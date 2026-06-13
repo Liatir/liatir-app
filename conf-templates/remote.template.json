@@ -1,0 +1,39 @@
+{
+  "identifier": "remote",
+  "windows": ["*"],
+  "webviews": ["*"],
+  "remote": { "urls": ["%%APP_URL%%"] },
+  "permissions": [
+    "core:default",
+
+    "desktopr-bridge",
+
+    "notification:default",
+    "notification:allow-permission-state",
+    "notification:allow-request-permission",
+    "notification:allow-is-permission-granted",
+    "notification:allow-notify",
+    "notification:allow-show",
+
+    "clipboard-manager:default",
+    "clipboard-manager:allow-read-text",
+    "clipboard-manager:allow-write-text",
+
+    "dialog:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister",
+    "global-shortcut:allow-unregister-all",
+    "global-shortcut:allow-is-registered",
+
+    "deep-link:default",
+    
+    "autostart:allow-enable",
+    "autostart:allow-disable",
+    "autostart:allow-is-enabled",
+
+    "shell:allow-open"
+  ]
+}

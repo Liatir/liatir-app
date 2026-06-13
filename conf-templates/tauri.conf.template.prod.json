@@ -1,0 +1,34 @@
+{
+  "productName": "%%APP_NAME%%",
+  "identifier": "%%APP_IDENTIFIER%%",
+  "version": "%%APP_VERSION%%",
+
+  "build": { "removeUnusedCommands": true },
+
+  "app": {
+    "withGlobalTauri": true,
+    "security": { "capabilities": ["remote"], "csp": null },
+    "windows": []
+  },
+
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "app", "deb", "rpm", "appimage"],
+    "icon": ["icons/icon.png", "icons/icon.icns", "icons/icon.ico"],
+    "macOS": {
+      "entitlements": "Entitlements.plist"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "active": false
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "desktopr"
+        ]
+      }
+    }
+  }
+}

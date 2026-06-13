@@ -1,0 +1,45 @@
+{
+  "name": "tauri-skeleton",
+  "version": "0.1.0",
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "esbuild": "^0.20.2"
+  },
+  "scripts": {
+    "build:frontend": "npm ci --prefix frontend/ && npm run build --prefix frontend/",
+    "dev:frontend": "npm run dev --prefix frontend/",
+    "devconf": "bash scripts/dev-conf.sh",
+    "localdevconf": "bash scripts/local-dev-conf.sh",
+    "prodconf": "bash scripts/prod-conf.sh",
+    "ts:clean": "find . -type f -name \"_companion_context.js\" -delete && find . -type f -name \"bridge.js\" -delete && find . -type f -name \"_constants.js\" -delete && find . -type f -name \"_helpers.js\" -delete && find . -type f -name \"_types.js\" -delete && find . -type f -name \"_main.js\" -delete && npm run clean:ts --prefix src-tauri/",
+    "ts:compile": "npx tsc -p tsconfig.json && npm run ts:compile --prefix src-tauri/",
+    "ts:compile:src-ts": "npx tsc -p tsconfig.json",
+    "ts:compile:bridge": "npm run ts:compile --prefix src-tauri/",
+    "build:worker": "npm run build:worker --prefix src-tauri/",
+    "clean": "npm run clean --prefix src-tauri/",
+    "clean:deep": "npm run ts:clean && npm run clean:deep --prefix src-tauri/",
+    "build": "npm install && npm run build --prefix src-tauri/",
+    "build:dev": "npm install && npm run build:dev --prefix src-tauri/",
+    "build:dev:clean": "npm install && npm run build:dev:clean --prefix src-tauri/",
+    "build:local": "npm install && npm run build:local --prefix src-tauri/",
+    "dev:keepsandbox": "npm run dev:keepsandbox --prefix src-tauri/",
+    "dev": "npm run dev --prefix src-tauri/",
+    "dev:local": "npm run dev:local --prefix src-tauri/",
+    "dev:clean": "npm run dev:clean --prefix src-tauri/",
+    "build:clean": "npm run build:clean --prefix src-tauri/",
+    "build:log": "npm run build:log --prefix src-tauri/",
+    "dev:log": "npm run dev:log --prefix src-tauri/",
+    "sdk:build": "npm run build --prefix sdk/",
+    "sdk:publish": "npm run pub --prefix sdk/",
+    "sdk:syncVersion": "npm run syncVersion --prefix sdk/",
+    "cargo:update": "npm run cargo:update --prefix src-tauri/"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.8.0",
+    "@wasmer/wasi": "^1.2.2",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "buffer": "^6.0.3",
+    "typescript": "^5.9.2"
+  }
+}

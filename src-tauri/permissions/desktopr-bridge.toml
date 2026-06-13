@@ -1,0 +1,126 @@
+"$schema" = "schemas/schema.json"
+
+[[permission]]
+identifier = "desktopr-bridge"
+description = "Allows Desktopr bridge commands for remote web apps."
+commands.allow = [
+  "dtr_notification_state",
+  "dtr_request_permission",
+  "dtr_notify",
+
+  "dtr_clipboard_write",
+  "dtr_clipboard_read",
+
+  "dtr_file_open",
+  "dtr_file_save",
+  "dtr_file_open_with_bytes",
+
+  "dtr_app_info",
+  "dtr_app_exit",
+
+  "dtr_global_vars_get",
+  "dtr_global_vars_set",
+  "dtr_global_vars_remove",
+  "dtr_global_vars_list",
+
+  "dtr_win_minimize",
+  "dtr_win_maximize",
+  "dtr_win_fullscreen",
+  "dtr_win_open",
+  "dtr_win_close",
+  "dtr_win_get_info",
+
+  "dtr_event_emit",
+  "dtr_event_emit_to",
+  "dtr_event_emit_to_current_window",
+
+  "dtr_fs_list_dir",
+  "dtr_fs_mkdir",
+  "dtr_fs_rm",
+  "dtr_fs_stat",
+  "dtr_fs_write_text",
+  "dtr_fs_read_text",
+  "dtr_fs_write_bytes",
+  "dtr_fs_read_bytes",
+  "dtr_fs_exists",
+  "dtr_fs_move",
+  "dtr_fs_copy",
+  "dtr_fs_clear_cache",
+  "dtr_fs_clear_data",
+  "dtr_fs_paths",
+
+  "dtr_fs_trash_list_dir",
+  "dtr_fs_trash_stat",
+  "dtr_fs_trash_exists",
+  "dtr_fs_trash_read_text",
+  "dtr_fs_trash_read_bytes",
+  "dtr_fs_data_recover_trash",
+  "dtr_fs_data_clear_trash",
+
+  "dtr_fs_diagnostics_list_dir",
+  "dtr_fs_diagnostics_read_bytes",
+  "dtr_fs_diagnostics_stat",
+  "dtr_fs_diagnostics_read_text",
+  "dtr_fs_diagnostics_rm",
+  "dtr_fs_diagnostics_clear",
+  "dtr_fs_diagnostics_exists",
+
+  "dtr_menu_set_enabled",
+  "dtr_menu_set_checked",
+  "dtr_init_menu_from_json",
+  "dtr_init_menu_from_file",
+  "dtr_init_menu_for_window_from_json",
+
+  "dtr_logs_get_privacy",
+  "dtr_logs_set_privacy",
+  "dtr_logs_run_retention",
+  "dtr_logs_list_files",
+  "dtr_logs_read_file",
+  "dtr_logs_record_js_error",
+  "dtr_logs_record_native_error",
+  "dtr_logs_record_error",
+  "dtr_logs_new_record",
+  "dtr_logs_export_zip",
+
+  "dtr_network_get_status",
+  "dtr_network_ping",
+  "dtr_network_resolve",
+  "dtr_network_bandwidth_estimate",
+  "dtr_network_set_monitor",
+  "dtr_network_stop_monitor",
+
+  "dtr_get_autostart_mode",
+  "dtr_set_autostart_mode",
+  "dtr_autostart_enable",
+  "dtr_autostart_disable",
+  "dtr_autostart_status",
+
+  "dtr_badge_set",
+  "dtr_badge_clear",
+
+  "dtr_context_menu_popup",
+
+  "dtr_launch_companion",
+
+  "dtr_plugin_status",
+  "dtr_plugin_paths",
+  "dtr_plugin_storage_clear",
+  "dtr_plugin_call",
+  "dtr_plugin_clear_all_jobs",
+  "dtr_plugin_add_module",
+  "dtr_plugin_pick_and_add_module",
+  "dtr_plugin_remove_module",
+  "dtr_plugin_list_modules",
+
+  # "dtr_worker_call",
+  # "dtr_worker_delivery",
+  # "dtr_worker_ready",
+  # "dtr_worker_add_module",
+  # "dtr_worker_pick_and_add_module",
+  # "dtr_worker_remove_module",
+  # "dtr_worker_paths",
+  # "dtr_worker_clear_all",
+  # "dtr_worker_list_modules",
+  # "dtr_worker_status",
+  # "dtr_worker_restart"
+]

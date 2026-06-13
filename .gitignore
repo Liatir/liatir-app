@@ -1,3 +1,15 @@
+
+
+src-tauri/target/
+src-tauri/gen/
+src-tauri/tsc/*
+!src-tauri/tsc/.gitkeep
+
+src-ts/**/*.js
+src-ts/**/*.js.map
+src-ts/**/*.tsbuildinfo
+
+
 # Logs
 logs
 *.log

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Desktopr Companion",
+  "version": "0.2.1",
+  "identifier": "app.desktopr.dashboard",
+  "plugins": {
+    "updater": {
+      "active": false
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "desktopr"
+        ]
+      }
+    }
+  },
+  "build": {
+    "frontendDist": "../frontend/dist",
+    "devUrl": "http://localhost:5173",
+    "removeUnusedCommands": true
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "security": {
+      "capabilities": [
+        "remote"
+      ],
+      "csp": null
+    },
+    "windows": []
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "dmg"
+    ],
+    "icon": [
+      "icons/icon-companion.png"
+    ],
+    "macOS": {
+      "entitlements": "Entitlements.plist"
+    }
+  }
+}

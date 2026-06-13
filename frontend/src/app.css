@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+/* Global layout using Tailwind utilities */
+body {
+  @apply min-h-screen bg-neutral-900 text-neutral-100 font-sans flex flex-col;
+}
