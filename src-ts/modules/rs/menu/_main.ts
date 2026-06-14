@@ -1,7 +1,7 @@
 import { initMenuConfig } from "../../../helpers";
-import type { DesktoprAPI, MenuConfig, MenuInterface, } from "../../../types";
+import type { OfflabAPI, MenuConfig, MenuInterface, } from "../../../types";
 
-export function buildMenu(core: { invoke: DesktoprAPI["invoke"] }): MenuInterface {
+export function buildMenu(core: { invoke: OfflabAPI["invoke"] }): MenuInterface {
   return {
     setEnabled: (id: string, enabled: boolean): Promise<void> => core.invoke("dtr_menu_set_enabled", { id, enabled }),
     setChecked: (id: string, checked: boolean): Promise<void> => core.invoke("dtr_menu_set_checked", { id, checked }),

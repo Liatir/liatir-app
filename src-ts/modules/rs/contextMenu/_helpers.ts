@@ -77,9 +77,9 @@ const onCmClick = (ev: MouseEvent, callback: CmListenerCallback, preventDefault:
       shiftKey: ev.shiftKey,
       metaKey: ev.metaKey,
     };
-    if (!window?.Desktopr)
-      throw new Error("[contextmenu listener] Desktopr not found");
-    window.Desktopr.events.emit("cm:click", info);
+    if (!window?.Offlab)
+      throw new Error("[contextmenu listener] Offlab not found");
+    window.Offlab.events.emit("cm:click", info);
     const callbackPlayload: CmListenerCallbackPlayload = {
         event: ev,
         ...info
@@ -91,23 +91,23 @@ const onCmClick = (ev: MouseEvent, callback: CmListenerCallback, preventDefault:
 };
 
 export const initContextMenuListener = (callback: CmListenerCallback, preventDefault: boolean = true) => {
-  if (!window?.Desktopr)
-    throw new Error("[contextmenu listener] Desktopr not found");
-  const listening = window.Desktopr.contextMenu.listening;
+  if (!window?.Offlab)
+    throw new Error("[contextmenu listener] Offlab not found");
+  const listening = window.Offlab.contextMenu.listening;
   if (listening) return console.warn("[contextmenu listener] already initialized");
   // listener globale: intercetta i click col destro su qualunque elemento della pagina
   const listener = (ev: MouseEvent) => onCmClick(ev, callback, preventDefault);
-  window.Desktopr.contextMenu.listener = listener as EventListenerOrEventListenerObject;
+  window.Offlab.contextMenu.listener = listener as EventListenerOrEventListenerObject;
   document.addEventListener("contextmenu", listener);
-  window.Desktopr.contextMenu.listening = true;
+  window.Offlab.contextMenu.listening = true;
 };
 
 export const removeContextMenuListener = () => {
-  if (!window?.Desktopr) throw new Error("[contextmenu listener] Desktopr not found");
-  const listening = window.Desktopr.contextMenu.listening;
+  if (!window?.Offlab) throw new Error("[contextmenu listener] Offlab not found");
+  const listening = window.Offlab.contextMenu.listening;
   if(!listening) return;
-  const listener = window.Desktopr.contextMenu.listener ?? (()=>{});
+  const listener = window.Offlab.contextMenu.listener ?? (()=>{});
   document.removeEventListener("contextmenu", listener);
-  window.Desktopr.contextMenu.listening = false;
-  window.Desktopr.contextMenu.listener = undefined;
+  window.Offlab.contextMenu.listening = false;
+  window.Offlab.contextMenu.listener = undefined;
 }

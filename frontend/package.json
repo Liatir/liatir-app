@@ -27,7 +27,7 @@
 	"dependencies": {
 		"@sveltejs/adapter-static": "^3.0.10",
 		"@tailwindcss/vite": "^4.1.17",
-		"desktopr": "^1.3.1",
+		"offlab": "^1.3.1",
 		"tailwindcss": "^4.1.17"
 	}
 }

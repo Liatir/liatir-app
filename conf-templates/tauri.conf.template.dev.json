@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Desktopr dev",
-  "version": "0.2.1",
-  "identifier": "app.desktopr.dashboard",
+  "productName": "Offlab dev",
+  "version": "0.0.1",
+  "identifier": "app.offlab.app",
   "plugins": {
     "updater": {
       "active": false
@@ -10,7 +10,7 @@
     "deep-link": {
       "desktop": {
         "schemes": [
-          "desktopr"
+          "offlab"
         ]
       }
     }

@@ -1,5 +1,5 @@
 export * from "./core/_helpers";
-export * from "./desktopr/_helpers";
+export * from "./offlab/_helpers";
 export * from "./modules/rs/files/_helpers";
 export * from "./modules/rs/events/_helpers";
 export * from "./modules/rs/fs/_helpers";
@@ -16,13 +16,12 @@ export * from "./modules/rs/autostart/_helpers";
 export * from "./modules/rs/badge/_helpers";
 export * from "./modules/rs/worker/_helpers";
 export * from "./modules/rs/contextMenu/_helpers";
-export * from "./modules/rs/companion/_helpers";
 export * from "./modules/rs/globalVariables/_helpers";
 
 
 import { wait } from "./utils";
 
-export const tauriReadyCheck = (): boolean => (typeof window !== "undefined" && ((window as any).__TAURI__) && ((window as any).Desktopr));
+export const tauriReadyCheck = (): boolean => (typeof window !== "undefined" && ((window as any).__TAURI__) && ((window as any).Offlab));
 
 export const waitTauri = async () => {
   const interval: number=500;

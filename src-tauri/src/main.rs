@@ -1,10 +1,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod bridge;
-mod desktopr;
+mod offlab;
 mod helpers;
 
 use bridge::*;
-use desktopr::bridge;
+use offlab::bridge;
 use tauri::{WindowEvent, Emitter, DragDropEvent, Manager, WebviewWindowBuilder, WebviewUrl};
 use crate::bridge::dragdrop;
 
@@ -64,14 +64,12 @@ fn main() {
     label: Mutex::new("main".to_string()),
   });
 
-  builder = builder.manage(CompanionSandboxRegistry::new());
-
   // --- 0) Single-instance first, important for deep links ---
   builder = builder.plugin(tauri_plugin_single_instance::init(|_app, argv, _cwd| {
     println!("single-instance argv: {argv:?}");
   }));
 
-  // --- 1) Desktopr bridge plugin and native plugins ---
+  // --- 1) Offlab bridge plugin and native plugins ---
   builder = builder
     .plugin(bridge())
     // .plugin(prevent)
@@ -181,7 +179,7 @@ fn main() {
             return;
           }
 
-          // Prevent immediate close so Desktopr can emit its close event first.
+          // Prevent immediate close so Offlab can emit its close event first.
           api.prevent_close();
 
           let _ = window.emit("window:close-requested", ());
@@ -338,9 +336,6 @@ fn main() {
 
       // context_menu
       dtr_context_menu_popup,
-
-      // companion
-      dtr_launch_companion,
 
       // plugins
       dtr_plugin_status,

@@ -1,6 +1,5 @@
 import { normalizeModuleName } from "../../../helpers";
-import { CompanionState } from "../../../companion_context";
-import { DesktoprAPI } from "../../../types";
+import { OfflabAPI } from "../../../types";
 import type {
     FsCoreMethods,
   FsEntry,
@@ -10,31 +9,13 @@ import type {
   FsScopeMethods,
 } from "../../../types";
 
-const getWindowLabelIfCompanion = (): string | undefined => {
-  const compState: CompanionState = window?.Desktopr?.window
-    ?.state as CompanionState;
-  let label: string | undefined = undefined;
-  if (compState && compState?.windowLabel?.trim() && compState?.isCacheOnly) label = compState.windowLabel.trim();
-  return label;
-};
-
 // Comments are in English
 function scopeCoreMethods(
-  core: { invoke: DesktoprAPI["invoke"] },
+  core: { invoke: OfflabAPI["invoke"] },
   permanent: boolean,
   plugin?: string
 ): FsCoreMethods {
-  // Guard that prevents persistent data operations from isolated (companion) windows.
-  const ensureDataNotIsolated = () => {
-    if (!permanent) return;
-
-    const label = getWindowLabelIfCompanion();
-    if (label && label.trim().length > 0) {
-      throw new Error(
-        "Persistent data operations are not available in isolated companion windows. Use the cache scope (Desktopr.fs.cache) for per-session storage."
-      );
-    }
-  };
+  const ensureDataNotIsolated = () => {};
 
   const pluginStorageModule = ((plugin?.trim()) ?? undefined);
 
@@ -44,7 +25,7 @@ function scopeCoreMethods(
       return core.invoke<FsEntry[]>("dtr_fs_list_dir", {
         rel,
         permanent,
-        windowLabel: getWindowLabelIfCompanion(),
+        windowLabel: undefined,
         pluginStorageModule
       });
     },
@@ -54,7 +35,7 @@ function scopeCoreMethods(
       return core.invoke<void>("dtr_fs_mkdir", {
         rel,
         permanent,
-        windowLabel: getWindowLabelIfCompanion(),
+        windowLabel: undefined,
         pluginStorageModule
       });
     },
@@ -65,7 +46,7 @@ function scopeCoreMethods(
         rel,
         recursive,
         permanent,
-        windowLabel: getWindowLabelIfCompanion(),
+        windowLabel: undefined,
         pluginStorageModule
       });
     },
@@ -75,7 +56,7 @@ function scopeCoreMethods(
       return core.invoke<FsEntry>("dtr_fs_stat", {
         rel,
         permanent,
-        windowLabel: getWindowLabelIfCompanion(),
+        windowLabel: undefined,
         pluginStorageModule
       });
     },
@@ -88,7 +69,7 @@ function scopeCoreMethods(
         contents,
         createDirs: opts?.createDirs,
         append: opts?.append,
-        windowLabel: getWindowLabelIfCompanion(),
+        windowLabel: undefined,
         pluginStorageModule
       });
     },
@@ -98,7 +79,7 @@ function scopeCoreMethods(
       return core.invoke<string>("dtr_fs_read_text", {
         rel,
         permanent,
-        windowLabel: getWindowLabelIfCompanion(),
+        windowLabel: undefined,
         pluginStorageModule
       });
     },
@@ -110,7 +91,7 @@ function scopeCoreMethods(
         permanent,
         dataBase64: base64,
         createDirs: opts?.createDirs,
-        windowLabel: getWindowLabelIfCompanion(),
+        windowLabel: undefined,
         pluginStorageModule
       });
     },
@@ -120,7 +101,7 @@ function scopeCoreMethods(
       return core.invoke<string>("dtr_fs_read_bytes", {
         rel,
         permanent,
-        windowLabel: getWindowLabelIfCompanion(),
+        windowLabel: undefined,
         pluginStorageModule
       });
     },
@@ -130,7 +111,7 @@ function scopeCoreMethods(
       return core.invoke<boolean>("dtr_fs_exists", {
         rel,
         permanent,
-        windowLabel: getWindowLabelIfCompanion(),
+        windowLabel: undefined,
         pluginStorageModule
       });
     },
@@ -143,7 +124,7 @@ function scopeCoreMethods(
         permanent,
         createDirs: opts?.createDirs,
         overwrite: opts?.overwrite,
-        windowLabel: getWindowLabelIfCompanion(),
+        windowLabel: undefined,
         pluginStorageModule
       });
     },
@@ -157,7 +138,7 @@ function scopeCoreMethods(
         recursive: opts?.recursive,
         createDirs: opts?.createDirs,
         overwrite: opts?.overwrite,
-        windowLabel: getWindowLabelIfCompanion(),
+        windowLabel: undefined,
         pluginStorageModule
       });
     },
@@ -166,20 +147,10 @@ function scopeCoreMethods(
 
 // Comments are in English
 function scope(
-  core: { invoke: DesktoprAPI["invoke"] },
+  core: { invoke: OfflabAPI["invoke"] },
   permanent: boolean,
 ): FsScopeMethods {
-  // Guard that prevents persistent data operations from isolated (companion) windows.
-  const ensureDataNotIsolated = () => {
-    if (!permanent) return;
-
-    const label = getWindowLabelIfCompanion();
-    if (label && label.trim().length > 0) {
-      throw new Error(
-        "Persistent data operations are not available in isolated companion windows. Use the cache scope (Desktopr.fs.cache) for per-session storage."
-      );
-    }
-  };
+  const ensureDataNotIsolated = () => {};
 
   const coreMethods: FsCoreMethods = scopeCoreMethods(core, permanent);
 
@@ -206,7 +177,7 @@ function scope(
 }
 
 function pluginFsScope(
-  core: { invoke: DesktoprAPI["invoke"] },
+  core: { invoke: OfflabAPI["invoke"] },
   plugin: string,
 ): FsPluginMethods {
 
@@ -224,7 +195,7 @@ function pluginFsScope(
 }
 
 export function buildFs(core: {
-  invoke: DesktoprAPI["invoke"];
+  invoke: OfflabAPI["invoke"];
 }): FsInterface {
   const cache = scope(core, false);
   const data = scope(core, true);

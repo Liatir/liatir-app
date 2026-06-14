@@ -1,7 +1,7 @@
-import type { DesktoprAPI, } from "../../../types";
+import type { OfflabAPI, } from "../../../types";
 import { AutostartInterface, AutostartMode } from "./_types";
 
-export function buildAutostart(core: { invoke: DesktoprAPI["invoke"] }): AutostartInterface {
+export function buildAutostart(core: { invoke: OfflabAPI["invoke"] }): AutostartInterface {
   return {
     enable: (): Promise<void> => core.invoke("dtr_autostart_enable"),
     disable: (): Promise<void> => core.invoke("dtr_autostart_disable"),

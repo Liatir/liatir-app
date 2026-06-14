@@ -1,9 +1,9 @@
-import { DesktoprAPI } from "../../../types";
+import { OfflabAPI } from "../../../types";
 import { U64, U8 } from "../../../utils";
 import { WorkerCallPayload, WorkerInterface } from "./_types";
 import { normalizeModuleName } from "../../../helpers";
 
-export function buildWorker(core: { invoke: DesktoprAPI["invoke"] }) {
+export function buildWorker(core: { invoke: OfflabAPI["invoke"] }) {
     return {
       call: (method: string, payload: WorkerCallPayload, timeoutMs?: U64): Promise<string> => core.invoke("dtr_worker_call", {modulePath: normalizeModuleName(method), payload, timeoutMs}),
       status: (): Promise<boolean> => core.invoke("dtr_worker_status"),

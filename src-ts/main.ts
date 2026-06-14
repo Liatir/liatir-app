@@ -1,5 +1,5 @@
 export * from "./core/_main";
-export * from "./desktopr/_main";
+export * from "./offlab/_main";
 export * from "./modules/rs/files/_main";
 export * from "./modules/rs/events/_main";
 export * from "./modules/rs/fs/_main";
@@ -16,5 +16,4 @@ export * from "./modules/rs/autostart/_main";
 export * from "./modules/rs/badge/_main";
 export * from "./modules/rs/worker/_main";
 export * from "./modules/rs/contextMenu/_main";
-export * from "./modules/rs/companion/_main";
 export * from "./modules/rs/globalVariables/_main";

@@ -5,7 +5,7 @@ set -euo pipefail
 APP_URL="http://blank.html"
 APP_VERSION="0.2.1"
 CARGO_PACKAGE_VERSION="0.2.1"
-CARGO_PACKAGE_NAME="desktopr-wrapper"
+CARGO_PACKAGE_NAME="offlab"
 
 sed -e "s|%%APP_URL%%|${APP_URL}|g" \
     -e "s|%%ASSETS_CDN_URL%%|${APP_URL}|g" \
@@ -26,7 +26,7 @@ cp conf-templates/tauri.conf.template.local.dev.json src-tauri/tauri.conf.json
 
 cat > src-tauri/window.env << 'EOF'
 MAIN_WINDOW_URL=
-MAIN_WINDOW_TITLE=Desktopr Companion
+MAIN_WINDOW_TITLE=Offlab
 MAIN_WINDOW_WIDTH=1200
 MAIN_WINDOW_HEIGHT=800
 MAIN_WINDOW_BG_COLOR=#171717

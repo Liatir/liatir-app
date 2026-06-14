@@ -22,7 +22,7 @@ export const normalizeString = (
 export const platformSpecifcFilter = async (
   platforms: DtrPlatform[],
 ): Promise<void> => {
-  const appInfo: AppInfo = (await window.Desktopr?.app.info()) as AppInfo;
+  const appInfo: AppInfo = (await window.Offlab?.app.info()) as AppInfo;
   if (!appInfo) throw "Failed to check platform";
   const plat = appInfo.os as DtrPlatform;
   if (!platforms.includes(plat))
@@ -30,11 +30,11 @@ export const platformSpecifcFilter = async (
 };
 
 export const getAppVersion = async (): Promise<string> => {
-  const desktopr = window?.Desktopr;
+  const offlab = window?.Offlab;
 
-  if (!desktopr) throw "[getAppVersion] Desktopr is not available";
+  if (!offlab) throw "[getAppVersion] Offlab is not available";
 
-  const appInfo = await desktopr.app.info();
+  const appInfo = await offlab.app.info();
 
   const version = appInfo.version;
 

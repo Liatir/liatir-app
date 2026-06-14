@@ -9,9 +9,7 @@ import type { FsInterface } from "../modules/rs/fs/_types";
 import type { MenuInterface } from "../modules/rs/menu/_types";
 import type { DiagnosticsInterface } from "../modules/rs/diagnostics/_types";
 import type { BadgeInterface } from "../modules/rs/badge/_types";
-import type { WorkerInterface } from "../modules/rs/worker/_types";
 import type { ContextMenuInterface } from "../modules/rs/contextMenu/_types";
-// import type { CompanionInterface } from "../modules/rs/companion/_types";
 import type { AutostartInterface } from "../modules/rs/autostart/_types";
 import type { NetworkInterface } from "../modules/rs/network/_types";
 import type { GlobalVariablesInterface } from "../modules/rs/globalVariables/_types";
@@ -21,17 +19,17 @@ import { PluginsInterface } from "../modules/rs/plugins/_types";
 export type DtrPlatform = "macos" | "linux" | "windows";
 
 /**
- * Desktopr API exposed in the webview.
+ * Offlab API exposed in the webview.
  *
  * Each property corresponds to a bridge module backed by Tauri commands.
- * The API is globally mounted on `window.Desktopr` when the runtime is ready.
+ * The API is globally mounted on `window.Offlab` when the runtime is ready.
  *
  * Notes:
  * - `badge` is supported **only on macOS**. On Windows and Linux this field
  *   will be `undefined` and must be checked before use.
  * - All other modules are cross-platform.
  */
-export type DesktoprAPI = {
+export type OfflabAPI = {
   readonly isAvailable: boolean;
   readonly apiVersion: string;
   readonly ready: Promise<true>;
@@ -59,11 +57,9 @@ export type DesktoprAPI = {
   globalVariables: GlobalVariablesInterface;
   contextMenu: ContextMenuInterface & {listening?: boolean, listener?: EventListenerOrEventListenerObject};
   openBrowser: (url: string) => Promise<void>;
-  // companion: CompanionInterface; DEPRECATED
-  // worker: WorkerInterface; DEPRECATED
 };
 
-export interface DesktoprInstanceInterface {
+export interface OfflabInstanceInterface {
   ready: () => boolean;
-  get: () => DesktoprAPI;
+  get: () => OfflabAPI;
 }

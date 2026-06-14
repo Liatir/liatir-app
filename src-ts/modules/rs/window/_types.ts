@@ -1,4 +1,3 @@
-import { CompanionState } from "../../../companion_context";
 
 // reserved for future window-related typed payloads
 export type _WindowTypesPlaceholder = unknown;
@@ -12,7 +11,6 @@ export interface WindowInterface {
   maximizeToggle: () => Promise<void>;
   fullscreen: (enable: boolean) => Promise<void>;
   getInfo: (label?: string) => Promise<WindowInfo>;
-  state: CompanionState;
 }
 
 // Comments are in English
@@ -50,5 +48,4 @@ export type NewWindowOptions = {
       label?: string;
       fullscreen?: boolean;
       url?: string;
-      cacheOnly?: boolean;
     }

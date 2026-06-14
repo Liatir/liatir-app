@@ -1,3 +1,3 @@
-import type { DesktoprAPI } from "./types";
-declare global { interface Window { Desktopr?: DesktoprAPI, __TAURI__?: any} }
+import type { OfflabAPI } from "./types";
+declare global { interface Window { Offlab?: OfflabAPI, __TAURI__?: any} }
 export {};

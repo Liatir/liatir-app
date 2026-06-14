@@ -1,5 +1,5 @@
 export * from "./core/_types";
-export * from "./desktopr/_types";
+export * from "./offlab/_types";
 export * from "./modules/rs/files/_types";
 export * from "./modules/rs/events/_types";
 export * from "./modules/rs/fs/_types";
@@ -15,5 +15,4 @@ export * from "./modules/rs/autostart/_types";
 export * from "./modules/rs/badge/_types";
 export * from "./modules/rs/worker/_types";
 export * from "./modules/rs/contextMenu/_types";
-export * from "./modules/rs/companion/_types";
 export * from "./modules/rs/globalVariables/_types";

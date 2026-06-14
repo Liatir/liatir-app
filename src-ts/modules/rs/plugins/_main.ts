@@ -1,9 +1,9 @@
-import { DesktoprAPI } from "../../../types";
+import { OfflabAPI } from "../../../types";
 import { U64, U8 } from "../../../utils";
 import { PluginsInterface, PluginCallPayload, PluginStatusResult, PluginCallResult, PluginAddResult } from "./_types";
 import { normalizeModuleName } from "./_helpers";
 
-export function buildPlugins(core: { invoke: DesktoprAPI["invoke"] }): PluginsInterface {
+export function buildPlugins(core: { invoke: OfflabAPI["invoke"] }): PluginsInterface {
     return {
       call: (module: string, payload: PluginCallPayload, timeoutMs?: U64): Promise<PluginCallResult> => core.invoke("dtr_plugin_call", {module: normalizeModuleName(module), payload, timeoutMs}),
       status: (): Promise<PluginStatusResult> => core.invoke("dtr_plugin_status"),

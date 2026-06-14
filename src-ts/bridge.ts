@@ -1,4 +1,4 @@
-import type { DesktoprAPI, WindowTauri } from "./types";
+import type { OfflabAPI, WindowTauri } from "./types";
 import {
     buildCore,
     buildFs,
@@ -22,18 +22,17 @@ import {
 } from "./main";
 import { API_VERSION } from "./constants";
 import { windowTauriProxy, tauriReadyCheck, waitTauri } from "./helpers";
-import { getCacheOnlyWindowContext } from "./companion_context";
 import { buildPlugins } from "./modules/rs/plugins/_main";
 
 (() => {
   if (typeof window === "undefined") return;
-  if ((window as any).Desktopr) return;
+  if ((window as any).Offlab) return;
 
-  console.log("[Desktopr bridge] init script evaluated");
+  console.log("[Offlab bridge] init script evaluated");
 
   const core = buildCore();
 
-  const api: DesktoprAPI = {
+  const api: OfflabAPI = {
     get isAvailable() { return true; },
     apiVersion: API_VERSION,
     get ready() {
@@ -62,16 +61,14 @@ import { buildPlugins } from "./modules/rs/plugins/_main";
     openBrowser: (url: string): Promise<void> => window.__TAURI__?.shell?.open(url)
   };
 
-  Object.defineProperty(window, "Desktopr", {
+  Object.defineProperty(window, "Offlab", {
     value: api,
     enumerable: false,
     configurable: false,
     writable: false,
   });
 
-  console.log("[Desktopr bridge] window.Desktopr assigned", (window as any).Desktopr);
-
-  getCacheOnlyWindowContext();
+  console.log("[Offlab bridge] window.Offlab assigned", (window as any).Offlab);
 })();
 
 (async () => {
@@ -80,6 +77,6 @@ import { buildPlugins } from "./modules/rs/plugins/_main";
   if (tauriReadyCheck()) {
     dtrInitiators();
   } else {
-    console.error("[Desktopr bridge] Tauri did not become ready in time");
+    console.error("[Offlab bridge] Tauri did not become ready in time");
   }
 })();

@@ -1,12 +1,12 @@
-import { Desktopr } from "../../../sdk";
-import { COMAPNION_WINDOW_LABEL_PREFIX, WINDOWS_LABELS_TRACKER_VARIABLE_NAME } from "../../../constants";
-import { DesktoprAPI } from "../../../desktopr/_types";
+import { Offlab } from "../../../sdk";
+import { WINDOWS_LABELS_TRACKER_VARIABLE_NAME } from "../../../constants";
+import { OfflabAPI } from "../../../offlab/_types";
 import { wait } from "../../../utils";
 
 export const tauriReadyCheck = (): boolean =>
   typeof window !== "undefined" &&
   (window as any).__TAURI__ &&
-  (window as any).Desktopr;
+  (window as any).Offlab;
 
 export const waitTauri = async () => {
   const interval: number = 500;
@@ -18,16 +18,14 @@ export const waitTauri = async () => {
 };
 
 export const newWindow = async (
-  core: { invoke: DesktoprAPI["invoke"] },
+  core: { invoke: OfflabAPI["invoke"] },
   options?: {
     label?: string;
     fullscreen?: boolean;
     url?: string;
   }
 ) => {
-  if (options?.label){
-    if(options.label.trim().toLowerCase().startsWith((COMAPNION_WINDOW_LABEL_PREFIX).trim().toLowerCase())) throw new Error(`[Reserved window label] '${COMAPNION_WINDOW_LABEL_PREFIX}' is an app reserved label`);
-    
+  if (options?.label){    
     if(options.label.trim().toLowerCase().startsWith("main")) throw new Error(`[Reserved window label] 'main' is an app reserved label`);
   }
   const randomWindowLabel: string = `w_${Math.random()
@@ -37,11 +35,11 @@ export const newWindow = async (
   const labelToSet = (options?.label) ?? randomWindowLabel;
 
   try {
-    const usedLabelsJSON = await Desktopr.globalVariables.get(WINDOWS_LABELS_TRACKER_VARIABLE_NAME);
+    const usedLabelsJSON = await Offlab.globalVariables.get(WINDOWS_LABELS_TRACKER_VARIABLE_NAME);
     let usedLabelsObj = await JSON.parse(usedLabelsJSON);
     usedLabelsObj[labelToSet] = true;
     const updatedUsedLabelsJSON = JSON.stringify(usedLabelsObj);
-    await Desktopr.globalVariables.set(WINDOWS_LABELS_TRACKER_VARIABLE_NAME, updatedUsedLabelsJSON);
+    await Offlab.globalVariables.set(WINDOWS_LABELS_TRACKER_VARIABLE_NAME, updatedUsedLabelsJSON);
   } catch (error) {
     console.warn("Could not update used windows labels tracker");
   }
@@ -55,7 +53,7 @@ export const newWindow = async (
 
 
 export const closeWindow = async (
-  core: { invoke: DesktoprAPI["invoke"] },
+  core: { invoke: OfflabAPI["invoke"] },
   label: string
 ) => {
 
@@ -64,11 +62,11 @@ export const closeWindow = async (
 
   try {
     if(trimmedLabel) {
-      const usedLabelsJSON = await Desktopr.globalVariables.get(WINDOWS_LABELS_TRACKER_VARIABLE_NAME);
+      const usedLabelsJSON = await Offlab.globalVariables.get(WINDOWS_LABELS_TRACKER_VARIABLE_NAME);
       let usedLabelsObj = await JSON.parse(usedLabelsJSON);
       delete usedLabelsObj[trimmedLabel];
       const updatedUsedLabelsJSON = JSON.stringify(usedLabelsObj);
-      await Desktopr.globalVariables.set(WINDOWS_LABELS_TRACKER_VARIABLE_NAME, updatedUsedLabelsJSON);
+      await Offlab.globalVariables.set(WINDOWS_LABELS_TRACKER_VARIABLE_NAME, updatedUsedLabelsJSON);
     }
   } catch (error) {
     console.warn("Could not update used windows labels tracker");

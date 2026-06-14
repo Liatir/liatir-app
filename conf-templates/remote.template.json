@@ -6,7 +6,7 @@
   "permissions": [
     "core:default",
 
-    "desktopr-bridge",
+    "offlab-bridge",
 
     "notification:default",
     "notification:allow-permission-state",

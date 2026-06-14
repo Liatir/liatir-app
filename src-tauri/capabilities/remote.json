@@ -2,11 +2,11 @@
   "identifier": "remote",
   "windows": ["*"],
   "webviews": ["*"],
-  "remote": { "urls": ["https://companion.desktopr.app/*"] },
+  "remote": { "urls": ["http://blank.html/*"] },
   "permissions": [
     "core:default",
 
-    "desktopr-bridge",
+    "offlab-bridge",
 
     "notification:default",
     "notification:allow-permission-state",

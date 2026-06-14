@@ -2,10 +2,10 @@
 set -euo pipefail
 
 # remote.json -> blank.html
-APP_URL="https://companion.desktopr.app"
+APP_URL="http://blank.html"
 APP_VERSION="0.2.1"
 CARGO_PACKAGE_VERSION="0.2.1"
-CARGO_PACKAGE_NAME="desktopr-wrapper"
+CARGO_PACKAGE_NAME="offlab"
 
 APP_URL_ORIGIN="$(printf '%s' "$APP_URL" | sed -E 's#^(https?://[^/]+).*$#\1#')"
 REMOTE_URL_PATTERN="${APP_URL_ORIGIN}/*"
@@ -30,8 +30,8 @@ cp conf-templates/tauri.conf.template.dev.json src-tauri/tauri.conf.json
 cp conf-templates/menu.config.dev.json src-tauri/resources/menu/menu.config.json
 
 cat > src-tauri/window.env << 'EOF'
-MAIN_WINDOW_URL=https://companion.desktopr.app
-MAIN_WINDOW_TITLE=Desktopr Dev
+MAIN_WINDOW_URL=
+MAIN_WINDOW_TITLE=Offlab Dev
 MAIN_WINDOW_WIDTH=1200
 MAIN_WINDOW_HEIGHT=800
 MAIN_WINDOW_BG_COLOR=#171717

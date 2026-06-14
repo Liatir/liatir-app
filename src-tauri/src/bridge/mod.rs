@@ -14,7 +14,6 @@ pub mod network;
 pub mod autostart;
 pub mod badge;
 pub mod context_menu;
-pub mod companion;
 pub mod global_vars;
 pub mod plugins;
 
@@ -33,6 +32,5 @@ pub use network::*;
 pub use autostart::*;
 pub use badge::*;
 pub use context_menu::*;
-pub use companion::*;
 pub use global_vars::*;
 pub use plugins::*;

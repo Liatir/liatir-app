@@ -1,7 +1,7 @@
 {
-  "name": "desktopr",
+  "name": "offlab",
   "version": "2.2.0",
-  "description": "Official JS/TS SDK for the Desktopr native bridge",
+  "description": "JS/TS SDK for the Offlab native bridge",
   "main": "dist-sdk/sdk/index.js",
   "types": "dist-sdk/sdk/index.d.ts",
   "module": "dist-sdk/sdk/index.js",

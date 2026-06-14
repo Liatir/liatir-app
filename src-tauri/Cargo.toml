@@ -1,8 +1,8 @@
 [package]
-name = "desktopr-wrapper"
+name = "offlab"
 version = "0.2.1"
 edition = "2021"
-default-run = "desktopr-wrapper"
+default-run = "offlab"
 
 [target.'cfg(windows)'.dependencies]
 tauri-plugin-prevent-default = { version = "3.0.3", features = ["platform-windows"], optional = true }
@@ -86,5 +86,5 @@ strip = true
 tauri-build = { version = "2.5.6", features = [] }
 
 [[bin]]
-name = "desktopr-wrapper"
+name = "offlab"
 path = "src/main.rs"

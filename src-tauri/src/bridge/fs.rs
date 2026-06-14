@@ -55,11 +55,11 @@ fn scope_dir_name(window_label: Option<&str>) -> Result<String, String> {
     }
 }
 
-// Returns the Desktopr scope root inside app_data_dir/app_cache_dir.
+// Returns the Offlab scope root inside app_data_dir/app_cache_dir.
 // Examples:
-// - app_data_dir()/.desktopr/.main
-// - app_cache_dir()/.desktopr/.my_window
-fn desktopr_scope_root(
+// - app_data_dir()/.offlab/.main
+// - app_cache_dir()/.offlab/.my_window
+fn offlab_scope_root(
     app: &AppHandle,
     permanent: bool,
     window_label: Option<&str>,
@@ -75,7 +75,7 @@ fn desktopr_scope_root(
     };
 
     let scope = scope_dir_name(window_label)?;
-    let root = base.join(".desktopr").join(scope);
+    let root = base.join(".offlab").join(scope);
 
     if !root.exists() {
         fs::create_dir_all(&root).map_err(|e| e.to_string())?;
@@ -85,21 +85,21 @@ fn desktopr_scope_root(
 }
 
 /// Returns the public base dir for fs.data / fs.cache.
-/// - permanent=true  -> app_data_dir()/.desktopr/.main/data
-/// - permanent=false -> app_cache_dir()/.desktopr/.main/cache
+/// - permanent=true  -> app_data_dir()/.offlab/.main/data
+/// - permanent=false -> app_cache_dir()/.offlab/.main/cache
 fn base_dir(app: &AppHandle, permanent: bool) -> PathBuf {
-    let scope_root = desktopr_scope_root(app, permanent, None).unwrap_or_else(|_| {
+    let scope_root = offlab_scope_root(app, permanent, None).unwrap_or_else(|_| {
         if permanent {
             app.path()
                 .app_data_dir()
                 .unwrap_or_else(|_| std::env::current_dir().unwrap())
-                .join(".desktopr")
+                .join(".offlab")
                 .join(".main")
         } else {
             app.path()
                 .app_cache_dir()
                 .unwrap_or_else(|_| std::env::temp_dir())
-                .join(".desktopr")
+                .join(".offlab")
                 .join(".main")
         }
     });
@@ -120,15 +120,15 @@ fn ensure_base_exists(app: &AppHandle, permanent: bool) -> Result<PathBuf, Strin
 }
 
 /// Returns the public base dir for a specific window scope.
-/// - permanent=true  -> app_data_dir()/.desktopr/.<window_label>/data
-/// - permanent=false -> app_cache_dir()/.desktopr/.<window_label>/cache
+/// - permanent=true  -> app_data_dir()/.offlab/.<window_label>/data
+/// - permanent=false -> app_cache_dir()/.offlab/.<window_label>/cache
 /// - window_label=None -> same as default ".main"
 fn base_dir_scoped(
     app: &AppHandle,
     permanent: bool,
     window_label: &Option<String>,
 ) -> Result<PathBuf, String> {
-    let scope_root = desktopr_scope_root(app, permanent, window_label.as_deref())?;
+    let scope_root = offlab_scope_root(app, permanent, window_label.as_deref())?;
     let base = if permanent {
         scope_root.join("data")
     } else {
@@ -212,7 +212,7 @@ fn plugin_storage_base_dir(
     plugin_storage_module: &str,
 ) -> Result<PathBuf, String> {
     let module = validate_plugin_storage_module(plugin_storage_module)?;
-    let root = desktopr_scope_root(app, true, None)?;
+    let root = offlab_scope_root(app, true, None)?;
     let base = root.join("_external_modules_storage").join(module);
 
     if !base.exists() {
@@ -284,11 +284,11 @@ fn resolve_any(app: &AppHandle, rel: &str, permanent: bool) -> Result<PathBuf, S
 }
 
 // ---------------------------------
-// Internal Desktopr dirs
+// Internal Offlab dirs
 // ---------------------------------
 
 fn trash_dir_scoped(app: &AppHandle, window_label: Option<&str>) -> Result<PathBuf, String> {
-    let trash = desktopr_scope_root(app, true, window_label)?.join("_trash");
+    let trash = offlab_scope_root(app, true, window_label)?.join("_trash");
     if !trash.exists() {
         std::fs::create_dir_all(&trash).map_err(|e| e.to_string())?;
     }
@@ -300,7 +300,7 @@ fn trash_dir(app: &AppHandle) -> Result<PathBuf, String> {
 }
 
 fn diagnostics_dir_scoped(app: &AppHandle, window_label: Option<&str>) -> Result<PathBuf, String> {
-    let diag = desktopr_scope_root(app, true, window_label)?.join("_diagnostics");
+    let diag = offlab_scope_root(app, true, window_label)?.join("_diagnostics");
     if !diag.exists() {
         std::fs::create_dir_all(&diag).map_err(|e| e.to_string())?;
     }
@@ -312,7 +312,7 @@ fn diagnostics_dir(app: &AppHandle) -> Result<PathBuf, String> {
 }
 
 fn sandbox_dir_scoped(app: &AppHandle, window_label: Option<&str>) -> Result<PathBuf, String> {
-    let sandbox_dir_base = desktopr_scope_root(app, false, window_label)?.join("_sandbox");
+    let sandbox_dir_base = offlab_scope_root(app, false, window_label)?.join("_sandbox");
     if !sandbox_dir_base.exists() {
         std::fs::create_dir_all(&sandbox_dir_base).map_err(|e| e.to_string())?;
     }

@@ -1,9 +1,9 @@
-import { DesktoprInstance } from "../../../main";
-import { DesktoprAPI } from "../../../types";
+import { OfflabInstance } from "../../../main";
+import { OfflabAPI } from "../../../types";
 import { buildDiagnosticsTestFunctions, deriveAppVersion, diagnosticsSettings } from "./_helpers";
 import { AnalyticsPayload, DiagnosticsArea, DiagnosticsInterface, ErrorPayload, PrivacySettings } from "./_types";
 
-export function buildDiagnostics(core: { invoke: DesktoprAPI["invoke"] }): DiagnosticsInterface {
+export function buildDiagnostics(core: { invoke: OfflabAPI["invoke"] }): DiagnosticsInterface {
   return {
     settings: {
       // set: mappa ai parametri snake_case attesi da Rust (tutti opzionali)

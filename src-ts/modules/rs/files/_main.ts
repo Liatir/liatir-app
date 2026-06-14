@@ -1,8 +1,8 @@
-import { DesktoprAPI, FilesInterface, OpenResultWithBytes } from "../../../types";
+import { OfflabAPI, FilesInterface, OpenResultWithBytes } from "../../../types";
 import { OpenResult } from "../../../types";
 import { U64 } from "../../../utils";
 
-export function buildFiles(core: { invoke: DesktoprAPI["invoke"] }): FilesInterface {
+export function buildFiles(core: { invoke: OfflabAPI["invoke"] }): FilesInterface {
   return {
     open: (options?: { multi?: boolean, allowed?: string[], maxBytes?: U64 }) =>
       core.invoke<OpenResult>("dtr_file_open", { multi: options?.multi ?? false, allowedExtensions: options?.allowed, maxBytes: options?.maxBytes }),

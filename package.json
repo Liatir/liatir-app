@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "devDependencies": {
     "@types/node": "^25.9.1",
-    "esbuild": "^0.20.2"
+    "esbuild": "^0.28.1"
   },
   "scripts": {
     "build:frontend": "npm ci --prefix frontend/ && npm run build --prefix frontend/",

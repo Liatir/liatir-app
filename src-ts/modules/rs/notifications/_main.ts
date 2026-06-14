@@ -1,6 +1,6 @@
-import type { DesktoprAPI, NotificationsInterface } from "../../../types";
+import type { OfflabAPI, NotificationsInterface } from "../../../types";
 
-export function buildNotifications(core: { invoke: DesktoprAPI["invoke"] }): NotificationsInterface {
+export function buildNotifications(core: { invoke: OfflabAPI["invoke"] }): NotificationsInterface {
   return {
     state: (): Promise<string> => core.invoke("dtr_notification_state"),
     request: (): Promise<string> => core.invoke("dtr_request_permission"),

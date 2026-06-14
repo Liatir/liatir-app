@@ -1,8 +1,8 @@
 "$schema" = "schemas/schema.json"
 
 [[permission]]
-identifier = "desktopr-bridge"
-description = "Allows Desktopr bridge commands for remote web apps."
+identifier = "offlab-bridge"
+description = "Allows Offlab bridge commands."
 commands.allow = [
   "dtr_notification_state",
   "dtr_request_permission",
@@ -99,8 +99,6 @@ commands.allow = [
   "dtr_badge_clear",
 
   "dtr_context_menu_popup",
-
-  "dtr_launch_companion",
 
   "dtr_plugin_status",
   "dtr_plugin_paths",

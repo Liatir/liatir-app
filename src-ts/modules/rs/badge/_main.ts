@@ -1,8 +1,8 @@
 import { platformSpecifcFilter } from "../../../helpers";
-import { AppInfo, BadgeInterface, DesktoprAPI } from "../../../types";
+import { AppInfo, BadgeInterface, OfflabAPI } from "../../../types";
 import { U32 } from "../../../utils";
 
-export function buildBadge(core: { invoke: DesktoprAPI["invoke"] }): BadgeInterface {
+export function buildBadge(core: { invoke: OfflabAPI["invoke"] }): BadgeInterface {
     return {
       set: async (count: U32): Promise<void> => {
         await platformSpecifcFilter(["macos"]);

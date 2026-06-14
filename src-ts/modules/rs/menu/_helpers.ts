@@ -1,4 +1,4 @@
-import { DesktoprAPI, MenuConfig } from "../../../types";
+import { OfflabAPI, MenuConfig } from "../../../types";
 import { validate } from "../../../utils";
 import { cryptoTools } from "../../../utils";
 
@@ -11,7 +11,7 @@ function isMacOS(): boolean {
 }
 
 export const initMenuConfig = async (
-  core: { invoke: DesktoprAPI["invoke"] },
+  core: { invoke: OfflabAPI["invoke"] },
   menuConfig: MenuConfig,
   windowLabel?: string
 ): Promise<void> => {
@@ -19,7 +19,7 @@ export const initMenuConfig = async (
   if (windowLabel) {
     if (isMacOS()) {
       console.warn(
-        "[Desktopr] Native window-specific menus are not supported on macOS."
+        "[Offlab] Native window-specific menus are not supported on macOS."
       );
       return;
     }
