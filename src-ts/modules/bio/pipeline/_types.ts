@@ -1,5 +1,6 @@
 import { PluginCallPayload, PluginCallResult } from "../../rs/plugins/_types";
 import { SidecarResult } from "../../rs/sidecar/_types";
+import { U64 } from "../../../utils";
 
 // ---------------------------------------------------------------------------
 // Step definitions
@@ -10,7 +11,7 @@ export type WasmStep = {
   /** .wasm module name as registered via Offlab.plugins.add() */
   module: string;
   payload: PluginCallPayload;
-  timeoutMs?: number;
+  timeoutMs?: U64;
 };
 
 export type SidecarStep = {
