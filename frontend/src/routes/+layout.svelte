@@ -1,15 +1,19 @@
 <script lang="ts">
-	// Import global styles
-	import '../app.css';
-	import favicon from '$lib/assets/favicon.svg';
-	import { onMount } from 'svelte';
-	import { Desktopr } from 'desktopr';
+  import '../app.css';
+  import Sidebar from '$lib/components/layout/Sidebar.svelte';
+  import { jobsStore } from '$lib/stores/jobs.svelte';
+  import { onMount } from 'svelte';
 
-	let { children } = $props();
+  let { children } = $props();
+
+  onMount(() => {
+    jobsStore.refresh();
+  });
 </script>
 
-<svelte:head>
-	<link rel="icon" href={favicon} />
-</svelte:head>
-
-{@render children()}
+<div class="flex h-screen overflow-hidden" style="background-color: var(--color-bg);">
+  <Sidebar />
+  <main class="flex-1 overflow-y-auto">
+    {@render children()}
+  </main>
+</div>

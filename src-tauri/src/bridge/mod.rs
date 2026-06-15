@@ -17,6 +17,8 @@ pub mod context_menu;
 pub mod global_vars;
 pub mod plugins;
 pub mod sidecar;
+pub mod jobs;
+pub mod deps;
 
 pub use notifications::*;
 pub use clipboard::*;
@@ -36,3 +38,5 @@ pub use context_menu::*;
 pub use global_vars::*;
 pub use plugins::*;
 pub use sidecar::*;
+pub use jobs::*;
+pub use deps::*;

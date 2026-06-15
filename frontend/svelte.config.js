@@ -15,9 +15,9 @@ const config = {
 			// Where to put the final static build
 			pages: 'dist',  // <- qui decidi la cartella finale
 			assets: 'dist',
-			fallback: null,
+			fallback: 'index.html',
 			precompress: false,
-			strict: true
+			strict: false
 		})
 	}
 };

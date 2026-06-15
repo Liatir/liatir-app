@@ -112,6 +112,15 @@ commands.allow = [
 
   "dtr_sidecar_run",
 
+  "dtr_jobs_spawn",
+  "dtr_jobs_kill",
+  "dtr_jobs_status",
+  "dtr_jobs_list",
+  "dtr_jobs_clear_done",
+
+  "dtr_deps_check",
+  "dtr_deps_check_many",
+
   # "dtr_worker_call",
   # "dtr_worker_delivery",
   # "dtr_worker_ready",

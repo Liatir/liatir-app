@@ -56,6 +56,8 @@ fn main() {
 
   let mut builder = tauri::Builder::default();
 
+  builder = builder.manage(bridge::jobs::JobRegistry::new());
+
   builder = builder.manage(CloseGuard {
     closing: AtomicBool::new(false),
   });
@@ -350,6 +352,17 @@ fn main() {
 
       // sidecar
       dtr_sidecar_run,
+
+      // jobs
+      dtr_jobs_spawn,
+      dtr_jobs_kill,
+      dtr_jobs_status,
+      dtr_jobs_list,
+      dtr_jobs_clear_done,
+
+      // deps
+      dtr_deps_check,
+      dtr_deps_check_many,
 
       // test commands only in dev
       #[cfg(debug_assertions)]

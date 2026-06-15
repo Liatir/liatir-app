@@ -20,3 +20,7 @@ export * from "./modules/rs/globalVariables/_main";
 export * from "./modules/rs/plugins/_main";
 export * from "./modules/rs/sidecar/_main";
 export * from "./modules/bio/pipeline/_main";
+export * from "./modules/rs/jobs/_main";
+export * from "./modules/rs/deps/_main";
+export * from "./modules/qc/_main";
+export * from "./modules/qc/fastqc/_main";

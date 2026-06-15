@@ -1,65 +1,52 @@
-import type { NotificationsInterface } from "../modules/rs/notifications/_types";
-import type { ClipboardInterface } from "../modules/rs/clipboard/_types";
-import type { FilesInterface } from "../modules/rs/files/_types";
-import type { AppInterface } from "../modules/rs/app/_types";
-import type { WindowInterface } from "../modules/rs/window/_types";
-import type { EventsInterface } from "../modules/rs/events/_types";
-import type { ShortcutsInterface } from "../modules/rs/shortcuts/_types";
-import type { FsInterface } from "../modules/rs/fs/_types";
-import type { MenuInterface } from "../modules/rs/menu/_types";
-import type { DiagnosticsInterface } from "../modules/rs/diagnostics/_types";
-import type { BadgeInterface } from "../modules/rs/badge/_types";
-import type { ContextMenuInterface } from "../modules/rs/contextMenu/_types";
-import type { AutostartInterface } from "../modules/rs/autostart/_types";
-import type { NetworkInterface } from "../modules/rs/network/_types";
-import type { GlobalVariablesInterface } from "../modules/rs/globalVariables/_types";
+import type { DesktopInterface } from "../modules/desktop/_types";
+import type { PluginsInterface } from "../modules/rs/plugins/_types";
+import type { SidecarInterface } from "../modules/rs/sidecar/_types";
+import type { PipelineInterface } from "../modules/bio/pipeline/_types";
+import type { JobsInterface } from "../modules/rs/jobs/_types";
+import type { DepsInterface } from "../modules/rs/deps/_types";
+import type { QcInterface } from "../modules/qc/_types";
 import { WindowTauri } from "../core/_types";
-import { PluginsInterface } from "../modules/rs/plugins/_types";
-import { SidecarInterface } from "../modules/rs/sidecar/_types";
-import { PipelineInterface } from "../modules/bio/pipeline/_types";
 
 export type DtrPlatform = "macos" | "linux" | "windows";
 
-/**
- * Offlab API exposed in the webview.
- *
- * Each property corresponds to a bridge module backed by Tauri commands.
- * The API is globally mounted on `window.Offlab` when the runtime is ready.
- *
- * Notes:
- * - `badge` is supported **only on macOS**. On Windows and Linux this field
- *   will be `undefined` and must be checked before use.
- * - All other modules are cross-platform.
- */
 export type OfflabAPI = {
   readonly isAvailable: boolean;
   readonly apiVersion: string;
   readonly ready: Promise<true>;
-  invoke<T = unknown>(
-    cmd: string,
-    payload?: Record<string, unknown>
-  ): Promise<T>;
+  invoke<T = unknown>(cmd: string, payload?: Record<string, unknown>): Promise<T>;
   isDesktop: boolean;
-  notifications: NotificationsInterface;
-  clipboard: ClipboardInterface;
-  files: FilesInterface;
-  app: AppInterface;
-  window: WindowInterface;
-  events: EventsInterface;
-  globalShortcut: ShortcutsInterface;
-  fs: FsInterface;
-  menu: MenuInterface;
-  diagnostics: DiagnosticsInterface;
-  network: NetworkInterface;
-  autostart: AutostartInterface;
-  badge?: BadgeInterface;
+
+  /** Native desktop bridge — window, fs, notifications, clipboard, etc. */
+  desktop: DesktopInterface;
+
+  // --- Compute infrastructure ---
+
+  /** Low-level WASM runtime. Use bio namespaces (qc, …) for typed wrappers. */
   plugins: PluginsInterface;
+  /** Run bundled native sidecars (declared in bundle.externalBin). */
   sidecar: SidecarInterface;
+  /** Chain WASM + sidecar steps into a sequential pipeline. */
   pipeline: PipelineInterface;
+
+  // --- Process management ---
+
+  /** Async process manager — spawn, stream, kill any system binary. */
+  jobs: JobsInterface;
+  /** Check whether system tools are installed and get their versions. */
+  deps: DepsInterface;
+
+  // --- Bio analysis namespaces (scipy-style) ---
+
+  qc: QcInterface;
+  // TODO: align: AlignInterface;
+  // TODO: variants: VariantsInterface;
+  // TODO: seq: SeqInterface;
+  // TODO: io: BioIoInterface;
+  // TODO: nextflow: NextflowInterface;
+  // TODO: snakemake: SnakemakeInterface;
+
   tauri?: WindowTauri;
   onReady: (callback: Function) => void;
-  globalVariables: GlobalVariablesInterface;
-  contextMenu: ContextMenuInterface & {listening?: boolean, listener?: EventListenerOrEventListenerObject};
   openBrowser: (url: string) => Promise<void>;
 };
 

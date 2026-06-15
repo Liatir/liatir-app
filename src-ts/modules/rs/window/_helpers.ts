@@ -35,11 +35,11 @@ export const newWindow = async (
   const labelToSet = (options?.label) ?? randomWindowLabel;
 
   try {
-    const usedLabelsJSON = await Offlab.globalVariables.get(WINDOWS_LABELS_TRACKER_VARIABLE_NAME);
+    const usedLabelsJSON = await Offlab.desktop.globalVariables.get(WINDOWS_LABELS_TRACKER_VARIABLE_NAME);
     let usedLabelsObj = await JSON.parse(usedLabelsJSON);
     usedLabelsObj[labelToSet] = true;
     const updatedUsedLabelsJSON = JSON.stringify(usedLabelsObj);
-    await Offlab.globalVariables.set(WINDOWS_LABELS_TRACKER_VARIABLE_NAME, updatedUsedLabelsJSON);
+    await Offlab.desktop.globalVariables.set(WINDOWS_LABELS_TRACKER_VARIABLE_NAME, updatedUsedLabelsJSON);
   } catch (error) {
     console.warn("Could not update used windows labels tracker");
   }
@@ -62,11 +62,11 @@ export const closeWindow = async (
 
   try {
     if(trimmedLabel) {
-      const usedLabelsJSON = await Offlab.globalVariables.get(WINDOWS_LABELS_TRACKER_VARIABLE_NAME);
+      const usedLabelsJSON = await Offlab.desktop.globalVariables.get(WINDOWS_LABELS_TRACKER_VARIABLE_NAME);
       let usedLabelsObj = await JSON.parse(usedLabelsJSON);
       delete usedLabelsObj[trimmedLabel];
       const updatedUsedLabelsJSON = JSON.stringify(usedLabelsObj);
-      await Offlab.globalVariables.set(WINDOWS_LABELS_TRACKER_VARIABLE_NAME, updatedUsedLabelsJSON);
+      await Offlab.desktop.globalVariables.set(WINDOWS_LABELS_TRACKER_VARIABLE_NAME, updatedUsedLabelsJSON);
     }
   } catch (error) {
     console.warn("Could not update used windows labels tracker");

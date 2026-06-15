@@ -4,7 +4,10 @@ export interface PluginsInterface {
   call: (
     module: string,
     payload: PluginCallPayload,
-    timeoutMs?: U64
+    timeoutMs?: U64,
+    /** Host directories exposed as read-only inside the WASM sandbox.
+     *  Use for large files (FASTQ, BAM, VCF…) that cannot go through stdin. */
+    hostReadPaths?: string[],
   ) => Promise<PluginCallResult>;
   status: () => Promise<PluginStatusResult>;
   list: () => Promise<string[]>;

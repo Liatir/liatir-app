@@ -1,30 +1,32 @@
 import type { OfflabAPI, WindowTauri } from "./types";
 import {
-    buildCore,
-    buildFs,
-    buildNotifications,
-    buildClipboard,
-    buildFiles,
-    buildWindow,
-    buildEvents,
-    buildShortcuts,
-    buildAppInfo,
-    buildMenu,
-    dtrInitiators,
-    buildDiagnostics,
-    buildNetwork,
-    buildAutostart,
-    buildBadge,
-    buildContextMenu,
-    // buildCompanion,
-    buildGlobVar,
-    dtrReadyEventListener,
+  buildCore,
+  buildFs,
+  buildNotifications,
+  buildClipboard,
+  buildFiles,
+  buildWindow,
+  buildEvents,
+  buildShortcuts,
+  buildAppInfo,
+  buildMenu,
+  dtrInitiators,
+  buildDiagnostics,
+  buildNetwork,
+  buildAutostart,
+  buildBadge,
+  buildContextMenu,
+  buildGlobVar,
+  dtrReadyEventListener,
 } from "./main";
 import { API_VERSION } from "./constants";
 import { windowTauriProxy, tauriReadyCheck, waitTauri } from "./helpers";
 import { buildPlugins } from "./modules/rs/plugins/_main";
 import { buildSidecar } from "./modules/rs/sidecar/_main";
 import { buildPipeline } from "./modules/bio/pipeline/_main";
+import { buildJobs } from "./modules/rs/jobs/_main";
+import { buildDeps } from "./modules/rs/deps/_main";
+import { buildQc } from "./modules/qc/_main";
 
 (() => {
   if (typeof window === "undefined") return;
@@ -39,32 +41,40 @@ import { buildPipeline } from "./modules/bio/pipeline/_main";
   const api: OfflabAPI = {
     get isAvailable() { return true; },
     apiVersion: API_VERSION,
-    get ready() {
-      return core.ready;
-    },
+    get ready() { return core.ready; },
     invoke: core.invoke,
     isDesktop: true,
-    notifications:    buildNotifications(core),
-    clipboard:        buildClipboard(core),
-    files:            buildFiles(core),
-    app:              buildAppInfo(core),
-    window:           buildWindow(core),
-    events:           buildEvents(core),
-    globalShortcut:   buildShortcuts(core),
-    fs:               buildFs(core),
-    menu:             buildMenu(core),
-    diagnostics:      buildDiagnostics(core),
-    network:          buildNetwork(core),
-    autostart:        buildAutostart(core),
-    badge:            buildBadge(core),
+
+    desktop: {
+      notifications:   buildNotifications(core),
+      clipboard:       buildClipboard(core),
+      files:           buildFiles(core),
+      app:             buildAppInfo(core),
+      window:          buildWindow(core),
+      events:          buildEvents(core),
+      globalShortcut:  buildShortcuts(core),
+      fs:              buildFs(core),
+      menu:            buildMenu(core),
+      diagnostics:     buildDiagnostics(core),
+      network:         buildNetwork(core),
+      autostart:       buildAutostart(core),
+      badge:           buildBadge(core),
+      contextMenu:     buildContextMenu(core),
+      globalVariables: buildGlobVar(core),
+    },
+
     plugins,
     sidecar,
-    pipeline:         buildPipeline({ plugins, sidecar }),
-    contextMenu:      buildContextMenu(core),
-    globalVariables:  buildGlobVar(core),
-    tauri:            windowTauriProxy as WindowTauri,
-    onReady:          dtrReadyEventListener,
-    openBrowser: (url: string): Promise<void> => window.__TAURI__?.shell?.open(url)
+    pipeline: buildPipeline({ plugins, sidecar }),
+
+    jobs:     buildJobs(core),
+    deps:     buildDeps(core),
+
+    qc:       buildQc({ plugins }),
+
+    tauri:       windowTauriProxy as WindowTauri,
+    onReady:     dtrReadyEventListener,
+    openBrowser: (url: string): Promise<void> => window.__TAURI__?.shell?.open(url),
   };
 
   Object.defineProperty(window, "Offlab", {

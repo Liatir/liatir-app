@@ -17,14 +17,13 @@
   },
   "build": {
     "frontendDist": "../frontend/dist",
-    "devUrl": "http://localhost:5173",
     "removeUnusedCommands": true
   },
   "app": {
     "withGlobalTauri": true,
     "security": {
       "capabilities": [
-        "remote"
+        "local"
       ],
       "csp": null
     },

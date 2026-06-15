@@ -1,109 +1,138 @@
 <script lang="ts">
-	import { goto } from "$app/navigation";
-	import { COMPANION_URL_GLOBAL_VAR_KEY } from "$lib";
-	import { Desktopr } from "desktopr";
-	import { validate } from "./_typesValidation";
-	import { onMount } from "svelte";
+  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import PageHeader from '$lib/components/layout/PageHeader.svelte';
+  import Card from '$lib/components/ui/Card.svelte';
+  import Badge from '$lib/components/ui/Badge.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
+  import Spinner from '$lib/components/ui/Spinner.svelte';
+  import { jobsStore, type JobEntry } from '$lib/stores/jobs.svelte';
+  import { fmtDuration, fmtTime } from '$lib/utils';
+  import { offlab } from '$lib/api';
 
-	const year = new Date().getFullYear();
+  let appVersion = $state<string | null>(null);
 
-    const normalizeUrl = (urlString: string) => {
-        const parts = urlString.trim().split('?');
-        const base = parts[0];
-        const baseUrl = base.trim().replaceAll("https://","").replaceAll("http://","");
-        let _url = baseUrl;
-        if(validate.nonEmptyString(parts[1])) _url = (`${_url.trim()}?${(parts[1]).trim()}`).trim();
-        return `https://${_url}`;
+  const recentJobs = $derived(
+    [...jobsStore.jobs]
+      .sort((a, b) => b.started_at_ms - a.started_at_ms)
+      .slice(0, 5)
+  );
+
+  function jobStatusVariant(job: JobEntry): 'running' | 'done' | 'failed' | 'killed' {
+    if (job.status === 'Running') return 'running';
+    if (job.status === 'Killed') return 'killed';
+    if (typeof job.status === 'object' && 'Done' in job.status) return 'done';
+    return 'failed';
+  }
+
+  function jobStatusLabel(job: JobEntry): string {
+    if (job.status === 'Running') return 'Running';
+    if (job.status === 'Killed') return 'Killed';
+    if (typeof job.status === 'object' && 'Done' in job.status) return 'Done';
+    return 'Failed';
+  }
+
+  onMount(async () => {
+    const api = offlab();
+    if (api) {
+      try {
+        const info = await api.desktop.app.getInfo();
+        appVersion = info?.version ?? null;
+      } catch {}
     }
+    await jobsStore.refresh();
+  });
 
-    let loading: boolean = $state(false);
-    let url: string = $state("");
-    let fullUrl: string = $derived(normalizeUrl(url));
-
-    $effect(()=>{
-        if(url && fullUrl && url!=fullUrl) url=fullUrl;
-    })
-
-    const launchCompanion = async () => {
-        loading=true;
-        try {
-            const _url = fullUrl.trim();
-            const validUrl = validate.url(_url);
-            if(!validUrl) return alert("Invalid URL");
-            await Desktopr.globalVariables.set(COMPANION_URL_GLOBAL_VAR_KEY,_url);
-            location.href = _url;
-        } catch (error) {
-            console.log(error);
-            alert("Something went wrong");
-        } finally {
-            loading=false;
-        }
-    }
-
-    const openDtrApp = () => {
-        Desktopr.tauri.shell.open("https://dashboard.desktopr.app");
-    }
-
-    onMount(async ()=>{
-        loading=true; 
-        try {
-            const savedUrl = await Desktopr.globalVariables.get(COMPANION_URL_GLOBAL_VAR_KEY);
-            if(validate.url(savedUrl)) url=savedUrl;
-        } catch (error) {
-            console.log(error);
-        } finally {
-            loading=false;
-        }
-    })
+  const quickTools = [
+    { label: 'Run FastQC', description: 'Quality control for FASTQ files', href: '/tools/qc' },
+    { label: 'Check Dependencies', description: 'Verify installed bioinformatics tools', href: '/deps' },
+    { label: 'Monitor Jobs', description: 'View running and completed processes', href: '/jobs' },
+  ];
 </script>
 
-<header
-	class="h-20 px-8 flex items-center justify-between border-b border-neutral-800 text-lg font-semibold bg-neutral-800/10"
->
-    <div class="flex items-center justify-start">
-	<span class="relative mr-4 inline-flex h-[30px] w-[30px] items-center justify-center">
-		<img src="/icons/dtr-icon.png" />
-	</span>
-	<span class="flex flex-col items-start justify-center space-y-0 gap-0 -mb-1">
-		<span class="text-xs text-amber-500 w-full -mb-0.5 font-light text-left">Desktopr</span>
-		<span class="-mt-0.5">Companion</span>
-	</span>
+<div class="flex flex-col h-full">
+  <PageHeader title="Dashboard" description="Welcome to Offlab — your bioinformatics workspace" />
+
+  <div class="flex-1 overflow-y-auto p-6 space-y-6">
+    <!-- Stats row -->
+    <div class="grid grid-cols-3 gap-4">
+      <Card class="p-4">
+        <p class="text-xs text-zinc-500 mb-1">Running Jobs</p>
+        <p class="text-2xl font-semibold text-zinc-100">{jobsStore.runningCount}</p>
+        {#if jobsStore.runningCount > 0}
+          <p class="text-xs text-sky-400 mt-1">Active</p>
+        {:else}
+          <p class="text-xs text-zinc-600 mt-1">Idle</p>
+        {/if}
+      </Card>
+
+      <Card class="p-4">
+        <p class="text-xs text-zinc-500 mb-1">Total Jobs</p>
+        <p class="text-2xl font-semibold text-zinc-100">{jobsStore.jobs.length}</p>
+        <p class="text-xs text-zinc-600 mt-1">this session</p>
+      </Card>
+
+      <Card class="p-4">
+        <p class="text-xs text-zinc-500 mb-1">App Version</p>
+        <p class="text-2xl font-semibold text-zinc-100">{appVersion ?? '—'}</p>
+        <p class="text-xs text-zinc-600 mt-1">Offlab</p>
+      </Card>
     </div>
+
+    <!-- Quick actions -->
     <div>
-            <button onclick={openDtrApp} class="px-4 py-2 text-xs bg-neutral-800 hover:cursor-pointer hover:bg-amber-500 hover:text-neutral-800 text-neutral-400 font-medium rounded-md">
-                Bubledesk App
-            </button>
-        </div>
-</header>
+      <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Quick Actions</h2>
+      <div class="grid grid-cols-3 gap-3">
+        {#each quickTools as tool}
+          <Card
+            hoverable
+            class="p-4"
+            onclick={() => goto(tool.href)}
+          >
+            <p class="text-sm font-medium text-zinc-200">{tool.label}</p>
+            <p class="text-xs text-zinc-500 mt-1 leading-relaxed">{tool.description}</p>
+          </Card>
+        {/each}
+      </div>
+    </div>
 
-<main class="flex-1 flex items-center justify-center px-4 bg-neutral-800/10">
-    {#if loading}
-        <div class="flex items-center justify-center h-full w-full">
-            <div class="h-8 w-8 animate-spin rounded-full border-2 border-slate-500 border-t-amber-500"></div>
-        </div>
-    {:else}
-        <form class="w-full max-w-md flex flex-col overflow-hidden" onsubmit={launchCompanion}>
-            <!-- <label for="url" class="text-neutral-300/80 text-center mb-2">
-                Enter your app url to launch companion:
-            </label> -->
-            <input
-                bind:value={url}
-                id="url"
-                type="url"
-                required
-                placeholder="Enter your app URL (eg. https://your-app.com)"
-                class="w-full rounded-t-xl text-center border placeholder:text-neutral-500 border-neutral-700 border-b-neutral-800 bg-neutral-900 px-4 py-4 text-sm text-neutral-100
-                transition focus:border-amber-500 ring-none outline-none overflow-hidden"
-            />
-            <button type="submit" class="px-4 py-2 border {url?.trim()?"bg-amber-500 border-amber-500 hover:cursor-pointer hover:bg-amber-500/90 text-neutral-800":" bg-neutral-800 border-neutral-800 text-neutral-600"} border-t-0 text-sm font-medium rounded-b-xl">
-                Launch Companion
-            </button>
-        </form>
-    {/if}
-</main>
+    <!-- Recent jobs -->
+    <div>
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider">Recent Jobs</h2>
+        <Button variant="ghost" size="sm" onclick={() => goto('/jobs')}>View all</Button>
+      </div>
 
-<footer
-	class="h-14 border-t border-neutral-800 flex items-center justify-center text-xs text-neutral-400"
->
-	© {year} Desktopr
-</footer>
+      {#if jobsStore.loading}
+        <div class="flex justify-center py-8">
+          <Spinner />
+        </div>
+      {:else if recentJobs.length === 0}
+        <Card class="p-6">
+          <p class="text-center text-sm text-zinc-500">No jobs yet. Run a tool to get started.</p>
+        </Card>
+      {:else}
+        <Card>
+          <div class="divide-y divide-border">
+            {#each recentJobs as job}
+              <div class="flex items-center gap-3 px-4 py-3">
+                <Badge variant={jobStatusVariant(job)} pulse>
+                  {jobStatusLabel(job)}
+                </Badge>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-mono text-zinc-200 truncate">
+                    {job.cmd} {job.args.join(' ')}
+                  </p>
+                  <p class="text-xs text-zinc-500 mt-0.5">{fmtTime(job.started_at_ms)}</p>
+                </div>
+                <span class="text-xs text-zinc-500 shrink-0">
+                  {fmtDuration(job.started_at_ms, job.ended_at_ms ?? undefined)}
+                </span>
+              </div>
+            {/each}
+          </div>
+        </Card>
+      {/if}
+    </div>
+  </div>
+</div>

@@ -1,0 +1,101 @@
+use tauri::AppHandle;
+
+// ---------------------------------
+// Helpers (sync, used in spawn_blocking)
+// ---------------------------------
+
+fn find_in_path(name: &str) -> Option<String> {
+    let path_var = std::env::var_os("PATH")?;
+
+    #[cfg(target_os = "windows")]
+    let extensions = ["", ".exe", ".cmd", ".bat"];
+    #[cfg(not(target_os = "windows"))]
+    let extensions = [""];
+
+    for dir in std::env::split_paths(&path_var) {
+        for ext in &extensions {
+            let candidate = dir.join(format!("{name}{ext}"));
+            if candidate.is_file() {
+                return Some(candidate.to_string_lossy().into_owned());
+            }
+        }
+    }
+
+    None
+}
+
+fn try_get_version(name: &str) -> Option<String> {
+    for flag in &["--version", "-version", "version", "-v"] {
+        let Ok(output) = std::process::Command::new(name).arg(flag).output() else {
+            continue;
+        };
+
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        let text = if !stdout.is_empty() { stdout } else { stderr };
+
+        if !text.is_empty() {
+            return Some(
+                text.lines().next().unwrap_or(&text).trim().to_string(),
+            );
+        }
+    }
+
+    None
+}
+
+// ---------------------------------
+// Public Tauri commands
+// ---------------------------------
+
+/// Check whether a binary is available in PATH and retrieve its version.
+///
+/// Returns:
+///   { available: bool, binary: string, path: string|null, version: string|null }
+///
+/// The `binary` name must be a simple identifier (no slashes, no path traversal).
+#[tauri::command]
+pub async fn dtr_deps_check(binary: String) -> Result<serde_json::Value, String> {
+    if binary.is_empty()
+        || binary.contains('/')
+        || binary.contains('\\')
+        || binary.contains("..")
+    {
+        return Err(format!("invalid binary name: {binary:?}"));
+    }
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let path = find_in_path(&binary);
+        let available = path.is_some();
+
+        let version = if available {
+            try_get_version(&binary)
+        } else {
+            None
+        };
+
+        Ok(serde_json::json!({
+            "available": available,
+            "binary":    binary,
+            "path":      path,
+            "version":   version,
+        }))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Check multiple binaries at once.
+#[tauri::command]
+pub async fn dtr_deps_check_many(
+    binaries: Vec<String>,
+) -> Result<Vec<serde_json::Value>, String> {
+    let mut results = Vec::with_capacity(binaries.len());
+
+    for binary in binaries {
+        let result = dtr_deps_check(binary).await?;
+        results.push(result);
+    }
+
+    Ok(results)
+}

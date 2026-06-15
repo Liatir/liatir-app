@@ -307,18 +307,62 @@ pub async fn dtr_plugin_call(
     module: String,
     payload: serde_json::Value,
     timeout_ms: Option<u64>,
+    // Optional list of host directories to expose as read-only inside the
+    // WASM sandbox. Required for tools that read large files from the
+    // filesystem (e.g. FASTQ, BAM) that cannot be passed through stdin.
+    // Each entry must be an absolute path to an existing directory.
+    host_read_paths: Option<Vec<String>>,
 ) -> Result<serde_json::Value, String> {
     let started = Instant::now();
     let id = gen_plugin_job_id();
     let timeout_ms = timeout_ms.unwrap_or(2_000);
 
+    let validated_paths = validate_host_read_paths(host_read_paths.unwrap_or_default())
+        .map_err(|e| e.to_string())?;
+
     let result = tauri::async_runtime::spawn_blocking(move || {
-        run_plugin_job(app, id, module, payload, timeout_ms, started)
+        run_plugin_job(app, id, module, payload, timeout_ms, started, validated_paths)
     })
     .await
     .map_err(|e| format!("plugin task join error: {e}"))?;
 
     result.map_err(|e| e.to_string())
+}
+
+fn validate_host_read_paths(raw: Vec<String>) -> Result<Vec<PathBuf>> {
+    // Paths that must never be exposed to a WASM module.
+    let blocked_prefixes: &[&str] = &[
+        "/etc", "/proc", "/sys", "/dev",
+        "/System", "/Library", "/private/etc",
+        "C:\\Windows", "C:\\Program Files",
+    ];
+
+    let mut out = Vec::with_capacity(raw.len());
+
+    for s in raw {
+        let p = PathBuf::from(&s);
+
+        if !p.is_absolute() {
+            return Err(anyhow!("host_read_path must be absolute: {s}"));
+        }
+
+        if !p.is_dir() {
+            return Err(anyhow!("host_read_path is not a directory: {s}"));
+        }
+
+        let canonical = p.canonicalize()
+            .with_context(|| format!("cannot canonicalize path: {s}"))?;
+
+        for blocked in blocked_prefixes {
+            if canonical.starts_with(blocked) {
+                return Err(anyhow!("host_read_path is blocked: {s}"));
+            }
+        }
+
+        out.push(canonical);
+    }
+
+    Ok(out)
 }
 
 #[tauri::command]
@@ -459,6 +503,7 @@ fn run_plugin_job(
     payload: serde_json::Value,
     timeout_ms: u64,
     started: Instant,
+    host_read_paths: Vec<PathBuf>,
 ) -> Result<serde_json::Value> {
     let job_dir = plugin_job_dir(&app, &id)?;
     let storage_dir = plugin_storage_dir(&app, &module_name)?;
@@ -471,6 +516,7 @@ fn run_plugin_job(
         timeout_ms,
         &job_dir,
         &storage_dir,
+        &host_read_paths,
     );
 
     let duration_ms = started.elapsed().as_millis() as u64;
@@ -509,6 +555,7 @@ fn run_plugin_job_inner(
     timeout_ms: u64,
     job_dir: &Path,
     storage_dir: &Path,
+    host_read_paths: &[PathBuf],
 ) -> Result<PluginResponse> {
     let wasm_bytes = read_wasm_module(app, module_name)?;
     let stdin_text = serde_json::to_string(&payload)? + "\n";
@@ -552,6 +599,20 @@ fn run_plugin_job_inner(
         DirPerms::all(),
         FilePerms::all(),
     )?;
+
+    // Read-only host directories requested by the caller (e.g. the directory
+    // containing a FASTQ or BAM file). Mapped to the same absolute path inside
+    // the sandbox so the module can open files by their original path.
+    for host_dir in host_read_paths {
+        if let Some(guest) = host_dir.to_str() {
+            wasi_builder.preopened_dir(
+                host_dir,
+                guest,
+                DirPerms::READ,
+                FilePerms::READ,
+            )?;
+        }
+    }
 
     let wasi = wasi_builder.build_p1();
 
