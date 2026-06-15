@@ -11,7 +11,7 @@
   height={size}
   viewBox="0 0 24 24"
   fill="none"
-  class="animate-spin text-indigo-400 {cls}"
+  class="animate-spin text-brand-muted {cls}"
 >
   <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
   <path

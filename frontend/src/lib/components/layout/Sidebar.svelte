@@ -13,6 +13,7 @@
     { href: '/tools', label: 'Tools', match: '/tools' },
     { href: '/jobs', label: 'Jobs', match: '/jobs' },
     { href: '/deps', label: 'Dependencies', match: '/deps' },
+    { href: '/code', label: 'Code', match: '/code' },
   ];
 
   function isActive(item: NavItem): boolean {
@@ -25,17 +26,11 @@
 <aside class="flex h-screen w-[220px] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
   <!-- Logo -->
   <div class="flex h-14 items-center gap-2.5 border-b border-[var(--color-border)] px-4">
-    <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 shrink-0">
-      <!-- DNA helix icon -->
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
-        <path d="M6 3c0 0 6 3 6 9s6 9 6 9" />
-        <path d="M18 3c0 0-6 3-6 9s-6 9-6 9" />
-        <path d="M6 12h12" opacity="0.5" />
-        <path d="M7 7.5h10M7 16.5h10" opacity="0.3" />
-      </svg>
+    <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-brand shrink-0 p-1">
+      <img src="/logo/png/logo-white.png" alt="Offlab" class="h-full w-full object-contain" />
     </div>
     <span class="text-sm font-semibold tracking-tight text-zinc-100">Offlab</span>
-    <span class="ml-auto rounded px-1.5 py-0.5 text-[10px] font-medium bg-indigo-600/20 text-indigo-400 border border-indigo-500/20">
+    <span class="ml-auto rounded px-1.5 py-0.5 text-[10px] font-medium bg-brand/20 text-brand-muted border border-brand/20">
       dev
     </span>
   </div>
@@ -48,7 +43,7 @@
         href={item.href}
         class="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-100
           {active
-            ? 'bg-indigo-600/15 text-indigo-300 font-medium'
+            ? 'bg-brand/15 text-brand-soft font-medium'
             : 'text-zinc-400 hover:bg-[var(--color-surface-2)] hover:text-zinc-200'}"
       >
         <!-- icons -->
@@ -66,6 +61,11 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
+          </svg>
+        {:else if item.match === '/code'}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6" />
+            <polyline points="8 6 2 12 8 18" />
           </svg>
         {:else if item.match === '/deps'}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -93,7 +93,7 @@
       href="/settings"
       class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-400
         hover:bg-[var(--color-surface-2)] hover:text-zinc-200 transition-colors duration-100
-        {$page.url.pathname === '/settings' ? 'bg-indigo-600/15 text-indigo-300 font-medium' : ''}"
+        {$page.url.pathname === '/settings' ? 'bg-brand/15 text-brand-soft font-medium' : ''}"
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3" />

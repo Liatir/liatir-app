@@ -98,7 +98,7 @@
 
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-mono text-zinc-200 truncate">
-                  <span class="text-indigo-400">{job.cmd}</span>
+                  <span class="text-brand-muted">{job.cmd}</span>
                   {#if job.args.length}
                     <span class="text-zinc-500"> {job.args.join(' ')}</span>
                   {/if}

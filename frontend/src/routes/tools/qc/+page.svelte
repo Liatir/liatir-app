@@ -26,19 +26,7 @@
   let error = $state<string | null>(null);
   let startedAt = $state<number | null>(null);
   let duration = $state<string | null>(null);
-  let depOk = $state<boolean | null>(null);
-
-  onMount(async () => {
-    // check if fastqc WASM is listed
-    const api = offlab();
-    if (!api) return;
-    try {
-      const modules = await api.plugins.list();
-      depOk = modules.some((m: string) => m.includes('fastqc'));
-    } catch {
-      depOk = false;
-    }
-  });
+  // fastqc.wasm is loaded from persistent plugin storage — no runtime check needed
 
   async function pickFile() {
     const api = offlab();
@@ -97,12 +85,6 @@
 
   <div class="flex-1 overflow-y-auto p-6 space-y-5">
 
-    {#if depOk === false}
-      <div class="rounded-xl border border-amber-700/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
-        FastQC WASM module not loaded. Add <code class="font-mono text-amber-200">fastqc.wasm</code> via Settings to enable analysis.
-      </div>
-    {/if}
-
     <!-- Input form -->
     <Card class="p-5 space-y-4">
       <h2 class="text-sm font-semibold text-zinc-200">Input</h2>
@@ -117,7 +99,7 @@
             placeholder="/path/to/reads.fastq"
             class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2
                    text-sm text-zinc-200 placeholder:text-zinc-600 outline-none
-                   focus:border-indigo-500 transition-colors"
+                   focus:border-brand transition-colors"
           />
           <Button variant="secondary" size="md" onclick={pickFile}>Browse</Button>
         </div>
@@ -138,7 +120,7 @@
           placeholder="e.g. 100000"
           class="w-48 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2
                  text-sm text-zinc-200 placeholder:text-zinc-600 outline-none
-                 focus:border-indigo-500 transition-colors"
+                 focus:border-brand transition-colors"
         />
       </div>
 
