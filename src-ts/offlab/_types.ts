@@ -15,6 +15,8 @@ import type { NetworkInterface } from "../modules/rs/network/_types";
 import type { GlobalVariablesInterface } from "../modules/rs/globalVariables/_types";
 import { WindowTauri } from "../core/_types";
 import { PluginsInterface } from "../modules/rs/plugins/_types";
+import { SidecarInterface } from "../modules/rs/sidecar/_types";
+import { PipelineInterface } from "../modules/bio/pipeline/_types";
 
 export type DtrPlatform = "macos" | "linux" | "windows";
 
@@ -52,6 +54,8 @@ export type OfflabAPI = {
   autostart: AutostartInterface;
   badge?: BadgeInterface;
   plugins: PluginsInterface;
+  sidecar: SidecarInterface;
+  pipeline: PipelineInterface;
   tauri?: WindowTauri;
   onReady: (callback: Function) => void;
   globalVariables: GlobalVariablesInterface;

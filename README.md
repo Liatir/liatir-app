@@ -1,69 +1,122 @@
-# Desktopr
+# Offlab
 
-**desktopr** is the official JavaScript/TypeScript SDK for communicating with the native Desktopr bridge.  
-It allows any web application to access native desktop features exposed by the Desktopr wrapper, using a clean, typed, importable API.
+Tauri 2 desktop runtime base for bioinformatics applications.
 
-If the app is running in a normal browser environment, the SDK provides a safe detection method `isDesktoprAvailable()` so you can fallback.
-
----
-
-## Installation
-
-```bash
-npm install desktopr
-```
-
-or
-
-```bash
-yarn add desktopr
-```
+Provides a sandboxed WASM plugin system, a native sidecar abstraction, and a
+sequential pipeline orchestrator — ready to wire up real bio tools.
 
 ---
 
-## Usage
+## Architecture
+
+```
+src-tauri/src/bridge/
+  plugins.rs      ← WASM runtime (wasmtime + WASI p1). Full implementation.
+  sidecar.rs      ← Native binary runner (tauri_plugin_shell). Scaffold.
+  fs.rs           ← Sandboxed file system commands.
+  ...             ← Other Tauri bridge modules (window, notifications, etc.)
+
+src-ts/
+  modules/rs/
+    plugins/      ← TS bridge to the WASM runtime.
+    sidecar/      ← TS bridge to the sidecar runner.
+  modules/bio/
+    pipeline/     ← Pipeline orchestrator (pure TS). Chains WASM + sidecar steps.
+```
+
+---
+
+## WASM plugins (`Offlab.plugins`)
+
+The WASM runtime is fully operational. Modules are `.wasm` files that receive a
+JSON payload on stdin and write a JSON result to stdout.
 
 ```ts
-import { Desktopr, isDesktoprAvailable } from "desktopr";
+// Add a module (file picker dialog).
+await Offlab.plugins.add("qc.wasm");
 
-if (isDesktoprAvailable()) {
-  await Desktopr.window.new();
-} else {
-  console.log("Running in browser mode — native features unavailable.");
-}
+// Call it.
+const result = await Offlab.plugins.call("qc.wasm", {
+  fn: "run",
+  args: { input: "sample.fastq" },
+}, /* timeoutMs */ 30_000);
+```
+
+Each call runs in an isolated job directory that is deleted after execution.
+Modules have access to a persistent `/storage` directory across calls.
+
+---
+
+## Sidecar binaries (`Offlab.sidecar`)
+
+For native tools that cannot be compiled to WASM (e.g. samtools, minimap2).
+
+**To add a real sidecar:**
+
+1. Place the platform binary under `src-tauri/binaries/` following Tauri's
+   naming convention (`<name>-<target-triple>`).
+2. Declare it in `tauri.conf.json`:
+   ```json
+   "bundle": {
+     "externalBin": ["binaries/samtools"]
+   }
+   ```
+3. Add the `shell:allow-execute` permission for the binary in the capability
+   file (`src-tauri/permissions/offlab-bridge.toml`).
+
+Then call it from TS:
+
+```ts
+const result = await Offlab.sidecar.run("samtools", ["view", "-c", "sample.bam"]);
 ```
 
 ---
 
-## API Shape
+## Pipeline orchestrator (`Offlab.pipeline`)
 
-The SDK exposes TypeScript definitions for the entire bridge via `DesktoprAPI`, ensuring autocomplete and type safety.
+Chains WASM and sidecar steps in sequence. Stops at the first failure unless
+`continueOnError` is set.
+
+```ts
+const result = await Offlab.pipeline.run([
+  {
+    kind: "wasm",
+    label: "QC",
+    module: "qc.wasm",
+    payload: { fn: "run", args: { input: "sample.fastq" } },
+    timeoutMs: 60_000,
+  },
+  {
+    kind: "sidecar",
+    label: "Align",
+    binary: "minimap2",
+    args: ["-ax", "sr", "ref.fa", "sample.fastq"],
+  },
+]);
+
+console.log(result.ok, result.steps.map(s => s.status));
+```
+
+**Extension points** (see `src-ts/modules/bio/pipeline/_types.ts` TODOs):
+- Add bio pipeline presets as named functions (e.g. `shortReadQC`, `alignShortReads`)
+- Add new step kinds (e.g. `"http-fetch"` for downloading reference genomes)
+- Wire step output as input to the next step (currently each step is independent)
 
 ---
 
-## Detecting Native Environment
+## File layout for bio data
 
-The SDK includes a lightweight helper:
+The sandboxed FS root is `~/.offlab/.main/` (data) and cache equivalent.
+WASM module storage lives at `~/.offlab/.main/_external_modules_storage/<module>/`.
 
-```ts
-isDesktoprAvailable(): boolean
+---
+
+## Development
+
+```sh
+# Configure for local dev (writes window.env + tauri.conf.json)
+bash scripts/local-dev-conf.sh
+
+# Start Tauri dev
+cargo tauri dev
 ```
-
-It **never throws**, even in SSR or when running outside Desktopr.
-
-Useful for apps that must run both:
-- as a normal website
-- and as a desktop app wrapped with Desktopr
-
-
-### When Desktopr Is Not Available
-
-If `Desktopr` is missing (e.g. browser mode), trying to call native APIs directly will throw.
-
-Make sure to guard features or provide fallbacks:
-
-```ts
-if (!isDesktoprAvailable()) return;
-await Desktopr.window.new(...);
-```
-

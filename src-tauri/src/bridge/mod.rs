@@ -16,6 +16,7 @@ pub mod badge;
 pub mod context_menu;
 pub mod global_vars;
 pub mod plugins;
+pub mod sidecar;
 
 pub use notifications::*;
 pub use clipboard::*;
@@ -34,3 +35,4 @@ pub use badge::*;
 pub use context_menu::*;
 pub use global_vars::*;
 pub use plugins::*;
+pub use sidecar::*;

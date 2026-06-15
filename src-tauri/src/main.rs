@@ -348,6 +348,9 @@ fn main() {
       dtr_plugin_remove_module,
       dtr_plugin_list_modules,
 
+      // sidecar
+      dtr_sidecar_run,
+
       // test commands only in dev
       #[cfg(debug_assertions)]
       dtr_logs_test_record_n,

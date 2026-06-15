@@ -23,6 +23,8 @@ import {
 import { API_VERSION } from "./constants";
 import { windowTauriProxy, tauriReadyCheck, waitTauri } from "./helpers";
 import { buildPlugins } from "./modules/rs/plugins/_main";
+import { buildSidecar } from "./modules/rs/sidecar/_main";
+import { buildPipeline } from "./modules/bio/pipeline/_main";
 
 (() => {
   if (typeof window === "undefined") return;
@@ -31,6 +33,8 @@ import { buildPlugins } from "./modules/rs/plugins/_main";
   console.log("[Offlab bridge] init script evaluated");
 
   const core = buildCore();
+  const plugins = buildPlugins(core);
+  const sidecar = buildSidecar(core);
 
   const api: OfflabAPI = {
     get isAvailable() { return true; },
@@ -53,7 +57,9 @@ import { buildPlugins } from "./modules/rs/plugins/_main";
     network:          buildNetwork(core),
     autostart:        buildAutostart(core),
     badge:            buildBadge(core),
-    plugins:          buildPlugins(core),
+    plugins,
+    sidecar,
+    pipeline:         buildPipeline({ plugins, sidecar }),
     contextMenu:      buildContextMenu(core),
     globalVariables:  buildGlobVar(core),
     tauri:            windowTauriProxy as WindowTauri,

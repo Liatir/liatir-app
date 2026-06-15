@@ -110,6 +110,8 @@ commands.allow = [
   "dtr_plugin_remove_module",
   "dtr_plugin_list_modules",
 
+  "dtr_sidecar_run",
+
   # "dtr_worker_call",
   # "dtr_worker_delivery",
   # "dtr_worker_ready",
