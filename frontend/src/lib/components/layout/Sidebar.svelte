@@ -26,10 +26,10 @@
 <aside class="flex h-screen w-[220px] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
   <!-- Logo -->
   <div class="flex h-14 items-center gap-2.5 border-b border-[var(--color-border)] px-4">
-    <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-brand shrink-0 p-1">
+    <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-brand shrink-0 p-1.5">
       <img src="/logo/png/logo-white.png" alt="Offlab" class="h-full w-full object-contain" />
     </div>
-    <span class="text-sm font-semibold tracking-tight text-zinc-100">Offlab</span>
+    <span class="text-md font-semibold tracking-tight text-zinc-100">Offlab</span>
     <span class="ml-auto rounded px-1.5 py-0.5 text-[10px] font-medium bg-brand/20 text-brand-muted border border-brand/20">
       dev
     </span>

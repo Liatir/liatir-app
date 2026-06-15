@@ -3,6 +3,7 @@
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
+  import CodeEditor from '$lib/components/ui/CodeEditor.svelte';
 
   interface SavedScript {
     id: string;
@@ -48,22 +49,6 @@ return jobs;`);
       outputType = 'error';
     } finally {
       running = false;
-    }
-  }
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const ta = e.target as HTMLTextAreaElement;
-      const start = ta.selectionStart;
-      const end = ta.selectionEnd;
-      code = code.slice(0, start) + '  ' + code.slice(end);
-      requestAnimationFrame(() => {
-        ta.selectionStart = ta.selectionEnd = start + 2;
-      });
-    }
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-      run();
     }
   }
 
@@ -139,8 +124,8 @@ return jobs;`);
 <div class="flex h-full overflow-hidden">
 
   <!-- Scripts sidebar -->
-  <div class="w-56 shrink-0 border-r border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col">
-    <div class="flex items-center justify-between px-3 py-3 border-b border-[var(--color-border)]">
+  <div class="w-56 shrink-0 border-r border-border bg-surface flex flex-col">
+    <div class="flex items-center justify-between px-3 py-3 border-b border-border">
       <span class="text-xs font-medium text-zinc-400">Scripts</span>
       <button
         onclick={newScript}
@@ -198,7 +183,7 @@ return jobs;`);
             bind:value={saveNameInput}
             placeholder="Script name…"
             onkeydown={(e) => e.key === 'Enter' && saveScript()}
-            class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1.5
+            class="rounded-lg border border-border bg-surface-2 px-3 py-1.5
                    text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-brand
                    transition-colors w-40"
           />
@@ -219,15 +204,11 @@ return jobs;`);
 
       <!-- Code editor -->
       <div class="flex-1 min-h-0">
-        <textarea
-          data-selectable
-          bind:value={code}
-          onkeydown={handleKeydown}
-          spellcheck="false"
-          class="w-full h-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]
-                 px-5 py-4 font-mono text-sm text-zinc-200 placeholder:text-zinc-600 outline-none
-                 resize-none focus:border-brand transition-colors leading-relaxed"
-        ></textarea>
+        <CodeEditor
+          value={code}
+          onchange={(v) => { code = v; }}
+          onrun={run}
+        />
       </div>
 
       <!-- Output -->
@@ -235,7 +216,7 @@ return jobs;`);
         <div class="shrink-0 max-h-64 rounded-xl border overflow-hidden
           {outputType === 'error'
             ? 'border-red-700/40 bg-red-950/30'
-            : 'border-[var(--color-border)] bg-[var(--color-surface)]'}">
+            : 'border-border bg-surface'}">
           <div class="flex items-center justify-between px-4 py-2 border-b border-inherit">
             <span class="text-xs font-medium {outputType === 'error' ? 'text-red-400' : 'text-zinc-400'}">
               {outputType === 'error' ? 'Error' : 'Output'}

@@ -29,6 +29,7 @@
     "build:clean": "npm run build:clean --prefix src-tauri/",
     "build:log": "npm run build:log --prefix src-tauri/",
     "dev:log": "npm run dev:log --prefix src-tauri/",
+    "gen:sdk-types": "node scripts/generate-sdk-types.mjs",
     "sdk:build": "npm run build --prefix sdk/",
     "sdk:publish": "npm run pub --prefix sdk/",
     "sdk:syncVersion": "npm run syncVersion --prefix sdk/",
