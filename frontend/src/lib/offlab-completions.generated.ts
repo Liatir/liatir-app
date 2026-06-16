@@ -203,7 +203,7 @@ export const OFFLAB_API: Record<string, ApiNode> = {
   } },
   qc: { type: "property", detail: "QcInterface", children: {
       fastqc: { type: "property", detail: "FastqcInterface", children: {
-          run: { type: "method", detail: "(args: FastqcArgs): Promise<FastqcResult>" },
+          run: { type: "method", detail: "(args: FastqcArgs): Promise<ToolOutput>" },
       } },
   } },
   tauri: { type: "property", detail: "WindowTauri", children: {

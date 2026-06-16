@@ -128,6 +128,17 @@ fn external_modules_dir(app: &AppHandle) -> Result<PathBuf> {
     Ok(dir)
 }
 
+fn builtin_modules_dir(app: &AppHandle) -> Result<PathBuf> {
+    let dir = plugin_scope_root(app, true, None)?.join("_builtin_modules");
+
+    if !dir.exists() {
+        fs::create_dir_all(&dir)
+            .with_context(|| format!("cannot create builtin modules dir {}", dir.display()))?;
+    }
+
+    Ok(dir)
+}
+
 fn external_modules_storage_dir(app: &AppHandle) -> Result<PathBuf> {
     let dir = plugin_scope_root(app, true, None)?.join("_external_modules_storage");
 
@@ -193,7 +204,15 @@ fn validate_module_name(module: &str) -> Result<()> {
 
 fn module_path(app: &AppHandle, module: &str) -> Result<PathBuf> {
     validate_module_name(module)?;
-    Ok(external_modules_dir(app)?.join(module))
+    let user = external_modules_dir(app)?.join(module);
+    if user.exists() {
+        return Ok(user);
+    }
+    let builtin = builtin_modules_dir(app)?.join(module);
+    if builtin.exists() {
+        return Ok(builtin);
+    }
+    Ok(user)
 }
 
 fn plugin_storage_dir(app: &AppHandle, module: &str) -> Result<PathBuf> {
@@ -507,49 +526,36 @@ pub fn dtr_plugin_list_modules(app: AppHandle) -> Result<Vec<String>, String> {
 // Built-in module installer
 // ---------------------------------
 
-/// Copy WASM modules bundled in resources/wasm/ into the external modules dir.
+/// Copy WASM modules bundled in resources/wasm/ into the builtin modules dir.
 /// Called once on startup so first-party modules (fastqc, …) are always available.
+/// Also migrates stale copies from _external_modules to keep the user-visible
+/// plugin list clean.
 pub(crate) fn ensure_builtin_modules(app: &AppHandle) {
-    use tauri::path::BaseDirectory;
+    static FASTQC_WASM: &[u8] = include_bytes!("../../resources/wasm/fastqc.wasm");
 
-    let resource_wasm = match app.path().resolve("wasm", BaseDirectory::Resource) {
-        Ok(p) => p,
-        Err(e) => {
-            eprintln!("[plugins] resource path error: {e}");
-            return;
-        }
-    };
-
-    if !resource_wasm.is_dir() {
-        return;
-    }
-
-    let ext_dir = match external_modules_dir(app) {
+    let builtin_dir = match builtin_modules_dir(app) {
         Ok(d) => d,
         Err(e) => {
-            eprintln!("[plugins] external_modules_dir error: {e}");
+            eprintln!("[plugins] builtin_modules_dir error: {e}");
             return;
         }
     };
 
-    let entries = match fs::read_dir(&resource_wasm) {
-        Ok(e) => e,
-        Err(e) => {
-            eprintln!("[plugins] read_dir resources/wasm error: {e}");
-            return;
-        }
-    };
+    let dest = builtin_dir.join("fastqc.wasm");
+    match fs::write(&dest, FASTQC_WASM) {
+        Ok(_) => eprintln!("[plugins] installed built-in module: fastqc.wasm"),
+        Err(e) => eprintln!("[plugins] failed to install fastqc.wasm: {e}"),
+    }
 
-    for entry in entries.flatten() {
-        let name = entry.file_name();
-        let name_str = name.to_string_lossy();
-        if !name_str.ends_with(".wasm") {
-            continue;
-        }
-        let target = ext_dir.join(&*name_str);
-        match fs::copy(entry.path(), &target) {
-            Ok(_) => eprintln!("[plugins] installed built-in module: {name_str}"),
-            Err(e) => eprintln!("[plugins] failed to install {name_str}: {e}"),
+    // Migration: remove any copy that ended up in _external_modules (legacy location).
+    if let Ok(ext_dir) = external_modules_dir(app) {
+        let stale = ext_dir.join("fastqc.wasm");
+        if stale.exists() {
+            if let Err(e) = fs::remove_file(&stale) {
+                eprintln!("[plugins] failed to remove stale fastqc.wasm from external modules: {e}");
+            } else {
+                eprintln!("[plugins] migrated: removed stale fastqc.wasm from external modules");
+            }
         }
     }
 }

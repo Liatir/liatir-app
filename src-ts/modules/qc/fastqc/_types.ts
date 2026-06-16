@@ -19,6 +19,8 @@ export type FastqcResult = {
   qualityPerPosition: number[];
 };
 
+import type { ToolOutput } from "../_types";
+
 export interface FastqcInterface {
-  run: (args: FastqcArgs) => Promise<FastqcResult>;
+  run: (args: FastqcArgs) => Promise<ToolOutput>;
 }
