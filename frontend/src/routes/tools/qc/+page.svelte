@@ -7,6 +7,7 @@
   import Spinner from '$lib/components/ui/Spinner.svelte';
   import { offlab } from '$lib/api';
   import { fmtDuration } from '$lib/utils';
+  import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import Plotly from 'plotly.js-dist-min';
 
   interface FastqcResult {
@@ -31,19 +32,9 @@
   let chartEl: HTMLDivElement;
   let chartMounted = false;
 
-  async function pickFile() {
-    const api = offlab();
-    if (!api) return;
-    try {
-      const picked = await api.desktop.files.open({
-        multiple: false,
-        filters: [{ name: 'FASTQ', extensions: ['fastq', 'fq', 'fastq.gz', 'fq.gz'] }],
-      });
-      if (typeof picked === 'string') filePath = picked;
-    } catch (e) {
-      console.error(e);
-    }
-  }
+  const fastqFiles = $derived(dataFiles.byExt('fastq', 'fastq.gz'));
+
+  onMount(() => dataFiles.init());
 
   async function runFastqc() {
     if (!filePath) return;
@@ -149,19 +140,39 @@
       <h2 class="text-sm font-semibold text-zinc-800">Input</h2>
 
       <div>
-        <label for="fastq-input" class="block text-xs text-zinc-500 mb-1.5">FASTQ file</label>
-        <div class="flex gap-2">
-          <input
-            id="fastq-input"
-            data-selectable
-            bind:value={filePath}
-            placeholder="/path/to/reads.fastq"
-            class="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2
-                   text-sm text-zinc-800 placeholder:text-zinc-400 outline-none
-                   focus:border-brand transition-colors"
-          />
-          <Button variant="secondary" size="md" onclick={pickFile}>Browse</Button>
-        </div>
+        <label class="block text-xs text-zinc-500 mb-1.5">FASTQ file</label>
+        {#if fastqFiles.length === 0}
+          <div class="rounded-lg border border-dashed border-border bg-surface-2 px-4 py-3 text-sm text-zinc-400 flex items-center justify-between">
+            No FASTQ files in Data yet.
+            <a href="/data" class="text-brand text-xs font-medium hover:underline">Go to Data →</a>
+          </div>
+        {:else}
+          <div class="space-y-1.5">
+            {#each fastqFiles as file (file.id)}
+              <button
+                onclick={() => filePath = file.path}
+                class="w-full flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors
+                  {filePath === file.path
+                    ? 'border-brand bg-brand/5'
+                    : 'border-border bg-surface-2 hover:border-border-2'}"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                  stroke={filePath === file.path ? '#4f39f6' : '#a1a1aa'}
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+                  <polyline points="13 2 13 9 20 9" />
+                </svg>
+                <span class="flex-1 min-w-0">
+                  <span class="block text-sm font-medium {filePath === file.path ? 'text-brand' : 'text-zinc-800'} truncate">{file.name}</span>
+                  <span class="block text-[11px] text-zinc-400 truncate">{file.path}</span>
+                </span>
+                <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
+                  {file.ext}
+                </span>
+              </button>
+            {/each}
+          </div>
+        {/if}
       </div>
 
       <div>

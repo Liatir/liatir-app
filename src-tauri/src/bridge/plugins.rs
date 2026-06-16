@@ -276,6 +276,17 @@ pub fn dtr_plugin_paths(app: AppHandle, module: String) -> Result<serde_json::Va
 }
 
 #[tauri::command]
+pub fn dtr_fastqc_sample_path(app: AppHandle) -> Result<String, String> {
+    static BYTES: &[u8] = include_bytes!("../../../test-files/fastqc/sample.fastq");
+    let storage = plugin_storage_dir(&app, "fastqc.wasm").map_err(|e| e.to_string())?;
+    let dest = storage.join("sample.fastq");
+    if !dest.exists() {
+        fs::write(&dest, BYTES).map_err(|e| e.to_string())?;
+    }
+    Ok(dest.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
 pub fn dtr_plugin_storage_clear(app: AppHandle, module: String) -> Result<bool, String> {
     let storage = plugin_storage_dir(&app, &module).map_err(|e| e.to_string())?;
 

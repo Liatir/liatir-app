@@ -345,6 +345,7 @@ fn main() {
       // plugins
       dtr_plugin_status,
       dtr_plugin_paths,
+      dtr_fastqc_sample_path,
       dtr_plugin_storage_clear,
       dtr_plugin_call,
       dtr_plugin_clear_all_jobs,

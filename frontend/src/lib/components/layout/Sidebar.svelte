@@ -10,6 +10,7 @@
 
   const nav: NavItem[] = [
     { href: '/', label: 'Dashboard' },
+    { href: '/data', label: 'Data', match: '/data' },
     { href: '/tools', label: 'Tools', match: '/tools' },
     { href: '/jobs', label: 'Jobs', match: '/jobs' },
     { href: '/deps', label: 'Dependencies', match: '/deps' },
@@ -51,6 +52,11 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
             <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+        {:else if item.match === '/data'}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+            <polyline points="13 2 13 9 20 9" />
           </svg>
         {:else if item.match === '/tools'}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
