@@ -25,3 +25,16 @@ export function fmtTime(ms: number): string {
 export function clsx(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(' ');
 }
+
+export async function md5(string: string) {
+  const msgUint8 = new TextEncoder().encode(string);                                  // encode as (utf-8) bytes
+  const hashBuffer = await crypto.subtle.digest('MD5', msgUint8);                     // hash the message
+  const hashArray = Array.from(new Uint8Array(hashBuffer));                           // convert buffer to byte array
+  const hashedString = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');  // convert bytes to hex string
+
+  try {
+    return hashedString.normalize().trim();
+  } catch (error) {
+    return hashedString.trim();
+  }
+}

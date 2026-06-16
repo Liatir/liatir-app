@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg:         #0e0e10;
-  --color-surface:    #17171a;
-  --color-surface-2:  #1f1f23;
-  --color-surface-3:  #28282e;
-  --color-border:     #2e2e35;
-  --color-border-2:   #3d3d47;
+  --color-bg:         #f4f4f6;
+  --color-surface:    #ffffff;
+  --color-surface-2:  #f0f0f3;
+  --color-surface-3:  #e8e8ec;
+  --color-border:     #e2e2e8;
+  --color-border-2:   #d0d0d8;
   /* Offlab brand */
   --color-brand:        #4f39f6;
   --color-brand-hover:  #6254f8;
   --color-brand-dark:   #3d2bc4;
-  --color-brand-shadow: #1a1260;
-  --color-brand-muted:  #a09af9;
-  --color-brand-soft:   #c4bffb;
+  --color-brand-shadow: #c7c0fd;
+  --color-brand-muted:  #6d5af5;
+  --color-brand-soft:   #4338ca;
 
   --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
@@ -31,7 +31,7 @@ html, body {
 
 body {
   background-color: var(--color-bg);
-  color: #e4e4e8;
+  color: #18181b;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -46,5 +46,5 @@ input, textarea, [data-selectable] {
 
 ::-webkit-scrollbar          { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track    { background: transparent; }
-::-webkit-scrollbar-thumb    { background: #3d3d47; border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: #52525e; }
+::-webkit-scrollbar-thumb    { background: #d0d0d8; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #b0b0bc; }

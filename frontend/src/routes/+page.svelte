@@ -58,24 +58,24 @@
     <div class="grid grid-cols-3 gap-4">
       <Card class="p-4">
         <p class="text-xs text-zinc-500 mb-1">Running Jobs</p>
-        <p class="text-2xl font-semibold text-zinc-100">{jobsStore.runningCount}</p>
+        <p class="text-2xl font-semibold text-zinc-900">{jobsStore.runningCount}</p>
         {#if jobsStore.runningCount > 0}
-          <p class="text-xs text-sky-400 mt-1">Active</p>
+          <p class="text-xs text-sky-600 mt-1">Active</p>
         {:else}
-          <p class="text-xs text-zinc-600 mt-1">Idle</p>
+          <p class="text-xs text-zinc-400 mt-1">Idle</p>
         {/if}
       </Card>
 
       <Card class="p-4">
         <p class="text-xs text-zinc-500 mb-1">Total Jobs</p>
-        <p class="text-2xl font-semibold text-zinc-100">{jobsStore.jobs.length}</p>
-        <p class="text-xs text-zinc-600 mt-1">this session</p>
+        <p class="text-2xl font-semibold text-zinc-900">{jobsStore.jobs.length}</p>
+        <p class="text-xs text-zinc-400 mt-1">this session</p>
       </Card>
 
       <Card class="p-4">
         <p class="text-xs text-zinc-500 mb-1">App Version</p>
-        <p class="text-2xl font-semibold text-zinc-100">{appVersion ?? '—'}</p>
-        <p class="text-xs text-zinc-600 mt-1">Offlab</p>
+        <p class="text-2xl font-semibold text-zinc-900">{appVersion ?? '—'}</p>
+        <p class="text-xs text-zinc-400 mt-1">Offlab</p>
       </Card>
     </div>
 
@@ -89,7 +89,7 @@
             class="p-4"
             onclick={() => goto(tool.href)}
           >
-            <p class="text-sm font-medium text-zinc-200">{tool.label}</p>
+            <p class="text-sm font-medium text-zinc-800">{tool.label}</p>
             <p class="text-xs text-zinc-500 mt-1 leading-relaxed">{tool.description}</p>
           </Card>
         {/each}
@@ -120,7 +120,7 @@
                   {jobStatusLabel(job)}
                 </Badge>
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-mono text-zinc-200 truncate">
+                  <p class="text-sm font-mono text-zinc-700 truncate">
                     {job.cmd} {job.args.join(' ')}
                   </p>
                   <p class="text-xs text-zinc-500 mt-0.5">{fmtTime(job.started_at_ms)}</p>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import Card from '$lib/components/ui/Card.svelte';
@@ -7,6 +7,7 @@
   import Spinner from '$lib/components/ui/Spinner.svelte';
   import { offlab } from '$lib/api';
   import { fmtDuration } from '$lib/utils';
+  import Plotly from 'plotly.js-dist-min';
 
   interface FastqcResult {
     readCount: number;
@@ -26,7 +27,9 @@
   let error = $state<string | null>(null);
   let startedAt = $state<number | null>(null);
   let duration = $state<string | null>(null);
-  // fastqc.wasm is loaded from persistent plugin storage — no runtime check needed
+
+  let chartEl: HTMLDivElement;
+  let chartMounted = false;
 
   async function pickFile() {
     const api = offlab();
@@ -60,15 +63,71 @@
     }
   }
 
-  function qualityColor(q: number): string {
-    if (q >= 30) return 'bg-emerald-500';
-    if (q >= 20) return 'bg-amber-400';
-    return 'bg-red-500';
+  function qualityGrade(q: number) {
+    if (q >= 30) return { label: 'Excellent', color: 'text-emerald-600' };
+    if (q >= 20) return { label: 'Acceptable', color: 'text-amber-600' };
+    return { label: 'Poor', color: 'text-red-600' };
   }
 
-  const maxQ = $derived(
-    result ? Math.max(...result.qualityPerPosition, 40) : 40
-  );
+  const grade = $derived(result ? qualityGrade(result.meanQuality) : { label: '', color: '' });
+
+  function barColor(q: number): string {
+    if (q >= 30) return '#10b981';
+    if (q >= 20) return '#f59e0b';
+    return '#ef4444';
+  }
+
+  $effect(() => {
+    if (!result || !chartEl) return;
+
+    const qs = result.qualityPerPosition;
+    const xs = qs.map((_, i) => i + 1);
+
+    Plotly.newPlot(
+      chartEl,
+      [
+        {
+          x: xs,
+          y: qs,
+          type: 'bar' as const,
+          marker: { color: qs.map(barColor) },
+          hovertemplate: 'Position %{x}<br>Q%{y:.1f}<extra></extra>',
+        },
+      ],
+      {
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        margin: { l: 44, r: 12, t: 12, b: 40 },
+        xaxis: {
+          title: { text: 'Position (bp)', font: { size: 11, color: '#9ca3af' } },
+          gridcolor: '#e2e2e8',
+          color: '#6b7280',
+          tickfont: { size: 10 },
+          linecolor: '#e2e2e8',
+        },
+        yaxis: {
+          title: { text: 'Mean Quality (Q)', font: { size: 11, color: '#9ca3af' } },
+          gridcolor: '#e2e2e8',
+          color: '#6b7280',
+          tickfont: { size: 10 },
+          range: [0, Math.max(42, ...qs) + 2],
+          linecolor: '#e2e2e8',
+        },
+        shapes: [
+          { type: 'line', x0: 0, x1: 1, xref: 'paper', y0: 30, y1: 30, line: { color: '#10b981', width: 1, dash: 'dot' } },
+          { type: 'line', x0: 0, x1: 1, xref: 'paper', y0: 20, y1: 20, line: { color: '#f59e0b', width: 1, dash: 'dot' } },
+        ],
+        showlegend: false,
+        bargap: 0.1,
+      },
+      { responsive: true, displayModeBar: false }
+    );
+    chartMounted = true;
+  });
+
+  onDestroy(() => {
+    if (chartEl && chartMounted) Plotly.purge(chartEl);
+  });
 </script>
 
 <div class="flex flex-col h-full">
@@ -87,18 +146,18 @@
 
     <!-- Input form -->
     <Card class="p-5 space-y-4">
-      <h2 class="text-sm font-semibold text-zinc-200">Input</h2>
+      <h2 class="text-sm font-semibold text-zinc-800">Input</h2>
 
       <div>
-        <label for="fastq-input" class="block text-xs text-zinc-400 mb-1.5">FASTQ file</label>
+        <label for="fastq-input" class="block text-xs text-zinc-500 mb-1.5">FASTQ file</label>
         <div class="flex gap-2">
           <input
             id="fastq-input"
             data-selectable
             bind:value={filePath}
             placeholder="/path/to/reads.fastq"
-            class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2
-                   text-sm text-zinc-200 placeholder:text-zinc-600 outline-none
+            class="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2
+                   text-sm text-zinc-800 placeholder:text-zinc-400 outline-none
                    focus:border-brand transition-colors"
           />
           <Button variant="secondary" size="md" onclick={pickFile}>Browse</Button>
@@ -106,9 +165,9 @@
       </div>
 
       <div>
-        <label for="max-reads" class="block text-xs text-zinc-400 mb-1.5">
+        <label for="max-reads" class="block text-xs text-zinc-500 mb-1.5">
           Max reads
-          <span class="text-zinc-600">(optional — leave blank for all)</span>
+          <span class="text-zinc-400">(optional — leave blank for all)</span>
         </label>
         <input
           id="max-reads"
@@ -118,8 +177,8 @@
           min="1000"
           step="10000"
           placeholder="e.g. 100000"
-          class="w-48 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2
-                 text-sm text-zinc-200 placeholder:text-zinc-600 outline-none
+          class="w-48 rounded-lg border border-border bg-surface-2 px-3 py-2
+                 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none
                  focus:border-brand transition-colors"
         />
       </div>
@@ -134,7 +193,7 @@
           Run Analysis
         </Button>
         {#if running}
-          <span class="text-xs text-zinc-500">
+          <span class="text-xs text-zinc-400">
             Elapsed: {startedAt ? fmtDuration(startedAt) : '—'}
           </span>
         {/if}
@@ -143,7 +202,7 @@
 
     <!-- Error -->
     {#if error}
-      <div class="rounded-xl border border-red-700/40 bg-red-500/10 px-4 py-3 text-sm text-red-300 font-mono" data-selectable>
+      <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-mono" data-selectable>
         {error}
       </div>
     {/if}
@@ -152,9 +211,9 @@
     {#if result}
       <div class="space-y-4">
         <div class="flex items-center justify-between">
-          <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider">Results</h2>
+          <h2 class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Results</h2>
           {#if duration}
-            <span class="text-xs text-zinc-600">Completed in {duration}</span>
+            <span class="text-xs text-zinc-400">Completed in {duration}</span>
           {/if}
         </div>
 
@@ -172,7 +231,7 @@
           ] as stat}
             <Card class="p-4">
               <p class="text-xs text-zinc-500 mb-1">{stat.label}</p>
-              <p class="text-lg font-semibold text-zinc-100">{stat.value}</p>
+              <p class="text-lg font-semibold text-zinc-900">{stat.value}</p>
             </Card>
           {/each}
         </div>
@@ -181,41 +240,30 @@
         <div class="grid grid-cols-3 gap-3">
           <Card class="p-4">
             <p class="text-xs text-zinc-500 mb-1">Mean Quality</p>
-            <p class="text-2xl font-semibold {result.meanQuality >= 30 ? 'text-emerald-400' : result.meanQuality >= 20 ? 'text-amber-400' : 'text-red-400'}">
+            <p class="text-2xl font-semibold {grade.color}">
               Q{result.meanQuality.toFixed(1)}
             </p>
           </Card>
           <Card class="p-4">
             <p class="text-xs text-zinc-500 mb-1">Read Length Range</p>
-            <p class="text-sm font-semibold text-zinc-200">
+            <p class="text-sm font-semibold text-zinc-800">
               {result.minLength} – {result.maxLength} bp
             </p>
           </Card>
           <Card class="p-4">
             <p class="text-xs text-zinc-500 mb-1">Quality Grade</p>
-            <p class="text-sm font-semibold {result.meanQuality >= 30 ? 'text-emerald-400' : result.meanQuality >= 20 ? 'text-amber-400' : 'text-red-400'}">
-              {result.meanQuality >= 30 ? 'Excellent' : result.meanQuality >= 20 ? 'Acceptable' : 'Poor'}
-            </p>
+            <p class="text-sm font-semibold {grade.color}">{grade.label}</p>
           </Card>
         </div>
 
-        <!-- Per-position quality chart -->
+        <!-- Plotly quality-per-position chart -->
         {#if result.qualityPerPosition.length > 0}
           <Card class="p-4">
-            <p class="text-xs text-zinc-500 mb-4">Per-position Mean Quality</p>
-            <div class="flex items-end gap-px h-24 w-full">
-              {#each result.qualityPerPosition as q, i}
-                <div
-                  class="flex-1 rounded-sm {qualityColor(q)} opacity-80 min-w-[1px]"
-                  style="height: {Math.max(4, (q / maxQ) * 96)}px"
-                  title="Pos {i + 1}: Q{q.toFixed(1)}"
-                ></div>
-              {/each}
-            </div>
-            <div class="flex justify-between mt-2 text-[10px] text-zinc-600">
-              <span>Position 1</span>
-              <span>Position {result.qualityPerPosition.length}</span>
-            </div>
+            <p class="text-xs text-zinc-500 mb-1">Per-position Mean Quality</p>
+            <p class="text-[10px] text-zinc-400 mb-3">
+              Green dotted line = Q30 · Amber = Q20 · Bars coloured by threshold
+            </p>
+            <div bind:this={chartEl} class="w-full h-52"></div>
           </Card>
         {/if}
       </div>

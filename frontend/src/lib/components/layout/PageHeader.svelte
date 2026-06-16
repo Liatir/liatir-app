@@ -12,7 +12,7 @@
 
 <div class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-4">
   <div>
-    <h1 class="text-base font-semibold text-zinc-100">{title}</h1>
+    <h1 class="text-base font-semibold text-zinc-900">{title}</h1>
     {#if description}
       <p class="mt-0.5 text-xs text-zinc-500">{description}</p>
     {/if}

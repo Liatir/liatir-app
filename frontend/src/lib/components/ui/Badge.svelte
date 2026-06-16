@@ -8,23 +8,23 @@
   let { variant = 'neutral', pulse = false, children }: Props = $props();
 
   const styles: Record<string, string> = {
-    running:   'bg-sky-500/15 text-sky-400 border border-sky-500/25',
-    done:      'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25',
-    failed:    'bg-red-500/15 text-red-400 border border-red-500/25',
-    killed:    'bg-amber-500/15 text-amber-400 border border-amber-500/25',
-    neutral:   'bg-zinc-700/40 text-zinc-400 border border-zinc-600/30',
-    available: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25',
-    missing:   'bg-red-500/15 text-red-400 border border-red-500/25',
+    running:   'bg-sky-500/12 text-sky-700 border border-sky-500/30',
+    done:      'bg-emerald-500/12 text-emerald-700 border border-emerald-500/30',
+    failed:    'bg-red-500/12 text-red-700 border border-red-500/30',
+    killed:    'bg-amber-500/12 text-amber-700 border border-amber-500/30',
+    neutral:   'bg-zinc-100 text-zinc-600 border border-zinc-300',
+    available: 'bg-emerald-500/12 text-emerald-700 border border-emerald-500/30',
+    missing:   'bg-red-500/12 text-red-700 border border-red-500/30',
   };
 
   const dots: Record<string, string> = {
-    running:   'bg-sky-400',
-    done:      'bg-emerald-400',
-    failed:    'bg-red-400',
-    killed:    'bg-amber-400',
-    neutral:   'bg-zinc-500',
-    available: 'bg-emerald-400',
-    missing:   'bg-red-400',
+    running:   'bg-sky-500',
+    done:      'bg-emerald-500',
+    failed:    'bg-red-500',
+    killed:    'bg-amber-500',
+    neutral:   'bg-zinc-400',
+    available: 'bg-emerald-500',
+    missing:   'bg-red-500',
   };
 </script>
 

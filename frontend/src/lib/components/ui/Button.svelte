@@ -33,9 +33,9 @@
     primary:
       'bg-brand hover:bg-brand-hover text-white shadow-sm shadow-brand-shadow/30',
     secondary:
-      'bg-[var(--color-surface-3)] hover:bg-[var(--color-border-2)] text-zinc-200 border border-[var(--color-border)]',
+      'bg-[var(--color-surface-3)] hover:bg-[var(--color-border-2)] text-zinc-700 border border-[var(--color-border)]',
     ghost:
-      'hover:bg-[var(--color-surface-2)] text-zinc-400 hover:text-zinc-100',
+      'hover:bg-[var(--color-surface-2)] text-zinc-500 hover:text-zinc-800',
     danger:
       'bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-800/40',
   };

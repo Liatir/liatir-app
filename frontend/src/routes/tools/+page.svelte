@@ -104,7 +104,7 @@
               onclick={tool.status === 'available' ? () => goto(tool.href) : undefined}
             >
               <div class="flex items-start justify-between gap-2 mb-2">
-                <p class="text-sm font-semibold text-zinc-100">{tool.label}</p>
+                <p class="text-sm font-semibold text-zinc-900">{tool.label}</p>
                 {#if tool.status === 'soon'}
                   <Badge variant="neutral">Coming soon</Badge>
                 {:else}
@@ -114,7 +114,7 @@
               <p class="text-xs text-zinc-500 leading-relaxed mb-3">{tool.description}</p>
               <div class="flex flex-wrap gap-1.5">
                 {#each tool.tags as tag}
-                  <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-800 text-zinc-400 border border-zinc-700/50">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-100 text-zinc-600 border border-zinc-200">
                     {tag}
                   </span>
                 {/each}
@@ -131,7 +131,7 @@
         <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider">
           Custom Plugins
           {#if pluginsStore.modules.length > 0}
-            <span class="ml-2 text-zinc-600 normal-case font-normal">
+            <span class="ml-2 text-zinc-400 normal-case font-normal">
               ({pluginsStore.modules.length} loaded)
             </span>
           {/if}
@@ -150,7 +150,7 @@
       {:else if pluginsStore.modules.length === 0}
         <Card class="p-6 border-dashed">
           <p class="text-center text-sm text-zinc-500">No custom plugins loaded.</p>
-          <p class="text-center text-xs text-zinc-600 mt-1">
+          <p class="text-center text-xs text-zinc-400 mt-1">
             Add any <code class="font-mono">.wasm</code> module compiled for <code class="font-mono">wasm32-wasip1</code>.
             Plugins persist across restarts.
           </p>
@@ -170,7 +170,7 @@
               onclick={() => goto(`/tools/plugin/${encodeURIComponent(mod)}`)}
             >
               <div class="flex items-start justify-between gap-2 mb-2">
-                <p class="text-sm font-semibold font-mono text-zinc-100">{mod}</p>
+                <p class="text-sm font-semibold font-mono text-zinc-800">{mod}</p>
                 <Badge variant="available">WASM</Badge>
               </div>
               <p class="text-xs text-zinc-500 leading-relaxed">

@@ -13,11 +13,11 @@
 
 <div class="flex flex-col items-center justify-center gap-3 py-16 text-center">
   {#if icon}
-    <div class="text-zinc-600 mb-1">
+    <div class="text-zinc-400 mb-1">
       {@render icon()}
     </div>
   {/if}
-  <p class="text-sm font-medium text-zinc-300">{title}</p>
+  <p class="text-sm font-medium text-zinc-700">{title}</p>
   {#if description}
     <p class="text-xs text-zinc-500 max-w-xs">{description}</p>
   {/if}

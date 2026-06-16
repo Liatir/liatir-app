@@ -29,8 +29,8 @@
     <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-brand shrink-0 p-1.5">
       <img src="/logo/png/logo-white.png" alt="Offlab" class="h-full w-full object-contain" />
     </div>
-    <span class="text-md font-semibold tracking-tight text-zinc-100">Offlab</span>
-    <span class="ml-auto rounded px-1.5 py-0.5 text-[10px] font-medium bg-brand/20 text-brand-muted border border-brand/20">
+    <span class="text-md font-semibold tracking-tight text-zinc-900">Offlab</span>
+    <span class="ml-auto rounded px-1.5 py-0.5 text-[10px] font-medium bg-brand/10 text-brand-soft border border-brand/20">
       dev
     </span>
   </div>
@@ -43,8 +43,8 @@
         href={item.href}
         class="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-100
           {active
-            ? 'bg-brand/15 text-brand-soft font-medium'
-            : 'text-zinc-400 hover:bg-[var(--color-surface-2)] hover:text-zinc-200'}"
+            ? 'bg-brand/10 text-brand font-medium'
+            : 'text-zinc-500 hover:bg-[var(--color-surface-2)] hover:text-zinc-800'}"
       >
         <!-- icons -->
         {#if item.href === '/'}
@@ -79,7 +79,7 @@
 
         <!-- running jobs badge on Jobs item -->
         {#if item.match === '/jobs' && jobsStore.runningCount > 0}
-          <span class="flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-sky-500/20 px-1.5 text-[10px] font-semibold text-sky-400">
+          <span class="flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-sky-500/15 px-1.5 text-[10px] font-semibold text-sky-600">
             {jobsStore.runningCount}
           </span>
         {/if}
@@ -91,9 +91,9 @@
   <div class="border-t border-[var(--color-border)] px-2 py-3">
     <a
       href="/settings"
-      class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-400
-        hover:bg-[var(--color-surface-2)] hover:text-zinc-200 transition-colors duration-100
-        {$page.url.pathname === '/settings' ? 'bg-brand/15 text-brand-soft font-medium' : ''}"
+      class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-500
+        hover:bg-[var(--color-surface-2)] hover:text-zinc-800 transition-colors duration-100
+        {$page.url.pathname === '/settings' ? 'bg-brand/10 text-brand font-medium' : ''}"
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3" />

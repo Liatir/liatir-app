@@ -38,8 +38,8 @@
           { label: 'API Version', value: apiVersion ?? '—' },
         ] as row}
           <div class="flex items-center justify-between px-4 py-3">
-            <span class="text-sm text-zinc-400">{row.label}</span>
-            <span class="text-sm font-mono text-zinc-200" data-selectable>{row.value}</span>
+            <span class="text-sm text-zinc-600">{row.label}</span>
+            <span class="text-sm font-mono text-zinc-800" data-selectable>{row.value}</span>
           </div>
         {/each}
       </Card>
@@ -50,7 +50,7 @@
       <div class="flex items-center justify-between mb-3">
         <div>
           <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider">WASM Plugins</h2>
-          <p class="text-xs text-zinc-600 mt-0.5">Plugins are stored persistently and auto-available on restart.</p>
+          <p class="text-xs text-zinc-400 mt-0.5">Plugins are stored persistently and auto-available on restart.</p>
         </div>
         <Button variant="secondary" size="sm" onclick={() => pluginsStore.add()} loading={pluginsStore.loading}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -67,7 +67,7 @@
         {:else if pluginsStore.modules.length === 0}
           <div class="py-10 text-center space-y-2">
             <p class="text-sm text-zinc-500">No plugins installed.</p>
-            <p class="text-xs text-zinc-600 max-w-xs mx-auto">
+            <p class="text-xs text-zinc-400 max-w-xs mx-auto">
               Add any <code class="font-mono text-zinc-500">.wasm</code> file compiled for
               <code class="font-mono text-zinc-500">wasm32-wasip1</code>.
               Each plugin gets its own persistent storage directory.
@@ -85,8 +85,8 @@
                 </div>
 
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-mono font-medium text-zinc-200 truncate">{mod}</p>
-                  <p class="text-xs text-zinc-600">Stored in app data · available in Tools</p>
+                  <p class="text-sm font-mono font-medium text-zinc-800 truncate">{mod}</p>
+                  <p class="text-xs text-zinc-400">Stored in app data · available in Tools</p>
                 </div>
 
                 <Badge variant="available">Active</Badge>

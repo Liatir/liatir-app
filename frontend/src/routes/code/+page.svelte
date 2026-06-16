@@ -4,7 +4,7 @@
   import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import CodeEditor from '$lib/components/ui/CodeEditor.svelte';
-	import { latestCodeEdit } from '$lib/stores/codeEditor.svelte';
+	import { codeIfEmpty, latestCodeEdit } from '$lib/stores/codeEditor.svelte';
 
   interface SavedScript {
     id: string;
@@ -51,6 +51,11 @@
       running = false;
     }
   }
+
+  latestCodeEdit.subscribe((v)=>{
+    if(v?.trim()) code = v;
+    else code = codeIfEmpty;
+  })
 
   function loadScripts() {
     try {
@@ -126,10 +131,10 @@
   <!-- Scripts sidebar -->
   <div class="w-56 shrink-0 border-r border-border bg-surface flex flex-col">
     <div class="flex items-center justify-between px-3 py-3 border-b border-border">
-      <span class="text-xs font-medium text-zinc-400">Scripts</span>
+      <span class="text-xs font-medium text-zinc-600">Scripts</span>
       <button
         onclick={newScript}
-        class="text-zinc-500 hover:text-zinc-200 transition-colors p-0.5 rounded"
+        class="text-zinc-500 hover:text-zinc-800 transition-colors p-0.5 rounded"
         title="New script"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -140,7 +145,7 @@
 
     <div class="flex-1 overflow-y-auto py-1">
       {#if scripts.length === 0}
-        <p class="text-xs text-zinc-600 text-center py-6 px-3">No saved scripts yet.<br/>Run and save to keep them.</p>
+        <p class="text-xs text-zinc-400 text-center py-6 px-3">No saved scripts yet.<br/>Run and save to keep them.</p>
       {:else}
         {#each scripts as s (s.id)}
           <!-- outer div avoids nested <button> — delete uses its own click area -->
@@ -152,15 +157,15 @@
             class="w-full text-left px-3 py-2 group transition-colors cursor-pointer
               {activeScriptId === s.id
                 ? 'bg-brand/15 text-brand-soft'
-                : 'text-zinc-400 hover:bg-surface-2 hover:text-zinc-200'}"
+                : 'text-zinc-600 hover:bg-surface-2 hover:text-zinc-800'}"
           >
             <p class="text-xs font-medium truncate">{s.name}</p>
             <div class="flex items-center justify-between mt-0.5">
-              <p class="text-[10px] text-zinc-600">{fmtDate(s.savedAt)}</p>
+              <p class="text-[10px] text-zinc-400">{fmtDate(s.savedAt)}</p>
               <button
                 onclick={(e) => { e.stopPropagation(); deleteScript(s.id); }}
                 aria-label="Delete script"
-                class="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400 transition-all"
+                class="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-500 transition-all"
               >
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                   <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -184,7 +189,7 @@
             placeholder="Script name…"
             onkeydown={(e) => e.key === 'Enter' && saveScript()}
             class="rounded-lg border border-border bg-surface-2 px-3 py-1.5
-                   text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-brand
+                   text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-brand
                    transition-colors w-40"
           />
           <Button variant="primary" size="sm" onclick={saveScript}>Save</Button>
@@ -194,7 +199,7 @@
             Save
           </Button>
           <Button variant="primary" size="sm" disabled={running} loading={running} onclick={run}>
-            Run  <span class="text-brand-soft text-[10px] ml-1">⌘↵</span>
+            Run  <span class="text-[10px] ml-1">⌘↵</span>
           </Button>
         {/if}
       {/snippet}
@@ -215,16 +220,16 @@
       {#if outputType !== null}
         <div class="shrink-0 max-h-64 rounded-xl border overflow-hidden
           {outputType === 'error'
-            ? 'border-red-700/40 bg-red-950/30'
+            ? 'border-red-200 bg-red-50'
             : 'border-border bg-surface'}">
           <div class="flex items-center justify-between px-4 py-2 border-b border-inherit">
-            <span class="text-xs font-medium {outputType === 'error' ? 'text-red-400' : 'text-zinc-400'}">
+            <span class="text-xs font-medium {outputType === 'error' ? 'text-red-600' : 'text-zinc-600'}">
               {outputType === 'error' ? 'Error' : 'Output'}
             </span>
             <button
               aria-label="Clear output"
               onclick={() => { output = null; outputError = null; outputType = null; }}
-              class="text-zinc-600 hover:text-zinc-400 transition-colors"
+              class="text-zinc-400 hover:text-zinc-600 transition-colors"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -233,7 +238,7 @@
           </div>
           <div class="overflow-y-auto max-h-48 px-4 py-3">
             <pre class="text-sm font-mono whitespace-pre-wrap break-all leading-relaxed
-              {outputType === 'error' ? 'text-red-300' : 'text-emerald-300'}"
+              {outputType === 'error' ? 'text-red-700' : 'text-emerald-700'}"
               data-selectable
             >{outputType === 'error' ? outputError : formatOutput(output)}</pre>
           </div>

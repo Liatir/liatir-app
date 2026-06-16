@@ -97,7 +97,7 @@
               <Badge {variant} pulse={variant === 'running'}>{jobStatusLabel(job)}</Badge>
 
               <div class="flex-1 min-w-0">
-                <p class="text-sm font-mono text-zinc-200 truncate">
+                <p class="text-sm font-mono text-zinc-800 truncate">
                   <span class="text-brand-muted">{job.cmd}</span>
                   {#if job.args.length}
                     <span class="text-zinc-500"> {job.args.join(' ')}</span>
@@ -130,7 +130,7 @@
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
-                class="shrink-0 text-zinc-600 transition-transform duration-150
+                class="shrink-0 text-zinc-400 transition-transform duration-150
                   {expandedJobId === job.id ? 'rotate-180' : ''}"
               >
                 <path d="M6 9l6 6 6-6" />
@@ -141,26 +141,26 @@
               <div class="border-t border-[var(--color-border)] px-4 py-3 bg-[var(--color-surface-2)]">
                 <dl class="grid grid-cols-3 gap-y-2 text-xs">
                   <div>
-                    <dt class="text-zinc-600">Job ID</dt>
-                    <dd class="font-mono text-zinc-400 truncate" data-selectable>{job.id}</dd>
+                    <dt class="text-zinc-400">Job ID</dt>
+                    <dd class="font-mono text-zinc-700 truncate" data-selectable>{job.id}</dd>
                   </div>
                   <div>
-                    <dt class="text-zinc-600">Command</dt>
-                    <dd class="font-mono text-zinc-400" data-selectable>{job.cmd}</dd>
+                    <dt class="text-zinc-400">Command</dt>
+                    <dd class="font-mono text-zinc-700" data-selectable>{job.cmd}</dd>
                   </div>
                   <div>
-                    <dt class="text-zinc-600">Duration</dt>
-                    <dd class="text-zinc-400">{fmtDuration(job.started_at_ms, job.ended_at_ms ?? undefined)}</dd>
+                    <dt class="text-zinc-400">Duration</dt>
+                    <dd class="text-zinc-700">{fmtDuration(job.started_at_ms, job.ended_at_ms ?? undefined)}</dd>
                   </div>
                   {#if job.args.length}
                     <div class="col-span-3">
-                      <dt class="text-zinc-600 mb-0.5">Arguments</dt>
-                      <dd class="font-mono text-zinc-400 break-all" data-selectable>{job.args.join(' ')}</dd>
+                      <dt class="text-zinc-400 mb-0.5">Arguments</dt>
+                      <dd class="font-mono text-zinc-700 break-all" data-selectable>{job.args.join(' ')}</dd>
                     </div>
                   {/if}
                 </dl>
 
-                <p class="text-[10px] text-zinc-600 mt-3">
+                <p class="text-[10px] text-zinc-400 mt-3">
                   To stream live output, subscribe to Tauri events:
                   <code class="text-zinc-500 font-mono" data-selectable>jobs:stdout:{job.id}</code>
                 </p>

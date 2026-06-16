@@ -105,8 +105,8 @@
     <!-- Payload editor -->
     <Card class="p-5 space-y-3">
       <div class="flex items-center justify-between">
-        <h2 class="text-sm font-semibold text-zinc-200">Payload <span class="text-zinc-600 font-normal text-xs">(JSON)</span></h2>
-        <span class="text-[11px] text-zinc-600">⌘↵ to run</span>
+        <h2 class="text-sm font-semibold text-zinc-900">Payload <span class="text-zinc-400 font-normal text-xs">(JSON)</span></h2>
+        <span class="text-[11px] text-zinc-400">⌘↵ to run</span>
       </div>
 
       <textarea
@@ -116,7 +116,7 @@
         rows="8"
         spellcheck="false"
         class="w-full rounded-lg border border-border bg-surface-2 px-4 py-3
-               font-mono text-sm text-zinc-200 placeholder:text-zinc-600 outline-none resize-y
+               font-mono text-sm text-zinc-700 placeholder:text-zinc-400 outline-none resize-y
                focus:border-brand transition-colors leading-relaxed"
       ></textarea>
 
@@ -139,7 +139,7 @@
 
     <!-- Error -->
     {#if error}
-      <div class="rounded-xl border border-red-700/40 bg-red-500/10 px-4 py-3 text-sm text-red-300 font-mono" data-selectable>
+      <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-mono" data-selectable>
         {error}
       </div>
     {/if}
@@ -150,10 +150,10 @@
         <div class="flex items-center justify-between mb-3">
           <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider">Result</h2>
           {#if duration}
-            <span class="text-xs text-zinc-600">{duration}</span>
+            <span class="text-xs text-zinc-400">{duration}</span>
           {/if}
         </div>
-        <pre class="text-sm font-mono text-emerald-300 whitespace-pre-wrap break-all leading-relaxed" data-selectable>{formatJson(result)}</pre>
+        <pre class="text-sm font-mono text-emerald-700 whitespace-pre-wrap break-all leading-relaxed" data-selectable>{formatJson(result)}</pre>
       </Card>
     {/if}
 
@@ -161,14 +161,14 @@
     {#if stdout}
       <Card class="p-4">
         <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">stdout</h2>
-        <pre class="text-xs font-mono text-zinc-300 whitespace-pre-wrap break-all leading-relaxed max-h-48 overflow-y-auto" data-selectable>{stdout}</pre>
+        <pre class="text-xs font-mono text-zinc-700 whitespace-pre-wrap break-all leading-relaxed max-h-48 overflow-y-auto" data-selectable>{stdout}</pre>
       </Card>
     {/if}
 
     {#if stderr}
       <Card class="p-4">
         <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">stderr</h2>
-        <pre class="text-xs font-mono text-amber-300 whitespace-pre-wrap break-all leading-relaxed max-h-48 overflow-y-auto" data-selectable>{stderr}</pre>
+        <pre class="text-xs font-mono text-amber-700 whitespace-pre-wrap break-all leading-relaxed max-h-48 overflow-y-auto" data-selectable>{stderr}</pre>
       </Card>
     {/if}
 

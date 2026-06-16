@@ -31,7 +31,7 @@
 
     {:else if !depsStore.checked}
       <div class="flex flex-col items-center gap-4 py-16">
-        <p class="text-sm text-zinc-400">No check has been run yet.</p>
+        <p class="text-sm text-zinc-600">No check has been run yet.</p>
         <Button variant="primary" onclick={() => depsStore.checkAll()}>Check Dependencies</Button>
       </div>
 
@@ -41,19 +41,19 @@
         <Card class="p-4">
           <p class="text-xs text-zinc-500 mb-1">Available</p>
           <p class="text-2xl font-semibold text-emerald-400">{depsStore.availableCount}</p>
-          <p class="text-xs text-zinc-600 mt-1">of {depsStore.results.length} tools</p>
+          <p class="text-xs text-zinc-400 mt-1">of {depsStore.results.length} tools</p>
         </Card>
         <Card class="p-4">
           <p class="text-xs text-zinc-500 mb-1">Missing</p>
           <p class="text-2xl font-semibold text-red-400">
             {depsStore.results.length - depsStore.availableCount}
           </p>
-          <p class="text-xs text-zinc-600 mt-1">not in PATH</p>
+          <p class="text-xs text-zinc-400 mt-1">not in PATH</p>
         </Card>
         <Card class="p-4">
           <p class="text-xs text-zinc-500 mb-1">Checked</p>
-          <p class="text-2xl font-semibold text-zinc-100">{depsStore.results.length}</p>
-          <p class="text-xs text-zinc-600 mt-1">total</p>
+          <p class="text-2xl font-semibold text-zinc-900">{depsStore.results.length}</p>
+          <p class="text-xs text-zinc-400 mt-1">total</p>
         </Card>
       </div>
 
@@ -63,7 +63,7 @@
           {#each depsStore.results as dep}
             <div class="flex items-center gap-4 px-4 py-3">
               <div class="w-28 shrink-0">
-                <p class="text-sm font-mono font-medium text-zinc-200">{dep.binary}</p>
+                <p class="text-sm font-mono font-medium text-zinc-800">{dep.binary}</p>
               </div>
 
               <Badge variant={dep.available ? 'available' : 'missing'}>
@@ -75,18 +75,18 @@
                   {dep.version}
                 </p>
               {:else if dep.available && dep.path}
-                <p class="text-xs font-mono text-zinc-600 flex-1 truncate" data-selectable>
+                <p class="text-xs font-mono text-zinc-400 flex-1 truncate" data-selectable>
                   {dep.path}
                 </p>
               {:else}
-                <p class="text-xs text-zinc-600 flex-1">Not found in PATH</p>
+                <p class="text-xs text-zinc-400 flex-1">Not found in PATH</p>
               {/if}
             </div>
           {/each}
         </div>
       </Card>
 
-      <p class="text-xs text-zinc-600 text-center">
+      <p class="text-xs text-zinc-400 text-center">
         Offlab checks the system PATH. Install missing tools via your package manager (brew, apt, conda, etc.)
       </p>
     {/if}
