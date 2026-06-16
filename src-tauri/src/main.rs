@@ -108,6 +108,9 @@ fn main() {
     // Run autostart bootstrap first so this setup owns the timing.
     bridge::autostart::run_from_setup(app)?;
 
+    // Install built-in WASM modules from bundled resources (fastqc, …)
+    bridge::plugins::ensure_builtin_modules(&app.handle());
+
     // Native menu
     // crate::bridge::menu::init_menu(app)?;
 

@@ -5,7 +5,7 @@
   import { keymap } from '@codemirror/view';
   import { indentWithTab } from '@codemirror/commands';
   import { type Extension } from '@codemirror/state';
-  import { offlabTheme, offlabCompletions } from '$lib/offlab-editor';
+  import { offlabTheme, offlabCompletions, offlabHover } from '$lib/offlab-editor';
 
   interface Props {
     value: string;
@@ -27,6 +27,7 @@
         javascript({ typescript: true }),
         ...offlabTheme,
         offlabCompletions,
+        offlabHover,
         keymap.of([
           indentWithTab,
           { key: 'Mod-Enter', run: () => { onrun?.(); return true; } },

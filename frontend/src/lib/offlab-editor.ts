@@ -1,7 +1,8 @@
-import { EditorView } from '@codemirror/view';
+import { EditorView, hoverTooltip } from '@codemirror/view';
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { autocompletion, type CompletionContext, type Completion } from '@codemirror/autocomplete';
 import { tags } from '@lezer/highlight';
+import { OFFLAB_API } from './offlab-completions.generated';
 
 // ── Syntax highlight colours ────────────────────────────────────────────────
 
@@ -110,266 +111,26 @@ const viewTheme = EditorView.theme({
     outline: '1px solid rgba(79, 57, 246, 0.4)',
     borderRadius: '2px',
   },
+  // Hover tooltip
+  '.cm-offlab-hover': {
+    padding: '8px 12px',
+    fontFamily: '"JetBrains Mono", ui-monospace, monospace',
+    fontSize: '12px',
+    lineHeight: '1.6',
+    maxWidth: '420px',
+  },
+  '.cm-offlab-hover-symbol': { color: '#86efac' },
+  '.cm-offlab-hover-detail': { color: '#a09af9', paddingLeft: '6px' },
+  '.cm-offlab-hover-info':   { color: '#a1a1aa', fontFamily: 'system-ui, sans-serif', fontSize: '11px', marginTop: '4px' },
 }, { dark: true });
 
-// ── Offlab API completion tree ──────────────────────────────────────────────
+// ── ApiNode type (exported so the generated file can reference it) ───────────
 
 export type ApiNode = {
   type: 'property' | 'method' | 'variable';
   detail: string;
   info?: string;
   children?: Record<string, ApiNode>;
-};
-
-const FS_SCOPE_CHILDREN: Record<string, ApiNode> = {
-  listContent:  { type: 'method', detail: '(rel: string) => Promise<FsEntry[]>' },
-  readText:     { type: 'method', detail: '(rel: string) => Promise<string>' },
-  writeText:    { type: 'method', detail: '(rel, contents, opts?) => Promise<void>' },
-  readBytes:    { type: 'method', detail: '(rel: string) => Promise<string>' },
-  writeBytes:   { type: 'method', detail: '(rel, base64, opts?) => Promise<void>' },
-  exists:       { type: 'method', detail: '(rel: string) => Promise<boolean>' },
-  stat:         { type: 'method', detail: '(rel: string) => Promise<FsEntry>' },
-  newDirectory: { type: 'method', detail: '(rel: string) => Promise<void>' },
-  remove:       { type: 'method', detail: '(rel, recursive?) => Promise<void>' },
-  move:         { type: 'method', detail: '(src, dest, opts?) => Promise<void>' },
-  copy:         { type: 'method', detail: '(src, dest, opts?) => Promise<void>' },
-  clear:        { type: 'method', detail: '() => Promise<void>' },
-  path:         { type: 'method', detail: '() => Promise<string>' },
-};
-
-const OFFLAB_API: Record<string, ApiNode> = {
-  // ── Top-level primitives ──────────────────────────────────────────────────
-  isAvailable:  { type: 'property', detail: 'boolean',         info: 'true when running inside Tauri/Offlab' },
-  isDesktop:    { type: 'property', detail: 'boolean',         info: 'true when running as a desktop app' },
-  apiVersion:   { type: 'property', detail: 'string',          info: 'Bridge API version string' },
-  invoke:       { type: 'method',   detail: '<T>(cmd, payload?) => Promise<T>', info: 'Raw Tauri command invocation' },
-  openBrowser:  { type: 'method',   detail: '(url: string) => Promise<void>',  info: 'Open a URL in the system browser' },
-  onReady:      { type: 'method',   detail: '(callback: () => void) => void',  info: 'Run callback once the bridge is ready' },
-
-  // ── desktop ──────────────────────────────────────────────────────────────
-  desktop: {
-    type: 'property', detail: 'DesktopInterface',
-    children: {
-      notifications: {
-        type: 'property', detail: 'NotificationsInterface',
-        children: {
-          state:   { type: 'method', detail: '() => Promise<"granted" | "denied" | "default">', info: 'Current notification permission state' },
-          request: { type: 'method', detail: '() => Promise<"granted" | "denied">',             info: 'Request notification permission from the OS' },
-          show:    { type: 'method', detail: '(title: string, body: string) => Promise<void>',  info: 'Show a native OS notification' },
-        },
-      },
-      clipboard: {
-        type: 'property', detail: 'ClipboardInterface',
-        children: {
-          readText:  { type: 'method', detail: '() => Promise<string>',          info: 'Read text from the system clipboard' },
-          writeText: { type: 'method', detail: '(text: string) => Promise<void>', info: 'Write text to the system clipboard' },
-        },
-      },
-      files: {
-        type: 'property', detail: 'FilesInterface',
-        children: {
-          open:          { type: 'method', detail: '(options?) => Promise<{paths: string[]}>',       info: 'Open a native file picker dialog' },
-          openWithBytes: { type: 'method', detail: '(options?) => Promise<{files: FileWithBytes[]}>', info: 'Open file picker and return raw bytes (base64)' },
-          save:          { type: 'method', detail: '(defaultName?) => Promise<string>',              info: 'Open a native save-file dialog' },
-        },
-      },
-      app: {
-        type: 'property', detail: 'AppInterface',
-        children: {
-          info: { type: 'method', detail: '() => Promise<AppInfo>', info: 'Get app info: version, os, pid, screens, windows…' },
-          exit: { type: 'method', detail: '(code?: number) => Promise<void>', info: 'Exit the application with an optional exit code' },
-        },
-      },
-      window: {
-        type: 'property', detail: 'WindowInterface',
-        children: {
-          new:             { type: 'method', detail: '(options?) => Promise<void>',          info: 'Open a new app window' },
-          close:           { type: 'method', detail: '(label: string) => Promise<void>',     info: 'Close a window by its label' },
-          minimize:        { type: 'method', detail: '() => Promise<void>',                  info: 'Minimize the current window' },
-          maximizeToggle:  { type: 'method', detail: '() => Promise<void>',                  info: 'Toggle maximize state of the current window' },
-          fullscreen:      { type: 'method', detail: '(enable: boolean) => Promise<void>',   info: 'Enter or exit fullscreen mode' },
-          getInfo:         { type: 'method', detail: '(label?) => Promise<WindowInfo>',      info: 'Get size, position, state of a window' },
-        },
-      },
-      events: {
-        type: 'property', detail: 'EventsInterface',
-        children: {
-          emit:            { type: 'method', detail: '(event, payload?) => Promise<void>',                 info: 'Emit an event to all windows and backend' },
-          emitToAll:       { type: 'method', detail: '(event, payload?) => Promise<void>',                 info: 'Emit to all windows' },
-          emitTo:          { type: 'method', detail: '(windowLabel, event, payload?) => Promise<void>',    info: 'Emit to a specific window' },
-          on:              { type: 'method', detail: '(event, handler) => Promise<Unlisten>',              info: 'Subscribe to an event. Call the returned fn to unsubscribe.' },
-          once:            { type: 'method', detail: '(event) => Promise<any>',                            info: 'Await a single event emission' },
-          onMany:          { type: 'method', detail: '(events[], handler) => Promise<Unlisten>',           info: 'Subscribe to multiple events at once' },
-          onNetworkStatus: { type: 'method', detail: '(handler) => Promise<Unlisten>',                     info: 'Listen for network connectivity changes' },
-          onDeeplink:      { type: 'method', detail: '(handler) => Promise<Unlisten>',                     info: 'Listen for deep-link URL activations' },
-          onShortcut:      { type: 'method', detail: '(handler) => Promise<Unlisten>',                     info: 'Listen for global shortcut triggers' },
-          onDragDrop:      { type: 'method', detail: '(handler, opts?) => Promise<Unlisten>',              info: 'Listen for file drag-drop events (paths in payload)' },
-          onMenuEvent:     { type: 'method', detail: '(handler) => Promise<Unlisten>',                     info: 'Listen for native menu item clicks' },
-          onTrayIconEvent: { type: 'method', detail: '(handler) => Promise<Unlisten>',                     info: 'Listen for tray icon interactions' },
-        },
-      },
-      globalShortcut: {
-        type: 'property', detail: 'ShortcutsInterface',
-        children: {
-          register:      { type: 'method', detail: '(accelerator, cb, opts?) => Promise<void>', info: 'Register a global keyboard shortcut (e.g. "CmdOrCtrl+Shift+P")' },
-          unregister:    { type: 'method', detail: '(accelerator: string) => Promise<void>',    info: 'Unregister a global shortcut' },
-          unregisterAll: { type: 'method', detail: '() => Promise<void>',                       info: 'Unregister all global shortcuts' },
-          isRegistered:  { type: 'method', detail: '(accelerator: string) => Promise<boolean>', info: 'Check if an accelerator is currently registered' },
-        },
-      },
-      fs: {
-        type: 'property', detail: 'FsInterface',
-        info: 'Sandboxed filesystem under ~/.offlab — use cache or data scopes',
-        children: {
-          cache:     { type: 'property', detail: 'FsScopeMethods', info: 'Cache-scoped storage (cleared on update)', children: FS_SCOPE_CHILDREN },
-          data:      { type: 'property', detail: 'FsScopeMethods', info: 'Persistent data storage',                  children: FS_SCOPE_CHILDREN },
-          pluginFs:  { type: 'method',   detail: '(plugin: string) => FsPluginMethods', info: 'Get a scoped fs for a named plugin' },
-          paths:     { type: 'method',   detail: '() => Promise<{cache, data}>',        info: 'Get absolute paths to cache and data dirs' },
-          trash:     {
-            type: 'property', detail: 'FsTrashMethods',
-            children: {
-              clear:       { type: 'method', detail: '() => Promise<void>' },
-              recover:     { type: 'method', detail: '() => Promise<void>' },
-              listContent: { type: 'method', detail: '(rel?) => Promise<FsEntry[]>' },
-              readText:    { type: 'method', detail: '(rel: string) => Promise<string>' },
-              exists:      { type: 'method', detail: '(rel?) => Promise<boolean>' },
-            },
-          },
-        },
-      },
-      menu: {
-        type: 'property', detail: 'MenuInterface',
-        children: {
-          setEnabled: { type: 'method', detail: '(id: string, enabled: boolean) => Promise<void>', info: 'Enable or disable a menu item by ID' },
-          setChecked: { type: 'method', detail: '(id: string, checked: boolean) => Promise<void>', info: 'Set check state of a checkable menu item' },
-          init: {
-            type: 'property', detail: '{ fromConfig, fromJsonFile }',
-            children: {
-              fromConfig:   { type: 'method', detail: '(config: MenuConfig) => Promise<void>',    info: 'Apply a menu config object' },
-              fromJsonFile: { type: 'method', detail: '(filePath: string) => Promise<void>',      info: 'Load menu from a JSON file path' },
-            },
-          },
-        },
-      },
-      network: {
-        type: 'property', detail: 'NetworkInterface',
-        children: {
-          status:            { type: 'method', detail: '() => Promise<void>',                             info: 'Get current network status' },
-          ping:              { type: 'method', detail: '(url, timeout?) => Promise<void>',                info: 'Ping a URL and get response time' },
-          resolve:           { type: 'method', detail: '(host: string) => Promise<void>',                 info: 'DNS-resolve a hostname' },
-          estimateBandwidth: { type: 'method', detail: '(url?, sizeHintBytes?, timeout?) => Promise<void>', info: 'Estimate download bandwidth' },
-          setMonitor:        { type: 'method', detail: '(interval, targets?) => Promise<void>',           info: 'Start periodic network monitoring' },
-          stopMonitor:       { type: 'method', detail: '() => Promise<void>',                             info: 'Stop network monitoring' },
-        },
-      },
-      autostart: {
-        type: 'property', detail: 'AutostartInterface',
-        children: {
-          enable:    { type: 'method', detail: '() => Promise<void>',              info: 'Enable app launch at login' },
-          disable:   { type: 'method', detail: '() => Promise<void>',              info: 'Disable app launch at login' },
-          isEnabled: { type: 'method', detail: '() => Promise<void>',              info: 'Check if autostart is enabled' },
-          mode: {
-            type: 'property', detail: '{ get, set }',
-            children: {
-              get: { type: 'method', detail: '() => Promise<AutostartMode>' },
-              set: { type: 'method', detail: '(mode: "shown" | "minimized" | "hidden") => Promise<void>' },
-            },
-          },
-        },
-      },
-      badge: {
-        type: 'property', detail: 'BadgeInterface | undefined',
-        info: 'macOS dock badge — undefined on non-macOS platforms',
-        children: {
-          set:   { type: 'method', detail: '(count: number) => Promise<void>', info: 'Set the dock badge count' },
-          clear: { type: 'method', detail: '() => Promise<void>',              info: 'Clear the dock badge' },
-        },
-      },
-      contextMenu: {
-        type: 'property', detail: 'ContextMenuInterface',
-        children: {
-          show:    { type: 'method', detail: '(entries: CmNode[], options: CmPopupOptions) => Promise<string>', info: 'Show a native context menu, returns the selected item ID' },
-          handler: {
-            type: 'property', detail: '{ init, remove }',
-            children: {
-              init:   { type: 'method', detail: '(callback, preventDefault?) => void', info: 'Attach a right-click listener' },
-              remove: { type: 'method', detail: '() => void',                          info: 'Remove the right-click listener' },
-            },
-          },
-        },
-      },
-      globalVariables: {
-        type: 'property', detail: 'GlobalVariablesInterface',
-        info: 'Persistent key-value store shared across windows',
-        children: {
-          get:    { type: 'method', detail: '(key: string) => Promise<string>',           info: 'Get a global variable value' },
-          set:    { type: 'method', detail: '(key, value: string) => Promise<void>',      info: 'Set a global variable (persists across windows)' },
-          remove: { type: 'method', detail: '(key: string) => Promise<void>',             info: 'Delete a global variable' },
-          list:   { type: 'method', detail: '(key: string) => Promise<Record<string, string>>', info: 'List all global variables' },
-        },
-      },
-    },
-  },
-
-  // ── plugins ──────────────────────────────────────────────────────────────
-  plugins: {
-    type: 'property', detail: 'PluginsInterface',
-    children: {
-      list:   { type: 'method', detail: '() => Promise<string[]>',                          info: 'List loaded WASM plugin names' },
-      call:   { type: 'method', detail: '(name: string, payload: object) => Promise<any>',  info: 'Call a WASM plugin function with a JSON payload' },
-      add:    { type: 'method', detail: '(path?: string) => Promise<{name: string}>',        info: 'Add a WASM plugin. Opens file picker if path is empty.' },
-      remove: { type: 'method', detail: '(name: string) => Promise<void>',                  info: 'Remove a loaded WASM plugin' },
-    },
-  },
-
-  // ── sidecar ──────────────────────────────────────────────────────────────
-  sidecar: {
-    type: 'property', detail: 'SidecarInterface',
-    children: {
-      run: { type: 'method', detail: '(name: string, args: string[]) => Promise<SidecarResult>', info: 'Run a bundled native sidecar binary. Returns stdout, stderr, exitCode.' },
-    },
-  },
-
-  // ── pipeline ─────────────────────────────────────────────────────────────
-  pipeline: {
-    type: 'property', detail: 'PipelineInterface',
-    children: {
-      run: { type: 'method', detail: '(steps: PipelineStep[], opts?) => Promise<PipelineResult>', info: 'Execute a sequence of WASM and/or sidecar steps in order' },
-    },
-  },
-
-  // ── jobs ─────────────────────────────────────────────────────────────────
-  jobs: {
-    type: 'property', detail: 'JobsInterface',
-    children: {
-      list:      { type: 'method', detail: '() => Promise<JobEntry[]>',               info: 'List all jobs (running + completed)' },
-      spawn:     { type: 'method', detail: '(cmd, args, opts?) => Promise<{jobId}>',  info: 'Spawn a new system process asynchronously' },
-      kill:      { type: 'method', detail: '(jobId: string) => Promise<void>',        info: 'Kill a running job by ID' },
-      clearDone: { type: 'method', detail: '() => Promise<void>',                     info: 'Remove all completed jobs from history' },
-    },
-  },
-
-  // ── deps ─────────────────────────────────────────────────────────────────
-  deps: {
-    type: 'property', detail: 'DepsInterface',
-    children: {
-      check:     { type: 'method', detail: '(binary: string) => Promise<DepResult>',       info: 'Check if a binary is available on PATH and get its version' },
-      checkMany: { type: 'method', detail: '(binaries: string[]) => Promise<DepResult[]>', info: 'Check multiple binaries at once' },
-    },
-  },
-
-  // ── qc ───────────────────────────────────────────────────────────────────
-  qc: {
-    type: 'property', detail: 'QcInterface',
-    children: {
-      fastqc: {
-        type: 'property', detail: 'FastqcAPI',
-        children: {
-          run: { type: 'method', detail: '({input, maxReads?}) => Promise<FastqcResult>', info: 'Run FastQC quality control on a FASTQ file. Returns per-position quality, GC content, read stats.' },
-        },
-      },
-    },
-  },
 };
 
 // ── Completion resolution ───────────────────────────────────────────────────
@@ -397,7 +158,7 @@ function offlabCompletionSource(context: CompletionContext) {
     };
   }
 
-  const text = dotMatch.text;
+  const text    = dotMatch.text;
   const lastDot = text.lastIndexOf('.');
 
   if (lastDot === -1) {
@@ -408,10 +169,10 @@ function offlabCompletionSource(context: CompletionContext) {
     };
   }
 
-  const prefix = text.slice(0, lastDot);      // e.g. "Offlab.desktop.fs"
-  const from   = dotMatch.from + lastDot + 1; // position right after the last dot
+  const prefix = text.slice(0, lastDot);
+  const from   = dotMatch.from + lastDot + 1;
+  const parts  = prefix.split('.').slice(1); // drop "Offlab"
 
-  const parts    = prefix.split('.').slice(1); // drop "Offlab" → ["desktop", "fs"]
   const children = resolveNode(parts);
   if (!children) return null;
 
@@ -426,6 +187,77 @@ function offlabCompletionSource(context: CompletionContext) {
   return { from, options, validFor: /^\w*$/ };
 }
 
+// ── Hover tooltip ───────────────────────────────────────────────────────────
+
+// Build a flat symbol → node map for hover lookup
+function buildSymbolMap(
+  tree: Record<string, ApiNode>,
+  prefix = 'Offlab',
+  out = new Map<string, ApiNode>()
+): Map<string, ApiNode> {
+  for (const [key, node] of Object.entries(tree)) {
+    const full = `${prefix}.${key}`;
+    out.set(full, node);
+    if (node.children) buildSymbolMap(node.children, full, out);
+  }
+  return out;
+}
+
+const SYMBOL_MAP = buildSymbolMap(OFFLAB_API);
+
+const offlabHoverTooltip = hoverTooltip((view, pos) => {
+  const line    = view.state.doc.lineAt(pos);
+  const lineStr = line.text;
+  const col     = pos - line.from;
+
+  // Find the longest "Offlab.xxx.yyy" token covering pos
+  let best: { from: number; to: number; symbol: string } | null = null;
+  const re = /Offlab(?:\.\w+)*/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(lineStr)) !== null) {
+    const start = line.from + m.index;
+    const end   = start + m[0].length;
+    if (start <= pos && pos <= end) {
+      if (!best || m[0].length > best.symbol.length) {
+        best = { from: start, to: end, symbol: m[0] };
+      }
+    }
+  }
+  if (!best) return null;
+
+  const node = SYMBOL_MAP.get(best.symbol);
+  if (!node) return null;
+
+  return {
+    pos:   best.from,
+    end:   best.to,
+    above: true,
+    create() {
+      const wrap = document.createElement('div');
+      wrap.className = 'cm-offlab-hover';
+
+      const firstLine = document.createElement('div');
+      const sym  = document.createElement('span');
+      sym.className = 'cm-offlab-hover-symbol';
+      sym.textContent = best!.symbol;
+      const det  = document.createElement('span');
+      det.className = 'cm-offlab-hover-detail';
+      det.textContent = node.detail;
+      firstLine.append(sym, det);
+      wrap.append(firstLine);
+
+      if (node.info) {
+        const inf = document.createElement('div');
+        inf.className = 'cm-offlab-hover-info';
+        inf.textContent = node.info;
+        wrap.append(inf);
+      }
+
+      return { dom: wrap };
+    },
+  };
+});
+
 // ── Exports ─────────────────────────────────────────────────────────────────
 
 export const offlabTheme = [viewTheme, syntaxHighlighting(highlightStyle)];
@@ -435,3 +267,5 @@ export const offlabCompletions = autocompletion({
   defaultKeymap: true,
   activateOnTyping: true,
 });
+
+export const offlabHover = offlabHoverTooltip;

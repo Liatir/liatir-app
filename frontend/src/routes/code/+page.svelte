@@ -4,6 +4,7 @@
   import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import CodeEditor from '$lib/components/ui/CodeEditor.svelte';
+	import { latestCodeEdit } from '$lib/stores/codeEditor.svelte';
 
   interface SavedScript {
     id: string;
@@ -14,12 +15,11 @@
 
   const STORAGE_KEY = 'offlab_scripts';
 
-  let code = $state(`// Offlab API is available as 'Offlab'
-// Use 'return' to output a value, or just let statements run.
-// ⌘↵ to execute
+  let code = $state("");
 
-const jobs = await Offlab.jobs.list();
-return jobs;`);
+  latestCodeEdit.subscribe((v: string)=>{
+    code = v;
+  })
 
   let running = $state(false);
   let output = $state<unknown>(null);
@@ -206,7 +206,7 @@ return jobs;`);
       <div class="flex-1 min-h-0">
         <CodeEditor
           value={code}
-          onchange={(v) => { code = v; }}
+          onchange={(v) => { latestCodeEdit.set(v); }}
           onrun={run}
         />
       </div>

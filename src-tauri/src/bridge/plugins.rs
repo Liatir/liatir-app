@@ -493,6 +493,57 @@ pub fn dtr_plugin_list_modules(app: AppHandle) -> Result<Vec<String>, String> {
 }
 
 // ---------------------------------
+// Built-in module installer
+// ---------------------------------
+
+/// Copy WASM modules bundled in resources/wasm/ into the external modules dir.
+/// Called once on startup so first-party modules (fastqc, …) are always available.
+pub(crate) fn ensure_builtin_modules(app: &AppHandle) {
+    use tauri::path::BaseDirectory;
+
+    let resource_wasm = match app.path().resolve("wasm", BaseDirectory::Resource) {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!("[plugins] resource path error: {e}");
+            return;
+        }
+    };
+
+    if !resource_wasm.is_dir() {
+        return;
+    }
+
+    let ext_dir = match external_modules_dir(app) {
+        Ok(d) => d,
+        Err(e) => {
+            eprintln!("[plugins] external_modules_dir error: {e}");
+            return;
+        }
+    };
+
+    let entries = match fs::read_dir(&resource_wasm) {
+        Ok(e) => e,
+        Err(e) => {
+            eprintln!("[plugins] read_dir resources/wasm error: {e}");
+            return;
+        }
+    };
+
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let name_str = name.to_string_lossy();
+        if !name_str.ends_with(".wasm") {
+            continue;
+        }
+        let target = ext_dir.join(&*name_str);
+        match fs::copy(entry.path(), &target) {
+            Ok(_) => eprintln!("[plugins] installed built-in module: {name_str}"),
+            Err(e) => eprintln!("[plugins] failed to install {name_str}: {e}"),
+        }
+    }
+}
+
+// ---------------------------------
 // Runtime
 // ---------------------------------
 
