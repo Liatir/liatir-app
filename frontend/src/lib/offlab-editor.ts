@@ -114,7 +114,7 @@ const viewTheme = EditorView.theme({
 
 // ── Offlab API completion tree ──────────────────────────────────────────────
 
-type ApiNode = {
+export type ApiNode = {
   type: 'property' | 'method' | 'variable';
   detail: string;
   info?: string;
