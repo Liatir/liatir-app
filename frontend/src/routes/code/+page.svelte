@@ -4,34 +4,47 @@
   import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import CodeEditor from '$lib/components/ui/CodeEditor.svelte';
-	import { codeIfEmpty, latestCodeEdit } from '$lib/stores/codeEditor.svelte';
+  import { codeIfEmpty } from '$lib/stores/codeEditor.svelte';
+  import { savedScripts } from '$lib/stores/savedScripts.svelte';
 
-  interface SavedScript {
-    id: string;
-    name: string;
-    code: string;
-    savedAt: number;
-  }
-
-  const STORAGE_KEY = 'offlab_scripts';
-
-  let code = $state("");
-
-  latestCodeEdit.subscribe((v: string)=>{
-    code = v;
-  })
-
+  // ── editor state ───────────────────────────────────────────────
+  let code = $state(codeIfEmpty);
   let running = $state(false);
   let output = $state<unknown>(null);
   let outputError = $state<string | null>(null);
   let outputType = $state<'result' | 'error' | null>(null);
 
-  let scripts = $state<SavedScript[]>([]);
-  let saveNameInput = $state('');
+  // ── save dialog state ──────────────────────────────────────────
   let showSavePanel = $state(false);
-  let activeScriptId = $state<string | null>(null);
+  let saveNameInput = $state('');
+  let saveFolderInput = $state('');
 
-  // AsyncFunction constructor for eval-like execution with async/await support
+  // Track which script id was last loaded to avoid reloading on update()
+  let lastLoadedId: string | null = null;
+
+  $effect(() => {
+    const id = savedScripts.activeScriptId;
+    const script = savedScripts.activeScript;
+    if (id !== lastLoadedId) {
+      lastLoadedId = id;
+      if (script) {
+        code = script.code;
+        saveNameInput = script.name;
+        saveFolderInput = script.folder;
+      } else {
+        code = codeIfEmpty;
+        saveNameInput = '';
+        saveFolderInput = '';
+      }
+      output = null;
+      outputError = null;
+      outputType = null;
+    }
+  });
+
+  onMount(() => savedScripts.init());
+
+  // ── execution ──────────────────────────────────────────────────
   const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 
   async function run() {
@@ -52,65 +65,41 @@
     }
   }
 
-  latestCodeEdit.subscribe((v)=>{
-    if(v?.trim()) code = v;
-    else code = codeIfEmpty;
-  })
-
-  function loadScripts() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      scripts = raw ? JSON.parse(raw) : [];
-    } catch {
-      scripts = [];
-    }
-  }
-
-  function saveScripts() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(scripts));
-  }
-
-  function saveScript() {
-    const name = saveNameInput.trim() || `Script ${scripts.length + 1}`;
-    if (activeScriptId) {
-      scripts = scripts.map((s) =>
-        s.id === activeScriptId ? { ...s, name, code, savedAt: Date.now() } : s
-      );
+  // ── save ───────────────────────────────────────────────────────
+  async function saveScript() {
+    const name = saveNameInput.trim() || `Script ${savedScripts.scripts.length + 1}`;
+    const id = savedScripts.activeScriptId;
+    if (id) {
+      await savedScripts.update(id, name, code);
     } else {
-      const id = `script_${Date.now()}`;
-      scripts = [{ id, name, code, savedAt: Date.now() }, ...scripts];
-      activeScriptId = id;
+      await savedScripts.create(name, code, saveFolderInput);
     }
-    saveScripts();
     showSavePanel = false;
-    saveNameInput = '';
+    saveNameInput = savedScripts.activeScript?.name ?? '';
   }
 
-  function loadScript(s: SavedScript) {
-    code = s.code;
-    activeScriptId = s.id;
-    saveNameInput = s.name;
-    output = null;
-    outputError = null;
-    outputType = null;
+  function openSavePanel() {
+    saveNameInput = savedScripts.activeScript?.name ?? '';
+    saveFolderInput = savedScripts.activeScript?.folder ?? '';
+    showSavePanel = true;
   }
 
-  function deleteScript(id: string) {
-    scripts = scripts.filter((s) => s.id !== id);
-    saveScripts();
-    if (activeScriptId === id) {
-      activeScriptId = null;
-      saveNameInput = '';
-    }
+  // ── script list actions ────────────────────────────────────────
+  function loadScript(id: string) {
+    savedScripts.setActive(id);
+    // $effect will pick up the change
   }
 
   function newScript() {
-    code = '// Write your script here\n// Offlab API is available as \'Offlab\'\n\n';
-    activeScriptId = null;
-    saveNameInput = '';
-    output = null;
-    outputError = null;
-    outputType = null;
+    savedScripts.setActive(null);
+  }
+
+  function deleteScript(id: string) {
+    savedScripts.remove(id);
+  }
+
+  function fmtDate(ms: number) {
+    return new Date(ms).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
   function formatOutput(v: unknown): string {
@@ -119,11 +108,7 @@
     try { return JSON.stringify(v, null, 2); } catch { return String(v); }
   }
 
-  function fmtDate(ms: number): string {
-    return new Date(ms).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-  }
-
-  onMount(loadScripts);
+  const allFolderPaths = $derived(savedScripts.allFolderPaths());
 </script>
 
 <div class="flex h-full overflow-hidden">
@@ -144,18 +129,17 @@
     </div>
 
     <div class="flex-1 overflow-y-auto py-1">
-      {#if scripts.length === 0}
+      {#if savedScripts.scripts.length === 0}
         <p class="text-xs text-zinc-400 text-center py-6 px-3">No saved scripts yet.<br/>Run and save to keep them.</p>
       {:else}
-        {#each scripts as s (s.id)}
-          <!-- outer div avoids nested <button> — delete uses its own click area -->
+        {#each savedScripts.scripts as s (s.id)}
           <div
             role="button"
             tabindex="0"
-            onclick={() => loadScript(s)}
-            onkeydown={(e) => e.key === 'Enter' && loadScript(s)}
+            onclick={() => loadScript(s.id)}
+            onkeydown={(e) => e.key === 'Enter' && loadScript(s.id)}
             class="w-full text-left px-3 py-2 group transition-colors cursor-pointer
-              {activeScriptId === s.id
+              {savedScripts.activeScriptId === s.id
                 ? 'bg-brand/15 text-brand-soft'
                 : 'text-zinc-600 hover:bg-surface-2 hover:text-zinc-800'}"
           >
@@ -190,14 +174,23 @@
             onkeydown={(e) => e.key === 'Enter' && saveScript()}
             class="rounded-lg border border-border bg-surface-2 px-3 py-1.5
                    text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-brand
-                   transition-colors w-40"
+                   transition-colors w-36"
           />
+          {#if allFolderPaths.length > 0}
+            <select
+              bind:value={saveFolderInput}
+              class="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-sm text-zinc-700 outline-none"
+            >
+              <option value="">Root</option>
+              {#each allFolderPaths as p}
+                <option value={p}>{p}</option>
+              {/each}
+            </select>
+          {/if}
           <Button variant="primary" size="sm" onclick={saveScript}>Save</Button>
           <Button variant="ghost" size="sm" onclick={() => (showSavePanel = false)}>Cancel</Button>
         {:else}
-          <Button variant="ghost" size="sm" onclick={() => { showSavePanel = true; }}>
-            Save
-          </Button>
+          <Button variant="ghost" size="sm" onclick={openSavePanel}>Save</Button>
           <Button variant="primary" size="sm" disabled={running} loading={running} onclick={run}>
             Run  <span class="text-[10px] ml-1">⌘↵</span>
           </Button>
@@ -211,7 +204,7 @@
       <div class="flex-1 min-h-0">
         <CodeEditor
           value={code}
-          onchange={(v) => { latestCodeEdit.set(v); }}
+          onchange={(v) => { code = v; }}
           onrun={run}
         />
       </div>

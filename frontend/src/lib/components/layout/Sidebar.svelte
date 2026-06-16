@@ -5,12 +5,13 @@
   interface NavItem {
     href: string;
     label: string;
-    match?: string; // prefix match if different from href
+    match?: string;
   }
 
   const nav: NavItem[] = [
     { href: '/', label: 'Dashboard' },
     { href: '/data', label: 'Data', match: '/data' },
+    { href: '/scripts', label: 'Scripts', match: '/scripts' },
     { href: '/tools', label: 'Tools', match: '/tools' },
     { href: '/jobs', label: 'Jobs', match: '/jobs' },
     { href: '/deps', label: 'Dependencies', match: '/deps' },
@@ -24,9 +25,9 @@
   }
 </script>
 
-<aside class="flex h-screen w-[220px] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
+<aside class="flex h-screen w-55 shrink-0 flex-col border-r border-border bg-surface">
   <!-- Logo -->
-  <div class="flex h-14 items-center gap-2.5 border-b border-[var(--color-border)] px-4">
+  <div class="flex h-14 items-center gap-2.5 border-b border-border px-4">
     <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-brand shrink-0 p-1.5">
       <img src="/logo/png/logo-white.png" alt="Offlab" class="h-full w-full object-contain" />
     </div>
@@ -45,9 +46,8 @@
         class="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-100
           {active
             ? 'bg-brand/10 text-brand font-medium'
-            : 'text-zinc-500 hover:bg-[var(--color-surface-2)] hover:text-zinc-800'}"
+            : 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
       >
-        <!-- icons -->
         {#if item.href === '/'}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -57,6 +57,11 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
             <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
             <polyline points="13 2 13 9 20 9" />
+          </svg>
+        {:else if item.match === '/scripts'}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6" />
+            <polyline points="8 6 2 12 8 18" />
           </svg>
         {:else if item.match === '/tools'}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -70,8 +75,9 @@
           </svg>
         {:else if item.match === '/code'}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="16 18 22 12 16 6" />
-            <polyline points="8 6 2 12 8 18" />
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <line x1="3" y1="9" x2="21" y2="9" />
+            <line x1="9" y1="21" x2="9" y2="9" />
           </svg>
         {:else if item.match === '/deps'}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -83,9 +89,8 @@
 
         <span class="flex-1">{item.label}</span>
 
-        <!-- running jobs badge on Jobs item -->
         {#if item.match === '/jobs' && jobsStore.runningCount > 0}
-          <span class="flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-sky-500/15 px-1.5 text-[10px] font-semibold text-sky-600">
+          <span class="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-sky-500/15 px-1.5 text-[10px] font-semibold text-sky-600">
             {jobsStore.runningCount}
           </span>
         {/if}
@@ -94,11 +99,11 @@
   </nav>
 
   <!-- Settings -->
-  <div class="border-t border-[var(--color-border)] px-2 py-3">
+  <div class="border-t border-border px-2 py-3">
     <a
       href="/settings"
       class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-500
-        hover:bg-[var(--color-surface-2)] hover:text-zinc-800 transition-colors duration-100
+        hover:bg-surface-2 hover:text-zinc-800 transition-colors duration-100
         {$page.url.pathname === '/settings' ? 'bg-brand/10 text-brand font-medium' : ''}"
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">

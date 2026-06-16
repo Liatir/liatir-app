@@ -1,11 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
-  import { dataFiles } from '$lib/stores/dataFiles.svelte';
+  import { savedScripts, type SavedScript } from '$lib/stores/savedScripts.svelte';
 
-  onMount(() => dataFiles.init());
+  onMount(() => savedScripts.init());
 
   // ── folder tree ────────────────────────────────────────────────
   let selectedFolder = $state<string | null>(null); // null = All
@@ -37,9 +38,9 @@
     return out;
   }
 
-  const flatFolders = $derived(buildFolderTree(dataFiles.allFolderPaths()));
-  const visibleFiles = $derived(
-    selectedFolder === null ? dataFiles.files : dataFiles.byFolder(selectedFolder)
+  const flatFolders = $derived(buildFolderTree(savedScripts.allFolderPaths()));
+  const visibleScripts = $derived(
+    selectedFolder === null ? savedScripts.scripts : savedScripts.byFolder(selectedFolder)
   );
 
   $effect(() => {
@@ -57,52 +58,34 @@
       showNewFolderInput = false; newFolderPath = ''; return;
     }
     const path = newFolderPath.trim().replace(/^\/+|\/+$/g, '');
-    if (path) { await dataFiles.createFolder(path); selectedFolder = path; }
+    if (path) { await savedScripts.createFolder(path); selectedFolder = path; }
     showNewFolderInput = false; newFolderPath = '';
   }
 
-  // ── ext styling ────────────────────────────────────────────────
-  const EXT_COLOR: Record<string, string> = {
-    'fastq':    'bg-emerald-100 text-emerald-700 border-emerald-200',
-    'fastq.gz': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    'bam':      'bg-sky-100 text-sky-700 border-sky-200',
-    'vcf':      'bg-violet-100 text-violet-700 border-violet-200',
-    'vcf.gz':   'bg-violet-100 text-violet-700 border-violet-200',
-  };
-  function extClass(ext: string) { return EXT_COLOR[ext] ?? 'bg-zinc-100 text-zinc-600 border-zinc-200'; }
-  function fmtDate(ms: number) { return new Date(ms).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }); }
-  function truncatePath(path: string, maxLen = 48) {
-    if (path.length <= maxLen) return path;
-    const parts = path.split(/[\\/]/);
-    return parts.length > 3 ? '…/' + parts.slice(-2).join('/') : '…' + path.slice(-(maxLen - 1));
+  // ── script actions ─────────────────────────────────────────────
+  function fmtDate(ms: number) {
+    return new Date(ms).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
-  // ── actions ────────────────────────────────────────────────────
-  let importing = $state(false);
-  let addingSample = $state(false);
-
-  async function importFiles() {
-    importing = true;
-    try { await dataFiles.importFromPicker(selectedFolder ?? ''); } finally { importing = false; }
+  function openScript(script: SavedScript) {
+    savedScripts.setActive(script.id);
+    goto('/code');
   }
 
-  async function addSample() {
-    addingSample = true;
-    try { await dataFiles.addSampleFastq(selectedFolder ?? ''); } finally { addingSample = false; }
+  function newScript() {
+    savedScripts.setActive(null);
+    goto('/code');
   }
 </script>
 
 <div class="flex flex-col h-full">
-  <PageHeader title="Data" description="Files available to tools">
+  <PageHeader title="Scripts" description="Saved JavaScript scripts">
     {#snippet actions()}
-      <Button variant="ghost" size="sm" onclick={addSample} loading={addingSample}>
-        Add sample FASTQ
-      </Button>
-      <Button variant="primary" size="sm" onclick={importFiles} loading={importing}>
+      <Button variant="primary" size="sm" onclick={newScript}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
         </svg>
-        Import file
+        New script
       </Button>
     {/snippet}
   </PageHeader>
@@ -128,8 +111,8 @@
             <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
             <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
           </svg>
-          <span class="flex-1 text-left">All files</span>
-          <span class="text-[10px] text-zinc-400">{dataFiles.files.length}</span>
+          <span class="flex-1 text-left">All scripts</span>
+          <span class="text-[10px] text-zinc-400">{savedScripts.scripts.length}</span>
         </button>
 
         {#if flatFolders.length > 0}
@@ -150,7 +133,7 @@
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
             </svg>
             <span class="flex-1 text-left truncate">{f.name}</span>
-            <span class="text-[10px] text-zinc-400">{dataFiles.byFolder(f.path).length}</span>
+            <span class="text-[10px] text-zinc-400">{savedScripts.byFolder(f.path).length}</span>
           </button>
         {/each}
 
@@ -188,27 +171,22 @@
     <!-- Main content -->
     <div class="flex-1 overflow-y-auto p-6">
 
-      {#if dataFiles.files.length === 0}
+      {#if savedScripts.scripts.length === 0}
         <!-- Global empty state -->
         <div class="flex flex-col items-center justify-center h-full text-center gap-3">
           <div class="h-12 w-12 rounded-xl bg-zinc-100 flex items-center justify-center">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
-              <polyline points="13 2 13 9 20 9" />
+              <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
             </svg>
           </div>
-          <p class="text-sm font-medium text-zinc-700">No files yet</p>
+          <p class="text-sm font-medium text-zinc-700">No saved scripts</p>
           <p class="text-xs text-zinc-400 max-w-xs">
-            Import files to make them available to tools like FastQC.
-            Files are referenced by path — they stay where they are on disk.
+            Write a script in the Code editor and save it to find it here.
           </p>
-          <div class="flex gap-2 mt-1">
-            <Button variant="secondary" size="sm" onclick={importFiles} loading={importing}>Import file</Button>
-            <Button variant="ghost" size="sm" onclick={addSample} loading={addingSample}>Add sample FASTQ</Button>
-          </div>
+          <Button variant="secondary" size="sm" onclick={newScript}>Open editor</Button>
         </div>
 
-      {:else if visibleFiles.length === 0}
+      {:else if visibleScripts.length === 0}
         <!-- Folder empty state -->
         <div class="flex flex-col items-center justify-center h-64 text-center gap-3">
           <div class="h-10 w-10 rounded-xl bg-zinc-100 flex items-center justify-center">
@@ -216,35 +194,29 @@
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
             </svg>
           </div>
-          <p class="text-sm text-zinc-500">No files in this folder</p>
-          <Button variant="secondary" size="sm" onclick={importFiles} loading={importing}>Import file here</Button>
+          <p class="text-sm text-zinc-500">No scripts in this folder</p>
         </div>
 
       {:else}
         <Card>
           <div class="divide-y divide-border">
-            {#each visibleFiles as file (file.id)}
+            {#each visibleScripts as script (script.id)}
               <div class="flex items-center gap-3 px-4 py-3 group">
                 <div class="h-8 w-8 rounded-lg bg-zinc-100 border border-zinc-200 flex items-center justify-center shrink-0">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
-                    <polyline points="13 2 13 9 20 9" />
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
                   </svg>
                 </div>
 
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium text-zinc-800 truncate">{file.name}</p>
-                  <p class="text-xs text-zinc-400 truncate" title={file.path}>{truncatePath(file.path)}</p>
+                  <p class="text-sm font-medium text-zinc-800 truncate">{script.name}</p>
+                  <p class="text-xs text-zinc-400">{fmtDate(script.savedAt)}</p>
                 </div>
-
-                <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium border {extClass(file.ext)}">
-                  {file.ext || '?'}
-                </span>
 
                 <!-- Move to folder select -->
                 <select
-                  value={file.folder}
-                  onchange={(e) => dataFiles.move(file.id, e.currentTarget.value)}
+                  value={script.folder}
+                  onchange={(e) => savedScripts.move(script.id, e.currentTarget.value)}
                   title="Move to folder"
                   class="shrink-0 text-[10px] border border-border rounded px-1.5 py-1 bg-surface
                          text-zinc-500 cursor-pointer max-w-22 truncate"
@@ -255,11 +227,22 @@
                   {/each}
                 </select>
 
-                <span class="shrink-0 text-xs text-zinc-400 hidden sm:block">{fmtDate(file.addedAt)}</span>
+                <button
+                  onclick={() => openScript(script)}
+                  class="shrink-0 flex items-center gap-1.5 rounded-lg border border-border
+                         bg-surface px-2.5 py-1.5 text-xs font-medium text-zinc-600
+                         hover:border-brand hover:text-brand transition-colors"
+                >
+                  Open
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                </button>
 
                 <button
-                  onclick={() => dataFiles.remove(file.id)}
-                  aria-label="Remove"
+                  onclick={() => savedScripts.remove(script.id)}
+                  aria-label="Delete"
                   class="shrink-0 text-zinc-300 hover:text-red-500 transition-colors"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
