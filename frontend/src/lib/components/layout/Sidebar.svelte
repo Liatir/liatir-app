@@ -12,13 +12,14 @@
     { href: '/', label: 'Dashboard' },
     { href: '/data', label: 'Data', match: '/data' },
     { href: '/tools', label: 'Tools', match: '/tools' },
+    { href: '/results', label: 'Results', match: '/results' },
     { href: '/jobs', label: 'Jobs', match: '/jobs' },
     { href: '/deps', label: 'Dependencies', match: '/deps' },
   ];
 
   const advancedNav: NavItem[] = [
     { href: '/scripts', label: 'Scripts', match: '/scripts' },
-    { href: '/code', label: 'Code', match: '/code' },
+    { href: '/code', label: 'Code Editor', match: '/code' },
   ];
 
   let advancedOpen = $state(false);
@@ -75,7 +76,11 @@
               <circle cx="12" cy="12" r="3" />
               <path d="M19.07 4.93a10 10 0 0 1 0 14.14M16.24 7.76a6 6 0 0 1 0 8.49M4.93 4.93a10 10 0 0 0 0 14.14M7.76 7.76a6 6 0 0 0 0 8.49" />
             </svg>
-          {:else if item.match === '/jobs'}
+          {:else if item.match === '/results'}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
+        {:else if item.match === '/jobs'}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
