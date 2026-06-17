@@ -51,6 +51,19 @@ function createDepsStore() {
       if (!api) return null;
       return await api.deps.check(binary);
     },
+
+    async recheckOne(binary: string): Promise<void> {
+      const api = offlab();
+      if (!api) return;
+      const result = await api.deps.check(binary);
+      if (!result) return;
+      const idx = results.findIndex(r => r.binary === binary);
+      if (idx >= 0) {
+        results[idx] = result;
+      } else {
+        results.push(result);
+      }
+    },
   };
 }
 

@@ -122,6 +122,12 @@
   };
   function extClass(ext: string) { return EXT_COLOR[ext] ?? 'bg-zinc-100 text-zinc-600 border-zinc-200'; }
   function fmtDate(ms: number) { return new Date(ms).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }); }
+  function fmtBytes(b: number): string {
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 ** 2) return `${(b / 1024).toFixed(1)} KB`;
+    if (b < 1024 ** 3) return `${(b / 1024 ** 2).toFixed(1)} MB`;
+    return `${(b / 1024 ** 3).toFixed(2)} GB`;
+  }
   function truncatePath(path: string, maxLen = 48) {
     if (path.length <= maxLen) return path;
     const parts = path.split(/[\\/]/);
@@ -336,6 +342,10 @@
                 <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium border {extClass(file.ext)}">
                   {file.ext || '?'}
                 </span>
+
+                {#if file.size != null}
+                  <span class="shrink-0 text-[11px] text-zinc-400 font-mono hidden sm:block">{fmtBytes(file.size)}</span>
+                {/if}
 
                 <Select
                   value={file.folder}

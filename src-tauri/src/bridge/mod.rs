@@ -19,6 +19,7 @@ pub mod plugins;
 pub mod sidecar;
 pub mod jobs;
 pub mod deps;
+pub mod managed_bins;
 
 pub use notifications::*;
 pub use clipboard::*;
@@ -40,3 +41,4 @@ pub use plugins::*;
 pub use sidecar::*;
 pub use jobs::*;
 pub use deps::*;
+pub use managed_bins::*;

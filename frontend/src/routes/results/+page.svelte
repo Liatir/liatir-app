@@ -5,7 +5,7 @@
   import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
   import { analysisRuns, type AnalysisRunMeta } from '$lib/stores/analysisRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
-  import { fmtDuration } from '$lib/utils';
+  import { fmtDuration, fmtBytes } from '$lib/utils';
   import type { ToolOutput } from '$lib/types/tool-output';
 
   const TOOL_LABELS: Record<string, string> = {
@@ -147,6 +147,9 @@
               </div>
               <p class="text-[10px] text-zinc-400 pl-3">
                 {toolLabel(run.tool)} · {fmtDate(run.startedAt)} · {fmtDuration(run.startedAt, run.endedAt)}
+                {#if run.inputSizes?.length}
+                  · {run.inputSizes.map(fmtBytes).join(', ')}
+                {/if}
               </p>
             </button>
             <button
@@ -195,7 +198,7 @@
             <div>
               <p class="text-sm font-semibold text-zinc-800">{selectedRun.label}</p>
               <p class="text-xs text-zinc-400 mt-0.5">
-                {toolLabel(selectedRun.tool)} · {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}
+                {toolLabel(selectedRun.tool)} · {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}{selectedRun.inputSizes?.length ? ' · ' + selectedRun.inputSizes.map(fmtBytes).join(', ') : ''}
               </p>
             </div>
           </div>
@@ -218,7 +221,7 @@
             <div>
               <p class="text-sm font-semibold text-zinc-800">{selectedRun.label}</p>
               <p class="text-xs text-zinc-400 mt-0.5">
-                {toolLabel(selectedRun.tool)} · {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}
+                {toolLabel(selectedRun.tool)} · {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}{selectedRun.inputSizes?.length ? ' · ' + selectedRun.inputSizes.map(fmtBytes).join(', ') : ''}
               </p>
             </div>
           </div>

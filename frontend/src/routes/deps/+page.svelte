@@ -2,21 +2,216 @@
   import { onMount } from 'svelte';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import Card from '$lib/components/ui/Card.svelte';
-  import Badge from '$lib/components/ui/Badge.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Spinner from '$lib/components/ui/Spinner.svelte';
-  import { depsStore, COMMON_TOOLS } from '$lib/stores/deps.svelte';
+  import InfoPopup from '$lib/components/ui/InfoPopup.svelte';
+  import { depsStore } from '$lib/stores/deps.svelte';
+  import { managedBins } from '$lib/stores/managedBins.svelte';
+  import { installProgress } from '$lib/stores/installProgress.svelte';
+  import { offlab } from '$lib/api';
+  import { runNativeTool } from '$lib/utils/native-tool';
+  import {
+    getRelease,
+    installBinary,
+    type OsPlatform,
+    type Arch,
+    type InstallProgress,
+  } from '$lib/tools/binary-manager';
 
-  onMount(() => {
+  // ── tool metadata ─────────────────────────────────────────────────
+  interface ToolMeta {
+    label: string;
+    description: string;
+    brew?: string;
+    apt?: string;
+    conda?: string;
+  }
+
+  const TOOL_META: Record<string, ToolMeta> = {
+    fastqc: {
+      label: 'FastQC',
+      description: 'Quality control for raw FASTQ sequencing data. Generates per-base quality score profiles, GC content, duplication levels, and adapter content reports. Run before any alignment step.',
+      brew: 'fastqc', apt: 'fastqc', conda: 'fastqc',
+    },
+    bwa: {
+      label: 'BWA',
+      description: 'Burrows-Wheeler Aligner for short Illumina reads. Maps reads to a reference genome and outputs SAM/BAM. BWA-MEM (included) is the recommended algorithm for reads > 70 bp.',
+      brew: 'bwa', apt: 'bwa', conda: 'bwa',
+    },
+    samtools: {
+      label: 'Samtools',
+      description: 'Swiss-army knife for SAM/BAM/CRAM files. Sort, index, view, filter alignments and generate mapping statistics (flagstat, stats, idxstats). Required by most downstream tools.',
+      brew: 'samtools', apt: 'samtools', conda: 'samtools',
+    },
+    minimap2: {
+      label: 'Minimap2',
+      description: 'Versatile aligner for long reads (PacBio CLR/HiFi, Oxford Nanopore) and short reads. Also performs genome-to-genome alignment. Outputs SAM or PAF format.',
+      brew: 'minimap2', apt: 'minimap2', conda: 'minimap2',
+    },
+    hisat2: {
+      label: 'HISAT2',
+      description: 'Graph-based RNA-seq aligner. Splice-aware — accurately maps reads spanning exon-exon junctions. Uses a genome graph index for fast, sensitive alignment of RNA-seq reads.',
+      brew: 'hisat2', apt: 'hisat2', conda: 'hisat2',
+    },
+    star: {
+      label: 'STAR',
+      description: 'Ultrafast RNA-seq aligner. Detects novel splice junctions de novo and handles chimeric reads. Widely used upstream of differential expression tools like DESeq2 and edgeR.',
+      brew: 'star', apt: 'rna-star', conda: 'star',
+    },
+    nextflow: {
+      label: 'Nextflow',
+      description: 'Dataflow-driven scientific workflow system. Runs scalable DSL2 pipelines with automatic parallelization, containerization, and cluster/cloud execution. Powers nf-core community pipelines.',
+      brew: 'nextflow', conda: 'nextflow',
+    },
+    snakemake: {
+      label: 'Snakemake',
+      description: 'Python-based workflow manager with Makefile-inspired syntax. Supports conda environments, containers, and cluster execution. Define rules once and Snakemake resolves the dependency graph.',
+      brew: 'snakemake', conda: 'snakemake',
+    },
+    bcftools: {
+      label: 'BCFtools',
+      description: 'Call variants and manipulate VCF/BCF files. Works with samtools output for SNP/indel calling, filtering, merging, and format conversion. Part of the samtools/htslib ecosystem.',
+      brew: 'bcftools', apt: 'bcftools', conda: 'bcftools',
+    },
+    bedtools: {
+      label: 'bedtools',
+      description: 'Genome arithmetic toolkit. Intersect, merge, count, and manipulate genomic intervals in BED, GFF, VCF, and BAM formats. Essential for annotation overlap and peak calling workflows.',
+      brew: 'bedtools', apt: 'bedtools', conda: 'bedtools',
+    },
+  };
+
+  // ── platform + package manager ─────────────────────────────────────
+  let platformOs = $state<OsPlatform>('macos');
+  let platformArch = $state<Arch>('x86_64');
+  let brewAvailable = $state(false);
+  let condaAvailable = $state(false);
+  let pmChecked = $state(false);
+
+  // ── per-tool install state ─────────────────────────────────────────
+  interface ToolInstallState {
+    phase: InstallProgress['phase'] | 'idle' | 'pm-installing';
+    bytesDownloaded: number;
+    bytesTotal: number | null;
+    error: string | null;
+    pmLog: string[];
+    showLog: boolean;
+  }
+
+  let toolStates = $state<Record<string, ToolInstallState>>({});
+
+  function toolState(binary: string): ToolInstallState {
+    return toolStates[binary] ?? {
+      phase: 'idle', bytesDownloaded: 0, bytesTotal: null,
+      error: null, pmLog: [], showLog: false,
+    };
+  }
+
+  function setToolState(binary: string, patch: Partial<ToolInstallState>) {
+    toolStates = {
+      ...toolStates,
+      [binary]: { ...toolState(binary), ...patch },
+    };
+  }
+
+  onMount(async () => {
     if (!depsStore.checked) depsStore.checkAll();
+    await managedBins.init();
+
+    const api = offlab();
+    if (api) {
+      const info = await api.desktop.app.info();
+      platformOs = info.os as OsPlatform;
+      platformArch = (info.arch === 'aarch64' ? 'arm64' : 'x86_64') as Arch;
+
+      const [brewRes, condaRes] = await Promise.all([
+        api.deps.check('brew'),
+        api.deps.check('conda'),
+      ]);
+      brewAvailable = brewRes.available;
+      condaAvailable = condaRes.available;
+    }
+    pmChecked = true;
   });
+
+  // ── download install (precompiled binary) ──────────────────────────
+  async function downloadInstall(binary: string) {
+    const label = TOOL_META[binary]?.label ?? binary;
+    setToolState(binary, { phase: 'downloading', error: null, bytesDownloaded: 0, bytesTotal: null });
+    installProgress.start(binary, label);
+    try {
+      await installBinary(binary, platformOs, platformArch, (p) => {
+        if (p.phase === 'downloading') {
+          setToolState(binary, { phase: 'downloading', bytesDownloaded: p.bytesDownloaded, bytesTotal: p.bytesTotal });
+          installProgress.update(binary, { phase: 'downloading', bytesDownloaded: p.bytesDownloaded, bytesTotal: p.bytesTotal });
+        } else if (p.phase === 'extracting') {
+          setToolState(binary, { phase: 'extracting' });
+          installProgress.update(binary, { phase: 'extracting' });
+        } else if (p.phase === 'done') {
+          setToolState(binary, { phase: 'done' });
+        }
+      });
+      await depsStore.recheckOne(binary);
+      installProgress.done(binary);
+    } catch (e) {
+      setToolState(binary, { phase: 'error', error: String(e) });
+      installProgress.error(binary, String(e));
+    }
+  }
+
+  // ── package manager install (brew / conda) ─────────────────────────
+  function pmInstallCmd(binary: string): { cmd: string; args: string[] } | null {
+    const meta = TOOL_META[binary];
+    if (!meta) return null;
+    if (brewAvailable && meta.brew) return { cmd: 'brew', args: ['install', meta.brew] };
+    if (condaAvailable && meta.conda) return { cmd: 'conda', args: ['install', '-c', 'bioconda', '-y', meta.conda] };
+    return null;
+  }
+
+  async function pmInstall(binary: string) {
+    const cmd = pmInstallCmd(binary);
+    if (!cmd) return;
+
+    const label = TOOL_META[binary]?.label ?? binary;
+    setToolState(binary, { phase: 'pm-installing', error: null, pmLog: [], showLog: true });
+    installProgress.start(binary, label);
+    installProgress.update(binary, { phase: 'pm-installing' });
+    try {
+      const result = await runNativeTool(cmd.cmd, cmd.args, (line) => {
+        setToolState(binary, { pmLog: [...toolState(binary).pmLog, line] });
+      });
+      if (!result.ok) {
+        const msg = result.stderr || `Exited ${result.exitCode}`;
+        setToolState(binary, { phase: 'error', error: msg });
+        installProgress.error(binary, msg);
+      } else {
+        setToolState(binary, { phase: 'done' });
+        await depsStore.recheckOne(binary);
+        installProgress.done(binary);
+      }
+    } catch (e) {
+      setToolState(binary, { phase: 'error', error: String(e) });
+      installProgress.error(binary, String(e));
+    }
+  }
+
+  function fmtBytes(b: number): string {
+    if (b >= 1_000_000) return `${(b / 1_000_000).toFixed(1)} MB`;
+    if (b >= 1_000) return `${(b / 1_000).toFixed(0)} KB`;
+    return `${b} B`;
+  }
+
+  function pmLabel(): string {
+    if (brewAvailable) return 'Install via Homebrew';
+    if (condaAvailable) return 'Install via conda';
+    return '';
+  }
 </script>
 
 <div class="flex flex-col h-full">
-  <PageHeader title="Dependencies" description="Verify bioinformatics tools installed on this system">
+  <PageHeader title="Dependencies" description="Bioinformatics tools available on this system">
     {#snippet actions()}
       <Button variant="secondary" size="sm" onclick={() => depsStore.checkAll()} loading={depsStore.loading}>
-        {depsStore.checked ? 'Re-check' : 'Check all'}
+        {depsStore.checked ? 'Re-check all' : 'Check all'}
       </Button>
     {/snippet}
   </PageHeader>
@@ -26,7 +221,7 @@
     {#if depsStore.loading}
       <div class="flex flex-col items-center gap-3 py-16">
         <Spinner size={28} />
-        <p class="text-sm text-zinc-500">Checking {COMMON_TOOLS.length} tools…</p>
+        <p class="text-sm text-zinc-500">Checking {Object.keys(TOOL_META).length} tools…</p>
       </div>
 
     {:else if !depsStore.checked}
@@ -40,11 +235,11 @@
       <div class="grid grid-cols-3 gap-3">
         <Card class="p-4">
           <p class="text-xs text-zinc-500 mb-1">Available</p>
-          <p class="text-2xl font-semibold text-emerald-400">{depsStore.availableCount}</p>
+          <p class="text-2xl font-semibold text-emerald-500">{depsStore.availableCount}</p>
           <p class="text-xs text-zinc-400 mt-1">of {depsStore.results.length} tools</p>
         </Card>
         <Card class="p-4">
-          <p class="text-xs text-zinc-500 mb-1">Missing</p>
+          <p class="text-xs text-zinc-500 mb-1">Not found</p>
           <p class="text-2xl font-semibold text-red-400">
             {depsStore.results.length - depsStore.availableCount}
           </p>
@@ -60,35 +255,165 @@
       <!-- Tool list -->
       <Card>
         <div class="divide-y divide-border">
-          {#each depsStore.results as dep}
-            <div class="flex items-center gap-4 px-4 py-3">
-              <div class="w-28 shrink-0">
-                <p class="text-sm font-mono font-medium text-zinc-800">{dep.binary}</p>
+        <div>
+              <!-- Main row -->
+              <div class="flex items-center gap-3 px-4 py-3">
+                <!-- Status dot -->
+                <span class="h-2 w-2 rounded-full shrink-0"> </span>
+
+                <!-- Binary name -->
+                <p class="text-sm font-mono font-medium text-zinc-800 w-24 shrink-0">Name</p>
+
+                <!-- Status message -->
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs text-emerald-600 truncate">
+                       Status
+                    </p>
+                </div>
+
+                <!-- Action buttons (only when not installed and not busy) -->
+                <div class="flex items-center gap-2 shrink-0">
+                    <Button variant="primary" size="sm">
+                      Install
+                    </Button>
+                </div>
+
+                <!-- Toggle log -->
+                  <button
+                    class="text-[10px] text-zinc-400/0 hover:text-zinc-600 transition-colors shrink-0 font-mono"
+                  >
+                  -
+                  </button>
+              </div>
+          {#each depsStore.results as dep (dep.binary)}
+            {@const meta = TOOL_META[dep.binary]}
+            {@const state = toolState(dep.binary)}
+            {@const hasRelease = !!getRelease(dep.binary, platformOs, platformArch)}
+            {@const hasPm = !!pmInstallCmd(dep.binary)}
+            {@const managed = managedBins.get(dep.binary)}
+            {@const isBusy = state.phase === 'downloading' || state.phase === 'extracting' || state.phase === 'pm-installing'}
+
+            <div>
+              <!-- Main row -->
+              <div class="flex items-center gap-3 px-4 py-3">
+                <!-- Status dot -->
+                <span class="h-2 w-2 rounded-full shrink-0 {dep.available || managed ? 'bg-emerald-500' : 'bg-red-400'}"></span>
+
+                <!-- Binary name -->
+                <p class="text-sm font-mono font-medium text-zinc-800 w-24 shrink-0">{dep.binary}</p>
+
+                <!-- Info popup -->
+                {#if meta}
+                  <InfoPopup text="{meta.label} — {meta.description}" />
+                {/if}
+
+                <!-- Status message -->
+                <div class="flex-1 min-w-0">
+                  {#if managed && !dep.available}
+                    <p class="text-xs text-emerald-600 truncate">
+                      Managed v{managed.version} — <span class="font-mono text-zinc-400">{managed.path}</span>
+                    </p>
+                  {:else if dep.available}
+                    {#if dep.version}
+                      <p class="text-xs font-mono text-zinc-500 truncate" data-selectable>{dep.version}</p>
+                    {:else if dep.path}
+                      <p class="text-xs font-mono text-zinc-400 truncate" data-selectable>{dep.path}</p>
+                    {:else}
+                      <p class="text-xs text-zinc-400">Found in PATH</p>
+                    {/if}
+                  {:else if state.phase === 'downloading'}
+                    <p class="text-xs text-brand">
+                      Downloading…
+                      {#if state.bytesTotal}
+                        {fmtBytes(state.bytesDownloaded)} / {fmtBytes(state.bytesTotal)}
+                      {:else}
+                        {fmtBytes(state.bytesDownloaded)}
+                      {/if}
+                    </p>
+                  {:else if state.phase === 'extracting'}
+                    <p class="text-xs text-brand">Extracting…</p>
+                  {:else if state.phase === 'pm-installing'}
+                    <p class="text-xs text-brand">Installing via {pmLabel()}…</p>
+                  {:else if state.phase === 'done'}
+                    <p class="text-xs text-emerald-600">Installed successfully</p>
+                  {:else if state.phase === 'error'}
+                    <p class="text-xs text-red-500 truncate">{state.error}</p>
+                  {:else}
+                    <p class="text-xs text-zinc-400">
+                      Not found in PATH
+                      {#if pmChecked && !hasRelease && !hasPm}
+                        — install via <span class="font-mono">brew</span>, <span class="font-mono">conda</span>, or <span class="font-mono">apt</span>
+                      {/if}
+                    </p>
+                  {/if}
+                </div>
+
+                <!-- Action buttons (only when not installed and not busy) -->
+                {#if !dep.available && !managed && pmChecked && !isBusy}
+                  <div class="flex items-center gap-2 shrink-0">
+                    {#if hasRelease}
+                      <Button variant="primary" size="sm" onclick={() => downloadInstall(dep.binary)}>
+                        Download & Install
+                      </Button>
+                    {/if}
+                    {#if hasPm}
+                      <Button variant="secondary" size="sm" onclick={() => pmInstall(dep.binary)}>
+                        {pmLabel()}
+                      </Button>
+                    {/if}
+                  </div>
+                {:else if isBusy}
+                  <div class="shrink-0">
+                    <svg class="animate-spin h-4 w-4 text-brand" viewBox="0 0 24 24" fill="none">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                    </svg>
+                  </div>
+                {/if}
+
+                <!-- Toggle log -->
+                {#if (state.pmLog.length > 0 || state.phase === 'error') && !isBusy}
+                  <button
+                    onclick={() => setToolState(dep.binary, { showLog: !state.showLog })}
+                    class="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors shrink-0 font-mono"
+                  >
+                    {state.showLog ? 'hide' : 'log'}
+                  </button>
+                {/if}
               </div>
 
-              <Badge variant={dep.available ? 'available' : 'missing'}>
-                {dep.available ? 'Available' : 'Missing'}
-              </Badge>
-
-              {#if dep.available && dep.version}
-                <p class="text-xs font-mono text-zinc-500 flex-1 truncate" data-selectable>
-                  {dep.version}
-                </p>
-              {:else if dep.available && dep.path}
-                <p class="text-xs font-mono text-zinc-400 flex-1 truncate" data-selectable>
-                  {dep.path}
-                </p>
-              {:else}
-                <p class="text-xs text-zinc-400 flex-1">Not found in PATH</p>
+              <!-- Install log -->
+              {#if state.showLog && (state.pmLog.length > 0 || state.phase === 'error')}
+                <div class="mx-4 mb-3 rounded-lg border border-border bg-zinc-950 px-3 py-2 max-h-40 overflow-y-auto">
+                  {#if state.phase === 'error' && state.error}
+                    <p class="text-xs font-mono text-red-400 mb-1">{state.error}</p>
+                  {/if}
+                  {#each state.pmLog as line}
+                    <p class="text-[11px] font-mono text-zinc-300 leading-relaxed">{line}</p>
+                  {/each}
+                </div>
               {/if}
             </div>
           {/each}
         </div>
       </Card>
 
-      <p class="text-xs text-zinc-400 text-center">
-        Offlab checks the system PATH. Install missing tools via your package manager (brew, apt, conda, etc.)
-      </p>
+      <!-- Footer note -->
+      {#if pmChecked}
+        <p class="text-xs text-zinc-400 text-center">
+          {#if brewAvailable && condaAvailable}
+            Homebrew and conda detected.
+          {:else if brewAvailable}
+            Homebrew detected.
+          {:else if condaAvailable}
+            conda detected.
+          {:else}
+            No package manager detected in PATH.
+          {/if}
+          "Download & Install" bundles precompiled binaries directly into Offlab — no package manager required.
+        </p>
+      {/if}
     {/if}
+
   </div>
 </div>

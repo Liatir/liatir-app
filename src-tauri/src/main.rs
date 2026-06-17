@@ -368,6 +368,18 @@ fn main() {
       dtr_deps_check,
       dtr_deps_check_many,
 
+      // managed binaries
+      dtr_managed_download,
+      dtr_managed_extract,
+      dtr_managed_find_binary,
+      dtr_managed_set_executable,
+      dtr_managed_move,
+      dtr_managed_remove,
+
+      // file utilities
+      dtr_file_size,
+      dtr_write_file_path,
+
       // test commands only in dev
       #[cfg(debug_assertions)]
       dtr_logs_test_record_n,

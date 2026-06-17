@@ -122,6 +122,16 @@ commands.allow = [
   "dtr_deps_check",
   "dtr_deps_check_many",
 
+  "dtr_managed_download",
+  "dtr_managed_extract",
+  "dtr_managed_find_binary",
+  "dtr_managed_set_executable",
+  "dtr_managed_move",
+  "dtr_managed_remove",
+
+  "dtr_file_size",
+  "dtr_write_file_path",
+
   # "dtr_worker_call",
   # "dtr_worker_delivery",
   # "dtr_worker_ready",

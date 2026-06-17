@@ -5,6 +5,7 @@ export interface DataFile {
   name: string;
   path: string;
   ext: string;
+  size?: number;
   addedAt: number;
   folder: string;
 }
@@ -75,11 +76,17 @@ function createDataFilesStore() {
     async add(path: string, folder = '') {
       if (files.some(f => f.path === path)) return;
       const name = path.split(/[\\/]/).pop() ?? path;
+      let size: number | undefined;
+      try {
+        const api = offlab();
+        if (api) size = (await api.invoke('dtr_file_size', { path })) as number;
+      } catch { /* size stays undefined */ }
       files = [{
         id: crypto.randomUUID(),
         name,
         path,
         ext: detectExt(path),
+        size,
         addedAt: Date.now(),
         folder,
       }, ...files];

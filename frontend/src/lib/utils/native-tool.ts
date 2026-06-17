@@ -1,4 +1,5 @@
 import { offlab } from '$lib/api';
+import { getManagedBinPath } from '$lib/tools/binary-manager';
 
 export interface NativeRunResult {
   stdout: string;
@@ -19,7 +20,9 @@ export async function runNativeTool(
   const api = offlab();
   if (!api) throw new Error('Offlab API not available');
 
-  const { jobId } = await api.jobs.spawn(cmd, args);
+  // Prefer a managed (downloaded) binary over the system PATH binary
+  const managedPath = getManagedBinPath(cmd);
+  const { jobId } = await api.jobs.spawn(managedPath ?? cmd, args);
 
   return new Promise((resolve) => {
     const stdoutLines: string[] = [];

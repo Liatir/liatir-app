@@ -8,13 +8,23 @@ export interface SavedScript {
   folder: string;
 }
 
-interface ScriptsData {
-  scripts: SavedScript[];
+interface ScriptMeta {
+  id: string;
+  name: string;
+  savedAt: number;
+  folder: string;
+}
+
+interface IndexData {
+  scripts: ScriptMeta[];
   folders: string[];
 }
 
-const INDEX = 'scripts.json';
+const DIR = 'scripts';
+const INDEX = `${DIR}/index.json`;
 const LS_MIGRATE_KEY = 'offlab_scripts';
+
+function scriptPath(id: string) { return `${DIR}/${id}.ts`; }
 
 function createSavedScriptsStore() {
   let scripts = $state<SavedScript[]>([]);
@@ -22,11 +32,23 @@ function createSavedScriptsStore() {
   let activeScriptId = $state<string | null>(null);
   let initialized = false;
 
-  async function persist() {
+  async function persistIndex() {
     const api = offlab();
     if (!api) return;
-    const data: ScriptsData = { scripts, folders };
-    await api.desktop.fs.data.writeText(INDEX, JSON.stringify(data));
+    const meta: ScriptMeta[] = scripts.map(({ id, name, savedAt, folder }) => ({ id, name, savedAt, folder }));
+    await api.desktop.fs.data.writeText(INDEX, JSON.stringify({ scripts: meta, folders }), { createDirs: true });
+  }
+
+  async function writeCode(id: string, code: string) {
+    const api = offlab();
+    if (!api) return;
+    await api.desktop.fs.data.writeText(scriptPath(id), code, { createDirs: true });
+  }
+
+  async function deleteCode(id: string) {
+    const api = offlab();
+    if (!api) return;
+    try { await api.desktop.fs.data.remove(scriptPath(id)); } catch { /* ignore */ }
   }
 
   return {
@@ -45,23 +67,47 @@ function createSavedScriptsStore() {
       const api = offlab();
       if (!api) return;
       try {
-        const exists = await api.desktop.fs.data.exists(INDEX);
-        if (exists) {
+        if (await api.desktop.fs.data.exists(INDEX)) {
+          // New format: read index then load all code files
           const raw = await api.desktop.fs.data.readText(INDEX);
-          const data: ScriptsData = JSON.parse(raw);
-          scripts = (data.scripts ?? []).map(s => ({ ...s, folder: s.folder ?? '' }));
+          const data: IndexData = JSON.parse(raw);
           folders = data.folders ?? [];
+          const metas = (data.scripts ?? []).map(s => ({ ...s, folder: s.folder ?? '' }));
+          scripts = await Promise.all(metas.map(async (meta) => {
+            let code = '';
+            try {
+              if (await api.desktop.fs.data.exists(scriptPath(meta.id))) {
+                code = await api.desktop.fs.data.readText(scriptPath(meta.id));
+              }
+            } catch { /* code stays empty */ }
+            return { ...meta, code };
+          }));
         } else {
-          // Migrate from localStorage
-          try {
-            const lsRaw = localStorage.getItem(LS_MIGRATE_KEY);
-            if (lsRaw) {
-              const lsScripts = JSON.parse(lsRaw) as Omit<SavedScript, 'folder'>[];
-              scripts = lsScripts.map(s => ({ folder: '', ...s }));
-              await persist();
-              localStorage.removeItem(LS_MIGRATE_KEY);
-            }
-          } catch { /* ignore migration errors */ }
+          // Try old single-file format: scripts.json
+          const oldExists = await api.desktop.fs.data.exists('scripts.json');
+          if (oldExists) {
+            const raw = await api.desktop.fs.data.readText('scripts.json');
+            const oldData = JSON.parse(raw) as { scripts?: (ScriptMeta & { code?: string })[]; folders?: string[] };
+            folders = oldData.folders ?? [];
+            const oldScripts = (oldData.scripts ?? []).map(s => ({ ...s, folder: s.folder ?? '', code: s.code ?? '' }));
+            // Migrate: write individual .ts files
+            await Promise.all(oldScripts.map(s => writeCode(s.id, s.code)));
+            scripts = oldScripts;
+            await persistIndex();
+            try { await api.desktop.fs.data.remove('scripts.json'); } catch { /* ignore */ }
+          } else {
+            // Try legacy localStorage migration
+            try {
+              const lsRaw = localStorage.getItem(LS_MIGRATE_KEY);
+              if (lsRaw) {
+                const lsScripts = JSON.parse(lsRaw) as (ScriptMeta & { code?: string })[];
+                scripts = lsScripts.map(s => ({ ...s, folder: s.folder ?? '', code: s.code ?? '' }));
+                await Promise.all(scripts.map(s => writeCode(s.id, s.code)));
+                await persistIndex();
+                localStorage.removeItem(LS_MIGRATE_KEY);
+              }
+            } catch { /* ignore migration errors */ }
+          }
         }
       } catch { scripts = []; folders = []; }
     },
@@ -70,31 +116,34 @@ function createSavedScriptsStore() {
       const id = crypto.randomUUID();
       scripts = [{ id, name, code, savedAt: Date.now(), folder }, ...scripts];
       activeScriptId = id;
-      await persist();
+      await writeCode(id, code);
+      await persistIndex();
       return id;
     },
 
     async update(id: string, name: string, code: string) {
       scripts = scripts.map(s => s.id === id ? { ...s, name, code, savedAt: Date.now() } : s);
-      await persist();
+      await writeCode(id, code);
+      await persistIndex();
     },
 
     async remove(id: string) {
       scripts = scripts.filter(s => s.id !== id);
       if (activeScriptId === id) activeScriptId = null;
-      await persist();
+      await deleteCode(id);
+      await persistIndex();
     },
 
     async move(id: string, folder: string) {
       scripts = scripts.map(s => s.id === id ? { ...s, folder } : s);
-      await persist();
+      await persistIndex();
     },
 
     async createFolder(path: string) {
       const trimmed = path.trim().replace(/^\/+|\/+$/g, '');
       if (!trimmed || folders.includes(trimmed)) return;
       folders = [...folders, trimmed].sort();
-      await persist();
+      await persistIndex();
     },
 
     async removeFolder(path: string) {
@@ -102,7 +151,7 @@ function createSavedScriptsStore() {
       scripts = scripts.map(s =>
         (s.folder === path || s.folder.startsWith(path + '/')) ? { ...s, folder: '' } : s
       );
-      await persist();
+      await persistIndex();
     },
 
     async renameFolder(oldPath: string, newPath: string) {
@@ -118,7 +167,7 @@ function createSavedScriptsStore() {
         if (s.folder.startsWith(oldPath + '/')) return { ...s, folder: trimmed + s.folder.slice(oldPath.length) };
         return s;
       });
-      await persist();
+      await persistIndex();
     },
 
     setActive(id: string | null) {
@@ -132,6 +181,20 @@ function createSavedScriptsStore() {
     allFolderPaths(): string[] {
       const fromScripts = scripts.map(s => s.folder).filter(Boolean);
       return [...new Set([...folders, ...fromScripts])].sort();
+    },
+
+    async exportScript(id: string) {
+      const script = scripts.find(s => s.id === id);
+      if (!script) return;
+      const api = offlab();
+      if (!api) return;
+
+      const result = await api.desktop.files.save({ defaultName: `${script.name}.ts` });
+      if (!result) return;
+      const destPath = typeof result === 'string' ? result : (result as { path?: string }).path;
+      if (!destPath) return;
+
+      await api.invoke('dtr_write_file_path', { path: destPath, content: script.code });
     },
   };
 }

@@ -64,13 +64,15 @@
     const runId = crypto.randomUUID();
     const fileName = filePath.split(/[\\/]/).pop() ?? filePath;
     const t0 = startedAt;
+    const fileSize = dataFiles.files.find(f => f.path === filePath)?.size;
+    const inputSizes = fileSize != null ? [fileSize] : undefined;
 
     try {
       const output = await api.qc.fastqc.run({ input: filePath, maxReads });
       const endedAt = Date.now();
       await analysisRuns.add({
         id: runId, tool: 'fastqc', label: fileName,
-        inputs: [filePath],
+        inputs: [filePath], inputSizes,
         params: maxReads !== undefined ? { maxReads } : {},
         status: 'done',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
@@ -80,7 +82,7 @@
       const endedAt = Date.now();
       await analysisRuns.add({
         id: runId, tool: 'fastqc', label: fileName,
-        inputs: [filePath],
+        inputs: [filePath], inputSizes,
         params: maxReads !== undefined ? { maxReads } : {},
         status: 'error',
         startedAt: t0, endedAt, durationMs: endedAt - t0,

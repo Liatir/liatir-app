@@ -329,6 +329,20 @@
                 </button>
 
                 <button
+                  onclick={() => savedScripts.exportScript(script.id)}
+                  title="Export as .ts file"
+                  class="shrink-0 flex items-center gap-1.5 rounded-lg border border-border
+                         bg-surface px-2.5 py-1.5 text-xs font-medium text-zinc-600
+                         hover:border-zinc-400 hover:text-zinc-800 transition-colors"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  Export
+                </button>
+
+                <button
                   onclick={async () => {
                     const ok = await confirm({ title: 'Delete script', message: `Delete "${script.name}"?`, confirmLabel: 'Delete' });
                     if (ok) savedScripts.remove(script.id);

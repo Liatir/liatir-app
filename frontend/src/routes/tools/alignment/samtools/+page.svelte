@@ -74,6 +74,8 @@
     const runId = crypto.randomUUID();
     const fileName = filePath.split(/[\\/]/).pop() ?? filePath;
     const t0 = startedAt;
+    const fileSize = dataFiles.files.find(f => f.path === filePath)?.size;
+    const inputSizes = fileSize != null ? [fileSize] : undefined;
 
     try {
       const result = await runNativeTool('samtools', ['flagstat', filePath]);
@@ -88,7 +90,7 @@
 
       await analysisRuns.add({
         id: runId, tool: 'samtools', label: fileName,
-        inputs: [filePath],
+        inputs: [filePath], inputSizes,
         params: { subcommand: 'flagstat' },
         status: 'done',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
@@ -98,7 +100,7 @@
       const endedAt = Date.now();
       await analysisRuns.add({
         id: runId, tool: 'samtools', label: fileName,
-        inputs: [filePath],
+        inputs: [filePath], inputSizes,
         params: { subcommand: 'flagstat' },
         status: 'error',
         startedAt: t0, endedAt, durationMs: endedAt - t0,

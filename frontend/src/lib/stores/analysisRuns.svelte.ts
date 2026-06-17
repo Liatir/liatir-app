@@ -6,6 +6,7 @@ export interface AnalysisRunMeta {
   tool: string;
   label: string;
   inputs: string[];
+  inputSizes?: number[];
   params: Record<string, unknown>;
   status: 'done' | 'error';
   startedAt: number;
