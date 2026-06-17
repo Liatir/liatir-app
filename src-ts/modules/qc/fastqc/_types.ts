@@ -3,6 +3,8 @@ export type FastqcArgs = {
   input: string;
   /** Stop after this many reads — useful for quick previews on huge files */
   maxReads?: number;
+  /** Max milliseconds to wait for the WASM module to complete (default 300 000) */
+  timeoutMs?: number;
 };
 
 export type FastqcResult = {

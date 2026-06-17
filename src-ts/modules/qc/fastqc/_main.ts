@@ -1,6 +1,7 @@
 import { PluginsInterface } from "../../rs/plugins/_types";
 import { FastqcArgs, FastqcInterface, FastqcResult } from "./_types";
 import type { ToolOutput, ToolSection } from "../_types";
+import type { U64 } from "../../../utils";
 
 const MODULE = "fastqc.wasm";
 
@@ -122,12 +123,14 @@ export function buildFastqc(plugins: PluginsInterface): FastqcInterface {
       const result = await plugins.call(
         MODULE,
         { fn: "run", args },
-        undefined,
+        (args.timeoutMs ?? 300_000) as U64,
         hostReadPaths,
       );
 
       if (!result.ok) {
-        throw new Error(result.error ?? result.stderr ?? "fastqc failed");
+        // result.stderr contains the Rust panic message; prefer it over the raw wasmtime trap description
+        const msg = result.stderr?.trim() || result.error || "fastqc failed";
+        throw new Error(msg);
       }
 
       return toToolOutput(result.value as unknown as FastqcResult);

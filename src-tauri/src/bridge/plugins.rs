@@ -345,7 +345,7 @@ pub async fn dtr_plugin_call(
 ) -> Result<serde_json::Value, String> {
     let started = Instant::now();
     let id = gen_plugin_job_id();
-    let timeout_ms = timeout_ms.unwrap_or(2_000);
+    let timeout_ms = timeout_ms.unwrap_or(300_000);
 
     let validated_paths = validate_host_read_paths(host_read_paths.unwrap_or_default())
         .map_err(|e| e.to_string())?;

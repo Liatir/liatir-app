@@ -16,9 +16,16 @@
 
   // ── form state ─────────────────────────────────────────────────
   let maxReads = $state<number | undefined>(undefined);
+  let timeoutSec = $state(120);
   let filePath = $state('');
   let running = $state(false);
   let startedAt = $state<number | null>(null);
+
+  function smartTimeout(sizeBytes: number | undefined): number {
+    if (sizeBytes == null) return 120;
+    const mb = sizeBytes / (1024 * 1024);
+    return Math.min(600, Math.max(30, Math.ceil(mb * 2)));
+  }
 
   // ── history ────────────────────────────────────────────────────
   let selectedRunId = $state<string | null>(null);
@@ -69,7 +76,7 @@
     const inputSizes = fileSize != null ? [fileSize] : undefined;
 
     try {
-      const output = await api.qc.fastqc.run({ input: filePath, maxReads });
+      const output = await api.qc.fastqc.run({ input: filePath, maxReads, timeoutMs: timeoutSec * 1000 });
       const endedAt = Date.now();
       await analysisRuns.add({
         id: runId, tool: 'fastqc', label: fileName,
@@ -200,7 +207,11 @@
           value={filePath}
           label="FASTQ file"
           emptyText="No FASTQ files in Data yet."
-          onchange={(p) => filePath = p}
+          onchange={(p) => {
+            filePath = p;
+            const f = fastqFiles.find(f => f.path === p);
+            timeoutSec = smartTimeout(f?.size);
+          }}
         />
 
         <div>
@@ -221,6 +232,27 @@
                    text-sm text-zinc-800 placeholder:text-zinc-400 outline-none
                    focus:border-brand transition-colors"
           />
+        </div>
+
+        <div>
+          <label for="timeout-sec" class="flex text-xs text-zinc-500 mb-1.5 items-center">
+            Timeout
+            <InfoPopup text="Maximum time in seconds to wait for the analysis to complete. Auto-set based on file size; increase for large files." />
+          </label>
+          <div class="flex items-center gap-2">
+            <input
+              id="timeout-sec"
+              type="number"
+              bind:value={timeoutSec}
+              min="10"
+              max="3600"
+              step="10"
+              class="w-24 rounded-lg border border-border bg-surface-2 px-3 py-2
+                     text-sm text-zinc-800 outline-none
+                     focus:border-brand transition-colors"
+            />
+            <span class="text-xs text-zinc-400">seconds</span>
+          </div>
         </div>
 
         <div class="flex items-center gap-3 pt-1">

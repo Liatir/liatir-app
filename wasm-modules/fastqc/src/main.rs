@@ -83,19 +83,19 @@ fn parse_fastq<R: BufRead>(
         // Skip empty lines between records
         let header = loop {
             match lines.next() {
-                Some(Ok(l)) if l.is_empty() => continue,
-                Some(Ok(l)) => break l,
+                Some(Ok(l)) => {
+                    let l = l.trim_end_matches('\r').to_string();
+                    if l.is_empty() { continue; }
+                    break l;
+                }
                 Some(Err(e)) => return Err(Box::new(e)),
                 None => break 'outer,
             }
         };
 
         if !header.starts_with('@') {
-            return Err(format!(
-                "expected '@' header, got: {:?}",
-                &header[..header.len().min(40)]
-            )
-            .into());
+            let preview: String = header.chars().take(40).collect();
+            return Err(format!("expected '@' header, got: {:?}", preview).into());
         }
 
         let seq = next_line(&mut lines, "after header")?;
@@ -174,7 +174,8 @@ fn next_line<R: BufRead>(
     ctx: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
     match lines.next() {
-        Some(Ok(l)) => Ok(l),
+        // Strip Windows-style carriage returns in case the file was created on Windows
+        Some(Ok(l)) => Ok(l.trim_end_matches('\r').to_string()),
         Some(Err(e)) => Err(Box::new(e)),
         None => Err(format!("unexpected EOF {ctx}").into()),
     }
