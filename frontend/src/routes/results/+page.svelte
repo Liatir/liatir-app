@@ -10,6 +10,7 @@
 
   const TOOL_LABELS: Record<string, string> = {
     fastqc: 'FastQC',
+    samtools: 'Samtools',
     bwa: 'BWA-MEM2',
     minimap2: 'Minimap2',
     bcftools: 'BCFtools',
