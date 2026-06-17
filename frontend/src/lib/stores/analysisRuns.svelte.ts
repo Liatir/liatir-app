@@ -7,6 +7,7 @@ export interface AnalysisRunMeta {
   label: string;
   inputs: string[];
   inputSizes?: number[];
+  outputSize?: number;
   params: Record<string, unknown>;
   status: 'done' | 'error';
   startedAt: number;
@@ -57,19 +58,30 @@ function createAnalysisRunsStore() {
       const api = offlab();
       if (!api) return;
 
+      const serialized = JSON.stringify(run.output);
+
       // Write output to its own file
       await api.desktop.fs.data.writeText(
         runPath(run.id),
-        JSON.stringify(run.output),
+        serialized,
         { createDirs: true },
       );
 
       // Cache it immediately so the first view is instant
       outputCache.set(run.id, run.output);
 
+      // Get output file size
+      let outputSize: number | undefined;
+      try {
+        const dataPath = await api.desktop.fs.data.path();
+        outputSize = (await api.invoke('dtr_file_size', {
+          path: `${dataPath}/${runPath(run.id)}`,
+        })) as number;
+      } catch { /* size stays undefined */ }
+
       // Update index (meta only, no output)
       const { output: _output, ...meta } = run;
-      runs = [meta, ...runs].slice(0, MAX_RUNS);
+      runs = [{ ...meta, outputSize }, ...runs].slice(0, MAX_RUNS);
       await persistIndex();
     },
 

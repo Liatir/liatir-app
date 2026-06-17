@@ -134,6 +134,17 @@
     return parts.length > 3 ? '…/' + parts.slice(-2).join('/') : '…' + path.slice(-(maxLen - 1));
   }
 
+  // ── search ─────────────────────────────────────────────────────
+  let query = $state('');
+  const filteredFiles = $derived(
+    query.trim() === ''
+      ? visibleFiles
+      : visibleFiles.filter(f =>
+          f.name.toLowerCase().includes(query.toLowerCase()) ||
+          f.path.toLowerCase().includes(query.toLowerCase())
+        )
+  );
+
   // ── actions ────────────────────────────────────────────────────
   let importing = $state(false);
   let addingSample = $state(false);
@@ -323,9 +334,31 @@
         </div>
 
       {:else}
+        <!-- Search bar -->
+        <div class="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 mb-4">
+          <svg class="shrink-0 text-zinc-400" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            bind:value={query}
+            placeholder="Search files…"
+            class="flex-1 text-sm bg-transparent outline-none text-zinc-800 placeholder:text-zinc-400"
+          />
+          {#if query}
+            <button onclick={() => query = ''} class="text-zinc-300 hover:text-zinc-500 transition-colors">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          {/if}
+        </div>
+
+        {#if filteredFiles.length === 0}
+          <p class="text-sm text-zinc-400 text-center py-8">No files match "{query}"</p>
+        {:else}
         <Card>
           <div class="divide-y divide-border">
-            {#each visibleFiles as file (file.id)}
+            {#each filteredFiles as file (file.id)}
               <div class="flex items-center gap-3 px-4 py-3 group">
                 <div class="h-8 w-8 rounded-lg bg-zinc-100 border border-zinc-200 flex items-center justify-center shrink-0">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -344,7 +377,7 @@
                 </span>
 
                 {#if file.size != null}
-                  <span class="shrink-0 text-[11px] text-zinc-400 font-mono hidden sm:block">{fmtBytes(file.size)}</span>
+                  <span class="shrink-0 text-[11px] text-zinc-400 font-mono">{fmtBytes(file.size)}</span>
                 {/if}
 
                 <Select
@@ -371,6 +404,7 @@
             {/each}
           </div>
         </Card>
+        {/if}
       {/if}
 
     </div>

@@ -68,6 +68,22 @@ function createDataFilesStore() {
           const data = parseSaved(raw);
           files = data.files;
           folders = data.folders;
+
+          // Back-fill missing sizes for files imported before size tracking
+          const missing = files.filter(f => f.size == null);
+          if (missing.length > 0) {
+            const updated = await Promise.all(
+              files.map(async (f) => {
+                if (f.size != null) return f;
+                try {
+                  const size = (await api.invoke('dtr_file_size', { path: f.path })) as number;
+                  return { ...f, size };
+                } catch { return f; }
+              })
+            );
+            files = updated;
+            await persist();
+          }
         }
       } catch { files = []; folders = []; }
       finally { loading = false; }

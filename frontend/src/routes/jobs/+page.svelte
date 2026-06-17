@@ -12,25 +12,24 @@
   let expandedJobId = $state<string | null>(null);
   let interval: ReturnType<typeof setInterval>;
 
-  function jobStatusVariant(job: JobEntry): 'running' | 'done' | 'failed' | 'killed' {
-    if (job.status === 'Running') return 'running';
-    if (job.status === 'Killed') return 'killed';
-    if (typeof job.status === 'object' && 'Done' in job.status) return 'done';
-    return 'failed';
+  function jobStatusVariant(job: JobEntry): 'running' | 'done' | 'failed' | 'killed' | 'neutral' {
+    switch (job.status.type) {
+      case 'running': return 'running';
+      case 'done': return 'done';
+      case 'failed': return 'failed';
+      case 'killed': return 'killed';
+      default: return 'neutral';
+    }
   }
 
   function jobStatusLabel(job: JobEntry): string {
-    if (job.status === 'Running') return 'Running';
-    if (job.status === 'Killed') return 'Killed';
-    if (typeof job.status === 'object' && 'Done' in job.status) {
-      const code = (job.status as { Done: { exit_code: number | null } }).Done.exit_code;
-      return code != null ? `Done (${code})` : 'Done';
+    switch (job.status.type) {
+      case 'running': return 'Running';
+      case 'done': return job.status.exitCode != null ? `Done (${job.status.exitCode})` : 'Done';
+      case 'failed': return job.status.exitCode != null ? `Failed (${job.status.exitCode})` : 'Failed';
+      case 'killed': return 'Killed';
+      default: return 'Unknown';
     }
-    if (typeof job.status === 'object' && 'Failed' in job.status) {
-      const code = (job.status as { Failed: { exit_code: number | null } }).Failed.exit_code;
-      return code != null ? `Failed (${code})` : 'Failed';
-    }
-    return 'Unknown';
   }
 
   function toggleExpand(id: string) {
@@ -38,7 +37,7 @@
   }
 
   const sortedJobs = $derived(
-    [...jobsStore.jobs].sort((a, b) => b.started_at_ms - a.started_at_ms)
+    [...jobsStore.jobs].sort((a, b) => b.startedAtMs - a.startedAtMs)
   );
 
   onMount(() => {
@@ -58,7 +57,7 @@
       <Button variant="ghost" size="sm" onclick={() => jobsStore.refresh()} loading={jobsStore.loading}>
         Refresh
       </Button>
-      {#if jobsStore.jobs.some(j => j.status !== 'Running')}
+      {#if jobsStore.jobs.some(j => j.status.type !== 'running')}
         <Button variant="ghost" size="sm" onclick={() => jobsStore.clearDone()}>
           Clear done
         </Button>
@@ -104,12 +103,12 @@
                   {/if}
                 </p>
                 <p class="text-xs text-zinc-600 mt-0.5">
-                  Started {fmtTime(job.started_at_ms)}
+                  Started {fmtTime(job.startedAtMs)}
                 </p>
               </div>
 
               <span class="text-xs text-zinc-500 shrink-0 font-mono">
-                {fmtDuration(job.started_at_ms, job.ended_at_ms ?? undefined)}
+                {fmtDuration(job.startedAtMs, job.endedAtMs ?? undefined)}
               </span>
 
               {#if variant === 'running'}
@@ -150,7 +149,7 @@
                   </div>
                   <div>
                     <dt class="text-zinc-400">Duration</dt>
-                    <dd class="text-zinc-700">{fmtDuration(job.started_at_ms, job.ended_at_ms ?? undefined)}</dd>
+                    <dd class="text-zinc-700">{fmtDuration(job.startedAtMs, job.endedAtMs ?? undefined)}</dd>
                   </div>
                   {#if job.args.length}
                     <div class="col-span-3">

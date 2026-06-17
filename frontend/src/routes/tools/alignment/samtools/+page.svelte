@@ -12,6 +12,7 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { runNativeTool } from '$lib/utils/native-tool';
   import { parseFlagstatResult, flagstatToToolOutput } from '$lib/tools/alignment/samtools';
+  import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import type { ToolOutput } from '$lib/types/tool-output';
 
   // ── dep check ────────────────────────────────────────────────────
@@ -266,41 +267,13 @@
           </div>
 
           <!-- File selector -->
-          <div>
-            <p class="text-xs text-zinc-500 mb-1.5">Select a BAM / SAM / CRAM file</p>
-            {#if bamFiles.length === 0}
-              <div class="rounded-lg border border-dashed border-border bg-surface-2 px-4 py-3 text-sm text-zinc-400 flex items-center justify-between">
-                No BAM/SAM/CRAM files in Data yet.
-                <a href="/data" class="text-brand text-xs font-medium hover:underline">Go to Data →</a>
-              </div>
-            {:else}
-              <div class="space-y-1.5">
-                {#each bamFiles as file (file.id)}
-                  <button
-                    onclick={() => filePath = file.path}
-                    class="w-full flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors
-                      {filePath === file.path
-                        ? 'border-brand bg-brand/5'
-                        : 'border-border bg-surface-2 hover:border-border-2'}"
-                  >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                      stroke={filePath === file.path ? '#4f39f6' : '#a1a1aa'}
-                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
-                      <polyline points="13 2 13 9 20 9" />
-                    </svg>
-                    <span class="flex-1 min-w-0">
-                      <span class="block text-sm font-medium truncate {filePath === file.path ? 'text-brand' : 'text-zinc-800'}">{file.name}</span>
-                      <span class="block text-[11px] text-zinc-400 truncate">{file.path}</span>
-                    </span>
-                    <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-sky-100 text-sky-700 border border-sky-200">
-                      {file.ext}
-                    </span>
-                  </button>
-                {/each}
-              </div>
-            {/if}
-          </div>
+          <FilePickerPopup
+            files={bamFiles}
+            value={filePath}
+            label="BAM / SAM / CRAM file"
+            emptyText="No BAM/SAM/CRAM files in Data yet."
+            onchange={(p) => filePath = p}
+          />
 
           <div class="flex items-center gap-3 pt-1">
             <Button

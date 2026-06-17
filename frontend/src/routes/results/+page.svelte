@@ -3,6 +3,7 @@
   import { page } from '$app/stores';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
+  import Select from '$lib/components/ui/Select.svelte';
   import { analysisRuns, type AnalysisRunMeta } from '$lib/stores/analysisRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import { fmtDuration, fmtBytes } from '$lib/utils';
@@ -23,6 +24,10 @@
   let activeStatus = $state<'all' | 'done' | 'error'>('all');
 
   const allTools = $derived([...new Set(analysisRuns.runs.map(r => r.tool))]);
+  const toolOptions = $derived([
+    { value: 'all', label: 'All tools' },
+    ...allTools.map(t => ({ value: t, label: toolLabel(t) })),
+  ]);
 
   const filtered = $derived(analysisRuns.runs.filter(r => {
     if (activeTool !== 'all' && r.tool !== activeTool) return false;
@@ -87,32 +92,21 @@
   <div class="w-72 shrink-0 border-r border-border bg-surface flex flex-col">
 
     <!-- Filters -->
-    <div class="px-3 pt-3 pb-2 border-b border-border space-y-2">
-      <!-- Tool tabs -->
-      <div class="flex flex-wrap gap-1">
-        <button
-          onclick={() => activeTool = 'all'}
-          class="px-2 py-0.5 rounded text-[11px] font-medium transition-colors
-            {activeTool === 'all' ? 'bg-brand/10 text-brand' : 'text-zinc-500 hover:bg-surface-2'}"
-        >All</button>
-        {#each allTools as tool}
-          <button
-            onclick={() => activeTool = tool}
-            class="px-2 py-0.5 rounded text-[11px] font-medium transition-colors
-              {activeTool === tool ? 'bg-brand/10 text-brand' : 'text-zinc-500 hover:bg-surface-2'}"
-          >{toolLabel(tool)}</button>
-        {/each}
-      </div>
-      <!-- Status filter -->
-      <div class="flex gap-1">
-        {#each [['all', 'All'], ['done', 'Done'], ['error', 'Error']] as [val, lbl]}
-          <button
-            onclick={() => activeStatus = val as typeof activeStatus}
-            class="px-2 py-0.5 rounded text-[11px] font-medium transition-colors
-              {activeStatus === val ? 'bg-zinc-200 text-zinc-700' : 'text-zinc-400 hover:bg-surface-2'}"
-          >{lbl}</button>
-        {/each}
-      </div>
+    <div class="px-3 pt-3 pb-2 border-b border-border flex gap-2">
+      <Select
+        value={activeTool}
+        options={toolOptions}
+        onchange={(v) => activeTool = v}
+      />
+      <Select
+        value={activeStatus}
+        options={[
+          { value: 'all', label: 'Any status' },
+          { value: 'done', label: 'Done' },
+          { value: 'error', label: 'Error' },
+        ]}
+        onchange={(v) => activeStatus = v as typeof activeStatus}
+      />
     </div>
 
     <!-- Count -->
@@ -146,10 +140,7 @@
                 </p>
               </div>
               <p class="text-[10px] text-zinc-400 pl-3">
-                {toolLabel(run.tool)} · {fmtDate(run.startedAt)} · {fmtDuration(run.startedAt, run.endedAt)}
-                {#if run.inputSizes?.length}
-                  · {run.inputSizes.map(fmtBytes).join(', ')}
-                {/if}
+                {toolLabel(run.tool)} · {fmtDate(run.startedAt)} · {fmtDuration(run.startedAt, run.endedAt)}{run.outputSize != null ? ' · ' + fmtBytes(run.outputSize) : ''}
               </p>
             </button>
             <button
@@ -198,7 +189,7 @@
             <div>
               <p class="text-sm font-semibold text-zinc-800">{selectedRun.label}</p>
               <p class="text-xs text-zinc-400 mt-0.5">
-                {toolLabel(selectedRun.tool)} · {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}{selectedRun.inputSizes?.length ? ' · ' + selectedRun.inputSizes.map(fmtBytes).join(', ') : ''}
+                {toolLabel(selectedRun.tool)} · {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}{selectedRun.outputSize != null ? ' · ' + fmtBytes(selectedRun.outputSize) : ''}
               </p>
             </div>
           </div>
@@ -221,7 +212,7 @@
             <div>
               <p class="text-sm font-semibold text-zinc-800">{selectedRun.label}</p>
               <p class="text-xs text-zinc-400 mt-0.5">
-                {toolLabel(selectedRun.tool)} · {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}{selectedRun.inputSizes?.length ? ' · ' + selectedRun.inputSizes.map(fmtBytes).join(', ') : ''}
+                {toolLabel(selectedRun.tool)} · {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}{selectedRun.outputSize != null ? ' · ' + fmtBytes(selectedRun.outputSize) : ''}
               </p>
             </div>
           </div>

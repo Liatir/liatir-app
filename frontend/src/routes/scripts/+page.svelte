@@ -113,9 +113,23 @@
     }
   }
 
+  // ── search ─────────────────────────────────────────────────────
+  let query = $state('');
+  const filteredScripts = $derived(
+    query.trim() === ''
+      ? visibleScripts
+      : visibleScripts.filter(s => s.name.toLowerCase().includes(query.toLowerCase()))
+  );
+
   // ── script actions ─────────────────────────────────────────────
   function fmtDate(ms: number) {
     return new Date(ms).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function fmtBytes(b: number): string {
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 ** 2) return `${(b / 1024).toFixed(1)} KB`;
+    return `${(b / 1024 ** 2).toFixed(1)} MB`;
   }
 
   function openScript(script: SavedScript) {
@@ -294,9 +308,31 @@
         </div>
 
       {:else}
+        <!-- Search bar -->
+        <div class="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 mb-4">
+          <svg class="shrink-0 text-zinc-400" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            bind:value={query}
+            placeholder="Search scripts…"
+            class="flex-1 text-sm bg-transparent outline-none text-zinc-800 placeholder:text-zinc-400"
+          />
+          {#if query}
+            <button onclick={() => query = ''} class="text-zinc-300 hover:text-zinc-500 transition-colors">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          {/if}
+        </div>
+
+        {#if filteredScripts.length === 0}
+          <p class="text-sm text-zinc-400 text-center py-8">No scripts match "{query}"</p>
+        {:else}
         <Card>
           <div class="divide-y divide-border">
-            {#each visibleScripts as script (script.id)}
+            {#each filteredScripts as script (script.id)}
               <div class="flex items-center gap-3 px-4 py-3 group">
                 <div class="h-8 w-8 rounded-lg bg-zinc-100 border border-zinc-200 flex items-center justify-center shrink-0">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -306,7 +342,7 @@
 
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-medium text-zinc-800 truncate">{script.name}</p>
-                  <p class="text-xs text-zinc-400">{fmtDate(script.savedAt)}</p>
+                  <p class="text-xs text-zinc-400">{fmtDate(script.savedAt)}{script.code ? ' · ' + fmtBytes(new TextEncoder().encode(script.code).length) : ''}</p>
                 </div>
 
                 <Select
@@ -358,6 +394,7 @@
             {/each}
           </div>
         </Card>
+        {/if}
       {/if}
 
     </div>

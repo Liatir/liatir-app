@@ -1,14 +1,18 @@
 import { offlab } from '$lib/api';
 
-export type JobStatus = 'Running' | { Done: { exit_code: number | null } } | { Failed: { exit_code: number | null } } | 'Killed';
+export type JobStatus =
+  | { type: 'running' }
+  | { type: 'done'; exitCode: number | null }
+  | { type: 'failed'; exitCode: number | null }
+  | { type: 'killed' };
 
 export interface JobEntry {
   id: string;
   cmd: string;
   args: string[];
   status: JobStatus;
-  started_at_ms: number;
-  ended_at_ms: number | null;
+  startedAtMs: number;
+  endedAtMs: number | null;
 }
 
 function createJobsStore() {
@@ -22,7 +26,7 @@ function createJobsStore() {
     get error() { return error; },
 
     get runningCount() {
-      return jobs.filter((j) => j.status === 'Running').length;
+      return jobs.filter((j) => j.status.type === 'running').length;
     },
 
     async refresh() {

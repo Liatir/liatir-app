@@ -189,9 +189,7 @@ function createSavedScriptsStore() {
       const api = offlab();
       if (!api) return;
 
-      const result = await api.desktop.files.save({ defaultName: `${script.name}.ts` });
-      if (!result) return;
-      const destPath = typeof result === 'string' ? result : (result as { path?: string }).path;
+      const destPath = await api.desktop.files.save(`${script.name}.ts`);
       if (!destPath) return;
 
       await api.invoke('dtr_write_file_path', { path: destPath, content: script.code });

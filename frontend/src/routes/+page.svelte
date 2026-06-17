@@ -22,15 +22,18 @@
   const recentAnalyses = $derived(analysisRuns.runs.slice(0, 5));
   const recentJobs = $derived(
     [...jobsStore.jobs]
-      .sort((a, b) => b.started_at_ms - a.started_at_ms)
+      .sort((a, b) => b.startedAtMs - a.startedAtMs)
       .slice(0, 4)
   );
 
-  function jobStatusVariant(job: JobEntry): 'running' | 'done' | 'failed' | 'killed' {
-    if (job.status === 'Running') return 'running';
-    if (job.status === 'Killed') return 'killed';
-    if (typeof job.status === 'object' && 'Done' in job.status) return 'done';
-    return 'failed';
+  function jobStatusVariant(job: JobEntry): 'running' | 'done' | 'failed' | 'killed' | 'neutral' {
+    switch (job.status.type) {
+      case 'running': return 'running';
+      case 'done': return 'done';
+      case 'failed': return 'failed';
+      case 'killed': return 'killed';
+      default: return 'neutral';
+    }
   }
 
   function fmtDate(ms: number) {
@@ -175,14 +178,14 @@
           <div class="divide-y divide-border">
             {#each recentJobs as job}
               <div class="flex items-center gap-3 px-4 py-3">
-                <Badge variant={jobStatusVariant(job)} pulse={job.status === 'Running'}>
+                <Badge variant={jobStatusVariant(job)} pulse={job.status.type === 'running'}>
                   {jobStatusVariant(job) === 'running' ? 'Running' : jobStatusVariant(job) === 'done' ? 'Done' : jobStatusVariant(job) === 'killed' ? 'Killed' : 'Failed'}
                 </Badge>
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-mono text-zinc-700 truncate">{job.cmd} {job.args.join(' ')}</p>
                 </div>
                 <span class="text-xs text-zinc-400 shrink-0 font-mono">
-                  {fmtDuration(job.started_at_ms, job.ended_at_ms ?? undefined)}
+                  {fmtDuration(job.startedAtMs, job.endedAtMs ?? undefined)}
                 </span>
               </div>
             {/each}
