@@ -8,15 +8,27 @@
     match?: string;
   }
 
-  const nav: NavItem[] = [
+  const mainNav: NavItem[] = [
     { href: '/', label: 'Dashboard' },
     { href: '/data', label: 'Data', match: '/data' },
-    { href: '/scripts', label: 'Scripts', match: '/scripts' },
     { href: '/tools', label: 'Tools', match: '/tools' },
     { href: '/jobs', label: 'Jobs', match: '/jobs' },
     { href: '/deps', label: 'Dependencies', match: '/deps' },
+  ];
+
+  const advancedNav: NavItem[] = [
+    { href: '/scripts', label: 'Scripts', match: '/scripts' },
     { href: '/code', label: 'Code', match: '/code' },
   ];
+
+  let advancedOpen = $state(false);
+
+  $effect(() => {
+    const path = $page.url.pathname;
+    if (path.startsWith('/scripts') || path.startsWith('/code')) {
+      advancedOpen = true;
+    }
+  });
 
   function isActive(item: NavItem): boolean {
     const path = $page.url.pathname;
@@ -39,63 +51,99 @@
 
   <!-- Navigation -->
   <nav class="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
-    {#each nav as item}
-      {@const active = isActive(item)}
-      <a
-        href={item.href}
-        class="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-100
-          {active
-            ? 'bg-brand/10 text-brand font-medium'
-            : 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
+    {#each mainNav as item}
+        {@const active = isActive(item)}
+        <a
+          href={item.href}
+          class="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-100
+            {active
+              ? 'bg-brand/10 text-brand font-medium'
+              : 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
+        >
+          {#if item.href === '/'}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+          {:else if item.match === '/data'}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+              <polyline points="13 2 13 9 20 9" />
+            </svg>
+          {:else if item.match === '/tools'}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M16.24 7.76a6 6 0 0 1 0 8.49M4.93 4.93a10 10 0 0 0 0 14.14M7.76 7.76a6 6 0 0 0 0 8.49" />
+            </svg>
+          {:else if item.match === '/jobs'}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          {:else if item.match === '/deps'}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+              <line x1="12" y1="22.08" x2="12" y2="12" />
+            </svg>
+          {/if}
+
+          <span class="flex-1">{item.label}</span>
+
+          {#if item.match === '/jobs' && jobsStore.runningCount > 0}
+            <span class="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-sky-500/15 px-1.5 text-[10px] font-semibold text-sky-600">
+              {jobsStore.runningCount}
+            </span>
+          {/if}
+        </a>
+      {/each}
+
+    <!-- Advanced section -->
+    <div class="pt-1">
+      <button
+        onclick={() => advancedOpen = !advancedOpen}
+        class="w-full flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-semibold
+               text-zinc-400 uppercase tracking-wider hover:text-zinc-500 transition-colors rounded-lg"
       >
-        {#if item.href === '/'}
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
-          </svg>
-        {:else if item.match === '/data'}
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
-            <polyline points="13 2 13 9 20 9" />
-          </svg>
-        {:else if item.match === '/scripts'}
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="16 18 22 12 16 6" />
-            <polyline points="8 6 2 12 8 18" />
-          </svg>
-        {:else if item.match === '/tools'}
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M16.24 7.76a6 6 0 0 1 0 8.49M4.93 4.93a10 10 0 0 0 0 14.14M7.76 7.76a6 6 0 0 0 0 8.49" />
-          </svg>
-        {:else if item.match === '/jobs'}
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
-        {:else if item.match === '/code'}
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-            <line x1="3" y1="9" x2="21" y2="9" />
-            <line x1="9" y1="21" x2="9" y2="9" />
-          </svg>
-        {:else if item.match === '/deps'}
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-            <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-            <line x1="12" y1="22.08" x2="12" y2="12" />
-          </svg>
-        {/if}
+        <svg
+          width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+          class="transition-transform duration-150 {advancedOpen ? 'rotate-90' : ''}"
+        >
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+        Advanced
+      </button>
 
-        <span class="flex-1">{item.label}</span>
-
-        {#if item.match === '/jobs' && jobsStore.runningCount > 0}
-          <span class="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-sky-500/15 px-1.5 text-[10px] font-semibold text-sky-600">
-            {jobsStore.runningCount}
-          </span>
-        {/if}
-      </a>
-    {/each}
+      {#if advancedOpen}
+        <div class="mt-0.5 space-y-0.5">
+          {#each advancedNav as item}
+            {@const active = isActive(item)}
+            <a
+              href={item.href}
+              class="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-100
+                {active
+                  ? 'bg-brand/10 text-brand font-medium'
+                  : 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
+            >
+              {#if item.match === '/scripts'}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="16 18 22 12 16 6" />
+                  <polyline points="8 6 2 12 8 18" />
+                </svg>
+              {:else if item.match === '/code'}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <line x1="3" y1="9" x2="21" y2="9" />
+                  <line x1="9" y1="21" x2="9" y2="9" />
+                </svg>
+              {/if}
+              <span class="flex-1">{item.label}</span>
+            </a>
+          {/each}
+        </div>
+      {/if}
+    </div>
   </nav>
 
   <!-- Settings -->

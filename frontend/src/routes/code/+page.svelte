@@ -1,11 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
-  import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
+  import Select from '$lib/components/ui/Select.svelte';
   import CodeEditor from '$lib/components/ui/CodeEditor.svelte';
   import { codeIfEmpty } from '$lib/stores/codeEditor.svelte';
-  import { savedScripts } from '$lib/stores/savedScripts.svelte';
+  import { savedScripts, type SavedScript } from '$lib/stores/savedScripts.svelte';
+  import { confirm } from '$lib/stores/confirm.svelte';
 
   // ── editor state ───────────────────────────────────────────────
   let code = $state(codeIfEmpty);
@@ -19,7 +20,6 @@
   let saveNameInput = $state('');
   let saveFolderInput = $state('');
 
-  // Track which script id was last loaded to avoid reloading on update()
   let lastLoadedId: string | null = null;
 
   $effect(() => {
@@ -43,6 +43,31 @@
   });
 
   onMount(() => savedScripts.init());
+
+  // ── script grouping ────────────────────────────────────────────
+  type ScriptGroup = { folder: string; scripts: SavedScript[] };
+
+  const scriptGroups = $derived.by(() => {
+    const root: SavedScript[] = [];
+    const folderMap = new Map<string, SavedScript[]>();
+    for (const s of savedScripts.scripts) {
+      if (!s.folder) {
+        root.push(s);
+      } else {
+        if (!folderMap.has(s.folder)) folderMap.set(s.folder, []);
+        folderMap.get(s.folder)!.push(s);
+      }
+    }
+    const folders: ScriptGroup[] = [...folderMap.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([folder, scripts]) => ({ folder, scripts }));
+    return { root, folders };
+  });
+
+  const folderOptions = $derived([
+    { value: '', label: 'No folder' },
+    ...savedScripts.allFolderPaths().map(p => ({ value: p, label: p })),
+  ]);
 
   // ── execution ──────────────────────────────────────────────────
   const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
@@ -87,15 +112,15 @@
   // ── script list actions ────────────────────────────────────────
   function loadScript(id: string) {
     savedScripts.setActive(id);
-    // $effect will pick up the change
   }
 
   function newScript() {
     savedScripts.setActive(null);
   }
 
-  function deleteScript(id: string) {
-    savedScripts.remove(id);
+  async function deleteScript(id: string, name: string) {
+    const ok = await confirm({ title: 'Delete script', message: `Delete "${name}"?`, confirmLabel: 'Delete' });
+    if (ok) savedScripts.remove(id);
   }
 
   function fmtDate(ms: number) {
@@ -107,8 +132,6 @@
     if (v === null) return 'null';
     try { return JSON.stringify(v, null, 2); } catch { return String(v); }
   }
-
-  const allFolderPaths = $derived(savedScripts.allFolderPaths());
 </script>
 
 <div class="flex h-full overflow-hidden">
@@ -117,7 +140,7 @@
   <div class="w-56 shrink-0 border-r border-border bg-surface flex flex-col">
     <div class="flex items-center justify-between px-3 py-3 border-b border-border">
       <span class="text-xs font-medium text-zinc-600">Scripts</span>
-      <button
+      <!-- <button
         onclick={newScript}
         class="text-zinc-500 hover:text-zinc-800 transition-colors p-0.5 rounded"
         title="New script"
@@ -125,29 +148,28 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
         </svg>
-      </button>
+      </button> -->
     </div>
 
     <div class="flex-1 overflow-y-auto py-1">
       {#if savedScripts.scripts.length === 0}
         <p class="text-xs text-zinc-400 text-center py-6 px-3">No saved scripts yet.<br/>Run and save to keep them.</p>
       {:else}
-        {#each savedScripts.scripts as s (s.id)}
+        <!-- Root scripts -->
+        {#each scriptGroups.root as s (s.id)}
+          {@const active = savedScripts.activeScriptId === s.id}
           <div
             role="button"
             tabindex="0"
             onclick={() => loadScript(s.id)}
             onkeydown={(e) => e.key === 'Enter' && loadScript(s.id)}
             class="w-full text-left px-3 py-2 group transition-colors cursor-pointer
-              {savedScripts.activeScriptId === s.id
-                ? 'bg-brand/15 text-brand-soft'
-                : 'text-zinc-600 hover:bg-surface-2 hover:text-zinc-800'}"
+              {active ? 'bg-brand/15 text-brand-soft' : 'text-zinc-600 hover:bg-surface-2 hover:text-zinc-800'}"
           >
-            <p class="text-xs font-medium truncate">{s.name}</p>
             <div class="flex items-center justify-between mt-0.5">
-              <p class="text-[10px] text-zinc-400">{fmtDate(s.savedAt)}</p>
+              <p class="text-xs font-medium truncate">{s.name}</p>
               <button
-                onclick={(e) => { e.stopPropagation(); deleteScript(s.id); }}
+                onclick={(e) => { e.stopPropagation(); deleteScript(s.id, s.name); }}
                 aria-label="Delete script"
                 class="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-500 transition-all"
               >
@@ -156,7 +178,47 @@
                 </svg>
               </button>
             </div>
+              <p class="text-[10px] text-zinc-400">
+                {fmtDate(s.savedAt)}
+              </p>
           </div>
+        {/each}
+
+        <!-- Folder groups -->
+        {#each scriptGroups.folders as group}
+          <!-- Folder header -->
+          <div class="flex items-center gap-1.5 px-3 pt-2.5 pb-1 {scriptGroups.root.length > 0 || scriptGroups.folders.indexOf(group) > 0 ? 'mt-0.5' : ''}">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-zinc-400">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+            </svg>
+            <span class="text-[10px] font-semibold text-zinc-400 truncate uppercase tracking-wide">{group.folder}</span>
+          </div>
+          <!-- Scripts in this folder -->
+          {#each group.scripts as s (s.id)}
+            {@const active = savedScripts.activeScriptId === s.id}
+            <div
+              role="button"
+              tabindex="0"
+              onclick={() => loadScript(s.id)}
+              onkeydown={(e) => e.key === 'Enter' && loadScript(s.id)}
+              class="w-full text-left pl-6 pr-3 py-2 group transition-colors cursor-pointer
+                {active ? 'bg-brand/15 text-brand-soft' : 'text-zinc-600 hover:bg-surface-2 hover:text-zinc-800'}"
+            >
+              <div class="flex items-center justify-between mt-0.5">
+              <p class="text-xs font-medium truncate">{s.name}</p>
+                <button
+                  onclick={(e) => { e.stopPropagation(); deleteScript(s.id, s.name); }}
+                  aria-label="Delete script"
+                  class="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-500 transition-all"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+                <p class="text-[10px] text-zinc-400">{fmtDate(s.savedAt)}</p>
+            </div>
+          {/each}
         {/each}
       {/if}
     </div>
@@ -176,16 +238,13 @@
                    text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-brand
                    transition-colors w-36"
           />
-          {#if allFolderPaths.length > 0}
-            <select
-              bind:value={saveFolderInput}
-              class="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-sm text-zinc-700 outline-none"
-            >
-              <option value="">Root</option>
-              {#each allFolderPaths as p}
-                <option value={p}>{p}</option>
-              {/each}
-            </select>
+          {#if folderOptions.length > 1}
+            <Select
+              value={saveFolderInput}
+              options={folderOptions}
+              onchange={(v) => (saveFolderInput = v)}
+              class="self-center"
+            />
           {/if}
           <Button variant="primary" size="sm" onclick={saveScript}>Save</Button>
           <Button variant="ghost" size="sm" onclick={() => (showSavePanel = false)}>Cancel</Button>

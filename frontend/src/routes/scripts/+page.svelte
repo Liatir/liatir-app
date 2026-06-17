@@ -4,15 +4,21 @@
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
+  import Select from '$lib/components/ui/Select.svelte';
   import { savedScripts, type SavedScript } from '$lib/stores/savedScripts.svelte';
+  import { confirm } from '$lib/stores/confirm.svelte';
 
   onMount(() => savedScripts.init());
 
   // ── folder tree ────────────────────────────────────────────────
-  let selectedFolder = $state<string | null>(null); // null = All
+  let selectedFolder = $state<string | null>(null);
   let showNewFolderInput = $state(false);
   let newFolderPath = $state('');
   let newFolderInputEl = $state<HTMLInputElement | null>(null);
+
+  let renamingFolder = $state<string | null>(null);
+  let renameValue = $state('');
+  let renameInputEl = $state<HTMLInputElement | null>(null);
 
   type FolderNode = { name: string; path: string; depth: number };
 
@@ -42,9 +48,19 @@
   const visibleScripts = $derived(
     selectedFolder === null ? savedScripts.scripts : savedScripts.byFolder(selectedFolder)
   );
+  const folderOptions = $derived([
+    { value: '', label: 'No folder' },
+    ...flatFolders.map(f => ({ value: f.path, label: f.path })),
+  ]);
 
   $effect(() => {
     if (showNewFolderInput && newFolderInputEl) newFolderInputEl.focus();
+  });
+  $effect(() => {
+    if (renamingFolder !== null && renameInputEl) {
+      renameInputEl.focus();
+      renameInputEl.select();
+    }
   });
 
   function startNewFolder() {
@@ -60,6 +76,41 @@
     const path = newFolderPath.trim().replace(/^\/+|\/+$/g, '');
     if (path) { await savedScripts.createFolder(path); selectedFolder = path; }
     showNewFolderInput = false; newFolderPath = '';
+  }
+
+  function startRename(folderPath: string) {
+    renamingFolder = folderPath;
+    renameValue = folderPath;
+  }
+
+  async function confirmRename(e: KeyboardEvent | FocusEvent) {
+    if (e instanceof KeyboardEvent && e.key !== 'Enter' && e.key !== 'Escape') return;
+    if (e instanceof KeyboardEvent && e.key === 'Escape') {
+      renamingFolder = null; renameValue = ''; return;
+    }
+    const oldPath = renamingFolder!;
+    const newPath = renameValue.trim().replace(/^\/+|\/+$/g, '');
+    if (newPath && newPath !== oldPath) {
+      await savedScripts.renameFolder(oldPath, newPath);
+      if (selectedFolder === oldPath) selectedFolder = newPath;
+      else if (selectedFolder?.startsWith(oldPath + '/')) {
+        selectedFolder = newPath + selectedFolder.slice(oldPath.length);
+      }
+    }
+    renamingFolder = null; renameValue = '';
+  }
+
+  async function deleteFolder(folderPath: string) {
+    const ok = await confirm({
+      title: 'Delete folder',
+      message: `Delete "${folderPath}"? Scripts inside will be moved to root.`,
+      confirmLabel: 'Delete',
+    });
+    if (!ok) return;
+    await savedScripts.removeFolder(folderPath);
+    if (selectedFolder === folderPath || selectedFolder?.startsWith(folderPath + '/')) {
+      selectedFolder = null;
+    }
   }
 
   // ── script actions ─────────────────────────────────────────────
@@ -121,20 +172,65 @@
 
         <!-- Folders -->
         {#each flatFolders as f (f.path)}
-          <button
-            onclick={() => selectedFolder = f.path}
-            style="padding-left: {f.depth * 10 + 12}px"
-            class="w-full flex items-center gap-2 pr-3 py-1.5 text-xs transition-colors
-              {selectedFolder === f.path
-                ? 'bg-brand/8 text-brand font-medium'
-                : 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-700'}"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-            </svg>
-            <span class="flex-1 text-left truncate">{f.name}</span>
-            <span class="text-[10px] text-zinc-400">{savedScripts.byFolder(f.path).length}</span>
-          </button>
+          {#if renamingFolder === f.path}
+            <div class="px-3 py-1.5">
+              <input
+                bind:this={renameInputEl}
+                bind:value={renameValue}
+                placeholder="folder/name"
+                onkeydown={confirmRename}
+                onblur={confirmRename}
+                class="w-full text-xs border border-brand/60 rounded px-2 py-1
+                       bg-surface text-zinc-800 placeholder:text-zinc-400 outline-none"
+              />
+            </div>
+          {:else}
+            <div
+              class="group relative flex items-center transition-colors
+                {selectedFolder === f.path ? 'bg-brand/8' : 'hover:bg-surface-2'}"
+            >
+              <button
+                onclick={() => selectedFolder = f.path}
+                style="padding-left: {f.depth * 10 + 12}px"
+                class="flex-1 flex items-center gap-2 py-1.5 text-xs min-w-0
+                  {selectedFolder === f.path
+                    ? 'text-brand font-medium'
+                    : 'text-zinc-500 group-hover:text-zinc-700'}"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                </svg>
+                <span class="flex-1 text-left truncate">{f.name}</span>
+              </button>
+              <!-- Count: hidden on hover -->
+              <span class="pr-3 text-[10px] text-zinc-400 group-hover:hidden">{savedScripts.byFolder(f.path).length}</span>
+              <!-- Actions: shown on hover -->
+              <div class="pr-1.5 hidden group-hover:flex items-center gap-0">
+                <button
+                  onclick={() => startRename(f.path)}
+                  title="Rename"
+                  class="p-1 text-zinc-400 hover:text-zinc-700 transition-colors rounded"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
+                <button
+                  onclick={() => deleteFolder(f.path)}
+                  title="Delete"
+                  class="p-1 text-zinc-400 hover:text-red-500 transition-colors rounded"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                    <path d="M10 11v6M14 11v6" />
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          {/if}
         {/each}
 
         <!-- New folder input -->
@@ -213,19 +309,11 @@
                   <p class="text-xs text-zinc-400">{fmtDate(script.savedAt)}</p>
                 </div>
 
-                <!-- Move to folder select -->
-                <select
+                <Select
                   value={script.folder}
-                  onchange={(e) => savedScripts.move(script.id, e.currentTarget.value)}
-                  title="Move to folder"
-                  class="shrink-0 text-[10px] border border-border rounded px-1.5 py-1 bg-surface
-                         text-zinc-500 cursor-pointer max-w-22 truncate"
-                >
-                  <option value="">/ Root</option>
-                  {#each flatFolders as f}
-                    <option value={f.path}>{f.path}</option>
-                  {/each}
-                </select>
+                  options={folderOptions}
+                  onchange={(v) => savedScripts.move(script.id, v)}
+                />
 
                 <button
                   onclick={() => openScript(script)}
@@ -241,7 +329,10 @@
                 </button>
 
                 <button
-                  onclick={() => savedScripts.remove(script.id)}
+                  onclick={async () => {
+                    const ok = await confirm({ title: 'Delete script', message: `Delete "${script.name}"?`, confirmLabel: 'Delete' });
+                    if (ok) savedScripts.remove(script.id);
+                  }}
                   aria-label="Delete"
                   class="shrink-0 text-zinc-300 hover:text-red-500 transition-colors"
                 >

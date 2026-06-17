@@ -105,6 +105,22 @@ function createSavedScriptsStore() {
       await persist();
     },
 
+    async renameFolder(oldPath: string, newPath: string) {
+      const trimmed = newPath.trim().replace(/^\/+|\/+$/g, '');
+      if (!trimmed || trimmed === oldPath) return;
+      folders = folders.map(f => {
+        if (f === oldPath) return trimmed;
+        if (f.startsWith(oldPath + '/')) return trimmed + f.slice(oldPath.length);
+        return f;
+      }).sort();
+      scripts = scripts.map(s => {
+        if (s.folder === oldPath) return { ...s, folder: trimmed };
+        if (s.folder.startsWith(oldPath + '/')) return { ...s, folder: trimmed + s.folder.slice(oldPath.length) };
+        return s;
+      });
+      await persist();
+    },
+
     setActive(id: string | null) {
       activeScriptId = id;
     },

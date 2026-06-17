@@ -1,6 +1,7 @@
 <script lang="ts">
   import '../app.css';
   import Sidebar from '$lib/components/layout/Sidebar.svelte';
+  import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
   import { jobsStore } from '$lib/stores/jobs.svelte';
   import { onMount } from 'svelte';
 
@@ -17,3 +18,5 @@
     {@render children()}
   </main>
 </div>
+
+<ConfirmDialog />

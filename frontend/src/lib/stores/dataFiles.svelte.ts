@@ -111,6 +111,22 @@ function createDataFilesStore() {
       await persist();
     },
 
+    async renameFolder(oldPath: string, newPath: string) {
+      const trimmed = newPath.trim().replace(/^\/+|\/+$/g, '');
+      if (!trimmed || trimmed === oldPath) return;
+      folders = folders.map(f => {
+        if (f === oldPath) return trimmed;
+        if (f.startsWith(oldPath + '/')) return trimmed + f.slice(oldPath.length);
+        return f;
+      }).sort();
+      files = files.map(f => {
+        if (f.folder === oldPath) return { ...f, folder: trimmed };
+        if (f.folder.startsWith(oldPath + '/')) return { ...f, folder: trimmed + f.folder.slice(oldPath.length) };
+        return f;
+      });
+      await persist();
+    },
+
     byExt(...exts: string[]): DataFile[] {
       return files.filter(f => exts.includes(f.ext));
     },
