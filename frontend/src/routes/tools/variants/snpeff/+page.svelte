@@ -107,35 +107,49 @@
   }
 
   // ── Database: download ────────────────────────────────────────────
+  let dbBytesDownloaded = $state(0);
+  let dbBytesTotal      = $state<number | null>(null);
+  let dbError           = $state<string | null>(null);
+
   async function downloadDatabase() {
     if (!snpEffStore.config.jarPath) return;
     const api = liatir();
     if (!api) return;
 
     dbDownloading = true;
+    dbBytesDownloaded = 0;
+    dbBytesTotal = null;
+    dbError = null;
     const genome = effectiveGenome;
     const id = `snpeff-db-${genome}-${Date.now()}`;
     dbDownloadId = id;
 
-    try {
-      // Run: java -jar snpEff.jar download -dataDir <dir> <genome>
-      // This spawns a long-running process (can be several GB)
-      const result = await runNativeTool('java', [
-        '-jar', snpEffStore.config.jarPath,
-        'download',
-        '-dataDir', snpEffStore.config.dataDir,
-        genome,
-      ]);
-
-      if (!result.ok) {
-        throw new Error(result.stderr || `SnpEff download exited with code ${result.exitCode}`);
+    // Listen to download progress events
+    const unlisten = await api.desktop.events.on(
+      `managed:progress:${id}`,
+      (evt: any) => {
+        const p = evt.payload as { bytesDownloaded: number; bytesTotal?: number; done: boolean; error?: string };
+        if (!p.done) {
+          dbBytesDownloaded = p.bytesDownloaded;
+          dbBytesTotal = p.bytesTotal ?? null;
+        }
       }
+    ) as unknown as () => void;
+
+    try {
+      await api.invoke('lia_snpeff_download_db', {
+        id,
+        jarPath: snpEffStore.config.jarPath,
+        dataDir: snpEffStore.config.dataDir,
+        genome,
+      } as any);
 
       await snpEffStore.markGenomeDownloaded(genome);
       genomePresent = true;
     } catch (e) {
-      alert(`Database download failed: ${e}`);
+      dbError = String(e);
     } finally {
+      unlisten();
       dbDownloading = false;
       dbDownloadId = null;
     }
@@ -387,6 +401,7 @@
                   </svg>
                   Database not found — download required (1–3 GB depending on genome)
                 </div>
+
                 <Button
                   variant="secondary"
                   disabled={dbDownloading}
@@ -395,8 +410,29 @@
                 >
                   Download {effectiveGenome} database
                 </Button>
+
                 {#if dbDownloading}
-                  <p class="text-xs text-zinc-400">This may take several minutes depending on your connection. The download runs via Java and cannot be paused.</p>
+                  {#if dbBytesTotal}
+                    <div class="space-y-1">
+                      <div class="w-full bg-zinc-200 rounded-full h-1.5">
+                        <div
+                          class="bg-brand h-1.5 rounded-full transition-all"
+                          style="width: {Math.round((dbBytesDownloaded / dbBytesTotal) * 100)}%"
+                        ></div>
+                      </div>
+                      <p class="text-xs text-zinc-400">
+                        {(dbBytesDownloaded / 1_000_000).toFixed(0)} MB / {(dbBytesTotal / 1_000_000).toFixed(0)} MB
+                      </p>
+                    </div>
+                  {:else}
+                    <p class="text-xs text-zinc-400">Downloading… ({(dbBytesDownloaded / 1_000_000).toFixed(0)} MB)</p>
+                  {/if}
+                {/if}
+
+                {#if dbError}
+                  <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 font-mono">
+                    {dbError}
+                  </div>
                 {/if}
               </div>
             {/if}

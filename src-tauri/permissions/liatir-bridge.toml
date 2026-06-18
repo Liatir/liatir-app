@@ -134,6 +134,7 @@ commands.allow = [
   "lia_managed_set_executable",
   "lia_managed_move",
   "lia_managed_remove",
+  "lia_snpeff_download_db",
 
   "lia_startup_cleanup",
   "lia_cleanup_delete_part",
