@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
   import { liatir } from '$lib/api';
   import { versionGte } from '$lib/utils/versions';
   import type { DepRequirement } from '$lib/data/dep-requirements';
@@ -168,6 +169,18 @@
         </div>
       {/if}
       <p class="text-[11px] text-zinc-400 mt-2 font-sans">Restart Liatir after installing.</p>
+      <div class="pt-1.5">
+        <button
+          onclick={() => goto('/deps')}
+          class="inline-flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-700 transition-colors"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+          </svg>
+          Manage all dependencies
+        </button>
+      </div>
     </div>
   {/if}
 

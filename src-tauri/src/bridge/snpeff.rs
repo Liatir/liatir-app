@@ -4,8 +4,23 @@ use tauri::{AppHandle, Emitter};
 
 use crate::bridge::managed_bins::{DownloadProgress, DownloadRegistry, stream_download};
 
-const SNPEFF_S3_BASE: &str = "https://snpeff-public.s3.amazonaws.com/databases";
+const SNPEFF_AZURE_BASE: &str = "https://snpeff.blob.core.windows.net/databases";
 const SNPEFF_VERSIONS: &[&str] = &["v5_4", "v5_3", "v5_2", "v5_1", "v5_0"];
+
+/// Read `database_repository` from snpEff.config in the same dir as the JAR.
+fn read_db_repository(jar_path: &str) -> Option<String> {
+    let config = Path::new(jar_path).parent()?.join("snpEff.config");
+    let content = std::fs::read_to_string(config).ok()?;
+    for line in content.lines() {
+        if let Some(rest) = line.strip_prefix("database_repository") {
+            let url = rest.trim_start_matches([' ', '\t', ':']).trim_end().trim_end_matches('/');
+            if !url.is_empty() {
+                return Some(url.to_string());
+            }
+        }
+    }
+    None
+}
 
 /// Detect SnpEff version from the JAR, e.g. "5.2d" → "v5_2".
 fn detect_snpeff_version(jar_path: &str) -> Option<String> {
@@ -41,7 +56,7 @@ fn detect_snpeff_version(jar_path: &str) -> Option<String> {
     None
 }
 
-fn db_urls(genome: &str, version_hint: Option<&str>) -> Vec<String> {
+fn db_urls(genome: &str, version_hint: Option<&str>, repo_base: &str) -> Vec<String> {
     let mut versions: Vec<String> = Vec::new();
     if let Some(v) = version_hint {
         versions.push(v.to_string());
@@ -53,7 +68,7 @@ fn db_urls(genome: &str, version_hint: Option<&str>) -> Vec<String> {
     }
     versions
         .into_iter()
-        .map(|v| format!("{SNPEFF_S3_BASE}/{v}/snpEff_{v}_{genome}.zip"))
+        .map(|v| format!("{repo_base}/{v}/snpEff_{v}_{genome}.zip"))
         .collect()
 }
 
@@ -130,7 +145,9 @@ pub async fn lia_snpeff_download_db(
     genome: String,
 ) -> Result<(), String> {
     let version_hint = detect_snpeff_version(&jar_path);
-    let urls = db_urls(&genome, version_hint.as_deref());
+    let repo_base = read_db_repository(&jar_path)
+        .unwrap_or_else(|| SNPEFF_AZURE_BASE.to_string());
+    let urls = db_urls(&genome, version_hint.as_deref(), &repo_base);
 
     let zip_path = format!("{data_dir}/{genome}-db.zip");
     let part_path = format!("{zip_path}.part");

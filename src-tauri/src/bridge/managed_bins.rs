@@ -19,13 +19,13 @@ impl DownloadRegistry {
         Self { active: Mutex::new(HashMap::new()) }
     }
 
-    fn register(&self, id: &str) -> Arc<AtomicBool> {
+    pub(crate) fn register(&self, id: &str) -> Arc<AtomicBool> {
         let flag = Arc::new(AtomicBool::new(false));
         self.active.lock().unwrap().insert(id.to_string(), Arc::clone(&flag));
         flag
     }
 
-    fn unregister(&self, id: &str) {
+    pub(crate) fn unregister(&self, id: &str) {
         self.active.lock().unwrap().remove(id);
     }
 
