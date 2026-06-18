@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.dtrReadyEventListener = exports.dtrInitiators = exports.DesktoprInstance = void 0;
+exports.liaReadyEventListener = exports.liaInitiators = exports.DesktoprInstance = void 0;
 // import { listenForEvent } from "../_helpers";
 const constants_1 = require("../constants");
 exports.DesktoprInstance = {
@@ -15,7 +15,7 @@ exports.DesktoprInstance = {
         return window?.Desktopr;
     }
 };
-const dtrInitiators = async () => {
+const liaInitiators = async () => {
     try {
         if (!exports.DesktoprInstance.ready())
             throw ("Desktopr instance not found");
@@ -27,6 +27,6 @@ const dtrInitiators = async () => {
         console.error(error);
     }
 };
-exports.dtrInitiators = dtrInitiators;
-const dtrReadyEventListener = (callback) => window.addEventListener(constants_1.READY_EVENT_NAME, () => callback());
-exports.dtrReadyEventListener = dtrReadyEventListener;
+exports.liaInitiators = liaInitiators;
+const liaReadyEventListener = (callback) => window.addEventListener(constants_1.READY_EVENT_NAME, () => callback());
+exports.liaReadyEventListener = liaReadyEventListener;

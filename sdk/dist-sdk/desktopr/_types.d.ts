@@ -15,7 +15,7 @@ import type { NetworkInterface } from "../modules/rs/network/_types";
 import type { GlobalVariablesInterface } from "../modules/rs/globalVariables/_types";
 import { WindowTauri } from "../core/_types";
 import { PluginsInterface } from "../modules/rs/plugins/_types";
-export type DtrPlatform = "macos" | "linux" | "windows";
+export type LiaPlatform = "macos" | "linux" | "windows";
 /**
  * Desktopr API exposed in the webview.
  *

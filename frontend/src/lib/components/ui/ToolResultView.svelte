@@ -3,7 +3,7 @@
   import Button from './Button.svelte';
   import InfoPopup from './InfoPopup.svelte';
   import PlotlyChart from './PlotlyChart.svelte';
-  import type { ToolOutput, StatsSection, NumberSection, PlotlySection, TextSection } from '$lib/types/tool-output';
+  import type { ToolOutput, StatsSection, NumberSection, PlotlySection, TextSection, TableSection } from '$lib/types/tool-output';
   import type { RunOutputFile } from '$lib/types/pipeline';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { liatir } from '$lib/api';
@@ -43,9 +43,9 @@
     next.add(file.path);
     savingAs = next;
     try {
-      const destPath = await api.invoke('dtr_file_save', { defaultName: file.label + '.' + file.ext }) as string;
+      const destPath = await api.invoke('lia_file_save', { defaultName: file.label + '.' + file.ext }) as string;
       if (!destPath) return;
-      await api.invoke('dtr_fs_copy', { src: file.path, dest: destPath });
+      await api.invoke('lia_fs_copy', { src: file.path, dest: destPath });
     } finally {
       const s = new Set(savingAs);
       s.delete(file.path);
@@ -199,6 +199,34 @@
           >
             {expanded ? 'Show less' : `Show all ${lines.length.toLocaleString()} lines`}
           </button>
+        {/if}
+      </Card>
+    {:else if section.type === 'table'}
+      {@const s = section as TableSection}
+      <Card class="p-4">
+        <p class="text-xs text-zinc-500 mb-3">{s.label}</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left border-collapse">
+            <thead>
+              <tr>
+                {#each s.headers as header}
+                  <th class="px-3 py-2 font-medium text-zinc-500 bg-zinc-50 border-b border-border">{header}</th>
+                {/each}
+              </tr>
+            </thead>
+            <tbody>
+              {#each s.rows as row, i}
+                <tr class="{i % 2 === 0 ? '' : 'bg-zinc-50/50'} hover:bg-brand/5 transition-colors">
+                  {#each row as cell}
+                    <td class="px-3 py-2 text-zinc-700 border-b border-border/50 font-mono">{cell}</td>
+                  {/each}
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+        {#if s.rows.length === 0}
+          <p class="text-xs text-zinc-400 text-center py-4">No rows</p>
         {/if}
       </Card>
     {/if}

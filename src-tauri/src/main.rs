@@ -57,6 +57,7 @@ fn main() {
   let mut builder = tauri::Builder::default();
 
   builder = builder.manage(bridge::jobs::JobRegistry::new());
+  builder = builder.manage(bridge::managed_bins::DownloadRegistry::new());
 
   builder = builder.manage(CloseGuard {
     closing: AtomicBool::new(false),
@@ -135,7 +136,7 @@ fn main() {
     install_panic_hook(app.handle().clone(), version);
 
     // Run logs retention on boot.
-    let _ = dtr_logs_run_retention(app.handle().clone());
+    let _ = lia_logs_run_retention(app.handle().clone());
 
     // Global Shortcut.
     app.handle().plugin(
@@ -202,7 +203,7 @@ fn main() {
 
           // Close for real.
           let window_label = window.label().to_string();
-          let _ = dtr_win_close(app.clone(), window_label);
+          let _ = lia_win_close(app.clone(), window_label);
         }
 
         WindowEvent::Resized(size) => {
@@ -239,169 +240,178 @@ fn main() {
     })
     .invoke_handler(tauri::generate_handler![
       // notifications
-      dtr_notification_state,
-      dtr_request_permission,
-      dtr_notify,
+      lia_notification_state,
+      lia_request_permission,
+      lia_notify,
 
       // clipboard
-      dtr_clipboard_write,
-      dtr_clipboard_read,
+      lia_clipboard_write,
+      lia_clipboard_read,
 
       // files
-      dtr_file_open,
-      dtr_file_save,
-      dtr_file_open_with_bytes,
+      lia_file_open,
+      lia_file_save,
+      lia_file_open_with_bytes,
 
       // app
-      dtr_app_info,
-      dtr_app_exit,
+      lia_app_info,
+      lia_app_exit,
 
       // global_vars
-      dtr_global_vars_get,
-      dtr_global_vars_set,
-      dtr_global_vars_remove,
-      dtr_global_vars_list,
+      lia_global_vars_get,
+      lia_global_vars_set,
+      lia_global_vars_remove,
+      lia_global_vars_list,
 
       // window
-      dtr_win_minimize,
-      dtr_win_maximize,
-      dtr_win_fullscreen,
-      dtr_win_open,
-      dtr_win_close,
-      dtr_win_get_info,
+      lia_win_minimize,
+      lia_win_maximize,
+      lia_win_fullscreen,
+      lia_win_open,
+      lia_win_close,
+      lia_win_get_info,
 
       // events
-      dtr_event_emit,
-      dtr_event_emit_to,
-      dtr_event_emit_to_current_window,
+      lia_event_emit,
+      lia_event_emit_to,
+      lia_event_emit_to_current_window,
 
       // fs
-      dtr_fs_list_dir,
-      dtr_fs_mkdir,
-      dtr_fs_rm,
-      dtr_fs_stat,
-      dtr_fs_write_text,
-      dtr_fs_read_text,
-      dtr_fs_write_bytes,
-      dtr_fs_read_bytes,
-      dtr_fs_exists,
-      dtr_fs_move,
-      dtr_fs_copy,
-      dtr_fs_clear_cache,
-      dtr_fs_clear_data,
-      dtr_fs_paths,
+      lia_fs_list_dir,
+      lia_fs_mkdir,
+      lia_fs_rm,
+      lia_fs_stat,
+      lia_fs_write_text,
+      lia_fs_read_text,
+      lia_fs_write_bytes,
+      lia_fs_read_bytes,
+      lia_fs_exists,
+      lia_fs_move,
+      lia_fs_copy,
+      lia_fs_clear_cache,
+      lia_fs_clear_data,
+      lia_fs_paths,
 
       // fs trash
-      dtr_fs_trash_list_dir,
-      dtr_fs_trash_stat,
-      dtr_fs_trash_exists,
-      dtr_fs_trash_read_text,
-      dtr_fs_trash_read_bytes,
-      dtr_fs_data_recover_trash,
-      dtr_fs_data_clear_trash,
+      lia_fs_trash_list_dir,
+      lia_fs_trash_stat,
+      lia_fs_trash_exists,
+      lia_fs_trash_read_text,
+      lia_fs_trash_read_bytes,
+      lia_fs_data_recover_trash,
+      lia_fs_data_clear_trash,
 
       // fs diagnostics
-      dtr_fs_diagnostics_list_dir,
-      dtr_fs_diagnostics_read_bytes,
-      dtr_fs_diagnostics_stat,
-      dtr_fs_diagnostics_read_text,
-      dtr_fs_diagnostics_rm,
-      dtr_fs_diagnostics_clear,
-      dtr_fs_diagnostics_exists,
+      lia_fs_diagnostics_list_dir,
+      lia_fs_diagnostics_read_bytes,
+      lia_fs_diagnostics_stat,
+      lia_fs_diagnostics_read_text,
+      lia_fs_diagnostics_rm,
+      lia_fs_diagnostics_clear,
+      lia_fs_diagnostics_exists,
 
       // menu
-      dtr_menu_set_enabled,
-      dtr_menu_set_checked,
-      dtr_init_menu_from_json,
-      dtr_init_menu_from_file,
-      dtr_init_menu_for_window_from_json,
+      lia_menu_set_enabled,
+      lia_menu_set_checked,
+      lia_init_menu_from_json,
+      lia_init_menu_from_file,
+      lia_init_menu_for_window_from_json,
 
       // diagnostics
-      dtr_logs_get_privacy,
-      dtr_logs_set_privacy,
-      dtr_logs_run_retention,
-      dtr_logs_list_files,
-      dtr_logs_read_file,
-      dtr_logs_record_js_error,
-      dtr_logs_record_native_error,
-      dtr_logs_record_error,
-      dtr_logs_new_record,
-      dtr_logs_export_zip,
+      lia_logs_get_privacy,
+      lia_logs_set_privacy,
+      lia_logs_run_retention,
+      lia_logs_list_files,
+      lia_logs_read_file,
+      lia_logs_record_js_error,
+      lia_logs_record_native_error,
+      lia_logs_record_error,
+      lia_logs_new_record,
+      lia_logs_export_zip,
 
       // network
-      dtr_network_get_status,
-      dtr_network_ping,
-      dtr_network_resolve,
-      dtr_network_bandwidth_estimate,
-      dtr_network_set_monitor,
-      dtr_network_stop_monitor,
+      lia_network_get_status,
+      lia_network_ping,
+      lia_network_resolve,
+      lia_network_bandwidth_estimate,
+      lia_network_set_monitor,
+      lia_network_stop_monitor,
 
       // autostart
-      dtr_get_autostart_mode,
-      dtr_set_autostart_mode,
-      dtr_autostart_enable,
-      dtr_autostart_disable,
-      dtr_autostart_status,
+      lia_get_autostart_mode,
+      lia_set_autostart_mode,
+      lia_autostart_enable,
+      lia_autostart_disable,
+      lia_autostart_status,
 
       // badge
-      dtr_badge_set,
-      dtr_badge_clear,
+      lia_badge_set,
+      lia_badge_clear,
 
       // context_menu
-      dtr_context_menu_popup,
+      lia_context_menu_popup,
 
       // plugins
-      dtr_plugin_status,
-      dtr_plugin_paths,
-      dtr_fastqc_sample_path,
-      dtr_plugin_storage_clear,
-      dtr_plugin_call,
-      dtr_plugin_clear_all_jobs,
-      dtr_plugin_add_module,
-      dtr_plugin_pick_and_add_module,
-      dtr_plugin_remove_module,
-      dtr_plugin_list_modules,
+      lia_plugin_status,
+      lia_plugin_paths,
+      lia_fastqc_sample_path,
+      lia_plugin_storage_clear,
+      lia_plugin_call,
+      lia_plugin_clear_all_jobs,
+      lia_plugin_add_module,
+      lia_plugin_pick_and_add_module,
+      lia_plugin_remove_module,
+      lia_plugin_list_modules,
 
       // sidecar
-      dtr_sidecar_run,
+      lia_sidecar_run,
 
       // jobs
-      dtr_jobs_spawn,
-      dtr_jobs_kill,
-      dtr_jobs_status,
-      dtr_jobs_list,
-      dtr_jobs_clear_done,
-      dtr_jobs_get_output,
+      lia_jobs_spawn,
+      lia_jobs_kill,
+      lia_jobs_status,
+      lia_jobs_list,
+      lia_jobs_clear_done,
+      lia_jobs_get_output,
 
       // deps
-      dtr_deps_check,
-      dtr_deps_check_many,
+      lia_deps_check,
+      lia_deps_check_many,
 
       // managed binaries
-      dtr_managed_download,
-      dtr_managed_extract,
-      dtr_managed_find_binary,
-      dtr_managed_set_executable,
-      dtr_managed_move,
-      dtr_managed_remove,
+      lia_managed_download,
+      lia_managed_download_cancel,
+      lia_managed_verify_sha256,
+      lia_managed_extract,
+      lia_managed_find_binary,
+      lia_managed_set_executable,
+      lia_managed_move,
+      lia_managed_remove,
+
+      // startup cleanup
+      lia_startup_cleanup,
+      lia_cleanup_delete_part,
+
+      // demo files
+      lia_init_demo_files,
 
       // .liatir modules
-      dtr_liatir_read_manifest,
-      dtr_liatir_run,
+      lia_liatir_read_manifest,
+      lia_liatir_run,
 
       // file utilities
-      dtr_file_size,
-      dtr_read_file_text,
-      dtr_write_file_path,
-      dtr_preview_file,
+      lia_file_size,
+      lia_read_file_text,
+      lia_write_file_path,
+      lia_preview_file,
 
       // test commands only in dev
       #[cfg(debug_assertions)]
-      dtr_logs_test_record_n,
+      lia_logs_test_record_n,
       #[cfg(debug_assertions)]
-      dtr_logs_test_panic,
+      lia_logs_test_panic,
       #[cfg(debug_assertions)]
-      dtr_logs_test_force_retention,
+      lia_logs_test_force_retention,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

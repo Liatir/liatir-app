@@ -38,7 +38,7 @@ pub struct SidecarResult {
 /// # Current registered sidecars (none — add as needed):
 ///   (empty — this is the scaffolding entry point)
 #[tauri::command]
-pub async fn dtr_sidecar_run(
+pub async fn lia_sidecar_run(
     app: AppHandle,
     // Name matches the key in bundle.externalBin (no platform suffix).
     // TODO: restrict to an allowlist of known bio tool names once real

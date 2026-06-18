@@ -4,11 +4,11 @@ import { closeWindow, newWindow } from "./_helpers";
 export function buildWindow(core: { invoke: LiatirAPI["invoke"] }): WindowInterface {
   const randomWindowLabel: string = `w_${Math.random().toString(36).substring(2, 2 + 8)}`
   return {
-    minimize: (label?: string): Promise<void> => core.invoke("dtr_win_minimize", { label: label??"main" }),
-    maximizeToggle: (label?: string): Promise<void> => core.invoke("dtr_win_maximize", { label: label??"main" }),
-    fullscreen: (enable: boolean, label?: string): Promise<void> => core.invoke("dtr_win_fullscreen", { enable, label: label??"main" }),
+    minimize: (label?: string): Promise<void> => core.invoke("lia_win_minimize", { label: label??"main" }),
+    maximizeToggle: (label?: string): Promise<void> => core.invoke("lia_win_maximize", { label: label??"main" }),
+    fullscreen: (enable: boolean, label?: string): Promise<void> => core.invoke("lia_win_fullscreen", { enable, label: label??"main" }),
     new: async (options?: NewWindowOptions): Promise<void> => newWindow(core, options),
     close: (label: string): Promise<void> => closeWindow(core, label),
-    getInfo: (label?: string): Promise<WindowInfo> => core.invoke("dtr_win_get_info", { label }),
+    getInfo: (label?: string): Promise<WindowInfo> => core.invoke("lia_win_get_info", { label }),
   };
 }

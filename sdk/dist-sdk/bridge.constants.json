@@ -1,5 +1,5 @@
 {
     "appUrl": "http://blank.html",
     "apiVersion": "2.2.0",
-    "companionWindowLabelPrefix": "dtr-cache-only-window-"
+    "companionWindowLabelPrefix": "lia-cache-only-window-"
 }

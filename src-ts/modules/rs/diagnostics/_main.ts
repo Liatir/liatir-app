@@ -8,7 +8,7 @@ export function buildDiagnostics(core: { invoke: LiatirAPI["invoke"] }): Diagnos
     settings: {
       // set: mappa ai parametri snake_case attesi da Rust (tutti opzionali)
       set: (settings?: PrivacySettings) => diagnosticsSettings(core, settings),
-      get: () => core.invoke("dtr_logs_get_privacy", {}),
+      get: () => core.invoke("lia_logs_get_privacy", {}),
     },
 
     // SOLO analytics (Rust vuole AnalyticsRecord), usa key record_type
@@ -19,7 +19,7 @@ export function buildDiagnostics(core: { invoke: LiatirAPI["invoke"] }): Diagnos
       appVersion?: string
     ) => {
       const v = await deriveAppVersion(appVersion);
-      return await core.invoke("dtr_logs_new_record", {
+      return await core.invoke("lia_logs_new_record", {
         recordType,
         payload,
         env,
@@ -30,32 +30,32 @@ export function buildDiagnostics(core: { invoke: LiatirAPI["invoke"] }): Diagnos
     newError: {
       js: async (payload: ErrorPayload, appVersion?: string) => {
         const v = await deriveAppVersion(appVersion);
-        return await core.invoke("dtr_logs_record_js_error", { payload, appVersion: v})
+        return await core.invoke("lia_logs_record_js_error", { payload, appVersion: v})
       },
 
       native: async (payload: ErrorPayload, appVersion?: string) => {
         const v = await deriveAppVersion(appVersion);
-        return await core.invoke("dtr_logs_record_native_error", { payload, appVersion: v})
+        return await core.invoke("lia_logs_record_native_error", { payload, appVersion: v})
       },
 
       // Rust richiede 'env' obbligatorio: di default "generic" se non passato
       generic: async (payload: ErrorPayload, env = "generic", appVersion?: string) => {
         const v = await deriveAppVersion(appVersion);
-        return await core.invoke("dtr_logs_record_error", { payload, env, appVersion: v})
+        return await core.invoke("lia_logs_record_error", { payload, env, appVersion: v})
       },
     },
 
     readRecordsFile: (relPath: string) =>
-      core.invoke<string>("dtr_logs_read_file", { relPath }),
+      core.invoke<string>("lia_logs_read_file", { relPath }),
 
-    // qui avevi chiamato dtr_logs_read_file: correggo su dtr_logs_list_files
+    // qui avevi chiamato lia_logs_read_file: correggo su lia_logs_list_files
     listRecordsFiles: (area: DiagnosticsArea) =>
-      core.invoke("dtr_logs_list_files", { area }),
+      core.invoke("lia_logs_list_files", { area }),
 
-    runRetention: () => core.invoke("dtr_logs_run_retention", {}),
+    runRetention: () => core.invoke("lia_logs_run_retention", {}),
 
     export: () =>
-      core.invoke<string>("dtr_logs_export_zip", {}),
+      core.invoke<string>("lia_logs_export_zip", {}),
 
     test: buildDiagnosticsTestFunctions(core),
   };

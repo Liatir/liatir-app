@@ -58,7 +58,7 @@ function createModulesStore() {
       const path = result?.paths?.[0];
       if (!path) return null;
 
-      const manifest = await api.invoke('dtr_liatir_read_manifest', { path }) as {
+      const manifest = await api.invoke('lia_liatir_read_manifest', { path }) as {
         name: string;
         version: string;
         description?: string;

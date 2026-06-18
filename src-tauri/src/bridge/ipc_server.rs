@@ -104,7 +104,7 @@ async fn handle_invoke(
 
 async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<Value> {
     match cmd {
-        "dtr_jobs_spawn" => {
+        "lia_jobs_spawn" => {
             let cmd_str = payload["cmd"]
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("cmd required"))?
@@ -115,115 +115,115 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 .unwrap_or_default();
             let cwd = payload["cwd"].as_str().map(String::from);
 
-            let result = crate::bridge::jobs::dtr_jobs_spawn(app.clone(), cmd_str, args, cwd)
+            let result = crate::bridge::jobs::lia_jobs_spawn(app.clone(), cmd_str, args, cwd)
                 .await
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(result)
         }
 
-        "dtr_jobs_kill" => {
+        "lia_jobs_kill" => {
             let job_id = payload["jobId"]
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("jobId required"))?
                 .to_string();
-            let ok = crate::bridge::jobs::dtr_jobs_kill(app.clone(), job_id)
+            let ok = crate::bridge::jobs::lia_jobs_kill(app.clone(), job_id)
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(serde_json::json!(ok))
         }
 
-        "dtr_jobs_status" => {
+        "lia_jobs_status" => {
             let job_id = payload["jobId"]
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("jobId required"))?
                 .to_string();
-            let entry = crate::bridge::jobs::dtr_jobs_status(app.clone(), job_id)
+            let entry = crate::bridge::jobs::lia_jobs_status(app.clone(), job_id)
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(serde_json::to_value(entry)?)
         }
 
-        "dtr_jobs_list" => {
-            let list = crate::bridge::jobs::dtr_jobs_list(app.clone())
+        "lia_jobs_list" => {
+            let list = crate::bridge::jobs::lia_jobs_list(app.clone())
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(serde_json::to_value(list)?)
         }
 
-        "dtr_jobs_get_output" => {
+        "lia_jobs_get_output" => {
             let job_id = payload["jobId"]
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("jobId required"))?
                 .to_string();
             let since = payload["since"].as_u64().map(|n| n as usize);
-            let output = crate::bridge::jobs::dtr_jobs_get_output(app.clone(), job_id, since)
+            let output = crate::bridge::jobs::lia_jobs_get_output(app.clone(), job_id, since)
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(output)
         }
 
-        "dtr_deps_check" => {
+        "lia_deps_check" => {
             let name = payload["name"]
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("name required"))?
                 .to_string();
-            let result = crate::bridge::deps::dtr_deps_check(name)
+            let result = crate::bridge::deps::lia_deps_check(name)
                 .await
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(result)
         }
 
-        "dtr_deps_check_many" => {
+        "lia_deps_check_many" => {
             let names: Vec<String> = payload["names"]
                 .as_array()
                 .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect())
                 .ok_or_else(|| anyhow::anyhow!("names required"))?;
-            let result = crate::bridge::deps::dtr_deps_check_many(names)
+            let result = crate::bridge::deps::lia_deps_check_many(names)
                 .await
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(serde_json::to_value(result)?)
         }
 
-        "dtr_fs_paths" => {
-            let result = crate::bridge::fs::dtr_fs_paths(app.clone())
+        "lia_fs_paths" => {
+            let result = crate::bridge::fs::lia_fs_paths(app.clone())
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(serde_json::to_value(result)?)
         }
 
-        "dtr_liatir_read_manifest" => {
+        "lia_liatir_read_manifest" => {
             let path = payload["path"]
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("path required"))?
                 .to_string();
-            crate::bridge::modules::dtr_liatir_read_manifest(path)
+            crate::bridge::modules::lia_liatir_read_manifest(path)
                 .await
                 .map_err(|e| anyhow::anyhow!(e))
         }
 
-        "dtr_liatir_run" => {
+        "lia_liatir_run" => {
             let path = payload["path"]
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("path required"))?
                 .to_string();
             let inputs = payload["inputs"].clone();
-            crate::bridge::modules::dtr_liatir_run(app.clone(), path, inputs)
+            crate::bridge::modules::lia_liatir_run(app.clone(), path, inputs)
                 .await
                 .map_err(|e| anyhow::anyhow!(e))
         }
 
-        "dtr_read_file_text" => {
+        "lia_read_file_text" => {
             let path = payload["path"]
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("path required"))?
                 .to_string();
-            let text = crate::bridge::managed_bins::dtr_read_file_text(path)
+            let text = crate::bridge::managed_bins::lia_read_file_text(path)
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(Value::String(text))
         }
 
-        "dtr_preview_file" => {
+        "lia_preview_file" => {
             let path = payload["path"]
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("path required"))?
                 .to_string();
             let lines = payload["lines"].as_u64().unwrap_or(50) as usize;
-            let text = crate::bridge::managed_bins::dtr_preview_file(path, lines)
+            let text = crate::bridge::managed_bins::lia_preview_file(path, lines)
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(Value::String(text))
         }

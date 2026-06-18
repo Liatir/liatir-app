@@ -15,7 +15,7 @@ use wasmtime_wasi::{
 };
 
 // Reuse the existing file picker helper.
-use crate::bridge::files::dtr_file_open_with_bytes;
+use crate::bridge::files::lia_file_open_with_bytes;
 
 static PLUGIN_REQ_COUNTER: AtomicU64 = AtomicU64::new(1);
 
@@ -228,7 +228,7 @@ fn plugin_storage_dir(app: &AppHandle, module: &str) -> Result<PathBuf> {
     Ok(dir)
 }
 
-pub fn dtr_plugin_storage_dir(app: &AppHandle, module: &str) -> Result<PathBuf> {
+pub fn lia_plugin_storage_dir(app: &AppHandle, module: &str) -> Result<PathBuf> {
     plugin_storage_dir(app, module)
 }
 
@@ -274,7 +274,7 @@ fn bytes_to_string(bytes: impl AsRef<[u8]>) -> String {
 // ---------------------------------
 
 #[tauri::command]
-pub fn dtr_plugin_status() -> serde_json::Value {
+pub fn lia_plugin_status() -> serde_json::Value {
     serde_json::json!({
         "ready": true,
         "runtime": "native-wasi"
@@ -282,7 +282,7 @@ pub fn dtr_plugin_status() -> serde_json::Value {
 }
 
 #[tauri::command]
-pub fn dtr_plugin_paths(app: AppHandle, module: String) -> Result<serde_json::Value, String> {
+pub fn lia_plugin_paths(app: AppHandle, module: String) -> Result<serde_json::Value, String> {
     let modules = external_modules_dir(&app).map_err(|e| e.to_string())?;
     let storage = plugin_storage_dir(&app, &module).map_err(|e| e.to_string())?;
     let sandbox = plugin_sandbox_dir(&app).map_err(|e| e.to_string())?;
@@ -295,7 +295,7 @@ pub fn dtr_plugin_paths(app: AppHandle, module: String) -> Result<serde_json::Va
 }
 
 #[tauri::command]
-pub fn dtr_fastqc_sample_path(app: AppHandle) -> Result<String, String> {
+pub fn lia_fastqc_sample_path(app: AppHandle) -> Result<String, String> {
     static BYTES: &[u8] = include_bytes!("../../../test-files/fastqc/sample.fastq");
     let storage = plugin_storage_dir(&app, "fastqc.wasm").map_err(|e| e.to_string())?;
     let dest = storage.join("sample.fastq");
@@ -306,7 +306,7 @@ pub fn dtr_fastqc_sample_path(app: AppHandle) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub fn dtr_plugin_storage_clear(app: AppHandle, module: String) -> Result<bool, String> {
+pub fn lia_plugin_storage_clear(app: AppHandle, module: String) -> Result<bool, String> {
     let storage = plugin_storage_dir(&app, &module).map_err(|e| e.to_string())?;
 
     if storage.exists() {
@@ -319,7 +319,7 @@ pub fn dtr_plugin_storage_clear(app: AppHandle, module: String) -> Result<bool, 
 }
 
 #[tauri::command]
-pub fn dtr_plugin_clear_all_jobs(app: AppHandle) -> Result<bool, String> {
+pub fn lia_plugin_clear_all_jobs(app: AppHandle) -> Result<bool, String> {
     let sandbox = plugin_sandbox_dir(&app).map_err(|e| e.to_string())?;
 
     if sandbox.exists() {
@@ -332,7 +332,7 @@ pub fn dtr_plugin_clear_all_jobs(app: AppHandle) -> Result<bool, String> {
 }
 
 #[tauri::command]
-pub async fn dtr_plugin_call(
+pub async fn lia_plugin_call(
     app: AppHandle,
     module: String,
     payload: serde_json::Value,
@@ -396,7 +396,7 @@ fn validate_host_read_paths(raw: Vec<String>) -> Result<Vec<PathBuf>> {
 }
 
 #[tauri::command]
-pub fn dtr_plugin_add_module(
+pub fn lia_plugin_add_module(
     app: AppHandle,
     name: String,
     contents: Vec<u8>,
@@ -434,13 +434,13 @@ pub fn dtr_plugin_add_module(
 }
 
 #[tauri::command]
-pub async fn dtr_plugin_pick_and_add_module(
+pub async fn lia_plugin_pick_and_add_module(
     app: AppHandle,
     default_name: Option<String>,
     max_bytes: Option<u64>,
 ) -> Result<serde_json::Value, String> {
     let allowed = Some(vec!["wasm".to_string()]);
-    let picked = dtr_file_open_with_bytes(app.clone(), false, allowed, max_bytes).await?;
+    let picked = lia_file_open_with_bytes(app.clone(), false, allowed, max_bytes).await?;
 
     let file = match picked.files.into_iter().next() {
         Some(f) => f,
@@ -485,7 +485,7 @@ pub async fn dtr_plugin_pick_and_add_module(
 }
 
 #[tauri::command]
-pub fn dtr_plugin_remove_module(app: AppHandle, name: String) -> Result<bool, String> {
+pub fn lia_plugin_remove_module(app: AppHandle, name: String) -> Result<bool, String> {
     let base = external_modules_dir(&app).map_err(|e| e.to_string())?;
 
     if name.contains(std::path::is_separator) {
@@ -502,7 +502,7 @@ pub fn dtr_plugin_remove_module(app: AppHandle, name: String) -> Result<bool, St
 }
 
 #[tauri::command]
-pub fn dtr_plugin_list_modules(app: AppHandle) -> Result<Vec<String>, String> {
+pub fn lia_plugin_list_modules(app: AppHandle) -> Result<Vec<String>, String> {
     let dir = external_modules_dir(&app).map_err(|e| e.to_string())?;
     let mut out = vec![];
 
@@ -609,7 +609,7 @@ fn run_plugin_job(
     };
 
     if let Err(cleanup_err) = cleanup_result {
-        eprintln!("[dtr-plugin] sandbox cleanup failed: {cleanup_err}");
+        eprintln!("[lia-plugin] sandbox cleanup failed: {cleanup_err}");
     }
 
     Ok(response)

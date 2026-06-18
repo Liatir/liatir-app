@@ -25,7 +25,7 @@ function scopeCoreMethods(core, permanent, plugin) {
     return {
         listContent: (rel = "") => {
             ensureDataNotIsolated();
-            return core.invoke("dtr_fs_list_dir", {
+            return core.invoke("lia_fs_list_dir", {
                 rel,
                 permanent,
                 windowLabel: getWindowLabelIfCompanion(),
@@ -34,7 +34,7 @@ function scopeCoreMethods(core, permanent, plugin) {
         },
         newDirectory: (rel) => {
             ensureDataNotIsolated();
-            return core.invoke("dtr_fs_mkdir", {
+            return core.invoke("lia_fs_mkdir", {
                 rel,
                 permanent,
                 windowLabel: getWindowLabelIfCompanion(),
@@ -43,7 +43,7 @@ function scopeCoreMethods(core, permanent, plugin) {
         },
         remove: (rel, recursive = false) => {
             ensureDataNotIsolated();
-            return core.invoke("dtr_fs_rm", {
+            return core.invoke("lia_fs_rm", {
                 rel,
                 recursive,
                 permanent,
@@ -53,7 +53,7 @@ function scopeCoreMethods(core, permanent, plugin) {
         },
         stat: (rel = "") => {
             ensureDataNotIsolated();
-            return core.invoke("dtr_fs_stat", {
+            return core.invoke("lia_fs_stat", {
                 rel,
                 permanent,
                 windowLabel: getWindowLabelIfCompanion(),
@@ -62,7 +62,7 @@ function scopeCoreMethods(core, permanent, plugin) {
         },
         writeText: (rel, contents, opts) => {
             ensureDataNotIsolated();
-            return core.invoke("dtr_fs_write_text", {
+            return core.invoke("lia_fs_write_text", {
                 rel,
                 permanent,
                 contents,
@@ -74,7 +74,7 @@ function scopeCoreMethods(core, permanent, plugin) {
         },
         readText: (rel) => {
             ensureDataNotIsolated();
-            return core.invoke("dtr_fs_read_text", {
+            return core.invoke("lia_fs_read_text", {
                 rel,
                 permanent,
                 windowLabel: getWindowLabelIfCompanion(),
@@ -83,7 +83,7 @@ function scopeCoreMethods(core, permanent, plugin) {
         },
         writeBytes: (rel, base64, opts) => {
             ensureDataNotIsolated();
-            return core.invoke("dtr_fs_write_bytes", {
+            return core.invoke("lia_fs_write_bytes", {
                 rel,
                 permanent,
                 dataBase64: base64,
@@ -94,7 +94,7 @@ function scopeCoreMethods(core, permanent, plugin) {
         },
         readBytes: (rel) => {
             ensureDataNotIsolated();
-            return core.invoke("dtr_fs_read_bytes", {
+            return core.invoke("lia_fs_read_bytes", {
                 rel,
                 permanent,
                 windowLabel: getWindowLabelIfCompanion(),
@@ -103,7 +103,7 @@ function scopeCoreMethods(core, permanent, plugin) {
         },
         exists: (rel) => {
             ensureDataNotIsolated();
-            return core.invoke("dtr_fs_exists", {
+            return core.invoke("lia_fs_exists", {
                 rel,
                 permanent,
                 windowLabel: getWindowLabelIfCompanion(),
@@ -112,7 +112,7 @@ function scopeCoreMethods(core, permanent, plugin) {
         },
         move: (src, dest, opts) => {
             ensureDataNotIsolated();
-            return core.invoke("dtr_fs_move", {
+            return core.invoke("lia_fs_move", {
                 src,
                 dest,
                 permanent,
@@ -124,7 +124,7 @@ function scopeCoreMethods(core, permanent, plugin) {
         },
         copy: (src, dest, opts) => {
             ensureDataNotIsolated();
-            return core.invoke("dtr_fs_copy", {
+            return core.invoke("lia_fs_copy", {
                 src,
                 dest,
                 permanent,
@@ -154,15 +154,15 @@ function scope(core, permanent) {
         ...coreMethods,
         path: async () => {
             ensureDataNotIsolated();
-            const p = await core.invoke("dtr_fs_paths");
+            const p = await core.invoke("lia_fs_paths");
             return permanent ? p.data : p.cache;
         },
         clear: async () => {
             ensureDataNotIsolated();
             if (permanent) {
-                return core.invoke("dtr_fs_clear_data");
+                return core.invoke("lia_fs_clear_data");
             }
-            return core.invoke("dtr_fs_clear_cache");
+            return core.invoke("lia_fs_clear_cache");
         },
         base: permanent ? ".data" : ".cache",
     };
@@ -176,7 +176,7 @@ function pluginFsScope(core, plugin) {
     const coreMethods = scopeCoreMethods(core, true, santizedluginModuleName);
     return {
         ...coreMethods,
-        clearStorage: async () => core.invoke("dtr_plugin_storage_clear", { module: santizedluginModuleName })
+        clearStorage: async () => core.invoke("lia_plugin_storage_clear", { module: santizedluginModuleName })
     };
 }
 function buildFs(core) {
@@ -186,25 +186,25 @@ function buildFs(core) {
         cache,
         data,
         pluginFs: (plugin) => pluginFsScope(core, plugin),
-        paths: async () => core.invoke("dtr_fs_paths"),
+        paths: async () => core.invoke("lia_fs_paths"),
         base: { cache: ".cache", data: ".data" },
         trash: {
-            clear: async () => core.invoke("dtr_fs_data_clear_trash"),
-            recover: async () => core.invoke("dtr_fs_data_recover_trash"),
-            listContent: async (rel = "") => core.invoke("dtr_fs_trash_list_dir", { rel }),
-            stat: async (rel = "") => core.invoke("dtr_fs_trash_stat", { rel }),
-            exists: async (rel = "") => core.invoke("dtr_fs_trash_exists", { rel }),
-            readText: async (rel) => core.invoke("dtr_fs_trash_read_text", { rel }),
-            readBytes: async (rel) => core.invoke("dtr_fs_trash_read_bytes", { rel }),
+            clear: async () => core.invoke("lia_fs_data_clear_trash"),
+            recover: async () => core.invoke("lia_fs_data_recover_trash"),
+            listContent: async (rel = "") => core.invoke("lia_fs_trash_list_dir", { rel }),
+            stat: async (rel = "") => core.invoke("lia_fs_trash_stat", { rel }),
+            exists: async (rel = "") => core.invoke("lia_fs_trash_exists", { rel }),
+            readText: async (rel) => core.invoke("lia_fs_trash_read_text", { rel }),
+            readBytes: async (rel) => core.invoke("lia_fs_trash_read_bytes", { rel }),
         },
         diagnostics: {
-            clear: async () => core.invoke("dtr_fs_diagnostics_clear"),
-            remove: async (rel, recursive = false) => core.invoke("dtr_fs_diagnostics_rm", { rel, recursive }),
-            listContent: async (rel = "") => core.invoke("dtr_fs_diagnostics_list_dir", { rel }),
-            stat: async (rel = "") => core.invoke("dtr_fs_diagnostics_stat", { rel }),
-            exists: async (rel = "") => core.invoke("dtr_fs_diagnostics_exists", { rel }),
-            readText: async (rel) => core.invoke("dtr_fs_diagnostics_read_text", { rel }),
-            readBytes: async (rel) => core.invoke("dtr_fs_diagnostics_read_bytes", { rel }),
+            clear: async () => core.invoke("lia_fs_diagnostics_clear"),
+            remove: async (rel, recursive = false) => core.invoke("lia_fs_diagnostics_rm", { rel, recursive }),
+            listContent: async (rel = "") => core.invoke("lia_fs_diagnostics_list_dir", { rel }),
+            stat: async (rel = "") => core.invoke("lia_fs_diagnostics_stat", { rel }),
+            exists: async (rel = "") => core.invoke("lia_fs_diagnostics_exists", { rel }),
+            readText: async (rel) => core.invoke("lia_fs_diagnostics_read_text", { rel }),
+            readBytes: async (rel) => core.invoke("lia_fs_diagnostics_read_bytes", { rel }),
         },
     };
 }

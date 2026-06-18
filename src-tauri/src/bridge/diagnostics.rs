@@ -18,8 +18,8 @@ use zip::write::SimpleFileOptions;
 
 use tauri_plugin_dialog::{DialogExt, FilePath};
 
-use crate::bridge::app::{dtr_app_info, AppInfo as AppInfoStruct};
-use crate::bridge::fs as dtrfs;
+use crate::bridge::app::{lia_app_info, AppInfo as AppInfoStruct};
+use crate::bridge::fs as liafs;
 
 // ==============================
 // Centralized relative paths
@@ -88,12 +88,12 @@ static HEARTBEAT_STOP: AtomicBool = AtomicBool::new(false);
 
 fn diagnostics_root(app: &AppHandle) -> PathBuf {
     // Resolve the absolute "_diagnostics" root.
-    dtrfs::dtr_fs_safe_join_diagnostics(app, ".").expect("_diagnostics base dir not available")
+    liafs::lia_fs_safe_join_diagnostics(app, ".").expect("_diagnostics base dir not available")
 }
 
-/// Write text through dtrfs in the "_diagnostics" scope.
+/// Write text through liafs in the "_diagnostics" scope.
 fn fs_write_text(app: &AppHandle, rel: &str, contents: &str, append: bool) -> Result<(), String> {
-    dtrfs::dtr_fs_diagnostics_write_text(
+    liafs::lia_fs_diagnostics_write_text(
         app.clone(),
         rel.to_string(),
         contents.to_string(),
@@ -102,14 +102,14 @@ fn fs_write_text(app: &AppHandle, rel: &str, contents: &str, append: bool) -> Re
     )
 }
 
-/// Read text through dtrfs in the "_diagnostics" scope.
+/// Read text through liafs in the "_diagnostics" scope.
 fn fs_read_text(app: &AppHandle, rel: &str) -> Result<String, String> {
-    dtrfs::dtr_fs_diagnostics_read_text(app.clone(), rel.to_string())
+    liafs::lia_fs_diagnostics_read_text(app.clone(), rel.to_string())
 }
 
-/// Read bytes through dtrfs in the "_diagnostics" scope.
+/// Read bytes through liafs in the "_diagnostics" scope.
 fn fs_read_bytes(app: &AppHandle, rel: &str) -> Result<Vec<u8>, String> {
-    let b64 = dtrfs::dtr_fs_diagnostics_read_bytes(app.clone(), rel.to_string())?;
+    let b64 = liafs::lia_fs_diagnostics_read_bytes(app.clone(), rel.to_string())?;
     general_purpose::STANDARD
         .decode(b64.as_bytes())
         .map_err(|e| e.to_string())
@@ -250,7 +250,7 @@ fn rotate_with_part_suffix(abs_path: &Path) -> std::io::Result<()> {
 fn append_jsonl(app: &AppHandle, rel_path: &str, value: &serde_json::Value) -> Result<(), String> {
     let _guard = LOG_MUTEX.lock().unwrap();
 
-    let abs = dtrfs::dtr_fs_safe_join_diagnostics(app, rel_path)?;
+    let abs = liafs::lia_fs_safe_join_diagnostics(app, rel_path)?;
     rotate_with_part_suffix(&abs).map_err(|e| e.to_string())?;
 
     let line = serde_json::to_string(value).unwrap() + "\n";
@@ -264,7 +264,7 @@ fn new_log_data(
     env: Option<String>,
     app_version: Option<String>,
 ) -> LogData {
-    let app_info_json: Option<Value> = dtr_app_info(app.clone())
+    let app_info_json: Option<Value> = lia_app_info(app.clone())
         .ok()
         .and_then(|ai: AppInfoStruct| serde_json::to_value(ai).ok());
 
@@ -312,8 +312,8 @@ pub fn start_heartbeat(app: AppHandle) {
         let _ = append_jsonl(&app, &log_rel, &entry);
     }
 
-    let _ = dtrfs::dtr_fs_diagnostics_rm(app.clone(), runtime_shutdown_ok_rel().into(), false);
-    let _ = dtrfs::dtr_fs_diagnostics_rm(app.clone(), runtime_heartbeat_rel().into(), false);
+    let _ = liafs::lia_fs_diagnostics_rm(app.clone(), runtime_shutdown_ok_rel().into(), false);
+    let _ = liafs::lia_fs_diagnostics_rm(app.clone(), runtime_heartbeat_rel().into(), false);
 
     thread::spawn(move || {
         while !HEARTBEAT_STOP.load(Ordering::Relaxed) {
@@ -330,7 +330,7 @@ pub fn start_heartbeat(app: AppHandle) {
         }
 
         let _ = fs_write_text(&app, &runtime_shutdown_ok_rel(), "ok", false);
-        let _ = dtrfs::dtr_fs_diagnostics_rm(app.clone(), runtime_heartbeat_rel().into(), false);
+        let _ = liafs::lia_fs_diagnostics_rm(app.clone(), runtime_heartbeat_rel().into(), false);
     });
 }
 
@@ -339,7 +339,7 @@ pub fn mark_clean_shutdown_now(app: &AppHandle) {
     HEARTBEAT_STOP.store(true, Ordering::Relaxed);
 
     let _ = fs_write_text(app, &runtime_shutdown_ok_rel(), "ok", false);
-    let _ = dtrfs::dtr_fs_diagnostics_rm(app.clone(), runtime_heartbeat_rel().into(), false);
+    let _ = liafs::lia_fs_diagnostics_rm(app.clone(), runtime_heartbeat_rel().into(), false);
 }
 
 // ==============================
@@ -348,7 +348,7 @@ pub fn mark_clean_shutdown_now(app: &AppHandle) {
 
 /// Generic error record. Normal errors are written only to logs/.
 #[tauri::command]
-pub fn dtr_logs_record_error(
+pub fn lia_logs_record_error(
     app: AppHandle,
     payload: ErrorPayload,
     env: String,
@@ -370,27 +370,27 @@ pub fn dtr_logs_record_error(
 
 /// Shortcut for JS errors.
 #[tauri::command]
-pub fn dtr_logs_record_js_error(
+pub fn lia_logs_record_js_error(
     app: AppHandle,
     payload: ErrorPayload,
     app_version: String,
 ) -> Result<(), String> {
-    dtr_logs_record_error(app, payload, "js".to_string(), app_version)
+    lia_logs_record_error(app, payload, "js".to_string(), app_version)
 }
 
 /// Shortcut for native errors.
 #[tauri::command]
-pub fn dtr_logs_record_native_error(
+pub fn lia_logs_record_native_error(
     app: AppHandle,
     payload: ErrorPayload,
     app_version: String,
 ) -> Result<(), String> {
-    dtr_logs_record_error(app, payload, "native".to_string(), app_version)
+    lia_logs_record_error(app, payload, "native".to_string(), app_version)
 }
 
 /// Append one analytics record if analytics are enabled.
 #[tauri::command]
-pub fn dtr_logs_new_record(
+pub fn lia_logs_new_record(
     app: AppHandle,
     record_type: String,
     payload: AnalyticsRecord,
@@ -421,7 +421,7 @@ pub fn dtr_logs_new_record(
 /// Opens an OS save dialog so the user explicitly chooses the destination path.
 /// Returns the chosen path, or an empty string if the user cancelled.
 #[tauri::command]
-pub async fn dtr_logs_export_zip(app: AppHandle) -> Result<String, String> {
+pub async fn lia_logs_export_zip(app: AppHandle) -> Result<String, String> {
     let handle = app.clone();
     let default_name = format!("diagnostics-{}.zip", Utc::now().format("%Y-%m-%d"));
 
@@ -543,7 +543,7 @@ fn purge_older_than(
                         .map(|p| p.to_string_lossy().to_string());
 
                     if let Some(rel) = rel {
-                        let _ = dtrfs::dtr_fs_diagnostics_rm(app.clone(), rel, false);
+                        let _ = liafs::lia_fs_diagnostics_rm(app.clone(), rel, false);
                     }
                 }
             }
@@ -568,7 +568,7 @@ fn run_retention(app: &AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn dtr_logs_run_retention(app: AppHandle) -> Result<(), String> {
+pub fn lia_logs_run_retention(app: AppHandle) -> Result<(), String> {
     run_retention(&app)
 }
 
@@ -577,7 +577,7 @@ pub fn dtr_logs_run_retention(app: AppHandle) -> Result<(), String> {
 // ==============================
 
 #[tauri::command]
-pub fn dtr_logs_list_files(app: AppHandle, area: String) -> Result<Vec<ListedFile>, String> {
+pub fn lia_logs_list_files(app: AppHandle, area: String) -> Result<Vec<ListedFile>, String> {
     let base = diagnostics_root(&app);
 
     let dir_rel = match area.as_str() {
@@ -623,7 +623,7 @@ pub fn dtr_logs_list_files(app: AppHandle, area: String) -> Result<Vec<ListedFil
 }
 
 #[tauri::command]
-pub fn dtr_logs_read_file(
+pub fn lia_logs_read_file(
     app: AppHandle,
     rel_path: String,
     // max_bytes: Option<u64>,
@@ -644,7 +644,7 @@ pub fn dtr_logs_read_file(
 // ==============================
 
 #[tauri::command]
-pub fn dtr_logs_get_privacy(app: AppHandle) -> Result<PrivacySettings, String> {
+pub fn lia_logs_get_privacy(app: AppHandle) -> Result<PrivacySettings, String> {
     Ok(read_privacy(&app))
 }
 
@@ -659,7 +659,7 @@ pub struct PrivacyPatch {
 }
 
 #[tauri::command]
-pub fn dtr_logs_set_privacy(app: AppHandle, patch: PrivacyPatch) -> Result<PrivacySettings, String> {
+pub fn lia_logs_set_privacy(app: AppHandle, patch: PrivacyPatch) -> Result<PrivacySettings, String> {
     let mut s = read_privacy(&app);
 
     if let Some(v) = patch.analytics_enabled {
@@ -693,7 +693,7 @@ pub fn dtr_logs_set_privacy(app: AppHandle, patch: PrivacyPatch) -> Result<Priva
 
 #[cfg(debug_assertions)]
 #[tauri::command]
-pub fn dtr_logs_test_record_n(app: AppHandle, n: u32) -> Result<(), String> {
+pub fn lia_logs_test_record_n(app: AppHandle, n: u32) -> Result<(), String> {
     for i in 0..n {
         let rec = AnalyticsRecord {
             name: "test_event".into(),
@@ -703,7 +703,7 @@ pub fn dtr_logs_test_record_n(app: AppHandle, n: u32) -> Result<(), String> {
             }),
         };
 
-        dtr_logs_new_record(
+        lia_logs_new_record(
             app.clone(),
             "test".into(),
             rec,
@@ -717,13 +717,13 @@ pub fn dtr_logs_test_record_n(app: AppHandle, n: u32) -> Result<(), String> {
 
 #[cfg(debug_assertions)]
 #[tauri::command]
-pub fn dtr_logs_test_panic() {
+pub fn lia_logs_test_panic() {
     panic!("Intentional panic for testing crash pipeline");
 }
 
 #[cfg(debug_assertions)]
 #[tauri::command]
-pub fn dtr_logs_test_force_retention(app: AppHandle, area: String) -> Result<(), String> {
+pub fn lia_logs_test_force_retention(app: AppHandle, area: String) -> Result<(), String> {
     let base = diagnostics_root(&app);
 
     let dir_rel = match area.as_str() {
@@ -745,7 +745,7 @@ pub fn dtr_logs_test_force_retention(app: AppHandle, area: String) -> Result<(),
                     .to_string_lossy()
                     .to_string();
 
-                let _ = dtrfs::dtr_fs_diagnostics_rm(app.clone(), rel, false);
+                let _ = liafs::lia_fs_diagnostics_rm(app.clone(), rel, false);
             }
         }
     }

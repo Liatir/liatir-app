@@ -22,6 +22,8 @@ pub mod deps;
 pub mod managed_bins;
 pub mod ipc_server;
 pub mod modules;
+pub mod startup_cleanup;
+pub mod demo_files;
 
 pub use notifications::*;
 pub use clipboard::*;
@@ -45,3 +47,5 @@ pub use jobs::*;
 pub use deps::*;
 pub use managed_bins::*;
 pub use modules::*;
+pub use startup_cleanup::*;
+pub use demo_files::*;

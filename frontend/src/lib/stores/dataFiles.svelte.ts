@@ -9,6 +9,7 @@ export interface DataFile {
   addedAt: number;
   folder: string;
   missing?: boolean;
+  protected?: boolean;
 }
 
 interface StoredData {
@@ -29,6 +30,8 @@ function detectExt(path: string): string {
   const m = name.match(/\.([^.]+)$/);
   return m ? m[1].toLowerCase() : '';
 }
+
+const DEMO_FOLDER_PREFIX = 'Demo Files';
 
 function parseSaved(raw: string): StoredData {
   const parsed = JSON.parse(raw);
@@ -81,7 +84,7 @@ function createDataFilesStore() {
               files.map(async (f) => {
                 if (f.size != null) return f;
                 try {
-                  const size = (await api.invoke('dtr_file_size', { path: f.path })) as number;
+                  const size = (await api.invoke('lia_file_size', { path: f.path })) as number;
                   return { ...f, size };
                 } catch { return f; }
               })
@@ -92,6 +95,45 @@ function createDataFilesStore() {
         }
       } catch { files = []; folders = []; }
       finally { loading = false; }
+
+      // Always ensure demo files are present (idempotent)
+      await this.initDemoFiles();
+    },
+
+    async initDemoFiles() {
+      const api = liatir();
+      if (!api) return;
+      try {
+        interface DemoEntry { path: string; folder: string; }
+        const entries = await api.invoke('lia_init_demo_files') as DemoEntry[];
+        let changed = false;
+
+        for (const entry of entries) {
+          if (files.some(f => f.path === entry.path)) continue;
+          const name = entry.path.split(/[\\/]/).pop() ?? entry.path;
+          let size: number | undefined;
+          try { size = (await api.invoke('lia_file_size', { path: entry.path })) as number; } catch { /**/ }
+
+          // Ensure the demo subfolder is registered
+          if (!folders.includes(entry.folder)) {
+            folders = [...folders, entry.folder].sort();
+          }
+
+          files = [...files, {
+            id: crypto.randomUUID(),
+            name,
+            path: entry.path,
+            ext: detectExt(entry.path),
+            size,
+            addedAt: 0,
+            folder: entry.folder,
+            protected: true,
+          }];
+          changed = true;
+        }
+
+        if (changed) await persist();
+      } catch { /* demo files init is best-effort */ }
     },
 
     async add(path: string, folder = '') {
@@ -100,7 +142,7 @@ function createDataFilesStore() {
       let size: number | undefined;
       try {
         const api = liatir();
-        if (api) size = (await api.invoke('dtr_file_size', { path })) as number;
+        if (api) size = (await api.invoke('lia_file_size', { path })) as number;
       } catch { /* size stays undefined */ }
       files = [{
         id: crypto.randomUUID(),
@@ -115,11 +157,13 @@ function createDataFilesStore() {
     },
 
     async remove(id: string) {
+      if (files.find(f => f.id === id)?.protected) return;
       files = files.filter(f => f.id !== id);
       await persist();
     },
 
     async move(id: string, folder: string) {
+      if (files.find(f => f.id === id)?.protected) return;
       files = files.map(f => f.id === id ? { ...f, folder } : f);
       await persist();
     },
@@ -132,6 +176,7 @@ function createDataFilesStore() {
     },
 
     async removeFolder(path: string) {
+      if (path === DEMO_FOLDER_PREFIX || path.startsWith(DEMO_FOLDER_PREFIX + '/')) return;
       folders = folders.filter(f => f !== path && !f.startsWith(path + '/'));
       files = files.map(f =>
         (f.folder === path || f.folder.startsWith(path + '/')) ? { ...f, folder: '' } : f
@@ -140,6 +185,7 @@ function createDataFilesStore() {
     },
 
     async renameFolder(oldPath: string, newPath: string) {
+      if (oldPath === DEMO_FOLDER_PREFIX || oldPath.startsWith(DEMO_FOLDER_PREFIX + '/')) return;
       const trimmed = newPath.trim().replace(/^\/+|\/+$/g, '');
       if (!trimmed || trimmed === oldPath) return;
       folders = folders.map(f => {
@@ -180,7 +226,7 @@ function createDataFilesStore() {
     async addSampleFastq(folder = '') {
       const api = liatir();
       if (!api) return;
-      const path = (await api.invoke('dtr_fastqc_sample_path')) as string | null;
+      const path = (await api.invoke('lia_fastqc_sample_path')) as string | null;
       if (path) await this.add(path, folder);
     },
 
@@ -190,7 +236,7 @@ function createDataFilesStore() {
       const results = await Promise.all(
         files.map(async (f) => {
           try {
-            await api.invoke('dtr_file_size', { path: f.path });
+            await api.invoke('lia_file_size', { path: f.path });
             return { id: f.id, missing: false };
           } catch {
             return { id: f.id, missing: true };
@@ -217,7 +263,7 @@ function createDataFilesStore() {
       if (!newPath) return;
       const name = newPath.split(/[\\/]/).pop() ?? newPath;
       let size: number | undefined;
-      try { size = (await api.invoke('dtr_file_size', { path: newPath })) as number; } catch { /* ok */ }
+      try { size = (await api.invoke('lia_file_size', { path: newPath })) as number; } catch { /* ok */ }
       files = files.map(f =>
         f.id === id ? { ...f, path: newPath, name, ext: detectExt(newPath), size, missing: false } : f
       );

@@ -200,7 +200,7 @@
     const lines = PREVIEW_LINES[file.ext] ?? 50;
     const api = liatir();
     if (!api) { previewLoading = false; return; }
-    api.invoke('dtr_preview_file', { path: file.path, lines })
+    api.invoke('lia_preview_file', { path: file.path, lines })
       .then((text: unknown) => { previewContent = text as string; previewError = null; })
       .catch((e: unknown) => { previewError = String(e); previewContent = null; })
       .finally(() => { previewLoading = false; });
@@ -326,33 +326,43 @@
                 </svg>
                 <span class="flex-1 text-left truncate">{f.name}</span>
               </button>
-              <!-- Count: hidden on hover -->
-              <span class="pr-3 text-[10px] text-zinc-400 group-hover:hidden">{dataFiles.byFolder(f.path).length}</span>
-              <!-- Actions: shown on hover -->
-              <div class="pr-1.5 hidden group-hover:flex items-center gap-0">
-                <button
-                  onclick={() => startRename(f.path)}
-                  title="Rename"
-                  class="p-1 text-zinc-400 hover:text-zinc-700 transition-colors rounded"
-                >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              <!-- Count: hidden on hover (unless protected) -->
+              <span class="pr-3 text-[10px] text-zinc-400 {f.path.startsWith('Demo Files') ? '' : 'group-hover:hidden'}">{dataFiles.byFolder(f.path).length}</span>
+              <!-- Actions: shown on hover (only for non-protected folders) -->
+              {#if !f.path.startsWith('Demo Files')}
+                <div class="pr-1.5 hidden group-hover:flex items-center gap-0">
+                  <button
+                    onclick={() => startRename(f.path)}
+                    title="Rename"
+                    class="p-1 text-zinc-400 hover:text-zinc-700 transition-colors rounded"
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                  <button
+                    onclick={() => deleteFolder(f.path)}
+                    title="Delete"
+                    class="p-1 text-zinc-400 hover:text-red-500 transition-colors rounded"
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                      <path d="M10 11v6M14 11v6" />
+                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                    </svg>
+                  </button>
+                </div>
+              {:else}
+                <!-- Lock icon for protected Demo Files folders -->
+                <div class="pr-2.5">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                   </svg>
-                </button>
-                <button
-                  onclick={() => deleteFolder(f.path)}
-                  title="Delete"
-                  class="p-1 text-zinc-400 hover:text-red-500 transition-colors rounded"
-                >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                    <path d="M10 11v6M14 11v6" />
-                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                  </svg>
-                </button>
-              </div>
+                </div>
+              {/if}
             </div>
           {/if}
         {/each}
@@ -496,27 +506,38 @@
                     <span class="shrink-0 text-[11px] text-zinc-400 font-mono">{fmtBytes(file.size)}</span>
                   {/if}
 
-                  <Select
-                    value={file.folder}
-                    options={folderOptions}
-                    onchange={(v) => dataFiles.move(file.id, v)}
-                  />
-
-                  <span class="shrink-0 text-xs text-zinc-400 hidden sm:block">{fmtDate(file.addedAt)}</span>
+                  {#if file.protected}
+                    <span class="shrink-0 flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium border border-violet-200 bg-violet-50 text-violet-600">
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                      </svg>
+                      Demo
+                    </span>
+                  {:else}
+                    <Select
+                      value={file.folder}
+                      options={folderOptions}
+                      onchange={(v) => dataFiles.move(file.id, v)}
+                    />
+                    <span class="shrink-0 text-xs text-zinc-400 hidden sm:block">{fmtDate(file.addedAt)}</span>
+                  {/if}
                 {/if}
 
-                <button
-                  onclick={async () => {
-                    const ok = await confirm({ title: 'Remove file', message: `Remove "${file.name}" from the list?`, confirmLabel: 'Remove' });
-                    if (ok) dataFiles.remove(file.id);
-                  }}
-                  aria-label="Remove"
-                  class="shrink-0 text-zinc-300 hover:text-red-500 transition-colors"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
+                {#if !file.protected}
+                  <button
+                    onclick={async () => {
+                      const ok = await confirm({ title: 'Remove file', message: `Remove "${file.name}" from the list?`, confirmLabel: 'Remove' });
+                      if (ok) dataFiles.remove(file.id);
+                    }}
+                    aria-label="Remove"
+                    class="shrink-0 text-zinc-300 hover:text-red-500 transition-colors"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                {/if}
               </div>
             {/each}
           </div>

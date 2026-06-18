@@ -128,7 +128,7 @@ export async function installBinary(
       },
     );
     try {
-      await api.invoke('dtr_managed_download', {
+      await api.invoke('lia_managed_download', {
         id: downloadId,
         url: release.url,
         destPath: archivePath,
@@ -139,13 +139,13 @@ export async function installBinary(
 
     // 2. Extract
     onProgress({ phase: 'extracting' });
-    await api.invoke('dtr_managed_extract', {
+    await api.invoke('lia_managed_extract', {
       archivePath,
       destDir: extractDir,
     });
 
     // 3. Find binary inside extracted dir
-    const foundPath = (await api.invoke('dtr_managed_find_binary', {
+    const foundPath = (await api.invoke('lia_managed_find_binary', {
       dir: extractDir,
       name: release.binaryName + binaryExt,
     })) as string | null;
@@ -154,8 +154,8 @@ export async function installBinary(
     }
 
     // 4. Move to final location + chmod +x
-    await api.invoke('dtr_managed_move', { src: foundPath, dest: finalPath });
-    await api.invoke('dtr_managed_set_executable', { path: finalPath });
+    await api.invoke('lia_managed_move', { src: foundPath, dest: finalPath });
+    await api.invoke('lia_managed_set_executable', { path: finalPath });
 
     // 5. Persist to store
     const info = await api.desktop.app.info();
@@ -172,6 +172,6 @@ export async function installBinary(
 
   } finally {
     // Cleanup tmp (best-effort)
-    await api.invoke('dtr_managed_remove', { path: tmpRoot, recursive: true }).catch(() => {});
+    await api.invoke('lia_managed_remove', { path: tmpRoot, recursive: true }).catch(() => {});
   }
 }

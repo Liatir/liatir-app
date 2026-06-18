@@ -3,7 +3,7 @@ use tauri::{AppHandle, Emitter}; // <- porta in scope il trait giusto
 use serde_json::Value;
 
 #[tauri::command]
-pub fn dtr_event_emit( // cross window
+pub fn lia_event_emit( // cross window
   app: AppHandle,
   event: String,
   payload: Option<Value>,
@@ -14,7 +14,7 @@ pub fn dtr_event_emit( // cross window
 }
 
 #[tauri::command]
-pub fn dtr_event_emit_to_current_window(
+pub fn lia_event_emit_to_current_window(
   window: tauri::Window,
   event: String,
   payload: Option<Value>
@@ -25,7 +25,7 @@ pub fn dtr_event_emit_to_current_window(
 }
 
 #[tauri::command]
-pub fn dtr_event_emit_to(
+pub fn lia_event_emit_to(
   app: AppHandle,
   window_label: String,
   event: String,

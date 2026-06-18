@@ -15,13 +15,13 @@ const initMenuConfig = async (core, menuConfig, windowLabel) => {
             console.warn("[Desktopr] Native window-specific menus are not supported on macOS.");
             return;
         }
-        await core.invoke("dtr_init_menu_for_window_from_json", {
+        await core.invoke("lia_init_menu_for_window_from_json", {
             windowLabel,
             cfgJson: menuConfig /*, is_base64: false*/,
         });
     }
     else {
-        await core.invoke("dtr_init_menu_from_json", {
+        await core.invoke("lia_init_menu_from_json", {
             cfgJson: menuConfig /*, is_base64: false*/,
         });
     }

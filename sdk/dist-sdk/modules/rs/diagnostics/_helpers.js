@@ -16,7 +16,7 @@ const diagnosticsSettings = async (core, settings) => {
         throw ("[retentionDaysLogs] the value must be a U32 integer number");
     if (retDaysCrashes != null && !utils_1.Num.isU32(retDaysCrashes))
         throw ("[retentionDaysCrashes] the value must be a U32 integer number");
-    return await core.invoke("dtr_logs_set_privacy", {
+    return await core.invoke("lia_logs_set_privacy", {
         patch: {
             analytics_enabled: s?.analyticsEnabled ?? s?.analytics_enabled,
             crash_reports_enabled: s?.crashReportsEnabled ?? s?.crash_reports_enabled,
@@ -39,13 +39,13 @@ exports.deriveAppVersion = deriveAppVersion;
 // ==============================
 function buildDiagnosticsTestFunctions(core) {
     return {
-        testGenerateRecords: (n = 200) => core.invoke("dtr_logs_test_record_n", { n }),
+        testGenerateRecords: (n = 200) => core.invoke("lia_logs_test_record_n", { n }),
         // Questa può semplicemente lanciare un errore JS: non serve invoke.
         testThrowJsError: async () => {
             throw new Error("DEV: test JS error");
         },
-        testPanicRust: () => core.invoke("dtr_logs_test_panic", {}),
-        testExportZip: () => core.invoke("dtr_logs_export_zip", {}),
-        testForceRetention: (area) => core.invoke("dtr_logs_test_force_retention", { area }),
+        testPanicRust: () => core.invoke("lia_logs_test_panic", {}),
+        testExportZip: () => core.invoke("lia_logs_export_zip", {}),
+        testForceRetention: (area) => core.invoke("lia_logs_test_force_retention", { area }),
     };
 }

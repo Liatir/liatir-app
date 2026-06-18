@@ -39,7 +39,7 @@ fn open_validated(path: &str) -> Result<zip::ZipArchive<std::fs::File>, String> 
 
 /// Read manifest.json from a .lia module, validating the signature first.
 #[tauri::command]
-pub async fn dtr_liatir_read_manifest(path: String) -> Result<Value, String> {
+pub async fn lia_liatir_read_manifest(path: String) -> Result<Value, String> {
     let mut zip = open_validated(&path)?;
     let mut entry = zip.by_name("manifest.json")
         .map_err(|_| "manifest.json not found in bundle".to_string())?;
@@ -49,9 +49,9 @@ pub async fn dtr_liatir_read_manifest(path: String) -> Result<Value, String> {
 }
 
 /// Extract a .lia module to a temp dir and spawn it with node.
-/// Returns the same {jobId} value as dtr_jobs_spawn.
+/// Returns the same {jobId} value as lia_jobs_spawn.
 #[tauri::command]
-pub async fn dtr_liatir_run(
+pub async fn lia_liatir_run(
     app: AppHandle,
     path: String,
     inputs: Value,
@@ -78,7 +78,7 @@ pub async fn dtr_liatir_run(
     let inputs_json = serde_json::to_string(&inputs).map_err(|e| e.to_string())?;
     let cwd = temp_dir.to_string_lossy().to_string();
 
-    super::jobs::dtr_jobs_spawn(
+    super::jobs::lia_jobs_spawn(
         app,
         "node".to_string(),
         vec!["_runner.mjs".to_string(), inputs_json],

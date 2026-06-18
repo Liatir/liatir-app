@@ -15,7 +15,7 @@ export const diagnosticsSettings = async (core: { invoke: LiatirAPI["invoke"] },
   if(retDaysLogs      != null && !Num.isU32(retDaysLogs))      throw("[retentionDaysLogs] the value must be a U32 integer number");
   if(retDaysCrashes   != null && !Num.isU32(retDaysCrashes))   throw("[retentionDaysCrashes] the value must be a U32 integer number");
 
-  return await core.invoke("dtr_logs_set_privacy", {
+  return await core.invoke("lia_logs_set_privacy", {
     patch: {
       analytics_enabled:        s?.analyticsEnabled     ?? s?.analytics_enabled,
       crash_reports_enabled:    s?.crashReportsEnabled  ?? s?.crash_reports_enabled,
@@ -41,19 +41,19 @@ export const deriveAppVersion = async (v?: string): Promise<string> => {
 export function buildDiagnosticsTestFunctions(core: { invoke: LiatirAPI["invoke"] }): DiagnosticsTestFunctions {
   return {
     testGenerateRecords: (n = 200) =>
-      core.invoke<void>("dtr_logs_test_record_n", { n }),
+      core.invoke<void>("lia_logs_test_record_n", { n }),
 
     // Questa può semplicemente lanciare un errore JS: non serve invoke.
     testThrowJsError: async () => {
       throw new Error("DEV: test JS error");
     },
 
-    testPanicRust: () => core.invoke<void>("dtr_logs_test_panic", {}),
+    testPanicRust: () => core.invoke<void>("lia_logs_test_panic", {}),
 
     testExportZip: () =>
-      core.invoke<string>("dtr_logs_export_zip", {}),
+      core.invoke<string>("lia_logs_export_zip", {}),
 
     testForceRetention: (area: DiagnosticsArea) =>
-      core.invoke<void>("dtr_logs_test_force_retention", { area }),
+      core.invoke<void>("lia_logs_test_force_retention", { area }),
   };
 }

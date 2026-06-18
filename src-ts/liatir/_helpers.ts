@@ -1,4 +1,4 @@
-import { AppInfo, DtrPlatform } from "../types";
+import { AppInfo, LiaPlatform } from "../types";
 import { isWindowAvailable, validate } from "../utils";
 
 export const normalizeString = (
@@ -20,11 +20,11 @@ export const normalizeString = (
 };
 
 export const platformSpecifcFilter = async (
-  platforms: DtrPlatform[],
+  platforms: LiaPlatform[],
 ): Promise<void> => {
   const appInfo: AppInfo = (await window.Liatir?.desktop.app.info()) as AppInfo;
   if (!appInfo) throw "Failed to check platform";
-  const plat = appInfo.os as DtrPlatform;
+  const plat = appInfo.os as LiaPlatform;
   if (!platforms.includes(plat))
     throw `[unsupported platform] this method is not supported on ${plat}`;
 };

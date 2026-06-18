@@ -10,14 +10,14 @@ import {
   buildShortcuts,
   buildAppInfo,
   buildMenu,
-  dtrInitiators,
+  liaInitiators,
   buildDiagnostics,
   buildNetwork,
   buildAutostart,
   buildBadge,
   buildContextMenu,
   buildGlobVar,
-  dtrReadyEventListener,
+  liaReadyEventListener,
 } from "./main";
 import { API_VERSION } from "./constants";
 import { windowTauriProxy, tauriReadyCheck, waitTauri } from "./helpers";
@@ -73,7 +73,7 @@ import { buildQc } from "./modules/qc/_main";
     qc:       buildQc({ plugins }),
 
     tauri:       windowTauriProxy as WindowTauri,
-    onReady:     dtrReadyEventListener,
+    onReady:     liaReadyEventListener,
     openBrowser: (url: string): Promise<void> => window.__TAURI__?.shell?.open(url),
   };
 
@@ -91,7 +91,7 @@ import { buildQc } from "./modules/qc/_main";
   await waitTauri();
 
   if (tauriReadyCheck()) {
-    dtrInitiators();
+    liaInitiators();
   } else {
     console.error("[Liatir bridge] Tauri did not become ready in time");
   }

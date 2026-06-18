@@ -7,7 +7,7 @@ export function buildShortcuts(core: { invoke: <T=unknown>(cmd: string, payload?
       const gs = tauriGlobalShortcut();
       await gs.register(accelerator, async (e: any) => {
         const payload = { accelerator, ...e };
-        if (options?.emitEvent) await core.invoke("dtr_event_emit", { event: "shortcut:event", payload });
+        if (options?.emitEvent) await core.invoke("lia_event_emit", { event: "shortcut:event", payload });
         cb(payload);
       });
     },

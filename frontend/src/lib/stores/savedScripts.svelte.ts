@@ -192,7 +192,7 @@ function createSavedScriptsStore() {
       const destPath = await api.desktop.files.save(`${script.name}.ts`);
       if (!destPath) return;
 
-      await api.invoke('dtr_write_file_path', { path: destPath, content: script.code });
+      await api.invoke('lia_write_file_path', { path: destPath, content: script.code });
     },
   };
 }

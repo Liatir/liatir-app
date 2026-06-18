@@ -1,7 +1,7 @@
 {
     "scripts": {
         "ts:compile": "npx esbuild ../src-ts/bridge.ts --bundle --format=iife --global-name=Bridge --outfile=tsc/bridge.js --sourcemap",
-        "build:worker": "esbuild ../src-ts/worker/dtr-wasm-runner.worker.ts --bundle --format=esm --outdir=resources/worker --loader:.wasm=file",
+        "build:worker": "esbuild ../src-ts/worker/lia-wasm-runner.worker.ts --bundle --format=esm --outdir=resources/worker --loader:.wasm=file",
         "keepsandbox": "export DESKTOPR_KEEP_SANDBOX=1",
         "rustbacktrace": "export RUST_BACKTRACE=1",
         "devconf": "npm run devconf --prefix ../",
@@ -12,7 +12,7 @@
         "build:wasm:fastqc": "cd ../wasm-modules/fastqc && cargo build --target wasm32-wasip1 --release && cp target/wasm32-wasip1/release/fastqc.wasm ../../src-tauri/resources/wasm/fastqc.wasm",
         "build:wasm": "npm run build:wasm:fastqc",
         "clean:ts": "rm -rf tsc",
-        "clean": "rm -rf Cargo.lock && rm -rf tsc && rm -rf target && rm -rf gen && rm -rf resources/worker/dtr-wasm-runner.worker.js && cargo clean",
+        "clean": "rm -rf Cargo.lock && rm -rf tsc && rm -rf target && rm -rf gen && rm -rf resources/worker/lia-wasm-runner.worker.js && cargo clean",
         "clean:deep": "rm -rf node_modules && rm -rf ../node_modules && npm run clean",
         "build": "npm run ts:compile && npm run prodconf && cargo tauri build",
         "build:dev": "npm run ts:compile && npm run devconf && cargo tauri build",

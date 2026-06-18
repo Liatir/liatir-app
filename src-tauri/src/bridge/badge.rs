@@ -7,14 +7,14 @@ use tauri::AppHandle;
 // -------- macOS implementation --------
 #[cfg(target_os = "macos")]
 #[tauri::command]
-pub fn dtr_badge_set(_app: AppHandle, count: Option<u32>) -> Result<(), String> {
+pub fn lia_badge_set(_app: AppHandle, count: Option<u32>) -> Result<(), String> {
     set_badge_macos(count)
 }
 
 #[cfg(target_os = "macos")]
 #[tauri::command]
-pub fn dtr_badge_clear(app: AppHandle) -> Result<(), String> {
-    dtr_badge_set(app, None)
+pub fn lia_badge_clear(app: AppHandle) -> Result<(), String> {
+    lia_badge_set(app, None)
 }
 
 #[cfg(target_os = "macos")]
@@ -44,14 +44,14 @@ fn set_badge_macos(count: Option<u32>) -> Result<(), String> {
 // -------- Non‑macOS stubs (no‑ops) --------
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
-pub fn dtr_badge_set(_app: AppHandle, _count: Option<u32>) -> Result<(), String> {
+pub fn lia_badge_set(_app: AppHandle, _count: Option<u32>) -> Result<(), String> {
     // No‑op on non‑macOS platforms to keep compatibility.
     Ok(())
 }
 
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
-pub fn dtr_badge_clear(_app: AppHandle) -> Result<(), String> {
+pub fn lia_badge_clear(_app: AppHandle) -> Result<(), String> {
     // No‑op on non‑macOS platforms to keep compatibility.
     Ok(())
 }

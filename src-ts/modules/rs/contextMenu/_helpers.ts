@@ -53,11 +53,11 @@ const onCmClick = (ev: MouseEvent, callback: CmListenerCallback, preventDefault:
     // elemento effettivo bersaglio (può essere text node -> cast a HTMLElement)
     const target = ev.target as HTMLElement | null;
 
-    // se vuoi risalire fino a un elemento significativo (con attributo data-dtr-context)
+    // se vuoi risalire fino a un elemento significativo (con attributo data-lia-context)
     const ancestorActionable =
-      target?.closest<HTMLElement>("[data-dtr-contextmenu]") ?? null;
+      target?.closest<HTMLElement>("[data-lia-contextmenu]") ?? null;
     const descendantActionable =
-      target?.querySelector<HTMLElement>("[data-dtr-contextmenu]") ?? null;
+      target?.querySelector<HTMLElement>("[data-lia-contextmenu]") ?? null;
 
     const info = {
       targetTag: target?.tagName ?? null,

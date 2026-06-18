@@ -9,7 +9,7 @@ function buildShortcuts(core) {
             await gs.register(accelerator, async (e) => {
                 const payload = { accelerator, ...e };
                 if (options?.emitEvent)
-                    await core.invoke("dtr_event_emit", { event: "shortcut:event", payload });
+                    await core.invoke("lia_event_emit", { event: "shortcut:event", payload });
                 cb(payload);
             });
         },

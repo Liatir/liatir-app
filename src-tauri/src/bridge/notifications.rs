@@ -6,13 +6,13 @@ use std::sync::atomic::{AtomicI32, Ordering};
 static NOTIF_ID: AtomicI32 = AtomicI32::new(1);
 
 #[tauri::command]
-pub fn dtr_notification_state(app: AppHandle) -> Result<String, String> {
+pub fn lia_notification_state(app: AppHandle) -> Result<String, String> {
   let s = app.notification().permission_state().map_err(|e| e.to_string())?;
   Ok(s.to_string())
 }
 
 #[tauri::command]
-pub fn dtr_request_permission(app: AppHandle) -> Result<String, String> {
+pub fn lia_request_permission(app: AppHandle) -> Result<String, String> {
   let r = app.notification().request_permission().map_err(|e| e.to_string())?;
   Ok(r.to_string())
 }
@@ -21,7 +21,7 @@ pub fn dtr_request_permission(app: AppHandle) -> Result<String, String> {
 pub struct NotifyResult { pub shown: bool, pub state_before: String, pub state_after: String }
 
 #[tauri::command]
-pub fn dtr_notify(app: AppHandle, title: String, body: String) -> Result<NotifyResult, String> {
+pub fn lia_notify(app: AppHandle, title: String, body: String) -> Result<NotifyResult, String> {
   let before = app.notification().permission_state().map_err(|e| e.to_string())?;
   let mut after = before.clone();
 

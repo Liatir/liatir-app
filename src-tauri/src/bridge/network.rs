@@ -14,14 +14,14 @@ pub struct NetworkStatus {
 }
 
 #[tauri::command]
-pub async fn dtr_network_get_status(app: AppHandle) -> Result<NetworkStatus, String> {
+pub async fn lia_network_get_status(app: AppHandle) -> Result<NetworkStatus, String> {
     // NOTE: Cheap probe to a fast, highly available endpoint.
     // Prefer a HEAD to a CDN endpoint you control; fallback to public.
     probe(&app, Some("https://www.cloudflare.com/cdn-cgi/trace".to_string()), 2500).await
 }
 
 #[tauri::command]
-pub async fn dtr_network_ping(
+pub async fn lia_network_ping(
     app: AppHandle,
     url: Option<String>,
     timeout_ms: Option<u64>,
@@ -37,7 +37,7 @@ pub async fn dtr_network_ping(
 }
 
 #[tauri::command]
-pub async fn dtr_network_resolve(host: String) -> Result<serde_json::Value, String> {
+pub async fn lia_network_resolve(host: String) -> Result<serde_json::Value, String> {
     // NOTE: Use system resolver via ToSocketAddrs; for more control use trust-dns-resolver.
     let addrs: Vec<String> = (host.as_str(), 443)
         .to_socket_addrs()
@@ -48,7 +48,7 @@ pub async fn dtr_network_resolve(host: String) -> Result<serde_json::Value, Stri
 }
 
 #[tauri::command]
-pub async fn dtr_network_bandwidth_estimate(
+pub async fn lia_network_bandwidth_estimate(
     app: AppHandle,
     url: Option<String>,
     size_hint_bytes: Option<u64>,
@@ -115,7 +115,7 @@ struct MonitorState {
 static MONITOR: OnceLock<Mutex<MonitorState>> = OnceLock::new();
 
 #[tauri::command]
-pub async fn dtr_network_set_monitor(app: AppHandle, interval_ms: u64, targets: Option<Vec<String>>) -> Result<(), String> {
+pub async fn lia_network_set_monitor(app: AppHandle, interval_ms: u64, targets: Option<Vec<String>>) -> Result<(), String> {
     // NOTE: Simple polling monitor; for OS-level callbacks use platform-specific crates.
     let app_handle = app.clone();
     let tgts = targets.unwrap_or_else(|| vec![
@@ -140,7 +140,7 @@ pub async fn dtr_network_set_monitor(app: AppHandle, interval_ms: u64, targets: 
 }
 
 #[tauri::command]
-pub async fn dtr_network_stop_monitor() -> Result<(), String> {
+pub async fn lia_network_stop_monitor() -> Result<(), String> {
     if let Some(state) = MONITOR.get() {
         let mut s = state.lock().unwrap();
         if let Some(h) = s.handle.take() { h.abort(); }

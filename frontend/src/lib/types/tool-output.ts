@@ -39,7 +39,14 @@ export interface TextSection {
   description?: string;
 }
 
-export type ToolSection = StatsSection | NumberSection | PlotlySection | TextSection;
+export interface TableSection {
+  type: 'table';
+  label: string;
+  headers: string[];
+  rows: (string | number)[][];
+}
+
+export type ToolSection = StatsSection | NumberSection | PlotlySection | TextSection | TableSection;
 
 export interface ToolOutput {
   sections: ToolSection[];

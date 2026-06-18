@@ -44,7 +44,7 @@ export const newWindow = async (
     console.warn("Could not update used windows labels tracker");
   }
 
-  core.invoke("dtr_win_open", {
+  core.invoke("lia_win_open", {
     label: labelToSet,
     fullscreen: (options?.fullscreen) || false,
     url: (options?.url) ?? "",
@@ -72,5 +72,5 @@ export const closeWindow = async (
     console.warn("Could not update used windows labels tracker");
   }
 
-  core.invoke("dtr_win_close", { label: _label });
+  core.invoke("lia_win_close", { label: _label });
 };

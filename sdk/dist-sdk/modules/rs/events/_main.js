@@ -4,9 +4,9 @@ exports.buildEvents = buildEvents;
 const helpers_1 = require("../../../helpers");
 function buildEvents(core) {
     return {
-        emit: (event, payload) => core.invoke("dtr_event_emit_to_current_window", { event, payload }),
-        emitToAll: (event, payload) => core.invoke("dtr_event_emit", { event, payload }),
-        emitTo: (windowLabel, event, payload) => core.invoke("dtr_event_emit_to", { windowLabel, event, payload }),
+        emit: (event, payload) => core.invoke("lia_event_emit_to_current_window", { event, payload }),
+        emitToAll: (event, payload) => core.invoke("lia_event_emit", { event, payload }),
+        emitTo: (windowLabel, event, payload) => core.invoke("lia_event_emit_to", { windowLabel, event, payload }),
         on: async (event, handler) => (0, helpers_1.listenForEvent)(event, handler),
         once: (event) => new Promise(async (resolve) => {
             const off = await (0, helpers_1.listenForEvent)(event, (p) => {

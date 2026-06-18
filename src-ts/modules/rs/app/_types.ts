@@ -1,4 +1,4 @@
-import { DtrPlatform } from "../../../types";
+import { LiaPlatform } from "../../../types";
 import { I32 } from "../../../utils";
 
 /**
@@ -40,7 +40,7 @@ export type AppInfo = {
   is_debug: boolean;
   name: string;
   now_unix_ms: number;              // Unix timestamp in milliseconds
-  os: DtrPlatform | string;
+  os: LiaPlatform | string;
   pid: number;
   primary_screen: AppScreenInfo;
   screens: AppScreenInfo[];

@@ -78,7 +78,7 @@ function createAnalysisRunsStore() {
       let outputSize: number | undefined;
       try {
         const dataPath = await api.desktop.fs.data.path();
-        outputSize = (await api.invoke('dtr_file_size', {
+        outputSize = (await api.invoke('lia_file_size', {
           path: `${dataPath}/${runPath(run.id)}`,
         })) as number;
       } catch { /* size stays undefined */ }

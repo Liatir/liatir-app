@@ -29,7 +29,7 @@ fn debounce(ms: u64) -> bool {
 }
 
 const NO_ACCEL: Option<&str> = None;
-const DESKTOPR_TRAY_ID: &str = "dtr-tray-ywapdpvw";
+const DESKTOPR_TRAY_ID: &str = "lia-tray-ywapdpvw";
 
 /// Builds a single tray item from the JSON config.
 /// Kept crate-visible so it remains reusable internally.

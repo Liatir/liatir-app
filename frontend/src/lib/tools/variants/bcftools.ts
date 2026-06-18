@@ -1,6 +1,21 @@
 import type { ToolOutput, StatsSection, TextSection } from '$lib/types/tool-output';
 import type { PipelineStepDefinition } from '$lib/types/pipeline';
 
+export const bcftoolsFilterDefinition: PipelineStepDefinition = {
+  id: 'bcftools-filter',
+  type: 'native-tool',
+  label: 'BCFtools filter',
+  description: 'Filter VCF/BCF variants by quality, depth, or any INFO/FORMAT field.',
+  category: 'Variant Calling',
+  inputSchema: {
+    inputFile:  { type: 'file',   label: 'VCF / BCF file',   required: true,  accept: ['vcf', 'vcf.gz', 'bcf', 'bcf.gz'] },
+    expression: { type: 'string', label: 'Filter expression', required: true,  default: 'QUAL>20' },
+  },
+  outputSchema: {
+    filteredVcf: { type: 'file', label: 'Filtered VCF', ext: ['vcf.gz'] },
+  },
+};
+
 export const bcftoolsStatsDefinition: PipelineStepDefinition = {
   id: 'bcftools-stats',
   type: 'native-tool',

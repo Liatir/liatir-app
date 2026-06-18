@@ -32,7 +32,7 @@ const typeFiles = walk(SRC_TS).sort();
 
 const PREAMBLE = `
 // ── Primitive aliases ──────────────────────────────────────────────────────
-type DtrPlatform = "macos" | "linux" | "windows";
+type LiaPlatform = "macos" | "linux" | "windows";
 type Brand<T, B extends string> = T & { readonly __brand: B };
 type U8  = Brand<number, "u8">;
 type U16 = Brand<number, "u16">;

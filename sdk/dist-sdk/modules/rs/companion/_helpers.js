@@ -43,6 +43,6 @@ const launchCompanion = async (core, config) => {
     let appConfig = config;
     if (appConfig && config?.url)
         appConfig["url"] = urlValidation.value || "";
-    core.invoke("dtr_launch_companion", { appConfig });
+    core.invoke("lia_launch_companion", { appConfig });
 };
 exports.launchCompanion = launchCompanion;

@@ -55,7 +55,7 @@ fn try_get_version(name: &str) -> Option<String> {
 ///
 /// The `binary` name must be a simple identifier (no slashes, no path traversal).
 #[tauri::command]
-pub async fn dtr_deps_check(binary: String) -> Result<serde_json::Value, String> {
+pub async fn lia_deps_check(binary: String) -> Result<serde_json::Value, String> {
     if binary.is_empty()
         || binary.contains('/')
         || binary.contains('\\')
@@ -87,13 +87,13 @@ pub async fn dtr_deps_check(binary: String) -> Result<serde_json::Value, String>
 
 /// Check multiple binaries at once.
 #[tauri::command]
-pub async fn dtr_deps_check_many(
+pub async fn lia_deps_check_many(
     binaries: Vec<String>,
 ) -> Result<Vec<serde_json::Value>, String> {
     let mut results = Vec::with_capacity(binaries.len());
 
     for binary in binaries {
-        let result = dtr_deps_check(binary).await?;
+        let result = lia_deps_check(binary).await?;
         results.push(result);
     }
 

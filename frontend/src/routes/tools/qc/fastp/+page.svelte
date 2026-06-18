@@ -88,7 +88,7 @@
     const api = liatir();
 
     try {
-      const paths = await api!.invoke('dtr_fs_paths', {}) as { data: string; cache: string };
+      const paths = await api!.invoke('lia_fs_paths', {}) as { data: string; cache: string };
       const base = `${paths.data}/tool-outputs`;
       const jsonPath = `${base}/fastp-${runId}.json`;
       const out1Path = `${base}/fastp-${runId}-R1.fastq.gz`;
@@ -110,14 +110,14 @@
         throw new Error(result.stderr || `fastp exited with code ${result.exitCode}`);
       }
 
-      const jsonText = await api!.invoke('dtr_read_file_text', { path: jsonPath }) as string;
+      const jsonText = await api!.invoke('lia_read_file_text', { path: jsonPath }) as string;
       const parsed = parseFastpJson(jsonText);
       const output = fastpToToolOutput(parsed);
       const endedAt = Date.now();
 
       // Collect output files
       const outputFiles: RunOutputFile[] = [];
-      const trySize = async (p: string) => { try { return await api!.invoke('dtr_file_size', { path: p }) as number; } catch { return undefined; } };
+      const trySize = async (p: string) => { try { return await api!.invoke('lia_file_size', { path: p }) as number; } catch { return undefined; } };
       outputFiles.push({ label: 'Trimmed R1', path: out1Path, ext: 'fastq.gz', size: await trySize(out1Path) });
       if (isPaired) {
         outputFiles.push({ label: 'Trimmed R2', path: out2Path, ext: 'fastq.gz', size: await trySize(out2Path) });

@@ -154,16 +154,16 @@ export async function createLiatir(): Promise<LiatirNode> {
 
   const jobs: LiatirNodeJobs = {
     spawn: (cmd, args = [], opts) =>
-      invoke<SpawnResult>("dtr_jobs_spawn", { cmd, args, cwd: opts?.cwd }),
+      invoke<SpawnResult>("lia_jobs_spawn", { cmd, args, cwd: opts?.cwd }),
 
-    kill: (jobId) => invoke<boolean>("dtr_jobs_kill", { jobId }),
+    kill: (jobId) => invoke<boolean>("lia_jobs_kill", { jobId }),
 
-    status: (jobId) => invoke<JobEntry>("dtr_jobs_status", { jobId }),
+    status: (jobId) => invoke<JobEntry>("lia_jobs_status", { jobId }),
 
-    list: () => invoke<JobEntry[]>("dtr_jobs_list", {}),
+    list: () => invoke<JobEntry[]>("lia_jobs_list", {}),
 
     getOutput: (jobId, since) =>
-      invoke<JobOutput>("dtr_jobs_get_output", { jobId, since }),
+      invoke<JobOutput>("lia_jobs_get_output", { jobId, since }),
 
     async run(cmd, args = [], opts = {}) {
       const { jobId } = await jobs.spawn(cmd, args, { cwd: opts.cwd });
@@ -192,14 +192,14 @@ export async function createLiatir(): Promise<LiatirNode> {
   };
 
   const deps: LiatirNodeDeps = {
-    check: (name) => invoke<DepResult>("dtr_deps_check", { name }),
-    checkMany: (names) => invoke<DepResult[]>("dtr_deps_check_many", { names }),
+    check: (name) => invoke<DepResult>("lia_deps_check", { name }),
+    checkMany: (names) => invoke<DepResult[]>("lia_deps_check_many", { names }),
   };
 
   return {
     jobs,
     deps,
-    paths: () => invoke<LiatirNodePaths>("dtr_fs_paths", {}),
+    paths: () => invoke<LiatirNodePaths>("lia_fs_paths", {}),
     invoke,
   };
 }

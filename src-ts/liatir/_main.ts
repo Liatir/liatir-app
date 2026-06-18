@@ -13,7 +13,7 @@ export const LiatirInstance: LiatirInstanceInterface = {
     }
 }
 
-export const dtrInitiators = async () => {
+export const liaInitiators = async () => {
     try {
         if(!LiatirInstance.ready()) throw("Liatir instance not found");
 
@@ -27,4 +27,4 @@ export const dtrInitiators = async () => {
     }
 }
 
-export const dtrReadyEventListener = (callback: Function) => window.addEventListener(READY_EVENT_NAME, () => callback());
+export const liaReadyEventListener = (callback: Function) => window.addEventListener(READY_EVENT_NAME, () => callback());

@@ -7,7 +7,7 @@ import type { DepsInterface } from "../modules/rs/deps/_types";
 import type { QcInterface } from "../modules/qc/_types";
 import { WindowTauri } from "../core/_types";
 
-export type DtrPlatform = "macos" | "linux" | "windows";
+export type LiaPlatform = "macos" | "linux" | "windows";
 
 export type LiatirAPI = {
   readonly isAvailable: boolean;

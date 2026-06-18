@@ -1,0 +1,434 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import PageHeader from '$lib/components/layout/PageHeader.svelte';
+  import Card from '$lib/components/ui/Card.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
+  import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
+  import { liatir } from '$lib/api';
+  import { fmtDuration } from '$lib/utils';
+  import { dataFiles } from '$lib/stores/dataFiles.svelte';
+  import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
+  import { confirm } from '$lib/stores/confirm.svelte';
+  import { runNativeTool } from '$lib/utils/native-tool';
+  import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
+  import type { ToolOutput, StatsSection, TextSection, TableSection } from '$lib/types/tool-output';
+
+  // ── dep check ────────────────────────────────────────────────────
+  let depChecked   = $state(false);
+  let depAvailable = $state(false);
+  let depVersion   = $state<string | null>(null);
+
+  // ── index form ───────────────────────────────────────────────────
+  let filePath  = $state('');
+  let running   = $state(false);
+  let startedAt = $state<number | null>(null);
+
+  // ── extract form ─────────────────────────────────────────────────
+  let extractRegion  = $state('');
+  let extractRunning = $state(false);
+  let extractOutput  = $state<string | null>(null);
+  let extractError   = $state<string | null>(null);
+
+  // ── history ──────────────────────────────────────────────────────
+  let selectedRunId = $state<string | null>(null);
+  let loadedOutput  = $state<ToolOutput | null>(null);
+  let loadingOutput = $state(false);
+
+  const faidxRuns   = $derived(analysisRuns.byTool('samtools-faidx'));
+  const fastaFiles  = $derived(dataFiles.byExt('fasta', 'fa', 'fna', 'faa', 'fasta.gz', 'fa.gz', 'fna.gz'));
+  const selectedRun = $derived(faidxRuns.find(r => r.id === selectedRunId) ?? null);
+  const displayError = $derived<string | null>(
+    selectedRun?.status === 'error' ? (selectedRun.error ?? 'Unknown error') : null
+  );
+
+  $effect(() => {
+    const id = selectedRunId;
+    if (!id) { loadedOutput = null; return; }
+    loadingOutput = true;
+    analysisRuns.loadOutput(id).then(out => {
+      loadedOutput = out;
+      loadingOutput = false;
+    });
+  });
+
+  onMount(async () => {
+    dataFiles.init();
+    analysisRuns.init().then(() => {
+      if (faidxRuns.length > 0 && selectedRunId === null) {
+        selectedRunId = faidxRuns[0].id;
+      }
+    });
+
+    const api = liatir();
+    if (api) {
+      const result = await api.deps.check('samtools');
+      depAvailable = result.available;
+      depVersion   = result.version;
+    }
+    depChecked = true;
+  });
+
+  // ── run faidx (index creation) ───────────────────────────────────
+  async function runFaidx() {
+    if (!filePath) return;
+
+    running   = true;
+    selectedRunId = null;
+    startedAt = Date.now();
+
+    const runId    = crypto.randomUUID();
+    const fileName = filePath.split(/[\\/]/).pop() ?? filePath;
+    const t0       = startedAt;
+    const fileSize = dataFiles.files.find(f => f.path === filePath)?.size;
+    const inputSizes = fileSize != null ? [fileSize] : undefined;
+
+    try {
+      // samtools faidx writes the index to <file>.fai (no stdout output)
+      const result = await runNativeTool('samtools', ['faidx', filePath]);
+
+      if (!result.ok) {
+        throw new Error(result.stderr || `samtools faidx exited with code ${result.exitCode}`);
+      }
+
+      // Read the generated .fai file to display sequence table
+      const api = liatir();
+      if (!api) throw new Error('Liatir API not available');
+
+      const faiPath = `${filePath}.fai`;
+      const faiText = await api.invoke('lia_read_file_text', { path: faiPath }) as string;
+      const output  = parseFaiToToolOutput(faiText, faiPath);
+      const endedAt = Date.now();
+
+      // Register the .fai file in Data
+      await dataFiles.add(faiPath);
+
+      await analysisRuns.add({
+        id: runId, tool: 'samtools-faidx', label: fileName,
+        inputs: [filePath], inputSizes,
+        params: { subcommand: 'faidx' },
+        status: 'done',
+        startedAt: t0, endedAt, durationMs: endedAt - t0,
+        output, error: null,
+      });
+    } catch (e) {
+      const endedAt = Date.now();
+      await analysisRuns.add({
+        id: runId, tool: 'samtools-faidx', label: fileName,
+        inputs: [filePath], inputSizes,
+        params: { subcommand: 'faidx' },
+        status: 'error',
+        startedAt: t0, endedAt, durationMs: endedAt - t0,
+        output: null, error: String(e),
+      });
+    } finally {
+      running   = false;
+      startedAt = null;
+      selectedRunId = runId;
+    }
+  }
+
+  // ── run faidx (subsequence extract) ─────────────────────────────
+  async function extractSubsequence() {
+    if (!filePath || !extractRegion.trim()) return;
+    extractRunning = true;
+    extractOutput  = null;
+    extractError   = null;
+
+    try {
+      const result = await runNativeTool('samtools', ['faidx', filePath, extractRegion.trim()]);
+      if (!result.ok && result.stdout.trim() === '') {
+        throw new Error(result.stderr || `samtools faidx exited with code ${result.exitCode}`);
+      }
+      extractOutput = result.stdout;
+    } catch (e) {
+      extractError = String(e);
+    } finally {
+      extractRunning = false;
+    }
+  }
+
+  function parseFaiToToolOutput(faiText: string, faiPath: string): ToolOutput {
+    const lines = faiText.split('\n').filter(l => l.trim());
+    const rows = lines.map(line => {
+      const [name, lenStr, , basesPerLine, bytesPerLine] = line.split('\t');
+      const len = parseInt(lenStr ?? '0', 10);
+      return { name: name ?? '', length: len };
+    });
+
+    const totalBases = rows.reduce((s, r) => s + r.length, 0);
+
+    const stats: StatsSection = {
+      type: 'stats',
+      cols: 3,
+      items: [
+        { label: 'Sequences', value: rows.length.toLocaleString(), description: 'Total number of sequences in the FASTA' },
+        { label: 'Total bases', value: fmtLen(totalBases), description: `${totalBases.toLocaleString()} bp` },
+        { label: 'Index file', value: faiPath.split(/[\\/]/).pop() ?? faiPath, description: 'Created next to the FASTA file' },
+      ],
+    };
+
+    const table: TableSection = {
+      type: 'table',
+      label: 'Sequences',
+      headers: ['Name', 'Length'],
+      rows: rows.map(r => [r.name, fmtLen(r.length)]),
+    };
+
+    return { sections: [stats, table] };
+  }
+
+  function fmtLen(n: number): string {
+    if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2)} Gb`;
+    if (n >= 1_000_000)     return `${(n / 1_000_000).toFixed(2)} Mb`;
+    if (n >= 1_000)         return `${(n / 1_000).toFixed(1)} Kb`;
+    return `${n} bp`;
+  }
+
+  async function deleteRun(id: string, label: string) {
+    const ok = await confirm({
+      title: 'Delete run',
+      message: `Delete the run for "${label}"?`,
+      confirmLabel: 'Delete',
+    });
+    if (!ok) return;
+    if (selectedRunId === id) {
+      selectedRunId = faidxRuns.find(r => r.id !== id)?.id ?? null;
+    }
+    await analysisRuns.remove(id);
+  }
+
+  function fmtDate(ms: number) {
+    return new Date(ms).toLocaleDateString([], {
+      month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  }
+</script>
+
+<div class="flex h-full overflow-hidden">
+
+  <!-- Run history sidebar -->
+  <div class="w-52 shrink-0 border-r border-border bg-surface flex flex-col">
+    <div class="flex items-center justify-between px-3 py-3 border-b border-border">
+      <span class="text-xs font-medium text-zinc-600">Run history</span>
+      {#if faidxRuns.length > 0}
+        <span class="text-[10px] text-zinc-400">{faidxRuns.length}</span>
+      {/if}
+    </div>
+
+    <div class="flex-1 overflow-y-auto py-1">
+      {#if faidxRuns.length === 0}
+        <p class="text-xs text-zinc-400 text-center py-8 px-3 leading-relaxed">
+          No runs yet.<br />Results will appear here.
+        </p>
+      {:else}
+        {#each faidxRuns as run (run.id)}
+          <div
+            class="group relative flex items-start transition-colors
+              {selectedRunId === run.id ? 'bg-brand/8' : 'hover:bg-surface-2'}"
+          >
+            <button
+              onclick={() => selectedRunId = run.id}
+              class="flex-1 text-left px-3 py-2.5 min-w-0"
+            >
+              <div class="flex items-center gap-1.5 mb-0.5">
+                <span class="h-1.5 w-1.5 rounded-full shrink-0
+                  {run.status === 'done' ? 'bg-emerald-500' : 'bg-red-500'}">
+                </span>
+                <p class="text-xs font-medium truncate
+                  {selectedRunId === run.id ? 'text-brand' : 'text-zinc-700'}">
+                  {run.label}
+                </p>
+              </div>
+              <p class="text-[10px] text-zinc-400 pl-3">
+                {fmtDate(run.startedAt)} · {fmtDuration(run.startedAt, run.endedAt)}
+              </p>
+            </button>
+            <button
+              onclick={() => deleteRun(run.id, run.label)}
+              aria-label="Delete run"
+              class="opacity-0 group-hover:opacity-100 p-1.5 mt-2 mr-1.5 shrink-0
+                     text-zinc-400 hover:text-red-500 transition-all rounded"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        {/each}
+      {/if}
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <PageHeader
+      title="Samtools faidx"
+      description="Index FASTA files and extract subsequences by coordinate"
+    >
+      {#snippet actions()}
+        <Button variant="ghost" size="sm" onclick={() => goto('/tools')}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 5l-7 7 7 7" />
+          </svg>
+          Back
+        </Button>
+      {/snippet}
+    </PageHeader>
+
+    <div class="flex-1 overflow-y-auto p-6 space-y-5">
+
+      <!-- Dep check gate -->
+      {#if !depChecked}
+        <Card class="p-5 flex items-center gap-3">
+          <svg class="animate-spin h-4 w-4 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+          </svg>
+          <span class="text-sm text-zinc-500">Checking for samtools…</span>
+        </Card>
+
+      {:else if !depAvailable}
+        <Card class="p-5 space-y-4">
+          <div class="flex items-start gap-3">
+            <div class="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-zinc-800">samtools not found</p>
+              <p class="text-xs text-zinc-500 mt-0.5 leading-relaxed">
+                samtools was not detected in your PATH.
+              </p>
+            </div>
+          </div>
+          <div class="rounded-lg border border-border bg-surface-2 p-3 space-y-1.5 font-mono text-xs text-zinc-700">
+            <div class="flex items-center gap-2">
+              <span class="text-zinc-400 w-14 shrink-0">macOS</span>
+              <code class="bg-zinc-100 px-2 py-0.5 rounded">brew install samtools</code>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-zinc-400 w-14 shrink-0">Ubuntu</span>
+              <code class="bg-zinc-100 px-2 py-0.5 rounded">sudo apt install samtools</code>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-zinc-400 w-14 shrink-0">conda</span>
+              <code class="bg-zinc-100 px-2 py-0.5 rounded">conda install -c bioconda samtools</code>
+            </div>
+          </div>
+        </Card>
+
+      {:else}
+        <!-- Index card -->
+        <Card class="p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-zinc-800">faidx — Create index</h2>
+            {#if depVersion}
+              <span class="text-[10px] text-zinc-400 font-mono">{depVersion}</span>
+            {/if}
+          </div>
+
+          <p class="text-xs text-zinc-500 leading-relaxed">
+            Creates a <code class="font-mono">.fai</code> index file next to the FASTA.
+            Required for random-access queries and many downstream tools.
+          </p>
+
+          <FilePickerPopup
+            files={fastaFiles}
+            value={filePath}
+            label="FASTA file"
+            emptyText="No FASTA files in Data yet."
+            onchange={(p) => filePath = p}
+          />
+
+          <div class="flex items-center gap-3 pt-1">
+            <Button
+              variant="primary"
+              disabled={!filePath || running}
+              loading={running}
+              onclick={runFaidx}
+            >
+              Create index
+            </Button>
+            {#if running && startedAt}
+              <span class="text-xs text-zinc-400">Elapsed: {fmtDuration(startedAt)}</span>
+            {/if}
+          </div>
+        </Card>
+
+        <!-- Extract card — only shown when a file is selected -->
+        {#if filePath}
+          <Card class="p-5 space-y-4">
+            <h2 class="text-sm font-semibold text-zinc-800">faidx — Extract subsequence</h2>
+            <p class="text-xs text-zinc-500 leading-relaxed">
+              Requires an existing <code class="font-mono">.fai</code> index.
+              Use the region format <code class="font-mono">chr:start-end</code> (1-based, inclusive).
+            </p>
+
+            <div class="space-y-1">
+              <label class="text-xs font-medium text-zinc-600">Region</label>
+              <input
+                type="text"
+                bind:value={extractRegion}
+                placeholder="e.g. chr1:1000-2000"
+                class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm
+                       placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand/30"
+              />
+            </div>
+
+            <Button
+              variant="secondary"
+              disabled={!extractRegion.trim() || extractRunning}
+              loading={extractRunning}
+              onclick={extractSubsequence}
+            >
+              Extract
+            </Button>
+
+            {#if extractError}
+              <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 font-mono">
+                {extractError}
+              </div>
+            {:else if extractOutput}
+              <div class="rounded-lg border border-border bg-zinc-50 px-3 py-2 font-mono text-xs text-zinc-700 whitespace-pre overflow-x-auto max-h-64">
+                {extractOutput}
+              </div>
+            {/if}
+          </Card>
+        {/if}
+
+        <!-- Run results -->
+        {#if displayError}
+          <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-mono">
+            {displayError}
+          </div>
+        {:else if loadingOutput}
+          <div class="flex justify-center py-12">
+            <svg class="animate-spin h-5 w-5 text-zinc-400" viewBox="0 0 24 24" fill="none">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            </svg>
+          </div>
+        {:else if loadedOutput}
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                {selectedRun?.label ?? 'Results'}
+              </h2>
+              {#if selectedRun}
+                <span class="text-xs text-zinc-400">
+                  {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}
+                </span>
+              {/if}
+            </div>
+            <ToolResultView output={loadedOutput} />
+          </div>
+        {/if}
+      {/if}
+
+    </div>
+  </div>
+</div>

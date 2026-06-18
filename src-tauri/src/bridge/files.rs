@@ -29,7 +29,7 @@ fn within_size_cap(pb: &PathBuf, max_bytes: Option<u64>) -> bool {
 }
 
 #[tauri::command]
-pub async fn dtr_file_open(
+pub async fn lia_file_open(
   app: AppHandle,
   multi: bool,
   allowed_extensions: Option<Vec<String>>,
@@ -105,7 +105,7 @@ pub struct OpenWithBytesResult {
 /// Apre uno o più file, opzionalmente limita le estensioni selezionabili, e ritorna i contenuti come bytes.
 /// Applica anche un size cap opzionale (in bytes); i file che eccedono il cap vengono ignorati.
 #[tauri::command]
-pub async fn dtr_file_open_with_bytes(
+pub async fn lia_file_open_with_bytes(
   app: AppHandle,
   multi: bool,
   allowed_extensions: Option<Vec<String>>,
@@ -176,7 +176,7 @@ pub async fn dtr_file_open_with_bytes(
 }
 
 #[tauri::command]
-pub async fn dtr_file_save(app: AppHandle, default_name: Option<String>) -> Result<String, String> {
+pub async fn lia_file_save(app: AppHandle, default_name: Option<String>) -> Result<String, String> {
   let handle = app.clone();
 
   let saved = tauri::async_runtime::spawn_blocking(move || {

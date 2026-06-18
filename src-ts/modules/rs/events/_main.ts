@@ -4,10 +4,10 @@ import type { DragDropPayload, EventsInterface } from "../../../types";
 
 export function buildEvents(core: { invoke: LiatirAPI["invoke"] }): EventsInterface {
   return {
-    emit: (event: string, payload?: unknown) => core.invoke("dtr_event_emit_to_current_window", { event, payload }),
-    emitToAll: (event: string, payload?: unknown) => core.invoke("dtr_event_emit", { event, payload }),
+    emit: (event: string, payload?: unknown) => core.invoke("lia_event_emit_to_current_window", { event, payload }),
+    emitToAll: (event: string, payload?: unknown) => core.invoke("lia_event_emit", { event, payload }),
     emitTo: (windowLabel: string, event: string, payload?: unknown) =>
-      core.invoke("dtr_event_emit_to", { windowLabel, event, payload }),
+      core.invoke("lia_event_emit_to", { windowLabel, event, payload }),
 
     on: async (event: string, handler: (payload: any) => void) => listenForEvent(event, handler),
 

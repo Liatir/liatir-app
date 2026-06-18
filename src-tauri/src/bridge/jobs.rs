@@ -75,7 +75,7 @@ impl JobRegistry {
 // ---------------------------------
 
 #[tauri::command]
-pub async fn dtr_jobs_spawn(
+pub async fn lia_jobs_spawn(
     app: AppHandle,
     cmd: String,
     args: Vec<String>,
@@ -182,7 +182,7 @@ pub async fn dtr_jobs_spawn(
 }
 
 #[tauri::command]
-pub fn dtr_jobs_kill(app: AppHandle, job_id: String) -> Result<bool, String> {
+pub fn lia_jobs_kill(app: AppHandle, job_id: String) -> Result<bool, String> {
     let registry = app.state::<JobRegistry>();
     let mut jobs = registry.0.lock().unwrap();
 
@@ -200,7 +200,7 @@ pub fn dtr_jobs_kill(app: AppHandle, job_id: String) -> Result<bool, String> {
 }
 
 #[tauri::command]
-pub fn dtr_jobs_status(app: AppHandle, job_id: String) -> Result<JobEntry, String> {
+pub fn lia_jobs_status(app: AppHandle, job_id: String) -> Result<JobEntry, String> {
     let registry = app.state::<JobRegistry>();
     let jobs = registry.0.lock().unwrap();
 
@@ -210,7 +210,7 @@ pub fn dtr_jobs_status(app: AppHandle, job_id: String) -> Result<JobEntry, Strin
 }
 
 #[tauri::command]
-pub fn dtr_jobs_list(app: AppHandle) -> Result<Vec<JobEntry>, String> {
+pub fn lia_jobs_list(app: AppHandle) -> Result<Vec<JobEntry>, String> {
     let registry = app.state::<JobRegistry>();
     let jobs = registry.0.lock().unwrap();
 
@@ -221,7 +221,7 @@ pub fn dtr_jobs_list(app: AppHandle) -> Result<Vec<JobEntry>, String> {
 }
 
 #[tauri::command]
-pub fn dtr_jobs_clear_done(app: AppHandle) -> Result<usize, String> {
+pub fn lia_jobs_clear_done(app: AppHandle) -> Result<usize, String> {
     let registry = app.state::<JobRegistry>();
     let mut jobs = registry.0.lock().unwrap();
 
@@ -234,7 +234,7 @@ pub fn dtr_jobs_clear_done(app: AppHandle) -> Result<usize, String> {
 /// Returns buffered stdout/stderr lines for a job, optionally from a given offset.
 /// `since` is the index of the first line to return (allows incremental polling).
 #[tauri::command]
-pub fn dtr_jobs_get_output(
+pub fn lia_jobs_get_output(
     app: AppHandle,
     job_id: String,
     since: Option<usize>,

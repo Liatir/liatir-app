@@ -69,7 +69,7 @@
     if (!api) { running = false; return; }
 
     try {
-      const res = await api.invoke('dtr_liatir_run', { path: mod.path, inputs: values }) as { jobId: string };
+      const res = await api.invoke('lia_liatir_run', { path: mod.path, inputs: values }) as { jobId: string };
       jobId = res.jobId;
 
       await new Promise<void>((resolve) => {
