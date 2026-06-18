@@ -14,6 +14,7 @@
   import { parseFastpJson, fastpToToolOutput } from '$lib/tools/qc/fastp';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import type { ToolOutput } from '$lib/types/tool-output';
+  import type { RunOutputFile } from '$lib/types/pipeline';
 
   // ── dep check ────────────────────────────────────────────────────
   let depChecked = $state(false);
@@ -34,6 +35,7 @@
   const fastpRuns = $derived(analysisRuns.byTool('fastp'));
   const fastqFiles = $derived(dataFiles.byExt('fastq', 'fastq.gz', 'fq', 'fq.gz'));
   const selectedRun = $derived(fastpRuns.find(r => r.id === selectedRunId) ?? null);
+  const selectedRunOutputFiles = $derived(selectedRun?.outputFiles ?? []);
   const displayError = $derived<string | null>(
     selectedRun?.status === 'error' ? (selectedRun.error ?? 'Unknown error') : null
   );
@@ -86,18 +88,24 @@
     const api = liatir();
 
     try {
-      // Get app data dir for the JSON output file
       const paths = await api!.invoke('dtr_fs_paths', {}) as { data: string; cache: string };
-      const jsonPath = `${paths.data}/tool-outputs/fastp-${runId}.json`;
+      const base = `${paths.data}/tool-outputs`;
+      const jsonPath = `${base}/fastp-${runId}.json`;
+      const out1Path = `${base}/fastp-${runId}-R1.fastq.gz`;
+      const out2Path = `${base}/fastp-${runId}-R2.fastq.gz`;
 
-      const args = ['--in1', r1Path, '--json', jsonPath, '--disable_adapter_trimming'];
+      const args = [
+        '--in1', r1Path,
+        '--out1', out1Path,
+        '--json', jsonPath,
+        '--html', '/dev/null',
+      ];
       if (isPaired) {
-        args.push('--in2', r2Path);
+        args.push('--in2', r2Path, '--out2', out2Path);
       }
 
       const result = await runNativeTool('fastp', args);
 
-      // fastp writes JSON to disk; exit code 0 = success
       if (!result.ok) {
         throw new Error(result.stderr || `fastp exited with code ${result.exitCode}`);
       }
@@ -107,11 +115,20 @@
       const output = fastpToToolOutput(parsed);
       const endedAt = Date.now();
 
+      // Collect output files
+      const outputFiles: RunOutputFile[] = [];
+      const trySize = async (p: string) => { try { return await api!.invoke('dtr_file_size', { path: p }) as number; } catch { return undefined; } };
+      outputFiles.push({ label: 'Trimmed R1', path: out1Path, ext: 'fastq.gz', size: await trySize(out1Path) });
+      if (isPaired) {
+        outputFiles.push({ label: 'Trimmed R2', path: out2Path, ext: 'fastq.gz', size: await trySize(out2Path) });
+      }
+
       await analysisRuns.add({
         id: runId, tool: 'fastp', label,
         inputs: isPaired ? [r1Path, r2Path] : [r1Path],
         inputSizes: inputSizes.length > 0 ? inputSizes : undefined,
         params: { paired: isPaired },
+        outputFiles,
         status: 'done',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, error: null,
@@ -354,7 +371,7 @@
                 </span>
               {/if}
             </div>
-            <ToolResultView output={loadedOutput} />
+            <ToolResultView output={loadedOutput} outputFiles={selectedRunOutputFiles} />
           </div>
         {/if}
       {/if}

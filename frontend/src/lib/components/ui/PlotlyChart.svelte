@@ -67,9 +67,9 @@
     originalCount = oc;
     Plotly.newPlot(el, traces as any, merged as any, {
       responsive: true,
-      displayModeBar: true,
+      displayModeBar: false,
       displaylogo: false,
-      modeBarButtons: [['toImage', 'zoom2d', 'pan2d', 'resetScale2d']] as any,
+      modeBarButtons: [['zoom2d', 'pan2d', 'resetScale2d']] as any,
     });
   });
 

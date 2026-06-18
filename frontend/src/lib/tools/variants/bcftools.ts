@@ -1,4 +1,19 @@
 import type { ToolOutput, StatsSection, TextSection } from '$lib/types/tool-output';
+import type { PipelineStepDefinition } from '$lib/types/pipeline';
+
+export const bcftoolsStatsDefinition: PipelineStepDefinition = {
+  id: 'bcftools-stats',
+  type: 'native-tool',
+  label: 'BCFtools stats',
+  description: 'Variant statistics for VCF/BCF files.',
+  category: 'Variant Calling',
+  inputSchema: {
+    inputFile: { type: 'file', label: 'VCF / BCF file', required: true, accept: ['vcf', 'vcf.gz', 'bcf', 'bcf.gz'] },
+  },
+  outputSchema: {
+    stats: { type: 'stats', label: 'Variant statistics' },
+  },
+};
 
 export interface BcftoolsStatsResult {
   samples: number;

@@ -1,4 +1,22 @@
 import type { ToolOutput, StatsSection, TextSection } from '$lib/types/tool-output';
+import type { PipelineStepDefinition } from '$lib/types/pipeline';
+
+export const fastpDefinition: PipelineStepDefinition = {
+  id: 'fastp',
+  type: 'native-tool',
+  label: 'fastp',
+  description: 'FASTQ quality trimming, adapter removal, and QC reporting.',
+  category: 'Quality Control',
+  inputSchema: {
+    r1: { type: 'file', label: 'R1 FASTQ', required: true, accept: ['fastq', 'fastq.gz', 'fq', 'fq.gz'] },
+    r2: { type: 'file', label: 'R2 FASTQ (optional, paired-end)', required: false, accept: ['fastq', 'fastq.gz', 'fq', 'fq.gz'] },
+  },
+  outputSchema: {
+    trimmedR1:  { type: 'file', label: 'Trimmed R1', ext: ['fastq.gz'] },
+    trimmedR2:  { type: 'file', label: 'Trimmed R2', ext: ['fastq.gz'], description: 'Only produced in paired-end mode.' },
+    stats:      { type: 'stats', label: 'QC statistics' },
+  },
+};
 
 export interface FastpSummary {
   before: {

@@ -1,13 +1,57 @@
 <script lang="ts">
   import Card from './Card.svelte';
+  import Button from './Button.svelte';
   import InfoPopup from './InfoPopup.svelte';
   import PlotlyChart from './PlotlyChart.svelte';
   import type { ToolOutput, StatsSection, NumberSection, PlotlySection, TextSection } from '$lib/types/tool-output';
+  import type { RunOutputFile } from '$lib/types/pipeline';
+  import { dataFiles } from '$lib/stores/dataFiles.svelte';
+  import { liatir } from '$lib/api';
 
-  let { output }: { output: ToolOutput } = $props();
+  let { output, outputFiles }: { output: ToolOutput; outputFiles?: RunOutputFile[] } = $props();
 
   const TEXT_PREVIEW_LINES = 300;
   let expandedSections = $state(new Set<number>());
+
+  let addingToData = $state<Set<string>>(new Set());
+  let savingAs = $state<Set<string>>(new Set());
+
+  function fmtBytes(b: number): string {
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 ** 2) return `${(b / 1024).toFixed(1)} KB`;
+    if (b < 1024 ** 3) return `${(b / 1024 ** 2).toFixed(1)} MB`;
+    return `${(b / 1024 ** 3).toFixed(2)} GB`;
+  }
+
+  async function addToData(file: RunOutputFile) {
+    const next = new Set(addingToData);
+    next.add(file.path);
+    addingToData = next;
+    try {
+      await dataFiles.add(file.path);
+    } finally {
+      const s = new Set(addingToData);
+      s.delete(file.path);
+      addingToData = s;
+    }
+  }
+
+  async function saveAs(file: RunOutputFile) {
+    const api = liatir();
+    if (!api) return;
+    const next = new Set(savingAs);
+    next.add(file.path);
+    savingAs = next;
+    try {
+      const destPath = await api.invoke('dtr_file_save', { defaultName: file.label + '.' + file.ext }) as string;
+      if (!destPath) return;
+      await api.invoke('dtr_fs_copy', { src: file.path, dest: destPath });
+    } finally {
+      const s = new Set(savingAs);
+      s.delete(file.path);
+      savingAs = s;
+    }
+  }
 
   function fmtNumber(value: number, format?: string): string {
     if (format === 'integer') return value.toLocaleString();
@@ -22,6 +66,48 @@
 </script>
 
 <div class="space-y-4">
+
+  {#if outputFiles && outputFiles.length > 0}
+    <Card class="p-4">
+      <p class="text-xs font-medium text-zinc-500 mb-3">Output files</p>
+      <div class="space-y-2">
+        {#each outputFiles as file (file.path)}
+          <div class="flex items-center gap-3 rounded-lg border border-border bg-surface-2 px-3 py-2.5">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4f39f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
+              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+              <polyline points="13 2 13 9 20 9" />
+            </svg>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-medium text-zinc-800 truncate">{file.label}</p>
+              {#if file.size != null}
+                <p class="text-[10px] text-zinc-400 font-mono">{fmtBytes(file.size)}</p>
+              {/if}
+            </div>
+            <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-zinc-100 text-zinc-600 border border-zinc-200">
+              {file.ext}
+            </span>
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={addingToData.has(file.path)}
+              onclick={() => addToData(file)}
+            >
+              Add to Data
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              loading={savingAs.has(file.path)}
+              onclick={() => saveAs(file)}
+            >
+              Save as…
+            </Button>
+          </div>
+        {/each}
+      </div>
+    </Card>
+  {/if}
+
   {#each output.sections as section, sectionIdx}
 
     {#if section.type === 'stats'}

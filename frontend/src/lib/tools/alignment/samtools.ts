@@ -1,4 +1,19 @@
 import type { ToolOutput, StatsSection, TextSection } from '$lib/types/tool-output';
+import type { PipelineStepDefinition } from '$lib/types/pipeline';
+
+export const samtoolsFlagstatDefinition: PipelineStepDefinition = {
+  id: 'samtools-flagstat',
+  type: 'native-tool',
+  label: 'Samtools flagstat',
+  description: 'Alignment statistics for BAM/SAM/CRAM files.',
+  category: 'Alignment',
+  inputSchema: {
+    inputFile: { type: 'file', label: 'BAM / SAM / CRAM', required: true, accept: ['bam', 'sam', 'cram'] },
+  },
+  outputSchema: {
+    stats: { type: 'stats', label: 'Alignment statistics' },
+  },
+};
 
 export interface FlagstatResult {
   total: number;

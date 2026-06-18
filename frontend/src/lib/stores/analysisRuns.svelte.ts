@@ -1,5 +1,8 @@
 import { liatir } from '$lib/api';
 import type { ToolOutput } from '$lib/types/tool-output';
+import type { RunOutputFile } from '$lib/types/pipeline';
+
+export type { RunOutputFile };
 
 export interface AnalysisRunMeta {
   id: string;
@@ -8,6 +11,7 @@ export interface AnalysisRunMeta {
   inputs: string[];
   inputSizes?: number[];
   outputSize?: number;
+  outputFiles?: RunOutputFile[];
   params: Record<string, unknown>;
   status: 'done' | 'error';
   startedAt: number;
