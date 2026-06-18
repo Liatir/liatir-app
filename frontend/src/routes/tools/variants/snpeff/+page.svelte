@@ -13,6 +13,8 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { runNativeTool } from '$lib/utils/native-tool';
   import { snpEffStore } from '$lib/stores/snpeff.svelte';
+  import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
+  import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
   import {
     SNPEFF_GENOMES,
     SNPEFF_DOWNLOAD_URL,
@@ -24,9 +26,7 @@
   import type { RunOutputFile } from '$lib/stores/analysisRuns.svelte';
 
   // ── dep / config state ────────────────────────────────────────────
-  let javaAvailable = $state(false);
-  let javaVersion   = $state<string | null>(null);
-  let depChecked    = $state(false);
+  let depStatus = $state<DepStatus>('checking');
 
   // ── genome state ──────────────────────────────────────────────────
   let selectedGenome = $state('hg38');
@@ -87,14 +87,6 @@
       }
     });
     await snpEffStore.init();
-
-    const api = liatir();
-    if (api) {
-      const r = await api.deps.check('java');
-      javaAvailable = r.available;
-      javaVersion   = r.version;
-    }
-    depChecked = true;
   });
 
   // ── JAR: browse existing ──────────────────────────────────────────
@@ -289,50 +281,13 @@
     <div class="flex-1 overflow-y-auto p-6 space-y-5">
 
       <!-- Step 1: Java check -->
-      {#if !depChecked}
-        <Card class="p-5 flex items-center gap-3">
-          <svg class="animate-spin h-4 w-4 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-          </svg>
-          <span class="text-sm text-zinc-500">Checking for Java…</span>
-        </Card>
+      <DepCheck req={DEP_REQUIREMENTS.java} onStatusChange={(s) => depStatus = s} />
 
-      {:else if !javaAvailable}
-        <Card class="p-5 space-y-3">
-          <div class="flex items-start gap-3">
-            <div class="h-8 w-8 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-            </div>
-            <div>
-              <p class="text-sm font-semibold text-zinc-800">Java not found</p>
-              <p class="text-xs text-zinc-500 mt-0.5">SnpEff requires a Java runtime (JRE 11 or later).</p>
-            </div>
-          </div>
-          <div class="rounded-lg border border-border bg-surface-2 p-3 space-y-1.5 font-mono text-xs text-zinc-700">
-            <div class="flex items-center gap-2">
-              <span class="text-zinc-400 w-14 shrink-0">macOS</span>
-              <code class="bg-zinc-100 px-2 py-0.5 rounded">brew install --cask temurin</code>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-zinc-400 w-14 shrink-0">Ubuntu</span>
-              <code class="bg-zinc-100 px-2 py-0.5 rounded">sudo apt install default-jre</code>
-            </div>
-          </div>
-        </Card>
-
-      {:else}
+      {#if depStatus === 'ok'}
 
         <!-- Step 2: JAR configuration -->
         <Card class="p-5 space-y-4">
-          <div class="flex items-center justify-between">
-            <h2 class="text-sm font-semibold text-zinc-800">1 — SnpEff JAR</h2>
-            {#if javaVersion}
-              <span class="text-[10px] text-zinc-400 font-mono">Java {javaVersion}</span>
-            {/if}
-          </div>
+          <h2 class="text-sm font-semibold text-zinc-800">1 — SnpEff JAR</h2>
 
           {#if snpEffStore.config.jarPath}
             <div class="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5">

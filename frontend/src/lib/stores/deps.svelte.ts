@@ -8,6 +8,7 @@ export interface DepResult {
 }
 
 export const COMMON_TOOLS = [
+  'java',
   'fastqc',
   'bwa',
   'samtools',
@@ -18,6 +19,8 @@ export const COMMON_TOOLS = [
   'snakemake',
   'bcftools',
   'bedtools',
+  'fastp',
+  'seqkit',
 ] as const;
 
 function createDepsStore() {

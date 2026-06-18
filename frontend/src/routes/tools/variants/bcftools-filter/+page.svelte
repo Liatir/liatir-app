@@ -12,6 +12,8 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { runNativeTool } from '$lib/utils/native-tool';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
+  import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
+  import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
   import type { ToolOutput, StatsSection, TextSection } from '$lib/types/tool-output';
   import type { RunOutputFile } from '$lib/stores/analysisRuns.svelte';
 
@@ -25,9 +27,7 @@
   ];
 
   // ── dep check ────────────────────────────────────────────────────
-  let depChecked   = $state(false);
-  let depAvailable = $state(false);
-  let depVersion   = $state<string | null>(null);
+  let depStatus = $state<DepStatus>('checking');
 
   // ── form state ───────────────────────────────────────────────────
   let filePath   = $state('');
@@ -58,21 +58,13 @@
     });
   });
 
-  onMount(async () => {
+  onMount(() => {
     dataFiles.init();
     analysisRuns.init().then(() => {
       if (filterRuns.length > 0 && selectedRunId === null) {
         selectedRunId = filterRuns[0].id;
       }
     });
-
-    const api = liatir();
-    if (api) {
-      const result = await api.deps.check('bcftools');
-      depAvailable = result.available;
-      depVersion   = result.version;
-    }
-    depChecked = true;
   });
 
   // ── run ──────────────────────────────────────────────────────────
@@ -277,55 +269,11 @@
 
     <div class="flex-1 overflow-y-auto p-6 space-y-5">
 
-      <!-- Dep check gate -->
-      {#if !depChecked}
-        <Card class="p-5 flex items-center gap-3">
-          <svg class="animate-spin h-4 w-4 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-          </svg>
-          <span class="text-sm text-zinc-500">Checking for bcftools…</span>
-        </Card>
+      <DepCheck req={DEP_REQUIREMENTS.bcftools} onStatusChange={(s) => depStatus = s} />
 
-      {:else if !depAvailable}
+      {#if depStatus === 'ok'}
         <Card class="p-5 space-y-4">
-          <div class="flex items-start gap-3">
-            <div class="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-              </svg>
-            </div>
-            <div>
-              <p class="text-sm font-semibold text-zinc-800">bcftools not found</p>
-              <p class="text-xs text-zinc-500 mt-0.5">bcftools was not detected in your PATH.</p>
-            </div>
-          </div>
-          <div class="rounded-lg border border-border bg-surface-2 p-3 space-y-1.5 font-mono text-xs text-zinc-700">
-            <div class="flex items-center gap-2">
-              <span class="text-zinc-400 w-14 shrink-0">macOS</span>
-              <code class="bg-zinc-100 px-2 py-0.5 rounded">brew install bcftools</code>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-zinc-400 w-14 shrink-0">Ubuntu</span>
-              <code class="bg-zinc-100 px-2 py-0.5 rounded">sudo apt install bcftools</code>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-zinc-400 w-14 shrink-0">conda</span>
-              <code class="bg-zinc-100 px-2 py-0.5 rounded">conda install -c bioconda bcftools</code>
-            </div>
-          </div>
-        </Card>
-
-      {:else}
-        <!-- Filter form -->
-        <Card class="p-5 space-y-4">
-          <div class="flex items-center justify-between">
-            <h2 class="text-sm font-semibold text-zinc-800">filter</h2>
-            {#if depVersion}
-              <span class="text-[10px] text-zinc-400 font-mono">{depVersion}</span>
-            {/if}
-          </div>
+          <h2 class="text-sm font-semibold text-zinc-800">filter</h2>
 
           <FilePickerPopup
             files={vcfFiles}
@@ -417,7 +365,7 @@
             <ToolResultView output={loadedOutput} outputFiles={selectedRunOutputFiles} />
           </div>
         {/if}
-      {/if}
+      {/if}  <!-- depStatus === 'ok' -->
 
     </div>
   </div>

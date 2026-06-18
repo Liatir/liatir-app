@@ -274,9 +274,6 @@
 <div class="flex flex-col h-full">
   <PageHeader title="Data" description="Files available to tools">
     {#snippet actions()}
-      <Button variant="ghost" size="sm" onclick={addSample} loading={addingSample}>
-        Add sample FASTQ
-      </Button>
       <Button variant="primary" size="sm" onclick={importFiles} loading={importing}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -453,7 +450,6 @@
           </p>
           <div class="flex gap-2 mt-1">
             <Button variant="secondary" size="sm" onclick={importFiles} loading={importing}>Import file</Button>
-            <Button variant="ghost" size="sm" onclick={addSample} loading={addingSample}>Add sample FASTQ</Button>
           </div>
         </div>
 
@@ -504,23 +500,53 @@
                 tabindex="0"
                 onkeydown={(e) => e.key === 'Enter' && !file.missing && openPreview(file)}
               >
-                <div class="h-8 w-8 rounded-lg {file.missing ? 'bg-amber-100 border-amber-200' : 'bg-zinc-100 border-zinc-200'} border flex items-center justify-center shrink-0">
-                  {#if file.missing}
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                {#if !file.missing && !file.protected}
+                  <button
+                    onclick={async (e) => {
+                      e.stopPropagation();
+                      const ok = await confirm({ title: 'Remove file', message: `Remove "${file.name}" from the list?`, confirmLabel: 'Remove' });
+                      if (ok) dataFiles.remove(file.id);
+                    }}
+                    aria-label="Remove"
+                    class="h-8 w-8 rounded-lg bg-zinc-100 border-zinc-200 border flex items-center justify-center shrink-0 group-hover:bg-red-50 group-hover:border-red-200 transition-colors"
+                  >
+                    <svg class="group-hover:hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+                      <polyline points="13 2 13 9 20 9" />
+                    </svg>
+                    <svg class="hidden group-hover:block text-red-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                {:else if file.missing}
+                  <button
+                    onclick={async (e) => {
+                      e.stopPropagation();
+                      const ok = await confirm({ title: 'Remove file', message: `Remove "${file.name}" from the list?`, confirmLabel: 'Remove' });
+                      if (ok) dataFiles.remove(file.id);
+                    }}
+                    aria-label="Remove"
+                    class="h-8 w-8 rounded-lg bg-amber-100 border-amber-200 border flex items-center justify-center shrink-0 group-hover:bg-red-50 group-hover:border-red-200 transition-colors"
+                  >
+                    <svg class="group-hover:hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                       <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
                     </svg>
-                  {:else}
+                    <svg class="hidden group-hover:block text-red-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                {:else}
+                  <div class="h-8 w-8 rounded-lg bg-zinc-100 border-zinc-200 border flex items-center justify-center shrink-0">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
                       <polyline points="13 2 13 9 20 9" />
                     </svg>
-                  {/if}
-                </div>
+                  </div>
+                {/if}
 
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-medium {file.missing ? 'text-amber-700' : 'text-zinc-800'} truncate">{file.name}</p>
-                  <p class="text-xs {file.missing ? 'text-amber-500' : 'text-zinc-400'} truncate" title={file.path}>{truncatePath(file.path)}</p>
                 </div>
 
                 {#if file.missing}
@@ -534,46 +560,34 @@
                     Locate
                   </button>
                 {:else}
-                  <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium border {extClass(file.ext)}">
-                    {file.ext || '?'}
-                  </span>
-
                   {#if file.size != null}
                     <span class="shrink-0 text-[11px] text-zinc-400 font-mono">{fmtBytes(file.size)}</span>
                   {/if}
 
-                  {#if file.protected}
-                    <span class="shrink-0 flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium border border-violet-200 bg-violet-50 text-violet-600">
-                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                      </svg>
-                      Demo
-                    </span>
-                  {:else}
-                    <Select
-                      value={file.folder}
-                      options={folderOptions}
-                      onchange={(v) => dataFiles.move(file.id, v)}
-                    />
-                    <span class="shrink-0 text-xs text-zinc-400 hidden sm:block">{fmtDate(file.addedAt)}</span>
-                  {/if}
+                  <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium border {extClass(file.ext)}">
+                    {file.ext || '?'}
+                  </span>
+
+                  <div class="shrink-0 w-24" onclick={(e) => e.stopPropagation()}>
+                    {#if file.protected}
+                      <span class="flex items-center justify-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium border border-violet-200 bg-violet-50 text-violet-600 w-full">
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        Demo
+                      </span>
+                    {:else}
+                      <Select
+                        value={file.folder}
+                        options={folderOptions}
+                        onchange={(v) => dataFiles.move(file.id, v)}
+                        class="w-full"
+                      />
+                    {/if}
+                  </div>
                 {/if}
 
-                {#if !file.protected}
-                  <button
-                    onclick={async () => {
-                      const ok = await confirm({ title: 'Remove file', message: `Remove "${file.name}" from the list?`, confirmLabel: 'Remove' });
-                      if (ok) dataFiles.remove(file.id);
-                    }}
-                    aria-label="Remove"
-                    class="shrink-0 text-zinc-300 hover:text-red-500 transition-colors"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
-                {/if}
               </div>
             {/each}
           </div>

@@ -17,6 +17,8 @@
 		type Arch,
 		type InstallProgress
 	} from '$lib/tools/binary-manager';
+	import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
+	import { versionGte } from '$lib/utils/versions';
 
 	// ── tool metadata ─────────────────────────────────────────────────
 	interface ToolMeta {
@@ -28,6 +30,11 @@
 	}
 
 	const TOOL_META: Record<string, ToolMeta> = {
+		java: {
+			label: 'Java',
+			description:
+				'Java Runtime Environment — required by SnpEff for variant annotation. Version 21 or later is needed. Any standard JDK distribution works (Temurin, Oracle JDK, OpenJDK).',
+		},
 		fastqc: {
 			label: 'FastQC',
 			description:
@@ -105,6 +112,21 @@
 			brew: 'bedtools',
 			apt: 'bedtools',
 			conda: 'bedtools'
+		},
+		fastp: {
+			label: 'fastp',
+			description:
+				'Fast FASTQ quality trimming and filtering. Removes adapters, low-quality bases and reads in a single pass. Produces HTML/JSON QC reports. Used upstream of alignment.',
+			brew: 'fastp',
+			apt: 'fastp',
+			conda: 'fastp'
+		},
+		seqkit: {
+			label: 'seqkit',
+			description:
+				'Toolkit for FASTA/FASTQ file manipulation and statistics. Computes N50, sequence lengths, GC content, quality scores. Useful for quick sanity checks on sequencing data.',
+			brew: 'seqkit',
+			conda: 'seqkit'
 		}
 	};
 
@@ -316,13 +338,18 @@
 								state.phase === 'downloading' ||
 								state.phase === 'extracting' ||
 								state.phase === 'pm-installing'}
+							{@const req = DEP_REQUIREMENTS[dep.binary]}
+							{@const versionOk = !req || !dep.available || !dep.version || versionGte(dep.version, req.minVersion)}
+							{@const isOutdated = dep.available && req && dep.version && !versionGte(dep.version, req.minVersion)}
 
 							<div>
 								<!-- Main row -->
 								<div class="flex items-center gap-3 px-4 py-3">
 									<!-- Status dot -->
 									<span
-										class="h-2 w-2 rounded-full shrink-0 {dep.available || managed
+										class="h-2 w-2 rounded-full shrink-0 {isOutdated
+											? 'bg-amber-400'
+											: dep.available || managed
 											? 'bg-emerald-500'
 											: 'bg-red-400'}"
 									></span>
@@ -345,9 +372,13 @@
 												<span class="font-mono text-zinc-400">{managed.path}</span>
 											</p>
 										{:else if dep.available}
-											{#if dep.version}
+											{#if isOutdated}
+												<p class="text-xs text-amber-600 truncate">
+													{dep.version} — requires {req!.minVersion}+
+												</p>
+											{:else if dep.version}
 												<p class="text-xs font-mono text-zinc-500 truncate" data-selectable>
-													{dep.version}
+													{dep.version}{req ? ` (min ${req.minVersion})` : ''}
 												</p>
 											{:else if dep.path}
 												<p class="text-xs font-mono text-zinc-400 truncate" data-selectable>
@@ -385,22 +416,34 @@
 										{/if}
 									</div>
 
-									<!-- Action buttons (only when not installed and not busy) -->
-									{#if !dep.available && !managed && pmChecked && !isBusy}
+									<!-- Action buttons -->
+									{#if (isOutdated || (!dep.available && !managed)) && pmChecked && !isBusy}
 										<div class="flex items-center gap-2 shrink-0">
-											{#if hasRelease}
-												<Button
-													variant="primary"
-													size="sm"
-													onclick={() => downloadInstall(dep.binary)}
-												>
-													Download & Install
-												</Button>
-											{/if}
-											{#if hasPm}
-												<Button variant="secondary" size="sm" onclick={() => pmInstall(dep.binary)}>
-													{pmLabel()}
-												</Button>
+											{#if req?.downloadOptions}
+												{#each req.downloadOptions as opt}
+													<Button
+														variant={opt.recommended ? 'primary' : 'secondary'}
+														size="sm"
+														onclick={async () => { const api = liatir(); if (api) await api.openBrowser(opt.url); }}
+													>
+														{opt.label} ↗
+													</Button>
+												{/each}
+											{:else}
+												{#if hasRelease}
+													<Button
+														variant="primary"
+														size="sm"
+														onclick={() => downloadInstall(dep.binary)}
+													>
+														Download & Install
+													</Button>
+												{/if}
+												{#if hasPm}
+													<Button variant="secondary" size="sm" onclick={() => pmInstall(dep.binary)}>
+														{pmLabel()}
+													</Button>
+												{/if}
 											{/if}
 										</div>
 									{:else if isBusy}

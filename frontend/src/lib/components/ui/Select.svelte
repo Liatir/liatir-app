@@ -27,10 +27,14 @@
     const rect = triggerEl.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
     const above = spaceBelow < 180 && rect.top > 180;
+    const width = Math.max(rect.width, 140);
+    const left = rect.left + width > window.innerWidth
+      ? Math.max(0, rect.right - width)
+      : rect.left;
     pos = {
       top: rect.bottom + 4,
-      left: rect.left,
-      width: Math.max(rect.width, 140),
+      left,
+      width,
       bottom: window.innerHeight - rect.top + 4,
       above,
     };
@@ -50,13 +54,13 @@
   });
 </script>
 
-<div class="relative inline-block {className}">
+<div class="relative {className || 'inline-block'}">
   <button
     bind:this={triggerEl}
     type="button"
     onclick={() => open ? (open = false) : openMenu()}
     class="flex items-center gap-1 text-[10px] border border-border rounded px-1.5 py-1 bg-surface
-           text-zinc-500 cursor-pointer hover:border-zinc-400 transition-colors max-w-22 min-w-0"
+           text-zinc-500 cursor-pointer hover:border-zinc-400 transition-colors w-full min-w-0"
   >
     <span class="truncate flex-1 min-w-0 text-left">{selectedLabel || 'No folder'}</span>
     <svg
