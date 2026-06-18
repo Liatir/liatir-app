@@ -393,6 +393,7 @@ fn main() {
       dtr_file_size,
       dtr_read_file_text,
       dtr_write_file_path,
+      dtr_preview_file,
 
       // test commands only in dev
       #[cfg(debug_assertions)]

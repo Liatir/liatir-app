@@ -61,6 +61,7 @@ input, textarea, [data-selectable] {
 		padding: 1.5px 5px !important;
 		border-radius: 4px !important;
 		font-family: monospace !important;
+    white-space: nowrap !important;
 	}
 
 	/* 2. Stile per il blocco di codice multilinea (tre backtick) */

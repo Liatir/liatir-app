@@ -198,6 +198,19 @@ pub fn dtr_read_file_text(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path).map_err(|e| e.to_string())
 }
 
+/// Read the first `lines` lines from any absolute path (efficient preview for large files).
+#[tauri::command]
+pub fn dtr_preview_file(path: String, lines: usize) -> Result<String, String> {
+    use std::io::{BufRead, BufReader};
+    let file = std::fs::File::open(&path).map_err(|e| e.to_string())?;
+    let reader = BufReader::new(file);
+    let mut result = Vec::with_capacity(lines);
+    for line in reader.lines().take(lines) {
+        result.push(line.map_err(|e| e.to_string())?);
+    }
+    Ok(result.join("\n"))
+}
+
 /// Write text content to any absolute path (used for script export).
 #[tauri::command]
 pub fn dtr_write_file_path(path: String, content: String) -> Result<(), String> {

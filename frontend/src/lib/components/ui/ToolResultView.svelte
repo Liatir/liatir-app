@@ -6,6 +6,9 @@
 
   let { output }: { output: ToolOutput } = $props();
 
+  const TEXT_PREVIEW_LINES = 300;
+  let expandedSections = $state(new Set<number>());
+
   function fmtNumber(value: number, format?: string): string {
     if (format === 'integer') return value.toLocaleString();
     if (format === 'percent') return `${(value * 100).toFixed(1)}%`;
@@ -19,7 +22,7 @@
 </script>
 
 <div class="space-y-4">
-  {#each output.sections as section}
+  {#each output.sections as section, sectionIdx}
 
     {#if section.type === 'stats'}
       {@const s = section as StatsSection}
@@ -81,15 +84,36 @@
 
     {:else if section.type === 'text'}
       {@const s = section as TextSection}
+      {@const lines = s.content.split('\n')}
+      {@const isLong = lines.length > TEXT_PREVIEW_LINES}
+      {@const expanded = expandedSections.has(sectionIdx)}
+      {@const displayed = isLong && !expanded ? lines.slice(0, TEXT_PREVIEW_LINES).join('\n') : s.content}
       <Card class="p-4">
         <p class="text-xs text-zinc-500 mb-2 flex items-center">
           {s.label}
           {#if s.description}
             <InfoPopup text={s.description} />
           {/if}
+          {#if isLong}
+            <span class="ml-auto text-[10px] text-zinc-400 font-normal">
+              {lines.length.toLocaleString()} lines
+            </span>
+          {/if}
         </p>
-        <pre class="text-sm text-zinc-700 whitespace-pre-wrap break-all leading-relaxed
-          {s.mono ? 'font-mono' : ''}">{s.content}</pre>
+        <pre class="text-xs text-zinc-700 whitespace-pre-wrap break-all leading-relaxed max-h-96 overflow-y-auto
+          {s.mono ? 'font-mono' : ''}">{displayed}</pre>
+        {#if isLong}
+          <button
+            onclick={() => {
+              const next = new Set(expandedSections);
+              if (expanded) next.delete(sectionIdx); else next.add(sectionIdx);
+              expandedSections = next;
+            }}
+            class="mt-2 text-xs text-brand hover:underline"
+          >
+            {expanded ? 'Show less' : `Show all ${lines.length.toLocaleString()} lines`}
+          </button>
+        {/if}
       </Card>
     {/if}
 

@@ -4,8 +4,9 @@
   import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Select from '$lib/components/ui/Select.svelte';
-  import { dataFiles } from '$lib/stores/dataFiles.svelte';
+  import { dataFiles, type DataFile } from '$lib/stores/dataFiles.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
+  import { liatir } from '$lib/api';
 
   onMount(async () => {
     await dataFiles.init();
@@ -167,6 +168,73 @@
         )
   );
 
+  // ── file preview ───────────────────────────────────────────────
+  const BINARY_EXTS = new Set(['bam', 'cram', 'bcf', 'bcf.gz', 'fastq.gz', 'fq.gz', 'fasta.gz', 'fa.gz', 'fna.gz', 'vcf.gz']);
+  const PREVIEW_LINES: Record<string, number> = {
+    fastq: 40, fq: 40,
+    fasta: 50, fa: 50, fna: 50, faa: 50,
+    vcf: 100, sam: 60,
+    bed: 50, gtf: 50, gff: 50, gff3: 50,
+  };
+
+  let previewFileId = $state<string | null>(null);
+  let previewContent = $state<string | null>(null);
+  let previewLoading = $state(false);
+  let previewError = $state<string | null>(null);
+
+  const previewFile = $derived(previewFileId ? dataFiles.files.find(f => f.id === previewFileId) ?? null : null);
+
+  function isBinary(ext: string) { return BINARY_EXTS.has(ext); }
+
+  function openPreview(file: DataFile) {
+    if (previewFileId === file.id) { previewFileId = null; return; }
+    previewFileId = file.id;
+  }
+
+  $effect(() => {
+    const file = previewFile;
+    if (!file || file.missing || isBinary(file.ext)) { previewContent = null; previewError = null; return; }
+    previewLoading = true;
+    previewContent = null;
+    previewError = null;
+    const lines = PREVIEW_LINES[file.ext] ?? 50;
+    const api = liatir();
+    if (!api) { previewLoading = false; return; }
+    api.invoke('dtr_preview_file', { path: file.path, lines })
+      .then((text: unknown) => { previewContent = text as string; previewError = null; })
+      .catch((e: unknown) => { previewError = String(e); previewContent = null; })
+      .finally(() => { previewLoading = false; });
+  });
+
+  // Syntax highlight for preview content
+  function highlightLine(line: string, ext: string, lineIdx: number): { text: string; cls: string } {
+    if (ext === 'fastq' || ext === 'fq') {
+      const mod = lineIdx % 4;
+      if (mod === 0) return { text: line, cls: 'text-brand' };
+      if (mod === 1) return { text: line, cls: 'text-emerald-700' };
+      if (mod === 2) return { text: line, cls: 'text-zinc-400' };
+      return { text: line, cls: 'text-amber-600' };
+    }
+    if (ext === 'fasta' || ext === 'fa' || ext === 'fna' || ext === 'faa') {
+      if (line.startsWith('>')) return { text: line, cls: 'text-brand font-medium' };
+      return { text: line, cls: 'text-emerald-700' };
+    }
+    if (ext === 'vcf') {
+      if (line.startsWith('##')) return { text: line, cls: 'text-zinc-400' };
+      if (line.startsWith('#')) return { text: line, cls: 'text-zinc-600 font-medium' };
+      return { text: line, cls: 'text-zinc-800' };
+    }
+    if (ext === 'sam') {
+      if (line.startsWith('@')) return { text: line, cls: 'text-zinc-500' };
+      return { text: line, cls: 'text-zinc-800' };
+    }
+    if (ext === 'gtf' || ext === 'gff' || ext === 'gff3') {
+      if (line.startsWith('#')) return { text: line, cls: 'text-zinc-400' };
+      return { text: line, cls: 'text-zinc-800' };
+    }
+    return { text: line, cls: 'text-zinc-800' };
+  }
+
   // ── actions ────────────────────────────────────────────────────
   let importing = $state(false);
   let addingSample = $state(false);
@@ -321,7 +389,7 @@
     </div>
 
     <!-- Main content -->
-    <div class="flex-1 overflow-y-auto p-6">
+    <div class="flex-1 overflow-y-auto p-6 {previewFileId ? 'border-r border-border' : ''}">
 
       {#if dataFiles.files.length === 0}
         <!-- Global empty state -->
@@ -381,7 +449,15 @@
         <Card>
           <div class="divide-y divide-border">
             {#each filteredFiles as file (file.id)}
-              <div class="flex items-center gap-3 px-4 py-3 group {file.missing ? 'bg-amber-50/60' : ''}">
+              <div
+                class="flex items-center gap-3 px-4 py-3 group cursor-pointer transition-colors
+                  {file.missing ? 'bg-amber-50/60' : ''}
+                  {previewFileId === file.id ? 'bg-brand/5 ring-inset ring-1 ring-brand/20' : 'hover:bg-zinc-50/80'}"
+                onclick={() => !file.missing && openPreview(file)}
+                role="button"
+                tabindex="0"
+                onkeydown={(e) => e.key === 'Enter' && !file.missing && openPreview(file)}
+              >
                 <div class="h-8 w-8 rounded-lg {file.missing ? 'bg-amber-100 border-amber-200' : 'bg-zinc-100 border-zinc-200'} border flex items-center justify-center shrink-0">
                   {#if file.missing}
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -449,5 +525,74 @@
       {/if}
 
     </div>
+    <!-- Preview panel -->
+    {#if previewFileId && previewFile}
+      <div class="w-80 shrink-0 flex flex-col overflow-hidden bg-surface">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-3 py-2.5 border-b border-border">
+          <div class="flex items-center gap-2 min-w-0">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4f39f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
+              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+              <polyline points="13 2 13 9 20 9" />
+            </svg>
+            <span class="text-xs font-medium text-zinc-700 truncate">{previewFile.name}</span>
+          </div>
+          <button
+            onclick={() => previewFileId = null}
+            aria-label="Close preview"
+            class="shrink-0 text-zinc-400 hover:text-zinc-600 transition-colors p-0.5"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Meta info -->
+        <div class="px-3 py-2 border-b border-border space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] text-zinc-400 uppercase tracking-wider">Size</span>
+            <span class="text-xs text-zinc-600 font-mono">{previewFile.size != null ? fmtBytes(previewFile.size) : '—'}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] text-zinc-400 uppercase tracking-wider">Format</span>
+            <span class="text-[10px] font-medium px-1.5 py-0.5 rounded border {extClass(previewFile.ext)}">{previewFile.ext || '?'}</span>
+          </div>
+          <p class="text-[10px] text-zinc-400 break-all pt-0.5">{previewFile.path}</p>
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 overflow-y-auto p-3">
+          {#if isBinary(previewFile.ext)}
+            <div class="flex flex-col items-center justify-center h-32 gap-2 text-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01" />
+              </svg>
+              <p class="text-xs text-zinc-400">Binary format</p>
+              <p class="text-[10px] text-zinc-300">Use a tool to inspect this file</p>
+            </div>
+
+          {:else if previewLoading}
+            <div class="flex justify-center py-8">
+              <svg class="animate-spin h-4 w-4 text-zinc-400" viewBox="0 0 24 24" fill="none">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+              </svg>
+            </div>
+
+          {:else if previewError}
+            <p class="text-xs text-red-400 font-mono break-all">{previewError}</p>
+
+          {:else if previewContent}
+            <pre class="text-[10px] font-mono leading-relaxed">{#each previewContent.split('\n') as line, i}{@const hl = highlightLine(line, previewFile.ext, i)}<span class={hl.cls}>{hl.text}</span>{'\n'}{/each}</pre>
+            <p class="text-[10px] text-zinc-300 mt-2 text-right">preview — first {PREVIEW_LINES[previewFile.ext] ?? 50} lines</p>
+
+          {:else}
+            <p class="text-xs text-zinc-400 text-center py-8">No content</p>
+          {/if}
+        </div>
+      </div>
+    {/if}
+
   </div>
 </div>

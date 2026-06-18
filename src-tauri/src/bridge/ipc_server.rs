@@ -207,6 +207,27 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 .map_err(|e| anyhow::anyhow!(e))
         }
 
+        "dtr_read_file_text" => {
+            let path = payload["path"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("path required"))?
+                .to_string();
+            let text = crate::bridge::managed_bins::dtr_read_file_text(path)
+                .map_err(|e| anyhow::anyhow!(e))?;
+            Ok(Value::String(text))
+        }
+
+        "dtr_preview_file" => {
+            let path = payload["path"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("path required"))?
+                .to_string();
+            let lines = payload["lines"].as_u64().unwrap_or(50) as usize;
+            let text = crate::bridge::managed_bins::dtr_preview_file(path, lines)
+                .map_err(|e| anyhow::anyhow!(e))?;
+            Ok(Value::String(text))
+        }
+
         _ => Err(anyhow::anyhow!("unknown command: {cmd}")),
     }
 }
