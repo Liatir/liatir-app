@@ -43,6 +43,17 @@ const MANIFEST = (name: string) =>
       name,
       version: "1.0.0",
       description: "",
+      inputSchema: {
+        filePath: {
+          type: "file",
+          label: "Input file",
+          required: true,
+          accept: [".bam", ".sam", ".fastq", ".fastq.gz"],
+        },
+      },
+      outputSchema: {
+        result: { type: "string", label: "Result" },
+      },
     },
     null,
     2
@@ -94,7 +105,7 @@ export async function init(name: string) {
   await Promise.all([
     fs.writeFile(path.join(dir, "package.json"), PACKAGE_JSON(name)),
     fs.writeFile(path.join(dir, "tsconfig.json"), TSCONFIG),
-    fs.writeFile(path.join(dir, ".liatir-manifest.json"), MANIFEST(name)),
+    fs.writeFile(path.join(dir, ".lia-manifest.json"), MANIFEST(name)),
     fs.writeFile(path.join(dir, "src", "index.ts"), INDEX_TS(name)),
   ]);
 
@@ -105,6 +116,6 @@ Next steps:
   cd ${name}
   npm install
   liatir dev       # watch mode with live Liatir app
-  liatir build     # package as ${name}.liatir
+  liatir build     # package as ${name}.lia
 `);
 }

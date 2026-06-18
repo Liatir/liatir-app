@@ -10,11 +10,11 @@ interface Manifest {
 
 async function loadManifest(): Promise<Manifest> {
   const cwd = process.cwd();
-  const manifestPath = path.join(cwd, ".liatir-manifest.json");
+  const manifestPath = path.join(cwd, ".lia-manifest.json");
   try {
     return JSON.parse(await fs.readFile(manifestPath, "utf-8")) as Manifest;
   } catch {
-    console.error("No .liatir-manifest.json found. Run this command from your project root.");
+    console.error("No .lia-manifest.json found. Run this command from your project root.");
     process.exit(1);
   }
 }
@@ -47,7 +47,7 @@ export async function dev() {
   const cwd = process.cwd();
   const manifest = await loadManifest();
   const entryPoint = path.join(cwd, "src", "index.ts");
-  const distDir = path.join(cwd, ".liatir-dev");
+  const distDir = path.join(cwd, ".lia-dev");
   const bundlePath = path.join(distDir, "index.mjs");
   const runnerPath = path.join(distDir, "_runner.mjs");
 

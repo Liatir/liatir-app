@@ -1,0 +1,256 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
+  import PageHeader from '$lib/components/layout/PageHeader.svelte';
+  import Card from '$lib/components/ui/Card.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
+  import { modulesStore, type LiatirModule, type FieldDef } from '$lib/stores/modules.svelte';
+  import { dataFiles } from '$lib/stores/dataFiles.svelte';
+  import { liatir } from '$lib/api';
+
+  const id = $derived(($page.params as { id: string }).id);
+  let mod = $state<LiatirModule | null>(null);
+
+  // Form values — keyed by field name
+  let values = $state<Record<string, string | number | boolean>>({});
+
+  // Run state
+  let running = $state(false);
+  let jobId = $state<string | null>(null);
+  let stdoutLines = $state<string[]>([]);
+  let stderrLines = $state<string[]>([]);
+  let exitCode = $state<number | null | undefined>(undefined);
+  let result = $state<unknown>(null);
+
+  // Node.js availability
+  let nodeAvailable = $state<boolean | null>(null);
+
+  onMount(async () => {
+    await modulesStore.init();
+    mod = modulesStore.byId(id);
+    if (!mod) { goto('/modules'); return; }
+
+    // Pre-fill defaults
+    for (const [key, field] of Object.entries(mod.inputSchema)) {
+      if (field.default !== undefined) values[key] = field.default;
+    }
+
+    dataFiles.init();
+
+    const api = liatir();
+    if (api) {
+      const check = await api.deps.check('node');
+      nodeAvailable = check.available;
+    }
+  });
+
+  function inputFields(schema: Record<string, FieldDef>) {
+    return Object.entries(schema);
+  }
+
+  function filesForField(field: FieldDef) {
+    if (!field.accept?.length) return dataFiles.files;
+    return dataFiles.files.filter(f =>
+      field.accept!.some(ext => f.path.endsWith(ext) || `.${f.ext}` === ext || f.ext === ext.replace(/^\./, ''))
+    );
+  }
+
+  async function run() {
+    if (!mod) return;
+    running = true;
+    jobId = null;
+    stdoutLines = [];
+    stderrLines = [];
+    exitCode = undefined;
+    result = null;
+
+    const api = liatir();
+    if (!api) { running = false; return; }
+
+    try {
+      const res = await api.invoke('dtr_liatir_run', { path: mod.path, inputs: values }) as { jobId: string };
+      jobId = res.jobId;
+
+      await new Promise<void>((resolve) => {
+        const unsubs: Array<() => void> = [];
+
+        api.desktop.events.on(`jobs:stdout:${jobId}`, (line: string) => {
+          if (line.startsWith('__LIATIR_RESULT__')) {
+            try { result = JSON.parse(line.slice('__LIATIR_RESULT__'.length)); } catch { /* ok */ }
+          } else {
+            stdoutLines = [...stdoutLines, line];
+          }
+        }).then((fn: () => void) => unsubs.push(fn));
+
+        api.desktop.events.on(`jobs:stderr:${jobId}`, (line: string) => {
+          stderrLines = [...stderrLines, line];
+        }).then((fn: () => void) => unsubs.push(fn));
+
+        api.desktop.events.on(`jobs:exit:${jobId}`, (payload: { exitCode: number | null }) => {
+          exitCode = payload.exitCode;
+          for (const fn of unsubs) fn();
+          resolve();
+        }).then((fn: () => void) => unsubs.push(fn));
+      });
+    } catch (e) {
+      stderrLines = [String(e)];
+      exitCode = 1;
+    } finally {
+      running = false;
+    }
+  }
+
+  const hasRun = $derived(exitCode !== undefined);
+  const succeeded = $derived(exitCode === 0);
+</script>
+
+{#if mod}
+  <div class="flex flex-col h-full">
+    <PageHeader title={mod.name} description={mod.description || `v${mod.version}`}>
+      {#snippet actions()}
+        <span class="text-xs font-mono text-zinc-400">v{mod!.version}</span>
+        <Button variant="ghost" size="sm" onclick={() => goto('/modules')}>← Modules</Button>
+      {/snippet}
+    </PageHeader>
+
+    <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
+
+      {#if nodeAvailable === false}
+        <Card>
+          <div class="px-4 py-4 flex items-start gap-3">
+            <svg class="shrink-0 mt-0.5 text-amber-500" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <div>
+              <p class="text-sm font-medium text-zinc-700">Node.js not found</p>
+              <p class="text-xs text-zinc-400 mt-0.5">.liatir modules require Node.js ≥18. Install it from <span class="font-mono">nodejs.org</span> or via your package manager.</p>
+            </div>
+          </div>
+        </Card>
+      {/if}
+
+      <!-- Input form -->
+      <Card>
+        <div class="px-4 py-3 border-b border-border">
+          <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Inputs</p>
+        </div>
+        <div class="px-4 py-4 space-y-4">
+          {#if Object.keys(mod.inputSchema).length === 0}
+            <p class="text-sm text-zinc-400">This module takes no inputs.</p>
+          {:else}
+            {#each inputFields(mod.inputSchema) as [key, field]}
+              <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-medium text-zinc-600" for="field-{key}">
+                  {field.label ?? key}
+                  {#if field.required}<span class="text-red-400 ml-0.5">*</span>{/if}
+                </label>
+
+                {#if field.type === 'file'}
+                  <select
+                    id="field-{key}"
+                    bind:value={values[key]}
+                    class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand/60 transition-colors"
+                  >
+                    <option value="">Select a file…</option>
+                    {#each filesForField(field) as f (f.id)}
+                      <option value={f.path}>{f.name}</option>
+                    {/each}
+                  </select>
+                {:else if field.type === 'boolean'}
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input
+                      id="field-{key}"
+                      type="checkbox"
+                      bind:checked={values[key] as boolean}
+                      class="rounded border-border text-brand"
+                    />
+                    <span class="text-sm text-zinc-600">{field.description ?? ''}</span>
+                  </label>
+                {:else if field.type === 'number'}
+                  <input
+                    id="field-{key}"
+                    type="number"
+                    bind:value={values[key]}
+                    placeholder={String(field.default ?? '')}
+                    class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand/60 transition-colors"
+                  />
+                {:else}
+                  <input
+                    id="field-{key}"
+                    type="text"
+                    bind:value={values[key]}
+                    placeholder={String(field.default ?? '')}
+                    class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand/60 transition-colors"
+                  />
+                {/if}
+
+                {#if field.description && field.type !== 'boolean'}
+                  <p class="text-[11px] text-zinc-400">{field.description}</p>
+                {/if}
+              </div>
+            {/each}
+          {/if}
+
+          <div class="pt-2">
+            <Button
+              variant="primary"
+              size="sm"
+              loading={running}
+              disabled={nodeAvailable === false}
+              onclick={run}
+            >
+              {running ? 'Running…' : 'Run'}
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      <!-- Output -->
+      {#if running || hasRun}
+        <Card>
+          <div class="px-4 py-3 border-b border-border flex items-center gap-2">
+            <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wider flex-1">Output</p>
+            {#if hasRun}
+              <span class="rounded-full px-2 py-0.5 text-[10px] font-medium {succeeded ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}">
+                {succeeded ? 'Done' : `Exit ${exitCode}`}
+              </span>
+            {:else}
+              <span class="text-[10px] text-zinc-400 animate-pulse">running…</span>
+            {/if}
+          </div>
+
+          <!-- Structured result -->
+          {#if result !== null}
+            <div class="px-4 py-3 border-b border-border bg-emerald-50/50">
+              <p class="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider mb-1.5">Result</p>
+              <pre class="text-xs text-emerald-800 whitespace-pre-wrap font-mono">{JSON.stringify(result, null, 2)}</pre>
+            </div>
+          {/if}
+
+          <!-- stdout -->
+          {#if stdoutLines.length > 0}
+            <div class="px-4 py-3 {stderrLines.length > 0 ? 'border-b border-border' : ''}">
+              <p class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">stdout</p>
+              <pre class="text-xs text-zinc-700 whitespace-pre-wrap font-mono leading-relaxed max-h-64 overflow-y-auto">{stdoutLines.join('\n')}</pre>
+            </div>
+          {/if}
+
+          <!-- stderr -->
+          {#if stderrLines.length > 0}
+            <div class="px-4 py-3">
+              <p class="text-[10px] font-semibold text-red-400 uppercase tracking-wider mb-1.5">stderr</p>
+              <pre class="text-xs text-red-600 whitespace-pre-wrap font-mono leading-relaxed max-h-48 overflow-y-auto">{stderrLines.join('\n')}</pre>
+            </div>
+          {/if}
+
+          {#if running && stdoutLines.length === 0 && stderrLines.length === 0}
+            <div class="px-4 py-6 text-center text-xs text-zinc-400">Waiting for output…</div>
+          {/if}
+        </Card>
+      {/if}
+
+    </div>
+  </div>
+{/if}

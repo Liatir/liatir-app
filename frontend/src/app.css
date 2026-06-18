@@ -52,3 +52,32 @@ input, textarea, [data-selectable] {
 ::-webkit-scrollbar-track    { background: transparent; }
 ::-webkit-scrollbar-thumb    { background: #d0d0d8; border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: #b0b0bc; }
+
+
+	/* 1. Stile per il codice inline (singolo backtick) */
+	.markdown-body code {
+		background-color: #eeeeee !important;
+		color: #000000 !important;
+		padding: 1.5px 5px !important;
+		border-radius: 4px !important;
+		font-family: monospace !important;
+	}
+
+	/* 2. Stile per il blocco di codice multilinea (tre backtick) */
+	.markdown-body pre {
+		background-color: #1e1e1e !important; /* Sfondo scuro stile editor */
+		color: #ffffff !important;            /* Testo bianco */
+		padding: 1rem;             /* Spaziatura interna */
+		border-radius: 8px !important;        /* Angoli smussati */
+		overflow-x: auto !important;          /* Barra di scorrimento orizzontale se il codice è lungo */
+		margin: 1rem 0 !important;            /* Margine sopra e sotto il blocco */
+	}
+/* 
+	.markdown-body :global(pre code) {
+		background-color: transparent !important;
+		padding: 0 !important;
+		border-radius: 0 !important;
+		font-family: 'Courier New', Courier, monospace !important;
+		font-size: 0.95em !important;
+	}
+*/

@@ -186,6 +186,27 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
             Ok(serde_json::to_value(result)?)
         }
 
+        "dtr_liatir_read_manifest" => {
+            let path = payload["path"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("path required"))?
+                .to_string();
+            crate::bridge::modules::dtr_liatir_read_manifest(path)
+                .await
+                .map_err(|e| anyhow::anyhow!(e))
+        }
+
+        "dtr_liatir_run" => {
+            let path = payload["path"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("path required"))?
+                .to_string();
+            let inputs = payload["inputs"].clone();
+            crate::bridge::modules::dtr_liatir_run(app.clone(), path, inputs)
+                .await
+                .map_err(|e| anyhow::anyhow!(e))
+        }
+
         _ => Err(anyhow::anyhow!("unknown command: {cmd}")),
     }
 }

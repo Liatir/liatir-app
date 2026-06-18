@@ -20,8 +20,12 @@ const INDEX = 'data-files.json';
 
 function detectExt(path: string): string {
   const name = path.split(/[\\/]/).pop() ?? path;
-  if (/\.(fastq|fq)\.gz$/i.test(name)) return 'fastq.gz';
-  if (/\.(fastq|fq)$/i.test(name)) return 'fastq';
+  if (/\.(fastq|fq)\.gz$/i.test(name))       return 'fastq.gz';
+  if (/\.(fastq|fq)$/i.test(name))           return 'fastq';
+  if (/\.(fasta|fa|fna|faa)\.gz$/i.test(name)) return 'fasta.gz';
+  if (/\.(fasta|fa|fna|faa)$/i.test(name))   return 'fasta';
+  if (/\.vcf\.gz$/i.test(name))              return 'vcf.gz';
+  if (/\.bcf\.gz$/i.test(name))              return 'bcf.gz';
   const m = name.match(/\.([^.]+)$/);
   return m ? m[1].toLowerCase() : '';
 }

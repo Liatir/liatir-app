@@ -192,6 +192,12 @@ pub fn dtr_file_size(path: String) -> Result<u64, String> {
         .map_err(|e| e.to_string())
 }
 
+/// Read text content from any absolute path.
+#[tauri::command]
+pub fn dtr_read_file_text(path: String) -> Result<String, String> {
+    std::fs::read_to_string(&path).map_err(|e| e.to_string())
+}
+
 /// Write text content to any absolute path (used for script export).
 #[tauri::command]
 pub fn dtr_write_file_path(path: String, content: String) -> Result<(), String> {

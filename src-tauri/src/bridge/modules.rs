@@ -1,0 +1,87 @@
+use std::io::Read;
+use tauri::AppHandle;
+use serde_json::Value;
+
+const SIG: &str = "LIATIR/1";
+
+const RUNNER: &str = r#"import { run } from './index.js';
+
+const _inputs = JSON.parse(process.argv[2] ?? '{}');
+try {
+  const _result = await run(_inputs);
+  if (_result !== undefined && _result !== null) {
+    process.stdout.write('__LIATIR_RESULT__' + JSON.stringify(_result) + '\n');
+  }
+} catch (err) {
+  process.stderr.write('[liatir] ' + (err?.message ?? String(err)) + '\n');
+  process.exit(1);
+}
+"#;
+
+fn open_validated(path: &str) -> Result<zip::ZipArchive<std::fs::File>, String> {
+    let file = std::fs::File::open(path)
+        .map_err(|e| format!("Cannot open: {e}"))?;
+    let mut zip = zip::ZipArchive::new(file)
+        .map_err(|_| "Not a valid .lia module (not a zip)".to_string())?;
+
+    // Validate signature
+    let mut sig_entry = zip.by_name("_sig")
+        .map_err(|_| "Not a valid .lia module (missing signature)".to_string())?;
+    let mut sig = String::new();
+    sig_entry.read_to_string(&mut sig).map_err(|e| e.to_string())?;
+    if sig.trim() != SIG {
+        return Err("Not a valid .lia module (wrong signature)".to_string());
+    }
+    drop(sig_entry);
+
+    Ok(zip)
+}
+
+/// Read manifest.json from a .lia module, validating the signature first.
+#[tauri::command]
+pub async fn dtr_liatir_read_manifest(path: String) -> Result<Value, String> {
+    let mut zip = open_validated(&path)?;
+    let mut entry = zip.by_name("manifest.json")
+        .map_err(|_| "manifest.json not found in bundle".to_string())?;
+    let mut buf = String::new();
+    entry.read_to_string(&mut buf).map_err(|e| e.to_string())?;
+    serde_json::from_str(&buf).map_err(|e| format!("Invalid manifest JSON: {e}"))
+}
+
+/// Extract a .lia module to a temp dir and spawn it with node.
+/// Returns the same {jobId} value as dtr_jobs_spawn.
+#[tauri::command]
+pub async fn dtr_liatir_run(
+    app: AppHandle,
+    path: String,
+    inputs: Value,
+) -> Result<Value, String> {
+    let mut zip = open_validated(&path)?;
+
+    let run_id = uuid::Uuid::new_v4().to_string();
+    let temp_dir = std::env::temp_dir().join(format!("liatir-run-{run_id}"));
+    std::fs::create_dir_all(&temp_dir).map_err(|e| e.to_string())?;
+
+    // Extract index.js
+    {
+        let mut entry = zip.by_name("index.js")
+            .map_err(|_| "index.js not found in bundle".to_string())?;
+        let mut buf = Vec::new();
+        entry.read_to_end(&mut buf).map_err(|e| e.to_string())?;
+        std::fs::write(temp_dir.join("index.js"), buf).map_err(|e| e.to_string())?;
+    }
+
+    // Write runner shim
+    std::fs::write(temp_dir.join("_runner.mjs"), RUNNER)
+        .map_err(|e| e.to_string())?;
+
+    let inputs_json = serde_json::to_string(&inputs).map_err(|e| e.to_string())?;
+    let cwd = temp_dir.to_string_lossy().to_string();
+
+    super::jobs::dtr_jobs_spawn(
+        app,
+        "node".to_string(),
+        vec!["_runner.mjs".to_string(), inputs_json],
+        Some(cwd),
+    ).await
+}

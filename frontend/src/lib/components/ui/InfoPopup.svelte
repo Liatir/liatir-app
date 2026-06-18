@@ -1,6 +1,17 @@
 <script lang="ts">
+	import { marked } from "marked";
+	import { onMount } from "svelte";
+
   let { text }: { text: string } = $props();
-  let open = $state(false);
+  let open = $state(false); 
+
+  // Converte il testo (markdown compatibile) in stringa HTML
+	let renderedText: string;
+
+  onMount(async ()=> {
+	  renderedText = await marked.parse(text);
+  })
+
 </script>
 
 <svelte:window
@@ -27,7 +38,7 @@
       aria-modal="true"
       onclick={(e) => e.stopPropagation()}
       class="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-             w-80 rounded-xl border border-border bg-surface shadow-xl"
+             w-96 rounded-xl border border-border bg-surface shadow-xl"
     >
       <div class="flex items-center justify-between px-4 py-3 border-b border-border">
         <span class="text-xs font-semibold text-zinc-700 flex items-center gap-1.5">
@@ -48,7 +59,8 @@
           </svg>
         </button>
       </div>
-      <p class="px-4 py-3 text-sm text-zinc-600 leading-relaxed">{text}</p>
+      <p class="px-4 py-3 text-xs font-medium markdown-body leading-relaxed">{@html (renderedText?.trim() || "")}</p>
     </div>
   {/if}
 </span>
+

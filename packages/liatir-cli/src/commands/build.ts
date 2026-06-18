@@ -3,22 +3,33 @@ import * as path from "path";
 import { createRequire } from "module";
 import { build as esbuild } from "esbuild";
 
+interface FieldDef {
+  type: "string" | "number" | "boolean" | "file";
+  label?: string;
+  description?: string;
+  required?: boolean;
+  default?: string | number | boolean;
+  accept?: string[];
+}
+
 interface Manifest {
   name: string;
   version: string;
   description?: string;
+  inputSchema?: Record<string, FieldDef>;
+  outputSchema?: Record<string, FieldDef>;
 }
 
 export async function build() {
   const cwd = process.cwd();
 
   // Load manifest
-  const manifestPath = path.join(cwd, ".liatir-manifest.json");
+  const manifestPath = path.join(cwd, ".lia-manifest.json");
   let manifest: Manifest;
   try {
     manifest = JSON.parse(await fs.readFile(manifestPath, "utf-8")) as Manifest;
   } catch {
-    console.error("No .liatir-manifest.json found. Run this command from your project root.");
+    console.error("No .lia-manifest.json found. Run this command from your project root.");
     process.exit(1);
   }
 
@@ -47,17 +58,16 @@ export async function build() {
     minify: false,
   });
 
-  // Build final manifest.json (will grow with inputSchema/outputSchema in future)
   const fullManifest = {
     name: manifest.name,
     version: manifest.version,
     description: manifest.description ?? "",
-    inputSchema: {},
-    outputSchema: {},
+    inputSchema: manifest.inputSchema ?? {},
+    outputSchema: manifest.outputSchema ?? {},
   };
 
-  // Zip into .liatir bundle
-  const outputName = `${manifest.name}.liatir`;
+  // Zip into .lia module
+  const outputName = `${manifest.name}.lia`;
   const outputPath = path.join(cwd, outputName);
   await createLiatir(
     outputPath,
@@ -79,6 +89,7 @@ async function createLiatir(
   });
 
   const zip = new JSZip();
+  zip.file("_sig", "LIATIR/1");
   zip.file("manifest.json", JSON.stringify(manifest, null, 2));
   zip.file("index.js", await fs.readFile(bundlePath));
 

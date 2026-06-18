@@ -117,11 +117,30 @@
 
   // ── ext styling ────────────────────────────────────────────────
   const EXT_COLOR: Record<string, string> = {
+    // FASTQ — raw reads
     'fastq':    'bg-emerald-100 text-emerald-700 border-emerald-200',
     'fastq.gz': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    'fq':       'bg-emerald-100 text-emerald-700 border-emerald-200',
+    // FASTA — reference / sequences
+    'fasta':    'bg-orange-100 text-orange-700 border-orange-200',
+    'fasta.gz': 'bg-orange-100 text-orange-700 border-orange-200',
+    'fa':       'bg-orange-100 text-orange-700 border-orange-200',
+    'fna':      'bg-orange-100 text-orange-700 border-orange-200',
+    'faa':      'bg-orange-100 text-orange-700 border-orange-200',
+    // Alignment
     'bam':      'bg-sky-100 text-sky-700 border-sky-200',
+    'sam':      'bg-blue-100 text-blue-700 border-blue-200',
+    'cram':     'bg-indigo-100 text-indigo-700 border-indigo-200',
+    // Variants
     'vcf':      'bg-violet-100 text-violet-700 border-violet-200',
     'vcf.gz':   'bg-violet-100 text-violet-700 border-violet-200',
+    'bcf':      'bg-purple-100 text-purple-700 border-purple-200',
+    'bcf.gz':   'bg-purple-100 text-purple-700 border-purple-200',
+    // Annotation / intervals
+    'gtf':      'bg-teal-100 text-teal-700 border-teal-200',
+    'gff':      'bg-teal-100 text-teal-700 border-teal-200',
+    'gff3':     'bg-teal-100 text-teal-700 border-teal-200',
+    'bed':      'bg-rose-100 text-rose-700 border-rose-200',
   };
   function extClass(ext: string) { return EXT_COLOR[ext] ?? 'bg-zinc-100 text-zinc-600 border-zinc-200'; }
   function fmtDate(ms: number) { return new Date(ms).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }); }

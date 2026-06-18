@@ -21,6 +21,7 @@ pub mod jobs;
 pub mod deps;
 pub mod managed_bins;
 pub mod ipc_server;
+pub mod modules;
 
 pub use notifications::*;
 pub use clipboard::*;
@@ -43,3 +44,4 @@ pub use sidecar::*;
 pub use jobs::*;
 pub use deps::*;
 pub use managed_bins::*;
+pub use modules::*;

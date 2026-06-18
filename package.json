@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "devDependencies": {
     "@types/node": "^25.9.1",
-    "esbuild": "^0.28.1"
+    "esbuild": "^0.28.1",
+    "vitepress": "^2.0.0-alpha.17"
   },
   "scripts": {
     "build:frontend": "npm ci --prefix frontend/ && npm run build --prefix frontend/",
@@ -34,7 +35,10 @@
     "sdk:build": "npm run build --prefix sdk/",
     "sdk:publish": "npm run pub --prefix sdk/",
     "sdk:syncVersion": "npm run syncVersion --prefix sdk/",
-    "cargo:update": "npm run cargo:update --prefix src-tauri/"
+    "cargo:update": "npm run cargo:update --prefix src-tauri/",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",
@@ -42,6 +46,7 @@
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "buffer": "^6.0.3",
+    "marked": "^18.0.5",
     "typescript": "^5.9.2"
   }
 }

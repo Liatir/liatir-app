@@ -39,6 +39,17 @@
     ],
     "macOS": {
       "entitlements": "Entitlements.plist"
-    }
+    },
+    "fileAssociations": [
+      {
+        "ext": [
+          "lia"
+        ],
+        "name": "Liatir Module",
+        "description": "Liatir .lia module",
+        "mimeType": "application/x-liatir",
+        "role": "Editor"
+      }
+    ]
   }
 }

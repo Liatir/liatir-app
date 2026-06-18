@@ -1,7 +1,7 @@
 {
   "name": "liatir-cli",
   "version": "1.0.0",
-  "description": "CLI for developing and building .liatir scripts",
+  "description": "CLI for developing and building .lia scripts",
   "bin": {
     "liatir": "./dist/cli.js"
   },

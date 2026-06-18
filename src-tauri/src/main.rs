@@ -385,8 +385,13 @@ fn main() {
       dtr_managed_move,
       dtr_managed_remove,
 
+      // .liatir modules
+      dtr_liatir_read_manifest,
+      dtr_liatir_run,
+
       // file utilities
       dtr_file_size,
+      dtr_read_file_text,
       dtr_write_file_path,
 
       // test commands only in dev

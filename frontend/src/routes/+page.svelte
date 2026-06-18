@@ -16,6 +16,7 @@
     bwa: 'BWA-MEM2',
     minimap2: 'Minimap2',
     bcftools: 'BCFtools',
+    fastp: 'fastp',
   };
   function toolLabel(tool: string) { return TOOL_LABELS[tool] ?? tool; }
 

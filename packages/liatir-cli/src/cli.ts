@@ -23,12 +23,12 @@ async function main() {
       await build();
       break;
     default:
-      console.log(`liatir-cli — develop and build .liatir scripts
+      console.log(`liatir-cli — develop and build .lia scripts
 
 Usage:
-  liatir init <name>   Scaffold a new .liatir project
+  liatir init <name>   Scaffold a new .lia project
   liatir dev           Watch mode: rebuild on save, run against live Liatir app
-  liatir build         Bundle and package as <name>.liatir
+  liatir build         Bundle and package as <name>.lia
 `);
   }
 }
