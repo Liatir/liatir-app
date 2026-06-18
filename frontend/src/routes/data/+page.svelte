@@ -3,7 +3,6 @@
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
-  import Select from '$lib/components/ui/Select.svelte';
   import { dataFiles, type DataFile } from '$lib/stores/dataFiles.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import { liatir } from '$lib/api';
@@ -51,6 +50,7 @@
   }
 
   let collapsedFolders = $state(new Set<string>());
+  let foldersInitialized = $state(false);
 
   function toggleCollapse(path: string) {
     const next = new Set(collapsedFolders);
@@ -59,6 +59,14 @@
   }
 
   const flatFolders = $derived(buildFolderTree(dataFiles.allFolderPaths()));
+
+  // Collapse all parent folders on first load
+  $effect(() => {
+    if (!foldersInitialized && flatFolders.length > 0) {
+      collapsedFolders = new Set(flatFolders.filter(f => f.hasChildren).map(f => f.path));
+      foldersInitialized = true;
+    }
+  });
 
   const visibleFolders = $derived(
     flatFolders.filter(f => {
@@ -69,13 +77,54 @@
       return true;
     })
   );
-  const visibleFiles = $derived(
-    selectedFolder === null ? dataFiles.files : dataFiles.byFolder(selectedFolder)
+
+  // Recursive count: files in folder + all subfolders
+  function countInFolder(folderPath: string): number {
+    return dataFiles.files.filter(f =>
+      f.folder === folderPath || f.folder.startsWith(folderPath + '/')
+    ).length;
+  }
+
+  // Direct subfolders of the selected folder
+  const selectedSubfolders = $derived(
+    selectedFolder === null ? [] :
+    flatFolders.filter(f => {
+      const selParts = selectedFolder.split('/');
+      const fParts = f.path.split('/');
+      return fParts.length === selParts.length + 1 && f.path.startsWith(selectedFolder + '/');
+    })
   );
-  const folderOptions = $derived([
-    { value: '', label: 'No folder' },
-    ...flatFolders.map(f => ({ value: f.path, label: f.path })),
-  ]);
+
+  // Only direct files in selected folder; all files when "All files" selected
+  const visibleFiles = $derived(
+    selectedFolder === null
+      ? dataFiles.files
+      : dataFiles.files.filter(f => f.folder === selectedFolder)
+  );
+
+  // Folder picker popup
+  let pickerFileId = $state<string | null>(null);
+  let pickerQuery = $state('');
+  let pickerPos = $state({ top: 0, left: 0, width: 260 });
+
+  const nonDemoFolders = $derived(
+    flatFolders.filter(f => !f.path.startsWith('Demo Files'))
+  );
+  const pickerOptions = $derived(
+    [{ value: '', label: 'No folder' }, ...nonDemoFolders.map(f => ({ value: f.path, label: f.path }))]
+      .filter(o => pickerQuery.trim() === '' || o.label.toLowerCase().includes(pickerQuery.toLowerCase()))
+  );
+
+  function openFolderPicker(fileId: string, el: HTMLElement) {
+    pickerFileId = fileId;
+    pickerQuery = '';
+    const rect = el.getBoundingClientRect();
+    const w = 260;
+    const left = rect.left + w > window.innerWidth ? Math.max(0, rect.right - w) : rect.left;
+    pickerPos = { top: rect.bottom + 4, left, width: w };
+  }
+
+  function closePicker() { pickerFileId = null; pickerQuery = ''; }
 
   $effect(() => {
     if (showNewFolderInput && newFolderInputEl) newFolderInputEl.focus();
@@ -327,30 +376,25 @@
               />
             </div>
           {:else}
-            <div
-              class="group relative flex items-center transition-colors
-                {selectedFolder === f.path ? 'bg-brand/8' : 'hover:bg-surface-2'}"
-            >
+            {@const isDemo = f.path.startsWith('Demo Files')}
+            <div class="group relative flex items-center transition-colors {selectedFolder === f.path ? 'bg-brand/8' : 'hover:bg-surface-2'}">
               <button
-                onclick={() => selectedFolder = f.path}
+                onclick={() => {
+                  selectedFolder = f.path;
+                  if (f.hasChildren) toggleCollapse(f.path);
+                }}
                 style="padding-left: {f.depth * 10 + 12}px"
                 class="flex-1 flex items-center gap-1.5 py-1.5 text-xs min-w-0
-                  {selectedFolder === f.path
-                    ? 'text-brand font-medium'
-                    : 'text-zinc-500 group-hover:text-zinc-700'}"
+                  {selectedFolder === f.path ? 'text-brand font-medium' : 'text-zinc-500 group-hover:text-zinc-700'}"
               >
-                <!-- Collapse chevron (only if has children) -->
                 {#if f.hasChildren}
-                  <button
-                    onclick={(e) => { e.stopPropagation(); toggleCollapse(f.path); }}
-                    class="shrink-0 text-zinc-400 hover:text-zinc-600 transition-transform duration-150
-                      {collapsedFolders.has(f.path) ? '' : 'rotate-90'}"
-                    aria-label={collapsedFolders.has(f.path) ? 'Expand' : 'Collapse'}
+                  <svg
+                    width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                    class="shrink-0 transition-transform duration-150 {collapsedFolders.has(f.path) ? '' : 'rotate-90'}"
                   >
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                  </button>
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
                 {:else}
                   <span class="w-2.5 shrink-0"></span>
                 {/if}
@@ -359,26 +403,17 @@
                 </svg>
                 <span class="flex-1 text-left truncate">{f.name}</span>
               </button>
-              <!-- Count: hidden on hover (unless protected) -->
-              <span class="pr-3 text-[10px] text-zinc-400 {f.path.startsWith('Demo Files') ? '' : 'group-hover:hidden'}">{dataFiles.byFolder(f.path).length}</span>
-              <!-- Actions: shown on hover (only for non-protected folders) -->
-              {#if !f.path.startsWith('Demo Files')}
-                <div class="pr-1.5 hidden group-hover:flex items-center gap-0">
-                  <button
-                    onclick={() => startRename(f.path)}
-                    title="Rename"
-                    class="p-1 text-zinc-400 hover:text-zinc-700 transition-colors rounded"
-                  >
+              <!-- Count (recursive, hidden on hover for non-demo) -->
+              <span class="pr-3 text-[10px] text-zinc-400 {isDemo ? '' : 'group-hover:hidden'}">{countInFolder(f.path)}</span>
+              {#if !isDemo}
+                <div class="pr-1.5 hidden group-hover:flex items-center">
+                  <button onclick={(e) => { e.stopPropagation(); startRename(f.path); }} title="Rename" class="p-1 text-zinc-400 hover:text-zinc-700 transition-colors rounded">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
                   </button>
-                  <button
-                    onclick={() => deleteFolder(f.path)}
-                    title="Delete"
-                    class="p-1 text-zinc-400 hover:text-red-500 transition-colors rounded"
-                  >
+                  <button onclick={(e) => { e.stopPropagation(); deleteFolder(f.path); }} title="Delete" class="p-1 text-zinc-400 hover:text-red-500 transition-colors rounded">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <polyline points="3 6 5 6 21 6" />
                       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
@@ -388,7 +423,6 @@
                   </button>
                 </div>
               {:else}
-                <!-- Lock icon for protected Demo Files folders -->
                 <div class="pr-2.5">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
@@ -453,7 +487,7 @@
           </div>
         </div>
 
-      {:else if visibleFiles.length === 0}
+      {:else if selectedFolder !== null && visibleFiles.length === 0 && selectedSubfolders.length === 0}
         <!-- Folder empty state -->
         <div class="flex flex-col items-center justify-center h-64 text-center gap-3">
           <div class="h-10 w-10 rounded-xl bg-zinc-100 flex items-center justify-center">
@@ -466,7 +500,26 @@
         </div>
 
       {:else}
+        <!-- Subfolders grid (only when a folder is selected) -->
+        {#if selectedFolder !== null && selectedSubfolders.length > 0}
+          <div class="flex flex-wrap gap-2 mb-4">
+            {#each selectedSubfolders as sub (sub.path)}
+              <button
+                onclick={() => selectedFolder = sub.path}
+                class="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-surface hover:bg-surface-2 hover:border-zinc-300 transition-colors text-xs text-zinc-600"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-zinc-400">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                </svg>
+                <span>{sub.name}</span>
+                <span class="text-[10px] text-zinc-400 font-mono">{countInFolder(sub.path)}</span>
+              </button>
+            {/each}
+          </div>
+        {/if}
+
         <!-- Search bar -->
+        {#if visibleFiles.length > 0 || query}
         <div class="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 mb-4">
           <svg class="shrink-0 text-zinc-400" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -484,10 +537,11 @@
             </button>
           {/if}
         </div>
+        {/if}
 
-        {#if filteredFiles.length === 0}
+        {#if filteredFiles.length === 0 && query}
           <p class="text-sm text-zinc-400 text-center py-8">No files match "{query}"</p>
-        {:else}
+        {:else if filteredFiles.length > 0}
         <Card>
           <div class="divide-y divide-border">
             {#each filteredFiles as file (file.id)}
@@ -578,12 +632,16 @@
                         Demo
                       </span>
                     {:else}
-                      <Select
-                        value={file.folder}
-                        options={folderOptions}
-                        onchange={(v) => dataFiles.move(file.id, v)}
-                        class="w-full"
-                      />
+                      <button
+                        onclick={(e) => openFolderPicker(file.id, e.currentTarget)}
+                        class="flex items-center gap-1 text-[10px] border border-border rounded px-1.5 py-1 bg-surface
+                               text-zinc-500 hover:border-zinc-400 transition-colors w-full min-w-0"
+                      >
+                        <span class="truncate flex-1 text-left">{file.folder || 'No folder'}</span>
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </button>
                     {/if}
                   </div>
                 {/if}
@@ -596,6 +654,45 @@
       {/if}
 
     </div>
+
+    <!-- Folder picker popup -->
+    {#if pickerFileId}
+      {@const currentFile = dataFiles.files.find(f => f.id === pickerFileId)}
+      <div class="fixed inset-0 z-9998" onclick={closePicker}></div>
+      <div
+        class="fixed z-9999 bg-surface border border-border rounded-xl shadow-xl p-3 flex flex-col gap-2"
+        style="top:{pickerPos.top}px; left:{pickerPos.left}px; width:{pickerPos.width}px;"
+      >
+        <div class="flex items-center gap-2 border border-border rounded-lg px-2 py-1.5">
+          <svg class="shrink-0 text-zinc-400" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            bind:value={pickerQuery}
+            placeholder="Search folders…"
+            class="flex-1 text-xs bg-transparent outline-none text-zinc-800 placeholder:text-zinc-400"
+            onclick={(e) => e.stopPropagation()}
+          />
+        </div>
+        <div class="flex flex-wrap gap-1.5 max-h-44 overflow-y-auto">
+          {#each pickerOptions as opt (opt.value)}
+            <button
+              onclick={(e) => { e.stopPropagation(); dataFiles.move(pickerFileId!, opt.value); closePicker(); }}
+              class="text-[11px] rounded-md px-2 py-1 border transition-colors
+                {currentFile?.folder === opt.value
+                  ? 'bg-brand/10 border-brand/30 text-brand font-medium'
+                  : 'bg-zinc-50 border-border text-zinc-600 hover:bg-zinc-100 hover:border-zinc-300'}"
+            >
+              {opt.label}
+            </button>
+          {/each}
+          {#if pickerOptions.length === 0}
+            <p class="text-xs text-zinc-400 py-1">No folders found</p>
+          {/if}
+        </div>
+      </div>
+    {/if}
+
     <!-- Preview panel -->
     {#if previewFileId && previewFile}
       <div class="w-80 shrink-0 flex flex-col overflow-hidden bg-surface">

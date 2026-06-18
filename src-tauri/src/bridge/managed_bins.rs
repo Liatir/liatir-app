@@ -114,7 +114,7 @@ pub async fn lia_managed_download(
     result
 }
 
-async fn stream_download(
+pub(crate) async fn stream_download(
     app: &AppHandle,
     id: &str,
     url: &str,
