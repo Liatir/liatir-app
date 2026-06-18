@@ -6,7 +6,7 @@ export default defineConfig({
   base: '/',
 
   themeConfig: {
-    logo: { light: '/logo-light.svg', dark: '/logo-dark.svg', alt: 'Liatir' },
+    logo: { light: '/static/app-icon-white-bg-color.png', dark: '/static/app-icon-white-bg-color.png', alt: 'Liatir' },
     siteTitle: 'Liatir',
 
     nav: [

@@ -26,6 +26,7 @@ function createDownloadsStore() {
   let downloads = $state<Map<string, ActiveDownload>>(new Map());
   const unlisteners: Map<string, () => void> = new Map();
 
+
   function get(id: string): ActiveDownload | undefined {
     return downloads.get(id);
   }
@@ -38,7 +39,7 @@ function createDownloadsStore() {
     return list().filter(d => d.status === 'downloading');
   }
 
-  function start(opts: {
+  async function start(opts: {
     id: string;
     url: string;
     label: string;
@@ -46,9 +47,9 @@ function createDownloadsStore() {
     sha256?: string;
   }): Promise<void> {
     const api = liatir();
-    if (!api) return Promise.reject('Liatir API not available');
+    if (!api) throw new Error('Liatir API not available');
 
-    const entry: ActiveDownload = {
+    downloads = new Map(downloads).set(opts.id, {
       id: opts.id,
       url: opts.url,
       label: opts.label,
@@ -59,17 +60,14 @@ function createDownloadsStore() {
       status: 'downloading',
       error: null,
       sha256Ok: null,
-    };
+    });
 
-    downloads = new Map(downloads).set(opts.id, entry);
-
-    // Listen to progress events
+    // Await the listener registration so we get the unlisten fn, not a Promise
     const eventName = `managed:progress:${opts.id}`;
-    const unlisten = api.desktop.events.on(eventName, (raw: unknown) => {
+    const unlistenFn = await api.desktop.events.on(eventName, (raw: unknown) => {
       const p = raw as ProgressPayload;
       const existing = downloads.get(p.id);
       if (!existing) return;
-
       const next = new Map(downloads);
       if (p.done) {
         next.set(p.id, {
@@ -89,22 +87,21 @@ function createDownloadsStore() {
         });
       }
       downloads = next;
-    });
+    }) as unknown as () => void;
 
-    unlisteners.set(opts.id, unlisten);
+    unlisteners.set(opts.id, unlistenFn);
 
-    // Start the download (resolves when complete)
-    return api.invoke('lia_managed_download', {
-      id: opts.id,
-      url: opts.url,
-      destPath: opts.destPath,
-      sha256: opts.sha256 ?? null,
-    }).then(() => {
-      cleanup(opts.id);
-    }).catch((err: unknown) => {
-      const next = new Map(downloads);
+    try {
+      await api.invoke('lia_managed_download', {
+        id: opts.id,
+        url: opts.url,
+        destPath: opts.destPath,
+        sha256: opts.sha256 ?? null,
+      });
+    } catch (err: unknown) {
       const existing = downloads.get(opts.id);
       if (existing) {
+        const next = new Map(downloads);
         next.set(opts.id, {
           ...existing,
           status: existing.bytesDownloaded > 0 ? 'cancelled' : 'error',
@@ -112,9 +109,10 @@ function createDownloadsStore() {
         });
         downloads = next;
       }
-      cleanup(opts.id);
       throw err;
-    });
+    } finally {
+      cleanup(opts.id);
+    }
   }
 
   function cancel(id: string) {

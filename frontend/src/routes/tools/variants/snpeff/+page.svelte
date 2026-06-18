@@ -5,7 +5,6 @@
   import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
-  import DownloadProgress from '$lib/components/ui/DownloadProgress.svelte';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import { liatir } from '$lib/api';
   import { fmtDuration } from '$lib/utils';
@@ -13,7 +12,6 @@
   import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import { runNativeTool } from '$lib/utils/native-tool';
-  import { downloadsStore } from '$lib/stores/downloads.svelte';
   import { snpEffStore } from '$lib/stores/snpeff.svelte';
   import {
     SNPEFF_GENOMES,
@@ -21,15 +19,14 @@
     buildSnpEffOutput,
     parseSnpEffStats,
   } from '$lib/tools/variants/snpeff';
+
   import type { ToolOutput } from '$lib/types/tool-output';
   import type { RunOutputFile } from '$lib/stores/analysisRuns.svelte';
 
   // ── dep / config state ────────────────────────────────────────────
-  let javaAvailable   = $state(false);
-  let javaVersion     = $state<string | null>(null);
-  let depChecked      = $state(false);
-  let jarDownloading  = $state(false);
-  let jarDownloadId   = $state<string | null>(null);
+  let javaAvailable = $state(false);
+  let javaVersion   = $state<string | null>(null);
+  let depChecked    = $state(false);
 
   // ── genome state ──────────────────────────────────────────────────
   let selectedGenome = $state('hg38');
@@ -59,12 +56,6 @@
     selectedRun?.status === 'error' ? (selectedRun.error ?? 'Unknown error') : null
   );
 
-  const jarDownload = $derived(
-    jarDownloadId ? downloadsStore.get(jarDownloadId) : undefined
-  );
-  const dbDownload = $derived(
-    dbDownloadId ? downloadsStore.get(dbDownloadId) : undefined
-  );
 
   $effect(() => {
     const id = selectedRunId;
@@ -117,45 +108,10 @@
     } catch { /* cancelled */ }
   }
 
-  // ── JAR: download automatically ───────────────────────────────────
-  async function downloadJar() {
+  async function openSnpEffDownloadPage() {
     const api = liatir();
     if (!api) return;
-
-    jarDownloading = true;
-    const id = `snpeff-jar-${Date.now()}`;
-    jarDownloadId = id;
-
-    const { data: dataDir } = await api.invoke('lia_fs_paths') as { data: string; cache: string };
-    const zipPath = `${dataDir}/snpeff/snpEff_latest_core.zip`;
-    const extractDir = `${dataDir}/snpeff/`;
-
-    try {
-      await downloadsStore.start({
-        id,
-        url: SNPEFF_DOWNLOAD_URL,
-        label: 'snpEff_latest_core.zip',
-        destPath: zipPath,
-      });
-
-      // Extract the zip
-      await api.invoke('lia_managed_extract', { archivePath: zipPath, destDir: extractDir });
-
-      // Find snpEff.jar inside extracted dir
-      const jarPath = await api.invoke('lia_managed_find_binary', {
-        dir: extractDir,
-        name: 'snpEff.jar',
-      }) as string | null;
-
-      if (!jarPath) throw new Error('snpEff.jar not found in extracted archive');
-
-      await snpEffStore.setJarPath(jarPath);
-    } catch (e) {
-      alert(`Download failed: ${e}`);
-    } finally {
-      jarDownloading = false;
-      jarDownloadId = null;
-    }
+    await api.openBrowser(SNPEFF_DOWNLOAD_URL);
   }
 
   // ── Database: download ────────────────────────────────────────────
@@ -389,31 +345,29 @@
               <button onclick={() => snpEffStore.setJarPath(null)} class="text-[10px] text-zinc-400 hover:text-zinc-600">Change</button>
             </div>
           {:else}
-            <p class="text-xs text-zinc-500">Configure the path to <code class="font-mono">snpEff.jar</code>. You can use an existing installation or let Liatir download it.</p>
+            <p class="text-xs text-zinc-500">
+              Select your <code class="font-mono">snpEff.jar</code>. If you don't have it yet, download SnpEff from the official website and point Liatir to the JAR.
+            </p>
 
             <div class="flex gap-2">
-              <Button variant="secondary" onclick={browseJar}>
+              <Button variant="primary" onclick={browseJar}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                 </svg>
-                Use existing JAR
+                Select snpEff.jar
               </Button>
-              <Button
-                variant="primary"
-                disabled={jarDownloading}
-                loading={jarDownloading}
-                onclick={downloadJar}
-              >
+              <Button variant="secondary" onclick={openSnpEffDownloadPage}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
                 </svg>
-                Download automatically (~50 MB)
+                Download SnpEff
               </Button>
             </div>
 
-            {#if jarDownload}
-              <DownloadProgress download={jarDownload} />
-            {/if}
+            <p class="text-[11px] text-zinc-400">
+              Download the ZIP from the SnpEff website, extract it, then select <code class="font-mono">snpEff.jar</code> from the extracted folder.
+            </p>
           {/if}
         </Card>
 

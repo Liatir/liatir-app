@@ -129,7 +129,10 @@ async fn stream_download(
 
     // Build HTTP request — add Range header if resuming
     let client = reqwest::Client::builder()
-        .user_agent("Liatir/2")
+        .user_agent("Mozilla/5.0 Liatir/2")
+        .timeout(std::time::Duration::from_secs(60))
+        .connect_timeout(std::time::Duration::from_secs(15))
+        .redirect(reqwest::redirect::Policy::limited(15))
         .build()
         .map_err(|e| e.to_string())?;
 

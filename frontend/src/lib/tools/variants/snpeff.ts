@@ -31,8 +31,7 @@ export const SNPEFF_GENOMES = [
   { id: 'sacCer3',   label: 'Yeast R64 (sacCer3)' },
 ];
 
-export const SNPEFF_DOWNLOAD_URL =
-  'https://snpeff.blob.core.windows.net/versions/snpEff_latest_core.zip';
+export const SNPEFF_DOWNLOAD_URL = 'https://pcingola.github.io/SnpEff/#download';
 
 // ── ANN field parser ──────────────────────────────────────────────
 

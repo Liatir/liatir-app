@@ -23,7 +23,7 @@
   let renameValue = $state('');
   let renameInputEl = $state<HTMLInputElement | null>(null);
 
-  type FolderNode = { name: string; path: string; depth: number };
+  type FolderNode = { name: string; path: string; depth: number; hasChildren: boolean };
 
   function buildFolderTree(paths: string[]): FolderNode[] {
     type Node = { name: string; path: string; children: Map<string, Node> };
@@ -41,13 +41,34 @@
     }
     const out: FolderNode[] = [];
     function dfs(m: Map<string, Node>, d: number) {
-      for (const n of m.values()) { out.push({ name: n.name, path: n.path, depth: d }); dfs(n.children, d + 1); }
+      for (const n of m.values()) {
+        out.push({ name: n.name, path: n.path, depth: d, hasChildren: n.children.size > 0 });
+        dfs(n.children, d + 1);
+      }
     }
     dfs(root, 0);
     return out;
   }
 
+  let collapsedFolders = $state(new Set<string>());
+
+  function toggleCollapse(path: string) {
+    const next = new Set(collapsedFolders);
+    if (next.has(path)) next.delete(path); else next.add(path);
+    collapsedFolders = next;
+  }
+
   const flatFolders = $derived(buildFolderTree(dataFiles.allFolderPaths()));
+
+  const visibleFolders = $derived(
+    flatFolders.filter(f => {
+      const parts = f.path.split('/');
+      for (let i = 1; i < parts.length; i++) {
+        if (collapsedFolders.has(parts.slice(0, i).join('/'))) return false;
+      }
+      return true;
+    })
+  );
   const visibleFiles = $derived(
     selectedFolder === null ? dataFiles.files : dataFiles.byFolder(selectedFolder)
   );
@@ -295,7 +316,7 @@
         {/if}
 
         <!-- Folders -->
-        {#each flatFolders as f (f.path)}
+        {#each visibleFolders as f (f.path)}
           {#if renamingFolder === f.path}
             <div class="px-3 py-1.5">
               <input
@@ -316,12 +337,27 @@
               <button
                 onclick={() => selectedFolder = f.path}
                 style="padding-left: {f.depth * 10 + 12}px"
-                class="flex-1 flex items-center gap-2 py-1.5 text-xs min-w-0
+                class="flex-1 flex items-center gap-1.5 py-1.5 text-xs min-w-0
                   {selectedFolder === f.path
                     ? 'text-brand font-medium'
                     : 'text-zinc-500 group-hover:text-zinc-700'}"
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
+                <!-- Collapse chevron (only if has children) -->
+                {#if f.hasChildren}
+                  <button
+                    onclick={(e) => { e.stopPropagation(); toggleCollapse(f.path); }}
+                    class="shrink-0 text-zinc-400 hover:text-zinc-600 transition-transform duration-150
+                      {collapsedFolders.has(f.path) ? '' : 'rotate-90'}"
+                    aria-label={collapsedFolders.has(f.path) ? 'Expand' : 'Collapse'}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                  </button>
+                {:else}
+                  <span class="w-2.5 shrink-0"></span>
+                {/if}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                 </svg>
                 <span class="flex-1 text-left truncate">{f.name}</span>

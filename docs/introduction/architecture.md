@@ -4,32 +4,14 @@ Liatir is a Tauri 2 desktop application with a Rust backend and a SvelteKit fron
 
 ## High-level overview
 
-```
-┌─────────────────────────────────────────────────────┐
-│  SvelteKit frontend  (Vite, Svelte 5 runes, Tailwind)│
-│                                                     │
-│  window.Liatir SDK  ─────── api.invoke('lia_*', …)  │
-└──────────────────────────────┬──────────────────────┘
-                               │ Tauri IPC bridge
-┌──────────────────────────────▼──────────────────────┐
-│  Rust backend  (Tauri 2, Tokio)                      │
-│                                                     │
-│  lia_* command handlers                             │
-│  ├─ filesystem: read, write, copy, preview, save    │
-│  ├─ job runner: spawn, status, output, kill         │
-│  ├─ dep checker: which/where + version parsing      │
-│  ├─ .lia runtime: sig check, manifest, Node exec    │
-│  └─ IPC server: Axum on random port (for modules)   │
-└─────────────────────────────────────────────────────┘
-         │ child process               │ HTTP / unix socket
-  ┌──────▼──────┐             ┌───────▼────────┐
-  │  native     │             │  liatir-adapter │
-  │  binaries   │             │  (Node.js +    │
-  │  samtools   │             │   .lia index.js)│
-  │  bcftools   │             └────────────────┘
-  │  fastp …    │
-  └─────────────┘
-```
+
+<div style="display: flex; justify-content: center; margin: 2rem 0;">
+  <img
+    src="/static/Liatir arch.png"
+    alt="Desktopr Companion Playground"
+    style="max-width: 100%; border-radius: 12px;"
+  />
+</div>
 
 ## Frontend stack
 
