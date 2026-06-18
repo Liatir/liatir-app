@@ -1,7 +1,7 @@
-import type { OfflabAPI, } from "../../../types";
+import type { LiatirAPI, } from "../../../types";
 import { AutostartInterface, AutostartMode } from "./_types";
 
-export function buildAutostart(core: { invoke: OfflabAPI["invoke"] }): AutostartInterface {
+export function buildAutostart(core: { invoke: LiatirAPI["invoke"] }): AutostartInterface {
   return {
     enable: (): Promise<void> => core.invoke("dtr_autostart_enable"),
     disable: (): Promise<void> => core.invoke("dtr_autostart_disable"),

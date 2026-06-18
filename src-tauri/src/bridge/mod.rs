@@ -20,6 +20,7 @@ pub mod sidecar;
 pub mod jobs;
 pub mod deps;
 pub mod managed_bins;
+pub mod ipc_server;
 
 pub use notifications::*;
 pub use clipboard::*;

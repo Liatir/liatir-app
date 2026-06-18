@@ -78,8 +78,8 @@
     outputError = null;
     outputType = null;
     try {
-      const fn = new AsyncFunction('Offlab', code);
-      const result = await fn(window.Offlab);
+      const fn = new AsyncFunction('Liatir', code);
+      const result = await fn(window.Liatir);
       output = result;
       outputType = 'result';
     } catch (e) {
@@ -226,7 +226,7 @@
 
   <!-- Editor + output -->
   <div class="flex-1 flex flex-col overflow-hidden">
-    <PageHeader title="Code" description="Write JavaScript and use the Offlab API directly">
+    <PageHeader title="Code" description="Write JavaScript and use the Liatir API directly">
       {#snippet actions()}
         {#if showSavePanel}
           <input

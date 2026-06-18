@@ -1,4 +1,4 @@
-import type { OfflabAPI, WindowTauri } from "./types";
+import type { LiatirAPI, WindowTauri } from "./types";
 import {
   buildCore,
   buildFs,
@@ -30,15 +30,15 @@ import { buildQc } from "./modules/qc/_main";
 
 (() => {
   if (typeof window === "undefined") return;
-  if ((window as any).Offlab) return;
+  if ((window as any).Liatir) return;
 
-  console.log("[Offlab bridge] init script evaluated");
+  console.log("[Liatir bridge] init script evaluated");
 
   const core = buildCore();
   const plugins = buildPlugins(core);
   const sidecar = buildSidecar(core);
 
-  const api: OfflabAPI = {
+  const api: LiatirAPI = {
     get isAvailable() { return true; },
     apiVersion: API_VERSION,
     get ready() { return core.ready; },
@@ -77,14 +77,14 @@ import { buildQc } from "./modules/qc/_main";
     openBrowser: (url: string): Promise<void> => window.__TAURI__?.shell?.open(url),
   };
 
-  Object.defineProperty(window, "Offlab", {
+  Object.defineProperty(window, "Liatir", {
     value: api,
     enumerable: false,
     configurable: false,
     writable: false,
   });
 
-  console.log("[Offlab bridge] window.Offlab assigned", (window as any).Offlab);
+  console.log("[Liatir bridge] window.Liatir assigned", (window as any).Liatir);
 })();
 
 (async () => {
@@ -93,6 +93,6 @@ import { buildQc } from "./modules/qc/_main";
   if (tauriReadyCheck()) {
     dtrInitiators();
   } else {
-    console.error("[Offlab bridge] Tauri did not become ready in time");
+    console.error("[Liatir bridge] Tauri did not become ready in time");
   }
 })();

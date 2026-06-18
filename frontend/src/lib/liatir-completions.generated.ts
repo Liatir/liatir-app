@@ -1,10 +1,10 @@
 // This file is generated automatically — do not edit.
 // Run:  npm run gen:sdk-types
-// Source: src-ts/offlab/_types.ts → OfflabAPI  (offlab@2.2.0)
+// Source: src-ts/liatir/_types.ts → LiatirAPI  (liatir@2.2.0)
 
-import type { ApiNode } from './offlab-editor';
+import type { ApiNode } from './liatir-editor';
 
-export const OFFLAB_API: Record<string, ApiNode> = {
+export const LIATIR_API: Record<string, ApiNode> = {
   isAvailable: { type: "property", detail: "boolean" },
   apiVersion: { type: "property", detail: "string" },
   ready: { type: "property", detail: "Promise<true>" },
@@ -57,7 +57,7 @@ export const OFFLAB_API: Record<string, ApiNode> = {
           unregisterAll: { type: "method", detail: "(): Promise<void>" },
           isRegistered: { type: "method", detail: "(accelerator: string): Promise<boolean>" },
       } },
-      fs: { type: "property", detail: "FsInterface", info: "Sandboxed persistent/cache storage under ~/.offlab", children: {
+      fs: { type: "property", detail: "FsInterface", info: "Sandboxed persistent/cache storage under ~/.liatir", children: {
           cache: { type: "property", detail: "FsScopeMethods", children: {
               listContent: { type: "method", detail: "(rel: string): Promise<FsEntry[]>" },
               newDirectory: { type: "method", detail: "(rel: string): Promise<void>" },
@@ -191,7 +191,7 @@ export const OFFLAB_API: Record<string, ApiNode> = {
       run: { type: "method", detail: "(steps: PipelineStep[], opts?: { continueOnError?: boolean; }): Promise<PipelineResult>", info: "Execute a sequence of steps in order.\nStops at the first failure unless `continueOnError` is true.\n\nTODO: add real bio pipeline presets here, e.g.:\n  - shortReadQC(fastqPath)         → FastQC → MultiQC\n  - alignShortReads(fastq, ref)    → BWA-MEM → samtools sort/index\n  - callVariants(bam, ref)         → GATK HaplotypeCaller → bcftools filter\n  - annotateVariants(vcf)          → VEP or SnpEff" },
   } },
   jobs: { type: "property", detail: "JobsInterface", info: "Async process manager — spawn, stream, kill any system binary.", children: {
-      spawn: { type: "method", detail: "(cmd: string, args: string[], opts?: SpawnOptions): Promise<SpawnResult>", info: "Spawn an async process. Returns immediately with a jobId.\nSubscribe to events via Offlab.desktop.events:\n  \"jobs:stdout:<jobId>\" → line: string\n  \"jobs:stderr:<jobId>\" → line: string\n  \"jobs:exit:<jobId>\"   → { jobId, exitCode, ok }" },
+      spawn: { type: "method", detail: "(cmd: string, args: string[], opts?: SpawnOptions): Promise<SpawnResult>", info: "Spawn an async process. Returns immediately with a jobId.\nSubscribe to events via Liatir.desktop.events:\n  \"jobs:stdout:<jobId>\" → line: string\n  \"jobs:stderr:<jobId>\" → line: string\n  \"jobs:exit:<jobId>\"   → { jobId, exitCode, ok }" },
       kill: { type: "method", detail: "(jobId: string): Promise<boolean>" },
       status: { type: "method", detail: "(jobId: string): Promise<JobEntry>" },
       list: { type: "method", detail: "(): Promise<JobEntry[]>" },

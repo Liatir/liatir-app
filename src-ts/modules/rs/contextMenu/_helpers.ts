@@ -77,9 +77,9 @@ const onCmClick = (ev: MouseEvent, callback: CmListenerCallback, preventDefault:
       shiftKey: ev.shiftKey,
       metaKey: ev.metaKey,
     };
-    if (!window?.Offlab)
-      throw new Error("[contextmenu listener] Offlab not found");
-    window.Offlab.desktop.events.emit("cm:click", info);
+    if (!window?.Liatir)
+      throw new Error("[contextmenu listener] Liatir not found");
+    window.Liatir.desktop.events.emit("cm:click", info);
     const callbackPlayload: CmListenerCallbackPlayload = {
         event: ev,
         ...info
@@ -91,23 +91,23 @@ const onCmClick = (ev: MouseEvent, callback: CmListenerCallback, preventDefault:
 };
 
 export const initContextMenuListener = (callback: CmListenerCallback, preventDefault: boolean = true) => {
-  if (!window?.Offlab)
-    throw new Error("[contextmenu listener] Offlab not found");
-  const listening = window.Offlab.desktop.contextMenu.listening;
+  if (!window?.Liatir)
+    throw new Error("[contextmenu listener] Liatir not found");
+  const listening = window.Liatir.desktop.contextMenu.listening;
   if (listening) return console.warn("[contextmenu listener] already initialized");
   // listener globale: intercetta i click col destro su qualunque elemento della pagina
   const listener = (ev: MouseEvent) => onCmClick(ev, callback, preventDefault);
-  window.Offlab.desktop.contextMenu.listener = listener as EventListenerOrEventListenerObject;
+  window.Liatir.desktop.contextMenu.listener = listener as EventListenerOrEventListenerObject;
   document.addEventListener("contextmenu", listener);
-  window.Offlab.desktop.contextMenu.listening = true;
+  window.Liatir.desktop.contextMenu.listening = true;
 };
 
 export const removeContextMenuListener = () => {
-  if (!window?.Offlab) throw new Error("[contextmenu listener] Offlab not found");
-  const listening = window.Offlab.desktop.contextMenu.listening;
+  if (!window?.Liatir) throw new Error("[contextmenu listener] Liatir not found");
+  const listening = window.Liatir.desktop.contextMenu.listening;
   if(!listening) return;
-  const listener = window.Offlab.desktop.contextMenu.listener ?? (()=>{});
+  const listener = window.Liatir.desktop.contextMenu.listener ?? (()=>{});
   document.removeEventListener("contextmenu", listener);
-  window.Offlab.desktop.contextMenu.listening = false;
-  window.Offlab.desktop.contextMenu.listener = undefined;
+  window.Liatir.desktop.contextMenu.listening = false;
+  window.Liatir.desktop.contextMenu.listener = undefined;
 }

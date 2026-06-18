@@ -8,7 +8,7 @@
 	import { depsStore } from '$lib/stores/deps.svelte';
 	import { managedBins } from '$lib/stores/managedBins.svelte';
 	import { installProgress } from '$lib/stores/installProgress.svelte';
-	import { offlab } from '$lib/api';
+	import { liatir } from '$lib/api';
 	import { runNativeTool } from '$lib/utils/native-tool';
 	import {
 		getRelease,
@@ -151,7 +151,7 @@
 		if (!depsStore.checked) depsStore.checkAll();
 		await managedBins.init();
 
-		const api = offlab();
+		const api = liatir();
 		if (api) {
 			const info = await api.desktop.app.info();
 			platformOs = info.os as OsPlatform;
@@ -463,7 +463,7 @@
 					{:else}
 						No package manager detected in PATH.
 					{/if}
-					"Download & Install" bundles precompiled binaries directly into Offlab — no package manager
+					"Download & Install" bundles precompiled binaries directly into Liatir — no package manager
 					required.
 				</p>
 			{/if}

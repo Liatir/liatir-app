@@ -1,37 +1,37 @@
-// src-ts/sdk/offlab.ts
-import type { OfflabAPI } from "../types";
+// src-ts/sdk/liatir.ts
+import type { LiatirAPI } from "../types";
 
 function getWindow(): Window {
   if (typeof window === "undefined") {
-    throw new Error("[Offlab] window is not defined. Are you running in SSR?");
+    throw new Error("[Liatir] window is not defined. Are you running in SSR?");
   }
   return window;
 }
 
-function getGlobalBridge(): OfflabAPI | undefined {
+function getGlobalBridge(): LiatirAPI | undefined {
   const w = getWindow() as any;
-  const bridge = w.Offlab;
+  const bridge = w.Liatir;
 
   if (!bridge) {
     console.error(
-      "[Offlab] window.Offlab is not available. Is the desktop wrapper loaded?"
+      "[Liatir] window.Liatir is not available. Is the desktop wrapper loaded?"
     );
     return;
   }
 
-  return bridge as OfflabAPI;
+  return bridge as LiatirAPI;
 }
 
-export function isOfflabAvailable(): boolean {
+export function isLiatirAvailable(): boolean {
   if (typeof window === "undefined") {
     return false;
   }
 
   const w = window as any;
-  return !!w.Offlab;
+  return !!w.Liatir;
 }
 
-export const Offlab: OfflabAPI = new Proxy({} as OfflabAPI, {
+export const Liatir: LiatirAPI = new Proxy({} as LiatirAPI, {
   get(_target, prop, _receiver) {
     const bridge = getGlobalBridge() ?? undefined;
     const value = (bridge as any)[prop];

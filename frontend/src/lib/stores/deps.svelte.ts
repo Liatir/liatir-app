@@ -1,4 +1,4 @@
-import { offlab } from '$lib/api';
+import { liatir } from '$lib/api';
 
 export interface DepResult {
   binary: string;
@@ -35,7 +35,7 @@ function createDepsStore() {
     },
 
     async checkAll() {
-      const api = offlab();
+      const api = liatir();
       if (!api) return;
       loading = true;
       try {
@@ -47,13 +47,13 @@ function createDepsStore() {
     },
 
     async checkOne(binary: string): Promise<DepResult | null> {
-      const api = offlab();
+      const api = liatir();
       if (!api) return null;
       return await api.deps.check(binary);
     },
 
     async recheckOne(binary: string): Promise<void> {
-      const api = offlab();
+      const api = liatir();
       if (!api) return;
       const result = await api.deps.check(binary);
       if (!result) return;

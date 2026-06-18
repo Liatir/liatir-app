@@ -5,7 +5,7 @@
   import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
-  import { offlab } from '$lib/api';
+  import { liatir } from '$lib/api';
   import { fmtDuration } from '$lib/utils';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns, type AnalysisRun } from '$lib/stores/analysisRuns.svelte';
@@ -55,7 +55,7 @@
       }
     });
 
-    const api = offlab();
+    const api = liatir();
     if (api) {
       const result = await api.deps.check('samtools');
       depAvailable = result.available;
@@ -253,7 +253,7 @@
             </div>
           </div>
 
-          <p class="text-xs text-zinc-400">After installing, restart Offlab or reload this page.</p>
+          <p class="text-xs text-zinc-400">After installing, restart Liatir or reload this page.</p>
         </Card>
 
       {:else}

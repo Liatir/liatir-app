@@ -6,7 +6,7 @@
   import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Spinner from '$lib/components/ui/Spinner.svelte';
-  import { offlab } from '$lib/api';
+  import { liatir } from '$lib/api';
   import { fmtDuration } from '$lib/utils';
   import { pluginsStore } from '$lib/stores/plugins.svelte';
 
@@ -37,7 +37,7 @@
     const parsed = validatePayload();
     if (parsed === null) return;
 
-    const api = offlab();
+    const api = liatir();
     if (!api) return;
 
     running = true;

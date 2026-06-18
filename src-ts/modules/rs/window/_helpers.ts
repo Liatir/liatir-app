@@ -1,12 +1,12 @@
-import { Offlab } from "../../../sdk";
+import { Liatir } from "../../../sdk";
 import { WINDOWS_LABELS_TRACKER_VARIABLE_NAME } from "../../../constants";
-import { OfflabAPI } from "../../../offlab/_types";
+import { LiatirAPI } from "../../../liatir/_types";
 import { wait } from "../../../utils";
 
 export const tauriReadyCheck = (): boolean =>
   typeof window !== "undefined" &&
   (window as any).__TAURI__ &&
-  (window as any).Offlab;
+  (window as any).Liatir;
 
 export const waitTauri = async () => {
   const interval: number = 500;
@@ -18,7 +18,7 @@ export const waitTauri = async () => {
 };
 
 export const newWindow = async (
-  core: { invoke: OfflabAPI["invoke"] },
+  core: { invoke: LiatirAPI["invoke"] },
   options?: {
     label?: string;
     fullscreen?: boolean;
@@ -35,11 +35,11 @@ export const newWindow = async (
   const labelToSet = (options?.label) ?? randomWindowLabel;
 
   try {
-    const usedLabelsJSON = await Offlab.desktop.globalVariables.get(WINDOWS_LABELS_TRACKER_VARIABLE_NAME);
+    const usedLabelsJSON = await Liatir.desktop.globalVariables.get(WINDOWS_LABELS_TRACKER_VARIABLE_NAME);
     let usedLabelsObj = await JSON.parse(usedLabelsJSON);
     usedLabelsObj[labelToSet] = true;
     const updatedUsedLabelsJSON = JSON.stringify(usedLabelsObj);
-    await Offlab.desktop.globalVariables.set(WINDOWS_LABELS_TRACKER_VARIABLE_NAME, updatedUsedLabelsJSON);
+    await Liatir.desktop.globalVariables.set(WINDOWS_LABELS_TRACKER_VARIABLE_NAME, updatedUsedLabelsJSON);
   } catch (error) {
     console.warn("Could not update used windows labels tracker");
   }
@@ -53,7 +53,7 @@ export const newWindow = async (
 
 
 export const closeWindow = async (
-  core: { invoke: OfflabAPI["invoke"] },
+  core: { invoke: LiatirAPI["invoke"] },
   label: string
 ) => {
 
@@ -62,11 +62,11 @@ export const closeWindow = async (
 
   try {
     if(trimmedLabel) {
-      const usedLabelsJSON = await Offlab.desktop.globalVariables.get(WINDOWS_LABELS_TRACKER_VARIABLE_NAME);
+      const usedLabelsJSON = await Liatir.desktop.globalVariables.get(WINDOWS_LABELS_TRACKER_VARIABLE_NAME);
       let usedLabelsObj = await JSON.parse(usedLabelsJSON);
       delete usedLabelsObj[trimmedLabel];
       const updatedUsedLabelsJSON = JSON.stringify(usedLabelsObj);
-      await Offlab.desktop.globalVariables.set(WINDOWS_LABELS_TRACKER_VARIABLE_NAME, updatedUsedLabelsJSON);
+      await Liatir.desktop.globalVariables.set(WINDOWS_LABELS_TRACKER_VARIABLE_NAME, updatedUsedLabelsJSON);
     }
   } catch (error) {
     console.warn("Could not update used windows labels tracker");

@@ -31,7 +31,7 @@ pub struct SidecarResult {
 ///   "bundle": { "externalBin": ["binaries/samtools", "binaries/minimap2"] }
 ///
 /// Each sidecar must also be declared in the shell allowlist inside the
-/// relevant capability file, e.g. offlab-bridge.toml:
+/// relevant capability file, e.g. liatir-bridge.toml:
 ///   [[permission]]
 ///   identifier = "shell:allow-execute"
 ///

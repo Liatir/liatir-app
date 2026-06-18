@@ -27,6 +27,7 @@
   let advancedOpen = $state(false);
   let advancedBtnEl = $state<HTMLElement | null>(null);
   let floatingY = $state(0);
+  let floatingFromBottom = $state(false);
 
   onMount(() => {
     collapsed = localStorage.getItem('sidebar-collapsed') === 'true';
@@ -53,9 +54,16 @@
     advancedNav.some(i => $page.url.pathname.startsWith(i.match ?? i.href))
   );
 
-  function toggleAdvanced() {
+  function togglePlayground() {
     if (collapsed) {
-      if (advancedBtnEl) floatingY = advancedBtnEl.getBoundingClientRect().top;
+      if (advancedBtnEl) {
+        const rect = advancedBtnEl.getBoundingClientRect();
+        const PANEL_HEIGHT = 120; // approx: header + 2 items
+        floatingFromBottom = rect.top + PANEL_HEIGHT > window.innerHeight;
+        floatingY = floatingFromBottom
+          ? window.innerHeight - rect.bottom
+          : rect.top;
+      }
       advancedOpen = !advancedOpen;
     } else {
       advancedOpen = !advancedOpen;
@@ -80,11 +88,11 @@
   <!-- Logo -->
   <div class="flex h-14 items-center border-b border-border px-3 gap-2.5 overflow-hidden">
     <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-brand shrink-0 p-1.5">
-      <img src="/logo/png/logo-white.png" alt="Offlab" class="h-full w-full object-contain" />
+      <img src="/logo/png/logo-white.png" alt="Liatir" class="h-full w-full object-contain" />
     </div>
 
     {#if !collapsed}
-      <span class="text-md font-semibold tracking-tight text-zinc-900 flex-1 whitespace-nowrap">Offlab</span>
+      <span class="text-md font-semibold tracking-tight text-zinc-900 flex-1 whitespace-nowrap">Liatir</span>
     {/if}
 
     <button
@@ -159,19 +167,23 @@
       </a>
     {/each}
 
-    <!-- Advanced -->
+  </nav>
+
+  <!-- Bottom: Playground + Settings -->
+  <div class="border-t border-border px-1.5 py-3 space-y-0.5">
+
+    <!-- Playground -->
     <div class="relative">
       <button
         bind:this={advancedBtnEl}
-        onclick={toggleAdvanced}
-        title={collapsed ? 'Advanced' : undefined}
+        onclick={togglePlayground}
+        title={collapsed ? 'Playground' : undefined}
         class="w-full flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
                {collapsed ? 'justify-center' : ''}
                {advancedActive
                  ? 'bg-brand/10 text-brand font-medium'
                  : 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
       >
-        <!-- Advanced icon: layers -->
         <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="12 2 2 7 12 12 22 7 12 2" />
           <polyline points="2 17 12 22 22 17" />
@@ -179,7 +191,7 @@
         </svg>
 
         {#if !collapsed}
-          <span class="flex-1 text-left">Advanced</span>
+          <span class="flex-1 text-left">Playground</span>
           <svg
             width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -219,10 +231,9 @@
         </div>
       {/if}
     </div>
-  </nav>
 
-  <!-- Settings -->
-  <div class="border-t border-border px-1.5 py-3">
+    <!-- Settings -->
+    <div>
     <a
       href="/settings"
       title={collapsed ? 'Settings' : undefined}
@@ -239,16 +250,18 @@
         <span>Settings</span>
       {/if}
     </a>
+    </div>
+
   </div>
 </aside>
 
-<!-- Floating Advanced panel (collapsed sidebar only) -->
+<!-- Floating Playground panel (collapsed sidebar only) -->
 {#if collapsed && advancedOpen}
   <div
     class="fixed z-50 rounded-xl border border-border bg-white shadow-xl py-1.5 min-w-44"
-    style="left: 60px; top: {floatingY}px;"
+    style="left: 60px; {floatingFromBottom ? `bottom: ${floatingY}px` : `top: ${floatingY}px`};"
   >
-    <p class="px-3 py-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Advanced</p>
+    <p class="px-3 py-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Playground</p>
     {#each advancedNav as item}
       {@const active = isActive(item)}
       <a

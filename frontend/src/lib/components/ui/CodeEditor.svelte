@@ -5,7 +5,7 @@
   import { keymap } from '@codemirror/view';
   import { indentWithTab } from '@codemirror/commands';
   import { type Extension } from '@codemirror/state';
-  import { offlabTheme, offlabCompletions, offlabHover } from '$lib/offlab-editor';
+  import { liatirTheme, liatirCompletions, liatirHover } from '$lib/liatir-editor';
 
   interface Props {
     value: string;
@@ -25,9 +25,9 @@
       extensions: [
         basicSetup,
         javascript({ typescript: true }),
-        ...offlabTheme,
-        offlabCompletions,
-        offlabHover,
+        ...liatirTheme,
+        liatirCompletions,
+        liatirHover,
         keymap.of([
           indentWithTab,
           { key: 'Mod-Enter', run: () => { onrun?.(); return true; } },

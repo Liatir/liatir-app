@@ -23,7 +23,7 @@ export type DesktopInterface = {
   window: WindowInterface;
   events: EventsInterface;
   globalShortcut: ShortcutsInterface;
-  /** Sandboxed persistent/cache storage under ~/.offlab */
+  /** Sandboxed persistent/cache storage under ~/.liatir */
   fs: FsInterface;
   menu: MenuInterface;
   diagnostics: DiagnosticsInterface;

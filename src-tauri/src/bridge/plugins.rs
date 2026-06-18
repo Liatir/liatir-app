@@ -107,7 +107,7 @@ fn plugin_scope_root(
     };
 
     let scope = plugin_scope_dir_name(window_label)?;
-    let root = base.join(".offlab").join(scope);
+    let root = base.join(".liatir").join(scope);
 
     if !root.exists() {
         fs::create_dir_all(&root)

@@ -1,4 +1,4 @@
-import { offlab } from '$lib/api';
+import { liatir } from '$lib/api';
 
 export type JobStatus =
   | { type: 'running' }
@@ -30,7 +30,7 @@ function createJobsStore() {
     },
 
     async refresh() {
-      const api = offlab();
+      const api = liatir();
       if (!api) return;
       loading = true;
       error = null;
@@ -44,7 +44,7 @@ function createJobsStore() {
     },
 
     async spawn(cmd: string, args: string[], cwd?: string) {
-      const api = offlab();
+      const api = liatir();
       if (!api) return null;
       const result = await api.jobs.spawn(cmd, args, cwd ? { cwd } : undefined);
       await this.refresh();
@@ -52,14 +52,14 @@ function createJobsStore() {
     },
 
     async kill(jobId: string) {
-      const api = offlab();
+      const api = liatir();
       if (!api) return;
       await api.jobs.kill(jobId);
       await this.refresh();
     },
 
     async clearDone() {
-      const api = offlab();
+      const api = liatir();
       if (!api) return;
       await api.jobs.clearDone();
       await this.refresh();

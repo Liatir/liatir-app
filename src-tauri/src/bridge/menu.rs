@@ -52,9 +52,9 @@ fn apply_menu_config(app: &AppHandle<Wry>, cfg: MenuConfig) -> tauri::Result<()>
 
   #[cfg(target_os = "macos")]
   if let Some(sec) = cfg.macos_root.as_ref() {
-    index_section_items(&mut index_map, "Offlab", &sec.items, None, None);
+    index_section_items(&mut index_map, "Liatir", &sec.items, None, None);
     collect_check_items(&mut check_map, &sec.items);
-    subs.push(build_submenu_from_section_handle(app, "Offlab", sec)?);
+    subs.push(build_submenu_from_section_handle(app, "Liatir", sec)?);
   }
 
   if let Some(sec) = cfg.file.as_ref() {
@@ -148,7 +148,7 @@ fn apply_menu_config_to_window(
   #[cfg(target_os = "macos")]
   {
     eprintln!(
-      "[Offlab][menu] Window-specific native menu is not supported on macOS; \
+      "[Liatir][menu] Window-specific native menu is not supported on macOS; \
 dtr_init_menu_for_window_from_json is a no-op on this platform."
     );
     return Ok(());
@@ -175,7 +175,7 @@ dtr_init_menu_for_window_from_json is a no-op on this platform."
 
     #[cfg(target_os = "macos")]
     if let Some(sec) = cfg.macos_root.as_ref() {
-      subs.push(build_submenu_from_section_handle(app, "Offlab", sec)?);
+      subs.push(build_submenu_from_section_handle(app, "Liatir", sec)?);
     }
 
     if let Some(sec) = cfg.file.as_ref() {

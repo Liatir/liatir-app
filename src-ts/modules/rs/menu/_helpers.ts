@@ -1,4 +1,4 @@
-import { OfflabAPI, MenuConfig } from "../../../types";
+import { LiatirAPI, MenuConfig } from "../../../types";
 import { validate } from "../../../utils";
 import { cryptoTools } from "../../../utils";
 
@@ -11,7 +11,7 @@ function isMacOS(): boolean {
 }
 
 export const initMenuConfig = async (
-  core: { invoke: OfflabAPI["invoke"] },
+  core: { invoke: LiatirAPI["invoke"] },
   menuConfig: MenuConfig,
   windowLabel?: string
 ): Promise<void> => {
@@ -19,7 +19,7 @@ export const initMenuConfig = async (
   if (windowLabel) {
     if (isMacOS()) {
       console.warn(
-        "[Offlab] Native window-specific menus are not supported on macOS."
+        "[Liatir] Native window-specific menus are not supported on macOS."
       );
       return;
     }

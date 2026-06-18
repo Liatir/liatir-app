@@ -6,13 +6,13 @@
   import Button from '$lib/components/ui/Button.svelte';
   import Spinner from '$lib/components/ui/Spinner.svelte';
   import { pluginsStore } from '$lib/stores/plugins.svelte';
-  import { offlab } from '$lib/api';
+  import { liatir } from '$lib/api';
 
   let apiVersion = $state<string | null>(null);
   let appVersion = $state<string | null>(null);
 
   onMount(async () => {
-    const api = offlab();
+    const api = liatir();
     if (!api) return;
     apiVersion = api.apiVersion ?? null;
     try {
@@ -33,7 +33,7 @@
       <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">About</h2>
       <Card class="divide-y divide-border">
         {#each [
-          { label: 'Application', value: 'Offlab' },
+          { label: 'Application', value: 'Liatir' },
           { label: 'App Version', value: appVersion ?? '—' },
           { label: 'API Version', value: apiVersion ?? '—' },
         ] as row}

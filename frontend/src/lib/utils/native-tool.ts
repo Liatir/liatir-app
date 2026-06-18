@@ -1,4 +1,4 @@
-import { offlab } from '$lib/api';
+import { liatir } from '$lib/api';
 import { getManagedBinPath } from '$lib/tools/binary-manager';
 
 export interface NativeRunResult {
@@ -9,7 +9,7 @@ export interface NativeRunResult {
 }
 
 /**
- * Spawns a system command via Offlab.jobs.spawn, collects all stdout/stderr,
+ * Spawns a system command via Liatir.jobs.spawn, collects all stdout/stderr,
  * and resolves when the process exits. Works with any PATH-installed binary.
  */
 export async function runNativeTool(
@@ -17,8 +17,8 @@ export async function runNativeTool(
   args: string[],
   onStdout?: (line: string) => void,
 ): Promise<NativeRunResult> {
-  const api = offlab();
-  if (!api) throw new Error('Offlab API not available');
+  const api = liatir();
+  if (!api) throw new Error('Liatir API not available');
 
   // Prefer a managed (downloaded) binary over the system PATH binary
   const managedPath = getManagedBinPath(cmd);

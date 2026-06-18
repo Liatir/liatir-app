@@ -1,5 +1,5 @@
 export * from "./core/_types";
-export * from "./offlab/_types";
+export * from "./liatir/_types";
 export * from "./modules/rs/files/_types";
 export * from "./modules/rs/events/_types";
 export * from "./modules/rs/fs/_types";

@@ -31,7 +31,7 @@ pub async fn dtr_managed_download(
     dest_path: String,
 ) -> Result<u64, String> {
     let client = reqwest::Client::builder()
-        .user_agent("Offlab/2")
+        .user_agent("Liatir/2")
         .build()
         .map_err(|e| e.to_string())?;
 

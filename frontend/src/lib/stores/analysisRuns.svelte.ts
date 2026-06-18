@@ -1,4 +1,4 @@
-import { offlab } from '$lib/api';
+import { liatir } from '$lib/api';
 import type { ToolOutput } from '$lib/types/tool-output';
 
 export interface AnalysisRunMeta {
@@ -32,7 +32,7 @@ function createAnalysisRunsStore() {
   const outputCache = new Map<string, ToolOutput | null>();
 
   async function persistIndex() {
-    const api = offlab();
+    const api = liatir();
     if (!api) return;
     await api.desktop.fs.data.writeText(INDEX, JSON.stringify(runs), { createDirs: true });
   }
@@ -43,7 +43,7 @@ function createAnalysisRunsStore() {
     async init() {
       if (initialized) return;
       initialized = true;
-      const api = offlab();
+      const api = liatir();
       if (!api) return;
       try {
         const exists = await api.desktop.fs.data.exists(INDEX);
@@ -55,7 +55,7 @@ function createAnalysisRunsStore() {
     },
 
     async add(run: AnalysisRun) {
-      const api = offlab();
+      const api = liatir();
       if (!api) return;
 
       const serialized = JSON.stringify(run.output);
@@ -86,7 +86,7 @@ function createAnalysisRunsStore() {
     },
 
     async remove(id: string) {
-      const api = offlab();
+      const api = liatir();
       if (!api) return;
 
       try {
@@ -101,7 +101,7 @@ function createAnalysisRunsStore() {
     async loadOutput(id: string): Promise<ToolOutput | null> {
       if (outputCache.has(id)) return outputCache.get(id)!;
 
-      const api = offlab();
+      const api = liatir();
       if (!api) return null;
 
       try {

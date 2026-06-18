@@ -1,5 +1,5 @@
 export * from "./core/_main";
-export * from "./offlab/_main";
+export * from "./liatir/_main";
 export * from "./modules/rs/files/_main";
 export * from "./modules/rs/events/_main";
 export * from "./modules/rs/fs/_main";

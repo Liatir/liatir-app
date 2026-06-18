@@ -1,4 +1,4 @@
-import { offlab } from '$lib/api';
+import { liatir } from '$lib/api';
 
 function createPluginsStore() {
   let modules = $state<string[]>([]);
@@ -11,7 +11,7 @@ function createPluginsStore() {
     get error() { return error; },
 
     async refresh() {
-      const api = offlab();
+      const api = liatir();
       if (!api) return;
       loading = true;
       error = null;
@@ -25,7 +25,7 @@ function createPluginsStore() {
     },
 
     async add(): Promise<{ name: string } | null> {
-      const api = offlab();
+      const api = liatir();
       if (!api) return null;
       error = null;
       try {
@@ -39,7 +39,7 @@ function createPluginsStore() {
     },
 
     async remove(name: string) {
-      const api = offlab();
+      const api = liatir();
       if (!api) return;
       error = null;
       try {

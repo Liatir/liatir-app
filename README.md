@@ -1,4 +1,4 @@
-# Offlab
+# Liatir
 
 Tauri 2 desktop runtime base for bioinformatics applications.
 
@@ -26,17 +26,17 @@ src-ts/
 
 ---
 
-## WASM plugins (`Offlab.plugins`)
+## WASM plugins (`Liatir.plugins`)
 
 The WASM runtime is fully operational. Modules are `.wasm` files that receive a
 JSON payload on stdin and write a JSON result to stdout.
 
 ```ts
 // Add a module (file picker dialog).
-await Offlab.plugins.add("qc.wasm");
+await Liatir.plugins.add("qc.wasm");
 
 // Call it.
-const result = await Offlab.plugins.call("qc.wasm", {
+const result = await Liatir.plugins.call("qc.wasm", {
   fn: "run",
   args: { input: "sample.fastq" },
 }, /* timeoutMs */ 30_000);
@@ -47,7 +47,7 @@ Modules have access to a persistent `/storage` directory across calls.
 
 ---
 
-## Sidecar binaries (`Offlab.sidecar`)
+## Sidecar binaries (`Liatir.sidecar`)
 
 For native tools that cannot be compiled to WASM (e.g. samtools, minimap2).
 
@@ -62,23 +62,23 @@ For native tools that cannot be compiled to WASM (e.g. samtools, minimap2).
    }
    ```
 3. Add the `shell:allow-execute` permission for the binary in the capability
-   file (`src-tauri/permissions/offlab-bridge.toml`).
+   file (`src-tauri/permissions/liatir-bridge.toml`).
 
 Then call it from TS:
 
 ```ts
-const result = await Offlab.sidecar.run("samtools", ["view", "-c", "sample.bam"]);
+const result = await Liatir.sidecar.run("samtools", ["view", "-c", "sample.bam"]);
 ```
 
 ---
 
-## Pipeline orchestrator (`Offlab.pipeline`)
+## Pipeline orchestrator (`Liatir.pipeline`)
 
 Chains WASM and sidecar steps in sequence. Stops at the first failure unless
 `continueOnError` is set.
 
 ```ts
-const result = await Offlab.pipeline.run([
+const result = await Liatir.pipeline.run([
   {
     kind: "wasm",
     label: "QC",
@@ -106,8 +106,8 @@ console.log(result.ok, result.steps.map(s => s.status));
 
 ## File layout for bio data
 
-The sandboxed FS root is `~/.offlab/.main/` (data) and cache equivalent.
-WASM module storage lives at `~/.offlab/.main/_external_modules_storage/<module>/`.
+The sandboxed FS root is `~/.liatir/.main/` (data) and cache equivalent.
+WASM module storage lives at `~/.liatir/.main/_external_modules_storage/<module>/`.
 
 ---
 

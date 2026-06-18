@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Generates two frontend files:
-//   frontend/src/lib/offlab-sdk-types.ts       — full .d.ts string for future TS worker
-//   frontend/src/lib/offlab-completions.generated.ts — CodeMirror completion tree
+//   frontend/src/lib/liatir-sdk-types.ts       — full .d.ts string for future TS worker
+//   frontend/src/lib/liatir-completions.generated.ts — CodeMirror completion tree
 //
 // Usage: npm run gen:sdk-types  (from repo root)
 
@@ -28,7 +28,7 @@ function walk(dir, results = []) {
 
 const typeFiles = walk(SRC_TS).sort();
 
-// ── 2. Generate offlabSdkTypes string ───────────────────────────────────────
+// ── 2. Generate liatirSdkTypes string ───────────────────────────────────────
 
 const PREAMBLE = `
 // ── Primitive aliases ──────────────────────────────────────────────────────
@@ -55,8 +55,8 @@ for (const file of typeFiles) {
 sdkBody += `
 // ── Global declaration ─────────────────────────────────────────────────────
 declare global {
-  /** The Offlab native bridge API — available as window.Offlab inside Tauri. */
-  const Offlab: OfflabAPI;
+  /** The Liatir native bridge API — available as window.Liatir inside Tauri. */
+  const Liatir: LiatirAPI;
 }
 export {};
 `;
@@ -66,14 +66,14 @@ const sdkVersion = JSON.parse(
 ).version ?? 'unknown';
 
 fs.writeFileSync(
-  path.join(OUT_DIR, 'offlab-sdk-types.ts'),
+  path.join(OUT_DIR, 'liatir-sdk-types.ts'),
   `// This file is generated automatically — do not edit.\n` +
   `// Run:  npm run gen:sdk-types\n` +
-  `// Source: src-ts/**/_types.ts  (offlab@${sdkVersion})\n\n` +
-  `export const offlabSdkTypes = ${JSON.stringify(sdkBody)};\n`,
+  `// Source: src-ts/**/_types.ts  (liatir@${sdkVersion})\n\n` +
+  `export const liatirSdkTypes = ${JSON.stringify(sdkBody)};\n`,
   'utf-8'
 );
-console.log(`✓ offlab-sdk-types.ts  (${(Buffer.byteLength(sdkBody) / 1024).toFixed(1)} KB)`);
+console.log(`✓ liatir-sdk-types.ts  (${(Buffer.byteLength(sdkBody) / 1024).toFixed(1)} KB)`);
 
 // ── 3. Generate completion tree via TypeScript compiler ──────────────────────
 
@@ -87,7 +87,7 @@ const compilerOptions = ts.convertCompilerOptionsFromJson({
 }, ROOT).options;
 
 const program = ts.createProgram(
-  [path.join(SRC_TS, 'offlab', '_types.ts'), ...typeFiles],
+  [path.join(SRC_TS, 'liatir', '_types.ts'), ...typeFiles],
   compilerOptions
 );
 const checker = program.getTypeChecker();
@@ -186,13 +186,13 @@ function buildTree(type, depth = 0, visited = new Set()) {
   return result;
 }
 
-const offlabType = findType('OfflabAPI');
-if (!offlabType) {
-  console.error('ERROR: OfflabAPI type not found in src-ts/');
+const liatirType = findType('LiatirAPI');
+if (!liatirType) {
+  console.error('ERROR: LiatirAPI type not found in src-ts/');
   process.exit(1);
 }
 
-const tree = buildTree(offlabType);
+const tree = buildTree(liatirType);
 
 // Serialize the tree as a TypeScript literal (with type annotations stripped)
 function serialize(obj, indent = 0) {
@@ -212,14 +212,14 @@ function serialize(obj, indent = 0) {
 const completionsOutput =
 `// This file is generated automatically — do not edit.
 // Run:  npm run gen:sdk-types
-// Source: src-ts/offlab/_types.ts → OfflabAPI  (offlab@${sdkVersion})
+// Source: src-ts/liatir/_types.ts → LiatirAPI  (liatir@${sdkVersion})
 
-import type { ApiNode } from './offlab-editor';
+import type { ApiNode } from './liatir-editor';
 
-export const OFFLAB_API: Record<string, ApiNode> = {
+export const LIATIR_API: Record<string, ApiNode> = {
 ${serialize(tree, 0)}
 };
 `;
 
-fs.writeFileSync(path.join(OUT_DIR, 'offlab-completions.generated.ts'), completionsOutput, 'utf-8');
-console.log(`✓ offlab-completions.generated.ts  (${Object.keys(tree).length} top-level entries)`);
+fs.writeFileSync(path.join(OUT_DIR, 'liatir-completions.generated.ts'), completionsOutput, 'utf-8');
+console.log(`✓ liatir-completions.generated.ts  (${Object.keys(tree).length} top-level entries)`);

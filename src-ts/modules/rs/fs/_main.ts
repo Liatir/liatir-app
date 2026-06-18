@@ -1,5 +1,5 @@
 import { normalizeModuleName } from "../../../helpers";
-import { OfflabAPI } from "../../../types";
+import { LiatirAPI } from "../../../types";
 import type {
     FsCoreMethods,
   FsEntry,
@@ -11,7 +11,7 @@ import type {
 
 // Comments are in English
 function scopeCoreMethods(
-  core: { invoke: OfflabAPI["invoke"] },
+  core: { invoke: LiatirAPI["invoke"] },
   permanent: boolean,
   plugin?: string
 ): FsCoreMethods {
@@ -147,7 +147,7 @@ function scopeCoreMethods(
 
 // Comments are in English
 function scope(
-  core: { invoke: OfflabAPI["invoke"] },
+  core: { invoke: LiatirAPI["invoke"] },
   permanent: boolean,
 ): FsScopeMethods {
   const ensureDataNotIsolated = () => {};
@@ -177,7 +177,7 @@ function scope(
 }
 
 function pluginFsScope(
-  core: { invoke: OfflabAPI["invoke"] },
+  core: { invoke: LiatirAPI["invoke"] },
   plugin: string,
 ): FsPluginMethods {
 
@@ -195,7 +195,7 @@ function pluginFsScope(
 }
 
 export function buildFs(core: {
-  invoke: OfflabAPI["invoke"];
+  invoke: LiatirAPI["invoke"];
 }): FsInterface {
   const cache = scope(core, false);
   const data = scope(core, true);

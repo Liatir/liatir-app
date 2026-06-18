@@ -25,7 +25,7 @@ export type SpawnOptions = {
 export interface JobsInterface {
   /**
    * Spawn an async process. Returns immediately with a jobId.
-   * Subscribe to events via Offlab.desktop.events:
+   * Subscribe to events via Liatir.desktop.events:
    *   "jobs:stdout:<jobId>" → line: string
    *   "jobs:stderr:<jobId>" → line: string
    *   "jobs:exit:<jobId>"   → { jobId, exitCode, ok }

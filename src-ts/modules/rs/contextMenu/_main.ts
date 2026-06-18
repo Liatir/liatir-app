@@ -1,7 +1,7 @@
 import { initContextMenuListener, normalizeEntries, removeContextMenuListener } from "../../../helpers";
-import type { OfflabAPI, CmNode, CmPopupOptions, ContextMenuInterface } from "../../../types";
+import type { LiatirAPI, CmNode, CmPopupOptions, ContextMenuInterface } from "../../../types";
 
-export function buildContextMenu(core: { invoke: OfflabAPI["invoke"] }): ContextMenuInterface {
+export function buildContextMenu(core: { invoke: LiatirAPI["invoke"] }): ContextMenuInterface {
   return {
     show: (entries: CmNode[], options: CmPopupOptions): Promise<string> => core.invoke("dtr_context_menu_popup", { items: normalizeEntries(entries), options }),
     handler: {

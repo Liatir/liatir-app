@@ -1,0 +1,15 @@
+{
+  "name": "@liatir/adapter",
+  "version": "1.0.0",
+  "description": "Node.js IPC adapter for Liatir — lets .liatir scripts call Liatir.* from Node.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

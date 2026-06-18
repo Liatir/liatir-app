@@ -1,8 +1,8 @@
-/** Typed access to window.Offlab — returns null when unavailable (SSR / web). */
-export const offlab = () => {
+/** Typed access to window.Liatir — returns null when unavailable (SSR / web). */
+export const liatir = () => {
   if (typeof window === 'undefined') return null;
-  return window.Offlab ?? null;
+  return window.Liatir ?? null;
 };
 
 export const isDesktop = () =>
-  typeof window !== 'undefined' && !!window.Offlab?.isAvailable;
+  typeof window !== 'undefined' && !!window.Liatir?.isAvailable;

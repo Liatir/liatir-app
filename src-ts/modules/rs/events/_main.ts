@@ -1,8 +1,8 @@
-import { OfflabAPI } from "../../../types";
+import { LiatirAPI } from "../../../types";
 import { listenForEvent } from "../../../helpers";
 import type { DragDropPayload, EventsInterface } from "../../../types";
 
-export function buildEvents(core: { invoke: OfflabAPI["invoke"] }): EventsInterface {
+export function buildEvents(core: { invoke: LiatirAPI["invoke"] }): EventsInterface {
   return {
     emit: (event: string, payload?: unknown) => core.invoke("dtr_event_emit_to_current_window", { event, payload }),
     emitToAll: (event: string, payload?: unknown) => core.invoke("dtr_event_emit", { event, payload }),

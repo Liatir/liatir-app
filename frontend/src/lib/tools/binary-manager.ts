@@ -1,4 +1,4 @@
-import { offlab } from '$lib/api';
+import { liatir } from '$lib/api';
 import { managedBins } from '$lib/stores/managedBins.svelte';
 
 export type OsPlatform = 'macos' | 'linux' | 'windows';
@@ -100,8 +100,8 @@ export async function installBinary(
   arch: Arch,
   onProgress: (p: InstallProgress) => void,
 ): Promise<void> {
-  const api = offlab();
-  if (!api) throw new Error('Offlab API not available');
+  const api = liatir();
+  if (!api) throw new Error('Liatir API not available');
 
   const release = getRelease(binary, platform, arch);
   if (!release) throw new Error(`No precompiled release for ${binary} on ${platform}/${arch}`);

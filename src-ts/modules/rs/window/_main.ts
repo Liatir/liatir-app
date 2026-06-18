@@ -1,7 +1,7 @@
-import type { OfflabAPI, NewWindowOptions, WindowInfo, WindowInterface } from "../../../types";
+import type { LiatirAPI, NewWindowOptions, WindowInfo, WindowInterface } from "../../../types";
 import { closeWindow, newWindow } from "./_helpers";
 
-export function buildWindow(core: { invoke: OfflabAPI["invoke"] }): WindowInterface {
+export function buildWindow(core: { invoke: LiatirAPI["invoke"] }): WindowInterface {
   const randomWindowLabel: string = `w_${Math.random().toString(36).substring(2, 2 + 8)}`
   return {
     minimize: (label?: string): Promise<void> => core.invoke("dtr_win_minimize", { label: label??"main" }),

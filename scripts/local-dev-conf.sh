@@ -3,7 +3,7 @@ set -euo pipefail
 
 APP_VERSION="0.2.1"
 CARGO_PACKAGE_VERSION="0.2.1"
-CARGO_PACKAGE_NAME="offlab"
+CARGO_PACKAGE_NAME="liatir"
 
 sed -e "s/%%CARGO_PACKAGE_NAME%%/${CARGO_PACKAGE_NAME}/g" \
     -e "s/%%CARGO_PACKAGE_VERSION%%/${CARGO_PACKAGE_VERSION}/g" \
@@ -20,7 +20,7 @@ cp conf-templates/capability.local.json src-tauri/capabilities/local.json
 
 cat > src-tauri/window.env << 'EOF'
 MAIN_WINDOW_URL=
-MAIN_WINDOW_TITLE=Offlab
+MAIN_WINDOW_TITLE=Liatir
 MAIN_WINDOW_WIDTH=1200
 MAIN_WINDOW_HEIGHT=800
 MAIN_WINDOW_BG_COLOR=#171717

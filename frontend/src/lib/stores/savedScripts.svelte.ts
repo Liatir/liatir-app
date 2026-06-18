@@ -1,4 +1,4 @@
-import { offlab } from '$lib/api';
+import { liatir } from '$lib/api';
 
 export interface SavedScript {
   id: string;
@@ -22,7 +22,7 @@ interface IndexData {
 
 const DIR = 'scripts';
 const INDEX = `${DIR}/index.json`;
-const LS_MIGRATE_KEY = 'offlab_scripts';
+const LS_MIGRATE_KEY = 'liatir_scripts';
 
 function scriptPath(id: string) { return `${DIR}/${id}.ts`; }
 
@@ -33,20 +33,20 @@ function createSavedScriptsStore() {
   let initialized = false;
 
   async function persistIndex() {
-    const api = offlab();
+    const api = liatir();
     if (!api) return;
     const meta: ScriptMeta[] = scripts.map(({ id, name, savedAt, folder }) => ({ id, name, savedAt, folder }));
     await api.desktop.fs.data.writeText(INDEX, JSON.stringify({ scripts: meta, folders }), { createDirs: true });
   }
 
   async function writeCode(id: string, code: string) {
-    const api = offlab();
+    const api = liatir();
     if (!api) return;
     await api.desktop.fs.data.writeText(scriptPath(id), code, { createDirs: true });
   }
 
   async function deleteCode(id: string) {
-    const api = offlab();
+    const api = liatir();
     if (!api) return;
     try { await api.desktop.fs.data.remove(scriptPath(id)); } catch { /* ignore */ }
   }
@@ -64,7 +64,7 @@ function createSavedScriptsStore() {
     async init() {
       if (initialized) return;
       initialized = true;
-      const api = offlab();
+      const api = liatir();
       if (!api) return;
       try {
         if (await api.desktop.fs.data.exists(INDEX)) {
@@ -186,7 +186,7 @@ function createSavedScriptsStore() {
     async exportScript(id: string) {
       const script = scripts.find(s => s.id === id);
       if (!script) return;
-      const api = offlab();
+      const api = liatir();
       if (!api) return;
 
       const destPath = await api.desktop.files.save(`${script.name}.ts`);

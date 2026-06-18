@@ -1,21 +1,21 @@
 import { READY_EVENT_NAME } from "../constants";
-import { OfflabAPI, OfflabInstanceInterface } from "../types";
-import { Offlab } from "../sdk";
+import { LiatirAPI, LiatirInstanceInterface } from "../types";
+import { Liatir } from "../sdk";
 
-export const OfflabInstance: OfflabInstanceInterface = {
+export const LiatirInstance: LiatirInstanceInterface = {
     ready: (): boolean => {
-        if(!window?.Offlab) return false;
+        if(!window?.Liatir) return false;
         return true;
     },
-    get: (): OfflabAPI => {
-        if(!OfflabInstance.ready()) throw("'window.Offlab' not found");
-        return window?.Offlab as OfflabAPI;
+    get: (): LiatirAPI => {
+        if(!LiatirInstance.ready()) throw("'window.Liatir' not found");
+        return window?.Liatir as LiatirAPI;
     }
 }
 
 export const dtrInitiators = async () => {
     try {
-        if(!OfflabInstance.ready()) throw("Offlab instance not found");
+        if(!LiatirInstance.ready()) throw("Liatir instance not found");
 
         console.log("## READY ##");
 

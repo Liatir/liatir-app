@@ -1,4 +1,4 @@
-import { offlab } from '$lib/api';
+import { liatir } from '$lib/api';
 
 export interface ManagedBinary {
   binary: string;
@@ -29,7 +29,7 @@ function createManagedBinsStore() {
 
     async init(): Promise<void> {
       if (initialized) return;
-      const api = offlab();
+      const api = liatir();
       if (!api) return;
       try {
         if (await api.desktop.fs.data.exists(INDEX_PATH)) {
@@ -53,7 +53,7 @@ function createManagedBinsStore() {
     },
 
     async _persist(): Promise<void> {
-      const api = offlab();
+      const api = liatir();
       if (!api) return;
       const index: ManagedBinsIndex = { bins };
       await api.desktop.fs.data.writeText(

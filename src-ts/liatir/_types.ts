@@ -9,7 +9,7 @@ import { WindowTauri } from "../core/_types";
 
 export type DtrPlatform = "macos" | "linux" | "windows";
 
-export type OfflabAPI = {
+export type LiatirAPI = {
   readonly isAvailable: boolean;
   readonly apiVersion: string;
   readonly ready: Promise<true>;
@@ -50,7 +50,7 @@ export type OfflabAPI = {
   openBrowser: (url: string) => Promise<void>;
 };
 
-export interface OfflabInstanceInterface {
+export interface LiatirInstanceInterface {
   ready: () => boolean;
-  get: () => OfflabAPI;
+  get: () => LiatirAPI;
 }

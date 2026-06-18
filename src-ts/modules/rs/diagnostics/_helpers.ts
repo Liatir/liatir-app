@@ -1,10 +1,10 @@
 // src-ts/_dev_diagnostics.ts
-import { OfflabAPI } from "../../../types";
+import { LiatirAPI } from "../../../types";
 import { DiagnosticsArea, DiagnosticsTestFunctions, PrivacySettings, PrivacySettingsCamelCase } from "./_types";
 import { Num } from "../../../utils";
 import { getAppVersion } from "../../../helpers";
 
-export const diagnosticsSettings = async (core: { invoke: OfflabAPI["invoke"] }, settings?: PrivacySettings): Promise<PrivacySettingsCamelCase> => {
+export const diagnosticsSettings = async (core: { invoke: LiatirAPI["invoke"] }, settings?: PrivacySettings): Promise<PrivacySettingsCamelCase> => {
   // Accept both camelCase (SDK input) and snake_case (Rust return format)
   const s = settings as any;
   const retDaysAnalytics = s?.retentionDaysAnalytics ?? s?.retention_days_analytics;
@@ -38,7 +38,7 @@ export const deriveAppVersion = async (v?: string): Promise<string> => {
 // Test functions
 // ==============================
 
-export function buildDiagnosticsTestFunctions(core: { invoke: OfflabAPI["invoke"] }): DiagnosticsTestFunctions {
+export function buildDiagnosticsTestFunctions(core: { invoke: LiatirAPI["invoke"] }): DiagnosticsTestFunctions {
   return {
     testGenerateRecords: (n = 200) =>
       core.invoke<void>("dtr_logs_test_record_n", { n }),

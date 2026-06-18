@@ -1,9 +1,9 @@
-import { OfflabAPI } from "../../../types";
+import { LiatirAPI } from "../../../types";
 import { U64, U8 } from "../../../utils";
 import { PluginsInterface, PluginCallPayload, PluginStatusResult, PluginCallResult, PluginAddResult } from "./_types";
 import { normalizeModuleName } from "./_helpers";
 
-export function buildPlugins(core: { invoke: OfflabAPI["invoke"] }): PluginsInterface {
+export function buildPlugins(core: { invoke: LiatirAPI["invoke"] }): PluginsInterface {
     return {
       call: (module: string, payload: PluginCallPayload, timeoutMs?: U64, hostReadPaths?: string[]): Promise<PluginCallResult> => core.invoke("dtr_plugin_call", {module: normalizeModuleName(module), payload, timeoutMs, hostReadPaths}),
       status: (): Promise<PluginStatusResult> => core.invoke("dtr_plugin_status"),

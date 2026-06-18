@@ -1,8 +1,8 @@
-import type { OfflabAPI, } from "../../../types";
+import type { LiatirAPI, } from "../../../types";
 import { U64 } from "../../../utils";
 import { NetworkInterface } from "./_types";
 
-export function buildNetwork(core: { invoke: OfflabAPI["invoke"] }): NetworkInterface {
+export function buildNetwork(core: { invoke: LiatirAPI["invoke"] }): NetworkInterface {
   return {
     status: (): Promise<void> => core.invoke("dtr_network_get_status"),
     ping: (url: string, timeoutMs?: U64): Promise<void> => core.invoke("dtr_network_ping", {url: url??"", timeoutMs}),

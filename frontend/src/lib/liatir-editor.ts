@@ -2,7 +2,7 @@ import { EditorView, hoverTooltip } from '@codemirror/view';
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { autocompletion, type CompletionContext, type Completion } from '@codemirror/autocomplete';
 import { tags } from '@lezer/highlight';
-import { OFFLAB_API } from './offlab-completions.generated';
+import { LIATIR_API } from './liatir-completions.generated';
 
 // ── Syntax highlight colours ────────────────────────────────────────────────
 
@@ -112,16 +112,16 @@ const viewTheme = EditorView.theme({
     borderRadius: '2px',
   },
   // Hover tooltip
-  '.cm-offlab-hover': {
+  '.cm-liatir-hover': {
     padding: '8px 12px',
     fontFamily: '"JetBrains Mono", ui-monospace, monospace',
     fontSize: '12px',
     lineHeight: '1.6',
     maxWidth: '420px',
   },
-  '.cm-offlab-hover-symbol': { color: '#047857' },
-  '.cm-offlab-hover-detail': { color: '#4f39f6', paddingLeft: '6px' },
-  '.cm-offlab-hover-info':   { color: '#6b7280', fontFamily: 'system-ui, sans-serif', fontSize: '11px', marginTop: '4px' },
+  '.cm-liatir-hover-symbol': { color: '#047857' },
+  '.cm-liatir-hover-detail': { color: '#4f39f6', paddingLeft: '6px' },
+  '.cm-liatir-hover-info':   { color: '#6b7280', fontFamily: 'system-ui, sans-serif', fontSize: '11px', marginTop: '4px' },
 }, { dark: false });
 
 // ── ApiNode type (exported so the generated file can reference it) ───────────
@@ -136,8 +136,8 @@ export type ApiNode = {
 // ── Completion resolution ───────────────────────────────────────────────────
 
 function resolveNode(parts: string[]): Record<string, ApiNode> | null {
-  if (parts.length === 0) return OFFLAB_API;
-  let node: ApiNode | undefined = OFFLAB_API[parts[0]];
+  if (parts.length === 0) return LIATIR_API;
+  let node: ApiNode | undefined = LIATIR_API[parts[0]];
   for (let i = 1; i < parts.length; i++) {
     if (!node?.children) return null;
     node = node.children[parts[i]];
@@ -145,15 +145,15 @@ function resolveNode(parts: string[]): Record<string, ApiNode> | null {
   return node?.children ?? null;
 }
 
-function offlabCompletionSource(context: CompletionContext) {
-  const dotMatch = context.matchBefore(/Offlab(\.\w*)*/);
+function liatirCompletionSource(context: CompletionContext) {
+  const dotMatch = context.matchBefore(/Liatir(\.\w*)*/);
 
   if (!dotMatch) {
     const word = context.matchBefore(/\w+/);
     if (!word || !word.text.startsWith('Off')) return null;
     return {
       from: word.from,
-      options: [{ label: 'Offlab', type: 'variable' as const, detail: 'Offlab bridge API' }],
+      options: [{ label: 'Liatir', type: 'variable' as const, detail: 'Liatir bridge API' }],
       validFor: /^\w*$/,
     };
   }
@@ -164,14 +164,14 @@ function offlabCompletionSource(context: CompletionContext) {
   if (lastDot === -1) {
     return {
       from: dotMatch.from,
-      options: [{ label: 'Offlab', type: 'variable' as const, detail: 'Offlab bridge API' }],
+      options: [{ label: 'Liatir', type: 'variable' as const, detail: 'Liatir bridge API' }],
       validFor: /^\w*$/,
     };
   }
 
   const prefix = text.slice(0, lastDot);
   const from   = dotMatch.from + lastDot + 1;
-  const parts  = prefix.split('.').slice(1); // drop "Offlab"
+  const parts  = prefix.split('.').slice(1); // drop "Liatir"
 
   const children = resolveNode(parts);
   if (!children) return null;
@@ -192,7 +192,7 @@ function offlabCompletionSource(context: CompletionContext) {
 // Build a flat symbol → node map for hover lookup
 function buildSymbolMap(
   tree: Record<string, ApiNode>,
-  prefix = 'Offlab',
+  prefix = 'Liatir',
   out = new Map<string, ApiNode>()
 ): Map<string, ApiNode> {
   for (const [key, node] of Object.entries(tree)) {
@@ -203,16 +203,16 @@ function buildSymbolMap(
   return out;
 }
 
-const SYMBOL_MAP = buildSymbolMap(OFFLAB_API);
+const SYMBOL_MAP = buildSymbolMap(LIATIR_API);
 
-const offlabHoverTooltip = hoverTooltip((view, pos) => {
+const liatirHoverTooltip = hoverTooltip((view, pos) => {
   const line    = view.state.doc.lineAt(pos);
   const lineStr = line.text;
   const col     = pos - line.from;
 
-  // Find the longest "Offlab.xxx.yyy" token covering pos
+  // Find the longest "Liatir.xxx.yyy" token covering pos
   let best: { from: number; to: number; symbol: string } | null = null;
-  const re = /Offlab(?:\.\w+)*/g;
+  const re = /Liatir(?:\.\w+)*/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(lineStr)) !== null) {
     const start = line.from + m.index;
@@ -234,21 +234,21 @@ const offlabHoverTooltip = hoverTooltip((view, pos) => {
     above: true,
     create() {
       const wrap = document.createElement('div');
-      wrap.className = 'cm-offlab-hover';
+      wrap.className = 'cm-liatir-hover';
 
       const firstLine = document.createElement('div');
       const sym  = document.createElement('span');
-      sym.className = 'cm-offlab-hover-symbol';
+      sym.className = 'cm-liatir-hover-symbol';
       sym.textContent = best!.symbol;
       const det  = document.createElement('span');
-      det.className = 'cm-offlab-hover-detail';
+      det.className = 'cm-liatir-hover-detail';
       det.textContent = node.detail;
       firstLine.append(sym, det);
       wrap.append(firstLine);
 
       if (node.info) {
         const inf = document.createElement('div');
-        inf.className = 'cm-offlab-hover-info';
+        inf.className = 'cm-liatir-hover-info';
         inf.textContent = node.info;
         wrap.append(inf);
       }
@@ -260,12 +260,12 @@ const offlabHoverTooltip = hoverTooltip((view, pos) => {
 
 // ── Exports ─────────────────────────────────────────────────────────────────
 
-export const offlabTheme = [viewTheme, syntaxHighlighting(highlightStyle)];
+export const liatirTheme = [viewTheme, syntaxHighlighting(highlightStyle)];
 
-export const offlabCompletions = autocompletion({
-  override: [offlabCompletionSource],
+export const liatirCompletions = autocompletion({
+  override: [liatirCompletionSource],
   defaultKeymap: true,
   activateOnTyping: true,
 });
 
-export const offlabHover = offlabHoverTooltip;
+export const liatirHover = liatirHoverTooltip;

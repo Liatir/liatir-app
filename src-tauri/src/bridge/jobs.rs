@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
-    sync::{atomic::{AtomicU64, Ordering}, Mutex},
+    sync::{atomic::{AtomicU64, Ordering}, Arc, Mutex},
     time::{SystemTime, UNIX_EPOCH},
 };
 use tauri::{AppHandle, Emitter, Manager};
@@ -45,9 +45,17 @@ pub struct JobEntry {
     pub ended_at_ms: Option<u64>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct JobOutput {
+    pub stdout: Vec<String>,
+    pub stderr: Vec<String>,
+}
+
 struct JobState {
     entry: JobEntry,
     child: Option<tauri_plugin_shell::process::CommandChild>,
+    stdout: Arc<Mutex<Vec<String>>>,
+    stderr: Arc<Mutex<Vec<String>>>,
 }
 
 // ---------------------------------
@@ -102,10 +110,18 @@ pub async fn dtr_jobs_spawn(
         ended_at_ms: None,
     };
 
+    let stdout_buf = Arc::new(Mutex::new(Vec::<String>::new()));
+    let stderr_buf = Arc::new(Mutex::new(Vec::<String>::new()));
+
     {
         let registry = app.state::<JobRegistry>();
         let mut jobs = registry.0.lock().unwrap();
-        jobs.insert(job_id.clone(), JobState { entry, child: Some(child) });
+        jobs.insert(job_id.clone(), JobState {
+            entry,
+            child: Some(child),
+            stdout: stdout_buf.clone(),
+            stderr: stderr_buf.clone(),
+        });
     }
 
     // Stream stdout/stderr and update status on exit.
@@ -116,15 +132,19 @@ pub async fn dtr_jobs_spawn(
         while let Some(event) = rx.recv().await {
             match event {
                 CommandEvent::Stdout(line) => {
+                    let text = String::from_utf8_lossy(&line).trim_end().to_string();
+                    stdout_buf.lock().unwrap().push(text.clone());
                     let _ = handle.emit(
                         &format!("jobs:stdout:{jid}"),
-                        String::from_utf8_lossy(&line).trim_end().to_string(),
+                        text,
                     );
                 }
                 CommandEvent::Stderr(line) => {
+                    let text = String::from_utf8_lossy(&line).trim_end().to_string();
+                    stderr_buf.lock().unwrap().push(text.clone());
                     let _ = handle.emit(
                         &format!("jobs:stderr:{jid}"),
-                        String::from_utf8_lossy(&line).trim_end().to_string(),
+                        text,
                     );
                 }
                 CommandEvent::Terminated(payload) => {
@@ -209,4 +229,33 @@ pub fn dtr_jobs_clear_done(app: AppHandle) -> Result<usize, String> {
     jobs.retain(|_, s| s.entry.status == JobStatus::Running);
 
     Ok(before - jobs.len())
+}
+
+/// Returns buffered stdout/stderr lines for a job, optionally from a given offset.
+/// `since` is the index of the first line to return (allows incremental polling).
+#[tauri::command]
+pub fn dtr_jobs_get_output(
+    app: AppHandle,
+    job_id: String,
+    since: Option<usize>,
+) -> Result<serde_json::Value, String> {
+    let registry = app.state::<JobRegistry>();
+    let jobs = registry.0.lock().unwrap();
+
+    let state = jobs
+        .get(&job_id)
+        .ok_or_else(|| format!("job not found: {job_id}"))?;
+
+    let from = since.unwrap_or(0);
+    let stdout: Vec<String> = state.stdout.lock().unwrap().iter().skip(from).cloned().collect();
+    let stderr: Vec<String> = state.stderr.lock().unwrap().iter().skip(from).cloned().collect();
+    let stdout_total = state.stdout.lock().unwrap().len();
+    let stderr_total = state.stderr.lock().unwrap().len();
+
+    Ok(serde_json::json!({
+        "stdout": stdout,
+        "stderr": stderr,
+        "stdoutTotal": stdout_total,
+        "stderrTotal": stderr_total,
+    }))
 }

@@ -7,7 +7,10 @@
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
 
-  onMount(() => dataFiles.init());
+  onMount(async () => {
+    await dataFiles.init();
+    dataFiles.checkMissing();
+  });
 
   // ── folder tree ────────────────────────────────────────────────
   let selectedFolder = $state<string | null>(null);
@@ -359,34 +362,53 @@
         <Card>
           <div class="divide-y divide-border">
             {#each filteredFiles as file (file.id)}
-              <div class="flex items-center gap-3 px-4 py-3 group">
-                <div class="h-8 w-8 rounded-lg bg-zinc-100 border border-zinc-200 flex items-center justify-center shrink-0">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
-                    <polyline points="13 2 13 9 20 9" />
-                  </svg>
+              <div class="flex items-center gap-3 px-4 py-3 group {file.missing ? 'bg-amber-50/60' : ''}">
+                <div class="h-8 w-8 rounded-lg {file.missing ? 'bg-amber-100 border-amber-200' : 'bg-zinc-100 border-zinc-200'} border flex items-center justify-center shrink-0">
+                  {#if file.missing}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                      <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                  {:else}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+                      <polyline points="13 2 13 9 20 9" />
+                    </svg>
+                  {/if}
                 </div>
 
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium text-zinc-800 truncate">{file.name}</p>
-                  <p class="text-xs text-zinc-400 truncate" title={file.path}>{truncatePath(file.path)}</p>
+                  <p class="text-sm font-medium {file.missing ? 'text-amber-700' : 'text-zinc-800'} truncate">{file.name}</p>
+                  <p class="text-xs {file.missing ? 'text-amber-500' : 'text-zinc-400'} truncate" title={file.path}>{truncatePath(file.path)}</p>
                 </div>
 
-                <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium border {extClass(file.ext)}">
-                  {file.ext || '?'}
-                </span>
+                {#if file.missing}
+                  <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium border bg-amber-100 text-amber-700 border-amber-200">
+                    missing
+                  </span>
+                  <button
+                    onclick={() => dataFiles.relocate(file.id)}
+                    class="shrink-0 rounded px-2 py-1 text-[11px] font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 border border-amber-200 transition-colors"
+                  >
+                    Locate
+                  </button>
+                {:else}
+                  <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium border {extClass(file.ext)}">
+                    {file.ext || '?'}
+                  </span>
 
-                {#if file.size != null}
-                  <span class="shrink-0 text-[11px] text-zinc-400 font-mono">{fmtBytes(file.size)}</span>
+                  {#if file.size != null}
+                    <span class="shrink-0 text-[11px] text-zinc-400 font-mono">{fmtBytes(file.size)}</span>
+                  {/if}
+
+                  <Select
+                    value={file.folder}
+                    options={folderOptions}
+                    onchange={(v) => dataFiles.move(file.id, v)}
+                  />
+
+                  <span class="shrink-0 text-xs text-zinc-400 hidden sm:block">{fmtDate(file.addedAt)}</span>
                 {/if}
-
-                <Select
-                  value={file.folder}
-                  options={folderOptions}
-                  onchange={(v) => dataFiles.move(file.id, v)}
-                />
-
-                <span class="shrink-0 text-xs text-zinc-400 hidden sm:block">{fmtDate(file.addedAt)}</span>
 
                 <button
                   onclick={async () => {

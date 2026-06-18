@@ -1,10 +1,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod bridge;
-mod offlab;
+mod liatir;
 mod helpers;
 
 use bridge::*;
-use offlab::bridge;
+use liatir::bridge;
 use tauri::{WindowEvent, Emitter, DragDropEvent, Manager, WebviewWindowBuilder, WebviewUrl};
 use crate::bridge::dragdrop;
 
@@ -71,7 +71,7 @@ fn main() {
     println!("single-instance argv: {argv:?}");
   }));
 
-  // --- 1) Offlab bridge plugin and native plugins ---
+  // --- 1) Liatir bridge plugin and native plugins ---
   builder = builder
     .plugin(bridge())
     // .plugin(prevent)
@@ -110,6 +110,14 @@ fn main() {
 
     // Install built-in WASM modules from bundled resources (fastqc, …)
     bridge::plugins::ensure_builtin_modules(&app.handle());
+
+    // Start local IPC server for Node.js adapter (liatir-cli dev mode, .liatir scripts)
+    let ipc_handle = app.handle().clone();
+    tauri::async_runtime::spawn(async move {
+        if let Err(e) = bridge::ipc_server::start(ipc_handle).await {
+            eprintln!("[ipc_server] failed to start: {e}");
+        }
+    });
 
     // Native menu
     // crate::bridge::menu::init_menu(app)?;
@@ -184,7 +192,7 @@ fn main() {
             return;
           }
 
-          // Prevent immediate close so Offlab can emit its close event first.
+          // Prevent immediate close so Liatir can emit its close event first.
           api.prevent_close();
 
           let _ = window.emit("window:close-requested", ());
@@ -363,6 +371,7 @@ fn main() {
       dtr_jobs_status,
       dtr_jobs_list,
       dtr_jobs_clear_done,
+      dtr_jobs_get_output,
 
       // deps
       dtr_deps_check,

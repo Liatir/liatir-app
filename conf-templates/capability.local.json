@@ -5,7 +5,7 @@
   "permissions": [
     "core:default",
 
-    "offlab-bridge",
+    "liatir-bridge",
 
     "notification:default",
     "notification:allow-permission-state",

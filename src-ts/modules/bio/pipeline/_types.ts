@@ -8,7 +8,7 @@ import { U64 } from "../../../utils";
 
 export type WasmStep = {
   kind: "wasm";
-  /** .wasm module name as registered via Offlab.plugins.add() */
+  /** .wasm module name as registered via Liatir.plugins.add() */
   module: string;
   payload: PluginCallPayload;
   timeoutMs?: U64;

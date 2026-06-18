@@ -1,8 +1,8 @@
 "$schema" = "schemas/schema.json"
 
 [[permission]]
-identifier = "offlab-bridge"
-description = "Allows Offlab bridge commands."
+identifier = "liatir-bridge"
+description = "Allows Liatir bridge commands."
 commands.allow = [
   "dtr_notification_state",
   "dtr_request_permission",

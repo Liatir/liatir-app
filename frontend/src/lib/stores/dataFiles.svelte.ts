@@ -1,4 +1,4 @@
-import { offlab } from '$lib/api';
+import { liatir } from '$lib/api';
 
 export interface DataFile {
   id: string;
@@ -8,6 +8,7 @@ export interface DataFile {
   size?: number;
   addedAt: number;
   folder: string;
+  missing?: boolean;
 }
 
 interface StoredData {
@@ -44,7 +45,7 @@ function createDataFilesStore() {
   let initialized = false;
 
   async function persist() {
-    const api = offlab();
+    const api = liatir();
     if (!api) return;
     const data: StoredData = { files, folders };
     await api.desktop.fs.data.writeText(INDEX, JSON.stringify(data));
@@ -58,7 +59,7 @@ function createDataFilesStore() {
     async init() {
       if (initialized) return;
       initialized = true;
-      const api = offlab();
+      const api = liatir();
       if (!api) return;
       loading = true;
       try {
@@ -94,7 +95,7 @@ function createDataFilesStore() {
       const name = path.split(/[\\/]/).pop() ?? path;
       let size: number | undefined;
       try {
-        const api = offlab();
+        const api = liatir();
         if (api) size = (await api.invoke('dtr_file_size', { path })) as number;
       } catch { /* size stays undefined */ }
       files = [{
@@ -164,7 +165,7 @@ function createDataFilesStore() {
     },
 
     async importFromPicker(folder = '') {
-      const api = offlab();
+      const api = liatir();
       if (!api) return;
       const result = await api.desktop.files.open({ multi: true });
       for (const path of result?.paths ?? []) {
@@ -173,10 +174,50 @@ function createDataFilesStore() {
     },
 
     async addSampleFastq(folder = '') {
-      const api = offlab();
+      const api = liatir();
       if (!api) return;
       const path = (await api.invoke('dtr_fastqc_sample_path')) as string | null;
       if (path) await this.add(path, folder);
+    },
+
+    async checkMissing() {
+      const api = liatir();
+      if (!api) return;
+      const results = await Promise.all(
+        files.map(async (f) => {
+          try {
+            await api.invoke('dtr_file_size', { path: f.path });
+            return { id: f.id, missing: false };
+          } catch {
+            return { id: f.id, missing: true };
+          }
+        })
+      );
+      const anyChange = results.some(r => {
+        const f = files.find(x => x.id === r.id);
+        return f && !!f.missing !== r.missing;
+      });
+      if (anyChange) {
+        files = files.map(f => {
+          const r = results.find(x => x.id === f.id);
+          return r ? { ...f, missing: r.missing } : f;
+        });
+      }
+    },
+
+    async relocate(id: string) {
+      const api = liatir();
+      if (!api) return;
+      const result = await api.desktop.files.open({ multi: false });
+      const newPath = result?.paths?.[0];
+      if (!newPath) return;
+      const name = newPath.split(/[\\/]/).pop() ?? newPath;
+      let size: number | undefined;
+      try { size = (await api.invoke('dtr_file_size', { path: newPath })) as number; } catch { /* ok */ }
+      files = files.map(f =>
+        f.id === id ? { ...f, path: newPath, name, ext: detectExt(newPath), size, missing: false } : f
+      );
+      await persist();
     },
   };
 }

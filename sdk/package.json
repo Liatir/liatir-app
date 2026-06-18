@@ -1,7 +1,7 @@
 {
-  "name": "offlab",
+  "name": "liatir",
   "version": "2.2.0",
-  "description": "JS/TS SDK for the Offlab native bridge",
+  "description": "JS/TS SDK for the Liatir native bridge",
   "main": "dist-sdk/sdk/index.js",
   "types": "dist-sdk/sdk/index.d.ts",
   "module": "dist-sdk/sdk/index.js",

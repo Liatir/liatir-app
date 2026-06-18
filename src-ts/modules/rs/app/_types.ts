@@ -2,7 +2,7 @@ import { DtrPlatform } from "../../../types";
 import { I32 } from "../../../utils";
 
 /**
- * Information about a window managed by Offlab.
+ * Information about a window managed by Liatir.
  */
 export type AppWindowInfo = {
   label: string;
@@ -29,7 +29,7 @@ export type AppScreenInfo = {
 };
 
 /**
- * Information about the current Offlab runtime environment.
+ * Information about the current Liatir runtime environment.
  */
 export type AppInfo = {
   arch: string;                     // e.g. "aarch64"
