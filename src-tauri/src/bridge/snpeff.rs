@@ -4,16 +4,22 @@ use tauri::{AppHandle, Emitter};
 
 use crate::bridge::managed_bins::{DownloadProgress, DownloadRegistry, stream_download};
 
-const SNPEFF_AZURE_BASE: &str = "https://snpeff.blob.core.windows.net/databases";
+const SNPEFF_S3_BASE: &str = "https://snpeff-public.s3.amazonaws.com/databases";
 const SNPEFF_VERSIONS: &[&str] = &["v5_4", "v5_3", "v5_2", "v5_1", "v5_0"];
 
-/// Read `database_repository` from snpEff.config in the same dir as the JAR.
+/// Read `database.repository` from snpEff.config in the same dir as the JAR.
+/// The config uses a dot key: `database.repository = https://...`
 fn read_db_repository(jar_path: &str) -> Option<String> {
     let config = Path::new(jar_path).parent()?.join("snpEff.config");
     let content = std::fs::read_to_string(config).ok()?;
     for line in content.lines() {
-        if let Some(rest) = line.strip_prefix("database_repository") {
-            let url = rest.trim_start_matches([' ', '\t', ':']).trim_end().trim_end_matches('/');
+        let trimmed = line.trim();
+        if trimmed.starts_with('#') {
+            continue;
+        }
+        // Matches "database.repository = URL" or "database.repository : URL"
+        if let Some(rest) = trimmed.strip_prefix("database.repository") {
+            let url = rest.trim_start_matches([' ', '\t', '=', ':']).trim_end().trim_end_matches('/');
             if !url.is_empty() {
                 return Some(url.to_string());
             }
@@ -144,9 +150,13 @@ pub async fn lia_snpeff_download_db(
     data_dir: String,
     genome: String,
 ) -> Result<(), String> {
+    if state.is_active(&id) {
+        return Err(format!("Download already in progress for {genome}"));
+    }
+
     let version_hint = detect_snpeff_version(&jar_path);
     let repo_base = read_db_repository(&jar_path)
-        .unwrap_or_else(|| SNPEFF_AZURE_BASE.to_string());
+        .unwrap_or_else(|| SNPEFF_S3_BASE.to_string());
     let urls = db_urls(&genome, version_hint.as_deref(), &repo_base);
 
     let zip_path = format!("{data_dir}/{genome}-db.zip");
@@ -167,8 +177,11 @@ pub async fn lia_snpeff_download_db(
 
         match result {
             Ok(_) => {
-                // Emit extracting status (reuse progress event with bytes_total=None, done=false)
-                emit_progress(&app, &id, 0, None, 0.0);
+                // Signal "extracting" — keep bytes_total so the bar stays full
+                let _ = app.emit(
+                    &format!("managed:progress:{id}"),
+                    serde_json::json!({ "id": id, "extracting": true, "done": false }),
+                );
 
                 let extract_result = extract_snpeff_db(&zip_path, &data_dir);
                 let _ = std::fs::remove_file(&zip_path);

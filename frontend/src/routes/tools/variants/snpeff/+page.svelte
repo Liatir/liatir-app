@@ -29,7 +29,7 @@
   let depStatus = $state<DepStatus>('checking');
 
   // ── genome state ──────────────────────────────────────────────────
-  let selectedGenome = $state('hg38');
+  let selectedGenome = $state('GRCh38.115');
   let customGenome   = $state('');
   let genomePresent  = $state<boolean | null>(null);
   let genomeChecking = $state(false);
@@ -67,10 +67,16 @@
     });
   });
 
-  // Check genome presence when genome selection changes
+  // Check genome presence when genome selection changes.
+  // For known genomes, use the store list instantly; for custom IDs, hit the filesystem.
   $effect(() => {
     const genome = effectiveGenome;
     if (!snpEffStore.config.jarPath) { genomePresent = null; return; }
+    if (snpEffStore.config.downloadedGenomes.includes(genome)) {
+      genomePresent = true;
+      genomeChecking = false;
+      return;
+    }
     genomeChecking = true;
     genomePresent = null;
     snpEffStore.checkGenomePresent(genome).then(present => {
@@ -87,6 +93,7 @@
       }
     });
     await snpEffStore.init();
+    await reattachIfDownloading();
   });
 
   // ── JAR: browse existing ──────────────────────────────────────────
@@ -107,33 +114,70 @@
   }
 
   // ── Database: download ────────────────────────────────────────────
-  let dbBytesDownloaded = $state(0);
-  let dbBytesTotal      = $state<number | null>(null);
-  let dbError           = $state<string | null>(null);
+  let dbBytesDownloaded  = $state(0);
+  let dbBytesTotal       = $state<number | null>(null);
+  let dbExtracting       = $state(false);
+  let dbError            = $state<string | null>(null);
+  let dbDownloadingGenome = $state<string | null>(null);
+
+  // Tauri 2 event names don't allow dots — sanitize genome name for use in event IDs
+  function genomeToId(genome: string) {
+    return `snpeff-db-${genome.replace(/\./g, '-')}`;
+  }
+
+  function handleProgressEvent(p: { bytesDownloaded?: number; bytesTotal?: number; done: boolean; extracting?: boolean; error?: string }) {
+    if (p.extracting) {
+      dbExtracting = true;
+    } else if (!p.done) {
+      dbBytesDownloaded = p.bytesDownloaded ?? 0;
+      dbBytesTotal = p.bytesTotal ?? null;
+    }
+  }
+
+  async function cancelDownload() {
+    const api = liatir();
+    if (!api || !dbDownloadId) return;
+    await api.invoke('lia_managed_download_cancel', { id: dbDownloadId } as any);
+  }
+
+  async function deleteDatabase(genome: string) {
+    const api = liatir();
+    if (!api) return;
+    const path = `${snpEffStore.config.dataDir}/${genome}`;
+    try { await api.invoke('lia_fs_rm', { path } as any); } catch { /* already gone */ }
+    snpEffStore.removeGenome(genome);
+    if (genome === effectiveGenome) genomePresent = false;
+  }
+
+  async function startDownloadFor(genome: string) {
+    selectedGenome = genome;
+    customGenome = '';
+    // $effect will update effectiveGenome synchronously; call after next tick
+    await Promise.resolve();
+    await downloadDatabase();
+  }
 
   async function downloadDatabase() {
     if (!snpEffStore.config.jarPath) return;
+    if (dbDownloading) return;
     const api = liatir();
     if (!api) return;
 
+    const genome = effectiveGenome;
+    const id = genomeToId(genome);
+
     dbDownloading = true;
+    dbDownloadingGenome = genome;
     dbBytesDownloaded = 0;
     dbBytesTotal = null;
+    dbExtracting = false;
     dbError = null;
-    const genome = effectiveGenome;
-    const id = `snpeff-db-${genome}-${Date.now()}`;
     dbDownloadId = id;
+    snpEffStore.startDownload(genome);
 
-    // Listen to download progress events
     const unlisten = await api.desktop.events.on(
       `managed:progress:${id}`,
-      (evt: any) => {
-        const p = evt.payload as { bytesDownloaded: number; bytesTotal?: number; done: boolean; error?: string };
-        if (!p.done) {
-          dbBytesDownloaded = p.bytesDownloaded;
-          dbBytesTotal = p.bytesTotal ?? null;
-        }
-      }
+      (evt: any) => handleProgressEvent(evt.payload)
     ) as unknown as () => void;
 
     try {
@@ -150,9 +194,45 @@
       dbError = String(e);
     } finally {
       unlisten();
+      snpEffStore.finishDownload();
       dbDownloading = false;
+      dbDownloadingGenome = null;
+      dbExtracting = false;
       dbDownloadId = null;
     }
+  }
+
+  // Re-attach to an in-progress download when navigating back to this page
+  async function reattachIfDownloading() {
+    const genome = snpEffStore.activeDownload;
+    if (!genome) return;
+    const api = liatir();
+    if (!api) return;
+
+    selectedGenome = genome;
+    customGenome = '';
+    dbDownloading = true;
+    dbDownloadingGenome = genome;
+    dbBytesDownloaded = 0;
+    dbBytesTotal = null;
+    dbExtracting = false;
+    dbError = null;
+
+    const id = genomeToId(genome);
+    const unlisten = await api.desktop.events.on(
+      `managed:progress:${id}`,
+      (evt: any) => {
+        const p = evt.payload as { bytesDownloaded?: number; bytesTotal?: number; done: boolean; extracting?: boolean; error?: string };
+        handleProgressEvent(p);
+        if (p.done) {
+          unlisten();
+          dbDownloading = false;
+          dbDownloadingGenome = null;
+          dbExtracting = false;
+          snpEffStore.checkGenomePresent(genome).then(present => { genomePresent = present; });
+        }
+      }
+    ) as unknown as () => void;
   }
 
   // ── Annotation run ────────────────────────────────────────────────
@@ -342,100 +422,113 @@
 
         <!-- Step 3: Database (only if JAR is configured) -->
         {#if snpEffStore.config.jarPath}
-          <Card class="p-5 space-y-4">
+          <Card class="p-5 space-y-3">
             <h2 class="text-sm font-semibold text-zinc-800">2 — Genome database</h2>
 
-            <!-- Genome selector -->
-            <div class="space-y-2">
-              <label class="text-xs font-medium text-zinc-600">Genome</label>
-              <div class="flex gap-2">
-                <select
-                  bind:value={selectedGenome}
-                  class="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm
-                         focus:outline-none focus:ring-2 focus:ring-brand/30"
+            <!-- Genome list -->
+            <div class="rounded-lg border border-border overflow-hidden divide-y divide-border">
+              {#each SNPEFF_GENOMES as g}
+                {@const downloaded = snpEffStore.config.downloadedGenomes.includes(g.id)}
+                {@const isDownloading = dbDownloading && dbDownloadingGenome === g.id}
+                {@const isSelected = effectiveGenome === g.id && !customGenome.trim()}
+                <div
+                  role="button" tabindex="0"
+                  onclick={() => { if (!dbDownloading) { selectedGenome = g.id; customGenome = ''; } }}
+                  onkeydown={(e) => e.key === 'Enter' && !dbDownloading && (selectedGenome = g.id, customGenome = '')}
+                  class="flex items-center gap-3 px-3 py-2.5 transition-colors
+                    {isSelected ? 'bg-brand/5' : 'hover:bg-zinc-50'}
+                    {dbDownloading && !isDownloading ? 'cursor-default' : 'cursor-pointer'}"
                 >
-                  {#each SNPEFF_GENOMES as g}
-                    <option value={g.id}>{g.label}</option>
-                  {/each}
-                </select>
-              </div>
+                  <!-- Status dot -->
+                  <div class="h-2 w-2 rounded-full shrink-0
+                    {isDownloading ? 'bg-brand animate-pulse' : downloaded ? 'bg-emerald-500' : 'bg-zinc-300'}">
+                  </div>
+
+                  <!-- Label + progress -->
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs {isSelected ? 'font-medium text-brand' : 'text-zinc-700'} truncate">{g.label}</p>
+                    {#if isDownloading}
+                      {#if dbExtracting}
+                        <p class="text-[10px] text-zinc-400 mt-0.5">Extracting…</p>
+                      {:else if dbBytesTotal}
+                        {@const pct = Math.round((dbBytesDownloaded / dbBytesTotal) * 100)}
+                        <div class="flex items-center gap-2 mt-1">
+                          <div class="flex-1 bg-zinc-200 rounded-full h-1">
+                            <div class="bg-brand h-1 rounded-full transition-all" style="width:{pct}%"></div>
+                          </div>
+                          <span class="text-[10px] text-zinc-400 shrink-0">
+                            {pct}% · {(dbBytesDownloaded / 1_048_576).toFixed(0)} / {(dbBytesTotal / 1_048_576).toFixed(0)} MB
+                          </span>
+                        </div>
+                      {:else}
+                        <p class="text-[10px] text-zinc-400 mt-0.5">Connecting…</p>
+                      {/if}
+                      {#if dbError}
+                        <p class="text-[10px] text-red-600 mt-0.5 font-mono truncate">{dbError}</p>
+                      {/if}
+                    {/if}
+                  </div>
+
+                  <!-- Actions -->
+                  <div class="flex items-center gap-1.5 shrink-0" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="none">
+                    {#if isDownloading}
+                      <button
+                        onclick={cancelDownload}
+                        class="text-[10px] text-red-500 hover:text-red-700 px-2 py-0.5 rounded border border-red-200 hover:border-red-300 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    {:else if downloaded}
+                      <button
+                        onclick={() => deleteDatabase(g.id)}
+                        class="text-[10px] text-zinc-400 hover:text-red-500 px-2 py-0.5 rounded border border-transparent hover:border-red-200 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    {:else}
+                      <button
+                        disabled={dbDownloading}
+                        onclick={() => startDownloadFor(g.id)}
+                        class="text-[10px] text-brand hover:text-brand/80 disabled:opacity-30 disabled:cursor-not-allowed px-2 py-0.5 rounded border border-brand/30 hover:border-brand/60 transition-colors"
+                      >
+                        Download
+                      </button>
+                    {/if}
+                  </div>
+                </div>
+              {/each}
+            </div>
+
+            <!-- Custom genome input -->
+            <div class="space-y-1.5">
+              <p class="text-[11px] text-zinc-500">Custom genome ID (overrides selection above):</p>
               <div class="flex items-center gap-2">
                 <input
                   type="text"
                   bind:value={customGenome}
-                  placeholder="Or type a custom genome ID…"
-                  class="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-mono
-                         placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand/30"
+                  disabled={dbDownloading}
+                  placeholder="e.g. GRCh38.mane.1.5.refseq"
+                  class="flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-mono
+                         placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand/30
+                         disabled:opacity-50"
                 />
                 {#if customGenome.trim()}
                   <button onclick={() => customGenome = ''} class="text-xs text-zinc-400 hover:text-zinc-600">Clear</button>
                 {/if}
               </div>
-              <p class="text-[11px] text-zinc-400">
-                Active: <code class="font-mono text-zinc-600">{effectiveGenome}</code>
-              </p>
-            </div>
-
-            <!-- Database status -->
-            {#if genomeChecking}
-              <div class="flex items-center gap-2 text-xs text-zinc-500">
-                <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                </svg>
-                Checking database…
-              </div>
-            {:else if genomePresent === true}
-              <div class="flex items-center gap-2 text-xs text-emerald-600">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
-                Database ready — {effectiveGenome}
-              </div>
-            {:else if genomePresent === false}
-              <div class="space-y-3">
-                <div class="flex items-center gap-2 text-xs text-amber-600">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                  </svg>
-                  Database not found — download required (1–3 GB depending on genome)
-                </div>
-
-                <Button
-                  variant="secondary"
-                  disabled={dbDownloading}
-                  loading={dbDownloading}
-                  onclick={downloadDatabase}
-                >
-                  Download {effectiveGenome} database
-                </Button>
-
-                {#if dbDownloading}
-                  {#if dbBytesTotal}
-                    <div class="space-y-1">
-                      <div class="w-full bg-zinc-200 rounded-full h-1.5">
-                        <div
-                          class="bg-brand h-1.5 rounded-full transition-all"
-                          style="width: {Math.round((dbBytesDownloaded / dbBytesTotal) * 100)}%"
-                        ></div>
-                      </div>
-                      <p class="text-xs text-zinc-400">
-                        {(dbBytesDownloaded / 1_000_000).toFixed(0)} MB / {(dbBytesTotal / 1_000_000).toFixed(0)} MB
-                      </p>
-                    </div>
-                  {:else}
-                    <p class="text-xs text-zinc-400">Downloading… ({(dbBytesDownloaded / 1_000_000).toFixed(0)} MB)</p>
+              {#if customGenome.trim()}
+                <p class="text-[10px] text-zinc-400">
+                  Active: <code class="font-mono text-zinc-600">{effectiveGenome}</code>
+                  {#if genomeChecking}
+                    <span class="ml-1 text-zinc-400">· checking…</span>
+                  {:else if genomePresent === true}
+                    <span class="ml-1 text-emerald-600">· ready</span>
+                  {:else if genomePresent === false}
+                    <span class="ml-1 text-amber-600">· not downloaded</span>
                   {/if}
-                {/if}
-
-                {#if dbError}
-                  <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 font-mono">
-                    {dbError}
-                  </div>
-                {/if}
-              </div>
-            {/if}
+                </p>
+              {/if}
+            </div>
           </Card>
 
           <!-- Step 4: Annotation (only if database ready) -->

@@ -15,6 +15,8 @@ function createSnpEffStore() {
     downloadedGenomes: [],
   });
   let loaded = $state(false);
+  // Tracks an in-progress genome download across page navigations (in-memory only)
+  let activeDownload = $state<string | null>(null);
 
   async function init() {
     const api = liatir();
@@ -61,6 +63,11 @@ function createSnpEffStore() {
     }
   }
 
+  async function removeGenome(genome: string) {
+    config = { ...config, downloadedGenomes: config.downloadedGenomes.filter(g => g !== genome) };
+    await save();
+  }
+
   async function checkGenomePresent(genome: string): Promise<boolean> {
     const api = liatir();
     if (!api || !config.dataDir) return false;
@@ -76,11 +83,15 @@ function createSnpEffStore() {
   return {
     get config() { return config; },
     get loaded() { return loaded; },
+    get activeDownload() { return activeDownload; },
     init,
     save,
     setJarPath,
     markGenomeDownloaded,
+    removeGenome,
     checkGenomePresent,
+    startDownload(genome: string) { activeDownload = genome; },
+    finishDownload() { activeDownload = null; },
   };
 }
 

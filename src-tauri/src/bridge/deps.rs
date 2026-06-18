@@ -29,15 +29,38 @@ fn try_get_version(name: &str) -> Option<String> {
         let Ok(output) = std::process::Command::new(name).arg(flag).output() else {
             continue;
         };
-
+        if !output.status.success() {
+            continue;
+        }
         let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
         let text = if !stdout.is_empty() { stdout } else { stderr };
-
         if !text.is_empty() {
-            return Some(
-                text.lines().next().unwrap_or(&text).trim().to_string(),
-            );
+            return Some(text.lines().next().unwrap_or(&text).trim().to_string());
+        }
+    }
+
+    // Fallback: some tools (e.g. bwa) print "Version: X.Y.Z" in their usage/no-args output
+    if let Ok(output) = std::process::Command::new(name).output() {
+        let combined = format!(
+            "{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        for line in combined.lines() {
+            let trimmed = line.trim();
+            // Match "Version: 0.7.18" or "version 0.7.18" style lines
+            let lower = trimmed.to_lowercase();
+            if lower.starts_with("version") {
+                let ver = trimmed
+                    .splitn(2, |c: char| c == ':' || c == ' ')
+                    .nth(1)
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty());
+                if let Some(v) = ver {
+                    return Some(v);
+                }
+            }
         }
     }
 

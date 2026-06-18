@@ -17,18 +17,18 @@ export const snpeffDefinition: PipelineStepDefinition = {
   },
 };
 
-// Common genomes available in SnpEff database
+// Common genomes available in SnpEff database — IDs match the S3 bucket filenames exactly.
+// Check https://snpeff-public.s3.amazonaws.com/ for the current list.
 export const SNPEFF_GENOMES = [
-  { id: 'hg38',      label: 'Human GRCh38 (hg38)' },
-  { id: 'hg19',      label: 'Human GRCh37 (hg19)' },
-  { id: 'GRCh38.105', label: 'Human GRCh38.105 (Ensembl)' },
-  { id: 'mm39',      label: 'Mouse GRCm39 (mm39)' },
-  { id: 'mm10',      label: 'Mouse GRCm38 (mm10)' },
-  { id: 'rn7',       label: 'Rat mRatBN7.2 (rn7)' },
-  { id: 'danRer11',  label: 'Zebrafish GRCz11 (danRer11)' },
-  { id: 'dm6',       label: 'Drosophila BDGP6 (dm6)' },
-  { id: 'ce11',      label: 'C. elegans WBcel235 (ce11)' },
-  { id: 'sacCer3',   label: 'Yeast R64 (sacCer3)' },
+  { id: 'GRCh38.115',   label: 'Human GRCh38.115 (Ensembl 115)' },
+  { id: 'hg38',         label: 'Human hg38 (UCSC / v5_0)' },
+  { id: 'hg19',         label: 'Human hg19 / GRCh37 (UCSC)' },
+  { id: 'GRCm39.115',   label: 'Mouse GRCm39.115 (Ensembl 115)' },
+  { id: 'mm10',         label: 'Mouse mm10 / GRCm38 (UCSC / v5_0)' },
+  { id: 'GRCz11.115',   label: 'Zebrafish GRCz11.115 (Ensembl 115)' },
+  { id: 'BDGP6.115',    label: 'Drosophila BDGP6.115 (Ensembl 115)' },
+  { id: 'WBcel235.115', label: 'C. elegans WBcel235.115 (Ensembl 115)' },
+  { id: 'R64-1-1.115',  label: 'Yeast R64-1-1.115 (Ensembl 115)' },
 ];
 
 export const SNPEFF_DOWNLOAD_URL = 'https://pcingola.github.io/SnpEff/#download';

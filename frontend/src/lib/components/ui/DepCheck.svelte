@@ -30,7 +30,11 @@
       status = 'missing';
     } else {
       installed = r.version ?? null;
-      status = installed && versionGte(installed, req.minVersion) ? 'ok' : 'outdated';
+      if (!installed) {
+        status = 'ok'; // installed but version undetectable — assume ok
+      } else {
+        status = versionGte(installed, req.minVersion) ? 'ok' : 'outdated';
+      }
     }
   }
 

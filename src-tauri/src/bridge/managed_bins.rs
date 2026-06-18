@@ -19,6 +19,10 @@ impl DownloadRegistry {
         Self { active: Mutex::new(HashMap::new()) }
     }
 
+    pub(crate) fn is_active(&self, id: &str) -> bool {
+        self.active.lock().unwrap().contains_key(id)
+    }
+
     pub(crate) fn register(&self, id: &str) -> Arc<AtomicBool> {
         let flag = Arc::new(AtomicBool::new(false));
         self.active.lock().unwrap().insert(id.to_string(), Arc::clone(&flag));
@@ -130,7 +134,6 @@ pub(crate) async fn stream_download(
     // Build HTTP request — add Range header if resuming
     let client = reqwest::Client::builder()
         .user_agent("Mozilla/5.0 Liatir/2")
-        .timeout(std::time::Duration::from_secs(60))
         .connect_timeout(std::time::Duration::from_secs(15))
         .redirect(reqwest::redirect::Policy::limited(15))
         .build()
