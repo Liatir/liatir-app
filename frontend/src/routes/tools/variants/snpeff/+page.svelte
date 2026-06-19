@@ -14,7 +14,6 @@
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
-  import { runNativeTool } from '$lib/utils/native-tool';
   import { snpEffStore } from '$lib/stores/snpeff.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
@@ -288,6 +287,8 @@
     const api = liatir();
     if (!api) { running = false; return; }
 
+    let offStderr: (() => void) | undefined;
+
     try {
       const { data: dataDir } = await api.invoke('lia_fs_paths') as { data: string; cache: string };
       const outDir  = `${dataDir}/tool-outputs`;
@@ -298,24 +299,27 @@
         `→ Genome: ${genome}  Heap: ${snpEffStore.jvmHeap}`,
         `→ Loading SnpEff database (this may take 1–2 min)…`,
       ];
-      const result = await runNativeTool('java', [
-        `-Xmx${snpEffStore.jvmHeap}`,
-        '-jar', snpEffStore.config.jarPath,
-        'ann',
-        '-dataDir', snpEffStore.config.dataDir,
-        '-noLog',
-        genome,
-        filePath,
-      ], undefined, (l) => {
-        if (typeof l === 'string' && l.trim() && logLines.length < 500) logLines.push(l);
-      });
 
-      if (!result.ok && result.stdout.trim() === '') {
-        throw new Error(result.stderr || `SnpEff exited with code ${result.exitCode}`);
+      const jid = `snpeff-${runId}`;
+      offStderr = await api.desktop.events.on(`jobs:stderr:${jid}`, (line: string) => {
+        if (typeof line === 'string' && line.trim() && logLines.length < 500) logLines.push(line);
+      }) as unknown as () => void;
+
+      // lia_snpeff_annotate streams stdout directly to disk — no OOM risk
+      const result = await api.invoke('lia_snpeff_annotate', {
+        jarPath: snpEffStore.config.jarPath,
+        genome,
+        dataDir: snpEffStore.config.dataDir,
+        inputVcf: filePath,
+        outputVcf: outPath,
+        heap: snpEffStore.jvmHeap,
+        jobId: jid,
+      } as any) as { ok: boolean; exitCode: number | null; stderr: string[] };
+
+      if (!result.ok) {
+        throw new Error(result.stderr.join('\n') || `SnpEff exited with code ${result.exitCode}`);
       }
 
-      // Write stdout (annotated VCF) to file
-      await api.invoke('lia_write_file_path', { path: outPath, content: result.stdout });
       const outFileSize = await api.invoke('lia_file_size', { path: outPath }) as number;
 
       const outputFiles: RunOutputFile[] = [{
@@ -325,10 +329,10 @@
         size: outFileSize,
       }];
 
-      const summary = parseSnpEffStats(result.stderr);
+      const summary = parseSnpEffStats(result.stderr.join('\n'));
       const output  = buildSnpEffOutput(summary, fileName);
       const endedAt = Date.now();
-      logLines = [...logLines, `✓ Annotation complete in ${fmtDuration(t0, endedAt)}`];
+      logLines.push(`✓ Annotation complete in ${fmtDuration(t0, endedAt)}`);
 
       await snpEffStore.touchGenome(genome);
       await analysisRuns.add({
@@ -343,7 +347,7 @@
       await notify('SnpEff complete', `${fileName} finished in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
     } catch (e) {
       const endedAt = Date.now();
-      logLines = [...logLines, `✗ Error: ${String(e)}`];
+      logLines.push(`✗ Error: ${String(e)}`);
       await analysisRuns.add({
         id: runId, tool: 'snpeff', label: fileName,
         inputs: [filePath], inputSizes,
@@ -355,6 +359,7 @@
       });
       await notify('SnpEff failed', String(e));
     } finally {
+      offStderr?.();
       running       = false;
       startedAt     = null;
       selectedRunId = runId;

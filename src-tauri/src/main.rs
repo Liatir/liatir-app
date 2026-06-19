@@ -387,6 +387,7 @@ fn main() {
       lia_managed_set_executable,
       lia_managed_move,
       lia_managed_remove,
+      lia_snpeff_annotate,
       lia_snpeff_download_db,
 
       // startup cleanup

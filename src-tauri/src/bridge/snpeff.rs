@@ -104,6 +104,87 @@ fn emit_done(app: &AppHandle, id: &str, error: Option<String>) {
     );
 }
 
+/// Run SnpEff annotation, writing stdout directly to `output_vcf` without buffering.
+/// Emits `jobs:stderr:{job_id}` events for each stderr line (live terminal).
+/// Returns { ok, exitCode, stderr } when done.
+///
+/// Using runNativeTool from JS is NOT safe for SnpEff because the annotated VCF
+/// (stdout) can be hundreds of MB — buffering it in Rust+JS causes OOM crashes.
+/// This command streams stdout line-by-line directly to disk.
+#[tauri::command]
+pub async fn lia_snpeff_annotate(
+    app: AppHandle,
+    jar_path: String,
+    genome: String,
+    data_dir: String,
+    input_vcf: String,
+    output_vcf: String,
+    heap: String,
+    job_id: String,
+) -> Result<serde_json::Value, String> {
+    use std::io::{BufWriter, Write};
+    use tauri_plugin_shell::ShellExt;
+    use tauri_plugin_shell::process::CommandEvent;
+
+    // Ensure output directory exists
+    if let Some(parent) = std::path::Path::new(&output_vcf).parent() {
+        std::fs::create_dir_all(parent).map_err(|e| format!("cannot create output dir: {e}"))?;
+    }
+
+    let out_file = std::fs::File::create(&output_vcf)
+        .map_err(|e| format!("cannot create output file: {e}"))?;
+    let mut writer = BufWriter::new(out_file);
+
+    let mut stderr_lines: Vec<String> = Vec::new();
+    let mut exit_code: Option<i32> = None;
+    let mut ok = false;
+
+    let (mut rx, _child) = app
+        .shell()
+        .command("java")
+        .args([
+            &format!("-Xmx{heap}"),
+            "-jar", &jar_path,
+            "ann",
+            "-dataDir", &data_dir,
+            "-noLog",
+            &genome,
+            &input_vcf,
+        ])
+        .spawn()
+        .map_err(|e| format!("failed to spawn java: {e}"))?;
+
+    while let Some(event) = rx.recv().await {
+        match event {
+            CommandEvent::Stdout(line) => {
+                // Write directly to file — never accumulate in memory
+                let _ = writer.write_all(&line);
+                let _ = writer.write_all(b"\n");
+            }
+            CommandEvent::Stderr(line) => {
+                let text = String::from_utf8_lossy(&line).trim_end().to_string();
+                if stderr_lines.len() < 2000 {
+                    stderr_lines.push(text.clone());
+                }
+                let _ = app.emit(&format!("jobs:stderr:{job_id}"), text);
+            }
+            CommandEvent::Terminated(payload) => {
+                exit_code = payload.code;
+                ok = payload.code.map(|c| c == 0).unwrap_or(false);
+            }
+            _ => {}
+        }
+    }
+
+    writer.flush().map_err(|e| format!("flush error: {e}"))?;
+
+    Ok(serde_json::json!({
+        "ok": ok,
+        "exitCode": exit_code,
+        "stderr": stderr_lines,
+    }))
+}
+
 /// Download and install a SnpEff genome database using Liatir's HTTP client
 /// (rustls-based, avoids Java SSL issues). Emits `managed:progress:{id}` events.
 /// Tries multiple S3 version URLs in order, starting from the detected JAR version.
