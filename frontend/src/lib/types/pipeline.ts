@@ -29,3 +29,26 @@ export interface RunOutputFile {
   ext: string;
   size?: number;
 }
+
+export type StepStatus = 'pending' | 'running' | 'done' | 'error';
+
+export interface PipelineStepState {
+  id: string;
+  stepId: string;
+  inputs: Record<string, string>;
+  status: StepStatus;
+  logs: string[];
+  outputFiles: RunOutputFile[];
+  error: string | null;
+}
+
+export type StepRunFn = (
+  inputs: Record<string, string>,
+  outputDir: string,
+  onLog: (line: string) => void
+) => Promise<{ outputFiles: RunOutputFile[] }>;
+
+export interface PipelineRegistryEntry {
+  definition: PipelineStepDefinition;
+  run: StepRunFn;
+}

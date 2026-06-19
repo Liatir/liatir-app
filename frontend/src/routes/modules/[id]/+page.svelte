@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import Card from '$lib/components/ui/Card.svelte';
@@ -9,7 +9,7 @@
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { liatir } from '$lib/api';
 
-  const id = $derived(($page.params as { id: string }).id);
+  const id = $derived((page.params as { id: string }).id);
   let mod = $state<LiatirModule | null>(null);
 
   // Form values — keyed by field name

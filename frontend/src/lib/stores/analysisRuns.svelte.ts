@@ -56,7 +56,9 @@ function createAnalysisRunsStore() {
         const exists = await api.desktop.fs.data.exists(INDEX);
         if (exists) {
           const raw = await api.desktop.fs.data.readText(INDEX);
-          runs = JSON.parse(raw) as AnalysisRunMeta[];
+          const parsed = JSON.parse(raw) as AnalysisRunMeta[];
+          const seen = new Set<string>();
+          runs = parsed.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
         }
       } catch { runs = []; }
       // Clean up log files older than TTL
@@ -100,7 +102,7 @@ function createAnalysisRunsStore() {
 
       // Update index (meta only, no output/log)
       const { output: _output, log: _log, ...meta } = run;
-      runs = [{ ...meta, outputSize }, ...runs].slice(0, MAX_RUNS);
+      runs = [{ ...meta, outputSize }, ...runs.filter(r => r.id !== run.id)].slice(0, MAX_RUNS);
       await persistIndex();
     },
 

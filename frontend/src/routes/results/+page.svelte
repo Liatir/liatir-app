@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
   import RunLog from '$lib/components/ui/RunLog.svelte';
@@ -61,7 +61,7 @@
 
   onMount(() => {
     analysisRuns.init().then(() => {
-      const runParam = $page.url.searchParams.get('run');
+      const runParam = page.url.searchParams.get('run');
       if (runParam && analysisRuns.runs.find(r => r.id === runParam)) {
         selectedId = runParam;
       } else if (filtered.length > 0 && !selectedId) {

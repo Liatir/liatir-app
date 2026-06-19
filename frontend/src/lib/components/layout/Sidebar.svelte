@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { onMount } from 'svelte';
   import { jobsStore } from '$lib/stores/jobs.svelte';
 
@@ -14,6 +14,7 @@
     { href: '/data', label: 'Data', match: '/data' },
     { href: '/tools', label: 'Tools', match: '/tools' },
     { href: '/modules', label: 'Modules', match: '/modules' },
+    { href: '/pipeline', label: 'Pipeline', match: '/pipeline' },
     { href: '/results', label: 'Results', match: '/results' },
     { href: '/jobs', label: 'Jobs', match: '/jobs' },
     { href: '/deps', label: 'Dependencies', match: '/deps' },
@@ -39,20 +40,20 @@
   });
 
   $effect(() => {
-    const path = $page.url.pathname;
+    const path = page.url.pathname;
     if (path.startsWith('/scripts') || path.startsWith('/code')) {
       advancedOpen = true;
     }
   });
 
   function isActive(item: NavItem): boolean {
-    const path = $page.url.pathname;
+    const path = page.url.pathname;
     if (item.href === '/') return path === '/';
     return path.startsWith(item.match ?? item.href);
   }
 
   const advancedActive = $derived(
-    advancedNav.some(i => $page.url.pathname.startsWith(i.match ?? i.href))
+    advancedNav.some(i => page.url.pathname.startsWith(i.match ?? i.href))
   );
 
   function togglePlayground() {
@@ -146,6 +147,13 @@
             <polyline points="21 12 16.5 14.6 16.5 19.79" />
             <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
             <line x1="12" y1="22.08" x2="12" y2="12" />
+          </svg>
+        {:else if item.match === '/pipeline'}
+          <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <circle cx="5" cy="12" r="2"/><circle cx="12" cy="7" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="17" r="2"/>
+            <line x1="12" y1="9" x2="12" y2="10"/><line x1="12" y1="14" x2="12" y2="15"/>
+            <line x1="7" y1="12" x2="10" y2="12"/><line x1="14" y1="12" x2="17" y2="12"/>
           </svg>
         {:else if item.match === '/results'}
           <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -250,7 +258,7 @@
       class="flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-zinc-500
              hover:bg-surface-2 hover:text-zinc-800 transition-colors duration-100
              {collapsed ? 'justify-center' : ''}
-             {$page.url.pathname === '/settings' ? 'bg-brand/10 text-brand font-medium' : ''}"
+             {page.url.pathname === '/settings' ? 'bg-brand/10 text-brand font-medium' : ''}"
     >
       <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3" />

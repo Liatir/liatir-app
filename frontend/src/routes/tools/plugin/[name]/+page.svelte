@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
@@ -10,7 +10,7 @@
   import { fmtDuration } from '$lib/utils';
   import { pluginsStore } from '$lib/stores/plugins.svelte';
 
-  const name = $derived(decodeURIComponent($page.params.name ?? ''));
+  const name = $derived(decodeURIComponent(page.params.name ?? ''));
 
   let payload = $state('{}');
   let running = $state(false);
