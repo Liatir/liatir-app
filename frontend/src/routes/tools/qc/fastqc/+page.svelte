@@ -13,6 +13,8 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import type { ToolOutput } from '$lib/types/tool-output';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
+  import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
+  import RunLog from '$lib/components/ui/RunLog.svelte';
 
   // ── form state ─────────────────────────────────────────────────
   let maxReads = $state<number | undefined>(undefined);
@@ -21,6 +23,7 @@
   let running   = $state(false);
   let startedAt = $state<number | null>(null);
   let now       = $state(Date.now());
+  let logLines  = $state<string[]>([]);
 
   $effect(() => {
     if (!running) return;
@@ -75,9 +78,11 @@
     running = true;
     selectedRunId = null;
     startedAt = Date.now();
+    logLines = [];
 
     const runId = crypto.randomUUID();
     const fileName = filePath.split(/[\\/]/).pop() ?? filePath;
+    logLines = [`$ fastqc ${fileName}`];
     const t0 = startedAt;
     const fileSize = dataFiles.files.find(f => f.path === filePath)?.size;
     const inputSizes = fileSize != null ? [fileSize] : undefined;
@@ -92,6 +97,7 @@
         status: 'done',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, error: null,
+        log: [...logLines],
       });
     } catch (e) {
       const endedAt = Date.now();
@@ -102,6 +108,7 @@
         status: 'error',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: String(e),
+        log: [...logLines],
       });
     } finally {
       running = false;
@@ -304,6 +311,7 @@
             {/if}
           </div>
           <ToolResultView output={loadedOutput} />
+            <RunLog runId={selectedRunId} />
         </div>
       {/if}
 

@@ -12,6 +12,8 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { runNativeTool } from '$lib/utils/native-tool';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
+  import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
+  import RunLog from '$lib/components/ui/RunLog.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
   import type { ToolOutput, StatsSection, TextSection, TableSection } from '$lib/types/tool-output';
@@ -24,6 +26,7 @@
   let running   = $state(false);
   let startedAt = $state<number | null>(null);
   let now       = $state(Date.now());
+  let logLines  = $state<string[]>([]);
 
   $effect(() => {
     if (!running) return;
@@ -83,8 +86,9 @@
     const inputSizes = fileSize != null ? [fileSize] : undefined;
 
     try {
+      logLines = [`$ samtools faidx ${fileName}`];
       // samtools faidx writes the index to <file>.fai (no stdout output)
-      const result = await runNativeTool('samtools', ['faidx', filePath]);
+      const result = await runNativeTool('samtools', ['faidx', filePath], undefined, (l) => { if (l.trim()) logLines.push(l); });
 
       if (!result.ok) {
         throw new Error(result.stderr || `samtools faidx exited with code ${result.exitCode}`);
@@ -109,6 +113,7 @@
         status: 'done',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, error: null,
+        log: [...logLines],
       });
     } catch (e) {
       const endedAt = Date.now();
@@ -119,6 +124,7 @@
         status: 'error',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: String(e),
+        log: [...logLines],
       });
     } finally {
       running   = false;
@@ -135,7 +141,8 @@
     extractError   = null;
 
     try {
-      const result = await runNativeTool('samtools', ['faidx', filePath, extractRegion.trim()]);
+      logLines = [`$ samtools faidx ${filePath.split(/[\\/]/).pop()} ${extractRegion.trim()}`];
+      const result = await runNativeTool('samtools', ['faidx', filePath, extractRegion.trim()], undefined, (l) => { if (l.trim()) logLines.push(l); });
       if (!result.ok && result.stdout.trim() === '') {
         throw new Error(result.stderr || `samtools faidx exited with code ${result.exitCode}`);
       }
@@ -312,6 +319,7 @@
               <span class="text-xs text-zinc-400">Elapsed: {fmtDuration(startedAt, now)}</span>
             {/if}
           </div>
+          <TerminalOutput lines={logLines} {running} />
         </Card>
 
         <!-- Extract card — only shown when a file is selected -->
@@ -382,6 +390,7 @@
               {/if}
             </div>
             <ToolResultView output={loadedOutput} />
+            <RunLog runId={selectedRunId} />
           </div>
         {/if}
       {/if}

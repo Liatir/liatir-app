@@ -6,6 +6,8 @@
   import Button from '$lib/components/ui/Button.svelte';
   import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
+  import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
+  import RunLog from '$lib/components/ui/RunLog.svelte';
   import { liatir } from '$lib/api';
   import { fmtDuration } from '$lib/utils';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
@@ -59,7 +61,7 @@
   let filePath         = $state('');
   let running          = $state(false);
   let startedAt        = $state<number | null>(null);
-  let annotationStatus = $state<string | null>(null);
+  let logLines         = $state<string[]>([]);
   let now              = $state(Date.now());
 
   $effect(() => {
@@ -288,9 +290,9 @@
       const outDir  = `${dataDir}/tool-outputs`;
       const outPath = `${outDir}/snpeff-${runId}.vcf`;
 
-      annotationStatus = null;
+      logLines = [`$ java -jar snpEff.jar ann ${genome} ${fileName}`];
       const result = await runNativeTool('java', [
-        '-Xmx4g',
+        `-Xmx${snpEffStore.jvmHeap}`,
         '-jar', snpEffStore.config.jarPath,
         'ann',
         '-dataDir', snpEffStore.config.dataDir,
@@ -298,7 +300,7 @@
         '-noLog',
         genome,
         filePath,
-      ], undefined, (line) => { if (line.trim()) annotationStatus = line.trim(); });
+      ], undefined, (l) => { if (l.trim()) logLines.push(l); });
 
       if (!result.ok && result.stdout.trim() === '') {
         throw new Error(result.stderr || `SnpEff exited with code ${result.exitCode}`);
@@ -337,12 +339,12 @@
         status: 'error',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: String(e),
+        log: [...logLines],
       });
     } finally {
-      running          = false;
-      startedAt        = null;
-      annotationStatus = null;
-      selectedRunId    = runId;
+      running       = false;
+      startedAt     = null;
+      selectedRunId = runId;
     }
   }
 
@@ -588,6 +590,38 @@
             <Card class="p-5 space-y-4">
               <h2 class="text-sm font-semibold text-zinc-800">3 — Annotate variants</h2>
 
+              <!-- Resource warning -->
+              <div class="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
+                <svg class="shrink-0 mt-0.5" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <p class="text-[11px] text-amber-800 leading-relaxed">
+                  SnpEff is computationally intensive. Large genomes (human, mouse, zebrafish…) require <strong>8+ GB RAM</strong> and can take 5–15 minutes to annotate. Smaller genomes need less memory and are faster.
+                </p>
+              </div>
+
+              <!-- JVM heap -->
+              <div class="flex items-center gap-3">
+                <label class="text-[11px] text-zinc-500 shrink-0">Java heap (RAM)</label>
+                <div class="flex gap-1.5">
+                  {#each ['4g', '6g', '8g', '12g', '16g'] as heap}
+                    <button
+                      onclick={() => snpEffStore.setJvmHeap(heap)}
+                      class="px-2.5 py-1 rounded-md border text-xs transition-colors
+                        {snpEffStore.jvmHeap === heap
+                          ? 'bg-brand text-white border-brand'
+                          : 'bg-surface border-border text-zinc-600 hover:border-brand/40'}"
+                    >
+                      {heap.replace('g', ' GB')}
+                    </button>
+                  {/each}
+                </div>
+                {#if parseInt(snpEffStore.jvmHeap) < 8}
+                  <span class="text-[10px] text-amber-600">↑ large genomes need 8+ GB</span>
+                {/if}
+              </div>
+
               <FilePickerPopup
                 files={vcfFiles}
                 value={filePath}
@@ -610,9 +644,7 @@
                   <span class="text-xs text-zinc-400">Elapsed: {fmtDuration(startedAt, now)}</span>
                 {/if}
               </div>
-              {#if annotationStatus}
-                <p class="text-[10px] text-zinc-400 font-mono truncate">{annotationStatus}</p>
-              {/if}
+              <TerminalOutput lines={logLines} {running} />
             </Card>
           {/if}
         {/if}
@@ -640,6 +672,7 @@
               {/if}
             </div>
             <ToolResultView output={loadedOutput} outputFiles={selectedRunOutputFiles} />
+            <RunLog runId={selectedRunId} />
           </div>
         {/if}
       {/if}

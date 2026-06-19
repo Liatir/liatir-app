@@ -13,6 +13,8 @@
   import { runNativeTool } from '$lib/utils/native-tool';
   import { parseFastpJson, fastpToToolOutput } from '$lib/tools/qc/fastp';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
+  import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
+  import RunLog from '$lib/components/ui/RunLog.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
   import type { ToolOutput } from '$lib/types/tool-output';
@@ -26,7 +28,7 @@
   let r2Path      = $state('');
   let running     = $state(false);
   let startedAt   = $state<number | null>(null);
-  let fastpStatus = $state<string | null>(null);
+  let logLines    = $state<string[]>([]);
   let now         = $state(Date.now());
 
   $effect(() => {
@@ -104,10 +106,8 @@
         args.push('--in2', r2Path, '--out2', out2Path);
       }
 
-      fastpStatus = null;
-      const result = await runNativeTool('fastp', args, undefined, (line) => {
-        if (line.trim()) fastpStatus = line.trim();
-      });
+      logLines = [`$ fastp --in1 ${r1Path.split(/[\\/]/).pop()}${r2Path ? ' --in2 ' + r2Path.split(/[\\/]/).pop() : ''}`];
+      const result = await runNativeTool('fastp', args, undefined, (l) => { if (l.trim()) logLines.push(l); });
 
       if (!result.ok) {
         throw new Error(result.stderr || `fastp exited with code ${result.exitCode}`);
@@ -135,6 +135,7 @@
         status: 'done',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, error: null,
+        log: [...logLines],
       });
     } catch (e) {
       const endedAt = Date.now();
@@ -146,11 +147,11 @@
         status: 'error',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: String(e),
+        log: [...logLines],
       });
     } finally {
-      running     = false;
-      startedAt   = null;
-      fastpStatus = null;
+      running   = false;
+      startedAt = null;
       selectedRunId = runId;
     }
   }
@@ -255,6 +256,13 @@
         <Card class="p-5 space-y-4">
           <h2 class="text-sm font-semibold text-zinc-800">trim &amp; filter</h2>
 
+              <div class="flex items-start gap-2.5 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
+                <svg class="shrink-0 mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <p class="text-[11px] text-blue-800 leading-relaxed">Processing time depends on file size — large FASTQ files (10+ GB) may take several minutes.</p>
+              </div>
+
           <FilePickerPopup
             files={fastqFiles}
             value={r1Path}
@@ -297,9 +305,7 @@
               </span>
             {/if}
           </div>
-          {#if fastpStatus}
-            <p class="text-[10px] text-zinc-400 font-mono truncate">{fastpStatus}</p>
-          {/if}
+          <TerminalOutput lines={logLines} {running} />
         </Card>
 
         {#if displayError}
@@ -326,6 +332,7 @@
               {/if}
             </div>
             <ToolResultView output={loadedOutput} outputFiles={selectedRunOutputFiles} />
+            <RunLog runId={selectedRunId} />
           </div>
         {/if}
       {/if}

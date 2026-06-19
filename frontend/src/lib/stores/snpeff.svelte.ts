@@ -5,6 +5,7 @@ export interface SnpEffConfig {
   dataDir: string;
   downloadedGenomes: string[];
   lastUsed: Record<string, number>;
+  jvmHeap: string;
 }
 
 const CONFIG_FILENAME = 'snpeff-config.json';
@@ -15,6 +16,7 @@ function createSnpEffStore() {
     dataDir: '',
     downloadedGenomes: [],
     lastUsed: {},
+    jvmHeap: '8g',
   });
   let loaded = $state(false);
   // Tracks an in-progress genome download across page navigations (in-memory only)
@@ -36,9 +38,10 @@ function createSnpEffStore() {
         dataDir: parsed.dataDir ?? defaultDataDir,
         downloadedGenomes: parsed.downloadedGenomes ?? [],
         lastUsed: parsed.lastUsed ?? {},
+        jvmHeap: parsed.jvmHeap ?? '8g',
       };
     } catch {
-      config = { jarPath: null, dataDir: defaultDataDir, downloadedGenomes: [], lastUsed: {} };
+      config = { jarPath: null, dataDir: defaultDataDir, downloadedGenomes: [], lastUsed: {}, jvmHeap: '8g' };
     }
 
     loaded = true;
@@ -97,6 +100,11 @@ function createSnpEffStore() {
     init,
     save,
     get lastUsed() { return config.lastUsed; },
+    get jvmHeap() { return config.jvmHeap; },
+    async setJvmHeap(heap: string) {
+      config = { ...config, jvmHeap: heap };
+      await save();
+    },
     setJarPath,
     markGenomeDownloaded,
     removeGenome,

@@ -12,6 +12,8 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { runNativeTool } from '$lib/utils/native-tool';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
+  import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
+  import RunLog from '$lib/components/ui/RunLog.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
   import type { ToolOutput, StatsSection, TextSection } from '$lib/types/tool-output';
@@ -35,6 +37,7 @@
   let running    = $state(false);
   let startedAt  = $state<number | null>(null);
   let now        = $state(Date.now());
+  let logLines  = $state<string[]>([]);
 
   $effect(() => {
     if (!running) return;
@@ -96,6 +99,7 @@
       const outDir  = `${dataDir}/tool-outputs`;
       const outPath = `${outDir}/bcftools-filter-${runId}.vcf.gz`;
 
+      logLines = [`$ bcftools filter -i '${expression.trim()}' ${fileName}`];
       // bcftools filter -i '<expr>' -O z -o <out> <in>
       const result = await runNativeTool('bcftools', [
         'filter',
@@ -103,7 +107,7 @@
         '-O', 'z',
         '-o', outPath,
         filePath,
-      ]);
+      ], undefined, (l) => { if (l.trim()) logLines.push(l); });
 
       if (!result.ok && result.stderr.includes('Error')) {
         throw new Error(result.stderr || `bcftools filter exited with code ${result.exitCode}`);
@@ -149,6 +153,7 @@
         status: 'error',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: String(e),
+        log: [...logLines],
       });
     } finally {
       running   = false;
@@ -347,6 +352,7 @@
               <span class="text-xs text-zinc-400">Elapsed: {fmtDuration(startedAt, now)}</span>
             {/if}
           </div>
+          <TerminalOutput lines={logLines} {running} />
         </Card>
 
         <!-- Results -->
@@ -374,6 +380,7 @@
               {/if}
             </div>
             <ToolResultView output={loadedOutput} outputFiles={selectedRunOutputFiles} />
+            <RunLog runId={selectedRunId} />
           </div>
         {/if}
       {/if}  <!-- depStatus === 'ok' -->

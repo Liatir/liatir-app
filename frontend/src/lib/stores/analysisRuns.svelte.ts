@@ -22,13 +22,16 @@ export interface AnalysisRunMeta {
 
 export interface AnalysisRun extends AnalysisRunMeta {
   output: ToolOutput | null;
+  log?: string[];
 }
 
 const DIR = 'analysis-runs';
 const INDEX = `${DIR}/index.json`;
 const MAX_RUNS = 200;
+const LOG_TTL_MS = 7 * 24 * 3600 * 1000;
 
 function runPath(id: string) { return `${DIR}/${id}.json`; }
+function logPath(id: string) { return `${DIR}/${id}.log.json`; }
 
 function createAnalysisRunsStore() {
   let runs = $state<AnalysisRunMeta[]>([]);
@@ -56,6 +59,13 @@ function createAnalysisRunsStore() {
           runs = JSON.parse(raw) as AnalysisRunMeta[];
         }
       } catch { runs = []; }
+      // Clean up log files older than TTL
+      const cutoff = Date.now() - LOG_TTL_MS;
+      for (const run of runs) {
+        if (run.endedAt < cutoff) {
+          api.desktop.fs.data.remove(logPath(run.id)).catch(() => {});
+        }
+      }
     },
 
     async add(run: AnalysisRun) {
@@ -71,6 +81,11 @@ function createAnalysisRunsStore() {
         { createDirs: true },
       );
 
+      // Persist log if present
+      if (run.log && run.log.length > 0) {
+        await api.desktop.fs.data.writeText(logPath(run.id), JSON.stringify(run.log), { createDirs: true });
+      }
+
       // Cache it immediately so the first view is instant
       outputCache.set(run.id, run.output);
 
@@ -83,8 +98,8 @@ function createAnalysisRunsStore() {
         })) as number;
       } catch { /* size stays undefined */ }
 
-      // Update index (meta only, no output)
-      const { output: _output, ...meta } = run;
+      // Update index (meta only, no output/log)
+      const { output: _output, log: _log, ...meta } = run;
       runs = [{ ...meta, outputSize }, ...runs].slice(0, MAX_RUNS);
       await persistIndex();
     },
@@ -120,6 +135,17 @@ function createAnalysisRunsStore() {
 
     byTool(tool: string): AnalysisRunMeta[] {
       return runs.filter(r => r.tool === tool);
+    },
+
+    async loadLog(id: string): Promise<string[] | null> {
+      const api = liatir();
+      if (!api) return null;
+      try {
+        const exists = await api.desktop.fs.data.exists(logPath(id));
+        if (!exists) return null;
+        const raw = await api.desktop.fs.data.readText(logPath(id));
+        return JSON.parse(raw) as string[];
+      } catch { return null; }
     },
   };
 }
