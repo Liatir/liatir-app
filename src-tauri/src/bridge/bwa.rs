@@ -21,6 +21,20 @@ pub async fn lia_bwa_mem(
         use std::io::{BufRead, BufReader};
         use std::process::{Command, Stdio};
 
+        // Auto-index reference if index files don't exist
+        if !Path::new(&format!("{reference}.amb")).exists() {
+            let _ = app.emit(&format!("jobs:stderr:{job_id}"), "[liatir] Indexing reference (first use)…".to_string());
+            let idx = Command::new("bwa")
+                .args(["index", &reference])
+                .stderr(Stdio::piped())
+                .status()
+                .map_err(|e| format!("failed to run bwa index: {e}"))?;
+            if !idx.success() {
+                return Err("bwa index failed".to_string());
+            }
+            let _ = app.emit(&format!("jobs:stderr:{job_id}"), "[liatir] Index complete.".to_string());
+        }
+
         let out_file = File::create(&output_sam)
             .map_err(|e| format!("cannot create output file: {e}"))?;
 

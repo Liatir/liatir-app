@@ -46,6 +46,42 @@
     return filesByExt(...accept);
   }
 
+  interface PrevOutputOption {
+    stepLabel: string;
+    fileLabel: string;
+    ext: string;
+    path: string | null;  // null = step hasn't run yet
+    size?: number;
+  }
+
+  function prevStepOutputs(stepIndex: number, accept: string[] | undefined): PrevOutputOption[] {
+    if (stepIndex === 0) return [];
+    const result: PrevOutputOption[] = [];
+
+    for (let pi = 0; pi < stepIndex; pi++) {
+      const prev = pipelineStore.steps[pi];
+      const prevDef = PIPELINE_REGISTRY[prev.stepId]?.definition;
+      if (!prevDef) continue;
+      const stepLabel = `Step ${pi + 1} · ${prevDef.label}`;
+
+      if (prev.outputFiles.length > 0) {
+        // Step has run — show actual output files
+        for (const f of prev.outputFiles) {
+          if (accept && accept.length > 0 && !accept.some(a => f.ext === a || f.path.endsWith(`.${a}`))) continue;
+          result.push({ stepLabel, fileLabel: f.label, ext: f.ext, path: f.path, size: f.size });
+        }
+      } else {
+        // Step hasn't run yet — show expected outputs from outputSchema
+        for (const [, outSchema] of Object.entries(prevDef.outputSchema)) {
+          if (outSchema.type !== 'file' || !outSchema.ext?.length) continue;
+          if (accept && accept.length > 0 && !accept.some(a => outSchema.ext!.includes(a))) continue;
+          result.push({ stepLabel, fileLabel: outSchema.label ?? 'Output file', ext: outSchema.ext[0], path: null });
+        }
+      }
+    }
+    return result;
+  }
+
   function statusColor(status: string) {
     if (status === 'done')    return 'bg-emerald-500';
     if (status === 'error')   return 'bg-red-500';
@@ -121,7 +157,7 @@
 
           <Card class="overflow-hidden">
             <!-- Step header -->
-            <div class="flex items-center gap-3 px-4 py-3 border-b border-border">
+            <div class="flex items-center gap-2 px-4 py-3 border-b border-border">
               <div class="flex items-center gap-2 flex-1 min-w-0">
                 <span class="text-[10px] font-medium text-zinc-400 w-4 shrink-0">{i + 1}</span>
                 <span class="h-2 w-2 rounded-full shrink-0 {statusColor(step.status)}"></span>
@@ -130,15 +166,59 @@
               </div>
               <span class="text-[10px] text-zinc-400 shrink-0">{statusLabel(step.status)}</span>
               {#if !pipelineStore.running}
-                <button
-                  onclick={() => pipelineStore.removeStep(i)}
-                  class="shrink-0 text-zinc-400 hover:text-red-500 transition-colors p-1 rounded"
-                  aria-label="Remove step"
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
+                <!-- Reorder buttons -->
+                <div class="flex items-center shrink-0">
+                  <button
+                    onclick={() => pipelineStore.moveStep(i, 'first')}
+                    disabled={i === 0}
+                    title="Move to top"
+                    class="p-1 rounded text-zinc-300 hover:text-zinc-600 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/>
+                    </svg>
+                  </button>
+                  <button
+                    onclick={() => pipelineStore.moveStep(i, 'up')}
+                    disabled={i === 0}
+                    title="Move up"
+                    class="p-1 rounded text-zinc-400 hover:text-zinc-700 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="18 15 12 9 6 15"/>
+                    </svg>
+                  </button>
+                  <button
+                    onclick={() => pipelineStore.moveStep(i, 'down')}
+                    disabled={i === pipelineStore.steps.length - 1}
+                    title="Move down"
+                    class="p-1 rounded text-zinc-400 hover:text-zinc-700 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
+                  <button
+                    onclick={() => pipelineStore.moveStep(i, 'last')}
+                    disabled={i === pipelineStore.steps.length - 1}
+                    title="Move to bottom"
+                    class="p-1 rounded text-zinc-300 hover:text-zinc-600 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="17 6 12 11 7 6"/><polyline points="17 13 12 18 7 13"/>
+                    </svg>
+                  </button>
+                  <div class="w-px h-3 bg-zinc-200 mx-1"></div>
+                  <button
+                    onclick={() => pipelineStore.removeStep(i)}
+                    class="p-1 rounded text-zinc-400 hover:text-red-500 transition-colors"
+                    aria-label="Remove step"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
               {/if}
             </div>
 
@@ -147,14 +227,55 @@
               <div class="px-4 py-3 space-y-3">
                 {#each Object.entries(def.inputSchema) as [key, schema]}
                   {#if schema.type === 'file'}
-                    <FilePickerPopup
-                      files={filesForInput(schema.accept)}
-                      value={step.inputs[key] ?? ''}
-                      label={schema.label ?? key}
-                      emptyText="No matching files in Data yet."
-                      disabled={pipelineStore.running}
-                      onchange={(p) => pipelineStore.setInput(i, key, p)}
-                    />
+                    {@const prevOutputs = prevStepOutputs(i, schema.accept)}
+                    <div class="space-y-2">
+                      {#if prevOutputs.length > 0}
+                        <div class="space-y-1">
+                          <p class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">From previous steps</p>
+                          {#each prevOutputs as opt}
+                            {#if opt.path !== null}
+                              {@const selected = step.inputs[key] === opt.path}
+                              <button
+                                type="button"
+                                onclick={() => pipelineStore.setInput(i, key, selected ? '' : opt.path!)}
+                                disabled={pipelineStore.running}
+                                class="w-full flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors
+                                  {selected ? 'border-brand/40 bg-brand/8 ring-1 ring-brand/20' : 'border-zinc-200 bg-zinc-50 hover:border-brand/30 hover:bg-brand/5'}"
+                              >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={selected ? '#4f39f6' : '#a1a1aa'} stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
+                                  {#if selected}<polyline points="20 6 9 17 4 12"/>{:else}<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>{/if}
+                                </svg>
+                                <div class="flex-1 min-w-0">
+                                  <p class="text-[10px] font-medium {selected ? 'text-brand/70' : 'text-zinc-400'}">{opt.stepLabel}</p>
+                                  <p class="text-xs truncate {selected ? 'text-brand font-medium' : 'text-zinc-700'}">{opt.fileLabel}</p>
+                                </div>
+                                <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-zinc-100 text-zinc-500 border border-zinc-200">{opt.ext}</span>
+                              </button>
+                            {:else}
+                              <div class="w-full flex items-center gap-3 rounded-lg border border-dashed border-zinc-200 px-3 py-2 opacity-50">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
+                                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                <div class="flex-1 min-w-0">
+                                  <p class="text-[10px] font-medium text-zinc-400">{opt.stepLabel}</p>
+                                  <p class="text-xs text-zinc-400 truncate">{opt.fileLabel} <span class="text-zinc-300">· run step first</span></p>
+                                </div>
+                                <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-zinc-100 text-zinc-400 border border-zinc-200">{opt.ext}</span>
+                              </div>
+                            {/if}
+                          {/each}
+                          <p class="text-[10px] text-zinc-300 pt-0.5">— or pick from your data files —</p>
+                        </div>
+                      {/if}
+                      <FilePickerPopup
+                        files={filesForInput(schema.accept)}
+                        value={prevOutputs.some(o => o.path !== null && o.path === step.inputs[key]) ? '' : (step.inputs[key] ?? '')}
+                        label={schema.label ?? key}
+                        emptyText="No matching files in Data yet."
+                        disabled={pipelineStore.running}
+                        onchange={(p) => pipelineStore.setInput(i, key, p)}
+                      />
+                    </div>
                   {:else if schema.type === 'string'}
                     <div class="space-y-1">
                       <label class="text-[11px] text-zinc-500">{schema.label ?? key}{schema.required ? '' : ' (optional)'}</label>
@@ -226,29 +347,6 @@
               Add step
             </button>
 
-            {#if showAddMenu}
-              <!-- Click outside to close -->
-              <div class="fixed inset-0 z-10" role="presentation" onclick={() => showAddMenu = false}></div>
-
-              <div class="absolute bottom-full mb-2 left-0 right-0 z-20 rounded-xl border border-border bg-white shadow-lg overflow-hidden">
-                {#each [...new Set(STEP_OPTIONS.map(s => s.category))] as category}
-                  <div>
-                    <p class="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">{category}</p>
-                    {#each STEP_OPTIONS.filter(s => s.category === category) as opt}
-                      <button
-                        onclick={() => { pipelineStore.addStep(opt.id); showAddMenu = false; }}
-                        class="w-full text-left flex items-start gap-3 px-3 py-2.5 hover:bg-zinc-50 transition-colors"
-                      >
-                        <div class="flex-1 min-w-0">
-                          <p class="text-sm font-medium text-zinc-800">{opt.label}</p>
-                          <p class="text-[11px] text-zinc-400 truncate">{opt.description}</p>
-                        </div>
-                      </button>
-                    {/each}
-                  </div>
-                {/each}
-              </div>
-            {/if}
           </div>
         {/if}
 
@@ -256,3 +354,25 @@
     {/if}
   </div>
 </div>
+
+{#if showAddMenu}
+  <div class="fixed inset-0 z-10" role="presentation" onclick={() => showAddMenu = false}></div>
+  <div class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 rounded-xl border border-border bg-white shadow-lg overflow-hidden w-64">
+    {#each [...new Set(STEP_OPTIONS.map(s => s.category))] as category}
+      <div>
+        <p class="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">{category}</p>
+        {#each STEP_OPTIONS.filter(s => s.category === category) as opt}
+          <button
+            onclick={() => { pipelineStore.addStep(opt.id); showAddMenu = false; }}
+            class="w-full text-left flex items-start gap-3 px-3 py-2.5 hover:bg-zinc-50 transition-colors"
+          >
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-zinc-800">{opt.label}</p>
+              <p class="text-[11px] text-zinc-400 truncate">{opt.description}</p>
+            </div>
+          </button>
+        {/each}
+      </div>
+    {/each}
+  </div>
+{/if}

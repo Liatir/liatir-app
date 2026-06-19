@@ -138,7 +138,7 @@
         output, error: null,
         log: [...logLines],
       });
-      await notify('fastp complete', `${fileName} finished in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
+      await notify('fastp complete', `${label} finished in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
     } catch (e) {
       const endedAt = Date.now();
       await analysisRuns.add({
@@ -324,10 +324,9 @@
           </div>
         {:else if loadedOutput}
           <div>
+            <p class="mb-2 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Last run result</p>
             <div class="flex items-center justify-between mb-3">
-              <h2 class="text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                {selectedRun?.label ?? 'Results'}
-              </h2>
+              <h2 class="text-xs font-medium text-zinc-700">{selectedRun?.label ?? 'Results'}</h2>
               {#if selectedRun}
                 <span class="text-xs text-zinc-400">
                   {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}

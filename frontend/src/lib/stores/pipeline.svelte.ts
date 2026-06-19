@@ -1,6 +1,6 @@
 import { liatir } from '$lib/api';
 import { dataFiles } from './dataFiles.svelte';
-import { PIPELINE_REGISTRY, autoConnectInputs } from '$lib/tools/pipeline-registry';
+import { PIPELINE_REGISTRY } from '$lib/tools/pipeline-registry';
 import type { PipelineStepState } from '$lib/types/pipeline';
 
 function createPipelineStore() {
@@ -10,15 +10,10 @@ function createPipelineStore() {
   function addStep(stepId: string) {
     const entry = PIPELINE_REGISTRY[stepId];
     if (!entry) return;
-
-    // Auto-connect inputs from the last completed step
-    const prev = [...steps].reverse().find(s => s.status === 'done');
-    const inputs = prev ? autoConnectInputs(prev.outputFiles, entry.definition) : {};
-
     steps.push({
       id: crypto.randomUUID(),
       stepId,
-      inputs,
+      inputs: {},
       status: 'pending',
       logs: [],
       outputFiles: [],
@@ -32,6 +27,19 @@ function createPipelineStore() {
 
   function setInput(stepIndex: number, key: string, value: string) {
     steps[stepIndex].inputs = { ...steps[stepIndex].inputs, [key]: value };
+  }
+
+  function moveStep(index: number, direction: 'up' | 'down' | 'first' | 'last') {
+    if (running) return;
+    const n = steps.length;
+    if (index < 0 || index >= n) return;
+    const arr = [...steps];
+    const [item] = arr.splice(index, 1);
+    if (direction === 'up')         arr.splice(Math.max(0, index - 1), 0, item);
+    else if (direction === 'down')  arr.splice(Math.min(n - 1, index + 1), 0, item);
+    else if (direction === 'first') arr.unshift(item);
+    else                            arr.push(item);
+    steps = arr;
   }
 
   function resetStatuses() {
@@ -71,20 +79,8 @@ function createPipelineStore() {
         step.outputFiles = result.outputFiles;
         step.status = 'done';
 
-        // Add output files to data store
         for (const f of result.outputFiles) {
           await dataFiles.add(f.path).catch(() => {});
-        }
-
-        // Auto-connect next step
-        if (i + 1 < steps.length) {
-          const nextEntry = PIPELINE_REGISTRY[steps[i + 1].stepId];
-          if (nextEntry) {
-            const autoInputs = autoConnectInputs(result.outputFiles, nextEntry.definition);
-            for (const [k, v] of Object.entries(autoInputs)) {
-              if (!steps[i + 1].inputs[k]) steps[i + 1].inputs[k] = v;
-            }
-          }
         }
       } catch (e) {
         step.status = 'error';
@@ -108,6 +104,7 @@ function createPipelineStore() {
     addStep,
     removeStep,
     setInput,
+    moveStep,
     run,
     clear,
   };
