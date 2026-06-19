@@ -210,7 +210,7 @@
 
     const unlisten = await api.desktop.events.on(
       `managed:progress:${id}`,
-      (evt: any) => handleProgressEvent(evt.payload)
+      (p: any) => handleProgressEvent(p)
     ) as unknown as () => void;
 
     try {
@@ -256,9 +256,8 @@
     const id = genomeToId(genome);
     const unlisten = await api.desktop.events.on(
       `managed:progress:${id}`,
-      (evt: any) => {
-        const p = evt.payload as { bytesDownloaded?: number; bytesTotal?: number; done: boolean; extracting?: boolean; error?: string };
-        handleProgressEvent(p);
+      (p: any) => {
+        handleProgressEvent(p as { bytesDownloaded?: number; bytesTotal?: number; done: boolean; extracting?: boolean; error?: string });
         if (p.done) {
           unlisten();
           dbDownloading = false;
@@ -314,7 +313,7 @@
         outputVcf: outPath,
         heap: snpEffStore.jvmHeap,
         jobId: jid,
-      } as any) as { ok: boolean; exitCode: number | null; stderr: string[] };
+      } as any) as { ok: boolean; exitCode: number | null; stderr: string[]; statsHtml: string; statsGenes: string };
 
       if (!result.ok) {
         throw new Error(result.stderr.join('\n') || `SnpEff exited with code ${result.exitCode}`);
@@ -328,6 +327,17 @@
         ext: 'vcf',
         size: outFileSize,
       }];
+
+      // Stats files are optional — SnpEff may not produce them on failure
+      for (const [label, path, ext] of [
+        ['Summary (HTML)', result.statsHtml,  'html'],
+        ['Gene stats',     result.statsGenes, 'txt'],
+      ] as const) {
+        try {
+          const size = await api.invoke('lia_file_size', { path }) as number;
+          outputFiles.push({ label, path, ext, size });
+        } catch { /* not generated */ }
+      }
 
       const summary = parseSnpEffStats(result.stderr.join('\n'));
       const output  = buildSnpEffOutput(summary, fileName);

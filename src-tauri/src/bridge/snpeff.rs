@@ -104,13 +104,15 @@ fn emit_done(app: &AppHandle, id: &str, error: Option<String>) {
     );
 }
 
-/// Run SnpEff annotation, writing stdout directly to `output_vcf` without buffering.
-/// Emits `jobs:stderr:{job_id}` events for each stderr line (live terminal).
-/// Returns { ok, exitCode, stderr } when done.
+/// Run SnpEff annotation with zero stdout memory overhead.
 ///
-/// Using runNativeTool from JS is NOT safe for SnpEff because the annotated VCF
-/// (stdout) can be hundreds of MB — buffering it in Rust+JS causes OOM crashes.
-/// This command streams stdout line-by-line directly to disk.
+/// Uses std::process::Command with stdout redirected to the output file at the OS
+/// level — Java writes the annotated VCF straight to disk, no bytes ever pass
+/// through Rust memory or any channel buffer.
+///
+/// Previous approach (tauri_plugin_shell) crashed because its internal channel is
+/// unbounded: millions of VCF stdout lines accumulate in the channel buffer even
+/// when writing to disk one-by-one → OOM. This approach has truly O(1) memory.
 #[tauri::command]
 pub async fn lia_snpeff_annotate(
     app: AppHandle,
@@ -122,67 +124,71 @@ pub async fn lia_snpeff_annotate(
     heap: String,
     job_id: String,
 ) -> Result<serde_json::Value, String> {
-    use std::io::{BufWriter, Write};
-    use tauri_plugin_shell::ShellExt;
-    use tauri_plugin_shell::process::CommandEvent;
-
-    // Ensure output directory exists
     if let Some(parent) = std::path::Path::new(&output_vcf).parent() {
         std::fs::create_dir_all(parent).map_err(|e| format!("cannot create output dir: {e}"))?;
     }
 
-    let out_file = std::fs::File::create(&output_vcf)
-        .map_err(|e| format!("cannot create output file: {e}"))?;
-    let mut writer = BufWriter::new(out_file);
+    // Derive stats paths alongside the VCF — keeps files out of src-tauri/ (tauri dev watches it)
+    // SnpEff writes the genes TSV as {stats_base}.genes.txt automatically.
+    let stats_base = output_vcf.strip_suffix(".vcf").unwrap_or(&output_vcf).to_string();
+    let stats_html  = format!("{stats_base}-summary.html");
+    let stats_genes = format!("{stats_base}-summary.genes.txt");
 
-    let mut stderr_lines: Vec<String> = Vec::new();
-    let mut exit_code: Option<i32> = None;
-    let mut ok = false;
+    tauri::async_runtime::spawn_blocking(move || {
+        use std::fs::File;
+        use std::io::{BufRead, BufReader};
+        use std::process::{Command, Stdio};
 
-    let (mut rx, _child) = app
-        .shell()
-        .command("java")
-        .args([
-            &format!("-Xmx{heap}"),
-            "-jar", &jar_path,
-            "ann",
-            "-dataDir", &data_dir,
-            "-noLog",
-            &genome,
-            &input_vcf,
-        ])
-        .spawn()
-        .map_err(|e| format!("failed to spawn java: {e}"))?;
+        let out_file = File::create(&output_vcf)
+            .map_err(|e| format!("cannot create output file: {e}"))?;
 
-    while let Some(event) = rx.recv().await {
-        match event {
-            CommandEvent::Stdout(line) => {
-                // Write directly to file — never accumulate in memory
-                let _ = writer.write_all(&line);
-                let _ = writer.write_all(b"\n");
-            }
-            CommandEvent::Stderr(line) => {
-                let text = String::from_utf8_lossy(&line).trim_end().to_string();
-                if stderr_lines.len() < 2000 {
-                    stderr_lines.push(text.clone());
+        let mut child = Command::new("java")
+            .args([
+                &format!("-Xmx{heap}"),
+                "-jar", &jar_path,
+                "ann",
+                "-dataDir", &data_dir,
+                "-noLog",
+                "-stats", &stats_html,
+                &genome,
+                &input_vcf,
+            ])
+            // OS-level redirect: Java's stdout fd → file, zero bytes through Rust
+            .stdout(out_file)
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| format!("failed to spawn java: {e}"))?;
+
+        let stderr = child.stderr.take()
+            .ok_or_else(|| "failed to capture stderr".to_string())?;
+
+        let mut stderr_lines: Vec<String> = Vec::new();
+        for line in BufReader::new(stderr).lines() {
+            match line {
+                Ok(l) => {
+                    if stderr_lines.len() < 2000 {
+                        stderr_lines.push(l.clone());
+                    }
+                    let _ = app.emit(&format!("jobs:stderr:{job_id}"), l);
                 }
-                let _ = app.emit(&format!("jobs:stderr:{job_id}"), text);
+                Err(_) => break,
             }
-            CommandEvent::Terminated(payload) => {
-                exit_code = payload.code;
-                ok = payload.code.map(|c| c == 0).unwrap_or(false);
-            }
-            _ => {}
         }
-    }
 
-    writer.flush().map_err(|e| format!("flush error: {e}"))?;
+        let status = child.wait().map_err(|e| format!("wait error: {e}"))?;
+        let exit_code = status.code();
+        let ok = exit_code.map(|c| c == 0).unwrap_or(false);
 
-    Ok(serde_json::json!({
-        "ok": ok,
-        "exitCode": exit_code,
-        "stderr": stderr_lines,
-    }))
+        Ok::<serde_json::Value, String>(serde_json::json!({
+            "ok": ok,
+            "exitCode": exit_code,
+            "stderr": stderr_lines,
+            "statsHtml":  stats_html,
+            "statsGenes": stats_genes,
+        }))
+    })
+    .await
+    .map_err(|e| format!("task error: {e}"))?
 }
 
 /// Download and install a SnpEff genome database using Liatir's HTTP client
