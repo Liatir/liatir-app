@@ -34,6 +34,13 @@
   let expression = $state('QUAL>20');
   let running    = $state(false);
   let startedAt  = $state<number | null>(null);
+  let now        = $state(Date.now());
+
+  $effect(() => {
+    if (!running) return;
+    const id = setInterval(() => now = Date.now(), 1000);
+    return () => clearInterval(id);
+  });
 
   // ── history ──────────────────────────────────────────────────────
   let selectedRunId = $state<string | null>(null);
@@ -280,6 +287,7 @@
             value={filePath}
             label="VCF / BCF file"
             emptyText="No VCF/BCF files in Data yet."
+            disabled={running}
             onchange={(p) => filePath = p}
           />
 
@@ -289,8 +297,9 @@
             <div class="flex flex-wrap gap-1.5">
               {#each PRESETS as preset}
                 <button
+                  disabled={running}
                   onclick={() => expression = preset.expr}
-                  class="px-2.5 py-1 rounded-md border text-xs transition-colors
+                  class="px-2.5 py-1 rounded-md border text-xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed
                     {expression === preset.expr
                       ? 'bg-brand text-white border-brand'
                       : 'bg-surface border-border text-zinc-600 hover:border-brand/50'}"
@@ -310,9 +319,11 @@
             <input
               type="text"
               bind:value={expression}
+              disabled={running}
               placeholder="e.g. QUAL>30 && DP>10"
               class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-mono
-                     placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand/30"
+                     placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand/30
+                     disabled:opacity-50"
             />
             <p class="text-[11px] text-zinc-400">
               Fields: <code class="font-mono">QUAL</code>, <code class="font-mono">DP</code>,
@@ -333,7 +344,7 @@
               Run filter
             </Button>
             {#if running && startedAt}
-              <span class="text-xs text-zinc-400">Elapsed: {fmtDuration(startedAt)}</span>
+              <span class="text-xs text-zinc-400">Elapsed: {fmtDuration(startedAt, now)}</span>
             {/if}
           </div>
         </Card>

@@ -20,9 +20,16 @@
   let depStatus = $state<DepStatus>('checking');
 
   // ── form state ───────────────────────────────────────────────────
-  let filePath = $state('');
-  let running = $state(false);
+  let filePath  = $state('');
+  let running   = $state(false);
   let startedAt = $state<number | null>(null);
+  let now       = $state(Date.now());
+
+  $effect(() => {
+    if (!running) return;
+    const id = setInterval(() => now = Date.now(), 1000);
+    return () => clearInterval(id);
+  });
 
   // ── history ──────────────────────────────────────────────────────
   let selectedRunId = $state<string | null>(null);
@@ -210,6 +217,7 @@
             value={filePath}
             label="BAM / SAM / CRAM file"
             emptyText="No BAM/SAM/CRAM files in Data yet."
+            disabled={running}
             onchange={(p) => filePath = p}
           />
 
@@ -224,7 +232,7 @@
             </Button>
             {#if running && startedAt}
               <span class="text-xs text-zinc-400">
-                Elapsed: {fmtDuration(startedAt)}
+                Elapsed: {fmtDuration(startedAt, now)}
               </span>
             {/if}
           </div>

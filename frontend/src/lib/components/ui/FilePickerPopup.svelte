@@ -8,6 +8,7 @@
     label?: string;
     emptyHref?: string;
     emptyText?: string;
+    disabled?: boolean;
     onchange: (path: string) => void;
   }
 
@@ -18,6 +19,7 @@
     label,
     emptyHref = '/data',
     emptyText = 'No files in Data yet.',
+    disabled = false,
     onchange,
   }: Props = $props();
 
@@ -76,10 +78,11 @@
   <!-- Trigger button -->
   <button
     type="button"
-    onclick={() => { if (files.length > 0) open = true; }}
+    onclick={() => { if (files.length > 0 && !disabled) open = true; }}
+    disabled={disabled}
     class="w-full flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors
            {open ? 'border-brand ring-1 ring-brand/20' : 'border-border hover:border-border-2'}
-           {files.length === 0 ? 'opacity-50 cursor-default' : ''}"
+           {files.length === 0 || disabled ? 'opacity-50 cursor-default' : ''}"
   >
     {#if selected}
       <svg class="shrink-0" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4f39f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

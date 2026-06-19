@@ -18,8 +18,15 @@
   let maxReads = $state<number | undefined>(undefined);
   let timeoutSec = $state(120);
   let filePath = $state('');
-  let running = $state(false);
+  let running   = $state(false);
   let startedAt = $state<number | null>(null);
+  let now       = $state(Date.now());
+
+  $effect(() => {
+    if (!running) return;
+    const id = setInterval(() => now = Date.now(), 1000);
+    return () => clearInterval(id);
+  });
 
   function smartTimeout(sizeBytes: number | undefined): number {
     if (sizeBytes == null) return 120;
@@ -266,7 +273,7 @@
           </Button>
           {#if running && startedAt}
             <span class="text-xs text-zinc-400">
-              Elapsed: {fmtDuration(startedAt)}
+              Elapsed: {fmtDuration(startedAt, now)}
             </span>
           {/if}
         </div>

@@ -31,6 +31,7 @@
   // ── genome state ──────────────────────────────────────────────────
   let selectedGenome = $state('GRCh38.115');
   let customGenome   = $state('');
+  let genomeSearch   = $state('');
   let genomePresent  = $state<boolean | null>(null);
   let genomeChecking = $state(false);
   let dbDownloading  = $state(false);
@@ -38,10 +39,34 @@
 
   const effectiveGenome = $derived(customGenome.trim() || selectedGenome);
 
+  const sortedGenomes = $derived(
+    SNPEFF_GENOMES
+      .filter(g => {
+        const q = genomeSearch.toLowerCase().trim();
+        return !q || g.id.toLowerCase().includes(q) || g.label.toLowerCase().includes(q);
+      })
+      .slice()
+      .sort((a, b) => {
+        const ad = snpEffStore.config.downloadedGenomes.includes(a.id);
+        const bd = snpEffStore.config.downloadedGenomes.includes(b.id);
+        if (ad !== bd) return ad ? -1 : 1;
+        if (ad && bd) return (snpEffStore.lastUsed[b.id] ?? 0) - (snpEffStore.lastUsed[a.id] ?? 0);
+        return 0;
+      })
+  );
+
   // ── form state ────────────────────────────────────────────────────
-  let filePath  = $state('');
-  let running   = $state(false);
-  let startedAt = $state<number | null>(null);
+  let filePath         = $state('');
+  let running          = $state(false);
+  let startedAt        = $state<number | null>(null);
+  let annotationStatus = $state<string | null>(null);
+  let now              = $state(Date.now());
+
+  $effect(() => {
+    if (!running) return;
+    const id = setInterval(() => now = Date.now(), 1000);
+    return () => clearInterval(id);
+  });
 
   // ── history ───────────────────────────────────────────────────────
   let selectedRunId = $state<string | null>(null);
@@ -141,6 +166,12 @@
   }
 
   async function deleteDatabase(genome: string) {
+    const ok = await confirm({
+      title: 'Delete database',
+      message: `Delete the "${genome}" genome database? You'll need to re-download it to use it again.`,
+      confirmLabel: 'Delete',
+    });
+    if (!ok) return;
     const api = liatir();
     if (!api) return;
     const path = `${snpEffStore.config.dataDir}/${genome}`;
@@ -257,6 +288,7 @@
       const outDir  = `${dataDir}/tool-outputs`;
       const outPath = `${outDir}/snpeff-${runId}.vcf`;
 
+      annotationStatus = null;
       const result = await runNativeTool('java', [
         '-Xmx4g',
         '-jar', snpEffStore.config.jarPath,
@@ -266,7 +298,7 @@
         '-noLog',
         genome,
         filePath,
-      ]);
+      ], undefined, (line) => { if (line.trim()) annotationStatus = line.trim(); });
 
       if (!result.ok && result.stdout.trim() === '') {
         throw new Error(result.stderr || `SnpEff exited with code ${result.exitCode}`);
@@ -287,6 +319,7 @@
       const output  = buildSnpEffOutput(summary, fileName, result.stderr);
       const endedAt = Date.now();
 
+      await snpEffStore.touchGenome(genome);
       await analysisRuns.add({
         id: runId, tool: 'snpeff', label: fileName,
         inputs: [filePath], inputSizes,
@@ -306,9 +339,10 @@
         output: null, error: String(e),
       });
     } finally {
-      running   = false;
-      startedAt = null;
-      selectedRunId = runId;
+      running          = false;
+      startedAt        = null;
+      annotationStatus = null;
+      selectedRunId    = runId;
     }
   }
 
@@ -426,8 +460,26 @@
             <h2 class="text-sm font-semibold text-zinc-800">2 — Genome database</h2>
 
             <!-- Genome list -->
-            <div class="rounded-lg border border-border overflow-hidden divide-y divide-border">
-              {#each SNPEFF_GENOMES as g}
+            <!-- Search -->
+            <div class="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5">
+              <svg class="shrink-0 text-zinc-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input
+                bind:value={genomeSearch}
+                placeholder="Search genomes…"
+                class="flex-1 text-xs bg-transparent outline-none text-zinc-700 placeholder:text-zinc-400"
+              />
+              {#if genomeSearch}
+                <button onclick={() => genomeSearch = ''} class="text-zinc-400 hover:text-zinc-600">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              {/if}
+            </div>
+            <div class="rounded-lg border border-border overflow-hidden divide-y divide-border max-h-72 overflow-y-auto">
+              {#each sortedGenomes as g}
                 {@const downloaded = snpEffStore.config.downloadedGenomes.includes(g.id)}
                 {@const isDownloading = dbDownloading && dbDownloadingGenome === g.id}
                 {@const isSelected = effectiveGenome === g.id && !customGenome.trim()}
@@ -541,6 +593,7 @@
                 value={filePath}
                 label="VCF file"
                 emptyText="No VCF files in Data yet."
+                disabled={running}
                 onchange={(p) => filePath = p}
               />
 
@@ -554,9 +607,12 @@
                   Run annotation
                 </Button>
                 {#if running && startedAt}
-                  <span class="text-xs text-zinc-400">Elapsed: {fmtDuration(startedAt)}</span>
+                  <span class="text-xs text-zinc-400">Elapsed: {fmtDuration(startedAt, now)}</span>
                 {/if}
               </div>
+              {#if annotationStatus}
+                <p class="text-[10px] text-zinc-400 font-mono truncate">{annotationStatus}</p>
+              {/if}
             </Card>
           {/if}
         {/if}

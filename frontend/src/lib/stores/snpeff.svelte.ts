@@ -4,6 +4,7 @@ export interface SnpEffConfig {
   jarPath: string | null;
   dataDir: string;
   downloadedGenomes: string[];
+  lastUsed: Record<string, number>;
 }
 
 const CONFIG_FILENAME = 'snpeff-config.json';
@@ -13,6 +14,7 @@ function createSnpEffStore() {
     jarPath: null,
     dataDir: '',
     downloadedGenomes: [],
+    lastUsed: {},
   });
   let loaded = $state(false);
   // Tracks an in-progress genome download across page navigations (in-memory only)
@@ -33,9 +35,10 @@ function createSnpEffStore() {
         jarPath: parsed.jarPath ?? null,
         dataDir: parsed.dataDir ?? defaultDataDir,
         downloadedGenomes: parsed.downloadedGenomes ?? [],
+        lastUsed: parsed.lastUsed ?? {},
       };
     } catch {
-      config = { jarPath: null, dataDir: defaultDataDir, downloadedGenomes: [] };
+      config = { jarPath: null, dataDir: defaultDataDir, downloadedGenomes: [], lastUsed: {} };
     }
 
     loaded = true;
@@ -64,7 +67,14 @@ function createSnpEffStore() {
   }
 
   async function removeGenome(genome: string) {
-    config = { ...config, downloadedGenomes: config.downloadedGenomes.filter(g => g !== genome) };
+    const lastUsed = { ...config.lastUsed };
+    delete lastUsed[genome];
+    config = { ...config, downloadedGenomes: config.downloadedGenomes.filter(g => g !== genome), lastUsed };
+    await save();
+  }
+
+  async function touchGenome(genome: string) {
+    config = { ...config, lastUsed: { ...config.lastUsed, [genome]: Date.now() } };
     await save();
   }
 
@@ -86,9 +96,11 @@ function createSnpEffStore() {
     get activeDownload() { return activeDownload; },
     init,
     save,
+    get lastUsed() { return config.lastUsed; },
     setJarPath,
     markGenomeDownloaded,
     removeGenome,
+    touchGenome,
     checkGenomePresent,
     startDownload(genome: string) { activeDownload = genome; },
     finishDownload() { activeDownload = null; },

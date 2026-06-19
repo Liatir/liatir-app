@@ -23,6 +23,13 @@
   let filePath  = $state('');
   let running   = $state(false);
   let startedAt = $state<number | null>(null);
+  let now       = $state(Date.now());
+
+  $effect(() => {
+    if (!running) return;
+    const id = setInterval(() => now = Date.now(), 1000);
+    return () => clearInterval(id);
+  });
 
   // ── extract form ─────────────────────────────────────────────────
   let extractRegion  = $state('');
@@ -288,6 +295,7 @@
             value={filePath}
             label="FASTA file"
             emptyText="No FASTA files in Data yet."
+            disabled={running}
             onchange={(p) => filePath = p}
           />
 
@@ -301,7 +309,7 @@
               Create index
             </Button>
             {#if running && startedAt}
-              <span class="text-xs text-zinc-400">Elapsed: {fmtDuration(startedAt)}</span>
+              <span class="text-xs text-zinc-400">Elapsed: {fmtDuration(startedAt, now)}</span>
             {/if}
           </div>
         </Card>
@@ -320,9 +328,11 @@
               <input
                 type="text"
                 bind:value={extractRegion}
+                disabled={extractRunning}
                 placeholder="e.g. chr1:1000-2000"
                 class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm
-                       placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand/30"
+                       placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand/30
+                       disabled:opacity-50"
               />
             </div>
 

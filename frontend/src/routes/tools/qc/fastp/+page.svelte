@@ -22,10 +22,18 @@
   let depStatus = $state<DepStatus>('checking');
 
   // ── form state ───────────────────────────────────────────────────
-  let r1Path = $state('');
-  let r2Path = $state('');
-  let running = $state(false);
-  let startedAt = $state<number | null>(null);
+  let r1Path      = $state('');
+  let r2Path      = $state('');
+  let running     = $state(false);
+  let startedAt   = $state<number | null>(null);
+  let fastpStatus = $state<string | null>(null);
+  let now         = $state(Date.now());
+
+  $effect(() => {
+    if (!running) return;
+    const id = setInterval(() => now = Date.now(), 1000);
+    return () => clearInterval(id);
+  });
 
   // ── history ──────────────────────────────────────────────────────
   let selectedRunId = $state<string | null>(null);
@@ -96,7 +104,10 @@
         args.push('--in2', r2Path, '--out2', out2Path);
       }
 
-      const result = await runNativeTool('fastp', args);
+      fastpStatus = null;
+      const result = await runNativeTool('fastp', args, undefined, (line) => {
+        if (line.trim()) fastpStatus = line.trim();
+      });
 
       if (!result.ok) {
         throw new Error(result.stderr || `fastp exited with code ${result.exitCode}`);
@@ -137,8 +148,9 @@
         output: null, error: String(e),
       });
     } finally {
-      running = false;
-      startedAt = null;
+      running     = false;
+      startedAt   = null;
+      fastpStatus = null;
       selectedRunId = runId;
     }
   }
@@ -249,6 +261,7 @@
             label="R1 — FASTQ file (required)"
             placeholder="Select R1 file…"
             emptyText="No FASTQ files in Data yet."
+            disabled={running}
             onchange={(p) => r1Path = p}
           />
 
@@ -259,6 +272,7 @@
               label="R2 — FASTQ file (optional, for paired-end)"
               placeholder="Select R2 file… (leave empty for single-end)"
               emptyText="No FASTQ files in Data yet."
+              disabled={running}
               onchange={(p) => r2Path = p}
             />
             {#if isPaired}
@@ -279,10 +293,13 @@
             </Button>
             {#if running && startedAt}
               <span class="text-xs text-zinc-400">
-                Elapsed: {fmtDuration(startedAt)}
+                Elapsed: {fmtDuration(startedAt, now)}
               </span>
             {/if}
           </div>
+          {#if fastpStatus}
+            <p class="text-[10px] text-zinc-400 font-mono truncate">{fastpStatus}</p>
+          {/if}
         </Card>
 
         {#if displayError}

@@ -177,8 +177,9 @@ pub(crate) async fn stream_download(
     let mut bytes_downloaded = start_bytes;
     let mut last_emit = Instant::now();
     let mut bytes_since_last_emit = 0u64;
+    let mut first_chunk = true;
 
-    // Emit initial progress
+    // Emit initial "connected" progress
     let _ = app.emit(&format!("managed:progress:{id}"), DownloadProgress {
         id: id.to_string(),
         bytes_downloaded,
@@ -203,10 +204,14 @@ pub(crate) async fn stream_download(
                 bytes_downloaded += chunk_len;
                 bytes_since_last_emit += chunk_len;
 
-                // Emit every 500 ms
                 let elapsed = last_emit.elapsed();
-                if elapsed.as_millis() >= 500 {
-                    let bps = bytes_since_last_emit as f64 / elapsed.as_secs_f64();
+                // Emit immediately on first chunk, then every 150 ms
+                if first_chunk || elapsed.as_millis() >= 150 {
+                    let bps = if elapsed.as_secs_f64() > 0.0 {
+                        bytes_since_last_emit as f64 / elapsed.as_secs_f64()
+                    } else {
+                        0.0
+                    };
                     let _ = app.emit(&format!("managed:progress:{id}"), DownloadProgress {
                         id: id.to_string(),
                         bytes_downloaded,
@@ -217,6 +222,7 @@ pub(crate) async fn stream_download(
                     });
                     last_emit = Instant::now();
                     bytes_since_last_emit = 0;
+                    first_chunk = false;
                 }
             }
             Ok(None) => break, // done

@@ -21,9 +21,16 @@
 
   // ── form state ───────────────────────────────────────────────────
   let filePath  = $state('');
-  let allStats  = $state(true);   // -a flag: include N50, Q20, Q30, GC
+  let allStats  = $state(true);
   let running   = $state(false);
   let startedAt = $state<number | null>(null);
+  let now       = $state(Date.now());
+
+  $effect(() => {
+    if (!running) return;
+    const id = setInterval(() => now = Date.now(), 1000);
+    return () => clearInterval(id);
+  });
 
   // ── history ──────────────────────────────────────────────────────
   let selectedRunId = $state<string | null>(null);
@@ -215,13 +222,15 @@
             value={filePath}
             label="FASTA / FASTQ file"
             emptyText="No FASTA/FASTQ files in Data yet."
+            disabled={running}
             onchange={(p) => filePath = p}
           />
 
-          <label class="flex items-center gap-2 cursor-pointer select-none">
+          <label class="flex items-center gap-2 {running ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} select-none">
             <input
               type="checkbox"
               bind:checked={allStats}
+              disabled={running}
               class="h-3.5 w-3.5 rounded border-zinc-300 accent-brand"
             />
             <span class="text-xs text-zinc-600">Include extended stats (N50, Q20, Q30, GC)</span>
@@ -237,7 +246,7 @@
               Run stats
             </Button>
             {#if running && startedAt}
-              <span class="text-xs text-zinc-400">Elapsed: {fmtDuration(startedAt)}</span>
+              <span class="text-xs text-zinc-400">Elapsed: {fmtDuration(startedAt, now)}</span>
             {/if}
           </div>
         </Card>

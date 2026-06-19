@@ -16,6 +16,7 @@ export async function runNativeTool(
   cmd: string,
   args: string[],
   onStdout?: (line: string) => void,
+  onStderr?: (line: string) => void,
 ): Promise<NativeRunResult> {
   const api = liatir();
   if (!api) throw new Error('Liatir API not available');
@@ -40,6 +41,7 @@ export async function runNativeTool(
 
     api.desktop.events.on(`jobs:stderr:${jobId}`, (line: string) => {
       stderrLines.push(line);
+      onStderr?.(line);
     }).then((fn: () => void) => unlisteners.push(fn));
 
     api.desktop.events.on(`jobs:exit:${jobId}`, (payload: { exitCode: number | null; ok: boolean }) => {

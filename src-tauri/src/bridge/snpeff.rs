@@ -28,40 +28,6 @@ fn read_db_repository(jar_path: &str) -> Option<String> {
     None
 }
 
-/// Detect SnpEff version from the JAR, e.g. "5.2d" → "v5_2".
-fn detect_snpeff_version(jar_path: &str) -> Option<String> {
-    let output = std::process::Command::new("java")
-        .args(["-jar", jar_path, "-version"])
-        .output()
-        .ok()?;
-    let text = format!(
-        "{}\n{}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
-    );
-    for line in text.lines() {
-        if !line.contains("SnpEff") && !line.contains("snpEff") {
-            continue;
-        }
-        let words: Vec<&str> = line.split_whitespace().collect();
-        for (i, &w) in words.iter().enumerate() {
-            if (w == "SnpEff" || w == "snpEff") && i + 1 < words.len() {
-                let ver = words[i + 1];
-                // "5.2d (build..." → take digits and dots only
-                let numeric: String = ver
-                    .chars()
-                    .take_while(|c| c.is_ascii_digit() || *c == '.')
-                    .collect();
-                let parts: Vec<&str> = numeric.splitn(3, '.').collect();
-                if parts.len() >= 2 && !parts[0].is_empty() && !parts[1].is_empty() {
-                    return Some(format!("v{}_{}", parts[0], parts[1]));
-                }
-            }
-        }
-    }
-    None
-}
-
 fn db_urls(genome: &str, version_hint: Option<&str>, repo_base: &str) -> Vec<String> {
     let mut versions: Vec<String> = Vec::new();
     if let Some(v) = version_hint {
@@ -154,10 +120,9 @@ pub async fn lia_snpeff_download_db(
         return Err(format!("Download already in progress for {genome}"));
     }
 
-    let version_hint = detect_snpeff_version(&jar_path);
     let repo_base = read_db_repository(&jar_path)
         .unwrap_or_else(|| SNPEFF_S3_BASE.to_string());
-    let urls = db_urls(&genome, version_hint.as_deref(), &repo_base);
+    let urls = db_urls(&genome, None, &repo_base);
 
     let zip_path = format!("{data_dir}/{genome}-db.zip");
     let part_path = format!("{zip_path}.part");
