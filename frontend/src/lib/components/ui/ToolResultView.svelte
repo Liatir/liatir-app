@@ -89,6 +89,7 @@
             <Button
               variant="secondary"
               size="sm"
+              class="shrink-0"
               loading={addingToData.has(file.path)}
               onclick={() => addToData(file)}
             >
@@ -97,6 +98,7 @@
             <Button
               variant="ghost"
               size="sm"
+              class="shrink-0"
               loading={savingAs.has(file.path)}
               onclick={() => saveAs(file)}
             >
@@ -117,15 +119,15 @@
         style="grid-template-columns: repeat({s.cols ?? 4}, minmax(0, 1fr))"
       >
         {#each s.items as item}
-          <Card class="p-4">
-            <p class="text-xs text-zinc-500 mb-1 flex items-center">
-              {item.label}
+          <Card class="p-4 min-w-0">
+            <p class="text-xs text-zinc-500 mb-1 flex items-center gap-1 min-w-0">
+              <span class="truncate">{item.label}</span>
               {#if item.description}
                 <InfoPopup text={item.description} />
               {/if}
             </p>
             <p
-              class="text-lg font-semibold text-zinc-900"
+              class="font-semibold text-zinc-900 break-all leading-snug {item.value.length > 16 ? 'text-sm' : 'text-lg'}"
               style={item.color ? `color: ${item.color}` : ''}
             >
               {item.value}
@@ -136,15 +138,15 @@
 
     {:else if section.type === 'number'}
       {@const s = section as NumberSection}
-      <Card class="p-4">
-        <p class="text-xs text-zinc-500 mb-1 flex items-center">
-          {s.label}
+      <Card class="p-4 min-w-0">
+        <p class="text-xs text-zinc-500 mb-1 flex items-center gap-1 min-w-0">
+          <span class="truncate">{s.label}</span>
           {#if s.description}
             <InfoPopup text={s.description} />
           {/if}
         </p>
         <p
-          class="text-2xl font-semibold"
+          class="text-2xl font-semibold break-all"
           style={s.color ? `color: ${s.color}` : ''}
         >
           {fmtNumber(s.value, s.format)}{s.unit ? ` ${s.unit}` : ''}
@@ -210,7 +212,7 @@
             <thead>
               <tr>
                 {#each s.headers as header}
-                  <th class="px-3 py-2 font-medium text-zinc-500 bg-zinc-50 border-b border-border">{header}</th>
+                  <th class="px-3 py-2 font-medium text-zinc-500 bg-zinc-50 border-b border-border whitespace-nowrap">{header}</th>
                 {/each}
               </tr>
             </thead>
@@ -218,7 +220,7 @@
               {#each s.rows as row, i}
                 <tr class="{i % 2 === 0 ? '' : 'bg-zinc-50/50'} hover:bg-brand/5 transition-colors">
                   {#each row as cell}
-                    <td class="px-3 py-2 text-zinc-700 border-b border-border/50 font-mono">{cell}</td>
+                    <td class="px-3 py-2 text-zinc-700 border-b border-border/50 font-mono whitespace-nowrap">{cell}</td>
                   {/each}
                 </tr>
               {/each}

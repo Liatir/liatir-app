@@ -15,6 +15,7 @@
   import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import { snpEffStore } from '$lib/stores/snpeff.svelte';
+  import { settingsStore } from '$lib/stores/settings.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
   import {
@@ -120,6 +121,7 @@
       }
     });
     await snpEffStore.init();
+    await settingsStore.init();
     await reattachIfDownloading();
   });
 
@@ -313,6 +315,7 @@
         outputVcf: outPath,
         heap: snpEffStore.jvmHeap,
         jobId: jid,
+        javaPath: settingsStore.javaPath || null,
       } as any) as { ok: boolean; exitCode: number | null; stderr: string[]; statsHtml: string; statsGenes: string };
 
       if (!result.ok) {

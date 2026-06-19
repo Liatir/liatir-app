@@ -123,6 +123,7 @@ pub async fn lia_snpeff_annotate(
     output_vcf: String,
     heap: String,
     job_id: String,
+    java_path: Option<String>,
 ) -> Result<serde_json::Value, String> {
     if let Some(parent) = std::path::Path::new(&output_vcf).parent() {
         std::fs::create_dir_all(parent).map_err(|e| format!("cannot create output dir: {e}"))?;
@@ -142,7 +143,8 @@ pub async fn lia_snpeff_annotate(
         let out_file = File::create(&output_vcf)
             .map_err(|e| format!("cannot create output file: {e}"))?;
 
-        let mut child = Command::new("java")
+        let java_bin = java_path.as_deref().filter(|s| !s.is_empty()).unwrap_or("java");
+        let mut child = Command::new(java_bin)
             .args([
                 &format!("-Xmx{heap}"),
                 "-jar", &jar_path,
