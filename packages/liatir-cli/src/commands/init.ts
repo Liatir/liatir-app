@@ -12,7 +12,7 @@ const PACKAGE_JSON = (name: string) =>
         build: "liatir build",
       },
       devDependencies: {
-        "@liatir/adapter": "^1.0.0",
+        "@liatir/sdk": "^1.0.0",
         typescript: "^5.0.0",
         "@types/node": "^20.0.0",
       },
@@ -59,7 +59,7 @@ const MANIFEST = (name: string) =>
     2
   );
 
-const INDEX_TS = (name: string) => `import { createLiatir } from "@liatir/adapter";
+const INDEX_TS = (name: string) => `import { createLiatir } from "@liatir/sdk";
 
 // Input type — define what your script expects
 export interface Input {

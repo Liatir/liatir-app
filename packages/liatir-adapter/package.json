@@ -1,13 +1,18 @@
 {
-  "name": "@liatir/adapter",
+  "name": "@liatir/sdk",
   "version": "1.0.0",
-  "description": "Node.js IPC adapter for Liatir — lets .lia scripts call Liatir.* from Node.js",
+  "description": "Node.js SDK for Liatir — gives .lia scripts access to Liatir.* APIs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
+  "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json --watch"
+    "dev": "tsc -p tsconfig.json --watch",
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
     "typescript": "^5.0.0"

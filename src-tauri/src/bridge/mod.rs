@@ -25,6 +25,8 @@ pub mod modules;
 pub mod startup_cleanup;
 pub mod demo_files;
 pub mod snpeff;
+pub mod bwa;
+pub mod minimap2;
 
 pub use notifications::*;
 pub use clipboard::*;
@@ -51,3 +53,5 @@ pub use modules::*;
 pub use startup_cleanup::*;
 pub use demo_files::*;
 pub use snpeff::*;
+pub use bwa::*;
+pub use minimap2::*;

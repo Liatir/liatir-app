@@ -23,7 +23,7 @@ async function main() {
       await build();
       break;
     default:
-      console.log(`liatir-cli — develop and build .lia scripts
+      console.log(`liatir — develop and build .lia scripts
 
 Usage:
   liatir init <name>   Scaffold a new .lia project

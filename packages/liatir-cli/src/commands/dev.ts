@@ -22,7 +22,7 @@ async function loadManifest(): Promise<Manifest> {
 // Generates a thin runner that imports the bundle and calls run({})
 function runnerScript(bundlePath: string): string {
   return `
-import { createLiatir } from "@liatir/adapter";
+import { createLiatir } from "@liatir/sdk";
 import { run } from ${JSON.stringify(bundlePath)};
 
 const Liatir = await createLiatir().catch(e => {
@@ -86,7 +86,7 @@ export async function dev() {
     platform: "node",
     target: "node18",
     outfile: bundlePath,
-    external: ["@liatir/adapter"],
+    external: ["@liatir/sdk"],
     plugins: [
       {
         name: "on-rebuild",

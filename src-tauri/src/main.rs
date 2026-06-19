@@ -389,6 +389,8 @@ fn main() {
       lia_managed_remove,
       lia_snpeff_annotate,
       lia_snpeff_download_db,
+      lia_bwa_mem,
+      lia_minimap2,
 
       // startup cleanup
       lia_startup_cleanup,

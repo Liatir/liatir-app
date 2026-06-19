@@ -79,4 +79,26 @@ export const DEP_REQUIREMENTS: Record<string, DepRequirement> = {
       { platform: 'conda', cmd: 'conda install -c bioconda fastp' },
     ],
   },
+  bwa: {
+    binary: 'bwa',
+    label: 'bwa',
+    minVersion: '0.7.17',
+    releasesUrl: 'https://github.com/lh3/bwa/releases/latest',
+    installCmds: [
+      { platform: 'macOS', cmd: 'brew install bwa' },
+      { platform: 'Ubuntu', cmd: 'sudo apt install bwa' },
+      { platform: 'conda', cmd: 'conda install -c bioconda bwa' },
+    ],
+  },
+  minimap2: {
+    binary: 'minimap2',
+    label: 'minimap2',
+    minVersion: '2.24',
+    releasesUrl: 'https://github.com/lh3/minimap2/releases/latest',
+    installCmds: [
+      { platform: 'macOS', cmd: 'brew install minimap2' },
+      { platform: 'Ubuntu', cmd: 'sudo apt install minimap2' },
+      { platform: 'conda', cmd: 'conda install -c bioconda minimap2' },
+    ],
+  },
 };

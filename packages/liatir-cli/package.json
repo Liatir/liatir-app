@@ -1,14 +1,19 @@
 {
-  "name": "liatir-cli",
+  "name": "@liatir/lia",
   "version": "1.0.0",
-  "description": "CLI for developing and building .lia scripts",
+  "description": "CLI for developing and building .lia scripts for Liatir",
   "bin": {
     "liatir": "./dist/cli.js"
   },
   "type": "module",
+  "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/make-executable.js",
-    "dev": "tsc -p tsconfig.json --watch"
+    "dev": "tsc -p tsconfig.json --watch",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "esbuild": "^0.24.0",
