@@ -85,7 +85,7 @@
 
     try {
       logLines = [`$ seqkit stats${allStats ? ' -a' : ''} ${fileName}`];
-      const result = await runNativeTool('seqkit', args, undefined, (l) => { if (l.trim()) logLines.push(l); });
+      const result = await runNativeTool('seqkit', args, undefined, (l) => { const s = typeof l === 'string' ? l.trim() : ''; if (s) logLines = [...logLines, l]; });
 
       if (!result.ok && result.stdout.trim() === '') {
         throw new Error(result.stderr || `seqkit exited with code ${result.exitCode}`);

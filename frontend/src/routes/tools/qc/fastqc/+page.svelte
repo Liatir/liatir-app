@@ -7,7 +7,7 @@
   import InfoPopup from '$lib/components/ui/InfoPopup.svelte';
   import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
   import { liatir } from '$lib/api';
-  import { fmtDuration } from '$lib/utils';
+  import { fmtDuration, fmtBytes } from '$lib/utils';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns, type AnalysisRun } from '$lib/stores/analysisRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
@@ -82,14 +82,20 @@
 
     const runId = crypto.randomUUID();
     const fileName = filePath.split(/[\\/]/).pop() ?? filePath;
-    logLines = [`$ fastqc ${fileName}`];
     const t0 = startedAt;
     const fileSize = dataFiles.files.find(f => f.path === filePath)?.size;
     const inputSizes = fileSize != null ? [fileSize] : undefined;
+    const sizeLine = fileSize != null ? ` (${fmtBytes(fileSize)})` : '';
+    logLines = [
+      `$ fastqc ${fileName}`,
+      `→ Input: ${fileName}${sizeLine}`,
+      `→ Running WASM quality analysis…`,
+    ];
 
     try {
       const output = await api.qc.fastqc.run({ input: filePath, maxReads, timeoutMs: timeoutSec * 1000 });
       const endedAt = Date.now();
+      logLines.push(`✓ Analysis complete in ${fmtDuration(t0, endedAt)}`);
       await analysisRuns.add({
         id: runId, tool: 'fastqc', label: fileName,
         inputs: [filePath], inputSizes,
@@ -101,6 +107,7 @@
       });
     } catch (e) {
       const endedAt = Date.now();
+      logLines.push(`✗ Error: ${String(e)}`);
       await analysisRuns.add({
         id: runId, tool: 'fastqc', label: fileName,
         inputs: [filePath], inputSizes,

@@ -88,7 +88,7 @@
     try {
       logLines = [`$ samtools faidx ${fileName}`];
       // samtools faidx writes the index to <file>.fai (no stdout output)
-      const result = await runNativeTool('samtools', ['faidx', filePath], undefined, (l) => { if (l.trim()) logLines.push(l); });
+      const result = await runNativeTool('samtools', ['faidx', filePath], undefined, (l) => { const s = typeof l === 'string' ? l.trim() : ''; if (s) logLines = [...logLines, l]; });
 
       if (!result.ok) {
         throw new Error(result.stderr || `samtools faidx exited with code ${result.exitCode}`);
@@ -142,7 +142,7 @@
 
     try {
       logLines = [`$ samtools faidx ${filePath.split(/[\\/]/).pop()} ${extractRegion.trim()}`];
-      const result = await runNativeTool('samtools', ['faidx', filePath, extractRegion.trim()], undefined, (l) => { if (l.trim()) logLines.push(l); });
+      const result = await runNativeTool('samtools', ['faidx', filePath, extractRegion.trim()], undefined, (l) => { const s = typeof l === 'string' ? l.trim() : ''; if (s) logLines = [...logLines, l]; });
       if (!result.ok && result.stdout.trim() === '') {
         throw new Error(result.stderr || `samtools faidx exited with code ${result.exitCode}`);
       }

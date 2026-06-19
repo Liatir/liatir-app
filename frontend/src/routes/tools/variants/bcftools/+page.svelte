@@ -81,7 +81,7 @@
 
     try {
       logLines = [`$ bcftools stats ${fileName}`];
-      const result = await runNativeTool('bcftools', ['stats', filePath], undefined, (l) => { if (l.trim()) logLines.push(l); });
+      const result = await runNativeTool('bcftools', ['stats', filePath], undefined, (l) => { const s = typeof l === 'string' ? l.trim() : ''; if (s) logLines = [...logLines, l]; });
 
       if (!result.ok && result.stdout.trim() === '') {
         throw new Error(result.stderr || `bcftools exited with code ${result.exitCode}`);

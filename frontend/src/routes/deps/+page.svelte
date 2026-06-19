@@ -71,7 +71,6 @@
 			label: 'HISAT2',
 			description:
 				'Graph-based RNA-seq aligner. Splice-aware — accurately maps reads spanning exon-exon junctions. Uses a genome graph index for fast, sensitive alignment of RNA-seq reads.',
-			brew: 'hisat2',
 			apt: 'hisat2',
 			conda: 'hisat2'
 		},

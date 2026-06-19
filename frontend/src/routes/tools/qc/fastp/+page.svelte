@@ -107,7 +107,7 @@
       }
 
       logLines = [`$ fastp --in1 ${r1Path.split(/[\\/]/).pop()}${r2Path ? ' --in2 ' + r2Path.split(/[\\/]/).pop() : ''}`];
-      const result = await runNativeTool('fastp', args, undefined, (l) => { if (l.trim()) logLines.push(l); });
+      const result = await runNativeTool('fastp', args, undefined, (l) => { const s = typeof l === 'string' ? l.trim() : ''; if (s) logLines = [...logLines, l]; });
 
       if (!result.ok) {
         throw new Error(result.stderr || `fastp exited with code ${result.exitCode}`);

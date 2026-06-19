@@ -1,4 +1,4 @@
-import type { ToolOutput, StatsSection, TableSection, TextSection } from '$lib/types/tool-output';
+import type { ToolOutput, StatsSection, TableSection } from '$lib/types/tool-output';
 import type { PipelineStepDefinition } from '$lib/types/pipeline';
 
 export const snpeffDefinition: PipelineStepDefinition = {
@@ -84,7 +84,6 @@ export interface SnpEffSummary {
 export function buildSnpEffOutput(
   summary: SnpEffSummary,
   outputVcfName: string,
-  rawStats: string,
 ): ToolOutput {
   const stats: StatsSection = {
     type: 'stats',
@@ -119,14 +118,7 @@ export function buildSnpEffOutput(
     rows: summary.topEffects.slice(0, 15).map(e => [e.effect, e.count]),
   };
 
-  const raw: TextSection = {
-    type: 'text',
-    label: 'SnpEff stats output',
-    content: rawStats,
-    mono: true,
-  };
-
-  return { sections: [stats, topTable, raw] };
+  return { sections: [stats, topTable] };
 }
 
 // ── Parse SnpEff text summary (genes.txt / snpEff_summary.txt) ───

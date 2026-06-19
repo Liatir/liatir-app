@@ -290,17 +290,24 @@
       const outDir  = `${dataDir}/tool-outputs`;
       const outPath = `${outDir}/snpeff-${runId}.vcf`;
 
-      logLines = [`$ java -jar snpEff.jar ann ${genome} ${fileName}`];
+      logLines = [
+        `$ java -Xmx${snpEffStore.jvmHeap} -jar snpEff.jar ann -v ${genome} ${fileName}`,
+        `→ Genome: ${genome}  Heap: ${snpEffStore.jvmHeap}`,
+        `→ Loading SnpEff database (this may take 1–2 min)…`,
+      ];
       const result = await runNativeTool('java', [
         `-Xmx${snpEffStore.jvmHeap}`,
         '-jar', snpEffStore.config.jarPath,
         'ann',
+        '-v',
         '-dataDir', snpEffStore.config.dataDir,
-        '-noStats',
         '-noLog',
         genome,
         filePath,
-      ], undefined, (l) => { if (l.trim()) logLines.push(l); });
+      ], undefined, (l) => {
+        const s = typeof l === 'string' ? l.trim() : '';
+        if (s) logLines = [...logLines, l];
+      });
 
       if (!result.ok && result.stdout.trim() === '') {
         throw new Error(result.stderr || `SnpEff exited with code ${result.exitCode}`);
@@ -317,9 +324,10 @@
         size: outFileSize,
       }];
 
-      const summary = parseSnpEffStats(result.stderr); // SnpEff writes stats to stderr
-      const output  = buildSnpEffOutput(summary, fileName, result.stderr);
+      const summary = parseSnpEffStats(result.stderr);
+      const output  = buildSnpEffOutput(summary, fileName);
       const endedAt = Date.now();
+      logLines = [...logLines, `✓ Annotation complete in ${fmtDuration(t0, endedAt)}`];
 
       await snpEffStore.touchGenome(genome);
       await analysisRuns.add({
@@ -329,9 +337,11 @@
         status: 'done',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, outputFiles, error: null,
+        log: [...logLines],
       });
     } catch (e) {
       const endedAt = Date.now();
+      logLines = [...logLines, `✗ Error: ${String(e)}`];
       await analysisRuns.add({
         id: runId, tool: 'snpeff', label: fileName,
         inputs: [filePath], inputSizes,

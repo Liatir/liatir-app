@@ -66,7 +66,7 @@
         >
           <polyline points="9 18 15 12 9 6"/>
         </svg>
-        Run log
+        View log
       </button>
 
       {#if open && log && log.length > 0}

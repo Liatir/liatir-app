@@ -107,7 +107,7 @@
         '-O', 'z',
         '-o', outPath,
         filePath,
-      ], undefined, (l) => { if (l.trim()) logLines.push(l); });
+      ], undefined, (l) => { const s = typeof l === 'string' ? l.trim() : ''; if (s) logLines = [...logLines, l]; });
 
       if (!result.ok && result.stderr.includes('Error')) {
         throw new Error(result.stderr || `bcftools filter exited with code ${result.exitCode}`);
