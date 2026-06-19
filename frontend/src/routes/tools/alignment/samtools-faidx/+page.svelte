@@ -13,6 +13,7 @@
   import { runNativeTool } from '$lib/utils/native-tool';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
+  import { notify } from '$lib/utils/notify';
   import RunLog from '$lib/components/ui/RunLog.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
@@ -88,7 +89,7 @@
     try {
       logLines = [`$ samtools faidx ${fileName}`];
       // samtools faidx writes the index to <file>.fai (no stdout output)
-      const result = await runNativeTool('samtools', ['faidx', filePath], undefined, (l) => { const s = typeof l === 'string' ? l.trim() : ''; if (s) logLines = [...logLines, l]; });
+      const result = await runNativeTool('samtools', ['faidx', filePath], undefined, (l) => { if (typeof l === 'string' && l.trim()) logLines.push(l); });
 
       if (!result.ok) {
         throw new Error(result.stderr || `samtools faidx exited with code ${result.exitCode}`);
@@ -115,6 +116,7 @@
         output, error: null,
         log: [...logLines],
       });
+      await notify('Samtools faidx complete', `${fileName} finished in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
     } catch (e) {
       const endedAt = Date.now();
       await analysisRuns.add({
@@ -126,6 +128,7 @@
         output: null, error: String(e),
         log: [...logLines],
       });
+      await notify('Samtools faidx failed', String(e));
     } finally {
       running   = false;
       startedAt = null;
@@ -142,7 +145,7 @@
 
     try {
       logLines = [`$ samtools faidx ${filePath.split(/[\\/]/).pop()} ${extractRegion.trim()}`];
-      const result = await runNativeTool('samtools', ['faidx', filePath, extractRegion.trim()], undefined, (l) => { const s = typeof l === 'string' ? l.trim() : ''; if (s) logLines = [...logLines, l]; });
+      const result = await runNativeTool('samtools', ['faidx', filePath, extractRegion.trim()], undefined, (l) => { if (typeof l === 'string' && l.trim()) logLines.push(l); });
       if (!result.ok && result.stdout.trim() === '') {
         throw new Error(result.stderr || `samtools faidx exited with code ${result.exitCode}`);
       }

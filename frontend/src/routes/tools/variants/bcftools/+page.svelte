@@ -13,6 +13,7 @@
   import { parseBcftoolsStats, bcftoolsStatsToToolOutput } from '$lib/tools/variants/bcftools';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
+  import { notify } from '$lib/utils/notify';
   import RunLog from '$lib/components/ui/RunLog.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
@@ -81,7 +82,7 @@
 
     try {
       logLines = [`$ bcftools stats ${fileName}`];
-      const result = await runNativeTool('bcftools', ['stats', filePath], undefined, (l) => { const s = typeof l === 'string' ? l.trim() : ''; if (s) logLines = [...logLines, l]; });
+      const result = await runNativeTool('bcftools', ['stats', filePath], undefined, (l) => { if (typeof l === 'string' && l.trim()) logLines.push(l); });
 
       if (!result.ok && result.stdout.trim() === '') {
         throw new Error(result.stderr || `bcftools exited with code ${result.exitCode}`);
@@ -100,6 +101,7 @@
         output, error: null,
         log: [...logLines],
       });
+      await notify('BCFtools complete', `${fileName} finished in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
     } catch (e) {
       const endedAt = Date.now();
       await analysisRuns.add({
@@ -111,6 +113,7 @@
         output: null, error: String(e),
         log: [...logLines],
       });
+      await notify('BCFtools failed', String(e));
     } finally {
       running = false;
       startedAt = null;

@@ -14,6 +14,7 @@
   import type { ToolOutput } from '$lib/types/tool-output';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
+  import { notify } from '$lib/utils/notify';
   import RunLog from '$lib/components/ui/RunLog.svelte';
 
   // ── form state ─────────────────────────────────────────────────
@@ -105,6 +106,7 @@
         output, error: null,
         log: [...logLines],
       });
+      await notify('FastQC complete', `${fileName} finished in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
     } catch (e) {
       const endedAt = Date.now();
       logLines.push(`✗ Error: ${String(e)}`);
@@ -117,6 +119,7 @@
         output: null, error: String(e),
         log: [...logLines],
       });
+      await notify('FastQC failed', String(e));
     } finally {
       running = false;
       startedAt = null;

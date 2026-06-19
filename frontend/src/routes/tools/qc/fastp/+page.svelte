@@ -14,6 +14,7 @@
   import { parseFastpJson, fastpToToolOutput } from '$lib/tools/qc/fastp';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
+  import { notify } from '$lib/utils/notify';
   import RunLog from '$lib/components/ui/RunLog.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
@@ -107,7 +108,7 @@
       }
 
       logLines = [`$ fastp --in1 ${r1Path.split(/[\\/]/).pop()}${r2Path ? ' --in2 ' + r2Path.split(/[\\/]/).pop() : ''}`];
-      const result = await runNativeTool('fastp', args, undefined, (l) => { const s = typeof l === 'string' ? l.trim() : ''; if (s) logLines = [...logLines, l]; });
+      const result = await runNativeTool('fastp', args, undefined, (l) => { if (typeof l === 'string' && l.trim()) logLines.push(l); });
 
       if (!result.ok) {
         throw new Error(result.stderr || `fastp exited with code ${result.exitCode}`);
@@ -137,6 +138,7 @@
         output, error: null,
         log: [...logLines],
       });
+      await notify('fastp complete', `${fileName} finished in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
     } catch (e) {
       const endedAt = Date.now();
       await analysisRuns.add({
@@ -149,6 +151,7 @@
         output: null, error: String(e),
         log: [...logLines],
       });
+      await notify('fastp failed', String(e));
     } finally {
       running   = false;
       startedAt = null;

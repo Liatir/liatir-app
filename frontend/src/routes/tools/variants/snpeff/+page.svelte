@@ -7,6 +7,7 @@
   import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
+  import { notify } from '$lib/utils/notify';
   import RunLog from '$lib/components/ui/RunLog.svelte';
   import { liatir } from '$lib/api';
   import { fmtDuration } from '$lib/utils';
@@ -223,8 +224,10 @@
 
       await snpEffStore.markGenomeDownloaded(genome);
       genomePresent = true;
+      await notify('SnpEff DB ready', `${genome} database downloaded and ready to use`);
     } catch (e) {
       dbError = String(e);
+      await notify('SnpEff DB download failed', String(e));
     } finally {
       unlisten();
       snpEffStore.finishDownload();
@@ -291,7 +294,7 @@
       const outPath = `${outDir}/snpeff-${runId}.vcf`;
 
       logLines = [
-        `$ java -Xmx${snpEffStore.jvmHeap} -jar snpEff.jar ann -v ${genome} ${fileName}`,
+        `$ java -Xmx${snpEffStore.jvmHeap} -jar snpEff.jar ann ${genome} ${fileName}`,
         `→ Genome: ${genome}  Heap: ${snpEffStore.jvmHeap}`,
         `→ Loading SnpEff database (this may take 1–2 min)…`,
       ];
@@ -299,14 +302,12 @@
         `-Xmx${snpEffStore.jvmHeap}`,
         '-jar', snpEffStore.config.jarPath,
         'ann',
-        '-v',
         '-dataDir', snpEffStore.config.dataDir,
         '-noLog',
         genome,
         filePath,
       ], undefined, (l) => {
-        const s = typeof l === 'string' ? l.trim() : '';
-        if (s) logLines = [...logLines, l];
+        if (typeof l === 'string' && l.trim() && logLines.length < 500) logLines.push(l);
       });
 
       if (!result.ok && result.stdout.trim() === '') {
@@ -339,6 +340,7 @@
         output, outputFiles, error: null,
         log: [...logLines],
       });
+      await notify('SnpEff complete', `${fileName} finished in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
     } catch (e) {
       const endedAt = Date.now();
       logLines = [...logLines, `✗ Error: ${String(e)}`];
@@ -351,6 +353,7 @@
         output: null, error: String(e),
         log: [...logLines],
       });
+      await notify('SnpEff failed', String(e));
     } finally {
       running       = false;
       startedAt     = null;

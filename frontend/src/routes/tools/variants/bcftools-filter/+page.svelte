@@ -13,6 +13,7 @@
   import { runNativeTool } from '$lib/utils/native-tool';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
+  import { notify } from '$lib/utils/notify';
   import RunLog from '$lib/components/ui/RunLog.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
@@ -107,7 +108,7 @@
         '-O', 'z',
         '-o', outPath,
         filePath,
-      ], undefined, (l) => { const s = typeof l === 'string' ? l.trim() : ''; if (s) logLines = [...logLines, l]; });
+      ], undefined, (l) => { if (typeof l === 'string' && l.trim()) logLines.push(l); });
 
       if (!result.ok && result.stderr.includes('Error')) {
         throw new Error(result.stderr || `bcftools filter exited with code ${result.exitCode}`);
@@ -144,6 +145,7 @@
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, outputFiles, error: null,
       });
+      await notify('BCFtools filter complete', `${fileName} filtered in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
     } catch (e) {
       const endedAt = Date.now();
       await analysisRuns.add({
@@ -155,6 +157,7 @@
         output: null, error: String(e),
         log: [...logLines],
       });
+      await notify('BCFtools filter failed', String(e));
     } finally {
       running   = false;
       startedAt = null;
