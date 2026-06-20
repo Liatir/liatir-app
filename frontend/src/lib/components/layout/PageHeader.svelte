@@ -21,7 +21,7 @@
       {/if}
     </h1>
     {#if description}
-      <p class="mt-0.5 text-xs text-zinc-500">{description}</p>
+      <p class="mt-0.5 text-xs text-zinc-500 max-md:hidden">{description}</p>
     {/if}
   </div>
   {#if actions}

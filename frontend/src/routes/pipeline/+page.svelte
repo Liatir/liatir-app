@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import Icon from '@iconify/svelte';
   import {
     SvelteFlow,
     Background,
@@ -23,8 +25,12 @@
 
   let nodes = $state<Node<ToolNodeData>[]>([]);
   let edges = $state<Edge[]>([]);
+  let storeReady = $state(false);
   let showAddMenu = $state(false);
   let stepSearch = $state('');
+  let editingName = $state(false);
+  let nameInput = $state('');
+  let saving = $state(false);
 
   const nodeTypes = { tool: ToolNode, start: StartNode };
 
@@ -60,7 +66,30 @@
     toolNodes.every(n => pipelineStore.nodeStates.get(n.id)?.status === 'done')
   );
 
-  onMount(() => { dataFiles.init(); });
+  onMount(async () => {
+    await pipelineStore.init();
+    dataFiles.init();
+
+    // Check if a pipeline was queued for loading (from Pipelines page)
+    const pending = pipelineStore.pendingLoad;
+    if (pending) {
+      nodes = [...(pending.nodes as Node<ToolNodeData>[])];
+      edges = [...pending.edges];
+      nameInput = pending.name;
+      pipelineStore.clearPendingLoad();
+    } else {
+      nodes = [...pipelineStore.currentNodes];
+      edges = [...pipelineStore.currentEdges];
+      nameInput = pipelineStore.pipelineName;
+    }
+    storeReady = true;
+  });
+
+  // Auto-save current state to store on any change
+  $effect(() => {
+    if (!storeReady) return;
+    pipelineStore.setCurrentState(nodes, edges, nameInput);
+  });
 
   function addToolNode(stepId: string) {
     const entry = PIPELINE_REGISTRY[stepId];
@@ -83,6 +112,16 @@
     pipelineStore.resetStates([]);
   }
 
+  async function savePipeline() {
+    if (!nameInput.trim()) return;
+    saving = true;
+    try {
+      await pipelineStore.savePipeline(nameInput.trim());
+    } finally {
+      saving = false;
+    }
+  }
+
   function onConnect(connection: Connection) {
     edges = [
       ...edges.filter(e => !(e.target === connection.target && e.targetHandle === connection.targetHandle)),
@@ -92,7 +131,6 @@
         sourceHandle: connection.sourceHandle ?? null,
         target: connection.target,
         targetHandle: connection.targetHandle ?? null,
-        animated: pipelineStore.running,
         style: 'stroke: #4f39f6; stroke-width: 2;',
       },
     ];
@@ -100,11 +138,51 @@
 </script>
 
 <div class="flex flex-col h-full overflow-hidden">
-  <PageHeader title="Pipeline" description="Visual workflow builder — connect tools to automate analysis">
+  <PageHeader title={nameInput || 'Untitled Pipeline'} description="Visual workflow builder — connect tools to automate analysis">
     {#snippet actions()}
       <div class="flex items-center gap-2">
+        {#if editingName}
+          <input
+            type="text"
+            bind:value={nameInput}
+            onblur={() => editingName = false}
+            onkeydown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') editingName = false; }}
+            autofocus
+            class="text-xs font-medium bg-white border border-brand/60 rounded px-2.5 py-1.5 outline-none w-40"
+          />
+        {:else}
+          <button
+            onclick={() => editingName = true}
+            class="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-brand transition-colors px-2 py-1.5 rounded-lg hover:bg-zinc-100"
+          >
+            <Icon icon="lucide:pencil" width="12" height="12" />
+            <span class="max-lg:hidden">
+            Rename
+          </span>
+          </button>
+        {/if}
+        <!-- <button
+          onclick={() => goto('/pipelines')}
+          class="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-zinc-100"
+        >
+          <Icon icon="famicons:grid-outline" width="13" height="13" />
+          <span class="max-lg:hidden">
+          Pipelines
+          </span>
+        </button> -->
+        <Button variant="ghost" size="sm" loading={saving} onclick={savePipeline} disabled={!nameInput.trim()}>
+          <Icon icon="lucide:save" width="12" height="12" />
+          <span class="max-lg:hidden">
+          Save
+          </span>
+        </Button>
         {#if nodes.length > 0}
-          <Button variant="ghost" size="sm" onclick={clear} disabled={pipelineStore.running}>Clear</Button>
+          <Button variant="ghost" size="sm" onclick={clear} disabled={pipelineStore.running}>
+            <Icon icon="ph:broom" width="12" height="12" />
+            <span class="max-lg:hidden">
+            Clear
+            </span>
+          </Button>
         {/if}
         <Button
           variant="primary"
@@ -112,9 +190,7 @@
           loading={pipelineStore.running}
           onclick={() => pipelineStore.run(nodes, edges)}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="5 3 19 12 5 21 5 3"/>
-          </svg>
+          <Icon icon="lucide:play" width="12" height="12" />
           Run pipeline
         </Button>
       </div>
@@ -149,10 +225,7 @@
     {#if nodes.length === 0}
       <div class="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none select-none">
         <div class="h-14 w-14 rounded-2xl bg-white border border-border shadow-sm flex items-center justify-center">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="5" cy="12" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="19" cy="19" r="2"/>
-            <line x1="7" y1="12" x2="17" y2="6"/><line x1="7" y1="12" x2="17" y2="18"/>
-          </svg>
+          <Icon icon="lucide:workflow" width="24" height="24" class="text-zinc-300" />
         </div>
         <div class="text-center">
           <p class="text-sm font-medium text-zinc-600">No steps yet</p>
@@ -165,9 +238,7 @@
       <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none
                   flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50
                   px-4 py-2.5 shadow-sm">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round">
-          <polyline points="20 6 9 17 4 12"/>
-        </svg>
+        <Icon icon="lucide:check" width="14" height="14" class="text-emerald-500" />
         <p class="text-sm text-emerald-800 font-medium">Pipeline complete — outputs added to Data.</p>
       </div>
     {/if}
@@ -181,9 +252,7 @@
              text-sm text-zinc-600 hover:border-brand/40 hover:text-brand transition-colors shadow-sm
              disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
+      <Icon icon="lucide:plus" width="13" height="13" />
       Add step
     </button>
     <span class="text-[11px] text-zinc-400">
@@ -202,9 +271,7 @@
 
   <div class="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-120 rounded-xl border border-border bg-white shadow-2xl overflow-hidden flex flex-col max-h-[65vh]">
     <div class="flex items-center gap-2 px-3 py-2.5 border-b border-border bg-surface">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2.5" stroke-linecap="round">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
+      <Icon icon="lucide:search" width="13" height="13" class="text-zinc-400 shrink-0" />
       <input
         type="text"
         bind:value={stepSearch}
@@ -214,9 +281,7 @@
       />
       {#if stepSearch}
         <button onclick={() => stepSearch = ''} class="text-zinc-400 hover:text-zinc-600">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
+          <Icon icon="lucide:x" width="12" height="12" />
         </button>
       {/if}
     </div>

@@ -136,7 +136,15 @@
     }
   });
 
+  function isSelectedProtected() {
+    return selectedFolder !== null && (
+      selectedFolder === 'Results' || selectedFolder.startsWith('Results/') ||
+      selectedFolder === 'Demo Files' || selectedFolder.startsWith('Demo Files/')
+    );
+  }
+
   function startNewFolder() {
+    if (isSelectedProtected()) return;
     newFolderPath = selectedFolder !== null ? selectedFolder + '/' : '';
     showNewFolderInput = true;
   }
@@ -376,7 +384,7 @@
               />
             </div>
           {:else}
-            {@const isDemo = f.path.startsWith('Demo Files')}
+            {@const isProtected = f.path === 'Results' || f.path.startsWith('Results/') || f.path.startsWith('Demo Files')}
             <div class="group relative flex items-center transition-colors {selectedFolder === f.path ? 'bg-brand/8' : 'hover:bg-surface-2'}">
               <button
                 onclick={() => {
@@ -403,9 +411,9 @@
                 </svg>
                 <span class="flex-1 text-left truncate">{f.name}</span>
               </button>
-              <!-- Count (recursive, hidden on hover for non-demo) -->
-              <span class="pr-3 text-[10px] text-zinc-400 {isDemo ? '' : 'group-hover:hidden'}">{countInFolder(f.path)}</span>
-              {#if !isDemo}
+              <!-- Count (recursive, hidden on hover for non-protected) -->
+              <span class="pr-3 text-[10px] text-zinc-400 {isProtected ? '' : 'group-hover:hidden'}">{countInFolder(f.path)}</span>
+              {#if !isProtected}
                 <div class="pr-1.5 hidden group-hover:flex items-center">
                   <button onclick={(e) => { e.stopPropagation(); startRename(f.path); }} title="Rename" class="p-1 text-zinc-400 hover:text-zinc-700 transition-colors rounded">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -451,7 +459,7 @@
       </div>
 
       <!-- New folder button -->
-      {#if !showNewFolderInput}
+      {#if !showNewFolderInput && !isSelectedProtected()}
         <button
           onclick={startNewFolder}
           class="flex items-center gap-1.5 px-3 py-2.5 text-[11px] text-zinc-400

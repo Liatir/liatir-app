@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import Icon from '@iconify/svelte';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import { apiConnections, sendApiRequest } from '$lib/stores/apiConnections.svelte';
-  import type { ApiRequest, ApiResponse, ApiKeyValue, HttpMethod, BodyType, AuthType } from '$lib/types/api-connection';
+  import type { ApiRequest, ApiResponse, ApiKeyValue, HttpMethod } from '$lib/types/api-connection';
 
   // ── State ─────────────────────────────────────────────────────────────────
   let activeRequestId = $state<string | null>(null);
@@ -12,7 +13,9 @@
   let sending = $state(false);
   let responseTab = $state<'body' | 'headers'>('body');
   let requestTab = $state<'params' | 'headers' | 'body' | 'auth'>('params');
-  let expandedCollections = $state<Set<string>>(new Set());
+
+  // Use string[] for explicit reactivity (reassignment, not mutation)
+  let expandedIds = $state<string[]>([]);
   let editingCollectionId = $state<string | null>(null);
   let editingCollectionName = $state('');
   let newCollectionName = $state('');
@@ -31,12 +34,21 @@
 
   onMount(() => { apiConnections.init(); });
 
+  // ── Expanded set helpers ──────────────────────────────────────────────────
+  function isExpanded(id: string) { return expandedIds.includes(id); }
+  function toggleExpanded(id: string) {
+    expandedIds = isExpanded(id) ? expandedIds.filter(x => x !== id) : [...expandedIds, id];
+  }
+  function ensureExpanded(id: string) {
+    if (!isExpanded(id)) expandedIds = [...expandedIds, id];
+  }
+
   // ── Draft management ──────────────────────────────────────────────────────
   function selectRequest(id: string) {
     const req = apiConnections.requestById(id);
     if (!req) return;
     activeRequestId = id;
-    draft = structuredClone(req);
+    draft = JSON.parse(JSON.stringify(req)) as ApiRequest;
     response = null;
     responseTab = 'body';
     requestTab = 'params';
@@ -64,7 +76,7 @@
   async function createCollection() {
     const name = newCollectionName.trim() || 'New Collection';
     const col = await apiConnections.addCollection(name);
-    expandedCollections.add(col.id);
+    ensureExpanded(col.id);
     newCollectionName = '';
     showNewCollection = false;
   }
@@ -78,8 +90,8 @@
   }
 
   async function createRequest(collectionId: string) {
+    ensureExpanded(collectionId); // expand immediately (before persist)
     const req = await apiConnections.addRequest(collectionId);
-    expandedCollections.add(collectionId);
     selectRequest(req.id);
   }
 
@@ -89,13 +101,8 @@
   }
 
   // ── Key-value helpers ─────────────────────────────────────────────────────
-  function addKv(arr: ApiKeyValue[]) {
-    arr.push({ key: '', value: '', enabled: true });
-  }
-
-  function removeKv(arr: ApiKeyValue[], i: number) {
-    arr.splice(i, 1);
-  }
+  function addKv(arr: ApiKeyValue[]) { arr.push({ key: '', value: '', enabled: true }); }
+  function removeKv(arr: ApiKeyValue[], i: number) { arr.splice(i, 1); }
 
   // ── Response helpers ──────────────────────────────────────────────────────
   function formatBody(body: string): string {
@@ -123,9 +130,7 @@
           class="h-5 w-5 rounded flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
           title="New collection"
         >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
+          <Icon icon="lucide:plus" width="11" height="11" />
         </button>
       </div>
 
@@ -146,23 +151,30 @@
       <div class="flex-1 overflow-y-auto">
         {#each apiConnections.collections as col (col.id)}
           {@const reqs = apiConnections.requestsInCollection(col.id)}
-          {@const expanded = expandedCollections.has(col.id)}
+          {@const expanded = isExpanded(col.id)}
+          {@const editing = editingCollectionId === col.id}
           <div>
             <!-- Collection header -->
-            <div class="group flex items-center gap-1 px-2 py-1.5 hover:bg-zinc-100/70 cursor-pointer"
-              role="button" tabindex="0"
-              onclick={() => expanded ? expandedCollections.delete(col.id) : expandedCollections.add(col.id)}
-              onkeydown={(e) => e.key === 'Enter' && (expanded ? expandedCollections.delete(col.id) : expandedCollections.add(col.id))}
+            <div
+              class="group flex items-center gap-1 px-2 py-1.5 hover:bg-zinc-100/70 cursor-pointer"
+              role="button"
+              tabindex="0"
+              onclick={() => !editing && toggleExpanded(col.id)}
+              onkeydown={(e) => !editing && e.key === 'Enter' && toggleExpanded(col.id)}
             >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2.5" stroke-linecap="round"
-                class="shrink-0 transition-transform {expanded ? 'rotate-90' : ''}">
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>
-              {#if editingCollectionId === col.id}
+              <Icon
+                icon="lucide:chevron-right"
+                width="10"
+                height="10"
+                class="shrink-0 transition-transform text-zinc-400 {expanded ? 'rotate-90' : ''}"
+              />
+
+              {#if editing}
+                <!-- Edit mode: input takes full width, no action buttons -->
                 <input
                   type="text"
                   bind:value={editingCollectionName}
-                  class="flex-1 text-xs bg-white border border-brand/40 rounded px-1 outline-none"
+                  class="flex-1 min-w-0 text-xs bg-white border border-brand/40 rounded px-1 outline-none"
                   onclick={(e) => e.stopPropagation()}
                   onkeydown={(e) => {
                     e.stopPropagation();
@@ -171,40 +183,39 @@
                   }}
                   autofocus
                 />
+                <button
+                  onclick={(e) => { e.stopPropagation(); apiConnections.renameCollection(col.id, editingCollectionName); editingCollectionId = null; }}
+                  class="shrink-0 text-[10px] text-brand hover:text-brand/80 px-1"
+                >
+                  OK
+                </button>
               {:else}
-                <span class="flex-1 text-xs font-medium text-zinc-700 truncate">{col.name}</span>
+                <span class="flex-1 min-w-0 text-xs font-medium text-zinc-700 truncate">{col.name}</span>
+                <!-- Action buttons — only shown when NOT editing -->
+                <div class="hidden group-hover:flex items-center gap-0.5 shrink-0">
+                  <button
+                    onclick={(e) => { e.stopPropagation(); createRequest(col.id); }}
+                    class="h-5 w-5 rounded flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-200"
+                    title="Add request"
+                  >
+                    <Icon icon="lucide:plus" width="9" height="9" />
+                  </button>
+                  <button
+                    onclick={(e) => { e.stopPropagation(); editingCollectionId = col.id; editingCollectionName = col.name; }}
+                    class="h-5 w-5 rounded flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-200"
+                    title="Rename"
+                  >
+                    <Icon icon="lucide:pencil" width="9" height="9" />
+                  </button>
+                  <button
+                    onclick={(e) => { e.stopPropagation(); deleteCollection(col.id); }}
+                    class="h-5 w-5 rounded flex items-center justify-center text-zinc-400 hover:text-red-500 hover:bg-zinc-200"
+                    title="Delete collection"
+                  >
+                    <Icon icon="lucide:trash-2" width="9" height="9" />
+                  </button>
+                </div>
               {/if}
-              <div class="hidden group-hover:flex items-center gap-0.5 shrink-0">
-                <button
-                  onclick={(e) => { e.stopPropagation(); createRequest(col.id); }}
-                  class="h-4.5 w-4.5 rounded flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-200"
-                  title="Add request"
-                >
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                  </svg>
-                </button>
-                <button
-                  onclick={(e) => { e.stopPropagation(); editingCollectionId = col.id; editingCollectionName = col.name; }}
-                  class="h-4.5 w-4.5 rounded flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-200"
-                  title="Rename"
-                >
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                </button>
-                <button
-                  onclick={(e) => { e.stopPropagation(); deleteCollection(col.id); }}
-                  class="h-4.5 w-4.5 rounded flex items-center justify-center text-zinc-400 hover:text-red-500 hover:bg-zinc-200"
-                  title="Delete collection"
-                >
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
-                    <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-                  </svg>
-                </button>
-              </div>
             </div>
 
             <!-- Requests under collection -->
@@ -225,9 +236,7 @@
                     class="hidden group-hover:flex h-4 w-4 items-center justify-center text-zinc-400 hover:text-red-500 shrink-0"
                     title="Delete request"
                   >
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
+                    <Icon icon="lucide:x" width="9" height="9" />
                   </button>
                 </div>
               {/each}
@@ -256,7 +265,7 @@
     {#if draft}
       <div class="flex-1 flex flex-col overflow-hidden">
 
-        <!-- Request name + send bar -->
+        <!-- Request name + save bar -->
         <div class="flex items-center gap-2 px-4 py-2.5 border-b border-border shrink-0">
           <input
             type="text"
@@ -265,7 +274,9 @@
             class="flex-1 text-sm font-medium text-zinc-800 bg-transparent outline-none border-b border-transparent focus:border-brand/40 pb-0.5 transition-colors"
             placeholder="Request name"
           />
-          <button onclick={saveRequest} class="text-xs text-zinc-400 hover:text-zinc-700 transition-colors px-1.5 py-0.5 rounded hover:bg-zinc-100">Save</button>
+          <button onclick={saveRequest} class="text-xs text-zinc-400 hover:text-zinc-700 transition-colors px-1.5 py-0.5 rounded hover:bg-zinc-100">
+            Save
+          </button>
         </div>
 
         <!-- URL bar -->
@@ -285,11 +296,12 @@
             class="flex-1 text-sm border border-border rounded px-3 py-1.5 bg-white outline-none focus:border-brand/60 font-mono"
           />
           <Button variant="primary" size="sm" loading={sending} onclick={send} disabled={!draft.url}>
+            <Icon icon="lucide:send" width="12" height="12" />
             Send
           </Button>
         </div>
 
-        <!-- Tabs: params / headers / body / auth -->
+        <!-- Request tabs -->
         <div class="flex border-b border-border px-4 shrink-0 bg-surface">
           {#each ['params', 'headers', 'body', 'auth'] as tab}
             <button
@@ -326,46 +338,27 @@
                 <tbody>
                   {#each arr as kv, i (i)}
                     <tr class="group">
-                      <td class="py-1">
-                        <input type="checkbox" bind:checked={kv.enabled} class="accent-brand" />
+                      <td class="py-1"><input type="checkbox" bind:checked={kv.enabled} class="accent-brand" /></td>
+                      <td class="py-1 pl-2">
+                        <input type="text" bind:value={kv.key} placeholder="key"
+                          class="w-full border border-transparent rounded px-1.5 py-0.5 bg-transparent focus:bg-white focus:border-border outline-none font-mono" />
                       </td>
                       <td class="py-1 pl-2">
-                        <input
-                          type="text"
-                          bind:value={kv.key}
-                          placeholder="key"
-                          class="w-full border border-transparent rounded px-1.5 py-0.5 bg-transparent focus:bg-white focus:border-border outline-none font-mono"
-                        />
-                      </td>
-                      <td class="py-1 pl-2">
-                        <input
-                          type="text"
-                          bind:value={kv.value}
-                          placeholder="value"
-                          class="w-full border border-transparent rounded px-1.5 py-0.5 bg-transparent focus:bg-white focus:border-border outline-none font-mono"
-                        />
+                        <input type="text" bind:value={kv.value} placeholder="value"
+                          class="w-full border border-transparent rounded px-1.5 py-0.5 bg-transparent focus:bg-white focus:border-border outline-none font-mono" />
                       </td>
                       <td class="py-1">
-                        <button
-                          onclick={() => removeKv(arr, i)}
-                          class="hidden group-hover:flex h-5 w-5 items-center justify-center text-zinc-400 hover:text-red-500 rounded"
-                        >
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                          </svg>
+                        <button onclick={() => removeKv(arr, i)}
+                          class="hidden group-hover:flex h-5 w-5 items-center justify-center text-zinc-400 hover:text-red-500 rounded">
+                          <Icon icon="lucide:x" width="10" height="10" />
                         </button>
                       </td>
                     </tr>
                   {/each}
                 </tbody>
               </table>
-              <button
-                onclick={() => addKv(arr)}
-                class="mt-2 flex items-center gap-1 text-xs text-zinc-400 hover:text-brand transition-colors"
-              >
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
+              <button onclick={() => addKv(arr)} class="mt-2 flex items-center gap-1 text-xs text-zinc-400 hover:text-brand transition-colors">
+                <Icon icon="lucide:plus" width="10" height="10" />
                 Add row
               </button>
             </div>
@@ -405,50 +398,33 @@
               {#if draft.auth.type === 'bearer'}
                 <div class="flex flex-col gap-1">
                   <label class="text-xs text-zinc-500">Token</label>
-                  <input
-                    type="text"
-                    bind:value={draft.auth.token}
-                    placeholder="Bearer token"
-                    class="border border-border rounded px-3 py-1.5 text-sm font-mono outline-none focus:border-brand/60"
-                  />
+                  <input type="text" bind:value={draft.auth.token} placeholder="Bearer token"
+                    class="border border-border rounded px-3 py-1.5 text-sm font-mono outline-none focus:border-brand/60" />
                 </div>
               {:else if draft.auth.type === 'basic'}
                 <div class="flex gap-3">
                   <div class="flex flex-col gap-1 flex-1">
                     <label class="text-xs text-zinc-500">Username</label>
-                    <input
-                      type="text"
-                      bind:value={draft.auth.username}
-                      class="border border-border rounded px-3 py-1.5 text-sm outline-none focus:border-brand/60"
-                    />
+                    <input type="text" bind:value={draft.auth.username}
+                      class="border border-border rounded px-3 py-1.5 text-sm outline-none focus:border-brand/60" />
                   </div>
                   <div class="flex flex-col gap-1 flex-1">
                     <label class="text-xs text-zinc-500">Password</label>
-                    <input
-                      type="password"
-                      bind:value={draft.auth.password}
-                      class="border border-border rounded px-3 py-1.5 text-sm outline-none focus:border-brand/60"
-                    />
+                    <input type="password" bind:value={draft.auth.password}
+                      class="border border-border rounded px-3 py-1.5 text-sm outline-none focus:border-brand/60" />
                   </div>
                 </div>
               {:else if draft.auth.type === 'api-key'}
                 <div class="flex gap-3">
                   <div class="flex flex-col gap-1 flex-1">
                     <label class="text-xs text-zinc-500">Header name</label>
-                    <input
-                      type="text"
-                      bind:value={draft.auth.apiKeyHeader}
-                      placeholder="X-API-Key"
-                      class="border border-border rounded px-3 py-1.5 text-sm font-mono outline-none focus:border-brand/60"
-                    />
+                    <input type="text" bind:value={draft.auth.apiKeyHeader} placeholder="X-API-Key"
+                      class="border border-border rounded px-3 py-1.5 text-sm font-mono outline-none focus:border-brand/60" />
                   </div>
                   <div class="flex flex-col gap-1 flex-1">
                     <label class="text-xs text-zinc-500">Value</label>
-                    <input
-                      type="text"
-                      bind:value={draft.auth.apiKeyValue}
-                      class="border border-border rounded px-3 py-1.5 text-sm font-mono outline-none focus:border-brand/60"
-                    />
+                    <input type="text" bind:value={draft.auth.apiKeyValue}
+                      class="border border-border rounded px-3 py-1.5 text-sm font-mono outline-none focus:border-brand/60" />
                   </div>
                 </div>
               {/if}
@@ -459,7 +435,6 @@
         <!-- ── Response panel ──────────────────────────────────────────── -->
         {#if response || sending}
           <div class="border-t border-border flex flex-col" style="height: 40%;">
-
             <div class="flex items-center gap-3 px-4 py-2 border-b border-border bg-surface shrink-0">
               {#if response}
                 <span class="text-xs font-bold px-2 py-0.5 rounded {statusClass(response.status)}">
@@ -489,7 +464,7 @@
                 {#if responseTab === 'body'}
                   <pre class="text-xs font-mono p-4 text-zinc-800 whitespace-pre-wrap break-all leading-relaxed">{formatBody(response.body)}</pre>
                 {:else}
-                  <table class="w-full text-xs p-4">
+                  <table class="w-full text-xs">
                     <tbody>
                       {#each Object.entries(response.headers) as [k, v]}
                         <tr class="border-b border-border/50">
@@ -502,19 +477,14 @@
                 {/if}
               {/if}
             </div>
-
           </div>
         {/if}
 
       </div>
     {:else}
-      <!-- Empty state -->
       <div class="flex-1 flex flex-col items-center justify-center gap-4 text-center p-8">
         <div class="h-14 w-14 rounded-2xl bg-white border border-border shadow-sm flex items-center justify-center">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round">
-            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-          </svg>
+          <Icon icon="lucide:link" width="22" height="22" class="text-zinc-300" />
         </div>
         <div>
           <p class="text-sm font-medium text-zinc-600">No request selected</p>

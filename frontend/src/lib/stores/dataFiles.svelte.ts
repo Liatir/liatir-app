@@ -32,6 +32,12 @@ function detectExt(path: string): string {
 }
 
 const DEMO_FOLDER_PREFIX = 'Demo Files';
+const RESULTS_FOLDER = 'Results';
+
+function isProtectedFolder(path: string): boolean {
+  return path === RESULTS_FOLDER || path.startsWith(RESULTS_FOLDER + '/') ||
+         path === DEMO_FOLDER_PREFIX || path.startsWith(DEMO_FOLDER_PREFIX + '/');
+}
 
 function parseSaved(raw: string): StoredData {
   const parsed = JSON.parse(raw);
@@ -176,7 +182,7 @@ function createDataFilesStore() {
     },
 
     async removeFolder(path: string) {
-      if (path === DEMO_FOLDER_PREFIX || path.startsWith(DEMO_FOLDER_PREFIX + '/')) return;
+      if (isProtectedFolder(path)) return;
       folders = folders.filter(f => f !== path && !f.startsWith(path + '/'));
       files = files.map(f =>
         (f.folder === path || f.folder.startsWith(path + '/')) ? { ...f, folder: '' } : f
@@ -185,7 +191,7 @@ function createDataFilesStore() {
     },
 
     async renameFolder(oldPath: string, newPath: string) {
-      if (oldPath === DEMO_FOLDER_PREFIX || oldPath.startsWith(DEMO_FOLDER_PREFIX + '/')) return;
+      if (isProtectedFolder(oldPath)) return;
       const trimmed = newPath.trim().replace(/^\/+|\/+$/g, '');
       if (!trimmed || trimmed === oldPath) return;
       folders = folders.map(f => {

@@ -2,6 +2,7 @@
   import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
   import type { NodeProps } from '@xyflow/svelte';
   import type { Node } from '@xyflow/svelte';
+  import Icon from '@iconify/svelte';
   import type { ToolNodeData } from '$lib/types/pipeline';
   import { PIPELINE_REGISTRY } from '$lib/tools/pipeline-registry';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
@@ -29,6 +30,8 @@
     def ? Object.entries(def.outputSchema).filter(([, s]) => s.type === 'file') : []
   );
 
+  const inputsDisabled = $derived(pipelineStore.running || status === 'done');
+
   function truncatePath(path: string, max = 40): string {
     if (path.length <= max) return path;
     const parts = path.split(/[\\/]/);
@@ -37,8 +40,6 @@
 
   function buildGroups(accept: string[] | undefined): PickerGroup[] {
     const groups: PickerGroup[] = [];
-
-    // Previous pipeline steps (schema-based, before running)
     const allNodes = getNodes() as Node<ToolNodeData>[];
     const prevStepItems = allNodes
       .filter(n => n.id !== id && n.type === 'tool' && n.data?.stepId)
@@ -47,11 +48,7 @@
         if (!reg) return [];
         return Object.entries(reg.definition.outputSchema)
           .filter(([, s]) => s.type === 'file')
-          .filter(([, s]) => {
-            if (!accept?.length) return true;
-            if (!s.ext?.length) return true;
-            return accept.some(a => s.ext!.includes(a));
-          })
+          .filter(([, s]) => !accept?.length || !s.ext?.length || accept.some(a => s.ext!.includes(a)))
           .map(([outKey, s]) => ({
             value: `@pipe:${n.id}:${outKey}`,
             label: s.label ?? outKey,
@@ -59,12 +56,8 @@
             badge: s.ext?.[0] ?? 'file',
           }));
       });
+    if (prevStepItems.length > 0) groups.push({ title: 'Pipeline steps', items: prevStepItems });
 
-    if (prevStepItems.length > 0) {
-      groups.push({ title: 'Pipeline steps', items: prevStepItems });
-    }
-
-    // Data files
     const files = accept?.length ? dataFiles.byExt(...accept) : dataFiles.files;
     if (files.length > 0) {
       groups.push({
@@ -78,7 +71,6 @@
         })),
       });
     }
-
     return groups;
   }
 
@@ -90,8 +82,7 @@
       if (!node) return raw;
       const reg = PIPELINE_REGISTRY[node.data.stepId];
       const outDef = reg?.definition.outputSchema[outKey];
-      const stepLabel = reg?.definition.label ?? nodeId;
-      return `${stepLabel} → ${outDef?.label ?? outKey}`;
+      return `${reg?.definition.label ?? nodeId} → ${outDef?.label ?? outKey}`;
     }
     return raw;
   }
@@ -106,24 +97,17 @@
     if (status === 'running') return 'bg-brand animate-pulse';
     return 'bg-zinc-300';
   }
-
-  const showBody = $derived(status === 'pending' || status === 'error' || status === 'running');
 </script>
 
-<!-- Input handles — one per file input -->
+<!-- Input handles -->
 {#each fileInputKeys as [key], idx}
-  <Handle
-    type="target"
-    position={Position.Left}
-    id={key}
-    style="top: {60 + idx * 28}px"
-  />
+  <Handle type="target" position={Position.Left} id={key} style="top: {60 + idx * 28}px" />
 {/each}
 
-<!-- Node card — no nodrag here, only on interactive children -->
-<div class="min-w-[280px] max-w-[320px] rounded-xl border border-border bg-white shadow-md overflow-hidden">
+<!-- Node card — no nodrag on outer div -->
+<div class="min-w-70 max-w-80 rounded-xl border border-border bg-white shadow-md overflow-hidden">
 
-  <!-- Header — draggable area -->
+  <!-- Header — draggable -->
   <div class="flex items-center gap-2 px-3 py-2.5 border-b border-border bg-surface cursor-grab active:cursor-grabbing">
     <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
     <span class="flex-1 text-sm font-semibold text-zinc-800 truncate">{def?.label ?? data.stepId}</span>
@@ -132,11 +116,10 @@
     </span>
   </div>
 
-  <!-- Body: inputs — nodrag to allow interaction without starting drag -->
-  {#if showBody && def}
+  <!-- Body: inputs (always shown to maintain consistent node height) -->
+  {#if def}
     <div class="px-3 py-2.5 space-y-2.5 nodrag nopan">
 
-      <!-- File inputs -->
       {#each fileInputKeys as [key, schema]}
         <div>
           <OptionPicker
@@ -147,13 +130,12 @@
             searchPlaceholder="Search files and steps…"
             emptyText="No matching files."
             emptyHref="/data"
-            disabled={pipelineStore.running}
+            disabled={inputsDisabled}
             onchange={(v) => setInput(key, v)}
           />
         </div>
       {/each}
 
-      <!-- String / number inputs -->
       {#each otherInputKeys as [key, schema]}
         {#if schema.type === 'string' || schema.type === 'number'}
           <div>
@@ -164,15 +146,16 @@
               type={schema.type === 'number' ? 'number' : 'text'}
               value={data.inputs[key] ?? (schema.default as string ?? '')}
               oninput={(e) => setInput(key, (e.target as HTMLInputElement).value)}
-              disabled={pipelineStore.running}
+              disabled={inputsDisabled}
               class="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-mono
-                     placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-brand/40"
+                     placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-brand/40
+                     disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
         {/if}
       {/each}
 
-      <!-- Error message -->
+      <!-- Error -->
       {#if status === 'error' && state?.error}
         <div class="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs text-red-700 font-mono">
           {state.error}
@@ -191,13 +174,11 @@
 
   <!-- Done: output files -->
   {#if status === 'done' && state?.outputFiles && state.outputFiles.length > 0}
-    <div class="px-3 pb-2.5 flex flex-wrap gap-1 nodrag nopan">
+    <div class="px-3 pb-2.5 flex flex-wrap gap-1 nodrag nopan border-t border-border/60 pt-2.5">
       {#each state.outputFiles as f}
         <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200
                      px-2 py-0.5 text-[10px] text-emerald-700">
-          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>
-          </svg>
+          <Icon icon="lucide:file" width="8" height="8" />
           {f.label}
         </span>
       {/each}
@@ -206,12 +187,7 @@
 
 </div>
 
-<!-- Output handles — one per file output -->
+<!-- Output handles -->
 {#each fileOutputKeys as [key], idx}
-  <Handle
-    type="source"
-    position={Position.Right}
-    id={key}
-    style="top: {60 + idx * 28}px"
-  />
+  <Handle type="source" position={Position.Right} id={key} style="top: {60 + idx * 28}px" />
 {/each}
