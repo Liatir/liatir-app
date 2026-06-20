@@ -19,25 +19,26 @@
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
   import { PIPELINE_REGISTRY } from '$lib/tools/pipeline-registry';
   import type { ToolNodeData } from '$lib/types/pipeline';
+  import { confirm } from '$lib/stores/confirm.svelte';
 
-  // ── Canvas state ─────────────────────────────────────────────────────────────
   let nodes = $state<Node<ToolNodeData>[]>([]);
   let edges = $state<Edge[]>([]);
   let showAddMenu = $state(false);
+  let stepSearch = $state('');
 
   const nodeTypes = { tool: ToolNode, start: StartNode };
 
-  // Group tools by category for the add-step menu
   const stepsByCategory = $derived.by(() => {
+    const q = stepSearch.toLowerCase();
     const map: Record<string, { id: string; label: string; description: string }[]> = {};
     for (const [id, entry] of Object.entries(PIPELINE_REGISTRY)) {
+      if (q && !entry.definition.label.toLowerCase().includes(q) && !entry.definition.description.toLowerCase().includes(q)) continue;
       const cat = entry.definition.category;
       (map[cat] ??= []).push({ id, label: entry.definition.label, description: entry.definition.description });
     }
     return map;
   });
 
-  // ── Derived ──────────────────────────────────────────────────────────────────
   const toolNodes = $derived(nodes.filter(n => n.type === 'tool'));
 
   const canRun = $derived(
@@ -61,7 +62,6 @@
 
   onMount(() => { dataFiles.init(); });
 
-  // ── Actions ──────────────────────────────────────────────────────────────────
   function addToolNode(stepId: string) {
     const entry = PIPELINE_REGISTRY[stepId];
     if (!entry) return;
@@ -75,14 +75,15 @@
     }];
   }
 
-  function clear() {
+  async function clear() {
+    const ok = await confirm({ title: 'Clear pipeline', message: 'Remove all steps and connections?', confirmLabel: 'Clear' });
+    if (!ok) return;
     nodes = [];
     edges = [];
     pipelineStore.resetStates([]);
   }
 
   function onConnect(connection: Connection) {
-    // Remove any existing edge to the same target handle (single connection per input)
     edges = [
       ...edges.filter(e => !(e.target === connection.target && e.targetHandle === connection.targetHandle)),
       {
@@ -120,7 +121,6 @@
     {/snippet}
   </PageHeader>
 
-  <!-- Flow canvas -->
   <div class="flex-1 relative">
     <SvelteFlow
       bind:nodes
@@ -146,7 +146,6 @@
       />
     </SvelteFlow>
 
-    <!-- Empty state -->
     {#if nodes.length === 0}
       <div class="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none select-none">
         <div class="h-14 w-14 rounded-2xl bg-white border border-border shadow-sm flex items-center justify-center">
@@ -162,7 +161,6 @@
       </div>
     {/if}
 
-    <!-- Success banner -->
     {#if allDone}
       <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none
                   flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50
@@ -175,7 +173,6 @@
     {/if}
   </div>
 
-  <!-- Bottom toolbar -->
   <div class="border-t border-border bg-surface px-4 py-2 flex items-center gap-3">
     <button
       onclick={() => showAddMenu = !showAddMenu}
@@ -196,24 +193,54 @@
   </div>
 </div>
 
-<!-- Add step menu (fixed popup) -->
 {#if showAddMenu}
-  <div class="fixed inset-0 z-40" role="presentation" onclick={() => showAddMenu = false}></div>
-  <div class="fixed z-50 bottom-14 left-4 w-68 rounded-xl border border-border bg-white shadow-xl overflow-hidden">
-    {#each Object.entries(stepsByCategory) as [category, tools]}
-      <p class="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider bg-surface sticky top-0">
-        {category}
-      </p>
-      {#each tools as tool}
-        <button
-          type="button"
-          onclick={() => { addToolNode(tool.id); showAddMenu = false; }}
-          class="w-full text-left flex flex-col px-3 py-2 hover:bg-zinc-50 transition-colors"
-        >
-          <span class="text-sm font-medium text-zinc-800">{tool.label}</span>
-          <span class="text-[11px] text-zinc-400 truncate">{tool.description}</span>
+  <div
+    class="fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px]"
+    role="presentation"
+    onclick={() => { showAddMenu = false; stepSearch = ''; }}
+  ></div>
+
+  <div class="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-120 rounded-xl border border-border bg-white shadow-2xl overflow-hidden flex flex-col max-h-[65vh]">
+    <div class="flex items-center gap-2 px-3 py-2.5 border-b border-border bg-surface">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2.5" stroke-linecap="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input
+        type="text"
+        bind:value={stepSearch}
+        placeholder="Search steps…"
+        autofocus
+        class="flex-1 text-sm bg-transparent outline-none text-zinc-800 placeholder:text-zinc-400"
+      />
+      {#if stepSearch}
+        <button onclick={() => stepSearch = ''} class="text-zinc-400 hover:text-zinc-600">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
         </button>
-      {/each}
-    {/each}
+      {/if}
+    </div>
+
+    <div class="overflow-y-auto">
+      {#if Object.keys(stepsByCategory).length === 0}
+        <p class="px-4 py-6 text-center text-sm text-zinc-400">No steps match "{stepSearch}"</p>
+      {:else}
+        {#each Object.entries(stepsByCategory) as [category, tools]}
+          <p class="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider bg-surface sticky top-0 z-10">
+            {category}
+          </p>
+          {#each tools as tool}
+            <button
+              type="button"
+              onclick={() => { addToolNode(tool.id); showAddMenu = false; stepSearch = ''; }}
+              class="w-full text-left flex flex-col px-4 py-2.5 hover:bg-zinc-50 transition-colors"
+            >
+              <span class="text-sm font-medium text-zinc-800">{tool.label}</span>
+              <span class="text-xs text-zinc-400 mt-0.5">{tool.description}</span>
+            </button>
+          {/each}
+        {/each}
+      {/if}
+    </div>
   </div>
 {/if}

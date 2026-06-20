@@ -12,7 +12,7 @@
 
   let { id, data }: NodeProps<Node<ToolNodeData>> = $props();
 
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, getNodes } = useSvelteFlow();
 
   const entry = $derived(PIPELINE_REGISTRY[data.stepId]);
   const def = $derived(entry?.definition);
@@ -36,16 +36,64 @@
   }
 
   function buildGroups(accept: string[] | undefined): PickerGroup[] {
+    const groups: PickerGroup[] = [];
+
+    // Previous pipeline steps (schema-based, before running)
+    const allNodes = getNodes() as Node<ToolNodeData>[];
+    const prevStepItems = allNodes
+      .filter(n => n.id !== id && n.type === 'tool' && n.data?.stepId)
+      .flatMap(n => {
+        const reg = PIPELINE_REGISTRY[n.data.stepId];
+        if (!reg) return [];
+        return Object.entries(reg.definition.outputSchema)
+          .filter(([, s]) => s.type === 'file')
+          .filter(([, s]) => {
+            if (!accept?.length) return true;
+            if (!s.ext?.length) return true;
+            return accept.some(a => s.ext!.includes(a));
+          })
+          .map(([outKey, s]) => ({
+            value: `@pipe:${n.id}:${outKey}`,
+            label: s.label ?? outKey,
+            sublabel: reg.definition.label,
+            badge: s.ext?.[0] ?? 'file',
+          }));
+      });
+
+    if (prevStepItems.length > 0) {
+      groups.push({ title: 'Pipeline steps', items: prevStepItems });
+    }
+
+    // Data files
     const files = accept?.length ? dataFiles.byExt(...accept) : dataFiles.files;
-    return [{
-      items: files.map(f => ({
-        value: f.path,
-        label: f.name,
-        sublabel: truncatePath(f.path),
-        badge: f.ext || '?',
-        meta: f.size != null ? fmtBytes(f.size) : undefined,
-      })),
-    }];
+    if (files.length > 0) {
+      groups.push({
+        title: 'Data files',
+        items: files.map(f => ({
+          value: f.path,
+          label: f.name,
+          sublabel: truncatePath(f.path),
+          badge: f.ext || '?',
+          meta: f.size != null ? fmtBytes(f.size) : undefined,
+        })),
+      });
+    }
+
+    return groups;
+  }
+
+  function displayValue(key: string): string {
+    const raw = data.inputs[key] ?? '';
+    if (raw.startsWith('@pipe:')) {
+      const [, nodeId, outKey] = raw.split(':');
+      const node = (getNodes() as Node<ToolNodeData>[]).find(n => n.id === nodeId);
+      if (!node) return raw;
+      const reg = PIPELINE_REGISTRY[node.data.stepId];
+      const outDef = reg?.definition.outputSchema[outKey];
+      const stepLabel = reg?.definition.label ?? nodeId;
+      return `${stepLabel} → ${outDef?.label ?? outKey}`;
+    }
+    return raw;
   }
 
   function setInput(key: string, value: string) {
@@ -63,7 +111,7 @@
 </script>
 
 <!-- Input handles — one per file input -->
-{#each fileInputKeys as [key, schema], idx}
+{#each fileInputKeys as [key], idx}
   <Handle
     type="target"
     position={Position.Left}
@@ -72,11 +120,11 @@
   />
 {/each}
 
-<!-- Node card -->
-<div class="min-w-[280px] max-w-[320px] rounded-xl border border-border bg-white shadow-md overflow-hidden nodrag">
+<!-- Node card — no nodrag here, only on interactive children -->
+<div class="min-w-[280px] max-w-[320px] rounded-xl border border-border bg-white shadow-md overflow-hidden">
 
-  <!-- Header -->
-  <div class="flex items-center gap-2 px-3 py-2.5 border-b border-border bg-surface">
+  <!-- Header — draggable area -->
+  <div class="flex items-center gap-2 px-3 py-2.5 border-b border-border bg-surface cursor-grab active:cursor-grabbing">
     <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
     <span class="flex-1 text-sm font-semibold text-zinc-800 truncate">{def?.label ?? data.stepId}</span>
     <span class="text-[10px] text-zinc-400 font-medium">
@@ -84,19 +132,19 @@
     </span>
   </div>
 
-  <!-- Body: inputs -->
+  <!-- Body: inputs — nodrag to allow interaction without starting drag -->
   {#if showBody && def}
-    <div class="px-3 py-2.5 space-y-2.5">
+    <div class="px-3 py-2.5 space-y-2.5 nodrag nopan">
 
-      <!-- File inputs — show via OptionPicker OR connected handle indicator -->
+      <!-- File inputs -->
       {#each fileInputKeys as [key, schema]}
-        {@const connected = false}
         <div>
           <OptionPicker
             value={data.inputs[key] ?? ''}
             groups={buildGroups(schema.accept)}
             label="{schema.label ?? key}{schema.required ? '' : ' (optional)'}"
-            placeholder="Select or connect…"
+            placeholder="Select file or step output…"
+            searchPlaceholder="Search files and steps…"
             emptyText="No matching files."
             emptyHref="/data"
             disabled={pipelineStore.running}
@@ -105,7 +153,7 @@
         </div>
       {/each}
 
-      <!-- String inputs -->
+      <!-- String / number inputs -->
       {#each otherInputKeys as [key, schema]}
         {#if schema.type === 'string' || schema.type === 'number'}
           <div>
@@ -136,14 +184,14 @@
 
   <!-- Running: log preview -->
   {#if status === 'running' && state?.logs && state.logs.length > 0}
-    <div class="px-3 pb-2 text-[10px] font-mono text-zinc-400 truncate">
+    <div class="px-3 pb-2 text-[10px] font-mono text-zinc-400 truncate nodrag nopan">
       {state.logs[state.logs.length - 1]}
     </div>
   {/if}
 
   <!-- Done: output files -->
   {#if status === 'done' && state?.outputFiles && state.outputFiles.length > 0}
-    <div class="px-3 pb-2.5 flex flex-wrap gap-1">
+    <div class="px-3 pb-2.5 flex flex-wrap gap-1 nodrag nopan">
       {#each state.outputFiles as f}
         <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200
                      px-2 py-0.5 text-[10px] text-emerald-700">
@@ -159,7 +207,7 @@
 </div>
 
 <!-- Output handles — one per file output -->
-{#each fileOutputKeys as [key, schema], idx}
+{#each fileOutputKeys as [key], idx}
   <Handle
     type="source"
     position={Position.Right}

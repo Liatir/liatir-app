@@ -4,9 +4,9 @@ export interface ApiKeyValue {
   enabled: boolean;
 }
 
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD';
-export type BodyType = 'none' | 'json' | 'form-data' | 'raw';
-export type AuthType = 'none' | 'bearer' | 'basic';
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS';
+export type BodyType = 'none' | 'json' | 'raw' | 'form-data';
+export type AuthType = 'none' | 'bearer' | 'basic' | 'api-key';
 
 export interface ApiBody {
   type: BodyType;
@@ -18,10 +18,13 @@ export interface ApiAuth {
   token?: string;
   username?: string;
   password?: string;
+  apiKeyHeader?: string;
+  apiKeyValue?: string;
 }
 
-export interface ApiConnection {
+export interface ApiRequest {
   id: string;
+  collectionId: string;
   name: string;
   method: HttpMethod;
   url: string;
@@ -29,9 +32,14 @@ export interface ApiConnection {
   headers: ApiKeyValue[];
   body: ApiBody;
   auth: ApiAuth;
-  responseSchema?: Record<string, { type: string; path: string; label?: string }>;
   createdAt: number;
   updatedAt: number;
+}
+
+export interface ApiCollection {
+  id: string;
+  name: string;
+  createdAt: number;
 }
 
 export interface ApiResponse {
@@ -42,12 +50,15 @@ export interface ApiResponse {
   durationMs: number;
 }
 
-export const DEFAULT_CONNECTION: Omit<ApiConnection, 'id' | 'createdAt' | 'updatedAt'> = {
+// Legacy alias kept for any code that imports ApiConnection
+export type ApiConnection = ApiRequest;
+
+export const DEFAULT_REQUEST: Omit<ApiRequest, 'id' | 'collectionId' | 'createdAt' | 'updatedAt'> = {
   name: 'New Request',
   method: 'GET',
   url: '',
   params: [],
-  headers: [{ key: 'Content-Type', value: 'application/json', enabled: true }],
+  headers: [{ key: 'Accept', value: 'application/json', enabled: true }],
   body: { type: 'none', content: '' },
   auth: { type: 'none' },
 };

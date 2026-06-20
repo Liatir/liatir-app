@@ -74,8 +74,20 @@ function createPipelineStore() {
 
       patchState(nodeId, { status: 'running' });
 
-      // Resolve inputs: static values + edges from completed source nodes
-      const resolved: Record<string, string> = { ...node.data.inputs };
+      // Resolve inputs: static values + @pipe: tokens + edges from completed source nodes
+      const resolved: Record<string, string> = {};
+      for (const [k, v] of Object.entries(node.data.inputs)) {
+        if (v.startsWith('@pipe:')) {
+          const [, srcNodeId, outKey] = v.split(':');
+          const srcDef = PIPELINE_REGISTRY[nodes.find(n => n.id === srcNodeId)?.data.stepId ?? '']?.definition;
+          const targetLabel = srcDef?.outputSchema[outKey]?.label ?? outKey;
+          const srcState = nodeStates.get(srcNodeId);
+          const outFile = srcState?.outputFiles.find(f => f.label === targetLabel);
+          if (outFile) resolved[k] = outFile.path;
+        } else {
+          resolved[k] = v;
+        }
+      }
       for (const edge of edges.filter(e => e.target === nodeId)) {
         if (!edge.targetHandle || !edge.sourceHandle) continue;
         const srcNode = nodes.find(n => n.id === edge.source);
