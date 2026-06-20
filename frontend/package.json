@@ -26,8 +26,10 @@
 	},
 	"dependencies": {
 		"@codemirror/lang-javascript": "^6.2.5",
+		"@scalar/api-client": "^3.10.4",
 		"@sveltejs/adapter-static": "^3.0.10",
 		"@tailwindcss/vite": "^4.1.17",
+		"@xyflow/svelte": "^1.6.0",
 		"codemirror": "^6.0.2",
 		"plotly.js-dist-min": "^2.35.2",
 		"tailwindcss": "^4.1.17"

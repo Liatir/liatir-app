@@ -3,13 +3,13 @@ export interface InputFieldSchema {
   label?: string;
   required?: boolean;
   default?: unknown;
-  accept?: string[];  // for file type: accepted extensions
+  accept?: string[];
 }
 
 export interface OutputFieldSchema {
   type: 'file' | 'stats' | 'string' | 'number';
   label?: string;
-  ext?: string[];       // for file type: extensions produced
+  ext?: string[];
   description?: string;
 }
 
@@ -25,12 +25,29 @@ export interface PipelineStepDefinition {
 
 export interface RunOutputFile {
   label: string;
-  path: string;   // absolute path on disk
+  path: string;
   ext: string;
   size?: number;
 }
 
 export type StepStatus = 'pending' | 'running' | 'done' | 'error';
+
+// ── Visual DAG node types ────────────────────────────────────────────────────
+
+export interface ToolNodeData extends Record<string, unknown> {
+  stepId: string;
+  inputs: Record<string, string>;
+  label?: string;
+}
+
+export interface NodeRunState {
+  status: StepStatus;
+  logs: string[];
+  outputFiles: RunOutputFile[];
+  error: string | null;
+}
+
+// ── Legacy list-mode types (kept for analysisRuns compatibility) ─────────────
 
 export interface PipelineStepState {
   id: string;

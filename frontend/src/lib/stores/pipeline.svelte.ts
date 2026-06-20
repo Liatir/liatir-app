@@ -1,58 +1,52 @@
+import type { Node, Edge } from '@xyflow/svelte';
 import { liatir } from '$lib/api';
 import { dataFiles } from './dataFiles.svelte';
 import { PIPELINE_REGISTRY } from '$lib/tools/pipeline-registry';
-import type { PipelineStepState } from '$lib/types/pipeline';
+import type { ToolNodeData, NodeRunState } from '$lib/types/pipeline';
 
 function createPipelineStore() {
-  let steps = $state<PipelineStepState[]>([]);
+  let nodeStates = $state(new Map<string, NodeRunState>());
   let running = $state(false);
 
-  function addStep(stepId: string) {
-    const entry = PIPELINE_REGISTRY[stepId];
-    if (!entry) return;
-    steps.push({
-      id: crypto.randomUUID(),
-      stepId,
-      inputs: {},
-      status: 'pending',
-      logs: [],
-      outputFiles: [],
-      error: null,
-    });
-  }
+  // Kahn's algorithm — returns node IDs in topological order
+  function topoSort(nodes: Node<ToolNodeData>[], edges: Edge[]): string[] {
+    const inDegree = new Map<string, number>();
+    const adj = new Map<string, string[]>();
 
-  function removeStep(index: number) {
-    steps.splice(index, 1);
-  }
-
-  function setInput(stepIndex: number, key: string, value: string) {
-    steps[stepIndex].inputs = { ...steps[stepIndex].inputs, [key]: value };
-  }
-
-  function moveStep(index: number, direction: 'up' | 'down' | 'first' | 'last') {
-    if (running) return;
-    const n = steps.length;
-    if (index < 0 || index >= n) return;
-    const arr = [...steps];
-    const [item] = arr.splice(index, 1);
-    if (direction === 'up')         arr.splice(Math.max(0, index - 1), 0, item);
-    else if (direction === 'down')  arr.splice(Math.min(n - 1, index + 1), 0, item);
-    else if (direction === 'first') arr.unshift(item);
-    else                            arr.push(item);
-    steps = arr;
-  }
-
-  function resetStatuses() {
-    for (const s of steps) {
-      s.status = 'pending';
-      s.logs = [];
-      s.outputFiles = [];
-      s.error = null;
+    for (const n of nodes) {
+      inDegree.set(n.id, 0);
+      adj.set(n.id, []);
     }
+    for (const e of edges) {
+      adj.get(e.source)?.push(e.target);
+      inDegree.set(e.target, (inDegree.get(e.target) ?? 0) + 1);
+    }
+
+    const queue = [...inDegree.entries()].filter(([, d]) => d === 0).map(([id]) => id);
+    const sorted: string[] = [];
+    while (queue.length) {
+      const id = queue.shift()!;
+      sorted.push(id);
+      for (const next of adj.get(id) ?? []) {
+        const d = (inDegree.get(next) ?? 1) - 1;
+        inDegree.set(next, d);
+        if (d === 0) queue.push(next);
+      }
+    }
+    return sorted;
   }
 
-  async function run() {
-    if (running || steps.length === 0) return;
+  function initNodeState(id: string): NodeRunState {
+    return { status: 'pending', logs: [], outputFiles: [], error: null };
+  }
+
+  function patchState(id: string, patch: Partial<NodeRunState>) {
+    const prev = nodeStates.get(id) ?? initNodeState(id);
+    nodeStates = new Map([...nodeStates, [id, { ...prev, ...patch }]]);
+  }
+
+  async function run(nodes: Node<ToolNodeData>[], edges: Edge[]) {
+    if (running || nodes.length === 0) return;
     const api = liatir();
     if (!api) return;
 
@@ -60,32 +54,54 @@ function createPipelineStore() {
     const outputDir = `${data}/tool-outputs`;
 
     running = true;
-    resetStatuses();
 
-    for (let i = 0; i < steps.length; i++) {
-      const step = steps[i];
-      const entry = PIPELINE_REGISTRY[step.stepId];
-      if (!entry) { step.status = 'error'; step.error = `Unknown step: ${step.stepId}`; break; }
+    // Reset all states
+    const fresh = new Map<string, NodeRunState>();
+    for (const n of nodes) fresh.set(n.id, initNodeState(n.id));
+    nodeStates = fresh;
 
-      step.status = 'running';
+    const order = topoSort(nodes, edges);
+
+    for (const nodeId of order) {
+      const node = nodes.find(n => n.id === nodeId);
+      if (!node || node.type !== 'tool') continue;
+
+      const entry = PIPELINE_REGISTRY[node.data.stepId];
+      if (!entry) {
+        patchState(nodeId, { status: 'error', error: `Unknown tool: ${node.data.stepId}` });
+        break;
+      }
+
+      patchState(nodeId, { status: 'running' });
+
+      // Resolve inputs: static values + edges from completed source nodes
+      const resolved: Record<string, string> = { ...node.data.inputs };
+      for (const edge of edges.filter(e => e.target === nodeId)) {
+        if (!edge.targetHandle || !edge.sourceHandle) continue;
+        const srcNode = nodes.find(n => n.id === edge.source);
+        if (!srcNode) continue;
+        const srcDef = PIPELINE_REGISTRY[srcNode.data.stepId]?.definition;
+        const targetLabel = srcDef?.outputSchema[edge.sourceHandle]?.label ?? edge.sourceHandle;
+        const srcState = nodeStates.get(edge.source);
+        const outFile = srcState?.outputFiles.find(f => f.label === targetLabel);
+        if (outFile) resolved[edge.targetHandle] = outFile.path;
+      }
+
+      const logs: string[] = [];
 
       try {
-        const result = await entry.run(
-          step.inputs,
-          outputDir,
-          (line) => { step.logs.push(line); }
-        );
+        const result = await entry.run(resolved, outputDir, (line) => {
+          logs.push(line);
+          patchState(nodeId, { logs: [...logs] });
+        });
 
-        step.outputFiles = result.outputFiles;
-        step.status = 'done';
+        patchState(nodeId, { status: 'done', logs, outputFiles: result.outputFiles, error: null });
 
         for (const f of result.outputFiles) {
           await dataFiles.add(f.path).catch(() => {});
         }
       } catch (e) {
-        step.status = 'error';
-        step.error = String(e);
-        step.logs.push(`✗ ${String(e)}`);
+        patchState(nodeId, { status: 'error', logs, outputFiles: [], error: String(e) });
         break;
       }
     }
@@ -93,20 +109,17 @@ function createPipelineStore() {
     running = false;
   }
 
-  function clear() {
-    steps = [];
-    running = false;
+  function resetStates(nodeIds: string[]) {
+    const fresh = new Map<string, NodeRunState>();
+    for (const id of nodeIds) fresh.set(id, initNodeState(id));
+    nodeStates = fresh;
   }
 
   return {
-    get steps() { return steps; },
+    get nodeStates() { return nodeStates; },
     get running() { return running; },
-    addStep,
-    removeStep,
-    setInput,
-    moveStep,
     run,
-    clear,
+    resetStates,
   };
 }
 

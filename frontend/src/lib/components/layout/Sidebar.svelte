@@ -15,6 +15,7 @@
     { href: '/tools', label: 'Tools', match: '/tools' },
     { href: '/modules', label: 'Modules', match: '/modules' },
     { href: '/pipeline', label: 'Pipeline', match: '/pipeline' },
+    { href: '/apis', label: 'API Connector', match: '/apis' },
     { href: '/results', label: 'Results', match: '/results' },
     { href: '/jobs', label: 'Jobs', match: '/jobs' },
     { href: '/deps', label: 'Dependencies', match: '/deps' },
@@ -154,6 +155,11 @@
             <circle cx="5" cy="12" r="2"/><circle cx="12" cy="7" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="17" r="2"/>
             <line x1="12" y1="9" x2="12" y2="10"/><line x1="12" y1="14" x2="12" y2="15"/>
             <line x1="7" y1="12" x2="10" y2="12"/><line x1="14" y1="12" x2="17" y2="12"/>
+          </svg>
+        {:else if item.match === '/apis'}
+          <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
           </svg>
         {:else if item.match === '/results'}
           <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
