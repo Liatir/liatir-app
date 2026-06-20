@@ -30,7 +30,7 @@ export interface RunOutputFile {
   size?: number;
 }
 
-export type StepStatus = 'pending' | 'running' | 'done' | 'error';
+export type StepStatus = 'pending' | 'running' | 'done' | 'error' | 'skipped';
 
 // ── Visual DAG node types ────────────────────────────────────────────────────
 
@@ -40,11 +40,43 @@ export interface ToolNodeData extends Record<string, unknown> {
   label?: string;
 }
 
+export interface VariableNodeData extends Record<string, unknown> {
+  varType: 'string' | 'number';
+  value: string;
+  label?: string;
+}
+
+export interface MathNodeData extends Record<string, unknown> {
+  operation: '+' | '-' | '*' | '/' | 'min' | 'max' | 'round' | 'floor' | 'ceil' | 'abs';
+  literalA?: string;
+  literalB?: string;
+  label?: string;
+}
+
+export interface ConditionNodeData extends Record<string, unknown> {
+  condition: string;
+  label?: string;
+}
+
+export interface SubPipelineNodeData extends Record<string, unknown> {
+  pipelineId: string | null;
+  pipelineName: string;
+  label?: string;
+}
+
+export interface ApiRequestNodeData extends Record<string, unknown> {
+  requestId: string | null;
+  requestName: string;
+  label?: string;
+}
+
 export interface NodeRunState {
   status: StepStatus;
   logs: string[];
   outputFiles: RunOutputFile[];
   error: string | null;
+  outputValues?: Record<string, string>;
+  activeBranch?: 'true' | 'false';
 }
 
 // ── Legacy list-mode types (kept for analysisRuns compatibility) ─────────────

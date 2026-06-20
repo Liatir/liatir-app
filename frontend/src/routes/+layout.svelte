@@ -3,6 +3,7 @@
   import '$lib/icons';
   import Sidebar from '$lib/components/layout/Sidebar.svelte';
   import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
+  import Toast from '$lib/components/ui/Toast.svelte';
   import InstallBanner from '$lib/components/ui/InstallBanner.svelte';
   import StartupCleanupBanner from '$lib/components/ui/StartupCleanupBanner.svelte';
   import { jobsStore } from '$lib/stores/jobs.svelte';
@@ -25,5 +26,6 @@
 </div>
 
 <ConfirmDialog />
+<Toast />
 <InstallBanner />
 <StartupCleanupBanner />

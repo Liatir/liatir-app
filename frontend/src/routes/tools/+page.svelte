@@ -137,11 +137,8 @@
 
 <div class="flex flex-col h-full">
   <PageHeader title="Tools" description="Built-in modules and custom WASM plugins">
-    {#snippet actions()}
-      <Button variant="secondary" size="sm" onclick={() => goto('/settings')}>
-        Manage plugins
-      </Button>
-    {/snippet}
+    <!-- {#snippet actions()}
+    {/snippet} -->
   </PageHeader>
 
   <div class="flex-1 overflow-y-auto p-6 space-y-8">

@@ -6,7 +6,7 @@ export interface ApiKeyValue {
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS';
 export type BodyType = 'none' | 'json' | 'raw' | 'form-data';
-export type AuthType = 'none' | 'bearer' | 'basic' | 'api-key';
+export type AuthType = 'none' | 'bearer' | 'basic' | 'api-key' | 'inherit';
 
 export interface ApiBody {
   type: BodyType;
@@ -22,6 +22,12 @@ export interface ApiAuth {
   apiKeyValue?: string;
 }
 
+export interface ApiOutputSchemaField {
+  label: string;
+  path: string;
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array';
+}
+
 export interface ApiRequest {
   id: string;
   collectionId: string;
@@ -34,11 +40,34 @@ export interface ApiRequest {
   auth: ApiAuth;
   createdAt: number;
   updatedAt: number;
+  outputSchema?: Record<string, ApiOutputSchemaField>;
+  lastResponse?: {
+    status: number;
+    statusText: string;
+    body: string;
+    headers: Record<string, string>;
+    durationMs: number;
+    timestamp: number;
+  };
 }
 
 export interface ApiCollection {
   id: string;
   name: string;
+  auth: ApiAuth;
+  createdAt: number;
+}
+
+export interface ApiEnvironmentVar {
+  key: string;
+  value: string;
+  enabled: boolean;
+}
+
+export interface ApiEnvironment {
+  id: string;
+  name: string;
+  variables: ApiEnvironmentVar[];
   createdAt: number;
 }
 
@@ -50,7 +79,7 @@ export interface ApiResponse {
   durationMs: number;
 }
 
-// Legacy alias kept for any code that imports ApiConnection
+// Legacy alias
 export type ApiConnection = ApiRequest;
 
 export const DEFAULT_REQUEST: Omit<ApiRequest, 'id' | 'collectionId' | 'createdAt' | 'updatedAt'> = {
