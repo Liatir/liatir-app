@@ -12,9 +12,14 @@ function workspaceEnvPath(id: string) {
 }
 
 let resetFn: (() => void) | null = null;
+let demoInitFn: (() => Promise<void>) | null = null;
 
 export function setResetFn(fn: () => void) {
   resetFn = fn;
+}
+
+export function setDemoInitFn(fn: () => Promise<void>) {
+  demoInitFn = fn;
 }
 
 function createWorkspaceStore() {
@@ -113,6 +118,11 @@ function createWorkspaceStore() {
         activeId = null;
       }
 
+      // Seed demo files if starting in Test Mode (runs before any page's onMount can race)
+      if (activeId === TEST_WORKSPACE_ID) {
+        await demoInitFn?.();
+      }
+
       initialized = true;
     },
 
@@ -137,6 +147,9 @@ function createWorkspaceStore() {
         w.id === id ? { ...w, lastOpenedAt: Date.now() } : w
       );
       await persistWorkspaces();
+      if (id === TEST_WORKSPACE_ID) {
+        await demoInitFn?.();
+      }
     },
 
     async rename(id: string, name: string) {
@@ -171,6 +184,7 @@ function createWorkspaceStore() {
         try { await api.desktop.fs.data.remove(`workspaces/${TEST_WORKSPACE_ID}`, true); } catch { /* ok */ }
       }
       envVars = [];
+      await demoInitFn?.();
     },
 
     async updateEnvVars(vars: WorkspaceEnvVar[]) {

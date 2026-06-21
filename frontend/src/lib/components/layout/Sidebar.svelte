@@ -50,8 +50,8 @@
 	];
 
 	const advancedNav: NavItem[] = [
-		{ href: '/scripts', label: 'Scripts', icon: 'lucide:code-2', match: '/scripts', global: true },
-		{ href: '/code', label: 'Code Editor', icon: 'lucide:square-terminal', match: '/code', global: true }
+		{ href: '/scripts', label: 'Saved', icon: 'lucide:folder-code', match: '/scripts', global: true },
+		{ href: '/code', label: 'Editor', icon: 'lucide:square-terminal', match: '/code', global: true }
 	];
 
 	let collapsed = $state(false);
@@ -88,17 +88,13 @@
 	);
 
 	function togglePlayground() {
-		if (collapsed) {
-			if (advancedBtnEl) {
-				const rect = advancedBtnEl.getBoundingClientRect();
-				const PANEL_HEIGHT = 120;
-				floatingFromBottom = rect.top + PANEL_HEIGHT > window.innerHeight;
-				floatingY = floatingFromBottom ? window.innerHeight - rect.bottom : rect.top;
-			}
-			advancedOpen = !advancedOpen;
-		} else {
-			advancedOpen = !advancedOpen;
+		if (advancedBtnEl) {
+			const rect = advancedBtnEl.getBoundingClientRect();
+			const PANEL_HEIGHT = 120;
+			floatingFromBottom = rect.top + PANEL_HEIGHT > window.innerHeight;
+			floatingY = floatingFromBottom ? window.innerHeight - rect.bottom : rect.top;
 		}
+		advancedOpen = !advancedOpen;
 	}
 
 	function closeFloating() {
@@ -110,10 +106,11 @@
 			await workspaceStore.switchTo("");
 			jobsStore.refresh();
 			pipelineStore.init();
-			goto(navItem.href);
+			if(navItem?.href) goto(navItem.href);
 		} else {
-			goto(navItem.href);
+			if(navItem?.href) goto(navItem.href);
 		}
+		advancedOpen=false;
 	};
 
 	async function toggleTestMode() {
@@ -141,9 +138,23 @@
 	       {collapsed ? 'w-14' : 'w-55'}"
 >
 	<!-- Logo -->
-	<div class="flex h-14 items-center border-b border-border px-3 gap-2.5 overflow-hidden">
-		<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand shrink-0 p-1.5">
-			<img src="/logo/png/logo-white.png" alt="Liatir" class="h-full w-full object-contain" />
+	<div class="flex h-14 items-center border-b border-border px-3 gap-2.5 overflow-hidden" id="logo-section">
+		<div class="flex w-8 h-8 overflow-hidden items-center gap-0 space-x-0 justify-center rounded-lg bg-brand shrink-0">
+			<div class="h-8 w-8 -mr-8 flex p-1.5 justify-center items-center shrink-0">
+				<img src="/logo/png/logo-white.png" alt="Liatir" class="h-full w-full opacity-100 object-contain" />
+			</div>
+			<button
+				onclick={()=> collapsed = !collapsed}
+				title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+				class="shrink-0 w-8 h-8 p-1.5 bg-brand font-semibold z-50 rounded-md  text-white 
+				{collapsed ? 'mx-auto' : 'ml-auto'}"
+				id="collapse-sidebar-button"
+			>
+				<Icon
+					icon="lucide:panel-left-close"
+					class="w-full h-full transition-transform duration-200 {collapsed?'scale-x-[-1]':''}"
+				/>
+			</button>
 		</div>
 
 		{#if !collapsed}
@@ -160,20 +171,6 @@
 				{/if}
 			</div>
 		{/if}
-
-		<button
-			onclick={() => (collapsed = !collapsed)}
-			title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-			class="shrink-0 rounded-md p-1 text-zinc-400 hover:bg-surface-2 hover:text-zinc-600 transition-colors
-			       {collapsed ? 'mx-auto' : 'ml-auto'}"
-		>
-			<Icon
-				icon="lucide:chevron-left"
-				width="14"
-				height="14"
-				class="transition-transform duration-200 {collapsed ? 'rotate-180' : ''}"
-			/>
-		</button>
 	</div>
 
 	<!-- Navigation -->
@@ -224,21 +221,21 @@
 			<button
 				bind:this={advancedBtnEl}
 				onclick={togglePlayground}
-				title={collapsed ? 'Playground' : undefined}
+				title={collapsed ? 'Scripts' : undefined}
 				class="w-full flex items-center text-left gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
 				       {collapsed ? 'justify-center' : ''}
 				       {advancedActive
 					? 'bg-brand/10 text-brand font-medium'
 					: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
 			>
-				<Icon icon="lucide:search-code" width="16" height="16" class="shrink-0" />
+				<Icon icon="lucide:code-2" width="16" height="16" class="shrink-0" />
 				{#if !collapsed}
-					<span class="flex-1 text-left">SDK Playground</span>
+					<span class="flex-1 text-left">Scripts</span>
 					<Icon
 						icon="lucide:chevron-right"
 						width="13"
 						height="13"
-						class="shrink-0 transition-transform duration-150 {advancedOpen ? 'rotate-90' : ''}"
+						class="shrink-0 transition-transform duration-150 {advancedOpen ? 'rotate-180' : ''}"
 					/>
 				{/if}
 			</button>
@@ -302,14 +299,14 @@
 	</div>
 </aside>
 
-<!-- Floating Playground panel (collapsed sidebar only) -->
+<!-- Floating Playground panel -->
 {#if advancedOpen}
 	<div
 		class="fixed z-50 rounded-xl border border-border bg-white shadow-xl py-1.5 min-w-44"
-		style="left: 60px; {floatingFromBottom ? `bottom: ${floatingY}px` : `top: ${floatingY}px`};"
+		style="left: {collapsed?'60':'225'}px; {floatingFromBottom ? `bottom: ${floatingY}px` : `top: ${floatingY}px`};"
 	>
 		<p class="px-3 py-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
-			Playground
+			Scripts
 		</p>
 		{#each advancedNav as item}
 			{@const active = isActive(item)}
@@ -326,3 +323,13 @@
 		{/each}
 	</div>
 {/if}
+
+
+<style>
+	#collapse-sidebar-button {
+		opacity: 0;
+	}
+	#logo-section:hover #collapse-sidebar-button {
+		opacity: 100;
+	}
+</style>
