@@ -141,7 +141,7 @@
 	<button
 		onclick={()=> collapsed = !collapsed}
 		title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-		class="shrink-0 w-5 h-8 p-0.5 top-[calc(50vh-10px)] font-semibold z-50 rounded-r-md absolute border-y border-r border-y-border border-r-border bg-zinc-50 text-border 
+		class="shrink-0 w-5 h-8 p-0.5 top-[calc(50vh-10px)] font-semibold z-50 rounded-r-md absolute border-y border-r border-y-border border-r-border bg-zinc-50 text-zinc-300 
 		{collapsed ? 'left-[56px]' : 'left-[220px]'}"
 		id="collapse-sidebar-button"
 	>
