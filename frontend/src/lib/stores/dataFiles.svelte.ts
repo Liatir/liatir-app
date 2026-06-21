@@ -1,5 +1,5 @@
 import { liatir } from '$lib/api';
-import { getDataPrefix } from './workspace.svelte';
+import { getDataPrefix, TEST_WORKSPACE_ID } from './workspace.svelte';
 
 export interface DataFile {
   id: string;
@@ -62,7 +62,7 @@ function createDataFilesStore() {
     const api = liatir();
     if (!api) return;
     const data: StoredData = { files, folders };
-    await api.desktop.fs.data.writeText(getFile(), JSON.stringify(data));
+    await api.desktop.fs.data.writeText(getFile(), JSON.stringify(data), { createDirs: true });
   }
 
   return {
@@ -71,37 +71,43 @@ function createDataFilesStore() {
     get loading() { return loading; },
 
     async init() {
-      if (initialized) return;
-      initialized = true;
-      const api = liatir();
-      if (!api) return;
-      loading = true;
-      try {
-        const exists = await api.desktop.fs.data.exists(getFile());
-        if (exists) {
-          const raw = await api.desktop.fs.data.readText(getFile());
-          const data = parseSaved(raw);
-          files = data.files;
-          folders = data.folders;
+      if (!initialized) {
+        initialized = true;
+        const api = liatir();
+        if (api) {
+          loading = true;
+          try {
+            const exists = await api.desktop.fs.data.exists(getFile());
+            if (exists) {
+              const raw = await api.desktop.fs.data.readText(getFile());
+              const data = parseSaved(raw);
+              files = data.files;
+              folders = data.folders;
 
-          // Back-fill missing sizes for files imported before size tracking
-          const missing = files.filter(f => f.size == null);
-          if (missing.length > 0) {
-            const updated = await Promise.all(
-              files.map(async (f) => {
-                if (f.size != null) return f;
-                try {
-                  const size = (await api.invoke('lia_file_size', { path: f.path })) as number;
-                  return { ...f, size };
-                } catch { return f; }
-              })
-            );
-            files = updated;
-            await persist();
-          }
+              // Back-fill missing sizes for files imported before size tracking
+              const missing = files.filter(f => f.size == null);
+              if (missing.length > 0) {
+                const updated = await Promise.all(
+                  files.map(async (f) => {
+                    if (f.size != null) return f;
+                    try {
+                      const size = (await api.invoke('lia_file_size', { path: f.path })) as number;
+                      return { ...f, size };
+                    } catch { return f; }
+                  })
+                );
+                files = updated;
+                await persist();
+              }
+            }
+          } catch { files = []; folders = []; }
+          finally { loading = false; }
         }
-      } catch { files = []; folders = []; }
-      finally { loading = false; }
+      }
+      // Always ensure demo files in Test Mode (idempotent dedup inside)
+      if (getDataPrefix().includes(TEST_WORKSPACE_ID)) {
+        await this.initDemoFiles();
+      }
     },
 
     reset() {
