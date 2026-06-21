@@ -134,27 +134,28 @@
 {/if}
 
 <aside
-	class="flex h-screen shrink-0 flex-col border-r border-border bg-surface transition-all duration-200
-	       {collapsed ? 'w-14' : 'w-55'}"
+	class="flex relative h-screen shrink-0 flex-col border-r border-border bg-surface transition-all duration-200
+	       {collapsed ? 'w-[56px]' : 'w-[220px]'}"
+	id="sidebar-container"
 >
+	<button
+		onclick={()=> collapsed = !collapsed}
+		title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+		class="shrink-0 w-5 h-8 p-0.5 top-[calc(50vh-10px)] font-semibold z-50 rounded-r-md absolute border-y border-r border-y-border border-r-border bg-zinc-50 text-border 
+		{collapsed ? 'left-[56px]' : 'left-[220px]'}"
+		id="collapse-sidebar-button"
+	>
+		<Icon
+			icon="lucide:chevron-left"
+			class="w-full h-full transition-transform duration-200 {collapsed?'scale-x-[-1]':''}"
+		/>
+	</button>
 	<!-- Logo -->
-	<div class="flex h-14 items-center border-b border-border px-3 gap-2.5 overflow-hidden" id="logo-section">
-		<div class="flex w-8 h-8 overflow-hidden items-center gap-0 space-x-0 justify-center rounded-lg bg-brand shrink-0">
-			<div class="h-8 w-8 -mr-8 flex p-1.5 justify-center items-center shrink-0">
+	<div class="flex h-14 items-center border-b border-border px-3 gap-2.5" id="logo-section">
+		<div class="flex w-8 h-8 overflow-hidden items-center gap-0 space-x-0 justify-center rounded-lg bg-brand shrink-0" id="sidebar-logo-container">
+			<div class="h-8 w-8 flex p-1.5 justify-center items-center shrink-0" id="sidebar-logo">
 				<img src="/logo/png/logo-white.png" alt="Liatir" class="h-full w-full opacity-100 object-contain" />
 			</div>
-			<button
-				onclick={()=> collapsed = !collapsed}
-				title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-				class="shrink-0 w-8 h-8 p-1.5 bg-brand font-semibold z-50 rounded-md  text-white 
-				{collapsed ? 'mx-auto' : 'ml-auto'}"
-				id="collapse-sidebar-button"
-			>
-				<Icon
-					icon="lucide:panel-left-close"
-					class="w-full h-full transition-transform duration-200 {collapsed?'scale-x-[-1]':''}"
-				/>
-			</button>
 		</div>
 
 		{#if !collapsed}
@@ -329,7 +330,10 @@
 	#collapse-sidebar-button {
 		opacity: 0;
 	}
-	#logo-section:hover #collapse-sidebar-button {
+	#sidebar-container:hover #collapse-sidebar-button {
+		opacity: 100;
+	}
+	#collapse-sidebar-button:hover {
 		opacity: 100;
 	}
 </style>
