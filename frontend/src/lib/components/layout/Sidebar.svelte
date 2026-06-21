@@ -7,8 +7,9 @@
 	import Divider from '../ui/Divider.svelte';
 
 	interface NavItem {
-		href: string;
-		label: string;
+		href?: string;
+		label?: string;
+		divider?: boolean;
 		icon?: string;
 		customIcon?: string;
 		match?: string;
@@ -18,20 +19,22 @@
 		{
 			href: '/',
 			label: 'Dashboard',
-			icon: 'material-symbols:home-outline-rounded',
+			icon: 'lucide:house',
 			match: undefined
 		},
 		{ href: '/data', label: 'Data', icon: 'lucide:database', match: '/data' },
-		{ href: '/tools', label: 'Tools', icon: 'octicon:apps-24', match: '/tools' },
 		{ href: '/pipelines', label: 'Pipelines', icon: 'lucide:workflow', match: '/pipelines' },
 		{ href: '/apis', label: 'API Connector', icon: 'lucide:plug', match: '/apis' },
-		{ href: '/results', label: 'Results', icon: 'mynaui:inbox-archive', match: '/results' },
+		{ href: '/results', label: 'Results', icon: 'lucide:gallery-vertical-end', match: '/results' },
 		{ href: '/jobs', label: 'Jobs', icon: 'lucide:activity', match: '/jobs' },
-	];
-	const bottomNav: NavItem[] = [
+		{ divider: true },
+		{ href: '/tools', label: 'Tools', icon: 'lucide:layout-grid', match: '/tools' },
 		{ href: '/modules', label: 'Modules', customIcon: '/icons/lia-file-icon.svg', match: '/modules' },
 		{ href: '/plugins', label: 'Plugins', customIcon: '/icons/web-assembly-file-icon.svg', match: '/plugins' },
-		{ href: '/deps', label: 'Dependencies', icon: 'octicon:package-dependencies-16', match: '/deps' },
+	];
+	const bottomNav: NavItem[] = [
+		{ divider: true },
+		{ href: '/deps', label: 'Dependencies', icon: 'lucide:replace', match: '/deps' },
 		{
 			href: '/settings',
 			label: 'Settings',
@@ -135,34 +138,38 @@
 	<nav class="flex-1 overflow-y-auto px-1.5 py-3 space-y-0.5">
 		{#each mainNav as item}
 			{@const active = isActive(item)}
-			<a
-				href={item.href}
-				title={collapsed ? item.label : undefined}
-				class="group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
-				       {collapsed ? 'justify-center' : ''}
-				       {active
-					? 'bg-brand/10 text-brand font-medium'
-					: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
-			>
-				{#if item?.customIcon}
-					<CustomIcon src={item.customIcon} class="w-[16px] h-[16px]"/>
-				{:else if item?.icon}
-					<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
-				{/if}
-
-				{#if !collapsed}
-					<span class="flex-1">{item.label}</span>
-					{#if item.match === '/jobs' && jobsStore.runningCount > 0}
-						<span
-							class="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-sky-500/15 px-1.5 text-[10px] font-semibold text-sky-600"
-						>
-							{jobsStore.runningCount}
-						</span>
+			{#if item?.divider}
+				<Divider my={5}/>
+			{:else}
+				<a
+					href={item.href}
+					title={collapsed ? item.label : undefined}
+					class="group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
+						{collapsed ? 'justify-center' : ''}
+						{active
+						? 'bg-brand/10 text-brand font-medium'
+						: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
+				>
+					{#if item?.customIcon}
+						<CustomIcon src={item.customIcon} class="w-[16px] h-[16px]"/>
+					{:else if item?.icon}
+						<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
 					{/if}
-				{:else if item.match === '/jobs' && jobsStore.runningCount > 0}
-					<span class="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-sky-500"></span>
-				{/if}
-			</a>
+
+					{#if !collapsed}
+						<span class="flex-1">{item.label}</span>
+						{#if item.match === '/jobs' && jobsStore.runningCount > 0}
+							<span
+								class="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-sky-500/15 px-1.5 text-[10px] font-semibold text-sky-600"
+							>
+								{jobsStore.runningCount}
+							</span>
+						{/if}
+					{:else if item.match === '/jobs' && jobsStore.runningCount > 0}
+						<span class="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-sky-500"></span>
+					{/if}
+				</a>
+			{/if}
 		{/each}
 	</nav>
 
@@ -212,40 +219,42 @@
 			{/if}
 		</div>
 
-		<Divider my={5}/>
-
 		<!-- Bottom nav -->
 		{#each bottomNav as item}
 			{@const active = isActive(item)}
-			<a
-				href={item.href}
-				title={collapsed ? item.label : undefined}
-				class="group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
-				       {collapsed ? 'justify-center' : ''}
-				       {active
-					? 'bg-brand/10 text-brand font-medium'
-					: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
-			>
+			{#if item?.divider}
+				<Divider my={5}/>
+			{:else}
+				<a
+					href={item.href}
+					title={collapsed ? item.label : undefined}
+					class="group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
+						{collapsed ? 'justify-center' : ''}
+						{active
+						? 'bg-brand/10 text-brand font-medium'
+						: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
+				>
 
-				{#if item?.customIcon}
-					<CustomIcon src={item.customIcon} class="w-[18px] h-[18px] -mr-[2px] opacity-65"/>
-				{:else if item?.icon}
-					<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
-				{/if}
-
-				{#if !collapsed}
-					<span class="flex-1">{item.label}</span>
-					{#if item.match === '/jobs' && jobsStore.runningCount > 0}
-						<span
-							class="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-sky-500/15 px-1.5 text-[10px] font-semibold text-sky-600"
-						>
-							{jobsStore.runningCount}
-						</span>
+					{#if item?.customIcon}
+						<CustomIcon src={item.customIcon} class="w-[18px] h-[18px] -mr-[2px] opacity-65"/>
+					{:else if item?.icon}
+						<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
 					{/if}
-				{:else if item.match === '/jobs' && jobsStore.runningCount > 0}
-					<span class="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-sky-500"></span>
-				{/if}
-			</a>
+
+					{#if !collapsed}
+						<span class="flex-1">{item.label}</span>
+						{#if item.match === '/jobs' && jobsStore.runningCount > 0}
+							<span
+								class="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-sky-500/15 px-1.5 text-[10px] font-semibold text-sky-600"
+							>
+								{jobsStore.runningCount}
+							</span>
+						{/if}
+					{:else if item.match === '/jobs' && jobsStore.runningCount > 0}
+						<span class="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-sky-500"></span>
+					{/if}
+				</a>
+			{/if}
 		{/each}
 	</div>
 </aside>
