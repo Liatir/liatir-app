@@ -171,7 +171,7 @@
     </div>
 
     <!-- Test Mode entry -->
-    <div class="mt-2">
+    <div class="mt-5">
       <!-- <p class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-2">Sandbox</p> -->
       <button
         onclick={() => openWorkspace(TEST_WORKSPACE_ID)}
