@@ -6,6 +6,8 @@
   import Button from '$lib/components/ui/Button.svelte';
   import { pipelineStore, type SavedPipeline } from '$lib/stores/pipeline.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
+  import { toast } from '$lib/stores/toast.svelte';
+  import { liatir } from '$lib/api';
 
   onMount(() => pipelineStore.init());
 
@@ -33,11 +35,47 @@
     if (!ok) return;
     await pipelineStore.deleteSavedPipeline(p.id);
   }
+
+  async function exportPipeline(p: SavedPipeline) {
+    const api = liatir();
+    if (!api) return;
+    const json = pipelineStore.exportToJson(p);
+    const safeName = p.name.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '-') || 'pipeline';
+    try {
+      const path = await api.desktop.files.save(`${safeName}.json`);
+      if (!path) return;
+      await api.invoke('lia_write_file_path', { path, content: json });
+      toast.success('Pipeline exported');
+    } catch {
+      toast.error('Export failed');
+    }
+  }
+
+  async function importPipeline() {
+    const api = liatir();
+    if (!api) return;
+    try {
+      const result = await api.desktop.files.open({ multi: false, allowed: ['json'] });
+      const path = result?.paths?.[0];
+      if (!path) return;
+      const json = await api.invoke('lia_read_file_text', { path }) as string;
+      const p = pipelineStore.importFromJson(json);
+      if (!p) { toast.error('Invalid pipeline file'); return; }
+      await pipelineStore.addImported(p);
+      toast.success(`Imported "${p.name}"`);
+    } catch {
+      toast.error('Import failed');
+    }
+  }
 </script>
 
 <div class="flex flex-col h-full overflow-hidden">
   <PageHeader title="Pipelines" description="Manage and run your saved analysis workflows">
     {#snippet actions()}
+      <Button variant="ghost" size="sm" onclick={importPipeline}>
+        <Icon icon="lucide:upload" width="13" height="13" />
+        Import
+      </Button>
       <Button variant="primary" size="sm" onclick={newPipeline}>
         <Icon icon="lucide:plus" width="13" height="13" />
         New pipeline
@@ -89,16 +127,18 @@
                 <Icon icon="lucide:trash-2" width="11" height="11" />
               </button>
               <button
+                onclick={() => exportPipeline(p)}
+                class="flex items-center w-fit justify-center gap-1.5 text-xs text-zinc-400 bg-zinc-50 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg px-2 py-1.5 transition-colors"
+                title="Export pipeline"
+              >
+                <Icon icon="lucide:download" width="11" height="11" />
+              </button>
+              <button
                 onclick={() => openPipeline(p)}
                 class="flex items-center w-fit justify-center gap-1.5 text-xs text-zinc-400 bg-zinc-50 hover:text-brand hover:bg-brand/10 rounded-lg px-2 py-1.5 transition-colors"
               >
                 <Icon icon="lucide:pencil" width="11" height="11" />
               </button>
-              <div
-                class="flex-1 flex w-full items-center justify-center gap-1.5 text-xs rounded-lg py-1.5 opacity-0"
-              >
-              -
-              </div>
             </div>
           </div>
         {/each}

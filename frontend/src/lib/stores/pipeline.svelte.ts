@@ -174,7 +174,7 @@ function createPipelineStore() {
   let currentEdges: Edge[] = [];
 
   let initialized = false;
-  let persistTimer: ReturnType<typeof setTimeout>;
+  let persistTimer: ReturnType<typeof setTimeout> | undefined;
 
   function patchState(id: string, patch: Partial<NodeRunState>) {
     const prev = nodeStates.get(id) ?? initNodeState();
@@ -373,6 +373,44 @@ function createPipelineStore() {
 
     async deleteSavedPipeline(id: string) {
       savedPipelines = savedPipelines.filter(p => p.id !== id);
+      await persist();
+    },
+
+    exportToJson(p: SavedPipeline): string {
+      const clean: SavedPipeline = {
+        ...p,
+        nodes: p.nodes.map(node => {
+          if (node.type !== 'tool') return node;
+          const entry = PIPELINE_REGISTRY[node.data?.stepId as string ?? ''];
+          if (!entry) return node;
+          const inputs = { ...(node.data?.inputs as Record<string, string> ?? {}) };
+          for (const [key, schema] of Object.entries(entry.definition.inputSchema)) {
+            if (schema.type === 'file') delete inputs[key];
+          }
+          return { ...node, data: { ...node.data, inputs } };
+        }),
+      };
+      return JSON.stringify(clean, null, 2);
+    },
+
+    importFromJson(json: string): SavedPipeline | null {
+      try {
+        const p = JSON.parse(json) as Partial<SavedPipeline>;
+        if (!Array.isArray(p.nodes) || !Array.isArray(p.edges)) return null;
+        return {
+          id: crypto.randomUUID(),
+          name: p.name ?? 'Imported Pipeline',
+          nodes: p.nodes,
+          edges: p.edges,
+          updatedAt: Date.now(),
+        };
+      } catch {
+        return null;
+      }
+    },
+
+    async addImported(p: SavedPipeline) {
+      savedPipelines = [p, ...savedPipelines];
       await persist();
     },
 

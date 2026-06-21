@@ -2,8 +2,10 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
+	import { afterNavigate, goto } from '$app/navigation';
 	import { jobsStore } from '$lib/stores/jobs.svelte';
-	import { workspaceStore } from '$lib/stores/workspace.svelte';
+	import { workspaceStore, TEST_WORKSPACE_ID } from '$lib/stores/workspace.svelte';
+	import { pipelineStore } from '$lib/stores/pipeline.svelte';
 	import CustomIcon from '../ui/CustomIcon.svelte';
 	import Divider from '../ui/Divider.svelte';
 
@@ -14,37 +16,42 @@
 		icon?: string;
 		customIcon?: string;
 		match?: string;
+		global: boolean;
+		workspacePage?: boolean;
 	}
 
 	const mainNav: NavItem[] = [
-		{ href: '/workspaces', label: 'Workspaces', icon: 'lucide:layout-grid', match: "/workspaces" },
-		{ divider: true },
-		{ href: '/', label: 'Dashboard', icon: 'lucide:house', match: undefined },
-		{ href: '/data', label: 'Data', icon: 'lucide:database', match: '/data' },
-		{ href: '/pipelines', label: 'Pipelines', icon: 'lucide:workflow', match: '/pipelines' },
-		{ href: '/apis', label: 'API Connector', icon: 'lucide:plug', match: '/apis' },
-		{ href: '/results', label: 'Results', icon: 'lucide:inbox', match: '/results' },
-		{ href: '/jobs', label: 'Jobs', icon: 'lucide:radio', match: '/jobs' },
-		{ href: '/tools', label: 'Tools', icon: 'lucide:dna', match: '/tools' },
-		{ href: '/modules', label: 'Modules', customIcon: '/icons/lia-file-icon.svg', match: '/modules' },
-		{ href: '/plugins', label: 'Plugins', customIcon: '/icons/web-assembly-file-icon.svg', match: '/plugins' },
-		{ divider: true }
+		{ href: '/workspaces', label: 'Workspaces', icon: 'lucide:layout-grid', match: "/workspaces", global: true, workspacePage: true },
+		{ divider: true, global: true },
+		{ href: '/', label: 'Dashboard', icon: 'lucide:house', match: undefined, global: false },
+		{ href: '/data', label: 'Data', icon: 'lucide:database', match: '/data', global: false },
+		{ href: '/pipelines', label: 'Pipelines', icon: 'lucide:workflow', match: '/pipelines', global: false },
+		{ href: '/apis', label: 'API Connector', icon: 'lucide:plug', match: '/apis', global: false },
+		{ href: '/results', label: 'Results', icon: 'lucide:inbox', match: '/results', global: false },
+		{ href: '/jobs', label: 'Jobs', icon: 'lucide:radio', match: '/jobs', global: false },
+		{ divider: true, global: false },
+		{ href: '/tools', label: 'Tools', icon: 'lucide:dna', match: '/tools', global: true },
+		{ href: '/modules', label: 'Modules', customIcon: '/icons/lia-file-icon.svg', match: '/modules', global: true },
+		{ href: '/plugins', label: 'Plugins', customIcon: '/icons/web-assembly-file-icon.svg', match: '/plugins', global: true }
 	];
 	const bottomNav: NavItem[] = [
-		{ divider: true },
-		{ href: '/deps', label: 'Dependencies', icon: 'lucide:replace', match: '/deps' },
-		{ href: '/workspace-settings', label: 'Workspace', icon: 'lucide:folder-cog', match: '/workspace-settings' },
+		{ divider: true, global: true },
+		{ href: '/workspace-settings', label: 'Workspace', icon: 'lucide:folder-cog', match: '/workspace-settings', global: false },
+		{ divider: true, global: false },
+		{ href: '/deps', label: 'Dependencies', icon: 'lucide:replace', match: '/deps', global: true },
 		{
 			href: '/settings',
 			label: 'Settings',
 			icon: 'lucide:settings',
-			match: '/settings'
-		}
+			match: '/settings',
+			global: true
+		},
+		{ divider: true, global: true },
 	];
 
 	const advancedNav: NavItem[] = [
-		{ href: '/scripts', label: 'Scripts', icon: 'lucide:code-2', match: '/scripts' },
-		{ href: '/code', label: 'Code Editor', icon: 'lucide:square-terminal', match: '/code' }
+		{ href: '/scripts', label: 'Scripts', icon: 'lucide:code-2', match: '/scripts', global: true },
+		{ href: '/code', label: 'Code Editor', icon: 'lucide:square-terminal', match: '/code', global: true }
 	];
 
 	let collapsed = $state(false);
@@ -69,13 +76,15 @@
 	});
 
 	function isActive(item: NavItem): boolean {
+		if (!item.href) return false;
 		const path = page.url.pathname;
 		if (item.href === '/') return path === '/';
+		if (item.href === '/workspaces') return path === '/workspaces';
 		return path.startsWith(item.match ?? item.href);
 	}
 
 	const advancedActive = $derived(
-		advancedNav.some((i) => page.url.pathname.startsWith(i.match ?? i.href))
+		advancedNav.some((i) => i.href && page.url.pathname.startsWith(i.match ?? i.href))
 	);
 
 	function togglePlayground() {
@@ -95,6 +104,31 @@
 	function closeFloating() {
 		advancedOpen = false;
 	}
+
+	async function navigateToPage(navItem: NavItem) {
+		if(navItem?.workspacePage) {
+			await workspaceStore.switchTo("");
+			jobsStore.refresh();
+			pipelineStore.init();
+			goto(navItem.href);
+		} else {
+			goto(navItem.href);
+		}
+	};
+
+	async function toggleTestMode() {
+		if (!workspaceStore.isTestMode) {
+			await workspaceStore.switchTo(TEST_WORKSPACE_ID);
+			jobsStore.refresh();
+			pipelineStore.init();
+			goto('/');
+		} else {
+			await workspaceStore.switchTo("");
+			jobsStore.refresh();
+			pipelineStore.init();
+			goto('/workspaces');
+		}
+	}
 </script>
 
 <!-- Click-outside backdrop for floating panel -->
@@ -108,15 +142,21 @@
 >
 	<!-- Logo -->
 	<div class="flex h-14 items-center border-b border-border px-3 gap-2.5 overflow-hidden">
-		<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-brand shrink-0 p-1.5">
+		<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand shrink-0 p-1.5">
 			<img src="/logo/png/logo-white.png" alt="Liatir" class="h-full w-full object-contain" />
 		</div>
 
 		{#if !collapsed}
 			<div class="flex-1 min-w-0">
-				<span class="text-md font-semibold tracking-tight text-zinc-900 whitespace-nowrap">Liatir</span>
 				{#if workspaceStore.active}
-					<p class="text-[10px] text-zinc-400 truncate leading-none mt-0.5">{workspaceStore.active.name}</p>
+					<p class="text-[10px] text-zinc-400 truncate leading-none mt-0.5">Workspace:</p>
+					{#if workspaceStore.isTestMode}
+						<span class="text-[10px] font-medium bg-emerald-100 text-emerald-600 rounded px-1.5 py-1 leading-5">sandbox</span>
+					{:else}
+						<p class="text-sm font-semibold text-zinc-800 truncate leading-none mt-0.5">{workspaceStore.active.name}</p>
+					{/if}
+				{:else}
+					<span class="text-md font-semibold tracking-tight text-zinc-900 whitespace-nowrap">Liatir</span>
 				{/if}
 			</div>
 		{/if}
@@ -140,37 +180,39 @@
 	<nav class="flex-1 overflow-y-auto px-1.5 py-3 space-y-0.5">
 		{#each mainNav as item}
 			{@const active = isActive(item)}
-			{#if item?.divider}
-				<Divider my={5}/>
-			{:else}
-				<a
-					href={item.href}
-					title={collapsed ? item.label : undefined}
-					class="group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
-						{collapsed ? 'justify-center' : ''}
-						{active
-						? 'bg-brand/10 text-brand font-medium'
-						: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
-				>
-					{#if item?.customIcon}
-						<CustomIcon src={item.customIcon} class="w-[16px] h-[16px] opacity-60"/>
-					{:else if item?.icon}
-						<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
-					{/if}
-
-					{#if !collapsed}
-						<span class="flex-1">{item.label}</span>
-						{#if item.match === '/jobs' && jobsStore.runningCount > 0}
-							<span
-								class="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-sky-500/15 px-1.5 text-[10px] font-semibold text-sky-600"
-							>
-								{jobsStore.runningCount}
-							</span>
+			{#if item?.global || (workspaceStore.activeId && page.route.id!="/workspaces")}
+				{#if item?.divider}
+					<Divider my={5}/>
+				{:else}
+					<button
+						onclick={()=>navigateToPage(item as NavItem)}
+						title={collapsed ? item.label : undefined}
+						class="group relative flex w-full text-left items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
+							{collapsed ? 'justify-center' : ''}
+							{active
+							? 'bg-brand/10 text-brand font-medium'
+							: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
+					>
+						{#if item?.customIcon}
+							<CustomIcon src={item.customIcon} class="w-[16px] h-[16px] opacity-60"/>
+						{:else if item?.icon}
+							<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
 						{/if}
-					{:else if item.match === '/jobs' && jobsStore.runningCount > 0}
-						<span class="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-sky-500"></span>
-					{/if}
-				</a>
+
+						{#if !collapsed}
+							<span class="flex-1">{item.label}</span>
+							{#if item.match === '/jobs' && jobsStore.runningCount > 0}
+								<span
+									class="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-sky-500/15 px-1.5 text-[10px] font-semibold text-sky-600"
+								>
+									{jobsStore.runningCount}
+								</span>
+							{/if}
+						{:else if item.match === '/jobs' && jobsStore.runningCount > 0}
+							<span class="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-sky-500"></span>
+						{/if}
+					</button>
+				{/if}
 			{/if}
 		{/each}
 	</nav>
@@ -183,15 +225,15 @@
 				bind:this={advancedBtnEl}
 				onclick={togglePlayground}
 				title={collapsed ? 'Playground' : undefined}
-				class="w-full flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
+				class="w-full flex items-center text-left gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
 				       {collapsed ? 'justify-center' : ''}
 				       {advancedActive
 					? 'bg-brand/10 text-brand font-medium'
 					: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
 			>
-				<Icon icon="lucide:flask-conical" width="16" height="16" class="shrink-0" />
+				<Icon icon="lucide:search-code" width="16" height="16" class="shrink-0" />
 				{#if !collapsed}
-					<span class="flex-1 text-left">Playground</span>
+					<span class="flex-1 text-left">SDK Playground</span>
 					<Icon
 						icon="lucide:chevron-right"
 						width="13"
@@ -224,40 +266,57 @@
 		<!-- Bottom nav -->
 		{#each bottomNav as item}
 			{@const active = isActive(item)}
-			{#if item?.divider}
-				<Divider my={5}/>
-			{:else}
-				<a
-					href={item.href}
-					title={collapsed ? item.label : undefined}
-					class="group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
-						{collapsed ? 'justify-center' : ''}
-						{active
-						? 'bg-brand/10 text-brand font-medium'
-						: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
-				>
+			{#if item?.global || (workspaceStore.activeId && page.route.id!="/workspaces")}
+				{#if item?.divider}
+					<Divider my={5}/>
+				{:else}
+					<button
+						onclick={()=>navigateToPage(item as NavItem)}
+						title={collapsed ? item.label : undefined}
+						class="group relative flex w-full text-left items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
+							{collapsed ? 'justify-center' : ''}
+							{active
+							? 'bg-brand/10 text-brand font-medium'
+							: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
+					>
 
-					{#if item?.customIcon}
-						<CustomIcon src={item.customIcon} class="w-[16px] h-[16px] opacity-60"/>
-					{:else if item?.icon}
-						<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
-					{/if}
-
-					{#if !collapsed}
-						<span class="flex-1">{item.label}</span>
-						{#if item.match === '/jobs' && jobsStore.runningCount > 0}
-							<span
-								class="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-sky-500/15 px-1.5 text-[10px] font-semibold text-sky-600"
-							>
-								{jobsStore.runningCount}
-							</span>
+						{#if item?.customIcon}
+							<CustomIcon src={item.customIcon} class="w-[16px] h-[16px] opacity-60"/>
+						{:else if item?.icon}
+							<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
 						{/if}
-					{:else if item.match === '/jobs' && jobsStore.runningCount > 0}
-						<span class="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-sky-500"></span>
-					{/if}
-				</a>
+
+						{#if !collapsed}
+							<span class="flex-1">{item.label}</span>
+							{#if item.match === '/jobs' && jobsStore.runningCount > 0}
+								<span
+									class="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-sky-500/15 px-1.5 text-[10px] font-semibold text-sky-600"
+								>
+									{jobsStore.runningCount}
+								</span>
+							{/if}
+						{:else if item.match === '/jobs' && jobsStore.runningCount > 0}
+							<span class="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-sky-500"></span>
+						{/if}
+					</button>
+				{/if}
 			{/if}
 		{/each}
+		
+		<!-- Toggle Test Mode -->
+		<button
+			onclick={toggleTestMode}
+			title={collapsed ? 'Toggle Test Mode' : undefined}
+			class="w-full flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
+					{collapsed ? 'justify-center' : ''} 
+					text-emerald-600 hover:bg-emerald-50"
+		>
+			<Icon icon="lucide:flask-conical" width="16" height="16" class="shrink-0" />
+			{#if !collapsed}
+				<span class="flex-1 text-left">Test Mode</span>
+				<span class="text-[10px] font-medium bg-emerald-100 text-emerald-600 rounded px-1 leading-5">{workspaceStore.isTestMode?'exit':''}</span>
+			{/if}
+		</button>
 	</div>
 </aside>
 
@@ -272,17 +331,16 @@
 		</p>
 		{#each advancedNav as item}
 			{@const active = isActive(item)}
-			<a
-				href={item.href}
-				onclick={closeFloating}
-				class="flex items-center gap-3 px-3 py-2 text-sm transition-colors
+			<button
+				onclick={()=>{closeFloating(); navigateToPage(item as NavItem)}}
+				class="flex items-center w-full text-left gap-3 px-3 py-2 text-sm transition-colors
 				       {active
 					? 'bg-brand/8 text-brand font-medium'
 					: 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900'}"
 			>
 				<Icon icon={item.icon} width="15" height="15" class="shrink-0" />
 				<span>{item.label}</span>
-			</a>
+			</button>
 		{/each}
 	</div>
 {/if}

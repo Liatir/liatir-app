@@ -5,12 +5,15 @@
   import Button from '$lib/components/ui/Button.svelte';
   import EnvVarTable from '$lib/components/ui/EnvVarTable.svelte';
   import TypeToConfirmDialog from '$lib/components/ui/TypeToConfirmDialog.svelte';
+  import Icon from '@iconify/svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
+  import { pipelineStore } from '$lib/stores/pipeline.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
 
   let nameInput = $state(workspaceStore.active?.name ?? '');
   let nameSaving = $state(false);
   let nameSaved = $state(false);
+  let resetting = $state(false);
 
   let typeConfirmOpen = $state(false);
 
@@ -45,72 +48,140 @@
     await workspaceStore.delete(id);
     goto('/workspaces');
   }
+
+  async function resetTestMode() {
+    const ok = await confirm({
+      title: 'Reset Test Mode',
+      message: 'This will clear all data in the Test Mode workspace (pipelines, scripts, API connections, data files, runs). Demo files will be re-seeded. This cannot be undone.',
+      confirmLabel: 'Reset',
+    });
+    if (!ok) return;
+    resetting = true;
+    try {
+      await workspaceStore.resetTestMode();
+      await pipelineStore.init();
+      goto('/');
+    } finally {
+      resetting = false;
+    }
+  }
 </script>
 
 <div class="flex flex-col h-full">
-  <PageHeader title="Workspace" description={workspaceStore.active?.name ?? ''} />
+  <PageHeader
+    title={workspaceStore.isTestMode ? 'Test Mode' : 'Workspace'}
+    description={workspaceStore.isTestMode ? 'Sandbox workspace with demo files' : (workspaceStore.active?.name ?? '')}
+  />
 
   <div class="flex-1 overflow-y-auto p-6 space-y-6">
 
-    <!-- General -->
-    <section>
-      <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">General</h2>
-      <Card class="p-4 space-y-3">
-        <div class="space-y-1.5">
-          <label for="ws-name" class="text-sm text-zinc-600">Workspace name</label>
-          <div class="flex gap-2">
-            <input
-              id="ws-name"
-              type="text"
-              bind:value={nameInput}
-              placeholder="My workspace"
-              class="flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm
-                     placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand/30"
-              onkeydown={(e) => { if (e.key === 'Enter') saveName(); }}
-            />
-            <Button
-              variant="secondary"
-              size="sm"
-              loading={nameSaving}
-              disabled={!nameInput.trim() || nameInput === workspaceStore.active?.name}
-              onclick={saveName}
-            >
-              {nameSaved ? 'Saved' : 'Save'}
-            </Button>
+    {#if workspaceStore.isTestMode}
+      <!-- Test Mode info card -->
+      <Card class="p-4 border-emerald-200 bg-emerald-50/40">
+        <div class="flex items-start gap-3">
+          <div class="h-8 w-8 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0 mt-0.5">
+            <Icon icon="lucide:flask-conical" width="16" height="16" class="text-emerald-600" />
           </div>
-        </div>
-      </Card>
-    </section>
-
-    <!-- Environment variables -->
-    <section>
-      <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">Environment Variables</h2>
-      <p class="text-xs text-zinc-400 mb-3">
-        Use <code class="font-mono text-zinc-600">{"{{KEY}}"}</code> to interpolate these variables in API requests, pipeline inputs, and tool parameters.
-      </p>
-      <EnvVarTable
-        vars={workspaceStore.envVars}
-        onchange={async (vars) => { await workspaceStore.updateEnvVars(vars); }}
-      />
-    </section>
-
-    <!-- Danger zone -->
-    <section>
-      <h2 class="text-xs font-medium text-red-400 uppercase tracking-wider mb-3">Danger Zone</h2>
-      <Card class="p-4">
-        <div class="flex items-start justify-between gap-4">
           <div>
-            <p class="text-sm font-medium text-zinc-800">Delete this workspace</p>
-            <p class="text-xs text-zinc-500 mt-0.5">
-              Permanently delete this workspace and all its data. This action cannot be undone.
+            <p class="text-sm font-medium text-emerald-900">Test Mode workspace</p>
+            <p class="text-xs text-emerald-700/80 mt-0.5 leading-relaxed">
+              This is a reserved sandbox workspace. It comes pre-loaded with demo files and can be reset at any time. It cannot be renamed or deleted.
             </p>
           </div>
-          <Button variant="danger" size="sm" onclick={initiateDelete}>
-            Delete
-          </Button>
         </div>
       </Card>
-    </section>
+
+      <!-- Environment variables -->
+      <section>
+        <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">Environment Variables</h2>
+        <p class="text-xs text-zinc-400 mb-3">
+          Use <code class="font-mono text-zinc-600">{"{{KEY}}"}</code> to interpolate these variables in API requests, pipeline inputs, and tool parameters.
+        </p>
+        <EnvVarTable
+          vars={workspaceStore.envVars}
+          onchange={async (vars) => { await workspaceStore.updateEnvVars(vars); }}
+        />
+      </section>
+
+      <!-- Reset -->
+      <section>
+        <h2 class="text-xs font-medium text-emerald-500 uppercase tracking-wider mb-3">Reset</h2>
+        <Card class="p-4">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-sm font-medium text-zinc-800">Reset Test Mode</p>
+              <p class="text-xs text-zinc-500 mt-0.5">
+                Clear all Test Mode data and re-seed the demo files. Useful for a clean start.
+              </p>
+            </div>
+            <Button variant="secondary" size="sm" loading={resetting} onclick={resetTestMode}>
+              Reset
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+    {:else}
+      <!-- General -->
+      <section>
+        <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">General</h2>
+        <Card class="p-4 space-y-3">
+          <div class="space-y-1.5">
+            <label for="ws-name" class="text-sm text-zinc-600">Workspace name</label>
+            <div class="flex gap-2">
+              <input
+                id="ws-name"
+                type="text"
+                bind:value={nameInput}
+                placeholder="My workspace"
+                class="flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm
+                       placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand/30"
+                onkeydown={(e) => { if (e.key === 'Enter') saveName(); }}
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                loading={nameSaving}
+                disabled={!nameInput.trim() || nameInput === workspaceStore.active?.name}
+                onclick={saveName}
+              >
+                {nameSaved ? 'Saved' : 'Save'}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </section>
+
+      <!-- Environment variables -->
+      <section>
+        <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">Environment Variables</h2>
+        <p class="text-xs text-zinc-400 mb-3">
+          Use <code class="font-mono text-zinc-600">{"{{KEY}}"}</code> to interpolate these variables in API requests, pipeline inputs, and tool parameters.
+        </p>
+        <EnvVarTable
+          vars={workspaceStore.envVars}
+          onchange={async (vars) => { await workspaceStore.updateEnvVars(vars); }}
+        />
+      </section>
+
+      <!-- Danger zone -->
+      <section>
+        <h2 class="text-xs font-medium text-red-400 uppercase tracking-wider mb-3">Danger Zone</h2>
+        <Card class="p-4">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-sm font-medium text-zinc-800">Delete this workspace</p>
+              <p class="text-xs text-zinc-500 mt-0.5">
+                Permanently delete this workspace and all its data. This action cannot be undone.
+              </p>
+            </div>
+            <Button variant="danger" size="sm" onclick={initiateDelete}>
+              Delete
+            </Button>
+          </div>
+        </Card>
+      </section>
+    {/if}
 
   </div>
 </div>

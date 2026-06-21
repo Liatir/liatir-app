@@ -4,6 +4,9 @@ import type { WorkspaceMeta, WorkspacesFile, WorkspaceEnvVar, WorkspaceEnvFile }
 const WORKSPACES_FILE = 'workspaces.json';
 const ACTIVE_FILE = 'active-workspace.json';
 
+export const TEST_WORKSPACE_ID = '__test__';
+const TEST_WORKSPACE_NAME = 'Test Mode';
+
 function workspaceEnvPath(id: string) {
   return `workspaces/${id}/env.json`;
 }
@@ -19,6 +22,7 @@ function createWorkspaceStore() {
   let activeId = $state<string | null>(null);
   let envVars = $state<WorkspaceEnvVar[]>([]);
   let initialized = $state(false);
+  let initStarted = false; // non-reactive guard against concurrent init() calls
 
   async function persistWorkspaces() {
     const api = liatir();
@@ -62,13 +66,15 @@ function createWorkspaceStore() {
     get active() { return workspaces.find(w => w.id === activeId) ?? null; },
     get envVars() { return envVars; },
     get initialized() { return initialized; },
+    get isTestMode() { return activeId === TEST_WORKSPACE_ID; },
 
     getDataPrefix(): string {
       return activeId ? `workspaces/${activeId}/` : '';
     },
 
     async init() {
-      if (initialized) return;
+      if (initStarted) return;
+      initStarted = true;
       const api = liatir();
       if (!api) { initialized = true; return; }
 
@@ -80,6 +86,18 @@ function createWorkspaceStore() {
         }
       } catch {
         workspaces = [];
+      }
+
+      // Auto-create Test Mode workspace if missing
+      if (!workspaces.some(w => w.id === TEST_WORKSPACE_ID)) {
+        const testWs: WorkspaceMeta = {
+          id: TEST_WORKSPACE_ID,
+          name: TEST_WORKSPACE_NAME,
+          createdAt: Date.now(),
+          lastOpenedAt: 0,
+        };
+        workspaces = [...workspaces, testWs];
+        await persistWorkspaces();
       }
 
       try {
@@ -122,6 +140,7 @@ function createWorkspaceStore() {
     },
 
     async rename(id: string, name: string) {
+      if (id === TEST_WORKSPACE_ID) return;
       workspaces = workspaces.map(w =>
         w.id === id ? { ...w, name: name.trim() || w.name } : w
       );
@@ -129,6 +148,7 @@ function createWorkspaceStore() {
     },
 
     async delete(id: string) {
+      if (id === TEST_WORKSPACE_ID) return;
       workspaces = workspaces.filter(w => w.id !== id);
       await persistWorkspaces();
       if (activeId === id) {
@@ -139,9 +159,18 @@ function createWorkspaceStore() {
       const api = liatir();
       if (api) {
         try {
-          await api.desktop.fs.data.remove(`workspaces/${id}`, { recursive: true });
+          await api.desktop.fs.data.remove(`workspaces/${id}`, true);
         } catch { /* best effort */ }
       }
+    },
+
+    async resetTestMode() {
+      resetFn?.();
+      const api = liatir();
+      if (api) {
+        try { await api.desktop.fs.data.remove(`workspaces/${TEST_WORKSPACE_ID}`, true); } catch { /* ok */ }
+      }
+      envVars = [];
     },
 
     async updateEnvVars(vars: WorkspaceEnvVar[]) {
