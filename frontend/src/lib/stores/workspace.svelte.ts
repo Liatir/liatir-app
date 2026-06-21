@@ -4,8 +4,8 @@ import type { WorkspaceMeta, WorkspacesFile, WorkspaceEnvVar, WorkspaceEnvFile }
 const WORKSPACES_FILE = 'workspaces.json';
 const ACTIVE_FILE = 'active-workspace.json';
 
-export const TEST_WORKSPACE_ID = '__test__';
-const TEST_WORKSPACE_NAME = 'Test Mode';
+export const SANDBOX_WORKSPACE_ID = '__test__';
+const SANDBOX_WORKSPACE_NAME = 'Sandbox';
 
 function workspaceEnvPath(id: string) {
   return `workspaces/${id}/env.json`;
@@ -71,7 +71,7 @@ function createWorkspaceStore() {
     get active() { return workspaces.find(w => w.id === activeId) ?? null; },
     get envVars() { return envVars; },
     get initialized() { return initialized; },
-    get isTestMode() { return activeId === TEST_WORKSPACE_ID; },
+    get isSandboxMode() { return activeId === SANDBOX_WORKSPACE_ID; },
 
     getDataPrefix(): string {
       return activeId ? `workspaces/${activeId}/` : '';
@@ -93,11 +93,11 @@ function createWorkspaceStore() {
         workspaces = [];
       }
 
-      // Auto-create Test Mode workspace if missing
-      if (!workspaces.some(w => w.id === TEST_WORKSPACE_ID)) {
+      // Auto-create Sandbox workspace if missing
+      if (!workspaces.some(w => w.id === SANDBOX_WORKSPACE_ID)) {
         const testWs: WorkspaceMeta = {
-          id: TEST_WORKSPACE_ID,
-          name: TEST_WORKSPACE_NAME,
+          id: SANDBOX_WORKSPACE_ID,
+          name: SANDBOX_WORKSPACE_NAME,
           createdAt: Date.now(),
           lastOpenedAt: 0,
         };
@@ -129,13 +129,13 @@ function createWorkspaceStore() {
         w.id === id ? { ...w, lastOpenedAt: Date.now() } : w
       );
       await persistWorkspaces();
-      if (id === TEST_WORKSPACE_ID) {
+      if (id === SANDBOX_WORKSPACE_ID) {
         await demoInitFn?.();
       }
     },
 
     async toggleFavorite(id: string) {
-      if (id === TEST_WORKSPACE_ID) return;
+      if (id === SANDBOX_WORKSPACE_ID) return;
       workspaces = workspaces.map(w =>
         w.id === id ? { ...w, favorite: !w.favorite } : w
       );
@@ -143,7 +143,7 @@ function createWorkspaceStore() {
     },
 
     async rename(id: string, name: string) {
-      if (id === TEST_WORKSPACE_ID) return;
+      if (id === SANDBOX_WORKSPACE_ID) return;
       workspaces = workspaces.map(w =>
         w.id === id ? { ...w, name: name.trim() || w.name } : w
       );
@@ -151,7 +151,7 @@ function createWorkspaceStore() {
     },
 
     async delete(id: string) {
-      if (id === TEST_WORKSPACE_ID) return;
+      if (id === SANDBOX_WORKSPACE_ID) return;
       workspaces = workspaces.filter(w => w.id !== id);
       await persistWorkspaces();
       if (activeId === id) {
@@ -167,11 +167,11 @@ function createWorkspaceStore() {
       }
     },
 
-    async resetTestMode() {
+    async resetSandboxMode() {
       resetFn?.();
       const api = liatir();
       if (api) {
-        try { await api.desktop.fs.data.remove(`workspaces/${TEST_WORKSPACE_ID}`, true); } catch { /* ok */ }
+        try { await api.desktop.fs.data.remove(`workspaces/${SANDBOX_WORKSPACE_ID}`, true); } catch { /* ok */ }
       }
       envVars = [];
       await demoInitFn?.();

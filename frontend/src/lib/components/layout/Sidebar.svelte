@@ -4,10 +4,11 @@
 	import Icon from '@iconify/svelte';
 	import { afterNavigate, goto } from '$app/navigation';
 	import { jobsStore } from '$lib/stores/jobs.svelte';
-	import { workspaceStore, TEST_WORKSPACE_ID } from '$lib/stores/workspace.svelte';
+	import { workspaceStore, SANDBOX_WORKSPACE_ID } from '$lib/stores/workspace.svelte';
 	import { pipelineStore } from '$lib/stores/pipeline.svelte';
 	import CustomIcon from '../ui/CustomIcon.svelte';
 	import Divider from '../ui/Divider.svelte';
+	import { toast } from '$lib/stores/toast.svelte';
 
 	interface NavItem {
 		href?: string;
@@ -32,14 +33,13 @@
 		{ divider: true, global: false },
 		{ href: '/tools', label: 'Tools', icon: 'lucide:dna', match: '/tools', global: true },
 		{ href: '/modules', label: 'Modules', customIcon: '/icons/lia-file-icon.svg', match: '/modules', global: true },
-		{ href: '/plugins', label: 'Plugins', customIcon: '/icons/web-assembly-file-icon.svg', match: '/plugins', global: true },
-		{ href: '/scripts', label: 'Scripts', icon: 'lucide:code', match: '/scripts', global: true }
+		{ href: '/plugins', label: 'Plugins', customIcon: '/icons/web-assembly-file-icon.svg', match: '/plugins', global: true }
 	];
 	const bottomNav: NavItem[] = [
-		{ divider: true, global: true },
-		{ href: '/workspace-settings', label: 'Workspace', icon: 'lucide:folder-cog', match: '/workspace-settings', global: false },
-		{ divider: true, global: false },
+		{ href: '/scripts', label: 'Scripts', icon: 'lucide:code', match: '/scripts', global: true },
 		{ href: '/deps', label: 'Dependencies', icon: 'lucide:replace', match: '/deps', global: true },
+		{ divider: true, global: true },
+		{ href: '/workspace-settings', label: 'Workspace', icon: 'lucide:box', match: '/workspace-settings', global: false },
 		{
 			href: '/settings',
 			label: 'Settings',
@@ -60,12 +60,6 @@
 		localStorage.setItem('sidebar-collapsed', String(collapsed));
 	});
 
-	$effect(() => {
-		const path = page.url.pathname;
-		if (path.startsWith('/scripts') || path.startsWith('/code')) {
-			advancedOpen = true;
-		}
-	});
 
 	function isActive(item: NavItem): boolean {
 		if (!item.href) return false;
@@ -84,20 +78,20 @@
 		} else {
 			if(navItem?.href) goto(navItem.href);
 		}
-		advancedOpen=false;
 	};
 
-	async function toggleTestMode() {
-		if (!workspaceStore.isTestMode) {
-			await workspaceStore.switchTo(TEST_WORKSPACE_ID);
+	async function toggleSandboxMode() {
+		if (!workspaceStore.isSandboxMode) {
+			await workspaceStore.switchTo(SANDBOX_WORKSPACE_ID);
 			jobsStore.refresh();
 			pipelineStore.init();
-			goto('/');
+			await goto('/');
+			toast.info("Now using sandbox");
 		} else {
 			await workspaceStore.switchTo("");
 			jobsStore.refresh();
 			pipelineStore.init();
-			goto('/workspaces');
+			await goto('/workspaces');
 		}
 	}
 </script>
@@ -131,8 +125,8 @@
 			<div class="flex-1 min-w-0">
 				{#if workspaceStore.active}
 					<p class="text-[10px] text-zinc-400 truncate leading-none mt-0.5">Workspace:</p>
-					{#if workspaceStore.isTestMode}
-						<span class="text-[10px] font-medium bg-emerald-100 text-emerald-600 rounded px-1.5 py-1 leading-5">sandbox</span>
+					{#if workspaceStore.isSandboxMode}
+						<span class="text-[10px] font-medium bg-sandbox-100 text-sandbox-600 rounded px-1.5 py-1 leading-5">sandbox</span>
 					{:else}
 						<p class="text-sm font-semibold text-zinc-800 truncate leading-none mt-0.5">{workspaceStore.active.name}</p>
 					{/if}
@@ -155,7 +149,7 @@
 						onclick={()=>navigateToPage(item as NavItem)}
 						title={collapsed ? item.label : undefined}
 						class="group relative flex w-full text-left items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
-							{collapsed ? 'justify-center' : ''}
+							{collapsed ? 'justify-center' : ''}  
 							{active
 							? 'bg-brand/10 text-brand font-medium'
 							: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
@@ -225,18 +219,18 @@
 			{/if}
 		{/each}
 		
-		<!-- Toggle Test Mode -->
+		<!-- Toggle Sandbox -->
 		<button
-			onclick={toggleTestMode}
-			title={collapsed ? 'Toggle Test Mode' : undefined}
+			onclick={toggleSandboxMode}
+			title={collapsed ? 'Toggle Sandbox' : undefined}
 			class="w-full flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
 					{collapsed ? 'justify-center' : ''} 
-					text-emerald-600 hover:bg-emerald-50"
+					text-sandbox-600 hover:bg-sandbox-50"
 		>
 			<Icon icon="lucide:flask-conical" width="16" height="16" class="shrink-0" />
 			{#if !collapsed}
-				<span class="flex-1 text-left">Test Mode</span>
-				<span class="text-[10px] font-medium bg-emerald-100 text-emerald-600 rounded px-1 leading-5">{workspaceStore.isTestMode?'exit':''}</span>
+				<span class="flex-1 text-left">Sandbox</span>
+				<span class="text-[10px] font-medium bg-sandbox-100 text-sandbox-600 rounded px-1 leading-5">{workspaceStore.isSandboxMode?'exit':''}</span>
 			{/if}
 		</button>
 	</div>

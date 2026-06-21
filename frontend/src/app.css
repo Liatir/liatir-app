@@ -7,6 +7,16 @@
   --color-surface-3:  #e8e8ec;
   --color-border:     #e2e2e8;
   --color-border-2:   #d0d0d8;
+  /* Liatir sandbox */
+  --color-sandbox-800:  #963B01;
+  --color-sandbox-700:  #BB4D01;
+  --color-sandbox-600:  #E17102;
+  --color-sandbox-500:  #FD9901;
+  --color-sandbox-400:  #FFB900;
+  --color-sandbox-300:  #FFD22F;
+  --color-sandbox-200:  #FEE685;
+  --color-sandbox-100:  #FFF3C6;
+  --color-sandbox-50:   #FFFBEB;
   /* Liatir brand */
   --color-brand:        #4f39f6;
   --color-brand-hover:  #6254f8;

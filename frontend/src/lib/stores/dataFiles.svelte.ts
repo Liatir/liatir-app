@@ -1,5 +1,5 @@
 import { liatir } from '$lib/api';
-import { getDataPrefix, TEST_WORKSPACE_ID } from './workspace.svelte';
+import { getDataPrefix, SANDBOX_WORKSPACE_ID } from './workspace.svelte';
 
 export interface DataFile {
   id: string;
@@ -104,8 +104,8 @@ function createDataFilesStore() {
           finally { loading = false; }
         }
       }
-      // Always ensure demo files in Test Mode (idempotent dedup inside)
-      if (getDataPrefix().includes(TEST_WORKSPACE_ID)) {
+      // Always ensure demo files in Sandbox (idempotent dedup inside)
+      if (getDataPrefix().includes(SANDBOX_WORKSPACE_ID)) {
         await this.initDemoFiles();
       }
     },

@@ -3,9 +3,10 @@
   import { goto } from '$app/navigation';
   import Icon from '@iconify/svelte';
   import Button from '$lib/components/ui/Button.svelte';
-  import { workspaceStore, TEST_WORKSPACE_ID } from '$lib/stores/workspace.svelte';
+  import { workspaceStore, SANDBOX_WORKSPACE_ID } from '$lib/stores/workspace.svelte';
   import { jobsStore } from '$lib/stores/jobs.svelte';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
+	import { toast } from '$lib/stores/toast.svelte';
 
   let newName = $state('');
   let creating = $state(false);
@@ -13,7 +14,7 @@
   let inputEl = $state<HTMLInputElement | null>(null);
 
   const sortedWorkspaces = $derived(
-    [...workspaceStore.workspaces.filter(w => w.id !== TEST_WORKSPACE_ID)]
+    [...workspaceStore.workspaces.filter(w => w.id !== SANDBOX_WORKSPACE_ID)]
       .sort((a, b) => {
         if (!!a.favorite !== !!b.favorite) return a.favorite ? -1 : 1;
         return b.lastOpenedAt - a.lastOpenedAt;
@@ -47,7 +48,8 @@
     await workspaceStore.switchTo(id);
     jobsStore.refresh();
     pipelineStore.init();
-    goto('/');
+    await goto('/');
+    if(workspaceStore.isSandboxMode) toast.info("Now using sandbox");
   }
 
   async function createAndOpen() {
@@ -170,24 +172,24 @@
       {/if}
     </div>
 
-    <!-- Test Mode entry -->
-    <div class="mt-5">
+    <!-- Sandbox entry -->
+    <div class="mt-5 hidden">
       <!-- <p class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-2">Sandbox</p> -->
       <button
-        onclick={() => openWorkspace(TEST_WORKSPACE_ID)}
-        class="group w-full text-left rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3
-               hover:border-emerald-400 hover:bg-emerald-50 hover:shadow-sm transition-all duration-150
-               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+        onclick={() => openWorkspace(SANDBOX_WORKSPACE_ID)}
+        class="group w-full text-left rounded-xl border border-sandbox-200 bg-sandbox-50/60 px-4 py-3
+               hover:border-sandbox-400 hover:bg-sandbox-50 hover:shadow-sm transition-all duration-150
+               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sandbox-400"
       >
         <div class="flex items-center gap-3">
-          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 shrink-0">
-            <Icon icon="lucide:flask-conical" width="15" height="15" class="text-emerald-600" />
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-sandbox-500/15 shrink-0">
+            <Icon icon="lucide:flask-conical" width="15" height="15" class="text-sandbox-600" />
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-emerald-800 group-hover:text-emerald-700 transition-colors">Test Mode</p>
-            <p class="text-xs text-emerald-600/70 truncate">Demo files · Isolated sandbox · Resettable</p>
+            <p class="text-sm font-medium text-sandbox-800 group-hover:text-sandbox-700 transition-colors">Sandbox</p>
+            <p class="text-xs text-sandbox-600/70 truncate">Demo files · Isolated sandbox · Resettable</p>
           </div>
-          <Icon icon="lucide:arrow-right" width="14" height="14" class="text-emerald-300 group-hover:text-emerald-500 transition-colors shrink-0" />
+          <Icon icon="lucide:arrow-right" width="14" height="14" class="text-sandbox-300 group-hover:text-sandbox-500 transition-colors shrink-0" />
         </div>
       </button>
     </div>

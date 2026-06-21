@@ -49,16 +49,16 @@
     goto('/workspaces');
   }
 
-  async function resetTestMode() {
+  async function resetSandboxMode() {
     const ok = await confirm({
-      title: 'Reset Test Mode',
-      message: 'This will clear all data in the Test Mode workspace (pipelines, scripts, API connections, data files, runs). Demo files will be re-seeded. This cannot be undone.',
+      title: 'Reset Sandbox',
+      message: 'This will clear all data in the Sandbox workspace (pipelines, scripts, API connections, data files, runs). Demo files will be re-seeded. This cannot be undone.',
       confirmLabel: 'Reset',
     });
     if (!ok) return;
     resetting = true;
     try {
-      await workspaceStore.resetTestMode();
+      await workspaceStore.resetSandboxMode();
       await pipelineStore.init();
       goto('/');
     } finally {
@@ -69,22 +69,22 @@
 
 <div class="flex flex-col h-full">
   <PageHeader
-    title={workspaceStore.isTestMode ? 'Test Mode' : 'Workspace'}
-    description={workspaceStore.isTestMode ? 'Sandbox workspace with demo files' : (workspaceStore.active?.name ?? '')}
+    title={workspaceStore.isSandboxMode ? 'Sandbox' : 'Workspace'}
+    description={workspaceStore.isSandboxMode ? 'Sandbox workspace with demo files' : (workspaceStore.active?.name ?? '')}
   />
 
   <div class="flex-1 overflow-y-auto p-6 space-y-6">
 
-    {#if workspaceStore.isTestMode}
-      <!-- Test Mode info card -->
-      <Card class="p-4 border-emerald-200 bg-emerald-50/40">
+    {#if workspaceStore.isSandboxMode}
+      <!-- Sandbox info card -->
+      <Card class="p-4 border-sandbox-200 bg-sandbox-50/40">
         <div class="flex items-start gap-3">
-          <div class="h-8 w-8 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0 mt-0.5">
-            <Icon icon="lucide:flask-conical" width="16" height="16" class="text-emerald-600" />
+          <div class="h-8 w-8 rounded-lg bg-sandbox-500/15 flex items-center justify-center shrink-0 mt-0.5">
+            <Icon icon="lucide:flask-conical" width="16" height="16" class="text-sandbox-600" />
           </div>
           <div>
-            <p class="text-sm font-medium text-emerald-900">Test Mode workspace</p>
-            <p class="text-xs text-emerald-700/80 mt-0.5 leading-relaxed">
+            <p class="text-sm font-medium text-sandbox-900">Sandbox workspace</p>
+            <p class="text-xs text-sandbox-700/80 mt-0.5 leading-relaxed">
               This is a reserved sandbox workspace. It comes pre-loaded with demo files and can be reset at any time. It cannot be renamed or deleted.
             </p>
           </div>
@@ -105,16 +105,16 @@
 
       <!-- Reset -->
       <section>
-        <h2 class="text-xs font-medium text-emerald-500 uppercase tracking-wider mb-3">Reset</h2>
+        <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Reset</h2>
         <Card class="p-4">
           <div class="flex items-start justify-between gap-4">
             <div>
-              <p class="text-sm font-medium text-zinc-800">Reset Test Mode</p>
+              <p class="text-sm font-medium text-zinc-800">Reset Sandbox</p>
               <p class="text-xs text-zinc-500 mt-0.5">
-                Clear all Test Mode data and re-seed the demo files. Useful for a clean start.
+                Clear all Sandbox data and re-seed the demo files. Useful for a clean start.
               </p>
             </div>
-            <Button variant="secondary" size="sm" loading={resetting} onclick={resetTestMode}>
+            <Button variant="sandbox" size="sm" loading={resetting} onclick={resetSandboxMode}>
               Reset
             </Button>
           </div>

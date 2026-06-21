@@ -42,8 +42,8 @@
 	</div>
 {:else}
 	<div
-		class="{workspaceStore.isTestMode
-			? 'border-x-[5px] transition-[border-width] border-green-600'
+		class="{workspaceStore.isSandboxMode
+			? 'border-x-[5px] transition-[border-width] border-sandbox-500'
 			: ''} flex h-screen overflow-hidden"
 		style="background-color: var(--color-bg);"
 	>

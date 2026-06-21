@@ -1,4 +1,4 @@
-type ToastKind = 'success' | 'error' | 'info';
+type ToastKind = 'success' | 'error' | 'info' | 'warn';
 interface ToastItem { id: string; message: string; kind: ToastKind; }
 
 function createToastStore() {
@@ -16,6 +16,7 @@ function createToastStore() {
     get items() { return items; },
     success: (msg: string) => add(msg, 'success'),
     error:   (msg: string) => add(msg, 'error'),
+    warn:    (msg: string) => add(msg, 'warn'),
     info:    (msg: string) => add(msg, 'info'),
     remove,
   };

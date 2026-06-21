@@ -10,7 +10,7 @@
 
   onMount(async () => {
     await dataFiles.init();
-    if (workspaceStore.isTestMode) {
+    if (workspaceStore.isSandboxMode) {
       await dataFiles.initDemoFiles();
     }
     dataFiles.checkMissing();

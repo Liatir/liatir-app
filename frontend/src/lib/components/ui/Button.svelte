@@ -2,7 +2,7 @@
   import type { Snippet } from 'svelte';
 
   interface Props {
-    variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+    variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'sandbox' | 'warn';
     size?: 'sm' | 'md';
     disabled?: boolean;
     loading?: boolean;
@@ -38,6 +38,10 @@
       'hover:bg-[var(--color-surface-2)] text-zinc-500 hover:text-zinc-800',
     danger:
       'bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-800/40',
+    warn:
+      'bg-amber-50 hover:bg-amber-100 text-amber-500 border border-amber-400',
+    sandbox:
+      'bg-sandbox-50 hover:bg-sandbox-100 text-sandbox-500 border border-sandbox-400',
   };
 </script>
 
