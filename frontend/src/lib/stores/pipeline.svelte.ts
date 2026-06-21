@@ -488,9 +488,12 @@ function createPipelineStore() {
             patchState(nodeId, { status: 'error', error: 'Request not found' });
             break;
           }
+          const provider = apiConnections.collectionById(req.collectionId) ?? undefined;
+          // Non-private params fed from upstream nodes (handle id = param key).
+          const paramOverrides = resolveInputs(nodeId, nodes, edges, nodeStates, {});
           patchState(nodeId, { status: 'running', logs: [`${req.method} ${req.url}`] });
           try {
-            const resp = await sendApiRequest(req);
+            const resp = await sendApiRequest(req, { provider, paramOverrides, envVars: apiConnections.activeEnvVars });
             const safeReqName = req.name.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '-') || d.requestId!;
             const reqOutputDir = `${data}/Results/${safeReqName}`;
             const reqVirtualFolder = `Results/${safeReqName}`;
@@ -515,7 +518,7 @@ function createPipelineStore() {
                     const valPath = `${reqOutputDir}/${key}-${ts}.json`;
                     await api.invoke('lia_write_file_path', { path: valPath, content: JSON.stringify(val) }).catch(() => {});
                     outputFiles.push({ label: field.label || key, path: valPath, ext: 'json' });
-                    outputValues[key] = String(val);
+                    outputValues[key] = (val !== null && typeof val === 'object') ? JSON.stringify(val) : String(val);
                   }
                 }
               }

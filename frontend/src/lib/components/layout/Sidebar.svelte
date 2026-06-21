@@ -3,11 +3,14 @@
 	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { jobsStore } from '$lib/stores/jobs.svelte';
+	import CustomIcon from '../ui/CustomIcon.svelte';
+	import Divider from '../ui/Divider.svelte';
 
 	interface NavItem {
 		href: string;
 		label: string;
-		icon: string;
+		icon?: string;
+		customIcon?: string;
 		match?: string;
 	}
 
@@ -19,13 +22,22 @@
 			match: undefined
 		},
 		{ href: '/data', label: 'Data', icon: 'lucide:database', match: '/data' },
-		{ href: '/tools', label: 'Tools', icon: 'ri:apps-line', match: '/tools' },
-		{ href: '/modules', label: 'Modules', icon: 'lucide:package', match: '/modules' },
+		{ href: '/tools', label: 'Tools', icon: 'octicon:apps-24', match: '/tools' },
 		{ href: '/pipelines', label: 'Pipelines', icon: 'lucide:workflow', match: '/pipelines' },
 		{ href: '/apis', label: 'API Connector', icon: 'lucide:plug', match: '/apis' },
 		{ href: '/results', label: 'Results', icon: 'mynaui:inbox-archive', match: '/results' },
 		{ href: '/jobs', label: 'Jobs', icon: 'lucide:activity', match: '/jobs' },
-		{ href: '/deps', label: 'Dependencies', icon: 'lucide:layers', match: '/deps' }
+	];
+	const bottomNav: NavItem[] = [
+		{ href: '/modules', label: 'Modules', customIcon: '/icons/lia-file-icon.svg', match: '/modules' },
+		{ href: '/plugins', label: 'Plugins', customIcon: '/icons/web-assembly-file-icon.svg', match: '/plugins' },
+		{ href: '/deps', label: 'Dependencies', icon: 'octicon:package-dependencies-16', match: '/deps' },
+		{
+			href: '/settings',
+			label: 'Settings',
+			icon: 'lucide:settings',
+			match: '/settings'
+		}
 	];
 
 	const advancedNav: NavItem[] = [
@@ -132,7 +144,11 @@
 					? 'bg-brand/10 text-brand font-medium'
 					: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
 			>
-				<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
+				{#if item?.customIcon}
+					<CustomIcon src={item.customIcon} class="w-[16px] h-[16px]"/>
+				{:else if item?.icon}
+					<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
+				{/if}
 
 				{#if !collapsed}
 					<span class="flex-1">{item.label}</span>
@@ -150,8 +166,8 @@
 		{/each}
 	</nav>
 
-	<!-- Bottom: Playground + Settings -->
-	<div class="border-t border-border px-1.5 py-3 space-y-0.5">
+	<!-- Bottom: playground + bottom nav -->
+	<div class="px-1.5 py-3 space-y-0.5">
 		<!-- Playground -->
 		<div class="relative">
 			<button
@@ -188,7 +204,7 @@
 								? 'bg-brand/10 text-brand font-medium'
 								: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
 						>
-							<Icon icon={item.icon} width="15" height="15" class="shrink-0" />
+							<Icon icon={item.icon} width="15" height="15" class="shrink-0"/>
 							<span>{item.label}</span>
 						</a>
 					{/each}
@@ -196,20 +212,41 @@
 			{/if}
 		</div>
 
-		<!-- Settings -->
-		<a
-			href="/settings"
-			title={collapsed ? 'Settings' : undefined}
-			class="flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-zinc-500
-			       hover:bg-surface-2 hover:text-zinc-800 transition-colors duration-100
-			       {collapsed ? 'justify-center' : ''}
-			       {page.url.pathname === '/settings' ? 'bg-brand/10 text-brand font-medium' : ''}"
-		>
-			<Icon icon="lucide:settings" width="16" height="16" class="shrink-0" />
-			{#if !collapsed}
-				<span>Settings</span>
-			{/if}
-		</a>
+		<Divider my={5}/>
+
+		<!-- Bottom nav -->
+		{#each bottomNav as item}
+			{@const active = isActive(item)}
+			<a
+				href={item.href}
+				title={collapsed ? item.label : undefined}
+				class="group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
+				       {collapsed ? 'justify-center' : ''}
+				       {active
+					? 'bg-brand/10 text-brand font-medium'
+					: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
+			>
+
+				{#if item?.customIcon}
+					<CustomIcon src={item.customIcon} class="w-[18px] h-[18px] -mr-[2px] opacity-65"/>
+				{:else if item?.icon}
+					<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
+				{/if}
+
+				{#if !collapsed}
+					<span class="flex-1">{item.label}</span>
+					{#if item.match === '/jobs' && jobsStore.runningCount > 0}
+						<span
+							class="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-sky-500/15 px-1.5 text-[10px] font-semibold text-sky-600"
+						>
+							{jobsStore.runningCount}
+						</span>
+					{/if}
+				{:else if item.match === '/jobs' && jobsStore.runningCount > 0}
+					<span class="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-sky-500"></span>
+				{/if}
+			</a>
+		{/each}
 	</div>
 </aside>
 

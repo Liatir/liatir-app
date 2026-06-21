@@ -82,3 +82,11 @@ input, textarea, [data-selectable] {
 		font-size: 0.95em !important;
 	}
 */
+
+.scalar-app #scalar-client-0 {
+  display: none !important;
+}
+
+.scalar-app .scalar-version-number {
+  display: none !important;
+}

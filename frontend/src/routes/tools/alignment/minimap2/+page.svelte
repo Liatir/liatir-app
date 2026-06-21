@@ -121,7 +121,7 @@
       }
 
       const outSize = await api.invoke('lia_file_size', { path: outPath }) as number;
-      await dataFiles.add(outPath);
+      await dataFiles.addToResults(outPath, 'minimap2');
 
       const stats = parseMinimap2Stats(result.stderr);
       const output = minimap2ToToolOutput(stats, result.stderr.join('\n'), outPath, preset);

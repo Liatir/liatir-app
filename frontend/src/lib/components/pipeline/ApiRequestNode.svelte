@@ -51,7 +51,26 @@
     { id: 'responseBody', label: 'Response' },
     ...Object.entries(req?.outputSchema ?? {}).map(([k, f]) => ({ id: k, label: f.label || k })),
   ]);
+
+  // Input handles: one per non-private parameter (call + provider shared)
+  const inputHandles = $derived.by(() => {
+    if (!req) return [] as { id: string; label: string }[];
+    const provider = apiConnections.collectionById(req.collectionId);
+    const params = [
+      ...(provider?.sharedParams ?? []).filter(p => !p.private && p.enabled && p.key),
+      ...req.params.filter(p => !p.private && p.enabled && p.key),
+    ];
+    // de-dupe by key (call overrides provider)
+    const seen = new Map<string, { id: string; label: string }>();
+    for (const p of params) seen.set(p.key, { id: p.key, label: p.key });
+    return [...seen.values()];
+  });
 </script>
+
+<!-- Input handles (non-private parameters) -->
+{#each inputHandles as h, idx}
+  <Handle type="target" position={Position.Left} id={h.id} style="top: {52 + idx * 24}px" />
+{/each}
 
 <!-- Output handles -->
 {#each outputHandles as h, idx}
@@ -61,7 +80,7 @@
 <div class="min-w-56 max-w-72 rounded-xl border border-border bg-white shadow-md overflow-hidden">
   <div class="flex items-center gap-2 px-3 py-2 border-b border-border bg-rose-50 cursor-grab active:cursor-grabbing">
     <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
-    <Icon icon="lucide:link" width="11" height="11" class="text-rose-500 shrink-0" />
+    <Icon icon="lucide:plug" width="11" height="11" class="text-rose-500 shrink-0" />
     <span class="text-[10px] font-semibold text-rose-700 uppercase tracking-wider">API Request</span>
   </div>
 
@@ -75,6 +94,17 @@
         {/if}
       </div>
       <div class="text-[10px] text-zinc-400 font-mono truncate">{req.url}</div>
+
+      {#if inputHandles.length > 0}
+        <div class="flex flex-col gap-0.5 border-t border-border/60 pt-1.5">
+          {#each inputHandles as h}
+            <div class="flex items-center gap-1.5">
+              <div class="w-2 h-2 rounded-full border border-zinc-300 bg-white"></div>
+              <span class="text-[10px] text-zinc-400">{h.label}</span>
+            </div>
+          {/each}
+        </div>
+      {/if}
 
       {#if outputHandles.length > 1}
         <div class="flex flex-col gap-0.5">

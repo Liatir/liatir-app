@@ -162,6 +162,18 @@ function createDataFilesStore() {
       await persist();
     },
 
+    /**
+     * Register a tool/job/pipeline result file under the locked `Results/<tool>/`
+     * folder (folders auto-created). Mirrors how the pipeline stores its outputs.
+     */
+    async addToResults(path: string, toolName: string) {
+      const safe = toolName.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '-') || 'tool';
+      const folder = `${RESULTS_FOLDER}/${safe}`;
+      await this.createFolder(RESULTS_FOLDER);
+      await this.createFolder(folder);
+      await this.add(path, folder);
+    },
+
     async remove(id: string) {
       if (files.find(f => f.id === id)?.protected) return;
       files = files.filter(f => f.id !== id);

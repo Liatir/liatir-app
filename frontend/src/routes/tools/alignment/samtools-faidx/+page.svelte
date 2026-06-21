@@ -104,8 +104,8 @@
       const output  = parseFaiToToolOutput(faiText, faiPath);
       const endedAt = Date.now();
 
-      // Register the .fai file in Data
-      await dataFiles.add(faiPath);
+      // Register the .fai file in Data under the locked Results/<tool>/ folder
+      await dataFiles.addToResults(faiPath, 'samtools-faidx');
 
       await analysisRuns.add({
         id: runId, tool: 'samtools-faidx', label: fileName,

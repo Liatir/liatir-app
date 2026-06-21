@@ -121,7 +121,7 @@
       }
 
       const outSize = await api.invoke('lia_file_size', { path: outPath }) as number;
-      await dataFiles.add(outPath);
+      await dataFiles.addToResults(outPath, 'bwa');
 
       const stats = parseBwaMemStats(result.stderr);
       const output = bwaMemToToolOutput(stats, result.stderr.join('\n'), outPath);

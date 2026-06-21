@@ -7,8 +7,13 @@
   import type { RunOutputFile } from '$lib/types/pipeline';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { liatir } from '$lib/api';
+  import { page } from '$app/state';
 
-  let { output, outputFiles }: { output: ToolOutput; outputFiles?: RunOutputFile[] } = $props();
+  let { output, outputFiles, resultFolder }: { output: ToolOutput; outputFiles?: RunOutputFile[]; resultFolder?: string } = $props();
+
+  // Result files land in the locked Results/<tool>/ folder. Tool name is taken
+  // from the route (e.g. /tools/alignment/bwa → "bwa") unless `resultFolder` is given.
+  const toolName = $derived(resultFolder ?? page.url.pathname.split('/').filter(Boolean).pop() ?? 'tool');
 
   const TEXT_PREVIEW_LINES = 300;
   let expandedSections = $state(new Set<number>());
@@ -28,7 +33,7 @@
     next.add(file.path);
     addingToData = next;
     try {
-      await dataFiles.add(file.path);
+      await dataFiles.addToResults(file.path, toolName);
     } finally {
       const s = new Set(addingToData);
       s.delete(file.path);

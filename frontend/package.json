@@ -28,7 +28,6 @@
 		"@codemirror/lang-javascript": "^6.2.5",
 		"@iconify-json/lucide": "^1.2.114",
 		"@iconify/svelte": "^5.2.2",
-		"@scalar/api-client": "^3.10.4",
 		"@sveltejs/adapter-static": "^3.0.10",
 		"@tailwindcss/vite": "^4.1.17",
 		"@xyflow/svelte": "^1.6.0",
