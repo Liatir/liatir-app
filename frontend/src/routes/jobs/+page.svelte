@@ -8,6 +8,7 @@
   import EmptyState from '$lib/components/ui/EmptyState.svelte';
   import { jobsStore, type JobEntry } from '$lib/stores/jobs.svelte';
   import { fmtDuration, fmtTime } from '$lib/utils';
+	import Icon from '@iconify/svelte/dist/OfflineIcon.svelte';
 
   let expandedJobId = $state<string | null>(null);
   let interval: ReturnType<typeof setInterval>;
@@ -77,10 +78,7 @@
         description="Run a tool or spawn a process to see it listed here."
       >
         {#snippet icon()}
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
+          <Icon icon="lucide:radio" width="30" height="30" class="shrink-0"/>
         {/snippet}
       </EmptyState>
 

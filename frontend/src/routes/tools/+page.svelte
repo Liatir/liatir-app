@@ -136,7 +136,7 @@
 </script>
 
 <div class="flex flex-col h-full">
-  <PageHeader title="Tools" description="Built-in modules and custom WASM plugins">
+  <PageHeader title="Tools" description="All built-in and custom analyisis tools">
     <!-- {#snippet actions()}
     {/snippet} -->
   </PageHeader>

@@ -16,21 +16,18 @@
 	}
 
 	const mainNav: NavItem[] = [
-		{
-			href: '/',
-			label: 'Dashboard',
-			icon: 'lucide:house',
-			match: undefined
-		},
+		{ href: '/workspaces', label: 'Workspaces', icon: 'lucide:layout-grid', match: "/workspaces" },
+		{ divider: true },
+		{ href: '/', label: 'Dashboard', icon: 'lucide:house', match: undefined },
 		{ href: '/data', label: 'Data', icon: 'lucide:database', match: '/data' },
 		{ href: '/pipelines', label: 'Pipelines', icon: 'lucide:workflow', match: '/pipelines' },
 		{ href: '/apis', label: 'API Connector', icon: 'lucide:plug', match: '/apis' },
-		{ href: '/results', label: 'Results', icon: 'lucide:gallery-vertical-end', match: '/results' },
-		{ href: '/jobs', label: 'Jobs', icon: 'lucide:activity', match: '/jobs' },
-		{ divider: true },
-		{ href: '/tools', label: 'Tools', icon: 'lucide:layout-grid', match: '/tools' },
+		{ href: '/results', label: 'Results', icon: 'lucide:inbox', match: '/results' },
+		{ href: '/jobs', label: 'Jobs', icon: 'lucide:radio', match: '/jobs' },
+		{ href: '/tools', label: 'Tools', icon: 'lucide:dna', match: '/tools' },
 		{ href: '/modules', label: 'Modules', customIcon: '/icons/lia-file-icon.svg', match: '/modules' },
 		{ href: '/plugins', label: 'Plugins', customIcon: '/icons/web-assembly-file-icon.svg', match: '/plugins' },
+		{ divider: true }
 	];
 	const bottomNav: NavItem[] = [
 		{ divider: true },
@@ -151,7 +148,7 @@
 						: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
 				>
 					{#if item?.customIcon}
-						<CustomIcon src={item.customIcon} class="w-[16px] h-[16px]"/>
+						<CustomIcon src={item.customIcon} class="w-[16px] h-[16px] opacity-60"/>
 					{:else if item?.icon}
 						<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
 					{/if}
@@ -236,7 +233,7 @@
 				>
 
 					{#if item?.customIcon}
-						<CustomIcon src={item.customIcon} class="w-[18px] h-[18px] -mr-[2px] opacity-65"/>
+						<CustomIcon src={item.customIcon} class="w-[16px] h-[16px] opacity-60"/>
 					{:else if item?.icon}
 						<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
 					{/if}
