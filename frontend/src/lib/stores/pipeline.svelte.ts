@@ -1,5 +1,6 @@
 import type { Node, Edge } from '@xyflow/svelte';
 import { liatir } from '$lib/api';
+import { getDataPrefix } from './workspace.svelte';
 import { dataFiles } from './dataFiles.svelte';
 import { apiConnections, sendApiRequest } from './apiConnections.svelte';
 import { PIPELINE_REGISTRY } from '$lib/tools/pipeline-registry';
@@ -8,7 +9,7 @@ import type {
   SubPipelineNodeData, ApiRequestNodeData, NodeRunState, RunOutputFile,
 } from '$lib/types/pipeline';
 
-const FILE = 'pipeline-workspace.json';
+function getFile() { return `${getDataPrefix()}pipeline-workspace.json`; }
 
 export interface SavedPipeline {
   id: string;
@@ -192,7 +193,7 @@ function createPipelineStore() {
       },
       saved: JSON.parse(JSON.stringify(savedPipelines)),
     };
-    await api.desktop.fs.data.writeText(FILE, JSON.stringify(workspace, null, 2), { createDirs: true });
+    await api.desktop.fs.data.writeText(getFile(), JSON.stringify(workspace, null, 2), { createDirs: true });
   }
 
   function schedulePersist() {
@@ -308,8 +309,8 @@ function createPipelineStore() {
       const api = liatir();
       if (!api) return;
       try {
-        if (await api.desktop.fs.data.exists(FILE)) {
-          const raw = await api.desktop.fs.data.readText(FILE);
+        if (await api.desktop.fs.data.exists(getFile())) {
+          const raw = await api.desktop.fs.data.readText(getFile());
           const ws: PipelineWorkspace = JSON.parse(raw);
           currentNodes = ws.current?.nodes ?? [];
           currentEdges = ws.current?.edges ?? [];
@@ -318,6 +319,19 @@ function createPipelineStore() {
           savedPipelines = ws.saved ?? [];
         }
       } catch { /* start fresh */ }
+    },
+
+    reset() {
+      clearTimeout(persistTimer);
+      initialized = false;
+      savedPipelines = [];
+      pipelineName = 'Untitled Pipeline';
+      pipelineId = null;
+      pendingLoad = null;
+      currentNodes = [];
+      currentEdges = [];
+      nodeStates = new Map();
+      running = false;
     },
 
     async savePipeline(name: string) {

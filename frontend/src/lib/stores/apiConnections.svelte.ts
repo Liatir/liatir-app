@@ -1,10 +1,11 @@
 import { liatir } from '$lib/api';
+import { getDataPrefix, workspaceStore } from './workspace.svelte';
 import type {
   ApiCollection, ApiRequest, ApiResponse, ApiKeyValue, ApiParam, ApiOutputSchemaField,
   ApiFieldType, ApiEnvironment, ApiAuth, HttpMethod,
 } from '$lib/types/api-connection';
 
-const FILE = 'api-workspace.json';
+function getFile() { return `${getDataPrefix()}api-workspace.json`; }
 
 interface Workspace {
   collections: ApiCollection[];
@@ -72,7 +73,7 @@ function createApiStore() {
     const api = liatir();
     if (!api) return;
     const data: Workspace = { collections, requests, environments, activeEnvironmentId };
-    await api.desktop.fs.data.writeText(FILE, JSON.stringify(data, null, 2), { createDirs: true });
+    await api.desktop.fs.data.writeText(getFile(), JSON.stringify(data, null, 2), { createDirs: true });
   }
 
   return {
@@ -105,8 +106,8 @@ function createApiStore() {
       const api = liatir();
       if (!api) return;
       try {
-        if (await api.desktop.fs.data.exists(FILE)) {
-          const raw = await api.desktop.fs.data.readText(FILE);
+        if (await api.desktop.fs.data.exists(getFile())) {
+          const raw = await api.desktop.fs.data.readText(getFile());
           const data: Workspace = JSON.parse(raw);
           collections = (data.collections ?? []).map(migrateCollection);
           requests = (data.requests ?? []).map(migrateRequest);
@@ -114,6 +115,14 @@ function createApiStore() {
           activeEnvironmentId = data.activeEnvironmentId ?? null;
         }
       } catch { collections = []; requests = []; environments = []; activeEnvironmentId = null; }
+    },
+
+    reset() {
+      initialized = false;
+      collections = [];
+      requests = [];
+      environments = [];
+      activeEnvironmentId = null;
     },
 
     // ── Providers (collections) ──────────────────────────────────────────────
@@ -420,7 +429,12 @@ export async function sendApiRequest(
     envVars?: Record<string, string>;
   } = {},
 ): Promise<ApiResponse> {
-  const env = opts.envVars ?? {};
+  const workspaceVars = Object.fromEntries(
+    workspaceStore.envVars
+      .filter(v => v.enabled && v.key)
+      .map(v => [v.key, v.value])
+  );
+  const env = { ...workspaceVars, ...(opts.envVars ?? {}) };
   const overrides = opts.paramOverrides ?? {};
   const r = (s: string) => resolveVars(s, env);
 

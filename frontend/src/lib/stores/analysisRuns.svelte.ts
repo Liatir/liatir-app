@@ -1,4 +1,5 @@
 import { liatir } from '$lib/api';
+import { getDataPrefix } from './workspace.svelte';
 import type { ToolOutput } from '$lib/types/tool-output';
 import type { RunOutputFile } from '$lib/types/pipeline';
 
@@ -25,13 +26,13 @@ export interface AnalysisRun extends AnalysisRunMeta {
   log?: string[];
 }
 
-const DIR = 'analysis-runs';
-const INDEX = `${DIR}/index.json`;
 const MAX_RUNS = 200;
 const LOG_TTL_MS = 7 * 24 * 3600 * 1000;
 
-function runPath(id: string) { return `${DIR}/${id}.json`; }
-function logPath(id: string) { return `${DIR}/${id}.log.json`; }
+function getDir() { return `${getDataPrefix()}analysis-runs`; }
+function getIndex() { return `${getDir()}/index.json`; }
+function runPath(id: string) { return `${getDir()}/${id}.json`; }
+function logPath(id: string) { return `${getDir()}/${id}.log.json`; }
 
 function createAnalysisRunsStore() {
   let runs = $state<AnalysisRunMeta[]>([]);
@@ -41,7 +42,7 @@ function createAnalysisRunsStore() {
   async function persistIndex() {
     const api = liatir();
     if (!api) return;
-    await api.desktop.fs.data.writeText(INDEX, JSON.stringify(runs), { createDirs: true });
+    await api.desktop.fs.data.writeText(getIndex(), JSON.stringify(runs), { createDirs: true });
   }
 
   return {
@@ -53,9 +54,9 @@ function createAnalysisRunsStore() {
       const api = liatir();
       if (!api) return;
       try {
-        const exists = await api.desktop.fs.data.exists(INDEX);
+        const exists = await api.desktop.fs.data.exists(getIndex());
         if (exists) {
-          const raw = await api.desktop.fs.data.readText(INDEX);
+          const raw = await api.desktop.fs.data.readText(getIndex());
           const parsed = JSON.parse(raw) as AnalysisRunMeta[];
           const seen = new Set<string>();
           runs = parsed.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
@@ -133,6 +134,12 @@ function createAnalysisRunsStore() {
         outputCache.set(id, output);
         return output;
       } catch { return null; }
+    },
+
+    reset() {
+      initialized = false;
+      runs = [];
+      outputCache.clear();
     },
 
     byTool(tool: string): AnalysisRunMeta[] {

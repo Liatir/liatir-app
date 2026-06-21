@@ -1,4 +1,5 @@
 import { liatir } from '$lib/api';
+import { getDataPrefix } from './workspace.svelte';
 
 export interface FieldDef {
   type: 'string' | 'number' | 'boolean' | 'file';
@@ -20,7 +21,7 @@ export interface LiatirModule {
   addedAt: number;
 }
 
-const INDEX = 'liatir-modules.json';
+function getFile() { return `${getDataPrefix()}liatir-modules.json`; }
 
 function createModulesStore() {
   let modules = $state<LiatirModule[]>([]);
@@ -29,7 +30,7 @@ function createModulesStore() {
   async function persist() {
     const api = liatir();
     if (!api) return;
-    await api.desktop.fs.data.writeText(INDEX, JSON.stringify(modules));
+    await api.desktop.fs.data.writeText(getFile(), JSON.stringify(modules));
   }
 
   return {
@@ -41,11 +42,16 @@ function createModulesStore() {
       const api = liatir();
       if (!api) return;
       try {
-        const exists = await api.desktop.fs.data.exists(INDEX);
+        const exists = await api.desktop.fs.data.exists(getFile());
         if (exists) {
-          modules = JSON.parse(await api.desktop.fs.data.readText(INDEX));
+          modules = JSON.parse(await api.desktop.fs.data.readText(getFile()));
         }
       } catch { modules = []; }
+    },
+
+    reset() {
+      initialized = false;
+      modules = [];
     },
 
     async importFromPicker(): Promise<LiatirModule | null> {

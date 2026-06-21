@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { jobsStore } from '$lib/stores/jobs.svelte';
+	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import CustomIcon from '../ui/CustomIcon.svelte';
 	import Divider from '../ui/Divider.svelte';
 
@@ -32,6 +33,7 @@
 	const bottomNav: NavItem[] = [
 		{ divider: true },
 		{ href: '/deps', label: 'Dependencies', icon: 'lucide:replace', match: '/deps' },
+		{ href: '/workspace-settings', label: 'Workspace', icon: 'lucide:folder-cog', match: '/workspace-settings' },
 		{
 			href: '/settings',
 			label: 'Settings',
@@ -111,9 +113,12 @@
 		</div>
 
 		{#if !collapsed}
-			<span class="text-md font-semibold tracking-tight text-zinc-900 flex-1 whitespace-nowrap"
-				>Liatir</span
-			>
+			<div class="flex-1 min-w-0">
+				<span class="text-md font-semibold tracking-tight text-zinc-900 whitespace-nowrap">Liatir</span>
+				{#if workspaceStore.active}
+					<p class="text-[10px] text-zinc-400 truncate leading-none mt-0.5">{workspaceStore.active.name}</p>
+				{/if}
+			</div>
 		{/if}
 
 		<button

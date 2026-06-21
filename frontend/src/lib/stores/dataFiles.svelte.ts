@@ -1,4 +1,5 @@
 import { liatir } from '$lib/api';
+import { getDataPrefix } from './workspace.svelte';
 
 export interface DataFile {
   id: string;
@@ -17,7 +18,7 @@ interface StoredData {
   folders: string[];
 }
 
-const INDEX = 'data-files.json';
+function getFile() { return `${getDataPrefix()}data-files.json`; }
 
 function detectExt(path: string): string {
   const name = path.split(/[\\/]/).pop() ?? path;
@@ -61,7 +62,7 @@ function createDataFilesStore() {
     const api = liatir();
     if (!api) return;
     const data: StoredData = { files, folders };
-    await api.desktop.fs.data.writeText(INDEX, JSON.stringify(data));
+    await api.desktop.fs.data.writeText(getFile(), JSON.stringify(data));
   }
 
   return {
@@ -76,9 +77,9 @@ function createDataFilesStore() {
       if (!api) return;
       loading = true;
       try {
-        const exists = await api.desktop.fs.data.exists(INDEX);
+        const exists = await api.desktop.fs.data.exists(getFile());
         if (exists) {
-          const raw = await api.desktop.fs.data.readText(INDEX);
+          const raw = await api.desktop.fs.data.readText(getFile());
           const data = parseSaved(raw);
           files = data.files;
           folders = data.folders;
@@ -104,6 +105,13 @@ function createDataFilesStore() {
 
       // Always ensure demo files are present (idempotent)
       await this.initDemoFiles();
+    },
+
+    reset() {
+      initialized = false;
+      files = [];
+      folders = [];
+      loading = false;
     },
 
     async initDemoFiles() {

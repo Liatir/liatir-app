@@ -1,4 +1,5 @@
 import { liatir } from '$lib/api';
+import { getDataPrefix } from './workspace.svelte';
 
 export interface SavedScript {
   id: string;
@@ -20,11 +21,11 @@ interface IndexData {
   folders: string[];
 }
 
-const DIR = 'scripts';
-const INDEX = `${DIR}/index.json`;
 const LS_MIGRATE_KEY = 'liatir_scripts';
 
-function scriptPath(id: string) { return `${DIR}/${id}.ts`; }
+function getDir() { return `${getDataPrefix()}scripts`; }
+function getIndex() { return `${getDir()}/index.json`; }
+function scriptPath(id: string) { return `${getDir()}/${id}.ts`; }
 
 function createSavedScriptsStore() {
   let scripts = $state<SavedScript[]>([]);
@@ -36,7 +37,7 @@ function createSavedScriptsStore() {
     const api = liatir();
     if (!api) return;
     const meta: ScriptMeta[] = scripts.map(({ id, name, savedAt, folder }) => ({ id, name, savedAt, folder }));
-    await api.desktop.fs.data.writeText(INDEX, JSON.stringify({ scripts: meta, folders }), { createDirs: true });
+    await api.desktop.fs.data.writeText(getIndex(), JSON.stringify({ scripts: meta, folders }), { createDirs: true });
   }
 
   async function writeCode(id: string, code: string) {
@@ -67,9 +68,9 @@ function createSavedScriptsStore() {
       const api = liatir();
       if (!api) return;
       try {
-        if (await api.desktop.fs.data.exists(INDEX)) {
+        if (await api.desktop.fs.data.exists(getIndex())) {
           // New format: read index then load all code files
-          const raw = await api.desktop.fs.data.readText(INDEX);
+          const raw = await api.desktop.fs.data.readText(getIndex());
           const data: IndexData = JSON.parse(raw);
           folders = data.folders ?? [];
           const metas = (data.scripts ?? []).map(s => ({ ...s, folder: s.folder ?? '' }));
@@ -84,9 +85,10 @@ function createSavedScriptsStore() {
           }));
         } else {
           // Try old single-file format: scripts.json
-          const oldExists = await api.desktop.fs.data.exists('scripts.json');
+          const oldFile = `${getDataPrefix()}scripts.json`;
+          const oldExists = await api.desktop.fs.data.exists(oldFile);
           if (oldExists) {
-            const raw = await api.desktop.fs.data.readText('scripts.json');
+            const raw = await api.desktop.fs.data.readText(oldFile);
             const oldData = JSON.parse(raw) as { scripts?: (ScriptMeta & { code?: string })[]; folders?: string[] };
             folders = oldData.folders ?? [];
             const oldScripts = (oldData.scripts ?? []).map(s => ({ ...s, folder: s.folder ?? '', code: s.code ?? '' }));
@@ -94,9 +96,9 @@ function createSavedScriptsStore() {
             await Promise.all(oldScripts.map(s => writeCode(s.id, s.code)));
             scripts = oldScripts;
             await persistIndex();
-            try { await api.desktop.fs.data.remove('scripts.json'); } catch { /* ignore */ }
+            try { await api.desktop.fs.data.remove(oldFile); } catch { /* ignore */ }
           } else {
-            // Try legacy localStorage migration
+            // Try legacy localStorage migration (only for root/no-workspace context)
             try {
               const lsRaw = localStorage.getItem(LS_MIGRATE_KEY);
               if (lsRaw) {
@@ -110,6 +112,13 @@ function createSavedScriptsStore() {
           }
         }
       } catch { scripts = []; folders = []; }
+    },
+
+    reset() {
+      initialized = false;
+      scripts = [];
+      folders = [];
+      activeScriptId = null;
     },
 
     async create(name: string, code: string, folder = ''): Promise<string> {
