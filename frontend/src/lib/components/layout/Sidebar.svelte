@@ -37,12 +37,11 @@
 	];
 	const bottomNav: NavItem[] = [
 		{ href: '/scripts', label: 'Scripts', icon: 'lucide:code', match: '/scripts', global: true },
-		{ href: '/deps', label: 'Dependencies', icon: 'lucide:replace', match: '/deps', global: true },
 		{ divider: true, global: true },
-		{ href: '/workspace-settings', label: 'Workspace', icon: 'lucide:box', match: '/workspace-settings', global: false },
+		{ href: '/deps', label: 'Dependencies', icon: 'lucide:replace', match: '/deps', global: true },
 		{
 			href: '/settings',
-			label: 'Settings',
+			label: 'App Settings',
 			icon: 'lucide:settings',
 			match: '/settings',
 			global: true
@@ -114,7 +113,9 @@
 		/>
 	</button>
 	<!-- Logo -->
-	<div class="flex h-14 items-center border-b border-border px-3 gap-2.5" id="logo-section">
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="flex h-14 items-center justify-start border-b border-border px-3 gap-2.5 text-left {workspaceStore.active?'hover:bg-zinc-100 hover:cursor-pointer':''}" id="logo-section" onclick={()=>{if(workspaceStore.active) goto("/workspace-settings")}}>
 		<div class="flex w-8 h-8 overflow-hidden items-center gap-0 space-x-0 justify-center rounded-lg bg-brand shrink-0" id="sidebar-logo-container">
 			<div class="h-8 w-8 flex p-1.5 justify-center items-center shrink-0" id="sidebar-logo">
 				<img src="/logo/png/logo-white.png" alt="Liatir" class="h-full w-full opacity-100 object-contain" />
