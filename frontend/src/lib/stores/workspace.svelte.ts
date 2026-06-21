@@ -105,24 +105,6 @@ function createWorkspaceStore() {
         await persistWorkspaces();
       }
 
-      try {
-        if (await api.desktop.fs.data.exists(ACTIVE_FILE)) {
-          const raw = await api.desktop.fs.data.readText(ACTIVE_FILE);
-          const { id } = JSON.parse(raw) as { id: string | null };
-          if (id && workspaces.some(w => w.id === id)) {
-            activeId = id;
-            await loadEnvVars(id);
-          }
-        }
-      } catch {
-        activeId = null;
-      }
-
-      // Seed demo files if starting in Test Mode (runs before any page's onMount can race)
-      if (activeId === TEST_WORKSPACE_ID) {
-        await demoInitFn?.();
-      }
-
       initialized = true;
     },
 
@@ -150,6 +132,14 @@ function createWorkspaceStore() {
       if (id === TEST_WORKSPACE_ID) {
         await demoInitFn?.();
       }
+    },
+
+    async toggleFavorite(id: string) {
+      if (id === TEST_WORKSPACE_ID) return;
+      workspaces = workspaces.map(w =>
+        w.id === id ? { ...w, favorite: !w.favorite } : w
+      );
+      await persistWorkspaces();
     },
 
     async rename(id: string, name: string) {

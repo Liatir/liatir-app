@@ -7,6 +7,7 @@
   import { codeIfEmpty } from '$lib/stores/codeEditor.svelte';
   import { savedScripts, type SavedScript } from '$lib/stores/savedScripts.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
+	import { goto } from '$app/navigation';
 
   // ── editor state ───────────────────────────────────────────────
   let code = $state(codeIfEmpty);
@@ -137,75 +138,38 @@
 <div class="flex h-full overflow-hidden">
 
   <!-- Scripts sidebar -->
-  <div class="w-56 shrink-0 border-r border-border bg-surface flex flex-col">
-    <div class="flex items-center justify-between px-3 py-3 border-b border-border">
-      <span class="text-xs font-medium text-zinc-600">Scripts</span>
-      <!-- <button
-        onclick={newScript}
-        class="text-zinc-500 hover:text-zinc-800 transition-colors p-0.5 rounded"
-        title="New script"
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-      </button> -->
-    </div>
+  <span class="hidden">
+    <div class="w-56 shrink-0 border-r border-border bg-surface flex flex-col">
+      <div class="flex items-center justify-between px-3 py-3 border-b border-border">
+        <span class="text-xs font-medium text-zinc-600">Scripts</span>
+        <!-- <button
+          onclick={newScript}
+          class="text-zinc-500 hover:text-zinc-800 transition-colors p-0.5 rounded"
+          title="New script"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button> -->
+      </div>
 
-    <div class="flex-1 overflow-y-auto py-1">
-      {#if savedScripts.scripts.length === 0}
-        <p class="text-xs text-zinc-400 text-center py-6 px-3">No saved scripts yet.<br/>Run and save to keep them.</p>
-      {:else}
-        <!-- Root scripts -->
-        {#each scriptGroups.root as s (s.id)}
-          {@const active = savedScripts.activeScriptId === s.id}
-          <div
-            role="button"
-            tabindex="0"
-            onclick={() => loadScript(s.id)}
-            onkeydown={(e) => e.key === 'Enter' && loadScript(s.id)}
-            class="w-full text-left px-3 py-2 group transition-colors cursor-pointer
-              {active ? 'bg-brand/15 text-brand-soft' : 'text-zinc-600 hover:bg-surface-2 hover:text-zinc-800'}"
-          >
-            <div class="flex items-center justify-between mt-0.5">
-              <p class="text-xs font-medium truncate">{s.name}</p>
-              <button
-                onclick={(e) => { e.stopPropagation(); deleteScript(s.id, s.name); }}
-                aria-label="Delete script"
-                class="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-500 transition-all"
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-              <p class="text-[10px] text-zinc-400">
-                {fmtDate(s.savedAt)}
-              </p>
-          </div>
-        {/each}
-
-        <!-- Folder groups -->
-        {#each scriptGroups.folders as group}
-          <!-- Folder header -->
-          <div class="flex items-center gap-1.5 px-3 pt-2.5 pb-1 {scriptGroups.root.length > 0 || scriptGroups.folders.indexOf(group) > 0 ? 'mt-0.5' : ''}">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-zinc-400">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-            </svg>
-            <span class="text-[10px] font-semibold text-zinc-400 truncate uppercase tracking-wide">{group.folder}</span>
-          </div>
-          <!-- Scripts in this folder -->
-          {#each group.scripts as s (s.id)}
+      <div class="flex-1 overflow-y-auto py-1">
+        {#if savedScripts.scripts.length === 0}
+          <p class="text-xs text-zinc-400 text-center py-6 px-3">No saved scripts yet.<br/>Run and save to keep them.</p>
+        {:else}
+          <!-- Root scripts -->
+          {#each scriptGroups.root as s (s.id)}
             {@const active = savedScripts.activeScriptId === s.id}
             <div
               role="button"
               tabindex="0"
               onclick={() => loadScript(s.id)}
               onkeydown={(e) => e.key === 'Enter' && loadScript(s.id)}
-              class="w-full text-left pl-6 pr-3 py-2 group transition-colors cursor-pointer
+              class="w-full text-left px-3 py-2 group transition-colors cursor-pointer
                 {active ? 'bg-brand/15 text-brand-soft' : 'text-zinc-600 hover:bg-surface-2 hover:text-zinc-800'}"
             >
               <div class="flex items-center justify-between mt-0.5">
-              <p class="text-xs font-medium truncate">{s.name}</p>
+                <p class="text-xs font-medium truncate">{s.name}</p>
                 <button
                   onclick={(e) => { e.stopPropagation(); deleteScript(s.id, s.name); }}
                   aria-label="Delete script"
@@ -216,13 +180,52 @@
                   </svg>
                 </button>
               </div>
-                <p class="text-[10px] text-zinc-400">{fmtDate(s.savedAt)}</p>
+                <p class="text-[10px] text-zinc-400">
+                  {fmtDate(s.savedAt)}
+                </p>
             </div>
           {/each}
-        {/each}
-      {/if}
+
+          <!-- Folder groups -->
+          {#each scriptGroups.folders as group}
+            <!-- Folder header -->
+            <div class="flex items-center gap-1.5 px-3 pt-2.5 pb-1 {scriptGroups.root.length > 0 || scriptGroups.folders.indexOf(group) > 0 ? 'mt-0.5' : ''}">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-zinc-400">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+              </svg>
+              <span class="text-[10px] font-semibold text-zinc-400 truncate uppercase tracking-wide">{group.folder}</span>
+            </div>
+            <!-- Scripts in this folder -->
+            {#each group.scripts as s (s.id)}
+              {@const active = savedScripts.activeScriptId === s.id}
+              <div
+                role="button"
+                tabindex="0"
+                onclick={() => loadScript(s.id)}
+                onkeydown={(e) => e.key === 'Enter' && loadScript(s.id)}
+                class="w-full text-left pl-6 pr-3 py-2 group transition-colors cursor-pointer
+                  {active ? 'bg-brand/15 text-brand-soft' : 'text-zinc-600 hover:bg-surface-2 hover:text-zinc-800'}"
+              >
+                <div class="flex items-center justify-between mt-0.5">
+                <p class="text-xs font-medium truncate">{s.name}</p>
+                  <button
+                    onclick={(e) => { e.stopPropagation(); deleteScript(s.id, s.name); }}
+                    aria-label="Delete script"
+                    class="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-500 transition-all"
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+                  <p class="text-[10px] text-zinc-400">{fmtDate(s.savedAt)}</p>
+              </div>
+            {/each}
+          {/each}
+        {/if}
+      </div>
     </div>
-  </div>
+  </span>
 
   <!-- Editor + output -->
   <div class="flex-1 flex flex-col overflow-hidden">
@@ -253,6 +256,8 @@
           <Button variant="primary" size="sm" disabled={running} loading={running} onclick={run}>
             Run  <span class="text-[10px] ml-1">⌘↵</span>
           </Button>
+          <div class="w-px bg-border self-stretch"></div>
+          <Button variant="secondary" size="sm" onclick={()=>goto("/scripts")}>Scrpits</Button>
         {/if}
       {/snippet}
     </PageHeader>

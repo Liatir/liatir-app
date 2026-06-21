@@ -3,6 +3,7 @@ export interface WorkspaceMeta {
   name: string;
   createdAt: number;
   lastOpenedAt: number;
+  favorite?: boolean;
 }
 
 export interface WorkspacesFile {

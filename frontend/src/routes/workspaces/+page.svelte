@@ -12,6 +12,14 @@
   let showNewForm = $state(false);
   let inputEl = $state<HTMLInputElement | null>(null);
 
+  const sortedWorkspaces = $derived(
+    [...workspaceStore.workspaces.filter(w => w.id !== TEST_WORKSPACE_ID)]
+      .sort((a, b) => {
+        if (!!a.favorite !== !!b.favorite) return a.favorite ? -1 : 1;
+        return b.lastOpenedAt - a.lastOpenedAt;
+      })
+  );
+
   onMount(async () => {
     if (!workspaceStore.initialized) {
       await workspaceStore.init();
@@ -77,32 +85,46 @@
 
   <!-- Workspace grid -->
   <div class="w-full max-w-2xl space-y-3">
-    {#if workspaceStore.workspaces.filter(w => w.id !== TEST_WORKSPACE_ID).length > 0}
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {#each workspaceStore.workspaces.filter(w => w.id !== TEST_WORKSPACE_ID) as w (w.id)}
-          <button
-            onclick={() => openWorkspace(w.id)}
-            class="group text-left rounded-xl border border-border bg-surface p-4 hover:border-brand/40 hover:bg-brand/5
-                   hover:shadow-sm transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-          >
-            <div class="flex items-start justify-between gap-2">
-              <div class="flex items-center gap-2.5 min-w-0">
-                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/10 shrink-0">
-                  <Icon icon="lucide:folder" width="15" height="15" class="text-brand" />
+    {#if sortedWorkspaces.length > 0}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {#each sortedWorkspaces as w, index (w.id)}
+          <div class="relative group/card">
+            <button
+              onclick={() => openWorkspace(w.id)}
+              class="group w-full text-left rounded-xl border border-border bg-surface p-4 hover:border-brand/40 hover:bg-brand/5
+                     hover:shadow-sm transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/10 shrink-0">
+                    <Icon icon="lucide:folder" width="15" height="15" class="text-brand" />
+                  </div>
+                  <p class="text-sm font-medium text-zinc-800 truncate group-hover:text-brand transition-colors">
+                    {w.name}
+                  </p>
                 </div>
-                <p class="text-sm font-medium text-zinc-800 truncate group-hover:text-brand transition-colors">
-                  {w.name}
-                </p>
               </div>
-              <Icon icon="lucide:arrow-right" width="14" height="14"
-                class="text-zinc-300 group-hover:text-brand transition-colors shrink-0 mt-0.5" />
+              <div class="mt-3 flex items-center gap-1 text-xs text-zinc-400">
+                <span>{relativeDate(w.lastOpenedAt)}</span>
+                <div class="bg-border rounded-full w-[2.5px] h-[2.5px]"></div>
+                <span>Created {fmtDate(w.createdAt)}</span>
+              </div>
+            </button>
+            <!-- Star / favorite button -->
+            <button
+              onclick={(e) => { e.stopPropagation(); workspaceStore.toggleFavorite(w.id); }}
+              title={w.favorite ? 'Remove from favorites' : 'Add to favorites'}
+              class="absolute top-2.5 right-3 p-1 rounded opacity-0 group-hover/card:opacity-100 transition-opacity
+                     {w.favorite ? 'opacity-100 text-amber-400 hover:text-amber-500' : 'text-zinc-300 hover:text-amber-400'}"
+            >
+              <Icon icon={w.favorite ? 'ph:star-fill' : 'ph:star'} width="13" height="13" />
+            </button>
+          </div>
+          {#if index === sortedWorkspaces.length - 1 && sortedWorkspaces.length % 2 !== 0}
+            <div class="hidden md:flex group/card items-center justify-center w-full rounded-xl border border-border bg-zinc-900/1 opacity-50">
+              <span class="text-sm tracking-wide text-zinc-400/0">Empty box</span>
             </div>
-            <div class="mt-3 flex items-center gap-3 text-xs text-zinc-400">
-              <span>{relativeDate(w.lastOpenedAt)}</span>
-              <span class="text-zinc-200">·</span>
-              <span>Created {fmtDate(w.createdAt)}</span>
-            </div>
-          </button>
+          {/if}
         {/each}
       </div>
     {:else}
@@ -112,28 +134,6 @@
         <p class="text-xs text-zinc-400 mt-1">Create your first workspace to get started</p>
       </div>
     {/if}
-
-    <!-- Test Mode entry -->
-    <div class="pt-2 border-t border-border">
-      <p class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-2">Sandbox</p>
-      <button
-        onclick={() => openWorkspace(TEST_WORKSPACE_ID)}
-        class="group w-full text-left rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3
-               hover:border-emerald-400 hover:bg-emerald-50 hover:shadow-sm transition-all duration-150
-               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-      >
-        <div class="flex items-center gap-3">
-          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 shrink-0">
-            <Icon icon="lucide:flask-conical" width="15" height="15" class="text-emerald-600" />
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-emerald-800 group-hover:text-emerald-700 transition-colors">Test Mode</p>
-            <p class="text-xs text-emerald-600/70 truncate">Demo files · Isolated sandbox · Resettable</p>
-          </div>
-          <Icon icon="lucide:arrow-right" width="14" height="14" class="text-emerald-300 group-hover:text-emerald-500 transition-colors shrink-0" />
-        </div>
-      </button>
-    </div>
 
     <!-- New workspace -->
     <div class="mt-2">
@@ -168,6 +168,28 @@
           New workspace
         </button>
       {/if}
+    </div>
+
+    <!-- Test Mode entry -->
+    <div class="mt-2">
+      <!-- <p class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-2">Sandbox</p> -->
+      <button
+        onclick={() => openWorkspace(TEST_WORKSPACE_ID)}
+        class="group w-full text-left rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3
+               hover:border-emerald-400 hover:bg-emerald-50 hover:shadow-sm transition-all duration-150
+               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+      >
+        <div class="flex items-center gap-3">
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 shrink-0">
+            <Icon icon="lucide:flask-conical" width="15" height="15" class="text-emerald-600" />
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-emerald-800 group-hover:text-emerald-700 transition-colors">Test Mode</p>
+            <p class="text-xs text-emerald-600/70 truncate">Demo files · Isolated sandbox · Resettable</p>
+          </div>
+          <Icon icon="lucide:arrow-right" width="14" height="14" class="text-emerald-300 group-hover:text-emerald-500 transition-colors shrink-0" />
+        </div>
+      </button>
     </div>
   </div>
 </div>

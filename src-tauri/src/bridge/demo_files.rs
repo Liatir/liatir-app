@@ -9,16 +9,32 @@ pub struct DemoFileEntry {
     pub folder: String,
 }
 
+fn find_demo_resource_dir(app: &AppHandle) -> Option<PathBuf> {
+    // Production: resources are bundled adjacent to the binary
+    if let Ok(d) = app.path().resource_dir() {
+        let p = d.join("demo-files");
+        if p.exists() { return Some(p); }
+    }
+    // Development fallback: files live in src-tauri/resources/demo-files/
+    #[cfg(debug_assertions)]
+    {
+        let p = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("resources")
+            .join("demo-files");
+        if p.exists() { return Some(p); }
+    }
+    None
+}
+
 /// Copy bundled demo files from the resource directory to app_data/demo-files/.
 /// Idempotent — skips files that already exist.
 /// Returns the list of all demo file paths (existing or just copied).
 #[tauri::command]
 pub fn lia_init_demo_files(app: AppHandle) -> Result<Vec<DemoFileEntry>, String> {
-    let resource_dir = app
-        .path()
-        .resource_dir()
-        .map_err(|e| e.to_string())?
-        .join("demo-files");
+    let resource_dir = match find_demo_resource_dir(&app) {
+        Some(d) => d,
+        None => return Ok(vec![]),
+    };
 
     let data_dir = app
         .path()

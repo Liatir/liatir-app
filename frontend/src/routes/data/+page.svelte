@@ -4,11 +4,15 @@
   import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import { dataFiles, type DataFile } from '$lib/stores/dataFiles.svelte';
+  import { workspaceStore } from '$lib/stores/workspace.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import { liatir } from '$lib/api';
 
   onMount(async () => {
     await dataFiles.init();
+    if (workspaceStore.isTestMode) {
+      await dataFiles.initDemoFiles();
+    }
     dataFiles.checkMissing();
   });
 

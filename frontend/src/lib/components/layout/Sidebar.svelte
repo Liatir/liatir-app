@@ -32,7 +32,8 @@
 		{ divider: true, global: false },
 		{ href: '/tools', label: 'Tools', icon: 'lucide:dna', match: '/tools', global: true },
 		{ href: '/modules', label: 'Modules', customIcon: '/icons/lia-file-icon.svg', match: '/modules', global: true },
-		{ href: '/plugins', label: 'Plugins', customIcon: '/icons/web-assembly-file-icon.svg', match: '/plugins', global: true }
+		{ href: '/plugins', label: 'Plugins', customIcon: '/icons/web-assembly-file-icon.svg', match: '/plugins', global: true },
+		{ href: '/scripts', label: 'Scripts', icon: 'lucide:code', match: '/scripts', global: true }
 	];
 	const bottomNav: NavItem[] = [
 		{ divider: true, global: true },
@@ -49,16 +50,7 @@
 		{ divider: true, global: true },
 	];
 
-	const advancedNav: NavItem[] = [
-		{ href: '/scripts', label: 'Saved', icon: 'lucide:folder-code', match: '/scripts', global: true },
-		{ href: '/code', label: 'Editor', icon: 'lucide:square-terminal', match: '/code', global: true }
-	];
-
 	let collapsed = $state(false);
-	let advancedOpen = $state(false);
-	let advancedBtnEl = $state<HTMLElement | null>(null);
-	let floatingY = $state(0);
-	let floatingFromBottom = $state(false);
 
 	onMount(() => {
 		collapsed = localStorage.getItem('sidebar-collapsed') === 'true';
@@ -81,24 +73,6 @@
 		if (item.href === '/') return path === '/';
 		if (item.href === '/workspaces') return path === '/workspaces';
 		return path.startsWith(item.match ?? item.href);
-	}
-
-	const advancedActive = $derived(
-		advancedNav.some((i) => i.href && page.url.pathname.startsWith(i.match ?? i.href))
-	);
-
-	function togglePlayground() {
-		if (advancedBtnEl) {
-			const rect = advancedBtnEl.getBoundingClientRect();
-			const PANEL_HEIGHT = 120;
-			floatingFromBottom = rect.top + PANEL_HEIGHT > window.innerHeight;
-			floatingY = floatingFromBottom ? window.innerHeight - rect.bottom : rect.top;
-		}
-		advancedOpen = !advancedOpen;
-	}
-
-	function closeFloating() {
-		advancedOpen = false;
 	}
 
 	async function navigateToPage(navItem: NavItem) {
@@ -127,11 +101,6 @@
 		}
 	}
 </script>
-
-<!-- Click-outside backdrop for floating panel -->
-{#if collapsed && advancedOpen}
-	<div class="fixed inset-0 z-40" role="presentation" onclick={closeFloating}></div>
-{/if}
 
 <aside
 	class="flex relative h-screen shrink-0 flex-col border-r border-border bg-surface transition-all duration-200
@@ -215,34 +184,7 @@
 		{/each}
 	</nav>
 
-	<!-- Bottom: playground + bottom nav -->
 	<div class="px-1.5 py-3 space-y-0.5">
-		<!-- Playground -->
-		<div class="relative">
-			<button
-				bind:this={advancedBtnEl}
-				onclick={togglePlayground}
-				title={collapsed ? 'Scripts' : undefined}
-				class="w-full flex items-center text-left gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
-				       {collapsed ? 'justify-center' : ''}
-				       {advancedActive
-					? 'bg-brand/10 text-brand font-medium'
-					: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
-			>
-				<Icon icon="lucide:code-2" width="16" height="16" class="shrink-0" />
-				{#if !collapsed}
-					<span class="flex-1 text-left">Scripts</span>
-					<Icon
-						icon="lucide:chevron-right"
-						width="13"
-						height="13"
-						class="shrink-0 transition-transform duration-150 {advancedOpen ? 'rotate-180' : ''}"
-					/>
-				{/if}
-			</button>
-
-		</div>
-
 		<!-- Bottom nav -->
 		{#each bottomNav as item}
 			{@const active = isActive(item)}
@@ -300,30 +242,6 @@
 	</div>
 </aside>
 
-<!-- Floating Playground panel -->
-{#if advancedOpen}
-	<div
-		class="fixed z-50 rounded-xl border border-border bg-white shadow-xl py-1.5 min-w-44"
-		style="left: {collapsed?'60':'225'}px; {floatingFromBottom ? `bottom: ${floatingY}px` : `top: ${floatingY}px`};"
-	>
-		<p class="px-3 py-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
-			Scripts
-		</p>
-		{#each advancedNav as item}
-			{@const active = isActive(item)}
-			<button
-				onclick={()=>{closeFloating(); navigateToPage(item as NavItem)}}
-				class="flex items-center w-full text-left gap-3 px-3 py-2 text-sm transition-colors
-				       {active
-					? 'bg-brand/8 text-brand font-medium'
-					: 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900'}"
-			>
-				<Icon icon={item.icon} width="15" height="15" class="shrink-0" />
-				<span>{item.label}</span>
-			</button>
-		{/each}
-	</div>
-{/if}
 
 
 <style>
