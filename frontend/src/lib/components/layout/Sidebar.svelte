@@ -243,24 +243,6 @@
 				{/if}
 			</button>
 
-			<!-- Inline submenu -->
-			{#if !collapsed && advancedOpen}
-				<div class="mt-0.5 space-y-0.5">
-					{#each advancedNav as item}
-						{@const active = isActive(item)}
-						<a
-							href={item.href}
-							class="flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100 pl-8
-							       {active
-								? 'bg-brand/10 text-brand font-medium'
-								: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
-						>
-							<Icon icon={item.icon} width="15" height="15" class="shrink-0"/>
-							<span>{item.label}</span>
-						</a>
-					{/each}
-				</div>
-			{/if}
 		</div>
 
 		<!-- Bottom nav -->
@@ -321,7 +303,7 @@
 </aside>
 
 <!-- Floating Playground panel (collapsed sidebar only) -->
-{#if collapsed && advancedOpen}
+{#if advancedOpen}
 	<div
 		class="fixed z-50 rounded-xl border border-border bg-white shadow-xl py-1.5 min-w-44"
 		style="left: 60px; {floatingFromBottom ? `bottom: ${floatingY}px` : `top: ${floatingY}px`};"

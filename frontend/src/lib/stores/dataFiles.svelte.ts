@@ -1,5 +1,5 @@
 import { liatir } from '$lib/api';
-import { getDataPrefix } from './workspace.svelte';
+import { getDataPrefix, workspaceStore, TEST_WORKSPACE_ID } from './workspace.svelte';
 
 export interface DataFile {
   id: string;
@@ -103,8 +103,10 @@ function createDataFilesStore() {
       } catch { files = []; folders = []; }
       finally { loading = false; }
 
-      // Always ensure demo files are present (idempotent)
-      await this.initDemoFiles();
+      // Demo files only in Test Mode workspace
+      if (workspaceStore.activeId === TEST_WORKSPACE_ID) {
+        await this.initDemoFiles();
+      }
     },
 
     reset() {
