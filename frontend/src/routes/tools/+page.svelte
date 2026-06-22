@@ -7,6 +7,8 @@
   import Button from '$lib/components/ui/Button.svelte';
   import Spinner from '$lib/components/ui/Spinner.svelte';
   import { pluginsStore } from '$lib/stores/plugins.svelte';
+	import { workspaceStore } from '$lib/stores/workspace.svelte';
+	import { toast } from '$lib/stores/toast.svelte';
 
   interface BuiltinTool {
     id: string;
@@ -132,6 +134,19 @@
   // group builtins by category
   const categories = [...new Set(builtins.map((t) => t.category))];
 
+  const openToolPage = (tool: BuiltinTool) => {
+    if(!tool || tool?.status != 'available' || !tool?.href) return;
+    if(workspaceStore.active && workspaceStore.activeId) {
+      goto(tool.href);
+    } else {
+      const params = new URLSearchParams();
+      // Lo slash viene codificato automaticamente in %2F
+      params.set('fromRoute', ((tool.href.trim())||""));
+      toast.info("Select a workplace first");
+      goto(`/workspaces?${params.toString()}`);
+    }
+  }
+
   onMount(() => pluginsStore.refresh());
 </script>
 
@@ -150,9 +165,9 @@
         <div class="grid grid-cols-2 gap-3">
           {#each builtins.filter((t) => t.category === category) as tool}
             <Card
-              hoverable={tool.status === 'available'}
+              hoverable={tool?.status === 'available'}
               class="p-4 {tool.status === 'soon' ? 'opacity-50' : ''}"
-              onclick={tool.status === 'available' ? () => goto(tool.href) : undefined}
+              onclick={()=>openToolPage(tool)}
             >
               <div class="flex items-start justify-between gap-2 mb-2">
                 <p class="text-sm font-semibold text-zinc-900">{tool.label}</p>

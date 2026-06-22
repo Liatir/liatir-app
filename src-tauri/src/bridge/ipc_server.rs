@@ -230,6 +230,102 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
             Ok(Value::String(text))
         }
 
+        // ── Native bio tools ─────────────────────────────────────────────
+        // Exposed to .lia Modules so the typed bio wrappers in `@liatir/sdk`
+        // (Liatir.align.*, Liatir.variants.*, …) can call the SAME native
+        // commands the desktop UI uses — reusing reference auto-indexing,
+        // output redirection and stat parsing instead of re-implementing them.
+
+        // BWA-MEM — short-read alignment → SAM. Auto-indexes the reference on first use.
+        "lia_bwa_mem" => {
+            let reference = payload["reference"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("reference required"))?
+                .to_string();
+            let reads_r1 = payload["readsR1"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("readsR1 required"))?
+                .to_string();
+            // Optional second mate for paired-end reads.
+            let reads_r2 = payload["readsR2"].as_str().map(String::from);
+            let output_sam = payload["outputSam"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("outputSam required"))?
+                .to_string();
+            let job_id = payload["jobId"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("jobId required"))?
+                .to_string();
+            crate::bridge::bwa::lia_bwa_mem(app.clone(), reference, reads_r1, reads_r2, output_sam, job_id)
+                .await
+                .map_err(|e| anyhow::anyhow!(e))
+        }
+
+        // minimap2 — long/short-read alignment → SAM. `preset` picks the mode (sr, lr, map-ont, …).
+        "lia_minimap2" => {
+            let preset = payload["preset"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("preset required"))?
+                .to_string();
+            let reference = payload["reference"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("reference required"))?
+                .to_string();
+            let reads_r1 = payload["readsR1"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("readsR1 required"))?
+                .to_string();
+            let reads_r2 = payload["readsR2"].as_str().map(String::from);
+            let output_sam = payload["outputSam"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("outputSam required"))?
+                .to_string();
+            let job_id = payload["jobId"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("jobId required"))?
+                .to_string();
+            crate::bridge::minimap2::lia_minimap2(app.clone(), preset, reference, reads_r1, reads_r2, output_sam, job_id)
+                .await
+                .map_err(|e| anyhow::anyhow!(e))
+        }
+
+        // SnpEff — functional variant annotation (VCF → annotated VCF + stats). Needs a configured JAR.
+        "lia_snpeff_annotate" => {
+            let jar_path = payload["jarPath"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("jarPath required"))?
+                .to_string();
+            let genome = payload["genome"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("genome required"))?
+                .to_string();
+            let data_dir = payload["dataDir"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("dataDir required"))?
+                .to_string();
+            let input_vcf = payload["inputVcf"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("inputVcf required"))?
+                .to_string();
+            let output_vcf = payload["outputVcf"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("outputVcf required"))?
+                .to_string();
+            // JVM heap (e.g. "4g"); falls back to a sane default if omitted.
+            let heap = payload["heap"].as_str().unwrap_or("4g").to_string();
+            let job_id = payload["jobId"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("jobId required"))?
+                .to_string();
+            // Optional explicit java binary; None lets the command resolve it.
+            let java_path = payload["javaPath"].as_str().map(String::from);
+            crate::bridge::snpeff::lia_snpeff_annotate(
+                app.clone(), jar_path, genome, data_dir, input_vcf, output_vcf, heap, job_id, java_path,
+            )
+            .await
+            .map_err(|e| anyhow::anyhow!(e))
+        }
+
         _ => Err(anyhow::anyhow!("unknown command: {cmd}")),
     }
 }

@@ -7,6 +7,7 @@
   import { jobsStore } from '$lib/stores/jobs.svelte';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
 	import { toast } from '$lib/stores/toast.svelte';
+	import { page } from '$app/state';
 
   let newName = $state('');
   let creating = $state(false);
@@ -48,8 +49,10 @@
     await workspaceStore.switchTo(id);
     jobsStore.refresh();
     pipelineStore.init();
-    await goto('/');
-    if(workspaceStore.isSandboxMode) toast.info("Now using sandbox");
+    const toRoute = (page.url.searchParams.get('fromRoute')?.trim()) ?? "";
+    if(toRoute?.trim()) await goto(toRoute);
+    else await goto('/');
+    if(workspaceStore.isSandboxMode) toast.info("Now using sandbox workspace");
   }
 
   async function createAndOpen() {
@@ -173,7 +176,7 @@
     </div>
 
     <!-- Sandbox entry -->
-    <div class="mt-5 hidden">
+    <div class="mt-5">
       <!-- <p class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-2">Sandbox</p> -->
       <button
         onclick={() => openWorkspace(SANDBOX_WORKSPACE_ID)}

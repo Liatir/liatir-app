@@ -22,8 +22,6 @@
 	}
 
 	const mainNav: NavItem[] = [
-		{ href: '/workspaces', label: 'Workspaces', icon: 'lucide:layout-grid', match: "/workspaces", global: true, workspacePage: true },
-		{ divider: true, global: true },
 		{ href: '/', label: 'Dashboard', icon: 'lucide:house', match: undefined, global: false },
 		{ href: '/data', label: 'Data', icon: 'lucide:database', match: '/data', global: false },
 		{ href: '/pipelines', label: 'Pipelines', icon: 'lucide:workflow', match: '/pipelines', global: false },
@@ -32,11 +30,13 @@
 		{ href: '/jobs', label: 'Jobs', icon: 'lucide:radio', match: '/jobs', global: false },
 		{ divider: true, global: false },
 		{ href: '/tools', label: 'Tools', icon: 'lucide:dna', match: '/tools', global: true },
+		{ href: '/ai', label: 'AI Models', icon: 'mingcute:ai-line', match: '/ai', global: true },
+		{ divider: true, global: true },
 		{ href: '/modules', label: 'Modules', customIcon: '/icons/lia-file-icon.svg', match: '/modules', global: true },
 		{ href: '/plugins', label: 'Plugins', customIcon: '/icons/web-assembly-file-icon.svg', match: '/plugins', global: true }
 	];
 	const bottomNav: NavItem[] = [
-		{ href: '/scripts', label: 'Scripts', icon: 'lucide:code', match: '/scripts', global: true },
+		{ href: '/workspaces', label: 'Workspaces', icon: 'lucide:layout-grid', match: "/workspaces", global: true, workspacePage: true },
 		{ divider: true, global: true },
 		{ href: '/deps', label: 'Dependencies', icon: 'lucide:replace', match: '/deps', global: true },
 		{
@@ -81,16 +81,31 @@
 
 	async function toggleSandboxMode() {
 		if (!workspaceStore.isSandboxMode) {
+			const params = new URLSearchParams();
+			// Lo slash viene codificato automaticamente in %2F
+			params.set('fromWorkspace', ((workspaceStore?.activeId?.trim())||""));
+			const queryParam: string = params.toString().trim();
+
 			await workspaceStore.switchTo(SANDBOX_WORKSPACE_ID);
 			jobsStore.refresh();
 			pipelineStore.init();
-			await goto('/');
-			toast.info("Now using sandbox");
+
+			await goto(`/?${queryParam}`);
+			toast.info("Now using sandbox workspace");
 		} else {
-			await workspaceStore.switchTo("");
-			jobsStore.refresh();
-			pipelineStore.init();
-			await goto('/workspaces');
+			const toWorkspace = (page.url.searchParams.get('fromWorkspace')?.trim()) ?? "";
+			if(toWorkspace?.trim()) {
+				await workspaceStore.switchTo(toWorkspace);
+				jobsStore.refresh();
+				pipelineStore.init();
+				toast.info(`Back to: ${workspaceStore.active?.name}`)
+				await goto('/');
+			} else {
+				await workspaceStore.switchTo("");
+				jobsStore.refresh();
+				pipelineStore.init();
+				await goto('/workspaces');
+			}
 		}
 	}
 </script>
@@ -151,7 +166,7 @@
 						title={collapsed ? item.label : undefined}
 						class="group relative flex w-full text-left items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
 							{collapsed ? 'justify-center' : ''}  
-							{active
+							{(active && !(item?.workspacePage))
 							? 'bg-brand/10 text-brand font-medium'
 							: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
 					>
@@ -192,7 +207,7 @@
 						title={collapsed ? item.label : undefined}
 						class="group relative flex w-full text-left items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
 							{collapsed ? 'justify-center' : ''}
-							{active
+							{(active && !(item?.workspacePage))
 							? 'bg-brand/10 text-brand font-medium'
 							: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
 					>

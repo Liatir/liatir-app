@@ -1,6 +1,7 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 import * as os from "os";
+import { buildAlign, type AlignNamespace } from "./bio/align";
 
 // ── Types mirrored from src-ts (no runtime dep on the browser SDK) ──────────
 
@@ -139,6 +140,8 @@ export interface LiatirNode {
   jobs: LiatirNodeJobs;
   /** Check whether system tools are installed and get their versions. */
   deps: LiatirNodeDeps;
+  /** Bio analysis namespaces (scipy-style typed wrappers): align, variants, … */
+  align: AlignNamespace;
   /** App filesystem paths. */
   paths(): Promise<LiatirNodePaths>;
   /** Raw invoke — calls any supported Tauri command. */
@@ -199,6 +202,7 @@ export async function createLiatir(): Promise<LiatirNode> {
   return {
     jobs,
     deps,
+    align: buildAlign(invoke),
     paths: () => invoke<LiatirNodePaths>("lia_fs_paths", {}),
     invoke,
   };

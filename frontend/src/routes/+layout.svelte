@@ -15,21 +15,26 @@
 
 	let { children } = $props();
 
+	let initialized: boolean = $state(false);
+
 	onMount(async () => {
 		await workspaceStore.init();
-		if (!workspaceStore.activeId) {
+		if (!(workspaceStore.activeId && workspaceStore.active)) {
 			goto('/workspaces');
+			initialized=true;
 			return;
 		}
 		jobsStore.refresh();
 		pipelineStore.init();
+		initialized=true;
 	});
 </script>
 
-{#if !workspaceStore.initialized}
+
+{#if !workspaceStore.initialized || !initialized}
 	<div class="h-screen flex items-center justify-center" style="background-color: var(--color-bg);">
 		<svg
-			class="animate-spin h-5 w-5 text-zinc-400"
+			class="animate-spin h-5 w-5 text-brand"
 			xmlns="http://www.w3.org/2000/svg"
 			fill="none"
 			viewBox="0 0 24 24"
@@ -47,7 +52,9 @@
 			: ''} flex h-screen overflow-hidden border-sandbox-500 transition-[border-width] duration-[0.48s] ease-in-out"
 		style="background-color: var(--color-bg);"
 	>
-		<Sidebar />
+		{#if workspaceStore.active && workspaceStore.activeId && initialized}
+			<Sidebar />
+		{/if}
 		<main class="flex-1 overflow-y-auto">
 			{@render children()}
 		</main>

@@ -7,6 +7,7 @@
   import Select from '$lib/components/ui/Select.svelte';
   import { savedScripts, type SavedScript } from '$lib/stores/savedScripts.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
+	import Icon from '@iconify/svelte';
 
   onMount(() => savedScripts.init());
 
@@ -144,13 +145,10 @@
 </script>
 
 <div class="flex flex-col h-full">
-  <PageHeader title="Scripts" description="Saved JavaScript scripts">
+  <PageHeader title="Scripts" description="JS/TS scripts saved from code editor">
     {#snippet actions()}
-      <Button variant="primary" size="sm" onclick={newScript}>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-        New script
+      <Button variant="secondary" size="sm" onclick={newScript}>
+        Code Editor
       </Button>
     {/snippet}
   </PageHeader>

@@ -128,6 +128,10 @@
       {#snippet actions()}
         <span class="text-xs font-mono text-zinc-400">v{mod!.version}</span>
         <Button variant="ghost" size="sm" onclick={() => goto('/modules')}>← Modules</Button>
+          <div class="w-px bg-border self-stretch"></div>
+        <Button variant="secondary" size="sm" onclick={()=>goto("/code")}>
+          Test API
+        </Button>
       {/snippet}
     </PageHeader>
 

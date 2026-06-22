@@ -229,7 +229,7 @@
 
   <!-- Editor + output -->
   <div class="flex-1 flex flex-col overflow-hidden">
-    <PageHeader title="Code" description="Write JavaScript and use the Liatir API directly">
+    <PageHeader title="Code Editor" description="Write JS/TS and test the Liatir API directly">
       {#snippet actions()}
         {#if showSavePanel}
           <input
@@ -257,7 +257,7 @@
             Run  <span class="text-[10px] ml-1">⌘↵</span>
           </Button>
           <div class="w-px bg-border self-stretch"></div>
-          <Button variant="secondary" size="sm" onclick={()=>goto("/scripts")}>Scrpits</Button>
+          <Button variant="secondary" size="sm" onclick={()=>goto("/scripts")}>Saved Scrpits</Button>
         {/if}
       {/snippet}
     </PageHeader>

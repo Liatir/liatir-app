@@ -9,6 +9,7 @@
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
   import { fmtDuration } from '$lib/utils';
+	import { workspaceStore } from '$lib/stores/workspace.svelte';
 
   const TOOL_LABELS: Record<string, string> = {
     fastqc: 'FastQC',
@@ -53,6 +54,7 @@
   });
 </script>
 
+{#if workspaceStore.active && workspaceStore.activeId}
 <div class="flex flex-col h-full">
   <PageHeader title="Dashboard" description="Your bioinformatics workspace" />
 
@@ -197,3 +199,4 @@
 
   </div>
 </div>
+{/if}
