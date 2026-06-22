@@ -1,4 +1,5 @@
 import { liatir } from '$lib/api';
+import { appStorage } from './app-storage';
 import { getDataPrefix, SANDBOX_WORKSPACE_ID } from './workspace.svelte';
 
 export interface DataFile {
@@ -59,10 +60,8 @@ function createDataFilesStore() {
   let initialized = false;
 
   async function persist() {
-    const api = liatir();
-    if (!api) return;
     const data: StoredData = { files, folders };
-    await api.desktop.fs.data.writeText(getFile(), JSON.stringify(data), { createDirs: true });
+    await appStorage.writeText(getFile(), JSON.stringify(data));
   }
 
   return {
@@ -77,9 +76,9 @@ function createDataFilesStore() {
         if (api) {
           loading = true;
           try {
-            const exists = await api.desktop.fs.data.exists(getFile());
+            const exists = await appStorage.exists(getFile());
             if (exists) {
-              const raw = await api.desktop.fs.data.readText(getFile());
+              const raw = await appStorage.readText(getFile());
               const data = parseSaved(raw);
               files = data.files;
               folders = data.folders;

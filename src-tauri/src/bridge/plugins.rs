@@ -543,7 +543,7 @@ pub(crate) fn ensure_builtin_modules(app: &AppHandle) {
 
     let dest = builtin_dir.join("fastqc.wasm");
     match fs::write(&dest, FASTQC_WASM) {
-        Ok(_) => eprintln!("[plugins] installed built-in module: fastqc.wasm"),
+        Ok(_) => {}
         Err(e) => eprintln!("[plugins] failed to install fastqc.wasm: {e}"),
     }
 

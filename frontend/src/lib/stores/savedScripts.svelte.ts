@@ -1,4 +1,5 @@
 import { liatir } from '$lib/api';
+import { appStorage } from './app-storage';
 import { getDataPrefix } from './workspace.svelte';
 
 export interface SavedScript {
@@ -34,22 +35,16 @@ function createSavedScriptsStore() {
   let initialized = false;
 
   async function persistIndex() {
-    const api = liatir();
-    if (!api) return;
     const meta: ScriptMeta[] = scripts.map(({ id, name, savedAt, folder }) => ({ id, name, savedAt, folder }));
-    await api.desktop.fs.data.writeText(getIndex(), JSON.stringify({ scripts: meta, folders }), { createDirs: true });
+    await appStorage.writeText(getIndex(), JSON.stringify({ scripts: meta, folders }), { createDirs: true });
   }
 
   async function writeCode(id: string, code: string) {
-    const api = liatir();
-    if (!api) return;
-    await api.desktop.fs.data.writeText(scriptPath(id), code, { createDirs: true });
+    await appStorage.writeText(scriptPath(id), code, { createDirs: true });
   }
 
   async function deleteCode(id: string) {
-    const api = liatir();
-    if (!api) return;
-    try { await api.desktop.fs.data.remove(scriptPath(id)); } catch { /* ignore */ }
+    try { await appStorage.remove(scriptPath(id)); } catch { /* ignore */ }
   }
 
   return {
@@ -65,20 +60,19 @@ function createSavedScriptsStore() {
     async init() {
       if (initialized) return;
       initialized = true;
-      const api = liatir();
-      if (!api) return;
+      if (!liatir()) return;
       try {
-        if (await api.desktop.fs.data.exists(getIndex())) {
+        if (await appStorage.exists(getIndex())) {
           // New format: read index then load all code files
-          const raw = await api.desktop.fs.data.readText(getIndex());
+          const raw = await appStorage.readText(getIndex());
           const data: IndexData = JSON.parse(raw);
           folders = data.folders ?? [];
           const metas = (data.scripts ?? []).map(s => ({ ...s, folder: s.folder ?? '' }));
           scripts = await Promise.all(metas.map(async (meta) => {
             let code = '';
             try {
-              if (await api.desktop.fs.data.exists(scriptPath(meta.id))) {
-                code = await api.desktop.fs.data.readText(scriptPath(meta.id));
+              if (await appStorage.exists(scriptPath(meta.id))) {
+                code = await appStorage.readText(scriptPath(meta.id));
               }
             } catch { /* code stays empty */ }
             return { ...meta, code };
@@ -86,9 +80,9 @@ function createSavedScriptsStore() {
         } else {
           // Try old single-file format: scripts.json
           const oldFile = `${getDataPrefix()}scripts.json`;
-          const oldExists = await api.desktop.fs.data.exists(oldFile);
+          const oldExists = await appStorage.exists(oldFile);
           if (oldExists) {
-            const raw = await api.desktop.fs.data.readText(oldFile);
+            const raw = await appStorage.readText(oldFile);
             const oldData = JSON.parse(raw) as { scripts?: (ScriptMeta & { code?: string })[]; folders?: string[] };
             folders = oldData.folders ?? [];
             const oldScripts = (oldData.scripts ?? []).map(s => ({ ...s, folder: s.folder ?? '', code: s.code ?? '' }));
@@ -96,7 +90,7 @@ function createSavedScriptsStore() {
             await Promise.all(oldScripts.map(s => writeCode(s.id, s.code)));
             scripts = oldScripts;
             await persistIndex();
-            try { await api.desktop.fs.data.remove(oldFile); } catch { /* ignore */ }
+            try { await appStorage.remove(oldFile); } catch { /* ignore */ }
           } else {
             // Try legacy localStorage migration (only for root/no-workspace context)
             try {

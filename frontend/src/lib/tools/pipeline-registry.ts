@@ -1,12 +1,54 @@
 import { liatir } from '$lib/api';
 import { runNativeTool } from '$lib/utils/native-tool';
 import { fastpDefinition, parseFastpJson, fastpToToolOutput } from './qc/fastp';
+import { seqkitStatsDefinition, parseSeqkitStats, seqkitStatsToToolOutput } from './qc/seqkit';
 import { samtoolsFlagstatDefinition, parseFlagstatResult, flagstatToToolOutput } from './alignment/samtools';
 import { bwaMemDefinition, parseBwaMemStats, bwaMemToToolOutput } from './alignment/bwa';
 import { minimap2Definition, parseMinimap2Stats, minimap2ToToolOutput } from './alignment/minimap2';
+import { bcftoolsStatsDefinition, bcftoolsFilterDefinition, parseBcftoolsStats, bcftoolsStatsToToolOutput } from './variants/bcftools';
+import { snpeffDefinition, parseSnpEffStats, buildSnpEffOutput } from './variants/snpeff';
+import { snpEffStore } from '$lib/stores/snpeff.svelte';
+import { settingsStore } from '$lib/stores/settings.svelte';
+import type { ToolOutput } from '$lib/types/tool-output';
 import type { PipelineRegistryEntry, PipelineStepDefinition, RunOutputFile } from '$lib/types/pipeline';
 
+type StepResult = { outputFiles: RunOutputFile[]; output?: ToolOutput };
+
 function basename(p: string) { return p.split(/[\\/]/).pop() ?? p; }
+
+// ── definitions that don't live in a tool file ───────────────────────────────
+
+const fastqcDefinition: PipelineStepDefinition = {
+  id: 'fastqc',
+  type: 'native-tool',
+  label: 'FastQC',
+  description: 'Quality-control report for FASTQ files (runs in-app via WASM).',
+  category: 'Quality Control',
+  inputSchema: {
+    input: { type: 'file', label: 'FASTQ file', required: true, accept: ['fastq', 'fastq.gz', 'fq', 'fq.gz'] },
+  },
+  outputSchema: {
+    stats: { type: 'stats', label: 'QC report' },
+  },
+};
+
+const samtoolsFaidxDefinition: PipelineStepDefinition = {
+  id: 'samtools-faidx',
+  type: 'native-tool',
+  label: 'Samtools faidx',
+  description: 'Build a FASTA index (.fai) next to the input file.',
+  category: 'Alignment',
+  inputSchema: {
+    inputFile: { type: 'file', label: 'FASTA file', required: true, accept: ['fasta', 'fa', 'fna', 'fasta.gz', 'fa.gz'] },
+  },
+  outputSchema: {
+    faiIndex: { type: 'file', label: 'FASTA index', ext: ['fai'] },
+  },
+};
+
+function textOutput(label: string, content: string): ToolOutput {
+  return { sections: [{ type: 'text', label, content, mono: true }] };
+}
 
 // ── auto-connect helpers ─────────────────────────────────────────────────────
 
@@ -27,11 +69,22 @@ export function autoConnectInputs(
 
 // ── step run functions ───────────────────────────────────────────────────────
 
+async function runFastqcStep(
+  inputs: Record<string, string>,
+  _outputDir: string,
+  onLog: (l: string) => void
+): Promise<StepResult> {
+  const api = liatir()!;
+  onLog(`$ fastqc ${basename(inputs.input)}`);
+  const output = await api.qc.fastqc.run({ input: inputs.input }) as ToolOutput;
+  return { outputFiles: [], output };
+}
+
 async function runFastpStep(
   inputs: Record<string, string>,
   outputDir: string,
   onLog: (l: string) => void
-): Promise<{ outputFiles: RunOutputFile[] }> {
+): Promise<StepResult> {
   const api = liatir()!;
   const runId = crypto.randomUUID();
   const jsonPath  = `${outputDir}/fastp-${runId}.json`;
@@ -47,19 +100,33 @@ async function runFastpStep(
   if (!result.ok) throw new Error(result.stderr || `fastp exited with code ${result.exitCode}`);
 
   const jsonText = await api.invoke('lia_read_file_text', { path: jsonPath }) as string;
-  const parsed = parseFastpJson(jsonText);
-  fastpToToolOutput(parsed); // validate parse succeeds
+  const output = fastpToToolOutput(parseFastpJson(jsonText));
 
   const outputFiles: RunOutputFile[] = [{ label: 'Trimmed R1', path: out1Path, ext: 'fastq.gz' }];
   if (inputs.r2) outputFiles.push({ label: 'Trimmed R2', path: out2Path, ext: 'fastq.gz' });
-  return { outputFiles };
+  return { outputFiles, output };
+}
+
+async function runSeqkitStatsStep(
+  inputs: Record<string, string>,
+  _outputDir: string,
+  onLog: (l: string) => void
+): Promise<StepResult> {
+  onLog(`$ seqkit stats ${basename(inputs.inputFile)}`);
+  const result = await runNativeTool('seqkit', ['stats', inputs.inputFile], undefined, (l) => { if (l.trim()) onLog(l); });
+
+  if (!result.ok && result.stdout.trim() === '') {
+    throw new Error(result.stderr || `seqkit exited with code ${result.exitCode}`);
+  }
+  const parsed = parseSeqkitStats(result.stdout);
+  return { outputFiles: [], output: parsed ? seqkitStatsToToolOutput(parsed, result.stdout) : undefined };
 }
 
 async function runSamtoolsFlagstatStep(
   inputs: Record<string, string>,
   _outputDir: string,
   onLog: (l: string) => void
-): Promise<{ outputFiles: RunOutputFile[] }> {
+): Promise<StepResult> {
   onLog(`$ samtools flagstat ${basename(inputs.inputFile)}`);
   const result = await runNativeTool('samtools', ['flagstat', inputs.inputFile], undefined, (l) => { if (l.trim()) onLog(l); });
 
@@ -67,15 +134,34 @@ async function runSamtoolsFlagstatStep(
     throw new Error(result.stderr || `samtools exited with code ${result.exitCode}`);
   }
   const parsed = parseFlagstatResult(result.stdout);
-  flagstatToToolOutput(parsed, result.stdout); // validate
-  return { outputFiles: [] };
+  return { outputFiles: [], output: flagstatToToolOutput(parsed, result.stdout) };
+}
+
+async function runSamtoolsFaidxStep(
+  inputs: Record<string, string>,
+  _outputDir: string,
+  onLog: (l: string) => void
+): Promise<StepResult> {
+  const api = liatir()!;
+  onLog(`$ samtools faidx ${basename(inputs.inputFile)}`);
+  const result = await runNativeTool('samtools', ['faidx', inputs.inputFile], undefined, (l) => { if (l.trim()) onLog(l); });
+
+  if (!result.ok) throw new Error(result.stderr || `samtools faidx exited with code ${result.exitCode}`);
+
+  const faiPath = `${inputs.inputFile}.fai`;
+  let size: number | undefined;
+  try { size = await api.invoke('lia_file_size', { path: faiPath }) as number; } catch { /* ok */ }
+  return {
+    outputFiles: [{ label: 'FASTA index', path: faiPath, ext: 'fai', size }],
+    output: textOutput('samtools faidx', `Indexed ${basename(inputs.inputFile)}\n→ ${basename(faiPath)}`),
+  };
 }
 
 async function runBwaMemStep(
   inputs: Record<string, string>,
   outputDir: string,
   onLog: (l: string) => void
-): Promise<{ outputFiles: RunOutputFile[] }> {
+): Promise<StepResult> {
   const api = liatir()!;
   const runId = crypto.randomUUID();
   const outPath = `${outputDir}/bwa-${runId}.sam`;
@@ -100,8 +186,8 @@ async function runBwaMemStep(
 
     const size = await api.invoke('lia_file_size', { path: outPath }) as number;
     const stats = parseBwaMemStats(result.stderr);
-    bwaMemToToolOutput(stats, result.stderr.join('\n'), outPath);
-    return { outputFiles: [{ label: 'Output SAM', path: outPath, ext: 'sam', size }] };
+    const output = bwaMemToToolOutput(stats, result.stderr.join('\n'), outPath);
+    return { outputFiles: [{ label: 'Output SAM', path: outPath, ext: 'sam', size }], output };
   } finally {
     offStderr();
   }
@@ -111,7 +197,7 @@ async function runMinimap2Step(
   inputs: Record<string, string>,
   outputDir: string,
   onLog: (l: string) => void
-): Promise<{ outputFiles: RunOutputFile[] }> {
+): Promise<StepResult> {
   const api = liatir()!;
   const runId = crypto.randomUUID();
   const outPath = `${outputDir}/minimap2-${runId}.sam`;
@@ -138,8 +224,116 @@ async function runMinimap2Step(
 
     const size = await api.invoke('lia_file_size', { path: outPath }) as number;
     const stats = parseMinimap2Stats(result.stderr);
-    minimap2ToToolOutput(stats, result.stderr.join('\n'), outPath, preset);
-    return { outputFiles: [{ label: 'Output SAM', path: outPath, ext: 'sam', size }] };
+    const output = minimap2ToToolOutput(stats, result.stderr.join('\n'), outPath, preset);
+    return { outputFiles: [{ label: 'Output SAM', path: outPath, ext: 'sam', size }], output };
+  } finally {
+    offStderr();
+  }
+}
+
+async function runBcftoolsStatsStep(
+  inputs: Record<string, string>,
+  _outputDir: string,
+  onLog: (l: string) => void
+): Promise<StepResult> {
+  onLog(`$ bcftools stats ${basename(inputs.inputFile)}`);
+  const result = await runNativeTool('bcftools', ['stats', inputs.inputFile], undefined, (l) => { if (l.trim()) onLog(l); });
+
+  if (!result.ok && result.stdout.trim() === '') {
+    throw new Error(result.stderr || `bcftools exited with code ${result.exitCode}`);
+  }
+  const parsed = parseBcftoolsStats(result.stdout);
+  return { outputFiles: [], output: bcftoolsStatsToToolOutput(parsed, result.stdout) };
+}
+
+async function runBcftoolsFilterStep(
+  inputs: Record<string, string>,
+  outputDir: string,
+  onLog: (l: string) => void
+): Promise<StepResult> {
+  const api = liatir()!;
+  const runId = crypto.randomUUID();
+  const outPath = `${outputDir}/bcftools-filter-${runId}.vcf.gz`;
+  const expr = inputs.expression?.trim() || 'QUAL>20';
+
+  onLog(`$ bcftools filter -i '${expr}' -O z -o ${basename(outPath)} ${basename(inputs.inputFile)}`);
+  const result = await runNativeTool(
+    'bcftools',
+    ['filter', '-i', expr, '-O', 'z', '-o', outPath, inputs.inputFile],
+    undefined,
+    (l) => { if (l.trim()) onLog(l); }
+  );
+
+  if (!result.ok) throw new Error(result.stderr || `bcftools filter exited with code ${result.exitCode}`);
+
+  let size: number | undefined;
+  try { size = await api.invoke('lia_file_size', { path: outPath }) as number; } catch { /* ok */ }
+  return {
+    outputFiles: [{ label: 'Filtered VCF', path: outPath, ext: 'vcf.gz', size }],
+    output: textOutput('bcftools filter', `Expression: ${expr}\nOutput: ${basename(outPath)}`),
+  };
+}
+
+async function runSnpeffStep(
+  inputs: Record<string, string>,
+  outputDir: string,
+  onLog: (l: string) => void
+): Promise<StepResult> {
+  const api = liatir()!;
+  await snpEffStore.init();
+  await settingsStore.init();
+
+  const jarPath = snpEffStore.config.jarPath;
+  if (!jarPath) {
+    throw new Error('SnpEff is not configured — open the SnpEff tool and set the JAR path first.');
+  }
+  const genome = inputs.genome?.trim() || 'hg38';
+  const runId = crypto.randomUUID();
+  const outPath = `${outputDir}/snpeff-${runId}.vcf`;
+  const jid = `snpeff-${runId}`;
+
+  onLog(`$ java -Xmx${snpEffStore.jvmHeap} -jar snpEff.jar ann ${genome} ${basename(inputs.inputFile)}`);
+
+  const offStderr = await api.desktop.events.on(`jobs:stderr:${jid}`, (line: string) => {
+    if (typeof line === 'string' && line.trim()) onLog(line);
+  }) as unknown as () => void;
+
+  try {
+    const result = await api.invoke('lia_snpeff_annotate', {
+      jarPath,
+      genome,
+      dataDir: snpEffStore.config.dataDir,
+      inputVcf: inputs.inputFile,
+      outputVcf: outPath,
+      heap: snpEffStore.jvmHeap,
+      jobId: jid,
+      javaPath: settingsStore.javaPath || null,
+    } as any) as { ok: boolean; exitCode: number | null; stderr: string[]; statsHtml: string; statsGenes: string };
+
+    if (!result.ok) {
+      throw new Error(result.stderr.slice(-10).join('\n') || `SnpEff exited with code ${result.exitCode}`);
+    }
+
+    const outputFiles: RunOutputFile[] = [];
+    let size: number | undefined;
+    try { size = await api.invoke('lia_file_size', { path: outPath }) as number; } catch { /* ok */ }
+    outputFiles.push({ label: 'Annotated VCF', path: outPath, ext: 'vcf', size });
+
+    for (const [label, path, ext] of [
+      ['Summary (HTML)', result.statsHtml, 'html'],
+      ['Gene stats', result.statsGenes, 'txt'],
+    ] as const) {
+      if (!path) continue;
+      try {
+        const s = await api.invoke('lia_file_size', { path }) as number;
+        outputFiles.push({ label, path, ext, size: s });
+      } catch { /* not generated */ }
+    }
+
+    const summary = parseSnpEffStats(result.stderr.join('\n'));
+    const output = buildSnpEffOutput(summary, basename(inputs.inputFile));
+    await snpEffStore.touchGenome(genome);
+    return { outputFiles, output };
   } finally {
     offStderr();
   }
@@ -148,8 +342,14 @@ async function runMinimap2Step(
 // ── registry ─────────────────────────────────────────────────────────────────
 
 export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
+  'fastqc':             { definition: fastqcDefinition,            run: runFastqcStep },
   'fastp':              { definition: fastpDefinition,             run: runFastpStep },
+  'seqkit-stats':       { definition: seqkitStatsDefinition,       run: runSeqkitStatsStep },
   'samtools-flagstat':  { definition: samtoolsFlagstatDefinition,  run: runSamtoolsFlagstatStep },
+  'samtools-faidx':     { definition: samtoolsFaidxDefinition,     run: runSamtoolsFaidxStep },
   'bwa-mem':            { definition: bwaMemDefinition,            run: runBwaMemStep },
   'minimap2':           { definition: minimap2Definition,          run: runMinimap2Step },
+  'bcftools-stats':     { definition: bcftoolsStatsDefinition,     run: runBcftoolsStatsStep },
+  'bcftools-filter':    { definition: bcftoolsFilterDefinition,    run: runBcftoolsFilterStep },
+  'snpeff':             { definition: snpeffDefinition,            run: runSnpeffStep },
 };

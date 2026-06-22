@@ -1,13 +1,37 @@
 import type { Node, Edge } from '@xyflow/svelte';
 import { liatir } from '$lib/api';
+import { appStorage } from './app-storage';
 import { getDataPrefix } from './workspace.svelte';
 import { dataFiles } from './dataFiles.svelte';
 import { apiConnections, sendApiRequest } from './apiConnections.svelte';
+import { analysisRuns } from './analysisRuns.svelte';
 import { PIPELINE_REGISTRY } from '$lib/tools/pipeline-registry';
+import { ensureResultsDir } from '$lib/utils/results';
+import type { ToolOutput } from '$lib/types/tool-output';
 import type {
   ToolNodeData, VariableNodeData, MathNodeData, ConditionNodeData,
   SubPipelineNodeData, ApiRequestNodeData, NodeRunState, RunOutputFile,
 } from '$lib/types/pipeline';
+
+interface PipelineStepRecord {
+  label: string;
+  output?: ToolOutput;
+  files: RunOutputFile[];
+}
+
+/** Combine each step's result into one grouped ToolOutput (a heading per step). */
+function buildPipelineOutput(steps: PipelineStepRecord[]): ToolOutput {
+  const sections: ToolOutput['sections'] = [];
+  for (const s of steps) {
+    sections.push({
+      type: 'text',
+      label: `▸ ${s.label}`,
+      content: s.files.length ? s.files.map(f => f.label).join(' · ') : 'completed',
+    });
+    if (s.output) sections.push(...s.output.sections);
+  }
+  return { sections };
+}
 
 function getFile() { return `${getDataPrefix()}pipeline-workspace.json`; }
 
@@ -182,8 +206,6 @@ function createPipelineStore() {
   }
 
   async function persist() {
-    const api = liatir();
-    if (!api) return;
     const workspace: PipelineWorkspace = {
       current: {
         nodes: JSON.parse(JSON.stringify(currentNodes)),
@@ -193,7 +215,7 @@ function createPipelineStore() {
       },
       saved: JSON.parse(JSON.stringify(savedPipelines)),
     };
-    await api.desktop.fs.data.writeText(getFile(), JSON.stringify(workspace, null, 2), { createDirs: true });
+    await appStorage.writeText(getFile(), JSON.stringify(workspace, null, 2));
   }
 
   function schedulePersist() {
@@ -205,7 +227,6 @@ function createPipelineStore() {
   async function runNodes(
     nodes: Node[],
     edges: Edge[],
-    dataDir: string,
     onLog: (line: string) => void
   ): Promise<RunOutputFile[]> {
     const localStates = new Map<string, NodeRunState>();
@@ -230,12 +251,7 @@ function createPipelineStore() {
         if (!entry) { patch({ status: 'error', error: `Unknown tool: ${node.data?.stepId}` }); break; }
 
         patch({ status: 'running' });
-        const safeLabel = entry.definition.label.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '-') || node.data?.stepId as string;
-        const outputDir = `${dataDir}/Results/${safeLabel}`;
-        const virtualFolder = `Results/${safeLabel}`;
-        const api = liatir()!;
-        await api.invoke('lia_fs_mkdir', { rel: 'Results', permanent: false, window_label: null, plugin_storage_module: null }).catch(() => {});
-        await api.invoke('lia_fs_mkdir', { rel: virtualFolder, permanent: false, window_label: null, plugin_storage_module: null }).catch(() => {});
+        const { absDir: outputDir, virtualFolder } = await ensureResultsDir(entry.definition.label);
 
         const resolved = resolveInputs(nodeId, nodes, edges, localStates, node.data?.inputs as Record<string, string> ?? {});
         const logs: string[] = [];
@@ -309,8 +325,8 @@ function createPipelineStore() {
       const api = liatir();
       if (!api) return;
       try {
-        if (await api.desktop.fs.data.exists(getFile())) {
-          const raw = await api.desktop.fs.data.readText(getFile());
+        if (await appStorage.exists(getFile())) {
+          const raw = await appStorage.readText(getFile());
           const ws: PipelineWorkspace = JSON.parse(raw);
           currentNodes = ws.current?.nodes ?? [];
           currentEdges = ws.current?.edges ?? [];
@@ -353,11 +369,15 @@ function createPipelineStore() {
     },
 
     loadSavedPipeline(p: SavedPipeline) {
+      // Preserve live run state when re-opening the pipeline that is currently
+      // loaded (e.g. navigating away mid-run and coming back via the list).
+      // Only wipe node states when switching to a *different* pipeline.
+      const sameAsCurrent = pipelineId === p.id;
       currentNodes = JSON.parse(JSON.stringify(p.nodes));
       currentEdges = JSON.parse(JSON.stringify(p.edges));
       pipelineName = p.name;
       pipelineId = p.id;
-      nodeStates = new Map();
+      if (!sameAsCurrent && !running) nodeStates = new Map();
       pendingLoad = { nodes: currentNodes, edges: currentEdges, name: p.name, id: p.id };
     },
 
@@ -419,12 +439,14 @@ function createPipelineStore() {
       const api = liatir();
       if (!api) return;
 
-      const { data } = await api.invoke('lia_fs_paths') as { data: string; cache: string };
-
       running = true;
       const fresh = new Map<string, NodeRunState>();
       for (const n of nodes) fresh.set(n.id, initNodeState());
       nodeStates = fresh;
+
+      // Accumulate step results to record ONE grouped pipeline run in Results.
+      const pipeStartedAt = Date.now();
+      const pipeSteps: PipelineStepRecord[] = [];
 
       const order = topoSort(nodes, edges);
       const skipped = new Set<string>();
@@ -443,12 +465,7 @@ function createPipelineStore() {
           }
           patchState(nodeId, { status: 'running' });
 
-          const safeLabel = entry.definition.label.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '-') || node.data?.stepId as string;
-          const outputDir = `${data}/Results/${safeLabel}`;
-          const virtualFolder = `Results/${safeLabel}`;
-
-          await api.invoke('lia_fs_mkdir', { rel: 'Results', permanent: false, window_label: null, plugin_storage_module: null }).catch(() => {});
-          await api.invoke('lia_fs_mkdir', { rel: virtualFolder, permanent: false, window_label: null, plugin_storage_module: null }).catch(() => {});
+          const { absDir: outputDir, virtualFolder } = await ensureResultsDir(entry.definition.label);
 
           const resolved = resolveInputs(nodeId, nodes, edges, nodeStates, node.data?.inputs as Record<string, string> ?? {});
           const logs: string[] = [];
@@ -458,6 +475,7 @@ function createPipelineStore() {
               patchState(nodeId, { logs: [...logs] });
             });
             patchState(nodeId, { status: 'done', logs, outputFiles: result.outputFiles, error: null });
+            pipeSteps.push({ label: entry.definition.label, output: result.output, files: result.outputFiles });
             await dataFiles.createFolder('Results').catch(() => {});
             await dataFiles.createFolder(virtualFolder).catch(() => {});
             for (const f of result.outputFiles) await dataFiles.add(f.path, virtualFolder).catch(() => {});
@@ -518,7 +536,7 @@ function createPipelineStore() {
           }
           patchState(nodeId, { status: 'running', logs: [`▶ Running sub-pipeline: ${sub.name}`] });
           try {
-            const subFiles = await runNodes(sub.nodes, sub.edges, data, (line) => {
+            const subFiles = await runNodes(sub.nodes, sub.edges, (line) => {
               const curr = nodeStates.get(nodeId);
               patchState(nodeId, { logs: [...(curr?.logs ?? []), line] });
             });
@@ -546,12 +564,7 @@ function createPipelineStore() {
           patchState(nodeId, { status: 'running', logs: [`${req.method} ${req.url}`] });
           try {
             const resp = await sendApiRequest(req, { provider, paramOverrides, envVars: apiConnections.activeEnvVars });
-            const safeReqName = req.name.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '-') || d.requestId!;
-            const reqOutputDir = `${data}/Results/${safeReqName}`;
-            const reqVirtualFolder = `Results/${safeReqName}`;
-
-            await api.invoke('lia_fs_mkdir', { rel: 'Results', permanent: false, window_label: null, plugin_storage_module: null }).catch(() => {});
-            await api.invoke('lia_fs_mkdir', { rel: reqVirtualFolder, permanent: false, window_label: null, plugin_storage_module: null }).catch(() => {});
+            const { absDir: reqOutputDir, virtualFolder: reqVirtualFolder } = await ensureResultsDir(req.name || d.requestId!);
 
             const ts = Date.now();
             const bodyPath = `${reqOutputDir}/response-${ts}.json`;
@@ -581,11 +594,36 @@ function createPipelineStore() {
             for (const f of outputFiles) await dataFiles.add(f.path, reqVirtualFolder).catch(() => {});
 
             patchState(nodeId, { status: 'done', outputFiles, outputValues });
+            pipeSteps.push({ label: req.name || 'API Request', files: outputFiles });
           } catch (e) {
             patchState(nodeId, { status: 'error', error: String(e) });
             break;
           }
         }
+      }
+
+      // Record ONE grouped run for this pipeline execution (visible in Results),
+      // instead of one loose run per step.
+      const erroredEntry = [...nodeStates.entries()].find(([, s]) => s.status === 'error');
+      if (pipeSteps.length > 0 || erroredEntry) {
+        const endedAt = Date.now();
+        const logs = [...nodeStates.values()].flatMap(s => s.logs ?? []);
+        const allFiles = pipeSteps.flatMap(s => s.files);
+        await analysisRuns.add({
+          id: crypto.randomUUID(),
+          tool: 'pipeline',
+          label: pipelineName || 'Pipeline',
+          inputs: [],
+          params: { steps: pipeSteps.length },
+          outputFiles: allFiles,
+          status: erroredEntry ? 'error' : 'done',
+          startedAt: pipeStartedAt,
+          endedAt,
+          durationMs: endedAt - pipeStartedAt,
+          output: erroredEntry ? null : buildPipelineOutput(pipeSteps),
+          error: erroredEntry ? (nodeStates.get(erroredEntry[0])?.error ?? 'Pipeline failed') : null,
+          log: logs,
+        }).catch(() => {});
       }
 
       running = false;

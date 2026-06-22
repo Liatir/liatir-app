@@ -43,6 +43,8 @@ pub struct JobEntry {
     pub status: JobStatus,
     pub started_at_ms: u64,
     pub ended_at_ms: Option<u64>,
+    /// Workspace this job was spawned in. `None` for global/untagged jobs.
+    pub workspace_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -80,6 +82,7 @@ pub async fn lia_jobs_spawn(
     cmd: String,
     args: Vec<String>,
     cwd: Option<String>,
+    workspace_id: Option<String>,
 ) -> Result<serde_json::Value, String> {
     if cmd.is_empty() || cmd.contains("..") {
         return Err(format!("invalid command: {cmd:?}"));
@@ -108,6 +111,7 @@ pub async fn lia_jobs_spawn(
         status: JobStatus::Running,
         started_at_ms,
         ended_at_ms: None,
+        workspace_id,
     };
 
     let stdout_buf = Arc::new(Mutex::new(Vec::<String>::new()));
@@ -210,23 +214,48 @@ pub fn lia_jobs_status(app: AppHandle, job_id: String) -> Result<JobEntry, Strin
 }
 
 #[tauri::command]
-pub fn lia_jobs_list(app: AppHandle) -> Result<Vec<JobEntry>, String> {
+pub fn lia_jobs_list(
+    app: AppHandle,
+    workspace_id: Option<String>,
+) -> Result<Vec<JobEntry>, String> {
     let registry = app.state::<JobRegistry>();
     let jobs = registry.0.lock().unwrap();
 
-    let mut list: Vec<JobEntry> = jobs.values().map(|s| s.entry.clone()).collect();
+    let mut list: Vec<JobEntry> = jobs
+        .values()
+        .map(|s| s.entry.clone())
+        // When a workspace filter is given, only return jobs spawned in it.
+        // When None, return everything (global view).
+        .filter(|e| match &workspace_id {
+            Some(ws) => e.workspace_id.as_deref() == Some(ws.as_str()),
+            None => true,
+        })
+        .collect();
     list.sort_by_key(|e| e.started_at_ms);
 
     Ok(list)
 }
 
 #[tauri::command]
-pub fn lia_jobs_clear_done(app: AppHandle) -> Result<usize, String> {
+pub fn lia_jobs_clear_done(
+    app: AppHandle,
+    workspace_id: Option<String>,
+) -> Result<usize, String> {
     let registry = app.state::<JobRegistry>();
     let mut jobs = registry.0.lock().unwrap();
 
     let before = jobs.len();
-    jobs.retain(|_, s| s.entry.status == JobStatus::Running);
+    // Keep running jobs; also keep finished jobs that belong to *other*
+    // workspaces when a workspace filter is provided.
+    jobs.retain(|_, s| {
+        if s.entry.status == JobStatus::Running {
+            return true;
+        }
+        match &workspace_id {
+            Some(ws) => s.entry.workspace_id.as_deref() != Some(ws.as_str()),
+            None => false,
+        }
+    });
 
     Ok(before - jobs.len())
 }

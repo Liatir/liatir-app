@@ -1,4 +1,5 @@
 import { liatir } from '$lib/api';
+import { appStorage } from './app-storage';
 import { getDataPrefix, workspaceStore } from './workspace.svelte';
 import type {
   ApiCollection, ApiRequest, ApiResponse, ApiKeyValue, ApiParam, ApiOutputSchemaField,
@@ -70,10 +71,8 @@ function createApiStore() {
   let initialized = false;
 
   async function persist() {
-    const api = liatir();
-    if (!api) return;
     const data: Workspace = { collections, requests, environments, activeEnvironmentId };
-    await api.desktop.fs.data.writeText(getFile(), JSON.stringify(data, null, 2), { createDirs: true });
+    await appStorage.writeText(getFile(), JSON.stringify(data, null, 2));
   }
 
   return {
@@ -106,8 +105,8 @@ function createApiStore() {
       const api = liatir();
       if (!api) return;
       try {
-        if (await api.desktop.fs.data.exists(getFile())) {
-          const raw = await api.desktop.fs.data.readText(getFile());
+        if (await appStorage.exists(getFile())) {
+          const raw = await appStorage.readText(getFile());
           const data: Workspace = JSON.parse(raw);
           collections = (data.collections ?? []).map(migrateCollection);
           requests = (data.requests ?? []).map(migrateRequest);

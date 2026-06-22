@@ -1,4 +1,5 @@
 import { liatir } from '$lib/api';
+import { appStorage } from './app-storage';
 import { getDataPrefix } from './workspace.svelte';
 
 export interface FieldDef {
@@ -28,9 +29,7 @@ function createModulesStore() {
   let initialized = false;
 
   async function persist() {
-    const api = liatir();
-    if (!api) return;
-    await api.desktop.fs.data.writeText(getFile(), JSON.stringify(modules));
+    await appStorage.writeText(getFile(), JSON.stringify(modules));
   }
 
   return {
@@ -42,9 +41,9 @@ function createModulesStore() {
       const api = liatir();
       if (!api) return;
       try {
-        const exists = await api.desktop.fs.data.exists(getFile());
+        const exists = await appStorage.exists(getFile());
         if (exists) {
-          modules = JSON.parse(await api.desktop.fs.data.readText(getFile()));
+          modules = JSON.parse(await appStorage.readText(getFile()));
         }
       } catch { modules = []; }
     },

@@ -1,4 +1,5 @@
 import { liatir } from '$lib/api';
+import { workspaceStore } from './workspace.svelte';
 
 export type JobStatus =
   | { type: 'running' }
@@ -13,6 +14,7 @@ export interface JobEntry {
   status: JobStatus;
   startedAtMs: number;
   endedAtMs: number | null;
+  workspaceId?: string | null;
 }
 
 function createJobsStore() {
@@ -35,7 +37,8 @@ function createJobsStore() {
       loading = true;
       error = null;
       try {
-        jobs = await api.jobs.list();
+        // Scope the list to the active workspace so jobs don't leak across them.
+        jobs = await api.invoke('lia_jobs_list', { workspaceId: workspaceStore.activeId }) as JobEntry[];
       } catch (e) {
         error = String(e);
       } finally {
@@ -46,22 +49,27 @@ function createJobsStore() {
     async spawn(cmd: string, args: string[], cwd?: string) {
       const api = liatir();
       if (!api) return null;
-      const result = await api.jobs.spawn(cmd, args, cwd ? { cwd } : undefined);
+      const result = await api.invoke('lia_jobs_spawn', {
+        cmd,
+        args,
+        cwd,
+        workspaceId: workspaceStore.activeId,
+      }) as { jobId: string };
       await this.refresh();
-      return result as { jobId: string };
+      return result;
     },
 
     async kill(jobId: string) {
       const api = liatir();
       if (!api) return;
-      await api.jobs.kill(jobId);
+      await api.invoke('lia_jobs_kill', { jobId });
       await this.refresh();
     },
 
     async clearDone() {
       const api = liatir();
       if (!api) return;
-      await api.jobs.clearDone();
+      await api.invoke('lia_jobs_clear_done', { workspaceId: workspaceStore.activeId });
       await this.refresh();
     },
   };

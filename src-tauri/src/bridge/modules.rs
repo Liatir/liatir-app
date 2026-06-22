@@ -83,5 +83,6 @@ pub async fn lia_liatir_run(
         "node".to_string(),
         vec!["_runner.mjs".to_string(), inputs_json],
         Some(cwd),
+        None,
     ).await
 }

@@ -8,6 +8,8 @@
   import { modulesStore, type LiatirModule, type FieldDef } from '$lib/stores/modules.svelte';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { liatir } from '$lib/api';
+  import { saveModuleResultFiles, type ModuleSaveResult } from '$lib/utils/module-files';
+  import { toast } from '$lib/stores/toast.svelte';
 
   const id = $derived((page.params as { id: string }).id);
   let mod = $state<LiatirModule | null>(null);
@@ -22,6 +24,7 @@
   let stderrLines = $state<string[]>([]);
   let exitCode = $state<number | null | undefined>(undefined);
   let result = $state<unknown>(null);
+  let savedFiles = $state<ModuleSaveResult[]>([]);
 
   // Node.js availability
   let nodeAvailable = $state<boolean | null>(null);
@@ -64,6 +67,8 @@
     stderrLines = [];
     exitCode = undefined;
     result = null;
+    savedFiles = [];
+    const runId = crypto.randomUUID();
 
     const api = liatir();
     if (!api) { running = false; return; }
@@ -93,6 +98,18 @@
           resolve();
         }).then((fn: () => void) => unsubs.push(fn));
       });
+
+      // Persist any file-typed outputs into Results (same as native tools).
+      if (exitCode === 0 && mod && Object.keys(mod.outputSchema).length > 0) {
+        try {
+          savedFiles = await saveModuleResultFiles(mod.name, mod.outputSchema, result, runId);
+          if (savedFiles.length > 0) {
+            toast.success(`Saved ${savedFiles.length} file${savedFiles.length > 1 ? 's' : ''} to Results`);
+          }
+        } catch (e) {
+          toast.error(`Failed to save module outputs: ${e}`);
+        }
+      }
     } catch (e) {
       stderrLines = [String(e)];
       exitCode = 1;
@@ -226,6 +243,20 @@
             <div class="px-4 py-3 border-b border-border bg-emerald-50/50">
               <p class="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider mb-1.5">Result</p>
               <pre class="text-xs text-emerald-800 whitespace-pre-wrap font-mono">{JSON.stringify(result, null, 2)}</pre>
+            </div>
+          {/if}
+
+          <!-- Saved output files (→ Results) -->
+          {#if savedFiles.length > 0}
+            <div class="px-4 py-3 border-b border-border">
+              <p class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">Saved to Results</p>
+              <div class="flex flex-wrap gap-1.5">
+                {#each savedFiles as f}
+                  <span class="inline-flex items-center gap-1 rounded-full bg-brand/8 border border-brand/20 px-2 py-0.5 text-[11px] text-brand font-mono">
+                    {f.virtualFolder}/{f.path.split(/[\\/]/).pop()}
+                  </span>
+                {/each}
+              </div>
             </div>
           {/if}
 

@@ -143,6 +143,17 @@ commands.allow = [
   "lia_cleanup_delete_part",
   "lia_init_demo_files",
 
+  "lia_module_save_output",
+  "lia_module_delete_output",
+
+  "lia_app_path",
+  "lia_app_exists",
+  "lia_app_read_text",
+  "lia_app_write_text",
+  "lia_app_mkdir",
+  "lia_app_remove",
+  "lia_app_migrate",
+
   "lia_file_size",
   "lia_read_file_text",
   "lia_write_file_path",

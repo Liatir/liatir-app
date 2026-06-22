@@ -1,4 +1,5 @@
 import { liatir } from '$lib/api';
+import { appStorage } from './app-storage';
 import type { WorkspaceMeta, WorkspacesFile, WorkspaceEnvVar, WorkspaceEnvFile } from '$lib/types/workspace';
 
 const WORKSPACES_FILE = 'workspaces.json';
@@ -30,31 +31,23 @@ function createWorkspaceStore() {
   let initStarted = false; // non-reactive guard against concurrent init() calls
 
   async function persistWorkspaces() {
-    const api = liatir();
-    if (!api) return;
     const data: WorkspacesFile = { workspaces };
-    await api.desktop.fs.data.writeText(WORKSPACES_FILE, JSON.stringify(data, null, 2), { createDirs: true });
+    await appStorage.writeText(WORKSPACES_FILE, JSON.stringify(data, null, 2));
   }
 
   async function persistActiveId() {
-    const api = liatir();
-    if (!api) return;
-    await api.desktop.fs.data.writeText(ACTIVE_FILE, JSON.stringify({ id: activeId }), { createDirs: true });
+    await appStorage.writeText(ACTIVE_FILE, JSON.stringify({ id: activeId }));
   }
 
   async function persistEnvVars(id: string) {
-    const api = liatir();
-    if (!api) return;
     const data: WorkspaceEnvFile = { variables: envVars };
-    await api.desktop.fs.data.writeText(workspaceEnvPath(id), JSON.stringify(data, null, 2), { createDirs: true });
+    await appStorage.writeText(workspaceEnvPath(id), JSON.stringify(data, null, 2));
   }
 
   async function loadEnvVars(id: string) {
-    const api = liatir();
-    if (!api) { envVars = []; return; }
     try {
-      if (await api.desktop.fs.data.exists(workspaceEnvPath(id))) {
-        const raw = await api.desktop.fs.data.readText(workspaceEnvPath(id));
+      if (await appStorage.exists(workspaceEnvPath(id))) {
+        const raw = await appStorage.readText(workspaceEnvPath(id));
         const parsed: WorkspaceEnvFile = JSON.parse(raw);
         envVars = parsed.variables ?? [];
       } else {
@@ -83,9 +76,12 @@ function createWorkspaceStore() {
       const api = liatir();
       if (!api) { initialized = true; return; }
 
+      // Move any legacy app state out of the public data scope before reading.
+      await appStorage.migrate();
+
       try {
-        if (await api.desktop.fs.data.exists(WORKSPACES_FILE)) {
-          const raw = await api.desktop.fs.data.readText(WORKSPACES_FILE);
+        if (await appStorage.exists(WORKSPACES_FILE)) {
+          const raw = await appStorage.readText(WORKSPACES_FILE);
           const parsed: WorkspacesFile = JSON.parse(raw);
           workspaces = parsed.workspaces ?? [];
         }
@@ -159,16 +155,17 @@ function createWorkspaceStore() {
         await persistActiveId();
         envVars = [];
       }
+      // Remove both the isolated app config and the public Results dir.
+      try { await appStorage.remove(`workspaces/${id}`, true); } catch { /* best effort */ }
       const api = liatir();
       if (api) {
-        try {
-          await api.desktop.fs.data.remove(`workspaces/${id}`, true);
-        } catch { /* best effort */ }
+        try { await api.desktop.fs.data.remove(`workspaces/${id}`, true); } catch { /* best effort */ }
       }
     },
 
     async resetSandboxMode() {
       resetFn?.();
+      try { await appStorage.remove(`workspaces/${SANDBOX_WORKSPACE_ID}`, true); } catch { /* ok */ }
       const api = liatir();
       if (api) {
         try { await api.desktop.fs.data.remove(`workspaces/${SANDBOX_WORKSPACE_ID}`, true); } catch { /* ok */ }

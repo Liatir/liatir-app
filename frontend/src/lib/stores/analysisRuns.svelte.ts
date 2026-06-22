@@ -1,4 +1,5 @@
 import { liatir } from '$lib/api';
+import { appStorage } from './app-storage';
 import { getDataPrefix } from './workspace.svelte';
 import type { ToolOutput } from '$lib/types/tool-output';
 import type { RunOutputFile } from '$lib/types/pipeline';
@@ -40,9 +41,7 @@ function createAnalysisRunsStore() {
   const outputCache = new Map<string, ToolOutput | null>();
 
   async function persistIndex() {
-    const api = liatir();
-    if (!api) return;
-    await api.desktop.fs.data.writeText(getIndex(), JSON.stringify(runs), { createDirs: true });
+    await appStorage.writeText(getIndex(), JSON.stringify(runs), { createDirs: true });
   }
 
   return {
@@ -54,9 +53,9 @@ function createAnalysisRunsStore() {
       const api = liatir();
       if (!api) return;
       try {
-        const exists = await api.desktop.fs.data.exists(getIndex());
+        const exists = await appStorage.exists(getIndex());
         if (exists) {
-          const raw = await api.desktop.fs.data.readText(getIndex());
+          const raw = await appStorage.readText(getIndex());
           const parsed = JSON.parse(raw) as AnalysisRunMeta[];
           const seen = new Set<string>();
           runs = parsed.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
@@ -66,7 +65,7 @@ function createAnalysisRunsStore() {
       const cutoff = Date.now() - LOG_TTL_MS;
       for (const run of runs) {
         if (run.endedAt < cutoff) {
-          api.desktop.fs.data.remove(logPath(run.id)).catch(() => {});
+          appStorage.remove(logPath(run.id)).catch(() => {});
         }
       }
     },
@@ -78,15 +77,11 @@ function createAnalysisRunsStore() {
       const serialized = JSON.stringify(run.output);
 
       // Write output to its own file
-      await api.desktop.fs.data.writeText(
-        runPath(run.id),
-        serialized,
-        { createDirs: true },
-      );
+      await appStorage.writeText(runPath(run.id), serialized, { createDirs: true });
 
       // Persist log if present
       if (run.log && run.log.length > 0) {
-        await api.desktop.fs.data.writeText(logPath(run.id), JSON.stringify(run.log), { createDirs: true });
+        await appStorage.writeText(logPath(run.id), JSON.stringify(run.log), { createDirs: true });
       }
 
       // Cache it immediately so the first view is instant
@@ -95,9 +90,9 @@ function createAnalysisRunsStore() {
       // Get output file size
       let outputSize: number | undefined;
       try {
-        const dataPath = await api.desktop.fs.data.path();
+        const appPath = await appStorage.path();
         outputSize = (await api.invoke('lia_file_size', {
-          path: `${dataPath}/${runPath(run.id)}`,
+          path: `${appPath}/${runPath(run.id)}`,
         })) as number;
       } catch { /* size stays undefined */ }
 
@@ -108,11 +103,8 @@ function createAnalysisRunsStore() {
     },
 
     async remove(id: string) {
-      const api = liatir();
-      if (!api) return;
-
       try {
-        await api.desktop.fs.data.remove(runPath(id));
+        await appStorage.remove(runPath(id));
       } catch { /* file may not exist */ }
 
       outputCache.delete(id);
@@ -122,14 +114,12 @@ function createAnalysisRunsStore() {
 
     async loadOutput(id: string): Promise<ToolOutput | null> {
       if (outputCache.has(id)) return outputCache.get(id)!;
-
-      const api = liatir();
-      if (!api) return null;
+      if (!liatir()) return null;
 
       try {
-        const exists = await api.desktop.fs.data.exists(runPath(id));
+        const exists = await appStorage.exists(runPath(id));
         if (!exists) return null;
-        const raw = await api.desktop.fs.data.readText(runPath(id));
+        const raw = await appStorage.readText(runPath(id));
         const output = JSON.parse(raw) as ToolOutput | null;
         outputCache.set(id, output);
         return output;
@@ -147,12 +137,11 @@ function createAnalysisRunsStore() {
     },
 
     async loadLog(id: string): Promise<string[] | null> {
-      const api = liatir();
-      if (!api) return null;
+      if (!liatir()) return null;
       try {
-        const exists = await api.desktop.fs.data.exists(logPath(id));
+        const exists = await appStorage.exists(logPath(id));
         if (!exists) return null;
-        const raw = await api.desktop.fs.data.readText(logPath(id));
+        const raw = await appStorage.readText(logPath(id));
         return JSON.parse(raw) as string[];
       } catch { return null; }
     },

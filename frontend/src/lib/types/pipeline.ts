@@ -95,7 +95,7 @@ export type StepRunFn = (
   inputs: Record<string, string>,
   outputDir: string,
   onLog: (line: string) => void
-) => Promise<{ outputFiles: RunOutputFile[] }>;
+) => Promise<{ outputFiles: RunOutputFile[]; output?: import('./tool-output').ToolOutput }>;
 
 export interface PipelineRegistryEntry {
   definition: PipelineStepDefinition;

@@ -402,6 +402,17 @@ fn main() {
       // .liatir modules
       lia_liatir_read_manifest,
       lia_liatir_run,
+      lia_module_save_output,
+      lia_module_delete_output,
+
+      // isolated app-managed storage
+      lia_app_path,
+      lia_app_exists,
+      lia_app_read_text,
+      lia_app_write_text,
+      lia_app_mkdir,
+      lia_app_remove,
+      lia_app_migrate,
 
       // file utilities
       lia_file_size,

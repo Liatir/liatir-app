@@ -114,8 +114,9 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect())
                 .unwrap_or_default();
             let cwd = payload["cwd"].as_str().map(String::from);
+            let workspace_id = payload["workspaceId"].as_str().map(String::from);
 
-            let result = crate::bridge::jobs::lia_jobs_spawn(app.clone(), cmd_str, args, cwd)
+            let result = crate::bridge::jobs::lia_jobs_spawn(app.clone(), cmd_str, args, cwd, workspace_id)
                 .await
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(result)
@@ -142,7 +143,8 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
         }
 
         "lia_jobs_list" => {
-            let list = crate::bridge::jobs::lia_jobs_list(app.clone())
+            let workspace_id = payload["workspaceId"].as_str().map(String::from);
+            let list = crate::bridge::jobs::lia_jobs_list(app.clone(), workspace_id)
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(serde_json::to_value(list)?)
         }
