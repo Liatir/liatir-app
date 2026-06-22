@@ -43,8 +43,8 @@
 {:else}
 	<div
 		class="{workspaceStore.isSandboxMode
-			? 'border-x-[5px] transition-[border-width] border-sandbox-500'
-			: ''} flex h-screen overflow-hidden"
+			? 'border-x-[5px]'
+			: ''} flex h-screen overflow-hidden border-sandbox-500 transition-[border-width] duration-[0.48s] ease-in-out"
 		style="background-color: var(--color-bg);"
 	>
 		<Sidebar />
