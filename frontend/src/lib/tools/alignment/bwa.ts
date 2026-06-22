@@ -59,6 +59,7 @@ export function bwaMemToToolOutput(stats: BwaMemStats, stderrRaw: string, output
     label: 'bwa stderr',
     content: stderrRaw,
     mono: true,
+    raw: true,
   };
 
   return { sections: [statsSection, rawSection] };

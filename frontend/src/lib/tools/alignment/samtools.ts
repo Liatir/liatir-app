@@ -107,6 +107,7 @@ export function flagstatToToolOutput(r: FlagstatResult, rawStdout: string): Tool
     label: 'Raw flagstat output',
     content: rawStdout,
     mono: true,
+    raw: true,
   };
 
   return { sections: [statsSection, rawSection] };

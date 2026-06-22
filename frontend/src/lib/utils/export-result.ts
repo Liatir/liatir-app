@@ -3,12 +3,18 @@ import type { AnalysisRunMeta } from '$lib/stores/analysisRuns.svelte';
 import { fmtDuration, fmtBytes } from '$lib/utils';
 
 const TOOL_LABELS: Record<string, string> = {
+  pipeline: 'Pipeline',
   fastqc: 'FastQC',
   fastp: 'fastp',
   seqkit: 'SeqKit',
+  'seqkit-stats': 'SeqKit stats',
   samtools: 'Samtools',
+  'samtools-flagstat': 'Samtools flagstat',
   'samtools-faidx': 'Samtools faidx',
+  'bwa-mem': 'BWA-MEM',
+  minimap2: 'minimap2',
   bcftools: 'BCFtools',
+  'bcftools-stats': 'BCFtools stats',
   'bcftools-filter': 'BCFtools filter',
   snpeff: 'SnpEff',
 };
@@ -98,7 +104,12 @@ export function exportToHtml(run: AnalysisRunMeta, output: ToolOutput): string {
   const inputNames = run.inputs.map(p => p.split(/[\\/]/).pop() ?? p).join(', ');
   const chartIdx = { n: 0 };
 
-  const sections = output.sections.map(s => renderSection(s, chartIdx)).join('\n');
+  // Exclude raw stdout/stderr dumps — they're redundant with the run log and
+  // make the printable/PDF export noisy.
+  const sections = output.sections
+    .filter(s => !(s.type === 'text' && s.raw))
+    .map(s => renderSection(s, chartIdx))
+    .join('\n');
 
   return `<!DOCTYPE html>
 <html lang="en">

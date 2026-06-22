@@ -74,6 +74,7 @@ export function minimap2ToToolOutput(stats: Minimap2Stats, stderrRaw: string, ou
     label: 'minimap2 stderr',
     content: stderrRaw,
     mono: true,
+    raw: true,
   };
 
   return { sections: [statsSection, rawSection] };

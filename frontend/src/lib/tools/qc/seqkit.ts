@@ -175,6 +175,7 @@ export function seqkitStatsToToolOutput(r: SeqkitStatsResult, rawStdout: string)
     label: 'Raw seqkit output',
     content: rawStdout,
     mono: true,
+    raw: true,
   };
 
   return { sections: [stats, raw] };

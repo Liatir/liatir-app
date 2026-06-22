@@ -140,6 +140,7 @@ export function bcftoolsStatsToToolOutput(r: BcftoolsStatsResult, rawStdout: str
     label: 'Raw bcftools stats output',
     content: rawStdout,
     mono: true,
+    raw: true,
   };
 
   return { sections: [stats, raw] };

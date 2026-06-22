@@ -37,6 +37,8 @@ export interface TextSection {
   content: string;
   mono?: boolean;
   description?: string;
+  /** Raw command stdout/stderr dump — redundant with the run log; excluded from HTML export. */
+  raw?: boolean;
 }
 
 export interface TableSection {
