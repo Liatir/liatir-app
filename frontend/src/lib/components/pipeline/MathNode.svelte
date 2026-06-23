@@ -12,7 +12,7 @@
   const status = $derived(state?.status ?? 'pending');
 
   const OPERATIONS: MathNodeData['operation'][] = ['+', '-', '*', '/', 'min', 'max', 'round', 'floor', 'ceil', 'abs'];
-  const disabled = $derived(pipelineStore.running || status === 'done');
+  const disabled = $derived(pipelineStore.running);
 
   function statusColor() {
     if (status === 'done')    return 'bg-emerald-500';

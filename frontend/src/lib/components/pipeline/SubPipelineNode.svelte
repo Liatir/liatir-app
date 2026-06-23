@@ -11,7 +11,7 @@
   const { updateNodeData } = useSvelteFlow();
   const state = $derived(pipelineStore.nodeStates.get(id));
   const status = $derived(state?.status ?? 'pending');
-  const disabled = $derived(pipelineStore.running || status === 'done');
+  const disabled = $derived(pipelineStore.running);
 
   // Available pipelines (no cycles, no self)
   const available = $derived(pipelineStore.availableSubPipelines(pipelineStore.pipelineId));

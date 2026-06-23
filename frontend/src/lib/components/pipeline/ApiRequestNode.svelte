@@ -12,7 +12,7 @@
   const { updateNodeData } = useSvelteFlow();
   const state = $derived(pipelineStore.nodeStates.get(id));
   const status = $derived(state?.status ?? 'pending');
-  const disabled = $derived(pipelineStore.running || status === 'done');
+  const disabled = $derived(pipelineStore.running);
 
   const req = $derived(data.requestId ? apiConnections.requestById(data.requestId) : null);
 

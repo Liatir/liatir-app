@@ -10,7 +10,7 @@
   const { updateNodeData } = useSvelteFlow();
   const state = $derived(pipelineStore.nodeStates.get(id));
   const status = $derived(state?.status ?? 'pending');
-  const disabled = $derived(pipelineStore.running || status === 'done');
+  const disabled = $derived(pipelineStore.running);
 
   function statusColor() {
     if (status === 'done') return state?.activeBranch === 'true' ? 'bg-emerald-500' : 'bg-amber-500';

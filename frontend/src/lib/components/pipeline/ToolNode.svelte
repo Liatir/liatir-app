@@ -22,7 +22,7 @@
 
   const inputKeys = $derived(def ? Object.entries(def.inputSchema) : []);
 
-  const inputsDisabled = $derived(pipelineStore.running || status === 'done');
+  const inputsDisabled = $derived(pipelineStore.running);
 
   function truncatePath(path: string, max = 40): string {
     if (path.length <= max) return path;

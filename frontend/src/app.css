@@ -100,3 +100,7 @@ input, textarea, [data-selectable] {
 .scalar-app .scalar-version-number {
   display: none !important;
 }
+
+.svelte-flow__handle {
+  scale: 1.5 !important;
+}

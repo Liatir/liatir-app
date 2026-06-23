@@ -37,6 +37,8 @@
   let nameInput = $state('');
   let saving = $state(false);
 
+  let unsavedChanges = $state(false);
+
   const nodeTypes = {
     tool: ToolNode,
     start: StartNode,
@@ -131,7 +133,7 @@
     pipelineStore.setCurrentState(nodes, edges, nameInput);
   });
 
-  function addNode(type: string, id: string) {
+  async function addNode(type: string, id: string) {
     const col = nodes.filter(n => n.type !== 'start').length;
     const pos = { x: 200 + (col % 3) * 380, y: 80 + Math.floor(col / 3) * 280 };
     let newNode: Node;
@@ -145,6 +147,8 @@
       default: return;
     }
     nodes = [...nodes, newNode];
+    unsavedChanges = true;
+    await savePipeline();
   }
 
   async function clear() {
@@ -153,6 +157,8 @@
     nodes = [];
     edges = [];
     pipelineStore.resetStates([]);
+    unsavedChanges = true;
+    await savePipeline();
   }
 
   async function savePipeline() {
@@ -160,7 +166,8 @@
     saving = true;
     try {
       await pipelineStore.savePipeline(nameInput.trim());
-      toast.success('Pipeline saved');
+      unsavedChanges = false;
+      toast.info('Pipeline saved');
     } catch {
       toast.error('Failed to save pipeline');
     } finally {
@@ -168,7 +175,7 @@
     }
   }
 
-  function onConnect(connection: Connection) {
+  async function connect(connection: Connection) {
     // Allow multiple incoming edges on the generic "input" handle (tool/sub-pipeline nodes).
     // For value handles (a, b, value, etc.) keep single-edge semantics.
     const allowMultiple = connection.targetHandle === 'input';
@@ -182,9 +189,15 @@
         sourceHandle: connection.sourceHandle ?? null,
         target: connection.target,
         targetHandle: connection.targetHandle ?? null,
-        style: 'stroke: #4f39f6; stroke-width: 2;',
+        style: 'stroke: #4f39f6; stroke-width:3;',
       },
     ];
+    unsavedChanges = true;
+  }
+
+  async function onConnect(connection: Connection) {
+    await connect(connection);
+    await savePipeline();
   }
 </script>
 
@@ -221,12 +234,6 @@
           Pipelines
           </span>
         </button> -->
-        <Button variant="ghost" size="sm" loading={saving} onclick={savePipeline} disabled={!nameInput.trim()}>
-          <Icon icon="lucide:save" width="12" height="12" />
-          <span class="max-lg:hidden">
-          Save
-          </span>
-        </Button>
         {#if nodes.length > 0}
           <Button variant="ghost" size="sm" onclick={clear} disabled={pipelineStore.running}>
             <Icon icon="ph:broom" width="12" height="12" />
@@ -235,6 +242,14 @@
             </span>
           </Button>
         {/if}
+        <div class={unsavedChanges?"":"opacity-60"}>
+        <Button variant="ghost" size="sm" loading={saving} onclick={savePipeline} disabled={!nameInput.trim() || !unsavedChanges}>
+            <Icon icon="lucide:save" width="12" height="12" />
+            <span class="max-lg:hidden">
+            Save
+            </span>
+          </Button>
+        </div>
         <Button
           variant="primary"
           disabled={!canRun}
