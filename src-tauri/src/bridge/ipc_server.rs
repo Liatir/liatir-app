@@ -230,6 +230,24 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
             Ok(Value::String(text))
         }
 
+        // WASM custom-tool runtime — lets .lia Modules invoke a compiled plugin
+        // (e.g. fastqc) by name with a JSON payload, optionally exposing host
+        // directories read-only (needed to read FASTQ/BAM files from disk).
+        "lia_plugin_call" => {
+            let module = payload["module"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("module required"))?
+                .to_string();
+            let plugin_payload = payload["payload"].clone();
+            let timeout_ms = payload["timeoutMs"].as_u64();
+            let host_read_paths = payload["hostReadPaths"]
+                .as_array()
+                .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect());
+            crate::bridge::plugins::lia_plugin_call(app.clone(), module, plugin_payload, timeout_ms, host_read_paths)
+                .await
+                .map_err(|e| anyhow::anyhow!(e))
+        }
+
         // ── Native bio tools ─────────────────────────────────────────────
         // Exposed to .lia Modules so the typed bio wrappers in `@liatir/sdk`
         // (Liatir.align.*, Liatir.variants.*, …) can call the SAME native

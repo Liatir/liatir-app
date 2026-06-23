@@ -7,3 +7,14 @@ export * from './types';
 
 // Quality control
 export * from './qc/seqkit';
+export * from './qc/fastp';
+export * from './qc/fastqc';
+
+// Alignment
+export * from './alignment/bwa';
+export * from './alignment/minimap2';
+export * from './alignment/samtools';
+
+// Variants
+export * from './variants/bcftools';
+export * from './variants/snpeff';

@@ -18,7 +18,13 @@ const config = {
 			fallback: 'index.html',
 			precompress: false,
 			strict: false
-		})
+		}),
+		// Shared internal package — aliased here so both Vite (bundling) and
+		// svelte-check (type-checking) resolve it without an npm workspace.
+		alias: {
+			'@liatir/output-parser': '../packages/liatir-output-parser/src',
+			'@liatir/output-parser/*': '../packages/liatir-output-parser/src/*'
+		}
 	}
 };
 

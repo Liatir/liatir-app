@@ -1,5 +1,15 @@
-import type { ToolOutput, StatsSection, TableSection } from '$lib/types/tool-output';
 import type { PipelineStepDefinition } from '$lib/types/pipeline';
+
+// Parsers + ANN helpers now live in the shared @liatir/output-parser package
+// (single source of truth). UI constants and the step definition stay here.
+export {
+  parseAnnField,
+  impactColor,
+  buildSnpEffOutput,
+  parseSnpEffStats,
+  type AnnEntry,
+  type SnpEffSummary,
+} from '@liatir/output-parser';
 
 export const snpeffDefinition: PipelineStepDefinition = {
   id: 'snpeff',
@@ -32,140 +42,3 @@ export const SNPEFF_GENOMES = [
 ];
 
 export const SNPEFF_DOWNLOAD_URL = 'https://pcingola.github.io/SnpEff/#download';
-
-// ── ANN field parser ──────────────────────────────────────────────
-
-export interface AnnEntry {
-  allele: string;
-  effect: string;
-  impact: 'HIGH' | 'MODERATE' | 'LOW' | 'MODIFIER' | string;
-  geneName: string;
-  geneId: string;
-  hgvsCds: string;
-  hgvsProtein: string;
-}
-
-export function parseAnnField(annValue: string): AnnEntry[] {
-  // Multiple transcripts separated by comma
-  return annValue.split(',').map(entry => {
-    const parts = entry.split('|');
-    return {
-      allele:      parts[0] ?? '',
-      effect:      parts[1] ?? '',
-      impact:      parts[2] ?? '',
-      geneName:    parts[3] ?? '',
-      geneId:      parts[4] ?? '',
-      hgvsCds:     parts[9] ?? '',
-      hgvsProtein: parts[10] ?? '',
-    };
-  });
-}
-
-export function impactColor(impact: string): string {
-  switch (impact) {
-    case 'HIGH':     return '#ef4444';
-    case 'MODERATE': return '#f59e0b';
-    case 'LOW':      return '#10b981';
-    default:         return '#71717a';
-  }
-}
-
-// ── Output builder ────────────────────────────────────────────────
-
-export interface SnpEffSummary {
-  totalVariants: number;
-  highImpact: number;
-  moderateImpact: number;
-  lowImpact: number;
-  modifierImpact: number;
-  topEffects: Array<{ effect: string; count: number }>;
-}
-
-export function buildSnpEffOutput(
-  summary: SnpEffSummary,
-  outputVcfName: string,
-): ToolOutput {
-  const stats: StatsSection = {
-    type: 'stats',
-    cols: 4,
-    items: [
-      { label: 'Total variants', value: summary.totalVariants.toLocaleString() },
-      {
-        label: 'HIGH impact',
-        value: summary.highImpact.toLocaleString(),
-        color: '#ef4444',
-        description: 'Stop gained, frameshift, splice site disruption',
-      },
-      {
-        label: 'MODERATE impact',
-        value: summary.moderateImpact.toLocaleString(),
-        color: '#f59e0b',
-        description: 'Missense, in-frame indel',
-      },
-      {
-        label: 'LOW impact',
-        value: summary.lowImpact.toLocaleString(),
-        color: '#10b981',
-        description: 'Synonymous, splice region',
-      },
-    ],
-  };
-
-  const topTable: TableSection = {
-    type: 'table',
-    label: 'Top effects',
-    headers: ['Effect', 'Count'],
-    rows: summary.topEffects.slice(0, 15).map(e => [e.effect, e.count]),
-  };
-
-  return { sections: [stats, topTable] };
-}
-
-// ── Parse SnpEff text summary (genes.txt / snpEff_summary.txt) ───
-
-export function parseSnpEffStats(stdout: string): SnpEffSummary {
-  const lines = stdout.split('\n');
-
-  let totalVariants = 0;
-  let highImpact = 0;
-  let moderateImpact = 0;
-  let lowImpact = 0;
-  let modifierImpact = 0;
-  const effectCounts: Map<string, number> = new Map();
-
-  for (const line of lines) {
-    if (line.startsWith('#') || !line.trim()) continue;
-
-    // SnpEff stats lines look like:
-    // "Number of variants (total)" ... "12345"
-    const trimmed = line.trim();
-
-    if (trimmed.includes('HIGH')) {
-      const m = trimmed.match(/(\d+)\s*$/);
-      if (m) highImpact = parseInt(m[1], 10);
-    }
-    if (trimmed.includes('MODERATE')) {
-      const m = trimmed.match(/(\d+)\s*$/);
-      if (m) moderateImpact = parseInt(m[1], 10);
-    }
-    if (trimmed.includes('LOW')) {
-      const m = trimmed.match(/(\d+)\s*$/);
-      if (m) lowImpact = parseInt(m[1], 10);
-    }
-    if (trimmed.includes('MODIFIER')) {
-      const m = trimmed.match(/(\d+)\s*$/);
-      if (m) modifierImpact = parseInt(m[1], 10);
-    }
-  }
-
-  totalVariants = highImpact + moderateImpact + lowImpact + modifierImpact;
-
-  return {
-    totalVariants,
-    highImpact,
-    moderateImpact,
-    lowImpact,
-    modifierImpact,
-    topEffects: [],
-  };
-}

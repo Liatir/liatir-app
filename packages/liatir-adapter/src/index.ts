@@ -2,6 +2,8 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import * as os from "os";
 import { buildAlign, type AlignNamespace } from "./bio/align";
+import { buildQc, type QcNamespace } from "./bio/qc";
+import { buildVariants, type VariantsNamespace } from "./bio/variants";
 
 // ── Types mirrored from src-ts (no runtime dep on the browser SDK) ──────────
 
@@ -140,8 +142,10 @@ export interface LiatirNode {
   jobs: LiatirNodeJobs;
   /** Check whether system tools are installed and get their versions. */
   deps: LiatirNodeDeps;
-  /** Bio analysis namespaces (scipy-style typed wrappers): align, variants, … */
+  /** Bio analysis namespaces (scipy-style typed wrappers). */
   align: AlignNamespace;
+  qc: QcNamespace;
+  variants: VariantsNamespace;
   /** App filesystem paths. */
   paths(): Promise<LiatirNodePaths>;
   /** Raw invoke — calls any supported Tauri command. */
@@ -199,11 +203,15 @@ export async function createLiatir(): Promise<LiatirNode> {
     checkMany: (names) => invoke<DepResult[]>("lia_deps_check_many", { names }),
   };
 
+  const paths = () => invoke<LiatirNodePaths>("lia_fs_paths", {});
+
   return {
     jobs,
     deps,
     align: buildAlign(invoke),
-    paths: () => invoke<LiatirNodePaths>("lia_fs_paths", {}),
+    qc: buildQc({ jobs, invoke, paths }),
+    variants: buildVariants({ jobs, invoke }),
+    paths,
     invoke,
   };
 }

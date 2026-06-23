@@ -11,10 +11,12 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "build:bundle": "tsup",
     "dev": "tsc -p tsconfig.json --watch",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build:bundle"
   },
   "devDependencies": {
+    "tsup": "^8.0.0",
     "typescript": "^5.0.0"
   }
 }
