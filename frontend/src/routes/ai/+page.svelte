@@ -6,7 +6,7 @@
 </script>
 
 <div class="flex flex-col h-full">
-  <PageHeader title="Plugins" description="Expand Liatir capabilities with custom tools">
+  <PageHeader title="AI Models" description="Leverage the power of AI models for biology and research">
     <!-- {#snippet actions()}
     {/snippet} -->
   </PageHeader>
