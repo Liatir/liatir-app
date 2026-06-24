@@ -5,6 +5,7 @@
   import { useSvelteFlow } from '@xyflow/svelte';
   import type { VariableNodeData } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
+  import NodeDeleteButton from './NodeDeleteButton.svelte';
 
   let { id, data }: NodeProps<Node<VariableNodeData>> = $props();
   const { updateNodeData } = useSvelteFlow();
@@ -24,6 +25,7 @@
   <div class="flex items-center gap-2 px-3 py-2 border-b border-border bg-amber-50 cursor-grab active:cursor-grabbing">
     <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
     <span class="text-[10px] font-semibold text-amber-700 uppercase tracking-wider">Variable</span>
+    <NodeDeleteButton {id} class="ml-auto" />
   </div>
 
   <div class="px-3 py-2.5 space-y-2 nodrag nopan">

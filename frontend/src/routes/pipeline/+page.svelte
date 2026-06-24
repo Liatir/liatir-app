@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick, setContext } from 'svelte';
   import { goto } from '$app/navigation';
   import Icon from '@iconify/svelte';
   import {
@@ -21,6 +21,7 @@
   import ConditionNode from '$lib/components/pipeline/ConditionNode.svelte';
   import SubPipelineNode from '$lib/components/pipeline/SubPipelineNode.svelte';
   import ApiRequestNode from '$lib/components/pipeline/ApiRequestNode.svelte';
+  import DeletableEdge from '$lib/components/pipeline/DeletableEdge.svelte';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { apiConnections } from '$lib/stores/apiConnections.svelte';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
@@ -36,6 +37,7 @@
   let editingName = $state(false);
   let nameInput = $state('');
   let saving = $state(false);
+  let savedConfirmation = $state(false);
 
   let unsavedChanges = $state(false);
 
@@ -48,6 +50,65 @@
     'sub-pipeline': SubPipelineNode,
     'api-request': ApiRequestNode,
   };
+
+  // All edges use the custom deletable edge (hover → X button to remove).
+  const edgeTypes = { default: DeletableEdge };
+
+  // ── Right-click context menu ─────────────────────────────────────────────────
+  let ctxMenu = $state<{ x: number; y: number; kind: 'pane' | 'node' | 'edge'; id?: string } | null>(null);
+
+  function onPaneContextMenu({ event }: { event: MouseEvent }) {
+    event.preventDefault();
+    ctxMenu = { x: event.clientX, y: event.clientY, kind: 'pane' };
+  }
+  function onNodeContextMenu({ node, event }: { node: Node; event: MouseEvent }) {
+    event.preventDefault();
+    if (node.type === 'start') { ctxMenu = null; return; }
+    ctxMenu = { x: event.clientX, y: event.clientY, kind: 'node', id: node.id };
+  }
+  function onEdgeContextMenu({ edge, event }: { edge: Edge; event: MouseEvent }) {
+    event.preventDefault();
+    ctxMenu = { x: event.clientX, y: event.clientY, kind: 'edge', id: edge.id };
+  }
+  function closeCtx() { ctxMenu = null; }
+
+  async function deleteNodeById(id: string) {
+    nodes = nodes.filter(n => n.id !== id);
+    edges = edges.filter(e => e.source !== id && e.target !== id);
+    closeCtx();
+    await onDelete();
+  }
+  // Single source of truth for edge removal (used by the edge's X button AND the
+  // context menu). xyflow's bind:edges reverts a structural change made during the
+  // click cycle, so we defer the removal to the next frame.
+  function removeEdgeById(id: string) {
+    requestAnimationFrame(() => {
+      edges = edges.filter(e => e.id !== id);
+      unsavedChanges = true;
+      void savePipeline();
+    });
+  }
+  setContext('pipelineEdge', { removeEdgeById });
+
+  function deleteEdgeById(id: string) {
+    closeCtx();
+    removeEdgeById(id);
+  }
+  async function duplicateNodeById(id: string) {
+    const orig = nodes.find(n => n.id === id);
+    if (!orig) return;
+    const copy: Node = {
+      ...(JSON.parse(JSON.stringify(orig)) as Node),
+      id: crypto.randomUUID(),
+      position: { x: orig.position.x + 40, y: orig.position.y + 40 },
+      selected: false,
+    };
+    nodes = [...nodes, copy];
+    closeCtx();
+    unsavedChanges = true;
+    await tick();
+    await savePipeline();
+  }
 
   // ── Add-step menu ──────────────────────────────────────────────────────────
 
@@ -117,12 +178,12 @@
     const pending = pipelineStore.pendingLoad;
     if (pending) {
       nodes = [...(pending.nodes as Node[])];
-      edges = [...pending.edges];
+      edges = pending.edges.map(e => ({ ...e, selectable: false }));
       nameInput = pending.name;
       pipelineStore.clearPendingLoad();
     } else {
       nodes = [...pipelineStore.currentNodes];
-      edges = [...pipelineStore.currentEdges];
+      edges = pipelineStore.currentEdges.map(e => ({ ...e, selectable: false }));
       nameInput = pipelineStore.pipelineName;
     }
     storeReady = true;
@@ -161,13 +222,22 @@
     await savePipeline();
   }
 
+  $effect(()=>{
+    if(!savedConfirmation) return;
+    setTimeout(()=>{
+      if(!savedConfirmation) return;
+      savedConfirmation=false;
+    }, 2500);
+  }) 
+
   async function savePipeline() {
     if (!nameInput.trim()) return;
     saving = true;
     try {
       await pipelineStore.savePipeline(nameInput.trim());
       unsavedChanges = false;
-      toast.info('Pipeline saved');
+      // toast.info('Pipeline saved');
+      savedConfirmation = true;
     } catch {
       toast.error('Failed to save pipeline');
     } finally {
@@ -190,6 +260,9 @@
         target: connection.target,
         targetHandle: connection.targetHandle ?? null,
         style: 'stroke: #4f39f6; stroke-width:3;',
+        // Not selectable: avoids the xyflow select-on-first-click race that made
+        // edge deletion (button + context menu) require two clicks.
+        selectable: false,
       },
     ];
     unsavedChanges = true;
@@ -197,6 +270,15 @@
 
   async function onConnect(connection: Connection) {
     await connect(connection);
+    await savePipeline();
+  }
+
+  // Persist after a node/edge deletion (Delete or Backspace, or context-menu).
+  // xyflow has already updated the bound nodes/edges; wait a tick so the
+  // $effect propagates them to the store before we save.
+  async function onDelete() {
+    unsavedChanges = true;
+    await tick();
     await savePipeline();
   }
 </script>
@@ -244,9 +326,9 @@
         {/if}
         <div class={unsavedChanges?"":"opacity-60"}>
         <Button variant="ghost" size="sm" loading={saving} onclick={savePipeline} disabled={!nameInput.trim() || !unsavedChanges}>
-            <Icon icon="lucide:save" width="12" height="12" />
+            <Icon icon="{saving?"svg-spinners:pulse":(savedConfirmation?"lucide:check":"lucide:save")}" width="12" height="12" />
             <span class="max-lg:hidden">
-            Save
+            {saving?"Saving":(savedConfirmation?"Saved":"Save")}
             </span>
           </Button>
         </div>
@@ -264,7 +346,7 @@
   </PageHeader>
 
   <div class="flex-1 relative">
-    <SvelteFlow bind:nodes bind:edges {nodeTypes} fitView onconnect={onConnect} deleteKey="Delete" proOptions={{ hideAttribution: true }}>
+    <SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView onconnect={onConnect} ondelete={onDelete} deleteKey={['Delete', 'Backspace']} onpanecontextmenu={onPaneContextMenu} onnodecontextmenu={onNodeContextMenu} onedgecontextmenu={onEdgeContextMenu} defaultEdgeOptions={{ selectable: false }} proOptions={{ hideAttribution: true }}>
       <Background gap={24} size={1} color="#e4e4e7" />
       <Controls position="bottom-right" />
     </SvelteFlow>
@@ -306,6 +388,39 @@
     </span>
   </div>
 </div>
+
+{#if ctxMenu}
+  <div class="fixed inset-0 z-40" role="presentation"
+       onclick={closeCtx}
+       oncontextmenu={(e) => { e.preventDefault(); closeCtx(); }}></div>
+  <div class="fixed z-50 min-w-44 rounded-lg border border-border bg-white shadow-xl py-1 text-sm overflow-hidden"
+       style="left: {ctxMenu.x}px; top: {ctxMenu.y}px;">
+    {#if ctxMenu.kind === 'pane'}
+      <button type="button" disabled={pipelineStore.running}
+        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-zinc-700 hover:bg-zinc-50 transition-colors disabled:opacity-40"
+        onclick={() => { closeCtx(); showAddMenu = true; }}>
+        <Icon icon="lucide:plus" width="13" height="13" /> Add step
+      </button>
+    {:else if ctxMenu.kind === 'node'}
+      <button type="button" disabled={pipelineStore.running}
+        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-zinc-700 hover:bg-zinc-50 transition-colors disabled:opacity-40"
+        onclick={() => duplicateNodeById(ctxMenu!.id!)}>
+        <Icon icon="lucide:copy" width="13" height="13" /> Duplicate
+      </button>
+      <button type="button" disabled={pipelineStore.running}
+        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
+        onclick={() => deleteNodeById(ctxMenu!.id!)}>
+        <Icon icon="lucide:trash-2" width="13" height="13" /> Delete node
+      </button>
+    {:else if ctxMenu.kind === 'edge'}
+      <button type="button" disabled={pipelineStore.running}
+        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
+        onclick={() => deleteEdgeById(ctxMenu!.id!)}>
+        <Icon icon="lucide:trash-2" width="13" height="13" /> Delete connection
+      </button>
+    {/if}
+  </div>
+{/if}
 
 {#if showAddMenu}
   <div class="fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px]" role="presentation" onclick={() => { showAddMenu = false; stepSearch = ''; }}></div>

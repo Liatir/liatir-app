@@ -14,8 +14,11 @@ export const fastpDefinition: PipelineStepDefinition = {
     r2: { type: 'file', label: 'R2 FASTQ (optional, paired-end)', required: false, accept: ['fastq', 'fastq.gz', 'fq', 'fq.gz'] },
   },
   outputSchema: {
-    trimmedR1:  { type: 'file', label: 'Trimmed R1', ext: ['fastq.gz'] },
-    trimmedR2:  { type: 'file', label: 'Trimmed R2', ext: ['fastq.gz'], description: 'Only produced in paired-end mode.' },
-    stats:      { type: 'stats', label: 'QC statistics' },
+    trimmedR1:   { type: 'file',   label: 'Trimmed R1', ext: ['fastq.gz'] },
+    trimmedR2:   { type: 'file',   label: 'Trimmed R2', ext: ['fastq.gz'], description: 'Only produced in paired-end mode.' },
+    stats:       { type: 'stats',  label: 'QC statistics' },
+    readsBefore: { type: 'number', label: 'Reads (input)', format: 'integer' },
+    q30After:    { type: 'number', label: 'Q30 % (after)', format: 'percent' },
+    passRate:    { type: 'number', label: 'Passed %',      format: 'percent' },
   },
 };

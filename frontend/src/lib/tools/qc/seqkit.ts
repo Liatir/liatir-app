@@ -19,6 +19,9 @@ export const seqkitStatsDefinition: PipelineStepDefinition = {
     },
   },
   outputSchema: {
-    stats: { type: 'stats', label: 'Sequence statistics' },
+    stats:   { type: 'stats',  label: 'Sequence statistics' },
+    numSeqs: { type: 'number', label: 'Sequences', format: 'integer' },
+    gcPct:   { type: 'number', label: 'GC %',      format: 'percent' },
+    n50:     { type: 'number', label: 'N50',       format: 'integer' },
   },
 };

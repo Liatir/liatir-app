@@ -11,6 +11,8 @@ export interface OutputFieldSchema {
   label?: string;
   ext?: string[];
   description?: string;
+  /** Display hint for numeric metric outputs (type: 'number'). */
+  format?: 'integer' | 'decimal' | 'percent';
 }
 
 export interface PipelineStepDefinition {
@@ -95,7 +97,12 @@ export type StepRunFn = (
   inputs: Record<string, string>,
   outputDir: string,
   onLog: (line: string) => void
-) => Promise<{ outputFiles: RunOutputFile[]; output?: import('./tool-output').ToolOutput }>;
+) => Promise<{
+  outputFiles: RunOutputFile[];
+  output?: import('./tool-output').ToolOutput;
+  /** Numeric metrics exposed as connectable value-outputs (→ Math / Condition nodes). */
+  metrics?: Record<string, number>;
+}>;
 
 export interface PipelineRegistryEntry {
   definition: PipelineStepDefinition;

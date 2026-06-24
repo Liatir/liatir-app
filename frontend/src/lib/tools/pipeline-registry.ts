@@ -12,7 +12,7 @@ import { settingsStore } from '$lib/stores/settings.svelte';
 import type { ToolOutput } from '$lib/types/tool-output';
 import type { PipelineRegistryEntry, PipelineStepDefinition, RunOutputFile } from '$lib/types/pipeline';
 
-type StepResult = { outputFiles: RunOutputFile[]; output?: ToolOutput };
+type StepResult = { outputFiles: RunOutputFile[]; output?: ToolOutput; metrics?: Record<string, number> };
 
 function basename(p: string) { return p.split(/[\\/]/).pop() ?? p; }
 
@@ -100,11 +100,13 @@ async function runFastpStep(
   if (!result.ok) throw new Error(result.stderr || `fastp exited with code ${result.exitCode}`);
 
   const jsonText = await api.invoke('lia_read_file_text', { path: jsonPath }) as string;
-  const output = fastpToToolOutput(parseFastpJson(jsonText));
+  const summary = parseFastpJson(jsonText);
+  const output = fastpToToolOutput(summary);
 
   const outputFiles: RunOutputFile[] = [{ label: 'Trimmed R1', path: out1Path, ext: 'fastq.gz' }];
   if (inputs.r2) outputFiles.push({ label: 'Trimmed R2', path: out2Path, ext: 'fastq.gz' });
-  return { outputFiles, output };
+  const passRate = summary.before.totalReads > 0 ? (summary.filtering.passed / summary.before.totalReads) * 100 : 0;
+  return { outputFiles, output, metrics: { readsBefore: summary.before.totalReads, q30After: summary.after.q30Rate, passRate } };
 }
 
 async function runSeqkitStatsStep(
@@ -119,7 +121,11 @@ async function runSeqkitStatsStep(
     throw new Error(result.stderr || `seqkit exited with code ${result.exitCode}`);
   }
   const parsed = parseSeqkitStats(result.stdout);
-  return { outputFiles: [], output: parsed ? seqkitStatsToToolOutput(parsed, result.stdout) : undefined };
+  return {
+    outputFiles: [],
+    output: parsed ? seqkitStatsToToolOutput(parsed, result.stdout) : undefined,
+    metrics: parsed ? { numSeqs: parsed.numSeqs, gcPct: parsed.gcPct ?? 0, n50: parsed.n50 ?? 0 } : undefined,
+  };
 }
 
 async function runSamtoolsFlagstatStep(
@@ -134,7 +140,11 @@ async function runSamtoolsFlagstatStep(
     throw new Error(result.stderr || `samtools exited with code ${result.exitCode}`);
   }
   const parsed = parseFlagstatResult(result.stdout);
-  return { outputFiles: [], output: flagstatToToolOutput(parsed, result.stdout) };
+  return {
+    outputFiles: [],
+    output: flagstatToToolOutput(parsed, result.stdout),
+    metrics: { total: parsed.total, mappedPct: parsed.mappedPct ?? 0, duplicatesPct: parsed.duplicatesPct ?? 0 },
+  };
 }
 
 async function runSamtoolsFaidxStep(
@@ -243,7 +253,11 @@ async function runBcftoolsStatsStep(
     throw new Error(result.stderr || `bcftools exited with code ${result.exitCode}`);
   }
   const parsed = parseBcftoolsStats(result.stdout);
-  return { outputFiles: [], output: bcftoolsStatsToToolOutput(parsed, result.stdout) };
+  return {
+    outputFiles: [],
+    output: bcftoolsStatsToToolOutput(parsed, result.stdout),
+    metrics: { records: parsed.records, snps: parsed.snps, indels: parsed.indels, tstv: parsed.tstv ?? 0 },
+  };
 }
 
 async function runBcftoolsFilterStep(
@@ -333,7 +347,11 @@ async function runSnpeffStep(
     const summary = parseSnpEffStats(result.stderr.join('\n'));
     const output = buildSnpEffOutput(summary, basename(inputs.inputFile));
     await snpEffStore.touchGenome(genome);
-    return { outputFiles, output };
+    return {
+      outputFiles,
+      output,
+      metrics: { totalVariants: summary.totalVariants, highImpact: summary.highImpact, moderateImpact: summary.moderateImpact, lowImpact: summary.lowImpact },
+    };
   } finally {
     offStderr();
   }

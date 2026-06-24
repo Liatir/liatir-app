@@ -3,13 +3,14 @@
   import type { NodeProps } from '@xyflow/svelte';
   import type { Node, Edge } from '@xyflow/svelte';
   import Icon from '@iconify/svelte';
-  import type { ToolNodeData } from '$lib/types/pipeline';
+  import type { ToolNodeData, OutputFieldSchema } from '$lib/types/pipeline';
   import { PIPELINE_REGISTRY } from '$lib/tools/pipeline-registry';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import OptionPicker from '$lib/components/ui/OptionPicker.svelte';
   import type { PickerGroup } from '$lib/components/ui/OptionPicker.svelte';
   import { fmtBytes } from '$lib/utils';
+  import NodeDeleteButton from './NodeDeleteButton.svelte';
 
   let { id, data }: NodeProps<Node<ToolNodeData>> = $props();
 
@@ -21,6 +22,20 @@
   const status = $derived(state?.status ?? 'pending');
 
   const inputKeys = $derived(def ? Object.entries(def.inputSchema) : []);
+
+  // Numeric metric outputs (type: 'number') exposed as connectable value handles
+  // for Math / Condition nodes. Their values appear in node state after the run.
+  const metricOutputs = $derived(def ? Object.entries(def.outputSchema).filter(([, s]) => s.type === 'number') : []);
+
+  function fmtMetric(key: string, schema: OutputFieldSchema): string {
+    const raw = state?.outputValues?.[key];
+    if (raw === undefined) return '–';
+    const n = Number(raw);
+    if (Number.isNaN(n)) return raw;
+    if (schema.format === 'percent') return `${n.toFixed(1)}%`;
+    if (schema.format === 'integer') return n.toLocaleString();
+    return n.toFixed(3);
+  }
 
   const inputsDisabled = $derived(pipelineStore.running);
 
@@ -112,6 +127,7 @@
     <span class="text-[10px] text-zinc-400 font-medium">
       {status === 'running' ? 'Running…' : status === 'done' ? 'Done' : status === 'error' ? 'Error' : status === 'skipped' ? 'Skipped' : 'Pending'}
     </span>
+    <NodeDeleteButton {id} />
   </div>
 
   {#if def}
@@ -168,6 +184,19 @@
           <Icon icon="lucide:file" width="8" height="8" />
           {f.label}
         </span>
+      {/each}
+    </div>
+  {/if}
+
+  {#if metricOutputs.length > 0}
+    <div class="px-3 pb-2.5 pt-2 border-t border-border/60 nodrag nopan">
+      <p class="text-[9px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Value outputs → Math / Condition</p>
+      {#each metricOutputs as [key, schema]}
+        <div class="relative flex items-center gap-1.5 h-5">
+          <span class="text-[10px] text-zinc-500 flex-1 truncate">{schema.label ?? key}</span>
+          <span class="text-[10px] font-mono text-zinc-600">{fmtMetric(key, schema)}</span>
+          <Handle type="source" position={Position.Right} id={key} style="position: relative; transform: none; right: -18px; top: auto;" />
+        </div>
       {/each}
     </div>
   {/if}

@@ -28,6 +28,10 @@ export const bcftoolsStatsDefinition: PipelineStepDefinition = {
     inputFile: { type: 'file', label: 'VCF / BCF file', required: true, accept: ['vcf', 'vcf.gz', 'bcf', 'bcf.gz'] },
   },
   outputSchema: {
-    stats: { type: 'stats', label: 'Variant statistics' },
+    stats:   { type: 'stats',  label: 'Variant statistics' },
+    records: { type: 'number', label: 'Records', format: 'integer' },
+    snps:    { type: 'number', label: 'SNPs',    format: 'integer' },
+    indels:  { type: 'number', label: 'Indels',  format: 'integer' },
+    tstv:    { type: 'number', label: 'Ts/Tv',   format: 'decimal' },
   },
 };

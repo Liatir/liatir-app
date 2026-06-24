@@ -6,6 +6,7 @@
   import Icon from '@iconify/svelte';
   import type { SubPipelineNodeData } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
+  import NodeDeleteButton from './NodeDeleteButton.svelte';
 
   let { id, data }: NodeProps<Node<SubPipelineNodeData>> = $props();
   const { updateNodeData } = useSvelteFlow();
@@ -41,6 +42,7 @@
     <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
     <Icon icon="lucide:workflow" width="11" height="11" class="text-indigo-500 shrink-0" />
     <span class="text-[10px] font-semibold text-indigo-700 uppercase tracking-wider">Sub-Pipeline</span>
+    <NodeDeleteButton {id} class="ml-auto" />
   </div>
 
   <div class="px-3 py-2.5 nodrag nopan">

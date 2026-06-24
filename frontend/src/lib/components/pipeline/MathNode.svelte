@@ -5,6 +5,7 @@
   import { useSvelteFlow } from '@xyflow/svelte';
   import type { MathNodeData } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
+  import NodeDeleteButton from './NodeDeleteButton.svelte';
 
   let { id, data }: NodeProps<Node<MathNodeData>> = $props();
   const { updateNodeData } = useSvelteFlow();
@@ -47,6 +48,7 @@
         <option value={op}>{op}</option>
       {/each}
     </select>
+    <NodeDeleteButton {id} />
   </div>
 
   <div class="px-3 py-2.5 space-y-1.5 nodrag nopan">

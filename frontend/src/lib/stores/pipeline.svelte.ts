@@ -76,6 +76,15 @@ function initNodeState(): NodeRunState {
   return { status: 'pending', logs: [], outputFiles: [], error: null };
 }
 
+// Convert a tool's numeric metrics into string outputValues so they can be
+// piped into Math / Condition nodes via resolveInputs (handle id = metric key).
+function metricsToValues(metrics?: Record<string, number>): Record<string, string> | undefined {
+  if (!metrics) return undefined;
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(metrics)) out[k] = String(v);
+  return out;
+}
+
 // Resolve all inputs for a node from edges (files and values) + node.data.inputs tokens
 function resolveInputs(
   nodeId: string,
@@ -257,7 +266,7 @@ function createPipelineStore() {
         const logs: string[] = [];
         try {
           const result = await entry.run(resolved, outputDir, (line) => { logs.push(line); onLog(line); });
-          patch({ status: 'done', logs, outputFiles: result.outputFiles });
+          patch({ status: 'done', logs, outputFiles: result.outputFiles, outputValues: metricsToValues(result.metrics) });
           allOutputFiles.push(...result.outputFiles);
           await dataFiles.createFolder('Results').catch(() => {});
           await dataFiles.createFolder(virtualFolder).catch(() => {});
@@ -474,7 +483,7 @@ function createPipelineStore() {
               logs.push(line);
               patchState(nodeId, { logs: [...logs] });
             });
-            patchState(nodeId, { status: 'done', logs, outputFiles: result.outputFiles, error: null });
+            patchState(nodeId, { status: 'done', logs, outputFiles: result.outputFiles, error: null, outputValues: metricsToValues(result.metrics) });
             pipeSteps.push({ label: entry.definition.label, output: result.output, files: result.outputFiles });
             await dataFiles.createFolder('Results').catch(() => {});
             await dataFiles.createFolder(virtualFolder).catch(() => {});

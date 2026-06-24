@@ -6,6 +6,7 @@
   import Icon from '@iconify/svelte';
   import type { ApiRequestNodeData } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
+  import NodeDeleteButton from './NodeDeleteButton.svelte';
   import { apiConnections } from '$lib/stores/apiConnections.svelte';
 
   let { id, data }: NodeProps<Node<ApiRequestNodeData>> = $props();
@@ -82,6 +83,7 @@
     <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
     <Icon icon="lucide:plug" width="11" height="11" class="text-rose-500 shrink-0" />
     <span class="text-[10px] font-semibold text-rose-700 uppercase tracking-wider">API Request</span>
+    <NodeDeleteButton {id} class="ml-auto" />
   </div>
 
   <div class="px-3 py-2.5 nodrag nopan space-y-2">

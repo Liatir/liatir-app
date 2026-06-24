@@ -5,6 +5,7 @@
   import { useSvelteFlow } from '@xyflow/svelte';
   import type { ConditionNodeData } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
+  import NodeDeleteButton from './NodeDeleteButton.svelte';
 
   let { id, data }: NodeProps<Node<ConditionNodeData>> = $props();
   const { updateNodeData } = useSvelteFlow();
@@ -32,6 +33,7 @@
         → {state.activeBranch}
       </span>
     {/if}
+    <NodeDeleteButton {id} class="ml-auto" />
   </div>
 
   <div class="px-3 py-2.5 nodrag nopan">

@@ -22,8 +22,12 @@ export const snpeffDefinition: PipelineStepDefinition = {
     genome:    { type: 'string', label: 'Genome', required: true, default: 'hg38' },
   },
   outputSchema: {
-    annotatedVcf: { type: 'file', label: 'Annotated VCF', ext: ['vcf'] },
-    stats:        { type: 'stats', label: 'Annotation summary' },
+    annotatedVcf:   { type: 'file',   label: 'Annotated VCF', ext: ['vcf'] },
+    stats:          { type: 'stats',  label: 'Annotation summary' },
+    totalVariants:  { type: 'number', label: 'Total variants', format: 'integer' },
+    highImpact:     { type: 'number', label: 'HIGH impact',    format: 'integer' },
+    moderateImpact: { type: 'number', label: 'MODERATE impact', format: 'integer' },
+    lowImpact:      { type: 'number', label: 'LOW impact',     format: 'integer' },
   },
 };
 
