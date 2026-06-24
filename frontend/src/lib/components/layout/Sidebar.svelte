@@ -114,7 +114,7 @@
 	class="flex relative h-screen shrink-0 flex-col border-r border-border bg-surface transition-all duration-200
 	       {collapsed ? 'w-[56px]' : 'w-[220px]'}"
 	id="sidebar-container"
->
+	>
 	<button
 		onclick={()=> collapsed = !collapsed}
 		title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -130,25 +130,33 @@
 	<!-- Logo -->
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="flex h-14 items-center justify-start border-b border-border px-3 gap-2.5 text-left {workspaceStore.active?'hover:bg-zinc-100 hover:cursor-pointer':''}" id="logo-section" onclick={()=>{if(workspaceStore.active) goto("/workspace-settings")}}>
-		<div class="flex w-8 h-8 overflow-hidden items-center gap-0 space-x-0 justify-center rounded-lg bg-brand shrink-0" id="sidebar-logo-container">
-			<div class="h-8 w-8 flex p-1.5 justify-center items-center shrink-0" id="sidebar-logo">
+	<div class="flex h-[75px] items-center justify-start border-b border-border px-3 gap-2.5 text-left {workspaceStore.active?'hover:bg-zinc-100 hover:cursor-pointer':''}" id="logo-section" onclick={()=>{if(workspaceStore.active) goto("/workspace-settings")}}>
+		<div class="flex w-9 h-9 overflow-hidden items-center gap-0 space-x-0 justify-center rounded-lg bg-brand shrink-0" id="sidebar-logo-container">
+			<div class="h-9 w-9 flex p-1.5 justify-center items-center shrink-0" id="sidebar-logo">
 				<img src="/logo/png/logo-white.png" alt="Liatir" class="h-full w-full opacity-100 object-contain" />
 			</div>
 		</div>
 
 		{#if !collapsed}
-			<div class="flex-1 min-w-0">
-				{#if workspaceStore.active}
-					<p class="text-[10px] text-zinc-400 truncate leading-none mt-0.5">Workspace:</p>
-					{#if workspaceStore.isSandboxMode}
-						<span class="text-[10px] font-medium bg-sandbox-100 text-sandbox-600 rounded px-1.5 py-1 leading-5">sandbox</span>
+			<div class="flex items-center justify-start min-w-0 h-9 w-full">
+				<div class="h-fit w-full">
+					{#if workspaceStore.active}
+						<p class="text-[11px] text-zinc-400 truncate mb-0.5">Workspace:</p>
+						{#if workspaceStore.isSandboxMode}
+							<div class="flex items-center justify-start bg-sandbox-100 rounded px-1.5 h-[16px] w-fit">
+								<p class="text-[11px] font-medium text-sandbox-600 w-fit">sandbox</p>
+							</div>
+						{:else}
+							<div class="flex items-center justify-start h-[16px]">
+								<p class="text-sm font-semibold text-zinc-800 truncate">{workspaceStore.active.name}</p>
+							</div>
+						{/if}
 					{:else}
-						<p class="text-sm font-semibold text-zinc-800 truncate leading-none mt-0.5">{workspaceStore.active.name}</p>
+						<div class="flex items-center justify-start">
+							<p class="text-md font-semibold text-zinc-800 truncate">Liatir</p>
+						</div>
 					{/if}
-				{:else}
-					<span class="text-md font-semibold tracking-tight text-zinc-900 whitespace-nowrap">Liatir</span>
-				{/if}
+				</div>
 			</div>
 		{/if}
 	</div>

@@ -12,7 +12,7 @@
   let { title, info, description, actions }: Props = $props();
 </script>
 
-<div class="flex items-center justify-between border-b border-border px-6 py-4">
+<div class="flex items-center justify-between border-b border-border px-6 py-4 h-[75px]">
   <div>
     <h1 class="text-base font-semibold text-zinc-900 flex items-center">
       {title}
