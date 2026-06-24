@@ -81,18 +81,17 @@
   // Single source of truth for edge removal (used by the edge's X button AND the
   // context menu). xyflow's bind:edges reverts a structural change made during the
   // click cycle, so we defer the removal to the next frame.
-  function removeEdgeById(id: string) {
+  async function removeEdgeById(id: string) {
     requestAnimationFrame(() => {
       edges = edges.filter(e => e.id !== id);
-      unsavedChanges = true;
-      void savePipeline();
+      onDelete();
     });
   }
   setContext('pipelineEdge', { removeEdgeById });
 
-  function deleteEdgeById(id: string) {
+  async function deleteEdgeById(id: string) {
     closeCtx();
-    removeEdgeById(id);
+    await removeEdgeById(id);
   }
   async function duplicateNodeById(id: string) {
     const orig = nodes.find(n => n.id === id);
@@ -222,22 +221,19 @@
     await savePipeline();
   }
 
-  $effect(()=>{
-    if(!savedConfirmation) return;
-    setTimeout(()=>{
-      if(!savedConfirmation) return;
-      savedConfirmation=false;
-    }, 2500);
-  }) 
-
   async function savePipeline() {
     if (!nameInput.trim()) return;
+    await tick();
     saving = true;
     try {
       await pipelineStore.savePipeline(nameInput.trim());
       unsavedChanges = false;
-      // toast.info('Pipeline saved');
       savedConfirmation = true;
+      setTimeout(()=>{
+        if(!savedConfirmation) return;
+        savedConfirmation=false;
+      }, 2500);
+      // toast.info('Pipeline saved');
     } catch {
       toast.error('Failed to save pipeline');
     } finally {
@@ -278,7 +274,6 @@
   // $effect propagates them to the store before we save.
   async function onDelete() {
     unsavedChanges = true;
-    await tick();
     await savePipeline();
   }
 </script>
@@ -324,10 +319,10 @@
             </span>
           </Button>
         {/if}
-        <div class={unsavedChanges?"":"opacity-60"}>
+        <div class={(unsavedChanges && !savedConfirmation && !saving)?"":"opacity-60"}>
         <Button variant="ghost" size="sm" loading={saving} onclick={savePipeline} disabled={!nameInput.trim() || !unsavedChanges}>
-            <Icon icon="{saving?"svg-spinners:pulse":(savedConfirmation?"lucide:check":"lucide:save")}" width="12" height="12" />
-            <span class="max-lg:hidden">
+            <Icon icon="{saving?"svg-spinners:pulse":(savedConfirmation?"lucide:check":"lucide:save")}" width="12" height="12"  class="{(unsavedChanges && !savedConfirmation && !saving)?"color: text-brand-hover":""}"/>
+            <span class="max-lg:hidden {(unsavedChanges && !savedConfirmation && !saving)?"color: text-brand-hover":""}">
             {saving?"Saving":(savedConfirmation?"Saved":"Save")}
             </span>
           </Button>

@@ -102,5 +102,26 @@ input, textarea, [data-selectable] {
 }
 
 .svelte-flow__handle {
-  scale: 1.5 !important;
+  scale: 2.5 !important;
+  border-color: var(--color-zinc-400) !important;
+  background-color: var(--color-zinc-500) !important;
+  min-width: 0px !important;
+  width: 4px !important;
+  border-width: 0.8px;
+}
+
+.svelte-flow__handle-left {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.svelte-flow__handle-right {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+.svelte-flow__handle:hover {
+  scale: 2.8 !important;
+  border-color: var(--color-brand-muted) !important;
+  background-color: var(--color-brand-hover) !important;
 }

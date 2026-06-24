@@ -5,6 +5,7 @@
   import { BaseEdge, getBezierPath, type EdgeProps } from '@xyflow/svelte';
   import { getContext } from 'svelte';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
+	import Icon from '@iconify/svelte';
 
   let {
     id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style, markerEnd,
@@ -37,11 +38,9 @@
       title="Remove connection"
       aria-label="Remove connection"
       class="edge-del h-5 w-5 rounded-full bg-white border border-zinc-300 shadow-sm flex items-center justify-center
-             text-zinc-400 hover:text-red-500 hover:border-red-300 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+             text-zinc-400 hover:text-red-700 hover:border-red-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
     >
-      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
-        <path d="M18 6 6 18M6 6l12 12" />
-      </svg>
+    X
     </button>
   </div>
 </foreignObject>

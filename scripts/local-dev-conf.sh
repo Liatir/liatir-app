@@ -15,8 +15,12 @@ sed -e "s|%%APP_URL%%||g" \
 
 cp conf-templates/tauri.conf.template.local.dev.json src-tauri/tauri.conf.json
 
-# local capability — no remote.urls restriction needed for local webview content
+# local capability — for local webview content (build:local → tauri://localhost)
 cp conf-templates/capability.local.json src-tauri/capabilities/local.json
+
+# local-dev capability — authorizes the Vite dev server (devUrl http://localhost:5173)
+# to use the bridge commands during `npm run dev` (HMR). Not used by build:local/prod.
+cp conf-templates/capability.local-dev.json src-tauri/capabilities/local-dev.json
 
 cat > src-tauri/window.env << 'EOF'
 MAIN_WINDOW_URL=

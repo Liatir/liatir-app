@@ -20,7 +20,7 @@
         "build:log": "npm run ts:compile && npm run prodconf && npm run rustbacktrace && cargo tauri build",
         "dev:log": "npm run ts:compile && npm run devconf && npm run rustbacktrace && cargo tauri dev",
         "dev:keepsandbox": "npm run ts:compile && npm run devconf && npm run keepsandbox && cargo tauri dev",
-        "dev": "npm run build:frontend && npm run ts:compile && npm run localdevconf && cargo tauri dev",
+        "dev": "npm run ts:compile && npm run localdevconf && cargo tauri dev",
         "dev:local": "npm run build:frontend && npm run ts:compile && npm run localdevconf && cargo tauri dev",
         "dev:clean": "npm run clean && npm run dev",
         "cargo:update": "cargo update",
