@@ -77,7 +77,7 @@ function initNodeState(): NodeRunState {
 }
 
 // Convert a tool's numeric metrics into string outputValues so they can be
-// piped into Math / Condition nodes via resolveInputs (handle id = metric key).
+// referenced as `@pipe:nodeId:<metricKey>` by downstream Math / Condition nodes.
 function metricsToValues(metrics?: Record<string, number>): Record<string, string> | undefined {
   if (!metrics) return undefined;
   const out: Record<string, string> = {};
@@ -85,49 +85,40 @@ function metricsToValues(metrics?: Record<string, number>): Record<string, strin
   return out;
 }
 
-// Resolve all inputs for a node from edges (files and values) + node.data.inputs tokens
-function resolveInputs(
-  nodeId: string,
+// Resolve a single field value. A value is either a plain literal (typed text,
+// a data-file path) OR an `@pipe:nodeId:outKey` reference to an upstream node's
+// output. References resolve against the already-computed node states: value
+// outputs (variable / math / tool metrics / API fields) come from outputValues;
+// file outputs are matched by their label.
+function resolveRef(
+  ref: unknown,
   nodes: Node[],
-  edges: Edge[],
+  nodeStates: Map<string, NodeRunState>
+): string {
+  if (typeof ref !== 'string' || !ref.startsWith('@pipe:')) return typeof ref === 'string' ? ref : '';
+  const [, srcNodeId, outKey] = ref.split(':');
+  const srcState = nodeStates.get(srcNodeId);
+  if (!srcState) return '';
+
+  // Value output (variable / math / tool numeric metric / API status & fields).
+  if (srcState.outputValues?.[outKey] !== undefined) return srcState.outputValues[outKey];
+
+  // File output — match by the source's declared output label.
+  const srcNode = nodes.find(n => n.id === srcNodeId);
+  const srcDef = PIPELINE_REGISTRY[(srcNode?.data?.stepId as string) ?? '']?.definition;
+  const label = srcDef?.outputSchema[outKey]?.label ?? (outKey === 'responseBody' ? 'Response Body' : outKey);
+  const outFile = srcState.outputFiles.find(f => f.label === label);
+  return outFile ? outFile.path : '';
+}
+
+// Resolve every field of a node's data.inputs (each value a literal or `@pipe:` ref).
+function resolveInputs(
+  nodes: Node[],
   nodeStates: Map<string, NodeRunState>,
   dataInputs: Record<string, string> = {}
 ): Record<string, string> {
-  const resolved: Record<string, string> = { ...dataInputs };
-
-  // Resolve @pipe: tokens from node.data.inputs
-  for (const [k, v] of Object.entries(resolved)) {
-    if (typeof v === 'string' && v.startsWith('@pipe:')) {
-      const [, srcNodeId, outKey] = v.split(':');
-      const srcDef = PIPELINE_REGISTRY[nodes.find(n => n.id === srcNodeId)?.data?.stepId as string ?? '']?.definition;
-      const targetLabel = srcDef?.outputSchema[outKey]?.label ?? outKey;
-      const srcState = nodeStates.get(srcNodeId);
-      const outFile = srcState?.outputFiles.find(f => f.label === targetLabel);
-      if (outFile) resolved[k] = outFile.path;
-    }
-  }
-
-  // Resolve from edges
-  for (const edge of edges.filter(e => e.target === nodeId)) {
-    if (!edge.targetHandle || !edge.sourceHandle) continue;
-    const srcState = nodeStates.get(edge.source);
-    if (!srcState) continue;
-
-    // Value output (variable / math / condition)
-    if (srcState.outputValues?.[edge.sourceHandle] !== undefined) {
-      resolved[edge.targetHandle] = srcState.outputValues[edge.sourceHandle];
-      continue;
-    }
-
-    // File output (tool nodes)
-    const srcNode = nodes.find(n => n.id === edge.source);
-    if (!srcNode) continue;
-    const srcDef = PIPELINE_REGISTRY[srcNode.data?.stepId as string ?? '']?.definition;
-    const targetLabel = srcDef?.outputSchema[edge.sourceHandle]?.label ?? edge.sourceHandle;
-    const outFile = srcState.outputFiles.find(f => f.label === targetLabel);
-    if (outFile) resolved[edge.targetHandle] = outFile.path;
-  }
-
+  const resolved: Record<string, string> = {};
+  for (const [k, v] of Object.entries(dataInputs)) resolved[k] = resolveRef(v, nodes, nodeStates);
   return resolved;
 }
 
@@ -262,7 +253,7 @@ function createPipelineStore() {
         patch({ status: 'running' });
         const { absDir: outputDir, virtualFolder } = await ensureResultsDir(entry.definition.label);
 
-        const resolved = resolveInputs(nodeId, nodes, edges, localStates, node.data?.inputs as Record<string, string> ?? {});
+        const resolved = resolveInputs(nodes, localStates, node.data?.inputs as Record<string, string> ?? {});
         const logs: string[] = [];
         try {
           const result = await entry.run(resolved, outputDir, (line) => { logs.push(line); onLog(line); });
@@ -280,15 +271,13 @@ function createPipelineStore() {
         patch({ status: 'done', outputValues: { value: d.value ?? '' } });
       } else if (node.type === 'math') {
         const d = node.data as unknown as MathNodeData;
-        const inp = resolveInputs(nodeId, nodes, edges, localStates, {});
-        const a = Number(inp['a'] ?? d.literalA ?? 0);
-        const b = Number(inp['b'] ?? d.literalB ?? 0);
+        const a = Number(resolveRef(d.literalA ?? '', nodes, localStates) || 0);
+        const b = Number(resolveRef(d.literalB ?? '', nodes, localStates) || 0);
         const res = computeMath(d.operation, a, b);
         patch({ status: 'done', outputValues: { result: String(res) } });
       } else if (node.type === 'condition') {
         const d = node.data as unknown as ConditionNodeData;
-        const inp = resolveInputs(nodeId, nodes, edges, localStates, {});
-        const value = inp['value'] ?? '';
+        const value = resolveRef(d.valueRef ?? '', nodes, localStates);
         let ok = false;
         try { ok = Boolean(new Function('value', `return (${d.condition})`)(value)); } catch { /* false */ }
         const branch: 'true' | 'false' = ok ? 'true' : 'false';
@@ -476,7 +465,7 @@ function createPipelineStore() {
 
           const { absDir: outputDir, virtualFolder } = await ensureResultsDir(entry.definition.label);
 
-          const resolved = resolveInputs(nodeId, nodes, edges, nodeStates, node.data?.inputs as Record<string, string> ?? {});
+          const resolved = resolveInputs(nodes, nodeStates, node.data?.inputs as Record<string, string> ?? {});
           const logs: string[] = [];
           try {
             const result = await entry.run(resolved, outputDir, (line) => {
@@ -501,16 +490,14 @@ function createPipelineStore() {
         // ── Math node ──────────────────────────────────────────────────────────
         } else if (node.type === 'math') {
           const d = node.data as unknown as MathNodeData;
-          const inp = resolveInputs(nodeId, nodes, edges, nodeStates, {});
-          const a = Number(inp['a'] ?? d.literalA ?? 0);
-          const b = Number(inp['b'] ?? d.literalB ?? 0);
+          const a = Number(resolveRef(d.literalA ?? '', nodes, nodeStates) || 0);
+          const b = Number(resolveRef(d.literalB ?? '', nodes, nodeStates) || 0);
           patchState(nodeId, { status: 'done', outputValues: { result: String(computeMath(d.operation, a, b)) } });
 
         // ── Condition node ─────────────────────────────────────────────────────
         } else if (node.type === 'condition') {
           const d = node.data as unknown as ConditionNodeData;
-          const inp = resolveInputs(nodeId, nodes, edges, nodeStates, {});
-          const value = inp['value'] ?? '';
+          const value = resolveRef(d.valueRef ?? '', nodes, nodeStates);
           let ok = false;
           try {
             // eslint-disable-next-line no-new-func
@@ -568,8 +555,11 @@ function createPipelineStore() {
             break;
           }
           const provider = apiConnections.collectionById(req.collectionId) ?? undefined;
-          // Non-private params fed from upstream nodes (handle id = param key).
-          const paramOverrides = resolveInputs(nodeId, nodes, edges, nodeStates, {});
+          // Per-param overrides configured on the node (literal or `@pipe:` ref).
+          // Only non-empty values override the request's own params.
+          const resolvedOverrides = resolveInputs(nodes, nodeStates, (node.data?.paramOverrides as Record<string, string>) ?? {});
+          const paramOverrides: Record<string, string> = {};
+          for (const [k, v] of Object.entries(resolvedOverrides)) if (v !== '') paramOverrides[k] = v;
           patchState(nodeId, { status: 'running', logs: [`${req.method} ${req.url}`] });
           try {
             const resp = await sendApiRequest(req, { provider, paramOverrides, envVars: apiConnections.activeEnvVars });
@@ -652,16 +642,25 @@ function computeMath(
   b: number
 ): number {
   switch (op) {
-    case '+': return a + b;
-    case '-': return a - b;
-    case '*': return a * b;
-    case '/': return b !== 0 ? a / b : 0;
+    // binary
+    case '+':   return a + b;
+    case '-':   return a - b;
+    case '*':   return a * b;
+    case '/':   return b !== 0 ? a / b : 0;
+    case '%':   return b !== 0 ? (a / b) * 100 : 0;  // a as a percentage of b
+    case '^':   return Math.pow(a, b);
+    case 'mod': return b !== 0 ? a % b : 0;
     case 'min': return Math.min(a, b);
     case 'max': return Math.max(a, b);
+    // unary (b ignored)
     case 'round': return Math.round(a);
     case 'floor': return Math.floor(a);
-    case 'ceil': return Math.ceil(a);
-    case 'abs': return Math.abs(a);
+    case 'ceil':  return Math.ceil(a);
+    case 'abs':   return Math.abs(a);
+    case 'sqrt':  return Math.sqrt(a);
+    case 'log2':  return Math.log2(a);
+    case 'log10': return Math.log10(a);
+    case 'ln':    return Math.log(a);
     default: return 0;
   }
 }

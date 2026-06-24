@@ -48,15 +48,25 @@ export interface VariableNodeData extends Record<string, unknown> {
   label?: string;
 }
 
+export type MathOperation =
+  // binary
+  | '+' | '-' | '*' | '/' | '%' | '^' | 'mod' | 'min' | 'max'
+  // unary (operand B ignored)
+  | 'round' | 'floor' | 'ceil' | 'abs' | 'sqrt' | 'log2' | 'log10' | 'ln';
+
 export interface MathNodeData extends Record<string, unknown> {
-  operation: '+' | '-' | '*' | '/' | 'min' | 'max' | 'round' | 'floor' | 'ceil' | 'abs';
+  operation: MathOperation;
+  /** Operand A — a literal number OR an `@pipe:nodeId:outKey` reference to an upstream value. */
   literalA?: string;
+  /** Operand B — a literal number OR an `@pipe:nodeId:outKey` reference (binary ops only). */
   literalB?: string;
   label?: string;
 }
 
 export interface ConditionNodeData extends Record<string, unknown> {
   condition: string;
+  /** The value tested by the expression (`value`): a literal OR an `@pipe:` reference to an upstream output. */
+  valueRef?: string;
   label?: string;
 }
 
@@ -69,6 +79,8 @@ export interface SubPipelineNodeData extends Record<string, unknown> {
 export interface ApiRequestNodeData extends Record<string, unknown> {
   requestId: string | null;
   requestName: string;
+  /** Optional per-parameter overrides (param key → literal OR `@pipe:` reference). Empty = use the request's own value. */
+  paramOverrides?: Record<string, string>;
   label?: string;
 }
 

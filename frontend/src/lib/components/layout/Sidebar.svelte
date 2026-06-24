@@ -81,6 +81,7 @@
 
 	async function toggleSandboxMode() {
 		if (!workspaceStore.isSandboxMode) {
+			const routeId: string = (page.route.id)??"/";
 			const params = new URLSearchParams();
 			// Lo slash viene codificato automaticamente in %2F
 			params.set('fromWorkspace', ((workspaceStore?.activeId?.trim())||""));
@@ -94,6 +95,7 @@
 			toast.info("Now using sandbox workspace");
 		} else {
 			const toWorkspace = (page.url.searchParams.get('fromWorkspace')?.trim()) ?? "";
+			const routeId: string = (page.route.id)??"/";
 			if(toWorkspace?.trim()) {
 				await workspaceStore.switchTo(toWorkspace);
 				jobsStore.refresh();

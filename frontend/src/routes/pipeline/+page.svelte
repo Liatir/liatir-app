@@ -81,17 +81,30 @@
   // Single source of truth for edge removal (used by the edge's X button AND the
   // context menu). xyflow's bind:edges reverts a structural change made during the
   // click cycle, so we defer the removal to the next frame.
-  async function removeEdgeById(id: string) {
-    requestAnimationFrame(() => {
-      edges = edges.filter(e => e.id !== id);
-      onDelete();
-    });
+  function removeEdgeById(id: string) {
+    edges = edges.filter(e => e.id !== id);
+    onDelete();
   }
   setContext('pipelineEdge', { removeEdgeById });
 
+  // Collapse duplicate edges (same source/handle → target/handle) into one.
+  // Older saved pipelines may contain a duplicate left by the previous connect()
+  // bug (xyflow's auto-added edge + a manual one); this cleans them on load.
+  function dedupeEdges(es: Edge[]): Edge[] {
+    const seen = new Set<string>();
+    const out: Edge[] = [];
+    for (const e of es) {
+      const key = `${e.source}|${e.sourceHandle}|${e.target}|${e.targetHandle}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(e);
+    }
+    return out;
+  }
+
   async function deleteEdgeById(id: string) {
     closeCtx();
-    await removeEdgeById(id);
+    removeEdgeById(id);
   }
   async function duplicateNodeById(id: string) {
     const orig = nodes.find(n => n.id === id);
@@ -177,12 +190,12 @@
     const pending = pipelineStore.pendingLoad;
     if (pending) {
       nodes = [...(pending.nodes as Node[])];
-      edges = pending.edges.map(e => ({ ...e, selectable: false }));
+      edges = dedupeEdges(pending.edges).map(e => ({ ...e, selectable: false }));
       nameInput = pending.name;
       pipelineStore.clearPendingLoad();
     } else {
       nodes = [...pipelineStore.currentNodes];
-      edges = pipelineStore.currentEdges.map(e => ({ ...e, selectable: false }));
+      edges = dedupeEdges(pipelineStore.currentEdges).map(e => ({ ...e, selectable: false }));
       nameInput = pipelineStore.pipelineName;
     }
     storeReady = true;
@@ -201,9 +214,9 @@
       case 'tool':         newNode = { id: crypto.randomUUID(), type, position: pos, data: { stepId: id, inputs: {} } }; break;
       case 'variable':     newNode = { id: crypto.randomUUID(), type, position: pos, data: { varType: 'string', value: '' } }; break;
       case 'math':         newNode = { id: crypto.randomUUID(), type, position: pos, data: { operation: '+', literalA: '', literalB: '' } }; break;
-      case 'condition':    newNode = { id: crypto.randomUUID(), type, position: pos, data: { condition: '' } }; break;
+      case 'condition':    newNode = { id: crypto.randomUUID(), type, position: pos, data: { condition: '', valueRef: '' } }; break;
       case 'sub-pipeline': newNode = { id: crypto.randomUUID(), type, position: pos, data: { pipelineId: null, pipelineName: '' } }; break;
-      case 'api-request':  newNode = { id: crypto.randomUUID(), type, position: pos, data: { requestId: null, requestName: '' } }; break;
+      case 'api-request':  newNode = { id: crypto.randomUUID(), type, position: pos, data: { requestId: null, requestName: '', paramOverrides: {} } }; break;
       default: return;
     }
     nodes = [...nodes, newNode];
@@ -241,31 +254,19 @@
     }
   }
 
-  async function connect(connection: Connection) {
-    // Allow multiple incoming edges on the generic "input" handle (tool/sub-pipeline nodes).
-    // For value handles (a, b, value, etc.) keep single-edge semantics.
-    const allowMultiple = connection.targetHandle === 'input';
-    edges = [
-      ...(allowMultiple
-        ? edges
-        : edges.filter(e => !(e.target === connection.target && e.targetHandle === connection.targetHandle))),
-      {
-        id: `${connection.source}:${connection.sourceHandle}→${connection.target}:${connection.targetHandle}`,
-        source: connection.source,
-        sourceHandle: connection.sourceHandle ?? null,
-        target: connection.target,
-        targetHandle: connection.targetHandle ?? null,
-        style: 'stroke: #4f39f6; stroke-width:3;',
-        // Not selectable: avoids the xyflow select-on-first-click race that made
-        // edge deletion (button + context menu) require two clicks.
-        selectable: false,
-      },
-    ];
+  function connect(_connection: Connection) {
+    // IMPORTANT: with bind:edges, xyflow already adds the new edge itself.
+    // Do NOT add a second one here — that produced duplicate overlapping edges
+    // (the root cause of "delete needs two clicks"). Every node now has a single
+    // "input" handle that accepts multiple incoming edges (one per upstream
+    // provider); the actual field→output wiring is chosen inside the node, so we
+    // only need to collapse any exact-duplicate edge and mark the graph dirty.
+    edges = dedupeEdges(edges);
     unsavedChanges = true;
   }
 
   async function onConnect(connection: Connection) {
-    await connect(connection);
+    connect(connection);
     await savePipeline();
   }
 
@@ -341,7 +342,7 @@
   </PageHeader>
 
   <div class="flex-1 relative">
-    <SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView onconnect={onConnect} ondelete={onDelete} deleteKey={['Delete', 'Backspace']} onpanecontextmenu={onPaneContextMenu} onnodecontextmenu={onNodeContextMenu} onedgecontextmenu={onEdgeContextMenu} defaultEdgeOptions={{ selectable: false }} proOptions={{ hideAttribution: true }}>
+    <SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView onconnect={onConnect} ondelete={onDelete} deleteKey={['Delete', 'Backspace']} onpanecontextmenu={onPaneContextMenu} onnodecontextmenu={onNodeContextMenu} onedgecontextmenu={onEdgeContextMenu} defaultEdgeOptions={{ selectable: false, style: 'stroke: #4f39f6; stroke-width:3;' }} proOptions={{ hideAttribution: true }}>
       <Background gap={24} size={1} color="#e4e4e7" />
       <Controls position="bottom-right" />
     </SvelteFlow>

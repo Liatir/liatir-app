@@ -10,6 +10,8 @@
   import OptionPicker from '$lib/components/ui/OptionPicker.svelte';
   import type { PickerGroup } from '$lib/components/ui/OptionPicker.svelte';
   import { fmtBytes } from '$lib/utils';
+  import { upstreamOptions } from '$lib/tools/pipeline-io';
+  import ValueRefInput from './ValueRefInput.svelte';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
 
   let { id, data }: NodeProps<Node<ToolNodeData>> = $props();
@@ -45,63 +47,34 @@
     return parts.length > 2 ? '…/' + parts.slice(-2).join('/') : '…' + path.slice(-(max - 1));
   }
 
-  // Build picker options from connected upstream nodes + data files
-  function buildGroups(inputType: string, accept: string[] | undefined): PickerGroup[] {
+  // File-input picker: compatible file outputs of connected upstream steps + data files.
+  function buildGroups(accept: string[] | undefined): PickerGroup[] {
     const groups: PickerGroup[] = [];
-    const allNodes = getNodes() as Node<ToolNodeData>[];
-    const allEdges = getEdges() as Edge[];
 
-    // Only nodes that have an edge pointing TO this node
-    const upstreamIds = new Set(allEdges.filter(e => e.target === id).map(e => e.source));
-
-    const stepItems = allNodes
-      .filter(n => upstreamIds.has(n.id) && n.type === 'tool' && n.data?.stepId)
-      .flatMap(n => {
-        const reg = PIPELINE_REGISTRY[n.data.stepId];
-        if (!reg) return [];
-        return Object.entries(reg.definition.outputSchema)
-          .filter(([, s]) => !accept?.length || !s.ext?.length || accept.some(a => s.ext!.includes(a)))
-          .map(([outKey, s]) => ({
-            value: `@pipe:${n.id}:${outKey}`,
-            label: s.label ?? outKey,
-            sublabel: reg.definition.label,
-            badge: s.ext?.[0] ?? s.type,
-          }));
-      });
-
+    const stepItems = upstreamOptions(id, getNodes(), getEdges() as Edge[], 'file', { accept });
     if (stepItems.length > 0) groups.push({ title: 'Connected steps', items: stepItems });
 
-    // For file-type inputs, also show data files
-    if (inputType === 'file') {
-      const files = accept?.length ? dataFiles.byExt(...accept) : dataFiles.files;
-      if (files.length > 0) {
-        groups.push({
-          title: 'Data files',
-          items: files.map(f => ({
-            value: f.path,
-            label: f.name,
-            sublabel: truncatePath(f.path),
-            badge: f.ext || '?',
-            meta: f.size != null ? fmtBytes(f.size) : undefined,
-          })),
-        });
-      }
+    const files = accept?.length ? dataFiles.byExt(...accept) : dataFiles.files;
+    if (files.length > 0) {
+      groups.push({
+        title: 'Data files',
+        items: files.map(f => ({
+          value: f.path,
+          label: f.name,
+          sublabel: truncatePath(f.path),
+          badge: f.ext || '?',
+          meta: f.size != null ? fmtBytes(f.size) : undefined,
+        })),
+      });
     }
 
     return groups;
   }
 
-  function displayValue(key: string): string {
-    const raw = data.inputs[key] ?? '';
-    if (raw.startsWith('@pipe:')) {
-      const [, nodeId, outKey] = raw.split(':');
-      const node = (getNodes() as Node<ToolNodeData>[]).find(n => n.id === nodeId);
-      if (!node) return raw;
-      const reg = PIPELINE_REGISTRY[node.data.stepId];
-      const outDef = reg?.definition.outputSchema[outKey];
-      return `${reg?.definition.label ?? nodeId} → ${outDef?.label ?? outKey}`;
-    }
-    return raw;
+  // String / number inputs may instead reference a connected upstream value output.
+  function valueOptions(inputType: string) {
+    return upstreamOptions(id, getNodes(), getEdges() as Edge[], 'value',
+      inputType === 'number' ? { valueType: 'number' } : {});
   }
 
   function setInput(key: string, value: string) {
@@ -136,7 +109,7 @@
         {#if schema.type === 'file'}
           <OptionPicker
             value={data.inputs[key] ?? ''}
-            groups={buildGroups('file', schema.accept)}
+            groups={buildGroups(schema.accept)}
             label="{schema.label ?? key}{schema.required ? '' : ' (optional)'}"
             placeholder="Select or connect a step…"
             searchPlaceholder="Search…"
@@ -150,14 +123,12 @@
             <label class="block text-[11px] text-zinc-500 mb-1">
               {schema.label ?? key}{schema.required ? '' : ' (optional)'}
             </label>
-            <input
-              type={schema.type === 'number' ? 'number' : 'text'}
+            <ValueRefInput
               value={data.inputs[key] ?? (schema.default as string ?? '')}
-              oninput={(e) => setInput(key, (e.target as HTMLInputElement).value)}
+              options={valueOptions(schema.type)}
+              type={schema.type === 'number' ? 'number' : 'text'}
               disabled={inputsDisabled}
-              class="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-mono
-                     placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-brand/40
-                     disabled:opacity-50 disabled:cursor-not-allowed"
+              onchange={(v) => setInput(key, v)}
             />
           </div>
         {/if}
@@ -190,12 +161,11 @@
 
   {#if metricOutputs.length > 0}
     <div class="px-3 pb-2.5 pt-2 border-t border-border/60 nodrag nopan">
-      <p class="text-[9px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Value outputs → Math / Condition</p>
+      <p class="text-[9px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Value outputs</p>
       {#each metricOutputs as [key, schema]}
-        <div class="relative flex items-center gap-1.5 h-5">
+        <div class="flex items-center gap-1.5 h-5">
           <span class="text-[10px] text-zinc-500 flex-1 truncate">{schema.label ?? key}</span>
           <span class="text-[10px] font-mono text-zinc-600">{fmtMetric(key, schema)}</span>
-          <Handle type="source" position={Position.Right} id={key} style="position: relative; transform: none; right: -18px; top: auto;" />
         </div>
       {/each}
     </div>
@@ -203,4 +173,5 @@
 
 </div>
 
+<!-- Single output handle — wire to a downstream node, then pick which value/file to use there. -->
 <Handle type="source" position={Position.Right} id="output" />

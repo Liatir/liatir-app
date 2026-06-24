@@ -1,16 +1,18 @@
 <script lang="ts">
   import { Handle, Position } from '@xyflow/svelte';
   import type { NodeProps } from '@xyflow/svelte';
-  import type { Node } from '@xyflow/svelte';
+  import type { Node, Edge } from '@xyflow/svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import Icon from '@iconify/svelte';
   import type { ApiRequestNodeData } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
-  import NodeDeleteButton from './NodeDeleteButton.svelte';
   import { apiConnections } from '$lib/stores/apiConnections.svelte';
+  import { upstreamOptions } from '$lib/tools/pipeline-io';
+  import ValueRefInput from './ValueRefInput.svelte';
+  import NodeDeleteButton from './NodeDeleteButton.svelte';
 
   let { id, data }: NodeProps<Node<ApiRequestNodeData>> = $props();
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, getNodes, getEdges } = useSvelteFlow();
   const state = $derived(pipelineStore.nodeStates.get(id));
   const status = $derived(state?.status ?? 'pending');
   const disabled = $derived(pipelineStore.running);
@@ -24,6 +26,7 @@
 
   let showPicker = $state(false);
   let pickerQuery = $state('');
+  let showParams = $state(false);
 
   const filteredRequests = $derived(
     apiConnections.requests.filter(r => {
@@ -47,38 +50,37 @@
     return 'bg-zinc-300';
   }
 
-  // Output handles: responseBody always + one per outputSchema field
-  const outputHandles = $derived([
-    { id: 'responseBody', label: 'Response' },
-    ...Object.entries(req?.outputSchema ?? {}).map(([k, f]) => ({ id: k, label: f.label || k })),
+  // Non-private params that may be overridden from upstream (call overrides provider).
+  const overridableParams = $derived.by(() => {
+    if (!req) return [] as string[];
+    const provider = apiConnections.collectionById(req.collectionId);
+    const keys: string[] = [];
+    for (const p of provider?.sharedParams ?? []) if (!p.private && p.enabled && p.key) keys.push(p.key);
+    for (const p of req.params) if (!p.private && p.enabled && p.key) keys.push(p.key);
+    return [...new Set(keys)];
+  });
+
+  // Connected upstream value outputs, usable as param overrides.
+  const valueOptions = $derived.by(() => {
+    void state;
+    return upstreamOptions(id, getNodes(), getEdges() as Edge[], 'value');
+  });
+
+  // Output fields the request exposes (status + extracted schema fields).
+  const outputFields = $derived([
+    { key: 'status', label: 'HTTP status' },
+    ...Object.entries(req?.outputSchema ?? {}).map(([k, f]) => ({ key: k, label: f.label || k })),
   ]);
 
-  // Input handles: one per non-private parameter (call + provider shared)
-  const inputHandles = $derived.by(() => {
-    if (!req) return [] as { id: string; label: string }[];
-    const provider = apiConnections.collectionById(req.collectionId);
-    const params = [
-      ...(provider?.sharedParams ?? []).filter(p => !p.private && p.enabled && p.key),
-      ...req.params.filter(p => !p.private && p.enabled && p.key),
-    ];
-    // de-dupe by key (call overrides provider)
-    const seen = new Map<string, { id: string; label: string }>();
-    for (const p of params) seen.set(p.key, { id: p.key, label: p.key });
-    return [...seen.values()];
-  });
+  function setOverride(key: string, value: string) {
+    updateNodeData(id, { paramOverrides: { ...(data.paramOverrides ?? {}), [key]: value } });
+  }
 </script>
 
-<!-- Input handles (non-private parameters) -->
-{#each inputHandles as h, idx}
-  <Handle type="target" position={Position.Left} id={h.id} style="top: {52 + idx * 24}px" />
-{/each}
+<!-- Single input handle — wire upstream value nodes in, then map them to params below. -->
+<Handle type="target" position={Position.Left} id="input" />
 
-<!-- Output handles -->
-{#each outputHandles as h, idx}
-  <Handle type="source" position={Position.Right} id={h.id} style="top: {52 + idx * 24}px" />
-{/each}
-
-<div class="min-w-56 max-w-72 rounded-xl border border-border bg-white shadow-md overflow-hidden">
+<div class="min-w-60 max-w-72 rounded-xl border border-border bg-white shadow-md overflow-hidden">
   <div class="flex items-center gap-2 px-3 py-2 border-b border-border bg-rose-50 cursor-grab active:cursor-grabbing">
     <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
     <Icon icon="lucide:plug" width="11" height="11" class="text-rose-500 shrink-0" />
@@ -97,25 +99,47 @@
       </div>
       <div class="text-[10px] text-zinc-400 font-mono truncate">{req.url}</div>
 
-      {#if inputHandles.length > 0}
-        <div class="flex flex-col gap-0.5 border-t border-border/60 pt-1.5">
-          {#each inputHandles as h}
-            <div class="flex items-center gap-1.5">
-              <div class="w-2 h-2 rounded-full border border-zinc-300 bg-white"></div>
-              <span class="text-[10px] text-zinc-400">{h.label}</span>
+      {#if overridableParams.length > 0}
+        <div class="border-t border-border/60 pt-1.5">
+          <button
+            onclick={() => showParams = !showParams}
+            class="w-full flex items-center justify-between text-[10px] text-zinc-500 hover:text-zinc-700"
+          >
+            <span>Parameter overrides{(() => { const n = Object.values(data.paramOverrides ?? {}).filter(v => v).length; return n ? ` (${n})` : ''; })()}</span>
+            <Icon icon={showParams ? 'lucide:chevron-up' : 'lucide:chevron-down'} width="12" height="12" />
+          </button>
+          {#if showParams}
+            <div class="mt-1.5 space-y-1.5">
+              {#each overridableParams as key}
+                <div>
+                  <label class="block text-[10px] text-zinc-400 mb-0.5 font-mono">{key}</label>
+                  <ValueRefInput
+                    value={data.paramOverrides?.[key] ?? ''}
+                    options={valueOptions}
+                    type="text"
+                    placeholder="default — or override / link →"
+                    {disabled}
+                    accentClass="focus:ring-rose-400/40"
+                    onchange={(v) => setOverride(key, v)}
+                  />
+                </div>
+              {/each}
             </div>
-          {/each}
+          {/if}
         </div>
       {/if}
 
-      {#if outputHandles.length > 1}
-        <div class="flex flex-col gap-0.5">
-          {#each outputHandles as h}
-            <div class="flex items-center justify-between">
-              <span class="text-[10px] text-zinc-400">{h.label}</span>
-              <div class="w-2 h-2 rounded-full border border-zinc-300 bg-white"></div>
-            </div>
-          {/each}
+      {#if outputFields.length > 0}
+        <div class="border-t border-border/60 pt-1.5">
+          <p class="text-[9px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Outputs</p>
+          <div class="flex flex-wrap gap-1">
+            {#each outputFields as f}
+              <span class="inline-flex items-center rounded-full bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 text-[10px] text-zinc-500">{f.label}</span>
+            {/each}
+            <span class="inline-flex items-center gap-1 rounded-full bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 text-[10px] text-zinc-500">
+              <Icon icon="lucide:file" width="8" height="8" /> Response body
+            </span>
+          </div>
         </div>
       {/if}
     {:else}
@@ -144,6 +168,9 @@
     {/if}
   </div>
 </div>
+
+<!-- Single output handle — wire downstream, then pick which field/body to use there. -->
+<Handle type="source" position={Position.Right} id="output" />
 
 {#if showPicker}
   <div class="fixed inset-0 z-50" role="presentation" onclick={() => { showPicker = false; pickerQuery = ''; }}></div>

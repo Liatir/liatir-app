@@ -1,17 +1,25 @@
 <script lang="ts">
   import { Handle, Position } from '@xyflow/svelte';
   import type { NodeProps } from '@xyflow/svelte';
-  import type { Node } from '@xyflow/svelte';
+  import type { Node, Edge } from '@xyflow/svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import type { ConditionNodeData } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
+  import { upstreamOptions } from '$lib/tools/pipeline-io';
+  import ValueRefInput from './ValueRefInput.svelte';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
 
   let { id, data }: NodeProps<Node<ConditionNodeData>> = $props();
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, getNodes, getEdges } = useSvelteFlow();
   const state = $derived(pipelineStore.nodeStates.get(id));
   const status = $derived(state?.status ?? 'pending');
   const disabled = $derived(pipelineStore.running);
+
+  // Any value output of a connected upstream node can be tested.
+  const valueOptions = $derived.by(() => {
+    void state;
+    return upstreamOptions(id, getNodes(), getEdges() as Edge[], 'value');
+  });
 
   function statusColor() {
     if (status === 'done') return state?.activeBranch === 'true' ? 'bg-emerald-500' : 'bg-amber-500';
@@ -22,7 +30,8 @@
   }
 </script>
 
-<Handle type="target" position={Position.Left} id="value" />
+<!-- Single input handle — wire upstream value nodes in, then pick the value to test below. -->
+<Handle type="target" position={Position.Left} id="input" />
 
 <div class="min-w-56 rounded-xl border border-border bg-white shadow-md overflow-hidden">
   <div class="flex items-center gap-2 px-3 py-2 border-b border-border bg-sky-50 cursor-grab active:cursor-grabbing">
@@ -36,20 +45,34 @@
     <NodeDeleteButton {id} class="ml-auto" />
   </div>
 
-  <div class="px-3 py-2.5 nodrag nopan">
-    <label class="block text-[10px] text-zinc-400 mb-1">Condition <span class="text-zinc-300">(JS, uses <code class="font-mono">value</code>)</span></label>
-    <input
-      type="text"
-      value={data.condition ?? ''}
-      oninput={(e) => updateNodeData(id, { condition: (e.target as HTMLInputElement).value })}
-      {disabled}
-      placeholder="Number(value) > 1000"
-      class="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-mono
-             placeholder:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-sky-400/40
-             disabled:opacity-50 disabled:cursor-not-allowed"
-    />
+  <div class="px-3 py-2.5 nodrag nopan space-y-2">
+    <div>
+      <label class="block text-[10px] text-zinc-400 mb-1">Value to test</label>
+      <ValueRefInput
+        value={data.valueRef ?? ''}
+        options={valueOptions}
+        type="text"
+        placeholder="literal or link →"
+        {disabled}
+        accentClass="focus:ring-sky-400/40"
+        onchange={(v) => updateNodeData(id, { valueRef: v })}
+      />
+    </div>
+    <div>
+      <label class="block text-[10px] text-zinc-400 mb-1">Condition <span class="text-zinc-300">(JS, uses <code class="font-mono">value</code>)</span></label>
+      <input
+        type="text"
+        value={data.condition ?? ''}
+        oninput={(e) => updateNodeData(id, { condition: (e.target as HTMLInputElement).value })}
+        {disabled}
+        placeholder="Number(value) > 1000"
+        class="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-mono
+               placeholder:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-sky-400/40
+               disabled:opacity-50 disabled:cursor-not-allowed"
+      />
+    </div>
     {#if status === 'error' && state?.error}
-      <div class="mt-1.5 text-[10px] text-red-500 font-mono">{state.error}</div>
+      <div class="text-[10px] text-red-500 font-mono">{state.error}</div>
     {/if}
   </div>
 </div>
