@@ -475,7 +475,7 @@
           New folder
         </button>
       {/if}
-    </div>
+      </div>
 
     <!-- Main content -->
     <div class="flex-1 overflow-y-auto p-6 {previewFileId ? 'border-r border-border' : ''}">

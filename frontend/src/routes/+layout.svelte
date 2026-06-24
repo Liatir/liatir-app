@@ -48,7 +48,7 @@
 {:else}
 	<div
 		class="{workspaceStore.isSandboxMode
-			? 'max-2xl:border-x-[5px] border-x-[8px]'
+			? 'max-2xl:border-x-[5px] border-x-[7px]'
 			: ''} flex h-screen overflow-hidden border-sandbox-500 transition-[border-width] duration-[0.48s] ease-in-out"
 		style="background-color: var(--color-bg);"
 	>
