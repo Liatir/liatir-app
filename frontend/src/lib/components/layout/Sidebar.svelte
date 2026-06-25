@@ -2,52 +2,14 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
-	import { afterNavigate, goto } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { jobsStore } from '$lib/stores/jobs.svelte';
 	import { workspaceStore, SANDBOX_WORKSPACE_ID } from '$lib/stores/workspace.svelte';
 	import { pipelineStore } from '$lib/stores/pipeline.svelte';
 	import CustomIcon from '../ui/CustomIcon.svelte';
 	import Divider from '../ui/Divider.svelte';
 	import { toast } from '$lib/stores/toast.svelte';
-
-	interface NavItem {
-		href?: string;
-		label?: string;
-		divider?: boolean;
-		icon?: string;
-		customIcon?: string;
-		match?: string;
-		global: boolean;
-		workspacePage?: boolean;
-	}
-
-	const mainNav: NavItem[] = [
-		{ href: '/', label: 'Dashboard', icon: 'lucide:house', match: undefined, global: false },
-		{ href: '/data', label: 'Data', icon: 'lucide:database', match: '/data', global: false },
-		{ href: '/pipelines', label: 'Pipelines', icon: 'lucide:workflow', match: '/pipelines', global: false },
-		{ href: '/apis', label: 'API Connector', icon: 'lucide:plug', match: '/apis', global: false },
-		{ href: '/results', label: 'Results', icon: 'lucide:inbox', match: '/results', global: false },
-		{ href: '/jobs', label: 'Jobs', icon: 'lucide:radio', match: '/jobs', global: false },
-		{ divider: true, global: false },
-		{ href: '/tools', label: 'Tools', icon: 'lucide:dna', match: '/tools', global: true },
-		{ href: '/ai', label: 'AI Models', icon: 'mingcute:ai-line', match: '/ai', global: true },
-		{ divider: true, global: true },
-		{ href: '/modules', label: 'Modules', customIcon: '/icons/lia-file-icon.svg', match: '/modules', global: true },
-		{ href: '/plugins', label: 'Plugins', customIcon: '/icons/web-assembly-file-icon.svg', match: '/plugins', global: true }
-	];
-	const bottomNav: NavItem[] = [
-		{ href: '/workspaces', label: 'Workspaces', icon: 'lucide:layout-grid', match: "/workspaces", global: true, workspacePage: true },
-		{ divider: true, global: true },
-		{ href: '/deps', label: 'Dependencies', icon: 'lucide:replace', match: '/deps', global: true },
-		{
-			href: '/settings',
-			label: 'App Settings',
-			icon: 'lucide:settings',
-			match: '/settings',
-			global: true
-		},
-		{ divider: true, global: true },
-	];
+	import { NAV_PAGES, NAV_PAGES_BOTTOM, routeIsInSidebar, type NavItem } from '$lib/sidebarUtils';
 
 	let collapsed = $state(false);
 
@@ -91,17 +53,26 @@
 			jobsStore.refresh();
 			pipelineStore.init();
 
-			await goto(`/?${queryParam}`);
+			const sidebarHasRoute: boolean = routeIsInSidebar(routeId);
+			if(sidebarHasRoute) await goto(`${routeId}?${queryParam}`);
+			else await goto(`/?${queryParam}`);
+			
 			toast.info("Now using sandbox workspace");
 		} else {
 			const toWorkspace = (page.url.searchParams.get('fromWorkspace')?.trim()) ?? "";
 			const routeId: string = (page.route.id)??"/";
-			if(toWorkspace?.trim()) {
-				await workspaceStore.switchTo(toWorkspace);
+			const pageHasToWorkspace:boolean = (toWorkspace?.trim())?true:false;
+			const hasPreviousActiveWorkspace:boolean = (workspaceStore?.previousActiveId?.trim())?true:false;
+			if(pageHasToWorkspace || hasPreviousActiveWorkspace) {
+				if(pageHasToWorkspace) await workspaceStore.switchTo(toWorkspace??"");
+				else if(hasPreviousActiveWorkspace) await workspaceStore.switchTo(workspaceStore.previousActiveId??"");
 				jobsStore.refresh();
 				pipelineStore.init();
-				toast.info(`Back to: ${workspaceStore.active?.name}`)
-				await goto('/');
+				toast.info(`Back to: ${workspaceStore.active?.name}`);
+				
+				const sidebarHasRoute: boolean = routeIsInSidebar(routeId);
+				if(sidebarHasRoute) await goto(routeId);
+				else await goto(`/`);
 			} else {
 				await workspaceStore.switchTo("");
 				jobsStore.refresh();
@@ -165,7 +136,7 @@
 
 	<!-- Navigation -->
 	<nav class="flex-1 overflow-y-auto px-1.5 py-3 space-y-0.5">
-		{#each mainNav as item}
+		{#each NAV_PAGES as item}
 			{@const active = isActive(item)}
 			{#if item?.global || (workspaceStore.activeId && page.route.id!="/workspaces")}
 				{#if item?.divider}
@@ -206,7 +177,7 @@
 
 	<div class="px-1.5 py-3 space-y-0.5">
 		<!-- Bottom nav -->
-		{#each bottomNav as item}
+		{#each NAV_PAGES_BOTTOM as item}
 			{@const active = isActive(item)}
 			{#if item?.global || (workspaceStore.activeId && page.route.id!="/workspaces")}
 				{#if item?.divider}

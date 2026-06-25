@@ -26,6 +26,7 @@ export function setDemoInitFn(fn: () => Promise<void>) {
 function createWorkspaceStore() {
   let workspaces = $state<WorkspaceMeta[]>([]);
   let activeId = $state<string | null>(null);
+  let previousActiveId = $state<string | null>(null);
   let envVars = $state<WorkspaceEnvVar[]>([]);
   let initialized = $state(false);
   let initStarted = false; // non-reactive guard against concurrent init() calls
@@ -61,6 +62,7 @@ function createWorkspaceStore() {
   return {
     get workspaces() { return workspaces; },
     get activeId() { return activeId; },
+    get previousActiveId() { return previousActiveId; },
     get active() { return workspaces.find(w => w.id === activeId) ?? null; },
     get envVars() { return envVars; },
     get initialized() { return initialized; },
@@ -118,6 +120,7 @@ function createWorkspaceStore() {
 
     async switchTo(id: string) {
       resetFn?.();
+      previousActiveId = activeId;
       activeId = id;
       await persistActiveId();
       await loadEnvVars(id);
