@@ -11,7 +11,11 @@ const PARSER_ENTRY = path.resolve(process.cwd(), "../liatir-output-parser/src/in
 export default defineConfig({
   entry: ["src/index.ts"],
   format: ["esm"],
-  dts: { resolve: true },
+  // Inline the .d.ts of internal @liatir packages only. src-ts is imported by
+  // relative path so it is inlined regardless; external npm types (e.g. ajv,
+  // pulled in by src-ts's JSON validation util) stay external and are
+  // tree-shaken out of the public types instead of being (mis-)resolved.
+  dts: { resolve: [/@liatir\//] },
   clean: true,
   // Inline the internal shared package (node built-ins stay external by default).
   noExternal: ["@liatir/output-parser"],

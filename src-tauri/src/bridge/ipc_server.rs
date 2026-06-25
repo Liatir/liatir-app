@@ -10,6 +10,78 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::{AppHandle, Manager};
 
+/// Generates IPC dispatch match-arms that forward a JSON payload to a
+/// *synchronous* bridge command. Each entry maps a command name to its Rust
+/// function plus the ordered `field: Type` list that follows the implicit
+/// `AppHandle`. serde deserializes the payload (camelCase JSON → snake_case
+/// fields) into a throwaway struct; the function's return value is serialized
+/// back to JSON. A `null` payload (commands that take no extra args) is
+/// normalized to `{}`.
+///
+/// This lets every non-GUI bridge area be exposed to .lia Modules with ONE
+/// line per command instead of hand-written extraction boilerplate — calling
+/// the SAME native commands the browser SDK uses, only over the IPC transport.
+macro_rules! ipc_sync_dispatch {
+    (
+        $app:expr, $cmd:expr, $payload:expr;
+        $( $name:literal => $func:path ( $( $field:ident : $ty:ty ),* $(,)? ) ),* $(,)?
+    ) => {
+        match $cmd {
+            $(
+                $name => {
+                    #[derive(::serde::Deserialize)]
+                    #[serde(rename_all = "camelCase")]
+                    #[allow(dead_code)]
+                    struct Args { $( $field : $ty ),* }
+                    // Commands with no arguments arrive with a null payload.
+                    let raw = if $payload.is_null() {
+                        ::serde_json::Value::Object(::serde_json::Map::new())
+                    } else {
+                        $payload
+                    };
+                    let a: Args = ::serde_json::from_value(raw)
+                        .map_err(|e| anyhow::anyhow!("bad payload for {}: {}", $name, e))?;
+                    let out = $func($app.clone(), $( a.$field ),*)
+                        .map_err(|e| anyhow::anyhow!(e))?;
+                    return Ok(::serde_json::to_value(out).unwrap_or(::serde_json::Value::Null));
+                }
+            )*
+            _ => {}
+        }
+    };
+}
+
+/// Async variant of `ipc_sync_dispatch!` — for bridge commands declared
+/// `pub async fn`. Identical mechanics, with `.await` on the call.
+macro_rules! ipc_async_dispatch {
+    (
+        $app:expr, $cmd:expr, $payload:expr;
+        $( $name:literal => $func:path ( $( $field:ident : $ty:ty ),* $(,)? ) ),* $(,)?
+    ) => {
+        match $cmd {
+            $(
+                $name => {
+                    #[derive(::serde::Deserialize)]
+                    #[serde(rename_all = "camelCase")]
+                    #[allow(dead_code)]
+                    struct Args { $( $field : $ty ),* }
+                    let raw = if $payload.is_null() {
+                        ::serde_json::Value::Object(::serde_json::Map::new())
+                    } else {
+                        $payload
+                    };
+                    let a: Args = ::serde_json::from_value(raw)
+                        .map_err(|e| anyhow::anyhow!("bad payload for {}: {}", $name, e))?;
+                    let out = $func($app.clone(), $( a.$field ),*).await
+                        .map_err(|e| anyhow::anyhow!(e))?;
+                    return Ok(::serde_json::to_value(out).unwrap_or(::serde_json::Value::Null));
+                }
+            )*
+            _ => {}
+        }
+    };
+}
+
 #[derive(Deserialize)]
 struct InvokeRequest {
     cmd: String,
@@ -103,7 +175,118 @@ async fn handle_invoke(
 }
 
 async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<Value> {
+    // ── Filesystem bridge (scoped storage: data/cache, trash, diagnostics) ──
+    // Same native commands window.Liatir.desktop.fs calls — exposed to Modules.
+    ipc_sync_dispatch!(app, cmd, payload;
+        "lia_fs_list_dir" => crate::bridge::fs::lia_fs_list_dir(rel: String, permanent: bool, window_label: Option<String>, plugin_storage_module: Option<String>),
+        "lia_fs_mkdir" => crate::bridge::fs::lia_fs_mkdir(rel: String, permanent: bool, window_label: Option<String>, plugin_storage_module: Option<String>),
+        "lia_fs_rm" => crate::bridge::fs::lia_fs_rm(rel: String, permanent: bool, recursive: bool, window_label: Option<String>, plugin_storage_module: Option<String>),
+        "lia_fs_stat" => crate::bridge::fs::lia_fs_stat(rel: String, permanent: bool, window_label: Option<String>, plugin_storage_module: Option<String>),
+        "lia_fs_write_text" => crate::bridge::fs::lia_fs_write_text(rel: String, permanent: Option<bool>, contents: String, create_dirs: Option<bool>, append: Option<bool>, window_label: Option<String>, plugin_storage_module: Option<String>),
+        "lia_fs_read_text" => crate::bridge::fs::lia_fs_read_text(rel: String, permanent: Option<bool>, window_label: Option<String>, plugin_storage_module: Option<String>),
+        "lia_fs_write_bytes" => crate::bridge::fs::lia_fs_write_bytes(rel: String, permanent: Option<bool>, data_base64: String, create_dirs: Option<bool>, window_label: Option<String>, plugin_storage_module: Option<String>),
+        "lia_fs_read_bytes" => crate::bridge::fs::lia_fs_read_bytes(rel: String, permanent: Option<bool>, window_label: Option<String>, plugin_storage_module: Option<String>),
+        "lia_fs_exists" => crate::bridge::fs::lia_fs_exists(rel: String, permanent: Option<bool>, window_label: Option<String>, plugin_storage_module: Option<String>),
+        "lia_fs_move" => crate::bridge::fs::lia_fs_move(src: String, dest: String, permanent: Option<bool>, create_dirs: Option<bool>, overwrite: Option<bool>, window_label: Option<String>, plugin_storage_module: Option<String>),
+        "lia_fs_copy" => crate::bridge::fs::lia_fs_copy(src: String, dest: String, permanent: Option<bool>, recursive: Option<bool>, create_dirs: Option<bool>, overwrite: Option<bool>, window_label: Option<String>, plugin_storage_module: Option<String>),
+        "lia_fs_clear_cache" => crate::bridge::fs::lia_fs_clear_cache(),
+        "lia_fs_clear_data" => crate::bridge::fs::lia_fs_clear_data(),
+        "lia_fs_data_clear_trash" => crate::bridge::fs::lia_fs_data_clear_trash(),
+        "lia_fs_data_recover_trash" => crate::bridge::fs::lia_fs_data_recover_trash(trash_rel_path: String),
+        "lia_fs_trash_list_dir" => crate::bridge::fs::lia_fs_trash_list_dir(rel: String),
+        "lia_fs_trash_stat" => crate::bridge::fs::lia_fs_trash_stat(rel: String),
+        "lia_fs_trash_exists" => crate::bridge::fs::lia_fs_trash_exists(rel: String),
+        "lia_fs_trash_read_text" => crate::bridge::fs::lia_fs_trash_read_text(rel: String),
+        "lia_fs_trash_read_bytes" => crate::bridge::fs::lia_fs_trash_read_bytes(rel: String),
+        "lia_fs_diagnostics_clear" => crate::bridge::fs::lia_fs_diagnostics_clear(),
+        "lia_fs_diagnostics_rm" => crate::bridge::fs::lia_fs_diagnostics_rm(rel: String, recursive: bool),
+        "lia_fs_diagnostics_list_dir" => crate::bridge::fs::lia_fs_diagnostics_list_dir(rel: String),
+        "lia_fs_diagnostics_stat" => crate::bridge::fs::lia_fs_diagnostics_stat(rel: String),
+        "lia_fs_diagnostics_exists" => crate::bridge::fs::lia_fs_diagnostics_exists(rel: String),
+        "lia_fs_diagnostics_read_text" => crate::bridge::fs::lia_fs_diagnostics_read_text(rel: String),
+        "lia_fs_diagnostics_read_bytes" => crate::bridge::fs::lia_fs_diagnostics_read_bytes(rel: String),
+        "lia_plugin_storage_clear" => crate::bridge::plugins::lia_plugin_storage_clear(module: String),
+        // ── App / clipboard / events / notifications / plugins / diagnostics (sync) ──
+        "lia_app_info" => crate::bridge::app::lia_app_info(),
+        "lia_app_exit" => crate::bridge::app::lia_app_exit(code: i32),
+        "lia_clipboard_write" => crate::bridge::clipboard::lia_clipboard_write(text: String),
+        "lia_clipboard_read" => crate::bridge::clipboard::lia_clipboard_read(),
+        "lia_event_emit" => crate::bridge::events::lia_event_emit(event: String, payload: Option<::serde_json::Value>),
+        "lia_event_emit_to" => crate::bridge::events::lia_event_emit_to(window_label: String, event: String, payload: Option<::serde_json::Value>),
+        "lia_notification_state" => crate::bridge::notifications::lia_notification_state(),
+        "lia_request_permission" => crate::bridge::notifications::lia_request_permission(),
+        "lia_notify" => crate::bridge::notifications::lia_notify(title: String, body: String),
+        "lia_plugin_clear_all_jobs" => crate::bridge::plugins::lia_plugin_clear_all_jobs(),
+        "lia_plugin_add_module" => crate::bridge::plugins::lia_plugin_add_module(name: String, contents: Vec<u8>),
+        "lia_plugin_remove_module" => crate::bridge::plugins::lia_plugin_remove_module(name: String),
+        "lia_plugin_list_modules" => crate::bridge::plugins::lia_plugin_list_modules(),
+        "lia_logs_list_files" => crate::bridge::diagnostics::lia_logs_list_files(area: String),
+        "lia_logs_read_file" => crate::bridge::diagnostics::lia_logs_read_file(rel_path: String),
+        "lia_logs_get_privacy" => crate::bridge::diagnostics::lia_logs_get_privacy(),
+        "lia_logs_run_retention" => crate::bridge::diagnostics::lia_logs_run_retention(),
+        "lia_logs_record_error" => crate::bridge::diagnostics::lia_logs_record_error(payload: crate::bridge::diagnostics::ErrorPayload, env: String, app_version: String),
+        "lia_logs_record_js_error" => crate::bridge::diagnostics::lia_logs_record_js_error(payload: crate::bridge::diagnostics::ErrorPayload, app_version: String),
+        "lia_logs_record_native_error" => crate::bridge::diagnostics::lia_logs_record_native_error(payload: crate::bridge::diagnostics::ErrorPayload, app_version: String),
+        "lia_logs_new_record" => crate::bridge::diagnostics::lia_logs_new_record(record_type: String, payload: crate::bridge::diagnostics::AnalyticsRecord, env: String, app_version: String),
+    );
+
+    // ── Files / sidecar / network / plugin-pick / export-zip (async) ──
+    ipc_async_dispatch!(app, cmd, payload;
+        "lia_file_open" => crate::bridge::files::lia_file_open(multi: bool, allowed_extensions: Option<Vec<String>>, max_bytes: Option<u64>),
+        "lia_file_open_with_bytes" => crate::bridge::files::lia_file_open_with_bytes(multi: bool, allowed_extensions: Option<Vec<String>>, max_bytes: Option<u64>),
+        "lia_file_save" => crate::bridge::files::lia_file_save(default_name: Option<String>),
+        "lia_sidecar_run" => crate::bridge::sidecar::lia_sidecar_run(name: String, args: Vec<String>),
+        "lia_plugin_pick_and_add_module" => crate::bridge::plugins::lia_plugin_pick_and_add_module(default_name: Option<String>, max_bytes: Option<u64>),
+        "lia_network_get_status" => crate::bridge::network::lia_network_get_status(),
+        "lia_network_ping" => crate::bridge::network::lia_network_ping(url: Option<String>, timeout_ms: Option<u64>),
+        "lia_network_bandwidth_estimate" => crate::bridge::network::lia_network_bandwidth_estimate(url: Option<String>, size_hint_bytes: Option<u64>, timeout_ms: Option<u64>),
+        "lia_network_set_monitor" => crate::bridge::network::lia_network_set_monitor(interval_ms: u64, targets: Option<Vec<String>>),
+        "lia_logs_export_zip" => crate::bridge::diagnostics::lia_logs_export_zip(),
+    );
+
     match cmd {
+        // ── Cases the macros can't express ───────────────────────────────
+        // Global variables use a managed State, not AppHandle.
+        "lia_global_vars_get" => {
+            let key = payload["key"].as_str().ok_or_else(|| anyhow::anyhow!("key required"))?.to_string();
+            return crate::bridge::global_vars::lia_global_vars_get(key, app.state::<crate::bridge::global_vars::EnvState>())
+                .map(|v| serde_json::to_value(v).unwrap_or(Value::Null))
+                .map_err(|e| anyhow::anyhow!(e));
+        }
+        "lia_global_vars_set" => {
+            let key = payload["key"].as_str().ok_or_else(|| anyhow::anyhow!("key required"))?.to_string();
+            let value = payload["value"].as_str().ok_or_else(|| anyhow::anyhow!("value required"))?.to_string();
+            return crate::bridge::global_vars::lia_global_vars_set(key, value, app.state::<crate::bridge::global_vars::EnvState>())
+                .map(|v| serde_json::to_value(v).unwrap_or(Value::Null))
+                .map_err(|e| anyhow::anyhow!(e));
+        }
+        "lia_global_vars_remove" => {
+            let key = payload["key"].as_str().ok_or_else(|| anyhow::anyhow!("key required"))?.to_string();
+            return crate::bridge::global_vars::lia_global_vars_remove(key, app.state::<crate::bridge::global_vars::EnvState>())
+                .map(|v| serde_json::to_value(v).unwrap_or(Value::Null))
+                .map_err(|e| anyhow::anyhow!(e));
+        }
+        "lia_global_vars_list" => {
+            return crate::bridge::global_vars::lia_global_vars_list(app.state::<crate::bridge::global_vars::EnvState>())
+                .map(|v| serde_json::to_value(v).unwrap_or(Value::Null))
+                .map_err(|e| anyhow::anyhow!(e));
+        }
+        // Plugin runtime status — no AppHandle, returns Value directly.
+        "lia_plugin_status" => {
+            return Ok(crate::bridge::plugins::lia_plugin_status());
+        }
+        // Network commands that take no AppHandle.
+        "lia_network_resolve" => {
+            let host = payload["host"].as_str().ok_or_else(|| anyhow::anyhow!("host required"))?.to_string();
+            return crate::bridge::network::lia_network_resolve(host).await
+                .map(|v| serde_json::to_value(v).unwrap_or(Value::Null))
+                .map_err(|e| anyhow::anyhow!(e));
+        }
+        "lia_network_stop_monitor" => {
+            return crate::bridge::network::lia_network_stop_monitor().await
+                .map(|v| serde_json::to_value(v).unwrap_or(Value::Null))
+                .map_err(|e| anyhow::anyhow!(e));
+        }
         "lia_jobs_spawn" => {
             let cmd_str = payload["cmd"]
                 .as_str()

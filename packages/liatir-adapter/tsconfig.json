@@ -3,16 +3,17 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "outDir": "dist",
     "declaration": true,
     "declarationMap": true,
     "strict": true,
     "skipLibCheck": true,
     "baseUrl": ".",
+    "moduleDetection": "force",
     "paths": {
       "@liatir/output-parser": ["../liatir-output-parser/src"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../../src-ts/globals.d.ts"]
 }
