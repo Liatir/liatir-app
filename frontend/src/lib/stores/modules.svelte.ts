@@ -16,6 +16,8 @@ export interface LiatirModule {
   name: string;
   version: string;
   description: string;
+  /** Execution runtime declared in the manifest: Node subprocess or sandboxed WASM. */
+  runtime: 'node' | 'wasm';
   path: string;
   inputSchema: Record<string, FieldDef>;
   outputSchema: Record<string, FieldDef>;
@@ -67,15 +69,18 @@ function createModulesStore() {
         name: string;
         version: string;
         description?: string;
+        runtime?: 'node' | 'wasm';
         inputSchema?: Record<string, FieldDef>;
         outputSchema?: Record<string, FieldDef>;
       };
+      // Manifest declares the runtime; default to Node for backward compatibility.
+      const runtime: 'node' | 'wasm' = manifest.runtime === 'wasm' ? 'wasm' : 'node';
 
       // Deduplicate by path — update if already imported
       const existing = modules.find(m => m.path === path);
       if (existing) {
         modules = modules.map(m => m.path === path
-          ? { ...m, name: manifest.name, version: manifest.version, description: manifest.description ?? '', inputSchema: manifest.inputSchema ?? {}, outputSchema: manifest.outputSchema ?? {} }
+          ? { ...m, name: manifest.name, version: manifest.version, description: manifest.description ?? '', runtime, inputSchema: manifest.inputSchema ?? {}, outputSchema: manifest.outputSchema ?? {} }
           : m
         );
         await persist();
@@ -87,6 +92,7 @@ function createModulesStore() {
         name: manifest.name,
         version: manifest.version,
         description: manifest.description ?? '',
+        runtime,
         path,
         inputSchema: manifest.inputSchema ?? {},
         outputSchema: manifest.outputSchema ?? {},

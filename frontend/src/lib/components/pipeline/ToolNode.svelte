@@ -4,7 +4,7 @@
   import type { Node, Edge } from '@xyflow/svelte';
   import Icon from '@iconify/svelte';
   import type { ToolNodeData, OutputFieldSchema } from '$lib/types/pipeline';
-  import { PIPELINE_REGISTRY } from '$lib/tools/pipeline-registry';
+  import { resolveStepEntry } from '$lib/tools/pipeline-registry';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import OptionPicker from '$lib/components/ui/OptionPicker.svelte';
@@ -18,7 +18,7 @@
 
   const { updateNodeData, getNodes, getEdges } = useSvelteFlow();
 
-  const entry = $derived(PIPELINE_REGISTRY[data.stepId]);
+  const entry = $derived(resolveStepEntry(data.stepId));
   const def = $derived(entry?.definition);
   const state = $derived(pipelineStore.nodeStates.get(id));
   const status = $derived(state?.status ?? 'pending');

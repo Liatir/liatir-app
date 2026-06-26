@@ -9,6 +9,7 @@
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { liatir } from '$lib/api';
   import { saveModuleResultFiles, type ModuleSaveResult } from '$lib/utils/module-files';
+  import { runLiatirModule } from '$lib/utils/module-run';
   import { toast } from '$lib/stores/toast.svelte';
 
   const id = $derived((page.params as { id: string }).id);
@@ -42,7 +43,8 @@
     dataFiles.init();
 
     const api = liatir();
-    if (api) {
+    // Node availability only matters for Node-runtime modules; WASM runs sandboxed in-process.
+    if (api && mod.runtime !== 'wasm') {
       const check = await api.deps.check('node');
       nodeAvailable = check.available;
     }
@@ -74,30 +76,13 @@
     if (!api) { running = false; return; }
 
     try {
-      const res = await api.invoke('lia_liatir_run', { path: mod.path, inputs: values }) as { jobId: string };
-      jobId = res.jobId;
-
-      await new Promise<void>((resolve) => {
-        const unsubs: Array<() => void> = [];
-
-        api.desktop.events.on(`jobs:stdout:${jobId}`, (line: string) => {
-          if (line.startsWith('__LIATIR_RESULT__')) {
-            try { result = JSON.parse(line.slice('__LIATIR_RESULT__'.length)); } catch { /* ok */ }
-          } else {
-            stdoutLines = [...stdoutLines, line];
-          }
-        }).then((fn: () => void) => unsubs.push(fn));
-
-        api.desktop.events.on(`jobs:stderr:${jobId}`, (line: string) => {
-          stderrLines = [...stderrLines, line];
-        }).then((fn: () => void) => unsubs.push(fn));
-
-        api.desktop.events.on(`jobs:exit:${jobId}`, (payload: { exitCode: number | null }) => {
-          exitCode = payload.exitCode;
-          for (const fn of unsubs) fn();
-          resolve();
-        }).then((fn: () => void) => unsubs.push(fn));
+      // Execute via the shared runner (Node job streaming OR WASM direct result).
+      const out = await runLiatirModule(mod, values, (stream, line) => {
+        if (stream === 'stdout') stdoutLines = [...stdoutLines, line];
+        else stderrLines = [...stderrLines, line];
       });
+      result = out.result;
+      exitCode = out.exitCode;
 
       // Persist any file-typed outputs into Results (same as native tools).
       if (exitCode === 0 && mod && Object.keys(mod.outputSchema).length > 0) {
@@ -126,6 +111,11 @@
   <div class="flex flex-col h-full">
     <PageHeader title={mod.name} description={mod.description || `v${mod.version}`}>
       {#snippet actions()}
+        {#if mod!.runtime === 'wasm'}
+          <span class="inline-flex items-center gap-1 rounded-full bg-violet-100 text-violet-700 px-2 py-0.5 text-[10px] font-medium" title="Runs in a WASM sandbox: pure computation, no network or arbitrary filesystem access.">
+            🔒 Sandbox
+          </span>
+        {/if}
         <span class="text-xs font-mono text-zinc-400">v{mod!.version}</span>
         <Button variant="ghost" size="sm" onclick={() => goto('/modules')}>← Modules</Button>
           <div class="w-px bg-border self-stretch"></div>

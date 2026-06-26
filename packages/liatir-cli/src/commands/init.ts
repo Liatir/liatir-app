@@ -1,6 +1,8 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 
+// ── Node module template ─────────────────────────────────────────────────────
+
 const PACKAGE_JSON = (name: string) =>
   JSON.stringify(
     {
@@ -43,6 +45,7 @@ const MANIFEST = (name: string) =>
       name,
       version: "1.0.0",
       description: "",
+      runtime: "node",
       inputSchema: {
         filePath: {
           type: "file",
@@ -89,7 +92,84 @@ export async function run(input: Input): Promise<Output> {
 }
 `;
 
-export async function init(name: string) {
+// ── WASM custom-tool template (Rust → wasm32-wasip1) ─────────────────────────
+
+const CARGO_TOML = (name: string) => `[package]
+name = "${name}"
+version = "1.0.0"
+edition = "2021"
+
+[[bin]]
+name = "${name}"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Smaller wasm artifact.
+[profile.release]
+opt-level = "s"
+lto = true
+`;
+
+const MANIFEST_WASM = (name: string) =>
+  JSON.stringify(
+    {
+      name,
+      version: "1.0.0",
+      description: "",
+      runtime: "wasm",
+      inputSchema: {
+        text: { type: "string", label: "Text", required: true },
+      },
+      outputSchema: {
+        length: { type: "number", label: "Length" },
+      },
+    },
+    null,
+    2
+  );
+
+const MAIN_RS = `use std::io::{self, Read, Write};
+use serde::{Deserialize, Serialize};
+
+// Inputs — must match the inputSchema in .lia-manifest.json.
+// Keys are camelCase in JSON; serde maps them to snake_case fields.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Input {
+    text: String,
+}
+
+// Outputs — must match the outputSchema in .lia-manifest.json.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct Output {
+    length: u64,
+}
+
+// A Liatir WASM tool reads its JSON input from STDIN and writes JSON output to
+// STDOUT. It runs in a sandbox: no network access and no arbitrary filesystem —
+// only the directories Liatir mounts (the folders of "file" inputs, read-only).
+fn main() {
+    let mut buf = String::new();
+    io::stdin().read_to_string(&mut buf).expect("failed to read stdin");
+    let input: Input = serde_json::from_str(&buf).expect("invalid JSON input");
+
+    // ── Your tool logic here ──────────────────────────────────────────────
+    let output = Output { length: input.text.len() as u64 };
+
+    let json = serde_json::to_string(&output).expect("failed to serialize output");
+    io::stdout().write_all(json.as_bytes()).expect("failed to write stdout");
+}
+`;
+
+const GITIGNORE = "target/\n*.lia\n";
+
+// ── Scaffolder ───────────────────────────────────────────────────────────────
+
+export async function init(name: string, runtime: "node" | "wasm" = "node") {
   const dir = path.resolve(name);
 
   try {
@@ -101,6 +181,25 @@ export async function init(name: string) {
   }
 
   await fs.mkdir(path.join(dir, "src"), { recursive: true });
+
+  if (runtime === "wasm") {
+    await Promise.all([
+      fs.writeFile(path.join(dir, "Cargo.toml"), CARGO_TOML(name)),
+      fs.writeFile(path.join(dir, ".lia-manifest.json"), MANIFEST_WASM(name)),
+      fs.writeFile(path.join(dir, "src", "main.rs"), MAIN_RS),
+      fs.writeFile(path.join(dir, ".gitignore"), GITIGNORE),
+    ]);
+
+    console.log(`
+✓ Created ${name}/ (WASM custom tool)
+
+Next steps:
+  cd ${name}
+  rustup target add wasm32-wasip1   # once, if not installed
+  liatir build                      # compile Rust → package as ${name}.lia
+`);
+    return;
+  }
 
   await Promise.all([
     fs.writeFile(path.join(dir, "package.json"), PACKAGE_JSON(name)),

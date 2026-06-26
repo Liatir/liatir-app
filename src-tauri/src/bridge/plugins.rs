@@ -351,7 +351,7 @@ pub async fn lia_plugin_call(
         .map_err(|e| e.to_string())?;
 
     let result = tauri::async_runtime::spawn_blocking(move || {
-        run_plugin_job(app, id, module, payload, timeout_ms, started, validated_paths)
+        run_plugin_job(app, id, module, None, payload, timeout_ms, started, validated_paths)
     })
     .await
     .map_err(|e| format!("plugin task join error: {e}"))?;
@@ -568,6 +568,8 @@ fn run_plugin_job(
     app: AppHandle,
     id: String,
     module_name: String,
+    // See run_plugin_job_inner: Some = run these bytes, None = load by name.
+    wasm_bytes_override: Option<Vec<u8>>,
     payload: serde_json::Value,
     timeout_ms: u64,
     started: Instant,
@@ -580,6 +582,7 @@ fn run_plugin_job(
         &app,
         &id,
         &module_name,
+        wasm_bytes_override,
         payload,
         timeout_ms,
         &job_dir,
@@ -615,17 +618,52 @@ fn run_plugin_job(
     Ok(response)
 }
 
+/// Execute wasm bytes extracted from a .lia bundle (manifest runtime "wasm")
+/// and return the parsed JSON result. Mirrors lia_plugin_call but for a module
+/// that lives inside the bundle rather than being separately installed —
+/// reuses the SAME sandboxed executor (run_plugin_job).
+pub fn run_wasm_bundle(
+    app: AppHandle,
+    storage_name: String,
+    wasm_bytes: Vec<u8>,
+    payload: serde_json::Value,
+    timeout_ms: Option<u64>,
+    host_read_paths: Vec<String>,
+) -> Result<serde_json::Value> {
+    let id = gen_plugin_job_id();
+    let timeout_ms = timeout_ms.unwrap_or(300_000);
+    // Same path validation lia_plugin_call applies (blocks /etc, /sys, …).
+    let validated_paths = validate_host_read_paths(host_read_paths)?;
+    run_plugin_job(
+        app,
+        id,
+        storage_name,
+        Some(wasm_bytes),
+        payload,
+        timeout_ms,
+        Instant::now(),
+        validated_paths,
+    )
+}
+
 fn run_plugin_job_inner(
     app: &AppHandle,
     id: &str,
     module_name: &str,
+    // When Some, run these bytes directly (e.g. a wasm payload extracted from a
+    // .lia bundle with runtime "wasm"); when None, load the installed module by
+    // name. Keeps a single sandboxed executor for both sources.
+    wasm_bytes_override: Option<Vec<u8>>,
     payload: serde_json::Value,
     timeout_ms: u64,
     job_dir: &Path,
     storage_dir: &Path,
     host_read_paths: &[PathBuf],
 ) -> Result<PluginResponse> {
-    let wasm_bytes = read_wasm_module(app, module_name)?;
+    let wasm_bytes = match wasm_bytes_override {
+        Some(bytes) => bytes,
+        None => read_wasm_module(app, module_name)?,
+    };
     let stdin_text = serde_json::to_string(&payload)? + "\n";
 
     let mut config = Config::new();

@@ -8,12 +8,14 @@ const [, , command, ...rest] = process.argv;
 async function main() {
   switch (command) {
     case "init": {
-      const name = rest[0];
+      // First non-flag arg is the project name; --wasm selects the WASM runtime.
+      const name = rest.find((a) => !a.startsWith("-"));
       if (!name) {
-        console.error("Usage: liatir init <name>");
+        console.error("Usage: liatir init <name> [--wasm]");
         process.exit(1);
       }
-      await init(name);
+      const runtime = rest.includes("--wasm") || rest.includes("--runtime=wasm") ? "wasm" : "node";
+      await init(name, runtime);
       break;
     }
     case "dev":
@@ -23,12 +25,13 @@ async function main() {
       await build();
       break;
     default:
-      console.log(`liatir — develop and build .lia scripts
+      console.log(`liatir — develop and build .lia modules & custom tools
 
 Usage:
-  liatir init <name>   Scaffold a new .lia project
-  liatir dev           Watch mode: rebuild on save, run against live Liatir app
-  liatir build         Bundle and package as <name>.lia
+  liatir init <name>          Scaffold a new Node (.lia) module
+  liatir init <name> --wasm   Scaffold a new WASM custom tool (Rust)
+  liatir dev                  Watch mode: rebuild on save, run against live Liatir app
+  liatir build                Bundle and package as <name>.lia
 `);
   }
 }

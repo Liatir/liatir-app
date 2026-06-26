@@ -5,7 +5,7 @@ import { getDataPrefix } from './workspace.svelte';
 import { dataFiles } from './dataFiles.svelte';
 import { apiConnections, sendApiRequest } from './apiConnections.svelte';
 import { analysisRuns } from './analysisRuns.svelte';
-import { PIPELINE_REGISTRY } from '$lib/tools/pipeline-registry';
+import { resolveStepEntry } from '$lib/tools/pipeline-registry';
 import { ensureResultsDir } from '$lib/utils/results';
 import type { ToolOutput } from '$lib/types/tool-output';
 import type {
@@ -105,7 +105,7 @@ function resolveRef(
 
   // File output — match by the source's declared output label.
   const srcNode = nodes.find(n => n.id === srcNodeId);
-  const srcDef = PIPELINE_REGISTRY[(srcNode?.data?.stepId as string) ?? '']?.definition;
+  const srcDef = resolveStepEntry((srcNode?.data?.stepId as string) ?? '')?.definition;
   const label = srcDef?.outputSchema[outKey]?.label ?? (outKey === 'responseBody' ? 'Response Body' : outKey);
   const outFile = srcState.outputFiles.find(f => f.label === label);
   return outFile ? outFile.path : '';
@@ -247,7 +247,7 @@ function createPipelineStore() {
       };
 
       if (node.type === 'tool') {
-        const entry = PIPELINE_REGISTRY[node.data?.stepId as string ?? ''];
+        const entry = resolveStepEntry(node.data?.stepId as string ?? '');
         if (!entry) { patch({ status: 'error', error: `Unknown tool: ${node.data?.stepId}` }); break; }
 
         patch({ status: 'running' });
@@ -399,7 +399,7 @@ function createPipelineStore() {
         ...p,
         nodes: p.nodes.map(node => {
           if (node.type !== 'tool') return node;
-          const entry = PIPELINE_REGISTRY[node.data?.stepId as string ?? ''];
+          const entry = resolveStepEntry(node.data?.stepId as string ?? '');
           if (!entry) return node;
           const inputs = { ...(node.data?.inputs as Record<string, string> ?? {}) };
           for (const [key, schema] of Object.entries(entry.definition.inputSchema)) {
@@ -456,7 +456,7 @@ function createPipelineStore() {
 
         // ── Tool node ──────────────────────────────────────────────────────────
         if (node.type === 'tool') {
-          const entry = PIPELINE_REGISTRY[node.data?.stepId as string ?? ''];
+          const entry = resolveStepEntry(node.data?.stepId as string ?? '');
           if (!entry) {
             patchState(nodeId, { status: 'error', error: `Unknown tool: ${node.data?.stepId}` });
             break;

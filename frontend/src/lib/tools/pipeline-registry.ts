@@ -11,6 +11,8 @@ import { snpEffStore } from '$lib/stores/snpeff.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import type { ToolOutput } from '$lib/types/tool-output';
 import type { PipelineRegistryEntry, PipelineStepDefinition, RunOutputFile } from '$lib/types/pipeline';
+import { modulesStore } from '$lib/stores/modules.svelte';
+import { moduleToRegistryEntry, moduleToDefinition } from './module-step';
 
 type StepResult = { outputFiles: RunOutputFile[]; output?: ToolOutput; metrics?: Record<string, number> };
 
@@ -371,3 +373,30 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
   'bcftools-filter':    { definition: bcftoolsFilterDefinition,    run: runBcftoolsFilterStep },
   'snpeff':             { definition: snpeffDefinition,            run: runSnpeffStep },
 };
+
+// ── Imported .lia modules as pipeline steps ──────────────────────────────────
+// Modules (Node and WASM) are first-class pipeline steps alongside native tools.
+// They are not in the static registry above — they are resolved on demand from
+// the modules store so importing/removing one is reflected without a rebuild.
+
+/** Resolve a step entry by id: a native tool OR an imported module (`module:<id>`). */
+export function resolveStepEntry(stepId: string): PipelineRegistryEntry | undefined {
+  if (stepId.startsWith('module:')) {
+    const mod = modulesStore.byId(stepId.slice('module:'.length));
+    return mod ? moduleToRegistryEntry(mod) : undefined;
+  }
+  return PIPELINE_REGISTRY[stepId];
+}
+
+/** Step definitions for every imported module — for the pipeline tool palette. */
+export function moduleStepDefinitions(): PipelineStepDefinition[] {
+  return modulesStore.modules.map(moduleToDefinition);
+}
+
+/** Definitions of all available steps (native tools + imported modules). */
+export function allStepDefinitions(): PipelineStepDefinition[] {
+  return [
+    ...Object.values(PIPELINE_REGISTRY).map((e) => e.definition),
+    ...moduleStepDefinitions(),
+  ];
+}

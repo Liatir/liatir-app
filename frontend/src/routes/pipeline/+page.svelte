@@ -25,7 +25,8 @@
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { apiConnections } from '$lib/stores/apiConnections.svelte';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
-  import { PIPELINE_REGISTRY } from '$lib/tools/pipeline-registry';
+  import { modulesStore } from '$lib/stores/modules.svelte';
+  import { resolveStepEntry, allStepDefinitions } from '$lib/tools/pipeline-registry';
   import { confirm } from '$lib/stores/confirm.svelte';
   import { toast } from '$lib/stores/toast.svelte';
 
@@ -129,10 +130,9 @@
   const toolsByCategory = $derived.by(() => {
     const q = stepSearch.toLowerCase();
     const map: Record<string, MenuItem[]> = {};
-    for (const [id, entry] of Object.entries(PIPELINE_REGISTRY)) {
-      if (q && !entry.definition.label.toLowerCase().includes(q) && !entry.definition.description.toLowerCase().includes(q)) continue;
-      const cat = entry.definition.category;
-      (map[cat] ??= []).push({ id, label: entry.definition.label, description: entry.definition.description, type: 'tool' });
+    for (const def of allStepDefinitions()) {
+      if (q && !def.label.toLowerCase().includes(q) && !def.description.toLowerCase().includes(q)) continue;
+      (map[def.category] ??= []).push({ id: def.id, label: def.label, description: def.description, type: 'tool' });
     }
     return map;
   });
@@ -161,7 +161,7 @@
     nodes.some(n => n.type !== 'start') &&
     !pipelineStore.running &&
     toolNodes.every(n => {
-      const def = PIPELINE_REGISTRY[n.data?.stepId as string ?? '']?.definition;
+      const def = resolveStepEntry(n.data?.stepId as string ?? '')?.definition;
       if (!def) return false;
       return Object.entries(def.inputSchema).every(([k, s]) => {
         if (!s.required) return true;
@@ -186,6 +186,7 @@
     await pipelineStore.init();
     dataFiles.init();
     apiConnections.init();
+    modulesStore.init(); // make imported .lia modules available as pipeline steps
 
     const pending = pipelineStore.pendingLoad;
     if (pending) {
