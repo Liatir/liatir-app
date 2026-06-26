@@ -1,0 +1,13 @@
+{
+  "name": "fastq-stats",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "lia build"
+  },
+  "devDependencies": {
+    "@liatir/sdk": "file:../../packages/liatir-adapter",
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}

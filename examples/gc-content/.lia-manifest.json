@@ -1,0 +1,17 @@
+{
+  "name": "gc-content",
+  "version": "1.0.0",
+  "description": "Compute GC content and base counts of a DNA sequence. WASM custom tool — pure, sandboxed.",
+  "runtime": "wasm",
+  "inputSchema": {
+    "sequence": { "type": "string", "label": "DNA sequence", "required": true }
+  },
+  "outputSchema": {
+    "length": { "type": "number", "label": "Length" },
+    "gcPercent": { "type": "number", "label": "GC %" },
+    "a": { "type": "number", "label": "A" },
+    "c": { "type": "number", "label": "C" },
+    "g": { "type": "number", "label": "G" },
+    "t": { "type": "number", "label": "T" }
+  }
+}
