@@ -1,5 +1,26 @@
 import * as fs from "fs/promises";
 import * as path from "path";
+import { execFile } from "child_process";
+import { promisify } from "util";
+
+const execFileAsync = promisify(execFile);
+
+/**
+ * Ensure the wasm compilation target is installed. Idempotent — rustup skips it
+ * if already present. Best-effort: a missing Rust toolchain only prints a hint,
+ * it does not fail the scaffold.
+ */
+async function ensureWasmTarget(): Promise<void> {
+  try {
+    await execFileAsync("rustup", ["target", "add", "wasm32-wasip1"]);
+    console.log("✓ Rust target wasm32-wasip1 ready");
+  } catch {
+    console.warn(
+      "⚠ Couldn't add the wasm target automatically. Install Rust (https://rustup.rs),\n" +
+      "  then run:  rustup target add wasm32-wasip1"
+    );
+  }
+}
 
 // ── Node module template ─────────────────────────────────────────────────────
 
@@ -190,13 +211,15 @@ export async function init(name: string, runtime: "node" | "wasm" = "node") {
       fs.writeFile(path.join(dir, ".gitignore"), GITIGNORE),
     ]);
 
+    // --wasm already takes care of the toolchain target for you.
+    await ensureWasmTarget();
+
     console.log(`
 ✓ Created ${name}/ (WASM custom tool)
 
 Next steps:
   cd ${name}
-  rustup target add wasm32-wasip1   # once, if not installed
-  liatir build                      # compile Rust → package as ${name}.lia
+  lia build      # compile Rust → package as ${name}.lia
 `);
     return;
   }
