@@ -1,7 +1,7 @@
 use tauri::AppHandle;
 use tauri_plugin_dialog::{DialogExt, FilePath};
 use serde::Serialize;
-use std::{fs, path::PathBuf};
+use std::{fs, path::{Path, PathBuf}};
 
 #[derive(Serialize)]
 pub struct OpenResult { pub paths: Vec<String> }
@@ -28,6 +28,28 @@ fn within_size_cap(pb: &PathBuf, max_bytes: Option<u64>) -> bool {
   true
 }
 
+fn normalize_extension(ext: &str) -> String {
+  ext.trim().trim_start_matches('.').to_ascii_lowercase()
+}
+
+fn cleaned_extensions(exts: &[String]) -> Vec<String> {
+  exts.iter()
+    .map(|e| normalize_extension(e))
+    .filter(|e| !e.is_empty())
+    .collect()
+}
+
+fn path_matches_allowed_extensions(path: &Path, allowed_extensions: &[String]) -> bool {
+  if allowed_extensions.is_empty() { return true; }
+
+  let Some(file_name) = path.file_name().and_then(|s| s.to_str()) else {
+    return false;
+  };
+  let file_name = file_name.to_ascii_lowercase();
+
+  allowed_extensions.iter().any(|ext| file_name.ends_with(&format!(".{ext}")))
+}
+
 #[tauri::command]
 pub async fn lia_file_open(
   app: AppHandle,
@@ -35,28 +57,24 @@ pub async fn lia_file_open(
   allowed_extensions: Option<Vec<String>>,
   max_bytes: Option<u64>
 ) -> Result<OpenResult, String> {
-  // Cloniamo ciò che serve nel task bloccante
   let handle = app.clone();
 
-  // 1) Mostra dialog e raccoglie i percorsi selezionati (come stringhe)
+  // Show the blocking system dialog off the async runtime thread, then return
+  // the selected paths as strings.
   let (picked_paths, exts) = tauri::async_runtime::spawn_blocking(move || {
     let mut builder = handle.dialog().file().set_title("Select file(s)");
     if let Some(exts) = allowed_extensions.as_ref() {
-      let cleaned: Vec<String> = exts.iter()
-        .map(|e| e.trim_start_matches('.').to_ascii_lowercase())
-        .collect();
+      let cleaned = cleaned_extensions(exts);
       let refs: Vec<&str> = cleaned.iter().map(|s| s.as_str()).collect();
       builder = builder.add_filter("Allowed", &refs);
     }
 
     let picked_paths: Vec<String> = if multi {
-      // Option<Vec<FilePath>>
       match builder.blocking_pick_files() {
         Some(list) => list.into_iter().map(file_path_to_string).collect::<Vec<_>>(),
         None => Vec::new(),
       }
     } else {
-      // Option<FilePath> -> Vec<String>
       match builder.blocking_pick_file() {
         Some(p) => vec![file_path_to_string(p)],
         None => Vec::new(),
@@ -66,22 +84,18 @@ pub async fn lia_file_open(
     (picked_paths, allowed_extensions)
   })
   .await
-  .map_err(|e| format!("Join error: {e}"))?; // errore nel thread pool
+  .map_err(|e| format!("Join error: {e}"))?;
 
-  // 2) Applica il filtro di size cap su file locali
+  // Enforce extension and size constraints on local paths even if the platform
+  // dialog allows manual filename entry or does not understand multipart
+  // extensions such as ".fastq.gz".
   let mut filtered: Vec<String> = Vec::with_capacity(picked_paths.len());
+  let cleaned_exts = exts.as_ref().map(|list| cleaned_extensions(list));
   for p in picked_paths {
     if is_local_path(&p) {
       let pb = PathBuf::from(&p);
-      // Check extension backend enforcement
-      if let Some(ext_list) = &exts {
-        match pb.extension().and_then(|s| s.to_str()) {
-          Some(ext) => {
-            let ok = ext_list.iter().any(|e| e.trim_start_matches('.').eq_ignore_ascii_case(ext));
-            if !ok { continue; }
-          }
-          None => continue,
-        }
+      if let Some(ext_list) = &cleaned_exts {
+        if !path_matches_allowed_extensions(&pb, ext_list) { continue; }
       }
       if !within_size_cap(&pb, max_bytes) { continue; }
     }
@@ -102,8 +116,8 @@ pub struct OpenWithBytesResult {
   pub files: Vec<FileWithBytes>,
 }
 
-/// Apre uno o più file, opzionalmente limita le estensioni selezionabili, e ritorna i contenuti come bytes.
-/// Applica anche un size cap opzionale (in bytes); i file che eccedono il cap vengono ignorati.
+/// Open one or more local files, optionally enforce allowed extensions, and
+/// return their bytes. Files over the optional size cap are skipped.
 #[tauri::command]
 pub async fn lia_file_open_with_bytes(
   app: AppHandle,
@@ -113,14 +127,12 @@ pub async fn lia_file_open_with_bytes(
 ) -> Result<OpenWithBytesResult, String> {
   let handle = app.clone();
 
-  // 1) Dialog di selezione con filtro opzionale di estensioni
+  // Show the blocking system dialog off the async runtime thread.
   let (paths, exts) = tauri::async_runtime::spawn_blocking(move || {
     let mut builder = handle.dialog().file().set_title("Select file(s)");
 
     if let Some(exts) = allowed_extensions.as_ref() {
-      let cleaned: Vec<String> = exts.iter()
-        .map(|e| e.trim_start_matches('.').to_ascii_lowercase())
-        .collect();
+      let cleaned = cleaned_extensions(exts);
       let refs: Vec<&str> = cleaned.iter().map(|s| s.as_str()).collect();
       builder = builder.add_filter("Allowed", &refs);
     }
@@ -143,32 +155,24 @@ pub async fn lia_file_open_with_bytes(
   .await
   .map_err(|e| format!("Join error: {e}"))?;
 
-  // 2) Lettura contenuti e enforcement size/estensioni lato backend
+  // Read file contents and enforce size/extension constraints in the backend.
   let mut out: Vec<FileWithBytes> = Vec::new();
+  let cleaned_exts = exts.as_ref().map(|list| cleaned_extensions(list));
 
   'next: for p in paths {
-    // Salta URL remoti: trattiamo solo path locali
     if !is_local_path(&p) { continue; }
 
     let pb = PathBuf::from(&p);
 
-    // Enforcement estensioni lato backend (se fornito)
-    if let Some(ext_list) = &exts {
-      match pb.extension().and_then(|s| s.to_str()) {
-        Some(ext) => {
-          let ok = ext_list.iter().any(|e| e.trim_start_matches('.').eq_ignore_ascii_case(ext));
-          if !ok { continue 'next; }
-        }
-        None => continue 'next,
-      }
+    if let Some(ext_list) = &cleaned_exts {
+      if !path_matches_allowed_extensions(&pb, ext_list) { continue 'next; }
     }
 
-    // Size cap
     if !within_size_cap(&pb, max_bytes) { continue; }
 
     match fs::read(&pb) {
       Ok(bytes) => out.push(FileWithBytes { path: p, bytes }),
-      Err(_) => { /* ignora file non leggibili */ }
+      Err(_) => { /* skip unreadable files */ }
     }
   }
 
@@ -184,7 +188,6 @@ pub async fn lia_file_save(app: AppHandle, default_name: Option<String>) -> Resu
     if let Some(name) = default_name.as_deref() {
       builder = builder.set_file_name(name);
     }
-    // Option<FilePath> -> String (vuota se cancel)
     builder.blocking_save_file().map(file_path_to_string).unwrap_or_default()
   })
   .await
