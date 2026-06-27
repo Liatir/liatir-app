@@ -4,11 +4,17 @@ use serde_json::Value;
 
 const SIG: &str = "LIATIR/1";
 
-const RUNNER: &str = r#"import { run } from './index.js';
-
+const RUNNER: &str = r#"import * as _mod from './index.js';
+// defineModule(...) returns an object with .run; also accept a bare function or a named run export.
+const _m = _mod.default ?? _mod;
+const _run = typeof _m === 'function' ? _m : (_m && (_m.run ?? _mod.run));
+if (typeof _run !== 'function') {
+  process.stderr.write('[liatir] module must `export default defineModule(...)`\n');
+  process.exit(1);
+}
 const _inputs = JSON.parse(process.argv[2] ?? '{}');
 try {
-  const _result = await run(_inputs);
+  const _result = await _run(_inputs);
   if (_result !== undefined && _result !== null) {
     process.stdout.write('__LIATIR_RESULT__' + JSON.stringify(_result) + '\n');
   }

@@ -29,13 +29,14 @@ const PACKAGE_JSON = (name: string) =>
     {
       name,
       version: "1.0.0",
+      description: "",
       type: "module",
       scripts: {
-        dev: "liatir dev",
-        build: "liatir build",
+        dev: "lia dev",
+        build: "lia build",
       },
       devDependencies: {
-        "@liatir/sdk": "^1.0.0",
+        "@liatir/sdk": "^1.3.0",
         typescript: "^5.0.0",
         "@types/node": "^20.0.0",
       },
@@ -60,57 +61,23 @@ const TSCONFIG = JSON.stringify(
   2
 );
 
-const MANIFEST = (name: string) =>
-  JSON.stringify(
-    {
-      name,
-      version: "1.0.0",
-      description: "",
-      runtime: "node",
-      inputSchema: {
-        filePath: {
-          type: "file",
-          label: "Input file",
-          required: true,
-          accept: [".bam", ".sam", ".fastq", ".fastq.gz"],
-        },
-      },
-      outputSchema: {
-        result: { type: "string", label: "Result" },
-      },
-    },
-    null,
-    2
-  );
+const INDEX_TS = () => `import { defineModule, field } from "@liatir/sdk";
 
-const INDEX_TS = (name: string) => `import { createLiatir } from "@liatir/sdk";
-
-// Input type — define what your script expects
-export interface Input {
-  // example: filePath: string;
-}
-
-// Output type — define what your script returns
-export interface Output {
-  // example: readCount: number;
-}
-
-// Entry point called by Liatir when this script runs
-export async function run(input: Input): Promise<Output> {
-  const Liatir = await createLiatir();
-
-  // Your script logic here.
-  // Example: spawn a system tool and wait for it to finish
-  // const job = await Liatir.jobs.run("samtools", ["flagstat", input.filePath], {
-  //   onStdout: (line) => console.log(line),
-  //   onStderr: (line) => console.error(line),
-  // });
-  // if (job.status.type !== "done") throw new Error("samtools failed");
-
-  console.log("[${name}] running with input:", input);
-
-  return {};
-}
+// Declare the schema ONCE here. The input/output types are inferred from it, and
+// \`lia build\` generates the manifest from it — nothing to keep in sync by hand.
+//   lia — the Liatir bridge: lia.jobs, lia.deps, lia.desktop.fs, …
+export default defineModule({
+  inputs: {
+    text: field.string({ label: "Text", required: true }),
+  },
+  outputs: {
+    length: field.number({ label: "Length" }),
+  },
+  async run({ input, lia }) {
+    // input.text is string (inferred); the return is checked against outputs.
+    return { length: input.text.length };
+  },
+});
 `;
 
 // ── WASM custom-tool template (Rust → wasm32-wasip1) ─────────────────────────
@@ -227,8 +194,7 @@ Next steps:
   await Promise.all([
     fs.writeFile(path.join(dir, "package.json"), PACKAGE_JSON(name)),
     fs.writeFile(path.join(dir, "tsconfig.json"), TSCONFIG),
-    fs.writeFile(path.join(dir, ".lia-manifest.json"), MANIFEST(name)),
-    fs.writeFile(path.join(dir, "src", "index.ts"), INDEX_TS(name)),
+    fs.writeFile(path.join(dir, "src", "index.ts"), INDEX_TS()),
   ]);
 
   console.log(`

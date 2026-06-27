@@ -265,3 +265,81 @@ export async function createLiatir(): Promise<LiatirNode> {
     invoke,
   };
 }
+
+// ── Module I/O schema — the SINGLE source of truth ───────────────────────────
+// You declare the schema once with `f.*`; the input/output TS types are inferred
+// from it, and `lia build` generates the manifest from it. Nothing to keep in
+// sync by hand.
+
+/** A typed field. `T` is the inferred TS type; it is erased at runtime. */
+export interface Field<T> {
+  readonly type: "string" | "number" | "boolean" | "file";
+  readonly label?: string;
+  readonly description?: string;
+  readonly required?: boolean;
+  readonly default?: T;
+  readonly accept?: string[];
+  /** phantom — carries the inferred type only, never present at runtime */
+  readonly __t?: T;
+}
+
+interface FieldOpts<T> {
+  label?: string;
+  description?: string;
+  required?: boolean;
+  default?: T;
+}
+
+/** Field builders: declare what a module's inputs/outputs are AND their types. */
+export const field = {
+  string: (o: FieldOpts<string> = {}): Field<string> => ({ type: "string", ...o }),
+  number: (o: FieldOpts<number> = {}): Field<number> => ({ type: "number", ...o }),
+  boolean: (o: FieldOpts<boolean> = {}): Field<boolean> => ({ type: "boolean", ...o }),
+  file: (o: FieldOpts<string> & { accept?: string[] } = {}): Field<string> => ({ type: "file", ...o }),
+};
+
+type Schema = Record<string, Field<unknown>>;
+type Infer<S extends Schema> = { [K in keyof S]: S[K] extends Field<infer T> ? T : never };
+
+export interface ModuleDefinition<I extends Schema, O extends Schema> {
+  inputs?: I;
+  outputs?: O;
+  run: (ctx: { input: Infer<I>; lia: LiatirNode }) => Infer<O> | Promise<Infer<O>>;
+}
+
+/** Runtime shape `lia build` reads (schema → manifest) and the app runner calls. */
+export interface LiatirModule {
+  inputs: Schema;
+  outputs: Schema;
+  run: (input: Record<string, unknown>) => Promise<unknown>;
+}
+
+/**
+ * Define a Liatir module. Declare `inputs`/`outputs` with `f.*` once: the
+ * `input` and return types are inferred from them, and the manifest is generated
+ * from them at build time — no hand-written types, no manifest to keep in sync.
+ *
+ * ```ts
+ * import { defineModule, field } from "@liatir/sdk";
+ *
+ * export default defineModule({
+ *   inputs:  { text: field.string({ label: "Text", required: true }) },
+ *   outputs: { length: field.number({ label: "Length" }) },
+ *   async run({ input, lia }) {
+ *     return { length: input.text.length }; // input.text is string; return type checked
+ *   },
+ * });
+ * ```
+ */
+export function defineModule<I extends Schema = Record<string, never>, O extends Schema = Record<string, never>>(
+  def: ModuleDefinition<I, O>,
+): LiatirModule {
+  return {
+    inputs: def.inputs ?? {},
+    outputs: def.outputs ?? {},
+    run: async (input) => {
+      const lia = await createLiatir();
+      return def.run({ input: input as Infer<I>, lia });
+    },
+  };
+}

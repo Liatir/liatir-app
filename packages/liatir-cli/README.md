@@ -1,62 +1,62 @@
 # `@liatir/lia` — build Liatir extensions
 
-Liatir is extensible with **`.lia` bundles**. A single `.lia` file can hold either of
-two kinds of tool, distinguished by the `runtime` field in its manifest:
+A `.lia` bundle is one file that holds either kind of tool, told apart by the
+`runtime` in its manifest:
 
-| Kind | `runtime` | Payload | Runs as | Best for |
-|------|-----------|---------|---------|----------|
-| **Module** | `node` (default) | `index.js` | Node.js subprocess with the **full Liatir bridge** | orchestration, shell-out to system tools, pipelines |
-| **Custom tool** | `wasm` | `module.wasm` | sandboxed WASM (wasmtime) | pure, fast, dependency-free computation |
+| Kind | Language | Capabilities |
+|------|----------|--------------|
+| **Module** (`node`) | TypeScript | the full Liatir bridge (`jobs`, `deps`, `desktop.fs`, …) + Node |
+| **Custom tool** (`wasm`) | Rust → wasm | pure, sandboxed computation (no network, fs read-only) |
 
-Both are imported the same way and run identically — standalone (like a native tool)
-or as a step inside a pipeline. The difference in capabilities is shown in the UI with
-a **🔒 Sandbox** badge on WASM tools.
+Both are imported the same way and run standalone or as a pipeline step.
 
-```
-npm install -g @liatir/lia
+```bash
+npm i @liatir/lia        # then use `npx lia …`  (or `npm i -g @liatir/lia`)
 ```
 
 ## Module (Node)
 
-```
-lia init my-module
-cd my-module
-npm install
-lia dev          # watch mode against the running Liatir app
-lia build        # → my-module.lia
+```bash
+npx lia init my-module
+cd my-module && npm install
+npx lia build            # → my-module.lia
 ```
 
-`src/index.ts` exports a `run(input)` function and has the **entire Liatir bridge**
-available via `@liatir/sdk` (see that package's README):
+The **schema is declared once, in code** — the input/output types are inferred
+from it and the manifest is generated from it at build time. You never hand-write
+types or a manifest:
 
 ```ts
-import { createLiatir } from "@liatir/sdk";
+import { defineModule, field } from "@liatir/sdk";
 
-export async function run(input: { filePath: string }) {
-  const Liatir = await createLiatir();
-  const job = await Liatir.jobs.run("samtools", ["flagstat", input.filePath], {
-    onStdout: (l) => console.log(l),
-  });
-  if (job.status.type !== "done") throw new Error("samtools failed");
-  return { ok: true };
-}
+export default defineModule({
+  inputs: {
+    fastq: field.file({ label: "FASTQ file", accept: ["fastq", "fq"], required: true }),
+  },
+  outputs: {
+    reads: field.number({ label: "Reads" }),
+  },
+  // `input.fastq` is string (inferred); the return is checked against `outputs`.
+  // `lia` is the Liatir bridge.
+  async run({ input, lia }) {
+    const out = await lia.jobs.run("seqkit", ["stats", input.fastq]);
+    return { reads: 0 };
+  },
+});
 ```
 
-The value you `return` is the module's structured result. Internally the runner emits
-it on stdout as a `__LIATIR_RESULT__<json>` marker line, which Liatir parses — you
-never write that marker yourself, just `return` a JSON-serializable value.
+`field.*` builders: `field.string`, `field.number`, `field.boolean`,
+`field.file({ accept })`. Each takes `{ label?, description?, required?, default? }`.
 
 ## Custom tool (WASM)
 
-```
-rustup target add wasm32-wasip1   # once
-lia init my-tool --wasm
+```bash
+npx lia init my-tool --wasm   # scaffolds the Rust crate AND adds the wasm target
 cd my-tool
-lia build        # compiles Rust → wasm32-wasip1, packages → my-tool.lia
+npx lia build                 # compiles Rust → my-tool.lia
 ```
 
-A WASM tool reads its JSON input from **stdin** and writes its JSON result to
-**stdout** — that's the entire contract:
+A WASM tool reads its JSON input from **stdin** and writes JSON to **stdout**:
 
 ```rust
 use std::io::{self, Read, Write};
@@ -64,7 +64,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)] #[serde(rename_all = "camelCase")]
 struct Input { text: String }
-
 #[derive(Serialize)] #[serde(rename_all = "camelCase")]
 struct Output { length: u64 }
 
@@ -72,37 +71,18 @@ fn main() {
     let mut buf = String::new();
     io::stdin().read_to_string(&mut buf).unwrap();
     let input: Input = serde_json::from_str(&buf).unwrap();
-    let output = Output { length: input.text.len() as u64 };
-    io::stdout().write_all(serde_json::to_string(&output).unwrap().as_bytes()).unwrap();
+    let out = Output { length: input.text.len() as u64 };
+    io::stdout().write_all(serde_json::to_string(&out).unwrap().as_bytes()).unwrap();
 }
 ```
 
-**Sandbox guarantees:** no network, and no arbitrary filesystem access. Liatir mounts
-only the directories of your `file`-typed inputs, **read-only** — so a WASM tool can
-read an input FASTQ/BAM but cannot touch anything else. A persistent scratch directory
-is available at `/storage`.
-
-## Manifest — `.lia-manifest.json`
-
-```jsonc
-{
-  "name": "my-tool",
-  "version": "1.0.0",
-  "description": "...",
-  "runtime": "node",        // or "wasm"
-  "inputSchema":  { "<key>": { "type": "file|string|number|boolean", "label": "...", "required": true, "accept": ["bam"] } },
-  "outputSchema": { "<key>": { "type": "file|string|number", "label": "..." } }
-}
-```
-
-The `inputSchema` drives the **auto-generated input form** and the pipeline node's input
-handles; `outputSchema` drives the output handles. `file` outputs are saved to `Results/`
-and can be chained into the next pipeline step; `number` outputs become connectable
-values (→ Math / Condition nodes).
+For WASM the schema lives in `.lia-manifest.json` (`inputSchema`/`outputSchema`),
+since Rust can't export a JS schema at build time. Sandbox: no network, and only
+the directories of `file` inputs are mounted read-only; a scratch dir is at `/storage`.
 
 ## Install into Liatir
 
-`lia build` produces `<name>.lia`. In the app open **Modules → Import** and pick the file.
-The tool then appears both on the Modules page (run standalone) and in the pipeline tool
-palette (drag in as a step). Node tools require Node.js ≥18 on the host; WASM tools have
-no host runtime requirement.
+`lia build` produces `<name>.lia`. In the app: **Modules → Import** → pick the file.
+It then shows up on the Modules page (auto-generated form + Run) and in the
+pipeline tool palette (drag in as a step). Re-run `lia build` and re-import the
+same file to update it.
