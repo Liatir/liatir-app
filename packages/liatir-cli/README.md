@@ -17,11 +17,12 @@ npm i @liatir/lia        # then use `npx lia …`  (or `npm i -g @liatir/lia`)
 ## Module (Node)
 
 ```bash
-npx lia init my-module      # interactive prompts, recommended choices flagged
+npx lia init my-module      # interactive prompts
 npx lia init my-module --yes --no-install
 cd my-module && npm install
 npx lia dev --input '{"fastq":"/absolute/path/sample.fastq"}'
 npx lia build              # → my-module.lia
+npm run update             # updates @liatir/lia and @liatir/sdk
 ```
 
 The **schema is declared once, in code** — the input/output types are inferred
@@ -29,16 +30,18 @@ from it and the manifest is generated from it at build time. You never hand-writ
 types or a manifest:
 
 ```ts
-import { defineModule, field } from "@liatir/sdk";
+import { defineModule, field, type ModuleContext } from "@liatir/sdk";
 
-export default defineModule({
+const liatirModule = defineModule({
   inputs: {
     fastq: field.file({ label: "FASTQ file", accept: ["fastq", "fq"], required: true }),
   },
   outputs: {
     reads: field.number({ label: "Reads" }),
   },
-}).main(async ({ input, lia }) => {
+});
+
+export default liatirModule.main(async ({ input, lia }: ModuleContext<typeof liatirModule>) => {
   // `input.fastq` is string (inferred from `inputs`).
   // `lia` is the local Liatir bridge.
   await lia.jobs.run("seqkit", ["stats", input.fastq]);
@@ -69,10 +72,18 @@ lia init my-module --template bio-cli
 lia init my-module --category "Quality Control" --tags "FASTQ,QC"
 lia init my-module --no-install
 lia init my-tool --no-wasm-target
+lia update                        # update @liatir/lia and @liatir/sdk
+lia update --version 1.5.1         # pin the target Liatir package version
+lia update --no-install --version 1.5.1
 ```
 
 When prompted, the recommended path is Node + TypeScript + the minimal template.
 `--yes` selects those recommended defaults automatically.
+
+`lia update` is for Node `.lia` module projects. It updates both `@liatir/lia`
+and `@liatir/sdk` together and refreshes `package-lock.json` through npm. WASM
+projects do not use `@liatir/sdk`; update the CLI with
+`npm install -g @liatir/lia@latest`.
 
 ## Custom tool (WASM)
 

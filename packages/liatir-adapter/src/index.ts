@@ -353,6 +353,9 @@ export interface LiatirModuleContract<I extends InputSchema, O extends OutputSch
   main: (handler: ModuleMainHandler<I, O>) => LiatirModule<I, O>;
 }
 
+export type ModuleContext<TContract> =
+  TContract extends LiatirModuleContract<infer I, infer O> ? ModuleMainContext<I, O> : never;
+
 /** Runtime shape `lia build` reads (schema → manifest) and the app runner calls. */
 export interface LiatirModule<I extends InputSchema = InputSchema, O extends OutputSchema = OutputSchema> {
   readonly __liatirModule: true;

@@ -2,6 +2,7 @@
 import { init } from "./commands/init.js";
 import { dev } from "./commands/dev.js";
 import { build } from "./commands/build.js";
+import { update } from "./commands/update.js";
 
 const [, , command, ...rest] = process.argv;
 
@@ -17,6 +18,9 @@ async function main() {
     case "build":
       await build();
       break;
+    case "update":
+      await update(rest);
+      break;
     default:
       console.log(`liatir — develop and build .lia modules & custom tools
 
@@ -29,6 +33,7 @@ Usage:
   liatir dev --input '{"text":"hello"}'
   liatir dev --input-file inputs.json
   liatir build                Bundle and package as <name>.lia
+  liatir update               Update @liatir/lia and @liatir/sdk in a Node .lia project
 `);
   }
 }

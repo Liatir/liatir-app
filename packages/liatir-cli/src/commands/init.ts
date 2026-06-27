@@ -27,6 +27,7 @@ interface ParsedInitArgs {
 
 interface InitConfig {
   dir: string;
+  nextStepDir: string;
   projectName: string;
   packageName: string;
   rustCrateName: string;
@@ -56,7 +57,6 @@ const RUNTIME_CHOICES: Choice<Runtime>[] = [
     value: "node",
     label: "Node TypeScript .lia module",
     description: "Use JavaScript/TypeScript and the full Liatir desktop bridge.",
-    recommended: true,
   },
   {
     value: "wasm",
@@ -245,17 +245,26 @@ function choiceLabel(choice: Choice<string>): string {
   return `${choice.label}${choice.recommended ? " (Recommended)" : ""}`;
 }
 
+function shellQuote(value: string): string {
+  if (/^[A-Za-z0-9_@%+=:,./-]+$/.test(value)) return value;
+  return `'${value.replace(/'/g, "'\\''")}'`;
+}
+
 async function promptText(
   rl: Interface,
   label: string,
   defaultValue: string,
-  options: { optional?: boolean; recommended?: boolean } = {},
+  options: { optional?: boolean; example?: string; required?: boolean } = {},
 ): Promise<string> {
-  const recommendation = options.recommended ? ` (Recommended: ${defaultValue})` : "";
+  const example = options.example ? ` (example: ${options.example})` : "";
   const defaultHint = defaultValue ? ` [${defaultValue}]` : "";
   const optional = options.optional ? " (optional)" : "";
-  const answer = (await rl.question(`${label}${optional}${recommendation}${defaultHint}: `)).trim();
-  return answer || defaultValue;
+
+  while (true) {
+    const answer = (await rl.question(`${label}${optional}${example}${defaultHint}: `)).trim();
+    if (answer || !options.required) return answer || defaultValue;
+    console.log(`${label} is required. \`lia init\` creates a new project directory.`);
+  }
 }
 
 async function promptChoice<T extends string>(
@@ -351,10 +360,11 @@ async function resolveInitConfig(parsed: ParsedInitArgs): Promise<InitConfig> {
 
     const selectedName = parsed.name
       ?? (rl
-        ? await promptText(rl, "Project folder", DEFAULT_PROJECT_NAME, { recommended: true })
+        ? await promptText(rl, "Project folder", "", { example: DEFAULT_PROJECT_NAME, required: true })
         : DEFAULT_PROJECT_NAME);
 
     const dir = path.resolve(selectedName);
+    const nextStepDir = path.relative(process.cwd(), dir) || ".";
     const projectName = projectBaseName(selectedName);
     const packageName = sanitizePackageName(projectName);
     const rustCrateName = sanitizeRustCrateName(projectName);
@@ -373,7 +383,7 @@ async function resolveInitConfig(parsed: ParsedInitArgs): Promise<InitConfig> {
       : "minimal";
 
     const displayName = normalizeText(
-      parsed.displayName ?? (rl ? await promptText(rl, "Display name", humanizeProjectName(projectName), { recommended: true }) : undefined),
+      parsed.displayName ?? (rl ? await promptText(rl, "Display name", "", { optional: true, example: humanizeProjectName(projectName) }) : undefined),
       humanizeProjectName(projectName),
     );
 
@@ -383,14 +393,11 @@ async function resolveInitConfig(parsed: ParsedInitArgs): Promise<InitConfig> {
     );
 
     const category = normalizeText(
-      parsed.category ?? (rl ? await promptText(rl, "Category", DEFAULT_CATEGORY, { recommended: true }) : undefined),
+      parsed.category ?? (rl ? await promptText(rl, "Category", DEFAULT_CATEGORY) : undefined),
       DEFAULT_CATEGORY,
     );
 
-    const tags = parsed.tags
-      ?? (rl
-        ? parseTags(await promptText(rl, "Tags, comma-separated", "", { optional: true }))
-        : []);
+    const tags = parsed.tags ?? [];
 
     const installDependencies = runtime === "node"
       ? parsed.installDependencies ?? (rl ? await promptYesNo(rl, "Install dependencies now?", true) : true)
@@ -402,6 +409,7 @@ async function resolveInitConfig(parsed: ParsedInitArgs): Promise<InitConfig> {
 
     return {
       dir,
+      nextStepDir,
       projectName,
       packageName,
       rustCrateName,
@@ -450,10 +458,11 @@ function packageJson(config: InitConfig): string {
   const scripts: Record<string, string> = {
     dev: "lia dev",
     build: "lia build",
+    update: "lia update",
   };
   const devDependencies: Record<string, string> = {
-    "@liatir/lia": "^1.5.0",
-    "@liatir/sdk": "^1.5.0",
+    "@liatir/lia": "^1.5.1",
+    "@liatir/sdk": "^1.5.1",
   };
 
   if (config.language === "typescript") {
@@ -507,14 +516,10 @@ function nodeIndex(config: InitConfig): string {
   return config.language === "typescript" ? MINIMAL_TS : MINIMAL_JS;
 }
 
-const MINIMAL_TS = `import { defineModule, field } from "@liatir/sdk";
+const MINIMAL_TS = `import { defineModule, field, type ModuleContext } from "@liatir/sdk";
 
-// defineModule declares the module contract. Keep inputs and outputs here:
-// this is the single source of truth used by TypeScript, the .lia manifest, and
-// Liatir pipelines when this module is used as a node.
-export default defineModule({
-  // Inputs become the form fields shown by Liatir before the module runs.
-  // Each field also gives TypeScript the correct type inside .main(...).
+// Docs: https://liatir.com/docs/lia-modules
+const liatirModule = defineModule({
   inputs: {
     text: field.string({
       label: "Text",
@@ -523,9 +528,6 @@ export default defineModule({
       default: "hello from Liatir",
     }),
   },
-
-  // Outputs describe the structured result returned by .main(...).
-  // Liatir uses this shape when rendering results and wiring pipeline edges.
   outputs: {
     length: field.number({
       label: "Length",
@@ -533,15 +535,10 @@ export default defineModule({
       format: "integer",
     }),
   },
-}).main(async ({ input, lia }) => {
-  // Write your module logic here. This dummy example returns the character
-  // count of input.text.
-  //
-  // input.text is a string inferred from the input schema above.
-  // lia is the local Liatir bridge for desktop APIs:
-  // - lia.jobs runs local tools and processes.
-  // - lia.deps checks installed command-line dependencies.
-  // - lia.desktop.fs reads/writes Liatir-scoped files.
+});
+
+export default liatirModule.main(async ({ input, lia }: ModuleContext<typeof liatirModule>) => {
+  // Write your module logic here. Inputs and outputs are defined once above.
   void lia;
 
   return {
@@ -552,11 +549,8 @@ export default defineModule({
 
 const MINIMAL_JS = `import { defineModule, field } from "@liatir/sdk";
 
-// defineModule declares the module contract. Keep inputs and outputs here:
-// this is the single source of truth used by the .lia manifest and Liatir
-// pipelines when this module is used as a node.
-export default defineModule({
-  // Inputs become the form fields shown by Liatir before the module runs.
+// Docs: https://liatir.com/docs/lia-modules
+const liatirModule = defineModule({
   inputs: {
     text: field.string({
       label: "Text",
@@ -565,8 +559,6 @@ export default defineModule({
       default: "hello from Liatir",
     }),
   },
-
-  // Outputs describe the structured result returned by .main(...).
   outputs: {
     length: field.number({
       label: "Length",
@@ -574,14 +566,10 @@ export default defineModule({
       format: "integer",
     }),
   },
-}).main(async ({ input, lia }) => {
-  // Write your module logic here. This dummy example returns the character
-  // count of input.text.
-  //
-  // lia is the local Liatir bridge for desktop APIs:
-  // - lia.jobs runs local tools and processes.
-  // - lia.deps checks installed command-line dependencies.
-  // - lia.desktop.fs reads/writes Liatir-scoped files.
+});
+
+export default liatirModule.main(async ({ input, lia }) => {
+  // Write your module logic here. Inputs and outputs are defined once above.
   void lia;
 
   return {
@@ -592,11 +580,10 @@ export default defineModule({
 
 const FILE_PROCESSOR_TS = `import { basename } from "node:path";
 import { stat } from "node:fs/promises";
-import { defineModule, field } from "@liatir/sdk";
+import { defineModule, field, type ModuleContext } from "@liatir/sdk";
 
-// This template shows a common local-first pattern: receive a file path from
-// Liatir, inspect it locally, and return structured metadata to the pipeline.
-export default defineModule({
+// Docs: https://liatir.com/docs/lia-modules
+const liatirModule = defineModule({
   inputs: {
     inputFile: field.file({
       label: "Input file",
@@ -616,7 +603,9 @@ export default defineModule({
       format: "bytes",
     }),
   },
-}).main(async ({ input }) => {
+});
+
+export default liatirModule.main(async ({ input }: ModuleContext<typeof liatirModule>) => {
   const fileStats = await stat(input.inputFile);
 
   return {
@@ -630,9 +619,8 @@ const FILE_PROCESSOR_JS = `import { basename } from "node:path";
 import { stat } from "node:fs/promises";
 import { defineModule, field } from "@liatir/sdk";
 
-// This template shows a common local-first pattern: receive a file path from
-// Liatir, inspect it locally, and return structured metadata to the pipeline.
-export default defineModule({
+// Docs: https://liatir.com/docs/lia-modules
+const liatirModule = defineModule({
   inputs: {
     inputFile: field.file({
       label: "Input file",
@@ -652,7 +640,9 @@ export default defineModule({
       format: "bytes",
     }),
   },
-}).main(async ({ input }) => {
+});
+
+export default liatirModule.main(async ({ input }) => {
   const fileStats = await stat(input.inputFile);
 
   return {
@@ -662,11 +652,10 @@ export default defineModule({
 });
 `;
 
-const BIO_CLI_TS = `import { defineModule, field } from "@liatir/sdk";
+const BIO_CLI_TS = `import { defineModule, field, type ModuleContext } from "@liatir/sdk";
 
-// This template wraps a local bioinformatics command. The command must be
-// installed on the user's machine or provided by Liatir as a managed tool.
-export default defineModule({
+// Docs: https://liatir.com/docs/lia-modules
+const liatirModule = defineModule({
   inputs: {
     fastq: field.file({
       label: "FASTQ file",
@@ -689,7 +678,9 @@ export default defineModule({
       description: "Command output captured from stderr.",
     }),
   },
-}).main(async ({ input, lia }) => {
+});
+
+export default liatirModule.main(async ({ input, lia }: ModuleContext<typeof liatirModule>) => {
   const stdoutLines: string[] = [];
   const stderrLines: string[] = [];
 
@@ -708,9 +699,8 @@ export default defineModule({
 
 const BIO_CLI_JS = `import { defineModule, field } from "@liatir/sdk";
 
-// This template wraps a local bioinformatics command. The command must be
-// installed on the user's machine or provided by Liatir as a managed tool.
-export default defineModule({
+// Docs: https://liatir.com/docs/lia-modules
+const liatirModule = defineModule({
   inputs: {
     fastq: field.file({
       label: "FASTQ file",
@@ -733,7 +723,9 @@ export default defineModule({
       description: "Command output captured from stderr.",
     }),
   },
-}).main(async ({ input, lia }) => {
+});
+
+export default liatirModule.main(async ({ input, lia }) => {
   const stdoutLines = [];
   const stderrLines = [];
 
@@ -842,7 +834,7 @@ async function scaffoldWasm(config: InitConfig): Promise<void> {
 Created ${config.projectName}/ (WASM Rust .lia tool)
 
 Next steps:
-  cd ${config.projectName}
+  cd ${shellQuote(config.nextStepDir)}
   lia build      # compile Rust and package as ${config.rustCrateName}.lia
 `);
 }
@@ -865,13 +857,13 @@ async function scaffoldNode(config: InitConfig): Promise<void> {
     await installNodeDependencies(config.dir);
   }
 
-  const installStep = config.installDependencies ? "" : "  npm install\n";
+  const installStep = config.installDependencies ? "" : "  npm install    # installs @liatir/sdk types for the editor\n";
 
   console.log(`
 Created ${config.projectName}/ (Node ${config.language} .lia module)
 
 Next steps:
-  cd ${config.projectName}
+  cd ${shellQuote(config.nextStepDir)}
 ${installStep}  lia dev       # watch mode with live Liatir app
   lia build     # package as ${config.packageName}.lia
 `);
