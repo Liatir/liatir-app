@@ -1,5 +1,8 @@
 <script lang="ts">
   import { Handle, Position } from '@xyflow/svelte';
+  import type { Node, NodeProps } from '@xyflow/svelte';
+
+  let {}: NodeProps<Node<Record<string, unknown>>> = $props();
 </script>
 
 <div class="flex items-center gap-2 px-4 py-2.5 rounded-full border-2 border-brand bg-brand/10 shadow-sm">

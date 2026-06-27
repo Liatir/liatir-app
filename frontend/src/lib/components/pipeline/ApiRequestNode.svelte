@@ -13,8 +13,8 @@
 
   let { id, data }: NodeProps<Node<ApiRequestNodeData>> = $props();
   const { updateNodeData, getNodes, getEdges } = useSvelteFlow();
-  const state = $derived(pipelineStore.nodeStates.get(id));
-  const status = $derived(state?.status ?? 'pending');
+  const runState = $derived(pipelineStore.nodeStates.get(id));
+  const status = $derived(runState?.status ?? 'pending');
   const disabled = $derived(pipelineStore.running);
 
   const req = $derived(data.requestId ? apiConnections.requestById(data.requestId) : null);
@@ -62,7 +62,7 @@
 
   // Connected upstream value outputs, usable as param overrides.
   const valueOptions = $derived.by(() => {
-    void state;
+    void runState;
     return upstreamOptions(id, getNodes(), getEdges() as Edge[], 'value');
   });
 
@@ -155,15 +155,15 @@
     {/if}
 
     {#if status === 'running'}
-      <div class="text-[10px] font-mono text-zinc-400">{state?.logs?.[0] ?? 'Sending…'}</div>
+      <div class="text-[10px] font-mono text-zinc-400">{runState?.logs?.[0] ?? 'Sending…'}</div>
     {/if}
-    {#if status === 'error' && state?.error}
-      <div class="text-[10px] text-red-500 font-mono">{state.error}</div>
+    {#if status === 'error' && runState?.error}
+      <div class="text-[10px] text-red-500 font-mono">{runState.error}</div>
     {/if}
     {#if status === 'done'}
       <div class="text-[10px] text-emerald-600">
-        {state?.outputValues?.status ? `HTTP ${state.outputValues.status}` : 'Done'}
-        · {state?.outputFiles?.length ?? 0} file{(state?.outputFiles?.length ?? 0) !== 1 ? 's' : ''}
+        {runState?.outputValues?.status ? `HTTP ${runState.outputValues.status}` : 'Done'}
+        · {runState?.outputFiles?.length ?? 0} file{(runState?.outputFiles?.length ?? 0) !== 1 ? 's' : ''}
       </div>
     {/if}
   </div>

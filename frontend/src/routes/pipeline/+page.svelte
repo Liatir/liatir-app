@@ -9,6 +9,7 @@
     type Node,
     type Edge,
     type Connection,
+    type NodeTypes,
   } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
 
@@ -42,7 +43,7 @@
 
   let unsavedChanges = $state(false);
 
-  const nodeTypes = {
+  const nodeTypes: NodeTypes = {
     tool: ToolNode,
     start: StartNode,
     variable: VariableNode,
@@ -323,7 +324,7 @@
         {/if}
         <div class={(unsavedChanges && !savedConfirmation && !saving)?"":"opacity-60"}>
         <Button variant="ghost" size="sm" loading={saving} onclick={savePipeline} disabled={!nameInput.trim() || !unsavedChanges}>
-            <Icon icon="{saving?"svg-spinners:pulse":(savedConfirmation?"lucide:check":"lucide:save")}" width="12" height="12"  class="{(unsavedChanges && !savedConfirmation && !saving)?"color: text-brand-hover":""}"/>
+            <Icon icon={saving ? "svg-spinners:pulse" : (savedConfirmation ? "lucide:check" : "lucide:save")} width="12" height="12" class={(unsavedChanges && !savedConfirmation && !saving) ? "color: text-brand-hover" : ""}/>
             <span class="max-lg:hidden {(unsavedChanges && !savedConfirmation && !saving)?"color: text-brand-hover":""}">
             {saving?"Saving":(savedConfirmation?"Saved":"Save")}
             </span>
@@ -344,7 +345,7 @@
 
   <div class="flex-1 relative">
     <SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView onconnect={onConnect} ondelete={onDelete} deleteKey={['Delete', 'Backspace']} onpanecontextmenu={onPaneContextMenu} onnodecontextmenu={onNodeContextMenu} onedgecontextmenu={onEdgeContextMenu} defaultEdgeOptions={{ selectable: false, style: 'stroke: #4f39f6; stroke-width:3;' }} proOptions={{ hideAttribution: true }}>
-      <Background gap={24} size={1} color="#e4e4e7" />
+      <Background gap={24} size={1} patternColor="#e4e4e7" />
       <Controls position="bottom-right" />
     </SvelteFlow>
 

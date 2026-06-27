@@ -10,8 +10,8 @@
 
   let { id, data }: NodeProps<Node<SubPipelineNodeData>> = $props();
   const { updateNodeData } = useSvelteFlow();
-  const state = $derived(pipelineStore.nodeStates.get(id));
-  const status = $derived(state?.status ?? 'pending');
+  const runState = $derived(pipelineStore.nodeStates.get(id));
+  const status = $derived(runState?.status ?? 'pending');
   const disabled = $derived(pipelineStore.running);
 
   // Available pipelines (no cycles, no self)
@@ -32,7 +32,7 @@
     return 'bg-zinc-300';
   }
 
-  const lastLog = $derived(state?.logs?.[state.logs.length - 1] ?? null);
+  const lastLog = $derived(runState?.logs?.[runState.logs.length - 1] ?? null);
 </script>
 
 <Handle type="target" position={Position.Left} id="input" />
@@ -71,12 +71,12 @@
     {#if status === 'running' && lastLog}
       <div class="mt-2 text-[10px] font-mono text-zinc-400 truncate">{lastLog}</div>
     {/if}
-    {#if status === 'error' && state?.error}
-      <div class="mt-2 text-[10px] text-red-500 font-mono">{state.error}</div>
+    {#if status === 'error' && runState?.error}
+      <div class="mt-2 text-[10px] text-red-500 font-mono">{runState.error}</div>
     {/if}
-    {#if status === 'done' && state?.outputFiles && state.outputFiles.length > 0}
+    {#if status === 'done' && runState?.outputFiles && runState.outputFiles.length > 0}
       <div class="mt-2 flex flex-wrap gap-1">
-        {#each state.outputFiles as f}
+        {#each runState.outputFiles as f}
           <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] text-emerald-700">
             <Icon icon="lucide:file" width="8" height="8" />
             {f.label}

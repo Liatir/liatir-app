@@ -93,6 +93,7 @@
   const selectedSubfolders = $derived(
     selectedFolder === null ? [] :
     flatFolders.filter(f => {
+      if (selectedFolder === null) return false;
       const selParts = selectedFolder.split('/');
       const fParts = f.path.split('/');
       return fParts.length === selParts.length + 1 && f.path.startsWith(selectedFolder + '/');

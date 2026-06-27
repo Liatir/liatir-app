@@ -124,6 +124,7 @@
         style="grid-template-columns: repeat({s.cols ?? 4}, minmax(0, 1fr))"
       >
         {#each s.items as item}
+          {@const itemValue = String(item.value)}
           <Card class="p-4 min-w-0">
             <p class="text-xs text-zinc-500 mb-1 flex items-center gap-1 min-w-0">
               <span class="truncate">{item.label}</span>
@@ -132,10 +133,10 @@
               {/if}
             </p>
             <p
-              class="font-semibold text-zinc-900 break-all leading-snug {item.value.length > 16 ? 'text-sm' : 'text-lg'}"
+              class="font-semibold text-zinc-900 break-all leading-snug {itemValue.length > 16 ? 'text-sm' : 'text-lg'}"
               style={item.color ? `color: ${item.color}` : ''}
             >
-              {item.value}
+              {itemValue}
             </p>
           </Card>
         {/each}

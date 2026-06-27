@@ -7,6 +7,7 @@
     disabled?: boolean;
     loading?: boolean;
     type?: 'button' | 'submit' | 'reset';
+    class?: string;
     onclick?: (e: MouseEvent) => void;
     children: Snippet;
   }
@@ -17,6 +18,7 @@
     disabled = false,
     loading = false,
     type = 'button',
+    class: className = '',
     onclick,
     children,
   }: Props = $props();
@@ -47,7 +49,7 @@
 
 <button
   {type}
-  class="{base} {sizes[size]} {variants[variant]}"
+  class="{base} {sizes[size]} {variants[variant]} {className}"
   disabled={disabled || loading}
   {onclick}
 >
