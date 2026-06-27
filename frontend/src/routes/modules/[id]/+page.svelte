@@ -4,6 +4,7 @@
   import { goto } from '$app/navigation';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import Card from '$lib/components/ui/Card.svelte';
+  import Badge from '$lib/components/ui/Badge.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import { modulesStore, type LiatirModule, type FieldDef } from '$lib/stores/modules.svelte';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
@@ -121,17 +122,17 @@
 
   const hasRun = $derived(exitCode !== undefined);
   const succeeded = $derived(exitCode === 0);
+
+  function runtimeLabel(runtime: LiatirModule['runtime']) {
+    return runtime === 'wasm' ? 'WASM .lia' : 'Node .lia';
+  }
 </script>
 
 {#if mod}
   <div class="flex flex-col h-full">
     <PageHeader title={mod.name} description={mod.description || `v${mod.version}`}>
       {#snippet actions()}
-        {#if mod!.runtime === 'wasm'}
-          <span class="inline-flex items-center gap-1 rounded-full bg-violet-100 text-violet-700 px-2 py-0.5 text-[10px] font-medium" title="Runs in a WASM sandbox: pure computation, no network or arbitrary filesystem access.">
-            🔒 Sandbox
-          </span>
-        {/if}
+        <Badge variant={mod!.runtime === 'wasm' ? 'neutral' : 'available'}>{runtimeLabel(mod!.runtime)}</Badge>
         <span class="text-xs font-mono text-zinc-400">v{mod!.version}</span>
         <Button variant="ghost" size="sm" onclick={() => goto('/modules')}>← Modules</Button>
           <div class="w-px bg-border self-stretch"></div>
@@ -142,6 +143,20 @@
     </PageHeader>
 
     <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
+      <Card>
+        <div class="px-4 py-3 flex flex-wrap items-center gap-2">
+          <span class="rounded px-1.5 py-0.5 text-[10px] font-medium border bg-zinc-100 text-zinc-500 border-zinc-200">
+            {mod.category}
+          </span>
+          {#each mod.tags ?? [] as tag}
+            <span class="rounded px-1.5 py-0.5 text-[10px] font-medium border bg-white text-zinc-500 border-zinc-200">
+              {tag}
+            </span>
+          {/each}
+          <span class="ml-auto text-xs text-zinc-400">{Object.keys(mod.inputSchema).length} input{Object.keys(mod.inputSchema).length !== 1 ? 's' : ''}</span>
+          <span class="text-xs text-zinc-400">{Object.keys(mod.outputSchema).length} output{Object.keys(mod.outputSchema).length !== 1 ? 's' : ''}</span>
+        </div>
+      </Card>
 
       {#if nodeAvailable === false}
         <Card>

@@ -22,8 +22,7 @@ export const NAV_PAGES: NavItem[] = [
     { href: '/tools', label: 'Tools', icon: 'lucide:dna', match: '/tools', global: true },
     { href: '/ai', label: 'AI Models', icon: 'mingcute:ai-line', match: '/ai', global: true },
     { divider: true, global: true },
-    { href: '/modules', label: 'Modules', customIcon: '/icons/lia-file-icon.svg', match: '/modules', global: true },
-    { href: '/plugins', label: 'Plugins', customIcon: '/icons/web-assembly-file-icon.svg', match: '/plugins', global: true }
+    { href: '/modules', label: 'Modules', customIcon: '/icons/lia-file-icon.svg', match: '/modules', global: true }
 ];
 
 export const NAV_PAGES_BOTTOM: NavItem[] = [
