@@ -10,7 +10,7 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@liatir/core": ["../liatir-core/src"]
+      "@liatir/core": ["../liatir-core/dist/index.d.ts"]
     }
   },
   "include": ["src"]

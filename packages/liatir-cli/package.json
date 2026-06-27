@@ -3,8 +3,8 @@
   "version": "1.5.0",
   "description": "CLI for developing and building .lia modules & WASM custom tools for Liatir",
   "bin": {
-    "lia": "./dist/cli.js",
-    "liatir": "./dist/cli.js"
+    "lia": "dist/cli.js",
+    "liatir": "dist/cli.js"
   },
   "type": "module",
   "files": ["dist"],
@@ -12,7 +12,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && node scripts/make-executable.js",
+    "build": "npm run build --prefix ../liatir-core && node scripts/clean-dist.js && tsc -p tsconfig.json && node scripts/make-executable.js",
     "dev": "tsc -p tsconfig.json --watch",
     "prepublishOnly": "npm run build"
   },

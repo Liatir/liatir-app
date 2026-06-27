@@ -32,6 +32,8 @@
     "dev:log": "npm run dev:log --prefix src-tauri/",
     "build:wasm": "npm run build:wasm --prefix src-tauri/",
     "gen:sdk-types": "node scripts/generate-sdk-types.mjs",
+    "lia:publish": "node scripts/publish-lia-packages.mjs",
+    "lia:publish:dry": "node scripts/publish-lia-packages.mjs --dry-run",
     "sdk:build": "npm run build --prefix sdk/",
     "sdk:publish": "npm run pub --prefix sdk/",
     "sdk:syncVersion": "npm run syncVersion --prefix sdk/",
