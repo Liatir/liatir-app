@@ -51,11 +51,20 @@ interface PipelineWorkspace {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+class PipelineCycleError extends Error {
+  constructor(readonly nodeIds: string[]) {
+    super(`Pipeline contains a cycle involving ${nodeIds.length} node${nodeIds.length === 1 ? '' : 's'}.`);
+    this.name = 'PipelineCycleError';
+  }
+}
+
 function topoSort(nodes: Node[], edges: Edge[]): string[] {
+  const nodeIds = new Set(nodes.map(n => n.id));
   const inDegree = new Map<string, number>();
   const adj = new Map<string, string[]>();
   for (const n of nodes) { inDegree.set(n.id, 0); adj.set(n.id, []); }
   for (const e of edges) {
+    if (!nodeIds.has(e.source) || !nodeIds.has(e.target)) continue;
     adj.get(e.source)?.push(e.target);
     inDegree.set(e.target, (inDegree.get(e.target) ?? 0) + 1);
   }
@@ -70,11 +79,19 @@ function topoSort(nodes: Node[], edges: Edge[]): string[] {
       if (d === 0) queue.push(next);
     }
   }
+  if (sorted.length !== nodes.length) {
+    const sortedIds = new Set(sorted);
+    throw new PipelineCycleError(nodes.filter(n => !sortedIds.has(n.id)).map(n => n.id));
+  }
   return sorted;
 }
 
 function initNodeState(): NodeRunState {
   return { status: 'pending', logs: [], outputFiles: [], error: null };
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 // Convert non-file node outputs into string outputValues so they can be
@@ -454,14 +471,16 @@ function createPipelineStore() {
       // Accumulate step results to record ONE grouped pipeline run in Results.
       const pipeStartedAt = Date.now();
       const pipeSteps: PipelineStepRecord[] = [];
+      let fatalError: unknown = null;
 
-      const order = topoSort(nodes, edges);
-      const skipped = new Set<string>();
+      try {
+        const order = topoSort(nodes, edges);
+        const skipped = new Set<string>();
 
-      for (const nodeId of order) {
-        if (skipped.has(nodeId)) continue;
-        const node = nodes.find(n => n.id === nodeId);
-        if (!node || node.type === 'start') continue;
+        for (const nodeId of order) {
+          if (skipped.has(nodeId)) continue;
+          const node = nodes.find(n => n.id === nodeId);
+          if (!node || node.type === 'start') continue;
 
         // ── Tool node ──────────────────────────────────────────────────────────
         if (node.type === 'tool') {
@@ -613,34 +632,46 @@ function createPipelineStore() {
             patchState(nodeId, { status: 'error', error: String(e) });
             break;
           }
+          }
         }
-      }
+      } catch (e) {
+        fatalError = e;
+        if (e instanceof PipelineCycleError) {
+          for (const nodeId of e.nodeIds) {
+            patchState(nodeId, { status: 'error', error: e.message });
+          }
+        } else {
+          const firstPending = nodes.find(n => n.type !== 'start' && nodeStates.get(n.id)?.status === 'pending');
+          if (firstPending) patchState(firstPending.id, { status: 'error', error: errorMessage(e) });
+        }
+      } finally {
+        // Record ONE grouped run for this pipeline execution (visible in Results),
+        // instead of one loose run per step.
+        const erroredEntry = [...nodeStates.entries()].find(([, s]) => s.status === 'error');
+        const fatalMessage = fatalError ? errorMessage(fatalError) : null;
+        if (pipeSteps.length > 0 || erroredEntry || fatalMessage) {
+          const endedAt = Date.now();
+          const logs = [...nodeStates.values()].flatMap(s => s.logs ?? []);
+          const allFiles = pipeSteps.flatMap(s => s.files);
+          await analysisRuns.add({
+            id: crypto.randomUUID(),
+            tool: 'pipeline',
+            label: pipelineName || 'Pipeline',
+            inputs: [],
+            params: { steps: pipeSteps.length },
+            outputFiles: allFiles,
+            status: erroredEntry || fatalMessage ? 'error' : 'done',
+            startedAt: pipeStartedAt,
+            endedAt,
+            durationMs: endedAt - pipeStartedAt,
+            output: erroredEntry || fatalMessage ? null : buildPipelineOutput(pipeSteps),
+            error: erroredEntry ? (nodeStates.get(erroredEntry[0])?.error ?? 'Pipeline failed') : fatalMessage,
+            log: logs,
+          }).catch(() => {});
+        }
 
-      // Record ONE grouped run for this pipeline execution (visible in Results),
-      // instead of one loose run per step.
-      const erroredEntry = [...nodeStates.entries()].find(([, s]) => s.status === 'error');
-      if (pipeSteps.length > 0 || erroredEntry) {
-        const endedAt = Date.now();
-        const logs = [...nodeStates.values()].flatMap(s => s.logs ?? []);
-        const allFiles = pipeSteps.flatMap(s => s.files);
-        await analysisRuns.add({
-          id: crypto.randomUUID(),
-          tool: 'pipeline',
-          label: pipelineName || 'Pipeline',
-          inputs: [],
-          params: { steps: pipeSteps.length },
-          outputFiles: allFiles,
-          status: erroredEntry ? 'error' : 'done',
-          startedAt: pipeStartedAt,
-          endedAt,
-          durationMs: endedAt - pipeStartedAt,
-          output: erroredEntry ? null : buildPipelineOutput(pipeSteps),
-          error: erroredEntry ? (nodeStates.get(erroredEntry[0])?.error ?? 'Pipeline failed') : null,
-          log: logs,
-        }).catch(() => {});
+        running = false;
       }
-
-      running = false;
     },
 
     resetStates(nodeIds: string[]) {
