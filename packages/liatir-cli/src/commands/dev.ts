@@ -3,6 +3,7 @@ import * as path from "path";
 import * as child_process from "child_process";
 import { context as esbuildContext } from "esbuild";
 import { typecheckIfConfigured } from "./_typecheck.js";
+import { resolveNodeEntryPoint, type NodeEntryPoint } from "./_entry.js";
 
 interface Manifest {
   name: string;
@@ -64,14 +65,15 @@ async function parseDevInputs(args: string[]): Promise<Record<string, unknown>> 
 
 // Generates a thin runner that imports the bundle and calls the same strict
 // runtime shape used by `lia build`: default defineModule(...).main(...).
-function runnerScript(bundlePath: string, inputs: Record<string, unknown>): string {
+function runnerScript(bundlePath: string, inputs: Record<string, unknown>, entryDisplayPath: string): string {
   return `
 import * as _mod from ${JSON.stringify(bundlePath)};
 const _providedInputs = ${JSON.stringify(inputs)};
+const _entryDisplayPath = ${JSON.stringify(entryDisplayPath)};
 
 const _m = _mod.default;
 if (!_m || typeof _m !== "object") {
-  console.error("[liatir dev] src/index.ts must default-export defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... })");
+  console.error(\`[liatir dev] \${_entryDisplayPath} must default-export defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... })\`);
   process.exit(1);
 }
 
@@ -116,14 +118,20 @@ export async function dev(args: string[] = []) {
   const cwd = process.cwd();
   const manifest = await loadManifest();
   const inputs = await parseDevInputs(args);
-  const entryPoint = path.join(cwd, "src", "index.ts");
+  let entryPoint: NodeEntryPoint;
+  try {
+    entryPoint = await resolveNodeEntryPoint(cwd);
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : err);
+    process.exit(1);
+  }
   const distDir = path.join(cwd, ".lia-dev");
   const bundlePath = path.join(distDir, "index.mjs");
   const runnerPath = path.join(distDir, "_runner.mjs");
 
   await fs.mkdir(distDir, { recursive: true });
 
-  console.log(`[liatir dev] watching ${manifest.name}... (Ctrl+C to stop)`);
+  console.log(`[liatir dev] watching ${manifest.name} (${entryPoint.displayPath})... (Ctrl+C to stop)`);
   console.log(`[liatir dev] make sure the Liatir app is running\n`);
 
   let runningProcess: child_process.ChildProcess | null = null;
@@ -134,7 +142,7 @@ export async function dev(args: string[] = []) {
       runningProcess.kill();
     }
 
-    await fs.writeFile(runnerPath, runnerScript(bundlePath, inputs));
+    await fs.writeFile(runnerPath, runnerScript(bundlePath, inputs, entryPoint.displayPath));
 
     runningProcess = child_process.fork(runnerPath, [], {
       stdio: "inherit",
@@ -149,7 +157,7 @@ export async function dev(args: string[] = []) {
 
   // esbuild watch mode — rebuilds on every save
   const ctx = await esbuildContext({
-    entryPoints: [entryPoint],
+    entryPoints: [entryPoint.path],
     bundle: true,
     format: "esm",
     platform: "node",

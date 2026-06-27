@@ -17,10 +17,11 @@ npm i @liatir/lia        # then use `npx lia …`  (or `npm i -g @liatir/lia`)
 ## Module (Node)
 
 ```bash
-npx lia init my-module
+npx lia init my-module      # interactive prompts, recommended choices flagged
+npx lia init my-module --yes --no-install
 cd my-module && npm install
 npx lia dev --input '{"fastq":"/absolute/path/sample.fastq"}'
-npx lia build            # → my-module.lia
+npx lia build              # → my-module.lia
 ```
 
 The **schema is declared once, in code** — the input/output types are inferred
@@ -50,13 +51,33 @@ export default defineModule({
 
 `lia build` runs TypeScript checks, validates the exported
 `defineModule({ inputs, outputs }).main(...)` shape, then packages the `.lia`.
-`lia dev` watches `src/index.ts`, typechecks on rebuild, validates the same
-shape, applies schema defaults, and runs the module against the open Liatir app.
+`lia dev` watches `src/index.ts` or `src/index.js`, typechecks on rebuild when a
+`tsconfig.json` exists, validates the same shape, applies schema defaults, and
+runs the module against the open Liatir app. JavaScript modules are supported
+too: use `lia init my-module --js`.
+
+Useful `lia init` flags:
+
+```bash
+lia init                         # asks for the project folder
+lia init my-module --yes          # recommended defaults
+lia init my-module --node --ts    # recommended Node TypeScript module
+lia init my-module --node --js    # JavaScript module
+lia init my-tool --wasm           # Rust/WASM tool
+lia init my-module --template file-processor
+lia init my-module --template bio-cli
+lia init my-module --category "Quality Control" --tags "FASTQ,QC"
+lia init my-module --no-install
+lia init my-tool --no-wasm-target
+```
+
+When prompted, the recommended path is Node + TypeScript + the minimal template.
+`--yes` selects those recommended defaults automatically.
 
 ## Custom tool (WASM)
 
 ```bash
-npx lia init my-tool --wasm   # scaffolds the Rust crate AND adds the wasm target
+npx lia init my-tool --wasm   # scaffolds the Rust crate and offers the wasm target
 cd my-tool
 npx lia build                 # compiles Rust → my-tool.lia
 ```

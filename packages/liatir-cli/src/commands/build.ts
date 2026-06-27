@@ -6,6 +6,7 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import type { LiatirFieldSchema, LiatirInputFieldSchema, LiatirOutputFieldSchema } from "@liatir/core";
 import { typecheckIfConfigured } from "./_typecheck.js";
+import { resolveNodeEntryPoint, type NodeEntryPoint } from "./_entry.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -23,6 +24,25 @@ type CompiledNodeModule = {
   outputs?: unknown;
   run?: unknown;
 };
+
+interface PackageMetadata {
+  name: string;
+  version: string;
+  description?: string;
+  liatir?: {
+    displayName?: unknown;
+    category?: unknown;
+    tags?: unknown;
+  };
+}
+
+interface ManifestMetadata {
+  name: string;
+  version: string;
+  description: string;
+  category?: string;
+  tags?: string[];
+}
 
 async function exists(p: string): Promise<boolean> {
   try { await fs.access(p); return true; } catch { return false; }
@@ -87,6 +107,39 @@ function isPlainRecord(value: unknown): value is Record<string, RuntimeField> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function cleanOptionalString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function cleanTags(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const tags = value
+    .filter((tag): tag is string => typeof tag === "string")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+  return tags.length > 0 ? [...new Set(tags)] : undefined;
+}
+
+function packageMetadata(pkg: PackageMetadata): ManifestMetadata {
+  return {
+    name: cleanOptionalString(pkg.liatir?.displayName) ?? pkg.name,
+    version: pkg.version,
+    description: pkg.description ?? "",
+    category: cleanOptionalString(pkg.liatir?.category),
+    tags: cleanTags(pkg.liatir?.tags),
+  };
+}
+
+function wasmMetadata(raw: Record<string, unknown>): ManifestMetadata {
+  return {
+    name: cleanOptionalString(raw.name) ?? "WASM Tool",
+    version: cleanOptionalString(raw.version) ?? "1.0.0",
+    description: cleanOptionalString(raw.description) ?? "",
+    category: cleanOptionalString(raw.category),
+    tags: cleanTags(raw.tags),
+  };
+}
+
 function validateNodeModule(def: CompiledNodeModule | undefined): asserts def is {
   __liatirModule: true;
   inputs: Record<string, RuntimeField>;
@@ -94,7 +147,7 @@ function validateNodeModule(def: CompiledNodeModule | undefined): asserts def is
   run: (input: Record<string, unknown>) => Promise<unknown>;
 } {
   if (!def || typeof def !== "object") {
-    failInvalidNodeModule("src/index.ts must default-export defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... }).");
+    failInvalidNodeModule("The module entrypoint must default-export defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... }).");
   }
 
   if (def.__liatirModuleContract === true && typeof def.run !== "function") {
@@ -135,17 +188,19 @@ async function buildNode(cwd: string): Promise<void> {
     console.error("No package.json found. Run this from your module's root.");
     process.exit(1);
   }
-  const pkg = JSON.parse(await fs.readFile(pkgPath, "utf-8")) as {
-    name: string; version: string; description?: string;
-  };
+  const pkg = JSON.parse(await fs.readFile(pkgPath, "utf-8")) as PackageMetadata;
 
-  const entryPoint = path.join(cwd, "src", "index.ts");
-  if (!(await exists(entryPoint))) {
-    console.error("src/index.ts not found.");
+  let entryPoint: NodeEntryPoint;
+  try {
+    entryPoint = await resolveNodeEntryPoint(cwd);
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : err);
     process.exit(1);
   }
 
-  console.log(`Building ${pkg.name}@${pkg.version} (node)...`);
+  const metadata = packageMetadata(pkg);
+
+  console.log(`Building ${pkg.name}@${pkg.version} (node, ${entryPoint.language})...`);
   await typecheckIfConfigured(cwd, "lia build");
 
   const distDir = path.join(cwd, "dist");
@@ -153,7 +208,7 @@ async function buildNode(cwd: string): Promise<void> {
   const bundlePath = path.join(distDir, "index.js");
 
   await esbuild({
-    entryPoints: [entryPoint],
+    entryPoints: [entryPoint.path],
     bundle: true,
     format: "esm",
     platform: "node",
@@ -169,10 +224,12 @@ async function buildNode(cwd: string): Promise<void> {
   validateNodeModule(def);
 
   const manifest = {
-    name: pkg.name,
-    version: pkg.version,
-    description: pkg.description ?? "",
+    name: metadata.name,
+    version: metadata.version,
+    description: metadata.description,
     runtime: "node",
+    category: metadata.category,
+    tags: metadata.tags,
     inputSchema: serializeInputSchema(def.inputs),
     outputSchema: serializeOutputSchema(def.outputs),
   };
@@ -192,12 +249,15 @@ async function buildWasm(cwd: string): Promise<void> {
     console.error("No .lia-manifest.json found. Run this from your tool's root.");
     process.exit(1);
   }
-  const m = JSON.parse(await fs.readFile(manifestPath, "utf-8"));
+  const m = JSON.parse(await fs.readFile(manifestPath, "utf-8")) as Record<string, unknown>;
+  const metadata = wasmMetadata(m);
   const manifest = {
-    name: m.name,
-    version: m.version,
-    description: m.description ?? "",
+    name: metadata.name,
+    version: metadata.version,
+    description: metadata.description,
     runtime: "wasm",
+    category: metadata.category,
+    tags: metadata.tags,
     inputSchema: m.inputSchema ?? {},
     outputSchema: m.outputSchema ?? {},
   };
