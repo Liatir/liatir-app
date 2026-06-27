@@ -43,7 +43,7 @@ export function buildDiagnosticsTestFunctions(core: { invoke: LiatirAPI["invoke"
     testGenerateRecords: (n = 200) =>
       core.invoke<void>("lia_logs_test_record_n", { n }),
 
-    // Questa può semplicemente lanciare un errore JS: non serve invoke.
+    // This can throw a JS error directly; no invoke call is needed.
     testThrowJsError: async () => {
       throw new Error("DEV: test JS error");
     },

@@ -74,14 +74,14 @@ input, textarea, [data-selectable] {
     white-space: nowrap !important;
 	}
 
-	/* 2. Stile per il blocco di codice multilinea (tre backtick) */
+	/* 2. Multiline code block style (triple backticks). */
 	.markdown-body pre {
-		background-color: #1e1e1e !important; /* Sfondo scuro stile editor */
-		color: #ffffff !important;            /* Testo bianco */
-		padding: 1rem;             /* Spaziatura interna */
-		border-radius: 8px !important;        /* Angoli smussati */
-		overflow-x: auto !important;          /* Barra di scorrimento orizzontale se il codice è lungo */
-		margin: 1rem 0 !important;            /* Margine sopra e sotto il blocco */
+		background-color: #1e1e1e !important; /* Dark editor-style background. */
+		color: #ffffff !important;            /* White text. */
+		padding: 1rem;             /* Internal spacing. */
+		border-radius: 8px !important;        /* Rounded corners. */
+		overflow-x: auto !important;          /* Horizontal scrolling for long code. */
+		margin: 1rem 0 !important;            /* Vertical block margin. */
 	}
 /* 
 	.markdown-body :global(pre code) {

@@ -115,21 +115,21 @@ export function clearUrl(input: string, domainOnly = false): string | null {
     else return urlParsed?.replace("https://", "");
   } catch {
     console.error(`[invalid url] ${input}`);
-    return null; // URL non valido
+    return null; // Invalid URL.
   }
 }
 
 /**
- * Estrae il sottodominio da un URL o dal dominio corrente (es. builder.bubbledesk.app → "builder").
+ * Extract a subdomain from a URL or from the current domain, e.g. builder.bubbledesk.app -> "builder".
  *
- * ⚠️ Restituisce `null` se non è presente alcun sottodominio (es. bubbledesk.app o localhost).
+ * Returns `null` when no subdomain is present, e.g. bubbledesk.app or localhost.
  *
- * @param url - (opzionale) Una stringa URL da cui estrarre il sottodominio. Se non fornita, usa `window.location.hostname`.
- * @returns Il sottodominio come stringa, oppure `null` se non rilevabile.
+ * @param url Optional URL string to extract the subdomain from. Uses `window.location.hostname` when omitted.
+ * @returns The subdomain string, or `null` when none can be detected.
  *
  * @example
  * getSubdomain("https://auth.bubbledesk.app"); // "auth"
- * getSubdomain(); // se eseguito su builder.bubbledesk.app → "builder"
+ * getSubdomain(); // when running on builder.bubbledesk.app -> "builder"
  * getSubdomain("https://bubbledesk.app"); // null
  * getSubdomain("http://localhost:5173"); // null
  */
@@ -713,7 +713,7 @@ export function URLGetParam(
     const parsedUrl = new URL(url);
     return parsedUrl.searchParams.get(paramName);
   } catch (e) {
-    return null; // URL malformato
+    return null; // Malformed URL.
   }
 }
 
@@ -957,24 +957,24 @@ export function getTimeBounds(
       break;
 
     case "months":
-      if (normalizeMonthly) start.setDate(1); // sicurezza (primo del mese)
+      if (normalizeMonthly) start.setDate(1); // Ensure first day of the month.
       start.setMonth(start.getMonth() - before);
       end.setMonth(end.getMonth() + after);
       if (normalizeMonthly) {
         start.setDate(1);
-        end.setMonth(end.getMonth() + 1, 0); // ultimo giorno del mese
+        end.setMonth(end.getMonth() + 1, 0); // Last day of the month.
       }
       start.setHours(0, 0, 0, 0);
       end.setHours(23, 59, 59, 999);
       break;
 
     case "years":
-      if (normalizeMonthly) start.setMonth(0, 1); // sicurezza (1 gennaio)
+      if (normalizeMonthly) start.setMonth(0, 1); // Ensure January 1.
       start.setFullYear(start.getFullYear() - before);
       end.setFullYear(end.getFullYear() + after);
       if (normalizeMonthly) {
-        start.setMonth(0, 1); // 1 gennaio
-        end.setMonth(12, 0); // 31 dicembre
+        start.setMonth(0, 1); // January 1.
+        end.setMonth(12, 0); // December 31.
       }
       start.setHours(0, 0, 0, 0);
       end.setHours(23, 59, 59, 999);
@@ -1012,7 +1012,7 @@ export function listMonthsInRange(
     throw new Error("Invalid start or end date");
   }
 
-  // Normalizza inizio e fine al primo giorno del mese
+  // Normalize start and end to the first day of the month.
   startDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
   endDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
 
@@ -1024,7 +1024,7 @@ export function listMonthsInRange(
     const isEnd = current.getTime() === endDate.getTime();
 
     if ((excludeStart && isStart) || (excludeEnd && isEnd)) {
-      // salta questo mese
+      // Skip this month.
     } else {
       const year = current.getFullYear();
       const month = current.getMonth();
@@ -1058,17 +1058,17 @@ export function listMonthsInRange(
 }
 
 /**
- * @param monthKey (deve essere in formato YYYY-MM)
- * @returns Restituisce un oggetto contente start e end
+ * @param monthKey Must use YYYY-MM format.
+ * @returns An object containing start and end dates.
  */
 export function getMonthBoundsByYearMonthString(monthKey: string): {
   start: Date;
   end: Date;
 } {
-  const [year, month] = monthKey.split("-").map(Number); // es. 2025, 6
+  const [year, month] = monthKey.split("-").map(Number); // e.g. 2025, 6
 
-  const start = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0)); // primo giorno del mese
-  const end = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999)); // ultimo giorno del mese
+  const start = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0)); // First day of the month.
+  const end = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999)); // Last day of the month.
 
   return { start, end };
 }
@@ -1083,24 +1083,24 @@ export function getYearMonthStringFromDate(date: Date): string {
 }
 
 /**
- * @returns Restituisce un oggetto contente start e end
+ * @returns An object containing start and end dates.
  */
 export function getMonthBounds(date: Date): { start: Date; end: Date } {
   const year = date.getUTCFullYear();
-  const month = date.getUTCMonth(); // 0-based
+  const month = date.getUTCMonth(); // 0-based.
 
-  const start = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0)); // primo giorno del mese
-  const end = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999)); // ultimo giorno del mese
+  const start = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0)); // First day of the month.
+  const end = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999)); // Last day of the month.
 
   return { start, end };
 }
 
 /**
- * Unisce l'array originale con nuovi oggetti, sovrascrivendo quelli con la stessa chiave.
- * @param original Array originale
- * @param updates Nuovi oggetti da aggiungere o aggiornare
- * @param key Chiave identificativa (default: "id")
- * @returns Nuovo array aggiornato
+ * Merge an original array with new objects, overwriting entries with the same key.
+ * @param original Original array.
+ * @param updates New objects to add or update.
+ * @param key Identifier key, defaulting to "id".
+ * @returns A new updated array.
  */
 export function mergeByKey<T extends AnyObject>(
   original: T[],
@@ -1121,12 +1121,12 @@ export function mergeByKey<T extends AnyObject>(
 }
 
 /**
- * Rimuove un elemento da un array di oggetti confrontando un campo chiave.
+ * Remove an item from an object array by comparing a key field.
  *
- * @param array - L'array di oggetti da cui rimuovere l'elemento
- * @param value - Il valore da confrontare per la rimozione
- * @param key - Il campo su cui fare il confronto (default: "id")
- * @returns Un nuovo array senza l'elemento corrispondente
+ * @param array Object array to remove the item from.
+ * @param value Value to match for removal.
+ * @param key Field used for matching, defaulting to "id".
+ * @returns A new array without the matching item.
  */
 export function removeFromArrayByKey<T extends Record<string, any>>(
   array: T[],

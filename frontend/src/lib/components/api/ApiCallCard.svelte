@@ -21,12 +21,25 @@
 
   let { request, provider, startOpen = false, onchange, ondelete }: Props = $props();
 
-  let open = $state(startOpen);
+  function initialOpenState() {
+    return startOpen;
+  }
+
+  function initialResponseState(): ApiResponse | null {
+    if (!request.lastResponse) return null;
+    return {
+      status: request.lastResponse.status,
+      statusText: request.lastResponse.statusText,
+      headers: request.lastResponse.headers,
+      body: request.lastResponse.body,
+      durationMs: request.lastResponse.durationMs,
+    };
+  }
+
+  let open = $state(initialOpenState());
   let initValues = $state<Record<string, string>>({});
   let sending = $state(false);
-  let response = $state<ApiResponse | null>(request.lastResponse
-    ? { status: request.lastResponse.status, statusText: request.lastResponse.statusText, headers: request.lastResponse.headers, body: request.lastResponse.body, durationMs: request.lastResponse.durationMs }
-    : null);
+  let response = $state<ApiResponse | null>(initialResponseState());
 
   const METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
   const METHOD_COLORS: Record<string, string> = {

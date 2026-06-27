@@ -1,17 +1,19 @@
 <script lang="ts">
-	import { marked } from "marked";
-	import { onMount } from "svelte";
-
   let { text }: { text: string } = $props();
-  let open = $state(false); 
+  let open = $state(false);
+  let renderedText = $state('');
 
-  // Converte il testo (markdown compatibile) in stringa HTML
-	let renderedText: string;
-
-  onMount(async ()=> {
-	  renderedText = await marked.parse(text);
-  })
-
+  $effect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { parse } = await import('marked');
+      const html = await parse(text);
+      if (!cancelled) renderedText = html;
+    })();
+    return () => {
+      cancelled = true;
+    };
+  });
 </script>
 
 <svelte:window
@@ -36,7 +38,9 @@
     <div
       role="dialog"
       aria-modal="true"
+      tabindex="-1"
       onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.stopPropagation()}
       class="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
              w-96 rounded-xl border border-border bg-surface shadow-xl"
     >
@@ -63,4 +67,3 @@
     </div>
   {/if}
 </span>
-

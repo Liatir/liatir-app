@@ -34,7 +34,7 @@
   <PageHeader
     title="Modules"
     description=".lia modules you can run from here"
-    info="I moduli sono script Node.js distribuiti come file  `.lia ` — un archivio zip firmato contenente il codice compilato e un manifest con gli input/output. Quando esegui un modulo, Liatir estrae il bundle in una directory temporanea e lo lancia con Node.js. Lo script si connette automaticamente all'app tramite il server IPC locale e può usare tutte le API di Liatir: avviare processi ( `samtools `,  `nextflow `, ...), leggere file, controllare dipendenze e altro.  Per creare un modulo installa **liatir-cli** ( `npm i -g liatir-cli `), poi: `liatir init mio-script`  → `cd mio-script && npm install`  →  `liatir build`  →  mio-script.lia.  Importa il file .lia qui e compilalo con i tuoi parametri."
+    info=".lia modules are Node.js tools distributed as signed zip archives containing compiled code plus an input/output manifest. When you run a module, Liatir extracts the bundle into a temporary directory and launches it with Node.js. The script automatically connects to the app through the local IPC server and can use Liatir APIs to start processes (`samtools`, `nextflow`, ...), read files, check dependencies, and more. To create a module, install **liatir-cli** (`npm i -g liatir-cli`), then run: `liatir init my-tool` → `cd my-tool && npm install` → `liatir build` → `my-tool.lia`. Import the .lia file here and run it with your parameters."
   >
     {#snippet actions()}
       <Button variant="primary" size="sm" onclick={importModule} loading={importing}>

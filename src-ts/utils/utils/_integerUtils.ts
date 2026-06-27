@@ -36,17 +36,17 @@ export interface NumPredicates {
 
 // ---------- Refinement API ----------
 export interface Refinement<TBrand extends string> {
-  /** Type guard verso il tipo brandizzato */
+  /** Type guard for the branded type. */
   is(v: unknown): v is Brand<number, TBrand>;
-  /** Costruttore che valida e lancia su input invalido */
+  /** Constructor that validates and throws on invalid input. */
   as(v: unknown): Brand<number, TBrand>;
-  /** Costruttore “safe” che restituisce null se non valido */
+  /** Safe constructor that returns null on invalid input. */
   try(v: unknown): Brand<number, TBrand> | null;
-  /** Parser da stringa (usa Number), valida e lancia su input invalido */
+  /** String parser using Number, with validation and throwing on invalid input. */
   parse(s: string): Brand<number, TBrand>;
 }
 
-// ---------- Oggetto pubblico Num (tipizzato) ----------
+// ---------- Public typed Num object ----------
 export interface NumAPI extends NumPredicates {
   U8:  Refinement<"u8">;
   U16: Refinement<"u16">;

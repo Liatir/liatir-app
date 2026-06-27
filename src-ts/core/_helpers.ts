@@ -38,7 +38,7 @@ export const windowTauriProxy = new Proxy(
 
     const tauri = (window as any).__TAURI__;
 
-    // 2. Tauri non disponibile
+    // 2. Tauri is not available.
     if (!tauri) {
       console.warn(`[TAURI PROXY] window.__TAURI__ missing.`);
       return undefined;
@@ -46,15 +46,14 @@ export const windowTauriProxy = new Proxy(
 
     const value = tauri[propName];
 
-    // 3. Proprietà non esistente
+    // 3. Missing property.
     if (value === undefined) {
-      // Opzionale: Rimuovi il warn se ti dà fastidio per controlli tipo 'if (proxy.mocks)'
+      // Keep the proxy quiet for feature checks such as "if (proxy.mocks)".
       // console.warn(`[TAURI PROXY] '${propName}' not found.`);
       return undefined;
     }
 
-    // --- FUNZIONE DI SUPPORTO PER ESECUZIONE SICURA ---
-    // La definiamo qui per riusarla sia sul livello base che su quelli annidati
+    // Safe executor reused for both root-level and nested Tauri functions.
     const createSafeExecutor = (fn: Function, context: any, fnName: string) => {
       return (...args: any[]) => {
         try {
@@ -70,33 +69,32 @@ export const windowTauriProxy = new Proxy(
       };
     };
 
-    // 4. Se è una FUNZIONE (es. nel caso ci siano funzioni alla radice)
+    // 4. Root-level function.
     if (typeof value === "function") {
       return createSafeExecutor(value, tauri, propName);
     }
 
-    // 5. [NUOVO] Se è un OGGETTO (es. 'core', 'event', 'window')
-    // Dobbiamo restituire un Proxy anche per questo oggetto, altrimenti
-    // le funzioni al suo interno (es. core.invoke) non saranno protette!
+    // 5. Nested object, such as "core", "event", or "window".
+    // Return a proxy so nested functions such as core.invoke are protected too.
     if (typeof value === "object" && value !== null) {
       return new Proxy(value, {
         get(nestedTarget, nestedProp: string | symbol) {
           const nestedValue = (nestedTarget as any)[nestedProp];
           const nestedName = `${propName}.${String(nestedProp)}`;
 
-          // Se troviamo una funzione dentro l'oggetto annidato (es. invoke dentro core)
+          // Protect nested functions, for example core.invoke.
           if (typeof nestedValue === "function") {
             return createSafeExecutor(nestedValue, nestedTarget, nestedName);
           }
 
-          // Ritorna il valore (potresti dover fare ricorsione infinita qui se 
-          // hai oggetti dentro oggetti dentro oggetti, ma per Tauri V2 basta 1 livello solitamente)
+          // Return primitive values and shallow nested objects as-is. Tauri v2
+          // APIs used here are normally only one level deep.
           return nestedValue;
         }
       });
     }
 
-    // 6. Ritorna il valore primitivo (stringhe, numeri, boolean)
+    // 6. Primitive value.
     return value;
   }
 }

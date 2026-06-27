@@ -45,7 +45,9 @@
       role="dialog"
       aria-modal="true"
       aria-labelledby="type-confirm-title"
+      tabindex="-1"
       onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.stopPropagation()}
       class="bg-surface border border-border rounded-2xl shadow-xl w-full max-w-sm mx-4 overflow-hidden"
     >
       <!-- Header -->

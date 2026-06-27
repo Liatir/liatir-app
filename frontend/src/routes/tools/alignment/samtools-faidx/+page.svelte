@@ -335,8 +335,9 @@
             </p>
 
             <div class="space-y-1">
-              <label class="text-xs font-medium text-zinc-600">Region</label>
+              <label for="samtools-faidx-region" class="text-xs font-medium text-zinc-600">Region</label>
               <input
+                id="samtools-faidx-region"
                 type="text"
                 bind:value={extractRegion}
                 disabled={extractRunning}

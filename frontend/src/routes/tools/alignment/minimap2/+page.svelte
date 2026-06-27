@@ -232,7 +232,7 @@
 
           <!-- Preset selector -->
           <div class="space-y-1.5">
-            <label class="text-[11px] text-zinc-500">Preset</label>
+            <span class="text-[11px] text-zinc-500">Preset</span>
             <div class="flex flex-wrap gap-1.5">
               {#each MINIMAP2_PRESETS as p}
                 <button

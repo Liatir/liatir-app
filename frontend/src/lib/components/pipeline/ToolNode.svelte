@@ -120,9 +120,9 @@
           />
         {:else if schema.type === 'string' || schema.type === 'number'}
           <div>
-            <label class="block text-[11px] text-zinc-500 mb-1">
+            <span class="block text-[11px] text-zinc-500 mb-1">
               {schema.label ?? key}{schema.required ? '' : ' (optional)'}
-            </label>
+            </span>
             <ValueRefInput
               value={data.inputs[key] ?? (schema.default as string ?? '')}
               options={valueOptions(schema.type)}

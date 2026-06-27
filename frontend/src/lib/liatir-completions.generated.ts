@@ -207,20 +207,20 @@ export const LIATIR_API: Record<string, ApiNode> = {
       } },
   } },
   tauri: { type: "property", detail: "WindowTauri", children: {
-      core: { type: "property", detail: "TauriCore", info: "Le API principali di Tauri (invoke, convertFileSrc).\nIn V2, invoke si trova qui, non più alla radice.", children: {
+      core: { type: "property", detail: "TauriCore", info: "Main Tauri APIs (invoke, convertFileSrc).\nIn v2, invoke lives here instead of at the root.", children: {
           invoke: { type: "method", detail: "<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T>" },
       } },
-      event: { type: "property", detail: "TauriEvent", info: "Gestione eventi (listen, emit).", children: {
-          listen: { type: "method", detail: "<T>(event: string, handler: (event: EventCallback<T>) => void): Promise<UnlistenFn>", info: "Ascolta un evento emesso dal backend o da un'altra finestra." },
-          once: { type: "method", detail: "<T>(event: string, handler: (event: EventCallback<T>) => void): Promise<UnlistenFn>", info: "Ascolta un evento una sola volta." },
-          emit: { type: "method", detail: "(event: string, payload?: unknown): Promise<void>", info: "Emette un evento al backend e a tutte le finestre Tauri." },
+      event: { type: "property", detail: "TauriEvent", info: "Event handling (listen, emit).", children: {
+          listen: { type: "method", detail: "<T>(event: string, handler: (event: EventCallback<T>) => void): Promise<UnlistenFn>", info: "Listen to an event emitted by the backend or another window." },
+          once: { type: "method", detail: "<T>(event: string, handler: (event: EventCallback<T>) => void): Promise<UnlistenFn>", info: "Listen to an event once." },
+          emit: { type: "method", detail: "(event: string, payload?: unknown): Promise<void>", info: "Emit an event to the backend and all Tauri windows." },
       } },
-      window: { type: "property", detail: "TauriWindow", info: "Gestione finestre (spesso richiede", children: {
-          getCurrent: { type: "method", detail: "(): any", info: "Ottiene la label della finestra corrente." },
+      window: { type: "property", detail: "TauriWindow", info: "Window management (often requires", children: {
+          getCurrent: { type: "method", detail: "(): any", info: "Return the current window label." },
           getAll: { type: "method", detail: "(): any[]" },
       } },
-      mocks: { type: "property", detail: "TauriMock", info: "Utility di mocking (se abilitate).", children: {
-          mockIPC: { type: "method", detail: "(handler: (cmd: string, args: TauriArgs) => any): void", info: "Utilizzato per il mocking delle chiamate IPC durante i test." },
+      mocks: { type: "property", detail: "TauriMock", info: "Mocking utilities, when enabled.", children: {
+          mockIPC: { type: "method", detail: "(handler: (cmd: string, args: TauriArgs) => any): void", info: "Used to mock IPC calls during tests." },
       } },
   } },
   onReady: { type: "method", detail: "(callback: Function): void" },

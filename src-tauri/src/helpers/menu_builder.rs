@@ -26,7 +26,7 @@ pub struct MenuConfig {
 #[serde(rename_all = "lowercase")]
 pub enum MenuPlatform { Macos, Windows, Linux }
 
-// Valore della chiave: { section: "...", items: [...] }
+// Key value shape: { section: "...", items: [...] }.
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MenuSectionConfig {
@@ -71,7 +71,7 @@ pub struct MenuConfigPredefinedItem {
 #[serde(rename_all = "lowercase")]
 pub enum MenuInteraction { Click, Check }
 
-// NB: niente "bring_all_to_front" in Tauri v2
+// Tauri v2 does not expose "bring_all_to_front".
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum MenuPredefinedMenuItemSlug {
@@ -79,7 +79,7 @@ pub enum MenuPredefinedMenuItemSlug {
   Minimize, Paste, Quit, Redo, SelectAll, Separator, Services, ShowAll, Undo,
 }
 
-// Per i submenu ricorsivi: il tag "type":"submenu" è gestito dall’enum
+// Recursive submenus: the "type":"submenu" tag is handled by the enum.
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MenuConfigSubmenuItem {
@@ -199,7 +199,7 @@ fn build_predefined<R: Runtime>(
       #[cfg(target_os = "macos")] { Some(Box::new(PredefinedMenuItem::redo(app, label)?)) }
       #[cfg(not(target_os = "macos"))] { None }
     }
-    MenuPredefinedMenuItemSlug::Separator => None, // già gestito sopra
+    MenuPredefinedMenuItemSlug::Separator => None, // already handled above
   };
   Ok(out)
 }

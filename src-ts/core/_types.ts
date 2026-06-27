@@ -5,7 +5,7 @@ export type TauriCore = {
   export type TauriGlobal = TauriCore | { core: TauriCore };
   
 
-  // Tipi di supporto per eventi e invoke
+  // Shared helper types for events and invoke calls.
 type TauriArgs = Record<string, unknown>;
 
 interface EventCallback<T> {
@@ -19,76 +19,76 @@ type UnlistenFn = () => void;
 
 type TauriCoreExtended = {
   /**
-   * Invia un messaggio al backend (Rust).
-   * @param cmd Il nome del comando definito in Rust (#[tauri::command])
-   * @param args Argomenti opzionali da passare al comando
+   * Send a message to the Rust backend.
+   * @param cmd Command name defined in Rust with #[tauri::command].
+   * @param args Optional arguments passed to the command.
    */
   invoke<T = unknown>(cmd: string, args?: TauriArgs): Promise<T>;
   
   /**
-   * Converte un percorso file locale in un URL asset utilizzabile nel webview.
+   * Convert a local file path into an asset URL usable inside the webview.
    */
   convertFileSrc(filePath: string, protocol?: string): string;
 }
 
 type TauriEvent = {
   /**
-   * Ascolta un evento emesso dal backend o da un'altra finestra.
+   * Listen to an event emitted by the backend or another window.
    */
   listen<T>(event: string, handler: (event: EventCallback<T>) => void): Promise<UnlistenFn>;
   
   /**
-   * Ascolta un evento una sola volta.
+   * Listen to an event once.
    */
   once<T>(event: string, handler: (event: EventCallback<T>) => void): Promise<UnlistenFn>;
   
   /**
-   * Emette un evento al backend e a tutte le finestre Tauri.
+   * Emit an event to the backend and all Tauri windows.
    */
   emit(event: string, payload?: unknown): Promise<void>;
 }
 
 type TauriWindow = {
   /**
-   * Ottiene la label della finestra corrente.
+   * Return the current window label.
    */
-  getCurrent(): any; // Ritorna l'oggetto Window corrente (semplificato qui)
+  getCurrent(): any; // Returns the current Window object, simplified here.
   getAll(): any[];
 }
 
 type TauriMock = {
     /**
-     * Utilizzato per il mocking delle chiamate IPC durante i test.
+     * Used to mock IPC calls during tests.
      */
     mockIPC(handler: (cmd: string, args: TauriArgs) => any): void;
 }
 
-// Estensione dell'interfaccia globale Window
+// Extension of the global Window interface.
 export interface WindowTauri {
     /**
-     * Le API principali di Tauri (invoke, convertFileSrc).
-     * In V2, invoke si trova qui, non più alla radice.
+     * Main Tauri APIs (invoke, convertFileSrc).
+     * In v2, invoke lives here instead of at the root.
      */
     core: TauriCore;
 
     /**
-     * Gestione eventi (listen, emit).
+     * Event handling (listen, emit).
      */
     event: TauriEvent;
 
     /**
-     * Gestione finestre (spesso richiede @tauri-apps/api/window).
+     * Window management (often requires @tauri-apps/api/window).
      */
     window: TauriWindow;
     
     /**
-     * Utility di mocking (se abilitate).
+     * Mocking utilities, when enabled.
      */
     mocks?: TauriMock;
     
     /**
-     * NOTA: I plugin (fs, os, http) NON sono qui di default in V2.
-     * Se li esponi manualmente nel main.js/ts, puoi estendere questa interfaccia.
+     * Note: plugins (fs, os, http) are not exposed here by default in v2.
+     * If main.js/ts exposes them manually, extend this interface.
      */
     [key: string]: any; 
 }

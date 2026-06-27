@@ -401,7 +401,9 @@ function createPipelineStore() {
       currentEdges = JSON.parse(JSON.stringify(p.edges));
       pipelineName = p.name;
       pipelineId = p.id;
-      if (!sameAsCurrent && !running) nodeStates = new Map();
+      if (!sameAsCurrent && !running) {
+        nodeStates = new Map();
+      }
       pendingLoad = { nodes: currentNodes, edges: currentEdges, name: p.name, id: p.id };
     },
 

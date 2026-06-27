@@ -86,48 +86,57 @@
     <p class="text-xs text-zinc-500 mb-1.5">{label}</p>
   {/if}
 
-  <!-- Trigger -->
-  <button
-    type="button"
-    onclick={tryOpen}
-    {disabled}
-    class="w-full flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors
-           {open ? 'border-brand ring-1 ring-brand/20' : 'border-border hover:border-border-2'}
-           {!hasItems || disabled ? 'opacity-50 cursor-default' : 'cursor-pointer'}"
-  >
-    {#if selected}
-      <span class="flex-1 min-w-0">
-        <span class="block text-sm font-medium text-brand truncate">{selected.label}</span>
-        {#if selected.sublabel}
-          <span class="block text-[11px] text-zinc-400 truncate">{selected.sublabel}</span>
+  <div class="relative">
+    <!-- Trigger -->
+    <button
+      type="button"
+      onclick={tryOpen}
+      {disabled}
+      class="w-full flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors
+             {selected || (!hasItems && emptyHref) ? 'pr-10' : ''}
+             {open ? 'border-brand ring-1 ring-brand/20' : 'border-border hover:border-border-2'}
+             {!hasItems || disabled ? 'opacity-50 cursor-default' : 'cursor-pointer'}"
+    >
+      {#if selected}
+        <span class="flex-1 min-w-0">
+          <span class="block text-sm font-medium text-brand truncate">{selected.label}</span>
+          {#if selected.sublabel}
+            <span class="block text-[11px] text-zinc-400 truncate">{selected.sublabel}</span>
+          {/if}
+        </span>
+        {#if selected.badge}
+          <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-zinc-100 text-zinc-500 border border-zinc-200">{selected.badge}</span>
         {/if}
-      </span>
-      {#if selected.badge}
-        <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-zinc-100 text-zinc-500 border border-zinc-200">{selected.badge}</span>
+      {:else if !hasItems}
+        <span class="flex-1 text-sm text-zinc-400">{emptyText}</span>
+      {:else}
+        <span class="flex-1 text-sm text-zinc-400">{placeholder}</span>
+        <svg class="shrink-0 text-zinc-300" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
       {/if}
+    </button>
+
+    {#if selected && !disabled}
       <button
         type="button"
         onclick={(e) => { e.stopPropagation(); pick(''); }}
-        class="shrink-0 text-zinc-300 hover:text-zinc-500 transition-colors p-0.5"
-        aria-label="Clear"
+        class="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-300 hover:text-zinc-500 transition-colors p-0.5"
+        aria-label="Clear selection"
       >
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
       </button>
-    {:else if !hasItems}
-      <span class="flex-1 text-sm text-zinc-400">{emptyText}</span>
-      {#if emptyHref}
-        <a href={emptyHref} onclick={(e) => e.stopPropagation()}
-           class="shrink-0 text-brand text-xs font-medium hover:underline">Go →</a>
-      {/if}
-    {:else}
-      <span class="flex-1 text-sm text-zinc-400">{placeholder}</span>
-      <svg class="shrink-0 text-zinc-300" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <polyline points="6 9 12 15 18 9"/>
-      </svg>
+    {:else if !hasItems && emptyHref}
+      <a
+        href={emptyHref}
+        class="absolute right-3 top-1/2 -translate-y-1/2 text-brand text-xs font-medium hover:underline"
+      >
+        Go →
+      </a>
     {/if}
-  </button>
+  </div>
 </div>
 
 {#if open}

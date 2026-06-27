@@ -26,6 +26,7 @@
 
   let showPicker = $state(false);
   let pickerQuery = $state('');
+  let pickerSearchInput = $state<HTMLInputElement | null>(null);
   let showParams = $state(false);
 
   const filteredRequests = $derived(
@@ -75,6 +76,10 @@
   function setOverride(key: string, value: string) {
     updateNodeData(id, { paramOverrides: { ...(data.paramOverrides ?? {}), [key]: value } });
   }
+
+  $effect(() => {
+    if (showPicker && pickerSearchInput) setTimeout(() => pickerSearchInput?.focus(), 30);
+  });
 </script>
 
 <!-- Single input handle — wire upstream value nodes in, then map them to params below. -->
@@ -112,7 +117,7 @@
             <div class="mt-1.5 space-y-1.5">
               {#each overridableParams as key}
                 <div>
-                  <label class="block text-[10px] text-zinc-400 mb-0.5 font-mono">{key}</label>
+                  <span class="block text-[10px] text-zinc-400 mb-0.5 font-mono">{key}</span>
                   <ValueRefInput
                     value={data.paramOverrides?.[key] ?? ''}
                     options={valueOptions}
@@ -178,9 +183,9 @@
     <div class="px-3 py-2 border-b border-border bg-surface flex items-center gap-2">
       <Icon icon="lucide:search" width="11" height="11" class="text-zinc-400 shrink-0" />
       <input
+        bind:this={pickerSearchInput}
         bind:value={pickerQuery}
         placeholder="Search requests…"
-        autofocus
         class="flex-1 text-xs bg-transparent outline-none text-zinc-800 placeholder:text-zinc-400"
         onclick={(e) => e.stopPropagation()}
       />

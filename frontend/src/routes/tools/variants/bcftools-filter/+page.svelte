@@ -320,11 +320,12 @@
 
           <!-- Expression input -->
           <div class="space-y-1">
-            <label class="text-xs font-medium text-zinc-600">
+            <label for="bcftools-filter-expression" class="text-xs font-medium text-zinc-600">
               Filter expression
               <span class="ml-1 text-zinc-400 font-normal">(passed to bcftools filter -i)</span>
             </label>
             <input
+              id="bcftools-filter-expression"
               type="text"
               bind:value={expression}
               disabled={running}

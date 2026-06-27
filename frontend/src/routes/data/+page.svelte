@@ -543,7 +543,7 @@
             class="flex-1 text-sm bg-transparent outline-none text-zinc-800 placeholder:text-zinc-400"
           />
           {#if query}
-            <button onclick={() => query = ''} class="text-zinc-300 hover:text-zinc-500 transition-colors">
+            <button onclick={() => query = ''} class="text-zinc-300 hover:text-zinc-500 transition-colors" aria-label="Clear file search">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
@@ -635,7 +635,7 @@
                     {file.ext || '?'}
                   </span>
 
-                  <div class="shrink-0 w-24" onclick={(e) => e.stopPropagation()}>
+                  <div class="shrink-0 w-24">
                     {#if file.protected}
                       <span class="flex items-center justify-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium border border-violet-200 bg-violet-50 text-violet-600 w-full">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -646,7 +646,7 @@
                       </span>
                     {:else}
                       <button
-                        onclick={(e) => openFolderPicker(file.id, e.currentTarget)}
+                        onclick={(e) => { e.stopPropagation(); openFolderPicker(file.id, e.currentTarget); }}
                         class="flex items-center gap-1 text-[10px] border border-border rounded px-1.5 py-1 bg-surface
                                text-zinc-500 hover:border-zinc-400 transition-colors w-full min-w-0"
                       >
@@ -671,7 +671,12 @@
     <!-- Folder picker popup -->
     {#if pickerFileId}
       {@const currentFile = dataFiles.files.find(f => f.id === pickerFileId)}
-      <div class="fixed inset-0 z-9998" onclick={closePicker}></div>
+      <div
+        class="fixed inset-0 z-9998"
+        role="presentation"
+        onclick={closePicker}
+        onkeydown={(e) => e.key === 'Escape' && closePicker()}
+      ></div>
       <div
         class="fixed z-9999 bg-surface border border-border rounded-xl shadow-xl p-3 flex flex-col gap-2"
         style="top:{pickerPos.top}px; left:{pickerPos.left}px; width:{pickerPos.width}px;"

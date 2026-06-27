@@ -1,7 +1,7 @@
 // encryption-utils.ts
 
 // ==============================
-// 🔒 Hash / Digest
+// Hash / digest.
 // ==============================
 
 async function digestHex(
@@ -16,7 +16,7 @@ async function digestHex(
 }
 
 // ==============================
-// 🔐 HMAC (digest con chiave)
+// HMAC keyed digest.
 // ==============================
 
 async function hmacSha256Hex(key: string, message: string): Promise<string> {

@@ -504,7 +504,7 @@
                 class="flex-1 text-xs bg-transparent outline-none text-zinc-700 placeholder:text-zinc-400"
               />
               {#if genomeSearch}
-                <button onclick={() => genomeSearch = ''} class="text-zinc-400 hover:text-zinc-600">
+                <button onclick={() => genomeSearch = ''} class="text-zinc-400 hover:text-zinc-600" aria-label="Clear genome search">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                   </svg>
@@ -634,7 +634,7 @@
 
               <!-- JVM heap -->
               <div class="flex items-center gap-3">
-                <label class="text-[11px] text-zinc-500 shrink-0">Java heap (RAM)</label>
+                <span class="text-[11px] text-zinc-500 shrink-0">Java heap (RAM)</span>
                 <div class="flex gap-1.5">
                   {#each ['4g', '6g', '8g', '12g', '16g'] as heap}
                     <button

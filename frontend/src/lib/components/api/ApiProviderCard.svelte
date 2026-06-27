@@ -17,7 +17,11 @@
 
   let { provider, startOpen = true }: Props = $props();
 
-  let open = $state(startOpen);
+  function initialOpenState() {
+    return startOpen;
+  }
+
+  let open = $state(initialOpenState());
   let showSettings = $state(false);
   let newlyAddedId = $state<string | null>(null);
 

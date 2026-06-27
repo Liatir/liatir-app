@@ -11,6 +11,7 @@
 
   let { id, data }: NodeProps<Node<ConditionNodeData>> = $props();
   const { updateNodeData, getNodes, getEdges } = useSvelteFlow();
+  const conditionInputId = $derived(`condition-${id}`);
   const state = $derived(pipelineStore.nodeStates.get(id));
   const status = $derived(state?.status ?? 'pending');
   const disabled = $derived(pipelineStore.running);
@@ -47,7 +48,7 @@
 
   <div class="px-3 py-2.5 nodrag nopan space-y-2">
     <div>
-      <label class="block text-[10px] text-zinc-400 mb-1">Value to test</label>
+      <span class="block text-[10px] text-zinc-400 mb-1">Value to test</span>
       <ValueRefInput
         value={data.valueRef ?? ''}
         options={valueOptions}
@@ -59,8 +60,9 @@
       />
     </div>
     <div>
-      <label class="block text-[10px] text-zinc-400 mb-1">Condition <span class="text-zinc-300">(JS, uses <code class="font-mono">value</code>)</span></label>
+      <label for={conditionInputId} class="block text-[10px] text-zinc-400 mb-1">Condition <span class="text-zinc-300">(JS, uses <code class="font-mono">value</code>)</span></label>
       <input
+        id={conditionInputId}
         type="text"
         value={data.condition ?? ''}
         oninput={(e) => updateNodeData(id, { condition: (e.target as HTMLInputElement).value })}

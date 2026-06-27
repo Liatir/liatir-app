@@ -36,7 +36,9 @@
   let storeReady = $state(false);
   let showAddMenu = $state(false);
   let stepSearch = $state('');
+  let stepSearchInput = $state<HTMLInputElement | null>(null);
   let editingName = $state(false);
+  let nameEditorInput = $state<HTMLInputElement | null>(null);
   let nameInput = $state('');
   let saving = $state(false);
   let savedConfirmation = $state(false);
@@ -208,6 +210,14 @@
     pipelineStore.setCurrentState(nodes, edges, nameInput);
   });
 
+  $effect(() => {
+    if (editingName && nameEditorInput) setTimeout(() => nameEditorInput?.focus(), 30);
+  });
+
+  $effect(() => {
+    if (showAddMenu && stepSearchInput) setTimeout(() => stepSearchInput?.focus(), 30);
+  });
+
   async function addNode(type: string, id: string) {
     const col = nodes.filter(n => n.type !== 'start').length;
     const pos = { x: 200 + (col % 3) * 380, y: 80 + Math.floor(col / 3) * 280 };
@@ -288,10 +298,10 @@
         {#if editingName}
           <input
             type="text"
+            bind:this={nameEditorInput}
             bind:value={nameInput}
             onblur={() => editingName = false}
             onkeydown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') editingName = false; }}
-            autofocus
             class="text-xs font-medium bg-white border border-brand/60 rounded px-2.5 py-1.5 outline-none w-40"
           />
         {:else}
@@ -425,7 +435,7 @@
   <div class="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-120 rounded-xl border border-border bg-white shadow-2xl overflow-hidden flex flex-col max-h-[70vh]">
     <div class="flex items-center gap-2 px-3 py-2.5 border-b border-border bg-surface">
       <Icon icon="lucide:search" width="13" height="13" class="text-zinc-400 shrink-0" />
-      <input type="text" bind:value={stepSearch} placeholder="Search steps…" autofocus
+      <input type="text" bind:this={stepSearchInput} bind:value={stepSearch} placeholder="Search steps…"
         class="flex-1 text-sm bg-transparent outline-none text-zinc-800 placeholder:text-zinc-400" />
       {#if stepSearch}
         <button onclick={() => stepSearch = ''} class="text-zinc-400 hover:text-zinc-600">

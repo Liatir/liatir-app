@@ -47,13 +47,13 @@ export function normalizeEntries(entries: ReadonlyArray<CmNode>): CmNode[] {
 
 const onCmClick = (ev: MouseEvent, callback: CmListenerCallback, preventDefault: boolean = true) => {
   try {
-    // impedire il menu contestuale nativo se vuoi mostrare il tuo
+    // Prevent the native context menu when showing the custom one.
     if(preventDefault) ev.preventDefault();
 
-    // elemento effettivo bersaglio (può essere text node -> cast a HTMLElement)
+    // Actual event target; text nodes are cast to HTMLElement for simplicity.
     const target = ev.target as HTMLElement | null;
 
-    // se vuoi risalire fino a un elemento significativo (con attributo data-lia-context)
+    // Walk up to the nearest actionable element.
     const ancestorActionable =
       target?.closest<HTMLElement>("[data-lia-contextmenu]") ?? null;
     const descendantActionable =

@@ -327,7 +327,7 @@ export const jsonTools: JsonTools = {
         let e = notValidJSONError;
         return {
           ok: false,
-          errors: ["JSON malformato: " + (e instanceof Error ? e.message : String(e))]
+          errors: ["Malformed JSON: " + (e instanceof Error ? e.message : String(e))]
         };
       }
     }
@@ -346,7 +346,7 @@ export const jsonTools: JsonTools = {
         return {
           ok: false,
           errors: [
-            "Schema malformato (non è JSON valido): " +
+            "Malformed schema (invalid JSON): " +
               (e instanceof Error ? e.message : String(e))
           ]
         };
