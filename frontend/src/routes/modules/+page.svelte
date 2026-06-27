@@ -150,7 +150,7 @@
           {/each}
 
           <div class="ml-auto flex items-center gap-2">
-            <Icon icon="lucide:folder-filter" width="13" height="13" class="text-zinc-400" />
+            <!-- <Icon icon="lucide:folder-filter" width="13" height="13" class="text-zinc-400" />
             <select
               bind:value={categoryFilter}
               class="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-zinc-600 outline-none focus:border-brand/60"
@@ -158,7 +158,7 @@
               {#each categories as category}
                 <option value={category}>{category}</option>
               {/each}
-            </select>
+            </select> -->
           </div>
         </div>
       </div>
