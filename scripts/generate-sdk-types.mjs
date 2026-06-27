@@ -13,6 +13,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT    = path.resolve(__dirname, '..');
 const SRC_TS  = path.join(ROOT, 'src-ts');
+const CORE_TYPES = path.join(ROOT, 'packages', 'liatir-core', 'src', 'index.ts');
 const OUT_DIR = path.join(ROOT, 'frontend', 'src', 'lib');
 
 // ── 1. Collect _types.ts files ──────────────────────────────────────────────
@@ -42,14 +43,24 @@ type I32 = Brand<number, "i32">;
 `.trimStart();
 
 let sdkBody = PREAMBLE;
-for (const file of typeFiles) {
-  const rel     = path.relative(ROOT, file).replaceAll('\\', '/');
-  const content = fs.readFileSync(file, 'utf-8');
-  const stripped = content
+
+function stripImports(content) {
+  return content
     .replace(/^import\s[^;]*;(\r?\n)?/gm, '')
     .replace(/^import\s[\s\S]*?from\s['"][^'"]*['"];(\r?\n)?/gm, '')
     .trim();
+}
+
+function appendTypesSource(file) {
+  const rel = path.relative(ROOT, file).replaceAll('\\', '/');
+  const stripped = stripImports(fs.readFileSync(file, 'utf-8'));
   if (stripped) sdkBody += `\n// Source: ${rel}\n${stripped}\n`;
+}
+
+appendTypesSource(CORE_TYPES);
+
+for (const file of typeFiles) {
+  appendTypesSource(file);
 }
 
 sdkBody += `
@@ -69,7 +80,7 @@ fs.writeFileSync(
   path.join(OUT_DIR, 'liatir-sdk-types.ts'),
   `// This file is generated automatically — do not edit.\n` +
   `// Run:  npm run gen:sdk-types\n` +
-  `// Source: src-ts/**/_types.ts  (liatir@${sdkVersion})\n\n` +
+  `// Source: packages/liatir-core/src/index.ts + src-ts/**/_types.ts  (liatir@${sdkVersion})\n\n` +
   `export const liatirSdkTypes = ${JSON.stringify(sdkBody)};\n`,
   'utf-8'
 );
@@ -83,6 +94,10 @@ const compilerOptions = ts.convertCompilerOptionsFromJson({
   strict: false,
   skipLibCheck: true,
   moduleResolution: 'node',
+  baseUrl: ROOT,
+  paths: {
+    '@liatir/core': [path.relative(ROOT, CORE_TYPES)],
+  },
   noEmit: true,
 }, ROOT).options;
 

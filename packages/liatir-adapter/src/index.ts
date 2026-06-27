@@ -1,6 +1,7 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 import * as os from "os";
+import type { LiatirInputFieldSchema } from "@liatir/core";
 import { buildAlign, type AlignNamespace } from "./bio/align";
 import { buildQc, type QcNamespace } from "./bio/qc";
 import { buildVariants, type VariantsNamespace } from "./bio/variants";
@@ -266,19 +267,13 @@ export async function createLiatir(): Promise<LiatirNode> {
   };
 }
 
-// ── Module I/O schema — the SINGLE source of truth ───────────────────────────
+// ── Module I/O schema — backed by @liatir/core ───────────────────────────────
 // You declare the schema once with `f.*`; the input/output TS types are inferred
 // from it, and `lia build` generates the manifest from it. Nothing to keep in
 // sync by hand.
 
 /** A typed field. `T` is the inferred TS type; it is erased at runtime. */
-export interface Field<T> {
-  readonly type: "string" | "number" | "boolean" | "file";
-  readonly label?: string;
-  readonly description?: string;
-  readonly required?: boolean;
-  readonly default?: T;
-  readonly accept?: string[];
+export interface Field<T> extends LiatirInputFieldSchema<T> {
   /** phantom — carries the inferred type only, never present at runtime */
   readonly __t?: T;
 }

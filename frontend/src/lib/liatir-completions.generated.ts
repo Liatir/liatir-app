@@ -203,7 +203,7 @@ export const LIATIR_API: Record<string, ApiNode> = {
   } },
   qc: { type: "property", detail: "QcInterface", children: {
       fastqc: { type: "property", detail: "FastqcInterface", children: {
-          run: { type: "method", detail: "(args: FastqcArgs): Promise<ToolOutput>" },
+          run: { type: "method", detail: "(args: FastqcArgs): Promise<LiatirToolOutput>" },
       } },
   } },
   tauri: { type: "property", detail: "WindowTauri", children: {

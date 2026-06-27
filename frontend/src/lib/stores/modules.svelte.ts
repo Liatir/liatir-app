@@ -1,15 +1,9 @@
 import { liatir } from '$lib/api';
 import { appStorage } from './app-storage';
 import { getDataPrefix } from './workspace.svelte';
+import type { LiatirInputFieldSchema } from '@liatir/core';
 
-export interface FieldDef {
-  type: 'string' | 'number' | 'boolean' | 'file';
-  label?: string;
-  description?: string;
-  required?: boolean;
-  default?: string | number | boolean;
-  accept?: string[];
-}
+export type FieldDef = LiatirInputFieldSchema<string | number | boolean>;
 
 export interface LiatirModule {
   id: string;

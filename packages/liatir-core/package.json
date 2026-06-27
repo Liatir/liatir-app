@@ -1,0 +1,17 @@
+{
+  "name": "@liatir/core",
+  "version": "1.0.0",
+  "description": "Shared Liatir contracts for tool schemas, pipeline steps, execution results, and rendered outputs",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

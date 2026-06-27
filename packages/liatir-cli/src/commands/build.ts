@@ -4,20 +4,12 @@ import { pathToFileURL } from "url";
 import { build as esbuild } from "esbuild";
 import { execFile } from "child_process";
 import { promisify } from "util";
+import type { LiatirInputFieldSchema } from "@liatir/core";
 
 const execFileAsync = promisify(execFile);
 
-interface FieldDef {
-  type: "string" | "number" | "boolean" | "file";
-  label?: string;
-  description?: string;
-  required?: boolean;
-  default?: unknown;
-  accept?: string[];
-}
-
 // A field as produced at runtime by the SDK's f.* builders (phantom __t erased).
-type RuntimeField = FieldDef & { __t?: unknown };
+type RuntimeField = LiatirInputFieldSchema & { __t?: unknown };
 
 async function exists(p: string): Promise<boolean> {
   try { await fs.access(p); return true; } catch { return false; }
@@ -28,11 +20,11 @@ function bareName(name: string): string {
   return name.includes("/") ? name.split("/").pop()! : name;
 }
 
-/** Reduce a code-declared schema to plain JSON FieldDefs for the manifest. */
-function serializeSchema(schema: Record<string, RuntimeField> | undefined): Record<string, FieldDef> {
-  const out: Record<string, FieldDef> = {};
+/** Reduce a code-declared schema to plain JSON field schemas for the manifest. */
+function serializeSchema(schema: Record<string, RuntimeField> | undefined): Record<string, LiatirInputFieldSchema> {
+  const out: Record<string, LiatirInputFieldSchema> = {};
   for (const [k, fld] of Object.entries(schema ?? {})) {
-    const def: FieldDef = { type: fld.type };
+    const def: LiatirInputFieldSchema = { type: fld.type };
     if (fld.label !== undefined) def.label = fld.label;
     if (fld.description !== undefined) def.description = fld.description;
     if (fld.required !== undefined) def.required = fld.required;

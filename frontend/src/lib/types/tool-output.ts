@@ -1,6 +1,6 @@
-// Canonical ToolOutput types now live in the shared @liatir/output-parser package
-// (single source of truth — also used by the @liatir/sdk adapter and the browser SDK).
-// Re-exported here so the rest of the frontend keeps importing from $lib/types/tool-output.
+// Canonical ToolOutput types live in @liatir/core.
+// Re-exported here so existing frontend imports keep working while the contract
+// remains owned by one shared package.
 export type {
   StatItem,
   StatsSection,
@@ -10,4 +10,4 @@ export type {
   TableSection,
   ToolSection,
   ToolOutput,
-} from '@liatir/output-parser';
+} from '@liatir/core';

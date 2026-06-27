@@ -22,6 +22,8 @@ const config = {
 		// Shared internal package — aliased here so both Vite (bundling) and
 		// svelte-check (type-checking) resolve it without an npm workspace.
 		alias: {
+			'@liatir/core': '../packages/liatir-core/src',
+			'@liatir/core/*': '../packages/liatir-core/src/*',
 			'@liatir/output-parser': '../packages/liatir-output-parser/src',
 			'@liatir/output-parser/*': '../packages/liatir-output-parser/src/*'
 		}

@@ -1,38 +1,21 @@
-export interface InputFieldSchema {
-  type: 'string' | 'number' | 'boolean' | 'file';
-  label?: string;
-  required?: boolean;
-  default?: unknown;
-  accept?: string[];
-}
+import type { ToolOutput } from './tool-output';
 
-export interface OutputFieldSchema {
-  type: 'file' | 'stats' | 'string' | 'number';
-  label?: string;
-  ext?: string[];
-  description?: string;
-  /** Display hint for numeric metric outputs (type: 'number'). */
-  format?: 'integer' | 'decimal' | 'percent';
-}
+export type {
+  InputFieldSchema,
+  OutputFieldSchema,
+  PipelineStepDefinition,
+  RunOutputFile,
+  StepStatus,
+  LiatirExecutionResult,
+  LiatirFileArtifact,
+  LiatirStepDefinition,
+} from '@liatir/core';
 
-export interface PipelineStepDefinition {
-  id: string;
-  type: 'native-tool' | 'lia-module' | 'wasm-plugin';
-  label: string;
-  description: string;
-  category: string;
-  inputSchema: Record<string, InputFieldSchema>;
-  outputSchema: Record<string, OutputFieldSchema>;
-}
-
-export interface RunOutputFile {
-  label: string;
-  path: string;
-  ext: string;
-  size?: number;
-}
-
-export type StepStatus = 'pending' | 'running' | 'done' | 'error' | 'skipped';
+import type {
+  PipelineStepDefinition,
+  RunOutputFile,
+  StepStatus,
+} from '@liatir/core';
 
 // ── Visual DAG node types ────────────────────────────────────────────────────
 
@@ -111,7 +94,7 @@ export type StepRunFn = (
   onLog: (line: string) => void
 ) => Promise<{
   outputFiles: RunOutputFile[];
-  output?: import('./tool-output').ToolOutput;
+  output?: ToolOutput;
   /** Numeric metrics exposed as connectable value-outputs (→ Math / Condition nodes). */
   metrics?: Record<string, number>;
 }>;
