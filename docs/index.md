@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Liatir
   text: Bioinformatics. On your machine. Under your control.
-  tagline: A desktop app that runs real bioinformatics pipelines locally — no cloud, no servers, no subscriptions. Built on Rust and Tauri for native speed when handling multi-gigabyte genomic files.
+  tagline: A desktop app that runs real bioinformatics tools and pipelines locally, and much more — no cloud, no servers, no subscriptions. Built on Rust and Tauri for native speed when handling multi-gigabyte genomic files.
   actions:
     - theme: brand
       text: Get Started
