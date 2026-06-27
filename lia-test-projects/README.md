@@ -37,7 +37,9 @@ Import `wasm-length.lia` from the Liatir Modules page.
 
 ## Notes
 
-`lia dev` currently uses an older development runner shape than `lia build`.
-The Node test module exports both a default `defineModule(...)` module and a
-named `run(...)` function so it can exercise both paths while the CLI dev flow
-is being finalized.
+Node modules should declare their input/output contract once with
+`defineModule(...)`. The SDK infers the TypeScript input and output types from
+that schema, and `lia build` generates the `.lia` manifest from the same source.
+The required shape is `defineModule({ inputs, outputs }).main(...)`: the
+contract stays inside `defineModule`, and the implementation body stays inside
+the SDK-controlled `.main(...)` entry point.

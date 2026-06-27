@@ -5,24 +5,30 @@ module the **same bridge** that `window.Liatir` exposes inside the app, over a l
 channel to the running Liatir desktop process.
 
 ```ts
-import { createLiatir } from "@liatir/sdk";
+import { defineModule, field } from "@liatir/sdk";
 
-export async function run(input: { reference: string; reads: string }) {
-  const Liatir = await createLiatir();   // connects to the running app's IPC
-
-  // Run a system tool with streamed output
-  const job = await Liatir.jobs.run("bwa", ["mem", input.reference, input.reads], {
+export default defineModule({
+  inputs: {
+    reference: field.file({ label: "Reference FASTA", accept: ["fa", "fasta"], required: true }),
+    reads: field.file({ label: "Reads FASTQ", accept: ["fq", "fastq"], required: true }),
+  },
+  outputs: {
+    exit: field.string({ label: "Job status" }),
+  },
+}).main(async ({ input, lia }) => {
+  // Run a system tool with streamed output.
+  const job = await lia.jobs.run("bwa", ["mem", input.reference, input.reads], {
     onStdout: (line) => console.log(line),
   });
 
-  // Scoped app storage (NOT raw node fs)
-  await Liatir.desktop.fs.data.writeText("log.txt", "done");
+  // Scoped app storage, not raw Node filesystem.
+  await lia.desktop.fs.data.writeText("log.txt", "done");
 
-  // Typed bio helpers
-  const aln = await Liatir.align.bwaMem({ reference: input.reference, reads: input.reads });
+  // Typed bio helpers are available from the same bridge.
+  await lia.align.bwaMem({ reference: input.reference, reads: input.reads });
 
   return { exit: job.status.type };
-}
+});
 ```
 
 ## What's available

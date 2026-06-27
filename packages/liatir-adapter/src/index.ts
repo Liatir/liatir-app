@@ -331,16 +331,33 @@ type Infer<S extends Record<string, Field<unknown, LiatirFieldType>>> = {
   [K in keyof S]: S[K] extends Field<infer T, LiatirFieldType> ? T : never;
 };
 
+export type ModuleInput<S extends InputSchema> = Infer<S>;
+export type ModuleOutput<S extends OutputSchema> = Infer<S>;
+export type ModuleMainContext<I extends InputSchema, O extends OutputSchema> = {
+  input: Infer<I>;
+  lia: LiatirNode;
+};
+export type ModuleMainHandler<I extends InputSchema, O extends OutputSchema> = (
+  ctx: ModuleMainContext<I, O>
+) => Infer<O> | Promise<Infer<O>>;
+
 export interface ModuleDefinition<I extends InputSchema, O extends OutputSchema> {
-  inputs?: I;
-  outputs?: O;
-  run: (ctx: { input: Infer<I>; lia: LiatirNode }) => Infer<O> | Promise<Infer<O>>;
+  inputs: I;
+  outputs: O;
+}
+
+export interface LiatirModuleContract<I extends InputSchema, O extends OutputSchema> {
+  readonly __liatirModuleContract: true;
+  inputs: I;
+  outputs: O;
+  main: (handler: ModuleMainHandler<I, O>) => LiatirModule<I, O>;
 }
 
 /** Runtime shape `lia build` reads (schema → manifest) and the app runner calls. */
-export interface LiatirModule {
-  inputs: InputSchema;
-  outputs: OutputSchema;
+export interface LiatirModule<I extends InputSchema = InputSchema, O extends OutputSchema = OutputSchema> {
+  readonly __liatirModule: true;
+  inputs: I;
+  outputs: O;
   run: (input: Record<string, unknown>) => Promise<unknown>;
 }
 
@@ -353,23 +370,34 @@ export interface LiatirModule {
  * import { defineModule, field } from "@liatir/sdk";
  *
  * export default defineModule({
- *   inputs:  { text: field.string({ label: "Text", required: true }) },
- *   outputs: { length: field.number({ label: "Length" }) },
- *   async run({ input, lia }) {
- *     return { length: input.text.length }; // input.text is string; return type checked
+ *   inputs: {
+ *     text: field.string({ label: "Text", required: true }),
  *   },
+ *   outputs: {
+ *     length: field.number({ label: "Length" }),
+ *   },
+ * }).main(async ({ input }) => {
+ *   return { length: input.text.length };
  * });
  * ```
  */
-export function defineModule<I extends InputSchema = Record<string, never>, O extends OutputSchema = Record<string, never>>(
+export function defineModule<const I extends InputSchema, const O extends OutputSchema>(
   def: ModuleDefinition<I, O>,
-): LiatirModule {
+): LiatirModuleContract<I, O> {
   return {
-    inputs: def.inputs ?? {},
-    outputs: def.outputs ?? {},
-    run: async (input) => {
-      const lia = await createLiatir();
-      return def.run({ input: input as Infer<I>, lia });
+    __liatirModuleContract: true,
+    inputs: def.inputs,
+    outputs: def.outputs,
+    main: (handler) => {
+      return {
+        __liatirModule: true,
+        inputs: def.inputs,
+        outputs: def.outputs,
+        run: async (input) => {
+          const lia = await createLiatir();
+          return handler({ input: input as Infer<I>, lia });
+        },
+      };
     },
   };
 }

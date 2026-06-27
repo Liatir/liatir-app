@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "lia dev",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "lia build"
   },
   "devDependencies": {
     "@liatir/lia": "file:../../packages/liatir-cli",
-    "@liatir/sdk": "file:../../packages/liatir-adapter"
+    "@liatir/sdk": "file:../../packages/liatir-adapter",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
   }
 }

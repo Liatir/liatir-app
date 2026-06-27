@@ -33,10 +33,12 @@ const PACKAGE_JSON = (name: string) =>
       type: "module",
       scripts: {
         dev: "lia dev",
+        typecheck: "tsc -p tsconfig.json --noEmit",
         build: "lia build",
       },
       devDependencies: {
-        "@liatir/sdk": "^1.3.0",
+        "@liatir/lia": "^1.5.0",
+        "@liatir/sdk": "^1.5.0",
         typescript: "^5.0.0",
         "@types/node": "^20.0.0",
       },
@@ -63,20 +65,41 @@ const TSCONFIG = JSON.stringify(
 
 const INDEX_TS = () => `import { defineModule, field } from "@liatir/sdk";
 
-// Declare the schema ONCE here. The input/output types are inferred from it, and
-// \`lia build\` generates the manifest from it — nothing to keep in sync by hand.
-//   lia — the Liatir bridge: lia.jobs, lia.deps, lia.desktop.fs, …
+// defineModule declares the module contract. Keep inputs and outputs here:
+// this is the single source of truth used by TypeScript, the .lia manifest, and
+// Liatir pipelines when this module is used as a node.
 export default defineModule({
+  // Inputs become the form fields shown by Liatir before the module runs.
+  // Each field also gives TypeScript the correct type inside .main(...).
   inputs: {
-    text: field.string({ label: "Text", required: true }),
+    text: field.string({
+      label: "Text",
+      description: "Text to analyze.",
+      required: true,
+      default: "hello from Liatir",
+    }),
   },
+
+  // Outputs describe the structured result returned by .main(...).
+  // Liatir uses this shape when rendering results and wiring pipeline edges.
   outputs: {
-    length: field.number({ label: "Length" }),
+    length: field.number({
+      label: "Length",
+      description: "Number of characters in the input text.",
+    }),
   },
-  async run({ input, lia }) {
-    // input.text is string (inferred); the return is checked against outputs.
-    return { length: input.text.length };
-  },
+}).main(async ({ input, lia }) => {
+  // Write your module logic here. This dummy example returns the character
+  // count of input.text.
+  //
+  // input.text is a string inferred from the input schema above.
+  // lia is the local Liatir bridge for desktop APIs:
+  // - lia.jobs runs local tools and processes.
+  // - lia.deps checks installed command-line dependencies.
+  // - lia.desktop.fs reads/writes Liatir-scoped files.
+  return {
+    length: input.text.length,
+  };
 });
 `;
 
@@ -159,6 +182,7 @@ const GITIGNORE = "target/\n*.lia\n";
 
 export async function init(name: string, runtime: "node" | "wasm" = "node") {
   const dir = path.resolve(name);
+  const projectName = path.basename(dir);
 
   try {
     await fs.access(dir);
@@ -172,8 +196,8 @@ export async function init(name: string, runtime: "node" | "wasm" = "node") {
 
   if (runtime === "wasm") {
     await Promise.all([
-      fs.writeFile(path.join(dir, "Cargo.toml"), CARGO_TOML(name)),
-      fs.writeFile(path.join(dir, ".lia-manifest.json"), MANIFEST_WASM(name)),
+      fs.writeFile(path.join(dir, "Cargo.toml"), CARGO_TOML(projectName)),
+      fs.writeFile(path.join(dir, ".lia-manifest.json"), MANIFEST_WASM(projectName)),
       fs.writeFile(path.join(dir, "src", "main.rs"), MAIN_RS),
       fs.writeFile(path.join(dir, ".gitignore"), GITIGNORE),
     ]);
@@ -186,13 +210,13 @@ export async function init(name: string, runtime: "node" | "wasm" = "node") {
 
 Next steps:
   cd ${name}
-  lia build      # compile Rust → package as ${name}.lia
+  lia build      # compile Rust → package as ${projectName}.lia
 `);
     return;
   }
 
   await Promise.all([
-    fs.writeFile(path.join(dir, "package.json"), PACKAGE_JSON(name)),
+    fs.writeFile(path.join(dir, "package.json"), PACKAGE_JSON(projectName)),
     fs.writeFile(path.join(dir, "tsconfig.json"), TSCONFIG),
     fs.writeFile(path.join(dir, "src", "index.ts"), INDEX_TS()),
   ]);
@@ -204,6 +228,6 @@ Next steps:
   cd ${name}
   npm install
   liatir dev       # watch mode with live Liatir app
-  liatir build     # package as ${name}.lia
+  liatir build     # package as ${projectName}.lia
 `);
 }

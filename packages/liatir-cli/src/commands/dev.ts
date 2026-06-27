@@ -2,6 +2,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import * as child_process from "child_process";
 import { context as esbuildContext } from "esbuild";
+import { typecheckIfConfigured } from "./_typecheck.js";
 
 interface Manifest {
   name: string;
@@ -61,18 +62,36 @@ async function parseDevInputs(args: string[]): Promise<Record<string, unknown>> 
   return {};
 }
 
-// Generates a thin runner that imports the bundle and calls the same runtime
-// shape used by `lia build`: default defineModule(...), a bare default function,
-// or a named run export.
+// Generates a thin runner that imports the bundle and calls the same strict
+// runtime shape used by `lia build`: default defineModule(...).main(...).
 function runnerScript(bundlePath: string, inputs: Record<string, unknown>): string {
   return `
 import * as _mod from ${JSON.stringify(bundlePath)};
 const _providedInputs = ${JSON.stringify(inputs)};
 
-const _m = _mod.default ?? _mod;
-const _run = typeof _m === "function" ? _m : (_m && (_m.run ?? _mod.run));
-if (typeof _run !== "function") {
-  console.error("[liatir dev] module must export default defineModule(...), a default function, or a named run function");
+const _m = _mod.default;
+if (!_m || typeof _m !== "object") {
+  console.error("[liatir dev] src/index.ts must default-export defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... })");
+  process.exit(1);
+}
+
+if (_m.__liatirModuleContract === true && typeof _m.run !== "function") {
+  console.error("[liatir dev] module contract is missing .main(...). Finish the default export with defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... })");
+  process.exit(1);
+}
+
+if (_m.__liatirModule !== true || typeof _m.run !== "function") {
+  console.error("[liatir dev] invalid .lia module entrypoint. Use: export default defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... });");
+  process.exit(1);
+}
+
+if (!_m.inputs || typeof _m.inputs !== "object" || Array.isArray(_m.inputs)) {
+  console.error("[liatir dev] invalid module contract: defineModule({ inputs }) must be an object.");
+  process.exit(1);
+}
+
+if (!_m.outputs || typeof _m.outputs !== "object" || Array.isArray(_m.outputs)) {
+  console.error("[liatir dev] invalid module contract: defineModule({ outputs }) must be an object.");
   process.exit(1);
 }
 
@@ -85,7 +104,7 @@ for (const [key, field] of Object.entries(_m.inputs ?? {})) {
 
 const _inputs = { ..._defaults, ..._providedInputs };
 console.log("[liatir dev] running module with inputs:", JSON.stringify(_inputs, null, 2));
-const result = await _run(_inputs).catch(e => {
+const result = await _m.run(_inputs).catch(e => {
   console.error("[liatir dev] script error:", e);
   process.exit(1);
 });
@@ -143,6 +162,12 @@ export async function dev(args: string[] = []) {
         setup(b) {
           b.onEnd(async (result) => {
             if (result.errors.length === 0) {
+              try {
+                await typecheckIfConfigured(cwd, "lia dev");
+              } catch (err) {
+                console.error(err instanceof Error ? err.message : err);
+                return;
+              }
               console.log(`[liatir dev] rebuilt → running...`);
               await runScript();
             } else {

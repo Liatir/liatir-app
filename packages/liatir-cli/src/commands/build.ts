@@ -5,6 +5,7 @@ import { build as esbuild } from "esbuild";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import type { LiatirFieldSchema, LiatirInputFieldSchema, LiatirOutputFieldSchema } from "@liatir/core";
+import { typecheckIfConfigured } from "./_typecheck.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -13,6 +14,14 @@ type RuntimeField = LiatirFieldSchema & {
   ext?: string[];
   format?: LiatirOutputFieldSchema["format"];
   __t?: unknown;
+};
+
+type CompiledNodeModule = {
+  __liatirModule?: unknown;
+  __liatirModuleContract?: unknown;
+  inputs?: unknown;
+  outputs?: unknown;
+  run?: unknown;
 };
 
 async function exists(p: string): Promise<boolean> {
@@ -69,6 +78,42 @@ function serializeOutputSchema(schema: Record<string, RuntimeField> | undefined)
   return out;
 }
 
+function failInvalidNodeModule(message: string): never {
+  console.error(message);
+  process.exit(1);
+}
+
+function isPlainRecord(value: unknown): value is Record<string, RuntimeField> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function validateNodeModule(def: CompiledNodeModule | undefined): asserts def is {
+  __liatirModule: true;
+  inputs: Record<string, RuntimeField>;
+  outputs: Record<string, RuntimeField>;
+  run: (input: Record<string, unknown>) => Promise<unknown>;
+} {
+  if (!def || typeof def !== "object") {
+    failInvalidNodeModule("src/index.ts must default-export defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... }).");
+  }
+
+  if (def.__liatirModuleContract === true && typeof def.run !== "function") {
+    failInvalidNodeModule("Module contract is missing .main(...). Finish the default export with defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... }).");
+  }
+
+  if (def.__liatirModule !== true || typeof def.run !== "function") {
+    failInvalidNodeModule("Invalid .lia module entrypoint. Use: export default defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... });");
+  }
+
+  if (!isPlainRecord(def.inputs)) {
+    failInvalidNodeModule("Invalid .lia module contract: defineModule({ inputs }) must be an object.");
+  }
+
+  if (!isPlainRecord(def.outputs)) {
+    failInvalidNodeModule("Invalid .lia module contract: defineModule({ outputs }) must be an object.");
+  }
+}
+
 export async function build() {
   const cwd = process.cwd();
   // Runtime is detected from the project: a Cargo.toml means a WASM custom tool.
@@ -101,6 +146,7 @@ async function buildNode(cwd: string): Promise<void> {
   }
 
   console.log(`Building ${pkg.name}@${pkg.version} (node)...`);
+  await typecheckIfConfigured(cwd, "lia build");
 
   const distDir = path.join(cwd, "dist");
   await fs.mkdir(distDir, { recursive: true });
@@ -119,11 +165,8 @@ async function buildNode(cwd: string): Promise<void> {
 
   // Read the schema straight from the compiled module — the code is the source.
   const mod = await import(pathToFileURL(bundlePath).href);
-  const def = mod.default;
-  if (!def || typeof def.run !== "function") {
-    console.error("src/index.ts must `export default defineModule(...)`.");
-    process.exit(1);
-  }
+  const def = mod.default as CompiledNodeModule | undefined;
+  validateNodeModule(def);
 
   const manifest = {
     name: pkg.name,

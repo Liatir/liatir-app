@@ -37,17 +37,21 @@ export default defineModule({
   outputs: {
     reads: field.number({ label: "Reads" }),
   },
-  // `input.fastq` is string (inferred); the return is checked against `outputs`.
-  // `lia` is the Liatir bridge.
-  async run({ input, lia }) {
-    const out = await lia.jobs.run("seqkit", ["stats", input.fastq]);
-    return { reads: 0 };
-  },
+}).main(async ({ input, lia }) => {
+  // `input.fastq` is string (inferred from `inputs`).
+  // `lia` is the local Liatir bridge.
+  await lia.jobs.run("seqkit", ["stats", input.fastq]);
+  return { reads: 0 };
 });
 ```
 
 `field.*` builders: `field.string`, `field.number`, `field.boolean`,
 `field.file({ accept })`. Each takes `{ label?, description?, required?, default? }`.
+
+`lia build` runs TypeScript checks, validates the exported
+`defineModule({ inputs, outputs }).main(...)` shape, then packages the `.lia`.
+`lia dev` watches `src/index.ts`, typechecks on rebuild, validates the same
+shape, applies schema defaults, and runs the module against the open Liatir app.
 
 ## Custom tool (WASM)
 
