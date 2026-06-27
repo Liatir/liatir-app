@@ -103,24 +103,24 @@ input, textarea, [data-selectable] {
 
 .svelte-flow__handle {
   border-color: var(--color-black) !important;
-  opacity: 0.1 !important;
-  border-top-width: 8px !important;
-  border-bottom-width: 8px !important;
-  border-radius: 3px !important;
+  opacity: 0.08 !important;
+  border-top-width: 25px !important;
+  border-bottom-width: 25px !important;
+  border-radius: 10px !important;
 }
 
 .svelte-flow__handle-left {
   border-left-width: 5px !important;
   border-top-right-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
-  transform: translateX(-5px) !important;
+  transform: translateX(-5px) translateY(-10px) !important;
 }
 
 .svelte-flow__handle-right {
   border-right-width: 5px !important;
   border-top-left-radius: 0 !important;
   border-bottom-left-radius: 0 !important;
-  transform: translateX(5px) !important;
+  transform: translateX(5px) translateY(-10px) !important;
 }
 
 .svelte-flow__handle:hover {
@@ -128,21 +128,24 @@ input, textarea, [data-selectable] {
   border-color: var(--color-brand-hover) !important;
 }
 
+
 .svelte-flow__node:hover .svelte-flow__handle {
-  opacity: 1 !important;
+  opacity: 0.5;
   border-color: var(--color-brand) !important;
 }
 
-.svelte-flow__node:hover .svelte-flow__handle-left {
-  border-left-width: 8px !important;
-  border-top-right-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
-  transform: translateX(-8px) !important;
-}
-
 .svelte-flow__node:hover .svelte-flow__handle-right {
-  border-right-width: 8px !important;
+  opacity: 1 !important;
+  border-right-width: 25px !important;
   border-top-left-radius: 0 !important;
   border-bottom-left-radius: 0 !important;
-  transform: translateX(8px) !important;
+  transform: translateX(25px) translateY(-10px) !important;
+}
+
+.svelte-flow__node:hover .svelte-flow__handle-left {
+  opacity: 1 !important;
+  border-left-width: 25px !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  transform: translateX(-25px) translateY(-10px) !important;
 }
