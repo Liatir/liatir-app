@@ -1,5 +1,5 @@
-import { DesktoprAPI } from "../../../types";
+import { LiatirAPI } from "../../../types";
 import type { FsInterface } from "../../../types";
 export declare function buildFs(core: {
-    invoke: DesktoprAPI["invoke"];
+    invoke: LiatirAPI["invoke"];
 }): FsInterface;

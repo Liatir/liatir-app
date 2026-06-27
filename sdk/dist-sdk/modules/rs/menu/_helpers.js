@@ -12,7 +12,7 @@ const initMenuConfig = async (core, menuConfig, windowLabel) => {
     validateMenuConfig(menuConfig);
     if (windowLabel) {
         if (isMacOS()) {
-            console.warn("[Desktopr] Native window-specific menus are not supported on macOS.");
+            console.warn("[Liatir] Native window-specific menus are not supported on macOS.");
             return;
         }
         await core.invoke("lia_init_menu_for_window_from_json", {

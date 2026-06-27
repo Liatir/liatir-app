@@ -1,4 +1,4 @@
-import { BadgeInterface, DesktoprAPI } from "../../../types";
+import { BadgeInterface, LiatirAPI } from "../../../types";
 export declare function buildBadge(core: {
-    invoke: DesktoprAPI["invoke"];
+    invoke: LiatirAPI["invoke"];
 }): BadgeInterface;

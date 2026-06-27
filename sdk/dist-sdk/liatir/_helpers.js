@@ -20,7 +20,7 @@ const normalizeString = (str, options = {
 };
 exports.normalizeString = normalizeString;
 const platformSpecifcFilter = async (platforms) => {
-    const appInfo = (await window.Desktopr?.app.info());
+    const appInfo = (await window.Liatir?.desktop.app.info());
     if (!appInfo)
         throw "Failed to check platform";
     const plat = appInfo.os;
@@ -29,10 +29,10 @@ const platformSpecifcFilter = async (platforms) => {
 };
 exports.platformSpecifcFilter = platformSpecifcFilter;
 const getAppVersion = async () => {
-    const desktopr = window?.Desktopr;
-    if (!desktopr)
-        throw "[getAppVersion] Desktopr is not available";
-    const appInfo = await desktopr.app.info();
+    const liatir = window?.Liatir;
+    if (!liatir)
+        throw "[getAppVersion] Liatir is not available";
+    const appInfo = await liatir.desktop.app.info();
     const version = appInfo.version;
     return version ?? "";
 };

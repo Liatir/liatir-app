@@ -18,16 +18,16 @@ export declare function validateFile(file: File | Blob | null | undefined, maxSi
 export declare function imageExistsAtURL(url: string, bustCache?: boolean): Promise<boolean>;
 export declare function clearUrl(input: string, domainOnly?: boolean): string | null;
 /**
- * Estrae il sottodominio da un URL o dal dominio corrente (es. builder.bubbledesk.app → "builder").
+ * Extract a subdomain from a URL or from the current domain, e.g. builder.bubbledesk.app -> "builder".
  *
- * ⚠️ Restituisce `null` se non è presente alcun sottodominio (es. bubbledesk.app o localhost).
+ * Returns `null` when no subdomain is present, e.g. bubbledesk.app or localhost.
  *
- * @param url - (opzionale) Una stringa URL da cui estrarre il sottodominio. Se non fornita, usa `window.location.hostname`.
- * @returns Il sottodominio come stringa, oppure `null` se non rilevabile.
+ * @param url Optional URL string to extract the subdomain from. Uses `window.location.hostname` when omitted.
+ * @returns The subdomain string, or `null` when none can be detected.
  *
  * @example
  * getSubdomain("https://auth.bubbledesk.app"); // "auth"
- * getSubdomain(); // se eseguito su builder.bubbledesk.app → "builder"
+ * getSubdomain(); // when running on builder.bubbledesk.app -> "builder"
  * getSubdomain("https://bubbledesk.app"); // null
  * getSubdomain("http://localhost:5173"); // null
  */
@@ -122,8 +122,8 @@ export declare function listMonthsInRange(start: Date | string, end: Date | stri
     descending?: boolean;
 }): string[];
 /**
- * @param monthKey (deve essere in formato YYYY-MM)
- * @returns Restituisce un oggetto contente start e end
+ * @param monthKey Must use YYYY-MM format.
+ * @returns An object containing start and end dates.
  */
 export declare function getMonthBoundsByYearMonthString(monthKey: string): {
     start: Date;
@@ -134,27 +134,27 @@ export declare function getMonthBoundsByYearMonthString(monthKey: string): {
  */
 export declare function getYearMonthStringFromDate(date: Date): string;
 /**
- * @returns Restituisce un oggetto contente start e end
+ * @returns An object containing start and end dates.
  */
 export declare function getMonthBounds(date: Date): {
     start: Date;
     end: Date;
 };
 /**
- * Unisce l'array originale con nuovi oggetti, sovrascrivendo quelli con la stessa chiave.
- * @param original Array originale
- * @param updates Nuovi oggetti da aggiungere o aggiornare
- * @param key Chiave identificativa (default: "id")
- * @returns Nuovo array aggiornato
+ * Merge an original array with new objects, overwriting entries with the same key.
+ * @param original Original array.
+ * @param updates New objects to add or update.
+ * @param key Identifier key, defaulting to "id".
+ * @returns A new updated array.
  */
 export declare function mergeByKey<T extends AnyObject>(original: T[], updates: T[], key?: keyof T): T[];
 /**
- * Rimuove un elemento da un array di oggetti confrontando un campo chiave.
+ * Remove an item from an object array by comparing a key field.
  *
- * @param array - L'array di oggetti da cui rimuovere l'elemento
- * @param value - Il valore da confrontare per la rimozione
- * @param key - Il campo su cui fare il confronto (default: "id")
- * @returns Un nuovo array senza l'elemento corrispondente
+ * @param array Object array to remove the item from.
+ * @param value Value to match for removal.
+ * @param key Field used for matching, defaulting to "id".
+ * @returns A new array without the matching item.
  */
 export declare function removeFromArrayByKey<T extends Record<string, any>>(array: T[], value: any, key?: string): T[];
 export declare function hexToRgb(hexString?: HexColor): string | "";

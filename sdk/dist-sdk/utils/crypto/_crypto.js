@@ -5,7 +5,7 @@ exports.cryptoTools = void 0;
 exports.nonCryptographicHash = nonCryptographicHash;
 exports.sha256 = sha256;
 // ==============================
-// 🔒 Hash / Digest
+// Hash / digest.
 // ==============================
 async function digestHex(input, algorithm) {
     const data = new TextEncoder().encode(input);
@@ -15,7 +15,7 @@ async function digestHex(input, algorithm) {
         .join("");
 }
 // ==============================
-// 🔐 HMAC (digest con chiave)
+// HMAC keyed digest.
 // ==============================
 async function hmacSha256Hex(key, message) {
     const enc = new TextEncoder();

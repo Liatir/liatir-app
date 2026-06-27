@@ -1,3 +1,3 @@
-import type { DesktoprAPI } from "../types";
-export declare function isDesktoprAvailable(): boolean;
-export declare const Desktopr: DesktoprAPI;
+import type { LiatirAPI } from "../types";
+export declare function isLiatirAvailable(): boolean;
+export declare const Liatir: LiatirAPI;

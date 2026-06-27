@@ -1,4 +1,4 @@
-import type { DesktoprAPI, ContextMenuInterface } from "../../../types";
+import type { LiatirAPI, ContextMenuInterface } from "../../../types";
 export declare function buildContextMenu(core: {
-    invoke: DesktoprAPI["invoke"];
+    invoke: LiatirAPI["invoke"];
 }): ContextMenuInterface;

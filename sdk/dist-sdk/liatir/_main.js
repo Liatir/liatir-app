@@ -1,24 +1,23 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.liaReadyEventListener = exports.liaInitiators = exports.DesktoprInstance = void 0;
-// import { listenForEvent } from "../_helpers";
+exports.liaReadyEventListener = exports.liaInitiators = exports.LiatirInstance = void 0;
 const constants_1 = require("../constants");
-exports.DesktoprInstance = {
+exports.LiatirInstance = {
     ready: () => {
-        if (!window?.Desktopr)
+        if (!window?.Liatir)
             return false;
         return true;
     },
     get: () => {
-        if (!exports.DesktoprInstance.ready())
-            throw ("'window.Desktopr' not found");
-        return window?.Desktopr;
+        if (!exports.LiatirInstance.ready())
+            throw ("'window.Liatir' not found");
+        return window?.Liatir;
     }
 };
 const liaInitiators = async () => {
     try {
-        if (!exports.DesktoprInstance.ready())
-            throw ("Desktopr instance not found");
+        if (!exports.LiatirInstance.ready())
+            throw ("Liatir instance not found");
         console.log("## READY ##");
         const eventReady = new CustomEvent(constants_1.READY_EVENT_NAME);
         window?.dispatchEvent(eventReady);

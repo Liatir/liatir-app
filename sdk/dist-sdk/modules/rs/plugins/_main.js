@@ -4,7 +4,7 @@ exports.buildPlugins = buildPlugins;
 const _helpers_1 = require("./_helpers");
 function buildPlugins(core) {
     return {
-        call: (module, payload, timeoutMs) => core.invoke("lia_plugin_call", { module: (0, _helpers_1.normalizeModuleName)(module), payload, timeoutMs }),
+        call: (module, payload, timeoutMs, hostReadPaths) => core.invoke("lia_plugin_call", { module: (0, _helpers_1.normalizeModuleName)(module), payload, timeoutMs, hostReadPaths }),
         status: () => core.invoke("lia_plugin_status"),
         list: () => core.invoke("lia_plugin_list_modules"),
         remove: (name) => core.invoke("lia_plugin_remove_module", { name: (0, _helpers_1.normalizeModuleName)(name) }),

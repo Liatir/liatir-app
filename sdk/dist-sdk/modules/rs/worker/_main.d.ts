@@ -1,8 +1,8 @@
-import { DesktoprAPI } from "../../../types";
+import { LiatirAPI } from "../../../types";
 import { U64, U8 } from "../../../utils";
 import { WorkerCallPayload } from "./_types";
 export declare function buildWorker(core: {
-    invoke: DesktoprAPI["invoke"];
+    invoke: LiatirAPI["invoke"];
 }): {
     call: (method: string, payload: WorkerCallPayload, timeoutMs?: U64) => Promise<string>;
     status: () => Promise<boolean>;

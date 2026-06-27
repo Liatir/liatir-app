@@ -2,25 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildFs = buildFs;
 const helpers_1 = require("../../../helpers");
-const getWindowLabelIfCompanion = () => {
-    const compState = window?.Desktopr?.window
-        ?.state;
-    let label = undefined;
-    if (compState && compState?.windowLabel?.trim() && compState?.isCacheOnly)
-        label = compState.windowLabel.trim();
-    return label;
-};
 // Comments are in English
 function scopeCoreMethods(core, permanent, plugin) {
-    // Guard that prevents persistent data operations from isolated (companion) windows.
-    const ensureDataNotIsolated = () => {
-        if (!permanent)
-            return;
-        const label = getWindowLabelIfCompanion();
-        if (label && label.trim().length > 0) {
-            throw new Error("Persistent data operations are not available in isolated companion windows. Use the cache scope (Desktopr.fs.cache) for per-session storage.");
-        }
-    };
+    const ensureDataNotIsolated = () => { };
     const pluginStorageModule = ((plugin?.trim()) ?? undefined);
     return {
         listContent: (rel = "") => {
@@ -28,7 +12,7 @@ function scopeCoreMethods(core, permanent, plugin) {
             return core.invoke("lia_fs_list_dir", {
                 rel,
                 permanent,
-                windowLabel: getWindowLabelIfCompanion(),
+                windowLabel: undefined,
                 pluginStorageModule
             });
         },
@@ -37,7 +21,7 @@ function scopeCoreMethods(core, permanent, plugin) {
             return core.invoke("lia_fs_mkdir", {
                 rel,
                 permanent,
-                windowLabel: getWindowLabelIfCompanion(),
+                windowLabel: undefined,
                 pluginStorageModule
             });
         },
@@ -47,7 +31,7 @@ function scopeCoreMethods(core, permanent, plugin) {
                 rel,
                 recursive,
                 permanent,
-                windowLabel: getWindowLabelIfCompanion(),
+                windowLabel: undefined,
                 pluginStorageModule
             });
         },
@@ -56,7 +40,7 @@ function scopeCoreMethods(core, permanent, plugin) {
             return core.invoke("lia_fs_stat", {
                 rel,
                 permanent,
-                windowLabel: getWindowLabelIfCompanion(),
+                windowLabel: undefined,
                 pluginStorageModule
             });
         },
@@ -68,7 +52,7 @@ function scopeCoreMethods(core, permanent, plugin) {
                 contents,
                 createDirs: opts?.createDirs,
                 append: opts?.append,
-                windowLabel: getWindowLabelIfCompanion(),
+                windowLabel: undefined,
                 pluginStorageModule
             });
         },
@@ -77,7 +61,7 @@ function scopeCoreMethods(core, permanent, plugin) {
             return core.invoke("lia_fs_read_text", {
                 rel,
                 permanent,
-                windowLabel: getWindowLabelIfCompanion(),
+                windowLabel: undefined,
                 pluginStorageModule
             });
         },
@@ -88,7 +72,7 @@ function scopeCoreMethods(core, permanent, plugin) {
                 permanent,
                 dataBase64: base64,
                 createDirs: opts?.createDirs,
-                windowLabel: getWindowLabelIfCompanion(),
+                windowLabel: undefined,
                 pluginStorageModule
             });
         },
@@ -97,7 +81,7 @@ function scopeCoreMethods(core, permanent, plugin) {
             return core.invoke("lia_fs_read_bytes", {
                 rel,
                 permanent,
-                windowLabel: getWindowLabelIfCompanion(),
+                windowLabel: undefined,
                 pluginStorageModule
             });
         },
@@ -106,7 +90,7 @@ function scopeCoreMethods(core, permanent, plugin) {
             return core.invoke("lia_fs_exists", {
                 rel,
                 permanent,
-                windowLabel: getWindowLabelIfCompanion(),
+                windowLabel: undefined,
                 pluginStorageModule
             });
         },
@@ -118,7 +102,7 @@ function scopeCoreMethods(core, permanent, plugin) {
                 permanent,
                 createDirs: opts?.createDirs,
                 overwrite: opts?.overwrite,
-                windowLabel: getWindowLabelIfCompanion(),
+                windowLabel: undefined,
                 pluginStorageModule
             });
         },
@@ -131,7 +115,7 @@ function scopeCoreMethods(core, permanent, plugin) {
                 recursive: opts?.recursive,
                 createDirs: opts?.createDirs,
                 overwrite: opts?.overwrite,
-                windowLabel: getWindowLabelIfCompanion(),
+                windowLabel: undefined,
                 pluginStorageModule
             });
         },
@@ -140,15 +124,7 @@ function scopeCoreMethods(core, permanent, plugin) {
 ;
 // Comments are in English
 function scope(core, permanent) {
-    // Guard that prevents persistent data operations from isolated (companion) windows.
-    const ensureDataNotIsolated = () => {
-        if (!permanent)
-            return;
-        const label = getWindowLabelIfCompanion();
-        if (label && label.trim().length > 0) {
-            throw new Error("Persistent data operations are not available in isolated companion windows. Use the cache scope (Desktopr.fs.cache) for per-session storage.");
-        }
-    };
+    const ensureDataNotIsolated = () => { };
     const coreMethods = scopeCoreMethods(core, permanent);
     const mainScopeMethods = {
         ...coreMethods,

@@ -1,4 +1,4 @@
-import type { DesktoprAPI, WindowInterface } from "../../../types";
+import type { LiatirAPI, WindowInterface } from "../../../types";
 export declare function buildWindow(core: {
-    invoke: DesktoprAPI["invoke"];
+    invoke: LiatirAPI["invoke"];
 }): WindowInterface;

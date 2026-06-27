@@ -47,12 +47,12 @@ function normalizeEntries(entries) {
 }
 const onCmClick = (ev, callback, preventDefault = true) => {
     try {
-        // impedire il menu contestuale nativo se vuoi mostrare il tuo
+        // Prevent the native context menu when showing the custom one.
         if (preventDefault)
             ev.preventDefault();
-        // elemento effettivo bersaglio (può essere text node -> cast a HTMLElement)
+        // Actual event target; text nodes are cast to HTMLElement for simplicity.
         const target = ev.target;
-        // se vuoi risalire fino a un elemento significativo (con attributo data-lia-context)
+        // Walk up to the nearest actionable element.
         const ancestorActionable = target?.closest("[data-lia-contextmenu]") ?? null;
         const descendantActionable = target?.querySelector("[data-lia-contextmenu]") ?? null;
         const info = {
@@ -73,9 +73,9 @@ const onCmClick = (ev, callback, preventDefault = true) => {
             shiftKey: ev.shiftKey,
             metaKey: ev.metaKey,
         };
-        if (!window?.Desktopr)
-            throw new Error("[contextmenu listener] Desktopr not found");
-        window.Desktopr.events.emit("cm:click", info);
+        if (!window?.Liatir)
+            throw new Error("[contextmenu listener] Liatir not found");
+        window.Liatir.desktop.events.emit("cm:click", info);
         const callbackPlayload = {
             event: ev,
             ...info
@@ -88,27 +88,27 @@ const onCmClick = (ev, callback, preventDefault = true) => {
     }
 };
 const initContextMenuListener = (callback, preventDefault = true) => {
-    if (!window?.Desktopr)
-        throw new Error("[contextmenu listener] Desktopr not found");
-    const listening = window.Desktopr.contextMenu.listening;
+    if (!window?.Liatir)
+        throw new Error("[contextmenu listener] Liatir not found");
+    const listening = window.Liatir.desktop.contextMenu.listening;
     if (listening)
         return console.warn("[contextmenu listener] already initialized");
     // listener globale: intercetta i click col destro su qualunque elemento della pagina
     const listener = (ev) => onCmClick(ev, callback, preventDefault);
-    window.Desktopr.contextMenu.listener = listener;
+    window.Liatir.desktop.contextMenu.listener = listener;
     document.addEventListener("contextmenu", listener);
-    window.Desktopr.contextMenu.listening = true;
+    window.Liatir.desktop.contextMenu.listening = true;
 };
 exports.initContextMenuListener = initContextMenuListener;
 const removeContextMenuListener = () => {
-    if (!window?.Desktopr)
-        throw new Error("[contextmenu listener] Desktopr not found");
-    const listening = window.Desktopr.contextMenu.listening;
+    if (!window?.Liatir)
+        throw new Error("[contextmenu listener] Liatir not found");
+    const listening = window.Liatir.desktop.contextMenu.listening;
     if (!listening)
         return;
-    const listener = window.Desktopr.contextMenu.listener ?? (() => { });
+    const listener = window.Liatir.desktop.contextMenu.listener ?? (() => { });
     document.removeEventListener("contextmenu", listener);
-    window.Desktopr.contextMenu.listening = false;
-    window.Desktopr.contextMenu.listener = undefined;
+    window.Liatir.desktop.contextMenu.listening = false;
+    window.Liatir.desktop.contextMenu.listener = undefined;
 };
 exports.removeContextMenuListener = removeContextMenuListener;

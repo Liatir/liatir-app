@@ -1,7 +1,7 @@
 import { LiaPlatform } from "../../../types";
 import { I32 } from "../../../utils";
 /**
- * Information about a window managed by Desktopr.
+ * Information about a window managed by Liatir.
  */
 export type AppWindowInfo = {
     label: string;
@@ -26,7 +26,7 @@ export type AppScreenInfo = {
     scale_factor: number;
 };
 /**
- * Information about the current Desktopr runtime environment.
+ * Information about the current Liatir runtime environment.
  */
 export type AppInfo = {
     arch: string;

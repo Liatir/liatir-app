@@ -1,4 +1,4 @@
-import { DesktoprAPI, FilesInterface } from "../../../types";
+import { LiatirAPI, FilesInterface } from "../../../types";
 export declare function buildFiles(core: {
-    invoke: DesktoprAPI["invoke"];
+    invoke: LiatirAPI["invoke"];
 }): FilesInterface;

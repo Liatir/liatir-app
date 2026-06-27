@@ -1,4 +1,4 @@
-import type { DesktoprAPI, ClipboardInterface } from "../../../types";
+import type { LiatirAPI, ClipboardInterface } from "../../../types";
 export declare function buildClipboard(core: {
-    invoke: DesktoprAPI["invoke"];
+    invoke: LiatirAPI["invoke"];
 }): ClipboardInterface;

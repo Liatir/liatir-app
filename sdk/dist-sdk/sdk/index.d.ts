@@ -1,2 +1,2 @@
-export { Desktopr } from "./_proxy";
-export { type DesktoprAPI } from "../types";
+export { Liatir, isLiatirAvailable } from "./_proxy";
+export { type LiatirAPI } from "../types";

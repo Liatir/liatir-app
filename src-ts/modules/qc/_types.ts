@@ -7,7 +7,7 @@ import type {
   LiatirTextSection,
   LiatirToolOutput,
   LiatirToolSection,
-} from "@liatir/core";
+} from "../../../packages/liatir-core/dist";
 
 export type QcInterface = {
   fastqc: FastqcInterface;

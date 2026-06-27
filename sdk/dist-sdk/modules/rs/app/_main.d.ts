@@ -1,4 +1,4 @@
-import { AppInterface, DesktoprAPI } from "../../../types";
+import { AppInterface, LiatirAPI } from "../../../types";
 export declare function buildAppInfo(core: {
-    invoke: DesktoprAPI["invoke"];
+    invoke: LiatirAPI["invoke"];
 }): AppInterface;

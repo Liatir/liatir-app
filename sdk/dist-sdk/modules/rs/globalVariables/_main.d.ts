@@ -1,5 +1,5 @@
-import { DesktoprAPI } from "../../../types";
+import { LiatirAPI } from "../../../types";
 import { GlobalVariablesInterface } from "./_types";
 export declare function buildGlobVar(core: {
-    invoke: DesktoprAPI["invoke"];
+    invoke: LiatirAPI["invoke"];
 }): GlobalVariablesInterface;

@@ -1,4 +1,4 @@
-import type { DesktoprAPI, MenuInterface } from "../../../types";
+import type { LiatirAPI, MenuInterface } from "../../../types";
 export declare function buildMenu(core: {
-    invoke: DesktoprAPI["invoke"];
+    invoke: LiatirAPI["invoke"];
 }): MenuInterface;

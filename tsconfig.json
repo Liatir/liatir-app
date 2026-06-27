@@ -9,9 +9,9 @@
       "declaration": false,
       "sourceMap": false,
       "rootDir": "src-ts",
-      "baseUrl": ".",
       "paths": {
-        "@liatir/core": ["packages/liatir-core/dist/index.d.ts"]
+        "*": ["./*"],
+        "@liatir/core": ["./packages/liatir-core/dist"]
       },
       "types": ["node"]
     },

@@ -1,4 +1,4 @@
-import type { DesktoprAPI, NotificationsInterface } from "../../../types";
+import type { LiatirAPI, NotificationsInterface } from "../../../types";
 export declare function buildNotifications(core: {
-    invoke: DesktoprAPI["invoke"];
+    invoke: LiatirAPI["invoke"];
 }): NotificationsInterface;

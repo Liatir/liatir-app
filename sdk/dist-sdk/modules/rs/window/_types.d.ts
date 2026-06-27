@@ -1,4 +1,3 @@
-import { CompanionState } from "../../../companion_context";
 export type _WindowTypesPlaceholder = unknown;
 export interface WindowInterface {
     new: (options?: NewWindowOptions) => Promise<void>;
@@ -7,7 +6,6 @@ export interface WindowInterface {
     maximizeToggle: () => Promise<void>;
     fullscreen: (enable: boolean) => Promise<void>;
     getInfo: (label?: string) => Promise<WindowInfo>;
-    state: CompanionState;
 }
 export type WindowSizeInfo = {
     width: number;
@@ -40,5 +38,4 @@ export type NewWindowOptions = {
     label?: string;
     fullscreen?: boolean;
     url?: string;
-    cacheOnly?: boolean;
 };

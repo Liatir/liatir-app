@@ -1,4 +1,4 @@
-import { DesktoprAPI, MenuConfig } from "../../../types";
+import { LiatirAPI, MenuConfig } from "../../../types";
 export declare const initMenuConfig: (core: {
-    invoke: DesktoprAPI["invoke"];
+    invoke: LiatirAPI["invoke"];
 }, menuConfig: MenuConfig, windowLabel?: string) => Promise<void>;

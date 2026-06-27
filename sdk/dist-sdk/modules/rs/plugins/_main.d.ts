@@ -1,5 +1,5 @@
-import { DesktoprAPI } from "../../../types";
+import { LiatirAPI } from "../../../types";
 import { PluginsInterface } from "./_types";
 export declare function buildPlugins(core: {
-    invoke: DesktoprAPI["invoke"];
+    invoke: LiatirAPI["invoke"];
 }): PluginsInterface;
