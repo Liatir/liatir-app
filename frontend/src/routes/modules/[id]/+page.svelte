@@ -10,6 +10,7 @@
   import { liatir } from '$lib/api';
   import { saveModuleResultFiles, type ModuleSaveResult } from '$lib/utils/module-files';
   import { runLiatirModule } from '$lib/utils/module-run';
+  import { matchesAcceptedExtension } from '$lib/utils/file-extensions';
   import { toast } from '$lib/stores/toast.svelte';
 
   const id = $derived((page.params as { id: string }).id);
@@ -56,9 +57,7 @@
 
   function filesForField(field: FieldDef) {
     if (!field.accept?.length) return dataFiles.files;
-    return dataFiles.files.filter(f =>
-      field.accept!.some(ext => f.path.endsWith(ext) || `.${f.ext}` === ext || f.ext === ext.replace(/^\./, ''))
-    );
+    return dataFiles.files.filter(f => matchesAcceptedExtension(f.path, field.accept ?? []));
   }
 
   function fieldHasValue(key: string, field: FieldDef): boolean {

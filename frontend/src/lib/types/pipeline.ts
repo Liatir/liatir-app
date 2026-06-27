@@ -12,6 +12,7 @@ export type {
 } from '@liatir/core';
 
 import type {
+  JsonValue,
   PipelineStepDefinition,
   RunOutputFile,
   StepStatus,
@@ -97,6 +98,8 @@ export type StepRunFn = (
   output?: ToolOutput;
   /** Numeric metrics exposed as connectable value-outputs (→ Math / Condition nodes). */
   metrics?: Record<string, number>;
+  /** Non-file output values exposed as connectable pipeline values. */
+  values?: Record<string, JsonValue>;
 }>;
 
 export interface PipelineRegistryEntry {

@@ -1,9 +1,11 @@
 import { liatir } from '$lib/api';
 import { appStorage } from './app-storage';
 import { getDataPrefix } from './workspace.svelte';
-import type { LiatirInputFieldSchema } from '@liatir/core';
+import type { LiatirInputFieldSchema, LiatirOutputFieldSchema } from '@liatir/core';
 
-export type FieldDef = LiatirInputFieldSchema<string | number | boolean>;
+export type ModuleInputFieldDef = LiatirInputFieldSchema<string | number | boolean>;
+export type ModuleOutputFieldDef = LiatirOutputFieldSchema;
+export type FieldDef = ModuleInputFieldDef;
 
 export interface LiatirModule {
   id: string;
@@ -13,8 +15,8 @@ export interface LiatirModule {
   /** Execution runtime declared in the manifest: Node subprocess or sandboxed WASM. */
   runtime: 'node' | 'wasm';
   path: string;
-  inputSchema: Record<string, FieldDef>;
-  outputSchema: Record<string, FieldDef>;
+  inputSchema: Record<string, ModuleInputFieldDef>;
+  outputSchema: Record<string, ModuleOutputFieldDef>;
   addedAt: number;
 }
 
@@ -64,8 +66,8 @@ function createModulesStore() {
         version: string;
         description?: string;
         runtime?: 'node' | 'wasm';
-        inputSchema?: Record<string, FieldDef>;
-        outputSchema?: Record<string, FieldDef>;
+        inputSchema?: Record<string, ModuleInputFieldDef>;
+        outputSchema?: Record<string, ModuleOutputFieldDef>;
       };
       // Manifest declares the runtime; default to Node for backward compatibility.
       const runtime: 'node' | 'wasm' = manifest.runtime === 'wasm' ? 'wasm' : 'node';

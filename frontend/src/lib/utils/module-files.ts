@@ -2,6 +2,8 @@ import { liatir } from '$lib/api';
 import { getDataPrefix } from '$lib/stores/workspace.svelte';
 import { dataFiles } from '$lib/stores/dataFiles.svelte';
 import { safeResultName } from './results';
+import { detectFileExtension } from './file-extensions';
+import type { LiatirFileOutputValue, LiatirOutputFieldSchema, RunOutputFile } from '@liatir/core';
 
 /**
  * Bridge for persisting/removing files produced by .lia modules.
@@ -11,7 +13,11 @@ import { safeResultName } from './results';
  * the Data store so they appear in Results exactly like native-tool outputs.
  */
 
-export interface ModuleSaveResult {
+export interface ModuleSaveResult extends RunOutputFile {
+  virtualFolder: string;
+}
+
+interface RawModuleSaveResult {
   path: string;
   virtualFolder: string;
   ext: string;
@@ -22,7 +28,7 @@ export async function saveModuleOutput(
   moduleName: string,
   fileName: string,
   content: string,
-  opts: { base64?: boolean } = {}
+  opts: { base64?: boolean; label?: string; fieldKey?: string } = {}
 ): Promise<ModuleSaveResult | null> {
   const api = liatir();
   if (!api) return null;
@@ -33,7 +39,7 @@ export async function saveModuleOutput(
     content,
     isBase64: opts.base64 ?? false,
     workspacePrefix: getDataPrefix(),
-  }) as ModuleSaveResult;
+  }) as RawModuleSaveResult;
 
   // Mirror the tool-output flow: ensure the virtual Results folders exist,
   // then register the file by absolute path.
@@ -41,7 +47,11 @@ export async function saveModuleOutput(
   await dataFiles.createFolder(entry.virtualFolder).catch(() => {});
   await dataFiles.add(entry.path, entry.virtualFolder).catch(() => {});
 
-  return entry;
+  return {
+    ...entry,
+    label: opts.label ?? fileName,
+    fieldKey: opts.fieldKey,
+  };
 }
 
 /** Delete a module output file (from disk + Data store). */
@@ -56,23 +66,16 @@ export async function deleteModuleOutput(path: string): Promise<void> {
 }
 
 /**
- * Shape a module may return for a file-typed output:
- *   - a plain string: absolute path to an existing file produced by the module
- *   - `{ content, fileName?, base64? }`: content Liatir should save to Results
+ * Shape a module may return for a file-typed output. Kept as an alias to the
+ * shared core contract so callers do not invent local variants.
  */
-export type ModuleFileValue =
-  | string
-  | { content: string; fileName?: string; base64?: boolean };
+export type ModuleFileValue = LiatirFileOutputValue;
 
-function detectExt(path: string): string {
-  const lower = path.toLowerCase();
-  for (const multi of ['fastq.gz', 'fq.gz', 'fasta.gz', 'fa.gz', 'vcf.gz', 'bcf.gz']) {
-    if (lower.endsWith(`.${multi}`)) return multi;
-  }
-  return lower.split(/[\\/]/).pop()?.split('.').pop() ?? '';
-}
-
-async function registerExistingModuleOutput(moduleName: string, path: string): Promise<ModuleSaveResult> {
+async function registerExistingModuleOutput(
+  moduleName: string,
+  path: string,
+  opts: { label: string; fieldKey: string }
+): Promise<ModuleSaveResult> {
   const api = liatir();
   if (!api) throw new Error('Liatir API not available');
 
@@ -83,7 +86,36 @@ async function registerExistingModuleOutput(moduleName: string, path: string): P
   await dataFiles.createFolder(virtualFolder).catch(() => {});
   await dataFiles.add(path, virtualFolder).catch(() => {});
 
-  return { path, virtualFolder, ext: detectExt(path) };
+  return {
+    label: opts.label,
+    path,
+    virtualFolder,
+    ext: detectFileExtension(path),
+    fieldKey: opts.fieldKey,
+  };
+}
+
+function getDefaultOutputExtension(field: Pick<LiatirOutputFieldSchema, 'accept' | 'ext'>): string {
+  return (field.ext?.[0] ?? field.accept?.[0] ?? 'txt').replace(/^\./, '');
+}
+
+function getFilePath(raw: LiatirFileOutputValue): string | null {
+  if (typeof raw === 'string') return raw.trim() || null;
+  if (raw && typeof raw === 'object' && 'path' in raw && typeof raw.path === 'string') {
+    return raw.path.trim() || null;
+  }
+  return null;
+}
+
+function getFileContent(raw: LiatirFileOutputValue): { content: string; fileName?: string; base64?: boolean } | null {
+  if (raw && typeof raw === 'object' && 'content' in raw && typeof raw.content === 'string') {
+    return {
+      content: raw.content,
+      fileName: raw.fileName,
+      base64: raw.base64,
+    };
+  }
+  return null;
 }
 
 /**
@@ -92,7 +124,7 @@ async function registerExistingModuleOutput(moduleName: string, path: string): P
  */
 export async function saveModuleResultFiles(
   moduleName: string,
-  outputSchema: Record<string, { type: string; accept?: string[] }>,
+  outputSchema: Record<string, LiatirOutputFieldSchema>,
   result: unknown,
   runId: string
 ): Promise<ModuleSaveResult[]> {
@@ -102,27 +134,28 @@ export async function saveModuleResultFiles(
 
   for (const [key, field] of Object.entries(outputSchema)) {
     if (field.type !== 'file') continue;
-    const raw = obj[key] as ModuleFileValue | undefined;
+    const raw = obj[key] as LiatirFileOutputValue | undefined;
     if (raw == null) continue;
 
-    let content: string;
-    let base64 = false;
-    let fileName: string;
-    const defaultExt = field.accept?.[0]?.replace(/^\./, '') ?? 'txt';
-
-    if (typeof raw === 'string') {
-      if (raw === '') continue;
-      saved.push(await registerExistingModuleOutput(moduleName, raw));
-      continue;
-    } else if (typeof raw === 'object' && typeof raw.content === 'string') {
-      content = raw.content;
-      base64 = raw.base64 ?? false;
-      fileName = raw.fileName ?? `${key}-${runId}.${defaultExt}`;
-    } else {
+    const label = field.label ?? key;
+    const path = getFilePath(raw);
+    if (path) {
+      saved.push(await registerExistingModuleOutput(moduleName, path, { label, fieldKey: key }));
       continue;
     }
 
-    const entry = await saveModuleOutput(moduleName, fileName, content, { base64 });
+    const fileContent = getFileContent(raw);
+    if (!fileContent) {
+      continue;
+    }
+
+    const defaultExt = getDefaultOutputExtension(field);
+    const fileName = fileContent.fileName ?? `${key}-${runId}.${defaultExt}`;
+    const entry = await saveModuleOutput(moduleName, fileName, fileContent.content, {
+      base64: fileContent.base64 ?? false,
+      label,
+      fieldKey: key,
+    });
     if (entry) saved.push(entry);
   }
 

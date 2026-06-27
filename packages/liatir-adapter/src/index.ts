@@ -1,7 +1,16 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 import * as os from "os";
-import type { LiatirInputFieldSchema } from "@liatir/core";
+import type {
+  JsonValue,
+  LiatirFieldSchema,
+  LiatirFieldType,
+  LiatirFileOutputValue,
+  LiatirInputFieldType,
+  LiatirOutputFieldSchema,
+  LiatirOutputFieldType,
+  LiatirToolOutput,
+} from "@liatir/core";
 import { buildAlign, type AlignNamespace } from "./bio/align";
 import { buildQc, type QcNamespace } from "./bio/qc";
 import { buildVariants, type VariantsNamespace } from "./bio/variants";
@@ -273,7 +282,8 @@ export async function createLiatir(): Promise<LiatirNode> {
 // sync by hand.
 
 /** A typed field. `T` is the inferred TS type; it is erased at runtime. */
-export interface Field<T> extends LiatirInputFieldSchema<T> {
+export interface Field<T, TType extends LiatirFieldType = LiatirFieldType> extends LiatirFieldSchema<T> {
+  type: TType;
   /** phantom — carries the inferred type only, never present at runtime */
   readonly __t?: T;
 }
@@ -287,16 +297,41 @@ interface FieldOpts<T> {
 
 /** Field builders: declare what a module's inputs/outputs are AND their types. */
 export const field = {
-  string: (o: FieldOpts<string> = {}): Field<string> => ({ type: "string", ...o }),
-  number: (o: FieldOpts<number> = {}): Field<number> => ({ type: "number", ...o }),
-  boolean: (o: FieldOpts<boolean> = {}): Field<boolean> => ({ type: "boolean", ...o }),
-  file: (o: FieldOpts<string> & { accept?: string[] } = {}): Field<string> => ({ type: "file", ...o }),
+  string: (o: FieldOpts<string> = {}): Field<string, "string"> => ({ type: "string", ...o }),
+  number: (
+    o: FieldOpts<number> & { format?: LiatirOutputFieldSchema["format"] } = {}
+  ): Field<number, "number"> & { format?: LiatirOutputFieldSchema["format"] } => ({ type: "number", ...o }),
+  boolean: (o: FieldOpts<boolean> = {}): Field<boolean, "boolean"> => ({ type: "boolean", ...o }),
+  file: (o: FieldOpts<string> & { accept?: string[]; ext?: string[] } = {}): Field<string, "file"> & { ext?: string[] } => ({ type: "file", ...o }),
+  json: <T extends JsonValue = JsonValue>(o: FieldOpts<T> = {}): Field<T, "json"> => ({ type: "json", ...o }),
+  stats: (o: FieldOpts<LiatirToolOutput> = {}): Field<LiatirToolOutput, "stats"> => ({ type: "stats", ...o }),
 };
 
-type Schema = Record<string, Field<unknown>>;
-type Infer<S extends Schema> = { [K in keyof S]: S[K] extends Field<infer T> ? T : never };
+export const input = {
+  string: field.string,
+  number: field.number,
+  boolean: field.boolean,
+  file: (o: FieldOpts<string> & { accept?: string[] } = {}): Field<string, "file"> => ({ type: "file", ...o }),
+};
 
-export interface ModuleDefinition<I extends Schema, O extends Schema> {
+export const output = {
+  string: field.string,
+  number: field.number,
+  boolean: field.boolean,
+  file: (
+    o: FieldOpts<LiatirFileOutputValue> & { accept?: string[]; ext?: string[] } = {}
+  ): Field<LiatirFileOutputValue, "file"> & { ext?: string[] } => ({ type: "file", ...o }),
+  json: field.json,
+  stats: field.stats,
+};
+
+type InputSchema = Record<string, Field<unknown, LiatirInputFieldType>>;
+type OutputSchema = Record<string, Field<unknown, LiatirOutputFieldType>>;
+type Infer<S extends Record<string, Field<unknown, LiatirFieldType>>> = {
+  [K in keyof S]: S[K] extends Field<infer T, LiatirFieldType> ? T : never;
+};
+
+export interface ModuleDefinition<I extends InputSchema, O extends OutputSchema> {
   inputs?: I;
   outputs?: O;
   run: (ctx: { input: Infer<I>; lia: LiatirNode }) => Infer<O> | Promise<Infer<O>>;
@@ -304,8 +339,8 @@ export interface ModuleDefinition<I extends Schema, O extends Schema> {
 
 /** Runtime shape `lia build` reads (schema → manifest) and the app runner calls. */
 export interface LiatirModule {
-  inputs: Schema;
-  outputs: Schema;
+  inputs: InputSchema;
+  outputs: OutputSchema;
   run: (input: Record<string, unknown>) => Promise<unknown>;
 }
 
@@ -326,7 +361,7 @@ export interface LiatirModule {
  * });
  * ```
  */
-export function defineModule<I extends Schema = Record<string, never>, O extends Schema = Record<string, never>>(
+export function defineModule<I extends InputSchema = Record<string, never>, O extends OutputSchema = Record<string, never>>(
   def: ModuleDefinition<I, O>,
 ): LiatirModule {
   return {

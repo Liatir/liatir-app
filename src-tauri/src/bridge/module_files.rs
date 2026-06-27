@@ -43,9 +43,13 @@ fn safe_segment(seg: &str) -> Result<String, String> {
 fn safe_module_name(name: &str) -> String {
     let cleaned: String = name
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == ' ' || c == '_' || c == '-' { c } else { '_' })
+        .filter(|c| c.is_ascii_alphanumeric() || *c == ' ' || *c == '_' || *c == '-')
         .collect();
-    let cleaned = cleaned.trim().replace(' ', "-");
+    let cleaned = cleaned
+        .trim()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join("-");
     if cleaned.is_empty() { "module".to_string() } else { cleaned }
 }
 

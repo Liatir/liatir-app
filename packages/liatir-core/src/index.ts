@@ -70,6 +70,24 @@ export interface LiatirFileArtifact {
   mediaType?: string;
 }
 
+export interface LiatirFileContentOutput {
+  content: string;
+  fileName?: string;
+  base64?: boolean;
+}
+
+export interface LiatirFilePathOutput {
+  path: string;
+}
+
+/**
+ * File-typed node outputs may either reference an existing durable path or ask
+ * Liatir to persist inline text/base64 content into the workspace Results area.
+ */
+export type LiatirFileOutputValue = string | LiatirFilePathOutput | LiatirFileContentOutput;
+
+export type LiatirOutputValue = JsonValue | LiatirFileOutputValue;
+
 export type LiatirStepStatus = 'pending' | 'running' | 'done' | 'error' | 'skipped';
 
 export interface LiatirStatItem {
@@ -146,6 +164,7 @@ export type InputFieldSchema = LiatirInputFieldSchema;
 export type OutputFieldSchema = LiatirOutputFieldSchema;
 export type PipelineStepDefinition = LiatirStepDefinition;
 export type RunOutputFile = LiatirFileArtifact;
+export type FileOutputValue = LiatirFileOutputValue;
 export type StepStatus = LiatirStepStatus;
 
 export type StatItem = LiatirStatItem;

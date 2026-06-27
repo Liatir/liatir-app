@@ -12,6 +12,7 @@ import type {
   ToolNodeData, VariableNodeData, MathNodeData, ConditionNodeData,
   SubPipelineNodeData, ApiRequestNodeData, NodeRunState, RunOutputFile,
 } from '$lib/types/pipeline';
+import type { JsonValue } from '@liatir/core';
 
 interface PipelineStepRecord {
   label: string;
@@ -76,12 +77,20 @@ function initNodeState(): NodeRunState {
   return { status: 'pending', logs: [], outputFiles: [], error: null };
 }
 
-// Convert a tool's numeric metrics into string outputValues so they can be
-// referenced as `@pipe:nodeId:<metricKey>` by downstream Math / Condition nodes.
-function metricsToValues(metrics?: Record<string, number>): Record<string, string> | undefined {
-  if (!metrics) return undefined;
+// Convert non-file node outputs into string outputValues so they can be
+// referenced as `@pipe:nodeId:<outputKey>` by downstream nodes.
+function outputsToValues(
+  metrics?: Record<string, number>,
+  values?: Record<string, JsonValue>
+): Record<string, string> | undefined {
+  if (!metrics && !values) return undefined;
   const out: Record<string, string> = {};
-  for (const [k, v] of Object.entries(metrics)) out[k] = String(v);
+  for (const [key, value] of Object.entries(values ?? {})) {
+    out[key] = value !== null && typeof value === 'object' ? JSON.stringify(value) : String(value);
+  }
+  for (const [key, value] of Object.entries(metrics ?? {})) {
+    out[key] = String(value);
+  }
   return out;
 }
 
@@ -257,7 +266,7 @@ function createPipelineStore() {
         const logs: string[] = [];
         try {
           const result = await entry.run(resolved, outputDir, (line) => { logs.push(line); onLog(line); });
-          patch({ status: 'done', logs, outputFiles: result.outputFiles, outputValues: metricsToValues(result.metrics) });
+          patch({ status: 'done', logs, outputFiles: result.outputFiles, outputValues: outputsToValues(result.metrics, result.values) });
           allOutputFiles.push(...result.outputFiles);
           await dataFiles.createFolder('Results').catch(() => {});
           await dataFiles.createFolder(virtualFolder).catch(() => {});
@@ -472,7 +481,13 @@ function createPipelineStore() {
               logs.push(line);
               patchState(nodeId, { logs: [...logs] });
             });
-            patchState(nodeId, { status: 'done', logs, outputFiles: result.outputFiles, error: null, outputValues: metricsToValues(result.metrics) });
+            patchState(nodeId, {
+              status: 'done',
+              logs,
+              outputFiles: result.outputFiles,
+              error: null,
+              outputValues: outputsToValues(result.metrics, result.values),
+            });
             pipeSteps.push({ label: entry.definition.label, output: result.output, files: result.outputFiles });
             await dataFiles.createFolder('Results').catch(() => {});
             await dataFiles.createFolder(virtualFolder).catch(() => {});

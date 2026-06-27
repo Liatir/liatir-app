@@ -4,12 +4,16 @@ import { pathToFileURL } from "url";
 import { build as esbuild } from "esbuild";
 import { execFile } from "child_process";
 import { promisify } from "util";
-import type { LiatirInputFieldSchema } from "@liatir/core";
+import type { LiatirFieldSchema, LiatirInputFieldSchema, LiatirOutputFieldSchema } from "@liatir/core";
 
 const execFileAsync = promisify(execFile);
 
-// A field as produced at runtime by the SDK's f.* builders (phantom __t erased).
-type RuntimeField = LiatirInputFieldSchema & { __t?: unknown };
+// A field as produced at runtime by the SDK's field/input/output builders.
+type RuntimeField = LiatirFieldSchema & {
+  ext?: string[];
+  format?: LiatirOutputFieldSchema["format"];
+  __t?: unknown;
+};
 
 async function exists(p: string): Promise<boolean> {
   try { await fs.access(p); return true; } catch { return false; }
@@ -20,16 +24,46 @@ function bareName(name: string): string {
   return name.includes("/") ? name.split("/").pop()! : name;
 }
 
-/** Reduce a code-declared schema to plain JSON field schemas for the manifest. */
-function serializeSchema(schema: Record<string, RuntimeField> | undefined): Record<string, LiatirInputFieldSchema> {
+/** Reduce a code-declared input schema to plain JSON field schemas for the manifest. */
+function serializeInputSchema(schema: Record<string, RuntimeField> | undefined): Record<string, LiatirInputFieldSchema> {
   const out: Record<string, LiatirInputFieldSchema> = {};
   for (const [k, fld] of Object.entries(schema ?? {})) {
+    if (fld.type !== "string" && fld.type !== "number" && fld.type !== "boolean" && fld.type !== "file") {
+      throw new Error(`Invalid input field type for "${k}": ${fld.type}`);
+    }
     const def: LiatirInputFieldSchema = { type: fld.type };
     if (fld.label !== undefined) def.label = fld.label;
     if (fld.description !== undefined) def.description = fld.description;
     if (fld.required !== undefined) def.required = fld.required;
     if (fld.default !== undefined) def.default = fld.default;
     if (fld.accept !== undefined) def.accept = fld.accept;
+    out[k] = def;
+  }
+  return out;
+}
+
+/** Reduce a code-declared output schema to plain JSON field schemas for the manifest. */
+function serializeOutputSchema(schema: Record<string, RuntimeField> | undefined): Record<string, LiatirOutputFieldSchema> {
+  const out: Record<string, LiatirOutputFieldSchema> = {};
+  for (const [k, fld] of Object.entries(schema ?? {})) {
+    if (
+      fld.type !== "string" &&
+      fld.type !== "number" &&
+      fld.type !== "boolean" &&
+      fld.type !== "file" &&
+      fld.type !== "stats" &&
+      fld.type !== "json"
+    ) {
+      throw new Error(`Invalid output field type for "${k}": ${fld.type}`);
+    }
+    const def: LiatirOutputFieldSchema = { type: fld.type };
+    if (fld.label !== undefined) def.label = fld.label;
+    if (fld.description !== undefined) def.description = fld.description;
+    if (fld.required !== undefined) def.required = fld.required;
+    if (fld.default !== undefined) def.default = fld.default;
+    if (fld.accept !== undefined) def.accept = fld.accept;
+    if (fld.ext !== undefined) def.ext = fld.ext;
+    if (fld.format !== undefined) def.format = fld.format;
     out[k] = def;
   }
   return out;
@@ -96,8 +130,8 @@ async function buildNode(cwd: string): Promise<void> {
     version: pkg.version,
     description: pkg.description ?? "",
     runtime: "node",
-    inputSchema: serializeSchema(def.inputs),
-    outputSchema: serializeSchema(def.outputs),
+    inputSchema: serializeInputSchema(def.inputs),
+    outputSchema: serializeOutputSchema(def.outputs),
   };
 
   const outputName = `${bareName(pkg.name)}.lia`;

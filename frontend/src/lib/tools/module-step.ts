@@ -1,29 +1,22 @@
-import type { LiatirModule, FieldDef } from '$lib/stores/modules.svelte';
+import type { LiatirModule, ModuleInputFieldDef, ModuleOutputFieldDef } from '$lib/stores/modules.svelte';
 import type {
   InputFieldSchema,
   OutputFieldSchema,
   PipelineStepDefinition,
   PipelineRegistryEntry,
-  RunOutputFile,
 } from '$lib/types/pipeline';
 import type { ToolOutput } from '$lib/types/tool-output';
 import { runLiatirModule } from '$lib/utils/module-run';
+import { saveModuleResultFiles } from '$lib/utils/module-files';
+import type { JsonValue } from '@liatir/core';
 
 /** Pipeline step id for an imported module — namespaced to avoid clashing with native tools. */
 export function moduleStepId(moduleId: string): string {
   return `module:${moduleId}`;
 }
 
-function detectExt(path: string): string {
-  const lower = path.toLowerCase();
-  for (const multi of ['fastq.gz', 'fq.gz', 'fasta.gz', 'fa.gz', 'vcf.gz', 'bcf.gz']) {
-    if (lower.endsWith(`.${multi}`)) return multi;
-  }
-  return lower.split(/[\\/]/).pop()?.split('.').pop() ?? '';
-}
-
 /** A module's input schema is already InputFieldSchema-shaped. */
-function mapInputs(schema: Record<string, FieldDef>): Record<string, InputFieldSchema> {
+function mapInputs(schema: Record<string, ModuleInputFieldDef>): Record<string, InputFieldSchema> {
   const out: Record<string, InputFieldSchema> = {};
   for (const [k, f] of Object.entries(schema)) {
     out[k] = { type: f.type, label: f.label, required: f.required, default: f.default, accept: f.accept };
@@ -31,14 +24,29 @@ function mapInputs(schema: Record<string, FieldDef>): Record<string, InputFieldS
   return out;
 }
 
-/** Map a module output field to a pipeline OutputFieldSchema (booleans surface as strings). */
-function mapOutputs(schema: Record<string, FieldDef>): Record<string, OutputFieldSchema> {
+/** Map a module output field to a pipeline OutputFieldSchema. */
+function mapOutputs(schema: Record<string, ModuleOutputFieldDef>): Record<string, OutputFieldSchema> {
   const out: Record<string, OutputFieldSchema> = {};
   for (const [k, f] of Object.entries(schema)) {
-    const type: OutputFieldSchema['type'] = f.type === 'file' ? 'file' : f.type === 'number' ? 'number' : 'string';
-    out[k] = { type, label: f.label, ext: f.accept, description: f.description };
+    const type: OutputFieldSchema['type'] =
+      f.type === 'file' || f.type === 'number' || f.type === 'json' || f.type === 'stats'
+        ? f.type
+        : 'string';
+    out[k] = { type, label: f.label, ext: f.ext ?? f.accept, description: f.description, format: f.format };
   }
   return out;
+}
+
+function isJsonValue(value: unknown): value is JsonValue {
+  if (value === null) return true;
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return true;
+  if (Array.isArray(value)) return value.every(isJsonValue);
+  if (typeof value === 'object') return Object.values(value as Record<string, unknown>).every(isJsonValue);
+  return false;
+}
+
+function stringifyOutputValue(value: JsonValue): string {
+  return value !== null && typeof value === 'object' ? JSON.stringify(value) : String(value);
 }
 
 /** Build the pipeline step definition (form + handles) for an imported module. */
@@ -70,17 +78,19 @@ export function moduleToRegistryEntry(mod: LiatirModule): PipelineRegistryEntry 
       }
 
       const result = out.result;
-      const outputFiles: RunOutputFile[] = [];
       const metrics: Record<string, number> = {};
+      const values: Record<string, JsonValue> = {};
+      const outputFiles = await saveModuleResultFiles(mod.name, mod.outputSchema, result, crypto.randomUUID());
 
       if (result && typeof result === 'object') {
         const obj = result as Record<string, unknown>;
         for (const [key, field] of Object.entries(mod.outputSchema)) {
           const v = obj[key];
-          if (field.type === 'file' && typeof v === 'string' && v.length > 0) {
-            outputFiles.push({ label: field.label ?? key, path: v, ext: detectExt(v) });
-          } else if (field.type === 'number' && typeof v === 'number') {
+          if (field.type === 'number' && typeof v === 'number') {
             metrics[key] = v;
+            values[key] = v;
+          } else if (field.type !== 'file' && isJsonValue(v)) {
+            values[key] = v;
           }
         }
       }
@@ -93,6 +103,9 @@ export function moduleToRegistryEntry(mod: LiatirModule): PipelineRegistryEntry 
         outputFiles,
         output,
         metrics: Object.keys(metrics).length > 0 ? metrics : undefined,
+        values: Object.keys(values).length > 0 ? Object.fromEntries(
+          Object.entries(values).map(([key, value]) => [key, stringifyOutputValue(value)])
+        ) : undefined,
       };
     },
   };

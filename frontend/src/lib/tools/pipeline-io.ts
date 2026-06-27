@@ -9,6 +9,7 @@ import type { Node, Edge } from '@xyflow/svelte';
 import { PIPELINE_REGISTRY } from './pipeline-registry';
 import { apiConnections } from '$lib/stores/apiConnections.svelte';
 import type { PickerItem } from '$lib/components/ui/OptionPicker.svelte';
+import { matchesAcceptedExtension } from '$lib/utils/file-extensions';
 
 export interface NodeOutput {
   /** Key used in the `@pipe:nodeId:key` reference token. */
@@ -18,7 +19,7 @@ export interface NodeOutput {
   /** For file outputs — primary extension (used to match a downstream `accept`). */
   ext?: string;
   /** For value outputs. */
-  valueType?: 'number' | 'string';
+  valueType?: 'number' | 'string' | 'boolean' | 'json';
 }
 
 /** Human label for a node (used as the picker sublabel / source name). */
@@ -43,7 +44,9 @@ export function nodeOutputs(node: Node): NodeOutput[] {
       for (const [key, s] of Object.entries(def.outputSchema)) {
         if (s.type === 'file')        out.push({ key, label: s.label ?? key, kind: 'file', ext: s.ext?.[0] });
         else if (s.type === 'number') out.push({ key, label: s.label ?? key, kind: 'value', valueType: 'number' });
-        else if (s.type === 'string') out.push({ key, label: s.label ?? key, kind: 'value', valueType: 'string' });
+        else if (s.type === 'boolean') out.push({ key, label: s.label ?? key, kind: 'value', valueType: 'boolean' });
+        else if (s.type === 'json')    out.push({ key, label: s.label ?? key, kind: 'value', valueType: 'json' });
+        else if (s.type === 'string')  out.push({ key, label: s.label ?? key, kind: 'value', valueType: 'string' });
         // 'stats' is a rich report — not connectable.
       }
       return out;
@@ -89,7 +92,7 @@ export function upstreamOptions(
     const src = nodeDisplayLabel(n);
     for (const o of nodeOutputs(n)) {
       if (o.kind !== want) continue;
-      if (want === 'file' && opts.accept?.length && o.ext && !opts.accept.includes(o.ext)) continue;
+      if (want === 'file' && opts.accept?.length && o.ext && !matchesAcceptedExtension(`file.${o.ext}`, opts.accept)) continue;
       if (want === 'value' && opts.valueType === 'number' && o.valueType !== 'number') continue;
       items.push({
         value: `@pipe:${n.id}:${o.key}`,
