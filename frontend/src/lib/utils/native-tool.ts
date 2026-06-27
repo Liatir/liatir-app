@@ -10,11 +10,12 @@ export interface NativeRunResult {
 }
 
 /**
- * Spawns a system command via Liatir.jobs.spawn, streams stdout/stderr via callbacks,
- * and resolves when the process exits.
+ * Spawn a system command via the Rust job registry and poll its buffered
+ * stdout/stderr until the process reaches a terminal status.
  *
- * All three event listeners are registered atomically (via Promise.all) before any
- * can fire, avoiding the race condition where early events are lost.
+ * Polling the registry is deliberate: short-lived bio tools can finish before
+ * the webview has registered Tauri event listeners, while the backend buffers
+ * every output line and final status as the durable source of truth.
  */
 export async function runNativeTool(
   cmd: string,
@@ -35,42 +36,50 @@ export async function runNativeTool(
 
   const stdoutLines: string[] = [];
   const stderrLines: string[] = [];
+  let stdoutSeen = 0;
+  let stderrSeen = 0;
 
-  // Declare unlisten refs so exit callback can call them
-  let offStdout: (() => void) | undefined;
-  let offStderr: (() => void) | undefined;
-  let offExit: (() => void) | undefined;
+  while (true) {
+    const since = Math.min(stdoutSeen, stderrSeen);
+    const [out, entry] = await Promise.all([
+      api.invoke('lia_jobs_get_output', { jobId, since }) as Promise<{
+        stdout: string[];
+        stderr: string[];
+        stdoutTotal: number;
+        stderrTotal: number;
+      }>,
+      api.invoke('lia_jobs_status', { jobId }) as Promise<{
+        status: { type: 'running' | 'done' | 'failed' | 'killed'; exitCode?: number | null };
+      }>,
+    ]);
 
-  return new Promise<NativeRunResult>((outerResolve, outerReject) => {
-    // async IIFE inside the Promise so we can await Promise.all
-    (async () => {
-      try {
-        // Register all three listeners simultaneously — avoids race where early
-        // events are lost while waiting for sequential listener registrations.
-        [offStdout, offStderr, offExit] = await Promise.all([
-          api.desktop.events.on(`jobs:stdout:${jobId}`, (line: string) => {
-            stdoutLines.push(line);
-            onStdout?.(line);
-          }),
-          api.desktop.events.on(`jobs:stderr:${jobId}`, (line: string) => {
-            stderrLines.push(line);
-            onStderr?.(line);
-          }),
-          api.desktop.events.on(`jobs:exit:${jobId}`, (payload: { exitCode: number | null; ok: boolean }) => {
-            offStdout?.();
-            offStderr?.();
-            offExit?.();
-            outerResolve({
-              stdout: stdoutLines.join('\n'),
-              stderr: stderrLines.join('\n'),
-              exitCode: payload.exitCode,
-              ok: payload.ok,
-            });
-          }),
-        ]);
-      } catch (err) {
-        outerReject(err);
-      }
-    })();
-  });
+    const stdoutStart = Math.max(0, stdoutSeen - since);
+    const stderrStart = Math.max(0, stderrSeen - since);
+
+    for (const line of out.stdout.slice(stdoutStart)) {
+      stdoutLines.push(line);
+      onStdout?.(line);
+    }
+    for (const line of out.stderr.slice(stderrStart)) {
+      stderrLines.push(line);
+      onStderr?.(line);
+    }
+
+    stdoutSeen = out.stdoutTotal;
+    stderrSeen = out.stderrTotal;
+
+    if (entry.status.type !== 'running') {
+      const exitCode = entry.status.type === 'done' || entry.status.type === 'failed'
+        ? entry.status.exitCode ?? null
+        : null;
+      return {
+        stdout: stdoutLines.join('\n'),
+        stderr: stderrLines.join('\n'),
+        exitCode,
+        ok: entry.status.type === 'done' && exitCode === 0,
+      };
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
 }
