@@ -64,7 +64,7 @@ struct JobState {
 // Registry (managed Tauri state)
 // ---------------------------------
 
-pub struct JobRegistry(pub Mutex<HashMap<String, JobState>>);
+pub struct JobRegistry(Mutex<HashMap<String, JobState>>);
 
 impl JobRegistry {
     pub fn new() -> Self {
@@ -83,6 +83,28 @@ pub async fn lia_jobs_spawn(
     args: Vec<String>,
     cwd: Option<String>,
     workspace_id: Option<String>,
+) -> Result<serde_json::Value, String> {
+    spawn_job(app, cmd, args, cwd, workspace_id, None).await
+}
+
+pub(crate) async fn lia_jobs_spawn_with_cleanup(
+    app: AppHandle,
+    cmd: String,
+    args: Vec<String>,
+    cwd: Option<String>,
+    workspace_id: Option<String>,
+    cleanup_dir: Option<String>,
+) -> Result<serde_json::Value, String> {
+    spawn_job(app, cmd, args, cwd, workspace_id, cleanup_dir).await
+}
+
+async fn spawn_job(
+    app: AppHandle,
+    cmd: String,
+    args: Vec<String>,
+    cwd: Option<String>,
+    workspace_id: Option<String>,
+    cleanup_dir: Option<String>,
 ) -> Result<serde_json::Value, String> {
     if cmd.is_empty() || cmd.contains("..") {
         return Err(format!("invalid command: {cmd:?}"));
@@ -176,6 +198,10 @@ pub async fn lia_jobs_spawn(
                         &format!("jobs:exit:{jid}"),
                         serde_json::json!({ "jobId": jid, "exitCode": exit_code, "ok": ok }),
                     );
+
+                    if let Some(dir) = cleanup_dir.as_deref() {
+                        let _ = std::fs::remove_dir_all(dir);
+                    }
                 }
                 _ => {}
             }

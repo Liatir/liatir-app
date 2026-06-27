@@ -19,6 +19,7 @@ npm i @liatir/lia        # then use `npx lia …`  (or `npm i -g @liatir/lia`)
 ```bash
 npx lia init my-module
 cd my-module && npm install
+npx lia dev --input '{"fastq":"/absolute/path/sample.fastq"}'
 npx lia build            # → my-module.lia
 ```
 

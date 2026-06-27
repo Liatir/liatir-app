@@ -1,0 +1,20 @@
+{
+  "name": "wasm-length",
+  "version": "1.0.0",
+  "description": "Minimal WASM-based .lia module for Liatir runtime testing",
+  "runtime": "wasm",
+  "inputSchema": {
+    "text": {
+      "type": "string",
+      "label": "Text",
+      "required": true,
+      "default": "hello from wasm"
+    }
+  },
+  "outputSchema": {
+    "length": {
+      "type": "number",
+      "label": "Length"
+    }
+  }
+}

@@ -1,7 +1,7 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 import * as child_process from "child_process";
-import { build as esbuild, context as esbuildContext } from "esbuild";
+import { context as esbuildContext } from "esbuild";
 
 interface Manifest {
   name: string;
@@ -11,31 +11,81 @@ interface Manifest {
 async function loadManifest(): Promise<Manifest> {
   const cwd = process.cwd();
   const manifestPath = path.join(cwd, ".lia-manifest.json");
+  const packagePath = path.join(cwd, "package.json");
+
   try {
     return JSON.parse(await fs.readFile(manifestPath, "utf-8")) as Manifest;
   } catch {
-    console.error("No .lia-manifest.json found. Run this command from your project root.");
-    process.exit(1);
+    try {
+      const pkg = JSON.parse(await fs.readFile(packagePath, "utf-8")) as Manifest;
+      return { name: pkg.name, version: pkg.version };
+    } catch {
+      console.error("No package.json or .lia-manifest.json found. Run this command from your module root.");
+      process.exit(1);
+    }
   }
 }
 
-// Generates a thin runner that imports the bundle and calls run({})
-function runnerScript(bundlePath: string): string {
+async function parseDevInputs(args: string[]): Promise<Record<string, unknown>> {
+  const inlineIdx = args.findIndex((a) => a === "--input" || a === "--inputs");
+  if (inlineIdx >= 0) {
+    const raw = args[inlineIdx + 1];
+    if (!raw) {
+      console.error("Missing JSON value after --input.");
+      process.exit(1);
+    }
+    return JSON.parse(raw) as Record<string, unknown>;
+  }
+
+  const inlineEq = args.find((a) => a.startsWith("--input=") || a.startsWith("--inputs="));
+  if (inlineEq) {
+    return JSON.parse(inlineEq.slice(inlineEq.indexOf("=") + 1)) as Record<string, unknown>;
+  }
+
+  const fileIdx = args.findIndex((a) => a === "--input-file" || a === "--inputs-file");
+  if (fileIdx >= 0) {
+    const file = args[fileIdx + 1];
+    if (!file) {
+      console.error("Missing file path after --input-file.");
+      process.exit(1);
+    }
+    return JSON.parse(await fs.readFile(path.resolve(file), "utf-8")) as Record<string, unknown>;
+  }
+
+  const fileEq = args.find((a) => a.startsWith("--input-file=") || a.startsWith("--inputs-file="));
+  if (fileEq) {
+    const file = fileEq.slice(fileEq.indexOf("=") + 1);
+    return JSON.parse(await fs.readFile(path.resolve(file), "utf-8")) as Record<string, unknown>;
+  }
+
+  return {};
+}
+
+// Generates a thin runner that imports the bundle and calls the same runtime
+// shape used by `lia build`: default defineModule(...), a bare default function,
+// or a named run export.
+function runnerScript(bundlePath: string, inputs: Record<string, unknown>): string {
   return `
-import { createLiatir } from "@liatir/sdk";
-import { run } from ${JSON.stringify(bundlePath)};
+import * as _mod from ${JSON.stringify(bundlePath)};
+const _providedInputs = ${JSON.stringify(inputs)};
 
-const Liatir = await createLiatir().catch(e => {
-  console.error(e.message);
+const _m = _mod.default ?? _mod;
+const _run = typeof _m === "function" ? _m : (_m && (_m.run ?? _mod.run));
+if (typeof _run !== "function") {
+  console.error("[liatir dev] module must export default defineModule(...), a default function, or a named run function");
   process.exit(1);
-});
+}
 
-// Inject Liatir as a global so scripts that do \`import { createLiatir }\` still work,
-// but also support the pattern where scripts access it via \`createLiatir()\`.
-globalThis.Liatir = Liatir;
+const _defaults = {};
+for (const [key, field] of Object.entries(_m.inputs ?? {})) {
+  if (field && typeof field === "object" && "default" in field) {
+    _defaults[key] = field.default;
+  }
+}
 
-console.log("[liatir dev] running script...");
-const result = await run({}).catch(e => {
+const _inputs = { ..._defaults, ..._providedInputs };
+console.log("[liatir dev] running module with inputs:", JSON.stringify(_inputs, null, 2));
+const result = await _run(_inputs).catch(e => {
   console.error("[liatir dev] script error:", e);
   process.exit(1);
 });
@@ -43,9 +93,10 @@ console.log("[liatir dev] result:", JSON.stringify(result, null, 2));
 `;
 }
 
-export async function dev() {
+export async function dev(args: string[] = []) {
   const cwd = process.cwd();
   const manifest = await loadManifest();
+  const inputs = await parseDevInputs(args);
   const entryPoint = path.join(cwd, "src", "index.ts");
   const distDir = path.join(cwd, ".lia-dev");
   const bundlePath = path.join(distDir, "index.mjs");
@@ -64,10 +115,9 @@ export async function dev() {
       runningProcess.kill();
     }
 
-    await fs.writeFile(runnerPath, runnerScript(bundlePath));
+    await fs.writeFile(runnerPath, runnerScript(bundlePath, inputs));
 
     runningProcess = child_process.fork(runnerPath, [], {
-      execArgv: ["--input-type=module"],
       stdio: "inherit",
     });
 

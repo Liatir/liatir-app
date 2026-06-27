@@ -1,6 +1,7 @@
 import { liatir } from '$lib/api';
 import { getDataPrefix } from '$lib/stores/workspace.svelte';
 import { dataFiles } from '$lib/stores/dataFiles.svelte';
+import { safeResultName } from './results';
 
 /**
  * Bridge for persisting/removing files produced by .lia modules.
@@ -56,12 +57,34 @@ export async function deleteModuleOutput(path: string): Promise<void> {
 
 /**
  * Shape a module may return for a file-typed output:
- *   - a plain string (treated as UTF-8 file content), or
- *   - `{ content, fileName?, base64? }` for explicit control.
+ *   - a plain string: absolute path to an existing file produced by the module
+ *   - `{ content, fileName?, base64? }`: content Liatir should save to Results
  */
 export type ModuleFileValue =
   | string
   | { content: string; fileName?: string; base64?: boolean };
+
+function detectExt(path: string): string {
+  const lower = path.toLowerCase();
+  for (const multi of ['fastq.gz', 'fq.gz', 'fasta.gz', 'fa.gz', 'vcf.gz', 'bcf.gz']) {
+    if (lower.endsWith(`.${multi}`)) return multi;
+  }
+  return lower.split(/[\\/]/).pop()?.split('.').pop() ?? '';
+}
+
+async function registerExistingModuleOutput(moduleName: string, path: string): Promise<ModuleSaveResult> {
+  const api = liatir();
+  if (!api) throw new Error('Liatir API not available');
+
+  await api.invoke('lia_file_size', { path });
+
+  const virtualFolder = `Results/${safeResultName(moduleName)}`;
+  await dataFiles.createFolder('Results').catch(() => {});
+  await dataFiles.createFolder(virtualFolder).catch(() => {});
+  await dataFiles.add(path, virtualFolder).catch(() => {});
+
+  return { path, virtualFolder, ext: detectExt(path) };
+}
 
 /**
  * Persist all file-typed outputs declared in a module's outputSchema from its
@@ -89,8 +112,8 @@ export async function saveModuleResultFiles(
 
     if (typeof raw === 'string') {
       if (raw === '') continue;
-      content = raw;
-      fileName = `${key}-${runId}.${defaultExt}`;
+      saved.push(await registerExistingModuleOutput(moduleName, raw));
+      continue;
     } else if (typeof raw === 'object' && typeof raw.content === 'string') {
       content = raw.content;
       base64 = raw.base64 ?? false;

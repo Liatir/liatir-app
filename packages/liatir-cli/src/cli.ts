@@ -19,7 +19,7 @@ async function main() {
       break;
     }
     case "dev":
-      await dev();
+      await dev(rest);
       break;
     case "build":
       await build();
@@ -31,6 +31,8 @@ Usage:
   liatir init <name>          Scaffold a new Node (.lia) module
   liatir init <name> --wasm   Scaffold a new WASM custom tool (Rust)
   liatir dev                  Watch mode: rebuild on save, run against live Liatir app
+  liatir dev --input '{"text":"hello"}'
+  liatir dev --input-file inputs.json
   liatir build                Bundle and package as <name>.lia
 `);
   }

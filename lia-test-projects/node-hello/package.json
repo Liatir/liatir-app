@@ -1,0 +1,14 @@
+{
+  "name": "node-hello",
+  "version": "1.0.0",
+  "description": "Minimal Node-based .lia module for Liatir runtime testing",
+  "type": "module",
+  "scripts": {
+    "dev": "lia dev",
+    "build": "lia build"
+  },
+  "devDependencies": {
+    "@liatir/lia": "file:../../packages/liatir-cli",
+    "@liatir/sdk": "file:../../packages/liatir-adapter"
+  }
+}

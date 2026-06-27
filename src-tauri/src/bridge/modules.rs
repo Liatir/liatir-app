@@ -152,11 +152,12 @@ pub async fn lia_liatir_run(
     let inputs_json = serde_json::to_string(&inputs).map_err(|e| e.to_string())?;
     let cwd = temp_dir.to_string_lossy().to_string();
 
-    super::jobs::lia_jobs_spawn(
+    super::jobs::lia_jobs_spawn_with_cleanup(
         app,
         "node".to_string(),
         vec!["_runner.mjs".to_string(), inputs_json],
         Some(cwd),
         None,
+        Some(temp_dir.to_string_lossy().to_string()),
     ).await
 }

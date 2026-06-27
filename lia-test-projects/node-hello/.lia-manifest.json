@@ -1,0 +1,29 @@
+{
+  "name": "node-hello",
+  "version": "1.0.0",
+  "description": "Minimal Node-based .lia module for Liatir runtime testing",
+  "runtime": "node",
+  "inputSchema": {
+    "text": {
+      "type": "string",
+      "label": "Text",
+      "required": true,
+      "default": "hello from node"
+    },
+    "repeat": {
+      "type": "number",
+      "label": "Repeat",
+      "default": 1
+    }
+  },
+  "outputSchema": {
+    "message": {
+      "type": "string",
+      "label": "Message"
+    },
+    "length": {
+      "type": "number",
+      "label": "Length"
+    }
+  }
+}

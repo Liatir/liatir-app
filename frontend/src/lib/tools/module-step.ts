@@ -14,6 +14,14 @@ export function moduleStepId(moduleId: string): string {
   return `module:${moduleId}`;
 }
 
+function detectExt(path: string): string {
+  const lower = path.toLowerCase();
+  for (const multi of ['fastq.gz', 'fq.gz', 'fasta.gz', 'fa.gz', 'vcf.gz', 'bcf.gz']) {
+    if (lower.endsWith(`.${multi}`)) return multi;
+  }
+  return lower.split(/[\\/]/).pop()?.split('.').pop() ?? '';
+}
+
 /** A module's input schema is already InputFieldSchema-shaped. */
 function mapInputs(schema: Record<string, FieldDef>): Record<string, InputFieldSchema> {
   const out: Record<string, InputFieldSchema> = {};
@@ -70,7 +78,7 @@ export function moduleToRegistryEntry(mod: LiatirModule): PipelineRegistryEntry 
         for (const [key, field] of Object.entries(mod.outputSchema)) {
           const v = obj[key];
           if (field.type === 'file' && typeof v === 'string' && v.length > 0) {
-            outputFiles.push({ label: field.label ?? key, path: v, ext: v.split('.').pop() ?? '' });
+            outputFiles.push({ label: field.label ?? key, path: v, ext: detectExt(v) });
           } else if (field.type === 'number' && typeof v === 'number') {
             metrics[key] = v;
           }

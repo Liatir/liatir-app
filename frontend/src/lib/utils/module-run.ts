@@ -27,31 +27,51 @@ export async function runLiatirModule(
     | { ok: boolean; value?: unknown; stdout?: string; stderr?: string; error?: string };
 
   if ('jobId' in res && res.jobId) {
-    // ── Node runtime: stream the job until exit ──────────────────────────────
+    // ── Node runtime: poll buffered job output until exit ────────────────────
+    // Do not rely only on Tauri events here: very small modules can print their
+    // result and exit before the frontend has registered listeners.
     const jobId = res.jobId;
-    await new Promise<void>((resolve) => {
-      const unsubs: Array<() => void> = [];
+    let stdoutSeen = 0;
+    let stderrSeen = 0;
 
-      api.desktop.events.on(`jobs:stdout:${jobId}`, (line: string) => {
+    while (true) {
+      const [out, entry] = await Promise.all([
+        api.invoke('lia_jobs_get_output', { jobId }) as Promise<{
+          stdout: string[];
+          stderr: string[];
+          stdoutTotal: number;
+          stderrTotal: number;
+        }>,
+        api.invoke('lia_jobs_status', { jobId }) as Promise<{
+          status: { type: 'running' | 'done' | 'failed' | 'killed'; exitCode?: number | null };
+        }>,
+      ]);
+
+      for (const line of out.stdout.slice(stdoutSeen)) {
         if (line.startsWith('__LIATIR_RESULT__')) {
-          try { result = JSON.parse(line.slice('__LIATIR_RESULT__'.length)); } catch { /* ok */ }
+          try { result = JSON.parse(line.slice('__LIATIR_RESULT__'.length)); } catch { /* ignore malformed marker */ }
         } else {
           stdout.push(line);
           onLog?.('stdout', line);
         }
-      }).then((fn: () => void) => unsubs.push(fn));
-
-      api.desktop.events.on(`jobs:stderr:${jobId}`, (line: string) => {
+      }
+      for (const line of out.stderr.slice(stderrSeen)) {
         stderr.push(line);
         onLog?.('stderr', line);
-      }).then((fn: () => void) => unsubs.push(fn));
+      }
 
-      api.desktop.events.on(`jobs:exit:${jobId}`, (payload: { exitCode: number | null }) => {
-        exitCode = payload.exitCode;
-        for (const fn of unsubs) fn();
-        resolve();
-      }).then((fn: () => void) => unsubs.push(fn));
-    });
+      stdoutSeen = out.stdoutTotal;
+      stderrSeen = out.stderrTotal;
+
+      if (entry.status.type !== 'running') {
+        exitCode = entry.status.type === 'done' || entry.status.type === 'failed'
+          ? entry.status.exitCode ?? null
+          : 1;
+        break;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
   } else {
     // ── WASM runtime: the sandboxed module returned its result synchronously ──
     const r = res as { ok: boolean; value?: unknown; stdout?: string; stderr?: string; error?: string };

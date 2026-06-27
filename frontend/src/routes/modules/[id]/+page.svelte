@@ -61,6 +61,23 @@
     );
   }
 
+  function fieldHasValue(key: string, field: FieldDef): boolean {
+    if (!field.required) return true;
+    const value = values[key];
+    if (field.type === 'boolean') return value !== undefined;
+    if (field.type === 'number') {
+      return value !== '' && value !== null && value !== undefined && Number.isFinite(Number(value));
+    }
+    return typeof value === 'string' ? value.trim().length > 0 : value !== null && value !== undefined;
+  }
+
+  const canRun = $derived(
+    !running &&
+    nodeAvailable !== false &&
+    !!mod &&
+    Object.entries(mod.inputSchema).every(([key, field]) => fieldHasValue(key, field))
+  );
+
   async function run() {
     if (!mod) return;
     running = true;
@@ -209,7 +226,7 @@
               variant="primary"
               size="sm"
               loading={running}
-              disabled={nodeAvailable === false}
+              disabled={!canRun}
               onclick={run}
             >
               {running ? 'Running…' : 'Run'}

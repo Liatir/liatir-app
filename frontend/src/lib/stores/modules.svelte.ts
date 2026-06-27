@@ -60,7 +60,7 @@ function createModulesStore() {
       if (!api) return null;
       const result = await api.desktop.files.open({
         multi: false,
-        filters: [{ name: 'Liatir Bundle', extensions: ['liatir'] }],
+        allowed: ['lia'],
       });
       const path = result?.paths?.[0];
       if (!path) return null;
