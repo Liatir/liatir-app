@@ -101,7 +101,7 @@
     {:else}
       <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl">
         {#each pipelineStore.savedPipelines as p (p.id)}
-          {@const stepCount = p.nodes.filter(n => n.type === 'tool').length}
+          {@const stepCount = p.nodes.filter(n => n.type !== 'start').length}
           <div class="bg-white rounded-xl border border-border shadow-sm hover:shadow-md hover:border-brand/30 transition-all group">
             <button
               onclick={() => openPipeline(p)}

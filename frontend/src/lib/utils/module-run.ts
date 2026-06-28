@@ -13,14 +13,14 @@ export async function runLiatirModule(
   mod: { path: string; runtime: 'node' | 'wasm' },
   inputs: Record<string, unknown>,
   onLog?: (stream: 'stdout' | 'stderr', line: string) => void,
-): Promise<{ result: unknown; stdout: string[]; stderr: string[]; exitCode: number | null }> {
+): Promise<{ result: unknown; stdout: string[]; stderr: string[]; exitCode: number }> {
   const api = liatir();
   if (!api) throw new Error('Liatir API not available');
 
   const stdout: string[] = [];
   const stderr: string[] = [];
   let result: unknown = null;
-  let exitCode: number | null = null;
+  let exitCode = 0;
 
   const res = (await api.invoke('lia_liatir_run', { path: mod.path, inputs })) as
     | { jobId: string }
@@ -64,9 +64,7 @@ export async function runLiatirModule(
       stderrSeen = out.stderrTotal;
 
       if (entry.status.type !== 'running') {
-        exitCode = entry.status.type === 'done' || entry.status.type === 'failed'
-          ? entry.status.exitCode ?? null
-          : 1;
+        exitCode = entry.status.type === 'done' ? (entry.status.exitCode ?? 0) : (entry.status.exitCode ?? 1);
         break;
       }
 

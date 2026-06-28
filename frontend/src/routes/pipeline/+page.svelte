@@ -45,6 +45,16 @@
 
   let unsavedChanges = $state(false);
 
+  type GraphSnapshot = { nodes: Node[]; edges: Edge[] };
+
+  const HISTORY_LIMIT = 80;
+  let undoStack = $state<GraphSnapshot[]>([]);
+  let redoStack = $state<GraphSnapshot[]>([]);
+  let historyReady = false;
+  let restoringGraphHistory = false;
+  let lastGraphSnapshot: GraphSnapshot | null = null;
+  let lastGraphKey = '';
+
   const nodeTypes: NodeTypes = {
     tool: ToolNode,
     start: StartNode,
@@ -104,6 +114,123 @@
       out.push(e);
     }
     return out;
+  }
+
+  function cloneJson<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value)) as T;
+  }
+
+  function normalizeNodeForHistory(node: Node): Node {
+    const copy = cloneJson(node) as Node & Record<string, unknown>;
+    delete copy.selected;
+    delete copy.dragging;
+    delete copy.resizing;
+    return copy as Node;
+  }
+
+  function normalizeEdgeForHistory(edge: Edge): Edge {
+    const copy = cloneJson(edge) as Edge & Record<string, unknown>;
+    delete copy.selected;
+    return { ...copy, selectable: false } as Edge;
+  }
+
+  function cloneGraphSnapshot(snapshot: GraphSnapshot): GraphSnapshot {
+    return {
+      nodes: snapshot.nodes.map(normalizeNodeForHistory),
+      edges: snapshot.edges.map(normalizeEdgeForHistory),
+    };
+  }
+
+  function createGraphSnapshot(): GraphSnapshot {
+    return {
+      nodes: nodes.map(normalizeNodeForHistory),
+      edges: dedupeEdges(edges).map(normalizeEdgeForHistory),
+    };
+  }
+
+  function graphSnapshotKey(snapshot: GraphSnapshot): string {
+    return JSON.stringify(snapshot);
+  }
+
+  function resetGraphHistory() {
+    undoStack = [];
+    redoStack = [];
+    historyReady = false;
+    restoringGraphHistory = false;
+    lastGraphSnapshot = null;
+    lastGraphKey = '';
+  }
+
+  function syncGraphHistory(currentSnapshot: GraphSnapshot) {
+    const currentKey = graphSnapshotKey(currentSnapshot);
+
+    if (!historyReady) {
+      historyReady = true;
+      lastGraphSnapshot = cloneGraphSnapshot(currentSnapshot);
+      lastGraphKey = currentKey;
+      return;
+    }
+
+    if (currentKey === lastGraphKey) return;
+
+    if (!restoringGraphHistory && lastGraphSnapshot) {
+      undoStack = [...undoStack, cloneGraphSnapshot(lastGraphSnapshot)].slice(-HISTORY_LIMIT);
+      redoStack = [];
+    }
+
+    lastGraphSnapshot = cloneGraphSnapshot(currentSnapshot);
+    lastGraphKey = currentKey;
+  }
+
+  async function restoreGraphSnapshot(snapshot: GraphSnapshot) {
+    restoringGraphHistory = true;
+    nodes = snapshot.nodes.map(normalizeNodeForHistory);
+    edges = dedupeEdges(snapshot.edges).map(normalizeEdgeForHistory);
+    unsavedChanges = true;
+    await tick();
+    restoringGraphHistory = false;
+    await savePipeline();
+  }
+
+  const canUndo = $derived(undoStack.length > 0 && !pipelineStore.running);
+  const canRedo = $derived(redoStack.length > 0 && !pipelineStore.running);
+
+  async function undoGraphChange() {
+    if (!canUndo) return;
+    const previous = undoStack[undoStack.length - 1];
+    redoStack = [...redoStack, createGraphSnapshot()].slice(-HISTORY_LIMIT);
+    undoStack = undoStack.slice(0, -1);
+    await restoreGraphSnapshot(previous);
+  }
+
+  async function redoGraphChange() {
+    if (!canRedo) return;
+    const next = redoStack[redoStack.length - 1];
+    undoStack = [...undoStack, createGraphSnapshot()].slice(-HISTORY_LIMIT);
+    redoStack = redoStack.slice(0, -1);
+    await restoreGraphSnapshot(next);
+  }
+
+  function isEditableTarget(target: EventTarget | null): boolean {
+    const element = target instanceof HTMLElement ? target : null;
+    if (!element) return false;
+    const tag = element.tagName.toLowerCase();
+    return tag === 'input' || tag === 'textarea' || tag === 'select' || element.isContentEditable;
+  }
+
+  function handleKeyboardShortcut(event: KeyboardEvent) {
+    if (isEditableTarget(event.target)) return;
+    const isModifierPressed = event.metaKey || event.ctrlKey;
+    if (!isModifierPressed) return;
+
+    const key = event.key.toLowerCase();
+    if (key === 'z' && !event.shiftKey) {
+      event.preventDefault();
+      void undoGraphChange();
+    } else if ((key === 'z' && event.shiftKey) || key === 'y') {
+      event.preventDefault();
+      void redoGraphChange();
+    }
   }
 
   async function deleteEdgeById(id: string) {
@@ -202,11 +329,13 @@
       edges = dedupeEdges(pipelineStore.currentEdges).map(e => ({ ...e, selectable: false }));
       nameInput = pipelineStore.pipelineName;
     }
+    resetGraphHistory();
     storeReady = true;
   });
 
   $effect(() => {
     if (!storeReady) return;
+    syncGraphHistory(createGraphSnapshot());
     pipelineStore.setCurrentState(nodes, edges, nameInput);
   });
 
@@ -291,6 +420,8 @@
   }
 </script>
 
+<svelte:window onkeydown={handleKeyboardShortcut} />
+
 <div class="flex flex-col h-full overflow-hidden">
    <PageHeader title={nameInput || 'Untitled Pipeline'} description="Visual workflow builder — connect tools to automate analysis">
     {#snippet actions()}
@@ -324,6 +455,28 @@
           Pipelines
           </span>
         </button> -->
+        <div class="flex items-center gap-1">
+          <button
+            type="button"
+            title="Undo"
+            aria-label="Undo"
+            onclick={() => void undoGraphChange()}
+            disabled={!canUndo}
+            class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Icon icon="lucide:undo-2" width="13" height="13" />
+          </button>
+          <button
+            type="button"
+            title="Redo"
+            aria-label="Redo"
+            onclick={() => void redoGraphChange()}
+            disabled={!canRedo}
+            class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Icon icon="lucide:redo-2" width="13" height="13" />
+          </button>
+        </div>
         {#if nodes.length > 0}
           <Button variant="ghost" size="sm" onclick={clear} disabled={pipelineStore.running}>
             <Icon icon="ph:broom" width="12" height="12" />

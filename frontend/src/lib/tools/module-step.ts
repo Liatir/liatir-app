@@ -45,10 +45,6 @@ function isJsonValue(value: unknown): value is JsonValue {
   return false;
 }
 
-function stringifyOutputValue(value: JsonValue): string {
-  return value !== null && typeof value === 'object' ? JSON.stringify(value) : String(value);
-}
-
 /** Build the pipeline step definition (form + handles) for an imported .lia plugin. */
 export function moduleToDefinition(mod: LiatirModule): PipelineStepDefinition {
   return {
@@ -103,9 +99,7 @@ export function moduleToRegistryEntry(mod: LiatirModule): PipelineRegistryEntry 
         outputFiles,
         output,
         metrics: Object.keys(metrics).length > 0 ? metrics : undefined,
-        values: Object.keys(values).length > 0 ? Object.fromEntries(
-          Object.entries(values).map(([key, value]) => [key, stringifyOutputValue(value)])
-        ) : undefined,
+        values: Object.keys(values).length > 0 ? values : undefined,
       };
     },
   };
