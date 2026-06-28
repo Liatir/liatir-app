@@ -1,7 +1,7 @@
 import type { JsonValue } from '@liatir/core';
 import type { PipelineStepDefinition } from '$lib/types/pipeline';
 import type { ToolOutput } from '$lib/types/tool-output';
-import { MOCK_AI_MODEL_ID, localAIModelOptions } from '$lib/ai/model-registry';
+import { MOCK_AI_MODEL_ID } from '$lib/ai/model-registry';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
 
 export const mockAIInferenceDefinition: PipelineStepDefinition = {
@@ -16,7 +16,6 @@ export const mockAIInferenceDefinition: PipelineStepDefinition = {
       label: 'AI Model',
       required: true,
       default: MOCK_AI_MODEL_ID,
-      options: localAIModelOptions(),
     },
     prompt: {
       type: 'string',

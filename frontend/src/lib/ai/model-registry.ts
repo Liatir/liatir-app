@@ -1,4 +1,4 @@
-import type { LiatirAIModelMetadata, LiatirFieldOption } from '@liatir/core';
+import type { LiatirAIModelMetadata } from '@liatir/core';
 
 export const MOCK_AI_MODEL_ID = 'liatir-mock-local';
 
@@ -36,12 +36,4 @@ export const LOCAL_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 
 export function getLocalAIModelMetadata(id: string): LiatirAIModelMetadata | undefined {
   return LOCAL_AI_MODEL_REGISTRY.find((model) => model.id === id);
-}
-
-export function localAIModelOptions(): LiatirFieldOption[] {
-  return LOCAL_AI_MODEL_REGISTRY.map((model) => ({
-    value: model.id,
-    label: model.name,
-    description: model.description,
-  }));
 }

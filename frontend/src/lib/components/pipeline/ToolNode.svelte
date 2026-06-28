@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
   import type { NodeProps } from '@xyflow/svelte';
   import type { Node, Edge } from '@xyflow/svelte';
@@ -7,6 +8,7 @@
   import { resolveStepEntry } from '$lib/tools/pipeline-registry';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
+  import { aiModelsStore } from '$lib/stores/aiModels.svelte';
   import OptionPicker from '$lib/components/ui/OptionPicker.svelte';
   import type { PickerGroup } from '$lib/components/ui/OptionPicker.svelte';
   import Select from '$lib/components/ui/Select.svelte';
@@ -27,6 +29,9 @@
   const status = $derived(state?.status ?? 'pending');
 
   const inputKeys = $derived(def ? Object.entries(def.inputSchema) : []);
+  const aiModelOptions = $derived(
+    aiModelsStore.runnableModels.map((model) => ({ value: model.id, label: model.name }))
+  );
 
   // Non-file outputs exposed as connectable value handles for downstream nodes.
   const valueOutputs = $derived(
@@ -44,6 +49,10 @@
   }
 
   const inputsDisabled = $derived(pipelineStore.running);
+
+  onMount(() => {
+    void aiModelsStore.init();
+  });
 
   function truncatePath(path: string, max = 40): string {
     if (path.length <= max) return path;
@@ -79,6 +88,11 @@
   function valueOptions(inputType: string) {
     return upstreamOptions(id, getNodes(), getEdges() as Edge[], 'value',
       inputType === 'number' ? { valueType: 'number' } : {});
+  }
+
+  function selectOptions(key: string, schema: { options?: { value: string; label: string }[] }) {
+    if (def?.type === 'ai-tool' && key === 'modelId') return aiModelOptions;
+    return schema.options ?? [];
   }
 
   async function setInput(key: string, value: string) {
@@ -123,14 +137,14 @@
             disabled={inputsDisabled}
             onchange={(v) => setInput(key, v)}
           />
-        {:else if schema.options && schema.options.length > 0}
+        {:else if selectOptions(key, schema).length > 0}
           <div>
             <span class="block text-[11px] text-zinc-500 mb-1">
               {schema.label ?? key}{schema.required ? '' : ' (optional)'}
             </span>
             <Select
               value={data.inputs[key] ?? String(schema.default ?? '')}
-              options={schema.options.map((option) => ({ value: option.value, label: option.label }))}
+              options={selectOptions(key, schema)}
               disabled={inputsDisabled}
               class="w-full"
               onchange={(v) => setInput(key, v)}
