@@ -9,6 +9,7 @@
   import { modulesStore } from '$lib/stores/modules.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import type { LiatirModule } from '$lib/stores/modules.svelte';
+	import Dot from '$lib/components/ui/Dot.svelte';
 
   onMount(() => modulesStore.init());
 
@@ -130,8 +131,8 @@
         <div class="flex flex-wrap items-center gap-2">
           {#each [
             { value: 'all', label: 'All runtimes' },
-            { value: 'node', label: 'Node .lia' },
-            { value: 'wasm', label: 'WASM .lia' },
+            { value: 'node', label: 'Node' },
+            { value: 'wasm', label: 'WASM' },
           ] as runtime}
             <button
               type="button"
@@ -164,73 +165,34 @@
           <p class="text-sm font-medium text-zinc-600">No plugins found</p>
         </div>
       {:else}
-      <Card>
-        <div class="divide-y divide-border">
+      <Card class="overflow-hidden">
+        <div class="divide-y divide-border overflow-hidden">
           {#each visiblePlugins as mod (mod.id)}
-            <div class="flex items-start gap-4 px-4 py-3 group hover:bg-surface-2 transition-colors">
+            <div class="flex items-start gap-4 px-4 py-3 group hover:bg-zinc-100/60 transition-colors">
 
-              <div class="h-9 w-9 rounded-lg bg-brand/8 border border-brand/20 flex items-center justify-center shrink-0">
-                <Icon icon={mod.runtime === 'wasm' ? 'lucide:box' : 'lucide:package'} width="15" height="15" class="text-brand" />
-              </div>
-
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2 min-w-0">
-                  <p class="text-sm font-medium text-zinc-800 truncate">{mod.name}</p>
-                  <Badge variant={mod.runtime === 'wasm' ? 'neutral' : 'available'}>{runtimeLabel(mod.runtime)}</Badge>
-                </div>
-                {#if mod.description}
-                  <p class="text-xs text-zinc-400 truncate">{mod.description}</p>
-                {:else}
-                  <p class="text-xs text-zinc-300 truncate font-mono">{mod.path.split(/[\\/]/).pop()}</p>
-                {/if}
-                <div class="mt-2 flex flex-wrap items-center gap-1.5">
-                  <span class="rounded px-1.5 py-0.5 text-[10px] font-medium border bg-zinc-100 text-zinc-500 border-zinc-200">
-                    {mod.category}
-                  </span>
-                  {#each mod.tags ?? [] as tag}
-                    <span class="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium border bg-white text-zinc-500 border-zinc-200">
-                      {tag}
-                      <button
-                        type="button"
-                        onclick={() => modulesStore.removeTag(mod.id, tag)}
-                        class="text-zinc-300 hover:text-red-500"
-                        aria-label={`Remove ${tag} tag`}
-                      >
-                        <Icon icon="lucide:x" width="9" height="9" />
-                      </button>
-                    </span>
-                  {/each}
-                </div>
-                <div class="mt-2 flex max-w-xs items-center gap-1.5">
-                  <input
-                    value={tagDrafts[mod.id] ?? ''}
-                    placeholder="Tag"
-                    oninput={(e) => tagDrafts = { ...tagDrafts, [mod.id]: (e.target as HTMLInputElement).value }}
-                    onkeydown={(e) => { if (e.key === 'Enter') addTag(mod); }}
-                    class="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1 text-xs text-zinc-700 outline-none focus:border-brand/60"
-                  />
-                  <button
-                    type="button"
-                    onclick={() => addTag(mod)}
-                    class="shrink-0 rounded-lg border border-border bg-surface px-2 py-1 text-zinc-400 hover:text-brand hover:border-brand/40 transition-colors"
-                    aria-label={`Add tag to ${mod.name}`}
-                  >
-                    <Icon icon="lucide:tag" width="12" height="12" />
-                  </button>
+              <div class="flex-1 justify-between min-w-0 border-r border-r-zinc-200/80 mr-2 pr-2">
+                <p class="text-md font-medium text-zinc-800 truncate">{mod.name}</p>
+                <div class="flex items-center gap-2 min-w-0 mt-3">
+                  <Badge hideDot size="xs" variant="brand">{(runtimeLabel(mod.runtime)).replace(".lia","")}</Badge>
+                  <Badge hideDot size="xs" variant="neutral">{mod.category}</Badge>
                 </div>
               </div>
 
-              <div class="hidden lg:flex min-w-36 flex-col gap-1 text-xs text-zinc-400">
+              <div class="hidden lg:flex min-w-36 flex-col self-stretch justify-between gap-1 text-xs text-zinc-400">
                 <span class="font-mono">v{mod.version}</span>
-                <span>{fieldCount(mod.inputSchema)} input{fieldCount(mod.inputSchema) !== 1 ? 's' : ''}</span>
-                <span>{fieldCount(mod.outputSchema)} output{fieldCount(mod.outputSchema) !== 1 ? 's' : ''}</span>
+                <div class="flex items-center gap-1.5 opacity-50">
+                  <Badge hideDot size='xs'>{fieldCount(mod.inputSchema)} input{fieldCount(mod.inputSchema) !== 1 ? 's' : ''}</Badge>
+                  <Badge hideDot size='xs'>{fieldCount(mod.outputSchema)} output{fieldCount(mod.outputSchema) !== 1 ? 's' : ''}</Badge>
+                </div>
               </div>
 
-              <span class="shrink-0 text-xs text-zinc-400 hidden sm:block">{fmtDate(mod.addedAt)}</span>
-
-              <Button variant="primary" size="sm" onclick={() => goto(`/plugins/${mod.id}`)}>
-                Run
-              </Button>
+              <button
+                onclick={async () => goto(`/plugins/${mod.id}`)}
+                aria-label="Run"
+                class="shrink-0 text-zinc-300 hover:text-brand transition-colors"
+              >
+                <Icon icon="lucide:play" width="14" height="14" />
+              </button>
 
               <button
                 onclick={async () => {

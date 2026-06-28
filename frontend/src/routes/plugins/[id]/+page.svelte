@@ -130,20 +130,18 @@
 
 {#if mod}
   <div class="flex flex-col h-full">
-    <PageHeader title={mod.name} description={mod.description || `v${mod.version}`}>
+    <PageHeader title={mod.name} description={mod.description || `Manage and run your plugin`}>
       {#snippet actions()}
-        <Badge variant={mod!.runtime === 'wasm' ? 'neutral' : 'available'}>{runtimeLabel(mod!.runtime)}</Badge>
-        <span class="text-xs font-mono text-zinc-400">v{mod!.version}</span>
-        <Button variant="ghost" size="sm" onclick={() => goto('/plugins')}>← Plugins</Button>
+        <span class="text-xs font-mono text-zinc-400">v{mod!.version} | </span>
+        <Button variant="secondary" size="sm" onclick={() => goto('/plugins')}>Plugins Page</Button>
       {/snippet}
     </PageHeader>
 
     <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
       <Card>
-        <div class="px-4 py-3 flex flex-wrap items-center gap-2">
-          <span class="rounded px-1.5 py-0.5 text-[10px] font-medium border bg-zinc-100 text-zinc-500 border-zinc-200">
-            {mod.category}
-          </span>
+        <div class="px-4 py-3 flex flex-wrap items-center gap-2 capitalize">
+          <Badge hideDot size="xs" variant="brand">{mod.runtime}</Badge>
+          <Badge hideDot size="xs" variant="neutral">{mod.category}</Badge>
           {#each mod.tags ?? [] as tag}
             <span class="rounded px-1.5 py-0.5 text-[10px] font-medium border bg-white text-zinc-500 border-zinc-200">
               {tag}
