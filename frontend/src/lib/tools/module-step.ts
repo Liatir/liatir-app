@@ -10,7 +10,7 @@ import { runLiatirModule } from '$lib/utils/module-run';
 import { saveModuleResultFiles } from '$lib/utils/module-files';
 import type { JsonValue } from '@liatir/core';
 
-/** Pipeline step id for an imported .lia plugin — namespaced to avoid clashing with native tools. */
+/** Pipeline step id for an imported .lia plugin — legacy prefix kept for saved pipeline compatibility. */
 export function moduleStepId(moduleId: string): string {
   return `module:${moduleId}`;
 }
@@ -49,7 +49,7 @@ function isJsonValue(value: unknown): value is JsonValue {
 export function moduleToDefinition(mod: LiatirModule): PipelineStepDefinition {
   return {
     id: moduleStepId(mod.id),
-    type: mod.runtime === 'wasm' ? 'wasm-plugin' : 'lia-module',
+    type: mod.runtime === 'wasm' ? 'wasm-plugin' : 'lia-plugin',
     label: mod.name,
     description: mod.description || (mod.runtime === 'wasm' ? 'WASM custom tool (sandboxed)' : 'Liatir plugin'),
     category: mod.runtime === 'wasm' ? 'Custom Tools' : 'Plugins',

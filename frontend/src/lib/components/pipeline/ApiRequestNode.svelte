@@ -10,9 +10,11 @@
   import { upstreamOptions } from '$lib/tools/pipeline-io';
   import ValueRefInput from './ValueRefInput.svelte';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
+  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
 
   let { id, data }: NodeProps<Node<ApiRequestNodeData>> = $props();
   const { updateNodeData, getNodes, getEdges } = useSvelteFlow();
+  const nodeDataContext = getPipelineNodeDataContext();
   const runState = $derived(pipelineStore.nodeStates.get(id));
   const status = $derived(runState?.status ?? 'pending');
   const disabled = $derived(pipelineStore.running);
@@ -37,8 +39,13 @@
     })
   );
 
+  async function updateApiRequestData(patch: Partial<ApiRequestNodeData>) {
+    updateNodeData(id, patch);
+    await commitNodeDataAfterUpdate(nodeDataContext, getNodes, getEdges);
+  }
+
   function selectRequest(rid: string, rname: string) {
-    updateNodeData(id, { requestId: rid, requestName: rname });
+    void updateApiRequestData({ requestId: rid, requestName: rname });
     showPicker = false;
     pickerQuery = '';
   }
@@ -74,7 +81,7 @@
   ]);
 
   function setOverride(key: string, value: string) {
-    updateNodeData(id, { paramOverrides: { ...(data.paramOverrides ?? {}), [key]: value } });
+    void updateApiRequestData({ paramOverrides: { ...(data.paramOverrides ?? {}), [key]: value } });
   }
 
   $effect(() => {
@@ -85,8 +92,8 @@
 <!-- Single input handle — wire upstream value nodes in, then map them to params below. -->
 <Handle type="target" position={Position.Left} id="input" />
 
-<div class="min-w-60 max-w-72 rounded-xl border border-border bg-white shadow-md overflow-hidden">
-  <div class="flex items-center gap-2 px-3 py-2 border-b border-border bg-rose-50 cursor-grab active:cursor-grabbing">
+<div class="min-w-60 max-w-72 rounded-xl border border-border bg-white shadow-md overflow-visible">
+  <div class="flex items-center gap-2 px-3 py-2 rounded-t-xl border-b border-border bg-rose-50 cursor-grab active:cursor-grabbing">
     <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
     <Icon icon="lucide:plug" width="11" height="11" class="text-rose-500 shrink-0" />
     <span class="text-[10px] font-semibold text-rose-700 uppercase tracking-wider">API Request</span>

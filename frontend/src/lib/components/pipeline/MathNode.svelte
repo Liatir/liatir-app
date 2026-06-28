@@ -8,9 +8,11 @@
   import { upstreamOptions } from '$lib/tools/pipeline-io';
   import ValueRefInput from './ValueRefInput.svelte';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
+  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
 
   let { id, data }: NodeProps<Node<MathNodeData>> = $props();
   const { updateNodeData, getNodes, getEdges } = useSvelteFlow();
+  const nodeDataContext = getPipelineNodeDataContext();
   const state = $derived(pipelineStore.nodeStates.get(id));
   const status = $derived(state?.status ?? 'pending');
 
@@ -42,18 +44,23 @@
     if (status === 'skipped') return 'bg-zinc-200';
     return 'bg-zinc-300';
   }
+
+  async function updateMathData(patch: Partial<MathNodeData>) {
+    updateNodeData(id, patch);
+    await commitNodeDataAfterUpdate(nodeDataContext, getNodes, getEdges);
+  }
 </script>
 
 <!-- Single input handle — wire upstream value nodes in, then pick each operand below. -->
 <Handle type="target" position={Position.Left} id="input" />
 
-<div class="min-w-56 rounded-xl border border-border bg-white shadow-md overflow-hidden">
-  <div class="flex items-center gap-2 px-3 py-2 border-b border-border bg-violet-50 cursor-grab active:cursor-grabbing">
+<div class="min-w-56 rounded-xl border border-border bg-white shadow-md overflow-visible">
+  <div class="flex items-center gap-2 px-3 py-2 rounded-t-xl border-b border-border bg-violet-50 cursor-grab active:cursor-grabbing">
     <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
     <span class="text-[10px] font-semibold text-violet-700 uppercase tracking-wider">Math</span>
     <select
       value={data.operation}
-      onchange={(e) => updateNodeData(id, { operation: (e.target as HTMLSelectElement).value as MathOperation })}
+      onchange={(e) => void updateMathData({ operation: (e.target as HTMLSelectElement).value as MathOperation })}
       {disabled}
       onclick={(e) => e.stopPropagation()}
       class="ml-auto text-[10px] border border-violet-200 rounded px-1.5 py-0.5 bg-violet-50 text-violet-700
@@ -80,7 +87,7 @@
           placeholder="0 or link →"
           {disabled}
           accentClass="focus:ring-violet-400/40"
-          onchange={(v) => updateNodeData(id, { literalA: v })}
+          onchange={(v) => void updateMathData({ literalA: v })}
         />
       </div>
     </div>
@@ -95,7 +102,7 @@
             placeholder="0 or link →"
             {disabled}
             accentClass="focus:ring-violet-400/40"
-            onchange={(v) => updateNodeData(id, { literalB: v })}
+            onchange={(v) => void updateMathData({ literalB: v })}
           />
         </div>
       </div>

@@ -13,10 +13,12 @@
   import { upstreamOptions } from '$lib/tools/pipeline-io';
   import ValueRefInput from './ValueRefInput.svelte';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
+  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
 
   let { id, data }: NodeProps<Node<ToolNodeData>> = $props();
 
   const { updateNodeData, getNodes, getEdges } = useSvelteFlow();
+  const nodeDataContext = getPipelineNodeDataContext();
 
   const entry = $derived(resolveStepEntry(data.stepId));
   const def = $derived(entry?.definition);
@@ -77,8 +79,9 @@
       inputType === 'number' ? { valueType: 'number' } : {});
   }
 
-  function setInput(key: string, value: string) {
+  async function setInput(key: string, value: string) {
     updateNodeData(id, { inputs: { ...data.inputs, [key]: value } });
+    await commitNodeDataAfterUpdate(nodeDataContext, getNodes, getEdges);
   }
 
   function statusColor() {
@@ -92,9 +95,9 @@
 
 <Handle type="target" position={Position.Left} id="input" />
 
-<div class="min-w-70 max-w-80 rounded-xl border border-border bg-white shadow-md overflow-hidden">
+<div class="min-w-70 max-w-80 rounded-xl border border-border bg-white shadow-md overflow-visible">
 
-  <div class="flex items-center gap-2 px-3 py-2.5 border-b border-border bg-surface cursor-grab active:cursor-grabbing">
+  <div class="flex items-center gap-2 px-3 py-2.5 rounded-t-xl border-b border-border bg-surface cursor-grab active:cursor-grabbing">
     <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
     <span class="flex-1 text-sm font-semibold text-zinc-800 truncate">{def?.label ?? data.stepId}</span>
     <span class="text-[10px] text-zinc-400 font-medium">

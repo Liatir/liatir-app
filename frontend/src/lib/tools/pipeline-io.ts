@@ -6,7 +6,7 @@
 // handles.
 
 import type { Node, Edge } from '@xyflow/svelte';
-import { PIPELINE_REGISTRY } from './pipeline-registry';
+import { resolveStepEntry } from './pipeline-registry';
 import { apiConnections } from '$lib/stores/apiConnections.svelte';
 import type { PickerItem } from '$lib/components/ui/OptionPicker.svelte';
 import { matchesAcceptedExtension } from '$lib/utils/file-extensions';
@@ -25,7 +25,7 @@ export interface NodeOutput {
 /** Human label for a node (used as the picker sublabel / source name). */
 export function nodeDisplayLabel(n: Node): string {
   switch (n.type) {
-    case 'tool':        return PIPELINE_REGISTRY[(n.data?.stepId as string) ?? '']?.definition.label ?? 'Tool';
+    case 'tool':        return resolveStepEntry((n.data?.stepId as string) ?? '')?.definition.label ?? 'Tool';
     case 'variable':    return 'Variable';
     case 'math':        return 'Math';
     case 'api-request': return (n.data?.requestName as string) || 'API Request';
@@ -38,7 +38,7 @@ export function nodeDisplayLabel(n: Node): string {
 export function nodeOutputs(node: Node): NodeOutput[] {
   switch (node.type) {
     case 'tool': {
-      const def = PIPELINE_REGISTRY[(node.data?.stepId as string) ?? '']?.definition;
+      const def = resolveStepEntry((node.data?.stepId as string) ?? '')?.definition;
       if (!def) return [];
       const out: NodeOutput[] = [];
       for (const [key, s] of Object.entries(def.outputSchema)) {

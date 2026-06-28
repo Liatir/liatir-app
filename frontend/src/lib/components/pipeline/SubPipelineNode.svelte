@@ -7,9 +7,11 @@
   import type { SubPipelineNodeData } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
+  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
 
   let { id, data }: NodeProps<Node<SubPipelineNodeData>> = $props();
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, getNodes, getEdges } = useSvelteFlow();
+  const nodeDataContext = getPipelineNodeDataContext();
   const runState = $derived(pipelineStore.nodeStates.get(id));
   const status = $derived(runState?.status ?? 'pending');
   const disabled = $derived(pipelineStore.running);
@@ -19,8 +21,9 @@
 
   let showPicker = $state(false);
 
-  function selectPipeline(pid: string, pname: string) {
+  async function selectPipeline(pid: string, pname: string) {
     updateNodeData(id, { pipelineId: pid, pipelineName: pname });
+    await commitNodeDataAfterUpdate(nodeDataContext, getNodes, getEdges);
     showPicker = false;
   }
 
@@ -37,8 +40,8 @@
 
 <Handle type="target" position={Position.Left} id="input" />
 
-<div class="min-w-56 rounded-xl border border-border bg-white shadow-md overflow-hidden">
-  <div class="flex items-center gap-2 px-3 py-2 border-b border-border bg-indigo-50 cursor-grab active:cursor-grabbing">
+<div class="min-w-56 rounded-xl border border-border bg-white shadow-md overflow-visible">
+  <div class="flex items-center gap-2 px-3 py-2 rounded-t-xl border-b border-border bg-indigo-50 cursor-grab active:cursor-grabbing">
     <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
     <Icon icon="lucide:workflow" width="11" height="11" class="text-indigo-500 shrink-0" />
     <span class="text-[10px] font-semibold text-indigo-700 uppercase tracking-wider">Sub-Pipeline</span>
@@ -102,7 +105,7 @@
           class="w-full text-left px-3 py-2 text-xs text-zinc-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors border-b border-border/50 last:border-0"
         >
           <div class="font-medium">{p.name}</div>
-          <div class="text-[10px] text-zinc-400">{p.nodes.filter(n => n.type === 'tool').length} steps</div>
+          <div class="text-[10px] text-zinc-400">{p.nodes.filter(n => n.type !== 'start').length} steps</div>
         </button>
       {:else}
         <div class="px-3 py-4 text-center text-xs text-zinc-400">No saved pipelines available</div>

@@ -23,6 +23,7 @@
   import SubPipelineNode from '$lib/components/pipeline/SubPipelineNode.svelte';
   import ApiRequestNode from '$lib/components/pipeline/ApiRequestNode.svelte';
   import DeletableEdge from '$lib/components/pipeline/DeletableEdge.svelte';
+  import { PIPELINE_NODE_DATA_CONTEXT, type PipelineNodeDataContext } from '$lib/components/pipeline/node-data-commit';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { apiConnections } from '$lib/stores/apiConnections.svelte';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
@@ -42,6 +43,7 @@
   let nameInput = $state('');
   let saving = $state(false);
   let savedConfirmation = $state(false);
+  let nodeDataPersistTimer: ReturnType<typeof setTimeout> | undefined;
 
   let unsavedChanges = $state(false);
 
@@ -54,6 +56,9 @@
   let restoringGraphHistory = false;
   let lastGraphSnapshot: GraphSnapshot | null = null;
   let lastGraphKey = '';
+  let draggingGraphNodes = false;
+  let dragStartSnapshot: GraphSnapshot | null = null;
+  let dragStartKey = '';
 
   const nodeTypes: NodeTypes = {
     tool: ToolNode,
@@ -101,6 +106,23 @@
   }
   setContext('pipelineEdge', { removeEdgeById });
 
+  function commitNodeDataChange(nextNodes: Node[], nextEdges: Edge[]) {
+    if (!storeReady) return;
+    nodes = nextNodes.map(node => ({
+      ...node,
+      data: JSON.parse(JSON.stringify(node.data ?? {})),
+    }));
+    edges = dedupeEdges(nextEdges).map(edge => ({ ...edge, selectable: false }));
+    unsavedChanges = true;
+    pipelineStore.setCurrentState(nodes, edges, nameInput);
+    clearTimeout(nodeDataPersistTimer);
+    nodeDataPersistTimer = setTimeout(() => {
+      void persistPipelineSilently();
+    }, 350);
+  }
+
+  setContext<PipelineNodeDataContext>(PIPELINE_NODE_DATA_CONTEXT, { commitNodeDataChange });
+
   // Collapse duplicate edges (same source/handle → target/handle) into one.
   // Older saved pipelines may contain a duplicate left by the previous connect()
   // bug (xyflow's auto-added edge + a manual one); this cleans them on load.
@@ -114,6 +136,40 @@
       out.push(e);
     }
     return out;
+  }
+
+  function edgeMatchesConnection(edge: Edge, connection: Connection): boolean {
+    return edge.source === connection.source &&
+      edge.target === connection.target &&
+      (edge.sourceHandle ?? null) === (connection.sourceHandle ?? null) &&
+      (edge.targetHandle ?? null) === (connection.targetHandle ?? null);
+  }
+
+  function connectionCreatesCycle(connection: Connection, candidateEdges: Edge[]): boolean {
+    const source = connection.source;
+    const target = connection.target;
+    if (!source || !target) return true;
+    if (source === target) return true;
+
+    const graph = new Map<string, string[]>();
+    for (const edge of candidateEdges) {
+      if (!edge.source || !edge.target) continue;
+      const outgoing = graph.get(edge.source) ?? [];
+      outgoing.push(edge.target);
+      graph.set(edge.source, outgoing);
+    }
+
+    const queue = [target];
+    const seen = new Set<string>();
+    while (queue.length > 0) {
+      const nodeId = queue.shift()!;
+      if (nodeId === source) return true;
+      if (seen.has(nodeId)) continue;
+      seen.add(nodeId);
+      queue.push(...(graph.get(nodeId) ?? []));
+    }
+
+    return false;
   }
 
   function cloneJson<T>(value: T): T {
@@ -159,6 +215,9 @@
     restoringGraphHistory = false;
     lastGraphSnapshot = null;
     lastGraphKey = '';
+    draggingGraphNodes = false;
+    dragStartSnapshot = null;
+    dragStartKey = '';
   }
 
   function syncGraphHistory(currentSnapshot: GraphSnapshot) {
@@ -172,6 +231,12 @@
     }
 
     if (currentKey === lastGraphKey) return;
+
+    if (draggingGraphNodes) {
+      lastGraphSnapshot = cloneGraphSnapshot(currentSnapshot);
+      lastGraphKey = currentKey;
+      return;
+    }
 
     if (!restoringGraphHistory && lastGraphSnapshot) {
       undoStack = [...undoStack, cloneGraphSnapshot(lastGraphSnapshot)].slice(-HISTORY_LIMIT);
@@ -190,6 +255,34 @@
     await tick();
     restoringGraphHistory = false;
     await savePipeline();
+  }
+
+  function beginGraphDrag() {
+    if (!storeReady || restoringGraphHistory || draggingGraphNodes) return;
+    dragStartSnapshot = createGraphSnapshot();
+    dragStartKey = graphSnapshotKey(dragStartSnapshot);
+    draggingGraphNodes = true;
+  }
+
+  async function finishGraphDrag() {
+    if (!draggingGraphNodes) return;
+    await tick();
+
+    const finalSnapshot = createGraphSnapshot();
+    const finalKey = graphSnapshotKey(finalSnapshot);
+    draggingGraphNodes = false;
+
+    if (dragStartSnapshot && finalKey !== dragStartKey) {
+      undoStack = [...undoStack, cloneGraphSnapshot(dragStartSnapshot)].slice(-HISTORY_LIMIT);
+      redoStack = [];
+      unsavedChanges = true;
+      await persistPipelineSilently();
+    }
+
+    lastGraphSnapshot = cloneGraphSnapshot(finalSnapshot);
+    lastGraphKey = finalKey;
+    dragStartSnapshot = null;
+    dragStartKey = '';
   }
 
   const canUndo = $derived(undoStack.length > 0 && !pipelineStore.running);
@@ -231,6 +324,14 @@
       event.preventDefault();
       void redoGraphChange();
     }
+  }
+
+  function onGraphDragStart() {
+    beginGraphDrag();
+  }
+
+  function onGraphDragStop() {
+    void finishGraphDrag();
   }
 
   async function deleteEdgeById(id: string) {
@@ -395,20 +496,37 @@
     }
   }
 
-  function connect(_connection: Connection) {
+  async function persistPipelineSilently() {
+    if (!nameInput.trim()) return;
+    await tick();
+    try {
+      await pipelineStore.savePipeline(nameInput.trim());
+      unsavedChanges = false;
+    } catch {
+      toast.error('Failed to save pipeline');
+    }
+  }
+
+  function connect(connection: Connection): boolean {
     // IMPORTANT: with bind:edges, xyflow already adds the new edge itself.
     // Do NOT add a second one here — that produced duplicate overlapping edges
     // (the root cause of "delete needs two clicks"). Every node now has a single
     // "input" handle that accepts multiple incoming edges (one per upstream
     // provider); the actual field→output wiring is chosen inside the node, so we
     // only need to collapse any exact-duplicate edge and mark the graph dirty.
-    edges = dedupeEdges(edges);
+    const nextEdges = dedupeEdges(edges);
+    if (connectionCreatesCycle(connection, nextEdges)) {
+      edges = nextEdges.filter(edge => !edgeMatchesConnection(edge, connection));
+      toast.error('This connection would create a cycle');
+      return false;
+    }
+    edges = nextEdges;
     unsavedChanges = true;
+    return true;
   }
 
   async function onConnect(connection: Connection) {
-    connect(connection);
-    await savePipeline();
+    if (connect(connection)) await savePipeline();
   }
 
   // Persist after a node/edge deletion (Delete or Backspace, or context-menu).
@@ -507,7 +625,7 @@
   </PageHeader>
 
   <div class="flex-1 relative">
-    <SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView onconnect={onConnect} ondelete={onDelete} deleteKey={['Delete', 'Backspace']} onpanecontextmenu={onPaneContextMenu} onnodecontextmenu={onNodeContextMenu} onedgecontextmenu={onEdgeContextMenu} defaultEdgeOptions={{ selectable: false, style: 'stroke: #4f39f6; stroke-width:3;' }} proOptions={{ hideAttribution: true }}>
+    <SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView onconnect={onConnect} ondelete={onDelete} deleteKey={['Delete', 'Backspace']} onpanecontextmenu={onPaneContextMenu} onnodecontextmenu={onNodeContextMenu} onedgecontextmenu={onEdgeContextMenu} onnodedragstart={onGraphDragStart} onnodedragstop={onGraphDragStop} onselectiondragstart={onGraphDragStart} onselectiondragstop={onGraphDragStop} defaultEdgeOptions={{ selectable: false, style: 'stroke: #4f39f6; stroke-width:3;' }} proOptions={{ hideAttribution: true }}>
       <Background gap={24} size={1} patternColor="#e4e4e7" />
       <Controls position="bottom-right" />
     </SvelteFlow>

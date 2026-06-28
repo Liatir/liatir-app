@@ -17,7 +17,7 @@ export type LiatirFieldType = LiatirInputFieldType | LiatirOutputFieldType;
 
 export type LiatirStepKind =
   | 'native-tool'
-  | 'lia-module'
+  | 'lia-plugin'
   | 'wasm-plugin'
   | 'api-request'
   | 'ai-tool'

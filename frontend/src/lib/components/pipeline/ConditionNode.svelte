@@ -8,9 +8,11 @@
   import { upstreamOptions } from '$lib/tools/pipeline-io';
   import ValueRefInput from './ValueRefInput.svelte';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
+  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
 
   let { id, data }: NodeProps<Node<ConditionNodeData>> = $props();
   const { updateNodeData, getNodes, getEdges } = useSvelteFlow();
+  const nodeDataContext = getPipelineNodeDataContext();
   const conditionInputId = $derived(`condition-${id}`);
   const state = $derived(pipelineStore.nodeStates.get(id));
   const status = $derived(state?.status ?? 'pending');
@@ -29,13 +31,18 @@
     if (status === 'skipped') return 'bg-zinc-200';
     return 'bg-zinc-300';
   }
+
+  async function updateConditionData(patch: Partial<ConditionNodeData>) {
+    updateNodeData(id, patch);
+    await commitNodeDataAfterUpdate(nodeDataContext, getNodes, getEdges);
+  }
 </script>
 
 <!-- Single input handle — wire upstream value nodes in, then pick the value to test below. -->
 <Handle type="target" position={Position.Left} id="input" />
 
-<div class="min-w-56 rounded-xl border border-border bg-white shadow-md overflow-hidden">
-  <div class="flex items-center gap-2 px-3 py-2 border-b border-border bg-sky-50 cursor-grab active:cursor-grabbing">
+<div class="min-w-56 rounded-xl border border-border bg-white shadow-md overflow-visible">
+  <div class="flex items-center gap-2 px-3 py-2 rounded-t-xl border-b border-border bg-sky-50 cursor-grab active:cursor-grabbing">
     <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
     <span class="text-[10px] font-semibold text-sky-700 uppercase tracking-wider">Condition</span>
     {#if status === 'done' && state?.activeBranch}
@@ -56,7 +63,7 @@
         placeholder="literal or link →"
         {disabled}
         accentClass="focus:ring-sky-400/40"
-        onchange={(v) => updateNodeData(id, { valueRef: v })}
+        onchange={(v) => void updateConditionData({ valueRef: v })}
       />
     </div>
     <div>
@@ -65,7 +72,7 @@
         id={conditionInputId}
         type="text"
         value={data.condition ?? ''}
-        oninput={(e) => updateNodeData(id, { condition: (e.target as HTMLInputElement).value })}
+        oninput={(e) => void updateConditionData({ condition: (e.target as HTMLInputElement).value })}
         {disabled}
         placeholder="Number(value) > 1000"
         class="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-mono
