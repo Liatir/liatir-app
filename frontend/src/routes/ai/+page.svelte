@@ -124,7 +124,7 @@
       {#if loading}
         <div class="px-4 py-8 text-center text-sm text-zinc-400">Loading AI Models...</div>
       {:else if models.length === 0}
-        <div class="px-4 py-8 text-center text-sm text-zinc-400">No AI Models registered.</div>
+        <div class="px-4 py-8 text-center text-sm text-zinc-400">No AI Models available.</div>
       {:else}
         {#each models as model (model.id)}
           <div class="grid grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(130px,0.8fr)_150px] gap-3 px-4 py-3 border-b border-border/70 last:border-b-0 items-center max-xl:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_150px]">
