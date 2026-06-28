@@ -8,6 +8,7 @@
     hoverable?: boolean;
   }
 
+
   let { class: cls = '', children, onclick, hoverable = false }: Props = $props();
 </script>
 

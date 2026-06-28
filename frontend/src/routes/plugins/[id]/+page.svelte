@@ -135,10 +135,6 @@
         <Badge variant={mod!.runtime === 'wasm' ? 'neutral' : 'available'}>{runtimeLabel(mod!.runtime)}</Badge>
         <span class="text-xs font-mono text-zinc-400">v{mod!.version}</span>
         <Button variant="ghost" size="sm" onclick={() => goto('/plugins')}>← Plugins</Button>
-          <div class="w-px bg-border self-stretch"></div>
-        <Button variant="secondary" size="sm" onclick={()=>goto("/code")}>
-          Test API
-        </Button>
       {/snippet}
     </PageHeader>
 

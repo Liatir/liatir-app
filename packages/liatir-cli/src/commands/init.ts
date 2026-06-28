@@ -461,8 +461,8 @@ function packageJson(config: InitConfig): string {
     update: "lia update",
   };
   const devDependencies: Record<string, string> = {
-    "@liatir/lia": "^1.5.1",
-    "@liatir/sdk": "^1.5.1",
+    "@liatir/lia": "^1.5.2",
+    "@liatir/sdk": "^1.5.2",
   };
 
   if (config.language === "typescript") {
@@ -537,10 +537,7 @@ const liatirModule = defineModule({
   },
 });
 
-export default liatirModule.main(async ({ input, lia }: ModuleContext<typeof liatirModule>) => {
-  // Write your plugin logic here. Inputs and outputs are defined once above.
-  void lia;
-
+export default liatirModule.main(async ({ input }: ModuleContext<typeof liatirModule>) => {
   return {
     length: input.text.length,
   };
@@ -568,10 +565,7 @@ const liatirModule = defineModule({
   },
 });
 
-export default liatirModule.main(async ({ input, lia }) => {
-  // Write your plugin logic here. Inputs and outputs are defined once above.
-  void lia;
-
+export default liatirModule.main(async ({ input }) => {
   return {
     length: input.text.length,
   };

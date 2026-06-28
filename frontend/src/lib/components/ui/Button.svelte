@@ -1,12 +1,13 @@
 <script lang="ts">
+	import type { ButtonSizes, ButtonTypes, ButtonVariants } from '$lib/types/componentes';
   import type { Snippet } from 'svelte';
 
   interface Props {
-    variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'sandbox' | 'warn';
-    size?: 'sm' | 'md';
+    variant?: ButtonVariants;
+    size?: ButtonSizes;
     disabled?: boolean;
     loading?: boolean;
-    type?: 'button' | 'submit' | 'reset';
+    type?: ButtonTypes;
     class?: string;
     onclick?: (e: MouseEvent) => void;
     children: Snippet;

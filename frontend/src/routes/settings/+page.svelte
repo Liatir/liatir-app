@@ -5,6 +5,8 @@
   import Button from '$lib/components/ui/Button.svelte';
   import { liatir } from '$lib/api';
   import { settingsStore } from '$lib/stores/settings.svelte';
+	import { goto } from '$app/navigation';
+	import { workspaceStore } from '$lib/stores/workspace.svelte';
 
   let apiVersion = $state<string | null>(null);
   let appVersion = $state<string | null>(null);
@@ -33,6 +35,8 @@
     setTimeout(() => { javaSaved = false; }, 2000);
   }
 
+  const testAPIButtonCallback = () => goto("/scripts");
+
   function fmtPath(p: string | null | undefined) {
     return p ?? '—';
   }
@@ -46,13 +50,15 @@
     <!-- About -->
     <section>
       <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">About</h2>
-      <Card class="divide-y divide-border">
+      <Card class="divide-y divide-border overflow-hidden">
         {#each [
           { label: 'Application', value: 'Liatir' },
           { label: 'App Version', value: appVersion ?? '—' },
+          { label: 'Active Workspace', value: (workspaceStore?.activeId) ? (workspaceStore?.isSandboxMode)?'[sandbox]':((workspaceStore?.active?.name)??'-') : '—' },
           { label: 'API Version', value: apiVersion ?? '—' },
+          { label: 'Test Liatir API', value: '⟶', callback: testAPIButtonCallback },
         ] as row}
-          <div class="flex items-center justify-between px-4 py-3">
+          <div class="flex items-center justify-between px-4 py-3 {(row?.callback)?"hover:bg-zinc-100 cursor-pointer":""}" role={(row?.callback) ? 'button' : undefined} onclick={row?.callback??undefined}>
             <span class="text-sm text-zinc-600">{row.label}</span>
             <span class="text-sm font-mono text-zinc-800" data-selectable>{row.value}</span>
           </div>

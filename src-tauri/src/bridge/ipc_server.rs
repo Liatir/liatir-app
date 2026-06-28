@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{env, path::PathBuf, sync::Arc};
 
 use axum::{
     extract::{Json, State},
@@ -100,6 +100,49 @@ struct ServerState {
     token: String,
 }
 
+fn legacy_ipc_dirs() -> Vec<PathBuf> {
+    let mut dirs = Vec::new();
+
+    #[cfg(target_os = "macos")]
+    if let Some(home) = env::var_os("HOME") {
+        let app_support = PathBuf::from(home).join("Library").join("Application Support");
+        dirs.push(app_support.join("liatir"));
+        dirs.push(app_support.join("app.liatir.app"));
+        dirs.push(app_support.join("Liatir"));
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let app_data = env::var_os("APPDATA").or_else(|| env::var_os("USERPROFILE"));
+        if let Some(app_data) = app_data {
+            let app_data = PathBuf::from(app_data);
+            dirs.push(app_data.join("liatir"));
+            dirs.push(app_data.join("app.liatir.app"));
+            dirs.push(app_data.join("Liatir"));
+        }
+    }
+
+    #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
+    {
+        let data_home = env::var_os("XDG_DATA_HOME")
+            .map(PathBuf::from)
+            .or_else(|| env::var_os("HOME").map(|home| PathBuf::from(home).join(".local").join("share")));
+        if let Some(data_home) = data_home {
+            dirs.push(data_home.join("liatir"));
+            dirs.push(data_home.join("app.liatir.app"));
+            dirs.push(data_home.join("Liatir"));
+        }
+    }
+
+    dirs
+}
+
+async fn write_ipc_file(dir: PathBuf, content: &str) -> anyhow::Result<()> {
+    tokio::fs::create_dir_all(&dir).await?;
+    tokio::fs::write(dir.join(".ipc"), content).await?;
+    Ok(())
+}
+
 /// Start the local IPC HTTP server. Writes port + auth token to
 /// `{app_data_dir}/.ipc` so the Node.js adapter can find it.
 pub async fn start(app: AppHandle) -> anyhow::Result<()> {
@@ -112,13 +155,16 @@ pub async fn start(app: AppHandle) -> anyhow::Result<()> {
         .path()
         .app_data_dir()
         .map_err(|e| anyhow::anyhow!("no app data dir: {e}"))?;
-    tokio::fs::create_dir_all(&data_dir).await?;
-    let port_file = data_dir.join(".ipc");
-    tokio::fs::write(
-        &port_file,
-        serde_json::to_string(&serde_json::json!({ "port": port, "token": token }))?,
-    )
-    .await?;
+    let ipc_content = serde_json::to_string(&serde_json::json!({ "port": port, "token": token }))?;
+    write_ipc_file(data_dir.clone(), &ipc_content).await?;
+
+    for dir in legacy_ipc_dirs() {
+        if dir != data_dir {
+            if let Err(err) = write_ipc_file(dir.clone(), &ipc_content).await {
+                eprintln!("[ipc_server] failed to write compatibility IPC file at {}: {err}", dir.display());
+            }
+        }
+    }
 
     let state = Arc::new(ServerState { app, token });
 

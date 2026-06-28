@@ -1,0 +1,23 @@
+{
+  "name": "test-1",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "dev": "lia dev",
+    "build": "lia build",
+    "update": "lia update",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "liatir": {
+    "displayName": "Test 1",
+    "category": "General",
+    "tags": []
+  },
+  "devDependencies": {
+    "@liatir/lia": "^1.5.1",
+    "@liatir/sdk": "^1.5.1",
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}

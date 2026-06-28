@@ -86,10 +86,6 @@
         </svg>
         Import .lia
       </Button>
-      <div class="w-px bg-border self-stretch"></div>
-      <Button variant="secondary" size="sm" onclick={()=>goto("/code")}>
-        Test API
-      </Button>
     {/snippet}
   </PageHeader>
 

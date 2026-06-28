@@ -87,29 +87,60 @@ interface IpcInfo {
   token: string;
 }
 
-function appDataDir(): string {
+function appDataDirCandidates(): string[] {
+  const envIpcFile = process.env["LIATIR_IPC_FILE"];
+  const envIpcDir = process.env["LIATIR_IPC_DIR"];
+  const candidates: string[] = [];
+
+  if (envIpcFile) candidates.push(path.dirname(envIpcFile));
+  if (envIpcDir) candidates.push(envIpcDir);
+
   switch (process.platform) {
-    case "darwin":
-      return path.join(os.homedir(), "Library", "Application Support", "liatir");
-    case "win32":
-      return path.join(process.env["APPDATA"] ?? os.homedir(), "liatir");
+    case "darwin": {
+      const appSupport = path.join(os.homedir(), "Library", "Application Support");
+      candidates.push(path.join(appSupport, "app.liatir.app"));
+      candidates.push(path.join(appSupport, "liatir"));
+      candidates.push(path.join(appSupport, "Liatir"));
+      break;
+    }
+    case "win32": {
+      const appData = process.env["APPDATA"] ?? os.homedir();
+      candidates.push(path.join(appData, "app.liatir.app"));
+      candidates.push(path.join(appData, "liatir"));
+      candidates.push(path.join(appData, "Liatir"));
+      break;
+    }
     default:
-      return path.join(os.homedir(), ".local", "share", "liatir");
+      const dataHome = process.env["XDG_DATA_HOME"] ?? path.join(os.homedir(), ".local", "share");
+      candidates.push(path.join(dataHome, "app.liatir.app"));
+      candidates.push(path.join(dataHome, "liatir"));
+      candidates.push(path.join(dataHome, "Liatir"));
+      break;
   }
+
+  return [...new Set(candidates)];
 }
 
 async function readIpcInfo(): Promise<IpcInfo> {
-  const portFile = path.join(appDataDir(), ".ipc");
-  try {
-    const content = await fs.readFile(portFile, "utf-8");
-    return JSON.parse(content) as IpcInfo;
-  } catch {
-    throw new Error(
-      `[liatir-adapter] Liatir app is not running or IPC not ready.\n` +
-      `Expected file: ${portFile}\n` +
-      `Start the Liatir desktop app first.`
-    );
+  const envIpcFile = process.env["LIATIR_IPC_FILE"];
+  const portFiles = envIpcFile
+    ? [envIpcFile, ...appDataDirCandidates().map((dir) => path.join(dir, ".ipc"))]
+    : appDataDirCandidates().map((dir) => path.join(dir, ".ipc"));
+
+  for (const portFile of [...new Set(portFiles)]) {
+    try {
+      const content = await fs.readFile(portFile, "utf-8");
+      return JSON.parse(content) as IpcInfo;
+    } catch {
+      // Try the next known app data location.
+    }
   }
+
+  throw new Error(
+    `[liatir-adapter] Liatir app is not running or IPC not ready.\n` +
+    `Expected one of:\n${portFiles.map((file) => `- ${file}`).join("\n")}\n` +
+    `Start the Liatir desktop app first.`
+  );
 }
 
 // ── HTTP invoke ──────────────────────────────────────────────────────────────

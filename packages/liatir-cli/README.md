@@ -73,8 +73,8 @@ lia init my-plugin --category "Quality Control" --tags "FASTQ,QC"
 lia init my-plugin --no-install
 lia init my-tool --no-wasm-target
 lia update                        # update @liatir/lia and @liatir/sdk
-lia update --version 1.5.1         # pin the target Liatir package version
-lia update --no-install --version 1.5.1
+lia update --version 1.5.2         # pin the target Liatir package version
+lia update --no-install --version 1.5.2
 ```
 
 When prompted, the recommended path is Node + TypeScript + the minimal template.

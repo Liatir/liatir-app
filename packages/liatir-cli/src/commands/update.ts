@@ -50,8 +50,8 @@ function usage(): string {
 
 Usage:
   lia update
-  lia update --version 1.5.1
-  lia update --no-install --version 1.5.1
+  lia update --version 1.5.2
+  lia update --no-install --version 1.5.2
   lia update --dry-run
 
 Options:
