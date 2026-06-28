@@ -3,10 +3,7 @@ import { LOCAL_AI_MODEL_REGISTRY, MOCK_AI_MODEL_ID } from '$lib/ai/model-registr
 import { appStorage } from './app-storage';
 import { getDataPrefix } from './workspace.svelte';
 import type {
-  LiatirAICapability,
-  LiatirAIModelModality,
   LiatirAIModelRecord,
-  LiatirAIModelRuntimeKind,
   LiatirAIModelStatus,
 } from '@liatir/core';
 
@@ -21,16 +18,6 @@ interface StoredAIModelState {
 interface AIModelsWorkspaceState {
   defaultModelId: string | null;
   modelStates: Record<string, StoredAIModelState>;
-  customModels: LiatirAIModelRecord[];
-}
-
-export interface RegisterLocalAIModelInput {
-  name: string;
-  path: string;
-  runtimeKind: Exclude<LiatirAIModelRuntimeKind, 'mock'>;
-  description?: string;
-  capabilities?: LiatirAICapability[];
-  modalities?: LiatirAIModelModality[];
 }
 
 function getFile() { return `${getDataPrefix()}ai-models.json`; }
@@ -46,18 +33,13 @@ function createAIModelsStore() {
   let initialized = false;
   let defaultModelId = $state<string | null>(MOCK_AI_MODEL_ID);
   let modelStates = $state<Record<string, StoredAIModelState>>({});
-  let customModels = $state<LiatirAIModelRecord[]>([]);
 
   function allModelIds(): Set<string> {
-    return new Set([...LOCAL_AI_MODEL_REGISTRY.map((model) => model.id), ...customModels.map((model) => model.id)]);
-  }
-
-  function isBuiltinModel(id: string): boolean {
-    return LOCAL_AI_MODEL_REGISTRY.some((model) => model.id === id);
+    return new Set(LOCAL_AI_MODEL_REGISTRY.map((model) => model.id));
   }
 
   function records(): LiatirAIModelRecord[] {
-    const builtinRecords = LOCAL_AI_MODEL_REGISTRY.map((metadata) => {
+    return LOCAL_AI_MODEL_REGISTRY.map((metadata) => {
       const state = { ...defaultStateFor(metadata.id), ...(modelStates[metadata.id] ?? {}) };
       return {
         ...metadata,
@@ -69,23 +51,10 @@ function createAIModelsStore() {
         isDefault: metadata.id === defaultModelId,
       };
     });
-    const localRecords = customModels.map((model) => {
-      const state = modelStates[model.id] ?? {};
-      return {
-        ...model,
-        status: state.status ?? model.status,
-        localPath: state.localPath ?? model.localPath,
-        enabled: state.enabled ?? model.enabled ?? true,
-        updatedAt: state.updatedAt ?? model.updatedAt,
-        error: state.error ?? model.error,
-        isDefault: model.id === defaultModelId,
-      };
-    });
-    return [...builtinRecords, ...localRecords];
   }
 
   async function persist() {
-    const workspace: AIModelsWorkspaceState = { defaultModelId, modelStates, customModels };
+    const workspace: AIModelsWorkspaceState = { defaultModelId, modelStates };
     await appStorage.writeText(getFile(), JSON.stringify(workspace, null, 2), { createDirs: true });
   }
 
@@ -95,7 +64,7 @@ function createAIModelsStore() {
     get models() { return records(); },
     get runnableModels() {
       return records().filter((model) =>
-        model.enabled !== false && (model.status === 'installed' || model.status === 'available')
+        model.enabled !== false && model.status === 'installed'
       );
     },
     get defaultModel() {
@@ -112,12 +81,10 @@ function createAIModelsStore() {
           const parsed = JSON.parse(raw) as Partial<AIModelsWorkspaceState>;
           defaultModelId = parsed.defaultModelId ?? MOCK_AI_MODEL_ID;
           modelStates = parsed.modelStates ?? {};
-          customModels = parsed.customModels ?? [];
         }
       } catch {
         defaultModelId = MOCK_AI_MODEL_ID;
         modelStates = {};
-        customModels = [];
       }
     },
 
@@ -127,6 +94,8 @@ function createAIModelsStore() {
 
     async setDefault(id: string) {
       if (!allModelIds().has(id)) return;
+      const model = records().find((item) => item.id === id);
+      if (model?.status !== 'installed') return;
       defaultModelId = id;
       await persist();
     },
@@ -145,51 +114,67 @@ function createAIModelsStore() {
       await persist();
     },
 
-    async registerLocalModel(input: RegisterLocalAIModelInput): Promise<LiatirAIModelRecord> {
-      const now = Date.now();
-      const id = `local-${crypto.randomUUID()}`;
-      const model: LiatirAIModelRecord = {
-        id,
-        name: input.name.trim(),
-        description: input.description?.trim() || 'User-registered local model file.',
-        runtime: {
-          kind: input.runtimeKind,
-          name: input.runtimeKind === 'llama-cpp'
-            ? 'llama.cpp'
-            : input.runtimeKind === 'onnx'
-              ? 'ONNX Runtime'
-              : 'Custom local runtime',
-        },
-        source: 'local-file',
-        localOnly: true,
-        capabilities: input.capabilities?.length ? input.capabilities : ['text-generation'],
-        modalities: input.modalities?.length ? input.modalities : ['text'],
-        install: {
-          method: 'local-file',
-          path: input.path,
-        },
-        license: {
-          name: 'Unverified local model license',
-        },
-        hardware: {
-          notes: 'Hardware requirements must be verified from the model provider before production use.',
-        },
-        tags: ['local', 'user-registered'],
+    async installManagedModel(
+      id: string,
+      onProgress?: (progress: { fileIndex: number; fileCount: number; bytesDownloaded: number; bytesTotal: number | null }) => void
+    ): Promise<LiatirAIModelRecord> {
+      const api = liatir();
+      if (!api) throw new Error('Liatir API not available');
+      const metadata = LOCAL_AI_MODEL_REGISTRY.find((model) => model.id === id);
+      if (!metadata) throw new Error(`Unknown AI Model: ${id}`);
+      const files = metadata.install?.files ?? [];
+      if (metadata.install?.method !== 'managed-download' || files.length === 0) {
+        throw new Error(`AI Model is not installable: ${metadata.name}`);
+      }
+
+      const dataPath = await api.desktop.fs.data.path();
+      const modelDir = `${dataPath}/ai-models/managed/${id}`;
+
+      for (let index = 0; index < files.length; index += 1) {
+        const file = files[index];
+        const downloadId = `${id}-${index}-${crypto.randomUUID()}`;
+        const destPath = `${modelDir}/${file.relativePath}`;
+        const unlisten = await api.desktop.events.on(
+          `managed:progress:${downloadId}`,
+          (p: { bytesDownloaded: number; bytesTotal: number | null }) => {
+            onProgress?.({
+              fileIndex: index,
+              fileCount: files.length,
+              bytesDownloaded: p.bytesDownloaded,
+              bytesTotal: p.bytesTotal,
+            });
+          }
+        );
+        try {
+          await api.invoke('lia_managed_download', {
+            id: downloadId,
+            url: file.url,
+            destPath,
+            sha256: file.sha256 ?? null,
+          });
+        } finally {
+          unlisten();
+        }
+      }
+
+      await this.setModelState(id, {
         status: 'installed',
-        localPath: input.path,
+        localPath: modelDir,
         enabled: true,
-        addedAt: now,
-        updatedAt: now,
-      };
-      customModels = [model, ...customModels];
-      defaultModelId = id;
-      await persist();
-      return model;
+        error: undefined,
+      });
+      await this.setDefault(id);
+      return this.byId(id)!;
     },
 
-    async removeLocalModel(id: string) {
-      if (isBuiltinModel(id)) return;
-      customModels = customModels.filter((model) => model.id !== id);
+    async removeManagedModel(id: string) {
+      const api = liatir();
+      if (!api) return;
+      const model = records().find((item) => item.id === id);
+      if (!model || model.source !== 'managed-download') return;
+      if (model.localPath) {
+        await api.invoke('lia_managed_remove', { path: model.localPath, recursive: true }).catch(() => {});
+      }
       const { [id]: _removed, ...restStates } = modelStates;
       modelStates = restStates;
       if (defaultModelId === id) defaultModelId = MOCK_AI_MODEL_ID;
@@ -200,7 +185,6 @@ function createAIModelsStore() {
       initialized = false;
       defaultModelId = MOCK_AI_MODEL_ID;
       modelStates = {};
-      customModels = [];
     },
   };
 }

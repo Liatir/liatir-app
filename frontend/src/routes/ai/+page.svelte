@@ -5,18 +5,18 @@
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import Badge, { type BadgeVariants } from '$lib/components/ui/Badge.svelte';
   import Button from '$lib/components/ui/Button.svelte';
-  import Select from '$lib/components/ui/Select.svelte';
-  import { liatir } from '$lib/api';
   import { aiModelsStore } from '$lib/stores/aiModels.svelte';
   import { toast } from '$lib/stores/toast.svelte';
-  import type { LiatirAIModelRecord, LiatirAIModelRuntimeKind } from '@liatir/core';
+  import { fmtBytes } from '$lib/utils';
+  import type { LiatirAIModelRecord } from '@liatir/core';
 
   let loading = $state(true);
-  let showRegister = $state(false);
-  let registering = $state(false);
-  let modelName = $state('');
-  let modelPath = $state('');
-  let runtimeKind = $state<Exclude<LiatirAIModelRuntimeKind, 'mock'>>('llama-cpp');
+  let installing = $state<Record<string, {
+    fileIndex: number;
+    fileCount: number;
+    bytesDownloaded: number;
+    bytesTotal: number | null;
+  }>>({});
 
   onMount(async () => {
     await aiModelsStore.init();
@@ -48,64 +48,40 @@
     return `${model.runtime.name}${model.runtime.version ? ` ${model.runtime.version}` : ''}`;
   }
 
-  function basename(path: string): string {
-    return path.split(/[\\/]/).pop() ?? path;
+  function installLabel(model: LiatirAIModelRecord): string {
+    const progress = installing[model.id];
+    if (!progress) return 'Install';
+    const file = `File ${progress.fileIndex + 1}/${progress.fileCount}`;
+    const bytes = progress.bytesTotal
+      ? `${fmtBytes(progress.bytesDownloaded)} / ${fmtBytes(progress.bytesTotal)}`
+      : fmtBytes(progress.bytesDownloaded);
+    return `${file} · ${bytes}`;
   }
 
-  function inferRuntime(path: string): Exclude<LiatirAIModelRuntimeKind, 'mock'> {
-    const lower = path.toLowerCase();
-    if (lower.endsWith('.gguf')) return 'llama-cpp';
-    if (lower.endsWith('.onnx')) return 'onnx';
-    return 'custom';
-  }
-
-  function inferName(path: string): string {
-    return basename(path).replace(/\.(gguf|onnx|safetensors|bin)$/i, '').replace(/[_-]+/g, ' ').trim();
-  }
-
-  async function browseModelFile() {
-    const api = liatir();
-    if (!api) return;
-    const result = await api.desktop.files.open({
-      multi: false,
-      allowed: ['gguf', 'onnx', 'safetensors', 'bin'],
-    });
-    const path = result.paths[0];
-    if (!path) return;
-    modelPath = path;
-    runtimeKind = inferRuntime(path);
-    if (!modelName.trim()) modelName = inferName(path);
-  }
-
-  function closeRegister() {
-    showRegister = false;
-    registering = false;
-    modelName = '';
-    modelPath = '';
-    runtimeKind = 'llama-cpp';
-  }
-
-  async function registerModel() {
-    const name = modelName.trim();
-    const path = modelPath.trim();
-    if (!name || !path) {
-      toast.warn('Model name and file path are required');
-      return;
-    }
-    registering = true;
+  async function installModel(model: LiatirAIModelRecord) {
+    installing = {
+      ...installing,
+      [model.id]: { fileIndex: 0, fileCount: model.install?.files?.length ?? 1, bytesDownloaded: 0, bytesTotal: null },
+    };
     try {
-      await aiModelsStore.registerLocalModel({
-        name,
-        path,
-        runtimeKind,
-        description: `Local model file: ${basename(path)}`,
+      await aiModelsStore.installManagedModel(model.id, (progress) => {
+        installing = { ...installing, [model.id]: progress };
       });
-      toast.success('Local AI Model registered');
-      closeRegister();
+      toast.success('AI Model installed');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to register AI Model');
+      toast.error(error instanceof Error ? error.message : 'Failed to install AI Model');
     } finally {
-      registering = false;
+      const { [model.id]: _done, ...rest } = installing;
+      installing = rest;
+    }
+  }
+
+  async function removeModel(model: LiatirAIModelRecord) {
+    try {
+      await aiModelsStore.removeManagedModel(model.id);
+      toast.info('AI Model removed');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to remove AI Model');
     }
   }
 </script>
@@ -113,10 +89,6 @@
 <div class="flex flex-col h-full overflow-hidden">
   <PageHeader title="AI Models" description="Local model registry for pipeline AI Tools">
     {#snippet actions()}
-      <Button size="sm" variant="primary" onclick={() => showRegister = true}>
-        <Icon icon="lucide:plus" width="14" height="14" />
-        Register model
-      </Button>
       <Button size="sm" variant="secondary" onclick={() => goto('/pipeline')}>
         <Icon icon="lucide:workflow" width="14" height="14" />
         Pipeline
@@ -159,7 +131,7 @@
             <div class="min-w-0">
               <div class="flex items-center gap-2 min-w-0">
                 <p class="text-sm font-semibold text-zinc-800 truncate">{model.name}</p>
-                <Badge variant={statusVariant(model.status)} size="xs">{model.status}</Badge>
+                <Badge variant={statusVariant(model.status)} size="xs">{installing[model.id] ? 'installing' : model.status}</Badge>
                 {#if model.localOnly}
                   <Badge variant="brand" size="xs" hideDot>local</Badge>
                 {/if}
@@ -194,7 +166,15 @@
             </div>
 
             <div class="flex justify-end gap-1.5">
-              {#if model.isDefault}
+              {#if installing[model.id]}
+                <Button size="sm" variant="secondary" loading>
+                  {installLabel(model)}
+                </Button>
+              {:else if model.status !== 'installed' && model.install?.method === 'managed-download'}
+                <Button size="sm" variant="primary" onclick={() => installModel(model)}>
+                  Install
+                </Button>
+              {:else if model.isDefault}
                 <Badge variant="done" size="xs">default</Badge>
               {:else}
                 <Button
@@ -206,11 +186,11 @@
                   Set
                 </Button>
               {/if}
-              {#if model.source === 'local-file'}
+              {#if model.source === 'managed-download' && model.status === 'installed' && !installing[model.id]}
                 <Button
                   size="sm"
                   variant="ghost"
-                  onclick={() => aiModelsStore.removeLocalModel(model.id)}
+                  onclick={() => removeModel(model)}
                 >
                   Remove
                 </Button>
@@ -234,68 +214,3 @@
     </div>
   </div>
 </div>
-
-{#if showRegister}
-  <div class="fixed inset-0 z-40 bg-black/30" role="presentation" onclick={closeRegister}></div>
-  <div class="fixed z-50 left-1/2 top-1/2 w-[480px] max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-white shadow-2xl overflow-hidden">
-    <div class="flex items-center justify-between border-b border-border bg-surface px-4 py-3">
-      <div>
-        <p class="text-sm font-semibold text-zinc-800">Register local AI Model</p>
-        <p class="text-xs text-zinc-500 mt-0.5">Add an existing local model file without downloading anything.</p>
-      </div>
-      <button class="text-zinc-400 hover:text-zinc-700" aria-label="Close" onclick={closeRegister}>
-        <Icon icon="lucide:x" width="16" height="16" />
-      </button>
-    </div>
-
-    <div class="p-4 space-y-3">
-      <div class="space-y-1.5">
-        <label class="text-xs font-medium text-zinc-600" for="model-name">Name</label>
-        <input
-          id="model-name"
-          bind:value={modelName}
-          class="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand/30"
-          placeholder="Local GGUF model"
-        />
-      </div>
-
-      <div class="space-y-1.5">
-        <label class="text-xs font-medium text-zinc-600" for="model-path">Model file</label>
-        <div class="flex gap-2">
-          <input
-            id="model-path"
-            bind:value={modelPath}
-            class="flex-1 rounded-lg border border-border bg-white px-3 py-2 text-xs font-mono outline-none focus:ring-2 focus:ring-brand/30"
-            placeholder="/path/to/model.gguf"
-          />
-          <Button size="sm" variant="secondary" onclick={browseModelFile}>
-            Browse
-          </Button>
-        </div>
-      </div>
-
-      <div class="space-y-1.5">
-        <span class="text-xs font-medium text-zinc-600">Runtime</span>
-        <Select
-          value={runtimeKind}
-          class="w-full"
-          options={[
-            { value: 'llama-cpp', label: 'llama.cpp / GGUF' },
-            { value: 'onnx', label: 'ONNX Runtime' },
-            { value: 'custom', label: 'Custom local runtime' },
-          ]}
-          onchange={(value) => runtimeKind = value as Exclude<LiatirAIModelRuntimeKind, 'mock'>}
-        />
-      </div>
-
-      <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-        License, hardware requirements, and install instructions are marked unverified until checked against official model sources.
-      </div>
-    </div>
-
-    <div class="flex justify-end gap-2 border-t border-border bg-surface px-4 py-3">
-      <Button size="sm" variant="ghost" onclick={closeRegister}>Cancel</Button>
-      <Button size="sm" variant="primary" loading={registering} onclick={registerModel}>Register</Button>
-    </div>
-  </div>
-{/if}

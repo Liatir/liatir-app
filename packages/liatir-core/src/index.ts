@@ -167,7 +167,7 @@ export interface LiatirExecutionResult {
   logs?: string[];
 }
 
-export type LiatirAIModelRuntimeKind = 'mock' | 'llama-cpp' | 'onnx' | 'custom';
+export type LiatirAIModelRuntimeKind = 'mock' | 'llama-cpp' | 'onnx' | 'transformers-js' | 'custom';
 export type LiatirAIModelSource = 'builtin' | 'local-file' | 'local-directory' | 'managed-download';
 export type LiatirAIModelStatus = 'available' | 'installed' | 'missing' | 'error';
 export type LiatirAICapability =
@@ -207,7 +207,15 @@ export interface LiatirAIModelInstallSpec {
   method: LiatirAIModelSource;
   path?: string;
   urls?: string[];
+  files?: LiatirAIModelInstallFile[];
   checksum?: string;
+}
+
+export interface LiatirAIModelInstallFile {
+  url: string;
+  relativePath: string;
+  sizeBytes?: number;
+  sha256?: string;
 }
 
 export interface LiatirAIModelMetadata {
