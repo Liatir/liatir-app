@@ -11,6 +11,7 @@ import type { ToolOutput } from '$lib/types/tool-output';
 import type {
   ToolNodeData, VariableNodeData, MathNodeData, ConditionNodeData,
   SubPipelineNodeData, ApiRequestNodeData, NodeRunState, RunOutputFile,
+  PipelineStepDefinition,
 } from '$lib/types/pipeline';
 import type { JsonValue } from '@liatir/core';
 
@@ -148,6 +149,25 @@ function resolveInputs(
   return resolved;
 }
 
+function defaultInputValue(value: unknown): string {
+  if (value === undefined || value === null) return '';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
+
+function inputsWithDefaults(
+  def: PipelineStepDefinition,
+  dataInputs: Record<string, string> = {}
+): Record<string, string> {
+  const inputs = { ...dataInputs };
+  for (const [key, schema] of Object.entries(def.inputSchema)) {
+    if (inputs[key] === undefined && schema.default !== undefined) {
+      inputs[key] = defaultInputValue(schema.default);
+    }
+  }
+  return inputs;
+}
+
 // Find nodes exclusively reachable via the dead branch of a condition node
 function findDeadBranchNodes(
   nodes: Node[],
@@ -279,7 +299,11 @@ function createPipelineStore() {
         patch({ status: 'running' });
         const { absDir: outputDir, virtualFolder } = await ensureResultsDir(entry.definition.label);
 
-        const resolved = resolveInputs(nodes, localStates, node.data?.inputs as Record<string, string> ?? {});
+        const resolved = resolveInputs(
+          nodes,
+          localStates,
+          inputsWithDefaults(entry.definition, node.data?.inputs as Record<string, string> ?? {})
+        );
         const logs: string[] = [];
         try {
           const result = await entry.run(resolved, outputDir, (line) => { logs.push(line); onLog(line); });
@@ -495,7 +519,11 @@ function createPipelineStore() {
 
           const { absDir: outputDir, virtualFolder } = await ensureResultsDir(entry.definition.label);
 
-          const resolved = resolveInputs(nodes, nodeStates, node.data?.inputs as Record<string, string> ?? {});
+          const resolved = resolveInputs(
+            nodes,
+            nodeStates,
+            inputsWithDefaults(entry.definition, node.data?.inputs as Record<string, string> ?? {})
+          );
           const logs: string[] = [];
           try {
             const result = await entry.run(resolved, outputDir, (line) => {

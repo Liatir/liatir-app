@@ -27,6 +27,7 @@
     'bcftools-stats': 'BCFtools stats',
     'bcftools-filter': 'BCFtools filter',
     snpeff: 'SnpEff',
+    'ai-mock-inference': 'Mock AI Inference',
   };
 
   function toolLabel(tool: string) { return TOOL_LABELS[tool] ?? tool; }

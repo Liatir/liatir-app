@@ -9,6 +9,7 @@
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import OptionPicker from '$lib/components/ui/OptionPicker.svelte';
   import type { PickerGroup } from '$lib/components/ui/OptionPicker.svelte';
+  import Select from '$lib/components/ui/Select.svelte';
   import { fmtBytes } from '$lib/utils';
   import { upstreamOptions } from '$lib/tools/pipeline-io';
   import ValueRefInput from './ValueRefInput.svelte';
@@ -27,15 +28,16 @@
 
   const inputKeys = $derived(def ? Object.entries(def.inputSchema) : []);
 
-  // Numeric metric outputs (type: 'number') exposed as connectable value handles
-  // for Math / Condition nodes. Their values appear in node state after the run.
-  const metricOutputs = $derived(def ? Object.entries(def.outputSchema).filter(([, s]) => s.type === 'number') : []);
+  // Non-file outputs exposed as connectable value handles for downstream nodes.
+  const valueOutputs = $derived(
+    def ? Object.entries(def.outputSchema).filter(([, s]) => s.type !== 'file' && s.type !== 'stats') : []
+  );
 
-  function fmtMetric(key: string, schema: OutputFieldSchema): string {
+  function fmtValue(key: string, schema: OutputFieldSchema): string {
     const raw = state?.outputValues?.[key];
     if (raw === undefined) return '–';
     const n = Number(raw);
-    if (Number.isNaN(n)) return raw;
+    if (schema.type !== 'number' || Number.isNaN(n)) return raw.length > 36 ? `${raw.slice(0, 33)}...` : raw;
     if (schema.format === 'percent') return `${n.toFixed(1)}%`;
     if (schema.format === 'integer') return n.toLocaleString();
     return n.toFixed(3);
@@ -121,6 +123,19 @@
             disabled={inputsDisabled}
             onchange={(v) => setInput(key, v)}
           />
+        {:else if schema.options && schema.options.length > 0}
+          <div>
+            <span class="block text-[11px] text-zinc-500 mb-1">
+              {schema.label ?? key}{schema.required ? '' : ' (optional)'}
+            </span>
+            <Select
+              value={data.inputs[key] ?? String(schema.default ?? '')}
+              options={schema.options.map((option) => ({ value: option.value, label: option.label }))}
+              disabled={inputsDisabled}
+              class="w-full"
+              onchange={(v) => setInput(key, v)}
+            />
+          </div>
         {:else if schema.type === 'string' || schema.type === 'number'}
           <div>
             <span class="block text-[11px] text-zinc-500 mb-1">
@@ -162,13 +177,13 @@
     </div>
   {/if}
 
-  {#if metricOutputs.length > 0}
+  {#if valueOutputs.length > 0}
     <div class="px-3 pb-2.5 pt-2 border-t border-border/60 nodrag nopan">
       <p class="text-[9px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Value outputs</p>
-      {#each metricOutputs as [key, schema]}
+      {#each valueOutputs as [key, schema]}
         <div class="flex items-center gap-1.5 h-5">
           <span class="text-[10px] text-zinc-500 flex-1 truncate">{schema.label ?? key}</span>
-          <span class="text-[10px] font-mono text-zinc-600">{fmtMetric(key, schema)}</span>
+          <span class="text-[10px] font-mono text-zinc-600 truncate max-w-32">{fmtValue(key, schema)}</span>
         </div>
       {/each}
     </div>

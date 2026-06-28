@@ -7,14 +7,21 @@ import { bwaMemDefinition, parseBwaMemStats, bwaMemToToolOutput } from './alignm
 import { minimap2Definition, parseMinimap2Stats, minimap2ToToolOutput } from './alignment/minimap2';
 import { bcftoolsStatsDefinition, bcftoolsFilterDefinition, parseBcftoolsStats, bcftoolsStatsToToolOutput } from './variants/bcftools';
 import { snpeffDefinition, parseSnpEffStats, buildSnpEffOutput } from './variants/snpeff';
+import { mockAIInferenceDefinition, runMockAIInferenceStep } from './ai/mock-inference';
 import { snpEffStore } from '$lib/stores/snpeff.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import type { ToolOutput } from '$lib/types/tool-output';
 import type { PipelineRegistryEntry, PipelineStepDefinition, RunOutputFile } from '$lib/types/pipeline';
 import { modulesStore } from '$lib/stores/modules.svelte';
 import { moduleToRegistryEntry, moduleToDefinition } from './module-step';
+import type { JsonValue } from '@liatir/core';
 
-type StepResult = { outputFiles: RunOutputFile[]; output?: ToolOutput; metrics?: Record<string, number> };
+type StepResult = {
+  outputFiles: RunOutputFile[];
+  output?: ToolOutput;
+  metrics?: Record<string, number>;
+  values?: Record<string, JsonValue>;
+};
 
 function basename(p: string) { return p.split(/[\\/]/).pop() ?? p; }
 
@@ -372,6 +379,7 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
   'bcftools-stats':     { definition: bcftoolsStatsDefinition,     run: runBcftoolsStatsStep },
   'bcftools-filter':    { definition: bcftoolsFilterDefinition,    run: runBcftoolsFilterStep },
   'snpeff':             { definition: snpeffDefinition,            run: runSnpeffStep },
+  'ai-mock-inference':  { definition: mockAIInferenceDefinition,   run: runMockAIInferenceStep },
 };
 
 // ── Imported .lia plugins as pipeline steps ──────────────────────────────────

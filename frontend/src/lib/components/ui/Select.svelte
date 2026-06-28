@@ -10,10 +10,11 @@
     value: string;
     options: SelectOption[];
     onchange: (value: string) => void;
+    disabled?: boolean;
     class?: string;
   }
 
-  let { value, options, onchange, class: className = '' }: Props = $props();
+  let { value, options, onchange, disabled = false, class: className = '' }: Props = $props();
 
   let open = $state(false);
   let triggerEl: HTMLButtonElement | null = $state(null);
@@ -23,7 +24,7 @@
   const selectedLabel = $derived(options.find(o => o.value === value)?.label ?? '');
 
   function openMenu() {
-    if (!triggerEl) return;
+    if (!triggerEl || disabled) return;
     const rect = triggerEl.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
     const above = spaceBelow < 180 && rect.top > 180;
@@ -59,8 +60,10 @@
     bind:this={triggerEl}
     type="button"
     onclick={() => open ? (open = false) : openMenu()}
+    disabled={disabled}
     class="flex items-center gap-1 text-[10px] border border-border rounded px-1.5 py-1 bg-surface
-           text-zinc-500 cursor-pointer hover:border-zinc-400 transition-colors w-full min-w-0"
+           text-zinc-500 cursor-pointer hover:border-zinc-400 transition-colors w-full min-w-0
+           disabled:cursor-not-allowed disabled:opacity-60"
   >
     <span class="truncate flex-1 min-w-0 text-left">{selectedLabel || 'No folder'}</span>
     <svg

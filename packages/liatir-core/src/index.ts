@@ -24,12 +24,20 @@ export type LiatirStepKind =
   | 'utility'
   | 'sub-pipeline';
 
+export interface LiatirFieldOption {
+  value: string;
+  label: string;
+  description?: string;
+}
+
 export interface LiatirFieldSchema<TDefault = unknown> {
   type: LiatirFieldType;
   label?: string;
   description?: string;
   required?: boolean;
   default?: TDefault;
+  /** Static choices for fields that should be selected instead of free-typed. */
+  options?: LiatirFieldOption[];
   /**
    * Accepted file extensions for file fields. Values are extension strings such
    * as "fastq", "fastq.gz", or ".vcf"; consumers must normalize the leading dot.
@@ -157,6 +165,85 @@ export interface LiatirExecutionResult {
   metrics?: Record<string, number>;
   values?: Record<string, JsonValue>;
   logs?: string[];
+}
+
+export type LiatirAIModelRuntimeKind = 'mock' | 'llama-cpp' | 'onnx' | 'custom';
+export type LiatirAIModelSource = 'builtin' | 'local-file' | 'local-directory' | 'managed-download';
+export type LiatirAIModelStatus = 'available' | 'installed' | 'missing' | 'error';
+export type LiatirAICapability =
+  | 'text-generation'
+  | 'summarization'
+  | 'classification'
+  | 'embedding'
+  | 'reranking'
+  | 'structured-extraction';
+export type LiatirAIModelModality = 'text' | 'dna' | 'rna' | 'protein' | 'image' | 'multimodal';
+
+export interface LiatirAIModelRuntime {
+  kind: LiatirAIModelRuntimeKind;
+  name: string;
+  version?: string;
+}
+
+export interface LiatirAIModelLicense {
+  name: string;
+  spdxId?: string;
+  url?: string;
+  /** ISO date when license metadata was verified from an official source. */
+  verifiedAt?: string;
+}
+
+export interface LiatirAIModelHardwareRequirements {
+  cpu?: boolean;
+  gpu?: boolean;
+  minRamGb?: number;
+  recommendedRamGb?: number;
+  minVramGb?: number;
+  recommendedVramGb?: number;
+  notes?: string;
+}
+
+export interface LiatirAIModelInstallSpec {
+  method: LiatirAIModelSource;
+  path?: string;
+  urls?: string[];
+  checksum?: string;
+}
+
+export interface LiatirAIModelMetadata {
+  id: string;
+  name: string;
+  description: string;
+  version?: string;
+  runtime: LiatirAIModelRuntime;
+  source: LiatirAIModelSource;
+  localOnly: boolean;
+  capabilities: LiatirAICapability[];
+  modalities: LiatirAIModelModality[];
+  parameters?: number;
+  quantization?: string;
+  contextWindow?: number;
+  diskSizeBytes?: number;
+  license?: LiatirAIModelLicense;
+  hardware?: LiatirAIModelHardwareRequirements;
+  install?: LiatirAIModelInstallSpec;
+  tags?: string[];
+}
+
+export interface LiatirAIModelRecord extends LiatirAIModelMetadata {
+  status: LiatirAIModelStatus;
+  localPath?: string;
+  enabled?: boolean;
+  isDefault?: boolean;
+  addedAt?: number;
+  updatedAt?: number;
+  error?: string;
+}
+
+export interface LiatirAIToolDefinition extends LiatirStepDefinition {
+  type: 'ai-tool';
+  modelInputKey?: string;
+  supportedCapabilities?: LiatirAICapability[];
 }
 
 // Compatibility aliases used by the current frontend and packages.

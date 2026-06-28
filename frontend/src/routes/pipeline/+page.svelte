@@ -177,17 +177,34 @@
   }
 
   function normalizeNodeForHistory(node: Node): Node {
-    const copy = cloneJson(node) as Node & Record<string, unknown>;
-    delete copy.selected;
-    delete copy.dragging;
-    delete copy.resizing;
-    return copy as Node;
+    const normalized: Node = {
+      id: node.id,
+      type: node.type,
+      position: {
+        x: node.position?.x ?? 0,
+        y: node.position?.y ?? 0,
+      },
+      data: cloneJson(node.data ?? {}),
+    };
+    if (node.parentId) normalized.parentId = node.parentId;
+    if (node.extent) normalized.extent = node.extent;
+    if (node.hidden !== undefined) normalized.hidden = node.hidden;
+    return normalized;
   }
 
   function normalizeEdgeForHistory(edge: Edge): Edge {
-    const copy = cloneJson(edge) as Edge & Record<string, unknown>;
-    delete copy.selected;
-    return { ...copy, selectable: false } as Edge;
+    const normalized: Edge = {
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      selectable: false,
+    };
+    if (edge.sourceHandle !== undefined && edge.sourceHandle !== null) normalized.sourceHandle = edge.sourceHandle;
+    if (edge.targetHandle !== undefined && edge.targetHandle !== null) normalized.targetHandle = edge.targetHandle;
+    if (edge.type) normalized.type = edge.type;
+    if (edge.data) normalized.data = cloneJson(edge.data);
+    if (edge.hidden !== undefined) normalized.hidden = edge.hidden;
+    return normalized;
   }
 
   function cloneGraphSnapshot(snapshot: GraphSnapshot): GraphSnapshot {
@@ -220,6 +237,13 @@
     dragStartKey = '';
   }
 
+  function initializeGraphHistory(snapshot: GraphSnapshot) {
+    resetGraphHistory();
+    lastGraphSnapshot = cloneGraphSnapshot(snapshot);
+    lastGraphKey = graphSnapshotKey(lastGraphSnapshot);
+    historyReady = true;
+  }
+
   function syncGraphHistory(currentSnapshot: GraphSnapshot) {
     const currentKey = graphSnapshotKey(currentSnapshot);
 
@@ -239,7 +263,10 @@
     }
 
     if (!restoringGraphHistory && lastGraphSnapshot) {
-      undoStack = [...undoStack, cloneGraphSnapshot(lastGraphSnapshot)].slice(-HISTORY_LIMIT);
+      const previous = cloneGraphSnapshot(lastGraphSnapshot);
+      if (graphSnapshotKey(previous) !== currentKey) {
+        undoStack = [...undoStack, previous].slice(-HISTORY_LIMIT);
+      }
       redoStack = [];
     }
 
@@ -285,22 +312,50 @@
     dragStartKey = '';
   }
 
-  const canUndo = $derived(undoStack.length > 0 && !pipelineStore.running);
-  const canRedo = $derived(redoStack.length > 0 && !pipelineStore.running);
+  function hasDifferentSnapshot(stack: GraphSnapshot[]): boolean {
+    const currentKey = graphSnapshotKey(createGraphSnapshot());
+    return stack.some((snapshot) => graphSnapshotKey(snapshot) !== currentKey);
+  }
+
+  const canUndo = $derived(hasDifferentSnapshot(undoStack) && !pipelineStore.running);
+  const canRedo = $derived(hasDifferentSnapshot(redoStack) && !pipelineStore.running);
+
+  function popDifferentSnapshot(
+    stack: GraphSnapshot[],
+    currentKey: string
+  ): { target: GraphSnapshot | null; rest: GraphSnapshot[] } {
+    const rest = [...stack];
+    while (rest.length > 0) {
+      const target = rest[rest.length - 1];
+      rest.pop();
+      if (graphSnapshotKey(target) !== currentKey) return { target, rest };
+    }
+    return { target: null, rest };
+  }
+
+  function pushDistinctSnapshot(stack: GraphSnapshot[], snapshot: GraphSnapshot): GraphSnapshot[] {
+    const key = graphSnapshotKey(snapshot);
+    if (stack.length > 0 && graphSnapshotKey(stack[stack.length - 1]) === key) return stack;
+    return [...stack, cloneGraphSnapshot(snapshot)].slice(-HISTORY_LIMIT);
+  }
 
   async function undoGraphChange() {
     if (!canUndo) return;
-    const previous = undoStack[undoStack.length - 1];
-    redoStack = [...redoStack, createGraphSnapshot()].slice(-HISTORY_LIMIT);
-    undoStack = undoStack.slice(0, -1);
+    const current = createGraphSnapshot();
+    const { target: previous, rest } = popDifferentSnapshot(undoStack, graphSnapshotKey(current));
+    undoStack = rest;
+    if (!previous) return;
+    redoStack = pushDistinctSnapshot(redoStack, current);
     await restoreGraphSnapshot(previous);
   }
 
   async function redoGraphChange() {
     if (!canRedo) return;
-    const next = redoStack[redoStack.length - 1];
-    undoStack = [...undoStack, createGraphSnapshot()].slice(-HISTORY_LIMIT);
-    redoStack = redoStack.slice(0, -1);
+    const current = createGraphSnapshot();
+    const { target: next, rest } = popDifferentSnapshot(redoStack, graphSnapshotKey(current));
+    redoStack = rest;
+    if (!next) return;
+    undoStack = pushDistinctSnapshot(undoStack, current);
     await restoreGraphSnapshot(next);
   }
 
@@ -388,6 +443,27 @@
 
   const toolNodes = $derived(nodes.filter(n => n.type === 'tool'));
 
+  function defaultInputValue(value: unknown): string {
+    if (value === undefined || value === null) return '';
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+  }
+
+  function nodeInputValue(n: Node, key: string, fallback: unknown): string {
+    const inputs = n.data?.inputs as Record<string, string> | undefined;
+    return inputs?.[key] ?? defaultInputValue(fallback);
+  }
+
+  function defaultInputsForStep(stepId: string): Record<string, string> {
+    const def = resolveStepEntry(stepId)?.definition;
+    if (!def) return {};
+    const inputs: Record<string, string> = {};
+    for (const [key, schema] of Object.entries(def.inputSchema)) {
+      if (schema.default !== undefined) inputs[key] = defaultInputValue(schema.default);
+    }
+    return inputs;
+  }
+
   const canRun = $derived(
     nodes.some(n => n.type !== 'start') &&
     !pipelineStore.running &&
@@ -396,7 +472,7 @@
       if (!def) return false;
       return Object.entries(def.inputSchema).every(([k, s]) => {
         if (!s.required) return true;
-        const val = (n.data?.inputs as Record<string, string>)?.[k] ?? '';
+        const val = nodeInputValue(n, k, s.default);
         return val !== '';
       });
     }) &&
@@ -430,7 +506,7 @@
       edges = dedupeEdges(pipelineStore.currentEdges).map(e => ({ ...e, selectable: false }));
       nameInput = pipelineStore.pipelineName;
     }
-    resetGraphHistory();
+    initializeGraphHistory(createGraphSnapshot());
     storeReady = true;
   });
 
@@ -453,7 +529,7 @@
     const pos = { x: 200 + (col % 3) * 380, y: 80 + Math.floor(col / 3) * 280 };
     let newNode: Node;
     switch (type) {
-      case 'tool':         newNode = { id: crypto.randomUUID(), type, position: pos, data: { stepId: id, inputs: {} } }; break;
+      case 'tool':         newNode = { id: crypto.randomUUID(), type, position: pos, data: { stepId: id, inputs: defaultInputsForStep(id) } }; break;
       case 'variable':     newNode = { id: crypto.randomUUID(), type, position: pos, data: { varType: 'string', value: '' } }; break;
       case 'math':         newNode = { id: crypto.randomUUID(), type, position: pos, data: { operation: '+', literalA: '', literalB: '' } }; break;
       case 'condition':    newNode = { id: crypto.randomUUID(), type, position: pos, data: { condition: '', valueRef: '' } }; break;

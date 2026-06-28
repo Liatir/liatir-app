@@ -5,6 +5,7 @@ import { savedScripts } from './savedScripts.svelte';
 import { dataFiles } from './dataFiles.svelte';
 import { analysisRuns } from './analysisRuns.svelte';
 import { modulesStore } from './modules.svelte';
+import { aiModelsStore } from './aiModels.svelte';
 
 setResetFn(() => {
   apiConnections.reset();
@@ -13,6 +14,7 @@ setResetFn(() => {
   dataFiles.reset();
   analysisRuns.reset();
   modulesStore.reset();
+  aiModelsStore.reset();
 });
 
 setDemoInitFn(() => dataFiles.initDemoFiles());
