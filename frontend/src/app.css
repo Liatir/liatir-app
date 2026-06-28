@@ -102,8 +102,7 @@ input, textarea, [data-selectable] {
 }
 
 .svelte-flow__handle {
-  border-color: var(--color-black) !important;
-  opacity: 0.08 !important;
+  border-color: var(--color-zinc-200) !important;
   border-top-width: 25px !important;
   border-bottom-width: 25px !important;
   border-radius: 10px !important;
@@ -113,39 +112,90 @@ input, textarea, [data-selectable] {
   border-left-width: 5px !important;
   border-top-right-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
-  transform: translateX(-5px) translateY(-10px) !important;
+  /* Setup Tailwind independent translate variables to avoid overriding axes */
+  --tw-translate-x: -5px !important;
+  --tw-translate-y: -10px !important;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) !important;
 }
 
 .svelte-flow__handle-right {
   border-right-width: 5px !important;
   border-top-left-radius: 0 !important;
   border-bottom-left-radius: 0 !important;
-  transform: translateX(5px) translateY(-10px) !important;
+  /* Setup Tailwind independent translate variables to avoid overriding axes */
+  --tw-translate-x: 5px !important;
+  --tw-translate-y: -10px !important;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) !important;
+}
+
+.svelte-flow__handle[data-handleid="trueBranch"] {
+  border-top-width: 20px !important;
+  border-bottom-width: 20px !important;
+}
+.svelte-flow__handle[data-handleid="falseBranch"] {
+  border-top-width: 20px !important;
+  border-bottom-width: 20px !important;
 }
 
 .svelte-flow__handle:hover {
-  opacity: 1 !important;
   border-color: var(--color-brand-hover) !important;
 }
 
 
 .svelte-flow__node:hover .svelte-flow__handle {
-  opacity: 0.5;
   border-color: var(--color-brand) !important;
 }
 
 .svelte-flow__node:hover .svelte-flow__handle-right {
-  opacity: 1 !important;
+  border-color: var(--color-brand) !important;
   border-right-width: 25px !important;
   border-top-left-radius: 0 !important;
   border-bottom-left-radius: 0 !important;
-  transform: translateX(25px) translateY(-10px) !important;
+  /* Modify ONLY X-axis: Y-axis stays at -10px inherited from base selector */
+  --tw-translate-x: 25px !important;
 }
 
 .svelte-flow__node:hover .svelte-flow__handle-left {
-  opacity: 1 !important;
+  border-color: var(--color-brand) !important;
   border-left-width: 25px !important;
   border-top-right-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
-  transform: translateX(-25px) translateY(-10px) !important;
+  /* Modify ONLY X-axis: Y-axis stays at -10px inherited from base selector */
+  --tw-translate-x: -25px !important;
+}
+
+
+.svelte-flow__handle[data-handleid="trueBranch"].svelte-flow__handle-right,
+.svelte-flow__handle[data-handleid="trueBranch"].svelte-flow__handle-left {
+  /* Modify ONLY Y-axis: X-axis remains intact based on left/right handle specific state */
+  --tw-translate-y: 10px !important;
+}
+
+.svelte-flow__handle[data-handleid="falseBranch"].svelte-flow__handle-right,
+.svelte-flow__handle[data-handleid="falseBranch"].svelte-flow__handle-left {
+  /* Modify ONLY Y-axis: X-axis remains intact based on left/right handle specific state */
+  --tw-translate-y: 20px !important;
+}
+
+
+.svelte-flow__handle[data-handleid="falseBranch"].svelte-flow__handle-right span,
+.svelte-flow__handle[data-handleid="trueBranch"].svelte-flow__handle-right span {
+  --tw-translate-x: -5px !important;
+}
+.svelte-flow__handle[data-handleid="falseBranch"].svelte-flow__handle-left span,
+.svelte-flow__handle[data-handleid="trueBranch"].svelte-flow__handle-left span {
+  --tw-translate-x: 5px !important;
+}
+
+.svelte-flow__node:hover .svelte-flow__handle[data-handleid="falseBranch"] span,
+.svelte-flow__node:hover .svelte-flow__handle[data-handleid="trueBranch"] span {
+  color: white !important;
+}
+
+.svelte-flow__node:hover .svelte-flow__handle[data-handleid="trueBranch"].svelte-flow__handle-right,.svelte-flow__handle[data-handleid="trueBranch"].svelte-flow__handle-left {
+  border-color: var(--color-green-600) !important;
+}
+
+.svelte-flow__node:hover .svelte-flow__handle[data-handleid="falseBranch"].svelte-flow__handle-right,.svelte-flow__handle[data-handleid="falseBranch"].svelte-flow__handle-left {
+  border-color: var(--color-red-600) !important;
 }
