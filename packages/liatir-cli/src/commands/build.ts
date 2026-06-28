@@ -147,23 +147,23 @@ function validateNodeModule(def: CompiledNodeModule | undefined): asserts def is
   run: (input: Record<string, unknown>) => Promise<unknown>;
 } {
   if (!def || typeof def !== "object") {
-    failInvalidNodeModule("The module entrypoint must default-export defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... }).");
+    failInvalidNodeModule("The plugin entrypoint must default-export defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... }).");
   }
 
   if (def.__liatirModuleContract === true && typeof def.run !== "function") {
-    failInvalidNodeModule("Module contract is missing .main(...). Finish the default export with defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... }).");
+    failInvalidNodeModule("Plugin contract is missing .main(...). Finish the default export with defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... }).");
   }
 
   if (def.__liatirModule !== true || typeof def.run !== "function") {
-    failInvalidNodeModule("Invalid .lia module entrypoint. Use: export default defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... });");
+    failInvalidNodeModule("Invalid .lia plugin entrypoint. Use: export default defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... });");
   }
 
   if (!isPlainRecord(def.inputs)) {
-    failInvalidNodeModule("Invalid .lia module contract: defineModule({ inputs }) must be an object.");
+    failInvalidNodeModule("Invalid .lia plugin contract: defineModule({ inputs }) must be an object.");
   }
 
   if (!isPlainRecord(def.outputs)) {
-    failInvalidNodeModule("Invalid .lia module contract: defineModule({ outputs }) must be an object.");
+    failInvalidNodeModule("Invalid .lia plugin contract: defineModule({ outputs }) must be an object.");
   }
 }
 
@@ -178,14 +178,14 @@ export async function build() {
 }
 
 /**
- * Node module: the I/O schema lives IN THE CODE (defineModule). We bundle, import
+ * Node plugin: the I/O schema lives IN THE CODE (defineModule). We bundle, import
  * the bundle to read its declared inputs/outputs, and GENERATE the manifest from
  * them — a single source of truth, nothing to keep in sync by hand.
  */
 async function buildNode(cwd: string): Promise<void> {
   const pkgPath = path.join(cwd, "package.json");
   if (!(await exists(pkgPath))) {
-    console.error("No package.json found. Run this from your module's root.");
+    console.error("No package.json found. Run this from your plugin's root.");
     process.exit(1);
   }
   const pkg = JSON.parse(await fs.readFile(pkgPath, "utf-8")) as PackageMetadata;
@@ -218,7 +218,7 @@ async function buildNode(cwd: string): Promise<void> {
     minify: false,
   });
 
-  // Read the schema straight from the compiled module — the code is the source.
+  // Read the schema straight from the compiled plugin — the code is the source.
   const mod = await import(pathToFileURL(bundlePath).href);
   const def = mod.default as CompiledNodeModule | undefined;
   validateNodeModule(def);

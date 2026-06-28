@@ -188,7 +188,7 @@ const { available, version } = await api.invoke('lia_deps_check', { name: 'bcfto
 
 ---
 
-## .lia module runtime
+## .lia plugin runtime
 
 ### lia_liatir_read_manifest
 

@@ -276,7 +276,7 @@ export async function createLiatir(): Promise<LiatirNode> {
   };
 }
 
-// ── Module I/O schema — backed by @liatir/core ───────────────────────────────
+// ── Plugin I/O schema — backed by @liatir/core ───────────────────────────────
 // You declare the schema once with `f.*`; the input/output TS types are inferred
 // from it, and `lia build` generates the manifest from it. Nothing to keep in
 // sync by hand.
@@ -295,7 +295,7 @@ interface FieldOpts<T> {
   default?: T;
 }
 
-/** Field builders: declare what a module's inputs/outputs are AND their types. */
+/** Field builders: declare what a plugin's inputs/outputs are AND their types. */
 export const field = {
   string: (o: FieldOpts<string> = {}): Field<string, "string"> => ({ type: "string", ...o }),
   number: (
@@ -365,7 +365,7 @@ export interface LiatirModule<I extends InputSchema = InputSchema, O extends Out
 }
 
 /**
- * Define a Liatir module. Declare `inputs`/`outputs` with `f.*` once: the
+ * Define a Liatir plugin. Declare `inputs`/`outputs` with `f.*` once: the
  * `input` and return types are inferred from them, and the manifest is generated
  * from them at build time — no hand-written types, no manifest to keep in sync.
  *

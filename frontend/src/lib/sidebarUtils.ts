@@ -16,7 +16,7 @@ export const NAV_PAGES: NavItem[] = [
     { href: '/pipelines', label: 'Pipelines', icon: 'lucide:workflow', match: '/pipelines', global: false },
     { divider: true, global: false },
     { href: '/tools', label: 'Tools', icon: 'lucide:dna', match: '/tools', global: true },
-    { href: '/modules', label: 'Modules', customIcon: '/icons/lia-file-icon.svg', match: '/modules', global: true },
+    { href: '/plugins', label: 'Plugins', customIcon: '/icons/lia-file-icon.svg', match: '/plugins', global: true },
     { href: '/apis', label: 'API Connector', icon: 'lucide:plug', match: '/apis', global: false },
     { href: '/ai', label: 'AI Models', icon: 'mingcute:ai-line', match: '/ai', global: true },
     { divider: true, global: true },

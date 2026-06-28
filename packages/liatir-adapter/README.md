@@ -1,7 +1,7 @@
 # `@liatir/sdk`
 
-The runtime SDK for **Liatir Modules** (`.lia` bundles with `runtime: "node"`). It gives a
-module the **same bridge** that `window.Liatir` exposes inside the app, over a local IPC
+The runtime SDK for **Liatir Plugins** (`.lia` bundles with `runtime: "node"`). It gives a
+plugin the **same bridge** that `window.Liatir` exposes inside the app, over a local IPC
 channel to the running Liatir desktop process.
 
 ```ts

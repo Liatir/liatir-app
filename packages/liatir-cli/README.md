@@ -5,7 +5,7 @@ A `.lia` bundle is one file that holds either kind of tool, told apart by the
 
 | Kind | Language | Capabilities |
 |------|----------|--------------|
-| **Module** (`node`) | TypeScript | the full Liatir bridge (`jobs`, `deps`, `desktop.fs`, …) + Node |
+| **Plugin** (`node`) | TypeScript | the full Liatir bridge (`jobs`, `deps`, `desktop.fs`, …) + Node |
 | **Custom tool** (`wasm`) | Rust → wasm | pure, sandboxed computation (no network, fs read-only) |
 
 Both are imported the same way and run standalone or as a pipeline step.
@@ -14,14 +14,14 @@ Both are imported the same way and run standalone or as a pipeline step.
 npm i @liatir/lia        # then use `npx lia …`  (or `npm i -g @liatir/lia`)
 ```
 
-## Module (Node)
+## Plugin (Node)
 
 ```bash
-npx lia init my-module      # interactive prompts
-npx lia init my-module --yes --no-install
-cd my-module && npm install
+npx lia init my-plugin      # interactive prompts
+npx lia init my-plugin --yes --no-install
+cd my-plugin && npm install
 npx lia dev --input '{"fastq":"/absolute/path/sample.fastq"}'
-npx lia build              # → my-module.lia
+npx lia build              # -> my-plugin.lia
 npm run update             # updates @liatir/lia and @liatir/sdk
 ```
 
@@ -56,21 +56,21 @@ export default liatirModule.main(async ({ input, lia }: ModuleContext<typeof lia
 `defineModule({ inputs, outputs }).main(...)` shape, then packages the `.lia`.
 `lia dev` watches `src/index.ts` or `src/index.js`, typechecks on rebuild when a
 `tsconfig.json` exists, validates the same shape, applies schema defaults, and
-runs the module against the open Liatir app. JavaScript modules are supported
-too: use `lia init my-module --js`.
+runs the plugin against the open Liatir app. JavaScript plugins are supported
+too: use `lia init my-plugin --js`.
 
 Useful `lia init` flags:
 
 ```bash
 lia init                         # asks for the project folder
-lia init my-module --yes          # recommended defaults
-lia init my-module --node --ts    # recommended Node TypeScript module
-lia init my-module --node --js    # JavaScript module
+lia init my-plugin --yes          # recommended defaults
+lia init my-plugin --node --ts    # recommended Node TypeScript plugin
+lia init my-plugin --node --js    # JavaScript plugin
 lia init my-tool --wasm           # Rust/WASM tool
-lia init my-module --template file-processor
-lia init my-module --template bio-cli
-lia init my-module --category "Quality Control" --tags "FASTQ,QC"
-lia init my-module --no-install
+lia init my-plugin --template file-processor
+lia init my-plugin --template bio-cli
+lia init my-plugin --category "Quality Control" --tags "FASTQ,QC"
+lia init my-plugin --no-install
 lia init my-tool --no-wasm-target
 lia update                        # update @liatir/lia and @liatir/sdk
 lia update --version 1.5.1         # pin the target Liatir package version
@@ -80,7 +80,7 @@ lia update --no-install --version 1.5.1
 When prompted, the recommended path is Node + TypeScript + the minimal template.
 `--yes` selects those recommended defaults automatically.
 
-`lia update` is for Node `.lia` module projects. It updates both `@liatir/lia`
+`lia update` is for Node `.lia` plugin projects. It updates both `@liatir/lia`
 and `@liatir/sdk` together and refreshes `package-lock.json` through npm. WASM
 projects do not use `@liatir/sdk`; update the CLI with
 `npm install -g @liatir/lia@latest`.
@@ -119,7 +119,7 @@ the directories of `file` inputs are mounted read-only; a scratch dir is at `/st
 
 ## Install into Liatir
 
-`lia build` produces `<name>.lia`. In the app: **Modules → Import** → pick the file.
-It then shows up on the Modules page (auto-generated form + Run) and in the
+`lia build` produces `<name>.lia`. In the app: **Plugins -> Import** -> pick the file.
+It then shows up on the Plugins page (auto-generated form + Run) and in the
 pipeline tool palette (drag in as a step). Re-run `lia build` and re-import the
 same file to update it.

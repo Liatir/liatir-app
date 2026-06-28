@@ -49,13 +49,13 @@ type Choice<T extends string> = {
   recommended?: boolean;
 };
 
-const DEFAULT_PROJECT_NAME = "my-liatir-module";
+const DEFAULT_PROJECT_NAME = "my-liatir-plugin";
 const DEFAULT_CATEGORY = "General";
 
 const RUNTIME_CHOICES: Choice<Runtime>[] = [
   {
     value: "node",
-    label: "Node TypeScript .lia module",
+    label: "Node TypeScript .lia plugin",
     description: "Use JavaScript/TypeScript and the full Liatir desktop bridge.",
   },
   {
@@ -69,21 +69,21 @@ const LANGUAGE_CHOICES: Choice<NodeLanguage>[] = [
   {
     value: "typescript",
     label: "TypeScript",
-    description: "Best type safety and contract validation while developing modules.",
+    description: "Best type safety and contract validation while developing plugins.",
     recommended: true,
   },
   {
     value: "javascript",
     label: "JavaScript",
-    description: "Plain ESM module without a TypeScript project.",
+    description: "Plain ESM plugin without a TypeScript project.",
   },
 ];
 
 const TEMPLATE_CHOICES: Choice<NodeTemplate>[] = [
   {
     value: "minimal",
-    label: "Minimal text module",
-    description: "Smallest example for learning the module contract.",
+    label: "Minimal text plugin",
+    description: "Smallest example for learning the plugin contract.",
     recommended: true,
   },
   {
@@ -336,7 +336,7 @@ function humanizeProjectName(raw: string): string {
     .split(/\s+/)
     .filter(Boolean);
 
-  if (words.length === 0) return "Liatir Module";
+  if (words.length === 0) return "Liatir Plugin";
   return words.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
 }
 
@@ -433,7 +433,7 @@ async function installNodeDependencies(dir: string): Promise<void> {
     console.log("Installing dependencies with npm...");
     await execFileAsync("npm", ["install"], { cwd: dir });
   } catch {
-    console.warn("Dependency install failed. Run `npm install` inside the module folder before `lia dev`.");
+    console.warn("Dependency install failed. Run `npm install` inside the plugin folder before `lia dev`.");
   }
 }
 
@@ -518,7 +518,7 @@ function nodeIndex(config: InitConfig): string {
 
 const MINIMAL_TS = `import { defineModule, field, type ModuleContext } from "@liatir/sdk";
 
-// Docs: https://liatir.com/docs/lia-modules
+// Docs: https://liatir.com/docs/plugins
 const liatirModule = defineModule({
   inputs: {
     text: field.string({
@@ -538,7 +538,7 @@ const liatirModule = defineModule({
 });
 
 export default liatirModule.main(async ({ input, lia }: ModuleContext<typeof liatirModule>) => {
-  // Write your module logic here. Inputs and outputs are defined once above.
+  // Write your plugin logic here. Inputs and outputs are defined once above.
   void lia;
 
   return {
@@ -549,7 +549,7 @@ export default liatirModule.main(async ({ input, lia }: ModuleContext<typeof lia
 
 const MINIMAL_JS = `import { defineModule, field } from "@liatir/sdk";
 
-// Docs: https://liatir.com/docs/lia-modules
+// Docs: https://liatir.com/docs/plugins
 const liatirModule = defineModule({
   inputs: {
     text: field.string({
@@ -569,7 +569,7 @@ const liatirModule = defineModule({
 });
 
 export default liatirModule.main(async ({ input, lia }) => {
-  // Write your module logic here. Inputs and outputs are defined once above.
+  // Write your plugin logic here. Inputs and outputs are defined once above.
   void lia;
 
   return {
@@ -582,7 +582,7 @@ const FILE_PROCESSOR_TS = `import { basename } from "node:path";
 import { stat } from "node:fs/promises";
 import { defineModule, field, type ModuleContext } from "@liatir/sdk";
 
-// Docs: https://liatir.com/docs/lia-modules
+// Docs: https://liatir.com/docs/plugins
 const liatirModule = defineModule({
   inputs: {
     inputFile: field.file({
@@ -619,7 +619,7 @@ const FILE_PROCESSOR_JS = `import { basename } from "node:path";
 import { stat } from "node:fs/promises";
 import { defineModule, field } from "@liatir/sdk";
 
-// Docs: https://liatir.com/docs/lia-modules
+// Docs: https://liatir.com/docs/plugins
 const liatirModule = defineModule({
   inputs: {
     inputFile: field.file({
@@ -654,7 +654,7 @@ export default liatirModule.main(async ({ input }) => {
 
 const BIO_CLI_TS = `import { defineModule, field, type ModuleContext } from "@liatir/sdk";
 
-// Docs: https://liatir.com/docs/lia-modules
+// Docs: https://liatir.com/docs/plugins
 const liatirModule = defineModule({
   inputs: {
     fastq: field.file({
@@ -699,7 +699,7 @@ export default liatirModule.main(async ({ input, lia }: ModuleContext<typeof lia
 
 const BIO_CLI_JS = `import { defineModule, field } from "@liatir/sdk";
 
-// Docs: https://liatir.com/docs/lia-modules
+// Docs: https://liatir.com/docs/plugins
 const liatirModule = defineModule({
   inputs: {
     fastq: field.file({
@@ -860,7 +860,7 @@ async function scaffoldNode(config: InitConfig): Promise<void> {
   const installStep = config.installDependencies ? "" : "  npm install    # installs @liatir/sdk types for the editor\n";
 
   console.log(`
-Created ${config.projectName}/ (Node ${config.language} .lia module)
+Created ${config.projectName}/ (Node ${config.language} .lia plugin)
 
 Next steps:
   cd ${shellQuote(config.nextStepDir)}

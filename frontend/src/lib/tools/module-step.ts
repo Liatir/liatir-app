@@ -10,12 +10,12 @@ import { runLiatirModule } from '$lib/utils/module-run';
 import { saveModuleResultFiles } from '$lib/utils/module-files';
 import type { JsonValue } from '@liatir/core';
 
-/** Pipeline step id for an imported module — namespaced to avoid clashing with native tools. */
+/** Pipeline step id for an imported .lia plugin — namespaced to avoid clashing with native tools. */
 export function moduleStepId(moduleId: string): string {
   return `module:${moduleId}`;
 }
 
-/** A module's input schema is already InputFieldSchema-shaped. */
+/** A .lia plugin's input schema is already InputFieldSchema-shaped. */
 function mapInputs(schema: Record<string, ModuleInputFieldDef>): Record<string, InputFieldSchema> {
   const out: Record<string, InputFieldSchema> = {};
   for (const [k, f] of Object.entries(schema)) {
@@ -24,7 +24,7 @@ function mapInputs(schema: Record<string, ModuleInputFieldDef>): Record<string, 
   return out;
 }
 
-/** Map a module output field to a pipeline OutputFieldSchema. */
+/** Map a .lia plugin output field to a pipeline OutputFieldSchema. */
 function mapOutputs(schema: Record<string, ModuleOutputFieldDef>): Record<string, OutputFieldSchema> {
   const out: Record<string, OutputFieldSchema> = {};
   for (const [k, f] of Object.entries(schema)) {
@@ -49,21 +49,21 @@ function stringifyOutputValue(value: JsonValue): string {
   return value !== null && typeof value === 'object' ? JSON.stringify(value) : String(value);
 }
 
-/** Build the pipeline step definition (form + handles) for an imported module. */
+/** Build the pipeline step definition (form + handles) for an imported .lia plugin. */
 export function moduleToDefinition(mod: LiatirModule): PipelineStepDefinition {
   return {
     id: moduleStepId(mod.id),
     type: mod.runtime === 'wasm' ? 'wasm-plugin' : 'lia-module',
     label: mod.name,
-    description: mod.description || (mod.runtime === 'wasm' ? 'WASM custom tool (sandboxed)' : 'Liatir module'),
-    category: mod.runtime === 'wasm' ? 'Custom Tools' : 'Modules',
+    description: mod.description || (mod.runtime === 'wasm' ? 'WASM custom tool (sandboxed)' : 'Liatir plugin'),
+    category: mod.runtime === 'wasm' ? 'Custom Tools' : 'Plugins',
     inputSchema: mapInputs(mod.inputSchema),
     outputSchema: mapOutputs(mod.outputSchema),
   };
 }
 
 /**
- * Full pipeline registry entry for a module: its definition plus a `run` that
+ * Full pipeline registry entry for a .lia plugin: its definition plus a `run` that
  * executes it (Node or WASM) via the shared runner and maps the result back to
  * the pipeline's StepResult — file outputs become RunOutputFiles (for chaining),
  * numeric outputs become connectable metrics.
@@ -74,7 +74,7 @@ export function moduleToRegistryEntry(mod: LiatirModule): PipelineRegistryEntry 
     run: async (inputs, _outputDir, onLog) => {
       const out = await runLiatirModule(mod, inputs, (_stream, line) => onLog(line));
       if (out.exitCode !== 0) {
-        throw new Error(out.stderr.join('\n') || `Module "${mod.name}" exited with code ${out.exitCode}`);
+        throw new Error(out.stderr.join('\n') || `Plugin "${mod.name}" exited with code ${out.exitCode}`);
       }
 
       const result = out.result;

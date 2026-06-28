@@ -1,7 +1,7 @@
 // Bio namespace: alignment tools (Liatir.align.*)
 //
 // These are thin, typed wrappers over the native Liatir commands that the IPC
-// server exposes to .lia Modules. A Module author writes:
+// server exposes to .lia plugins. A plugin author writes:
 //
 //     const r = await Liatir.align.bwaMem({ reference, readsR1, outputSam });
 //

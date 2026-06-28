@@ -57,7 +57,7 @@ fastp produces trimmed FASTQ files:
 
 Each output file appears in the results panel above the QC stats, with two actions:
 
-- **Add to Data** — registers the trimmed file in the Data library immediately. The file is available in any subsequent tool's file picker (e.g., as input to an aligner .lia module) without any manual import step.
+- **Add to Data** — registers the trimmed file in the Data library immediately. The file is available in any subsequent tool's file picker (e.g., as input to an aligner .lia plugin) without any manual import step.
 - **Save as…** — opens the system save dialog to copy the file to a location you choose.
 
 ::: tip After trimming

@@ -27,7 +27,7 @@ export async function typecheckIfConfigured(cwd: string, label: string): Promise
   if (!(await exists(localTsc))) {
     throw new Error(
       `[${label}] TypeScript project detected, but local TypeScript is missing.\n` +
-      "Run `npm install` in the module directory, then try again."
+      "Run `npm install` in the plugin directory, then try again."
     );
   }
 

@@ -13,7 +13,7 @@ export default defineConfig({
       { text: 'Introduction', link: '/introduction/overview' },
       { text: 'Data', link: '/data/overview' },
       { text: 'Tools', link: '/tools/overview' },
-      { text: 'Modules', link: '/modules/overview' },
+      { text: 'Plugins', link: '/plugins/overview' },
       { text: 'Pipeline', link: '/pipeline/overview' },
       { text: 'API', link: '/api/liatir-api' },
     ],
@@ -50,12 +50,12 @@ export default defineConfig({
         ],
       },
       {
-        text: 'Modules (.lia)',
+        text: 'Plugins (.lia)',
         collapsed: false,
         items: [
-          { text: 'Overview', link: '/modules/overview' },
-          { text: 'Bundle format', link: '/modules/format' },
-          { text: 'liatir-cli', link: '/modules/liatir-cli' },
+          { text: 'Overview', link: '/plugins/overview' },
+          { text: 'Bundle format', link: '/plugins/format' },
+          { text: 'liatir-cli', link: '/plugins/liatir-cli' },
         ],
       },
       {

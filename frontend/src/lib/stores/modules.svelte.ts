@@ -35,8 +35,14 @@ function normalizeTags(tags: unknown): string[] {
 }
 
 function normalizeCategory(category: unknown, runtime: 'node' | 'wasm'): string {
-  if (typeof category === 'string' && category.trim()) return category.trim();
-  return runtime === 'wasm' ? 'WASM Modules' : 'Node Modules';
+  if (typeof category === 'string' && category.trim()) {
+    const cleanCategory = category.trim();
+    if (cleanCategory === 'WASM Modules') return 'WASM Plugins';
+    if (cleanCategory === 'Node Modules') return 'Node Plugins';
+    if (cleanCategory === 'Modules') return 'Plugins';
+    return cleanCategory;
+  }
+  return runtime === 'wasm' ? 'WASM Plugins' : 'Node Plugins';
 }
 
 function normalizePersistedModule(module: LiatirModule): LiatirModule {

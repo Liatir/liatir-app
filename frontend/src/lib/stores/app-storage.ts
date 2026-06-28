@@ -8,7 +8,7 @@ import { liatir } from '$lib/api';
  * so migrating a store is a drop-in replacement:
  *   `api.desktop.fs.data.X(...)` → `appStorage.X(...)`
  *
- * User scripts and .lia modules keep using `desktop.fs.*` for their own data;
+ * User scripts and .lia plugins keep using `desktop.fs.*` for their own data;
  * they cannot read or clobber anything stored here.
  */
 export const appStorage = {

@@ -189,7 +189,7 @@
     await pipelineStore.init();
     dataFiles.init();
     apiConnections.init();
-    modulesStore.init(); // make imported .lia modules available as pipeline steps
+    modulesStore.init(); // make imported .lia plugins available as pipeline steps
 
     const pending = pipelineStore.pendingLoad;
     if (pending) {

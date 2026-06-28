@@ -1,6 +1,6 @@
 # Data
 
-The Data page is the central file registry for Liatir. Every tool and module draws its input files from here. You add files once; everything else in the app can see them.
+The Data page is the central file registry for Liatir. Every tool and plugin draws its input files from here. You add files once; everything else in the app can see them.
 
 ## How files are stored
 

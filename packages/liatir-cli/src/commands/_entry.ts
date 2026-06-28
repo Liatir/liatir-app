@@ -17,7 +17,7 @@ async function exists(p: string): Promise<boolean> {
 }
 
 /**
- * Resolve the single supported Node module entrypoint. TypeScript is preferred
+ * Resolve the single supported Node plugin entrypoint. TypeScript is preferred
  * when both files exist because it is the recommended scaffold and typechecked
  * when a tsconfig is present.
  */
@@ -32,5 +32,5 @@ export async function resolveNodeEntryPoint(cwd: string): Promise<NodeEntryPoint
     return { path: jsPath, displayPath: "src/index.js", language: "javascript" };
   }
 
-  throw new Error("No Node module entrypoint found. Expected src/index.ts or src/index.js.");
+  throw new Error("No Node plugin entrypoint found. Expected src/index.ts or src/index.js.");
 }

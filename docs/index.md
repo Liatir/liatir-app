@@ -21,15 +21,15 @@ features:
     title: 100% local and offline
     details: Your genomic data never leaves your machine. There are no API calls to external servers, no telemetry, no licence checks. Liatir works on an air-gapped workstation just as well as a connected laptop.
   - icon: 📦
-    title: .lia modules — extend anything
-    details: A .lia file is a self-contained JavaScript bundle (built with liatir-cli) that plugs in as a first-class analysis step. Share a module as a single file; load it with a drag-and-drop. No install, no conflicts, no root access.
+    title: .lia plugins — extend anything
+    details: A .lia file is a self-contained JavaScript bundle (built with liatir-cli) that plugs in as a first-class analysis step. Share a plugin as a single file; load it with a drag-and-drop. No install, no conflicts, no root access.
   - icon: 🔌
     title: WASM plugin system
-    details: For performance-critical or language-agnostic logic, Liatir supports WebAssembly plugins. Compile from Rust, C, or any WASM target and register the module — the same input/output schema used by every other step applies.
+    details: For performance-critical or language-agnostic logic, Liatir supports WebAssembly plugins. Compile from Rust, C, or any WASM target and register the plugin — the same input/output schema used by every other step applies.
   - icon: 🗂️
     title: Unified data layer
     details: Import files once, use them everywhere. Liatir tracks every file you add by path, shows extension-aware icons, detects when a file moves or disappears, and provides an inline text preview for FASTQ, VCF, SAM, BED, and GTF formats.
   - icon: 🔗
     title: Orchestrate any pipeline
-    details: The .lia module system can shell out to Nextflow, Snakemake, or any CLI tool. A .lia module that wraps a Nextflow workflow appears in the pipeline builder exactly like a native tool — same schema, same run history, same output tracking.
+    details: The .lia plugin system can shell out to Nextflow, Snakemake, or any CLI tool. A .lia plugin that wraps a Nextflow workflow appears in the pipeline builder exactly like a native tool — same schema, same run history, same output tracking.
 ---

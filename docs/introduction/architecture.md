@@ -1,6 +1,6 @@
 # Architecture
 
-Liatir is a Tauri 2 desktop application with a Rust backend and a SvelteKit frontend. Understanding the layering matters when you want to add a new tool, write a `.lia` module, or contribute to the codebase.
+Liatir is a Tauri 2 desktop application with a Rust backend and a SvelteKit frontend. Understanding the layering matters when you want to add a new tool, write a `.lia` plugin, or contribute to the codebase.
 
 ## High-level overview
 
@@ -42,7 +42,7 @@ The backend is split into bridge modules under `src-tauri/src/bridge/`:
 |--------|---------------|
 | `managed_bins.rs` | Filesystem ops, file preview, dep checks |
 | `job_runner.rs` | Process spawning, stdout/stderr streaming, job registry |
-| `ipc_server.rs` | Axum server that proxies `lia_*` calls for Node.js modules |
+| `ipc_server.rs` | Axum server that proxies `lia_*` calls for Node.js plugins |
 | `lia_runtime.rs` | `.lia` bundle validation, manifest parsing, execution |
 
 Every `lia_*` command must be:
@@ -56,7 +56,7 @@ Missing the permissions file entry causes a "command not allowed" error at runti
 
 An [Axum](https://github.com/tokio-rs/axum) HTTP server starts on a random port when the app launches. Its address and a Bearer token are written to `{app_data_dir}/.ipc`.
 
-The IPC server is how `.lia` modules call back into the Rust backend while they execute. The `liatir-adapter` Node.js package reads `.ipc` at module startup and authenticates with the Bearer token. This lets module code call `lia_fs_paths`, read files, stream job output, and write results — all from within the JavaScript bundle — without exposing any Tauri APIs directly.
+The IPC server is how `.lia` plugins call back into the Rust backend while they execute. The `liatir-adapter` Node.js package reads `.ipc` at plugin startup and authenticates with the Bearer token. This lets plugin code call `lia_fs_paths`, read files, stream job output, and write results — all from within the JavaScript bundle — without exposing any Tauri APIs directly.
 
 ```
 {app_data_dir}/
@@ -69,8 +69,8 @@ The IPC server is how `.lia` modules call back into the Rust backend while they 
   tool-outputs/
     fastp-<run-id>-R1.fastq.gz
     fastp-<run-id>-R2.fastq.gz
-  modules/
-    my-module.lia
+  plugins/
+    my-plugin.lia
 ```
 
 ## Capability system

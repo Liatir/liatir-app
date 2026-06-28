@@ -153,8 +153,8 @@ await api.desktop.fs.data.writeText(
   { createDirs: true }
 )
 
-// Check if a module has been imported
-const exists = await api.desktop.fs.data.exists('modules/my-module.lia')
+// Check if a plugin has been imported
+const exists = await api.desktop.fs.data.exists('plugins/my-plugin.lia')
 ```
 
 ## api.desktop.events

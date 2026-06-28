@@ -1,9 +1,9 @@
 import { liatir } from '$lib/api';
 
 /**
- * Execute a .lia module (Node OR WASM runtime) and collect its result.
+ * Execute a .lia plugin (Node OR WASM runtime) and collect its result.
  *
- * Single source of truth for module execution, shared by the standalone runner
+ * Single source of truth for plugin execution, shared by the standalone runner
  * page and the pipeline engine. `lia_liatir_run` instruments the runtime:
  *  - Node  → returns `{ jobId }`; we stream `jobs:stdout/stderr/exit` events and
  *            parse the `__LIATIR_RESULT__` marker line for the structured result.
@@ -28,7 +28,7 @@ export async function runLiatirModule(
 
   if ('jobId' in res && res.jobId) {
     // ── Node runtime: poll buffered job output until exit ────────────────────
-    // Do not rely only on Tauri events here: very small modules can print their
+    // Do not rely only on Tauri events here: very small plugins can print their
     // result and exit before the frontend has registered listeners.
     const jobId = res.jobId;
     let stdoutSeen = 0;

@@ -6,9 +6,9 @@ import { detectFileExtension } from './file-extensions';
 import type { LiatirFileOutputValue, LiatirOutputFieldSchema, RunOutputFile } from '@liatir/core';
 
 /**
- * Bridge for persisting/removing files produced by .lia modules.
+ * Bridge for persisting/removing files produced by .lia plugins.
  *
- * Files are written under the workspace-scoped, module-relative folder
+ * Files are written under the workspace-scoped, plugin-relative folder
  * `Results/<module>/` (via the Rust `lia_module_*` commands) and registered in
  * the Data store so they appear in Results exactly like native-tool outputs.
  */
@@ -66,7 +66,7 @@ export async function deleteModuleOutput(path: string): Promise<void> {
 }
 
 /**
- * Shape a module may return for a file-typed output. Kept as an alias to the
+ * Shape a plugin may return for a file-typed output. Kept as an alias to the
  * shared core contract so callers do not invent local variants.
  */
 export type ModuleFileValue = LiatirFileOutputValue;
@@ -119,7 +119,7 @@ function getFileContent(raw: LiatirFileOutputValue): { content: string; fileName
 }
 
 /**
- * Persist all file-typed outputs declared in a module's outputSchema from its
+ * Persist all file-typed outputs declared in a plugin's outputSchema from its
  * structured `result`. Returns the saved entries (for UI display).
  */
 export async function saveModuleResultFiles(

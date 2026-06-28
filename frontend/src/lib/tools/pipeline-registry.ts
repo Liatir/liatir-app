@@ -374,12 +374,12 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
   'snpeff':             { definition: snpeffDefinition,            run: runSnpeffStep },
 };
 
-// ── Imported .lia modules as pipeline steps ──────────────────────────────────
-// Modules (Node and WASM) are first-class pipeline steps alongside native tools.
+// ── Imported .lia plugins as pipeline steps ──────────────────────────────────
+// Plugins (Node and WASM) are first-class pipeline steps alongside native tools.
 // They are not in the static registry above — they are resolved on demand from
-// the modules store so importing/removing one is reflected without a rebuild.
+// the plugin import store so importing/removing one is reflected without a rebuild.
 
-/** Resolve a step entry by id: a native tool OR an imported module (`module:<id>`). */
+/** Resolve a step entry by id: a native tool OR an imported .lia plugin (`module:<id>`). */
 export function resolveStepEntry(stepId: string): PipelineRegistryEntry | undefined {
   if (stepId.startsWith('module:')) {
     const mod = modulesStore.byId(stepId.slice('module:'.length));
@@ -388,12 +388,12 @@ export function resolveStepEntry(stepId: string): PipelineRegistryEntry | undefi
   return PIPELINE_REGISTRY[stepId];
 }
 
-/** Step definitions for every imported module — for the pipeline tool palette. */
+/** Step definitions for every imported .lia plugin — for the pipeline tool palette. */
 export function moduleStepDefinitions(): PipelineStepDefinition[] {
   return modulesStore.modules.map(moduleToDefinition);
 }
 
-/** Definitions of all available steps (native tools + imported modules). */
+/** Definitions of all available steps (native tools + imported .lia plugins). */
 export function allStepDefinitions(): PipelineStepDefinition[] {
   return [
     ...Object.values(PIPELINE_REGISTRY).map((e) => e.definition),

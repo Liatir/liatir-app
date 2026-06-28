@@ -1,7 +1,7 @@
 // Bio namespace: quality control (Liatir.qc.*)
 //
 // Typed wrappers that run QC tools and return a rendered ToolOutput, using the
-// shared parsers from @liatir/output-parser so Modules and the app match exactly.
+// shared parsers from @liatir/output-parser so plugins and the app match exactly.
 // seqkit/fastp shell out via the job manager; fastqc runs the bundled WASM custom-tool.
 
 import {

@@ -28,11 +28,11 @@ src-ts/
 
 ## WASM plugins (`Liatir.plugins`)
 
-The WASM runtime is fully operational. Modules are `.wasm` files that receive a
+The WASM runtime is fully operational. Plugins are `.wasm` files that receive a
 JSON payload on stdin and write a JSON result to stdout.
 
 ```ts
-// Add a module (file picker dialog).
+// Add a plugin (file picker dialog).
 await Liatir.plugins.add("qc.wasm");
 
 // Call it.
@@ -43,7 +43,7 @@ const result = await Liatir.plugins.call("qc.wasm", {
 ```
 
 Each call runs in an isolated job directory that is deleted after execution.
-Modules have access to a persistent `/storage` directory across calls.
+Plugins have access to a persistent `/storage` directory across calls.
 
 ---
 
@@ -107,7 +107,7 @@ console.log(result.ok, result.steps.map(s => s.status));
 ## File layout for bio data
 
 The sandboxed FS root is `~/.liatir/.main/` (data) and cache equivalent.
-WASM module storage lives at `~/.liatir/.main/_external_modules_storage/<module>/`.
+WASM plugin storage lives at `~/.liatir/.main/_external_modules_storage/<plugin>/`.
 
 ---
 

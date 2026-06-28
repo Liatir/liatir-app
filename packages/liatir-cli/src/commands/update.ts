@@ -300,7 +300,7 @@ export async function update(args: string[] = []): Promise<void> {
       return;
     }
 
-    throw new Error("No package.json found. Run `lia update` from a Node .lia module project.");
+    throw new Error("No package.json found. Run `lia update` from a Node .lia plugin project.");
   }
 
   const pkg = await readPackageJson(projectRoot);
@@ -311,7 +311,7 @@ export async function update(args: string[] = []): Promise<void> {
       return;
     }
 
-    throw new Error("This package does not look like a Node .lia module project.");
+    throw new Error("This package does not look like a Node .lia plugin project.");
   }
 
   const installArgs = [

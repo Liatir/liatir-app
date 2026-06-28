@@ -22,7 +22,7 @@ async function loadManifest(): Promise<Manifest> {
       const pkg = JSON.parse(await fs.readFile(packagePath, "utf-8")) as Manifest;
       return { name: pkg.name, version: pkg.version };
     } catch {
-      console.error("No package.json or .lia-manifest.json found. Run this command from your module root.");
+      console.error("No package.json or .lia-manifest.json found. Run this command from your plugin root.");
       process.exit(1);
     }
   }
@@ -78,22 +78,22 @@ if (!_m || typeof _m !== "object") {
 }
 
 if (_m.__liatirModuleContract === true && typeof _m.run !== "function") {
-  console.error("[liatir dev] module contract is missing .main(...). Finish the default export with defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... })");
+  console.error("[liatir dev] plugin contract is missing .main(...). Finish the default export with defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... })");
   process.exit(1);
 }
 
 if (_m.__liatirModule !== true || typeof _m.run !== "function") {
-  console.error("[liatir dev] invalid .lia module entrypoint. Use: export default defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... });");
+  console.error("[liatir dev] invalid .lia plugin entrypoint. Use: export default defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... });");
   process.exit(1);
 }
 
 if (!_m.inputs || typeof _m.inputs !== "object" || Array.isArray(_m.inputs)) {
-  console.error("[liatir dev] invalid module contract: defineModule({ inputs }) must be an object.");
+  console.error("[liatir dev] invalid plugin contract: defineModule({ inputs }) must be an object.");
   process.exit(1);
 }
 
 if (!_m.outputs || typeof _m.outputs !== "object" || Array.isArray(_m.outputs)) {
-  console.error("[liatir dev] invalid module contract: defineModule({ outputs }) must be an object.");
+  console.error("[liatir dev] invalid plugin contract: defineModule({ outputs }) must be an object.");
   process.exit(1);
 }
 
@@ -105,7 +105,7 @@ for (const [key, field] of Object.entries(_m.inputs ?? {})) {
 }
 
 const _inputs = { ..._defaults, ..._providedInputs };
-console.log("[liatir dev] running module with inputs:", JSON.stringify(_inputs, null, 2));
+console.log("[liatir dev] running plugin with inputs:", JSON.stringify(_inputs, null, 2));
 const result = await _m.run(_inputs).catch(e => {
   console.error("[liatir dev] script error:", e);
   process.exit(1);

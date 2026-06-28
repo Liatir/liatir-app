@@ -1,7 +1,7 @@
 {
   "name": "@liatir/sdk",
   "version": "1.5.1",
-  "description": "Node.js SDK for Liatir — gives .lia modules access to the full Liatir.* bridge",
+  "description": "Node.js SDK for Liatir — gives .lia plugins access to the full Liatir.* bridge",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
