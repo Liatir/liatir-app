@@ -23,6 +23,7 @@
   let error = $state<string | null>(null);
   let jbrowseError = $state<string | null>(null);
   let jbrowseFrameUrl = $state('');
+  let jbrowseFrameEl: HTMLIFrameElement | null = $state(null);
   let features = $state<Feature[]>([]);
   const viewerId = crypto.randomUUID();
 
@@ -115,6 +116,49 @@
 
   function escapeInlineScript(source: string): string {
     return source.replace(/<\/script/gi, '<\\/script');
+  }
+
+  function downloadDataUrl(dataUrl: string, filename: string) {
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+
+  async function captureJBrowseScreenshot() {
+    if (!jbrowseFrameEl?.contentWindow) throw new Error('JBrowse viewer is not ready.');
+
+    await new Promise<void>((resolve, reject) => {
+      const timeout = window.setTimeout(() => {
+        window.removeEventListener('message', onCaptureMessage);
+        reject(new Error('JBrowse screenshot timed out.'));
+      }, 4000);
+
+      function onCaptureMessage(event: MessageEvent) {
+        const data = event.data as {
+          type?: string;
+          viewerId?: string;
+          dataUrl?: string;
+          message?: string;
+        } | null;
+        if (!data || data.viewerId !== viewerId) return;
+        if (data.type !== 'liatir-jbrowse-viewer-screenshot-result') return;
+
+        window.clearTimeout(timeout);
+        window.removeEventListener('message', onCaptureMessage);
+        if (data.dataUrl) {
+          downloadDataUrl(data.dataUrl, `${section.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'genome-viewer'}.png`);
+          resolve();
+        } else {
+          reject(new Error(data.message ?? 'JBrowse screenshot failed.'));
+        }
+      }
+
+      window.addEventListener('message', onCaptureMessage);
+      jbrowseFrameEl?.contentWindow?.postMessage({ type: 'liatir-jbrowse-viewer-screenshot', viewerId }, '*');
+    });
   }
 
   function fileUri(path?: string, url?: string): string {
@@ -227,6 +271,66 @@
         const state = lib.createViewState(payload.config);
         const root = lib.createRoot(document.getElementById('jbrowse'));
         root.render(lib.React.createElement(lib.JBrowseLinearGenomeView, { viewState: state }));
+        window.addEventListener('message', function (event) {
+          const request = event.data || {};
+          if (request.type !== 'liatir-jbrowse-viewer-screenshot' || request.viewerId !== payload.viewerId) return;
+          try {
+            const target = document.getElementById('jbrowse');
+            if (!target) throw new Error('JBrowse target is not available.');
+            const rect = target.getBoundingClientRect();
+            const width = Math.max(1, Math.ceil(rect.width));
+            const height = Math.max(1, Math.ceil(rect.height));
+            const clone = target.cloneNode(true);
+            for (const canvas of Array.from(target.querySelectorAll('canvas'))) {
+              const cloneCanvas = clone.querySelectorAll('canvas')[Array.from(target.querySelectorAll('canvas')).indexOf(canvas)];
+              if (!cloneCanvas) continue;
+              const image = document.createElement('img');
+              image.src = canvas.toDataURL('image/png');
+              image.width = canvas.width;
+              image.height = canvas.height;
+              cloneCanvas.replaceWith(image);
+            }
+            const styles = Array.from(document.styleSheets).map(function (sheet) {
+              try {
+                return Array.from(sheet.cssRules || []).map(function (rule) { return rule.cssText; }).join('\\n');
+              } catch (_) {
+                return '';
+              }
+            }).join('\\n');
+            const svg = '<?xml version="1.0" encoding="UTF-8"?>' +
+              '<svg xmlns="http://www.w3.org/2000/svg" width="' + width + '" height="' + height + '">' +
+              '<foreignObject width="100%" height="100%">' +
+              '<div xmlns="http://www.w3.org/1999/xhtml" style="width:' + width + 'px;height:' + height + 'px;background:#fff;">' +
+              '<style>' + styles + '</style>' + clone.outerHTML +
+              '</div></foreignObject></svg>';
+            const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
+            const image = new Image();
+            image.onload = function () {
+              try {
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) throw new Error('Canvas capture is not available.');
+                ctx.drawImage(image, 0, 0);
+                URL.revokeObjectURL(url);
+                window.parent.postMessage({ type: 'liatir-jbrowse-viewer-screenshot-result', viewerId: payload.viewerId, dataUrl: canvas.toDataURL('image/png') }, '*');
+              } catch (error) {
+                URL.revokeObjectURL(url);
+                const text = error && error.message ? error.message : String(error || 'JBrowse screenshot failed.');
+                window.parent.postMessage({ type: 'liatir-jbrowse-viewer-screenshot-result', viewerId: payload.viewerId, message: text }, '*');
+              }
+            };
+            image.onerror = function () {
+              URL.revokeObjectURL(url);
+              window.parent.postMessage({ type: 'liatir-jbrowse-viewer-screenshot-result', viewerId: payload.viewerId, message: 'Could not render JBrowse screenshot.' }, '*');
+            };
+            image.src = url;
+          } catch (error) {
+            const text = error && error.message ? error.message : String(error || 'JBrowse screenshot failed.');
+            window.parent.postMessage({ type: 'liatir-jbrowse-viewer-screenshot-result', viewerId: payload.viewerId, message: text }, '*');
+          }
+        });
         message.remove();
         window.parent.postMessage({ type: 'liatir-jbrowse-viewer-ready', viewerId: payload.viewerId }, '*');
       } catch (error) {
@@ -312,10 +416,12 @@
   badge={section.assembly.name}
   height={section.height ?? 420}
   openHref={section.tracks[0]?.path ? `/tools/visualization/genome?track=${encodeURIComponent(section.tracks[0].path)}${section.assembly.fastaPath ? `&reference=${encodeURIComponent(section.assembly.fastaPath)}` : ''}` : undefined}
+  oncapture={jbrowseFrameUrl ? captureJBrowseScreenshot : undefined}
 >
   <div class="h-full overflow-auto bg-white">
     {#if jbrowseFrameUrl}
       <iframe
+        bind:this={jbrowseFrameEl}
         title={section.label}
         src={jbrowseFrameUrl}
         sandbox="allow-scripts"
