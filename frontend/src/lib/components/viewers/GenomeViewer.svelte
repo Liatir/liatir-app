@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
+  import VisualizationShell from '$lib/components/viewers/VisualizationShell.svelte';
   import { liatir } from '$lib/api';
   import { JBROWSE_RUNTIME_ID } from '$lib/viewers/runtime-registry';
   import { localFileSrc, readViewerRuntimeScript } from '$lib/viewers/runtime-loader';
@@ -306,53 +306,34 @@
   });
 </script>
 
-<Card class="p-4">
-  <div class="mb-3 flex items-start justify-between gap-3">
-    <div class="min-w-0">
-      <p class="text-xs font-medium text-zinc-500">{section.label}</p>
-      {#if section.description}
-        <p class="mt-1 text-[11px] text-zinc-400">{section.description}</p>
-      {/if}
-    </div>
-    <div class="flex shrink-0 items-center gap-2">
-      {#if section.tracks[0]?.path}
-        <Button
-          size="sm"
-          variant="ghost"
-          onclick={() => goto(`/tools/visualization/genome?track=${encodeURIComponent(section.tracks[0].path!)}${section.assembly.fastaPath ? `&reference=${encodeURIComponent(section.assembly.fastaPath)}` : ''}`)}
-        >
-          Open page
-        </Button>
-      {/if}
-      <span class="rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">
-        {section.assembly.name}
-      </span>
-    </div>
-  </div>
-
-  {#if jbrowseFrameUrl}
-    <div class="mb-3 overflow-hidden rounded-lg border border-border bg-white" style={`height: ${section.height ?? 420}px`}>
+<VisualizationShell
+  title={section.label}
+  description={section.description}
+  badge={section.assembly.name}
+  height={section.height ?? 420}
+  openHref={section.tracks[0]?.path ? `/tools/visualization/genome?track=${encodeURIComponent(section.tracks[0].path)}${section.assembly.fastaPath ? `&reference=${encodeURIComponent(section.assembly.fastaPath)}` : ''}` : undefined}
+>
+  <div class="h-full overflow-auto bg-white">
+    {#if jbrowseFrameUrl}
       <iframe
         title={section.label}
         src={jbrowseFrameUrl}
         sandbox="allow-scripts"
-        class="h-full w-full border-0"
+        class="h-full min-h-[320px] w-full border-0"
       ></iframe>
-    </div>
-  {:else if jbrowseError && !loading && !error}
-    <div class="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-      {#if jbrowseError.includes('not installed')}
-        Full JBrowse 2 rendering requires the optional JBrowse 2 runtime.
-        <Button size="sm" variant="secondary" class="ml-2" onclick={() => goto('/deps')}>
-          Open Dependencies
-        </Button>
-      {:else}
-        {jbrowseError}
-      {/if}
-    </div>
-  {/if}
+    {:else if jbrowseError && !loading && !error}
+      <div class="m-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+        {#if jbrowseError.includes('not installed')}
+          Full JBrowse 2 rendering requires the optional JBrowse 2 runtime.
+          <Button size="sm" variant="secondary" class="ml-2" onclick={() => goto('/deps')}>
+            Open Dependencies
+          </Button>
+        {:else}
+          {jbrowseError}
+        {/if}
+      </div>
+    {/if}
 
-  <div class="rounded-lg border border-border bg-white" style={`min-height: ${section.height ?? 320}px`}>
     <div class="border-b border-border bg-zinc-50 px-3 py-2">
       <div class="flex items-center justify-between gap-3 text-[10px] font-mono text-zinc-500">
         <span>{refName || 'region'}:{Math.round(visibleStart).toLocaleString()}</span>
@@ -395,4 +376,4 @@
       </div>
     {/if}
   </div>
-</Card>
+</VisualizationShell>

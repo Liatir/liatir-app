@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
+  import VisualizationShell from '$lib/components/viewers/VisualizationShell.svelte';
   import { liatir } from '$lib/api';
   import { THREEDMOL_RUNTIME_ID } from '$lib/viewers/runtime-registry';
   import { readViewerRuntimeScript } from '$lib/viewers/runtime-loader';
@@ -15,6 +15,7 @@
   let runtimeWarning = $state<string | null>(null);
   let frameUrl = $state('');
   let fallbackContent = $state('');
+  let frameEl: HTMLIFrameElement | null = $state(null);
 
   const viewerId = crypto.randomUUID();
 
@@ -113,6 +114,49 @@
     return URL.createObjectURL(new Blob([html], { type: 'text/html' }));
   }
 
+  function downloadDataUrl(dataUrl: string, filename: string) {
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+
+  async function captureStructureScreenshot() {
+    if (!frameEl?.contentWindow) throw new Error('Structure viewer is not ready.');
+
+    await new Promise<void>((resolve, reject) => {
+      const timeout = window.setTimeout(() => {
+        window.removeEventListener('message', onCaptureMessage);
+        reject(new Error('Structure screenshot timed out.'));
+      }, 3000);
+
+      function onCaptureMessage(event: MessageEvent) {
+        const data = event.data as {
+          type?: string;
+          viewerId?: string;
+          dataUrl?: string;
+          message?: string;
+        } | null;
+        if (!data || data.viewerId !== viewerId) return;
+        if (data.type !== 'liatir-structure-viewer-screenshot-result') return;
+
+        window.clearTimeout(timeout);
+        window.removeEventListener('message', onCaptureMessage);
+        if (data.dataUrl) {
+          downloadDataUrl(data.dataUrl, `${section.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'structure'}.png`);
+          resolve();
+        } else {
+          reject(new Error(data.message ?? 'Structure screenshot failed.'));
+        }
+      }
+
+      window.addEventListener('message', onCaptureMessage);
+      frameEl?.contentWindow?.postMessage({ type: 'liatir-structure-viewer-screenshot', viewerId }, '*');
+    });
+  }
+
   function runtimeFailureMessage(message: string): string {
     if (message.includes("Proxy handler's 'get' result")) {
       return 'The embedded 3D runtime is not compatible with this webview context.';
@@ -175,6 +219,19 @@
         viewer.setStyle({}, payload.style);
         viewer.zoomTo();
         viewer.render();
+        window.addEventListener('message', function (event) {
+          const request = event.data || {};
+          if (request.type !== 'liatir-structure-viewer-screenshot' || request.viewerId !== payload.viewerId) return;
+          try {
+            viewer.render();
+            const dataUrl = typeof viewer.pngURI === 'function' ? viewer.pngURI() : '';
+            if (!dataUrl) throw new Error('3Dmol.js did not return an image.');
+            window.parent.postMessage({ type: 'liatir-structure-viewer-screenshot-result', viewerId: payload.viewerId, dataUrl }, '*');
+          } catch (error) {
+            const text = error && error.message ? error.message : String(error || 'Structure screenshot failed.');
+            window.parent.postMessage({ type: 'liatir-structure-viewer-screenshot-result', viewerId: payload.viewerId, message: text }, '*');
+          }
+        });
         window.addEventListener('resize', function () {
           try {
             viewer.resize();
@@ -243,34 +300,15 @@
   });
 </script>
 
-<Card class="p-4">
-  <div class="mb-3 flex items-start justify-between gap-3">
-    <div class="min-w-0">
-      <p class="text-xs font-medium text-zinc-500">{section.label}</p>
-      {#if section.description}
-        <p class="mt-1 text-[11px] text-zinc-400">{section.description}</p>
-      {/if}
-    </div>
-    <div class="flex shrink-0 items-center gap-2">
-      {#if section.path}
-        <Button
-          size="sm"
-          variant="ghost"
-          onclick={() => goto(`/tools/visualization/structure?file=${encodeURIComponent(section.path!)}`)}
-        >
-          Open page
-        </Button>
-      {/if}
-      <span class="rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[10px] font-medium uppercase text-zinc-500">
-        {section.format}
-      </span>
-    </div>
-  </div>
-
-  <div
-    class="relative overflow-hidden rounded-lg border border-border bg-white"
-    style={`height: ${section.height ?? 420}px`}
-  >
+<VisualizationShell
+  title={section.label}
+  description={section.description}
+  badge={section.format}
+  height={section.height ?? 420}
+  openHref={section.path ? `/tools/visualization/structure?file=${encodeURIComponent(section.path)}` : undefined}
+  oncapture={frameUrl ? captureStructureScreenshot : undefined}
+>
+  <div class="relative h-full overflow-hidden bg-white">
     {#if loading}
       <div class="absolute inset-0 flex items-center justify-center text-xs text-zinc-400">
         Loading structure...
@@ -286,6 +324,7 @@
       </div>
     {:else if frameUrl}
       <iframe
+        bind:this={frameEl}
         title={section.label}
         src={frameUrl}
         sandbox="allow-scripts"
@@ -314,5 +353,22 @@
         {/if}
       </div>
     {/if}
+
+    {#if !loading && !error}
+      <div
+        class="pointer-events-none absolute inset-0 opacity-[0.16]"
+        style="background-image: linear-gradient(to right, #d4d4d8 1px, transparent 1px), linear-gradient(to bottom, #d4d4d8 1px, transparent 1px); background-size: 42px 42px;"
+      ></div>
+      <div class="pointer-events-none absolute bottom-3 right-3 rounded-lg border border-zinc-200 bg-white/85 px-2 py-1.5 shadow-sm backdrop-blur">
+        <svg width="54" height="42" viewBox="0 0 54 42" aria-hidden="true">
+          <line x1="12" y1="30" x2="42" y2="30" stroke="#ef4444" stroke-width="2" stroke-linecap="round" />
+          <line x1="12" y1="30" x2="12" y2="8" stroke="#22c55e" stroke-width="2" stroke-linecap="round" />
+          <line x1="12" y1="30" x2="31" y2="14" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" />
+          <text x="45" y="33" font-size="8" fill="#ef4444" font-family="monospace">X</text>
+          <text x="8" y="8" font-size="8" fill="#22c55e" font-family="monospace">Y</text>
+          <text x="33" y="14" font-size="8" fill="#3b82f6" font-family="monospace">Z</text>
+        </svg>
+      </div>
+    {/if}
   </div>
-</Card>
+</VisualizationShell>

@@ -9,6 +9,7 @@
   import ValueRefInput from './ValueRefInput.svelte';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
   import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
+  import Select from '$lib/components/ui/Select.svelte';
 
   let { id, data }: NodeProps<Node<MathNodeData>> = $props();
   const { updateNodeData, getNodes, getEdges } = useSvelteFlow();
@@ -27,6 +28,10 @@
     'round': 'round', 'floor': 'floor', 'ceil': 'ceil', 'abs': 'abs',
     'sqrt': '√  sqrt', 'log2': 'log₂', 'log10': 'log₁₀', 'ln': 'ln',
   };
+  const operationOptions = [
+    ...BINARY.map((op) => ({ value: op, label: OP_LABELS[op], meta: 'Binary' })),
+    ...UNARY.map((op) => ({ value: op, label: OP_LABELS[op], meta: 'Unary' })),
+  ];
 
   const disabled = $derived(pipelineStore.running);
   const needsB = $derived(BINARY.includes(data.operation ?? '+'));
@@ -58,21 +63,15 @@
   <div class="flex items-center gap-2 px-3 py-2 rounded-t-xl border-b border-border bg-violet-50 cursor-grab active:cursor-grabbing">
     <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
     <span class="text-[10px] font-semibold text-violet-700 uppercase tracking-wider">Math</span>
-    <select
+    <Select
       value={data.operation}
-      onchange={(e) => void updateMathData({ operation: (e.target as HTMLSelectElement).value as MathOperation })}
+      options={operationOptions}
+      onchange={(value) => void updateMathData({ operation: value as MathOperation })}
       {disabled}
-      onclick={(e) => e.stopPropagation()}
-      class="ml-auto text-[10px] border border-violet-200 rounded px-1.5 py-0.5 bg-violet-50 text-violet-700
-             font-mono outline-none cursor-pointer disabled:opacity-50 nodrag max-w-36"
-    >
-      <optgroup label="Binary">
-        {#each BINARY as op}<option value={op}>{OP_LABELS[op]}</option>{/each}
-      </optgroup>
-      <optgroup label="Unary (A only)">
-        {#each UNARY as op}<option value={op}>{OP_LABELS[op]}</option>{/each}
-      </optgroup>
-    </select>
+      class="ml-auto max-w-36 nodrag"
+      buttonClass="h-6 rounded px-1.5 py-0.5 text-[10px] font-mono border-violet-200 bg-violet-50 text-violet-700 shadow-none"
+      stopPropagation
+    />
     <NodeDeleteButton {id} />
   </div>
 

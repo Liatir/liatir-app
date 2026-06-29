@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { WorkspaceEnvVar } from '$lib/types/workspace';
+  import Select from '$lib/components/ui/Select.svelte';
 
   interface Props {
     vars: WorkspaceEnvVar[];
@@ -7,6 +8,11 @@
   }
 
   let { vars, onchange }: Props = $props();
+  const typeOptions = [
+    { value: 'string', label: 'string' },
+    { value: 'number', label: 'number' },
+    { value: 'boolean', label: 'boolean' },
+  ];
 
   function update(index: number, patch: Partial<WorkspaceEnvVar>) {
     onchange(vars.map((v, i) => i === index ? { ...v, ...patch } : v));
@@ -51,16 +57,13 @@
       />
 
       <!-- Type selector -->
-      <select
+      <Select
         value={v.type}
-        onchange={(e) => onTypeChange(i, (e.target as HTMLSelectElement).value as WorkspaceEnvVar['type'])}
-        class="w-full text-xs bg-transparent outline-none text-zinc-500 border border-border rounded px-1 py-0.5
-               focus:border-brand focus:ring-0 cursor-pointer"
-      >
-        <option value="string">string</option>
-        <option value="number">number</option>
-        <option value="boolean">boolean</option>
-      </select>
+        options={typeOptions}
+        onchange={(value) => onTypeChange(i, value as WorkspaceEnvVar['type'])}
+        class="w-full"
+        buttonClass="rounded border-border bg-transparent px-1 py-0.5 text-xs text-zinc-500 shadow-none"
+      />
 
       <!-- Key -->
       <input

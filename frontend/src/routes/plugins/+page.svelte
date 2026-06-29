@@ -21,11 +21,6 @@
   let categoryFilter = $state('All');
   let tagDrafts = $state<Record<string, string>>({});
 
-  const categories = $derived([
-    'All',
-    ...new Set(modulesStore.modules.map(mod => mod.category).filter(Boolean)),
-  ]);
-
   const visiblePlugins = $derived.by(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return modulesStore.modules.filter(mod => {
@@ -148,17 +143,7 @@
             </button>
           {/each}
 
-          <div class="ml-auto flex items-center gap-2">
-            <!-- <Icon icon="lucide:folder-filter" width="13" height="13" class="text-zinc-400" />
-            <select
-              bind:value={categoryFilter}
-              class="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-zinc-600 outline-none focus:border-brand/60"
-            >
-              {#each categories as category}
-                <option value={category}>{category}</option>
-              {/each}
-            </select> -->
-          </div>
+          <div class="ml-auto flex items-center gap-2"></div>
         </div>
       </div>
 

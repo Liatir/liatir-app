@@ -2,7 +2,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{
     collections::HashMap,
-    sync::{atomic::{AtomicU64, Ordering}, Arc, Mutex},
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc, Mutex,
+    },
     time::{SystemTime, UNIX_EPOCH},
 };
 use tauri::{AppHandle, Emitter, Manager};
@@ -52,9 +55,12 @@ pub struct JobEntry {
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct JobOutput {
     pub stdout: Vec<String>,
     pub stderr: Vec<String>,
+    pub stdout_total: usize,
+    pub stderr_total: usize,
 }
 
 struct JobState {
@@ -92,7 +98,19 @@ pub async fn lia_jobs_spawn(
     kind: Option<String>,
     metadata: Option<Value>,
 ) -> Result<serde_json::Value, String> {
-    spawn_job(app, cmd, args, cwd, workspace_id, env, label, kind, metadata, None).await
+    spawn_job(
+        app,
+        cmd,
+        args,
+        cwd,
+        workspace_id,
+        env,
+        label,
+        kind,
+        metadata,
+        None,
+    )
+    .await
 }
 
 pub(crate) async fn lia_jobs_spawn_with_cleanup(
@@ -107,7 +125,19 @@ pub(crate) async fn lia_jobs_spawn_with_cleanup(
     metadata: Option<Value>,
     cleanup_dir: Option<String>,
 ) -> Result<serde_json::Value, String> {
-    spawn_job(app, cmd, args, cwd, workspace_id, env, label, kind, metadata, cleanup_dir).await
+    spawn_job(
+        app,
+        cmd,
+        args,
+        cwd,
+        workspace_id,
+        env,
+        label,
+        kind,
+        metadata,
+        cleanup_dir,
+    )
+    .await
 }
 
 async fn spawn_job(
@@ -129,10 +159,7 @@ async fn spawn_job(
     let job_id = gen_job_id();
     let started_at_ms = now_ms();
 
-    let mut command = app
-        .shell()
-        .command(&cmd)
-        .args(&args);
+    let mut command = app.shell().command(&cmd).args(&args);
 
     if let Some(dir) = cwd {
         command = command.current_dir(dir);
@@ -165,12 +192,15 @@ async fn spawn_job(
     {
         let registry = app.state::<JobRegistry>();
         let mut jobs = registry.0.lock().unwrap();
-        jobs.insert(job_id.clone(), JobState {
-            entry,
-            child: Some(child),
-            stdout: stdout_buf.clone(),
-            stderr: stderr_buf.clone(),
-        });
+        jobs.insert(
+            job_id.clone(),
+            JobState {
+                entry,
+                child: Some(child),
+                stdout: stdout_buf.clone(),
+                stderr: stderr_buf.clone(),
+            },
+        );
     }
 
     // Stream stdout/stderr and update status on exit.
@@ -183,18 +213,12 @@ async fn spawn_job(
                 CommandEvent::Stdout(line) => {
                     let text = String::from_utf8_lossy(&line).trim_end().to_string();
                     stdout_buf.lock().unwrap().push(text.clone());
-                    let _ = handle.emit(
-                        &format!("jobs:stdout:{jid}"),
-                        text,
-                    );
+                    let _ = handle.emit(&format!("jobs:stdout:{jid}"), text);
                 }
                 CommandEvent::Stderr(line) => {
                     let text = String::from_utf8_lossy(&line).trim_end().to_string();
                     stderr_buf.lock().unwrap().push(text.clone());
-                    let _ = handle.emit(
-                        &format!("jobs:stderr:{jid}"),
-                        text,
-                    );
+                    let _ = handle.emit(&format!("jobs:stderr:{jid}"), text);
                 }
                 CommandEvent::Terminated(payload) => {
                     let exit_code = payload.code;
@@ -294,10 +318,7 @@ pub fn lia_jobs_list(
 }
 
 #[tauri::command]
-pub fn lia_jobs_clear_done(
-    app: AppHandle,
-    workspace_id: Option<String>,
-) -> Result<usize, String> {
+pub fn lia_jobs_clear_done(app: AppHandle, workspace_id: Option<String>) -> Result<usize, String> {
     let registry = app.state::<JobRegistry>();
     let mut jobs = registry.0.lock().unwrap();
 
@@ -324,7 +345,7 @@ pub fn lia_jobs_get_output(
     app: AppHandle,
     job_id: String,
     since: Option<usize>,
-) -> Result<serde_json::Value, String> {
+) -> Result<JobOutput, String> {
     let registry = app.state::<JobRegistry>();
     let jobs = registry.0.lock().unwrap();
 
@@ -333,15 +354,12 @@ pub fn lia_jobs_get_output(
         .ok_or_else(|| format!("job not found: {job_id}"))?;
 
     let from = since.unwrap_or(0);
-    let stdout: Vec<String> = state.stdout.lock().unwrap().iter().skip(from).cloned().collect();
-    let stderr: Vec<String> = state.stderr.lock().unwrap().iter().skip(from).cloned().collect();
-    let stdout_total = state.stdout.lock().unwrap().len();
-    let stderr_total = state.stderr.lock().unwrap().len();
-
-    Ok(serde_json::json!({
-        "stdout": stdout,
-        "stderr": stderr,
-        "stdoutTotal": stdout_total,
-        "stderrTotal": stderr_total,
-    }))
+    let stdout_buffer = state.stdout.lock().unwrap();
+    let stderr_buffer = state.stderr.lock().unwrap();
+    Ok(JobOutput {
+        stdout: stdout_buffer.iter().skip(from).cloned().collect(),
+        stderr: stderr_buffer.iter().skip(from).cloned().collect(),
+        stdout_total: stdout_buffer.len(),
+        stderr_total: stderr_buffer.len(),
+    })
 }

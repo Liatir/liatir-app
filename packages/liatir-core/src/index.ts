@@ -9,20 +9,29 @@
 // re-export these types instead of mirroring them manually.
 
 export type JsonPrimitive = string | number | boolean | null;
-export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
+export type JsonValue =
+  | JsonPrimitive
+  | JsonValue[]
+  | { [key: string]: JsonValue };
 
-export type LiatirInputFieldType = 'string' | 'number' | 'boolean' | 'file';
-export type LiatirOutputFieldType = 'string' | 'number' | 'boolean' | 'file' | 'stats' | 'json';
+export type LiatirInputFieldType = "string" | "number" | "boolean" | "file";
+export type LiatirOutputFieldType =
+  | "string"
+  | "number"
+  | "boolean"
+  | "file"
+  | "stats"
+  | "json";
 export type LiatirFieldType = LiatirInputFieldType | LiatirOutputFieldType;
 
 export type LiatirStepKind =
-  | 'native-tool'
-  | 'lia-plugin'
-  | 'wasm-plugin'
-  | 'api-request'
-  | 'ai-tool'
-  | 'utility'
-  | 'sub-pipeline';
+  | "native-tool"
+  | "lia-plugin"
+  | "wasm-plugin"
+  | "api-request"
+  | "ai-tool"
+  | "utility"
+  | "sub-pipeline";
 
 export interface LiatirFieldOption {
   value: string;
@@ -45,7 +54,9 @@ export interface LiatirFieldSchema<TDefault = unknown> {
   accept?: string[];
 }
 
-export interface LiatirInputFieldSchema<TDefault = unknown> extends LiatirFieldSchema<TDefault> {
+export interface LiatirInputFieldSchema<
+  TDefault = unknown,
+> extends LiatirFieldSchema<TDefault> {
   type: LiatirInputFieldType;
 }
 
@@ -54,7 +65,7 @@ export interface LiatirOutputFieldSchema extends LiatirFieldSchema {
   /** Expected extensions for file outputs. Kept for pipeline-port readability. */
   ext?: string[];
   /** Display hint for numeric metric outputs. */
-  format?: 'integer' | 'decimal' | 'percent' | 'bytes';
+  format?: "integer" | "decimal" | "percent" | "bytes";
 }
 
 export interface LiatirStepDefinition {
@@ -92,11 +103,19 @@ export interface LiatirFilePathOutput {
  * File-typed node outputs may either reference an existing durable path or ask
  * Liatir to persist inline text/base64 content into the workspace Results area.
  */
-export type LiatirFileOutputValue = string | LiatirFilePathOutput | LiatirFileContentOutput;
+export type LiatirFileOutputValue =
+  | string
+  | LiatirFilePathOutput
+  | LiatirFileContentOutput;
 
 export type LiatirOutputValue = JsonValue | LiatirFileOutputValue;
 
-export type LiatirStepStatus = 'pending' | 'running' | 'done' | 'error' | 'skipped';
+export type LiatirStepStatus =
+  | "pending"
+  | "running"
+  | "done"
+  | "error"
+  | "skipped";
 
 export interface LiatirStatItem {
   label: string;
@@ -106,23 +125,23 @@ export interface LiatirStatItem {
 }
 
 export interface LiatirStatsSection {
-  type: 'stats';
+  type: "stats";
   cols?: number;
   items: LiatirStatItem[];
 }
 
 export interface LiatirNumberSection {
-  type: 'number';
+  type: "number";
   label: string;
   value: number;
   unit?: string;
   color?: string;
-  format?: 'integer' | 'decimal' | 'percent' | 'bytes';
+  format?: "integer" | "decimal" | "percent" | "bytes";
   description?: string;
 }
 
 export interface LiatirPlotlySection {
-  type: 'plotly';
+  type: "plotly";
   plotlyType: string;
   title?: string;
   subtitle?: string;
@@ -132,7 +151,7 @@ export interface LiatirPlotlySection {
 }
 
 export interface LiatirTextSection {
-  type: 'text';
+  type: "text";
   label: string;
   content: string;
   mono?: boolean;
@@ -142,28 +161,40 @@ export interface LiatirTextSection {
 }
 
 export interface LiatirTableSection {
-  type: 'table';
+  type: "table";
   label: string;
   headers: string[];
   rows: (string | number)[][];
 }
 
-export type LiatirStructureFormat = 'pdb' | 'cif' | 'mmcif' | 'sdf' | 'mol2' | 'xyz';
-export type LiatirStructureStyle = 'cartoon' | 'stick' | 'line' | 'sphere';
+export type LiatirStructureFormat =
+  | "pdb"
+  | "cif"
+  | "mmcif"
+  | "sdf"
+  | "mol2"
+  | "xyz";
+export type LiatirStructureStyle = "cartoon" | "stick" | "line" | "sphere";
 
 export interface LiatirStructureViewerSection {
-  type: 'structure-viewer';
+  type: "structure-viewer";
   label: string;
   description?: string;
   path?: string;
   content?: string;
   format: LiatirStructureFormat;
   style?: LiatirStructureStyle;
-  colorScheme?: 'spectrum' | 'chain' | 'element';
+  colorScheme?: "spectrum" | "chain" | "element";
   height?: number;
 }
 
-export type LiatirGenomeTrackKind = 'gff' | 'bed' | 'vcf' | 'bam' | 'wiggle' | 'unknown';
+export type LiatirGenomeTrackKind =
+  | "gff"
+  | "bed"
+  | "vcf"
+  | "bam"
+  | "wiggle"
+  | "unknown";
 
 export interface LiatirGenomeAssemblySpec {
   name: string;
@@ -187,7 +218,7 @@ export interface LiatirGenomeTrackSpec {
 }
 
 export interface LiatirGenomeViewerSection {
-  type: 'genome-viewer';
+  type: "genome-viewer";
   label: string;
   description?: string;
   assembly: LiatirGenomeAssemblySpec;
@@ -196,7 +227,7 @@ export interface LiatirGenomeViewerSection {
 }
 
 export interface LiatirSingleCellViewerSection {
-  type: 'single-cell-viewer';
+  type: "single-cell-viewer";
   label: string;
   description?: string;
   config: JsonValue;
@@ -225,21 +256,44 @@ export interface LiatirExecutionResult {
   logs?: string[];
 }
 
-export type LiatirAIModelRuntimeKind = 'mock' | 'python-venv' | 'llama-cpp' | 'onnx' | 'transformers-js' | 'custom';
-export type LiatirAIModelSource = 'builtin' | 'local-file' | 'local-directory' | 'managed-download' | 'managed-runtime';
-export type LiatirAIModelStatus = 'available' | 'installed' | 'missing' | 'error';
+export type LiatirAIModelRuntimeKind =
+  | "mock"
+  | "python-venv"
+  | "llama-cpp"
+  | "onnx"
+  | "transformers-js"
+  | "custom";
+export type LiatirAIModelSource =
+  | "builtin"
+  | "local-file"
+  | "local-directory"
+  | "managed-download"
+  | "managed-runtime";
+export type LiatirAIModelStatus =
+  | "available"
+  | "installed"
+  | "missing"
+  | "error";
 export type LiatirAICapability =
-  | 'text-generation'
-  | 'summarization'
-  | 'classification'
-  | 'cell-annotation'
-  | 'embedding'
-  | 'sequence-embedding'
-  | 'protein-structure-prediction'
-  | 'protein-binding'
-  | 'reranking'
-  | 'structured-extraction';
-export type LiatirAIModelModality = 'text' | 'dna' | 'rna' | 'protein' | 'ligand' | 'single-cell' | 'image' | 'multimodal';
+  | "text-generation"
+  | "summarization"
+  | "classification"
+  | "cell-annotation"
+  | "embedding"
+  | "sequence-embedding"
+  | "protein-structure-prediction"
+  | "protein-binding"
+  | "reranking"
+  | "structured-extraction";
+export type LiatirAIModelModality =
+  | "text"
+  | "dna"
+  | "rna"
+  | "protein"
+  | "ligand"
+  | "single-cell"
+  | "image"
+  | "multimodal";
 
 export interface LiatirAIModelRuntime {
   kind: LiatirAIModelRuntimeKind;
@@ -273,6 +327,8 @@ export interface LiatirAIModelInstallSpec {
   runtimeId?: string;
   runtimePackages?: LiatirAIModelRuntimePackage[];
   modelCacheSubdir?: string;
+  /** Immutable upstream model/source revision, when the runtime downloads from a versioned hub. */
+  revision?: string;
   hostRequirements?: LiatirAIModelHostRequirements;
   checksum?: string;
 }
@@ -337,7 +393,7 @@ export interface LiatirAIModelRecord extends LiatirAIModelMetadata {
 }
 
 export interface LiatirAIToolDefinition extends LiatirStepDefinition {
-  type: 'ai-tool';
+  type: "ai-tool";
   modelInputKey?: string;
   supportedCapabilities?: LiatirAICapability[];
 }

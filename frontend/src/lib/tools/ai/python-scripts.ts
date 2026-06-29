@@ -145,6 +145,7 @@ def load_sequences():
     return [("sequence_1", inline)] if inline else []
 
 model_id = payload["hubModelId"]
+revision = payload.get("hubRevision") or None
 molecule_type = payload.get("moleculeType", "dna")
 output_dir = payload["outputDir"]
 max_length = int(payload.get("maxLength") or 1024)
@@ -169,12 +170,12 @@ if torch.cuda.is_available():
 elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
     device = "mps"
 
-tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True, cache_dir=cache_dir)
+tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True, cache_dir=cache_dir, revision=revision)
 is_nucleotide_transformer = model_id.startswith("InstaDeepAI/nucleotide-transformer")
 if is_nucleotide_transformer:
-    model = AutoModelForMaskedLM.from_pretrained(model_id, trust_remote_code=True, cache_dir=cache_dir)
+    model = AutoModelForMaskedLM.from_pretrained(model_id, trust_remote_code=True, cache_dir=cache_dir, revision=revision)
 else:
-    model = AutoModel.from_pretrained(model_id, trust_remote_code=True, cache_dir=cache_dir)
+    model = AutoModel.from_pretrained(model_id, trust_remote_code=True, cache_dir=cache_dir, revision=revision)
 model.eval()
 model.to(device)
 
@@ -230,6 +231,7 @@ summary = {
     "sequenceCount": int(len(records)),
     "embeddingDim": int(embeddings.shape[1]),
     "model": model_id,
+    "revision": revision,
     "moleculeType": molecule_type,
     "device": device,
     "meanSequenceLength": float(np.mean([len(seq) for seq in seqs])),

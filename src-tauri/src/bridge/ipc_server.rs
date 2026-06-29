@@ -406,7 +406,7 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
             let since = payload["since"].as_u64().map(|n| n as usize);
             let output = crate::bridge::jobs::lia_jobs_get_output(app.clone(), job_id, since)
                 .map_err(|e| anyhow::anyhow!(e))?;
-            Ok(output)
+            Ok(serde_json::to_value(output)?)
         }
 
         "lia_deps_check" => {

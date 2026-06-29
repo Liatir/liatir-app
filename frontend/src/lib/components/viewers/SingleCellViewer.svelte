@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import Card from '$lib/components/ui/Card.svelte';
-  import Button from '$lib/components/ui/Button.svelte';
+  import VisualizationShell from '$lib/components/viewers/VisualizationShell.svelte';
   import type { JsonValue } from '@liatir/core';
   import type { SingleCellViewerSection } from '$lib/types/tool-output';
 
@@ -37,34 +35,14 @@
   const sourceIsH5ad = $derived(source.toLowerCase().endsWith('.h5ad'));
 </script>
 
-<Card class="p-4">
-  <div class="mb-3 flex items-start justify-between gap-3">
-    <div class="min-w-0">
-      <p class="text-xs font-medium text-zinc-500">{title}</p>
-      {#if section.description}
-        <p class="mt-1 text-[11px] text-zinc-400">{section.description}</p>
-      {/if}
-      {#if source}
-        <p class="mt-1 truncate text-[10px] text-zinc-400">{source}</p>
-      {/if}
-    </div>
-    <div class="flex shrink-0 items-center gap-2">
-      {#if source}
-        <Button
-          size="sm"
-          variant="ghost"
-          onclick={() => goto(`/tools/visualization/single-cell?file=${encodeURIComponent(source)}`)}
-        >
-          Open page
-        </Button>
-      {/if}
-      <span class="rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">
-        single-cell
-      </span>
-    </div>
-  </div>
-
-  <div class="rounded-lg border border-border bg-white" style={`min-height: ${section.height ?? 300}px`}>
+<VisualizationShell
+  {title}
+  description={section.description ?? source}
+  badge="single-cell"
+  height={section.height ?? 300}
+  openHref={source ? `/tools/visualization/single-cell?file=${encodeURIComponent(source)}` : undefined}
+>
+  <div class="h-full overflow-auto bg-white">
     {#if labelCounts.length === 0}
       <div class="flex min-h-56 items-center justify-center px-4 text-center text-xs text-zinc-400">
         {#if sourceIsH5ad}
@@ -87,4 +65,4 @@
       </div>
     {/if}
   </div>
-</Card>
+</VisualizationShell>

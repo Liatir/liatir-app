@@ -37,56 +37,68 @@ if runtime_path:
 from transformers import AutoModel, AutoModelForMaskedLM, AutoTokenizer
 
 model_id = payload["hubModelId"]
-AutoTokenizer.from_pretrained(model_id, trust_remote_code=True, cache_dir=cache_dir)
+revision = payload.get("hubRevision") or None
+AutoTokenizer.from_pretrained(model_id, trust_remote_code=True, cache_dir=cache_dir, revision=revision)
 if model_id.startswith("InstaDeepAI/nucleotide-transformer"):
-    AutoModelForMaskedLM.from_pretrained(model_id, trust_remote_code=True, cache_dir=cache_dir)
+    AutoModelForMaskedLM.from_pretrained(model_id, trust_remote_code=True, cache_dir=cache_dir, revision=revision)
 else:
-    AutoModel.from_pretrained(model_id, trust_remote_code=True, cache_dir=cache_dir)
-print(json.dumps({"downloaded": True, "model": model_id}))
+    AutoModel.from_pretrained(model_id, trust_remote_code=True, cache_dir=cache_dir, revision=revision)
+print(json.dumps({"downloaded": True, "model": model_id, "revision": revision}))
 `;
 
 function hubModelId(modelId: string): string | null {
-  if (modelId === NUCLEOTIDE_TRANSFORMER_50M_ID) return 'InstaDeepAI/nucleotide-transformer-v2-50m-multi-species';
-  if (modelId === ESM2_8M_ID) return 'facebook/esm2_t6_8M_UR50D';
-  return null;
+	if (modelId === NUCLEOTIDE_TRANSFORMER_50M_ID)
+		return 'InstaDeepAI/nucleotide-transformer-v2-50m-multi-species';
+	if (modelId === ESM2_8M_ID) return 'facebook/esm2_t6_8M_UR50D';
+	return null;
 }
 
 function splitLog(text: string): string[] {
-  return text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+	return text
+		.split(/\r?\n/)
+		.map((line) => line.trim())
+		.filter(Boolean);
 }
 
 export async function preloadManagedAIModel(
-  model: LiatirAIModelRecord,
-  onLog?: (lines: string[]) => void,
+	model: LiatirAIModelRecord,
+	onLog?: (lines: string[]) => void
 ): Promise<void> {
-  if (model.id === CELLTYPIST_MODEL_ID) {
-    const result = await runAIPython(
-      model,
-      CELLTYPIST_PRELOAD_SCRIPT,
-      {
-        runtimePath: model.runtimePath ?? model.localPath ?? null,
-        celltypistModel: 'Immune_All_Low.pkl',
-      },
-      { timeoutSeconds: 7200, trackJob: false },
-    );
-    onLog?.([...splitLog(result.stdout), ...splitLog(result.stderr)]);
-    if (!result.ok) throw new Error(result.stderr || `CellTypist model preload exited with code ${result.exitCode}`);
-    return;
-  }
+	if (model.id === CELLTYPIST_MODEL_ID) {
+		const result = await runAIPython(
+			model,
+			CELLTYPIST_PRELOAD_SCRIPT,
+			{
+				runtimePath: model.runtimePath ?? model.localPath ?? null,
+				celltypistModel: 'Immune_All_Low.pkl'
+			},
+			{ timeoutSeconds: 7200, trackJob: false }
+		);
+		onLog?.([...splitLog(result.stdout), ...splitLog(result.stderr)]);
+		if (!result.ok)
+			throw new Error(
+				result.stderr || `CellTypist model preload exited with code ${result.exitCode}`
+			);
+		return;
+	}
 
-  const hfModel = hubModelId(model.id);
-  if (hfModel) {
-    const result = await runAIPython(
-      model,
-      TRANSFORMERS_PRELOAD_SCRIPT,
-      {
-        runtimePath: model.runtimePath ?? model.localPath ?? null,
-        modelCacheDir: cachePathForModel(model) as JsonValue,
-        hubModelId: hfModel,
-      },
-      { timeoutSeconds: 7200, trackJob: false },
-    );
-    onLog?.([...splitLog(result.stdout), ...splitLog(result.stderr)]);
-    if (!result.ok) throw new Error(result.stderr || `Transformers model preload exited with code ${result.exitCode}`);
-  }
+	const hfModel = hubModelId(model.id);
+	if (hfModel) {
+		const result = await runAIPython(
+			model,
+			TRANSFORMERS_PRELOAD_SCRIPT,
+			{
+				runtimePath: model.runtimePath ?? model.localPath ?? null,
+				modelCacheDir: cachePathForModel(model) as JsonValue,
+				hubModelId: hfModel,
+				...(model.install?.revision ? { hubRevision: model.install.revision } : {})
+			},
+			{ timeoutSeconds: 7200, trackJob: false }
+		);
+		onLog?.([...splitLog(result.stdout), ...splitLog(result.stderr)]);
+		if (!result.ok)
+			throw new Error(
+				result.stderr || `Transformers model preload exited with code ${result.exitCode}`
+			);
+	}
 }

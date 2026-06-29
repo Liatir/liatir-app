@@ -7,29 +7,54 @@
 	import Toast from '$lib/components/ui/Toast.svelte';
 	import InstallBanner from '$lib/components/ui/InstallBanner.svelte';
 	import StartupCleanupBanner from '$lib/components/ui/StartupCleanupBanner.svelte';
+	import {
+		finalizeCompletedAIDirectRuns,
+		hasRunningDirectAIJob
+	} from '$lib/ai/direct-run-finalizer';
 	import { jobsStore } from '$lib/stores/jobs.svelte';
 	import { pipelineStore } from '$lib/stores/pipeline.svelte';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 
 	let { children } = $props();
 
 	let initialized: boolean = $state(false);
+	let jobRefreshInterval: ReturnType<typeof setInterval> | null = null;
+	let refreshingJobs = false;
+
+	async function refreshJobsAndFinalize() {
+		if (refreshingJobs) return;
+		refreshingJobs = true;
+		try {
+			await jobsStore.refresh();
+			await finalizeCompletedAIDirectRuns(jobsStore.jobs);
+		} finally {
+			refreshingJobs = false;
+		}
+	}
 
 	onMount(async () => {
 		await workspaceStore.init();
 		if (!(workspaceStore.activeId && workspaceStore.active)) {
 			goto('/workspaces');
-			initialized=true;
+			initialized = true;
 			return;
 		}
-		jobsStore.refresh();
+		await refreshJobsAndFinalize();
+		jobRefreshInterval = setInterval(() => {
+			if (jobsStore.runningCount > 0 || hasRunningDirectAIJob(jobsStore.jobs)) {
+				void refreshJobsAndFinalize();
+			}
+		}, 2000);
 		pipelineStore.init();
-		initialized=true;
+		initialized = true;
+	});
+
+	onDestroy(() => {
+		if (jobRefreshInterval) clearInterval(jobRefreshInterval);
 	});
 </script>
-
 
 {#if !workspaceStore.initialized || !initialized}
 	<div class="h-screen flex items-center justify-center" style="background-color: var(--color-bg);">

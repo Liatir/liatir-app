@@ -5,6 +5,7 @@
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
+  import Select from '$lib/components/ui/Select.svelte';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
@@ -16,6 +17,7 @@
   } from '$lib/tools/viewers/scientific-viewers';
 
   type ViewerMode = 'structure' | 'genome' | 'single-cell';
+  type StructureStyle = 'cartoon' | 'stick' | 'line' | 'sphere';
 
   interface Props {
     mode: ViewerMode;
@@ -24,7 +26,7 @@
   let { mode }: Props = $props();
 
   let structureFile = $state('');
-  let structureStyle = $state('cartoon');
+  let structureStyle = $state<StructureStyle>('cartoon');
   let referenceFile = $state('');
   let trackFile = $state('');
   let refName = $state('');
@@ -39,6 +41,12 @@
   const referenceFiles = $derived(dataFiles.byExt('fasta', 'fasta.gz'));
   const trackFiles = $derived(dataFiles.byExt('gff', 'gff3', 'bed', 'vcf', 'vcf.gz', 'bam'));
   const singleCellFiles = $derived(dataFiles.byExt('h5ad', 'csv', 'json'));
+  const structureStyleOptions = [
+    { value: 'cartoon', label: 'Cartoon' },
+    { value: 'stick', label: 'Stick' },
+    { value: 'line', label: 'Line' },
+    { value: 'sphere', label: 'Sphere' },
+  ];
   const canRun = $derived(
     mode === 'structure'
       ? !!structureFile
@@ -145,16 +153,12 @@
             />
             <label class="grid gap-1.5">
               <span class="text-xs font-medium text-zinc-500">Style</span>
-              <select
-                bind:value={structureStyle}
+              <Select
+                value={structureStyle}
+                options={structureStyleOptions}
                 disabled={running}
-                class="h-9 rounded-lg border border-border bg-white px-3 text-sm text-zinc-800 outline-none focus:border-brand"
-              >
-                <option value="cartoon">Cartoon</option>
-                <option value="stick">Stick</option>
-                <option value="line">Line</option>
-                <option value="sphere">Sphere</option>
-              </select>
+                onchange={(value) => structureStyle = value as StructureStyle}
+              />
             </label>
           {:else if mode === 'genome'}
             <FilePickerPopup

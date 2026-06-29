@@ -6,6 +6,7 @@
   import Card from '$lib/components/ui/Card.svelte';
   import Badge from '$lib/components/ui/Badge.svelte';
   import Button from '$lib/components/ui/Button.svelte';
+  import Select from '$lib/components/ui/Select.svelte';
   import { modulesStore, type LiatirModule, type FieldDef } from '$lib/stores/modules.svelte';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { liatir } from '$lib/api';
@@ -196,22 +197,28 @@
                 </label>
 
                 {#if field.type === 'file'}
-                  <select
+                  <Select
                     id="field-{key}"
-                    bind:value={values[key]}
-                    class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand/60 transition-colors"
-                  >
-                    <option value="">Select a file…</option>
-                    {#each filesForField(field) as f (f.id)}
-                      <option value={f.path}>{f.name}</option>
-                    {/each}
-                  </select>
+                    value={String(values[key] ?? '')}
+                    options={[
+                      { value: '', label: 'Select a file...' },
+                      ...filesForField(field).map((file) => ({
+                        value: file.path,
+                        label: file.name,
+                        description: file.path
+                      }))
+                    ]}
+                    disabled={running}
+                    searchable
+                    onchange={(value) => (values[key] = value)}
+                  />
                 {:else if field.type === 'boolean'}
                   <label class="flex items-center gap-2 cursor-pointer">
                     <input
                       id="field-{key}"
                       type="checkbox"
                       bind:checked={values[key] as boolean}
+                      disabled={running}
                       class="rounded border-border text-brand"
                     />
                     <span class="text-sm text-zinc-600">{field.description ?? ''}</span>
@@ -222,6 +229,7 @@
                     type="number"
                     bind:value={values[key]}
                     placeholder={String(field.default ?? '')}
+                    disabled={running}
                     class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand/60 transition-colors"
                   />
                 {:else}
@@ -230,6 +238,7 @@
                     type="text"
                     bind:value={values[key]}
                     placeholder={String(field.default ?? '')}
+                    disabled={running}
                     class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand/60 transition-colors"
                   />
                 {/if}
