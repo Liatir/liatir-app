@@ -1,11 +1,11 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
+import type { LiatirBrowserAPI } from '../../src-ts/liatir/_types';
 
 declare global {
 	namespace App {}
 
 	interface Window {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		Liatir: any;
+		Liatir?: LiatirBrowserAPI;
 	}
 }
 

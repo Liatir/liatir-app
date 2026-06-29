@@ -5,11 +5,12 @@ import type { PipelineInterface } from "../modules/bio/pipeline/_types";
 import type { JobsInterface } from "../modules/rs/jobs/_types";
 import type { DepsInterface } from "../modules/rs/deps/_types";
 import type { QcInterface } from "../modules/qc/_types";
-import { WindowTauri } from "../core/_types";
+import type { WindowTauri } from "../core/_types";
 
 export type LiaPlatform = "macos" | "linux" | "windows";
 
-export type LiatirAPI = {
+/** Browser/webview bridge exposed as window.Liatir inside the Tauri app. */
+export type LiatirBrowserAPI = {
   readonly isAvailable: boolean;
   readonly apiVersion: string;
   readonly ready: Promise<true>;
@@ -50,7 +51,13 @@ export type LiatirAPI = {
   openBrowser: (url: string) => Promise<void>;
 };
 
+/**
+ * @deprecated Use LiatirBrowserAPI for the window.Liatir webview bridge.
+ * LiatirAPI is kept only as a compatibility alias for older integrations.
+ */
+export type LiatirAPI = LiatirBrowserAPI;
+
 export interface LiatirInstanceInterface {
   ready: () => boolean;
-  get: () => LiatirAPI;
+  get: () => LiatirBrowserAPI;
 }

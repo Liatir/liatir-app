@@ -5,7 +5,7 @@
   import Button from '$lib/components/ui/Button.svelte';
   import { liatir } from '$lib/api';
   import { JBROWSE_RUNTIME_ID } from '$lib/viewers/runtime-registry';
-  import { getViewerRuntimeScriptUrl, localFileSrc } from '$lib/viewers/runtime-loader';
+  import { localFileSrc, readViewerRuntimeScript } from '$lib/viewers/runtime-loader';
   import type { GenomeViewerSection } from '$lib/types/tool-output';
 
   let { section }: { section: GenomeViewerSection } = $props();
@@ -22,7 +22,7 @@
   let loading = $state(true);
   let error = $state<string | null>(null);
   let jbrowseError = $state<string | null>(null);
-  let jbrowseSrcdoc = $state('');
+  let jbrowseFrameUrl = $state('');
   let features = $state<Feature[]>([]);
   const viewerId = crypto.randomUUID();
 
@@ -113,6 +113,10 @@
     return JSON.stringify(value).replace(/</g, '\\u003c');
   }
 
+  function escapeInlineScript(source: string): string {
+    return source.replace(/<\/script/gi, '<\\/script');
+  }
+
   function fileUri(path?: string, url?: string): string {
     if (url) return url;
     return path ? localFileSrc(path) : '';
@@ -176,7 +180,7 @@
     };
   }
 
-  function createJBrowseFrame(scriptUrl: string, config: unknown): string {
+  function createJBrowseFrame(scriptSource: string, config: unknown): string {
     const payload = escapeScriptJson({ viewerId, config });
     return `<!doctype html>
 <html>
@@ -203,7 +207,7 @@
   <div id="jbrowse"></div>
   <div id="message">Loading JBrowse 2...</div>
   <script id="liatir-jbrowse-payload" type="application/json">${payload}<\/script>
-  <script src="${scriptUrl}"><\/script>
+  <script>${escapeInlineScript(scriptSource)}<\/script>
   <script>
     (function () {
       const message = document.getElementById('message');
@@ -220,7 +224,7 @@
         if (!lib || !lib.React || !lib.createRoot || !lib.createViewState || !lib.JBrowseLinearGenomeView) {
           throw new Error('JBrowse 2 did not expose the embedded linear genome view runtime.');
         }
-        const state = new lib.createViewState(payload.config);
+        const state = lib.createViewState(payload.config);
         const root = lib.createRoot(document.getElementById('jbrowse'));
         root.render(lib.React.createElement(lib.JBrowseLinearGenomeView, { viewState: state }));
         message.remove();
@@ -234,24 +238,37 @@
 </html>`;
   }
 
+  function createFrameUrl(html: string): string {
+    return URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  }
+
+  function runtimeFailureMessage(message: string): string {
+    if (message.includes("Proxy handler's 'get' result")) {
+      return 'The embedded JBrowse runtime is not compatible with this webview context.';
+    }
+    return message;
+  }
+
   async function initJBrowseFrame() {
     try {
       jbrowseError = null;
-      const { url } = await getViewerRuntimeScriptUrl(JBROWSE_RUNTIME_ID);
+      const { source } = await readViewerRuntimeScript(JBROWSE_RUNTIME_ID);
       const config = buildJBrowseConfig();
-      jbrowseSrcdoc = createJBrowseFrame(url, config);
+      jbrowseFrameUrl = createFrameUrl(createJBrowseFrame(source, config));
     } catch (err) {
-      jbrowseSrcdoc = '';
+      jbrowseFrameUrl = '';
       jbrowseError = err instanceof Error ? err.message : String(err);
     }
   }
 
   onMount(() => {
+    let objectUrl = '';
     function onMessage(event: MessageEvent) {
       const data = event.data as { type?: string; viewerId?: string; message?: string } | null;
       if (!data || data.viewerId !== viewerId) return;
       if (data.type === 'liatir-jbrowse-viewer-error') {
-        jbrowseError = data.message ?? 'JBrowse viewer failed.';
+        jbrowseError = runtimeFailureMessage(data.message ?? 'JBrowse viewer failed.');
+        jbrowseFrameUrl = '';
       }
     }
     window.addEventListener('message', onMessage);
@@ -273,6 +290,7 @@
         }
         features = next;
         await initJBrowseFrame();
+        objectUrl = jbrowseFrameUrl;
       } catch (err) {
         error = err instanceof Error ? err.message : String(err);
       } finally {
@@ -281,7 +299,10 @@
     }
 
     void loadTracks();
-    return () => window.removeEventListener('message', onMessage);
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      window.removeEventListener('message', onMessage);
+    };
   });
 </script>
 
@@ -309,9 +330,14 @@
     </div>
   </div>
 
-  {#if jbrowseSrcdoc}
+  {#if jbrowseFrameUrl}
     <div class="mb-3 overflow-hidden rounded-lg border border-border bg-white" style={`height: ${section.height ?? 420}px`}>
-      <iframe title={section.label} srcdoc={jbrowseSrcdoc} class="h-full w-full border-0"></iframe>
+      <iframe
+        title={section.label}
+        src={jbrowseFrameUrl}
+        sandbox="allow-scripts"
+        class="h-full w-full border-0"
+      ></iframe>
     </div>
   {:else if jbrowseError && !loading && !error}
     <div class="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">

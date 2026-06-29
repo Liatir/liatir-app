@@ -1,5 +1,3 @@
-use tauri::AppHandle;
-
 // ---------------------------------
 // Helpers (sync, used in spawn_blocking)
 // ---------------------------------
@@ -24,9 +22,30 @@ fn find_in_path(name: &str) -> Option<String> {
     None
 }
 
-fn try_get_version(name: &str) -> Option<String> {
+fn first_available(names: &[&str]) -> Option<String> {
+    names.iter().find_map(|name| find_in_path(name))
+}
+
+fn preferred_python() -> Option<String> {
+    first_available(&[
+        "python3.12",
+        "python3.11",
+        "python3.10",
+        "python3",
+        "python",
+    ])
+}
+
+fn resolve_dependency_command(binary: &str) -> Option<String> {
+    if binary == "python" {
+        return preferred_python();
+    }
+    find_in_path(binary)
+}
+
+fn try_get_version(command: &str) -> Option<String> {
     for flag in &["--version", "-version", "version", "-v"] {
-        let Ok(output) = std::process::Command::new(name).arg(flag).output() else {
+        let Ok(output) = std::process::Command::new(command).arg(flag).output() else {
             continue;
         };
         if !output.status.success() {
@@ -41,7 +60,7 @@ fn try_get_version(name: &str) -> Option<String> {
     }
 
     // Fallback: some tools (e.g. bwa) print "Version: X.Y.Z" in their usage/no-args output
-    if let Ok(output) = std::process::Command::new(name).output() {
+    if let Ok(output) = std::process::Command::new(command).output() {
         let combined = format!(
             "{}\n{}",
             String::from_utf8_lossy(&output.stdout),
@@ -79,20 +98,16 @@ fn try_get_version(name: &str) -> Option<String> {
 /// The `binary` name must be a simple identifier (no slashes, no path traversal).
 #[tauri::command]
 pub async fn lia_deps_check(binary: String) -> Result<serde_json::Value, String> {
-    if binary.is_empty()
-        || binary.contains('/')
-        || binary.contains('\\')
-        || binary.contains("..")
-    {
+    if binary.is_empty() || binary.contains('/') || binary.contains('\\') || binary.contains("..") {
         return Err(format!("invalid binary name: {binary:?}"));
     }
 
     tauri::async_runtime::spawn_blocking(move || {
-        let path = find_in_path(&binary);
+        let path = resolve_dependency_command(&binary);
         let available = path.is_some();
 
         let version = if available {
-            try_get_version(&binary)
+            path.as_deref().and_then(try_get_version)
         } else {
             None
         };
@@ -110,9 +125,7 @@ pub async fn lia_deps_check(binary: String) -> Result<serde_json::Value, String>
 
 /// Check multiple binaries at once.
 #[tauri::command]
-pub async fn lia_deps_check_many(
-    binaries: Vec<String>,
-) -> Result<Vec<serde_json::Value>, String> {
+pub async fn lia_deps_check_many(binaries: Vec<String>) -> Result<Vec<serde_json::Value>, String> {
     let mut results = Vec::with_capacity(binaries.len());
 
     for binary in binaries {

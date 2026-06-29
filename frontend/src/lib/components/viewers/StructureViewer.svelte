@@ -5,14 +5,16 @@
   import Button from '$lib/components/ui/Button.svelte';
   import { liatir } from '$lib/api';
   import { THREEDMOL_RUNTIME_ID } from '$lib/viewers/runtime-registry';
-  import { getViewerRuntimeScriptUrl } from '$lib/viewers/runtime-loader';
+  import { readViewerRuntimeScript } from '$lib/viewers/runtime-loader';
   import type { StructureViewerSection } from '$lib/types/tool-output';
 
   let { section }: { section: StructureViewerSection } = $props();
 
   let loading = $state(true);
   let error = $state<string | null>(null);
-  let iframeSrcdoc = $state('');
+  let runtimeWarning = $state<string | null>(null);
+  let frameUrl = $state('');
+  let fallbackContent = $state('');
 
   const viewerId = crypto.randomUUID();
 
@@ -34,6 +36,10 @@
     return JSON.stringify(value).replace(/</g, '\\u003c');
   }
 
+  function escapeInlineScript(source: string): string {
+    return source.replace(/<\/script/gi, '<\\/script');
+  }
+
   function validateStructureContent(content: string, format: StructureViewerSection['format']) {
     const trimmed = content.trim();
     if (!trimmed) throw new Error('Structure file is empty.');
@@ -42,7 +48,79 @@
     }
   }
 
-  function createStructureFrame(scriptUrl: string, content: string): string {
+  interface PdbAtom {
+    serial: number;
+    name: string;
+    residue: string;
+    chain: string;
+    x: number;
+    y: number;
+    z: number;
+    element: string;
+  }
+
+  function parsePdbAtoms(content: string): PdbAtom[] {
+    return content.split(/\r?\n/)
+      .filter(line => line.startsWith('ATOM') || line.startsWith('HETATM'))
+      .map((line) => ({
+        serial: Number(line.slice(6, 11).trim()) || 0,
+        name: line.slice(12, 16).trim(),
+        residue: line.slice(17, 20).trim(),
+        chain: line.slice(21, 22).trim(),
+        x: Number(line.slice(30, 38).trim()),
+        y: Number(line.slice(38, 46).trim()),
+        z: Number(line.slice(46, 54).trim()),
+        element: line.slice(76, 78).trim() || line.slice(12, 14).trim(),
+      }))
+      .filter(atom => Number.isFinite(atom.x) && Number.isFinite(atom.y) && Number.isFinite(atom.z));
+  }
+
+  const fallbackAtoms = $derived(parsePdbAtoms(fallbackContent));
+  const fallbackBounds = $derived.by(() => {
+    if (fallbackAtoms.length === 0) return null;
+    const xs = fallbackAtoms.map(atom => atom.x);
+    const ys = fallbackAtoms.map(atom => atom.y);
+    return {
+      minX: Math.min(...xs),
+      maxX: Math.max(...xs),
+      minY: Math.min(...ys),
+      maxY: Math.max(...ys),
+    };
+  });
+
+  function atomColor(element: string): string {
+    const normalized = element.toUpperCase();
+    if (normalized === 'N') return '#2563eb';
+    if (normalized === 'O') return '#dc2626';
+    if (normalized === 'S') return '#ca8a04';
+    if (normalized === 'P') return '#9333ea';
+    if (normalized === 'H') return '#a1a1aa';
+    return '#52525b';
+  }
+
+  function atomPoint(atom: PdbAtom): { x: number; y: number } {
+    if (!fallbackBounds) return { x: 50, y: 50 };
+    const pad = 10;
+    const width = Math.max(1, fallbackBounds.maxX - fallbackBounds.minX);
+    const height = Math.max(1, fallbackBounds.maxY - fallbackBounds.minY);
+    return {
+      x: pad + ((atom.x - fallbackBounds.minX) / width) * (100 - pad * 2),
+      y: pad + ((atom.y - fallbackBounds.minY) / height) * (100 - pad * 2),
+    };
+  }
+
+  function createFrameUrl(html: string): string {
+    return URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  }
+
+  function runtimeFailureMessage(message: string): string {
+    if (message.includes("Proxy handler's 'get' result")) {
+      return 'The embedded 3D runtime is not compatible with this webview context.';
+    }
+    return message;
+  }
+
+  function createStructureFrame(scriptSource: string, content: string): string {
     const payload = escapeScriptJson({
       viewerId,
       content,
@@ -74,7 +152,7 @@
   <div id="viewer"></div>
   <div id="message">Loading structure...</div>
   <script id="liatir-structure-payload" type="application/json">${payload}<\/script>
-  <script src="${scriptUrl}"><\/script>
+  <script>${escapeInlineScript(scriptSource)}<\/script>
   <script>
     (function () {
       const message = document.getElementById('message');
@@ -124,12 +202,14 @@
 
   onMount(() => {
     let disposed = false;
+    let objectUrl = '';
 
     function onMessage(event: MessageEvent) {
       const data = event.data as { type?: string; viewerId?: string; message?: string } | null;
       if (!data || data.viewerId !== viewerId) return;
       if (data.type === 'liatir-structure-viewer-error') {
-        error = data.message ?? 'Structure viewer failed.';
+        runtimeWarning = runtimeFailureMessage(data.message ?? 'Structure viewer failed.');
+        frameUrl = '';
       }
     }
 
@@ -137,11 +217,14 @@
       try {
         loading = true;
         error = null;
+        runtimeWarning = null;
         const content = await loadStructureContent();
+        fallbackContent = content;
         validateStructureContent(content, section.format);
-        const { url } = await getViewerRuntimeScriptUrl(THREEDMOL_RUNTIME_ID);
+        const { source } = await readViewerRuntimeScript(THREEDMOL_RUNTIME_ID);
         if (disposed) return;
-        iframeSrcdoc = createStructureFrame(url, content);
+        objectUrl = createFrameUrl(createStructureFrame(source, content));
+        frameUrl = objectUrl;
       } catch (err) {
         error = err instanceof Error ? err.message : String(err);
       } finally {
@@ -154,6 +237,7 @@
 
     return () => {
       disposed = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
       window.removeEventListener('message', onMessage);
     };
   });
@@ -200,12 +284,35 @@
           </Button>
         {/if}
       </div>
-    {:else if iframeSrcdoc}
+    {:else if frameUrl}
       <iframe
         title={section.label}
-        srcdoc={iframeSrcdoc}
+        src={frameUrl}
+        sandbox="allow-scripts"
         class="absolute inset-0 h-full w-full border-0"
       ></iframe>
+    {:else if fallbackAtoms.length > 0}
+      <div class="absolute inset-0">
+        <svg viewBox="0 0 100 100" class="h-full w-full bg-white">
+          {#each fallbackAtoms as atom}
+            {@const point = atomPoint(atom)}
+            <circle
+              cx={point.x}
+              cy={point.y}
+              r={atom.name === 'CA' ? 1.7 : 1.15}
+              fill={atomColor(atom.element)}
+              opacity={atom.name === 'CA' ? 0.95 : 0.72}
+            >
+              <title>{atom.name} {atom.residue}{atom.chain ? ` chain ${atom.chain}` : ''} · {atom.x.toFixed(2)}, {atom.y.toFixed(2)}, {atom.z.toFixed(2)}</title>
+            </circle>
+          {/each}
+        </svg>
+        {#if runtimeWarning}
+          <div class="absolute bottom-3 left-3 right-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            3Dmol.js runtime failed, showing lightweight PDB preview. {runtimeWarning}
+          </div>
+        {/if}
+      </div>
     {/if}
   </div>
 </Card>

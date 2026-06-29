@@ -51,7 +51,14 @@ function hubModelId(modelId: string): string | null {
   return null;
 }
 
-export async function preloadManagedAIModel(model: LiatirAIModelRecord): Promise<void> {
+function splitLog(text: string): string[] {
+  return text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+}
+
+export async function preloadManagedAIModel(
+  model: LiatirAIModelRecord,
+  onLog?: (lines: string[]) => void,
+): Promise<void> {
   if (model.id === CELLTYPIST_MODEL_ID) {
     const result = await runAIPython(
       model,
@@ -60,8 +67,9 @@ export async function preloadManagedAIModel(model: LiatirAIModelRecord): Promise
         runtimePath: model.runtimePath ?? model.localPath ?? null,
         celltypistModel: 'Immune_All_Low.pkl',
       },
-      { timeoutSeconds: 7200 },
+      { timeoutSeconds: 7200, trackJob: false },
     );
+    onLog?.([...splitLog(result.stdout), ...splitLog(result.stderr)]);
     if (!result.ok) throw new Error(result.stderr || `CellTypist model preload exited with code ${result.exitCode}`);
     return;
   }
@@ -76,8 +84,9 @@ export async function preloadManagedAIModel(model: LiatirAIModelRecord): Promise
         modelCacheDir: cachePathForModel(model) as JsonValue,
         hubModelId: hfModel,
       },
-      { timeoutSeconds: 7200 },
+      { timeoutSeconds: 7200, trackJob: false },
     );
+    onLog?.([...splitLog(result.stdout), ...splitLog(result.stderr)]);
     if (!result.ok) throw new Error(result.stderr || `Transformers model preload exited with code ${result.exitCode}`);
   }
 }

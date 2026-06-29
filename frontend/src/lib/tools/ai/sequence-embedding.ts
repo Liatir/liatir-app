@@ -131,7 +131,11 @@ export async function runSequenceEmbeddingStep(
       moleculeType,
       maxLength,
     },
-    { timeoutSeconds: 7200 },
+    {
+      timeoutSeconds: 7200,
+      jobLabel: sequenceEmbeddingDefinition.label,
+      metadata: { toolId: sequenceEmbeddingDefinition.id },
+    },
   );
 
   if (!result.ok) {

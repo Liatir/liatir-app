@@ -16,10 +16,7 @@
   });
 </script>
 
-<svelte:window
-  onclick={() => { if (open) open = false; }}
-  onkeydown={(e) => { if (e.key === 'Escape') open = false; }}
-/>
+<svelte:window onkeydown={(e) => { if (e.key === 'Escape') open = false; }} />
 
 <span class="relative inline-flex items-center leading-none">
   <button
@@ -35,6 +32,17 @@
   </button>
 
   {#if open}
+    <button
+      type="button"
+      aria-label="Close information"
+      class="fixed inset-0 z-40 cursor-default bg-transparent"
+      onclick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        open = false;
+      }}
+    ></button>
+
     <div
       role="dialog"
       aria-modal="true"

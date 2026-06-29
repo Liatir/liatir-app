@@ -11,6 +11,9 @@ export interface JobEntry {
   id: string;
   cmd: string;
   args: string[];
+  label?: string | null;
+  kind?: string | null;
+  metadata?: Record<string, unknown> | null;
   status: JobStatus;
   startedAtMs: number;
   endedAtMs: number | null;
@@ -46,7 +49,12 @@ function createJobsStore() {
       }
     },
 
-    async spawn(cmd: string, args: string[], cwd?: string) {
+    async spawn(cmd: string, args: string[], cwd?: string, options: {
+      env?: Record<string, string>;
+      label?: string;
+      kind?: string;
+      metadata?: Record<string, unknown>;
+    } = {}) {
       const api = liatir();
       if (!api) return null;
       const result = await api.invoke('lia_jobs_spawn', {
@@ -54,6 +62,10 @@ function createJobsStore() {
         args,
         cwd,
         workspaceId: workspaceStore.activeId,
+        env: options.env,
+        label: options.label,
+        kind: options.kind,
+        metadata: options.metadata,
       }) as { jobId: string };
       await this.refresh();
       return result;

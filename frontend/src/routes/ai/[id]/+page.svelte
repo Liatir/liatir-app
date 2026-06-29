@@ -4,26 +4,33 @@
   import { page } from '$app/state';
   import Icon from '@iconify/svelte';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
-  import Card from '$lib/components/ui/Card.svelte';
-  import Button from '$lib/components/ui/Button.svelte';
-  import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
+	  import Card from '$lib/components/ui/Card.svelte';
+	  import Button from '$lib/components/ui/Button.svelte';
+	  import InfoPopup from '$lib/components/ui/InfoPopup.svelte';
+	  import LabelWithInfo from '$lib/components/ui/LabelWithInfo.svelte';
+	  import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
   import RunLog from '$lib/components/ui/RunLog.svelte';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import { aiModelsStore } from '$lib/stores/aiModels.svelte';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns, type AnalysisRunMeta } from '$lib/stores/analysisRuns.svelte';
-  import { confirm } from '$lib/stores/confirm.svelte';
-  import { toast } from '$lib/stores/toast.svelte';
-  import { fmtDuration } from '$lib/utils';
+  import { jobsStore, type JobEntry } from '$lib/stores/jobs.svelte';
+	  import { confirm } from '$lib/stores/confirm.svelte';
+	  import { toast } from '$lib/stores/toast.svelte';
+	  import { modelInstallBlock } from '$lib/ai/model-compatibility';
+	  import { AI_MODEL_INPUT_HELP, aiModelInfo } from '$lib/ai/model-help';
+	  import { fmtDuration } from '$lib/utils';
   import { ensureResultsDir } from '$lib/utils/results';
-  import { CELLTYPIST_MODEL_ID, ESM2_8M_ID, MOCK_AI_MODEL_ID, NUCLEOTIDE_TRANSFORMER_50M_ID } from '$lib/ai/model-registry';
+  import { getAIHardwareInfo, type AIHardwareInfo } from '$lib/ai/runtime';
+  import { BOLTZ2_MODEL_ID, CELLTYPIST_MODEL_ID, CHAI1_MODEL_ID, ESM2_8M_ID, MOCK_AI_MODEL_ID, NUCLEOTIDE_TRANSFORMER_50M_ID } from '$lib/ai/model-registry';
   import { celltypistAnnotateDefinition, runCelltypistAnnotateStep } from '$lib/tools/ai/celltypist-annotate';
   import { sequenceEmbeddingDefinition, runSequenceEmbeddingStep } from '$lib/tools/ai/sequence-embedding';
   import { mockAIInferenceDefinition, runMockAIInferenceStep } from '$lib/tools/ai/mock-inference';
+  import { proteinStructureDefinition, runProteinStructureStep } from '$lib/tools/ai/protein-structure';
   import type { ToolOutput } from '$lib/types/tool-output';
   import type { RunOutputFile } from '$lib/types/pipeline';
 
-  type RunMode = 'celltypist' | 'sequence' | 'mock' | 'unsupported';
+  type RunMode = 'celltypist' | 'sequence' | 'protein-structure' | 'mock' | 'unsupported';
 
   const modelId = $derived(page.params.id ?? '');
   const model = $derived(aiModelsStore.byId(modelId));
@@ -33,9 +40,11 @@
       ? celltypistAnnotateDefinition
       : mode === 'sequence'
         ? sequenceEmbeddingDefinition
-        : mode === 'mock'
-          ? mockAIInferenceDefinition
-          : null
+        : mode === 'protein-structure'
+          ? proteinStructureDefinition
+          : mode === 'mock'
+            ? mockAIInferenceDefinition
+            : null
   );
 
   let running = $state(false);
@@ -45,6 +54,8 @@
   let selectedRunId = $state<string | null>(null);
   let loadedOutput = $state<ToolOutput | null>(null);
   let loadingOutput = $state(false);
+  let hardware = $state<AIHardwareInfo | null>(null);
+  let jobRefreshInterval: ReturnType<typeof setInterval> | null = null;
 
   let inputFile = $state('');
   let sequence = $state('');
@@ -52,6 +63,16 @@
   let maxLength = $state(1024);
   let celltypistModel = $state('Immune_All_Low.pkl');
   let majorityVoting = $state(false);
+  let ligandSmiles = $state('');
+  let ligandCcd = $state('');
+  let useMsaServer = $state(true);
+  let predictAffinity = $state(true);
+  let accelerator = $state('cpu');
+  let outputFormat = $state('mmcif');
+  let recyclingSteps = $state(3);
+  let diffusionSamples = $state(1);
+  let usePotentials = $state(false);
+  let noKernels = $state(false);
   let prompt = $state('Summarize the selected model run.');
   let context = $state('');
 
@@ -72,27 +93,41 @@
   );
   const selectedRun = $derived(modelRuns.find((run) => run.id === selectedRunId) ?? null);
   const selectedRunOutputFiles = $derived(selectedRun?.outputFiles ?? []);
+  const activeModelJobs = $derived(
+    jobsStore.jobs.filter((job) =>
+      job.status.type === 'running' &&
+      job.kind === 'ai-python' &&
+      jobMetadataString(job, 'modelId') === modelId
+    )
+  );
+  const activeModelJob = $derived(activeModelJobs[activeModelJobs.length - 1] ?? null);
+  const modelRunActive = $derived(running || !!activeModelJob);
   const displayError = $derived<string | null>(
     selectedRun?.status === 'error' ? (selectedRun.error ?? 'Unknown error') : null
   );
+  const installBlock = $derived(model ? modelInstallBlock(model, hardware) : null);
+  const formDisabled = $derived(modelRunActive);
+  const runStartedAt = $derived(startedAt ?? activeModelJob?.startedAtMs ?? null);
   const canRun = $derived(
     !!model &&
     model.status === 'installed' &&
     !!definition &&
-    !running &&
+    !modelRunActive &&
     (
       mode === 'celltypist'
         ? !!inputFile
         : mode === 'sequence'
           ? !!inputFile || !!sequence.trim()
-          : mode === 'mock'
-            ? !!prompt.trim()
-            : false
+          : mode === 'protein-structure'
+            ? !!inputFile || !!sequence.trim()
+            : mode === 'mock'
+              ? !!prompt.trim()
+              : false
     )
   );
 
   $effect(() => {
-    if (!running) return;
+    if (!modelRunActive) return;
     const id = setInterval(() => now = Date.now(), 1000);
     return () => clearInterval(id);
   });
@@ -115,14 +150,21 @@
   onMount(() => {
     void aiModelsStore.init();
     void dataFiles.init();
-    analysisRuns.init().then(() => {
-      if (modelRuns.length > 0 && selectedRunId === null) selectedRunId = modelRuns[0].id;
-    });
+    void jobsStore.refresh();
+    void getAIHardwareInfo().then((info) => hardware = info).catch(() => hardware = null);
+    void analysisRuns.init();
+    jobRefreshInterval = setInterval(() => {
+      if (modelRunActive || jobsStore.runningCount > 0) void jobsStore.refresh();
+    }, 2000);
+    return () => {
+      if (jobRefreshInterval) clearInterval(jobRefreshInterval);
+    };
   });
 
   function runMode(id: string): RunMode {
     if (id === CELLTYPIST_MODEL_ID) return 'celltypist';
     if (id === NUCLEOTIDE_TRANSFORMER_50M_ID || id === ESM2_8M_ID) return 'sequence';
+    if (id === BOLTZ2_MODEL_ID || id === CHAI1_MODEL_ID) return 'protein-structure';
     if (id === MOCK_AI_MODEL_ID) return 'mock';
     return 'unsupported';
   }
@@ -138,6 +180,13 @@
       hour: '2-digit',
       minute: '2-digit',
     });
+  }
+
+  function jobMetadataString(job: JobEntry, key: string): string | null {
+    const metadata = job.metadata;
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+    const value = metadata[key];
+    return typeof value === 'string' ? value : null;
   }
 
   function inputSize(path: string): number | undefined {
@@ -185,6 +234,24 @@
       };
       label = inputFile ? basename(inputFile) : `${moleculeType.toUpperCase()} sequence`;
       if (inputFile) inputPaths.push(inputFile);
+    } else if (mode === 'protein-structure') {
+      inputs = {
+        modelId: model.id,
+        inputFile,
+        sequence,
+        ligandSmiles,
+        ligandCcd,
+        useMsaServer: String(useMsaServer),
+        predictAffinity: String(predictAffinity),
+        accelerator,
+        outputFormat,
+        recyclingSteps: String(recyclingSteps),
+        diffusionSamples: String(diffusionSamples),
+        usePotentials: String(usePotentials),
+        noKernels: String(noKernels),
+      };
+      label = inputFile ? basename(inputFile) : 'Protein structure';
+      if (inputFile) inputPaths.push(inputFile);
     } else {
       inputs = {
         modelId: model.id,
@@ -202,9 +269,11 @@
       const { absDir } = await ensureResultsDir(definition.label);
       const result = mode === 'celltypist'
         ? await runCelltypistAnnotateStep(inputs, absDir, onLog)
-        : mode === 'sequence'
-          ? await runSequenceEmbeddingStep(inputs, absDir, onLog)
-          : await runMockAIInferenceStep(inputs, absDir, onLog);
+          : mode === 'sequence'
+            ? await runSequenceEmbeddingStep(inputs, absDir, onLog)
+            : mode === 'protein-structure'
+              ? await runProteinStructureStep(inputs, absDir, onLog)
+              : await runMockAIInferenceStep(inputs, absDir, onLog);
 
       const endedAt = Date.now();
       onLog(`Completed in ${fmtDuration(t0, endedAt)}`);
@@ -253,6 +322,7 @@
   }
 
   async function deleteRun(run: AnalysisRunMeta) {
+    if (running) return;
     const ok = await confirm({
       title: 'Delete run',
       message: `Delete the ${definition?.label ?? 'AI Model'} run for "${run.label}"?`,
@@ -292,8 +362,9 @@
             </button>
             <button
               onclick={() => deleteRun(run)}
+              disabled={running}
               aria-label="Delete run"
-              class="opacity-0 group-hover:opacity-100 p-1.5 mt-2 mr-1.5 shrink-0 text-zinc-400 hover:text-red-500 transition-all rounded"
+              class="opacity-0 group-hover:opacity-100 p-1.5 mt-2 mr-1.5 shrink-0 text-zinc-400 hover:text-red-500 transition-all rounded disabled:pointer-events-none disabled:opacity-20"
             >
               <Icon icon="lucide:x" width="11" height="11" />
             </button>
@@ -304,7 +375,7 @@
   </div>
 
   <div class="flex-1 flex flex-col overflow-hidden">
-    <PageHeader title={model?.name ?? 'AI Model'} description={definition?.description ?? 'Run a local AI Model'}>
+	    <PageHeader title={model?.name ?? 'AI Model'} info={model ? aiModelInfo(model) : undefined} description={definition?.description ?? 'Run a local AI Model'}>
       {#snippet actions()}
         <Button variant="ghost" size="sm" onclick={() => goto('/ai')}>
           <Icon icon="lucide:arrow-left" width="14" height="14" />
@@ -321,8 +392,13 @@
         </Card>
       {:else if model.status !== 'installed'}
         <Card class="p-5">
-          <p class="text-sm font-semibold text-zinc-800">Install required</p>
-          <p class="mt-1 text-xs text-zinc-500">Install this AI Model before running it directly.</p>
+          {#if installBlock}
+            <p class="text-sm font-semibold text-zinc-800">Incompatible host</p>
+            <p class="mt-1 text-xs leading-relaxed text-amber-700">{installBlock.reason}</p>
+          {:else}
+            <p class="text-sm font-semibold text-zinc-800">Install required</p>
+            <p class="mt-1 text-xs text-zinc-500">Install this AI Model before running it directly.</p>
+          {/if}
         </Card>
       {:else if mode === 'unsupported'}
         <Card class="p-5">
@@ -331,39 +407,46 @@
         </Card>
       {:else}
         <Card class="p-5 space-y-4">
-          <div>
-            <p class="text-sm font-semibold text-zinc-800">Input</p>
-            <p class="mt-1 text-xs text-zinc-500">{model.runtime.name} · {model.modalities.join(', ')}</p>
-          </div>
+	          <div>
+	            <div class="flex items-center gap-1">
+	              <p class="text-sm font-semibold text-zinc-800">Input</p>
+	              <InfoPopup text={AI_MODEL_INPUT_HELP.runInput} />
+	            </div>
+	            <p class="mt-1 text-xs text-zinc-500">{model.runtime.name} · {model.modalities.join(', ')}</p>
+	          </div>
 
+          <fieldset disabled={formDisabled} class="space-y-4 disabled:opacity-70">
           {#if mode === 'celltypist'}
-            <FilePickerPopup
-              files={h5adFiles}
-              value={inputFile}
-              label="AnnData file"
-              emptyText="No h5ad files in Data yet."
+	            <FilePickerPopup
+	              files={h5adFiles}
+	              value={inputFile}
+	              label="AnnData file"
+	              info={AI_MODEL_INPUT_HELP.annDataFile}
+	              emptyText="No h5ad files in Data yet."
+              disabled={formDisabled}
               onchange={(path) => inputFile = path}
             />
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label for="celltypist-model" class="block text-xs text-zinc-500 mb-1.5">CellTypist model</label>
-                <input
+	            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+	              <div>
+	                <LabelWithInfo targetId="celltypist-model" text="CellTypist model" info={AI_MODEL_INPUT_HELP.celltypistModel} />
+	                <input
                   id="celltypist-model"
                   type="text"
                   bind:value={celltypistModel}
                   class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
                 />
-              </div>
-              <label class="flex items-end gap-2 text-xs text-zinc-600 pb-2">
-                <input type="checkbox" bind:checked={majorityVoting} />
-                Majority voting
-              </label>
-            </div>
-          {:else if mode === 'sequence'}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label for="molecule-type" class="block text-xs text-zinc-500 mb-1.5">Molecule</label>
-                <select
+	              </div>
+	              <label class="flex items-end gap-2 text-xs text-zinc-600 pb-2">
+	                <input type="checkbox" bind:checked={majorityVoting} />
+	                <span>Majority voting</span>
+	                <InfoPopup text={AI_MODEL_INPUT_HELP.majorityVoting} />
+	              </label>
+	            </div>
+	          {:else if mode === 'sequence'}
+	            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+	              <div>
+	                <LabelWithInfo targetId="molecule-type" text="Molecule" info={AI_MODEL_INPUT_HELP.molecule} />
+	                <select
                   id="molecule-type"
                   bind:value={moleculeType}
                   class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
@@ -372,10 +455,10 @@
                     <option value={option.value}>{option.label}</option>
                   {/each}
                 </select>
-              </div>
-              <div>
-                <label for="max-length" class="block text-xs text-zinc-500 mb-1.5">Max tokens</label>
-                <input
+	              </div>
+	              <div>
+	                <LabelWithInfo targetId="max-length" text="Max tokens" info={AI_MODEL_INPUT_HELP.maxTokens} />
+	                <input
                   id="max-length"
                   type="number"
                   min="16"
@@ -387,15 +470,17 @@
               </div>
             </div>
             <FilePickerPopup
-              files={sequenceFiles}
-              value={inputFile}
-              label="FASTA file"
-              emptyText="No FASTA files in Data yet."
+	              files={sequenceFiles}
+	              value={inputFile}
+	              label="FASTA file"
+	              info={AI_MODEL_INPUT_HELP.fastaFile}
+	              emptyText="No FASTA files in Data yet."
+              disabled={formDisabled}
               onchange={(path) => inputFile = path}
-            />
-            <div>
-              <label for="inline-sequence" class="block text-xs text-zinc-500 mb-1.5">Inline sequence</label>
-              <textarea
+	            />
+	            <div>
+	              <LabelWithInfo targetId="inline-sequence" text="Inline sequence" info={AI_MODEL_INPUT_HELP.inlineSequence} />
+	              <textarea
                 id="inline-sequence"
                 bind:value={sequence}
                 rows="5"
@@ -403,19 +488,127 @@
                 class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-brand transition-colors font-mono"
               ></textarea>
             </div>
-          {:else if mode === 'mock'}
-            <div>
-              <label for="prompt" class="block text-xs text-zinc-500 mb-1.5">Prompt</label>
-              <textarea
+          {:else if mode === 'protein-structure'}
+            <FilePickerPopup
+	              files={sequenceFiles}
+	              value={inputFile}
+	              label="Protein FASTA"
+	              info={AI_MODEL_INPUT_HELP.proteinFasta}
+	              emptyText="No protein FASTA files in Data yet."
+              disabled={formDisabled}
+              onchange={(path) => inputFile = path}
+	            />
+	            <div>
+	              <LabelWithInfo targetId="protein-sequence" text="Inline protein sequence" info={AI_MODEL_INPUT_HELP.inlineProteinSequence} />
+	              <textarea
+                id="protein-sequence"
+                bind:value={sequence}
+                rows="5"
+                placeholder="Paste a protein sequence..."
+                class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-brand transition-colors font-mono"
+              ></textarea>
+            </div>
+	            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+	              <div>
+	                <LabelWithInfo targetId="ligand-smiles" text="Ligand SMILES" info={AI_MODEL_INPUT_HELP.ligandSmiles} />
+	                <input
+                  id="ligand-smiles"
+                  type="text"
+                  bind:value={ligandSmiles}
+                  class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors font-mono"
+                />
+	              </div>
+	              <div>
+	                <LabelWithInfo targetId="ligand-ccd" text="Ligand CCD" info={AI_MODEL_INPUT_HELP.ligandCcd} />
+	                <input
+                  id="ligand-ccd"
+                  type="text"
+                  bind:value={ligandCcd}
+                  class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors font-mono"
+                />
+              </div>
+            </div>
+	            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+	              <div>
+	                <LabelWithInfo targetId="accelerator" text="Accelerator" info={AI_MODEL_INPUT_HELP.accelerator} />
+	                <select
+                  id="accelerator"
+                  bind:value={accelerator}
+                  class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+                >
+                  <option value="cpu">CPU</option>
+                  <option value="gpu">GPU</option>
+                </select>
+	              </div>
+	              <div>
+	                <LabelWithInfo targetId="output-format" text="Output" info={AI_MODEL_INPUT_HELP.outputFormat} />
+	                <select
+                  id="output-format"
+                  bind:value={outputFormat}
+                  class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+                >
+                  <option value="mmcif">mmCIF</option>
+                  <option value="pdb">PDB</option>
+                </select>
+	              </div>
+	              <div>
+	                <LabelWithInfo targetId="recycling-steps" text="Recycling" info={AI_MODEL_INPUT_HELP.recyclingSteps} />
+	                <input
+                  id="recycling-steps"
+                  type="number"
+                  min="1"
+                  max="20"
+                  bind:value={recyclingSteps}
+                  class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+                />
+	              </div>
+	              <div>
+	                <LabelWithInfo targetId="diffusion-samples" text="Samples" info={AI_MODEL_INPUT_HELP.diffusionSamples} />
+	                <input
+                  id="diffusion-samples"
+                  type="number"
+                  min="1"
+                  max="25"
+                  bind:value={diffusionSamples}
+                  class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+                />
+              </div>
+            </div>
+	            <div class="flex flex-wrap gap-4">
+	              <label class="flex items-center gap-2 text-xs text-zinc-600">
+	                <input type="checkbox" bind:checked={useMsaServer} />
+	                <span>Use MSA server</span>
+	                <InfoPopup text={AI_MODEL_INPUT_HELP.useMsaServer} />
+	              </label>
+	              <label class="flex items-center gap-2 text-xs text-zinc-600">
+	                <input type="checkbox" bind:checked={predictAffinity} />
+	                <span>Predict affinity</span>
+	                <InfoPopup text={AI_MODEL_INPUT_HELP.predictAffinity} />
+	              </label>
+	              <label class="flex items-center gap-2 text-xs text-zinc-600">
+	                <input type="checkbox" bind:checked={usePotentials} />
+	                <span>Use potentials</span>
+	                <InfoPopup text={AI_MODEL_INPUT_HELP.usePotentials} />
+	              </label>
+	              <label class="flex items-center gap-2 text-xs text-zinc-600">
+	                <input type="checkbox" bind:checked={noKernels} />
+	                <span>Disable CUDA kernels</span>
+	                <InfoPopup text={AI_MODEL_INPUT_HELP.noKernels} />
+	              </label>
+	            </div>
+	          {:else if mode === 'mock'}
+	            <div>
+	              <LabelWithInfo targetId="prompt" text="Prompt" info={AI_MODEL_INPUT_HELP.prompt} />
+	              <textarea
                 id="prompt"
                 bind:value={prompt}
                 rows="3"
                 class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
               ></textarea>
-            </div>
-            <div>
-              <label for="context" class="block text-xs text-zinc-500 mb-1.5">Context</label>
-              <textarea
+	            </div>
+	            <div>
+	              <LabelWithInfo targetId="context" text="Context" info={AI_MODEL_INPUT_HELP.context} />
+	              <textarea
                 id="context"
                 bind:value={context}
                 rows="4"
@@ -423,13 +616,20 @@
               ></textarea>
             </div>
           {/if}
+          </fieldset>
 
           <div class="flex items-center gap-3 pt-1">
             <Button variant="primary" disabled={!canRun} loading={running} onclick={runModel}>
               Run
             </Button>
-            {#if running && startedAt}
-              <span class="text-xs text-zinc-400">Elapsed: {fmtDuration(startedAt, now)}</span>
+            {#if modelRunActive && runStartedAt}
+              <span class="text-xs text-zinc-400">Elapsed: {fmtDuration(runStartedAt, now)}</span>
+            {/if}
+            {#if activeModelJob && !running}
+              <Button variant="ghost" size="sm" onclick={() => goto('/jobs')}>
+                <Icon icon="lucide:radio" width="13" height="13" />
+                Open Jobs
+              </Button>
             {/if}
           </div>
         </Card>
@@ -439,6 +639,20 @@
         <Card class="p-4">
           <p class="mb-2 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Current run log</p>
           <pre class="max-h-48 overflow-auto whitespace-pre-wrap text-xs text-zinc-600 font-mono">{logLines.join('\n')}</pre>
+        </Card>
+      {:else if activeModelJob && !running}
+        <Card class="p-4">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="mb-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Active AI Model job</p>
+              <p class="text-xs text-zinc-600">
+                This model is still running in Jobs. Inputs are locked until the job exits.
+              </p>
+            </div>
+            <Button variant="ghost" size="sm" onclick={() => goto('/jobs')}>
+              Open Jobs
+            </Button>
+          </div>
         </Card>
       {/if}
 

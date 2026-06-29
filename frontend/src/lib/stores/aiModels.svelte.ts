@@ -1,7 +1,8 @@
 import { liatir } from '$lib/api';
 import { LOCAL_AI_MODEL_REGISTRY, MOCK_AI_MODEL_ID } from '$lib/ai/model-registry';
+import { modelInstallBlock } from '$lib/ai/model-compatibility';
 import { preloadManagedAIModel } from '$lib/ai/model-preload';
-import { cachePathForModel, getAIRuntimeStatus, prepareAIRuntime } from '$lib/ai/runtime';
+import { cachePathForModel, getAIHardwareInfo, getAIRuntimeStatus, prepareAIRuntime } from '$lib/ai/runtime';
 import { appStorage } from './app-storage';
 import { SANDBOX_WORKSPACE_ID, workspaceStore } from './workspace.svelte';
 import type {
@@ -30,6 +31,16 @@ interface AIModelsState {
 
 interface WorkspacesState {
   workspaces?: Array<{ id?: string | null }>;
+}
+
+export interface AIModelInstallProgress {
+  phase?: 'preparing-runtime' | 'installing-packages' | 'downloading-model' | 'downloading-files';
+  fileIndex: number;
+  fileCount: number;
+  bytesDownloaded: number;
+  bytesTotal: number | null;
+  message?: string;
+  logLines?: string[];
 }
 
 function getFile() { return AI_MODELS_FILE; }
@@ -235,13 +246,18 @@ function createAIModelsStore() {
       try {
         const status = await getAIRuntimeStatus(model);
         if (!status) return model;
+        const runtimeIssue = status.error
+          ?? (status.missingPackages.length > 0
+            ? `Missing or incompatible runtime packages: ${status.missingPackages.join(', ')}`
+            : undefined);
         await this.setModelState(id, {
+          status: status.error ? 'error' : status.installed ? 'installed' : 'available',
           runtimePath: status.runtimeDir,
           localPath: status.runtimeDir,
           cachePath: status.runtimeDir && model.install?.modelCacheSubdir
             ? `${status.runtimeDir}/${model.install.modelCacheSubdir}`
             : undefined,
-          error: status.error ?? undefined,
+          error: runtimeIssue,
         });
         return this.byId(id);
       } catch (error) {
@@ -263,19 +279,17 @@ function createAIModelsStore() {
 
     async installManagedModel(
       id: string,
-      onProgress?: (progress: {
-        phase?: 'preparing-runtime' | 'installing-packages' | 'downloading-model' | 'downloading-files';
-        fileIndex: number;
-        fileCount: number;
-        bytesDownloaded: number;
-        bytesTotal: number | null;
-        message?: string;
-      }) => void
+      onProgress?: (progress: AIModelInstallProgress) => void
     ): Promise<LiatirAIModelRecord> {
       const api = liatir();
       if (!api) throw new Error('Liatir API not available');
       const metadata = LOCAL_AI_MODEL_REGISTRY.find((model) => model.id === id);
       if (!metadata) throw new Error(`Unknown AI Model: ${id}`);
+      if (metadata.install?.hostRequirements) {
+        const hardware = await getAIHardwareInfo();
+        const blocked = modelInstallBlock(metadata, hardware);
+        if (blocked) throw new Error(blocked.reason);
+      }
 
       if (metadata.install?.method === 'managed-runtime') {
         onProgress?.({
@@ -285,8 +299,14 @@ function createAIModelsStore() {
           bytesDownloaded: 0,
           bytesTotal: null,
           message: 'Preparing runtime',
+          logLines: [`$ prepare AI runtime ${metadata.install.runtimeId ?? id}`],
         });
         const prepared = await prepareAIRuntime(metadata);
+        const prepareLog = [prepared.stdout, prepared.stderr]
+          .join('\n')
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean);
         const record: LiatirAIModelRecord = {
           ...metadata,
           status: 'installed' as const,
@@ -302,8 +322,24 @@ function createAIModelsStore() {
           bytesDownloaded: 0,
           bytesTotal: null,
           message: 'Downloading model',
+          logLines: [
+            `Runtime prepared with ${prepared.installer}`,
+            ...prepareLog,
+            '$ preload managed model assets',
+          ],
         });
-        await preloadManagedAIModel(record);
+        await preloadManagedAIModel(record, (lines) => {
+          if (lines.length === 0) return;
+          onProgress?.({
+            phase: 'downloading-model',
+            fileIndex: 0,
+            fileCount: 1,
+            bytesDownloaded: 0,
+            bytesTotal: null,
+            message: 'Downloading model',
+            logLines: lines,
+          });
+        });
         await this.setModelState(id, {
           status: 'installed',
           runtimePath: prepared.runtimeDir,
@@ -335,6 +371,14 @@ function createAIModelsStore() {
         const file = files[index];
         const downloadId = `${id}-${index}-${crypto.randomUUID()}`;
         const destPath = `${modelDir}/${file.relativePath}`;
+        onProgress?.({
+          phase: 'downloading-files',
+          fileIndex: index,
+          fileCount: files.length,
+          bytesDownloaded: 0,
+          bytesTotal: file.sizeBytes ?? null,
+          logLines: [`Downloading ${file.relativePath}`],
+        });
         const unlisten = await api.desktop.events.on(
           `managed:progress:${downloadId}`,
           (p: { bytesDownloaded: number; bytesTotal: number | null }) => {

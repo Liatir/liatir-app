@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { liatir } from '$lib/api';
-  import { versionGte } from '$lib/utils/versions';
+  import { versionGte, versionLt } from '$lib/utils/versions';
   import type { DepRequirement } from '$lib/data/dep-requirements';
 
   export type DepStatus = 'checking' | 'ok' | 'outdated' | 'missing';
@@ -33,7 +33,9 @@
       if (!installed) {
         status = 'ok'; // installed but version undetectable — assume ok
       } else {
-        status = versionGte(installed, req.minVersion) ? 'ok' : 'outdated';
+        status = versionGte(installed, req.minVersion) && (!req.maxVersionExclusive || versionLt(installed, req.maxVersionExclusive))
+          ? 'ok'
+          : 'outdated';
       }
     }
   }
@@ -54,6 +56,10 @@
     status === 'ok'       ? 'text-emerald-600' :
     status === 'outdated' ? 'text-amber-600' :
     status === 'missing'  ? 'text-red-600' : 'text-zinc-400'
+  );
+
+  const requirementLabel = $derived(
+    req.versionLabel ?? (req.maxVersionExclusive ? `${req.minVersion} - <${req.maxVersionExclusive}` : `${req.minVersion}+`)
   );
 </script>
 
@@ -96,13 +102,13 @@
           <span class="text-xs text-zinc-400">Checking…</span>
         {:else if status === 'ok'}
           <span class="font-mono text-xs text-emerald-600">{installed}</span>
-          <span class="text-[10px] text-zinc-400">(requires {req.minVersion}+)</span>
+          <span class="text-[10px] text-zinc-400">(requires {requirementLabel})</span>
         {:else if status === 'outdated'}
           <span class="font-mono text-xs text-amber-600">{installed}</span>
-          <span class="text-[10px] text-zinc-400">(requires {req.minVersion}+)</span>
+          <span class="text-[10px] text-zinc-400">(requires {requirementLabel})</span>
         {:else}
           <span class="text-xs text-zinc-400">Not installed</span>
-          <span class="text-[10px] text-zinc-400">(requires {req.minVersion}+)</span>
+          <span class="text-[10px] text-zinc-400">(requires {requirementLabel})</span>
         {/if}
       </div>
     </div>
@@ -139,7 +145,7 @@
   {#if status === 'outdated' || status === 'missing'}
     <div class="rounded-lg border border-border bg-surface-2 p-3 space-y-1.5">
       <p class="text-[11px] text-zinc-500 mb-2">
-        {status === 'outdated' ? `Upgrade ${req.label} to ${req.minVersion} or later:` : `Install ${req.label}:`}
+        {status === 'outdated' ? `Update ${req.label} to ${requirementLabel}:` : `Install ${req.label}:`}
       </p>
       {#each req.installCmds as { platform, cmd }}
         <div class="flex items-center gap-2 font-mono text-xs">

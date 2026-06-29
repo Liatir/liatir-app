@@ -27,6 +27,19 @@ export async function getViewerRuntimeScriptUrl(runtimeId: string): Promise<{ ru
   return { runtime, url: localFileSrc(runtime.entryPath) };
 }
 
+export async function readViewerRuntimeScript(runtimeId: string): Promise<{ runtime: ViewerRuntimeRecord; source: string }> {
+  await viewerRuntimesStore.init();
+  const runtime = viewerRuntimesStore.byId(runtimeId);
+  if (!runtime) throw new Error(`Unknown viewer runtime: ${runtimeId}`);
+  if (runtime.status !== 'installed' || !runtime.entryPath) {
+    throw new Error(`${runtime.name} is not installed.`);
+  }
+  const api = liatir();
+  if (!api) throw new Error('Liatir API not available.');
+  const source = await api.invoke('lia_read_file_text', { path: runtime.entryPath }) as string;
+  return { runtime, source };
+}
+
 export async function loadViewerRuntimeScript(runtimeId: string): Promise<void> {
   const { runtime, url } = await getViewerRuntimeScriptUrl(runtimeId);
 

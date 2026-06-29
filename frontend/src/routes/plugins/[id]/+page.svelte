@@ -32,7 +32,19 @@
   // Node.js availability
   let nodeAvailable = $state<boolean | null>(null);
 
+  function resetRunOutput() {
+    running = false;
+    jobId = null;
+    stdoutLines = [];
+    stderrLines = [];
+    exitCode = undefined;
+    result = null;
+    savedFiles = [];
+  }
+
   onMount(async () => {
+    resetRunOutput();
+    values = {};
     await modulesStore.init();
     mod = modulesStore.byId(id);
     if (!mod) { goto('/plugins'); return; }

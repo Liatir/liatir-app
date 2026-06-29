@@ -1,5 +1,5 @@
 // src-ts/sdk/liatir.ts
-import type { LiatirAPI } from "../types";
+import type { LiatirBrowserAPI } from "../types";
 
 function getWindow(): Window {
   if (typeof window === "undefined") {
@@ -8,7 +8,7 @@ function getWindow(): Window {
   return window;
 }
 
-function getGlobalBridge(): LiatirAPI | undefined {
+function getGlobalBridge(): LiatirBrowserAPI | undefined {
   const w = getWindow() as any;
   const bridge = w.Liatir;
 
@@ -19,7 +19,7 @@ function getGlobalBridge(): LiatirAPI | undefined {
     return;
   }
 
-  return bridge as LiatirAPI;
+  return bridge as LiatirBrowserAPI;
 }
 
 export function isLiatirAvailable(): boolean {
@@ -31,7 +31,7 @@ export function isLiatirAvailable(): boolean {
   return !!w.Liatir;
 }
 
-export const Liatir: LiatirAPI = new Proxy({} as LiatirAPI, {
+export const Liatir: LiatirBrowserAPI = new Proxy({} as LiatirBrowserAPI, {
   get(_target, prop, _receiver) {
     const bridge = getGlobalBridge() ?? undefined;
     const value = (bridge as any)[prop];

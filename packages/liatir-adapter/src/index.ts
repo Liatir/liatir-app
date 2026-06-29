@@ -14,6 +14,16 @@ import type {
 import { buildAlign, type AlignNamespace } from "./bio/align";
 import { buildQc, type QcNamespace } from "./bio/qc";
 import { buildVariants, type VariantsNamespace } from "./bio/variants";
+import type { LiatirBrowserAPI as BrowserBridgeAPI } from "../../../src-ts/liatir/_types";
+
+/** Browser/webview bridge exposed as window.Liatir inside the Tauri app. */
+export type LiatirBrowserAPI = BrowserBridgeAPI;
+
+/**
+ * @deprecated Use LiatirBrowserAPI for the window.Liatir webview bridge.
+ * LiatirAPI is kept only as a compatibility alias for older integrations.
+ */
+export type LiatirAPI = LiatirBrowserAPI;
 
 // Bridge areas — reused (NOT duplicated) from the single source of truth in
 // src-ts. The same buildX(core) functions power window.Liatir in the browser;
@@ -31,17 +41,6 @@ import { buildNotifications } from "../../../src-ts/modules/rs/notifications/_ma
 import { buildDiagnostics } from "../../../src-ts/modules/rs/diagnostics/_main";
 import { buildPlugins } from "../../../src-ts/modules/rs/plugins/_main";
 import { buildSidecar } from "../../../src-ts/modules/rs/sidecar/_main";
-import type { FsInterface } from "../../../src-ts/modules/rs/fs/_types";
-import type { FilesInterface } from "../../../src-ts/modules/rs/files/_types";
-import type { EventsInterface } from "../../../src-ts/modules/rs/events/_types";
-import type { AppInterface } from "../../../src-ts/modules/rs/app/_types";
-import type { GlobalVariablesInterface } from "../../../src-ts/modules/rs/globalVariables/_types";
-import type { NetworkInterface } from "../../../src-ts/modules/rs/network/_types";
-import type { ClipboardInterface } from "../../../src-ts/modules/rs/clipboard/_types";
-import type { NotificationsInterface } from "../../../src-ts/modules/rs/notifications/_types";
-import type { DiagnosticsInterface } from "../../../src-ts/modules/rs/diagnostics/_types";
-import type { PluginsInterface } from "../../../src-ts/modules/rs/plugins/_types";
-import type { SidecarInterface } from "../../../src-ts/modules/rs/sidecar/_types";
 import { buildJobs } from "../../../src-ts/modules/rs/jobs/_main";
 import { buildDeps } from "../../../src-ts/modules/rs/deps/_main";
 import type {
@@ -200,35 +199,35 @@ export interface LiatirNodePaths {
   temp: string;
 }
 
-export interface LiatirNode {
+export type LiatirSharedDesktop = Pick<
+  LiatirBrowserAPI["desktop"],
+  | "fs"
+  | "files"
+  | "events"
+  | "app"
+  | "network"
+  | "clipboard"
+  | "notifications"
+  | "diagnostics"
+  | "globalVariables"
+>;
+
+export type LiatirSharedTopLevel = Pick<
+  LiatirBrowserAPI,
+  "deps" | "plugins" | "sidecar" | "invoke"
+>;
+
+export interface LiatirNode extends LiatirSharedTopLevel {
   /** Async process manager — spawn, stream, kill any system binary. */
   jobs: LiatirNodeJobs;
-  /** Check whether system tools are installed and get their versions. */
-  deps: DepsInterface;
   /** Bio analysis namespaces (scipy-style typed wrappers). */
   align: AlignNamespace;
   qc: QcNamespace;
   variants: VariantsNamespace;
-  /** Full Liatir bridge — same interfaces as window.Liatir.desktop, reused from src-ts (no duplication). */
-  desktop: {
-    fs: FsInterface;
-    files: FilesInterface;
-    events: EventsInterface;
-    app: AppInterface;
-    globalVariables: GlobalVariablesInterface;
-    network: NetworkInterface;
-    clipboard: ClipboardInterface;
-    notifications: NotificationsInterface;
-    diagnostics: DiagnosticsInterface;
-  };
-  /** WASM custom-tool runtime (reused from src-ts). */
-  plugins: PluginsInterface;
-  /** Sidecar process runner (reused from src-ts). */
-  sidecar: SidecarInterface;
+  /** Desktop bridge subset available in headless Node plugins. */
+  desktop: LiatirSharedDesktop;
   /** App filesystem paths. */
   paths(): Promise<LiatirNodePaths>;
-  /** Raw invoke — calls any supported Tauri command. */
-  invoke<T = unknown>(cmd: string, payload?: Record<string, unknown>): Promise<T>;
 }
 
 // ── Factory ──────────────────────────────────────────────────────────────────

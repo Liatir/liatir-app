@@ -1,5 +1,6 @@
 export type TauriCore = {
     invoke<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T>;
+    convertFileSrc(filePath: string, protocol?: string): string;
   };
   
   export type TauriGlobal = TauriCore | { core: TauriCore };
@@ -16,20 +17,6 @@ interface EventCallback<T> {
 }
 
 type UnlistenFn = () => void;
-
-type TauriCoreExtended = {
-  /**
-   * Send a message to the Rust backend.
-   * @param cmd Command name defined in Rust with #[tauri::command].
-   * @param args Optional arguments passed to the command.
-   */
-  invoke<T = unknown>(cmd: string, args?: TauriArgs): Promise<T>;
-  
-  /**
-   * Convert a local file path into an asset URL usable inside the webview.
-   */
-  convertFileSrc(filePath: string, protocol?: string): string;
-}
 
 type TauriEvent = {
   /**

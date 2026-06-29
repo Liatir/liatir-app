@@ -6,6 +6,7 @@ import { cachePathForModel, runAIPython } from '$lib/ai/runtime';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
 import { CELLTYPIST_ANNOTATE_SCRIPT } from './python-scripts';
 import { liatir } from '$lib/api';
+import { getLastSegmentFromPath } from '$lib/utils';
 
 export const celltypistAnnotateDefinition: LiatirAIToolDefinition = {
   id: 'ai-celltypist-annotate',
@@ -116,7 +117,11 @@ export async function runCelltypistAnnotateStep(
       celltypistModel: inputs.celltypistModel || 'Immune_All_Low.pkl',
       majorityVoting: inputs.majorityVoting === 'true',
     },
-    { timeoutSeconds: 7200 },
+    {
+      timeoutSeconds: 7200,
+      jobLabel: celltypistAnnotateDefinition.label,
+      metadata: { toolId: celltypistAnnotateDefinition.id },
+    },
   );
 
   if (!result.ok) {
@@ -192,7 +197,7 @@ export async function runCelltypistAnnotateStep(
           description: 'Lightweight preview. Full Vitessce rendering is handled by a modular viewer runtime.',
           config: {
             title: 'CellTypist labels',
-            source: parsed.labelsPath,
+            source: getLastSegmentFromPath((parsed?.labelsPath?.trim()) ?? ""),
             labelCounts: parsed.summary.counts,
           },
           height: 340,

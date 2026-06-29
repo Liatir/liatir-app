@@ -1,4 +1,4 @@
-import { U64, U8 } from "../../../utils";
+import type { U64, U8 } from "../../../utils/utils/_integerUtils";
 
 export interface PluginsInterface {
   call: (
@@ -45,4 +45,3 @@ export type PluginAddResult = {
   path: string;
   saved: boolean;
 }
-

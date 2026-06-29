@@ -115,11 +115,7 @@
 
   onMount(async () => {
     dataFiles.init();
-    analysisRuns.init().then(() => {
-      if (snpeffRuns.length > 0 && selectedRunId === null) {
-        selectedRunId = snpeffRuns[0].id;
-      }
-    });
+    analysisRuns.init();
     await snpEffStore.init();
     await settingsStore.init();
     await reattachIfDownloading();

@@ -1,4 +1,4 @@
-import { U64, U8 } from "../../../utils";
+import type { U64, U8 } from "../../../utils/utils/_integerUtils";
 
 export type FileWithBytes = {
   path: string,

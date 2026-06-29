@@ -8,6 +8,7 @@ export interface DepResult {
 }
 
 export const COMMON_TOOLS = [
+  'python',
   'java',
   'fastqc',
   'bwa',

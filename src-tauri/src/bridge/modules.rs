@@ -158,6 +158,10 @@ pub async fn lia_liatir_run(
         vec!["_runner.mjs".to_string(), inputs_json],
         Some(cwd),
         None,
+        None,
+        Some("Liatir plugin run".to_string()),
+        Some("lia-plugin".to_string()),
+        None,
         Some(temp_dir.to_string_lossy().to_string()),
     ).await
 }

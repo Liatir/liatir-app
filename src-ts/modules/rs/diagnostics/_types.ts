@@ -1,4 +1,4 @@
-import { U32, U64 } from "../../../utils";
+import type { U32, U64 } from "../../../utils/utils/_integerUtils";
 
 export interface DiagnosticsInterface {
   settings: {

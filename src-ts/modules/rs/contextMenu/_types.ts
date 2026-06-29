@@ -1,6 +1,4 @@
-import { CM_TYPES } from "../../../helpers";
-
-export type CmType = (typeof CM_TYPES)[number];
+export type CmType = "item" | "check" | "separator" | "submenu" | "predefined";
 
 export type CmItem = {
   type: Extract<CmType, "item">;

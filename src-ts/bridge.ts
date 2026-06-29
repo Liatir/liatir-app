@@ -1,4 +1,4 @@
-import type { LiatirAPI, WindowTauri } from "./types";
+import type { LiatirBrowserAPI, WindowTauri } from "./types";
 import {
   buildCore,
   buildFs,
@@ -38,7 +38,7 @@ import { buildQc } from "./modules/qc/_main";
   const plugins = buildPlugins(core);
   const sidecar = buildSidecar(core);
 
-  const api: LiatirAPI = {
+  const api: LiatirBrowserAPI = {
     get isAvailable() { return true; },
     apiVersion: API_VERSION,
     get ready() { return core.ready; },

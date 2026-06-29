@@ -65,11 +65,7 @@
 
   onMount(() => {
     dataFiles.init();
-    analysisRuns.init().then(() => {
-      if (faidxRuns.length > 0 && selectedRunId === null) {
-        selectedRunId = faidxRuns[0].id;
-      }
-    });
+    analysisRuns.init();
   });
 
   // ── run faidx (index creation) ───────────────────────────────────

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import InfoPopup from './InfoPopup.svelte';
+
   export interface PickerItem {
     value: string;
     label: string;
@@ -16,6 +18,7 @@
     value: string;
     groups: PickerGroup[];
     label?: string;
+    info?: string;
     placeholder?: string;
     searchPlaceholder?: string;
     emptyText?: string;
@@ -28,6 +31,7 @@
     value,
     groups,
     label,
+    info,
     placeholder = 'Select…',
     searchPlaceholder = 'Search…',
     emptyText = 'No options available.',
@@ -83,7 +87,12 @@
 
 <div class="relative">
   {#if label}
-    <p class="text-xs text-zinc-500 mb-1.5">{label}</p>
+    <p class="mb-1.5 flex items-center gap-1 text-xs text-zinc-500">
+      <span>{label}</span>
+      {#if info}
+        <InfoPopup text={info} />
+      {/if}
+    </p>
   {/if}
 
   <div class="relative">

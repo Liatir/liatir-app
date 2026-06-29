@@ -20,3 +20,17 @@ export function versionGte(installed: string, required: string): boolean {
   }
   return true;
 }
+
+/** Returns true if `installed` < `upperBound`. */
+export function versionLt(installed: string, upperBound: string): boolean {
+  const a = parseVersion(installed);
+  const b = parseVersion(upperBound);
+  const len = Math.max(a.length, b.length);
+  for (let i = 0; i < len; i++) {
+    const ai = a[i] ?? 0;
+    const bi = b[i] ?? 0;
+    if (ai < bi) return true;
+    if (ai > bi) return false;
+  }
+  return false;
+}

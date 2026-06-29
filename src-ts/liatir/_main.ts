@@ -1,5 +1,5 @@
 import { READY_EVENT_NAME } from "../constants";
-import { LiatirAPI, LiatirInstanceInterface } from "../types";
+import { LiatirBrowserAPI, LiatirInstanceInterface } from "../types";
 import { Liatir } from "../sdk";
 
 export const LiatirInstance: LiatirInstanceInterface = {
@@ -7,9 +7,9 @@ export const LiatirInstance: LiatirInstanceInterface = {
         if(!window?.Liatir) return false;
         return true;
     },
-    get: (): LiatirAPI => {
+    get: (): LiatirBrowserAPI => {
         if(!LiatirInstance.ready()) throw("'window.Liatir' not found");
-        return window?.Liatir as LiatirAPI;
+        return window?.Liatir as LiatirBrowserAPI;
     }
 }
 

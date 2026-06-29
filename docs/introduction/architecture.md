@@ -23,16 +23,17 @@ Liatir is a Tauri 2 desktop application with a Rust backend and a SvelteKit fron
 | Charts | Plotly.js |
 | Build | Vite |
 
-The frontend communicates with Rust exclusively through `window.Liatir`. Direct `__TAURI__` calls are avoided — always use the `liatir()` helper from `$lib/api.ts`:
+The frontend communicates with Rust exclusively through `window.Liatir`, typed publicly as `LiatirBrowserAPI`. Direct `__TAURI__` calls are avoided — always use the `liatir()` helper from `$lib/api.ts`:
 
 ```typescript
 import { liatir } from '$lib/api'
+import type { LiatirBrowserAPI } from '@liatir/sdk'
 
-const api = liatir()  // window.Liatir ?? null
+const api = liatir() as LiatirBrowserAPI | null  // window.Liatir ?? null
 const size = await api.invoke('lia_file_size', { path }) as number
 ```
 
-`window.Liatir` is typed `any` at runtime — use `as` casts to narrow return types. Do **not** rely on generic type parameters on `api.invoke<T>()` — they silently no-op when `Liatir` is `any`.
+If the local helper returns `any`, use `as` casts to narrow return types. Do **not** rely on generic type parameters on `api.invoke<T>()` when the receiver is `any`.
 
 ## Rust backend
 

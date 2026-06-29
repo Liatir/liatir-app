@@ -235,9 +235,11 @@ export type LiatirAICapability =
   | 'cell-annotation'
   | 'embedding'
   | 'sequence-embedding'
+  | 'protein-structure-prediction'
+  | 'protein-binding'
   | 'reranking'
   | 'structured-extraction';
-export type LiatirAIModelModality = 'text' | 'dna' | 'rna' | 'protein' | 'single-cell' | 'image' | 'multimodal';
+export type LiatirAIModelModality = 'text' | 'dna' | 'rna' | 'protein' | 'ligand' | 'single-cell' | 'image' | 'multimodal';
 
 export interface LiatirAIModelRuntime {
   kind: LiatirAIModelRuntimeKind;
@@ -271,6 +273,7 @@ export interface LiatirAIModelInstallSpec {
   runtimeId?: string;
   runtimePackages?: LiatirAIModelRuntimePackage[];
   modelCacheSubdir?: string;
+  hostRequirements?: LiatirAIModelHostRequirements;
   checksum?: string;
 }
 
@@ -286,6 +289,20 @@ export interface LiatirAIModelRuntimePackage {
   version?: string;
   specifier?: string;
   importName?: string;
+}
+
+export interface LiatirAIModelPythonRequirement {
+  minVersion?: string;
+  maxVersionExclusive?: string;
+  label?: string;
+  reason?: string;
+}
+
+export interface LiatirAIModelHostRequirements {
+  os?: string[];
+  requiresCuda?: boolean;
+  python?: LiatirAIModelPythonRequirement;
+  reason?: string;
 }
 
 export interface LiatirAIModelMetadata {

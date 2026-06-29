@@ -20,8 +20,8 @@
 		type Arch,
 		type InstallProgress
 	} from '$lib/tools/binary-manager';
-	import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
-	import { versionGte } from '$lib/utils/versions';
+	import { DEP_REQUIREMENTS, type DepRequirement } from '$lib/data/dep-requirements';
+	import { versionGte, versionLt } from '$lib/utils/versions';
 
 	// ── tool metadata ─────────────────────────────────────────────────
 	interface ToolMeta {
@@ -30,9 +30,19 @@
 		brew?: string;
 		apt?: string;
 		conda?: string;
+		condaChannel?: string;
 	}
 
 	const TOOL_META: Record<string, ToolMeta> = {
+		python: {
+			label: 'Python',
+			description:
+				'Python runtime used by managed local AI Models. Liatir creates isolated environments per runtime, but it needs a compatible host Python. Python 3.10, 3.11, or 3.12 is currently required for the local AI stack.',
+			brew: 'python@3.12',
+			apt: 'python3.12 python3.12-venv',
+			conda: 'python=3.12',
+			condaChannel: 'conda-forge'
+		},
 		java: {
 			label: 'Java',
 			description:
@@ -146,6 +156,7 @@
 		bytesTotal: number | null;
 		error: string | null;
 		pmLog: string[];
+		pmOperation: 'install' | 'update' | null;
 		showLog: boolean;
 	}
 
@@ -160,6 +171,7 @@
 				bytesTotal: null,
 				error: null,
 				pmLog: [],
+				pmOperation: null,
 				showLog: false
 			}
 		);
@@ -237,22 +249,34 @@
 		if (!meta) return null;
 		if (brewAvailable && meta.brew) return { cmd: 'brew', args: ['install', meta.brew] };
 		if (condaAvailable && meta.conda)
-			return { cmd: 'conda', args: ['install', '-c', 'bioconda', '-y', meta.conda] };
+			return { cmd: 'conda', args: ['install', '-c', meta.condaChannel ?? 'bioconda', '-y', meta.conda] };
 		return null;
 	}
 
-	async function pmInstall(binary: string) {
-		const cmd = pmInstallCmd(binary);
+	function pmUpdateCmd(binary: string): { cmd: string; args: string[] } | null {
+		const meta = TOOL_META[binary];
+		if (!meta) return null;
+		if (brewAvailable && meta.brew) return { cmd: 'brew', args: ['upgrade', meta.brew] };
+		if (condaAvailable && meta.conda)
+			return { cmd: 'conda', args: ['install', '-c', meta.condaChannel ?? 'bioconda', '-y', meta.conda] };
+		return null;
+	}
+
+	async function pmRun(binary: string, operation: 'install' | 'update') {
+		const cmd = operation === 'update' ? pmUpdateCmd(binary) : pmInstallCmd(binary);
 		if (!cmd) return;
 
 		const label = TOOL_META[binary]?.label ?? binary;
-		setToolState(binary, { phase: 'pm-installing', error: null, pmLog: [], showLog: true });
+		setToolState(binary, { phase: 'pm-installing', error: null, pmLog: [], pmOperation: operation, showLog: true });
 		installProgress.start(binary, label);
 		installProgress.update(binary, { phase: 'pm-installing' });
 		try {
+			setToolState(binary, { pmLog: [`$ ${cmd.cmd} ${cmd.args.join(' ')}`] });
 			const result = await runNativeTool(cmd.cmd, cmd.args, (line) => {
 				setToolState(binary, { pmLog: [...toolState(binary).pmLog, line] });
-			});
+			}, (line) => {
+				setToolState(binary, { pmLog: [...toolState(binary).pmLog, line] });
+			}, { env: pmRunEnv(cmd.cmd) });
 			if (!result.ok) {
 				const msg = result.stderr || `Exited ${result.exitCode}`;
 				setToolState(binary, { phase: 'error', error: msg });
@@ -268,6 +292,14 @@
 		}
 	}
 
+	async function pmInstall(binary: string) {
+		await pmRun(binary, 'install');
+	}
+
+	async function pmUpdate(binary: string) {
+		await pmRun(binary, 'update');
+	}
+
 	function fmtBytes(b: number): string {
 		if (b >= 1_000_000) return `${(b / 1_000_000).toFixed(1)} MB`;
 		if (b >= 1_000) return `${(b / 1_000).toFixed(0)} KB`;
@@ -278,6 +310,27 @@
 		if (brewAvailable) return 'Via Homebrew';
 		if (condaAvailable) return 'Via conda';
 		return '';
+	}
+
+	function pmRunEnv(cmd: string): Record<string, string> | undefined {
+		if (cmd !== 'brew') return undefined;
+		return {
+			HOMEBREW_NO_AUTO_UPDATE: '1',
+			HOMEBREW_NO_ENV_HINTS: '1',
+		};
+	}
+
+	function requirementLabel(req: DepRequirement): string {
+		if (req.versionLabel) return req.versionLabel;
+		if (req.maxVersionExclusive) return `${req.minVersion} - <${req.maxVersionExclusive}`;
+		return `${req.minVersion}+`;
+	}
+
+	function dependencyVersionOk(version: string | null, req: DepRequirement | undefined): boolean {
+		if (!req || !version) return true;
+		if (!versionGte(version, req.minVersion)) return false;
+		if (req.maxVersionExclusive && !versionLt(version, req.maxVersionExclusive)) return false;
+		return true;
 	}
 
 	function viewerProgressLabel(id: string): string {
@@ -308,7 +361,8 @@
 			});
 			toast.success('Viewer runtime installed');
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed to install viewer runtime');
+			if(error instanceof Error && error?.message?.trim() && error.message.toLowerCase().includes("already installed")) toast.info(error instanceof Error ? error.message : 'Failed to install viewer runtime');
+			else toast.error(error instanceof Error ? error.message : 'Failed to install viewer runtime');
 		} finally {
 			const { [id]: _done, ...rest } = viewerRuntimeProgress;
 			viewerRuntimeProgress = rest;
@@ -334,7 +388,7 @@
 </script>
 
 <div class="flex flex-col h-full">
-	<PageHeader title="Dependencies" description="Bioinformatics tools available on this system">
+	<PageHeader title="Dependencies" description="System runtimes and bioinformatics tools available on this system">
 		{#snippet actions()}
 			<Button
 				variant="secondary"
@@ -351,7 +405,7 @@
 		{#if depsStore.loading}
 			<div class="flex flex-col items-center gap-3 py-16">
 				<Spinner size={28} />
-				<p class="text-sm text-zinc-500">Checking {Object.keys(TOOL_META).length} tools…</p>
+				<p class="text-sm text-zinc-500">Checking {Object.keys(TOOL_META).length} dependencies…</p>
 			</div>
 		{:else if !depsStore.checked}
 			<div class="flex flex-col items-center gap-4 py-16">
@@ -364,7 +418,7 @@
 				<Card class="p-4">
 					<p class="text-xs text-zinc-500 mb-1">Available</p>
 					<p class="text-2xl font-semibold text-emerald-500">{depsStore.availableCount}</p>
-					<p class="text-xs text-zinc-400 mt-1">of {depsStore.results.length} tools</p>
+					<p class="text-xs text-zinc-400 mt-1">of {depsStore.results.length} dependencies</p>
 				</Card>
 				<Card class="p-4">
 					<p class="text-xs text-zinc-500 mb-1">Not found</p>
@@ -378,6 +432,14 @@
 					<p class="text-2xl font-semibold text-zinc-900">{depsStore.results.length}</p>
 					<p class="text-xs text-zinc-400 mt-1">total</p>
 				</Card>
+			</div>
+
+			<div class="flex justify-center gap-2 items-center w-full cursor-default group">
+				<div class="w-full h-px bg-zinc-200 group-hover:bg-zinc-300"></div>
+				<div class="min-w-fit text-[11px] text-zinc-400 text-center group-hover:text-zinc-600">
+					Dependencies are installed globally, therefore available to all workspaces
+				</div>
+				<div class="w-full h-px bg-zinc-200 group-hover:bg-zinc-300"></div>
 			</div>
 
 			<!-- Tool list -->
@@ -395,15 +457,16 @@
 								state.phase === 'extracting' ||
 								state.phase === 'pm-installing'}
 							{@const req = DEP_REQUIREMENTS[dep.binary]}
-							{@const versionOk = !req || !dep.available || !dep.version || versionGte(dep.version, req.minVersion)}
-							{@const isOutdated = dep.available && req && dep.version && !versionGte(dep.version, req.minVersion)}
+							{@const versionOk = !dep.available || dependencyVersionOk(dep.version, req)}
+							{@const isUnsupportedVersion = dep.available && !!dep.version && !versionOk}
+							{@const canUpdateWithPm = !!pmUpdateCmd(dep.binary)}
 
 							<div>
 								<!-- Main row -->
 								<div class="flex items-center gap-3 px-4 py-3">
 									<!-- Status dot -->
 									<span
-										class="h-2 w-2 rounded-full shrink-0 {isOutdated
+										class="h-2 w-2 rounded-full shrink-0 {isUnsupportedVersion
 											? 'bg-amber-400'
 											: dep.available || managed
 											? 'bg-emerald-500'
@@ -428,13 +491,13 @@
 												<span class="font-mono text-zinc-400">{managed.path}</span>
 											</p>
 										{:else if dep.available}
-											{#if isOutdated}
+											{#if isUnsupportedVersion && req}
 												<p class="text-xs text-amber-600 truncate">
-													{dep.version} — requires {req!.minVersion}+
+													{dep.version} — requires {requirementLabel(req)}
 												</p>
 											{:else if dep.version}
 												<p class="text-xs font-mono text-zinc-500 truncate" data-selectable>
-													{dep.version}{req ? ` (min ${req.minVersion})` : ''}
+													{dep.version}{req ? ` (requires ${requirementLabel(req)})` : ''}
 												</p>
 											{:else if dep.path}
 												<p class="text-xs font-mono text-zinc-400 truncate" data-selectable>
@@ -455,7 +518,7 @@
 										{:else if state.phase === 'extracting'}
 											<p class="text-xs text-brand">Extracting…</p>
 										{:else if state.phase === 'pm-installing'}
-											<p class="text-xs text-brand">Installing via {pmLabel()}…</p>
+											<p class="text-xs text-brand">{state.pmOperation === 'update' ? 'Checking for update' : 'Installing'} via {pmLabel()}…</p>
 										{:else if state.phase === 'done'}
 											<p class="text-xs text-emerald-600">Installed successfully</p>
 										{:else if state.phase === 'error'}
@@ -470,10 +533,13 @@
 												{/if}
 											</p>
 										{/if}
+										{#if req?.reason && (isUnsupportedVersion || dep.binary === 'python')}
+											<p class="mt-1 text-[10px] text-zinc-400">{req.reason}</p>
+										{/if}
 									</div>
 
 									<!-- Action buttons -->
-									{#if (isOutdated || (!dep.available && !managed)) && pmChecked && !isBusy}
+									{#if (isUnsupportedVersion || (!dep.available && !managed)) && pmChecked && !isBusy}
 										<div class="flex items-center gap-2 shrink-0">
 											{#if req?.downloadOptions}
 												{#each req.downloadOptions as opt}
@@ -492,12 +558,12 @@
 														size="sm"
 														onclick={() => downloadInstall(dep.binary)}
 													>
-														Download & Install
+														{dep.available || managed ? 'Download & Update' : 'Download & Install'}
 													</Button>
 												{/if}
 												{#if hasPm}
 													<Button variant="secondary" size="sm" onclick={() => pmInstall(dep.binary)}>
-														{pmLabel()}
+														{dep.available ? `Install/Update ${pmLabel()}` : pmLabel()}
 													</Button>
 												{/if}
 											{/if}
@@ -517,7 +583,19 @@
 											</svg>
 										</div>
 									{:else if !isBusy && (dep.available || managed) && pmChecked}
-										<p class="text-xs text-zinc-400">Installed</p>
+										<div class="flex items-center gap-2 shrink-0">
+											<p class="text-xs text-zinc-400">Installed</p>
+											{#if managed && hasRelease}
+												<Button variant="secondary" size="sm" onclick={() => downloadInstall(dep.binary)}>
+													Update
+												</Button>
+											{/if}
+											{#if dep.available && canUpdateWithPm}
+												<Button variant="secondary" size="sm" onclick={() => pmUpdate(dep.binary)}>
+													Check update
+												</Button>
+											{/if}
+										</div>
 									{/if}
 
 									<!-- Toggle log -->

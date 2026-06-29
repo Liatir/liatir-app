@@ -344,8 +344,28 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 .unwrap_or_default();
             let cwd = payload["cwd"].as_str().map(String::from);
             let workspace_id = payload["workspaceId"].as_str().map(String::from);
+            let env: Option<std::collections::HashMap<String, String>> = payload["env"]
+                .as_object()
+                .map(|obj| {
+                    obj.iter()
+                        .filter_map(|(key, value)| value.as_str().map(|s| (key.clone(), s.to_string())))
+                        .collect()
+                });
+            let label = payload["label"].as_str().map(String::from);
+            let kind = payload["kind"].as_str().map(String::from);
+            let metadata = payload.get("metadata").filter(|value| !value.is_null()).cloned();
 
-            let result = crate::bridge::jobs::lia_jobs_spawn(app.clone(), cmd_str, args, cwd, workspace_id)
+            let result = crate::bridge::jobs::lia_jobs_spawn(
+                app.clone(),
+                cmd_str,
+                args,
+                cwd,
+                workspace_id,
+                env,
+                label,
+                kind,
+                metadata,
+            )
                 .await
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(result)

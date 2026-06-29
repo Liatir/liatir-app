@@ -13,12 +13,29 @@ export interface DepRequirement {
   binary: string;
   label: string;
   minVersion: string;
+  maxVersionExclusive?: string;
+  versionLabel?: string;
+  reason?: string;
   releasesUrl: string;
   downloadOptions?: DownloadOption[];
   installCmds: InstallCmd[];
 }
 
 export const DEP_REQUIREMENTS: Record<string, DepRequirement> = {
+  python: {
+    binary: 'python',
+    label: 'Python',
+    minVersion: '3.10',
+    maxVersionExclusive: '3.13',
+    versionLabel: '3.10, 3.11, or 3.12',
+    reason: 'Local AI Models use isolated Python runtimes, and the current protein structure stack requires Python >=3.10,<3.13.',
+    releasesUrl: 'https://www.python.org/downloads/',
+    installCmds: [
+      { platform: 'macOS', cmd: 'brew install python@3.12' },
+      { platform: 'Ubuntu', cmd: 'sudo apt install python3.12 python3.12-venv' },
+      { platform: 'conda', cmd: 'conda install -c conda-forge python=3.12' },
+    ],
+  },
   java: {
     binary: 'java',
     label: 'Java',

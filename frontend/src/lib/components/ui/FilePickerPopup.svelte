@@ -8,6 +8,7 @@
     value: string;
     placeholder?: string;
     label?: string;
+    info?: string;
     emptyHref?: string;
     emptyText?: string;
     disabled?: boolean;
@@ -19,6 +20,7 @@
     value,
     placeholder = 'Select a file…',
     label,
+    info,
     emptyHref = '/data',
     emptyText = 'No files in Data yet.',
     disabled = false,
@@ -46,6 +48,7 @@
   {value}
   {groups}
   {label}
+  {info}
   {placeholder}
   searchPlaceholder="Search files…"
   {emptyText}

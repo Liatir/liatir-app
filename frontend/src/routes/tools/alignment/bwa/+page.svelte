@@ -64,11 +64,7 @@
 
   onMount(() => {
     dataFiles.init();
-    analysisRuns.init().then(() => {
-      if (bwaRuns.length > 0 && selectedRunId === null) {
-        selectedRunId = bwaRuns[0].id;
-      }
-    });
+    analysisRuns.init();
   });
 
   // ── run ──────────────────────────────────────────────────────────

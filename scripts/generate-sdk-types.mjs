@@ -67,7 +67,7 @@ sdkBody += `
 // ── Global declaration ─────────────────────────────────────────────────────
 declare global {
   /** The Liatir native bridge API — available as window.Liatir inside Tauri. */
-  const Liatir: LiatirAPI;
+  const Liatir: LiatirBrowserAPI;
 }
 export {};
 `;
@@ -201,9 +201,9 @@ function buildTree(type, depth = 0, visited = new Set()) {
   return result;
 }
 
-const liatirType = findType('LiatirAPI');
+const liatirType = findType('LiatirBrowserAPI');
 if (!liatirType) {
-  console.error('ERROR: LiatirAPI type not found in src-ts/');
+  console.error('ERROR: LiatirBrowserAPI type not found in src-ts/');
   process.exit(1);
 }
 
@@ -227,7 +227,7 @@ function serialize(obj, indent = 0) {
 const completionsOutput =
 `// This file is generated automatically — do not edit.
 // Run:  npm run gen:sdk-types
-// Source: src-ts/liatir/_types.ts → LiatirAPI  (liatir@${sdkVersion})
+// Source: src-ts/liatir/_types.ts → LiatirBrowserAPI  (liatir@${sdkVersion})
 
 import type { ApiNode } from './liatir-editor';
 

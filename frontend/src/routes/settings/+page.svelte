@@ -20,7 +20,7 @@
     if (!api) return;
     apiVersion = api.apiVersion ?? null;
     try {
-      const info = await api.desktop.app.getInfo();
+      const info = await api.desktop.app.info();
       appVersion = info?.version ?? null;
     } catch {}
     await settingsStore.init();

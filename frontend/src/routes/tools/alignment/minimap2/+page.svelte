@@ -65,11 +65,7 @@
 
   onMount(() => {
     dataFiles.init();
-    analysisRuns.init().then(() => {
-      if (mm2Runs.length > 0 && selectedRunId === null) {
-        selectedRunId = mm2Runs[0].id;
-      }
-    });
+    analysisRuns.init();
   });
 
   // ── run ──────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { DragDropPayload } from "../../../types";
+import type { DragDropPayload } from "../dragdrop/_types";
 import type { Unlisten } from "./_helpers";
 
 export interface EventsInterface {

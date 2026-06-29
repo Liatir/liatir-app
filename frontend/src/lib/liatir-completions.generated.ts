@@ -1,6 +1,6 @@
 // This file is generated automatically — do not edit.
 // Run:  npm run gen:sdk-types
-// Source: src-ts/liatir/_types.ts → LiatirAPI  (liatir@0.2.1)
+// Source: src-ts/liatir/_types.ts → LiatirBrowserAPI  (liatir@0.2.1)
 
 import type { ApiNode } from './liatir-editor';
 
@@ -209,6 +209,7 @@ export const LIATIR_API: Record<string, ApiNode> = {
   tauri: { type: "property", detail: "WindowTauri", children: {
       core: { type: "property", detail: "TauriCore", info: "Main Tauri APIs (invoke, convertFileSrc).\nIn v2, invoke lives here instead of at the root.", children: {
           invoke: { type: "method", detail: "<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T>" },
+          convertFileSrc: { type: "method", detail: "(filePath: string, protocol?: string): string" },
       } },
       event: { type: "property", detail: "TauriEvent", info: "Event handling (listen, emit).", children: {
           listen: { type: "method", detail: "<T>(event: string, handler: (event: EventCallback<T>) => void): Promise<UnlistenFn>", info: "Listen to an event emitted by the backend or another window." },

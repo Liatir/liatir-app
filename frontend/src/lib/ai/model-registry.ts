@@ -4,11 +4,13 @@ export const MOCK_AI_MODEL_ID = 'liatir-mock-local';
 export const CELLTYPIST_MODEL_ID = 'celltypist-local-annotation';
 export const NUCLEOTIDE_TRANSFORMER_50M_ID = 'instadeep-nt-v2-50m-multi-species';
 export const ESM2_8M_ID = 'facebook-esm2-8m-protein';
+export const BOLTZ2_MODEL_ID = 'boltz2-local-structure-binding';
+export const CHAI1_MODEL_ID = 'chai1-local-structure';
 
 const INTERNAL_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
   {
     id: MOCK_AI_MODEL_ID,
-    name: 'Liatir Mock Local Model',
+    name: 'Mock Local Model',
     description: 'Deterministic local model fixture for validating AI Tool wiring without loading model weights.',
     version: '0.1.0',
     runtime: {
@@ -167,6 +169,103 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
       ],
     },
     tags: ['built-in', 'managed', 'protein', 'embedding'],
+  },
+  {
+    id: BOLTZ2_MODEL_ID,
+    name: 'Boltz-2 Local Structure & Binding',
+    description: 'Managed local Boltz-2 runtime for protein structure prediction and optional protein-ligand affinity scoring.',
+    version: '2.x',
+    runtime: {
+      kind: 'python-venv',
+      name: 'Boltz Python Runtime',
+      version: 'python-venv',
+    },
+    source: 'managed-runtime',
+    localOnly: true,
+    capabilities: ['protein-structure-prediction', 'protein-binding'],
+    modalities: ['protein', 'ligand'],
+    license: {
+      name: 'MIT License',
+      spdxId: 'MIT',
+      url: 'https://github.com/jwohlwend/boltz',
+      verifiedAt: '2026-06-29',
+    },
+    hardware: {
+      cpu: true,
+      gpu: true,
+      minRamGb: 16,
+      recommendedRamGb: 32,
+      minVramGb: 0,
+      recommendedVramGb: 16,
+      notes: 'Boltz officially supports CPU-only installs, but CPU inference is significantly slower than CUDA GPU inference.',
+    },
+    install: {
+      method: 'managed-runtime',
+      runtimeId: 'boltz2-structure',
+      modelCacheSubdir: 'model-cache/boltz',
+      runtimePackages: [
+        { package: 'boltz', specifier: 'boltz>=2,<3', importName: 'boltz' },
+        { package: 'pyyaml', specifier: 'pyyaml>=6,<7', importName: 'yaml' },
+      ],
+      hostRequirements: {
+        python: {
+          minVersion: '3.10',
+          maxVersionExclusive: '3.13',
+          label: 'Python 3.10, 3.11, or 3.12',
+          reason: 'The official Boltz Python package declares Python >=3.10,<3.13.',
+        },
+      },
+    },
+    tags: ['built-in', 'managed', 'protein', 'structure', 'binding', 'requires-python-3.10', 'commercial-use-ok'],
+  },
+  {
+    id: CHAI1_MODEL_ID,
+    name: 'Chai-1 Local Structure',
+    description: 'Managed Chai-1 runtime for molecular structure prediction on Linux CUDA hosts.',
+    version: '0.6.1',
+    runtime: {
+      kind: 'python-venv',
+      name: 'Chai-1 Python Runtime',
+      version: 'python-venv',
+    },
+    source: 'managed-runtime',
+    localOnly: true,
+    capabilities: ['protein-structure-prediction'],
+    modalities: ['protein', 'ligand'],
+    license: {
+      name: 'Apache License 2.0',
+      spdxId: 'Apache-2.0',
+      url: 'https://github.com/chaidiscovery/chai-lab',
+      verifiedAt: '2026-06-29',
+    },
+    hardware: {
+      cpu: false,
+      gpu: true,
+      minRamGb: 32,
+      recommendedRamGb: 64,
+      minVramGb: 24,
+      recommendedVramGb: 48,
+      notes: 'Official Chai-1 package requires Linux, Python 3.10+, CUDA, and bfloat16 GPU support. A100/H100/L40S class GPUs are recommended.',
+    },
+    install: {
+      method: 'managed-runtime',
+      runtimeId: 'chai1-structure',
+      modelCacheSubdir: 'model-cache/chai',
+      runtimePackages: [
+        { package: 'chai_lab', specifier: 'chai_lab==0.6.1', importName: 'chai_lab' },
+      ],
+      hostRequirements: {
+        os: ['linux'],
+        requiresCuda: true,
+        python: {
+          minVersion: '3.10',
+          label: 'Python 3.10+',
+          reason: 'The official chai_lab package requires Python 3.10 or newer.',
+        },
+        reason: 'The official Chai-1 local runtime is built for Linux CUDA hosts; macOS Apple Metal is not a CUDA backend for this package.',
+      },
+    },
+    tags: ['built-in', 'managed', 'protein', 'structure', 'requires-python-3.10', 'requires-linux-cuda', 'commercial-use-ok'],
   },
 ];
 

@@ -1,6 +1,6 @@
-import { PluginCallPayload, PluginCallResult } from "../../rs/plugins/_types";
-import { SidecarResult } from "../../rs/sidecar/_types";
-import { U64 } from "../../../utils";
+import type { PluginCallPayload, PluginCallResult } from "../../rs/plugins/_types";
+import type { SidecarResult } from "../../rs/sidecar/_types";
+import type { U64 } from "../../../utils/utils/_integerUtils";
 
 // ---------------------------------------------------------------------------
 // Step definitions

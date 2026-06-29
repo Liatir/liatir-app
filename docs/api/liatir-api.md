@@ -1,17 +1,18 @@
-# window.Liatir API
+# window.Liatir Browser API
 
-`window.Liatir` is the SDK entry point injected by Tauri before the SvelteKit app mounts. All frontend code interacts with the Rust backend exclusively through this object.
+`window.Liatir` is the browser/webview SDK entry point injected by Tauri before the SvelteKit app mounts. Its public TypeScript type is `LiatirBrowserAPI`. `LiatirAPI` remains only as a deprecated compatibility alias.
 
 ## Getting the handle
 
 ```typescript
 import { liatir } from '$lib/api'
+import type { LiatirBrowserAPI } from '@liatir/sdk'
 
-const api = liatir()  // returns window.Liatir ?? null
+const api = liatir() as LiatirBrowserAPI | null  // returns window.Liatir ?? null
 if (!api) throw new Error('Liatir API not available')
 ```
 
-`window.Liatir` is typed as `any` at runtime. Use `as` casts to narrow return types — generic type parameters on `api.invoke<T>()` silently no-op:
+If a helper returns `any`, use `as` casts to narrow return types. Generic type parameters on `api.invoke<T>()` silently no-op when the receiver is `any`:
 
 ```typescript
 // ✓ correct — explicit as cast

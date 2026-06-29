@@ -59,11 +59,7 @@
 
   onMount(() => {
     dataFiles.init();
-    analysisRuns.init().then(() => {
-      if (samtoolsRuns.length > 0 && selectedRunId === null) {
-        selectedRunId = samtoolsRuns[0].id;
-      }
-    });
+    analysisRuns.init();
   });
 
   // ── run ──────────────────────────────────────────────────────────

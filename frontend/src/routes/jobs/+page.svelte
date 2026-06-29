@@ -33,6 +33,15 @@
     }
   }
 
+  function jobTitle(job: JobEntry): string {
+    return job.label?.trim() || job.cmd;
+  }
+
+  function jobSubtitle(job: JobEntry): string {
+    const command = [job.cmd, ...job.args].join(' ');
+    return job.kind ? `${job.kind} · ${command}` : command;
+  }
+
   function toggleExpand(id: string) {
     expandedJobId = expandedJobId === id ? null : id;
   }
@@ -93,15 +102,15 @@
             >
               <Badge {variant} pulse={variant === 'running'}>{jobStatusLabel(job)}</Badge>
 
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-mono text-zinc-800 truncate">
-                  <span class="text-brand-muted">{job.cmd}</span>
-                  {#if job.args.length}
-                    <span class="text-zinc-500"> {job.args.join(' ')}</span>
-                  {/if}
-                </p>
-                <p class="text-xs text-zinc-600 mt-0.5">
-                  Started {fmtTime(job.startedAtMs)}
+	              <div class="flex-1 min-w-0">
+	                <p class="text-sm font-medium text-zinc-800 truncate">
+	                  {jobTitle(job)}
+	                </p>
+	                <p class="text-xs font-mono text-zinc-500 truncate mt-0.5">
+	                  {jobSubtitle(job)}
+	                </p>
+	                <p class="text-xs text-zinc-600 mt-0.5">
+	                  Started {fmtTime(job.startedAtMs)}
                 </p>
               </div>
 
@@ -141,16 +150,28 @@
                     <dt class="text-zinc-400">Job ID</dt>
                     <dd class="font-mono text-zinc-700 truncate" data-selectable>{job.id}</dd>
                   </div>
-                  <div>
-                    <dt class="text-zinc-400">Command</dt>
-                    <dd class="font-mono text-zinc-700" data-selectable>{job.cmd}</dd>
-                  </div>
-                  <div>
-                    <dt class="text-zinc-400">Duration</dt>
-                    <dd class="text-zinc-700">{fmtDuration(job.startedAtMs, job.endedAtMs ?? undefined)}</dd>
-                  </div>
-                  {#if job.args.length}
-                    <div class="col-span-3">
+	                  <div>
+	                    <dt class="text-zinc-400">Command</dt>
+	                    <dd class="font-mono text-zinc-700" data-selectable>{job.cmd}</dd>
+	                  </div>
+	                  <div>
+	                    <dt class="text-zinc-400">Duration</dt>
+	                    <dd class="text-zinc-700">{fmtDuration(job.startedAtMs, job.endedAtMs ?? undefined)}</dd>
+	                  </div>
+	                  {#if job.kind}
+	                    <div>
+	                      <dt class="text-zinc-400">Kind</dt>
+	                      <dd class="font-mono text-zinc-700" data-selectable>{job.kind}</dd>
+	                    </div>
+	                  {/if}
+	                  {#if job.label}
+	                    <div class="col-span-2">
+	                      <dt class="text-zinc-400">Label</dt>
+	                      <dd class="text-zinc-700" data-selectable>{job.label}</dd>
+	                    </div>
+	                  {/if}
+	                  {#if job.args.length}
+	                    <div class="col-span-3">
                       <dt class="text-zinc-400 mb-0.5">Arguments</dt>
                       <dd class="font-mono text-zinc-700 break-all" data-selectable>{job.args.join(' ')}</dd>
                     </div>

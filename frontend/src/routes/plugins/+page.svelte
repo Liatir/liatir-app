@@ -10,6 +10,8 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import type { LiatirModule } from '$lib/stores/modules.svelte';
 	import Dot from '$lib/components/ui/Dot.svelte';
+	import { openLinkInBrowser } from '$lib';
+	import { LIATIR_LIA_NPM_PACKAGE_URL } from '$lib/_constants';
 
   onMount(() => modulesStore.init());
 
@@ -99,9 +101,9 @@
           </svg>
         </div>
         <p class="text-sm font-medium text-zinc-700">No plugins yet</p>
-        <p class="text-xs text-zinc-400 max-w-xs">
-          Import a <span class="font-mono">.lia</span> plugin built with <span class="font-mono">liatir build</span>.
-        </p>
+        <div class="text-xs text-zinc-400 max-w-md flex items-center justify-center gap-1">
+          Import a <span class="font-mono">.lia</span> plugin built with <button class="min-w-fit flex items-center justify-center gap-1 font-mono hover:bg-brand-hover hover:text-brand-shadow hover:border-brand-shadow cursor-pointer bg-zinc-200/15 py-0.5 px-1.5 rounded-sm border border-zinc-300/50" onclick={()=>{openLinkInBrowser(LIATIR_LIA_NPM_PACKAGE_URL)}}><span>@liatir/lia</span> <Icon class="text-xs opacity-40" icon="lucide:external-link"/></button>
+        </div>
         <Button variant="secondary" size="sm" onclick={importPlugin} loading={importing}>
           Import .lia
         </Button>

@@ -1,4 +1,4 @@
-import { U64 } from "../../../utils";
+import type { U64 } from "../../../utils/utils/_integerUtils";
 
 export interface NetworkInterface {
     status: () => Promise<void>;

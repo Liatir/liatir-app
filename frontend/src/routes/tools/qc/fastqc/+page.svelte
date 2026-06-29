@@ -63,11 +63,7 @@
 
   onMount(() => {
     dataFiles.init();
-    analysisRuns.init().then(() => {
-      if (fastqcRuns.length > 0 && selectedRunId === null) {
-        selectedRunId = fastqcRuns[0].id;
-      }
-    });
+    analysisRuns.init();
   });
 
   // ── run ────────────────────────────────────────────────────────

@@ -9,6 +9,10 @@ export interface NativeRunResult {
   ok: boolean;
 }
 
+export interface NativeRunOptions {
+  env?: Record<string, string>;
+}
+
 /**
  * Spawn a system command via the Rust job registry and poll its buffered
  * stdout/stderr until the process reaches a terminal status.
@@ -22,6 +26,7 @@ export async function runNativeTool(
   args: string[],
   onStdout?: (line: string) => void,
   onStderr?: (line: string) => void,
+  options: NativeRunOptions = {},
 ): Promise<NativeRunResult> {
   const api = liatir();
   if (!api) throw new Error('Liatir API not available');
@@ -32,6 +37,7 @@ export async function runNativeTool(
     cmd: managedPath ?? cmd,
     args,
     workspaceId: workspaceStore.activeId,
+    env: options.env,
   }) as { jobId: string };
 
   const stdoutLines: string[] = [];
@@ -72,11 +78,12 @@ export async function runNativeTool(
       const exitCode = entry.status.type === 'done' || entry.status.type === 'failed'
         ? entry.status.exitCode ?? null
         : null;
+      const completed = entry.status.type === 'done' && (exitCode === null || exitCode === 0);
       return {
         stdout: stdoutLines.join('\n'),
         stderr: stderrLines.join('\n'),
         exitCode,
-        ok: entry.status.type === 'done' && exitCode === 0,
+        ok: completed,
       };
     }
 

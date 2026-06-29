@@ -60,11 +60,7 @@
 
   onMount(() => {
     dataFiles.init();
-    analysisRuns.init().then(() => {
-      if (seqkitRuns.length > 0 && selectedRunId === null) {
-        selectedRunId = seqkitRuns[0].id;
-      }
-    });
+    analysisRuns.init();
   });
 
   // ── run ──────────────────────────────────────────────────────────

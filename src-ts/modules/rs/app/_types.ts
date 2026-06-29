@@ -1,5 +1,5 @@
-import { LiaPlatform } from "../../../types";
-import { I32 } from "../../../utils";
+import type { LiaPlatform } from "../../../liatir/_types";
+import type { I32 } from "../../../utils/utils/_integerUtils";
 
 /**
  * Information about a window managed by Liatir.

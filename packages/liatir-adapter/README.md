@@ -4,6 +4,12 @@ The runtime SDK for **Liatir Plugins** (`.lia` bundles with `runtime: "node"`). 
 plugin the **same bridge** that `window.Liatir` exposes inside the app, over a local IPC
 channel to the running Liatir desktop process.
 
+## Type names
+
+- `LiatirNode` is the Node.js plugin bridge available as `lia` inside `.main(...)`.
+- `LiatirBrowserAPI` is only for the browser/webview bridge exposed as `window.Liatir`.
+- `LiatirAPI` is a deprecated compatibility alias for `LiatirBrowserAPI`; avoid it in new code.
+
 ```ts
 import { defineModule, field } from "@liatir/sdk";
 

@@ -59,11 +59,7 @@
 
   onMount(() => {
     dataFiles.init();
-    analysisRuns.init().then(() => {
-      if (bcftoolsRuns.length > 0 && selectedRunId === null) {
-        selectedRunId = bcftoolsRuns[0].id;
-      }
-    });
+    analysisRuns.init();
   });
 
   // ── run ──────────────────────────────────────────────────────────

@@ -1,3 +1,5 @@
+import { liatir } from "./api";
+
 export function fmtDuration(startMs: number, endMs?: number): string {
   const ms = (endMs ?? Date.now()) - startMs;
   if (ms < 1_000) return `${ms}ms`;
@@ -36,5 +38,28 @@ export async function md5(string: string) {
     return hashedString.normalize().trim();
   } catch (error) {
     return hashedString.trim();
+  }
+}
+
+
+export const openLinkInBrowser = async (link: string) => {
+  try {
+    await liatir()?.openBrowser(link);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export const getLastSegmentFromPath = (path:string): string => {
+  try {
+    const queryRomved: string = path.includes("?")?(path.trim().split("?")[0]):path.trim();
+    const segments: string[] = queryRomved.split("/");
+
+    const lastSegment: string = segments[((segments.length)-1)];
+
+    return lastSegment;
+  } catch (error) {
+    console.error(error);
+    return "";
   }
 }

@@ -5,31 +5,52 @@
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import Badge, { type BadgeVariants } from '$lib/components/ui/Badge.svelte';
   import Button from '$lib/components/ui/Button.svelte';
+  import InfoPopup from '$lib/components/ui/InfoPopup.svelte';
+  import { modelInstallBlock, type AIModelInstallBlock } from '$lib/ai/model-compatibility';
+  import { aiModelInfo } from '$lib/ai/model-help';
   import { getAIHardwareInfo, type AIHardwareInfo } from '$lib/ai/runtime';
-  import { aiModelsStore } from '$lib/stores/aiModels.svelte';
+  import { aiModelsStore, type AIModelInstallProgress } from '$lib/stores/aiModels.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import { fmtBytes } from '$lib/utils';
   import type { LiatirAIModelRecord } from '@liatir/core';
   import Spinner from '$lib/components/ui/Spinner.svelte';
+  import { workspaceStore } from '$lib/stores/workspace.svelte';
 
-  let loading = $state(true);
-  let installing = $state<Record<string, {
-    phase?: 'preparing-runtime' | 'installing-packages' | 'downloading-model' | 'downloading-files';
-    fileIndex: number;
-    fileCount: number;
-    bytesDownloaded: number;
-    bytesTotal: number | null;
-    message?: string;
-  }>>({});
+  type InstallState = AIModelInstallProgress & {
+    showLog: boolean;
+    logLines: string[];
+  };
+  type InstallLogState = {
+    showLog: boolean;
+    logLines: string[];
+  };
+
+  let loading = $state(!aiModelsStore.initialized);
+  let installing = $state<Record<string, InstallState>>({});
+  let installLogs = $state<Record<string, InstallLogState>>({});
   let hardware = $state<AIHardwareInfo | null>(null);
   let searchQuery = $state('');
 
-  onMount(async () => {
-    await aiModelsStore.init();
-    await aiModelsStore.refreshManagedRuntimeStatuses();
-    hardware = await getAIHardwareInfo().catch(() => null);
-    loading = false;
+  onMount(() => {
+    let cancelled = false;
+    const firstLoad = !aiModelsStore.initialized;
+    loading = firstLoad;
+
+    (async () => {
+      await aiModelsStore.init();
+      if (!cancelled) loading = false;
+
+      const [info] = await Promise.all([
+        getAIHardwareInfo().catch(() => null),
+        aiModelsStore.refreshManagedRuntimeStatuses(),
+      ]);
+      if (!cancelled) hardware = info;
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   });
 
   const models = $derived(aiModelsStore.models);
@@ -82,6 +103,16 @@
     ].filter(Boolean).join(' ').toLowerCase();
   }
 
+  function installBlock(model: LiatirAIModelRecord): AIModelInstallBlock | null {
+    return modelInstallBlock(model, hardware);
+  }
+
+  function errorMessage(error: unknown, fallback: string): string {
+    if (error instanceof Error && error.message) return error.message;
+    if (typeof error === 'string' && error.trim()) return error;
+    return fallback;
+  }
+
   function installLabel(model: LiatirAIModelRecord): string {
     const progress = installing[model.id];
     if (!progress) return 'Install';
@@ -99,7 +130,70 @@
     return Math.max(0, Math.min(100, (progress.bytesDownloaded / progress.bytesTotal) * 100));
   }
 
+  function updateInstallProgress(modelId: string, progress: AIModelInstallProgress) {
+    const current = installing[modelId];
+    installing = {
+      ...installing,
+      [modelId]: {
+        ...current,
+        ...progress,
+        showLog: current?.showLog ?? true,
+        logLines: [...(current?.logLines ?? []), ...(progress.logLines ?? [])],
+      },
+    };
+  }
+
+  function toggleInstallLog(modelId: string) {
+    const current = installing[modelId];
+    if (current) {
+      installing = {
+        ...installing,
+        [modelId]: {
+          ...current,
+          showLog: !current.showLog,
+        },
+      };
+      return;
+    }
+    const saved = installLogs[modelId];
+    if (!saved) return;
+    installLogs = {
+      ...installLogs,
+      [modelId]: {
+        ...saved,
+        showLog: !saved.showLog,
+      },
+    };
+  }
+
+  function installLogState(modelId: string): InstallLogState | null {
+    const current = installing[modelId];
+    if (current?.logLines.length) {
+      return {
+        showLog: current.showLog,
+        logLines: current.logLines,
+      };
+    }
+    const saved = installLogs[modelId];
+    if (saved?.logLines.length) return saved;
+    return null;
+  }
+
+  function logLineClass(line: string): string {
+    const lower = line.toLowerCase();
+    if (lower.includes('error') || lower.includes('failed')) return 'text-red-400';
+    if (lower.includes('warning')) return 'text-red-400';
+    return 'text-zinc-300';
+  }
+
   async function installModel(model: LiatirAIModelRecord) {
+    const blocked = installBlock(model);
+    if (blocked) {
+      toast.error(blocked.reason);
+      return;
+    }
+    const { [model.id]: _oldLog, ...restLogs } = installLogs;
+    installLogs = restLogs;
     installing = {
       ...installing,
       [model.id]: {
@@ -109,16 +203,31 @@
         bytesDownloaded: 0,
         bytesTotal: null,
         message: model.install?.method === 'managed-runtime' ? 'Preparing runtime' : undefined,
+        showLog: true,
+        logLines: [`$ install AI Model ${model.id}`],
       },
     };
     try {
       await aiModelsStore.installManagedModel(model.id, (progress) => {
-        installing = { ...installing, [model.id]: progress };
+        updateInstallProgress(model.id, progress);
       });
+      updateInstallProgress(model.id, { fileIndex: 0, fileCount: 1, bytesDownloaded: 0, bytesTotal: null, logLines: ['AI Model installed'] });
       toast.success('AI Model installed');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to install AI Model');
+      const message = errorMessage(error, 'Failed to install AI Model');
+      updateInstallProgress(model.id, { fileIndex: 0, fileCount: 1, bytesDownloaded: 0, bytesTotal: null, logLines: [`ERROR: ${message}`] });
+      toast.error(message);
     } finally {
+      const finalLogLines = installing[model.id]?.logLines ?? [];
+      if (finalLogLines.length > 0) {
+        installLogs = {
+          ...installLogs,
+          [model.id]: {
+            showLog: true,
+            logLines: finalLogLines,
+          },
+        };
+      }
       const { [model.id]: _done, ...rest } = installing;
       installing = rest;
     }
@@ -136,7 +245,7 @@
       await aiModelsStore.removeManagedModel(model.id);
       toast.info('AI Model removed');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to remove AI Model');
+      toast.error(errorMessage(error, 'Failed to remove AI Model'));
     }
   }
 </script>
@@ -164,7 +273,7 @@
       <div class="border border-border bg-white rounded-lg px-4 py-3 md:col-span-2">
         <p class="text-[10px] font-semibold uppercase text-zinc-400">Host runtime</p>
         <p class="mt-1 text-sm font-semibold text-zinc-800">
-          {hardware ? `${hardware.cpuCores} CPU cores${hardware.totalMemoryBytes ? ` · ${fmtBytes(hardware.totalMemoryBytes)} RAM` : ''}${hardware.appleMetal ? ' · Apple Metal' : ''}${hardware.cudaAvailable ? ' · CUDA' : ''}` : 'Hardware detection unavailable'}
+          {hardware ? `${hardware.cpuCores} CPU cores${hardware.totalMemoryBytes ? ` · ${fmtBytes(hardware.totalMemoryBytes)} RAM` : ''}${hardware.appleMetal ? ' · Apple Metal' : ''}${hardware.cudaAvailable ? ' · CUDA' : ''}${hardware.pythonVersion ? ` · ${hardware.pythonVersion}` : ''}` : 'Hardware detection unavailable'}
         </p>
       </div>
     </div>
@@ -172,7 +281,7 @@
     <div class="flex justify-center gap-2 items-center w-full cursor-default group">
       <div class="w-full h-px bg-zinc-200 group-hover:bg-zinc-300"></div>
       <div class="min-w-fit text-[11px] text-zinc-400 text-center group-hover:text-zinc-600">
-        AI models are installed globally for all workspaces
+        AI models are installed globally, therefore available to all workspaces
       </div>
       <div class="w-full h-px bg-zinc-200 group-hover:bg-zinc-300"></div>
     </div>
@@ -218,99 +327,156 @@
         <div class="px-4 py-8 text-center text-sm text-zinc-400">No AI Models match your search.</div>
       {:else}
         {#each filteredModels as model (model.id)}
-          <div class="grid grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(130px,0.8fr)_210px] gap-3 px-4 py-3 border-b border-border/70 last:border-b-0 items-center max-xl:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_210px]">
-            <div class="min-w-0">
-              <div class="flex items-center gap-2 min-w-0">
-                <p class="text-sm font-semibold text-zinc-800 truncate">{model.name}</p>
-                <Badge variant={installing[model.id]?'running':statusVariant(model.status)} hideDot={!installing[model.id]} pulse={installing[model.id]?true:false} size="xs">{installing[model.id] ? 'installing' : model.status}</Badge>
-                {#if model.localOnly}
-                  <Badge variant="neutral" size="xs" hideDot>local</Badge>
+          {@const blocked = installBlock(model)}
+          {@const installLog = installLogState(model.id)}
+          <div class="border-b border-border/70 last:border-b-0">
+            <div class="grid grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(130px,0.8fr)_210px] gap-3 px-4 py-3 items-center max-xl:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_210px]">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 min-w-0">
+                  <p class="text-sm font-semibold text-zinc-800 truncate">{model.name}</p>
+                  <span class="shrink-0">
+                    <InfoPopup text={aiModelInfo(model)} />
+                  </span>
+                  <Badge variant={installing[model.id]?'running':statusVariant(model.status)} hideDot={!installing[model.id]} pulse={installing[model.id]?true:false} size="xs">{installing[model.id] ? 'installing' : model.status}</Badge>
+                  {#if model.localOnly}
+                    <Badge variant="neutral" size="xs" hideDot>local</Badge>
+                  {/if}
+                </div>
+                <p class="mt-1 text-xs text-zinc-500 line-clamp-2">{model.description}</p>
+                {#if model.error}
+                  <p class="mt-1 text-[11px] text-red-500 line-clamp-2">{model.error}</p>
+                {/if}
+                <div class="mt-2 flex flex-wrap gap-1.5">
+                  {#each model.capabilities as capability}
+                    <span class="rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[10px] text-zinc-500">{capability}</span>
+                  {/each}
+                </div>
+                {#if blocked}
+                  <div class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] leading-snug text-amber-800 xl:hidden">
+                    <p class="font-semibold">{blocked.summary}</p>
+                    <p class="mt-0.5">{blocked.reason}</p>
+                  </div>
                 {/if}
               </div>
-              <p class="mt-1 text-xs text-zinc-500 line-clamp-2">{model.description}</p>
-              <div class="mt-2 flex flex-wrap gap-1.5">
-                {#each model.capabilities as capability}
-                  <span class="rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[10px] text-zinc-500">{capability}</span>
-                {/each}
+
+              <div class="text-xs text-zinc-600 min-w-0 max-xl:hidden">
+                <p class="truncate">{runtimeLabel(model)}</p>
+                <p class="text-[10px] text-zinc-400 truncate">{model.localPath ?? model.runtime.kind}</p>
+              </div>
+
+              <div class="text-xs text-zinc-600 min-w-0 max-xl:hidden">
+                <p class="truncate">{hardwareLabel(model)}</p>
+                {#if model.hardware?.notes}
+                  <p class="text-[10px] text-zinc-400 truncate">{model.hardware.notes}</p>
+                {/if}
+                {#if blocked}
+                  <div class="mt-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] leading-snug text-amber-800">
+                    <p class="font-semibold">{blocked.summary}</p>
+                    <p class="mt-0.5">{blocked.reason}</p>
+                  </div>
+                {/if}
+              </div>
+
+              <div class="text-xs text-zinc-600 min-w-0">
+                <p class="truncate">{model.license?.name ?? 'Unspecified'}</p>
+                {#if model.license?.verifiedAt}
+                  <p class="text-[10px] text-zinc-400">Verified {model.license.verifiedAt}</p>
+                {:else}
+                  <p class="text-[10px] text-zinc-400">Verification required</p>
+                {/if}
+              </div>
+
+              <div class="flex items-center justify-end gap-2 min-w-0">
+                {#if (model.source === 'managed-download' || model.source === 'managed-runtime') && model.status === 'installed' && !installing[model.id]}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onclick={() => removeModel(model)}
+                  >
+                    Remove
+                  </Button>
+                {:else}
+                  <span></span>
+                {/if}
+
+                {#if !installing[model.id] && installLog}
+                  <button
+                    type="button"
+                    onclick={() => toggleInstallLog(model.id)}
+                    class="font-mono text-[10px] text-zinc-400 transition-colors hover:text-zinc-600"
+                  >
+                    {installLog.showLog ? 'hide' : 'log'}
+                  </button>
+                {/if}
+
+                {#if installing[model.id]}
+                  {@const percent = installPercent(model)}
+                  <div class="ml-auto min-w-0 w-full max-w-40">
+                    <div class="flex items-center justify-between gap-2 text-[10px] text-zinc-500">
+                      <span class="truncate">{installLabel(model)}</span>
+                      {#if percent !== null}
+                        <span class="shrink-0 font-mono">{Math.round(percent)}%</span>
+                      {/if}
+                      {#if installing[model.id].logLines.length > 0}
+                        <button
+                          type="button"
+                          onclick={() => toggleInstallLog(model.id)}
+                          class="shrink-0 font-mono text-[10px] text-zinc-400 transition-colors hover:text-zinc-600"
+                        >
+                          {installing[model.id].showLog ? 'hide' : 'log'}
+                        </button>
+                      {/if}
+                    </div>
+                    <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-zinc-100">
+                      {#if percent !== null}
+                        <div class="h-full rounded-full bg-brand transition-[width]" style={`width: ${percent}%`}></div>
+                      {:else}
+                        <div class="h-full w-1/2 rounded-full bg-brand/70 animate-pulse"></div>
+                      {/if}
+                    </div>
+                  </div>
+                {:else if model.status === 'installed'}
+                  <Button size="sm" variant="secondary" onclick={() => goto(`/ai/${encodeURIComponent(model.id)}`)}>
+                    Run
+                  </Button>
+                {:else if model.install?.method === 'managed-download' || model.install?.method === 'managed-runtime'}
+                  {#if blocked}
+                    <Button size="sm" variant="secondary" disabled={true} class="cursor-help" title={blocked.reason}>
+                      Incompatible
+                    </Button>
+                  {:else}
+                    <Button size="sm" variant="primary" onclick={() => installModel(model)}>
+                      Install
+                    </Button>
+                  {/if}
+                {/if}
               </div>
             </div>
 
-            <div class="text-xs text-zinc-600 min-w-0 max-xl:hidden">
-              <p class="truncate">{runtimeLabel(model)}</p>
-              <p class="text-[10px] text-zinc-400 truncate">{model.localPath ?? model.runtime.kind}</p>
-            </div>
-
-            <div class="text-xs text-zinc-600 min-w-0 max-xl:hidden">
-              <p class="truncate">{hardwareLabel(model)}</p>
-              {#if model.hardware?.notes}
-                <p class="text-[10px] text-zinc-400 truncate">{model.hardware.notes}</p>
-              {/if}
-            </div>
-
-            <div class="text-xs text-zinc-600 min-w-0">
-              <p class="truncate">{model.license?.name ?? 'Unspecified'}</p>
-              {#if model.license?.verifiedAt}
-                <p class="text-[10px] text-zinc-400">Verified {model.license.verifiedAt}</p>
-              {:else}
-                <p class="text-[10px] text-zinc-400">Verification required</p>
-              {/if}
-            </div>
-
-            <div class="flex items-center justify-end gap-2 min-w-0">
-              {#if (model.source === 'managed-download' || model.source === 'managed-runtime') && model.status === 'installed' && !installing[model.id]}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onclick={() => removeModel(model)}
-                >
-                  Remove
-                </Button>
-              {:else}
-                <span></span>
-              {/if}
-
-              {#if installing[model.id]}
-                {@const percent = installPercent(model)}
-                <div class="ml-auto min-w-0 w-full max-w-40">
-                  <div class="flex items-center justify-between gap-2 text-[10px] text-zinc-500">
-                    <span class="truncate">{installLabel(model)}</span>
-                    {#if percent !== null}
-                      <span class="shrink-0 font-mono">{Math.round(percent)}%</span>
-                    {/if}
-                  </div>
-                  <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-zinc-100">
-                    {#if percent !== null}
-                      <div class="h-full rounded-full bg-brand transition-[width]" style={`width: ${percent}%`}></div>
-                    {:else}
-                      <div class="h-full w-1/2 rounded-full bg-brand/70 animate-pulse"></div>
-                    {/if}
-                  </div>
-                </div>
-              {:else if model.status === 'installed'}
-                <Button size="sm" variant="secondary" onclick={() => goto(`/ai/${encodeURIComponent(model.id)}`)}>
-                  Run
-                </Button>
-              {:else if model.install?.method === 'managed-download' || model.install?.method === 'managed-runtime'}
-                <Button size="sm" variant="primary" onclick={() => installModel(model)}>
-                  Install
-                </Button>
-              {/if}
-            </div>
+            {#if installLog?.showLog && installLog.logLines.length > 0}
+              <div class="mx-4 mb-3 rounded-lg border border-border bg-zinc-950 px-3 py-2 max-h-40 overflow-y-auto">
+                {#each installLog.logLines as line}
+                  <p class="text-[11px] font-mono leading-relaxed {logLineClass(line)}">{line}</p>
+                {/each}
+              </div>
+            {/if}
           </div>
         {/each}
       {/if}
     </div>
 
-    <div class="border border-border bg-white rounded-lg px-4 py-3 flex items-start gap-3">
-      <div class="h-8 w-8 rounded-lg bg-brand/10 text-brand flex items-center justify-center shrink-0">
-        <Icon icon="mingcute:ai-line" width="17" height="17" />
+    {#if workspaceStore.isSandboxMode}
+      <div class="border border-border bg-white rounded-lg px-4 py-3 flex items-start gap-3">
+        <div class="h-8 w-8 rounded-lg bg-brand/10 text-brand flex items-center justify-center shrink-0">
+          <Icon icon="mingcute:ai-line" width="17" height="17" />
+        </div>
+        <div class="min-w-0">
+          <p class="text-sm font-semibold text-zinc-800">AI Tools</p>
+          <p class="mt-1 text-xs text-zinc-500">
+            The sandbox workplace includes a mock AI Tool that emits a response and provenance values.
+          </p>
+        </div>
       </div>
-      <div class="min-w-0">
-        <p class="text-sm font-semibold text-zinc-800">AI Tools</p>
-        <p class="mt-1 text-xs text-zinc-500">
-          The pipeline catalog includes a mock AI Tool that uses the selected AI Model and emits response and provenance values.
-        </p>
-      </div>
-    </div>
+    {/if}
   </div>
 </div>

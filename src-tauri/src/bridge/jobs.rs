@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::{
     collections::HashMap,
     sync::{atomic::{AtomicU64, Ordering}, Arc, Mutex},
@@ -40,6 +41,9 @@ pub struct JobEntry {
     pub id: String,
     pub cmd: String,
     pub args: Vec<String>,
+    pub label: Option<String>,
+    pub kind: Option<String>,
+    pub metadata: Option<Value>,
     pub status: JobStatus,
     pub started_at_ms: u64,
     pub ended_at_ms: Option<u64>,
@@ -83,8 +87,12 @@ pub async fn lia_jobs_spawn(
     args: Vec<String>,
     cwd: Option<String>,
     workspace_id: Option<String>,
+    env: Option<HashMap<String, String>>,
+    label: Option<String>,
+    kind: Option<String>,
+    metadata: Option<Value>,
 ) -> Result<serde_json::Value, String> {
-    spawn_job(app, cmd, args, cwd, workspace_id, None).await
+    spawn_job(app, cmd, args, cwd, workspace_id, env, label, kind, metadata, None).await
 }
 
 pub(crate) async fn lia_jobs_spawn_with_cleanup(
@@ -93,9 +101,13 @@ pub(crate) async fn lia_jobs_spawn_with_cleanup(
     args: Vec<String>,
     cwd: Option<String>,
     workspace_id: Option<String>,
+    env: Option<HashMap<String, String>>,
+    label: Option<String>,
+    kind: Option<String>,
+    metadata: Option<Value>,
     cleanup_dir: Option<String>,
 ) -> Result<serde_json::Value, String> {
-    spawn_job(app, cmd, args, cwd, workspace_id, cleanup_dir).await
+    spawn_job(app, cmd, args, cwd, workspace_id, env, label, kind, metadata, cleanup_dir).await
 }
 
 async fn spawn_job(
@@ -104,6 +116,10 @@ async fn spawn_job(
     args: Vec<String>,
     cwd: Option<String>,
     workspace_id: Option<String>,
+    env: Option<HashMap<String, String>>,
+    label: Option<String>,
+    kind: Option<String>,
+    metadata: Option<Value>,
     cleanup_dir: Option<String>,
 ) -> Result<serde_json::Value, String> {
     if cmd.is_empty() || cmd.contains("..") {
@@ -122,6 +138,10 @@ async fn spawn_job(
         command = command.current_dir(dir);
     }
 
+    if let Some(env) = env {
+        command = command.envs(env);
+    }
+
     let (mut rx, child) = command
         .spawn()
         .map_err(|e| format!("failed to spawn '{cmd}': {e}"))?;
@@ -130,6 +150,9 @@ async fn spawn_job(
         id: job_id.clone(),
         cmd: cmd.clone(),
         args: args.clone(),
+        label,
+        kind,
+        metadata,
         status: JobStatus::Running,
         started_at_ms,
         ended_at_ms: None,
@@ -175,12 +198,16 @@ async fn spawn_job(
                 }
                 CommandEvent::Terminated(payload) => {
                     let exit_code = payload.code;
-                    let ok = exit_code.map(|c| c == 0).unwrap_or(false);
-                    let status = if ok {
+                    // Some Tauri shell backends report a normal completion with
+                    // a missing exit code. Treat that as success unless the job
+                    // was explicitly marked killed.
+                    let ok = exit_code.map(|c| c == 0).unwrap_or(true);
+                    let mut status = if ok {
                         JobStatus::Done { exit_code }
                     } else {
                         JobStatus::Failed { exit_code }
                     };
+                    let mut event_ok = ok;
 
                     let ended_at_ms = now_ms();
 
@@ -188,6 +215,10 @@ async fn spawn_job(
                         let registry = handle.state::<JobRegistry>();
                         let mut jobs = registry.0.lock().unwrap();
                         if let Some(state) = jobs.get_mut(&jid) {
+                            if state.entry.status == JobStatus::Killed {
+                                status = JobStatus::Killed;
+                                event_ok = false;
+                            }
                             state.entry.status = status.clone();
                             state.entry.ended_at_ms = Some(ended_at_ms);
                             state.child = None;
@@ -196,7 +227,7 @@ async fn spawn_job(
 
                     let _ = handle.emit(
                         &format!("jobs:exit:{jid}"),
-                        serde_json::json!({ "jobId": jid, "exitCode": exit_code, "ok": ok }),
+                        serde_json::json!({ "jobId": jid, "exitCode": exit_code, "ok": event_ok }),
                     );
 
                     if let Some(dir) = cleanup_dir.as_deref() {

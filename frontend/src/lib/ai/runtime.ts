@@ -1,10 +1,19 @@
 import { liatir } from '$lib/api';
-import type { JsonValue, LiatirAIModelMetadata, LiatirAIModelRecord } from '@liatir/core';
+import { workspaceStore } from '$lib/stores/workspace.svelte';
+import type {
+  JsonValue,
+  LiatirAIModelMetadata,
+  LiatirAIModelPythonRequirement,
+  LiatirAIModelRecord,
+} from '@liatir/core';
 
 export interface AIRuntimePackageCheck {
   package: string;
   importName?: string;
+  specifier?: string;
 }
+
+export type AIRuntimePythonRequirement = LiatirAIModelPythonRequirement;
 
 export interface AIHardwareInfo {
   os: string;
@@ -13,6 +22,9 @@ export interface AIHardwareInfo {
   totalMemoryBytes: number | null;
   appleMetal: boolean;
   cudaAvailable: boolean | null;
+  pythonPath?: string | null;
+  pythonVersion?: string | null;
+  uvPath?: string | null;
 }
 
 export interface AIRuntimeStatus {
@@ -42,6 +54,15 @@ export interface AIPythonRunResult {
   durationMs: number;
 }
 
+export interface AIPythonRunOptions {
+  args?: string[];
+  timeoutSeconds?: number;
+  trackJob?: boolean;
+  jobLabel?: string;
+  metadata?: Record<string, JsonValue>;
+  onJobId?: (jobId: string) => void;
+}
+
 export function runtimeIdForModel(model: LiatirAIModelMetadata): string | null {
   return model.install?.runtimeId ?? null;
 }
@@ -58,6 +79,7 @@ export function packageChecksForModel(model: LiatirAIModelMetadata): AIRuntimePa
   return (model.install?.runtimePackages ?? []).map((pkg) => ({
     package: pkg.package,
     importName: pkg.importName,
+    specifier: pkg.specifier,
   }));
 }
 
@@ -90,6 +112,7 @@ export async function prepareAIRuntime(model: LiatirAIModelMetadata): Promise<AI
   return await api.invoke('lia_ai_runtime_prepare', {
     runtimeId,
     requirements: requirementsForModel(model),
+    pythonRequirement: model.install?.hostRequirements?.python ?? null,
   }) as AIRuntimePrepareResult;
 }
 
@@ -97,17 +120,100 @@ export async function runAIPython(
   model: LiatirAIModelRecord,
   script: string,
   inputJson: Record<string, JsonValue>,
-  options: { args?: string[]; timeoutSeconds?: number } = {},
+  options: AIPythonRunOptions = {},
 ): Promise<AIPythonRunResult> {
   const api = liatir();
   const runtimeId = runtimeIdForModel(model);
   if (!api) throw new Error('Liatir API not available');
   if (!runtimeId) throw new Error(`AI Model has no managed runtime: ${model.name}`);
-  return await api.invoke('lia_ai_python_run', {
+
+  if (options.trackJob === false) {
+    return await api.invoke('lia_ai_python_run', {
+      runtimeId,
+      script,
+      args: options.args ?? [],
+      inputJson,
+      timeoutSeconds: options.timeoutSeconds ?? null,
+    }) as AIPythonRunResult;
+  }
+
+  const startedAt = Date.now();
+  const { jobId } = await api.invoke('lia_ai_python_spawn', {
     runtimeId,
     script,
     args: options.args ?? [],
     inputJson,
-    timeoutSeconds: options.timeoutSeconds ?? null,
-  }) as AIPythonRunResult;
+    workspaceId: workspaceStore.activeId,
+    label: options.jobLabel ?? `AI Model: ${model.name}`,
+    metadata: {
+      modelId: model.id,
+      modelName: model.name,
+      ...(options.metadata ?? {}),
+    },
+  }) as { jobId: string };
+  options.onJobId?.(jobId);
+
+  const stdoutLines: string[] = [];
+  const stderrLines: string[] = [];
+  let stdoutSeen = 0;
+  let stderrSeen = 0;
+  const timeoutMs = (options.timeoutSeconds ?? 3600) * 1000;
+
+  while (true) {
+    const since = Math.min(stdoutSeen, stderrSeen);
+    const [out, entry] = await Promise.all([
+      api.invoke('lia_jobs_get_output', { jobId, since }) as Promise<{
+        stdout: string[];
+        stderr: string[];
+        stdoutTotal: number;
+        stderrTotal: number;
+      }>,
+      api.invoke('lia_jobs_status', { jobId }) as Promise<{
+        status: { type: 'running' | 'done' | 'failed' | 'killed'; exitCode?: number | null };
+      }>,
+    ]);
+
+    const stdoutStart = Math.max(0, stdoutSeen - since);
+    const stderrStart = Math.max(0, stderrSeen - since);
+    stdoutLines.push(...out.stdout.slice(stdoutStart));
+    stderrLines.push(...out.stderr.slice(stderrStart));
+    stdoutSeen = out.stdoutTotal;
+    stderrSeen = out.stderrTotal;
+
+    if (entry.status.type !== 'running') {
+      const exitCode = entry.status.type === 'done' || entry.status.type === 'failed'
+        ? entry.status.exitCode ?? null
+        : null;
+      const completed = entry.status.type === 'done' && (exitCode === null || exitCode === 0);
+      return {
+        ok: completed,
+        exitCode,
+        stdout: stdoutLines.join('\n'),
+        stderr: stderrLines.join('\n'),
+        durationMs: Date.now() - startedAt,
+      };
+    }
+
+    if (Date.now() - startedAt > timeoutMs) {
+      await api.invoke('lia_jobs_kill', { jobId });
+      const out = await api.invoke('lia_jobs_get_output', { jobId }) as {
+        stdout: string[];
+        stderr: string[];
+      };
+      const stdout = out.stdout.join('\n');
+      const stderr = [
+        out.stderr.join('\n'),
+        `AI runtime timed out after ${Math.round(timeoutMs / 1000)} seconds`,
+      ].filter(Boolean).join('\n');
+      return {
+        ok: false,
+        exitCode: null,
+        stdout,
+        stderr,
+        durationMs: Date.now() - startedAt,
+      };
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
 }
