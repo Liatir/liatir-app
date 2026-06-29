@@ -39,7 +39,7 @@
 </script>
 
 <span class="inline-flex items-center {sizes[size]} rounded-full font-medium {styles[variant]} {classes??''}">
-  {#if !hideDot}<Dot variant={dotVariant} />{/if}
+  {#if !hideDot}<Dot variant={dotVariant} pulse />{/if}
   {#if children}
     {@render children()}
   {:else}

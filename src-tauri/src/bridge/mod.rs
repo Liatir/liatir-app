@@ -29,6 +29,7 @@ pub mod app_storage;
 pub mod snpeff;
 pub mod bwa;
 pub mod minimap2;
+pub mod ai_runtime;
 
 pub use notifications::*;
 pub use clipboard::*;
@@ -59,3 +60,4 @@ pub use app_storage::*;
 pub use snpeff::*;
 pub use bwa::*;
 pub use minimap2::*;
+pub use ai_runtime::*;

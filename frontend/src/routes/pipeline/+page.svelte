@@ -460,10 +460,6 @@
     if (!def) return {};
     const inputs: Record<string, string> = {};
     for (const [key, schema] of Object.entries(def.inputSchema)) {
-      if (def.type === 'ai-tool' && key === 'modelId' && aiModelsStore.defaultModelId) {
-        inputs[key] = aiModelsStore.defaultModelId;
-        continue;
-      }
       if (schema.default !== undefined) inputs[key] = defaultInputValue(schema.default);
     }
     return inputs;

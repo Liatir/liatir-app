@@ -1,6 +1,9 @@
 import type { LiatirAIModelMetadata } from '@liatir/core';
 
 export const MOCK_AI_MODEL_ID = 'liatir-mock-local';
+export const CELLTYPIST_MODEL_ID = 'celltypist-local-annotation';
+export const NUCLEOTIDE_TRANSFORMER_50M_ID = 'instadeep-nt-v2-50m-multi-species';
+export const ESM2_8M_ID = 'facebook-esm2-8m-protein';
 
 const INTERNAL_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
   {
@@ -34,7 +37,135 @@ const INTERNAL_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
   },
 ];
 
-export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [];
+export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
+  {
+    id: CELLTYPIST_MODEL_ID,
+    name: 'CellTypist Local Annotation',
+    description: 'Local single-cell annotation runtime using CellTypist models for h5ad/AnnData workflows.',
+    version: '1.x',
+    runtime: {
+      kind: 'python-venv',
+      name: 'CellTypist Python Runtime',
+      version: 'python-venv',
+    },
+    source: 'managed-runtime',
+    localOnly: true,
+    capabilities: ['classification', 'cell-annotation'],
+    modalities: ['single-cell'],
+    license: {
+      name: 'MIT License',
+      spdxId: 'MIT',
+      url: 'https://github.com/Teichlab/celltypist',
+      verifiedAt: '2026-06-28',
+    },
+    hardware: {
+      cpu: true,
+      gpu: false,
+      minRamGb: 4,
+      recommendedRamGb: 8,
+      notes: 'CPU runtime. Memory depends on AnnData matrix size.',
+    },
+    install: {
+      method: 'managed-runtime',
+      runtimeId: 'celltypist',
+      modelCacheSubdir: 'model-cache/celltypist',
+      runtimePackages: [
+        { package: 'celltypist', specifier: 'celltypist>=1.7,<2', importName: 'celltypist' },
+        { package: 'anndata', specifier: 'anndata>=0.10,<1', importName: 'anndata' },
+        { package: 'pandas', specifier: 'pandas>=2,<3', importName: 'pandas' },
+      ],
+    },
+    tags: ['built-in', 'managed', 'single-cell', 'annotation'],
+  },
+  {
+    id: NUCLEOTIDE_TRANSFORMER_50M_ID,
+    name: 'Nucleotide Transformer v2 50M',
+    description: 'Small/base managed local DNA/RNA embedding model for genomic sequence representations.',
+    version: 'v2-50m-multi-species',
+    runtime: {
+      kind: 'python-venv',
+      name: 'Transformers PyTorch Runtime',
+      version: 'python-venv',
+    },
+    source: 'managed-runtime',
+    localOnly: true,
+    capabilities: ['embedding', 'sequence-embedding'],
+    modalities: ['dna', 'rna'],
+    parameters: 50_000_000,
+    license: {
+      name: 'CC-BY-NC-SA-4.0',
+      spdxId: 'CC-BY-NC-SA-4.0',
+      url: 'https://huggingface.co/InstaDeepAI/nucleotide-transformer-v2-50m-multi-species',
+      verifiedAt: '2026-06-28',
+    },
+    hardware: {
+      cpu: true,
+      gpu: true,
+      minRamGb: 8,
+      recommendedRamGb: 16,
+      minVramGb: 0,
+      recommendedVramGb: 8,
+      notes: 'CPU is supported for small batches; GPU/MPS is faster when PyTorch can use it.',
+    },
+    install: {
+      method: 'managed-runtime',
+      runtimeId: 'sequence-transformers',
+      modelCacheSubdir: 'model-cache/huggingface',
+      runtimePackages: [
+        { package: 'torch', specifier: 'torch>=2.2,<3', importName: 'torch' },
+        { package: 'transformers', specifier: 'transformers>=4.40,<5', importName: 'transformers' },
+        { package: 'numpy', specifier: 'numpy>=1.26,<3', importName: 'numpy' },
+        { package: 'safetensors', specifier: 'safetensors>=0.4,<1', importName: 'safetensors' },
+        { package: 'urllib3', specifier: 'urllib3>=1.26,<2', importName: 'urllib3' },
+      ],
+    },
+    tags: ['built-in', 'managed', 'genomics', 'embedding', 'non-commercial'],
+  },
+  {
+    id: ESM2_8M_ID,
+    name: 'ESM-2 8M Protein',
+    description: 'Small managed local protein language model for lightweight protein sequence embeddings.',
+    version: 'esm2_t6_8M_UR50D',
+    runtime: {
+      kind: 'python-venv',
+      name: 'Transformers PyTorch Runtime',
+      version: 'python-venv',
+    },
+    source: 'managed-runtime',
+    localOnly: true,
+    capabilities: ['embedding', 'sequence-embedding'],
+    modalities: ['protein'],
+    parameters: 8_000_000,
+    license: {
+      name: 'MIT License',
+      spdxId: 'MIT',
+      url: 'https://huggingface.co/facebook/esm2_t6_8M_UR50D',
+      verifiedAt: '2026-06-28',
+    },
+    hardware: {
+      cpu: true,
+      gpu: true,
+      minRamGb: 4,
+      recommendedRamGb: 8,
+      minVramGb: 0,
+      recommendedVramGb: 4,
+      notes: 'Small ESM-2 model. CPU is acceptable for short sequences.',
+    },
+    install: {
+      method: 'managed-runtime',
+      runtimeId: 'sequence-transformers',
+      modelCacheSubdir: 'model-cache/huggingface',
+      runtimePackages: [
+        { package: 'torch', specifier: 'torch>=2.2,<3', importName: 'torch' },
+        { package: 'transformers', specifier: 'transformers>=4.40,<5', importName: 'transformers' },
+        { package: 'numpy', specifier: 'numpy>=1.26,<3', importName: 'numpy' },
+        { package: 'safetensors', specifier: 'safetensors>=0.4,<1', importName: 'safetensors' },
+        { package: 'urllib3', specifier: 'urllib3>=1.26,<2', importName: 'urllib3' },
+      ],
+    },
+    tags: ['built-in', 'managed', 'protein', 'embedding'],
+  },
+];
 
 export const LOCAL_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
   ...INTERNAL_AI_MODEL_REGISTRY,

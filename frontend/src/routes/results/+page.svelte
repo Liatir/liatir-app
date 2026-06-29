@@ -28,6 +28,8 @@
     'bcftools-filter': 'BCFtools filter',
     snpeff: 'SnpEff',
     'ai-mock-inference': 'Mock AI Inference',
+    'ai-celltypist-annotate': 'CellTypist Annotation',
+    'ai-sequence-embedding': 'Sequence Embedding',
   };
 
   function toolLabel(tool: string) { return TOOL_LABELS[tool] ?? tool; }

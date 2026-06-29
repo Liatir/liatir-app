@@ -1,7 +1,6 @@
 import type { JsonValue } from '@liatir/core';
 import type { PipelineStepDefinition } from '$lib/types/pipeline';
 import type { ToolOutput } from '$lib/types/tool-output';
-import { MOCK_AI_MODEL_ID } from '$lib/ai/model-registry';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
 
 export const mockAIInferenceDefinition: PipelineStepDefinition = {
@@ -15,7 +14,6 @@ export const mockAIInferenceDefinition: PipelineStepDefinition = {
       type: 'string',
       label: 'AI Model',
       required: true,
-      default: MOCK_AI_MODEL_ID,
     },
     prompt: {
       type: 'string',
@@ -53,7 +51,8 @@ export async function runMockAIInferenceStep(
 }> {
   await aiModelsStore.init();
 
-  const modelId = inputs.modelId?.trim() || aiModelsStore.defaultModelId || MOCK_AI_MODEL_ID;
+  const modelId = inputs.modelId?.trim();
+  if (!modelId) throw new Error('AI Model is required.');
   const model = aiModelsStore.byId(modelId);
   if (!model) throw new Error(`Unknown AI Model: ${modelId}`);
   if (model.enabled === false || (model.status !== 'installed' && model.status !== 'available')) {

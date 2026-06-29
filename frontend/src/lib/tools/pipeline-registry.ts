@@ -8,6 +8,8 @@ import { minimap2Definition, parseMinimap2Stats, minimap2ToToolOutput } from './
 import { bcftoolsStatsDefinition, bcftoolsFilterDefinition, parseBcftoolsStats, bcftoolsStatsToToolOutput } from './variants/bcftools';
 import { snpeffDefinition, parseSnpEffStats, buildSnpEffOutput } from './variants/snpeff';
 import { mockAIInferenceDefinition, runMockAIInferenceStep } from './ai/mock-inference';
+import { celltypistAnnotateDefinition, runCelltypistAnnotateStep } from './ai/celltypist-annotate';
+import { sequenceEmbeddingDefinition, runSequenceEmbeddingStep } from './ai/sequence-embedding';
 import { snpEffStore } from '$lib/stores/snpeff.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import type { ToolOutput } from '$lib/types/tool-output';
@@ -380,6 +382,8 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
   'bcftools-filter':    { definition: bcftoolsFilterDefinition,    run: runBcftoolsFilterStep },
   'snpeff':             { definition: snpeffDefinition,            run: runSnpeffStep },
   'ai-mock-inference':  { definition: mockAIInferenceDefinition,   run: runMockAIInferenceStep },
+  'ai-celltypist-annotate': { definition: celltypistAnnotateDefinition, run: runCelltypistAnnotateStep },
+  'ai-sequence-embedding': { definition: sequenceEmbeddingDefinition, run: runSequenceEmbeddingStep },
 };
 
 // ── Imported .lia plugins as pipeline steps ──────────────────────────────────

@@ -167,17 +167,19 @@ export interface LiatirExecutionResult {
   logs?: string[];
 }
 
-export type LiatirAIModelRuntimeKind = 'mock' | 'llama-cpp' | 'onnx' | 'transformers-js' | 'custom';
-export type LiatirAIModelSource = 'builtin' | 'local-file' | 'local-directory' | 'managed-download';
+export type LiatirAIModelRuntimeKind = 'mock' | 'python-venv' | 'llama-cpp' | 'onnx' | 'transformers-js' | 'custom';
+export type LiatirAIModelSource = 'builtin' | 'local-file' | 'local-directory' | 'managed-download' | 'managed-runtime';
 export type LiatirAIModelStatus = 'available' | 'installed' | 'missing' | 'error';
 export type LiatirAICapability =
   | 'text-generation'
   | 'summarization'
   | 'classification'
+  | 'cell-annotation'
   | 'embedding'
+  | 'sequence-embedding'
   | 'reranking'
   | 'structured-extraction';
-export type LiatirAIModelModality = 'text' | 'dna' | 'rna' | 'protein' | 'image' | 'multimodal';
+export type LiatirAIModelModality = 'text' | 'dna' | 'rna' | 'protein' | 'single-cell' | 'image' | 'multimodal';
 
 export interface LiatirAIModelRuntime {
   kind: LiatirAIModelRuntimeKind;
@@ -208,6 +210,9 @@ export interface LiatirAIModelInstallSpec {
   path?: string;
   urls?: string[];
   files?: LiatirAIModelInstallFile[];
+  runtimeId?: string;
+  runtimePackages?: LiatirAIModelRuntimePackage[];
+  modelCacheSubdir?: string;
   checksum?: string;
 }
 
@@ -216,6 +221,13 @@ export interface LiatirAIModelInstallFile {
   relativePath: string;
   sizeBytes?: number;
   sha256?: string;
+}
+
+export interface LiatirAIModelRuntimePackage {
+  package: string;
+  version?: string;
+  specifier?: string;
+  importName?: string;
 }
 
 export interface LiatirAIModelMetadata {
@@ -241,8 +253,9 @@ export interface LiatirAIModelMetadata {
 export interface LiatirAIModelRecord extends LiatirAIModelMetadata {
   status: LiatirAIModelStatus;
   localPath?: string;
+  runtimePath?: string;
+  cachePath?: string;
   enabled?: boolean;
-  isDefault?: boolean;
   addedAt?: number;
   updatedAt?: number;
   error?: string;
@@ -252,6 +265,21 @@ export interface LiatirAIToolDefinition extends LiatirStepDefinition {
   type: 'ai-tool';
   modelInputKey?: string;
   supportedCapabilities?: LiatirAICapability[];
+}
+
+export interface LiatirAIProvenance {
+  toolId: string;
+  toolLabel: string;
+  modelId: string;
+  modelName: string;
+  modelVersion?: string | null;
+  runtimeKind: LiatirAIModelRuntimeKind;
+  runtimeName: string;
+  runtimeVersion?: string | null;
+  localOnly: boolean;
+  inputSummary?: Record<string, JsonValue>;
+  parameters?: Record<string, JsonValue>;
+  generatedAt: string;
 }
 
 // Compatibility aliases used by the current frontend and packages.

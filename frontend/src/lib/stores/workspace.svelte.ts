@@ -103,6 +103,21 @@ function createWorkspaceStore() {
         await persistWorkspaces();
       }
 
+      try {
+        if (await appStorage.exists(ACTIVE_FILE)) {
+          const raw = await appStorage.readText(ACTIVE_FILE);
+          const parsed = JSON.parse(raw) as { id?: string | null };
+          const savedId = parsed.id ?? null;
+          if (savedId && workspaces.some(w => w.id === savedId)) {
+            activeId = savedId;
+            await loadEnvVars(savedId);
+          }
+        }
+      } catch {
+        activeId = null;
+        envVars = [];
+      }
+
       initialized = true;
     },
 

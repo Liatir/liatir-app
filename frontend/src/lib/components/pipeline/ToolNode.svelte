@@ -30,7 +30,25 @@
 
   const inputKeys = $derived(def ? Object.entries(def.inputSchema) : []);
   const aiModelOptions = $derived(
-    aiModelsStore.runnableModels.map((model) => ({ value: model.id, label: model.name }))
+    aiModelsStore.runnableModels
+      .filter((model) => {
+        const capabilities = def?.type === 'ai-tool'
+          ? ((def as typeof def & { supportedCapabilities?: string[] })?.supportedCapabilities ?? [])
+          : [];
+        return capabilities.length === 0 || capabilities.some((capability) => model.capabilities.includes(capability as any));
+      })
+      .map((model) => ({
+        value: model.id,
+        label: model.name,
+        sublabel: `${model.runtime.name} · ${model.modalities.join(', ')}`,
+        badge: model.capabilities[0] ?? 'AI',
+      }))
+  );
+
+  const aiModelGroups = $derived(
+    aiModelOptions.length > 0
+      ? [{ title: 'Installed AI Models', items: aiModelOptions }]
+      : []
   );
 
   // Non-file outputs exposed as connectable value handles for downstream nodes.
@@ -134,6 +152,18 @@
             searchPlaceholder="Search…"
             emptyText="No matching options."
             emptyHref="/data"
+            disabled={inputsDisabled}
+            onchange={(v) => setInput(key, v)}
+          />
+        {:else if def.type === 'ai-tool' && key === 'modelId'}
+          <OptionPicker
+            value={data.inputs[key] ?? ''}
+            groups={aiModelGroups}
+            label="{schema.label ?? key}{schema.required ? '' : ' (optional)'}"
+            placeholder="Select an AI Model..."
+            searchPlaceholder="Search AI Models..."
+            emptyText="No compatible installed AI Models."
+            emptyHref="/ai"
             disabled={inputsDisabled}
             onchange={(v) => setInput(key, v)}
           />
