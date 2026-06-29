@@ -3,6 +3,7 @@ import { LOCAL_AI_MODEL_REGISTRY, MOCK_AI_MODEL_ID } from '$lib/ai/model-registr
 import { preloadManagedAIModel } from '$lib/ai/model-preload';
 import { cachePathForModel, getAIRuntimeStatus, prepareAIRuntime } from '$lib/ai/runtime';
 import { appStorage } from './app-storage';
+import { SANDBOX_WORKSPACE_ID, workspaceStore } from './workspace.svelte';
 import type {
   LiatirAIModelRecord,
   LiatirAIModelStatus,
@@ -12,7 +13,6 @@ const AI_MODELS_FILE = 'ai-models.json';
 const AI_MODEL_INSTALL_MARKER_DIR = 'ai-model-installs';
 const LEGACY_AI_MODELS_WORKSPACE_MIGRATION_FILE = 'ai-models-workspace-migration.json';
 const WORKSPACES_FILE = 'workspaces.json';
-const SANDBOX_WORKSPACE_ID = '__test__';
 
 interface StoredAIModelState {
   status?: LiatirAIModelStatus;
@@ -65,7 +65,9 @@ function createAIModelsStore() {
   }
 
   function records(): LiatirAIModelRecord[] {
-    return LOCAL_AI_MODEL_REGISTRY.map((metadata) => {
+    return LOCAL_AI_MODEL_REGISTRY.filter((metadata) =>
+      metadata.id !== MOCK_AI_MODEL_ID || workspaceStore.isSandboxMode
+    ).map((metadata) => {
       const state = { ...defaultStateFor(metadata.id), ...(modelStates[metadata.id] ?? {}) };
       return {
         ...metadata,

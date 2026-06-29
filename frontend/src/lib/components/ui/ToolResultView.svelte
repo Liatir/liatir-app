@@ -3,7 +3,20 @@
   import Button from './Button.svelte';
   import InfoPopup from './InfoPopup.svelte';
   import PlotlyChart from './PlotlyChart.svelte';
-  import type { ToolOutput, StatsSection, NumberSection, PlotlySection, TextSection, TableSection } from '$lib/types/tool-output';
+  import StructureViewer from '$lib/components/viewers/StructureViewer.svelte';
+  import GenomeViewer from '$lib/components/viewers/GenomeViewer.svelte';
+  import SingleCellViewer from '$lib/components/viewers/SingleCellViewer.svelte';
+  import type {
+    ToolOutput,
+    StatsSection,
+    NumberSection,
+    PlotlySection,
+    TextSection,
+    TableSection,
+    StructureViewerSection,
+    GenomeViewerSection,
+    SingleCellViewerSection,
+  } from '$lib/types/tool-output';
   import type { RunOutputFile } from '$lib/types/pipeline';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { liatir } from '$lib/api';
@@ -237,6 +250,12 @@
           <p class="text-xs text-zinc-400 text-center py-4">No rows</p>
         {/if}
       </Card>
+    {:else if section.type === 'structure-viewer'}
+      <StructureViewer section={section as StructureViewerSection} />
+    {:else if section.type === 'genome-viewer'}
+      <GenomeViewer section={section as GenomeViewerSection} />
+    {:else if section.type === 'single-cell-viewer'}
+      <SingleCellViewer section={section as SingleCellViewerSection} />
     {/if}
 
   {/each}

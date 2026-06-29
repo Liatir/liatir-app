@@ -8,6 +8,9 @@ export type {
   PlotlySection,
   TextSection,
   TableSection,
+  StructureViewerSection,
+  GenomeViewerSection,
+  SingleCellViewerSection,
   ToolSection,
   ToolOutput,
 } from '@liatir/core';

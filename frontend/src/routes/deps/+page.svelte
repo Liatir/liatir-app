@@ -8,6 +8,9 @@
 	import { depsStore } from '$lib/stores/deps.svelte';
 	import { managedBins } from '$lib/stores/managedBins.svelte';
 	import { installProgress } from '$lib/stores/installProgress.svelte';
+	import { viewerRuntimesStore, type ViewerRuntimeInstallProgress } from '$lib/stores/viewerRuntimes.svelte';
+	import { confirm } from '$lib/stores/confirm.svelte';
+	import { toast } from '$lib/stores/toast.svelte';
 	import { liatir } from '$lib/api';
 	import { runNativeTool } from '$lib/utils/native-tool';
 	import {
@@ -147,6 +150,7 @@
 	}
 
 	let toolStates = $state<Record<string, ToolInstallState>>({});
+	let viewerRuntimeProgress = $state<Record<string, ViewerRuntimeInstallProgress>>({});
 
 	function toolState(binary: string): ToolInstallState {
 		return (
@@ -171,6 +175,7 @@
 	onMount(async () => {
 		if (!depsStore.checked) depsStore.checkAll();
 		await managedBins.init();
+		await viewerRuntimesStore.init();
 
 		const api = liatir();
 		if (api) {
@@ -273,6 +278,58 @@
 		if (brewAvailable) return 'Via Homebrew';
 		if (condaAvailable) return 'Via conda';
 		return '';
+	}
+
+	function viewerProgressLabel(id: string): string {
+		const progress = viewerRuntimeProgress[id];
+		if (!progress) return '';
+		if (progress.phase === 'done') return 'Installed';
+		const file = `File ${progress.fileIndex + 1}/${progress.fileCount}`;
+		const bytes = progress.bytesTotal
+			? `${fmtBytes(progress.bytesDownloaded)} / ${fmtBytes(progress.bytesTotal)}`
+			: fmtBytes(progress.bytesDownloaded);
+		return `${file} · ${bytes}`;
+	}
+
+	async function installViewerRuntime(id: string) {
+		viewerRuntimeProgress = {
+			...viewerRuntimeProgress,
+			[id]: {
+				phase: 'downloading-files',
+				fileIndex: 0,
+				fileCount: 1,
+				bytesDownloaded: 0,
+				bytesTotal: null,
+			},
+		};
+		try {
+			await viewerRuntimesStore.installManagedRuntime(id, (progress) => {
+				viewerRuntimeProgress = { ...viewerRuntimeProgress, [id]: progress };
+			});
+			toast.success('Viewer runtime installed');
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to install viewer runtime');
+		} finally {
+			const { [id]: _done, ...rest } = viewerRuntimeProgress;
+			viewerRuntimeProgress = rest;
+		}
+	}
+
+	async function removeViewerRuntime(id: string) {
+		const runtime = viewerRuntimesStore.byId(id);
+		if (!runtime) return;
+		const ok = await confirm({
+			title: 'Remove viewer runtime',
+			message: `Remove "${runtime.name}" from this device? It can be installed again later.`,
+			confirmLabel: 'Remove',
+		});
+		if (!ok) return;
+		try {
+			await viewerRuntimesStore.removeManagedRuntime(id);
+			toast.info('Viewer runtime removed');
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to remove viewer runtime');
+		}
 	}
 </script>
 
@@ -492,6 +549,74 @@
 					</div>
 				</div></Card
 			>
+
+			<Card>
+				<div class="border-b border-border px-4 py-3">
+					<p class="text-sm font-semibold text-zinc-800">Viewer runtimes</p>
+					<p class="mt-1 text-xs text-zinc-400">
+						Optional scientific visualization dependencies. Install only the runtimes needed by your workflows.
+					</p>
+				</div>
+				<div class="divide-y divide-border">
+					{#each viewerRuntimesStore.runtimes as runtime (runtime.id)}
+						{@const progress = viewerRuntimeProgress[runtime.id]}
+						{@const installable = runtime.install.kind === 'managed-script'}
+						<div class="flex items-center gap-3 px-4 py-3">
+							<span
+								class="h-2 w-2 rounded-full shrink-0 {runtime.status === 'installed'
+									? 'bg-emerald-500'
+									: installable
+									? 'bg-amber-400'
+									: 'bg-zinc-300'}"
+							></span>
+							<div class="min-w-0 flex-1">
+								<div class="flex items-center gap-2">
+									<p class="truncate text-sm font-medium text-zinc-800">{runtime.name}</p>
+									<span class="rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[10px] text-zinc-500">
+										{runtime.capability}
+									</span>
+								</div>
+								<p class="mt-1 text-xs text-zinc-500">{runtime.description}</p>
+								<p class="mt-1 text-[10px] text-zinc-400">
+									{runtime.license}
+									{#if runtime.localPath}
+										<span class="font-mono"> · {runtime.localPath}</span>
+									{:else if runtime.install.note}
+										 · {runtime.install.note}
+									{/if}
+								</p>
+								{#if progress}
+									<p class="mt-1 text-xs text-brand">{viewerProgressLabel(runtime.id)}</p>
+								{/if}
+							</div>
+							<div class="flex shrink-0 items-center gap-2">
+								{#if progress}
+									<svg class="h-4 w-4 animate-spin text-brand" viewBox="0 0 24 24" fill="none">
+										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
+										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+									</svg>
+								{:else if runtime.status === 'installed' && installable}
+									<Button size="sm" variant="ghost" onclick={() => removeViewerRuntime(runtime.id)}>
+										Remove
+									</Button>
+								{:else if installable}
+									<Button size="sm" variant="primary" onclick={() => installViewerRuntime(runtime.id)}>
+										Install
+									</Button>
+								{:else if runtime.install.docsUrl}
+									<Button
+										size="sm"
+										variant="secondary"
+										onclick={async () => { const api = liatir(); if (api) await api.openBrowser(runtime.install.docsUrl!); }}
+									>
+										Docs ↗
+									</Button>
+								{/if}
+							</div>
+						</div>
+					{/each}
+				</div>
+			</Card>
 
 			<!-- Footer note -->
 			{#if pmChecked}

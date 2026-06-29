@@ -54,6 +54,24 @@ function basename(path: string): string {
   return path.split(/[\\/]/).pop() ?? path;
 }
 
+function parsePythonJson<T>(stdout: string): T {
+  const text = stdout.trim();
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    for (let i = lines.length - 1; i >= 0; i -= 1) {
+      if (!lines[i].startsWith('{')) continue;
+      try {
+        return JSON.parse(lines[i]) as T;
+      } catch {
+        // Keep scanning for the final JSON payload.
+      }
+    }
+  }
+  throw new Error('CellTypist did not return JSON output.');
+}
+
 async function fileArtifact(label: string, path: string, ext: string, fieldKey: string): Promise<RunOutputFile> {
   let size: number | undefined;
   const api = liatir();
@@ -106,7 +124,7 @@ export async function runCelltypistAnnotateStep(
   }
   if (result.stderr.trim()) onLog(result.stderr.trim());
 
-  const parsed = JSON.parse(result.stdout.trim()) as {
+  const parsed = parsePythonJson<{
     labelsPath: string;
     summaryPath: string;
     summary: {
@@ -119,8 +137,9 @@ export async function runCelltypistAnnotateStep(
       counts: Record<string, number>;
       model: string;
       majorityVoting: boolean;
+      preprocessing: string;
     };
-  };
+  }>(result.stdout);
 
   const provenance: LiatirAIProvenance = {
     toolId: celltypistAnnotateDefinition.id,
@@ -136,6 +155,7 @@ export async function runCelltypistAnnotateStep(
       inputFile: basename(inputs.inputFile),
       celltypistModel: parsed.summary.model,
       majorityVoting: parsed.summary.majorityVoting,
+      preprocessing: parsed.summary.preprocessing,
     },
     generatedAt: new Date().toISOString(),
   };
@@ -167,6 +187,17 @@ export async function runCelltypistAnnotateStep(
             .slice(0, 20),
         },
         {
+          type: 'single-cell-viewer',
+          label: 'Cell label distribution',
+          description: 'Lightweight preview. Full Vitessce rendering is handled by a modular viewer runtime.',
+          config: {
+            title: 'CellTypist labels',
+            source: parsed.labelsPath,
+            labelCounts: parsed.summary.counts,
+          },
+          height: 340,
+        },
+        {
           type: 'table',
           label: 'Provenance',
           headers: ['Field', 'Value'],
@@ -174,6 +205,7 @@ export async function runCelltypistAnnotateStep(
             ['AI Model', model.name],
             ['Runtime', `${model.runtime.name} (${model.runtime.kind})`],
             ['CellTypist model', parsed.summary.model],
+            ['Preprocessing', parsed.summary.preprocessing],
             ['Input', basename(inputs.inputFile)],
           ],
         },

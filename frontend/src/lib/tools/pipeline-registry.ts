@@ -10,6 +10,14 @@ import { snpeffDefinition, parseSnpEffStats, buildSnpEffOutput } from './variant
 import { mockAIInferenceDefinition, runMockAIInferenceStep } from './ai/mock-inference';
 import { celltypistAnnotateDefinition, runCelltypistAnnotateStep } from './ai/celltypist-annotate';
 import { sequenceEmbeddingDefinition, runSequenceEmbeddingStep } from './ai/sequence-embedding';
+import {
+  genomeViewerDefinition,
+  runGenomeViewerStep,
+  runSingleCellViewerStep,
+  runStructureViewerStep,
+  singleCellViewerDefinition,
+  structureViewerDefinition,
+} from './viewers/scientific-viewers';
 import { snpEffStore } from '$lib/stores/snpeff.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import type { ToolOutput } from '$lib/types/tool-output';
@@ -384,6 +392,9 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
   'ai-mock-inference':  { definition: mockAIInferenceDefinition,   run: runMockAIInferenceStep },
   'ai-celltypist-annotate': { definition: celltypistAnnotateDefinition, run: runCelltypistAnnotateStep },
   'ai-sequence-embedding': { definition: sequenceEmbeddingDefinition, run: runSequenceEmbeddingStep },
+  'viewer-structure-3d': { definition: structureViewerDefinition, run: runStructureViewerStep },
+  'viewer-genome-track': { definition: genomeViewerDefinition, run: runGenomeViewerStep },
+  'viewer-single-cell': { definition: singleCellViewerDefinition, run: runSingleCellViewerStep },
 };
 
 // ── Imported .lia plugins as pipeline steps ──────────────────────────────────

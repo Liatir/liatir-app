@@ -270,7 +270,7 @@
               {/if}
             </button>
           </div>
-          <ToolResultView output={loadedOutput} />
+          <ToolResultView output={loadedOutput} outputFiles={selectedRun.outputFiles ?? []} />
           <RunLog runId={selectedId} />
         </div>
       {/if}

@@ -148,12 +148,70 @@ export interface LiatirTableSection {
   rows: (string | number)[][];
 }
 
+export type LiatirStructureFormat = 'pdb' | 'cif' | 'mmcif' | 'sdf' | 'mol2' | 'xyz';
+export type LiatirStructureStyle = 'cartoon' | 'stick' | 'line' | 'sphere';
+
+export interface LiatirStructureViewerSection {
+  type: 'structure-viewer';
+  label: string;
+  description?: string;
+  path?: string;
+  content?: string;
+  format: LiatirStructureFormat;
+  style?: LiatirStructureStyle;
+  colorScheme?: 'spectrum' | 'chain' | 'element';
+  height?: number;
+}
+
+export type LiatirGenomeTrackKind = 'gff' | 'bed' | 'vcf' | 'bam' | 'wiggle' | 'unknown';
+
+export interface LiatirGenomeAssemblySpec {
+  name: string;
+  fastaPath?: string;
+  fastaUrl?: string;
+  faiPath?: string;
+  faiUrl?: string;
+  refName?: string;
+  start?: number;
+  end?: number;
+}
+
+export interface LiatirGenomeTrackSpec {
+  name: string;
+  kind: LiatirGenomeTrackKind;
+  path?: string;
+  url?: string;
+  indexPath?: string;
+  indexUrl?: string;
+  category?: string;
+}
+
+export interface LiatirGenomeViewerSection {
+  type: 'genome-viewer';
+  label: string;
+  description?: string;
+  assembly: LiatirGenomeAssemblySpec;
+  tracks: LiatirGenomeTrackSpec[];
+  height?: number;
+}
+
+export interface LiatirSingleCellViewerSection {
+  type: 'single-cell-viewer';
+  label: string;
+  description?: string;
+  config: JsonValue;
+  height?: number;
+}
+
 export type LiatirToolSection =
   | LiatirStatsSection
   | LiatirNumberSection
   | LiatirPlotlySection
   | LiatirTextSection
-  | LiatirTableSection;
+  | LiatirTableSection
+  | LiatirStructureViewerSection
+  | LiatirGenomeViewerSection
+  | LiatirSingleCellViewerSection;
 
 export interface LiatirToolOutput {
   sections: LiatirToolSection[];
@@ -296,5 +354,8 @@ export type NumberSection = LiatirNumberSection;
 export type PlotlySection = LiatirPlotlySection;
 export type TextSection = LiatirTextSection;
 export type TableSection = LiatirTableSection;
+export type StructureViewerSection = LiatirStructureViewerSection;
+export type GenomeViewerSection = LiatirGenomeViewerSection;
+export type SingleCellViewerSection = LiatirSingleCellViewerSection;
 export type ToolSection = LiatirToolSection;
 export type ToolOutput = LiatirToolOutput;

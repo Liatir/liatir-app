@@ -73,6 +73,9 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
         { package: 'celltypist', specifier: 'celltypist>=1.7,<2', importName: 'celltypist' },
         { package: 'anndata', specifier: 'anndata>=0.10,<1', importName: 'anndata' },
         { package: 'pandas', specifier: 'pandas>=2,<3', importName: 'pandas' },
+        { package: 'numpy', specifier: 'numpy>=1.26,<3', importName: 'numpy' },
+        { package: 'scipy', specifier: 'scipy>=1.10,<2', importName: 'scipy' },
+        { package: 'urllib3', specifier: 'urllib3>=1.26,<2', importName: 'urllib3' },
       ],
     },
     tags: ['built-in', 'managed', 'single-cell', 'annotation'],
@@ -168,8 +171,8 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 ];
 
 export const LOCAL_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
-  ...INTERNAL_AI_MODEL_REGISTRY,
   ...BUILT_IN_AI_MODEL_REGISTRY,
+  ...INTERNAL_AI_MODEL_REGISTRY,
 ];
 
 export function getLocalAIModelMetadata(id: string): LiatirAIModelMetadata | undefined {
