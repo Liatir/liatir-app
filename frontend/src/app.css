@@ -187,9 +187,15 @@ input, textarea, [data-selectable] {
   --tw-translate-x: 5px !important;
 }
 
+.svelte-flow__handle[data-handleid="falseBranch"] span,
+.svelte-flow__handle[data-handleid="trueBranch"] span {
+  display: none !important;
+  color: white !important;
+}
+
 .svelte-flow__node:hover .svelte-flow__handle[data-handleid="falseBranch"] span,
 .svelte-flow__node:hover .svelte-flow__handle[data-handleid="trueBranch"] span {
-  color: white !important;
+  display: inline !important;
 }
 
 .svelte-flow__node:hover .svelte-flow__handle[data-handleid="trueBranch"].svelte-flow__handle-right,.svelte-flow__handle[data-handleid="trueBranch"].svelte-flow__handle-left {
