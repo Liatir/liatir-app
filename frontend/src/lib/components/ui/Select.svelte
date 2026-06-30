@@ -9,7 +9,7 @@
 </script>
 
 <script lang="ts">
-	import { onMount, tick } from 'svelte';
+	import { tick } from 'svelte';
 	import Icon from '@iconify/svelte';
 
 	interface Props {
@@ -46,7 +46,8 @@
 	let query = $state('');
 	let triggerEl: HTMLButtonElement | null = $state(null);
 	let searchEl: HTMLInputElement | null = $state(null);
-	let menuStyle = $state('');
+	let menuPlacement = $state<'below' | 'above'>('below');
+	let menuMaxHeight = $state(280);
 
 	const selected = $derived(options.find((option) => option.value === value));
 	const showSearch = $derived(searchable || options.length > 7);
@@ -69,18 +70,9 @@
 		const rect = triggerEl.getBoundingClientRect();
 		const availableBelow = window.innerHeight - rect.bottom - 12;
 		const availableAbove = rect.top - 12;
-		const maxHeight = Math.max(180, Math.min(320, Math.max(availableBelow, availableAbove)));
-		const top =
-			availableBelow >= 220 || availableBelow >= availableAbove
-				? rect.bottom + 6
-				: Math.max(12, rect.top - maxHeight - 6);
-
-		menuStyle = [
-			`left: ${Math.max(12, rect.left)}px`,
-			`top: ${top}px`,
-			`width: ${Math.max(180, rect.width)}px`,
-			`max-height: ${maxHeight}px`
-		].join('; ');
+		menuPlacement = availableBelow >= 220 || availableBelow >= availableAbove ? 'below' : 'above';
+		const available = menuPlacement === 'below' ? availableBelow : availableAbove;
+		menuMaxHeight = Math.max(160, Math.min(320, available));
 	}
 
 	async function openMenu() {
@@ -146,20 +138,6 @@
 			if (firstEnabled) choose(firstEnabled);
 		}
 	}
-
-	onMount(() => {
-		const reposition = () => {
-			if (open) positionMenu();
-		};
-
-		window.addEventListener('resize', reposition);
-		window.addEventListener('scroll', reposition, true);
-
-		return () => {
-			window.removeEventListener('resize', reposition);
-			window.removeEventListener('scroll', reposition, true);
-		};
-	});
 </script>
 
 <div class={`relative ${className}`}>
@@ -183,76 +161,79 @@
 			class={`h-4 w-4 shrink-0 text-neutral-400 transition ${open ? 'rotate-180' : ''}`}
 		/>
 	</button>
-</div>
 
-{#if open}
-	<button
-		type="button"
-		class="fixed inset-0 z-[9998] cursor-default bg-transparent"
-		aria-label="Close menu"
-		onclick={closeMenu}
-	></button>
+	{#if open}
+		<button
+			type="button"
+			class="fixed inset-0 z-[9998] cursor-default bg-transparent"
+			aria-label="Close menu"
+			onclick={closeMenu}
+		></button>
 
-	<div
-		class="fixed z-[9999] flex flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl"
-		style={menuStyle}
-		role="listbox"
-		tabindex="-1"
-		onkeydown={handleKeydown}
-	>
-		{#if showSearch}
-			<div class="border-b border-neutral-100 p-2">
-				<div class="flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-2">
-					<Icon icon="lucide:search" class="h-4 w-4 shrink-0 text-neutral-400" />
-					<input
-						bind:this={searchEl}
-						bind:value={query}
-						type="search"
-						class="min-w-0 flex-1 bg-transparent py-2 text-sm text-neutral-800 outline-none placeholder:text-neutral-400"
-						placeholder={searchPlaceholder}
-						onclick={(event) => event.stopPropagation()}
-						onkeydown={handleSearchKeydown}
-					/>
+		<div
+			class={[
+				'absolute left-0 right-0 z-[9999] flex min-w-[180px] flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl',
+				menuPlacement === 'above' ? 'bottom-[calc(100%+6px)]' : 'top-[calc(100%+6px)]'
+			].join(' ')}
+			style={`max-height: ${menuMaxHeight}px`}
+			role="listbox"
+			tabindex="-1"
+			onkeydown={handleKeydown}
+		>
+			{#if showSearch}
+				<div class="border-b border-neutral-100 p-2">
+					<div class="flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-2">
+						<Icon icon="lucide:search" class="h-4 w-4 shrink-0 text-neutral-400" />
+						<input
+							bind:this={searchEl}
+							bind:value={query}
+							type="search"
+							class="min-w-0 flex-1 bg-transparent py-2 text-sm text-neutral-800 outline-none placeholder:text-neutral-400"
+							placeholder={searchPlaceholder}
+							onclick={(event) => event.stopPropagation()}
+							onkeydown={handleSearchKeydown}
+						/>
+					</div>
 				</div>
-			</div>
-		{/if}
+			{/if}
 
-		<div class="min-h-0 flex-1 overflow-auto p-1">
-			{#if filteredOptions.length === 0}
-				<div class="px-3 py-2 text-sm text-neutral-500">{emptyText}</div>
-			{:else}
-				{#each filteredOptions as option (option.value)}
-					<button
-						type="button"
-						class={[
-							'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition',
-							option.value === value ? 'bg-violet-50 text-violet-700' : 'text-neutral-700 hover:bg-neutral-50',
-							option.disabled ? 'cursor-not-allowed opacity-45 hover:bg-transparent' : ''
-						].join(' ')}
-						role="option"
-						aria-selected={option.value === value}
-						disabled={option.disabled}
-						onclick={() => choose(option)}
-					>
-						<span class="min-w-0 flex-1">
-							<span class="block truncate font-medium">{option.label}</span>
-							{#if option.description}
-								<span class="mt-0.5 block line-clamp-2 text-xs text-neutral-500">
-									{option.description}
+			<div class="min-h-0 flex-1 overflow-auto p-1">
+				{#if filteredOptions.length === 0}
+					<div class="px-3 py-2 text-sm text-neutral-500">{emptyText}</div>
+				{:else}
+					{#each filteredOptions as option (option.value)}
+						<button
+							type="button"
+							class={[
+								'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition',
+								option.value === value ? 'bg-violet-50 text-violet-700' : 'text-neutral-700 hover:bg-neutral-50',
+								option.disabled ? 'cursor-not-allowed opacity-45 hover:bg-transparent' : ''
+							].join(' ')}
+							role="option"
+							aria-selected={option.value === value}
+							disabled={option.disabled}
+							onclick={() => choose(option)}
+						>
+							<span class="min-w-0 flex-1">
+								<span class="block truncate font-medium">{option.label}</span>
+								{#if option.description}
+									<span class="mt-0.5 block line-clamp-2 text-xs text-neutral-500">
+										{option.description}
+									</span>
+								{/if}
+							</span>
+							{#if option.meta}
+								<span class="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-neutral-500">
+									{option.meta}
 								</span>
 							{/if}
-						</span>
-						{#if option.meta}
-							<span class="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-neutral-500">
-								{option.meta}
-							</span>
-						{/if}
-						{#if option.value === value}
-							<Icon icon="lucide:check" class="h-4 w-4 shrink-0 text-violet-600" />
-						{/if}
-					</button>
-				{/each}
-			{/if}
+							{#if option.value === value}
+								<Icon icon="lucide:check" class="h-4 w-4 shrink-0 text-violet-600" />
+							{/if}
+						</button>
+					{/each}
+				{/if}
+			</div>
 		</div>
-	</div>
-{/if}
+	{/if}
+</div>

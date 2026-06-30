@@ -50,14 +50,15 @@ export const openLinkInBrowser = async (link: string) => {
   }
 }
 
-export const getLastSegmentFromPath = (path:string): string => {
+export const getLastSegmentsStringFromPath = (path: string, nSegments?: number): string => {
   try {
-    const queryRomved: string = path.includes("?")?(path.trim().split("?")[0]):path.trim();
-    const segments: string[] = queryRomved.split("/");
+    const queryRemoved: string = path.includes("?") ? path.trim().split("?")[0] : path.trim();
+    const segments: string[] = queryRemoved.split(/[\\/]/).filter(Boolean);
 
-    const lastSegment: string = segments[((segments.length)-1)];
+    let n: number = 1;
+    if (nSegments && nSegments >= 1) n = Math.round(nSegments);
 
-    return lastSegment;
+    return segments.slice(-n).join("/");
   } catch (error) {
     console.error(error);
     return "";

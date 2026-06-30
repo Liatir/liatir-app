@@ -12,7 +12,7 @@
   import { aiModelsStore, type AIModelInstallProgress } from '$lib/stores/aiModels.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import { toast } from '$lib/stores/toast.svelte';
-  import { fmtBytes } from '$lib/utils';
+  import { fmtBytes, getLastSegmentsStringFromPath } from '$lib/utils';
   import type { LiatirAIModelRecord } from '@liatir/core';
   import Spinner from '$lib/components/ui/Spinner.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
@@ -361,7 +361,9 @@
 
               <div class="text-xs text-zinc-600 min-w-0 max-xl:hidden">
                 <p class="truncate">{runtimeLabel(model)}</p>
-                <p class="text-[10px] text-zinc-400 truncate">{model.localPath ?? model.runtime.kind}</p>
+                <p class="text-[10px] text-zinc-400 truncate" title={model.localPath ?? undefined}>
+                  {model.localPath ? getLastSegmentsStringFromPath(model.localPath, 2) : model.runtime.kind}
+                </p>
               </div>
 
               <div class="text-xs text-zinc-600 min-w-0 max-xl:hidden">

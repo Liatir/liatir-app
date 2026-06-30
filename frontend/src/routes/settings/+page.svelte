@@ -7,6 +7,7 @@
   import { settingsStore } from '$lib/stores/settings.svelte';
 	import { goto } from '$app/navigation';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
+	import { getLastSegmentsStringFromPath } from '$lib/utils';
 
   let apiVersion = $state<string | null>(null);
   let appVersion = $state<string | null>(null);
@@ -38,7 +39,7 @@
   const testAPIButtonCallback = () => goto("/scripts");
 
   function fmtPath(p: string | null | undefined) {
-    return p ?? '—';
+    return p ? getLastSegmentsStringFromPath(p, 2) : '—';
   }
 </script>
 
@@ -96,7 +97,7 @@
           </div>
           {#if settingsStore.javaPath}
             <p class="text-[11px] text-emerald-600">
-              Active: <code class="font-mono">{settingsStore.javaPath}</code>
+              Active: <code class="font-mono" title={settingsStore.javaPath}>{fmtPath(settingsStore.javaPath)}</code>
             </p>
           {/if}
         </div>

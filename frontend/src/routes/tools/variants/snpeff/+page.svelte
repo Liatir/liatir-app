@@ -10,7 +10,7 @@
   import { notify } from '$lib/utils/notify';
   import RunLog from '$lib/components/ui/RunLog.svelte';
   import { liatir } from '$lib/api';
-  import { fmtDuration } from '$lib/utils';
+  import { fmtDuration, getLastSegmentsStringFromPath } from '$lib/utils';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
@@ -452,7 +452,9 @@
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
               <div class="flex-1 min-w-0">
-                <p class="text-xs font-medium text-zinc-800 truncate">{snpEffStore.config.jarPath}</p>
+                <p class="text-xs font-medium text-zinc-800 truncate" title={snpEffStore.config.jarPath}>
+                  {getLastSegmentsStringFromPath(snpEffStore.config.jarPath, 2)}
+                </p>
               </div>
               <button onclick={() => snpEffStore.setJarPath(null)} class="text-[10px] text-zinc-400 hover:text-zinc-600">Change</button>
             </div>

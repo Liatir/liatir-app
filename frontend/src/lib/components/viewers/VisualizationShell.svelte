@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import Icon from '@iconify/svelte';
+	import { toast } from '$lib/stores/toast.svelte';
+	import { getLastSegmentsStringFromPath } from '$lib/utils';
+	import { captureElementRegionNative, screenshotFilename } from '$lib/viewers/visual-capture';
 
 	interface Props {
 		title: string;
@@ -11,7 +13,6 @@
 		height?: number;
 		openHref?: string;
 		openLabel?: string;
-		oncapture?: () => Promise<void> | void;
 		children: Snippet;
 	}
 
@@ -22,17 +23,13 @@
 		height = 420,
 		openHref,
 		openLabel = 'Open page',
-		oncapture,
 		children
 	}: Props = $props();
 
-	let shellEl: HTMLDivElement | null = $state(null);
 	let captureEl: HTMLDivElement | null = $state(null);
-	let fullscreen = $state(false);
+	let expanded = $state(false);
 	let capturing = $state(false);
 	let captureError = $state<string | null>(null);
-
-	const safeFilename = $derived(`${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'visualization'}.png`);
 
 	function collectDocumentStyles(): string {
 		const chunks: string[] = [];
@@ -68,7 +65,7 @@
 		link.remove();
 	}
 
-	async function captureElementAsPng(element: HTMLElement) {
+	async function captureElementAsPng(element: HTMLElement, filename: string) {
 		const rect = element.getBoundingClientRect();
 		const width = Math.max(1, Math.ceil(rect.width));
 		const height = Math.max(1, Math.ceil(rect.height));
@@ -101,7 +98,7 @@
 			const ctx = canvas.getContext('2d');
 			if (!ctx) throw new Error('Canvas capture is not available.');
 			ctx.drawImage(image, 0, 0);
-			downloadDataUrl(canvas.toDataURL('image/png'), safeFilename);
+			downloadDataUrl(canvas.toDataURL('image/png'), filename);
 		} finally {
 			URL.revokeObjectURL(url);
 		}
@@ -111,9 +108,20 @@
 		if (capturing) return;
 		capturing = true;
 		captureError = null;
+		const filename = screenshotFilename(title);
 		try {
-			if (oncapture) await oncapture();
-			else if (captureEl) await captureElementAsPng(captureEl);
+			if (!captureEl) return;
+			try {
+				const nativeResult = await captureElementRegionNative(captureEl, filename);
+				if (nativeResult?.path) {
+					toast.success(`Saved screenshot: ${getLastSegmentsStringFromPath(nativeResult.path, 2)}`);
+					return;
+				}
+			} catch (nativeError) {
+				console.warn('[visual-capture] native capture failed', nativeError);
+			}
+			await captureElementAsPng(captureEl, filename);
+			toast.success(`Saved screenshot: ${filename}`);
 		} catch (err) {
 			captureError = err instanceof Error ? err.message : String(err);
 		} finally {
@@ -121,29 +129,25 @@
 		}
 	}
 
-	async function toggleFullscreen() {
-		if (!shellEl) return;
-		if (document.fullscreenElement === shellEl) {
-			await document.exitFullscreen();
-		} else {
-			await shellEl.requestFullscreen();
-		}
+	function toggleExpanded() {
+		expanded = !expanded;
 	}
 
-	onMount(() => {
-		function syncFullscreen() {
-			fullscreen = document.fullscreenElement === shellEl;
-		}
-		document.addEventListener('fullscreenchange', syncFullscreen);
-		return () => document.removeEventListener('fullscreenchange', syncFullscreen);
+	$effect(() => {
+		if (!expanded || typeof document === 'undefined') return;
+		const previous = document.body.style.overflow;
+		document.body.style.overflow = 'hidden';
+		return () => {
+			document.body.style.overflow = previous;
+		};
 	});
 </script>
 
-<div bind:this={shellEl} class={fullscreen ? 'h-screen w-screen bg-white p-4' : ''}>
+<div class={expanded ? 'fixed inset-0 z-[9980] bg-white p-4' : ''}>
 	<div
 		class={[
 			'rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4',
-			fullscreen ? 'flex h-full flex-col rounded-none border-0' : ''
+			expanded ? 'flex h-full flex-col rounded-none border-0' : ''
 		].join(' ')}
 	>
 		<div class="mb-3 flex items-start justify-between gap-3">
@@ -177,12 +181,12 @@
 				</button>
 				<button
 					type="button"
-					title={fullscreen ? 'Close fullscreen' : 'Fullscreen'}
-					aria-label={fullscreen ? 'Close fullscreen' : 'Fullscreen'}
+					title={expanded ? 'Close fullscreen' : 'Fullscreen'}
+					aria-label={expanded ? 'Close fullscreen' : 'Fullscreen'}
 					class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800"
-					onclick={toggleFullscreen}
+					onclick={toggleExpanded}
 				>
-					<Icon icon={fullscreen ? 'lucide:minimize-2' : 'lucide:maximize-2'} class="h-4 w-4" />
+					<Icon icon={expanded ? 'lucide:minimize-2' : 'lucide:maximize-2'} class="h-4 w-4" />
 				</button>
 				{#if badge}
 					<span class="rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">
@@ -200,8 +204,8 @@
 
 		<div
 			bind:this={captureEl}
-			class="min-h-0 overflow-hidden rounded-lg border border-border bg-white {fullscreen ? 'flex-1' : ''}"
-			style={fullscreen ? '' : `height: ${height}px`}
+			class="min-h-0 overflow-hidden rounded-lg border border-border bg-white {expanded ? 'flex-1' : ''}"
+			style={expanded ? '' : `height: ${height}px`}
 		>
 			{@render children()}
 		</div>

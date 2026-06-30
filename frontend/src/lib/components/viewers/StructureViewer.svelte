@@ -15,7 +15,6 @@
   let runtimeWarning = $state<string | null>(null);
   let frameUrl = $state('');
   let fallbackContent = $state('');
-  let frameEl: HTMLIFrameElement | null = $state(null);
 
   const viewerId = crypto.randomUUID();
 
@@ -114,49 +113,6 @@
     return URL.createObjectURL(new Blob([html], { type: 'text/html' }));
   }
 
-  function downloadDataUrl(dataUrl: string, filename: string) {
-    const link = document.createElement('a');
-    link.href = dataUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  }
-
-  async function captureStructureScreenshot() {
-    if (!frameEl?.contentWindow) throw new Error('Structure viewer is not ready.');
-
-    await new Promise<void>((resolve, reject) => {
-      const timeout = window.setTimeout(() => {
-        window.removeEventListener('message', onCaptureMessage);
-        reject(new Error('Structure screenshot timed out.'));
-      }, 3000);
-
-      function onCaptureMessage(event: MessageEvent) {
-        const data = event.data as {
-          type?: string;
-          viewerId?: string;
-          dataUrl?: string;
-          message?: string;
-        } | null;
-        if (!data || data.viewerId !== viewerId) return;
-        if (data.type !== 'liatir-structure-viewer-screenshot-result') return;
-
-        window.clearTimeout(timeout);
-        window.removeEventListener('message', onCaptureMessage);
-        if (data.dataUrl) {
-          downloadDataUrl(data.dataUrl, `${section.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'structure'}.png`);
-          resolve();
-        } else {
-          reject(new Error(data.message ?? 'Structure screenshot failed.'));
-        }
-      }
-
-      window.addEventListener('message', onCaptureMessage);
-      frameEl?.contentWindow?.postMessage({ type: 'liatir-structure-viewer-screenshot', viewerId }, '*');
-    });
-  }
-
   function runtimeFailureMessage(message: string): string {
     if (message.includes("Proxy handler's 'get' result")) {
       return 'The embedded 3D runtime is not compatible with this webview context.';
@@ -219,19 +175,6 @@
         viewer.setStyle({}, payload.style);
         viewer.zoomTo();
         viewer.render();
-        window.addEventListener('message', function (event) {
-          const request = event.data || {};
-          if (request.type !== 'liatir-structure-viewer-screenshot' || request.viewerId !== payload.viewerId) return;
-          try {
-            viewer.render();
-            const dataUrl = typeof viewer.pngURI === 'function' ? viewer.pngURI() : '';
-            if (!dataUrl) throw new Error('3Dmol.js did not return an image.');
-            window.parent.postMessage({ type: 'liatir-structure-viewer-screenshot-result', viewerId: payload.viewerId, dataUrl }, '*');
-          } catch (error) {
-            const text = error && error.message ? error.message : String(error || 'Structure screenshot failed.');
-            window.parent.postMessage({ type: 'liatir-structure-viewer-screenshot-result', viewerId: payload.viewerId, message: text }, '*');
-          }
-        });
         window.addEventListener('resize', function () {
           try {
             viewer.resize();
@@ -306,7 +249,6 @@
   badge={section.format}
   height={section.height ?? 420}
   openHref={section.path ? `/tools/visualization/structure?file=${encodeURIComponent(section.path)}` : undefined}
-  oncapture={frameUrl ? captureStructureScreenshot : undefined}
 >
   <div class="relative h-full overflow-hidden bg-white">
     {#if loading}
@@ -324,7 +266,6 @@
       </div>
     {:else if frameUrl}
       <iframe
-        bind:this={frameEl}
         title={section.label}
         src={frameUrl}
         sandbox="allow-scripts"

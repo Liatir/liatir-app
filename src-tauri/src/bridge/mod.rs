@@ -30,6 +30,7 @@ pub mod snpeff;
 pub mod bwa;
 pub mod minimap2;
 pub mod ai_runtime;
+pub mod visual_capture;
 
 pub use notifications::*;
 pub use clipboard::*;
@@ -61,3 +62,4 @@ pub use snpeff::*;
 pub use bwa::*;
 pub use minimap2::*;
 pub use ai_runtime::*;
+pub use visual_capture::*;

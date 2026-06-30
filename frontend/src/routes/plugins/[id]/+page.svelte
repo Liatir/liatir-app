@@ -14,6 +14,7 @@
   import { runLiatirModule } from '$lib/utils/module-run';
   import { matchesAcceptedExtension } from '$lib/utils/file-extensions';
   import { toast } from '$lib/stores/toast.svelte';
+  import { getLastSegmentsStringFromPath } from '$lib/utils';
 
   const id = $derived((page.params as { id: string }).id);
   let mod = $state<LiatirModule | null>(null);
@@ -205,7 +206,7 @@
                       ...filesForField(field).map((file) => ({
                         value: file.path,
                         label: file.name,
-                        description: file.path
+                        description: getLastSegmentsStringFromPath(file.path, 2)
                       }))
                     ]}
                     disabled={running}

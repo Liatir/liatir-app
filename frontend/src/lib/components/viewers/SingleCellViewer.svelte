@@ -1,5 +1,6 @@
 <script lang="ts">
   import VisualizationShell from '$lib/components/viewers/VisualizationShell.svelte';
+  import { getLastSegmentsStringFromPath } from '$lib/utils';
   import type { JsonValue } from '@liatir/core';
   import type { SingleCellViewerSection } from '$lib/types/tool-output';
 
@@ -30,6 +31,7 @@
   const config = $derived(asRecord(section.config));
   const title = $derived(asString(config.title) || section.label);
   const source = $derived(asString(config.source));
+  const sourceLabel = $derived(source ? getLastSegmentsStringFromPath(source, 2) : '');
   const labelCounts = $derived(asCountEntries(config.labelCounts ?? config.counts));
   const maxCount = $derived(Math.max(1, ...labelCounts.map(([, count]) => count)));
   const sourceIsH5ad = $derived(source.toLowerCase().endsWith('.h5ad'));
@@ -37,7 +39,7 @@
 
 <VisualizationShell
   {title}
-  description={section.description ?? source}
+  description={section.description ?? sourceLabel}
   badge="single-cell"
   height={section.height ?? 300}
   openHref={source ? `/tools/visualization/single-cell?file=${encodeURIComponent(source)}` : undefined}

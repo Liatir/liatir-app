@@ -270,6 +270,7 @@ fn main() {
       lia_win_open,
       lia_win_close,
       lia_win_get_info,
+      lia_visual_capture_region,
 
       // events
       lia_event_emit,

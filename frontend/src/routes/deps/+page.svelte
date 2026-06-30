@@ -13,6 +13,7 @@
 	import { toast } from '$lib/stores/toast.svelte';
 	import { liatir } from '$lib/api';
 	import { runNativeTool } from '$lib/utils/native-tool';
+	import { getLastSegmentsStringFromPath } from '$lib/utils';
 	import {
 		getRelease,
 		installBinary,
@@ -488,7 +489,9 @@
 										{#if managed && !dep.available}
 											<p class="text-xs text-emerald-600 truncate">
 												Managed v{managed.version} —
-												<span class="font-mono text-zinc-400">{managed.path}</span>
+												<span class="font-mono text-zinc-400" title={managed.path}>
+													{getLastSegmentsStringFromPath(managed.path, 2)}
+												</span>
 											</p>
 										{:else if dep.available}
 											{#if isUnsupportedVersion && req}
@@ -501,7 +504,7 @@
 												</p>
 											{:else if dep.path}
 												<p class="text-xs font-mono text-zinc-400 truncate" data-selectable>
-													{dep.path}
+													<span title={dep.path}>{getLastSegmentsStringFromPath(dep.path, 2)}</span>
 												</p>
 											{:else}
 												<p class="text-xs text-zinc-400">Found in PATH</p>
@@ -658,7 +661,9 @@
 								<p class="mt-1 text-[10px] text-zinc-400">
 									{runtime.license}
 									{#if runtime.localPath}
-										<span class="font-mono"> · {runtime.localPath}</span>
+										<span class="font-mono" title={runtime.localPath}>
+											 · {getLastSegmentsStringFromPath(runtime.localPath, 2)}
+										</span>
 									{:else if runtime.install.note}
 										 · {runtime.install.note}
 									{/if}

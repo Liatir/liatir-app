@@ -12,7 +12,7 @@
   import OptionPicker from '$lib/components/ui/OptionPicker.svelte';
   import type { PickerGroup } from '$lib/components/ui/OptionPicker.svelte';
   import Select from '$lib/components/ui/Select.svelte';
-  import { fmtBytes } from '$lib/utils';
+  import { fmtBytes, getLastSegmentsStringFromPath } from '$lib/utils';
   import { upstreamOptions } from '$lib/tools/pipeline-io';
   import ValueRefInput from './ValueRefInput.svelte';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
@@ -72,12 +72,6 @@
     void aiModelsStore.init();
   });
 
-  function truncatePath(path: string, max = 40): string {
-    if (path.length <= max) return path;
-    const parts = path.split(/[\\/]/);
-    return parts.length > 2 ? '…/' + parts.slice(-2).join('/') : '…' + path.slice(-(max - 1));
-  }
-
   // File-input picker: compatible file outputs of connected upstream steps + data files.
   function buildGroups(accept: string[] | undefined): PickerGroup[] {
     const groups: PickerGroup[] = [];
@@ -92,7 +86,7 @@
         items: files.map(f => ({
           value: f.path,
           label: f.name,
-          sublabel: truncatePath(f.path),
+          sublabel: getLastSegmentsStringFromPath(f.path, 2),
           badge: f.ext || '?',
           meta: f.size != null ? fmtBytes(f.size) : undefined,
         })),

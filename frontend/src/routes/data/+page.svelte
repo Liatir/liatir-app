@@ -7,6 +7,7 @@
   import { workspaceStore } from '$lib/stores/workspace.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import { liatir } from '$lib/api';
+  import { getLastSegmentsStringFromPath } from '$lib/utils';
 
   onMount(async () => {
     await dataFiles.init();
@@ -744,7 +745,9 @@
             <span class="text-[10px] text-zinc-400 uppercase tracking-wider">Format</span>
             <span class="text-[10px] font-medium px-1.5 py-0.5 rounded border {extClass(previewFile.ext)}">{previewFile.ext || '?'}</span>
           </div>
-          <p class="text-[10px] text-zinc-400 break-all pt-0.5">{previewFile.path}</p>
+          <p class="text-[10px] text-zinc-400 break-all pt-0.5" title={previewFile.path}>
+            {getLastSegmentsStringFromPath(previewFile.path, 3)}
+          </p>
         </div>
 
         <!-- Content -->

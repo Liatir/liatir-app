@@ -12,7 +12,7 @@ import { cachePathForModel, runAIPython, type AIPythonRunResult } from '$lib/ai/
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
 import { CELLTYPIST_ANNOTATE_SCRIPT } from './python-scripts';
 import { liatir } from '$lib/api';
-import { getLastSegmentFromPath } from '$lib/utils';
+import { getLastSegmentsStringFromPath } from '$lib/utils';
 
 export const celltypistAnnotateDefinition: LiatirAIToolDefinition = {
 	id: 'ai-celltypist-annotate',
@@ -185,7 +185,7 @@ export async function finalizeCelltypistAnnotateResult(
 						'Lightweight preview. Full Vitessce rendering is handled by a modular viewer runtime.',
 					config: {
 						title: 'CellTypist labels',
-						source: getLastSegmentFromPath(parsed?.labelsPath?.trim() ?? ''),
+						source: getLastSegmentsStringFromPath(parsed?.labelsPath?.trim() ?? ''),
 						labelCounts: parsed.summary.counts
 					},
 					height: 340

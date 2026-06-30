@@ -1,7 +1,7 @@
 <script lang="ts">
   import OptionPicker from './OptionPicker.svelte';
   import type { DataFile } from '$lib/stores/dataFiles.svelte';
-  import { fmtBytes } from '$lib/utils';
+  import { fmtBytes, getLastSegmentsStringFromPath } from '$lib/utils';
 
   interface Props {
     files: DataFile[];
@@ -27,17 +27,11 @@
     onchange,
   }: Props = $props();
 
-  function truncatePath(path: string, max = 52): string {
-    if (path.length <= max) return path;
-    const parts = path.split(/[\\/]/);
-    return parts.length > 2 ? '…/' + parts.slice(-2).join('/') : '…' + path.slice(-(max - 1));
-  }
-
   const groups = $derived([{
     items: files.map(f => ({
       value: f.path,
       label: f.name,
-      sublabel: truncatePath(f.path),
+      sublabel: getLastSegmentsStringFromPath(f.path, 2),
       badge: f.ext || '?',
       meta: f.size != null ? fmtBytes(f.size) : undefined,
     })),
