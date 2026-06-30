@@ -355,6 +355,7 @@
             type="text"
             value={searchQuery}
             placeholder="Search AI Models..."
+            data-testid="ai-models-search"
             class="h-9 w-full rounded-md border border-border bg-white pl-9 pr-9 text-sm text-zinc-700 outline-none transition-colors placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand/10"
             oninput={(event) => searchQuery = (event.target as HTMLInputElement).value}
           />
@@ -380,9 +381,11 @@
       {:else}
         {#each groupedModels as group (group.name)}
           {@const expanded = isCategoryExpanded(group.name)}
-          <section class="border border-border bg-white rounded-lg overflow-hidden">
+          <section class="border border-border bg-white rounded-lg overflow-hidden" data-testid="ai-model-category" data-category={group.name}>
             <button
               type="button"
+              data-testid="ai-model-category-toggle"
+              data-category={group.name}
               class="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors hover:bg-zinc-50"
               aria-expanded={expanded}
               onclick={() => toggleCategory(group.name)}

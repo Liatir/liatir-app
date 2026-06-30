@@ -82,6 +82,13 @@ fn main() {
     .plugin(tauri_plugin_shell::init())
     .plugin(bridge::autostart::init_plugin());
 
+  #[cfg(feature = "wdio")]
+  {
+    builder = builder
+      .plugin(tauri_plugin_wdio::init())
+      .plugin(tauri_plugin_wdio_webdriver::init());
+  }
+
   // --- 2) Deep Link plugin ---
   builder = builder.plugin(tauri_plugin_deep_link::init());
 

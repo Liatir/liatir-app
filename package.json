@@ -4,7 +4,17 @@
   "devDependencies": {
     "@types/node": "^25.9.1",
     "esbuild": "^0.28.1",
-    "vitepress": "^2.0.0-alpha.17"
+    "expect": "^30.4.1",
+    "pixelmatch": "^7.2.0",
+    "pngjs": "^7.0.0",
+    "tsx": "^4.22.4",
+    "vitepress": "^2.0.0-alpha.17",
+    "vitest": "^4.1.9"
+  },
+  "overrides": {
+    "vite": {
+      "esbuild": "^0.28.1"
+    }
   },
   "scripts": {
     "build:frontend": "npm ci --prefix frontend/ && npm run build --prefix frontend/",
@@ -31,6 +41,12 @@
     "build:log": "npm run build:log --prefix src-tauri/",
     "dev:log": "npm run dev:log --prefix src-tauri/",
     "build:wasm": "npm run build:wasm --prefix src-tauri/",
+    "test:unit": "vitest run --config tests/unit/vitest.config.ts",
+    "test:tauri:prepare": "npm run localdevconf && npm run gen:sdk-types && npm run build --prefix packages/liatir-core && npm run check --prefix frontend && npm run build --prefix frontend && npm run ts:compile --prefix src-tauri && node scripts/build-tauri-test-binary.mjs",
+    "test:tauri": "npm run test:tauri:prepare && npm run test:tauri:run",
+    "test:tauri:run": "node tests/e2e/run-tauri-e2e.mjs",
+    "test:visual": "node tests/e2e/run-tauri-e2e.mjs --visual tests/e2e/specs/visual.smoke.e2e.mjs",
+    "test:quality": "npm run test:unit && npm run test:tauri && npm run test:visual",
     "gen:sdk-types": "node scripts/generate-sdk-types.mjs",
     "lia:publish": "node scripts/publish-lia-packages.mjs",
     "lia:publish:dry": "node scripts/publish-lia-packages.mjs --dry-run",

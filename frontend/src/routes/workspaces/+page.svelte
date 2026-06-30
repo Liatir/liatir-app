@@ -180,6 +180,7 @@
       <!-- <p class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-2">Sandbox</p> -->
       <button
         onclick={() => openWorkspace(SANDBOX_WORKSPACE_ID)}
+        data-testid="workspace-sandbox-button"
         class="group w-full text-left rounded-xl border border-sandbox-200 bg-sandbox-50/60 px-4 py-3
                hover:border-sandbox-400 hover:bg-sandbox-50 hover:shadow-sm transition-all duration-150
                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sandbox-400"

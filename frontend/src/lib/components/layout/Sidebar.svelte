@@ -145,6 +145,8 @@
 					<button
 						onclick={()=>navigateToPage(item as NavItem)}
 						title={collapsed ? item.label : undefined}
+						data-testid="sidebar-nav-item"
+						data-route={item.href}
 						class="group relative flex w-full text-left items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
 							{collapsed ? 'justify-center' : ''}  
 							{(active && !(item?.workspacePage))
@@ -186,6 +188,8 @@
 					<button
 						onclick={()=>navigateToPage(item as NavItem)}
 						title={collapsed ? item.label : undefined}
+						data-testid="sidebar-nav-item"
+						data-route={item.href}
 						class="group relative flex w-full text-left items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
 							{collapsed ? 'justify-center' : ''}
 							{(active && !(item?.workspacePage))
