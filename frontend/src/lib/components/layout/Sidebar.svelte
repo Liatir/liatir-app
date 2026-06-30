@@ -149,7 +149,7 @@
 							{collapsed ? 'justify-center' : ''}  
 							{(active && !(item?.workspacePage))
 							? 'bg-brand/10 text-brand font-medium'
-							: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
+							: 'text-zinc-500 hover:bg-zinc-100/90 hover:text-zinc-800'}"
 					>
 						{#if item?.customIcon}
 							<CustomIcon src={item.customIcon} class="w-[16px] h-[16px] opacity-60"/>
@@ -190,7 +190,7 @@
 							{collapsed ? 'justify-center' : ''}
 							{(active && !(item?.workspacePage))
 							? 'bg-brand/10 text-brand font-medium'
-							: 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-800'}"
+							: 'text-zinc-500 hover:bg-zinc-100/90 hover:text-zinc-800'}"
 					>
 
 						{#if item?.customIcon}
@@ -222,7 +222,7 @@
 			title={collapsed ? 'Toggle Sandbox' : undefined}
 			class="w-full flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
 					{collapsed ? 'justify-center' : ''} 
-					text-sandbox-600 hover:bg-sandbox-50"
+					{workspaceStore.isSandboxMode?'text-sandbox-600 hover:bg-sandbox-50':'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100/90'}"
 		>
 			<Icon icon="lucide:flask-conical" width="16" height="16" class="shrink-0" />
 			{#if !collapsed}

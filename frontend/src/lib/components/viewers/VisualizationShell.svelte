@@ -143,7 +143,7 @@
 	});
 </script>
 
-<div class={expanded ? 'fixed inset-0 z-[9980] bg-white p-4' : ''}>
+<div class={expanded ? 'fixed inset-0 h-full z-[9980] bg-white p-4' : ''}>
 	<div
 		class={[
 			'rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4',
