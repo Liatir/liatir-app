@@ -24,6 +24,7 @@
 		emptyText?: string;
 		searchable?: boolean;
 		buttonClass?: string;
+		textSize?: 'xs' | 'sm' | 'md' | 'lg' | string,
 		stopPropagation?: boolean;
 	}
 
@@ -33,6 +34,7 @@
 		onchange,
 		disabled = false,
 		class: className = '',
+		textSize='xs',
 		id,
 		placeholder = 'Select option',
 		searchPlaceholder = 'Search...',
@@ -146,7 +148,7 @@
 		type="button"
 		{id}
 		class={[
-			'flex w-full items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-left text-sm text-neutral-800 shadow-sm transition hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-400',
+			`flex w-full items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-left text-${textSize} text-neutral-800 shadow-sm transition hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-400`,
 			buttonClass
 		].join(' ')}
 		aria-haspopup="listbox"
@@ -188,7 +190,7 @@
 							bind:this={searchEl}
 							bind:value={query}
 							type="search"
-							class="min-w-0 flex-1 bg-transparent py-2 text-sm text-neutral-800 outline-none placeholder:text-neutral-400"
+							class="min-w-0 flex-1 bg-transparent py-1.5 {`text-${textSize}`} text-neutral-800 outline-none placeholder:text-neutral-400"
 							placeholder={searchPlaceholder}
 							onclick={(event) => event.stopPropagation()}
 							onkeydown={handleSearchKeydown}
@@ -199,13 +201,13 @@
 
 			<div class="min-h-0 flex-1 overflow-auto p-1">
 				{#if filteredOptions.length === 0}
-					<div class="px-3 py-2 text-sm text-neutral-500">{emptyText}</div>
+					<div class="px-3 py-1.5 text-sm text-neutral-500">{emptyText}</div>
 				{:else}
 					{#each filteredOptions as option (option.value)}
 						<button
 							type="button"
 							class={[
-								'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition',
+								`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-${textSize} transition`,
 								option.value === value ? 'bg-violet-50 text-violet-700' : 'text-neutral-700 hover:bg-neutral-50',
 								option.disabled ? 'cursor-not-allowed opacity-45 hover:bg-transparent' : ''
 							].join(' ')}

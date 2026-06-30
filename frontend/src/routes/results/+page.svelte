@@ -11,6 +11,7 @@
   import { liatir } from '$lib/api';
   import { exportToHtml } from '$lib/utils/export-result';
   import type { ToolOutput } from '$lib/types/tool-output';
+	import Icon from '@iconify/svelte';
 
   const TOOL_LABELS: Record<string, string> = {
     pipeline: 'Pipeline',
@@ -76,7 +77,7 @@
       if (runParam && analysisRuns.runs.find(r => r.id === runParam)) {
         selectedId = runParam;
       } else if (filtered.length > 0 && !selectedId) {
-        selectedId = filtered[0].id;
+        // selectedId = filtered[0].id;
       }
     });
   });
@@ -132,6 +133,7 @@
         value={activeTool}
         options={toolOptions}
         onchange={(v) => activeTool = v}
+        class="text-xs"
       />
       <Select
         value={activeStatus}
@@ -141,6 +143,7 @@
           { value: 'error', label: 'Error' },
         ]}
         onchange={(v) => activeStatus = v as typeof activeStatus}
+        class="text-[10px]"
       />
     </div>
 
@@ -215,6 +218,10 @@
 
       {:else if !selectedRun}
         <div class="flex flex-col items-center justify-center h-full text-center">
+          <div class="flex items-center justify-center mb-2 gap-1">
+            <!-- <Icon icon="lucide:arrow-left" class="text-zinc-400/50 h-3 w-3"/> -->
+            <Icon icon="lucide:list" class="text-zinc-400/50 h-6 w-6"/>
+          </div>
           <p class="text-sm text-zinc-400">Select a run from the list to view results.</p>
         </div>
 
