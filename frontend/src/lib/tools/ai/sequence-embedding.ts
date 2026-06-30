@@ -7,7 +7,11 @@ import type {
 import type { RunOutputFile } from '$lib/types/pipeline';
 import type { ToolOutput } from '$lib/types/tool-output';
 import { aiRunMetadata, type AIRunContext } from '$lib/ai/direct-run-context';
-import { ESM2_8M_ID, NUCLEOTIDE_TRANSFORMER_50M_ID } from '$lib/ai/model-registry';
+import {
+	ESM2_8M_ID,
+	NUCLEOTIDE_TRANSFORMER_500M_ID,
+	NUCLEOTIDE_TRANSFORMER_50M_ID
+} from '$lib/ai/model-registry';
 import { cachePathForModel, runAIPython, type AIPythonRunResult } from '$lib/ai/runtime';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
 import { SEQUENCE_EMBEDDING_SCRIPT } from './python-scripts';
@@ -15,6 +19,7 @@ import { liatir } from '$lib/api';
 
 const HUB_MODEL_IDS: Record<string, string> = {
 	[NUCLEOTIDE_TRANSFORMER_50M_ID]: 'InstaDeepAI/nucleotide-transformer-v2-50m-multi-species',
+	[NUCLEOTIDE_TRANSFORMER_500M_ID]: 'InstaDeepAI/nucleotide-transformer-v2-500m-multi-species',
 	[ESM2_8M_ID]: 'facebook/esm2_t6_8M_UR50D'
 };
 

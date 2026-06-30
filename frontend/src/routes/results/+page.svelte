@@ -30,6 +30,8 @@
     'ai-mock-inference': 'Mock AI Inference',
     'ai-celltypist-annotate': 'CellTypist Annotation',
     'ai-sequence-embedding': 'Sequence Embedding',
+    'ai-genomic-variant-effect': 'Genomic Variant Effect',
+    'ai-protein-structure': 'Protein Structure Prediction',
   };
 
   function toolLabel(tool: string) { return TOOL_LABELS[tool] ?? tool; }

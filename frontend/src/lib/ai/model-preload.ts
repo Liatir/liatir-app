@@ -1,5 +1,10 @@
 import type { JsonValue, LiatirAIModelRecord } from '@liatir/core';
-import { CELLTYPIST_MODEL_ID, ESM2_8M_ID, NUCLEOTIDE_TRANSFORMER_50M_ID } from './model-registry';
+import {
+	CELLTYPIST_MODEL_ID,
+	ESM2_8M_ID,
+	NUCLEOTIDE_TRANSFORMER_500M_ID,
+	NUCLEOTIDE_TRANSFORMER_50M_ID
+} from './model-registry';
 import { cachePathForModel, runAIPython } from './runtime';
 
 const CELLTYPIST_PRELOAD_SCRIPT = String.raw`
@@ -49,6 +54,8 @@ print(json.dumps({"downloaded": True, "model": model_id, "revision": revision}))
 function hubModelId(modelId: string): string | null {
 	if (modelId === NUCLEOTIDE_TRANSFORMER_50M_ID)
 		return 'InstaDeepAI/nucleotide-transformer-v2-50m-multi-species';
+	if (modelId === NUCLEOTIDE_TRANSFORMER_500M_ID)
+		return 'InstaDeepAI/nucleotide-transformer-v2-500m-multi-species';
 	if (modelId === ESM2_8M_ID) return 'facebook/esm2_t6_8M_UR50D';
 	return null;
 }

@@ -3,6 +3,8 @@ import type { LiatirAIModelRecord } from '@liatir/core';
 const CAPABILITY_HELP: Record<string, string> = {
   'cell-annotation': 'labels cells in a single-cell dataset using known reference cell types.',
   'sequence-embedding': 'turns DNA, RNA, or protein sequences into numeric vectors that other tools can compare or plot.',
+  'regulatory-prediction': 'predicts or scores regulatory activity from genomic sequence windows.',
+  'variant-effect-scoring': 'compares reference and alternate sequence windows to estimate how much a variant changes model representation.',
   embedding: 'creates numeric vectors that capture similarity between biological inputs.',
   'protein-structure-prediction': 'predicts a 3D protein structure from an amino-acid sequence.',
   'protein-binding': 'can include ligand or binding-related outputs when the backend supports them.',

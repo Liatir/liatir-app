@@ -281,6 +281,8 @@ export type LiatirAICapability =
   | "cell-annotation"
   | "embedding"
   | "sequence-embedding"
+  | "regulatory-prediction"
+  | "variant-effect-scoring"
   | "protein-structure-prediction"
   | "protein-binding"
   | "reranking"

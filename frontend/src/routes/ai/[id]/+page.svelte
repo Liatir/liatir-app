@@ -30,6 +30,7 @@
 		CHAI1_MODEL_ID,
 		ESM2_8M_ID,
 		MOCK_AI_MODEL_ID,
+		NUCLEOTIDE_TRANSFORMER_500M_ID,
 		NUCLEOTIDE_TRANSFORMER_50M_ID
 	} from '$lib/ai/model-registry';
 	import {
@@ -163,7 +164,11 @@
 
 	$effect(() => {
 		if (modelId === ESM2_8M_ID && moleculeType !== 'protein') moleculeType = 'protein';
-		if (modelId === NUCLEOTIDE_TRANSFORMER_50M_ID && moleculeType === 'protein')
+		if (
+			(modelId === NUCLEOTIDE_TRANSFORMER_50M_ID ||
+				modelId === NUCLEOTIDE_TRANSFORMER_500M_ID) &&
+			moleculeType === 'protein'
+		)
 			moleculeType = 'dna';
 	});
 
@@ -198,7 +203,7 @@
 
 	function runMode(id: string): RunMode {
 		if (id === CELLTYPIST_MODEL_ID) return 'celltypist';
-		if (id === NUCLEOTIDE_TRANSFORMER_50M_ID || id === ESM2_8M_ID) return 'sequence';
+		if (id === NUCLEOTIDE_TRANSFORMER_50M_ID || id === NUCLEOTIDE_TRANSFORMER_500M_ID || id === ESM2_8M_ID) return 'sequence';
 		if (id === BOLTZ2_MODEL_ID || id === CHAI1_MODEL_ID) return 'protein-structure';
 		if (id === MOCK_AI_MODEL_ID) return 'mock';
 		return 'unsupported';

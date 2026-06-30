@@ -3,6 +3,7 @@ import type { LiatirAIModelMetadata } from '@liatir/core';
 export const MOCK_AI_MODEL_ID = 'liatir-mock-local';
 export const CELLTYPIST_MODEL_ID = 'celltypist-local-annotation';
 export const NUCLEOTIDE_TRANSFORMER_50M_ID = 'instadeep-nt-v2-50m-multi-species';
+export const NUCLEOTIDE_TRANSFORMER_500M_ID = 'instadeep-nt-v2-500m-multi-species';
 export const ESM2_8M_ID = 'facebook-esm2-8m-protein';
 export const BOLTZ2_MODEL_ID = 'boltz2-local-structure-binding';
 export const CHAI1_MODEL_ID = 'chai1-local-structure';
@@ -97,7 +98,7 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		},
 		source: 'managed-runtime',
 		localOnly: true,
-		capabilities: ['embedding', 'sequence-embedding'],
+		capabilities: ['embedding', 'sequence-embedding', 'variant-effect-scoring'],
 		modalities: ['dna', 'rna'],
 		parameters: 50_000_000,
 		license: {
@@ -129,6 +130,52 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			]
 		},
 		tags: ['built-in', 'managed', 'genomics', 'embedding', 'non-commercial']
+	},
+	{
+		id: NUCLEOTIDE_TRANSFORMER_500M_ID,
+		name: 'Nucleotide Transformer v2 500M',
+		description:
+			'Larger managed local DNA/RNA foundation model for genomic embeddings and embedding-delta variant effect scoring.',
+		version: 'v2-500m-multi-species',
+		runtime: {
+			kind: 'python-venv',
+			name: 'Transformers PyTorch Runtime',
+			version: 'python-venv'
+		},
+		source: 'managed-runtime',
+		localOnly: true,
+		capabilities: ['embedding', 'sequence-embedding', 'variant-effect-scoring'],
+		modalities: ['dna', 'rna'],
+		parameters: 500_000_000,
+		license: {
+			name: 'CC-BY-NC-SA-4.0',
+			spdxId: 'CC-BY-NC-SA-4.0',
+			url: 'https://huggingface.co/InstaDeepAI/nucleotide-transformer-v2-500m-multi-species',
+			verifiedAt: '2026-06-30'
+		},
+		hardware: {
+			cpu: true,
+			gpu: true,
+			minRamGb: 16,
+			recommendedRamGb: 32,
+			minVramGb: 0,
+			recommendedVramGb: 16,
+			notes:
+				'Larger Nucleotide Transformer checkpoint. CPU can work for short windows, but GPU/MPS is strongly preferred for repeated variant scoring.'
+		},
+		install: {
+			method: 'managed-runtime',
+			runtimeId: 'sequence-transformers',
+			modelCacheSubdir: 'model-cache/huggingface',
+			runtimePackages: [
+				{ package: 'torch', specifier: 'torch>=2.2,<3', importName: 'torch' },
+				{ package: 'transformers', specifier: 'transformers>=4.40,<5', importName: 'transformers' },
+				{ package: 'numpy', specifier: 'numpy>=1.26,<3', importName: 'numpy' },
+				{ package: 'safetensors', specifier: 'safetensors>=0.4,<1', importName: 'safetensors' },
+				{ package: 'urllib3', specifier: 'urllib3>=1.26,<2', importName: 'urllib3' }
+			]
+		},
+		tags: ['built-in', 'managed', 'genomics', 'variant-effect', 'embedding', 'non-commercial']
 	},
 	{
 		id: ESM2_8M_ID,
