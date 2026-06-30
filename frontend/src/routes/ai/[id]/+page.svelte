@@ -20,7 +20,7 @@
 	import { toast } from '$lib/stores/toast.svelte';
 	import { modelInstallBlock } from '$lib/ai/model-compatibility';
 	import { AI_MODEL_INPUT_HELP, aiModelInfo } from '$lib/ai/model-help';
-	import { fmtDuration } from '$lib/utils';
+	import { fmtDuration, sanitizeLocalPathsForDisplay } from '$lib/utils';
 	import { ensureResultsDir } from '$lib/utils/results';
 	import type { AIDirectRunContext } from '$lib/ai/direct-run-context';
 	import { getAIHardwareInfo, type AIHardwareInfo } from '$lib/ai/runtime';
@@ -773,9 +773,9 @@
 						Current run log
 					</p>
 					<pre
-						class="max-h-48 overflow-auto whitespace-pre-wrap text-xs text-zinc-600 font-mono">{logLines.join(
+						class="max-h-48 overflow-auto whitespace-pre-wrap text-xs text-zinc-600 font-mono">{sanitizeLocalPathsForDisplay(logLines.join(
 							'\n'
-						)}</pre>
+						), 2)}</pre>
 				</Card>
 			{:else if activeModelJob && !running}
 				<Card class="p-4">
@@ -798,7 +798,7 @@
 					class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-mono"
 					data-selectable
 				>
-					{displayError}
+					{sanitizeLocalPathsForDisplay(displayError, 2)}
 				</div>
 				<RunLog runId={selectedRunId} />
 			{:else if loadingOutput}

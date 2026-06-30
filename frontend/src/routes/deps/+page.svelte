@@ -13,7 +13,7 @@
 	import { toast } from '$lib/stores/toast.svelte';
 	import { liatir } from '$lib/api';
 	import { runNativeTool } from '$lib/utils/native-tool';
-	import { getLastSegmentsStringFromPath } from '$lib/utils';
+	import { getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
 	import {
 		getRelease,
 		installBinary,
@@ -489,7 +489,7 @@
 										{#if managed && !dep.available}
 											<p class="text-xs text-emerald-600 truncate">
 												Managed v{managed.version} —
-												<span class="font-mono text-zinc-400" title={managed.path}>
+												<span class="font-mono text-zinc-400" title={getLastSegmentsStringFromPath(managed.path, 2)}>
 													{getLastSegmentsStringFromPath(managed.path, 2)}
 												</span>
 											</p>
@@ -504,7 +504,7 @@
 												</p>
 											{:else if dep.path}
 												<p class="text-xs font-mono text-zinc-400 truncate" data-selectable>
-													<span title={dep.path}>{getLastSegmentsStringFromPath(dep.path, 2)}</span>
+													<span title={getLastSegmentsStringFromPath(dep.path, 2)}>{getLastSegmentsStringFromPath(dep.path, 2)}</span>
 												</p>
 											{:else}
 												<p class="text-xs text-zinc-400">Found in PATH</p>
@@ -525,7 +525,7 @@
 										{:else if state.phase === 'done'}
 											<p class="text-xs text-emerald-600">Installed successfully</p>
 										{:else if state.phase === 'error'}
-											<p class="text-xs text-red-500 truncate">{state.error}</p>
+											<p class="text-xs text-red-500 truncate">{sanitizeLocalPathsForDisplay(state.error ?? 'Install failed.', 2)}</p>
 										{:else}
 											<p class="text-xs text-zinc-400">
 												Not found in PATH
@@ -618,10 +618,10 @@
 										class="mx-4 mb-3 rounded-lg border border-border bg-zinc-950 px-3 py-2 max-h-40 overflow-y-auto"
 									>
 										{#if state.phase === 'error' && state.error}
-											<p class="text-xs font-mono text-red-400 mb-1">{state.error}</p>
+											<p class="text-xs font-mono text-red-400 mb-1">{sanitizeLocalPathsForDisplay(state.error, 2)}</p>
 										{/if}
 										{#each state.pmLog as line}
-											<p class="text-[11px] font-mono text-zinc-300 leading-relaxed">{line}</p>
+											<p class="text-[11px] font-mono text-zinc-300 leading-relaxed">{sanitizeLocalPathsForDisplay(line, 2)}</p>
 										{/each}
 									</div>
 								{/if}
@@ -661,7 +661,7 @@
 								<p class="mt-1 text-[10px] text-zinc-400">
 									{runtime.license}
 									{#if runtime.localPath}
-										<span class="font-mono" title={runtime.localPath}>
+										<span class="font-mono" title={getLastSegmentsStringFromPath(runtime.localPath, 2)}>
 											 · {getLastSegmentsStringFromPath(runtime.localPath, 2)}
 										</span>
 									{:else if runtime.install.note}

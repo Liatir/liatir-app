@@ -6,7 +6,7 @@ import type {
 } from '@liatir/core';
 import type { RunOutputFile } from '$lib/types/pipeline';
 import type { ToolOutput } from '$lib/types/tool-output';
-import { directRunMetadata, type AIDirectRunContext } from '$lib/ai/direct-run-context';
+import { aiRunMetadata, type AIRunContext } from '$lib/ai/direct-run-context';
 import { CELLTYPIST_MODEL_ID } from '$lib/ai/model-registry';
 import { cachePathForModel, runAIPython, type AIPythonRunResult } from '$lib/ai/runtime';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
@@ -222,7 +222,7 @@ export async function runCelltypistAnnotateStep(
 	inputs: Record<string, string>,
 	outputDir: string,
 	onLog: (line: string) => void,
-	runContext?: AIDirectRunContext
+	runContext?: AIRunContext
 ): Promise<{
 	outputFiles: RunOutputFile[];
 	output: ToolOutput;
@@ -257,10 +257,13 @@ export async function runCelltypistAnnotateStep(
 		},
 		{
 			timeoutSeconds: 7200,
-			jobLabel: celltypistAnnotateDefinition.label,
+			jobLabel:
+				runContext?.runKind === 'pipeline-step'
+					? `${runContext.pipelineName}: ${celltypistAnnotateDefinition.label}`
+					: celltypistAnnotateDefinition.label,
 			metadata: {
 				toolId: celltypistAnnotateDefinition.id,
-				...(runContext ? directRunMetadata(runContext) : {})
+				...(runContext ? aiRunMetadata(runContext) : {})
 			}
 		}
 	);

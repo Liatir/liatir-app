@@ -6,6 +6,7 @@
   import { liatir } from '$lib/api';
   import { THREEDMOL_RUNTIME_ID } from '$lib/viewers/runtime-registry';
   import { readViewerRuntimeScript } from '$lib/viewers/runtime-loader';
+  import { sanitizeLocalPathsForDisplay } from '$lib/utils';
   import type { StructureViewerSection } from '$lib/types/tool-output';
 
   let { section }: { section: StructureViewerSection } = $props();
@@ -257,7 +258,7 @@
       </div>
     {:else if error}
       <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 px-4 text-center text-xs text-red-600">
-        <p>{error}</p>
+        <p>{sanitizeLocalPathsForDisplay(error, 2)}</p>
         {#if error.includes('not installed')}
           <Button size="sm" variant="secondary" onclick={() => goto('/deps')}>
             Open Dependencies
@@ -289,7 +290,7 @@
         </svg>
         {#if runtimeWarning}
           <div class="absolute bottom-3 left-3 right-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-            3Dmol.js runtime failed, showing lightweight PDB preview. {runtimeWarning}
+            3Dmol.js runtime failed, showing lightweight PDB preview. {sanitizeLocalPathsForDisplay(runtimeWarning, 2)}
           </div>
         {/if}
       </div>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ActiveDownload } from '$lib/stores/downloads.svelte';
   import { downloadsStore } from '$lib/stores/downloads.svelte';
+  import { sanitizeLocalPathsForDisplay } from '$lib/utils';
 
   let { download }: { download: ActiveDownload } = $props();
 
@@ -74,7 +75,7 @@
   </div>
 
   {#if download.status === 'error'}
-    <p class="text-xs text-red-600 font-mono leading-relaxed">{download.error}</p>
+    <p class="text-xs text-red-600 font-mono leading-relaxed">{sanitizeLocalPathsForDisplay(download.error ?? 'Download failed.', 2)}</p>
   {:else}
     <!-- Progress bar -->
     <div class="h-1.5 bg-zinc-100 rounded-full overflow-hidden">

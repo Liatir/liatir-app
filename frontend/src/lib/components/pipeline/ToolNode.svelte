@@ -12,7 +12,7 @@
   import OptionPicker from '$lib/components/ui/OptionPicker.svelte';
   import type { PickerGroup } from '$lib/components/ui/OptionPicker.svelte';
   import Select from '$lib/components/ui/Select.svelte';
-  import { fmtBytes, getLastSegmentsStringFromPath } from '$lib/utils';
+  import { fmtBytes, getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { upstreamOptions } from '$lib/tools/pipeline-io';
   import ValueRefInput from './ValueRefInput.svelte';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
@@ -60,7 +60,10 @@
     const raw = state?.outputValues?.[key];
     if (raw === undefined) return '–';
     const n = Number(raw);
-    if (schema.type !== 'number' || Number.isNaN(n)) return raw.length > 36 ? `${raw.slice(0, 33)}...` : raw;
+    if (schema.type !== 'number' || Number.isNaN(n)) {
+      const visible = sanitizeLocalPathsForDisplay(raw, 2);
+      return visible.length > 36 ? `${visible.slice(0, 33)}...` : visible;
+    }
     if (schema.format === 'percent') return `${n.toFixed(1)}%`;
     if (schema.format === 'integer') return n.toLocaleString();
     return n.toFixed(3);
@@ -192,7 +195,7 @@
 
       {#if status === 'error' && state?.error}
         <div class="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs text-red-700 font-mono overflow-y-scroll overflow-x-hidden text-wrap break-all max-h-40">
-          {state.error}
+          {sanitizeLocalPathsForDisplay(state.error, 2)}
         </div>
       {/if}
     </div>
@@ -200,7 +203,7 @@
 
   {#if status === 'running' && state?.logs && state.logs.length > 0}
     <div class="px-3 pb-2 text-[10px] font-mono text-zinc-400 truncate nodrag nopan">
-      {state.logs[state.logs.length - 1]}
+      {sanitizeLocalPathsForDisplay(state.logs[state.logs.length - 1], 2)}
     </div>
   {/if}
 

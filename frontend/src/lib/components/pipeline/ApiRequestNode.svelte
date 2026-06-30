@@ -8,6 +8,7 @@
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
   import { apiConnections } from '$lib/stores/apiConnections.svelte';
   import { upstreamOptions } from '$lib/tools/pipeline-io';
+  import { sanitizeLocalPathsForDisplay } from '$lib/utils';
   import ValueRefInput from './ValueRefInput.svelte';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
   import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
@@ -167,10 +168,10 @@
     {/if}
 
     {#if status === 'running'}
-      <div class="text-[10px] font-mono text-zinc-400">{runState?.logs?.[0] ?? 'Sending…'}</div>
+      <div class="text-[10px] font-mono text-zinc-400">{sanitizeLocalPathsForDisplay(runState?.logs?.[0] ?? 'Sending…', 2)}</div>
     {/if}
     {#if status === 'error' && runState?.error}
-      <div class="text-[10px] text-red-500 font-mono">{runState.error}</div>
+      <div class="text-[10px] text-red-500 font-mono">{sanitizeLocalPathsForDisplay(runState.error, 2)}</div>
     {/if}
     {#if status === 'done'}
       <div class="text-[10px] text-emerald-600">

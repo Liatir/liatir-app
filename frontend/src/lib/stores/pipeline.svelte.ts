@@ -13,6 +13,7 @@ import type {
   SubPipelineNodeData, ApiRequestNodeData, NodeRunState, RunOutputFile,
   PipelineStepDefinition,
 } from '$lib/types/pipeline';
+import type { AIPipelineRunContext } from '$lib/ai/direct-run-context';
 import type { JsonValue } from '@liatir/core';
 
 interface PipelineStepRecord {
@@ -24,6 +25,14 @@ interface PipelineStepRecord {
 /** Combine each step's result into one grouped ToolOutput (a heading per step). */
 function buildPipelineOutput(steps: PipelineStepRecord[]): ToolOutput {
   const sections: ToolOutput['sections'] = [];
+  if (steps.length === 0) {
+    sections.push({
+      type: 'text',
+      label: 'Pipeline',
+      content: 'Pipeline completed.',
+    });
+    return { sections };
+  }
   for (const s of steps) {
     sections.push({
       type: 'text',
@@ -48,7 +57,30 @@ export interface SavedPipeline {
 interface PipelineWorkspace {
   current: { nodes: Node[]; edges: Edge[]; name: string; id: string | null };
   saved: SavedPipeline[];
+  runtime?: SerializedPipelineRuntimeState[];
 }
+
+interface PipelineRuntimeState {
+  pipelineId: string | null;
+  pipelineName: string;
+  nodeStates: Map<string, NodeRunState>;
+  running: boolean;
+  runId: string | null;
+  startedAt: number | null;
+}
+
+interface SerializedPipelineRuntimeState {
+  key: string;
+  pipelineId: string | null;
+  pipelineName: string;
+  nodeStates: [string, NodeRunState][];
+  running: boolean;
+  runId: string | null;
+  startedAt: number | null;
+}
+
+const DRAFT_PIPELINE_KEY = '__draft__';
+const EMPTY_NODE_STATES: Map<string, NodeRunState> = new Map();
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -89,6 +121,65 @@ function topoSort(nodes: Node[], edges: Edge[]): string[] {
 
 function initNodeState(): NodeRunState {
   return { status: 'pending', logs: [], outputFiles: [], error: null };
+}
+
+function runtimeKeyFor(id: string | null | undefined): string {
+  return id ?? DRAFT_PIPELINE_KEY;
+}
+
+function createRuntimeState(
+  key: string,
+  pipelineId: string | null,
+  pipelineName: string
+): PipelineRuntimeState {
+  return {
+    pipelineId,
+    pipelineName,
+    nodeStates: new Map(),
+    running: false,
+    runId: null,
+    startedAt: null,
+  };
+}
+
+function serializeRuntimeState(
+  key: string,
+  state: PipelineRuntimeState
+): SerializedPipelineRuntimeState {
+  return {
+    key,
+    pipelineId: state.pipelineId,
+    pipelineName: state.pipelineName,
+    nodeStates: [...state.nodeStates.entries()],
+    running: state.running,
+    runId: state.runId,
+    startedAt: state.startedAt,
+  };
+}
+
+function deserializeRuntimeState(serialized: SerializedPipelineRuntimeState): PipelineRuntimeState {
+  const nodeStates = new Map(serialized.nodeStates ?? []);
+
+  if (serialized.running) {
+    for (const [nodeId, state] of nodeStates.entries()) {
+      if (state.status === 'running') {
+        nodeStates.set(nodeId, {
+          ...state,
+          status: 'error',
+          error: 'Pipeline run was interrupted before Liatir could finalize it.',
+        });
+      }
+    }
+  }
+
+  return {
+    pipelineId: serialized.pipelineId,
+    pipelineName: serialized.pipelineName,
+    nodeStates,
+    running: false,
+    runId: serialized.running ? null : serialized.runId,
+    startedAt: serialized.running ? null : serialized.startedAt,
+  };
 }
 
 function errorMessage(error: unknown): string {
@@ -232,8 +323,7 @@ function wouldCreateCycle(
 // ── Store ─────────────────────────────────────────────────────────────────────
 
 function createPipelineStore() {
-  let nodeStates = $state(new Map<string, NodeRunState>());
-  let running = $state(false);
+  let runtimeByPipeline = $state(new Map<string, PipelineRuntimeState>());
 
   let savedPipelines = $state<SavedPipeline[]>([]);
   let pipelineName = $state('Untitled Pipeline');
@@ -246,9 +336,52 @@ function createPipelineStore() {
   let initialized = false;
   let persistTimer: ReturnType<typeof setTimeout> | undefined;
 
+  function currentRuntimeKey(): string {
+    return runtimeKeyFor(pipelineId);
+  }
+
+  function runtimeFor(
+    key = currentRuntimeKey(),
+    id = pipelineId,
+    name = pipelineName
+  ): PipelineRuntimeState {
+    const existing = runtimeByPipeline.get(key);
+    if (existing) return existing;
+    const created = createRuntimeState(key, id, name);
+    runtimeByPipeline = new Map([...runtimeByPipeline, [key, created]]);
+    return created;
+  }
+
+  function setRuntime(key: string, state: PipelineRuntimeState) {
+    runtimeByPipeline = new Map([...runtimeByPipeline, [key, state]]);
+    schedulePersist();
+  }
+
+  function patchStateFor(key: string, id: string, patch: Partial<NodeRunState>) {
+    const runtime = runtimeFor(key);
+    const prev = runtime.nodeStates.get(id) ?? initNodeState();
+    setRuntime(key, {
+      ...runtime,
+      nodeStates: new Map([...runtime.nodeStates, [id, { ...prev, ...patch }]]),
+    });
+  }
+
   function patchState(id: string, patch: Partial<NodeRunState>) {
-    const prev = nodeStates.get(id) ?? initNodeState();
-    nodeStates = new Map([...nodeStates, [id, { ...prev, ...patch }]]);
+    patchStateFor(currentRuntimeKey(), id, patch);
+  }
+
+  function runtimeNodeStates(key: string): Map<string, NodeRunState> {
+    return runtimeFor(key).nodeStates;
+  }
+
+  function moveRuntimeState(fromKey: string, toKey: string, id: string | null, name: string) {
+    if (fromKey === toKey) return;
+    const existing = runtimeByPipeline.get(fromKey);
+    if (!existing) return;
+    const next = new Map(runtimeByPipeline);
+    next.delete(fromKey);
+    next.set(toKey, { ...existing, pipelineId: id, pipelineName: name });
+    runtimeByPipeline = next;
   }
 
   async function persist() {
@@ -260,6 +393,7 @@ function createPipelineStore() {
         id: pipelineId,
       },
       saved: JSON.parse(JSON.stringify(savedPipelines)),
+      runtime: [...runtimeByPipeline.entries()].map(([key, state]) => serializeRuntimeState(key, state)),
     };
     await appStorage.writeText(getFile(), JSON.stringify(workspace, null, 2));
   }
@@ -340,8 +474,15 @@ function createPipelineStore() {
   }
 
   return {
-    get nodeStates() { return nodeStates; },
-    get running() { return running; },
+    get nodeStates() { return runtimeFor().nodeStates; },
+    get running() { return runtimeFor().running; },
+    get currentRunId() { return runtimeFor().runId; },
+    isPipelineRunning(id: string | null = pipelineId) {
+      return runtimeByPipeline.get(runtimeKeyFor(id))?.running ?? false;
+    },
+    nodeStatesFor(id: string | null = pipelineId): Map<string, NodeRunState> {
+      return runtimeByPipeline.get(runtimeKeyFor(id))?.nodeStates ?? EMPTY_NODE_STATES;
+    },
     get savedPipelines() { return savedPipelines; },
     get pipelineName() { return pipelineName; },
     get pipelineId() { return pipelineId; },
@@ -381,6 +522,9 @@ function createPipelineStore() {
           pipelineName = ws.current?.name ?? 'Untitled Pipeline';
           pipelineId = ws.current?.id ?? null;
           savedPipelines = ws.saved ?? [];
+          runtimeByPipeline = new Map(
+            (ws.runtime ?? []).map((runtime) => [runtime.key, deserializeRuntimeState(runtime)])
+          );
         }
       } catch { /* start fresh */ }
     },
@@ -394,11 +538,11 @@ function createPipelineStore() {
       pendingLoad = null;
       currentNodes = [];
       currentEdges = [];
-      nodeStates = new Map();
-      running = false;
+      runtimeByPipeline = new Map();
     },
 
     async savePipeline(name: string) {
+      const previousKey = currentRuntimeKey();
       const id = pipelineId ?? crypto.randomUUID();
       const p: SavedPipeline = {
         id, name,
@@ -408,6 +552,7 @@ function createPipelineStore() {
       };
       pipelineName = name;
       pipelineId = id;
+      moveRuntimeState(previousKey, runtimeKeyFor(id), id, name);
       const idx = savedPipelines.findIndex(x => x.id === id);
       savedPipelines = idx >= 0
         ? savedPipelines.map((x, i) => i === idx ? p : x)
@@ -417,17 +562,11 @@ function createPipelineStore() {
     },
 
     loadSavedPipeline(p: SavedPipeline) {
-      // Preserve live run state when re-opening the pipeline that is currently
-      // loaded (e.g. navigating away mid-run and coming back via the list).
-      // Only wipe node states when switching to a *different* pipeline.
-      const sameAsCurrent = pipelineId === p.id;
       currentNodes = JSON.parse(JSON.stringify(p.nodes));
       currentEdges = JSON.parse(JSON.stringify(p.edges));
       pipelineName = p.name;
       pipelineId = p.id;
-      if (!sameAsCurrent && !running) {
-        nodeStates = new Map();
-      }
+      runtimeFor(runtimeKeyFor(p.id), p.id, p.name);
       pendingLoad = { nodes: currentNodes, edges: currentEdges, name: p.name, id: p.id };
     },
 
@@ -436,7 +575,7 @@ function createPipelineStore() {
       currentEdges = [];
       pipelineName = 'Untitled Pipeline';
       pipelineId = null;
-      nodeStates = new Map();
+      runtimeByPipeline = new Map([...runtimeByPipeline, [DRAFT_PIPELINE_KEY, createRuntimeState(DRAFT_PIPELINE_KEY, null, 'Untitled Pipeline')]]);
       pendingLoad = { nodes: [], edges: [], name: 'Untitled Pipeline', id: null };
       schedulePersist();
     },
@@ -485,14 +624,46 @@ function createPipelineStore() {
     },
 
     async run(nodes: Node[], edges: Edge[]) {
-      if (running || nodes.length === 0) return;
+      const runPipelineId = pipelineId;
+      const runPipelineName = pipelineName || 'Pipeline';
+      const runKey = runtimeKeyFor(runPipelineId);
+      const existingRuntime = runtimeFor(runKey, runPipelineId, runPipelineName);
+      if (existingRuntime.running || nodes.length === 0) return;
       const api = liatir();
       if (!api) return;
 
-      running = true;
       const fresh = new Map<string, NodeRunState>();
       for (const n of nodes) fresh.set(n.id, initNodeState());
-      nodeStates = fresh;
+      const pipelineRunId = crypto.randomUUID();
+      setRuntime(runKey, {
+        pipelineId: runPipelineId,
+        pipelineName: runPipelineName,
+        nodeStates: fresh,
+        running: true,
+        runId: pipelineRunId,
+        startedAt: Date.now(),
+      });
+
+      const states = () => runtimeNodeStates(runKey);
+      const patchRunState = (nodeId: string, patch: Partial<NodeRunState>) => patchStateFor(runKey, nodeId, patch);
+      const pipelineStepContext = (
+        nodeId: string,
+        definition: PipelineStepDefinition,
+        resolved: Record<string, string>,
+        outputDir: string,
+        startedAt: number
+      ): AIPipelineRunContext => ({
+        runKind: 'pipeline-step',
+        pipelineRunId,
+        pipelineId: runPipelineId,
+        pipelineName: runPipelineName,
+        nodeId,
+        toolId: definition.id,
+        label: definition.label,
+        params: resolved,
+        startedAt,
+        outputDir,
+      });
 
       // Accumulate step results to record ONE grouped pipeline run in Results.
       const pipeStartedAt = Date.now();
@@ -512,25 +683,25 @@ function createPipelineStore() {
         if (node.type === 'tool') {
           const entry = resolveStepEntry(node.data?.stepId as string ?? '');
           if (!entry) {
-            patchState(nodeId, { status: 'error', error: `Unknown tool: ${node.data?.stepId}` });
+            patchRunState(nodeId, { status: 'error', error: `Unknown tool: ${node.data?.stepId}` });
             break;
           }
-          patchState(nodeId, { status: 'running' });
+          patchRunState(nodeId, { status: 'running' });
 
           const { absDir: outputDir, virtualFolder } = await ensureResultsDir(entry.definition.label);
 
           const resolved = resolveInputs(
             nodes,
-            nodeStates,
+            states(),
             inputsWithDefaults(entry.definition, node.data?.inputs as Record<string, string> ?? {})
           );
           const logs: string[] = [];
           try {
             const result = await entry.run(resolved, outputDir, (line) => {
               logs.push(line);
-              patchState(nodeId, { logs: [...logs] });
-            });
-            patchState(nodeId, {
+              patchRunState(nodeId, { logs: [...logs] });
+            }, pipelineStepContext(nodeId, entry.definition, resolved, outputDir, pipeStartedAt));
+            patchRunState(nodeId, {
               status: 'done',
               logs,
               outputFiles: result.outputFiles,
@@ -542,67 +713,67 @@ function createPipelineStore() {
             await dataFiles.createFolder(virtualFolder).catch(() => {});
             for (const f of result.outputFiles) await dataFiles.add(f.path, virtualFolder).catch(() => {});
           } catch (e) {
-            patchState(nodeId, { status: 'error', logs, outputFiles: [], error: String(e) });
+            patchRunState(nodeId, { status: 'error', logs, outputFiles: [], error: String(e) });
             break;
           }
 
         // ── Variable node ──────────────────────────────────────────────────────
         } else if (node.type === 'variable') {
           const d = node.data as unknown as VariableNodeData;
-          patchState(nodeId, { status: 'done', outputValues: { value: d.value ?? '' } });
+          patchRunState(nodeId, { status: 'done', outputValues: { value: d.value ?? '' } });
 
         // ── Math node ──────────────────────────────────────────────────────────
         } else if (node.type === 'math') {
           const d = node.data as unknown as MathNodeData;
-          const a = Number(resolveRef(d.literalA ?? '', nodes, nodeStates) || 0);
-          const b = Number(resolveRef(d.literalB ?? '', nodes, nodeStates) || 0);
-          patchState(nodeId, { status: 'done', outputValues: { result: String(computeMath(d.operation, a, b)) } });
+          const a = Number(resolveRef(d.literalA ?? '', nodes, states()) || 0);
+          const b = Number(resolveRef(d.literalB ?? '', nodes, states()) || 0);
+          patchRunState(nodeId, { status: 'done', outputValues: { result: String(computeMath(d.operation, a, b)) } });
 
         // ── Condition node ─────────────────────────────────────────────────────
         } else if (node.type === 'condition') {
           const d = node.data as unknown as ConditionNodeData;
-          const value = resolveRef(d.valueRef ?? '', nodes, nodeStates);
+          const value = resolveRef(d.valueRef ?? '', nodes, states());
           let ok = false;
           try {
             // eslint-disable-next-line no-new-func
             ok = Boolean(new Function('value', `return (${d.condition ?? 'false'})`)(value));
           } catch (e) {
-            patchState(nodeId, { status: 'error', error: `Invalid condition: ${e}` });
+            patchRunState(nodeId, { status: 'error', error: `Invalid condition: ${e}` });
             break;
           }
           const branch: 'true' | 'false' = ok ? 'true' : 'false';
-          patchState(nodeId, {
+          patchRunState(nodeId, {
             status: 'done',
             activeBranch: branch,
             outputValues: { trueBranch: ok ? value : '', falseBranch: !ok ? value : '' },
           });
-          const dead = findDeadBranchNodes(nodes, edges, nodeId, ok ? 'falseBranch' : 'trueBranch', nodeStates);
+          const dead = findDeadBranchNodes(nodes, edges, nodeId, ok ? 'falseBranch' : 'trueBranch', states());
           for (const s of dead) {
             skipped.add(s);
-            patchState(s, { status: 'skipped' });
+            patchRunState(s, { status: 'skipped' });
           }
 
         // ── Sub-pipeline node ──────────────────────────────────────────────────
         } else if (node.type === 'sub-pipeline') {
           const d = node.data as unknown as SubPipelineNodeData;
           if (!d.pipelineId) {
-            patchState(nodeId, { status: 'error', error: 'No pipeline selected' });
+            patchRunState(nodeId, { status: 'error', error: 'No pipeline selected' });
             break;
           }
           const sub = savedPipelines.find(p => p.id === d.pipelineId);
           if (!sub) {
-            patchState(nodeId, { status: 'error', error: 'Pipeline not found' });
+            patchRunState(nodeId, { status: 'error', error: 'Pipeline not found' });
             break;
           }
-          patchState(nodeId, { status: 'running', logs: [`▶ Running sub-pipeline: ${sub.name}`] });
+          patchRunState(nodeId, { status: 'running', logs: [`▶ Running sub-pipeline: ${sub.name}`] });
           try {
             const subFiles = await runNodes(sub.nodes, sub.edges, (line) => {
-              const curr = nodeStates.get(nodeId);
-              patchState(nodeId, { logs: [...(curr?.logs ?? []), line] });
+              const curr = states().get(nodeId);
+              patchRunState(nodeId, { logs: [...(curr?.logs ?? []), line] });
             });
-            patchState(nodeId, { status: 'done', outputFiles: subFiles });
+            patchRunState(nodeId, { status: 'done', outputFiles: subFiles });
           } catch (e) {
-            patchState(nodeId, { status: 'error', error: String(e) });
+            patchRunState(nodeId, { status: 'error', error: String(e) });
             break;
           }
 
@@ -610,21 +781,21 @@ function createPipelineStore() {
         } else if (node.type === 'api-request') {
           const d = node.data as unknown as ApiRequestNodeData;
           if (!d.requestId) {
-            patchState(nodeId, { status: 'error', error: 'No request selected' });
+            patchRunState(nodeId, { status: 'error', error: 'No request selected' });
             break;
           }
           const req = apiConnections.requestById(d.requestId);
           if (!req) {
-            patchState(nodeId, { status: 'error', error: 'Request not found' });
+            patchRunState(nodeId, { status: 'error', error: 'Request not found' });
             break;
           }
           const provider = apiConnections.collectionById(req.collectionId) ?? undefined;
           // Per-param overrides configured on the node (literal or `@pipe:` ref).
           // Only non-empty values override the request's own params.
-          const resolvedOverrides = resolveInputs(nodes, nodeStates, (node.data?.paramOverrides as Record<string, string>) ?? {});
+          const resolvedOverrides = resolveInputs(nodes, states(), (node.data?.paramOverrides as Record<string, string>) ?? {});
           const paramOverrides: Record<string, string> = {};
           for (const [k, v] of Object.entries(resolvedOverrides)) if (v !== '') paramOverrides[k] = v;
-          patchState(nodeId, { status: 'running', logs: [`${req.method} ${req.url}`] });
+          patchRunState(nodeId, { status: 'running', logs: [`${req.method} ${req.url}`] });
           try {
             const resp = await sendApiRequest(req, { provider, paramOverrides, envVars: apiConnections.activeEnvVars });
             const { absDir: reqOutputDir, virtualFolder: reqVirtualFolder } = await ensureResultsDir(req.name || d.requestId!);
@@ -656,10 +827,10 @@ function createPipelineStore() {
             await dataFiles.createFolder(reqVirtualFolder).catch(() => {});
             for (const f of outputFiles) await dataFiles.add(f.path, reqVirtualFolder).catch(() => {});
 
-            patchState(nodeId, { status: 'done', outputFiles, outputValues });
+            patchRunState(nodeId, { status: 'done', outputFiles, outputValues });
             pipeSteps.push({ label: req.name || 'API Request', files: outputFiles });
           } catch (e) {
-            patchState(nodeId, { status: 'error', error: String(e) });
+            patchRunState(nodeId, { status: 'error', error: String(e) });
             break;
           }
           }
@@ -668,46 +839,57 @@ function createPipelineStore() {
         fatalError = e;
         if (e instanceof PipelineCycleError) {
           for (const nodeId of e.nodeIds) {
-            patchState(nodeId, { status: 'error', error: e.message });
+            patchRunState(nodeId, { status: 'error', error: e.message });
           }
         } else {
-          const firstPending = nodes.find(n => n.type !== 'start' && nodeStates.get(n.id)?.status === 'pending');
-          if (firstPending) patchState(firstPending.id, { status: 'error', error: errorMessage(e) });
+          const firstPending = nodes.find(n => n.type !== 'start' && states().get(n.id)?.status === 'pending');
+          if (firstPending) patchRunState(firstPending.id, { status: 'error', error: errorMessage(e) });
         }
       } finally {
         // Record ONE grouped run for this pipeline execution (visible in Results),
         // instead of one loose run per step.
-        const erroredEntry = [...nodeStates.entries()].find(([, s]) => s.status === 'error');
+        const finalStates = states();
+        const erroredEntry = [...finalStates.entries()].find(([, s]) => s.status === 'error');
         const fatalMessage = fatalError ? errorMessage(fatalError) : null;
-        if (pipeSteps.length > 0 || erroredEntry || fatalMessage) {
+        if (nodes.some(n => n.type !== 'start')) {
           const endedAt = Date.now();
-          const logs = [...nodeStates.values()].flatMap(s => s.logs ?? []);
+          const logs = [...finalStates.values()].flatMap(s => s.logs ?? []);
           const allFiles = pipeSteps.flatMap(s => s.files);
+          await analysisRuns.init();
           await analysisRuns.add({
-            id: crypto.randomUUID(),
+            id: pipelineRunId,
             tool: 'pipeline',
-            label: pipelineName || 'Pipeline',
+            label: runPipelineName,
             inputs: [],
-            params: { steps: pipeSteps.length },
+            params: { steps: pipeSteps.length, pipelineId: runPipelineId, pipelineRunId },
             outputFiles: allFiles,
             status: erroredEntry || fatalMessage ? 'error' : 'done',
             startedAt: pipeStartedAt,
             endedAt,
             durationMs: endedAt - pipeStartedAt,
             output: erroredEntry || fatalMessage ? null : buildPipelineOutput(pipeSteps),
-            error: erroredEntry ? (nodeStates.get(erroredEntry[0])?.error ?? 'Pipeline failed') : fatalMessage,
+            error: erroredEntry ? (finalStates.get(erroredEntry[0])?.error ?? 'Pipeline failed') : fatalMessage,
             log: logs,
-          }).catch(() => {});
+          }).catch((error) => {
+            console.error('[pipeline] failed to persist analysis run', error);
+          });
         }
 
-        running = false;
+        const runtime = runtimeFor(runKey, runPipelineId, runPipelineName);
+        setRuntime(runKey, {
+          ...runtime,
+          running: false,
+          runId: pipelineRunId,
+          startedAt: pipeStartedAt,
+        });
       }
     },
 
     resetStates(nodeIds: string[]) {
       const fresh = new Map<string, NodeRunState>();
       for (const id of nodeIds) fresh.set(id, initNodeState());
-      nodeStates = fresh;
+      const runtime = runtimeFor();
+      setRuntime(currentRuntimeKey(), { ...runtime, nodeStates: fresh, running: false, runId: null, startedAt: null });
     },
   };
 }

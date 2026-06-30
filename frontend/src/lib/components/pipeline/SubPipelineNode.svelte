@@ -6,6 +6,7 @@
   import Icon from '@iconify/svelte';
   import type { SubPipelineNodeData } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
+  import { sanitizeLocalPathsForDisplay } from '$lib/utils';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
   import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
 
@@ -72,10 +73,10 @@
     {/if}
 
     {#if status === 'running' && lastLog}
-      <div class="mt-2 text-[10px] font-mono text-zinc-400 truncate">{lastLog}</div>
+      <div class="mt-2 text-[10px] font-mono text-zinc-400 truncate">{sanitizeLocalPathsForDisplay(lastLog, 2)}</div>
     {/if}
     {#if status === 'error' && runState?.error}
-      <div class="mt-2 text-[10px] text-red-500 font-mono">{runState.error}</div>
+      <div class="mt-2 text-[10px] text-red-500 font-mono">{sanitizeLocalPathsForDisplay(runState.error, 2)}</div>
     {/if}
     {#if status === 'done' && runState?.outputFiles && runState.outputFiles.length > 0}
       <div class="mt-2 flex flex-wrap gap-1">

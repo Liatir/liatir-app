@@ -102,6 +102,7 @@
       <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl">
         {#each pipelineStore.savedPipelines as p (p.id)}
           {@const stepCount = p.nodes.filter(n => n.type !== 'start').length}
+          {@const pipelineRunning = pipelineStore.isPipelineRunning(p.id)}
           <div class="bg-white rounded-xl border border-border shadow-sm hover:shadow-md hover:border-brand/30 transition-all group">
             <button
               onclick={() => openPipeline(p)}
@@ -111,7 +112,15 @@
                 <div class="h-9 w-9 rounded-lg bg-brand/8 flex items-center justify-center shrink-0">
                   <Icon icon="lucide:workflow" width="18" height="18" class="text-brand" />
                 </div>
-                <span class="text-[11px] text-zinc-400 mt-1">{fmtDate(p.updatedAt)}</span>
+                <div class="flex items-center gap-2 mt-1">
+                  {#if pipelineRunning}
+                    <span class="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700">
+                      <span class="h-1.5 w-1.5 rounded-full bg-sky-500 animate-pulse"></span>
+                      Running
+                    </span>
+                  {/if}
+                  <span class="text-[11px] text-zinc-400">{fmtDate(p.updatedAt)}</span>
+                </div>
               </div>
               <p class="text-sm font-semibold text-zinc-800 truncate">{p.name}</p>
               <p class="text-xs text-zinc-400 mt-0.5">
@@ -122,7 +131,8 @@
             <div class="flex items-center gap-1 px-3 pb-3 opacity-30 group-hover:opacity-100 transition-opacity">
               <button
                 onclick={() => deletePipeline(p)}
-                class="flex items-center w-fit justify-center gap-1.5 text-xs text-zinc-400 bg-zinc-50 hover:text-red-500 hover:bg-red-50 rounded-lg px-2 py-1.5 transition-colors"
+                disabled={pipelineRunning}
+                class="flex items-center w-fit justify-center gap-1.5 text-xs text-zinc-400 bg-zinc-50 hover:text-red-500 hover:bg-red-50 rounded-lg px-2 py-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-zinc-50 disabled:hover:text-zinc-400"
               >
                 <Icon icon="lucide:trash-2" width="11" height="11" />
               </button>

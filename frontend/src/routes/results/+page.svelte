@@ -7,7 +7,7 @@
   import Select from '$lib/components/ui/Select.svelte';
   import { analysisRuns, type AnalysisRunMeta } from '$lib/stores/analysisRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
-  import { fmtDuration, fmtBytes } from '$lib/utils';
+  import { fmtDuration, fmtBytes, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { liatir } from '$lib/api';
   import { exportToHtml } from '$lib/utils/export-result';
   import type { ToolOutput } from '$lib/types/tool-output';
@@ -227,7 +227,7 @@
             </div>
           </div>
           <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-mono" data-selectable>
-            {selectedRun.error ?? 'Unknown error'}
+            {sanitizeLocalPathsForDisplay(selectedRun.error ?? 'Unknown error', 2)}
           </div>
           <RunLog runId={selectedId} />
         </div>

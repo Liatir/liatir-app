@@ -7,7 +7,7 @@
   import InfoPopup from '$lib/components/ui/InfoPopup.svelte';
   import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
   import { liatir } from '$lib/api';
-  import { fmtDuration, fmtBytes } from '$lib/utils';
+  import { fmtDuration, fmtBytes, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns, type AnalysisRun } from '$lib/stores/analysisRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
@@ -295,7 +295,7 @@
       <!-- Results -->
       {#if displayError}
         <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-mono" data-selectable>
-          {displayError}
+          {sanitizeLocalPathsForDisplay(displayError, 2)}
         </div>
       {:else if loadingOutput}
         <div class="flex justify-center py-12">

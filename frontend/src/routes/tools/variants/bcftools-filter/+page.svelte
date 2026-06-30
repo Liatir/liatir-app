@@ -6,7 +6,7 @@
   import Button from '$lib/components/ui/Button.svelte';
   import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
   import { liatir } from '$lib/api';
-  import { fmtDuration } from '$lib/utils';
+  import { fmtDuration, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
@@ -358,7 +358,7 @@
         <!-- Results -->
         {#if displayError}
           <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-mono">
-            {displayError}
+            {sanitizeLocalPathsForDisplay(displayError, 2)}
           </div>
         {:else if loadingOutput}
           <div class="flex justify-center py-12">

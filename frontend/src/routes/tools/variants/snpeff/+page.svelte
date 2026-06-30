@@ -10,7 +10,7 @@
   import { notify } from '$lib/utils/notify';
   import RunLog from '$lib/components/ui/RunLog.svelte';
   import { liatir } from '$lib/api';
-  import { fmtDuration, getLastSegmentsStringFromPath } from '$lib/utils';
+  import { fmtDuration, getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
@@ -452,7 +452,7 @@
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
               <div class="flex-1 min-w-0">
-                <p class="text-xs font-medium text-zinc-800 truncate" title={snpEffStore.config.jarPath}>
+                <p class="text-xs font-medium text-zinc-800 truncate" title={getLastSegmentsStringFromPath(snpEffStore.config.jarPath, 2)}>
                   {getLastSegmentsStringFromPath(snpEffStore.config.jarPath, 2)}
                 </p>
               </div>
@@ -547,7 +547,7 @@
                         <p class="text-[10px] text-zinc-400 mt-0.5">Connecting…</p>
                       {/if}
                       {#if dbError}
-                        <p class="text-[10px] text-red-600 mt-0.5 font-mono truncate">{dbError}</p>
+                        <p class="text-[10px] text-red-600 mt-0.5 font-mono truncate">{sanitizeLocalPathsForDisplay(dbError, 2)}</p>
                       {/if}
                     {/if}
                   </div>
@@ -680,7 +680,7 @@
 
         <!-- Results -->
         {#if displayError}
-          <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-mono">{displayError}</div>
+          <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-mono">{sanitizeLocalPathsForDisplay(displayError, 2)}</div>
         {:else if loadingOutput}
           <div class="flex justify-center py-12">
             <svg class="animate-spin h-5 w-5 text-zinc-400" viewBox="0 0 24 24" fill="none">

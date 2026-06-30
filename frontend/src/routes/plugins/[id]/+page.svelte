@@ -14,7 +14,7 @@
   import { runLiatirModule } from '$lib/utils/module-run';
   import { matchesAcceptedExtension } from '$lib/utils/file-extensions';
   import { toast } from '$lib/stores/toast.svelte';
-  import { getLastSegmentsStringFromPath } from '$lib/utils';
+  import { getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
 
   const id = $derived((page.params as { id: string }).id);
   let mod = $state<LiatirModule | null>(null);
@@ -305,7 +305,7 @@
           {#if stdoutLines.length > 0}
             <div class="px-4 py-3 {stderrLines.length > 0 ? 'border-b border-border' : ''}">
               <p class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">stdout</p>
-              <pre class="text-xs text-zinc-700 whitespace-pre-wrap font-mono leading-relaxed max-h-64 overflow-y-auto">{stdoutLines.join('\n')}</pre>
+              <pre class="text-xs text-zinc-700 whitespace-pre-wrap font-mono leading-relaxed max-h-64 overflow-y-auto">{sanitizeLocalPathsForDisplay(stdoutLines.join('\n'), 2)}</pre>
             </div>
           {/if}
 
@@ -313,7 +313,7 @@
           {#if stderrLines.length > 0}
             <div class="px-4 py-3">
               <p class="text-[10px] font-semibold text-red-400 uppercase tracking-wider mb-1.5">stderr</p>
-              <pre class="text-xs text-red-600 whitespace-pre-wrap font-mono leading-relaxed max-h-48 overflow-y-auto">{stderrLines.join('\n')}</pre>
+              <pre class="text-xs text-red-600 whitespace-pre-wrap font-mono leading-relaxed max-h-48 overflow-y-auto">{sanitizeLocalPathsForDisplay(stderrLines.join('\n'), 2)}</pre>
             </div>
           {/if}
 

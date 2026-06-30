@@ -6,7 +6,7 @@ import type {
 } from '@liatir/core';
 import type { RunOutputFile } from '$lib/types/pipeline';
 import type { ToolOutput } from '$lib/types/tool-output';
-import { directRunMetadata, type AIDirectRunContext } from '$lib/ai/direct-run-context';
+import { aiRunMetadata, type AIRunContext } from '$lib/ai/direct-run-context';
 import { BOLTZ2_MODEL_ID, CHAI1_MODEL_ID } from '$lib/ai/model-registry';
 import {
 	cachePathForModel,
@@ -454,7 +454,7 @@ export async function runProteinStructureStep(
 	inputs: Record<string, string>,
 	outputDir: string,
 	onLog: (line: string) => void,
-	runContext?: AIDirectRunContext
+	runContext?: AIRunContext
 ): Promise<{
 	outputFiles: RunOutputFile[];
 	output: ToolOutput;
@@ -535,11 +535,14 @@ export async function runProteinStructureStep(
 		},
 		{
 			timeoutSeconds: 24 * 60 * 60,
-			jobLabel: proteinStructureDefinition.label,
+			jobLabel:
+				runContext?.runKind === 'pipeline-step'
+					? `${runContext.pipelineName}: ${proteinStructureDefinition.label}`
+					: proteinStructureDefinition.label,
 			metadata: {
 				toolId: proteinStructureDefinition.id,
 				backend,
-				...(runContext ? directRunMetadata(runContext) : {})
+				...(runContext ? aiRunMetadata(runContext) : {})
 			}
 		}
 	);

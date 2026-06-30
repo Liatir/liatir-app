@@ -7,7 +7,7 @@
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 	import { jobsStore, type JobBufferedOutput, type JobEntry } from '$lib/stores/jobs.svelte';
-	import { fmtDuration, fmtTime } from '$lib/utils';
+	import { compactPathIfLocal, fmtDuration, fmtTime, sanitizeForDisplay, sanitizeLocalPathsForDisplay } from '$lib/utils';
 	import Icon from '@iconify/svelte/dist/OfflineIcon.svelte';
 
 	let expandedJobId = $state<string | null>(null);
@@ -46,16 +46,36 @@
 	}
 
 	function jobTitle(job: JobEntry): string {
-		return job.label?.trim() || job.cmd;
+		return sanitizeLocalPathsForDisplay(job.label?.trim() || compactPathIfLocal(job.cmd), 2);
+	}
+
+	function pipelineJobName(job: JobEntry): string | null {
+		const metadata = job.metadata ?? {};
+		if (metadata.runKind !== 'pipeline-step') return null;
+		return typeof metadata.pipelineName === 'string' ? metadata.pipelineName : 'Pipeline';
 	}
 
 	function jobSubtitle(job: JobEntry): string {
-		const command = [job.cmd, ...job.args].join(' ');
+		const command = displayCommand(job);
+		const pipelineName = pipelineJobName(job);
+		if (pipelineName) return `Pipeline · ${pipelineName} · ${job.kind ?? 'job'} · ${command}`;
 		return job.kind ? `${job.kind} · ${command}` : command;
 	}
 
+	function displayCommand(job: JobEntry): string {
+		return [job.cmd, ...job.args].map((part) => compactPathIfLocal(part, 2)).join(' ');
+	}
+
+	function displayArgs(job: JobEntry): string {
+		return sanitizeLocalPathsForDisplay(job.args.map((part) => compactPathIfLocal(part, 2)).join(' '), 2);
+	}
+
+	function displayMetadata(job: JobEntry): string {
+		return JSON.stringify(sanitizeForDisplay(job.metadata, 2), null, 2);
+	}
+
 	function terminalLines(lines: string[]): string[] {
-		return lines.slice(-300);
+		return lines.slice(-300).map((line) => sanitizeLocalPathsForDisplay(line, 2));
 	}
 
 	function terminalLineClass(line: string): string {
@@ -200,7 +220,7 @@
 									</div>
 									<div>
 										<dt class="text-zinc-400">Command</dt>
-										<dd class="font-mono text-zinc-700" data-selectable>{job.cmd}</dd>
+										<dd class="font-mono text-zinc-700" data-selectable>{compactPathIfLocal(job.cmd, 2)}</dd>
 									</div>
 									<div>
 										<dt class="text-zinc-400">Duration</dt>
@@ -220,11 +240,17 @@
 											<dd class="text-zinc-700" data-selectable>{job.label}</dd>
 										</div>
 									{/if}
+									{#if pipelineJobName(job)}
+										<div class="col-span-3">
+											<dt class="text-zinc-400">Parent pipeline</dt>
+											<dd class="text-zinc-700" data-selectable>{pipelineJobName(job)}</dd>
+										</div>
+									{/if}
 									{#if job.args.length}
 										<div class="col-span-3">
 											<dt class="text-zinc-400 mb-0.5">Arguments</dt>
 											<dd class="font-mono text-zinc-700 break-all" data-selectable>
-												{job.args.join(' ')}
+												{displayArgs(job)}
 											</dd>
 										</div>
 									{/if}
@@ -239,7 +265,7 @@
 										</p>
 										<pre
 											class="max-h-28 overflow-auto rounded-md border border-border bg-white px-2 py-1.5 text-[11px] font-mono text-zinc-600"
-											data-selectable>{JSON.stringify(job.metadata, null, 2)}</pre>
+											data-selectable>{displayMetadata(job)}</pre>
 									</div>
 								{/if}
 

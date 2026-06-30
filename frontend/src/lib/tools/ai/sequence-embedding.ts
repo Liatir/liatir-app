@@ -6,7 +6,7 @@ import type {
 } from '@liatir/core';
 import type { RunOutputFile } from '$lib/types/pipeline';
 import type { ToolOutput } from '$lib/types/tool-output';
-import { directRunMetadata, type AIDirectRunContext } from '$lib/ai/direct-run-context';
+import { aiRunMetadata, type AIRunContext } from '$lib/ai/direct-run-context';
 import { ESM2_8M_ID, NUCLEOTIDE_TRANSFORMER_50M_ID } from '$lib/ai/model-registry';
 import { cachePathForModel, runAIPython, type AIPythonRunResult } from '$lib/ai/runtime';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
@@ -246,7 +246,7 @@ export async function runSequenceEmbeddingStep(
 	inputs: Record<string, string>,
 	outputDir: string,
 	onLog: (line: string) => void,
-	runContext?: AIDirectRunContext
+	runContext?: AIRunContext
 ): Promise<{
 	outputFiles: RunOutputFile[];
 	output: ToolOutput;
@@ -295,10 +295,13 @@ export async function runSequenceEmbeddingStep(
 		},
 		{
 			timeoutSeconds: 7200,
-			jobLabel: sequenceEmbeddingDefinition.label,
+			jobLabel:
+				runContext?.runKind === 'pipeline-step'
+					? `${runContext.pipelineName}: ${sequenceEmbeddingDefinition.label}`
+					: sequenceEmbeddingDefinition.label,
 			metadata: {
 				toolId: sequenceEmbeddingDefinition.id,
-				...(runContext ? directRunMetadata(runContext) : {})
+				...(runContext ? aiRunMetadata(runContext) : {})
 			}
 		}
 	);

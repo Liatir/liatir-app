@@ -6,6 +6,7 @@
   import { liatir } from '$lib/api';
   import { JBROWSE_RUNTIME_ID } from '$lib/viewers/runtime-registry';
   import { localFileSrc, readViewerRuntimeScript } from '$lib/viewers/runtime-loader';
+  import { sanitizeLocalPathsForDisplay } from '$lib/utils';
   import type { GenomeViewerSection } from '$lib/types/tool-output';
 
   let { section }: { section: GenomeViewerSection } = $props();
@@ -329,7 +330,7 @@
             Open Dependencies
           </Button>
         {:else}
-          {jbrowseError}
+          {sanitizeLocalPathsForDisplay(jbrowseError, 2)}
         {/if}
       </div>
     {/if}
@@ -345,7 +346,7 @@
     {#if loading}
       <div class="px-4 py-10 text-center text-xs text-zinc-400">Loading genome tracks...</div>
     {:else if error}
-      <div class="px-4 py-10 text-center text-xs text-red-600">{error}</div>
+      <div class="px-4 py-10 text-center text-xs text-red-600">{sanitizeLocalPathsForDisplay(error, 2)}</div>
     {:else if tracks.length === 0}
       <div class="px-4 py-10 text-center text-xs text-zinc-400">No tracks configured.</div>
     {:else}

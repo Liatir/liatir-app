@@ -10,6 +10,7 @@
   import NodeDeleteButton from './NodeDeleteButton.svelte';
   import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
   import Select from '$lib/components/ui/Select.svelte';
+  import { sanitizeLocalPathsForDisplay } from '$lib/utils';
 
   let { id, data }: NodeProps<Node<MathNodeData>> = $props();
   const { updateNodeData, getNodes, getEdges } = useSvelteFlow();
@@ -110,7 +111,7 @@
       <div class="text-[10px] text-emerald-600 font-mono">= {state.outputValues.result}</div>
     {/if}
     {#if status === 'error' && state?.error}
-      <div class="text-[10px] text-red-500 font-mono">{state.error}</div>
+      <div class="text-[10px] text-red-500 font-mono">{sanitizeLocalPathsForDisplay(state.error, 2)}</div>
     {/if}
   </div>
 </div>

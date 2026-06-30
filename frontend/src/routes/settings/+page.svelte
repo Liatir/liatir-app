@@ -97,7 +97,7 @@
           </div>
           {#if settingsStore.javaPath}
             <p class="text-[11px] text-emerald-600">
-              Active: <code class="font-mono" title={settingsStore.javaPath}>{fmtPath(settingsStore.javaPath)}</code>
+              Active: <code class="font-mono" title={fmtPath(settingsStore.javaPath)}>{fmtPath(settingsStore.javaPath)}</code>
             </p>
           {/if}
         </div>

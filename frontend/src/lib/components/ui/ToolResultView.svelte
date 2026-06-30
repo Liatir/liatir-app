@@ -21,6 +21,7 @@
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { liatir } from '$lib/api';
   import { page } from '$app/state';
+  import { getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
 
   let { output, outputFiles, resultFolder }: { output: ToolOutput; outputFiles?: RunOutputFile[]; resultFolder?: string } = $props();
 
@@ -81,6 +82,14 @@
     }
     return value.toFixed(2);
   }
+
+  function displayText(value: string): string {
+    return sanitizeLocalPathsForDisplay(value, 2);
+  }
+
+  function displayCell(value: string | number): string | number {
+    return typeof value === 'string' ? displayText(value) : value;
+  }
 </script>
 
 <div class="space-y-4">
@@ -97,6 +106,9 @@
             </svg>
             <div class="flex-1 min-w-0">
               <p class="text-xs font-medium text-zinc-800 truncate">{file.label}</p>
+              <p class="text-[10px] text-zinc-400 font-mono truncate" title={getLastSegmentsStringFromPath(file.path, 2)}>
+                {getLastSegmentsStringFromPath(file.path, 2)}
+              </p>
               {#if file.size != null}
                 <p class="text-[10px] text-zinc-400 font-mono">{fmtBytes(file.size)}</p>
               {/if}
@@ -137,7 +149,7 @@
         style="grid-template-columns: repeat({s.cols ?? 4}, minmax(0, 1fr))"
       >
         {#each s.items as item}
-          {@const itemValue = String(item.value)}
+          {@const itemValue = displayText(String(item.value))}
           <Card class="p-4 min-w-0">
             <p class="text-xs text-zinc-500 mb-1 flex items-center gap-1 min-w-0">
               <span class="truncate">{item.label}</span>
@@ -194,7 +206,7 @@
       {@const lines = s.content.split('\n')}
       {@const isLong = lines.length > TEXT_PREVIEW_LINES}
       {@const expanded = expandedSections.has(sectionIdx)}
-      {@const displayed = isLong && !expanded ? lines.slice(0, TEXT_PREVIEW_LINES).join('\n') : s.content}
+      {@const displayed = displayText(isLong && !expanded ? lines.slice(0, TEXT_PREVIEW_LINES).join('\n') : s.content)}
       <Card class="p-4">
         <p class="text-xs text-zinc-500 mb-2 flex items-center">
           {s.label}
@@ -239,7 +251,7 @@
               {#each s.rows as row, i}
                 <tr class="{i % 2 === 0 ? '' : 'bg-zinc-50/50'} hover:bg-brand/5 transition-colors">
                   {#each row as cell}
-                    <td class="px-3 py-2 text-zinc-700 border-b border-border/50 font-mono whitespace-nowrap">{cell}</td>
+                    <td class="px-3 py-2 text-zinc-700 border-b border-border/50 font-mono whitespace-nowrap">{displayCell(cell)}</td>
                   {/each}
                 </tr>
               {/each}

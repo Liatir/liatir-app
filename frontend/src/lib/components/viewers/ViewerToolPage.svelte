@@ -8,6 +8,7 @@
   import Select from '$lib/components/ui/Select.svelte';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
+  import { sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import type { ToolOutput } from '$lib/types/tool-output';
   import {
@@ -216,7 +217,7 @@
               Open viewer
             </Button>
             {#if logLines.length > 0}
-              <p class="text-xs text-zinc-400">{logLines.at(-1)}</p>
+              <p class="text-xs text-zinc-400">{sanitizeLocalPathsForDisplay(logLines.at(-1) ?? '', 2)}</p>
             {/if}
           </div>
         </div>
@@ -224,7 +225,7 @@
 
       {#if error}
         <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" data-selectable>
-          {error}
+          {sanitizeLocalPathsForDisplay(error, 2)}
         </div>
       {/if}
 

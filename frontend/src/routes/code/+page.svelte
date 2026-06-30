@@ -7,6 +7,7 @@
   import { codeIfEmpty } from '$lib/stores/codeEditor.svelte';
   import { savedScripts, type SavedScript } from '$lib/stores/savedScripts.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
+  import { sanitizeLocalPathsForDisplay } from '$lib/utils';
 	import { goto } from '$app/navigation';
 
   // ── editor state ───────────────────────────────────────────────
@@ -297,7 +298,7 @@
             <pre class="text-sm font-mono whitespace-pre-wrap break-all leading-relaxed
               {outputType === 'error' ? 'text-red-700' : 'text-emerald-700'}"
               data-selectable
-            >{outputType === 'error' ? outputError : formatOutput(output)}</pre>
+            >{sanitizeLocalPathsForDisplay(outputType === 'error' ? (outputError ?? '') : formatOutput(output), 2)}</pre>
           </div>
         </div>
       {/if}

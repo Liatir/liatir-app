@@ -15,6 +15,21 @@ export interface AIDirectRunContext {
 	outputDir: string;
 }
 
+export interface AIPipelineRunContext {
+	runKind: 'pipeline-step';
+	pipelineRunId: string;
+	pipelineId: string | null;
+	pipelineName: string;
+	nodeId: string;
+	toolId: string;
+	label: string;
+	params: Record<string, string>;
+	startedAt: number;
+	outputDir: string;
+}
+
+export type AIRunContext = AIDirectRunContext | AIPipelineRunContext;
+
 function stringArray(value: unknown): string[] {
 	return Array.isArray(value)
 		? value.filter((item): item is string => typeof item === 'string')
@@ -45,6 +60,22 @@ export function directRunMetadata(context: AIDirectRunContext): Record<string, J
 		label: context.label,
 		inputPaths: context.inputPaths,
 		...(context.inputSizes ? { inputSizes: context.inputSizes } : {}),
+		params: context.params,
+		startedAt: context.startedAt,
+		outputDir: context.outputDir
+	};
+}
+
+export function aiRunMetadata(context: AIRunContext): Record<string, JsonValue> {
+	if (context.runKind === 'ai-model-direct') return directRunMetadata(context);
+	return {
+		runKind: context.runKind,
+		pipelineRunId: context.pipelineRunId,
+		pipelineId: context.pipelineId,
+		pipelineName: context.pipelineName,
+		nodeId: context.nodeId,
+		toolId: context.toolId,
+		label: context.label,
 		params: context.params,
 		startedAt: context.startedAt,
 		outputDir: context.outputDir

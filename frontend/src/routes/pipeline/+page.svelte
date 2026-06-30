@@ -489,6 +489,10 @@
       return s === 'done' || s === 'skipped';
     })
   );
+  const hasRunError = $derived(
+    nodes.some(n => n.type !== 'start') &&
+    nodes.some(n => pipelineStore.nodeStates.get(n.id)?.status === 'error')
+  );
 
   onMount(async () => {
     await pipelineStore.init();
@@ -721,9 +725,32 @@
     {/if}
 
     {#if allDone}
-      <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 shadow-sm">
+      <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 shadow-sm">
         <Icon icon="lucide:check" width="14" height="14" class="text-emerald-500" />
         <p class="text-sm text-emerald-800 font-medium">Pipeline complete — outputs added to Data.</p>
+        {#if pipelineStore.currentRunId}
+          <button
+            type="button"
+            class="rounded-lg border border-emerald-200 bg-white px-2 py-1 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
+            onclick={() => goto(`/results?run=${pipelineStore.currentRunId}`)}
+          >
+            Open Results
+          </button>
+        {/if}
+      </div>
+    {:else if hasRunError}
+      <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 shadow-sm">
+        <Icon icon="lucide:circle-alert" width="14" height="14" class="text-red-500" />
+        <p class="text-sm text-red-800 font-medium">Pipeline failed — open Results for logs and details.</p>
+        {#if pipelineStore.currentRunId}
+          <button
+            type="button"
+            class="rounded-lg border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
+            onclick={() => goto(`/results?run=${pipelineStore.currentRunId}`)}
+          >
+            Open Results
+          </button>
+        {/if}
       </div>
     {/if}
   </div>

@@ -3,7 +3,7 @@
 	import type { Snippet } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { toast } from '$lib/stores/toast.svelte';
-	import { getLastSegmentsStringFromPath } from '$lib/utils';
+	import { getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
 	import { captureElementRegionNative, screenshotFilename } from '$lib/viewers/visual-capture';
 
 	interface Props {
@@ -198,7 +198,7 @@
 
 		{#if captureError}
 			<div class="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-				{captureError}
+				{sanitizeLocalPathsForDisplay(captureError, 2)}
 			</div>
 		{/if}
 

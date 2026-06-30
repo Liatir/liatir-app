@@ -6,6 +6,7 @@
   import type { ConditionNodeData } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
   import { upstreamOptions } from '$lib/tools/pipeline-io';
+  import { sanitizeLocalPathsForDisplay } from '$lib/utils';
   import ValueRefInput from './ValueRefInput.svelte';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
   import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
@@ -81,7 +82,7 @@
       />
     </div>
     {#if status === 'error' && state?.error}
-      <div class="text-[10px] text-red-500 font-mono">{state.error}</div>
+      <div class="text-[10px] text-red-500 font-mono">{sanitizeLocalPathsForDisplay(state.error, 2)}</div>
     {/if}
   </div>
 </div>

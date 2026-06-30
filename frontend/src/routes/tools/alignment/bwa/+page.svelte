@@ -14,7 +14,7 @@
   import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import { notify } from '$lib/utils/notify';
-  import { fmtDuration } from '$lib/utils';
+  import { fmtDuration, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { liatir } from '$lib/api';
   import { parseBwaMemStats, bwaMemToToolOutput } from '$lib/tools/alignment/bwa';
   import type { ToolOutput } from '$lib/types/tool-output';
@@ -271,7 +271,7 @@
         </Card>
 
         {#if displayError}
-          <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-mono" data-selectable>{displayError}</div>
+          <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-mono" data-selectable>{sanitizeLocalPathsForDisplay(displayError, 2)}</div>
         {:else if loadingOutput}
           <div class="flex justify-center py-12">
             <svg class="animate-spin h-5 w-5 text-zinc-400" viewBox="0 0 24 24" fill="none">

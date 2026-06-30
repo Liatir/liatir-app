@@ -64,3 +64,93 @@ export const getLastSegmentsStringFromPath = (path: string, nSegments?: number):
     return "";
   }
 }
+
+const LOCAL_PATH_START_RE = /^(?:[A-Za-z]:[\\/]|\/(?:Users|Volumes|private|tmp|var|home|opt|usr|Applications|Library)\b)/;
+const LOCAL_PATH_ANY_RE = /(?:[A-Za-z]:[\\/]|\/(?:Users|Volumes|private|tmp|var|home|opt|usr|Applications|Library)\b)/;
+const LOCAL_PATH_EXTENSIONS = [
+  'bcf',
+  'bed',
+  'bin',
+  'cif',
+  'cram',
+  'csv',
+  'faa',
+  'fa',
+  'fai',
+  'fasta',
+  'fastq',
+  'fna',
+  'fq',
+  'gff',
+  'gff3',
+  'gtf',
+  'gz',
+  'h5ad',
+  'html',
+  'json',
+  'log',
+  'mmcif',
+  'mol2',
+  'npy',
+  'npz',
+  'parquet',
+  'pdb',
+  'pkl',
+  'pt',
+  'py',
+  'sam',
+  'sdf',
+  'tsv',
+  'txt',
+  'vcf',
+  'xyz',
+  'yaml',
+  'yml',
+].join('|');
+
+export function isLikelyLocalPath(value: string): boolean {
+  return LOCAL_PATH_START_RE.test(value.trim());
+}
+
+export function compactPathForDisplay(path: string, nSegments = 2): string {
+  const compact = getLastSegmentsStringFromPath(path, nSegments);
+  return compact || path;
+}
+
+export function compactPathIfLocal(value: string, nSegments = 2): string {
+  return isLikelyLocalPath(value) ? compactPathForDisplay(value, nSegments) : value;
+}
+
+export function sanitizeLocalPathsForDisplay(text: string, nSegments = 2): string {
+  if (!text || !LOCAL_PATH_ANY_RE.test(text)) {
+    return text;
+  }
+
+  let sanitized = text.replace(
+    /(["'`])((?:[A-Za-z]:[\\/]|\/(?:Users|Volumes|private|tmp|var|home|opt|usr|Applications|Library)\b)[^"'`\r\n<>]*?)\1/g,
+    (_match, quote: string, path: string) => `${quote}${compactPathForDisplay(path, nSegments)}${quote}`,
+  );
+
+  sanitized = sanitized.replace(
+    new RegExp(`((?:[A-Za-z]:[\\\\/]|/(?:Users|Volumes|private|tmp|var|home|opt|usr|Applications|Library)\\b)[^\\r\\n\\t"'<>]*?\\.(?:${LOCAL_PATH_EXTENSIONS})(?=$|[\\s,;:)\\]]))`, 'gi'),
+    (path: string) => compactPathForDisplay(path, nSegments),
+  );
+
+  sanitized = sanitized.replace(
+    /((?:[A-Za-z]:[\\/]|\/(?:Users|Volumes|private|tmp|var|home|opt|usr|Applications|Library)\b)[^\r\n"'<>]*?\/(?:python(?:\d(?:\.\d+)?)?|python3(?:\.\d+)?|pip|pip3|node|npm|uv|boltz|chai-lab)(?=$|[\s,;:)\]]))/g,
+    (path: string) => compactPathForDisplay(path, nSegments),
+  );
+
+  return sanitized;
+}
+
+export function sanitizeForDisplay(value: unknown, nSegments = 2): unknown {
+  if (typeof value === 'string') return sanitizeLocalPathsForDisplay(compactPathIfLocal(value, nSegments), nSegments);
+  if (Array.isArray(value)) return value.map((item) => sanitizeForDisplay(item, nSegments));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, item]) => [key, sanitizeForDisplay(item, nSegments)]),
+    );
+  }
+  return value;
+}

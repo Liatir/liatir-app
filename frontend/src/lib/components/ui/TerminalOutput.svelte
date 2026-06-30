@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tick } from 'svelte';
+  import { sanitizeLocalPathsForDisplay } from '$lib/utils';
 
   interface Props {
     lines: string[];
@@ -16,6 +17,10 @@
       if (el) el.scrollTop = el.scrollHeight;
     });
   });
+
+  function displayLine(line: string): string {
+    return sanitizeLocalPathsForDisplay(line, 2);
+  }
 </script>
 
 {#if lines.length > 0 || running}
@@ -25,16 +30,17 @@
            px-3 py-2.5 max-h-40 overflow-y-auto select-text"
   >
     {#each lines as line}
+      {@const visibleLine = displayLine(line)}
       {#if line.startsWith('$ ')}
-        <p class="text-zinc-500">{line}</p>
+        <p class="text-zinc-500">{visibleLine}</p>
       {:else if line.startsWith('✓')}
-        <p class="text-emerald-400">{line}</p>
+        <p class="text-emerald-400">{visibleLine}</p>
       {:else if line.startsWith('✗') || /error/i.test(line)}
-        <p class="text-red-400">{line}</p>
+        <p class="text-red-400">{visibleLine}</p>
       {:else if line.startsWith('→')}
-        <p class="text-zinc-500">{line}</p>
+        <p class="text-zinc-500">{visibleLine}</p>
       {:else}
-        <p class="text-zinc-300">{line}</p>
+        <p class="text-zinc-300">{visibleLine}</p>
       {/if}
     {/each}
     {#if running}

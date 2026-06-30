@@ -12,7 +12,7 @@
   import { aiModelsStore, type AIModelInstallProgress } from '$lib/stores/aiModels.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import { toast } from '$lib/stores/toast.svelte';
-  import { fmtBytes, getLastSegmentsStringFromPath } from '$lib/utils';
+  import { fmtBytes, getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import type { LiatirAIModelRecord } from '@liatir/core';
   import Spinner from '$lib/components/ui/Spinner.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
@@ -344,7 +344,7 @@
                 </div>
                 <p class="mt-1 text-xs text-zinc-500 line-clamp-2">{model.description}</p>
                 {#if model.error}
-                  <p class="mt-1 text-[11px] text-red-500 line-clamp-2">{model.error}</p>
+                  <p class="mt-1 text-[11px] text-red-500 line-clamp-2">{sanitizeLocalPathsForDisplay(model.error, 2)}</p>
                 {/if}
                 <div class="mt-2 flex flex-wrap gap-1.5">
                   {#each model.capabilities as capability}
@@ -361,7 +361,7 @@
 
               <div class="text-xs text-zinc-600 min-w-0 max-xl:hidden">
                 <p class="truncate">{runtimeLabel(model)}</p>
-                <p class="text-[10px] text-zinc-400 truncate" title={model.localPath ?? undefined}>
+                <p class="text-[10px] text-zinc-400 truncate" title={model.localPath ? getLastSegmentsStringFromPath(model.localPath, 2) : undefined}>
                   {model.localPath ? getLastSegmentsStringFromPath(model.localPath, 2) : model.runtime.kind}
                 </p>
               </div>
@@ -458,7 +458,7 @@
             {#if installLog?.showLog && installLog.logLines.length > 0}
               <div class="mx-4 mb-3 rounded-lg border border-border bg-zinc-950 px-3 py-2 max-h-40 overflow-y-auto">
                 {#each installLog.logLines as line}
-                  <p class="text-[11px] font-mono leading-relaxed {logLineClass(line)}">{line}</p>
+                  <p class="text-[11px] font-mono leading-relaxed {logLineClass(line)}">{sanitizeLocalPathsForDisplay(line, 2)}</p>
                 {/each}
               </div>
             {/if}

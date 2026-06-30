@@ -1,4 +1,5 @@
 import type { ToolOutput } from './tool-output';
+import type { AIRunContext } from '$lib/ai/direct-run-context';
 
 export type {
   InputFieldSchema,
@@ -92,7 +93,8 @@ export interface PipelineStepState {
 export type StepRunFn = (
   inputs: Record<string, string>,
   outputDir: string,
-  onLog: (line: string) => void
+  onLog: (line: string) => void,
+  context?: AIRunContext
 ) => Promise<{
   outputFiles: RunOutputFile[];
   output?: ToolOutput;
