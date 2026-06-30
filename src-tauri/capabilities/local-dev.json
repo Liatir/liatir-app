@@ -10,8 +10,6 @@
     "core:default",
 
     "liatir-bridge",
-    "wdio:default",
-    "wdio-webdriver:default",
 
     "notification:default",
     "notification:allow-permission-state",

@@ -15,6 +15,11 @@ jobs, AI runtimes, viewer capture, sidecars, or `.lia` execution.
   builds the debug Tauri binary with the `wdio` feature, then runs the custom
   Tauri E2E harness against the real native webview.
 
+- `npm run test:tauri:dev-smoke`
+  Starts the real `npm run dev` flow with isolated test app storage, waits until
+  the Tauri debug binary starts, then stops the process group. This catches
+  config drift between normal development and the test-only WebDriver build.
+
 - `npm run test:tauri:run`
   Runs the native E2E suite against an already-built
   `src-tauri/target/debug/bundle/macos/Liatir.app` debug bundle on macOS. Use this after
@@ -26,8 +31,9 @@ jobs, AI runtimes, viewer capture, sidecars, or `.lia` execution.
   `tests/e2e/__snapshots__`. First run creates the missing baseline.
 
 - `npm run test:quality`
-  Runs unit tests, prepares and runs native Tauri E2E tests, then runs the
-  visual smoke suite. Use this before handing off larger UI/runtime changes.
+  Runs unit tests, the normal `npm run dev` smoke check, native Tauri E2E tests,
+  and the visual smoke suite. Use this before handing off larger UI/runtime
+  changes.
 
 ## Native Harness
 
@@ -55,6 +61,9 @@ E2E tests launch Liatir with a test-only `HOME`, `XDG_DATA_HOME`,
 `XDG_CACHE_HOME`, and `XDG_CONFIG_HOME` under `tests/.artifacts/home`.
 This prevents tests from reading or mutating the developer's real Liatir app
 data in Application Support.
+
+The dev smoke check uses the same isolation pattern under
+`tests/.artifacts/home-dev-smoke`.
 
 ## Tooling Choice
 
