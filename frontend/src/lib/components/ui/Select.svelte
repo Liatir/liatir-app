@@ -142,17 +142,18 @@
 	}
 </script>
 
-<div class={`relative ${className}`}>
+<div class={`relative min-w-0 max-w-full ${className}`}>
 	<button
 		bind:this={triggerEl}
 		type="button"
 		{id}
 		class={[
-			`flex w-full items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-left text-${textSize} text-neutral-800 shadow-sm transition hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-400`,
+			`flex min-w-0 max-w-full w-full items-center justify-between gap-2 overflow-hidden rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-left text-${textSize} text-neutral-800 shadow-sm transition hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-400`,
 			buttonClass
 		].join(' ')}
 		aria-haspopup="listbox"
 		aria-expanded={open}
+		title={selected?.label ?? placeholder}
 		{disabled}
 		onclick={toggleMenu}
 		onkeydown={handleKeydown}
@@ -174,7 +175,7 @@
 
 		<div
 			class={[
-				'absolute left-0 right-0 z-[9999] flex min-w-[180px] flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl',
+				'absolute left-0 right-0 z-[9999] flex min-w-0 max-w-full flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl',
 				menuPlacement === 'above' ? 'bottom-[calc(100%+6px)]' : 'top-[calc(100%+6px)]'
 			].join(' ')}
 			style={`max-height: ${menuMaxHeight}px`}
@@ -207,7 +208,7 @@
 						<button
 							type="button"
 							class={[
-								`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-${textSize} transition`,
+								`flex min-w-0 w-full items-center gap-2 overflow-hidden rounded-lg px-3 py-1.5 text-left text-${textSize} transition`,
 								option.value === value ? 'bg-violet-50 text-violet-700' : 'text-neutral-700 hover:bg-neutral-50',
 								option.disabled ? 'cursor-not-allowed opacity-45 hover:bg-transparent' : ''
 							].join(' ')}

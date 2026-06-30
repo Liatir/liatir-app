@@ -124,6 +124,9 @@
 	);
 	const selectedRun = $derived(modelRuns.find((run) => run.id === selectedRunId) ?? null);
 	const selectedRunOutputFiles = $derived(selectedRun?.outputFiles ?? []);
+	const fileOverridesInlineSequence = $derived(
+		(mode === 'sequence' || mode === 'protein-structure') && !!inputFile && !!sequence.trim()
+	);
 	const activeModelJobs = $derived(
 		jobsStore.jobs.filter(
 			(job) =>
@@ -587,6 +590,11 @@
 									placeholder="Paste a DNA, RNA, or protein sequence..."
 									class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-brand transition-colors font-mono"
 								></textarea>
+								{#if fileOverridesInlineSequence}
+									<p class="mt-1 text-xs text-amber-600">
+										FASTA file selected: Liatir will use the file and ignore the inline sequence.
+									</p>
+								{/if}
 							</div>
 						{:else if mode === 'protein-structure'}
 							<FilePickerPopup
@@ -612,6 +620,11 @@
 									placeholder="Paste a protein sequence..."
 									class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-brand transition-colors font-mono"
 								></textarea>
+								{#if fileOverridesInlineSequence}
+									<p class="mt-1 text-xs text-amber-600">
+										Protein FASTA selected: Liatir will use the file and ignore the inline protein sequence.
+									</p>
+								{/if}
 							</div>
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 								<div>

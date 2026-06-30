@@ -5,7 +5,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import InfoPopup from '$lib/components/ui/InfoPopup.svelte';
-	import { depsStore } from '$lib/stores/deps.svelte';
+	import { depsStore, type DepResult } from '$lib/stores/deps.svelte';
 	import { managedBins } from '$lib/stores/managedBins.svelte';
 	import { installProgress } from '$lib/stores/installProgress.svelte';
 	import { viewerRuntimesStore, type ViewerRuntimeInstallProgress } from '$lib/stores/viewerRuntimes.svelte';
@@ -32,6 +32,14 @@
 		apt?: string;
 		conda?: string;
 		condaChannel?: string;
+	}
+
+	interface RelatedDependencyTool {
+		id: string;
+		parentBinary: string;
+		label: string;
+		description: string;
+		actionLabel: string;
 	}
 
 	const TOOL_META: Record<string, ToolMeta> = {
@@ -143,6 +151,16 @@
 		}
 	};
 
+	const RELATED_DEPENDENCY_TOOLS: RelatedDependencyTool[] = [
+		{
+			id: 'pip',
+			parentBinary: 'python',
+			label: 'pip',
+			description: 'Python package installer used inside Python environments.',
+			actionLabel: 'Update pip'
+		}
+	];
+
 	// ── platform + package manager ─────────────────────────────────────
 	let platformOs = $state<OsPlatform>('macos');
 	let platformArch = $state<Arch>('x86_64');
@@ -163,6 +181,7 @@
 
 	let toolStates = $state<Record<string, ToolInstallState>>({});
 	let viewerRuntimeProgress = $state<Record<string, ViewerRuntimeInstallProgress>>({});
+	let relatedToolsExpanded = $state<Record<string, boolean>>({});
 
 	function toolState(binary: string): ToolInstallState {
 		return (
@@ -183,6 +202,62 @@
 			...toolStates,
 			[binary]: { ...toolState(binary), ...patch }
 		};
+	}
+
+	function relatedToolStateKey(parentBinary: string, toolId: string): string {
+		return `${parentBinary}:${toolId}`;
+	}
+
+	function relatedToolsFor(binary: string): RelatedDependencyTool[] {
+		return RELATED_DEPENDENCY_TOOLS.filter((tool) => tool.parentBinary === binary);
+	}
+
+	function toggleRelatedTools(binary: string) {
+		relatedToolsExpanded = {
+			...relatedToolsExpanded,
+			[binary]: !relatedToolsExpanded[binary]
+		};
+	}
+
+	function appendToolLog(key: string, line: string) {
+		setToolState(key, { pmLog: [...toolState(key).pmLog, line] });
+	}
+
+	function pythonPackageManager(dep: DepResult): 'brew' | 'conda' | null {
+		const path = dep.path ?? '';
+		if (
+			brewAvailable &&
+			(path.includes('/opt/homebrew/') || path.includes('/usr/local/bin/') || path.includes('/usr/local/Cellar/'))
+		) {
+			return 'brew';
+		}
+		if (
+			condaAvailable &&
+			(path.includes('/miniconda') || path.includes('/anaconda') || path.includes('/conda/'))
+		) {
+			return 'conda';
+		}
+		return null;
+	}
+
+	function relatedToolActionLabel(dep: DepResult, tool: RelatedDependencyTool): string {
+		if (tool.id !== 'pip') return tool.actionLabel;
+		const manager = pythonPackageManager(dep);
+		if (manager === 'brew') return 'Update via Homebrew';
+		if (manager === 'conda') return 'Update via conda';
+		return tool.actionLabel;
+	}
+
+	function relatedToolRuntimeNote(dep: DepResult, tool: RelatedDependencyTool): string | null {
+		if (tool.id !== 'pip') return null;
+		const manager = pythonPackageManager(dep);
+		if (manager === 'brew') {
+			return 'This Python is managed by Homebrew, so pip is updated through the Homebrew Python package.';
+		}
+		if (manager === 'conda') {
+			return 'This Python is managed by conda, so pip is updated through conda.';
+		}
+		return null;
 	}
 
 	onMount(async () => {
@@ -274,9 +349,9 @@
 		try {
 			setToolState(binary, { pmLog: [`$ ${cmd.cmd} ${cmd.args.join(' ')}`] });
 			const result = await runNativeTool(cmd.cmd, cmd.args, (line) => {
-				setToolState(binary, { pmLog: [...toolState(binary).pmLog, line] });
+				appendToolLog(binary, line);
 			}, (line) => {
-				setToolState(binary, { pmLog: [...toolState(binary).pmLog, line] });
+				appendToolLog(binary, line);
 			}, { env: pmRunEnv(cmd.cmd) });
 			if (!result.ok) {
 				const msg = result.stderr || `Exited ${result.exitCode}`;
@@ -299,6 +374,77 @@
 
 	async function pmUpdate(binary: string) {
 		await pmRun(binary, 'update');
+	}
+
+	async function updateRelatedTool(dep: DepResult, tool: RelatedDependencyTool) {
+		if (tool.id !== 'pip') return;
+		const key = relatedToolStateKey(dep.binary, tool.id);
+		const manager = pythonPackageManager(dep);
+		const managedCmd =
+			manager === 'brew'
+				? { cmd: 'brew', args: ['upgrade', TOOL_META.python.brew ?? 'python@3.12'] }
+				: manager === 'conda'
+					? { cmd: 'conda', args: ['install', '-c', 'conda-forge', '-y', 'pip'] }
+					: null;
+		if (managedCmd) {
+			setToolState(key, {
+				phase: 'pm-installing',
+				error: null,
+				pmLog: [
+					`$ ${managedCmd.cmd} ${managedCmd.args.join(' ')}`,
+					relatedToolRuntimeNote(dep, tool) ?? ''
+				].filter(Boolean),
+				pmOperation: 'update',
+				showLog: true
+			});
+
+			try {
+				const result = await runNativeTool(managedCmd.cmd, managedCmd.args, (line) => {
+					appendToolLog(key, line);
+				}, (line) => {
+					appendToolLog(key, line);
+				}, { env: pmRunEnv(managedCmd.cmd) });
+				if (!result.ok) {
+					const msg = result.stderr || result.stdout || `Exited ${result.exitCode}`;
+					setToolState(key, { phase: 'error', error: msg });
+					return;
+				}
+				setToolState(key, { phase: 'done' });
+				await depsStore.recheckOne(dep.binary);
+			} catch (e) {
+				setToolState(key, { phase: 'error', error: String(e) });
+			}
+			return;
+		}
+
+		const python = dep.path ?? dep.binary;
+		const args = ['-m', 'pip', 'install', '--upgrade', 'pip'];
+		setToolState(key, {
+			phase: 'pm-installing',
+			error: null,
+			pmLog: [`$ ${getLastSegmentsStringFromPath(python, 2)} ${args.join(' ')}`],
+			pmOperation: 'update',
+			showLog: true
+		});
+
+		try {
+			const result = await runNativeTool(python, args, (line) => {
+				appendToolLog(key, line);
+			}, (line) => {
+				appendToolLog(key, line);
+			});
+			if (!result.ok) {
+				const rawMsg = result.stderr || result.stdout || `Exited ${result.exitCode}`;
+				const msg = rawMsg.includes('externally-managed-environment')
+					? 'This Python environment is externally managed. Update pip through the Python package manager, or use a virtual environment. Liatir managed AI runtimes already create isolated Python environments for model dependencies.'
+					: rawMsg;
+				setToolState(key, { phase: 'error', error: msg });
+				return;
+			}
+			setToolState(key, { phase: 'done' });
+		} catch (e) {
+			setToolState(key, { phase: 'error', error: String(e) });
+		}
 	}
 
 	function fmtBytes(b: number): string {
@@ -433,7 +579,7 @@
 					<p class="text-2xl font-semibold text-zinc-900">{depsStore.results.length}</p>
 					<p class="text-xs text-zinc-400 mt-1">total</p>
 				</Card>
-			</div>
+										</div>
 
 			<div class="flex justify-center gap-2 items-center w-full cursor-default group">
 				<div class="w-full h-px bg-zinc-200 group-hover:bg-zinc-300"></div>
@@ -461,6 +607,8 @@
 							{@const versionOk = !dep.available || dependencyVersionOk(dep.version, req)}
 							{@const isUnsupportedVersion = dep.available && !!dep.version && !versionOk}
 							{@const canUpdateWithPm = !!pmUpdateCmd(dep.binary)}
+							{@const relatedTools = relatedToolsFor(dep.binary)}
+							{@const isRelatedExpanded = !!relatedToolsExpanded[dep.binary]}
 
 							<div>
 								<!-- Main row -->
@@ -541,6 +689,16 @@
 										{/if}
 									</div>
 
+									<!-- Toggle log -->
+									{#if (state.pmLog.length > 0 || state.phase === 'error') && !isBusy}
+										<button
+											onclick={() => setToolState(dep.binary, { showLog: !state.showLog })}
+											class="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors shrink-0 font-mono"
+										>
+											{state.showLog ? 'hide' : 'log'}
+										</button>
+									{/if}
+
 									<!-- Action buttons -->
 									{#if (isUnsupportedVersion || (!dep.available && !managed)) && pmChecked && !isBusy}
 										<div class="flex items-center gap-2 shrink-0">
@@ -601,15 +759,6 @@
 										</div>
 									{/if}
 
-									<!-- Toggle log -->
-									{#if (state.pmLog.length > 0 || state.phase === 'error') && !isBusy}
-										<button
-											onclick={() => setToolState(dep.binary, { showLog: !state.showLog })}
-											class="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors shrink-0 font-mono"
-										>
-											{state.showLog ? 'hide' : 'log'}
-										</button>
-									{/if}
 								</div>
 
 								<!-- Install log -->
@@ -623,6 +772,114 @@
 										{#each state.pmLog as line}
 											<p class="text-[11px] font-mono text-zinc-300 leading-relaxed">{sanitizeLocalPathsForDisplay(line, 2)}</p>
 										{/each}
+									</div>
+								{/if}
+
+								{#if relatedTools.length > 0}
+									<div class="mx-4 mb-3">
+										<button
+											type="button"
+											class="flex w-full items-center justify-between rounded-lg border border-border bg-zinc-50 px-2.5 py-1 font-light text-left text-[11px] text-zinc-400 hover:text-zinc-600 transition-colors hover:bg-zinc-100"
+											aria-expanded={isRelatedExpanded}
+											onclick={() => toggleRelatedTools(dep.binary)}
+										>
+											<span class="font-medium">Related deps</span>
+											<span class="font-mono text-[10px] text-zinc-400">
+												{isRelatedExpanded ? 'collapse' : 'expand'}
+											</span>
+										</button>
+
+										{#if isRelatedExpanded}
+											<div class="mt-2 space-y-2">
+												{#each relatedTools as relatedTool (relatedTool.id)}
+													{@const relatedKey = relatedToolStateKey(dep.binary, relatedTool.id)}
+													{@const relatedState = toolState(relatedKey)}
+													{@const relatedBusy = relatedState.phase === 'pm-installing'}
+													{@const runtimeNote = relatedToolRuntimeNote(dep, relatedTool)}
+													<div class="rounded-lg border border-border bg-white px-3 py-3">
+														<div class="flex items-start gap-3">
+															<span
+																class="mt-1 h-2 w-2 rounded-full shrink-0 {relatedState.phase === 'error'
+																	? 'bg-red-400'
+																	: relatedState.phase === 'done'
+																	? 'bg-emerald-500'
+																	: dep.available
+																	? 'bg-zinc-300'
+																	: 'bg-red-400'}"
+															></span>
+															<div class="min-w-0 flex-1">
+																<div class="flex items-center gap-2">
+																	<p class="truncate text-sm font-mono font-medium text-zinc-800">
+																		{relatedTool.label}
+																	</p>
+																	<InfoPopup text="{relatedTool.label} — {relatedTool.description}" />
+																</div>
+																<p class="mt-1 text-xs text-zinc-500">{relatedTool.description}</p>
+																{#if runtimeNote}
+																	<p class="mt-1 text-[10px] leading-snug text-zinc-400">{runtimeNote}</p>
+																{/if}
+																{#if dep.available && dep.path}
+																	<p class="mt-1 text-[10px] text-zinc-400">
+																		Uses
+																		<span class="font-mono" title={getLastSegmentsStringFromPath(dep.path, 2)}>
+																			{getLastSegmentsStringFromPath(dep.path, 2)}
+																		</span>
+																	</p>
+																{:else}
+																	<p class="mt-1 text-[10px] text-red-500">Python is not available.</p>
+																{/if}
+																{#if relatedState.phase === 'pm-installing'}
+																	<p class="mt-1 text-xs text-brand">Updating…</p>
+																{:else if relatedState.phase === 'done'}
+																	<p class="mt-1 text-xs text-emerald-600">Updated successfully</p>
+																{:else if relatedState.phase === 'error'}
+																	<p class="mt-1 truncate text-xs text-red-500">
+																		{sanitizeLocalPathsForDisplay(relatedState.error ?? 'Update failed.', 2)}
+																	</p>
+																{/if}
+															</div>
+															<div class="flex shrink-0 items-center gap-2">
+																{#if (relatedState.pmLog.length > 0 || relatedState.phase === 'error') && !relatedBusy}
+																	<button
+																		type="button"
+																		onclick={() => setToolState(relatedKey, { showLog: !relatedState.showLog })}
+																		class="text-[10px] text-zinc-400 transition-colors hover:text-zinc-600 shrink-0 font-mono"
+																	>
+																		{relatedState.showLog ? 'hide' : 'log'}
+																	</button>
+																{/if}
+																<Button
+																	variant="secondary"
+																	size="sm"
+																	disabled={!dep.available || relatedBusy}
+																	loading={relatedBusy}
+																	onclick={() => updateRelatedTool(dep, relatedTool)}
+																>
+																	{relatedToolActionLabel(dep, relatedTool)}
+																</Button>
+															</div>
+														</div>
+
+														{#if relatedState.showLog && (relatedState.pmLog.length > 0 || relatedState.phase === 'error')}
+															<div
+																class="mt-3 rounded-lg border border-border bg-zinc-950 px-3 py-2 max-h-40 overflow-y-auto"
+															>
+																{#if relatedState.phase === 'error' && relatedState.error}
+																	<p class="text-xs font-mono text-red-400 mb-1">
+																		{sanitizeLocalPathsForDisplay(relatedState.error, 2)}
+																	</p>
+																{/if}
+																{#each relatedState.pmLog as line}
+																	<p class="text-[11px] font-mono text-zinc-300 leading-relaxed">
+																		{sanitizeLocalPathsForDisplay(line, 2)}
+																	</p>
+																{/each}
+															</div>
+														{/if}
+													</div>
+												{/each}
+											</div>
+										{/if}
 									</div>
 								{/if}
 							</div>

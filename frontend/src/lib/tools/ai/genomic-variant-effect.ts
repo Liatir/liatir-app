@@ -35,12 +35,14 @@ export const genomicVariantEffectDefinition: LiatirAIToolDefinition = {
 			type: 'file',
 			label: 'Reference FASTA',
 			required: false,
+			description: 'Used before the inline reference sequence when both are provided.',
 			accept: ['fasta', 'fa', 'fna', 'txt']
 		},
 		sequence: {
 			type: 'string',
 			label: 'Inline reference sequence',
 			required: false,
+			description: 'Used only when no reference FASTA file is selected.',
 			default: ''
 		},
 		variantFile: {
@@ -211,6 +213,7 @@ export async function finalizeGenomicVariantEffectResult(
 		inputSummary: {
 			referenceFile: inputs.referenceFile ? basename(inputs.referenceFile) : null,
 			inlineReference: inputs.sequence ? 'provided' : 'not provided',
+			inputSource: inputs.referenceFile ? 'file' : 'inline',
 			variantFile: inputs.variantFile ? basename(inputs.variantFile) : null,
 			referenceName: inputs.referenceName || parsed.summary.referenceName,
 			windowStart,

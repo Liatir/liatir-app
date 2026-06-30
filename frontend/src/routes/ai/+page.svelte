@@ -25,10 +25,17 @@
     showLog: boolean;
     logLines: string[];
   };
+  type ModelCategoryGroup = {
+    name: string;
+    models: LiatirAIModelRecord[];
+    installedCount: number;
+    runnableCount: number;
+  };
 
   let loading = $state(!aiModelsStore.initialized);
   let installing = $state<Record<string, InstallState>>({});
   let installLogs = $state<Record<string, InstallLogState>>({});
+  let expandedCategories = $state<Record<string, boolean>>({});
   let hardware = $state<AIHardwareInfo | null>(null);
   let searchQuery = $state('');
 
@@ -62,6 +69,7 @@
   );
   const installedCount = $derived(models.filter((model) => model.status === 'installed').length);
   const runnableCount = $derived(aiModelsStore.runnableModels.length);
+  const groupedModels = $derived(groupModelsByCategory(filteredModels));
 
   function statusVariant(status: LiatirAIModelRecord['status']): BadgeVariants {
     if (status === 'error') return 'failed';
@@ -89,6 +97,7 @@
       model.name,
       model.id,
       model.description,
+      model.category,
       model.version,
       model.runtime.name,
       model.runtime.kind,
@@ -101,6 +110,58 @@
       ...(model.modalities ?? []),
       ...(model.tags ?? []),
     ].filter(Boolean).join(' ').toLowerCase();
+  }
+
+  function modelCategory(model: LiatirAIModelRecord): string {
+    return model.category?.trim() || 'Other';
+  }
+
+  function groupModelsByCategory(items: LiatirAIModelRecord[]): ModelCategoryGroup[] {
+    const categoryOrder = [
+      'Single-cell',
+      'Genomics',
+      'Protein Language Models',
+      'Protein Structure',
+      'Development Fixtures',
+      'Other',
+    ];
+    const rank = new Map(categoryOrder.map((category, index) => [category, index]));
+    const groups = new Map<string, LiatirAIModelRecord[]>();
+
+    for (const model of items) {
+      const category = modelCategory(model);
+      groups.set(category, [...(groups.get(category) ?? []), model]);
+    }
+
+    return Array.from(groups.entries())
+      .sort(([a], [b]) => (rank.get(a) ?? 999) - (rank.get(b) ?? 999) || a.localeCompare(b))
+      .map(([name, groupModels]) => ({
+        name,
+        models: groupModels,
+        installedCount: groupModels.filter((model) => model.status === 'installed').length,
+        runnableCount: groupModels.filter((model) => model.enabled !== false && model.status === 'installed').length,
+      }));
+  }
+
+  function categoryDescription(category: string): string {
+    if (category === 'Single-cell') return 'Cell annotation and AnnData workflows.';
+    if (category === 'Genomics') return 'DNA/RNA embeddings, regulatory prediction, and variant scoring.';
+    if (category === 'Protein Language Models') return 'Protein sequence embeddings and representation models.';
+    if (category === 'Protein Structure') return 'Structure prediction and binding-oriented local runtimes.';
+    if (category === 'Development Fixtures') return 'Internal models used to validate AI Tool contracts.';
+    return 'Additional local AI Models.';
+  }
+
+  function isCategoryExpanded(category: string): boolean {
+    if (normalizedSearch) return true;
+    return expandedCategories[category] ?? false;
+  }
+
+  function toggleCategory(category: string) {
+    expandedCategories = {
+      ...expandedCategories,
+      [category]: !isCategoryExpanded(category),
+    };
   }
 
   function installBlock(model: LiatirAIModelRecord): AIModelInstallBlock | null {
@@ -286,9 +347,8 @@
       <div class="w-full h-px bg-zinc-200 group-hover:bg-zinc-300"></div>
     </div>
 
-
-    <div class="border border-border bg-white rounded-lg overflow-hidden">
-      <div class="px-4 py-3 border-b border-border bg-white">
+    <div class="space-y-3">
+      <div class="border border-border bg-white rounded-lg px-4 py-3">
         <div class="relative max-w-md">
           <Icon icon="lucide:search" width="15" height="15" class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
           <input
@@ -311,158 +371,195 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(130px,0.8fr)_210px] gap-3 px-4 py-2.5 border-b border-border bg-surface text-[10px] font-semibold uppercase text-zinc-400 max-xl:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_210px]">
-        <span>Model</span>
-        <span class="max-xl:hidden">Runtime</span>
-        <span class="max-xl:hidden">Hardware</span>
-        <span>License</span>
-        <span class="text-right">Actions</span>
-      </div>
-
       {#if loading}
-        <div class="flex flex-col gap-2 items-center justify-center px-4 py-8 text-center text-sm text-zinc-400"><Spinner class="text-zinc-300"/> <p>Loading AI Models...</p></div>
+        <div class="border border-border bg-white rounded-lg flex flex-col gap-2 items-center justify-center px-4 py-8 text-center text-sm text-zinc-400"><Spinner class="text-zinc-300"/> <p>Loading AI Models...</p></div>
       {:else if models.length === 0}
-        <div class="px-4 py-8 text-center text-sm text-zinc-400">No AI Models available.</div>
+        <div class="border border-border bg-white rounded-lg px-4 py-8 text-center text-sm text-zinc-400">No AI Models available.</div>
       {:else if filteredModels.length === 0}
-        <div class="px-4 py-8 text-center text-sm text-zinc-400">No AI Models match your search.</div>
+        <div class="border border-border bg-white rounded-lg px-4 py-8 text-center text-sm text-zinc-400">No AI Models match your search.</div>
       {:else}
-        {#each filteredModels as model (model.id)}
-          {@const blocked = installBlock(model)}
-          {@const installLog = installLogState(model.id)}
-          <div class="border-b border-border/70 last:border-b-0">
-            <div class="grid grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(130px,0.8fr)_210px] gap-3 px-4 py-3 items-center max-xl:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_210px]">
-              <div class="min-w-0">
-                <div class="flex items-center gap-2 min-w-0">
-                  <p class="text-sm font-semibold text-zinc-800 truncate">{model.name}</p>
-                  <span class="shrink-0">
-                    <InfoPopup text={aiModelInfo(model)} />
-                  </span>
-                  <Badge variant={installing[model.id]?'running':statusVariant(model.status)} hideDot={!installing[model.id]} pulse={installing[model.id]?true:false} size="xs">{installing[model.id] ? 'installing' : model.status}</Badge>
-                  {#if model.localOnly}
-                    <Badge variant="neutral" size="xs" hideDot>local</Badge>
-                  {/if}
+        {#each groupedModels as group (group.name)}
+          {@const expanded = isCategoryExpanded(group.name)}
+          <section class="border border-border bg-white rounded-lg overflow-hidden">
+            <button
+              type="button"
+              class="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors hover:bg-zinc-50"
+              aria-expanded={expanded}
+              onclick={() => toggleCategory(group.name)}
+            >
+              <div class="flex min-w-0 items-start gap-3">
+                <div class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-50 text-zinc-500">
+                  <Icon icon={expanded ? 'lucide:chevron-down' : 'lucide:chevron-right'} width="15" height="15" />
                 </div>
-                <p class="mt-1 text-xs text-zinc-500 line-clamp-2">{model.description}</p>
-                {#if model.error}
-                  <p class="mt-1 text-[11px] text-red-500 line-clamp-2">{sanitizeLocalPathsForDisplay(model.error, 2)}</p>
-                {/if}
-                <div class="mt-2 flex flex-wrap gap-1.5">
-                  {#each model.capabilities as capability}
-                    <span class="rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[10px] text-zinc-500">{capability}</span>
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-sm font-semibold text-zinc-800">{group.name}</h2>
+                    <Badge variant="neutral" size="xs" hideDot>{group.models.length} model{group.models.length === 1 ? '' : 's'}</Badge>
+                    {#if group.installedCount > 0}
+                      <Badge variant="done" size="xs">{group.installedCount} installed</Badge>
+                    {/if}
+                  </div>
+                  <p class="mt-1 text-xs text-zinc-500">{categoryDescription(group.name)}</p>
+                </div>
+              </div>
+              <div class="hidden shrink-0 items-center gap-2 text-xs text-zinc-500 sm:flex">
+                <span>{group.runnableCount} runnable</span>
+              </div>
+            </button>
+
+            {#if expanded}
+              <div class="border-t border-border bg-surface/60 p-3">
+                <div class="grid grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(130px,0.8fr)_210px] gap-3 px-3 py-2 text-[10px] font-semibold uppercase text-zinc-400 max-xl:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_210px]">
+                  <span>Model</span>
+                  <span class="max-xl:hidden">Runtime</span>
+                  <span class="max-xl:hidden">Hardware</span>
+                  <span>License</span>
+                  <span class="text-right">Actions</span>
+                </div>
+
+                <div class="space-y-2">
+                  {#each group.models as model (model.id)}
+                    {@const blocked = installBlock(model)}
+                    {@const installLog = installLogState(model.id)}
+                    <div class="rounded-lg border border-border bg-white">
+                      <div class="grid grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(130px,0.8fr)_210px] gap-3 px-4 py-3 items-center max-xl:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_210px]">
+                        <div class="min-w-0">
+                          <div class="flex items-center gap-2 min-w-0">
+                            <p class="text-sm font-semibold text-zinc-800 truncate">{model.name}</p>
+                            <span class="shrink-0">
+                              <InfoPopup text={aiModelInfo(model)} />
+                            </span>
+                            <Badge variant={installing[model.id]?'running':statusVariant(model.status)} hideDot={!installing[model.id]} pulse={installing[model.id]?true:false} size="xs">{installing[model.id] ? 'installing' : model.status}</Badge>
+                            {#if model.localOnly}
+                              <Badge variant="neutral" size="xs" hideDot>local</Badge>
+                            {/if}
+                          </div>
+                          <p class="mt-1 text-xs text-zinc-500 line-clamp-2">{model.description}</p>
+                          {#if model.error}
+                            <p class="mt-1 text-[11px] text-red-500 line-clamp-2">{sanitizeLocalPathsForDisplay(model.error, 2)}</p>
+                          {/if}
+                          <div class="mt-2 flex flex-wrap gap-1.5">
+                            {#each model.capabilities as capability}
+                              <span class="rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[10px] text-zinc-500">{capability}</span>
+                            {/each}
+                          </div>
+                          {#if blocked}
+                            <div class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] leading-snug text-amber-800 xl:hidden">
+                              <p class="font-semibold">{blocked.summary}</p>
+                              <p class="mt-0.5">{blocked.reason}</p>
+                            </div>
+                          {/if}
+                        </div>
+
+                        <div class="text-xs text-zinc-600 min-w-0 max-xl:hidden">
+                          <p class="truncate">{runtimeLabel(model)}</p>
+                          <p class="text-[10px] text-zinc-400 truncate" title={model.localPath ? getLastSegmentsStringFromPath(model.localPath, 2) : undefined}>
+                            {model.localPath ? getLastSegmentsStringFromPath(model.localPath, 2) : model.runtime.kind}
+                          </p>
+                        </div>
+
+                        <div class="text-xs text-zinc-600 min-w-0 max-xl:hidden">
+                          <p class="truncate">{hardwareLabel(model)}</p>
+                          {#if model.hardware?.notes}
+                            <p class="text-[10px] text-zinc-400 truncate">{model.hardware.notes}</p>
+                          {/if}
+                          {#if blocked}
+                            <div class="mt-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] leading-snug text-amber-800">
+                              <p class="font-semibold">{blocked.summary}</p>
+                              <p class="mt-0.5">{blocked.reason}</p>
+                            </div>
+                          {/if}
+                        </div>
+
+                        <div class="text-xs text-zinc-600 min-w-0">
+                          <p class="truncate">{model.license?.name ?? 'Unspecified'}</p>
+                          {#if model.license?.verifiedAt}
+                            <p class="text-[10px] text-zinc-400">Verified {model.license.verifiedAt}</p>
+                          {:else}
+                            <p class="text-[10px] text-zinc-400">Verification required</p>
+                          {/if}
+                        </div>
+
+                        <div class="flex items-center justify-end gap-2 min-w-0">
+                          {#if (model.source === 'managed-download' || model.source === 'managed-runtime') && model.status === 'installed' && !installing[model.id]}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onclick={() => removeModel(model)}
+                            >
+                              Remove
+                            </Button>
+                          {:else}
+                            <span></span>
+                          {/if}
+
+                          {#if !installing[model.id] && installLog}
+                            <button
+                              type="button"
+                              onclick={() => toggleInstallLog(model.id)}
+                              class="font-mono text-[10px] text-zinc-400 transition-colors hover:text-zinc-600"
+                            >
+                              {installLog.showLog ? 'hide' : 'log'}
+                            </button>
+                          {/if}
+
+                          {#if installing[model.id]}
+                            {@const percent = installPercent(model)}
+                            <div class="ml-auto min-w-0 w-full max-w-40">
+                              <div class="flex items-center justify-between gap-2 text-[10px] text-zinc-500">
+                                <span class="truncate">{installLabel(model)}</span>
+                                {#if percent !== null}
+                                  <span class="shrink-0 font-mono">{Math.round(percent)}%</span>
+                                {/if}
+                                {#if installing[model.id].logLines.length > 0}
+                                  <button
+                                    type="button"
+                                    onclick={() => toggleInstallLog(model.id)}
+                                    class="shrink-0 font-mono text-[10px] text-zinc-400 transition-colors hover:text-zinc-600"
+                                  >
+                                    {installing[model.id].showLog ? 'hide' : 'log'}
+                                  </button>
+                                {/if}
+                              </div>
+                              <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-zinc-100">
+                                {#if percent !== null}
+                                  <div class="h-full rounded-full bg-brand transition-[width]" style={`width: ${percent}%`}></div>
+                                {:else}
+                                  <div class="h-full w-1/2 rounded-full bg-brand/70 animate-pulse"></div>
+                                {/if}
+                              </div>
+                            </div>
+                          {:else if model.status === 'installed'}
+                            <Button size="sm" variant="secondary" onclick={() => goto(`/ai/${encodeURIComponent(model.id)}`)}>
+                              Run
+                            </Button>
+                          {:else if model.install?.method === 'managed-download' || model.install?.method === 'managed-runtime'}
+                            {#if blocked}
+                              <Button size="sm" variant="secondary" disabled={true} class="cursor-help" title={blocked.reason}>
+                                Incompatible
+                              </Button>
+                            {:else}
+                              <Button size="sm" variant="primary" onclick={() => installModel(model)}>
+                                Install
+                              </Button>
+                            {/if}
+                          {/if}
+                        </div>
+                      </div>
+
+                      {#if installLog?.showLog && installLog.logLines.length > 0}
+                        <div class="mx-4 mb-3 rounded-lg border border-border bg-zinc-950 px-3 py-2 max-h-40 overflow-y-auto">
+                          {#each installLog.logLines as line}
+                            <p class="text-[11px] font-mono leading-relaxed {logLineClass(line)}">{sanitizeLocalPathsForDisplay(line, 2)}</p>
+                          {/each}
+                        </div>
+                      {/if}
+                    </div>
                   {/each}
                 </div>
-                {#if blocked}
-                  <div class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] leading-snug text-amber-800 xl:hidden">
-                    <p class="font-semibold">{blocked.summary}</p>
-                    <p class="mt-0.5">{blocked.reason}</p>
-                  </div>
-                {/if}
-              </div>
-
-              <div class="text-xs text-zinc-600 min-w-0 max-xl:hidden">
-                <p class="truncate">{runtimeLabel(model)}</p>
-                <p class="text-[10px] text-zinc-400 truncate" title={model.localPath ? getLastSegmentsStringFromPath(model.localPath, 2) : undefined}>
-                  {model.localPath ? getLastSegmentsStringFromPath(model.localPath, 2) : model.runtime.kind}
-                </p>
-              </div>
-
-              <div class="text-xs text-zinc-600 min-w-0 max-xl:hidden">
-                <p class="truncate">{hardwareLabel(model)}</p>
-                {#if model.hardware?.notes}
-                  <p class="text-[10px] text-zinc-400 truncate">{model.hardware.notes}</p>
-                {/if}
-                {#if blocked}
-                  <div class="mt-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] leading-snug text-amber-800">
-                    <p class="font-semibold">{blocked.summary}</p>
-                    <p class="mt-0.5">{blocked.reason}</p>
-                  </div>
-                {/if}
-              </div>
-
-              <div class="text-xs text-zinc-600 min-w-0">
-                <p class="truncate">{model.license?.name ?? 'Unspecified'}</p>
-                {#if model.license?.verifiedAt}
-                  <p class="text-[10px] text-zinc-400">Verified {model.license.verifiedAt}</p>
-                {:else}
-                  <p class="text-[10px] text-zinc-400">Verification required</p>
-                {/if}
-              </div>
-
-              <div class="flex items-center justify-end gap-2 min-w-0">
-                {#if (model.source === 'managed-download' || model.source === 'managed-runtime') && model.status === 'installed' && !installing[model.id]}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onclick={() => removeModel(model)}
-                  >
-                    Remove
-                  </Button>
-                {:else}
-                  <span></span>
-                {/if}
-
-                {#if !installing[model.id] && installLog}
-                  <button
-                    type="button"
-                    onclick={() => toggleInstallLog(model.id)}
-                    class="font-mono text-[10px] text-zinc-400 transition-colors hover:text-zinc-600"
-                  >
-                    {installLog.showLog ? 'hide' : 'log'}
-                  </button>
-                {/if}
-
-                {#if installing[model.id]}
-                  {@const percent = installPercent(model)}
-                  <div class="ml-auto min-w-0 w-full max-w-40">
-                    <div class="flex items-center justify-between gap-2 text-[10px] text-zinc-500">
-                      <span class="truncate">{installLabel(model)}</span>
-                      {#if percent !== null}
-                        <span class="shrink-0 font-mono">{Math.round(percent)}%</span>
-                      {/if}
-                      {#if installing[model.id].logLines.length > 0}
-                        <button
-                          type="button"
-                          onclick={() => toggleInstallLog(model.id)}
-                          class="shrink-0 font-mono text-[10px] text-zinc-400 transition-colors hover:text-zinc-600"
-                        >
-                          {installing[model.id].showLog ? 'hide' : 'log'}
-                        </button>
-                      {/if}
-                    </div>
-                    <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-zinc-100">
-                      {#if percent !== null}
-                        <div class="h-full rounded-full bg-brand transition-[width]" style={`width: ${percent}%`}></div>
-                      {:else}
-                        <div class="h-full w-1/2 rounded-full bg-brand/70 animate-pulse"></div>
-                      {/if}
-                    </div>
-                  </div>
-                {:else if model.status === 'installed'}
-                  <Button size="sm" variant="secondary" onclick={() => goto(`/ai/${encodeURIComponent(model.id)}`)}>
-                    Run
-                  </Button>
-                {:else if model.install?.method === 'managed-download' || model.install?.method === 'managed-runtime'}
-                  {#if blocked}
-                    <Button size="sm" variant="secondary" disabled={true} class="cursor-help" title={blocked.reason}>
-                      Incompatible
-                    </Button>
-                  {:else}
-                    <Button size="sm" variant="primary" onclick={() => installModel(model)}>
-                      Install
-                    </Button>
-                  {/if}
-                {/if}
-              </div>
-            </div>
-
-            {#if installLog?.showLog && installLog.logLines.length > 0}
-              <div class="mx-4 mb-3 rounded-lg border border-border bg-zinc-950 px-3 py-2 max-h-40 overflow-y-auto">
-                {#each installLog.logLines as line}
-                  <p class="text-[11px] font-mono leading-relaxed {logLineClass(line)}">{sanitizeLocalPathsForDisplay(line, 2)}</p>
-                {/each}
               </div>
             {/if}
-          </div>
+          </section>
         {/each}
       {/if}
     </div>

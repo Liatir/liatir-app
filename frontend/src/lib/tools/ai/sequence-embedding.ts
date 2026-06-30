@@ -51,12 +51,14 @@ export const sequenceEmbeddingDefinition: LiatirAIToolDefinition = {
 			type: 'file',
 			label: 'FASTA file',
 			required: false,
+			description: 'Used before the inline sequence when both are provided.',
 			accept: ['fasta', 'fa', 'faa', 'fna', 'txt']
 		},
 		sequence: {
 			type: 'string',
 			label: 'Sequence',
 			required: false,
+			description: 'Used only when no FASTA file is selected.',
 			default: ''
 		},
 		maxLength: {
@@ -177,6 +179,7 @@ export async function finalizeSequenceEmbeddingResult(
 		inputSummary: {
 			inputFile: inputs.inputFile ? basename(inputs.inputFile) : null,
 			inlineSequence: inputs.sequence ? 'provided' : 'not provided',
+			inputSource: inputs.inputFile ? 'file' : 'inline',
 			moleculeType,
 			maxLength
 		},

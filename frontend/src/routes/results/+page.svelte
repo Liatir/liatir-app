@@ -128,12 +128,12 @@
   <div class="w-72 shrink-0 border-r border-border bg-surface flex flex-col">
 
     <!-- Filters -->
-    <div class="px-3 pt-3 pb-2 border-b border-border flex gap-2">
+    <div class="px-3 pt-3 pb-2 border-b border-border flex flex-wrap gap-2">
       <Select
         value={activeTool}
         options={toolOptions}
         onchange={(v) => activeTool = v}
-        class="text-xs"
+        class="min-w-0 flex-[1_1_8rem] text-xs"
       />
       <Select
         value={activeStatus}
@@ -143,7 +143,7 @@
           { value: 'error', label: 'Error' },
         ]}
         onchange={(v) => activeStatus = v as typeof activeStatus}
-        class="text-[10px]"
+        class="min-w-0 flex-[1_1_7rem] text-[10px]"
       />
     </div>
 

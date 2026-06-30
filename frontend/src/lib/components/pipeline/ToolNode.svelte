@@ -141,17 +141,22 @@
     <div class="px-3 py-2.5 space-y-2.5 nodrag nopan">
       {#each inputKeys as [key, schema]}
         {#if schema.type === 'file'}
-          <OptionPicker
-            value={data.inputs[key] ?? ''}
-            groups={buildGroups(schema.accept)}
-            label="{schema.label ?? key}{schema.required ? '' : ' (optional)'}"
-            placeholder="Select or connect a step…"
-            searchPlaceholder="Search…"
-            emptyText="No matching options."
-            emptyHref="/data"
-            disabled={inputsDisabled}
-            onchange={(v) => setInput(key, v)}
-          />
+          <div>
+            <OptionPicker
+              value={data.inputs[key] ?? ''}
+              groups={buildGroups(schema.accept)}
+              label="{schema.label ?? key}{schema.required ? '' : ' (optional)'}"
+              placeholder="Select or connect a step…"
+              searchPlaceholder="Search…"
+              emptyText="No matching options."
+              emptyHref="/data"
+              disabled={inputsDisabled}
+              onchange={(v) => setInput(key, v)}
+            />
+            {#if schema.description}
+              <p class="mt-1 text-[10px] leading-snug text-zinc-400">{schema.description}</p>
+            {/if}
+          </div>
         {:else if def.type === 'ai-tool' && key === 'modelId'}
           <OptionPicker
             value={data.inputs[key] ?? ''}
@@ -176,6 +181,9 @@
               class="w-full"
               onchange={(v) => setInput(key, v)}
             />
+            {#if schema.description}
+              <p class="mt-1 text-[10px] leading-snug text-zinc-400">{schema.description}</p>
+            {/if}
           </div>
         {:else if schema.type === 'string' || schema.type === 'number'}
           <div>
@@ -189,6 +197,9 @@
               disabled={inputsDisabled}
               onchange={(v) => setInput(key, v)}
             />
+            {#if schema.description}
+              <p class="mt-1 text-[10px] leading-snug text-zinc-400">{schema.description}</p>
+            {/if}
           </div>
         {/if}
       {/each}

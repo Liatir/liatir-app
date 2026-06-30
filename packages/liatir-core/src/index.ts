@@ -367,6 +367,8 @@ export interface LiatirAIModelMetadata {
   id: string;
   name: string;
   description: string;
+  /** Product-facing model family/category used for registry grouping. */
+  category: string;
   version?: string;
   runtime: LiatirAIModelRuntime;
   source: LiatirAIModelSource;

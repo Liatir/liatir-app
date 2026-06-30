@@ -14,6 +14,7 @@ const INTERNAL_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		name: 'Mock Local Model',
 		description:
 			'Deterministic local model fixture for validating AI Tool wiring without loading model weights.',
+		category: 'Development Fixtures',
 		version: '0.1.0',
 		runtime: {
 			kind: 'mock',
@@ -47,6 +48,7 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		name: 'CellTypist Local Annotation',
 		description:
 			'Local single-cell annotation runtime using CellTypist models for h5ad/AnnData workflows.',
+		category: 'Single-cell',
 		version: '1.x',
 		runtime: {
 			kind: 'python-venv',
@@ -90,6 +92,7 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		name: 'Nucleotide Transformer v2 50M',
 		description:
 			'Small/base managed local DNA/RNA embedding model for genomic sequence representations.',
+		category: 'Genomics',
 		version: 'v2-50m-multi-species',
 		runtime: {
 			kind: 'python-venv',
@@ -136,6 +139,7 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		name: 'Nucleotide Transformer v2 500M',
 		description:
 			'Larger managed local DNA/RNA foundation model for genomic embeddings and embedding-delta variant effect scoring.',
+		category: 'Genomics',
 		version: 'v2-500m-multi-species',
 		runtime: {
 			kind: 'python-venv',
@@ -182,6 +186,7 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		name: 'ESM-2 8M Protein',
 		description:
 			'Small managed local protein language model for lightweight protein sequence embeddings.',
+		category: 'Protein Language Models',
 		version: 'esm2_t6_8M_UR50D',
 		runtime: {
 			kind: 'python-venv',
@@ -228,6 +233,7 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		name: 'Boltz-2 Local Structure & Binding',
 		description:
 			'Managed local Boltz-2 runtime for protein structure prediction and optional protein-ligand affinity scoring.',
+		category: 'Protein Structure',
 		version: '2.x',
 		runtime: {
 			kind: 'python-venv',
@@ -285,6 +291,7 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		id: CHAI1_MODEL_ID,
 		name: 'Chai-1 Local Structure',
 		description: 'Managed Chai-1 runtime for molecular structure prediction on Linux CUDA hosts.',
+		category: 'Protein Structure',
 		version: '0.6.1',
 		runtime: {
 			kind: 'python-venv',

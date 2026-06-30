@@ -40,12 +40,14 @@ export const proteinStructureDefinition: LiatirAIToolDefinition = {
 			type: 'file',
 			label: 'Protein FASTA',
 			required: false,
+			description: 'Used before the inline protein sequence when both are provided.',
 			accept: ['fasta', 'fa', 'faa', 'txt']
 		},
 		sequence: {
 			type: 'string',
 			label: 'Protein sequence',
 			required: false,
+			description: 'Used only when no protein FASTA file is selected.',
 			default: ''
 		},
 		ligandSmiles: {
@@ -335,6 +337,7 @@ export async function finalizeProteinStructureResult(
 		inputSummary: {
 			inputFile: inputs.inputFile ? basename(inputs.inputFile) : null,
 			inlineSequence: inputs.sequence ? 'provided' : 'not provided',
+			inputSource: inputs.inputFile ? 'file' : 'inline',
 			ligand: inputs.ligandSmiles?.trim() ? 'SMILES' : inputs.ligandCcd?.trim() ? 'CCD' : 'none',
 			sequenceCount: parsed.summary.sequenceCount,
 			sequenceLengths: parsed.summary.sequenceLengths
