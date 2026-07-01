@@ -9,7 +9,6 @@
 | Type | Native tool |
 | Binary | `samtools` |
 | Subcommand | `faidx` |
-| Pipeline ID | `samtools-faidx` |
 
 ## Installation
 

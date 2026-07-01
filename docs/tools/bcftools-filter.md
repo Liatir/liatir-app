@@ -9,7 +9,6 @@
 | Type | Native tool |
 | Binary | `bcftools` |
 | Subcommand | `filter -i` (include mode) |
-| Pipeline ID | `bcftools-filter` |
 
 ## Installation
 
@@ -47,7 +46,7 @@ conda install -c bioconda bcftools
 3. Choose a preset or write a custom filter expression.
 4. Click **Run filter**.
 
-Liatir runs `bcftools filter -i '<expression>' -O z -o <output.vcf.gz> <input>`. The output file is stored in `{app_data_dir}/tool-outputs/` and appears in the results panel.
+Liatir runs the selected filter expression and shows the compressed VCF output in the results panel.
 
 ## Filter expression syntax
 

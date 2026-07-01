@@ -1,6 +1,6 @@
 # .lia Bundle Format
 
-A `.lia` file is a ZIP archive with a specific internal structure. Rust validates the bundle before any content is extracted or executed.
+A `.lia` file is a ZIP archive with a specific internal structure. Liatir validates the bundle before any content is extracted or executed.
 
 ## Archive contents
 

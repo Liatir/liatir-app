@@ -17,7 +17,6 @@ export default defineConfig({
       { text: 'AI Models', link: '/ai/models/overview' },
       { text: 'Plugins', link: '/plugins/overview' },
       { text: 'Pipeline', link: '/pipeline/overview' },
-      { text: 'API', link: '/api/liatir-api' },
     ],
 
     sidebar: [
@@ -26,7 +25,7 @@ export default defineConfig({
         collapsed: false,
         items: [
           { text: 'What is Liatir', link: '/introduction/overview' },
-          { text: 'Architecture', link: '/introduction/architecture' },
+          { text: 'How Liatir Works', link: '/introduction/architecture' },
         ],
       },
       {
@@ -85,14 +84,6 @@ export default defineConfig({
         collapsed: false,
         items: [
           { text: 'Overview', link: '/pipeline/overview' },
-        ],
-      },
-      {
-        text: 'API Reference',
-        collapsed: false,
-        items: [
-          { text: 'window.Liatir', link: '/api/liatir-api' },
-          { text: 'Rust commands', link: '/api/rust-commands' },
         ],
       },
     ],

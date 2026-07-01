@@ -14,6 +14,7 @@ export default defineConfig({
       { text: 'Overview', link: '/' },
       { text: 'Architecture', link: '/architecture/overview' },
       { text: 'Testing', link: '/testing/overview' },
+      { text: 'API', link: '/api/liatir-api' },
       { text: 'AI Roadmap', link: '/roadmap/ai-batches' },
     ],
 
@@ -30,6 +31,7 @@ export default defineConfig({
         collapsed: false,
         items: [
           { text: 'Core principles', link: '/architecture/overview' },
+          { text: 'Implementation architecture', link: '/architecture/implementation' },
         ],
       },
       {
@@ -37,6 +39,14 @@ export default defineConfig({
         collapsed: false,
         items: [
           { text: 'Testing Liatir', link: '/testing/overview' },
+        ],
+      },
+      {
+        text: 'API and Bridge',
+        collapsed: false,
+        items: [
+          { text: 'window.Liatir', link: '/api/liatir-api' },
+          { text: 'Rust commands', link: '/api/rust-commands' },
         ],
       },
       {

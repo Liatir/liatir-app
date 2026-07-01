@@ -29,7 +29,7 @@ You can either:
 - **Browse** for an existing `snpEff.jar` on your machine, or
 - **Download** the latest SnpEff bundle from the official source directly inside Liatir. The download runs in the background with progress, speed, and pause/resume support.
 
-The JAR path is saved to `{app_data}/snpeff-config.json` and persists across restarts.
+The JAR path is saved by Liatir and persists across restarts.
 
 ### Step 2 — Download a genome database
 
@@ -66,7 +66,7 @@ java -Xmx4g -jar snpEff.jar ann \
   <input.vcf>
 ```
 
-Output is written to `{data}/tool-outputs/snpeff-{runId}.vcf`.
+The annotated VCF appears in the results panel and can be added to the Data library.
 
 ## Output
 

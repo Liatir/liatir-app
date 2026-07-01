@@ -30,7 +30,7 @@ Any binary installed in your system PATH can be wrapped as a native tool. Liatir
 A `.lia` file is a self-contained ZIP bundle: a `manifest.json` with an input/output schema, and an `index.js` ESM bundle that is executed by Node.js. The plugin's JS can do anything Node can do — including shelling out to Nextflow, Snakemake, or any other CLI tool. From Liatir's perspective, a plugin that wraps a Nextflow workflow looks identical to a native QC tool: same schema, same run history, same output tracking.
 
 ### 3 — WASM plugins
-For performance-critical or cross-language logic, Liatir supports WebAssembly plugins. Compile from Rust, C, or any WASM-compatible language and register the plugin — the same `PipelineStepDefinition` schema used by every other step type applies.
+For performance-critical or cross-language logic, Liatir supports WebAssembly plugins. Compile from Rust, C, or any WASM-compatible language and register the plugin so it can behave like a normal tool in the UI and in pipelines.
 
 ### 4 — AI Models and AI Tools
 AI Models are locally installed model runtimes managed by Liatir. AI Tools are the pipeline capabilities that use those models for tasks such as single-cell annotation, sequence embedding, protein structure prediction, and genomic variant scoring.

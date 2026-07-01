@@ -32,7 +32,7 @@ my-qc-plugin/
 
 ### `liatir dev`
 
-Starts esbuild in watch mode and connects to the running Liatir app via the IPC server (reads `{app_data_dir}/.ipc`).
+Starts esbuild in watch mode and connects to the running Liatir app for local plugin development.
 
 ```bash
 liatir dev
@@ -41,7 +41,7 @@ liatir dev
 Changes to `src/` are rebuilt automatically. The updated plugin is hot-reloaded in the app without a manual import step.
 
 ::: warning Liatir must be running
-`liatir dev` looks for an active IPC socket. Start the Liatir app before running this command.
+`liatir dev` needs a running Liatir app so the plugin can be loaded and tested during development.
 :::
 
 ### `liatir build`

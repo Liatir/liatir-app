@@ -8,7 +8,6 @@ FastQC performs comprehensive quality control analysis on raw sequencing reads. 
 |----------|-------|
 | Type | WASM plugin |
 | Installation | None (bundled with Liatir) |
-| Pipeline ID | `fastqc` |
 
 ## Why WASM?
 

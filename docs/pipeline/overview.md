@@ -1,115 +1,77 @@
 # Pipeline
 
-The Liatir pipeline system connects analysis steps so that outputs from one step flow automatically into the inputs of the next. Every native tool, `.lia` plugin, and WASM plugin exposes the same typed schema — which means any step can be combined with any other compatible step.
+Pipelines let you connect analysis steps visually so that the output from one
+step becomes the input for the next one.
 
-::: warning Status: type system complete, visual builder in progress
-The shared schema infrastructure and `PipelineStepDefinition` types are implemented and used by all tools and plugins today. The DAG canvas editor and automated run execution are planned features.
-:::
+Use pipelines when you want to repeat a workflow, avoid manual file handoffs,
+or combine built-in tools, `.lia` plugins, and AI Tools in one place.
 
-## The schema system
+## What a pipeline contains
 
-### PipelineStepDefinition
+A pipeline is made of nodes and connections:
 
-Every step — whether it is a native binary wrapper, a JavaScript plugin, or a WASM plugin — exposes a `PipelineStepDefinition`:
+- **Input nodes** provide starting files or values.
+- **Tool nodes** run built-in tools, `.lia` plugins, or AI Tools.
+- **Logic nodes** help control simple branching or conditional behavior.
+- **Connections** pass compatible outputs into later inputs.
 
-```typescript
-interface PipelineStepDefinition {
-  id: string                              // unique step identifier
-  type: 'native-tool' | 'lia-module' | 'wasm-plugin'
-  label: string                           // display name
-  description: string
-  category: string                        // e.g. 'qc', 'alignment', 'variants'
-  inputSchema:  Record<string, InputFieldSchema>
-  outputSchema: Record<string, OutputFieldSchema>
-}
-```
+Each node exposes only the inputs that make sense for that tool. File pickers
+are filtered by compatible format whenever possible.
 
-This is the single source of truth for what a step needs and what it produces.
+## Running a pipeline
 
-### InputFieldSchema
+1. Open **Pipeline** from the sidebar.
+2. Add the tools or plugins you want to use.
+3. Connect outputs to compatible inputs.
+4. Fill in required fields.
+5. Click **Run pipeline**.
 
-Describes a single input parameter:
+While the pipeline is running, the active pipeline is disabled to prevent
+accidental edits. Other pipelines and unrelated pages should remain usable.
 
-```typescript
-interface InputFieldSchema {
-  type: 'string' | 'number' | 'boolean' | 'file'
-  label?: string
-  required?: boolean
-  default?: string | number | boolean
-  accept?: string[]    // file extensions, e.g. ['fastq', 'fastq.gz']
-}
-```
+## Jobs and Results
 
-### OutputFieldSchema
+Long-running steps appear in **Jobs** while they run. When the pipeline
+finishes, the completed run appears in **Results** with:
 
-Describes a single output:
+- the pipeline name;
+- each step that ran;
+- logs and errors;
+- output files;
+- metrics and summaries;
+- provenance for tools and AI Models.
 
-```typescript
-interface OutputFieldSchema {
-  type: 'file' | 'stats' | 'string' | 'number'
-  label?: string
-  ext?: string[]          // expected extensions for file outputs
-  description?: string
-}
-```
+If a step fails, Liatir keeps the logs and shows which part of the pipeline
+failed so you can fix the input or settings and run again.
 
-### RunOutputFile
+## Example workflows
 
-Files produced by a run are represented as `RunOutputFile` values. These are stored alongside the run record and can be registered in the Data library:
+### FASTQ quality control
 
-```typescript
-interface RunOutputFile {
-  label: string
-  path: string     // absolute path on disk
-  ext: string      // file extension without dot
-  size?: number    // bytes
-}
-```
+1. Start from FASTQ files in **Data**.
+2. Run **FastQC**.
+3. Run **fastp** to trim reads.
+4. Add trimmed files back to **Data** or pass them to the next step.
 
-## How data flows between steps
+### Variant filtering
 
-When a file-type output from step A is connected to a file-type input on step B, the pipeline engine:
+1. Start from a VCF or BCF file.
+2. Run **BCFtools stats** to inspect the callset.
+3. Run **BCFtools filter** with a quality expression.
+4. Review the filtered VCF in **Results**.
 
-1. Reads `RunOutputFile.path` from the step A result.
-2. Checks that the file extension matches `inputSchema[field].accept` on step B.
-3. Pre-fills the input field on step B with that path.
-4. Registers the file in the Data library if it is not already there.
+### AI-assisted workflows
 
-This means the user never manually copies a path between tool runs — the pipeline does it automatically.
+1. Install a compatible AI Model.
+2. Add an AI Tool to the pipeline.
+3. Select the model inside the tool.
+4. Connect the generated output to viewers, reports, or later tools.
 
-## Step registry
+## Saving and reusing workflows
 
-All registered steps and their IDs:
+Pipelines are meant to be reusable. A saved workflow keeps its structure and
+settings so you can return to it later, adjust inputs, and run it again.
 
-| Step | Type | Pipeline ID |
-|------|------|------------|
-| FastQC | WASM plugin | `fastqc` |
-| Samtools flagstat | Native tool | `samtools-flagstat` |
-| BCFtools stats | Native tool | `bcftools-stats` |
-| fastp | Native tool | `fastp` |
-
-`.lia` plugin IDs are taken from the `name` field in their `manifest.json`.
-
-## Typical pipeline: FASTQ → Alignment → Variant Calling
-
-Even before the visual builder exists, you can use Liatir tools in sequence manually:
-
-```
-1. fastp          FASTQ (R1 + R2)     → trimmed R1, trimmed R2
-2. [aligner .lia] trimmed FASTQ       → BAM  (e.g., BWA-MEM2 .lia plugin)
-3. samtools       BAM                 → flagstat stats
-4. [variant .lia] BAM + reference     → VCF  (e.g., GATK HaplotypeCaller .lia)
-5. bcftools       VCF                 → variant stats, Ts/Tv ratio
-```
-
-Each step's output files are registered in the Data library via **Add to Data**, and the next step picks them from the file picker. The visual pipeline builder will automate this wiring.
-
-## Planned: visual pipeline builder
-
-The DAG canvas editor will provide:
-
-- **Step library panel** — drag any registered step onto the canvas.
-- **Edge drawing** — connect a file output port to a compatible file input port. Type compatibility is checked at connect time.
-- **Run pipeline** — execute all steps in topological order, passing outputs automatically.
-- **Pipeline persistence** — save and reload pipeline definitions as JSON.
-- **Nested pipelines** — embed a `.lia` plugin that itself runs Nextflow or Snakemake, treating the entire external pipeline as a single opaque step.
+For custom steps, use [.lia plugins](/plugins/overview). A plugin can wrap a
+script, command-line tool, Nextflow workflow, or Snakemake workflow and still
+behave like a normal node in the pipeline.

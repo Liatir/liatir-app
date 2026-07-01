@@ -10,7 +10,7 @@ hero:
       text: Get Started
       link: /introduction/overview
     - theme: alt
-      text: Architecture
+      text: How It Works
       link: /introduction/architecture
 
 features:

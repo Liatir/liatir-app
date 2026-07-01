@@ -7,7 +7,7 @@
 The JavaScript inside a `.lia` bundle runs in a full Node.js subprocess. It can:
 
 - **Shell out to any CLI tool** — wrap a Nextflow workflow, a Snakemake pipeline, a custom Python script, or any bioinformatics tool that isn't natively supported by Liatir.
-- **Read and write files** via the Liatir IPC server (no Node.js `fs` workarounds needed).
+- **Read and write files** through the Liatir plugin APIs.
 - **Produce structured results** — stats tables, text sections, and Plotly charts rendered by `ToolResultView`.
 - **Register output files** in the Data library for use in subsequent pipeline steps.
 
@@ -24,7 +24,7 @@ my-plugin.lia  (ZIP)
   └── index.js       ESM bundle (all dependencies inlined by esbuild)
 ```
 
-The `_sig` file is checked first by the Rust runtime. If its content is not exactly `LIATIR/1`, the import is rejected and no other files are read or executed.
+The `_sig` file is checked first. If its content is not exactly `LIATIR/1`, the import is rejected before the plugin is loaded.
 
 ## Why a single-file bundle?
 
@@ -95,6 +95,6 @@ The `manifest.json` for this plugin declares `reads` (file input) and `outputDir
 
 ## Pipeline integration
 
-Every `.lia` plugin exposes a `PipelineStepDefinition` derived from its `manifest.json`. This means plugin outputs can flow automatically to the inputs of subsequent native tools or other plugins in a pipeline.
+Every `.lia` plugin describes its inputs and outputs in `manifest.json`. This means plugin outputs can flow automatically to the inputs of subsequent native tools or other plugins in a pipeline.
 
 See [.lia Format](/plugins/format) for the full manifest schema, and [liatir-cli](/plugins/liatir-cli) to learn how to scaffold and build a plugin.

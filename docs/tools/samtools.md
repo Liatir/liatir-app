@@ -9,7 +9,6 @@ Samtools is the standard toolkit for working with sequence alignment data. Liati
 | Type | Native tool |
 | Binary | `samtools` |
 | Subcommand | `flagstat` |
-| Pipeline ID | `samtools-flagstat` |
 
 ## Installation
 

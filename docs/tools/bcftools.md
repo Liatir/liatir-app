@@ -9,7 +9,6 @@ BCFtools is the standard toolkit for manipulating VCF and BCF variant files. Lia
 | Type | Native tool |
 | Binary | `bcftools` |
 | Subcommand | `stats` |
-| Pipeline ID | `bcftools-stats` |
 
 ## Installation
 

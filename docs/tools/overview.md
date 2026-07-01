@@ -26,30 +26,20 @@ Require the corresponding binary to be in your system PATH. Liatir checks availa
 
 Every tool page follows the same layout:
 
-1. **Dependency check** — on page load, Liatir calls `lia_deps_check` (for native tools). If the binary is not found, a card appears with installation instructions.
+1. **Dependency check** — if a native binary is missing, Liatir shows installation instructions.
 2. **Input form** — file pickers pre-filtered by compatible extension, plus any tool-specific options.
-3. **Run button** — spawns the process via `lia_jobs_spawn` and streams output.
-4. **Results panel** — renders the parsed `ToolOutput` via `ToolResultView` (stats grids, text sections, Plotly charts).
+3. **Run button** — starts the analysis and streams progress or logs when available.
+4. **Results panel** — shows parsed stats, tables, text output, charts, and generated files.
 5. **Run history sidebar** — all past runs for this tool, selectable to re-display their results.
 
-## ToolOutput format
+## Result views
 
-Every tool produces a `ToolOutput` value that is rendered by `ToolResultView`:
+Tool results are displayed in a consistent format:
 
-```typescript
-interface ToolOutput {
-  sections: ToolSection[]
-}
-
-// Section types:
-type ToolSection =
-  | { type: 'stats';  title: string; stats: Record<string, string | number> }
-  | { type: 'text';   title: string; content: string }
-  | { type: 'plotly'; title: string; data: PlotlyData }
-  | { type: 'number'; title: string; value: number; unit?: string }
-```
-
-Stats sections become labelled key-value grids. Text sections are shown with line-count awareness (long outputs are truncated with a "show all" toggle). Plotly sections render interactive charts.
+- stats appear as readable key-value grids;
+- long text output can be expanded when needed;
+- charts are interactive where available;
+- generated files appear above the report with actions.
 
 ## Output files
 
@@ -60,14 +50,17 @@ Some tools produce output files as part of their results. These appear in the re
 
 ## Run history
 
-Each tool keeps a persistent run history stored as JSON files in `{app_data_dir}/analysis-runs/<tool-name>/`. Selecting a past run in the sidebar re-renders its output without re-running the tool. Run records include:
+Each tool keeps a persistent run history. Selecting a past run in the sidebar
+re-renders its output without re-running the tool. Run records include:
 
 - Tool name and version
 - Input file paths
-- Parsed `ToolOutput`
-- Any `RunOutputFile` references
+- Parsed results
+- Output file references
 - Timestamp
 
 ## Pipeline integration
 
-Every tool exposes a `PipelineStepDefinition` that describes its inputs and outputs. This is what allows tool outputs to be wired automatically to subsequent steps in a pipeline. See [Pipeline Overview](/pipeline/overview) for details.
+Tools expose compatible inputs and outputs to the pipeline builder. This allows
+an output file from one step to be connected to a compatible input in the next
+step. See [Pipeline Overview](/pipeline/overview) for details.

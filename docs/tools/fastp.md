@@ -8,7 +8,6 @@ fastp is an all-in-one FASTQ pre-processing tool. It performs adapter trimming, 
 |----------|-------|
 | Type | Native tool |
 | Binary | `fastp` |
-| Pipeline ID | `fastp` |
 
 ## Installation
 
@@ -46,7 +45,7 @@ Providing only R1 runs fastp in **single-end** mode. Providing both R1 and R2 ac
 3. Optionally select an R2 file for paired-end mode.
 4. Click **Run**.
 
-Liatir runs fastp with auto-detected adapter trimming and writes trimmed output files to `{app_data_dir}/tool-outputs/`.
+Liatir runs fastp with auto-detected adapter trimming and shows the trimmed output files in the results panel.
 
 ## Output files
 

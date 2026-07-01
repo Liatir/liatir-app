@@ -6,7 +6,7 @@ The Data page is the central file registry for Liatir. Every tool and plugin dra
 
 Files are imported **by reference** — Liatir records the absolute path, not a copy of the file. Your data stays exactly where it is. There are no uploads, no hidden copies, and no size limits on import.
 
-This design matters for bioinformatics because the files are large. A whole-genome BAM can be 100 GB. Copying it would be wasteful and slow. Liatir reads it directly from disk via the Rust backend every time a tool needs it.
+This design matters for bioinformatics because the files are large. A whole-genome BAM can be 100 GB. Copying it would be wasteful and slow. Liatir reads files directly from disk when a tool needs them.
 
 ## Importing files
 
@@ -34,7 +34,7 @@ After import, each file is registered with:
 
 ## File preview
 
-Click any file row to open the preview panel on the right side. Liatir reads the first lines of the file using the `lia_preview_file` command — a `BufReader`-based Rust implementation that is efficient even for files many gigabytes in size.
+Click any file row to open the preview panel on the right side. Liatir reads only the first lines needed for the preview, so you can inspect large text files without loading the whole file into memory.
 
 The preview is format-aware:
 

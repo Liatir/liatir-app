@@ -9,7 +9,6 @@ seqkit is a cross-platform toolkit for FASTA/FASTQ file manipulation. Liatir use
 | Type | Native tool |
 | Binary | `seqkit` |
 | Subcommand | `stats` |
-| Pipeline ID | `seqkit-stats` |
 
 ## Installation
 
