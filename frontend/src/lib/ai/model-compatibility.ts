@@ -12,10 +12,14 @@ interface VersionParts {
 }
 
 export interface AIModelInstallBlock {
+  kind: 'host-os' | 'cuda' | 'python';
   summary: string;
   reason: string;
   required: string;
   detected: string;
+  details: string[];
+  dependencyBinary?: string;
+  actionLabel?: string;
 }
 
 function parseVersion(value: string | null | undefined): VersionParts | null {
@@ -81,6 +85,26 @@ function detectedPythonLabel(hardware: AIHardwareInfo): string {
   return `${hardware.pythonVersion}${hardware.pythonPath ? ` at ${hardware.pythonPath}` : ''}`;
 }
 
+function pythonDependencyBinary(
+  requirement: LiatirAIModelPythonRequirement | undefined,
+): string {
+  if (!requirement) return 'python';
+  const max = parseVersion(requirement.maxVersionExclusive);
+  if (max && compareVersions(max, { major: 3, minor: 11, patch: 0 }) <= 0) {
+    return 'python3.10';
+  }
+  if (requirement.minVersion?.startsWith('3.11')) return 'python3.11';
+  if (requirement.minVersion?.startsWith('3.12')) return 'python3.12';
+  return 'python3.11';
+}
+
+function pythonDependencyLabel(binary: string): string {
+  if (binary === 'python3.10') return 'Python 3.10';
+  if (binary === 'python3.11') return 'Python 3.11';
+  if (binary === 'python3.12') return 'Python 3.12';
+  return 'Python';
+}
+
 function pythonRequirementLabel(
   requirement: LiatirAIModelHostRequirements['python'],
 ): string {
@@ -106,10 +130,16 @@ export function modelInstallBlock(
     const detected = detectedHostLabel(hardware);
     const basis = requirements.reason ?? `This model supports ${required} hosts only.`;
     return {
-      summary: 'Host OS incompatible',
+      kind: 'host-os',
+      summary: 'This model is not available on this system',
       required,
       detected,
-      reason: `${model.name} is incompatible with this host. ${basis} Detected ${detected}; required ${required}.`,
+      reason: `This model needs ${required}.`,
+      details: [
+        basis,
+        `Detected: ${detected}`,
+        `Required: ${required}`,
+      ],
     };
   }
 
@@ -118,10 +148,16 @@ export function modelInstallBlock(
     const detected = detectedHostLabel(hardware);
     const basis = requirements.reason ?? 'This model requires a CUDA-capable NVIDIA GPU runtime.';
     return {
-      summary: 'CUDA runtime required',
+      kind: 'cuda',
+      summary: 'NVIDIA CUDA is required',
       required,
       detected,
-      reason: `${model.name} is incompatible with this host. ${basis} Detected ${detected}; required ${required}.`,
+      reason: 'This model needs a CUDA-capable NVIDIA GPU runtime.',
+      details: [
+        basis,
+        `Detected: ${detected}`,
+        `Required: ${required}`,
+      ],
     };
   }
 
@@ -134,11 +170,20 @@ export function modelInstallBlock(
     const required = pythonRequirementLabel(requirements.python);
     const detected = detectedPythonLabel(hardware);
     const basis = requirements.python.reason ?? `This model requires ${required}.`;
+    const dependencyBinary = pythonDependencyBinary(requirements.python);
     return {
-      summary: 'Python runtime incompatible',
+      kind: 'python',
+      summary: 'A compatible Python runtime is missing',
       required,
       detected,
-      reason: `${model.name} is incompatible with this host. ${basis} Detected ${detected}; required ${required}.`,
+      reason: `Install ${required} from Dependencies, then install this AI Model.`,
+      details: [
+        basis,
+        `Detected: ${detected}`,
+        `Required: ${required}`,
+      ],
+      dependencyBinary,
+      actionLabel: `Open ${pythonDependencyLabel(dependencyBinary)}`,
     };
   }
 

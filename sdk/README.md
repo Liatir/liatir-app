@@ -1,23 +1,23 @@
-# Desktopr
-[Desktopr official website ↗](https://desktopr.app)
+# Liatir
+[Liatir official website ↗](https://liatir.app)
 
-This is the official JavaScript/TypeScript SDK for communicating with the native Desktopr bridge.  
-It allows any web application to access native desktop features exposed by the Desktopr wrapper, using a clean, typed, importable API.
+This is the official JavaScript/TypeScript SDK for communicating with the native Liatir API.
+It allows any web application to access native desktop features exposed by the Liatir wrapper, using a clean, typed, importable API.
 
-If the app is running in a normal browser environment, the SDK provides a safe detection method `isDesktoprAvailable()` so you can fallback.
+If the app is running in a normal browser environment, the SDK provides a safe detection method `isLiatirAvailable()` so you can fallback.
 
 ---
 
 ## Installation
 
 ```bash
-npm install desktopr
+npm install liatir
 ```
 
 or
 
 ```bash
-yarn add desktopr
+yarn add liatir
 ```
 
 ---
@@ -25,10 +25,10 @@ yarn add desktopr
 ## Usage
 
 ```ts
-import { Desktopr, isDesktoprAvailable } from "desktopr";
+import { Liatir, isLiatirAvailable } from "liatir";
 
-if (isDesktoprAvailable()) {
-  await Desktopr.window.new();
+if (isLiatirAvailable()) {
+  await Liatir.window.new();
 } else {
   console.log("Running in browser mode — native features unavailable.");
 }
@@ -38,7 +38,7 @@ if (isDesktoprAvailable()) {
 
 ## API Shape
 
-The SDK exposes TypeScript definitions for the entire bridge via `DesktoprAPI`, ensuring autocomplete and type safety.
+The SDK exposes TypeScript definitions for the entire bridge via `LiatirAPI`, ensuring autocomplete and type safety.
 
 ---
 
@@ -47,27 +47,27 @@ The SDK exposes TypeScript definitions for the entire bridge via `DesktoprAPI`, 
 The SDK includes a lightweight helper:
 
 ```ts
-isDesktoprAvailable(): boolean
+isLiatirAvailable(): boolean
 ```
 
-It **never throws**, even in SSR or when running outside Desktopr.
+It **never throws**, even in SSR or when running outside Liatir.
 
 Useful for apps that must run both:
 - as a normal website
-- and as a desktop app wrapped with Desktopr
+- and as a desktop app wrapped with Liatir
 
 
-### When Desktopr Is Not Available
+### When Liatir Is Not Available
 
-If `Desktopr` is missing (e.g. browser mode), trying to call native APIs directly will throw.
+If `Liatir` is missing (e.g. browser mode), trying to call native APIs directly will throw.
 
 Make sure to guard features or provide fallbacks:
 
 ```ts
-if (!isDesktoprAvailable()) return;
-await Desktopr.window.new(...);
+if (!isLiatirAvailable()) return;
+await Liatir.window.new(...);
 ```
 
 ---
 
-[Desktopr official website ↗](https://desktopr.app)
+[Liatir official website ↗](https://liatir.app)

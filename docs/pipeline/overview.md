@@ -1,4 +1,4 @@
-# Pipeline
+# Pipelines
 
 Pipelines let you connect analysis steps visually so that the output from one
 step becomes the input for the next one.

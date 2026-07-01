@@ -5,7 +5,7 @@ A `.lia` bundle is one file that holds either kind of tool, told apart by the
 
 | Kind | Language | Capabilities |
 |------|----------|--------------|
-| **Plugin** (`node`) | TypeScript | the full Liatir bridge (`jobs`, `deps`, `desktop.fs`, …) + Node |
+| **Plugin** (`node`) | TypeScript | the full Liatir API (`jobs`, `deps`, `desktop.fs`, …) + Node |
 | **Custom tool** (`wasm`) | Rust → wasm | pure, sandboxed computation (no network, fs read-only) |
 
 Both are imported the same way and run standalone or as a pipeline step.
@@ -43,7 +43,7 @@ const liatirModule = defineModule({
 
 export default liatirModule.main(async ({ input, lia }: ModuleContext<typeof liatirModule>) => {
   // `input.fastq` is string (inferred from `inputs`).
-  // `lia` is the local Liatir bridge.
+  // `lia` is the local Liatir API.
   await lia.jobs.run("seqkit", ["stats", input.fastq]);
   return { reads: 0 };
 });

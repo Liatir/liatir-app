@@ -26,18 +26,19 @@ export default defineConfig({
         items: [
           { text: 'What is Liatir', link: '/introduction/overview' },
           { text: 'How Liatir Works', link: '/introduction/architecture' },
+          { text: "Tauri", link: "/introduction/what-is-tauri" },
         ],
       },
       {
         text: 'Data',
-        collapsed: false,
+        collapsed: true,
         items: [
           { text: 'Managing files', link: '/data/overview' },
         ],
       },
       {
         text: 'Tools',
-        collapsed: false,
+        collapsed: true,
         items: [
           { text: 'Overview', link: '/tools/overview' },
           { text: 'FastQC', link: '/tools/fastqc' },
@@ -52,7 +53,7 @@ export default defineConfig({
       },
       {
         text: 'AI Models',
-        collapsed: false,
+        collapsed: true,
         items: [
           { text: 'Overview', link: '/ai/models/overview' },
           { text: 'CellTypist Local Annotation', link: '/ai/models/celltypist-local-annotation' },
@@ -67,28 +68,58 @@ export default defineConfig({
         ],
       },
       {
-        text: 'AI Tools',
-        collapsed: false,
-        items: [
-          { text: 'Overview', link: '/ai/tools/overview' },
-        ],
-      },
-      {
-        text: 'Plugins (.lia)',
-        collapsed: false,
-        items: [
-          { text: 'Overview', link: '/plugins/overview' },
-          { text: 'Bundle format', link: '/plugins/format' },
-          { text: 'liatir-cli', link: '/plugins/liatir-cli' },
-        ],
-      },
-      {
-        text: 'Pipeline',
-        collapsed: false,
+        text: 'Pipelines',
+        collapsed: true,
         items: [
           { text: 'Overview', link: '/pipeline/overview' },
         ],
       },
+      {
+        text: 'Plugins (.lia)',
+        items: [
+      {
+        text: 'Get started',
+        collapsed: true,
+        items: [
+          { text: 'Overview', link: '/plugins/overview' },
+          { text: 'Bundle format', link: '/plugins/format' },
+          { text: 'liatir-cli', link: '/plugins/liatir-cli' },
+        ]},
+      {
+        text: "API",
+        collapsed: true,
+        items: [
+          { text: "Overview", link: "/plugins/api/overview" },
+          {
+            text: ".desktop",
+            collapsed: true,
+            items: [
+              { text: "App", link: "/plugins/api/desktop/app" },
+              { text: "Events", link: "/plugins/api/desktop/events" },
+              { text: "File System", link: "/plugins/api/desktop/file-system" },
+              { text: "Shortcuts", link: "/plugins/api/desktop/shortcuts" },
+              { text: "Deeplinks", link: "/plugins/api/desktop/deep-links" },
+              { text: "Notifications", link: "/plugins/api/desktop/notifications" },
+              { text: "Files", link: "/plugins/api/desktop/files" },
+              { text: "Drag and Drop", link: "/plugins/api/desktop/drag-and-drop" },
+              { text: "Network", link: "/plugins/api/desktop/network" },
+              { text: "Window", link: "/plugins/api/desktop/window" },
+              { text: "Clipboard", link: "/plugins/api/desktop/clipboard" },
+              { text: "Utilities", link: "/plugins/api/desktop/utilities" }
+            ],
+          }
+        ],
+      },
+        ],
+      },
+      {
+        text: "Legal",
+        items: [
+          { text: "Privacy Policy", link: "/privacy" },
+          { text: "Terms of Service", link: "/terms" }
+        ]
+      },
+      { text: `</br>All rights reserved</br>© ${new Date().getFullYear()} <a href="/">Liatir</a>`},
     ],
 
     socialLinks: [],

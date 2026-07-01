@@ -1,6 +1,21 @@
 
+# OS metadata
+.DS_Store
+Thumbs.db
 
-src-tauri/target/
+# Rust build output
+target/
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
 src-tauri/gen/
 src-tauri/tsc/*
 !src-tauri/tsc/.gitkeep

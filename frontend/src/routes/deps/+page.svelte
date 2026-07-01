@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
+	import { page } from '$app/state';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -21,18 +22,14 @@
 		type Arch,
 		type InstallProgress
 	} from '$lib/tools/binary-manager';
-	import { DEP_REQUIREMENTS, type DepRequirement } from '$lib/data/dep-requirements';
+	import {
+		DEP_REQUIREMENTS,
+		depRequirementLabel,
+		depScope,
+		isSoftDep,
+		type DepRequirement
+	} from '$lib/data/dep-requirements';
 	import { versionGte, versionLt } from '$lib/utils/versions';
-
-	// ── tool metadata ─────────────────────────────────────────────────
-	interface ToolMeta {
-		label: string;
-		description: string;
-		brew?: string;
-		apt?: string;
-		conda?: string;
-		condaChannel?: string;
-	}
 
 	interface RelatedDependencyTool {
 		id: string;
@@ -41,115 +38,6 @@
 		description: string;
 		actionLabel: string;
 	}
-
-	const TOOL_META: Record<string, ToolMeta> = {
-		python: {
-			label: 'Python',
-			description:
-				'Python runtime used by managed local AI Models. Liatir creates isolated environments per runtime, but it needs a compatible host Python. Python 3.10, 3.11, or 3.12 is currently required for the local AI stack.',
-			brew: 'python@3.12',
-			apt: 'python3.12 python3.12-venv',
-			conda: 'python=3.12',
-			condaChannel: 'conda-forge'
-		},
-		java: {
-			label: 'Java',
-			description:
-				'Java Runtime Environment — required by SnpEff for variant annotation. Version 21 or later is needed. Any standard JDK distribution works (Temurin, Oracle JDK, OpenJDK).',
-		},
-		fastqc: {
-			label: 'FastQC',
-			description:
-				'Quality control for raw FASTQ sequencing data. Generates per-base quality score profiles, GC content, duplication levels, and adapter content reports. Run before any alignment step.',
-			brew: 'fastqc',
-			apt: 'fastqc',
-			conda: 'fastqc'
-		},
-		bwa: {
-			label: 'BWA',
-			description:
-				'Burrows-Wheeler Aligner for short Illumina reads. Maps reads to a reference genome and outputs SAM/BAM. BWA-MEM (included) is the recommended algorithm for reads > 70 bp.',
-			brew: 'bwa',
-			apt: 'bwa',
-			conda: 'bwa'
-		},
-		samtools: {
-			label: 'Samtools',
-			description:
-				'Swiss-army knife for SAM/BAM/CRAM files. Sort, index, view, filter alignments and generate mapping statistics (flagstat, stats, idxstats). Required by most downstream tools.',
-			brew: 'samtools',
-			apt: 'samtools',
-			conda: 'samtools'
-		},
-		minimap2: {
-			label: 'Minimap2',
-			description:
-				'Versatile aligner for long reads (PacBio CLR/HiFi, Oxford Nanopore) and short reads. Also performs genome-to-genome alignment. Outputs SAM or PAF format.',
-			brew: 'minimap2',
-			apt: 'minimap2',
-			conda: 'minimap2'
-		},
-		hisat2: {
-			label: 'HISAT2',
-			description:
-				'Graph-based RNA-seq aligner. Splice-aware — accurately maps reads spanning exon-exon junctions. Uses a genome graph index for fast, sensitive alignment of RNA-seq reads.',
-			apt: 'hisat2',
-			conda: 'hisat2'
-		},
-		star: {
-			label: 'STAR',
-			description:
-				'Ultrafast RNA-seq aligner. Detects novel splice junctions de novo and handles chimeric reads. Widely used upstream of differential expression tools like DESeq2 and edgeR.',
-			brew: 'star',
-			apt: 'rna-star',
-			conda: 'star'
-		},
-		nextflow: {
-			label: 'Nextflow',
-			description:
-				'Dataflow-driven scientific workflow system. Runs scalable DSL2 pipelines with automatic parallelization, containerization, and cluster/cloud execution. Powers nf-core community pipelines.',
-			brew: 'nextflow',
-			conda: 'nextflow'
-		},
-		snakemake: {
-			label: 'Snakemake',
-			description:
-				'Python-based workflow manager with Makefile-inspired syntax. Supports conda environments, containers, and cluster execution. Define rules once and Snakemake resolves the dependency graph.',
-			brew: 'snakemake',
-			conda: 'snakemake'
-		},
-		bcftools: {
-			label: 'BCFtools',
-			description:
-				'Call variants and manipulate VCF/BCF files. Works with samtools output for SNP/indel calling, filtering, merging, and format conversion. Part of the samtools/htslib ecosystem.',
-			brew: 'bcftools',
-			apt: 'bcftools',
-			conda: 'bcftools'
-		},
-		bedtools: {
-			label: 'bedtools',
-			description:
-				'Genome arithmetic toolkit. Intersect, merge, count, and manipulate genomic intervals in BED, GFF, VCF, and BAM formats. Essential for annotation overlap and peak calling workflows.',
-			brew: 'bedtools',
-			apt: 'bedtools',
-			conda: 'bedtools'
-		},
-		fastp: {
-			label: 'fastp',
-			description:
-				'Fast FASTQ quality trimming and filtering. Removes adapters, low-quality bases and reads in a single pass. Produces HTML/JSON QC reports. Used upstream of alignment.',
-			brew: 'fastp',
-			apt: 'fastp',
-			conda: 'fastp'
-		},
-		seqkit: {
-			label: 'seqkit',
-			description:
-				'Toolkit for FASTA/FASTQ file manipulation and statistics. Computes N50, sequence lengths, GC content, quality scores. Useful for quick sanity checks on sequencing data.',
-			brew: 'seqkit',
-			conda: 'seqkit'
-		}
-	};
 
 	const RELATED_DEPENDENCY_TOOLS: RelatedDependencyTool[] = [
 		{
@@ -167,6 +55,7 @@
 	let brewAvailable = $state(false);
 	let condaAvailable = $state(false);
 	let pmChecked = $state(false);
+	const focusedDependency = $derived(page.url.searchParams.get('focus')?.trim() ?? '');
 
 	// ── per-tool install state ─────────────────────────────────────────
 	interface ToolInstallState {
@@ -182,6 +71,8 @@
 	let toolStates = $state<Record<string, ToolInstallState>>({});
 	let viewerRuntimeProgress = $state<Record<string, ViewerRuntimeInstallProgress>>({});
 	let relatedToolsExpanded = $state<Record<string, boolean>>({});
+	const needsActionCount = $derived(depsStore.results.filter((dep) => dependencyNeedsAction(dep)).length);
+	const focusedDependencies = $derived(focusedDependency ? [focusedDependency] : []);
 
 	function toolState(binary: string): ToolInstallState {
 		return (
@@ -260,8 +151,16 @@
 		return null;
 	}
 
+	async function scrollFocusedDependencyIntoView() {
+		if (!focusedDependency) return;
+		await tick();
+		document
+			.getElementById(`dependency-${focusedDependency}`)
+			?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+	}
+
 	onMount(async () => {
-		if (!depsStore.checked) depsStore.checkAll();
+		void depsStore.checkAll(focusedDependencies);
 		await managedBins.init();
 		await viewerRuntimesStore.init();
 
@@ -279,11 +178,21 @@
 			condaAvailable = condaRes.available;
 		}
 		pmChecked = true;
+		await scrollFocusedDependencyIntoView();
+	});
+
+	$effect(() => {
+		if (depsStore.checked && focusedDependency) {
+			if (!depsStore.results.some((dep) => dep.binary === focusedDependency)) {
+				void depsStore.recheckOne(focusedDependency);
+			}
+			void scrollFocusedDependencyIntoView();
+		}
 	});
 
 	// ── download install (precompiled binary) ──────────────────────────
 	async function downloadInstall(binary: string) {
-		const label = TOOL_META[binary]?.label ?? binary;
+		const label = DEP_REQUIREMENTS[binary]?.label ?? binary;
 		setToolState(binary, {
 			phase: 'downloading',
 			error: null,
@@ -321,20 +230,20 @@
 
 	// ── package manager install (brew / conda) ─────────────────────────
 	function pmInstallCmd(binary: string): { cmd: string; args: string[] } | null {
-		const meta = TOOL_META[binary];
-		if (!meta) return null;
-		if (brewAvailable && meta.brew) return { cmd: 'brew', args: ['install', meta.brew] };
-		if (condaAvailable && meta.conda)
-			return { cmd: 'conda', args: ['install', '-c', meta.condaChannel ?? 'bioconda', '-y', meta.conda] };
+		const req = DEP_REQUIREMENTS[binary];
+		if (!req) return null;
+		if (brewAvailable && req.brew) return { cmd: 'brew', args: ['install', req.brew] };
+		if (condaAvailable && req.conda)
+			return { cmd: 'conda', args: ['install', '-c', req.condaChannel ?? 'bioconda', '-y', req.conda] };
 		return null;
 	}
 
 	function pmUpdateCmd(binary: string): { cmd: string; args: string[] } | null {
-		const meta = TOOL_META[binary];
-		if (!meta) return null;
-		if (brewAvailable && meta.brew) return { cmd: 'brew', args: ['upgrade', meta.brew] };
-		if (condaAvailable && meta.conda)
-			return { cmd: 'conda', args: ['install', '-c', meta.condaChannel ?? 'bioconda', '-y', meta.conda] };
+		const req = DEP_REQUIREMENTS[binary];
+		if (!req) return null;
+		if (brewAvailable && req.brew) return { cmd: 'brew', args: ['upgrade', req.brew] };
+		if (condaAvailable && req.conda)
+			return { cmd: 'conda', args: ['install', '-c', req.condaChannel ?? 'bioconda', '-y', req.conda] };
 		return null;
 	}
 
@@ -342,7 +251,7 @@
 		const cmd = operation === 'update' ? pmUpdateCmd(binary) : pmInstallCmd(binary);
 		if (!cmd) return;
 
-		const label = TOOL_META[binary]?.label ?? binary;
+		const label = DEP_REQUIREMENTS[binary]?.label ?? binary;
 		setToolState(binary, { phase: 'pm-installing', error: null, pmLog: [], pmOperation: operation, showLog: true });
 		installProgress.start(binary, label);
 		installProgress.update(binary, { phase: 'pm-installing' });
@@ -382,7 +291,7 @@
 		const manager = pythonPackageManager(dep);
 		const managedCmd =
 			manager === 'brew'
-				? { cmd: 'brew', args: ['upgrade', TOOL_META.python.brew ?? 'python@3.12'] }
+				? { cmd: 'brew', args: ['upgrade', DEP_REQUIREMENTS.python.brew ?? 'python@3.12'] }
 				: manager === 'conda'
 					? { cmd: 'conda', args: ['install', '-c', 'conda-forge', '-y', 'pip'] }
 					: null;
@@ -468,9 +377,7 @@
 	}
 
 	function requirementLabel(req: DepRequirement): string {
-		if (req.versionLabel) return req.versionLabel;
-		if (req.maxVersionExclusive) return `${req.minVersion} - <${req.maxVersionExclusive}`;
-		return `${req.minVersion}+`;
+		return depRequirementLabel(req);
 	}
 
 	function dependencyVersionOk(version: string | null, req: DepRequirement | undefined): boolean {
@@ -478,6 +385,39 @@
 		if (!versionGte(version, req.minVersion)) return false;
 		if (req.maxVersionExclusive && !versionLt(version, req.maxVersionExclusive)) return false;
 		return true;
+	}
+
+	function dependencyScope(binary: string): NonNullable<DepRequirement['scope']> {
+		return depScope(DEP_REQUIREMENTS[binary]);
+	}
+
+	function isSoftDependency(binary: string): boolean {
+		return isSoftDep(DEP_REQUIREMENTS[binary]);
+	}
+
+	function softDependencyLabel(binary: string): string {
+		return dependencyScope(binary) === 'model-runtime' ? 'AI Model runtime' : 'Optional';
+	}
+
+	function dependencyKindLabel(binary: string): string {
+		const req = DEP_REQUIREMENTS[binary];
+		if (isSoftDependency(binary)) return softDependencyLabel(binary);
+		if (req?.category === 'workflow') return 'Workflow dependency';
+		if (req?.category === 'bioinformatics') return 'Tool dependency';
+		return 'Core dependency';
+	}
+
+	function isCoreDependency(binary: string): boolean {
+		const req = DEP_REQUIREMENTS[binary];
+		return !isSoftDependency(binary) && req?.category === 'core-runtime';
+	}
+
+	function dependencyNeedsAction(dep: DepResult): boolean {
+		if (!isCoreDependency(dep.binary)) return false;
+		const req = DEP_REQUIREMENTS[dep.binary];
+		const managed = managedBins.get(dep.binary);
+		if (!dep.available && !managed) return true;
+		return dep.available && !!dep.version && !dependencyVersionOk(dep.version, req);
 	}
 
 	function viewerProgressLabel(id: string): string {
@@ -538,10 +478,10 @@
 	<PageHeader title="Dependencies" description="System runtimes and bioinformatics tools available on this system">
 		{#snippet actions()}
 			<Button
-				variant="secondary"
-				size="sm"
-				onclick={() => depsStore.checkAll()}
-				loading={depsStore.loading}
+					variant="secondary"
+					size="sm"
+					onclick={() => depsStore.checkAll(focusedDependencies)}
+					loading={depsStore.loading}
 			>
 				{depsStore.checked ? 'Re-check all' : 'Check all'}
 			</Button>
@@ -550,14 +490,14 @@
 
 	<div class="flex-1 overflow-y-auto p-6 space-y-4">
 		{#if depsStore.loading}
-			<div class="flex flex-col items-center gap-3 py-16">
-				<Spinner size={28} />
-				<p class="text-sm text-zinc-500">Checking {Object.keys(TOOL_META).length} dependencies…</p>
-			</div>
+				<div class="flex flex-col items-center gap-3 py-16">
+					<Spinner size={28} />
+					<p class="text-sm text-zinc-500">Checking dependencies…</p>
+				</div>
 		{:else if !depsStore.checked}
 			<div class="flex flex-col items-center gap-4 py-16">
 				<p class="text-sm text-zinc-600">No check has been run yet.</p>
-				<Button variant="primary" onclick={() => depsStore.checkAll()}>Check Dependencies</Button>
+				<Button variant="primary" onclick={() => depsStore.checkAll(focusedDependencies)}>Check Dependencies</Button>
 			</div>
 		{:else}
 			<!-- Summary -->
@@ -568,11 +508,11 @@
 					<p class="text-xs text-zinc-400 mt-1">of {depsStore.results.length} dependencies</p>
 				</Card>
 				<Card class="p-4">
-					<p class="text-xs text-zinc-500 mb-1">Not found</p>
-					<p class="text-2xl font-semibold text-red-400">
-						{depsStore.results.length - depsStore.availableCount}
+					<p class="text-xs text-zinc-500 mb-1">Core issues</p>
+					<p class="text-2xl font-semibold {needsActionCount > 0 ? 'text-red-400' : 'text-zinc-400'}">
+						{needsActionCount}
 					</p>
-					<p class="text-xs text-zinc-400 mt-1">not in PATH</p>
+					<p class="text-xs text-zinc-400 mt-1">runtime essentials</p>
 				</Card>
 				<Card class="p-4">
 					<p class="text-xs text-zinc-500 mb-1">Checked</p>
@@ -589,12 +529,24 @@
 				<div class="w-full h-px bg-zinc-200 group-hover:bg-zinc-300"></div>
 			</div>
 
+			{#if focusedDependency}
+				<div class="rounded-lg border border-brand/20 bg-brand/5 px-4 py-3 text-sm text-zinc-700">
+					<p class="font-medium text-zinc-800">Resolve dependency</p>
+					<p class="mt-1 text-xs text-zinc-500">
+						Install or update <span class="font-mono">{focusedDependency}</span>, then return to AI Models and install the model again.
+						{#if isSoftDependency(focusedDependency)}
+							This is only required by AI Models that use this runtime.
+						{/if}
+					</p>
+				</div>
+			{/if}
+
 			<!-- Tool list -->
 			<Card>
 				<div class="divide-y divide-border">
 					<div>
 						{#each depsStore.results as dep (dep.binary)}
-							{@const meta = TOOL_META[dep.binary]}
+							{@const req = DEP_REQUIREMENTS[dep.binary]}
 							{@const state = toolState(dep.binary)}
 							{@const hasRelease = !!getRelease(dep.binary, platformOs, platformArch)}
 							{@const hasPm = !!pmInstallCmd(dep.binary)}
@@ -603,14 +555,18 @@
 								state.phase === 'downloading' ||
 								state.phase === 'extracting' ||
 								state.phase === 'pm-installing'}
-							{@const req = DEP_REQUIREMENTS[dep.binary]}
 							{@const versionOk = !dep.available || dependencyVersionOk(dep.version, req)}
 							{@const isUnsupportedVersion = dep.available && !!dep.version && !versionOk}
+							{@const isSoft = isSoftDependency(dep.binary)}
+							{@const isCore = isCoreDependency(dep.binary)}
 							{@const canUpdateWithPm = !!pmUpdateCmd(dep.binary)}
 							{@const relatedTools = relatedToolsFor(dep.binary)}
 							{@const isRelatedExpanded = !!relatedToolsExpanded[dep.binary]}
 
-							<div>
+							<div
+								id={`dependency-${dep.binary}`}
+								class={dep.binary === focusedDependency ? 'bg-brand/5 ring-1 ring-brand/20' : ''}
+							>
 								<!-- Main row -->
 								<div class="flex items-center gap-3 px-4 py-3">
 									<!-- Status dot -->
@@ -619,6 +575,8 @@
 											? 'bg-amber-400'
 											: dep.available || managed
 											? 'bg-emerald-500'
+											: !isCore || isSoft
+											? 'bg-zinc-300'
 											: 'bg-red-400'}"
 									></span>
 
@@ -628,8 +586,8 @@
 									</p>
 
 									<!-- Info popup -->
-									{#if meta}
-										<InfoPopup text="{meta.label} — {meta.description}" />
+									{#if req}
+										<InfoPopup text="{req.label} — {req.description}" />
 									{/if}
 
 									<!-- Status message -->
@@ -657,6 +615,9 @@
 											{:else}
 												<p class="text-xs text-zinc-400">Found in PATH</p>
 											{/if}
+											{#if isSoft || !isCore}
+												<p class="mt-1 text-[10px] text-zinc-400">{dependencyKindLabel(dep.binary)}</p>
+											{/if}
 										{:else if state.phase === 'downloading'}
 											<p class="text-xs text-brand">
 												Downloading…
@@ -675,16 +636,27 @@
 										{:else if state.phase === 'error'}
 											<p class="text-xs text-red-500 truncate">{sanitizeLocalPathsForDisplay(state.error ?? 'Install failed.', 2)}</p>
 										{:else}
-											<p class="text-xs text-zinc-400">
-												Not found in PATH
-												{#if pmChecked && !hasRelease && !hasPm}
-													— install via <span class="font-mono">brew</span>,
-													<span class="font-mono">conda</span>, or
-													<span class="font-mono">apt</span>
-												{/if}
-											</p>
+											{#if isSoft || !isCore}
+												<p class="text-xs text-zinc-400">
+													Install when needed by {isSoft ? 'an AI Model' : 'a tool'}
+													{#if pmChecked && !hasRelease && !hasPm}
+														— use <span class="font-mono">brew</span>,
+														<span class="font-mono">conda</span>, or
+														<span class="font-mono">apt</span>
+													{/if}
+												</p>
+											{:else}
+												<p class="text-xs text-zinc-400">
+													Not found in PATH
+													{#if pmChecked && !hasRelease && !hasPm}
+														— install via <span class="font-mono">brew</span>,
+														<span class="font-mono">conda</span>, or
+														<span class="font-mono">apt</span>
+													{/if}
+												</p>
+											{/if}
 										{/if}
-										{#if req?.reason && (isUnsupportedVersion || dep.binary === 'python')}
+										{#if req?.reason && (isUnsupportedVersion || isSoft || !isCore || dep.binary === 'python')}
 											<p class="mt-1 text-[10px] text-zinc-400">{req.reason}</p>
 										{/if}
 									</div>

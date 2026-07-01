@@ -2,7 +2,7 @@
     "scripts": {
         "ts:compile": "npx esbuild ../src-ts/bridge.ts --bundle --format=iife --global-name=Bridge --outfile=tsc/bridge.js --sourcemap",
         "build:worker": "esbuild ../src-ts/worker/lia-wasm-runner.worker.ts --bundle --format=esm --outdir=resources/worker --loader:.wasm=file",
-        "keepsandbox": "export DESKTOPR_KEEP_SANDBOX=1",
+        "keepsandbox": "export LIATIR_KEEP_SANDBOX=1",
         "rustbacktrace": "export RUST_BACKTRACE=1",
         "devconf": "npm run devconf --prefix ../",
         "prodconf": "npm run prodconf --prefix ../",

@@ -326,7 +326,7 @@ function createAIModelsStore() {
         const status = await getAIRuntimeStatus(model);
         if (!status) return model;
         const runtimeIssue = status.error
-          ?? (status.missingPackages.length > 0
+          ?? (status.installed && status.missingPackages.length > 0
             ? `Missing or incompatible runtime packages: ${status.missingPackages.join(', ')}`
             : undefined);
         await this.setModelState(id, {

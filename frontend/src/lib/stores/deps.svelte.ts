@@ -1,4 +1,5 @@
 import { liatir } from '$lib/api';
+import { GLOBAL_DEPENDENCY_BINARIES } from '$lib/data/dep-requirements';
 
 export interface DepResult {
   binary: string;
@@ -7,22 +8,11 @@ export interface DepResult {
   version: string | null;
 }
 
-export const COMMON_TOOLS = [
-  'python',
-  'java',
-  'fastqc',
-  'bwa',
-  'samtools',
-  'minimap2',
-  'hisat2',
-  'star',
-  'nextflow',
-  'snakemake',
-  'bcftools',
-  'bedtools',
-  'fastp',
-  'seqkit',
-] as const;
+export const COMMON_TOOLS = GLOBAL_DEPENDENCY_BINARIES;
+
+function uniqueBinaries(binaries: string[]): string[] {
+  return [...new Set(binaries.map((binary) => binary.trim()).filter(Boolean))];
+}
 
 function createDepsStore() {
   let results = $state<DepResult[]>([]);
@@ -38,12 +28,12 @@ function createDepsStore() {
       return results.filter((r) => r.available).length;
     },
 
-    async checkAll() {
+    async checkAll(extraBinaries: string[] = []) {
       const api = liatir();
       if (!api) return;
       loading = true;
       try {
-        results = await api.deps.checkMany([...COMMON_TOOLS]);
+        results = await api.deps.checkMany(uniqueBinaries([...COMMON_TOOLS, ...extraBinaries]));
         checked = true;
       } finally {
         loading = false;
@@ -63,9 +53,9 @@ function createDepsStore() {
       if (!result) return;
       const idx = results.findIndex(r => r.binary === binary);
       if (idx >= 0) {
-        results[idx] = result;
+        results = results.map((item, index) => index === idx ? result : item);
       } else {
-        results.push(result);
+        results = [...results, result];
       }
     },
   };

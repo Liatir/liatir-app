@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { liatir } from '$lib/api';
+  import { managedBins } from '$lib/stores/managedBins.svelte';
   import { versionGte, versionLt } from '$lib/utils/versions';
   import type { DepRequirement } from '$lib/data/dep-requirements';
 
@@ -25,8 +26,13 @@
     installed = null;
     const api = liatir();
     if (!api) return;
+    await managedBins.init();
+    const managed = managedBins.get(req.binary);
     const r = await api.deps.check(req.binary);
-    if (!r.available) {
+    if (!r.available && managed) {
+      installed = `${managed.version} managed`;
+      status = 'ok';
+    } else if (!r.available) {
       status = 'missing';
     } else {
       installed = r.version ?? null;
@@ -181,7 +187,7 @@
       <p class="text-[11px] text-zinc-400 mt-2 font-sans">Restart Liatir after installing.</p>
       <div class="pt-1.5">
         <button
-          onclick={() => goto('/deps')}
+          onclick={() => goto(`/deps?focus=${encodeURIComponent(req.binary)}`)}
           class="inline-flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-700 transition-colors"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">

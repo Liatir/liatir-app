@@ -14,7 +14,7 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import { fmtBytes, getLastSegmentsStringFromPath, openLinkInBrowser, sanitizeLocalPathsForDisplay } from '$lib/utils';
-  import type { LiatirAIModelRecord } from '@liatir/core';
+  import type { LiatirAIModelRecord, LiatirAIModelRuntimePackage } from '@liatir/core';
   import Spinner from '$lib/components/ui/Spinner.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
@@ -38,6 +38,7 @@
   let installing = $state<Record<string, InstallState>>({});
   let installLogs = $state<Record<string, InstallLogState>>({});
   let expandedCategories = $state<Record<string, boolean>>({});
+  let expandedModelDetails = $state<Record<string, boolean>>({});
   let hardware = $state<AIHardwareInfo | null>(null);
   let searchQuery = $state('');
 
@@ -77,8 +78,15 @@
     if (status === 'error') return 'failed';
     if (status === 'installed') return 'done';
     if (status === 'available') return 'brand';
-    if (status === 'missing') return 'missing';
+    if (status === 'missing') return 'neutral';
     return 'failed';
+  }
+
+  function statusLabel(status: LiatirAIModelRecord['status']): string {
+    if (status === 'installed') return 'installed';
+    if (status === 'available' || status === 'missing') return 'not installed';
+    if (status === 'error') return 'needs attention';
+    return status;
   }
 
   function hardwareLabel(model: LiatirAIModelRecord): string {
@@ -168,8 +176,50 @@
     };
   }
 
+  function isModelDetailsExpanded(modelId: string): boolean {
+    return expandedModelDetails[modelId] ?? false;
+  }
+
+  function toggleModelDetails(modelId: string) {
+    expandedModelDetails = {
+      ...expandedModelDetails,
+      [modelId]: !isModelDetailsExpanded(modelId),
+    };
+  }
+
   function installBlock(model: LiatirAIModelRecord): AIModelInstallBlock | null {
     return modelInstallBlock(model, hardware);
+  }
+
+  function runtimePackages(model: LiatirAIModelRecord): LiatirAIModelRuntimePackage[] {
+    return model.install?.runtimePackages ?? [];
+  }
+
+  function runtimePackageLabel(pkg: LiatirAIModelRuntimePackage): string {
+    if (pkg.specifier && pkg.specifier !== pkg.package) return `${pkg.package}: ${pkg.specifier}`;
+    if (pkg.version) return `${pkg.package} ${pkg.version}`;
+    return pkg.package;
+  }
+
+  function runtimePackagesPreview(model: LiatirAIModelRecord): string {
+    const packages = runtimePackages(model).map((pkg) => pkg.package);
+    if (packages.length === 0) return 'No runtime packages';
+    if (packages.length <= 3) return packages.join(', ');
+    return `${packages.slice(0, 3).join(', ')} +${packages.length - 3}`;
+  }
+
+  function modelFilesLabel(model: LiatirAIModelRecord): string {
+    const files = model.install?.files ?? [];
+    if (files.length === 0) return 'No managed model files';
+    return `${files.length} managed file${files.length === 1 ? '' : 's'}`;
+  }
+
+  function resolveInstallBlock(blocked: AIModelInstallBlock) {
+    if (blocked.dependencyBinary) {
+      goto(`/deps?focus=${encodeURIComponent(blocked.dependencyBinary)}`);
+      return;
+    }
+    goto('/deps');
   }
 
   function errorMessage(error: unknown, fallback: string): string {
@@ -448,13 +498,13 @@
                             <span class="shrink-0">
                               <InfoPopup text={aiModelInfo(model)} />
                             </span>
-                            <Badge variant={installing[model.id]?'running':statusVariant(model.status)} hideDot={!installing[model.id]} pulse={installing[model.id]?true:false} size="xs">{installing[model.id] ? 'installing' : model.status}</Badge>
+                            <Badge variant={installing[model.id]?'running':statusVariant(model.status)} hideDot={!installing[model.id]} pulse={installing[model.id]?true:false} size="xs">{installing[model.id] ? 'installing' : statusLabel(model.status)}</Badge>
                             {#if model.localOnly}
                               <Badge variant="neutral" size="xs" hideDot>local</Badge>
                             {/if}
                           </div>
                           <p class="mt-1 text-xs text-zinc-500 line-clamp-2">{model.description}</p>
-                          {#if model.error}
+                          {#if model.error && model.status === 'error'}
                             <p class="mt-1 text-[11px] text-red-500 line-clamp-2">{sanitizeLocalPathsForDisplay(model.error, 2)}</p>
                           {/if}
                           <div class="mt-2 flex flex-wrap gap-1.5">
@@ -466,6 +516,23 @@
                             <div class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] leading-snug text-amber-800 xl:hidden">
                               <p class="font-semibold">{blocked.summary}</p>
                               <p class="mt-0.5">{blocked.reason}</p>
+                              <div class="mt-2 flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  class="text-[11px] font-semibold text-amber-900 underline decoration-amber-300 underline-offset-2 hover:text-amber-700"
+                                  onclick={() => resolveInstallBlock(blocked)}
+                                >
+                                  {blocked.actionLabel ?? 'Open Dependencies'}
+                                </button>
+                                <details class="text-[10px] text-amber-700">
+                                  <summary class="cursor-pointer">Technical details</summary>
+                                  <div class="mt-1 space-y-0.5">
+                                    {#each blocked.details as detail}
+                                      <p>{sanitizeLocalPathsForDisplay(detail, 2)}</p>
+                                    {/each}
+                                  </div>
+                                </details>
+                              </div>
                             </div>
                           {/if}
                         </div>
@@ -475,6 +542,11 @@
                           <p class="text-[10px] text-zinc-400 truncate" title={model.localPath ? getLastSegmentsStringFromPath(model.localPath, 2) : undefined}>
                             {model.localPath ? getLastSegmentsStringFromPath(model.localPath, 2) : model.runtime.kind}
                           </p>
+                          {#if runtimePackages(model).length > 0}
+                            <p class="mt-1 text-[10px] text-zinc-400 truncate" title={runtimePackages(model).map(runtimePackageLabel).join(', ')}>
+                              {runtimePackagesPreview(model)}
+                            </p>
+                          {/if}
                         </div>
 
                         <div class="text-xs text-zinc-600 min-w-0 max-xl:hidden">
@@ -486,6 +558,23 @@
                             <div class="mt-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] leading-snug text-amber-800">
                               <p class="font-semibold">{blocked.summary}</p>
                               <p class="mt-0.5">{blocked.reason}</p>
+                              <div class="mt-2 flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  class="font-semibold text-amber-900 underline decoration-amber-300 underline-offset-2 hover:text-amber-700"
+                                  onclick={() => resolveInstallBlock(blocked)}
+                                >
+                                  {blocked.actionLabel ?? 'Open Dependencies'}
+                                </button>
+                                <details class="text-[10px] text-amber-700">
+                                  <summary class="cursor-pointer">Technical details</summary>
+                                  <div class="mt-1 space-y-0.5">
+                                    {#each blocked.details as detail}
+                                      <p>{sanitizeLocalPathsForDisplay(detail, 2)}</p>
+                                    {/each}
+                                  </div>
+                                </details>
+                              </div>
                             </div>
                           {/if}
                         </div>
@@ -500,6 +589,17 @@
                         </div>
 
                         <div class="flex items-center justify-end gap-2 min-w-0">
+                          <button
+                            type="button"
+                            class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--color-surface-3)] text-zinc-500 transition-colors hover:bg-[var(--color-border-2)] hover:text-zinc-800"
+                            title={isModelDetailsExpanded(model.id) ? 'Hide model details' : 'Show model details'}
+                            aria-label={isModelDetailsExpanded(model.id) ? 'Hide model details' : 'Show model details'}
+                            aria-expanded={isModelDetailsExpanded(model.id)}
+                            onclick={() => toggleModelDetails(model.id)}
+                          >
+                            <Icon icon={isModelDetailsExpanded(model.id) ? 'lucide:chevron-up' : 'lucide:list-tree'} width="14" height="14" />
+                          </button>
+
                           {#if aiModelLiatirDocsUrl(model)}
                             <button
                               type="button"
@@ -578,8 +678,8 @@
                             </Button>
                           {:else if model.install?.method === 'managed-download' || model.install?.method === 'managed-runtime'}
                             {#if blocked}
-                              <Button size="sm" variant="secondary" disabled={true} class="cursor-help" title={blocked.reason}>
-                                Incompatible
+                              <Button size="sm" variant="secondary" onclick={() => resolveInstallBlock(blocked)}>
+                                Fix dependency
                               </Button>
                             {:else}
                               <Button size="sm" variant="primary" onclick={() => installModel(model)}>
@@ -595,6 +695,58 @@
                           {#each installLog.logLines as line}
                             <p class="text-[11px] font-mono leading-relaxed {logLineClass(line)}">{sanitizeLocalPathsForDisplay(line, 2)}</p>
                           {/each}
+                        </div>
+                      {/if}
+
+                      {#if isModelDetailsExpanded(model.id)}
+                        <div class="mx-4 mb-3 rounded-lg border border-border bg-zinc-50 px-3 py-3">
+                          <div class="grid grid-cols-1 gap-3 text-xs text-zinc-600 md:grid-cols-3">
+                            <div>
+                              <p class="text-[10px] font-semibold uppercase text-zinc-400">Runtime box</p>
+                              <p class="mt-1 font-medium text-zinc-800">{runtimeLabel(model)}</p>
+                              <p class="mt-1 text-[11px] text-zinc-500">
+                                Runtime packages are installed inside this AI Model environment, not as global Dependencies.
+                              </p>
+                            </div>
+
+                            <div>
+                              <p class="text-[10px] font-semibold uppercase text-zinc-400">Model files</p>
+                              <p class="mt-1 font-medium text-zinc-800">{modelFilesLabel(model)}</p>
+                              {#if model.diskSizeBytes}
+                                <p class="mt-1 text-[11px] text-zinc-500">Approx. {fmtBytes(model.diskSizeBytes)} on disk.</p>
+                              {/if}
+                              {#if model.contextWindow}
+                                <p class="mt-1 text-[11px] text-zinc-500">Context window: {model.contextWindow.toLocaleString()} tokens/bases.</p>
+                              {/if}
+                            </div>
+
+                            <div>
+                              <p class="text-[10px] font-semibold uppercase text-zinc-400">Host requirement</p>
+                              {#if model.install?.hostRequirements?.python}
+                                <p class="mt-1 font-medium text-zinc-800">{model.install.hostRequirements.python.label ?? 'Python runtime'}</p>
+                              {:else if model.install?.hostRequirements?.requiresCuda}
+                                <p class="mt-1 font-medium text-zinc-800">NVIDIA CUDA</p>
+                              {:else}
+                                <p class="mt-1 font-medium text-zinc-800">No special host runtime</p>
+                              {/if}
+                              {#if model.install?.hostRequirements?.python?.reason}
+                                <p class="mt-1 text-[11px] text-zinc-500">{model.install.hostRequirements.python.reason}</p>
+                              {/if}
+                            </div>
+                          </div>
+
+                          {#if runtimePackages(model).length > 0}
+                            <div class="mt-3 border-t border-border pt-3">
+                              <p class="text-[10px] font-semibold uppercase text-zinc-400">Runtime packages</p>
+                              <div class="mt-2 flex flex-wrap gap-1.5">
+                                {#each runtimePackages(model) as pkg}
+                                  <span class="rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-[10px] text-zinc-500" title={runtimePackageLabel(pkg)}>
+                                    {pkg.package}
+                                  </span>
+                                {/each}
+                              </div>
+                            </div>
+                          {/if}
                         </div>
                       {/if}
                     </div>

@@ -67,6 +67,27 @@ function createViewerRuntimesStore() {
     await appStorage.writeText(VIEWER_RUNTIMES_FILE, JSON.stringify(state, null, 2), { createDirs: true });
   }
 
+  function safeInstallRelativePath(relativePath: string): string {
+    const normalized = relativePath.replace(/\\/g, '/');
+    if (!normalized || normalized.startsWith('/') || normalized.split('/').includes('..')) {
+      throw new Error(`Unsafe viewer runtime install file path: ${relativePath}`);
+    }
+    return normalized;
+  }
+
+  async function existingFileMatches(
+    api: NonNullable<ReturnType<typeof liatir>>,
+    path: string,
+    expectedSize?: number,
+  ): Promise<boolean> {
+    try {
+      const size = (await api.invoke('lia_file_size', { path })) as number;
+      return expectedSize == null ? size > 0 : size === expectedSize;
+    } catch {
+      return false;
+    }
+  }
+
   return {
     get initialized() { return initialized; },
     get runtimes() { return records(); },
@@ -150,8 +171,19 @@ function createViewerRuntimesStore() {
 
       for (let index = 0; index < files.length; index += 1) {
         const file = files[index];
+        const relativePath = safeInstallRelativePath(file.relativePath);
         const downloadId = `${id}-${index}-${crypto.randomUUID()}`;
-        const destPath = `${runtimeDir}/${file.relativePath}`;
+        const destPath = `${runtimeDir}/${relativePath}`;
+        if (await existingFileMatches(api, destPath, file.sizeBytes)) {
+          onProgress?.({
+            phase: 'downloading-files',
+            fileIndex: index,
+            fileCount: files.length,
+            bytesDownloaded: file.sizeBytes ?? 0,
+            bytesTotal: file.sizeBytes ?? null,
+          });
+          continue;
+        }
         const unlisten = await api.desktop.events.on(
           `managed:progress:${downloadId}`,
           (p: { bytesDownloaded: number; bytesTotal: number | null }) => {
@@ -176,7 +208,7 @@ function createViewerRuntimesStore() {
         }
       }
 
-      const entryPath = `${runtimeDir}/${runtime.install.entryFile}`;
+      const entryPath = `${runtimeDir}/${safeInstallRelativePath(runtime.install.entryFile)}`;
       await this.setRuntimeState(id, {
         status: 'installed',
         localPath: runtimeDir,

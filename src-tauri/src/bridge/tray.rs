@@ -29,7 +29,7 @@ fn debounce(ms: u64) -> bool {
 }
 
 const NO_ACCEL: Option<&str> = None;
-const DESKTOPR_TRAY_ID: &str = "lia-tray-ywapdpvw";
+const LIATIR_TRAY_ID: &str = "lia-tray-ywapdpvw";
 
 /// Builds a single tray item from the JSON config.
 /// Kept crate-visible so it remains reusable internally.
@@ -195,9 +195,9 @@ pub fn init_tray_from_section(app: &AppHandle<Wry>, sec: &MenuSectionConfig) -> 
   let menu = Menu::with_items(app, &all)?;
 
   // Remove the existing tray before recreating it.
-  let _ = app.remove_tray_by_id(DESKTOPR_TRAY_ID);
+  let _ = app.remove_tray_by_id(LIATIR_TRAY_ID);
 
-  let mut builder = TrayIconBuilder::with_id(DESKTOPR_TRAY_ID)
+  let mut builder = TrayIconBuilder::with_id(LIATIR_TRAY_ID)
     .menu(&menu)
     .show_menu_on_left_click(false)
     .on_menu_event(|app, ev| {
