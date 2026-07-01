@@ -377,6 +377,14 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			runtimePackages: [
 				...TENSORFLOW_2_15_PACKAGES,
 				{
+					package: 'pybedtools',
+					specifier: 'pybedtools==0.10.0',
+					importName: 'pybedtools',
+					installOptions: {
+						noBuildIsolation: true
+					}
+				},
+				{
 					package: 'baskerville',
 					specifier: 'git+https://github.com/calico/baskerville.git@main',
 					importName: 'baskerville'

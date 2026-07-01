@@ -5,6 +5,7 @@ import type {
   LiatirAIModelMetadata,
   LiatirAIModelPythonRequirement,
   LiatirAIModelRecord,
+  LiatirAIModelRuntimePackage,
 } from '@liatir/core';
 
 export interface AIRuntimePackageCheck {
@@ -76,8 +77,12 @@ export function requirementsForModel(model: LiatirAIModelMetadata): string[] {
   });
 }
 
+export function runtimePackagesForModel(model: LiatirAIModelMetadata): LiatirAIModelRuntimePackage[] {
+  return model.install?.runtimePackages ?? [];
+}
+
 export function packageChecksForModel(model: LiatirAIModelMetadata): AIRuntimePackageCheck[] {
-  return (model.install?.runtimePackages ?? []).map((pkg) => ({
+  return runtimePackagesForModel(model).map((pkg) => ({
     package: pkg.package,
     importName: pkg.importName,
     specifier: pkg.specifier,
@@ -113,6 +118,7 @@ export async function prepareAIRuntime(model: LiatirAIModelMetadata): Promise<AI
   return await api.invoke('lia_ai_runtime_prepare', {
     runtimeId,
     requirements: requirementsForModel(model),
+    packages: runtimePackagesForModel(model),
     pythonRequirement: model.install?.hostRequirements?.python ?? null,
   }) as AIRuntimePrepareResult;
 }

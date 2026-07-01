@@ -30,12 +30,20 @@ pub struct AiHardwareInfo {
     pub uv_path: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AiRuntimePackage {
     pub package: String,
+    pub version: Option<String>,
     pub import_name: Option<String>,
     pub specifier: Option<String>,
+    pub install_options: Option<AiRuntimePackageInstallOptions>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct AiRuntimePackageInstallOptions {
+    pub no_build_isolation: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -96,6 +104,13 @@ sys.stdin = io.StringIO(input_path.read_text(encoding="utf-8"))
 runpy.run_path(str(script_path), run_name="__main__")
 "#;
 
+const AI_PYTHON_BOOTSTRAP_REQUIREMENTS: &[&str] = &[
+    "pip>=23,<27",
+    "setuptools>=68,<81",
+    "wheel>=0.41,<1",
+    "packaging>=23,<26",
+];
+
 fn validate_runtime_id(runtime_id: &str) -> Result<(), String> {
     if runtime_id.is_empty()
         || runtime_id.len() > 80
@@ -144,7 +159,13 @@ fn preferred_python() -> Option<String> {
 
 fn python_candidates() -> Vec<String> {
     let mut candidates = Vec::new();
-    for name in ["python3.12", "python3.11", "python3.10", "python3", "python"] {
+    for name in [
+        "python3.12",
+        "python3.11",
+        "python3.10",
+        "python3",
+        "python",
+    ] {
         if let Some(path) = find_in_path(name) {
             if !candidates.contains(&path) {
                 candidates.push(path);
@@ -323,6 +344,127 @@ fn run_command(cmd: &str, args: &[String], cwd: Option<&Path>) -> Result<(String
             stderr
         ));
     }
+    Ok((stdout, stderr))
+}
+
+fn install_python_requirements(
+    uv: Option<&str>,
+    py: &Path,
+    dir: &Path,
+    requirements: &[String],
+    upgrade: bool,
+    no_build_isolation: bool,
+) -> Result<(String, String), String> {
+    if requirements.is_empty() {
+        return Ok((String::new(), String::new()));
+    }
+
+    if let Some(uv_path) = uv {
+        let mut args = vec![
+            "pip".to_string(),
+            "install".to_string(),
+            "--python".to_string(),
+            py.to_string_lossy().to_string(),
+        ];
+        if upgrade {
+            args.push("--upgrade".to_string());
+        }
+        if no_build_isolation {
+            args.push("--no-build-isolation".to_string());
+        }
+        args.extend(requirements.to_owned());
+        return run_command(uv_path, &args, Some(dir));
+    }
+
+    let mut args = vec!["-m".to_string(), "pip".to_string(), "install".to_string()];
+    if upgrade {
+        args.push("--upgrade".to_string());
+    }
+    if no_build_isolation {
+        args.push("--no-build-isolation".to_string());
+    }
+    args.extend(requirements.to_owned());
+    let py_path = py.to_string_lossy().to_string();
+    run_command(&py_path, &args, Some(dir))
+}
+
+fn runtime_package_requirement(package: &AiRuntimePackage) -> String {
+    if let Some(specifier) = package.specifier.as_deref() {
+        return specifier.to_string();
+    }
+    if let Some(version) = package.version.as_deref() {
+        return format!("{}=={}", package.package, version);
+    }
+    package.package.clone()
+}
+
+fn install_runtime_package_group(
+    uv: Option<&str>,
+    py: &Path,
+    dir: &Path,
+    requirements: &mut Vec<String>,
+    no_build_isolation: bool,
+    stdout: &mut String,
+    stderr: &mut String,
+) -> Result<(), String> {
+    if requirements.is_empty() {
+        return Ok(());
+    }
+
+    let (out, err) =
+        install_python_requirements(uv, py, dir, requirements, false, no_build_isolation)?;
+    stdout.push_str(&out);
+    stderr.push_str(&err);
+    requirements.clear();
+    Ok(())
+}
+
+fn install_runtime_packages(
+    uv: Option<&str>,
+    py: &Path,
+    dir: &Path,
+    packages: &[AiRuntimePackage],
+) -> Result<(String, String), String> {
+    let mut stdout = String::new();
+    let mut stderr = String::new();
+    let mut current_no_build_isolation: Option<bool> = None;
+    let mut current_requirements: Vec<String> = Vec::new();
+
+    for package in packages {
+        let no_build_isolation = package
+            .install_options
+            .as_ref()
+            .and_then(|options| options.no_build_isolation)
+            .unwrap_or(false);
+        if let Some(current) = current_no_build_isolation {
+            if current != no_build_isolation {
+                install_runtime_package_group(
+                    uv,
+                    py,
+                    dir,
+                    &mut current_requirements,
+                    current,
+                    &mut stdout,
+                    &mut stderr,
+                )?;
+            }
+        }
+        current_no_build_isolation = Some(no_build_isolation);
+        current_requirements.push(runtime_package_requirement(package));
+    }
+
+    if let Some(no_build_isolation) = current_no_build_isolation {
+        install_runtime_package_group(
+            uv,
+            py,
+            dir,
+            &mut current_requirements,
+            no_build_isolation,
+            &mut stdout,
+            &mut stderr,
+        )?;
+    }
+
     Ok((stdout, stderr))
 }
 
@@ -526,7 +668,8 @@ pub async fn lia_ai_runtime_status(
 pub async fn lia_ai_runtime_prepare(
     app: AppHandle,
     runtime_id: String,
-    requirements: Vec<String>,
+    requirements: Option<Vec<String>>,
+    packages: Option<Vec<AiRuntimePackage>>,
     python_requirement: Option<AiPythonRequirement>,
 ) -> Result<AiRuntimePrepareResult, String> {
     tauri::async_runtime::spawn_blocking(move || {
@@ -589,26 +732,35 @@ pub async fn lia_ai_runtime_prepare(
             };
         }
 
-        if !requirements.is_empty() {
-            if let Some(uv_path) = uv.as_deref() {
-                let mut args = vec![
-                    "pip".to_string(),
-                    "install".to_string(),
-                    "--python".to_string(),
-                    py.to_string_lossy().to_string(),
-                ];
-                args.extend(requirements.clone());
-                let (out, err) = run_command(uv_path, &args, Some(&dir))?;
-                stdout.push_str(&out);
-                stderr.push_str(&err);
-            } else {
-                let mut args = vec!["-m".to_string(), "pip".to_string(), "install".to_string()];
-                args.extend(requirements.clone());
-                let py_path = py.to_string_lossy().to_string();
-                let (out, err) = run_command(&py_path, &args, Some(&dir))?;
+        let bootstrap_requirements = AI_PYTHON_BOOTSTRAP_REQUIREMENTS
+            .iter()
+            .map(|requirement| requirement.to_string())
+            .collect::<Vec<_>>();
+        stdout.push_str("Preparing Python packaging tools.\n");
+        let (out, err) = install_python_requirements(
+            uv.as_deref(),
+            &py,
+            &dir,
+            &bootstrap_requirements,
+            true,
+            false,
+        )?;
+        stdout.push_str(&out);
+        stderr.push_str(&err);
+
+        if let Some(packages) = packages.as_deref() {
+            if !packages.is_empty() {
+                stdout.push_str("Installing AI runtime packages.\n");
+                let (out, err) = install_runtime_packages(uv.as_deref(), &py, &dir, packages)?;
                 stdout.push_str(&out);
                 stderr.push_str(&err);
             }
+        } else if let Some(requirements) = requirements.as_deref() {
+            stdout.push_str("Installing AI runtime packages.\n");
+            let (out, err) =
+                install_python_requirements(uv.as_deref(), &py, &dir, requirements, false, false)?;
+            stdout.push_str(&out);
+            stderr.push_str(&err);
         }
 
         Ok(AiRuntimePrepareResult {

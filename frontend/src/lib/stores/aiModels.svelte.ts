@@ -71,6 +71,7 @@ function defaultStateFor(modelId: string): StoredAIModelState {
 function createAIModelsStore() {
   let initialized = false;
   let modelStates = $state<Record<string, StoredAIModelState>>({});
+  let runtimeChecks = $state<Record<string, boolean>>({});
 
   function allModelIds(): Set<string> {
     return new Set(LOCAL_AI_MODEL_REGISTRY.map((model) => model.id));
@@ -92,6 +93,19 @@ function createAIModelsStore() {
         error: state.error,
       };
     });
+  }
+
+  function setRuntimeChecking(id: string, checking: boolean) {
+    if (!allModelIds().has(id)) return;
+    if (checking) {
+      runtimeChecks = {
+        ...runtimeChecks,
+        [id]: true,
+      };
+      return;
+    }
+    const { [id]: _done, ...rest } = runtimeChecks;
+    runtimeChecks = rest;
   }
 
   async function persist() {
@@ -261,9 +275,10 @@ function createAIModelsStore() {
   return {
     get initialized() { return initialized; },
     get models() { return records(); },
+    get runtimeChecks() { return runtimeChecks; },
     get runnableModels() {
       return records().filter((model) =>
-        model.enabled !== false && model.status === 'installed'
+        model.enabled !== false && model.status === 'installed' && !runtimeChecks[model.id]
       );
     },
     async init() {
@@ -322,15 +337,23 @@ function createAIModelsStore() {
     async refreshManagedRuntimeStatus(id: string): Promise<LiatirAIModelRecord | null> {
       const model = records().find((item) => item.id === id);
       if (!model || model.install?.method !== 'managed-runtime') return model ?? null;
+      setRuntimeChecking(id, true);
       try {
         const status = await getAIRuntimeStatus(model);
         if (!status) return model;
+        const hasMissingPackages = status.missingPackages.length > 0;
+        const shouldSurfaceRuntimeIssue = hasMissingPackages
+          && (model.status === 'installed' || model.status === 'error' || Boolean(status.pythonPath));
         const runtimeIssue = status.error
-          ?? (status.installed && status.missingPackages.length > 0
+          ?? (shouldSurfaceRuntimeIssue
             ? `Missing or incompatible runtime packages: ${status.missingPackages.join(', ')}`
             : undefined);
         await this.setModelState(id, {
-          status: status.error ? 'error' : status.installed ? 'installed' : 'available',
+          status: status.error || shouldSurfaceRuntimeIssue
+            ? 'error'
+            : status.installed
+              ? 'installed'
+              : 'available',
           runtimePath: status.runtimeDir,
           localPath: status.runtimeDir,
           cachePath: status.runtimeDir && model.install?.modelCacheSubdir
@@ -345,11 +368,17 @@ function createAIModelsStore() {
           error: error instanceof Error ? error.message : String(error),
         });
         return this.byId(id);
+      } finally {
+        setRuntimeChecking(id, false);
       }
     },
 
     async refreshManagedRuntimeStatuses(): Promise<void> {
-      for (const model of records()) {
+      const managedRuntimeModels = records().filter((model) => model.install?.method === 'managed-runtime');
+      for (const model of managedRuntimeModels) {
+        setRuntimeChecking(model.id, true);
+      }
+      for (const model of managedRuntimeModels) {
         if (model.install?.method === 'managed-runtime') {
           await this.refreshManagedRuntimeStatus(model.id);
         }

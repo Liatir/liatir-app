@@ -395,6 +395,12 @@ export interface LiatirAIModelRuntimePackage {
   version?: string;
   specifier?: string;
   importName?: string;
+  installOptions?: LiatirAIModelRuntimePackageInstallOptions;
+}
+
+export interface LiatirAIModelRuntimePackageInstallOptions {
+  /** Install this package with pip build isolation disabled. Used for legacy scientific packages with incomplete build metadata. */
+  noBuildIsolation?: boolean;
 }
 
 export interface LiatirAIModelPythonRequirement {

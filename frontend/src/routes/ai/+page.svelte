@@ -41,19 +41,25 @@
   let expandedModelDetails = $state<Record<string, boolean>>({});
   let hardware = $state<AIHardwareInfo | null>(null);
   let searchQuery = $state('');
+  let initialRuntimeStatusRefresh = $state(true);
 
   onMount(() => {
     let cancelled = false;
     const firstLoad = !aiModelsStore.initialized;
     loading = firstLoad;
+    initialRuntimeStatusRefresh = true;
 
     (async () => {
       await aiModelsStore.init();
-      if (!cancelled) loading = false;
+      const runtimeRefresh = aiModelsStore.refreshManagedRuntimeStatuses();
+      if (!cancelled) {
+        initialRuntimeStatusRefresh = false;
+        loading = false;
+      }
 
       const [info] = await Promise.all([
         getAIHardwareInfo().catch(() => null),
-        aiModelsStore.refreshManagedRuntimeStatuses(),
+        runtimeRefresh,
       ]);
       if (!cancelled) hardware = info;
     })();
@@ -64,13 +70,14 @@
   });
 
   const models = $derived(aiModelsStore.models);
+  const runtimeChecks = $derived(aiModelsStore.runtimeChecks);
   const normalizedSearch = $derived(searchQuery.trim().toLowerCase());
   const filteredModels = $derived(
     normalizedSearch
       ? models.filter((model) => modelSearchText(model).includes(normalizedSearch))
       : models
   );
-  const installedCount = $derived(models.filter((model) => model.status === 'installed').length);
+  const installedCount = $derived(models.filter((model) => model.status === 'installed' && !runtimeChecks[model.id]).length);
   const runnableCount = $derived(aiModelsStore.runnableModels.length);
   const groupedModels = $derived(groupModelsByCategory(filteredModels));
 
@@ -87,6 +94,26 @@
     if (status === 'available' || status === 'missing') return 'not installed';
     if (status === 'error') return 'needs attention';
     return status;
+  }
+
+  function isCheckingModel(model: LiatirAIModelRecord): boolean {
+    return runtimeChecks[model.id] === true
+      || (initialRuntimeStatusRefresh && model.install?.method === 'managed-runtime');
+  }
+
+  function modelStatusLabel(model: LiatirAIModelRecord): string {
+    if (installing[model.id]) return 'installing';
+    if (isCheckingModel(model)) return 'checking';
+    return statusLabel(model.status);
+  }
+
+  function modelStatusVariant(model: LiatirAIModelRecord): BadgeVariants {
+    if (installing[model.id] || isCheckingModel(model)) return 'running';
+    return statusVariant(model.status);
+  }
+
+  function modelActionsLocked(model: LiatirAIModelRecord): boolean {
+    return Boolean(installing[model.id]) || isCheckingModel(model);
   }
 
   function hardwareLabel(model: LiatirAIModelRecord): string {
@@ -149,8 +176,8 @@
       .map(([name, groupModels]) => ({
         name,
         models: groupModels,
-        installedCount: groupModels.filter((model) => model.status === 'installed').length,
-        runnableCount: groupModels.filter((model) => model.enabled !== false && model.status === 'installed').length,
+        installedCount: groupModels.filter((model) => model.status === 'installed' && !runtimeChecks[model.id]).length,
+        runnableCount: groupModels.filter((model) => model.enabled !== false && model.status === 'installed' && !runtimeChecks[model.id]).length,
       }));
   }
 
@@ -302,6 +329,7 @@
   }
 
   async function installModel(model: LiatirAIModelRecord) {
+    if (modelActionsLocked(model)) return;
     const blocked = installBlock(model);
     if (blocked) {
       toast.error(blocked.reason);
@@ -349,6 +377,7 @@
   }
 
   async function removeModel(model: LiatirAIModelRecord) {
+    if (modelActionsLocked(model)) return;
     const ok = await confirm({
       title: 'Remove AI Model',
       message: `Remove "${model.name}" from this device? The model can be installed again later.`,
@@ -365,11 +394,13 @@
   }
 
   async function openModelDocs(model: LiatirAIModelRecord) {
+    if (modelActionsLocked(model)) return;
     const url = aiModelLiatirDocsUrl(model);
     if (url) await openLinkInBrowser(url);
   }
 
   async function openOfficialModelPage(model: LiatirAIModelRecord) {
+    if (modelActionsLocked(model)) return;
     const url = aiModelOfficialUrl(model);
     if (url) await openLinkInBrowser(url);
   }
@@ -490,6 +521,8 @@
                   {#each group.models as model (model.id)}
                     {@const blocked = installBlock(model)}
                     {@const installLog = installLogState(model.id)}
+                    {@const checking = isCheckingModel(model)}
+                    {@const actionsLocked = modelActionsLocked(model)}
                     <div class="rounded-lg border border-border bg-white">
                       <div class="grid grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(130px,0.8fr)_250px] gap-3 px-4 py-3 items-center max-xl:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_250px]">
                         <div class="min-w-0">
@@ -498,7 +531,7 @@
                             <span class="shrink-0">
                               <InfoPopup text={aiModelInfo(model)} />
                             </span>
-                            <Badge variant={installing[model.id]?'running':statusVariant(model.status)} hideDot={!installing[model.id]} pulse={installing[model.id]?true:false} size="xs">{installing[model.id] ? 'installing' : statusLabel(model.status)}</Badge>
+                            <Badge variant={modelStatusVariant(model)} hideDot={!installing[model.id] && !checking} pulse={Boolean(installing[model.id]) || checking} size="xs">{modelStatusLabel(model)}</Badge>
                             {#if model.localOnly}
                               <Badge variant="neutral" size="xs" hideDot>local</Badge>
                             {/if}
@@ -519,7 +552,8 @@
                               <div class="mt-2 flex flex-wrap items-center gap-2">
                                 <button
                                   type="button"
-                                  class="text-[11px] font-semibold text-amber-900 underline decoration-amber-300 underline-offset-2 hover:text-amber-700"
+                                  class="text-[11px] font-semibold text-amber-900 underline decoration-amber-300 underline-offset-2 hover:text-amber-700 disabled:cursor-not-allowed disabled:opacity-40"
+                                  disabled={actionsLocked}
                                   onclick={() => resolveInstallBlock(blocked)}
                                 >
                                   {blocked.actionLabel ?? 'Open Dependencies'}
@@ -561,7 +595,8 @@
                               <div class="mt-2 flex flex-wrap items-center gap-2">
                                 <button
                                   type="button"
-                                  class="font-semibold text-amber-900 underline decoration-amber-300 underline-offset-2 hover:text-amber-700"
+                                  class="font-semibold text-amber-900 underline decoration-amber-300 underline-offset-2 hover:text-amber-700 disabled:cursor-not-allowed disabled:opacity-40"
+                                  disabled={actionsLocked}
                                   onclick={() => resolveInstallBlock(blocked)}
                                 >
                                   {blocked.actionLabel ?? 'Open Dependencies'}
@@ -591,10 +626,11 @@
                         <div class="flex items-center justify-end gap-2 min-w-0">
                           <button
                             type="button"
-                            class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--color-surface-3)] text-zinc-500 transition-colors hover:bg-[var(--color-border-2)] hover:text-zinc-800"
+                            class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--color-surface-3)] text-zinc-500 transition-colors hover:bg-[var(--color-border-2)] hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[var(--color-surface-3)] disabled:hover:text-zinc-500"
                             title={isModelDetailsExpanded(model.id) ? 'Hide model details' : 'Show model details'}
                             aria-label={isModelDetailsExpanded(model.id) ? 'Hide model details' : 'Show model details'}
                             aria-expanded={isModelDetailsExpanded(model.id)}
+                            disabled={actionsLocked}
                             onclick={() => toggleModelDetails(model.id)}
                           >
                             <Icon icon={isModelDetailsExpanded(model.id) ? 'lucide:chevron-up' : 'lucide:list-tree'} width="14" height="14" />
@@ -603,9 +639,10 @@
                           {#if aiModelLiatirDocsUrl(model)}
                             <button
                               type="button"
-                              class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--color-surface-3)] text-zinc-500 transition-colors hover:bg-[var(--color-border-2)] hover:text-zinc-800"
+                              class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--color-surface-3)] text-zinc-500 transition-colors hover:bg-[var(--color-border-2)] hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[var(--color-surface-3)] disabled:hover:text-zinc-500"
                               title="Open Liatir documentation"
                               aria-label="Open Liatir documentation"
+                              disabled={actionsLocked}
                               onclick={() => openModelDocs(model)}
                             >
                               <Icon icon="lucide:book-open" width="14" height="14" />
@@ -615,9 +652,10 @@
                           {#if aiModelOfficialUrl(model)}
                             <button
                               type="button"
-                              class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--color-surface-3)] text-zinc-500 transition-colors hover:bg-[var(--color-border-2)] hover:text-zinc-800"
+                              class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--color-surface-3)] text-zinc-500 transition-colors hover:bg-[var(--color-border-2)] hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[var(--color-surface-3)] disabled:hover:text-zinc-500"
                               title="Open official model page"
                               aria-label="Open official model page"
+                              disabled={actionsLocked}
                               onclick={() => openOfficialModelPage(model)}
                             >
                               <Icon icon="lucide:external-link" width="14" height="14" />
@@ -628,6 +666,7 @@
                             <Button
                               size="sm"
                               variant="ghost"
+                              disabled={actionsLocked}
                               onclick={() => removeModel(model)}
                             >
                               Remove
@@ -672,17 +711,21 @@
                                 {/if}
                               </div>
                             </div>
+                          {:else if checking}
+                            <Button size="sm" variant="secondary" disabled>
+                              Checking
+                            </Button>
                           {:else if model.status === 'installed'}
-                            <Button size="sm" variant="secondary" onclick={() => goto(`/ai/${encodeURIComponent(model.id)}`)}>
+                            <Button size="sm" variant="secondary" disabled={actionsLocked} onclick={() => goto(`/ai/${encodeURIComponent(model.id)}`)}>
                               Run
                             </Button>
                           {:else if model.install?.method === 'managed-download' || model.install?.method === 'managed-runtime'}
                             {#if blocked}
-                              <Button size="sm" variant="secondary" onclick={() => resolveInstallBlock(blocked)}>
+                              <Button size="sm" variant="secondary" disabled={actionsLocked} onclick={() => resolveInstallBlock(blocked)}>
                                 Fix dependency
                               </Button>
                             {:else}
-                              <Button size="sm" variant="primary" onclick={() => installModel(model)}>
+                              <Button size="sm" variant="primary" disabled={actionsLocked} onclick={() => installModel(model)}>
                                 Install
                               </Button>
                             {/if}
