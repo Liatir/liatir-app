@@ -363,6 +363,14 @@ export interface LiatirAIModelHostRequirements {
   reason?: string;
 }
 
+export interface LiatirAIModelDocumentation {
+  /** Public Liatir documentation path, relative to the configured documentation base URL. */
+  liatirPath?: string;
+  /** Official upstream model, package, or project page. */
+  officialUrl?: string;
+  paperUrl?: string;
+}
+
 export interface LiatirAIModelMetadata {
   id: string;
   name: string;
@@ -382,6 +390,7 @@ export interface LiatirAIModelMetadata {
   license?: LiatirAIModelLicense;
   hardware?: LiatirAIModelHardwareRequirements;
   install?: LiatirAIModelInstallSpec;
+  documentation?: LiatirAIModelDocumentation;
   tags?: string[];
 }
 

@@ -8,11 +8,13 @@ export default defineConfig({
   themeConfig: {
     logo: { light: '/static/app-icon-white-bg-color.png', dark: '/static/app-icon-white-bg-color.png', alt: 'Liatir' },
     siteTitle: 'Liatir',
+    search: { provider: 'local' },
 
     nav: [
       { text: 'Introduction', link: '/introduction/overview' },
       { text: 'Data', link: '/data/overview' },
       { text: 'Tools', link: '/tools/overview' },
+      { text: 'AI Models', link: '/ai/models/overview' },
       { text: 'Plugins', link: '/plugins/overview' },
       { text: 'Pipeline', link: '/pipeline/overview' },
       { text: 'API', link: '/api/liatir-api' },
@@ -47,6 +49,26 @@ export default defineConfig({
           { text: 'BCFtools stats', link: '/tools/bcftools' },
           { text: 'BCFtools filter', link: '/tools/bcftools-filter' },
           { text: 'SnpEff', link: '/tools/snpeff' },
+        ],
+      },
+      {
+        text: 'AI Models',
+        collapsed: false,
+        items: [
+          { text: 'Overview', link: '/ai/models/overview' },
+          { text: 'CellTypist Local Annotation', link: '/ai/models/celltypist-local-annotation' },
+          { text: 'Nucleotide Transformer v2 50M', link: '/ai/models/instadeep-nt-v2-50m-multi-species' },
+          { text: 'Nucleotide Transformer v2 500M', link: '/ai/models/instadeep-nt-v2-500m-multi-species' },
+          { text: 'ESM-2 8M Protein', link: '/ai/models/facebook-esm2-8m-protein' },
+          { text: 'Boltz-2 Local Structure & Binding', link: '/ai/models/boltz2-local-structure-binding' },
+          { text: 'Chai-1 Local Structure', link: '/ai/models/chai1-local-structure' },
+        ],
+      },
+      {
+        text: 'AI Tools',
+        collapsed: false,
+        items: [
+          { text: 'Overview', link: '/ai/tools/overview' },
         ],
       },
       {

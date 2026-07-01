@@ -43,10 +43,21 @@ export async function md5(string: string) {
 
 
 export const openLinkInBrowser = async (link: string) => {
+  const href = link.trim();
+  if (!href) return;
+
   try {
-    await liatir()?.openBrowser(link);
+    const api = liatir();
+    if (api?.openBrowser) {
+      await api.openBrowser(href);
+      return;
+    }
   } catch (error) {
     console.error(error);
+  }
+
+  if (typeof window !== 'undefined') {
+    window.open(href, '_blank', 'noopener,noreferrer');
   }
 }
 

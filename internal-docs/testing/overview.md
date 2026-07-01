@@ -22,8 +22,8 @@ jobs, AI runtimes, viewer capture, sidecars, or `.lia` execution.
 
 - `npm run test:tauri:run`
   Runs the native E2E suite against an already-built
-  `src-tauri/target/debug/bundle/macos/Liatir.app` debug bundle on macOS. Use this after
-  `npm run test:tauri:prepare` while iterating on tests.
+  `src-tauri/target/debug/bundle/macos/Liatir.app` debug bundle on macOS. Use
+  this after `npm run test:tauri:prepare` while iterating on tests.
 
 - `npm run test:visual`
   Runs the visual smoke suite. The harness captures PNG screenshots from the
@@ -58,9 +58,9 @@ standard `fetch`.
 ## Isolation
 
 E2E tests launch Liatir with a test-only `HOME`, `XDG_DATA_HOME`,
-`XDG_CACHE_HOME`, and `XDG_CONFIG_HOME` under `tests/.artifacts/home`.
-This prevents tests from reading or mutating the developer's real Liatir app
-data in Application Support.
+`XDG_CACHE_HOME`, and `XDG_CONFIG_HOME` under `tests/.artifacts/home`. This
+prevents tests from reading or mutating the developer's real Liatir app data in
+Application Support.
 
 The dev smoke check uses the same isolation pattern under
 `tests/.artifacts/home-dev-smoke`.

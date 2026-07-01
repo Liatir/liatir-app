@@ -12,6 +12,8 @@
   import { exportToHtml } from '$lib/utils/export-result';
   import type { ToolOutput } from '$lib/types/tool-output';
 	import Icon from '@iconify/svelte';
+	import PageContent from '$lib/components/layout/PageContent.svelte';
+	import { HEADER_HEIGHT } from '$lib/_constants';
 
   const TOOL_LABELS: Record<string, string> = {
     pipeline: 'Pipeline',
@@ -128,7 +130,7 @@
   <div class="w-72 shrink-0 border-r border-border bg-surface flex flex-col">
 
     <!-- Filters -->
-    <div class="px-3 pt-3 pb-2 border-b border-border flex flex-wrap gap-2">
+    <div class="px-3 pt-3 pb-3 border-b border-border flex items-end flex-wrap gap-2" style="height: {HEADER_HEIGHT}px;">
       <Select
         value={activeTool}
         options={toolOptions}
@@ -204,85 +206,87 @@
       description="Analysis run history across all tools"
     />
 
-    <div class="flex-1 overflow-y-auto p-6">
-      {#if analysisRuns.runs.length === 0}
-        <div class="flex flex-col items-center justify-center h-full text-center gap-3">
-          <div class="h-12 w-12 rounded-xl bg-zinc-100 flex items-center justify-center">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    <PageContent>
+      <div class="flex-1 overflow-y-auto p-6">
+        {#if analysisRuns.runs.length === 0}
+          <div class="flex flex-col items-center justify-center h-full text-center gap-3">
+            <div class="h-12 w-12 rounded-xl bg-zinc-100 flex items-center justify-center">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+            </div>
+            <p class="text-sm font-medium text-zinc-700">No analyses yet</p>
+            <p class="text-xs text-zinc-400 max-w-xs">Run a tool to see results here.</p>
+          </div>
+
+        {:else if !selectedRun}
+          <div class="flex flex-col items-center justify-center h-full text-center">
+            <div class="flex items-center justify-center mb-2 gap-1">
+              <!-- <Icon icon="lucide:arrow-left" class="text-zinc-400/50 h-3 w-3"/> -->
+              <Icon icon="lucide:list" class="text-zinc-400/50 h-6 w-6"/>
+            </div>
+            <p class="text-sm text-zinc-400">Select a run from the list to view results.</p>
+          </div>
+
+        {:else if selectedRun.status === 'error'}
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <p class="text-sm font-semibold text-zinc-800">{selectedRun.label}</p>
+                <p class="text-xs text-zinc-400 mt-0.5">
+                  {toolLabel(selectedRun.tool)} · {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}{selectedRun.outputSize != null ? ' · ' + fmtBytes(selectedRun.outputSize) : ''}
+                </p>
+              </div>
+            </div>
+            <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-mono" data-selectable>
+              {sanitizeLocalPathsForDisplay(selectedRun.error ?? 'Unknown error', 2)}
+            </div>
+            <RunLog runId={selectedId} />
+          </div>
+
+        {:else if loadingOutput}
+          <div class="flex justify-center py-16">
+            <svg class="animate-spin h-5 w-5 text-zinc-400" viewBox="0 0 24 24" fill="none">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
             </svg>
           </div>
-          <p class="text-sm font-medium text-zinc-700">No analyses yet</p>
-          <p class="text-xs text-zinc-400 max-w-xs">Run a tool to see results here.</p>
-        </div>
 
-      {:else if !selectedRun}
-        <div class="flex flex-col items-center justify-center h-full text-center">
-          <div class="flex items-center justify-center mb-2 gap-1">
-            <!-- <Icon icon="lucide:arrow-left" class="text-zinc-400/50 h-3 w-3"/> -->
-            <Icon icon="lucide:list" class="text-zinc-400/50 h-6 w-6"/>
-          </div>
-          <p class="text-sm text-zinc-400">Select a run from the list to view results.</p>
-        </div>
-
-      {:else if selectedRun.status === 'error'}
-        <div>
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <p class="text-sm font-semibold text-zinc-800">{selectedRun.label}</p>
-              <p class="text-xs text-zinc-400 mt-0.5">
-                {toolLabel(selectedRun.tool)} · {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}{selectedRun.outputSize != null ? ' · ' + fmtBytes(selectedRun.outputSize) : ''}
-              </p>
+        {:else if loadedOutput}
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <p class="text-sm font-semibold text-zinc-800">{selectedRun.label}</p>
+                <p class="text-xs text-zinc-400 mt-0.5">
+                  {toolLabel(selectedRun.tool)} · {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}{selectedRun.outputSize != null ? ' · ' + fmtBytes(selectedRun.outputSize) : ''}
+                </p>
+              </div>
+              <button
+                onclick={exportRun}
+                disabled={exporting}
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
+                      text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2
+                      disabled:opacity-50 disabled:cursor-default transition-colors"
+              >
+                {#if exporting}
+                  <svg class="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                  </svg>
+                  Exporting…
+                {:else}
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  Export HTML
+                {/if}
+              </button>
             </div>
+            <ToolResultView output={loadedOutput} outputFiles={selectedRun.outputFiles ?? []} />
+            <RunLog runId={selectedId} />
           </div>
-          <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-mono" data-selectable>
-            {sanitizeLocalPathsForDisplay(selectedRun.error ?? 'Unknown error', 2)}
-          </div>
-          <RunLog runId={selectedId} />
-        </div>
-
-      {:else if loadingOutput}
-        <div class="flex justify-center py-16">
-          <svg class="animate-spin h-5 w-5 text-zinc-400" viewBox="0 0 24 24" fill="none">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-          </svg>
-        </div>
-
-      {:else if loadedOutput}
-        <div>
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <p class="text-sm font-semibold text-zinc-800">{selectedRun.label}</p>
-              <p class="text-xs text-zinc-400 mt-0.5">
-                {toolLabel(selectedRun.tool)} · {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}{selectedRun.outputSize != null ? ' · ' + fmtBytes(selectedRun.outputSize) : ''}
-              </p>
-            </div>
-            <button
-              onclick={exportRun}
-              disabled={exporting}
-              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
-                     text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2
-                     disabled:opacity-50 disabled:cursor-default transition-colors"
-            >
-              {#if exporting}
-                <svg class="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                </svg>
-                Exporting…
-              {:else}
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                Export HTML
-              {/if}
-            </button>
-          </div>
-          <ToolResultView output={loadedOutput} outputFiles={selectedRun.outputFiles ?? []} />
-          <RunLog runId={selectedId} />
-        </div>
-      {/if}
-    </div>
+        {/if}
+      </div>
+    </PageContent>
   </div>
 </div>

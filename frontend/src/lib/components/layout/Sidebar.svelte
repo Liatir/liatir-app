@@ -9,18 +9,23 @@
 	import CustomIcon from '../ui/CustomIcon.svelte';
 	import Divider from '../ui/Divider.svelte';
 	import { toast } from '$lib/stores/toast.svelte';
-	import { NAV_PAGES, NAV_PAGES_BOTTOM, routeIsInSidebar, type NavItem } from '$lib/sidebarUtils';
+	import { NAV_PAGES, NAV_PAGES_BOTTOM, routeIsInSidebar, SIDEBAR_EXPANDED_WIDTH, type NavItem } from '$lib/sidebarUtils';
+	import { sidebarCollapsed, sidebarWidth } from '$lib/stores/sidebar';
+	import { HEADER_HEIGHT } from '$lib/_constants';
 
-	let collapsed = $state(false);
+	let { forceExpand=false } = $props();
+
+	let sideWidth = $derived(forceExpand ? SIDEBAR_EXPANDED_WIDTH : $sidebarWidth);
+	let sideCollapsed = $derived(forceExpand ? false : $sidebarCollapsed);
 
 	onMount(() => {
-		collapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+		const lastCollapsedStatus = localStorage.getItem('sidebar-collapsed') === 'true';
+		sidebarCollapsed.set(lastCollapsedStatus);
 	});
 
-	$effect(() => {
-		localStorage.setItem('sidebar-collapsed', String(collapsed));
-	});
-
+	sidebarCollapsed.subscribe((value)=>{
+		localStorage.setItem('sidebar-collapsed', String(value));
+	})
 
 	function isActive(item: NavItem): boolean {
 		if (!item.href) return false;
@@ -84,34 +89,39 @@
 </script>
 
 <aside
-	class="flex relative h-screen shrink-0 flex-col border-r border-border bg-surface transition-all duration-200
-	       {collapsed ? 'w-[56px]' : 'w-[220px]'}"
+	class="flex relative h-screen shrink-0 flex-col border-r border-border bg-surface transition-all duration-200"
 	id="sidebar-container"
+	style="width: {sideWidth}px;"
 	>
-	<button
-		onclick={()=> collapsed = !collapsed}
-		title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-		class="shrink-0 w-5 h-8 p-0.5 top-[calc(50vh-10px)] font-semibold z-50 rounded-r-md absolute border-y border-r border-y-border border-r-border bg-zinc-50 text-zinc-300 
-		{collapsed ? 'left-[56px]' : 'left-[220px]'}"
+	<!-- <button
+		onclick={()=> sidebarCollapsed.set(!sideCollapsed)}
+		title={sideCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+		class="shrink-0 w-5 h-8 p-0.5 top-[calc(50vh-10px)] font-semibold z-50 rounded-r-md absolute border-y border-r border-y-border border-r-border bg-zinc-50 text-zinc-300"
 		id="collapse-sidebar-button"
+		style="left: {(forceExpand ? SIDEBAR_EXPANDED_WIDTH : sideWidth)}px;"
 	>
 		<Icon
 			icon="lucide:chevron-left"
-			class="w-full h-full transition-transform duration-200 {collapsed?'scale-x-[-1]':''}"
+			class="w-full h-full transition-transform duration-200 {sideCollapsed?'scale-x-[-1]':''}"
 		/>
-	</button>
+	</button> -->
 	<!-- Logo -->
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="flex h-[75px] items-center justify-start border-b border-border px-3 gap-2.5 text-left {workspaceStore.active?'hover:bg-zinc-100 hover:cursor-pointer':''}" id="logo-section" onclick={()=>{if(workspaceStore.active) goto("/workspace-settings")}}>
+	<div
+		class="flex items-center justify-start border-b border-border pt-1.5 px-3 gap-2.5 text-left {workspaceStore.active?'hover:bg-zinc-100 hover:cursor-pointer':''}"
+		id="logo-section"
+		onclick={()=>{if(workspaceStore.active) goto("/workspace-settings")}}
+		style="height: {HEADER_HEIGHT}px"
+		>
 		<div class="flex w-9 h-9 overflow-hidden items-center gap-0 space-x-0 justify-center rounded-lg bg-brand shrink-0" id="sidebar-logo-container">
 			<div class="h-9 w-9 flex p-1.5 justify-center items-center shrink-0" id="sidebar-logo">
 				<img src="/logo/png/logo-white.png" alt="Liatir" class="h-full w-full opacity-100 object-contain" />
 			</div>
 		</div>
 
-		{#if !collapsed}
-			<div class="flex items-center justify-start min-w-0 h-9 w-full">
+		{#if !sideCollapsed}
+			<div class="flex items-center justify-start min-w-0 h-9 w-full overflow-hidden">
 				<div class="h-fit w-full">
 					{#if workspaceStore.active}
 						<p class="text-[11px] text-zinc-400 truncate mb-0.5">Workspace:</p>
@@ -144,11 +154,11 @@
 				{:else}
 					<button
 						onclick={()=>navigateToPage(item as NavItem)}
-						title={collapsed ? item.label : undefined}
+						title={sideCollapsed ? item.label : undefined}
 						data-testid="sidebar-nav-item"
 						data-route={item.href}
-						class="group relative flex w-full text-left items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
-							{collapsed ? 'justify-center' : ''}  
+						class="group relative flex w-full overflow-hidden text-left items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
+							{sideCollapsed ? 'justify-center' : ''}  
 							{(active && !(item?.workspacePage))
 							? 'bg-brand/10 text-brand font-medium'
 							: 'text-zinc-500 hover:bg-zinc-100/90 hover:text-zinc-800'}"
@@ -159,8 +169,8 @@
 							<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
 						{/if}
 
-						{#if !collapsed}
-							<span class="flex-1">{item.label}</span>
+						{#if !sideCollapsed}
+							<span class="flex-1 truncate">{item.label}</span>
 							{#if item.match === '/jobs' && jobsStore.runningCount > 0}
 								<span
 									class="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-sky-500/15 px-1.5 text-[10px] font-semibold text-sky-600"
@@ -177,7 +187,7 @@
 		{/each}
 	</nav>
 
-	<div class="px-1.5 py-3 space-y-0.5">
+	<div class="px-1.5 py-3 space-y-0.5 overflow-hidden">
 		<!-- Bottom nav -->
 		{#each NAV_PAGES_BOTTOM as item}
 			{@const active = isActive(item)}
@@ -187,11 +197,11 @@
 				{:else}
 					<button
 						onclick={()=>navigateToPage(item as NavItem)}
-						title={collapsed ? item.label : undefined}
+						title={sideCollapsed ? item.label : undefined}
 						data-testid="sidebar-nav-item"
 						data-route={item.href}
-						class="group relative flex w-full text-left items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
-							{collapsed ? 'justify-center' : ''}
+						class="group relative flex overflow-hidden w-full text-left items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
+							{sideCollapsed ? 'justify-center' : ''}
 							{(active && !(item?.workspacePage))
 							? 'bg-brand/10 text-brand font-medium'
 							: 'text-zinc-500 hover:bg-zinc-100/90 hover:text-zinc-800'}"
@@ -203,17 +213,8 @@
 							<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
 						{/if}
 
-						{#if !collapsed}
-							<span class="flex-1">{item.label}</span>
-							{#if item.match === '/jobs' && jobsStore.runningCount > 0}
-								<span
-									class="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-sky-500/15 px-1.5 text-[10px] font-semibold text-sky-600"
-								>
-									{jobsStore.runningCount}
-								</span>
-							{/if}
-						{:else if item.match === '/jobs' && jobsStore.runningCount > 0}
-							<span class="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-sky-500"></span>
+						{#if !sideCollapsed}
+							<span class="flex-1 truncate">{item.label}</span>
 						{/if}
 					</button>
 				{/if}
@@ -223,17 +224,39 @@
 		<!-- Toggle Sandbox -->
 		<button
 			onclick={toggleSandboxMode}
-			title={collapsed ? 'Toggle Sandbox' : undefined}
-			class="w-full flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
-					{collapsed ? 'justify-center' : ''} 
+			title={sideCollapsed ? 'Toggle Sandbox' : undefined}
+			class="w-full flex items-center overflow-hidden gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
+					{sideCollapsed ? 'justify-center' : ''} 
 					{workspaceStore.isSandboxMode?'text-sandbox-600 hover:bg-sandbox-50':'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100/90'}"
 		>
 			<Icon icon="lucide:flask-conical" width="16" height="16" class="shrink-0" />
-			{#if !collapsed}
+			{#if !sideCollapsed}
 				<span class="flex-1 text-left">Sandbox</span>
 				<span class="text-[10px] font-medium bg-sandbox-100 text-sandbox-600 rounded px-1 leading-5">{workspaceStore.isSandboxMode?'exit':''}</span>
 			{/if}
 		</button>
+
+					<Divider my={5}/>
+
+		<!-- Set sidebar collapsed status -->
+		<div
+			class="w-full flex items-center overflow-hidden gap-3 rounded-lg px-1 text-sm transition-colors duration-100
+					{sideCollapsed ? 'justify-center' : ''}"
+		>
+
+			{#if $sidebarCollapsed}
+				<button class="w-fit text-right text-zinc-800 hover:bg-zinc-100 py-1.5 px-1.5 rounded-md" onclick={()=>sidebarCollapsed.set(false)}>
+					<Icon icon="ph:sidebar-simple-light" width="17" height="17" class="shrink-0 rotate-180" />
+				</button>
+			{:else}
+				<button class="w-fit text-right text-zinc-800 hover:bg-zinc-100 py-1.5 px-1.5 rounded-md" onclick={()=>sidebarCollapsed.set(true)}>
+					<Icon icon="ph:sidebar-simple-light" width="17" height="17" class="shrink-0" />
+				</button>
+			{/if}
+			{#if !sideCollapsed}
+				<span class="flex-1 truncate text-right text-[11px] text-zinc-300 mr-1.5">© {new Date().getFullYear()} Liatir</span>
+			{/if}
+		</div>
 	</div>
 </aside>
 

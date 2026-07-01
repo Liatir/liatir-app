@@ -7,6 +7,7 @@
   import ApiProviderCard from '$lib/components/api/ApiProviderCard.svelte';
   import { apiConnections } from '$lib/stores/apiConnections.svelte';
   import { toast } from '$lib/stores/toast.svelte';
+	import PageContent from '$lib/components/layout/PageContent.svelte';
 
   let newlyAddedId = $state<string | null>(null);
 
@@ -33,6 +34,7 @@
     {/snippet}
   </PageHeader>
 
+  <PageContent>
   <div class="flex-1 overflow-y-auto p-6">
     {#if apiConnections.collections.length === 0}
       <div class="max-w-md mx-auto mt-16">
@@ -59,4 +61,5 @@
       </div>
     {/if}
   </div>
+  </PageContent>
 </div>

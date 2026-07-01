@@ -19,8 +19,9 @@
 	import { confirm } from '$lib/stores/confirm.svelte';
 	import { toast } from '$lib/stores/toast.svelte';
 	import { modelInstallBlock } from '$lib/ai/model-compatibility';
+	import { aiModelLiatirDocsUrl, aiModelOfficialUrl } from '$lib/ai/model-docs';
 	import { AI_MODEL_INPUT_HELP, aiModelInfo } from '$lib/ai/model-help';
-	import { fmtDuration, sanitizeLocalPathsForDisplay } from '$lib/utils';
+	import { fmtDuration, openLinkInBrowser, sanitizeLocalPathsForDisplay } from '$lib/utils';
 	import { ensureResultsDir } from '$lib/utils/results';
 	import type { AIDirectRunContext } from '$lib/ai/direct-run-context';
 	import { getAIHardwareInfo, type AIHardwareInfo } from '$lib/ai/runtime';
@@ -48,6 +49,8 @@
 	} from '$lib/tools/ai/protein-structure';
 	import type { ToolOutput } from '$lib/types/tool-output';
 	import type { RunOutputFile } from '$lib/types/pipeline';
+	import PageContent from '$lib/components/layout/PageContent.svelte';
+	import { HEADER_HEIGHT } from '$lib/_constants';
 
 	type RunMode = 'celltypist' | 'sequence' | 'protein-structure' | 'mock' | 'unsupported';
 	type MoleculeType = 'dna' | 'rna' | 'protein';
@@ -391,18 +394,30 @@
 			selectedRunId = modelRuns.find((item) => item.id !== run.id)?.id ?? null;
 		await analysisRuns.remove(run.id);
 	}
+
+	async function openCurrentModelDocs() {
+		if (!model) return;
+		const url = aiModelLiatirDocsUrl(model);
+		if (url) await openLinkInBrowser(url);
+	}
+
+	async function openCurrentOfficialModelPage() {
+		if (!model) return;
+		const url = aiModelOfficialUrl(model);
+		if (url) await openLinkInBrowser(url);
+	}
 </script>
 
 <div class="flex h-full overflow-hidden">
-	<div class="w-56 shrink-0 border-r border-border bg-surface flex flex-col">
-		<div class="flex items-center justify-between px-3 py-3 border-b border-border">
-			<span class="text-xs font-medium text-zinc-600">Run history</span>
+	<div class="w-56 shrink-0 border-r border-border flex flex-col">
+		<div class="flex items-end justify-between px-3 py-3 border-b border-border bg-surface" style="height: {HEADER_HEIGHT}px;">
+			<span class="text-sm font-medium text-zinc-600">Run history</span>
 			{#if modelRuns.length > 0}
-				<span class="text-[10px] text-zinc-400">{modelRuns.length}</span>
+				<span class="text-xs text-zinc-400">{modelRuns.length}</span>
 			{/if}
 		</div>
 
-		<div class="flex-1 overflow-y-auto py-1">
+		<div class="flex-1 overflow-y-auto py-1 bg-surface">
 			{#if modelRuns.length === 0}
 				<p class="text-xs text-zinc-400 text-center py-8 px-3 leading-relaxed">
 					No runs yet.<br />Results will appear here.
@@ -457,13 +472,25 @@
 			description={definition?.description ?? 'Run a local AI Model'}
 		>
 			{#snippet actions()}
+				{#if model && aiModelLiatirDocsUrl(model)}
+					<Button variant="secondary" size="sm" onclick={openCurrentModelDocs}>
+						<Icon icon="lucide:book-open" width="14" height="14" />
+						Docs
+					</Button>
+				{/if}
+				{#if model && aiModelOfficialUrl(model)}
+					<Button variant="secondary" size="sm" onclick={openCurrentOfficialModelPage}>
+						<Icon icon="lucide:external-link" width="14" height="14" />
+						Official
+					</Button>
+				{/if}
 				<Button variant="ghost" size="sm" onclick={() => goto('/ai')}>
 					<Icon icon="lucide:arrow-left" width="14" height="14" />
 					Back
 				</Button>
 			{/snippet}
 		</PageHeader>
-
+<PageContent>
 		<div class="flex-1 overflow-y-auto p-6 space-y-5">
 			{#if !model}
 				<Card class="p-5">
@@ -844,5 +871,6 @@
 				</div>
 			{/if}
 		</div>
+		</PageContent>
 	</div>
 </div>

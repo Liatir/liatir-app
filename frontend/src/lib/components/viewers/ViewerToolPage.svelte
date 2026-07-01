@@ -16,6 +16,7 @@
     runSingleCellViewerStep,
     runStructureViewerStep,
   } from '$lib/tools/viewers/scientific-viewers';
+	import PageContent from '../layout/PageContent.svelte';
 
   type ViewerMode = 'structure' | 'genome' | 'single-cell';
   type StructureStyle = 'cartoon' | 'stick' | 'line' | 'sphere';
@@ -138,7 +139,7 @@
       </Button>
     {/snippet}
   </PageHeader>
-
+<PageContent>
   <div class="flex-1 overflow-y-auto p-6">
     <div class="mx-auto flex max-w-5xl flex-col gap-5">
       <Card class="p-5">
@@ -234,4 +235,5 @@
       {/if}
     </div>
   </div>
+  </PageContent>
 </div>

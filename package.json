@@ -57,7 +57,11 @@
     "cargo:update": "npm run cargo:update --prefix src-tauri/",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "docs:internal:dev": "vitepress dev internal-docs",
+    "docs:internal:build": "vitepress build internal-docs",
+    "docs:internal:preview": "vitepress preview internal-docs",
+    "docs:all:build": "npm run docs:build && npm run docs:internal:build"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",

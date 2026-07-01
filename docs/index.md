@@ -26,6 +26,9 @@ features:
   - icon: 🔌
     title: WASM plugin system
     details: For performance-critical or language-agnostic logic, Liatir supports WebAssembly plugins. Compile from Rust, C, or any WASM target and register the plugin — the same input/output schema used by every other step applies.
+  - icon: 🧠
+    title: Local AI Models and AI Tools
+    details: Install model runtimes only when needed, then use them directly or inside pipelines for single-cell annotation, sequence embeddings, structure prediction, and genomic scoring.
   - icon: 🗂️
     title: Unified data layer
     details: Import files once, use them everywhere. Liatir tracks every file you add by path, shows extension-aware icons, detects when a file moves or disappears, and provides an inline text preview for FASTQ, VCF, SAM, BED, and GTF formats.

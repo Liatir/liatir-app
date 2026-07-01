@@ -16,12 +16,14 @@
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { sidebarWidth } from '$lib/stores/sidebar';
 
 	let { children } = $props();
 
 	let initialized: boolean = $state(false);
 	let jobRefreshInterval: ReturnType<typeof setInterval> | null = null;
 	let refreshingJobs = false;
+	let sidebarForceExpand = $state(false);
 
 	async function refreshJobsAndFinalize() {
 		if (refreshingJobs) return;
@@ -48,8 +50,14 @@
 			}
 		}, 2000);
 		pipelineStore.init();
+		
 		initialized = true;
 	});
+
+	const setSidebarForceExpand = (status: boolean) => {
+		if((sidebarForceExpand && status) || (!sidebarForceExpand && !status)) return;
+		sidebarForceExpand = status;
+	};
 
 	onDestroy(() => {
 		if (jobRefreshInterval) clearInterval(jobRefreshInterval);
@@ -71,21 +79,25 @@
 		</svg>
 	</div>
 {:else}
-	<div
-		class="{workspaceStore.isSandboxMode
-			? 'max-2xl:border-x-[5px] border-x-[7px]'
-			: ''} flex h-screen overflow-hidden border-sandbox-500 transition-[border-width] duration-[0.48s] ease-in-out"
-		style="background-color: var(--color-bg);"
-	>
-		{#if workspaceStore.active && workspaceStore.activeId && initialized}
-			<Sidebar />
-		{/if}
-		<main class="flex-1 overflow-y-auto">
+<div
+        class="{workspaceStore.isSandboxMode
+            ? 'max-2xl:border-x-[5px] border-x-[7px]'
+            : ''} flex h-screen overflow-hidden border-sandbox-500 transition-[border-width] duration-[0.48s] ease-in-out relative"
+        style="background-color: var(--color-bg);"
+    >
+        {#if workspaceStore.active && workspaceStore.activeId && initialized}
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div class="absolute left-0 top-0 h-full z-20" onmouseenter={()=>setSidebarForceExpand(true)} onmouseleave={()=>setSidebarForceExpand(false)}>
+                <Sidebar forceExpand={sidebarForceExpand}/>
+            </div>
+        {/if}
+        
+        <main class="w-full h-full overflow-y-auto" style="padding-left: {$sidebarWidth}px;">
 			{@render children()}
 		</main>
-	</div>
+    </div>
 
-	<ConfirmDialog />
+    <ConfirmDialog />
 	<Toast />
 	<InstallBanner />
 	<StartupCleanupBanner />

@@ -7,15 +7,17 @@
   import Button from '$lib/components/ui/Button.svelte';
   import InfoPopup from '$lib/components/ui/InfoPopup.svelte';
   import { modelInstallBlock, type AIModelInstallBlock } from '$lib/ai/model-compatibility';
+  import { aiModelLiatirDocsUrl, aiModelOfficialUrl } from '$lib/ai/model-docs';
   import { aiModelInfo } from '$lib/ai/model-help';
   import { getAIHardwareInfo, type AIHardwareInfo } from '$lib/ai/runtime';
   import { aiModelsStore, type AIModelInstallProgress } from '$lib/stores/aiModels.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import { toast } from '$lib/stores/toast.svelte';
-  import { fmtBytes, getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
+  import { fmtBytes, getLastSegmentsStringFromPath, openLinkInBrowser, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import type { LiatirAIModelRecord } from '@liatir/core';
   import Spinner from '$lib/components/ui/Spinner.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
+	import PageContent from '$lib/components/layout/PageContent.svelte';
 
   type InstallState = AIModelInstallProgress & {
     showLog: boolean;
@@ -309,6 +311,16 @@
       toast.error(errorMessage(error, 'Failed to remove AI Model'));
     }
   }
+
+  async function openModelDocs(model: LiatirAIModelRecord) {
+    const url = aiModelLiatirDocsUrl(model);
+    if (url) await openLinkInBrowser(url);
+  }
+
+  async function openOfficialModelPage(model: LiatirAIModelRecord) {
+    const url = aiModelOfficialUrl(model);
+    if (url) await openLinkInBrowser(url);
+  }
 </script>
 
 <div class="flex flex-col h-full overflow-hidden">
@@ -320,6 +332,8 @@
       </Button>
     {/snippet}
   </PageHeader>
+
+  <PageContent>
 
   <div class="flex-1 overflow-y-auto p-6 space-y-5">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -412,7 +426,7 @@
 
             {#if expanded}
               <div class="border-t border-border bg-surface/60 p-3">
-                <div class="grid grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(130px,0.8fr)_210px] gap-3 px-3 py-2 text-[10px] font-semibold uppercase text-zinc-400 max-xl:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_210px]">
+                <div class="grid grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(130px,0.8fr)_250px] gap-3 px-3 py-2 text-[10px] font-semibold uppercase text-zinc-400 max-xl:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_250px]">
                   <span>Model</span>
                   <span class="max-xl:hidden">Runtime</span>
                   <span class="max-xl:hidden">Hardware</span>
@@ -425,7 +439,7 @@
                     {@const blocked = installBlock(model)}
                     {@const installLog = installLogState(model.id)}
                     <div class="rounded-lg border border-border bg-white">
-                      <div class="grid grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(130px,0.8fr)_210px] gap-3 px-4 py-3 items-center max-xl:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_210px]">
+                      <div class="grid grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(130px,0.8fr)_250px] gap-3 px-4 py-3 items-center max-xl:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_250px]">
                         <div class="min-w-0">
                           <div class="flex items-center gap-2 min-w-0">
                             <p class="text-sm font-semibold text-zinc-800 truncate">{model.name}</p>
@@ -484,6 +498,30 @@
                         </div>
 
                         <div class="flex items-center justify-end gap-2 min-w-0">
+                          {#if aiModelLiatirDocsUrl(model)}
+                            <button
+                              type="button"
+                              class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--color-surface-3)] text-zinc-500 transition-colors hover:bg-[var(--color-border-2)] hover:text-zinc-800"
+                              title="Open Liatir documentation"
+                              aria-label="Open Liatir documentation"
+                              onclick={() => openModelDocs(model)}
+                            >
+                              <Icon icon="lucide:book-open" width="14" height="14" />
+                            </button>
+                          {/if}
+
+                          {#if aiModelOfficialUrl(model)}
+                            <button
+                              type="button"
+                              class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--color-surface-3)] text-zinc-500 transition-colors hover:bg-[var(--color-border-2)] hover:text-zinc-800"
+                              title="Open official model page"
+                              aria-label="Open official model page"
+                              onclick={() => openOfficialModelPage(model)}
+                            >
+                              <Icon icon="lucide:external-link" width="14" height="14" />
+                            </button>
+                          {/if}
+
                           {#if (model.source === 'managed-download' || model.source === 'managed-runtime') && model.status === 'installed' && !installing[model.id]}
                             <Button
                               size="sm"
@@ -581,4 +619,5 @@
       </div>
     {/if}
   </div>
+  </PageContent>
 </div>

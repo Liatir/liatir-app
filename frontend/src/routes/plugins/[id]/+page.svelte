@@ -15,6 +15,7 @@
   import { matchesAcceptedExtension } from '$lib/utils/file-extensions';
   import { toast } from '$lib/stores/toast.svelte';
   import { getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
+	import PageContent from '$lib/components/layout/PageContent.svelte';
 
   const id = $derived((page.params as { id: string }).id);
   let mod = $state<LiatirModule | null>(null);
@@ -150,7 +151,7 @@
         <Button variant="secondary" size="sm" onclick={() => goto('/plugins')}>Plugins Page</Button>
       {/snippet}
     </PageHeader>
-
+<PageContent>
     <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
       <Card>
         <div class="px-4 py-3 flex flex-wrap items-center gap-2 capitalize">
@@ -324,5 +325,6 @@
       {/if}
 
     </div>
+    </PageContent>
   </div>
 {/if}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import InfoPopup from '$lib/components/ui/InfoPopup.svelte';
+	import { HEADER_HEIGHT } from '$lib/_constants';
 
   interface Props {
     title: string;
@@ -12,7 +13,7 @@
   let { title, info, description, actions }: Props = $props();
 </script>
 
-<div class="flex items-center justify-between border-b border-border px-6 py-4 h-[75px]">
+<div class="flex items-center justify-between border-b border-border px-6 py-4" style="max-height: {HEADER_HEIGHT}px; min-height: {HEADER_HEIGHT}px;">
   <div>
     <h1 class="text-base font-semibold text-zinc-900 flex items-center">
       {title}
@@ -21,7 +22,7 @@
       {/if}
     </h1>
     {#if description}
-      <p class="mt-0.5 text-xs text-zinc-500 max-md:hidden">{description}</p>
+      <p class="mt-0.5 text-[11px] text-zinc-500 max-md:hidden">{description}</p>
     {/if}
   </div>
   {#if actions}

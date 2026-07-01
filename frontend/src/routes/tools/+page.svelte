@@ -6,6 +6,7 @@
   import Badge from '$lib/components/ui/Badge.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
   import { toast } from '$lib/stores/toast.svelte';
+	import PageContent from '$lib/components/layout/PageContent.svelte';
 
   interface BuiltinTool {
     id: string;
@@ -194,7 +195,7 @@
 
 <div class="flex flex-col h-full">
   <PageHeader title="Tools" description="Built-in local bioinformatics tools" />
-
+<PageContent>
   <div class="flex-1 overflow-y-auto p-6 space-y-6">
     <div class="flex flex-col gap-3">
       <div class="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
@@ -280,4 +281,5 @@
       {/each}
     {/if}
   </div>
+  </PageContent>
 </div>

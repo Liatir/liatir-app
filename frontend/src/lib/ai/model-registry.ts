@@ -85,6 +85,10 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 				{ package: 'urllib3', specifier: 'urllib3>=1.26,<2', importName: 'urllib3' }
 			]
 		},
+		documentation: {
+			liatirPath: '/ai/models/celltypist-local-annotation',
+			officialUrl: 'https://github.com/Teichlab/celltypist'
+		},
 		tags: ['built-in', 'managed', 'single-cell', 'annotation']
 	},
 	{
@@ -131,6 +135,11 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 				{ package: 'safetensors', specifier: 'safetensors>=0.4,<1', importName: 'safetensors' },
 				{ package: 'urllib3', specifier: 'urllib3>=1.26,<2', importName: 'urllib3' }
 			]
+		},
+		documentation: {
+			liatirPath: '/ai/models/instadeep-nt-v2-50m-multi-species',
+			officialUrl:
+				'https://huggingface.co/InstaDeepAI/nucleotide-transformer-v2-50m-multi-species'
 		},
 		tags: ['built-in', 'managed', 'genomics', 'embedding', 'non-commercial']
 	},
@@ -179,6 +188,11 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 				{ package: 'urllib3', specifier: 'urllib3>=1.26,<2', importName: 'urllib3' }
 			]
 		},
+		documentation: {
+			liatirPath: '/ai/models/instadeep-nt-v2-500m-multi-species',
+			officialUrl:
+				'https://huggingface.co/InstaDeepAI/nucleotide-transformer-v2-500m-multi-species'
+		},
 		tags: ['built-in', 'managed', 'genomics', 'variant-effect', 'embedding', 'non-commercial']
 	},
 	{
@@ -225,6 +239,10 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 				{ package: 'safetensors', specifier: 'safetensors>=0.4,<1', importName: 'safetensors' },
 				{ package: 'urllib3', specifier: 'urllib3>=1.26,<2', importName: 'urllib3' }
 			]
+		},
+		documentation: {
+			liatirPath: '/ai/models/facebook-esm2-8m-protein',
+			officialUrl: 'https://huggingface.co/facebook/esm2_t6_8M_UR50D'
 		},
 		tags: ['built-in', 'managed', 'protein', 'embedding']
 	},
@@ -276,6 +294,10 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 					reason: 'The official Boltz Python package declares Python >=3.10,<3.13.'
 				}
 			}
+		},
+		documentation: {
+			liatirPath: '/ai/models/boltz2-local-structure-binding',
+			officialUrl: 'https://github.com/jwohlwend/boltz'
 		},
 		tags: [
 			'built-in',
@@ -336,6 +358,10 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 				reason:
 					'The official Chai-1 local runtime is built for Linux CUDA hosts; macOS Apple Metal is not a CUDA backend for this package.'
 			}
+		},
+		documentation: {
+			liatirPath: '/ai/models/chai1-local-structure',
+			officialUrl: 'https://github.com/chaidiscovery/chai-lab'
 		},
 		tags: [
 			'built-in',

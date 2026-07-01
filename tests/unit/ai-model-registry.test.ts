@@ -28,4 +28,22 @@ describe('AI model registry contracts', () => {
     expect(mock?.category).toBe('Development Fixtures');
     expect(mock?.tags ?? []).toContain('development');
   });
+
+  it('requires public documentation links for user-facing AI Models', () => {
+    for (const model of LOCAL_AI_MODEL_REGISTRY) {
+      if (model.id === MOCK_AI_MODEL_ID) {
+        expect(model.documentation).toBeUndefined();
+        continue;
+      }
+
+      expect(
+        model.documentation?.liatirPath,
+        `${model.id} missing Liatir documentation path`,
+      ).toMatch(/^\/ai\/models\/[a-z0-9-]+$/);
+      expect(
+        model.documentation?.officialUrl,
+        `${model.id} missing official documentation URL`,
+      ).toMatch(/^https:\/\//);
+    }
+  });
 });

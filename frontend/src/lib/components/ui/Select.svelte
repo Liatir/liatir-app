@@ -175,7 +175,7 @@
 
 		<div
 			class={[
-				'absolute left-0 right-0 z-[9999] flex min-w-0 max-w-full flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl',
+				'absolute left-0 right-0 z-[9999] flex min-w-fit max-w-full flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl',
 				menuPlacement === 'above' ? 'bottom-[calc(100%+6px)]' : 'top-[calc(100%+6px)]'
 			].join(' ')}
 			style={`max-height: ${menuMaxHeight}px`}

@@ -1,5 +1,8 @@
 import { page } from "$app/state";
 
+export const SIDEBAR_EXPANDED_WIDTH: number = 200;
+export const SIDEBAR_COLLAPSED_WIDTH: number = 62;
+
 export interface NavItem {
     href?: string;
     label?: string;
@@ -26,8 +29,6 @@ export const NAV_PAGES: NavItem[] = [
 ];
 
 export const NAV_PAGES_BOTTOM: NavItem[] = [
-    { href: '/workspaces', label: 'Workspaces', icon: 'lucide:layout-grid', match: "/workspaces", global: true, workspacePage: true },
-    { divider: true, global: true },
     { href: '/deps', label: 'Dependencies', icon: 'lucide:replace', match: '/deps', global: true },
     {
         href: '/settings',
@@ -37,6 +38,7 @@ export const NAV_PAGES_BOTTOM: NavItem[] = [
         global: true
     },
     { divider: true, global: true },
+    { href: '/workspaces', label: 'Workspaces', icon: 'lucide:layout-grid', match: "/workspaces", global: true, workspacePage: true },
 ];
 
 export const routeIsInSidebar = (route: string, onlyTop?: boolean): boolean => {

@@ -8,6 +8,7 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { liatir } from '$lib/api';
   import { getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
+	import PageContent from '$lib/components/layout/PageContent.svelte';
 
   onMount(async () => {
     await dataFiles.init();
@@ -345,7 +346,6 @@
       </Button>
     {/snippet}
   </PageHeader>
-
   <div class="flex flex-1 overflow-hidden">
 
     <!-- Folder sidebar -->
@@ -478,6 +478,8 @@
         </button>
       {/if}
       </div>
+
+<PageContent>
 
     <!-- Main content -->
     <div class="flex-1 overflow-y-auto p-6 {previewFileId ? 'border-r border-border' : ''}">
@@ -668,6 +670,7 @@
       {/if}
 
     </div>
+  </PageContent>
 
     <!-- Folder picker popup -->
     {#if pickerFileId}
