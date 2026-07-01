@@ -58,6 +58,16 @@ For managed AI runtimes:
 - scripts should live with the tool/family that owns them;
 - preload behavior should be strategy-based, not a long manual switch.
 
+Regulatory genomics follows this model:
+
+- Enformer uses `regulatory-enformer` and a TensorFlow Hub preload strategy.
+- Basenji2 human uses `regulatory-basenji2-human` and managed upstream files.
+- Borzoi Mini K562 RNA-seq uses `regulatory-borzoi-mini-k562-rna` and managed
+  upstream files.
+
+They all communicate through `ai-regulatory-prediction`, but their packages,
+Python requirements, cache payloads, and failure boundaries stay separate.
+
 ## Heavy boxes
 
 Large scientific systems such as Enformer, Basenji, Borzoi, OpenMM, or advanced

@@ -3,7 +3,7 @@
 This page tracks the current Batch 4 implementation and the constraints that
 matter when extending it.
 
-## Current implemented slice
+## Current implemented slices
 
 Liatir currently supports a pragmatic variant-effect workflow built on
 Nucleotide Transformer embeddings:
@@ -19,6 +19,20 @@ Nucleotide Transformer embeddings:
 The tool is `ai-genomic-variant-effect`. It is intentionally an AI Tool rather
 than a direct model-only runner because it needs coordinated reference, variant,
 window, and model inputs.
+
+Liatir also supports a dedicated regulatory prediction workflow:
+
+1. read a reference FASTA or inline DNA sequence;
+2. optionally read variants from `.vcf` or `.vcf.gz`;
+3. fit the sequence into the selected model context window;
+4. run Enformer, Basenji2 human, or Borzoi Mini K562 RNA-seq from its own
+   isolated TensorFlow runtime box;
+5. write signal CSV, BED signal track, optional variant score CSV/BED, JSON
+   summary, Results sections, Jobs metadata, and provenance.
+
+The tool is `ai-regulatory-prediction`. It uses `supportedModelIds` because the
+existing capability labels are too broad to distinguish embedding-delta variant
+scoring from regulatory-signal variant scoring.
 
 ## File formats
 
@@ -69,10 +83,7 @@ Keep warnings visible when:
 - only a subset of variants is scored because of `Max variants`;
 - CPU execution is expected to be slow.
 
-## Deferred regulatory model candidates
-
-Do not add these as installable AI Models until the runtime box, dependency
-isolation, hardware checks, and artifact layout are designed and tested.
+## Regulatory model boxes
 
 Official sources checked on 2026-07-01:
 
@@ -91,6 +102,26 @@ Official sources checked on 2026-07-01:
   requires Python 3.10, TensorFlow 2.15.x, related repositories, environment
   variables, and separate model-weight downloads.
 
-These are more complex than the current Transformers/PyTorch Nucleotide
-Transformer stack. Treat them as a dedicated expansion slice, not as entries in
-the current model registry.
+Current Liatir model boxes:
+
+- `deepmind-enformer-regulatory`
+  - runtime: `regulatory-enformer`;
+  - preload: TensorFlow Hub asset cache;
+  - Python: 3.10 or 3.11;
+  - context window: 393,216 bp.
+- `calico-basenji2-human-regulatory`
+  - runtime: `regulatory-basenji2-human`;
+  - preload: official `model_human.h5`, `params_human.json`, and
+    `targets_human.txt`;
+  - Python: 3.10 or 3.11;
+  - context window: 131,072 bp.
+- `calico-borzoi-mini-k562-rna`
+  - runtime: `regulatory-borzoi-mini-k562-rna`;
+  - preload: official Mini Borzoi K562 RNA-seq fold 0 weights, parameters, and
+    targets;
+  - Python: 3.10;
+  - context window: 524,288 bp.
+
+Keep these boxes isolated. Do not merge them into the Nucleotide Transformer
+runtime or a generic TensorFlow bucket unless package specs, host requirements,
+and artifact payloads are identical.

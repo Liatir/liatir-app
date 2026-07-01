@@ -1,6 +1,6 @@
 import type { JsonValue } from '@liatir/core';
 
-export type AIDirectRunMode = 'celltypist' | 'sequence' | 'protein-structure' | 'mock';
+export type AIDirectRunMode = 'celltypist' | 'sequence' | 'regulatory' | 'protein-structure' | 'mock';
 
 export interface AIDirectRunContext {
 	runKind: 'ai-model-direct';
@@ -91,6 +91,7 @@ export function parseDirectRunContext(metadata: unknown): AIDirectRunContext | n
 	if (
 		record.mode !== 'celltypist' &&
 		record.mode !== 'sequence' &&
+		record.mode !== 'regulatory' &&
 		record.mode !== 'protein-structure' &&
 		record.mode !== 'mock'
 	)

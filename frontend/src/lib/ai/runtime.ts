@@ -24,6 +24,7 @@ export interface AIHardwareInfo {
   cudaAvailable: boolean | null;
   pythonPath?: string | null;
   pythonVersion?: string | null;
+  pythonCandidates?: Array<{ path: string; version: string }>;
   uvPath?: string | null;
 }
 

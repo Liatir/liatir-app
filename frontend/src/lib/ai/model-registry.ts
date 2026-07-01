@@ -4,9 +4,26 @@ export const MOCK_AI_MODEL_ID = 'liatir-mock-local';
 export const CELLTYPIST_MODEL_ID = 'celltypist-local-annotation';
 export const NUCLEOTIDE_TRANSFORMER_50M_ID = 'instadeep-nt-v2-50m-multi-species';
 export const NUCLEOTIDE_TRANSFORMER_500M_ID = 'instadeep-nt-v2-500m-multi-species';
+export const ENFORMER_REGULATORY_MODEL_ID = 'deepmind-enformer-regulatory';
+export const BASENJI2_REGULATORY_MODEL_ID = 'calico-basenji2-human-regulatory';
+export const BORZOI_K562_RNA_MODEL_ID = 'calico-borzoi-mini-k562-rna';
 export const ESM2_8M_ID = 'facebook-esm2-8m-protein';
 export const BOLTZ2_MODEL_ID = 'boltz2-local-structure-binding';
 export const CHAI1_MODEL_ID = 'chai1-local-structure';
+
+const TENSORFLOW_2_15_PACKAGES = [
+	{ package: 'tensorflow', specifier: 'tensorflow>=2.15,<2.16', importName: 'tensorflow' },
+	{ package: 'numpy', specifier: 'numpy>=1.24,<2', importName: 'numpy' },
+	{ package: 'pandas', specifier: 'pandas>=1.5,<3', importName: 'pandas' },
+	{ package: 'urllib3', specifier: 'urllib3>=1.26,<2', importName: 'urllib3' }
+];
+
+const TENSORFLOW_PYTHON_3_10_TO_3_11 = {
+	minVersion: '3.10',
+	maxVersionExclusive: '3.12',
+	label: 'Python 3.10 or 3.11',
+	reason: 'These TensorFlow-based regulatory genomics runtimes use TensorFlow 2.15, which is not a Python 3.12 runtime.'
+};
 
 const INTERNAL_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 	{
@@ -194,6 +211,215 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 				'https://huggingface.co/InstaDeepAI/nucleotide-transformer-v2-500m-multi-species'
 		},
 		tags: ['built-in', 'managed', 'genomics', 'variant-effect', 'embedding', 'non-commercial']
+	},
+	{
+		id: ENFORMER_REGULATORY_MODEL_ID,
+		name: 'Enformer Regulatory Prediction',
+		description:
+			'Managed local Enformer runtime for long-range regulatory activity prediction and variant-effect scoring from genomic sequence windows.',
+		category: 'Predictive Genomics',
+		version: 'tfhub-deepmind-enformer-1',
+		runtime: {
+			kind: 'python-venv',
+			name: 'TensorFlow Regulatory Runtime',
+			version: 'tensorflow-2.15'
+		},
+		source: 'managed-runtime',
+		localOnly: true,
+		capabilities: ['regulatory-prediction', 'variant-effect-scoring'],
+		modalities: ['dna'],
+		contextWindow: 393_216,
+		license: {
+			name: 'Apache License 2.0',
+			spdxId: 'Apache-2.0',
+			url: 'https://github.com/google-deepmind/deepmind-research/tree/master/enformer',
+			verifiedAt: '2026-07-01'
+		},
+		hardware: {
+			cpu: true,
+			gpu: true,
+			minRamGb: 16,
+			recommendedRamGb: 32,
+			minVramGb: 0,
+			recommendedVramGb: 16,
+			notes:
+				'Long input windows make CPU inference slow. GPU acceleration depends on the local TensorFlow backend.'
+		},
+		install: {
+			method: 'managed-runtime',
+			runtimeId: 'regulatory-enformer',
+			modelCacheSubdir: 'model-cache/enformer',
+			runtimePackages: [
+				...TENSORFLOW_2_15_PACKAGES,
+				{ package: 'tensorflow-hub', specifier: 'tensorflow-hub>=0.16,<1', importName: 'tensorflow_hub' }
+			],
+			hostRequirements: {
+				python: TENSORFLOW_PYTHON_3_10_TO_3_11
+			}
+		},
+		documentation: {
+			liatirPath: '/ai/models/deepmind-enformer-regulatory',
+			officialUrl: 'https://github.com/google-deepmind/deepmind-research/tree/master/enformer',
+			paperUrl: 'https://www.nature.com/articles/s41592-021-01252-x'
+		},
+		tags: ['built-in', 'managed', 'genomics', 'regulatory', 'variant-effect', 'commercial-use-ok']
+	},
+	{
+		id: BASENJI2_REGULATORY_MODEL_ID,
+		name: 'Basenji2 Human Regulatory',
+		description:
+			'Managed local Basenji2 human regulatory model for sequence activity prediction and focused variant-effect scoring.',
+		category: 'Predictive Genomics',
+		version: 'cross2020-human',
+		runtime: {
+			kind: 'python-venv',
+			name: 'Basenji TensorFlow Runtime',
+			version: 'tensorflow-2.15'
+		},
+		source: 'managed-runtime',
+		localOnly: true,
+		capabilities: ['regulatory-prediction', 'variant-effect-scoring'],
+		modalities: ['dna'],
+		contextWindow: 131_072,
+		diskSizeBytes: 122_000_000,
+		license: {
+			name: 'Apache License 2.0',
+			spdxId: 'Apache-2.0',
+			url: 'https://github.com/calico/basenji',
+			verifiedAt: '2026-07-01'
+		},
+		hardware: {
+			cpu: true,
+			gpu: true,
+			minRamGb: 16,
+			recommendedRamGb: 32,
+			minVramGb: 0,
+			recommendedVramGb: 12,
+			notes:
+				'CPU inference is supported for small tests, but repeated windows are much faster on a TensorFlow GPU backend.'
+		},
+		install: {
+			method: 'managed-runtime',
+			runtimeId: 'regulatory-basenji2-human',
+			modelCacheSubdir: 'model-cache/basenji2-human',
+			runtimePackages: [
+				...TENSORFLOW_2_15_PACKAGES,
+				{ package: 'h5py', specifier: 'h5py>=3.10,<4', importName: 'h5py' },
+				{ package: 'natsort', specifier: 'natsort>=8,<9', importName: 'natsort' },
+				{ package: 'basenji', specifier: 'git+https://github.com/calico/basenji.git@master', importName: 'basenji' }
+			],
+			files: [
+				{
+					url: 'https://storage.googleapis.com/basenji_barnyard2/model_human.h5',
+					relativePath: 'model_human.h5',
+					sizeBytes: 120_813_856
+				},
+				{
+					url: 'https://raw.githubusercontent.com/calico/basenji/master/manuscripts/cross2020/params_human.json',
+					relativePath: 'params_human.json',
+					sizeBytes: 1_377
+				},
+				{
+					url: 'https://raw.githubusercontent.com/calico/basenji/master/manuscripts/cross2020/targets_human.txt',
+					relativePath: 'targets_human.txt',
+					sizeBytes: 800_919
+				}
+			],
+			hostRequirements: {
+				python: TENSORFLOW_PYTHON_3_10_TO_3_11
+			}
+		},
+		documentation: {
+			liatirPath: '/ai/models/calico-basenji2-human-regulatory',
+			officialUrl: 'https://github.com/calico/basenji/tree/master/manuscripts/cross2020',
+			paperUrl: 'https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008050'
+		},
+		tags: ['built-in', 'managed', 'genomics', 'regulatory', 'variant-effect', 'commercial-use-ok']
+	},
+	{
+		id: BORZOI_K562_RNA_MODEL_ID,
+		name: 'Borzoi Mini K562 RNA-seq',
+		description:
+			'Managed local Mini Borzoi K562 RNA-seq model for RNA-seq signal prediction from genomic sequence windows.',
+		category: 'Predictive Genomics',
+		version: 'mini-k562-rna-f0',
+		runtime: {
+			kind: 'python-venv',
+			name: 'Borzoi TensorFlow Runtime',
+			version: 'tensorflow-2.15'
+		},
+		source: 'managed-runtime',
+		localOnly: true,
+		capabilities: ['regulatory-prediction', 'variant-effect-scoring'],
+		modalities: ['dna', 'rna'],
+		contextWindow: 524_288,
+		diskSizeBytes: 126_000_000,
+		license: {
+			name: 'Apache License 2.0',
+			spdxId: 'Apache-2.0',
+			url: 'https://github.com/calico/borzoi',
+			verifiedAt: '2026-07-01'
+		},
+		hardware: {
+			cpu: true,
+			gpu: true,
+			minRamGb: 24,
+			recommendedRamGb: 48,
+			minVramGb: 0,
+			recommendedVramGb: 16,
+			notes:
+				'Borzoi uses very long sequence windows. CPU works for small validation runs, but GPU is strongly preferred.'
+		},
+		install: {
+			method: 'managed-runtime',
+			runtimeId: 'regulatory-borzoi-mini-k562-rna',
+			modelCacheSubdir: 'model-cache/borzoi-mini-k562-rna',
+			runtimePackages: [
+				...TENSORFLOW_2_15_PACKAGES,
+				{
+					package: 'baskerville',
+					specifier: 'git+https://github.com/calico/baskerville.git@main',
+					importName: 'baskerville'
+				},
+				{
+					package: 'borzoi',
+					specifier: 'git+https://github.com/calico/borzoi.git@main',
+					importName: 'borzoi'
+				}
+			],
+			files: [
+				{
+					url: 'https://storage.googleapis.com/seqnn-share/borzoi/mini/k562_rna/f0/model0_best.h5',
+					relativePath: 'model0_best.h5',
+					sizeBytes: 123_809_560
+				},
+				{
+					url: 'https://storage.googleapis.com/seqnn-share/borzoi/mini/k562_rna/params.json',
+					relativePath: 'params.json',
+					sizeBytes: 1_814
+				},
+				{
+					url: 'https://storage.googleapis.com/seqnn-share/borzoi/mini/k562_rna/hg38/targets.txt',
+					relativePath: 'targets.txt',
+					sizeBytes: 14_149
+				}
+			],
+			hostRequirements: {
+				python: {
+					minVersion: '3.10',
+					maxVersionExclusive: '3.11',
+					label: 'Python 3.10',
+					reason:
+						'The official Borzoi documentation recommends Python 3.10 with TensorFlow 2.15.x.'
+				}
+			}
+		},
+		documentation: {
+			liatirPath: '/ai/models/calico-borzoi-mini-k562-rna',
+			officialUrl: 'https://github.com/calico/borzoi',
+			paperUrl: 'https://www.biorxiv.org/content/10.1101/2023.08.30.555582v1'
+		},
+		tags: ['built-in', 'managed', 'genomics', 'rna-seq', 'regulatory', 'variant-effect', 'commercial-use-ok']
 	},
 	{
 		id: ESM2_8M_ID,

@@ -13,6 +13,10 @@ import {
 	finalizeProteinStructureResult
 } from '$lib/tools/ai/protein-structure';
 import {
+	regulatoryPredictionDefinition,
+	finalizeRegulatoryPredictionResult
+} from '$lib/tools/ai/regulatory-prediction';
+import {
 	sequenceEmbeddingDefinition,
 	finalizeSequenceEmbeddingResult
 } from '$lib/tools/ai/sequence-embedding';
@@ -76,6 +80,9 @@ async function finalizeToolResult(
 	}
 	if (toolId === sequenceEmbeddingDefinition.id) {
 		return await finalizeSequenceEmbeddingResult(model, params, result, onLog);
+	}
+	if (toolId === regulatoryPredictionDefinition.id) {
+		return await finalizeRegulatoryPredictionResult(model, params, result, onLog);
 	}
 	if (toolId === proteinStructureDefinition.id) {
 		return await finalizeProteinStructureResult(model, params, result, onLog);

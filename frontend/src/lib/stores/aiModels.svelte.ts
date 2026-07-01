@@ -6,6 +6,7 @@ import { cachePathForModel, getAIHardwareInfo, getAIRuntimeStatus, prepareAIRunt
 import { appStorage } from './app-storage';
 import { SANDBOX_WORKSPACE_ID, workspaceStore } from './workspace.svelte';
 import type {
+  LiatirAIModelInstallFile,
   LiatirAIModelRecord,
   LiatirAIModelStatus,
 } from '@liatir/core';
@@ -96,6 +97,84 @@ function createAIModelsStore() {
   async function persist() {
     const state: AIModelsState = { modelStates };
     await appStorage.writeText(getFile(), JSON.stringify(state, null, 2), { createDirs: true });
+  }
+
+  function safeInstallRelativePath(relativePath: string): string {
+    const normalized = relativePath.replace(/\\/g, '/');
+    if (!normalized || normalized.startsWith('/') || normalized.split('/').includes('..')) {
+      throw new Error(`Unsafe AI Model install file path: ${relativePath}`);
+    }
+    return normalized;
+  }
+
+  async function existingFileMatches(
+    api: ReturnType<typeof liatir>,
+    path: string,
+    expectedSize?: number
+  ): Promise<boolean> {
+    if (!api) return false;
+    try {
+      const size = (await api.invoke('lia_file_size', { path })) as number;
+      return expectedSize == null ? size > 0 : size === expectedSize;
+    } catch {
+      return false;
+    }
+  }
+
+  async function downloadInstallFiles(
+    api: NonNullable<ReturnType<typeof liatir>>,
+    modelId: string,
+    files: LiatirAIModelInstallFile[],
+    baseDir: string,
+    onProgress?: (progress: AIModelInstallProgress) => void
+  ): Promise<void> {
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      const relativePath = safeInstallRelativePath(file.relativePath);
+      const downloadId = `${modelId}-${index}-${crypto.randomUUID()}`;
+      const destPath = `${baseDir}/${relativePath}`;
+      if (await existingFileMatches(api, destPath, file.sizeBytes)) {
+        onProgress?.({
+          phase: 'downloading-files',
+          fileIndex: index,
+          fileCount: files.length,
+          bytesDownloaded: file.sizeBytes ?? 0,
+          bytesTotal: file.sizeBytes ?? null,
+          logLines: [`Skipping existing ${relativePath}`],
+        });
+        continue;
+      }
+      onProgress?.({
+        phase: 'downloading-files',
+        fileIndex: index,
+        fileCount: files.length,
+        bytesDownloaded: 0,
+        bytesTotal: file.sizeBytes ?? null,
+        logLines: [`Downloading ${relativePath}`],
+      });
+      const unlisten = await api.desktop.events.on(
+        `managed:progress:${downloadId}`,
+        (p: { bytesDownloaded: number; bytesTotal: number | null }) => {
+          onProgress?.({
+            phase: 'downloading-files',
+            fileIndex: index,
+            fileCount: files.length,
+            bytesDownloaded: p.bytesDownloaded,
+            bytesTotal: p.bytesTotal,
+          });
+        }
+      );
+      try {
+        await api.invoke('lia_managed_download', {
+          id: downloadId,
+          url: file.url,
+          destPath,
+          sha256: file.sha256 ?? null,
+        });
+      } finally {
+        unlisten();
+      }
+    }
   }
 
   async function readStoredStateFile(file: string): Promise<Record<string, StoredAIModelState>> {
@@ -315,6 +394,10 @@ function createAIModelsStore() {
           cachePath: undefined,
         };
         record.cachePath = cachePathForModel(record) ?? undefined;
+        if ((metadata.install?.files?.length ?? 0) > 0) {
+          if (!record.cachePath) throw new Error(`AI Model cache path is missing: ${metadata.name}`);
+          await downloadInstallFiles(api, id, metadata.install?.files ?? [], record.cachePath, onProgress);
+        }
         onProgress?.({
           phase: 'downloading-model',
           fileIndex: 0,
@@ -366,42 +449,7 @@ function createAIModelsStore() {
 
       const dataPath = await api.desktop.fs.data.path();
       const modelDir = `${dataPath}/ai-models/managed/${id}`;
-
-      for (let index = 0; index < files.length; index += 1) {
-        const file = files[index];
-        const downloadId = `${id}-${index}-${crypto.randomUUID()}`;
-        const destPath = `${modelDir}/${file.relativePath}`;
-        onProgress?.({
-          phase: 'downloading-files',
-          fileIndex: index,
-          fileCount: files.length,
-          bytesDownloaded: 0,
-          bytesTotal: file.sizeBytes ?? null,
-          logLines: [`Downloading ${file.relativePath}`],
-        });
-        const unlisten = await api.desktop.events.on(
-          `managed:progress:${downloadId}`,
-          (p: { bytesDownloaded: number; bytesTotal: number | null }) => {
-            onProgress?.({
-              phase: 'downloading-files',
-              fileIndex: index,
-              fileCount: files.length,
-              bytesDownloaded: p.bytesDownloaded,
-              bytesTotal: p.bytesTotal,
-            });
-          }
-        );
-        try {
-          await api.invoke('lia_managed_download', {
-            id: downloadId,
-            url: file.url,
-            destPath,
-            sha256: file.sha256 ?? null,
-          });
-        } finally {
-          unlisten();
-        }
-      }
+      await downloadInstallFiles(api, id, files, modelDir, onProgress);
 
       await this.setModelState(id, {
         status: 'installed',

@@ -73,6 +73,10 @@ function detectedHostLabel(hardware: AIHardwareInfo): string {
 }
 
 function detectedPythonLabel(hardware: AIHardwareInfo): string {
+  const candidates = hardware.pythonCandidates ?? [];
+  if (candidates.length > 0) {
+    return candidates.map((candidate) => `${candidate.version} at ${candidate.path}`).join(', ');
+  }
   if (!hardware.pythonVersion) return 'no compatible Python detected';
   return `${hardware.pythonVersion}${hardware.pythonPath ? ` at ${hardware.pythonPath}` : ''}`;
 }
@@ -122,6 +126,11 @@ export function modelInstallBlock(
   }
 
   if (requirements?.python && !pythonMatches(hardware.pythonVersion, requirements.python)) {
+    const candidates = hardware.pythonCandidates ?? [];
+    const hasCompatibleCandidate = candidates.some((candidate) =>
+      pythonMatches(candidate.version, requirements.python)
+    );
+    if (hasCompatibleCandidate) return null;
     const required = pythonRequirementLabel(requirements.python);
     const detected = detectedPythonLabel(hardware);
     const basis = requirements.python.reason ?? `This model requires ${required}.`;

@@ -34,6 +34,7 @@
     'ai-celltypist-annotate': 'CellTypist Annotation',
     'ai-sequence-embedding': 'Sequence Embedding',
     'ai-genomic-variant-effect': 'Genomic Variant Effect',
+    'ai-regulatory-prediction': 'Regulatory Prediction',
     'ai-protein-structure': 'Protein Structure Prediction',
   };
 

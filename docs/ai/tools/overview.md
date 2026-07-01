@@ -64,6 +64,32 @@ The score is based on how much the model representation changes between the
 reference and alternate sequence window. It is useful for prioritization and
 exploration, but it is not a clinical interpretation by itself.
 
+### Regulatory prediction
+
+Uses Enformer, Basenji2, or Borzoi Mini to predict regulatory signal from DNA
+sequence windows. With an optional VCF file, it can also compare reference and
+alternate windows for model-specific variant deltas.
+
+Typical inputs:
+
+- a reference FASTA/FA/FNA file, or a pasted DNA sequence;
+- an optional VCF or VCF.GZ file;
+- an output head, such as `Human`;
+- a target index;
+- a maximum number of variants for long runs.
+
+Typical outputs:
+
+- signal CSV;
+- BED signal track;
+- optional variant score CSV and BED track;
+- JSON summary;
+- provenance with model, runtime, input files, and selected parameters.
+
+These models can be slow because they read long sequence windows. Start with a
+small demo sequence and a small `Max variants` value before running larger
+inputs.
+
 ## Reading results
 
 AI outputs are useful signals, not automatic biological conclusions. Check the

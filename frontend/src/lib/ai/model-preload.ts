@@ -2,6 +2,8 @@ import type { LiatirAIModelRecord } from '@liatir/core';
 import { artifactSpecForModel } from './model-artifacts';
 import { preloadCelltypistModel } from './preloaders/celltypist';
 import { preloadHuggingFaceTransformersModel } from './preloaders/huggingface-transformers';
+import { preloadManagedModelFiles } from './preloaders/managed-files';
+import { preloadTensorFlowHubModel } from './preloaders/tensorflow-hub';
 
 export async function preloadManagedAIModel(
 	model: LiatirAIModelRecord,
@@ -17,6 +19,16 @@ export async function preloadManagedAIModel(
 
 	if (spec.preloadKind === 'huggingface-transformers') {
 		await preloadHuggingFaceTransformersModel(model, spec, onLog);
+		return;
+	}
+
+	if (spec.preloadKind === 'tensorflow-hub') {
+		await preloadTensorFlowHubModel(model, spec, onLog);
+		return;
+	}
+
+	if (spec.preloadKind === 'managed-files') {
+		await preloadManagedModelFiles(model, onLog);
 		return;
 	}
 

@@ -67,6 +67,7 @@ describe('AI modularity boundaries', () => {
       'genomic-variant-effect.ts',
       'index.ts',
       'protein-structure.ts',
+      'regulatory-prediction.ts',
       'sequence-embedding.ts',
     ]);
     for (const file of files) {

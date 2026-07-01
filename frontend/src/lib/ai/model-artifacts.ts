@@ -1,8 +1,11 @@
 import type { LiatirAIModelMetadata, LiatirAIModelRecord } from '@liatir/core';
 import {
+	BASENJI2_REGULATORY_MODEL_ID,
 	BOLTZ2_MODEL_ID,
+	BORZOI_K562_RNA_MODEL_ID,
 	CELLTYPIST_MODEL_ID,
 	CHAI1_MODEL_ID,
+	ENFORMER_REGULATORY_MODEL_ID,
 	ESM2_8M_ID,
 	MOCK_AI_MODEL_ID,
 	NUCLEOTIDE_TRANSFORMER_500M_ID,
@@ -13,10 +16,20 @@ export type AIModelRuntimeFamily =
 	| 'development-fixture'
 	| 'single-cell-celltypist'
 	| 'sequence-transformers'
+	| 'regulatory-enformer'
+	| 'regulatory-basenji2-human'
+	| 'regulatory-borzoi-mini-k562-rna'
 	| 'protein-structure-boltz'
 	| 'protein-structure-chai';
 
-export type AIModelPreloadKind = 'none' | 'celltypist' | 'huggingface-transformers';
+export type AIModelPreloadKind =
+	| 'none'
+	| 'celltypist'
+	| 'huggingface-transformers'
+	| 'tensorflow-hub'
+	| 'managed-files';
+
+export type AIRegulatoryBackend = 'enformer' | 'basenji2' | 'borzoi-mini';
 
 export interface AIModelArtifactSpec {
 	modelId: string;
@@ -25,6 +38,13 @@ export interface AIModelArtifactSpec {
 	upstreamModelId?: string;
 	transformersLoader?: 'auto-model' | 'masked-lm';
 	defaultAsset?: string;
+	regulatoryBackend?: AIRegulatoryBackend;
+	contextWindow?: number;
+	defaultHead?: 'human' | 'mouse';
+	defaultTargetIndex?: number;
+	modelFile?: string;
+	paramsFile?: string;
+	targetsFile?: string;
 }
 
 export const AI_MODEL_ARTIFACT_SPECS: AIModelArtifactSpec[] = [
@@ -59,6 +79,40 @@ export const AI_MODEL_ARTIFACT_SPECS: AIModelArtifactSpec[] = [
 		preloadKind: 'huggingface-transformers',
 		upstreamModelId: 'facebook/esm2_t6_8M_UR50D',
 		transformersLoader: 'auto-model'
+	},
+	{
+		modelId: ENFORMER_REGULATORY_MODEL_ID,
+		runtimeFamily: 'regulatory-enformer',
+		preloadKind: 'tensorflow-hub',
+		upstreamModelId: 'https://tfhub.dev/deepmind/enformer/1',
+		regulatoryBackend: 'enformer',
+		contextWindow: 393_216,
+		defaultHead: 'human',
+		defaultTargetIndex: 0
+	},
+	{
+		modelId: BASENJI2_REGULATORY_MODEL_ID,
+		runtimeFamily: 'regulatory-basenji2-human',
+		preloadKind: 'managed-files',
+		regulatoryBackend: 'basenji2',
+		contextWindow: 131_072,
+		defaultHead: 'human',
+		defaultTargetIndex: 0,
+		modelFile: 'model_human.h5',
+		paramsFile: 'params_human.json',
+		targetsFile: 'targets_human.txt'
+	},
+	{
+		modelId: BORZOI_K562_RNA_MODEL_ID,
+		runtimeFamily: 'regulatory-borzoi-mini-k562-rna',
+		preloadKind: 'managed-files',
+		regulatoryBackend: 'borzoi-mini',
+		contextWindow: 524_288,
+		defaultHead: 'human',
+		defaultTargetIndex: 0,
+		modelFile: 'model0_best.h5',
+		paramsFile: 'params.json',
+		targetsFile: 'targets.txt'
 	},
 	{
 		modelId: BOLTZ2_MODEL_ID,
@@ -111,5 +165,21 @@ export function requireHuggingFaceArtifactForModel(
 ): { upstreamModelId: string; revision: string | null; transformersLoader: 'auto-model' | 'masked-lm' } {
 	const artifact = huggingFaceArtifactForModel(model);
 	if (!artifact) throw new Error(`${model.name} is not backed by a Hugging Face Transformers artifact.`);
+	return artifact;
+}
+
+export function regulatoryArtifactForModel(
+	model: Pick<LiatirAIModelRecord, 'id' | 'name'>
+): (AIModelArtifactSpec & { regulatoryBackend: AIRegulatoryBackend }) | null {
+	const spec = artifactSpecForModel(model);
+	if (!spec?.regulatoryBackend) return null;
+	return spec as AIModelArtifactSpec & { regulatoryBackend: AIRegulatoryBackend };
+}
+
+export function requireRegulatoryArtifactForModel(
+	model: Pick<LiatirAIModelRecord, 'id' | 'name'>
+): AIModelArtifactSpec & { regulatoryBackend: AIRegulatoryBackend } {
+	const artifact = regulatoryArtifactForModel(model);
+	if (!artifact) throw new Error(`${model.name} is not backed by a regulatory genomics artifact.`);
 	return artifact;
 }

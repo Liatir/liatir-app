@@ -11,6 +11,7 @@ import { mockAIInferenceDefinition, runMockAIInferenceStep } from './ai/mock-inf
 import { celltypistAnnotateDefinition, runCelltypistAnnotateStep } from './ai/celltypist-annotate';
 import { sequenceEmbeddingDefinition, runSequenceEmbeddingStep } from './ai/sequence-embedding';
 import { genomicVariantEffectDefinition, runGenomicVariantEffectStep } from './ai/genomic-variant-effect';
+import { regulatoryPredictionDefinition, runRegulatoryPredictionStep } from './ai/regulatory-prediction';
 import { proteinStructureDefinition, runProteinStructureStep } from './ai/protein-structure';
 import {
   genomeViewerDefinition,
@@ -395,6 +396,7 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
   'ai-celltypist-annotate': { definition: celltypistAnnotateDefinition, run: runCelltypistAnnotateStep },
   'ai-sequence-embedding': { definition: sequenceEmbeddingDefinition, run: runSequenceEmbeddingStep },
   'ai-genomic-variant-effect': { definition: genomicVariantEffectDefinition, run: runGenomicVariantEffectStep },
+  'ai-regulatory-prediction': { definition: regulatoryPredictionDefinition, run: runRegulatoryPredictionStep },
   'ai-protein-structure': { definition: proteinStructureDefinition, run: runProteinStructureStep },
   'viewer-structure-3d': { definition: structureViewerDefinition, run: runStructureViewerStep },
   'viewer-genome-track': { definition: genomeViewerDefinition, run: runGenomeViewerStep },

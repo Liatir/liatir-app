@@ -27,8 +27,11 @@
 	import { getAIHardwareInfo, type AIHardwareInfo } from '$lib/ai/runtime';
 	import {
 		BOLTZ2_MODEL_ID,
+		BASENJI2_REGULATORY_MODEL_ID,
+		BORZOI_K562_RNA_MODEL_ID,
 		CELLTYPIST_MODEL_ID,
 		CHAI1_MODEL_ID,
+		ENFORMER_REGULATORY_MODEL_ID,
 		ESM2_8M_ID,
 		MOCK_AI_MODEL_ID,
 		NUCLEOTIDE_TRANSFORMER_500M_ID,
@@ -47,15 +50,20 @@
 		proteinStructureDefinition,
 		runProteinStructureStep
 	} from '$lib/tools/ai/protein-structure';
+	import {
+		regulatoryPredictionDefinition,
+		runRegulatoryPredictionStep
+	} from '$lib/tools/ai/regulatory-prediction';
 	import type { ToolOutput } from '$lib/types/tool-output';
 	import type { RunOutputFile } from '$lib/types/pipeline';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
 	import { HEADER_HEIGHT } from '$lib/_constants';
 
-	type RunMode = 'celltypist' | 'sequence' | 'protein-structure' | 'mock' | 'unsupported';
+	type RunMode = 'celltypist' | 'sequence' | 'regulatory' | 'protein-structure' | 'mock' | 'unsupported';
 	type MoleculeType = 'dna' | 'rna' | 'protein';
 	type Accelerator = 'cpu' | 'gpu';
 	type ProteinOutputFormat = 'mmcif' | 'pdb';
+	type RegulatoryHead = 'human' | 'mouse';
 
 	const acceleratorOptions = [
 		{ value: 'cpu', label: 'CPU' },
@@ -64,6 +72,10 @@
 	const proteinOutputFormatOptions = [
 		{ value: 'mmcif', label: 'mmCIF' },
 		{ value: 'pdb', label: 'PDB' }
+	];
+	const regulatoryHeadOptions = [
+		{ value: 'human', label: 'Human' },
+		{ value: 'mouse', label: 'Mouse' }
 	];
 
 	const modelId = $derived(page.params.id ?? '');
@@ -74,11 +86,13 @@
 			? celltypistAnnotateDefinition
 			: mode === 'sequence'
 				? sequenceEmbeddingDefinition
-				: mode === 'protein-structure'
-					? proteinStructureDefinition
-					: mode === 'mock'
-						? mockAIInferenceDefinition
-						: null
+				: mode === 'regulatory'
+					? regulatoryPredictionDefinition
+					: mode === 'protein-structure'
+						? proteinStructureDefinition
+						: mode === 'mock'
+							? mockAIInferenceDefinition
+							: null
 	);
 
 	let running = $state(false);
@@ -92,9 +106,14 @@
 	let jobRefreshInterval: ReturnType<typeof setInterval> | null = null;
 
 	let inputFile = $state('');
+	let variantFile = $state('');
 	let sequence = $state('');
 	let moleculeType = $state<MoleculeType>('dna');
 	let maxLength = $state(1024);
+	let regulatoryHead = $state<RegulatoryHead>('human');
+	let regulatoryTargetIndex = $state(0);
+	let regulatoryWindowStart = $state(1);
+	let regulatoryMaxVariants = $state(10);
 	let celltypistModel = $state('Immune_All_Low.pkl');
 	let majorityVoting = $state(false);
 	let ligandSmiles = $state('');
@@ -112,6 +131,8 @@
 
 	const h5adFiles = $derived(dataFiles.byExt('h5ad'));
 	const sequenceFiles = $derived(dataFiles.byExt('fasta', 'fa', 'faa', 'fna', 'txt'));
+	const genomicSequenceFiles = $derived(dataFiles.byExt('fasta', 'fa', 'fna', 'txt'));
+	const variantFiles = $derived(dataFiles.byExt('vcf', 'vcf.gz'));
 	const modelRuns = $derived(
 		definition
 			? analysisRuns.byTool(definition.id).filter((run) => run.params?.modelId === modelId)
@@ -128,7 +149,9 @@
 	const selectedRun = $derived(modelRuns.find((run) => run.id === selectedRunId) ?? null);
 	const selectedRunOutputFiles = $derived(selectedRun?.outputFiles ?? []);
 	const fileOverridesInlineSequence = $derived(
-		(mode === 'sequence' || mode === 'protein-structure') && !!inputFile && !!sequence.trim()
+		(mode === 'sequence' || mode === 'regulatory' || mode === 'protein-structure') &&
+			!!inputFile &&
+			!!sequence.trim()
 	);
 	const activeModelJobs = $derived(
 		jobsStore.jobs.filter(
@@ -155,11 +178,13 @@
 				? !!inputFile
 				: mode === 'sequence'
 					? !!inputFile || !!sequence.trim()
-					: mode === 'protein-structure'
+					: mode === 'regulatory'
 						? !!inputFile || !!sequence.trim()
-						: mode === 'mock'
-							? !!prompt.trim()
-							: false)
+						: mode === 'protein-structure'
+							? !!inputFile || !!sequence.trim()
+							: mode === 'mock'
+								? !!prompt.trim()
+								: false)
 	);
 
 	$effect(() => {
@@ -210,6 +235,12 @@
 	function runMode(id: string): RunMode {
 		if (id === CELLTYPIST_MODEL_ID) return 'celltypist';
 		if (id === NUCLEOTIDE_TRANSFORMER_50M_ID || id === NUCLEOTIDE_TRANSFORMER_500M_ID || id === ESM2_8M_ID) return 'sequence';
+		if (
+			id === ENFORMER_REGULATORY_MODEL_ID ||
+			id === BASENJI2_REGULATORY_MODEL_ID ||
+			id === BORZOI_K562_RNA_MODEL_ID
+		)
+			return 'regulatory';
 		if (id === BOLTZ2_MODEL_ID || id === CHAI1_MODEL_ID) return 'protein-structure';
 		if (id === MOCK_AI_MODEL_ID) return 'mock';
 		return 'unsupported';
@@ -280,6 +311,21 @@
 			};
 			label = inputFile ? basename(inputFile) : `${moleculeType.toUpperCase()} sequence`;
 			if (inputFile) inputPaths.push(inputFile);
+		} else if (mode === 'regulatory') {
+			inputs = {
+				modelId: model.id,
+				referenceFile: inputFile,
+				sequence,
+				variantFile,
+				referenceName: '',
+				windowStart: String(regulatoryWindowStart),
+				outputHead: regulatoryHead,
+				targetIndex: String(regulatoryTargetIndex),
+				maxVariants: String(regulatoryMaxVariants)
+			};
+			label = inputFile ? basename(inputFile) : 'Regulatory sequence';
+			if (inputFile) inputPaths.push(inputFile);
+			if (variantFile) inputPaths.push(variantFile);
 		} else if (mode === 'protein-structure') {
 			inputs = {
 				modelId: model.id,
@@ -313,7 +359,7 @@
 		try {
 			const { absDir } = await ensureResultsDir(definition.label);
 			const directRunContext: AIDirectRunContext | undefined =
-				mode === 'celltypist' || mode === 'sequence' || mode === 'protein-structure'
+				mode === 'celltypist' || mode === 'sequence' || mode === 'regulatory' || mode === 'protein-structure'
 					? {
 							runKind: 'ai-model-direct',
 							analysisRunId: runId,
@@ -332,9 +378,11 @@
 					? await runCelltypistAnnotateStep(inputs, absDir, onLog, directRunContext)
 					: mode === 'sequence'
 						? await runSequenceEmbeddingStep(inputs, absDir, onLog, directRunContext)
-						: mode === 'protein-structure'
-							? await runProteinStructureStep(inputs, absDir, onLog, directRunContext)
-							: await runMockAIInferenceStep(inputs, absDir, onLog);
+						: mode === 'regulatory'
+							? await runRegulatoryPredictionStep(inputs, absDir, onLog, directRunContext)
+							: mode === 'protein-structure'
+								? await runProteinStructureStep(inputs, absDir, onLog, directRunContext)
+								: await runMockAIInferenceStep(inputs, absDir, onLog);
 
 			const endedAt = Date.now();
 			onLog(`Completed in ${fmtDuration(t0, endedAt)}`);
@@ -595,7 +643,7 @@
 								</div>
 							</div>
 							<FilePickerPopup
-								files={sequenceFiles}
+								files={genomicSequenceFiles}
 								value={inputFile}
 								label="FASTA file"
 								info={AI_MODEL_INPUT_HELP.fastaFile}
@@ -622,6 +670,107 @@
 										FASTA file selected: Liatir will use the file and ignore the inline sequence.
 									</p>
 								{/if}
+							</div>
+						{:else if mode === 'regulatory'}
+							<FilePickerPopup
+								files={sequenceFiles}
+								value={inputFile}
+								label="Reference FASTA"
+								info={AI_MODEL_INPUT_HELP.regulatoryReference}
+								emptyText="No FASTA files in Data yet."
+								disabled={formDisabled}
+								onchange={(path) => (inputFile = path)}
+							/>
+							<div>
+								<LabelWithInfo
+									targetId="regulatory-sequence"
+									text="Inline sequence"
+									info={AI_MODEL_INPUT_HELP.regulatoryInlineSequence}
+								/>
+								<textarea
+									id="regulatory-sequence"
+									bind:value={sequence}
+									rows="5"
+									disabled={formDisabled}
+									placeholder="Paste a DNA sequence..."
+									class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-brand transition-colors font-mono"
+								></textarea>
+								{#if fileOverridesInlineSequence}
+									<p class="mt-1 text-xs text-amber-600">
+										Reference FASTA selected: Liatir will use the file and ignore the inline sequence.
+									</p>
+								{/if}
+							</div>
+							<FilePickerPopup
+								files={variantFiles}
+								value={variantFile}
+								label="Variant VCF"
+								info={AI_MODEL_INPUT_HELP.variantVcf}
+								emptyText="No VCF files in Data yet."
+								disabled={formDisabled}
+								onchange={(path) => (variantFile = path)}
+							/>
+							<div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+								<div>
+									<LabelWithInfo
+										targetId="regulatory-head"
+										text="Output head"
+										info={AI_MODEL_INPUT_HELP.outputHead}
+									/>
+									<Select
+										id="regulatory-head"
+										value={regulatoryHead}
+										options={regulatoryHeadOptions}
+										disabled={formDisabled}
+										onchange={(value) => (regulatoryHead = value as RegulatoryHead)}
+									/>
+								</div>
+								<div>
+									<LabelWithInfo
+										targetId="regulatory-target-index"
+										text="Target index"
+										info={AI_MODEL_INPUT_HELP.targetIndex}
+									/>
+									<input
+										id="regulatory-target-index"
+										type="number"
+										min="0"
+										bind:value={regulatoryTargetIndex}
+										disabled={formDisabled}
+										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+									/>
+								</div>
+								<div>
+									<LabelWithInfo
+										targetId="regulatory-window-start"
+										text="Window start"
+										info={AI_MODEL_INPUT_HELP.windowStart}
+									/>
+									<input
+										id="regulatory-window-start"
+										type="number"
+										min="1"
+										bind:value={regulatoryWindowStart}
+										disabled={formDisabled}
+										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+									/>
+								</div>
+								<div>
+									<LabelWithInfo
+										targetId="regulatory-max-variants"
+										text="Max variants"
+										info={AI_MODEL_INPUT_HELP.maxVariants}
+									/>
+									<input
+										id="regulatory-max-variants"
+										type="number"
+										min="0"
+										max="1000"
+										bind:value={regulatoryMaxVariants}
+										disabled={formDisabled}
+										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+									/>
+								</div>
 							</div>
 						{:else if mode === 'protein-structure'}
 							<FilePickerPopup

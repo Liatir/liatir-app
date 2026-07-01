@@ -87,7 +87,8 @@ export const genomicVariantEffectDefinition: LiatirAIToolDefinition = {
 		provenance: { type: 'json', label: 'Provenance' }
 	},
 	modelInputKey: 'modelId',
-	supportedCapabilities: ['variant-effect-scoring']
+	supportedCapabilities: ['variant-effect-scoring'],
+	supportedModelIds: [NUCLEOTIDE_TRANSFORMER_50M_ID, NUCLEOTIDE_TRANSFORMER_500M_ID]
 };
 
 function basename(path: string): string {

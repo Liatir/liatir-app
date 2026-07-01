@@ -10,6 +10,13 @@ use tauri::{AppHandle, Manager};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct AiPythonCandidate {
+    pub path: String,
+    pub version: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AiHardwareInfo {
     pub os: String,
     pub arch: String,
@@ -19,6 +26,7 @@ pub struct AiHardwareInfo {
     pub cuda_available: Option<bool>,
     pub python_path: Option<String>,
     pub python_version: Option<String>,
+    pub python_candidates: Vec<AiPythonCandidate>,
     pub uv_path: Option<String>,
 }
 
@@ -134,6 +142,27 @@ fn preferred_python() -> Option<String> {
     ])
 }
 
+fn python_candidates() -> Vec<String> {
+    let mut candidates = Vec::new();
+    for name in ["python3.12", "python3.11", "python3.10", "python3", "python"] {
+        if let Some(path) = find_in_path(name) {
+            if !candidates.contains(&path) {
+                candidates.push(path);
+            }
+        }
+    }
+    candidates
+}
+
+fn python_candidate_infos() -> Vec<AiPythonCandidate> {
+    python_candidates()
+        .into_iter()
+        .filter_map(|path| {
+            command_stdout(&path, &["--version"]).map(|version| AiPythonCandidate { path, version })
+        })
+        .collect()
+}
+
 fn command_stdout(cmd: &str, args: &[&str]) -> Option<String> {
     let output = Command::new(cmd).args(args).output().ok()?;
     if !output.status.success() {
@@ -197,6 +226,39 @@ fn python_requirement_matches(version: &str, requirement: Option<&AiPythonRequir
         }
     }
     true
+}
+
+fn preferred_python_matching(requirement: Option<&AiPythonRequirement>) -> Result<String, String> {
+    let candidates = python_candidates();
+    if candidates.is_empty() {
+        return Err("Python 3 is required to prepare this AI runtime".to_string());
+    }
+
+    let mut seen = Vec::new();
+    for python in &candidates {
+        if let Some(version) = command_stdout(python, &["--version"]) {
+            if python_requirement_matches(&version, requirement) {
+                return Ok(python.clone());
+            }
+            seen.push(format!("{version} at {python}"));
+        }
+    }
+
+    let required = requirement
+        .map(python_requirement_label)
+        .unwrap_or_else(|| "a compatible Python version".to_string());
+    let reason = requirement
+        .and_then(|requirement| requirement.reason.as_deref())
+        .map(|text| format!(" {text}"))
+        .unwrap_or_default();
+    let found = if seen.is_empty() {
+        "no readable Python version".to_string()
+    } else {
+        seen.join(", ")
+    };
+    Err(format!(
+        "This AI runtime requires {required}, but Liatir found {found}. Install a compatible Python from Dependencies, then retry."
+    ) + &reason)
 }
 
 fn python_requirement_label(requirement: &AiPythonRequirement) -> String {
@@ -373,6 +435,7 @@ pub fn lia_ai_hardware_info() -> Result<AiHardwareInfo, String> {
     let python_version = python_path
         .as_deref()
         .and_then(|path| command_stdout(path, &["--version"]));
+    let python_candidates = python_candidate_infos();
     let uv_path = first_available(&["uv"]);
 
     Ok(AiHardwareInfo {
@@ -386,6 +449,7 @@ pub fn lia_ai_hardware_info() -> Result<AiHardwareInfo, String> {
         cuda_available: first_available(&["nvidia-smi"]).map(|_| true),
         python_path,
         python_version,
+        python_candidates,
         uv_path,
     })
 }
@@ -469,24 +533,7 @@ pub async fn lia_ai_runtime_prepare(
         let dir = runtime_dir(&app, &runtime_id)?;
         std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
 
-        let python = preferred_python()
-            .ok_or_else(|| "Python 3 is required to prepare this AI runtime".to_string())?;
-        let python_version = command_stdout(&python, &["--version"])
-            .ok_or_else(|| format!("Could not read Python version from {python}"))?;
-        if !python_requirement_matches(&python_version, python_requirement.as_ref()) {
-            let required = python_requirement
-                .as_ref()
-                .map(python_requirement_label)
-                .unwrap_or_else(|| "a compatible Python version".to_string());
-            let reason = python_requirement
-                .as_ref()
-                .and_then(|requirement| requirement.reason.as_deref())
-                .map(|text| format!(" {text}"))
-                .unwrap_or_default();
-            return Err(format!(
-                "This AI runtime requires {required}, but Liatir found {python_version} at {python}. Install a compatible Python from Dependencies, then retry."
-            ) + &reason);
-        }
+        let python = preferred_python_matching(python_requirement.as_ref())?;
         let uv = first_available(&["uv"]);
         let venv = venv_dir(&dir);
         let py = venv_python(&dir);

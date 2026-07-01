@@ -32,6 +32,10 @@
   const aiModelOptions = $derived(
     aiModelsStore.runnableModels
       .filter((model) => {
+        const supportedModelIds = def?.type === 'ai-tool'
+          ? ((def as typeof def & { supportedModelIds?: string[] })?.supportedModelIds ?? [])
+          : [];
+        if (supportedModelIds.length > 0) return supportedModelIds.includes(model.id);
         const capabilities = def?.type === 'ai-tool'
           ? ((def as typeof def & { supportedCapabilities?: string[] })?.supportedCapabilities ?? [])
           : [];

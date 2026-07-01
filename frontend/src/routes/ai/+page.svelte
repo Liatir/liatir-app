@@ -122,6 +122,7 @@
     const categoryOrder = [
       'Single-cell',
       'Genomics',
+      'Predictive Genomics',
       'Protein Language Models',
       'Protein Structure',
       'Development Fixtures',
@@ -148,6 +149,7 @@
   function categoryDescription(category: string): string {
     if (category === 'Single-cell') return 'Cell annotation and AnnData workflows.';
     if (category === 'Genomics') return 'DNA/RNA embeddings, regulatory prediction, and variant scoring.';
+    if (category === 'Predictive Genomics') return 'Long-context sequence models for regulatory signal and variant impact.';
     if (category === 'Protein Language Models') return 'Protein sequence embeddings and representation models.';
     if (category === 'Protein Structure') return 'Structure prediction and binding-oriented local runtimes.';
     if (category === 'Development Fixtures') return 'Internal models used to validate AI Tool contracts.';

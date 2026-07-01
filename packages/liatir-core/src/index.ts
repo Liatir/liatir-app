@@ -409,6 +409,8 @@ export interface LiatirAIToolDefinition extends LiatirStepDefinition {
   type: "ai-tool";
   modelInputKey?: string;
   supportedCapabilities?: LiatirAICapability[];
+  /** Optional exact allow-list when capabilities are too broad for backend compatibility. */
+  supportedModelIds?: string[];
 }
 
 export interface LiatirAIProvenance {
