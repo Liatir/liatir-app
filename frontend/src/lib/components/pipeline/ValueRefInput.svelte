@@ -6,6 +6,7 @@
   // inputs consume previous steps' outputs without per-field handles.
   import Icon from '@iconify/svelte';
   import type { PickerItem } from '$lib/components/ui/OptionPicker.svelte';
+  import { clickOutside } from '$lib/actions/clickOutside';
 
   interface Props {
     value: string;
@@ -37,7 +38,7 @@
   function pick(v: string) { onchange(v); open = false; }
 </script>
 
-<div class="relative">
+<div class="relative" use:clickOutside={{ enabled: open, onOutside: () => (open = false) }}>
   {#if isRef}
     <div class="flex items-center gap-1.5 rounded-lg border border-brand/40 bg-brand/5 px-2 py-1.5">
       <Icon icon="lucide:plug-zap" width="11" height="11" class="text-brand shrink-0" />
@@ -76,8 +77,7 @@
   {/if}
 
   {#if open}
-    <div class="fixed inset-0 z-40" role="presentation" onclick={() => open = false}></div>
-    <div class="absolute right-0 top-full mt-1 z-50 w-56 rounded-lg border border-border bg-white shadow-xl overflow-hidden">
+    <div class="nowheel absolute right-0 top-full mt-1 z-50 w-56 rounded-lg border border-border bg-white shadow-xl overflow-hidden">
       <p class="px-3 pt-2 pb-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Upstream outputs</p>
       <div class="max-h-52 overflow-y-auto pb-1">
         {#each options as o (o.value)}

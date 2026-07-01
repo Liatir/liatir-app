@@ -11,6 +11,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import Icon from '@iconify/svelte';
+	import { clickOutside } from '$lib/actions/clickOutside';
 
 	interface Props {
 		value: string;
@@ -142,7 +143,7 @@
 	}
 </script>
 
-<div class={`relative min-w-0 max-w-full ${className}`}>
+<div class={`relative min-w-0 max-w-full ${className}`} use:clickOutside={{ enabled: open, onOutside: closeMenu }}>
 	<button
 		bind:this={triggerEl}
 		type="button"
@@ -166,16 +167,9 @@
 	</button>
 
 	{#if open}
-		<button
-			type="button"
-			class="fixed inset-0 z-[9998] cursor-default bg-transparent"
-			aria-label="Close menu"
-			onclick={closeMenu}
-		></button>
-
 		<div
 			class={[
-				'absolute left-0 right-0 z-[9999] flex min-w-fit max-w-full flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl',
+				'nowheel absolute left-0 right-0 z-[9999] flex min-w-fit max-w-full flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl',
 				menuPlacement === 'above' ? 'bottom-[calc(100%+6px)]' : 'top-[calc(100%+6px)]'
 			].join(' ')}
 			style={`max-height: ${menuMaxHeight}px`}

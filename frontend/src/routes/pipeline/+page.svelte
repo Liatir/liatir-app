@@ -39,6 +39,11 @@
 
   let nodes = $state<Node[]>([]);
   let edges = $state<Edge[]>([]);
+  // Live viewport transform + the flow container, used to drop new nodes into the
+  // user's current view instead of a fixed off-screen spot. Left undefined so it
+  // doesn't override fitView on mount — xyflow writes the real value back.
+  let viewport = $state<{ x: number; y: number; zoom: number } | undefined>(undefined);
+  let flowContainer = $state<HTMLDivElement | null>(null);
   let storeReady = $state(false);
   let showAddMenu = $state(false);
   let stepSearch = $state('');
@@ -51,6 +56,13 @@
   let nodeDataPersistTimer: ReturnType<typeof setTimeout> | undefined;
 
   let unsavedChanges = $state(false);
+
+  // The done/error result banner is shown only right after a run and is dismissed
+  // the moment the graph is edited. Leaving/returning to the canvas remounts the
+  // page, so this naturally resets to false on re-entry.
+  let showRunResult = $state(false);
+  let runResultGraphKey = '';
+  let wasRunning = false;
 
   type GraphSnapshot = { nodes: Node[]; edges: Edge[] };
 
@@ -550,6 +562,26 @@
     pipelineStore.setCurrentState(nodes, edges, nameInput);
   });
 
+  // Reveal the result banner when a run finishes; snapshot the graph so any later
+  // structural edit can dismiss it.
+  $effect(() => {
+    const running = pipelineStore.running;
+    if (wasRunning && !running) {
+      showRunResult = true;
+      runResultGraphKey = graphSnapshotKey(createGraphSnapshot());
+    }
+    wasRunning = running;
+  });
+
+  // Editing the graph (add / move / connect / edit a field) dismisses the banner.
+  // Uses the structural key, so xyflow's measurement churn doesn't trigger it.
+  $effect(() => {
+    if (!showRunResult) return;
+    if (graphSnapshotKey(createGraphSnapshot()) !== runResultGraphKey) {
+      showRunResult = false;
+    }
+  });
+
   $effect(() => {
     if (editingName && nameEditorInput) setTimeout(() => nameEditorInput?.focus(), 30);
   });
@@ -558,9 +590,22 @@
     if (showAddMenu && stepSearchInput) setTimeout(() => stepSearchInput?.focus(), 30);
   });
 
+  // Flow-coordinate position at the center of the visible pane, cascaded slightly
+  // per node so successive adds don't stack exactly. Falls back to a grid layout if
+  // the viewport hasn't been measured yet.
+  function nextNodePosition(): { x: number; y: number } {
+    const rect = flowContainer?.getBoundingClientRect();
+    const step = nodes.filter(n => n.type !== 'start').length % 6;
+    if (!rect || !viewport || !viewport.zoom) {
+      return { x: 200 + (step % 3) * 380, y: 80 + Math.floor(step / 3) * 280 };
+    }
+    const cx = (rect.width / 2 - viewport.x) / viewport.zoom;
+    const cy = (rect.height / 2 - viewport.y) / viewport.zoom;
+    return { x: Math.round(cx - 140 + step * 28), y: Math.round(cy - 70 + step * 28) };
+  }
+
   async function addNode(type: string, id: string) {
-    const col = nodes.filter(n => n.type !== 'start').length;
-    const pos = { x: 200 + (col % 3) * 380, y: 80 + Math.floor(col / 3) * 280 };
+    const pos = nextNodePosition();
     let newNode: Node;
     switch (type) {
       case 'tool':         newNode = { id: crypto.randomUUID(), type, position: pos, data: { stepId: id, inputs: defaultInputsForStep(id) } }; break;
@@ -750,8 +795,8 @@
     {/snippet}
   </PageHeader>
 
-  <div class="flex-1 relative">
-    <SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ maxZoom: 1 }} onconnect={onConnect} ondelete={onDelete} deleteKey={pipelineStore.running ? [] : ['Delete', 'Backspace']} nodesDraggable={!pipelineStore.running} nodesConnectable={!pipelineStore.running} onpanecontextmenu={onPaneContextMenu} onnodecontextmenu={onNodeContextMenu} onedgecontextmenu={onEdgeContextMenu} onnodedragstart={onGraphDragStart} onnodedragstop={onGraphDragStop} onselectiondragstart={onGraphDragStart} onselectiondragstop={onGraphDragStop} defaultEdgeOptions={{ selectable: false, style: 'stroke: #4f39f6; stroke-width:3;' }} proOptions={{ hideAttribution: true }}>
+  <div class="flex-1 relative" bind:this={flowContainer}>
+    <SvelteFlow bind:nodes bind:edges bind:viewport {nodeTypes} {edgeTypes} fitView fitViewOptions={{ maxZoom: 1 }} onconnect={onConnect} ondelete={onDelete} deleteKey={pipelineStore.running ? [] : ['Delete', 'Backspace']} nodesDraggable={!pipelineStore.running} nodesConnectable={!pipelineStore.running} onpanecontextmenu={onPaneContextMenu} onnodecontextmenu={onNodeContextMenu} onedgecontextmenu={onEdgeContextMenu} onnodedragstart={onGraphDragStart} onnodedragstop={onGraphDragStop} onselectiondragstart={onGraphDragStart} onselectiondragstop={onGraphDragStop} defaultEdgeOptions={{ selectable: false, style: 'stroke: #4f39f6; stroke-width:3;' }} proOptions={{ hideAttribution: true }}>
       <Background gap={24} size={2} patternColor="#d4d4d8" variant={BackgroundVariant.Dots} />
       <Panel position="top-left" class="rounded-lg border border-border bg-white/95 shadow-sm">
         <button
@@ -794,7 +839,7 @@
         <Icon icon="svg-spinners:ring-resize" width="14" height="14" class="text-sky-500" />
         <p class="text-sm text-sky-800 font-medium">Pipeline running… {doneCount}/{executableNodes.length} steps</p>
       </div>
-    {:else if allDone}
+    {:else if allDone && showRunResult}
       <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 shadow-sm">
         <Icon icon="lucide:check" width="14" height="14" class="text-emerald-500" />
         <p class="text-sm text-emerald-800 font-medium">Pipeline complete — outputs added to Data.</p>
@@ -808,7 +853,7 @@
           </button>
         {/if}
       </div>
-    {:else if hasRunError}
+    {:else if hasRunError && showRunResult}
       <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 shadow-sm">
         <Icon icon="lucide:circle-alert" width="14" height="14" class="text-red-500" />
         <p class="text-sm text-red-800 font-medium">Pipeline failed — open Results for logs and details.</p>

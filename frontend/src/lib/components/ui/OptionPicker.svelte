@@ -1,5 +1,6 @@
 <script lang="ts">
   import InfoPopup from './InfoPopup.svelte';
+  import { clickOutside } from '$lib/actions/clickOutside';
 
   export interface PickerItem {
     value: string;
@@ -85,7 +86,7 @@
   });
 </script>
 
-<div class="relative">
+<div class="relative" use:clickOutside={{ enabled: open, onOutside: close }}>
   {#if label}
     <p class="mb-1.5 flex items-center gap-1 text-xs text-zinc-500">
       <span>{label}</span>
@@ -146,16 +147,10 @@
       </a>
     {/if}
   </div>
-</div>
 
-{#if open}
-  <!-- Backdrop -->
-  <div class="fixed inset-0 z-40" role="presentation"
-       onclick={close}
-       onkeydown={(e) => e.key === 'Escape' && close()}></div>
-
-  <!-- Popup -->
-  <div class="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
+  {#if open}
+  <!-- Popup (nowheel: scrolling the list must not zoom the pipeline canvas) -->
+  <div class="nowheel fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
               w-full max-w-md rounded-xl border border-border bg-white shadow-xl overflow-hidden">
 
     <!-- Search -->
@@ -229,4 +224,5 @@
       {filteredCount} of {allItems.length} option{allItems.length !== 1 ? 's' : ''}
     </div>
   </div>
-{/if}
+  {/if}
+</div>

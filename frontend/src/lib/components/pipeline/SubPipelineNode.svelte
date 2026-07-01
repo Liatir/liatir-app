@@ -11,6 +11,7 @@
   import NodeDeleteButton from './NodeDeleteButton.svelte';
   import EditableNodeLabel from './EditableNodeLabel.svelte';
   import { statusDotClass, statusLabel } from './node-status';
+  import { clickOutside } from '$lib/actions/clickOutside';
   import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
 
   let { id, data }: NodeProps<Node<SubPipelineNodeData>> = $props();
@@ -101,8 +102,7 @@
 <Handle type="source" position={Position.Right} id="output" />
 
 {#if showPicker}
-  <div class="fixed inset-0 z-50" role="presentation" onclick={() => showPicker = false}></div>
-  <div class="absolute left-full top-0 ml-2 z-50 w-56 rounded-xl border border-border bg-white shadow-xl overflow-hidden nodrag nopan">
+  <div use:clickOutside={{ enabled: showPicker, onOutside: () => (showPicker = false) }} class="nowheel absolute left-full top-0 ml-2 z-50 w-56 rounded-xl border border-border bg-white shadow-xl overflow-hidden nodrag nopan">
     <div class="px-3 py-2 border-b border-border bg-surface">
       <span class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">Select pipeline</span>
     </div>
