@@ -32,6 +32,10 @@ After import, each file is registered with:
 | GTF / GFF | `.gtf`, `.gff`, `.gff3` | Text |
 | BED | `.bed` | Text |
 
+Some tools can read compressed files even when the Data preview cannot display
+them. For example, genomic variant scoring accepts both `.vcf` and `.vcf.gz`;
+the preview panel still treats `.vcf.gz` as compressed data.
+
 ## File preview
 
 Click any file row to open the preview panel on the right side. Liatir reads only the first lines needed for the preview, so you can inspect large text files without loading the whole file into memory.

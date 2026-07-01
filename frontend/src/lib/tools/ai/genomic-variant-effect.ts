@@ -8,15 +8,11 @@ import type { RunOutputFile } from '$lib/types/pipeline';
 import type { ToolOutput } from '$lib/types/tool-output';
 import { aiRunMetadata, type AIRunContext } from '$lib/ai/direct-run-context';
 import { NUCLEOTIDE_TRANSFORMER_500M_ID, NUCLEOTIDE_TRANSFORMER_50M_ID } from '$lib/ai/model-registry';
+import { huggingFaceArtifactForModel, requireHuggingFaceArtifactForModel } from '$lib/ai/model-artifacts';
 import { cachePathForModel, runAIPython, type AIPythonRunResult } from '$lib/ai/runtime';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
 import { liatir } from '$lib/api';
-import { GENOMIC_VARIANT_EFFECT_SCRIPT } from './python-scripts';
-
-const HUB_MODEL_IDS: Record<string, string> = {
-	[NUCLEOTIDE_TRANSFORMER_50M_ID]: 'InstaDeepAI/nucleotide-transformer-v2-50m-multi-species',
-	[NUCLEOTIDE_TRANSFORMER_500M_ID]: 'InstaDeepAI/nucleotide-transformer-v2-500m-multi-species'
-};
+import { GENOMIC_VARIANT_EFFECT_SCRIPT } from './python-scripts/genomic-variant-effect';
 
 export const genomicVariantEffectDefinition: LiatirAIToolDefinition = {
 	id: 'ai-genomic-variant-effect',
@@ -49,7 +45,7 @@ export const genomicVariantEffectDefinition: LiatirAIToolDefinition = {
 			type: 'file',
 			label: 'Variant VCF',
 			required: true,
-			accept: ['vcf']
+			accept: ['vcf', 'vcf.gz']
 		},
 		referenceName: {
 			type: 'string',
@@ -161,8 +157,9 @@ export async function finalizeGenomicVariantEffectResult(
 	metrics: Record<string, number>;
 	values: Record<string, JsonValue>;
 }> {
-	const hubModelId = HUB_MODEL_IDS[model.id];
-	const hubRevision = model.install?.revision;
+	const artifact = requireHuggingFaceArtifactForModel(model);
+	const hubModelId = artifact.upstreamModelId;
+	const hubRevision = artifact.revision;
 	const flankSize = asNumber(inputs.flankSize, 256, 1, 4096);
 	const maxVariants = asNumber(inputs.maxVariants, 20, 1, 1000);
 	const maxLength = asNumber(inputs.maxLength, 1024, 16, 4096);
@@ -342,7 +339,7 @@ export async function runGenomicVariantEffectStep(
 	if (!modelId) throw new Error('AI Model is required.');
 	const model = aiModelsStore.byId(modelId);
 	if (!model) throw new Error(`Unknown AI Model: ${modelId}`);
-	if (!HUB_MODEL_IDS[model.id]) {
+	if (!huggingFaceArtifactForModel(model)) {
 		throw new Error('Genomic Variant Effect requires a Nucleotide Transformer model.');
 	}
 	if (model.status !== 'installed') throw new Error(`AI Model is not installed: ${model.name}`);
@@ -354,8 +351,9 @@ export async function runGenomicVariantEffectStep(
 	}
 	if (!inputs.variantFile) throw new Error('Variant VCF file is required.');
 
-	const hubModelId = HUB_MODEL_IDS[model.id];
-	const hubRevision = model.install?.revision;
+	const artifact = requireHuggingFaceArtifactForModel(model);
+	const hubModelId = artifact.upstreamModelId;
+	const hubRevision = artifact.revision;
 	const flankSize = asNumber(inputs.flankSize, 256, 1, 4096);
 	const maxVariants = asNumber(inputs.maxVariants, 20, 1, 1000);
 	const maxLength = asNumber(inputs.maxLength, 1024, 16, 4096);

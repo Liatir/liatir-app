@@ -12,16 +12,11 @@ import {
 	NUCLEOTIDE_TRANSFORMER_500M_ID,
 	NUCLEOTIDE_TRANSFORMER_50M_ID
 } from '$lib/ai/model-registry';
+import { huggingFaceArtifactForModel, requireHuggingFaceArtifactForModel } from '$lib/ai/model-artifacts';
 import { cachePathForModel, runAIPython, type AIPythonRunResult } from '$lib/ai/runtime';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
-import { SEQUENCE_EMBEDDING_SCRIPT } from './python-scripts';
+import { SEQUENCE_EMBEDDING_SCRIPT } from './python-scripts/sequence-embedding';
 import { liatir } from '$lib/api';
-
-const HUB_MODEL_IDS: Record<string, string> = {
-	[NUCLEOTIDE_TRANSFORMER_50M_ID]: 'InstaDeepAI/nucleotide-transformer-v2-50m-multi-species',
-	[NUCLEOTIDE_TRANSFORMER_500M_ID]: 'InstaDeepAI/nucleotide-transformer-v2-500m-multi-species',
-	[ESM2_8M_ID]: 'facebook/esm2_t6_8M_UR50D'
-};
 
 export const sequenceEmbeddingDefinition: LiatirAIToolDefinition = {
 	id: 'ai-sequence-embedding',
@@ -142,8 +137,9 @@ export async function finalizeSequenceEmbeddingResult(
 	values: Record<string, JsonValue>;
 }> {
 	const moleculeType = inputs.moleculeType || 'dna';
-	const hubModelId = HUB_MODEL_IDS[model.id];
-	const hubRevision = model.install?.revision;
+	const artifact = requireHuggingFaceArtifactForModel(model);
+	const hubModelId = artifact.upstreamModelId;
+	const hubRevision = artifact.revision;
 	const maxLength = Math.max(16, Math.min(Number(inputs.maxLength || 1024), 4096));
 
 	if (!result.ok) {
@@ -267,7 +263,7 @@ export async function runSequenceEmbeddingStep(
 	if (!modelId) throw new Error('AI Model is required.');
 	const model = aiModelsStore.byId(modelId);
 	if (!model) throw new Error(`Unknown AI Model: ${modelId}`);
-	if (!HUB_MODEL_IDS[model.id])
+	if (!huggingFaceArtifactForModel(model))
 		throw new Error('Sequence Embedding requires Nucleotide Transformer or ESM-2.');
 	if (model.status !== 'installed') throw new Error(`AI Model is not installed: ${model.name}`);
 	if (!modelSupportsMolecule(model, moleculeType)) {
@@ -278,8 +274,9 @@ export async function runSequenceEmbeddingStep(
 	}
 
 	const maxLength = Math.max(16, Math.min(Number(inputs.maxLength || 1024), 4096));
-	const hubModelId = HUB_MODEL_IDS[model.id];
-	const hubRevision = model.install?.revision;
+	const artifact = requireHuggingFaceArtifactForModel(model);
+	const hubModelId = artifact.upstreamModelId;
+	const hubRevision = artifact.revision;
 	const cachePath = cachePathForModel(model);
 
 	onLog(`ai-tool ${sequenceEmbeddingDefinition.id}`);
@@ -298,6 +295,7 @@ export async function runSequenceEmbeddingStep(
 			modelCacheDir: cachePath,
 			hubModelId,
 			...(hubRevision ? { hubRevision } : {}),
+			transformersLoader: artifact.transformersLoader,
 			moleculeType,
 			maxLength
 		},

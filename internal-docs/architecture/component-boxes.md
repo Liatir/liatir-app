@@ -1,0 +1,89 @@
+# Component Boxes
+
+Liatir should behave as an organizer of contained boxes. Each box owns one
+concept, one state boundary, and one failure boundary. Boxes communicate through
+shared Liatir contracts instead of reaching into each other directly.
+
+## Shared contract
+
+Every executable node must expose the shared pipeline contract from
+`packages/liatir-core`:
+
+- typed input schema;
+- typed output schema;
+- output files;
+- result sections;
+- metrics and values;
+- logs;
+- provenance.
+
+The contract is shared. Runtime state is not.
+
+## Box boundaries
+
+Use the narrowest owner that matches the domain:
+
+- workspace state belongs to the workspace;
+- pipeline state belongs to a `pipelineId`;
+- pipeline run state belongs to a `pipelineRunId`;
+- tool run state belongs to a tool run or analysis run;
+- AI runtime state belongs to a `runtimeId`;
+- AI model assets belong to a model-specific cache inside that runtime;
+- viewer runtime state belongs to a viewer runtime id;
+- dependency state belongs to the dependency manager.
+
+Do not add a single global `running`, `selected`, `current`, `active`, or
+`status` value unless the domain is truly singleton.
+
+## AI boxes
+
+AI has three separate layers:
+
+- AI Model: installable local model/runtime asset.
+- AI Tool: pipeline capability that uses compatible AI Models.
+- AI runtime: isolated environment, usually a Python virtual environment under
+  `data/ai-runtimes/<runtimeId>`.
+
+The model registry describes install metadata. The artifact registry describes
+runtime family, upstream model id, preload strategy, and loader behavior. Tools
+must consume these registries rather than duplicating model identifiers.
+
+For managed AI runtimes:
+
+- every installable model must have an artifact spec;
+- every managed runtime must have `runtimeId`, `runtimePackages`, and
+  `modelCacheSubdir`;
+- a shared `runtimeId` is allowed only when package and host requirements are
+  identical;
+- scripts should live with the tool/family that owns them;
+- preload behavior should be strategy-based, not a long manual switch.
+
+## Heavy boxes
+
+Large scientific systems such as Enformer, Basenji, Borzoi, OpenMM, or advanced
+protein design stacks should be added as dedicated boxes:
+
+- separate runtime id;
+- separate package set;
+- separate model cache and weight validation;
+- explicit host compatibility;
+- dedicated install progress and logs;
+- direct docs page;
+- dedicated AI Tool or native tool adapter;
+- Results, Jobs, and provenance connected through the common contract.
+
+Do not add a heavy dependency to the frontend bundle, global Node dependencies,
+or a shared runtime unless it is truly common and version-compatible.
+
+## Failure isolation
+
+When a box fails:
+
+- unrelated boxes must remain usable;
+- unrelated pipeline runs must not be blocked;
+- logs should point to the owning box and run id;
+- Results should preserve failed run context;
+- user-facing errors should describe the actionable input/runtime issue.
+
+This is not only implementation cleanliness. It is a product requirement for a
+scientific desktop app where workflows can be long and expensive.

@@ -34,6 +34,10 @@ Dependencies and AI Models. Avoid adding large viewer, runtime, or model
 packages to the always-loaded frontend or core app unless they are genuinely
 foundational.
 
+See [Component boxes](/architecture/component-boxes) for the concrete isolation
+rules used by runtimes, AI Models, AI Tools, viewers, dependencies, Jobs, and
+Results.
+
 ## State ownership
 
 Before implementing a workflow, identify the entity that owns state:

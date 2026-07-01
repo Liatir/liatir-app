@@ -18,6 +18,8 @@ larger models.
 ## Inputs in Liatir
 
 - FASTA/FA/FNA file, or an inline DNA/RNA sequence.
+- For variant effect workflows: reference FASTA plus `.vcf` or `.vcf.gz`
+  variants.
 - Molecule type: DNA or RNA.
 - Maximum token/window length.
 
@@ -26,6 +28,8 @@ larger models.
 Liatir can produce:
 
 - per-sequence embeddings;
+- variant effect scores for small local VCF/VCF.GZ batches;
+- BED tracks for genome viewer inspection;
 - JSON/CSV summaries;
 - basic metrics such as sequence count and embedding size;
 - provenance with model ID, revision, runtime, input, and parameters.

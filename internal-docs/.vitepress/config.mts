@@ -15,6 +15,7 @@ export default defineConfig({
       { text: 'Architecture', link: '/architecture/overview' },
       { text: 'Testing', link: '/testing/overview' },
       { text: 'API', link: '/api/liatir-api' },
+      { text: 'AI', link: '/ai/predictive-genomics' },
       { text: 'AI Roadmap', link: '/roadmap/ai-batches' },
     ],
 
@@ -32,6 +33,7 @@ export default defineConfig({
         items: [
           { text: 'Core principles', link: '/architecture/overview' },
           { text: 'Implementation architecture', link: '/architecture/implementation' },
+          { text: 'Component boxes', link: '/architecture/component-boxes' },
         ],
       },
       {
@@ -39,6 +41,13 @@ export default defineConfig({
         collapsed: false,
         items: [
           { text: 'Testing Liatir', link: '/testing/overview' },
+        ],
+      },
+      {
+        text: 'AI',
+        collapsed: false,
+        items: [
+          { text: 'Predictive genomics', link: '/ai/predictive-genomics' },
         ],
       },
       {

@@ -15,7 +15,7 @@ import {
 	type AIPythonRunResult
 } from '$lib/ai/runtime';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
-import { PROTEIN_STRUCTURE_SCRIPT } from './python-scripts';
+import { PROTEIN_STRUCTURE_SCRIPT } from './python-scripts/protein-structure';
 import { liatir } from '$lib/api';
 
 const BACKENDS: Record<string, 'boltz2' | 'chai1'> = {

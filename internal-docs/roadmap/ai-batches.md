@@ -56,14 +56,18 @@ Status: implemented and under scientific validation.
 
 ## Batch 4: Predictive genomics
 
-Status: implemented as a first architectural slice; continue validation before
-expanding model coverage.
+Status: variant-effect slice consolidated; regulatory prediction model coverage
+is deliberately deferred to a dedicated managed-runtime slice.
 
 - Larger Nucleotide Transformer support.
 - Variant effect scoring based on reference/alternate sequence windows.
-- Genome-track-compatible outputs for JBrowse workflows.
-- Inputs: FASTA/VCF/BED/sequence window depending on tool.
+- `.vcf` and `.vcf.gz` inputs for sequential variant scoring.
+- Genome-track-compatible BED outputs for JBrowse workflows.
+- Inputs: FASTA/VCF/VCF.GZ/BED/sequence window depending on tool.
 - Outputs: scores, embeddings, tracks, and reports.
+
+Regulatory prediction candidates such as Enformer, Basenji, and Borzoi need a
+separate runtime/dependency plan before being added as installable AI Models.
 
 ## Batch 5: Single-cell foundation models
 

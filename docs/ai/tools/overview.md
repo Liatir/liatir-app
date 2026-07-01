@@ -42,6 +42,28 @@ Uses sequence model embeddings to compare reference and alternate sequence
 windows. Outputs scores, summaries, and genome-browser-friendly artifacts where
 supported.
 
+Use this when you have a reference sequence and a VCF file of variants you want
+to inspect locally. Liatir currently supports normal `.vcf` files and compressed
+`.vcf.gz` files for this scoring tool.
+
+Typical inputs:
+
+- a reference FASTA/FA/FNA file, or a pasted reference sequence;
+- a VCF or VCF.GZ file with variants on that reference;
+- a reference name such as `chr1` when the FASTA contains multiple sequences;
+- a flank/window size around each variant.
+
+Typical outputs:
+
+- CSV scores for each scored variant;
+- a small JSON summary;
+- a BED genome track that can be opened in genomic viewers;
+- provenance showing model, runtime, input files, and parameters.
+
+The score is based on how much the model representation changes between the
+reference and alternate sequence window. It is useful for prioritization and
+exploration, but it is not a clinical interpretation by itself.
+
 ## Reading results
 
 AI outputs are useful signals, not automatic biological conclusions. Check the

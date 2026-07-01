@@ -19,7 +19,7 @@ scoring and higher-quality embeddings, but it is heavier.
 
 - FASTA/FA/FNA file, or an inline DNA/RNA sequence.
 - For variant effect workflows: reference/alternate sequence windows derived
-  from VCF/FASTA-style inputs.
+  from FASTA plus `.vcf` or `.vcf.gz` inputs.
 - Maximum token/window length.
 
 ## Outputs

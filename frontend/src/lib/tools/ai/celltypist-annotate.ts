@@ -10,7 +10,7 @@ import { aiRunMetadata, type AIRunContext } from '$lib/ai/direct-run-context';
 import { CELLTYPIST_MODEL_ID } from '$lib/ai/model-registry';
 import { cachePathForModel, runAIPython, type AIPythonRunResult } from '$lib/ai/runtime';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
-import { CELLTYPIST_ANNOTATE_SCRIPT } from './python-scripts';
+import { CELLTYPIST_ANNOTATE_SCRIPT } from './python-scripts/celltypist-annotate';
 import { liatir } from '$lib/api';
 import { getLastSegmentsStringFromPath } from '$lib/utils';
 
