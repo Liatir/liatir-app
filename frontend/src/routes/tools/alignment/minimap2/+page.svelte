@@ -9,6 +9,7 @@
   import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
   import RunLog from '$lib/components/ui/RunLog.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
+  import ThreadControl from '$lib/components/tools/ThreadControl.svelte';
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
@@ -17,6 +18,7 @@
   import { fmtDuration, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { liatir } from '$lib/api';
   import { MINIMAP2_PRESETS, parseMinimap2Stats, minimap2ToToolOutput, type Minimap2Preset } from '$lib/tools/alignment/minimap2';
+  import { threadParam } from '$lib/utils/execution-resources';
   import type { ToolOutput } from '$lib/types/tool-output';
   import type { RunOutputFile } from '$lib/stores/analysisRuns.svelte';
 
@@ -27,6 +29,7 @@
   let preset     = $state<Minimap2Preset>('sr');
   let refPath    = $state('');
   let r1Path     = $state('');
+  let threads    = $state(0);
   let running    = $state(false);
   let startedAt  = $state<number | null>(null);
   let now        = $state(Date.now());
@@ -82,6 +85,7 @@
     const refName = refPath.split(/[\\/]/).pop() ?? refPath;
     const r1Name  = r1Path.split(/[\\/]/).pop() ?? r1Path;
     const t0 = startedAt;
+    const threadInfo = threadParam(threads);
     const inputSizes = [
       dataFiles.files.find(f => f.path === refPath)?.size,
       dataFiles.files.find(f => f.path === r1Path)?.size,
@@ -95,7 +99,7 @@
       const jid = `minimap2-${runId}`;
 
       logLines = [
-        `$ minimap2 -ax ${preset} ${refName} ${r1Name}`,
+        `$ minimap2 -t ${threadInfo.threads} -ax ${preset} ${refName} ${r1Name}`,
         `→ Output: minimap2-${runId}.sam`,
       ];
 
@@ -110,7 +114,8 @@
         readsR2: null,
         outputSam: outPath,
         jobId: jid,
-      } as any) as { ok: boolean; exitCode: number | null; stderr: string[] };
+        threads: threadInfo.threads,
+      } as any) as { ok: boolean; exitCode: number | null; stderr: string[]; threads?: number };
 
       if (!result.ok) {
         throw new Error(result.stderr.slice(-10).join('\n') || `minimap2 exited with code ${result.exitCode}`);
@@ -130,7 +135,7 @@
         id: runId, tool: 'minimap2', label: r1Name,
         inputs: [refPath, r1Path],
         inputSizes: inputSizes.length ? inputSizes : undefined,
-        params: { preset },
+        params: { preset, threads: result.threads ?? threadInfo.threads, threadsMode: threadInfo.mode },
         status: 'done',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, outputFiles, error: null,
@@ -143,7 +148,7 @@
       await analysisRuns.add({
         id: runId, tool: 'minimap2', label: r1Path.split(/[\\/]/).pop() ?? r1Path,
         inputs: [refPath, r1Path],
-        params: { preset },
+        params: { preset, threads: threadInfo.threads, threadsMode: threadInfo.mode },
         status: 'error',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: String(e),
@@ -265,6 +270,8 @@
             disabled={running}
             onchange={(p) => r1Path = p}
           />
+
+          <ThreadControl value={threads} disabled={running} onchange={(value) => threads = value} />
 
           <div class="flex items-center gap-3 pt-1">
             <Button

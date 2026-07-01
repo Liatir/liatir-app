@@ -16,7 +16,9 @@
   import { notify } from '$lib/utils/notify';
   import RunLog from '$lib/components/ui/RunLog.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
+  import ThreadControl from '$lib/components/tools/ThreadControl.svelte';
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
+  import { threadParam } from '$lib/utils/execution-resources';
   import type { ToolOutput } from '$lib/types/tool-output';
 
   // ── dep check ────────────────────────────────────────────────────
@@ -24,6 +26,7 @@
 
   // ── form state ───────────────────────────────────────────────────
   let filePath  = $state('');
+  let threads   = $state(0);
   let running   = $state(false);
   let startedAt = $state<number | null>(null);
   let now       = $state(Date.now());
@@ -75,10 +78,11 @@
     const t0 = startedAt;
     const fileSize = dataFiles.files.find(f => f.path === filePath)?.size;
     const inputSizes = fileSize != null ? [fileSize] : undefined;
+    const threadInfo = threadParam(threads);
 
     try {
-      logLines = [`$ samtools flagstat ${fileName}`];
-      const result = await runNativeTool('samtools', ['flagstat', filePath], undefined, (l) => { if (typeof l === 'string' && l.trim()) logLines.push(l); });
+      logLines = [`$ samtools flagstat -@ ${threadInfo.threads} ${fileName}`];
+      const result = await runNativeTool('samtools', ['flagstat', '-@', String(threadInfo.threads), filePath], undefined, (l) => { if (typeof l === 'string' && l.trim()) logLines.push(l); });
 
       if (!result.ok && result.stdout.trim() === '') {
         throw new Error(result.stderr || `samtools exited with code ${result.exitCode}`);
@@ -91,7 +95,7 @@
       await analysisRuns.add({
         id: runId, tool: 'samtools', label: fileName,
         inputs: [filePath], inputSizes,
-        params: { subcommand: 'flagstat' },
+        params: { subcommand: 'flagstat', threads: threadInfo.threads, threadsMode: threadInfo.mode },
         status: 'done',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, error: null,
@@ -103,7 +107,7 @@
       await analysisRuns.add({
         id: runId, tool: 'samtools', label: fileName,
         inputs: [filePath], inputSizes,
-        params: { subcommand: 'flagstat' },
+        params: { subcommand: 'flagstat', threads: threadInfo.threads, threadsMode: threadInfo.mode },
         status: 'error',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: String(e),
@@ -225,6 +229,8 @@
             disabled={running}
             onchange={(p) => filePath = p}
           />
+
+          <ThreadControl value={threads} disabled={running} onchange={(value) => threads = value} />
 
           <div class="flex items-center gap-3 pt-1">
             <Button

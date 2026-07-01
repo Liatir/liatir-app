@@ -6,6 +6,8 @@
   import type { VariableNodeData } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
+  import EditableNodeLabel from './EditableNodeLabel.svelte';
+  import { statusDotClass, statusLabel } from './node-status';
   import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
 
   let { id, data }: NodeProps<Node<VariableNodeData>> = $props();
@@ -13,14 +15,6 @@
   const nodeDataContext = getPipelineNodeDataContext();
   const state = $derived(pipelineStore.nodeStates.get(id));
   const status = $derived(state?.status ?? 'pending');
-
-  function statusColor() {
-    if (status === 'done')    return 'bg-emerald-500';
-    if (status === 'error')   return 'bg-red-500';
-    if (status === 'running') return 'bg-brand animate-pulse';
-    if (status === 'skipped') return 'bg-zinc-200';
-    return 'bg-zinc-300';
-  }
 
   async function updateVariableData(patch: Partial<VariableNodeData>) {
     updateNodeData(id, patch);
@@ -30,8 +24,14 @@
 
 <div class="min-w-48 rounded-xl border border-border bg-white shadow-md overflow-visible">
   <div class="flex items-center gap-2 px-3 py-2 rounded-t-xl border-b border-border bg-amber-50 cursor-grab active:cursor-grabbing">
-    <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
-    <span class="text-[10px] font-semibold text-amber-700 uppercase tracking-wider">Variable</span>
+    <span class="h-2 w-2 rounded-full shrink-0 {statusDotClass(status)}" title={statusLabel(status)}></span>
+    <EditableNodeLabel
+      {id}
+      label={data.label}
+      typeName="Variable"
+      nameClass="text-xs font-semibold text-amber-800"
+      typeClass="text-[10px] font-semibold text-amber-700 uppercase tracking-wider"
+    />
     <NodeDeleteButton {id} class="ml-auto" />
   </div>
 

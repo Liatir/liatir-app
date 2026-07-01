@@ -523,7 +523,8 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("jobId required"))?
                 .to_string();
-            crate::bridge::bwa::lia_bwa_mem(app.clone(), reference, reads_r1, reads_r2, output_sam, job_id)
+            let threads = payload["threads"].as_u64().map(|value| value as usize);
+            crate::bridge::bwa::lia_bwa_mem(app.clone(), reference, reads_r1, reads_r2, output_sam, job_id, threads)
                 .await
                 .map_err(|e| anyhow::anyhow!(e))
         }
@@ -551,7 +552,8 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("jobId required"))?
                 .to_string();
-            crate::bridge::minimap2::lia_minimap2(app.clone(), preset, reference, reads_r1, reads_r2, output_sam, job_id)
+            let threads = payload["threads"].as_u64().map(|value| value as usize);
+            crate::bridge::minimap2::lia_minimap2(app.clone(), preset, reference, reads_r1, reads_r2, output_sam, job_id, threads)
                 .await
                 .map_err(|e| anyhow::anyhow!(e))
         }

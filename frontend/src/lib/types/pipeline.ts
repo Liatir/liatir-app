@@ -69,6 +69,32 @@ export interface ApiRequestNodeData extends Record<string, unknown> {
   label?: string;
 }
 
+/** Palette available for note nodes. `none` removes the note background entirely. */
+export type NoteColor = 'amber' | 'sky' | 'emerald' | 'rose' | 'violet' | 'slate' | 'none';
+
+export interface NoteNodeData extends Record<string, unknown> {
+  text: string;
+  /** Fixed width in px (resizable); the height auto-fits the content. */
+  width?: number;
+  /** Background/accent color; defaults to `none` (transparent) when unset. */
+  color?: NoteColor;
+}
+
+export const EXECUTABLE_PIPELINE_NODE_TYPES = [
+  'tool',
+  'variable',
+  'math',
+  'condition',
+  'sub-pipeline',
+  'api-request',
+] as const;
+
+const EXECUTABLE_PIPELINE_NODE_TYPE_SET = new Set<string>(EXECUTABLE_PIPELINE_NODE_TYPES);
+
+export function isExecutablePipelineNode(node: { type?: string | null }): boolean {
+  return EXECUTABLE_PIPELINE_NODE_TYPE_SET.has(node.type ?? '');
+}
+
 export interface NodeRunState {
   status: StepStatus;
   logs: string[];

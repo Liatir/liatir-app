@@ -7,12 +7,14 @@ import { apiConnections, sendApiRequest } from './apiConnections.svelte';
 import { analysisRuns } from './analysisRuns.svelte';
 import { resolveStepEntry } from '$lib/tools/pipeline-registry';
 import { ensureResultsDir } from '$lib/utils/results';
+import { withArtifactsMetadata } from '$lib/utils/artifacts';
 import type { ToolOutput } from '$lib/types/tool-output';
 import type {
   ToolNodeData, VariableNodeData, MathNodeData, ConditionNodeData,
   SubPipelineNodeData, ApiRequestNodeData, NodeRunState, RunOutputFile,
   PipelineStepDefinition,
 } from '$lib/types/pipeline';
+import { isExecutablePipelineNode } from '$lib/types/pipeline';
 import type { AIPipelineRunContext } from '$lib/ai/direct-run-context';
 import type { JsonValue } from '@liatir/core';
 
@@ -119,6 +121,15 @@ function topoSort(nodes: Node[], edges: Edge[]): string[] {
   return sorted;
 }
 
+function executableGraph(nodes: Node[], edges: Edge[]): { nodes: Node[]; edges: Edge[] } {
+  const executableNodes = nodes.filter(isExecutablePipelineNode);
+  const executableIds = new Set(executableNodes.map(node => node.id));
+  return {
+    nodes: executableNodes,
+    edges: edges.filter(edge => executableIds.has(edge.source) && executableIds.has(edge.target)),
+  };
+}
+
 function initNodeState(): NodeRunState {
   return { status: 'pending', logs: [], outputFiles: [], error: null };
 }
@@ -184,6 +195,12 @@ function deserializeRuntimeState(serialized: SerializedPipelineRuntimeState): Pi
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+// Prefer the user's custom node name (data.label) over the tool/type name for
+// anything user-facing (Results headings, logs, artifact metadata).
+function nodeDisplayLabel(node: Node, fallback: string): string {
+  return ((node.data?.label as string) ?? '').trim() || fallback;
 }
 
 // Convert non-file node outputs into string outputValues so they can be
@@ -409,16 +426,17 @@ function createPipelineStore() {
     edges: Edge[],
     onLog: (line: string) => void
   ): Promise<RunOutputFile[]> {
+    const { nodes: graphNodes, edges: graphEdges } = executableGraph(nodes, edges);
     const localStates = new Map<string, NodeRunState>();
-    for (const n of nodes) localStates.set(n.id, initNodeState());
+    for (const n of graphNodes) localStates.set(n.id, initNodeState());
 
-    const order = topoSort(nodes, edges);
+    const order = topoSort(graphNodes, graphEdges);
     const skipped = new Set<string>();
     const allOutputFiles: RunOutputFile[] = [];
 
     for (const nodeId of order) {
       if (skipped.has(nodeId)) continue;
-      const node = nodes.find(n => n.id === nodeId);
+      const node = graphNodes.find(n => n.id === nodeId);
       if (!node || node.type === 'start') continue;
 
       const patch = (p: Partial<NodeRunState>) => {
@@ -434,7 +452,7 @@ function createPipelineStore() {
         const { absDir: outputDir, virtualFolder } = await ensureResultsDir(entry.definition.label);
 
         const resolved = resolveInputs(
-          nodes,
+          graphNodes,
           localStates,
           inputsWithDefaults(entry.definition, node.data?.inputs as Record<string, string> ?? {})
         );
@@ -455,18 +473,18 @@ function createPipelineStore() {
         patch({ status: 'done', outputValues: { value: d.value ?? '' } });
       } else if (node.type === 'math') {
         const d = node.data as unknown as MathNodeData;
-        const a = Number(resolveRef(d.literalA ?? '', nodes, localStates) || 0);
-        const b = Number(resolveRef(d.literalB ?? '', nodes, localStates) || 0);
+        const a = Number(resolveRef(d.literalA ?? '', graphNodes, localStates) || 0);
+        const b = Number(resolveRef(d.literalB ?? '', graphNodes, localStates) || 0);
         const res = computeMath(d.operation, a, b);
         patch({ status: 'done', outputValues: { result: String(res) } });
       } else if (node.type === 'condition') {
         const d = node.data as unknown as ConditionNodeData;
-        const value = resolveRef(d.valueRef ?? '', nodes, localStates);
+        const value = resolveRef(d.valueRef ?? '', graphNodes, localStates);
         let ok = false;
         try { ok = Boolean(new Function('value', `return (${d.condition})`)(value)); } catch { /* false */ }
         const branch: 'true' | 'false' = ok ? 'true' : 'false';
         patch({ status: 'done', activeBranch: branch, outputValues: { trueBranch: ok ? value : '', falseBranch: !ok ? value : '' } });
-        const dead = findDeadBranchNodes(nodes, edges, nodeId, ok ? 'falseBranch' : 'trueBranch', localStates);
+        const dead = findDeadBranchNodes(graphNodes, graphEdges, nodeId, ok ? 'falseBranch' : 'trueBranch', localStates);
         for (const s of dead) { skipped.add(s); localStates.set(s, { ...initNodeState(), status: 'skipped' }); }
       }
     }
@@ -585,6 +603,29 @@ function createPipelineStore() {
       await persist();
     },
 
+    async renamePipeline(id: string, name: string) {
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      savedPipelines = savedPipelines.map(p =>
+        p.id === id ? { ...p, name: trimmed, updatedAt: Date.now() } : p
+      );
+      if (pipelineId === id) pipelineName = trimmed;
+      await persist();
+    },
+
+    async duplicatePipeline(source: SavedPipeline): Promise<SavedPipeline> {
+      const copy: SavedPipeline = {
+        id: crypto.randomUUID(),
+        name: `${source.name} (copy)`,
+        nodes: JSON.parse(JSON.stringify(source.nodes)),
+        edges: JSON.parse(JSON.stringify(source.edges)),
+        updatedAt: Date.now(),
+      };
+      savedPipelines = [copy, ...savedPipelines];
+      await persist();
+      return copy;
+    },
+
     exportToJson(p: SavedPipeline): string {
       const clean: SavedPipeline = {
         ...p,
@@ -628,12 +669,13 @@ function createPipelineStore() {
       const runPipelineName = pipelineName || 'Pipeline';
       const runKey = runtimeKeyFor(runPipelineId);
       const existingRuntime = runtimeFor(runKey, runPipelineId, runPipelineName);
-      if (existingRuntime.running || nodes.length === 0) return;
+      const { nodes: graphNodes, edges: graphEdges } = executableGraph(nodes, edges);
+      if (existingRuntime.running || graphNodes.length === 0) return;
       const api = liatir();
       if (!api) return;
 
       const fresh = new Map<string, NodeRunState>();
-      for (const n of nodes) fresh.set(n.id, initNodeState());
+      for (const n of graphNodes) fresh.set(n.id, initNodeState());
       const pipelineRunId = crypto.randomUUID();
       setRuntime(runKey, {
         pipelineId: runPipelineId,
@@ -649,6 +691,7 @@ function createPipelineStore() {
       const pipelineStepContext = (
         nodeId: string,
         definition: PipelineStepDefinition,
+        label: string,
         resolved: Record<string, string>,
         outputDir: string,
         startedAt: number
@@ -659,7 +702,7 @@ function createPipelineStore() {
         pipelineName: runPipelineName,
         nodeId,
         toolId: definition.id,
-        label: definition.label,
+        label,
         params: resolved,
         startedAt,
         outputDir,
@@ -671,12 +714,12 @@ function createPipelineStore() {
       let fatalError: unknown = null;
 
       try {
-        const order = topoSort(nodes, edges);
+        const order = topoSort(graphNodes, graphEdges);
         const skipped = new Set<string>();
 
         for (const nodeId of order) {
           if (skipped.has(nodeId)) continue;
-          const node = nodes.find(n => n.id === nodeId);
+          const node = graphNodes.find(n => n.id === nodeId);
           if (!node || node.type === 'start') continue;
 
         // ── Tool node ──────────────────────────────────────────────────────────
@@ -686,12 +729,13 @@ function createPipelineStore() {
             patchRunState(nodeId, { status: 'error', error: `Unknown tool: ${node.data?.stepId}` });
             break;
           }
+          const nodeLabel = nodeDisplayLabel(node, entry.definition.label);
           patchRunState(nodeId, { status: 'running' });
 
           const { absDir: outputDir, virtualFolder } = await ensureResultsDir(entry.definition.label);
 
           const resolved = resolveInputs(
-            nodes,
+            graphNodes,
             states(),
             inputsWithDefaults(entry.definition, node.data?.inputs as Record<string, string> ?? {})
           );
@@ -700,18 +744,36 @@ function createPipelineStore() {
             const result = await entry.run(resolved, outputDir, (line) => {
               logs.push(line);
               patchRunState(nodeId, { logs: [...logs] });
-            }, pipelineStepContext(nodeId, entry.definition, resolved, outputDir, pipeStartedAt));
+            }, pipelineStepContext(nodeId, entry.definition, nodeLabel, resolved, outputDir, pipeStartedAt));
+            const outputFiles = withArtifactsMetadata(result.outputFiles, {
+              role: 'final',
+              createdAt: Date.now(),
+              producer: {
+                kind: entry.definition.type,
+                id: entry.definition.id,
+                label: nodeLabel,
+                nodeId,
+              },
+              parentRun: {
+                runKind: 'pipeline-step',
+                runId: pipelineRunId,
+                analysisRunId: pipelineRunId,
+                pipelineRunId,
+                pipelineId: runPipelineId,
+                nodeId,
+              },
+            });
             patchRunState(nodeId, {
               status: 'done',
               logs,
-              outputFiles: result.outputFiles,
+              outputFiles,
               error: null,
               outputValues: outputsToValues(result.metrics, result.values),
             });
-            pipeSteps.push({ label: entry.definition.label, output: result.output, files: result.outputFiles });
+            pipeSteps.push({ label: nodeLabel, output: result.output, files: outputFiles });
             await dataFiles.createFolder('Results').catch(() => {});
             await dataFiles.createFolder(virtualFolder).catch(() => {});
-            for (const f of result.outputFiles) await dataFiles.add(f.path, virtualFolder).catch(() => {});
+            for (const f of outputFiles) await dataFiles.add(f.path, virtualFolder).catch(() => {});
           } catch (e) {
             patchRunState(nodeId, { status: 'error', logs, outputFiles: [], error: String(e) });
             break;
@@ -725,14 +787,14 @@ function createPipelineStore() {
         // ── Math node ──────────────────────────────────────────────────────────
         } else if (node.type === 'math') {
           const d = node.data as unknown as MathNodeData;
-          const a = Number(resolveRef(d.literalA ?? '', nodes, states()) || 0);
-          const b = Number(resolveRef(d.literalB ?? '', nodes, states()) || 0);
+          const a = Number(resolveRef(d.literalA ?? '', graphNodes, states()) || 0);
+          const b = Number(resolveRef(d.literalB ?? '', graphNodes, states()) || 0);
           patchRunState(nodeId, { status: 'done', outputValues: { result: String(computeMath(d.operation, a, b)) } });
 
         // ── Condition node ─────────────────────────────────────────────────────
         } else if (node.type === 'condition') {
           const d = node.data as unknown as ConditionNodeData;
-          const value = resolveRef(d.valueRef ?? '', nodes, states());
+          const value = resolveRef(d.valueRef ?? '', graphNodes, states());
           let ok = false;
           try {
             // eslint-disable-next-line no-new-func
@@ -747,7 +809,7 @@ function createPipelineStore() {
             activeBranch: branch,
             outputValues: { trueBranch: ok ? value : '', falseBranch: !ok ? value : '' },
           });
-          const dead = findDeadBranchNodes(nodes, edges, nodeId, ok ? 'falseBranch' : 'trueBranch', states());
+          const dead = findDeadBranchNodes(graphNodes, graphEdges, nodeId, ok ? 'falseBranch' : 'trueBranch', states());
           for (const s of dead) {
             skipped.add(s);
             patchRunState(s, { status: 'skipped' });
@@ -765,7 +827,7 @@ function createPipelineStore() {
             patchRunState(nodeId, { status: 'error', error: 'Pipeline not found' });
             break;
           }
-          patchRunState(nodeId, { status: 'running', logs: [`▶ Running sub-pipeline: ${sub.name}`] });
+          patchRunState(nodeId, { status: 'running', logs: [`▶ Running sub-pipeline: ${nodeDisplayLabel(node, sub.name)}`] });
           try {
             const subFiles = await runNodes(sub.nodes, sub.edges, (line) => {
               const curr = states().get(nodeId);
@@ -789,10 +851,11 @@ function createPipelineStore() {
             patchRunState(nodeId, { status: 'error', error: 'Request not found' });
             break;
           }
+          const nodeLabel = nodeDisplayLabel(node, req.name || 'API Request');
           const provider = apiConnections.collectionById(req.collectionId) ?? undefined;
           // Per-param overrides configured on the node (literal or `@pipe:` ref).
           // Only non-empty values override the request's own params.
-          const resolvedOverrides = resolveInputs(nodes, states(), (node.data?.paramOverrides as Record<string, string>) ?? {});
+          const resolvedOverrides = resolveInputs(graphNodes, states(), (node.data?.paramOverrides as Record<string, string>) ?? {});
           const paramOverrides: Record<string, string> = {};
           for (const [k, v] of Object.entries(resolvedOverrides)) if (v !== '') paramOverrides[k] = v;
           patchRunState(nodeId, { status: 'running', logs: [`${req.method} ${req.url}`] });
@@ -804,7 +867,7 @@ function createPipelineStore() {
             const bodyPath = `${reqOutputDir}/response-${ts}.json`;
             await api.invoke('lia_write_file_path', { path: bodyPath, content: resp.body }).catch(() => {});
 
-            const outputFiles: RunOutputFile[] = [{ label: 'Response Body', path: bodyPath, ext: 'json' }];
+            let outputFiles: RunOutputFile[] = [{ label: 'Response Body', path: bodyPath, ext: 'json' }];
             const outputValues: Record<string, string> = { status: String(resp.status) };
 
             if (req.outputSchema) {
@@ -823,12 +886,31 @@ function createPipelineStore() {
               }
             }
 
+            outputFiles = withArtifactsMetadata(outputFiles, {
+              role: 'final',
+              createdAt: ts,
+              producer: {
+                kind: 'api-request',
+                id: d.requestId!,
+                label: nodeLabel,
+                nodeId,
+              },
+              parentRun: {
+                runKind: 'pipeline-step',
+                runId: pipelineRunId,
+                analysisRunId: pipelineRunId,
+                pipelineRunId,
+                pipelineId: runPipelineId,
+                nodeId,
+              },
+            });
+
             await dataFiles.createFolder('Results').catch(() => {});
             await dataFiles.createFolder(reqVirtualFolder).catch(() => {});
             for (const f of outputFiles) await dataFiles.add(f.path, reqVirtualFolder).catch(() => {});
 
             patchRunState(nodeId, { status: 'done', outputFiles, outputValues });
-            pipeSteps.push({ label: req.name || 'API Request', files: outputFiles });
+            pipeSteps.push({ label: nodeLabel, files: outputFiles });
           } catch (e) {
             patchRunState(nodeId, { status: 'error', error: String(e) });
             break;
@@ -842,7 +924,7 @@ function createPipelineStore() {
             patchRunState(nodeId, { status: 'error', error: e.message });
           }
         } else {
-          const firstPending = nodes.find(n => n.type !== 'start' && states().get(n.id)?.status === 'pending');
+          const firstPending = graphNodes.find(n => states().get(n.id)?.status === 'pending');
           if (firstPending) patchRunState(firstPending.id, { status: 'error', error: errorMessage(e) });
         }
       } finally {
@@ -851,7 +933,7 @@ function createPipelineStore() {
         const finalStates = states();
         const erroredEntry = [...finalStates.entries()].find(([, s]) => s.status === 'error');
         const fatalMessage = fatalError ? errorMessage(fatalError) : null;
-        if (nodes.some(n => n.type !== 'start')) {
+        if (graphNodes.length > 0) {
           const endedAt = Date.now();
           const logs = [...finalStates.values()].flatMap(s => s.logs ?? []);
           const allFiles = pipeSteps.flatMap(s => s.files);

@@ -1,4 +1,5 @@
 import type { PipelineStepDefinition } from '$lib/types/pipeline';
+import { threadInputSchema } from '$lib/utils/execution-resources';
 
 // Parsers now live in the shared @liatir/output-parser package (single source of truth,
 // also consumed by the @liatir/sdk adapter). The pipeline-step definition stays here.
@@ -17,6 +18,7 @@ export const seqkitStatsDefinition: PipelineStepDefinition = {
       required: true,
       accept: ['fasta', 'fa', 'fna', 'fastq', 'fq', 'fastq.gz', 'fq.gz', 'fasta.gz', 'fa.gz'],
     },
+    threads: threadInputSchema('Worker threads for seqkit stats. 0 lets Liatir choose a safe local value.'),
   },
   outputSchema: {
     stats:   { type: 'stats',  label: 'Sequence statistics' },

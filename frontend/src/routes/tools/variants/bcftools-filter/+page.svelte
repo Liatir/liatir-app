@@ -16,7 +16,9 @@
   import { notify } from '$lib/utils/notify';
   import RunLog from '$lib/components/ui/RunLog.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
+  import ThreadControl from '$lib/components/tools/ThreadControl.svelte';
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
+  import { threadParam } from '$lib/utils/execution-resources';
   import type { ToolOutput, StatsSection, TextSection } from '$lib/types/tool-output';
   import type { RunOutputFile } from '$lib/stores/analysisRuns.svelte';
 
@@ -35,6 +37,7 @@
   // ── form state ───────────────────────────────────────────────────
   let filePath   = $state('');
   let expression = $state('QUAL>20');
+  let threads    = $state(0);
   let running    = $state(false);
   let startedAt  = $state<number | null>(null);
   let now        = $state(Date.now());
@@ -87,6 +90,7 @@
     const t0       = startedAt;
     const fileSize = dataFiles.files.find(f => f.path === filePath)?.size;
     const inputSizes = fileSize != null ? [fileSize] : undefined;
+    const threadInfo = threadParam(threads);
 
     const api = liatir();
     if (!api) { running = false; return; }
@@ -96,10 +100,11 @@
       const outDir  = `${dataDir}/tool-outputs`;
       const outPath = `${outDir}/bcftools-filter-${runId}.vcf.gz`;
 
-      logLines = [`$ bcftools filter -i '${expression.trim()}' ${fileName}`];
+      logLines = [`$ bcftools filter --threads ${threadInfo.threads} -i '${expression.trim()}' ${fileName}`];
       // bcftools filter -i '<expr>' -O z -o <out> <in>
       const result = await runNativeTool('bcftools', [
         'filter',
+        '--threads', String(threadInfo.threads),
         '-i', expression.trim(),
         '-O', 'z',
         '-o', outPath,
@@ -113,7 +118,7 @@
       // Count retained variants (run bcftools stats on output)
       let retainedCount = 0;
       try {
-        const statsResult = await runNativeTool('bcftools', ['stats', outPath]);
+        const statsResult = await runNativeTool('bcftools', ['stats', '--threads', String(threadInfo.threads), outPath]);
         const recordsLine = statsResult.stdout.split('\n')
           .find(l => l.startsWith('SN') && l.includes('number of records'));
         if (recordsLine) {
@@ -136,7 +141,7 @@
       await analysisRuns.add({
         id: runId, tool: 'bcftools-filter', label: fileName,
         inputs: [filePath], inputSizes,
-        params: { expression: expression.trim() },
+        params: { expression: expression.trim(), threads: threadInfo.threads, threadsMode: threadInfo.mode },
         status: 'done',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, outputFiles, error: null,
@@ -147,7 +152,7 @@
       await analysisRuns.add({
         id: runId, tool: 'bcftools-filter', label: fileName,
         inputs: [filePath], inputSizes,
-        params: { expression: expression.trim() },
+        params: { expression: expression.trim(), threads: threadInfo.threads, threadsMode: threadInfo.mode },
         status: 'error',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: String(e),
@@ -338,6 +343,8 @@
               <code class="font-mono">&gt; &lt; = !=</code>
             </p>
           </div>
+
+          <ThreadControl value={threads} disabled={running} onchange={(value) => threads = value} />
 
           <div class="flex items-center gap-3 pt-1">
             <Button

@@ -17,6 +17,8 @@ type Invoke = <T>(cmd: string, payload?: Record<string, unknown>) => Promise<T>;
 export interface AlignResult {
   ok: boolean;
   exitCode: number | null;
+  /** Worker threads actually used by the native command, when reported. */
+  threads?: number;
   /** Captured stderr lines — also where BWA/minimap2 print their run stats. */
   stderr: string[];
   /** Absolute path of the produced SAM file (echoed back for convenience). */
@@ -32,6 +34,8 @@ export interface BwaMemArgs {
   readsR2?: string;
   /** Where to write the output SAM. */
   outputSam: string;
+  /** Worker threads. Omit or use 0 to let Liatir choose a safe local value. */
+  threads?: number;
 }
 
 export interface Minimap2Args {
@@ -43,6 +47,8 @@ export interface Minimap2Args {
   outputSam: string;
   /** Alignment preset: 'sr' (short read), 'lr', 'map-ont', … (default 'sr'). */
   preset?: string;
+  /** Worker threads. Omit or use 0 to let Liatir choose a safe local value. */
+  threads?: number;
 }
 
 export interface AlignNamespace {
@@ -58,7 +64,7 @@ function genJobId(tool: string): string {
 }
 
 /** The raw payload a native alignment command returns (before we echo outputSam). */
-type NativeAlignResult = { ok: boolean; exitCode: number | null; stderr: string[] };
+type NativeAlignResult = { ok: boolean; exitCode: number | null; stderr: string[]; threads?: number };
 
 /** Build the `align` namespace bound to a specific IPC `invoke`. */
 export function buildAlign(invoke: Invoke): AlignNamespace {
@@ -71,6 +77,7 @@ export function buildAlign(invoke: Invoke): AlignNamespace {
         readsR2: args.readsR2 ?? null,
         outputSam: args.outputSam,
         jobId,
+        threads: args.threads ?? 0,
       });
       return { ...res, outputSam: args.outputSam };
     },
@@ -84,6 +91,7 @@ export function buildAlign(invoke: Invoke): AlignNamespace {
         readsR2: null,
         outputSam: args.outputSam,
         jobId,
+        threads: args.threads ?? 0,
       });
       return { ...res, outputSam: args.outputSam };
     },

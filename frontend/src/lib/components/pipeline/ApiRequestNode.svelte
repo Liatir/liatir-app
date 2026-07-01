@@ -3,6 +3,7 @@
   import type { NodeProps } from '@xyflow/svelte';
   import type { Node, Edge } from '@xyflow/svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
+  import { goto } from '$app/navigation';
   import Icon from '@iconify/svelte';
   import type { ApiRequestNodeData } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
@@ -11,6 +12,8 @@
   import { sanitizeLocalPathsForDisplay } from '$lib/utils';
   import ValueRefInput from './ValueRefInput.svelte';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
+  import EditableNodeLabel from './EditableNodeLabel.svelte';
+  import { statusDotClass, statusLabel } from './node-status';
   import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
 
   let { id, data }: NodeProps<Node<ApiRequestNodeData>> = $props();
@@ -19,6 +22,8 @@
   const runState = $derived(pipelineStore.nodeStates.get(id));
   const status = $derived(runState?.status ?? 'pending');
   const disabled = $derived(pipelineStore.running);
+  const incomplete = $derived(status === 'pending' && !data.requestId);
+  const runId = $derived(pipelineStore.currentRunId);
 
   const req = $derived(data.requestId ? apiConnections.requestById(data.requestId) : null);
 
@@ -51,12 +56,8 @@
     pickerQuery = '';
   }
 
-  function statusColor() {
-    if (status === 'done')    return 'bg-emerald-500';
-    if (status === 'error')   return 'bg-red-500';
-    if (status === 'running') return 'bg-brand animate-pulse';
-    if (status === 'skipped') return 'bg-zinc-200';
-    return 'bg-zinc-300';
+  function openResults() {
+    if (runId) goto(`/results?run=${runId}`);
   }
 
   // Non-private params that may be overridden from upstream (call overrides provider).
@@ -95,9 +96,20 @@
 
 <div class="min-w-60 max-w-72 rounded-xl border border-border bg-white shadow-md overflow-visible">
   <div class="flex items-center gap-2 px-3 py-2 rounded-t-xl border-b border-border bg-rose-50 cursor-grab active:cursor-grabbing">
-    <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
+    <span class="h-2 w-2 rounded-full shrink-0 {statusDotClass(status)}" title={statusLabel(status)}></span>
     <Icon icon="lucide:plug" width="11" height="11" class="text-rose-500 shrink-0" />
-    <span class="text-[10px] font-semibold text-rose-700 uppercase tracking-wider">API Request</span>
+    <EditableNodeLabel
+      {id}
+      label={data.label}
+      typeName="API Request"
+      nameClass="text-xs font-semibold text-rose-800"
+      typeClass="text-[10px] font-semibold text-rose-700 uppercase tracking-wider"
+    />
+    {#if incomplete}
+      <span class="ml-auto shrink-0 text-amber-500" title="Select a request to call">
+        <Icon icon="lucide:triangle-alert" width="12" height="12" />
+      </span>
+    {/if}
     <NodeDeleteButton {id} class="ml-auto" />
   </div>
 
@@ -174,9 +186,21 @@
       <div class="text-[10px] text-red-500 font-mono">{sanitizeLocalPathsForDisplay(runState.error, 2)}</div>
     {/if}
     {#if status === 'done'}
-      <div class="text-[10px] text-emerald-600">
-        {runState?.outputValues?.status ? `HTTP ${runState.outputValues.status}` : 'Done'}
-        · {runState?.outputFiles?.length ?? 0} file{(runState?.outputFiles?.length ?? 0) !== 1 ? 's' : ''}
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-[10px] text-emerald-600">
+          {runState?.outputValues?.status ? `HTTP ${runState.outputValues.status}` : 'Done'}
+          · {runState?.outputFiles?.length ?? 0} file{(runState?.outputFiles?.length ?? 0) !== 1 ? 's' : ''}
+        </span>
+        {#if runId}
+          <button
+            type="button"
+            onclick={openResults}
+            class="inline-flex items-center gap-1 text-[10px] font-medium text-brand hover:text-brand-hover transition-colors"
+          >
+            Open in Results
+            <Icon icon="lucide:arrow-up-right" width="10" height="10" />
+          </button>
+        {/if}
       </div>
     {/if}
   </div>

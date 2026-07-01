@@ -17,7 +17,9 @@
   import { notify } from '$lib/utils/notify';
   import RunLog from '$lib/components/ui/RunLog.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
+  import ThreadControl from '$lib/components/tools/ThreadControl.svelte';
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
+  import { threadParam } from '$lib/utils/execution-resources';
   import type { ToolOutput } from '$lib/types/tool-output';
   import type { RunOutputFile } from '$lib/types/pipeline';
 
@@ -27,6 +29,7 @@
   // ── form state ───────────────────────────────────────────────────
   let r1Path      = $state('');
   let r2Path      = $state('');
+  let threads     = $state(0);
   let running     = $state(false);
   let startedAt   = $state<number | null>(null);
   let logLines    = $state<string[]>([]);
@@ -79,6 +82,7 @@
     const r1Name = r1Path.split(/[\\/]/).pop() ?? r1Path;
     const label = isPaired ? `${r1Name} (paired)` : r1Name;
     const t0 = startedAt;
+    const threadInfo = threadParam(threads);
 
     const r1Size = dataFiles.files.find(f => f.path === r1Path)?.size;
     const r2Size = isPaired ? dataFiles.files.find(f => f.path === r2Path)?.size : undefined;
@@ -98,12 +102,13 @@
         '--out1', out1Path,
         '--json', jsonPath,
         '--html', '/dev/null',
+        '--thread', String(threadInfo.threads),
       ];
       if (isPaired) {
         args.push('--in2', r2Path, '--out2', out2Path);
       }
 
-      logLines = [`$ fastp --in1 ${r1Path.split(/[\\/]/).pop()}${r2Path ? ' --in2 ' + r2Path.split(/[\\/]/).pop() : ''}`];
+      logLines = [`$ fastp --thread ${threadInfo.threads} --in1 ${r1Path.split(/[\\/]/).pop()}${r2Path ? ' --in2 ' + r2Path.split(/[\\/]/).pop() : ''}`];
       const result = await runNativeTool('fastp', args, undefined, (l) => { if (typeof l === 'string' && l.trim()) logLines.push(l); });
 
       if (!result.ok) {
@@ -127,7 +132,7 @@
         id: runId, tool: 'fastp', label,
         inputs: isPaired ? [r1Path, r2Path] : [r1Path],
         inputSizes: inputSizes.length > 0 ? inputSizes : undefined,
-        params: { paired: isPaired },
+        params: { paired: isPaired, threads: threadInfo.threads, threadsMode: threadInfo.mode },
         outputFiles,
         status: 'done',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
@@ -141,7 +146,7 @@
         id: runId, tool: 'fastp', label,
         inputs: isPaired ? [r1Path, r2Path] : [r1Path],
         inputSizes: inputSizes.length > 0 ? inputSizes : undefined,
-        params: { paired: isPaired },
+        params: { paired: isPaired, threads: threadInfo.threads, threadsMode: threadInfo.mode },
         status: 'error',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: String(e),
@@ -288,6 +293,8 @@
               <p class="text-[11px] text-zinc-400 mt-1.5">Single-end mode — add R2 for paired-end</p>
             {/if}
           </div>
+
+          <ThreadControl value={threads} disabled={running} onchange={(value) => threads = value} />
 
           <div class="flex items-center gap-3 pt-1">
             <Button

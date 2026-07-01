@@ -1,4 +1,5 @@
 import type { PipelineStepDefinition } from '$lib/types/pipeline';
+import { threadInputSchema } from '$lib/utils/execution-resources';
 
 // Parsers now live in the shared @liatir/output-parser package (single source of truth).
 export { parseFlagstatResult, flagstatToToolOutput, type FlagstatResult } from '@liatir/output-parser';
@@ -11,6 +12,7 @@ export const samtoolsFlagstatDefinition: PipelineStepDefinition = {
   category: 'Alignment',
   inputSchema: {
     inputFile: { type: 'file', label: 'BAM / SAM / CRAM', required: true, accept: ['bam', 'sam', 'cram'] },
+    threads: threadInputSchema('Additional worker threads for samtools flagstat. 0 lets Liatir choose a safe local value.'),
   },
   outputSchema: {
     stats:         { type: 'stats',  label: 'Alignment statistics' },

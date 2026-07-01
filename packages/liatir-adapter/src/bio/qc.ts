@@ -34,11 +34,17 @@ export interface FastpResult {
 
 export interface QcNamespace {
   /** Sequence statistics (`seqkit stats -a`). */
-  seqkit(args: { input: string; all?: boolean }): Promise<ToolOutput>;
+  seqkit(args: { input: string; all?: boolean; threads?: number }): Promise<ToolOutput>;
   /** FASTQ trimming + QC (`fastp`). Writes trimmed reads to `outDir` (default: temp dir). */
-  fastp(args: { r1: string; r2?: string; outDir?: string }): Promise<FastpResult>;
+  fastp(args: { r1: string; r2?: string; outDir?: string; threads?: number }): Promise<FastpResult>;
   /** Quality-control report via the bundled fastqc WASM custom-tool. */
   fastqc(args: { input: string; maxReads?: number; timeoutMs?: number }): Promise<ToolOutput>;
+}
+
+function resolveThreads(value?: number): number {
+  if (Number.isFinite(value) && value! > 0) return Math.max(1, Math.min(128, Math.trunc(value!)));
+  const cores = (globalThis as { navigator?: { hardwareConcurrency?: number } }).navigator?.hardwareConcurrency ?? 2;
+  return Math.max(1, Math.min(16, cores > 1 ? cores - 1 : 1));
 }
 
 /** Directory portion of a file path (cross-platform), for fastqc host read access. */
@@ -50,9 +56,9 @@ function parentDir(filePath: string): string {
 
 export function buildQc({ jobs, invoke, paths }: QcDeps): QcNamespace {
   return {
-    async seqkit({ input, all = true }) {
+    async seqkit({ input, all = true, threads }) {
       let stdout = "";
-      const args = ["stats", ...(all ? ["-a"] : []), input];
+      const args = ["stats", ...(all ? ["-a"] : []), "-j", String(resolveThreads(threads)), input];
       const entry = await jobs.run("seqkit", args, { onStdout: (l) => { stdout += l + "\n"; } });
       if (entry.status.type !== "done") throw new Error("seqkit failed");
       const parsed = parseSeqkitStats(stdout);
@@ -60,13 +66,13 @@ export function buildQc({ jobs, invoke, paths }: QcDeps): QcNamespace {
       return seqkitStatsToToolOutput(parsed, stdout);
     },
 
-    async fastp({ r1, r2, outDir }) {
+    async fastp({ r1, r2, outDir, threads }) {
       const dir = outDir ?? (await paths()).temp;
       const id = `${Date.now()}`;
       const jsonPath = `${dir}/fastp-${id}.json`;
       const out1 = `${dir}/fastp-${id}-R1.fastq.gz`;
       const out2 = `${dir}/fastp-${id}-R2.fastq.gz`;
-      const args = ["--in1", r1, "--out1", out1, "--json", jsonPath, "--html", "/dev/null"];
+      const args = ["--in1", r1, "--out1", out1, "--json", jsonPath, "--html", "/dev/null", "--thread", String(resolveThreads(threads))];
       if (r2) args.push("--in2", r2, "--out2", out2);
       const entry = await jobs.run("fastp", args);
       if (entry.status.type !== "done") throw new Error("fastp failed");

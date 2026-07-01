@@ -1,6 +1,8 @@
 use std::path::Path;
 use tauri::{AppHandle, Emitter};
 
+use crate::bridge::execution_resources::resolve_thread_count;
+
 /// Run `bwa mem` with stdout streamed directly to disk.
 /// Emits `jobs:stderr:{job_id}` events for live terminal display.
 #[tauri::command]
@@ -11,6 +13,7 @@ pub async fn lia_bwa_mem(
     reads_r2: Option<String>,
     output_sam: String,
     job_id: String,
+    threads: Option<usize>,
 ) -> Result<serde_json::Value, String> {
     if let Some(parent) = Path::new(&output_sam).parent() {
         std::fs::create_dir_all(parent).map_err(|e| format!("cannot create output dir: {e}"))?;
@@ -20,6 +23,8 @@ pub async fn lia_bwa_mem(
         use std::fs::File;
         use std::io::{BufRead, BufReader};
         use std::process::{Command, Stdio};
+
+        let resolved_threads = resolve_thread_count(threads);
 
         // Auto-index reference if index files don't exist
         if !Path::new(&format!("{reference}.amb")).exists() {
@@ -40,6 +45,8 @@ pub async fn lia_bwa_mem(
 
         let mut args = vec![
             "mem".to_string(),
+            "-t".to_string(),
+            resolved_threads.to_string(),
             reference,
             reads_r1,
         ];
@@ -79,6 +86,7 @@ pub async fn lia_bwa_mem(
             "ok": ok,
             "exitCode": exit_code,
             "stderr": stderr_lines,
+            "threads": resolved_threads,
         }))
     })
     .await

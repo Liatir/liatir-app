@@ -9,6 +9,7 @@
   import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
   import RunLog from '$lib/components/ui/RunLog.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
+  import ThreadControl from '$lib/components/tools/ThreadControl.svelte';
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
@@ -17,6 +18,7 @@
   import { fmtDuration, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { liatir } from '$lib/api';
   import { parseBwaMemStats, bwaMemToToolOutput } from '$lib/tools/alignment/bwa';
+  import { threadParam } from '$lib/utils/execution-resources';
   import type { ToolOutput } from '$lib/types/tool-output';
   import type { RunOutputFile } from '$lib/stores/analysisRuns.svelte';
 
@@ -27,6 +29,7 @@
   let refPath    = $state('');
   let r1Path     = $state('');
   let r2Path     = $state('');
+  let threads    = $state(0);
   let running    = $state(false);
   let startedAt  = $state<number | null>(null);
   let now        = $state(Date.now());
@@ -81,6 +84,7 @@
     const refName = refPath.split(/[\\/]/).pop() ?? refPath;
     const r1Name  = r1Path.split(/[\\/]/).pop() ?? r1Path;
     const t0 = startedAt;
+    const threadInfo = threadParam(threads);
     const inputSizes = [
       dataFiles.files.find(f => f.path === refPath)?.size,
       dataFiles.files.find(f => f.path === r1Path)?.size,
@@ -96,7 +100,7 @@
 
       const label = r2Path ? `${r1Name} + R2` : r1Name;
       logLines = [
-        `$ bwa mem ${refName} ${r1Name}${r2Path ? ` ${r2Path.split(/[\\/]/).pop()}` : ''}`,
+        `$ bwa mem -t ${threadInfo.threads} ${refName} ${r1Name}${r2Path ? ` ${r2Path.split(/[\\/]/).pop()}` : ''}`,
         `→ Output: bwa-${runId}.sam`,
       ];
 
@@ -110,7 +114,8 @@
         readsR2: r2Path || null,
         outputSam: outPath,
         jobId: jid,
-      } as any) as { ok: boolean; exitCode: number | null; stderr: string[] };
+        threads: threadInfo.threads,
+      } as any) as { ok: boolean; exitCode: number | null; stderr: string[]; threads?: number };
 
       if (!result.ok) {
         throw new Error(result.stderr.slice(-10).join('\n') || `bwa exited with code ${result.exitCode}`);
@@ -130,7 +135,7 @@
         id: runId, tool: 'bwa', label,
         inputs: [refPath, r1Path, ...(r2Path ? [r2Path] : [])],
         inputSizes: inputSizes.length ? inputSizes : undefined,
-        params: { paired: !!r2Path },
+        params: { paired: !!r2Path, threads: result.threads ?? threadInfo.threads, threadsMode: threadInfo.mode },
         status: 'done',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, outputFiles, error: null,
@@ -143,7 +148,7 @@
       await analysisRuns.add({
         id: runId, tool: 'bwa', label: r1Path.split(/[\\/]/).pop() ?? r1Path,
         inputs: [refPath, r1Path],
-        params: { paired: !!r2Path },
+        params: { paired: !!r2Path, threads: threadInfo.threads, threadsMode: threadInfo.mode },
         status: 'error',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: String(e),
@@ -252,6 +257,8 @@
             disabled={running}
             onchange={(p) => r2Path = p}
           />
+
+          <ThreadControl value={threads} disabled={running} onchange={(value) => threads = value} />
 
           <div class="flex items-center gap-3 pt-1">
             <Button

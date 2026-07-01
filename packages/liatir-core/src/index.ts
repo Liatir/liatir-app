@@ -78,11 +78,59 @@ export interface LiatirStepDefinition {
   outputSchema: Record<string, LiatirOutputFieldSchema>;
 }
 
+export type LiatirFileArtifactRole =
+  | "final"
+  | "intermediate"
+  | "cache"
+  | "temp";
+
+export type LiatirArtifactProducerKind =
+  | LiatirStepKind
+  | "pipeline"
+  | "ai-model"
+  | "dependency"
+  | "system"
+  | "unknown";
+
+export interface LiatirArtifactProducer {
+  kind: LiatirArtifactProducerKind;
+  id: string;
+  label?: string;
+  version?: string;
+  nodeId?: string;
+}
+
+export type LiatirArtifactParentRunKind =
+  | "tool"
+  | "pipeline"
+  | "pipeline-step"
+  | "ai-model-direct"
+  | "dependency"
+  | "unknown";
+
+export interface LiatirArtifactParentRun {
+  runKind: LiatirArtifactParentRunKind;
+  runId: string;
+  analysisRunId?: string;
+  pipelineId?: string | null;
+  pipelineRunId?: string;
+  nodeId?: string;
+  jobId?: string;
+}
+
 export interface LiatirFileArtifact {
   label: string;
   path: string;
   ext: string;
   size?: number;
+  /** Artifact lifecycle role. Used by cache and cleanup policy; missing means legacy final output. */
+  role?: LiatirFileArtifactRole;
+  /** Unix epoch milliseconds when Liatir registered this artifact. */
+  createdAt?: number;
+  /** Tool, model, pipeline, or system component that produced this artifact. */
+  producer?: LiatirArtifactProducer;
+  /** Run or job this artifact belongs to. */
+  parentRun?: LiatirArtifactParentRun;
   /** Output schema key that produced this artifact, when known. */
   fieldKey?: string;
   /** MIME type or domain-specific media type, when known. */

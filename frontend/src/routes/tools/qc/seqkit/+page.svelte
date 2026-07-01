@@ -16,7 +16,9 @@
   import { notify } from '$lib/utils/notify';
   import RunLog from '$lib/components/ui/RunLog.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
+  import ThreadControl from '$lib/components/tools/ThreadControl.svelte';
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
+  import { threadParam } from '$lib/utils/execution-resources';
   import type { ToolOutput } from '$lib/types/tool-output';
 
   // ── dep check ────────────────────────────────────────────────────
@@ -25,6 +27,7 @@
   // ── form state ───────────────────────────────────────────────────
   let filePath  = $state('');
   let allStats  = $state(true);
+  let threads   = $state(0);
   let running   = $state(false);
   let startedAt = $state<number | null>(null);
   let now       = $state(Date.now());
@@ -76,12 +79,13 @@
     const t0       = startedAt;
     const fileSize = dataFiles.files.find(f => f.path === filePath)?.size;
     const inputSizes = fileSize != null ? [fileSize] : undefined;
+    const threadInfo = threadParam(threads);
 
-    const args = ['stats', filePath];
+    const args = ['stats', '-j', String(threadInfo.threads), filePath];
     if (allStats) args.splice(1, 0, '-a');
 
     try {
-      logLines = [`$ seqkit stats${allStats ? ' -a' : ''} ${fileName}`];
+      logLines = [`$ seqkit stats${allStats ? ' -a' : ''} -j ${threadInfo.threads} ${fileName}`];
       const result = await runNativeTool('seqkit', args, undefined, (l) => { if (typeof l === 'string' && l.trim()) logLines.push(l); });
 
       if (!result.ok && result.stdout.trim() === '') {
@@ -96,7 +100,7 @@
       await analysisRuns.add({
         id: runId, tool: 'seqkit', label: fileName,
         inputs: [filePath], inputSizes,
-        params: { subcommand: 'stats', allStats },
+        params: { subcommand: 'stats', allStats, threads: threadInfo.threads, threadsMode: threadInfo.mode },
         status: 'done',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, error: null,
@@ -108,7 +112,7 @@
       await analysisRuns.add({
         id: runId, tool: 'seqkit', label: fileName,
         inputs: [filePath], inputSizes,
-        params: { subcommand: 'stats', allStats },
+        params: { subcommand: 'stats', allStats, threads: threadInfo.threads, threadsMode: threadInfo.mode },
         status: 'error',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: String(e),
@@ -240,6 +244,8 @@
             />
             <span class="text-xs text-zinc-600">Include extended stats (N50, Q20, Q30, GC)</span>
           </label>
+
+          <ThreadControl value={threads} disabled={running} onchange={(value) => threads = value} />
 
           <div class="flex items-center gap-3 pt-1">
             <Button

@@ -1,8 +1,10 @@
 import { liatir } from '$lib/api';
 import { appStorage } from './app-storage';
 import { getDataPrefix } from './workspace.svelte';
+import { withArtifactsMetadata } from '$lib/utils/artifacts';
 import type { ToolOutput } from '$lib/types/tool-output';
 import type { RunOutputFile } from '$lib/types/pipeline';
+import type { LiatirArtifactParentRunKind, LiatirArtifactProducerKind } from '@liatir/core';
 
 export type { RunOutputFile };
 
@@ -29,6 +31,43 @@ export interface AnalysisRun extends AnalysisRunMeta {
 
 const MAX_RUNS = 200;
 const LOG_TTL_MS = 7 * 24 * 3600 * 1000;
+const NATIVE_ANALYSIS_TOOLS = new Set([
+  'fastp',
+  'fastqc',
+  'seqkit',
+  'seqkit-stats',
+  'samtools',
+  'samtools-flagstat',
+  'samtools-faidx',
+  'bwa',
+  'bwa-mem',
+  'minimap2',
+  'bcftools',
+  'bcftools-stats',
+  'bcftools-filter',
+  'snpeff',
+]);
+const AI_ANALYSIS_TOOLS = new Set([
+  'ai-celltypist-annotate',
+  'ai-sequence-embedding',
+  'ai-genomic-variant-effect',
+  'ai-regulatory-prediction',
+  'ai-protein-structure',
+  'ai-mock-inference',
+]);
+
+function producerKindFor(tool: string): LiatirArtifactProducerKind {
+  if (tool === 'pipeline') return 'pipeline';
+  if (NATIVE_ANALYSIS_TOOLS.has(tool)) return 'native-tool';
+  if (AI_ANALYSIS_TOOLS.has(tool)) return 'ai-tool';
+  return 'unknown';
+}
+
+function parentRunKindFor(tool: string): LiatirArtifactParentRunKind {
+  if (tool === 'pipeline') return 'pipeline';
+  if (AI_ANALYSIS_TOOLS.has(tool)) return 'ai-model-direct';
+  return 'tool';
+}
 
 function getDir() { return `${getDataPrefix()}analysis-runs`; }
 function getIndex() { return `${getDir()}/index.json`; }
@@ -74,31 +113,47 @@ function createAnalysisRunsStore() {
       const api = liatir();
       if (!api) return;
 
-      const serialized = JSON.stringify(run.output);
+      const outputFiles = withArtifactsMetadata(run.outputFiles, {
+        role: 'final',
+        createdAt: run.endedAt,
+        producer: {
+          kind: producerKindFor(run.tool),
+          id: run.tool,
+          label: run.label,
+        },
+        parentRun: {
+          runKind: parentRunKindFor(run.tool),
+          runId: run.id,
+          analysisRunId: run.id,
+        },
+      });
+      const normalizedRun: AnalysisRun = { ...run, outputFiles };
+
+      const serialized = JSON.stringify(normalizedRun.output);
 
       // Write output to its own file
-      await appStorage.writeText(runPath(run.id), serialized, { createDirs: true });
+      await appStorage.writeText(runPath(normalizedRun.id), serialized, { createDirs: true });
 
       // Persist log if present
-      if (run.log && run.log.length > 0) {
-        await appStorage.writeText(logPath(run.id), JSON.stringify(run.log), { createDirs: true });
+      if (normalizedRun.log && normalizedRun.log.length > 0) {
+        await appStorage.writeText(logPath(normalizedRun.id), JSON.stringify(normalizedRun.log), { createDirs: true });
       }
 
       // Cache it immediately so the first view is instant
-      outputCache.set(run.id, run.output);
+      outputCache.set(normalizedRun.id, normalizedRun.output);
 
       // Get output file size
       let outputSize: number | undefined;
       try {
         const appPath = await appStorage.path();
         outputSize = (await api.invoke('lia_file_size', {
-          path: `${appPath}/${runPath(run.id)}`,
+          path: `${appPath}/${runPath(normalizedRun.id)}`,
         })) as number;
       } catch { /* size stays undefined */ }
 
       // Update index (meta only, no output/log)
-      const { output: _output, log: _log, ...meta } = run;
-      runs = [{ ...meta, outputSize }, ...runs.filter(r => r.id !== run.id)].slice(0, MAX_RUNS);
+      const { output: _output, log: _log, ...meta } = normalizedRun;
+      runs = [{ ...meta, outputSize }, ...runs.filter(r => r.id !== normalizedRun.id)].slice(0, MAX_RUNS);
       await persistIndex();
     },
 

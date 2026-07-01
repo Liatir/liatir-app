@@ -9,6 +9,9 @@
   import { sanitizeLocalPathsForDisplay } from '$lib/utils';
   import ValueRefInput from './ValueRefInput.svelte';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
+  import EditableNodeLabel from './EditableNodeLabel.svelte';
+  import Icon from '@iconify/svelte';
+  import { statusLabel } from './node-status';
   import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
 
   let { id, data }: NodeProps<Node<ConditionNodeData>> = $props();
@@ -18,6 +21,7 @@
   const state = $derived(pipelineStore.nodeStates.get(id));
   const status = $derived(state?.status ?? 'pending');
   const disabled = $derived(pipelineStore.running);
+  const incomplete = $derived(status === 'pending' && !(data.condition ?? '').trim());
 
   // Any value output of a connected upstream node can be tested.
   const valueOptions = $derived.by(() => {
@@ -25,6 +29,8 @@
     return upstreamOptions(id, getNodes(), getEdges() as Edge[], 'value');
   });
 
+  // Condition uses branch-aware colors when done (green = true, amber = false),
+  // so it keeps its own dot color rather than the shared statusDotClass helper.
   function statusColor() {
     if (status === 'done') return state?.activeBranch === 'true' ? 'bg-emerald-500' : 'bg-amber-500';
     if (status === 'error')   return 'bg-red-500';
@@ -44,8 +50,19 @@
 
 <div class="min-w-56 rounded-xl border border-border bg-white shadow-md overflow-visible">
   <div class="flex items-center gap-2 px-3 py-2 rounded-t-xl border-b border-border bg-sky-50 cursor-grab active:cursor-grabbing">
-    <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
-    <span class="text-[10px] font-semibold text-sky-700 uppercase tracking-wider">Condition</span>
+    <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}" title={statusLabel(status)}></span>
+    <EditableNodeLabel
+      {id}
+      label={data.label}
+      typeName="Condition"
+      nameClass="text-xs font-semibold text-sky-800"
+      typeClass="text-[10px] font-semibold text-sky-700 uppercase tracking-wider"
+    />
+    {#if incomplete}
+      <span class="shrink-0 text-amber-500" title="Add a condition expression">
+        <Icon icon="lucide:triangle-alert" width="12" height="12" />
+      </span>
+    {/if}
     {#if status === 'done' && state?.activeBranch}
       <span class="ml-auto text-[10px] font-mono {state.activeBranch === 'true' ? 'text-emerald-600' : 'text-amber-600'}">
         → {state.activeBranch}

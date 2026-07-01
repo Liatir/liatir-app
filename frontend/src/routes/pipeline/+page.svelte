@@ -5,7 +5,9 @@
   import {
     SvelteFlow,
     Background,
+    BackgroundVariant,
     Controls,
+    Panel,
     type Node,
     type Edge,
     type Connection,
@@ -22,8 +24,10 @@
   import ConditionNode from '$lib/components/pipeline/ConditionNode.svelte';
   import SubPipelineNode from '$lib/components/pipeline/SubPipelineNode.svelte';
   import ApiRequestNode from '$lib/components/pipeline/ApiRequestNode.svelte';
+  import NoteNode from '$lib/components/pipeline/NoteNode.svelte';
   import DeletableEdge from '$lib/components/pipeline/DeletableEdge.svelte';
   import { PIPELINE_NODE_DATA_CONTEXT, type PipelineNodeDataContext } from '$lib/components/pipeline/node-data-commit';
+  import { isExecutablePipelineNode } from '$lib/types/pipeline';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { apiConnections } from '$lib/stores/apiConnections.svelte';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
@@ -69,6 +73,7 @@
     condition: ConditionNode,
     'sub-pipeline': SubPipelineNode,
     'api-request': ApiRequestNode,
+    note: NoteNode,
   };
 
   // All edges use the custom deletable edge (hover → X button to remove).
@@ -368,11 +373,25 @@
   }
 
   function handleKeyboardShortcut(event: KeyboardEvent) {
-    if (isEditableTarget(event.target)) return;
     const isModifierPressed = event.metaKey || event.ctrlKey;
     if (!isModifierPressed) return;
 
     const key = event.key.toLowerCase();
+
+    // Global shortcuts — intentionally work even while a node field is focused.
+    if (key === 's') {
+      event.preventDefault();
+      if (nameInput.trim() && unsavedChanges && !saving) void savePipeline();
+      return;
+    }
+    if (key === 'enter') {
+      event.preventDefault();
+      if (canRun) void pipelineStore.run(nodes, edges);
+      return;
+    }
+
+    // Undo / redo — ignored while typing so they don't hijack text editing.
+    if (isEditableTarget(event.target)) return;
     if (key === 'z' && !event.shiftKey) {
       event.preventDefault();
       void undoGraphChange();
@@ -442,6 +461,7 @@
 
   // ── Runtime helpers ────────────────────────────────────────────────────────
 
+  const executableNodes = $derived(nodes.filter(isExecutablePipelineNode));
   const toolNodes = $derived(nodes.filter(n => n.type === 'tool'));
 
   function defaultInputValue(value: unknown): string {
@@ -466,7 +486,7 @@
   }
 
   const canRun = $derived(
-    nodes.some(n => n.type !== 'start') &&
+    executableNodes.length > 0 &&
     !pipelineStore.running &&
     toolNodes.every(n => {
       const def = resolveStepEntry(n.data?.stepId as string ?? '')?.definition;
@@ -477,21 +497,29 @@
         return val !== '';
       });
     }) &&
-    nodes.filter(n => n.type === 'sub-pipeline').every(n => n.data?.pipelineId) &&
-    nodes.filter(n => n.type === 'api-request').every(n => n.data?.requestId) &&
-    nodes.filter(n => n.type === 'condition').every(n => (n.data?.condition as string)?.trim())
+    executableNodes.filter(n => n.type === 'sub-pipeline').every(n => n.data?.pipelineId) &&
+    executableNodes.filter(n => n.type === 'api-request').every(n => n.data?.requestId) &&
+    executableNodes.filter(n => n.type === 'condition').every(n => (n.data?.condition as string)?.trim())
+  );
+
+  // Steps that have finished (done or skipped) — drives the running progress banner.
+  const doneCount = $derived(
+    executableNodes.filter(n => {
+      const s = pipelineStore.nodeStates.get(n.id)?.status;
+      return s === 'done' || s === 'skipped';
+    }).length
   );
 
   const allDone = $derived(
-    nodes.some(n => n.type !== 'start') &&
-    nodes.filter(n => n.type !== 'start').every(n => {
+    executableNodes.length > 0 &&
+    executableNodes.every(n => {
       const s = pipelineStore.nodeStates.get(n.id)?.status;
       return s === 'done' || s === 'skipped';
     })
   );
   const hasRunError = $derived(
-    nodes.some(n => n.type !== 'start') &&
-    nodes.some(n => pipelineStore.nodeStates.get(n.id)?.status === 'error')
+    executableNodes.length > 0 &&
+    executableNodes.some(n => pipelineStore.nodeStates.get(n.id)?.status === 'error')
   );
 
   onMount(async () => {
@@ -541,6 +569,7 @@
       case 'condition':    newNode = { id: crypto.randomUUID(), type, position: pos, data: { condition: '', valueRef: '' } }; break;
       case 'sub-pipeline': newNode = { id: crypto.randomUUID(), type, position: pos, data: { pipelineId: null, pipelineName: '' } }; break;
       case 'api-request':  newNode = { id: crypto.randomUUID(), type, position: pos, data: { requestId: null, requestName: '', paramOverrides: {} } }; break;
+      case 'note':         newNode = { id: crypto.randomUUID(), type, position: pos, data: { text: '', width: 260 } }; break;
       default: return;
     }
     nodes = [...nodes, newNode];
@@ -548,8 +577,12 @@
     await savePipeline();
   }
 
+  async function addNote() {
+    await addNode('note', 'note');
+  }
+
   async function clear() {
-    const ok = await confirm({ title: 'Clear pipeline', message: 'Remove all steps and connections?', confirmLabel: 'Clear' });
+    const ok = await confirm({ title: 'Clear pipeline', message: 'Remove all steps, notes, and connections?', confirmLabel: 'Clear' });
     if (!ok) return;
     nodes = [];
     edges = [];
@@ -618,6 +651,17 @@
     unsavedChanges = true;
     await savePipeline();
   }
+
+  // Renaming from the header must persist to the SAVED pipeline entry: the reactive
+  // setCurrentState only updates the working copy, so commit + save explicitly.
+  // Guarded so the blur that follows Enter/Escape doesn't save twice.
+  function commitName() {
+    if (!editingName) return;
+    editingName = false;
+    if (!nameInput.trim()) return;
+    unsavedChanges = true;
+    void savePipeline();
+  }
 </script>
 
 <svelte:window onkeydown={handleKeyboardShortcut} />
@@ -631,8 +675,8 @@
             type="text"
             bind:this={nameEditorInput}
             bind:value={nameInput}
-            onblur={() => editingName = false}
-            onkeydown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') editingName = false; }}
+            onblur={commitName}
+            onkeydown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') commitName(); }}
             class="text-xs font-medium bg-white border border-brand/60 rounded px-2.5 py-1.5 outline-none w-40"
           />
         {:else}
@@ -707,8 +751,21 @@
   </PageHeader>
 
   <div class="flex-1 relative">
-    <SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView onconnect={onConnect} ondelete={onDelete} deleteKey={['Delete', 'Backspace']} onpanecontextmenu={onPaneContextMenu} onnodecontextmenu={onNodeContextMenu} onedgecontextmenu={onEdgeContextMenu} onnodedragstart={onGraphDragStart} onnodedragstop={onGraphDragStop} onselectiondragstart={onGraphDragStart} onselectiondragstop={onGraphDragStop} defaultEdgeOptions={{ selectable: false, style: 'stroke: #4f39f6; stroke-width:3;' }} proOptions={{ hideAttribution: true }}>
-      <Background gap={24} size={1} patternColor="#e4e4e7" />
+    <SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ maxZoom: 1 }} onconnect={onConnect} ondelete={onDelete} deleteKey={pipelineStore.running ? [] : ['Delete', 'Backspace']} nodesDraggable={!pipelineStore.running} nodesConnectable={!pipelineStore.running} onpanecontextmenu={onPaneContextMenu} onnodecontextmenu={onNodeContextMenu} onedgecontextmenu={onEdgeContextMenu} onnodedragstart={onGraphDragStart} onnodedragstop={onGraphDragStop} onselectiondragstart={onGraphDragStart} onselectiondragstop={onGraphDragStop} defaultEdgeOptions={{ selectable: false, style: 'stroke: #4f39f6; stroke-width:3;' }} proOptions={{ hideAttribution: true }}>
+      <Background gap={24} size={2} patternColor="#d4d4d8" variant={BackgroundVariant.Dots} />
+      <Panel position="top-left" class="rounded-lg border border-border bg-white/95 shadow-sm">
+        <button
+          type="button"
+          title="Add note"
+          aria-label="Add note"
+          onclick={() => void addNote()}
+          disabled={pipelineStore.running}
+          class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:text-brand disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-zinc-600"
+        >
+          <Icon icon="lucide:sticky-note" width="13" height="13" />
+          Note
+        </button>
+      </Panel>
       <Controls position="bottom-right" />
     </SvelteFlow>
 
@@ -719,12 +776,25 @@
         </div>
         <div class="text-center">
           <p class="text-sm font-medium text-zinc-600">No steps yet</p>
-          <p class="text-xs text-zinc-400 mt-1">Click "Add step" to start building your pipeline.</p>
+          <p class="text-xs text-zinc-400 mt-1">Add a step to start building your pipeline.</p>
         </div>
+        <button
+          type="button"
+          onclick={() => showAddMenu = true}
+          class="pointer-events-auto inline-flex items-center gap-1.5 rounded-lg bg-brand px-3.5 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-hover"
+        >
+          <Icon icon="lucide:plus" width="14" height="14" />
+          Add step
+        </button>
       </div>
     {/if}
 
-    {#if allDone}
+    {#if pipelineStore.running}
+      <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2.5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 shadow-sm">
+        <Icon icon="svg-spinners:ring-resize" width="14" height="14" class="text-sky-500" />
+        <p class="text-sm text-sky-800 font-medium">Pipeline running… {doneCount}/{executableNodes.length} steps</p>
+      </div>
+    {:else if allDone}
       <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 shadow-sm">
         <Icon icon="lucide:check" width="14" height="14" class="text-emerald-500" />
         <p class="text-sm text-emerald-800 font-medium">Pipeline complete — outputs added to Data.</p>
@@ -766,9 +836,19 @@
       <Icon icon="lucide:plus" width="13" height="13" />
       Add step
     </button>
+    <button
+      onclick={() => void addNote()}
+      disabled={pipelineStore.running}
+      class="flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5
+             text-sm text-zinc-600 hover:border-amber-300 hover:text-amber-700 transition-colors shadow-sm
+             disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <Icon icon="lucide:sticky-note" width="13" height="13" />
+      Add note
+    </button>
     <span class="text-[11px] text-zinc-400">
-      {nodes.filter(n => n.type !== 'start').length} step{nodes.filter(n => n.type !== 'start').length !== 1 ? 's' : ''}
-      {#if nodes.length > 0}· Drag to reorder · Connect handles to wire data{/if}
+      {executableNodes.length} step{executableNodes.length !== 1 ? 's' : ''}
+      {#if nodes.length > 0}· Drag to move · Connect handles to wire data{/if}
     </span>
   </div>
 </div>
@@ -780,6 +860,11 @@
   <div class="fixed z-50 min-w-44 rounded-lg border border-border bg-white shadow-xl py-1 text-sm overflow-hidden"
        style="left: {ctxMenu.x}px; top: {ctxMenu.y}px;">
     {#if ctxMenu.kind === 'pane'}
+      <button type="button" disabled={pipelineStore.running}
+        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-zinc-700 hover:bg-zinc-50 transition-colors disabled:opacity-40"
+        onclick={() => { closeCtx(); void addNote(); }}>
+        <Icon icon="lucide:sticky-note" width="13" height="13" /> Add note
+      </button>
       <button type="button" disabled={pipelineStore.running}
         class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-zinc-700 hover:bg-zinc-50 transition-colors disabled:opacity-40"
         onclick={() => { closeCtx(); showAddMenu = true; }}>

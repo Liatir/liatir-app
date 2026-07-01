@@ -1,6 +1,8 @@
 use std::path::Path;
 use tauri::{AppHandle, Emitter};
 
+use crate::bridge::execution_resources::resolve_thread_count;
+
 /// Run `minimap2 -ax <preset>` with stdout streamed directly to disk.
 /// Emits `jobs:stderr:{job_id}` events for live terminal display.
 #[tauri::command]
@@ -12,6 +14,7 @@ pub async fn lia_minimap2(
     reads_r2: Option<String>,
     output_sam: String,
     job_id: String,
+    threads: Option<usize>,
 ) -> Result<serde_json::Value, String> {
     if let Some(parent) = Path::new(&output_sam).parent() {
         std::fs::create_dir_all(parent).map_err(|e| format!("cannot create output dir: {e}"))?;
@@ -22,11 +25,15 @@ pub async fn lia_minimap2(
         use std::io::{BufRead, BufReader};
         use std::process::{Command, Stdio};
 
+        let resolved_threads = resolve_thread_count(threads);
+
         let out_file = File::create(&output_sam)
             .map_err(|e| format!("cannot create output file: {e}"))?;
 
         // -ax: output SAM instead of default PAF
         let mut args = vec![
+            "-t".to_string(),
+            resolved_threads.to_string(),
             "-ax".to_string(),
             preset,
             reference,
@@ -68,6 +75,7 @@ pub async fn lia_minimap2(
             "ok": ok,
             "exitCode": exit_code,
             "stderr": stderr_lines,
+            "threads": resolved_threads,
         }))
     })
     .await

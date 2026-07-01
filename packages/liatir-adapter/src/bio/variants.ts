@@ -44,7 +44,7 @@ export interface SnpEffResult {
 
 export interface VariantsNamespace {
   /** Variant statistics (`bcftools stats`). */
-  bcftoolsStats(args: { input: string }): Promise<ToolOutput>;
+  bcftoolsStats(args: { input: string; threads?: number }): Promise<ToolOutput>;
   /** Functional annotation with SnpEff. Requires a configured JAR + data dir. */
   snpeff(args: SnpEffArgs): Promise<SnpEffResult>;
 }
@@ -53,11 +53,17 @@ function genJobId(tool: string): string {
   return `${tool}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function resolveThreads(value?: number): number {
+  if (Number.isFinite(value) && value! > 0) return Math.max(1, Math.min(128, Math.trunc(value!)));
+  const cores = (globalThis as { navigator?: { hardwareConcurrency?: number } }).navigator?.hardwareConcurrency ?? 2;
+  return Math.max(1, Math.min(16, cores > 1 ? cores - 1 : 1));
+}
+
 export function buildVariants({ jobs, invoke }: VariantsDeps): VariantsNamespace {
   return {
-    async bcftoolsStats({ input }) {
+    async bcftoolsStats({ input, threads }) {
       let stdout = "";
-      const entry = await jobs.run("bcftools", ["stats", input], { onStdout: (l) => { stdout += l + "\n"; } });
+      const entry = await jobs.run("bcftools", ["stats", "--threads", String(resolveThreads(threads)), input], { onStdout: (l) => { stdout += l + "\n"; } });
       if (entry.status.type !== "done") throw new Error("bcftools failed");
       const parsed = parseBcftoolsStats(stdout);
       return bcftoolsStatsToToolOutput(parsed, stdout);

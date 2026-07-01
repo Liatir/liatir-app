@@ -28,6 +28,7 @@ import type { PipelineRegistryEntry, PipelineStepDefinition, RunOutputFile } fro
 import { modulesStore } from '$lib/stores/modules.svelte';
 import { moduleToRegistryEntry, moduleToDefinition } from './module-step';
 import type { JsonValue } from '@liatir/core';
+import { threadInputSchema, threadParam } from '$lib/utils/execution-resources';
 
 type StepResult = {
   outputFiles: RunOutputFile[];
@@ -62,6 +63,7 @@ const samtoolsFaidxDefinition: PipelineStepDefinition = {
   category: 'Alignment',
   inputSchema: {
     inputFile: { type: 'file', label: 'FASTA file', required: true, accept: ['fasta', 'fa', 'fna', 'fasta.gz', 'fa.gz'] },
+    threads: threadInputSchema('Additional worker threads for samtools faidx. 0 lets Liatir choose a safe local value.'),
   },
   outputSchema: {
     faiIndex: { type: 'file', label: 'FASTA index', ext: ['fai'] },
@@ -112,11 +114,12 @@ async function runFastpStep(
   const jsonPath  = `${outputDir}/fastp-${runId}.json`;
   const out1Path  = `${outputDir}/fastp-${runId}-R1.fastq.gz`;
   const out2Path  = `${outputDir}/fastp-${runId}-R2.fastq.gz`;
+  const { threads } = threadParam(inputs.threads);
 
-  const args = ['--in1', inputs.r1, '--out1', out1Path, '--json', jsonPath, '--html', '/dev/null'];
+  const args = ['--in1', inputs.r1, '--out1', out1Path, '--json', jsonPath, '--html', '/dev/null', '--thread', String(threads)];
   if (inputs.r2) args.push('--in2', inputs.r2, '--out2', out2Path);
 
-  onLog(`$ fastp --in1 ${basename(inputs.r1)}${inputs.r2 ? ' --in2 ' + basename(inputs.r2) : ''}`);
+  onLog(`$ fastp --thread ${threads} --in1 ${basename(inputs.r1)}${inputs.r2 ? ' --in2 ' + basename(inputs.r2) : ''}`);
   const result = await runNativeTool('fastp', args, undefined, (l) => { if (l.trim()) onLog(l); });
 
   if (!result.ok) throw new Error(result.stderr || `fastp exited with code ${result.exitCode}`);
@@ -136,8 +139,9 @@ async function runSeqkitStatsStep(
   _outputDir: string,
   onLog: (l: string) => void
 ): Promise<StepResult> {
-  onLog(`$ seqkit stats ${basename(inputs.inputFile)}`);
-  const result = await runNativeTool('seqkit', ['stats', inputs.inputFile], undefined, (l) => { if (l.trim()) onLog(l); });
+  const { threads } = threadParam(inputs.threads);
+  onLog(`$ seqkit stats -j ${threads} ${basename(inputs.inputFile)}`);
+  const result = await runNativeTool('seqkit', ['stats', '-j', String(threads), inputs.inputFile], undefined, (l) => { if (l.trim()) onLog(l); });
 
   if (!result.ok && result.stdout.trim() === '') {
     throw new Error(result.stderr || `seqkit exited with code ${result.exitCode}`);
@@ -155,8 +159,9 @@ async function runSamtoolsFlagstatStep(
   _outputDir: string,
   onLog: (l: string) => void
 ): Promise<StepResult> {
-  onLog(`$ samtools flagstat ${basename(inputs.inputFile)}`);
-  const result = await runNativeTool('samtools', ['flagstat', inputs.inputFile], undefined, (l) => { if (l.trim()) onLog(l); });
+  const { threads } = threadParam(inputs.threads);
+  onLog(`$ samtools flagstat -@ ${threads} ${basename(inputs.inputFile)}`);
+  const result = await runNativeTool('samtools', ['flagstat', '-@', String(threads), inputs.inputFile], undefined, (l) => { if (l.trim()) onLog(l); });
 
   if (!result.ok && result.stdout.trim() === '') {
     throw new Error(result.stderr || `samtools exited with code ${result.exitCode}`);
@@ -175,8 +180,9 @@ async function runSamtoolsFaidxStep(
   onLog: (l: string) => void
 ): Promise<StepResult> {
   const api = liatir()!;
-  onLog(`$ samtools faidx ${basename(inputs.inputFile)}`);
-  const result = await runNativeTool('samtools', ['faidx', inputs.inputFile], undefined, (l) => { if (l.trim()) onLog(l); });
+  const { threads } = threadParam(inputs.threads);
+  onLog(`$ samtools faidx -@ ${threads} ${basename(inputs.inputFile)}`);
+  const result = await runNativeTool('samtools', ['faidx', '-@', String(threads), inputs.inputFile], undefined, (l) => { if (l.trim()) onLog(l); });
 
   if (!result.ok) throw new Error(result.stderr || `samtools faidx exited with code ${result.exitCode}`);
 
@@ -198,8 +204,9 @@ async function runBwaMemStep(
   const runId = crypto.randomUUID();
   const outPath = `${outputDir}/bwa-${runId}.sam`;
   const jid = `bwa-${runId}`;
+  const { threads } = threadParam(inputs.threads);
 
-  onLog(`$ bwa mem ${basename(inputs.reference)} ${basename(inputs.readsR1)}`);
+  onLog(`$ bwa mem -t ${threads} ${basename(inputs.reference)} ${basename(inputs.readsR1)}`);
 
   const offStderr = await api.desktop.events.on(`jobs:stderr:${jid}`, (line: string) => {
     if (typeof line === 'string' && line.trim()) onLog(line);
@@ -212,7 +219,8 @@ async function runBwaMemStep(
       readsR2: inputs.readsR2 || null,
       outputSam: outPath,
       jobId: jid,
-    } as any) as { ok: boolean; exitCode: number | null; stderr: string[] };
+      threads,
+    } as any) as { ok: boolean; exitCode: number | null; stderr: string[]; threads?: number };
 
     if (!result.ok) throw new Error(result.stderr.slice(-5).join('\n') || `bwa failed`);
 
@@ -235,8 +243,9 @@ async function runMinimap2Step(
   const outPath = `${outputDir}/minimap2-${runId}.sam`;
   const jid = `minimap2-${runId}`;
   const preset = inputs.preset || 'sr';
+  const { threads } = threadParam(inputs.threads);
 
-  onLog(`$ minimap2 -ax ${preset} ${basename(inputs.reference)} ${basename(inputs.reads)}`);
+  onLog(`$ minimap2 -t ${threads} -ax ${preset} ${basename(inputs.reference)} ${basename(inputs.reads)}`);
 
   const offStderr = await api.desktop.events.on(`jobs:stderr:${jid}`, (line: string) => {
     if (typeof line === 'string' && line.trim()) onLog(line);
@@ -250,7 +259,8 @@ async function runMinimap2Step(
       readsR2: null,
       outputSam: outPath,
       jobId: jid,
-    } as any) as { ok: boolean; exitCode: number | null; stderr: string[] };
+      threads,
+    } as any) as { ok: boolean; exitCode: number | null; stderr: string[]; threads?: number };
 
     if (!result.ok) throw new Error(result.stderr.slice(-5).join('\n') || `minimap2 failed`);
 
@@ -268,8 +278,9 @@ async function runBcftoolsStatsStep(
   _outputDir: string,
   onLog: (l: string) => void
 ): Promise<StepResult> {
-  onLog(`$ bcftools stats ${basename(inputs.inputFile)}`);
-  const result = await runNativeTool('bcftools', ['stats', inputs.inputFile], undefined, (l) => { if (l.trim()) onLog(l); });
+  const { threads } = threadParam(inputs.threads);
+  onLog(`$ bcftools stats --threads ${threads} ${basename(inputs.inputFile)}`);
+  const result = await runNativeTool('bcftools', ['stats', '--threads', String(threads), inputs.inputFile], undefined, (l) => { if (l.trim()) onLog(l); });
 
   if (!result.ok && result.stdout.trim() === '') {
     throw new Error(result.stderr || `bcftools exited with code ${result.exitCode}`);
@@ -291,11 +302,12 @@ async function runBcftoolsFilterStep(
   const runId = crypto.randomUUID();
   const outPath = `${outputDir}/bcftools-filter-${runId}.vcf.gz`;
   const expr = inputs.expression?.trim() || 'QUAL>20';
+  const { threads } = threadParam(inputs.threads);
 
-  onLog(`$ bcftools filter -i '${expr}' -O z -o ${basename(outPath)} ${basename(inputs.inputFile)}`);
+  onLog(`$ bcftools filter --threads ${threads} -i '${expr}' -O z -o ${basename(outPath)} ${basename(inputs.inputFile)}`);
   const result = await runNativeTool(
     'bcftools',
-    ['filter', '-i', expr, '-O', 'z', '-o', outPath, inputs.inputFile],
+    ['filter', '--threads', String(threads), '-i', expr, '-O', 'z', '-o', outPath, inputs.inputFile],
     undefined,
     (l) => { if (l.trim()) onLog(l); }
   );

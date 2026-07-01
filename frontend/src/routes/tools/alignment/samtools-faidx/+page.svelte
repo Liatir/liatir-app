@@ -16,14 +16,18 @@
   import { notify } from '$lib/utils/notify';
   import RunLog from '$lib/components/ui/RunLog.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
+  import ThreadControl from '$lib/components/tools/ThreadControl.svelte';
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
+  import { threadParam } from '$lib/utils/execution-resources';
   import type { ToolOutput, StatsSection, TextSection, TableSection } from '$lib/types/tool-output';
+  import type { RunOutputFile } from '$lib/types/pipeline';
 
   // ── dep check ────────────────────────────────────────────────────
   let depStatus = $state<DepStatus>('checking');
 
   // ── index form ───────────────────────────────────────────────────
   let filePath  = $state('');
+  let threads   = $state(0);
   let running   = $state(false);
   let startedAt = $state<number | null>(null);
   let now       = $state(Date.now());
@@ -81,11 +85,12 @@
     const t0       = startedAt;
     const fileSize = dataFiles.files.find(f => f.path === filePath)?.size;
     const inputSizes = fileSize != null ? [fileSize] : undefined;
+    const threadInfo = threadParam(threads);
 
     try {
-      logLines = [`$ samtools faidx ${fileName}`];
+      logLines = [`$ samtools faidx -@ ${threadInfo.threads} ${fileName}`];
       // samtools faidx writes the index to <file>.fai (no stdout output)
-      const result = await runNativeTool('samtools', ['faidx', filePath], undefined, (l) => { if (typeof l === 'string' && l.trim()) logLines.push(l); });
+      const result = await runNativeTool('samtools', ['faidx', '-@', String(threadInfo.threads), filePath], undefined, (l) => { if (typeof l === 'string' && l.trim()) logLines.push(l); });
 
       if (!result.ok) {
         throw new Error(result.stderr || `samtools faidx exited with code ${result.exitCode}`);
@@ -102,14 +107,20 @@
 
       // Register the .fai file in Data under the locked Results/<tool>/ folder
       await dataFiles.addToResults(faiPath, 'samtools-faidx');
+      const outputFiles: RunOutputFile[] = [{
+        label: 'FASTA index',
+        path: faiPath,
+        ext: 'fai',
+        size: await api.invoke('lia_file_size', { path: faiPath }) as number,
+      }];
 
       await analysisRuns.add({
         id: runId, tool: 'samtools-faidx', label: fileName,
         inputs: [filePath], inputSizes,
-        params: { subcommand: 'faidx' },
+        params: { subcommand: 'faidx', threads: threadInfo.threads, threadsMode: threadInfo.mode },
         status: 'done',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
-        output, error: null,
+        output, outputFiles, error: null,
         log: [...logLines],
       });
       await notify('Samtools faidx complete', `${fileName} finished in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
@@ -118,7 +129,7 @@
       await analysisRuns.add({
         id: runId, tool: 'samtools-faidx', label: fileName,
         inputs: [filePath], inputSizes,
-        params: { subcommand: 'faidx' },
+        params: { subcommand: 'faidx', threads: threadInfo.threads, threadsMode: threadInfo.mode },
         status: 'error',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: String(e),
@@ -140,8 +151,9 @@
     extractError   = null;
 
     try {
-      logLines = [`$ samtools faidx ${filePath.split(/[\\/]/).pop()} ${extractRegion.trim()}`];
-      const result = await runNativeTool('samtools', ['faidx', filePath, extractRegion.trim()], undefined, (l) => { if (typeof l === 'string' && l.trim()) logLines.push(l); });
+      const threadInfo = threadParam(threads);
+      logLines = [`$ samtools faidx -@ ${threadInfo.threads} ${filePath.split(/[\\/]/).pop()} ${extractRegion.trim()}`];
+      const result = await runNativeTool('samtools', ['faidx', '-@', String(threadInfo.threads), filePath, extractRegion.trim()], undefined, (l) => { if (typeof l === 'string' && l.trim()) logLines.push(l); });
       if (!result.ok && result.stdout.trim() === '') {
         throw new Error(result.stderr || `samtools faidx exited with code ${result.exitCode}`);
       }
@@ -304,6 +316,8 @@
             disabled={running}
             onchange={(p) => filePath = p}
           />
+
+          <ThreadControl value={threads} disabled={running || extractRunning} onchange={(value) => threads = value} />
 
           <div class="flex items-center gap-3 pt-1">
             <Button

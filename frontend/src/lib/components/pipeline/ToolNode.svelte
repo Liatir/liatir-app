@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
   import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
   import type { NodeProps } from '@xyflow/svelte';
   import type { Node, Edge } from '@xyflow/svelte';
@@ -16,6 +17,8 @@
   import { upstreamOptions } from '$lib/tools/pipeline-io';
   import ValueRefInput from './ValueRefInput.svelte';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
+  import EditableNodeLabel from './EditableNodeLabel.svelte';
+  import { statusDotClass, statusLabel } from './node-status';
   import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
 
   let { id, data }: NodeProps<Node<ToolNodeData>> = $props();
@@ -75,6 +78,20 @@
 
   const inputsDisabled = $derived(pipelineStore.running);
 
+  // Required inputs still empty (mirrors the canvas' canRun check) → surfaced as a
+  // subtle warning so the user knows why the pipeline can't run yet.
+  function resolvedInput(key: string, schema: { default?: unknown }): string {
+    const v = data.inputs?.[key];
+    if (v !== undefined && v !== null && v !== '') return String(v);
+    return schema.default !== undefined && schema.default !== null ? String(schema.default) : '';
+  }
+  const missingRequired = $derived(
+    def ? Object.entries(def.inputSchema).filter(([k, s]) => s.required && resolvedInput(k, s) === '') : []
+  );
+  const incomplete = $derived(status === 'pending' && missingRequired.length > 0);
+
+  const runId = $derived(pipelineStore.currentRunId);
+
   onMount(() => {
     void aiModelsStore.init();
   });
@@ -119,12 +136,8 @@
     await commitNodeDataAfterUpdate(nodeDataContext, getNodes, getEdges);
   }
 
-  function statusColor() {
-    if (status === 'done')    return 'bg-emerald-500';
-    if (status === 'error')   return 'bg-red-500';
-    if (status === 'running') return 'bg-brand animate-pulse';
-    if (status === 'skipped') return 'bg-zinc-200';
-    return 'bg-zinc-300';
+  function openResults() {
+    if (runId) goto(`/results?run=${runId}`);
   }
 </script>
 
@@ -133,10 +146,15 @@
 <div class="min-w-70 max-w-80 rounded-xl border border-border bg-white shadow-md overflow-visible">
 
   <div class="flex items-center gap-2 px-3 py-2.5 rounded-t-xl border-b border-border bg-surface cursor-grab active:cursor-grabbing">
-    <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
-    <span class="flex-1 text-sm font-semibold text-zinc-800 truncate">{def?.label ?? data.stepId}</span>
+    <span class="h-2 w-2 rounded-full shrink-0 {statusDotClass(status)}" title={statusLabel(status)}></span>
+    <EditableNodeLabel {id} label={data.label} typeName={def?.label ?? data.stepId} />
+    {#if incomplete}
+      <span class="shrink-0 text-amber-500" title="Missing required input: {missingRequired.map(([, s]) => s.label ?? '').filter(Boolean).join(', ')}">
+        <Icon icon="lucide:triangle-alert" width="12" height="12" />
+      </span>
+    {/if}
     <span class="text-[10px] text-zinc-400 font-medium">
-      {status === 'running' ? 'Running…' : status === 'done' ? 'Done' : status === 'error' ? 'Error' : status === 'skipped' ? 'Skipped' : 'Pending'}
+      {statusLabel(status)}
     </span>
     <NodeDeleteButton {id} />
   </div>
@@ -223,13 +241,28 @@
   {/if}
 
   {#if status === 'done' && state?.outputFiles && state.outputFiles.length > 0}
-    <div class="px-3 pb-2.5 flex flex-wrap gap-1 nodrag nopan border-t border-border/60 pt-2.5">
-      {#each state.outputFiles as f}
-        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] text-emerald-700  overflow-y-scroll overflow-x-hidden text-wrap max-h-40">
-          <Icon icon="lucide:file" width="8" height="8" />
-          {f.label}
-        </span>
-      {/each}
+    <div class="px-3 pb-2.5 nodrag nopan border-t border-border/60 pt-2.5">
+      <div class="mb-1.5 flex items-center justify-between gap-2">
+        <p class="text-[9px] font-semibold text-zinc-400 uppercase tracking-wider">Outputs</p>
+        {#if runId}
+          <button
+            type="button"
+            onclick={openResults}
+            class="inline-flex items-center gap-1 text-[10px] font-medium text-brand hover:text-brand-hover transition-colors"
+          >
+            Open in Results
+            <Icon icon="lucide:arrow-up-right" width="10" height="10" />
+          </button>
+        {/if}
+      </div>
+      <div class="flex flex-wrap gap-1">
+        {#each state.outputFiles as f}
+          <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] text-emerald-700 overflow-y-scroll overflow-x-hidden text-wrap max-h-40">
+            <Icon icon="lucide:file" width="8" height="8" />
+            {f.label}
+          </span>
+        {/each}
+      </div>
     </div>
   {/if}
 

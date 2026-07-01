@@ -5,9 +5,12 @@
   import { useSvelteFlow } from '@xyflow/svelte';
   import Icon from '@iconify/svelte';
   import type { SubPipelineNodeData } from '$lib/types/pipeline';
+  import { isExecutablePipelineNode } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
   import { sanitizeLocalPathsForDisplay } from '$lib/utils';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
+  import EditableNodeLabel from './EditableNodeLabel.svelte';
+  import { statusDotClass, statusLabel } from './node-status';
   import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
 
   let { id, data }: NodeProps<Node<SubPipelineNodeData>> = $props();
@@ -16,6 +19,7 @@
   const runState = $derived(pipelineStore.nodeStates.get(id));
   const status = $derived(runState?.status ?? 'pending');
   const disabled = $derived(pipelineStore.running);
+  const incomplete = $derived(status === 'pending' && !data.pipelineId);
 
   // Available pipelines (no cycles, no self)
   const available = $derived(pipelineStore.availableSubPipelines(pipelineStore.pipelineId));
@@ -28,14 +32,6 @@
     showPicker = false;
   }
 
-  function statusColor() {
-    if (status === 'done')    return 'bg-emerald-500';
-    if (status === 'error')   return 'bg-red-500';
-    if (status === 'running') return 'bg-brand animate-pulse';
-    if (status === 'skipped') return 'bg-zinc-200';
-    return 'bg-zinc-300';
-  }
-
   const lastLog = $derived(runState?.logs?.[runState.logs.length - 1] ?? null);
 </script>
 
@@ -43,9 +39,20 @@
 
 <div class="min-w-56 rounded-xl border border-border bg-white shadow-md overflow-visible">
   <div class="flex items-center gap-2 px-3 py-2 rounded-t-xl border-b border-border bg-indigo-50 cursor-grab active:cursor-grabbing">
-    <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
+    <span class="h-2 w-2 rounded-full shrink-0 {statusDotClass(status)}" title={statusLabel(status)}></span>
     <Icon icon="lucide:workflow" width="11" height="11" class="text-indigo-500 shrink-0" />
-    <span class="text-[10px] font-semibold text-indigo-700 uppercase tracking-wider">Sub-Pipeline</span>
+    <EditableNodeLabel
+      {id}
+      label={data.label}
+      typeName="Sub-Pipeline"
+      nameClass="text-xs font-semibold text-indigo-800"
+      typeClass="text-[10px] font-semibold text-indigo-700 uppercase tracking-wider"
+    />
+    {#if incomplete}
+      <span class="ml-auto shrink-0 text-amber-500" title="Select a pipeline to run">
+        <Icon icon="lucide:triangle-alert" width="12" height="12" />
+      </span>
+    {/if}
     <NodeDeleteButton {id} class="ml-auto" />
   </div>
 
@@ -106,7 +113,7 @@
           class="w-full text-left px-3 py-2 text-xs text-zinc-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors border-b border-border/50 last:border-0"
         >
           <div class="font-medium">{p.name}</div>
-          <div class="text-[10px] text-zinc-400">{p.nodes.filter(n => n.type !== 'start').length} steps</div>
+          <div class="text-[10px] text-zinc-400">{p.nodes.filter(isExecutablePipelineNode).length} steps</div>
         </button>
       {:else}
         <div class="px-3 py-4 text-center text-xs text-zinc-400">No saved pipelines available</div>

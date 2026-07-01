@@ -8,6 +8,8 @@
   import { upstreamOptions } from '$lib/tools/pipeline-io';
   import ValueRefInput from './ValueRefInput.svelte';
   import NodeDeleteButton from './NodeDeleteButton.svelte';
+  import EditableNodeLabel from './EditableNodeLabel.svelte';
+  import { statusDotClass, statusLabel } from './node-status';
   import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
   import Select from '$lib/components/ui/Select.svelte';
   import { sanitizeLocalPathsForDisplay } from '$lib/utils';
@@ -43,14 +45,6 @@
     return upstreamOptions(id, getNodes(), getEdges() as Edge[], 'value', { valueType: 'number' });
   });
 
-  function statusColor() {
-    if (status === 'done')    return 'bg-emerald-500';
-    if (status === 'error')   return 'bg-red-500';
-    if (status === 'running') return 'bg-brand animate-pulse';
-    if (status === 'skipped') return 'bg-zinc-200';
-    return 'bg-zinc-300';
-  }
-
   async function updateMathData(patch: Partial<MathNodeData>) {
     updateNodeData(id, patch);
     await commitNodeDataAfterUpdate(nodeDataContext, getNodes, getEdges);
@@ -62,8 +56,14 @@
 
 <div class="min-w-56 rounded-xl border border-border bg-white shadow-md overflow-visible">
   <div class="flex items-center gap-2 px-3 py-2 rounded-t-xl border-b border-border bg-violet-50 cursor-grab active:cursor-grabbing">
-    <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}"></span>
-    <span class="text-[10px] font-semibold text-violet-700 uppercase tracking-wider">Math</span>
+    <span class="h-2 w-2 rounded-full shrink-0 {statusDotClass(status)}" title={statusLabel(status)}></span>
+    <EditableNodeLabel
+      {id}
+      label={data.label}
+      typeName="Math"
+      nameClass="text-xs font-semibold text-violet-800"
+      typeClass="text-[10px] font-semibold text-violet-700 uppercase tracking-wider"
+    />
     <Select
       value={data.operation}
       options={operationOptions}

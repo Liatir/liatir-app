@@ -1,4 +1,5 @@
 import type { PipelineStepDefinition } from '$lib/types/pipeline';
+import { threadInputSchema } from '$lib/utils/execution-resources';
 
 // Parsers now live in the shared @liatir/output-parser package (single source of truth).
 export { parseBcftoolsStats, bcftoolsStatsToToolOutput, type BcftoolsStatsResult } from '@liatir/output-parser';
@@ -12,6 +13,7 @@ export const bcftoolsFilterDefinition: PipelineStepDefinition = {
   inputSchema: {
     inputFile:  { type: 'file',   label: 'VCF / BCF file',   required: true,  accept: ['vcf', 'vcf.gz', 'bcf', 'bcf.gz'] },
     expression: { type: 'string', label: 'Filter expression', required: true,  default: 'QUAL>20' },
+    threads: threadInputSchema('Worker threads for BCFtools filter. 0 lets Liatir choose a safe local value.'),
   },
   outputSchema: {
     filteredVcf: { type: 'file', label: 'Filtered VCF', ext: ['vcf.gz'] },
@@ -26,6 +28,7 @@ export const bcftoolsStatsDefinition: PipelineStepDefinition = {
   category: 'Variant Calling',
   inputSchema: {
     inputFile: { type: 'file', label: 'VCF / BCF file', required: true, accept: ['vcf', 'vcf.gz', 'bcf', 'bcf.gz'] },
+    threads: threadInputSchema('Worker threads for BCFtools stats. 0 lets Liatir choose a safe local value.'),
   },
   outputSchema: {
     stats:   { type: 'stats',  label: 'Variant statistics' },
