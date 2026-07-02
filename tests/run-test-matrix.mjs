@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { cleanupTestArtifacts } from './support/artifact-cleanup.mjs';
 import { testProfiles, testSuites } from './test-matrix.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -216,6 +217,31 @@ function relativePath(filePath) {
   return filePath ? path.relative(rootDir, filePath) : '';
 }
 
+function loadE2EFailures(reportPath) {
+  if (!reportPath || !fs.existsSync(reportPath)) return [];
+  try {
+    const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+    if (!Array.isArray(report.tests)) return [];
+    return report.tests
+      .filter((test) => test.status === 'failed')
+      .map((test) => ({
+        durationMs: test.durationMs ?? 0,
+        error: test.error ?? '',
+        failureScreenshot: test.failureScreenshot ?? null,
+        name: test.name,
+        specPath: test.specPath,
+      }));
+  } catch (error) {
+    return [{
+      durationMs: 0,
+      error: `Could not read E2E report: ${error instanceof Error ? error.message : String(error)}`,
+      failureScreenshot: null,
+      name: 'E2E report parse failure',
+      specPath: relativePath(reportPath),
+    }];
+  }
+}
+
 function renderMarkdown(report) {
   const lines = [
     '# Liatir Test Report',
@@ -266,24 +292,119 @@ function renderMarkdown(report) {
   return `${lines.join('\n')}\n`;
 }
 
+function buildFailureReport(report) {
+  const failedSuites = report.suites.filter((result) => result.status === 'failed');
+  return {
+    finishedAt: report.finishedAt,
+    failures: failedSuites.map((result) => ({
+      command: result.command,
+      durationMs: result.durationMs,
+      e2eFailures: loadE2EFailures(result.e2eReportPath),
+      e2eReportPath: result.e2eReportPath,
+      exitCode: result.exitCode,
+      id: result.id,
+      label: result.label,
+      layer: result.layer,
+      logPath: result.logPath,
+      signal: result.signal,
+      timedOut: Boolean(result.timedOut),
+    })),
+    runId: report.runId,
+    summary: report.summary,
+  };
+}
+
+function errorPreview(error) {
+  return String(error || '')
+    .split('\n')
+    .slice(0, 8)
+    .join('\n');
+}
+
+function renderFailureMarkdown(failureReport) {
+  const lines = [
+    '# Liatir Test Failures',
+    '',
+    `Generated: ${failureReport.finishedAt}`,
+    `Run ID: \`${failureReport.runId}\``,
+    '',
+  ];
+
+  if (failureReport.failures.length === 0) {
+    lines.push('No failures were recorded in the latest test matrix run.', '');
+    return lines.join('\n');
+  }
+
+  for (const failure of failureReport.failures) {
+    lines.push(`## ${failure.label}`, '');
+    lines.push(`- Suite: \`${failure.id}\``);
+    lines.push(`- Layer: \`${failure.layer}\``);
+    lines.push(`- Command: \`${failure.command}\``);
+    lines.push(`- Duration: ${formatDuration(failure.durationMs)}`);
+    lines.push(`- Exit: ${failure.timedOut ? 'timed out' : failure.exitCode ?? 'unknown'}`);
+    if (failure.logPath) lines.push(`- Log: \`${relativePath(failure.logPath)}\``);
+    if (failure.e2eReportPath) lines.push(`- E2E report: \`${relativePath(failure.e2eReportPath)}\``);
+    lines.push('');
+
+    if (failure.e2eFailures.length > 0) {
+      lines.push('### Failed E2E Tests', '');
+      for (const test of failure.e2eFailures) {
+        lines.push(`- ${test.name} (${test.specPath}, ${formatDuration(test.durationMs)})`);
+        if (test.failureScreenshot) lines.push(`  Screenshot: \`${relativePath(test.failureScreenshot)}\``);
+        if (test.error) {
+          lines.push('');
+          lines.push('```text');
+          lines.push(errorPreview(test.error));
+          lines.push('```');
+          lines.push('');
+        }
+      }
+    }
+  }
+
+  return `${lines.join('\n')}\n`;
+}
+
 function writeReport(report, reportDir, runDir) {
   fs.mkdirSync(reportDir, { recursive: true });
   const json = JSON.stringify(report, null, 2);
   const markdown = renderMarkdown(report);
+  const failureReport = buildFailureReport(report);
+  const failureJson = JSON.stringify(failureReport, null, 2);
+  const failureMarkdown = renderFailureMarkdown(failureReport);
   const timestampJson = path.join(runDir, 'report.json');
   const timestampMd = path.join(runDir, 'report.md');
+  const timestampFailuresJson = path.join(runDir, 'failures.json');
+  const timestampFailuresMd = path.join(runDir, 'failures.md');
   const latestJson = path.join(reportDir, 'latest.json');
   const latestMd = path.join(reportDir, 'latest.md');
+  const latestFailuresJson = path.join(reportDir, 'latest-failures.json');
+  const latestFailuresMd = path.join(reportDir, 'latest-failures.md');
 
   fs.writeFileSync(timestampJson, json);
   fs.writeFileSync(timestampMd, markdown);
+  fs.writeFileSync(timestampFailuresJson, failureJson);
+  fs.writeFileSync(timestampFailuresMd, failureMarkdown);
   fs.copyFileSync(timestampJson, latestJson);
   fs.copyFileSync(timestampMd, latestMd);
+  fs.copyFileSync(timestampFailuresJson, latestFailuresJson);
+  fs.copyFileSync(timestampFailuresMd, latestFailuresMd);
 
-  return { latestJson, latestMd, timestampJson, timestampMd };
+  return {
+    latestFailuresJson,
+    latestFailuresMd,
+    latestJson,
+    latestMd,
+    timestampFailuresJson,
+    timestampFailuresMd,
+    timestampJson,
+    timestampMd,
+  };
 }
 
 async function main() {
+  cleanupTestArtifacts(rootDir);
+
   const options = parseArgs(process.argv.slice(2));
   const suites = selectSuites(options);
 
@@ -345,6 +466,7 @@ async function main() {
 
   console.log(`\nTest report: ${relativePath(reportPaths.latestMd)}`);
   console.log(`Machine report: ${relativePath(reportPaths.latestJson)}`);
+  console.log(`Failure report: ${relativePath(reportPaths.latestFailuresMd)}`);
 
   if (report.summary.failed > 0) process.exit(1);
 }

@@ -29,6 +29,25 @@ jobs, AI runtimes, viewer capture, sidecars, or `.lia` execution.
   heavy models through the real UI. Never add model downloads to default test
   profiles.
 
+- `npm run test:full`
+  Runs the full matrix in dependency order. Heavy suites are included in the
+  profile but skipped unless heavy mode is enabled. Use this for periodic broad
+  confidence checks.
+
+- `npm run test:full:continue`
+  Runs the full matrix and keeps going after a failed suite. Use this when the
+  goal is to discover as many failures as possible in one pass. Treat downstream
+  failures carefully if an upstream build or prepare step failed.
+
+- `npm run test:full:heavy`
+  Runs the full matrix with `LIATIR_RUN_HEAVY_AI=1` and heavy suites enabled.
+  This is for explicit heavy runtime checks, not normal development loops.
+
+- `npm run test:full:heavy:install`
+  Runs the full matrix with heavy AI installation enabled. This may download
+  large runtime dependencies and model files. Use `LIATIR_HEAVY_AI_MODELS` to
+  restrict the model IDs being installed.
+
 - `npm run test:unit`
   Fast TypeScript contract/helper tests. Use this for pure registry contracts,
   parsers, path display helpers, and other deterministic logic.
@@ -72,7 +91,13 @@ runtime tests without mixing their risk profiles:
 - every suite writes a dedicated log file;
 - every run writes `tests/.artifacts/reports/latest.json` and
   `tests/.artifacts/reports/latest.md`;
+- every run writes `tests/.artifacts/reports/latest-failures.json` and
+  `tests/.artifacts/reports/latest-failures.md`;
 - timestamped report copies are kept under the same reports directory.
+- artifacts older than `LIATIR_TEST_ARTIFACT_TTL_DAYS` are pruned
+  automatically from reports, screenshots, Tauri logs, visual diffs, and stale
+  test app storage. The default is 7 days. Set a negative value to disable
+  cleanup for debugging.
 
 Useful commands:
 
@@ -81,13 +106,22 @@ npm run test:fast
 npm run test:verify
 npm run test:ui
 npm run test:ui:visual
+npm run test:full
+npm run test:full:continue
 LIATIR_RUN_HEAVY_AI=1 npm run test:heavy:ai
+LIATIR_RUN_HEAVY_AI=1 npm run test:full:heavy
 LIATIR_RUN_HEAVY_AI=1 LIATIR_HEAVY_AI_INSTALL=1 LIATIR_HEAVY_AI_MODELS=instadeep-nt-v2-50m-multi-species npm run test:heavy:ai
+LIATIR_HEAVY_AI_MODELS=instadeep-nt-v2-50m-multi-species npm run test:full:heavy:install
 ```
 
 Use `LIATIR_HEAVY_AI_MODELS` as a comma-separated list when a heavy test should
 target specific model IDs. Keep defaults conservative, then expand targeted
 runs as runtime boxes stabilize.
+
+When a suite fails, first open `tests/.artifacts/reports/latest-failures.md`.
+It summarizes the failed suite, command, log path, E2E report path, failing E2E
+test names, and screenshots when available. The complete machine-readable data
+lives in `tests/.artifacts/reports/latest-failures.json`.
 
 ## Native Harness
 
@@ -102,7 +136,7 @@ It intentionally owns the native lifecycle:
 - starts the embedded WebDriver server through the `wdio` Cargo feature;
 - creates the WebDriver session with standard `fetch`;
 - drives the native webview through a small fetch-based WebDriver client;
-- captures failure screenshots and Tauri logs under `tests/.artifacts`.
+- captures failure screenshots and Tauri logs under `tests/.artifacts`;
 - writes per-test JSON reports when `LIATIR_E2E_REPORT` or `--report` is set.
 
 The custom session creation is deliberate. The upstream WebdriverIO runner

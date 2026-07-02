@@ -1,22 +1,97 @@
 import {
+  expectNoVisibleRuntimeError,
   navigateSidebar,
   openSandboxWorkspace,
 } from '../support/liatir-app.mjs';
 
+const VISUAL_PAGES = [
+  {
+    name: 'ai-models',
+    route: '/ai',
+    readyText: 'AI Models',
+  },
+  {
+    name: 'dependencies',
+    route: '/deps',
+    readyText: 'Dependencies',
+  },
+  {
+    name: 'jobs',
+    route: '/jobs',
+    readyText: 'Jobs',
+  },
+  {
+    name: 'results',
+    route: '/results',
+    readyText: 'Results',
+  },
+  {
+    name: 'data',
+    route: '/data',
+    readyText: 'Data',
+  },
+];
+
+async function setSidebarCollapsed(browser, collapsed) {
+  await browser.waitUntil(
+    async () => browser.execute(() => Boolean(document.querySelector('[data-testid="sidebar-collapse-toggle"]'))),
+    { timeout: 20_000, timeoutMsg: 'Sidebar collapse toggle was not available' },
+  );
+
+  const current = await browser.execute(() => localStorage.getItem('sidebar-collapsed') === 'true');
+  if (current !== collapsed) {
+    await browser.execute(() => {
+      document.querySelector('[data-testid="sidebar-collapse-toggle"]')?.click();
+    });
+  }
+
+  await browser.waitUntil(
+    async () => browser.execute((expected) => localStorage.getItem('sidebar-collapsed') === String(expected), collapsed),
+    { timeout: 5_000, timeoutMsg: `Sidebar did not reach collapsed=${collapsed}` },
+  );
+}
+
+async function waitForPage(browser, page) {
+  await navigateSidebar(browser, page.route);
+  await browser.waitUntil(
+    async () => browser.execute((text) => document.body.innerText.includes(text), page.readyText),
+    { timeout: 30_000, timeoutMsg: `${page.readyText} page did not load for visual capture` },
+  );
+  await browser.waitUntil(
+    async () => browser.execute(() => !document.body.innerText.includes('Loading AI Models...')),
+    { timeout: 30_000, timeoutMsg: 'AI Models loading state did not settle before visual capture' },
+  );
+  await expectNoVisibleRuntimeError(browser);
+}
+
+async function compareStableScreenshot(browser, expect, name, compareScreenshot) {
+  const result = await compareScreenshot(browser, name);
+  expect(result.diffRatio).toBeLessThanOrEqual(Number(process.env.LIATIR_VISUAL_THRESHOLD ?? 0.01));
+}
+
 export const tests = [
   {
-    name: 'captures the AI Models page in the native Tauri webview',
+    name: 'captures core workspace pages with expanded sidebar',
     async run({ browser, compareScreenshot, expect }) {
       await openSandboxWorkspace(browser);
-      await navigateSidebar(browser, '/ai');
+      await setSidebarCollapsed(browser, false);
 
-      await browser.waitUntil(
-        async () => browser.execute(() => document.body.innerText.includes('AI Models')),
-        { timeout: 20_000, timeoutMsg: 'AI Models page did not load for visual capture' },
-      );
+      for (const page of VISUAL_PAGES) {
+        await waitForPage(browser, page);
+        await compareStableScreenshot(browser, expect, `${page.name}-sidebar-expanded`, compareScreenshot);
+      }
+    },
+  },
+  {
+    name: 'captures core workspace pages with collapsed sidebar',
+    async run({ browser, compareScreenshot, expect }) {
+      await openSandboxWorkspace(browser);
+      await setSidebarCollapsed(browser, true);
 
-      const result = await compareScreenshot(browser, 'ai-models-page');
-      expect(result.diffRatio).toBeLessThanOrEqual(Number(process.env.LIATIR_VISUAL_THRESHOLD ?? 0.01));
+      for (const page of VISUAL_PAGES) {
+        await waitForPage(browser, page);
+        await compareStableScreenshot(browser, expect, `${page.name}-sidebar-collapsed`, compareScreenshot);
+      }
     },
   },
 ];

@@ -61,7 +61,7 @@
 			const sidebarHasRoute: boolean = routeIsInSidebar(routeId);
 			if(sidebarHasRoute) await goto(`${routeId}?${queryParam}`);
 			else await goto(`/?${queryParam}`);
-			
+
 			toast.info("Now using sandbox workspace");
 		} else {
 			const toWorkspace = (page.url.searchParams.get('fromWorkspace')?.trim()) ?? "";
@@ -74,7 +74,7 @@
 				jobsStore.refresh();
 				pipelineStore.init();
 				toast.info(`Back to: ${workspaceStore.active?.name}`);
-				
+
 				const sidebarHasRoute: boolean = routeIsInSidebar(routeId);
 				if(sidebarHasRoute) await goto(routeId);
 				else await goto(`/`);
@@ -158,7 +158,7 @@
 						data-testid="sidebar-nav-item"
 						data-route={item.href}
 						class="group relative flex w-full overflow-hidden text-left items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
-							{sideCollapsed ? 'justify-center' : ''}  
+							{sideCollapsed ? 'justify-center' : ''}
 							{(active && !(item?.workspacePage))
 							? 'bg-brand/10 text-brand font-medium'
 							: 'text-zinc-500 hover:bg-zinc-100/90 hover:text-zinc-800'}"
@@ -220,13 +220,13 @@
 				{/if}
 			{/if}
 		{/each}
-		
+
 		<!-- Toggle Sandbox -->
 		<button
 			onclick={toggleSandboxMode}
 			title={sideCollapsed ? 'Toggle Sandbox' : undefined}
 			class="w-full flex items-center overflow-hidden gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
-					{sideCollapsed ? 'justify-center' : ''} 
+					{sideCollapsed ? 'justify-center' : ''}
 					{workspaceStore.isSandboxMode?'text-sandbox-600 hover:bg-sandbox-50':'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100/90'}"
 		>
 			<Icon icon="lucide:flask-conical" width="16" height="16" class="shrink-0" />
@@ -245,11 +245,11 @@
 		>
 
 			{#if $sidebarCollapsed}
-				<button class="w-fit text-right text-zinc-800 hover:bg-zinc-100 py-1.5 px-1.5 rounded-md" onclick={()=>sidebarCollapsed.set(false)}>
+				<button data-testid="sidebar-collapse-toggle" class="w-fit text-right text-zinc-800 hover:bg-zinc-100 py-1.5 px-1.5 rounded-md" onclick={()=>sidebarCollapsed.set(false)}>
 					<Icon icon="ph:sidebar-simple-light" width="17" height="17" class="shrink-0 rotate-180" />
 				</button>
 			{:else}
-				<button class="w-fit text-right text-zinc-800 hover:bg-zinc-100 py-1.5 px-1.5 rounded-md" onclick={()=>sidebarCollapsed.set(true)}>
+				<button data-testid="sidebar-collapse-toggle" class="w-fit text-right text-zinc-800 hover:bg-zinc-100 py-1.5 px-1.5 rounded-md" onclick={()=>sidebarCollapsed.set(true)}>
 					<Icon icon="ph:sidebar-simple-light" width="17" height="17" class="shrink-0" />
 				</button>
 			{/if}
@@ -259,17 +259,3 @@
 		</div>
 	</div>
 </aside>
-
-
-
-<style>
-	#collapse-sidebar-button {
-		opacity: 0;
-	}
-	#sidebar-container:hover #collapse-sidebar-button {
-		opacity: 100;
-	}
-	#collapse-sidebar-button:hover {
-		opacity: 100;
-	}
-</style>

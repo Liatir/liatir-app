@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { expect } from 'expect';
 import pixelmatch from 'pixelmatch';
 import { PNG } from 'pngjs';
+import { cleanupTestArtifacts } from '../support/artifact-cleanup.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const appBinaryCandidates = process.platform === 'darwin'
@@ -26,6 +27,8 @@ const diffDir = path.join(artifactsDir, 'visual-diffs');
 const embeddedPort = Number(process.env.TAURI_WEBDRIVER_PORT ?? 4445);
 const baseUrl = `http://127.0.0.1:${embeddedPort}`;
 const elementKey = 'element-6066-11e4-a52e-4f735466cecf';
+
+cleanupTestArtifacts(rootDir);
 
 for (const dir of [testHome, logDir, screenshotDir, baselineDir, diffDir]) {
   fs.mkdirSync(dir, { recursive: true });
