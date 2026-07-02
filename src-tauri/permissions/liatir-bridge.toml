@@ -149,8 +149,8 @@ commands.allow = [
   "lia_cleanup_delete_part",
   "lia_init_demo_files",
 
-  "lia_module_save_output",
-  "lia_module_delete_output",
+  "lia_plugin_save_output",
+  "lia_plugin_delete_output",
 
   "lia_app_path",
   "lia_app_exists",

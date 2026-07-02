@@ -1,11 +1,11 @@
 ---
 title: plugins.remove
-description: Removes a registered low-level WASM module.
+description: Removes a registered low-level WASM plugin.
 ---
 
 # plugins.remove
 
-`Liatir.plugins.remove()` removes a registered low-level WASM module.
+`Liatir.plugins.remove()` removes a registered low-level WASM plugin.
 
 ## Signature
 
@@ -16,6 +16,5 @@ remove(name: string): Promise<boolean>
 ## Example
 
 ```ts
-await Liatir.plugins.remove('my-wasm-module');
+await Liatir.plugins.remove('my-wasm-plugin');
 ```
-

@@ -8,8 +8,8 @@ import type { U64 } from "../../../utils/utils/_integerUtils";
 
 export type WasmStep = {
   kind: "wasm";
-  /** .wasm module name as registered via Liatir.plugins.add() */
-  module: string;
+  /** .wasm plugin name as registered via Liatir.plugins.add() */
+  plugin: string;
   payload: PluginCallPayload;
   timeoutMs?: U64;
 };
@@ -22,7 +22,7 @@ export type SidecarStep = {
 };
 
 /**
- * A pipeline step is either a WASM module call or a native sidecar invocation.
+ * A pipeline step is either a WASM plugin call or a native sidecar invocation.
  *
  * TODO: extend with additional step kinds as needed, e.g.:
  *   - "fs-transform"   → read/write file in the sandbox without a full binary

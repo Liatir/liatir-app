@@ -495,6 +495,7 @@ const TSCONFIG = JSON.stringify(
     compilerOptions: {
       target: "ES2022",
       module: "ESNext",
+      outDir: "raw_build",
       moduleResolution: "bundler",
       lib: ["ES2022"],
       strict: true,
@@ -516,10 +517,13 @@ function nodeIndex(config: InitConfig): string {
   return config.language === "typescript" ? MINIMAL_TS : MINIMAL_JS;
 }
 
-const MINIMAL_TS = `import { defineModule, field, type ModuleContext } from "@liatir/sdk";
+const MINIMAL_TS = `// Docs: https://liatir.com/docs/plugins
 
-// Docs: https://liatir.com/docs/plugins
-const liatirModule = defineModule({
+import { definePlugin, field, type PluginContext } from "@liatir/sdk";
+
+// This is just an example. Edit inputs and outputs definitions and the plugin logic to implement your solutions.
+
+const liatirPlugin = definePlugin({
   inputs: {
     text: field.string({
       label: "Text",
@@ -537,17 +541,20 @@ const liatirModule = defineModule({
   },
 });
 
-export default liatirModule.main(async ({ input }: ModuleContext<typeof liatirModule>) => {
+export default liatirPlugin.main(async ({ input, lia }: PluginContext<typeof liatirPlugin>) => {
+
+  // Write the plugin logic here
+
   return {
     length: input.text.length,
   };
 });
 `;
 
-const MINIMAL_JS = `import { defineModule, field } from "@liatir/sdk";
+const MINIMAL_JS = `import { definePlugin, field } from "@liatir/sdk";
 
 // Docs: https://liatir.com/docs/plugins
-const liatirModule = defineModule({
+const liatirPlugin = definePlugin({
   inputs: {
     text: field.string({
       label: "Text",
@@ -565,7 +572,7 @@ const liatirModule = defineModule({
   },
 });
 
-export default liatirModule.main(async ({ input }) => {
+export default liatirPlugin.main(async ({ input }) => {
   return {
     length: input.text.length,
   };
@@ -574,10 +581,10 @@ export default liatirModule.main(async ({ input }) => {
 
 const FILE_PROCESSOR_TS = `import { basename } from "node:path";
 import { stat } from "node:fs/promises";
-import { defineModule, field, type ModuleContext } from "@liatir/sdk";
+import { definePlugin, field, type PluginContext } from "@liatir/sdk";
 
 // Docs: https://liatir.com/docs/plugins
-const liatirModule = defineModule({
+const liatirPlugin = definePlugin({
   inputs: {
     inputFile: field.file({
       label: "Input file",
@@ -599,7 +606,7 @@ const liatirModule = defineModule({
   },
 });
 
-export default liatirModule.main(async ({ input }: ModuleContext<typeof liatirModule>) => {
+export default liatirPlugin.main(async ({ input }: PluginContext<typeof liatirPlugin>) => {
   const fileStats = await stat(input.inputFile);
 
   return {
@@ -611,10 +618,10 @@ export default liatirModule.main(async ({ input }: ModuleContext<typeof liatirMo
 
 const FILE_PROCESSOR_JS = `import { basename } from "node:path";
 import { stat } from "node:fs/promises";
-import { defineModule, field } from "@liatir/sdk";
+import { definePlugin, field } from "@liatir/sdk";
 
 // Docs: https://liatir.com/docs/plugins
-const liatirModule = defineModule({
+const liatirPlugin = definePlugin({
   inputs: {
     inputFile: field.file({
       label: "Input file",
@@ -636,7 +643,7 @@ const liatirModule = defineModule({
   },
 });
 
-export default liatirModule.main(async ({ input }) => {
+export default liatirPlugin.main(async ({ input }) => {
   const fileStats = await stat(input.inputFile);
 
   return {
@@ -646,10 +653,10 @@ export default liatirModule.main(async ({ input }) => {
 });
 `;
 
-const BIO_CLI_TS = `import { defineModule, field, type ModuleContext } from "@liatir/sdk";
+const BIO_CLI_TS = `import { definePlugin, field, type PluginContext } from "@liatir/sdk";
 
 // Docs: https://liatir.com/docs/plugins
-const liatirModule = defineModule({
+const liatirPlugin = definePlugin({
   inputs: {
     fastq: field.file({
       label: "FASTQ file",
@@ -674,7 +681,7 @@ const liatirModule = defineModule({
   },
 });
 
-export default liatirModule.main(async ({ input, lia }: ModuleContext<typeof liatirModule>) => {
+export default liatirPlugin.main(async ({ input, lia }: PluginContext<typeof liatirPlugin>) => {
   const stdoutLines: string[] = [];
   const stderrLines: string[] = [];
 
@@ -691,10 +698,10 @@ export default liatirModule.main(async ({ input, lia }: ModuleContext<typeof lia
 });
 `;
 
-const BIO_CLI_JS = `import { defineModule, field } from "@liatir/sdk";
+const BIO_CLI_JS = `import { definePlugin, field } from "@liatir/sdk";
 
 // Docs: https://liatir.com/docs/plugins
-const liatirModule = defineModule({
+const liatirPlugin = definePlugin({
   inputs: {
     fastq: field.file({
       label: "FASTQ file",
@@ -719,7 +726,7 @@ const liatirModule = defineModule({
   },
 });
 
-export default liatirModule.main(async ({ input, lia }) => {
+export default liatirPlugin.main(async ({ input, lia }) => {
   const stdoutLines = [];
   const stderrLines = [];
 

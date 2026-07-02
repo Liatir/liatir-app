@@ -30,9 +30,9 @@ from it and the manifest is generated from it at build time. You never hand-writ
 types or a manifest:
 
 ```ts
-import { defineModule, field, type ModuleContext } from "@liatir/sdk";
+import { definePlugin, field, type PluginContext } from "@liatir/sdk";
 
-const liatirModule = defineModule({
+const liatirPlugin = definePlugin({
   inputs: {
     fastq: field.file({ label: "FASTQ file", accept: ["fastq", "fq"], required: true }),
   },
@@ -41,7 +41,7 @@ const liatirModule = defineModule({
   },
 });
 
-export default liatirModule.main(async ({ input, lia }: ModuleContext<typeof liatirModule>) => {
+export default liatirPlugin.main(async ({ input, lia }: PluginContext<typeof liatirPlugin>) => {
   // `input.fastq` is string (inferred from `inputs`).
   // `lia` is the local Liatir API.
   await lia.jobs.run("seqkit", ["stats", input.fastq]);
@@ -53,7 +53,7 @@ export default liatirModule.main(async ({ input, lia }: ModuleContext<typeof lia
 `field.file({ accept })`. Each takes `{ label?, description?, required?, default? }`.
 
 `lia build` runs TypeScript checks, validates the exported
-`defineModule({ inputs, outputs }).main(...)` shape, then packages the `.lia`.
+`definePlugin({ inputs, outputs }).main(...)` shape, then packages the `.lia`.
 `lia dev` watches `src/index.ts` or `src/index.js`, typechecks on rebuild when a
 `tsconfig.json` exists, validates the same shape, applies schema defaults, and
 runs the plugin against the open Liatir app. JavaScript plugins are supported

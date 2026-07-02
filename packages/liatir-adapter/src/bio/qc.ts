@@ -85,7 +85,7 @@ export function buildQc({ jobs, invoke, paths }: QcDeps): QcNamespace {
       const result = await invoke<{ ok: boolean; value?: unknown; stderr?: string; error?: string }>(
         "lia_plugin_call",
         {
-          module: "fastqc.wasm",
+          plugin: "fastqc.wasm",
           payload: { fn: "run", args: { input, maxReads } },
           timeoutMs: timeoutMs ?? 300_000,
           hostReadPaths: [parentDir(input)],

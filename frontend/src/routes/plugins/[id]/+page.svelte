@@ -7,18 +7,18 @@
   import Badge from '$lib/components/ui/Badge.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Select from '$lib/components/ui/Select.svelte';
-  import { modulesStore, type LiatirModule, type FieldDef } from '$lib/stores/modules.svelte';
+  import { liaPluginsStore, type LiatirPlugin, type FieldDef } from '$lib/stores/lia-plugins.svelte';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { liatir } from '$lib/api';
-  import { saveModuleResultFiles, type ModuleSaveResult } from '$lib/utils/module-files';
-  import { runLiatirModule } from '$lib/utils/module-run';
+  import { savePluginResultFiles, type PluginSaveResult } from '$lib/utils/plugin-files';
+  import { runLiatirPlugin } from '$lib/utils/plugin-run';
   import { matchesAcceptedExtension } from '$lib/utils/file-extensions';
   import { toast } from '$lib/stores/toast.svelte';
   import { getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
 
   const id = $derived((page.params as { id: string }).id);
-  let mod = $state<LiatirModule | null>(null);
+  let mod = $state<LiatirPlugin | null>(null);
 
   // Form values — keyed by field name
   let values = $state<Record<string, string | number | boolean>>({});
@@ -30,7 +30,7 @@
   let stderrLines = $state<string[]>([]);
   let exitCode = $state<number | null | undefined>(undefined);
   let result = $state<unknown>(null);
-  let savedFiles = $state<ModuleSaveResult[]>([]);
+  let savedFiles = $state<PluginSaveResult[]>([]);
 
   // Node.js availability
   let nodeAvailable = $state<boolean | null>(null);
@@ -48,8 +48,8 @@
   onMount(async () => {
     resetRunOutput();
     values = {};
-    await modulesStore.init();
-    mod = modulesStore.byId(id);
+    await liaPluginsStore.init();
+    mod = liaPluginsStore.byId(id);
     if (!mod) { goto('/plugins'); return; }
 
     // Pre-fill defaults
@@ -109,7 +109,7 @@
 
     try {
       // Execute via the shared runner (Node job streaming OR WASM direct result).
-      const out = await runLiatirModule(mod, values, (stream, line) => {
+      const out = await runLiatirPlugin(mod, values, (stream, line) => {
         if (stream === 'stdout') stdoutLines = [...stdoutLines, line];
         else stderrLines = [...stderrLines, line];
       });
@@ -119,7 +119,7 @@
       // Persist any file-typed outputs into Results (same as native tools).
       if (exitCode === 0 && mod && Object.keys(mod.outputSchema).length > 0) {
         try {
-          savedFiles = await saveModuleResultFiles(mod.name, mod.outputSchema, result, runId);
+          savedFiles = await savePluginResultFiles(mod.name, mod.outputSchema, result, runId);
           if (savedFiles.length > 0) {
             toast.success(`Saved ${savedFiles.length} file${savedFiles.length > 1 ? 's' : ''} to Results`);
           }
@@ -138,7 +138,7 @@
   const hasRun = $derived(exitCode !== undefined);
   const succeeded = $derived(exitCode === 0);
 
-  function runtimeLabel(runtime: LiatirModule['runtime']) {
+  function runtimeLabel(runtime: LiatirPlugin['runtime']) {
     return runtime === 'wasm' ? 'WASM .lia' : 'Node .lia';
   }
 </script>

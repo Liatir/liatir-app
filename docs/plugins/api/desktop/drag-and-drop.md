@@ -1,12 +1,12 @@
 ---
-title: Drag & Drop Module
-description: Documentation for the Drag & Drop module. Learn how to handle file and folder drag-and-drop events within your desktop app.
+title: Drag & Drop API
+description: Documentation for the Drag & Drop API area. Learn how to handle file and folder drag-and-drop events within your desktop app.
 ---
 
 
-# Drag & Drop Module
+# Drag & Drop API
 
-The **Drag & Drop Module** of the Liatir API enables your desktop application to handle drag-and-drop events. This module integrates with the bridge event system via the `onDragDrop` event, allowing you to respond to drag-and-drop actions performed within the app window.
+The **Drag & Drop API** of the Liatir API enables your desktop application to handle drag-and-drop events. This API area integrates with the bridge event system via the `onDragDrop` event, allowing you to respond to drag-and-drop actions performed within the app window.
 
 ## Overview
 

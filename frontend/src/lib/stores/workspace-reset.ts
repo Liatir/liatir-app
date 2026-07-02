@@ -4,7 +4,7 @@ import { pipelineStore } from './pipeline.svelte';
 import { savedScripts } from './savedScripts.svelte';
 import { dataFiles } from './dataFiles.svelte';
 import { analysisRuns } from './analysisRuns.svelte';
-import { modulesStore } from './modules.svelte';
+import { liaPluginsStore } from './lia-plugins.svelte';
 
 setResetFn(() => {
   apiConnections.reset();
@@ -12,7 +12,7 @@ setResetFn(() => {
   savedScripts.reset();
   dataFiles.reset();
   analysisRuns.reset();
-  modulesStore.reset();
+  liaPluginsStore.reset();
 });
 
 setDemoInitFn(() => dataFiles.initDemoFiles());

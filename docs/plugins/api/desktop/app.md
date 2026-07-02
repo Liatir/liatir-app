@@ -1,12 +1,12 @@
 ---
-title: App Module
+title: App API
 description: Interface for retrieving system information and controlling the Liatir app.
 ---
 
 
-# App Module
+# App API
 
-The `app` module of the Liatir API provides methods to retrieve system-level information and control the main application. Use this module when you need to access details about the app environment or programmatically exit the application.
+The `app` API area of the Liatir API provides methods to retrieve system-level information and control the main application. Use this API area when you need to access details about the app environment or programmatically exit the application.
 
 ## Overview
 

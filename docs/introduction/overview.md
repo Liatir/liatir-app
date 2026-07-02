@@ -27,10 +27,13 @@ Liatir offers four ways to add new analysis capability:
 Any binary installed in your system PATH can be wrapped as a native tool. Liatir checks availability, surfaces install instructions when the binary is missing, and runs the command with the parameters you choose. Run history and parsed results are stored automatically.
 
 ### 2 — .lia plugins
-A `.lia` file is a self-contained ZIP bundle: a `manifest.json` with an input/output schema, and an `index.js` ESM bundle that is executed by Node.js. The plugin's JS can do anything Node can do — including shelling out to Nextflow, Snakemake, or any other CLI tool. From Liatir's perspective, a plugin that wraps a Nextflow workflow looks identical to a native QC tool: same schema, same run history, same output tracking.
+A `.lia` file is a self-contained extension bundle. Node plugins declare their
+inputs and outputs in code with `definePlugin({ inputs, outputs })`, and
+`lia build` generates the bundle manifest from that contract. WASM plugins use a
+manifest file and a sandboxed `plugin.wasm` payload.
 
 ### 3 — WASM tools
-For performance-critical or cross-language logic, Liatir supports WebAssembly modules. Compile from Rust, C, or any WASM-compatible language and expose it as a normal tool in the UI and in pipelines.
+For performance-critical or cross-language logic, Liatir supports WebAssembly plugins. Compile from Rust, C, or any WASM-compatible language and expose it as a normal tool in the UI and in pipelines.
 
 ### 4 — AI Models and AI Tools
 AI Models are locally installed model runtimes managed by Liatir. AI Tools are the pipeline capabilities that use those models for tasks such as single-cell annotation, sequence embedding, protein structure prediction, and genomic variant scoring.
@@ -41,7 +44,7 @@ AI Models are locally installed model runtimes managed by Liatir. AI Tools are t
 |---------|-------------|
 | **Data library** | A registry of file paths on disk. Files are never copied — Liatir tracks references and detects when files move or disappear. |
 | **Native tool** | A system binary wrapped with a Liatir UI, dependency check, and run history. |
-| **.lia plugin** | A self-contained JavaScript bundle that extends Liatir with custom steps. Can orchestrate any external tool. |
+| **.lia plugin** | A self-contained extension bundle that adds custom steps through the shared input/output contract. |
 | **WASM tool** | A WebAssembly-backed tool for performance-critical logic. FastQC is the primary example. |
 | **AI Model** | A locally managed model runtime installed only when needed. |
 | **AI Tool** | A pipeline-ready capability that runs a compatible local AI Model through the shared I/O contract. |

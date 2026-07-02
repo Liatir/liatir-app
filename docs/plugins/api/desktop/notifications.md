@@ -1,11 +1,11 @@
 ---
-title: Notifications Module
+title: Notifications API
 description: Send and manage native desktop notifications from your web app using the Liatir API API.
 ---
 
-# Notifications Module
+# Notifications API
 
-The `Notifications` module exposes a minimal interface for reading the current notification permission state, requesting permission from the user, and showing a notification.
+The `Notifications` API area exposes a minimal interface for reading the current notification permission state, requesting permission from the user, and showing a notification.
 
 :::tip Notifications on macOS
 On macOS, a granted notification permission does not always mean notifications will appear as visible banners. Notifications may still be delivered silently and placed only in Notification Center, depending on the app’s notification settings in System Settings and the selected alert style. If notifications seem to “not work,” first check whether they are being collected in Notification Center and review the app’s macOS notification preferences.
@@ -19,7 +19,7 @@ On macOS, a granted notification permission does not always mean notifications w
 | `request()`                     | Requests permission to send notifications.   |
 | `show(title, body)`    | Displays a notification with a title and body text.                        |
 
-### Module Interface
+### API Interface
 
 ```ts
 interface NotificationsInterface = {
@@ -151,7 +151,7 @@ await Liatir.desktop.notifications.show("Operation completed", "The process fini
 
 | Name | Type | Description |
 | --- | --- | --- |
-| **NotificationPermission** | `"granted" \| "denied" \| "default" \| string` | Represents the permission value returned by the module methods. |
+| **NotificationPermission** | `"granted" \| "denied" \| "default" \| string` | Represents the permission value returned by the API area methods. |
 
 
 ## Notes

@@ -35,8 +35,10 @@ export function buildPipeline(deps: {
 
         try {
           if (step.kind === "wasm") {
+            const plugin = step.plugin ?? (step as unknown as { module?: string }).module;
+            if (!plugin) throw new Error("WASM pipeline step requires a plugin name.");
             const output = await deps.plugins.call(
-              step.module,
+              plugin,
               step.payload,
               step.timeoutMs
             );

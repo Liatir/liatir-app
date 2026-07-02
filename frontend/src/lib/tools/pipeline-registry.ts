@@ -25,8 +25,13 @@ import { snpEffStore } from '$lib/stores/snpeff.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import type { ToolOutput } from '$lib/types/tool-output';
 import type { PipelineRegistryEntry, PipelineStepDefinition, RunOutputFile } from '$lib/types/pipeline';
-import { modulesStore } from '$lib/stores/modules.svelte';
-import { moduleToRegistryEntry, moduleToDefinition } from './module-step';
+import { liaPluginsStore } from '$lib/stores/lia-plugins.svelte';
+import {
+  LEGACY_LIA_PLUGIN_STEP_PREFIX,
+  LIA_PLUGIN_STEP_PREFIX,
+  pluginToRegistryEntry,
+  pluginToDefinition,
+} from './plugin-step';
 import type { JsonValue } from '@liatir/core';
 import { threadInputSchema, threadParam } from '$lib/utils/execution-resources';
 
@@ -420,24 +425,28 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
 // They are not in the static registry above — they are resolved on demand from
 // the plugin import store so importing/removing one is reflected without a rebuild.
 
-/** Resolve a step entry by id: a native tool OR an imported .lia plugin (`module:<id>`). */
+/** Resolve a step entry by id: a native tool OR an imported .lia plugin. */
 export function resolveStepEntry(stepId: string): PipelineRegistryEntry | undefined {
-  if (stepId.startsWith('module:')) {
-    const mod = modulesStore.byId(stepId.slice('module:'.length));
-    return mod ? moduleToRegistryEntry(mod) : undefined;
+  if (stepId.startsWith(LIA_PLUGIN_STEP_PREFIX)) {
+    const plugin = liaPluginsStore.byId(stepId.slice(LIA_PLUGIN_STEP_PREFIX.length));
+    return plugin ? pluginToRegistryEntry(plugin) : undefined;
+  }
+  if (stepId.startsWith(LEGACY_LIA_PLUGIN_STEP_PREFIX)) {
+    const plugin = liaPluginsStore.byId(stepId.slice(LEGACY_LIA_PLUGIN_STEP_PREFIX.length));
+    return plugin ? pluginToRegistryEntry(plugin) : undefined;
   }
   return PIPELINE_REGISTRY[stepId];
 }
 
 /** Step definitions for every imported .lia plugin — for the pipeline tool palette. */
-export function moduleStepDefinitions(): PipelineStepDefinition[] {
-  return modulesStore.modules.map(moduleToDefinition);
+export function pluginStepDefinitions(): PipelineStepDefinition[] {
+  return liaPluginsStore.plugins.map(pluginToDefinition);
 }
 
 /** Definitions of all available steps (native tools + imported .lia plugins). */
 export function allStepDefinitions(): PipelineStepDefinition[] {
   return [
     ...Object.values(PIPELINE_REGISTRY).map((e) => e.definition),
-    ...moduleStepDefinitions(),
+    ...pluginStepDefinitions(),
   ];
 }

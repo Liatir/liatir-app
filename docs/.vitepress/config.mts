@@ -118,7 +118,7 @@ export default defineConfig({
             items: [
               { text: 'Overview', link: '/plugins/overview' },
               { text: 'Bundle format', link: '/plugins/format' },
-              { text: 'liatir-cli', link: '/plugins/liatir-cli' },
+              { text: '@liatir/lia CLI', link: '/plugins/liatir-cli' },
               { text: 'Liatir SDK', link: '/plugins/sdk' },
             ],
           },
@@ -127,6 +127,16 @@ export default defineConfig({
             collapsed: true,
             items: [
               { text: 'Overview', link: '/plugins/api/overview' },
+              {
+                text: 'Plugin authoring',
+                collapsed: true,
+                items: [
+                  { text: 'definePlugin', link: '/plugins/api/plugin/define-plugin' },
+                  { text: 'field', link: '/plugins/api/plugin/field' },
+                  { text: 'PluginContext', link: '/plugins/api/plugin/plugin-context' },
+                  { text: 'lia context', link: '/plugins/api/plugin/lia-context' },
+                ],
+              },
               {
                 text: 'Root',
                 collapsed: true,

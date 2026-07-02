@@ -1,11 +1,11 @@
 ---
 title: plugins.call
-description: Calls a registered low-level WASM plugin module.
+description: Calls a registered low-level WASM plugin.
 ---
 
 # plugins.call
 
-`Liatir.plugins.call()` calls a registered low-level WASM module.
+`Liatir.plugins.call()` calls a registered low-level WASM plugin.
 
 For normal `.lia` plugin authoring, prefer the `.lia` manifest and plugin
 contract documented in [Plugins](/plugins/overview). This namespace is for the
@@ -15,7 +15,7 @@ lower-level WASM runtime surface.
 
 ```ts
 call(
-  module: string,
+  plugin: string,
   payload: PluginCallPayload,
   timeoutMs?: number,
   hostReadPaths?: string[]
@@ -35,7 +35,7 @@ type PluginCallPayload = {
 ## Example
 
 ```ts
-const result = await Liatir.plugins.call('my-wasm-module', {
+const result = await Liatir.plugins.call('my-wasm-plugin', {
   fn: 'run',
   args: { value: 42 }
 });
@@ -44,8 +44,7 @@ const result = await Liatir.plugins.call('my-wasm-module', {
 ## Result
 
 The result includes duration, stdout, stderr, success state, and the returned
-module value.
+plugin value.
 
 Use `hostReadPaths` for large local files that cannot reasonably be passed
 through memory.
-

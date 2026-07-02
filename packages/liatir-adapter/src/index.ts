@@ -361,48 +361,48 @@ type Infer<S extends Record<string, Field<unknown, LiatirFieldType>>> = {
   [K in keyof S]: S[K] extends Field<infer T, LiatirFieldType> ? T : never;
 };
 
-export type ModuleInput<S extends InputSchema> = Infer<S>;
-export type ModuleOutput<S extends OutputSchema> = Infer<S>;
-export type ModuleMainContext<I extends InputSchema, O extends OutputSchema> = {
+export type PluginInput<S extends InputSchema> = Infer<S>;
+export type PluginOutput<S extends OutputSchema> = Infer<S>;
+export type PluginMainContext<I extends InputSchema, O extends OutputSchema> = {
   input: Infer<I>;
   lia: LiatirNode;
 };
-export type ModuleMainHandler<I extends InputSchema, O extends OutputSchema> = (
-  ctx: ModuleMainContext<I, O>
+export type PluginMainHandler<I extends InputSchema, O extends OutputSchema> = (
+  ctx: PluginMainContext<I, O>
 ) => Infer<O> | Promise<Infer<O>>;
 
-export interface ModuleDefinition<I extends InputSchema, O extends OutputSchema> {
+export interface PluginDefinition<I extends InputSchema, O extends OutputSchema> {
   inputs: I;
   outputs: O;
 }
 
-export interface LiatirModuleContract<I extends InputSchema, O extends OutputSchema> {
-  readonly __liatirModuleContract: true;
+export interface LiatirPluginContract<I extends InputSchema, O extends OutputSchema> {
+  readonly __liatirPluginContract: true;
   inputs: I;
   outputs: O;
-  main: (handler: ModuleMainHandler<I, O>) => LiatirModule<I, O>;
+  main: (handler: PluginMainHandler<I, O>) => LiatirPlugin<I, O>;
 }
 
-export type ModuleContext<TContract> =
-  TContract extends LiatirModuleContract<infer I, infer O> ? ModuleMainContext<I, O> : never;
+export type PluginContext<TContract> =
+  TContract extends LiatirPluginContract<infer I, infer O> ? PluginMainContext<I, O> : never;
 
 /** Runtime shape `lia build` reads (schema → manifest) and the app runner calls. */
-export interface LiatirModule<I extends InputSchema = InputSchema, O extends OutputSchema = OutputSchema> {
-  readonly __liatirModule: true;
+export interface LiatirPlugin<I extends InputSchema = InputSchema, O extends OutputSchema = OutputSchema> {
+  readonly __liatirPlugin: true;
   inputs: I;
   outputs: O;
   run: (input: Record<string, unknown>) => Promise<unknown>;
 }
 
 /**
- * Define a Liatir plugin. Declare `inputs`/`outputs` with `f.*` once: the
+ * Define a Liatir plugin. Declare `inputs`/`outputs` with `field.*` once: the
  * `input` and return types are inferred from them, and the manifest is generated
  * from them at build time — no hand-written types, no manifest to keep in sync.
  *
  * ```ts
- * import { defineModule, field } from "@liatir/sdk";
+ * import { definePlugin, field } from "@liatir/sdk";
  *
- * export default defineModule({
+ * export default definePlugin({
  *   inputs: {
  *     text: field.string({ label: "Text", required: true }),
  *   },
@@ -414,16 +414,16 @@ export interface LiatirModule<I extends InputSchema = InputSchema, O extends Out
  * });
  * ```
  */
-export function defineModule<const I extends InputSchema, const O extends OutputSchema>(
-  def: ModuleDefinition<I, O>,
-): LiatirModuleContract<I, O> {
+export function definePlugin<const I extends InputSchema, const O extends OutputSchema>(
+  def: PluginDefinition<I, O>,
+): LiatirPluginContract<I, O> {
   return {
-    __liatirModuleContract: true,
+    __liatirPluginContract: true,
     inputs: def.inputs,
     outputs: def.outputs,
     main: (handler) => {
       return {
-        __liatirModule: true,
+        __liatirPlugin: true,
         inputs: def.inputs,
         outputs: def.outputs,
         run: async (input) => {

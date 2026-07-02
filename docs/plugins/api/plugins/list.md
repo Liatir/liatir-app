@@ -1,11 +1,11 @@
 ---
 title: plugins.list
-description: Lists registered low-level WASM modules.
+description: Lists registered low-level WASM plugins.
 ---
 
 # plugins.list
 
-`Liatir.plugins.list()` lists low-level WASM modules registered in the runtime.
+`Liatir.plugins.list()` lists low-level WASM plugins registered in the runtime.
 
 ## Signature
 
@@ -16,6 +16,5 @@ list(): Promise<string[]>
 ## Example
 
 ```ts
-const modules = await Liatir.plugins.list();
+const plugins = await Liatir.plugins.list();
 ```
-

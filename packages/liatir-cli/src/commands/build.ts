@@ -17,9 +17,9 @@ type RuntimeField = LiatirFieldSchema & {
   __t?: unknown;
 };
 
-type CompiledNodeModule = {
-  __liatirModule?: unknown;
-  __liatirModuleContract?: unknown;
+type CompiledNodePlugin = {
+  __liatirPlugin?: unknown;
+  __liatirPluginContract?: unknown;
   inputs?: unknown;
   outputs?: unknown;
   run?: unknown;
@@ -98,7 +98,7 @@ function serializeOutputSchema(schema: Record<string, RuntimeField> | undefined)
   return out;
 }
 
-function failInvalidNodeModule(message: string): never {
+function failInvalidNodePlugin(message: string): never {
   console.error(message);
   process.exit(1);
 }
@@ -140,30 +140,30 @@ function wasmMetadata(raw: Record<string, unknown>): ManifestMetadata {
   };
 }
 
-function validateNodeModule(def: CompiledNodeModule | undefined): asserts def is {
-  __liatirModule: true;
+function validateNodePlugin(def: CompiledNodePlugin | undefined): asserts def is {
+  __liatirPlugin?: true;
   inputs: Record<string, RuntimeField>;
   outputs: Record<string, RuntimeField>;
   run: (input: Record<string, unknown>) => Promise<unknown>;
 } {
   if (!def || typeof def !== "object") {
-    failInvalidNodeModule("The plugin entrypoint must default-export defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... }).");
+    failInvalidNodePlugin("The plugin entrypoint must default-export definePlugin({ inputs, outputs }).main(async ({ input, lia }) => { ... }).");
   }
 
-  if (def.__liatirModuleContract === true && typeof def.run !== "function") {
-    failInvalidNodeModule("Plugin contract is missing .main(...). Finish the default export with defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... }).");
+  if (def.__liatirPluginContract === true && typeof def.run !== "function") {
+    failInvalidNodePlugin("Plugin contract is missing .main(...). Finish the default export with definePlugin({ inputs, outputs }).main(async ({ input, lia }) => { ... }).");
   }
 
-  if (def.__liatirModule !== true || typeof def.run !== "function") {
-    failInvalidNodeModule("Invalid .lia plugin entrypoint. Use: export default defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... });");
+  if (def.__liatirPlugin !== true || typeof def.run !== "function") {
+    failInvalidNodePlugin("Invalid .lia plugin entrypoint. Use: export default definePlugin({ inputs, outputs }).main(async ({ input, lia }) => { ... });");
   }
 
   if (!isPlainRecord(def.inputs)) {
-    failInvalidNodeModule("Invalid .lia plugin contract: defineModule({ inputs }) must be an object.");
+    failInvalidNodePlugin("Invalid .lia plugin contract: definePlugin({ inputs }) must be an object.");
   }
 
   if (!isPlainRecord(def.outputs)) {
-    failInvalidNodeModule("Invalid .lia plugin contract: defineModule({ outputs }) must be an object.");
+    failInvalidNodePlugin("Invalid .lia plugin contract: definePlugin({ outputs }) must be an object.");
   }
 }
 
@@ -178,7 +178,7 @@ export async function build() {
 }
 
 /**
- * Node plugin: the I/O schema lives IN THE CODE (defineModule). We bundle, import
+ * Node plugin: the I/O schema lives IN THE CODE (definePlugin). We bundle, import
  * the bundle to read its declared inputs/outputs, and GENERATE the manifest from
  * them — a single source of truth, nothing to keep in sync by hand.
  */
@@ -220,8 +220,8 @@ async function buildNode(cwd: string): Promise<void> {
 
   // Read the schema straight from the compiled plugin — the code is the source.
   const mod = await import(pathToFileURL(bundlePath).href);
-  const def = mod.default as CompiledNodeModule | undefined;
-  validateNodeModule(def);
+  const def = mod.default as CompiledNodePlugin | undefined;
+  validateNodePlugin(def);
 
   const manifest = {
     name: metadata.name,
@@ -241,7 +241,7 @@ async function buildNode(cwd: string): Promise<void> {
 
 /**
  * WASM custom tool: the schema lives in .lia-manifest.json (Rust can't export a
- * JS schema at build time). We compile the crate and package module.wasm.
+ * JS schema at build time). We compile the crate and package plugin.wasm.
  */
 async function buildWasm(cwd: string): Promise<void> {
   const manifestPath = path.join(cwd, ".lia-manifest.json");
@@ -279,7 +279,7 @@ async function buildWasm(cwd: string): Promise<void> {
   if (!wasmFile) throw new Error(`No .wasm artifact found in ${releaseDir}`);
 
   const outputName = `${bareName(manifest.name)}.lia`;
-  await createBundle(path.join(cwd, outputName), manifest, "module.wasm", path.join(releaseDir, wasmFile));
+  await createBundle(path.join(cwd, outputName), manifest, "plugin.wasm", path.join(releaseDir, wasmFile));
   console.log(`✓ Built → ${outputName}`);
 }
 
@@ -287,7 +287,7 @@ async function buildWasm(cwd: string): Promise<void> {
 async function createBundle(
   outputPath: string,
   manifest: object,
-  payloadName: "index.js" | "module.wasm",
+  payloadName: "index.js" | "plugin.wasm",
   payloadPath: string,
 ): Promise<void> {
   const { default: JSZip } = await import("jszip").catch(() => {

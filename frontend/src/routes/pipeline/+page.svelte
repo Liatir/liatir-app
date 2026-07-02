@@ -31,7 +31,7 @@
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { apiConnections } from '$lib/stores/apiConnections.svelte';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
-  import { modulesStore } from '$lib/stores/modules.svelte';
+  import { liaPluginsStore } from '$lib/stores/lia-plugins.svelte';
   import { aiModelsStore } from '$lib/stores/aiModels.svelte';
   import { resolveStepEntry, allStepDefinitions } from '$lib/tools/pipeline-registry';
   import { defaultConditionData, isConditionConfigured } from '$lib/pipeline/conditions';
@@ -539,7 +539,7 @@
     await pipelineStore.init();
     dataFiles.init();
     apiConnections.init();
-    modulesStore.init(); // make imported .lia plugins available as pipeline steps
+    liaPluginsStore.init(); // make imported .lia plugins available as pipeline steps
     await aiModelsStore.init();
 
     const pending = pipelineStore.pendingLoad;

@@ -1,11 +1,11 @@
 ---
 title: plugins.addFromBytes
-description: Adds a low-level WASM module from bytes.
+description: Adds a low-level WASM plugin from bytes.
 ---
 
 # plugins.addFromBytes
 
-`Liatir.plugins.addFromBytes()` registers a low-level WASM module from a byte
+`Liatir.plugins.addFromBytes()` registers a low-level WASM plugin from a byte
 array.
 
 ## Signature
@@ -17,11 +17,10 @@ addFromBytes(name: string, contents: number[]): Promise<unknown>
 ## Example
 
 ```ts
-await Liatir.plugins.addFromBytes('my-wasm-module', wasmBytes);
+await Liatir.plugins.addFromBytes('my-wasm-plugin', wasmBytes);
 ```
 
 ## Notes
 
-Use [plugins.add](/plugins/api/plugins/add) when the module should be selected
+Use [plugins.add](/plugins/api/plugins/add) when the plugin should be selected
 by the user through a file picker.
-

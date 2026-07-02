@@ -3,11 +3,11 @@ import { appStorage } from './app-storage';
 import { getDataPrefix } from './workspace.svelte';
 import type { LiatirInputFieldSchema, LiatirOutputFieldSchema } from '@liatir/core';
 
-export type ModuleInputFieldDef = LiatirInputFieldSchema<string | number | boolean>;
-export type ModuleOutputFieldDef = LiatirOutputFieldSchema;
-export type FieldDef = ModuleInputFieldDef;
+export type PluginInputFieldDef = LiatirInputFieldSchema<string | number | boolean>;
+export type PluginOutputFieldDef = LiatirOutputFieldSchema;
+export type FieldDef = PluginInputFieldDef;
 
-export interface LiatirModule {
+export interface LiatirPlugin {
   id: string;
   name: string;
   version: string;
@@ -17,12 +17,13 @@ export interface LiatirModule {
   /** Execution runtime declared in the manifest: Node subprocess or sandboxed WASM. */
   runtime: 'node' | 'wasm';
   path: string;
-  inputSchema: Record<string, ModuleInputFieldDef>;
-  outputSchema: Record<string, ModuleOutputFieldDef>;
+  inputSchema: Record<string, PluginInputFieldDef>;
+  outputSchema: Record<string, PluginOutputFieldDef>;
   addedAt: number;
 }
 
-function getFile() { return `${getDataPrefix()}liatir-modules.json`; }
+function getFile() { return `${getDataPrefix()}liatir-plugins.json`; }
+function getLegacyFile() { return `${getDataPrefix()}liatir-modules.json`; }
 
 function normalizeTags(tags: unknown): string[] {
   if (!Array.isArray(tags)) return [];
@@ -45,28 +46,28 @@ function normalizeCategory(category: unknown, runtime: 'node' | 'wasm'): string 
   return runtime === 'wasm' ? 'WASM Plugins' : 'Node Plugins';
 }
 
-function normalizePersistedModule(module: LiatirModule): LiatirModule {
-  const runtime = module.runtime === 'wasm' ? 'wasm' : 'node';
+function normalizePersistedPlugin(plugin: LiatirPlugin): LiatirPlugin {
+  const runtime = plugin.runtime === 'wasm' ? 'wasm' : 'node';
   return {
-    ...module,
+    ...plugin,
     runtime,
-    category: normalizeCategory(module.category, runtime),
-    tags: normalizeTags(module.tags),
-    inputSchema: module.inputSchema ?? {},
-    outputSchema: module.outputSchema ?? {},
+    category: normalizeCategory(plugin.category, runtime),
+    tags: normalizeTags(plugin.tags),
+    inputSchema: plugin.inputSchema ?? {},
+    outputSchema: plugin.outputSchema ?? {},
   };
 }
 
-function createModulesStore() {
-  let modules = $state<LiatirModule[]>([]);
+function createLiaPluginsStore() {
+  let plugins = $state<LiatirPlugin[]>([]);
   let initialized = false;
 
   async function persist() {
-    await appStorage.writeText(getFile(), JSON.stringify(modules));
+    await appStorage.writeText(getFile(), JSON.stringify(plugins));
   }
 
   return {
-    get modules() { return modules; },
+    get plugins() { return plugins; },
 
     async init() {
       if (initialized) return;
@@ -76,18 +77,26 @@ function createModulesStore() {
       try {
         const exists = await appStorage.exists(getFile());
         if (exists) {
-          const parsed = JSON.parse(await appStorage.readText(getFile())) as LiatirModule[];
-          modules = parsed.map(normalizePersistedModule);
+          const parsed = JSON.parse(await appStorage.readText(getFile())) as LiatirPlugin[];
+          plugins = parsed.map(normalizePersistedPlugin);
+          return;
         }
-      } catch { modules = []; }
+
+        const legacyExists = await appStorage.exists(getLegacyFile());
+        if (legacyExists) {
+          const parsed = JSON.parse(await appStorage.readText(getLegacyFile())) as LiatirPlugin[];
+          plugins = parsed.map(normalizePersistedPlugin);
+          await persist();
+        }
+      } catch { plugins = []; }
     },
 
     reset() {
       initialized = false;
-      modules = [];
+      plugins = [];
     },
 
-    async importFromPicker(): Promise<LiatirModule | null> {
+    async importFromPicker(): Promise<LiatirPlugin | null> {
       const api = liatir();
       if (!api) return null;
       const result = await api.desktop.files.open({
@@ -104,8 +113,8 @@ function createModulesStore() {
         runtime?: 'node' | 'wasm';
         category?: string;
         tags?: string[];
-        inputSchema?: Record<string, ModuleInputFieldDef>;
-        outputSchema?: Record<string, ModuleOutputFieldDef>;
+        inputSchema?: Record<string, PluginInputFieldDef>;
+        outputSchema?: Record<string, PluginOutputFieldDef>;
       };
       // Manifest declares the runtime; default to Node for backward compatibility.
       const runtime: 'node' | 'wasm' = manifest.runtime === 'wasm' ? 'wasm' : 'node';
@@ -113,9 +122,9 @@ function createModulesStore() {
       const manifestTags = normalizeTags(manifest.tags);
 
       // Deduplicate by path — update if already imported
-      const existing = modules.find(m => m.path === path);
+      const existing = plugins.find(m => m.path === path);
       if (existing) {
-        modules = modules.map(m => m.path === path
+        plugins = plugins.map(m => m.path === path
           ? {
               ...m,
               name: manifest.name,
@@ -130,10 +139,10 @@ function createModulesStore() {
           : m
         );
         await persist();
-        return modules.find(m => m.path === path)!;
+        return plugins.find(m => m.path === path)!;
       }
 
-      const mod: LiatirModule = {
+      const plugin: LiatirPlugin = {
         id: crypto.randomUUID(),
         name: manifest.name,
         version: manifest.version,
@@ -147,27 +156,27 @@ function createModulesStore() {
         addedAt: Date.now(),
       };
 
-      modules = [mod, ...modules];
+      plugins = [plugin, ...plugins];
       await persist();
-      return mod;
+      return plugin;
     },
 
     async remove(id: string) {
-      modules = modules.filter(m => m.id !== id);
+      plugins = plugins.filter(m => m.id !== id);
       await persist();
     },
 
     async setCategory(id: string, category: string) {
       const cleanCategory = category.trim();
       if (!cleanCategory) return;
-      modules = modules.map(m => m.id === id ? { ...m, category: cleanCategory } : m);
+      plugins = plugins.map(m => m.id === id ? { ...m, category: cleanCategory } : m);
       await persist();
     },
 
     async addTag(id: string, tag: string) {
       const cleanTag = tag.trim();
       if (!cleanTag) return;
-      modules = modules.map(m => {
+      plugins = plugins.map(m => {
         if (m.id !== id) return m;
         return { ...m, tags: [...new Set([...(m.tags ?? []), cleanTag])] };
       });
@@ -175,17 +184,17 @@ function createModulesStore() {
     },
 
     async removeTag(id: string, tag: string) {
-      modules = modules.map(m => m.id === id
+      plugins = plugins.map(m => m.id === id
         ? { ...m, tags: (m.tags ?? []).filter(existingTag => existingTag !== tag) }
         : m
       );
       await persist();
     },
 
-    byId(id: string): LiatirModule | null {
-      return modules.find(m => m.id === id) ?? null;
+    byId(id: string): LiatirPlugin | null {
+      return plugins.find(m => m.id === id) ?? null;
     },
   };
 }
 
-export const modulesStore = createModulesStore();
+export const liaPluginsStore = createLiaPluginsStore();

@@ -1,7 +1,7 @@
 //! Isolated, app-managed storage scope.
 //!
 //! The public `desktop.fs.*` API resolves under `.liatir/.main/data/` and is
-//! freely usable by user scripts and .lia modules. App-management state
+//! freely usable by user scripts and .lia plugins. App-management state
 //! (workspaces, indexes, per-workspace configs, analysis-run metadata, …) must
 //! NOT be reachable from there, so it lives in a sibling directory
 //! `.liatir/.main/_app/`. Because `safe_join` forbids `..` traversal, code using
@@ -175,6 +175,7 @@ pub fn lia_app_migrate(app: AppHandle) -> Result<bool, String> {
         "data-files.json",
         "pipeline-workspace.json",
         "api-workspace.json",
+        "liatir-plugins.json",
         "liatir-modules.json",
         "analysis-runs",
         "scripts",

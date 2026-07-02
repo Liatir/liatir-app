@@ -9,8 +9,8 @@ import { liatir } from '$lib/api';
  *            parse the `__LIATIR_RESULT__` marker line for the structured result.
  *  - WASM  → returns the sandboxed result directly (`{ ok, value, stdout, … }`).
  */
-export async function runLiatirModule(
-  mod: { path: string; runtime: 'node' | 'wasm' },
+export async function runLiatirPlugin(
+  plugin: { path: string; runtime: 'node' | 'wasm' },
   inputs: Record<string, unknown>,
   onLog?: (stream: 'stdout' | 'stderr', line: string) => void,
 ): Promise<{ result: unknown; stdout: string[]; stderr: string[]; exitCode: number }> {
@@ -22,7 +22,7 @@ export async function runLiatirModule(
   let result: unknown = null;
   let exitCode = 0;
 
-  const res = (await api.invoke('lia_liatir_run', { path: mod.path, inputs })) as
+  const res = (await api.invoke('lia_liatir_run', { path: plugin.path, inputs })) as
     | { jobId: string }
     | { ok: boolean; value?: unknown; stdout?: string; stderr?: string; error?: string };
 
@@ -71,7 +71,7 @@ export async function runLiatirModule(
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
   } else {
-    // ── WASM runtime: the sandboxed module returned its result synchronously ──
+    // ── WASM runtime: the sandboxed plugin returned its result synchronously ──
     const r = res as { ok: boolean; value?: unknown; stdout?: string; stderr?: string; error?: string };
     if (r.value !== undefined && r.value !== null) result = r.value;
     for (const l of (r.stdout ?? '').split('\n')) if (l) { stdout.push(l); onLog?.('stdout', l); }

@@ -1,16 +1,16 @@
 ---
-title: Window Module
-description: The Window module of the Liatir API provides methods to manage native app windows, including opening, closing, resizing, fullscreen, and developer tools management.
+title: Window API
+description: The Window API area of the Liatir API provides methods to manage native app windows, including opening, closing, resizing, fullscreen, and developer tools management.
 ---
 
 
-# Window Module
+# Window API
 
-The `window` module provides methods to manage the native app windows. It allows you to open new windows, close or minimize existing ones, toggle fullscreen mode, and control developer tools. This module is essential for applications that require multiple windows or advanced window management features.
+The `window` API area provides methods to manage the native app windows. It allows you to open new windows, close or minimize existing ones, toggle fullscreen mode, and control developer tools. This API area is essential for applications that require multiple windows or advanced window management features.
 
 ## Overview
 
-Common use cases for the `window` module include:
+Common use cases for the `window` API area include:
 
 - Opening additional windows.
 - Managing fullscreen, minimized and maximized modes.

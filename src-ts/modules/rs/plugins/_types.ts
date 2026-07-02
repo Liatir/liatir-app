@@ -2,7 +2,7 @@ import type { U64, U8 } from "../../../utils/utils/_integerUtils";
 
 export interface PluginsInterface {
   call: (
-    module: string,
+    plugin: string,
     payload: PluginCallPayload,
     timeoutMs?: U64,
     /** Host directories exposed as read-only inside the WASM sandbox.
@@ -18,9 +18,9 @@ export interface PluginsInterface {
 }
 
 export type PluginCallPayload = {
-  fn: string;             // function to call
-  args: number[]|Record<string, unknown>;  // max linear memory in MB
-  [key: string]: any;     // optional (may be ignored in some runtimes)
+  fn: string;
+  args: number[] | Record<string, unknown>;
+  [key: string]: any;
 };
 
 export type PluginStatusResult = {ready: true, runtime: string};

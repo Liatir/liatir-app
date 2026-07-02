@@ -117,7 +117,7 @@ fn main() {
     // Run autostart bootstrap first so this setup owns the timing.
     bridge::autostart::run_from_setup(app)?;
 
-    // Install built-in WASM modules from bundled resources (fastqc, …)
+    // Install built-in WASM plugins from bundled resources (fastqc, …)
     bridge::plugins::ensure_builtin_modules(&app.handle());
 
     // Start local IPC server for Node.js adapter (liatir-cli dev mode, .liatir scripts)
@@ -417,11 +417,11 @@ fn main() {
       // demo files
       lia_init_demo_files,
 
-      // .liatir modules
+      // .lia plugins
       lia_liatir_read_manifest,
       lia_liatir_run,
-      lia_module_save_output,
-      lia_module_delete_output,
+      lia_plugin_save_output,
+      lia_plugin_delete_output,
 
       // isolated app-managed storage
       lia_app_path,

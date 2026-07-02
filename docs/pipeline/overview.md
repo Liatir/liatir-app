@@ -82,5 +82,5 @@ Pipelines are meant to be reusable. A saved workflow keeps its structure and
 settings so you can return to it later, adjust inputs, and run it again.
 
 For custom steps, use [.lia plugins](/plugins/overview). A plugin can wrap a
-script, command-line tool, Nextflow workflow, or Snakemake workflow and still
-behave like a normal node in the pipeline.
+script or command-line tool through the SDK bridge and still behave like a
+normal node in the pipeline.

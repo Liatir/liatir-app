@@ -56,10 +56,10 @@ fn gen_plugin_job_id() -> String {
 // ---------------------------------
 
 fn validate_wasm_name_and_bytes(name: &str, bytes: &[u8]) -> Result<()> {
-    validate_module_name(name)?;
+    validate_plugin_wasm_name(name)?;
 
     if bytes.len() < 4 || bytes[..4] != WASM_MAGIC {
-        return Err(anyhow!("invalid module: missing WASM magic header (\\0asm)"));
+        return Err(anyhow!("invalid plugin: missing WASM magic header (\\0asm)"));
     }
 
     Ok(())
@@ -122,7 +122,7 @@ fn external_modules_dir(app: &AppHandle) -> Result<PathBuf> {
 
     if !dir.exists() {
         fs::create_dir_all(&dir)
-            .with_context(|| format!("cannot create external modules dir {}", dir.display()))?;
+            .with_context(|| format!("cannot create external plugins dir {}", dir.display()))?;
     }
 
     Ok(dir)
@@ -133,7 +133,7 @@ fn builtin_modules_dir(app: &AppHandle) -> Result<PathBuf> {
 
     if !dir.exists() {
         fs::create_dir_all(&dir)
-            .with_context(|| format!("cannot create builtin modules dir {}", dir.display()))?;
+            .with_context(|| format!("cannot create builtin plugins dir {}", dir.display()))?;
     }
 
     Ok(dir)
@@ -145,7 +145,7 @@ fn external_modules_storage_dir(app: &AppHandle) -> Result<PathBuf> {
     if !dir.exists() {
         fs::create_dir_all(&dir).with_context(|| {
             format!(
-                "cannot create external modules storage dir {}",
+                "cannot create external plugins storage dir {}",
                 dir.display()
             )
         })?;
@@ -177,14 +177,14 @@ fn plugin_job_dir(app: &AppHandle, job_id: &str) -> Result<PathBuf> {
 }
 
 // ---------------------------------
-// Module/storage helpers
+// Plugin/storage helpers
 // ---------------------------------
 
-fn validate_module_name(module: &str) -> Result<()> {
-    let name = module.trim();
+fn validate_plugin_wasm_name(plugin: &str) -> Result<()> {
+    let name = plugin.trim();
 
     if name.is_empty() {
-        return Err(anyhow!("module cannot be empty"));
+        return Err(anyhow!("plugin cannot be empty"));
     }
 
     if Path::new(name).is_absolute()
@@ -192,33 +192,33 @@ fn validate_module_name(module: &str) -> Result<()> {
         || name.contains('\\')
         || name.contains(std::path::is_separator)
     {
-        return Err(anyhow!("invalid module name"));
+        return Err(anyhow!("invalid plugin name"));
     }
 
     if !name.ends_with(".wasm") {
-        return Err(anyhow!("invalid module: expected .wasm extension"));
+        return Err(anyhow!("invalid plugin: expected .wasm extension"));
     }
 
     Ok(())
 }
 
-fn module_path(app: &AppHandle, module: &str) -> Result<PathBuf> {
-    validate_module_name(module)?;
-    let user = external_modules_dir(app)?.join(module);
+fn plugin_wasm_path(app: &AppHandle, plugin: &str) -> Result<PathBuf> {
+    validate_plugin_wasm_name(plugin)?;
+    let user = external_modules_dir(app)?.join(plugin);
     if user.exists() {
         return Ok(user);
     }
-    let builtin = builtin_modules_dir(app)?.join(module);
+    let builtin = builtin_modules_dir(app)?.join(plugin);
     if builtin.exists() {
         return Ok(builtin);
     }
     Ok(user)
 }
 
-fn plugin_storage_dir(app: &AppHandle, module: &str) -> Result<PathBuf> {
-    validate_module_name(module)?;
+fn plugin_storage_dir(app: &AppHandle, plugin: &str) -> Result<PathBuf> {
+    validate_plugin_wasm_name(plugin)?;
 
-    let dir = external_modules_storage_dir(app)?.join(module);
+    let dir = external_modules_storage_dir(app)?.join(plugin);
 
     if !dir.exists() {
         fs::create_dir_all(&dir)
@@ -228,24 +228,24 @@ fn plugin_storage_dir(app: &AppHandle, module: &str) -> Result<PathBuf> {
     Ok(dir)
 }
 
-pub fn lia_plugin_storage_dir(app: &AppHandle, module: &str) -> Result<PathBuf> {
-    plugin_storage_dir(app, module)
+pub fn lia_plugin_storage_dir(app: &AppHandle, plugin: &str) -> Result<PathBuf> {
+    plugin_storage_dir(app, plugin)
 }
 
 fn validate_wasm_file(path: &Path) -> Result<()> {
-    let bytes = fs::read(path).with_context(|| format!("cannot read module: {}", path.display()))?;
+    let bytes = fs::read(path).with_context(|| format!("cannot read plugin: {}", path.display()))?;
 
     if bytes.len() < 4 || bytes[..4] != WASM_MAGIC {
-        return Err(anyhow!("invalid module: missing WASM magic header (\\0asm)"));
+        return Err(anyhow!("invalid plugin: missing WASM magic header (\\0asm)"));
     }
 
     Ok(())
 }
 
-fn read_wasm_module(app: &AppHandle, module: &str) -> Result<Vec<u8>> {
-    let path = module_path(app, module)?;
+fn read_wasm_plugin(app: &AppHandle, plugin: &str) -> Result<Vec<u8>> {
+    let path = plugin_wasm_path(app, plugin)?;
     validate_wasm_file(&path)?;
-    fs::read(&path).with_context(|| format!("cannot read module: {}", path.display()))
+    fs::read(&path).with_context(|| format!("cannot read plugin: {}", path.display()))
 }
 
 fn safe_remove_dir_all(path: &Path) -> Result<()> {
@@ -282,13 +282,20 @@ pub fn lia_plugin_status() -> serde_json::Value {
 }
 
 #[tauri::command]
-pub fn lia_plugin_paths(app: AppHandle, module: String) -> Result<serde_json::Value, String> {
-    let modules = external_modules_dir(&app).map_err(|e| e.to_string())?;
-    let storage = plugin_storage_dir(&app, &module).map_err(|e| e.to_string())?;
+pub fn lia_plugin_paths(
+    app: AppHandle,
+    plugin: Option<String>,
+    module: Option<String>,
+) -> Result<serde_json::Value, String> {
+    let plugin = plugin
+        .or(module)
+        .ok_or_else(|| "plugin required".to_string())?;
+    let plugins = external_modules_dir(&app).map_err(|e| e.to_string())?;
+    let storage = plugin_storage_dir(&app, &plugin).map_err(|e| e.to_string())?;
     let sandbox = plugin_sandbox_dir(&app).map_err(|e| e.to_string())?;
 
     Ok(serde_json::json!({
-        "externalModules": modules.to_string_lossy(),
+        "externalPlugins": plugins.to_string_lossy(),
         "storage": storage.to_string_lossy(),
         "sandbox": sandbox.to_string_lossy()
     }))
@@ -306,8 +313,15 @@ pub fn lia_fastqc_sample_path(app: AppHandle) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub fn lia_plugin_storage_clear(app: AppHandle, module: String) -> Result<bool, String> {
-    let storage = plugin_storage_dir(&app, &module).map_err(|e| e.to_string())?;
+pub fn lia_plugin_storage_clear(
+    app: AppHandle,
+    plugin: Option<String>,
+    module: Option<String>,
+) -> Result<bool, String> {
+    let plugin = plugin
+        .or(module)
+        .ok_or_else(|| "plugin required".to_string())?;
+    let storage = plugin_storage_dir(&app, &plugin).map_err(|e| e.to_string())?;
 
     if storage.exists() {
         fs::remove_dir_all(&storage).map_err(|e| e.to_string())?;
@@ -334,7 +348,8 @@ pub fn lia_plugin_clear_all_jobs(app: AppHandle) -> Result<bool, String> {
 #[tauri::command]
 pub async fn lia_plugin_call(
     app: AppHandle,
-    module: String,
+    plugin: Option<String>,
+    module: Option<String>,
     payload: serde_json::Value,
     timeout_ms: Option<u64>,
     // Optional list of host directories to expose as read-only inside the
@@ -346,12 +361,15 @@ pub async fn lia_plugin_call(
     let started = Instant::now();
     let id = gen_plugin_job_id();
     let timeout_ms = timeout_ms.unwrap_or(300_000);
+    let plugin = plugin
+        .or(module)
+        .ok_or_else(|| "plugin required".to_string())?;
 
     let validated_paths = validate_host_read_paths(host_read_paths.unwrap_or_default())
         .map_err(|e| e.to_string())?;
 
     let result = tauri::async_runtime::spawn_blocking(move || {
-        run_plugin_job(app, id, module, None, payload, timeout_ms, started, validated_paths)
+        run_plugin_job(app, id, plugin, None, payload, timeout_ms, started, validated_paths)
     })
     .await
     .map_err(|e| format!("plugin task join error: {e}"))?;
@@ -360,7 +378,7 @@ pub async fn lia_plugin_call(
 }
 
 fn validate_host_read_paths(raw: Vec<String>) -> Result<Vec<PathBuf>> {
-    // Paths that must never be exposed to a WASM module.
+    // Paths that must never be exposed to a WASM plugin.
     let blocked_prefixes: &[&str] = &[
         "/etc", "/proc", "/sys", "/dev",
         "/System", "/Library", "/private/etc",
@@ -406,7 +424,7 @@ pub fn lia_plugin_add_module(
 
     if contents.len() > max_size {
         return Err(format!(
-            "module too large ({} bytes > {} bytes)",
+            "plugin too large ({} bytes > {} bytes)",
             contents.len(),
             max_size
         ));
@@ -415,7 +433,7 @@ pub fn lia_plugin_add_module(
     let base = external_modules_dir(&app).map_err(|e| e.to_string())?;
 
     if name.contains(std::path::is_separator) {
-        return Err("Invalid module name".into());
+        return Err("Invalid plugin name".into());
     }
 
     if let Err(e) = validate_wasm_name_and_bytes(&name, &contents) {
@@ -461,7 +479,7 @@ pub async fn lia_plugin_pick_and_add_module(
     let base = external_modules_dir(&app).map_err(|e| e.to_string())?;
 
     if name.contains(std::path::is_separator) {
-        return Err("Invalid module name".into());
+        return Err("Invalid plugin name".into());
     }
 
     if let Err(e) = validate_wasm_name_and_bytes(&name, &file.bytes) {
@@ -489,7 +507,7 @@ pub fn lia_plugin_remove_module(app: AppHandle, name: String) -> Result<bool, St
     let base = external_modules_dir(&app).map_err(|e| e.to_string())?;
 
     if name.contains(std::path::is_separator) {
-        return Err("Invalid module name".into());
+        return Err("Invalid plugin name".into());
     }
 
     let target = base.join(&name);
@@ -523,11 +541,11 @@ pub fn lia_plugin_list_modules(app: AppHandle) -> Result<Vec<String>, String> {
 }
 
 // ---------------------------------
-// Built-in module installer
+// Built-in plugin installer
 // ---------------------------------
 
-/// Copy WASM modules bundled in resources/wasm/ into the builtin modules dir.
-/// Called once on startup so first-party modules (fastqc, …) are always available.
+/// Copy WASM plugins bundled in resources/wasm/ into the builtin plugins dir.
+/// Called once on startup so first-party plugins (fastqc, …) are always available.
 /// Also migrates stale copies from _external_modules to keep the user-visible
 /// plugin list clean.
 pub(crate) fn ensure_builtin_modules(app: &AppHandle) {
@@ -552,9 +570,9 @@ pub(crate) fn ensure_builtin_modules(app: &AppHandle) {
         let stale = ext_dir.join("fastqc.wasm");
         if stale.exists() {
             if let Err(e) = fs::remove_file(&stale) {
-                eprintln!("[plugins] failed to remove stale fastqc.wasm from external modules: {e}");
+                eprintln!("[plugins] failed to remove stale fastqc.wasm from external plugins: {e}");
             } else {
-                eprintln!("[plugins] migrated: removed stale fastqc.wasm from external modules");
+                eprintln!("[plugins] migrated: removed stale fastqc.wasm from external plugins");
             }
         }
     }
@@ -567,7 +585,7 @@ pub(crate) fn ensure_builtin_modules(app: &AppHandle) {
 fn run_plugin_job(
     app: AppHandle,
     id: String,
-    module_name: String,
+    plugin_name: String,
     // See run_plugin_job_inner: Some = run these bytes, None = load by name.
     wasm_bytes_override: Option<Vec<u8>>,
     payload: serde_json::Value,
@@ -576,12 +594,12 @@ fn run_plugin_job(
     host_read_paths: Vec<PathBuf>,
 ) -> Result<serde_json::Value> {
     let job_dir = plugin_job_dir(&app, &id)?;
-    let storage_dir = plugin_storage_dir(&app, &module_name)?;
+    let storage_dir = plugin_storage_dir(&app, &plugin_name)?;
 
     let run_result = run_plugin_job_inner(
         &app,
         &id,
-        &module_name,
+        &plugin_name,
         wasm_bytes_override,
         payload,
         timeout_ms,
@@ -619,7 +637,7 @@ fn run_plugin_job(
 }
 
 /// Execute wasm bytes extracted from a .lia bundle (manifest runtime "wasm")
-/// and return the parsed JSON result. Mirrors lia_plugin_call but for a module
+/// and return the parsed JSON result. Mirrors lia_plugin_call but for a plugin
 /// that lives inside the bundle rather than being separately installed —
 /// reuses the SAME sandboxed executor (run_plugin_job).
 pub fn run_wasm_bundle(
@@ -649,9 +667,9 @@ pub fn run_wasm_bundle(
 fn run_plugin_job_inner(
     app: &AppHandle,
     id: &str,
-    module_name: &str,
+    plugin_name: &str,
     // When Some, run these bytes directly (e.g. a wasm payload extracted from a
-    // .lia bundle with runtime "wasm"); when None, load the installed module by
+    // .lia bundle with runtime "wasm"); when None, load the installed plugin by
     // name. Keeps a single sandboxed executor for both sources.
     wasm_bytes_override: Option<Vec<u8>>,
     payload: serde_json::Value,
@@ -662,7 +680,7 @@ fn run_plugin_job_inner(
 ) -> Result<PluginResponse> {
     let wasm_bytes = match wasm_bytes_override {
         Some(bytes) => bytes,
-        None => read_wasm_module(app, module_name)?,
+        None => read_wasm_plugin(app, plugin_name)?,
     };
     let stdin_text = serde_json::to_string(&payload)? + "\n";
 
@@ -681,7 +699,7 @@ fn run_plugin_job_inner(
     let mut wasi_builder = WasiCtxBuilder::new();
 
     wasi_builder
-        .arg("module.wasm")
+        .arg("plugin.wasm")
         .stdin(stdin)
         .stdout(stdout.clone())
         .stderr(stderr.clone())
@@ -708,7 +726,7 @@ fn run_plugin_job_inner(
 
     // Read-only host directories requested by the caller (e.g. the directory
     // containing a FASTQ or BAM file). Mapped to the same absolute path inside
-    // the sandbox so the module can open files by their original path.
+    // the sandbox so the plugin can open files by their original path.
     for host_dir in host_read_paths {
         if let Some(guest) = host_dir.to_str() {
             wasi_builder.preopened_dir(
@@ -741,7 +759,7 @@ fn run_plugin_job_inner(
 
     let start = instance
         .get_typed_func::<(), ()>(&mut store, "_start")
-        .map_err(|e| anyhow!("module does not export _start: {e}"))?;
+        .map_err(|e| anyhow!("plugin does not export _start: {e}"))?;
 
     let call_result = start.call(&mut store, ());
 

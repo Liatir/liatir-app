@@ -11,9 +11,9 @@ channel to the running Liatir desktop process.
 - `LiatirAPI` is a deprecated compatibility alias for `LiatirBrowserAPI`; avoid it in new code.
 
 ```ts
-import { defineModule, field } from "@liatir/sdk";
+import { definePlugin, field } from "@liatir/sdk";
 
-export default defineModule({
+export default definePlugin({
   inputs: {
     reference: field.file({ label: "Reference FASTA", accept: ["fa", "fasta"], required: true }),
     reads: field.file({ label: "Reads FASTQ", accept: ["fq", "fastq"], required: true }),

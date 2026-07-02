@@ -1,11 +1,11 @@
 ---
 title: plugins.add
-description: Adds a low-level WASM module through a file picker.
+description: Adds a low-level WASM plugin through a file picker.
 ---
 
 # plugins.add
 
-`Liatir.plugins.add()` adds a low-level WASM module through a native file picker.
+`Liatir.plugins.add()` adds a low-level WASM plugin through a native file picker.
 
 ## Signature
 
@@ -16,7 +16,7 @@ add(name: string, maxBytes?: number): Promise<PluginAddResult>
 ## Example
 
 ```ts
-const added = await Liatir.plugins.add('my-wasm-module');
+const added = await Liatir.plugins.add('my-wasm-plugin');
 ```
 
 ## Result
@@ -29,4 +29,3 @@ type PluginAddResult = {
   saved: boolean;
 };
 ```
-

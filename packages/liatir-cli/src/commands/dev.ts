@@ -64,7 +64,7 @@ async function parseDevInputs(args: string[]): Promise<Record<string, unknown>> 
 }
 
 // Generates a thin runner that imports the bundle and calls the same strict
-// runtime shape used by `lia build`: default defineModule(...).main(...).
+// runtime shape used by `lia build`: default definePlugin(...).main(...).
 function runnerScript(bundlePath: string, inputs: Record<string, unknown>, entryDisplayPath: string): string {
   return `
 import * as _mod from ${JSON.stringify(bundlePath)};
@@ -73,27 +73,27 @@ const _entryDisplayPath = ${JSON.stringify(entryDisplayPath)};
 
 const _m = _mod.default;
 if (!_m || typeof _m !== "object") {
-  console.error(\`[liatir dev] \${_entryDisplayPath} must default-export defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... })\`);
+  console.error(\`[liatir dev] \${_entryDisplayPath} must default-export definePlugin({ inputs, outputs }).main(async ({ input, lia }) => { ... })\`);
   process.exit(1);
 }
 
-if (_m.__liatirModuleContract === true && typeof _m.run !== "function") {
-  console.error("[liatir dev] plugin contract is missing .main(...). Finish the default export with defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... })");
+if (_m.__liatirPluginContract === true && typeof _m.run !== "function") {
+  console.error("[liatir dev] plugin contract is missing .main(...). Finish the default export with definePlugin({ inputs, outputs }).main(async ({ input, lia }) => { ... })");
   process.exit(1);
 }
 
-if (_m.__liatirModule !== true || typeof _m.run !== "function") {
-  console.error("[liatir dev] invalid .lia plugin entrypoint. Use: export default defineModule({ inputs, outputs }).main(async ({ input, lia }) => { ... });");
+if (_m.__liatirPlugin !== true || typeof _m.run !== "function") {
+  console.error("[liatir dev] invalid .lia plugin entrypoint. Use: export default definePlugin({ inputs, outputs }).main(async ({ input, lia }) => { ... });");
   process.exit(1);
 }
 
 if (!_m.inputs || typeof _m.inputs !== "object" || Array.isArray(_m.inputs)) {
-  console.error("[liatir dev] invalid plugin contract: defineModule({ inputs }) must be an object.");
+  console.error("[liatir dev] invalid plugin contract: definePlugin({ inputs }) must be an object.");
   process.exit(1);
 }
 
 if (!_m.outputs || typeof _m.outputs !== "object" || Array.isArray(_m.outputs)) {
-  console.error("[liatir dev] invalid plugin contract: defineModule({ outputs }) must be an object.");
+  console.error("[liatir dev] invalid plugin contract: definePlugin({ outputs }) must be an object.");
   process.exit(1);
 }
 

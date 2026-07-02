@@ -1,16 +1,16 @@
 ---
-title: Network Module
-description: Documentation for the Network module of the Liatir API, providing connectivity monitoring, ping, DNS resolution, and bandwidth estimation functions.
+title: Network API
+description: Documentation for the Network API area of the Liatir API, providing connectivity monitoring, ping, DNS resolution, and bandwidth estimation functions.
 ---
 
 
-# Network Module
+# Network API
 
-The **Network module** provides a set of functions to monitor network connectivity, perform ping operations, resolve hostnames, and estimate bandwidth. It is designed to help applications keep track of network health and performance in real-time.
+The **Network API area** provides a set of functions to monitor network connectivity, perform ping operations, resolve hostnames, and estimate bandwidth. It is designed to help applications keep track of network health and performance in real-time.
 
 ## Overview
 
-This module is primarily used for:
+This API area is primarily used for:
 
 - Network diagnostics and troubleshooting.
 - Health-check mechanisms to verify connectivity status.
@@ -32,7 +32,7 @@ By integrating these functions, applications can respond dynamically to network 
 
 ## Network Status Event
 
-If you start monitoring a network status with `setMonitor`, you can listen to status changes with the `onNetworkStatus` method of the [events module](./events.md):
+If you start monitoring a network status with `setMonitor`, you can listen to status changes with the `onNetworkStatus` method of the [events API area](./events.md):
 ```js
 Liatir.events.onNetworkStatus((status)=>{/* ... */})
 ```
@@ -43,7 +43,7 @@ Liatir.events.onNetworkStatus((status)=>{/* ... */})
 // Start monitoring network status every 10 seconds
 Liatir.network.setMonitor(10000, ['https://example.com', 'https://api.example.com']);
 
-// Listen for network status updates (use the events module for this)
+// Listen for network status updates (use the events API area for this)
 Liatir.events.onNetworkStatus((status) => {
   console.log('Network status updated:', status);
 });

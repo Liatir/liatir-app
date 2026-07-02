@@ -1,107 +1,143 @@
-# liatir-cli
+# @liatir/lia CLI
 
-`liatir-cli` is the command-line tool for scaffolding, developing, and building `.lia` plugins.
+`@liatir/lia` is the command-line package for scaffolding, developing, and
+building `.lia` plugins and WASM tools.
+
+The installed binary is `lia`. The package also exposes a `liatir` binary for
+compatibility.
 
 ## Installation
 
 ```bash
-npm install -g liatir-cli
+npm install -g @liatir/lia
 ```
 
-## Commands
-
-### `liatir init <name>`
-
-Scaffolds a new plugin project in a directory named `<name>`.
+You can also use it without a global install:
 
 ```bash
-liatir init my-qc-plugin
-cd my-qc-plugin
+npx lia init my-plugin --yes
 ```
 
-The generated project contains:
+## `lia init`
 
+`lia init` creates a new plugin or WASM tool project.
+
+```bash
+lia init my-plugin --yes
+cd my-plugin
+npm install
 ```
-my-qc-plugin/
-  .lia-manifest.json   ← source of truth for manifest.json
+
+Recommended defaults create a Node TypeScript plugin with:
+
+```txt
+my-plugin/
   src/
-    index.ts           ← plugin entry point
+    index.ts
   package.json
   tsconfig.json
 ```
 
-### `liatir dev`
+The generated `src/index.ts` follows the current plugin contract:
 
-Starts esbuild in watch mode and connects to the running Liatir app for local plugin development.
+```ts
+import { definePlugin, field, type PluginContext } from "@liatir/sdk";
 
-```bash
-liatir dev
+// Docs: https://liatir.com/docs/plugins
+const liatirPlugin = definePlugin({
+  inputs: {
+    text: field.string({
+      label: "Text",
+      description: "Text to analyze.",
+      required: true,
+      default: "hello from Liatir",
+    }),
+  },
+  outputs: {
+    length: field.number({
+      label: "Length",
+      description: "Number of characters in the input text.",
+      format: "integer",
+    }),
+  },
+});
+
+export default liatirPlugin.main(async ({ input, lia }: PluginContext<typeof liatirPlugin>) => {
+  // Write your plugin logic here. Inputs and outputs are defined once above.
+
+  return {
+    length: input.text.length,
+  };
+});
 ```
 
-Changes to `src/` are rebuilt automatically. The updated plugin is hot-reloaded in the app without a manual import step.
+Useful init flags:
+
+```bash
+lia init                         # asks for the project folder
+lia init my-plugin --yes          # recommended defaults
+lia init my-plugin --node --ts    # Node TypeScript plugin
+lia init my-plugin --node --js    # Node JavaScript plugin
+lia init my-tool --wasm           # Rust/WASM tool
+lia init my-plugin --template file-processor
+lia init my-plugin --template bio-cli
+lia init my-plugin --category "Quality Control" --tags "FASTQ,QC"
+lia init my-plugin --no-install
+lia init my-tool --no-wasm-target
+```
+
+## `lia dev`
+
+`lia dev` watches the plugin source, rebuilds on save, validates the same runtime
+shape used by `lia build`, applies schema defaults, and runs the plugin against
+the open Liatir app.
+
+```bash
+lia dev --input '{"text":"hello"}'
+lia dev --input-file inputs.json
+```
 
 ::: warning Liatir must be running
-`liatir dev` needs a running Liatir app so the plugin can be loaded and tested during development.
+Node plugins use the local Liatir IPC bridge. Start the desktop app before using
+`lia dev`.
 :::
 
-### `liatir build`
+## `lia build`
 
-Bundles the plugin into a `.lia` file ready for distribution.
+`lia build` packages the project as `<name>.lia`.
+
+For Node plugins it:
+
+1. resolves the Node entry point;
+2. runs TypeScript checks when a `tsconfig.json` exists;
+3. bundles the entry point with esbuild;
+4. imports the bundle and validates `definePlugin({ inputs, outputs }).main(...)`;
+5. generates `manifest.json` from the declared schema;
+6. writes `_sig`, `manifest.json`, and `index.js` into the `.lia` ZIP.
+
+For WASM tools it:
+
+1. reads `.lia-manifest.json`;
+2. compiles Rust with `cargo build --release --target wasm32-wasip1`;
+3. writes `_sig`, `manifest.json`, and `plugin.wasm` into the `.lia` ZIP.
 
 ```bash
-liatir build
-# outputs: my-qc-plugin.lia
+lia build
 ```
 
-The build process:
+## `lia update`
 
-1. Reads `.lia-manifest.json` and validates the schema
-2. Runs esbuild to bundle `src/index.ts` into a single `index.js` (ESM, all deps inlined)
-3. Creates the `_sig` file with content `LIATIR/1`
-4. Packages `_sig`, `manifest.json`, and `index.js` into a ZIP archive named `<name>.lia`
+`lia update` updates both `@liatir/lia` and `@liatir/sdk` in a Node `.lia`
+plugin project.
 
-## Entry point contract
-
-`src/index.ts` must export a `run` function:
-
-```typescript
-export async function run(inputs: Record<string, unknown>): Promise<void> {
-  // ... perform analysis ...
-
-  const result = {
-    report: { totalReads: 1000000, q30Rate: 0.87 },
-  }
-
-  process.stdout.write(`__LIATIR_RESULT__${JSON.stringify(result)}\n`)
-}
+```bash
+lia update
+lia update --version 1.5.2
+lia update --no-install --version 1.5.2
 ```
 
-The `__LIATIR_RESULT__` marker must appear on its own line. Everything before it on stdout is treated as log output and shown in the dev console.
+WASM projects do not use `@liatir/sdk`; update the CLI itself with:
 
-## .lia-manifest.json
-
-This file is the source of truth for the plugin manifest. It has the same schema as [`manifest.json`](/plugins/format#manifest-json) inside the bundle, but lives in the project root so it can be committed to version control.
-
-```json
-{
-  "name": "my-qc-plugin",
-  "version": "1.0.0",
-  "description": "Custom QC analysis",
-  "inputSchema": {
-    "reads": {
-      "type": "file",
-      "label": "Input reads",
-      "required": true,
-      "accept": ".fastq,.fastq.gz"
-    }
-  },
-  "outputSchema": {
-    "report": {
-      "type": "stats",
-      "label": "QC report"
-    }
-  }
-}
+```bash
+npm install -g @liatir/lia@latest
 ```
-
-`liatir build` copies this file verbatim into the bundle as `manifest.json`.

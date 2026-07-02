@@ -1,6 +1,6 @@
-import { defineModule, field } from "@liatir/sdk";
+import { definePlugin, field } from "@liatir/sdk";
 
-export default defineModule({
+export default definePlugin({
   inputs: {
     text: field.string({
       label: "Text",

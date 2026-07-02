@@ -90,7 +90,7 @@ export const LIATIR_API: Record<string, ApiNode> = {
               path: { type: "method", detail: "(): Promise<string>" },
               base: { type: "property", detail: "string" },
           } },
-          pluginFs: { type: "method", detail: "(plugin: string): FsPluginMethods" },
+          pluginFs: { type: "method", detail: "(plugin: string): FsPluginMethods", info: "Scoped to the persistent storage of the selected plugin." },
           paths: { type: "method", detail: "(): Promise<FsPaths>" },
           base: { type: "property", detail: "{ cache: string; data: string; }", children: {
               cache: { type: "property", detail: "string" },
@@ -176,7 +176,7 @@ export const LIATIR_API: Record<string, ApiNode> = {
       } },
   } },
   plugins: { type: "property", detail: "PluginsInterface", info: "Low-level WASM runtime. Use bio namespaces (qc, …) for typed wrappers.", children: {
-      call: { type: "method", detail: "(module: string, payload: PluginCallPayload, timeoutMs?: U64, hostReadPaths?: string[]): Promise<PluginCallResult>" },
+      call: { type: "method", detail: "(plugin: string, payload: PluginCallPayload, timeoutMs?: U64, hostReadPaths?: string[]): Promise<PluginCallResult>" },
       status: { type: "method", detail: "(): Promise<PluginStatusResult>" },
       list: { type: "method", detail: "(): Promise<string[]>" },
       remove: { type: "method", detail: "(name: string): Promise<boolean>" },

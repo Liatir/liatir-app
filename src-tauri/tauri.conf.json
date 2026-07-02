@@ -47,7 +47,7 @@
           "lia"
         ],
         "name": "Liatir Module",
-        "description": "Liatir .lia module",
+        "description": "Liatir .lia plugin",
         "mimeType": "application/x-liatir",
         "role": "Editor"
       }

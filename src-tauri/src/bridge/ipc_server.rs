@@ -18,7 +18,7 @@ use tauri::{AppHandle, Manager};
 /// back to JSON. A `null` payload (commands that take no extra args) is
 /// normalized to `{}`.
 ///
-/// This lets every non-GUI bridge area be exposed to .lia Modules with ONE
+/// This lets every non-GUI bridge area be exposed to .lia plugins with ONE
 /// line per command instead of hand-written extraction boilerplate — calling
 /// the SAME native commands the browser SDK uses, only over the IPC transport.
 macro_rules! ipc_sync_dispatch {
@@ -222,19 +222,19 @@ async fn handle_invoke(
 
 async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<Value> {
     // ── Filesystem bridge (scoped storage: data/cache, trash, diagnostics) ──
-    // Same native commands window.Liatir.desktop.fs calls — exposed to Modules.
+    // Same native commands window.Liatir.desktop.fs calls — exposed to .lia plugins.
     ipc_sync_dispatch!(app, cmd, payload;
-        "lia_fs_list_dir" => crate::bridge::fs::lia_fs_list_dir[rel: String, permanent: bool, window_label: Option<String>, plugin_storage_module: Option<String>],
-        "lia_fs_mkdir" => crate::bridge::fs::lia_fs_mkdir[rel: String, permanent: bool, window_label: Option<String>, plugin_storage_module: Option<String>],
-        "lia_fs_rm" => crate::bridge::fs::lia_fs_rm[rel: String, permanent: bool, recursive: bool, window_label: Option<String>, plugin_storage_module: Option<String>],
-        "lia_fs_stat" => crate::bridge::fs::lia_fs_stat[rel: String, permanent: bool, window_label: Option<String>, plugin_storage_module: Option<String>],
-        "lia_fs_write_text" => crate::bridge::fs::lia_fs_write_text[rel: String, permanent: Option<bool>, contents: String, create_dirs: Option<bool>, append: Option<bool>, window_label: Option<String>, plugin_storage_module: Option<String>],
-        "lia_fs_read_text" => crate::bridge::fs::lia_fs_read_text[rel: String, permanent: Option<bool>, window_label: Option<String>, plugin_storage_module: Option<String>],
-        "lia_fs_write_bytes" => crate::bridge::fs::lia_fs_write_bytes[rel: String, permanent: Option<bool>, data_base64: String, create_dirs: Option<bool>, window_label: Option<String>, plugin_storage_module: Option<String>],
-        "lia_fs_read_bytes" => crate::bridge::fs::lia_fs_read_bytes[rel: String, permanent: Option<bool>, window_label: Option<String>, plugin_storage_module: Option<String>],
-        "lia_fs_exists" => crate::bridge::fs::lia_fs_exists[rel: String, permanent: Option<bool>, window_label: Option<String>, plugin_storage_module: Option<String>],
-        "lia_fs_move" => crate::bridge::fs::lia_fs_move[src: String, dest: String, permanent: Option<bool>, create_dirs: Option<bool>, overwrite: Option<bool>, window_label: Option<String>, plugin_storage_module: Option<String>],
-        "lia_fs_copy" => crate::bridge::fs::lia_fs_copy[src: String, dest: String, permanent: Option<bool>, recursive: Option<bool>, create_dirs: Option<bool>, overwrite: Option<bool>, window_label: Option<String>, plugin_storage_module: Option<String>],
+        "lia_fs_list_dir" => crate::bridge::fs::lia_fs_list_dir[rel: String, permanent: bool, window_label: Option<String>, plugin_storage_plugin: Option<String>],
+        "lia_fs_mkdir" => crate::bridge::fs::lia_fs_mkdir[rel: String, permanent: bool, window_label: Option<String>, plugin_storage_plugin: Option<String>],
+        "lia_fs_rm" => crate::bridge::fs::lia_fs_rm[rel: String, permanent: bool, recursive: bool, window_label: Option<String>, plugin_storage_plugin: Option<String>],
+        "lia_fs_stat" => crate::bridge::fs::lia_fs_stat[rel: String, permanent: bool, window_label: Option<String>, plugin_storage_plugin: Option<String>],
+        "lia_fs_write_text" => crate::bridge::fs::lia_fs_write_text[rel: String, permanent: Option<bool>, contents: String, create_dirs: Option<bool>, append: Option<bool>, window_label: Option<String>, plugin_storage_plugin: Option<String>],
+        "lia_fs_read_text" => crate::bridge::fs::lia_fs_read_text[rel: String, permanent: Option<bool>, window_label: Option<String>, plugin_storage_plugin: Option<String>],
+        "lia_fs_write_bytes" => crate::bridge::fs::lia_fs_write_bytes[rel: String, permanent: Option<bool>, data_base64: String, create_dirs: Option<bool>, window_label: Option<String>, plugin_storage_plugin: Option<String>],
+        "lia_fs_read_bytes" => crate::bridge::fs::lia_fs_read_bytes[rel: String, permanent: Option<bool>, window_label: Option<String>, plugin_storage_plugin: Option<String>],
+        "lia_fs_exists" => crate::bridge::fs::lia_fs_exists[rel: String, permanent: Option<bool>, window_label: Option<String>, plugin_storage_plugin: Option<String>],
+        "lia_fs_move" => crate::bridge::fs::lia_fs_move[src: String, dest: String, permanent: Option<bool>, create_dirs: Option<bool>, overwrite: Option<bool>, window_label: Option<String>, plugin_storage_plugin: Option<String>],
+        "lia_fs_copy" => crate::bridge::fs::lia_fs_copy[src: String, dest: String, permanent: Option<bool>, recursive: Option<bool>, create_dirs: Option<bool>, overwrite: Option<bool>, window_label: Option<String>, plugin_storage_plugin: Option<String>],
         "lia_fs_clear_cache" => crate::bridge::fs::lia_fs_clear_cache[],
         "lia_fs_clear_data" => crate::bridge::fs::lia_fs_clear_data[],
         "lia_fs_data_clear_trash" => crate::bridge::fs::lia_fs_data_clear_trash[],
@@ -251,7 +251,7 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
         "lia_fs_diagnostics_exists" => crate::bridge::fs::lia_fs_diagnostics_exists[rel: String],
         "lia_fs_diagnostics_read_text" => crate::bridge::fs::lia_fs_diagnostics_read_text[rel: String],
         "lia_fs_diagnostics_read_bytes" => crate::bridge::fs::lia_fs_diagnostics_read_bytes[rel: String],
-        "lia_plugin_storage_clear" => crate::bridge::plugins::lia_plugin_storage_clear[module: String],
+        "lia_plugin_storage_clear" => crate::bridge::plugins::lia_plugin_storage_clear[plugin: Option<String>, module: Option<String>],
         // ── App / clipboard / events / notifications / plugins / diagnostics (sync) ──
         "lia_app_info" => crate::bridge::app::lia_app_info[],
         "lia_app_exit" => crate::bridge::app::lia_app_exit[code: i32],
@@ -442,7 +442,7 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("path required"))?
                 .to_string();
-            crate::bridge::modules::lia_liatir_read_manifest(path)
+            crate::bridge::lia_plugins::lia_liatir_read_manifest(path)
                 .await
                 .map_err(|e| anyhow::anyhow!(e))
         }
@@ -453,7 +453,7 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 .ok_or_else(|| anyhow::anyhow!("path required"))?
                 .to_string();
             let inputs = payload["inputs"].clone();
-            crate::bridge::modules::lia_liatir_run(app.clone(), path, inputs)
+            crate::bridge::lia_plugins::lia_liatir_run(app.clone(), path, inputs)
                 .await
                 .map_err(|e| anyhow::anyhow!(e))
         }
@@ -479,26 +479,27 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
             Ok(Value::String(text))
         }
 
-        // WASM custom-tool runtime — lets .lia Modules invoke a compiled plugin
+        // WASM custom-tool runtime — lets .lia plugins invoke a compiled plugin
         // (e.g. fastqc) by name with a JSON payload, optionally exposing host
         // directories read-only (needed to read FASTQ/BAM files from disk).
         "lia_plugin_call" => {
-            let module = payload["module"]
+            let plugin = payload["plugin"]
                 .as_str()
-                .ok_or_else(|| anyhow::anyhow!("module required"))?
+                .or_else(|| payload["module"].as_str())
+                .ok_or_else(|| anyhow::anyhow!("plugin required"))?
                 .to_string();
             let plugin_payload = payload["payload"].clone();
             let timeout_ms = payload["timeoutMs"].as_u64();
             let host_read_paths = payload["hostReadPaths"]
                 .as_array()
                 .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect());
-            crate::bridge::plugins::lia_plugin_call(app.clone(), module, plugin_payload, timeout_ms, host_read_paths)
+            crate::bridge::plugins::lia_plugin_call(app.clone(), Some(plugin), None, plugin_payload, timeout_ms, host_read_paths)
                 .await
                 .map_err(|e| anyhow::anyhow!(e))
         }
 
         // ── Native bio tools ─────────────────────────────────────────────
-        // Exposed to .lia Modules so the typed bio wrappers in `@liatir/sdk`
+        // Exposed to .lia plugins so the typed bio wrappers in `@liatir/sdk`
         // (Liatir.align.*, Liatir.variants.*, …) can call the SAME native
         // commands the desktop UI uses — reusing reference auto-indexing,
         // output redirection and stat parsing instead of re-implementing them.

@@ -6,15 +6,15 @@
   import Card from '$lib/components/ui/Card.svelte';
   import Badge from '$lib/components/ui/Badge.svelte';
   import Button from '$lib/components/ui/Button.svelte';
-  import { modulesStore } from '$lib/stores/modules.svelte';
+  import { liaPluginsStore } from '$lib/stores/lia-plugins.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
-  import type { LiatirModule } from '$lib/stores/modules.svelte';
+  import type { LiatirPlugin } from '$lib/stores/lia-plugins.svelte';
 	import Dot from '$lib/components/ui/Dot.svelte';
 	import { openLinkInBrowser } from '$lib';
 	import { LIATIR_LIA_NPM_PACKAGE_URL } from '$lib/_constants';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
 
-  onMount(() => modulesStore.init());
+  onMount(() => liaPluginsStore.init());
 
   let importing = $state(false);
   let query = $state('');
@@ -24,7 +24,7 @@
 
   const visiblePlugins = $derived.by(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    return modulesStore.modules.filter(mod => {
+    return liaPluginsStore.plugins.filter(mod => {
       const matchesRuntime = runtimeFilter === 'all' || mod.runtime === runtimeFilter;
       const matchesCategory = categoryFilter === 'All' || mod.category === categoryFilter;
       if (!matchesRuntime || !matchesCategory) return false;
@@ -45,7 +45,7 @@
   async function importPlugin() {
     importing = true;
     try {
-      const mod = await modulesStore.importFromPicker();
+      const mod = await liaPluginsStore.importFromPicker();
       if (mod) goto(`/plugins/${mod.id}`);
     } finally {
       importing = false;
@@ -60,14 +60,14 @@
     return Object.keys(schema).length;
   }
 
-  function runtimeLabel(runtime: LiatirModule['runtime']) {
+  function runtimeLabel(runtime: LiatirPlugin['runtime']) {
     return runtime === 'wasm' ? 'WASM .lia' : 'Node .lia';
   }
 
-  async function addTag(mod: LiatirModule) {
+  async function addTag(mod: LiatirPlugin) {
     const tag = tagDrafts[mod.id]?.trim() ?? '';
     if (!tag) return;
-    await modulesStore.addTag(mod.id, tag);
+    await liaPluginsStore.addTag(mod.id, tag);
     tagDrafts = { ...tagDrafts, [mod.id]: '' };
   }
 </script>
@@ -91,7 +91,7 @@
   <PageContent>
 
   <div class="flex-1 overflow-y-auto p-6 space-y-5">
-    {#if modulesStore.modules.length === 0}
+    {#if liaPluginsStore.plugins.length === 0}
       <div class="flex flex-col items-center justify-center h-full text-center gap-3">
         <div class="h-12 w-12 rounded-xl bg-zinc-100 flex items-center justify-center">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -187,7 +187,7 @@
               <button
                 onclick={async () => {
                   const ok = await confirm({ title: 'Remove plugin', message: `Remove "${mod.name}"?`, confirmLabel: 'Remove' });
-                  if (ok) modulesStore.remove(mod.id);
+                  if (ok) liaPluginsStore.remove(mod.id);
                 }}
                 aria-label="Remove"
                 class="shrink-0 text-zinc-300 hover:text-red-500 transition-colors"

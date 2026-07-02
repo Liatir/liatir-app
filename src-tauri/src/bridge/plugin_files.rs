@@ -3,13 +3,13 @@ use serde::Serialize;
 use std::path::{Component, Path, PathBuf};
 use tauri::{AppHandle, Manager};
 
-/// Result of saving a module output file.
+/// Result of saving a plugin output file.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ModuleFileEntry {
+pub struct PluginFileEntry {
     /// Absolute path of the written file.
     pub path: String,
-    /// Virtual folder label used by the Data/Results view (e.g. "Results/MyModule").
+    /// Virtual folder label used by the Data/Results view (e.g. "Results/MyPlugin").
     pub virtual_folder: String,
     /// Detected file extension (lowercase).
     pub ext: String,
@@ -39,8 +39,8 @@ fn safe_segment(seg: &str) -> Result<String, String> {
     Ok(clean.to_string())
 }
 
-/// Sanitize a folder-name from a module label (keep it readable but safe).
-fn safe_module_name(name: &str) -> String {
+/// Sanitize a folder-name from a plugin label (keep it readable but safe).
+fn safe_plugin_name(name: &str) -> String {
     let cleaned: String = name
         .chars()
         .filter(|c| c.is_ascii_alphanumeric() || *c == ' ' || *c == '_' || *c == '-')
@@ -50,7 +50,7 @@ fn safe_module_name(name: &str) -> String {
         .split_whitespace()
         .collect::<Vec<_>>()
         .join("-");
-    if cleaned.is_empty() { "module".to_string() } else { cleaned }
+    if cleaned.is_empty() { "plugin".to_string() } else { cleaned }
 }
 
 /// Validate that an optional workspace prefix only contains safe components
@@ -81,29 +81,29 @@ fn detect_ext(name: &str) -> String {
         .to_string()
 }
 
-/// Save a file produced by a .lia module under the workspace-scoped, module-relative
-/// `Results/<module>/` folder so it appears in Results exactly like a tool output.
+/// Save a file produced by a .lia plugin under the workspace-scoped, plugin-relative
+/// `Results/<plugin>/` folder so it appears in Results exactly like a tool output.
 ///
 /// - `content` is written as UTF-8 text, or decoded from base64 when `is_base64` is true.
 /// - `workspace_prefix` is the active workspace's data prefix (e.g. "workspaces/<id>/")
 ///   or empty/None for the default scope.
 #[tauri::command]
-pub fn lia_module_save_output(
+pub fn lia_plugin_save_output(
     app: AppHandle,
-    module: String,
+    plugin: String,
     file_name: String,
     content: String,
     is_base64: Option<bool>,
     workspace_prefix: Option<String>,
-) -> Result<ModuleFileEntry, String> {
-    let safe_module = safe_module_name(&module);
+) -> Result<PluginFileEntry, String> {
+    let safe_plugin = safe_plugin_name(&plugin);
     let safe_file = safe_segment(&file_name)?;
 
     let prefix = safe_prefix(workspace_prefix.as_deref().unwrap_or(""))?;
     let dir = data_root(&app)?
         .join(&prefix)
         .join("Results")
-        .join(&safe_module);
+        .join(&safe_plugin);
 
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let dest = dir.join(&safe_file);
@@ -117,17 +117,17 @@ pub fn lia_module_save_output(
         std::fs::write(&dest, content.as_bytes()).map_err(|e| e.to_string())?;
     }
 
-    Ok(ModuleFileEntry {
+    Ok(PluginFileEntry {
         path: dest.to_string_lossy().to_string(),
-        virtual_folder: format!("Results/{safe_module}"),
+        virtual_folder: format!("Results/{safe_plugin}"),
         ext: detect_ext(&safe_file),
     })
 }
 
-/// Delete a file previously saved by a .lia module. The path MUST live inside the
+/// Delete a file previously saved by a .lia plugin. The path MUST live inside the
 /// app data dir (`.liatir/.main/data`) — arbitrary deletes are rejected.
 #[tauri::command]
-pub fn lia_module_delete_output(app: AppHandle, path: String) -> Result<(), String> {
+pub fn lia_plugin_delete_output(app: AppHandle, path: String) -> Result<(), String> {
     let root = data_root(&app)?;
     let target = PathBuf::from(&path);
 

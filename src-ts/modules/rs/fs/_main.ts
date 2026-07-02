@@ -1,5 +1,5 @@
-import { normalizeModuleName } from "../../../helpers";
 import { LiatirAPI } from "../../../types";
+import { normalizePluginName } from "../plugins/_helpers";
 import type {
     FsCoreMethods,
   FsEntry,
@@ -17,7 +17,7 @@ function scopeCoreMethods(
 ): FsCoreMethods {
   const ensureDataNotIsolated = () => {};
 
-  const pluginStorageModule = ((plugin?.trim()) ?? undefined);
+  const pluginStoragePlugin = ((plugin?.trim()) ?? undefined);
 
   return {
     listContent: (rel: string = "") => {
@@ -26,7 +26,7 @@ function scopeCoreMethods(
         rel,
         permanent,
         windowLabel: undefined,
-        pluginStorageModule
+        pluginStoragePlugin
       });
     },
 
@@ -36,7 +36,7 @@ function scopeCoreMethods(
         rel,
         permanent,
         windowLabel: undefined,
-        pluginStorageModule
+        pluginStoragePlugin
       });
     },
 
@@ -47,7 +47,7 @@ function scopeCoreMethods(
         recursive,
         permanent,
         windowLabel: undefined,
-        pluginStorageModule
+        pluginStoragePlugin
       });
     },
 
@@ -57,7 +57,7 @@ function scopeCoreMethods(
         rel,
         permanent,
         windowLabel: undefined,
-        pluginStorageModule
+        pluginStoragePlugin
       });
     },
 
@@ -70,7 +70,7 @@ function scopeCoreMethods(
         createDirs: opts?.createDirs,
         append: opts?.append,
         windowLabel: undefined,
-        pluginStorageModule
+        pluginStoragePlugin
       });
     },
 
@@ -80,7 +80,7 @@ function scopeCoreMethods(
         rel,
         permanent,
         windowLabel: undefined,
-        pluginStorageModule
+        pluginStoragePlugin
       });
     },
 
@@ -92,7 +92,7 @@ function scopeCoreMethods(
         dataBase64: base64,
         createDirs: opts?.createDirs,
         windowLabel: undefined,
-        pluginStorageModule
+        pluginStoragePlugin
       });
     },
 
@@ -102,7 +102,7 @@ function scopeCoreMethods(
         rel,
         permanent,
         windowLabel: undefined,
-        pluginStorageModule
+        pluginStoragePlugin
       });
     },
 
@@ -112,7 +112,7 @@ function scopeCoreMethods(
         rel,
         permanent,
         windowLabel: undefined,
-        pluginStorageModule
+        pluginStoragePlugin
       });
     },
 
@@ -125,7 +125,7 @@ function scopeCoreMethods(
         createDirs: opts?.createDirs,
         overwrite: opts?.overwrite,
         windowLabel: undefined,
-        pluginStorageModule
+        pluginStoragePlugin
       });
     },
 
@@ -139,7 +139,7 @@ function scopeCoreMethods(
         createDirs: opts?.createDirs,
         overwrite: opts?.overwrite,
         windowLabel: undefined,
-        pluginStorageModule
+        pluginStoragePlugin
       });
     },
   }
@@ -181,16 +181,16 @@ function pluginFsScope(
   plugin: string,
 ): FsPluginMethods {
 
-  const pluginModuleName = ((plugin?.trim()) ?? undefined);
-  const santizedluginModuleName = (normalizeModuleName(pluginModuleName)?.trim())??undefined;
+  const pluginName = ((plugin?.trim()) ?? undefined);
+  const sanitizedPluginName = (normalizePluginName(pluginName)?.trim()) ?? undefined;
 
-  if(!santizedluginModuleName) throw("Invalid plugin name");
+  if(!sanitizedPluginName) throw("Invalid plugin name");
 
-  const coreMethods: FsCoreMethods = scopeCoreMethods(core, true, santizedluginModuleName);
+  const coreMethods: FsCoreMethods = scopeCoreMethods(core, true, sanitizedPluginName);
 
   return {
     ...coreMethods,
-    clearStorage: async () => core.invoke<void>("lia_plugin_storage_clear", {module: santizedluginModuleName})
+    clearStorage: async () => core.invoke<void>("lia_plugin_storage_clear", {plugin: sanitizedPluginName})
   }
 }
 

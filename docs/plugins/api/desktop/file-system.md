@@ -1,16 +1,16 @@
 ---
-title: "File System Module"
-description: "Comprehensive documentation for the File System module."
+title: "File System API"
+description: "Comprehensive documentation for the File System API area."
 ---
 
 
-# File System Module
+# File System API
 
-The File System (shortend Fs) module provides secure and isolated access to the file system. It enables applications to interact with files and directories within predefined scopes, ensuring data integrity and sandboxing from the global file system.
+The File System API area provides secure and isolated access to the file system. It enables applications to interact with files and directories within predefined scopes, ensuring data integrity and sandboxing from the global file system.
 
 ## Overview
 
-The module is organized into several main scopes, each serving a specific purpose:
+The API area is organized into several main scopes, each serving a specific purpose:
 
 - **cache**: Temporary storage that should always be used for cached data that can be purged without loss of critical information.
 - **data**: Persistent storage for application data and files.
@@ -25,7 +25,7 @@ These scopes help maintain data organization, security, and lifecycle management
 |---------------|---------------|--------------------------------------------------------|
 | `cache`       | `FsScopeMethods` | Methods to interact with the cache scope.              |
 | `data`        | `FsScopeMethods` | Methods to interact with the persistent data scope.    |
-| `pluginFs`        | `(plugin: string) => FsPluginMethods` | Retruns an interface you can use to interact with the persistent storage of the specified plugin.    |
+| `pluginFs`        | `(plugin: string) => FsPluginMethods` | Returns an interface you can use to interact with the persistent storage of the specified plugin.    |
 | `paths`       | `FsPaths`     | Provides base paths for all scopes.                     |
 | `base`        | `string`      | The root base path for all file system operations.     |
 | `trash`       | `FsTrashMethods` | Methods to manage files in the trash scope.             |
@@ -133,5 +133,5 @@ The `cache` namespace is intended for temporary files that can be cleared withou
 :::
 
 :::warning
-Access through the File System module is strictly limited to the Liatir isolated environment. It does not provide access to the global file system of the host machine, ensuring security and sandboxing.
+Access through the File System API area is strictly limited to the Liatir isolated environment. It does not provide access to the global file system of the host machine, ensuring security and sandboxing.
 :::

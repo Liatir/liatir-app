@@ -1,11 +1,11 @@
 ---
-title: Events Module
-description: Comprehensive guide to the Events Module for managing and listening to internal and external events.
+title: Events API
+description: Comprehensive guide to the Events API for managing and listening to internal and external events.
 ---
 
-# Events Module
+# Events API
 
-The **Events Module** lets you emit and listen to events across windows and bridge components. All listener methods return a `Promise` that resolves to an **unlisten function** — call it when the listener is no longer needed to avoid memory leaks.
+The **Events API** lets you emit and listen to events across windows and bridge components. All listener methods return a `Promise` that resolves to an **unlisten function** — call it when the listener is no longer needed to avoid memory leaks.
 
 ## Methods
 

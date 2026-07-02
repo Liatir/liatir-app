@@ -1,16 +1,16 @@
 ---
-title: Shortcuts Module
+title: Shortcuts API
 description: Manage global and local keyboard shortcuts.
 ---
 
 
-# Shortcuts Module
+# Shortcuts API
 
-The **Shortcuts** module allows you to manage keyboard shortcuts for the desktop application. This enables your app to respond to specific key combinations ([accelerators](#accelerators)), improving user experience by providing quick access to common actions.
+The **Shortcuts** API area allows you to manage keyboard shortcuts for the desktop application. This enables your app to respond to specific key combinations ([accelerators](#accelerators)), improving user experience by providing quick access to common actions.
 
 ## Overview
 
-With the Shortcuts Module, you can:
+With the Shortcuts API, you can:
 
 - Register hotkeys to trigger specific actions quickly.
 - Listen to keyboard shortcut press and release events.

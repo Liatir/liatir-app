@@ -1,83 +1,104 @@
 # Liatir SDK
 
-The Liatir SDK is the JavaScript/TypeScript API exposed to code running inside
-the Liatir desktop environment.
+The Liatir SDK has two related surfaces:
 
-Use it when you are building a `.lia` plugin or another local surface that needs
-typed access to Liatir features.
+- `@liatir/sdk` for Node `.lia` plugin authoring;
+- `liatir` for browser/webview code that needs the `window.Liatir` bridge.
+
+Most plugin authors use `@liatir/sdk` through projects created by
+`lia init`.
 
 ![Liatir SDK surface map](../static/sdk-surface-map.svg)
 
-## Install
+## Node plugin authoring
 
-```bash
-npm install liatir
-```
-
-## Basic usage
+Node `.lia` plugins import `definePlugin`, `field`, and optional helper types
+from `@liatir/sdk`.
 
 ```ts
-import { Liatir, isLiatirAvailable } from 'liatir';
+import { definePlugin, field, type PluginContext } from "@liatir/sdk";
 
-if (!isLiatirAvailable()) {
-  throw new Error('Liatir is not available in this environment.');
-}
+const liatirPlugin = definePlugin({
+  inputs: {
+    text: field.string({
+      label: "Text",
+      description: "Text to analyze.",
+      required: true,
+      default: "hello from Liatir",
+    }),
+  },
+  outputs: {
+    length: field.number({
+      label: "Length",
+      description: "Number of characters in the input text.",
+      format: "integer",
+    }),
+  },
+});
 
-const files = await Liatir.desktop.files.open({
-  multi: true,
-  allowed: ['fastq', 'fq', 'fastq.gz']
+export default liatirPlugin.main(async ({ input, lia }: PluginContext<typeof liatirPlugin>) => {
+  return {
+    length: input.text.length,
+  };
 });
 ```
 
-## Important distinction
+The schema is declared once. TypeScript input and output types are inferred from
+that schema, and `lia build` generates the `.lia` manifest from it.
 
-The SDK is not the same thing as a `.lia` plugin.
+## Node plugin bridge
 
-| Concept | Meaning |
-| --- | --- |
-| `.lia` plugin | A packaged extension file imported into Liatir. |
-| Liatir SDK | The typed API used by code to talk to Liatir. |
-| `Liatir.desktop` | Native desktop features such as files, fs, window, events. |
-| `Liatir.plugins` | Low-level WASM module runtime. |
-| AI Models / AI Tools | Built-in local AI model system, not SDK plugins. |
+Inside `.main(...)`, the `lia` object is a Node bridge to the running Liatir app.
+It is not the same type as `window.Liatir`, because a headless Node process does
+not support GUI-only APIs.
 
-## Availability
+Available areas include:
 
-Use `isLiatirAvailable()` before calling native features. It returns `false`
-outside Liatir and does not throw during normal browser rendering.
+- `lia.jobs`
+- `lia.deps`
+- `lia.desktop.fs`
+- `lia.desktop.files`
+- `lia.desktop.events`
+- `lia.desktop.app`
+- `lia.desktop.network`
+- `lia.desktop.clipboard`
+- `lia.desktop.notifications`
+- `lia.desktop.diagnostics`
+- `lia.desktop.globalVariables`
+- `lia.align`
+- `lia.qc`
+- `lia.variants`
+- `lia.plugins`
+- `lia.sidecar`
+- `lia.paths()`
+- `lia.invoke`
+
+## Browser/webview bridge
+
+Code running inside Liatir's desktop webview can use the browser bridge:
 
 ```ts
-import { Liatir, isLiatirAvailable } from 'liatir';
+import { Liatir, isLiatirAvailable } from "liatir";
 
-export async function openInput() {
-  if (!isLiatirAvailable()) return null;
-  return await Liatir.desktop.files.open({ multi: false });
+if (isLiatirAvailable()) {
+  await Liatir.desktop.files.open({ multi: false });
 }
 ```
 
-## Main namespaces
-
-| Namespace | Use it for |
-| --- | --- |
-| `Liatir.desktop` | File dialogs, sandboxed storage, app/window APIs, events, clipboard, notifications. |
-| `Liatir.plugins` | Calling low-level WASM modules. |
-| `Liatir.pipeline` | Running sequential SDK pipelines made of WASM and sidecar steps. |
-| `Liatir.jobs` | Spawning and tracking async native processes. |
-| `Liatir.deps` | Checking whether command-line binaries are available. |
-| `Liatir.qc` | Typed quality-control wrappers such as FastQC. |
-| `Liatir.invoke` | Low-level command invocation for advanced use. |
-
-Prefer typed namespaces. Use `invoke` only when no typed wrapper exists.
+This package proxies the `window.Liatir` surface. It includes desktop/webview
+APIs such as window controls, menus, shortcuts, and other UI-related areas
+that are not available to headless Node plugin code.
 
 ## API reference
 
-The API reference is organized by namespace:
-
-- [Root API](/plugins/api/root/overview)
+- [Plugin authoring API](/plugins/api/plugin/define-plugin)
+- [field builders](/plugins/api/plugin/field)
+- [PluginContext](/plugins/api/plugin/plugin-context)
+- [lia Node bridge](/plugins/api/plugin/lia-context)
+- [Root browser API](/plugins/api/root/overview)
 - [Desktop API](/plugins/api/desktop/app)
 - [Plugins API](/plugins/api/plugins/call)
 - [Pipeline API](/plugins/api/pipeline/run)
 - [Jobs API](/plugins/api/jobs/spawn)
 - [Dependencies API](/plugins/api/deps/check)
 - [QC API](/plugins/api/qc/fastqc)
-

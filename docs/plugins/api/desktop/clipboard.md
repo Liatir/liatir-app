@@ -1,12 +1,12 @@
 ---
-title: Clipboard Module
+title: Clipboard API
 description: Read from and write to the system clipboard.
 ---
 
 
-# Clipboard Module
+# Clipboard API
 
-The `Clipboard` module lets your app read from and write text to the system clipboard.
+The `Clipboard` API area lets your app read from and write text to the system clipboard.
 
 ## Methods
 

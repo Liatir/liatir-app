@@ -1,16 +1,16 @@
 ---
-title: Files Module
-description: Documentation for the Files module of Liatir API, providing native file open and save dialogs with byte-level file content access.
+title: Files API
+description: Documentation for the Files API area of Liatir API, providing native file open and save dialogs with byte-level file content access.
 ---
 
 
-# Files Module
+# Files API
 
-The `files` module provides an interface to open and save files through native system dialogs. It supports reading file contents not only as paths but also directly as bytes, enabling more flexible and advanced file handling in your applications.
+The `files` API area provides an interface to open and save files through native system dialogs. It supports reading file contents not only as paths but also directly as bytes, enabling more flexible and advanced file handling in your applications.
 
 ## Overview
 
-The main use cases of the `files` module are:
+The main use cases of the `files` API area are:
 
 - **open**: Open files using a native dialog, returning file paths and metadata.
 - **openWithBytes**: Similar to `open`, but also returns the raw bytes of the selected files.

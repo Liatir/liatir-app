@@ -10,13 +10,14 @@ This is the API used by code running inside the Liatir local environment.
 
 For an introduction to installing and using the SDK, start with
 [Liatir SDK](/plugins/sdk). This section is the API reference: it is organized
-by namespace and then by module or method.
+by namespace and then by API area or method.
 
 Prefer typed namespaces such as `desktop`, `jobs`, `deps`, and `qc`. Use the
 root-level `invoke()` escape hatch only when no typed wrapper exists.
 
 ## Namespaces
 
+- [Plugin authoring API](/plugins/api/plugin/define-plugin)
 - [Root API](/plugins/api/root/overview)
 - [Desktop API](/plugins/api/desktop/app)
 - [Plugins API](/plugins/api/plugins/call)
@@ -25,13 +26,20 @@ root-level `invoke()` escape hatch only when no typed wrapper exists.
 - [Dependencies API](/plugins/api/deps/check)
 - [QC API](/plugins/api/qc/fastqc)
 
+## Plugin authoring API
+
+- [definePlugin](/plugins/api/plugin/define-plugin)
+- [field](/plugins/api/plugin/field)
+- [PluginContext](/plugins/api/plugin/plugin-context)
+- [lia context](/plugins/api/plugin/lia-context)
+
 ## Root API
 
 - [Overview](/plugins/api/root/overview)
 - [openBrowser](/plugins/api/root/open-browser)
 - [invoke](/plugins/api/root/invoke)
 
-## Desktop modules
+## Desktop API areas
 
 - [App](/plugins/api/desktop/app)
 - [Files](/plugins/api/desktop/files)

@@ -46,7 +46,7 @@ self.onmessage = async (ev: MessageEvent<WorkMsg>) => {
     const stdinText = JSON.stringify(payload) + "\n";
 
     const wasiInst = new WASI({
-      args: ["module.wasm"],
+      args: ["plugin.wasm"],
       env: {}, // add passthrough if you need
     });
     wasiInst.setStdinString(stdinText);

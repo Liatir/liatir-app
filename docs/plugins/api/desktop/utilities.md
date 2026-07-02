@@ -7,7 +7,7 @@ description: Liatir utility functions and low-level runtime helpers.
 
 This page documents small utility APIs exposed by Liatir.
 
-These functions are not tied to a single native module, but they are useful when you need to interact with the Liatir runtime, open external URLs, or access the low-level Tauri proxy.
+These functions are not tied to a single native API area, but they are useful when you need to interact with the Liatir runtime, open external URLs, or access the low-level Tauri proxy.
 
 ## openBrowser
 
@@ -29,10 +29,10 @@ if (!isLiatirAvailable()) {
   throw new Error('Liatir is not available in this environment.');
 }
 
-await Liatir.desktop.openBrowser('https://liatir.app');
+await Liatir.openBrowser('https://liatir.app');
 ```
 
-If you want to open a URL inside a new native desktop window instead, use the [window module](/plugins/api/desktop/window):
+If you want to open a URL inside a new native desktop window instead, use the [window API area](/plugins/api/desktop/window):
 
 ```ts
 await Liatir.desktop.window.new({
@@ -95,7 +95,7 @@ Use `Liatir.tauri` only when you need direct access to lower-level Tauri primiti
 ::: warning
 `Liatir.tauri` is a low-level advanced API.
 
-Prefer the standard Liatir API modules whenever possible. Direct Tauri access may be more sensitive to internal runtime changes and should be used carefully.
+Prefer the standard Liatir API areas whenever possible. Direct Tauri access may be more sensitive to internal runtime changes and should be used carefully.
 :::
 
 ### Availability
@@ -275,7 +275,7 @@ interface WindowTauri {
 ---
 
 :::tip Notes
-`Liatir.tauri` is intentionally low-level. For most use cases, use the Liatir API modules instead of calling Tauri APIs directly.
+`Liatir.tauri` is intentionally low-level. For most use cases, use the Liatir API areas instead of calling Tauri APIs directly.
 
-Direct Tauri access is useful when you need advanced behavior that is not yet wrapped by a dedicated Liatir module.
+Direct Tauri access is useful when you need advanced behavior that is not yet wrapped by a dedicated Liatir API area.
 :::

@@ -178,20 +178,20 @@ fn safe_join(base: &Path, rel: &str) -> Result<PathBuf, String> {
     Ok(out)
 }
 
-// Validates a WASM module name used as plugin storage scope.
-fn validate_plugin_storage_module(module: &str) -> Result<String, String> {
-    let clean = module.trim();
+// Validates a WASM plugin name used as plugin storage scope.
+fn validate_plugin_storage_plugin(plugin: &str) -> Result<String, String> {
+    let clean = plugin.trim();
 
     if clean.is_empty() {
-        return Err("plugin_storage_module cannot be empty".into());
+        return Err("plugin_storage_plugin cannot be empty".into());
     }
 
     if !clean.ends_with(".wasm") {
-        return Err("plugin_storage_module must end with .wasm".into());
+        return Err("plugin_storage_plugin must end with .wasm".into());
     }
 
     if clean == "." || clean == ".." {
-        return Err("invalid plugin_storage_module".into());
+        return Err("invalid plugin_storage_plugin".into());
     }
 
     if Path::new(clean).is_absolute()
@@ -199,21 +199,21 @@ fn validate_plugin_storage_module(module: &str) -> Result<String, String> {
         || clean.contains('\\')
         || clean.contains(std::path::is_separator)
     {
-        return Err("invalid plugin_storage_module".into());
+        return Err("invalid plugin_storage_plugin".into());
     }
 
     Ok(clean.to_string())
 }
 
-// Returns the persistent storage root for a plugin module.
-// This lets the existing fs commands target _external_modules_storage/<module>.
+// Returns the persistent storage root for a plugin.
+// This lets the existing fs commands target _external_modules_storage/<plugin>.
 fn plugin_storage_base_dir(
     app: &AppHandle,
-    plugin_storage_module: &str,
+    plugin_storage_plugin: &str,
 ) -> Result<PathBuf, String> {
-    let module = validate_plugin_storage_module(plugin_storage_module)?;
+    let plugin = validate_plugin_storage_plugin(plugin_storage_plugin)?;
     let root = liatir_scope_root(app, true, None)?;
-    let base = root.join("_external_modules_storage").join(module);
+    let base = root.join("_external_modules_storage").join(plugin);
 
     if !base.exists() {
         fs::create_dir_all(&base).map_err(|e| e.to_string())?;
@@ -223,15 +223,15 @@ fn plugin_storage_base_dir(
 }
 
 // Returns the effective root for fs commands.
-// If plugin_storage_module is set, it overrides data/cache resolution.
+// If plugin_storage_plugin is set, it overrides data/cache resolution.
 fn scoped_or_plugin_base_dir(
     app: &AppHandle,
     permanent: bool,
     window_label: &Option<String>,
-    plugin_storage_module: &Option<String>,
+    plugin_storage_plugin: &Option<String>,
 ) -> Result<PathBuf, String> {
-    if let Some(module) = plugin_storage_module.as_deref() {
-        return plugin_storage_base_dir(app, module);
+    if let Some(plugin) = plugin_storage_plugin.as_deref() {
+        return plugin_storage_base_dir(app, plugin);
     }
 
     base_dir_scoped(app, permanent, window_label)
@@ -243,9 +243,9 @@ fn resolve_existing_scoped(
     rel: &str,
     permanent: bool,
     window_label: &Option<String>,
-    plugin_storage_module: &Option<String>,
+    plugin_storage_plugin: &Option<String>,
 ) -> Result<PathBuf, String> {
-    let base = scoped_or_plugin_base_dir(app, permanent, window_label, plugin_storage_module)?;
+    let base = scoped_or_plugin_base_dir(app, permanent, window_label, plugin_storage_plugin)?;
     let p = safe_join(&base, rel)?;
 
     if !p.exists() {
@@ -261,9 +261,9 @@ fn resolve_any_scoped(
     rel: &str,
     permanent: bool,
     window_label: &Option<String>,
-    plugin_storage_module: &Option<String>,
+    plugin_storage_plugin: &Option<String>,
 ) -> Result<PathBuf, String> {
-    let base = scoped_or_plugin_base_dir(app, permanent, window_label, plugin_storage_module)?;
+    let base = scoped_or_plugin_base_dir(app, permanent, window_label, plugin_storage_plugin)?;
     safe_join(&base, rel)
 }
 
@@ -334,15 +334,15 @@ pub fn lia_fs_list_dir(
     permanent: bool,
     window_label: Option<String>,
     // Optional plugin storage scope. When set, rel is resolved under
-    // _external_modules_storage/<module> instead of data/cache.
-    plugin_storage_module: Option<String>,
+    // _external_modules_storage/<plugin> instead of data/cache.
+    plugin_storage_plugin: Option<String>,
 ) -> Result<Vec<FsEntry>, String> {
     let dir = resolve_existing_scoped(
         &app,
         &rel,
         permanent,
         &window_label,
-        &plugin_storage_module,
+        &plugin_storage_plugin,
     )?;
     let mut out = Vec::new();
 
@@ -371,15 +371,15 @@ pub fn lia_fs_mkdir(
     permanent: bool,
     window_label: Option<String>,
     // Optional plugin storage scope. When set, rel is resolved under
-    // _external_modules_storage/<module> instead of data/cache.
-    plugin_storage_module: Option<String>,
+    // _external_modules_storage/<plugin> instead of data/cache.
+    plugin_storage_plugin: Option<String>,
 ) -> Result<(), String> {
     let dir = resolve_any_scoped(
         &app,
         &rel,
         permanent,
         &window_label,
-        &plugin_storage_module,
+        &plugin_storage_plugin,
     )?;
     fs::create_dir_all(&dir).map_err(|e| e.to_string())
 }
@@ -393,14 +393,14 @@ pub fn lia_fs_rm(
     window_label: Option<String>,
     // Optional plugin storage scope. Plugin storage deletes permanently
     // and does not use the data trash system.
-    plugin_storage_module: Option<String>,
+    plugin_storage_plugin: Option<String>,
 ) -> Result<(), String> {
     let p = resolve_any_scoped(
         &app,
         &rel,
         permanent,
         &window_label,
-        &plugin_storage_module,
+        &plugin_storage_plugin,
     )?;
 
     if !p.exists() {
@@ -408,7 +408,7 @@ pub fn lia_fs_rm(
     }
 
     // Plugin storage always deletes for real, even though it lives under app data.
-    if plugin_storage_module.is_some() {
+    if plugin_storage_plugin.is_some() {
         if recursive {
             return if p.is_dir() {
                 fs::remove_dir_all(&p).map_err(|e| e.to_string())
@@ -455,15 +455,15 @@ pub fn lia_fs_stat(
     permanent: bool,
     window_label: Option<String>,
     // Optional plugin storage scope. When set, rel is resolved under
-    // _external_modules_storage/<module> instead of data/cache.
-    plugin_storage_module: Option<String>,
+    // _external_modules_storage/<plugin> instead of data/cache.
+    plugin_storage_plugin: Option<String>,
 ) -> Result<FsEntry, String> {
     let p = resolve_existing_scoped(
         &app,
         &rel,
         permanent,
         &window_label,
-        &plugin_storage_module,
+        &plugin_storage_plugin,
     )?;
     let md = fs::metadata(&p).map_err(|e| e.to_string())?;
     Ok(FsEntry {
@@ -488,8 +488,8 @@ pub fn lia_fs_write_text(
     append: Option<bool>,
     window_label: Option<String>,
     // Optional plugin storage scope. When set, rel is resolved under
-    // _external_modules_storage/<module> instead of data/cache.
-    plugin_storage_module: Option<String>,
+    // _external_modules_storage/<plugin> instead of data/cache.
+    plugin_storage_plugin: Option<String>,
 ) -> Result<(), String> {
     let permanent = permanent.unwrap_or(false);
     let path = resolve_any_scoped(
@@ -497,7 +497,7 @@ pub fn lia_fs_write_text(
         &rel,
         permanent,
         &window_label,
-        &plugin_storage_module,
+        &plugin_storage_plugin,
     )?;
     if create_dirs.unwrap_or(true) {
         if let Some(parent) = path.parent() {
@@ -529,8 +529,8 @@ pub fn lia_fs_read_text(
     permanent: Option<bool>,
     window_label: Option<String>,
     // Optional plugin storage scope. When set, rel is resolved under
-    // _external_modules_storage/<module> instead of data/cache.
-    plugin_storage_module: Option<String>,
+    // _external_modules_storage/<plugin> instead of data/cache.
+    plugin_storage_plugin: Option<String>,
 ) -> Result<String, String> {
     let permanent = permanent.unwrap_or(false);
     let path = resolve_existing_scoped(
@@ -538,7 +538,7 @@ pub fn lia_fs_read_text(
         &rel,
         permanent,
         &window_label,
-        &plugin_storage_module,
+        &plugin_storage_plugin,
     )?;
     std::fs::read_to_string(path).map_err(|e| e.to_string())
 }
@@ -553,8 +553,8 @@ pub fn lia_fs_write_bytes(
     create_dirs: Option<bool>,
     window_label: Option<String>,
     // Optional plugin storage scope. When set, rel is resolved under
-    // _external_modules_storage/<module> instead of data/cache.
-    plugin_storage_module: Option<String>,
+    // _external_modules_storage/<plugin> instead of data/cache.
+    plugin_storage_plugin: Option<String>,
 ) -> Result<(), String> {
     let permanent = permanent.unwrap_or(false);
     let path = resolve_any_scoped(
@@ -562,7 +562,7 @@ pub fn lia_fs_write_bytes(
         &rel,
         permanent,
         &window_label,
-        &plugin_storage_module,
+        &plugin_storage_plugin,
     )?;
     if create_dirs.unwrap_or(true) {
         if let Some(parent) = path.parent() {
@@ -583,8 +583,8 @@ pub fn lia_fs_read_bytes(
     permanent: Option<bool>,
     window_label: Option<String>,
     // Optional plugin storage scope. When set, rel is resolved under
-    // _external_modules_storage/<module> instead of data/cache.
-    plugin_storage_module: Option<String>,
+    // _external_modules_storage/<plugin> instead of data/cache.
+    plugin_storage_plugin: Option<String>,
 ) -> Result<String, String> {
     let permanent = permanent.unwrap_or(false);
     let path = resolve_existing_scoped(
@@ -592,7 +592,7 @@ pub fn lia_fs_read_bytes(
         &rel,
         permanent,
         &window_label,
-        &plugin_storage_module,
+        &plugin_storage_plugin,
     )?;
     let mut f = std::fs::File::open(path).map_err(|e| e.to_string())?;
     let mut buf = Vec::new();
@@ -608,8 +608,8 @@ pub fn lia_fs_exists(
     permanent: Option<bool>,
     window_label: Option<String>,
     // Optional plugin storage scope. When set, rel is resolved under
-    // _external_modules_storage/<module> instead of data/cache.
-    plugin_storage_module: Option<String>,
+    // _external_modules_storage/<plugin> instead of data/cache.
+    plugin_storage_plugin: Option<String>,
 ) -> Result<bool, String> {
     let permanent = permanent.unwrap_or(false);
     let path = resolve_any_scoped(
@@ -617,7 +617,7 @@ pub fn lia_fs_exists(
         &rel,
         permanent,
         &window_label,
-        &plugin_storage_module,
+        &plugin_storage_plugin,
     )?;
     Ok(path.exists())
 }
@@ -633,8 +633,8 @@ pub fn lia_fs_move(
     overwrite: Option<bool>,
     window_label: Option<String>,
     // Optional plugin storage scope. When set, src/dest are resolved under
-    // _external_modules_storage/<module> instead of data/cache.
-    plugin_storage_module: Option<String>,
+    // _external_modules_storage/<plugin> instead of data/cache.
+    plugin_storage_plugin: Option<String>,
 ) -> Result<(), String> {
     let permanent = permanent.unwrap_or(false);
     let src_path = resolve_existing_scoped(
@@ -642,14 +642,14 @@ pub fn lia_fs_move(
         &src,
         permanent,
         &window_label,
-        &plugin_storage_module,
+        &plugin_storage_plugin,
     )?;
     let mut dest_path = resolve_any_scoped(
         &app,
         &dest,
         permanent,
         &window_label,
-        &plugin_storage_module,
+        &plugin_storage_plugin,
     )?;
     let create_dirs = create_dirs.unwrap_or(true);
     let overwrite = overwrite.unwrap_or(false);
@@ -696,8 +696,8 @@ pub fn lia_fs_copy(
     overwrite: Option<bool>,
     window_label: Option<String>,
     // Optional plugin storage scope. When set, src/dest are resolved under
-    // _external_modules_storage/<module> instead of data/cache.
-    plugin_storage_module: Option<String>,
+    // _external_modules_storage/<plugin> instead of data/cache.
+    plugin_storage_plugin: Option<String>,
 ) -> Result<(), String> {
     let permanent = permanent.unwrap_or(false);
     let src_path = resolve_existing_scoped(
@@ -705,14 +705,14 @@ pub fn lia_fs_copy(
         &src,
         permanent,
         &window_label,
-        &plugin_storage_module,
+        &plugin_storage_plugin,
     )?;
     let mut dest_path = resolve_any_scoped(
         &app,
         &dest,
         permanent,
         &window_label,
-        &plugin_storage_module,
+        &plugin_storage_plugin,
     )?;
     let recursive = recursive.unwrap_or(false);
     let create_dirs = create_dirs.unwrap_or(true);

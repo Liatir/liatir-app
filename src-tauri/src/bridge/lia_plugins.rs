@@ -5,11 +5,11 @@ use serde_json::Value;
 const SIG: &str = "LIATIR/1";
 
 const RUNNER: &str = r#"import * as _mod from './index.js';
-// defineModule(...) returns an object with .run; also accept a bare function or a named run export.
+// definePlugin(...) returns an object with .run; legacy shapes are accepted for older bundles.
 const _m = _mod.default ?? _mod;
 const _run = typeof _m === 'function' ? _m : (_m && (_m.run ?? _mod.run));
 if (typeof _run !== 'function') {
-  process.stderr.write('[liatir] module must `export default defineModule(...)`\n');
+  process.stderr.write('[liatir] plugin must `export default definePlugin(...)`\n');
   process.exit(1);
 }
 const _inputs = JSON.parse(process.argv[2] ?? '{}');
@@ -28,22 +28,22 @@ fn open_validated(path: &str) -> Result<zip::ZipArchive<std::fs::File>, String> 
     let file = std::fs::File::open(path)
         .map_err(|e| format!("Cannot open: {e}"))?;
     let mut zip = zip::ZipArchive::new(file)
-        .map_err(|_| "Not a valid .lia module (not a zip)".to_string())?;
+        .map_err(|_| "Not a valid .lia plugin (not a zip)".to_string())?;
 
     // Validate signature
     let mut sig_entry = zip.by_name("_sig")
-        .map_err(|_| "Not a valid .lia module (missing signature)".to_string())?;
+        .map_err(|_| "Not a valid .lia plugin (missing signature)".to_string())?;
     let mut sig = String::new();
     sig_entry.read_to_string(&mut sig).map_err(|e| e.to_string())?;
     if sig.trim() != SIG {
-        return Err("Not a valid .lia module (wrong signature)".to_string());
+        return Err("Not a valid .lia plugin (wrong signature)".to_string());
     }
     drop(sig_entry);
 
     Ok(zip)
 }
 
-/// Read manifest.json from a .lia module, validating the signature first.
+/// Read manifest.json from a .lia plugin, validating the signature first.
 #[tauri::command]
 pub async fn lia_liatir_read_manifest(path: String) -> Result<Value, String> {
     let mut zip = open_validated(&path)?;
@@ -54,7 +54,7 @@ pub async fn lia_liatir_read_manifest(path: String) -> Result<Value, String> {
     serde_json::from_str(&buf).map_err(|e| format!("Invalid manifest JSON: {e}"))
 }
 
-/// Extract a .lia module to a temp dir and spawn it with node.
+/// Extract a .lia plugin to a temp dir and spawn it with node.
 /// Returns the same {jobId} value as lia_jobs_spawn.
 #[tauri::command]
 pub async fn lia_liatir_run(
@@ -77,19 +77,26 @@ pub async fn lia_liatir_run(
         .and_then(|r| r.as_str())
         .unwrap_or("node");
 
-    // ── WASM runtime: extract module.wasm and run it in the sandbox ─────────
+    // ── WASM runtime: extract plugin.wasm and run it in the sandbox ─────────
     if runtime == "wasm" {
         let wasm_bytes = {
+            const PLUGIN_WASM_ENTRY: &str = "plugin.wasm";
+            const LEGACY_WASM_ENTRY: &str = "module.wasm";
+            let wasm_entry_name = if zip.by_name(PLUGIN_WASM_ENTRY).is_ok() {
+                PLUGIN_WASM_ENTRY
+            } else {
+                LEGACY_WASM_ENTRY
+            };
             let mut entry = zip
-                .by_name("module.wasm")
-                .map_err(|_| "module.wasm not found in bundle (runtime: wasm)".to_string())?;
+                .by_name(wasm_entry_name)
+                .map_err(|_| "plugin.wasm not found in bundle (runtime: wasm)".to_string())?;
             let mut buf = Vec::new();
             entry.read_to_end(&mut buf).map_err(|e| e.to_string())?;
             buf
         };
 
         // Auto-expose the directory of each "file" input read-only, so the
-        // sandboxed module can open it — wasm has no host fs access otherwise.
+        // sandboxed plugin can open it — wasm has no host fs access otherwise.
         let mut host_read_paths: Vec<String> = Vec::new();
         if let Some(schema) = manifest.get("inputSchema").and_then(|s| s.as_object()) {
             for (key, def) in schema {
@@ -118,7 +125,7 @@ pub async fn lia_liatir_run(
                     .collect();
                 format!("{safe}.wasm")
             })
-            .unwrap_or_else(|| "module.wasm".to_string());
+            .unwrap_or_else(|| "plugin.wasm".to_string());
 
         return super::plugins::run_wasm_bundle(
             app,

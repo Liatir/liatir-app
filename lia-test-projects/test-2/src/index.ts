@@ -19,9 +19,7 @@ const liatirPlugin = definePlugin({
   },
 });
 
-export default liatirPlugin.main(async ({ input, lia }: PluginContext<typeof liatirPlugin>) => {
-  // Write your plugin logic here. Inputs and outputs are defined once above.
-
+export default liatirPlugin.main(async ({ input }: PluginContext<typeof liatirPlugin>) => {
   return {
     length: input.text.length,
   };

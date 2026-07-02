@@ -1,4 +1,4 @@
-import type { LiatirModule, ModuleInputFieldDef, ModuleOutputFieldDef } from '$lib/stores/modules.svelte';
+import type { LiatirPlugin, PluginInputFieldDef, PluginOutputFieldDef } from '$lib/stores/lia-plugins.svelte';
 import type {
   InputFieldSchema,
   OutputFieldSchema,
@@ -6,17 +6,20 @@ import type {
   PipelineRegistryEntry,
 } from '$lib/types/pipeline';
 import type { ToolOutput } from '$lib/types/tool-output';
-import { runLiatirModule } from '$lib/utils/module-run';
-import { saveModuleResultFiles } from '$lib/utils/module-files';
+import { runLiatirPlugin } from '$lib/utils/plugin-run';
+import { savePluginResultFiles } from '$lib/utils/plugin-files';
 import type { JsonValue } from '@liatir/core';
 
-/** Pipeline step id for an imported .lia plugin — legacy prefix kept for saved pipeline compatibility. */
-export function moduleStepId(moduleId: string): string {
-  return `module:${moduleId}`;
+export const LIA_PLUGIN_STEP_PREFIX = 'plugin:';
+export const LEGACY_LIA_PLUGIN_STEP_PREFIX = 'module:';
+
+/** Pipeline step id for an imported .lia plugin. */
+export function pluginStepId(pluginId: string): string {
+  return `${LIA_PLUGIN_STEP_PREFIX}${pluginId}`;
 }
 
 /** A .lia plugin's input schema is already InputFieldSchema-shaped. */
-function mapInputs(schema: Record<string, ModuleInputFieldDef>): Record<string, InputFieldSchema> {
+function mapInputs(schema: Record<string, PluginInputFieldDef>): Record<string, InputFieldSchema> {
   const out: Record<string, InputFieldSchema> = {};
   for (const [k, f] of Object.entries(schema)) {
     out[k] = { type: f.type, label: f.label, required: f.required, default: f.default, accept: f.accept };
@@ -25,7 +28,7 @@ function mapInputs(schema: Record<string, ModuleInputFieldDef>): Record<string, 
 }
 
 /** Map a .lia plugin output field to a pipeline OutputFieldSchema. */
-function mapOutputs(schema: Record<string, ModuleOutputFieldDef>): Record<string, OutputFieldSchema> {
+function mapOutputs(schema: Record<string, PluginOutputFieldDef>): Record<string, OutputFieldSchema> {
   const out: Record<string, OutputFieldSchema> = {};
   for (const [k, f] of Object.entries(schema)) {
     const type: OutputFieldSchema['type'] =
@@ -46,15 +49,15 @@ function isJsonValue(value: unknown): value is JsonValue {
 }
 
 /** Build the pipeline step definition (form + handles) for an imported .lia plugin. */
-export function moduleToDefinition(mod: LiatirModule): PipelineStepDefinition {
+export function pluginToDefinition(plugin: LiatirPlugin): PipelineStepDefinition {
   return {
-    id: moduleStepId(mod.id),
-    type: mod.runtime === 'wasm' ? 'wasm-plugin' : 'lia-plugin',
-    label: mod.name,
-    description: mod.description || (mod.runtime === 'wasm' ? 'WASM custom tool (sandboxed)' : 'Liatir plugin'),
-    category: mod.runtime === 'wasm' ? 'Custom Tools' : 'Plugins',
-    inputSchema: mapInputs(mod.inputSchema),
-    outputSchema: mapOutputs(mod.outputSchema),
+    id: pluginStepId(plugin.id),
+    type: plugin.runtime === 'wasm' ? 'wasm-plugin' : 'lia-plugin',
+    label: plugin.name,
+    description: plugin.description || (plugin.runtime === 'wasm' ? 'WASM custom tool (sandboxed)' : 'Liatir plugin'),
+    category: plugin.runtime === 'wasm' ? 'Custom Tools' : 'Plugins',
+    inputSchema: mapInputs(plugin.inputSchema),
+    outputSchema: mapOutputs(plugin.outputSchema),
   };
 }
 
@@ -64,23 +67,23 @@ export function moduleToDefinition(mod: LiatirModule): PipelineStepDefinition {
  * the pipeline's StepResult — file outputs become RunOutputFiles (for chaining),
  * numeric outputs become connectable metrics.
  */
-export function moduleToRegistryEntry(mod: LiatirModule): PipelineRegistryEntry {
+export function pluginToRegistryEntry(plugin: LiatirPlugin): PipelineRegistryEntry {
   return {
-    definition: moduleToDefinition(mod),
+    definition: pluginToDefinition(plugin),
     run: async (inputs, _outputDir, onLog) => {
-      const out = await runLiatirModule(mod, inputs, (_stream, line) => onLog(line));
+      const out = await runLiatirPlugin(plugin, inputs, (_stream, line) => onLog(line));
       if (out.exitCode !== 0) {
-        throw new Error(out.stderr.join('\n') || `Plugin "${mod.name}" exited with code ${out.exitCode}`);
+        throw new Error(out.stderr.join('\n') || `Plugin "${plugin.name}" exited with code ${out.exitCode}`);
       }
 
       const result = out.result;
       const metrics: Record<string, number> = {};
       const values: Record<string, JsonValue> = {};
-      const outputFiles = await saveModuleResultFiles(mod.name, mod.outputSchema, result, crypto.randomUUID());
+      const outputFiles = await savePluginResultFiles(plugin.name, plugin.outputSchema, result, crypto.randomUUID());
 
       if (result && typeof result === 'object') {
         const obj = result as Record<string, unknown>;
-        for (const [key, field] of Object.entries(mod.outputSchema)) {
+        for (const [key, field] of Object.entries(plugin.outputSchema)) {
           const v = obj[key];
           if (field.type === 'number' && typeof v === 'number') {
             metrics[key] = v;

@@ -58,7 +58,7 @@ DeepLinkSegments {
 
 ## Event Handling in JavaScript
 
-To handle deep links in your Liatir app, use the `Liatir.events.onDeeplink()` method of the [events module](events). This method can register a callback that receives the parsed payload whenever a deep link is triggered.
+To handle deep links in your Liatir app, use the `Liatir.events.onDeeplink()` method of the [events API area](events). This method can register a callback that receives the parsed payload whenever a deep link is triggered.
 
 ## Event Handling Example
 

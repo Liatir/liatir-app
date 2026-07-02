@@ -38,8 +38,8 @@ Import `wasm-length.lia` from the Liatir Plugins page.
 ## Notes
 
 Node plugins should declare their input/output contract once with
-`defineModule(...)`. The SDK infers the TypeScript input and output types from
+`definePlugin(...)`. The SDK infers the TypeScript input and output types from
 that schema, and `lia build` generates the `.lia` manifest from the same source.
-The required shape is `defineModule({ inputs, outputs }).main(...)`: the
-contract stays inside `defineModule`, and the implementation body stays inside
+The required shape is `definePlugin({ inputs, outputs }).main(...)`: the
+contract stays inside `definePlugin`, and the implementation body stays inside
 the SDK-controlled `.main(...)` entry point.

@@ -1,12 +1,12 @@
 import { liatir } from '$lib/api';
 
 function createPluginsStore() {
-  let modules = $state<string[]>([]);
+  let plugins = $state<string[]>([]);
   let loading = $state(false);
   let error = $state<string | null>(null);
 
   return {
-    get modules() { return modules; },
+    get plugins() { return plugins; },
     get loading() { return loading; },
     get error() { return error; },
 
@@ -16,7 +16,7 @@ function createPluginsStore() {
       loading = true;
       error = null;
       try {
-        modules = await api.plugins.list();
+        plugins = await api.plugins.list();
       } catch (e) {
         error = String(e);
       } finally {
@@ -44,7 +44,7 @@ function createPluginsStore() {
       error = null;
       try {
         await api.plugins.remove(name);
-        modules = modules.filter((m) => m !== name);
+        plugins = plugins.filter((m) => m !== name);
       } catch (e) {
         error = String(e);
       }
