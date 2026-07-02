@@ -4,6 +4,10 @@ Liatir is a local-first desktop environment for bioinformatics. It gives you one
 place to manage data files, run tools, build pipelines, install local AI Models,
 and review results without sending your scientific data to a cloud service.
 
+<figure class="liatir-architecture-figure">
+  <img src="../static/Liatir%20arch.png" alt="Liatir architecture overview" />
+</figure>
+
 ## The basic idea
 
 Liatir is organized around a few product concepts:

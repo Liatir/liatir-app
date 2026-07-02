@@ -1,6 +1,6 @@
 # What is Liatir
 
-Liatir is a local-first bioinformatics desktop application. It runs native command-line tools (FastQC, Samtools, BCFtools, fastp, …), custom JavaScript plugins (`.lia` files), WebAssembly plugins, and local AI Models used by AI Tools — all from a single UI, entirely on your own machine.
+Liatir is a local-first bioinformatics desktop application. It runs native command-line tools (FastQC, Samtools, BCFtools, fastp, ...), custom JavaScript plugins (`.lia` files), WebAssembly tools, and local AI Models used by AI Tools - all from a single UI, entirely on your own machine.
 
 ## Why local-first matters
 
@@ -29,8 +29,8 @@ Any binary installed in your system PATH can be wrapped as a native tool. Liatir
 ### 2 — .lia plugins
 A `.lia` file is a self-contained ZIP bundle: a `manifest.json` with an input/output schema, and an `index.js` ESM bundle that is executed by Node.js. The plugin's JS can do anything Node can do — including shelling out to Nextflow, Snakemake, or any other CLI tool. From Liatir's perspective, a plugin that wraps a Nextflow workflow looks identical to a native QC tool: same schema, same run history, same output tracking.
 
-### 3 — WASM plugins
-For performance-critical or cross-language logic, Liatir supports WebAssembly plugins. Compile from Rust, C, or any WASM-compatible language and register the plugin so it can behave like a normal tool in the UI and in pipelines.
+### 3 — WASM tools
+For performance-critical or cross-language logic, Liatir supports WebAssembly modules. Compile from Rust, C, or any WASM-compatible language and expose it as a normal tool in the UI and in pipelines.
 
 ### 4 — AI Models and AI Tools
 AI Models are locally installed model runtimes managed by Liatir. AI Tools are the pipeline capabilities that use those models for tasks such as single-cell annotation, sequence embedding, protein structure prediction, and genomic variant scoring.
@@ -42,7 +42,7 @@ AI Models are locally installed model runtimes managed by Liatir. AI Tools are t
 | **Data library** | A registry of file paths on disk. Files are never copied — Liatir tracks references and detects when files move or disappear. |
 | **Native tool** | A system binary wrapped with a Liatir UI, dependency check, and run history. |
 | **.lia plugin** | A self-contained JavaScript bundle that extends Liatir with custom steps. Can orchestrate any external tool. |
-| **WASM plugin** | A WebAssembly plugin for performance-critical logic. FastQC is the primary example. |
+| **WASM tool** | A WebAssembly-backed tool for performance-critical logic. FastQC is the primary example. |
 | **AI Model** | A locally managed model runtime installed only when needed. |
 | **AI Tool** | A pipeline-ready capability that runs a compatible local AI Model through the shared I/O contract. |
 | **Pipeline** | A directed graph of steps whose typed outputs connect to typed inputs of subsequent steps. |
@@ -52,6 +52,7 @@ AI Models are locally installed model runtimes managed by Liatir. AI Tools are t
 
 1. [Add files to your Data library](/data/overview) — import by path, no copying.
 2. [Run a native tool](/tools/overview) — start with FastQC or fastp on FASTQ files.
-3. [Install an AI Model](/ai/models/overview) — try local annotation, embedding, or structure workflows.
-4. [Build or import a .lia plugin](/plugins/overview) — for custom logic or pipeline orchestration.
-5. [Connect steps in a pipeline](/pipeline/overview) — automatic type-matched data flow.
+3. [Read the AI guide](/ai/guide) — learn what AI Models and AI Tools do before interpreting results.
+4. [Install an AI Model](/ai/models/overview) — try local annotation, embedding, or structure workflows.
+5. [Build or import a .lia plugin](/plugins/overview) — for custom logic or pipeline orchestration.
+6. [Connect steps in a pipeline](/pipeline/overview) — automatic type-matched data flow.

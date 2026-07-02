@@ -87,12 +87,14 @@
   }
 
   function modelStatusLabel(model: LiatirAIModelRecord): string {
+    if (model.releaseStage === 'preview') return 'preview';
     if (installing[model.id]) return 'installing';
     if (isCheckingModel(model)) return 'checking';
     return statusLabel(model.status);
   }
 
   function modelStatusVariant(model: LiatirAIModelRecord): BadgeVariants {
+    if (model.releaseStage === 'preview') return 'neutral';
     if (installing[model.id] || isCheckingModel(model)) return 'running';
     return statusVariant(model.status);
   }
@@ -131,6 +133,7 @@
       ...(model.capabilities ?? []),
       ...(model.modalities ?? []),
       ...(model.tags ?? []),
+      model.releaseStage,
     ].filter(Boolean).join(' ').toLowerCase();
   }
 
@@ -141,6 +144,7 @@
   function groupModelsByCategory(items: LiatirAIModelRecord[]): ModelCategoryGroup[] {
     const categoryOrder = [
       'Single-cell',
+      'Single-cell Foundation Models',
       'Genomics',
       'Predictive Genomics',
       'Protein Language Models',
@@ -162,12 +166,13 @@
         name,
         models: groupModels,
         installedCount: groupModels.filter((model) => model.status === 'installed' && !runtimeChecks[model.id]).length,
-        runnableCount: groupModels.filter((model) => model.enabled !== false && model.status === 'installed' && !runtimeChecks[model.id]).length,
+        runnableCount: groupModels.filter((model) => model.releaseStage !== 'preview' && model.enabled !== false && model.status === 'installed' && !runtimeChecks[model.id]).length,
       }));
   }
 
   function categoryDescription(category: string): string {
     if (category === 'Single-cell') return 'Cell annotation and AnnData workflows.';
+    if (category === 'Single-cell Foundation Models') return 'Embeddings, perturbation, and cell-state foundation-model workflows.';
     if (category === 'Genomics') return 'DNA/RNA embeddings, regulatory prediction, and variant scoring.';
     if (category === 'Predictive Genomics') return 'Long-context sequence models for regulatory signal and variant impact.';
     if (category === 'Protein Language Models') return 'Protein sequence embeddings and representation models.';
@@ -461,6 +466,11 @@
                           {#if model.error && model.status === 'error'}
                             <p class="mt-1 text-[11px] text-red-500 line-clamp-2">{sanitizeLocalPathsForDisplay(model.error, 2)}</p>
                           {/if}
+                          {#if model.releaseStage === 'preview'}
+                            <p class="mt-1 text-[11px] text-zinc-500">
+                              Preview model: documentation and roadmap metadata are available, but install and run are not enabled yet.
+                            </p>
+                          {/if}
                           <div class="mt-2 flex flex-wrap gap-1.5">
                             {#each model.capabilities as capability}
                               <span class="rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[10px] text-zinc-500">{capability}</span>
@@ -636,6 +646,10 @@
                           {:else if checking}
                             <Button size="sm" variant="secondary" disabled>
                               Checking
+                            </Button>
+                          {:else if model.releaseStage === 'preview'}
+                            <Button size="sm" variant="secondary" disabled>
+                              Preview
                             </Button>
                           {:else if model.status === 'installed'}
                             <Button size="sm" variant="secondary" testId="ai-model-run-button" disabled={actionsLocked} onclick={() => goto(`/ai/${encodeURIComponent(model.id)}`)}>

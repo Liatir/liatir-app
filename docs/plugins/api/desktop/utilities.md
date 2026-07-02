@@ -32,7 +32,7 @@ if (!isLiatirAvailable()) {
 await Liatir.desktop.openBrowser('https://liatir.app');
 ```
 
-If you want to open a URL inside a new native desktop window instead, use the [window module](/guide/bridge/api/window.md):
+If you want to open a URL inside a new native desktop window instead, use the [window module](/plugins/api/desktop/window):
 
 ```ts
 await Liatir.desktop.window.new({

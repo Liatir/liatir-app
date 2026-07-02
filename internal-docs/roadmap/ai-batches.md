@@ -56,30 +56,37 @@ Status: implemented and under scientific validation.
 
 ## Batch 4: Predictive genomics
 
-Status: variant-effect slice consolidated; regulatory prediction model coverage
-is deliberately deferred to a dedicated managed-runtime slice.
+Status: implemented and under heavy validation.
 
 - Larger Nucleotide Transformer support.
 - Variant effect scoring based on reference/alternate sequence windows.
 - `.vcf` and `.vcf.gz` inputs for sequential variant scoring.
 - Genome-track-compatible BED outputs for JBrowse workflows.
+- Enformer, Basenji2, and Borzoi Mini K562 RNA-seq as isolated predictive
+  genomics runtime boxes.
 - Inputs: FASTA/VCF/VCF.GZ/BED/sequence window depending on tool.
 - Outputs: scores, embeddings, tracks, and reports.
 
-Regulatory prediction candidates such as Enformer, Basenji, and Borzoi need a
-separate runtime/dependency plan before being added as installable AI Models.
+Remaining work is validation rather than architecture: heavy install/run test
+coverage, scientific output sanity checks, and better model-target UX for the
+regulatory target index.
 
 ## Batch 5: Single-cell foundation models
 
-Status: planned.
+Status: started with preview registry, docs, and contract tests.
 
 - scGPT for embeddings, batch correction, and perturbation hypotheses.
 - Geneformer for cell representations and gene/network insights.
-- UCE/scFoundation as advanced candidates.
+- UCE and scFoundation as advanced candidates.
 - Inputs: `.h5ad`, matrix, metadata.
 - Outputs: embeddings, UMAP-ready data, labels, gene programs, perturbation
   predictions.
 - Visualization with Vitessce.
+
+Current Batch 5 models are visible preview entries, not installable runtimes.
+Do not enable Install or Run until each model has a validated managed runtime
+box, explicit model-asset handling, input validation, output parsing, Jobs,
+Results, and provenance.
 
 ## Batch 6: Simulations and biophysics
 

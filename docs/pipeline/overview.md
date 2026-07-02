@@ -67,6 +67,15 @@ failed so you can fix the input or settings and run again.
 3. Select the model inside the tool.
 4. Connect the generated output to viewers, reports, or later tools.
 
+Example AI pipelines:
+
+- `.h5ad` file to [CellTypist Annotation](/ai/tools/celltypist-annotation) to label summary.
+- FASTA plus VCF to [Genomic Variant Effect](/ai/tools/genomic-variant-effect) to BED track.
+- DNA window to [Regulatory Prediction](/ai/tools/regulatory-prediction) to genome viewer.
+- Protein FASTA to [Protein Structure Prediction](/ai/tools/protein-structure-prediction) to 3D viewer.
+
+Read [Local AI for bioinformatics](/ai/guide) before interpreting AI outputs.
+
 ## Saving and reusing workflows
 
 Pipelines are meant to be reusable. A saved workflow keeps its structure and

@@ -48,6 +48,13 @@ The first Liatir integration exposes a practical target-index workflow. It does
 not yet include a friendly target-label browser, so target index `0` is the
 default starting point.
 
+Treat signal tracks as model predictions. They are useful for comparing windows
+and variants, but they are not direct measurements from an experiment.
+
 ## Official source
 
 - [Calico Basenji cross2020 models](https://github.com/calico/basenji/tree/master/manuscripts/cross2020)
+
+## Related tool
+
+- [Regulatory Prediction](/ai/tools/regulatory-prediction)

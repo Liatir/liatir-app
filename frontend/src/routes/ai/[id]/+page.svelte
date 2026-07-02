@@ -544,6 +544,13 @@
 					<p class="text-sm font-semibold text-zinc-800">AI Model not found</p>
 					<p class="mt-1 text-xs text-zinc-500">Open AI Models and select an available model.</p>
 				</Card>
+			{:else if model.releaseStage === 'preview'}
+				<Card class="p-5">
+					<p class="text-sm font-semibold text-zinc-800">Preview model</p>
+					<p class="mt-1 text-xs text-zinc-500">
+						This AI Model is documented in the roadmap, but Liatir does not expose install or direct run controls until its managed runtime, model assets, and scientific runner are validated.
+					</p>
+				</Card>
 			{:else if model.status !== 'installed'}
 				<Card class="p-5">
 					{#if installBlock}

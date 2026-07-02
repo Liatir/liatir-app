@@ -98,3 +98,6 @@ The `manifest.json` for this plugin declares `reads` (file input) and `outputDir
 Every `.lia` plugin describes its inputs and outputs in `manifest.json`. This means plugin outputs can flow automatically to the inputs of subsequent native tools or other plugins in a pipeline.
 
 See [.lia Format](/plugins/format) for the full manifest schema, and [liatir-cli](/plugins/liatir-cli) to learn how to scaffold and build a plugin.
+
+For the JavaScript/TypeScript SDK exposed inside Liatir, see
+[Liatir SDK](/plugins/sdk) and the [API reference](/plugins/api/overview).

@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="520" viewBox="0 0 1180 520" role="img" aria-labelledby="title desc">
+  <title id="title">Liatir local AI workflow</title>
+  <desc id="desc">Diagram showing Data flowing through AI Tools and local AI Model runtime boxes into Jobs, Results, provenance, and viewers.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#111827" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4f46e5"/>
+    </marker>
+  </defs>
+
+  <rect width="1180" height="520" rx="22" fill="#f8fafc"/>
+  <text x="56" y="62" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="28" font-weight="700" fill="#18181b">Local AI in Liatir</text>
+  <text x="56" y="93" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="15" fill="#71717a">AI Models are installable runtime boxes. AI Tools use them through the shared Liatir I/O contract.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="54" y="148" width="186" height="112" rx="14" fill="#ffffff" stroke="#e4e4e7"/>
+    <text x="82" y="184" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17" font-weight="700" fill="#27272a">Data</text>
+    <text x="82" y="211" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#71717a">FASTA, VCF, h5ad,</text>
+    <text x="82" y="231" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#71717a">FASTQ, PDB, tables</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="318" y="122" width="226" height="164" rx="16" fill="#ffffff" stroke="#e4e4e7"/>
+    <text x="348" y="158" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17" font-weight="700" fill="#27272a">AI Tool</text>
+    <text x="348" y="186" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#71717a">Pipeline-ready task:</text>
+    <text x="348" y="207" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#71717a">annotation, embedding,</text>
+    <text x="348" y="228" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#71717a">regulatory scoring,</text>
+    <text x="348" y="249" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#71717a">structure prediction</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="618" y="112" width="250" height="184" rx="18" fill="#ffffff" stroke="#c7d2fe"/>
+    <rect x="642" y="138" width="202" height="38" rx="9" fill="#eef2ff"/>
+    <text x="658" y="163" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="700" fill="#4338ca">AI Model runtime box</text>
+    <text x="650" y="204" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#52525b">Isolated Python/venv,</text>
+    <text x="650" y="225" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#52525b">model cache, packages,</text>
+    <text x="650" y="246" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#52525b">hardware checks</text>
+    <text x="650" y="272" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#71717a">Installed only when needed</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="936" y="122" width="190" height="164" rx="16" fill="#ffffff" stroke="#e4e4e7"/>
+    <text x="966" y="158" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17" font-weight="700" fill="#27272a">Jobs</text>
+    <text x="966" y="186" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#71717a">Running process,</text>
+    <text x="966" y="207" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#71717a">stdout, stderr,</text>
+    <text x="966" y="228" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#71717a">status, duration</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="318" y="356" width="226" height="108" rx="16" fill="#ffffff" stroke="#e4e4e7"/>
+    <text x="348" y="392" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17" font-weight="700" fill="#27272a">Results</text>
+    <text x="348" y="420" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#71717a">Tables, metrics, files,</text>
+    <text x="348" y="441" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#71717a">warnings, summaries</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="618" y="356" width="250" height="108" rx="16" fill="#ffffff" stroke="#e4e4e7"/>
+    <text x="650" y="392" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17" font-weight="700" fill="#27272a">Provenance</text>
+    <text x="650" y="420" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#71717a">Model, version, runtime,</text>
+    <text x="650" y="441" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#71717a">inputs, parameters</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="936" y="356" width="190" height="108" rx="16" fill="#ffffff" stroke="#e4e4e7"/>
+    <text x="966" y="392" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17" font-weight="700" fill="#27272a">Viewers</text>
+    <text x="966" y="420" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#71717a">Genome tracks,</text>
+    <text x="966" y="441" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#71717a">3D structures, cells</text>
+  </g>
+
+  <path d="M240 204 H304" stroke="#4f46e5" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+  <path d="M544 204 H604" stroke="#4f46e5" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+  <path d="M868 204 H922" stroke="#4f46e5" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+  <path d="M431 286 V342" stroke="#4f46e5" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+  <path d="M743 296 V342" stroke="#4f46e5" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+  <path d="M1031 286 V342" stroke="#4f46e5" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+</svg>

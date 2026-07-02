@@ -50,6 +50,19 @@ describe('AI model registry contracts', () => {
     }
   });
 
+  it('keeps preview AI Models documented but not installable or runnable', () => {
+    const previews = VISIBLE_LOCAL_AI_MODEL_REGISTRY.filter(
+      (model) => model.releaseStage === 'preview',
+    );
+
+    expect(previews.length).toBeGreaterThan(0);
+    for (const model of previews) {
+      expect(model.install, `${model.id} preview model must not expose install controls`).toBeUndefined();
+      expect(model.documentation?.liatirPath, `${model.id} preview model missing docs`).toBeTruthy();
+      expect(model.tags ?? []).toContain('preview');
+    }
+  });
+
   it('keeps deferred models implemented but hidden from user-facing catalog surfaces', () => {
     const chai = getLocalAIModelMetadata(CHAI1_MODEL_ID);
 

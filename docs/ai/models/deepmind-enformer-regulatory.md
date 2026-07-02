@@ -46,6 +46,14 @@ Predictions are useful for exploration and prioritization, not automatic
 biological conclusions. Always check the input reference, selected target index,
 model notes, and provenance.
 
+The current `targetIndex` is technical. Start with `0` for a smoke test, but do
+not make biological claims until you know which target the selected index
+represents.
+
 ## Official source
 
 - [DeepMind Enformer repository](https://github.com/google-deepmind/deepmind-research/tree/master/enformer)
+
+## Related tool
+
+- [Regulatory Prediction](/ai/tools/regulatory-prediction)

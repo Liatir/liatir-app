@@ -43,6 +43,9 @@ Chai-1 is not a fallback for macOS or CPU-only testing. Use Boltz-2 CPU mode for
 local compatibility testing on machines without CUDA, understanding that CPU
 runs can be slow.
 
+This model is currently hidden from normal Liatir catalog surfaces until a Linux
+CUDA validation environment is available.
+
 ## Official source
 
 - [Chai-1 / chai-lab on GitHub](https://github.com/chaidiscovery/chai-lab)

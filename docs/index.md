@@ -10,8 +10,8 @@ hero:
       text: Get Started
       link: /introduction/overview
     - theme: alt
-      text: How It Works
-      link: /introduction/architecture
+      text: AI Guide
+      link: /ai/guide
 
 features:
   - icon: 🦀
@@ -24,11 +24,11 @@ features:
     title: .lia plugins — extend anything
     details: A .lia file is a self-contained JavaScript bundle (built with liatir-cli) that plugs in as a first-class analysis step. Share a plugin as a single file; load it with a drag-and-drop. No install, no conflicts, no root access.
   - icon: 🔌
-    title: WASM plugin system
-    details: For performance-critical or language-agnostic logic, Liatir supports WebAssembly plugins. Compile from Rust, C, or any WASM target and register the plugin — the same input/output schema used by every other step applies.
+    title: WASM tools
+    details: For performance-critical or language-agnostic logic, Liatir can run WebAssembly modules. Compile from Rust, C, or any WASM target and use the same input/output schema used by every other step.
   - icon: 🧠
     title: Local AI Models and AI Tools
-    details: Install model runtimes only when needed, then use them directly or inside pipelines for single-cell annotation, sequence embeddings, structure prediction, and genomic scoring.
+    details: Install model runtimes only when needed, then use AI Tools directly or inside pipelines for single-cell annotation, sequence embeddings, structure prediction, and genomic scoring.
   - icon: 🗂️
     title: Unified data layer
     details: Import files once, use them everywhere. Liatir tracks every file you add by path, shows extension-aware icons, detects when a file moves or disappears, and provides an inline text preview for FASTQ, VCF, SAM, BED, and GTF formats.

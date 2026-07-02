@@ -120,7 +120,7 @@ Current Liatir model boxes:
   - preload: official Mini Borzoi K562 RNA-seq fold 0 weights, parameters, and
     targets;
   - Python: 3.10;
-  - context window: 524,288 bp.
+  - context window: 393,216 bp.
 
 Keep these boxes isolated. Do not merge them into the Nucleotide Transformer
 runtime or a generic TensorFlow bucket unless package specs, host requirements,

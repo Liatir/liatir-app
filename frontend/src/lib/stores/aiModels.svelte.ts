@@ -383,7 +383,7 @@ function createAIModelsStore() {
     get installLogs() { return installLogs; },
     get runnableModels() {
       return records().filter((model) =>
-        model.enabled !== false && model.status === 'installed' && !runtimeChecks[model.id]
+        model.releaseStage !== 'preview' && model.enabled !== false && model.status === 'installed' && !runtimeChecks[model.id]
       );
     },
     async init() {

@@ -43,6 +43,13 @@ Protein embeddings summarize sequence patterns, but they do not by themselves
 predict a reliable 3D structure or binding property. Use a structure-prediction
 model for that.
 
+Use embeddings when you want representation or comparison. Use Boltz-2 when you
+want a structure file.
+
 ## Official source
 
 - [ESM-2 8M on Hugging Face](https://huggingface.co/facebook/esm2_t6_8M_UR50D)
+
+## Related tool
+
+- [Sequence Embedding](/ai/tools/sequence-embedding)

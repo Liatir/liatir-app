@@ -49,6 +49,13 @@ artifact is missing.
 Predicted structures and affinities should be interpreted carefully and, where
 important, validated with additional methods.
 
+The structure file is the main artifact. If a run produces logs but no PDB or
+mmCIF file, the scientific output is incomplete.
+
 ## Official source
 
 - [Boltz on GitHub](https://github.com/jwohlwend/boltz)
+
+## Related tool
+
+- [Protein Structure Prediction](/ai/tools/protein-structure-prediction)

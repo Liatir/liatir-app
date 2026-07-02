@@ -49,6 +49,14 @@ before using it in commercial or restricted work.
 Embedding-delta scoring is a useful local signal, not a replacement for a
 validated variant interpretation pipeline.
 
+For first tests, use the 50M model. Move to 500M when you need stronger
+representations and have enough memory for slower runs.
+
 ## Official source
 
 - [Nucleotide Transformer v2 500M on Hugging Face](https://huggingface.co/InstaDeepAI/nucleotide-transformer-v2-500m-multi-species)
+
+## Related tools
+
+- [Sequence Embedding](/ai/tools/sequence-embedding)
+- [Genomic Variant Effect](/ai/tools/genomic-variant-effect)

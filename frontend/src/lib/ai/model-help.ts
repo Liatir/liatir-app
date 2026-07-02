@@ -2,6 +2,10 @@ import type { LiatirAIModelRecord } from '@liatir/core';
 
 const CAPABILITY_HELP: Record<string, string> = {
   'cell-annotation': 'labels cells in a single-cell dataset using known reference cell types.',
+  'single-cell-embedding': 'turns cells into numeric vectors that can be compared, clustered, or visualized.',
+  'batch-correction': 'helps align related single-cell datasets when technical batch effects make them hard to compare.',
+  'perturbation-prediction': 'estimates how cells or gene programs may change after a simulated perturbation.',
+  'gene-network-inference': 'helps inspect relationships between genes or regulatory programs.',
   'sequence-embedding': 'turns DNA, RNA, or protein sequences into numeric vectors that other tools can compare or plot.',
   'regulatory-prediction': 'predicts or scores regulatory activity from genomic sequence windows.',
   'variant-effect-scoring': 'compares reference and alternate sequence windows to estimate how much a variant changes model representation.',
@@ -53,7 +57,12 @@ export function aiModelInfo(model: LiatirAIModelRecord): string {
     ? `Works with: ${model.modalities.join(', ')} data.`
     : null;
   const local = model.localOnly
-    ? 'Runs locally on this computer after installation.'
+    ? model.releaseStage === 'preview'
+      ? 'Planned as a local runtime after its managed model box is validated.'
+      : 'Runs locally on this computer after installation.'
+    : null;
+  const stage = model.releaseStage === 'preview'
+    ? 'Status: preview. Install and run controls are disabled until the runtime and model assets are validated.'
     : null;
   const runtime = `Runtime: ${model.runtime.name}${model.runtime.version ? ` ${model.runtime.version}` : ''}.`;
   const hardware = model.hardware?.notes
@@ -67,6 +76,7 @@ export function aiModelInfo(model: LiatirAIModelRecord): string {
     model.description,
     capabilityHelp.length > 0 ? `In simple terms: ${capabilityHelp.join(' ')}` : null,
     modalities,
+    stage,
     local,
     runtime,
     hardware,

@@ -34,6 +34,14 @@ Liatir can produce:
 - CSV/JSON summaries;
 - output provenance with model, parameters, input file, and runtime metadata.
 
+## How to interpret results
+
+Read the label distribution first. If the top label covers nearly all cells,
+check whether that matches the biology of the dataset.
+
+CellTypist labels are reference-based suggestions. A wrong tissue, species,
+assay, or preprocessing method can produce confident but misleading labels.
+
 ## Hardware and installation
 
 CellTypist runs on CPU and does not require a GPU. Memory use depends mostly on
@@ -50,3 +58,7 @@ well. Treat the result as an annotation aid, not as a final biological claim.
 ## Official source
 
 - [CellTypist on GitHub](https://github.com/Teichlab/celltypist)
+
+## Related tool
+
+- [CellTypist Annotation](/ai/tools/celltypist-annotation)

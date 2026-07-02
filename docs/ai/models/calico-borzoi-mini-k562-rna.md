@@ -48,6 +48,14 @@ This is a focused Mini Borzoi model, not the full multi-replicate Borzoi stack.
 Use it to validate workflows and explore K562 RNA-seq signal prediction before
 moving to larger Borzoi runs.
 
+Because this model is K562-focused, interpret outputs as a model-specific signal
+example rather than a universal regulatory prediction for every tissue or cell
+type.
+
 ## Official source
 
 - [Calico Borzoi repository](https://github.com/calico/borzoi)
+
+## Related tool
+
+- [Regulatory Prediction](/ai/tools/regulatory-prediction)

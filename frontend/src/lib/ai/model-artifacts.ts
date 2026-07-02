@@ -7,9 +7,13 @@ import {
 	CHAI1_MODEL_ID,
 	ENFORMER_REGULATORY_MODEL_ID,
 	ESM2_8M_ID,
+	GENEFORMER_V1_10M_MODEL_ID,
 	MOCK_AI_MODEL_ID,
 	NUCLEOTIDE_TRANSFORMER_500M_ID,
-	NUCLEOTIDE_TRANSFORMER_50M_ID
+	NUCLEOTIDE_TRANSFORMER_50M_ID,
+	SCFOUNDATION_100M_MODEL_ID,
+	SCGPT_WHOLE_HUMAN_MODEL_ID,
+	UCE_4LAYER_MODEL_ID
 } from './model-registry';
 
 export type AIModelRuntimeFamily =
@@ -19,6 +23,10 @@ export type AIModelRuntimeFamily =
 	| 'regulatory-enformer'
 	| 'regulatory-basenji2-human'
 	| 'regulatory-borzoi-mini-k562-rna'
+	| 'single-cell-foundation-scgpt'
+	| 'single-cell-foundation-geneformer'
+	| 'single-cell-foundation-uce'
+	| 'single-cell-foundation-scfoundation'
 	| 'protein-structure-boltz'
 	| 'protein-structure-chai';
 
@@ -113,6 +121,26 @@ export const AI_MODEL_ARTIFACT_SPECS: AIModelArtifactSpec[] = [
 		modelFile: 'model0_best.h5',
 		paramsFile: 'params.json',
 		targetsFile: 'targets.txt'
+	},
+	{
+		modelId: SCGPT_WHOLE_HUMAN_MODEL_ID,
+		runtimeFamily: 'single-cell-foundation-scgpt',
+		preloadKind: 'none'
+	},
+	{
+		modelId: GENEFORMER_V1_10M_MODEL_ID,
+		runtimeFamily: 'single-cell-foundation-geneformer',
+		preloadKind: 'none'
+	},
+	{
+		modelId: UCE_4LAYER_MODEL_ID,
+		runtimeFamily: 'single-cell-foundation-uce',
+		preloadKind: 'none'
+	},
+	{
+		modelId: SCFOUNDATION_100M_MODEL_ID,
+		runtimeFamily: 'single-cell-foundation-scfoundation',
+		preloadKind: 'none'
 	},
 	{
 		modelId: BOLTZ2_MODEL_ID,

@@ -332,6 +332,10 @@ export type LiatirAICapability =
   | "summarization"
   | "classification"
   | "cell-annotation"
+  | "single-cell-embedding"
+  | "batch-correction"
+  | "perturbation-prediction"
+  | "gene-network-inference"
   | "embedding"
   | "sequence-embedding"
   | "regulatory-prediction"
@@ -439,6 +443,7 @@ export interface LiatirAIModelDocumentation {
 }
 
 export type LiatirAIModelCatalogVisibility = "visible" | "hidden";
+export type LiatirAIModelReleaseStage = "ready" | "preview";
 
 export interface LiatirAIModelMetadata {
   id: string;
@@ -460,6 +465,8 @@ export interface LiatirAIModelMetadata {
   hardware?: LiatirAIModelHardwareRequirements;
   install?: LiatirAIModelInstallSpec;
   documentation?: LiatirAIModelDocumentation;
+  /** Preview models are visible for roadmap/docs but are not installable or runnable yet. */
+  releaseStage?: LiatirAIModelReleaseStage;
   /** Hidden models remain implemented but are not exposed in normal product surfaces. */
   catalogVisibility?: LiatirAIModelCatalogVisibility;
   catalogHiddenReason?: string;

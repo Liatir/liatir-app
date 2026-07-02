@@ -50,6 +50,15 @@ before using it in commercial or restricted work.
 Embeddings are not direct biological conclusions. They are numerical
 representations that need downstream interpretation.
 
+For variant effect scoring, a higher embedding delta means the model
+representation changed more. It does not mean the variant is automatically
+pathogenic or clinically important.
+
 ## Official source
 
 - [Nucleotide Transformer v2 50M on Hugging Face](https://huggingface.co/InstaDeepAI/nucleotide-transformer-v2-50m-multi-species)
+
+## Related tools
+
+- [Sequence Embedding](/ai/tools/sequence-embedding)
+- [Genomic Variant Effect](/ai/tools/genomic-variant-effect)

@@ -7,6 +7,10 @@ export const NUCLEOTIDE_TRANSFORMER_500M_ID = 'instadeep-nt-v2-500m-multi-specie
 export const ENFORMER_REGULATORY_MODEL_ID = 'deepmind-enformer-regulatory';
 export const BASENJI2_REGULATORY_MODEL_ID = 'calico-basenji2-human-regulatory';
 export const BORZOI_K562_RNA_MODEL_ID = 'calico-borzoi-mini-k562-rna';
+export const SCGPT_WHOLE_HUMAN_MODEL_ID = 'bowang-scgpt-whole-human';
+export const GENEFORMER_V1_10M_MODEL_ID = 'ctheodoris-geneformer-v1-10m';
+export const UCE_4LAYER_MODEL_ID = 'snap-stanford-uce-4layer';
+export const SCFOUNDATION_100M_MODEL_ID = 'biomap-scfoundation-100m';
 export const ESM2_8M_ID = 'facebook-esm2-8m-protein';
 export const BOLTZ2_MODEL_ID = 'boltz2-local-structure-binding';
 export const CHAI1_MODEL_ID = 'chai1-local-structure';
@@ -448,6 +452,173 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			paperUrl: 'https://www.biorxiv.org/content/10.1101/2023.08.30.555582v1'
 		},
 		tags: ['built-in', 'managed', 'genomics', 'rna-seq', 'regulatory', 'variant-effect', 'commercial-use-ok']
+	},
+	{
+		id: SCGPT_WHOLE_HUMAN_MODEL_ID,
+		name: 'scGPT Whole-human',
+		description:
+			'Preview single-cell foundation model for cell embeddings, integration, perturbation hypotheses, and gene-network exploration.',
+		category: 'Single-cell Foundation Models',
+		version: 'whole-human',
+		releaseStage: 'preview',
+		runtime: {
+			kind: 'python-venv',
+			name: 'scGPT PyTorch Runtime',
+			version: 'preview'
+		},
+		source: 'managed-runtime',
+		localOnly: true,
+		capabilities: [
+			'single-cell-embedding',
+			'batch-correction',
+			'perturbation-prediction',
+			'gene-network-inference'
+		],
+		modalities: ['single-cell'],
+		license: {
+			name: 'MIT License',
+			spdxId: 'MIT',
+			url: 'https://github.com/bowang-lab/scGPT',
+			verifiedAt: '2026-07-02'
+		},
+		hardware: {
+			cpu: true,
+			gpu: true,
+			minRamGb: 16,
+			recommendedRamGb: 32,
+			minVramGb: 0,
+			recommendedVramGb: 16,
+			notes:
+				'CPU can load small examples, but meaningful foundation-model embedding and perturbation workflows should use a GPU.'
+		},
+		documentation: {
+			liatirPath: '/ai/models/bowang-scgpt-whole-human',
+			officialUrl: 'https://github.com/bowang-lab/scGPT',
+			paperUrl: 'https://www.biorxiv.org/content/10.1101/2023.04.30.538439v2'
+		},
+		tags: ['preview', 'single-cell', 'foundation-model', 'embedding', 'perturbation']
+	},
+	{
+		id: GENEFORMER_V1_10M_MODEL_ID,
+		name: 'Geneformer V1 10M',
+		description:
+			'Preview human single-cell transcriptome foundation model for embeddings, gene-network insight, and in-silico perturbation workflows.',
+		category: 'Single-cell Foundation Models',
+		version: 'v1-10m',
+		releaseStage: 'preview',
+		runtime: {
+			kind: 'python-venv',
+			name: 'Geneformer PyTorch Runtime',
+			version: 'preview'
+		},
+		source: 'managed-runtime',
+		localOnly: true,
+		capabilities: ['single-cell-embedding', 'perturbation-prediction', 'gene-network-inference'],
+		modalities: ['single-cell'],
+		parameters: 10_000_000,
+		license: {
+			name: 'Apache License 2.0',
+			spdxId: 'Apache-2.0',
+			url: 'https://huggingface.co/ctheodoris/Geneformer',
+			verifiedAt: '2026-07-02'
+		},
+		hardware: {
+			cpu: true,
+			gpu: true,
+			minRamGb: 16,
+			recommendedRamGb: 32,
+			minVramGb: 0,
+			recommendedVramGb: 16,
+			notes:
+				'GPU resources are strongly recommended by the official documentation for efficient use.'
+		},
+		documentation: {
+			liatirPath: '/ai/models/ctheodoris-geneformer-v1-10m',
+			officialUrl: 'https://huggingface.co/ctheodoris/Geneformer',
+			paperUrl: 'https://www.nature.com/articles/s41586-023-06139-9'
+		},
+		tags: ['preview', 'single-cell', 'foundation-model', 'gene-network', 'perturbation']
+	},
+	{
+		id: UCE_4LAYER_MODEL_ID,
+		name: 'UCE 4-layer',
+		description:
+			'Preview zero-shot Universal Cell Embeddings model for AnnData single-cell expression embeddings.',
+		category: 'Single-cell Foundation Models',
+		version: '4-layer',
+		releaseStage: 'preview',
+		runtime: {
+			kind: 'python-venv',
+			name: 'UCE PyTorch Runtime',
+			version: 'preview'
+		},
+		source: 'managed-runtime',
+		localOnly: true,
+		capabilities: ['single-cell-embedding'],
+		modalities: ['single-cell'],
+		license: {
+			name: 'MIT License',
+			spdxId: 'MIT',
+			url: 'https://github.com/snap-stanford/UCE',
+			verifiedAt: '2026-07-02'
+		},
+		hardware: {
+			cpu: true,
+			gpu: true,
+			minRamGb: 16,
+			recommendedRamGb: 32,
+			minVramGb: 0,
+			recommendedVramGb: 16,
+			notes:
+				'The official workflow supports AnnData inputs and downloads model files as needed; Liatir still needs a managed asset box before enabling install.'
+		},
+		documentation: {
+			liatirPath: '/ai/models/snap-stanford-uce-4layer',
+			officialUrl: 'https://github.com/snap-stanford/UCE',
+			paperUrl: 'https://www.biorxiv.org/content/10.1101/2023.11.28.568918v2'
+		},
+		tags: ['preview', 'single-cell', 'foundation-model', 'embedding', 'zero-shot']
+	},
+	{
+		id: SCFOUNDATION_100M_MODEL_ID,
+		name: 'scFoundation 100M',
+		description:
+			'Preview large-scale single-cell foundation model candidate for embeddings and downstream cell-state analysis.',
+		category: 'Single-cell Foundation Models',
+		version: '100m',
+		releaseStage: 'preview',
+		runtime: {
+			kind: 'python-venv',
+			name: 'scFoundation PyTorch Runtime',
+			version: 'preview'
+		},
+		source: 'managed-runtime',
+		localOnly: true,
+		capabilities: ['single-cell-embedding', 'batch-correction'],
+		modalities: ['single-cell'],
+		parameters: 100_000_000,
+		license: {
+			name: 'Apache License 2.0',
+			spdxId: 'Apache-2.0',
+			url: 'https://github.com/biomap-research/scFoundation',
+			verifiedAt: '2026-07-02'
+		},
+		hardware: {
+			cpu: true,
+			gpu: true,
+			minRamGb: 24,
+			recommendedRamGb: 48,
+			minVramGb: 0,
+			recommendedVramGb: 24,
+			notes:
+				'Large model candidate. Liatir should keep it behind a dedicated runtime and managed checkpoint box before exposing install.'
+		},
+		documentation: {
+			liatirPath: '/ai/models/biomap-scfoundation-100m',
+			officialUrl: 'https://github.com/biomap-research/scFoundation',
+			paperUrl: 'https://www.nature.com/articles/s41592-024-02305-7'
+		},
+		tags: ['preview', 'single-cell', 'foundation-model', 'embedding']
 	},
 	{
 		id: ESM2_8M_ID,

@@ -1,16 +1,21 @@
 # Tools
 
-Liatir ships with two categories of built-in analysis tools: **WASM plugins** that run entirely inside the app with no installation, and **native tools** that delegate to binaries you have installed in your system PATH.
+Liatir ships with three built-in analysis surfaces: **WASM tools** that run
+inside the app, **native tools** that delegate to binaries installed on your
+machine, and **AI Tools** that use local AI Models.
 
-Both categories share the same UI pattern, run history, and output model — they are interchangeable from the pipeline's perspective.
+All of them share the same UI pattern, run history, and output model. They are
+interchangeable from the pipeline's perspective when their input and output
+types match.
 
-## WASM plugins
+## WASM tools
 
 Compiled to WebAssembly and bundled with Liatir. Zero installation required. These tools work identically on every machine.
 
 | Tool | Description |
 |------|-------------|
 | [FastQC](/tools/fastqc) | Per-base quality, GC content, adapter detection, duplication levels |
+| [seqkit stats](/tools/seqkit) | FASTA/FASTQ sequence counts, GC, length, N50 |
 
 ## Native tools
 
@@ -19,8 +24,39 @@ Require the corresponding binary to be in your system PATH. Liatir checks availa
 | Tool | Binary | Subcommand | Input formats |
 |------|--------|-----------|---------------|
 | [Samtools](/tools/samtools) | `samtools` | `flagstat` | BAM, SAM, CRAM |
+| [Samtools faidx](/tools/samtools-faidx) | `samtools` | `faidx` | FASTA, FASTA.GZ |
+| [BWA-MEM](/tools/bwa-mem) | `bwa` | `mem` | FASTA + FASTQ |
+| [Minimap2](/tools/minimap2) | `minimap2` | — | FASTA/MMI + FASTQ/FASTA |
 | [BCFtools](/tools/bcftools) | `bcftools` | `stats` | VCF, VCF.GZ, BCF, BCF.GZ |
+| [BCFtools filter](/tools/bcftools-filter) | `bcftools` | `filter` | VCF, VCF.GZ, BCF, BCF.GZ |
+| [SnpEff](/tools/snpeff) | `java` + SnpEff JAR | — | VCF, VCF.GZ |
 | [fastp](/tools/fastp) | `fastp` | — | FASTQ (single or paired-end) |
+
+## AI Tools
+
+AI Tools are documented separately because interpreting their results requires
+model-specific context.
+
+| AI Tool | Description |
+| --- | --- |
+| [CellTypist Annotation](/ai/tools/celltypist-annotation) | Single-cell cell-type labels from `.h5ad` inputs |
+| [Sequence Embedding](/ai/tools/sequence-embedding) | DNA/RNA/protein sequence embeddings |
+| [Genomic Variant Effect](/ai/tools/genomic-variant-effect) | Embedding-delta scores for variants |
+| [Regulatory Prediction](/ai/tools/regulatory-prediction) | Predicted regulatory signal tracks |
+| [Protein Structure Prediction](/ai/tools/protein-structure-prediction) | Protein 3D structure prediction |
+
+Start with [Local AI for bioinformatics](/ai/guide) if you are new to these
+outputs.
+
+## Scientific viewers
+
+Viewers inspect output artifacts produced by tools and pipelines.
+
+| Viewer | Description |
+| --- | --- |
+| [3D Structure Viewer](/visualization/structure-viewer) | PDB/mmCIF/CIF structure inspection |
+| [Genome Track Viewer](/visualization/genome-track-viewer) | BED and genome-track inspection |
+| [Single-cell Viewer](/visualization/single-cell-viewer) | single-cell labels and preview artifacts |
 
 ## Common UI pattern
 
