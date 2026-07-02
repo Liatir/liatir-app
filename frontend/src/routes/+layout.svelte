@@ -11,6 +11,7 @@
 		finalizeCompletedAIDirectRuns,
 		hasRunningDirectAIJob
 	} from '$lib/ai/direct-run-finalizer';
+	import { initAppCloseGuard } from '$lib/stores/appCloseGuard.svelte';
 	import { jobsStore } from '$lib/stores/jobs.svelte';
 	import { pipelineStore } from '$lib/stores/pipeline.svelte';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
@@ -22,6 +23,7 @@
 
 	let initialized: boolean = $state(false);
 	let jobRefreshInterval: ReturnType<typeof setInterval> | null = null;
+	let closeGuardUnlisten: (() => void) | null = null;
 	let refreshingJobs = false;
 	let sidebarForceExpand = $state(false);
 
@@ -37,6 +39,7 @@
 	}
 
 	onMount(async () => {
+		closeGuardUnlisten = await initAppCloseGuard();
 		await workspaceStore.init();
 		if (!(workspaceStore.activeId && workspaceStore.active)) {
 			goto('/workspaces');
@@ -60,6 +63,7 @@
 	};
 
 	onDestroy(() => {
+		closeGuardUnlisten?.();
 		if (jobRefreshInterval) clearInterval(jobRefreshInterval);
 	});
 </script>
@@ -97,8 +101,9 @@
 		</main>
     </div>
 
-    <ConfirmDialog />
 	<Toast />
 	<InstallBanner />
 	<StartupCleanupBanner />
 {/if}
+
+<ConfirmDialog />

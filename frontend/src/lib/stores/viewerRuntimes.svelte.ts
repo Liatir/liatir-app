@@ -43,6 +43,8 @@ function defaultState(): StoredViewerRuntimeState {
 function createViewerRuntimesStore() {
   let initialized = false;
   let runtimeStates = $state<Record<string, StoredViewerRuntimeState>>({});
+  let installProgress = $state<Record<string, ViewerRuntimeInstallProgress>>({});
+  const installPromises = new Map<string, Promise<ViewerRuntimeRecord>>();
 
   function allRuntimeIds(): Set<string> {
     return new Set(VIEWER_RUNTIME_REGISTRY.map((runtime) => runtime.id));
@@ -91,6 +93,7 @@ function createViewerRuntimesStore() {
   return {
     get initialized() { return initialized; },
     get runtimes() { return records(); },
+    get installProgress() { return installProgress; },
 
     byId(id: string): ViewerRuntimeRecord | null {
       return records().find((runtime) => runtime.id === id) ?? null;
@@ -153,6 +156,9 @@ function createViewerRuntimesStore() {
       id: string,
       onProgress?: (progress: ViewerRuntimeInstallProgress) => void,
     ): Promise<ViewerRuntimeRecord> {
+      const existingInstall = installPromises.get(id);
+      if (existingInstall) return existingInstall;
+
       const api = liatir();
       if (!api) throw new Error('Liatir API not available');
       const runtime = VIEWER_RUNTIME_REGISTRY.find((item) => item.id === id);
@@ -162,73 +168,99 @@ function createViewerRuntimesStore() {
       }
 
       const files = runtime.install.files ?? [];
-      if (files.length === 0 || !runtime.install.entryFile) {
+      const entryFile = runtime.install.entryFile;
+      if (files.length === 0 || !entryFile) {
         throw new Error(`${runtime.name} has no managed files.`);
       }
 
       const dataPath = await api.desktop.fs.data.path();
       const runtimeDir = `${dataPath}/viewer-runtimes/managed/${id}`;
 
-      for (let index = 0; index < files.length; index += 1) {
-        const file = files[index];
-        const relativePath = safeInstallRelativePath(file.relativePath);
-        const downloadId = `${id}-${index}-${crypto.randomUUID()}`;
-        const destPath = `${runtimeDir}/${relativePath}`;
-        if (await existingFileMatches(api, destPath, file.sizeBytes)) {
-          onProgress?.({
-            phase: 'downloading-files',
-            fileIndex: index,
-            fileCount: files.length,
-            bytesDownloaded: file.sizeBytes ?? 0,
-            bytesTotal: file.sizeBytes ?? null,
-          });
-          continue;
-        }
-        const unlisten = await api.desktop.events.on(
-          `managed:progress:${downloadId}`,
-          (p: { bytesDownloaded: number; bytesTotal: number | null }) => {
-            onProgress?.({
+      const emitProgress = (progress: ViewerRuntimeInstallProgress) => {
+        installProgress = {
+          ...installProgress,
+          [id]: progress,
+        };
+        onProgress?.(progress);
+      };
+
+      const installPromise = (async () => {
+        emitProgress({
+          phase: 'downloading-files',
+          fileIndex: 0,
+          fileCount: files.length,
+          bytesDownloaded: 0,
+          bytesTotal: null,
+        });
+
+        for (let index = 0; index < files.length; index += 1) {
+          const file = files[index];
+          const relativePath = safeInstallRelativePath(file.relativePath);
+          const downloadId = `${id}-${index}-${crypto.randomUUID()}`;
+          const destPath = `${runtimeDir}/${relativePath}`;
+          if (await existingFileMatches(api, destPath, file.sizeBytes)) {
+            emitProgress({
               phase: 'downloading-files',
               fileIndex: index,
               fileCount: files.length,
-              bytesDownloaded: p.bytesDownloaded,
-              bytesTotal: p.bytesTotal,
+              bytesDownloaded: file.sizeBytes ?? 0,
+              bytesTotal: file.sizeBytes ?? null,
             });
-          },
-        );
-        try {
-          await api.invoke('lia_managed_download', {
-            id: downloadId,
-            url: file.url,
-            destPath,
-            sha256: file.sha256 ?? null,
-          });
-        } finally {
-          unlisten();
+            continue;
+          }
+          const unlisten = await api.desktop.events.on(
+            `managed:progress:${downloadId}`,
+            (p: { bytesDownloaded: number; bytesTotal: number | null }) => {
+              emitProgress({
+                phase: 'downloading-files',
+                fileIndex: index,
+                fileCount: files.length,
+                bytesDownloaded: p.bytesDownloaded,
+                bytesTotal: p.bytesTotal,
+              });
+            },
+          );
+          try {
+            await api.invoke('lia_managed_download', {
+              id: downloadId,
+              url: file.url,
+              destPath,
+              sha256: file.sha256 ?? null,
+            });
+          } finally {
+            unlisten();
+          }
         }
-      }
 
-      const entryPath = `${runtimeDir}/${safeInstallRelativePath(runtime.install.entryFile)}`;
-      await this.setRuntimeState(id, {
-        status: 'installed',
-        localPath: runtimeDir,
-        entryPath,
-        error: undefined,
+        const entryPath = `${runtimeDir}/${safeInstallRelativePath(entryFile)}`;
+        await this.setRuntimeState(id, {
+          status: 'installed',
+          localPath: runtimeDir,
+          entryPath,
+          error: undefined,
+        });
+        await appStorage.writeText(getInstallMarkerFile(id), JSON.stringify({
+          status: 'installed',
+          localPath: runtimeDir,
+          entryPath,
+          updatedAt: Date.now(),
+        }, null, 2), { createDirs: true });
+        emitProgress({
+          phase: 'done',
+          fileIndex: files.length,
+          fileCount: files.length,
+          bytesDownloaded: 0,
+          bytesTotal: null,
+        });
+        return this.byId(id)!;
+      })().finally(() => {
+        installPromises.delete(id);
+        const { [id]: _done, ...rest } = installProgress;
+        installProgress = rest;
       });
-      await appStorage.writeText(getInstallMarkerFile(id), JSON.stringify({
-        status: 'installed',
-        localPath: runtimeDir,
-        entryPath,
-        updatedAt: Date.now(),
-      }, null, 2), { createDirs: true });
-      onProgress?.({
-        phase: 'done',
-        fileIndex: files.length,
-        fileCount: files.length,
-        bytesDownloaded: 0,
-        bytesTotal: null,
-      });
-      return this.byId(id)!;
+
+      installPromises.set(id, installPromise);
+      return installPromise;
     },
 
     async removeManagedRuntime(id: string) {
@@ -248,6 +280,8 @@ function createViewerRuntimesStore() {
     reset() {
       initialized = false;
       runtimeStates = {};
+      installProgress = {};
+      installPromises.clear();
     },
   };
 }

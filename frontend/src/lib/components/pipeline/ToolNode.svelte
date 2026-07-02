@@ -214,7 +214,7 @@
             </span>
             <ValueRefInput
               value={data.inputs[key] ?? (schema.default as string ?? '')}
-              options={valueOptions(schema.type)}
+              options={schema.connectable === false ? [] : valueOptions(schema.type)}
               type={schema.type === 'number' ? 'number' : 'text'}
               disabled={inputsDisabled}
               onchange={(v) => setInput(key, v)}

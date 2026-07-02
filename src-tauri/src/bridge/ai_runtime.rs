@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{
+    collections::HashMap,
     io::Write,
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
     process::{Command, Stdio},
     time::{Duration, Instant},
 };
@@ -46,6 +47,15 @@ pub struct AiRuntimePackageInstallOptions {
     pub no_build_isolation: Option<bool>,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct AiRuntimeSource {
+    pub url: String,
+    pub revision: Option<String>,
+    pub relative_path: String,
+    pub python_path: Option<bool>,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AiPythonRequirement {
@@ -64,6 +74,7 @@ pub struct AiRuntimeStatus {
     pub uv_path: Option<String>,
     pub installed: bool,
     pub missing_packages: Vec<String>,
+    pub missing_sources: Vec<String>,
     pub error: Option<String>,
 }
 
@@ -325,6 +336,105 @@ fn venv_python(dir: &Path) -> PathBuf {
     }
 }
 
+fn runtime_pythonpath_file(dir: &Path) -> PathBuf {
+    dir.join("runtime-pythonpath.json")
+}
+
+fn validate_runtime_relative_path(value: &str) -> Result<PathBuf, String> {
+    if value.trim().is_empty() {
+        return Err("runtime source path cannot be empty".to_string());
+    }
+    let path = Path::new(value);
+    if path.is_absolute() {
+        return Err(format!("runtime source path must be relative: {value}"));
+    }
+    for component in path.components() {
+        match component {
+            Component::Normal(_) => {}
+            _ => return Err(format!("unsafe runtime source path: {value}")),
+        }
+    }
+    Ok(path.to_path_buf())
+}
+
+fn runtime_source_path(dir: &Path, source: &AiRuntimeSource) -> Result<PathBuf, String> {
+    Ok(dir.join(validate_runtime_relative_path(&source.relative_path)?))
+}
+
+fn source_revision_matches(target: &Path, revision: &str) -> bool {
+    let Ok(out) = Command::new("git")
+        .args(["-C", &target.to_string_lossy(), "rev-parse", "HEAD"])
+        .output()
+    else {
+        return false;
+    };
+    if !out.status.success() {
+        return false;
+    }
+    String::from_utf8_lossy(&out.stdout).trim() == revision
+}
+
+fn runtime_python_paths_from_sources(
+    dir: &Path,
+    sources: &[AiRuntimeSource],
+) -> Result<Vec<PathBuf>, String> {
+    let mut paths = Vec::new();
+    for source in sources {
+        if source.python_path.unwrap_or(false) {
+            paths.push(runtime_source_path(dir, source)?);
+        }
+    }
+    Ok(paths)
+}
+
+fn write_runtime_python_paths(dir: &Path, paths: &[PathBuf]) -> Result<(), String> {
+    let values = paths
+        .iter()
+        .map(|path| path.to_string_lossy().to_string())
+        .collect::<Vec<_>>();
+    std::fs::write(
+        runtime_pythonpath_file(dir),
+        serde_json::to_vec_pretty(&values).map_err(|e| e.to_string())?,
+    )
+    .map_err(|e| e.to_string())
+}
+
+fn read_runtime_python_paths(dir: &Path) -> Vec<PathBuf> {
+    let Ok(raw) = std::fs::read(runtime_pythonpath_file(dir)) else {
+        return Vec::new();
+    };
+    let Ok(values) = serde_json::from_slice::<Vec<String>>(&raw) else {
+        return Vec::new();
+    };
+    values.into_iter().map(PathBuf::from).collect()
+}
+
+fn python_path_env_value(paths: &[PathBuf]) -> Option<String> {
+    if paths.is_empty() {
+        return None;
+    }
+    let separator = if cfg!(target_os = "windows") {
+        ";"
+    } else {
+        ":"
+    };
+    Some(
+        paths
+            .iter()
+            .map(|path| path.to_string_lossy().to_string())
+            .collect::<Vec<_>>()
+            .join(separator),
+    )
+}
+
+fn runtime_python_env(dir: &Path) -> Option<HashMap<String, String>> {
+    python_path_env_value(&read_runtime_python_paths(dir)).map(|value| {
+        let mut env = HashMap::new();
+        env.insert("PYTHONPATH".to_string(), value);
+        env
+    })
+}
+
 fn run_command(cmd: &str, args: &[String], cwd: Option<&Path>) -> Result<(String, String), String> {
     let mut command = Command::new(cmd);
     command.args(args);
@@ -468,13 +578,89 @@ fn install_runtime_packages(
     Ok((stdout, stderr))
 }
 
+fn install_runtime_sources(
+    dir: &Path,
+    sources: &[AiRuntimeSource],
+) -> Result<(String, String, Vec<PathBuf>), String> {
+    let mut stdout = String::new();
+    let mut stderr = String::new();
+    let mut python_paths = Vec::new();
+
+    if sources.is_empty() {
+        let _ = write_runtime_python_paths(dir, &[]);
+        return Ok((stdout, stderr, python_paths));
+    }
+
+    let git = first_available(&["git"])
+        .ok_or_else(|| "Git is required to install this AI Model source runtime.".to_string())?;
+
+    for source in sources {
+        let target = runtime_source_path(dir, source)?;
+        let source_label = source.relative_path.clone();
+        let needs_clone = if target.is_dir() {
+            match source.revision.as_deref() {
+                Some(revision) => !source_revision_matches(&target, revision),
+                None => false,
+            }
+        } else {
+            true
+        };
+
+        if needs_clone {
+            if target.exists() {
+                std::fs::remove_dir_all(&target).map_err(|e| {
+                    format!(
+                        "Failed to replace AI runtime source at {}: {e}",
+                        target.to_string_lossy()
+                    )
+                })?;
+            }
+            if let Some(parent) = target.parent() {
+                std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+            }
+            stdout.push_str(&format!("Installing AI runtime source: {source_label}\n"));
+            let args = vec![
+                "clone".to_string(),
+                source.url.clone(),
+                target.to_string_lossy().to_string(),
+            ];
+            let (out, err) = run_command(&git, &args, Some(dir))?;
+            stdout.push_str(&out);
+            stderr.push_str(&err);
+        }
+
+        if let Some(revision) = source.revision.as_deref() {
+            if !source_revision_matches(&target, revision) {
+                let args = vec![
+                    "-C".to_string(),
+                    target.to_string_lossy().to_string(),
+                    "checkout".to_string(),
+                    revision.to_string(),
+                ];
+                let (out, err) = run_command(&git, &args, Some(dir))?;
+                stdout.push_str(&out);
+                stderr.push_str(&err);
+            }
+        }
+
+        if source.python_path.unwrap_or(false) {
+            python_paths.push(target);
+        }
+    }
+
+    write_runtime_python_paths(dir, &python_paths)?;
+    Ok((stdout, stderr, python_paths))
+}
+
 fn import_check_script(packages: &[AiRuntimePackage]) -> String {
     let packages_json = serde_json::to_string(packages).unwrap_or_else(|_| "[]".to_string());
+    let packages_json_literal =
+        serde_json::to_string(&packages_json).unwrap_or_else(|_| "\"[]\"".to_string());
     format!(
         r#"
 import importlib, importlib.metadata, json, re
 
-packages = {packages_json}
+packages = json.loads({packages_json_literal})
 missing = []
 
 def parse_version(value):
@@ -543,6 +729,61 @@ print(json.dumps({{"missing": missing}}))
     )
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn import_check_script_embeds_runtime_packages_as_json_data() {
+        let script = import_check_script(&[AiRuntimePackage {
+            package: "example-package".to_string(),
+            version: None,
+            import_name: Some("math".to_string()),
+            specifier: Some("example-package>=1,<2".to_string()),
+            install_options: Some(AiRuntimePackageInstallOptions {
+                no_build_isolation: Some(true),
+            }),
+        }]);
+
+        assert!(script.contains("packages = json.loads("));
+        assert!(!script.contains("packages = [{"));
+        assert!(script.contains("\\\"version\\\":null"));
+        assert!(script.contains("\\\"noBuildIsolation\\\":true"));
+    }
+
+    #[test]
+    fn import_check_script_runs_with_json_null_and_bool_when_python_is_available() {
+        let Some(python) = first_available(&["python3", "python"]) else {
+            return;
+        };
+        let script = import_check_script(&[AiRuntimePackage {
+            package: "json".to_string(),
+            version: None,
+            import_name: Some("json".to_string()),
+            specifier: None,
+            install_options: Some(AiRuntimePackageInstallOptions {
+                no_build_isolation: Some(true),
+            }),
+        }]);
+
+        let output = Command::new(python)
+            .arg("-c")
+            .arg(script)
+            .output()
+            .expect("python status check script should run");
+
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert_eq!(
+            String::from_utf8_lossy(&output.stdout).trim(),
+            r#"{"missing": []}"#
+        );
+    }
+}
+
 fn total_memory_bytes() -> Option<u64> {
     #[cfg(target_os = "macos")]
     {
@@ -601,9 +842,11 @@ pub async fn lia_ai_runtime_status(
     app: AppHandle,
     runtime_id: String,
     packages: Vec<AiRuntimePackage>,
+    sources: Option<Vec<AiRuntimeSource>>,
 ) -> Result<AiRuntimeStatus, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let dir = runtime_dir(&app, &runtime_id)?;
+        let sources = sources.unwrap_or_default();
         let python = venv_python(&dir);
         let python_path = if python.is_file() {
             Some(python.to_string_lossy().to_string())
@@ -612,12 +855,49 @@ pub async fn lia_ai_runtime_status(
         };
         let uv_path = first_available(&["uv"]);
         let mut missing_packages = Vec::new();
+        let mut missing_sources = Vec::new();
         let mut error = None;
+
+        let source_python_paths =
+            runtime_python_paths_from_sources(&dir, &sources).unwrap_or_default();
+        let check_python_paths = if source_python_paths.is_empty() {
+            read_runtime_python_paths(&dir)
+        } else {
+            source_python_paths
+        };
+        let env = python_path_env_value(&check_python_paths).map(|value| {
+            let mut env = HashMap::new();
+            env.insert("PYTHONPATH".to_string(), value);
+            env
+        });
+
+        for source in &sources {
+            match runtime_source_path(&dir, source) {
+                Ok(target) => {
+                    let revision_ok = source
+                        .revision
+                        .as_deref()
+                        .map(|revision| source_revision_matches(&target, revision))
+                        .unwrap_or(true);
+                    if !target.is_dir() || !revision_ok {
+                        missing_sources.push(source.relative_path.clone());
+                    }
+                }
+                Err(err) => {
+                    error = Some(err);
+                }
+            }
+        }
 
         if let Some(python_path) = python_path.as_deref() {
             if !packages.is_empty() {
                 let script = import_check_script(&packages);
-                match Command::new(python_path).arg("-c").arg(script).output() {
+                let mut command = Command::new(python_path);
+                command.arg("-c").arg(script);
+                if let Some(env) = env.as_ref() {
+                    command.envs(env);
+                }
+                match command.output() {
                     Ok(out) if out.status.success() => {
                         let stdout = String::from_utf8_lossy(&out.stdout);
                         let parsed: Result<Value, _> = serde_json::from_str(stdout.trim());
@@ -654,9 +934,11 @@ pub async fn lia_ai_runtime_status(
             python_path,
             uv_path,
             installed: missing_packages.is_empty()
+                && missing_sources.is_empty()
                 && error.is_none()
                 && venv_python(&dir).is_file(),
             missing_packages,
+            missing_sources,
             error,
         })
     })
@@ -670,6 +952,7 @@ pub async fn lia_ai_runtime_prepare(
     runtime_id: String,
     requirements: Option<Vec<String>>,
     packages: Option<Vec<AiRuntimePackage>>,
+    sources: Option<Vec<AiRuntimeSource>>,
     python_requirement: Option<AiPythonRequirement>,
 ) -> Result<AiRuntimePrepareResult, String> {
     tauri::async_runtime::spawn_blocking(move || {
@@ -763,6 +1046,16 @@ pub async fn lia_ai_runtime_prepare(
             stderr.push_str(&err);
         }
 
+        if let Some(sources) = sources.as_deref() {
+            if !sources.is_empty() {
+                let (out, err, _python_paths) = install_runtime_sources(&dir, sources)?;
+                stdout.push_str(&out);
+                stderr.push_str(&err);
+            } else {
+                write_runtime_python_paths(&dir, &[])?;
+            }
+        }
+
         Ok(AiRuntimePrepareResult {
             runtime_id,
             runtime_dir: dir.to_string_lossy().to_string(),
@@ -831,7 +1124,7 @@ pub async fn lia_ai_python_spawn(
         job_args,
         Some(dir.to_string_lossy().to_string()),
         workspace_id,
-        None,
+        runtime_python_env(&dir),
         Some(label.unwrap_or_else(|| format!("AI runtime: {runtime_id}"))),
         Some("ai-python".to_string()),
         Some(Value::Object(metadata_map)),
@@ -862,13 +1155,18 @@ pub async fn lia_ai_python_run(
         std::fs::write(&script_path, script.as_bytes()).map_err(|e| e.to_string())?;
 
         let started = Instant::now();
-        let mut child = Command::new(&py)
+        let mut command = Command::new(&py);
+        command
             .arg(&script_path)
             .args(args)
             .current_dir(&dir)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
+            .stderr(Stdio::piped());
+        if let Some(env) = runtime_python_env(&dir) {
+            command.envs(env);
+        }
+        let mut child = command
             .spawn()
             .map_err(|e| format!("failed to start AI runtime: {e}"))?;
 

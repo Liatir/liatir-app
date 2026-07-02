@@ -34,6 +34,7 @@
   import { modulesStore } from '$lib/stores/modules.svelte';
   import { aiModelsStore } from '$lib/stores/aiModels.svelte';
   import { resolveStepEntry, allStepDefinitions } from '$lib/tools/pipeline-registry';
+  import { defaultConditionData, isConditionConfigured } from '$lib/pipeline/conditions';
   import { confirm } from '$lib/stores/confirm.svelte';
   import { toast } from '$lib/stores/toast.svelte';
 
@@ -458,7 +459,7 @@
   const ALL_UTILITY: MenuItem[] = [
     { id: 'variable',     type: 'variable',     label: 'Variable',     description: 'Store a string or number value' },
     { id: 'math',         type: 'math',          label: 'Math',         description: 'Arithmetic between two values' },
-    { id: 'condition',    type: 'condition',     label: 'Condition',    description: 'Branch pipeline on a JS expression' },
+    { id: 'condition',    type: 'condition',     label: 'Condition',    description: 'Branch pipeline with no-code rules' },
     { id: 'sub-pipeline', type: 'sub-pipeline',  label: 'Sub-Pipeline', description: 'Run a saved pipeline as a step' },
     { id: 'api-request',  type: 'api-request',   label: 'API Request',  description: 'Call an HTTP request from API Connector' },
   ];
@@ -511,7 +512,7 @@
     }) &&
     executableNodes.filter(n => n.type === 'sub-pipeline').every(n => n.data?.pipelineId) &&
     executableNodes.filter(n => n.type === 'api-request').every(n => n.data?.requestId) &&
-    executableNodes.filter(n => n.type === 'condition').every(n => (n.data?.condition as string)?.trim())
+    executableNodes.filter(n => n.type === 'condition').every(n => isConditionConfigured(n.data))
   );
 
   // Steps that have finished (done or skipped) — drives the running progress banner.
@@ -611,7 +612,7 @@
       case 'tool':         newNode = { id: crypto.randomUUID(), type, position: pos, data: { stepId: id, inputs: defaultInputsForStep(id) } }; break;
       case 'variable':     newNode = { id: crypto.randomUUID(), type, position: pos, data: { varType: 'string', value: '' } }; break;
       case 'math':         newNode = { id: crypto.randomUUID(), type, position: pos, data: { operation: '+', literalA: '', literalB: '' } }; break;
-      case 'condition':    newNode = { id: crypto.randomUUID(), type, position: pos, data: { condition: '', valueRef: '' } }; break;
+      case 'condition':    newNode = { id: crypto.randomUUID(), type, position: pos, data: defaultConditionData() }; break;
       case 'sub-pipeline': newNode = { id: crypto.randomUUID(), type, position: pos, data: { pipelineId: null, pipelineName: '' } }; break;
       case 'api-request':  newNode = { id: crypto.randomUUID(), type, position: pos, data: { requestId: null, requestName: '', paramOverrides: {} } }; break;
       case 'note':         newNode = { id: crypto.randomUUID(), type, position: pos, data: { text: '', width: 260 } }; break;

@@ -36,6 +36,7 @@ export function threadInputSchema(description?: string): InputFieldSchema {
     required: false,
     default: AUTO_THREADS_VALUE,
     description: description ?? '0 lets Liatir choose a safe local thread count.',
+    connectable: false,
   };
 }
 

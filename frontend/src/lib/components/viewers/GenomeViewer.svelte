@@ -6,6 +6,7 @@
   import { liatir } from '$lib/api';
   import { JBROWSE_RUNTIME_ID } from '$lib/viewers/runtime-registry';
   import { localFileSrc, readViewerRuntimeScript } from '$lib/viewers/runtime-loader';
+  import { isViewerProxyCompatibilityError, viewerRuntimeFailureMessage } from '$lib/viewers/runtime-errors';
   import { sanitizeLocalPathsForDisplay } from '$lib/utils';
   import type { GenomeViewerSection } from '$lib/types/tool-output';
 
@@ -31,6 +32,10 @@
   const visibleStart = $derived(section.assembly.start ?? inferStart(features));
   const visibleEnd = $derived(section.assembly.end ?? inferEnd(features, visibleStart));
   const span = $derived(Math.max(1, visibleEnd - visibleStart));
+  const canPreviewAllTracksLocally = $derived(
+    section.tracks.length > 0 &&
+      section.tracks.every(track => Boolean(track.path) && ['bed', 'gff', 'vcf'].includes(track.kind))
+  );
   const tracks = $derived(section.tracks.map(track => ({
     ...track,
     features: features.filter(feature => feature.track === track.name),
@@ -243,11 +248,12 @@
     return URL.createObjectURL(new Blob([html], { type: 'text/html' }));
   }
 
-  function runtimeFailureMessage(message: string): string {
-    if (message.includes("Proxy handler's 'get' result")) {
-      return 'The embedded JBrowse runtime is not compatible with this webview context.';
+  function setJBrowseError(message: string) {
+    if (canPreviewAllTracksLocally && isViewerProxyCompatibilityError(message)) {
+      jbrowseError = null;
+      return;
     }
-    return message;
+    jbrowseError = viewerRuntimeFailureMessage(message, 'JBrowse 2');
   }
 
   async function initJBrowseFrame() {
@@ -258,7 +264,7 @@
       jbrowseFrameUrl = createFrameUrl(createJBrowseFrame(source, config));
     } catch (err) {
       jbrowseFrameUrl = '';
-      jbrowseError = err instanceof Error ? err.message : String(err);
+      setJBrowseError(err instanceof Error ? err.message : String(err));
     }
   }
 
@@ -268,7 +274,7 @@
       const data = event.data as { type?: string; viewerId?: string; message?: string } | null;
       if (!data || data.viewerId !== viewerId) return;
       if (data.type === 'liatir-jbrowse-viewer-error') {
-        jbrowseError = runtimeFailureMessage(data.message ?? 'JBrowse viewer failed.');
+        setJBrowseError(data.message ?? 'JBrowse viewer failed.');
         jbrowseFrameUrl = '';
       }
     }

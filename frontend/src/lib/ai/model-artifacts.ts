@@ -107,7 +107,7 @@ export const AI_MODEL_ARTIFACT_SPECS: AIModelArtifactSpec[] = [
 		runtimeFamily: 'regulatory-borzoi-mini-k562-rna',
 		preloadKind: 'managed-files',
 		regulatoryBackend: 'borzoi-mini',
-		contextWindow: 524_288,
+		contextWindow: 393_216,
 		defaultHead: 'human',
 		defaultTargetIndex: 0,
 		modelFile: 'model0_best.h5',

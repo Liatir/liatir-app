@@ -223,7 +223,13 @@ pub fn init_tray_from_section(app: &AppHandle<Wry>, sec: &MenuSectionConfig) -> 
             let _ = win.close();
           }
         }
-        "tray.quit" => app.exit(0),
+        "tray.quit" => {
+          if let Some(win) = app.get_webview_window("main") {
+            let _ = win.close();
+          } else {
+            app.exit(0);
+          }
+        }
         _ => {}
       }
     })

@@ -6,6 +6,7 @@
   import { liatir } from '$lib/api';
   import { THREEDMOL_RUNTIME_ID } from '$lib/viewers/runtime-registry';
   import { readViewerRuntimeScript } from '$lib/viewers/runtime-loader';
+  import { isViewerProxyCompatibilityError, viewerRuntimeFailureMessage } from '$lib/viewers/runtime-errors';
   import { sanitizeLocalPathsForDisplay } from '$lib/utils';
   import type { StructureViewerSection } from '$lib/types/tool-output';
 
@@ -114,11 +115,12 @@
     return URL.createObjectURL(new Blob([html], { type: 'text/html' }));
   }
 
-  function runtimeFailureMessage(message: string): string {
-    if (message.includes("Proxy handler's 'get' result")) {
-      return 'The embedded 3D runtime is not compatible with this webview context.';
+  function setRuntimeWarning(message: string) {
+    if (fallbackAtoms.length > 0 && isViewerProxyCompatibilityError(message)) {
+      runtimeWarning = null;
+      return;
     }
-    return message;
+    runtimeWarning = viewerRuntimeFailureMessage(message, '3Dmol.js');
   }
 
   function createStructureFrame(scriptSource: string, content: string): string {
@@ -209,7 +211,7 @@
       const data = event.data as { type?: string; viewerId?: string; message?: string } | null;
       if (!data || data.viewerId !== viewerId) return;
       if (data.type === 'liatir-structure-viewer-error') {
-        runtimeWarning = runtimeFailureMessage(data.message ?? 'Structure viewer failed.');
+        setRuntimeWarning(data.message ?? 'Structure viewer failed.');
         frameUrl = '';
       }
     }

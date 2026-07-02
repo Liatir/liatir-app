@@ -1,9 +1,10 @@
 use tauri::{AppHandle, Manager};
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 
 pub struct CloseGuard {
     pub closing: AtomicBool,
+    pub pending: AtomicBool,
 }
 
 pub struct LatestWindowLabel {
@@ -23,4 +24,3 @@ pub fn get_latest_window_label(app: &AppHandle) -> String {
     let l = state.label.lock().unwrap().clone();
     return l;
 }
-

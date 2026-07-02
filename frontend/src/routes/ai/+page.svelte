@@ -9,8 +9,7 @@
   import { modelInstallBlock, type AIModelInstallBlock } from '$lib/ai/model-compatibility';
   import { aiModelLiatirDocsUrl, aiModelOfficialUrl } from '$lib/ai/model-docs';
   import { aiModelInfo } from '$lib/ai/model-help';
-  import { getAIHardwareInfo, type AIHardwareInfo } from '$lib/ai/runtime';
-  import { aiModelsStore, type AIModelInstallProgress } from '$lib/stores/aiModels.svelte';
+  import { aiModelsStore } from '$lib/stores/aiModels.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import { fmtBytes, getLastSegmentsStringFromPath, openLinkInBrowser, sanitizeLocalPathsForDisplay } from '$lib/utils';
@@ -19,14 +18,6 @@
   import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
 
-  type InstallState = AIModelInstallProgress & {
-    showLog: boolean;
-    logLines: string[];
-  };
-  type InstallLogState = {
-    showLog: boolean;
-    logLines: string[];
-  };
   type ModelCategoryGroup = {
     name: string;
     models: LiatirAIModelRecord[];
@@ -35,33 +26,23 @@
   };
 
   let loading = $state(!aiModelsStore.initialized);
-  let installing = $state<Record<string, InstallState>>({});
-  let installLogs = $state<Record<string, InstallLogState>>({});
   let expandedCategories = $state<Record<string, boolean>>({});
   let expandedModelDetails = $state<Record<string, boolean>>({});
-  let hardware = $state<AIHardwareInfo | null>(null);
   let searchQuery = $state('');
-  let initialRuntimeStatusRefresh = $state(true);
 
   onMount(() => {
     let cancelled = false;
     const firstLoad = !aiModelsStore.initialized;
     loading = firstLoad;
-    initialRuntimeStatusRefresh = true;
 
     (async () => {
       await aiModelsStore.init();
-      const runtimeRefresh = aiModelsStore.refreshManagedRuntimeStatuses();
+      const runtimeRefresh = aiModelsStore.ensureManagedRuntimeStatuses();
+      void aiModelsStore.ensureHardwareInfo();
       if (!cancelled) {
-        initialRuntimeStatusRefresh = false;
         loading = false;
       }
-
-      const [info] = await Promise.all([
-        getAIHardwareInfo().catch(() => null),
-        runtimeRefresh,
-      ]);
-      if (!cancelled) hardware = info;
+      void runtimeRefresh;
     })();
 
     return () => {
@@ -71,6 +52,10 @@
 
   const models = $derived(aiModelsStore.models);
   const runtimeChecks = $derived(aiModelsStore.runtimeChecks);
+  const installing = $derived(aiModelsStore.installing);
+  const installLogs = $derived(aiModelsStore.installLogs);
+  const hardware = $derived(aiModelsStore.hardwareInfo);
+  const hardwareInfoChecked = $derived(aiModelsStore.hardwareInfoChecked);
   const normalizedSearch = $derived(searchQuery.trim().toLowerCase());
   const filteredModels = $derived(
     normalizedSearch
@@ -98,7 +83,7 @@
 
   function isCheckingModel(model: LiatirAIModelRecord): boolean {
     return runtimeChecks[model.id] === true
-      || (initialRuntimeStatusRefresh && model.install?.method === 'managed-runtime');
+      || (Boolean(model.install?.hostRequirements) && !hardwareInfoChecked);
   }
 
   function modelStatusLabel(model: LiatirAIModelRecord): string {
@@ -272,43 +257,11 @@
     return Math.max(0, Math.min(100, (progress.bytesDownloaded / progress.bytesTotal) * 100));
   }
 
-  function updateInstallProgress(modelId: string, progress: AIModelInstallProgress) {
-    const current = installing[modelId];
-    installing = {
-      ...installing,
-      [modelId]: {
-        ...current,
-        ...progress,
-        showLog: current?.showLog ?? true,
-        logLines: [...(current?.logLines ?? []), ...(progress.logLines ?? [])],
-      },
-    };
-  }
-
   function toggleInstallLog(modelId: string) {
-    const current = installing[modelId];
-    if (current) {
-      installing = {
-        ...installing,
-        [modelId]: {
-          ...current,
-          showLog: !current.showLog,
-        },
-      };
-      return;
-    }
-    const saved = installLogs[modelId];
-    if (!saved) return;
-    installLogs = {
-      ...installLogs,
-      [modelId]: {
-        ...saved,
-        showLog: !saved.showLog,
-      },
-    };
+    aiModelsStore.toggleInstallLog(modelId);
   }
 
-  function installLogState(modelId: string): InstallLogState | null {
+  function installLogState(modelId: string): { showLog: boolean; logLines: string[] } | null {
     const current = installing[modelId];
     if (current?.logLines.length) {
       return {
@@ -335,44 +288,12 @@
       toast.error(blocked.reason);
       return;
     }
-    const { [model.id]: _oldLog, ...restLogs } = installLogs;
-    installLogs = restLogs;
-    installing = {
-      ...installing,
-      [model.id]: {
-        phase: model.install?.method === 'managed-runtime' ? 'preparing-runtime' : 'downloading-files',
-        fileIndex: 0,
-        fileCount: model.install?.files?.length ?? 1,
-        bytesDownloaded: 0,
-        bytesTotal: null,
-        message: model.install?.method === 'managed-runtime' ? 'Preparing runtime' : undefined,
-        showLog: true,
-        logLines: [`$ install AI Model ${model.id}`],
-      },
-    };
     try {
-      await aiModelsStore.installManagedModel(model.id, (progress) => {
-        updateInstallProgress(model.id, progress);
-      });
-      updateInstallProgress(model.id, { fileIndex: 0, fileCount: 1, bytesDownloaded: 0, bytesTotal: null, logLines: ['AI Model installed'] });
+      await aiModelsStore.installManagedModel(model.id);
       toast.success('AI Model installed');
     } catch (error) {
       const message = errorMessage(error, 'Failed to install AI Model');
-      updateInstallProgress(model.id, { fileIndex: 0, fileCount: 1, bytesDownloaded: 0, bytesTotal: null, logLines: [`ERROR: ${message}`] });
       toast.error(message);
-    } finally {
-      const finalLogLines = installing[model.id]?.logLines ?? [];
-      if (finalLogLines.length > 0) {
-        installLogs = {
-          ...installLogs,
-          [model.id]: {
-            showLog: true,
-            logLines: finalLogLines,
-          },
-        };
-      }
-      const { [model.id]: _done, ...rest } = installing;
-      installing = rest;
     }
   }
 

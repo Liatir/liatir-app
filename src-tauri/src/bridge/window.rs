@@ -1,6 +1,10 @@
 use serde::Serialize;
-use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder, WebviewWindow};
+use std::sync::atomic::Ordering;
+use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindow};
 use url::Url;
+
+use crate::bridge::diagnostics::mark_clean_shutdown_now;
+use crate::helpers::states::CloseGuard;
 
 #[derive(Serialize)]
 pub struct WindowSizeInfo {
@@ -105,6 +109,28 @@ pub async fn lia_win_open(
 #[tauri::command]
 pub fn lia_win_close(app: AppHandle, label: String) -> Result<(), String> {
   if let Some(w) = app.get_webview_window(&label) { w.close().map_err(|e| e.to_string())?; }
+  Ok(())
+}
+
+#[tauri::command]
+pub fn lia_win_continue_close(app: AppHandle, label: String) -> Result<(), String> {
+  let guard = app.state::<CloseGuard>();
+  guard.pending.store(false, Ordering::SeqCst);
+  guard.closing.store(true, Ordering::SeqCst);
+
+  mark_clean_shutdown_now(&app);
+
+  if let Some(w) = app.get_webview_window(&label) {
+    w.close().map_err(|e| e.to_string())?;
+  }
+  Ok(())
+}
+
+#[tauri::command]
+pub fn lia_win_cancel_close(app: AppHandle) -> Result<(), String> {
+  let guard = app.state::<CloseGuard>();
+  guard.pending.store(false, Ordering::SeqCst);
+  guard.closing.store(false, Ordering::SeqCst);
   Ok(())
 }
 

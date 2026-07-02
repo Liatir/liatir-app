@@ -52,6 +52,11 @@ export interface LiatirFieldSchema<TDefault = unknown> {
    * as "fastq", "fastq.gz", or ".vcf"; consumers must normalize the leading dot.
    */
   accept?: string[];
+  /**
+   * Whether pipeline editors may bind this field to an upstream output reference.
+   * Defaults to true. Use false for local execution controls such as thread counts.
+   */
+  connectable?: boolean;
 }
 
 export interface LiatirInputFieldSchema<
@@ -376,6 +381,7 @@ export interface LiatirAIModelInstallSpec {
   files?: LiatirAIModelInstallFile[];
   runtimeId?: string;
   runtimePackages?: LiatirAIModelRuntimePackage[];
+  runtimeSources?: LiatirAIModelRuntimeSource[];
   modelCacheSubdir?: string;
   /** Immutable upstream model/source revision, when the runtime downloads from a versioned hub. */
   revision?: string;
@@ -401,6 +407,13 @@ export interface LiatirAIModelRuntimePackage {
 export interface LiatirAIModelRuntimePackageInstallOptions {
   /** Install this package with pip build isolation disabled. Used for legacy scientific packages with incomplete build metadata. */
   noBuildIsolation?: boolean;
+}
+
+export interface LiatirAIModelRuntimeSource {
+  url: string;
+  revision?: string;
+  relativePath: string;
+  pythonPath?: boolean;
 }
 
 export interface LiatirAIModelPythonRequirement {

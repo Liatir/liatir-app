@@ -48,8 +48,24 @@ export interface MathNodeData extends Record<string, unknown> {
   label?: string;
 }
 
+export type ConditionOperator =
+  | 'exists'
+  | 'empty'
+  | 'equals'
+  | 'not-equals'
+  | 'contains'
+  | 'greater-than'
+  | 'greater-or-equal'
+  | 'less-than'
+  | 'less-or-equal'
+  | 'truthy'
+  | 'falsy';
+
 export interface ConditionNodeData extends Record<string, unknown> {
-  condition: string;
+  /** Legacy JS expression kept only for older saved pipelines. */
+  condition?: string;
+  operator?: ConditionOperator;
+  compareValue?: string;
   /** The value tested by the expression (`value`): a literal OR an `@pipe:` reference to an upstream output. */
   valueRef?: string;
   label?: string;

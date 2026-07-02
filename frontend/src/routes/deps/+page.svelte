@@ -6,10 +6,15 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import InfoPopup from '$lib/components/ui/InfoPopup.svelte';
-	import { depsStore, type DepResult } from '$lib/stores/deps.svelte';
+	import {
+		defaultDependencyProcessState,
+		depsStore,
+		type DependencyProcessState,
+		type DepResult
+	} from '$lib/stores/deps.svelte';
 	import { managedBins } from '$lib/stores/managedBins.svelte';
 	import { installProgress } from '$lib/stores/installProgress.svelte';
-	import { viewerRuntimesStore, type ViewerRuntimeInstallProgress } from '$lib/stores/viewerRuntimes.svelte';
+	import { viewerRuntimesStore } from '$lib/stores/viewerRuntimes.svelte';
 	import { confirm } from '$lib/stores/confirm.svelte';
 	import { toast } from '$lib/stores/toast.svelte';
 	import { liatir } from '$lib/api';
@@ -19,16 +24,25 @@
 		getRelease,
 		installBinary,
 		type OsPlatform,
-		type Arch,
-		type InstallProgress
+		type Arch
 	} from '$lib/tools/binary-manager';
 	import {
 		DEP_REQUIREMENTS,
+		depRequirementForBinary,
 		depRequirementLabel,
 		depScope,
+		dependencyBinaryForKeyOrBinary,
 		isSoftDep,
 		type DepRequirement
 	} from '$lib/data/dep-requirements';
+	import {
+		packageManagerInstallCommand,
+		packageManagerUpdateCommand,
+		resolveDependency,
+		type DependencyResolverAction,
+		type DependencyResolverEnvironment,
+		type DependencyResolverCommand,
+	} from '$lib/dependencies/resolvers';
 	import { versionGte, versionLt } from '$lib/utils/versions';
 
 	interface RelatedDependencyTool {
@@ -55,44 +69,26 @@
 	let brewAvailable = $state(false);
 	let condaAvailable = $state(false);
 	let pmChecked = $state(false);
-	const focusedDependency = $derived(page.url.searchParams.get('focus')?.trim() ?? '');
+	const focusedDependency = $derived(
+		dependencyBinaryForKeyOrBinary(page.url.searchParams.get('focus')?.trim() ?? '')
+	);
+	const resolverEnvironment = $derived<DependencyResolverEnvironment>({
+		brewAvailable,
+		condaAvailable,
+	});
 
-	// ── per-tool install state ─────────────────────────────────────────
-	interface ToolInstallState {
-		phase: InstallProgress['phase'] | 'idle' | 'pm-installing';
-		bytesDownloaded: number;
-		bytesTotal: number | null;
-		error: string | null;
-		pmLog: string[];
-		pmOperation: 'install' | 'update' | null;
-		showLog: boolean;
-	}
-
-	let toolStates = $state<Record<string, ToolInstallState>>({});
-	let viewerRuntimeProgress = $state<Record<string, ViewerRuntimeInstallProgress>>({});
 	let relatedToolsExpanded = $state<Record<string, boolean>>({});
+	const processStates = $derived(depsStore.processStates);
+	const viewerRuntimeProgress = $derived(viewerRuntimesStore.installProgress);
 	const needsActionCount = $derived(depsStore.results.filter((dep) => dependencyNeedsAction(dep)).length);
 	const focusedDependencies = $derived(focusedDependency ? [focusedDependency] : []);
 
-	function toolState(binary: string): ToolInstallState {
-		return (
-			toolStates[binary] ?? {
-				phase: 'idle',
-				bytesDownloaded: 0,
-				bytesTotal: null,
-				error: null,
-				pmLog: [],
-				pmOperation: null,
-				showLog: false
-			}
-		);
+	function toolState(binary: string): DependencyProcessState {
+		return processStates[binary] ?? defaultDependencyProcessState();
 	}
 
-	function setToolState(binary: string, patch: Partial<ToolInstallState>) {
-		toolStates = {
-			...toolStates,
-			[binary]: { ...toolState(binary), ...patch }
-		};
+	function setToolState(binary: string, patch: Partial<DependencyProcessState>) {
+		depsStore.setProcessState(binary, patch);
 	}
 
 	function relatedToolStateKey(parentBinary: string, toolId: string): string {
@@ -111,7 +107,7 @@
 	}
 
 	function appendToolLog(key: string, line: string) {
-		setToolState(key, { pmLog: [...toolState(key).pmLog, line] });
+		depsStore.appendProcessLog(key, line);
 	}
 
 	function pythonPackageManager(dep: DepResult): 'brew' | 'conda' | null {
@@ -192,7 +188,7 @@
 
 	// ── download install (precompiled binary) ──────────────────────────
 	async function downloadInstall(binary: string) {
-		const label = DEP_REQUIREMENTS[binary]?.label ?? binary;
+		const label = depRequirementForBinary(binary)?.label ?? binary;
 		setToolState(binary, {
 			phase: 'downloading',
 			error: null,
@@ -229,29 +225,19 @@
 	}
 
 	// ── package manager install (brew / conda) ─────────────────────────
-	function pmInstallCmd(binary: string): { cmd: string; args: string[] } | null {
-		const req = DEP_REQUIREMENTS[binary];
-		if (!req) return null;
-		if (brewAvailable && req.brew) return { cmd: 'brew', args: ['install', req.brew] };
-		if (condaAvailable && req.conda)
-			return { cmd: 'conda', args: ['install', '-c', req.condaChannel ?? 'bioconda', '-y', req.conda] };
-		return null;
+	function pmInstallCmd(binary: string): DependencyResolverCommand | null {
+		return packageManagerInstallCommand(depRequirementForBinary(binary), resolverEnvironment);
 	}
 
-	function pmUpdateCmd(binary: string): { cmd: string; args: string[] } | null {
-		const req = DEP_REQUIREMENTS[binary];
-		if (!req) return null;
-		if (brewAvailable && req.brew) return { cmd: 'brew', args: ['upgrade', req.brew] };
-		if (condaAvailable && req.conda)
-			return { cmd: 'conda', args: ['install', '-c', req.condaChannel ?? 'bioconda', '-y', req.conda] };
-		return null;
+	function pmUpdateCmd(binary: string): DependencyResolverCommand | null {
+		return packageManagerUpdateCommand(depRequirementForBinary(binary), resolverEnvironment);
 	}
 
 	async function pmRun(binary: string, operation: 'install' | 'update') {
 		const cmd = operation === 'update' ? pmUpdateCmd(binary) : pmInstallCmd(binary);
 		if (!cmd) return;
 
-		const label = DEP_REQUIREMENTS[binary]?.label ?? binary;
+		const label = depRequirementForBinary(binary)?.label ?? binary;
 		setToolState(binary, { phase: 'pm-installing', error: null, pmLog: [], pmOperation: operation, showLog: true });
 		installProgress.start(binary, label);
 		installProgress.update(binary, { phase: 'pm-installing' });
@@ -283,6 +269,55 @@
 
 	async function pmUpdate(binary: string) {
 		await pmRun(binary, 'update');
+	}
+
+	async function runDependencyResolverAction(
+		binary: string,
+		req: DepRequirement,
+		action: DependencyResolverAction,
+	) {
+		const ok = await confirm({
+			title: action.confirmTitle ?? 'Run dependency fix',
+			message: action.confirmMessage ?? `Run "${action.label}" for ${req.label ?? binary}?`,
+			confirmLabel: action.confirmLabel ?? 'Run',
+		});
+		if (!ok) return;
+
+		const label = req.label ?? binary;
+		setToolState(binary, {
+			phase: 'pm-installing',
+			error: null,
+			pmLog: [],
+			pmOperation: 'update',
+			showLog: true,
+		});
+		installProgress.start(binary, label);
+		installProgress.update(binary, { phase: 'pm-installing' });
+
+		try {
+			for (const command of action.commands) {
+				appendToolLog(binary, `$ ${command.cmd} ${command.args.join(' ')}`);
+				const result = await runNativeTool(
+					command.cmd,
+					command.args,
+					(line) => appendToolLog(binary, line),
+					(line) => appendToolLog(binary, line),
+					{ env: pmRunEnv(command.cmd) },
+				);
+				if (!result.ok) {
+					const msg = result.stderr || result.stdout || `Exited ${result.exitCode}`;
+					setToolState(binary, { phase: 'error', error: msg });
+					installProgress.error(binary, msg);
+					return;
+				}
+			}
+			setToolState(binary, { phase: 'done' });
+			await depsStore.recheckOne(binary);
+			installProgress.done(binary);
+		} catch (e) {
+			setToolState(binary, { phase: 'error', error: String(e) });
+			installProgress.error(binary, String(e));
+		}
 	}
 
 	async function updateRelatedTool(dep: DepResult, tool: RelatedDependencyTool) {
@@ -388,11 +423,11 @@
 	}
 
 	function dependencyScope(binary: string): NonNullable<DepRequirement['scope']> {
-		return depScope(DEP_REQUIREMENTS[binary]);
+		return depScope(depRequirementForBinary(binary));
 	}
 
 	function isSoftDependency(binary: string): boolean {
-		return isSoftDep(DEP_REQUIREMENTS[binary]);
+		return isSoftDep(depRequirementForBinary(binary));
 	}
 
 	function softDependencyLabel(binary: string): string {
@@ -400,7 +435,7 @@
 	}
 
 	function dependencyKindLabel(binary: string): string {
-		const req = DEP_REQUIREMENTS[binary];
+		const req = depRequirementForBinary(binary);
 		if (isSoftDependency(binary)) return softDependencyLabel(binary);
 		if (req?.category === 'workflow') return 'Workflow dependency';
 		if (req?.category === 'bioinformatics') return 'Tool dependency';
@@ -408,13 +443,13 @@
 	}
 
 	function isCoreDependency(binary: string): boolean {
-		const req = DEP_REQUIREMENTS[binary];
+		const req = depRequirementForBinary(binary);
 		return !isSoftDependency(binary) && req?.category === 'core-runtime';
 	}
 
 	function dependencyNeedsAction(dep: DepResult): boolean {
 		if (!isCoreDependency(dep.binary)) return false;
-		const req = DEP_REQUIREMENTS[dep.binary];
+		const req = depRequirementForBinary(dep.binary);
 		const managed = managedBins.get(dep.binary);
 		if (!dep.available && !managed) return true;
 		return dep.available && !!dep.version && !dependencyVersionOk(dep.version, req);
@@ -432,27 +467,12 @@
 	}
 
 	async function installViewerRuntime(id: string) {
-		viewerRuntimeProgress = {
-			...viewerRuntimeProgress,
-			[id]: {
-				phase: 'downloading-files',
-				fileIndex: 0,
-				fileCount: 1,
-				bytesDownloaded: 0,
-				bytesTotal: null,
-			},
-		};
 		try {
-			await viewerRuntimesStore.installManagedRuntime(id, (progress) => {
-				viewerRuntimeProgress = { ...viewerRuntimeProgress, [id]: progress };
-			});
+			await viewerRuntimesStore.installManagedRuntime(id);
 			toast.success('Viewer runtime installed');
 		} catch (error) {
 			if(error instanceof Error && error?.message?.trim() && error.message.toLowerCase().includes("already installed")) toast.info(error instanceof Error ? error.message : 'Failed to install viewer runtime');
 			else toast.error(error instanceof Error ? error.message : 'Failed to install viewer runtime');
-		} finally {
-			const { [id]: _done, ...rest } = viewerRuntimeProgress;
-			viewerRuntimeProgress = rest;
 		}
 	}
 
@@ -480,7 +500,7 @@
 			<Button
 					variant="secondary"
 					size="sm"
-					onclick={() => depsStore.checkAll(focusedDependencies)}
+					onclick={() => depsStore.checkAll(focusedDependencies, { force: true })}
 					loading={depsStore.loading}
 			>
 				{depsStore.checked ? 'Re-check all' : 'Check all'}
@@ -546,7 +566,7 @@
 				<div class="divide-y divide-border">
 					<div>
 						{#each depsStore.results as dep (dep.binary)}
-							{@const req = DEP_REQUIREMENTS[dep.binary]}
+							{@const req = depRequirementForBinary(dep.binary)}
 							{@const state = toolState(dep.binary)}
 							{@const hasRelease = !!getRelease(dep.binary, platformOs, platformArch)}
 							{@const hasPm = !!pmInstallCmd(dep.binary)}
@@ -562,6 +582,8 @@
 							{@const canUpdateWithPm = !!pmUpdateCmd(dep.binary)}
 							{@const relatedTools = relatedToolsFor(dep.binary)}
 							{@const isRelatedExpanded = !!relatedToolsExpanded[dep.binary]}
+							{@const resolution = resolveDependency({ dep, requirement: req, environment: resolverEnvironment })}
+							{@const primaryResolutionMessage = resolution.messages[0]?.text ?? null}
 
 							<div
 								id={`dependency-${dep.binary}`}
@@ -601,9 +623,13 @@
 											</p>
 										{:else if dep.available}
 											{#if isUnsupportedVersion && req}
-												<p class="text-xs text-amber-600 truncate">
-													{dep.version} — requires {requirementLabel(req)}
-												</p>
+												{#if primaryResolutionMessage}
+													<p class="text-xs text-amber-600">{primaryResolutionMessage}</p>
+												{:else}
+													<p class="text-xs text-amber-600 truncate">
+														{dep.version} — requires {requirementLabel(req)}
+													</p>
+												{/if}
 											{:else if dep.version}
 												<p class="text-xs font-mono text-zinc-500 truncate" data-selectable>
 													{dep.version}{req ? ` (requires ${requirementLabel(req)})` : ''}
@@ -698,6 +724,17 @@
 													<Button variant="secondary" size="sm" onclick={() => pmInstall(dep.binary)}>
 														{dep.available ? `Install/Update ${pmLabel()}` : pmLabel()}
 													</Button>
+												{/if}
+												{#if req}
+													{#each resolution.actions as action (action.id)}
+														<Button
+															variant={action.variant ?? 'secondary'}
+															size="sm"
+															onclick={() => runDependencyResolverAction(dep.binary, req, action)}
+														>
+															{action.label}
+														</Button>
+													{/each}
 												{/if}
 											{/if}
 										</div>

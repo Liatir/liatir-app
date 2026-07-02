@@ -5,7 +5,7 @@ mod helpers;
 
 use bridge::*;
 use liatir::bridge;
-use tauri::{WindowEvent, Emitter, DragDropEvent, Manager, WebviewWindowBuilder, WebviewUrl};
+use tauri::{WindowEvent, Emitter, DragDropEvent, Manager, RunEvent, WebviewWindowBuilder, WebviewUrl};
 use crate::bridge::dragdrop;
 
 // Global Shortcut plugin
@@ -61,6 +61,7 @@ fn main() {
 
   builder = builder.manage(CloseGuard {
     closing: AtomicBool::new(false),
+    pending: AtomicBool::new(false),
   });
 
   builder = builder.manage(LatestWindowLabel {
@@ -192,25 +193,27 @@ fn main() {
         }
 
         WindowEvent::CloseRequested { api, .. } => {
-          let app = window.app_handle();
-          let guard = app.state::<CloseGuard>();
-
-          // If already closing, ignore duplicated close requests.
-          if guard.closing.swap(true, Ordering::SeqCst) {
+          if window.label() != "main" {
             return;
           }
 
-          // Prevent immediate close so Liatir can emit its close event first.
+          let app = window.app_handle();
+          let guard = app.state::<CloseGuard>();
+
+          if guard.closing.load(Ordering::SeqCst) {
+            return;
+          }
+
           api.prevent_close();
 
-          let _ = window.emit("window:close-requested", ());
-
-          // Mark clean shutdown centrally.
-          mark_clean_shutdown_now(&app);
-
-          // Close for real.
-          let window_label = window.label().to_string();
-          let _ = lia_win_close(app.clone(), window_label);
+          if !guard.pending.swap(true, Ordering::SeqCst) {
+            let _ = window.show();
+            let _ = window.unminimize();
+            let _ = window.set_focus();
+            let _ = window.emit("window:close-requested", Some(serde_json::json!({
+              "label": window.label().to_string()
+            })));
+          }
         }
 
         WindowEvent::Resized(size) => {
@@ -276,6 +279,8 @@ fn main() {
       lia_win_fullscreen,
       lia_win_open,
       lia_win_close,
+      lia_win_continue_close,
+      lia_win_cancel_close,
       lia_win_get_info,
       lia_visual_capture_region,
 
@@ -441,6 +446,27 @@ fn main() {
       #[cfg(debug_assertions)]
       lia_logs_test_force_retention,
     ])
-    .run(tauri::generate_context!())
-    .expect("error while running tauri application");
+    .build(tauri::generate_context!())
+    .expect("error while building tauri application")
+    .run(|app, event| {
+      if let RunEvent::ExitRequested { api, .. } = event {
+        let Some(window) = app.get_webview_window("main") else {
+          return;
+        };
+        let guard = app.state::<CloseGuard>();
+        if guard.closing.load(Ordering::SeqCst) {
+          return;
+        }
+
+        api.prevent_exit();
+        if !guard.pending.swap(true, Ordering::SeqCst) {
+          let _ = window.show();
+          let _ = window.unminimize();
+          let _ = window.set_focus();
+          let _ = window.emit("window:close-requested", Some(serde_json::json!({
+            "label": window.label().to_string()
+          })));
+        }
+      }
+    });
 }

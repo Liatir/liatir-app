@@ -11,11 +11,51 @@ export const ESM2_8M_ID = 'facebook-esm2-8m-protein';
 export const BOLTZ2_MODEL_ID = 'boltz2-local-structure-binding';
 export const CHAI1_MODEL_ID = 'chai1-local-structure';
 
-const TENSORFLOW_2_15_PACKAGES = [
+const ENFORMER_RUNTIME_PACKAGES = [
 	{ package: 'tensorflow', specifier: 'tensorflow>=2.15,<2.16', importName: 'tensorflow' },
 	{ package: 'numpy', specifier: 'numpy>=1.24,<2', importName: 'numpy' },
 	{ package: 'pandas', specifier: 'pandas>=1.5,<3', importName: 'pandas' },
-	{ package: 'urllib3', specifier: 'urllib3>=1.26,<2', importName: 'urllib3' }
+	{ package: 'urllib3', specifier: 'urllib3>=1.26,<2', importName: 'urllib3' },
+	{ package: 'tensorflow-hub', specifier: 'tensorflow-hub>=0.16,<1', importName: 'tensorflow_hub' }
+];
+
+const BASENJI2_RUNTIME_PACKAGES = [
+	{ package: 'tensorflow', specifier: 'tensorflow>=2.15,<2.16', importName: 'tensorflow' },
+	{ package: 'numpy', specifier: 'numpy>=1.24,<2', importName: 'numpy' },
+	{ package: 'pandas', specifier: 'pandas>=1.5,<3', importName: 'pandas' },
+	{ package: 'urllib3', specifier: 'urllib3>=1.26,<2', importName: 'urllib3' },
+	{ package: 'h5py', specifier: 'h5py>=3.10,<4', importName: 'h5py' },
+	{ package: 'natsort', specifier: 'natsort>=8,<9', importName: 'natsort' },
+	{
+		package: 'basenji',
+		specifier: 'git+https://github.com/calico/basenji.git@master',
+		importName: 'basenji.seqnn'
+	}
+];
+
+const BORZOI_MINI_K562_RNA_RUNTIME_PACKAGES = [
+	{ package: 'tensorflow', specifier: 'tensorflow>=2.15,<2.16', importName: 'tensorflow' },
+	{ package: 'numpy', specifier: 'numpy>=1.24,<2', importName: 'numpy' },
+	{ package: 'pandas', specifier: 'pandas>=1.5,<3', importName: 'pandas' },
+	{ package: 'urllib3', specifier: 'urllib3>=1.26,<2', importName: 'urllib3' },
+	{
+		package: 'pybedtools',
+		specifier: 'pybedtools==0.10.0',
+		importName: 'pybedtools',
+		installOptions: {
+			noBuildIsolation: true
+		}
+	},
+	{
+		package: 'baskerville',
+		specifier: 'git+https://github.com/calico/baskerville.git@main',
+		importName: 'baskerville'
+	},
+	{
+		package: 'borzoi',
+		specifier: 'git+https://github.com/calico/borzoi.git@main',
+		importName: 'borzoi'
+	}
 ];
 
 const TENSORFLOW_PYTHON_3_10_TO_3_11 = {
@@ -249,10 +289,7 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			method: 'managed-runtime',
 			runtimeId: 'regulatory-enformer',
 			modelCacheSubdir: 'model-cache/enformer',
-			runtimePackages: [
-				...TENSORFLOW_2_15_PACKAGES,
-				{ package: 'tensorflow-hub', specifier: 'tensorflow-hub>=0.16,<1', importName: 'tensorflow_hub' }
-			],
+			runtimePackages: ENFORMER_RUNTIME_PACKAGES,
 			hostRequirements: {
 				python: TENSORFLOW_PYTHON_3_10_TO_3_11
 			}
@@ -302,11 +339,14 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			method: 'managed-runtime',
 			runtimeId: 'regulatory-basenji2-human',
 			modelCacheSubdir: 'model-cache/basenji2-human',
-			runtimePackages: [
-				...TENSORFLOW_2_15_PACKAGES,
-				{ package: 'h5py', specifier: 'h5py>=3.10,<4', importName: 'h5py' },
-				{ package: 'natsort', specifier: 'natsort>=8,<9', importName: 'natsort' },
-				{ package: 'basenji', specifier: 'git+https://github.com/calico/basenji.git@master', importName: 'basenji' }
+			runtimePackages: BASENJI2_RUNTIME_PACKAGES,
+			runtimeSources: [
+				{
+					url: 'https://github.com/calico/basenji.git',
+					revision: '06ce5d387e20b47184d05433b3983163c5f923cd',
+					relativePath: 'source/basenji',
+					pythonPath: true
+				}
 			],
 			files: [
 				{
@@ -352,7 +392,7 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		localOnly: true,
 		capabilities: ['regulatory-prediction', 'variant-effect-scoring'],
 		modalities: ['dna', 'rna'],
-		contextWindow: 524_288,
+		contextWindow: 393_216,
 		diskSizeBytes: 126_000_000,
 		license: {
 			name: 'Apache License 2.0',
@@ -374,27 +414,7 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			method: 'managed-runtime',
 			runtimeId: 'regulatory-borzoi-mini-k562-rna',
 			modelCacheSubdir: 'model-cache/borzoi-mini-k562-rna',
-			runtimePackages: [
-				...TENSORFLOW_2_15_PACKAGES,
-				{
-					package: 'pybedtools',
-					specifier: 'pybedtools==0.10.0',
-					importName: 'pybedtools',
-					installOptions: {
-						noBuildIsolation: true
-					}
-				},
-				{
-					package: 'baskerville',
-					specifier: 'git+https://github.com/calico/baskerville.git@main',
-					importName: 'baskerville'
-				},
-				{
-					package: 'borzoi',
-					specifier: 'git+https://github.com/calico/borzoi.git@main',
-					importName: 'borzoi'
-				}
-			],
+			runtimePackages: BORZOI_MINI_K562_RNA_RUNTIME_PACKAGES,
 			files: [
 				{
 					url: 'https://storage.googleapis.com/seqnn-share/borzoi/mini/k562_rna/f0/model0_best.h5',

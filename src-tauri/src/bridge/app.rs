@@ -150,6 +150,10 @@ pub fn lia_app_info(app: AppHandle) -> Result<AppInfo, String> {
 
 #[tauri::command]
 pub fn lia_app_exit(app: AppHandle, code: i32) -> Result<(), String> {
+  if let Some(window) = app.get_webview_window("main") {
+    window.close().map_err(|e| e.to_string())?;
+    return Ok(());
+  }
   app.exit(code);
   Ok(())
 }

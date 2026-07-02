@@ -24,6 +24,16 @@ export interface DepRequirement {
   apt?: string;
   conda?: string;
   condaChannel?: string;
+  wrongToolPatterns?: string[];
+  wrongToolMessage?: string;
+  homebrewLinkConflict?: {
+    blockerFormula: string;
+    targetFormula: string;
+    binary: string;
+    actionLabel: string;
+    confirmTitle: string;
+    confirmMessage: string;
+  };
   downloadOptions?: DownloadOption[];
   installCmds: InstallCmd[];
 }
@@ -266,18 +276,36 @@ export const DEP_REQUIREMENTS: Record<string, DepRequirement> = {
     ],
   },
   star: {
-    binary: 'star',
+    binary: 'STAR',
     label: 'STAR',
     description:
       'RNA-seq aligner for splice junction discovery and chimeric read detection.',
     minVersion: '2.7.0',
     category: 'bioinformatics',
     releasesUrl: 'https://github.com/alexdobin/STAR/releases/latest',
-    brew: 'star',
+    brew: 'rna-star',
     apt: 'rna-star',
     conda: 'star',
+    wrongToolPatterns: [
+      'standard tap archiver',
+      'schily',
+      'jörg schilling',
+      'joerg schilling',
+      'star: star 1.7.0',
+    ],
+    wrongToolMessage:
+      'Found the Schily star archiver, not the STAR RNA-seq aligner. Install RNA-seq STAR with rna-star; if Homebrew reports a link conflict, remove or unlink the archiver formula named star first.',
+    homebrewLinkConflict: {
+      blockerFormula: 'star',
+      targetFormula: 'rna-star',
+      binary: 'STAR',
+      actionLabel: 'Resolve Homebrew link',
+      confirmTitle: 'Resolve STAR link conflict',
+      confirmMessage:
+        'Homebrew has RNA-seq STAR installed as rna-star, but the archiver formula named star is shadowing the STAR command. Liatir can run "brew unlink star" and then "brew link rna-star". This keeps both formulas installed, but makes STAR resolve to the RNA-seq aligner.',
+    },
     installCmds: [
-      { platform: 'macOS', cmd: 'brew install star' },
+      { platform: 'macOS', cmd: 'brew install rna-star' },
       { platform: 'Ubuntu', cmd: 'sudo apt install rna-star' },
       { platform: 'conda', cmd: 'conda install -c bioconda star' },
     ],
@@ -346,6 +374,18 @@ export function depRequirementLabel(req: DepRequirement): string {
   if (req.versionLabel) return req.versionLabel;
   if (req.maxVersionExclusive) return `${req.minVersion} - <${req.maxVersionExclusive}`;
   return `${req.minVersion}+`;
+}
+
+const DEP_REQUIREMENTS_BY_BINARY = new Map(
+  Object.values(DEP_REQUIREMENTS).map((req) => [req.binary, req])
+);
+
+export function depRequirementForBinary(binary: string): DepRequirement | undefined {
+  return DEP_REQUIREMENTS[binary] ?? DEP_REQUIREMENTS_BY_BINARY.get(binary);
+}
+
+export function dependencyBinaryForKeyOrBinary(value: string): string {
+  return depRequirementForBinary(value)?.binary ?? value;
 }
 
 export const GLOBAL_DEPENDENCY_BINARIES = Object.values(DEP_REQUIREMENTS)

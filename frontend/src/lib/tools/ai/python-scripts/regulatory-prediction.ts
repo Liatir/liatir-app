@@ -4,6 +4,10 @@ import gzip
 import json
 import os
 import sys
+import warnings as py_warnings
+
+py_warnings.filterwarnings("ignore", category=FutureWarning, module=r"google\.api_core\._python_version_support")
+py_warnings.filterwarnings("ignore", message=r"pkg_resources is deprecated as an API.*", category=UserWarning)
 
 payload = json.loads(sys.stdin.read() or "{}")
 runtime_path = payload.get("runtimePath")
@@ -108,9 +112,10 @@ def slice_with_padding(seq, start, length):
     clipped_end = min(len(seq), right)
     return ("N" * left_pad) + seq[clipped_start:clipped_end] + ("N" * right_pad)
 
-def centered_window(seq, length):
+def centered_window_with_start(seq, length):
     center = len(seq) // 2
-    return slice_with_padding(seq, center - length // 2, length)
+    start = center - length // 2
+    return slice_with_padding(seq, start, length), start
 
 def variant_windows(reference_seq, variants, window_start, length):
     windows = []
@@ -179,6 +184,36 @@ def load_borzoi(params_path, model_path):
     model.restore(model_path)
     return model.model
 
+def model_input_length(model):
+    shape = getattr(model, "input_shape", None)
+    if isinstance(shape, list) and shape:
+        shape = shape[0]
+    if shape is not None:
+        try:
+            if len(shape) >= 3 and shape[1] is not None:
+                return int(shape[1])
+        except TypeError:
+            pass
+    inputs = getattr(model, "inputs", None)
+    if inputs:
+        input_shape = getattr(inputs[0], "shape", None)
+        if hasattr(input_shape, "as_list"):
+            input_shape = input_shape.as_list()
+        if input_shape is not None and len(input_shape) >= 3 and input_shape[1] is not None:
+            return int(input_shape[1])
+    return None
+
+def params_seq_length(params_path):
+    if not params_path:
+        return None
+    try:
+        with open(params_path, "r", encoding="utf-8") as fh:
+            params = json.load(fh)
+        seq_length = params.get("model", {}).get("seq_length")
+        return int(seq_length) if seq_length else None
+    except Exception:
+        return None
+
 def predict_batch(model, backend, seqs, head):
     batch = np.stack([one_hot(seq) for seq in seqs], axis=0)
     if backend == "enformer":
@@ -206,50 +241,61 @@ reference_name, reference_seq = load_reference()
 if not reference_seq:
     raise SystemExit("Reference sequence is empty after DNA normalization.")
 
-context_window = int(payload.get("contextWindow") or 0)
-if context_window <= 0:
+requested_context_window = int(payload.get("contextWindow") or 0)
+if requested_context_window <= 0:
     raise SystemExit("Regulatory model context window is missing.")
+context_window = requested_context_window
 target_index = int(payload.get("targetIndex") or 0)
 output_head = payload.get("outputHead") or "human"
 window_start = int(payload.get("windowStart") or 1)
 max_variants = max(0, min(int(payload.get("maxVariants") or 0), 1000))
 variant_file = payload.get("variantFile") or ""
 
+warnings = []
 model = None
 model_source = None
+params_path = ""
 if backend == "enformer":
     model_source = payload["tfhubUrl"]
     model = load_enformer(model_source)
 elif backend == "basenji2":
     model_source = os.path.join(cache_dir, payload["modelFile"])
-    model = load_basenji(os.path.join(cache_dir, payload["paramsFile"]), model_source)
+    params_path = os.path.join(cache_dir, payload["paramsFile"])
+    model = load_basenji(params_path, model_source)
 elif backend == "borzoi-mini":
     model_source = os.path.join(cache_dir, payload["modelFile"])
-    model = load_borzoi(os.path.join(cache_dir, payload["paramsFile"]), model_source)
+    params_path = os.path.join(cache_dir, payload["paramsFile"])
+    model = load_borzoi(params_path, model_source)
 else:
     raise SystemExit(f"Unsupported regulatory backend: {backend}")
 
-warnings = []
+runtime_context_window = model_input_length(model) or params_seq_length(params_path) or requested_context_window
+if runtime_context_window <= 0:
+    raise SystemExit("Regulatory model input length could not be determined.")
+context_window = int(runtime_context_window)
+if context_window != requested_context_window:
+    warnings.append(f"Model artifact expects {context_window} bp; Liatir adjusted the requested {requested_context_window} bp window.")
+
 if len(reference_seq) < context_window:
     warnings.append(f"Reference sequence is shorter than the model context window ({len(reference_seq)} bp < {context_window} bp); Liatir pads missing context with N.")
 if len(reference_seq) > context_window:
     warnings.append(f"Reference sequence is longer than the model context window; Liatir uses the centered {context_window} bp window for signal prediction.")
 
-signal_seq = centered_window(reference_seq, context_window)
+signal_seq, signal_window_start = centered_window_with_start(reference_seq, context_window)
 prediction = predict_batch(model, backend, [signal_seq], output_head)[0]
 signal = fit_target_index(prediction, target_index).astype("float32")
 
 signal_rows = []
 bin_count = int(signal.shape[0])
-span = max(1, len(reference_seq))
+span = max(1, context_window)
 for idx, value in enumerate(signal):
-    start0 = max(0, int(round(idx * span / max(1, bin_count))))
-    end0 = max(start0 + 1, int(round((idx + 1) * span / max(1, bin_count))))
+    local_start = int(round(idx * span / max(1, bin_count)))
+    local_end = max(local_start + 1, int(round((idx + 1) * span / max(1, bin_count))))
     signal_rows.append({
         "binIndex": idx,
         "chrom": reference_name,
-        "start": window_start + start0 - 1,
-        "end": window_start + end0 - 1,
+        "start": max(0, window_start + signal_window_start + local_start - 1),
+        "end": max(1, window_start + signal_window_start + local_end - 1),
         "value": float(value),
     })
 
@@ -312,6 +358,7 @@ summary = {
     "referenceLength": len(reference_seq),
     "windowStart": window_start,
     "contextWindow": context_window,
+    "requestedContextWindow": requested_context_window,
     "outputHead": output_head,
     "targetIndex": target_index,
     "binCount": bin_count,

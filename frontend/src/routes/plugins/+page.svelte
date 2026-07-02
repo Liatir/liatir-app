@@ -155,9 +155,9 @@
           <p class="text-sm font-medium text-zinc-600">No plugins found</p>
         </div>
       {:else}
-      <Card class="overflow-hidden">
-        <div class="divide-y divide-border overflow-hidden">
+        <div class="grid grid-cols-3 max-2xl:grid-cols-2 max-lg:grid-cols-1 gap-3">
           {#each visiblePlugins as mod (mod.id)}
+      <Card class="overflow-hidden">
             <div class="flex items-start gap-4 px-4 py-3 group hover:bg-zinc-100/60 transition-colors">
 
               <div class="flex-1 justify-between min-w-0 border-r border-r-zinc-200/80 mr-2 pr-2">
@@ -168,7 +168,7 @@
                 </div>
               </div>
 
-              <div class="hidden lg:flex min-w-36 flex-col self-stretch justify-between gap-1 text-xs text-zinc-400">
+              <div class="hidden md:flex min-w-36 flex-col self-stretch justify-between gap-1 text-xs text-zinc-400">
                 <span class="font-mono">v{mod.version}</span>
                 <div class="flex items-center gap-1.5 opacity-50">
                   <Badge hideDot size='xs'>{fieldCount(mod.inputSchema)} input{fieldCount(mod.inputSchema) !== 1 ? 's' : ''}</Badge>
@@ -195,9 +195,9 @@
                 <Icon icon="lucide:trash-2" width="14" height="14" />
               </button>
             </div>
+      </Card>
           {/each}
         </div>
-      </Card>
       {/if}
     {/if}
   </div>

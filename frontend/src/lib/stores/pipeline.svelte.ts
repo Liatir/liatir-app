@@ -8,6 +8,7 @@ import { analysisRuns } from './analysisRuns.svelte';
 import { resolveStepEntry } from '$lib/tools/pipeline-registry';
 import { ensureResultsDir } from '$lib/utils/results';
 import { withArtifactsMetadata } from '$lib/utils/artifacts';
+import { evaluateConditionNode } from '$lib/pipeline/conditions';
 import type { ToolOutput } from '$lib/types/tool-output';
 import type {
   ToolNodeData, VariableNodeData, MathNodeData, ConditionNodeData,
@@ -269,7 +270,9 @@ function inputsWithDefaults(
 ): Record<string, string> {
   const inputs = { ...dataInputs };
   for (const [key, schema] of Object.entries(def.inputSchema)) {
-    if (inputs[key] === undefined && schema.default !== undefined) {
+    if (schema.connectable === false && typeof inputs[key] === 'string' && inputs[key].startsWith('@pipe:')) {
+      inputs[key] = defaultInputValue(schema.default);
+    } else if (inputs[key] === undefined && schema.default !== undefined) {
       inputs[key] = defaultInputValue(schema.default);
     }
   }
@@ -480,8 +483,12 @@ function createPipelineStore() {
       } else if (node.type === 'condition') {
         const d = node.data as unknown as ConditionNodeData;
         const value = resolveRef(d.valueRef ?? '', graphNodes, localStates);
-        let ok = false;
-        try { ok = Boolean(new Function('value', `return (${d.condition})`)(value)); } catch { /* false */ }
+        const evaluated = evaluateConditionNode(d, value);
+        if (evaluated.error) {
+          patch({ status: 'error', error: evaluated.error });
+          break;
+        }
+        const ok = evaluated.ok;
         const branch: 'true' | 'false' = ok ? 'true' : 'false';
         patch({ status: 'done', activeBranch: branch, outputValues: { trueBranch: ok ? value : '', falseBranch: !ok ? value : '' } });
         const dead = findDeadBranchNodes(graphNodes, graphEdges, nodeId, ok ? 'falseBranch' : 'trueBranch', localStates);
@@ -494,6 +501,9 @@ function createPipelineStore() {
   return {
     get nodeStates() { return runtimeFor().nodeStates; },
     get running() { return runtimeFor().running; },
+    get runningCount() {
+      return [...runtimeByPipeline.values()].filter((runtime) => runtime.running).length;
+    },
     get currentRunId() { return runtimeFor().runId; },
     isPipelineRunning(id: string | null = pipelineId) {
       return runtimeByPipeline.get(runtimeKeyFor(id))?.running ?? false;
@@ -795,14 +805,12 @@ function createPipelineStore() {
         } else if (node.type === 'condition') {
           const d = node.data as unknown as ConditionNodeData;
           const value = resolveRef(d.valueRef ?? '', graphNodes, states());
-          let ok = false;
-          try {
-            // eslint-disable-next-line no-new-func
-            ok = Boolean(new Function('value', `return (${d.condition ?? 'false'})`)(value));
-          } catch (e) {
-            patchRunState(nodeId, { status: 'error', error: `Invalid condition: ${e}` });
+          const evaluated = evaluateConditionNode(d, value);
+          if (evaluated.error) {
+            patchRunState(nodeId, { status: 'error', error: evaluated.error });
             break;
           }
+          const ok = evaluated.ok;
           const branch: 'true' | 'false' = ok ? 'true' : 'false';
           patchRunState(nodeId, {
             status: 'done',
