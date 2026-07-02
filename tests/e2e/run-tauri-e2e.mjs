@@ -40,14 +40,34 @@ function slugify(value) {
 }
 
 function parseArgs(argv) {
-  const visual = argv.includes('--visual') || process.env.LIATIR_VISUAL === '1';
+  const options = {
+    heavy: argv.includes('--heavy') || process.env.LIATIR_RUN_HEAVY_AI === '1',
+    reportPath: process.env.LIATIR_E2E_REPORT ?? null,
+    specs: [],
+    visual: argv.includes('--visual') || process.env.LIATIR_VISUAL === '1',
+  };
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === '--visual' || arg === '--heavy') continue;
+    if (arg === '--report') {
+      options.reportPath = path.resolve(rootDir, argv[++index]);
+      continue;
+    }
+    if (arg.startsWith('--report=')) {
+      options.reportPath = path.resolve(rootDir, arg.slice('--report='.length));
+      continue;
+    }
+    options.specs.push(arg);
+  }
+
   return {
-    visual,
-    specs: argv.filter((arg) => arg !== '--visual'),
+    ...options,
+    specs: options.specs,
   };
 }
 
-function resolveSpecs(specArgs, visual) {
+function resolveSpecs(specArgs, visual, heavy) {
   if (specArgs.length > 0) {
     return specArgs.map((spec) => path.resolve(rootDir, spec));
   }
@@ -55,6 +75,7 @@ function resolveSpecs(specArgs, visual) {
   return fs.readdirSync(path.join(rootDir, 'tests', 'e2e', 'specs'))
     .filter((file) => file.endsWith('.e2e.mjs'))
     .filter((file) => visual || !file.startsWith('visual.'))
+    .filter((file) => heavy || !file.startsWith('heavy.'))
     .sort()
     .map((file) => path.join(rootDir, 'tests', 'e2e', 'specs', file));
 }
@@ -329,13 +350,26 @@ async function cleanup(browser, app) {
   app?.logStream?.end();
 }
 
+function missingRequiredEnv(test) {
+  return (test.requiredEnv ?? []).filter((name) => !process.env[name]);
+}
+
+function writeE2EReport(reportPath, report) {
+  if (!reportPath) return;
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
+}
+
 async function run() {
-  const { visual, specs: specArgs } = parseArgs(process.argv.slice(2));
-  const specs = resolveSpecs(specArgs, visual);
+  const { heavy, reportPath, visual, specs: specArgs } = parseArgs(process.argv.slice(2));
+  const specs = resolveSpecs(specArgs, visual, heavy);
   const app = startTauriApp();
   let browser = null;
   let failed = 0;
   let passed = 0;
+  let skipped = 0;
+  const runStartedAt = new Date();
+  const results = [];
 
   const stop = async (exitCode) => {
     await cleanup(browser, app);
@@ -370,11 +404,47 @@ async function run() {
 
       console.log(`\n${path.relative(rootDir, specPath)}`);
       for (const test of tests) {
+        const testStartedAt = new Date();
+        const requiredEnvMissing = missingRequiredEnv(test);
+        if (test.heavy && !heavy) {
+          skipped += 1;
+          console.log(`  - ${test.name} ... skipped`);
+          results.push({
+            durationMs: 0,
+            heavy: true,
+            name: test.name,
+            reason: 'Heavy test not enabled.',
+            specPath: path.relative(rootDir, specPath),
+            status: 'skipped',
+          });
+          continue;
+        }
+        if (requiredEnvMissing.length > 0) {
+          skipped += 1;
+          console.log(`  - ${test.name} ... skipped`);
+          results.push({
+            durationMs: 0,
+            heavy: Boolean(test.heavy),
+            name: test.name,
+            reason: `Missing required environment variable${requiredEnvMissing.length === 1 ? '' : 's'}: ${requiredEnvMissing.join(', ')}`,
+            specPath: path.relative(rootDir, specPath),
+            status: 'skipped',
+          });
+          continue;
+        }
+
         process.stdout.write(`  - ${test.name} ... `);
         try {
           await test.run(context);
           passed += 1;
           console.log('ok');
+          results.push({
+            durationMs: Date.now() - testStartedAt.getTime(),
+            heavy: Boolean(test.heavy),
+            name: test.name,
+            specPath: path.relative(rootDir, specPath),
+            status: 'passed',
+          });
         } catch (error) {
           failed += 1;
           console.log('failed');
@@ -382,6 +452,15 @@ async function run() {
           console.error(error?.stack ?? error);
           if (failureScreenshot) console.error(`Failure screenshot: ${failureScreenshot}`);
           console.error(`Tauri log: ${app.logPath}`);
+          results.push({
+            durationMs: Date.now() - testStartedAt.getTime(),
+            error: error?.stack ?? String(error),
+            failureScreenshot,
+            heavy: Boolean(test.heavy),
+            name: test.name,
+            specPath: path.relative(rootDir, specPath),
+            status: 'failed',
+          });
         }
       }
     }
@@ -389,7 +468,27 @@ async function run() {
     await cleanup(browser, app);
   }
 
-  console.log(`\nE2E result: ${passed} passed, ${failed} failed.`);
+  const runFinishedAt = new Date();
+  writeE2EReport(reportPath, {
+    appLogPath: app.logPath,
+    artifactsDir,
+    heavy,
+    specs: specs.map((spec) => path.relative(rootDir, spec)),
+    startedAt: runStartedAt.toISOString(),
+    finishedAt: runFinishedAt.toISOString(),
+    summary: {
+      durationMs: runFinishedAt.getTime() - runStartedAt.getTime(),
+      failed,
+      passed,
+      skipped,
+      total: passed + failed + skipped,
+    },
+    tests: results,
+    visual,
+  });
+
+  console.log(`\nE2E result: ${passed} passed, ${failed} failed, ${skipped} skipped.`);
+  if (reportPath) console.log(`E2E report: ${reportPath}`);
   if (failed > 0) process.exit(1);
 }
 

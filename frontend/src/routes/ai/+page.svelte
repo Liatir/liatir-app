@@ -444,7 +444,7 @@
                     {@const installLog = installLogState(model.id)}
                     {@const checking = isCheckingModel(model)}
                     {@const actionsLocked = modelActionsLocked(model)}
-                    <div class="rounded-lg border border-border bg-white">
+                    <div class="rounded-lg border border-border bg-white" data-testid="ai-model-card" data-model-id={model.id}>
                       <div class="grid grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(130px,0.8fr)_250px] gap-3 px-4 py-3 items-center max-xl:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_250px]">
                         <div class="min-w-0">
                           <div class="flex items-center gap-2 min-w-0">
@@ -587,6 +587,7 @@
                             <Button
                               size="sm"
                               variant="ghost"
+                              testId="ai-model-remove-button"
                               disabled={actionsLocked}
                               onclick={() => removeModel(model)}
                             >
@@ -637,16 +638,16 @@
                               Checking
                             </Button>
                           {:else if model.status === 'installed'}
-                            <Button size="sm" variant="secondary" disabled={actionsLocked} onclick={() => goto(`/ai/${encodeURIComponent(model.id)}`)}>
+                            <Button size="sm" variant="secondary" testId="ai-model-run-button" disabled={actionsLocked} onclick={() => goto(`/ai/${encodeURIComponent(model.id)}`)}>
                               Run
                             </Button>
                           {:else if model.install?.method === 'managed-download' || model.install?.method === 'managed-runtime'}
                             {#if blocked}
-                              <Button size="sm" variant="secondary" disabled={actionsLocked} onclick={() => resolveInstallBlock(blocked)}>
+                              <Button size="sm" variant="secondary" testId="ai-model-fix-dependency-button" disabled={actionsLocked} onclick={() => resolveInstallBlock(blocked)}>
                                 Fix dependency
                               </Button>
                             {:else}
-                              <Button size="sm" variant="primary" disabled={actionsLocked} onclick={() => installModel(model)}>
+                              <Button size="sm" variant="primary" testId="ai-model-install-button" disabled={actionsLocked} onclick={() => installModel(model)}>
                                 Install
                               </Button>
                             {/if}

@@ -58,4 +58,3 @@ decisions.
 - [Borzoi Mini K562 RNA-seq](/ai/models/calico-borzoi-mini-k562-rna)
 - [ESM-2 8M Protein](/ai/models/facebook-esm2-8m-protein)
 - [Boltz-2 Local Structure & Binding](/ai/models/boltz2-local-structure-binding)
-- [Chai-1 Local Structure](/ai/models/chai1-local-structure)

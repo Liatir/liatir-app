@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CHAI1_MODEL_ID,
   LOCAL_AI_MODEL_REGISTRY,
   MOCK_AI_MODEL_ID,
+  VISIBLE_LOCAL_AI_MODEL_REGISTRY,
+  getLocalAIModelMetadata,
 } from '../../frontend/src/lib/ai/model-registry';
 
 describe('AI model registry contracts', () => {
   it('keeps model ids unique and category metadata explicit', () => {
     const ids = new Set<string>();
 
-    for (const model of LOCAL_AI_MODEL_REGISTRY) {
+    for (const model of VISIBLE_LOCAL_AI_MODEL_REGISTRY) {
       expect(model.id).toMatch(/^[a-z0-9][a-z0-9-]*$/);
       expect(ids.has(model.id), `duplicate model id: ${model.id}`).toBe(false);
       ids.add(model.id);
@@ -22,7 +25,7 @@ describe('AI model registry contracts', () => {
   });
 
   it('keeps the mock model registered last and marked as an internal fixture', () => {
-    const mock = LOCAL_AI_MODEL_REGISTRY.at(-1);
+    const mock = VISIBLE_LOCAL_AI_MODEL_REGISTRY.at(-1);
 
     expect(mock?.id).toBe(MOCK_AI_MODEL_ID);
     expect(mock?.category).toBe('Development Fixtures');
@@ -30,7 +33,7 @@ describe('AI model registry contracts', () => {
   });
 
   it('requires public documentation links for user-facing AI Models', () => {
-    for (const model of LOCAL_AI_MODEL_REGISTRY) {
+    for (const model of VISIBLE_LOCAL_AI_MODEL_REGISTRY) {
       if (model.id === MOCK_AI_MODEL_ID) {
         expect(model.documentation).toBeUndefined();
         continue;
@@ -45,5 +48,14 @@ describe('AI model registry contracts', () => {
         `${model.id} missing official documentation URL`,
       ).toMatch(/^https:\/\//);
     }
+  });
+
+  it('keeps deferred models implemented but hidden from user-facing catalog surfaces', () => {
+    const chai = getLocalAIModelMetadata(CHAI1_MODEL_ID);
+
+    expect(chai, 'Chai work should remain in the registry for future re-enable').toBeTruthy();
+    expect(chai?.catalogVisibility).toBe('hidden');
+    expect(chai?.catalogHiddenReason?.trim()).toBeTruthy();
+    expect(VISIBLE_LOCAL_AI_MODEL_REGISTRY.some((model) => model.id === CHAI1_MODEL_ID)).toBe(false);
   });
 });

@@ -33,11 +33,11 @@ export const tests = [
 
       const workspaceState = await browser.execute(() => ({
         path: window.location.pathname,
-        body: document.body.innerText,
+        hasSidebar: Boolean(document.querySelector('[data-testid="sidebar-nav-item"]')),
       }));
 
       expect(workspaceState.path).not.toBe('/workspaces');
-      expect(workspaceState.body).toContain('sandbox');
+      expect(workspaceState.hasSidebar).toBe(true);
       await expectNoVisibleRuntimeError(browser);
     },
   },

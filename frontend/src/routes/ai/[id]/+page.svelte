@@ -30,7 +30,6 @@
 		BASENJI2_REGULATORY_MODEL_ID,
 		BORZOI_K562_RNA_MODEL_ID,
 		CELLTYPIST_MODEL_ID,
-		CHAI1_MODEL_ID,
 		ENFORMER_REGULATORY_MODEL_ID,
 		ESM2_8M_ID,
 		MOCK_AI_MODEL_ID,
@@ -241,7 +240,7 @@
 			id === BORZOI_K562_RNA_MODEL_ID
 		)
 			return 'regulatory';
-		if (id === BOLTZ2_MODEL_ID || id === CHAI1_MODEL_ID) return 'protein-structure';
+		if (id === BOLTZ2_MODEL_ID) return 'protein-structure';
 		if (id === MOCK_AI_MODEL_ID) return 'mock';
 		return 'unsupported';
 	}

@@ -9,6 +9,7 @@
     loading?: boolean;
     type?: ButtonTypes;
     title?: string;
+    testId?: string;
     class?: string;
     onclick?: (e: MouseEvent) => void;
     children: Snippet;
@@ -21,6 +22,7 @@
     loading = false,
     type = 'button',
     title,
+    testId,
     class: className = '',
     onclick,
     children,
@@ -53,6 +55,7 @@
 <button
   {type}
   {title}
+  data-testid={testId}
   class="{base} {sizes[size]} {variants[variant]} {className}"
   disabled={disabled || loading}
   {onclick}

@@ -568,6 +568,9 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		name: 'Chai-1 Local Structure',
 		description: 'Managed Chai-1 runtime for molecular structure prediction on Linux CUDA hosts.',
 		category: 'Protein Structure',
+		catalogVisibility: 'hidden',
+		catalogHiddenReason:
+			'Deferred until Liatir can validate the Linux CUDA runtime on supported hardware.',
 		version: '0.6.1',
 		runtime: {
 			kind: 'python-venv',
@@ -633,6 +636,13 @@ export const LOCAL_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 	...BUILT_IN_AI_MODEL_REGISTRY,
 	...INTERNAL_AI_MODEL_REGISTRY
 ];
+
+export function isAIModelCatalogVisible(model: LiatirAIModelMetadata): boolean {
+	return model.catalogVisibility !== 'hidden';
+}
+
+export const VISIBLE_LOCAL_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] =
+	LOCAL_AI_MODEL_REGISTRY.filter(isAIModelCatalogVisible);
 
 export function getLocalAIModelMetadata(id: string): LiatirAIModelMetadata | undefined {
 	return LOCAL_AI_MODEL_REGISTRY.find((model) => model.id === id);

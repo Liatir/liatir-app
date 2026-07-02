@@ -6,6 +6,29 @@ jobs, AI runtimes, viewer capture, sidecars, or `.lia` execution.
 
 ## Test Layers
 
+- `npm run test:fast`
+  Runs the test matrix fast profile. Today this is the unit/contract layer and
+  writes a JSON and Markdown report under `tests/.artifacts/reports`.
+
+- `npm run test:verify`
+  Runs the production handoff profile: unit tests, SDK type generation, core
+  build, frontend check, frontend build, and root TypeScript compile. This is
+  the default non-native quality gate for regular implementation work.
+
+- `npm run test:ui`
+  Runs the matrix native UI profile. It prepares a Tauri WebDriver-enabled test
+  binary and runs native E2E specs against the real desktop webview.
+
+- `npm run test:ui:visual`
+  Runs the matrix visual profile. It prepares the Tauri test binary and runs the
+  visual screenshot comparison suite.
+
+- `LIATIR_RUN_HEAVY_AI=1 npm run test:heavy:ai`
+  Runs the gated heavy AI profile. This can exercise large AI Model catalog
+  checks and, when `LIATIR_HEAVY_AI_INSTALL=1` is also set, install selected
+  heavy models through the real UI. Never add model downloads to default test
+  profiles.
+
 - `npm run test:unit`
   Fast TypeScript contract/helper tests. Use this for pure registry contracts,
   parsers, path display helpers, and other deterministic logic.
@@ -35,6 +58,37 @@ jobs, AI runtimes, viewer capture, sidecars, or `.lia` execution.
   and the visual smoke suite. Use this before handing off larger UI/runtime
   changes.
 
+## Test Matrix
+
+The orchestrator lives in `tests/run-test-matrix.mjs`; suite definitions live in
+`tests/test-matrix.mjs`.
+
+The matrix exists so Liatir can scale from fast checks to expensive scientific
+runtime tests without mixing their risk profiles:
+
+- default profiles never download heavy models;
+- heavy suites require `--include-heavy` plus `LIATIR_RUN_HEAVY_AI`;
+- model installation requires the additional `LIATIR_HEAVY_AI_INSTALL=1`;
+- every suite writes a dedicated log file;
+- every run writes `tests/.artifacts/reports/latest.json` and
+  `tests/.artifacts/reports/latest.md`;
+- timestamped report copies are kept under the same reports directory.
+
+Useful commands:
+
+```bash
+npm run test:fast
+npm run test:verify
+npm run test:ui
+npm run test:ui:visual
+LIATIR_RUN_HEAVY_AI=1 npm run test:heavy:ai
+LIATIR_RUN_HEAVY_AI=1 LIATIR_HEAVY_AI_INSTALL=1 LIATIR_HEAVY_AI_MODELS=instadeep-nt-v2-50m-multi-species npm run test:heavy:ai
+```
+
+Use `LIATIR_HEAVY_AI_MODELS` as a comma-separated list when a heavy test should
+target specific model IDs. Keep defaults conservative, then expand targeted
+runs as runtime boxes stabilize.
+
 ## Native Harness
 
 The E2E runner lives in `tests/e2e/run-tauri-e2e.mjs`.
@@ -49,6 +103,7 @@ It intentionally owns the native lifecycle:
 - creates the WebDriver session with standard `fetch`;
 - drives the native webview through a small fetch-based WebDriver client;
 - captures failure screenshots and Tauri logs under `tests/.artifacts`.
+- writes per-test JSON reports when `LIATIR_E2E_REPORT` or `--report` is set.
 
 The custom session creation is deliberate. The upstream WebdriverIO runner
 currently fails to create a session against the embedded Tauri WebDriver server
@@ -75,6 +130,11 @@ Playwright can still be added later for browser-only checks, but it must not be
 used as the primary quality gate for features that depend on the native Tauri
 bridge.
 
+Use the native E2E harness for app behavior, state persistence, Jobs, Results,
+AI Model installs, dependency resolution, and viewer capture. Use Playwright only
+for browser-only surfaces such as public docs or isolated web components that do
+not require the Tauri bridge.
+
 ## Writing New Tests
 
 Add native E2E specs under `tests/e2e/specs`. A spec exports a `tests` array:
@@ -97,6 +157,9 @@ Use native E2E tests for:
 - pipeline execution and Jobs page behavior;
 - viewer rendering, fullscreen, screenshot capture;
 - real filesystem persistence and analysis-run finalization.
+- page navigation while a process is running;
+- per-entity disabled states, especially pipeline runs and AI Model jobs;
+- visible error hygiene and path sanitization.
 
 Use unit tests for:
 
@@ -107,3 +170,19 @@ Use unit tests for:
 
 Do not install heavy models or large dependencies in the default smoke suite.
 Put those in explicit, opt-in tests with clear names and timeouts.
+
+Heavy AI tests should mark each test with `heavy: true`. If a test needs an
+extra opt-in switch, set `requiredEnv` on the test object:
+
+```js
+export const tests = [
+  {
+    name: 'installs selected heavy AI Models',
+    heavy: true,
+    requiredEnv: ['LIATIR_HEAVY_AI_INSTALL'],
+    async run({ browser, expect }) {
+      // Install through the real UI.
+    },
+  },
+];
+```

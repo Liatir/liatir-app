@@ -13,6 +13,12 @@ export const tests = [
 
       const search = await browser.$('[data-testid="ai-models-search"]');
       await search.waitForDisplayed({ timeout: 20_000 });
+      await search.setValue('');
+
+      await browser.waitUntil(
+        async () => browser.execute(() => document.querySelectorAll('[data-testid="ai-model-category"]').length > 1),
+        { timeout: 10_000, timeoutMsg: 'AI Model categories did not reset after clearing search' },
+      );
 
       const categories = await browser.$$('[data-testid="ai-model-category"]');
       expect(categories.length).toBeGreaterThan(1);

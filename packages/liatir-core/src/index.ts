@@ -438,6 +438,8 @@ export interface LiatirAIModelDocumentation {
   paperUrl?: string;
 }
 
+export type LiatirAIModelCatalogVisibility = "visible" | "hidden";
+
 export interface LiatirAIModelMetadata {
   id: string;
   name: string;
@@ -458,6 +460,9 @@ export interface LiatirAIModelMetadata {
   hardware?: LiatirAIModelHardwareRequirements;
   install?: LiatirAIModelInstallSpec;
   documentation?: LiatirAIModelDocumentation;
+  /** Hidden models remain implemented but are not exposed in normal product surfaces. */
+  catalogVisibility?: LiatirAIModelCatalogVisibility;
+  catalogHiddenReason?: string;
   tags?: string[];
 }
 

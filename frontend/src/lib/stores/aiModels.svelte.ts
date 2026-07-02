@@ -1,5 +1,8 @@
 import { liatir } from '$lib/api';
-import { LOCAL_AI_MODEL_REGISTRY, MOCK_AI_MODEL_ID } from '$lib/ai/model-registry';
+import {
+  MOCK_AI_MODEL_ID,
+  VISIBLE_LOCAL_AI_MODEL_REGISTRY,
+} from '$lib/ai/model-registry';
 import { modelInstallBlock } from '$lib/ai/model-compatibility';
 import { preloadManagedAIModel } from '$lib/ai/model-preload';
 import {
@@ -103,11 +106,11 @@ function createAIModelsStore() {
   const installPromises = new Map<string, Promise<LiatirAIModelRecord>>();
 
   function allModelIds(): Set<string> {
-    return new Set(LOCAL_AI_MODEL_REGISTRY.map((model) => model.id));
+    return new Set(VISIBLE_LOCAL_AI_MODEL_REGISTRY.map((model) => model.id));
   }
 
   function records(): LiatirAIModelRecord[] {
-    return LOCAL_AI_MODEL_REGISTRY.filter((metadata) =>
+    return VISIBLE_LOCAL_AI_MODEL_REGISTRY.filter((metadata) =>
       metadata.id !== MOCK_AI_MODEL_ID || workspaceStore.isSandboxMode
     ).map((metadata) => {
       const state = { ...defaultStateFor(metadata.id), ...(modelStates[metadata.id] ?? {}) };
@@ -342,7 +345,7 @@ function createAIModelsStore() {
         }
       } catch { /* legacy recovery is best-effort */ }
 
-      for (const metadata of LOCAL_AI_MODEL_REGISTRY) {
+      for (const metadata of VISIBLE_LOCAL_AI_MODEL_REGISTRY) {
         try {
           const markerFile = getLegacyWorkspaceInstallMarkerFile(workspaceId, metadata.id);
           if (!await appStorage.exists(markerFile)) continue;
@@ -395,7 +398,7 @@ function createAIModelsStore() {
         modelStates = {};
       }
 
-      for (const metadata of LOCAL_AI_MODEL_REGISTRY) {
+      for (const metadata of VISIBLE_LOCAL_AI_MODEL_REGISTRY) {
         if (metadata.install?.method !== 'managed-runtime' && metadata.install?.method !== 'managed-download') continue;
         try {
           const markerFile = getInstallMarkerFile(metadata.id);
@@ -561,7 +564,7 @@ function createAIModelsStore() {
 
       const api = liatir();
       if (!api) throw new Error('Liatir API not available');
-      const metadata = LOCAL_AI_MODEL_REGISTRY.find((model) => model.id === id);
+      const metadata = VISIBLE_LOCAL_AI_MODEL_REGISTRY.find((model) => model.id === id);
       if (!metadata) throw new Error(`Unknown AI Model: ${id}`);
       if (metadata.install?.hostRequirements) {
         const hardware = await this.ensureHardwareInfo();
