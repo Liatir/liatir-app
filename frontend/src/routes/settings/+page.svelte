@@ -8,6 +8,7 @@
 	import { goto } from '$app/navigation';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { getLastSegmentsStringFromPath } from '$lib/utils';
+	import PageContent from '$lib/components/layout/PageContent.svelte';
 
   let apiVersion = $state<string | null>(null);
   let appVersion = $state<string | null>(null);
@@ -46,6 +47,7 @@
 <div class="flex flex-col h-full">
   <PageHeader title="Settings" description="Application configuration" />
 
+  <PageContent>
   <div class="flex-1 overflow-y-auto p-6 space-y-6">
 
     <!-- About -->
@@ -105,4 +107,5 @@
     </section>
 
   </div>
+  </PageContent>
 </div>

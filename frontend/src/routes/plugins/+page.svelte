@@ -155,10 +155,10 @@
           <p class="text-sm font-medium text-zinc-600">No plugins found</p>
         </div>
       {:else}
-        <div class="grid grid-cols-3 max-2xl:grid-cols-2 max-lg:grid-cols-1 gap-3">
+        <div class="grid grid-cols-1 2xl:grid-cols-2 4xl:grid-cols-3 gap-3">
           {#each visiblePlugins as mod (mod.id)}
       <Card class="overflow-hidden">
-            <div class="flex items-start gap-4 px-4 py-3 group hover:bg-zinc-100/60 transition-colors">
+            <div class="flex items-start gap-4 px-4 py-4 group hover:bg-zinc-100/60 transition-colors">
 
               <div class="flex-1 justify-between min-w-0 border-r border-r-zinc-200/80 mr-2 pr-2">
                 <p class="text-md font-medium text-zinc-800 truncate">{mod.name}</p>

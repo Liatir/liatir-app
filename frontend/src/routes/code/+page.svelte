@@ -263,7 +263,7 @@
       {/snippet}
     </PageHeader>
 
-    <div class="flex-1 flex flex-col overflow-hidden p-4 gap-3">
+    <div class="flex-1 flex flex-col overflow-hidden gap-3">
 
       <!-- Code editor -->
       <div class="flex-1 min-h-0">
@@ -271,6 +271,7 @@
           value={code}
           onchange={(v) => { code = v; }}
           onrun={run}
+          class="border-none rounded-none"
         />
       </div>
 

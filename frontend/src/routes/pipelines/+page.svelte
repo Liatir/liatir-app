@@ -10,6 +10,7 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import { liatir } from '$lib/api';
+	import PageContent from '$lib/components/layout/PageContent.svelte';
 
   let search = $state('');
   let openMenuId = $state<string | null>(null);
@@ -132,6 +133,7 @@
     {/snippet}
   </PageHeader>
 
+  <PageContent>
   <div class="flex-1 overflow-y-auto p-6">
     {#if pipelineStore.savedPipelines.length === 0}
       <div class="flex flex-col items-center justify-center h-full gap-4 text-center">
@@ -149,9 +151,9 @@
       </div>
     {:else}
       <!-- Search -->
-      <div class="max-w-4xl mb-4">
-        <div class="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 shadow-sm max-w-xs">
-          <Icon icon="lucide:search" width="13" height="13" class="text-zinc-400 shrink-0" />
+      <div class="w-full mb-4">
+        <div class="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 w-full">
+          <Icon icon="lucide:search" width="14" height="14" class="text-zinc-400 shrink-0" />
           <input
             type="text"
             bind:value={search}
@@ -284,6 +286,7 @@
       {/if}
     {/if}
   </div>
+  </PageContent>
 </div>
 
 <!-- Click-away layer to dismiss the open actions menu -->

@@ -44,6 +44,7 @@
 		type DependencyResolverCommand,
 	} from '$lib/dependencies/resolvers';
 	import { versionGte, versionLt } from '$lib/utils/versions';
+	import PageContent from '$lib/components/layout/PageContent.svelte';
 
 	interface RelatedDependencyTool {
 		id: string;
@@ -508,6 +509,7 @@
 		{/snippet}
 	</PageHeader>
 
+	<PageContent>
 	<div class="flex-1 overflow-y-auto p-6 space-y-4">
 		{#if depsStore.loading}
 				<div class="flex flex-col items-center gap-3 py-16">
@@ -985,4 +987,5 @@
 			{/if}
 		{/if}
 	</div>
+	</PageContent>
 </div>

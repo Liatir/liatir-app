@@ -9,6 +9,7 @@
   import { workspaceStore } from '$lib/stores/workspace.svelte';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
+	import PageContent from '$lib/components/layout/PageContent.svelte';
 
   let nameInput = $state(workspaceStore.active?.name ?? '');
   let nameSaving = $state(false);
@@ -73,6 +74,7 @@
     description={workspaceStore.isSandboxMode ? 'Sandbox workspace with demo files' : (workspaceStore.active?.name ?? '')}
   />
 
+  <PageContent>
   <div class="flex-1 overflow-y-auto p-6 space-y-6">
 
     {#if workspaceStore.isSandboxMode}
@@ -184,6 +186,7 @@
     {/if}
 
   </div>
+  </PageContent>
 </div>
 
 <TypeToConfirmDialog

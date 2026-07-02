@@ -10,7 +10,7 @@
   end. Using `h-full` here overflowed past the header and clipped the bottom.
 -->
 <div class="flex justify-center items-stretch w-full flex-1 min-h-0 overflow-hidden">
-    <div class="w-full max-w-12/12 flex flex-col min-h-0">
+    <div class="w-full max-w-9/12 flex flex-col min-h-0">
         {@render children()}
     </div>
 </div>

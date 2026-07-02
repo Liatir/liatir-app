@@ -35,9 +35,9 @@
   </PageHeader>
 
   <PageContent>
-  <div class="flex-1 overflow-y-auto p-6">
+  <div class="flex-1 overflow-y-auto py-6">
     {#if apiConnections.collections.length === 0}
-      <div class="max-w-md mx-auto mt-16">
+      <div class="max-w-4xl mx-auto mt-16">
         <EmptyState
           title="No APIs yet"
           description="Add an API provider, define its calls and authentication, then initialize each call to capture its typed response — ready to plug into your pipelines."
