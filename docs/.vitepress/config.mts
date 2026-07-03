@@ -226,7 +226,8 @@ export default defineConfig({
     socialLinks: [],
 
     footer: {
-      message: 'Liatir — powerful bioinformatics on your machine.',
+      message: 'Liatir — powerful bioinformatics on your machine.<br></br>By using this app, you agree to our <a href="/privacy">Privacy Policy</a> and <a href="/terms">Terms of Service</a>.',
+      copyright: `All rights reserved © ${new Date().getFullYear()} Liatir`,
     },
   },
 })

@@ -413,6 +413,35 @@ export interface LiatirAIModelRuntimePackageInstallOptions {
   noBuildIsolation?: boolean;
 }
 
+export interface LiatirPythonRuntimeLockedPackage {
+  package: string;
+  importName?: string;
+  specifier?: string;
+  requested: string;
+  installedVersion?: string;
+}
+
+export interface LiatirPythonRuntimeLockedSource {
+  url: string;
+  revision?: string;
+  relativePath: string;
+  pythonPath: boolean;
+  resolvedRevision?: string;
+}
+
+export interface LiatirPythonRuntimeLock {
+  schemaVersion: number;
+  envRoot: string;
+  envId: string;
+  pythonVersion?: string;
+  installer: string;
+  requirements: string[];
+  packages: LiatirPythonRuntimeLockedPackage[];
+  sources: LiatirPythonRuntimeLockedSource[];
+  createdAtMs: number;
+  updatedAtMs: number;
+}
+
 export interface LiatirAIModelRuntimeSource {
   url: string;
   revision?: string;
@@ -478,6 +507,14 @@ export interface LiatirAIModelRecord extends LiatirAIModelMetadata {
   localPath?: string;
   runtimePath?: string;
   cachePath?: string;
+  /** Current bytes used by the installed runtime/model box when measured locally. */
+  installedSizeBytes?: number;
+  /** Bytes used by the Python/runtime environment box, when measured locally. */
+  runtimeSizeBytes?: number;
+  /** Bytes used by model cache/weights inside the runtime box, when measured separately. */
+  cacheSizeBytes?: number;
+  /** Runtime dependency lock captured after preparation/install. */
+  runtimeLock?: LiatirPythonRuntimeLock;
   enabled?: boolean;
   addedAt?: number;
   updatedAt?: number;
@@ -501,6 +538,7 @@ export interface LiatirAIProvenance {
   runtimeKind: LiatirAIModelRuntimeKind;
   runtimeName: string;
   runtimeVersion?: string | null;
+  runtimeLock?: LiatirPythonRuntimeLock | null;
   localOnly: boolean;
   inputSummary?: Record<string, JsonValue>;
   parameters?: Record<string, JsonValue>;

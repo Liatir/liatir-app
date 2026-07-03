@@ -10,6 +10,8 @@ import {
   getAIHardwareInfo,
   getAIRuntimeStatus,
   prepareAIRuntime,
+  removeAIRuntime,
+  runtimeIdForModel,
   type AIHardwareInfo,
 } from '$lib/ai/runtime';
 import { appStorage } from './app-storage';
@@ -18,6 +20,7 @@ import type {
   LiatirAIModelInstallFile,
   LiatirAIModelRecord,
   LiatirAIModelStatus,
+  LiatirPythonRuntimeLock,
 } from '@liatir/core';
 
 const AI_MODELS_FILE = 'ai-models.json';
@@ -30,6 +33,10 @@ interface StoredAIModelState {
   localPath?: string;
   runtimePath?: string;
   cachePath?: string;
+  installedSizeBytes?: number;
+  runtimeSizeBytes?: number;
+  cacheSizeBytes?: number;
+  runtimeLock?: LiatirPythonRuntimeLock;
   enabled?: boolean;
   updatedAt?: number;
   error?: string;
@@ -120,6 +127,10 @@ function createAIModelsStore() {
         localPath: state.localPath,
         runtimePath: state.runtimePath,
         cachePath: state.cachePath,
+        installedSizeBytes: state.installedSizeBytes,
+        runtimeSizeBytes: state.runtimeSizeBytes,
+        cacheSizeBytes: state.cacheSizeBytes,
+        runtimeLock: state.runtimeLock,
         enabled: state.enabled ?? true,
         updatedAt: state.updatedAt,
         error: state.error,
@@ -491,6 +502,9 @@ function createAIModelsStore() {
           cachePath: status.runtimeDir && model.install?.modelCacheSubdir
             ? `${status.runtimeDir}/${model.install.modelCacheSubdir}`
             : undefined,
+          installedSizeBytes: status.sizeBytes ?? undefined,
+          runtimeSizeBytes: status.sizeBytes ?? undefined,
+          runtimeLock: status.lock ?? undefined,
           error: runtimeIssue,
         });
         return this.byId(id);
@@ -606,6 +620,9 @@ function createAIModelsStore() {
               runtimePath: prepared.runtimeDir,
               localPath: prepared.runtimeDir,
               cachePath: undefined,
+              installedSizeBytes: prepared.sizeBytes ?? undefined,
+              runtimeSizeBytes: prepared.sizeBytes ?? undefined,
+              runtimeLock: prepared.lock ?? undefined,
             };
             record.cachePath = cachePathForModel(record) ?? undefined;
             if ((metadata.install?.files?.length ?? 0) > 0) {
@@ -644,6 +661,9 @@ function createAIModelsStore() {
               runtimePath: prepared.runtimeDir,
               localPath: prepared.runtimeDir,
               cachePath: record.cachePath,
+              installedSizeBytes: prepared.sizeBytes ?? undefined,
+              runtimeSizeBytes: prepared.sizeBytes ?? undefined,
+              runtimeLock: prepared.lock ?? undefined,
               enabled: true,
               error: undefined,
             });
@@ -652,6 +672,9 @@ function createAIModelsStore() {
               runtimePath: prepared.runtimeDir,
               localPath: prepared.runtimeDir,
               cachePath: record.cachePath,
+              installedSizeBytes: prepared.sizeBytes ?? undefined,
+              runtimeSizeBytes: prepared.sizeBytes ?? undefined,
+              runtimeLock: prepared.lock ?? undefined,
               enabled: true,
               updatedAt: Date.now(),
             }, null, 2), { createDirs: true });
@@ -670,16 +693,19 @@ function createAIModelsStore() {
           await downloadInstallFiles(api, id, files, modelDir, (progress) => {
             emitInstallProgress(id, progress, onProgress);
           });
+          const installedSizeBytes = files.reduce((total, file) => total + (file.sizeBytes ?? 0), 0) || undefined;
 
           await this.setModelState(id, {
             status: 'installed',
             localPath: modelDir,
+            installedSizeBytes,
             enabled: true,
             error: undefined,
           });
           await appStorage.writeText(getInstallMarkerFile(id), JSON.stringify({
             status: 'installed',
             localPath: modelDir,
+            installedSizeBytes,
             enabled: true,
             updatedAt: Date.now(),
           }, null, 2), { createDirs: true });
@@ -712,6 +738,20 @@ function createAIModelsStore() {
       if (!model || (model.source !== 'managed-download' && model.source !== 'managed-runtime')) return;
       if (model.localPath && model.source === 'managed-download') {
         await api.invoke('lia_managed_remove', { path: model.localPath, recursive: true }).catch(() => {});
+      }
+      if (model.source === 'managed-runtime') {
+        const runtimeId = runtimeIdForModel(model);
+        const sharedRuntimeStillInstalled = runtimeId
+          ? records().some((item) =>
+              item.id !== id
+              && item.status === 'installed'
+              && item.source === 'managed-runtime'
+              && runtimeIdForModel(item) === runtimeId
+            )
+          : false;
+        if (!sharedRuntimeStillInstalled) {
+          await removeAIRuntime(model).catch(() => {});
+        }
       }
       const { [id]: _removed, ...restStates } = modelStates;
       modelStates = restStates;

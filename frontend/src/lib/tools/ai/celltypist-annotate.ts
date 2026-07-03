@@ -142,6 +142,7 @@ export async function finalizeCelltypistAnnotateResult(
 		runtimeKind: model.runtime.kind,
 		runtimeName: model.runtime.name,
 		runtimeVersion: model.runtime.version ?? null,
+		runtimeLock: model.runtimeLock ?? null,
 		localOnly: model.localOnly,
 		inputSummary: {
 			inputFile: basename(inputs.inputFile),

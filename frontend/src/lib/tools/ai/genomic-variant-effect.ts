@@ -207,6 +207,7 @@ export async function finalizeGenomicVariantEffectResult(
 		runtimeKind: model.runtime.kind,
 		runtimeName: model.runtime.name,
 		runtimeVersion: model.runtime.version ?? null,
+		runtimeLock: model.runtimeLock ?? null,
 		localOnly: model.localOnly,
 		inputSummary: {
 			referenceFile: inputs.referenceFile ? basename(inputs.referenceFile) : null,

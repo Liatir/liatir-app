@@ -333,6 +333,7 @@ export async function finalizeProteinStructureResult(
 		runtimeKind: model.runtime.kind,
 		runtimeName: model.runtime.name,
 		runtimeVersion: model.runtime.version ?? null,
+		runtimeLock: model.runtimeLock ?? null,
 		localOnly: model.localOnly,
 		inputSummary: {
 			inputFile: inputs.inputFile ? basename(inputs.inputFile) : null,

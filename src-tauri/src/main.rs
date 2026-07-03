@@ -403,6 +403,7 @@ fn main() {
       lia_ai_hardware_info,
       lia_ai_runtime_status,
       lia_ai_runtime_prepare,
+      lia_ai_runtime_remove,
       lia_ai_python_spawn,
       lia_ai_python_run,
       lia_snpeff_annotate,

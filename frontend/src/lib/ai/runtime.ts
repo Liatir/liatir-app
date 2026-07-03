@@ -7,6 +7,7 @@ import type {
   LiatirAIModelRecord,
   LiatirAIModelRuntimePackage,
   LiatirAIModelRuntimeSource,
+  LiatirPythonRuntimeLock,
 } from '@liatir/core';
 
 export interface AIRuntimePackageCheck {
@@ -39,6 +40,8 @@ export interface AIRuntimeStatus {
   missingPackages: string[];
   missingSources?: string[];
   error: string | null;
+  sizeBytes?: number | null;
+  lock?: LiatirPythonRuntimeLock | null;
 }
 
 export interface AIRuntimePrepareResult {
@@ -48,6 +51,8 @@ export interface AIRuntimePrepareResult {
   installer: string;
   stdout: string;
   stderr: string;
+  sizeBytes?: number | null;
+  lock?: LiatirPythonRuntimeLock | null;
 }
 
 export interface AIPythonRunResult {
@@ -129,6 +134,14 @@ export async function prepareAIRuntime(model: LiatirAIModelMetadata): Promise<AI
     sources: runtimeSourcesForModel(model),
     pythonRequirement: model.install?.hostRequirements?.python ?? null,
   }) as AIRuntimePrepareResult;
+}
+
+export async function removeAIRuntime(model: LiatirAIModelMetadata): Promise<boolean> {
+  const api = liatir();
+  const runtimeId = runtimeIdForModel(model);
+  if (!api) throw new Error('Liatir API not available');
+  if (!runtimeId) return false;
+  return await api.invoke('lia_ai_runtime_remove', { runtimeId }) as boolean;
 }
 
 export async function runAIPython(

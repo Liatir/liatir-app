@@ -31,6 +31,7 @@ pub mod bwa;
 pub mod minimap2;
 pub mod execution_resources;
 pub mod ai_runtime;
+pub mod python_env;
 pub mod visual_capture;
 
 pub use notifications::*;

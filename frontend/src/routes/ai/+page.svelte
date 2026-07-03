@@ -231,6 +231,24 @@
     return `${files.length} managed file${files.length === 1 ? '' : 's'}`;
   }
 
+  function installedSizeLabel(model: LiatirAIModelRecord): string | null {
+    if (model.installedSizeBytes && model.installedSizeBytes > 0) {
+      return `${fmtBytes(model.installedSizeBytes)} installed`;
+    }
+    if (model.status !== 'installed' && model.diskSizeBytes && model.diskSizeBytes > 0) {
+      return `Approx. ${fmtBytes(model.diskSizeBytes)}`;
+    }
+    return null;
+  }
+
+  function runtimeLockLabel(model: LiatirAIModelRecord): string {
+    const lock = model.runtimeLock;
+    if (!lock) return 'No runtime lock captured yet';
+    const packageCount = lock.packages.length;
+    const packageLabel = `${packageCount} package${packageCount === 1 ? '' : 's'}`;
+    return `${lock.pythonVersion ?? 'Python'} · ${packageLabel} · ${lock.installer}`;
+  }
+
   function resolveInstallBlock(blocked: AIModelInstallBlock) {
     if (blocked.dependencyBinary) {
       goto(`/deps?focus=${encodeURIComponent(blocked.dependencyBinary)}`);
@@ -512,6 +530,9 @@
                               {runtimePackagesPreview(model)}
                             </p>
                           {/if}
+                          {#if installedSizeLabel(model)}
+                            <p class="mt-1 text-[10px] text-zinc-500 truncate">{installedSizeLabel(model)}</p>
+                          {/if}
                         </div>
 
                         <div class="text-xs text-zinc-600 min-w-0 max-xl:hidden">
@@ -683,6 +704,10 @@
                             <div>
                               <p class="text-[10px] font-semibold uppercase text-zinc-400">Runtime box</p>
                               <p class="mt-1 font-medium text-zinc-800">{runtimeLabel(model)}</p>
+                              {#if model.runtimeSizeBytes}
+                                <p class="mt-1 text-[11px] text-zinc-500">Installed size: {fmtBytes(model.runtimeSizeBytes)}</p>
+                              {/if}
+                              <p class="mt-1 text-[11px] text-zinc-500">{runtimeLockLabel(model)}</p>
                               <p class="mt-1 text-[11px] text-zinc-500">
                                 Runtime packages are installed inside this AI Model environment, not as global Dependencies.
                               </p>
@@ -722,6 +747,20 @@
                                   <span class="rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-[10px] text-zinc-500" title={runtimePackageLabel(pkg)}>
                                     {pkg.package}
                                   </span>
+                                {/each}
+                              </div>
+                            </div>
+                          {/if}
+
+                          {#if model.runtimeLock?.packages?.length}
+                            <div class="mt-3 border-t border-border pt-3">
+                              <p class="text-[10px] font-semibold uppercase text-zinc-400">Installed package lock</p>
+                              <div class="mt-2 grid grid-cols-1 gap-1.5 md:grid-cols-2">
+                                {#each model.runtimeLock.packages as pkg}
+                                  <div class="rounded border border-zinc-200 bg-white px-2 py-1 text-[10px] text-zinc-600">
+                                    <span class="font-medium text-zinc-800">{pkg.package}</span>
+                                    <span class="text-zinc-400"> {pkg.installedVersion ?? pkg.requested}</span>
+                                  </div>
                                 {/each}
                               </div>
                             </div>
