@@ -37,8 +37,8 @@
     "entry": "src/main.py",
     "pythonRequirement": {
       "minVersion": "3.10",
-      "maxVersionExclusive": "3.13",
-      "label": "Python >=3.10,<3.13"
+      "maxVersionExclusive": "3.14",
+      "label": "Python >=3.10,<3.14"
     },
     "packages": [],
     "requirements": []
