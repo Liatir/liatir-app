@@ -73,17 +73,17 @@ const _entryDisplayPath = ${JSON.stringify(entryDisplayPath)};
 
 const _m = _mod.default;
 if (!_m || typeof _m !== "object") {
-  console.error(\`[liatir dev] \${_entryDisplayPath} must default-export definePlugin({ inputs, outputs }).main(async ({ input, lia }) => { ... })\`);
+  console.error(\`[liatir dev] \${_entryDisplayPath} must default-export definePlugin({ inputs, outputs }).main(async ({ input, Liatir }) => { ... })\`);
   process.exit(1);
 }
 
 if (_m.__liatirPluginContract === true && typeof _m.run !== "function") {
-  console.error("[liatir dev] plugin contract is missing .main(...). Finish the default export with definePlugin({ inputs, outputs }).main(async ({ input, lia }) => { ... })");
+  console.error("[liatir dev] plugin contract is missing .main(...). Finish the default export with definePlugin({ inputs, outputs }).main(async ({ input, Liatir }) => { ... })");
   process.exit(1);
 }
 
 if (_m.__liatirPlugin !== true || typeof _m.run !== "function") {
-  console.error("[liatir dev] invalid .lia plugin entrypoint. Use: export default definePlugin({ inputs, outputs }).main(async ({ input, lia }) => { ... });");
+  console.error("[liatir dev] invalid .lia plugin entrypoint. Use: export default definePlugin({ inputs, outputs }).main(async ({ input, Liatir }) => { ... });");
   process.exit(1);
 }
 

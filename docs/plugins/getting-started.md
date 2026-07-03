@@ -88,6 +88,6 @@ The fields declared in `inputs` and `outputs` become the plugin's pipeline
 contract. Liatir uses them to render forms, validate required inputs, expose
 outputs to later steps, and store file outputs in Results.
 
-For the exact bundle format, see [.lia Bundle Format](/plugins/format). For CLI
-commands, see [@liatir/cli CLI](/plugins/liatir-cli). For the API packages, see
-[Liatir API packages](/plugins/api-packages) and [Plugin authoring API](/plugins/api/plugin/define-plugin).
+For the exact bundle format, see [.lia Bundle Format](/plugins/format). For the
+API packages, see [Liatir API packages](/plugins/api-packages) and
+[Plugin authoring API](/plugins/api/plugin/define-plugin).

@@ -29,7 +29,7 @@ Any binary installed in your system PATH can be wrapped as a native tool. Liatir
 ### 2 — .lia plugins
 A `.lia` file is a self-contained extension bundle. Node plugins declare their
 inputs and outputs in code with `definePlugin({ inputs, outputs })`, and
-`lia build` generates the bundle manifest from that contract. WASM plugins use a
+`liatir build` generates the bundle manifest from that contract. WASM plugins use a
 manifest file and a sandboxed `plugin.wasm` payload.
 
 ### 3 — WASM plugins

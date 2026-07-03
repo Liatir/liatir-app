@@ -12,10 +12,9 @@ export default defineConfig({
 
     nav: [
       { text: 'Introduction', link: '/introduction/overview' },
-      { text: 'Data', link: '/data/overview' },
       { text: 'Tools', link: '/tools/overview' },
-      { text: 'AI', link: '/ai/guide' },
-      { text: 'Pipeline', link: '/pipeline/overview' },
+      { text: 'AI Models', link: '/ai/guide' },
+      { text: 'Pipelines', link: '/pipeline/overview' },
       { text: 'Plugins', link: '/plugins/overview' },
     ],
 
@@ -128,6 +127,16 @@ export default defineConfig({
             items: [
               { text: 'Overview', link: '/plugins/api/overview' },
               {
+                text: 'Plugin authoring',
+                collapsed: true,
+                items: [
+                  { text: 'definePlugin', link: '/plugins/api/plugin/define-plugin' },
+                  { text: 'field', link: '/plugins/api/plugin/field' },
+                  { text: 'PluginContext', link: '/plugins/api/plugin/plugin-context' },
+                  { text: 'Liatir Node bridge', link: '/plugins/api/plugin/node-bridge' },
+                ],
+              },
+              {
                 text: 'Root',
                 collapsed: true,
                 items: [
@@ -217,7 +226,7 @@ export default defineConfig({
     socialLinks: [],
 
     footer: {
-      message: 'Liatir — local-first bioinformatics.',
+      message: 'Liatir — powerful bioinformatics on your machine.',
     },
   },
 })

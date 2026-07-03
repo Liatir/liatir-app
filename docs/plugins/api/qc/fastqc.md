@@ -5,13 +5,13 @@ description: Runs the typed FastQC wrapper from the Liatir API.
 
 # qc.fastqc
 
-`Liatir.qc.fastqc.run()` runs the typed FastQC wrapper and returns a Liatir tool
+`Liatir.qc.fastqc()` runs the typed FastQC wrapper and returns a Liatir tool
 output object.
 
 ## Signature
 
 ```ts
-run(args: FastqcArgs): Promise<ToolOutput>
+fastqc(args: FastqcArgs): Promise<ToolOutput>
 ```
 
 ## Arguments
@@ -27,7 +27,7 @@ type FastqcArgs = {
 ## Example
 
 ```ts
-const output = await Liatir.qc.fastqc.run({
+const output = await Liatir.qc.fastqc({
   input: '/path/to/sample.fastq.gz',
   maxReads: 100000
 });

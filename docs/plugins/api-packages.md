@@ -94,7 +94,7 @@ that are not available to headless Node plugin code.
 - [Plugin authoring API](/plugins/api/plugin/define-plugin)
 - [field builders](/plugins/api/plugin/field)
 - [PluginContext](/plugins/api/plugin/plugin-context)
-- [lia Node bridge](/plugins/api/plugin/lia-context)
+- [Liatir Node bridge](/plugins/api/plugin/node-bridge)
 - [Root browser API](/plugins/api/root/overview)
 - [Desktop API](/plugins/api/desktop/app)
 - [Plugins API](/plugins/api/plugins/call)

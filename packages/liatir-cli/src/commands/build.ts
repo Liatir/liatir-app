@@ -148,15 +148,15 @@ function validateNodePlugin(def: CompiledNodePlugin | undefined): asserts def is
   run: (input: Record<string, unknown>) => Promise<unknown>;
 } {
   if (!def || typeof def !== "object") {
-    failInvalidNodePlugin("The plugin entrypoint must default-export definePlugin({ inputs, outputs }).main(async ({ input, lia }) => { ... }).");
+    failInvalidNodePlugin("The plugin entrypoint must default-export definePlugin({ inputs, outputs }).main(async ({ input, Liatir }) => { ... }).");
   }
 
   if (def.__liatirPluginContract === true && typeof def.run !== "function") {
-    failInvalidNodePlugin("Plugin contract is missing .main(...). Finish the default export with definePlugin({ inputs, outputs }).main(async ({ input, lia }) => { ... }).");
+    failInvalidNodePlugin("Plugin contract is missing .main(...). Finish the default export with definePlugin({ inputs, outputs }).main(async ({ input, Liatir }) => { ... }).");
   }
 
   if (def.__liatirPlugin !== true || typeof def.run !== "function") {
-    failInvalidNodePlugin("Invalid .lia plugin entrypoint. Use: export default definePlugin({ inputs, outputs }).main(async ({ input, lia }) => { ... });");
+    failInvalidNodePlugin("Invalid .lia plugin entrypoint. Use: export default definePlugin({ inputs, outputs }).main(async ({ input, Liatir }) => { ... });");
   }
 
   if (!isPlainRecord(def.inputs)) {

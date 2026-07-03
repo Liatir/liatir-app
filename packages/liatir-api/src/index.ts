@@ -41,6 +41,7 @@ import { buildNotifications } from "../../../src-ts/modules/rs/notifications/_ma
 import { buildDiagnostics } from "../../../src-ts/modules/rs/diagnostics/_main";
 import { buildPlugins } from "../../../src-ts/modules/rs/plugins/_main";
 import { buildSidecar } from "../../../src-ts/modules/rs/sidecar/_main";
+import { buildPipeline } from "../../../src-ts/modules/bio/pipeline/_main";
 import { buildJobs } from "../../../src-ts/modules/rs/jobs/_main";
 import { buildDeps } from "../../../src-ts/modules/rs/deps/_main";
 import type {
@@ -214,7 +215,7 @@ export type LiatirSharedDesktop = Pick<
 
 export type LiatirSharedTopLevel = Pick<
   LiatirBrowserAPI,
-  "deps" | "plugins" | "sidecar" | "invoke"
+  "deps" | "plugins" | "sidecar" | "pipeline" | "invoke"
 >;
 
 export interface LiatirNode extends LiatirSharedTopLevel {
@@ -282,6 +283,11 @@ export async function createLiatir(): Promise<LiatirNode> {
 
   const paths = () => invoke<LiatirNodePaths>("lia_fs_paths", {});
 
+  // Pipeline is pure JS orchestration over plugins.call + sidecar.run, so it is
+  // shared with the browser bridge (no Rust command of its own).
+  const plugins = buildPlugins(core);
+  const sidecar = buildSidecar(core);
+
   return {
     jobs,
     deps,
@@ -299,8 +305,9 @@ export async function createLiatir(): Promise<LiatirNode> {
       notifications: buildNotifications(core),
       diagnostics: buildDiagnostics(core),
     },
-    plugins: buildPlugins(core),
-    sidecar: buildSidecar(core),
+    plugins,
+    sidecar,
+    pipeline: buildPipeline({ plugins, sidecar }),
     paths,
     invoke,
   };

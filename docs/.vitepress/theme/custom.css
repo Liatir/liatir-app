@@ -1,61 +1,19 @@
+
+/* ── Hide scrollbars ──────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  scrollbar-width: none !important;
+}
+
+::-webkit-scrollbar { display: none !important; } 
+
 /* ── Brand colors ──────────────────────────────────────────────── */
 :root {
   --vp-c-brand-1: #4f39f6;
   --vp-c-brand-2: #6254f8;
   --vp-c-brand-3: #7a70f8;
   --vp-c-brand-soft: rgba(79, 57, 246, 0.12);
-}
-
-/* ── Hero ──────────────────────────────────────────────────────── */
-.VPHero {
-  padding-top: 80px !important;
-  padding-bottom: 80px !important;
-  text-align: center;
-}
-
-.VPHero .name,
-.VPHero .clip {
-  background: linear-gradient(135deg, #4f39f6 0%, #9b8cfc 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-
-.VPHero .text {
-  max-width: 640px;
-  margin: 0 auto;
-  line-height: 1.3;
-}
-
-.VPHero .tagline {
-  max-width: 580px;
-  margin: 12px auto 0;
-  font-size: 1rem;
-  line-height: 1.7;
-  color: var(--vp-c-text-2);
-}
-
-.VPHero .actions {
-  justify-content: center;
-  margin-top: 32px;
-}
-
-/* ── Features ──────────────────────────────────────────────────── */
-.VPFeature {
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 12px;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.VPFeature:hover {
-  border-color: var(--vp-c-brand-1);
-  box-shadow: 0 0 0 1px var(--vp-c-brand-soft);
-}
-
-.VPFeature .title {
-  font-size: 0.95rem;
-  font-weight: 600;
 }
 
 /* ── Nav ───────────────────────────────────────────────────────── */
@@ -116,11 +74,4 @@
   .liatir-architecture-figure {
     margin: 24px 0;
   }
-}
-
-.name {
-  max-width: 100vw !important;
-  width: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
 }
