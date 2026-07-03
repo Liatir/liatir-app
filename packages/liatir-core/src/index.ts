@@ -83,6 +83,51 @@ export interface LiatirStepDefinition {
   outputSchema: Record<string, LiatirOutputFieldSchema>;
 }
 
+export type LiatirPluginRuntime = "node" | "wasm" | "python";
+
+export interface LiatirPythonRuntimePackageInstallOptions {
+  /** Install this package with pip build isolation disabled. Used for legacy scientific packages with incomplete build metadata. */
+  noBuildIsolation?: boolean;
+}
+
+export interface LiatirPythonRuntimePackage {
+  package: string;
+  version?: string;
+  specifier?: string;
+  importName?: string;
+  installOptions?: LiatirPythonRuntimePackageInstallOptions;
+}
+
+export interface LiatirPythonRequirement {
+  minVersion?: string;
+  maxVersionExclusive?: string;
+  label?: string;
+  reason?: string;
+}
+
+export interface LiatirPythonPluginRuntimeSpec {
+  /** Entry file inside the packaged .lia bundle. Generated builds store Python sources under python/. */
+  entry: string;
+  /** Structured package declarations used by Liatir's managed Python environment. */
+  packages?: LiatirPythonRuntimePackage[];
+  /** Raw pip requirement specifiers for advanced packages that do not need import checks. */
+  requirements?: string[];
+  /** Optional interpreter compatibility range for this plugin runtime box. */
+  pythonRequirement?: LiatirPythonRequirement;
+}
+
+export interface LiatirPluginManifest {
+  name: string;
+  version: string;
+  description?: string;
+  runtime: LiatirPluginRuntime;
+  category?: string;
+  tags?: string[];
+  inputSchema: Record<string, LiatirInputFieldSchema>;
+  outputSchema: Record<string, LiatirOutputFieldSchema>;
+  python?: LiatirPythonPluginRuntimeSpec;
+}
+
 export type LiatirFileArtifactRole =
   | "final"
   | "intermediate"
@@ -401,17 +446,14 @@ export interface LiatirAIModelInstallFile {
 }
 
 export interface LiatirAIModelRuntimePackage {
-  package: string;
-  version?: string;
-  specifier?: string;
-  importName?: string;
-  installOptions?: LiatirAIModelRuntimePackageInstallOptions;
+  package: LiatirPythonRuntimePackage["package"];
+  version?: LiatirPythonRuntimePackage["version"];
+  specifier?: LiatirPythonRuntimePackage["specifier"];
+  importName?: LiatirPythonRuntimePackage["importName"];
+  installOptions?: LiatirPythonRuntimePackageInstallOptions;
 }
 
-export interface LiatirAIModelRuntimePackageInstallOptions {
-  /** Install this package with pip build isolation disabled. Used for legacy scientific packages with incomplete build metadata. */
-  noBuildIsolation?: boolean;
-}
+export interface LiatirAIModelRuntimePackageInstallOptions extends LiatirPythonRuntimePackageInstallOptions {}
 
 export interface LiatirPythonRuntimeLockedPackage {
   package: string;
@@ -449,12 +491,7 @@ export interface LiatirAIModelRuntimeSource {
   pythonPath?: boolean;
 }
 
-export interface LiatirAIModelPythonRequirement {
-  minVersion?: string;
-  maxVersionExclusive?: string;
-  label?: string;
-  reason?: string;
-}
+export interface LiatirAIModelPythonRequirement extends LiatirPythonRequirement {}
 
 export interface LiatirAIModelHostRequirements {
   os?: string[];

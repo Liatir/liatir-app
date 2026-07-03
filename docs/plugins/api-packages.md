@@ -8,7 +8,7 @@ The Liatir API ships in two related packages:
 Most plugin authors use `@liatir/api` through projects created by
 `liatir init`.
 
-![Liatir API surface map](../static/api-surface-map.svg)
+![Liatir API surface map](/static/api-surface-map.svg)
 
 ## Node plugin authoring
 

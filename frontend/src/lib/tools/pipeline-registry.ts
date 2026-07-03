@@ -421,7 +421,7 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
 };
 
 // ── Imported .lia plugins as pipeline steps ──────────────────────────────────
-// Plugins (Node and WASM) are first-class pipeline steps alongside native tools.
+// .lia plugins are first-class pipeline steps alongside native tools.
 // They are not in the static registry above — they are resolved on demand from
 // the plugin import store so importing/removing one is reflected without a rebuild.
 

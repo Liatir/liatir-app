@@ -13,7 +13,7 @@ import { REGULATORY_PREDICTION_SCRIPT } from '../../frontend/src/lib/tools/ai/py
 import { installSvelteRuneStubs } from './support/svelte-runes';
 
 const rootDir = resolve(import.meta.dirname, '../..');
-const aiRuntimePath = resolve(rootDir, 'src-tauri/src/bridge/ai_runtime.rs');
+const pythonEnvPath = resolve(rootDir, 'src-tauri/src/bridge/python_env.rs');
 
 const REGULATORY_MODEL_IDS = [
   ENFORMER_REGULATORY_MODEL_ID,
@@ -193,7 +193,7 @@ describe('Batch 4 regulatory model contracts', () => {
   });
 
   it('keeps Python runtime bootstrap packages needed by TensorFlow model boxes', () => {
-    const runtimeSource = readFileSync(aiRuntimePath, 'utf8');
+    const runtimeSource = readFileSync(pythonEnvPath, 'utf8');
 
     expect(runtimeSource).toContain('"setuptools>=68,<81"');
     expect(runtimeSource).toContain('"wheel>=0.41,<1"');

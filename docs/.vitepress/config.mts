@@ -5,6 +5,14 @@ export default defineConfig({
   description: 'Local-first bioinformatics desktop app built on Rust and Tauri.',
   base: '/',
 
+  // Cloudflare deployment docs — kept in docs/ but not a published page.
+  srcExclude: ['DEPLOY-cloudflare.md'],
+
+  // Browser-tab favicon (served from docs/public/static).
+  head: [
+    ['link', { rel: 'icon', type: 'image/png', href: '/static/app-icon-white-bg-color.png' }],
+  ],
+
   themeConfig: {
     logo: { light: '/static/app-icon-white-bg-color.png', dark: '/static/app-icon-white-bg-color.png', alt: 'Liatir' },
     siteTitle: 'Liatir',

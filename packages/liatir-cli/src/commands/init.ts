@@ -7,7 +7,7 @@ import { stdin as processStdin, stdout as processStdout } from "process";
 
 const execFileAsync = promisify(execFile);
 
-type Runtime = "node" | "wasm";
+type Runtime = "node" | "wasm" | "python";
 type NodeLanguage = "typescript" | "javascript";
 type NodeTemplate = "minimal" | "file-processor" | "bio-cli";
 
@@ -63,6 +63,11 @@ const RUNTIME_CHOICES: Choice<Runtime>[] = [
     label: "WASM Rust .lia tool",
     description: "Use Rust compiled to WASM for sandboxed local computation.",
   },
+  {
+    value: "python",
+    label: "Python .lia plugin",
+    description: "Use a managed Python environment for scientific Python libraries.",
+  },
 ];
 
 const LANGUAGE_CHOICES: Choice<NodeLanguage>[] = [
@@ -116,8 +121,8 @@ function requireFlagValue(args: string[], index: number, flag: string): string {
 }
 
 function parseRuntime(value: string): Runtime {
-  if (value === "node" || value === "wasm") return value;
-  throw new Error(`Invalid runtime "${value}". Expected "node" or "wasm".`);
+  if (value === "node" || value === "wasm" || value === "python") return value;
+  throw new Error(`Invalid runtime "${value}". Expected "node", "wasm", or "python".`);
 }
 
 function parseLanguage(value: string): NodeLanguage {
@@ -179,6 +184,9 @@ function parseInitArgs(args: string[]): ParsedInitArgs {
         break;
       case "--wasm":
         setRuntime(parsed, "wasm");
+        break;
+      case "--python":
+        setRuntime(parsed, "python");
         break;
       case "--runtime":
         setRuntime(parsed, parseRuntime(inlineValue ?? requireFlagValue(args, i, flag)));
@@ -763,6 +771,48 @@ opt-level = "s"
 lto = true
 `;
 
+function pythonManifest(config: InitConfig): string {
+  return JSON.stringify(
+    {
+      name: config.displayName,
+      version: "1.0.0",
+      description: config.description,
+      runtime: "python",
+      category: config.category,
+      tags: config.tags,
+      inputSchema: {
+        text: {
+          type: "string",
+          label: "Text",
+          description: "Text to analyze.",
+          required: true,
+          default: "hello from Liatir",
+        },
+      },
+      outputSchema: {
+        length: {
+          type: "number",
+          label: "Length",
+          description: "Number of characters in the input text.",
+          format: "integer",
+        },
+      },
+      python: {
+        entry: "src/main.py",
+        pythonRequirement: {
+          minVersion: "3.10",
+          maxVersionExclusive: "3.13",
+          label: "Python >=3.10,<3.13",
+        },
+        packages: [],
+        requirements: [],
+      },
+    },
+    null,
+    2,
+  );
+}
+
 function wasmManifest(config: InitConfig): string {
   return JSON.stringify(
     {
@@ -818,7 +868,14 @@ fn main() {
 }
 `;
 
-const GITIGNORE = "target/\n*.lia\nnode_modules/\ndist/\n.liatir/\nbuild/\n.lia-dev/\n";
+const MAIN_PY = `def main(input):
+    text = str(input.get("text", ""))
+    return {
+        "length": len(text),
+    }
+`;
+
+const GITIGNORE = "target/\n*.lia\nnode_modules/\ndist/\n.liatir/\nbuild/\n.lia-dev/\n.venv/\nvenv/\n__pycache__/\n";
 
 async function scaffoldWasm(config: InitConfig): Promise<void> {
   await Promise.all([
@@ -871,6 +928,23 @@ ${installStep}  liatir dev       # watch mode with live Liatir app
 `);
 }
 
+async function scaffoldPython(config: InitConfig): Promise<void> {
+  await Promise.all([
+    fs.writeFile(path.join(config.dir, ".lia-manifest.json"), pythonManifest(config)),
+    fs.writeFile(path.join(config.dir, "src", "main.py"), MAIN_PY),
+    fs.writeFile(path.join(config.dir, "requirements.txt"), "# Add pip requirements here when the plugin needs external Python packages.\n"),
+    fs.writeFile(path.join(config.dir, ".gitignore"), GITIGNORE),
+  ]);
+
+  console.log(`
+Created ${config.projectName}/ (Python .lia plugin)
+
+Next steps:
+  cd ${shellQuote(config.nextStepDir)}
+  liatir build      # package into .liatir/
+`);
+}
+
 export async function init(args: string[] | string, runtime?: Runtime): Promise<void> {
   const parsed: ParsedInitArgs = Array.isArray(args)
     ? parseInitArgs(args)
@@ -886,6 +960,8 @@ export async function init(args: string[] | string, runtime?: Runtime): Promise<
 
   if (config.runtime === "wasm") {
     await scaffoldWasm(config);
+  } else if (config.runtime === "python") {
+    await scaffoldPython(config);
   } else {
     await scaffoldNode(config);
   }

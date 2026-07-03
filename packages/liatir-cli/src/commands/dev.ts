@@ -8,6 +8,10 @@ import { resolveNodeEntryPoint, type NodeEntryPoint } from "./_entry.js";
 interface Manifest {
   name: string;
   version: string;
+  runtime?: "node" | "wasm" | "python";
+  python?: {
+    entry?: string;
+  };
 }
 
 async function loadManifest(): Promise<Manifest> {
@@ -63,6 +67,47 @@ async function parseDevInputs(args: string[]): Promise<Record<string, unknown>> 
   return {};
 }
 
+function pythonRunnerScript(entryPath: string, inputs: Record<string, unknown>): string {
+  return `
+import asyncio
+import importlib.util
+import inspect
+import json
+import pathlib
+import sys
+import traceback
+
+entry_path = pathlib.Path(${JSON.stringify(entryPath)})
+inputs = ${JSON.stringify(inputs)}
+
+sys.path.insert(0, str(entry_path.parent))
+try:
+    spec = importlib.util.spec_from_file_location("_liatir_dev_plugin", entry_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Cannot load Python plugin entry: {entry_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    handler = getattr(module, "main", None)
+    if not callable(handler):
+        raise TypeError("Python .lia plugin must define a callable main(input) function.")
+    result = handler(inputs)
+    if inspect.isawaitable(result):
+        result = asyncio.run(result)
+    print("[liatir dev] result:", json.dumps(result, indent=2))
+except Exception:
+    traceback.print_exc()
+    sys.exit(1)
+`;
+}
+
+function normalizeRelativePath(value: string): string {
+  const normalized = value.replace(/\\/g, "/").replace(/^\.\/+/, "");
+  if (!normalized || normalized.startsWith("/") || normalized.includes("../") || normalized === "..") {
+    throw new Error("python.entry must be a relative path inside the plugin project.");
+  }
+  return normalized;
+}
+
 // Generates a thin runner that imports the bundle and calls the same strict
 // runtime shape used by `liatir build`: default definePlugin(...).main(...).
 function runnerScript(bundlePath: string, inputs: Record<string, unknown>, entryDisplayPath: string): string {
@@ -114,10 +159,61 @@ console.log("[liatir dev] result:", JSON.stringify(result, null, 2));
 `;
 }
 
+async function devPython(cwd: string, manifest: Manifest, inputs: Record<string, unknown>) {
+  const entry = normalizeRelativePath(manifest.python?.entry ?? "src/main.py");
+  const entryPath = path.resolve(cwd, entry);
+  const distDir = path.join(cwd, ".lia-dev");
+  const runnerPath = path.join(distDir, "_python_runner.py");
+  await fs.mkdir(distDir, { recursive: true });
+
+  let runningProcess: child_process.ChildProcess | null = null;
+
+  async function runScript() {
+    if (runningProcess && !runningProcess.killed) {
+      runningProcess.kill();
+    }
+    await fs.writeFile(runnerPath, pythonRunnerScript(entryPath, inputs));
+    console.log(`[liatir dev] running ${manifest.name} (${entry})...`);
+    runningProcess = child_process.spawn("python3", [runnerPath], { stdio: "inherit", cwd });
+    runningProcess.on("exit", (code) => {
+      if (code !== 0 && code !== null) {
+        console.log(`[liatir dev] exited with code ${code}`);
+      }
+    });
+  }
+
+  await runScript();
+  console.log(`[liatir dev] watching ${manifest.name} (${entry})... (Ctrl+C to stop)`);
+  console.log("[liatir dev] Python dependencies are resolved by Liatir when the packaged plugin runs.\n");
+
+  let timer: NodeJS.Timeout | null = null;
+  const fsWatcher = await import("fs");
+  const nativeWatcher = fsWatcher.watch(path.dirname(entryPath), () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => void runScript(), 150);
+  });
+
+  process.on("SIGINT", async () => {
+    console.log("\n[liatir dev] stopping...");
+    nativeWatcher.close();
+    runningProcess?.kill();
+    await fs.rm(distDir, { recursive: true, force: true });
+    process.exit(0);
+  });
+
+  await new Promise(() => {});
+}
+
 export async function dev(args: string[] = []) {
   const cwd = process.cwd();
   const manifest = await loadManifest();
   const inputs = await parseDevInputs(args);
+
+  if (manifest.runtime === "python") {
+    await devPython(cwd, manifest, inputs);
+    return;
+  }
+
   let entryPoint: NodeEntryPoint;
   try {
     entryPoint = await resolveNodeEntryPoint(cwd);

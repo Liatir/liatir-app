@@ -4,10 +4,18 @@ import { pathToFileURL } from "url";
 import { build as esbuild } from "esbuild";
 import { execFile } from "child_process";
 import { promisify } from "util";
-import type { LiatirFieldSchema, LiatirInputFieldSchema, LiatirOutputFieldSchema } from "@liatir/core";
+import type {
+  LiatirFieldSchema,
+  LiatirInputFieldSchema,
+  LiatirOutputFieldSchema,
+  LiatirPluginManifest,
+  LiatirPluginRuntime,
+  LiatirPythonPluginRuntimeSpec,
+  LiatirPythonRequirement,
+  LiatirPythonRuntimePackage,
+} from "@liatir/core";
 import { typecheckIfConfigured } from "./_typecheck.js";
 import { resolveNodeEntryPoint, type NodeEntryPoint } from "./_entry.js";
-import { accessSync } from "fs";
 
 const execFileAsync = promisify(execFile);
 
@@ -44,6 +52,12 @@ interface ManifestMetadata {
   category?: string;
   tags?: string[];
 }
+
+type RawManifest = Record<string, unknown>;
+type BundlePayload = {
+  name: string;
+  path: string;
+};
 
 async function exists(p: string): Promise<boolean> {
   try { await fs.access(p); return true; } catch { return false; }
@@ -121,6 +135,57 @@ function cleanTags(value: unknown): string[] | undefined {
   return tags.length > 0 ? [...new Set(tags)] : undefined;
 }
 
+function cleanStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const values = value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return values.length > 0 ? [...new Set(values)] : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function cleanPythonPackages(value: unknown): LiatirPythonRuntimePackage[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const packages = value
+    .filter(isRecord)
+    .map((item) => {
+      const packageName = cleanOptionalString(item.package);
+      if (!packageName) return null;
+      const pkg: LiatirPythonRuntimePackage = { package: packageName };
+      const version = cleanOptionalString(item.version);
+      const specifier = cleanOptionalString(item.specifier);
+      const importName = cleanOptionalString(item.importName);
+      const installOptions = isRecord(item.installOptions)
+        ? { noBuildIsolation: item.installOptions.noBuildIsolation === true }
+        : undefined;
+      if (version) pkg.version = version;
+      if (specifier) pkg.specifier = specifier;
+      if (importName) pkg.importName = importName;
+      if (installOptions) pkg.installOptions = installOptions;
+      return pkg;
+    })
+    .filter((item): item is LiatirPythonRuntimePackage => item !== null);
+  return packages.length > 0 ? packages : undefined;
+}
+
+function cleanPythonRequirement(value: unknown): LiatirPythonRequirement | undefined {
+  if (!isRecord(value)) return undefined;
+  const requirement: LiatirPythonRequirement = {};
+  const minVersion = cleanOptionalString(value.minVersion);
+  const maxVersionExclusive = cleanOptionalString(value.maxVersionExclusive);
+  const label = cleanOptionalString(value.label);
+  const reason = cleanOptionalString(value.reason);
+  if (minVersion) requirement.minVersion = minVersion;
+  if (maxVersionExclusive) requirement.maxVersionExclusive = maxVersionExclusive;
+  if (label) requirement.label = label;
+  if (reason) requirement.reason = reason;
+  return Object.keys(requirement).length > 0 ? requirement : undefined;
+}
+
 function packageMetadata(pkg: PackageMetadata): ManifestMetadata {
   return {
     name: cleanOptionalString(pkg.liatir?.displayName) ?? pkg.name,
@@ -139,6 +204,51 @@ function wasmMetadata(raw: Record<string, unknown>): ManifestMetadata {
     category: cleanOptionalString(raw.category),
     tags: cleanTags(raw.tags),
   };
+}
+
+function manifestRuntime(raw: RawManifest | null): LiatirPluginRuntime | undefined {
+  const runtime = raw?.runtime;
+  return runtime === "node" || runtime === "wasm" || runtime === "python" ? runtime : undefined;
+}
+
+function validateRelativePath(value: string, fieldName: string): string {
+  const normalized = value.replace(/\\/g, "/").replace(/^\.\/+/, "");
+  if (!normalized || normalized.startsWith("/") || normalized.includes("../") || normalized === "..") {
+    throw new Error(`${fieldName} must be a relative path inside the plugin project.`);
+  }
+  return normalized;
+}
+
+async function readRawManifest(cwd: string): Promise<RawManifest | null> {
+  const manifestPath = path.join(cwd, ".lia-manifest.json");
+  if (!(await exists(manifestPath))) return null;
+  return JSON.parse(await fs.readFile(manifestPath, "utf-8")) as RawManifest;
+}
+
+async function readRequirementsFile(cwd: string): Promise<string[] | undefined> {
+  const requirementsPath = path.join(cwd, "requirements.txt");
+  if (!(await exists(requirementsPath))) return undefined;
+  const lines = (await fs.readFile(requirementsPath, "utf-8"))
+    .split(/\r?\n/)
+    .map((line) => line.replace(/#.*/, "").trim())
+    .filter(Boolean);
+  return lines.length > 0 ? lines : undefined;
+}
+
+async function filesUnder(root: string): Promise<string[]> {
+  const ignored = new Set(["__pycache__", ".git", ".lia-dev", ".liatir", ".mypy_cache", ".pytest_cache", ".venv", "venv"]);
+  const entries = await fs.readdir(root, { withFileTypes: true });
+  const files: string[] = [];
+  for (const entry of entries) {
+    if (ignored.has(entry.name)) continue;
+    const fullPath = path.join(root, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...await filesUnder(fullPath));
+    } else if (entry.isFile()) {
+      files.push(fullPath);
+    }
+  }
+  return files;
 }
 
 function validateNodePlugin(def: CompiledNodePlugin | undefined): asserts def is {
@@ -170,12 +280,20 @@ function validateNodePlugin(def: CompiledNodePlugin | undefined): asserts def is
 
 export async function build() {
   const cwd = process.cwd();
-  // Runtime is detected from the project: a Cargo.toml means a WASM custom tool.
-  if (await exists(path.join(cwd, "Cargo.toml"))) {
-    await buildWasm(cwd);
-  } else {
-    await buildNode(cwd);
+  const rawManifest = await readRawManifest(cwd);
+  const runtime = manifestRuntime(rawManifest);
+
+  if (runtime === "python") {
+    await buildPython(cwd, rawManifest!);
+    return;
   }
+
+  if (runtime === "wasm" || await exists(path.join(cwd, "Cargo.toml"))) {
+    await buildWasm(cwd, rawManifest ?? undefined);
+    return;
+  }
+
+  await buildNode(cwd);
 }
 
 /**
@@ -225,7 +343,7 @@ async function buildNode(cwd: string): Promise<void> {
   const def = mod.default as CompiledNodePlugin | undefined;
   validateNodePlugin(def);
 
-  const manifest = {
+  const manifest: LiatirPluginManifest = {
     name: metadata.name,
     version: metadata.version,
     description: metadata.description,
@@ -237,7 +355,7 @@ async function buildNode(cwd: string): Promise<void> {
   };
 
   const outputName = `${bareName(pkg.name)}.lia`;
-  await createBundle(path.join(liatirDir, outputName), manifest, "index.js", bundlePath);
+  await createBundle(path.join(liatirDir, outputName), manifest, [{ name: "index.js", path: bundlePath }]);
   console.log(`✓ Built → ${outputName}`);
 }
 
@@ -245,23 +363,22 @@ async function buildNode(cwd: string): Promise<void> {
  * WASM custom tool: the schema lives in .lia-manifest.json (Rust can't export a
  * JS schema at build time). We compile the crate and package plugin.wasm.
  */
-async function buildWasm(cwd: string): Promise<void> {
-  const manifestPath = path.join(cwd, ".lia-manifest.json");
-  if (!(await exists(manifestPath))) {
+async function buildWasm(cwd: string, rawManifest?: RawManifest): Promise<void> {
+  const m = rawManifest ?? await readRawManifest(cwd);
+  if (!m) {
     console.error("No .lia-manifest.json found. Run this from your tool's root.");
     process.exit(1);
   }
-  const m = JSON.parse(await fs.readFile(manifestPath, "utf-8")) as Record<string, unknown>;
   const metadata = wasmMetadata(m);
-  const manifest = {
+  const manifest: LiatirPluginManifest = {
     name: metadata.name,
     version: metadata.version,
     description: metadata.description,
     runtime: "wasm",
     category: metadata.category,
     tags: metadata.tags,
-    inputSchema: m.inputSchema ?? {},
-    outputSchema: m.outputSchema ?? {},
+    inputSchema: isRecord(m.inputSchema) ? m.inputSchema as Record<string, LiatirInputFieldSchema> : {} as Record<string, LiatirInputFieldSchema>,
+    outputSchema: isRecord(m.outputSchema) ? m.outputSchema as Record<string, LiatirOutputFieldSchema> : {} as Record<string, LiatirOutputFieldSchema>,
   };
 
   console.log(`Building ${manifest.name}@${manifest.version} (wasm)...`);
@@ -282,16 +399,70 @@ async function buildWasm(cwd: string): Promise<void> {
 
   const outputName = `${bareName(manifest.name)}.lia`;
   const liatirDir = path.join(cwd, ".liatir");
-  await createBundle(path.join(liatirDir, outputName), manifest, "plugin.wasm", path.join(releaseDir, wasmFile));
+  await createBundle(path.join(liatirDir, outputName), manifest, [{ name: "plugin.wasm", path: path.join(releaseDir, wasmFile) }]);
   console.log(`✓ Built → ${outputName}`);
 }
 
-/** Write the .lia zip: signature + manifest + the runtime payload. */
+async function buildPython(cwd: string, rawManifest: RawManifest): Promise<void> {
+  const metadata = wasmMetadata(rawManifest);
+  const rawPython = isRecord(rawManifest.python) ? rawManifest.python : {};
+  const sourceEntry = validateRelativePath(
+    cleanOptionalString(rawPython.entry) ?? cleanOptionalString(rawManifest.entry) ?? "src/main.py",
+    "python.entry",
+  );
+  const entryPath = path.resolve(cwd, sourceEntry);
+  if (!(await exists(entryPath))) {
+    throw new Error(`Python plugin entry not found: ${sourceEntry}`);
+  }
+
+  const sourceRoot = path.dirname(entryPath);
+  const sourceFiles = await filesUnder(sourceRoot);
+  if (sourceFiles.length === 0) {
+    throw new Error(`No Python source files found in ${path.relative(cwd, sourceRoot) || "."}`);
+  }
+
+  const entryRelativeToRoot = path.relative(sourceRoot, entryPath).split(path.sep).join("/");
+  const payloads = sourceFiles.map((file) => ({
+    name: `python/${path.relative(sourceRoot, file).split(path.sep).join("/")}`,
+    path: file,
+  }));
+
+  const requirements =
+    cleanStringArray(rawPython.requirements)
+    ?? cleanStringArray(rawManifest.requirements)
+    ?? await readRequirementsFile(cwd);
+
+  const python: LiatirPythonPluginRuntimeSpec = {
+    entry: `python/${entryRelativeToRoot}`,
+    packages: cleanPythonPackages(rawPython.packages ?? rawManifest.runtimePackages),
+    requirements,
+    pythonRequirement: cleanPythonRequirement(rawPython.pythonRequirement ?? rawPython.python ?? rawManifest.pythonRequirement),
+  };
+
+  const manifest: LiatirPluginManifest = {
+    name: metadata.name,
+    version: metadata.version,
+    description: metadata.description,
+    runtime: "python",
+    category: metadata.category,
+    tags: metadata.tags,
+    inputSchema: isRecord(rawManifest.inputSchema) ? rawManifest.inputSchema as Record<string, LiatirInputFieldSchema> : {} as Record<string, LiatirInputFieldSchema>,
+    outputSchema: isRecord(rawManifest.outputSchema) ? rawManifest.outputSchema as Record<string, LiatirOutputFieldSchema> : {} as Record<string, LiatirOutputFieldSchema>,
+    python,
+  };
+
+  console.log(`Building ${manifest.name}@${manifest.version} (python)...`);
+  const outputName = `${bareName(manifest.name)}.lia`;
+  const liatirDir = path.join(cwd, ".liatir");
+  await createBundle(path.join(liatirDir, outputName), manifest, payloads);
+  console.log(`✓ Built → ${outputName}`);
+}
+
+/** Write the .lia zip: signature + manifest + runtime payloads. */
 async function createBundle(
   outputPath: string,
   manifest: object,
-  payloadName: "index.js" | "plugin.wasm",
-  payloadPath: string,
+  payloads: BundlePayload[],
 ): Promise<void> {
   const { default: JSZip } = await import("jszip").catch(() => {
     throw new Error("jszip not found. Run: npm install jszip");
@@ -299,7 +470,10 @@ async function createBundle(
   const zip = new JSZip();
   zip.file("_sig", "LIATIR/1");
   zip.file("manifest.json", JSON.stringify(manifest, null, 2));
-  zip.file(payloadName, await fs.readFile(payloadPath));
+  for (const payload of payloads) {
+    zip.file(validateRelativePath(payload.name, "payload path"), await fs.readFile(payload.path));
+  }
   const content = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
+  await fs.mkdir(path.dirname(outputPath), { recursive: true });
   await fs.writeFile(outputPath, content);
 }

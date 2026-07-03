@@ -14,6 +14,8 @@ const VISUAL_PAGES = [
     name: 'dependencies',
     route: '/deps',
     readyText: 'Dependencies',
+    waitUntilAbsent: 'Checking dependencies...',
+    waitUntilPresent: 'Re-check all',
   },
   {
     name: 'jobs',
@@ -61,6 +63,26 @@ async function waitForPage(browser, page) {
     async () => browser.execute(() => !document.body.innerText.includes('Loading AI Models...')),
     { timeout: 30_000, timeoutMsg: 'AI Models loading state did not settle before visual capture' },
   );
+  if (page.waitUntilAbsent) {
+    const absentText = page.waitUntilAbsent;
+    await browser.waitUntil(
+      async () => browser.execute((value) => !document.body.innerText.includes(value), absentText),
+      {
+        timeout: 30_000,
+        timeoutMsg: `${page.readyText} page did not settle before visual capture`,
+      },
+    );
+  }
+  if (page.waitUntilPresent) {
+    const presentText = page.waitUntilPresent;
+    await browser.waitUntil(
+      async () => browser.execute((value) => document.body.innerText.includes(value), presentText),
+      {
+        timeout: 30_000,
+        timeoutMsg: `${page.readyText} page did not reach ready state before visual capture`,
+      },
+    );
+  }
   await expectNoVisibleRuntimeError(browser);
 }
 

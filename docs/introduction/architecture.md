@@ -5,7 +5,7 @@ place to manage data files, run tools, build pipelines, install local AI Models,
 and review results without sending your scientific data to a cloud service.
 
 <figure class="liatir-architecture-figure">
-  <img src="../static/liatir_arch_schema.svg" alt="Liatir architecture overview" />
+  <img src="/static/liatir_arch_schema.svg" alt="Liatir architecture overview" />
 </figure>
 
 ## The basic idea

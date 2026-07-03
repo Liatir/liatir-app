@@ -67,6 +67,7 @@
     "cargo:update": "npm run cargo:update --prefix src-tauri/",
     "docs:dev": "vitepress dev docs --port 5175",
     "docs:build": "vitepress build docs",
+    "docs:deploy": "npm run deploy --prefix docs/",
     "docs:preview": "vitepress preview docs",
     "docs:internal:dev": "vitepress dev internal-docs --port 5176",
     "docs:internal:build": "vitepress build internal-docs",

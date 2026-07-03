@@ -8,7 +8,7 @@
   import Button from '$lib/components/ui/Button.svelte';
   import { liaPluginsStore } from '$lib/stores/lia-plugins.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
-  import type { LiatirPlugin } from '$lib/stores/lia-plugins.svelte';
+  import type { LiatirPlugin, PluginRuntime } from '$lib/stores/lia-plugins.svelte';
 	import Dot from '$lib/components/ui/Dot.svelte';
 	import { openLinkInBrowser } from '$lib';
 	import { LIATIR_CLI_NPM_PACKAGE_URL } from '$lib/_constants';
@@ -18,7 +18,7 @@
 
   let importing = $state(false);
   let query = $state('');
-  let runtimeFilter = $state<'all' | 'node' | 'wasm'>('all');
+  let runtimeFilter = $state<'all' | PluginRuntime>('all');
   let categoryFilter = $state('All');
   let tagDrafts = $state<Record<string, string>>({});
 
@@ -61,7 +61,9 @@
   }
 
   function runtimeLabel(runtime: LiatirPlugin['runtime']) {
-    return runtime === 'wasm' ? 'WASM .lia' : 'Node .lia';
+    if (runtime === 'wasm') return 'WASM .lia';
+    if (runtime === 'python') return 'Python .lia';
+    return 'Node .lia';
   }
 
   async function addTag(mod: LiatirPlugin) {
@@ -75,8 +77,8 @@
 <div class="flex flex-col h-full">
   <PageHeader
     title="Plugins"
-    description="Imported .lia plugins for Node and WASM runtimes"
-    info=".lia plugins are local extensions packaged with a manifest that declares runtime, inputs, and outputs. Node plugins can use the desktop bridge for native Liatir APIs, while WASM plugins run as portable sandboxed tools. Import a .lia file here to inspect, organize, and run it with your parameters."
+    description="Imported .lia plugins for Node, Python, and WASM runtimes"
+    info=".lia plugins are local extensions packaged with a manifest that declares runtime, inputs, and outputs. Node plugins can use the desktop bridge, Python plugins run in managed Python environments, and WASM plugins run as portable sandboxed tools. Import a .lia file here to inspect, organize, and run it with your parameters."
   >
     {#snippet actions()}
       <Button variant="primary" size="sm" onclick={importPlugin} loading={importing}>
@@ -132,11 +134,12 @@
           {#each [
             { value: 'all', label: 'All runtimes' },
             { value: 'node', label: 'Node' },
+            { value: 'python', label: 'Python' },
             { value: 'wasm', label: 'WASM' },
           ] as runtime}
             <button
               type="button"
-              onclick={() => runtimeFilter = runtime.value as 'all' | 'node' | 'wasm'}
+              onclick={() => runtimeFilter = runtime.value as 'all' | PluginRuntime}
               class="shrink-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors
                 {runtimeFilter === runtime.value
                   ? 'border-brand bg-brand/10 text-brand'

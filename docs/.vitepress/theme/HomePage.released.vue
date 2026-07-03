@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { withBase } from 'vitepress'
-import MailingListForm from './MailingListForm.vue'
 
 const pillars = [
   {
@@ -61,20 +60,20 @@ const capabilities = [
       <div class="hero-glow" aria-hidden="true"></div>
 
       <div class="container hero-inner">
-        <span class="status"><span class="status-dot" aria-hidden="true"></span>In active development · Coming soon</span>
+        <span class="eyebrow">Local-first bioinformatics</span>
 
         <h1 class="name">Liatir</h1>
 
         <p class="headline">Bioinformatics on your machine.<br>Under your control.</p>
 
         <p class="tagline">
-          A desktop app that runs bioinformatics tools, AI, and pipelines locally.<br>Your data never leaves your machine 
+          A desktop app that runs bioinformatics tools, AI, and pipelines locally.<br>Your data never leaves your machine
           — Rust-powered native speed, even on multi-gigabyte files
         </p>
 
         <div class="actions">
-          <a class="btn btn-brand" href="#subscribe">Join the waiting list</a>
-          <a class="btn btn-alt" :href="withBase('/introduction/overview')">Read the docs</a>
+          <a class="btn btn-brand" :href="withBase('/introduction/overview')">Get started</a>
+          <a class="btn btn-alt" :href="withBase('/plugins/overview')">Build a plugin</a>
         </div>
 
         <p class="trust">No cloud · No servers · Completely Free</p>
@@ -154,12 +153,15 @@ const capabilities = [
       </div>
     </section>
 
-    <!-- ── Mailing list ─────────────────────────────────────── -->
-    <section id="subscribe" class="container band">
+    <!-- ── Closing CTA ──────────────────────────────────────── -->
+    <section class="container band">
       <div class="cta">
-        <h2>Stay in the loop</h2>
-        <p>Liatir is under active development. Subscribe for occasional updates and be the first to know when it launches — no spam, unsubscribe anytime.</p>
-        <MailingListForm />
+        <h2>Start where you are</h2>
+        <p>Run your first tool in minutes, then extend Liatir with your own plugins.</p>
+        <div class="actions">
+          <a class="btn btn-brand" :href="withBase('/introduction/overview')">Read the intro</a>
+          <a class="btn btn-alt" :href="withBase('/tools/overview')">Browse the tools</a>
+        </div>
       </div>
     </section>
   </div>
@@ -225,52 +227,6 @@ const capabilities = [
   border: 1px solid color-mix(in srgb, var(--vp-c-brand-1) 22%, transparent);
   padding: 6px 14px;
   border-radius: 999px;
-}
-
-/* ── Status pill (coming soon) ─────────────────────────── */
-.status {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--vp-c-brand-1);
-  background: var(--vp-c-brand-soft);
-  border: 1px solid color-mix(in srgb, var(--vp-c-brand-1) 22%, transparent);
-  padding: 6px 14px 6px 12px;
-  border-radius: 999px;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--vp-c-brand-1);
-  box-shadow: 0 0 0 0 color-mix(in srgb, var(--vp-c-brand-1) 60%, transparent);
-  animation: status-pulse 2s ease-out infinite;
-}
-
-@keyframes status-pulse {
-  0% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--vp-c-brand-1) 55%, transparent);
-  }
-  70% {
-    box-shadow: 0 0 0 7px color-mix(in srgb, var(--vp-c-brand-1) 0%, transparent);
-  }
-  100% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--vp-c-brand-1) 0%, transparent);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .status-dot {
-    animation: none;
-  }
-}
-
-#subscribe {
-  scroll-margin-top: 90px;
 }
 
 .name {

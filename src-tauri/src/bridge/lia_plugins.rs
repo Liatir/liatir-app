@@ -1,8 +1,15 @@
-use std::io::Read;
+use std::{
+    io::Read,
+    path::{Component, Path, PathBuf},
+};
 use tauri::AppHandle;
-use serde_json::Value;
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
+
+use super::python_env::{env_dir, prepare_env, spawn_in_env, PythonEnvPackage, PythonRequirement};
 
 const SIG: &str = "LIATIR/1";
+const PYTHON_PLUGIN_ENV_ROOT: &str = "plugin-runtimes";
 
 const RUNNER: &str = r#"import * as _mod from './index.js';
 // definePlugin(...) returns an object with .run; legacy shapes are accepted for older bundles.
@@ -24,6 +31,15 @@ try {
 }
 "#;
 
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+struct PythonPluginSpec {
+    entry: Option<String>,
+    packages: Option<Vec<PythonEnvPackage>>,
+    requirements: Option<Vec<String>>,
+    python_requirement: Option<PythonRequirement>,
+}
+
 fn open_validated(path: &str) -> Result<zip::ZipArchive<std::fs::File>, String> {
     let file = std::fs::File::open(path)
         .map_err(|e| format!("Cannot open: {e}"))?;
@@ -43,6 +59,144 @@ fn open_validated(path: &str) -> Result<zip::ZipArchive<std::fs::File>, String> 
     Ok(zip)
 }
 
+fn validate_relative_path(value: &str) -> Result<PathBuf, String> {
+    let path = Path::new(value);
+    if value.trim().is_empty() || path.is_absolute() {
+        return Err(format!("unsafe plugin payload path: {value}"));
+    }
+    for component in path.components() {
+        match component {
+            Component::Normal(_) => {}
+            _ => return Err(format!("unsafe plugin payload path: {value}")),
+        }
+    }
+    Ok(path.to_path_buf())
+}
+
+fn sanitize_env_part(value: &str, max_len: usize) -> String {
+    let mut clean = value
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c.to_ascii_lowercase() } else { '-' })
+        .collect::<String>();
+    while clean.contains("--") {
+        clean = clean.replace("--", "-");
+    }
+    clean = clean.trim_matches('-').to_string();
+    if clean.is_empty() {
+        clean = "plugin".to_string();
+    }
+    clean.chars().take(max_len).collect()
+}
+
+fn stable_hash_hex(bytes: &[u8]) -> String {
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for byte in bytes {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    format!("{hash:016x}")
+}
+
+fn python_plugin_env_id(manifest: &Value, bundle_hash: &str) -> String {
+    let name = manifest
+        .get("name")
+        .and_then(|value| value.as_str())
+        .unwrap_or("plugin");
+    let version = manifest
+        .get("version")
+        .and_then(|value| value.as_str())
+        .unwrap_or("0");
+    format!(
+        "plugin-{}-{}-{}",
+        sanitize_env_part(name, 28),
+        sanitize_env_part(version, 16),
+        &bundle_hash[..12.min(bundle_hash.len())]
+    )
+}
+
+fn parse_python_spec(manifest: &Value) -> Result<PythonPluginSpec, String> {
+    let mut spec = match manifest.get("python") {
+        Some(value) => serde_json::from_value::<PythonPluginSpec>(value.clone())
+            .map_err(|e| format!("Invalid python runtime spec in manifest: {e}"))?,
+        None => PythonPluginSpec::default(),
+    };
+
+    if spec.entry.is_none() {
+        spec.entry = Some("python/main.py".to_string());
+    }
+    Ok(spec)
+}
+
+fn extract_python_payload(
+    zip: &mut zip::ZipArchive<std::fs::File>,
+    target_root: &Path,
+) -> Result<(), String> {
+    std::fs::create_dir_all(target_root).map_err(|e| e.to_string())?;
+    let mut extracted = 0usize;
+
+    for index in 0..zip.len() {
+        let mut entry = zip.by_index(index).map_err(|e| e.to_string())?;
+        let name = entry.name().to_string();
+        if !name.starts_with("python/") || name.ends_with('/') {
+            continue;
+        }
+        let relative = validate_relative_path(&name)?;
+        let target = target_root.join(relative);
+        if let Some(parent) = target.parent() {
+            std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        }
+        let mut buf = Vec::new();
+        entry.read_to_end(&mut buf).map_err(|e| e.to_string())?;
+        std::fs::write(target, buf).map_err(|e| e.to_string())?;
+        extracted += 1;
+    }
+
+    if extracted == 0 {
+        return Err("Python .lia bundle has no python/ payload files".to_string());
+    }
+    Ok(())
+}
+
+fn python_plugin_runner(plugin_root: &Path, entry: &str) -> String {
+    format!(
+        r#"
+import asyncio
+import importlib.util
+import inspect
+import json
+import pathlib
+import sys
+import traceback
+
+plugin_root = pathlib.Path({plugin_root:?})
+entry_path = plugin_root / {entry:?}
+
+try:
+    payload = json.load(sys.stdin)
+    sys.path.insert(0, str(plugin_root))
+    sys.path.insert(0, str(entry_path.parent))
+    spec = importlib.util.spec_from_file_location("_liatir_python_plugin", entry_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Cannot load Python plugin entry: {{entry_path}}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    handler = getattr(module, "main", None)
+    if not callable(handler):
+        raise TypeError("Python .lia plugin must define a callable main(input) function.")
+    result = handler(payload)
+    if inspect.isawaitable(result):
+        result = asyncio.run(result)
+    if result is not None:
+        print("__LIATIR_RESULT__" + json.dumps(result))
+except Exception:
+    traceback.print_exc(file=sys.stderr)
+    sys.exit(1)
+"#,
+        plugin_root = plugin_root.to_string_lossy().to_string(),
+        entry = entry,
+    )
+}
+
 /// Read manifest.json from a .lia plugin, validating the signature first.
 #[tauri::command]
 pub async fn lia_liatir_read_manifest(path: String) -> Result<Value, String> {
@@ -54,7 +208,7 @@ pub async fn lia_liatir_read_manifest(path: String) -> Result<Value, String> {
     serde_json::from_str(&buf).map_err(|e| format!("Invalid manifest JSON: {e}"))
 }
 
-/// Extract a .lia plugin to a temp dir and spawn it with node.
+/// Run a .lia plugin with the runtime declared by its manifest.
 /// Returns the same {jobId} value as lia_jobs_spawn.
 #[tauri::command]
 pub async fn lia_liatir_run(
@@ -64,7 +218,7 @@ pub async fn lia_liatir_run(
 ) -> Result<Value, String> {
     let mut zip = open_validated(&path)?;
 
-    // Read the manifest to pick the runtime (node | wasm). Default: node.
+    // Read the manifest to pick the runtime (node | python | wasm). Default: node.
     let manifest: Value = {
         let mut buf = String::new();
         if let Ok(mut entry) = zip.by_name("manifest.json") {
@@ -136,6 +290,66 @@ pub async fn lia_liatir_run(
             host_read_paths,
         )
         .map_err(|e| e.to_string());
+    }
+
+    if runtime == "python" {
+        let spec = parse_python_spec(&manifest)?;
+        let entry = spec.entry.clone().unwrap_or_else(|| "python/main.py".to_string());
+        validate_relative_path(&entry)?;
+        let bundle_hash = stable_hash_hex(&std::fs::read(&path).map_err(|e| e.to_string())?);
+        let env_id = python_plugin_env_id(&manifest, &bundle_hash);
+        let app_for_prepare = app.clone();
+        let env_id_for_prepare = env_id.clone();
+        let requirements = spec.requirements.clone();
+        let packages = spec.packages.clone();
+        let python_requirement = spec.python_requirement.clone();
+        let prepared = tauri::async_runtime::spawn_blocking(move || {
+            prepare_env(
+                app_for_prepare,
+                PYTHON_PLUGIN_ENV_ROOT.to_string(),
+                env_id_for_prepare,
+                requirements,
+                packages,
+                None,
+                python_requirement,
+            )
+        })
+        .await
+        .map_err(|e| e.to_string())??;
+
+        let source_root = env_dir(&app, PYTHON_PLUGIN_ENV_ROOT, &env_id)?.join("plugin-source");
+        extract_python_payload(&mut zip, &source_root)?;
+
+        let plugin_name = manifest
+            .get("name")
+            .and_then(|value| value.as_str())
+            .unwrap_or("Python plugin")
+            .to_string();
+        let plugin_version = manifest
+            .get("version")
+            .and_then(|value| value.as_str())
+            .unwrap_or("0")
+            .to_string();
+        let metadata = json!({
+            "runtime": "python",
+            "pluginName": plugin_name,
+            "pluginVersion": plugin_version,
+            "runtimeLock": prepared.lock,
+        });
+
+        return spawn_in_env(
+            app,
+            PYTHON_PLUGIN_ENV_ROOT.to_string(),
+            env_id.clone(),
+            python_plugin_runner(&source_root, &entry),
+            Vec::new(),
+            inputs,
+            None,
+            Some(format!("Liatir Python plugin: {plugin_name}")),
+            "lia-plugin".to_string(),
+            Some(metadata),
+        )
+        .await;
     }
 
     // ── Node runtime (default): extract index.js and spawn node ────────────

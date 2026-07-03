@@ -1,16 +1,17 @@
 import { liatir } from '$lib/api';
+import type { PluginRuntime } from '$lib/stores/lia-plugins.svelte';
 
 /**
- * Execute a .lia plugin (Node OR WASM runtime) and collect its result.
+ * Execute a .lia plugin (Node, Python, or WASM runtime) and collect its result.
  *
  * Single source of truth for plugin execution, shared by the standalone runner
  * page and the pipeline engine. `lia_liatir_run` instruments the runtime:
- *  - Node  → returns `{ jobId }`; we stream `jobs:stdout/stderr/exit` events and
- *            parse the `__LIATIR_RESULT__` marker line for the structured result.
- *  - WASM  → returns the sandboxed result directly (`{ ok, value, stdout, … }`).
+ *  - Node/Python → return `{ jobId }`; buffered output is polled until exit and
+ *                  the runner marker is parsed for the structured result.
+ *  - WASM        → returns the sandboxed result directly (`{ ok, value, stdout, … }`).
  */
 export async function runLiatirPlugin(
-  plugin: { path: string; runtime: 'node' | 'wasm' },
+  plugin: { path: string; runtime: PluginRuntime },
   inputs: Record<string, unknown>,
   onLog?: (stream: 'stdout' | 'stderr', line: string) => void,
 ): Promise<{ result: unknown; stdout: string[]; stderr: string[]; exitCode: number }> {

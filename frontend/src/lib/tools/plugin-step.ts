@@ -50,12 +50,14 @@ function isJsonValue(value: unknown): value is JsonValue {
 
 /** Build the pipeline step definition (form + handles) for an imported .lia plugin. */
 export function pluginToDefinition(plugin: LiatirPlugin): PipelineStepDefinition {
+  const isWasm = plugin.runtime === 'wasm';
+  const runtimeLabel = plugin.runtime === 'python' ? 'Python plugin' : isWasm ? 'WASM custom tool (sandboxed)' : 'Liatir plugin';
   return {
     id: pluginStepId(plugin.id),
-    type: plugin.runtime === 'wasm' ? 'wasm-plugin' : 'lia-plugin',
+    type: isWasm ? 'wasm-plugin' : 'lia-plugin',
     label: plugin.name,
-    description: plugin.description || (plugin.runtime === 'wasm' ? 'WASM custom tool (sandboxed)' : 'Liatir plugin'),
-    category: plugin.runtime === 'wasm' ? 'Custom Tools' : 'Plugins',
+    description: plugin.description || runtimeLabel,
+    category: isWasm ? 'Custom Tools' : 'Plugins',
     inputSchema: mapInputs(plugin.inputSchema),
     outputSchema: mapOutputs(plugin.outputSchema),
   };

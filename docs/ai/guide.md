@@ -8,7 +8,7 @@ Liatir uses AI locally. That means model runtimes are installed on your machine,
 your input files stay on your machine, and runs are recorded in Jobs, Results,
 and provenance just like other tools.
 
-![Liatir local AI workflow](../static/ai-local-workflow.svg)
+![Liatir local AI workflow](/static/ai-local-workflow.svg)
 
 ## The three pieces
 

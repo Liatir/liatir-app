@@ -1,11 +1,12 @@
 import { liatir } from '$lib/api';
 import { appStorage } from './app-storage';
 import { getDataPrefix } from './workspace.svelte';
-import type { LiatirInputFieldSchema, LiatirOutputFieldSchema } from '@liatir/core';
+import type { LiatirInputFieldSchema, LiatirOutputFieldSchema, LiatirPluginRuntime } from '@liatir/core';
 
 export type PluginInputFieldDef = LiatirInputFieldSchema<string | number | boolean>;
 export type PluginOutputFieldDef = LiatirOutputFieldSchema;
 export type FieldDef = PluginInputFieldDef;
+export type PluginRuntime = LiatirPluginRuntime;
 
 export interface LiatirPlugin {
   id: string;
@@ -14,8 +15,8 @@ export interface LiatirPlugin {
   description: string;
   category: string;
   tags: string[];
-  /** Execution runtime declared in the manifest: Node subprocess or sandboxed WASM. */
-  runtime: 'node' | 'wasm';
+  /** Execution runtime declared in the manifest: Node subprocess, Python venv, or sandboxed WASM. */
+  runtime: PluginRuntime;
   path: string;
   inputSchema: Record<string, PluginInputFieldDef>;
   outputSchema: Record<string, PluginOutputFieldDef>;
@@ -35,7 +36,12 @@ function normalizeTags(tags: unknown): string[] {
   )];
 }
 
-function normalizeCategory(category: unknown, runtime: 'node' | 'wasm'): string {
+function normalizeRuntime(runtime: unknown): PluginRuntime {
+  if (runtime === 'wasm' || runtime === 'python') return runtime;
+  return 'node';
+}
+
+function normalizeCategory(category: unknown, runtime: PluginRuntime): string {
   if (typeof category === 'string' && category.trim()) {
     const cleanCategory = category.trim();
     if (cleanCategory === 'WASM Modules') return 'WASM Plugins';
@@ -43,11 +49,12 @@ function normalizeCategory(category: unknown, runtime: 'node' | 'wasm'): string 
     if (cleanCategory === 'Modules') return 'Plugins';
     return cleanCategory;
   }
+  if (runtime === 'python') return 'Python Plugins';
   return runtime === 'wasm' ? 'WASM Plugins' : 'Node Plugins';
 }
 
 function normalizePersistedPlugin(plugin: LiatirPlugin): LiatirPlugin {
-  const runtime = plugin.runtime === 'wasm' ? 'wasm' : 'node';
+  const runtime = normalizeRuntime(plugin.runtime);
   return {
     ...plugin,
     runtime,
@@ -110,14 +117,14 @@ function createLiaPluginsStore() {
         name: string;
         version: string;
         description?: string;
-        runtime?: 'node' | 'wasm';
+        runtime?: PluginRuntime;
         category?: string;
         tags?: string[];
         inputSchema?: Record<string, PluginInputFieldDef>;
         outputSchema?: Record<string, PluginOutputFieldDef>;
       };
       // Manifest declares the runtime; default to Node for backward compatibility.
-      const runtime: 'node' | 'wasm' = manifest.runtime === 'wasm' ? 'wasm' : 'node';
+      const runtime = normalizeRuntime(manifest.runtime);
       const category = normalizeCategory(manifest.category, runtime);
       const manifestTags = normalizeTags(manifest.tags);
 

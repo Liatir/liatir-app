@@ -1,0 +1,17 @@
+{
+  "name": "liatir-docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview",
+    "deploy": "npm run build && npx wrangler pages deploy"
+  },
+  "devDependencies": {
+    "vitepress": "^2.0.0-alpha.17"
+  },
+  "dependencies": {
+    "wrangler": "^4.107.0"
+  }
+}

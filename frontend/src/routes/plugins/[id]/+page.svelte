@@ -60,8 +60,8 @@
     dataFiles.init();
 
     const api = liatir();
-    // Node availability only matters for Node-runtime plugins; WASM runs sandboxed in-process.
-    if (api && mod.runtime !== 'wasm') {
+    // Node availability only matters for Node-runtime plugins.
+    if (api && mod.runtime === 'node') {
       const check = await api.deps.check('node');
       nodeAvailable = check.available;
     }
@@ -139,7 +139,9 @@
   const succeeded = $derived(exitCode === 0);
 
   function runtimeLabel(runtime: LiatirPlugin['runtime']) {
-    return runtime === 'wasm' ? 'WASM .lia' : 'Node .lia';
+    if (runtime === 'wasm') return 'WASM .lia';
+    if (runtime === 'python') return 'Python .lia';
+    return 'Node .lia';
   }
 </script>
 
@@ -155,7 +157,7 @@
     <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
       <Card>
         <div class="px-4 py-3 flex flex-wrap items-center gap-2 capitalize">
-          <Badge hideDot size="xs" variant="brand">{mod.runtime}</Badge>
+          <Badge hideDot size="xs" variant="brand">{runtimeLabel(mod.runtime).replace('.lia', '')}</Badge>
           <Badge hideDot size="xs" variant="neutral">{mod.category}</Badge>
           {#each mod.tags ?? [] as tag}
             <span class="rounded px-1.5 py-0.5 text-[10px] font-medium border bg-white text-zinc-500 border-zinc-200">

@@ -42,7 +42,7 @@ pub struct PythonEnvSource {
     pub python_path: Option<bool>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PythonRequirement {
     pub min_version: Option<String>,
