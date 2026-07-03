@@ -393,7 +393,9 @@ pub fn prepare_env(
         let (out, err) = install_runtime_packages(uv.as_deref(), &py, &dir, &packages)?;
         stdout.push_str(&out);
         stderr.push_str(&err);
-    } else if !requirements.is_empty() {
+    }
+
+    if !requirements.is_empty() {
         stdout.push_str("Installing Python environment packages.\n");
         let (out, err) =
             install_python_requirements(uv.as_deref(), &py, &dir, &requirements, false, false)?;
@@ -1351,5 +1353,50 @@ mod tests {
             String::from_utf8_lossy(&output.stdout).trim(),
             r#"{"missing": []}"#
         );
+    }
+
+    #[test]
+    fn python_requirement_matching_enforces_min_and_exclusive_max() {
+        let requirement = PythonRequirement {
+            min_version: Some("3.10".to_string()),
+            max_version_exclusive: Some("3.13".to_string()),
+            label: None,
+            reason: None,
+        };
+
+        assert!(python_requirement_matches("Python 3.10.13", Some(&requirement)));
+        assert!(python_requirement_matches("Python 3.12.9", Some(&requirement)));
+        assert!(!python_requirement_matches("Python 3.9.18", Some(&requirement)));
+        assert!(!python_requirement_matches("Python 3.13.0", Some(&requirement)));
+    }
+
+    #[test]
+    fn runtime_relative_paths_reject_escape_attempts() {
+        assert!(validate_runtime_relative_path("repo/subdir").is_ok());
+        assert!(validate_runtime_relative_path("../outside").is_err());
+        assert!(validate_runtime_relative_path("repo/../outside").is_err());
+        assert!(validate_runtime_relative_path("").is_err());
+        assert!(validate_runtime_relative_path("/absolute/path").is_err());
+    }
+
+    #[test]
+    fn runtime_package_requirement_prefers_explicit_specifier() {
+        let package = PythonEnvPackage {
+            package: "example".to_string(),
+            version: Some("1.2.3".to_string()),
+            import_name: Some("example".to_string()),
+            specifier: Some("example>=1,<2".to_string()),
+            install_options: None,
+        };
+        assert_eq!(runtime_package_requirement(&package), "example>=1,<2");
+
+        let package = PythonEnvPackage {
+            package: "example".to_string(),
+            version: Some("1.2.3".to_string()),
+            import_name: None,
+            specifier: None,
+            install_options: None,
+        };
+        assert_eq!(runtime_package_requirement(&package), "example==1.2.3");
     }
 }

@@ -941,6 +941,7 @@ Created ${config.projectName}/ (Python .lia plugin)
 
 Next steps:
   cd ${shellQuote(config.nextStepDir)}
+  liatir dev --input '{"text":"hello from Liatir"}'
   liatir build      # package into .liatir/
 `);
 }

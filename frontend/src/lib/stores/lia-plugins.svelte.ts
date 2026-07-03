@@ -1,7 +1,13 @@
 import { liatir } from '$lib/api';
 import { appStorage } from './app-storage';
 import { getDataPrefix } from './workspace.svelte';
-import type { LiatirInputFieldSchema, LiatirOutputFieldSchema, LiatirPluginRuntime } from '@liatir/core';
+import type {
+  LiatirInputFieldSchema,
+  LiatirOutputFieldSchema,
+  LiatirPluginRuntime,
+  LiatirPythonPluginRuntimeSpec,
+  LiatirPythonRuntimeLock,
+} from '@liatir/core';
 
 export type PluginInputFieldDef = LiatirInputFieldSchema<string | number | boolean>;
 export type PluginOutputFieldDef = LiatirOutputFieldSchema;
@@ -17,11 +23,45 @@ export interface LiatirPlugin {
   tags: string[];
   /** Execution runtime declared in the manifest: Node subprocess, Python venv, or sandboxed WASM. */
   runtime: PluginRuntime;
+  python?: LiatirPythonPluginRuntimeSpec;
   path: string;
   inputSchema: Record<string, PluginInputFieldDef>;
   outputSchema: Record<string, PluginOutputFieldDef>;
   addedAt: number;
 }
+
+export interface PythonPluginRuntimeState {
+  phase: 'idle' | 'checking' | 'ready' | 'not-prepared' | 'preparing' | 'error';
+  installed: boolean;
+  envId?: string;
+  pythonPath?: string;
+  pythonVersion?: string;
+  sizeBytes?: number;
+  missingPackages: string[];
+  error?: string;
+  lock?: LiatirPythonRuntimeLock;
+  checkedAt?: number;
+  updatedAt?: number;
+}
+
+interface PythonEnvStatusResponse {
+  envId: string;
+  pythonPath?: string | null;
+  installed: boolean;
+  missingPackages?: string[];
+  error?: string | null;
+  sizeBytes?: number | null;
+  lock?: LiatirPythonRuntimeLock | null;
+}
+
+interface PythonEnvPrepareResponse {
+  envId: string;
+  pythonPath: string;
+  sizeBytes?: number | null;
+  lock?: LiatirPythonRuntimeLock | null;
+}
+
+const pendingRuntimeTasks = new Map<string, Promise<PythonPluginRuntimeState | null>>();
 
 function getFile() { return `${getDataPrefix()}liatir-plugins.json`; }
 function getLegacyFile() { return `${getDataPrefix()}liatir-modules.json`; }
@@ -58,6 +98,7 @@ function normalizePersistedPlugin(plugin: LiatirPlugin): LiatirPlugin {
   return {
     ...plugin,
     runtime,
+    python: runtime === 'python' ? plugin.python : undefined,
     category: normalizeCategory(plugin.category, runtime),
     tags: normalizeTags(plugin.tags),
     inputSchema: plugin.inputSchema ?? {},
@@ -65,8 +106,43 @@ function normalizePersistedPlugin(plugin: LiatirPlugin): LiatirPlugin {
   };
 }
 
+function stateFromPythonStatus(status: PythonEnvStatusResponse): PythonPluginRuntimeState {
+  const missingPackages = status.missingPackages ?? [];
+  const error = status.error ?? undefined;
+  const installed = status.installed && missingPackages.length === 0 && !error;
+  return {
+    phase: error ? 'error' : installed ? 'ready' : 'not-prepared',
+    installed,
+    envId: status.envId,
+    pythonPath: status.pythonPath ?? undefined,
+    pythonVersion: status.lock?.pythonVersion,
+    sizeBytes: status.sizeBytes ?? undefined,
+    missingPackages,
+    error,
+    lock: status.lock ?? undefined,
+    checkedAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+}
+
+function stateFromPythonPrepare(prepared: PythonEnvPrepareResponse): PythonPluginRuntimeState {
+  return {
+    phase: 'ready',
+    installed: true,
+    envId: prepared.envId,
+    pythonPath: prepared.pythonPath,
+    pythonVersion: prepared.lock?.pythonVersion,
+    sizeBytes: prepared.sizeBytes ?? undefined,
+    missingPackages: [],
+    lock: prepared.lock ?? undefined,
+    checkedAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+}
+
 function createLiaPluginsStore() {
   let plugins = $state<LiatirPlugin[]>([]);
+  let pythonRuntimeStates = $state<Record<string, PythonPluginRuntimeState>>({});
   let initialized = false;
 
   async function persist() {
@@ -75,6 +151,7 @@ function createLiaPluginsStore() {
 
   return {
     get plugins() { return plugins; },
+    get pythonRuntimeStates() { return pythonRuntimeStates; },
 
     async init() {
       if (initialized) return;
@@ -101,6 +178,8 @@ function createLiaPluginsStore() {
     reset() {
       initialized = false;
       plugins = [];
+      pythonRuntimeStates = {};
+      pendingRuntimeTasks.clear();
     },
 
     async importFromPicker(): Promise<LiatirPlugin | null> {
@@ -122,6 +201,7 @@ function createLiaPluginsStore() {
         tags?: string[];
         inputSchema?: Record<string, PluginInputFieldDef>;
         outputSchema?: Record<string, PluginOutputFieldDef>;
+        python?: LiatirPythonPluginRuntimeSpec;
       };
       // Manifest declares the runtime; default to Node for backward compatibility.
       const runtime = normalizeRuntime(manifest.runtime);
@@ -138,6 +218,7 @@ function createLiaPluginsStore() {
               version: manifest.version,
               description: manifest.description ?? '',
               runtime,
+              python: runtime === 'python' ? manifest.python : undefined,
               category,
               tags: [...new Set([...manifestTags, ...(m.tags ?? [])])],
               inputSchema: manifest.inputSchema ?? {},
@@ -157,6 +238,7 @@ function createLiaPluginsStore() {
         category,
         tags: manifestTags,
         runtime,
+        python: runtime === 'python' ? manifest.python : undefined,
         path,
         inputSchema: manifest.inputSchema ?? {},
         outputSchema: manifest.outputSchema ?? {},
@@ -200,6 +282,138 @@ function createLiaPluginsStore() {
 
     byId(id: string): LiatirPlugin | null {
       return plugins.find(m => m.id === id) ?? null;
+    },
+
+    runtimeState(id: string): PythonPluginRuntimeState | null {
+      return pythonRuntimeStates[id] ?? null;
+    },
+
+    async ensurePythonRuntimeStatus(id: string): Promise<PythonPluginRuntimeState | null> {
+      const existing = pythonRuntimeStates[id];
+      if (existing && existing.phase !== 'checking' && existing.phase !== 'preparing') return existing;
+      return this.refreshPythonRuntimeStatus(id);
+    },
+
+    async refreshPythonRuntimeStatus(id: string): Promise<PythonPluginRuntimeState | null> {
+      const plugin = plugins.find(item => item.id === id);
+      if (!plugin || plugin.runtime !== 'python') return null;
+      const key = `status:${id}`;
+      const pending = pendingRuntimeTasks.get(key);
+      if (pending) return pending;
+
+      const task = (async () => {
+        const previous = pythonRuntimeStates[id];
+        pythonRuntimeStates = {
+          ...pythonRuntimeStates,
+          [id]: {
+            phase: 'checking',
+            installed: previous?.installed ?? false,
+            envId: previous?.envId,
+            pythonPath: previous?.pythonPath,
+            pythonVersion: previous?.pythonVersion,
+            sizeBytes: previous?.sizeBytes,
+            missingPackages: previous?.missingPackages ?? [],
+            lock: previous?.lock,
+            checkedAt: previous?.checkedAt,
+            updatedAt: Date.now(),
+          },
+        };
+
+        const api = liatir();
+        if (!api) {
+          const state: PythonPluginRuntimeState = {
+            phase: 'error',
+            installed: false,
+            missingPackages: [],
+            error: 'Liatir API not available',
+            updatedAt: Date.now(),
+          };
+          pythonRuntimeStates = { ...pythonRuntimeStates, [id]: state };
+          return state;
+        }
+
+        try {
+          const status = await api.invoke('lia_liatir_python_runtime_status', { path: plugin.path }) as PythonEnvStatusResponse;
+          const state = stateFromPythonStatus(status);
+          pythonRuntimeStates = { ...pythonRuntimeStates, [id]: state };
+          return state;
+        } catch (error) {
+          const state: PythonPluginRuntimeState = {
+            phase: 'error',
+            installed: false,
+            missingPackages: [],
+            error: String(error),
+            checkedAt: Date.now(),
+            updatedAt: Date.now(),
+          };
+          pythonRuntimeStates = { ...pythonRuntimeStates, [id]: state };
+          return state;
+        }
+      })().finally(() => pendingRuntimeTasks.delete(key));
+
+      pendingRuntimeTasks.set(key, task);
+      return task;
+    },
+
+    async preparePythonRuntime(id: string): Promise<PythonPluginRuntimeState | null> {
+      const plugin = plugins.find(item => item.id === id);
+      if (!plugin || plugin.runtime !== 'python') return null;
+      const key = `prepare:${id}`;
+      const pending = pendingRuntimeTasks.get(key);
+      if (pending) return pending;
+
+      const task = (async () => {
+        const previous = pythonRuntimeStates[id];
+        pythonRuntimeStates = {
+          ...pythonRuntimeStates,
+          [id]: {
+            phase: 'preparing',
+            installed: previous?.installed ?? false,
+            envId: previous?.envId,
+            pythonPath: previous?.pythonPath,
+            pythonVersion: previous?.pythonVersion,
+            sizeBytes: previous?.sizeBytes,
+            missingPackages: previous?.missingPackages ?? [],
+            lock: previous?.lock,
+            checkedAt: previous?.checkedAt,
+            updatedAt: Date.now(),
+          },
+        };
+
+        const api = liatir();
+        if (!api) {
+          const state: PythonPluginRuntimeState = {
+            phase: 'error',
+            installed: false,
+            missingPackages: [],
+            error: 'Liatir API not available',
+            updatedAt: Date.now(),
+          };
+          pythonRuntimeStates = { ...pythonRuntimeStates, [id]: state };
+          return state;
+        }
+
+        try {
+          const prepared = await api.invoke('lia_liatir_python_runtime_prepare', { path: plugin.path }) as PythonEnvPrepareResponse;
+          const state = stateFromPythonPrepare(prepared);
+          pythonRuntimeStates = { ...pythonRuntimeStates, [id]: state };
+          return state;
+        } catch (error) {
+          const state: PythonPluginRuntimeState = {
+            phase: 'error',
+            installed: false,
+            missingPackages: [],
+            error: String(error),
+            checkedAt: Date.now(),
+            updatedAt: Date.now(),
+          };
+          pythonRuntimeStates = { ...pythonRuntimeStates, [id]: state };
+          return state;
+        }
+      })().finally(() => pendingRuntimeTasks.delete(key));
+
+      pendingRuntimeTasks.set(key, task);
+      return task;
     },
   };
 }

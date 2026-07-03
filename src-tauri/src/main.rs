@@ -420,6 +420,8 @@ fn main() {
 
       // .lia plugins
       lia_liatir_read_manifest,
+      lia_liatir_python_runtime_status,
+      lia_liatir_python_runtime_prepare,
       lia_liatir_run,
       lia_plugin_save_output,
       lia_plugin_delete_output,

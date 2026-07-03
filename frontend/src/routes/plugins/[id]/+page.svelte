@@ -14,7 +14,7 @@
   import { runLiatirPlugin } from '$lib/utils/plugin-run';
   import { matchesAcceptedExtension } from '$lib/utils/file-extensions';
   import { toast } from '$lib/stores/toast.svelte';
-  import { getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
+  import { fmtBytes, getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
 
   const id = $derived((page.params as { id: string }).id);
@@ -34,6 +34,10 @@
 
   // Node.js availability
   let nodeAvailable = $state<boolean | null>(null);
+
+  const pythonRuntimeState = $derived(mod?.runtime === 'python' ? liaPluginsStore.pythonRuntimeStates[mod.id] ?? null : null);
+  const pythonRuntimeBusy = $derived(pythonRuntimeState?.phase === 'checking' || pythonRuntimeState?.phase === 'preparing');
+  const pythonRuntimeReady = $derived(mod?.runtime !== 'python' || pythonRuntimeState?.phase === 'ready');
 
   function resetRunOutput() {
     running = false;
@@ -65,6 +69,10 @@
       const check = await api.deps.check('node');
       nodeAvailable = check.available;
     }
+
+    if (mod.runtime === 'python') {
+      await liaPluginsStore.ensurePythonRuntimeStatus(mod.id);
+    }
   });
 
   function inputFields(schema: Record<string, FieldDef>) {
@@ -88,10 +96,27 @@
 
   const canRun = $derived(
     !running &&
+    !pythonRuntimeBusy &&
+    pythonRuntimeReady &&
     nodeAvailable !== false &&
     !!mod &&
     Object.entries(mod.inputSchema).every(([key, field]) => fieldHasValue(key, field))
   );
+
+  async function preparePythonRuntime() {
+    if (!mod || mod.runtime !== 'python') return;
+    const state = await liaPluginsStore.preparePythonRuntime(mod.id);
+    if (state?.phase === 'ready') {
+      toast.success('Python runtime is ready');
+    } else if (state?.error) {
+      toast.error('Failed to prepare Python runtime');
+    }
+  }
+
+  async function refreshPythonRuntime() {
+    if (!mod || mod.runtime !== 'python') return;
+    await liaPluginsStore.refreshPythonRuntimeStatus(mod.id);
+  }
 
   async function run() {
     if (!mod) return;
@@ -143,6 +168,28 @@
     if (runtime === 'python') return 'Python .lia';
     return 'Node .lia';
   }
+
+  function pythonRuntimeSummary(): string {
+    const state = pythonRuntimeState;
+    if (!state || state.phase === 'checking') return 'Checking the managed Python runtime for this plugin.';
+    if (state.phase === 'preparing') return 'Preparing the managed Python runtime for this plugin.';
+    if (state.phase === 'ready') {
+      const parts = ['Ready'];
+      if (state.pythonVersion) parts.push(state.pythonVersion);
+      if (state.sizeBytes) parts.push(fmtBytes(state.sizeBytes));
+      return parts.join(' · ');
+    }
+    if (state.phase === 'not-prepared') return 'Runtime not prepared yet. Prepare it once before running this plugin.';
+    return sanitizeLocalPathsForDisplay(state.error ?? 'Runtime needs attention.', 2);
+  }
+
+  function declaredPythonPackages(): string[] {
+    if (!mod?.python) return [];
+    return [
+      ...(mod.python.packages ?? []).map((pkg) => pkg.specifier ?? (pkg.version ? `${pkg.package}==${pkg.version}` : pkg.package)),
+      ...(mod.python.requirements ?? []),
+    ];
+  }
 </script>
 
 {#if mod}
@@ -184,6 +231,60 @@
         </Card>
       {/if}
 
+      {#if mod.runtime === 'python'}
+        <Card>
+          <div class="px-4 py-4 flex flex-col gap-4">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <p class="text-sm font-medium text-zinc-700">Python runtime</p>
+                  <Badge
+                    hideDot
+                    size="xs"
+                    variant={pythonRuntimeState?.phase === 'ready' ? 'available' : pythonRuntimeState?.phase === 'error' ? 'missing' : 'neutral'}
+                  >
+                    {pythonRuntimeState?.phase === 'ready' ? 'Ready' : pythonRuntimeState?.phase === 'preparing' ? 'Preparing' : pythonRuntimeState?.phase === 'checking' ? 'Checking' : pythonRuntimeState?.phase === 'error' ? 'Needs attention' : 'Not prepared'}
+                  </Badge>
+                </div>
+                <p class="mt-1 text-xs text-zinc-500">{pythonRuntimeSummary()}</p>
+                {#if declaredPythonPackages().length > 0}
+                  <p class="mt-2 text-[11px] text-zinc-400">
+                    Dependencies: {declaredPythonPackages().slice(0, 4).join(', ')}{declaredPythonPackages().length > 4 ? ` +${declaredPythonPackages().length - 4}` : ''}
+                  </p>
+                {:else}
+                  <p class="mt-2 text-[11px] text-zinc-400">No external Python packages declared.</p>
+                {/if}
+                {#if pythonRuntimeState?.missingPackages?.length}
+                  <p class="mt-2 text-[11px] text-amber-600">
+                    Missing packages: {pythonRuntimeState.missingPackages.join(', ')}
+                  </p>
+                {/if}
+              </div>
+
+              <div class="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onclick={refreshPythonRuntime}
+                  disabled={pythonRuntimeBusy || running}
+                >
+                  Refresh
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onclick={preparePythonRuntime}
+                  loading={pythonRuntimeState?.phase === 'preparing'}
+                  disabled={pythonRuntimeBusy || running}
+                >
+                  Prepare runtime
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Card>
+      {/if}
+
       <!-- Input form -->
       <Card>
         <div class="px-4 py-3 border-b border-border">
@@ -212,7 +313,7 @@
                         description: getLastSegmentsStringFromPath(file.path, 2)
                       }))
                     ]}
-                    disabled={running}
+                    disabled={running || pythonRuntimeBusy}
                     searchable
                     onchange={(value) => (values[key] = value)}
                   />
@@ -222,7 +323,7 @@
                       id="field-{key}"
                       type="checkbox"
                       bind:checked={values[key] as boolean}
-                      disabled={running}
+                      disabled={running || pythonRuntimeBusy}
                       class="rounded border-border text-brand"
                     />
                     <span class="text-sm text-zinc-600">{field.description ?? ''}</span>
@@ -233,7 +334,7 @@
                     type="number"
                     bind:value={values[key]}
                     placeholder={String(field.default ?? '')}
-                    disabled={running}
+                    disabled={running || pythonRuntimeBusy}
                     class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand/60 transition-colors"
                   />
                 {:else}
@@ -242,7 +343,7 @@
                     type="text"
                     bind:value={values[key]}
                     placeholder={String(field.default ?? '')}
-                    disabled={running}
+                    disabled={running || pythonRuntimeBusy}
                     class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand/60 transition-colors"
                   />
                 {/if}
@@ -262,7 +363,7 @@
               disabled={!canRun}
               onclick={run}
             >
-              {running ? 'Running…' : 'Run'}
+              {running ? 'Running…' : mod.runtime === 'python' && !pythonRuntimeReady ? 'Prepare runtime first' : 'Run'}
             </Button>
           </div>
         </div>

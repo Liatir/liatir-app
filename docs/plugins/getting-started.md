@@ -39,6 +39,7 @@ liatir init
 
 2. **Runtime** — how the plugin runs:
    - **Node** — JavaScript/TypeScript with the full Liatir desktop bridge.
+   - **Python** — managed Python environment for Python scripts and scientific packages.
    - **WASM** — Rust compiled to WASM, for sandboxed local computation.
 
 3. **Node language** *(Node runtime only)*:
@@ -65,6 +66,7 @@ liatir init                            # full guided initialization
 liatir init plugin-name --yes          # uses recommended defaults
 liatir init plugin-name --node --ts    # Node TypeScript plugin
 liatir init plugin-name --node --js    # Node JavaScript plugin
+liatir init plugin-name --python       # Python plugin
 liatir init plugin-name --wasm         # Rust/WASM plugin
 liatir init plugin-name --template <TEMPLATE_NAME>
 liatir init plugin-name --category "Quality Control" --tags "FASTQ,QC"

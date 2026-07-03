@@ -1,6 +1,6 @@
 # Plugins (.lia)
 
-Build anything on top of Liatir: .lia plugins are based on Node or WASM, so if you can build it in Node or WASM, you can plug it into Liatir.
+Build anything on top of Liatir: `.lia` plugins can run with Node, Python, or WASM, so you can choose the runtime that fits the job.
 They appear in the Plugins area and can run as pipeline nodes or by itself, just like Liatir native tools.
 
 A `.lia` plugin file is a bundle built with `@liatir/cli` and imported into Liatir. It declares:
@@ -8,7 +8,7 @@ A `.lia` plugin file is a bundle built with `@liatir/cli` and imported into Liat
 - metadata such as name, version, description, category, and tags;
 - input fields shown in the UI;
 - output fields that later pipeline steps can consume;
-- the runtime, either `node` or `wasm`.
+- the runtime: `node`, `python`, or `wasm`.
 
 :::info
 Plugins must follow the **Liatir I/O standard**, but don't worry — the **Liatir CLI** scaffolds that for you.
@@ -62,7 +62,7 @@ from `.main(...)`; Liatir handles packaging, execution, logs, and result parsing
 
 ## What a Node plugin can use
 
-The `lia` object passed to `.main(...)` is a Node bridge to the running Liatir
+The `Liatir` object passed to `.main(...)` is a Node bridge to the running Liatir
 app. It includes:
 
 - `Liatir.jobs` for running and tracking local command-line processes;
@@ -86,6 +86,29 @@ sandboxed than Node plugins:
 - no arbitrary host filesystem or network access is available;
 - directories containing declared file inputs are mounted read-only by Liatir.
 
+## Python plugins
+
+Python `.lia` plugins are useful for scientific Python code and libraries such
+as parsers, statistics packages, and analysis helpers. They use a
+`.lia-manifest.json` file for the input/output schema and a Python entry point,
+usually `src/main.py`.
+
+```python
+def main(input):
+    text = str(input.get("text", ""))
+    return {
+        "length": len(text),
+    }
+```
+
+Python plugins run in isolated managed Python environments. The plugin manifest
+can declare packages and requirements; Liatir prepares that runtime box before
+execution and shows its status and installed size in the Plugins UI.
+
+Python plugins do not receive the Node `Liatir` bridge. Use Node plugins when a
+plugin needs to spawn Liatir jobs, call bridge APIs, or interact with app
+services directly.
+
 ---
 
 <br>
@@ -93,6 +116,7 @@ sandboxed than Node plugins:
 :::info
 - Use WASM for portable, sandboxed computation. 
 - Use Node plugins when you need the Liatir bridge, local process management, or the flexibility of the Node environment and libraries.
+- Use Python plugins when the implementation depends on Python libraries or scientific Python workflows.
 :::
 
 <style>

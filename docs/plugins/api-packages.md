@@ -48,7 +48,7 @@ that schema, and `liatir build` generates the `.lia` manifest from it.
 
 ## Node plugin bridge
 
-Inside `.main(...)`, the `lia` object is a Node bridge to the running Liatir app.
+Inside `.main(...)`, the `Liatir` object is a Node bridge to the running Liatir app.
 It is not the same type as `window.Liatir`, because a headless Node process does
 not support GUI-only APIs.
 

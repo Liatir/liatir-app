@@ -6,7 +6,10 @@ use tauri::AppHandle;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use super::python_env::{env_dir, prepare_env, spawn_in_env, PythonEnvPackage, PythonRequirement};
+use super::python_env::{
+    env_dir, prepare_env, spawn_in_env, status_env, PythonEnvLock, PythonEnvPackage,
+    PythonEnvStatus, PythonRequirement,
+};
 
 const SIG: &str = "LIATIR/1";
 const PYTHON_PLUGIN_ENV_ROOT: &str = "plugin-runtimes";
@@ -38,6 +41,14 @@ struct PythonPluginSpec {
     packages: Option<Vec<PythonEnvPackage>>,
     requirements: Option<Vec<String>>,
     python_requirement: Option<PythonRequirement>,
+}
+
+#[derive(Debug, Clone)]
+struct PythonPluginRuntimeContext {
+    manifest: Value,
+    spec: PythonPluginSpec,
+    entry: String,
+    env_id: String,
 }
 
 fn open_validated(path: &str) -> Result<zip::ZipArchive<std::fs::File>, String> {
@@ -127,6 +138,84 @@ fn parse_python_spec(manifest: &Value) -> Result<PythonPluginSpec, String> {
     Ok(spec)
 }
 
+fn read_manifest(zip: &mut zip::ZipArchive<std::fs::File>) -> Result<Value, String> {
+    let mut entry = zip
+        .by_name("manifest.json")
+        .map_err(|_| "manifest.json not found in bundle".to_string())?;
+    let mut buf = String::new();
+    entry.read_to_string(&mut buf).map_err(|e| e.to_string())?;
+    serde_json::from_str(&buf).map_err(|e| format!("Invalid manifest JSON: {e}"))
+}
+
+fn python_runtime_context(path: &str, manifest: Value) -> Result<PythonPluginRuntimeContext, String> {
+    let runtime = manifest
+        .get("runtime")
+        .and_then(|r| r.as_str())
+        .unwrap_or("node");
+    if runtime != "python" {
+        return Err("This .lia plugin does not declare the Python runtime.".to_string());
+    }
+
+    let spec = parse_python_spec(&manifest)?;
+    let entry = spec
+        .entry
+        .clone()
+        .unwrap_or_else(|| "python/main.py".to_string());
+    validate_relative_path(&entry)?;
+    let bundle_hash = stable_hash_hex(&std::fs::read(path).map_err(|e| e.to_string())?);
+    let env_id = python_plugin_env_id(&manifest, &bundle_hash);
+
+    Ok(PythonPluginRuntimeContext {
+        manifest,
+        spec,
+        entry,
+        env_id,
+    })
+}
+
+fn status_python_plugin_env(
+    app: AppHandle,
+    env_id: String,
+    spec: &PythonPluginSpec,
+) -> Result<PythonEnvStatus, String> {
+    status_env(
+        app,
+        PYTHON_PLUGIN_ENV_ROOT.to_string(),
+        env_id,
+        spec.packages.clone().unwrap_or_default(),
+        Vec::new(),
+    )
+}
+
+fn prepare_python_plugin_env(
+    app: AppHandle,
+    env_id: String,
+    spec: &PythonPluginSpec,
+) -> Result<super::python_env::PythonEnvPrepareResult, String> {
+    prepare_env(
+        app,
+        PYTHON_PLUGIN_ENV_ROOT.to_string(),
+        env_id,
+        spec.requirements.clone(),
+        spec.packages.clone(),
+        None,
+        spec.python_requirement.clone(),
+    )
+}
+
+fn ensure_python_plugin_env(
+    app: AppHandle,
+    env_id: String,
+    spec: &PythonPluginSpec,
+) -> Result<Option<PythonEnvLock>, String> {
+    let status = status_python_plugin_env(app.clone(), env_id.clone(), spec)?;
+    if status.installed {
+        return Ok(status.lock);
+    }
+    let prepared = prepare_python_plugin_env(app, env_id, spec)?;
+    Ok(prepared.lock)
+}
+
 fn extract_python_payload(
     zip: &mut zip::ZipArchive<std::fs::File>,
     target_root: &Path,
@@ -201,11 +290,39 @@ except Exception:
 #[tauri::command]
 pub async fn lia_liatir_read_manifest(path: String) -> Result<Value, String> {
     let mut zip = open_validated(&path)?;
-    let mut entry = zip.by_name("manifest.json")
-        .map_err(|_| "manifest.json not found in bundle".to_string())?;
-    let mut buf = String::new();
-    entry.read_to_string(&mut buf).map_err(|e| e.to_string())?;
-    serde_json::from_str(&buf).map_err(|e| format!("Invalid manifest JSON: {e}"))
+    read_manifest(&mut zip)
+}
+
+#[tauri::command]
+pub async fn lia_liatir_python_runtime_status(
+    app: AppHandle,
+    path: String,
+) -> Result<PythonEnvStatus, String> {
+    let mut zip = open_validated(&path)?;
+    let manifest = read_manifest(&mut zip)?;
+    let context = python_runtime_context(&path, manifest)?;
+    let app_for_status = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        status_python_plugin_env(app_for_status, context.env_id, &context.spec)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn lia_liatir_python_runtime_prepare(
+    app: AppHandle,
+    path: String,
+) -> Result<super::python_env::PythonEnvPrepareResult, String> {
+    let mut zip = open_validated(&path)?;
+    let manifest = read_manifest(&mut zip)?;
+    let context = python_runtime_context(&path, manifest)?;
+    let app_for_prepare = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        prepare_python_plugin_env(app_for_prepare, context.env_id, &context.spec)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// Run a .lia plugin with the runtime declared by its manifest.
@@ -219,13 +336,7 @@ pub async fn lia_liatir_run(
     let mut zip = open_validated(&path)?;
 
     // Read the manifest to pick the runtime (node | python | wasm). Default: node.
-    let manifest: Value = {
-        let mut buf = String::new();
-        if let Ok(mut entry) = zip.by_name("manifest.json") {
-            entry.read_to_string(&mut buf).map_err(|e| e.to_string())?;
-        }
-        serde_json::from_str(&buf).unwrap_or(Value::Null)
-    };
+    let manifest = read_manifest(&mut zip)?;
     let runtime = manifest
         .get("runtime")
         .and_then(|r| r.as_str())
@@ -293,39 +404,28 @@ pub async fn lia_liatir_run(
     }
 
     if runtime == "python" {
-        let spec = parse_python_spec(&manifest)?;
-        let entry = spec.entry.clone().unwrap_or_else(|| "python/main.py".to_string());
-        validate_relative_path(&entry)?;
-        let bundle_hash = stable_hash_hex(&std::fs::read(&path).map_err(|e| e.to_string())?);
-        let env_id = python_plugin_env_id(&manifest, &bundle_hash);
+        let context = python_runtime_context(&path, manifest)?;
         let app_for_prepare = app.clone();
-        let env_id_for_prepare = env_id.clone();
-        let requirements = spec.requirements.clone();
-        let packages = spec.packages.clone();
-        let python_requirement = spec.python_requirement.clone();
-        let prepared = tauri::async_runtime::spawn_blocking(move || {
-            prepare_env(
-                app_for_prepare,
-                PYTHON_PLUGIN_ENV_ROOT.to_string(),
-                env_id_for_prepare,
-                requirements,
-                packages,
-                None,
-                python_requirement,
-            )
+        let env_id_for_prepare = context.env_id.clone();
+        let spec_for_prepare = context.spec.clone();
+        let runtime_lock = tauri::async_runtime::spawn_blocking(move || {
+            ensure_python_plugin_env(app_for_prepare, env_id_for_prepare, &spec_for_prepare)
         })
         .await
         .map_err(|e| e.to_string())??;
 
-        let source_root = env_dir(&app, PYTHON_PLUGIN_ENV_ROOT, &env_id)?.join("plugin-source");
+        let source_root =
+            env_dir(&app, PYTHON_PLUGIN_ENV_ROOT, &context.env_id)?.join("plugin-source");
         extract_python_payload(&mut zip, &source_root)?;
 
-        let plugin_name = manifest
+        let plugin_name = context
+            .manifest
             .get("name")
             .and_then(|value| value.as_str())
             .unwrap_or("Python plugin")
             .to_string();
-        let plugin_version = manifest
+        let plugin_version = context
+            .manifest
             .get("version")
             .and_then(|value| value.as_str())
             .unwrap_or("0")
@@ -334,14 +434,14 @@ pub async fn lia_liatir_run(
             "runtime": "python",
             "pluginName": plugin_name,
             "pluginVersion": plugin_version,
-            "runtimeLock": prepared.lock,
+            "runtimeLock": runtime_lock,
         });
 
         return spawn_in_env(
             app,
             PYTHON_PLUGIN_ENV_ROOT.to_string(),
-            env_id.clone(),
-            python_plugin_runner(&source_root, &entry),
+            context.env_id.clone(),
+            python_plugin_runner(&source_root, &context.entry),
             Vec::new(),
             inputs,
             None,

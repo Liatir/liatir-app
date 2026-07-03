@@ -13,8 +13,16 @@
 	import { openLinkInBrowser } from '$lib';
 	import { LIATIR_CLI_NPM_PACKAGE_URL } from '$lib/_constants';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
+  import { fmtBytes, sanitizeLocalPathsForDisplay } from '$lib/utils';
 
-  onMount(() => liaPluginsStore.init());
+  onMount(async () => {
+    await liaPluginsStore.init();
+    for (const plugin of liaPluginsStore.plugins) {
+      if (plugin.runtime === 'python') {
+        void liaPluginsStore.ensurePythonRuntimeStatus(plugin.id);
+      }
+    }
+  });
 
   let importing = $state(false);
   let query = $state('');
@@ -64,6 +72,31 @@
     if (runtime === 'wasm') return 'WASM .lia';
     if (runtime === 'python') return 'Python .lia';
     return 'Node .lia';
+  }
+
+  function runtimeStatusLabel(mod: LiatirPlugin): string {
+    if (mod.runtime === 'node') return 'Uses system Node.js';
+    if (mod.runtime === 'wasm') return 'Sandboxed runtime';
+    const state = liaPluginsStore.pythonRuntimeStates[mod.id];
+    if (!state || state.phase === 'checking') return 'Checking runtime…';
+    if (state.phase === 'preparing') return 'Preparing runtime…';
+    if (state.phase === 'ready') return state.sizeBytes ? `Ready · ${fmtBytes(state.sizeBytes)}` : 'Ready';
+    if (state.phase === 'not-prepared') return 'Runtime not prepared';
+    return sanitizeLocalPathsForDisplay(state.error ?? 'Runtime needs attention', 2);
+  }
+
+  function runtimeStatusClass(mod: LiatirPlugin): string {
+    if (mod.runtime !== 'python') return 'text-zinc-400';
+    const state = liaPluginsStore.pythonRuntimeStates[mod.id];
+    if (!state || state.phase === 'checking' || state.phase === 'preparing') return 'text-amber-500';
+    if (state.phase === 'ready') return 'text-emerald-600';
+    if (state.phase === 'not-prepared') return 'text-zinc-500';
+    return 'text-red-500';
+  }
+
+  function pythonBusy(mod: LiatirPlugin): boolean {
+    const state = liaPluginsStore.pythonRuntimeStates[mod.id];
+    return mod.runtime === 'python' && (state?.phase === 'checking' || state?.phase === 'preparing');
   }
 
   async function addTag(mod: LiatirPlugin) {
@@ -177,12 +210,25 @@
                   <Badge hideDot size='xs'>{fieldCount(mod.inputSchema)} input{fieldCount(mod.inputSchema) !== 1 ? 's' : ''}</Badge>
                   <Badge hideDot size='xs'>{fieldCount(mod.outputSchema)} output{fieldCount(mod.outputSchema) !== 1 ? 's' : ''}</Badge>
                 </div>
+                <p class="truncate text-[11px] {runtimeStatusClass(mod)}">{runtimeStatusLabel(mod)}</p>
               </div>
+
+              {#if mod.runtime === 'python' && liaPluginsStore.pythonRuntimeStates[mod.id]?.phase !== 'ready'}
+                <button
+                  onclick={async () => liaPluginsStore.preparePythonRuntime(mod.id)}
+                  disabled={pythonBusy(mod)}
+                  aria-label="Prepare Python runtime"
+                  class="shrink-0 text-zinc-300 hover:text-brand transition-colors disabled:opacity-40 disabled:hover:text-zinc-300"
+                >
+                  <Icon icon={pythonBusy(mod) ? 'lucide:loader-2' : 'lucide:download'} width="14" height="14" class={pythonBusy(mod) ? 'animate-spin' : ''} />
+                </button>
+              {/if}
 
               <button
                 onclick={async () => goto(`/plugins/${mod.id}`)}
                 aria-label="Run"
-                class="shrink-0 text-zinc-300 hover:text-brand transition-colors"
+                disabled={pythonBusy(mod)}
+                class="shrink-0 text-zinc-300 hover:text-brand transition-colors disabled:opacity-40 disabled:hover:text-zinc-300"
               >
                 <Icon icon="lucide:play" width="14" height="14" />
               </button>

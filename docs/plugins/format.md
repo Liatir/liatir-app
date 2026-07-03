@@ -6,13 +6,17 @@ payload.
 
 ## Runtime variants
 
-There are two supported runtimes: **Node** and **WASM**.
+There are three supported runtimes: **Node**, **Python**, and **WASM**.
 
 Node plugins should not maintain a hand-written `.lia-manifest.json`.
 `liatir build` generates the manifest from the exported `definePlugin({...})` contract.
 
 WASM plugins do use `.lia-manifest.json`, because Rust/WASM cannot export the
 JavaScript plugin contract at build time.
+
+Python plugins also use `.lia-manifest.json`. The manifest declares the same
+Liatir I/O schema plus the Python entry point and optional Python dependency
+requirements.
 
 ## Generated Node manifest
 
@@ -156,3 +160,57 @@ WASM plugins keep their schema in `.lia-manifest.json`:
 
 The WASM binary reads JSON input from stdin and writes JSON output to stdout.
 Liatir rejects WASM plugins that do not follow the I/O contract.
+
+## Python manifest
+
+Python plugins keep their schema and runtime dependency metadata in
+`.lia-manifest.json`:
+
+```json
+{
+  "name": "python-length",
+  "version": "1.0.0",
+  "description": "Count characters with Python.",
+  "runtime": "python",
+  "inputSchema": {
+    "text": {
+      "type": "string",
+      "label": "Text",
+      "required": true,
+      "default": "hello from Liatir"
+    }
+  },
+  "outputSchema": {
+    "length": {
+      "type": "number",
+      "label": "Length",
+      "format": "integer"
+    }
+  },
+  "python": {
+    "entry": "src/main.py",
+    "pythonRequirement": {
+      "minVersion": "3.10",
+      "maxVersionExclusive": "3.13",
+      "label": "Python >=3.10,<3.13"
+    },
+    "packages": [],
+    "requirements": []
+  }
+}
+```
+
+The Python entry point must define a callable `main(input)` function. Liatir
+passes the input object as JSON-compatible data and expects `main` to return a
+JSON-compatible object whose keys match the output schema.
+
+```python
+def main(input):
+    text = str(input.get("text", ""))
+    return {
+        "length": len(text),
+    }
+```
+
+When the packaged `.lia` runs, Liatir creates an isolated managed Python runtime
+for that plugin bundle and installs the declared packages or requirements there.

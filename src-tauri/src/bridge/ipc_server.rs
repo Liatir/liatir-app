@@ -447,6 +447,30 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 .map_err(|e| anyhow::anyhow!(e))
         }
 
+        "lia_liatir_python_runtime_status" => {
+            let path = payload["path"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("path required"))?
+                .to_string();
+            let result =
+                crate::bridge::lia_plugins::lia_liatir_python_runtime_status(app.clone(), path)
+                    .await
+                    .map_err(|e| anyhow::anyhow!(e))?;
+            Ok(serde_json::to_value(result)?)
+        }
+
+        "lia_liatir_python_runtime_prepare" => {
+            let path = payload["path"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("path required"))?
+                .to_string();
+            let result =
+                crate::bridge::lia_plugins::lia_liatir_python_runtime_prepare(app.clone(), path)
+                    .await
+                    .map_err(|e| anyhow::anyhow!(e))?;
+            Ok(serde_json::to_value(result)?)
+        }
+
         "lia_liatir_run" => {
             let path = payload["path"]
                 .as_str()
