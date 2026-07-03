@@ -8,13 +8,19 @@ export default defineConfig({
   // Cloudflare deployment docs — kept in docs/ but not a published page.
   srcExclude: ['DEPLOY-cloudflare.md'],
 
-  // Browser-tab favicon (served from docs/public/static).
+  // Browser-tab favicon: mono-color logo mark. SVG first for crisp scaling,
+  // PNG fallback for browsers without SVG-favicon support.
   head: [
-    ['link', { rel: 'icon', type: 'image/png', href: '/static/app-icon-white-bg-color.png' }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/static/logos/svg/app-icon-mono.svg' }],
+    ['link', { rel: 'icon', type: 'image/png', href: '/static/logos/png/app-icon-mono.png' }],
   ],
 
   themeConfig: {
-    logo: { light: '/static/app-icon-white-bg-color.png', dark: '/static/app-icon-white-bg-color.png', alt: 'Liatir' },
+    logo: {
+      light: '/static/logos/svg/app-icon-mono.svg',
+      dark: '/static/logos/svg/app-icon-mono.svg',
+      alt: 'Liatir',
+    },
     siteTitle: 'Liatir',
     search: { provider: 'local' },
 

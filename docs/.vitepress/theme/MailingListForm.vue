@@ -130,7 +130,7 @@ async function submit() {
           v-model="email"
           type="email"
           class="wl-input"
-          placeholder="you@lab.org"
+          placeholder="youremail@example.com"
           autocomplete="email"
           aria-label="Email address"
           :disabled="state === 'submitting'"
@@ -200,6 +200,7 @@ async function submit() {
   min-height: 65px;
   display: flex;
   justify-content: center;
+  margin-top: 30px;
 }
 
 .wl-msg {

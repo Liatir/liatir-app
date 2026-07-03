@@ -21,6 +21,19 @@
   color: var(--vp-c-brand-1) !important;
 }
 
+/* Balance the tall logo mark against the "Liatir" wordmark. */
+.VPNavBarTitle .logo {
+  height: 24px;
+  width: auto;
+  margin-right: 9px;
+}
+
+.VPNavBarTitle .title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
 /* ── Sidebar ───────────────────────────────────────────────────── */
 .VPSidebarItem.is-active > .item .indicator {
   background-color: var(--vp-c-brand-1);

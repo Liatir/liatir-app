@@ -63,6 +63,8 @@ const capabilities = [
       <div class="container hero-inner">
         <span class="status"><span class="status-dot" aria-hidden="true"></span>In active development · Coming soon</span>
 
+        <img class="hero-logo" :src="withBase('/static/logos/svg/logo-color.svg')" alt="" aria-hidden="true" />
+
         <h1 class="name">Liatir</h1>
 
         <p class="headline">Bioinformatics on your machine.<br>Under your control.</p>
@@ -273,8 +275,14 @@ const capabilities = [
   scroll-margin-top: 90px;
 }
 
+.hero-logo {
+  height: 78px;
+  width: auto;
+  margin: 30px 0 0;
+}
+
 .name {
-  margin: 22px 0 0;
+  margin: 16px 0 0;
   font-size: clamp(3.25rem, 9vw, 5.5rem);
   line-height: 1;
   font-weight: 800;
