@@ -78,6 +78,7 @@ export default defineConfig({
               { text: 'Overview', link: '/ai/tools/overview' },
               { text: 'CellTypist Annotation', link: '/ai/tools/celltypist-annotation' },
               { text: 'Sequence Embedding', link: '/ai/tools/sequence-embedding' },
+              { text: 'Single-cell Embedding', link: '/ai/tools/single-cell-embedding' },
               { text: 'Genomic Variant Effect', link: '/ai/tools/genomic-variant-effect' },
               { text: 'Regulatory Prediction', link: '/ai/tools/regulatory-prediction' },
               { text: 'Protein Structure Prediction', link: '/ai/tools/protein-structure-prediction' },

@@ -20,6 +20,10 @@ const CAPABILITY_HELP: Record<string, string> = {
 export const AI_MODEL_INPUT_HELP: Record<string, string> = {
   runInput: 'Inputs are the files, sequences, and settings sent to this AI Model for one run.',
   annDataFile: 'A `.h5ad` single-cell dataset. The model reads the cell expression matrix and returns predicted cell-type labels.',
+  uceAnnDataFile: 'A `.h5ad` single-cell dataset for UCE. The `.X` matrix should contain scRNA-seq counts and `var_names` should contain gene symbols.',
+  uceSpecies: 'The organism used to match genes against UCE protein-embedding assets. Choose the species that matches the AnnData file.',
+  uceBatchSize: 'Number of cells processed together. Lower values use less memory; higher values can be faster on GPUs.',
+  uceCsvRows: 'How many cells to export to the lightweight CSV preview. The full embedding matrix is stored in the output AnnData file.',
   celltypistModel: 'The CellTypist reference model used for annotation. Different references are trained for different tissues or immune panels.',
   majorityVoting: 'Smooths CellTypist labels using nearby cells. It can make labels more stable, but may hide small rare populations.',
   molecule: 'The kind of biological sequence in the input. This tells the embedding model how to interpret the letters.',

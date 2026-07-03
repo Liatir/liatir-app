@@ -5,12 +5,13 @@ AI Model registry and public docs.
 
 ## Current status
 
-Batch 5 is started as preview metadata only. The models below are visible in AI
-Models so users can understand the roadmap, but they are not installable or
-runnable until each runtime box has validated package installation, model asset
-handling, input preprocessing, output parsing, Jobs, Results, and provenance.
+Batch 5 now has one installable/runnable slice: UCE 4-layer. The remaining
+foundation models stay visible as preview entries so users can understand the
+roadmap, but they are not installable or runnable until each runtime box has
+validated package installation, model asset handling, input preprocessing,
+output parsing, Jobs, Results, and provenance.
 
-## Official sources checked on 2026-07-02
+## Official sources checked on 2026-07-02 and 2026-07-03
 
 - [scGPT](https://github.com/bowang-lab/scGPT)
   - official codebase for scGPT;
@@ -29,8 +30,8 @@ handling, input preprocessing, output parsing, Jobs, Results, and provenance.
   - official workflow embeds AnnData `.h5ad` files;
   - requirements are pinned and include PyTorch, Scanpy, Accelerate, NumPy,
     SciPy, Pandas, Requests, and urllib3;
-  - official scripts can download model files, but Liatir should manage those
-    files directly before exposing Install.
+  - Liatir manages the 4-layer source checkout, model weights, token file,
+    species maps, offsets, and protein embeddings directly before run.
 - [scFoundation](https://github.com/biomap-research/scFoundation)
   - Apache 2.0 license;
   - 100M-parameter model family;
@@ -42,13 +43,19 @@ Do not share these runtimes with CellTypist. CellTypist is a practical
 annotation runtime; foundation models need separate boxes because package sets,
 model files, preprocessing, and output semantics differ materially.
 
-## First real implementation target
+## Implemented slice
 
-The first installable Batch 5 runtime should be the one with the smallest
-validated asset surface. UCE is a strong candidate because the official workflow
-is AnnData-focused and the repository documents a single embedding script, but
-Liatir should still replace implicit script downloads with explicit managed
-files wherever possible.
+UCE 4-layer is the first real Batch 5 implementation. It uses an isolated
+runtime ID (`single-cell-foundation-uce`), a pinned UCE source checkout, managed
+Figshare assets, and a dedicated `ai-single-cell-embedding` AI Tool.
+
+The tool outputs:
+
+- embedded AnnData with `obsm["X_uce"]`;
+- lightweight embedding preview CSV;
+- summary JSON;
+- intermediate UCE processing artifacts;
+- metrics, values, warnings, logs, and provenance.
 
 ## Required acceptance checks before enabling Install or Run
 

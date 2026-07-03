@@ -50,6 +50,7 @@ const NATIVE_ANALYSIS_TOOLS = new Set([
 const AI_ANALYSIS_TOOLS = new Set([
   'ai-celltypist-annotate',
   'ai-sequence-embedding',
+  'ai-single-cell-embedding',
   'ai-genomic-variant-effect',
   'ai-regulatory-prediction',
   'ai-protein-structure',

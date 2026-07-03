@@ -34,7 +34,8 @@
 		ESM2_8M_ID,
 		MOCK_AI_MODEL_ID,
 		NUCLEOTIDE_TRANSFORMER_500M_ID,
-		NUCLEOTIDE_TRANSFORMER_50M_ID
+		NUCLEOTIDE_TRANSFORMER_50M_ID,
+		UCE_4LAYER_MODEL_ID
 	} from '$lib/ai/model-registry';
 	import {
 		celltypistAnnotateDefinition,
@@ -44,6 +45,11 @@
 		sequenceEmbeddingDefinition,
 		runSequenceEmbeddingStep
 	} from '$lib/tools/ai/sequence-embedding';
+	import {
+		singleCellEmbeddingDefinition,
+		runSingleCellEmbeddingStep,
+		uceSpeciesOptions
+	} from '$lib/tools/ai/single-cell-embedding';
 	import { mockAIInferenceDefinition, runMockAIInferenceStep } from '$lib/tools/ai/mock-inference';
 	import {
 		proteinStructureDefinition,
@@ -58,7 +64,14 @@
 	import PageContent from '$lib/components/layout/PageContent.svelte';
 	import { HEADER_HEIGHT } from '$lib/_constants';
 
-	type RunMode = 'celltypist' | 'sequence' | 'regulatory' | 'protein-structure' | 'mock' | 'unsupported';
+	type RunMode =
+		| 'celltypist'
+		| 'sequence'
+		| 'regulatory'
+		| 'protein-structure'
+		| 'single-cell-embedding'
+		| 'mock'
+		| 'unsupported';
 	type MoleculeType = 'dna' | 'rna' | 'protein';
 	type Accelerator = 'cpu' | 'gpu';
 	type ProteinOutputFormat = 'mmcif' | 'pdb';
@@ -85,13 +98,15 @@
 			? celltypistAnnotateDefinition
 			: mode === 'sequence'
 				? sequenceEmbeddingDefinition
-				: mode === 'regulatory'
-					? regulatoryPredictionDefinition
-					: mode === 'protein-structure'
-						? proteinStructureDefinition
-						: mode === 'mock'
-							? mockAIInferenceDefinition
-							: null
+				: mode === 'single-cell-embedding'
+					? singleCellEmbeddingDefinition
+					: mode === 'regulatory'
+						? regulatoryPredictionDefinition
+						: mode === 'protein-structure'
+							? proteinStructureDefinition
+							: mode === 'mock'
+								? mockAIInferenceDefinition
+								: null
 	);
 
 	let running = $state(false);
@@ -113,6 +128,9 @@
 	let regulatoryTargetIndex = $state(0);
 	let regulatoryWindowStart = $state(1);
 	let regulatoryMaxVariants = $state(10);
+	let uceSpecies = $state('human');
+	let uceBatchSize = $state(25);
+	let uceMaxCsvRows = $state(500);
 	let celltypistModel = $state('Immune_All_Low.pkl');
 	let majorityVoting = $state(false);
 	let ligandSmiles = $state('');
@@ -177,13 +195,15 @@
 				? !!inputFile
 				: mode === 'sequence'
 					? !!inputFile || !!sequence.trim()
-					: mode === 'regulatory'
-						? !!inputFile || !!sequence.trim()
-						: mode === 'protein-structure'
+					: mode === 'single-cell-embedding'
+						? !!inputFile
+						: mode === 'regulatory'
 							? !!inputFile || !!sequence.trim()
-							: mode === 'mock'
-								? !!prompt.trim()
-								: false)
+							: mode === 'protein-structure'
+								? !!inputFile || !!sequence.trim()
+								: mode === 'mock'
+									? !!prompt.trim()
+									: false)
 	);
 
 	$effect(() => {
@@ -240,6 +260,7 @@
 			id === BORZOI_K562_RNA_MODEL_ID
 		)
 			return 'regulatory';
+		if (id === UCE_4LAYER_MODEL_ID) return 'single-cell-embedding';
 		if (id === BOLTZ2_MODEL_ID) return 'protein-structure';
 		if (id === MOCK_AI_MODEL_ID) return 'mock';
 		return 'unsupported';
@@ -310,6 +331,16 @@
 			};
 			label = inputFile ? basename(inputFile) : `${moleculeType.toUpperCase()} sequence`;
 			if (inputFile) inputPaths.push(inputFile);
+		} else if (mode === 'single-cell-embedding') {
+			inputs = {
+				modelId: model.id,
+				inputFile,
+				species: uceSpecies,
+				batchSize: String(uceBatchSize),
+				maxCsvRows: String(uceMaxCsvRows)
+			};
+			label = basename(inputFile);
+			inputPaths.push(inputFile);
 		} else if (mode === 'regulatory') {
 			inputs = {
 				modelId: model.id,
@@ -358,7 +389,7 @@
 		try {
 			const { absDir } = await ensureResultsDir(definition.label);
 			const directRunContext: AIDirectRunContext | undefined =
-				mode === 'celltypist' || mode === 'sequence' || mode === 'regulatory' || mode === 'protein-structure'
+				mode !== 'mock' && mode !== 'unsupported'
 					? {
 							runKind: 'ai-model-direct',
 							analysisRunId: runId,
@@ -377,11 +408,13 @@
 					? await runCelltypistAnnotateStep(inputs, absDir, onLog, directRunContext)
 					: mode === 'sequence'
 						? await runSequenceEmbeddingStep(inputs, absDir, onLog, directRunContext)
-						: mode === 'regulatory'
-							? await runRegulatoryPredictionStep(inputs, absDir, onLog, directRunContext)
-							: mode === 'protein-structure'
-								? await runProteinStructureStep(inputs, absDir, onLog, directRunContext)
-								: await runMockAIInferenceStep(inputs, absDir, onLog);
+						: mode === 'single-cell-embedding'
+							? await runSingleCellEmbeddingStep(inputs, absDir, onLog, directRunContext)
+							: mode === 'regulatory'
+								? await runRegulatoryPredictionStep(inputs, absDir, onLog, directRunContext)
+								: mode === 'protein-structure'
+									? await runProteinStructureStep(inputs, absDir, onLog, directRunContext)
+									: await runMockAIInferenceStep(inputs, absDir, onLog);
 
 			const endedAt = Date.now();
 			onLog(`Completed in ${fmtDuration(t0, endedAt)}`);
@@ -613,6 +646,64 @@
 									<span>Majority voting</span>
 									<InfoPopup text={AI_MODEL_INPUT_HELP.majorityVoting} />
 								</label>
+							</div>
+						{:else if mode === 'single-cell-embedding'}
+							<FilePickerPopup
+								files={h5adFiles}
+								value={inputFile}
+								label="AnnData file"
+								info={AI_MODEL_INPUT_HELP.uceAnnDataFile}
+								emptyText="No h5ad files in Data yet."
+								disabled={formDisabled}
+								onchange={(path) => (inputFile = path)}
+							/>
+							<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+								<div>
+									<LabelWithInfo
+										targetId="uce-species"
+										text="Species"
+										info={AI_MODEL_INPUT_HELP.uceSpecies}
+									/>
+									<Select
+										id="uce-species"
+										value={uceSpecies}
+										options={uceSpeciesOptions}
+										disabled={formDisabled}
+										onchange={(value) => (uceSpecies = value)}
+									/>
+								</div>
+								<div>
+									<LabelWithInfo
+										targetId="uce-batch-size"
+										text="Batch size"
+										info={AI_MODEL_INPUT_HELP.uceBatchSize}
+									/>
+									<input
+										id="uce-batch-size"
+										type="number"
+										min="1"
+										max="256"
+										bind:value={uceBatchSize}
+										disabled={formDisabled}
+										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+									/>
+								</div>
+								<div>
+									<LabelWithInfo
+										targetId="uce-csv-rows"
+										text="CSV rows"
+										info={AI_MODEL_INPUT_HELP.uceCsvRows}
+									/>
+									<input
+										id="uce-csv-rows"
+										type="number"
+										min="1"
+										max="5000"
+										bind:value={uceMaxCsvRows}
+										disabled={formDisabled}
+										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+									/>
+								</div>
 							</div>
 						{:else if mode === 'sequence'}
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-3">

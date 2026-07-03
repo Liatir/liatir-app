@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import {
   GENEFORMER_V1_10M_MODEL_ID,
   SCFOUNDATION_100M_MODEL_ID,
@@ -8,16 +10,17 @@ import {
 } from '../../frontend/src/lib/ai/model-registry';
 import { artifactSpecForModelId } from '../../frontend/src/lib/ai/model-artifacts';
 
-const BATCH5_MODEL_IDS = [
+const rootDir = resolve(import.meta.dirname, '../..');
+
+const PREVIEW_BATCH5_MODEL_IDS = [
   SCGPT_WHOLE_HUMAN_MODEL_ID,
   GENEFORMER_V1_10M_MODEL_ID,
-  UCE_4LAYER_MODEL_ID,
   SCFOUNDATION_100M_MODEL_ID,
 ];
 
 describe('Batch 5 single-cell foundation model contract', () => {
-  it('registers Batch 5 candidates as preview models with explicit capabilities', () => {
-    for (const id of BATCH5_MODEL_IDS) {
+  it('keeps deferred Batch 5 candidates as preview models with explicit capabilities', () => {
+    for (const id of PREVIEW_BATCH5_MODEL_IDS) {
       const model = getLocalAIModelMetadata(id);
 
       expect(model, `${id} missing model metadata`).toBeTruthy();
@@ -33,7 +36,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
   it('keeps preview models paired with isolated future runtime families without enabling preload', () => {
     const runtimeFamilies = new Set<string>();
 
-    for (const id of BATCH5_MODEL_IDS) {
+    for (const id of PREVIEW_BATCH5_MODEL_IDS) {
       const model = getLocalAIModelMetadata(id);
       const spec = artifactSpecForModelId(id);
 
@@ -44,5 +47,50 @@ describe('Batch 5 single-cell foundation model contract', () => {
       expect(runtimeFamilies.has(spec?.runtimeFamily ?? ''), `${id} shares a runtime family unexpectedly`).toBe(false);
       runtimeFamilies.add(spec?.runtimeFamily ?? '');
     }
+  });
+
+  it('enables UCE as the first installable Batch 5 runtime box', () => {
+    const model = getLocalAIModelMetadata(UCE_4LAYER_MODEL_ID);
+    const spec = artifactSpecForModelId(UCE_4LAYER_MODEL_ID);
+
+    expect(model, 'UCE missing model metadata').toBeTruthy();
+    expect(model?.category).toBe('Single-cell Foundation Models');
+    expect(model?.releaseStage).toBeUndefined();
+    expect(model?.install?.method).toBe('managed-runtime');
+    expect(model?.install?.runtimeId).toBe('single-cell-foundation-uce');
+    expect(model?.install?.modelCacheSubdir).toBe('model-cache/uce');
+    expect(model?.install?.runtimeSources?.[0]?.revision).toMatch(/^[a-f0-9]{40}$/);
+    expect(model?.install?.files?.map((file) => file.relativePath).sort()).toEqual([
+      'model_files/4layer_model.torch',
+      'model_files/all_tokens.torch',
+      'model_files/protein_embeddings.tar.gz',
+      'model_files/species_chrom.csv',
+      'model_files/species_offsets.pkl',
+    ]);
+    expect(model?.install?.hostRequirements?.python?.maxVersionExclusive).toBe('3.12');
+    expect(spec?.runtimeFamily).toBe('single-cell-foundation-uce');
+    expect(spec?.preloadKind).toBe('uce-managed-files');
+  });
+
+  it('registers the UCE single-cell embedding AI Tool for pipelines', () => {
+    const registrySource = readFileSync(
+      resolve(rootDir, 'frontend/src/lib/tools/pipeline-registry.ts'),
+      'utf8',
+    );
+    const toolSource = readFileSync(
+      resolve(rootDir, 'frontend/src/lib/tools/ai/single-cell-embedding.ts'),
+      'utf8',
+    );
+
+    expect(registrySource).toContain("'ai-single-cell-embedding'");
+    expect(registrySource).toContain('singleCellEmbeddingDefinition');
+    expect(registrySource).toContain('runSingleCellEmbeddingStep');
+    expect(toolSource).toContain('supportedModelIds: [UCE_4LAYER_MODEL_ID]');
+    expect(toolSource).toContain("id: 'ai-single-cell-embedding'");
+    expect(toolSource).toContain('batchSize');
+    expect(toolSource).toContain('maxCsvRows');
+    expect(toolSource.match(/connectable: false/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(toolSource).toContain("embeddedAnnData: { type: 'file', label: 'Embedded AnnData', ext: ['h5ad'] }");
+    expect(toolSource).toContain('intermediateFiles');
   });
 });

@@ -69,6 +69,7 @@ describe('AI modularity boundaries', () => {
       'protein-structure.ts',
       'regulatory-prediction.ts',
       'sequence-embedding.ts',
+      'uce-embedding.ts',
     ]);
     for (const file of files) {
       expect(statSync(file).size, `${file} should stay focused`).toBeLessThan(24_000);

@@ -20,6 +20,10 @@ import {
 	sequenceEmbeddingDefinition,
 	finalizeSequenceEmbeddingResult
 } from '$lib/tools/ai/sequence-embedding';
+import {
+	singleCellEmbeddingDefinition,
+	finalizeSingleCellEmbeddingResult
+} from '$lib/tools/ai/single-cell-embedding';
 import type { ToolOutput } from '$lib/types/tool-output';
 
 type FinalizedAIToolResult = {
@@ -80,6 +84,9 @@ async function finalizeToolResult(
 	}
 	if (toolId === sequenceEmbeddingDefinition.id) {
 		return await finalizeSequenceEmbeddingResult(model, params, result, onLog);
+	}
+	if (toolId === singleCellEmbeddingDefinition.id) {
+		return await finalizeSingleCellEmbeddingResult(model, params, result, onLog);
 	}
 	if (toolId === regulatoryPredictionDefinition.id) {
 		return await finalizeRegulatoryPredictionResult(model, params, result, onLog);

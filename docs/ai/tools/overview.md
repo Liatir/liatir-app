@@ -10,6 +10,7 @@ run compatible AI Models through the shared Liatir I/O contract.
 | --- | --- | --- |
 | [CellTypist Annotation](/ai/tools/celltypist-annotation) | CellTypist Local Annotation | cell labels and summary |
 | [Sequence Embedding](/ai/tools/sequence-embedding) | Nucleotide Transformer 50M/500M, ESM-2 8M | embedding CSV and JSON summary |
+| [Single-cell Embedding](/ai/tools/single-cell-embedding) | UCE 4-layer | embedded AnnData, embedding preview, JSON summary |
 | [Genomic Variant Effect](/ai/tools/genomic-variant-effect) | Nucleotide Transformer 50M/500M | variant scores and BED track |
 | [Regulatory Prediction](/ai/tools/regulatory-prediction) | Enformer, Basenji2, Borzoi Mini | signal tracks and optional variant deltas |
 | [Protein Structure Prediction](/ai/tools/protein-structure-prediction) | Boltz-2 | mmCIF/PDB structure and confidence metadata |

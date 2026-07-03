@@ -62,11 +62,31 @@ const BORZOI_MINI_K562_RNA_RUNTIME_PACKAGES = [
 	}
 ];
 
+const UCE_4LAYER_RUNTIME_PACKAGES = [
+	{ package: 'numpy', version: '1.26.4', importName: 'numpy' },
+	{ package: 'scipy', version: '1.14.1', importName: 'scipy' },
+	{ package: 'pandas', version: '2.2.2', importName: 'pandas' },
+	{ package: 'tqdm', version: '4.66.5', importName: 'tqdm' },
+	{ package: 'torch', version: '2.1.1', importName: 'torch' },
+	{ package: 'scanpy', version: '1.10.2', importName: 'scanpy' },
+	{ package: 'accelerate', version: '0.24.0', importName: 'accelerate' },
+	{ package: 'requests', version: '2.25.1', importName: 'requests' },
+	{ package: 'urllib3', version: '1.26.6', importName: 'urllib3' }
+];
+
 const TENSORFLOW_PYTHON_3_10_TO_3_11 = {
 	minVersion: '3.10',
 	maxVersionExclusive: '3.12',
 	label: 'Python 3.10 or 3.11',
 	reason: 'These TensorFlow-based regulatory genomics runtimes use TensorFlow 2.15, which is not a Python 3.12 runtime.'
+};
+
+const UCE_PYTHON_3_10_TO_3_11 = {
+	minVersion: '3.10',
+	maxVersionExclusive: '3.12',
+	label: 'Python 3.10 or 3.11',
+	reason:
+		'UCE official requirements pin torch 2.1.1 and scanpy 1.10.2; Liatir validates this runtime on Python 3.10/3.11.'
 };
 
 const INTERNAL_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
@@ -543,14 +563,13 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		id: UCE_4LAYER_MODEL_ID,
 		name: 'UCE 4-layer',
 		description:
-			'Preview zero-shot Universal Cell Embeddings model for AnnData single-cell expression embeddings.',
+			'Managed zero-shot Universal Cell Embeddings runtime for AnnData single-cell expression embeddings.',
 		category: 'Single-cell Foundation Models',
 		version: '4-layer',
-		releaseStage: 'preview',
 		runtime: {
 			kind: 'python-venv',
 			name: 'UCE PyTorch Runtime',
-			version: 'preview'
+			version: 'python-venv'
 		},
 		source: 'managed-runtime',
 		localOnly: true,
@@ -570,14 +589,54 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			minVramGb: 0,
 			recommendedVramGb: 16,
 			notes:
-				'The official workflow supports AnnData inputs and downloads model files as needed; Liatir still needs a managed asset box before enabling install.'
+				'GPU is recommended by the model card. CPU can be used for small validation datasets, but repeated runs should use a GPU-capable workstation.'
+		},
+		install: {
+			method: 'managed-runtime',
+			runtimeId: 'single-cell-foundation-uce',
+			modelCacheSubdir: 'model-cache/uce',
+			revision: '8ead6e07af0c80f75653598138bb704e865b45c8',
+			runtimePackages: UCE_4LAYER_RUNTIME_PACKAGES,
+			runtimeSources: [
+				{
+					url: 'https://github.com/snap-stanford/UCE.git',
+					revision: '8ead6e07af0c80f75653598138bb704e865b45c8',
+					relativePath: 'source/UCE',
+					pythonPath: true
+				}
+			],
+			files: [
+				{
+					url: 'https://figshare.com/ndownloader/files/42706558',
+					relativePath: 'model_files/species_chrom.csv'
+				},
+				{
+					url: 'https://figshare.com/ndownloader/files/42706555',
+					relativePath: 'model_files/species_offsets.pkl'
+				},
+				{
+					url: 'https://figshare.com/ndownloader/files/42706585',
+					relativePath: 'model_files/all_tokens.torch'
+				},
+				{
+					url: 'https://figshare.com/ndownloader/files/42706576',
+					relativePath: 'model_files/4layer_model.torch'
+				},
+				{
+					url: 'https://figshare.com/ndownloader/files/42715213',
+					relativePath: 'model_files/protein_embeddings.tar.gz'
+				}
+			],
+			hostRequirements: {
+				python: UCE_PYTHON_3_10_TO_3_11
+			}
 		},
 		documentation: {
 			liatirPath: '/ai/models/snap-stanford-uce-4layer',
 			officialUrl: 'https://github.com/snap-stanford/UCE',
 			paperUrl: 'https://www.biorxiv.org/content/10.1101/2023.11.28.568918v2'
 		},
-		tags: ['preview', 'single-cell', 'foundation-model', 'embedding', 'zero-shot']
+		tags: ['built-in', 'managed', 'single-cell', 'foundation-model', 'embedding', 'zero-shot']
 	},
 	{
 		id: SCFOUNDATION_100M_MODEL_ID,

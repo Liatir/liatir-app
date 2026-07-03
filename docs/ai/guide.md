@@ -23,6 +23,7 @@ Examples:
 - Nucleotide Transformer v2 50M or 500M.
 - ESM-2 8M Protein.
 - Enformer, Basenji2, or Borzoi Mini.
+- UCE 4-layer.
 - Boltz-2.
 
 ### AI Tools
@@ -34,6 +35,7 @@ Examples:
 
 - CellTypist Annotation uses the CellTypist AI Model.
 - Sequence Embedding can use Nucleotide Transformer or ESM-2.
+- Single-cell Embedding uses UCE 4-layer.
 - Genomic Variant Effect uses Nucleotide Transformer models.
 - Regulatory Prediction uses Enformer, Basenji2, or Borzoi Mini.
 - Protein Structure Prediction uses Boltz-2.
@@ -59,6 +61,7 @@ parameters, and output files were used.
 | Workflow | Use it when | Typical input | Typical output |
 | --- | --- | --- | --- |
 | Single-cell annotation | You have cells and want likely cell-type labels | `.h5ad` AnnData | labels, label counts, summary |
+| Single-cell embedding | You want foundation-model cell vectors for comparison or downstream analysis | `.h5ad` AnnData | embedded AnnData, embedding preview, summary |
 | Sequence embedding | You want a numeric representation of DNA, RNA, or protein sequences | FASTA or pasted sequence | embedding table, dimensions, summary |
 | Variant effect scoring | You want a first local signal for which variants change sequence representation | FASTA + VCF/VCF.GZ | scores, BED track, warnings |
 | Regulatory prediction | You want predicted genomic signal tracks from DNA sequence windows | FASTA or pasted DNA, optional VCF | signal track, variant deltas |
@@ -119,10 +122,11 @@ Start small:
 1. Install CellTypist and run a small `.h5ad` demo.
 2. Install Nucleotide Transformer 50M and run Sequence Embedding on a short
    FASTA.
-3. Run Genomic Variant Effect on the demo FASTA and VCF.
-4. Install one regulatory model and run Regulatory Prediction with `targetIndex
+3. Install UCE 4-layer and run Single-cell Embedding on a small `.h5ad` demo.
+4. Run Genomic Variant Effect on the demo FASTA and VCF.
+5. Install one regulatory model and run Regulatory Prediction with `targetIndex
    = 0` and a low `maxVariants`.
-5. Run Boltz-2 on a short protein sequence and inspect the generated structure.
+6. Run Boltz-2 on a short protein sequence and inspect the generated structure.
 
 Avoid starting with large files, many variants, or high sample counts until you
 know the workflow is healthy.
@@ -135,8 +139,9 @@ Use:
 
 1. AnnData `.h5ad` input.
 2. CellTypist Annotation.
-3. Results table or single-cell preview.
-4. Later, foundation-model embeddings and Vitessce viewers.
+3. Single-cell Embedding with UCE 4-layer when you need foundation-model vectors.
+4. Results table or single-cell preview.
+5. Later, Vitessce viewers.
 
 ### Genomic variants
 
@@ -163,6 +168,7 @@ Be careful when:
 
 - the input file format is not the one the tool expects;
 - a single-cell matrix is raw counts when the model expects normalized data;
+- a single-cell matrix is normalized when the model expects raw counts;
 - VCF `REF` bases do not match the selected FASTA;
 - a regulatory model uses an unknown `targetIndex`;
 - CPU runtime takes much longer than expected;

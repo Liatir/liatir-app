@@ -10,6 +10,7 @@ import { snpeffDefinition, parseSnpEffStats, buildSnpEffOutput } from './variant
 import { mockAIInferenceDefinition, runMockAIInferenceStep } from './ai/mock-inference';
 import { celltypistAnnotateDefinition, runCelltypistAnnotateStep } from './ai/celltypist-annotate';
 import { sequenceEmbeddingDefinition, runSequenceEmbeddingStep } from './ai/sequence-embedding';
+import { singleCellEmbeddingDefinition, runSingleCellEmbeddingStep } from './ai/single-cell-embedding';
 import { genomicVariantEffectDefinition, runGenomicVariantEffectStep } from './ai/genomic-variant-effect';
 import { regulatoryPredictionDefinition, runRegulatoryPredictionStep } from './ai/regulatory-prediction';
 import { proteinStructureDefinition, runProteinStructureStep } from './ai/protein-structure';
@@ -412,6 +413,7 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
   'ai-mock-inference':  { definition: mockAIInferenceDefinition,   run: runMockAIInferenceStep },
   'ai-celltypist-annotate': { definition: celltypistAnnotateDefinition, run: runCelltypistAnnotateStep },
   'ai-sequence-embedding': { definition: sequenceEmbeddingDefinition, run: runSequenceEmbeddingStep },
+  'ai-single-cell-embedding': { definition: singleCellEmbeddingDefinition, run: runSingleCellEmbeddingStep },
   'ai-genomic-variant-effect': { definition: genomicVariantEffectDefinition, run: runGenomicVariantEffectStep },
   'ai-regulatory-prediction': { definition: regulatoryPredictionDefinition, run: runRegulatoryPredictionStep },
   'ai-protein-structure': { definition: proteinStructureDefinition, run: runProteinStructureStep },

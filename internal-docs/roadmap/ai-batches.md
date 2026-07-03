@@ -73,20 +73,22 @@ regulatory target index.
 
 ## Batch 5: Single-cell foundation models
 
-Status: started with preview registry, docs, and contract tests.
+Status: in progress. UCE 4-layer is implemented as the first managed
+installable/runnable slice; scGPT, Geneformer, and scFoundation remain preview
+entries.
 
 - scGPT for embeddings, batch correction, and perturbation hypotheses.
 - Geneformer for cell representations and gene/network insights.
-- UCE and scFoundation as advanced candidates.
+- UCE 4-layer for zero-shot single-cell embeddings from AnnData.
+- scFoundation as an advanced candidate.
 - Inputs: `.h5ad`, matrix, metadata.
 - Outputs: embeddings, UMAP-ready data, labels, gene programs, perturbation
   predictions.
 - Visualization with Vitessce.
 
-Current Batch 5 models are visible preview entries, not installable runtimes.
-Do not enable Install or Run until each model has a validated managed runtime
-box, explicit model-asset handling, input validation, output parsing, Jobs,
-Results, and provenance.
+Do not enable Install or Run for the remaining preview models until each model
+has a validated managed runtime box, explicit model-asset handling, input
+validation, output parsing, Jobs, Results, and provenance.
 
 ## Batch 6: Simulations and biophysics
 

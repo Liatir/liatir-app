@@ -35,7 +35,8 @@ export type AIModelPreloadKind =
 	| 'celltypist'
 	| 'huggingface-transformers'
 	| 'tensorflow-hub'
-	| 'managed-files';
+	| 'managed-files'
+	| 'uce-managed-files';
 
 export type AIRegulatoryBackend = 'enformer' | 'basenji2' | 'borzoi-mini';
 
@@ -135,7 +136,8 @@ export const AI_MODEL_ARTIFACT_SPECS: AIModelArtifactSpec[] = [
 	{
 		modelId: UCE_4LAYER_MODEL_ID,
 		runtimeFamily: 'single-cell-foundation-uce',
-		preloadKind: 'none'
+		preloadKind: 'uce-managed-files',
+		modelFile: 'model_files/4layer_model.torch'
 	},
 	{
 		modelId: SCFOUNDATION_100M_MODEL_ID,

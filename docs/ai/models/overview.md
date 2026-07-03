@@ -29,7 +29,8 @@ You can use AI Models in two ways:
 | Score small VCF examples | Nucleotide Transformer v2 50M | Faster variant-effect smoke tests |
 | Predict regulatory signal | Basenji2 or Enformer | Managed regulatory runtimes with BED outputs |
 | Predict protein structure | Boltz-2 | Current primary local structure model |
-| Explore future single-cell foundation models | scGPT, Geneformer, UCE, scFoundation | Preview entries documented but not installable yet |
+| Create single-cell foundation embeddings | UCE 4-layer | First managed Batch 5 runtime with AnnData embedding outputs |
+| Explore future single-cell foundation models | scGPT, Geneformer, scFoundation | Preview entries documented but not installable yet |
 
 ## Installation
 
@@ -71,6 +72,7 @@ decisions.
 
 - [CellTypist Annotation](/ai/tools/celltypist-annotation)
 - [Sequence Embedding](/ai/tools/sequence-embedding)
+- [Single-cell Embedding](/ai/tools/single-cell-embedding)
 - [Genomic Variant Effect](/ai/tools/genomic-variant-effect)
 - [Regulatory Prediction](/ai/tools/regulatory-prediction)
 - [Protein Structure Prediction](/ai/tools/protein-structure-prediction)
