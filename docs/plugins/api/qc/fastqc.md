@@ -1,6 +1,6 @@
 ---
 title: qc.fastqc
-description: Runs the typed FastQC wrapper from the Liatir SDK.
+description: Runs the typed FastQC wrapper from the Liatir API.
 ---
 
 # qc.fastqc

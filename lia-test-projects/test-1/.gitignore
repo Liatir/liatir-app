@@ -2,4 +2,6 @@ target/
 *.lia
 node_modules/
 dist/
+.liatir/
+build/
 .lia-dev/

@@ -1,6 +1,6 @@
 ---
 title: Root API
-description: Root-level fields and methods exposed by the Liatir SDK.
+description: Root-level fields and methods exposed by the Liatir API.
 ---
 
 # Root API

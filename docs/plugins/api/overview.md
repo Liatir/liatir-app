@@ -8,8 +8,8 @@ description: Comprehensive overview of the Liatir API, its lifecycle, usage, and
 
 This is the API used by code running inside the Liatir local environment.
 
-For an introduction to installing and using the SDK, start with
-[Liatir SDK](/plugins/sdk). This section is the API reference: it is organized
+For an introduction to installing and using the API packages, start with
+[Liatir API packages](/plugins/api-packages). This section is the API reference: it is organized
 by namespace and then by API area or method.
 
 Prefer typed namespaces such as `desktop`, `jobs`, `deps`, and `qc`. Use the
@@ -25,13 +25,6 @@ root-level `invoke()` escape hatch only when no typed wrapper exists.
 - [Jobs API](/plugins/api/jobs/spawn)
 - [Dependencies API](/plugins/api/deps/check)
 - [QC API](/plugins/api/qc/fastqc)
-
-## Plugin authoring API
-
-- [definePlugin](/plugins/api/plugin/define-plugin)
-- [field](/plugins/api/plugin/field)
-- [PluginContext](/plugins/api/plugin/plugin-context)
-- [lia context](/plugins/api/plugin/lia-context)
 
 ## Root API
 

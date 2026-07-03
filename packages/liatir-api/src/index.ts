@@ -56,7 +56,7 @@ import type {
 } from "../../../src-ts/modules/rs/deps/_types";
 
 // ── Bridge types — reused from src-ts (single source of truth, no mirroring) ─
-// jobs/deps are the SAME interfaces the browser SDK uses, re-exported here.
+// jobs/deps are the SAME interfaces the browser bridge uses, re-exported here.
 export type {
   JobEntry,
   JobStatus,
@@ -68,7 +68,7 @@ export type {
 };
 
 /**
- * Buffered stdout/stderr lines — Node-specific. The browser SDK streams job
+ * Buffered stdout/stderr lines — Node-specific. The browser bridge streams job
  * output via Tauri events; a headless Node process has no event channel, so it
  * polls `lia_jobs_get_output` instead. This type has no browser counterpart.
  */
@@ -136,7 +136,7 @@ async function readIpcInfo(): Promise<IpcInfo> {
   }
 
   throw new Error(
-    `[liatir-adapter] Liatir app is not running or IPC not ready.\n` +
+    `[liatir-api] Liatir app is not running or IPC not ready.\n` +
     `Expected one of:\n${portFiles.map((file) => `- ${file}`).join("\n")}\n` +
     `Start the Liatir desktop app first.`
   );
@@ -159,12 +159,12 @@ async function httpInvoke<T>(
   });
 
   if (!res.ok) {
-    throw new Error(`[liatir-adapter] HTTP ${res.status} for ${cmd}`);
+    throw new Error(`[liatir-api] HTTP ${res.status} for ${cmd}`);
   }
 
   const data = (await res.json()) as { ok: boolean; result?: T; error?: string };
   if (!data.ok) {
-    throw new Error(data.error ?? `[liatir-adapter] ${cmd} failed`);
+    throw new Error(data.error ?? `[liatir-api] ${cmd} failed`);
   }
   return data.result as T;
 }
@@ -240,7 +240,7 @@ export async function createLiatir(): Promise<LiatirNode> {
   // The `core` shape every bridge buildX() expects — only needs `invoke`.
   const core = { invoke };
 
-  // jobs/deps reuse the browser SDK builders; Node adds polling-based streaming
+  // jobs/deps reuse the browser bridge builders; Node adds polling-based streaming
   // (getOutput/run) since there is no Tauri event channel in a Node process.
   const baseJobs = buildJobs(core);
 
@@ -308,7 +308,7 @@ export async function createLiatir(): Promise<LiatirNode> {
 
 // ── Plugin I/O schema — backed by @liatir/core ───────────────────────────────
 // You declare the schema once with `f.*`; the input/output TS types are inferred
-// from it, and `lia build` generates the manifest from it. Nothing to keep in
+// from it, and `liatir build` generates the manifest from it. Nothing to keep in
 // sync by hand.
 
 /** A typed field. `T` is the inferred TS type; it is erased at runtime. */
@@ -365,7 +365,7 @@ export type PluginInput<S extends InputSchema> = Infer<S>;
 export type PluginOutput<S extends OutputSchema> = Infer<S>;
 export type PluginMainContext<I extends InputSchema, O extends OutputSchema> = {
   input: Infer<I>;
-  lia: LiatirNode;
+  Liatir: LiatirNode;
 };
 export type PluginMainHandler<I extends InputSchema, O extends OutputSchema> = (
   ctx: PluginMainContext<I, O>
@@ -386,7 +386,7 @@ export interface LiatirPluginContract<I extends InputSchema, O extends OutputSch
 export type PluginContext<TContract> =
   TContract extends LiatirPluginContract<infer I, infer O> ? PluginMainContext<I, O> : never;
 
-/** Runtime shape `lia build` reads (schema → manifest) and the app runner calls. */
+/** Runtime shape `liatir build` reads (schema → manifest) and the app runner calls. */
 export interface LiatirPlugin<I extends InputSchema = InputSchema, O extends OutputSchema = OutputSchema> {
   readonly __liatirPlugin: true;
   inputs: I;
@@ -400,7 +400,7 @@ export interface LiatirPlugin<I extends InputSchema = InputSchema, O extends Out
  * from them at build time — no hand-written types, no manifest to keep in sync.
  *
  * ```ts
- * import { definePlugin, field } from "@liatir/sdk";
+ * import { definePlugin, field } from "@liatir/api";
  *
  * export default definePlugin({
  *   inputs: {
@@ -427,8 +427,8 @@ export function definePlugin<const I extends InputSchema, const O extends Output
         inputs: def.inputs,
         outputs: def.outputs,
         run: async (input) => {
-          const lia = await createLiatir();
-          return handler({ input: input as Infer<I>, lia });
+          const Liatir = await createLiatir();
+          return handler({ input: input as Infer<I>, Liatir });
         },
       };
     },

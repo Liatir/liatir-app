@@ -1,6 +1,4 @@
-# Liatir CLI
-
-[Liatir website ↗](https://liatir.com)
+# Getting started
 
 In order to start developing a **Liatir plugin**, you have to install the **Liatir CLI** from `@liatir/cli`, the Liatir command-line package for scaffolding, developing, and building `.lia` plugins.
 
@@ -89,3 +87,7 @@ liatir init plugin-name --no-wasm-target
 The fields declared in `inputs` and `outputs` become the plugin's pipeline
 contract. Liatir uses them to render forms, validate required inputs, expose
 outputs to later steps, and store file outputs in Results.
+
+For the exact bundle format, see [.lia Bundle Format](/plugins/format). For CLI
+commands, see [@liatir/cli CLI](/plugins/liatir-cli). For the API packages, see
+[Liatir API packages](/plugins/api-packages) and [Plugin authoring API](/plugins/api/plugin/define-plugin).

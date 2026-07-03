@@ -1,6 +1,9 @@
-import { definePlugin, field, type PluginContext } from "@liatir/sdk";
-
 // Docs: https://liatir.com/docs/plugins
+
+import { definePlugin, field, type PluginContext } from "@liatir/api";
+
+// This is just an example. Edit inputs and outputs definitions and the plugin logic to implement your solutions.
+
 const liatirPlugin = definePlugin({
   inputs: {
     text: field.string({
@@ -19,8 +22,9 @@ const liatirPlugin = definePlugin({
   },
 });
 
-export default liatirPlugin.main(async ({ input, lia }: PluginContext<typeof liatirPlugin>) => {
-  // Write your plugin logic here. Inputs and outputs are defined once above.
+export default liatirPlugin.main(async ({ input, Liatir }: PluginContext<typeof liatirPlugin>) => {
+
+  // Write the plugin logic here
 
   return {
     length: input.text.length,

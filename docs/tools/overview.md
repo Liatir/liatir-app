@@ -1,6 +1,6 @@
 # Tools
 
-Liatir ships with three built-in analysis surfaces: **WASM tools** that run
+Liatir ships with three built-in analysis surfaces: **WASM plugins** that run
 inside the app, **native tools** that delegate to binaries installed on your
 machine, and **AI Tools** that use local AI Models.
 
@@ -8,7 +8,7 @@ All of them share the same UI pattern, run history, and output model. They are
 interchangeable from the pipeline's perspective when their input and output
 types match.
 
-## WASM tools
+## WASM plugins
 
 Compiled to WebAssembly and bundled with Liatir. Zero installation required. These tools work identically on every machine.
 

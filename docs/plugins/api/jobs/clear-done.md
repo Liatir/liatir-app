@@ -1,6 +1,6 @@
 ---
 title: jobs.clearDone
-description: Clears completed jobs from the SDK job registry.
+description: Clears completed jobs from the job registry.
 ---
 
 # jobs.clearDone

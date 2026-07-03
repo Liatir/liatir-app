@@ -1,7 +1,7 @@
 import { defineConfig } from "tsup";
 import path from "path";
 
-// Build config for the PUBLISHED @liatir/sdk package.
+// Build config for the PUBLISHED @liatir/api package.
 //
 // Bundles the INTERNAL @liatir/output-parser into the output — both the JS and
 // the .d.ts (via dts.resolve) — so the published package is self-contained and

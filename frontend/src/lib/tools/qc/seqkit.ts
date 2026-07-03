@@ -2,7 +2,7 @@ import type { PipelineStepDefinition } from '$lib/types/pipeline';
 import { threadInputSchema } from '$lib/utils/execution-resources';
 
 // Parsers now live in the shared @liatir/output-parser package (single source of truth,
-// also consumed by the @liatir/sdk adapter). The pipeline-step definition stays here.
+// also consumed by the @liatir/api adapter). The pipeline-step definition stays here.
 export { parseSeqkitStats, seqkitStatsToToolOutput, type SeqkitStatsResult } from '@liatir/output-parser';
 
 export const seqkitStatsDefinition: PipelineStepDefinition = {

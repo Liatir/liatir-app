@@ -1,6 +1,6 @@
 // FastQC (WASM custom-tool) — types + render the FastqcResult into a ToolOutput.
 // Migrated from the browser SDK (src-ts/modules/qc/fastqc) so the app and the
-// @liatir/sdk adapter render identical reports.
+// @liatir/api adapter render identical reports.
 
 import type { ToolOutput, ToolSection } from '../types';
 

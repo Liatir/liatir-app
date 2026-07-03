@@ -6,7 +6,7 @@
 
 ```typescript
 import { liatir } from '$lib/api'
-import type { LiatirBrowserAPI } from '@liatir/sdk'
+import type { LiatirBrowserAPI } from '@liatir/api'
 
 const api = liatir() as LiatirBrowserAPI | null  // returns window.Liatir ?? null
 if (!api) throw new Error('Liatir API not available')

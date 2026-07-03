@@ -1,5 +1,5 @@
 // fastp — parse the JSON report into a typed summary and a ToolOutput.
-// Pure functions; migrated from the frontend so app and @liatir/sdk render identically.
+// Pure functions; migrated from the frontend so app and @liatir/api render identically.
 
 import type { ToolOutput, StatsSection } from '../types';
 

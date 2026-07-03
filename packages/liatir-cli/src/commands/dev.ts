@@ -64,7 +64,7 @@ async function parseDevInputs(args: string[]): Promise<Record<string, unknown>> 
 }
 
 // Generates a thin runner that imports the bundle and calls the same strict
-// runtime shape used by `lia build`: default definePlugin(...).main(...).
+// runtime shape used by `liatir build`: default definePlugin(...).main(...).
 function runnerScript(bundlePath: string, inputs: Record<string, unknown>, entryDisplayPath: string): string {
   return `
 import * as _mod from ${JSON.stringify(bundlePath)};
@@ -163,7 +163,7 @@ export async function dev(args: string[] = []) {
     platform: "node",
     target: "node18",
     outfile: bundlePath,
-    external: ["@liatir/sdk"],
+    external: ["@liatir/api"],
     plugins: [
       {
         name: "on-rebuild",
@@ -171,7 +171,7 @@ export async function dev(args: string[] = []) {
           b.onEnd(async (result) => {
             if (result.errors.length === 0) {
               try {
-                await typecheckIfConfigured(cwd, "lia dev");
+                await typecheckIfConfigured(cwd, "liatir dev");
               } catch (err) {
                 console.error(err instanceof Error ? err.message : err);
                 return;

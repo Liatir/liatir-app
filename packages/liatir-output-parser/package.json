@@ -1,7 +1,7 @@
 {
   "name": "@liatir/output-parser",
   "version": "1.0.0",
-  "description": "Shared bioinformatics output parsers (tool stdout/JSON → ToolOutput). Single source of truth consumed by the Liatir frontend, the @liatir/sdk adapter, and the browser SDK. Internal — never published (bundled into consumers).",
+  "description": "Shared bioinformatics output parsers (tool stdout/JSON → ToolOutput). Single source of truth consumed by the Liatir frontend, the @liatir/api adapter, and the browser SDK. Internal — never published (bundled into consumers).",
   "private": true,
   "type": "module",
   "main": "dist/index.js",

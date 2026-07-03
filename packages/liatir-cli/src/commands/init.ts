@@ -263,7 +263,7 @@ async function promptText(
   while (true) {
     const answer = (await rl.question(`${label}${optional}${example}${defaultHint}: `)).trim();
     if (answer || !options.required) return answer || defaultValue;
-    console.log(`${label} is required. \`lia init\` creates a new project directory.`);
+    console.log(`${label} is required. \`liatir init\` creates a new project directory.`);
   }
 }
 
@@ -355,7 +355,7 @@ async function resolveInitConfig(parsed: ParsedInitArgs): Promise<InitConfig> {
 
   try {
     if (!parsed.name && !interactive && !parsed.yes) {
-      throw new Error("Missing project folder. Use `lia init <folder>` or `lia init --yes`.");
+      throw new Error("Missing project folder. Use `liatir init <folder>` or `liatir init --yes`.");
     }
 
     const selectedName = parsed.name
@@ -433,7 +433,7 @@ async function installNodeDependencies(dir: string): Promise<void> {
     console.log("Installing dependencies with npm...");
     await execFileAsync("npm", ["install"], { cwd: dir });
   } catch {
-    console.warn("Dependency install failed. Run `npm install` inside the plugin folder before `lia dev`.");
+    console.warn("Dependency install failed. Run `npm install` inside the plugin folder before `liatir dev`.");
   }
 }
 
@@ -456,13 +456,13 @@ async function ensureWasmTarget(): Promise<void> {
 
 function packageJson(config: InitConfig): string {
   const scripts: Record<string, string> = {
-    dev: "lia dev",
-    build: "lia build",
-    update: "lia update",
+    dev: "liatir dev",
+    build: "liatir build",
+    update: "liatir update",
   };
   const devDependencies: Record<string, string> = {
-    "@liatir/lia": "^1.5.2",
-    "@liatir/sdk": "^1.5.2",
+    "@liatir/cli": "^1.5.2",
+    "@liatir/api": "^1.5.2",
   };
 
   if (config.language === "typescript") {
@@ -495,7 +495,8 @@ const TSCONFIG = JSON.stringify(
     compilerOptions: {
       target: "ES2022",
       module: "ESNext",
-      outDir: "raw_build",
+      outDir: ".liatir",
+      rootDir: "./src",
       moduleResolution: "bundler",
       lib: ["ES2022"],
       strict: true,
@@ -519,7 +520,7 @@ function nodeIndex(config: InitConfig): string {
 
 const MINIMAL_TS = `// Docs: https://liatir.com/docs/plugins
 
-import { definePlugin, field, type PluginContext } from "@liatir/sdk";
+import { definePlugin, field, type PluginContext } from "@liatir/api";
 
 // This is just an example. Edit inputs and outputs definitions and the plugin logic to implement your solutions.
 
@@ -541,7 +542,7 @@ const liatirPlugin = definePlugin({
   },
 });
 
-export default liatirPlugin.main(async ({ input, lia }: PluginContext<typeof liatirPlugin>) => {
+export default liatirPlugin.main(async ({ input, Liatir }: PluginContext<typeof liatirPlugin>) => {
 
   // Write the plugin logic here
 
@@ -551,7 +552,7 @@ export default liatirPlugin.main(async ({ input, lia }: PluginContext<typeof lia
 });
 `;
 
-const MINIMAL_JS = `import { definePlugin, field } from "@liatir/sdk";
+const MINIMAL_JS = `import { definePlugin, field } from "@liatir/api";
 
 // Docs: https://liatir.com/docs/plugins
 const liatirPlugin = definePlugin({
@@ -581,7 +582,7 @@ export default liatirPlugin.main(async ({ input }) => {
 
 const FILE_PROCESSOR_TS = `import { basename } from "node:path";
 import { stat } from "node:fs/promises";
-import { definePlugin, field, type PluginContext } from "@liatir/sdk";
+import { definePlugin, field, type PluginContext } from "@liatir/api";
 
 // Docs: https://liatir.com/docs/plugins
 const liatirPlugin = definePlugin({
@@ -618,7 +619,7 @@ export default liatirPlugin.main(async ({ input }: PluginContext<typeof liatirPl
 
 const FILE_PROCESSOR_JS = `import { basename } from "node:path";
 import { stat } from "node:fs/promises";
-import { definePlugin, field } from "@liatir/sdk";
+import { definePlugin, field } from "@liatir/api";
 
 // Docs: https://liatir.com/docs/plugins
 const liatirPlugin = definePlugin({
@@ -653,7 +654,7 @@ export default liatirPlugin.main(async ({ input }) => {
 });
 `;
 
-const BIO_CLI_TS = `import { definePlugin, field, type PluginContext } from "@liatir/sdk";
+const BIO_CLI_TS = `import { definePlugin, field, type PluginContext } from "@liatir/api";
 
 // Docs: https://liatir.com/docs/plugins
 const liatirPlugin = definePlugin({
@@ -681,11 +682,11 @@ const liatirPlugin = definePlugin({
   },
 });
 
-export default liatirPlugin.main(async ({ input, lia }: PluginContext<typeof liatirPlugin>) => {
+export default liatirPlugin.main(async ({ input, Liatir }: PluginContext<typeof liatirPlugin>) => {
   const stdoutLines: string[] = [];
   const stderrLines: string[] = [];
 
-  const job = await lia.jobs.run("seqkit", ["stats", input.fastq], {
+  const job = await Liatir.jobs.run("seqkit", ["stats", input.fastq], {
     onStdout: (line) => stdoutLines.push(line),
     onStderr: (line) => stderrLines.push(line),
   });
@@ -698,7 +699,7 @@ export default liatirPlugin.main(async ({ input, lia }: PluginContext<typeof lia
 });
 `;
 
-const BIO_CLI_JS = `import { definePlugin, field } from "@liatir/sdk";
+const BIO_CLI_JS = `import { definePlugin, field } from "@liatir/api";
 
 // Docs: https://liatir.com/docs/plugins
 const liatirPlugin = definePlugin({
@@ -726,11 +727,11 @@ const liatirPlugin = definePlugin({
   },
 });
 
-export default liatirPlugin.main(async ({ input, lia }) => {
+export default liatirPlugin.main(async ({ input, Liatir }) => {
   const stdoutLines = [];
   const stderrLines = [];
 
-  const job = await lia.jobs.run("seqkit", ["stats", input.fastq], {
+  const job = await Liatir.jobs.run("seqkit", ["stats", input.fastq], {
     onStdout: (line) => stdoutLines.push(line),
     onStderr: (line) => stderrLines.push(line),
   });
@@ -801,7 +802,7 @@ struct Output {
     length: u64,
 }
 
-// A Liatir WASM tool reads its JSON input from STDIN and writes JSON output to
+// A Liatir WASM plugin reads its JSON input from STDIN and writes JSON output to
 // STDOUT. It runs in a sandbox: no network access and no arbitrary filesystem.
 // Only directories mounted by Liatir are available to the tool.
 fn main() {
@@ -817,7 +818,7 @@ fn main() {
 }
 `;
 
-const GITIGNORE = "target/\n*.lia\nnode_modules/\ndist/\n.lia-dev/\n";
+const GITIGNORE = "target/\n*.lia\nnode_modules/\ndist/\n.liatir/\nbuild/\n.lia-dev/\n";
 
 async function scaffoldWasm(config: InitConfig): Promise<void> {
   await Promise.all([
@@ -836,7 +837,7 @@ Created ${config.projectName}/ (WASM Rust .lia tool)
 
 Next steps:
   cd ${shellQuote(config.nextStepDir)}
-  lia build      # compile Rust and package as ${config.rustCrateName}.lia
+  liatir build      # compile Rust and package as ${config.rustCrateName}.lia
 `);
 }
 
@@ -858,15 +859,15 @@ async function scaffoldNode(config: InitConfig): Promise<void> {
     await installNodeDependencies(config.dir);
   }
 
-  const installStep = config.installDependencies ? "" : "  npm install    # installs @liatir/sdk types for the editor\n";
+  const installStep = config.installDependencies ? "" : "  npm install    # installs @liatir/api types for the editor\n";
 
   console.log(`
 Created ${config.projectName}/ (Node ${config.language} .lia plugin)
 
 Next steps:
   cd ${shellQuote(config.nextStepDir)}
-${installStep}  lia dev       # watch mode with live Liatir app
-  lia build     # package as ${config.packageName}.lia
+${installStep}  liatir dev       # watch mode with live Liatir app
+  liatir build     # package as ${config.packageName}.lia
 `);
 }
 

@@ -5,7 +5,7 @@ import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);
 
-const LIATIR_PACKAGES = ["@liatir/lia", "@liatir/sdk"] as const;
+const LIATIR_PACKAGES = ["@liatir/cli", "@liatir/api"] as const;
 
 type LiatirPackageName = typeof LIATIR_PACKAGES[number];
 type DependencyBlockName = "dependencies" | "devDependencies" | "peerDependencies" | "optionalDependencies";
@@ -49,13 +49,13 @@ function usage(): string {
   return `liatir update — update a Node .lia project's Liatir packages
 
 Usage:
-  lia update
-  lia update --version 1.5.2
-  lia update --no-install --version 1.5.2
-  lia update --dry-run
+  liatir update
+  liatir update --version 1.5.2
+  liatir update --no-install --version 1.5.2
+  liatir update --dry-run
 
 Options:
-  --version <version>  Install a specific @liatir/lia and @liatir/sdk version
+  --version <version>  Install a specific @liatir/cli and @liatir/api version
   --exact              Save exact versions instead of npm's default range
   --no-install         Edit package.json only, then print the npm install step
   --dry-run            Show what would change without writing files
@@ -139,7 +139,7 @@ function hasLiatirPackageDependency(pkg: PackageJson): boolean {
 
 function hasLiatirScript(pkg: PackageJson): boolean {
   return Object.values(pkg.scripts ?? {}).some((script) =>
-    typeof script === "string" && /\blia\s+(build|dev|update)\b/.test(script),
+    typeof script === "string" && /\bliatir\s+(build|dev|update)\b/.test(script),
   );
 }
 
@@ -254,8 +254,8 @@ function runNpm(args: string[], cwd: string): Promise<void> {
 function printWasmUpdateHint(projectRoot: string): void {
   console.log(
     `Found a WASM .lia tool at ${projectRoot}.\n` +
-    "WASM projects do not use @liatir/sdk. Update the CLI with:\n\n" +
-    "  npm install -g @liatir/lia@latest\n",
+    "WASM projects do not use @liatir/api. Update the CLI with:\n\n" +
+    "  npm install -g @liatir/cli@latest\n",
   );
 }
 
@@ -300,7 +300,7 @@ export async function update(args: string[] = []): Promise<void> {
       return;
     }
 
-    throw new Error("No package.json found. Run `lia update` from a Node .lia plugin project.");
+    throw new Error("No package.json found. Run `liatir update` from a Node .lia plugin project.");
   }
 
   const pkg = await readPackageJson(projectRoot);

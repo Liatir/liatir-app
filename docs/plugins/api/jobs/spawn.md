@@ -1,6 +1,6 @@
 ---
 title: jobs.spawn
-description: Starts an async native process from the Liatir SDK.
+description: Starts an async native process from the Liatir API.
 ---
 
 # jobs.spawn

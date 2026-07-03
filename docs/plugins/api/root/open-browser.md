@@ -1,6 +1,6 @@
 ---
 title: openBrowser
-description: Opens an external URL from the Liatir SDK.
+description: Opens an external URL from the Liatir API.
 ---
 
 # openBrowser

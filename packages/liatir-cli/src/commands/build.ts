@@ -7,10 +7,11 @@ import { promisify } from "util";
 import type { LiatirFieldSchema, LiatirInputFieldSchema, LiatirOutputFieldSchema } from "@liatir/core";
 import { typecheckIfConfigured } from "./_typecheck.js";
 import { resolveNodeEntryPoint, type NodeEntryPoint } from "./_entry.js";
+import { accessSync } from "fs";
 
 const execFileAsync = promisify(execFile);
 
-// A field as produced at runtime by the SDK's field/input/output builders.
+// A field as produced at runtime by the @liatir/api field/input/output builders.
 type RuntimeField = LiatirFieldSchema & {
   ext?: string[];
   format?: LiatirOutputFieldSchema["format"];
@@ -132,7 +133,7 @@ function packageMetadata(pkg: PackageMetadata): ManifestMetadata {
 
 function wasmMetadata(raw: Record<string, unknown>): ManifestMetadata {
   return {
-    name: cleanOptionalString(raw.name) ?? "WASM Tool",
+    name: cleanOptionalString(raw.name) ?? "WASM plugin",
     version: cleanOptionalString(raw.version) ?? "1.0.0",
     description: cleanOptionalString(raw.description) ?? "",
     category: cleanOptionalString(raw.category),
@@ -201,9 +202,10 @@ async function buildNode(cwd: string): Promise<void> {
   const metadata = packageMetadata(pkg);
 
   console.log(`Building ${pkg.name}@${pkg.version} (node, ${entryPoint.language})...`);
-  await typecheckIfConfigured(cwd, "lia build");
+  await typecheckIfConfigured(cwd, "liatir build");
 
-  const distDir = path.join(cwd, "dist");
+  const liatirDir = path.join(cwd, ".liatir");
+  const distDir = path.join(liatirDir, "build-artifacts");
   await fs.mkdir(distDir, { recursive: true });
   const bundlePath = path.join(distDir, "index.js");
 
@@ -235,7 +237,7 @@ async function buildNode(cwd: string): Promise<void> {
   };
 
   const outputName = `${bareName(pkg.name)}.lia`;
-  await createBundle(path.join(cwd, outputName), manifest, "index.js", bundlePath);
+  await createBundle(path.join(liatirDir, outputName), manifest, "index.js", bundlePath);
   console.log(`✓ Built → ${outputName}`);
 }
 
@@ -279,7 +281,8 @@ async function buildWasm(cwd: string): Promise<void> {
   if (!wasmFile) throw new Error(`No .wasm artifact found in ${releaseDir}`);
 
   const outputName = `${bareName(manifest.name)}.lia`;
-  await createBundle(path.join(cwd, outputName), manifest, "plugin.wasm", path.join(releaseDir, wasmFile));
+  const liatirDir = path.join(cwd, ".liatir");
+  await createBundle(path.join(liatirDir, outputName), manifest, "plugin.wasm", path.join(releaseDir, wasmFile));
   console.log(`✓ Built → ${outputName}`);
 }
 

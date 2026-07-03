@@ -1,22 +1,22 @@
-# Liatir SDK
+# Liatir API packages
 
-The Liatir SDK has two related surfaces:
+The Liatir API ships in two related packages:
 
-- `@liatir/sdk` for Node `.lia` plugin authoring;
+- `@liatir/api` for Node `.lia` plugin authoring;
 - `liatir` for browser/webview code that needs the `window.Liatir` bridge.
 
-Most plugin authors use `@liatir/sdk` through projects created by
-`lia init`.
+Most plugin authors use `@liatir/api` through projects created by
+`liatir init`.
 
-![Liatir SDK surface map](../static/sdk-surface-map.svg)
+![Liatir API surface map](../static/api-surface-map.svg)
 
 ## Node plugin authoring
 
 Node `.lia` plugins import `definePlugin`, `field`, and optional helper types
-from `@liatir/sdk`.
+from `@liatir/api`.
 
 ```ts
-import { definePlugin, field, type PluginContext } from "@liatir/sdk";
+import { definePlugin, field, type PluginContext } from "@liatir/api";
 
 const liatirPlugin = definePlugin({
   inputs: {
@@ -36,7 +36,7 @@ const liatirPlugin = definePlugin({
   },
 });
 
-export default liatirPlugin.main(async ({ input, lia }: PluginContext<typeof liatirPlugin>) => {
+export default liatirPlugin.main(async ({ input, Liatir }: PluginContext<typeof liatirPlugin>) => {
   return {
     length: input.text.length,
   };
@@ -44,7 +44,7 @@ export default liatirPlugin.main(async ({ input, lia }: PluginContext<typeof lia
 ```
 
 The schema is declared once. TypeScript input and output types are inferred from
-that schema, and `lia build` generates the `.lia` manifest from it.
+that schema, and `liatir build` generates the `.lia` manifest from it.
 
 ## Node plugin bridge
 
@@ -54,24 +54,24 @@ not support GUI-only APIs.
 
 Available areas include:
 
-- `lia.jobs`
-- `lia.deps`
-- `lia.desktop.fs`
-- `lia.desktop.files`
-- `lia.desktop.events`
-- `lia.desktop.app`
-- `lia.desktop.network`
-- `lia.desktop.clipboard`
-- `lia.desktop.notifications`
-- `lia.desktop.diagnostics`
-- `lia.desktop.globalVariables`
-- `lia.align`
-- `lia.qc`
-- `lia.variants`
-- `lia.plugins`
-- `lia.sidecar`
-- `lia.paths()`
-- `lia.invoke`
+- `Liatir.jobs`
+- `Liatir.deps`
+- `Liatir.desktop.fs`
+- `Liatir.desktop.files`
+- `Liatir.desktop.events`
+- `Liatir.desktop.app`
+- `Liatir.desktop.network`
+- `Liatir.desktop.clipboard`
+- `Liatir.desktop.notifications`
+- `Liatir.desktop.diagnostics`
+- `Liatir.desktop.globalVariables`
+- `Liatir.align`
+- `Liatir.qc`
+- `Liatir.variants`
+- `Liatir.plugins`
+- `Liatir.sidecar`
+- `Liatir.paths()`
+- `Liatir.invoke`
 
 ## Browser/webview bridge
 

@@ -22,9 +22,9 @@ features:
     details: Your genomic data never leaves your machine. There are no API calls to external servers, no telemetry, no licence checks. Liatir works on an air-gapped workstation just as well as a connected laptop.
   - icon: 📦
     title: .lia plugins — extend anything
-    details: A .lia file is a self-contained extension built with @liatir/lia. Node plugins declare inputs and outputs with definePlugin, then run as first-class analysis steps in the app and pipeline builder.
+    details: A .lia file is a self-contained extension built with @liatir/cli. Node plugins declare inputs and outputs with definePlugin, then run as first-class analysis steps in the app and pipeline builder.
   - icon: 🔌
-    title: WASM tools
+    title: WASM plugins
     details: For performance-critical or language-agnostic logic, Liatir can run WebAssembly plugins. Compile from Rust, C, or any WASM target and use the same input/output schema used by every other step.
   - icon: 🧠
     title: Local AI Models and AI Tools

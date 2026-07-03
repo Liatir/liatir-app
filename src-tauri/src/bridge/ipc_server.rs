@@ -499,7 +499,7 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
         }
 
         // ── Native bio tools ─────────────────────────────────────────────
-        // Exposed to .lia plugins so the typed bio wrappers in `@liatir/sdk`
+        // Exposed to .lia plugins so the typed bio wrappers in `@liatir/api`
         // (Liatir.align.*, Liatir.variants.*, …) can call the SAME native
         // commands the desktop UI uses — reusing reference auto-indexing,
         // output redirection and stat parsing instead of re-implementing them.

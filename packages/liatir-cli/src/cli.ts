@@ -25,7 +25,7 @@ async function main() {
       console.log(`liatir — develop and build .lia plugins & custom tools
 
 Usage:
-  liatir init [name]          Scaffold a .lia plugin or WASM tool interactively
+  liatir init [name]          Scaffold a .lia plugin or WASM plugin interactively
   liatir init <name> --yes    Use recommended defaults without prompts
   liatir init <name> --wasm   Scaffold a WASM Rust .lia tool
   liatir init <name> --js     Scaffold a JavaScript Node .lia plugin
@@ -33,7 +33,7 @@ Usage:
   liatir dev --input '{"text":"hello"}'
   liatir dev --input-file inputs.json
   liatir build                Bundle and package as <name>.lia
-  liatir update               Update @liatir/lia and @liatir/sdk in a Node .lia plugin project
+  liatir update               Update @liatir/cli and @liatir/api in a Node .lia plugin project
 `);
   }
 }

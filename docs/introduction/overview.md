@@ -32,7 +32,7 @@ inputs and outputs in code with `definePlugin({ inputs, outputs })`, and
 `lia build` generates the bundle manifest from that contract. WASM plugins use a
 manifest file and a sandboxed `plugin.wasm` payload.
 
-### 3 — WASM tools
+### 3 — WASM plugins
 For performance-critical or cross-language logic, Liatir supports WebAssembly plugins. Compile from Rust, C, or any WASM-compatible language and expose it as a normal tool in the UI and in pipelines.
 
 ### 4 — AI Models and AI Tools
@@ -45,7 +45,7 @@ AI Models are locally installed model runtimes managed by Liatir. AI Tools are t
 | **Data library** | A registry of file paths on disk. Files are never copied — Liatir tracks references and detects when files move or disappear. |
 | **Native tool** | A system binary wrapped with a Liatir UI, dependency check, and run history. |
 | **.lia plugin** | A self-contained extension bundle that adds custom steps through the shared input/output contract. |
-| **WASM tool** | A WebAssembly-backed tool for performance-critical logic. FastQC is the primary example. |
+| **WASM plugin** | A WebAssembly-backed tool for performance-critical logic. FastQC is the primary example. |
 | **AI Model** | A locally managed model runtime installed only when needed. |
 | **AI Tool** | A pipeline-ready capability that runs a compatible local AI Model through the shared I/O contract. |
 | **Pipeline** | A directed graph of steps whose typed outputs connect to typed inputs of subsequent steps. |

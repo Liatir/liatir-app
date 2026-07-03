@@ -4,9 +4,9 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "dev": "lia dev",
-    "build": "lia build",
-    "update": "lia update",
+    "dev": "liatir dev",
+    "build": "liatir build",
+    "update": "liatir update",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "liatir": {
@@ -15,8 +15,8 @@
     "tags": []
   },
   "devDependencies": {
-    "@liatir/lia": "^1.5.2",
-    "@liatir/sdk": "^1.5.2",
+    "@liatir/cli": "^1.5.2",
+    "@liatir/api": "^1.5.2",
     "typescript": "^5.0.0",
     "@types/node": "^20.0.0"
   }

@@ -1,11 +1,11 @@
 ---
 title: pipeline.run
-description: Runs a sequential SDK pipeline made of low-level WASM and sidecar steps.
+description: Runs a sequential pipeline made of low-level WASM and sidecar steps.
 ---
 
 # pipeline.run
 
-`Liatir.pipeline.run()` runs a simple sequential SDK pipeline made of low-level
+`Liatir.pipeline.run()` runs a simple sequential pipeline made of low-level
 WASM plugin calls and native sidecar steps.
 
 This is not the same as Liatir's visual pipeline builder. The visual pipeline

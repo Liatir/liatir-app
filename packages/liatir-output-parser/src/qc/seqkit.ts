@@ -1,7 +1,7 @@
 // seqkit stats — parse the tabular stdout into a typed result and a ToolOutput.
 //
 // Pure functions (string → data → ToolOutput), no runtime dependencies beyond
-// the shared types. Migrated here from the frontend so the @liatir/sdk adapter
+// the shared types. Migrated here from the frontend so the @liatir/api adapter
 // (Liatir.qc.seqkit) and the app render identical results.
 
 import type { ToolOutput, StatsSection, TextSection } from '../types';

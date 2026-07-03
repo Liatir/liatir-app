@@ -25,7 +25,7 @@ the local `liatir()` helper from `$lib/api.ts`.
 
 ```ts
 import { liatir } from '$lib/api'
-import type { LiatirBrowserAPI } from '@liatir/sdk'
+import type { LiatirBrowserAPI } from '@liatir/api'
 
 const api = liatir() as LiatirBrowserAPI | null
 if (!api) throw new Error('Liatir API not available')

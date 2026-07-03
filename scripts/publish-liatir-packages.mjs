@@ -5,11 +5,11 @@ import { join, resolve } from "node:path";
 
 const packages = [
   {
-    label: "@liatir/sdk",
-    dir: "packages/liatir-adapter",
+    label: "@liatir/api",
+    dir: "packages/liatir-api",
   },
   {
-    label: "@liatir/lia",
+    label: "@liatir/cli",
     dir: "packages/liatir-cli",
   },
 ];
@@ -18,10 +18,10 @@ function usage() {
   console.log(`Publish the .lia npm packages in dependency order.
 
 Usage:
-  npm run lia:publish
-  npm run lia:publish -- --otp 123456
-  npm run lia:publish -- --tag next
-  npm run lia:publish:dry
+  npm run liatir:publish
+  npm run liatir:publish -- --otp 123456
+  npm run liatir:publish -- --tag next
+  npm run liatir:publish:dry
 
 Options:
   --otp <code>     One-time password required by npm 2FA.

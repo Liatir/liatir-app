@@ -1,6 +1,6 @@
 ---
 title: invoke
-description: Low-level command invocation for advanced SDK usage.
+description: Low-level command invocation for advanced API usage.
 ---
 
 # invoke
@@ -9,7 +9,7 @@ description: Low-level command invocation for advanced SDK usage.
 
 Use it only when:
 
-- the SDK has no typed wrapper for what you need;
+- the API has no typed wrapper for what you need;
 - you know the command name and payload contract;
 - you can handle app-version changes.
 
