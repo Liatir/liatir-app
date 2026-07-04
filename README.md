@@ -1,3 +1,7 @@
+[![CI](https://github.com/Liatir/tauri-builder/actions/workflows/ci.yml/badge.svg)](https://github.com/Liatir/tauri-builder/actions/workflows/ci.yml)
+
+---
+
 # Liatir
 
 Tauri 2 desktop runtime base for bioinformatics applications.
