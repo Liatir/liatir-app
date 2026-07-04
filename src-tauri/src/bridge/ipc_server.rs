@@ -7,8 +7,102 @@ use axum::{
     Router,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Map, Value};
 use tauri::{AppHandle, Manager};
+
+const DEV_CONTEXT_PAYLOAD_KEY: &str = "__liatirDevContext";
+
+#[derive(Debug, Clone)]
+struct IpcDevContext {
+    session_id: String,
+}
+
+fn dev_context_from_payload(payload: &Value) -> Option<IpcDevContext> {
+    let ctx = payload.get(DEV_CONTEXT_PAYLOAD_KEY)?.as_object()?;
+    let scope = ctx.get("scope").and_then(Value::as_str)?;
+    if scope != "plugin-dev" {
+        return None;
+    }
+    let session_id = ctx.get("sessionId").and_then(Value::as_str)?.trim();
+    if session_id.is_empty() {
+        return None;
+    }
+    Some(IpcDevContext {
+        session_id: session_id.to_string(),
+    })
+}
+
+fn merge_dev_job_metadata(metadata: Option<Value>, ctx: &IpcDevContext) -> Value {
+    let mut map = match metadata {
+        Some(Value::Object(map)) => map,
+        Some(value) => {
+            let mut map = Map::new();
+            map.insert("value".to_string(), value);
+            map
+        }
+        None => Map::new(),
+    };
+    map.insert("pluginDev".to_string(), Value::Bool(true));
+    map.insert("pluginDevSessionId".to_string(), Value::String(ctx.session_id.clone()));
+    Value::Object(map)
+}
+
+fn scoped_dev_rel(ctx: &IpcDevContext, value: &str) -> String {
+    let clean = value.trim_matches('/');
+    let base = format!(
+        "workspaces/{}/plugin-dev/{}",
+        crate::bridge::jobs::SANDBOX_WORKSPACE_ID,
+        ctx.session_id
+    );
+    if clean == base || clean.starts_with(&format!("{base}/")) {
+        return clean.to_string();
+    }
+    if clean.is_empty() {
+        base
+    } else {
+        format!("{base}/{clean}")
+    }
+}
+
+fn scope_dev_fs_payload(cmd: &str, payload: Value, ctx: Option<&IpcDevContext>) -> Value {
+    let Some(ctx) = ctx else {
+        return payload;
+    };
+    if !cmd.starts_with("lia_fs_") {
+        return payload;
+    }
+    if matches!(
+        cmd,
+        "lia_fs_paths"
+            | "lia_fs_clear_data"
+            | "lia_fs_clear_cache"
+            | "lia_fs_data_clear_trash"
+            | "lia_fs_data_recover_trash"
+    ) || cmd.contains("_diagnostics_")
+        || cmd.contains("_trash_")
+    {
+        return payload;
+    }
+
+    let Value::Object(mut map) = payload else {
+        return payload;
+    };
+    if map
+        .get("pluginStoragePlugin")
+        .and_then(Value::as_str)
+        .map(|value| !value.trim().is_empty())
+        .unwrap_or(false)
+    {
+        return Value::Object(map);
+    }
+
+    for key in ["rel", "src", "dest"] {
+        if let Some(Value::String(value)) = map.get(key).cloned() {
+            map.insert(key.to_string(), Value::String(scoped_dev_rel(ctx, &value)));
+        }
+    }
+    Value::Object(map)
+}
 
 /// Generates IPC dispatch match-arms that forward a JSON payload to a
 /// *synchronous* bridge command. Each entry maps a command name to its Rust
@@ -221,6 +315,8 @@ async fn handle_invoke(
 }
 
 async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<Value> {
+    let dev_context = dev_context_from_payload(&payload);
+    let payload = scope_dev_fs_payload(cmd, payload, dev_context.as_ref());
     // ── Filesystem bridge (scoped storage: data/cache, trash, diagnostics) ──
     // Same native commands window.Liatir.desktop.fs calls — exposed to .lia plugins.
     ipc_sync_dispatch!(app, cmd, payload;
@@ -343,7 +439,10 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect())
                 .unwrap_or_default();
             let cwd = payload["cwd"].as_str().map(String::from);
-            let workspace_id = payload["workspaceId"].as_str().map(String::from);
+            let workspace_id = dev_context
+                .as_ref()
+                .map(|_| crate::bridge::jobs::SANDBOX_WORKSPACE_ID.to_string())
+                .or_else(|| payload["workspaceId"].as_str().map(String::from));
             let env: Option<std::collections::HashMap<String, String>> = payload["env"]
                 .as_object()
                 .map(|obj| {
@@ -352,8 +451,21 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                         .collect()
                 });
             let label = payload["label"].as_str().map(String::from);
-            let kind = payload["kind"].as_str().map(String::from);
+            let kind = match dev_context.as_ref() {
+                Some(_) => Some(
+                    payload["kind"]
+                        .as_str()
+                        .filter(|kind| kind.starts_with("lia-plugin-dev"))
+                        .unwrap_or("lia-plugin-dev-child")
+                        .to_string(),
+                ),
+                None => payload["kind"].as_str().map(String::from),
+            };
             let metadata = payload.get("metadata").filter(|value| !value.is_null()).cloned();
+            let metadata = match dev_context.as_ref() {
+                Some(ctx) => Some(merge_dev_job_metadata(metadata, ctx)),
+                None => metadata,
+            };
 
             let result = crate::bridge::jobs::lia_jobs_spawn(
                 app.clone(),
@@ -368,6 +480,11 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
             )
                 .await
                 .map_err(|e| anyhow::anyhow!(e))?;
+            if let Some(ctx) = dev_context.as_ref() {
+                if let Some(job_id) = result.get("jobId").and_then(Value::as_str) {
+                    crate::bridge::plugin_dev::track_dev_job(app, &ctx.session_id, job_id);
+                }
+            }
             Ok(result)
         }
 
@@ -393,7 +510,8 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
 
         "lia_jobs_list" => {
             let workspace_id = payload["workspaceId"].as_str().map(String::from);
-            let list = crate::bridge::jobs::lia_jobs_list(app.clone(), workspace_id)
+            let include_dev = payload["includeDev"].as_bool();
+            let list = crate::bridge::jobs::lia_jobs_list(app.clone(), workspace_id, include_dev)
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(serde_json::to_value(list)?)
         }
@@ -480,6 +598,113 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
             crate::bridge::lia_plugins::lia_liatir_run(app.clone(), path, inputs)
                 .await
                 .map_err(|e| anyhow::anyhow!(e))
+        }
+
+        "lia_plugin_dev_update_session" => {
+            let session_id = payload["sessionId"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("sessionId required"))?
+                .to_string();
+            let project_dir = payload["projectDir"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("projectDir required"))?
+                .to_string();
+            let bundle_path = payload["bundlePath"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("bundlePath required"))?
+                .to_string();
+            let build_id = payload["buildId"].as_str().map(String::from);
+            let initial_inputs = payload.get("initialInputs").filter(|value| !value.is_null()).cloned();
+            let session = crate::bridge::plugin_dev::lia_plugin_dev_update_session(
+                app.clone(),
+                session_id,
+                project_dir,
+                bundle_path,
+                build_id,
+                initial_inputs,
+            )
+            .await
+            .map_err(|e| anyhow::anyhow!(e))?;
+            Ok(serde_json::to_value(session)?)
+        }
+
+        "lia_plugin_dev_set_error" => {
+            let session_id = payload["sessionId"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("sessionId required"))?
+                .to_string();
+            let project_dir = payload["projectDir"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("projectDir required"))?
+                .to_string();
+            let error = payload["error"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("error required"))?
+                .to_string();
+            let build_id = payload["buildId"].as_str().map(String::from);
+            let initial_inputs = payload.get("initialInputs").filter(|value| !value.is_null()).cloned();
+            let session = crate::bridge::plugin_dev::lia_plugin_dev_set_error(
+                app.clone(),
+                session_id,
+                project_dir,
+                error,
+                build_id,
+                initial_inputs,
+            )
+            .map_err(|e| anyhow::anyhow!(e))?;
+            Ok(serde_json::to_value(session)?)
+        }
+
+        "lia_plugin_dev_get_session" => {
+            let session_id = payload["sessionId"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("sessionId required"))?
+                .to_string();
+            let session = crate::bridge::plugin_dev::lia_plugin_dev_get_session(app.clone(), session_id)
+                .map_err(|e| anyhow::anyhow!(e))?;
+            Ok(serde_json::to_value(session)?)
+        }
+
+        "lia_plugin_dev_list_jobs" => {
+            let session_id = payload["sessionId"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("sessionId required"))?
+                .to_string();
+            let jobs = crate::bridge::plugin_dev::lia_plugin_dev_list_jobs(app.clone(), session_id)
+                .map_err(|e| anyhow::anyhow!(e))?;
+            Ok(serde_json::to_value(jobs)?)
+        }
+
+        "lia_plugin_dev_open_session" => {
+            let session_id = payload["sessionId"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("sessionId required"))?
+                .to_string();
+            let session = crate::bridge::plugin_dev::lia_plugin_dev_open_session(app.clone(), session_id)
+                .await
+                .map_err(|e| anyhow::anyhow!(e))?;
+            Ok(serde_json::to_value(session)?)
+        }
+
+        "lia_plugin_dev_run" => {
+            let session_id = payload["sessionId"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("sessionId required"))?
+                .to_string();
+            let inputs = payload["inputs"].clone();
+            crate::bridge::plugin_dev::lia_plugin_dev_run(app.clone(), session_id, inputs)
+                .await
+                .map_err(|e| anyhow::anyhow!(e))
+        }
+
+        "lia_plugin_dev_end_session" => {
+            let session_id = payload["sessionId"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("sessionId required"))?
+                .to_string();
+            crate::bridge::plugin_dev::lia_plugin_dev_end_session(app.clone(), session_id)
+                .map_err(|e| anyhow::anyhow!(e))?;
+            Ok(Value::Null)
         }
 
         "lia_read_file_text" => {

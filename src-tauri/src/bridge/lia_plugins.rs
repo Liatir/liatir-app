@@ -1,10 +1,11 @@
 use std::{
+    collections::HashMap,
     io::Read,
     path::{Component, Path, PathBuf},
 };
 use tauri::AppHandle;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 
 use super::python_env::{
     env_dir, prepare_env, spawn_in_env, status_env, PythonEnvLock, PythonEnvPackage,
@@ -13,6 +14,7 @@ use super::python_env::{
 
 const SIG: &str = "LIATIR/1";
 const PYTHON_PLUGIN_ENV_ROOT: &str = "plugin-runtimes";
+pub(crate) const PYTHON_PLUGIN_DEV_ENV_ROOT: &str = "plugin-dev-runtimes";
 
 const RUNNER: &str = r#"import * as _mod from './index.js';
 // definePlugin(...) returns an object with .run; legacy shapes are accepted for older bundles.
@@ -147,6 +149,16 @@ fn read_manifest(zip: &mut zip::ZipArchive<std::fs::File>) -> Result<Value, Stri
     serde_json::from_str(&buf).map_err(|e| format!("Invalid manifest JSON: {e}"))
 }
 
+pub(crate) fn read_manifest_from_bundle(path: &str) -> Result<Value, String> {
+    let mut zip = open_validated(path)?;
+    read_manifest(&mut zip)
+}
+
+pub(crate) fn python_env_id_for_bundle(path: &str, manifest: &Value) -> Result<String, String> {
+    let bundle_hash = stable_hash_hex(&std::fs::read(path).map_err(|e| e.to_string())?);
+    Ok(python_plugin_env_id(manifest, &bundle_hash))
+}
+
 fn python_runtime_context(path: &str, manifest: Value) -> Result<PythonPluginRuntimeContext, String> {
     let runtime = manifest
         .get("runtime")
@@ -201,19 +213,6 @@ fn prepare_python_plugin_env(
         None,
         spec.python_requirement.clone(),
     )
-}
-
-fn ensure_python_plugin_env(
-    app: AppHandle,
-    env_id: String,
-    spec: &PythonPluginSpec,
-) -> Result<Option<PythonEnvLock>, String> {
-    let status = status_python_plugin_env(app.clone(), env_id.clone(), spec)?;
-    if status.installed {
-        return Ok(status.lock);
-    }
-    let prepared = prepare_python_plugin_env(app, env_id, spec)?;
-    Ok(prepared.lock)
 }
 
 fn extract_python_payload(
@@ -289,8 +288,7 @@ except Exception:
 /// Read manifest.json from a .lia plugin, validating the signature first.
 #[tauri::command]
 pub async fn lia_liatir_read_manifest(path: String) -> Result<Value, String> {
-    let mut zip = open_validated(&path)?;
-    read_manifest(&mut zip)
+    read_manifest_from_bundle(&path)
 }
 
 #[tauri::command]
@@ -332,6 +330,40 @@ pub async fn lia_liatir_run(
     app: AppHandle,
     path: String,
     inputs: Value,
+) -> Result<Value, String> {
+    run_lia_plugin_bundle(app, path, inputs, LiaPluginRunOptions::default()).await
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct LiaPluginRunOptions {
+    pub python_env_root: String,
+    pub workspace_id: Option<String>,
+    pub env: Option<HashMap<String, String>>,
+    pub job_label: Option<String>,
+    pub job_kind: String,
+    pub metadata: Option<Value>,
+    pub wasm_storage_name: Option<String>,
+}
+
+impl Default for LiaPluginRunOptions {
+    fn default() -> Self {
+        Self {
+            python_env_root: PYTHON_PLUGIN_ENV_ROOT.to_string(),
+            workspace_id: None,
+            env: None,
+            job_label: None,
+            job_kind: "lia-plugin".to_string(),
+            metadata: None,
+            wasm_storage_name: None,
+        }
+    }
+}
+
+pub(crate) async fn run_lia_plugin_bundle(
+    app: AppHandle,
+    path: String,
+    inputs: Value,
+    options: LiaPluginRunOptions,
 ) -> Result<Value, String> {
     let mut zip = open_validated(&path)?;
 
@@ -380,7 +412,7 @@ pub async fn lia_liatir_run(
 
         // Persistent /storage scope name, derived from the manifest name
         // (sanitized + ".wasm" so it passes the plugin-name validation).
-        let storage_name = manifest
+        let storage_name = options.wasm_storage_name.unwrap_or_else(|| manifest
             .get("name")
             .and_then(|n| n.as_str())
             .map(|n| {
@@ -390,17 +422,21 @@ pub async fn lia_liatir_run(
                     .collect();
                 format!("{safe}.wasm")
             })
-            .unwrap_or_else(|| "plugin.wasm".to_string());
+            .unwrap_or_else(|| "plugin.wasm".to_string()));
 
-        return super::plugins::run_wasm_bundle(
-            app,
-            storage_name,
-            wasm_bytes,
-            inputs,
-            None,
-            host_read_paths,
-        )
-        .map_err(|e| e.to_string());
+        return tauri::async_runtime::spawn_blocking(move || {
+            super::plugins::run_wasm_bundle(
+                app,
+                storage_name,
+                wasm_bytes,
+                inputs,
+                None,
+                host_read_paths,
+            )
+            .map_err(|e| e.to_string())
+        })
+        .await
+        .map_err(|e| format!("WASM plugin runtime failed: {e}"))?;
     }
 
     if runtime == "python" {
@@ -408,14 +444,40 @@ pub async fn lia_liatir_run(
         let app_for_prepare = app.clone();
         let env_id_for_prepare = context.env_id.clone();
         let spec_for_prepare = context.spec.clone();
+        let python_env_root = options.python_env_root.clone();
+        let python_env_root_for_prepare = python_env_root.clone();
+        let workspace_id = options.workspace_id.clone();
+        let extra_env = options.env.clone();
+        let job_label = options.job_label.clone();
+        let job_kind = options.job_kind.clone();
+        let extra_metadata = options.metadata.clone();
         let runtime_lock = tauri::async_runtime::spawn_blocking(move || {
-            ensure_python_plugin_env(app_for_prepare, env_id_for_prepare, &spec_for_prepare)
+            let status = status_env(
+                app_for_prepare.clone(),
+                python_env_root_for_prepare.clone(),
+                env_id_for_prepare.clone(),
+                spec_for_prepare.packages.clone().unwrap_or_default(),
+                Vec::new(),
+            )?;
+            if status.installed {
+                return Ok::<Option<PythonEnvLock>, String>(status.lock);
+            }
+            let prepared = prepare_env(
+                app_for_prepare,
+                python_env_root_for_prepare.clone(),
+                env_id_for_prepare,
+                spec_for_prepare.requirements.clone(),
+                spec_for_prepare.packages.clone(),
+                None,
+                spec_for_prepare.python_requirement.clone(),
+            )?;
+            Ok::<Option<PythonEnvLock>, String>(prepared.lock)
         })
         .await
         .map_err(|e| e.to_string())??;
 
         let source_root =
-            env_dir(&app, PYTHON_PLUGIN_ENV_ROOT, &context.env_id)?.join("plugin-source");
+            env_dir(&app, &python_env_root, &context.env_id)?.join("plugin-source");
         extract_python_payload(&mut zip, &source_root)?;
 
         let plugin_name = context
@@ -430,23 +492,31 @@ pub async fn lia_liatir_run(
             .and_then(|value| value.as_str())
             .unwrap_or("0")
             .to_string();
-        let metadata = json!({
-            "runtime": "python",
-            "pluginName": plugin_name,
-            "pluginVersion": plugin_version,
-            "runtimeLock": runtime_lock,
-        });
+        let mut metadata_map = serde_json::Map::new();
+        metadata_map.insert("runtime".to_string(), Value::String("python".to_string()));
+        metadata_map.insert("pluginName".to_string(), Value::String(plugin_name.clone()));
+        metadata_map.insert("pluginVersion".to_string(), Value::String(plugin_version.clone()));
+        metadata_map.insert("runtimeLock".to_string(), serde_json::to_value(runtime_lock).unwrap_or(Value::Null));
+        if let Some(Value::Object(extra)) = extra_metadata {
+            for (key, value) in extra {
+                metadata_map.insert(key, value);
+            }
+        } else if let Some(extra) = extra_metadata {
+            metadata_map.insert("extra".to_string(), extra);
+        }
+        let metadata = Value::Object(metadata_map);
 
         return spawn_in_env(
             app,
-            PYTHON_PLUGIN_ENV_ROOT.to_string(),
+            python_env_root,
             context.env_id.clone(),
             python_plugin_runner(&source_root, &context.entry),
             Vec::new(),
             inputs,
-            None,
-            Some(format!("Liatir Python plugin: {plugin_name}")),
-            "lia-plugin".to_string(),
+            workspace_id,
+            extra_env,
+            job_label.or_else(|| Some(format!("Liatir Python plugin: {plugin_name}"))),
+            job_kind,
             Some(metadata),
         )
         .await;
@@ -478,11 +548,11 @@ pub async fn lia_liatir_run(
         "node".to_string(),
         vec!["_runner.mjs".to_string(), inputs_json],
         Some(cwd),
-        None,
-        None,
-        Some("Liatir plugin run".to_string()),
-        Some("lia-plugin".to_string()),
-        None,
+        options.workspace_id,
+        options.env,
+        options.job_label.or_else(|| Some("Liatir plugin run".to_string())),
+        Some(options.job_kind),
+        options.metadata,
         Some(temp_dir.to_string_lossy().to_string()),
     ).await
 }

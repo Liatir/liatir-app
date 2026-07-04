@@ -17,6 +17,7 @@
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { sidebarWidth } from '$lib/stores/sidebar';
 
 	let { children } = $props();
@@ -26,6 +27,7 @@
 	let closeGuardUnlisten: (() => void) | null = null;
 	let refreshingJobs = false;
 	let sidebarForceExpand = $state(false);
+	const isPluginDevRoute = $derived(page.url.pathname.startsWith('/plugin-dev'));
 
 	async function refreshJobsAndFinalize() {
 		if (refreshingJobs) return;
@@ -39,6 +41,10 @@
 	}
 
 	onMount(async () => {
+		if (isPluginDevRoute) {
+			initialized = true;
+			return;
+		}
 		closeGuardUnlisten = await initAppCloseGuard();
 		await workspaceStore.init();
 		if (!(workspaceStore.activeId && workspaceStore.active)) {
@@ -68,7 +74,12 @@
 	});
 </script>
 
-{#if !workspaceStore.initialized || !initialized}
+{#if isPluginDevRoute}
+	<div class="h-screen overflow-hidden" style="background-color: var(--color-bg);">
+		{@render children()}
+	</div>
+	<Toast />
+{:else if !workspaceStore.initialized || !initialized}
 	<div class="h-screen flex items-center justify-center" style="background-color: var(--color-bg);">
 		<svg
 			class="animate-spin h-5 w-5 text-brand"

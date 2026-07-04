@@ -7,15 +7,17 @@ const ACTIVE_FILE = 'active-workspace.json';
 
 export const SANDBOX_WORKSPACE_ID = '__test__';
 const SANDBOX_WORKSPACE_NAME = 'Sandbox';
+export type SandboxResetLevel = 'demo-files' | 'runs' | 'full';
+export type WorkspaceResetScope = 'runs' | 'all';
 
 function workspaceEnvPath(id: string) {
   return `workspaces/${id}/env.json`;
 }
 
-let resetFn: (() => void) | null = null;
+let resetFn: ((scope: WorkspaceResetScope) => void) | null = null;
 let demoInitFn: (() => Promise<void>) | null = null;
 
-export function setResetFn(fn: () => void) {
+export function setResetFn(fn: (scope: WorkspaceResetScope) => void) {
   resetFn = fn;
 }
 
@@ -134,7 +136,7 @@ function createWorkspaceStore() {
     },
 
     async switchTo(id: string) {
-      resetFn?.();
+      resetFn?.('all');
       previousActiveId = activeId;
       activeId = id;
       await persistActiveId();
@@ -181,10 +183,26 @@ function createWorkspaceStore() {
       }
     },
 
-    async resetSandboxMode() {
-      resetFn?.();
-      try { await appStorage.remove(`workspaces/${SANDBOX_WORKSPACE_ID}`, true); } catch { /* ok */ }
+    async resetSandboxMode(level: SandboxResetLevel = 'full') {
       const api = liatir();
+
+      if (level === 'demo-files') {
+        await demoInitFn?.();
+        return;
+      }
+
+      if (level === 'runs') {
+        resetFn?.('runs');
+        try { await appStorage.remove(`workspaces/${SANDBOX_WORKSPACE_ID}/analysis-runs`, true); } catch { /* ok */ }
+        if (api) {
+          try { await api.desktop.fs.data.remove(`workspaces/${SANDBOX_WORKSPACE_ID}/Results`, true); } catch { /* ok */ }
+          try { await api.invoke('lia_jobs_clear_done', { workspaceId: SANDBOX_WORKSPACE_ID }); } catch { /* ok */ }
+        }
+        return;
+      }
+
+      resetFn?.('all');
+      try { await appStorage.remove(`workspaces/${SANDBOX_WORKSPACE_ID}`, true); } catch { /* ok */ }
       if (api) {
         try { await api.desktop.fs.data.remove(`workspaces/${SANDBOX_WORKSPACE_ID}`, true); } catch { /* ok */ }
       }

@@ -120,3 +120,13 @@ bash scripts/local-dev-conf.sh
 # Start Tauri dev
 cargo tauri dev
 ```
+
+---
+
+## npm run liatir:publish flags
+
+- npm run liatir:publish -- --minor
+- npm run liatir:publish -- --major
+- npm run liatir:publish -- --patch
+- npm run liatir:publish -- --bump minor
+- npm run liatir:publish -- --version 1.10.0

@@ -6,7 +6,7 @@
   import EnvVarTable from '$lib/components/ui/EnvVarTable.svelte';
   import TypeToConfirmDialog from '$lib/components/ui/TypeToConfirmDialog.svelte';
   import Icon from '@iconify/svelte';
-  import { workspaceStore } from '$lib/stores/workspace.svelte';
+  import { workspaceStore, type SandboxResetLevel } from '$lib/stores/workspace.svelte';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
@@ -14,7 +14,7 @@
   let nameInput = $state(workspaceStore.active?.name ?? '');
   let nameSaving = $state(false);
   let nameSaved = $state(false);
-  let resetting = $state(false);
+  let resettingLevel = $state<SandboxResetLevel | null>(null);
 
   let typeConfirmOpen = $state(false);
 
@@ -50,20 +50,39 @@
     goto('/workspaces');
   }
 
-  async function resetSandboxMode() {
-    const ok = await confirm({
+  const sandboxResetCopy: Record<SandboxResetLevel, { title: string; message: string; label: string }> = {
+    'demo-files': {
+      title: 'Re-seed demo files',
+      message: 'This will re-add any missing bundled demo files to the Sandbox. Existing data, pipelines, scripts, results, and settings will be kept.',
+      label: 'Re-seed',
+    },
+    runs: {
+      title: 'Clear Sandbox runs',
+      message: 'This will clear Sandbox Results, Analysis Runs, completed Sandbox jobs, and pipeline run state. Pipelines, scripts, API connections, environment variables, and data files will be kept.',
+      label: 'Clear runs',
+    },
+    full: {
       title: 'Reset Sandbox',
       message: 'This will clear all data in the Sandbox workspace (pipelines, scripts, API connections, data files, runs). Demo files will be re-seeded. This cannot be undone.',
-      confirmLabel: 'Reset',
+      label: 'Reset',
+    },
+  };
+
+  async function resetSandboxMode(level: SandboxResetLevel) {
+    const copy = sandboxResetCopy[level];
+    const ok = await confirm({
+      title: copy.title,
+      message: copy.message,
+      confirmLabel: copy.label,
     });
     if (!ok) return;
-    resetting = true;
+    resettingLevel = level;
     try {
-      await workspaceStore.resetSandboxMode();
+      await workspaceStore.resetSandboxMode(level);
       await pipelineStore.init();
-      goto('/');
+      if (level === 'full') goto('/');
     } finally {
-      resetting = false;
+      resettingLevel = null;
     }
   }
 </script>
@@ -107,20 +126,50 @@
 
       <!-- Reset -->
       <section>
-        <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Reset</h2>
+        <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Sandbox Reset</h2>
+        <div class="grid gap-3 lg:grid-cols-3">
         <Card class="p-4">
-          <div class="flex items-start justify-between gap-4">
+          <div class="flex h-full flex-col justify-between gap-4">
             <div>
-              <p class="text-sm font-medium text-zinc-800">Reset Sandbox</p>
+              <p class="text-sm font-medium text-zinc-800">Re-seed demo files</p>
               <p class="text-xs text-zinc-500 mt-0.5">
-                Clear all Sandbox data and re-seed the demo files. Useful for a clean start.
+                Restore missing bundled demo files without touching your Sandbox work.
               </p>
             </div>
-            <Button variant="sandbox" size="sm" loading={resetting} onclick={resetSandboxMode}>
-              Reset
+            <Button variant="sandbox" size="sm" loading={resettingLevel === 'demo-files'} disabled={resettingLevel !== null} onclick={() => resetSandboxMode('demo-files')}>
+              Re-seed
             </Button>
           </div>
         </Card>
+
+        <Card class="p-4">
+          <div class="flex h-full flex-col justify-between gap-4">
+            <div>
+              <p class="text-sm font-medium text-zinc-800">Clear runs and results</p>
+              <p class="text-xs text-zinc-500 mt-0.5">
+                Clear Results, Analysis Runs, completed jobs, and pipeline run state.
+              </p>
+            </div>
+            <Button variant="warn" size="sm" loading={resettingLevel === 'runs'} disabled={resettingLevel !== null} onclick={() => resetSandboxMode('runs')}>
+              Clear runs
+            </Button>
+          </div>
+        </Card>
+
+        <Card class="p-4">
+          <div class="flex h-full flex-col justify-between gap-4">
+            <div>
+              <p class="text-sm font-medium text-zinc-800">Full Sandbox reset</p>
+              <p class="text-xs text-zinc-500 mt-0.5">
+                Clear Sandbox data completely and re-seed bundled demo files.
+              </p>
+            </div>
+            <Button variant="danger" size="sm" loading={resettingLevel === 'full'} disabled={resettingLevel !== null} onclick={() => resetSandboxMode('full')}>
+              Reset all
+            </Button>
+          </div>
+        </Card>
+        </div>
       </section>
 
     {:else}

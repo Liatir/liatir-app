@@ -11,6 +11,8 @@ use std::{
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_shell::{process::CommandEvent, ShellExt};
 
+pub(crate) const SANDBOX_WORKSPACE_ID: &str = "__test__";
+
 static JOB_COUNTER: AtomicU64 = AtomicU64::new(1);
 
 fn gen_job_id() -> String {
@@ -80,6 +82,31 @@ impl JobRegistry {
     pub fn new() -> Self {
         Self(Mutex::new(HashMap::new()))
     }
+}
+
+fn is_dev_job(entry: &JobEntry) -> bool {
+    if entry
+        .kind
+        .as_deref()
+        .map(|kind| kind.starts_with("lia-plugin-dev"))
+        .unwrap_or(false)
+    {
+        return true;
+    }
+
+    let Some(Value::Object(metadata)) = entry.metadata.as_ref() else {
+        return false;
+    };
+
+    metadata
+        .get("pluginDev")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+        || metadata
+            .get("devSession")
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+        || metadata.get("pluginDevSessionId").and_then(Value::as_str).is_some()
 }
 
 // ---------------------------------
@@ -298,9 +325,11 @@ pub fn lia_jobs_status(app: AppHandle, job_id: String) -> Result<JobEntry, Strin
 pub fn lia_jobs_list(
     app: AppHandle,
     workspace_id: Option<String>,
+    include_dev: Option<bool>,
 ) -> Result<Vec<JobEntry>, String> {
     let registry = app.state::<JobRegistry>();
     let jobs = registry.0.lock().unwrap();
+    let include_dev = include_dev.unwrap_or(false);
 
     let mut list: Vec<JobEntry> = jobs
         .values()
@@ -311,6 +340,7 @@ pub fn lia_jobs_list(
             Some(ws) => e.workspace_id.as_deref() == Some(ws.as_str()),
             None => true,
         })
+        .filter(|e| include_dev || !is_dev_job(e))
         .collect();
     list.sort_by_key(|e| e.started_at_ms);
 

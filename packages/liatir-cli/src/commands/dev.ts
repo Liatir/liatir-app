@@ -1,35 +1,148 @@
 import * as fs from "fs/promises";
+import * as os from "os";
 import * as path from "path";
 import * as child_process from "child_process";
-import { context as esbuildContext } from "esbuild";
-import { typecheckIfConfigured } from "./_typecheck.js";
-import { resolveNodeEntryPoint, type NodeEntryPoint } from "./_entry.js";
+import { randomUUID } from "crypto";
+import { promisify } from "util";
+import { buildDevBundle, type BuildResult } from "./build.js";
 
-interface Manifest {
-  name: string;
-  version: string;
-  runtime?: "node" | "wasm" | "python";
-  python?: {
-    entry?: string;
+const execFileAsync = promisify(child_process.execFile);
+const PLUGIN_DOCS_URL = "https://liatir.com/plugins";
+const LIATIR_BUNDLE_ID = "app.liatir.app";
+
+interface IpcInfo {
+  port: number;
+  token: string;
+}
+
+interface InvokeResponse<T> {
+  ok: boolean;
+  result?: T;
+  error?: string;
+}
+
+class IncompatibleLiatirAppError extends Error {}
+
+interface MacAppCandidate {
+  path: string;
+  version: string | null;
+  bundleVersion: string | null;
+}
+
+function incompatibleLiatirAppMessage(): string {
+  return (
+    `The running Liatir desktop app does not support \`liatir dev\` Dev Runner sessions.\n\n` +
+    `Update Liatir to a build that includes Plugin Dev Runner support, then retry \`liatir dev\`.\n\n` +
+    `Docs: ${PLUGIN_DOCS_URL}`
+  );
+}
+
+const WATCH_INTERVAL_MS = 800;
+const IGNORED_DIRS = new Set([
+  ".git",
+  ".lia-dev",
+  ".liatir",
+  ".mypy_cache",
+  ".pytest_cache",
+  ".venv",
+  "__pycache__",
+  "build",
+  "dist",
+  "node_modules",
+  "target",
+  "venv",
+]);
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parseVersionParts(value: string | null | undefined): number[] {
+  return String(value ?? "")
+    .match(/\d+/g)
+    ?.slice(0, 4)
+    .map((part) => Number(part)) ?? [];
+}
+
+function compareVersionsDesc(left: string | null, right: string | null): number {
+  const a = parseVersionParts(left);
+  const b = parseVersionParts(right);
+  const len = Math.max(a.length, b.length, 3);
+  for (let i = 0; i < len; i += 1) {
+    const delta = (b[i] ?? 0) - (a[i] ?? 0);
+    if (delta !== 0) return delta;
+  }
+  return 0;
+}
+
+async function plistValue(plistPath: string, key: string): Promise<string | null> {
+  try {
+    const { stdout } = await execFileAsync("/usr/libexec/PlistBuddy", ["-c", `Print :${key}`, plistPath]);
+    const value = stdout.trim();
+    return value || null;
+  } catch {
+    return null;
+  }
+}
+
+async function macAppCandidate(appPath: string): Promise<MacAppCandidate | null> {
+  const infoPath = path.join(appPath, "Contents", "Info.plist");
+  try {
+    const stat = await fs.stat(infoPath);
+    if (!stat.isFile()) return null;
+  } catch {
+    return null;
+  }
+
+  const bundleId = await plistValue(infoPath, "CFBundleIdentifier");
+  if (bundleId !== LIATIR_BUNDLE_ID) return null;
+  return {
+    path: appPath,
+    version: await plistValue(infoPath, "CFBundleShortVersionString"),
+    bundleVersion: await plistValue(infoPath, "CFBundleVersion"),
   };
 }
 
-async function loadManifest(): Promise<Manifest> {
-  const cwd = process.cwd();
-  const manifestPath = path.join(cwd, ".lia-manifest.json");
-  const packagePath = path.join(cwd, "package.json");
+async function macLiatirAppCandidates(): Promise<MacAppCandidate[]> {
+  const raw = new Set<string>();
+  const explicitPath = process.env["LIATIR_APP_PATH"];
+  if (explicitPath) raw.add(explicitPath);
+
+  for (const knownPath of [
+    "/Applications/Liatir.app",
+    "/Applications/Liatir dev.app",
+    path.join(os.homedir(), "Applications", "Liatir.app"),
+    path.join(os.homedir(), "Applications", "Liatir dev.app"),
+  ]) {
+    raw.add(knownPath);
+  }
 
   try {
-    return JSON.parse(await fs.readFile(manifestPath, "utf-8")) as Manifest;
-  } catch {
-    try {
-      const pkg = JSON.parse(await fs.readFile(packagePath, "utf-8")) as Manifest;
-      return { name: pkg.name, version: pkg.version };
-    } catch {
-      console.error("No package.json or .lia-manifest.json found. Run this command from your plugin root.");
-      process.exit(1);
+    const { stdout } = await execFileAsync("mdfind", [`kMDItemCFBundleIdentifier == "${LIATIR_BUNDLE_ID}"`]);
+    for (const item of stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)) {
+      raw.add(item);
     }
+  } catch {
+    // Spotlight may be unavailable or disabled. Known app paths are still tried.
   }
+
+  const candidates = (await Promise.all([...raw].map((item) => macAppCandidate(item))))
+    .filter((item): item is MacAppCandidate => item !== null);
+
+  const seen = new Set<string>();
+  return candidates
+    .filter((candidate) => {
+      if (seen.has(candidate.path)) return false;
+      seen.add(candidate.path);
+      return true;
+    })
+    .sort((a, b) => {
+      const byVersion = compareVersionsDesc(a.version, b.version);
+      if (byVersion !== 0) return byVersion;
+      const byBundleVersion = compareVersionsDesc(a.bundleVersion, b.bundleVersion);
+      if (byBundleVersion !== 0) return byBundleVersion;
+      return a.path.localeCompare(b.path);
+    });
 }
 
 async function parseDevInputs(args: string[]): Promise<Record<string, unknown>> {
@@ -67,235 +180,313 @@ async function parseDevInputs(args: string[]): Promise<Record<string, unknown>> 
   return {};
 }
 
-function pythonRunnerScript(entryPath: string, inputs: Record<string, unknown>): string {
-  return `
-import asyncio
-import importlib.util
-import inspect
-import json
-import pathlib
-import sys
-import traceback
+function appDataDirCandidates(): string[] {
+  const envIpcFile = process.env["LIATIR_IPC_FILE"];
+  const envIpcDir = process.env["LIATIR_IPC_DIR"];
+  const candidates: string[] = [];
 
-entry_path = pathlib.Path(${JSON.stringify(entryPath)})
-inputs = ${JSON.stringify(inputs)}
+  if (envIpcFile) candidates.push(path.dirname(envIpcFile));
+  if (envIpcDir) candidates.push(envIpcDir);
 
-sys.path.insert(0, str(entry_path.parent))
-try:
-    spec = importlib.util.spec_from_file_location("_liatir_dev_plugin", entry_path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Cannot load Python plugin entry: {entry_path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    handler = getattr(module, "main", None)
-    if not callable(handler):
-        raise TypeError("Python .lia plugin must define a callable main(input) function.")
-    result = handler(inputs)
-    if inspect.isawaitable(result):
-        result = asyncio.run(result)
-    print("[liatir dev] result:", json.dumps(result, indent=2))
-except Exception:
-    traceback.print_exc()
-    sys.exit(1)
-`;
-}
-
-function normalizeRelativePath(value: string): string {
-  const normalized = value.replace(/\\/g, "/").replace(/^\.\/+/, "");
-  if (!normalized || normalized.startsWith("/") || normalized.includes("../") || normalized === "..") {
-    throw new Error("python.entry must be a relative path inside the plugin project.");
-  }
-  return normalized;
-}
-
-// Generates a thin runner that imports the bundle and calls the same strict
-// runtime shape used by `liatir build`: default definePlugin(...).main(...).
-function runnerScript(bundlePath: string, inputs: Record<string, unknown>, entryDisplayPath: string): string {
-  return `
-import * as _mod from ${JSON.stringify(bundlePath)};
-const _providedInputs = ${JSON.stringify(inputs)};
-const _entryDisplayPath = ${JSON.stringify(entryDisplayPath)};
-
-const _m = _mod.default;
-if (!_m || typeof _m !== "object") {
-  console.error(\`[liatir dev] \${_entryDisplayPath} must default-export definePlugin({ inputs, outputs }).main(async ({ input, Liatir }) => { ... })\`);
-  process.exit(1);
-}
-
-if (_m.__liatirPluginContract === true && typeof _m.run !== "function") {
-  console.error("[liatir dev] plugin contract is missing .main(...). Finish the default export with definePlugin({ inputs, outputs }).main(async ({ input, Liatir }) => { ... })");
-  process.exit(1);
-}
-
-if (_m.__liatirPlugin !== true || typeof _m.run !== "function") {
-  console.error("[liatir dev] invalid .lia plugin entrypoint. Use: export default definePlugin({ inputs, outputs }).main(async ({ input, Liatir }) => { ... });");
-  process.exit(1);
-}
-
-if (!_m.inputs || typeof _m.inputs !== "object" || Array.isArray(_m.inputs)) {
-  console.error("[liatir dev] invalid plugin contract: definePlugin({ inputs }) must be an object.");
-  process.exit(1);
-}
-
-if (!_m.outputs || typeof _m.outputs !== "object" || Array.isArray(_m.outputs)) {
-  console.error("[liatir dev] invalid plugin contract: definePlugin({ outputs }) must be an object.");
-  process.exit(1);
-}
-
-const _defaults = {};
-for (const [key, field] of Object.entries(_m.inputs ?? {})) {
-  if (field && typeof field === "object" && "default" in field) {
-    _defaults[key] = field.default;
-  }
-}
-
-const _inputs = { ..._defaults, ..._providedInputs };
-console.log("[liatir dev] running plugin with inputs:", JSON.stringify(_inputs, null, 2));
-const result = await _m.run(_inputs).catch(e => {
-  console.error("[liatir dev] script error:", e);
-  process.exit(1);
-});
-console.log("[liatir dev] result:", JSON.stringify(result, null, 2));
-`;
-}
-
-async function devPython(cwd: string, manifest: Manifest, inputs: Record<string, unknown>) {
-  const entry = normalizeRelativePath(manifest.python?.entry ?? "src/main.py");
-  const entryPath = path.resolve(cwd, entry);
-  const distDir = path.join(cwd, ".lia-dev");
-  const runnerPath = path.join(distDir, "_python_runner.py");
-  await fs.mkdir(distDir, { recursive: true });
-
-  let runningProcess: child_process.ChildProcess | null = null;
-
-  async function runScript() {
-    if (runningProcess && !runningProcess.killed) {
-      runningProcess.kill();
+  switch (process.platform) {
+    case "darwin": {
+      const appSupport = path.join(os.homedir(), "Library", "Application Support");
+      candidates.push(path.join(appSupport, "app.liatir.app"));
+      candidates.push(path.join(appSupport, "liatir"));
+      candidates.push(path.join(appSupport, "Liatir"));
+      break;
     }
-    await fs.writeFile(runnerPath, pythonRunnerScript(entryPath, inputs));
-    console.log(`[liatir dev] running ${manifest.name} (${entry})...`);
-    runningProcess = child_process.spawn("python3", [runnerPath], { stdio: "inherit", cwd });
-    runningProcess.on("exit", (code) => {
-      if (code !== 0 && code !== null) {
-        console.log(`[liatir dev] exited with code ${code}`);
-      }
-    });
+    case "win32": {
+      const appData = process.env["APPDATA"] ?? os.homedir();
+      candidates.push(path.join(appData, "app.liatir.app"));
+      candidates.push(path.join(appData, "liatir"));
+      candidates.push(path.join(appData, "Liatir"));
+      break;
+    }
+    default: {
+      const dataHome = process.env["XDG_DATA_HOME"] ?? path.join(os.homedir(), ".local", "share");
+      candidates.push(path.join(dataHome, "app.liatir.app"));
+      candidates.push(path.join(dataHome, "liatir"));
+      candidates.push(path.join(dataHome, "Liatir"));
+      break;
+    }
   }
 
-  await runScript();
-  console.log(`[liatir dev] watching ${manifest.name} (${entry})... (Ctrl+C to stop)`);
-  console.log("[liatir dev] Python dependencies are resolved by Liatir when the packaged plugin runs.\n");
+  return [...new Set(candidates)];
+}
 
-  let timer: NodeJS.Timeout | null = null;
-  const fsWatcher = await import("fs");
-  const nativeWatcher = fsWatcher.watch(path.dirname(entryPath), () => {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => void runScript(), 150);
-  });
+async function readIpcInfo(): Promise<IpcInfo> {
+  const envIpcFile = process.env["LIATIR_IPC_FILE"];
+  const portFiles = envIpcFile
+    ? [envIpcFile, ...appDataDirCandidates().map((dir) => path.join(dir, ".ipc"))]
+    : appDataDirCandidates().map((dir) => path.join(dir, ".ipc"));
 
-  process.on("SIGINT", async () => {
-    console.log("\n[liatir dev] stopping...");
-    nativeWatcher.close();
-    runningProcess?.kill();
-    await fs.rm(distDir, { recursive: true, force: true });
-    process.exit(0);
-  });
+  for (const portFile of [...new Set(portFiles)]) {
+    try {
+      const content = await fs.readFile(portFile, "utf-8");
+      return JSON.parse(content) as IpcInfo;
+    } catch {
+      // Try the next known Liatir app data location.
+    }
+  }
 
-  await new Promise(() => {});
+  throw new Error(
+    `Liatir desktop app is required for \`liatir dev\`.\n\n` +
+    `\`liatir dev\` runs your temporary plugin inside Liatir's Dev Runner, so the desktop app must be installed and running.\n` +
+    `Install or open Liatir, then run \`liatir dev\` again.\n\n` +
+    `Docs: ${PLUGIN_DOCS_URL}\n\n` +
+    `Could not find Liatir's local IPC file. Checked:\n${portFiles.map((file) => `- ${file}`).join("\n")}`
+  );
+}
+
+async function launchLiatirBestEffort(): Promise<void> {
+  try {
+    if (process.platform === "darwin") {
+      const candidates = await macLiatirAppCandidates();
+      if (candidates[0]) {
+        await execFileAsync("open", [candidates[0].path]);
+        return;
+      }
+      await execFileAsync("open", ["-b", LIATIR_BUNDLE_ID]);
+      return;
+    }
+    if (process.platform === "win32") {
+      child_process.spawn("cmd", ["/c", "start", "", "Liatir"], {
+        detached: true,
+        stdio: "ignore",
+      }).unref();
+      return;
+    }
+    child_process.spawn("liatir", [], { detached: true, stdio: "ignore" }).unref();
+  } catch {
+    // Best-effort only; the final error explains how to continue.
+  }
+}
+
+async function probeIpc(ipc: IpcInfo): Promise<"ready" | "unreachable" | "incompatible"> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 1_500);
+  try {
+    const res = await fetch(`http://127.0.0.1:${ipc.port}/invoke`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${ipc.token}`,
+      },
+      body: JSON.stringify({
+        cmd: "lia_plugin_dev_get_session",
+        payload: { sessionId: "__liatir_cli_probe__" },
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) return "unreachable";
+    const data = (await res.json()) as InvokeResponse<unknown>;
+    if (data.ok) return "ready";
+    if ((data.error ?? "").includes("unknown command")) return "incompatible";
+    return "ready";
+  } catch {
+    return "unreachable";
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function readLiveIpcInfo(): Promise<IpcInfo> {
+  const ipc = await readIpcInfo();
+  const probe = await probeIpc(ipc);
+  if (probe === "ready") return ipc;
+  if (probe === "incompatible") {
+    throw new IncompatibleLiatirAppError(incompatibleLiatirAppMessage());
+  }
+  throw new Error("Found a stale Liatir IPC file, but the desktop app is not responding.");
+}
+
+async function waitForIpc(): Promise<IpcInfo> {
+  try {
+    return await readLiveIpcInfo();
+  } catch (error) {
+    if (error instanceof IncompatibleLiatirAppError) throw error;
+    await launchLiatirBestEffort();
+  }
+
+  const started = Date.now();
+  let lastError: unknown = null;
+  while (Date.now() - started < 15_000) {
+    try {
+      return await readLiveIpcInfo();
+    } catch (error) {
+      if (error instanceof IncompatibleLiatirAppError) throw error;
+      lastError = error;
+      await wait(500);
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+}
+
+async function invoke<T>(ipc: IpcInfo, cmd: string, payload?: Record<string, unknown>): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(`http://127.0.0.1:${ipc.port}/invoke`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${ipc.token}`,
+      },
+      body: JSON.stringify({ cmd, payload }),
+    });
+  } catch (error) {
+    throw new Error(
+      `Liatir IPC is not reachable while running ${cmd}. ` +
+      `Make sure the Liatir desktop app is open and up to date, then retry \`liatir dev\`.\n` +
+      `${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+
+  if (!res.ok) {
+    throw new Error(`Liatir IPC HTTP ${res.status} for ${cmd}`);
+  }
+
+  const data = (await res.json()) as InvokeResponse<T>;
+  if (!data.ok) {
+    if ((data.error ?? "").includes("unknown command") && cmd.startsWith("lia_plugin_dev_")) {
+      throw new Error(incompatibleLiatirAppMessage());
+    }
+    throw new Error(data.error ?? `${cmd} failed`);
+  }
+  return data.result as T;
+}
+
+async function collectProjectFingerprint(root: string): Promise<string> {
+  const rows: string[] = [];
+
+  async function walk(dir: string) {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (IGNORED_DIRS.has(entry.name)) continue;
+      const filePath = path.join(dir, entry.name);
+      const rel = path.relative(root, filePath).split(path.sep).join("/");
+      if (entry.isDirectory()) {
+        await walk(filePath);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      const stat = await fs.stat(filePath);
+      rows.push(`${rel}:${stat.size}:${Math.round(stat.mtimeMs)}`);
+    }
+  }
+
+  await walk(root);
+  return rows.sort().join("\n");
+}
+
+function compactError(error: unknown): string {
+  return error instanceof Error ? error.stack ?? error.message : String(error);
 }
 
 export async function dev(args: string[] = []) {
   const cwd = process.cwd();
-  const manifest = await loadManifest();
-  const inputs = await parseDevInputs(args);
+  const initialInputs = await parseDevInputs(args);
+  const hasInitialInputs = Object.keys(initialInputs).length > 0;
+  const sessionId = randomUUID();
 
-  if (manifest.runtime === "python") {
-    await devPython(cwd, manifest, inputs);
-    return;
-  }
+  console.log("[liatir dev] building temporary dev bundle...");
+  const initialBuildId = randomUUID();
+  const initialResult = await buildDevBundle();
 
-  let entryPoint: NodeEntryPoint;
-  try {
-    entryPoint = await resolveNodeEntryPoint(cwd);
-  } catch (err) {
-    console.error(err instanceof Error ? err.message : err);
-    process.exit(1);
-  }
-  const distDir = path.join(cwd, ".lia-dev");
-  const bundlePath = path.join(distDir, "index.mjs");
-  const runnerPath = path.join(distDir, "_runner.mjs");
+  console.log("[liatir dev] connecting to Liatir...");
+  const ipc = await waitForIpc();
 
-  await fs.mkdir(distDir, { recursive: true });
+  let opened = false;
+  let building = false;
+  let lastFingerprint = "";
+  let stopped = false;
 
-  console.log(`[liatir dev] watching ${manifest.name} (${entryPoint.displayPath})... (Ctrl+C to stop)`);
-  console.log(`[liatir dev] make sure the Liatir app is running\n`);
-
-  let runningProcess: child_process.ChildProcess | null = null;
-
-  async function runScript() {
-    // Kill previous run if still going
-    if (runningProcess && !runningProcess.killed) {
-      runningProcess.kill();
+  async function publishError(error: unknown, buildId: string) {
+    const message = compactError(error);
+    console.error(`[liatir dev] build failed:\n${message}`);
+    await invoke(ipc, "lia_plugin_dev_set_error", {
+      sessionId,
+      projectDir: cwd,
+      error: message,
+      buildId,
+      initialInputs: hasInitialInputs ? initialInputs : null,
+    });
+    if (!opened) {
+      await invoke(ipc, "lia_plugin_dev_open_session", { sessionId });
+      opened = true;
     }
-
-    await fs.writeFile(runnerPath, runnerScript(bundlePath, inputs, entryPoint.displayPath));
-
-    runningProcess = child_process.fork(runnerPath, [], {
-      stdio: "inherit",
-    });
-
-    runningProcess.on("exit", (code) => {
-      if (code !== 0 && code !== null) {
-        console.log(`[liatir dev] exited with code ${code}`);
-      }
-    });
   }
 
-  // esbuild watch mode — rebuilds on every save
-  const ctx = await esbuildContext({
-    entryPoints: [entryPoint.path],
-    bundle: true,
-    format: "esm",
-    platform: "node",
-    target: "node18",
-    outfile: bundlePath,
-    external: ["@liatir/api"],
-    plugins: [
-      {
-        name: "on-rebuild",
-        setup(b) {
-          b.onEnd(async (result) => {
-            if (result.errors.length === 0) {
-              try {
-                await typecheckIfConfigured(cwd, "liatir dev");
-              } catch (err) {
-                console.error(err instanceof Error ? err.message : err);
-                return;
-              }
-              console.log(`[liatir dev] rebuilt → running...`);
-              await runScript();
-            } else {
-              console.error(`[liatir dev] build errors:`);
-              result.errors.forEach((e) => console.error(" ", e.text));
-            }
-          });
-        },
-      },
-    ],
-  });
+  async function publishResult(result: BuildResult, buildId: string) {
+    await invoke(ipc, "lia_plugin_dev_update_session", {
+      sessionId,
+      projectDir: cwd,
+      bundlePath: result.path,
+      buildId,
+      initialInputs: hasInitialInputs ? initialInputs : null,
+    });
+    if (!opened) {
+      await invoke(ipc, "lia_plugin_dev_open_session", { sessionId });
+      opened = true;
+    }
+    console.log(`[liatir dev] published ${result.runtime} bundle to Liatir Dev Runner.`);
+  }
 
-  await ctx.watch();
+  async function buildAndPublish() {
+    if (building) return;
+    building = true;
+    const buildId = randomUUID();
+    try {
+      const result = await buildDevBundle();
+      await publishResult(result, buildId);
+    } catch (error) {
+      await publishError(error, buildId);
+    } finally {
+      building = false;
+    }
+  }
 
-  // Initial build triggers the plugin's onEnd
+  async function cleanup() {
+    if (stopped) return;
+    stopped = true;
+    try {
+      await invoke(ipc, "lia_plugin_dev_end_session", { sessionId });
+    } catch {
+      // The app may already be closed.
+    }
+  }
+
   process.on("SIGINT", async () => {
     console.log("\n[liatir dev] stopping...");
-    await ctx.dispose();
-    runningProcess?.kill();
-    // Clean up dev dir
-    await fs.rm(distDir, { recursive: true, force: true });
+    await cleanup();
+    process.exit(0);
+  });
+  process.on("SIGTERM", async () => {
+    await cleanup();
     process.exit(0);
   });
 
-  // Keep the process alive
-  await new Promise(() => {});
+  console.log("[liatir dev] connected to Liatir. Publishing temporary dev bundle...");
+  await publishResult(initialResult, initialBuildId);
+  lastFingerprint = await collectProjectFingerprint(cwd);
+  console.log("[liatir dev] watching project files. Use the Dev Runner window to run the plugin. Press Ctrl+C to stop.");
+
+  while (!stopped) {
+    await wait(WATCH_INTERVAL_MS);
+    const nextFingerprint = await collectProjectFingerprint(cwd);
+    if (nextFingerprint !== lastFingerprint) {
+      lastFingerprint = nextFingerprint;
+      await buildAndPublish();
+    }
+
+    if (opened) {
+      const session = await invoke<unknown>(ipc, "lia_plugin_dev_get_session", { sessionId }).catch(() => null);
+      if (session === null) {
+        stopped = true;
+      }
+    }
+  }
+
+  await cleanup();
 }

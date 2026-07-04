@@ -50,8 +50,8 @@ function usage(): string {
 
 Usage:
   liatir update
-  liatir update --version 1.5.2
-  liatir update --no-install --version 1.5.2
+  liatir update --version x.x.x
+  liatir update --no-install --version x.x.x
   liatir update --dry-run
 
 Options:

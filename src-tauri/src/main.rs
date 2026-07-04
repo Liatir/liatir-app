@@ -58,6 +58,7 @@ fn main() {
 
   builder = builder.manage(bridge::jobs::JobRegistry::new());
   builder = builder.manage(bridge::managed_bins::DownloadRegistry::new());
+  builder = builder.manage(bridge::plugin_dev::PluginDevRegistry::new());
 
   builder = builder.manage(CloseGuard {
     closing: AtomicBool::new(false),
@@ -193,6 +194,11 @@ fn main() {
         }
 
         WindowEvent::CloseRequested { api, .. } => {
+          if window.label().starts_with("plugin-dev-") {
+            bridge::plugin_dev::cleanup_dev_session_for_window(window.app_handle(), window.label());
+            return;
+          }
+
           if window.label() != "main" {
             return;
           }
@@ -423,6 +429,13 @@ fn main() {
       lia_liatir_python_runtime_status,
       lia_liatir_python_runtime_prepare,
       lia_liatir_run,
+      lia_plugin_dev_update_session,
+      lia_plugin_dev_set_error,
+      lia_plugin_dev_get_session,
+      lia_plugin_dev_list_jobs,
+      lia_plugin_dev_open_session,
+      lia_plugin_dev_run,
+      lia_plugin_dev_end_session,
       lia_plugin_save_output,
       lia_plugin_delete_output,
 

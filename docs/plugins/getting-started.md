@@ -5,7 +5,7 @@ In order to start developing a **Liatir plugin**, you have to install the **Liat
 Liatir commands exposed by the CLI:
 - `liatir init`: this will generate your project folder and scaffolding.
 - `liatir update`: you can use this to update @liatir/cli.
-- `liatir dev`: use this to test your progresses.
+- `liatir dev`: opens a temporary Liatir Dev Runner session for testing the plugin inside Liatir.
 - `liatir build`: with this command the cli will build your plugin and generate the relative `.lia` file.
 
 ## Quick initialization
@@ -76,7 +76,7 @@ liatir init plugin-name --no-wasm-target
 
 ## Test, build and import
 
-1. While developing, use `liatir dev` to test your plugin as you work — it runs in watch mode against the live Liatir app.
+1. While developing, use `liatir dev` to test your plugin as you work. It opens a temporary Dev Runner window in Liatir, rebuilds on save, and lets you run the current bundle without importing it into your real plugin library.
 
 2. When you're happy with it, run `liatir build` to package your plugin into a `.lia` bundle.
 

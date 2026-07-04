@@ -1,5 +1,5 @@
 {
-  "name": "test-2",
+  "name": "test-a",
   "version": "1.0.0",
   "description": "",
   "type": "module",
@@ -10,13 +10,13 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "liatir": {
-    "displayName": "Test 2",
+    "displayName": "Test A",
     "category": "General",
     "tags": []
   },
   "devDependencies": {
-    "@liatir/cli": "^1.5.2",
-    "@liatir/api": "^1.5.2",
+    "@liatir/cli": "^1.9.5",
+    "@liatir/api": "^1.9.5",
     "typescript": "^5.0.0",
     "@types/node": "^20.0.0"
   }

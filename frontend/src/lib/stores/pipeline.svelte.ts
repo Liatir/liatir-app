@@ -569,6 +569,11 @@ function createPipelineStore() {
       runtimeByPipeline = new Map();
     },
 
+    resetRuntime() {
+      runtimeByPipeline = new Map();
+      schedulePersist();
+    },
+
     async savePipeline(name: string) {
       const previousKey = currentRuntimeKey();
       const id = pipelineId ?? crypto.randomUUID();

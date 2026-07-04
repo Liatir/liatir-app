@@ -87,6 +87,58 @@ interface IpcInfo {
   token: string;
 }
 
+const DEV_CONTEXT_PAYLOAD_KEY = "__liatirDevContext";
+const SANDBOX_WORKSPACE_ID = "__test__";
+
+interface LiatirDevContext {
+  scope: "plugin-dev";
+  sessionId: string;
+  workspaceId: string;
+}
+
+function readDevContextFromEnv(): LiatirDevContext | null {
+  if (process.env["LIATIR_RUN_SCOPE"] !== "plugin-dev") return null;
+  const sessionId = process.env["LIATIR_DEV_SESSION_ID"]?.trim();
+  if (!sessionId) return null;
+  return {
+    scope: "plugin-dev",
+    sessionId,
+    workspaceId: process.env["LIATIR_WORKSPACE_ID"]?.trim() || SANDBOX_WORKSPACE_ID,
+  };
+}
+
+function withDevContextPayload(
+  payload: Record<string, unknown> | undefined,
+  devContext: LiatirDevContext | null,
+): Record<string, unknown> | undefined {
+  if (!devContext) return payload;
+  return {
+    ...(payload ?? {}),
+    [DEV_CONTEXT_PAYLOAD_KEY]: devContext,
+  };
+}
+
+function withDevSpawnOptions(
+  opts: SpawnOptions = {},
+  devContext: LiatirDevContext | null,
+): SpawnOptions {
+  if (!devContext) return opts;
+  return {
+    ...opts,
+    kind: opts.kind?.startsWith("lia-plugin-dev") ? opts.kind : "lia-plugin-dev-child",
+    metadata: {
+      ...(opts.metadata ?? {}),
+      pluginDev: true,
+      pluginDevSessionId: devContext.sessionId,
+    },
+  };
+}
+
+function isCurrentDevJob(entry: JobEntry, devContext: LiatirDevContext | null): boolean {
+  if (!devContext) return true;
+  return entry.metadata?.["pluginDevSessionId"] === devContext.sessionId;
+}
+
 function appDataDirCandidates(): string[] {
   const envIpcFile = process.env["LIATIR_IPC_FILE"];
   const envIpcDir = process.env["LIATIR_IPC_DIR"];
@@ -235,8 +287,9 @@ export interface LiatirNode extends LiatirSharedTopLevel {
 
 export async function createLiatir(): Promise<LiatirNode> {
   const ipc = await readIpcInfo();
+  const devContext = readDevContextFromEnv();
   const invoke = <T>(cmd: string, payload?: Record<string, unknown>) =>
-    httpInvoke<T>(ipc, cmd, payload);
+    httpInvoke<T>(ipc, cmd, withDevContextPayload(payload, devContext));
 
   // The `core` shape every bridge buildX() expects — only needs `invoke`.
   const core = { invoke };
@@ -244,6 +297,20 @@ export async function createLiatir(): Promise<LiatirNode> {
   // jobs/deps reuse the browser bridge builders; Node adds polling-based streaming
   // (getOutput/run) since there is no Tauri event channel in a Node process.
   const baseJobs = buildJobs(core);
+  const spawnJob = (cmd: string, args: string[], opts: SpawnOptions = {}) =>
+    baseJobs.spawn(cmd, args, withDevSpawnOptions(opts, devContext));
+  const listJobs = async () => {
+    if (!devContext) return baseJobs.list();
+    const entries = await invoke<JobEntry[]>("lia_jobs_list", {
+      workspaceId: devContext.workspaceId,
+      includeDev: true,
+    });
+    return entries.filter((entry) => isCurrentDevJob(entry, devContext));
+  };
+  const clearDoneJobs = async () => {
+    if (devContext) return 0;
+    return baseJobs.clearDone();
+  };
 
   const getOutput = (jobId: string, since?: number) =>
     invoke<JobOutput>("lia_jobs_get_output", { jobId, since });
@@ -257,7 +324,7 @@ export async function createLiatir(): Promise<LiatirNode> {
       onStderr?: (line: string) => void;
     } = {}
   ): Promise<JobEntry> => {
-    const { jobId } = await baseJobs.spawn(cmd, args, { cwd: opts.cwd });
+    const { jobId } = await spawnJob(cmd, args, { cwd: opts.cwd });
     let stdoutOffset = 0;
     let stderrOffset = 0;
 
@@ -278,10 +345,32 @@ export async function createLiatir(): Promise<LiatirNode> {
     }
   };
 
-  const jobs: LiatirNodeJobs = { ...baseJobs, getOutput, run: runJob };
+  const jobs: LiatirNodeJobs = {
+    ...baseJobs,
+    spawn: spawnJob,
+    list: listJobs,
+    clearDone: clearDoneJobs,
+    getOutput,
+    run: runJob,
+  };
   const deps: DepsInterface = buildDeps(core);
 
-  const paths = () => invoke<LiatirNodePaths>("lia_fs_paths", {});
+  const paths = async () => {
+    const base = await invoke<Record<string, string>>("lia_fs_paths", {});
+    if (!devContext) return base as unknown as LiatirNodePaths;
+
+    const rel = `workspaces/${devContext.workspaceId}/plugin-dev/${devContext.sessionId}`;
+    await Promise.all([
+      invoke<void>("lia_fs_mkdir", { rel, permanent: true }),
+      invoke<void>("lia_fs_mkdir", { rel, permanent: false }),
+    ]);
+    return {
+      ...base,
+      data: `${base.data}/${rel}`,
+      cache: `${base.cache}/${rel}`,
+      temp: `${base.cache}/${rel}`,
+    } as unknown as LiatirNodePaths;
+  };
 
   // Pipeline is pure JS orchestration over plugins.call + sidecar.run, so it is
   // shared with the browser bridge (no Rust command of its own).

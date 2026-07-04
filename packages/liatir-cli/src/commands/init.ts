@@ -469,8 +469,8 @@ function packageJson(config: InitConfig): string {
     update: "liatir update",
   };
   const devDependencies: Record<string, string> = {
-    "@liatir/cli": "^1.5.2",
-    "@liatir/api": "^1.5.2",
+    "@liatir/cli": "^1.9.9",
+    "@liatir/api": "^1.9.9",
   };
 
   if (config.language === "typescript") {
@@ -923,7 +923,7 @@ Created ${config.projectName}/ (Node ${config.language} .lia plugin)
 
 Next steps:
   cd ${shellQuote(config.nextStepDir)}
-${installStep}  liatir dev       # watch mode with live Liatir app
+${installStep}  liatir dev       # open a temporary Liatir Dev Runner session
   liatir build     # package as ${config.packageName}.lia
 `);
 }

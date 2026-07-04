@@ -65,6 +65,8 @@
     "sdk:publish": "npm run pub --prefix sdk/",
     "sdk:syncVersion": "npm run syncVersion --prefix sdk/",
     "cargo:update": "npm run cargo:update --prefix src-tauri/",
+    "linecount": "cloc $(git ls-files)",
+    "linecount:ignored": "cloc .",
     "docs:dev": "vitepress dev docs --port 5175",
     "docs:build": "vitepress build docs",
     "docs:deploy": "npm run deploy --prefix docs/",

@@ -1,12 +1,14 @@
 {
   "name": "@liatir/cli",
-  "version": "1.8.1",
+  "version": "1.9.9",
   "description": "CLI for developing and building .lia plugins & WASM custom tools for Liatir",
   "bin": {
     "liatir": "dist/cli.js"
   },
   "type": "module",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public"
   },

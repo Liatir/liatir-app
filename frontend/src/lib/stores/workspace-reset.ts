@@ -6,7 +6,14 @@ import { dataFiles } from './dataFiles.svelte';
 import { analysisRuns } from './analysisRuns.svelte';
 import { liaPluginsStore } from './lia-plugins.svelte';
 
-setResetFn(() => {
+setResetFn((scope) => {
+  if (scope === 'runs') {
+    analysisRuns.reset();
+    pipelineStore.resetRuntime();
+    dataFiles.clearResults();
+    return;
+  }
+
   apiConnections.reset();
   pipelineStore.reset();
   savedScripts.reset();

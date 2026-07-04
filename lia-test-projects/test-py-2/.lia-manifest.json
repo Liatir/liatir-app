@@ -1,0 +1,35 @@
+{
+  "name": "Test Py 2",
+  "version": "1.0.0",
+  "description": "",
+  "runtime": "python",
+  "category": "General",
+  "tags": [],
+  "inputSchema": {
+    "text": {
+      "type": "string",
+      "label": "Text",
+      "description": "Text to analyze.",
+      "required": true,
+      "default": "hello from Liatir"
+    }
+  },
+  "outputSchema": {
+    "length": {
+      "type": "number",
+      "label": "Length",
+      "description": "Number of characters in the input text.",
+      "format": "integer"
+    }
+  },
+  "python": {
+    "entry": "src/main.py",
+    "pythonRequirement": {
+      "minVersion": "3.10",
+      "maxVersionExclusive": "3.13",
+      "label": "Python >=3.10,<3.13"
+    },
+    "packages": [],
+    "requirements": []
+  }
+}

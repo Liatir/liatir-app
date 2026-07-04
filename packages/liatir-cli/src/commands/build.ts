@@ -58,6 +58,22 @@ type BundlePayload = {
   name: string;
   path: string;
 };
+interface BuildOptions {
+  outputDir?: string;
+  outputName?: string;
+  quiet?: boolean;
+}
+
+interface NearbyPluginProject {
+  name: string;
+  runtime: string;
+}
+
+export interface BuildResult {
+  path: string;
+  manifest: LiatirPluginManifest;
+  runtime: LiatirPluginRuntime;
+}
 
 async function exists(p: string): Promise<boolean> {
   try { await fs.access(p); return true; } catch { return false; }
@@ -225,6 +241,56 @@ async function readRawManifest(cwd: string): Promise<RawManifest | null> {
   return JSON.parse(await fs.readFile(manifestPath, "utf-8")) as RawManifest;
 }
 
+async function nearbyPluginProjects(cwd: string): Promise<NearbyPluginProject[]> {
+  let entries: import("fs").Dirent[] = [];
+  try {
+    entries = await fs.readdir(cwd, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+
+  const projects: NearbyPluginProject[] = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory() || entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+    const dir = path.join(cwd, entry.name);
+    const rawManifest = await readRawManifest(dir).catch(() => null);
+    const runtime = manifestRuntime(rawManifest);
+    if (runtime) {
+      projects.push({ name: entry.name, runtime });
+      continue;
+    }
+    if (await exists(path.join(dir, "package.json"))) {
+      projects.push({ name: entry.name, runtime: "node" });
+      continue;
+    }
+    if (await exists(path.join(dir, "Cargo.toml"))) {
+      projects.push({ name: entry.name, runtime: "wasm" });
+    }
+  }
+
+  return projects.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+async function noPluginProjectError(cwd: string): Promise<Error> {
+  const nearby = await nearbyPluginProjects(cwd);
+  const nearbyText = (() => {
+    if (nearby.length === 0) return "";
+    const projects = nearby.slice(0, 8).map((project) => `- ${project.name} (${project.runtime})`).join("\n");
+    if (nearby.length === 1) {
+      return `\n\nNearby plugin project:\n${projects}\n\nRun:\n  cd ${nearby[0].name}\n  liatir dev`;
+    }
+    return `\n\nNearby plugin projects:\n${projects}\n\nRun from the plugin folder you want to test:\n  cd <plugin-folder>\n  liatir dev`;
+  })();
+  return new Error(
+    `No Liatir plugin project found in ${path.basename(cwd) || cwd}.\n\n` +
+    `Run this command from a plugin root. Expected one of:\n` +
+    `- .lia-manifest.json with runtime "python" or "wasm"\n` +
+    `- package.json with src/index.ts or src/index.js for a Node plugin\n` +
+    `- Cargo.toml plus .lia-manifest.json for a WASM plugin` +
+    nearbyText
+  );
+}
+
 async function readRequirementsFile(cwd: string): Promise<string[] | undefined> {
   const requirementsPath = path.join(cwd, "requirements.txt");
   if (!(await exists(requirementsPath))) return undefined;
@@ -278,22 +344,49 @@ function validateNodePlugin(def: CompiledNodePlugin | undefined): asserts def is
   }
 }
 
-export async function build() {
+async function buildPluginBundle(options: BuildOptions = {}): Promise<BuildResult> {
   const cwd = process.cwd();
   const rawManifest = await readRawManifest(cwd);
   const runtime = manifestRuntime(rawManifest);
+  const hasPackageJson = await exists(path.join(cwd, "package.json"));
+  const hasCargoToml = await exists(path.join(cwd, "Cargo.toml"));
 
   if (runtime === "python") {
-    await buildPython(cwd, rawManifest!);
-    return;
+    return buildPython(cwd, rawManifest!, options);
   }
 
-  if (runtime === "wasm" || await exists(path.join(cwd, "Cargo.toml"))) {
-    await buildWasm(cwd, rawManifest ?? undefined);
-    return;
+  if (runtime === "wasm" || (rawManifest && hasCargoToml)) {
+    return buildWasm(cwd, rawManifest ?? undefined, options);
   }
 
-  await buildNode(cwd);
+  if (runtime === "node" || hasPackageJson) {
+    return buildNode(cwd, options);
+  }
+
+  if (rawManifest) {
+    throw new Error(
+      `Unsupported .lia-manifest.json runtime in ${path.basename(cwd) || cwd}.\n` +
+      `Expected runtime "python", "wasm", or "node".`
+    );
+  }
+
+  if (hasCargoToml) {
+    throw new Error("No .lia-manifest.json found. WASM plugins need a manifest next to Cargo.toml.");
+  }
+
+  throw await noPluginProjectError(cwd);
+}
+
+export async function build(): Promise<void> {
+  await buildPluginBundle();
+}
+
+export async function buildDevBundle(): Promise<BuildResult> {
+  return buildPluginBundle({
+    outputDir: path.join(process.cwd(), ".lia-dev"),
+    outputName: "current.lia",
+    quiet: false,
+  });
 }
 
 /**
@@ -301,11 +394,10 @@ export async function build() {
  * the bundle to read its declared inputs/outputs, and GENERATE the manifest from
  * them — a single source of truth, nothing to keep in sync by hand.
  */
-async function buildNode(cwd: string): Promise<void> {
+async function buildNode(cwd: string, options: BuildOptions = {}): Promise<BuildResult> {
   const pkgPath = path.join(cwd, "package.json");
   if (!(await exists(pkgPath))) {
-    console.error("No package.json found. Run this from your plugin's root.");
-    process.exit(1);
+    throw await noPluginProjectError(cwd);
   }
   const pkg = JSON.parse(await fs.readFile(pkgPath, "utf-8")) as PackageMetadata;
 
@@ -319,11 +411,11 @@ async function buildNode(cwd: string): Promise<void> {
 
   const metadata = packageMetadata(pkg);
 
-  console.log(`Building ${pkg.name}@${pkg.version} (node, ${entryPoint.language})...`);
+  if (!options.quiet) console.log(`Building ${pkg.name}@${pkg.version} (node, ${entryPoint.language})...`);
   await typecheckIfConfigured(cwd, "liatir build");
 
-  const liatirDir = path.join(cwd, ".liatir");
-  const distDir = path.join(liatirDir, "build-artifacts");
+  const outputDir = options.outputDir ?? path.join(cwd, ".liatir");
+  const distDir = path.join(outputDir, "build-artifacts");
   await fs.mkdir(distDir, { recursive: true });
   const bundlePath = path.join(distDir, "index.js");
 
@@ -339,7 +431,11 @@ async function buildNode(cwd: string): Promise<void> {
   });
 
   // Read the schema straight from the compiled plugin — the code is the source.
-  const mod = await import(pathToFileURL(bundlePath).href);
+  // The bundle path is stable across rebuilds, and Node's ESM loader caches
+  // modules by URL for the whole process. `liatir dev` rebuilds in a single
+  // long-lived process, so a bare import would return the FIRST build's module
+  // and miss later schema edits. A unique query per build forces a fresh load.
+  const mod = await import(`${pathToFileURL(bundlePath).href}?v=${Date.now()}`);
   const def = mod.default as CompiledNodePlugin | undefined;
   validateNodePlugin(def);
 
@@ -354,16 +450,18 @@ async function buildNode(cwd: string): Promise<void> {
     outputSchema: serializeOutputSchema(def.outputs),
   };
 
-  const outputName = `${bareName(pkg.name)}.lia`;
-  await createBundle(path.join(liatirDir, outputName), manifest, [{ name: "index.js", path: bundlePath }]);
-  console.log(`✓ Built → ${outputName}`);
+  const outputName = options.outputName ?? `${bareName(pkg.name)}.lia`;
+  const outputPath = path.join(outputDir, outputName);
+  await createBundle(outputPath, manifest, [{ name: "index.js", path: bundlePath }]);
+  if (!options.quiet) console.log(`✓ Built → ${outputName}`);
+  return { path: outputPath, manifest, runtime: "node" };
 }
 
 /**
  * WASM custom tool: the schema lives in .lia-manifest.json (Rust can't export a
  * JS schema at build time). We compile the crate and package plugin.wasm.
  */
-async function buildWasm(cwd: string, rawManifest?: RawManifest): Promise<void> {
+async function buildWasm(cwd: string, rawManifest?: RawManifest, options: BuildOptions = {}): Promise<BuildResult> {
   const m = rawManifest ?? await readRawManifest(cwd);
   if (!m) {
     console.error("No .lia-manifest.json found. Run this from your tool's root.");
@@ -381,8 +479,10 @@ async function buildWasm(cwd: string, rawManifest?: RawManifest): Promise<void> 
     outputSchema: isRecord(m.outputSchema) ? m.outputSchema as Record<string, LiatirOutputFieldSchema> : {} as Record<string, LiatirOutputFieldSchema>,
   };
 
-  console.log(`Building ${manifest.name}@${manifest.version} (wasm)...`);
-  console.log("Compiling Rust → wasm32-wasip1 (cargo build --release)...");
+  if (!options.quiet) {
+    console.log(`Building ${manifest.name}@${manifest.version} (wasm)...`);
+    console.log("Compiling Rust → wasm32-wasip1 (cargo build --release)...");
+  }
   try {
     await execFileAsync("cargo", ["build", "--release", "--target", "wasm32-wasip1"], { cwd });
   } catch (e) {
@@ -397,13 +497,15 @@ async function buildWasm(cwd: string, rawManifest?: RawManifest): Promise<void> 
   } catch { /* handled below */ }
   if (!wasmFile) throw new Error(`No .wasm artifact found in ${releaseDir}`);
 
-  const outputName = `${bareName(manifest.name)}.lia`;
-  const liatirDir = path.join(cwd, ".liatir");
-  await createBundle(path.join(liatirDir, outputName), manifest, [{ name: "plugin.wasm", path: path.join(releaseDir, wasmFile) }]);
-  console.log(`✓ Built → ${outputName}`);
+  const outputName = options.outputName ?? `${bareName(manifest.name)}.lia`;
+  const outputDir = options.outputDir ?? path.join(cwd, ".liatir");
+  const outputPath = path.join(outputDir, outputName);
+  await createBundle(outputPath, manifest, [{ name: "plugin.wasm", path: path.join(releaseDir, wasmFile) }]);
+  if (!options.quiet) console.log(`✓ Built → ${outputName}`);
+  return { path: outputPath, manifest, runtime: "wasm" };
 }
 
-async function buildPython(cwd: string, rawManifest: RawManifest): Promise<void> {
+async function buildPython(cwd: string, rawManifest: RawManifest, options: BuildOptions = {}): Promise<BuildResult> {
   const metadata = wasmMetadata(rawManifest);
   const rawPython = isRecord(rawManifest.python) ? rawManifest.python : {};
   const sourceEntry = validateRelativePath(
@@ -451,11 +553,13 @@ async function buildPython(cwd: string, rawManifest: RawManifest): Promise<void>
     python,
   };
 
-  console.log(`Building ${manifest.name}@${manifest.version} (python)...`);
-  const outputName = `${bareName(manifest.name)}.lia`;
-  const liatirDir = path.join(cwd, ".liatir");
-  await createBundle(path.join(liatirDir, outputName), manifest, payloads);
-  console.log(`✓ Built → ${outputName}`);
+  if (!options.quiet) console.log(`Building ${manifest.name}@${manifest.version} (python)...`);
+  const outputName = options.outputName ?? `${bareName(path.basename(cwd))}.lia`;
+  const outputDir = options.outputDir ?? path.join(cwd, ".liatir");
+  const outputPath = path.join(outputDir, outputName);
+  await createBundle(outputPath, manifest, payloads);
+  if (!options.quiet) console.log(`✓ Built → ${outputName}`);
+  return { path: outputPath, manifest, runtime: "python" };
 }
 
 /** Write the .lia zip: signature + manifest + runtime payloads. */

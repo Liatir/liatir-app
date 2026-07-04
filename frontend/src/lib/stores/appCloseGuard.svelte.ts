@@ -31,7 +31,7 @@ async function listRunningJobs(): Promise<JobEntry[]> {
 	const api = liatir();
 	if (!api) return jobsStore.jobs.filter((job) => job.status.type === 'running');
 	try {
-		const jobs = (await api.invoke('lia_jobs_list', { workspaceId: null })) as JobEntry[];
+		const jobs = (await api.invoke('lia_jobs_list', { workspaceId: null, includeDev: true })) as JobEntry[];
 		return jobs.filter((job) => job.status.type === 'running');
 	} catch {
 		return jobsStore.jobs.filter((job) => job.status.type === 'running');

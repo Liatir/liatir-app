@@ -116,6 +116,12 @@ function createDataFilesStore() {
       loading = false;
     },
 
+    async clearResults() {
+      files = files.filter(f => !(f.folder === RESULTS_FOLDER || f.folder.startsWith(RESULTS_FOLDER + '/')));
+      folders = folders.filter(f => !(f === RESULTS_FOLDER || f.startsWith(RESULTS_FOLDER + '/')));
+      await persist();
+    },
+
     async initDemoFiles() {
       const api = liatir();
       if (!api) return;

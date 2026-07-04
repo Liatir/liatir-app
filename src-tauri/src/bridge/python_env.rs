@@ -453,6 +453,7 @@ pub async fn spawn_in_env(
     args: Vec<String>,
     input_json: Value,
     workspace_id: Option<String>,
+    extra_env: Option<HashMap<String, String>>,
     label: Option<String>,
     job_kind: String,
     metadata: Option<Value>,
@@ -496,13 +497,19 @@ pub async fn spawn_in_env(
     metadata_map.insert("envRoot".to_string(), Value::String(env_root));
     metadata_map.insert("envId".to_string(), Value::String(env_id.clone()));
 
+    let mut env = runtime_python_env(&dir).unwrap_or_default();
+    if let Some(extra_env) = extra_env {
+        env.extend(extra_env);
+    }
+    let env = if env.is_empty() { None } else { Some(env) };
+
     super::jobs::lia_jobs_spawn_with_cleanup(
         app,
         py.to_string_lossy().to_string(),
         job_args,
         Some(dir.to_string_lossy().to_string()),
         workspace_id,
-        runtime_python_env(&dir),
+        env,
         Some(label.unwrap_or_else(|| format!("Python environment: {env_id}"))),
         Some(job_kind),
         Some(Value::Object(metadata_map)),

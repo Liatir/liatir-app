@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Liatir dev",
+  "productName": "Liatir",
   "version": "0.0.1",
   "identifier": "app.liatir.app",
   "plugins": {

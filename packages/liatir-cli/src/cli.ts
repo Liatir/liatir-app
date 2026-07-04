@@ -3,6 +3,7 @@ import { init } from "./commands/init.js";
 import { dev } from "./commands/dev.js";
 import { build } from "./commands/build.js";
 import { update } from "./commands/update.js";
+import { version } from "./commands/version.js";
 
 const [, , command, ...rest] = process.argv;
 
@@ -21,6 +22,11 @@ async function main() {
     case "update":
       await update(rest);
       break;
+    case "version":
+    case "-v":
+    case "--version":
+      await version();
+      break;
     default:
       console.log(`liatir — develop and build .lia plugins & custom tools
 
@@ -30,11 +36,12 @@ Usage:
   liatir init <name> --wasm   Scaffold a WASM Rust .lia tool
   liatir init <name> --python Scaffold a Python .lia plugin
   liatir init <name> --js     Scaffold a JavaScript Node .lia plugin
-  liatir dev                  Watch mode: rebuild on save, run against live Liatir app
+  liatir dev                  Open a temporary Liatir Dev Runner session
   liatir dev --input '{"text":"hello"}'
   liatir dev --input-file inputs.json
   liatir build                Bundle and package as <name>.lia
   liatir update               Update @liatir/cli and @liatir/api in a Node .lia plugin project
+  liatir -v                   Print the CLI version (and @liatir/api version if installed)
 `);
   }
 }

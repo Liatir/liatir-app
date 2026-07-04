@@ -220,6 +220,7 @@ pub async fn lia_ai_python_spawn(
         args,
         input_json,
         workspace_id,
+        None,
         Some(label.unwrap_or_else(|| format!("AI runtime: {runtime_id}"))),
         "ai-python".to_string(),
         Some(Value::Object(metadata_map)),

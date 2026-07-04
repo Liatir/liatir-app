@@ -5,6 +5,9 @@ export default defineConfig({
   description: 'Local-first bioinformatics desktop app built on Rust and Tauri.',
   base: '/',
 
+  // Generate links without the .html suffix (Cloudflare Pages serves clean URLs).
+  cleanUrls: true,
+
   // Cloudflare deployment docs — kept in docs/ but not a published page.
   srcExclude: ['DEPLOY-cloudflare.md'],
 

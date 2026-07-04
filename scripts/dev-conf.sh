@@ -31,7 +31,7 @@ cp conf-templates/menu.config.dev.json src-tauri/resources/menu/menu.config.json
 
 cat > src-tauri/window.env << 'EOF'
 MAIN_WINDOW_URL=
-MAIN_WINDOW_TITLE=Liatir Dev
+MAIN_WINDOW_TITLE=Liatir
 MAIN_WINDOW_WIDTH=1200
 MAIN_WINDOW_HEIGHT=800
 MAIN_WINDOW_BG_COLOR=#171717

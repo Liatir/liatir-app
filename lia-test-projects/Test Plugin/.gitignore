@@ -5,3 +5,6 @@ dist/
 .liatir/
 build/
 .lia-dev/
+.venv/
+venv/
+__pycache__/
