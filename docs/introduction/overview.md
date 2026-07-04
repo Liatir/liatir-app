@@ -1,6 +1,6 @@
 # What is Liatir
 
-Liatir is a local-first bioinformatics desktop application. It runs native command-line tools (FastQC, Samtools, BCFtools, fastp, ...), custom JavaScript plugins (`.lia` files), WebAssembly tools, and local AI Models used by AI Tools - all from a single UI, entirely on your own machine.
+Liatir is a local-first bioinformatics desktop application. It runs bioinformatics tools (FastQC, Samtools, BCFtools, fastp, ...), custom plugins (.lia) that can be made in Python, Node or WASM, local AI Models, and piplines to connect processes together - all from a single UI, entirely on your own machine.
 
 ## Why local-first matters
 
