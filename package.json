@@ -2,12 +2,16 @@
   "name": "tauri-skeleton",
   "version": "0.1.0",
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@types/node": "^25.9.1",
     "esbuild": "^0.28.1",
+    "eslint": "^9.39.4",
     "expect": "^30.4.1",
+    "globals": "^15.15.0",
     "pixelmatch": "^7.2.0",
     "pngjs": "^7.0.0",
     "tsx": "^4.22.4",
+    "typescript-eslint": "^8.62.1",
     "vitepress": "^2.0.0-alpha.17",
     "vitest": "^4.1.9"
   },
@@ -19,6 +23,7 @@
   "scripts": {
     "build:frontend": "npm ci --prefix frontend/ && npm run build --prefix frontend/",
     "dev:frontend": "npm run dev --prefix frontend/",
+    "lint:ts": "eslint \"packages/*/src/**/*.ts\"",
     "devconf": "bash scripts/dev-conf.sh",
     "localdevconf": "bash scripts/local-dev-conf.sh",
     "prodconf": "bash scripts/prod-conf.sh",

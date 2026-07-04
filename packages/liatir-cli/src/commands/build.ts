@@ -488,8 +488,8 @@ async function buildWasm(cwd: string, rawManifest?: RawManifest, options: BuildO
     runtime: "wasm",
     category: metadata.category,
     tags: metadata.tags,
-    inputSchema: isRecord(m.inputSchema) ? m.inputSchema as Record<string, LiatirInputFieldSchema> : {} as Record<string, LiatirInputFieldSchema>,
-    outputSchema: isRecord(m.outputSchema) ? m.outputSchema as Record<string, LiatirOutputFieldSchema> : {} as Record<string, LiatirOutputFieldSchema>,
+    inputSchema: isRecord(m.inputSchema) ? m.inputSchema as Record<string, LiatirInputFieldSchema> : {},
+    outputSchema: isRecord(m.outputSchema) ? m.outputSchema as Record<string, LiatirOutputFieldSchema> : {},
   };
 
   if (!options.quiet) {
@@ -561,8 +561,8 @@ async function buildPython(cwd: string, rawManifest: RawManifest, options: Build
     runtime: "python",
     category: metadata.category,
     tags: metadata.tags,
-    inputSchema: isRecord(rawManifest.inputSchema) ? rawManifest.inputSchema as Record<string, LiatirInputFieldSchema> : {} as Record<string, LiatirInputFieldSchema>,
-    outputSchema: isRecord(rawManifest.outputSchema) ? rawManifest.outputSchema as Record<string, LiatirOutputFieldSchema> : {} as Record<string, LiatirOutputFieldSchema>,
+    inputSchema: isRecord(rawManifest.inputSchema) ? rawManifest.inputSchema as Record<string, LiatirInputFieldSchema> : {},
+    outputSchema: isRecord(rawManifest.outputSchema) ? rawManifest.outputSchema as Record<string, LiatirOutputFieldSchema> : {},
     python,
   };
 

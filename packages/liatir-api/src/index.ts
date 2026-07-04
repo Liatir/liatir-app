@@ -162,12 +162,13 @@ function appDataDirCandidates(): string[] {
       candidates.push(path.join(appData, "Liatir"));
       break;
     }
-    default:
+    default: {
       const dataHome = process.env["XDG_DATA_HOME"] ?? path.join(os.homedir(), ".local", "share");
       candidates.push(path.join(dataHome, "app.liatir.app"));
       candidates.push(path.join(dataHome, "liatir"));
       candidates.push(path.join(dataHome, "Liatir"));
       break;
+    }
   }
 
   return [...new Set(candidates)];

@@ -457,14 +457,20 @@ export async function dev(args: string[] = []) {
     }
   }
 
-  process.on("SIGINT", async () => {
-    console.log("\n[liatir dev] stopping...");
-    await cleanup();
-    process.exit(0);
+  // Signal handlers must return void, so the async cleanup runs in a
+  // fire-and-forget IIFE (the process exits once it settles).
+  process.on("SIGINT", () => {
+    void (async () => {
+      console.log("\n[liatir dev] stopping...");
+      await cleanup();
+      process.exit(0);
+    })();
   });
-  process.on("SIGTERM", async () => {
-    await cleanup();
-    process.exit(0);
+  process.on("SIGTERM", () => {
+    void (async () => {
+      await cleanup();
+      process.exit(0);
+    })();
   });
 
   console.log("[liatir dev] connected to Liatir. Publishing temporary dev bundle...");

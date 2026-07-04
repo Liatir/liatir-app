@@ -39,6 +39,32 @@ jobs:
       - name: Verify profile (unit + types + builds)
         run: npm run test:verify
 
+  # ── ESLint on the shippable TS packages (ADVISORY — never blocks a merge) ──
+  # Type-aware lint of the SDK/CLI/API/core. Kept non-blocking while the
+  # baseline is cleaned up: findings are visible (job goes red on its own line
+  # + inline annotations) but do not gate the merge. Promote to `required` in
+  # branch protection once the baseline is at zero.
+  lint-ts:
+    name: ESLint TS packages (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix packages/liatir-core
+      - run: npm ci --prefix packages/liatir-cli
+      - run: npm ci --prefix packages/liatir-api
+      # Register the ESLint problem matcher so findings show as inline
+      # error/warning annotations on the PR (not just buried in the log).
+      - name: ESLint
+        run: |
+          echo "::add-matcher::.github/eslint-matcher.json"
+          npm run lint:ts
+
   # ── Rust bridge: clippy (correctness/suspicious denied) + tests ──────────
   rust:
     name: Rust (clippy + tests)
