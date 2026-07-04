@@ -69,8 +69,8 @@ function accept() {
   pointer-events: none;
   background: linear-gradient(
     to top,
-    rgba(15, 23, 42, 0.55) 0%,
-    rgba(15, 23, 42, 0.32) 30%,
+    rgba(15, 23, 42, 0.75) 0%,
+    rgba(15, 23, 42, 0.40) 30%,
     rgba(15, 23, 42, 0) 100%
   );
 }
