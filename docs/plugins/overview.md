@@ -60,7 +60,7 @@ Do not write a separate Node plugin manifest by hand. Do not export a standalone
 `run()` function. Do not write result markers to stdout. Return the output object
 from `.main(...)`; Liatir handles packaging, execution, logs, and result parsing.
 
-## What a Node plugin can use
+### What a Node plugin can use
 
 The `Liatir` object passed to `.main(...)` is a Node bridge to the running Liatir
 app. It includes:
