@@ -23,10 +23,10 @@ jobs:
           node-version: 22
           cache: npm
 
-      # Install deps for every workspace the verify profile touches. Packages
-      # are not npm workspaces, so each is installed at its own prefix.
+      # Only install where a package-lock.json is committed. liatir-core and
+      # liatir-output-parser are private, type-only packages with no lockfile —
+      # they build with the root-resolved tsc, so `npm ci` must NOT target them.
       - run: npm ci
-      - run: npm ci --prefix packages/liatir-core
       - run: npm ci --prefix packages/liatir-cli
       - run: npm ci --prefix packages/liatir-api
       - run: npm ci --prefix frontend
@@ -54,10 +54,14 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      # Only lockfile-backed packages are installed with `npm ci`. liatir-core
+      # has no lock (type-only), so it is BUILT via the root tsc to produce the
+      # @liatir/core types that the cli/api sources import — accurate type-aware
+      # linting without an install.
       - run: npm ci
-      - run: npm ci --prefix packages/liatir-core
       - run: npm ci --prefix packages/liatir-cli
       - run: npm ci --prefix packages/liatir-api
+      - run: npm run build --prefix packages/liatir-core
       # Register the ESLint problem matcher so findings show as inline
       # error/warning annotations on the PR (not just buried in the log).
       - name: ESLint
