@@ -116,8 +116,8 @@ You can unsubscribe at any time by using the unsubscribe link included in our em
 
 If a third-party mailing list provider is used, please insert its details here:
 
-**Mailing list provider:** [INSERT PROVIDER NAME]  
-**Provider privacy policy:** [INSERT PROVIDER PRIVACY POLICY URL]
+**Mailing list provider:** Cloudflare  
+**Provider privacy policy:** [Cloudflare Privacy Policy](https://www.cloudflare.com/privacypolicy/)
 
 ### 3.5 Cookie Consent Preferences
 
@@ -208,7 +208,7 @@ These providers may include:
 
 - **Cloudflare**, for hosting, network delivery, security, and analytics;
 - **Google**, for Google Analytics;
-- **[INSERT MAILING LIST PROVIDER]**, for mailing list management and email delivery;
+- **Cloudflare**, for mailing list management and email delivery;
 - technical, legal, or compliance service providers where necessary.
 
 Service providers may process personal data on our behalf or as independent controllers depending on the service, configuration, and applicable terms.

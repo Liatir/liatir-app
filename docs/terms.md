@@ -186,13 +186,13 @@ Sections that by their nature should survive termination will continue to apply,
 
 ## 19. Governing Law
 
-These Terms are governed by the laws of **[INSERT GOVERNING LAW / JURISDICTION]**, without regard to conflict of law principles.
+These Terms are governed by the laws of **Italy and the EU**, without regard to conflict of law principles.
 
 If you are a consumer located in the European Union or another jurisdiction with mandatory consumer protection laws, you may also benefit from the mandatory protections of the laws of your country of residence.
 
 ## 20. Dispute Resolution and Venue
 
-Unless mandatory law provides otherwise, any dispute arising out of or related to these Terms or the Website will be submitted to the competent courts of **[INSERT COURT / VENUE]**.
+Unless mandatory law provides otherwise, any dispute arising out of or related to these Terms or the Website will be submitted to the competent courts of **"Comune di Grosseto" - Grosseto, 58100 GR, Italy**.
 
 Before starting formal proceedings, you agree to contact us at **contact@liatir.com** and attempt to resolve the dispute informally.
 
