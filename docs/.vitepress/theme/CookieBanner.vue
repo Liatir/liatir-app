@@ -31,6 +31,13 @@ function accept() {
     // If storage is unavailable the banner may reappear next visit; that's
     // an acceptable fallback and nothing else should break.
   }
+  // Grant analytics consent now that the visitor has accepted. gtag is defined
+  // globally by the Consent Mode snippet in .vitepress/config.mts.
+  try {
+    ;(window as any).gtag?.('consent', 'update', { analytics_storage: 'granted' })
+  } catch {
+    // GA not loaded (e.g. blocked by an extension) — nothing else to do.
+  }
 }
 </script>
 
