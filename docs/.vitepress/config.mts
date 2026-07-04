@@ -254,14 +254,14 @@ export default defineConfig({
           { text: "Terms of Service", link: "/terms" }
         ]
       },
-      { text: `</br>All rights reserved</br>© ${new Date().getFullYear()} <a href="/">Liatir</a>`},
+      { text: `</br>All rights reserved</br>© ${new Date().getFullYear()} <a href="https://liatir.app" target="_blank">Liatir</a>`},
     ],
 
     socialLinks: [],
 
     footer: {
       message: 'Liatir — powerful bioinformatics on your machine.<br></br>By using this app, you agree to our <a href="/privacy">Privacy Policy</a> and <a href="/terms">Terms of Service</a>.',
-      copyright: `All rights reserved © ${new Date().getFullYear()} Liatir`,
+      copyright: `All rights reserved © ${new Date().getFullYear()}  <a href="https://liatir.app" target="_blank">Liatir</a>`,
     },
   },
 })
