@@ -35,6 +35,12 @@ function accept() {
 </script>
 
 <template>
+  <!-- Gradient scrim that darkens the lower part of the page so the banner
+       stands out. Purely decorative and click-through (pointer-events: none),
+       so it dims without trapping the visitor. -->
+  <Transition name="cookie-backdrop-fade">
+    <div v-if="visible" class="cookie-backdrop" aria-hidden="true"></div>
+  </Transition>
   <Transition name="cookie-fade">
     <div v-if="visible" class="cookie-banner" role="dialog" aria-live="polite"
       aria-label="Privacy notice">
@@ -51,6 +57,24 @@ function accept() {
 </template>
 
 <style scoped>
+.cookie-backdrop {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Covers roughly the lower half of the viewport, fading to nothing near
+     the top so it blends into the page instead of drawing a hard edge. */
+  height: 46vh;
+  z-index: 199; /* just under the banner (200) */
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    rgba(15, 23, 42, 0.55) 0%,
+    rgba(15, 23, 42, 0.32) 30%,
+    rgba(15, 23, 42, 0) 100%
+  );
+}
+
 .cookie-banner {
   position: fixed;
   bottom: 16px;
@@ -111,6 +135,17 @@ function accept() {
 .cookie-fade-leave-to {
   opacity: 0;
   transform: translateY(12px);
+}
+
+/* The scrim just fades (no slide) so it feels like the page dims. */
+.cookie-backdrop-fade-enter-active,
+.cookie-backdrop-fade-leave-active {
+  transition: opacity 0.35s ease;
+}
+
+.cookie-backdrop-fade-enter-from,
+.cookie-backdrop-fade-leave-to {
+  opacity: 0;
 }
 
 @media (max-width: 640px) {
