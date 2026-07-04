@@ -27,15 +27,9 @@ Liatir offers four ways to add new analysis capability:
 Any binary installed in your system PATH can be wrapped as a native tool. Liatir checks availability, surfaces install instructions when the binary is missing, and runs the command with the parameters you choose. Run history and parsed results are stored automatically.
 
 ### 2 — .lia plugins
-A `.lia` file is a self-contained extension bundle. Node plugins declare their
-inputs and outputs in code with `definePlugin({ inputs, outputs })`, and
-`liatir build` generates the bundle manifest from that contract. WASM plugins use a
-manifest file and a sandboxed `plugin.wasm` payload.
+A `.lia` file is a self-contained extension bundle that can be built in Node, Pyhon or even WASM, which are perfect for performance-critical, sandboxed and cross-language logic. Compile from Rust, C, or any WASM-compatible language to compiled to `wasm32-wasip1`, and expose it as a normal tool in the UI and in pipelines.
 
-### 3 — WASM plugins
-For performance-critical or cross-language logic, Liatir supports WebAssembly plugins. Compile from Rust, C, or any WASM-compatible language and expose it as a normal tool in the UI and in pipelines.
-
-### 4 — AI Models and AI Tools
+### 4 — AI Models
 AI Models are locally installed model runtimes managed by Liatir. AI Tools are the pipeline capabilities that use those models for tasks such as single-cell annotation, sequence embedding, protein structure prediction, and genomic variant scoring.
 
 ## Core concepts
@@ -45,9 +39,7 @@ AI Models are locally installed model runtimes managed by Liatir. AI Tools are t
 | **Data library** | A registry of file paths on disk. Files are never copied — Liatir tracks references and detects when files move or disappear. |
 | **Native tool** | A system binary wrapped with a Liatir UI, dependency check, and run history. |
 | **.lia plugin** | A self-contained extension bundle that adds custom steps through the shared input/output contract. |
-| **WASM plugin** | A WebAssembly-backed tool for performance-critical logic. FastQC is the primary example. |
 | **AI Model** | A locally managed model runtime installed only when needed. |
-| **AI Tool** | A pipeline-ready capability that runs a compatible local AI Model through the shared I/O contract. |
 | **Pipeline** | A directed graph of steps whose typed outputs connect to typed inputs of subsequent steps. |
 | **Analysis run** | A single execution: recorded inputs, stdout, parsed sections, and any output files. |
 

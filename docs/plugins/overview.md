@@ -79,8 +79,8 @@ Node plugins can also use normal Node.js APIs and bundled npm dependencies.
 
 ## WASM plugins
 
-WASM `.lia` plugins are Rust tools compiled to `wasm32-wasip1`. They are more
-sandboxed than Node plugins:
+WASM `.lia` plugins are Web Assembly tools compiled to `wasm32-wasip1`. They are more
+sandboxed than Node or Python plugins:
 
 - input JSON is read from stdin;
 - output JSON is written to stdout;

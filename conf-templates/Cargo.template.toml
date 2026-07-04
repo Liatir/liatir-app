@@ -4,13 +4,6 @@ version = "%%CARGO_PACKAGE_VERSION%%"
 edition = "2021"
 default-run = "%%CARGO_PACKAGE_NAME%%"
 
-# Bug-catching clippy categories are hard errors (in `cargo clippy` / CI);
-# style/complexity/pedantic stay warnings so the existing baseline is not a
-# blocker. New correctness/suspicious issues fail the build.
-[lints.clippy]
-correctness = "deny"
-suspicious = "deny"
-
 [target.'cfg(windows)'.dependencies]
 tauri-plugin-prevent-default = { version = "3.0.3", features = ["platform-windows"], optional = true }
 

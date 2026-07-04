@@ -19,7 +19,6 @@ Liatir is organized around a few product concepts:
 | **Tools** | Built-in analysis steps such as FastQC, fastp, Samtools, BCFtools, and SnpEff. |
 | **Plugins** | `.lia` extensions that add custom analysis steps. |
 | **AI Models** | Local model runtimes that Liatir can install and manage when you need them. |
-| **AI Tools** | Pipeline-ready tools that use compatible local AI Models. |
 | **Pipelines** | Visual workflows that connect tool outputs to later inputs. |
 | **Jobs** | Long-running work currently executing in the background. |
 | **Results** | Completed runs, logs, output files, metrics, and provenance. |
@@ -41,7 +40,7 @@ This is useful when you work with:
 
 Every run should leave a clear trace:
 
-- which tool or AI Tool ran;
+- which tool ran;
 - which files or values were used as inputs;
 - which parameters were selected;
 - which output files were created;
@@ -50,18 +49,6 @@ Every run should leave a clear trace:
 
 This is why long-running work appears in **Jobs** while it is active and in
 **Results** after it finishes.
-
-## Pipelines
-
-Pipelines connect steps visually. A typical workflow might be:
-
-1. choose an input file from **Data**;
-2. run a QC tool;
-3. pass an output file to another tool;
-4. inspect the final result in **Results**.
-
-AI Tools follow the same idea. They use an installed AI Model, produce normal
-Liatir outputs, and can be connected to later pipeline steps.
 
 ## Plugins and extension points
 
