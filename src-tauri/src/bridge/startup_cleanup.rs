@@ -25,6 +25,7 @@ pub struct CleanupReport {
 /// - Finds `.part` files → reports as resumable (does NOT delete them)
 /// - Removes cache entries older than 7 days
 /// - Removes malformed JSON run records
+/// - Removes orphaned plugin-dev session residues (venv, sandbox fs, vars)
 #[tauri::command]
 pub fn lia_startup_cleanup(app: AppHandle) -> Result<CleanupReport, String> {
     let data_dir = app
@@ -118,6 +119,13 @@ pub fn lia_startup_cleanup(app: AppHandle) -> Result<CleanupReport, String> {
                 }
             }
         }
+    }
+
+    // 4 ── Remove orphaned plugin-dev session residues ─────────────
+    // Dev sessions are volatile: their registry is in-memory, so leftovers
+    // on disk (crashed CLI/app) are cleaned here. Active sessions survive.
+    for error in crate::bridge::plugin_dev::cleanup_orphan_dev_residues(&app) {
+        report.errors.push(format!("plugin-dev residue: {error}"));
     }
 
     Ok(report)

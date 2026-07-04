@@ -531,6 +531,10 @@ export default {
     expect(liaPlugins).toContain('const PYTHON_PLUGIN_ENV_ROOT: &str = "plugin-runtimes";');
     expect(liaPlugins).toContain('prepare_env(');
     expect(liaPlugins).toContain('spawn_in_env(');
+    // Venv identity must come from the dependency spec, not the bundle bytes,
+    // so code-only edits in `liatir dev` reuse the same environment.
+    expect(liaPlugins).toContain('fn python_spec_hash');
+    expect(liaPlugins).toContain('python_env_id_for_manifest');
     expect(liaPlugins).toContain('metadata_map.insert("runtime".to_string(), Value::String("python".to_string()))');
     expect(aiRuntime).toContain('const AI_PYTHON_ENV_ROOT: &str = "ai-runtimes";');
     expect(aiRuntime).not.toContain('plugin-runtimes');
@@ -571,6 +575,29 @@ export default {
     expect(ipcServer).toContain('lia-plugin-dev-child');
     expect(jobs).toContain('include_dev');
     expect(jobs).toContain('is_dev_job');
+  });
+
+  it('keeps liatir dev sessions sandboxed and free of global residues', () => {
+    const ipcServer = readFileSync(resolve(rootDir, 'src-tauri/src/bridge/ipc_server.rs'), 'utf8');
+    const pluginDev = readFileSync(resolve(rootDir, 'src-tauri/src/bridge/plugin_dev.rs'), 'utf8');
+    const startupCleanup = readFileSync(resolve(rootDir, 'src-tauri/src/bridge/startup_cleanup.rs'), 'utf8');
+
+    // Global/destructive bridge commands are refused inside dev sessions.
+    expect(ipcServer).toContain('DEV_BLOCKED_COMMANDS');
+    expect(ipcServer).toContain('"lia_app_exit"');
+    expect(ipcServer).toContain('"lia_fs_clear_data"');
+    expect(ipcServer).toContain('"lia_plugin_add_module"');
+    // Per-job commands only reach jobs inside the sandbox workspace.
+    expect(ipcServer).toContain('ensure_dev_job_access');
+    // Global variables are namespaced per dev session.
+    expect(ipcServer).toContain('dev_global_var_key');
+    expect(pluginDev).toContain('session_global_vars_prefix');
+    // Session ids reach fs paths, so they are validated at the boundary.
+    expect(pluginDev).toContain('validate_session_id');
+    // Dev sessions are volatile: end-of-session and startup cleanup.
+    expect(pluginDev).toContain('cleanup_orphan_dev_residues');
+    expect(pluginDev).toContain('session_sandbox_rel');
+    expect(startupCleanup).toContain('cleanup_orphan_dev_residues');
   });
 
   it('keeps the npm publish helper responsible for synced CLI/API version bumps', () => {

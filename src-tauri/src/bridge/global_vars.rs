@@ -93,6 +93,31 @@ impl EnvState {
     }
 }
 
+/// Remove every variable whose key matches `predicate`. Used to drop the
+/// per-session namespaces plugin-dev runs write under (see bridge::plugin_dev).
+pub fn remove_vars_matching<F: Fn(&str) -> bool>(
+    state: &EnvState,
+    predicate: F,
+) -> Result<usize, String> {
+    state.with_mut(|store| {
+        let keys: Vec<String> = store
+            .vars
+            .keys()
+            .filter(|key| predicate(key))
+            .cloned()
+            .collect();
+        for key in &keys {
+            store.vars.remove(key);
+        }
+        Ok(keys.len())
+    })
+}
+
+/// Remove every variable whose key starts with `prefix`.
+pub fn remove_vars_with_prefix(state: &EnvState, prefix: &str) -> Result<usize, String> {
+    remove_vars_matching(state, |key| key.starts_with(prefix))
+}
+
 // ------- Commands -------
 
 #[tauri::command]

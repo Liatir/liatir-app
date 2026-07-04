@@ -12,24 +12,84 @@ use tauri::{AppHandle, Manager};
 
 const DEV_CONTEXT_PAYLOAD_KEY: &str = "__liatirDevContext";
 
+/// Commands a plugin-dev session may never execute: they mutate global app
+/// state (whole data/cache stores, trash, log files, the real plugin module
+/// library, app lifecycle) and have no sandbox-scoped meaning. Everything
+/// else is either already rewritten into the sandbox workspace or harmless.
+const DEV_BLOCKED_COMMANDS: &[&str] = &[
+    "lia_app_exit",
+    "lia_fs_clear_data",
+    "lia_fs_clear_cache",
+    "lia_fs_data_clear_trash",
+    "lia_fs_data_recover_trash",
+    "lia_fs_diagnostics_clear",
+    "lia_fs_diagnostics_rm",
+    "lia_plugin_add_module",
+    "lia_plugin_remove_module",
+    "lia_plugin_pick_and_add_module",
+    "lia_plugin_clear_all_jobs",
+    "lia_plugin_storage_clear",
+];
+
 #[derive(Debug, Clone)]
 struct IpcDevContext {
     session_id: String,
 }
 
-fn dev_context_from_payload(payload: &Value) -> Option<IpcDevContext> {
-    let ctx = payload.get(DEV_CONTEXT_PAYLOAD_KEY)?.as_object()?;
-    let scope = ctx.get("scope").and_then(Value::as_str)?;
+/// Extract the dev context, if any. A present-but-malformed context is an
+/// error (never fall back to executing the command unscoped), an absent one
+/// simply means a normal non-dev invocation.
+fn dev_context_from_payload(payload: &Value) -> Result<Option<IpcDevContext>, String> {
+    let Some(raw) = payload.get(DEV_CONTEXT_PAYLOAD_KEY) else {
+        return Ok(None);
+    };
+    let ctx = raw
+        .as_object()
+        .ok_or_else(|| "invalid liatir dev context".to_string())?;
+    let scope = ctx.get("scope").and_then(Value::as_str).unwrap_or_default();
     if scope != "plugin-dev" {
-        return None;
+        return Err(format!("unknown liatir dev context scope: {scope:?}"));
     }
-    let session_id = ctx.get("sessionId").and_then(Value::as_str)?.trim();
-    if session_id.is_empty() {
-        return None;
-    }
-    Some(IpcDevContext {
+    let session_id = ctx
+        .get("sessionId")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .trim();
+    crate::bridge::plugin_dev::validate_session_id(session_id)?;
+    Ok(Some(IpcDevContext {
         session_id: session_id.to_string(),
-    })
+    }))
+}
+
+/// In dev sessions, per-job commands may only touch jobs that live in the
+/// sandbox workspace — the only workspace a dev plugin can spawn into.
+fn ensure_dev_job_access(
+    app: &AppHandle,
+    ctx: Option<&IpcDevContext>,
+    job_id: &str,
+) -> anyhow::Result<()> {
+    if ctx.is_none() {
+        return Ok(());
+    }
+    let entry = crate::bridge::jobs::lia_jobs_status(app.clone(), job_id.to_string())
+        .map_err(|e| anyhow::anyhow!(e))?;
+    if entry.workspace_id.as_deref() != Some(crate::bridge::jobs::SANDBOX_WORKSPACE_ID) {
+        return Err(anyhow::anyhow!(
+            "job {job_id} is outside the sandbox workspace and cannot be accessed from a liatir dev session"
+        ));
+    }
+    Ok(())
+}
+
+/// Namespace a global-variable key into the session's private space. Dev
+/// plugins read/write global vars normally, but against their own volatile
+/// namespace (removed at session end), never the app's real variables.
+fn dev_global_var_key(ctx: &IpcDevContext, key: &str) -> String {
+    format!(
+        "{}{}",
+        crate::bridge::plugin_dev::session_global_vars_prefix(&ctx.session_id),
+        key
+    )
 }
 
 fn merge_dev_job_metadata(metadata: Option<Value>, ctx: &IpcDevContext) -> Value {
@@ -49,11 +109,7 @@ fn merge_dev_job_metadata(metadata: Option<Value>, ctx: &IpcDevContext) -> Value
 
 fn scoped_dev_rel(ctx: &IpcDevContext, value: &str) -> String {
     let clean = value.trim_matches('/');
-    let base = format!(
-        "workspaces/{}/plugin-dev/{}",
-        crate::bridge::jobs::SANDBOX_WORKSPACE_ID,
-        ctx.session_id
-    );
+    let base = crate::bridge::plugin_dev::session_sandbox_rel(&ctx.session_id);
     if clean == base || clean.starts_with(&format!("{base}/")) {
         return clean.to_string();
     }
@@ -315,7 +371,12 @@ async fn handle_invoke(
 }
 
 async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<Value> {
-    let dev_context = dev_context_from_payload(&payload);
+    let dev_context = dev_context_from_payload(&payload).map_err(|e| anyhow::anyhow!(e))?;
+    if dev_context.is_some() && DEV_BLOCKED_COMMANDS.contains(&cmd) {
+        return Err(anyhow::anyhow!(
+            "{cmd} is not available in liatir dev sessions: it would change global Liatir state."
+        ));
+    }
     let payload = scope_dev_fs_payload(cmd, payload, dev_context.as_ref());
     // ── Filesystem bridge (scoped storage: data/cache, trash, diagnostics) ──
     // Same native commands window.Liatir.desktop.fs calls — exposed to .lia plugins.
@@ -389,29 +450,51 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
     match cmd {
         // ── Cases the macros can't express ───────────────────────────────
         // Global variables use a managed State, not AppHandle.
+        // Global vars: dev sessions read/write a private per-session namespace
+        // (prefixed keys, stripped on list) instead of the real app variables.
         "lia_global_vars_get" => {
-            let key = payload["key"].as_str().ok_or_else(|| anyhow::anyhow!("key required"))?.to_string();
+            let mut key = payload["key"].as_str().ok_or_else(|| anyhow::anyhow!("key required"))?.to_string();
+            if let Some(ctx) = dev_context.as_ref() {
+                key = dev_global_var_key(ctx, &key);
+            }
             return crate::bridge::global_vars::lia_global_vars_get(key, app.state::<crate::bridge::global_vars::EnvState>())
                 .map(|v| serde_json::to_value(v).unwrap_or(Value::Null))
                 .map_err(|e| anyhow::anyhow!(e));
         }
         "lia_global_vars_set" => {
-            let key = payload["key"].as_str().ok_or_else(|| anyhow::anyhow!("key required"))?.to_string();
+            let mut key = payload["key"].as_str().ok_or_else(|| anyhow::anyhow!("key required"))?.to_string();
             let value = payload["value"].as_str().ok_or_else(|| anyhow::anyhow!("value required"))?.to_string();
+            if let Some(ctx) = dev_context.as_ref() {
+                key = dev_global_var_key(ctx, &key);
+            }
             return crate::bridge::global_vars::lia_global_vars_set(key, value, app.state::<crate::bridge::global_vars::EnvState>())
                 .map(|v| serde_json::to_value(v).unwrap_or(Value::Null))
                 .map_err(|e| anyhow::anyhow!(e));
         }
         "lia_global_vars_remove" => {
-            let key = payload["key"].as_str().ok_or_else(|| anyhow::anyhow!("key required"))?.to_string();
+            let mut key = payload["key"].as_str().ok_or_else(|| anyhow::anyhow!("key required"))?.to_string();
+            if let Some(ctx) = dev_context.as_ref() {
+                key = dev_global_var_key(ctx, &key);
+            }
             return crate::bridge::global_vars::lia_global_vars_remove(key, app.state::<crate::bridge::global_vars::EnvState>())
                 .map(|v| serde_json::to_value(v).unwrap_or(Value::Null))
                 .map_err(|e| anyhow::anyhow!(e));
         }
         "lia_global_vars_list" => {
-            return crate::bridge::global_vars::lia_global_vars_list(app.state::<crate::bridge::global_vars::EnvState>())
-                .map(|v| serde_json::to_value(v).unwrap_or(Value::Null))
-                .map_err(|e| anyhow::anyhow!(e));
+            let vars = crate::bridge::global_vars::lia_global_vars_list(app.state::<crate::bridge::global_vars::EnvState>())
+                .map_err(|e| anyhow::anyhow!(e))?;
+            let vars = match dev_context.as_ref() {
+                Some(ctx) => {
+                    let prefix = crate::bridge::plugin_dev::session_global_vars_prefix(&ctx.session_id);
+                    vars.into_iter()
+                        .filter_map(|(key, value)| {
+                            key.strip_prefix(&prefix).map(|bare| (bare.to_string(), value))
+                        })
+                        .collect()
+                }
+                None => vars,
+            };
+            return Ok(serde_json::to_value(vars).unwrap_or(Value::Null));
         }
         // Plugin runtime status — no AppHandle, returns Value directly.
         "lia_plugin_status" => {
@@ -493,6 +576,7 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("jobId required"))?
                 .to_string();
+            ensure_dev_job_access(app, dev_context.as_ref(), &job_id)?;
             let ok = crate::bridge::jobs::lia_jobs_kill(app.clone(), job_id)
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(serde_json::json!(ok))
@@ -503,6 +587,7 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("jobId required"))?
                 .to_string();
+            ensure_dev_job_access(app, dev_context.as_ref(), &job_id)?;
             let entry = crate::bridge::jobs::lia_jobs_status(app.clone(), job_id)
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(serde_json::to_value(entry)?)
@@ -521,6 +606,7 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("jobId required"))?
                 .to_string();
+            ensure_dev_job_access(app, dev_context.as_ref(), &job_id)?;
             let since = payload["since"].as_u64().map(|n| n as usize);
             let output = crate::bridge::jobs::lia_jobs_get_output(app.clone(), job_id, since)
                 .map_err(|e| anyhow::anyhow!(e))?;
@@ -595,9 +681,40 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 .ok_or_else(|| anyhow::anyhow!("path required"))?
                 .to_string();
             let inputs = payload["inputs"].clone();
-            crate::bridge::lia_plugins::lia_liatir_run(app.clone(), path, inputs)
-                .await
-                .map_err(|e| anyhow::anyhow!(e))
+            match dev_context.as_ref() {
+                // Plugin-to-plugin runs started from a dev session stay in the
+                // sandbox workspace and are tracked (and killed) with the session.
+                Some(ctx) => {
+                    let mut env = std::collections::HashMap::new();
+                    env.insert("LIATIR_RUN_SCOPE".to_string(), "plugin-dev".to_string());
+                    env.insert("LIATIR_DEV_SESSION_ID".to_string(), ctx.session_id.clone());
+                    env.insert(
+                        "LIATIR_WORKSPACE_ID".to_string(),
+                        crate::bridge::jobs::SANDBOX_WORKSPACE_ID.to_string(),
+                    );
+                    let result = crate::bridge::lia_plugins::run_lia_plugin_bundle(
+                        app.clone(),
+                        path,
+                        inputs,
+                        crate::bridge::lia_plugins::LiaPluginRunOptions {
+                            workspace_id: Some(crate::bridge::jobs::SANDBOX_WORKSPACE_ID.to_string()),
+                            env: Some(env),
+                            job_kind: "lia-plugin-dev-child".to_string(),
+                            metadata: Some(merge_dev_job_metadata(None, ctx)),
+                            ..Default::default()
+                        },
+                    )
+                    .await
+                    .map_err(|e| anyhow::anyhow!(e))?;
+                    if let Some(job_id) = result.get("jobId").and_then(Value::as_str) {
+                        crate::bridge::plugin_dev::track_dev_job(app, &ctx.session_id, job_id);
+                    }
+                    Ok(result)
+                }
+                None => crate::bridge::lia_plugins::lia_liatir_run(app.clone(), path, inputs)
+                    .await
+                    .map_err(|e| anyhow::anyhow!(e)),
+            }
         }
 
         "lia_plugin_dev_update_session" => {

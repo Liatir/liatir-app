@@ -110,7 +110,26 @@ fn stable_hash_hex(bytes: &[u8]) -> String {
     format!("{hash:016x}")
 }
 
-fn python_plugin_env_id(manifest: &Value, bundle_hash: &str) -> String {
+/// Hash of the dependency-defining parts of the Python spec ONLY. Keying the
+/// venv on this (instead of the whole bundle bytes) lets code-only edits reuse
+/// the same environment — critical for `liatir dev`, where every save produces
+/// a new bundle. Only a change in packages/requirements/pythonRequirement
+/// yields a new env. serde_json objects serialize with sorted keys, so the
+/// fingerprint is deterministic.
+fn python_spec_hash(spec: &PythonPluginSpec) -> String {
+    let fingerprint = serde_json::json!({
+        "packages": spec.packages,
+        "requirements": spec.requirements,
+        "pythonRequirement": spec.python_requirement,
+    });
+    stable_hash_hex(
+        serde_json::to_string(&fingerprint)
+            .unwrap_or_default()
+            .as_bytes(),
+    )
+}
+
+fn python_plugin_env_id(manifest: &Value, spec: &PythonPluginSpec) -> String {
     let name = manifest
         .get("name")
         .and_then(|value| value.as_str())
@@ -119,11 +138,12 @@ fn python_plugin_env_id(manifest: &Value, bundle_hash: &str) -> String {
         .get("version")
         .and_then(|value| value.as_str())
         .unwrap_or("0");
+    let spec_hash = python_spec_hash(spec);
     format!(
         "plugin-{}-{}-{}",
         sanitize_env_part(name, 28),
         sanitize_env_part(version, 16),
-        &bundle_hash[..12.min(bundle_hash.len())]
+        &spec_hash[..12.min(spec_hash.len())]
     )
 }
 
@@ -154,12 +174,12 @@ pub(crate) fn read_manifest_from_bundle(path: &str) -> Result<Value, String> {
     read_manifest(&mut zip)
 }
 
-pub(crate) fn python_env_id_for_bundle(path: &str, manifest: &Value) -> Result<String, String> {
-    let bundle_hash = stable_hash_hex(&std::fs::read(path).map_err(|e| e.to_string())?);
-    Ok(python_plugin_env_id(manifest, &bundle_hash))
+pub(crate) fn python_env_id_for_manifest(manifest: &Value) -> Result<String, String> {
+    let spec = parse_python_spec(manifest)?;
+    Ok(python_plugin_env_id(manifest, &spec))
 }
 
-fn python_runtime_context(path: &str, manifest: Value) -> Result<PythonPluginRuntimeContext, String> {
+fn python_runtime_context(manifest: Value) -> Result<PythonPluginRuntimeContext, String> {
     let runtime = manifest
         .get("runtime")
         .and_then(|r| r.as_str())
@@ -174,8 +194,7 @@ fn python_runtime_context(path: &str, manifest: Value) -> Result<PythonPluginRun
         .clone()
         .unwrap_or_else(|| "python/main.py".to_string());
     validate_relative_path(&entry)?;
-    let bundle_hash = stable_hash_hex(&std::fs::read(path).map_err(|e| e.to_string())?);
-    let env_id = python_plugin_env_id(&manifest, &bundle_hash);
+    let env_id = python_plugin_env_id(&manifest, &spec);
 
     Ok(PythonPluginRuntimeContext {
         manifest,
@@ -298,7 +317,7 @@ pub async fn lia_liatir_python_runtime_status(
 ) -> Result<PythonEnvStatus, String> {
     let mut zip = open_validated(&path)?;
     let manifest = read_manifest(&mut zip)?;
-    let context = python_runtime_context(&path, manifest)?;
+    let context = python_runtime_context(manifest)?;
     let app_for_status = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
         status_python_plugin_env(app_for_status, context.env_id, &context.spec)
@@ -314,7 +333,7 @@ pub async fn lia_liatir_python_runtime_prepare(
 ) -> Result<super::python_env::PythonEnvPrepareResult, String> {
     let mut zip = open_validated(&path)?;
     let manifest = read_manifest(&mut zip)?;
-    let context = python_runtime_context(&path, manifest)?;
+    let context = python_runtime_context(manifest)?;
     let app_for_prepare = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
         prepare_python_plugin_env(app_for_prepare, context.env_id, &context.spec)
@@ -440,7 +459,7 @@ pub(crate) async fn run_lia_plugin_bundle(
     }
 
     if runtime == "python" {
-        let context = python_runtime_context(&path, manifest)?;
+        let context = python_runtime_context(manifest)?;
         let app_for_prepare = app.clone();
         let env_id_for_prepare = context.env_id.clone();
         let spec_for_prepare = context.spec.clone();
@@ -476,8 +495,14 @@ pub(crate) async fn run_lia_plugin_bundle(
         .await
         .map_err(|e| e.to_string())??;
 
-        let source_root =
-            env_dir(&app, &python_env_root, &context.env_id)?.join("plugin-source");
+        // Source dirs are content-addressed by the bundle hash: the venv is
+        // shared across code edits (env id = dependency spec), but each bundle
+        // content gets its own immutable source snapshot. This avoids both
+        // stale files from older bundles and races between concurrent runs.
+        let bundle_hash = stable_hash_hex(&std::fs::read(&path).map_err(|e| e.to_string())?);
+        let source_root = env_dir(&app, &python_env_root, &context.env_id)?
+            .join("plugin-source")
+            .join(&bundle_hash[..12.min(bundle_hash.len())]);
         extract_python_payload(&mut zip, &source_root)?;
 
         let plugin_name = context
@@ -555,4 +580,74 @@ pub(crate) async fn run_lia_plugin_bundle(
         options.metadata,
         Some(temp_dir.to_string_lossy().to_string()),
     ).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn manifest(python: Value) -> Value {
+        json!({
+            "name": "Demo Plugin",
+            "version": "1.0.0",
+            "runtime": "python",
+            "python": python,
+        })
+    }
+
+    #[test]
+    fn python_env_id_is_stable_across_code_only_changes() {
+        // The env id is keyed on the dependency spec, NOT on bundle bytes, so
+        // code-only edits (different entry, different sources) reuse the venv.
+        let a = python_env_id_for_manifest(&manifest(json!({
+            "entry": "python/main.py",
+            "requirements": ["colorama==0.4.6"],
+        })))
+        .unwrap();
+        let b = python_env_id_for_manifest(&manifest(json!({
+            "entry": "python/other.py",
+            "requirements": ["colorama==0.4.6"],
+        })))
+        .unwrap();
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn python_env_id_changes_when_dependencies_change() {
+        let base = python_env_id_for_manifest(&manifest(json!({
+            "requirements": ["colorama==0.4.6"],
+        })))
+        .unwrap();
+        let bumped = python_env_id_for_manifest(&manifest(json!({
+            "requirements": ["colorama==0.4.5"],
+        })))
+        .unwrap();
+        let with_packages = python_env_id_for_manifest(&manifest(json!({
+            "requirements": ["colorama==0.4.6"],
+            "packages": [{ "package": "numpy" }],
+        })))
+        .unwrap();
+        let with_python_requirement = python_env_id_for_manifest(&manifest(json!({
+            "requirements": ["colorama==0.4.6"],
+            "pythonRequirement": { "minVersion": "3.11" },
+        })))
+        .unwrap();
+        assert_ne!(base, bumped);
+        assert_ne!(base, with_packages);
+        assert_ne!(base, with_python_requirement);
+    }
+
+    #[test]
+    fn python_env_id_stays_within_env_id_limits() {
+        // env ids must pass python_env::validate_env_id (alnum/-/_, len <= 80).
+        let id = python_env_id_for_manifest(&manifest(json!({
+            "requirements": ["colorama==0.4.6"],
+        })))
+        .unwrap();
+        assert!(id.len() <= 80, "env id too long: {id}");
+        assert!(id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_'));
+    }
 }

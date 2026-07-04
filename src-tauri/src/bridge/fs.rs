@@ -87,7 +87,9 @@ fn liatir_scope_root(
 /// Returns the public base dir for fs.data / fs.cache.
 /// - permanent=true  -> app_data_dir()/.liatir/.main/data
 /// - permanent=false -> app_cache_dir()/.liatir/.main/cache
-fn base_dir(app: &AppHandle, permanent: bool) -> PathBuf {
+/// pub(crate): plugin_dev/startup_cleanup resolve dev sandbox dirs through
+/// this same function instead of re-deriving the layout.
+pub(crate) fn base_dir(app: &AppHandle, permanent: bool) -> PathBuf {
     let scope_root = liatir_scope_root(app, permanent, None).unwrap_or_else(|_| {
         if permanent {
             app.path()

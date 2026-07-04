@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::Mutex,
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -11,12 +11,46 @@ use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 use url::Url;
 
 use super::lia_plugins::{
-    python_env_id_for_bundle, read_manifest_from_bundle, run_lia_plugin_bundle,
+    python_env_id_for_manifest, read_manifest_from_bundle, run_lia_plugin_bundle,
     LiaPluginRunOptions, PYTHON_PLUGIN_DEV_ENV_ROOT,
 };
 use super::python_env::env_dir;
 
 const PLUGIN_DEV_SCOPE: &str = "plugin-dev";
+
+/// Prefix namespace for global variables written by plugin-dev sessions.
+/// Session-scoped keys are `plugin-dev:<sessionId>:<key>`; everything under
+/// the bare prefix is volatile and removed at session end / app startup.
+pub(crate) const PLUGIN_DEV_GLOBAL_VARS_PREFIX: &str = "plugin-dev:";
+
+pub(crate) fn session_global_vars_prefix(session_id: &str) -> String {
+    format!("{PLUGIN_DEV_GLOBAL_VARS_PREFIX}{session_id}:")
+}
+
+/// Root (relative to the fs data/cache base) of ALL plugin-dev sandbox areas.
+pub(crate) fn plugin_dev_sandbox_root_rel() -> String {
+    format!("workspaces/{}/plugin-dev", super::jobs::SANDBOX_WORKSPACE_ID)
+}
+
+/// Per-session sandbox area (relative to the fs data/cache base). Single
+/// source of truth for the IPC fs scoping and the end-of-session cleanup.
+pub(crate) fn session_sandbox_rel(session_id: &str) -> String {
+    format!("{}/{}", plugin_dev_sandbox_root_rel(), session_id)
+}
+
+/// Session ids come from the CLI over IPC and end up in filesystem paths
+/// (sandbox dirs, python env cleanup), so only accept a safe charset.
+pub(crate) fn validate_session_id(session_id: &str) -> Result<(), String> {
+    if session_id.is_empty()
+        || session_id.len() > 64
+        || !session_id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-')
+    {
+        return Err("invalid plugin dev session id".to_string());
+    }
+    Ok(())
+}
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -178,10 +212,11 @@ pub async fn lia_plugin_dev_update_session(
     build_id: Option<String>,
     initial_inputs: Option<Value>,
 ) -> Result<PluginDevSession, String> {
+    validate_session_id(&session_id)?;
     let manifest = read_manifest_from_bundle(&bundle_path)?;
     let runtime = manifest_runtime(&manifest);
     let python_env_id = if runtime == "python" {
-        Some(python_env_id_for_bundle(&bundle_path, &manifest)?)
+        Some(python_env_id_for_manifest(&manifest)?)
     } else {
         None
     };
@@ -209,6 +244,7 @@ pub fn lia_plugin_dev_set_error(
     build_id: Option<String>,
     initial_inputs: Option<Value>,
 ) -> Result<PluginDevSession, String> {
+    validate_session_id(&session_id)?;
     let registry = app.state::<PluginDevRegistry>();
     Ok(upsert_record(
         &registry,
@@ -371,19 +407,49 @@ pub fn lia_plugin_dev_end_session(app: AppHandle, session_id: String) -> Result<
     Ok(())
 }
 
+/// Tear down everything a dev session created. Dev sessions are volatile by
+/// design, so every step is best-effort: one failing removal must not keep
+/// the rest of the session's residues alive.
 fn cleanup_record(
     app: &AppHandle,
     record: PluginDevSessionRecord,
     close_window: bool,
 ) -> Result<(), String> {
+    let mut errors: Vec<String> = Vec::new();
+
     for job_id in &record.job_ids {
         let _ = super::jobs::lia_jobs_kill(app.clone(), job_id.clone());
     }
 
     for env_id in record.python_env_ids {
-        let dir: PathBuf = env_dir(app, PYTHON_PLUGIN_DEV_ENV_ROOT, &env_id)?;
+        match env_dir(app, PYTHON_PLUGIN_DEV_ENV_ROOT, &env_id) {
+            Ok(dir) => {
+                if dir.exists() {
+                    if let Err(e) = std::fs::remove_dir_all(&dir) {
+                        errors.push(format!("python env {env_id}: {e}"));
+                    }
+                }
+            }
+            Err(e) => errors.push(format!("python env {env_id}: {e}")),
+        }
+    }
+
+    // Remove the session's sandbox fs area (data + cache).
+    let sandbox_rel = session_sandbox_rel(&record.session.session_id);
+    for permanent in [true, false] {
+        let dir: PathBuf = super::fs::base_dir(app, permanent).join(&sandbox_rel);
         if dir.exists() {
-            std::fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
+            if let Err(e) = std::fs::remove_dir_all(&dir) {
+                errors.push(format!("sandbox dir {}: {e}", dir.to_string_lossy()));
+            }
+        }
+    }
+
+    // Drop the session's namespaced global variables.
+    if let Some(state) = app.try_state::<super::global_vars::EnvState>() {
+        let prefix = session_global_vars_prefix(&record.session.session_id);
+        if let Err(e) = super::global_vars::remove_vars_with_prefix(&state, &prefix) {
+            errors.push(format!("global vars: {e}"));
         }
     }
 
@@ -393,7 +459,97 @@ fn cleanup_record(
         }
     }
 
-    Ok(())
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(format!(
+            "plugin dev session cleanup left residues: {}",
+            errors.join("; ")
+        ))
+    }
+}
+
+fn active_session_ids(app: &AppHandle) -> HashSet<String> {
+    app.try_state::<PluginDevRegistry>()
+        .map(|registry| registry.0.lock().unwrap().keys().cloned().collect())
+        .unwrap_or_default()
+}
+
+fn active_python_env_ids(app: &AppHandle) -> HashSet<String> {
+    app.try_state::<PluginDevRegistry>()
+        .map(|registry| {
+            registry
+                .0
+                .lock()
+                .unwrap()
+                .values()
+                .flat_map(|record| record.python_env_ids.iter().cloned())
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Remove direct children of `dir` whose name is not in `keep`.
+fn remove_orphan_children(dir: &Path, keep: &HashSet<String>, errors: &mut Vec<String>) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return; // A missing dir means there is nothing to clean.
+    };
+    for entry in entries.flatten() {
+        let name = entry.file_name().to_string_lossy().to_string();
+        if keep.contains(&name) {
+            continue;
+        }
+        let path = entry.path();
+        let removed = if path.is_dir() {
+            std::fs::remove_dir_all(&path)
+        } else {
+            std::fs::remove_file(&path)
+        };
+        if let Err(e) = removed {
+            errors.push(format!("{}: {e}", path.to_string_lossy()));
+        }
+    }
+}
+
+/// Remove residues of dev sessions that are no longer active: python dev
+/// envs, sandbox fs areas and namespaced global variables. The session
+/// registry is in-memory, so after a crash everything found here is an
+/// orphan. Safe to run while sessions are open — active ids are skipped.
+/// Returns the list of (non-fatal) errors.
+pub fn cleanup_orphan_dev_residues(app: &AppHandle) -> Vec<String> {
+    let mut errors = Vec::new();
+    let active_sessions = active_session_ids(app);
+    let active_envs = active_python_env_ids(app);
+
+    match super::python_env::data_root(app) {
+        Ok(root) => remove_orphan_children(
+            &root.join(PYTHON_PLUGIN_DEV_ENV_ROOT),
+            &active_envs,
+            &mut errors,
+        ),
+        Err(e) => errors.push(e),
+    }
+
+    for permanent in [true, false] {
+        let root = super::fs::base_dir(app, permanent).join(plugin_dev_sandbox_root_rel());
+        remove_orphan_children(&root, &active_sessions, &mut errors);
+    }
+
+    if let Some(state) = app.try_state::<super::global_vars::EnvState>() {
+        let removed = super::global_vars::remove_vars_matching(&state, |key| {
+            key.strip_prefix(PLUGIN_DEV_GLOBAL_VARS_PREFIX)
+                .map(|rest| {
+                    let session = rest.split(':').next().unwrap_or("");
+                    !active_sessions.contains(session)
+                })
+                .unwrap_or(false)
+        });
+        if let Err(e) = removed {
+            errors.push(format!("global vars: {e}"));
+        }
+    }
+
+    errors
 }
 
 pub fn cleanup_dev_session_for_window(app: &AppHandle, label: &str) {

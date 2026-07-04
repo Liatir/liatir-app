@@ -769,7 +769,9 @@ fn python_requirement_label(requirement: &PythonRequirement) -> String {
     }
 }
 
-fn data_root(app: &AppHandle) -> Result<PathBuf, String> {
+/// pub(crate): plugin_dev startup cleanup locates orphan dev env roots
+/// through this same function instead of re-deriving the layout.
+pub(crate) fn data_root(app: &AppHandle) -> Result<PathBuf, String> {
     let base = app
         .path()
         .app_data_dir()
