@@ -125,12 +125,6 @@ function parseRuntime(value: string): Runtime {
   throw new Error(`Invalid runtime "${value}". Expected "node", "wasm", or "python".`);
 }
 
-function parseLanguage(value: string): NodeLanguage {
-  if (value === "typescript" || value === "ts") return "typescript";
-  if (value === "javascript" || value === "js") return "javascript";
-  throw new Error(`Invalid language "${value}". Expected "typescript" or "javascript".`);
-}
-
 function parseTemplate(value: string): NodeTemplate {
   if (value === "minimal" || value === "file-processor" || value === "bio-cli") return value;
   throw new Error(`Invalid template "${value}". Expected "minimal", "file-processor", or "bio-cli".`);
