@@ -23,6 +23,7 @@ export default defineConfig({
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/static/logos/svg/app-icon-mono.svg' }],
     ['link', { rel: 'icon', type: 'image/png', href: '/static/logos/png/app-icon-mono.png' }],
 
+    ['script', { src: "https://platform-api.sharethis.com/js/sharethis.js", async: "true" }],
     // Google Analytics (GA4). Fires on every page load.
     ['script', { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-JSH1W9TFP9' }],
     ['script', {}, `

@@ -1,5 +1,6 @@
 import DefaultTheme from 'vitepress/theme'
 import { h } from 'vue'
+import ShareThis from './ShareThis.vue'
 import HomePage from './HomePage.vue'
 import CookieBanner from './CookieBanner.vue'
 import './custom.css'
@@ -11,6 +12,7 @@ export default {
   Layout() {
     return h(DefaultTheme.Layout, null, {
       'layout-bottom': () => h(CookieBanner),
+      'nav-bar-content-after': () => h(ShareThis),
     })
   },
   enhanceApp({ app }) {
