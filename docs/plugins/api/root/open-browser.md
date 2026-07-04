@@ -19,7 +19,7 @@ openBrowser(url: string): Promise<void>
 ## Example
 
 ```ts
-await Liatir.openBrowser('https://liatir.app/docs');
+await Liatir.openBrowser('https://liatir.com/docs');
 ```
 
 ## Notes

@@ -29,14 +29,14 @@ if (!isLiatirAvailable()) {
   throw new Error('Liatir is not available in this environment.');
 }
 
-await Liatir.openBrowser('https://liatir.app');
+await Liatir.openBrowser('https://liatir.com');
 ```
 
 If you want to open a URL inside a new native desktop window instead, use the [window API area](/plugins/api/desktop/window):
 
 ```ts
 await Liatir.desktop.window.new({
-  url: 'https://liatir.app'
+  url: 'https://liatir.com'
 });
 ```
 

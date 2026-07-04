@@ -12,6 +12,7 @@
 		hasRunningDirectAIJob
 	} from '$lib/ai/direct-run-finalizer';
 	import { initAppCloseGuard } from '$lib/stores/appCloseGuard.svelte';
+	import { installGlobalErrorHandler } from '$lib/diagnostics/global-error-handler';
 	import { jobsStore } from '$lib/stores/jobs.svelte';
 	import { pipelineStore } from '$lib/stores/pipeline.svelte';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
@@ -41,6 +42,9 @@
 	}
 
 	onMount(async () => {
+		// Capture uncaught errors app-wide (incl. the plugin-dev window) before
+		// anything else runs, so early failures are recorded too.
+		installGlobalErrorHandler();
 		if (isPluginDevRoute) {
 			initialized = true;
 			return;

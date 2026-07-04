@@ -1,5 +1,5 @@
 # Liatir
-[Liatir official website ↗](https://liatir.app)
+[Liatir official website ↗](https://liatir.com)
 
 This is the official JavaScript/TypeScript SDK for communicating with the native Liatir API.
 It allows any web application to access native desktop features exposed by the Liatir wrapper, using a clean, typed, importable API.
@@ -70,4 +70,4 @@ await Liatir.window.new(...);
 
 ---
 
-[Liatir official website ↗](https://liatir.app)
+[Liatir official website ↗](https://liatir.com)

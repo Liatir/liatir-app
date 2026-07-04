@@ -29,6 +29,8 @@ commands.allow = [
   "lia_win_open",
   "lia_win_close",
   "lia_win_get_info",
+  "lia_win_continue_close",
+  "lia_win_cancel_close",
   "lia_visual_capture_region",
 
   "lia_event_emit",
@@ -147,6 +149,7 @@ commands.allow = [
   "lia_ai_hardware_info",
   "lia_ai_runtime_status",
   "lia_ai_runtime_prepare",
+  "lia_ai_runtime_remove",
   "lia_ai_python_spawn",
   "lia_ai_python_run",
   "lia_snpeff_annotate",

@@ -11,6 +11,12 @@ export default defineConfig({
   // Cloudflare deployment docs — kept in docs/ but not a published page.
   srcExclude: ['DEPLOY-cloudflare.md'],
 
+  // Generate sitemap.xml at build time so search engines can crawl every page.
+  // `hostname` must be the production domain — it prefixes every URL entry.
+  sitemap: {
+    hostname: 'https://liatir.com',
+  },
+
   // Browser-tab favicon: mono-color logo mark. SVG first for crisp scaling,
   // PNG fallback for browsers without SVG-favicon support.
   head: [

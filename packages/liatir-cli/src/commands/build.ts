@@ -16,6 +16,12 @@ import type {
 } from "@liatir/core";
 import { typecheckIfConfigured } from "./_typecheck.js";
 import { resolveNodeEntryPoint, type NodeEntryPoint } from "./_entry.js";
+import {
+  buildSignatureEntries,
+  defaultKeyPath,
+  loadSigningKey,
+  type BundleEntry,
+} from "../signing.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -62,6 +68,12 @@ interface BuildOptions {
   outputDir?: string;
   outputName?: string;
   quiet?: boolean;
+  /**
+   * Whether to Ed25519-sign the bundle. "auto" (default for `liatir build`)
+   * signs when a signing key exists, otherwise builds unsigned. `false` (dev
+   * builds) never signs — dev bundles are ephemeral and rebuilt constantly.
+   */
+  sign?: "auto" | false;
 }
 
 interface NearbyPluginProject {
@@ -386,6 +398,7 @@ export async function buildDevBundle(): Promise<BuildResult> {
     outputDir: path.join(process.cwd(), ".lia-dev"),
     outputName: "current.lia",
     quiet: false,
+    sign: false,
   });
 }
 
@@ -452,7 +465,7 @@ async function buildNode(cwd: string, options: BuildOptions = {}): Promise<Build
 
   const outputName = options.outputName ?? `${bareName(pkg.name)}.lia`;
   const outputPath = path.join(outputDir, outputName);
-  await createBundle(outputPath, manifest, [{ name: "index.js", path: bundlePath }]);
+  await createBundle(outputPath, manifest, [{ name: "index.js", path: bundlePath }], options);
   if (!options.quiet) console.log(`✓ Built → ${outputName}`);
   return { path: outputPath, manifest, runtime: "node" };
 }
@@ -500,7 +513,7 @@ async function buildWasm(cwd: string, rawManifest?: RawManifest, options: BuildO
   const outputName = options.outputName ?? `${bareName(manifest.name)}.lia`;
   const outputDir = options.outputDir ?? path.join(cwd, ".liatir");
   const outputPath = path.join(outputDir, outputName);
-  await createBundle(outputPath, manifest, [{ name: "plugin.wasm", path: path.join(releaseDir, wasmFile) }]);
+  await createBundle(outputPath, manifest, [{ name: "plugin.wasm", path: path.join(releaseDir, wasmFile) }], options);
   if (!options.quiet) console.log(`✓ Built → ${outputName}`);
   return { path: outputPath, manifest, runtime: "wasm" };
 }
@@ -557,25 +570,52 @@ async function buildPython(cwd: string, rawManifest: RawManifest, options: Build
   const outputName = options.outputName ?? `${bareName(path.basename(cwd))}.lia`;
   const outputDir = options.outputDir ?? path.join(cwd, ".liatir");
   const outputPath = path.join(outputDir, outputName);
-  await createBundle(outputPath, manifest, payloads);
+  await createBundle(outputPath, manifest, payloads, options);
   if (!options.quiet) console.log(`✓ Built → ${outputName}`);
   return { path: outputPath, manifest, runtime: "python" };
 }
 
-/** Write the .lia zip: signature + manifest + runtime payloads. */
+/**
+ * Write the .lia zip: magic + manifest + runtime payloads, then optionally an
+ * Ed25519 signature over all of them. The desktop app rejects a *signed* bundle
+ * whose content was altered after signing; unsigned bundles stay valid (dev).
+ */
 async function createBundle(
   outputPath: string,
   manifest: object,
   payloads: BundlePayload[],
+  options: BuildOptions = {},
 ): Promise<void> {
   const { default: JSZip } = await import("jszip").catch(() => {
     throw new Error("jszip not found. Run: npm install jszip");
   });
   const zip = new JSZip();
-  zip.file("_sig", "LIATIR/1");
-  zip.file("manifest.json", JSON.stringify(manifest, null, 2));
+
+  // Collect entries first so the signature digest covers exactly what ships.
+  const entries: BundleEntry[] = [
+    { name: "_sig", content: Buffer.from("LIATIR/1", "utf8") },
+    { name: "manifest.json", content: Buffer.from(JSON.stringify(manifest, null, 2), "utf8") },
+  ];
   for (const payload of payloads) {
-    zip.file(validateRelativePath(payload.name, "payload path"), await fs.readFile(payload.path));
+    entries.push({
+      name: validateRelativePath(payload.name, "payload path"),
+      content: await fs.readFile(payload.path),
+    });
+  }
+
+  if (options.sign !== false) {
+    const signingKey = await loadSigningKey(defaultKeyPath());
+    if (signingKey) {
+      const { entries: signatureEntries, fingerprint } = buildSignatureEntries(entries, signingKey);
+      entries.push(...signatureEntries);
+      if (!options.quiet) console.log(`Signed with key ${fingerprint}`);
+    } else if (!options.quiet) {
+      console.log("Building unsigned (run `liatir keygen` to sign your plugins).");
+    }
+  }
+
+  for (const entry of entries) {
+    zip.file(entry.name, entry.content);
   }
   const content = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
   await fs.mkdir(path.dirname(outputPath), { recursive: true });

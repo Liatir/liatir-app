@@ -16,6 +16,13 @@ const SIG: &str = "LIATIR/1";
 const PYTHON_PLUGIN_ENV_ROOT: &str = "plugin-runtimes";
 pub(crate) const PYTHON_PLUGIN_DEV_ENV_ROOT: &str = "plugin-dev-runtimes";
 
+// Signature-related zip entries. Excluded from the signed digest and, together,
+// carry an Ed25519 signature over the rest of the bundle.
+const SIG_ENTRY_ALG: &str = "_sig_alg";
+const SIG_ENTRY_PUBKEY: &str = "_pubkey";
+const SIG_ENTRY_SIGNATURE: &str = "_signature";
+const SIG_ALG_ED25519: &str = "ed25519";
+
 const RUNNER: &str = r#"import * as _mod from './index.js';
 // definePlugin(...) returns an object with .run; legacy shapes are accepted for older bundles.
 const _m = _mod.default ?? _mod;
@@ -69,7 +76,133 @@ fn open_validated(path: &str) -> Result<zip::ZipArchive<std::fs::File>, String> 
     }
     drop(sig_entry);
 
+    // Verify the Ed25519 signature when present. Unsigned bundles (dev/legacy)
+    // are allowed; a *signed* bundle whose content was altered is rejected.
+    verify_bundle_signature(&mut zip)?;
+
     Ok(zip)
+}
+
+fn read_zip_entry_bytes(
+    zip: &mut zip::ZipArchive<std::fs::File>,
+    name: &str,
+) -> Result<Option<Vec<u8>>, String> {
+    match zip.by_name(name) {
+        Ok(mut entry) => {
+            let mut buf = Vec::new();
+            entry.read_to_end(&mut buf).map_err(|e| e.to_string())?;
+            Ok(Some(buf))
+        }
+        Err(zip::result::ZipError::FileNotFound) => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+/// Canonical digest signed by the CLI and re-derived here. Deterministic across
+/// implementations: for every entry except the signature-meta entries, sorted
+/// by name, append `"{name}\n{sha256hex(content)}\n"`, then SHA-256 the whole.
+fn bundle_signing_digest(zip: &mut zip::ZipArchive<std::fs::File>) -> Result<Vec<u8>, String> {
+    let mut rows: Vec<(String, Vec<u8>)> = Vec::new();
+    for index in 0..zip.len() {
+        let mut entry = zip.by_index(index).map_err(|e| e.to_string())?;
+        let name = entry.name().to_string();
+        if matches!(
+            name.as_str(),
+            SIG_ENTRY_ALG | SIG_ENTRY_PUBKEY | SIG_ENTRY_SIGNATURE
+        ) || name.ends_with('/')
+        {
+            continue;
+        }
+        let mut buf = Vec::new();
+        entry.read_to_end(&mut buf).map_err(|e| e.to_string())?;
+        rows.push((name, buf));
+    }
+    Ok(canonical_digest_from_rows(&rows))
+}
+
+/// Pure canonical digest — kept in sync with `bundleSigningDigest` in the CLI's
+/// signing.ts. Split out from zip reading so it can be tested directly.
+fn canonical_digest_from_rows(rows: &[(String, Vec<u8>)]) -> Vec<u8> {
+    use sha2::{Digest, Sha256};
+
+    let mut hashed: Vec<(String, String)> = rows
+        .iter()
+        .map(|(name, content)| {
+            let mut hasher = Sha256::new();
+            hasher.update(content);
+            (name.clone(), hex_lower(&hasher.finalize()))
+        })
+        .collect();
+    hashed.sort_by(|a, b| a.0.cmp(&b.0));
+
+    let mut outer = Sha256::new();
+    for (name, content_hash) in hashed {
+        outer.update(name.as_bytes());
+        outer.update(b"\n");
+        outer.update(content_hash.as_bytes());
+        outer.update(b"\n");
+    }
+    outer.finalize().to_vec()
+}
+
+fn hex_lower(bytes: &[u8]) -> String {
+    let mut out = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        out.push_str(&format!("{byte:02x}"));
+    }
+    out
+}
+
+/// Verify the bundle's Ed25519 signature if it carries one.
+/// - no signature entries  → Ok (unsigned/dev/legacy bundle, allowed)
+/// - complete + valid       → Ok
+/// - incomplete or invalid  → Err (tamper-evident)
+fn verify_bundle_signature(zip: &mut zip::ZipArchive<std::fs::File>) -> Result<(), String> {
+    use base64::{engine::general_purpose::STANDARD, Engine as _};
+    use ed25519_dalek::{Signature, Verifier, VerifyingKey};
+
+    let signature_b64 = read_zip_entry_bytes(zip, SIG_ENTRY_SIGNATURE)?;
+    let pubkey_b64 = read_zip_entry_bytes(zip, SIG_ENTRY_PUBKEY)?;
+
+    match (signature_b64, pubkey_b64) {
+        (None, None) => return Ok(()), // Unsigned bundle.
+        (Some(_), None) | (None, Some(_)) => {
+            return Err("Malformed .lia signature (missing public key or signature).".to_string());
+        }
+        (Some(sig_raw), Some(pub_raw)) => {
+            if let Some(alg) = read_zip_entry_bytes(zip, SIG_ENTRY_ALG)? {
+                let alg = String::from_utf8_lossy(&alg).trim().to_string();
+                if alg != SIG_ALG_ED25519 {
+                    return Err(format!("Unsupported .lia signature algorithm: {alg}"));
+                }
+            }
+
+            let sig_bytes = STANDARD
+                .decode(sig_raw.iter().copied().filter(|b| !b.is_ascii_whitespace()).collect::<Vec<u8>>())
+                .map_err(|e| format!("Invalid .lia signature encoding: {e}"))?;
+            let pub_bytes = STANDARD
+                .decode(pub_raw.iter().copied().filter(|b| !b.is_ascii_whitespace()).collect::<Vec<u8>>())
+                .map_err(|e| format!("Invalid .lia public key encoding: {e}"))?;
+
+            let pub_arr: [u8; 32] = pub_bytes
+                .as_slice()
+                .try_into()
+                .map_err(|_| "Invalid .lia public key length.".to_string())?;
+            let sig_arr: [u8; 64] = sig_bytes
+                .as_slice()
+                .try_into()
+                .map_err(|_| "Invalid .lia signature length.".to_string())?;
+
+            let verifying_key = VerifyingKey::from_bytes(&pub_arr)
+                .map_err(|e| format!("Invalid .lia public key: {e}"))?;
+            let signature = Signature::from_bytes(&sig_arr);
+
+            let digest = bundle_signing_digest(zip)?;
+            verifying_key
+                .verify(&digest, &signature)
+                .map_err(|_| "This .lia plugin's signature is invalid — it may be corrupted or tampered with.".to_string())
+        }
+    }
 }
 
 fn validate_relative_path(value: &str) -> Result<PathBuf, String> {
@@ -636,6 +769,34 @@ mod tests {
         assert_ne!(base, bumped);
         assert_ne!(base, with_packages);
         assert_ne!(base, with_python_requirement);
+    }
+
+    #[test]
+    fn canonical_digest_matches_cli_signing_digest() {
+        // Fixed input; expected hex computed by the CLI's bundleSigningDigest
+        // (signing.ts). If either side changes the formula, this breaks.
+        let rows = vec![
+            ("_sig".to_string(), b"LIATIR/1".to_vec()),
+            ("manifest.json".to_string(), b"{}".to_vec()),
+            ("python/main.py".to_string(), b"x=1\n".to_vec()),
+        ];
+        assert_eq!(
+            hex_lower(&canonical_digest_from_rows(&rows)),
+            "efa4ba1296535072c771119a233b874990c006d8deda526e4390cbbb5e4a82b6"
+        );
+    }
+
+    #[test]
+    fn canonical_digest_is_order_independent() {
+        let a = vec![
+            ("b.txt".to_string(), b"two".to_vec()),
+            ("a.txt".to_string(), b"one".to_vec()),
+        ];
+        let b = vec![
+            ("a.txt".to_string(), b"one".to_vec()),
+            ("b.txt".to_string(), b"two".to_vec()),
+        ];
+        assert_eq!(canonical_digest_from_rows(&a), canonical_digest_from_rows(&b));
     }
 
     #[test]

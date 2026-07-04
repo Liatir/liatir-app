@@ -4,6 +4,13 @@ version = "%%CARGO_PACKAGE_VERSION%%"
 edition = "2021"
 default-run = "%%CARGO_PACKAGE_NAME%%"
 
+# Bug-catching clippy categories are hard errors (in `cargo clippy` / CI);
+# style/complexity/pedantic stay warnings so the existing baseline is not a
+# blocker. New correctness/suspicious issues fail the build.
+[lints.clippy]
+correctness = "deny"
+suspicious = "deny"
+
 [target.'cfg(windows)'.dependencies]
 tauri-plugin-prevent-default = { version = "3.0.3", features = ["platform-windows"], optional = true }
 
@@ -52,6 +59,10 @@ tokio = { version = "1.48.0", features = ["time", "rt", "net", "io-util"] }
 axum = "0.8"
 reqwest = { version = "0.12.24", default-features = false, features = ["stream", "rustls-tls"] }
 sha2 = "0.10"
+# Available disk space checks before large model/tool downloads.
+fs2 = "0.4.3"
+# Ed25519 verification of signed .lia plugin bundles (signing happens in the CLI).
+ed25519-dalek = "2.1.1"
 
 anyhow = "1.0.100"
 

@@ -4,9 +4,62 @@ use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
 use walkdir::WalkDir;
+
+// A stalled connection (open but delivering no bytes) must not hang a download
+// forever. If no chunk arrives within this window we abort with a clear error;
+// the .part file is kept so the user can resume.
+const DOWNLOAD_STALL_TIMEOUT: Duration = Duration::from_secs(60);
+
+// Keep a safety margin over the reported size so a download cannot fill the
+// disk to the last byte (which breaks the OS and other apps mid-write).
+const DISK_SPACE_MARGIN_BYTES: u64 = 256 * 1024 * 1024;
+
+/// Fail fast when the destination volume cannot hold the download. Only enforced
+/// when the server reports a size and disk space can be read; otherwise the
+/// stall/write paths remain the backstop.
+fn ensure_disk_space(dest_path: &str, needed_bytes: u64, already_have: u64) -> Result<(), String> {
+    let probe_dir = Path::new(dest_path)
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| Path::new(".").to_path_buf());
+    // Walk up to the nearest existing ancestor — the destination dir may not
+    // exist yet, but its volume does.
+    let mut existing = probe_dir.as_path();
+    while !existing.exists() {
+        match existing.parent() {
+            Some(parent) => existing = parent,
+            None => return Ok(()), // Cannot probe; let the write path handle it.
+        }
+    }
+    let Ok(available) = fs2::available_space(existing) else {
+        return Ok(());
+    };
+    let remaining = needed_bytes.saturating_sub(already_have);
+    let required = remaining.saturating_add(DISK_SPACE_MARGIN_BYTES);
+    if available < required {
+        return Err(format!(
+            "Not enough disk space: need ~{} (plus safety margin), only {} free on the destination volume.",
+            format_bytes(required),
+            format_bytes(available)
+        ));
+    }
+    Ok(())
+}
+
+fn format_bytes(bytes: u64) -> String {
+    const UNITS: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
+    let mut value = bytes as f64;
+    let mut unit = 0;
+    while value >= 1024.0 && unit < UNITS.len() - 1 {
+        value /= 1024.0;
+        unit += 1;
+    }
+    format!("{value:.1} {}", UNITS[unit])
+}
 
 // ── Download registry ─────────────────────────────────────────────
 
@@ -160,6 +213,12 @@ pub(crate) async fn stream_download(
     let content_length = response.content_length();
     let bytes_total = content_length.map(|cl| cl + start_bytes);
 
+    // Preflight: refuse a download the destination volume clearly cannot hold,
+    // before writing a single byte, so multi-GB models fail fast and cleanly.
+    if let Some(total) = bytes_total {
+        ensure_disk_space(dest_path, total, start_bytes)?;
+    }
+
     // Ensure parent directory exists
     if let Some(parent) = Path::new(&part_path).parent() {
         std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
@@ -197,7 +256,20 @@ pub(crate) async fn stream_download(
             return Err("Download cancelled".to_string());
         }
 
-        match response.chunk().await {
+        // Guard each read with a stall timeout: a hung connection aborts
+        // instead of blocking the download (and its UI) indefinitely.
+        let next_chunk = match tokio::time::timeout(DOWNLOAD_STALL_TIMEOUT, response.chunk()).await {
+            Ok(result) => result,
+            Err(_) => {
+                // .part kept for resume.
+                return Err(format!(
+                    "Download stalled: no data for {} seconds. The partial file was kept for resume.",
+                    DOWNLOAD_STALL_TIMEOUT.as_secs()
+                ));
+            }
+        };
+
+        match next_chunk {
             Ok(Some(chunk)) => {
                 file.write_all(&chunk).map_err(|e| format!("Write error: {e}"))?;
                 let chunk_len = chunk.len() as u64;
