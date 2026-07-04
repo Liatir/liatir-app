@@ -23,23 +23,12 @@ export default defineConfig({
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/static/logos/svg/app-icon-mono.svg' }],
     ['link', { rel: 'icon', type: 'image/png', href: '/static/logos/png/app-icon-mono.png' }],
 
-    // Google Analytics (GA4). Loaded with Consent Mode v2 so it stays in sync
-    // with the cookie banner: analytics_storage is denied by default and only
-    // granted once the visitor accepts (see CookieBanner.vue). Until then GA
-    // sends cookieless pings only — no analytics cookies are set.
+    // Google Analytics (GA4). Fires on every page load.
     ['script', { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-JSH1W9TFP9' }],
     ['script', {}, `
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      // Deny analytics storage until the visitor consents (GDPR/ePrivacy).
-      gtag('consent', 'default', { analytics_storage: 'denied' });
-      // Honour a choice already stored from a previous visit.
-      try {
-        if (localStorage.getItem('liatir-cookie-consent-v1') === 'accepted') {
-          gtag('consent', 'update', { analytics_storage: 'granted' });
-        }
-      } catch (e) {}
       gtag('config', 'G-JSH1W9TFP9');
     `],
   ],
