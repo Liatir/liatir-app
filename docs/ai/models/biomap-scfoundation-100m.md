@@ -29,8 +29,8 @@ need a dedicated implementation.
 
 ## Hardware and installation
 
-This is a large model family. It should be treated as a separate, optional
-runtime box and should not be bundled into the Liatir core app.
+This is a large model family. It installs as a separate, optional environment
+and is never bundled into the base app.
 
 ## Official source
 

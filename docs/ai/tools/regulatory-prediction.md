@@ -53,10 +53,7 @@ represents.
 If a VCF is provided, variant scores show how much the predicted signal changed
 between reference and alternate windows.
 
-## Technical details
+## Good to know
 
-Tool ID: `ai-regulatory-prediction`
-
-Each model has its own isolated TensorFlow runtime box. Liatir does not share
-these runtimes with Nucleotide Transformer or CellTypist because package
-versions, model files, and input windows differ.
+Each regulatory model installs in its own isolated environment, separate from
+other AI Models, because they rely on different packages and model files.

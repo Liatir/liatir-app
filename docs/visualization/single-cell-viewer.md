@@ -7,7 +7,7 @@ used by Liatir.
 
 - inspecting CellTypist label distributions;
 - checking single-cell output artifacts before deeper visualization;
-- preparing for future Vitessce-based views.
+- getting a quick look before richer interactive views.
 
 ## Inputs
 
@@ -20,7 +20,7 @@ Start with label counts and obvious outliers. If a label distribution looks
 unexpected, check the input preprocessing and CellTypist reference model.
 
 This viewer is a practical preview. Full interactive single-cell and spatial
-visualization remains a modular future viewer runtime.
+visualization is planned.
 
 ## Related tools
 

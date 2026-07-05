@@ -212,14 +212,18 @@ fn main() {
 
           api.prevent_close();
 
-          if !guard.pending.swap(true, Ordering::SeqCst) {
-            let _ = window.show();
-            let _ = window.unminimize();
-            let _ = window.set_focus();
-            let _ = window.emit("window:close-requested", Some(serde_json::json!({
-              "label": window.label().to_string()
-            })));
-          }
+          // Always re-emit on every close request. The frontend deduplicates
+          // concurrent prompts on its side, so re-emitting is harmless — but it
+          // makes the flow recoverable: if the first event was missed (listener
+          // registered late, transient error), clicking the X again re-triggers
+          // it instead of leaving the window permanently un-closable.
+          guard.pending.store(true, Ordering::SeqCst);
+          let _ = window.show();
+          let _ = window.unminimize();
+          let _ = window.set_focus();
+          let _ = window.emit("window:close-requested", Some(serde_json::json!({
+            "label": window.label().to_string()
+          })));
         }
 
         WindowEvent::Resized(size) => {
@@ -475,14 +479,15 @@ fn main() {
         }
 
         api.prevent_exit();
-        if !guard.pending.swap(true, Ordering::SeqCst) {
-          let _ = window.show();
-          let _ = window.unminimize();
-          let _ = window.set_focus();
-          let _ = window.emit("window:close-requested", Some(serde_json::json!({
-            "label": window.label().to_string()
-          })));
-        }
+        // See the CloseRequested handler: always re-emit so a missed event can
+        // recover on the next quit attempt instead of trapping the app open.
+        guard.pending.store(true, Ordering::SeqCst);
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+        let _ = window.emit("window:close-requested", Some(serde_json::json!({
+          "label": window.label().to_string()
+        })));
       }
     });
 }

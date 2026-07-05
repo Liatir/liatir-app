@@ -79,29 +79,61 @@ Node plugins can also use normal Node.js APIs and bundled npm dependencies.
 
 ## WASM plugins
 
-WASM `.lia` plugins are Web Assembly tools compiled to `wasm32-wasip1`. They are more
-sandboxed than Node or Python plugins:
+WASM `.lia` plugins are Web Assembly tools compiled to `wasm32-wasip1`. They
+declare the same `define_plugin` contract as Node and Python through the
+CLI-managed `src/liatir.rs` module that `liatir init --wasm` scaffolds and
+`liatir build` keeps in sync:
 
-- input JSON is read from stdin;
-- output JSON is written to stdout;
-- the schema lives in `.lia-manifest.json`;
+```rust
+mod liatir;
+
+use liatir::{define_plugin, field};
+use serde_json::json;
+
+fn main() {
+    define_plugin()
+        .input("text", field::string().label("Text").required(true))
+        .output("length", field::number().label("Length").integer())
+        .main(|ctx| {
+            let text = ctx.str("text")?;
+            Ok(json!({ "length": text.chars().count() }))
+        });
+}
+```
+
+`liatir build` generates the manifest schema from this contract, and the SDK
+validates inputs and outputs on every run. WASM plugins are more sandboxed than
+Node or Python plugins:
+
 - no arbitrary host filesystem or network access is available;
-- directories containing declared file inputs are mounted read-only by Liatir.
+- directories containing declared file inputs are mounted read-only by Liatir;
+- stdout is reserved for the result JSON (use `eprintln!` for logs).
 
 ## Python plugins
 
 Python `.lia` plugins are useful for scientific Python code and libraries such
-as parsers, statistics packages, and analysis helpers. They use a
-`.lia-manifest.json` file for the input/output schema and a Python entry point,
-usually `src/main.py`.
+as parsers, statistics packages, and analysis helpers. They declare the same
+`define_plugin` contract as Node and WASM, with the CLI-managed `liatir` module
+scaffolded next to the entry point (usually `src/main.py`) and shipped inside
+the bundle:
 
 ```python
-def main(input):
-    text = str(input.get("text", ""))
-    return {
-        "length": len(text),
-    }
+from liatir import define_plugin, field
+
+plugin = define_plugin(
+    inputs={"text": field.string(label="Text", required=True)},
+    outputs={"length": field.number(label="Length", format="integer")},
+)
+
+
+@plugin.main
+def main(ctx):
+    return {"length": len(ctx.input["text"])}
 ```
+
+`liatir build` generates the manifest schema from this contract, and the SDK
+validates inputs and outputs on every run. `.lia-manifest.json` keeps the plugin
+metadata plus the Python runtime spec (entry point, packages, requirements).
 
 Python plugins run in isolated managed Python environments. The plugin manifest
 can declare packages and requirements; Liatir prepares that runtime box before

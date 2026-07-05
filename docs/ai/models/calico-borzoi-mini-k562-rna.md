@@ -35,11 +35,9 @@ Liatir writes:
 
 ## Hardware and installation
 
-Borzoi is TensorFlow-based and uses very long input windows. Liatir installs it
-as its own AI Model box and downloads the official Mini Borzoi K562 RNA-seq fold
-0 weights, parameters, and targets.
+Borzoi uses very long input windows. Liatir installs it in its own isolated
+environment and downloads the official Mini Borzoi K562 RNA-seq weights for you.
 
-The official Borzoi documentation recommends Python 3.10 with TensorFlow 2.15.x.
 CPU can run small checks, but GPU is strongly preferred.
 
 ## Limits and cautions

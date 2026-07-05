@@ -1,36 +1,38 @@
 # Tools
 
-Liatir ships with three built-in analysis surfaces: **WASM plugins** that run
-inside the app, **native tools** that delegate to binaries installed on your
-machine, and **AI Tools** that use local AI Models.
+Liatir offers three kinds of analysis step: **built-in tools** that work out of
+the box, **native tools** that use programs installed on your machine, and
+**AI Tools** that use local AI Models.
 
-All of them share the same UI pattern, run history, and output model. They are
-interchangeable from the pipeline's perspective when their input and output
-types match.
+They all share the same layout, run history, and results view, and they can be
+mixed freely in a pipeline whenever their inputs and outputs match.
 
-## WASM plugins
+## Built-in tools
 
-Compiled to WebAssembly and bundled with Liatir. Zero installation required. These tools work identically on every machine.
+Bundled with Liatir, so there is nothing to install. They work identically on
+every machine.
 
 | Tool | Description |
 |------|-------------|
 | [FastQC](/tools/fastqc) | Per-base quality, GC content, adapter detection, duplication levels |
-| [seqkit stats](/tools/seqkit) | FASTA/FASTQ sequence counts, GC, length, N50 |
 
 ## Native tools
 
-Require the corresponding binary to be in your system PATH. Liatir checks availability when you open the tool page and surfaces install instructions (Homebrew, apt, conda) if the binary is missing.
+Require the corresponding program to be installed on your machine. Liatir checks
+availability when you open the tool page and shows install instructions
+(Homebrew, apt, conda) if it is missing.
 
-| Tool | Binary | Subcommand | Input formats |
-|------|--------|-----------|---------------|
-| [Samtools](/tools/samtools) | `samtools` | `flagstat` | BAM, SAM, CRAM |
-| [Samtools faidx](/tools/samtools-faidx) | `samtools` | `faidx` | FASTA, FASTA.GZ |
-| [BWA-MEM](/tools/bwa-mem) | `bwa` | `mem` | FASTA + FASTQ |
-| [Minimap2](/tools/minimap2) | `minimap2` | — | FASTA/MMI + FASTQ/FASTA |
-| [BCFtools](/tools/bcftools) | `bcftools` | `stats` | VCF, VCF.GZ, BCF, BCF.GZ |
-| [BCFtools filter](/tools/bcftools-filter) | `bcftools` | `filter` | VCF, VCF.GZ, BCF, BCF.GZ |
-| [SnpEff](/tools/snpeff) | `java` + SnpEff JAR | — | VCF, VCF.GZ |
-| [fastp](/tools/fastp) | `fastp` | — | FASTQ (single or paired-end) |
+| Tool | Subcommand | Input formats |
+|------|-----------|---------------|
+| [seqkit stats](/tools/seqkit) | `stats` | FASTA, FASTQ (compressed or not) |
+| [Samtools](/tools/samtools) | `flagstat` | BAM, SAM, CRAM |
+| [Samtools faidx](/tools/samtools-faidx) | `faidx` | FASTA, FASTA.GZ |
+| [BWA-MEM](/tools/bwa-mem) | `mem` | FASTA + FASTQ |
+| [Minimap2](/tools/minimap2) | — | FASTA/MMI + FASTQ/FASTA |
+| [BCFtools](/tools/bcftools) | `stats` | VCF, VCF.GZ, BCF, BCF.GZ |
+| [BCFtools filter](/tools/bcftools-filter) | `filter` | VCF, VCF.GZ, BCF, BCF.GZ |
+| [SnpEff](/tools/snpeff) | — | VCF, VCF.GZ |
+| [fastp](/tools/fastp) | — | FASTQ (single or paired-end) |
 
 ## AI Tools
 

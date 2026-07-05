@@ -34,11 +34,11 @@ Liatir writes:
 
 ## Hardware and installation
 
-Enformer is TensorFlow-based and uses a large input window. CPU execution can be
-slow. A GPU-capable TensorFlow backend is preferred for repeated scoring.
+Enformer uses a large input window, so CPU runs can be slow. A GPU is preferred
+for repeated scoring.
 
-Liatir installs the runtime as a separate AI Model box, including TensorFlow,
-TensorFlow Hub, and the Enformer TFHub asset cache.
+Liatir installs Enformer and its model files in an isolated environment, so
+nothing is added to the base app until you install it.
 
 ## Limits and cautions
 

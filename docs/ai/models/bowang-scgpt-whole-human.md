@@ -16,9 +16,9 @@ This model is visible as a preview. Liatir documents the model and keeps its
 metadata in the AI Model registry, but install and run controls are not enabled
 yet.
 
-The next implementation step is a dedicated managed runtime box that can install
-the Python package, download a selected checkpoint, validate AnnData inputs, and
-write embeddings/provenance through the shared Liatir I/O contract.
+The next step is a managed environment that can install the model, download a
+selected checkpoint, validate AnnData inputs, and write embeddings with full
+provenance.
 
 ## Expected inputs
 
@@ -36,8 +36,8 @@ write embeddings/provenance through the shared Liatir I/O contract.
 ## Hardware and installation
 
 Small examples may load on CPU, but practical foundation-model workflows should
-use a GPU. scGPT is a heavy scientific runtime and will stay isolated from the
-core app.
+use a GPU. scGPT is heavy, so it installs in its own isolated environment and is
+never added to the base app.
 
 ## Official source
 

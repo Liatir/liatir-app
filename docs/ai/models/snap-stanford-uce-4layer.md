@@ -15,16 +15,10 @@ foundation-model embeddings, use UCE.
 
 ## What Liatir installs
 
-Liatir installs UCE as its own isolated AI Model runtime box:
-
-- a Python 3.10/3.11 virtual environment;
-- the official UCE source checkout pinned to a verified commit;
-- the UCE Python requirements;
-- the 4-layer model weights;
-- token and species mapping files;
-- protein embedding assets used by the model.
-
-This runtime is separate from CellTypist and from every other AI Model.
+Liatir installs UCE in its own isolated environment, including the 4-layer model
+weights and everything the model needs to run. It is kept separate from
+CellTypist and every other AI Model, and nothing is added to the base app until
+you install it.
 
 ## Inputs
 
@@ -57,13 +51,12 @@ The UCE model card lists GPU as the system requirement. Liatir allows CPU runs
 for small validation datasets, but they can be slow. For repeated or large
 single-cell runs, use a GPU-capable workstation.
 
-## Technical notes
+## Good to know
 
-Liatir currently exposes the official 4-layer UCE workflow. It pins the source
-checkout and installs the official package versions used by that workflow. The
-larger 33-layer workflow is not exposed yet.
+Liatir currently exposes the official 4-layer UCE workflow. The larger 33-layer
+workflow is not available yet.
 
-Supported species in the first Liatir runner are:
+Supported species are:
 
 - human;
 - mouse;

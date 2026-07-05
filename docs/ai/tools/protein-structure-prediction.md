@@ -48,10 +48,8 @@ inspection, not replace experimental validation.
 CPU runs can be slow. For short tests, use one diffusion sample and modest
 recycling steps.
 
-## Technical details
+## Good to know
 
-Tool ID: `ai-protein-structure`
-
-The direct runner and pipeline tool both create Jobs and Results records. A run
-that finishes without a structure file is treated as an error because the main
-scientific artifact is missing.
+A run that finishes without a structure file is treated as an error, because
+the structure is the main result. Chai-1 support is built in but hidden until
+Linux CUDA validation is available.

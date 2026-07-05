@@ -77,6 +77,34 @@ print(json.dumps(module.main(${JSON.stringify(input)})))
   return JSON.parse(output.trim()) as Record<string, unknown>;
 }
 
+/** Run the plugin's main(payload) from the project src dir, like the app runner does. */
+function execPythonMainFromDir(projectDir: string, input: Record<string, unknown>, python: string): Record<string, unknown> {
+  const script = `
+import importlib.util
+import json
+import pathlib
+import sys
+
+entry = pathlib.Path("main.py").resolve()
+sys.path.insert(0, str(entry.parent))
+spec = importlib.util.spec_from_file_location("_liatir_test_plugin", entry)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+print(json.dumps(module.main(${JSON.stringify(input)})))
+`;
+  try {
+    const output = execFileSync(python, ['-c', script], {
+      cwd: join(projectDir, 'src'),
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    return JSON.parse(output.trim()) as Record<string, unknown>;
+  } catch (error) {
+    const stderr = (error as { stderr?: unknown }).stderr;
+    throw new Error(typeof stderr === 'string' && stderr ? stderr : String(error));
+  }
+}
+
 function hasWasmToolchain(): boolean {
   try {
     execFileSync('cargo', ['--version'], { stdio: 'ignore' });
@@ -218,7 +246,8 @@ afterEach(() => {
 });
 
 describe('Python .lia plugin runtime', () => {
-  it('scaffolds and packages Python plugins with a manifest-owned I/O contract', async () => {
+  it('scaffolds and packages Python plugins with the code-declared define_plugin contract', async () => {
+    if (!findPython()) return;
     const previousCwd = process.cwd();
     const root = mkdtempSync(join(tmpdir(), 'liatir-python-plugin-'));
     tmpRoots.push(root);
@@ -246,6 +275,12 @@ describe('Python .lia plugin runtime', () => {
       logSpy.mockRestore();
     }
 
+    // The source manifest carries metadata + runtime spec only: the I/O schema
+    // lives in the code and is generated into the bundle manifest at build.
+    const sourceManifest = JSON.parse(readFileSync(join(projectDir, '.lia-manifest.json'), 'utf8'));
+    expect(sourceManifest.inputSchema).toBeUndefined();
+    expect(sourceManifest.outputSchema).toBeUndefined();
+
     const bundleName = readdirSync(join(projectDir, '.liatir')).find((name) => name.endsWith('.lia'));
     expect(bundleName).toBe('python-length.lia');
 
@@ -262,6 +297,7 @@ describe('Python .lia plugin runtime', () => {
         text: {
           type: 'string',
           required: true,
+          default: 'hello from Liatir',
         },
       },
       outputSchema: {
@@ -279,8 +315,55 @@ describe('Python .lia plugin runtime', () => {
       },
     });
     expect(bundle.file('python/main.py')).toBeTruthy();
-    expect(await bundle.file('python/main.py').async('string')).toContain('def main(input):');
-  });
+    expect(await bundle.file('python/main.py').async('string')).toContain('@plugin.main');
+    // The CLI-managed SDK ships inside the bundle so `import liatir` resolves.
+    expect(bundle.file('python/liatir.py')).toBeTruthy();
+    expect(await bundle.file('python/liatir.py').async('string')).toContain('managed by @liatir/cli');
+  }, 60_000);
+
+  it('enforces the Python contract at run time (defaults, required, undeclared outputs)', async () => {
+    const python = findPython();
+    if (!python) return;
+    const previousCwd = process.cwd();
+    const root = mkdtempSync(join(tmpdir(), 'liatir-python-sdk-'));
+    tmpRoots.push(root);
+    const projectDir = join(root, 'python-sdk-checks');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    try {
+      await init([projectDir, '--python', '--yes']);
+      process.chdir(projectDir);
+      await build();
+    } finally {
+      process.chdir(previousCwd);
+      logSpy.mockRestore();
+    }
+
+    const bundle = await builtBundle(projectDir);
+
+    // Default applied when the input is missing.
+    const withDefault = await runPythonMainFromBundle(bundle, {}, python);
+    expect(withDefault).toMatchObject({ length: 'hello from Liatir'.length });
+
+    // Wrong input type is rejected by the SDK wrapper before the handler runs.
+    expect(() => execPythonMainFromDir(projectDir, { text: 42 }, python)).toThrow(/must be a string/);
+
+    // Outputs not declared in the contract are rejected.
+    writeFileSync(join(projectDir, 'src', 'main.py'), [
+      'from liatir import define_plugin, field',
+      '',
+      'plugin = define_plugin(',
+      '    inputs={"text": field.string(default="x")},',
+      '    outputs={"length": field.number()},',
+      ')',
+      '',
+      '@plugin.main',
+      'def main(ctx):',
+      '    return {"length": 1, "extra": True}',
+      '',
+    ].join('\n'));
+    expect(() => execPythonMainFromDir(projectDir, { text: 'x' }, python)).toThrow(/not declared in the contract/);
+  }, 60_000);
 
   it('builds and runs the Python stdlib fixture through the packaged I/O contract', async () => {
     const previousCwd = process.cwd();
@@ -447,6 +530,34 @@ export default {
       process.chdir(previousCwd);
     }
   }, 120_000);
+
+  it('generates identical manifest schemas from the same contract in Python and WASM (one API)', async () => {
+    if (!findPython() || !hasWasmToolchain()) return;
+    const previousCwd = process.cwd();
+    const root = mkdtempSync(join(tmpdir(), 'liatir-conformance-'));
+    tmpRoots.push(root);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const manifests: Record<string, any> = {};
+    try {
+      for (const runtime of ['python', 'wasm'] as const) {
+        const projectDir = join(root, `conf-${runtime}`);
+        await init([projectDir, `--${runtime}`, '--yes', '--no-wasm-target']);
+        process.chdir(projectDir);
+        const result = await buildDevBundle();
+        manifests[runtime] = JSON.parse(await (await loadBundle(result.path)).file('manifest.json').async('string'));
+        process.chdir(previousCwd);
+      }
+    } finally {
+      process.chdir(previousCwd);
+      logSpy.mockRestore();
+    }
+
+    // Same define_plugin declaration in both templates → byte-identical schema.
+    expect(manifests.python.inputSchema).toEqual(manifests.wasm.inputSchema);
+    expect(manifests.python.outputSchema).toEqual(manifests.wasm.outputSchema);
+    expect(manifests.python.inputSchema.text.default).toBe('hello from Liatir');
+  }, 240_000);
 
   it('publishes Node, Python, and WASM dev bundles through the app-backed dev IPC flow', async () => {
     const runtimes: DevRuntime[] = hasWasmToolchain() ? ['node', 'python', 'wasm'] : ['node', 'python'];

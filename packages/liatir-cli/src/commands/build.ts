@@ -16,6 +16,8 @@ import type {
 } from "@liatir/core";
 import { typecheckIfConfigured } from "./_typecheck.js";
 import { resolveNodeEntryPoint, type NodeEntryPoint } from "./_entry.js";
+import { assetPath, assetsDir, syncManagedSdkFile } from "./_assets.js";
+import { formatProcessError } from "./_process.js";
 import {
   buildSignatureEntries,
   defaultKeyPath,
@@ -144,6 +146,247 @@ function serializeOutputSchema(schema: Record<string, RuntimeField> | undefined)
 function failInvalidNodePlugin(message: string): never {
   console.error(message);
   process.exit(1);
+}
+
+// ── Code-declared contracts (Python/WASM SDK) ────────────────────────────────
+// Python and WASM plugins declare the SAME define_plugin contract as Node, via
+// the CLI-managed SDK files (liatir.py / liatir.rs). The build reads it back:
+// - Python: the extractor imports the entry module and prints the contract.
+// - WASM: the compiled binary prints it when run with LIATIR_EMIT_CONTRACT=1.
+// Plugins without the SDK keep working with a manifest-owned schema (legacy).
+//
+// Whether a failure to read the contract is fatal depends on the project: a
+// present SDK file (src/liatir.py / src/liatir.rs) marks an SDK project, and
+// those FAIL CLOSED (never silently ship a stale/empty schema); projects
+// without it are legacy and fall back to the manifest with a warning.
+
+// These markers must stay in sync with assets/liatir.rs (CONTRACT_MARKER),
+// assets/extract-lia-contract.py (all three), and are exercised end-to-end by
+// tests/unit/python-plugin-runtime.test.ts, which fails on any mismatch.
+const CONTRACT_MARKER = "__LIATIR_CONTRACT__";
+const LEGACY_MARKER = "__LIATIR_LEGACY__";
+const STUBBED_MARKER = "__LIATIR_STUBBED__";
+const SUPPORTED_CONTRACT_VERSION = 1;
+
+interface CodeContract {
+  inputs: Record<string, RuntimeField>;
+  outputs: Record<string, RuntimeField>;
+  /** Top-level import names stubbed during Python extraction (informative). */
+  stubbedImports?: string[];
+}
+
+type ContractExtraction =
+  | { kind: "contract"; contract: CodeContract }
+  | { kind: "legacy" }                       // code has no SDK contract
+  | { kind: "unavailable"; reason: string }  // could not check (no interpreter/WASI)
+  | { kind: "error"; details: string };      // extraction ran and failed
+
+/** Scan extractor stdout for the contract or legacy marker line. */
+function parseContractOutput(stdout: string): CodeContract | "legacy" | null {
+  let contract: CodeContract | null = null;
+  let legacy = false;
+  const stubbedImports: string[] = [];
+
+  for (const line of stdout.split(/\r?\n/)) {
+    if (line.startsWith(LEGACY_MARKER)) {
+      legacy = true;
+      continue;
+    }
+    if (line.startsWith(STUBBED_MARKER)) {
+      stubbedImports.push(...line.slice(STUBBED_MARKER.length).split(",").map((n) => n.trim()).filter(Boolean));
+      continue;
+    }
+    if (!line.startsWith(CONTRACT_MARKER)) continue;
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(line.slice(CONTRACT_MARKER.length));
+    } catch {
+      throw new Error("The plugin SDK emitted an unreadable contract (invalid JSON).");
+    }
+    if (!isRecord(parsed) || !isPlainRecord(parsed.inputs) || !isPlainRecord(parsed.outputs)) {
+      throw new Error("The plugin SDK emitted an invalid contract: inputs/outputs must be objects.");
+    }
+    if (typeof parsed.liatirContract === "number" && parsed.liatirContract > SUPPORTED_CONTRACT_VERSION) {
+      throw new Error(
+        `The plugin declares contract version ${parsed.liatirContract}, but this CLI supports up to ${SUPPORTED_CONTRACT_VERSION}. Update @liatir/cli.`,
+      );
+    }
+    contract = { inputs: parsed.inputs, outputs: parsed.outputs };
+  }
+
+  if (contract) {
+    if (stubbedImports.length > 0) contract.stubbedImports = stubbedImports;
+    return contract;
+  }
+  return legacy ? "legacy" : null;
+}
+
+// The interpreter on PATH does not change while the CLI runs; cache the probe
+// so `liatir dev` does not respawn `python --version` on every rebuild.
+let cachedPythonBinary: Promise<string | null> | undefined;
+
+function findPythonBinary(): Promise<string | null> {
+  cachedPythonBinary ??= (async () => {
+    const fromEnv = process.env["LIATIR_PYTHON"];
+    const candidates = fromEnv ? [fromEnv, "python3", "python"] : ["python3", "python"];
+    for (const candidate of candidates) {
+      try {
+        await execFileAsync(candidate, ["--version"]);
+        return candidate;
+      } catch {
+        // Try the next candidate.
+      }
+    }
+    return null;
+  })();
+  return cachedPythonBinary;
+}
+
+async function extractPythonContract(entryPath: string): Promise<ContractExtraction> {
+  const python = await findPythonBinary();
+  if (!python) {
+    return {
+      kind: "unavailable",
+      reason: "Python 3 was not found on PATH (set LIATIR_PYTHON to your interpreter).",
+    };
+  }
+
+  let stdout: string;
+  try {
+    ({ stdout } = await execFileAsync(
+      python,
+      [assetPath("extract-lia-contract.py"), entryPath, assetsDir()],
+      { timeout: 30_000, maxBuffer: 8 * 1024 * 1024 },
+    ));
+  } catch (error) {
+    return {
+      kind: "error",
+      details: `Reading the plugin contract from ${path.basename(entryPath)} failed:\n${formatProcessError(error)}`,
+    };
+  }
+
+  const parsed = parseContractOutput(stdout);
+  if (parsed === "legacy") return { kind: "legacy" };
+  if (parsed) return { kind: "contract", contract: parsed };
+  return { kind: "error", details: `The contract extractor produced no result for ${path.basename(entryPath)}.` };
+}
+
+/**
+ * Run the compiled wasm once with LIATIR_EMIT_CONTRACT=1 and scan stdout for
+ * the contract marker. A clean run without the marker is a legacy binary; any
+ * failure (node:wasi unavailable, trap/panic, timeout) is reported as an
+ * error with the child's output so SDK projects can fail closed with a cause.
+ */
+async function extractWasmContract(wasmPath: string): Promise<ContractExtraction> {
+  let stdout: string;
+  try {
+    const child = execFileAsync(
+      process.execPath,
+      [assetPath("extract-wasm-contract.mjs"), wasmPath],
+      {
+        timeout: 15_000,
+        maxBuffer: 8 * 1024 * 1024,
+        env: { ...process.env, NODE_NO_WARNINGS: "1" },
+      },
+    );
+    // No input: legacy binaries that read stdin see EOF instead of hanging.
+    child.child.stdin?.end();
+    ({ stdout } = await child);
+  } catch (error) {
+    // A contract emitted before a late failure still counts.
+    const failedStdout = (error as { stdout?: unknown }).stdout;
+    if (typeof failedStdout === "string") {
+      const parsed = parseContractOutput(failedStdout);
+      if (parsed && parsed !== "legacy") return { kind: "contract", contract: parsed };
+    }
+    return {
+      kind: "error",
+      details: `Reading the plugin contract from ${path.basename(wasmPath)} failed:\n${formatProcessError(error)}`,
+    };
+  }
+
+  const parsed = parseContractOutput(stdout);
+  if (parsed && parsed !== "legacy") return { kind: "contract", contract: parsed };
+  return { kind: "legacy" };
+}
+
+interface ResolvedSchemas {
+  inputSchema: Record<string, LiatirInputFieldSchema>;
+  outputSchema: Record<string, LiatirOutputFieldSchema>;
+  fromContract: boolean;
+}
+
+interface SchemaResolutionContext {
+  extraction: ContractExtraction;
+  rawManifest: RawManifest;
+  /** src/liatir.py / src/liatir.rs present → SDK project → fail closed. */
+  sdkFilePresent: boolean;
+  /** Runtime-specific hint on how to declare the contract. */
+  sdkHint: string;
+  quiet: boolean;
+}
+
+/**
+ * Pick the I/O schema for a Python/WASM manifest.
+ *
+ * - Code contract found → it wins (manifest schemas, if any, are ignored).
+ * - SDK project (managed SDK file present) but the contract could not be
+ *   read → hard error with the real cause; never ship a stale/empty schema.
+ * - Legacy project → manifest schemas; if it has none, build with an empty
+ *   schema exactly as older CLIs did, and say how to declare the contract.
+ */
+function resolveDeclaredSchemas(context: SchemaResolutionContext): ResolvedSchemas {
+  const { extraction, rawManifest, sdkFilePresent, sdkHint, quiet } = context;
+  const manifestInput = isRecord(rawManifest.inputSchema) && Object.keys(rawManifest.inputSchema).length > 0
+    ? rawManifest.inputSchema as Record<string, LiatirInputFieldSchema>
+    : undefined;
+  const manifestOutput = isRecord(rawManifest.outputSchema) && Object.keys(rawManifest.outputSchema).length > 0
+    ? rawManifest.outputSchema as Record<string, LiatirOutputFieldSchema>
+    : undefined;
+
+  if (extraction.kind === "contract") {
+    if (!quiet) {
+      if (manifestInput || manifestOutput) {
+        console.log("Schema comes from the define_plugin contract in the code; inputSchema/outputSchema in .lia-manifest.json are ignored and can be removed.");
+      }
+      const stubbed = extraction.contract.stubbedImports;
+      if (stubbed && stubbed.length > 0) {
+        console.log(`Imports assumed available at run time (not installed while reading the contract): ${stubbed.join(", ")}. Check the names and declare them in the plugin requirements.`);
+      }
+    }
+    return {
+      inputSchema: serializeInputSchema(extraction.contract.inputs),
+      outputSchema: serializeOutputSchema(extraction.contract.outputs),
+      fromContract: true,
+    };
+  }
+
+  // SDK project without a readable contract: failing open here would ship a
+  // stale or empty schema that no longer matches the code.
+  if (sdkFilePresent) {
+    const cause = extraction.kind === "legacy"
+      ? "The entry point does not expose a define_plugin contract."
+      : extraction.kind === "unavailable" ? extraction.reason : extraction.details;
+    throw new Error(`Could not read the plugin contract from the code.\n${cause}\n${sdkHint}`);
+  }
+
+  // Legacy project: manifest owns the schema, and extraction problems only warn.
+  if (!quiet && (extraction.kind === "unavailable" || extraction.kind === "error")) {
+    const reason = extraction.kind === "unavailable" ? extraction.reason : extraction.details;
+    console.warn(`Skipping the code contract check: ${reason}`);
+  }
+  if (!manifestInput && !manifestOutput) {
+    if (!quiet) {
+      console.warn(`No I/O schema declared: building with an empty contract.\n${sdkHint}`);
+    }
+    return { inputSchema: {}, outputSchema: {}, fromContract: false };
+  }
+  return {
+    inputSchema: manifestInput ?? {},
+    outputSchema: manifestOutput ?? {},
+    fromContract: false,
+  };
 }
 
 function isPlainRecord(value: unknown): value is Record<string, RuntimeField> {
@@ -471,8 +714,11 @@ async function buildNode(cwd: string, options: BuildOptions = {}): Promise<Build
 }
 
 /**
- * WASM custom tool: the schema lives in .lia-manifest.json (Rust can't export a
- * JS schema at build time). We compile the crate and package plugin.wasm.
+ * WASM custom tool: the I/O contract is declared in the code with the
+ * CLI-managed src/liatir.rs SDK module (same define_plugin API as Node and
+ * Python). We compile the crate, run the binary once with
+ * LIATIR_EMIT_CONTRACT=1 to read the contract back, and generate the manifest
+ * schema from it. Tools without the SDK keep their manifest-owned schema.
  */
 async function buildWasm(cwd: string, rawManifest?: RawManifest, options: BuildOptions = {}): Promise<BuildResult> {
   const m = rawManifest ?? await readRawManifest(cwd);
@@ -481,19 +727,21 @@ async function buildWasm(cwd: string, rawManifest?: RawManifest, options: BuildO
     process.exit(1);
   }
   const metadata = wasmMetadata(m);
-  const manifest: LiatirPluginManifest = {
-    name: metadata.name,
-    version: metadata.version,
-    description: metadata.description,
-    runtime: "wasm",
-    category: metadata.category,
-    tags: metadata.tags,
-    inputSchema: isRecord(m.inputSchema) ? m.inputSchema as Record<string, LiatirInputFieldSchema> : {},
-    outputSchema: isRecord(m.outputSchema) ? m.outputSchema as Record<string, LiatirOutputFieldSchema> : {},
-  };
 
   if (!options.quiet) {
-    console.log(`Building ${manifest.name}@${manifest.version} (wasm)...`);
+    console.log(`Building ${metadata.name}@${metadata.version} (wasm)...`);
+  }
+
+  // SDK projects carry src/liatir.rs: keep it in sync with this CLI version
+  // before compiling. Legacy tools without the file are left untouched.
+  const sdkModulePath = path.join(cwd, "src", "liatir.rs");
+  if (await exists(sdkModulePath)) {
+    if (await syncManagedSdkFile(sdkModulePath, "liatir.rs") && !options.quiet) {
+      console.log("Synced src/liatir.rs (Liatir plugin SDK) with this CLI version.");
+    }
+  }
+
+  if (!options.quiet) {
     console.log("Compiling Rust → wasm32-wasip1 (cargo build --release)...");
   }
   try {
@@ -509,11 +757,34 @@ async function buildWasm(cwd: string, rawManifest?: RawManifest, options: BuildO
     wasmFile = (await fs.readdir(releaseDir)).find((x) => x.endsWith(".wasm"));
   } catch { /* handled below */ }
   if (!wasmFile) throw new Error(`No .wasm artifact found in ${releaseDir}`);
+  const wasmPath = path.join(releaseDir, wasmFile);
+
+  const extraction = await extractWasmContract(wasmPath);
+  const schemas = resolveDeclaredSchemas({
+    extraction,
+    rawManifest: m,
+    sdkFilePresent: await exists(sdkModulePath),
+    sdkHint:
+      "Declare the contract once in src/main.rs with the Liatir SDK " +
+      "(`mod liatir;` + define_plugin, scaffolded by `liatir init --wasm`).",
+    quiet: options.quiet ?? false,
+  });
+
+  const manifest: LiatirPluginManifest = {
+    name: metadata.name,
+    version: metadata.version,
+    description: metadata.description,
+    runtime: "wasm",
+    category: metadata.category,
+    tags: metadata.tags,
+    inputSchema: schemas.inputSchema,
+    outputSchema: schemas.outputSchema,
+  };
 
   const outputName = options.outputName ?? `${bareName(manifest.name)}.lia`;
   const outputDir = options.outputDir ?? path.join(cwd, ".liatir");
   const outputPath = path.join(outputDir, outputName);
-  await createBundle(outputPath, manifest, [{ name: "plugin.wasm", path: path.join(releaseDir, wasmFile) }], options);
+  await createBundle(outputPath, manifest, [{ name: "plugin.wasm", path: wasmPath }], options);
   if (!options.quiet) console.log(`✓ Built → ${outputName}`);
   return { path: outputPath, manifest, runtime: "wasm" };
 }
@@ -531,6 +802,29 @@ async function buildPython(cwd: string, rawManifest: RawManifest, options: Build
   }
 
   const sourceRoot = path.dirname(entryPath);
+
+  // I/O contract: read define_plugin(...) back from the entry module. Plugins
+  // without the SDK stay on the manifest-owned schema (legacy).
+  const extraction = await extractPythonContract(entryPath);
+  const schemas = resolveDeclaredSchemas({
+    extraction,
+    rawManifest,
+    sdkFilePresent: await exists(path.join(sourceRoot, "liatir.py")),
+    sdkHint:
+      "Declare the contract once in the entry module with the Liatir SDK " +
+      "(`from liatir import define_plugin, field` + @plugin.main, scaffolded by `liatir init --python`).",
+    quiet: options.quiet ?? false,
+  });
+
+  // SDK plugins ship the CLI-managed liatir.py next to the entry, so
+  // `import liatir` resolves at run time and in editors. Synced BEFORE the
+  // payload scan below so the bundle always carries the current version.
+  if (schemas.fromContract) {
+    if (await syncManagedSdkFile(path.join(sourceRoot, "liatir.py"), "liatir.py") && !options.quiet) {
+      console.log("Synced liatir.py (Liatir plugin SDK) with this CLI version.");
+    }
+  }
+
   const sourceFiles = await filesUnder(sourceRoot);
   if (sourceFiles.length === 0) {
     throw new Error(`No Python source files found in ${path.relative(cwd, sourceRoot) || "."}`);
@@ -561,8 +855,8 @@ async function buildPython(cwd: string, rawManifest: RawManifest, options: Build
     runtime: "python",
     category: metadata.category,
     tags: metadata.tags,
-    inputSchema: isRecord(rawManifest.inputSchema) ? rawManifest.inputSchema as Record<string, LiatirInputFieldSchema> : {},
-    outputSchema: isRecord(rawManifest.outputSchema) ? rawManifest.outputSchema as Record<string, LiatirOutputFieldSchema> : {},
+    inputSchema: schemas.inputSchema,
+    outputSchema: schemas.outputSchema,
     python,
   };
 

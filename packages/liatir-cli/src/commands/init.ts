@@ -4,6 +4,7 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import { createInterface, type Interface } from "readline/promises";
 import { stdin as processStdin, stdout as processStdout } from "process";
+import { readAsset } from "./_assets.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -463,8 +464,8 @@ function packageJson(config: InitConfig): string {
     update: "liatir update",
   };
   const devDependencies: Record<string, string> = {
-    "@liatir/cli": "^1.9.9",
-    "@liatir/api": "^1.9.9",
+    "@liatir/cli": "^1.9.11",
+    "@liatir/api": "^1.9.11",
   };
 
   if (config.language === "typescript") {
@@ -756,8 +757,9 @@ name = "${name}"
 path = "src/main.rs"
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+# preserve_order keeps the declared field order in the generated manifest,
+# which is the order Liatir renders the input form in.
+serde_json = { version = "1", features = ["preserve_order"] }
 
 # Smaller wasm artifact.
 [profile.release]
@@ -765,6 +767,8 @@ opt-level = "s"
 lto = true
 `;
 
+// The I/O schema is NOT in these manifests: Python/WASM plugins declare it in
+// code with define_plugin (same API as Node) and `liatir build` generates it.
 function pythonManifest(config: InitConfig): string {
   return JSON.stringify(
     {
@@ -774,23 +778,6 @@ function pythonManifest(config: InitConfig): string {
       runtime: "python",
       category: config.category,
       tags: config.tags,
-      inputSchema: {
-        text: {
-          type: "string",
-          label: "Text",
-          description: "Text to analyze.",
-          required: true,
-          default: "hello from Liatir",
-        },
-      },
-      outputSchema: {
-        length: {
-          type: "number",
-          label: "Length",
-          description: "Number of characters in the input text.",
-          format: "integer",
-        },
-      },
       python: {
         entry: "src/main.py",
         pythonRequirement: {
@@ -816,56 +803,79 @@ function wasmManifest(config: InitConfig): string {
       runtime: "wasm",
       category: config.category,
       tags: config.tags,
-      inputSchema: {
-        text: { type: "string", label: "Text", required: true },
-      },
-      outputSchema: {
-        length: { type: "number", label: "Length", format: "integer" },
-      },
     },
     null,
     2,
   );
 }
 
-const MAIN_RS = `use std::io::{self, Read, Write};
-use serde::{Deserialize, Serialize};
+const MAIN_RS = `// Docs: https://liatir.com/docs/plugins
 
-// Inputs must match the inputSchema in .lia-manifest.json.
-// Keys are camelCase in JSON; serde maps them to snake_case fields.
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct Input {
-    text: String,
-}
+mod liatir;
 
-// Outputs must match the outputSchema in .lia-manifest.json.
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct Output {
-    length: u64,
-}
+use liatir::{define_plugin, field};
+use serde_json::json;
 
-// A Liatir WASM plugin reads its JSON input from STDIN and writes JSON output to
-// STDOUT. It runs in a sandbox: no network access and no arbitrary filesystem.
-// Only directories mounted by Liatir are available to the tool.
+// This is just an example. Edit inputs and outputs definitions and the plugin
+// logic to implement your solutions. \`liatir build\` generates the manifest
+// schema from this contract and validates every run against it.
+//
+// The plugin runs in a sandbox: no network and no arbitrary filesystem — only
+// directories mounted by Liatir are available. stdout is reserved for the
+// result; use eprintln! for logs.
 fn main() {
-    let mut buf = String::new();
-    io::stdin().read_to_string(&mut buf).expect("failed to read stdin");
-    let input: Input = serde_json::from_str(&buf).expect("invalid JSON input");
+    define_plugin()
+        .input("text", field::string()
+            .label("Text")
+            .description("Text to analyze.")
+            .required(true)
+            .default_value("hello from Liatir"))
+        .output("length", field::number()
+            .label("Length")
+            .description("Number of characters in the input text.")
+            .integer())
+        .main(|ctx| {
+            // Write the plugin logic here
+            let text = ctx.str("text")?;
 
-    // Write your tool logic here.
-    let output = Output { length: input.text.len() as u64 };
-
-    let json = serde_json::to_string(&output).expect("failed to serialize output");
-    io::stdout().write_all(json.as_bytes()).expect("failed to write stdout");
+            Ok(json!({
+                "length": text.chars().count(),
+            }))
+        });
 }
 `;
 
-const MAIN_PY = `def main(input):
-    text = str(input.get("text", ""))
+const MAIN_PY = `# Docs: https://liatir.com/docs/plugins
+
+from liatir import define_plugin, field
+
+# This is just an example. Edit inputs and outputs definitions and the plugin
+# logic to implement your solutions. \`liatir build\` generates the manifest
+# schema from this contract and validates every run against it.
+plugin = define_plugin(
+    inputs={
+        "text": field.string(
+            label="Text",
+            description="Text to analyze.",
+            required=True,
+            default="hello from Liatir",
+        ),
+    },
+    outputs={
+        "length": field.number(
+            label="Length",
+            description="Number of characters in the input text.",
+            format="integer",
+        ),
+    },
+)
+
+
+@plugin.main
+def main(ctx):
+    # Write the plugin logic here
     return {
-        "length": len(text),
+        "length": len(ctx.input["text"]),
     }
 `;
 
@@ -876,6 +886,8 @@ async function scaffoldWasm(config: InitConfig): Promise<void> {
     fs.writeFile(path.join(config.dir, "Cargo.toml"), CARGO_TOML(config.rustCrateName)),
     fs.writeFile(path.join(config.dir, ".lia-manifest.json"), wasmManifest(config)),
     fs.writeFile(path.join(config.dir, "src", "main.rs"), MAIN_RS),
+    // CLI-managed Liatir plugin SDK module; `liatir build` keeps it in sync.
+    readAsset("liatir.rs").then((sdk) => fs.writeFile(path.join(config.dir, "src", "liatir.rs"), sdk)),
     fs.writeFile(path.join(config.dir, ".gitignore"), GITIGNORE),
   ]);
 
@@ -926,6 +938,9 @@ async function scaffoldPython(config: InitConfig): Promise<void> {
   await Promise.all([
     fs.writeFile(path.join(config.dir, ".lia-manifest.json"), pythonManifest(config)),
     fs.writeFile(path.join(config.dir, "src", "main.py"), MAIN_PY),
+    // CLI-managed Liatir plugin SDK module; `liatir build` keeps it in sync
+    // and ships it inside the .lia bundle, so `import liatir` always resolves.
+    readAsset("liatir.py").then((sdk) => fs.writeFile(path.join(config.dir, "src", "liatir.py"), sdk)),
     fs.writeFile(path.join(config.dir, "requirements.txt"), "# Add pip requirements here when the plugin needs external Python packages.\n"),
     fs.writeFile(path.join(config.dir, ".gitignore"), GITIGNORE),
   ]);

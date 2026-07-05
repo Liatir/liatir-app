@@ -379,27 +379,6 @@
               </div>
             </div>
           </Card>
-
-          {#if devJobs.length > 0}
-            <Card>
-              <div class="border-b border-border px-4 py-3">
-                <p class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Session jobs</p>
-              </div>
-              <div class="divide-y divide-border">
-                {#each devJobs as job}
-                  <div class="flex items-center justify-between gap-3 px-4 py-2.5">
-                    <div class="min-w-0">
-                      <p class="truncate text-xs font-medium text-zinc-700">{job.label ?? job.id}</p>
-                      <p class="truncate text-[10px] text-zinc-400">{job.kind ?? job.id}</p>
-                    </div>
-                    <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium {job.status.type === 'running' ? 'bg-brand/10 text-brand' : job.status.type === 'done' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}">
-                      {job.status.type}
-                    </span>
-                  </div>
-                {/each}
-              </div>
-            </Card>
-          {/if}
         </div>
 
         <div class="space-y-4">
@@ -447,6 +426,27 @@
               <div class="px-4 py-16 text-center text-sm text-zinc-400">Waiting for output...</div>
             {/if}
           </Card>
+          
+          {#if devJobs.length > 0}
+            <Card>
+              <div class="border-b border-border px-4 py-3">
+                <p class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Session jobs</p>
+              </div>
+              <div class="divide-y divide-border">
+                {#each devJobs as job}
+                  <div class="flex items-center justify-between gap-3 px-4 py-2.5">
+                    <div class="min-w-0">
+                      <p class="truncate text-xs font-medium text-zinc-700">{job.label ?? job.id}</p>
+                      <p class="truncate text-[10px] text-zinc-400">{job.kind ?? job.id}</p>
+                    </div>
+                    <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium {job.status.type === 'running' ? 'bg-brand/10 text-brand' : job.status.type === 'done' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}">
+                      {job.status.type}
+                    </span>
+                  </div>
+                {/each}
+              </div>
+            </Card>
+          {/if}
         </div>
       </div>
     {/if}

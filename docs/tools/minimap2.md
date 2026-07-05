@@ -25,12 +25,5 @@ sequences. In Liatir it outputs SAM format.
 The SAM output is usually an intermediate artifact. For downstream analysis,
 convert and sort it with Samtools or another alignment-processing tool.
 
-Minimap2 supports many presets upstream. Liatir currently exposes a practical
-managed wrapper, and future UI work may expose more preset controls.
-
-## Technical details
-
-Tool ID: `minimap2`
-
-Liatir runs Minimap2 as a native tool, streams logs, and stores the generated
-SAM output in Results.
+Minimap2 supports many presets. Liatir currently exposes a practical default
+configuration, with more preset controls planned.

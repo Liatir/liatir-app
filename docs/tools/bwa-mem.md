@@ -31,10 +31,3 @@ convert, sort, and index it with Samtools before downstream analysis.
 
 Check logs for indexing or reference errors. If the run is very slow, increase
 threads when your machine has enough CPU cores.
-
-## Technical details
-
-Tool ID: `bwa-mem`
-
-Liatir runs BWA-MEM with controlled thread settings and records the generated
-SAM file as an output artifact.

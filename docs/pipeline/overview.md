@@ -26,8 +26,8 @@ are filtered by compatible format whenever possible.
 4. Fill in required fields.
 5. Click **Run pipeline**.
 
-While the pipeline is running, the active pipeline is disabled to prevent
-accidental edits. Other pipelines and unrelated pages should remain usable.
+While a pipeline is running, it is locked to prevent accidental edits. You can
+still work in other pipelines and elsewhere in the app.
 
 ## Jobs and Results
 

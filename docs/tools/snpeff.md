@@ -33,11 +33,7 @@ The JAR path is saved by Liatir and persists across restarts.
 
 ### Step 2 — Download a genome database
 
-Select a genome from the dropdown or type a custom ID (e.g. `GRCh38.p14`). Liatir runs:
-
-```
-java -jar snpEff.jar download <genome> -dataDir <dir>
-```
+Select a genome from the dropdown or type a custom ID (e.g. `GRCh38.p14`). Liatir downloads the matching annotation database directly, with progress, speed, and pause/resume support, and installs it for you.
 
 Available built-in genomes:
 
@@ -93,24 +89,16 @@ Pipe-separated fields (simplified): allele | effect | impact | gene name | gene 
 
 ## Pipeline use
 
-```json
-{
-  "id": "annotate-variants",
-  "type": "native-tool",
-  "tool": "snpeff",
-  "inputs": {
-    "inputFile": "{{ outputs.filter.vcf }}",
-    "genome": "hg38"
-  }
-}
-```
+SnpEff works as a normal pipeline node: connect a VCF output (for example from
+[BCFtools filter](/tools/bcftools-filter)) into its input and pick a genome. See
+the [Pipelines](/pipeline/overview) section.
 
 ## Troubleshooting
 
 **Java not found** — install Java 8+ from your package manager and make sure `java` is on `PATH`.
 
-**Database download fails** — SnpEff fetches databases from `snpeff.sourceforge.net`. Check your network or firewall settings.
+**Database download fails** — check your network or firewall settings, then try the download again.
 
-**Out of memory** — the default heap is `-Xmx4g`. For very large VCFs on memory-constrained machines consider closing other apps first.
+**Out of memory** — very large VCFs on memory-constrained machines can run out of heap; consider closing other apps first.
 
-**Wrong genome ID** — SnpEff genome IDs are case-sensitive. Check the full list at `snpeff.sourceforge.net/download.html`.
+**Wrong genome ID** — SnpEff genome IDs are case-sensitive. Pick one from the dropdown, or double-check a custom ID against the official [SnpEff database list](https://pcingola.github.io/SnpEff/).

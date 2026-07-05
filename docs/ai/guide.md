@@ -14,8 +14,8 @@ and provenance just like other tools.
 
 ### AI Models
 
-An AI Model is the local runtime box: Python environment, packages, model cache,
-downloaded weights, hardware checks, and model metadata.
+An AI Model is the local engine: the downloaded model weights and everything
+needed to run them, installed in their own isolated environment on your machine.
 
 Examples:
 
@@ -141,7 +141,7 @@ Use:
 2. CellTypist Annotation.
 3. Single-cell Embedding with UCE 4-layer when you need foundation-model vectors.
 4. Results table or single-cell preview.
-5. Later, Vitessce viewers.
+5. Later, richer interactive single-cell views.
 
 ### Genomic variants
 

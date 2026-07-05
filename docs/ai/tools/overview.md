@@ -1,8 +1,8 @@
 # AI Tools
 
 AI Tools are the pipeline-ready tasks that use local AI Models. They are not
-Plugins. Plugins are `.lia` extensions; AI Tools are built-in capabilities that
-run compatible AI Models through the shared Liatir I/O contract.
+Plugins: Plugins are `.lia` extensions, while AI Tools are built-in capabilities
+that run compatible AI Models.
 
 ## Available AI Tools
 

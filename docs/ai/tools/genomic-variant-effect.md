@@ -55,13 +55,9 @@ VCF reference allele does not match the FASTA sequence Liatir used.
 4. BED output into a genome viewer.
 5. Inspect top scores and provenance.
 
-## Technical details
+## How the score is computed
 
-Tool ID: `ai-genomic-variant-effect`
-
-Scoring method: `1 - cosine_similarity(reference_embedding,
-alternate_embedding)`.
-
-The current scorer scans VCF/VCF.GZ records sequentially and stops at `Max
-variants`. It does not require a `.tbi` index for the current sequential
-workflow.
+The score measures how much the alternate sequence embedding differs from the
+reference embedding — higher means a bigger change in the model's
+representation. Variants are read in file order and scoring stops at `Max
+variants`, so no `.tbi` index is needed.

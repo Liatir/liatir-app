@@ -6,17 +6,24 @@ payload.
 
 ## Runtime variants
 
-There are three supported runtimes: **Node**, **Python**, and **WASM**.
+There are three supported runtimes: **Node**, **Python**, and **WASM**. All
+three declare the I/O contract the same way — once, in the code, with the
+`define_plugin` API — and `liatir build` generates the bundle manifest schema
+from it. There is no schema to keep in sync by hand:
 
-Node plugins should not maintain a hand-written `.lia-manifest.json`.
-`liatir build` generates the manifest from the exported `definePlugin({...})` contract.
+- **Node** declares it with `definePlugin({...})` from `@liatir/api`.
+- **Python** declares it with `define_plugin(...)` from the CLI-managed
+  `liatir` module scaffolded next to the entry point.
+- **WASM** declares it with `define_plugin()` from the CLI-managed
+  `src/liatir.rs` module.
 
-WASM plugins do use `.lia-manifest.json`, because Rust/WASM cannot export the
-JavaScript plugin contract at build time.
-
-Python plugins also use `.lia-manifest.json`. The manifest declares the same
-Liatir I/O schema plus the Python entry point and optional Python dependency
-requirements.
+Node plugins have no `.lia-manifest.json` at all (metadata lives in
+`package.json`). Python and WASM projects keep a small `.lia-manifest.json`
+for metadata (name, version, description, category, tags) — plus, for Python,
+the runtime spec (entry point, packages, requirements). Legacy Python/WASM
+plugins that still declare `inputSchema`/`outputSchema` in the manifest keep
+building; when a code contract exists, it wins and the manifest schema is
+ignored.
 
 ## Generated Node manifest
 
@@ -139,9 +146,35 @@ return {
 Liatir registers saved file outputs under the workspace's Results folder so they
 can be opened later or connected to downstream pipeline steps.
 
-## WASM manifest
+## WASM contract and manifest
 
-WASM plugins keep their schema in `.lia-manifest.json`:
+WASM plugins declare the contract in `src/main.rs` with the CLI-managed
+`src/liatir.rs` module (`liatir init --wasm` scaffolds both, `liatir build`
+keeps the module in sync):
+
+```rust
+mod liatir;
+
+use liatir::{define_plugin, field};
+use serde_json::json;
+
+fn main() {
+    define_plugin()
+        .input("text", field::string()
+            .label("Text")
+            .required(true)
+            .default_value("hello from Liatir"))
+        .output("length", field::number()
+            .label("Length")
+            .integer())
+        .main(|ctx| {
+            let text = ctx.str("text")?;
+            Ok(json!({ "length": text.chars().count() }))
+        });
+}
+```
+
+`.lia-manifest.json` only carries metadata:
 
 ```json
 {
@@ -149,22 +182,49 @@ WASM plugins keep their schema in `.lia-manifest.json`:
   "version": "1.0.0",
   "description": "Count characters in text.",
   "runtime": "wasm",
-  "inputSchema": {
-    "text": { "type": "string", "label": "Text", "required": true }
-  },
-  "outputSchema": {
-    "length": { "type": "number", "label": "Length", "format": "integer" }
-  }
+  "category": "Utilities",
+  "tags": ["text"]
 }
 ```
 
-The WASM binary reads JSON input from stdin and writes JSON output to stdout.
-Liatir rejects WASM plugins that do not follow the I/O contract.
+`liatir build` compiles the crate, reads the contract back from the binary, and
+generates the bundle manifest schema from it. At run time the SDK validates the
+input before your handler runs and the output after it returns; stdout is
+reserved for the result JSON (use `eprintln!` for logs). Legacy tools without
+the SDK keep working with `inputSchema`/`outputSchema` in the manifest.
 
-## Python manifest
+## Python contract and manifest
 
-Python plugins keep their schema and runtime dependency metadata in
-`.lia-manifest.json`:
+Python plugins declare the contract in the entry module with the CLI-managed
+`liatir` module (`liatir init --python` scaffolds `src/liatir.py` next to
+`src/main.py`; `liatir build` keeps it in sync and ships it in the bundle):
+
+```python
+from liatir import define_plugin, field
+
+plugin = define_plugin(
+    inputs={
+        "text": field.string(
+            label="Text",
+            required=True,
+            default="hello from Liatir",
+        ),
+    },
+    outputs={
+        "length": field.number(label="Length", format="integer"),
+    },
+)
+
+
+@plugin.main
+def main(ctx):
+    return {"length": len(ctx.input["text"])}
+```
+
+The handler receives a context with the validated input (defaults applied,
+required and typed fields checked); the returned dict is validated against the
+declared outputs. `.lia-manifest.json` carries metadata and the Python runtime
+spec:
 
 ```json
 {
@@ -172,21 +232,6 @@ Python plugins keep their schema and runtime dependency metadata in
   "version": "1.0.0",
   "description": "Count characters with Python.",
   "runtime": "python",
-  "inputSchema": {
-    "text": {
-      "type": "string",
-      "label": "Text",
-      "required": true,
-      "default": "hello from Liatir"
-    }
-  },
-  "outputSchema": {
-    "length": {
-      "type": "number",
-      "label": "Length",
-      "format": "integer"
-    }
-  },
   "python": {
     "entry": "src/main.py",
     "pythonRequirement": {
@@ -200,17 +245,7 @@ Python plugins keep their schema and runtime dependency metadata in
 }
 ```
 
-The Python entry point must define a callable `main(input)` function. Liatir
-passes the input object as JSON-compatible data and expects `main` to return a
-JSON-compatible object whose keys match the output schema.
-
-```python
-def main(input):
-    text = str(input.get("text", ""))
-    return {
-        "length": len(text),
-    }
-```
-
 When the packaged `.lia` runs, Liatir creates an isolated managed Python runtime
 for that plugin bundle and installs the declared packages or requirements there.
+Legacy plugins with a plain `main(input)` function and a manifest-owned
+`inputSchema`/`outputSchema` keep working.

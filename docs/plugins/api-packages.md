@@ -8,6 +8,11 @@ The Liatir API ships in two related packages:
 Most plugin authors use `@liatir/api` through projects created by
 `liatir init`.
 
+Python and WASM plugins use the same `define_plugin` contract API, but not as a
+package: the CLI scaffolds a single managed module (`src/liatir.py` /
+`src/liatir.rs`) into the project and `liatir build` keeps it in sync — there
+is nothing to install or update separately.
+
 ![Liatir API surface map](/static/api-surface-map.svg)
 
 ## Node plugin authoring

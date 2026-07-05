@@ -11,9 +11,8 @@ perturbation analysis.
 
 ## Current status in Liatir
 
-This model is visible as a preview. Liatir does not enable install or run
-controls yet because the official setup depends on Git LFS and model assets that
-must be managed explicitly inside a dedicated runtime box.
+This model is visible as a preview. Install and run controls are not enabled
+yet, because its setup requires model assets that need dedicated handling.
 
 ## Expected inputs
 
@@ -29,9 +28,9 @@ must be managed explicitly inside a dedicated runtime box.
 
 ## Hardware and installation
 
-The official documentation strongly recommends GPU resources for efficient use.
-Liatir will keep Geneformer in its own managed runtime instead of mixing it with
-CellTypist or other single-cell tools.
+The official documentation strongly recommends a GPU for efficient use. Liatir
+will keep Geneformer in its own isolated environment, separate from CellTypist
+and other single-cell tools.
 
 ## Official source
 

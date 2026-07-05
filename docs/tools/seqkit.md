@@ -39,7 +39,7 @@ sudo apt install seqkit
 | `.fastq`, `.fq` | Uncompressed FASTQ |
 | `.fastq.gz`, `.fq.gz` | Gzip-compressed FASTQ |
 
-seqkit handles both compressed and uncompressed formats natively without piping through gunzip first.
+seqkit reads both compressed and uncompressed files directly — no need to decompress them first.
 
 ## Running seqkit stats
 

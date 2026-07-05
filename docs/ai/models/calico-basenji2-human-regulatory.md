@@ -35,9 +35,8 @@ Liatir writes:
 
 ## Hardware and installation
 
-Basenji2 runs through a dedicated Python/TensorFlow runtime box. Liatir downloads
-the official human model weights, model parameters, and target table into that
-box.
+Liatir installs Basenji2 in its own isolated environment and downloads the
+official human model weights for you.
 
 CPU runs are possible for small tests. GPU acceleration is preferred for larger
 or repeated workflows.

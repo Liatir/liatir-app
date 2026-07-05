@@ -44,14 +44,9 @@ for a diverse tissue sample.
 4. Select the `.h5ad` file and model.
 5. Run and inspect labels in Results.
 
-## Technical details
-
-Tool ID: `ai-celltypist-annotate`
-
-Compatible model:
+## Compatible model
 
 - [CellTypist Local Annotation](/ai/models/celltypist-local-annotation)
 
-Outputs follow the shared Liatir tool output contract and include provenance
-with model ID, runtime, input file, selected CellTypist model, and majority
-voting setting.
+Every run records provenance: the model and version, the input file, the
+selected CellTypist model, and the majority-voting setting.

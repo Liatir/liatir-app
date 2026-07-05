@@ -52,7 +52,7 @@ BAM is the most common format. SAM files are large (text) and uncommon in practi
 2. Select a BAM, SAM, or CRAM file from your Data library.
 3. Click **Run**.
 
-The run spawns `samtools flagstat <path>` and captures stdout. Results are parsed and stored in run history.
+Liatir runs `samtools flagstat` on the file and displays the parsed results, keeping them in the run history.
 
 ## Output metrics
 

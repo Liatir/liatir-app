@@ -29,7 +29,7 @@ You can use AI Models in two ways:
 | Score small VCF examples | Nucleotide Transformer v2 50M | Faster variant-effect smoke tests |
 | Predict regulatory signal | Basenji2 or Enformer | Managed regulatory runtimes with BED outputs |
 | Predict protein structure | Boltz-2 | Current primary local structure model |
-| Create single-cell foundation embeddings | UCE 4-layer | First managed Batch 5 runtime with AnnData embedding outputs |
+| Create single-cell foundation embeddings | UCE 4-layer | Managed foundation-model runtime with AnnData embedding outputs |
 | Explore future single-cell foundation models | scGPT, Geneformer, scFoundation | Preview entries documented but not installable yet |
 
 ## Installation
@@ -37,13 +37,13 @@ You can use AI Models in two ways:
 AI Models are installed globally for the app, not per workspace. Once a model is
 installed, every workspace can use it.
 
-Liatir manages the runtime dependency box for each model. Heavy dependencies are
-not bundled into the core app; they are installed only when the model needs
-them.
+Each model installs in its own isolated environment. Heavy dependencies are
+never added to the base app — they are downloaded only when you install the
+model, which keeps Liatir small.
 
-Preview models are different: they are visible in the catalog so you can see the
-roadmap and read the docs, but Liatir does not expose Install or Run until the
-runtime box and scientific output contract are validated.
+Preview models are different: they are visible in the catalog so you can see
+what's coming and read the docs, but Install and Run stay disabled until the
+model is fully validated.
 
 ## Results and provenance
 

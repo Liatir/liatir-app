@@ -3,6 +3,8 @@ import * as path from "path";
 import { execFile, spawn } from "child_process";
 import { promisify } from "util";
 
+import { formatProcessError } from "./_process.js";
+
 const execFileAsync = promisify(execFile);
 
 const LIATIR_PACKAGES = ["@liatir/cli", "@liatir/api"] as const;
@@ -175,15 +177,6 @@ function dependencyRange(version: string, exact: boolean): string {
 
 function formatCommand(command: string, args: string[]): string {
   return [command, ...args].join(" ");
-}
-
-function formatProcessError(err: unknown): string {
-  if (!err || typeof err !== "object") return String(err);
-  const error = err as { stdout?: unknown; stderr?: unknown; message?: unknown };
-  const stdout = typeof error.stdout === "string" ? error.stdout.trim() : "";
-  const stderr = typeof error.stderr === "string" ? error.stderr.trim() : "";
-  const message = typeof error.message === "string" ? error.message : "";
-  return [stdout, stderr, message].filter(Boolean).join("\n");
 }
 
 async function fetchLatestVersions(projectRoot: string): Promise<Record<LiatirPackageName, string>> {

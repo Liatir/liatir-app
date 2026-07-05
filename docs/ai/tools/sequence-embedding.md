@@ -46,10 +46,7 @@ Check:
 - max tokens did not truncate important sequence context;
 - molecule type matches the model.
 
-## Technical details
+## Good to know
 
-Tool ID: `ai-sequence-embedding`
-
-Liatir pools model outputs with attention-mask mean pooling and writes a
-per-sequence embedding table. The output is a representation, not a final
-biological label.
+Each sequence becomes a single embedding vector, written to a per-sequence
+table. The output is a numeric representation, not a final biological label.

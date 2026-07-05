@@ -38,31 +38,48 @@ async function listRunningJobs(): Promise<JobEntry[]> {
 	}
 }
 
+/**
+ * Read a single active-process counter defensively. A throwing store getter
+ * must never be able to strand the close flow, so any failure counts as "0
+ * active" for that source (and is logged) rather than propagating.
+ */
+function safeCount(read: () => number): number {
+	try {
+		return read();
+	} catch (err) {
+		console.error('[closeGuard] failed to read active-process counter', err);
+		return 0;
+	}
+}
+
 async function activeProcessSummary(): Promise<ActiveProcessSummary> {
 	const labels: string[] = [];
 
-	const runningJobs = await listRunningJobs();
-	if (runningJobs.length > 0) labels.push(plural(runningJobs.length, 'background job'));
+	const runningJobs = (await listRunningJobs()).length;
+	if (runningJobs > 0) labels.push(plural(runningJobs, 'background job'));
 
-	const runningPipelines = pipelineStore.runningCount;
+	const runningPipelines = safeCount(() => pipelineStore.runningCount);
 	if (runningPipelines > 0) labels.push(plural(runningPipelines, 'pipeline run'));
 
-	const aiModelInstalls = Object.keys(aiModelsStore.installing).length;
+	const aiModelInstalls = safeCount(() => Object.keys(aiModelsStore.installing).length);
 	if (aiModelInstalls > 0) labels.push(plural(aiModelInstalls, 'AI Model install'));
 
-	const dependencyProcesses = Object.values(depsStore.processStates).filter((state) =>
-		ACTIVE_DEPENDENCY_PHASES.has(state.phase)
-	).length;
+	const dependencyProcesses = safeCount(
+		() =>
+			Object.values(depsStore.processStates).filter((state) =>
+				ACTIVE_DEPENDENCY_PHASES.has(state.phase)
+			).length
+	);
 	if (dependencyProcesses > 0) {
 		labels.push(plural(dependencyProcesses, 'dependency install/update', 'dependency installs/updates'));
 	}
 
-	const viewerRuntimeInstalls = Object.keys(viewerRuntimesStore.installProgress).length;
+	const viewerRuntimeInstalls = safeCount(() => Object.keys(viewerRuntimesStore.installProgress).length);
 	if (viewerRuntimeInstalls > 0) labels.push(plural(viewerRuntimeInstalls, 'viewer runtime install'));
 
 	return {
 		count:
-			runningJobs.length +
+			runningJobs +
 			runningPipelines +
 			aiModelInstalls +
 			dependencyProcesses +
@@ -87,7 +104,18 @@ async function handleCloseRequest(payload: CloseRequestedPayload | null | undefi
 	if (closePromptOpen) return;
 
 	const label = payload?.label ?? 'main';
-	const summary = await activeProcessSummary();
+
+	// Compute the summary defensively. If we cannot even determine what is
+	// running, we must not trap the user: proceed with the close rather than
+	// leaving the window stuck open with no feedback (the reported symptom).
+	let summary: ActiveProcessSummary;
+	try {
+		summary = await activeProcessSummary();
+	} catch (err) {
+		console.error('[closeGuard] failed to compute active processes, closing anyway', err);
+		await continueClose(label);
+		return;
+	}
 
 	if (summary.count === 0) {
 		await continueClose(label);
@@ -109,8 +137,11 @@ async function handleCloseRequest(payload: CloseRequestedPayload | null | undefi
 		} else {
 			await cancelClose();
 		}
-	} catch {
-		await cancelClose();
+	} catch (err) {
+		// If the prompt itself fails, default to closing: an un-closable window
+		// is a worse outcome than an unconfirmed close.
+		console.error('[closeGuard] close prompt failed, closing anyway', err);
+		await continueClose(label);
 	} finally {
 		closePromptOpen = false;
 	}
@@ -119,7 +150,14 @@ async function handleCloseRequest(payload: CloseRequestedPayload | null | undefi
 export async function initAppCloseGuard(): Promise<(() => void) | null> {
 	const api = liatir();
 	if (!api) return null;
-	return api.desktop.events.on('window:close-requested', (payload: CloseRequestedPayload) => {
-		void handleCloseRequest(payload);
-	});
+	try {
+		return await api.desktop.events.on('window:close-requested', (payload: CloseRequestedPayload) => {
+			void handleCloseRequest(payload);
+		});
+	} catch (err) {
+		// Never let a failed listener registration abort app startup. It would
+		// also leave the window un-closable, so surface it loudly.
+		console.error('[closeGuard] failed to register close listener', err);
+		return null;
+	}
 }

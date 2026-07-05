@@ -1,20 +1,13 @@
 # FastQC
 
-FastQC performs comprehensive quality control analysis on raw sequencing reads. The Liatir implementation is compiled to **WebAssembly** — it runs entirely inside the app with no installation required.
+FastQC performs comprehensive quality control analysis on raw sequencing reads. In Liatir it is a **built-in tool** — nothing to install, and noticeably faster than the original FastQC.
 
 ## Details
 
 | Property | Value |
 |----------|-------|
-| Type | WASM plugin |
+| Type | Built-in tool |
 | Installation | None (bundled with Liatir) |
-
-## Why WASM?
-
-The FastQC WASM plugin is compiled from a high-performance Rust implementation rather than wrapping the original Java binary. This gives it two advantages:
-
-1. **No installation** — the binary is embedded in the app bundle.
-2. **Native speed** — Rust + WASM is significantly faster than the JVM-based original for per-read parsing.
 
 ## Accepted inputs
 

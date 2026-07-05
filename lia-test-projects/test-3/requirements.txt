@@ -1,1 +1,0 @@
-# Add pip requirements here when the plugin needs external Python packages.
