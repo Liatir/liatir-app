@@ -79,7 +79,7 @@ app. It includes:
 - `Liatir.desktop.files`, `Liatir.desktop.app`, diagnostics, notifications, clipboard,
   network, and global variables where meaningful in a headless process;
 - typed bio namespaces such as `Liatir.qc`, `Liatir.align`, and `Liatir.variants`;
-- lower-level `Liatir.plugins`, `Liatir.sidecar`, and `Liatir.invoke` escape hatches.
+- lower-level `Liatir.sidecar` and `Liatir.invoke` escape hatches.
 
 Node plugins can also use normal Node.js APIs and bundled npm dependencies.
 
@@ -150,18 +150,35 @@ Python plugins run in isolated managed Python environments. The plugin manifest
 can declare packages and requirements; Liatir prepares that runtime box before
 execution and shows its status and installed size in the Plugins UI.
 
-Python plugins do not receive the Node `Liatir` bridge. Use Node plugins when a
-plugin needs to spawn Liatir jobs, call bridge APIs, or interact with app
-services directly.
+Python plugins receive the same `Liatir` bridge as Node, exposed on the handler
+context as `ctx.liatir`. It reaches the app over the same local IPC server the
+Node SDK uses, so a Python plugin can spawn Liatir jobs, check dependencies,
+read and write app storage, and call any other bridge API:
+
+```python
+@plugin.main
+def main(ctx):
+    ctx.liatir.deps.check("bwa")
+    job = ctx.liatir.jobs.run("bwa", ["index", ctx.input["ref"]])
+    return {"jobId": job["id"]}
+```
+
+`ctx.liatir` mirrors the Node namespaces (`jobs`, `deps`, `desktop.*`,
+`sidecar`, `pipeline`, `paths()`, plus `invoke` as a raw escape hatch), using
+snake_case method names. It resolves its connection lazily, so plugins that
+never touch the bridge run without requiring the app.
+
+WASM plugins remain fully sandboxed and have no bridge: they cannot call back
+into the app. Use Node or Python when you need bridge access.
 
 ---
 
 <br>
 
 :::info
-- Use WASM for portable, sandboxed computation. 
-- Use Node plugins when you need the Liatir bridge, local process management, or the flexibility of the Node environment and libraries.
-- Use Python plugins when the implementation depends on Python libraries or scientific Python workflows.
+- Use WASM for portable, sandboxed computation that must not call back into the app (no bridge).
+- Use Node plugins when you want the Liatir bridge with the Node environment and its libraries.
+- Use Python plugins when the implementation depends on Python libraries or scientific Python workflows — they get the same bridge as Node via `ctx.liatir`.
 :::
 
 <style>

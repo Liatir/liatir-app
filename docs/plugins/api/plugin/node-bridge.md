@@ -8,6 +8,12 @@ description: Node bridge available inside a .lia plugin main handler.
 The `Liatir` object passed to `.main(...)` is the Node plugin bridge. It connects
 the plugin process to the running Liatir desktop app through local IPC.
 
+Python plugins get the same bridge on their handler context as `ctx.liatir`,
+using snake_case method names (e.g. `ctx.liatir.jobs.run(...)`,
+`ctx.liatir.deps.check(...)`, `ctx.liatir.invoke(...)`). It covers the same
+areas below except the typed bio helpers (`align`/`qc`/`variants`), which Python
+reaches through `ctx.liatir.invoke`. WASM plugins are sandboxed and have no bridge.
+
 ```ts
 export default liatirPlugin.main(async ({ input, Liatir }: PluginContext<typeof liatirPlugin>) => {
   const node = await Liatir.deps.check("node");

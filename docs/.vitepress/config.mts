@@ -242,6 +242,8 @@ export default defineConfig({
                 items: [
                   { text: 'bwaMem', link: '/plugins/api/align/bwa-mem' },
                   { text: 'minimap2', link: '/plugins/api/align/minimap2' },
+                  { text: 'flagstat', link: '/plugins/api/align/flagstat' },
+                  { text: 'faidx', link: '/plugins/api/align/faidx' },
                 ],
               },
               {
@@ -249,6 +251,7 @@ export default defineConfig({
                 collapsed: true,
                 items: [
                   { text: 'bcftoolsStats', link: '/plugins/api/variants/bcftools-stats' },
+                  { text: 'bcftoolsFilter', link: '/plugins/api/variants/bcftools-filter' },
                   { text: 'snpeff', link: '/plugins/api/variants/snpeff' },
                 ],
               },

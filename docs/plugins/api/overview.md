@@ -75,8 +75,11 @@ root-level `invoke()` escape hatch only when no typed wrapper exists.
 
 - [bwaMem](/plugins/api/align/bwa-mem)
 - [minimap2](/plugins/api/align/minimap2)
+- [flagstat](/plugins/api/align/flagstat)
+- [faidx](/plugins/api/align/faidx)
 
 ## Bio: Variants API
 
 - [bcftoolsStats](/plugins/api/variants/bcftools-stats)
+- [bcftoolsFilter](/plugins/api/variants/bcftools-filter)
 - [snpeff](/plugins/api/variants/snpeff)

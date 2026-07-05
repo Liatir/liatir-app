@@ -113,6 +113,10 @@ hr {
   opacity: 0.2 !important;
 }
 
+body:has(.cookie-backdrop) {
+  overflow: hidden !important;
+}
+
 @media (max-width: 768px) {
   .liatir-architecture-figure {
     margin: 24px 0;

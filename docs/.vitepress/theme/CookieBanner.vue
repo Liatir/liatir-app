@@ -64,15 +64,18 @@ function accept() {
   bottom: 0;
   /* Covers roughly the lower half of the viewport, fading to nothing near
      the top so it blends into the page instead of drawing a hard edge. */
-  height: 46vh;
+  height: 100vh;
   z-index: 199; /* just under the banner (200) */
   pointer-events: none;
   background: linear-gradient(
     to top,
     rgba(15, 23, 42, 0.90) 0%,
-    rgba(15, 23, 42, 0.60) 50%,
-    rgba(15, 23, 42, 0) 100%
+    rgba(15, 23, 42, 0.80) 40%,
+    rgba(15, 23, 42, 0.60) 70%,
+    rgba(15, 23, 42, 0.20) 100%
   );
+  backdrop-filter: blur(0.5px);
+  pointer-events: auto !important;
 }
 
 .cookie-banner {
@@ -86,6 +89,7 @@ function accept() {
   display: flex;
   align-items: center;
   gap: 16px;
+  margin-bottom: 10vh;
   padding: 14px 18px;
   border: 1px solid var(--vp-c-divider);
   border-radius: 12px;
@@ -96,14 +100,15 @@ function accept() {
 .cookie-banner__text {
   margin: 0;
   flex: 1;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
   color: var(--vp-c-text-2);
+  font-weight: 700 !important;
 }
 
 .cookie-banner__text a {
   color: var(--vp-c-brand-1);
-  font-weight: 500;
+  font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 2px;
 }

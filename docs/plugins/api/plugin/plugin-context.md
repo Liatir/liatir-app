@@ -38,8 +38,9 @@ export default liatirPlugin.main(async ({ input, Liatir }: PluginContext<typeof 
 plugins only need `PluginContext<typeof liatirPlugin>`. The type is erased at
 runtime; the contract is enforced at build time and through TypeScript.
 
-Only Node plugins receive the `Liatir` bridge — see
-[Liatir Node bridge](/plugins/api/plugin/node-bridge).
+Node and Python plugins receive the `Liatir` bridge — see
+[Liatir Node bridge](/plugins/api/plugin/node-bridge). WASM plugins are fully
+sandboxed and have no bridge.
 
 ## Python — `ctx`
 
@@ -61,8 +62,20 @@ def main(ctx):
     return {"length": len(ctx.input["text"])}
 ```
 
-Python plugins do not receive the `Liatir` bridge; use a Node plugin when you
-need to spawn Liatir jobs or call bridge APIs.
+Python plugins also receive the `Liatir` bridge, exposed on the context as
+`ctx.liatir`. It mirrors the Node bridge namespaces with snake_case method names
+(`ctx.liatir.jobs`, `ctx.liatir.deps`, `ctx.liatir.desktop.*`, `ctx.liatir.invoke`),
+and reaches the app over the same local IPC server:
+
+```python
+@plugin.main
+def main(ctx):
+    ctx.liatir.deps.check("node")
+    return {"length": len(ctx.input["text"])}
+```
+
+The connection is resolved lazily, so plugins that never touch the bridge run
+without requiring the app to be reachable.
 
 ## WASM — `ctx`
 
