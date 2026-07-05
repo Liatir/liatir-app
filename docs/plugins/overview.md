@@ -11,7 +11,13 @@ A `.lia` plugin file is a bundle built with `@liatir/cli` and imported into Liat
 - the runtime: `node`, `python`, or `wasm`.
 
 :::info
-Plugins must follow the **Liatir I/O standard**, but don't worry — the **Liatir CLI** scaffolds that for you.
+
+<div style="display: flex;">
+
+<p style="margin-right: 10px; margin-top: 8px;"> <strong>→</strong> </p> <p> Every plugin must follow the <strong>Liatir I/O standard</strong>, but don't worry — the <strong>Liatir CLI</strong> scaffolds that for you. </p>
+
+</div>
+
 :::
 
 ## Node plugins
@@ -79,10 +85,15 @@ Node plugins can also use normal Node.js APIs and bundled npm dependencies.
 
 ## WASM plugins
 
+
 WASM `.lia` plugins are Web Assembly tools compiled to `wasm32-wasip1`. They
 declare the same `define_plugin` contract as Node and Python through the
 CLI-managed `src/liatir.rs` module that `liatir init --wasm` scaffolds and
 `liatir build` keeps in sync:
+
+:::warning Keep in mind:
+WASM plugins runtime is intentionally **fully sandboxed and isolated** for safety and compliance reasons; therefore, **they cannot communicate with external resources**.
+:::
 
 ```rust
 mod liatir;

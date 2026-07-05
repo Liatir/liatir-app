@@ -1,6 +1,10 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
+  markdown: {
+    // Abilita il rendering delle equazioni matematiche
+    math: true
+  },
   title: 'Liatir',
   description: 'Local-first bioinformatics desktop app built on Rust and Tauri.',
   base: '/',
@@ -47,8 +51,8 @@ export default defineConfig({
       { text: 'Introduction', link: '/introduction/overview' },
       { text: 'Tools', link: '/tools/overview' },
       { text: 'AI Models', link: '/ai/guide' },
-      { text: 'Pipelines', link: '/pipeline/overview' },
       { text: 'Plugins', link: '/plugins/overview' },
+      { text: 'Pipelines', link: '/pipeline/overview' },
     ],
 
     sidebar: [
@@ -198,19 +202,6 @@ export default defineConfig({
                 ],
               },
               {
-                text: '.plugins',
-                collapsed: true,
-                items: [
-                  { text: 'call', link: '/plugins/api/plugins/call' },
-                  { text: 'status', link: '/plugins/api/plugins/status' },
-                  { text: 'list', link: '/plugins/api/plugins/list' },
-                  { text: 'add', link: '/plugins/api/plugins/add' },
-                  { text: 'addFromBytes', link: '/plugins/api/plugins/add-from-bytes' },
-                  { text: 'remove', link: '/plugins/api/plugins/remove' },
-                  { text: 'killJobs', link: '/plugins/api/plugins/kill-jobs' },
-                ],
-              },
-              {
                 text: '.pipeline',
                 collapsed: true,
                 items: [
@@ -240,7 +231,25 @@ export default defineConfig({
                 text: '.qc',
                 collapsed: true,
                 items: [
+                  { text: 'seqkit', link: '/plugins/api/qc/seqkit' },
+                  { text: 'fastp', link: '/plugins/api/qc/fastp' },
                   { text: 'fastqc', link: '/plugins/api/qc/fastqc' },
+                ],
+              },
+              {
+                text: '.align',
+                collapsed: true,
+                items: [
+                  { text: 'bwaMem', link: '/plugins/api/align/bwa-mem' },
+                  { text: 'minimap2', link: '/plugins/api/align/minimap2' },
+                ],
+              },
+              {
+                text: '.variants',
+                collapsed: true,
+                items: [
+                  { text: 'bcftoolsStats', link: '/plugins/api/variants/bcftools-stats' },
+                  { text: 'snpeff', link: '/plugins/api/variants/snpeff' },
                 ],
               },
             ],
@@ -254,7 +263,8 @@ export default defineConfig({
           { text: "Terms of Service", link: "/terms" }
         ]
       },
-      { text: `</br>All rights reserved</br>© ${new Date().getFullYear()} <a href="https://liatir.com" target="_blank">Liatir</a>`},
+      { text: 'Branding Assets', link: '/branding' },
+      { text: `</br></br>All rights reserved</br>© ${new Date().getFullYear()} <a href="https://liatir.com" target="_blank">Liatir</a>`},
     ],
 
     socialLinks: [],

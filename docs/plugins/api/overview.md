@@ -20,11 +20,12 @@ root-level `invoke()` escape hatch only when no typed wrapper exists.
 - [Plugin authoring API](/plugins/api/plugin/define-plugin)
 - [Root API](/plugins/api/root/overview)
 - [Desktop API](/plugins/api/desktop/app)
-- [Plugins API](/plugins/api/plugins/call)
 - [Pipeline API](/plugins/api/pipeline/run)
 - [Jobs API](/plugins/api/jobs/spawn)
 - [Dependencies API](/plugins/api/deps/check)
-- [QC API](/plugins/api/qc/fastqc)
+- [Bio: QC API](/plugins/api/qc/fastqc)
+- [Bio: Alignment API](/plugins/api/align/bwa-mem)
+- [Bio: Variants API](/plugins/api/variants/bcftools-stats)
 
 ## Root API
 
@@ -47,16 +48,6 @@ root-level `invoke()` escape hatch only when no typed wrapper exists.
 - [Deep links](/plugins/api/desktop/deep-links)
 - [Utilities](/plugins/api/desktop/utilities)
 
-## Plugins API
-
-- [call](/plugins/api/plugins/call)
-- [status](/plugins/api/plugins/status)
-- [list](/plugins/api/plugins/list)
-- [add](/plugins/api/plugins/add)
-- [addFromBytes](/plugins/api/plugins/add-from-bytes)
-- [remove](/plugins/api/plugins/remove)
-- [killJobs](/plugins/api/plugins/kill-jobs)
-
 ## Pipeline API
 
 - [run](/plugins/api/pipeline/run)
@@ -74,6 +65,18 @@ root-level `invoke()` escape hatch only when no typed wrapper exists.
 - [check](/plugins/api/deps/check)
 - [checkMany](/plugins/api/deps/check-many)
 
-## QC API
+## Bio: QC API
 
+- [seqkit](/plugins/api/qc/seqkit)
+- [fastp](/plugins/api/qc/fastp)
 - [fastqc](/plugins/api/qc/fastqc)
+
+## Bio: Alignment API
+
+- [bwaMem](/plugins/api/align/bwa-mem)
+- [minimap2](/plugins/api/align/minimap2)
+
+## Bio: Variants API
+
+- [bcftoolsStats](/plugins/api/variants/bcftools-stats)
+- [snpeff](/plugins/api/variants/snpeff)

@@ -109,6 +109,10 @@
   display: none !important;
 }
 
+hr {
+  opacity: 0.2 !important;
+}
+
 @media (max-width: 768px) {
   .liatir-architecture-figure {
     margin: 24px 0;

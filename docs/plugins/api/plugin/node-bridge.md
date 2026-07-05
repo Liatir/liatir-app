@@ -36,9 +36,8 @@ export default liatirPlugin.main(async ({ input, Liatir }: PluginContext<typeof 
 | `Liatir.align` | Typed alignment helpers. |
 | `Liatir.qc` | Typed quality-control helpers. |
 | `Liatir.variants` | Typed variant-analysis helpers. |
-| `Liatir.plugins` | Low-level WASM plugin runtime. |
 | `Liatir.sidecar` | Registered sidecar binaries. |
-| `Liatir.pipeline` | Chain WASM and sidecar steps into a sequential pipeline. |
+| `Liatir.pipeline` | Chain sidecar steps into a sequential pipeline. |
 | `Liatir.paths()` | App filesystem paths. |
 | `Liatir.invoke` | Low-level IPC escape hatch. |
 

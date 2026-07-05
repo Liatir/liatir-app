@@ -4,9 +4,10 @@ In order to start developing a **Liatir plugin**, you have to install the **Liat
 
 Liatir commands exposed by the CLI:
 - `liatir init`: this will generate your project folder and scaffolding.
-- `liatir update`: you can use this to update @liatir/cli.
+- `liatir update`: you can use this to update `@liatir/cli`.
 - `liatir dev`: opens a temporary Liatir Dev Runner session for testing the plugin inside Liatir.
 - `liatir build`: with this command the cli will build your plugin and generate the relative `.lia` file.
+- `liatir -v`: use this command to check the `@liatir/cli` current installed version. This will also return the `@liatir/api` version if present inside the current enviornment (eg. a plugin project folder).
 
 ## Quick initialization
 
@@ -46,18 +47,22 @@ liatir init
    - **TypeScript** *(recommended)* — best type safety and contract validation while developing.
    - **JavaScript** — plain ESM plugin, no TypeScript project.
 
-4. **Starter template**:
+<!-- 4. **Starter template**:
    - **Minimal text plugin** *(recommended)* — the smallest example for learning the plugin contract.
    - **File processor** — reads metadata from a user-selected local file.
-   - **Bio CLI wrapper** — wraps a local bioinformatics command.
+   - **Bio CLI wrapper** — wraps a local bioinformatics command. -->
 
-5. **Metadata** — display name, description, and category. All optional; you can change them later in the manifest.
+4. **Metadata** — display name, description, and category. All optional; you can change them later in the manifest.
 
-6. **Install dependencies** — answer **Yes** to run `npm install` right away.
+5. **Install dependencies** — answer **Yes** to run `npm install` right away.
 
-7. Open the project folder with `cd my-liatir-plugin`.
+6. Open the project folder with `cd my-liatir-plugin`.
 
-8. Start developing your Liatir plugin.
+7. Start developing your Liatir plugin.
+
+:::warning Keep in mind:
+WASM plugins runtime is intentionally **fully sandboxed and isolated** for safety and compliance reasons; therefore, **they cannot communicate with external resources**.
+:::
 
 ## Initialization flags
 
@@ -73,6 +78,24 @@ liatir init plugin-name --category "Quality Control" --tags "FASTQ,QC"
 liatir init plugin-name --no-install
 liatir init plugin-name --no-wasm-target
 ```
+
+## The plugin contract
+
+Whatever runtime you pick, you declare the plugin's inputs and outputs **once,
+in code**, with the same `define_plugin` API. `liatir build` reads that contract
+and generates the bundle manifest from it — there is no schema to write by hand.
+
+- **Node** — `definePlugin({ inputs, outputs })` from `@liatir/api`.
+- **Python** — `define_plugin(...)` + `@plugin.main` from the `liatir` module
+  scaffolded into `src/`.
+- **WASM** — `define_plugin()` from the `src/liatir.rs` module scaffolded into
+  your project.
+
+For Python and WASM the `liatir` module is not a package you install: `liatir
+init` writes it into your project and `liatir build` keeps it in sync with your
+CLI version. See [definePlugin](/plugins/api/plugin/define-plugin) for the
+side-by-side examples and [field builders](/plugins/api/plugin/field) for the
+field types.
 
 ## Test, build and import
 

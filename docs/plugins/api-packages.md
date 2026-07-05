@@ -73,7 +73,6 @@ Available areas include:
 - `Liatir.align`
 - `Liatir.qc`
 - `Liatir.variants`
-- `Liatir.plugins`
 - `Liatir.sidecar`
 - `Liatir.paths()`
 - `Liatir.invoke`
@@ -102,8 +101,9 @@ that are not available to headless Node plugin code.
 - [Liatir Node bridge](/plugins/api/plugin/node-bridge)
 - [Root browser API](/plugins/api/root/overview)
 - [Desktop API](/plugins/api/desktop/app)
-- [Plugins API](/plugins/api/plugins/call)
 - [Pipeline API](/plugins/api/pipeline/run)
 - [Jobs API](/plugins/api/jobs/spawn)
 - [Dependencies API](/plugins/api/deps/check)
-- [QC API](/plugins/api/qc/fastqc)
+- [Bio: QC API](/plugins/api/qc/fastqc)
+- [Bio: Alignment API](/plugins/api/align/bwa-mem)
+- [Bio: Variants API](/plugins/api/variants/bcftools-stats)
