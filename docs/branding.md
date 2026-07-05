@@ -237,6 +237,10 @@ A more detailed version for product pages, forums, blog posts, directories, pres
 </a>
 ```
 
+## Google Drive
+
+Alternatively you can find Liatir branding assets and guidelines here: <br> [Liatir Google Drive shared folder ↗](https://drive.google.com/drive/folders/1Av46enrsxaBSE8XTayEz6oy766uv_BmG?usp=sharing)
+
 <style>
 .brand-color-card {
   display: flex;

@@ -42,6 +42,7 @@ export default liatirPlugin.main(async ({ input, Liatir }: PluginContext<typeof 
 | `Liatir.align` | Typed alignment helpers. |
 | `Liatir.qc` | Typed quality-control helpers. |
 | `Liatir.variants` | Typed variant-analysis helpers. |
+| `Liatir.ai` | Local AI models: list, prepare, and run in a managed runtime. |
 | `Liatir.sidecar` | Registered sidecar binaries. |
 | `Liatir.pipeline` | Chain sidecar steps into a sequential pipeline. |
 | `Liatir.paths()` | App filesystem paths. |

@@ -83,3 +83,7 @@ root-level `invoke()` escape hatch only when no typed wrapper exists.
 - [bcftoolsStats](/plugins/api/variants/bcftools-stats)
 - [bcftoolsFilter](/plugins/api/variants/bcftools-filter)
 - [snpeff](/plugins/api/variants/snpeff)
+
+## AI API
+
+- [Overview (list, hardware, status, prepare, runScript)](/plugins/api/ai/overview)

@@ -73,6 +73,7 @@ Available areas include:
 - `Liatir.align`
 - `Liatir.qc`
 - `Liatir.variants`
+- `Liatir.ai`
 - `Liatir.sidecar`
 - `Liatir.paths()`
 - `Liatir.invoke`

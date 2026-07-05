@@ -255,6 +255,13 @@ export default defineConfig({
                   { text: 'snpeff', link: '/plugins/api/variants/snpeff' },
                 ],
               },
+              {
+                text: '.ai',
+                collapsed: true,
+                items: [
+                  { text: 'Overview', link: '/plugins/api/ai/overview' },
+                ],
+              },
             ],
           },
         ],
