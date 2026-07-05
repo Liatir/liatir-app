@@ -114,9 +114,9 @@
 		onclick={()=>{if(workspaceStore.active) goto("/workspace-settings")}}
 		style="height: {HEADER_HEIGHT}px"
 		>
-		<div class="flex w-9 h-9 overflow-hidden items-center gap-0 space-x-0 justify-center rounded-lg bg-brand shrink-0" id="sidebar-logo-container">
-			<div class="h-9 w-9 flex p-1.5 justify-center items-center shrink-0" id="sidebar-logo">
-				<img src="/logo/png/logo-white.png" alt="Liatir" class="h-full w-full opacity-100 object-contain" />
+		<div class="flex w-9 h-9 items-center gap-0 space-x-0 justify-center shrink-0" id="sidebar-logo-container">
+			<div class="h-9 w-9 flex justify-center items-center shrink-0" id="sidebar-logo">
+				<img src="/logo/logo-beta-badge.svg" alt="Liatir" class="h-full w-full scale-110 opacity-100 object-contain" />
 			</div>
 		</div>
 
