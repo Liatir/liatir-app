@@ -9,6 +9,7 @@
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { getLastSegmentsStringFromPath } from '$lib/utils';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
+	import { LIATIR_DOCS_URL } from '$lib/_constants';
 
   let apiVersion = $state<string | null>(null);
   let appVersion = $state<string | null>(null);
@@ -38,6 +39,10 @@
   }
 
   const testAPIButtonCallback = () => goto("/scripts");
+  const docsButtonCallback = () => {
+    const api = liatir();
+    api?.openBrowser(LIATIR_DOCS_URL);
+  };
 
   function fmtPath(p: string | null | undefined) {
     return p ? getLastSegmentsStringFromPath(p, 2) : '—';
@@ -59,12 +64,15 @@
           { label: 'App Version', value: appVersion ?? '—' },
           { label: 'Active Workspace', value: (workspaceStore?.activeId) ? (workspaceStore?.isSandboxMode)?'[sandbox]':((workspaceStore?.active?.name)??'-') : '—' },
           { label: 'API Version', value: apiVersion ?? '—' },
-          { label: 'Test Liatir API', value: '⟶', callback: testAPIButtonCallback },
+          { label: 'Test Liatir API', value: '⟶', callback: testAPIButtonCallback, hidden: !workspaceStore.isSandboxMode },
+          { label: 'Liatir Documentation', value: '⟶', callback: docsButtonCallback },
         ] as row}
-          <div class="flex items-center justify-between px-4 py-3 {(row?.callback)?"hover:bg-zinc-100 cursor-pointer":""}" role={(row?.callback) ? 'button' : undefined} onclick={row?.callback??undefined}>
-            <span class="text-sm text-zinc-600">{row.label}</span>
-            <span class="text-sm font-mono text-zinc-800" data-selectable>{row.value}</span>
-          </div>
+          {#if !(row?.hidden)}
+            <div class="flex items-center justify-between px-4 py-3 {(row?.callback)?"hover:bg-zinc-100 cursor-pointer":""}" role={(row?.callback) ? 'button' : undefined} onclick={row?.callback??undefined}>
+              <span class="text-sm text-zinc-600">{row.label}</span>
+              <span class="text-sm font-mono text-zinc-800" data-selectable>{row.value}</span>
+            </div>
+          {/if}
         {/each}
       </Card>
     </section>

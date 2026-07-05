@@ -116,7 +116,7 @@
 		>
 		<div class="flex w-9 h-9 items-center gap-0 space-x-0 justify-center shrink-0" id="sidebar-logo-container">
 			<div class="h-9 w-9 flex justify-center items-center shrink-0" id="sidebar-logo">
-				<img src="/logo/logo-beta-badge.svg" alt="Liatir" class="h-full w-full scale-110 opacity-100 object-contain" />
+				<img src="/logo/logo-beta-badge.svg" alt="Liatir" class="h-full w-full scale-105 opacity-100 object-contain" />
 			</div>
 		</div>
 
