@@ -93,7 +93,7 @@ export default defineConfig({
         text: 'AI',
         collapsed: true,
         items: [
-          { text: 'Local AI guide', link: '/ai/guide' },
+          { text: 'Overview', link: '/ai/guide' },
           {
             text: 'AI Tools',
             collapsed: true,

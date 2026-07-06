@@ -20,6 +20,10 @@ A `.lia` plugin file is a bundle built with `@liatir/cli` and imported into Liat
 
 :::
 
+---
+
+![Liatir API surface map](/static/api-surface-map.svg)
+
 ## Node plugins
 
 Node plugins are the recommended starting point for most custom logic. A Node
@@ -83,42 +87,13 @@ app. It includes:
 
 Node plugins can also use normal Node.js APIs and bundled npm dependencies.
 
-## WASM plugins
+---
 
+<center>
 
-WASM `.lia` plugins are Web Assembly tools compiled to `wasm32-wasip1`. They
-declare the same `define_plugin` contract as Node and Python through the
-CLI-managed `src/liatir.rs` module that `liatir init --wasm` scaffolds and
-`liatir build` keeps in sync:
+![Liatir API surface Node map](/static/api-surface-node-map.svg)
 
-:::warning Keep in mind:
-WASM plugins runtime is intentionally **fully sandboxed and isolated** for safety and compliance reasons; therefore, **they cannot communicate with external resources**.
-:::
-
-```rust
-mod liatir;
-
-use liatir::{define_plugin, field};
-use serde_json::json;
-
-fn main() {
-    define_plugin()
-        .input("text", field::string().label("Text").required(true))
-        .output("length", field::number().label("Length").integer())
-        .main(|ctx| {
-            let text = ctx.str("text")?;
-            Ok(json!({ "length": text.chars().count() }))
-        });
-}
-```
-
-`liatir build` generates the manifest schema from this contract, and the SDK
-validates inputs and outputs on every run. WASM plugins are more sandboxed than
-Node or Python plugins:
-
-- no arbitrary host filesystem or network access is available;
-- directories containing declared file inputs are mounted read-only by Liatir;
-- stdout is reserved for the result JSON (use `eprintln!` for logs).
+</center>
 
 ## Python plugins
 
@@ -168,8 +143,52 @@ def main(ctx):
 snake_case method names. It resolves its connection lazily, so plugins that
 never touch the bridge run without requiring the app.
 
-WASM plugins remain fully sandboxed and have no bridge: they cannot call back
-into the app. Use Node or Python when you need bridge access.
+---
+
+<center>
+
+![Liatir API surface Python map](/static/api-surface-py-map.svg)
+
+</center>
+
+## WASM plugins
+
+
+WASM `.lia` plugins are Web Assembly tools compiled to `wasm32-wasip1`. They
+declare the same `define_plugin` contract as Node and Python through the
+CLI-managed `src/liatir.rs` module that `liatir init --wasm` scaffolds and
+`liatir build` keeps in sync:
+
+:::warning Keep in mind:
+WASM plugins runtime is intentionally **fully sandboxed and isolated** for safety and compliance reasons; therefore, **they cannot communicate with external resources**.
+:::
+
+```rust
+mod liatir;
+
+use liatir::{define_plugin, field};
+use serde_json::json;
+
+fn main() {
+    define_plugin()
+        .input("text", field::string().label("Text").required(true))
+        .output("length", field::number().label("Length").integer())
+        .main(|ctx| {
+            let text = ctx.str("text")?;
+            Ok(json!({ "length": text.chars().count() }))
+        });
+}
+```
+
+`liatir build` generates the manifest schema from this contract, and the SDK
+validates inputs and outputs on every run. WASM plugins are more sandboxed than
+Node or Python plugins:
+
+- no arbitrary host filesystem or network access is available;
+- directories containing declared file inputs are mounted read-only by Liatir;
+- stdout is reserved for the result JSON (use `eprintln!` for logs).
+
+> WASM plugins remain fully sandboxed and have no bridge: they cannot call back into the app. Use Node or Python when you need bridge access.
 
 ---
 

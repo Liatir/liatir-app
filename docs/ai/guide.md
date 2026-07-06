@@ -1,4 +1,4 @@
-# Local AI for bioinformatics
+# AI Models for bioinformatics
 
 This guide explains the AI part of Liatir without assuming that you already know
 single-cell analysis, genomic language models, regulatory prediction, or protein

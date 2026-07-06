@@ -1,17 +1,13 @@
 # Liatir API packages
 
-The Liatir API ships in two related packages:
+- **Node plugins** use `@liatir/api` Node module as typed API entry point, based on a shared `define_plugin` contract;
 
-- `@liatir/api` for Node `.lia` plugin authoring;
-- `liatir` for browser/webview code that needs the `window.Liatir` bridge.
-
-Most plugin authors use `@liatir/api` through projects created by
-`liatir init`.
-
-Python and WASM plugins use the same `define_plugin` contract API, but not as a
+- **Python and WASM plugins** use the same `define_plugin` contract, but not as a
 package: the CLI scaffolds a single managed module (`src/liatir.py` /
 `src/liatir.rs`) into the project and `liatir build` keeps it in sync — there
 is nothing to install or update separately.
+
+- The Liatir API is also available in browser/webview enviornments through `window.Liatir` as a subset of `@liatir/api`.
 
 ![Liatir API surface map](/static/api-surface-map.svg)
 
@@ -77,6 +73,10 @@ Available areas include:
 - `Liatir.sidecar`
 - `Liatir.paths()`
 - `Liatir.invoke`
+
+---
+
+![Liatir API Node surface map](/static/api-surface-node-map.svg)
 
 ## Browser/webview bridge
 
