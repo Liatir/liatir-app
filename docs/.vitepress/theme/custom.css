@@ -109,10 +109,6 @@
   display: none !important;
 }
 
-hr {
-  opacity: 0.2 !important;
-}
-
 body:has(.cookie-backdrop) {
   overflow: hidden !important;
 }

@@ -48,11 +48,14 @@ export default defineConfig({
     search: { provider: 'local' },
 
     nav: [
+      { text: 'Resources', items: [
+        { text: 'Tools', link: '/tools/overview' },
+        { text: 'AI Models', link: '/ai/guide' },
+        { text: 'Plugins', link: '/plugins/overview' },
+        { text: 'Pipelines', link: '/pipeline/overview' },
+      ] },
       { text: 'Introduction', link: '/introduction/overview' },
-      { text: 'Tools', link: '/tools/overview' },
-      { text: 'AI Models', link: '/ai/guide' },
-      { text: 'Plugins', link: '/plugins/overview' },
-      { text: 'Pipelines', link: '/pipeline/overview' },
+      { text: 'Donate', link: '/donate' },
     ],
 
     sidebar: [
@@ -274,6 +277,7 @@ export default defineConfig({
         ]
       },
       { text: 'Branding Assets', link: '/branding' },
+      { text: 'Donate', link: '/donate' },
       { text: `</br></br>All rights reserved</br>© ${new Date().getFullYear()} <a href="https://liatir.com" target="_blank">Liatir</a>`},
     ],
 
