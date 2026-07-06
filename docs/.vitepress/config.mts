@@ -53,6 +53,7 @@ export default defineConfig({
         { text: 'AI Models', link: '/ai/guide' },
         { text: 'Plugins', link: '/plugins/overview' },
         { text: 'Pipelines', link: '/pipeline/overview' },
+        { text: 'Donate', link: '/donate' },
       ] },
       { text: 'Introduction', link: '/introduction/overview' },
       { text: 'Donate', link: '/donate' },
