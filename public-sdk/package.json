@@ -1,0 +1,15 @@
+{
+  "name": "liatir-sdk",
+  "private": true,
+  "description": "Public SDK packages for building and validating Liatir plugins.",
+  "type": "module",
+  "workspaces": [
+    "packages/liatir-api",
+    "packages/liatir-cli"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "npm test --workspaces"
+  }
+}
