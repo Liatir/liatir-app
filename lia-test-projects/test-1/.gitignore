@@ -1,0 +1,10 @@
+target/
+*.lia
+node_modules/
+dist/
+.liatir/
+build/
+.lia-dev/
+.venv/
+venv/
+__pycache__/
