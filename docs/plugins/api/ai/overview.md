@@ -83,6 +83,6 @@ and its packages are installed first.
 
 ## Related
 
-- [AI guide](/ai/guide.md)
+- [AI guide](/ai/guide)
 - [AI Models](/ai/models/overview)
 - [Dependencies API](/plugins/api/deps/check)
