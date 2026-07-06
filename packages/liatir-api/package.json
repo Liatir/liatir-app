@@ -1,6 +1,6 @@
 {
   "name": "@liatir/api",
-  "version": "1.9.11",
+  "version": "1.9.13",
   "description": "Node.js API bindings for Liatir — gives .lia plugins access to the full Liatir.* bridge",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "build:bundle": "tsup",
+    "build:bundle": "tsup --config ./tsup.config.ts",
     "dev": "tsc -p tsconfig.json --watch",
     "prepublishOnly": "npm run build:bundle"
   },

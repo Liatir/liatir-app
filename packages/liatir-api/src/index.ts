@@ -15,7 +15,7 @@ import { buildAlign, type AlignNamespace } from "./bio/align";
 import { buildQc, type QcNamespace } from "./bio/qc";
 import { buildVariants, type VariantsNamespace } from "./bio/variants";
 import { buildAi, type AiNamespace } from "./ai";
-import type { LiatirBrowserAPI as BrowserBridgeAPI } from "../../../src-ts/liatir/_types";
+import type { LiatirBrowserAPI as BrowserBridgeAPI } from "./browser-api/index.js";
 
 /** Browser/webview bridge exposed as window.Liatir inside the Tauri app. */
 export type LiatirBrowserAPI = BrowserBridgeAPI;
@@ -31,30 +31,30 @@ export type LiatirAPI = LiatirBrowserAPI;
 // here we compose them with the IPC `invoke`. tsup bundles them into dist.
 // GUI-only areas (window, menu, shortcuts, badge, autostart, contextMenu) are
 // intentionally excluded — they have no meaning in a headless Node process.
-import { buildFs } from "../../../src-ts/modules/rs/fs/_main";
-import { buildFiles } from "../../../src-ts/modules/rs/files/_main";
-import { buildEvents } from "../../../src-ts/modules/rs/events/_main";
-import { buildAppInfo } from "../../../src-ts/modules/rs/app/_main";
-import { buildGlobVar } from "../../../src-ts/modules/rs/globalVariables/_main";
-import { buildNetwork } from "../../../src-ts/modules/rs/network/_main";
-import { buildClipboard } from "../../../src-ts/modules/rs/clipboard/_main";
-import { buildNotifications } from "../../../src-ts/modules/rs/notifications/_main";
-import { buildDiagnostics } from "../../../src-ts/modules/rs/diagnostics/_main";
-import { buildSidecar } from "../../../src-ts/modules/rs/sidecar/_main";
-import { buildPipeline } from "../../../src-ts/modules/bio/pipeline/_main";
-import { buildJobs } from "../../../src-ts/modules/rs/jobs/_main";
-import { buildDeps } from "../../../src-ts/modules/rs/deps/_main";
+import { buildFs } from "./browser-api/index.js";
+import { buildFiles } from "./browser-api/index.js";
+import { buildEvents } from "./browser-api/index.js";
+import { buildAppInfo } from "./browser-api/index.js";
+import { buildGlobVar } from "./browser-api/index.js";
+import { buildNetwork } from "./browser-api/index.js";
+import { buildClipboard } from "./browser-api/index.js";
+import { buildNotifications } from "./browser-api/index.js";
+import { buildDiagnostics } from "./browser-api/index.js";
+import { buildSidecar } from "./browser-api/index.js";
+import { buildPipeline } from "./browser-api/index.js";
+import { buildJobs } from "./browser-api/index.js";
+import { buildDeps } from "./browser-api/index.js";
 import type {
   JobEntry,
   JobStatus,
   SpawnResult,
   SpawnOptions,
   JobsInterface,
-} from "../../../src-ts/modules/rs/jobs/_types";
+} from "./browser-api/index.js";
 import type {
   DepCheckResult,
   DepsInterface,
-} from "../../../src-ts/modules/rs/deps/_types";
+} from "./browser-api/index.js";
 
 // ── Bridge types — reused from src-ts (single source of truth, no mirroring) ─
 // jobs/deps are the SAME interfaces the browser bridge uses, re-exported here.

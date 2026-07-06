@@ -16,5 +16,5 @@
       "types": ["node"]
     },
 	"include": ["src-ts"],
-	"exclude": ["node_modules", "src-tauri/tsc", "**/*.test.ts"]
+	"exclude": ["node_modules", "src-ts/bundle.ts", "src-tauri/tsc", "**/*.test.ts"]
   }

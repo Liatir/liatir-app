@@ -1,0 +1,62 @@
+// BCFtools stats — parse variant statistics into a typed result and a ToolOutput.
+// Pure functions; migrated from the frontend.
+function snValue(lines, key) {
+    const line = lines.find((l) => l.startsWith('SN') && l.includes(key));
+    if (!line)
+        return 0;
+    const parts = line.split('\t');
+    return parseInt(parts[3] ?? '0', 10);
+}
+/** Parse `bcftools stats` stdout. */
+export function parseBcftoolsStats(stdout) {
+    const lines = stdout.split('\n');
+    const tstvLine = lines.find((l) => l.startsWith('TSTV\t'));
+    let ts = 0, tv = 0, tstv = null;
+    if (tstvLine) {
+        const p = tstvLine.split('\t');
+        ts = parseInt(p[2] ?? '0', 10);
+        tv = parseInt(p[3] ?? '0', 10);
+        tstv = parseFloat(p[4] ?? '0') || null;
+    }
+    return {
+        samples: snValue(lines, 'number of samples'),
+        records: snValue(lines, 'number of records'),
+        snps: snValue(lines, 'number of SNPs'),
+        mnps: snValue(lines, 'number of MNPs'),
+        indels: snValue(lines, 'number of indels'),
+        multiallelic: snValue(lines, 'number of multiallelic sites'),
+        multiallelicSnps: snValue(lines, 'number of multiallelic SNP sites'),
+        transitions: ts,
+        transversions: tv,
+        tstv,
+    };
+}
+function tstvColor(r) {
+    if (r === null)
+        return '#71717a';
+    // Expected Ts/Tv for whole genome ~2.0–2.1, exome ~2.8–3.0
+    if (r >= 1.8)
+        return '#10b981';
+    if (r >= 1.5)
+        return '#f59e0b';
+    return '#ef4444';
+}
+/** Build the rendered ToolOutput (variant stats + raw text) from a parsed result. */
+export function bcftoolsStatsToToolOutput(r, rawStdout) {
+    const stats = {
+        type: 'stats',
+        cols: 4,
+        items: [
+            { label: 'Total Records', value: r.records.toLocaleString(), description: 'Total variant records in the file.' },
+            { label: 'SNPs', value: r.snps.toLocaleString(), color: '#6366f1', description: 'Single nucleotide polymorphisms.' },
+            { label: 'Indels', value: r.indels.toLocaleString(), color: '#8b5cf6', description: 'Insertions and deletions.' },
+            { label: 'Ts/Tv Ratio', value: r.tstv !== null ? r.tstv.toFixed(3) : 'N/A', color: tstvColor(r.tstv), description: 'Transition/transversion ratio. Expected ≥1.8 (WGS ~2.0, exome ~2.8).' },
+            { label: 'Transitions', value: r.transitions.toLocaleString(), description: 'Purine↔purine or pyrimidine↔pyrimidine substitutions.' },
+            { label: 'Transversions', value: r.transversions.toLocaleString(), description: 'Purine↔pyrimidine substitutions.' },
+            { label: 'Multiallelic', value: r.multiallelic.toLocaleString(), description: 'Sites with more than one alternate allele.' },
+            { label: 'Samples', value: r.samples.toLocaleString(), description: 'Number of samples in the file.' },
+        ],
+    };
+    const raw = { type: 'text', label: 'Raw bcftools stats output', content: rawStdout, mono: true, raw: true };
+    return { sections: [stats, raw] };
+}

@@ -2,10 +2,12 @@
 
 Public developer-facing packages for building, validating, and packaging Liatir plugins.
 
+For the full Liatir documentation, guides, and project overview, visit [liatir.com](https://liatir.com).
+
 Liatir is a free desktop app that runs bioinformatics tools, AI models, custom plugins, and pipelines locally. It keeps data on the user's machine while providing native performance, including with multi-gigabyte files.
 
-> This repository is automatically mirrored from Liatir's private development monorepo.
-> Do not push directly to this repository. Changes should be made in the source monorepo and mirrored here automatically.
+> This repository is automatically mirrored from Liatir's private development.
+> Do not push directly to this repository. Changes should be made in the source and mirrored here automatically.
 
 ## Packages
 
@@ -99,5 +101,3 @@ This repository is a public mirror. Direct commits to this repository may be ove
 If you want to contribute, open an issue or pull request here first. Accepted changes will be applied to the private source monorepo and then mirrored back to this repository.
 
 ## License
-
-MIT

@@ -464,8 +464,8 @@ function packageJson(config: InitConfig): string {
     update: "liatir update",
   };
   const devDependencies: Record<string, string> = {
-    "@liatir/cli": "^1.9.11",
-    "@liatir/api": "^1.9.11",
+    "@liatir/cli": "^1.9.13",
+    "@liatir/api": "^1.9.13",
   };
 
   if (config.language === "typescript") {

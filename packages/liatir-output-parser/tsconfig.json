@@ -9,7 +9,6 @@
     "declarationMap": true,
     "strict": true,
     "skipLibCheck": true,
-    "baseUrl": ".",
     "paths": {
       "@liatir/core": ["../liatir-core/src"]
     }

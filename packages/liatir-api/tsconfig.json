@@ -1,3 +1,4 @@
+
 {
   "compilerOptions": {
     "target": "ES2022",
@@ -9,12 +10,12 @@
     "declarationMap": true,
     "strict": true,
     "skipLibCheck": true,
-    "baseUrl": ".",
     "moduleDetection": "force",
     "paths": {
       "@liatir/core": ["../liatir-core/src"],
       "@liatir/output-parser": ["../liatir-output-parser/src"]
     }
   },
-  "include": ["src", "../../src-ts/globals.d.ts"]
+  "include": ["src"],
+  "exclude": ["dist", "node_modules"]
 }
