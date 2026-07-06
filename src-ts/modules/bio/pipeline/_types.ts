@@ -1,18 +1,8 @@
-import type { PluginCallPayload, PluginCallResult } from "../../rs/plugins/_types";
 import type { SidecarResult } from "../../rs/sidecar/_types";
-import type { U64 } from "../../../utils/utils/_integerUtils";
 
 // ---------------------------------------------------------------------------
 // Step definitions
 // ---------------------------------------------------------------------------
-
-export type WasmStep = {
-  kind: "wasm";
-  /** .wasm plugin name as registered via Liatir.plugins.add() */
-  plugin: string;
-  payload: PluginCallPayload;
-  timeoutMs?: U64;
-};
 
 export type SidecarStep = {
   kind: "sidecar";
@@ -22,13 +12,13 @@ export type SidecarStep = {
 };
 
 /**
- * A pipeline step is either a WASM plugin call or a native sidecar invocation.
+ * A pipeline step is a native sidecar invocation.
  *
  * TODO: extend with additional step kinds as needed, e.g.:
  *   - "fs-transform"   → read/write file in the sandbox without a full binary
  *   - "http-fetch"     → download reference data (e.g. genome index)
  */
-export type PipelineStep = (WasmStep | SidecarStep) & {
+export type PipelineStep = SidecarStep & {
   /** Human-readable label for logging and UI display */
   label: string;
 };
@@ -43,8 +33,8 @@ export type StepResult = {
   label: string;
   status: StepStatus;
   durationMs: number;
-  /** Raw output from the step (stdout for sidecar, stdout+value for wasm) */
-  output: PluginCallResult | SidecarResult | null;
+  /** Raw output from the step (stdout for sidecar) */
+  output: SidecarResult | null;
   error: string | null;
 };
 

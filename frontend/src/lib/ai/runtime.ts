@@ -5,16 +5,28 @@ import type {
   LiatirAIModelMetadata,
   LiatirAIModelPythonRequirement,
   LiatirAIModelRecord,
-  LiatirAIModelRuntimePackage,
-  LiatirAIModelRuntimeSource,
   LiatirPythonRuntimeLock,
 } from '@liatir/core';
+// Model → runtime-parameter mapping lives in @liatir/core (shared with the
+// plugin API). Re-exported here so existing frontend imports keep working.
+import {
+  runtimeIdForModel,
+  requirementsForModel,
+  runtimePackagesForModel,
+  runtimeSourcesForModel,
+  packageChecksForModel,
+  type AiRuntimePackageCheck,
+} from '@liatir/core';
 
-export interface AIRuntimePackageCheck {
-  package: string;
-  importName?: string;
-  specifier?: string;
-}
+export {
+  runtimeIdForModel,
+  requirementsForModel,
+  runtimePackagesForModel,
+  runtimeSourcesForModel,
+  packageChecksForModel,
+};
+
+export type AIRuntimePackageCheck = AiRuntimePackageCheck;
 
 export type AIRuntimePythonRequirement = LiatirAIModelPythonRequirement;
 
@@ -70,34 +82,6 @@ export interface AIPythonRunOptions {
   jobLabel?: string;
   metadata?: Record<string, JsonValue>;
   onJobId?: (jobId: string) => void;
-}
-
-export function runtimeIdForModel(model: LiatirAIModelMetadata): string | null {
-  return model.install?.runtimeId ?? null;
-}
-
-export function requirementsForModel(model: LiatirAIModelMetadata): string[] {
-  return (model.install?.runtimePackages ?? []).map((pkg) => {
-    if (pkg.specifier) return pkg.specifier;
-    if (pkg.version) return `${pkg.package}==${pkg.version}`;
-    return pkg.package;
-  });
-}
-
-export function runtimePackagesForModel(model: LiatirAIModelMetadata): LiatirAIModelRuntimePackage[] {
-  return model.install?.runtimePackages ?? [];
-}
-
-export function runtimeSourcesForModel(model: LiatirAIModelMetadata): LiatirAIModelRuntimeSource[] {
-  return model.install?.runtimeSources ?? [];
-}
-
-export function packageChecksForModel(model: LiatirAIModelMetadata): AIRuntimePackageCheck[] {
-  return runtimePackagesForModel(model).map((pkg) => ({
-    package: pkg.package,
-    importName: pkg.importName,
-    specifier: pkg.specifier,
-  }));
 }
 
 export function cachePathForModel(model: LiatirAIModelRecord): string | null {

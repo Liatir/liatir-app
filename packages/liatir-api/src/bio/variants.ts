@@ -12,6 +12,7 @@ import {
   type ToolOutput,
 } from "@liatir/output-parser";
 import type { LiatirNodeJobs } from "../index";
+import { resolveThreads } from "./_threads";
 
 type Invoke = <T>(cmd: string, payload?: Record<string, unknown>) => Promise<T>;
 
@@ -42,21 +43,35 @@ export interface SnpEffResult {
   outputVcf: string;
 }
 
+export interface BcftoolsFilterArgs {
+  /** Input VCF/BCF. */
+  input: string;
+  /** Where to write the filtered VCF (bgzipped, `-O z`). */
+  outputVcf: string;
+  /** Filter expression for `-i` (default `QUAL>20`). */
+  expression?: string;
+  /** Worker threads. */
+  threads?: number;
+}
+
+export interface BcftoolsFilterResult {
+  /** Path to the filtered VCF. */
+  outputVcf: string;
+  /** The expression that was applied. */
+  expression: string;
+}
+
 export interface VariantsNamespace {
   /** Variant statistics (`bcftools stats`). */
   bcftoolsStats(args: { input: string; threads?: number }): Promise<ToolOutput>;
+  /** Filter variants by expression (`bcftools filter -i`). Writes a bgzipped VCF. */
+  bcftoolsFilter(args: BcftoolsFilterArgs): Promise<BcftoolsFilterResult>;
   /** Functional annotation with SnpEff. Requires a configured JAR + data dir. */
   snpeff(args: SnpEffArgs): Promise<SnpEffResult>;
 }
 
 function genJobId(tool: string): string {
   return `${tool}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function resolveThreads(value?: number): number {
-  if (Number.isFinite(value) && value! > 0) return Math.max(1, Math.min(128, Math.trunc(value!)));
-  const cores = (globalThis as { navigator?: { hardwareConcurrency?: number } }).navigator?.hardwareConcurrency ?? 2;
-  return Math.max(1, Math.min(16, cores > 1 ? cores - 1 : 1));
 }
 
 export function buildVariants({ jobs, invoke }: VariantsDeps): VariantsNamespace {
@@ -67,6 +82,20 @@ export function buildVariants({ jobs, invoke }: VariantsDeps): VariantsNamespace
       if (entry.status.type !== "done") throw new Error("bcftools failed");
       const parsed = parseBcftoolsStats(stdout);
       return bcftoolsStatsToToolOutput(parsed, stdout);
+    },
+
+    async bcftoolsFilter({ input, outputVcf, expression, threads }) {
+      const expr = expression?.trim() || "QUAL>20";
+      const entry = await jobs.run("bcftools", [
+        "filter",
+        "--threads", String(resolveThreads(threads)),
+        "-i", expr,
+        "-O", "z",
+        "-o", outputVcf,
+        input,
+      ]);
+      if (entry.status.type !== "done") throw new Error("bcftools filter failed");
+      return { outputVcf, expression: expr };
     },
 
     async snpeff({ input, genome, jarPath, dataDir, outputVcf, heap, javaPath }) {

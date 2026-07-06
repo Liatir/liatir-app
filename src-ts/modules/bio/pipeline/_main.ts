@@ -1,4 +1,3 @@
-import { PluginsInterface } from "../../rs/plugins/_types";
 import { SidecarInterface } from "../../rs/sidecar/_types";
 import {
   PipelineInterface,
@@ -8,7 +7,6 @@ import {
 } from "./_types";
 
 export function buildPipeline(deps: {
-  plugins: PluginsInterface;
   sidecar: SidecarInterface;
 }): PipelineInterface {
   return {
@@ -34,26 +32,11 @@ export function buildPipeline(deps: {
         };
 
         try {
-          if (step.kind === "wasm") {
-            const plugin = step.plugin ?? (step as unknown as { module?: string }).module;
-            if (!plugin) throw new Error("WASM pipeline step requires a plugin name.");
-            const output = await deps.plugins.call(
-              plugin,
-              step.payload,
-              step.timeoutMs
-            );
-            result.output = output;
-            result.status = output.ok ? "done" : "error";
-            if (!output.ok) {
-              result.error = output.error ?? output.stderr ?? "wasm step failed";
-            }
-          } else {
-            const output = await deps.sidecar.run(step.binary, step.args);
-            result.output = output;
-            result.status = output.ok ? "done" : "error";
-            if (!output.ok) {
-              result.error = output.error ?? `exit code ${output.exitCode}`;
-            }
+          const output = await deps.sidecar.run(step.binary, step.args);
+          result.output = output;
+          result.status = output.ok ? "done" : "error";
+          if (!output.ok) {
+            result.error = output.error ?? `exit code ${output.exitCode}`;
           }
         } catch (err: unknown) {
           result.status = "error";

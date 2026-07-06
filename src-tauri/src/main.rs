@@ -374,17 +374,11 @@ fn main() {
       // context_menu
       lia_context_menu_popup,
 
-      // plugins
-      lia_plugin_status,
+      // wasm tool runtime (internal; powers the fastqc bio wrapper and .lia wasm plugins)
       lia_plugin_paths,
       lia_fastqc_sample_path,
       lia_plugin_storage_clear,
       lia_plugin_call,
-      lia_plugin_clear_all_jobs,
-      lia_plugin_add_module,
-      lia_plugin_pick_and_add_module,
-      lia_plugin_remove_module,
-      lia_plugin_list_modules,
 
       // sidecar
       lia_sidecar_run,

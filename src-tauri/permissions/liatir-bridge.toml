@@ -103,16 +103,10 @@ commands.allow = [
 
   "lia_context_menu_popup",
 
-  "lia_plugin_status",
   "lia_plugin_paths",
   "lia_fastqc_sample_path",
   "lia_plugin_storage_clear",
   "lia_plugin_call",
-  "lia_plugin_clear_all_jobs",
-  "lia_plugin_add_module",
-  "lia_plugin_pick_and_add_module",
-  "lia_plugin_remove_module",
-  "lia_plugin_list_modules",
 
   "lia_sidecar_run",
 

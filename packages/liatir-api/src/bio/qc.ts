@@ -14,6 +14,7 @@ import {
   type FastqcResult,
 } from "@liatir/output-parser";
 import type { LiatirNodeJobs, LiatirNodePaths } from "../index";
+import { resolveThreads } from "./_threads";
 
 type Invoke = <T>(cmd: string, payload?: Record<string, unknown>) => Promise<T>;
 
@@ -39,12 +40,6 @@ export interface QcNamespace {
   fastp(args: { r1: string; r2?: string; outDir?: string; threads?: number }): Promise<FastpResult>;
   /** Quality-control report via the bundled fastqc WASM custom-tool. */
   fastqc(args: { input: string; maxReads?: number; timeoutMs?: number }): Promise<ToolOutput>;
-}
-
-function resolveThreads(value?: number): number {
-  if (Number.isFinite(value) && value! > 0) return Math.max(1, Math.min(128, Math.trunc(value!)));
-  const cores = (globalThis as { navigator?: { hardwareConcurrency?: number } }).navigator?.hardwareConcurrency ?? 2;
-  return Math.max(1, Math.min(16, cores > 1 ? cores - 1 : 1));
 }
 
 /** Directory portion of a file path (cross-platform), for fastqc host read access. */

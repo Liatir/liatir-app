@@ -601,3 +601,8 @@ export type GenomeViewerSection = LiatirGenomeViewerSection;
 export type SingleCellViewerSection = LiatirSingleCellViewerSection;
 export type ToolSection = LiatirToolSection;
 export type ToolOutput = LiatirToolOutput;
+
+// Built-in AI model catalog — the single source of truth shared by the app UI
+// and the plugin API (@liatir/api Liatir.ai). Model ids, metadata, and runtime
+// specs live here so neither side hand-duplicates the list.
+export * from "./ai-catalog";

@@ -697,7 +697,7 @@ export default {
     expect(ipcServer).toContain('DEV_BLOCKED_COMMANDS');
     expect(ipcServer).toContain('"lia_app_exit"');
     expect(ipcServer).toContain('"lia_fs_clear_data"');
-    expect(ipcServer).toContain('"lia_plugin_add_module"');
+    expect(ipcServer).toContain('"lia_plugin_storage_clear"');
     // Per-job commands only reach jobs inside the sandbox workspace.
     expect(ipcServer).toContain('ensure_dev_job_access');
     // Global variables are namespaced per dev session.

@@ -1,9 +1,18 @@
-import { PluginsInterface } from "../../rs/plugins/_types";
 import { FastqcArgs, FastqcInterface, FastqcResult } from "./_types";
 import type { ToolOutput, ToolSection } from "../_types";
-import type { U64 } from "../../../utils";
+import type { LiatirAPI } from "../../../types";
 
+// Name of the bundled fastqc WASM tool, run through the internal
+// `lia_plugin_call` command (not part of any public plugin namespace).
 const MODULE = "fastqc.wasm";
+
+// Minimal result shape returned by lia_plugin_call for the fastqc tool.
+interface WasmCallResult {
+  ok: boolean;
+  value?: unknown;
+  stderr?: string;
+  error?: string;
+}
 
 function parentDir(filePath: string): string {
   const sep = filePath.includes("/") ? "/" : "\\";
@@ -115,17 +124,17 @@ function toToolOutput(r: FastqcResult): ToolOutput {
   return { sections };
 }
 
-export function buildFastqc(plugins: PluginsInterface): FastqcInterface {
+export function buildFastqc(core: { invoke: LiatirAPI["invoke"] }): FastqcInterface {
   return {
     run: async (args: FastqcArgs): Promise<ToolOutput> => {
       const hostReadPaths = [parentDir(args.input)];
 
-      const result = await plugins.call(
-        MODULE,
-        { fn: "run", args },
-        (args.timeoutMs ?? 300_000) as U64,
+      const result = await core.invoke<WasmCallResult>("lia_plugin_call", {
+        plugin: MODULE,
+        payload: { fn: "run", args },
+        timeoutMs: args.timeoutMs ?? 300_000,
         hostReadPaths,
-      );
+      });
 
       if (!result.ok) {
         // result.stderr contains the Rust panic message; prefer it over the raw wasmtime trap description

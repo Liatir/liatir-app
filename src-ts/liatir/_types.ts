@@ -1,5 +1,4 @@
 import type { DesktopInterface } from "../modules/desktop/_types";
-import type { PluginsInterface } from "../modules/rs/plugins/_types";
 import type { SidecarInterface } from "../modules/rs/sidecar/_types";
 import type { PipelineInterface } from "../modules/bio/pipeline/_types";
 import type { JobsInterface } from "../modules/rs/jobs/_types";
@@ -22,11 +21,9 @@ export type LiatirBrowserAPI = {
 
   // --- Compute infrastructure ---
 
-  /** Low-level WASM runtime. Use bio namespaces (qc, …) for typed wrappers. */
-  plugins: PluginsInterface;
   /** Run bundled native sidecars (declared in bundle.externalBin). */
   sidecar: SidecarInterface;
-  /** Chain WASM + sidecar steps into a sequential pipeline. */
+  /** Chain sidecar steps into a sequential pipeline. */
   pipeline: PipelineInterface;
 
   // --- Process management ---

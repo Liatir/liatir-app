@@ -175,19 +175,10 @@ export const LIATIR_API: Record<string, ApiNode> = {
           list: { type: "method", detail: "(key: string): Promise<{ [key: string]: string; }>" },
       } },
   } },
-  plugins: { type: "property", detail: "PluginsInterface", info: "Low-level WASM runtime. Use bio namespaces (qc, …) for typed wrappers.", children: {
-      call: { type: "method", detail: "(plugin: string, payload: PluginCallPayload, timeoutMs?: U64, hostReadPaths?: string[]): Promise<PluginCallResult>" },
-      status: { type: "method", detail: "(): Promise<PluginStatusResult>" },
-      list: { type: "method", detail: "(): Promise<string[]>" },
-      remove: { type: "method", detail: "(name: string): Promise<boolean>" },
-      addFromBytes: { type: "method", detail: "(name: string, contents: U8[]): Promise<any>" },
-      add: { type: "method", detail: "(name: string, maxBytes?: U64): Promise<PluginAddResult>" },
-      killJobs: { type: "method", detail: "(): Promise<boolean>" },
-  } },
   sidecar: { type: "property", detail: "SidecarInterface", info: "Run bundled native sidecars (declared in bundle.externalBin).", children: {
       run: { type: "method", detail: "(name: string, args: string[]): Promise<SidecarResult>", info: "Run a registered sidecar binary and capture stdout/stderr.\n\nThe binary must be declared in `bundle.externalBin` in tauri.conf.json.\n\nTODO: add real bio tool sidecars here as they are bundled, e.g.:\n  - \"samtools\"   → SAM/BAM processing\n  - \"minimap2\"   → long-read alignment\n  - \"bwa\"        → short-read alignment\n  - \"bcftools\"   → VCF/BCF manipulation\n  - \"fastqc\"     → QC reports (requires JVM or standalone binary)" },
   } },
-  pipeline: { type: "property", detail: "PipelineInterface", info: "Chain WASM + sidecar steps into a sequential pipeline.", children: {
+  pipeline: { type: "property", detail: "PipelineInterface", info: "Chain sidecar steps into a sequential pipeline.", children: {
       run: { type: "method", detail: "(steps: PipelineStep[], opts?: { continueOnError?: boolean; }): Promise<PipelineResult>", info: "Execute a sequence of steps in order.\nStops at the first failure unless `continueOnError` is true.\n\nTODO: add real bio pipeline presets here, e.g.:\n  - shortReadQC(fastqPath)         → FastQC → MultiQC\n  - alignShortReads(fastq, ref)    → BWA-MEM → samtools sort/index\n  - callVariants(bam, ref)         → GATK HaplotypeCaller → bcftools filter\n  - annotateVariants(vcf)          → VEP or SnpEff" },
   } },
   jobs: { type: "property", detail: "JobsInterface", info: "Async process manager — spawn, stream, kill any system binary.", children: {

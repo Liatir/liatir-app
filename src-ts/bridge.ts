@@ -21,7 +21,6 @@ import {
 } from "./main";
 import { API_VERSION } from "./constants";
 import { windowTauriProxy, tauriReadyCheck, waitTauri } from "./helpers";
-import { buildPlugins } from "./modules/rs/plugins/_main";
 import { buildSidecar } from "./modules/rs/sidecar/_main";
 import { buildPipeline } from "./modules/bio/pipeline/_main";
 import { buildJobs } from "./modules/rs/jobs/_main";
@@ -35,7 +34,6 @@ import { buildQc } from "./modules/qc/_main";
   console.log("[Liatir bridge] init script evaluated");
 
   const core = buildCore();
-  const plugins = buildPlugins(core);
   const sidecar = buildSidecar(core);
 
   const api: LiatirBrowserAPI = {
@@ -63,14 +61,13 @@ import { buildQc } from "./modules/qc/_main";
       globalVariables: buildGlobVar(core),
     },
 
-    plugins,
     sidecar,
-    pipeline: buildPipeline({ plugins, sidecar }),
+    pipeline: buildPipeline({ sidecar }),
 
     jobs:     buildJobs(core),
     deps:     buildDeps(core),
 
-    qc:       buildQc({ plugins }),
+    qc:       buildQc(core),
 
     tauri:       windowTauriProxy as WindowTauri,
     onReady:     liaReadyEventListener,

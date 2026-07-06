@@ -13,9 +13,13 @@
 
 import inspect
 import json
+import os
 import sys
+import time
+import urllib.error
+import urllib.request
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 # Field types accepted by Liatir, mirroring the manifest schema contract
 # (inputs render as form fields; outputs feed Results and pipeline wiring).
@@ -35,6 +39,10 @@ class LiatirInputError(Exception):
 
 class LiatirOutputError(Exception):
     """The handler returned data that does not satisfy the output contract."""
+
+
+class LiatirBridgeError(Exception):
+    """A bridge call (ctx.liatir.*) failed, or the Liatir app is not reachable."""
 
 
 def _field(field_type, label=None, description=None, required=None, default=None,
@@ -86,12 +94,590 @@ class field:
         return _field("stats", label, description, required)
 
 
+# ── Bridge (ctx.liatir) ──────────────────────────────────────────────────────
+#
+# The bridge is NOT in-process: the Liatir app runs a loopback HTTP server
+# (127.0.0.1:<port>, Bearer-token auth) whose coordinates it writes to a `.ipc`
+# file. This is the SAME transport the Node SDK (@liatir/api) uses; the only
+# per-language part is this thin HTTP client. Every method below maps 1:1 to a
+# native `lia_*` command — the single source of truth is the dispatch table in
+# the Rust IPC server, so command strings and payload keys stay identical to
+# the Node builders (camelCase payload keys; snake_case Python method names).
+
+# Injected into every payload during `liatir dev` so the app scopes fs/jobs/
+# global-vars to the sandbox session — mirrors the Node SDK.
+DEV_CONTEXT_PAYLOAD_KEY = "__liatirDevContext"
+SANDBOX_WORKSPACE_ID = "__test__"
+
+
+def _compact(payload):
+    """Drop keys whose value is None so they are absent from the JSON body.
+
+    Node relies on JSON.stringify dropping `undefined`; Python must do the same
+    explicitly so optional params reach Rust as "not provided", not as null.
+    """
+    return {key: value for key, value in payload.items() if value is not None}
+
+
+def _app_data_dir_candidates():
+    """Known locations of the app's `.ipc` file, mirroring appDataDirCandidates."""
+    candidates = []
+    env_ipc_file = os.environ.get("LIATIR_IPC_FILE")
+    env_ipc_dir = os.environ.get("LIATIR_IPC_DIR")
+    if env_ipc_file:
+        candidates.append(os.path.dirname(env_ipc_file))
+    if env_ipc_dir:
+        candidates.append(env_ipc_dir)
+
+    home = os.path.expanduser("~")
+    names = ("app.liatir.app", "liatir", "Liatir")
+    if sys.platform == "darwin":
+        base = os.path.join(home, "Library", "Application Support")
+        candidates += [os.path.join(base, name) for name in names]
+    elif sys.platform == "win32":
+        base = os.environ.get("APPDATA") or home
+        candidates += [os.path.join(base, name) for name in names]
+    else:
+        base = os.environ.get("XDG_DATA_HOME") or os.path.join(home, ".local", "share")
+        candidates += [os.path.join(base, name) for name in names]
+
+    # De-duplicate while preserving order.
+    seen = set()
+    unique = []
+    for path in candidates:
+        if path not in seen:
+            seen.add(path)
+            unique.append(path)
+    return unique
+
+
+def _read_ipc_info():
+    """Locate and read the app's `.ipc` file -> {"port", "token"}.
+
+    Rust injects LIATIR_IPC_FILE when it spawns the plugin; the app-data
+    fallback keeps the SDK usable outside that spawn path (e.g. local testing).
+    """
+    env_ipc_file = os.environ.get("LIATIR_IPC_FILE")
+    port_files = []
+    if env_ipc_file:
+        port_files.append(env_ipc_file)
+    port_files += [os.path.join(d, ".ipc") for d in _app_data_dir_candidates()]
+
+    for port_file in port_files:
+        try:
+            with open(port_file, "r", encoding="utf-8") as handle:
+                return json.load(handle)
+        except (OSError, ValueError):
+            continue
+
+    raise LiatirBridgeError(
+        "Liatir app is not running or IPC not ready. Expected one of:\n"
+        + "\n".join("- " + path for path in port_files)
+        + "\nStart the Liatir desktop app first."
+    )
+
+
+def _read_dev_context():
+    """Mirror of readDevContextFromEnv: active only during `liatir dev`."""
+    if os.environ.get("LIATIR_RUN_SCOPE") != "plugin-dev":
+        return None
+    session_id = (os.environ.get("LIATIR_DEV_SESSION_ID") or "").strip()
+    if not session_id:
+        return None
+    return {
+        "scope": "plugin-dev",
+        "sessionId": session_id,
+        "workspaceId": (os.environ.get("LIATIR_WORKSPACE_ID") or "").strip()
+        or SANDBOX_WORKSPACE_ID,
+    }
+
+
+def _http_invoke(ipc, cmd, payload):
+    """POST {cmd, payload} to the app's /invoke endpoint and unwrap the result."""
+    url = "http://127.0.0.1:{}/invoke".format(ipc["port"])
+    body = json.dumps({"cmd": cmd, "payload": payload}).encode("utf-8")
+    request = urllib.request.Request(url, data=body, method="POST")
+    request.add_header("Content-Type", "application/json")
+    request.add_header("Authorization", "Bearer " + ipc["token"])
+    try:
+        with urllib.request.urlopen(request) as response:
+            raw = response.read().decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        raise LiatirBridgeError("HTTP {} for {}".format(exc.code, cmd))
+    except urllib.error.URLError as exc:
+        raise LiatirBridgeError("cannot reach Liatir app for {}: {}".format(cmd, exc.reason))
+
+    data = json.loads(raw)
+    if not data.get("ok"):
+        raise LiatirBridgeError(data.get("error") or (cmd + " failed"))
+    return data.get("result")
+
+
+def _is_current_dev_job(entry, dev):
+    metadata = entry.get("metadata") or {}
+    return metadata.get("pluginDevSessionId") == dev["sessionId"]
+
+
+class _Jobs:
+    """Async process manager — spawn/stream/kill any system binary."""
+
+    def __init__(self, bridge):
+        self._bridge = bridge
+
+    def _with_dev_spawn(self, kind, metadata):
+        # Mirror withDevSpawnOptions: tag spawns so the app can scope them to
+        # the current dev session.
+        dev = self._bridge._dev
+        if not dev:
+            return kind, metadata
+        new_kind = kind if (kind and kind.startswith("lia-plugin-dev")) else "lia-plugin-dev-child"
+        new_metadata = dict(metadata or {})
+        new_metadata["pluginDev"] = True
+        new_metadata["pluginDevSessionId"] = dev["sessionId"]
+        return new_kind, new_metadata
+
+    def spawn(self, cmd, args=None, cwd=None, env=None, label=None, kind=None, metadata=None):
+        kind, metadata = self._with_dev_spawn(kind, metadata)
+        return self._bridge.invoke("lia_jobs_spawn", _compact({
+            "cmd": cmd,
+            "args": args or [],
+            "cwd": cwd,
+            "env": env,
+            "label": label,
+            "kind": kind,
+            "metadata": metadata,
+        }))
+
+    def kill(self, job_id):
+        return self._bridge.invoke("lia_jobs_kill", {"jobId": job_id})
+
+    def status(self, job_id):
+        return self._bridge.invoke("lia_jobs_status", {"jobId": job_id})
+
+    def list(self):
+        dev = self._bridge._dev
+        if not dev:
+            return self._bridge.invoke("lia_jobs_list")
+        entries = self._bridge.invoke(
+            "lia_jobs_list", {"workspaceId": dev["workspaceId"], "includeDev": True}
+        ) or []
+        return [entry for entry in entries if _is_current_dev_job(entry, dev)]
+
+    def clear_done(self):
+        if self._bridge._dev:
+            return 0
+        return self._bridge.invoke("lia_jobs_clear_done")
+
+    def get_output(self, job_id, since=None):
+        return self._bridge.invoke("lia_jobs_get_output", _compact({"jobId": job_id, "since": since}))
+
+    def run(self, cmd, args=None, cwd=None, on_stdout=None, on_stderr=None):
+        """Spawn, poll to exit, and stream output line-by-line (mirror of runJob)."""
+        spawned = self.spawn(cmd, args or [], cwd=cwd)
+        job_id = spawned["jobId"]
+        stdout_offset = 0
+        stderr_offset = 0
+        while True:
+            time.sleep(0.1)
+            out = self.get_output(job_id)
+            entry = self.status(job_id)
+            for line in out["stdout"][stdout_offset:]:
+                if on_stdout:
+                    on_stdout(line)
+            for line in out["stderr"][stderr_offset:]:
+                if on_stderr:
+                    on_stderr(line)
+            stdout_offset = out["stdoutTotal"]
+            stderr_offset = out["stderrTotal"]
+            if entry["status"]["type"] != "running":
+                return entry
+
+
+class _Deps:
+    """Check whether external binaries are available on the host."""
+
+    def __init__(self, bridge):
+        self._bridge = bridge
+
+    def check(self, binary):
+        return self._bridge.invoke("lia_deps_check", {"binary": binary})
+
+    def check_many(self, binaries):
+        return self._bridge.invoke("lia_deps_check_many", {"binaries": binaries})
+
+
+class _FsScope:
+    """One filesystem scope (.data = permanent, .cache = ephemeral)."""
+
+    def __init__(self, bridge, permanent, plugin=None):
+        self._bridge = bridge
+        self._permanent = permanent
+        self._plugin = plugin or None
+
+    def _payload(self, extra):
+        base = {"permanent": self._permanent, "windowLabel": None, "pluginStoragePlugin": self._plugin}
+        base.update(extra)
+        return _compact(base)
+
+    def list_content(self, rel=""):
+        return self._bridge.invoke("lia_fs_list_dir", self._payload({"rel": rel}))
+
+    def new_directory(self, rel):
+        return self._bridge.invoke("lia_fs_mkdir", self._payload({"rel": rel}))
+
+    def remove(self, rel, recursive=False):
+        return self._bridge.invoke("lia_fs_rm", self._payload({"rel": rel, "recursive": recursive}))
+
+    def stat(self, rel=""):
+        return self._bridge.invoke("lia_fs_stat", self._payload({"rel": rel}))
+
+    def write_text(self, rel, contents, create_dirs=None, append=None):
+        return self._bridge.invoke("lia_fs_write_text", self._payload({
+            "rel": rel, "contents": contents, "createDirs": create_dirs, "append": append,
+        }))
+
+    def read_text(self, rel):
+        return self._bridge.invoke("lia_fs_read_text", self._payload({"rel": rel}))
+
+    def write_bytes(self, rel, data_base64, create_dirs=None):
+        return self._bridge.invoke("lia_fs_write_bytes", self._payload({
+            "rel": rel, "dataBase64": data_base64, "createDirs": create_dirs,
+        }))
+
+    def read_bytes(self, rel):
+        return self._bridge.invoke("lia_fs_read_bytes", self._payload({"rel": rel}))
+
+    def exists(self, rel):
+        return self._bridge.invoke("lia_fs_exists", self._payload({"rel": rel}))
+
+    def move(self, src, dest, create_dirs=None, overwrite=None):
+        return self._bridge.invoke("lia_fs_move", self._payload({
+            "src": src, "dest": dest, "createDirs": create_dirs, "overwrite": overwrite,
+        }))
+
+    def copy(self, src, dest, recursive=None, create_dirs=None, overwrite=None):
+        return self._bridge.invoke("lia_fs_copy", self._payload({
+            "src": src, "dest": dest, "recursive": recursive,
+            "createDirs": create_dirs, "overwrite": overwrite,
+        }))
+
+    def path(self):
+        paths = self._bridge.invoke("lia_fs_paths")
+        return paths["data"] if self._permanent else paths["cache"]
+
+    def clear(self):
+        return self._bridge.invoke("lia_fs_clear_data" if self._permanent else "lia_fs_clear_cache")
+
+
+class _FsPluginScope(_FsScope):
+    """Isolated per-plugin storage under the permanent scope."""
+
+    def __init__(self, bridge, plugin):
+        super().__init__(bridge, True, plugin=plugin)
+
+    def clear_storage(self):
+        return self._bridge.invoke("lia_plugin_storage_clear", {"plugin": self._plugin})
+
+
+class _FsTrash:
+    def __init__(self, bridge):
+        self._bridge = bridge
+
+    def clear(self):
+        return self._bridge.invoke("lia_fs_data_clear_trash")
+
+    def recover(self):
+        return self._bridge.invoke("lia_fs_data_recover_trash")
+
+    def list_content(self, rel=""):
+        return self._bridge.invoke("lia_fs_trash_list_dir", {"rel": rel})
+
+    def stat(self, rel=""):
+        return self._bridge.invoke("lia_fs_trash_stat", {"rel": rel})
+
+    def exists(self, rel=""):
+        return self._bridge.invoke("lia_fs_trash_exists", {"rel": rel})
+
+    def read_text(self, rel):
+        return self._bridge.invoke("lia_fs_trash_read_text", {"rel": rel})
+
+    def read_bytes(self, rel):
+        return self._bridge.invoke("lia_fs_trash_read_bytes", {"rel": rel})
+
+
+class _FsDiagnostics:
+    def __init__(self, bridge):
+        self._bridge = bridge
+
+    def clear(self):
+        return self._bridge.invoke("lia_fs_diagnostics_clear")
+
+    def remove(self, rel, recursive=False):
+        return self._bridge.invoke("lia_fs_diagnostics_rm", {"rel": rel, "recursive": recursive})
+
+    def list_content(self, rel=""):
+        return self._bridge.invoke("lia_fs_diagnostics_list_dir", {"rel": rel})
+
+    def stat(self, rel=""):
+        return self._bridge.invoke("lia_fs_diagnostics_stat", {"rel": rel})
+
+    def exists(self, rel=""):
+        return self._bridge.invoke("lia_fs_diagnostics_exists", {"rel": rel})
+
+    def read_text(self, rel):
+        return self._bridge.invoke("lia_fs_diagnostics_read_text", {"rel": rel})
+
+    def read_bytes(self, rel):
+        return self._bridge.invoke("lia_fs_diagnostics_read_bytes", {"rel": rel})
+
+
+class _Fs:
+    """App-managed filesystem: .data (permanent), .cache (ephemeral), trash, diagnostics."""
+
+    def __init__(self, bridge):
+        self._bridge = bridge
+        self.cache = _FsScope(bridge, False)
+        self.data = _FsScope(bridge, True)
+        self.trash = _FsTrash(bridge)
+        self.diagnostics = _FsDiagnostics(bridge)
+
+    def paths(self):
+        return self._bridge.invoke("lia_fs_paths")
+
+    def plugin_fs(self, plugin):
+        name = (plugin or "").strip()
+        if not name:
+            raise LiatirBridgeError("plugin_fs requires a non-empty plugin name")
+        return _FsPluginScope(self._bridge, name)
+
+
+class _Files:
+    """Native open/save dialogs."""
+
+    def __init__(self, bridge):
+        self._bridge = bridge
+
+    def open(self, multi=False, allowed=None, max_bytes=None):
+        return self._bridge.invoke("lia_file_open", _compact({
+            "multi": multi, "allowedExtensions": allowed, "maxBytes": max_bytes,
+        }))
+
+    def open_with_bytes(self, multi=False, allowed=None, max_bytes=None):
+        return self._bridge.invoke("lia_file_open_with_bytes", _compact({
+            "multi": multi, "allowedExtensions": allowed, "maxBytes": max_bytes,
+        }))
+
+    def save(self, default_name=None):
+        return self._bridge.invoke("lia_file_save", {"defaultName": default_name})
+
+
+class _Events:
+    """Emit app events. Listening needs the webview event channel, absent in a
+    headless plugin process, so only the emit_* methods are exposed."""
+
+    def __init__(self, bridge):
+        self._bridge = bridge
+
+    def emit(self, event, payload=None):
+        return self._bridge.invoke("lia_event_emit_to_current_window", {"event": event, "payload": payload})
+
+    def emit_to_all(self, event, payload=None):
+        return self._bridge.invoke("lia_event_emit", {"event": event, "payload": payload})
+
+    def emit_to(self, window_label, event, payload=None):
+        return self._bridge.invoke("lia_event_emit_to", {"windowLabel": window_label, "event": event, "payload": payload})
+
+
+class _App:
+    def __init__(self, bridge):
+        self._bridge = bridge
+
+    def info(self):
+        return self._bridge.invoke("lia_app_info")
+
+    def exit(self, code=0):
+        return self._bridge.invoke("lia_app_exit", {"code": code})
+
+
+class _GlobalVariables:
+    def __init__(self, bridge):
+        self._bridge = bridge
+
+    def get(self, key):
+        return self._bridge.invoke("lia_global_vars_get", {"key": key})
+
+    def set(self, key, value):
+        return self._bridge.invoke("lia_global_vars_set", {"key": key, "value": value})
+
+    def remove(self, key):
+        return self._bridge.invoke("lia_global_vars_remove", {"key": key})
+
+    def list(self):
+        return self._bridge.invoke("lia_global_vars_list")
+
+
+class _Network:
+    def __init__(self, bridge):
+        self._bridge = bridge
+
+    def status(self):
+        return self._bridge.invoke("lia_network_get_status")
+
+    def ping(self, url, timeout_ms=None):
+        return self._bridge.invoke("lia_network_ping", _compact({"url": url or "", "timeoutMs": timeout_ms}))
+
+    def resolve(self, host):
+        return self._bridge.invoke("lia_network_resolve", {"host": host})
+
+    def estimate_bandwidth(self, url=None, size_hint_bytes=None, timeout_ms=None):
+        return self._bridge.invoke("lia_network_bandwidth_estimate", _compact({
+            "url": url, "sizeHintBytes": size_hint_bytes, "timeoutMs": timeout_ms,
+        }))
+
+    def set_monitor(self, interval_ms=3000, targets=None):
+        return self._bridge.invoke("lia_network_set_monitor", _compact({"intervalMs": interval_ms, "targets": targets}))
+
+    def stop_monitor(self):
+        return self._bridge.invoke("lia_network_stop_monitor")
+
+
+class _Clipboard:
+    def __init__(self, bridge):
+        self._bridge = bridge
+
+    def read_text(self):
+        return self._bridge.invoke("lia_clipboard_read")
+
+    def write_text(self, text):
+        return self._bridge.invoke("lia_clipboard_write", {"text": text})
+
+
+class _Notifications:
+    def __init__(self, bridge):
+        self._bridge = bridge
+
+    def state(self):
+        return self._bridge.invoke("lia_notification_state")
+
+    def request(self):
+        return self._bridge.invoke("lia_request_permission")
+
+    def show(self, title, body):
+        return self._bridge.invoke("lia_notify", {"title": title, "body": body})
+
+
+class _Desktop:
+    """Desktop bridge subset available to headless plugins (GUI-only areas excluded)."""
+
+    def __init__(self, bridge):
+        self.fs = _Fs(bridge)
+        self.files = _Files(bridge)
+        self.events = _Events(bridge)
+        self.app = _App(bridge)
+        self.global_variables = _GlobalVariables(bridge)
+        self.network = _Network(bridge)
+        self.clipboard = _Clipboard(bridge)
+        self.notifications = _Notifications(bridge)
+
+
+class _Sidecar:
+    def __init__(self, bridge):
+        self._bridge = bridge
+
+    def run(self, name, args=None):
+        return self._bridge.invoke("lia_sidecar_run", {"name": name, "args": args or []})
+
+
+class _Pipeline:
+    """Pure orchestration over sidecar.run — no Rust command of its own
+    (mirror of buildPipeline)."""
+
+    def __init__(self, bridge):
+        self._bridge = bridge
+
+    def run(self, steps, continue_on_error=False):
+        results = []
+        failed_at = None
+        for index, step in enumerate(steps):
+            step_start = time.time()
+            result = {"label": step["label"], "status": "running", "durationMs": 0, "output": None, "error": None}
+            try:
+                output = self._bridge.sidecar.run(step["binary"], step.get("args", []))
+                result["output"] = output
+                result["status"] = "done" if output.get("ok") else "error"
+                if not output.get("ok"):
+                    result["error"] = output.get("error") or "exit code {}".format(output.get("exitCode"))
+            except Exception as exc:  # noqa: BLE001 - surfaced in the step result
+                result["status"] = "error"
+                result["error"] = str(exc)
+            result["durationMs"] = int((time.time() - step_start) * 1000)
+            results.append(result)
+            if result["status"] == "error":
+                if failed_at is None:
+                    failed_at = index
+                if not continue_on_error:
+                    break
+
+        # Steps never reached are reported as pending.
+        for skipped in steps[len(results):]:
+            results.append({"label": skipped["label"], "status": "pending", "durationMs": 0, "output": None, "error": None})
+
+        return {"steps": results, "failedAt": failed_at, "ok": failed_at is None}
+
+
+class Liatir:
+    """The bridge handed to Python plugins as `ctx.liatir`.
+
+    Same capabilities as the Node `Liatir` object: every namespace forwards to a
+    native `lia_*` command over the app's loopback HTTP IPC server. The IPC
+    coordinates are resolved lazily on the first call, so plugins that never
+    touch the bridge run without requiring the app to be reachable.
+    """
+
+    def __init__(self):
+        self._ipc = None
+        self._dev = _read_dev_context()
+        self.jobs = _Jobs(self)
+        self.deps = _Deps(self)
+        self.desktop = _Desktop(self)
+        self.sidecar = _Sidecar(self)
+        self.pipeline = _Pipeline(self)
+
+    def invoke(self, cmd, payload=None):
+        """Raw escape hatch: call any native command not covered by a namespace."""
+        if self._ipc is None:
+            self._ipc = _read_ipc_info()
+        if self._dev and payload is not None:
+            payload = dict(payload)
+            payload[DEV_CONTEXT_PAYLOAD_KEY] = self._dev
+        elif self._dev:
+            payload = {DEV_CONTEXT_PAYLOAD_KEY: self._dev}
+        return _http_invoke(self._ipc, cmd, payload)
+
+    def paths(self):
+        """App filesystem paths, rewritten to the sandbox root during `liatir dev`."""
+        base = self.invoke("lia_fs_paths") or {}
+        if not self._dev:
+            return base
+        rel = "workspaces/{}/plugin-dev/{}".format(self._dev["workspaceId"], self._dev["sessionId"])
+        self.invoke("lia_fs_mkdir", {"rel": rel, "permanent": True})
+        self.invoke("lia_fs_mkdir", {"rel": rel, "permanent": False})
+        rewritten = dict(base)
+        rewritten["data"] = "{}/{}".format(base.get("data"), rel)
+        rewritten["cache"] = "{}/{}".format(base.get("cache"), rel)
+        rewritten["temp"] = "{}/{}".format(base.get("cache"), rel)
+        return rewritten
+
+
 class PluginContext:
-    """What the handler receives: validated input plus the raw payload."""
+    """What the handler receives: validated input, the raw payload, and the bridge."""
 
     def __init__(self, validated_input, raw_input):
         self.input = validated_input
         self.raw_input = raw_input
+        # The bridge (ctx.liatir) is constructed eagerly but resolves its IPC
+        # connection lazily, so it costs nothing until the plugin actually uses it.
+        self.liatir = Liatir()
 
 
 def _type_error(kind, name, expected, value):

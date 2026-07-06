@@ -14,9 +14,6 @@ use wasmtime_wasi::{
     DirPerms, FilePerms, WasiCtxBuilder,
 };
 
-// Reuse the existing file picker helper.
-use crate::bridge::files::lia_file_open_with_bytes;
-
 static PLUGIN_REQ_COUNTER: AtomicU64 = AtomicU64::new(1);
 
 const WASM_MAGIC: [u8; 4] = [0x00, 0x61, 0x73, 0x6D];
@@ -54,16 +51,6 @@ fn gen_plugin_job_id() -> String {
 // ---------------------------------
 // Scope / root helpers
 // ---------------------------------
-
-fn validate_wasm_name_and_bytes(name: &str, bytes: &[u8]) -> Result<()> {
-    validate_plugin_wasm_name(name)?;
-
-    if bytes.len() < 4 || bytes[..4] != WASM_MAGIC {
-        return Err(anyhow!("invalid plugin: missing WASM magic header (\\0asm)"));
-    }
-
-    Ok(())
-}
 
 fn plugin_scope_dir_name(window_label: Option<&str>) -> Result<String> {
     match window_label {
@@ -274,14 +261,6 @@ fn bytes_to_string(bytes: impl AsRef<[u8]>) -> String {
 // ---------------------------------
 
 #[tauri::command]
-pub fn lia_plugin_status() -> serde_json::Value {
-    serde_json::json!({
-        "ready": true,
-        "runtime": "native-wasi"
-    })
-}
-
-#[tauri::command]
 pub fn lia_plugin_paths(
     app: AppHandle,
     plugin: Option<String>,
@@ -328,19 +307,6 @@ pub fn lia_plugin_storage_clear(
     }
 
     fs::create_dir_all(&storage).map_err(|e| e.to_string())?;
-
-    Ok(true)
-}
-
-#[tauri::command]
-pub fn lia_plugin_clear_all_jobs(app: AppHandle) -> Result<bool, String> {
-    let sandbox = plugin_sandbox_dir(&app).map_err(|e| e.to_string())?;
-
-    if sandbox.exists() {
-        fs::remove_dir_all(&sandbox).map_err(|e| e.to_string())?;
-    }
-
-    fs::create_dir_all(&sandbox).map_err(|e| e.to_string())?;
 
     Ok(true)
 }
@@ -408,133 +374,6 @@ fn validate_host_read_paths(raw: Vec<String>) -> Result<Vec<PathBuf>> {
         }
 
         out.push(canonical);
-    }
-
-    Ok(out)
-}
-
-#[tauri::command]
-pub fn lia_plugin_add_module(
-    app: AppHandle,
-    name: String,
-    contents: Vec<u8>,
-) -> Result<bool, String> {
-    // Default size limit: 20 MB.
-    let max_size: usize = 20 * 1024 * 1024;
-
-    if contents.len() > max_size {
-        return Err(format!(
-            "plugin too large ({} bytes > {} bytes)",
-            contents.len(),
-            max_size
-        ));
-    }
-
-    let base = external_modules_dir(&app).map_err(|e| e.to_string())?;
-
-    if name.contains(std::path::is_separator) {
-        return Err("Invalid plugin name".into());
-    }
-
-    if let Err(e) = validate_wasm_name_and_bytes(&name, &contents) {
-        return Err(e.to_string());
-    }
-
-    let target = base.join(&name);
-
-    if let Some(parent) = target.parent() {
-        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    }
-
-    fs::write(&target, &contents).map_err(|e| e.to_string())?;
-
-    Ok(true)
-}
-
-#[tauri::command]
-pub async fn lia_plugin_pick_and_add_module(
-    app: AppHandle,
-    default_name: Option<String>,
-    max_bytes: Option<u64>,
-) -> Result<serde_json::Value, String> {
-    let allowed = Some(vec!["wasm".to_string()]);
-    let picked = lia_file_open_with_bytes(app.clone(), false, allowed, max_bytes).await?;
-
-    let file = match picked.files.into_iter().next() {
-        Some(f) => f,
-        None => return Err("no file selected".into()),
-    };
-
-    let name = match default_name {
-        Some(n) if !n.trim().is_empty() => n,
-        _ => {
-            Path::new(&file.path)
-                .file_name()
-                .map(|s| s.to_string_lossy().to_string())
-                .filter(|s| !s.is_empty())
-                .ok_or_else(|| "cannot derive file name".to_string())?
-        }
-    };
-
-    let base = external_modules_dir(&app).map_err(|e| e.to_string())?;
-
-    if name.contains(std::path::is_separator) {
-        return Err("Invalid plugin name".into());
-    }
-
-    if let Err(e) = validate_wasm_name_and_bytes(&name, &file.bytes) {
-        return Err(e.to_string());
-    }
-
-    let target = base.join(&name);
-
-    if let Some(parent) = target.parent() {
-        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    }
-
-    fs::write(&target, &file.bytes).map_err(|e| e.to_string())?;
-
-    Ok(serde_json::json!({
-        "saved": true,
-        "name": name,
-        "path": target.to_string_lossy(),
-        "bytes": file.bytes.len(),
-    }))
-}
-
-#[tauri::command]
-pub fn lia_plugin_remove_module(app: AppHandle, name: String) -> Result<bool, String> {
-    let base = external_modules_dir(&app).map_err(|e| e.to_string())?;
-
-    if name.contains(std::path::is_separator) {
-        return Err("Invalid plugin name".into());
-    }
-
-    let target = base.join(&name);
-
-    if target.exists() {
-        fs::remove_file(&target).map_err(|e| e.to_string())?;
-    }
-
-    Ok(true)
-}
-
-#[tauri::command]
-pub fn lia_plugin_list_modules(app: AppHandle) -> Result<Vec<String>, String> {
-    let dir = external_modules_dir(&app).map_err(|e| e.to_string())?;
-    let mut out = vec![];
-
-    for entry in fs::read_dir(dir).map_err(|e| e.to_string())? {
-        let e = entry.map_err(|e| e.to_string())?;
-
-        if e.path().is_file()
-            && e.path()
-                .extension()
-                .map(|x| x == "wasm")
-                .unwrap_or(false)
-        {
-            out.push(e.file_name().to_string_lossy().to_string());
-        }
     }
 
     Ok(out)

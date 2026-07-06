@@ -14,6 +14,7 @@ import type {
 import { buildAlign, type AlignNamespace } from "./bio/align";
 import { buildQc, type QcNamespace } from "./bio/qc";
 import { buildVariants, type VariantsNamespace } from "./bio/variants";
+import { buildAi, type AiNamespace } from "./ai";
 import type { LiatirBrowserAPI as BrowserBridgeAPI } from "../../../src-ts/liatir/_types";
 
 /** Browser/webview bridge exposed as window.Liatir inside the Tauri app. */
@@ -39,7 +40,6 @@ import { buildNetwork } from "../../../src-ts/modules/rs/network/_main";
 import { buildClipboard } from "../../../src-ts/modules/rs/clipboard/_main";
 import { buildNotifications } from "../../../src-ts/modules/rs/notifications/_main";
 import { buildDiagnostics } from "../../../src-ts/modules/rs/diagnostics/_main";
-import { buildPlugins } from "../../../src-ts/modules/rs/plugins/_main";
 import { buildSidecar } from "../../../src-ts/modules/rs/sidecar/_main";
 import { buildPipeline } from "../../../src-ts/modules/bio/pipeline/_main";
 import { buildJobs } from "../../../src-ts/modules/rs/jobs/_main";
@@ -268,7 +268,7 @@ export type LiatirSharedDesktop = Pick<
 
 export type LiatirSharedTopLevel = Pick<
   LiatirBrowserAPI,
-  "deps" | "plugins" | "sidecar" | "pipeline" | "invoke"
+  "deps" | "sidecar" | "pipeline" | "invoke"
 >;
 
 export interface LiatirNode extends LiatirSharedTopLevel {
@@ -278,6 +278,8 @@ export interface LiatirNode extends LiatirSharedTopLevel {
   align: AlignNamespace;
   qc: QcNamespace;
   variants: VariantsNamespace;
+  /** Local AI model runtimes — list, prepare, and run models in their venv. */
+  ai: AiNamespace;
   /** Desktop bridge subset available in headless Node plugins. */
   desktop: LiatirSharedDesktop;
   /** App filesystem paths. */
@@ -373,17 +375,17 @@ export async function createLiatir(): Promise<LiatirNode> {
     } as unknown as LiatirNodePaths;
   };
 
-  // Pipeline is pure JS orchestration over plugins.call + sidecar.run, so it is
-  // shared with the browser bridge (no Rust command of its own).
-  const plugins = buildPlugins(core);
+  // Pipeline is pure JS orchestration over sidecar.run, so it is shared with
+  // the browser bridge (no Rust command of its own).
   const sidecar = buildSidecar(core);
 
   return {
     jobs,
     deps,
-    align: buildAlign(invoke),
+    align: buildAlign({ invoke, jobs }),
     qc: buildQc({ jobs, invoke, paths }),
     variants: buildVariants({ jobs, invoke }),
+    ai: buildAi(invoke),
     desktop: {
       fs: buildFs(core),
       files: buildFiles(core),
@@ -395,9 +397,8 @@ export async function createLiatir(): Promise<LiatirNode> {
       notifications: buildNotifications(core),
       diagnostics: buildDiagnostics(core),
     },
-    plugins,
     sidecar,
-    pipeline: buildPipeline({ plugins, sidecar }),
+    pipeline: buildPipeline({ sidecar }),
     paths,
     invoke,
   };

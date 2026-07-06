@@ -24,10 +24,6 @@ const DEV_BLOCKED_COMMANDS: &[&str] = &[
     "lia_fs_data_recover_trash",
     "lia_fs_diagnostics_clear",
     "lia_fs_diagnostics_rm",
-    "lia_plugin_add_module",
-    "lia_plugin_remove_module",
-    "lia_plugin_pick_and_add_module",
-    "lia_plugin_clear_all_jobs",
     "lia_plugin_storage_clear",
 ];
 
@@ -419,10 +415,6 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
         "lia_notification_state" => crate::bridge::notifications::lia_notification_state[],
         "lia_request_permission" => crate::bridge::notifications::lia_request_permission[],
         "lia_notify" => crate::bridge::notifications::lia_notify[title: String, body: String],
-        "lia_plugin_clear_all_jobs" => crate::bridge::plugins::lia_plugin_clear_all_jobs[],
-        "lia_plugin_add_module" => crate::bridge::plugins::lia_plugin_add_module[name: String, contents: Vec<u8>],
-        "lia_plugin_remove_module" => crate::bridge::plugins::lia_plugin_remove_module[name: String],
-        "lia_plugin_list_modules" => crate::bridge::plugins::lia_plugin_list_modules[],
         "lia_logs_list_files" => crate::bridge::diagnostics::lia_logs_list_files[area: String],
         "lia_logs_read_file" => crate::bridge::diagnostics::lia_logs_read_file[rel_path: String],
         "lia_logs_get_privacy" => crate::bridge::diagnostics::lia_logs_get_privacy[],
@@ -439,7 +431,6 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
         "lia_file_open_with_bytes" => crate::bridge::files::lia_file_open_with_bytes[multi: bool, allowed_extensions: Option<Vec<String>>, max_bytes: Option<u64>],
         "lia_file_save" => crate::bridge::files::lia_file_save[default_name: Option<String>],
         "lia_sidecar_run" => crate::bridge::sidecar::lia_sidecar_run[name: String, args: Vec<String>],
-        "lia_plugin_pick_and_add_module" => crate::bridge::plugins::lia_plugin_pick_and_add_module[default_name: Option<String>, max_bytes: Option<u64>],
         "lia_network_get_status" => crate::bridge::network::lia_network_get_status[],
         "lia_network_ping" => crate::bridge::network::lia_network_ping[url: Option<String>, timeout_ms: Option<u64>],
         "lia_network_bandwidth_estimate" => crate::bridge::network::lia_network_bandwidth_estimate[url: Option<String>, size_hint_bytes: Option<u64>, timeout_ms: Option<u64>],
@@ -495,10 +486,6 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 None => vars,
             };
             return Ok(serde_json::to_value(vars).unwrap_or(Value::Null));
-        }
-        // Plugin runtime status — no AppHandle, returns Value directly.
-        "lia_plugin_status" => {
-            return Ok(crate::bridge::plugins::lia_plugin_status());
         }
         // Network commands that take no AppHandle.
         "lia_network_resolve" => {

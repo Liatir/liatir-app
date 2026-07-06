@@ -3,7 +3,7 @@ use std::{
     io::Read,
     path::{Component, Path, PathBuf},
 };
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -599,7 +599,19 @@ pub(crate) async fn run_lia_plugin_bundle(
         let python_env_root = options.python_env_root.clone();
         let python_env_root_for_prepare = python_env_root.clone();
         let workspace_id = options.workspace_id.clone();
-        let extra_env = options.env.clone();
+        // Point the Python process at the app's IPC server so `ctx.liatir.*`
+        // can reach it. The path mirrors what ipc_server writes
+        // ({app_data_dir}/.ipc); the Python SDK also has an app-data fallback,
+        // but injecting it here makes discovery deterministic. A caller-provided
+        // LIATIR_IPC_FILE wins.
+        let mut env_map = options.env.clone().unwrap_or_default();
+        if let Ok(app_data_dir) = app.path().app_data_dir() {
+            let ipc_file = app_data_dir.join(".ipc");
+            env_map
+                .entry("LIATIR_IPC_FILE".to_string())
+                .or_insert_with(|| ipc_file.to_string_lossy().to_string());
+        }
+        let extra_env = Some(env_map);
         let job_label = options.job_label.clone();
         let job_kind = options.job_kind.clone();
         let extra_metadata = options.metadata.clone();

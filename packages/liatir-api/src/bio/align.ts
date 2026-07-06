@@ -10,6 +10,10 @@
 // Rust command (crate::bridge::bwa / minimap2), so there is a single source of
 // truth shared with the desktop UI.
 
+import { parseFlagstatResult, flagstatToToolOutput, type ToolOutput } from "@liatir/output-parser";
+import type { LiatirNodeJobs } from "../index";
+import { resolveThreads } from "./_threads";
+
 /** Minimal shape of the IPC `invoke` injected by the adapter factory. */
 type Invoke = <T>(cmd: string, payload?: Record<string, unknown>) => Promise<T>;
 
@@ -51,11 +55,20 @@ export interface Minimap2Args {
   threads?: number;
 }
 
+export interface FaidxResult {
+  /** Path of the produced FASTA index (`<input>.fai`). */
+  faiPath: string;
+}
+
 export interface AlignNamespace {
   /** Map short reads to a reference with BWA-MEM. */
   bwaMem(args: BwaMemArgs): Promise<AlignResult>;
   /** Map long or short reads with minimap2. */
   minimap2(args: Minimap2Args): Promise<AlignResult>;
+  /** Alignment summary stats (`samtools flagstat`) over a SAM/BAM file. */
+  flagstat(args: { input: string; threads?: number }): Promise<ToolOutput>;
+  /** Index a FASTA reference (`samtools faidx`), producing `<input>.fai`. */
+  faidx(args: { input: string; threads?: number }): Promise<FaidxResult>;
 }
 
 /** Generate a unique job id for a tool run (used by the native command for log events). */
@@ -66,8 +79,8 @@ function genJobId(tool: string): string {
 /** The raw payload a native alignment command returns (before we echo outputSam). */
 type NativeAlignResult = { ok: boolean; exitCode: number | null; stderr: string[]; threads?: number };
 
-/** Build the `align` namespace bound to a specific IPC `invoke`. */
-export function buildAlign(invoke: Invoke): AlignNamespace {
+/** Build the `align` namespace bound to a specific IPC `invoke` and job runner. */
+export function buildAlign({ invoke, jobs }: { invoke: Invoke; jobs: LiatirNodeJobs }): AlignNamespace {
   return {
     async bwaMem(args) {
       const jobId = genJobId("bwa");
@@ -94,6 +107,22 @@ export function buildAlign(invoke: Invoke): AlignNamespace {
         threads: args.threads ?? 0,
       });
       return { ...res, outputSam: args.outputSam };
+    },
+
+    async flagstat({ input, threads }) {
+      let stdout = "";
+      const entry = await jobs.run("samtools", ["flagstat", "-@", String(resolveThreads(threads)), input], {
+        onStdout: (l) => { stdout += l + "\n"; },
+      });
+      if (entry.status.type !== "done") throw new Error("samtools flagstat failed");
+      return flagstatToToolOutput(parseFlagstatResult(stdout), stdout);
+    },
+
+    async faidx({ input, threads }) {
+      // samtools writes the .fai index next to the input FASTA automatically.
+      const entry = await jobs.run("samtools", ["faidx", "-@", String(resolveThreads(threads)), input]);
+      if (entry.status.type !== "done") throw new Error("samtools faidx failed");
+      return { faiPath: `${input}.fai` };
     },
   };
 }
