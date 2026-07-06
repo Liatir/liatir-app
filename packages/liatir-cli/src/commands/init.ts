@@ -441,6 +441,7 @@ async function installNodeDependencies(dir: string): Promise<void> {
 }
 
 /**
+ * NOTE:
  * Ensure the wasm compilation target is installed. Idempotent: rustup skips it if already present.
  * Best-effort: a missing Rust toolchain only prints a hint, it does not fail the scaffold.
  */
