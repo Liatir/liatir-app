@@ -7,7 +7,7 @@ description: List, prepare, and run local AI models from a Liatir plugin.
 
 `Liatir.ai` lets a plugin discover the built-in AI model catalog, prepare a
 model's managed Python runtime, and run code inside it. The model catalog is the
-same one the Liatir app uses — you can check it out [here](ai/guide).
+same one the Liatir app uses — you can check it out [here](/ai/guide).
 
 ::: info
 `Liatir.ai` is available on Node `.lia` plugins (through the `Liatir` bridge).
@@ -83,6 +83,6 @@ and its packages are installed first.
 
 ## Related
 
-- [AI guide](/ai/guide)
+- [AI guide](/ai/guide.md)
 - [AI Models](/ai/models/overview)
 - [Dependencies API](/plugins/api/deps/check)
