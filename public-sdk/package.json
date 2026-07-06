@@ -1,9 +1,10 @@
 {
   "name": "liatir-sdk",
   "private": true,
-  "description": "Public SDK packages for building and validating Liatir plugins.",
+  "description": "Public SDK packages for building, validating, and packaging Liatir plugins.",
   "type": "module",
   "workspaces": [
+    "packages/liatir-core",
     "packages/liatir-api",
     "packages/liatir-cli"
   ],

@@ -9,7 +9,17 @@ Liatir is a free desktop app that runs bioinformatics tools, AI models, custom p
 
 ## Packages
 
-This repository contains two public npm packages.
+This repository contains three public npm packages.
+
+### `@liatir/core`
+
+Core public types, shared contracts, metadata definitions, and model catalog utilities used across the Liatir SDK.
+
+Use this package when you need the base type system and shared structures used by Liatir-compatible tools, plugins, outputs, and AI model metadata.
+
+```bash
+npm install @liatir/core
+```
 
 ### `@liatir/api`
 
@@ -39,6 +49,7 @@ npx @liatir/cli
 
 ```txt
 packages/
+  liatir-core/
   liatir-api/
   liatir-cli/
 ```
@@ -60,6 +71,7 @@ npm run build
 Build a single package:
 
 ```bash
+npm run build --workspace packages/liatir-core
 npm run build --workspace packages/liatir-api
 npm run build --workspace packages/liatir-cli
 ```
@@ -75,6 +87,7 @@ npm run typecheck
 The packages are published separately on npm:
 
 ```bash
+npm publish --workspace packages/liatir-core --access public
 npm publish --workspace packages/liatir-api --access public
 npm publish --workspace packages/liatir-cli --access public
 ```

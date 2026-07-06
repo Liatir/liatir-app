@@ -1,12 +1,10 @@
 // @liatir/core
 //
 // Global Liatir contracts shared by every executable node type:
-// native tools, Node .lia plugins, WASM .lia tools, API calls, future AI tools,
-// utility nodes, and sub-pipelines.
+// native tools, Node .lia plugins, WASM .lia tools, API calls, future AI tools, utility nodes, and sub-pipelines.
 //
 // This package is the single source of truth for schema and result shapes.
-// UI components, the SDK, the CLI, parsers, and pipeline code should import or
-// re-export these types instead of mirroring them manually.
+// UI components, the SDK, the CLI, parsers, and pipeline code should import or re-export these types instead of mirroring them manually.
 
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue =
