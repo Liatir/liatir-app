@@ -32,8 +32,8 @@ This is the **same API shape in all three runtimes**:
   CLI-managed `liatir` module.
 
 - [Plugin context](/plugins/plugin-context) 
-- [Defining plugin](plugins/api/define-plugin)
-- [Declaring I/O fields](plugins/api/define-plugin)
+- [Defining plugin](/plugins/define-plugin)
+- [Declaring I/O fields](/plugins/field)
 
 ## API bridge
 
