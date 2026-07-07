@@ -165,35 +165,42 @@ export default defineConfig({
                   { text: 'Define plugin', link: '/plugins/define-plugin' },
                   { text: 'Declare fields', link: '/plugins/field' },
               {
-                text: 'Node',
-                collapsed: true,
-                items: [{
-                text: '.desktop',
-                collapsed: true,
-                items: [
-                  { text: '.app', link: '/plugins/api/desktop/app' },
-                  { text: '.fs', link: '/plugins/api/desktop/file-system' },
+              text: 'Node bridge',
+              collapsed: true,
+              items: [
+                {
+                  text: '.desktop',
+                  collapsed: true,
+                  items: [
+                    { text: '.app', link: '/plugins/api/desktop/app' },
+                    { text: '.fs', link: '/plugins/api/desktop/file-system'},
+                  ],
+                },
+                {
+                  text: '.jobs',
+                  collapsed: true,
+                  items: [
+                    { text: '.status', link: '/plugins/api/jobs/status' },
+                    { text: '.list', link: '/plugins/api/jobs/list' },
+                  ],
+                  },
+                  {
+                    text: '.deps',
+                    collapsed: true,
+                    items: [
+                      { text: '.check', link: '/plugins/api/deps/check' },
+                      { text: '.checkMany', link: '/plugins/api/deps/check-many' },
+                    ],
+                  },
+                  { text: '.invoke', link: '/plugins/api/invoke' },
                 ],
               },
               {
-                text: '.jobs',
+                text: 'Python bridge',
                 collapsed: true,
                 items: [
-                  { text: '.status', link: '/plugins/api/jobs/status' },
-                  { text: '.list', link: '/plugins/api/jobs/list' },
-                ],
-                },
-                {
-                  text: '.deps',
-                  collapsed: true,
-                  items: [
-                    { text: '.check', link: '/plugins/api/deps/check' },
-                    { text: '.checkMany', link: '/plugins/api/deps/check-many' },
-                  ],
-                },
-                { text: '.invoke', link: '/plugins/api/root/invoke' },
-                { text: 'Utilities', link: '/plugins/api/root/overview' },
-                ],
+                  { text: '.app', link: '/plugins/api/desktop/app' },
+                  { text: '.fs', link: '/plugins/api/desktop/file-system' },],
               },
             ],
           },

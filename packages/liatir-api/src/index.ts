@@ -11,10 +11,6 @@ import type {
   LiatirOutputFieldType,
   LiatirToolOutput,
 } from "@liatir/core";
-import { buildAlign, type AlignNamespace } from "./bio/align";
-import { buildQc, type QcNamespace } from "./bio/qc";
-import { buildVariants, type VariantsNamespace } from "./bio/variants";
-import { buildAi, type AiNamespace } from "./ai";
 import type { LiatirBrowserAPI as BrowserBridgeAPI } from "./browser-api/index.js";
 
 /** Browser/webview bridge exposed as window.Liatir inside the Tauri app. */
@@ -29,19 +25,13 @@ export type LiatirAPI = LiatirBrowserAPI;
 // Bridge areas — reused (NOT duplicated) from the single source of truth in
 // src-ts. The same buildX(core) functions power window.Liatir in the browser;
 // here we compose them with the IPC `invoke`. tsup bundles them into dist.
-// GUI-only areas (window, menu, shortcuts, badge, autostart, contextMenu) are
-// intentionally excluded — they have no meaning in a headless Node process.
+//
+// Plugin API surface (minimal — a plugin is a tool, not an orchestrator):
+//   jobs, deps, sidecar, desktop.fs (data/cache/pluginFs), desktop.app (info),
+//   paths, invoke.
 import { buildFs } from "./browser-api/index.js";
-import { buildFiles } from "./browser-api/index.js";
-import { buildEvents } from "./browser-api/index.js";
 import { buildAppInfo } from "./browser-api/index.js";
-import { buildGlobVar } from "./browser-api/index.js";
-import { buildNetwork } from "./browser-api/index.js";
-import { buildClipboard } from "./browser-api/index.js";
-import { buildNotifications } from "./browser-api/index.js";
-import { buildDiagnostics } from "./browser-api/index.js";
 import { buildSidecar } from "./browser-api/index.js";
-import { buildPipeline } from "./browser-api/index.js";
 import { buildJobs } from "./browser-api/index.js";
 import { buildDeps } from "./browser-api/index.js";
 import type {
@@ -55,9 +45,10 @@ import type {
   DepCheckResult,
   DepsInterface,
 } from "./browser-api/index.js";
+import type { FsEntry, FsPaths } from "./browser-api/index.js";
+import type { SidecarResult, SidecarInterface } from "./browser-api/index.js";
 
 // ── Bridge types — reused from src-ts (single source of truth, no mirroring) ─
-// jobs/deps are the SAME interfaces the browser bridge uses, re-exported here.
 export type {
   JobEntry,
   JobStatus,
@@ -66,6 +57,9 @@ export type {
   JobsInterface,
   DepCheckResult,
   DepsInterface,
+  FsEntry,
+  FsPaths,
+  SidecarResult,
 };
 
 /**
@@ -223,7 +217,7 @@ async function httpInvoke<T>(
   return data.result as T;
 }
 
-// ── Liatir namespace (subset available in Node.js) ──────────────────────────
+// ── Plugin API types ─────────────────────────────────────────────────────────
 
 /**
  * Jobs in Node = the reused JobsInterface (spawn/kill/status/list/clearDone)
@@ -253,37 +247,86 @@ export interface LiatirNodePaths {
   temp: string;
 }
 
-export type LiatirSharedDesktop = Pick<
-  LiatirBrowserAPI["desktop"],
-  | "fs"
-  | "files"
-  | "events"
-  | "app"
-  | "network"
-  | "clipboard"
-  | "notifications"
-  | "diagnostics"
-  | "globalVariables"
->;
+/**
+ * Filesystem scope (data or cache) — the subset of FsScopeMethods relevant
+ * to plugins. Excludes trash and diagnostics which are app-internal.
+ */
+export interface PluginFsScope {
+  listContent(rel?: string): Promise<FsEntry[]>;
+  newDirectory(rel: string): Promise<void>;
+  remove(rel: string, recursive?: boolean): Promise<void>;
+  stat(rel?: string): Promise<FsEntry>;
+  writeText(rel: string, contents: string, opts?: { createDirs?: boolean; append?: boolean }): Promise<void>;
+  readText(rel: string): Promise<string>;
+  writeBytes(rel: string, base64: string, opts?: { createDirs?: boolean }): Promise<void>;
+  readBytes(rel: string): Promise<string>;
+  exists(rel: string): Promise<boolean>;
+  move(src: string, dest: string, opts?: { createDirs?: boolean; overwrite?: boolean }): Promise<void>;
+  copy(src: string, dest: string, opts?: { recursive?: boolean; createDirs?: boolean; overwrite?: boolean }): Promise<void>;
+  clear(): Promise<void>;
+  path(): Promise<string>;
+}
 
-export type LiatirSharedTopLevel = Pick<
-  LiatirBrowserAPI,
-  "deps" | "sidecar" | "pipeline" | "invoke"
->;
+/** Per-plugin isolated persistent storage. */
+export interface PluginFsPluginScope {
+  listContent(rel?: string): Promise<FsEntry[]>;
+  newDirectory(rel: string): Promise<void>;
+  remove(rel: string, recursive?: boolean): Promise<void>;
+  stat(rel?: string): Promise<FsEntry>;
+  writeText(rel: string, contents: string, opts?: { createDirs?: boolean; append?: boolean }): Promise<void>;
+  readText(rel: string): Promise<string>;
+  writeBytes(rel: string, base64: string, opts?: { createDirs?: boolean }): Promise<void>;
+  readBytes(rel: string): Promise<string>;
+  exists(rel: string): Promise<boolean>;
+  move(src: string, dest: string, opts?: { createDirs?: boolean; overwrite?: boolean }): Promise<void>;
+  copy(src: string, dest: string, opts?: { recursive?: boolean; createDirs?: boolean; overwrite?: boolean }): Promise<void>;
+  clearStorage(): Promise<void>;
+}
 
-export interface LiatirNode extends LiatirSharedTopLevel {
+/** Plugin filesystem — data (permanent), cache (ephemeral), pluginFs (isolated). */
+export interface PluginFs {
+  data: PluginFsScope;
+  cache: PluginFsScope;
+  pluginFs(plugin: string): PluginFsPluginScope;
+  paths(): Promise<FsPaths>;
+}
+
+/** App info — read-only runtime information about the Liatir app. */
+export interface PluginAppInfo {
+  info(): Promise<{
+    arch: string;
+    name: string;
+    version: string;
+    os: string;
+    pid: number;
+    is_debug: boolean;
+    temp_dir: string;
+  }>;
+}
+
+/** Desktop bridge subset available to headless plugins. */
+export interface PluginDesktop {
+  fs: PluginFs;
+  app: PluginAppInfo;
+}
+
+/** Sidecar — run binaries bundled with the Liatir app. */
+export type PluginSidecar = SidecarInterface;
+
+/** The full Liatir object handed to a Node plugin. */
+export interface LiatirNode {
   /** Async process manager — spawn, stream, kill any system binary. */
   jobs: LiatirNodeJobs;
-  /** Bio analysis namespaces (scipy-style typed wrappers). */
-  align: AlignNamespace;
-  qc: QcNamespace;
-  variants: VariantsNamespace;
-  /** Local AI model runtimes — list, prepare, and run models in their venv. */
-  ai: AiNamespace;
-  /** Desktop bridge subset available in headless Node plugins. */
-  desktop: LiatirSharedDesktop;
+  /** Check whether external binaries are available on the host. */
+  deps: DepsInterface;
+  /** Run binaries bundled with the Liatir app (samtools, bwa, etc.). */
+  sidecar: PluginSidecar;
+  /** Desktop bridge subset: filesystem and app info. */
+  desktop: PluginDesktop;
   /** App filesystem paths. */
   paths(): Promise<LiatirNodePaths>;
+  /** Raw escape hatch: call any native command not covered by a namespace. */
+  invoke<T = unknown>(cmd: string, payload?: Record<string, unknown>): Promise<T>;
 }
 
 // ── Factory ──────────────────────────────────────────────────────────────────
@@ -375,30 +418,35 @@ export async function createLiatir(): Promise<LiatirNode> {
     } as unknown as LiatirNodePaths;
   };
 
-  // Pipeline is pure JS orchestration over sidecar.run, so it is shared with
-  // the browser bridge (no Rust command of its own).
-  const sidecar = buildSidecar(core);
+  // Build the full browser bridge fs, then expose only the plugin-relevant surface.
+  const fullFs = buildFs(core);
+  const pluginFs: PluginFs = {
+    data: fullFs.data,
+    cache: fullFs.cache,
+    pluginFs: (plugin: string) => fullFs.pluginFs(plugin),
+    paths: fullFs.paths,
+  };
+
+  // Build app info bridge, expose only info() (not exit).
+  const fullApp = buildAppInfo(core);
+  const pluginApp: PluginAppInfo = {
+    info: fullApp.info,
+  };
+
+  // Sidecar — run binaries bundled with the Liatir app.
+  const fullSidecar = buildSidecar(core);
+  const sidecar: PluginSidecar = {
+    run: fullSidecar.run,
+  };
 
   return {
     jobs,
     deps,
-    align: buildAlign({ invoke, jobs }),
-    qc: buildQc({ jobs, invoke, paths }),
-    variants: buildVariants({ jobs, invoke }),
-    ai: buildAi(invoke),
-    desktop: {
-      fs: buildFs(core),
-      files: buildFiles(core),
-      events: buildEvents(core),
-      app: buildAppInfo(core),
-      globalVariables: buildGlobVar(core),
-      network: buildNetwork(core),
-      clipboard: buildClipboard(core),
-      notifications: buildNotifications(core),
-      diagnostics: buildDiagnostics(core),
-    },
     sidecar,
-    pipeline: buildPipeline({ sidecar }),
+    desktop: {
+      fs: pluginFs,
+      app: pluginApp,
+    },
     paths,
     invoke,
   };
