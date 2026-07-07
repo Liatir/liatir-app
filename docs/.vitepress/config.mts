@@ -153,117 +153,46 @@ export default defineConfig({
       {
         text: 'Plugins (.lia)',
         items: [
-          {
-            text: 'Get started',
-            collapsed: true,
-            items: [
               { text: 'Overview', link: '/plugins/overview' },
               { text: 'Get started', link: '/plugins/getting-started' },
               { text: 'Bundle format', link: '/plugins/format' },
-              { text: 'API packages', link: '/plugins/api-packages' },
-            ],
-          },
           {
             text: 'API',
             collapsed: true,
             items: [
               { text: 'Overview', link: '/plugins/api/overview' },
+                  { text: 'Plugin context', link: '/plugins/plugin-context' },
+                  { text: 'Define plugin', link: '/plugins/define-plugin' },
+                  { text: 'Declare fields', link: '/plugins/field' },
               {
-                text: 'Plugin authoring',
+                text: 'Node',
                 collapsed: true,
-                items: [
-                  { text: 'definePlugin', link: '/plugins/api/plugin/define-plugin' },
-                  { text: 'field', link: '/plugins/api/plugin/field' },
-                  { text: 'PluginContext', link: '/plugins/api/plugin/plugin-context' },
-                  { text: 'Liatir Node bridge', link: '/plugins/api/plugin/node-bridge' },
-                ],
-              },
-              {
-                text: 'Root',
-                collapsed: true,
-                items: [
-                  { text: 'Overview', link: '/plugins/api/root/overview' },
-                  { text: 'openBrowser', link: '/plugins/api/root/open-browser' },
-                  { text: 'invoke', link: '/plugins/api/root/invoke' },
-                ],
-              },
-              {
+                items: [{
                 text: '.desktop',
                 collapsed: true,
                 items: [
-                  { text: 'App', link: '/plugins/api/desktop/app' },
-                  { text: 'Events', link: '/plugins/api/desktop/events' },
-                  { text: 'File System', link: '/plugins/api/desktop/file-system' },
-                  { text: 'Shortcuts', link: '/plugins/api/desktop/shortcuts' },
-                  { text: 'Deeplinks', link: '/plugins/api/desktop/deep-links' },
-                  { text: 'Notifications', link: '/plugins/api/desktop/notifications' },
-                  { text: 'Files', link: '/plugins/api/desktop/files' },
-                  { text: 'Drag and Drop', link: '/plugins/api/desktop/drag-and-drop' },
-                  { text: 'Network', link: '/plugins/api/desktop/network' },
-                  { text: 'Window', link: '/plugins/api/desktop/window' },
-                  { text: 'Clipboard', link: '/plugins/api/desktop/clipboard' },
-                  { text: 'Utilities', link: '/plugins/api/desktop/utilities' },
-                ],
-              },
-              {
-                text: '.pipeline',
-                collapsed: true,
-                items: [
-                  { text: 'run', link: '/plugins/api/pipeline/run' },
+                  { text: '.app', link: '/plugins/api/desktop/app' },
+                  { text: '.fs', link: '/plugins/api/desktop/file-system' },
                 ],
               },
               {
                 text: '.jobs',
                 collapsed: true,
                 items: [
-                  { text: 'spawn', link: '/plugins/api/jobs/spawn' },
-                  { text: 'status', link: '/plugins/api/jobs/status' },
-                  { text: 'list', link: '/plugins/api/jobs/list' },
-                  { text: 'kill', link: '/plugins/api/jobs/kill' },
-                  { text: 'clearDone', link: '/plugins/api/jobs/clear-done' },
+                  { text: '.status', link: '/plugins/api/jobs/status' },
+                  { text: '.list', link: '/plugins/api/jobs/list' },
                 ],
-              },
-              {
-                text: '.deps',
-                collapsed: true,
-                items: [
-                  { text: 'check', link: '/plugins/api/deps/check' },
-                  { text: 'checkMany', link: '/plugins/api/deps/check-many' },
-                ],
-              },
-              {
-                text: '.qc',
-                collapsed: true,
-                items: [
-                  { text: 'seqkit', link: '/plugins/api/qc/seqkit' },
-                  { text: 'fastp', link: '/plugins/api/qc/fastp' },
-                  { text: 'fastqc', link: '/plugins/api/qc/fastqc' },
-                ],
-              },
-              {
-                text: '.align',
-                collapsed: true,
-                items: [
-                  { text: 'bwaMem', link: '/plugins/api/align/bwa-mem' },
-                  { text: 'minimap2', link: '/plugins/api/align/minimap2' },
-                  { text: 'flagstat', link: '/plugins/api/align/flagstat' },
-                  { text: 'faidx', link: '/plugins/api/align/faidx' },
-                ],
-              },
-              {
-                text: '.variants',
-                collapsed: true,
-                items: [
-                  { text: 'bcftoolsStats', link: '/plugins/api/variants/bcftools-stats' },
-                  { text: 'bcftoolsFilter', link: '/plugins/api/variants/bcftools-filter' },
-                  { text: 'snpeff', link: '/plugins/api/variants/snpeff' },
-                ],
-              },
-              {
-                text: '.ai',
-                collapsed: true,
-                items: [
-                  { text: 'Overview', link: '/plugins/api/ai/overview' },
+                },
+                {
+                  text: '.deps',
+                  collapsed: true,
+                  items: [
+                    { text: '.check', link: '/plugins/api/deps/check' },
+                    { text: '.checkMany', link: '/plugins/api/deps/check-many' },
+                  ],
+                },
+                { text: '.invoke', link: '/plugins/api/root/invoke' },
+                { text: 'Utilities', link: '/plugins/api/root/overview' },
                 ],
               },
             ],

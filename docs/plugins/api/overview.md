@@ -1,89 +1,55 @@
 ---
-title: Liatir API
-description: Comprehensive overview of the Liatir API, its lifecycle, usage, and platform specifics.
+title: Liatir Plugin API
+description: Comprehensive overview of the Liatir Plugin API, its lifecycle, usage, and platform specifics.
 ---
 
 
-# Liatir API
+# Liatir Plugin API
 
-This is the API used by code running inside the Liatir local environment.
+This is the API you need to use in order to develop a `.lia` plugin that can run inside the Liatir local environment. The Liatir Plugin API allows you to define the plugin, providing the entry point and the context where you can implement your logic and use the API bridge.
 
-For an introduction to installing and using the API packages, start with
-[Liatir API packages](/plugins/api-packages). This section is the API reference: it is organized
-by namespace and then by API area or method.
+## Runtimes
 
-Prefer typed namespaces such as `desktop`, `jobs`, `deps`, and `qc`. Use the
-root-level `invoke()` escape hatch only when no typed wrapper exists.
+- **Node** declares it with `definePlugin({...})` from `@liatir/api`.
+- **Python** declares it with `define_plugin(...)` from the CLI-managed
+  `liatir` module scaffolded next to the entry point.
+- **WASM** declares it with `define_plugin()` from the CLI-managed
+  `src/liatir.rs` module.
 
-## Namespaces
+## Authoring
 
-- [Plugin authoring API](/plugins/api/plugin/define-plugin)
-- [Root API](/plugins/api/root/overview)
-- [Desktop API](/plugins/api/desktop/app)
-- [Pipeline API](/plugins/api/pipeline/run)
-- [Jobs API](/plugins/api/jobs/spawn)
-- [Dependencies API](/plugins/api/deps/check)
-- [Bio: QC API](/plugins/api/qc/fastqc)
-- [Bio: Alignment API](/plugins/api/align/bwa-mem)
-- [Bio: Variants API](/plugins/api/variants/bcftools-stats)
+Every `.lia` plugin declares its inputs and outputs **once**, in code, and
+attaches the implementation to that contract. `liatir build` reads the contract
+back and generates `manifest.json` from it — **there is no schema to write or keep
+in sync by hand**.
 
-## Root API
+This is the **same API shape in all three runtimes**:
 
-- [Overview](/plugins/api/root/overview)
-- [openBrowser](/plugins/api/root/open-browser)
-- [invoke](/plugins/api/root/invoke)
+- **Node** — `definePlugin({ inputs, outputs }).main(handler)` from `@liatir/api`.
+- **Python** — `define_plugin(inputs=..., outputs=...)` + `@plugin.main` from the
+  CLI-managed `liatir` module.
+- **WASM (Rust)** — `define_plugin().input(...).output(...).main(handler)` from the
+  CLI-managed `liatir` module.
 
-## Desktop API areas
+- [Plugin context](/plugins/plugin-context) 
+- [Defining plugin](plugins/api/define-plugin)
+- [Declaring I/O fields](plugins/api/define-plugin)
 
-- [App](/plugins/api/desktop/app)
-- [Files](/plugins/api/desktop/files)
-- [File system](/plugins/api/desktop/file-system)
-- [Window](/plugins/api/desktop/window)
-- [Events](/plugins/api/desktop/events)
-- [Clipboard](/plugins/api/desktop/clipboard)
-- [Notifications](/plugins/api/desktop/notifications)
-- [Network](/plugins/api/desktop/network)
-- [Shortcuts](/plugins/api/desktop/shortcuts)
-- [Drag and drop](/plugins/api/desktop/drag-and-drop)
-- [Deep links](/plugins/api/desktop/deep-links)
-- [Utilities](/plugins/api/desktop/utilities)
+## API bridge
 
-## Pipeline API
+The `Liatir` object passed to `.main(...)` is the Node plugin bridge. It connects
+the plugin process to the running Liatir desktop app through local IPC.
 
-- [run](/plugins/api/pipeline/run)
+Python plugins get the same bridge on their handler context as `ctx.liatir`,
+using snake_case method names (e.g. `ctx.liatir.jobs.list()`,
+`ctx.liatir.deps.check(...)`, `ctx.liatir.invoke(...)`). It covers the same
+areas below except the typed bio helpers (`align`/`qc`/`variants`), which Python
+reaches through `ctx.liatir.invoke`. WASM plugins are sandboxed and do not have API bridge access.
 
-## Jobs API
-
-- [spawn](/plugins/api/jobs/spawn)
-- [status](/plugins/api/jobs/status)
-- [list](/plugins/api/jobs/list)
-- [kill](/plugins/api/jobs/kill)
-- [clearDone](/plugins/api/jobs/clear-done)
-
-## Dependencies API
-
-- [check](/plugins/api/deps/check)
-- [checkMany](/plugins/api/deps/check-many)
-
-## Bio: QC API
-
-- [seqkit](/plugins/api/qc/seqkit)
-- [fastp](/plugins/api/qc/fastp)
-- [fastqc](/plugins/api/qc/fastqc)
-
-## Bio: Alignment API
-
-- [bwaMem](/plugins/api/align/bwa-mem)
-- [minimap2](/plugins/api/align/minimap2)
-- [flagstat](/plugins/api/align/flagstat)
-- [faidx](/plugins/api/align/faidx)
-
-## Bio: Variants API
-
-- [bcftoolsStats](/plugins/api/variants/bcftools-stats)
-- [bcftoolsFilter](/plugins/api/variants/bcftools-filter)
-- [snpeff](/plugins/api/variants/snpeff)
-
-## AI API
-
-- [Overview (list, hardware, status, prepare, runScript)](/plugins/api/ai/overview)
+| Area | Use it for |
+| --- | --- |
+| `Jobs` | Spawn, wait for, stream, and inspect Liatir jobs. |
+| `Deps` | Check whether command-line binaries are available. |
+| `Desktop fs` | Scoped Liatir storage. |
+| `Desktop app info` | App and OS information. |
+| `Invoke method` | Low-level IPC escape hatch. |

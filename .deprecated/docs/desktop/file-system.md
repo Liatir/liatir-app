@@ -4,9 +4,9 @@ description: "Comprehensive documentation for the File System API area."
 ---
 
 
-# .desktop.fs
+# File System API
 
-The **File System API** area provides secure and isolated access to the file system. It enables applications to interact with files and directories within predefined scopes, ensuring data integrity and sandboxing from the global file system.
+The File System API area provides secure and isolated access to the file system. It enables applications to interact with files and directories within predefined scopes, ensuring data integrity and sandboxing from the global file system.
 
 ## Overview
 
@@ -14,7 +14,8 @@ The API area is organized into several main scopes, each serving a specific purp
 
 - **cache**: Temporary storage that should always be used for cached data that can be purged without loss of critical information.
 - **data**: Persistent storage for application data and files.
-- **pluginFs**: Persistent storage of a specified plugin.
+- **trash**: A recycle bin area where deleted files are temporarily held before permanent removal.
+- **diagnostics**: Access to diagnostic files and logs for troubleshooting and monitoring.
 
 These scopes help maintain data organization, security, and lifecycle management within the Liatir environment and can't be changed.
 
@@ -25,6 +26,10 @@ These scopes help maintain data organization, security, and lifecycle management
 | `cache`       | `FsScopeMethods` | Methods to interact with the cache scope.              |
 | `data`        | `FsScopeMethods` | Methods to interact with the persistent data scope.    |
 | `pluginFs`        | `(plugin: string) => FsPluginMethods` | Returns an interface you can use to interact with the persistent storage of the specified plugin.    |
+| `paths`       | `FsPaths`     | Provides base paths for all scopes.                     |
+| `base`        | `string`      | The root base path for all file system operations.     |
+| `trash`       | `FsTrashMethods` | Methods to manage files in the trash scope.             |
+| `diagnostics` | `FsDiagnosticMethods` | Methods to access diagnostic files and logs.            |
 
 ### FsPaths
 
@@ -32,6 +37,8 @@ These scopes help maintain data organization, security, and lifecycle management
 |-------------|---------|----------------------------------------------|
 | `cache`     | string  | Base path for the cache scope.                |
 | `data`      | string  | Base path for the data scope.                 |
+| `trash`     | string  | Base path for the trash scope.                |
+| `diagnostics`| string | Base path for the diagnostics scope.          |
 
 ### FsScopeMethods
 
@@ -51,6 +58,30 @@ These scopes help maintain data organization, security, and lifecycle management
 | `clear`          | `() => Promise<void>`                          | Clears all contents within the scope.                 |
 | `path`           | `(relativePath: string) => string`            | Resolves and returns an absolute path within the scope. |
 | `base`           | `string`                                      | The base path of the current scope.                    |
+
+### FsTrashMethods
+
+| Method           | Signature                                    | Description                                         |
+|------------------|----------------------------------------------|-----------------------------------------------------|
+| `listContent`    | `(path: string) => Promise<FsEntry[]>`       | Lists files and directories within the specified path. |
+| `recover`   | `(path: string) => Promise<void>`             | Recovers a file or directory at the specified path.          |
+| `clear`         | `(path: string) => Promise<void>`             | Clears all contents within the trash scope.  |
+| `stat`           | `(path: string) => Promise<FsEntry>`          | Retrieves metadata about a file or directory.       |
+| `readText`       | `(path: string) => Promise<string>`           | Reads text content from a file at the specified path. |
+| `readBytes`      | `(path: string) => Promise<Uint8Array>`       | Reads binary data from a file at the specified path. |
+| `exists`         | `(path: string) => Promise<boolean>`          | Checks if a file or directory exists at the given path. |
+
+### FsScopeMethods
+
+| Method           | Signature                                    | Description                                         |
+|------------------|----------------------------------------------|-----------------------------------------------------|
+| `listContent`    | `(path: string) => Promise<FsEntry[]>`       | Lists files and directories within the specified path. |
+| `remove`         | `(path: string) => Promise<void>`             | Deletes a file or directory at the specified path.  |
+| `clear`         | `(path: string) => Promise<void>`             | Clears all contents within the trash scope.  |
+| `stat`           | `(path: string) => Promise<FsEntry>`          | Retrieves metadata about a file or directory.       |
+| `readText`       | `(path: string) => Promise<string>`           | Reads text content from a file at the specified path. |
+| `readBytes`      | `(path: string) => Promise<Uint8Array>`       | Reads binary data from a file at the specified path. |
+| `exists`         | `(path: string) => Promise<boolean>`          | Checks if a file or directory exists at the given path. |
 
 ### FsEntry
 
@@ -88,19 +119,19 @@ These scopes help maintain data organization, security, and lifecycle management
 
 ```ts
 // Writing a text file to the data (persistent) scope
-await Liatir.desktop.fs.pluginFs.writeText('notes/todo.txt', 'Remember to review the documentation.');
+await Liatir.desktop.fs.data.writeText('notes/todo.txt', 'Remember to review the documentation.');
 
 // Reading the text file back
-const content = await Liatir.desktop.fs.pluginFs.readText('notes/todo.txt');
+const content = await Liatir.desktop.fs.data.readText('notes/todo.txt');
 console.log(content); // Output: Remember to review the documentation.
 ```
 
 ## Notes
 
 :::tip
-The `cache` namespace is intended for temporary files that will be cleared, while `data` and `pluginFs` namespaces are meant for persistent files that should be preserved across sessions.
+The `cache` namespace is intended for temporary files that can be cleared without affecting user data, while the `data` namespace is for persistent files that should be preserved across sessions and backups.
 :::
 
 :::warning
-Access through the File System API area is strictly limited to the Liatir isolated environment. It does not provide access to the global file system of the local machine, ensuring security and sandboxing.
+Access through the File System API area is strictly limited to the Liatir isolated environment. It does not provide access to the global file system of the host machine, ensuring security and sandboxing.
 :::

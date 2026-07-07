@@ -1,9 +1,9 @@
 ---
-title: .jobs.status
+title: jobs.status
 description: Reads one async process job status.
 ---
 
-# .jobs.status
+# jobs.status
 
 `Liatir.jobs.status()` reads the current state of one async process job.
 

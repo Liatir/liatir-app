@@ -3,7 +3,7 @@ title: jobs.list
 description: Lists async process jobs tracked by Liatir.
 ---
 
-# .jobs.list
+# jobs.list
 
 `Liatir.jobs.list()` lists async process jobs tracked by Liatir.
 

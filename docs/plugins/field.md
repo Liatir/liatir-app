@@ -1,9 +1,9 @@
 ---
-title: field
+title: Declaring plugin fields
 description: Field builders for .lia plugin input and output schemas, in Node, Python, and WASM.
 ---
 
-# field
+# Declaring plugin fields
 
 `field` contains the builders for declaring plugin inputs and outputs. The
 builder set is the same across the three runtimes; only the call syntax differs.
@@ -32,9 +32,13 @@ use liatir::field;
 
 :::
 
-In Node, `field.*` is the normal builder set and `output.file(...)` types
-returned file values correctly. In Python and WASM the `liatir` module is
-scaffolded into your project by `liatir init` (no separate install).
+> <small>
+>
+> In Node, `field.*` is the normal builder set and `output.file(...)` types
+> returned file values correctly. In Python and WASM the `liatir` module is
+> scaffolded into your project by `liatir init` (no separate install).
+>
+> </small>
 
 ## Input field types
 

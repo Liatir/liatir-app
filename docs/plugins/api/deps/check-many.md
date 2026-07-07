@@ -3,7 +3,7 @@ title: deps.checkMany
 description: Checks several command-line dependencies at once.
 ---
 
-# deps.checkMany
+# .deps.checkMany
 
 `Liatir.deps.checkMany()` checks several command-line binaries at once.
 

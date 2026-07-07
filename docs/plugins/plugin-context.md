@@ -38,9 +38,7 @@ export default liatirPlugin.main(async ({ input, Liatir }: PluginContext<typeof 
 plugins only need `PluginContext<typeof liatirPlugin>`. The type is erased at
 runtime; the contract is enforced at build time and through TypeScript.
 
-Node and Python plugins receive the `Liatir` bridge — see
-[Liatir Node bridge](/plugins/api/plugin/node-bridge). WASM plugins are fully
-sandboxed and have no bridge.
+WASM plugins are fully sandboxed and does not have the [API bridge](/plugins/api/overview#api-bridge).
 
 ## Python — `ctx`
 

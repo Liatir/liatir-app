@@ -4,15 +4,25 @@ description: Interface for retrieving system information and controlling the Lia
 ---
 
 
-# .desktop.app
+# App API
 
-The `app` API area of the Liatir API provides methods to retrieve system-level information. Use this API area when you need to access details about the app environment and OS.
+The `app` API area of the Liatir API provides methods to retrieve system-level information and control the main application. Use this API area when you need to access details about the app environment or programmatically exit the application.
+
+## Overview
+
+The `app` interface is responsible for:
+
+- Fetching general information about the running Liatir application and its environment.
+- Allowing programmatic exit of the app (with appropriate permissions).
+
+These features are useful for diagnostics, analytics, and scenarios where the app needs to be closed from code (e.g., after a critical error or on user request).
 
 ## Methods
 
 | Method         | Description                                                        | Return Type    |
 |--------------- |--------------------------------------------------------------------|---------------|
 | `info()`       | Retrieves detailed information about the Liatir app instance, including version, platform, and environment. | `Promise<AppInfo>` |
+| `exit()`       | Closes the Liatir application. Requires sufficient permissions and may not be available in all contexts. | `Promise<void>`    |
 
 ## AppInfo structure
 
@@ -76,4 +86,8 @@ console.log('Platform:', info.os);
 
 :::tip Efficient usage of `info()`
 Cache the result of `info()` if you need app details multiple times, as the information is static for the session and repeated calls may be unnecessary.
+:::
+
+:::warning
+The `exit()` method will immediately terminate the Liatir app if permissions allow. Use this method with caution and always ensure the user is notified or has saved their work.
 :::

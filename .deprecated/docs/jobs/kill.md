@@ -3,7 +3,7 @@ title: jobs.kill
 description: Stops a running async process job.
 ---
 
-# .jobs.kill
+# jobs.kill
 
 `Liatir.jobs.kill()` stops a running async process job.
 
@@ -21,5 +21,5 @@ await Liatir.jobs.kill(jobId);
 
 ## Notes
 
-Use this method with caution.
+Only stop jobs in response to an explicit user action.
 

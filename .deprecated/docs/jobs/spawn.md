@@ -3,7 +3,7 @@ title: jobs.spawn
 description: Starts an async native process from the Liatir API.
 ---
 
-# .jobs.spawn
+# jobs.spawn
 
 `Liatir.jobs.spawn()` starts an async native process and returns immediately
 with a job ID.
@@ -34,3 +34,12 @@ const { jobId } = await Liatir.jobs.spawn('samtools', ['--version'], {
   kind: 'diagnostic'
 });
 ```
+
+## Events
+
+Subscribe to process output through `Liatir.desktop.events`:
+
+- `jobs:stdout:<jobId>`
+- `jobs:stderr:<jobId>`
+- `jobs:exit:<jobId>`
+

@@ -93,9 +93,8 @@ and generates the bundle manifest from it — there is no schema to write by han
 
 For Python and WASM the `liatir` module is not a package you install: `liatir
 init` writes it into your project and `liatir build` keeps it in sync with your
-CLI version. See [definePlugin](/plugins/api/plugin/define-plugin) for the
-side-by-side examples and [field builders](/plugins/api/plugin/field) for the
-field types.
+CLI version. See the dedicated guide [here](/plugins/define-plugin) for the
+side-by-side examples and the one on how to declare fields [here](/plugins/field).
 
 ## Test, build and import
 
@@ -114,5 +113,22 @@ contract. Liatir uses them to render forms, validate required inputs, expose
 outputs to later steps, and store file outputs in Results.
 
 For the exact bundle format, see [.lia Bundle Format](/plugins/format). For the
-API packages, see [Liatir API packages](/plugins/api-packages) and
-[Plugin authoring API](/plugins/api/plugin/define-plugin).
+API packages, see [Plugin authoring API](/plugins/define-plugin).
+
+## Liatir API package
+
+- **Node plugins** use `@liatir/api` Node module as typed API entry point, based on a shared `define_plugin` contract;
+
+- **Python and WASM plugins** use the same `define_plugin` contract, but not as a
+package: the CLI scaffolds a single managed module (`src/liatir.py` /
+`src/liatir.rs`) into the project and `liatir build` keeps it in sync — there
+is nothing to install or update separately. Check out the [plugin context guide](/plugins/plugin-context).
+
+## Related
+
+- [Plugin context](/plugins/plugin-context)
+- [Plugin authoring](/plugins/define-plugin)
+- [Declaring fields](/plugins/field)
+- [Desktop API](/plugins/api/desktop/app)
+- [Jobs API](/plugins/api/jobs/spawn)
+- [Dependencies API](/plugins/api/deps/check)

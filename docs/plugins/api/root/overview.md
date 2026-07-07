@@ -1,28 +1,23 @@
 ---
-title: Root API
-description: Root-level fields and methods exposed by the Liatir API.
+title: API Utilities
+description: Root-level utility fields and methods exposed by the Liatir API.
 ---
 
-# Root API
+# API Utilities
 
-The root API contains runtime availability, bridge readiness, and a few
+The root API contains various utilities such as runtime availability check, bridge readiness, and a few
 cross-cutting helpers.
 
-Most plugin code should prefer specific namespaces such as `desktop`, `jobs`,
-`deps`, or `qc`. Use root-level helpers for availability checks and advanced
-integration points.
+## Methods
 
-## Members
-
-| Member | Type | Description |
+| Methods | Type | Description |
 | --- | --- | --- |
 | `isAvailable` | `boolean` | Whether the Liatir bridge is available. |
 | `apiVersion` | `string` | Bridge API version. |
 | `ready` | `Promise<true>` | Resolves when the bridge is ready. |
-| `isDesktop` | `boolean` | Whether the current runtime is desktop Liatir. |
+| `isDesktop` | `boolean` | Whether the current runtime is a desktop app (not a browser). |
 | `onReady(callback)` | `(callback: Function) => void` | Runs a callback when the bridge is ready. |
 | `openBrowser(url)` | `(url: string) => Promise<void>` | Opens a URL in the external browser. |
-| `invoke(cmd, payload)` | generic promise | Low-level command invocation. |
 
 ## Example
 
@@ -30,15 +25,11 @@ integration points.
 import { Liatir, isLiatirAvailable } from 'liatir';
 
 if (!isLiatirAvailable()) {
-  throw new Error('This feature must run inside Liatir.');
+  throw new Error('Liatir instance unavailable.');
 }
 
 await Liatir.ready;
+
+// Other logic...
 ```
-
-## Notes
-
-Use [openBrowser](/plugins/api/root/open-browser) for external links and
-[invoke](/plugins/api/root/invoke) only when a typed namespace does not expose
-the feature you need.
 

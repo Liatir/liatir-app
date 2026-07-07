@@ -20,10 +20,6 @@ A `.lia` plugin file is a bundle built with `@liatir/cli` and imported into Liat
 
 :::
 
----
-
-![Liatir API surface map](/static/api-surface-map.svg)
-
 ## Node plugins
 
 Node plugins are the recommended starting point for most custom logic. A Node

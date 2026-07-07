@@ -3,7 +3,7 @@ title: openBrowser
 description: Opens an external URL from the Liatir API.
 ---
 
-# openBrowser
+# .openBrowser
 
 `Liatir.openBrowser(url)` opens a URL in the user's default external browser.
 
@@ -19,7 +19,7 @@ openBrowser(url: string): Promise<void>
 ## Example
 
 ```ts
-await Liatir.openBrowser('https://liatir.com/docs');
+await Liatir.openBrowser('https://liatir.com');
 ```
 
 ## Notes

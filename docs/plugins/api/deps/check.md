@@ -3,7 +3,7 @@ title: deps.check
 description: Checks whether one command-line dependency is available.
 ---
 
-# deps.check
+# .deps.check
 
 `Liatir.deps.check()` checks whether one command-line binary is available in
 `PATH`.

@@ -1,9 +1,9 @@
 ---
-title: definePlugin
+title: Define plugin
 description: Declares the input/output contract and entry point of a .lia plugin, in Node, Python, or WASM.
 ---
 
-# definePlugin
+# Define plugin entry point
 
 Every `.lia` plugin declares its inputs and outputs **once**, in code, and
 attaches the implementation to that contract. `liatir build` reads the contract
@@ -120,7 +120,7 @@ fn main() {
 
 `liatir build` rejects a plugin whose contract is malformed: a missing entry
 point, an input/output that is not an object, or a field with an unsupported
-type (see [field builders](/plugins/api/plugin/field) for the allowed types).
+type (see [field builders](/plugins/field) for the allowed types).
 
 In **Python and WASM**, the SDK also validates on **every run**: it applies
 declared defaults, rejects a missing required input or a wrong-typed value
@@ -136,17 +136,8 @@ time.
 - Return an object whose keys match the declared output keys.
 - Node only: do not export `run(inputs)` directly, and do not maintain a Node `.lia-manifest.json`.
 
-## Legacy plugins
-
-Older Python plugins with a plain `def main(input)` and a manifest-owned
-`inputSchema` / `outputSchema`, and older WASM tools that read stdin / write
-stdout without the SDK, still build: when no code contract is present, the
-manifest schema is used. When a code contract **is** present, it wins and any
-manifest schema is ignored.
-
 ## Related pages
 
-- [field builders](/plugins/api/plugin/field)
-- [PluginContext](/plugins/api/plugin/plugin-context)
-- [Liatir Node bridge](/plugins/api/plugin/node-bridge)
+- [Declare fields](/plugins/field)
+- [Plugin context](/plugins/plugin-context)
 - [.lia Bundle Format](/plugins/format)

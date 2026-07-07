@@ -3,7 +3,7 @@ title: invoke
 description: Low-level command invocation for advanced API usage.
 ---
 
-# invoke
+# .invoke
 
 `Liatir.invoke()` calls a low-level bridge command directly.
 
@@ -25,12 +25,12 @@ invoke<T = unknown>(cmd: string, payload?: Record<string, unknown>): Promise<T>
 
 ```ts
 const result = await Liatir.invoke('some_command', {
-  value: 42
+  some_input: 42
 });
 ```
 
 ## Notes
 
-Typed namespaces are more stable and easier to understand. Treat `invoke()` as
-an escape hatch for advanced integrations.
+Typed namespaces are more stable and easier to understand and should be preferred. Treat `invoke()` as
+an **escape hatch for advanced integrations**.
 
