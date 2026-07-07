@@ -83,14 +83,6 @@ app. It includes:
 
 Node plugins can also use normal Node.js APIs and bundled npm dependencies.
 
----
-
-<center>
-
-![Liatir API surface Node map](/static/api-surface-node-map.svg)
-
-</center>
-
 ## Python plugins
 
 Python `.lia` plugins are useful for scientific Python code and libraries such
@@ -138,14 +130,6 @@ def main(ctx):
 `sidecar`, `pipeline`, `paths()`, plus `invoke` as a raw escape hatch), using
 snake_case method names. It resolves its connection lazily, so plugins that
 never touch the bridge run without requiring the app.
-
----
-
-<center>
-
-![Liatir API surface Python map](/static/api-surface-py-map.svg)
-
-</center>
 
 ## WASM plugins
 
