@@ -108,6 +108,9 @@ commands.allow = [
   "lia_plugin_storage_clear",
   "lia_plugin_call",
 
+  "lia_plugin_progress",
+  "lia_plugin_log",
+
   "lia_sidecar_run",
 
   "lia_liatir_read_manifest",

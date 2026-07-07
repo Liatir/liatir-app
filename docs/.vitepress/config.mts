@@ -56,7 +56,6 @@ export default defineConfig({
         { text: 'Donate', link: '/donate' },
       ] },
       { text: 'Introduction', link: '/introduction/overview' },
-      { text: 'Donate', link: '/donate' },
     ],
 
     sidebar: [
