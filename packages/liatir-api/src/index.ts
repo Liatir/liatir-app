@@ -10,6 +10,18 @@ import type {
   LiatirOutputFieldSchema,
   LiatirOutputFieldType,
   LiatirToolOutput,
+  LiatirToolRef,
+  LiatirPluginLogEntry,
+  LiatirJobProgress,
+  LiatirLogLevel,
+} from "@liatir/core";
+import {
+  BUILT_IN_NATIVE_TOOLS,
+  BUILT_IN_AI_MODEL_REGISTRY,
+  nativeTool,
+  aiModel,
+  liaPlugin,
+  apiRequest,
 } from "@liatir/core";
 import type { LiatirBrowserAPI as BrowserBridgeAPI } from "./browser-api/index.js";
 
@@ -313,6 +325,89 @@ export interface PluginDesktop {
 /** Sidecar — run binaries bundled with the Liatir app. */
 export type PluginSidecar = SidecarInterface;
 
+// ── ToolRef re-exports — typed references for spawnable entities ─────────────
+
+/**
+ * Typed references for bundled native tools (samtools, bwa, etc.).
+ * Use with `jobs.spawn(tools.samtools, args)` for type-safe tool invocation.
+ */
+export const tools = Object.fromEntries(
+  BUILT_IN_NATIVE_TOOLS.map((t) => [t.name, nativeTool(t.id)])
+) as Record<string, LiatirToolRef>;
+
+/**
+ * Typed references for AI models (scGPT, Enformer, etc.).
+ * Use with `jobs.spawn(models.scgpt, args)` for type-safe model invocation.
+ */
+export const models = Object.fromEntries(
+  BUILT_IN_AI_MODEL_REGISTRY.map((m) => [m.id, aiModel(m.id)])
+) as Record<string, LiatirToolRef>;
+
+/** Create a ToolRef for a .lia plugin by name. */
+export { liaPlugin as plugin };
+
+/** Create a ToolRef for an API request endpoint by name. */
+export { apiRequest as api };
+
+// ── Plugin Log & Progress builders ───────────────────────────────────────────
+
+/**
+ * Structured logging interface for plugins.
+ * Logs are tagged with the current job ID and streamed to the frontend.
+ */
+export interface PluginLog {
+  info(message: string, meta?: Record<string, unknown>): Promise<void>;
+  warn(message: string, meta?: Record<string, unknown>): Promise<void>;
+  error(message: string, meta?: Record<string, unknown>): Promise<void>;
+  debug(message: string, meta?: Record<string, unknown>): Promise<void>;
+}
+
+/**
+ * Progress tracking interface for plugins.
+ * Progress updates are streamed to the frontend and displayed in the Jobs UI.
+ */
+export interface PluginProgress {
+  start(total: number, label?: string): Promise<void>;
+  advance(n?: number, label?: string): Promise<void>;
+  update(current: number, label?: string): Promise<void>;
+  done(): Promise<void>;
+}
+
+type InvokeFn = <T>(cmd: string, payload?: Record<string, unknown>) => Promise<T>;
+
+/**
+ * Build a PluginLog instance for a specific job.
+ * Called internally by the plugin runtime; plugins access it via `Liatir.log`.
+ */
+export function buildLog(invoke: InvokeFn, jobId: string): PluginLog {
+  const send = (level: LiatirLogLevel) => (message: string, meta?: Record<string, unknown>) =>
+    invoke<void>("lia_plugin_log", { jobId, level, message, meta });
+
+  return {
+    info: send("info"),
+    warn: send("warn"),
+    error: send("error"),
+    debug: send("debug"),
+  };
+}
+
+/**
+ * Build a PluginProgress instance for a specific job.
+ * Called internally by the plugin runtime; plugins access it via `Liatir.progress`.
+ */
+export function buildProgress(invoke: InvokeFn, jobId: string): PluginProgress {
+  return {
+    start: (total, label) =>
+      invoke<void>("lia_plugin_progress", { jobId, current: 0, total, label }),
+    advance: (n = 1, label) =>
+      invoke<void>("lia_plugin_progress", { jobId, delta: n, label }),
+    update: (current, label) =>
+      invoke<void>("lia_plugin_progress", { jobId, current, label }),
+    done: () =>
+      invoke<void>("lia_plugin_progress", { jobId, done: true }),
+  };
+}
+
 /** The full Liatir object handed to a Node plugin. */
 export interface LiatirNode {
   /** Async process manager — spawn, stream, kill any system binary. */
@@ -323,6 +418,10 @@ export interface LiatirNode {
   sidecar: PluginSidecar;
   /** Desktop bridge subset: filesystem and app info. */
   desktop: PluginDesktop;
+  /** Structured logging — logs are streamed to the Jobs UI. */
+  log: PluginLog;
+  /** Progress tracking — updates are displayed in the Jobs UI. */
+  progress: PluginProgress;
   /** App filesystem paths. */
   paths(): Promise<LiatirNodePaths>;
   /** Raw escape hatch: call any native command not covered by a namespace. */
@@ -439,6 +538,12 @@ export async function createLiatir(): Promise<LiatirNode> {
     run: fullSidecar.run,
   };
 
+  // Log & Progress — structured observability for plugins.
+  // The job ID is injected by the runtime via LIATIR_JOB_ID env var.
+  const jobId = process.env["LIATIR_JOB_ID"] ?? "unknown";
+  const log = buildLog(invoke, jobId);
+  const progress = buildProgress(invoke, jobId);
+
   return {
     jobs,
     deps,
@@ -447,6 +552,8 @@ export async function createLiatir(): Promise<LiatirNode> {
       fs: pluginFs,
       app: pluginApp,
     },
+    log,
+    progress,
     paths,
     invoke,
   };

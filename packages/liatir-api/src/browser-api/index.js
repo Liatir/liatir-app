@@ -440,7 +440,7 @@ var Liatir = new Proxy({}, {
 
 // src-ts/bridge.constants.json
 var bridge_constants_default = {
-  appUrl: "http://blank.html",
+  appUrl: "",
   apiVersion: "0.2.1"
 };
 
@@ -840,6 +840,20 @@ var normalizePluginName = (name) => {
 function scopeCoreMethods(core, permanent, plugin) {
   const ensureDataNotIsolated = () => {
   };
+  const blockEmptyRel = (rel, errorMsg) => {
+    const cleanRel = typeof rel === "string" ? rel.trim().replaceAll(" ", "") : void 0;
+    if (!cleanRel || rel.length <= 0) throw errorMsg ?? "'rel' can't be empty";
+  };
+  const forceRel = (rel) => {
+    const cleanRel = typeof rel === "string" ? rel.trim().replaceAll(" ", "") : "";
+    let finalRel = cleanRel;
+    if (!cleanRel || rel.length <= 0) {
+      const secondsTimestamp = Math.floor(Date.now() / 1e3);
+      finalRel = `untiled_${secondsTimestamp}`;
+    }
+    ;
+    return finalRel;
+  };
   const pluginStoragePlugin = plugin?.trim() ?? void 0;
   return {
     listContent: (rel = "") => {
@@ -853,6 +867,7 @@ function scopeCoreMethods(core, permanent, plugin) {
     },
     newDirectory: (rel) => {
       ensureDataNotIsolated();
+      blockEmptyRel(rel);
       return core.invoke("lia_fs_mkdir", {
         rel,
         permanent,
@@ -862,6 +877,7 @@ function scopeCoreMethods(core, permanent, plugin) {
     },
     remove: (rel, recursive = false) => {
       ensureDataNotIsolated();
+      blockEmptyRel(rel);
       return core.invoke("lia_fs_rm", {
         rel,
         recursive,
@@ -881,6 +897,7 @@ function scopeCoreMethods(core, permanent, plugin) {
     },
     writeText: (rel, contents, opts) => {
       ensureDataNotIsolated();
+      blockEmptyRel(rel);
       return core.invoke("lia_fs_write_text", {
         rel,
         permanent,
@@ -893,6 +910,7 @@ function scopeCoreMethods(core, permanent, plugin) {
     },
     readText: (rel) => {
       ensureDataNotIsolated();
+      blockEmptyRel(rel);
       return core.invoke("lia_fs_read_text", {
         rel,
         permanent,
@@ -902,6 +920,7 @@ function scopeCoreMethods(core, permanent, plugin) {
     },
     writeBytes: (rel, base64, opts) => {
       ensureDataNotIsolated();
+      blockEmptyRel(rel);
       return core.invoke("lia_fs_write_bytes", {
         rel,
         permanent,
@@ -913,6 +932,7 @@ function scopeCoreMethods(core, permanent, plugin) {
     },
     readBytes: (rel) => {
       ensureDataNotIsolated();
+      blockEmptyRel(rel);
       return core.invoke("lia_fs_read_bytes", {
         rel,
         permanent,
@@ -922,6 +942,7 @@ function scopeCoreMethods(core, permanent, plugin) {
     },
     exists: (rel) => {
       ensureDataNotIsolated();
+      blockEmptyRel(rel);
       return core.invoke("lia_fs_exists", {
         rel,
         permanent,
@@ -931,6 +952,8 @@ function scopeCoreMethods(core, permanent, plugin) {
     },
     move: (src, dest, opts) => {
       ensureDataNotIsolated();
+      blockEmptyRel(src, "'src' can't be empty");
+      blockEmptyRel(dest, "'dest' can't be empty");
       return core.invoke("lia_fs_move", {
         src,
         dest,
@@ -943,6 +966,8 @@ function scopeCoreMethods(core, permanent, plugin) {
     },
     copy: (src, dest, opts) => {
       ensureDataNotIsolated();
+      blockEmptyRel(src, "'src' can't be empty");
+      blockEmptyRel(dest, "'dest' can't be empty");
       return core.invoke("lia_fs_copy", {
         src,
         dest,

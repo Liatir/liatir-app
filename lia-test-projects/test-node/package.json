@@ -15,8 +15,8 @@
     "tags": []
   },
   "devDependencies": {
-    "@liatir/api": "^1.9.11",
-    "@liatir/cli": "^1.9.11",
+    "@liatir/api": "^1.9.17",
+    "@liatir/cli": "^1.9.17",
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0"
   }

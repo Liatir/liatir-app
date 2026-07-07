@@ -12,7 +12,7 @@
     "skipLibCheck": true,
     "moduleDetection": "force",
     "paths": {
-      "@liatir/core": ["../liatir-core/src"],
+      "@liatir/core": ["../liatir-core/dist"],
       "@liatir/output-parser": ["../liatir-output-parser/src"]
     }
   },

@@ -380,9 +380,6 @@ fn main() {
       lia_plugin_storage_clear,
       lia_plugin_call,
 
-      // sidecar
-      lia_sidecar_run,
-
       // jobs
       lia_jobs_spawn,
       lia_jobs_kill,
@@ -390,6 +387,10 @@ fn main() {
       lia_jobs_list,
       lia_jobs_clear_done,
       lia_jobs_get_output,
+
+      // plugin log & progress
+      lia_plugin_log,
+      lia_plugin_progress,
 
       // deps
       lia_deps_check,

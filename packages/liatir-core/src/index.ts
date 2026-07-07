@@ -604,3 +604,74 @@ export type ToolOutput = LiatirToolOutput;
 // and the plugin API (@liatir/api Liatir.ai). Model ids, metadata, and runtime
 // specs live here so neither side hand-duplicates the list.
 export * from "./ai-catalog";
+
+// Built-in native tools catalog — bioinformatics binaries bundled with Liatir.
+export * from "./native-tools";
+
+// ── ToolRef — unified reference for anything spawnable via jobs ──────────────
+
+/**
+ * Kind of runnable entity that can be spawned via `jobs.spawn()`.
+ */
+export type LiatirRunnableKind =
+  | "native-tool"
+  | "ai-model"
+  | "lia-plugin"
+  | "api-request";
+
+/**
+ * A typed reference to a runnable entity. Used by `jobs.spawn()` to resolve
+ * the correct binary, runtime, or plugin entry point.
+ */
+export interface LiatirToolRef {
+  readonly __kind: LiatirRunnableKind;
+  readonly id: string;
+}
+
+/** Create a ToolRef for a bundled native tool. */
+export function nativeTool(id: string): LiatirToolRef {
+  return { __kind: "native-tool", id };
+}
+
+/** Create a ToolRef for an AI model. */
+export function aiModel(id: string): LiatirToolRef {
+  return { __kind: "ai-model", id };
+}
+
+/** Create a ToolRef for a .lia plugin. */
+export function liaPlugin(id: string): LiatirToolRef {
+  return { __kind: "lia-plugin", id };
+}
+
+/** Create a ToolRef for an API request endpoint. */
+export function apiRequest(id: string): LiatirToolRef {
+  return { __kind: "api-request", id };
+}
+
+// ── Plugin Log & Progress — contracts for plugin observability ───────────────
+
+/**
+ * Log level for structured plugin logs.
+ */
+export type LiatirLogLevel = "info" | "warn" | "error" | "debug";
+
+/**
+ * A structured log entry emitted by a plugin during execution.
+ */
+export interface LiatirPluginLogEntry {
+  jobId: string;
+  level: LiatirLogLevel;
+  message: string;
+  meta?: Record<string, JsonValue>;
+  timestampMs: number;
+}
+
+/**
+ * Progress state for a running job, updated by the plugin via the progress API.
+ */
+export interface LiatirJobProgress {
+  current: number;
+  total?: number;
+  label?: string;
+  done: boolean;
+}

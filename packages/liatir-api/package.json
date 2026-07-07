@@ -1,6 +1,6 @@
 {
   "name": "@liatir/api",
-  "version": "1.9.13",
+  "version": "1.9.17",
   "description": "Node.js API bindings for Liatir — gives .lia plugins access to the full Liatir.* bridge",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

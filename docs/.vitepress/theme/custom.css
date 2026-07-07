@@ -113,6 +113,61 @@ body:has(.cookie-backdrop) {
   overflow: hidden !important;
 }
 
+.vp-tabs {
+  margin: 24px 0;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--vp-c-bg);
+}
+
+.vp-tabs .header-anchor {
+  display: none !important;
+}
+
+.vp-tabs__nav {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  border-bottom: 1px solid var(--vp-c-divider);
+  background: var(--vp-c-bg-soft);
+  overflow-x: auto;
+}
+
+.vp-tabs__button {
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 12px;
+  background: transparent;
+  color: var(--vp-c-text-2);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.vp-tabs__button:hover {
+  color: var(--vp-c-text-1);
+  background: var(--vp-c-default-soft);
+}
+
+.vp-tabs__button.is-active {
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+}
+
+.vp-tabs__content {
+  padding: 20px;
+}
+
+.vp-tabs__panel > :first-child {
+  margin-top: 0;
+}
+
+.vp-tabs__panel > :last-child {
+  margin-bottom: 0;
+}
+
 @media (max-width: 768px) {
   .liatir-architecture-figure {
     margin: 24px 0;

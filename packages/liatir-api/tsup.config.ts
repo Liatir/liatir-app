@@ -8,6 +8,8 @@ import path from "path";
 // the .d.ts (via dts.resolve) — so the published package is self-contained and
 // the parser package never has to go to npm.
 const PARSER_ENTRY = path.resolve(process.cwd(), "../liatir-output-parser/src/index.ts");
+// Use compiled .d.ts from dist for type resolution (rollup-plugin-dts needs compiled declarations)
+const CORE_ENTRY_DTS = path.resolve(process.cwd(), "../liatir-core/dist/index.d.ts");
 const CORE_ENTRY = path.resolve(process.cwd(), "../liatir-core/src/index.ts");
 
 
@@ -15,7 +17,11 @@ export default defineConfig({
   entry: ["src/index.ts"],
   format: ["esm"],
   // Inline the .d.ts of internal @liatir packages only.
-  dts: { resolve: [/@liatir\//] },
+  dts: { 
+    resolve: [/@liatir\//],
+    // Use compiled declarations from dist instead of source files
+    entry: ["src/index.ts"],
+  },
   clean: true,
   
   // Keep internal Liatir packages bundled.

@@ -425,12 +425,11 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
         "lia_logs_new_record" => crate::bridge::diagnostics::lia_logs_new_record[record_type: String, payload: crate::bridge::diagnostics::AnalyticsRecord, env: String, app_version: String],
     );
 
-    // ── Files / sidecar / network / plugin-pick / export-zip (async) ──
+    // ── Files / network / plugin-pick / export-zip (async) ──
     ipc_async_dispatch!(app, cmd, payload;
         "lia_file_open" => crate::bridge::files::lia_file_open[multi: bool, allowed_extensions: Option<Vec<String>>, max_bytes: Option<u64>],
         "lia_file_open_with_bytes" => crate::bridge::files::lia_file_open_with_bytes[multi: bool, allowed_extensions: Option<Vec<String>>, max_bytes: Option<u64>],
         "lia_file_save" => crate::bridge::files::lia_file_save[default_name: Option<String>],
-        "lia_sidecar_run" => crate::bridge::sidecar::lia_sidecar_run[name: String, args: Vec<String>],
         "lia_network_get_status" => crate::bridge::network::lia_network_get_status[],
         "lia_network_ping" => crate::bridge::network::lia_network_ping[url: Option<String>, timeout_ms: Option<u64>],
         "lia_network_bandwidth_estimate" => crate::bridge::network::lia_network_bandwidth_estimate[url: Option<String>, size_hint_bytes: Option<u64>, timeout_ms: Option<u64>],

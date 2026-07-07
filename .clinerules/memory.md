@@ -1,6 +1,6 @@
 # Liatir — Project Memory
 
-Last updated: 2026-07-06
+Last updated: 2026-07-07 (session 2)
 
 ## Project Identity
 
@@ -15,10 +15,10 @@ Last updated: 2026-07-06
 
 ### Backend (Rust — `src-tauri/`)
 - Tauri v2 with ~120 commands exposed via `main.rs`
-- 36 bridge modules in `src-tauri/src/bridge/`
-- Key modules: `python_env.rs` (1411 lines, implemented), `plugins.rs` (WASM runtime, full), `sidecar.rs` (native binary runner, scaffold), `fs.rs` (sandboxed FS), jobs, notifications, window management
-- Dependencies: wasmtime (WASM), tauri_plugin_shell (sidecar), serde, tokio
-- WASM runtime fully operational; sidecar abstraction exists but real binaries not yet bundled
+- 37 bridge modules in `src-tauri/src/bridge/`
+- Key modules: `python_env.rs` (1411 lines, implemented), `plugins.rs` (WASM runtime, full), `plugin_log.rs` (structured logging), `plugin_progress.rs` (progress tracking), `fs.rs` (sandboxed FS), jobs, notifications, window management
+- Dependencies: wasmtime (WASM), tauri_plugin_shell, serde, tokio
+- WASM runtime fully operational; **sidecar module removed** — native tools now use `jobs.spawn()` with ToolRef
 
 ### TypeScript Bridge (`src-ts/`)
 - IIFE bridge exposing `window.Liatir` via builder pattern
@@ -33,8 +33,8 @@ Last updated: 2026-07-06
 - Key deps: @xyflow/svelte, codemirror, plotly.js, iconify/lucide
 
 ### Shared Packages (`packages/`)
-- `@liatir/core` v1.0.0: single source of truth — field schemas, step/pipeline types, plugin manifest, artifact/provenance, execution result, AI model catalog, built-in tool definitions
-- `@liatir/api`: API connector package
+- `@liatir/core` v1.0.0: single source of truth — field schemas, step/pipeline types, plugin manifest, artifact/provenance, execution result, AI model catalog, **built-in native tools catalog** (`BUILT_IN_NATIVE_TOOLS`), **ToolRef types** (`LiatirToolRef`, `LiatirPluginLogEntry`, `LiatirJobProgress`)
+- `@liatir/api`: API connector package — **re-exports `tools`, `models`, `plugin`, `api` ToolRefs; `buildLog()`/`buildProgress()` builders; `LiatirNode` includes `log` and `progress`**
 - `@liatir/cli`: CLI for plugin development
 - `sdk/`: public SDK with generated types from core
 
@@ -96,6 +96,99 @@ npm run test:heavy:ai  # include heavy AI tests
 npm run liatir:publish -- --patch
 npm run sdk:publish
 ```
+
+## Recent Work (2026-07-07 — session 2)
+
+### Plugin Log & Progress System
+Implemented structured logging and progress tracking for plugins:
+
+**@liatir/core**
+- Created `native-tools.ts` with `BUILT_IN_NATIVE_TOOLS` catalog (samtools, bwa, minimap2, etc.)
+- Added types: `LiatirToolRef`, `LiatirPluginLogEntry`, `LiatirJobProgress`, `LiatirLogLevel`
+- Added factory functions: `nativeTool()`, `aiModel()`, `liaPlugin()`, `apiRequest()`
+
+**@liatir/api**
+- Re-exports: `tools`, `models`, `plugin`, `api` (typed ToolRef references)
+- Builders: `buildLog(invoke, jobId)`, `buildProgress(invoke, jobId)`
+- `LiatirNode` interface now includes `log: PluginLog` and `progress: PluginProgress`
+- `createLiatir()` reads `LIATIR_JOB_ID` env var and injects log/progress instances
+
+**Backend Rust**
+- Created `plugin_log.rs`: `lia_plugin_log` command, emits `jobs:log:{jobId}` events
+- Created `plugin_progress.rs`: `lia_plugin_progress` command, emits `jobs:progress:{jobId}` events
+- Updated `jobs.rs`: added `progress: Option<JobProgress>` field to `JobEntry`, made `JobState` fields `pub(crate)`
+- Registered commands in `main.rs` and modules in `mod.rs`
+
+**Frontend**
+- Updated `jobs.svelte.ts`: added `JobProgress`, `PluginLogEntry` types; `getLogs()`, `getProgress()`, `subscribeToJob()` methods; auto-subscribes to events on spawn
+- Created `JobProgressBar.svelte`: progress bar component with determinate/indeterminate states
+- Created `JobLogViewer.svelte`: collapsible log viewer with level colors, copy/export features
+
+### Sidecar Removal
+- Removed `sidecar.rs` module
+- Removed `lia_sidecar_run` from `main.rs` invoke handler
+- Removed sidecar dispatch from `ipc_server.rs`
+- Removed `pub mod sidecar` and `pub use sidecar::*` from `mod.rs`
+- Native tools now use `jobs.spawn(tools.samtools, args)` pattern
+
+### Build Verification
+- ✅ `cargo check` — 0 errors (56 warnings, mostly unused imports)
+- ✅ `svelte-check` — 0 errors, 1 benign warning
+- ✅ `@liatir/core` build (tsc)
+- ✅ `@liatir/api` build:bundle (tsup) — 346 KB JS, 40 KB d.ts
+  - Fixed DTS build error by changing `tsconfig.json` path alias from `../liatir-core/src` to `../liatir-core/dist` (rollup-plugin-dts needs compiled declarations)
+
+---
+
+## Recent Work (2026-07-07 — session 1)
+
+### Plugin API Refactoring
+- **`@liatir/api` (Node)**: Removed bio/ai/desktop bloat from `packages/liatir-api/src/index.ts`
+  - Deleted `src/bio/` (align.ts, qc.ts, variants.ts, _threads.ts) and `src/ai/` (index.ts)
+  - Created specific types: `PluginFs`, `PluginFsScope`, `PluginFsPluginScope`, `PluginAppInfo`, `PluginDesktop`, `PluginSidecar`
+  - `LiatirNode` now exposes only: `jobs`, `deps`, `sidecar`, `desktop` (fs + app), `paths`, `invoke`
+  - `desktop.fs` exposes only `data`, `cache`, `pluginFs`, `paths` (removed `trash` and `diagnostics`)
+  - `desktop.app` exposes only `info()` (removed `exit()`)
+  - Removed `align`, `qc`, `variants`, `ai`, `pipeline` from top-level
+
+- **`liatir.py` (Python)**: Aligned with Node API in `packages/liatir-cli/src/assets/liatir.py`
+  - Removed classes: `_Files`, `_Events`, `_GlobalVariables`, `_Network`, `_Clipboard`, `_Notifications`, `_FsTrash`, `_FsDiagnostics`, `_Pipeline`
+  - `_Desktop` now contains only `fs` (data, cache, plugin_fs) and `app` (only info)
+  - `Liatir` now exposes: `jobs`, `deps`, `sidecar`, `desktop`, `paths()`, `invoke()`
+  - File reduced from 891 to ~530 lines
+
+### Documentation Updates
+- Updated all pages in `docs/plugins/api/` with dual Node + Python examples using VitePress code groups
+- Created `docs/plugins/api/sidecar.md` with full documentation
+- All tables now show both naming conventions:
+  - Node (camelCase) | Python (snake_case) | Type | Description
+- Added `::: tip` notes explaining that JSON response fields are always camelCase in both languages
+
+### Plugin API Surface (final — updated session 2)
+```
+Liatir (plugin context)
+├── jobs          → spawn, run, kill, status, list, getOutput, clearDone
+├── deps          → check, checkMany
+├── desktop
+│   ├── fs        → data, cache, pluginFs/plugin_fs, paths
+│   └── app       → info
+├── log           → info, warn, error, debug (structured logging)
+├── progress      → start, advance, update, done (progress tracking)
+├── paths()       → { data, cache, temp, home, ... }
+└── invoke()      → raw escape hatch
+
+ToolRef re-exports:
+├── tools         → { samtools, bwa, minimap2, ... } (native tools)
+├── models        → { scgpt, enformer, ... } (AI models)
+├── plugin(name)  → create ToolRef for .lia plugin
+└── api(name)     → create ToolRef for API endpoint
+```
+
+### Build Verification
+- ✅ `@liatir/api` build (tsup) — 312 KB JS, 37 KB d.ts
+- ✅ `@liatir/core` build (tsc)
+- ✅ Frontend typecheck (svelte-check) — 0 errors, 0 warnings
+- ✅ Unit tests — 48/48 passed (9 test files)
 
 ## Architecture Rules (from .clinerules)
 - "Plugins" = only `.lia` plugins

@@ -165,7 +165,7 @@ export default defineConfig({
                   { text: 'Define plugin', link: '/plugins/define-plugin' },
                   { text: 'Declare fields', link: '/plugins/field' },
               {
-              text: 'Node bridge',
+              text: 'Bridge',
               collapsed: true,
               items: [
                 {
@@ -181,6 +181,9 @@ export default defineConfig({
                   collapsed: true,
                   items: [
                     { text: '.status', link: '/plugins/api/jobs/status' },
+                    { text: '.spawn', link: '/plugins/api/jobs/spawn' },
+                    { text: '.kill', link: '/plugins/api/jobs/kill' },
+                    { text: '.clearDone', link: '/plugins/api/jobs/clear-done' },
                     { text: '.list', link: '/plugins/api/jobs/list' },
                   ],
                   },
@@ -194,13 +197,6 @@ export default defineConfig({
                   },
                   { text: '.invoke', link: '/plugins/api/invoke' },
                 ],
-              },
-              {
-                text: 'Python bridge',
-                collapsed: true,
-                items: [
-                  { text: '.app', link: '/plugins/api/desktop/app' },
-                  { text: '.fs', link: '/plugins/api/desktop/file-system' },],
               },
             ],
           },

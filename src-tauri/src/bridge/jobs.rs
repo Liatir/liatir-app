@@ -11,6 +11,8 @@ use std::{
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_shell::{process::CommandEvent, ShellExt};
 
+use super::plugin_progress::JobProgress;
+
 pub(crate) const SANDBOX_WORKSPACE_ID: &str = "__test__";
 
 static JOB_COUNTER: AtomicU64 = AtomicU64::new(1);
@@ -54,6 +56,8 @@ pub struct JobEntry {
     pub ended_at_ms: Option<u64>,
     /// Workspace this job was spawned in. `None` for global/untagged jobs.
     pub workspace_id: Option<String>,
+    /// Progress tracking for plugin jobs. Updated via `lia_plugin_progress`.
+    pub progress: Option<JobProgress>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -65,18 +69,18 @@ pub struct JobOutput {
     pub stderr_total: usize,
 }
 
-struct JobState {
-    entry: JobEntry,
-    child: Option<tauri_plugin_shell::process::CommandChild>,
-    stdout: Arc<Mutex<Vec<String>>>,
-    stderr: Arc<Mutex<Vec<String>>>,
+pub(crate) struct JobState {
+    pub(crate) entry: JobEntry,
+    pub(crate) child: Option<tauri_plugin_shell::process::CommandChild>,
+    pub(crate) stdout: Arc<Mutex<Vec<String>>>,
+    pub(crate) stderr: Arc<Mutex<Vec<String>>>,
 }
 
 // ---------------------------------
 // Registry (managed Tauri state)
 // ---------------------------------
 
-pub struct JobRegistry(Mutex<HashMap<String, JobState>>);
+pub struct JobRegistry(pub(crate) Mutex<HashMap<String, JobState>>);
 
 impl JobRegistry {
     pub fn new() -> Self {
@@ -211,6 +215,7 @@ async fn spawn_job(
         started_at_ms,
         ended_at_ms: None,
         workspace_id,
+        progress: None,
     };
 
     let stdout_buf = Arc::new(Mutex::new(Vec::<String>::new()));
