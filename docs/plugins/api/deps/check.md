@@ -3,7 +3,7 @@ title: deps.check
 description: Checks whether one command-line dependency is available.
 ---
 
-# .deps.check
+# `.deps.check`
 
 `Liatir.deps.check()` checks whether one command-line binary is available in
 `PATH`.
@@ -62,7 +62,7 @@ if not samtools['available']:
 | `path`      | `string \| null` / `str \| None` | Full path to the binary, or `null`. |
 | `version`   | `string \| null` / `str \| None` | Detected version string, or `null`. |
 
-::: warning NOTE
+::: warning IMPORTANT
 `DepCheckResult` fields are always camelCase in both Node and Python, because they
 come from the JSON response of the Liatir bridge.
 :::

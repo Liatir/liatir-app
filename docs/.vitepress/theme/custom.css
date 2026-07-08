@@ -1,4 +1,5 @@
 
+
 /* ── Hide scrollbars ──────────────────────────────────────────────── */
 *,
 *::before,
@@ -166,6 +167,18 @@ body:has(.cookie-backdrop) {
 
 .vp-tabs__panel > :last-child {
   margin-bottom: 0;
+}
+
+
+.VPSidebarItem:has(.VPSidebarItem-monospace):not(:has(.VPSidebarItem .VPSidebarItem-monospace)) .text:not(:has(.VPSidebarItem-monospace)) {
+  font-family: "Roboto Mono", monospace !important;
+  font-optical-sizing: auto !important;
+  font-weight: 450 !important;
+  font-style: normal !important;
+}
+
+.VPSidebarItem:has(.VPSidebarItem-monospace):not(:has(.VPSidebarItem .VPSidebarItem-monospace)) .text:not(:has(.VPSidebarItem-monospace)):hover {
+  color: var(--vp-c-brand-1) !important;
 }
 
 @media (max-width: 768px) {

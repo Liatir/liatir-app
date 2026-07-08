@@ -4,7 +4,7 @@ description: Interface for retrieving system information and controlling the Lia
 ---
 
 
-# .desktop.app
+# `.desktop.app`
 
 The `app` API area of the Liatir API provides methods to retrieve system-level information. Use this API area when you need to access details about the app environment and OS.
 
@@ -49,7 +49,7 @@ The `AppInfo` object returned by `info()` contains the following fields:
 | `version`         | string             | The version of the Liatir app.                                                            |
 | `windows`         | `AppWindowInfo[]`  | Array of information objects for all open app windows.                                        |
 
-::: warning NOTE
+::: warning IMPORTANT
 `AppInfo` fields are always snake_case in both Node and Python, because they
 come from the JSON response of the Liatir bridge.
 :::

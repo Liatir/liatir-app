@@ -73,7 +73,7 @@ else:
 | `error`      | `string \| null` / `str \| None` | Error message if the process failed. |
 | `durationMs` | `number` / `int`   | Execution time in milliseconds.          |
 
-::: warning NOTE
+::: warning IMPORTANT
 `SidecarResult` fields are always camelCase in both Node and Python, because they
 come from the JSON response of the Liatir bridge.
 :::
@@ -98,6 +98,10 @@ The following binaries are bundled with Liatir and can be invoked via sidecar:
 Sidecar binaries run in a sandboxed environment. They cannot access arbitrary
 paths on the host filesystem — use the plugin filesystem (`.desktop.fs.pluginFs` / `.desktop.fs.plugin_fs`)
 to stage input files and read output files.
+:::
+
+::: warning IMPORTANT
+JSON response fields are always camelCase in both Node and Python.
 :::
 
 :::warning

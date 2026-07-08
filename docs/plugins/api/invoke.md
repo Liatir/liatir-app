@@ -1,9 +1,9 @@
 ---
-title: invoke
+title: Invoke
 description: Low-level command invocation for advanced API usage.
 ---
 
-# .invoke
+# `.invoke`
 
 `Liatir.invoke()` calls a low-level bridge command directly.
 

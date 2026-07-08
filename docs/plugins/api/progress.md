@@ -3,31 +3,47 @@ title: Progress
 description: Progress tracking for plugins — display real-time progress in the Jobs UI.
 ---
 
-# .progress
+# `.progress`
 
 `Liatir.progress` provides progress tracking for long-running plugin jobs. Progress updates are streamed in real time to the Liatir Jobs UI, where users see a progress bar with the current step label and percentage.
 
 ## Methods
 
-| Method | Node | Python | Description |
-|--------|------|--------|-------------|
-| `.start()` | `progress.start(total, label?)` | `progress.start(total, label=None)` | Initialize progress with a total count |
-| `.advance()` | `progress.advance(n?, label?)` | `progress.advance(n=1, label=None)` | Increment progress by `n` units |
-| `.update()` | `progress.update(current, label?)` | `progress.update(current, label=None)` | Set progress to an absolute value |
-| `.done()` | `progress.done()` | `progress.done()` | Mark progress as complete |
+<Tabs>
+<Tab title="Node">
+
+| Method |  Description |
+|------|-------------|
+| `.start(total, label?)` | Initialize progress with a total count |
+| `.advance(n?, label?)` | Increment progress by `n` units |
+| `.update(current, label?)` | Set progress to an absolute value |
+| `.done()` | Mark progress as complete |
+
+</Tab>
+<Tab title="Python">
+
+| Method | Description |
+|--------|-------------|
+| `.start(total, label=None)` | Initialize progress with a total count |
+| `.advance(n=1, label=None)` | Increment progress by `n` units |
+| `.update(current, label=None)` | Set progress to an absolute value |
+| `.done()` | Mark progress as complete |
+
+</Tab>
+</Tabs>
 
 ### Parameters
 
-| Parameter | Node (camelCase) | Python (snake_case) | Type | Description |
-|-----------|------------------|---------------------|------|-------------|
-| total | `total` | `total` | `number` | Total number of units (e.g., files, reads, steps) |
-| current | `current` | `current` | `number` | Absolute progress value |
-| n | `n` | `n` | `number` | Increment to add (default: 1) |
-| label | `label` | `label` | `string` | Human-readable label for the current step |
 
-::: tip
-JSON response fields are always camelCase in both Node and Python.
-:::
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| total  | `number` | Total number of units (e.g., files, reads, steps) |
+| current  | `number` | Absolute progress value |
+| n | `number` | Increment to add (default: 1) |
+| label | `string` | Human-readable label for the current step |
+
+<br>
+
 
 ## Examples
 
@@ -35,6 +51,8 @@ JSON response fields are always camelCase in both Node and Python.
 
 <Tabs>
 <Tab title="Node">
+
+**File listing progress tracking**
 
 ```ts
 const files = await Liatir.desktop.fs.data.listContent('input');
@@ -156,7 +174,10 @@ ctx.liatir.progress.done()
 | Complete | Checkmark | After `.done()` is called |
 
 ## Notes
-
+---
+::: warning IMPORTANT
+JSON response fields are always camelCase in both Node and Python.
+:::
 - Progress updates are emitted as Tauri events (`jobs:progress:{jobId}`) and displayed in real time in the Jobs UI.
 - Call `.start()` to initialize progress with a known total. If you don't know the total upfront, the progress bar shows an indeterminate spinner.
 - Use `.advance(n)` for incremental updates (most common) or `.update(current)` for absolute jumps.

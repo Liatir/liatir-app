@@ -27,6 +27,10 @@ export default defineConfig({
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/static/logos/svg/app-icon-mono.svg' }],
     ['link', { rel: 'icon', type: 'image/png', href: '/static/logos/png/app-icon-mono.png' }],
 
+    ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
+    ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
+    ['link', { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap' }],
+
     ['script', { src: "https://platform-api.sharethis.com/js/sharethis.js", async: "true" }],
     // Google Analytics (GA4). Fires on every page load.
     ['script', { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-JSH1W9TFP9' }],
@@ -164,7 +168,7 @@ export default defineConfig({
                   { text: 'Define plugin', link: '/plugins/define-plugin' },
                   { text: 'Declare fields', link: '/plugins/field' },
               {
-              text: 'Bridge',
+              text: '<span class="VPSidebarItem-monospace">Bridge</span>',
               collapsed: true,
               items: [
                 {
@@ -194,7 +198,10 @@ export default defineConfig({
                       { text: '.checkMany', link: '/plugins/api/deps/check-many' },
                     ],
                   },
-                  { text: '.progress', link: '/plugins/api/progress' },
+                  {
+                    text: '.progress',
+                    link: '/plugins/api/progress',
+                  },
                   { text: '.log', link: '/plugins/api/log' },
                   { text: '.invoke', link: '/plugins/api/invoke' },
                 ],

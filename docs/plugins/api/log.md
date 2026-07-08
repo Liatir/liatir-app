@@ -3,7 +3,7 @@ title: Log
 description: Structured logging for plugins — stream log entries to the Jobs UI.
 ---
 
-# .log
+# `.log`
 
 `Liatir.log` provides structured logging for plugins. Every log entry is tagged with the current job ID and streamed in real time to the Liatir Jobs UI, where users can inspect, filter, and export logs.
 
@@ -25,9 +25,6 @@ Logs are also appended to the job's stderr buffer, so they appear in `jobs.getOu
 | message | `message` | `message` | `string` | Human-readable log message |
 | meta | `meta` | `meta` | `Record<string, unknown>` / `dict` | Optional structured metadata attached to the entry |
 
-::: tip
-JSON response fields are always camelCase in both Node and Python.
-:::
 
 ## Examples
 
@@ -101,6 +98,10 @@ ctx.liatir.log.info('All files processed', {'count': len(files)})
 | `debug` | Gray | Verbose diagnostic output for development |
 
 ## Notes
+---
+::: warning IMPORTANT
+JSON response fields are always camelCase in both Node and Python.
+:::
 
 - Log entries are emitted as Tauri events (`jobs:log:{jobId}`) and displayed in real time in the Jobs UI.
 - Each entry includes a timestamp (Unix epoch milliseconds) added by the backend.

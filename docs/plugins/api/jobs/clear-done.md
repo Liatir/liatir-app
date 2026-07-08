@@ -3,7 +3,7 @@ title: jobs.clearDone
 description: Clears completed jobs from the job registry.
 ---
 
-# .jobs.clearDone
+# `.jobs.clearDone`
 
 `Liatir.jobs.clearDone()` removes completed, failed, or killed jobs from the job
 registry.

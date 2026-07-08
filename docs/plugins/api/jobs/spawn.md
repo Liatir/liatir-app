@@ -3,7 +3,7 @@ title: jobs.spawn
 description: Starts an async native process from the Liatir API.
 ---
 
-# .jobs.spawn
+# `.jobs.spawn`
 
 `Liatir.jobs.spawn()` starts an async native process and returns immediately
 with a job ID.
@@ -90,7 +90,7 @@ print('Started job:', job_id)
 |---------|-----------------|--------------------------------|
 | `jobId` | `string` / `str` | Unique identifier for the job. |
 
-::: warning NOTE
+::: warning IMPORTANT
 Return value fields are always camelCase in both Node and Python, because they
 come from the JSON response of the Liatir bridge.
 :::

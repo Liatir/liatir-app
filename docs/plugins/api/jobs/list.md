@@ -3,7 +3,7 @@ title: jobs.list
 description: Lists async process jobs tracked by Liatir.
 ---
 
-# .jobs.list
+# `.jobs.list`
 
 `Liatir.jobs.list()` lists async process jobs tracked by Liatir.
 
@@ -65,7 +65,7 @@ for job in jobs:
 | `metadata`   | `object` / `dict` | Arbitrary metadata attached to the job. |
 | `createdAt`  | `number` / `int`  | Timestamp when the job was created.     |
 
-::: warning NOTE
+::: warning IMPORTANT
 `JobEntry` fields are always camelCase in both Node and Python, because they
 come from the JSON response of the Liatir bridge.
 :::

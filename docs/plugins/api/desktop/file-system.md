@@ -4,7 +4,7 @@ description: "Comprehensive documentation for the File System API area."
 ---
 
 
-# .desktop.fs
+# `.desktop.fs`
 
 The **File System API** area provides secure and isolated access to the file system. It enables applications to interact with files and directories within predefined scopes, ensuring data integrity and sandboxing from the global file system.
 
@@ -104,7 +104,7 @@ Methods available on `data`, `cache`, and `pluginFs` / `plugin_fs` scopes.
 | `size`         | number  | Size of the file in bytes (0 for directories).|
 | `lastModified` | Date    | Timestamp of the last modification.          |
 
-::: warning NOTE
+::: warning IMPORTANT
 `FsEntry` fields are always camelCase in both Node and Python, because they
 come from the JSON response of the Liatir bridge.
 :::
