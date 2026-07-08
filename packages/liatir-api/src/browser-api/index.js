@@ -261,6 +261,9 @@ var validate = {
 };
 
 // src-ts/utils/utils/_utils.ts
+var isBrowser = () => {
+  return typeof window !== "undefined" && typeof document !== "undefined";
+};
 var isDev = () => {
   const isLocalhost = typeof window !== "undefined" && ["localhost", "127.0.0.1"].includes(window.location.hostname);
   const nodeEnv = process?.env?.NODE_ENV;
@@ -440,7 +443,7 @@ var Liatir = new Proxy({}, {
 
 // src-ts/bridge.constants.json
 var bridge_constants_default = {
-  appUrl: "",
+  appUrl: "http://blank.html",
   apiVersion: "0.2.1"
 };
 
@@ -1527,6 +1530,7 @@ function buildQc(core) {
   if (tauriReadyCheck()) {
     liaInitiators();
   } else {
+    if (!isBrowser()) return;
     console.error("[Liatir bridge] Tauri did not become ready in time");
   }
 })();

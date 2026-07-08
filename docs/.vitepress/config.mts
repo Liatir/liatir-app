@@ -194,6 +194,8 @@ export default defineConfig({
                       { text: '.checkMany', link: '/plugins/api/deps/check-many' },
                     ],
                   },
+                  { text: '.progress', link: '/plugins/api/progress' },
+                  { text: '.log', link: '/plugins/api/log' },
                   { text: '.invoke', link: '/plugins/api/invoke' },
                 ],
               },
