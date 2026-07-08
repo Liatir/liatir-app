@@ -1,6 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildFastqc = buildFastqc;
+// Name of the bundled fastqc WASM tool, run through the internal
+// `lia_plugin_call` command (not part of any public plugin namespace).
 const MODULE = "fastqc.wasm";
 function parentDir(filePath) {
     const sep = filePath.includes("/") ? "/" : "\\";
@@ -110,11 +112,16 @@ function toToolOutput(r) {
     }
     return { sections };
 }
-function buildFastqc(plugins) {
+function buildFastqc(core) {
     return {
         run: async (args) => {
             const hostReadPaths = [parentDir(args.input)];
-            const result = await plugins.call(MODULE, { fn: "run", args }, (args.timeoutMs ?? 300_000), hostReadPaths);
+            const result = await core.invoke("lia_plugin_call", {
+                plugin: MODULE,
+                payload: { fn: "run", args },
+                timeoutMs: args.timeoutMs ?? 300_000,
+                hostReadPaths,
+            });
             if (!result.ok) {
                 // result.stderr contains the Rust panic message; prefer it over the raw wasmtime trap description
                 const msg = result.stderr?.trim() || result.error || "fastqc failed";

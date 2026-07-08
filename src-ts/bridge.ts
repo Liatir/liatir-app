@@ -21,8 +21,6 @@ import {
 } from "./main";
 import { API_VERSION } from "./constants";
 import { windowTauriProxy, tauriReadyCheck, waitTauri } from "./helpers";
-import { buildSidecar } from "./modules/rs/sidecar/_main";
-import { buildPipeline } from "./modules/bio/pipeline/_main";
 import { buildJobs } from "./modules/rs/jobs/_main";
 import { buildDeps } from "./modules/rs/deps/_main";
 import { buildQc } from "./modules/qc/_main";
@@ -35,7 +33,6 @@ import { isBrowser } from "./utils";
   console.log("[Liatir bridge] init script evaluated");
 
   const core = buildCore();
-  const sidecar = buildSidecar(core);
 
   const api: LiatirBrowserAPI = {
     get isAvailable() { return true; },
@@ -61,9 +58,6 @@ import { isBrowser } from "./utils";
       contextMenu:     buildContextMenu(core),
       globalVariables: buildGlobVar(core),
     },
-
-    sidecar,
-    pipeline: buildPipeline({ sidecar }),
 
     jobs:     buildJobs(core),
     deps:     buildDeps(core),

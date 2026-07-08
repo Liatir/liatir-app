@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { liatir } from '$lib/api';
   import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
+  import { copyTextToClipboard, saveTextToFile } from '$lib/utils/log-export';
   import TerminalOutput from './TerminalOutput.svelte';
 
   interface Props {
@@ -32,22 +32,14 @@
 
   async function copyLog() {
     if (!log) return;
-    const api = liatir();
-    await api?.desktop.clipboard.writeText(log.join('\n'));
+    await copyTextToClipboard(log.join('\n'));
     copied = true;
     setTimeout(() => copied = false, 1500);
   }
 
   async function exportLog() {
     if (!log || !runId) return;
-    const api = liatir();
-    if (!api) return;
-    try {
-      const dest = await api.desktop.files.save(`liatir-log-${runId.slice(0, 8)}.txt`);
-      if (dest) {
-        await api.invoke('lia_write_file_path', { path: dest, content: log.join('\n') } as any);
-      }
-    } catch { /* cancelled */ }
+    await saveTextToFile(`liatir-log-${runId.slice(0, 8)}.txt`, log.join('\n'));
   }
 </script>
 

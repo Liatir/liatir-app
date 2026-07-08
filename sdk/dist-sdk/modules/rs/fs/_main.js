@@ -1,11 +1,26 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildFs = buildFs;
-const helpers_1 = require("../../../helpers");
+const _helpers_1 = require("../plugins/_helpers");
 // Comments are in English
 function scopeCoreMethods(core, permanent, plugin) {
     const ensureDataNotIsolated = () => { };
-    const pluginStorageModule = ((plugin?.trim()) ?? undefined);
+    const blockEmptyRel = (rel, errorMsg) => {
+        const cleanRel = (typeof rel === "string") ? (rel.trim().replaceAll(" ", "")) : undefined;
+        if (!cleanRel || rel.length <= 0)
+            throw (errorMsg ?? "'rel' can't be empty");
+    };
+    const forceRel = (rel) => {
+        const cleanRel = (typeof rel === "string") ? (rel.trim().replaceAll(" ", "")) : "";
+        let finalRel = cleanRel;
+        if (!cleanRel || rel.length <= 0) {
+            const secondsTimestamp = Math.floor(Date.now() / 1000); // Example: 1783456789
+            finalRel = `untiled_${secondsTimestamp}`;
+        }
+        ;
+        return finalRel;
+    };
+    const pluginStoragePlugin = ((plugin?.trim()) ?? undefined);
     return {
         listContent: (rel = "") => {
             ensureDataNotIsolated();
@@ -13,26 +28,28 @@ function scopeCoreMethods(core, permanent, plugin) {
                 rel,
                 permanent,
                 windowLabel: undefined,
-                pluginStorageModule
+                pluginStoragePlugin
             });
         },
         newDirectory: (rel) => {
             ensureDataNotIsolated();
+            blockEmptyRel(rel);
             return core.invoke("lia_fs_mkdir", {
                 rel,
                 permanent,
                 windowLabel: undefined,
-                pluginStorageModule
+                pluginStoragePlugin
             });
         },
         remove: (rel, recursive = false) => {
             ensureDataNotIsolated();
+            blockEmptyRel(rel);
             return core.invoke("lia_fs_rm", {
                 rel,
                 recursive,
                 permanent,
                 windowLabel: undefined,
-                pluginStorageModule
+                pluginStoragePlugin
             });
         },
         stat: (rel = "") => {
@@ -41,11 +58,12 @@ function scopeCoreMethods(core, permanent, plugin) {
                 rel,
                 permanent,
                 windowLabel: undefined,
-                pluginStorageModule
+                pluginStoragePlugin
             });
         },
         writeText: (rel, contents, opts) => {
             ensureDataNotIsolated();
+            blockEmptyRel(rel);
             return core.invoke("lia_fs_write_text", {
                 rel,
                 permanent,
@@ -53,49 +71,55 @@ function scopeCoreMethods(core, permanent, plugin) {
                 createDirs: opts?.createDirs,
                 append: opts?.append,
                 windowLabel: undefined,
-                pluginStorageModule
+                pluginStoragePlugin
             });
         },
         readText: (rel) => {
             ensureDataNotIsolated();
+            blockEmptyRel(rel);
             return core.invoke("lia_fs_read_text", {
                 rel,
                 permanent,
                 windowLabel: undefined,
-                pluginStorageModule
+                pluginStoragePlugin
             });
         },
         writeBytes: (rel, base64, opts) => {
             ensureDataNotIsolated();
+            blockEmptyRel(rel);
             return core.invoke("lia_fs_write_bytes", {
                 rel,
                 permanent,
                 dataBase64: base64,
                 createDirs: opts?.createDirs,
                 windowLabel: undefined,
-                pluginStorageModule
+                pluginStoragePlugin
             });
         },
         readBytes: (rel) => {
             ensureDataNotIsolated();
+            blockEmptyRel(rel);
             return core.invoke("lia_fs_read_bytes", {
                 rel,
                 permanent,
                 windowLabel: undefined,
-                pluginStorageModule
+                pluginStoragePlugin
             });
         },
         exists: (rel) => {
             ensureDataNotIsolated();
+            blockEmptyRel(rel);
             return core.invoke("lia_fs_exists", {
                 rel,
                 permanent,
                 windowLabel: undefined,
-                pluginStorageModule
+                pluginStoragePlugin
             });
         },
         move: (src, dest, opts) => {
             ensureDataNotIsolated();
+            blockEmptyRel(src, "'src' can't be empty");
+            blockEmptyRel(dest, "'dest' can't be empty");
             return core.invoke("lia_fs_move", {
                 src,
                 dest,
@@ -103,11 +127,13 @@ function scopeCoreMethods(core, permanent, plugin) {
                 createDirs: opts?.createDirs,
                 overwrite: opts?.overwrite,
                 windowLabel: undefined,
-                pluginStorageModule
+                pluginStoragePlugin
             });
         },
         copy: (src, dest, opts) => {
             ensureDataNotIsolated();
+            blockEmptyRel(src, "'src' can't be empty");
+            blockEmptyRel(dest, "'dest' can't be empty");
             return core.invoke("lia_fs_copy", {
                 src,
                 dest,
@@ -116,7 +142,7 @@ function scopeCoreMethods(core, permanent, plugin) {
                 createDirs: opts?.createDirs,
                 overwrite: opts?.overwrite,
                 windowLabel: undefined,
-                pluginStorageModule
+                pluginStoragePlugin
             });
         },
     };
@@ -145,14 +171,14 @@ function scope(core, permanent) {
     return mainScopeMethods;
 }
 function pluginFsScope(core, plugin) {
-    const pluginModuleName = ((plugin?.trim()) ?? undefined);
-    const santizedluginModuleName = ((0, helpers_1.normalizeModuleName)(pluginModuleName)?.trim()) ?? undefined;
-    if (!santizedluginModuleName)
+    const pluginName = ((plugin?.trim()) ?? undefined);
+    const sanitizedPluginName = ((0, _helpers_1.normalizePluginName)(pluginName)?.trim()) ?? undefined;
+    if (!sanitizedPluginName)
         throw ("Invalid plugin name");
-    const coreMethods = scopeCoreMethods(core, true, santizedluginModuleName);
+    const coreMethods = scopeCoreMethods(core, true, sanitizedPluginName);
     return {
         ...coreMethods,
-        clearStorage: async () => core.invoke("lia_plugin_storage_clear", { module: santizedluginModuleName })
+        clearStorage: async () => core.invoke("lia_plugin_storage_clear", { plugin: sanitizedPluginName })
     };
 }
 function buildFs(core) {

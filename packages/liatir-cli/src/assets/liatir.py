@@ -10,8 +10,8 @@
 # against it before and after your handler executes.
 #
 # Plugin API surface (minimal — a plugin is a tool, not an orchestrator):
-#   jobs, deps, sidecar, desktop.fs (data/cache/pluginFs), desktop.app (info),
-#   paths, invoke.
+#   jobs, deps, desktop.fs (data/cache/pluginFs), desktop.app (info),
+#   log, progress, paths, invoke.
 #
 # Docs: https://liatir.com/docs/plugins
 
@@ -310,14 +310,69 @@ class _Deps:
         return self._bridge.invoke("lia_deps_check_many", {"binaries": binaries})
 
 
-class _Sidecar:
-    """Run binaries bundled with the Liatir app (samtools, bwa, etc.)."""
+class _Log:
+    """Structured logging — entries are tagged with the job ID and streamed to the Jobs UI.
 
-    def __init__(self, bridge):
+    Mirrors the Node `Liatir.log` builder: same `lia_plugin_log` command and
+    camelCase payload keys (jobId/level/message/meta).
+    """
+
+    def __init__(self, bridge, job_id):
         self._bridge = bridge
+        self._job_id = job_id
 
-    def run(self, name, args=None):
-        return self._bridge.invoke("lia_sidecar_run", {"name": name, "args": args or []})
+    def _send(self, level, message, meta=None):
+        return self._bridge.invoke("lia_plugin_log", _compact({
+            "jobId": self._job_id,
+            "level": level,
+            "message": message,
+            "meta": meta,
+        }))
+
+    def info(self, message, meta=None):
+        return self._send("info", message, meta)
+
+    def warn(self, message, meta=None):
+        return self._send("warn", message, meta)
+
+    def error(self, message, meta=None):
+        return self._send("error", message, meta)
+
+    def debug(self, message, meta=None):
+        return self._send("debug", message, meta)
+
+
+class _Progress:
+    """Progress tracking — updates are streamed to the Jobs UI.
+
+    Mirrors the Node `Liatir.progress` builder: same `lia_plugin_progress`
+    command. `advance` sends a `delta`, `update` an absolute `current`; optional
+    keys are dropped (via _compact) so they reach Rust as "not provided".
+    """
+
+    def __init__(self, bridge, job_id):
+        self._bridge = bridge
+        self._job_id = job_id
+
+    def start(self, total, label=None):
+        return self._bridge.invoke("lia_plugin_progress", _compact({
+            "jobId": self._job_id, "current": 0, "total": total, "label": label,
+        }))
+
+    def advance(self, n=1, label=None):
+        return self._bridge.invoke("lia_plugin_progress", _compact({
+            "jobId": self._job_id, "delta": n, "label": label,
+        }))
+
+    def update(self, current, label=None):
+        return self._bridge.invoke("lia_plugin_progress", _compact({
+            "jobId": self._job_id, "current": current, "label": label,
+        }))
+
+    def done(self):
+        return self._bridge.invoke("lia_plugin_progress", {
+            "jobId": self._job_id, "done": True,
+        })
 
 
 class _FsScope:
@@ -440,8 +495,9 @@ class Liatir:
     Plugin API surface:
       jobs      — spawn/stream/kill any system binary
       deps      — check whether external binaries are available
-      sidecar   — run binaries bundled with the Liatir app
       desktop   — fs (data/cache/pluginFs) and app (info)
+      log       — structured logging streamed to the Jobs UI
+      progress  — progress updates streamed to the Jobs UI
       paths()   — app filesystem paths
       invoke()  — raw escape hatch for any native command
     """
@@ -449,10 +505,14 @@ class Liatir:
     def __init__(self):
         self._ipc = None
         self._dev = _read_dev_context()
+        # The runtime injects the current job's ID; log/progress tag their
+        # entries with it (mirrors the Node factory reading LIATIR_JOB_ID).
+        self._job_id = os.environ.get("LIATIR_JOB_ID", "unknown")
         self.jobs = _Jobs(self)
         self.deps = _Deps(self)
-        self.sidecar = _Sidecar(self)
         self.desktop = _Desktop(self)
+        self.log = _Log(self, self._job_id)
+        self.progress = _Progress(self, self._job_id)
 
     def invoke(self, cmd, payload=None):
         """Raw escape hatch: call any native command not covered by a namespace."""

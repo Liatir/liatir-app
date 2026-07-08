@@ -39,11 +39,10 @@ export type LiatirAPI = LiatirBrowserAPI;
 // here we compose them with the IPC `invoke`. tsup bundles them into dist.
 //
 // Plugin API surface (minimal — a plugin is a tool, not an orchestrator):
-//   jobs, deps, sidecar, desktop.fs (data/cache/pluginFs), desktop.app (info),
-//   paths, invoke.
+//   jobs, deps, desktop.fs (data/cache/pluginFs), desktop.app (info),
+//   log, progress, paths, invoke.
 import { buildFs } from "./browser-api/index.js";
 import { buildAppInfo } from "./browser-api/index.js";
-import { buildSidecar } from "./browser-api/index.js";
 import { buildJobs } from "./browser-api/index.js";
 import { buildDeps } from "./browser-api/index.js";
 import type {
@@ -58,7 +57,6 @@ import type {
   DepsInterface,
 } from "./browser-api/index.js";
 import type { FsEntry, FsPaths } from "./browser-api/index.js";
-import type { SidecarResult, SidecarInterface } from "./browser-api/index.js";
 
 // ── Bridge types — reused from src-ts (single source of truth, no mirroring) ─
 export type {
@@ -71,7 +69,6 @@ export type {
   DepsInterface,
   FsEntry,
   FsPaths,
-  SidecarResult,
 };
 
 /**
@@ -235,12 +232,17 @@ async function httpInvoke<T>(
  * Jobs in Node = the reused JobsInterface (spawn/kill/status/list/clearDone)
  * plus two polling helpers that replace the browser's event-based streaming.
  */
-export type LiatirNodeJobs = JobsInterface & {
+export type LiatirNodeJobs = Omit<JobsInterface, "spawn"> & {
+  /**
+   * Spawn a process. `cmd` may be a command string, or a bundled-tool ToolRef
+   * (e.g. `tools.samtools`) which the backend resolves to its installed binary.
+   */
+  spawn(cmd: string | LiatirToolRef, args: string[], opts?: SpawnOptions): Promise<SpawnResult>;
   /** Buffered stdout/stderr lines since an offset (for polling). */
   getOutput(jobId: string, since?: number): Promise<JobOutput>;
   /** Spawn, wait for exit, and stream output via polling callbacks. */
   run(
-    cmd: string,
+    cmd: string | LiatirToolRef,
     args?: string[],
     opts?: {
       cwd?: string;
@@ -249,6 +251,10 @@ export type LiatirNodeJobs = JobsInterface & {
     }
   ): Promise<JobEntry>;
 };
+
+/** A spawn target: a command string, or a bundled ToolRef (`tools.*` / `models.*`). */
+const toolRefToCmd = (cmd: string | LiatirToolRef): string =>
+  typeof cmd === "string" ? cmd : cmd.id;
 
 export interface LiatirNodePaths {
   appData: string;
@@ -321,9 +327,6 @@ export interface PluginDesktop {
   fs: PluginFs;
   app: PluginAppInfo;
 }
-
-/** Sidecar — run binaries bundled with the Liatir app. */
-export type PluginSidecar = SidecarInterface;
 
 // ── ToolRef re-exports — typed references for spawnable entities ─────────────
 
@@ -414,8 +417,6 @@ export interface LiatirNode {
   jobs: LiatirNodeJobs;
   /** Check whether external binaries are available on the host. */
   deps: DepsInterface;
-  /** Run binaries bundled with the Liatir app (samtools, bwa, etc.). */
-  sidecar: PluginSidecar;
   /** Desktop bridge subset: filesystem and app info. */
   desktop: PluginDesktop;
   /** Structured logging — logs are streamed to the Jobs UI. */
@@ -442,8 +443,8 @@ export async function createLiatir(): Promise<LiatirNode> {
   // jobs/deps reuse the browser bridge builders; Node adds polling-based streaming
   // (getOutput/run) since there is no Tauri event channel in a Node process.
   const baseJobs = buildJobs(core);
-  const spawnJob = (cmd: string, args: string[], opts: SpawnOptions = {}) =>
-    baseJobs.spawn(cmd, args, withDevSpawnOptions(opts, devContext));
+  const spawnJob = (cmd: string | LiatirToolRef, args: string[], opts: SpawnOptions = {}) =>
+    baseJobs.spawn(toolRefToCmd(cmd), args, withDevSpawnOptions(opts, devContext));
   const listJobs = async () => {
     if (!devContext) return baseJobs.list();
     const entries = await invoke<JobEntry[]>("lia_jobs_list", {
@@ -461,7 +462,7 @@ export async function createLiatir(): Promise<LiatirNode> {
     invoke<JobOutput>("lia_jobs_get_output", { jobId, since });
 
   const runJob = async (
-    cmd: string,
+    cmd: string | LiatirToolRef,
     args: string[] = [],
     opts: {
       cwd?: string;
@@ -532,12 +533,6 @@ export async function createLiatir(): Promise<LiatirNode> {
     info: fullApp.info,
   };
 
-  // Sidecar — run binaries bundled with the Liatir app.
-  const fullSidecar = buildSidecar(core);
-  const sidecar: PluginSidecar = {
-    run: fullSidecar.run,
-  };
-
   // Log & Progress — structured observability for plugins.
   // The job ID is injected by the runtime via LIATIR_JOB_ID env var.
   const jobId = process.env["LIATIR_JOB_ID"] ?? "unknown";
@@ -547,7 +542,6 @@ export async function createLiatir(): Promise<LiatirNode> {
   return {
     jobs,
     deps,
-    sidecar,
     desktop: {
       fs: pluginFs,
       app: pluginApp,

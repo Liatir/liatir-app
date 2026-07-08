@@ -6,6 +6,8 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import JobLogViewer from '$lib/components/ui/JobLogViewer.svelte';
+	import JobProgressBar from '$lib/components/ui/JobProgressBar.svelte';
 	import { jobsStore, type JobBufferedOutput, type JobEntry } from '$lib/stores/jobs.svelte';
 	import { compactPathIfLocal, fmtDuration, fmtTime, sanitizeForDisplay, sanitizeLocalPathsForDisplay } from '$lib/utils';
 	import Icon from '@iconify/svelte/dist/OfflineIcon.svelte';
@@ -208,6 +210,12 @@
 							{/if}
 						</div>
 
+						{#if variant === 'running' && jobsStore.getProgress(job.id)}
+							<div class="px-4 pb-3">
+								<JobProgressBar progress={jobsStore.getProgress(job.id)} />
+							</div>
+						{/if}
+
 						{#if expandedJobId === job.id}
 							{@const buffered = jobOutputs[job.id]}
 							<div
@@ -268,6 +276,13 @@
 											data-selectable>{displayMetadata(job)}</pre>
 									</div>
 								{/if}
+
+								<div class="mt-4 border-t border-border pt-3">
+									<p class="mb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+										Plugin logs
+									</p>
+									<JobLogViewer jobId={job.id} inline />
+								</div>
 
 								<div class="mt-4 border-t border-border pt-3">
 									<div class="mb-2 flex items-center justify-between gap-3">

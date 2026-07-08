@@ -599,6 +599,54 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
             Ok(serde_json::to_value(output)?)
         }
 
+        // Plugin structured logging / progress. Both target a specific job, so
+        // (like status/get_output) they go through the dev-session job guard
+        // rather than the generic macro — a dev plugin may only log/report
+        // progress for jobs it owns inside the sandbox workspace.
+        "lia_plugin_log" => {
+            let job_id = payload["jobId"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("jobId required"))?
+                .to_string();
+            ensure_dev_job_access(app, dev_context.as_ref(), &job_id)?;
+            let level = payload["level"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("level required"))?
+                .to_string();
+            let message = payload["message"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("message required"))?
+                .to_string();
+            let meta = payload.get("meta").filter(|value| !value.is_null()).cloned();
+            crate::bridge::plugin_log::lia_plugin_log(app.clone(), job_id, level, message, meta)
+                .map_err(|e| anyhow::anyhow!(e))?;
+            Ok(Value::Null)
+        }
+
+        "lia_plugin_progress" => {
+            let job_id = payload["jobId"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("jobId required"))?
+                .to_string();
+            ensure_dev_job_access(app, dev_context.as_ref(), &job_id)?;
+            let current = payload["current"].as_u64();
+            let total = payload["total"].as_u64();
+            let label = payload["label"].as_str().map(String::from);
+            let delta = payload["delta"].as_u64();
+            let done = payload["done"].as_bool();
+            crate::bridge::plugin_progress::lia_plugin_progress(
+                app.clone(),
+                job_id,
+                current,
+                total,
+                label,
+                delta,
+                done,
+            )
+            .map_err(|e| anyhow::anyhow!(e))?;
+            Ok(Value::Null)
+        }
+
         "lia_deps_check" => {
             let name = payload["name"]
                 .as_str()

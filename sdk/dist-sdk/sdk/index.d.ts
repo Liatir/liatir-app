@@ -1,2 +1,2 @@
 export { Liatir, isLiatirAvailable } from "./_proxy";
-export { type LiatirAPI } from "../types";
+export { type LiatirBrowserAPI, type LiatirAPI } from "../types";

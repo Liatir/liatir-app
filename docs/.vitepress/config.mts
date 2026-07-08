@@ -57,6 +57,7 @@ export default defineConfig({
         { text: 'AI Models', link: '/ai/guide' },
         { text: 'Plugins', link: '/plugins/overview' },
         { text: 'Pipelines', link: '/pipeline/overview' },
+        { text: 'Brand assets', link: '/donate' },
         { text: 'Donate', link: '/donate' },
       ] },
       { text: 'Introduction', link: '/introduction/overview' },
@@ -217,7 +218,7 @@ export default defineConfig({
           { text: "Terms of Service", link: "/terms" }
         ]
       },
-      { text: 'Branding Assets', link: '/branding' },
+      { text: 'Brand Assets', link: '/branding' },
       { text: 'Donate', link: '/donate' },
       { text: `</br></br>All rights reserved</br>© ${new Date().getFullYear()} <a href="https://liatir.com" target="_blank">Liatir</a>`},
     ],

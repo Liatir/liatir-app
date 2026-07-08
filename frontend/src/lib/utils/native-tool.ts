@@ -1,5 +1,4 @@
 import { liatir } from '$lib/api';
-import { resolveManagedBinPath } from '$lib/tools/binary-manager';
 import { workspaceStore } from '$lib/stores/workspace.svelte';
 
 export interface NativeRunResult {
@@ -31,10 +30,11 @@ export async function runNativeTool(
   const api = liatir();
   if (!api) throw new Error('Liatir API not available');
 
-  const managedPath = await resolveManagedBinPath(cmd);
   // Spawn via invoke directly so the job is tagged with the active workspace.
+  // The backend resolves managed native tools to their installed binary (single
+  // source of truth, shared with plugins); bare names fall through to PATH.
   const { jobId } = await api.invoke('lia_jobs_spawn', {
-    cmd: managedPath ?? cmd,
+    cmd,
     args,
     workspaceId: workspaceStore.activeId,
     env: options.env,

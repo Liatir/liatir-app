@@ -1,26 +1,27 @@
 <script lang="ts">
-  import { liatir } from '$lib/api';
-  import { jobsStore, type PluginLogEntry, type LogLevel } from '$lib/stores/jobs.svelte';
+  import { jobsStore, type LogLevel } from '$lib/stores/jobs.svelte';
+  import { copyTextToClipboard, saveTextToFile } from '$lib/utils/log-export';
 
   interface Props {
     jobId: string | null;
-    /** If true, show logs inline. If false, show collapsible toggle. */
+    /** If true, logs are always shown. If false, a collapsible toggle controls visibility. */
     inline?: boolean;
   }
 
   let { jobId, inline = false }: Props = $props();
 
-  let open = $state(inline);
+  // In inline mode logs are always visible; otherwise the toggle drives it.
+  let userOpened = $state(false);
+  const open = $derived(inline || userOpened);
+
   let copied = $state(false);
 
-  const logs = $derived(() => {
-    if (!jobId) return [];
-    return jobsStore.getLogs(jobId);
-  });
+  const logs = $derived(jobId ? jobsStore.getLogs(jobId) : []);
 
+  // Collapse again when switching to a different job (collapsible mode only).
   $effect(() => {
-    const id = jobId;
-    if (!inline) open = false;
+    jobId;
+    userOpened = false;
   });
 
   function levelColor(level: LogLevel): string {
@@ -46,28 +47,22 @@
     return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
 
+  function logsAsText(): string {
+    return logs
+      .map((e) => `[${formatTime(e.timestampMs)}] [${e.level.toUpperCase()}] ${e.message}`)
+      .join('\n');
+  }
+
   async function copyLog() {
-    const entries = logs();
-    if (entries.length === 0) return;
-    const api = liatir();
-    const text = entries.map(e => `[${formatTime(e.timestampMs)}] [${e.level.toUpperCase()}] ${e.message}`).join('\n');
-    await api?.desktop.clipboard.writeText(text);
+    if (logs.length === 0) return;
+    await copyTextToClipboard(logsAsText());
     copied = true;
     setTimeout(() => copied = false, 1500);
   }
 
   async function exportLog() {
-    const entries = logs();
-    if (entries.length === 0 || !jobId) return;
-    const api = liatir();
-    if (!api) return;
-    try {
-      const dest = await api.desktop.files.save(`liatir-job-log-${jobId.slice(0, 8)}.txt`);
-      if (dest) {
-        const text = entries.map(e => `[${formatTime(e.timestampMs)}] [${e.level.toUpperCase()}] ${e.message}`).join('\n');
-        await api.invoke('lia_write_file_path', { path: dest, content: text } as any);
-      }
-    } catch { /* cancelled */ }
+    if (logs.length === 0 || !jobId) return;
+    await saveTextToFile(`liatir-job-log-${jobId.slice(0, 8)}.txt`, logsAsText());
   }
 </script>
 
@@ -77,7 +72,7 @@
       <!-- Toggle row -->
       <div class="flex items-center gap-2">
         <button
-          onclick={() => open = !open}
+          onclick={() => userOpened = !userOpened}
           class="flex items-center gap-1.5 text-[11px] text-zinc-400 hover:text-zinc-600 transition-colors"
         >
           <svg
@@ -87,10 +82,10 @@
           >
             <polyline points="9 18 15 12 9 6"/>
           </svg>
-          View logs ({logs().length})
+          View logs ({logs.length})
         </button>
 
-        {#if open && logs().length > 0}
+        {#if open && logs.length > 0}
           <button
             onclick={copyLog}
             class="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors"
@@ -105,10 +100,10 @@
           </button>
         {/if}
       </div>
-    {:else if logs().length > 0}
+    {:else if logs.length > 0}
       <!-- Inline header with actions -->
       <div class="flex items-center justify-between mb-2">
-        <span class="text-[11px] text-zinc-500 font-medium">Logs ({logs().length})</span>
+        <span class="text-[11px] text-zinc-500 font-medium">Logs ({logs.length})</span>
         <div class="flex items-center gap-2">
           <button
             onclick={copyLog}
@@ -127,12 +122,12 @@
     {/if}
 
     {#if open}
-      {#if logs().length === 0}
+      {#if logs.length === 0}
         <p class="text-[11px] text-zinc-400 mt-2">No logs yet for this job.</p>
       {:else}
         <div class="mt-2 rounded-lg bg-zinc-50 border border-zinc-200 overflow-hidden">
           <div class="max-h-64 overflow-y-auto p-2 font-mono text-[11px] space-y-0.5">
-            {#each logs() as entry (entry.timestampMs)}
+            {#each logs as entry, i (`${entry.timestampMs}-${i}`)}
               <div class="flex items-start gap-2 leading-relaxed">
                 <span class="text-zinc-400 shrink-0">{formatTime(entry.timestampMs)}</span>
                 <span class="shrink-0 font-semibold {levelColor(entry.level)}">{levelBadge(entry.level)}</span>

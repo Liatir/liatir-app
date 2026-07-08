@@ -16,8 +16,6 @@ export * from "./modules/rs/badge/_types";
 export * from "./modules/rs/worker/_types";
 export * from "./modules/rs/contextMenu/_types";
 export * from "./modules/rs/globalVariables/_types";
-export * from "./modules/rs/sidecar/_types";
-export * from "./modules/bio/pipeline/_types";
 export * from "./modules/desktop/_types";
 export * from "./modules/rs/jobs/_types";
 export * from "./modules/rs/deps/_types";

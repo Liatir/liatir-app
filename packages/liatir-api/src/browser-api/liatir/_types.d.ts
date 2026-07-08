@@ -1,6 +1,4 @@
 import type { DesktopInterface } from "../modules/desktop/_types";
-import type { SidecarInterface } from "../modules/rs/sidecar/_types";
-import type { PipelineInterface } from "../modules/bio/pipeline/_types";
 import type { JobsInterface } from "../modules/rs/jobs/_types";
 import type { DepsInterface } from "../modules/rs/deps/_types";
 import type { QcInterface } from "../modules/qc/_types";
@@ -15,10 +13,6 @@ export type LiatirBrowserAPI = {
     isDesktop: boolean;
     /** Native desktop bridge — window, fs, notifications, clipboard, etc. */
     desktop: DesktopInterface;
-    /** Run bundled native sidecars (declared in bundle.externalBin). */
-    sidecar: SidecarInterface;
-    /** Chain sidecar steps into a sequential pipeline. */
-    pipeline: PipelineInterface;
     /** Async process manager — spawn, stream, kill any system binary. */
     jobs: JobsInterface;
     /** Check whether system tools are installed and get their versions. */

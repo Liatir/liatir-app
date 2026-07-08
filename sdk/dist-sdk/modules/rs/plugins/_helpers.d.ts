@@ -1,1 +1,1 @@
-export declare const normalizeModuleName: (name: string) => string;
+export declare const normalizePluginName: (name: string) => string;

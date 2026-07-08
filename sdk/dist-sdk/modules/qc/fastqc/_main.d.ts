@@ -1,3 +1,5 @@
-import { PluginsInterface } from "../../rs/plugins/_types";
 import { FastqcInterface } from "./_types";
-export declare function buildFastqc(plugins: PluginsInterface): FastqcInterface;
+import type { LiatirAPI } from "../../../types";
+export declare function buildFastqc(core: {
+    invoke: LiatirAPI["invoke"];
+}): FastqcInterface;

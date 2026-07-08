@@ -1,3 +1,3 @@
-import type { LiatirAPI } from "../types";
+import type { LiatirBrowserAPI } from "../types";
 export declare function isLiatirAvailable(): boolean;
-export declare const Liatir: LiatirAPI;
+export declare const Liatir: LiatirBrowserAPI;

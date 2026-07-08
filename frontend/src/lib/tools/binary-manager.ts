@@ -82,15 +82,6 @@ export function getRelease(
   return BINARY_RELEASES[binary]?.[platform]?.[arch] ?? null;
 }
 
-export function getManagedBinPath(binary: string): string | null {
-  return managedBins.get(binary)?.path ?? null;
-}
-
-export async function resolveManagedBinPath(binary: string): Promise<string | null> {
-  await managedBins.init();
-  return getManagedBinPath(binary);
-}
-
 // ── install orchestrator ───────────────────────────────────────────────────
 
 export type InstallProgress =

@@ -75,11 +75,10 @@ app. It includes:
 
 - `Liatir.jobs` for running and tracking local command-line processes;
 - `Liatir.deps` for checking whether binaries are available;
-- `Liatir.desktop.fs` for scoped Liatir storage;
-- `Liatir.desktop.files`, `Liatir.desktop.app`, diagnostics, notifications, clipboard,
-  network, and global variables where meaningful in a headless process;
-- typed bio namespaces such as `Liatir.qc`, `Liatir.align`, and `Liatir.variants`;
-- lower-level `Liatir.sidecar` and `Liatir.invoke` escape hatches.
+- `Liatir.desktop.fs` for scoped Liatir storage (`data`, `cache`, `pluginFs`);
+- `Liatir.desktop.app` for read-only app info;
+- `Liatir.log` and `Liatir.progress` for structured logs and progress streamed to the Jobs UI;
+- `Liatir.paths()` and the lower-level `Liatir.invoke` escape hatch.
 
 Node plugins can also use normal Node.js APIs and bundled npm dependencies.
 
@@ -126,10 +125,10 @@ def main(ctx):
     return {"jobId": job["id"]}
 ```
 
-`ctx.liatir` mirrors the Node namespaces (`jobs`, `deps`, `desktop.*`,
-`sidecar`, `pipeline`, `paths()`, plus `invoke` as a raw escape hatch), using
-snake_case method names. It resolves its connection lazily, so plugins that
-never touch the bridge run without requiring the app.
+`ctx.liatir` mirrors the Node namespaces (`jobs`, `deps`, `desktop.fs`,
+`desktop.app`, `log`, `progress`, `paths()`, plus `invoke` as a raw escape
+hatch), using snake_case method names. It resolves its connection lazily, so
+plugins that never touch the bridge run without requiring the app.
 
 ## WASM plugins
 

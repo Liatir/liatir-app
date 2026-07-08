@@ -111,8 +111,6 @@ commands.allow = [
   "lia_plugin_progress",
   "lia_plugin_log",
 
-  "lia_sidecar_run",
-
   "lia_liatir_read_manifest",
   "lia_liatir_python_runtime_status",
   "lia_liatir_python_runtime_prepare",

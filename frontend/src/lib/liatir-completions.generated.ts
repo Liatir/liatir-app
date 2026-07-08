@@ -175,12 +175,6 @@ export const LIATIR_API: Record<string, ApiNode> = {
           list: { type: "method", detail: "(key: string): Promise<{ [key: string]: string; }>" },
       } },
   } },
-  sidecar: { type: "property", detail: "SidecarInterface", info: "Run bundled native sidecars (declared in bundle.externalBin).", children: {
-      run: { type: "method", detail: "(name: string, args: string[]): Promise<SidecarResult>", info: "Run a registered sidecar binary and capture stdout/stderr.\n\nThe binary must be declared in `bundle.externalBin` in tauri.conf.json.\n\nTODO: add real bio tool sidecars here as they are bundled, e.g.:\n  - \"samtools\"   → SAM/BAM processing\n  - \"minimap2\"   → long-read alignment\n  - \"bwa\"        → short-read alignment\n  - \"bcftools\"   → VCF/BCF manipulation\n  - \"fastqc\"     → QC reports (requires JVM or standalone binary)" },
-  } },
-  pipeline: { type: "property", detail: "PipelineInterface", info: "Chain sidecar steps into a sequential pipeline.", children: {
-      run: { type: "method", detail: "(steps: PipelineStep[], opts?: { continueOnError?: boolean; }): Promise<PipelineResult>", info: "Execute a sequence of steps in order.\nStops at the first failure unless `continueOnError` is true.\n\nTODO: add real bio pipeline presets here, e.g.:\n  - shortReadQC(fastqPath)         → FastQC → MultiQC\n  - alignShortReads(fastq, ref)    → BWA-MEM → samtools sort/index\n  - callVariants(bam, ref)         → GATK HaplotypeCaller → bcftools filter\n  - annotateVariants(vcf)          → VEP or SnpEff" },
-  } },
   jobs: { type: "property", detail: "JobsInterface", info: "Async process manager — spawn, stream, kill any system binary.", children: {
       spawn: { type: "method", detail: "(cmd: string, args: string[], opts?: SpawnOptions): Promise<SpawnResult>", info: "Spawn an async process. Returns immediately with a jobId.\nSubscribe to events via Liatir.desktop.events:\n  \"jobs:stdout:<jobId>\" → line: string\n  \"jobs:stderr:<jobId>\" → line: string\n  \"jobs:exit:<jobId>\"   → { jobId, exitCode, ok }" },
       kill: { type: "method", detail: "(jobId: string): Promise<boolean>" },

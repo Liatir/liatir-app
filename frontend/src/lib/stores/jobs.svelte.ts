@@ -137,9 +137,9 @@ function createJobsStore() {
 			return jobLogs.get(jobId) ?? [];
 		},
 
-		/** Get progress for a specific job. */
+		/** Get progress for a specific job — live events first, else the last value on the job entry. */
 		getProgress(jobId: string): JobProgress | null {
-			return jobProgress.get(jobId) ?? null;
+			return jobProgress.get(jobId) ?? jobs.find((j) => j.id === jobId)?.progress ?? null;
 		},
 
 		/** Subscribe to real-time log and progress events for a job. */
@@ -155,6 +155,12 @@ function createJobsStore() {
 				jobs = (await api.invoke('lia_jobs_list', {
 					workspaceId: workspaceStore.activeId
 				})) as JobEntry[];
+				// Subscribe to still-running jobs (e.g. after a reload, or ones spawned by a
+				// plugin elsewhere) so their live log/progress events are captured too.
+				// subscribeToJob() de-dupes, so re-subscribing an already-tracked job is cheap.
+				for (const job of jobs) {
+					if (job.status.type === 'running') void subscribeToJob(job.id);
+				}
 			} catch (e) {
 				error = String(e);
 			} finally {

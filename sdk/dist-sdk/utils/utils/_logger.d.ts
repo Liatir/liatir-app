@@ -3,7 +3,7 @@ export declare const logger: {
     log: LogFn;
     warn: LogFn;
     error: (...data: any[]) => void;
-    devError: LogFn;
+    devError: (...data: any[]) => void;
     logCaller: LogFn;
     page: LogFn;
     prod: {

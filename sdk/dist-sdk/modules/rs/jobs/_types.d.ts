@@ -13,6 +13,9 @@ export type JobEntry = {
     id: string;
     cmd: string;
     args: string[];
+    label?: string | null;
+    kind?: string | null;
+    metadata?: Record<string, unknown> | null;
     status: JobStatus;
     startedAtMs: number;
     endedAtMs: number | null;
@@ -23,6 +26,14 @@ export type SpawnResult = {
 export type SpawnOptions = {
     /** Working directory for the spawned process */
     cwd?: string;
+    /** Environment variables added or overridden for the spawned process. */
+    env?: Record<string, string>;
+    /** Human-readable label shown in job lists. */
+    label?: string;
+    /** Stable machine-readable job category. */
+    kind?: string;
+    /** Small structured metadata for UI routing and diagnostics. */
+    metadata?: Record<string, unknown>;
 };
 export interface JobsInterface {
     /**

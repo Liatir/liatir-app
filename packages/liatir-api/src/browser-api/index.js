@@ -443,7 +443,7 @@ var Liatir = new Proxy({}, {
 
 // src-ts/bridge.constants.json
 var bridge_constants_default = {
-  appUrl: "http://blank.html",
+  appUrl: "",
   apiVersion: "0.2.1"
 };
 
@@ -1255,68 +1255,6 @@ function buildGlobVar(core) {
   };
 }
 
-// src-ts/modules/rs/sidecar/_main.ts
-function buildSidecar(core) {
-  return {
-    run: (name, args) => core.invoke("lia_sidecar_run", { name, args })
-  };
-}
-
-// src-ts/modules/bio/pipeline/_main.ts
-function buildPipeline(deps) {
-  return {
-    run: async (steps, opts = {}) => {
-      const { continueOnError = false } = opts;
-      const results = [];
-      const pipelineStart = Date.now();
-      let failedAt = null;
-      for (let i = 0; i < steps.length; i++) {
-        const step = steps[i];
-        const stepStart = Date.now();
-        let result = {
-          label: step.label,
-          status: "running",
-          durationMs: 0,
-          output: null,
-          error: null
-        };
-        try {
-          const output = await deps.sidecar.run(step.binary, step.args);
-          result.output = output;
-          result.status = output.ok ? "done" : "error";
-          if (!output.ok) {
-            result.error = output.error ?? `exit code ${output.exitCode}`;
-          }
-        } catch (err) {
-          result.status = "error";
-          result.error = err instanceof Error ? err.message : String(err);
-        }
-        result.durationMs = Date.now() - stepStart;
-        results.push(result);
-        if (result.status === "error") {
-          if (failedAt === null) failedAt = i;
-          if (!continueOnError) break;
-        }
-      }
-      for (let i = results.length; i < steps.length; i++) {
-        results.push({
-          label: steps[i].label,
-          status: "pending",
-          durationMs: 0,
-          output: null,
-          error: null
-        });
-      }
-      return {
-        ok: failedAt === null,
-        steps: results,
-        totalDurationMs: Date.now() - pipelineStart,
-        failedAt
-      };
-    }
-  };
-}
-
 // src-ts/modules/rs/jobs/_main.ts
 function buildJobs(core) {
   return {
@@ -1480,7 +1418,6 @@ function buildQc(core) {
   if (window.Liatir) return;
   console.log("[Liatir bridge] init script evaluated");
   const core = buildCore();
-  const sidecar = buildSidecar(core);
   const api = {
     get isAvailable() {
       return true;
@@ -1508,8 +1445,6 @@ function buildQc(core) {
       contextMenu: buildContextMenu(core),
       globalVariables: buildGlobVar(core)
     },
-    sidecar,
-    pipeline: buildPipeline({ sidecar }),
     jobs: buildJobs(core),
     deps: buildDeps(core),
     qc: buildQc(core),
@@ -1561,10 +1496,8 @@ export {
   buildMenu,
   buildNetwork,
   buildNotifications,
-  buildPipeline,
   buildQc,
   buildShortcuts,
-  buildSidecar,
   buildWindow,
   buildWorker,
   closeWindow,

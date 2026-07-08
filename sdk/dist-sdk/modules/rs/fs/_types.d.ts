@@ -62,6 +62,7 @@ export interface FsDiagnosticMethods {
 export interface FsInterface {
     cache: FsScopeMethods;
     data: FsScopeMethods;
+    /** Scoped to the persistent storage of the selected plugin. */
     pluginFs: (plugin: string) => FsPluginMethods;
     paths: () => Promise<FsPaths>;
     base: {

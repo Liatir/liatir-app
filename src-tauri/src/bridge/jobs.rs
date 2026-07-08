@@ -171,6 +171,34 @@ pub(crate) async fn lia_jobs_spawn_with_cleanup(
     .await
 }
 
+/// Resolve a spawn target to an executable path — the single source of truth
+/// for native-tool resolution, shared by the app's own `runNativeTool` and by
+/// out-of-process plugins calling `jobs.spawn(tools.X, ...)`:
+/// - an explicit path (contains a separator) is used verbatim;
+/// - a bare name listed in the managed-bins registry
+///   (`<data>/managed-bins/index.json`, written by the installer) resolves to
+///   that installed binary, so the app and plugins run the SAME managed build;
+/// - otherwise the bare name is returned unchanged and resolved via PATH
+///   (tools installed through brew/conda).
+fn resolve_spawn_cmd(app: &AppHandle, cmd: &str) -> String {
+    if cmd.contains('/') || cmd.contains(std::path::MAIN_SEPARATOR) {
+        return cmd.to_string();
+    }
+    managed_bin_path(app, cmd).unwrap_or_else(|| cmd.to_string())
+}
+
+/// Look up a bare tool name in the managed-bins registry, returning its
+/// absolute path only if the registry lists it AND the file still exists.
+fn managed_bin_path(app: &AppHandle, name: &str) -> Option<String> {
+    let index_path = super::fs::base_dir(app, true).join("managed-bins/index.json");
+    let raw = std::fs::read_to_string(index_path).ok()?;
+    let index: Value = serde_json::from_str(&raw).ok()?;
+    let path = index.get("bins")?.get(name)?.get("path")?.as_str()?;
+    std::path::Path::new(path)
+        .exists()
+        .then(|| path.to_string())
+}
+
 async fn spawn_job(
     app: AppHandle,
     cmd: String,
@@ -190,7 +218,10 @@ async fn spawn_job(
     let job_id = gen_job_id();
     let started_at_ms = now_ms();
 
-    let mut command = app.shell().command(&cmd).args(&args);
+    // Resolve managed native tools to their installed binary; bare names fall
+    // through to PATH. The JobEntry keeps the original `cmd` for display.
+    let resolved = resolve_spawn_cmd(&app, &cmd);
+    let mut command = app.shell().command(&resolved).args(&args);
 
     if let Some(dir) = cwd {
         command = command.current_dir(dir);
@@ -202,7 +233,7 @@ async fn spawn_job(
 
     let (mut rx, child) = command
         .spawn()
-        .map_err(|e| format!("failed to spawn '{cmd}': {e}"))?;
+        .map_err(|e| format!("failed to spawn '{resolved}': {e}"))?;
 
     let entry = JobEntry {
         id: job_id.clone(),
