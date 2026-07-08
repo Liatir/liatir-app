@@ -26,6 +26,7 @@ import { buildPipeline } from "./modules/bio/pipeline/_main";
 import { buildJobs } from "./modules/rs/jobs/_main";
 import { buildDeps } from "./modules/rs/deps/_main";
 import { buildQc } from "./modules/qc/_main";
+import { isBrowser } from "./utils";
 
 (() => {
   if (typeof window === "undefined") return;
@@ -90,6 +91,7 @@ import { buildQc } from "./modules/qc/_main";
   if (tauriReadyCheck()) {
     liaInitiators();
   } else {
+    if(!isBrowser()) return;
     console.error("[Liatir bridge] Tauri did not become ready in time");
   }
 })();
