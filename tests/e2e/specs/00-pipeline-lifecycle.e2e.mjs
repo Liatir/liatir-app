@@ -9,8 +9,13 @@ import {
 
 const PIPELINE_A_ID = 'e2e-delayed-pipeline';
 const PIPELINE_B_ID = 'e2e-independent-pipeline';
+const PIPELINE_FAILURE_ID = 'e2e-failing-pipeline';
+const PIPELINE_INTERRUPTED_ID = 'e2e-interrupted-pipeline';
 const REQUEST_ID = 'e2e-delayed-request';
+const FAILURE_REQUEST_ID = 'e2e-failing-request';
+const INTERRUPTED_RUN_ID = 'e2e-interrupted-run';
 const COLLECTION_ID = 'e2e-local-api';
+const INTERRUPTED_ERROR = 'Pipeline run was interrupted before Liatir could finalize it.';
 
 async function startDelayedApi() {
   const server = createServer((_request, response) => {
@@ -74,6 +79,38 @@ function pipelineWorkspace() {
     edges: [],
     updatedAt: now - 1,
   };
+  const failingPipeline = {
+    id: PIPELINE_FAILURE_ID,
+    name: 'Failing API Pipeline',
+    nodes: [
+      {
+        id: 'failing-api-step',
+        type: 'api-request',
+        position: { x: 200, y: 140 },
+        data: {
+          requestId: FAILURE_REQUEST_ID,
+          requestName: 'Unreachable endpoint',
+          paramOverrides: {},
+        },
+      },
+    ],
+    edges: [],
+    updatedAt: now - 2,
+  };
+  const interruptedPipeline = {
+    id: PIPELINE_INTERRUPTED_ID,
+    name: 'Interrupted Pipeline',
+    nodes: [
+      {
+        id: 'interrupted-step',
+        type: 'variable',
+        position: { x: 220, y: 150 },
+        data: { varType: 'string', value: 'interrupted' },
+      },
+    ],
+    edges: [],
+    updatedAt: now - 3,
+  };
 
   return {
     current: {
@@ -82,7 +119,7 @@ function pipelineWorkspace() {
       nodes: pipelineA.nodes,
       edges: pipelineA.edges,
     },
-    saved: [pipelineA, pipelineB],
+    saved: [pipelineA, pipelineB, failingPipeline, interruptedPipeline],
     runtime: [],
   };
 }
@@ -117,6 +154,20 @@ function apiWorkspace(url) {
         outputSchema: {
           source: { path: 'source', label: 'Source', type: 'string' },
         },
+      },
+      {
+        id: FAILURE_REQUEST_ID,
+        collectionId: COLLECTION_ID,
+        name: 'Unreachable endpoint',
+        useAs: 'data',
+        method: 'GET',
+        url: 'http://127.0.0.1:1/unreachable',
+        params: [],
+        headers: [{ key: 'Accept', value: 'application/json', enabled: true }],
+        body: { type: 'none', content: '' },
+        auth: { type: 'inherit' },
+        createdAt: now,
+        updatedAt: now,
       },
     ],
     environments: [],
@@ -154,6 +205,56 @@ async function openPipeline(browser, pipelineId) {
     }, pipelineId),
     { timeout: 20_000, timeoutMsg: `Pipeline editor did not open ${pipelineId}` },
   );
+}
+
+async function readWorkspaceJson(browser, rel) {
+  return browser.execute(async (path) => {
+    const raw = await window.Liatir.invoke('lia_app_read_text', { rel: path });
+    return JSON.parse(raw);
+  }, rel);
+}
+
+async function writeInterruptedRuntime(browser) {
+  await browser.execute(async (pipelineId, runId) => {
+    const rel = 'workspaces/__test__/pipeline-workspace.json';
+    const raw = await window.Liatir.invoke('lia_app_read_text', { rel });
+    const workspace = JSON.parse(raw);
+    const pipeline = workspace.saved.find((candidate) => candidate.id === pipelineId);
+    const startedAt = Date.now() - 1_000;
+
+    workspace.current = {
+      id: pipeline.id,
+      name: pipeline.name,
+      nodes: pipeline.nodes,
+      edges: pipeline.edges,
+    };
+    workspace.runtime = [
+      ...(workspace.runtime ?? []).filter((runtime) => runtime.key !== pipelineId),
+      {
+        key: pipelineId,
+        pipelineId,
+        pipelineName: pipeline.name,
+        nodeStates: [[
+          'interrupted-step',
+          {
+            status: 'running',
+            logs: ['Interrupted step started'],
+            outputFiles: [],
+            error: null,
+          },
+        ]],
+        running: true,
+        runId,
+        startedAt,
+      },
+    ];
+
+    await window.Liatir.invoke('lia_app_write_text', {
+      rel,
+      content: JSON.stringify(workspace, null, 2),
+      createDirs: true,
+    });
+  }, PIPELINE_INTERRUPTED_ID, INTERRUPTED_RUN_ID);
 }
 
 export const tests = [
@@ -237,6 +338,134 @@ export const tests = [
       } finally {
         await delayedApi.close();
       }
+    },
+  },
+  {
+    name: 'persists a failed pipeline exactly once with readable Result state',
+    async run({ browser, expect }) {
+      await navigateSidebar(browser, '/pipelines');
+      await openPipeline(browser, PIPELINE_FAILURE_ID);
+
+      const runButton = await browser.$('[data-testid="pipeline-run-button"]');
+      await runButton.waitForDisplayed({ timeout: 20_000 });
+      await runButton.click();
+
+      await browser.waitUntil(
+        async () => browser.execute(async (pipelineId) => {
+          try {
+            const raw = await window.Liatir.invoke('lia_app_read_text', {
+              rel: 'workspaces/__test__/analysis-runs/index.json',
+            });
+            return JSON.parse(raw).some(
+              (run) => run.tool === 'pipeline'
+                && run.params?.pipelineId === pipelineId
+                && run.status === 'error',
+            );
+          } catch {
+            return false;
+          }
+        }, PIPELINE_FAILURE_ID),
+        { timeout: 30_000, timeoutMsg: 'Failed pipeline Result was not persisted' },
+      );
+
+      const runs = await readWorkspaceJson(
+        browser,
+        'workspaces/__test__/analysis-runs/index.json',
+      );
+      const failedRuns = runs.filter(
+        (run) => run.tool === 'pipeline' && run.params?.pipelineId === PIPELINE_FAILURE_ID,
+      );
+      expect(failedRuns).toHaveLength(1);
+      expect(failedRuns[0].status).toBe('error');
+      expect(failedRuns[0].params.pipelineRunId).toBe(failedRuns[0].id);
+      expect(typeof failedRuns[0].error).toBe('string');
+      expect(failedRuns[0].error.length).toBeGreaterThan(0);
+
+      await navigateSidebar(browser, '/results');
+      const resultSelector = `[data-testid="result-run"][data-run-id="${failedRuns[0].id}"]`;
+      const result = await browser.$(resultSelector);
+      await result.waitForDisplayed({ timeout: 20_000 });
+      await browser.execute((selector) => {
+        document.querySelector(`${selector} [data-testid="result-run-open"]`)?.click();
+      }, resultSelector);
+      await browser.waitUntil(
+        async () => browser.execute((message) => document.body.textContent?.includes(message) ?? false, failedRuns[0].error),
+        { timeout: 20_000, timeoutMsg: 'Failed Result did not expose its error' },
+      );
+      await expectNoVisibleRuntimeError(browser);
+    },
+  },
+  {
+    name: 'reconciles an interrupted pipeline after reload and finalizes one Result',
+    async run({ browser, expect }) {
+      await navigateSidebar(browser, '/pipelines');
+      await openPipeline(browser, PIPELINE_INTERRUPTED_ID);
+      await writeInterruptedRuntime(browser);
+
+      await browser.execute(() => window.location.reload());
+      await waitForLiatirBridge(browser);
+      await browser.waitUntil(
+        async () => browser.execute((pipelineId) => {
+          const editor = document.querySelector('[data-testid="pipeline-editor"]');
+          return window.location.pathname === '/pipeline'
+            && editor?.getAttribute('data-pipeline-id') === pipelineId;
+        }, PIPELINE_INTERRUPTED_ID),
+        { timeout: 30_000, timeoutMsg: 'Interrupted pipeline was not restored after reload' },
+      );
+
+      await browser.waitUntil(
+        async () => browser.execute(async (runId) => {
+          try {
+            const raw = await window.Liatir.invoke('lia_app_read_text', {
+              rel: 'workspaces/__test__/analysis-runs/index.json',
+            });
+            return JSON.parse(raw).some(
+              (run) => run.id === runId && run.status === 'error',
+            );
+          } catch {
+            return false;
+          }
+        }, INTERRUPTED_RUN_ID),
+        { timeout: 30_000, timeoutMsg: 'Interrupted pipeline Result was not finalized' },
+      );
+
+      const editorState = await browser.execute(() => ({
+        runDisabled: document.querySelector('[data-testid="pipeline-run-button"]')?.disabled,
+      }));
+      expect(editorState.runDisabled).toBe(false);
+
+      const workspace = await readWorkspaceJson(
+        browser,
+        'workspaces/__test__/pipeline-workspace.json',
+      );
+      const runtime = workspace.runtime.find(
+        (candidate) => candidate.key === PIPELINE_INTERRUPTED_ID,
+      );
+      expect(runtime.running).toBe(false);
+      expect(runtime.runId).toBe(INTERRUPTED_RUN_ID);
+      expect(runtime.nodeStates[0][1].status).toBe('error');
+      expect(runtime.nodeStates[0][1].error).toBe(INTERRUPTED_ERROR);
+
+      const runs = await readWorkspaceJson(
+        browser,
+        'workspaces/__test__/analysis-runs/index.json',
+      );
+      const interruptedRuns = runs.filter((run) => run.id === INTERRUPTED_RUN_ID);
+      expect(interruptedRuns).toHaveLength(1);
+      expect(interruptedRuns[0].params.pipelineId).toBe(PIPELINE_INTERRUPTED_ID);
+      expect(interruptedRuns[0].params.pipelineRunId).toBe(INTERRUPTED_RUN_ID);
+      expect(interruptedRuns[0].error).toBe(INTERRUPTED_ERROR);
+
+      await navigateSidebar(browser, '/pipelines');
+      const cardText = await (
+        await browser.$(`[data-testid="pipeline-card"][data-pipeline-id="${PIPELINE_INTERRUPTED_ID}"]`)
+      ).getText();
+      expect(cardText).not.toContain('Running');
+
+      await navigateSidebar(browser, '/results');
+      const resultSelector = `[data-testid="result-run"][data-run-id="${INTERRUPTED_RUN_ID}"]`;
+      await (await browser.$(resultSelector)).waitForDisplayed({ timeout: 20_000 });
+      await expectNoVisibleRuntimeError(browser);
     },
   },
 ];

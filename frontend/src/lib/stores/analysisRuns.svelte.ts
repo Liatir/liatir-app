@@ -2,6 +2,7 @@ import { liatir } from '$lib/api';
 import { appStorage } from './app-storage';
 import { getDataPrefix } from './workspace.svelte';
 import { withArtifactsMetadata } from '$lib/utils/artifacts';
+import { createAsyncStoreInitializer } from './async-store-initializer';
 import type { ToolOutput } from '$lib/types/tool-output';
 import type { RunOutputFile } from '$lib/types/pipeline';
 import type { LiatirArtifactParentRunKind, LiatirArtifactProducerKind } from '@liatir/core';
@@ -77,7 +78,7 @@ function logPath(id: string) { return `${getDir()}/${id}.log.json`; }
 
 function createAnalysisRunsStore() {
   let runs = $state<AnalysisRunMeta[]>([]);
-  let initialized = false;
+  const initializer = createAsyncStoreInitializer();
   const outputCache = new Map<string, ToolOutput | null>();
 
   async function persistIndex() {
@@ -88,26 +89,31 @@ function createAnalysisRunsStore() {
     get runs() { return runs; },
 
     async init() {
-      if (initialized) return;
-      initialized = true;
-      const api = liatir();
-      if (!api) return;
-      try {
-        const exists = await appStorage.exists(getIndex());
-        if (exists) {
-          const raw = await appStorage.readText(getIndex());
-          const parsed = JSON.parse(raw) as AnalysisRunMeta[];
-          const seen = new Set<string>();
-          runs = parsed.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
+      await initializer.run(async (isCurrent) => {
+        const api = liatir();
+        if (!api) return;
+        try {
+          const exists = await appStorage.exists(getIndex());
+          if (exists) {
+            const raw = await appStorage.readText(getIndex());
+            const parsed = JSON.parse(raw) as AnalysisRunMeta[];
+            if (!isCurrent()) return;
+            const seen = new Set<string>();
+            runs = parsed.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
+          }
+        } catch {
+          if (isCurrent()) runs = [];
         }
-      } catch { runs = []; }
-      // Clean up log files older than TTL
-      const cutoff = Date.now() - LOG_TTL_MS;
-      for (const run of runs) {
-        if (run.endedAt < cutoff) {
-          appStorage.remove(logPath(run.id)).catch(() => {});
+
+        if (!isCurrent()) return;
+        // Clean up log files older than TTL
+        const cutoff = Date.now() - LOG_TTL_MS;
+        for (const run of runs) {
+          if (run.endedAt < cutoff) {
+            appStorage.remove(logPath(run.id)).catch(() => {});
+          }
         }
-      }
+      });
     },
 
     async add(run: AnalysisRun) {
@@ -183,7 +189,7 @@ function createAnalysisRunsStore() {
     },
 
     reset() {
-      initialized = false;
+      initializer.reset();
       runs = [];
       outputCache.clear();
     },

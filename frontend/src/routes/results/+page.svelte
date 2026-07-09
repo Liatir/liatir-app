@@ -170,6 +170,7 @@
             data-run-id={run.id}
           >
             <button
+              data-testid="result-run-open"
               onclick={() => selectedId = run.id}
               class="flex-1 text-left px-3 py-2.5 min-w-0"
             >

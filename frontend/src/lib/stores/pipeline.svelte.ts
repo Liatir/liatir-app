@@ -18,6 +18,7 @@ import type {
 import { isExecutablePipelineNode } from '$lib/types/pipeline';
 import type { AIPipelineRunContext } from '$lib/ai/direct-run-context';
 import type { JsonValue } from '@liatir/core';
+import { createAsyncStoreInitializer } from './async-store-initializer';
 
 interface PipelineStepRecord {
   label: string;
@@ -84,6 +85,7 @@ interface SerializedPipelineRuntimeState {
 
 const DRAFT_PIPELINE_KEY = '__draft__';
 const EMPTY_NODE_STATES: Map<string, NodeRunState> = new Map();
+const INTERRUPTED_PIPELINE_ERROR = 'Pipeline run was interrupted before Liatir could finalize it.';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -178,7 +180,7 @@ function deserializeRuntimeState(serialized: SerializedPipelineRuntimeState): Pi
         nodeStates.set(nodeId, {
           ...state,
           status: 'error',
-          error: 'Pipeline run was interrupted before Liatir could finalize it.',
+          error: INTERRUPTED_PIPELINE_ERROR,
         });
       }
     }
@@ -189,8 +191,8 @@ function deserializeRuntimeState(serialized: SerializedPipelineRuntimeState): Pi
     pipelineName: serialized.pipelineName,
     nodeStates,
     running: false,
-    runId: serialized.running ? null : serialized.runId,
-    startedAt: serialized.running ? null : serialized.startedAt,
+    runId: serialized.runId,
+    startedAt: serialized.startedAt,
   };
 }
 
@@ -353,7 +355,7 @@ function createPipelineStore() {
   let currentNodes: Node[] = [];
   let currentEdges: Edge[] = [];
 
-  let initialized = false;
+  const initializer = createAsyncStoreInitializer();
   let persistTimer: ReturnType<typeof setTimeout> | undefined;
 
   function currentRuntimeKey(): string {
@@ -537,29 +539,70 @@ function createPipelineStore() {
     },
 
     async init() {
-      if (initialized) return;
-      initialized = true;
-      const api = liatir();
-      if (!api) return;
-      try {
-        if (await appStorage.exists(getFile())) {
-          const raw = await appStorage.readText(getFile());
-          const ws: PipelineWorkspace = JSON.parse(raw);
-          currentNodes = ws.current?.nodes ?? [];
-          currentEdges = ws.current?.edges ?? [];
-          pipelineName = ws.current?.name ?? 'Untitled Pipeline';
-          pipelineId = ws.current?.id ?? null;
-          savedPipelines = ws.saved ?? [];
-          runtimeByPipeline = new Map(
-            (ws.runtime ?? []).map((runtime) => [runtime.key, deserializeRuntimeState(runtime)])
-          );
-        }
-      } catch { /* start fresh */ }
+      await initializer.run(async (isCurrent) => {
+        const api = liatir();
+        if (!api) return;
+        try {
+          if (await appStorage.exists(getFile())) {
+            const raw = await appStorage.readText(getFile());
+            const ws: PipelineWorkspace = JSON.parse(raw);
+            if (!isCurrent()) return;
+
+            currentNodes = ws.current?.nodes ?? [];
+            currentEdges = ws.current?.edges ?? [];
+            pipelineName = ws.current?.name ?? 'Untitled Pipeline';
+            pipelineId = ws.current?.id ?? null;
+            savedPipelines = ws.saved ?? [];
+            const serializedRuntimes = ws.runtime ?? [];
+            runtimeByPipeline = new Map(
+              serializedRuntimes.map((runtime) => [runtime.key, deserializeRuntimeState(runtime)])
+            );
+
+            const interruptedRuntimes = serializedRuntimes.filter(
+              (runtime) => runtime.running && runtime.runId
+            );
+            if (interruptedRuntimes.length > 0) {
+              await analysisRuns.init();
+              for (const runtime of interruptedRuntimes) {
+                if (!isCurrent()) return;
+                const endedAt = Date.now();
+                const startedAt = runtime.startedAt ?? endedAt;
+                await analysisRuns.add({
+                  id: runtime.runId!,
+                  tool: 'pipeline',
+                  label: runtime.pipelineName || 'Pipeline',
+                  inputs: [],
+                  params: {
+                    steps: runtime.nodeStates.length,
+                    pipelineId: runtime.pipelineId,
+                    pipelineRunId: runtime.runId,
+                  },
+                  outputFiles: [],
+                  status: 'error',
+                  startedAt,
+                  endedAt,
+                  durationMs: Math.max(0, endedAt - startedAt),
+                  output: null,
+                  error: INTERRUPTED_PIPELINE_ERROR,
+                  log: runtime.nodeStates.flatMap(([, state]) => state.logs ?? []),
+                }).catch((error) => {
+                  console.error('[pipeline] failed to persist interrupted analysis run', error);
+                });
+              }
+
+              if (!isCurrent()) return;
+              // Persist the reconciled non-running states so subsequent launches
+              // do not repeatedly recover the same interrupted execution.
+              await persist();
+            }
+          }
+        } catch { /* start fresh */ }
+      });
     },
 
     reset() {
       clearTimeout(persistTimer);
-      initialized = false;
+      initializer.reset();
       savedPipelines = [];
       pipelineName = 'Untitled Pipeline';
       pipelineId = null;
