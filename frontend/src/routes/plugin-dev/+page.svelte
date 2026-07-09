@@ -284,7 +284,7 @@
         </div>
       </Card>
     {:else if session}
-      <div class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,420px)_1fr]">
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-[minmax(320px,420px)_1fr]">
         <div class="space-y-4">
           {#if session.status === 'error'}
             <Card>

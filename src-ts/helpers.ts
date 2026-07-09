@@ -21,7 +21,15 @@ export * from "./modules/rs/globalVariables/_helpers";
 
 import { wait } from "./utils";
 
-export const tauriReadyCheck = (): boolean => (typeof window !== "undefined" && ((window as any).__TAURI__) && ((window as any).Liatir));
+// Ready when the Tauri core is present AND the bridge has assigned window.Liatir.
+// Use __TAURI_INTERNALS__ (always injected by Tauri v2) OR the __TAURI__ global
+// (only present with withGlobalTauri) — aligned with isTauri() below. Checking
+// only __TAURI__ made programmatically-created webviews (e.g. the plugin dev
+// window) time out with "Tauri did not become ready in time".
+export const tauriReadyCheck = (): boolean =>
+  typeof window !== "undefined" &&
+  !!((window as any).__TAURI_INTERNALS__ || (window as any).__TAURI__) &&
+  !!((window as any).Liatir);
 
 export const waitTauri = async () => {
   const interval: number=500;

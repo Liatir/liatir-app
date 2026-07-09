@@ -82,7 +82,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     )
       .bind(email, 'website', country || null)
       .run()
-  } catch {
+  } catch (e) {
+    // Surface the real cause in the Pages function logs (`wrangler pages
+    // deployment tail`) — usually a missing `subscribers` table or an
+    // unbound DB. The user still sees a generic message.
+    console.error('subscribe: D1 insert failed', e)
     return json({ error: 'Could not save your email. Please try again.' }, 500)
   }
 

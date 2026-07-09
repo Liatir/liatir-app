@@ -227,9 +227,13 @@ async fn spawn_job(
         command = command.current_dir(dir);
     }
 
-    if let Some(env) = env {
-        command = command.envs(env);
-    }
+    // Every spawned process learns its own job id, so the Liatir SDK's
+    // log/progress calls (which read LIATIR_JOB_ID) target THIS job instead of
+    // falling back to "unknown" — the previous behaviour that made
+    // Liatir.progress fail with "job not found" and Liatir.log fail in dev.
+    let mut env = env.unwrap_or_default();
+    env.insert("LIATIR_JOB_ID".to_string(), job_id.clone());
+    command = command.envs(env);
 
     let (mut rx, child) = command
         .spawn()

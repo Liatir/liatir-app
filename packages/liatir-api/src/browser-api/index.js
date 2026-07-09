@@ -742,7 +742,7 @@ var removeContextMenuListener = () => {
 };
 
 // src-ts/helpers.ts
-var tauriReadyCheck = () => typeof window !== "undefined" && window.__TAURI__ && window.Liatir;
+var tauriReadyCheck = () => typeof window !== "undefined" && !!(window.__TAURI_INTERNALS__ || window.__TAURI__) && !!window.Liatir;
 var waitTauri = async () => {
   const interval = 500;
   let counter = 0;

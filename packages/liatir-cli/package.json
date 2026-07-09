@@ -1,6 +1,6 @@
 {
   "name": "@liatir/cli",
-  "version": "1.9.17",
+  "version": "1.9.18",
   "description": "CLI for developing and building .lia plugins & WASM custom tools for Liatir",
   "bin": {
     "liatir": "dist/cli.js"
