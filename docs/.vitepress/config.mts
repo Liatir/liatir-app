@@ -170,7 +170,6 @@ export default defineConfig({
                   { text: 'Declare fields', link: '/plugins/field' },
               {
               text: '<span class="VPSidebarItem-monospace">Bridge</span>',
-              collapsed: false,
               items: [
                 {
                   text: '.desktop',
