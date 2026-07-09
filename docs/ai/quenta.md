@@ -1,6 +1,6 @@
-# Local Tutor
+# Quenta
 
-The Local Tutor is a read-only assistant inside Liatir. It helps explain app
+Quenta is a local, read-only AI inside Liatir. It helps explain app
 state, bioinformatics workflows, Results, Jobs, pipeline structure, and failure
 logs using local context.
 
@@ -18,7 +18,7 @@ It is designed for guidance and reports, not automation.
 
 ## What it cannot do
 
-The Tutor cannot:
+Quenta cannot:
 
 - run pipelines;
 - run tools;
@@ -30,15 +30,15 @@ The Tutor cannot:
 - execute shell commands.
 
 The model receives text context only. Liatir does not send tool callbacks to the
-Tutor model.
+model.
 
 ## Requirements
 
-The first Tutor runtime uses Ollama running locally.
+The first Quenta runtime uses Ollama running locally.
 
 1. Install and start Ollama.
 2. Pull a local chat model in Ollama.
-3. Open **Tutor** in Liatir.
+3. Open **Quenta** in Liatir.
 4. Set the Ollama base URL, usually `http://127.0.0.1:11434`.
 5. Refresh models and select the model you want to use.
 6. Save settings.
@@ -49,26 +49,26 @@ Liatir accepts only local loopback Ollama endpoints for this feature.
 
 Open **Results**, select a run, then choose:
 
-- **Explain result** for a guided interpretation.
-- **Report** for a structured report.
-- **Explain failure** for a failed or cancelled run.
+- **Explain with Quenta** for a guided interpretation.
+- **Quenta report** for a structured report.
+- **Explain with Quenta** for a failed or cancelled run.
 
-The Tutor will open with that Result as its focus. Focused Results are forced
+Quenta will open with that Result as its focus. Focused Results are forced
 into the retrieval context so the model sees the selected run metadata,
 structured output, output files, and recent logs.
 
 ## Explaining a Job
 
-Open **Jobs** and choose **Explain job** or **Explain failure**. The Tutor uses
+Open **Jobs** and choose **Explain with Quenta**. Quenta uses
 the job status, command metadata, parent pipeline metadata when available, and
 buffered stdout/stderr.
 
-## How to read Tutor answers
+## How to read Quenta answers
 
-Treat Tutor answers as scientific guidance. Check the cited sources and the
+Treat Quenta answers as scientific guidance. Check the cited sources and the
 original Result or Job before acting on conclusions.
 
-Good Tutor answers should:
+Good Quenta answers should:
 
 - cite local sources;
 - distinguish observed evidence from interpretation;
@@ -77,5 +77,5 @@ Good Tutor answers should:
 - avoid inventing missing metrics;
 - avoid clinical or diagnostic conclusions.
 
-If a source is missing, the Tutor should say what is missing instead of filling
+If a source is missing, Quenta should say what is missing instead of filling
 the gap.

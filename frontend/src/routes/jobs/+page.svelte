@@ -77,8 +77,8 @@
 		return JSON.stringify(sanitizeForDisplay(job.metadata, 2), null, 2);
 	}
 
-	function openTutorForJob(job: JobEntry, intent: 'chat' | 'explain-failure') {
-		void goto(`/tutor?intent=${intent}&job=${encodeURIComponent(job.id)}&auto=1`);
+	function openQuentaForJob(job: JobEntry, intent: 'chat' | 'explain-failure') {
+		void goto(`/quenta?intent=${intent}&job=${encodeURIComponent(job.id)}&auto=1`);
 	}
 
 	function terminalLines(lines: string[]): string[] {
@@ -218,13 +218,13 @@
 								<Button
 									variant="ghost"
 									size="sm"
-									onclick={() => openTutorForJob(job, 'explain-failure')}
+									onclick={() => openQuentaForJob(job, 'explain-failure')}
 								>
-									Explain failure
+									Explain with Quenta
 								</Button>
 							{:else}
-								<Button variant="ghost" size="sm" onclick={() => openTutorForJob(job, 'chat')}>
-									Explain job
+								<Button variant="ghost" size="sm" onclick={() => openQuentaForJob(job, 'chat')}>
+									Explain with Quenta
 								</Button>
 							{/if}
 						</div>

@@ -1,11 +1,11 @@
-# Local Tutor MVP
+# Quenta MVP
 
-The Local Tutor is the read-only explanatory assistant for Liatir. It is part
+Quenta is the read-only local AI explanation and report engine for Liatir. It is part
 of the Beta 1 plan, but it is not an execution surface.
 
 ## Product boundary
 
-The Tutor may:
+Quenta may:
 
 - explain Liatir concepts, pipeline structure, Jobs, Results, provenance, and
   bioinformatics context;
@@ -13,7 +13,7 @@ The Tutor may:
 - generate cited scientific reports from local evidence;
 - answer questions about the active workspace and saved app state.
 
-The Tutor must not:
+Quenta must not:
 
 - execute pipelines, tools, Plugins, AI Models, API Connector requests, shell
   commands, or file operations;
@@ -26,12 +26,12 @@ The Tutor must not:
 
 | Entity | Owner | Persistence |
 | --- | --- | --- |
-| Provider settings | App-level Tutor settings | `tutor/settings.json` |
-| Conversations | Active workspace | `workspaces/<id>/tutor/conversations.json` |
+| Provider settings | App-level Quenta settings | `quenta/settings.json` |
+| Conversations | Active workspace | `workspaces/<id>/quenta/conversations.json` |
 | Model response in progress | Conversation ID | In-memory `sendingByConversation` map |
 | Retrieved context | Per request | Rebuilt from current workspace stores |
-| Result focus | Conversation focus | `LiatirTutorFocus { kind: "result", entityId }` |
-| Job focus | Conversation focus | `LiatirTutorFocus { kind: "job", entityId }` |
+| Result focus | Conversation focus | `LiatirQuentaFocus { kind: "result", entityId }` |
+| Job focus | Conversation focus | `LiatirQuentaFocus { kind: "job", entityId }` |
 
 Do not replace conversation-scoped sending/error maps with one global
 `running` flag. Multiple conversations can exist and should remain inspectable
@@ -39,7 +39,7 @@ independently.
 
 ## Runtime design
 
-- Shared contracts live in `packages/liatir-core/src/tutor.ts`.
+- Shared contracts live in `packages/liatir-core/src/quenta.ts`.
 - The first runtime provider is Ollama.
 - The Tauri bridge accepts only local `http://` loopback endpoints.
 - The bridge calls the native Ollama API directly:
@@ -80,7 +80,7 @@ Current automated gates:
   settings, deep-linked Result explanations, structured reports, local context
   injection, source rendering, and the absence of tool callbacks.
 
-This is not enough for `Verified` readiness. Before promoting the Tutor to
+This is not enough for `Verified` readiness. Before promoting Quenta to
 Verified, add a real local Ollama evaluation matrix with at least one
 documented recommended model, small deterministic fixtures, latency/error
 expectations, and report-quality review criteria.
@@ -99,4 +99,4 @@ expectations, and report-quality review criteria.
   - API Connector Result;
   - mixed pipeline with upstream/downstream provenance.
 - Ensure reports never invent missing metrics or clinical conclusions.
-- Keep the Tutor read-only even after MCP lands.
+- Keep Quenta read-only even after MCP lands.

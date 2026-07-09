@@ -11,7 +11,7 @@ Use this site to keep durable decisions close to the codebase:
 - architecture rules that affect multiple surfaces;
 - testing and release checks;
 - AI Models and AI Tools roadmap status;
-- Local Tutor and MCP trust boundaries;
+- Quenta and MCP trust boundaries;
 - native bridge and runtime constraints;
 - notes that help future maintainers avoid repeating old mistakes.
 

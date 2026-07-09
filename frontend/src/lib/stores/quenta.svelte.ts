@@ -1,35 +1,36 @@
 import { appStorage } from './app-storage';
 import { getDataPrefix, workspaceStore } from './workspace.svelte';
-import { buildTutorContextDocuments, requiredContextIdsForFocus } from '$lib/tutor/context';
-import { buildTutorMessages } from '$lib/tutor/prompt';
-import { citedSources, retrieveTutorContext } from '$lib/tutor/retrieval';
-import { TUTOR_REPORT_SCHEMA, parseTutorReport, tutorReportToMarkdown } from '$lib/tutor/report';
-import { createTutorRuntime } from '$lib/tutor/runtime';
+import { buildQuentaContextDocuments, requiredContextIdsForFocus } from '$lib/quenta/context';
+import { buildQuentaMessages } from '$lib/quenta/prompt';
+import { citedSources, retrieveQuentaContext } from '$lib/quenta/retrieval';
+import { QUENTA_REPORT_SCHEMA, parseQuentaReport, quentaReportToMarkdown } from '$lib/quenta/report';
+import { createQuentaRuntime } from '$lib/quenta/runtime';
 import type {
-  LiatirTutorCitation,
-  LiatirTutorConversation,
-  LiatirTutorFocus,
-  LiatirTutorIntent,
-  LiatirTutorMessage,
-  LiatirTutorProviderConfig,
-  LiatirTutorProviderModel,
-  LiatirTutorProviderStatus,
-  LiatirTutorRuntimeMessage,
+  LiatirQuentaCitation,
+  LiatirQuentaConversation,
+  LiatirQuentaFocus,
+  LiatirQuentaIntent,
+  LiatirQuentaMessage,
+  LiatirQuentaProviderConfig,
+  LiatirQuentaProviderModel,
+  LiatirQuentaProviderStatus,
+  LiatirQuentaRuntimeMessage,
 } from '@liatir/core';
 
-const SETTINGS_FILE = 'tutor/settings.json';
+const SETTINGS_FILE = 'quenta/settings.json';
+const LEGACY_SETTINGS_FILE = 'tutor/settings.json';
 const MAX_CONVERSATIONS = 40;
 const MAX_MESSAGES_PER_CONVERSATION = 120;
 
-interface TutorSettingsFile {
-  config: LiatirTutorProviderConfig;
+interface QuentaSettingsFile {
+  config: LiatirQuentaProviderConfig;
 }
 
-interface TutorConversationsFile {
-  conversations: LiatirTutorConversation[];
+interface QuentaConversationsFile {
+  conversations: LiatirQuentaConversation[];
 }
 
-const DEFAULT_CONFIG: LiatirTutorProviderConfig = {
+const DEFAULT_CONFIG: LiatirQuentaProviderConfig = {
   provider: 'ollama',
   baseUrl: 'http://127.0.0.1:11434',
   model: '',
@@ -38,6 +39,10 @@ const DEFAULT_CONFIG: LiatirTutorProviderConfig = {
 };
 
 function conversationsPath() {
+  return `${getDataPrefix()}quenta/conversations.json`;
+}
+
+function legacyConversationsPath() {
   return `${getDataPrefix()}tutor/conversations.json`;
 }
 
@@ -52,14 +57,14 @@ function id(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function titleForIntent(intent: LiatirTutorIntent, focus?: LiatirTutorFocus): string {
+function titleForIntent(intent: LiatirQuentaIntent, focus?: LiatirQuentaFocus): string {
   if (intent === 'report') return focus ? `Report for ${focus.kind} ${focus.entityId}` : 'Scientific report';
   if (intent === 'explain-failure') return focus ? `Failure explanation for ${focus.kind} ${focus.entityId}` : 'Failure explanation';
   if (intent === 'explain-result') return focus ? `Result explanation for ${focus.entityId}` : 'Result explanation';
-  return 'Tutor chat';
+  return 'Quenta chat';
 }
 
-function promptForFocus(intent: LiatirTutorIntent, focus: LiatirTutorFocus): string {
+function promptForFocus(intent: LiatirQuentaIntent, focus: LiatirQuentaFocus): string {
   if (intent === 'report') {
     return `Generate a cited structured scientific report for ${focus.kind} ${focus.entityId}. Use observed evidence only, separate interpretation from limitations, and include recommended validation steps.`;
   }
@@ -72,19 +77,19 @@ function promptForFocus(intent: LiatirTutorIntent, focus: LiatirTutorFocus): str
   return `Explain ${focus.kind} ${focus.entityId}. Summarize the relevant evidence and limitations.`;
 }
 
-function messagesForHistory(messages: LiatirTutorMessage[]): LiatirTutorRuntimeMessage[] {
+function messagesForHistory(messages: LiatirQuentaMessage[]): LiatirQuentaRuntimeMessage[] {
   return messages.slice(-12).map((message) => ({
     role: message.role,
     content: message.content,
   }));
 }
 
-function citationsFromIds(ids: string[], available: LiatirTutorCitation[]): LiatirTutorCitation[] {
+function citationsFromIds(ids: string[], available: LiatirQuentaCitation[]): LiatirQuentaCitation[] {
   const wanted = new Set(ids);
   return available.filter((citation) => wanted.has(citation.id));
 }
 
-function normalizeSettings(value: Partial<TutorSettingsFile> | null): TutorSettingsFile {
+function normalizeSettings(value: Partial<QuentaSettingsFile> | null): QuentaSettingsFile {
   const temperature = Number(value?.config?.temperature ?? DEFAULT_CONFIG.temperature);
   return {
     config: {
@@ -101,15 +106,32 @@ function normalizeSettings(value: Partial<TutorSettingsFile> | null): TutorSetti
   };
 }
 
-function createTutorStore() {
-  let settings = $state<TutorSettingsFile>(normalizeSettings(null));
+function normalizeConversationName(value: string): string {
+  return value.replace(/\bLocal Tutor\b/g, 'Quenta').replace(/\bTutor\b/g, 'Quenta');
+}
+
+function normalizeLegacyConversation(conversation: LiatirQuentaConversation): LiatirQuentaConversation {
+  return {
+    ...conversation,
+    id: conversation.id.replace(/^tutor-/, 'quenta-'),
+    title: normalizeConversationName(conversation.title),
+    messages: conversation.messages.map((message) => ({
+      ...message,
+      id: message.id.replace(/^tutor-/, 'quenta-'),
+      content: normalizeConversationName(message.content),
+    })),
+  };
+}
+
+function createQuentaStore() {
+  let settings = $state<QuentaSettingsFile>(normalizeSettings(null));
   let settingsLoaded = false;
-  let conversations = $state<LiatirTutorConversation[]>([]);
+  let conversations = $state<LiatirQuentaConversation[]>([]);
   let selectedConversationId = $state<string | null>(null);
   let loadedWorkspaceId = $state<string | null>(null);
   let initializing = $state(false);
-  let providerStatus = $state<LiatirTutorProviderStatus | null>(null);
-  let providerModels = $state<LiatirTutorProviderModel[]>([]);
+  let providerStatus = $state<LiatirQuentaProviderStatus | null>(null);
+  let providerModels = $state<LiatirQuentaProviderModel[]>([]);
   let providerRefreshing = $state(false);
   let sendingByConversation = $state<Record<string, boolean>>({});
   let errorByConversation = $state<Record<string, string>>({});
@@ -122,9 +144,12 @@ function createTutorStore() {
     if (settingsLoaded) return;
     settingsLoaded = true;
     try {
-      if (await appStorage.exists(SETTINGS_FILE)) {
-        const raw = await appStorage.readText(SETTINGS_FILE);
-        settings = normalizeSettings(JSON.parse(raw) as TutorSettingsFile);
+      const legacyOnly = !(await appStorage.exists(SETTINGS_FILE)) && (await appStorage.exists(LEGACY_SETTINGS_FILE));
+      const settingsPath = legacyOnly ? LEGACY_SETTINGS_FILE : SETTINGS_FILE;
+      if (await appStorage.exists(settingsPath)) {
+        const raw = await appStorage.readText(settingsPath);
+        settings = normalizeSettings(JSON.parse(raw) as QuentaSettingsFile);
+        if (legacyOnly) await persistSettings();
       }
     } catch {
       settings = normalizeSettings(null);
@@ -153,14 +178,20 @@ function createTutorStore() {
     if (!workspaceId) return;
 
     try {
-      if (await appStorage.exists(conversationsPath())) {
-        const raw = await appStorage.readText(conversationsPath());
-        const parsed = JSON.parse(raw) as TutorConversationsFile;
+      const currentPath = conversationsPath();
+      const legacyPath = legacyConversationsPath();
+      const legacyOnly = !(await appStorage.exists(currentPath)) && (await appStorage.exists(legacyPath));
+      const sourcePath = legacyOnly ? legacyPath : currentPath;
+      if (await appStorage.exists(sourcePath)) {
+        const raw = await appStorage.readText(sourcePath);
+        const parsed = JSON.parse(raw) as QuentaConversationsFile;
         conversations = (parsed.conversations ?? [])
+          .map((conversation) => legacyOnly ? normalizeLegacyConversation(conversation) : conversation)
           .filter((conversation) => conversation.workspaceId === workspaceId)
           .sort((a, b) => b.updatedAt - a.updatedAt)
           .slice(0, MAX_CONVERSATIONS);
         selectedConversationId = conversations[0]?.id ?? null;
+        if (legacyOnly) await persistConversations();
       }
     } catch {
       conversations = [];
@@ -170,7 +201,7 @@ function createTutorStore() {
 
   function updateConversation(
     conversationId: string,
-    mapper: (conversation: LiatirTutorConversation) => LiatirTutorConversation,
+    mapper: (conversation: LiatirQuentaConversation) => LiatirQuentaConversation,
   ) {
     conversations = conversations
       .map((conversation) => conversation.id === conversationId ? mapper(conversation) : conversation)
@@ -179,15 +210,15 @@ function createTutorStore() {
 
   function createConversation(input: {
     title?: string;
-    focus?: LiatirTutorFocus;
-  } = {}): LiatirTutorConversation {
+    focus?: LiatirQuentaFocus;
+  } = {}): LiatirQuentaConversation {
     const workspaceId = workspaceStore.activeId;
-    if (!workspaceId) throw new Error('Open a workspace before using the Local Tutor');
+    if (!workspaceId) throw new Error('Open a workspace before using Quenta');
     const timestamp = now();
-    const conversation: LiatirTutorConversation = {
-      id: id('tutor-conversation'),
+    const conversation: LiatirQuentaConversation = {
+      id: id('quenta-conversation'),
       workspaceId,
-      title: input.title ?? 'Tutor chat',
+      title: input.title ?? 'Quenta chat',
       createdAt: timestamp,
       updatedAt: timestamp,
       focus: input.focus,
@@ -199,7 +230,7 @@ function createTutorStore() {
     return conversation;
   }
 
-  function currentConversation(): LiatirTutorConversation | null {
+  function currentConversation(): LiatirQuentaConversation | null {
     return conversations.find((conversation) => conversation.id === selectedConversationId) ?? null;
   }
 
@@ -223,14 +254,14 @@ function createTutorStore() {
 
   async function sendMessage(
     content: string,
-    intent: LiatirTutorIntent = 'chat',
-    options: { conversationId?: string; focus?: LiatirTutorFocus } = {},
+    intent: LiatirQuentaIntent = 'chat',
+    options: { conversationId?: string; focus?: LiatirQuentaFocus } = {},
   ): Promise<void> {
-    await tutorStore.init();
+    await quentaStore.init();
     const query = content.trim();
     if (!query) return;
     if (!settings.config.model.trim()) {
-      throw new Error('Select an installed Ollama model before asking the Local Tutor');
+      throw new Error('Select an installed Ollama model before asking Quenta');
     }
 
     const existing = options.conversationId
@@ -244,8 +275,8 @@ function createTutorStore() {
     setConversationError(conversation.id, null);
 
     const timestamp = now();
-    const userMessage: LiatirTutorMessage = {
-      id: id('tutor-message'),
+    const userMessage: LiatirQuentaMessage = {
+      id: id('quenta-message'),
       role: 'user',
       intent,
       content: query,
@@ -263,31 +294,31 @@ function createTutorStore() {
     setConversationSending(conversation.id, true);
     try {
       const focus = options.focus ?? conversation.focus;
-      const documents = await buildTutorContextDocuments(focus);
-      const retrieval = retrieveTutorContext(query, documents, {
+      const documents = await buildQuentaContextDocuments(focus);
+      const retrieval = retrieveQuentaContext(query, documents, {
         requiredIds: requiredContextIdsForFocus(focus),
       });
       const history = messagesForHistory(priorMessages);
-      const runtime = createTutorRuntime(settings.config);
+      const runtime = createQuentaRuntime(settings.config);
       const response = await runtime.chat({
         model: settings.config.model,
-        messages: buildTutorMessages(query, retrieval.context, history, intent),
+        messages: buildQuentaMessages(query, retrieval.context, history, intent),
         temperature: settings.config.temperature,
-        format: intent === 'report' ? TUTOR_REPORT_SCHEMA : undefined,
+        format: intent === 'report' ? QUENTA_REPORT_SCHEMA : undefined,
       });
 
       let assistantContent = response.content;
       let citations = citedSources(response.content, retrieval.citations);
-      let report: LiatirTutorMessage['report'];
+      let report: LiatirQuentaMessage['report'];
       if (intent === 'report') {
-        report = parseTutorReport(response.content);
-        assistantContent = tutorReportToMarkdown(report);
+        report = parseQuentaReport(response.content);
+        assistantContent = quentaReportToMarkdown(report);
         citations = citationsFromIds(report.citationIds, retrieval.citations);
       }
       if (citations.length === 0) citations = retrieval.citations.slice(0, 4);
 
-      const assistantMessage: LiatirTutorMessage = {
-        id: id('tutor-message'),
+      const assistantMessage: LiatirQuentaMessage = {
+        id: id('quenta-message'),
         role: 'assistant',
         intent,
         content: assistantContent,
@@ -309,7 +340,7 @@ function createTutorStore() {
     }
   }
 
-  const tutorStore = {
+  const quentaStore = {
     get settings() { return settings; },
     get config() { return settings.config; },
     get conversations() { return conversations; },
@@ -340,7 +371,7 @@ function createTutorStore() {
       }
     },
 
-    async updateConfig(patch: Partial<LiatirTutorProviderConfig>) {
+    async updateConfig(patch: Partial<LiatirQuentaProviderConfig>) {
       settings = normalizeSettings({
         config: {
           ...settings.config,
@@ -351,13 +382,13 @@ function createTutorStore() {
     },
 
     async refreshProvider() {
-      await tutorStore.init();
+      await quentaStore.init();
       providerRefreshing = true;
       try {
-        const runtime = createTutorRuntime(settings.config);
+        const runtime = createQuentaRuntime(settings.config);
         const [status, models] = await Promise.all([
           runtime.status(),
-          runtime.models().catch(() => [] as LiatirTutorProviderModel[]),
+          runtime.models().catch(() => [] as LiatirQuentaProviderModel[]),
         ]);
         providerStatus = status;
         providerModels = models;
@@ -377,8 +408,8 @@ function createTutorStore() {
     },
 
     async newConversation() {
-      await tutorStore.init();
-      createConversation({ title: 'Tutor chat' });
+      await quentaStore.init();
+      createConversation({ title: 'Quenta chat' });
     },
 
     async deleteConversation(conversationId: string) {
@@ -387,8 +418,8 @@ function createTutorStore() {
       await persistConversations();
     },
 
-    async startFocusedConversation(intent: LiatirTutorIntent, focus: LiatirTutorFocus, autoSend = true) {
-      await tutorStore.init();
+    async startFocusedConversation(intent: LiatirQuentaIntent, focus: LiatirQuentaFocus, autoSend = true) {
+      await quentaStore.init();
       const conversation = createConversation({
         title: titleForIntent(intent, focus),
         focus,
@@ -405,7 +436,7 @@ function createTutorStore() {
     sendMessage,
   };
 
-  return tutorStore;
+  return quentaStore;
 }
 
-export const tutorStore = createTutorStore();
+export const quentaStore = createQuentaStore();

@@ -8,7 +8,7 @@ Liatir uses AI locally. That means model runtimes are installed on your machine,
 your input files stay on your machine, and runs are recorded in Jobs, Results,
 and provenance just like other tools.
 
-The [Local Tutor](/ai/local-tutor) is separate from AI Tools: it explains,
+[Quenta](/ai/quenta) is separate from AI Tools: it explains,
 guides, and creates cited reports from local context, but it cannot run
 pipelines, tools, models, Plugins, or API requests.
 

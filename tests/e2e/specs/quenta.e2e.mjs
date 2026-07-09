@@ -5,7 +5,7 @@ import {
   waitForLiatirBridge,
 } from '../support/liatir-app.mjs';
 
-const RUN_ID = 'e2e-tutor-result';
+const RUN_ID = 'e2e-quenta-result';
 
 async function startMockOllama() {
   const chatRequests = [];
@@ -48,7 +48,7 @@ async function startMockOllama() {
           message: {
             role: 'assistant',
             content: JSON.stringify({
-              title: 'Mock Tutor report',
+              title: 'Mock Quenta report',
               subject: `result:${RUN_ID}`,
               runStatus: 'done',
               executiveSummary: `The mock report used result evidence from [result:${RUN_ID}].`,
@@ -77,7 +77,7 @@ async function startMockOllama() {
         model: parsed.model,
         message: {
           role: 'assistant',
-          content: `Mock Tutor observed the SeqKit QC result and cites [result:${RUN_ID}].`,
+          content: `Mock Quenta observed the SeqKit QC result and cites [result:${RUN_ID}].`,
         },
         prompt_eval_count: 10,
         eval_count: 8,
@@ -108,13 +108,13 @@ async function startMockOllama() {
   };
 }
 
-async function seedTutorState(browser, baseUrl) {
+async function seedQuentaState(browser, baseUrl) {
   await browser.execute(async (input) => {
     const now = Date.now();
     const run = {
       id: input.runId,
       tool: 'seqkit-stats',
-      label: 'Tutor E2E SeqKit Stats',
+      label: 'Quenta E2E SeqKit Stats',
       inputs: ['reads.fastq'],
       outputSize: 512,
       outputFiles: [],
@@ -127,7 +127,7 @@ async function seedTutorState(browser, baseUrl) {
     };
 
     await window.Liatir.invoke('lia_app_write_text', {
-      rel: 'tutor/settings.json',
+      rel: 'quenta/settings.json',
       content: JSON.stringify({
         config: {
           provider: 'ollama',
@@ -172,7 +172,7 @@ async function seedTutorState(browser, baseUrl) {
   }, { baseUrl, runId: RUN_ID });
 }
 
-async function openSandboxWorkspaceForTutor(browser) {
+async function openSandboxWorkspaceForQuenta(browser) {
   await waitForLiatirBridge(browser);
   await browser.execute(async () => {
     const now = Date.now();
@@ -205,36 +205,36 @@ async function openSandboxWorkspaceForTutor(browser) {
     async () => browser.execute(() => Boolean(document.querySelector('[data-testid="sidebar-nav-item"]'))),
     {
       timeout: 20_000,
-      timeoutMsg: 'Sandbox workspace shell did not open for Tutor E2E',
+      timeoutMsg: 'Sandbox workspace shell did not open for Quenta E2E',
     },
   );
 }
 
 export const tests = [
   {
-    name: 'runs a read-only Local Tutor explanation against a mock Ollama server',
+    name: 'runs a read-only Quenta explanation against a mock Ollama server',
     async run({ browser, expect }) {
       const ollama = await startMockOllama();
       try {
-        await openSandboxWorkspaceForTutor(browser);
-        await seedTutorState(browser, ollama.baseUrl);
+        await openSandboxWorkspaceForQuenta(browser);
+        await seedQuentaState(browser, ollama.baseUrl);
 
         await browser.execute((runId) => {
-          window.location.href = `/tutor?intent=explain-result&run=${encodeURIComponent(runId)}&auto=1`;
+          window.location.href = `/quenta?intent=explain-result&run=${encodeURIComponent(runId)}&auto=1`;
         }, RUN_ID);
 
         await browser.waitUntil(
-          async () => browser.execute(() => window.location.pathname === '/tutor'),
-          { timeout: 20_000, timeoutMsg: 'Tutor route did not open' },
+          async () => browser.execute(() => window.location.pathname === '/quenta'),
+          { timeout: 20_000, timeoutMsg: 'Quenta route did not open' },
         );
         await browser.waitUntil(
-          async () => browser.execute(() => document.body.innerText.includes('Mock Tutor observed')),
-          { timeout: 30_000, timeoutMsg: 'Tutor did not render the mock model response' },
+          async () => browser.execute(() => document.body.innerText.includes('Mock Quenta observed')),
+          { timeout: 30_000, timeoutMsg: 'Quenta did not render the mock model response' },
         );
 
         const bodyText = await (await browser.$('body')).getText();
         expect(bodyText).toContain(`result:${RUN_ID}`);
-        expect(bodyText).toContain('Tutor E2E SeqKit Stats');
+        expect(bodyText).toContain('Quenta E2E SeqKit Stats');
         expect(bodyText).toContain('Ollama 0.99.0-e2e');
 
         expect(ollama.chatRequests.length).toBeGreaterThanOrEqual(1);
@@ -255,16 +255,16 @@ export const tests = [
     async run({ browser, expect }) {
       const ollama = await startMockOllama();
       try {
-        await openSandboxWorkspaceForTutor(browser);
-        await seedTutorState(browser, ollama.baseUrl);
+        await openSandboxWorkspaceForQuenta(browser);
+        await seedQuentaState(browser, ollama.baseUrl);
 
         await browser.execute((runId) => {
-          window.location.href = `/tutor?intent=report&run=${encodeURIComponent(runId)}&auto=1`;
+          window.location.href = `/quenta?intent=report&run=${encodeURIComponent(runId)}&auto=1`;
         }, RUN_ID);
 
         await browser.waitUntil(
-          async () => browser.execute(() => document.body.innerText.includes('Mock Tutor report')),
-          { timeout: 30_000, timeoutMsg: 'Tutor report did not render' },
+          async () => browser.execute(() => document.body.innerText.includes('Mock Quenta report')),
+          { timeout: 30_000, timeoutMsg: 'Quenta report did not render' },
         );
 
         const bodyText = await (await browser.$('body')).getText();

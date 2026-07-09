@@ -1,4 +1,4 @@
-import { LIATIR_TUTOR_KNOWLEDGE } from './knowledge';
+import { LIATIR_QUENTA_KNOWLEDGE } from './knowledge';
 import { analysisRuns, type AnalysisRunMeta } from '$lib/stores/analysisRuns.svelte';
 import { apiConnections } from '$lib/stores/apiConnections.svelte';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
@@ -6,7 +6,7 @@ import { jobsStore, type JobBufferedOutput, type JobEntry } from '$lib/stores/jo
 import { pipelineStore, type SavedPipeline } from '$lib/stores/pipeline.svelte';
 import { workspaceStore } from '$lib/stores/workspace.svelte';
 import { compact, jsonSummary, summarizeToolOutput } from './output-summary';
-import type { LiatirTutorContextDocument, LiatirTutorFocus } from '@liatir/core';
+import type { LiatirQuentaContextDocument, LiatirQuentaFocus } from '@liatir/core';
 
 const MAX_LOG_LINES = 80;
 const MAX_RECENT_RUNS = 24;
@@ -17,7 +17,7 @@ function line(label: string, value: unknown): string | null {
   return `${label}: ${String(value)}`;
 }
 
-function doc(input: LiatirTutorContextDocument): LiatirTutorContextDocument {
+function doc(input: LiatirQuentaContextDocument): LiatirQuentaContextDocument {
   return {
     ...input,
     excerpt: input.excerpt ?? compact(input.content, 260),
@@ -62,7 +62,7 @@ function pipelineNodeSummary(pipeline: SavedPipeline): string {
   ].join('\n');
 }
 
-async function resultDocument(run: AnalysisRunMeta, focused: boolean): Promise<LiatirTutorContextDocument> {
+async function resultDocument(run: AnalysisRunMeta, focused: boolean): Promise<LiatirQuentaContextDocument> {
   const [output, log] = await Promise.all([
     analysisRuns.loadOutput(run.id),
     analysisRuns.loadLog(run.id),
@@ -104,7 +104,7 @@ async function resultDocument(run: AnalysisRunMeta, focused: boolean): Promise<L
   });
 }
 
-async function jobDocument(job: JobEntry, focused: boolean): Promise<LiatirTutorContextDocument> {
+async function jobDocument(job: JobEntry, focused: boolean): Promise<LiatirQuentaContextDocument> {
   let output: JobBufferedOutput | null = null;
   if (focused || job.status.type !== 'running') {
     try {
@@ -143,7 +143,7 @@ async function jobDocument(job: JobEntry, focused: boolean): Promise<LiatirTutor
   });
 }
 
-function workspaceDocument(): LiatirTutorContextDocument {
+function workspaceDocument(): LiatirQuentaContextDocument {
   const workspace = workspaceStore.active;
   return doc({
     id: `workspace:${workspaceStore.activeId ?? 'none'}`,
@@ -159,7 +159,7 @@ function workspaceDocument(): LiatirTutorContextDocument {
   });
 }
 
-function apiDocuments(): LiatirTutorContextDocument[] {
+function apiDocuments(): LiatirQuentaContextDocument[] {
   return [
     ...apiConnections.collections.map((collection) => doc({
       id: `api-connector:collection:${collection.id}`,
@@ -199,7 +199,7 @@ function apiDocuments(): LiatirTutorContextDocument[] {
   ];
 }
 
-function aiModelDocuments(): LiatirTutorContextDocument[] {
+function aiModelDocuments(): LiatirQuentaContextDocument[] {
   return aiModelsStore.models.map((model) => doc({
     id: `ai-model:${model.id}`,
     sourceKind: 'ai-model',
@@ -220,9 +220,9 @@ function aiModelDocuments(): LiatirTutorContextDocument[] {
   }));
 }
 
-export async function buildTutorContextDocuments(
-  focus?: LiatirTutorFocus,
-): Promise<LiatirTutorContextDocument[]> {
+export async function buildQuentaContextDocuments(
+  focus?: LiatirQuentaFocus,
+): Promise<LiatirQuentaContextDocument[]> {
   await workspaceStore.init();
   await Promise.allSettled([
     analysisRuns.init(),
@@ -232,8 +232,8 @@ export async function buildTutorContextDocuments(
     jobsStore.refresh(),
   ]);
 
-  const documents: LiatirTutorContextDocument[] = [
-    ...LIATIR_TUTOR_KNOWLEDGE,
+  const documents: LiatirQuentaContextDocument[] = [
+    ...LIATIR_QUENTA_KNOWLEDGE,
     workspaceDocument(),
   ];
 
@@ -291,7 +291,7 @@ export async function buildTutorContextDocuments(
   return documents;
 }
 
-export function requiredContextIdsForFocus(focus?: LiatirTutorFocus): string[] {
+export function requiredContextIdsForFocus(focus?: LiatirQuentaFocus): string[] {
   if (!focus) return [];
   return [`${focus.kind}:${focus.entityId}`];
 }

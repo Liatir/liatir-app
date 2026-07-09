@@ -35,7 +35,7 @@ pub mod python_env;
 pub mod visual_capture;
 pub mod plugin_log;
 pub mod plugin_progress;
-pub mod tutor;
+pub mod quenta;
 
 pub use notifications::*;
 pub use clipboard::*;
@@ -70,4 +70,4 @@ pub use ai_runtime::*;
 pub use visual_capture::*;
 pub use plugin_log::*;
 pub use plugin_progress::*;
-pub use tutor::*;
+pub use quenta::*;

@@ -679,6 +679,6 @@ export interface LiatirJobProgress {
   done: boolean;
 }
 
-// Read-only local Tutor contracts. The Tutor may explain app/scientific state
+// Read-only Quenta contracts. Quenta may explain app/scientific state
 // and generate cited reports, but it is intentionally not a runnable entity.
-export * from "./tutor";
+export * from "./quenta";

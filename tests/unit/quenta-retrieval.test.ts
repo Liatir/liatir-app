@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   citedSources,
-  retrieveTutorContext,
-} from '../../frontend/src/lib/tutor/retrieval';
-import type { LiatirTutorContextDocument } from '../../packages/liatir-core/src';
+  retrieveQuentaContext,
+} from '../../frontend/src/lib/quenta/retrieval';
+import type { LiatirQuentaContextDocument } from '../../packages/liatir-core/src';
 
-const docs: LiatirTutorContextDocument[] = [
+const docs: LiatirQuentaContextDocument[] = [
   {
     id: 'result:run-a',
     sourceKind: 'result',
@@ -30,9 +30,9 @@ const docs: LiatirTutorContextDocument[] = [
   },
 ];
 
-describe('Tutor retrieval', () => {
+describe('Quenta retrieval', () => {
   it('selects relevant local sources and emits source-wrapped context', () => {
-    const result = retrieveTutorContext('why did the native tool fail with missing reference index', docs);
+    const result = retrieveQuentaContext('why did the native tool fail with missing reference index', docs);
 
     expect(result.documents.map((doc) => doc.id)).toContain('job:failed');
     expect(result.context).toContain('<source id="job:failed"');
@@ -40,7 +40,7 @@ describe('Tutor retrieval', () => {
   });
 
   it('forces focused source IDs into the retrieval set', () => {
-    const result = retrieveTutorContext('general quality control explanation', docs, {
+    const result = retrieveQuentaContext('general quality control explanation', docs, {
       requiredIds: ['result:run-a'],
       limit: 1,
     });

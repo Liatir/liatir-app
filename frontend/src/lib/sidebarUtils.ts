@@ -22,7 +22,7 @@ export const NAV_PAGES: NavItem[] = [
     { href: '/plugins', label: 'Plugins', customIcon: '/icons/lia-file-icon.svg', match: '/plugins', global: true },
     { href: '/apis', label: 'API Connector', icon: 'lucide:plug', match: '/apis', global: false },
     { href: '/ai', label: 'AI Models', icon: 'mingcute:ai-line', match: '/ai', global: true },
-    { href: '/tutor', label: 'Tutor', icon: 'lucide:graduation-cap', match: '/tutor', global: false },
+    { href: '/quenta', label: 'Quenta', icon: 'lucide:scroll-text', match: '/quenta', global: false },
     { divider: true, global: true },
     { href: '/data', label: 'Data', icon: 'lucide:database', match: '/data', global: false },
     { href: '/results', label: 'Results', icon: 'lucide:inbox', match: '/results', global: false },

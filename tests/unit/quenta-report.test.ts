@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  parseTutorReport,
-  tutorReportToMarkdown,
-} from '../../frontend/src/lib/tutor/report';
-import { summarizeToolOutput } from '../../frontend/src/lib/tutor/output-summary';
+  parseQuentaReport,
+  quentaReportToMarkdown,
+} from '../../frontend/src/lib/quenta/report';
+import { summarizeToolOutput } from '../../frontend/src/lib/quenta/output-summary';
 
-describe('Tutor reports', () => {
+describe('Quenta reports', () => {
   it('parses a structured report and renders stable markdown', () => {
-    const report = parseTutorReport(JSON.stringify({
+    const report = parseQuentaReport(JSON.stringify({
       title: 'FASTQ QC report',
       subject: 'result:run-a',
       runStatus: 'done',
@@ -22,7 +22,7 @@ describe('Tutor reports', () => {
           citationIds: ['result:run-a'],
         },
       ],
-      limitations: ['No raw FASTQ was inspected by the Tutor.'],
+      limitations: ['No raw FASTQ was inspected by Quenta.'],
       recommendedNextSteps: ['Validate adapter and quality profiles.'],
       citationIds: ['result:run-a'],
     }), '2026-07-09T12:00:00.000Z');
@@ -30,15 +30,15 @@ describe('Tutor reports', () => {
     expect(report.runStatus).toBe('done');
     expect(report.findings[0].citationIds).toEqual(['result:run-a']);
 
-    const markdown = tutorReportToMarkdown(report);
+    const markdown = quentaReportToMarkdown(report);
     expect(markdown).toContain('# FASTQ QC report');
     expect(markdown).toContain('Sources: [result:run-a]');
     expect(markdown).toContain('- [result:run-a]');
   });
 
   it('rejects malformed report payloads instead of accepting uncited prose', () => {
-    expect(() => parseTutorReport('not json')).toThrow(/invalid structured report/);
-    expect(() => parseTutorReport(JSON.stringify({ title: 'Incomplete' }))).toThrow(/missing/);
+    expect(() => parseQuentaReport('not json')).toThrow(/invalid structured report/);
+    expect(() => parseQuentaReport(JSON.stringify({ title: 'Incomplete' }))).toThrow(/missing/);
   });
 
   it('summarizes heterogeneous ToolOutput sections for model context', () => {

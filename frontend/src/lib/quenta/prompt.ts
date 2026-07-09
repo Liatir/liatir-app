@@ -1,9 +1,9 @@
 import type {
-  LiatirTutorIntent,
-  LiatirTutorRuntimeMessage,
+  LiatirQuentaIntent,
+  LiatirQuentaRuntimeMessage,
 } from '@liatir/core';
 
-export const TUTOR_SYSTEM_PROMPT = `You are Liatir Tutor, a local, read-only assistant for the Liatir bioinformatics desktop application.
+export const QUENTA_SYSTEM_PROMPT = `You are Liatir Quenta, a local, read-only assistant for the Liatir bioinformatics desktop application.
 
 Hard boundaries:
 - Explain, teach, interpret supplied evidence, troubleshoot conceptually, and generate reports.
@@ -16,21 +16,21 @@ Hard boundaries:
 - If evidence is missing, say exactly what is missing.
 - This is scientific guidance, not clinical diagnosis or medical advice.`;
 
-export function buildTutorMessages(
+export function buildQuentaMessages(
   query: string,
   context: string,
-  history: LiatirTutorRuntimeMessage[],
-  intent: LiatirTutorIntent,
-): LiatirTutorRuntimeMessage[] {
+  history: LiatirQuentaRuntimeMessage[],
+  intent: LiatirQuentaIntent,
+): LiatirQuentaRuntimeMessage[] {
   const task = intent === 'report'
     ? 'Create the requested structured scientific report. Use only source IDs present in the context.'
     : intent === 'explain-result'
       ? 'Explain the selected result, its evidence, limitations, and sensible validation steps.'
       : intent === 'explain-failure'
         ? 'Explain the failure, likely causes supported by evidence, and safe troubleshooting steps. Do not execute anything.'
-        : 'Answer as a tutor using the relevant evidence and explain uncertainty.';
+        : 'Answer as Quenta using the relevant evidence and explain uncertainty.';
   return [
-    { role: 'system', content: TUTOR_SYSTEM_PROMPT },
+    { role: 'system', content: QUENTA_SYSTEM_PROMPT },
     ...history.slice(-12),
     {
       role: 'user',

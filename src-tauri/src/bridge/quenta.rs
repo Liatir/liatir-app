@@ -9,7 +9,7 @@ const MAX_RESPONSE_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TutorRuntimeMessage {
+pub struct QuentaRuntimeMessage {
     role: String,
     content: String,
 }
@@ -76,7 +76,7 @@ async fn json_response(response: Response) -> Result<Value, String> {
 }
 
 #[tauri::command]
-pub async fn lia_tutor_ollama_status(base_url: String) -> Result<Value, String> {
+pub async fn lia_quenta_ollama_status(base_url: String) -> Result<Value, String> {
     let endpoint = ollama_endpoint(&base_url, "version")?;
     let response = client(Duration::from_secs(10))?
         .get(endpoint)
@@ -87,7 +87,7 @@ pub async fn lia_tutor_ollama_status(base_url: String) -> Result<Value, String> 
 }
 
 #[tauri::command]
-pub async fn lia_tutor_ollama_models(base_url: String) -> Result<Value, String> {
+pub async fn lia_quenta_ollama_models(base_url: String) -> Result<Value, String> {
     let endpoint = ollama_endpoint(&base_url, "tags")?;
     let response = client(Duration::from_secs(15))?
         .get(endpoint)
@@ -98,10 +98,10 @@ pub async fn lia_tutor_ollama_models(base_url: String) -> Result<Value, String> 
 }
 
 #[tauri::command]
-pub async fn lia_tutor_ollama_chat(
+pub async fn lia_quenta_ollama_chat(
     base_url: String,
     model: String,
-    messages: Vec<TutorRuntimeMessage>,
+    messages: Vec<QuentaRuntimeMessage>,
     temperature: f64,
     format: Option<Value>,
 ) -> Result<Value, String> {
@@ -109,13 +109,13 @@ pub async fn lia_tutor_ollama_chat(
         return Err("Select an installed Ollama model first".to_string());
     }
     if messages.is_empty() {
-        return Err("Tutor messages cannot be empty".to_string());
+        return Err("Quenta messages cannot be empty".to_string());
     }
     if messages
         .iter()
         .any(|message| !matches!(message.role.as_str(), "system" | "user" | "assistant"))
     {
-        return Err("Tutor message role is invalid".to_string());
+        return Err("Quenta message role is invalid".to_string());
     }
 
     let endpoint = ollama_endpoint(&base_url, "chat")?;
@@ -131,7 +131,7 @@ pub async fn lia_tutor_ollama_chat(
         body["format"] = format;
     }
 
-    // No `tools` field is ever sent. The Tutor is a read-only language-model
+    // No `tools` field is ever sent. Quenta is a read-only language-model
     // surface and cannot receive runnable callbacks from the application.
     let response = client(Duration::from_secs(15 * 60))?
         .post(endpoint)
@@ -146,13 +146,13 @@ pub async fn lia_tutor_ollama_chat(
         .and_then(Value::as_array)
         .is_some_and(|calls| !calls.is_empty())
     {
-        return Err("Ollama returned a tool call, which the read-only Tutor refuses".to_string());
+        return Err("Ollama returned a tool call, which the read-only Quenta refuses".to_string());
     }
     Ok(value)
 }
 
 #[tauri::command]
-pub async fn lia_tutor_ollama_embed(
+pub async fn lia_quenta_ollama_embed(
     base_url: String,
     model: String,
     input: Vec<String>,
@@ -167,11 +167,14 @@ pub async fn lia_tutor_ollama_embed(
     let response = client(Duration::from_secs(10 * 60))?
         .post(endpoint)
         .header(CONTENT_TYPE, "application/json")
-        .body(json!({
-            "model": model,
-            "input": input,
-            "truncate": true
-        }).to_string())
+        .body(
+            json!({
+                "model": model,
+                "input": input,
+                "truncate": true
+            })
+            .to_string(),
+        )
         .send()
         .await
         .map_err(|error| format!("Ollama embedding failed: {error}"))?;

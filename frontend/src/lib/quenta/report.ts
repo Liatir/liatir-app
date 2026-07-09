@@ -1,6 +1,6 @@
-import type { JsonValue, LiatirTutorReport } from '@liatir/core';
+import type { JsonValue, LiatirQuentaReport } from '@liatir/core';
 
-export const TUTOR_REPORT_SCHEMA: JsonValue = {
+export const QUENTA_REPORT_SCHEMA: JsonValue = {
   type: 'object',
   additionalProperties: false,
   properties: {
@@ -35,12 +35,12 @@ export const TUTOR_REPORT_SCHEMA: JsonValue = {
 
 function stringArray(value: unknown, field: string): string[] {
   if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
-    throw new Error(`Tutor report field "${field}" must be a string array`);
+    throw new Error(`Quenta report field "${field}" must be a string array`);
   }
   return value;
 }
 
-export function parseTutorReport(content: string, generatedAt = new Date().toISOString()): LiatirTutorReport {
+export function parseQuentaReport(content: string, generatedAt = new Date().toISOString()): LiatirQuentaReport {
   let raw: Record<string, unknown>;
   try {
     raw = JSON.parse(content) as Record<string, unknown>;
@@ -49,14 +49,14 @@ export function parseTutorReport(content: string, generatedAt = new Date().toISO
   }
   for (const key of ['title', 'subject', 'executiveSummary'] as const) {
     if (typeof raw[key] !== 'string' || !raw[key].trim()) {
-      throw new Error(`Tutor report field "${key}" is missing`);
+      throw new Error(`Quenta report field "${key}" is missing`);
     }
   }
-  if (!Array.isArray(raw.findings)) throw new Error('Tutor report findings are missing');
+  if (!Array.isArray(raw.findings)) throw new Error('Quenta report findings are missing');
   const findings = raw.findings.map((value, index) => {
     const finding = value as Record<string, unknown>;
     if (typeof finding?.title !== 'string' || typeof finding?.interpretation !== 'string') {
-      throw new Error(`Tutor report finding ${index + 1} is invalid`);
+      throw new Error(`Quenta report finding ${index + 1} is invalid`);
     }
     return {
       title: finding.title,
@@ -67,13 +67,13 @@ export function parseTutorReport(content: string, generatedAt = new Date().toISO
   });
   const runStatus = raw.runStatus;
   if (runStatus !== undefined && !['done', 'error', 'cancelled'].includes(String(runStatus))) {
-    throw new Error('Tutor report runStatus is invalid');
+    throw new Error('Quenta report runStatus is invalid');
   }
   return {
     title: raw.title as string,
     generatedAt,
     subject: raw.subject as string,
-    runStatus: runStatus as LiatirTutorReport['runStatus'],
+    runStatus: runStatus as LiatirQuentaReport['runStatus'],
     executiveSummary: raw.executiveSummary as string,
     methods: stringArray(raw.methods, 'methods'),
     findings,
@@ -83,7 +83,7 @@ export function parseTutorReport(content: string, generatedAt = new Date().toISO
   };
 }
 
-export function tutorReportToMarkdown(report: LiatirTutorReport): string {
+export function quentaReportToMarkdown(report: LiatirQuentaReport): string {
   const lines = [
     `# ${report.title}`,
     '',

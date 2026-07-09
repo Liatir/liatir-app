@@ -1,6 +1,6 @@
 import type {
-  LiatirTutorCitation,
-  LiatirTutorContextDocument,
+  LiatirQuentaCitation,
+  LiatirQuentaContextDocument,
 } from '@liatir/core';
 
 const STOP_WORDS = new Set([
@@ -18,7 +18,7 @@ function terms(value: string): string[] {
     .filter((term) => term.length > 1 && !STOP_WORDS.has(term));
 }
 
-function scoreDocument(query: string, document: LiatirTutorContextDocument): number {
+function scoreDocument(query: string, document: LiatirQuentaContextDocument): number {
   const queryTerms = terms(query);
   if (queryTerms.length === 0) return 0;
   const titleTerms = new Set(terms(document.title));
@@ -39,17 +39,17 @@ function scoreDocument(query: string, document: LiatirTutorContextDocument): num
   return score;
 }
 
-export interface TutorRetrievalResult {
-  documents: LiatirTutorContextDocument[];
-  citations: LiatirTutorCitation[];
+export interface QuentaRetrievalResult {
+  documents: LiatirQuentaContextDocument[];
+  citations: LiatirQuentaCitation[];
   context: string;
 }
 
-export function retrieveTutorContext(
+export function retrieveQuentaContext(
   query: string,
-  documents: LiatirTutorContextDocument[],
+  documents: LiatirQuentaContextDocument[],
   options: { limit?: number; maxChars?: number; requiredIds?: string[] } = {},
-): TutorRetrievalResult {
+): QuentaRetrievalResult {
   const limit = options.limit ?? 8;
   const maxChars = options.maxChars ?? 14_000;
   const requiredIds = new Set(options.requiredIds ?? []);
@@ -62,7 +62,7 @@ export function retrieveTutorContext(
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score || a.index - b.index);
 
-  const selected: LiatirTutorContextDocument[] = [];
+  const selected: LiatirQuentaContextDocument[] = [];
   let usedChars = 0;
   for (const item of ranked) {
     if (selected.length >= limit) break;
@@ -86,8 +86,8 @@ export function retrieveTutorContext(
 
 export function citedSources(
   content: string,
-  available: LiatirTutorCitation[],
-): LiatirTutorCitation[] {
+  available: LiatirQuentaCitation[],
+): LiatirQuentaCitation[] {
   const mentioned = new Set<string>();
   for (const match of content.matchAll(/\[([a-z0-9][a-z0-9:._-]+)\]/gi)) {
     mentioned.add(match[1]);

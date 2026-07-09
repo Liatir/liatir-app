@@ -118,8 +118,8 @@
     }
   }
 
-  function openTutorForRun(run: AnalysisRunMeta, intent: 'explain-result' | 'explain-failure' | 'report') {
-    void goto(`/tutor?intent=${intent}&run=${encodeURIComponent(run.id)}&auto=1`);
+  function openQuentaForRun(run: AnalysisRunMeta, intent: 'explain-result' | 'explain-failure' | 'report') {
+    void goto(`/quenta?intent=${intent}&run=${encodeURIComponent(run.id)}&auto=1`);
   }
 
   function fmtDate(ms: number) {
@@ -248,12 +248,12 @@
                 </p>
               </div>
               <button
-                onclick={() => openTutorForRun(selectedRun, 'explain-failure')}
+                onclick={() => openQuentaForRun(selectedRun, 'explain-failure')}
                 class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
                       text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2 transition-colors"
                 data-testid="result-explain-failure"
               >
-                Explain failure
+                Explain with Quenta
               </button>
             </div>
             <div class="rounded-xl border px-4 py-3 text-sm font-mono
@@ -284,20 +284,20 @@
               </div>
               <div class="flex items-center gap-2">
                 <button
-                  onclick={() => openTutorForRun(selectedRun, 'explain-result')}
+                  onclick={() => openQuentaForRun(selectedRun, 'explain-result')}
                   class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
                         text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2 transition-colors"
                   data-testid="result-explain"
                 >
-                  Explain result
+                  Explain with Quenta
                 </button>
                 <button
-                  onclick={() => openTutorForRun(selectedRun, 'report')}
+                  onclick={() => openQuentaForRun(selectedRun, 'report')}
                   class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
                         text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2 transition-colors"
                   data-testid="result-report"
                 >
-                  Report
+                  Quenta report
                 </button>
                 <button
                   onclick={exportRun}

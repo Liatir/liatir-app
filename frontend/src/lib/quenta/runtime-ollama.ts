@@ -1,11 +1,11 @@
 import { liatir } from '$lib/api';
 import type {
-  LiatirTutorChatRequest,
-  LiatirTutorChatResponse,
-  LiatirTutorProviderModel,
-  LiatirTutorProviderStatus,
+  LiatirQuentaChatRequest,
+  LiatirQuentaChatResponse,
+  LiatirQuentaProviderModel,
+  LiatirQuentaProviderStatus,
 } from '@liatir/core';
-import type { TutorRuntime } from './runtime';
+import type { QuentaRuntime } from './runtime';
 
 interface OllamaModel {
   name?: string;
@@ -20,7 +20,7 @@ interface OllamaModel {
   };
 }
 
-export class OllamaTutorRuntime implements TutorRuntime {
+export class OllamaQuentaRuntime implements QuentaRuntime {
   constructor(private readonly baseUrl: string) {}
 
   private api() {
@@ -29,9 +29,9 @@ export class OllamaTutorRuntime implements TutorRuntime {
     return api;
   }
 
-  async status(): Promise<LiatirTutorProviderStatus> {
+  async status(): Promise<LiatirQuentaProviderStatus> {
     try {
-      const response = await this.api().invoke('lia_tutor_ollama_status', {
+      const response = await this.api().invoke('lia_quenta_ollama_status', {
         baseUrl: this.baseUrl,
       }) as { version?: string };
       return { available: true, version: response.version };
@@ -40,8 +40,8 @@ export class OllamaTutorRuntime implements TutorRuntime {
     }
   }
 
-  async models(): Promise<LiatirTutorProviderModel[]> {
-    const response = await this.api().invoke('lia_tutor_ollama_models', {
+  async models(): Promise<LiatirQuentaProviderModel[]> {
+    const response = await this.api().invoke('lia_quenta_ollama_models', {
       baseUrl: this.baseUrl,
     }) as { models?: OllamaModel[] };
     return (response.models ?? []).map((model) => ({
@@ -55,8 +55,8 @@ export class OllamaTutorRuntime implements TutorRuntime {
     }));
   }
 
-  async chat(request: LiatirTutorChatRequest): Promise<LiatirTutorChatResponse> {
-    const response = await this.api().invoke('lia_tutor_ollama_chat', {
+  async chat(request: LiatirQuentaChatRequest): Promise<LiatirQuentaChatResponse> {
+    const response = await this.api().invoke('lia_quenta_ollama_chat', {
       baseUrl: this.baseUrl,
       model: request.model,
       messages: request.messages,
@@ -70,7 +70,7 @@ export class OllamaTutorRuntime implements TutorRuntime {
       total_duration?: number;
     };
     const content = response.message?.content?.trim();
-    if (!content) throw new Error('Ollama returned an empty Tutor response');
+    if (!content) throw new Error('Ollama returned an empty Quenta response');
     return {
       model: response.model ?? request.model,
       content,
@@ -81,7 +81,7 @@ export class OllamaTutorRuntime implements TutorRuntime {
   }
 
   async embed(model: string, input: string[]): Promise<number[][]> {
-    const response = await this.api().invoke('lia_tutor_ollama_embed', {
+    const response = await this.api().invoke('lia_quenta_ollama_embed', {
       baseUrl: this.baseUrl,
       model,
       input,
