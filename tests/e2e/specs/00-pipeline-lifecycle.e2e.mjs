@@ -11,6 +11,7 @@ const PIPELINE_A_ID = 'e2e-delayed-pipeline';
 const PIPELINE_B_ID = 'e2e-independent-pipeline';
 const PIPELINE_FAILURE_ID = 'e2e-failing-pipeline';
 const PIPELINE_INTERRUPTED_ID = 'e2e-interrupted-pipeline';
+const PIPELINE_NATIVE_JOB_ID = 'e2e-native-job-pipeline';
 const REQUEST_ID = 'e2e-delayed-request';
 const FAILURE_REQUEST_ID = 'e2e-failing-request';
 const INTERRUPTED_RUN_ID = 'e2e-interrupted-run';
@@ -111,6 +112,27 @@ function pipelineWorkspace() {
     edges: [],
     updatedAt: now - 3,
   };
+  const nativeJobPipeline = {
+    id: PIPELINE_NATIVE_JOB_ID,
+    name: 'Native Job Pipeline',
+    nodes: [
+      {
+        id: 'seqkit-step',
+        type: 'tool',
+        position: { x: 210, y: 145 },
+        data: {
+          stepId: 'seqkit-stats',
+          label: 'Sequence statistics',
+          inputs: {
+            inputFile: '/tmp/e2e-sequences.fastq',
+            threads: '1',
+          },
+        },
+      },
+    ],
+    edges: [],
+    updatedAt: now - 4,
+  };
 
   return {
     current: {
@@ -119,7 +141,7 @@ function pipelineWorkspace() {
       nodes: pipelineA.nodes,
       edges: pipelineA.edges,
     },
-    saved: [pipelineA, pipelineB, failingPipeline, interruptedPipeline],
+    saved: [pipelineA, pipelineB, failingPipeline, interruptedPipeline, nativeJobPipeline],
     runtime: [],
   };
 }
@@ -183,10 +205,31 @@ async function seedSandbox(browser, apiUrl) {
       content: JSON.stringify(value, null, 2),
       createDirs: true,
     });
+    const writeData = (rel, value) => window.Liatir.invoke('lia_fs_write_text', {
+      rel,
+      permanent: true,
+      contents: JSON.stringify(value, null, 2),
+      createDirs: true,
+      append: false,
+      windowLabel: null,
+      pluginStoragePlugin: null,
+    });
 
     await Promise.all([
       write('workspaces/__test__/pipeline-workspace.json', pipelineState),
       write('workspaces/__test__/api-workspace.json', apiState),
+      writeData('managed-bins/index.json', {
+        bins: {
+          seqkit: {
+            binary: 'seqkit',
+            version: 'e2e',
+            path: '/bin/echo',
+            platform: 'macos',
+            arch: 'test',
+            installedAt: Date.now(),
+          },
+        },
+      }),
     ]);
   }, pipelineWorkspace(), apiWorkspace(apiUrl));
 }
@@ -465,6 +508,67 @@ export const tests = [
       await navigateSidebar(browser, '/results');
       const resultSelector = `[data-testid="result-run"][data-run-id="${INTERRUPTED_RUN_ID}"]`;
       await (await browser.$(resultSelector)).waitForDisplayed({ timeout: 20_000 });
+      await expectNoVisibleRuntimeError(browser);
+    },
+  },
+  {
+    name: 'attributes a native child Job to its originating pipeline run',
+    async run({ browser, expect }) {
+      await navigateSidebar(browser, '/pipelines');
+      await openPipeline(browser, PIPELINE_NATIVE_JOB_ID);
+
+      const runButton = await browser.$('[data-testid="pipeline-run-button"]');
+      await runButton.waitForDisplayed({ timeout: 20_000 });
+      await runButton.click();
+
+      await browser.waitUntil(
+        async () => browser.execute(async (pipelineId) => {
+          const jobs = await window.Liatir.invoke('lia_jobs_list', {
+            workspaceId: '__test__',
+          });
+          return jobs.some(
+            (job) => job.metadata?.pipelineId === pipelineId
+              && job.metadata?.runKind === 'pipeline-step',
+          );
+        }, PIPELINE_NATIVE_JOB_ID),
+        { timeout: 30_000, timeoutMsg: 'Pipeline child Job was not attributed' },
+      );
+
+      const jobs = await browser.execute(async (pipelineId) => {
+        const allJobs = await window.Liatir.invoke('lia_jobs_list', {
+          workspaceId: '__test__',
+        });
+        return allJobs.filter((job) => job.metadata?.pipelineId === pipelineId);
+      }, PIPELINE_NATIVE_JOB_ID);
+      expect(jobs).toHaveLength(1);
+
+      const [job] = jobs;
+      expect(job.kind).toBe('pipeline-step');
+      expect(job.label).toBe('Sequence statistics');
+      expect(job.metadata.pipelineName).toBe('Native Job Pipeline');
+      expect(job.metadata.nodeId).toBe('seqkit-step');
+      expect(job.metadata.toolId).toBe('seqkit-stats');
+      expect(typeof job.metadata.pipelineRunId).toBe('string');
+      expect(job.metadata.pipelineRunId.length).toBeGreaterThan(0);
+
+      await browser.waitUntil(
+        async () => browser.execute(async (runId) => {
+          const raw = await window.Liatir.invoke('lia_app_read_text', {
+            rel: 'workspaces/__test__/analysis-runs/index.json',
+          });
+          return JSON.parse(raw).some(
+            (run) => run.id === runId && run.status === 'done',
+          );
+        }, job.metadata.pipelineRunId),
+        { timeout: 30_000, timeoutMsg: 'Native Job parent Result was not finalized' },
+      );
+
+      await navigateSidebar(browser, '/jobs');
+      const jobSelector = `[data-testid="job-entry"][data-job-id="${job.id}"]`;
+      const jobEntry = await browser.$(jobSelector);
+      await jobEntry.waitForDisplayed({ timeout: 20_000 });
+      const jobText = await jobEntry.getText();
+      expect(jobText).toContain('Pipeline · Native Job Pipeline');
       await expectNoVisibleRuntimeError(browser);
     },
   },

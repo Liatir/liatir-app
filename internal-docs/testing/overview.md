@@ -173,7 +173,8 @@ not require the Tauri bridge.
 `tests/e2e/specs/00-pipeline-lifecycle.e2e.mjs` is the baseline pipeline
 lifecycle gate. It covers per-pipeline isolation across navigation, off-page
 completion, deterministic failure, and interrupted-run reconciliation after a
-webview reload, including exactly-once Results identity.
+webview reload, including exactly-once Results identity and native child Job
+attribution.
 
 ## Writing New Tests
 

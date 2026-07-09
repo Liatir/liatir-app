@@ -35,6 +35,9 @@ import {
 } from './plugin-step';
 import type { JsonValue } from '@liatir/core';
 import { threadInputSchema, threadParam } from '$lib/utils/execution-resources';
+import type { AIRunContext } from '$lib/ai/direct-run-context';
+import { aiRunMetadata } from '$lib/ai/direct-run-context';
+import type { NativeRunOptions } from '$lib/utils/native-tool';
 
 type StepResult = {
   outputFiles: RunOutputFile[];
@@ -44,6 +47,15 @@ type StepResult = {
 };
 
 function basename(p: string) { return p.split(/[\\/]/).pop() ?? p; }
+
+function nativePipelineJobOptions(context?: AIRunContext): NativeRunOptions {
+  if (!context || context.runKind !== 'pipeline-step') return {};
+  return {
+    label: context.label,
+    kind: 'pipeline-step',
+    metadata: aiRunMetadata(context),
+  };
+}
 
 // ── definitions that don't live in a tool file ───────────────────────────────
 
@@ -113,7 +125,8 @@ async function runFastqcStep(
 async function runFastpStep(
   inputs: Record<string, string>,
   outputDir: string,
-  onLog: (l: string) => void
+  onLog: (l: string) => void,
+  context?: AIRunContext,
 ): Promise<StepResult> {
   const api = liatir()!;
   const runId = crypto.randomUUID();
@@ -126,7 +139,13 @@ async function runFastpStep(
   if (inputs.r2) args.push('--in2', inputs.r2, '--out2', out2Path);
 
   onLog(`$ fastp --thread ${threads} --in1 ${basename(inputs.r1)}${inputs.r2 ? ' --in2 ' + basename(inputs.r2) : ''}`);
-  const result = await runNativeTool('fastp', args, undefined, (l) => { if (l.trim()) onLog(l); });
+  const result = await runNativeTool(
+    'fastp',
+    args,
+    undefined,
+    (l) => { if (l.trim()) onLog(l); },
+    nativePipelineJobOptions(context),
+  );
 
   if (!result.ok) throw new Error(result.stderr || `fastp exited with code ${result.exitCode}`);
 
@@ -143,11 +162,18 @@ async function runFastpStep(
 async function runSeqkitStatsStep(
   inputs: Record<string, string>,
   _outputDir: string,
-  onLog: (l: string) => void
+  onLog: (l: string) => void,
+  context?: AIRunContext,
 ): Promise<StepResult> {
   const { threads } = threadParam(inputs.threads);
   onLog(`$ seqkit stats -j ${threads} ${basename(inputs.inputFile)}`);
-  const result = await runNativeTool('seqkit', ['stats', '-j', String(threads), inputs.inputFile], undefined, (l) => { if (l.trim()) onLog(l); });
+  const result = await runNativeTool(
+    'seqkit',
+    ['stats', '-j', String(threads), inputs.inputFile],
+    undefined,
+    (l) => { if (l.trim()) onLog(l); },
+    nativePipelineJobOptions(context),
+  );
 
   if (!result.ok && result.stdout.trim() === '') {
     throw new Error(result.stderr || `seqkit exited with code ${result.exitCode}`);
@@ -163,11 +189,18 @@ async function runSeqkitStatsStep(
 async function runSamtoolsFlagstatStep(
   inputs: Record<string, string>,
   _outputDir: string,
-  onLog: (l: string) => void
+  onLog: (l: string) => void,
+  context?: AIRunContext,
 ): Promise<StepResult> {
   const { threads } = threadParam(inputs.threads);
   onLog(`$ samtools flagstat -@ ${threads} ${basename(inputs.inputFile)}`);
-  const result = await runNativeTool('samtools', ['flagstat', '-@', String(threads), inputs.inputFile], undefined, (l) => { if (l.trim()) onLog(l); });
+  const result = await runNativeTool(
+    'samtools',
+    ['flagstat', '-@', String(threads), inputs.inputFile],
+    undefined,
+    (l) => { if (l.trim()) onLog(l); },
+    nativePipelineJobOptions(context),
+  );
 
   if (!result.ok && result.stdout.trim() === '') {
     throw new Error(result.stderr || `samtools exited with code ${result.exitCode}`);
@@ -183,12 +216,19 @@ async function runSamtoolsFlagstatStep(
 async function runSamtoolsFaidxStep(
   inputs: Record<string, string>,
   _outputDir: string,
-  onLog: (l: string) => void
+  onLog: (l: string) => void,
+  context?: AIRunContext,
 ): Promise<StepResult> {
   const api = liatir()!;
   const { threads } = threadParam(inputs.threads);
   onLog(`$ samtools faidx -@ ${threads} ${basename(inputs.inputFile)}`);
-  const result = await runNativeTool('samtools', ['faidx', '-@', String(threads), inputs.inputFile], undefined, (l) => { if (l.trim()) onLog(l); });
+  const result = await runNativeTool(
+    'samtools',
+    ['faidx', '-@', String(threads), inputs.inputFile],
+    undefined,
+    (l) => { if (l.trim()) onLog(l); },
+    nativePipelineJobOptions(context),
+  );
 
   if (!result.ok) throw new Error(result.stderr || `samtools faidx exited with code ${result.exitCode}`);
 
@@ -282,11 +322,18 @@ async function runMinimap2Step(
 async function runBcftoolsStatsStep(
   inputs: Record<string, string>,
   _outputDir: string,
-  onLog: (l: string) => void
+  onLog: (l: string) => void,
+  context?: AIRunContext,
 ): Promise<StepResult> {
   const { threads } = threadParam(inputs.threads);
   onLog(`$ bcftools stats --threads ${threads} ${basename(inputs.inputFile)}`);
-  const result = await runNativeTool('bcftools', ['stats', '--threads', String(threads), inputs.inputFile], undefined, (l) => { if (l.trim()) onLog(l); });
+  const result = await runNativeTool(
+    'bcftools',
+    ['stats', '--threads', String(threads), inputs.inputFile],
+    undefined,
+    (l) => { if (l.trim()) onLog(l); },
+    nativePipelineJobOptions(context),
+  );
 
   if (!result.ok && result.stdout.trim() === '') {
     throw new Error(result.stderr || `bcftools exited with code ${result.exitCode}`);
@@ -302,7 +349,8 @@ async function runBcftoolsStatsStep(
 async function runBcftoolsFilterStep(
   inputs: Record<string, string>,
   outputDir: string,
-  onLog: (l: string) => void
+  onLog: (l: string) => void,
+  context?: AIRunContext,
 ): Promise<StepResult> {
   const api = liatir()!;
   const runId = crypto.randomUUID();
@@ -315,7 +363,8 @@ async function runBcftoolsFilterStep(
     'bcftools',
     ['filter', '--threads', String(threads), '-i', expr, '-O', 'z', '-o', outPath, inputs.inputFile],
     undefined,
-    (l) => { if (l.trim()) onLog(l); }
+    (l) => { if (l.trim()) onLog(l); },
+    nativePipelineJobOptions(context),
   );
 
   if (!result.ok) throw new Error(result.stderr || `bcftools filter exited with code ${result.exitCode}`);

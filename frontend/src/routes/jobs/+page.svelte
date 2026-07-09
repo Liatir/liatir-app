@@ -164,6 +164,8 @@
 					<Card class="overflow-hidden">
 						<div
 							class="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--color-surface-2)] transition-colors"
+							data-testid="job-entry"
+							data-job-id={job.id}
 						>
 							<button
 								class="flex flex-1 items-center gap-3 min-w-0 text-left cursor-pointer"

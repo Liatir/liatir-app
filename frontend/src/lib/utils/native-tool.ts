@@ -1,7 +1,9 @@
 import { liatir } from '$lib/api';
 import { workspaceStore } from '$lib/stores/workspace.svelte';
+import type { JsonValue } from '@liatir/core';
 
 export interface NativeRunResult {
+  jobId: string;
   stdout: string;
   stderr: string;
   exitCode: number | null;
@@ -10,6 +12,10 @@ export interface NativeRunResult {
 
 export interface NativeRunOptions {
   env?: Record<string, string>;
+  label?: string;
+  kind?: string;
+  metadata?: Record<string, JsonValue>;
+  onSpawn?: (jobId: string) => void;
 }
 
 /**
@@ -38,7 +44,11 @@ export async function runNativeTool(
     args,
     workspaceId: workspaceStore.activeId,
     env: options.env,
+    label: options.label,
+    kind: options.kind,
+    metadata: options.metadata,
   }) as { jobId: string };
+  options.onSpawn?.(jobId);
 
   const stdoutLines: string[] = [];
   const stderrLines: string[] = [];
@@ -80,6 +90,7 @@ export async function runNativeTool(
         : null;
       const completed = entry.status.type === 'done' && (exitCode === null || exitCode === 0);
       return {
+        jobId,
         stdout: stdoutLines.join('\n'),
         stderr: stderrLines.join('\n'),
         exitCode,
