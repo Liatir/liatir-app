@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
+	import { goto } from '$app/navigation';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
@@ -74,6 +75,10 @@
 
 	function displayMetadata(job: JobEntry): string {
 		return JSON.stringify(sanitizeForDisplay(job.metadata, 2), null, 2);
+	}
+
+	function openTutorForJob(job: JobEntry, intent: 'chat' | 'explain-failure') {
+		void goto(`/tutor?intent=${intent}&job=${encodeURIComponent(job.id)}&auto=1`);
 	}
 
 	function terminalLines(lines: string[]): string[] {
@@ -208,6 +213,18 @@
 							{#if variant === 'running'}
 								<Button variant="danger" size="sm" onclick={() => jobsStore.kill(job.id)}>
 									Kill
+								</Button>
+							{:else if variant === 'failed' || variant === 'killed'}
+								<Button
+									variant="ghost"
+									size="sm"
+									onclick={() => openTutorForJob(job, 'explain-failure')}
+								>
+									Explain failure
+								</Button>
+							{:else}
+								<Button variant="ghost" size="sm" onclick={() => openTutorForJob(job, 'chat')}>
+									Explain job
 								</Button>
 							{/if}
 						</div>

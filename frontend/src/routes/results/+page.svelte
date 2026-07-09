@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
@@ -115,6 +116,10 @@
     } catch { /* cancelled */ } finally {
       exporting = false;
     }
+  }
+
+  function openTutorForRun(run: AnalysisRunMeta, intent: 'explain-result' | 'explain-failure' | 'report') {
+    void goto(`/tutor?intent=${intent}&run=${encodeURIComponent(run.id)}&auto=1`);
   }
 
   function fmtDate(ms: number) {
@@ -242,6 +247,14 @@
                   {toolLabel(selectedRun.tool)} · {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}{selectedRun.outputSize != null ? ' · ' + fmtBytes(selectedRun.outputSize) : ''}
                 </p>
               </div>
+              <button
+                onclick={() => openTutorForRun(selectedRun, 'explain-failure')}
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
+                      text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2 transition-colors"
+                data-testid="result-explain-failure"
+              >
+                Explain failure
+              </button>
             </div>
             <div class="rounded-xl border px-4 py-3 text-sm font-mono
               {selectedRun.status === 'cancelled'
@@ -269,26 +282,44 @@
                   {toolLabel(selectedRun.tool)} · {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}{selectedRun.outputSize != null ? ' · ' + fmtBytes(selectedRun.outputSize) : ''}
                 </p>
               </div>
-              <button
-                onclick={exportRun}
-                disabled={exporting}
-                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
-                      text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2
-                      disabled:opacity-50 disabled:cursor-default transition-colors"
-              >
-                {#if exporting}
-                  <svg class="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                  </svg>
-                  Exporting…
-                {:else}
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                  </svg>
-                  Export HTML
-                {/if}
-              </button>
+              <div class="flex items-center gap-2">
+                <button
+                  onclick={() => openTutorForRun(selectedRun, 'explain-result')}
+                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
+                        text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2 transition-colors"
+                  data-testid="result-explain"
+                >
+                  Explain result
+                </button>
+                <button
+                  onclick={() => openTutorForRun(selectedRun, 'report')}
+                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
+                        text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2 transition-colors"
+                  data-testid="result-report"
+                >
+                  Report
+                </button>
+                <button
+                  onclick={exportRun}
+                  disabled={exporting}
+                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
+                        text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2
+                        disabled:opacity-50 disabled:cursor-default transition-colors"
+                >
+                  {#if exporting}
+                    <svg class="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                    </svg>
+                    Exporting…
+                  {:else}
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Export HTML
+                  {/if}
+                </button>
+              </div>
             </div>
             <ToolResultView output={loadedOutput} outputFiles={selectedRun.outputFiles ?? []} />
             <RunLog runId={selectedId} />

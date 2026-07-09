@@ -39,7 +39,7 @@ feature to Verified.
 | AI Batch 5 | **Partial** | UCE is runnable; scGPT, Geneformer, and scFoundation remain preview entries | Complete one model at a time with managed assets, runtime, Jobs, Results, provenance, and native E2E |
 | AI Batches 6–8 | **Planned** | Roadmap only | Complete prerequisite runtime/tool gates before implementation |
 | Scientific viewers | **Implemented — unverified** | Optional local viewer runtimes and visual pages exist | Native visual/runtime coverage with real artifacts, failures, fullscreen, and capture |
-| Local Tutor | **Planned** | Product boundary agreed: read-only explanation, guidance, and cited reports | Base model + RAG evaluation before any fine-tuning decision |
+| Local Tutor | **Partial** | Read-only Ollama MVP with shared contracts, local retrieval, Result/Job deep links, cited reports, unit tests, Rust loopback tests, and mock-Ollama Tauri E2E | Real local Ollama evaluation matrix with recommended model(s), report-quality review, latency/error expectations, and no-tool-call audit |
 | Liatir MCP server | **Planned** | Product boundary agreed: resources plus controlled saved-pipeline execution | Threat model, allowlist, asynchronous run identity, audit, Jobs/Results attribution, real client test |
 | Plugin templates | **Partial** | CLI scaffolds supported runtimes | Replace toy examples with useful, tested scientific templates for every supported runtime |
 | API/pipeline presets | **Planned** | Individual tools and demo files exist | Versioned useful presets backed by small realistic fixtures and end-to-end tests |
@@ -63,7 +63,8 @@ The beta cannot ship until automated native coverage proves:
 ## Immediate execution order
 
 1. Validate existing AI Batches 1–4 with targeted real runtime fixtures.
-2. Build the read-only Tutor vertical slice and evaluation suite.
+2. Run the real local Ollama Tutor evaluation matrix and document recommended
+   model choices.
 3. Add the MCP server with allowlisted saved-pipeline execution.
 4. Finish useful plugin, API Connector, and pipeline presets.
 5. Close macOS distribution gates and run the release-candidate matrix.

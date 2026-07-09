@@ -130,6 +130,11 @@ commands.allow = [
   "lia_jobs_clear_done",
   "lia_jobs_get_output",
 
+  "lia_tutor_ollama_status",
+  "lia_tutor_ollama_models",
+  "lia_tutor_ollama_chat",
+  "lia_tutor_ollama_embed",
+
   "lia_deps_check",
   "lia_deps_check_many",
 
