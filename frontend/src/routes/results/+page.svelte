@@ -42,7 +42,7 @@
 
   // ── filters ────────────────────────────────────────────────────
   let activeTool = $state<string | 'all'>('all');
-  let activeStatus = $state<'all' | 'done' | 'error'>('all');
+  let activeStatus = $state<'all' | 'done' | 'error' | 'cancelled'>('all');
 
   const allTools = $derived([...new Set(analysisRuns.runs.map(r => r.tool))]);
   const toolOptions = $derived([
@@ -144,6 +144,7 @@
           { value: 'all', label: 'Any status' },
           { value: 'done', label: 'Done' },
           { value: 'error', label: 'Error' },
+          { value: 'cancelled', label: 'Cancelled' },
         ]}
         onchange={(v) => activeStatus = v as typeof activeStatus}
         class="min-w-0 flex-[1_1_7rem] text-[10px]"
@@ -176,7 +177,7 @@
             >
               <div class="flex items-center gap-1.5 mb-0.5">
                 <span class="h-1.5 w-1.5 rounded-full shrink-0
-                  {run.status === 'done' ? 'bg-emerald-500' : 'bg-red-500'}">
+                  {run.status === 'done' ? 'bg-emerald-500' : run.status === 'cancelled' ? 'bg-amber-500' : 'bg-red-500'}">
                 </span>
                 <p class="text-xs font-medium truncate
                   {selectedId === run.id ? 'text-brand' : 'text-zinc-700'}">
@@ -232,7 +233,7 @@
             <p class="text-sm text-zinc-400">Select a run from the list to view results.</p>
           </div>
 
-        {:else if selectedRun.status === 'error'}
+        {:else if selectedRun.status === 'error' || selectedRun.status === 'cancelled'}
           <div>
             <div class="flex items-center justify-between mb-4">
               <div>
@@ -242,7 +243,10 @@
                 </p>
               </div>
             </div>
-            <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-mono" data-selectable>
+            <div class="rounded-xl border px-4 py-3 text-sm font-mono
+              {selectedRun.status === 'cancelled'
+                ? 'border-amber-200 bg-amber-50 text-amber-700'
+                : 'border-red-200 bg-red-50 text-red-700'}" data-selectable>
               {sanitizeLocalPathsForDisplay(selectedRun.error ?? 'Unknown error', 2)}
             </div>
             <RunLog runId={selectedId} />

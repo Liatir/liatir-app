@@ -365,7 +365,9 @@ export async function runSingleCellEmbeddingStep(
 			metadata: {
 				toolId: singleCellEmbeddingDefinition.id,
 				...(runContext ? aiRunMetadata(runContext) : {})
-			}
+			},
+			signal: runContext?.signal,
+			onJobId: runContext?.onJobId
 		}
 	);
 

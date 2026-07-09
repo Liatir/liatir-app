@@ -54,6 +54,8 @@ function nativePipelineJobOptions(context?: AIRunContext): NativeRunOptions {
     label: context.label,
     kind: 'pipeline-step',
     metadata: aiRunMetadata(context),
+    signal: context.signal,
+    onSpawn: context.onJobId,
   };
 }
 

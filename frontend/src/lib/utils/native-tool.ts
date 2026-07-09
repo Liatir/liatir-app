@@ -1,6 +1,7 @@
 import { liatir } from '$lib/api';
 import { workspaceStore } from '$lib/stores/workspace.svelte';
 import type { JsonValue } from '@liatir/core';
+import { RunCancelledError, throwIfRunCancelled } from '$lib/pipeline/cancellation';
 
 export interface NativeRunResult {
   jobId: string;
@@ -16,6 +17,7 @@ export interface NativeRunOptions {
   kind?: string;
   metadata?: Record<string, JsonValue>;
   onSpawn?: (jobId: string) => void;
+  signal?: AbortSignal;
 }
 
 /**
@@ -35,6 +37,7 @@ export async function runNativeTool(
 ): Promise<NativeRunResult> {
   const api = liatir();
   if (!api) throw new Error('Liatir API not available');
+  throwIfRunCancelled(options.signal);
 
   // Spawn via invoke directly so the job is tagged with the active workspace.
   // The backend resolves managed native tools to their installed binary (single
@@ -49,13 +52,22 @@ export async function runNativeTool(
     metadata: options.metadata,
   }) as { jobId: string };
   options.onSpawn?.(jobId);
+  const cancelJob = () => {
+    void api.invoke('lia_jobs_kill', { jobId }).catch(() => {});
+  };
+  options.signal?.addEventListener('abort', cancelJob, { once: true });
 
-  const stdoutLines: string[] = [];
-  const stderrLines: string[] = [];
-  let stdoutSeen = 0;
-  let stderrSeen = 0;
+  try {
+    const stdoutLines: string[] = [];
+    const stderrLines: string[] = [];
+    let stdoutSeen = 0;
+    let stderrSeen = 0;
 
-  while (true) {
+    while (true) {
+      if (options.signal?.aborted) {
+        cancelJob();
+        throw new RunCancelledError();
+      }
     const since = Math.min(stdoutSeen, stderrSeen);
     const [out, entry] = await Promise.all([
       api.invoke('lia_jobs_get_output', { jobId, since }) as Promise<{
@@ -98,6 +110,9 @@ export async function runNativeTool(
       };
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  } finally {
+    options.signal?.removeEventListener('abort', cancelJob);
   }
 }

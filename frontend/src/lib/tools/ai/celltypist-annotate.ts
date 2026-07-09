@@ -265,7 +265,9 @@ export async function runCelltypistAnnotateStep(
 			metadata: {
 				toolId: celltypistAnnotateDefinition.id,
 				...(runContext ? aiRunMetadata(runContext) : {})
-			}
+			},
+			signal: runContext?.signal,
+			onJobId: runContext?.onJobId
 		}
 	);
 

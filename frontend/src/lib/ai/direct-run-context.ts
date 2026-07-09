@@ -19,6 +19,8 @@ export interface AIDirectRunContext {
 	params: Record<string, string>;
 	startedAt: number;
 	outputDir: string;
+	signal?: AbortSignal;
+	onJobId?: (jobId: string) => void;
 }
 
 export interface AIPipelineRunContext {
@@ -32,6 +34,8 @@ export interface AIPipelineRunContext {
 	params: Record<string, string>;
 	startedAt: number;
 	outputDir: string;
+	signal?: AbortSignal;
+	onJobId?: (jobId: string) => void;
 }
 
 export type AIRunContext = AIDirectRunContext | AIPipelineRunContext;

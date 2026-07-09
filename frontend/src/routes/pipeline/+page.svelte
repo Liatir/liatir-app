@@ -790,16 +790,26 @@
             </span>
           </Button>
         </div>
-        <Button
-          variant="primary"
-          testId="pipeline-run-button"
-          disabled={!canRun}
-          loading={pipelineStore.running}
-          onclick={() => pipelineStore.run(nodes, edges)}
-        >
-          <Icon icon="lucide:play" width="12" height="12" />
-          Run pipeline
-        </Button>
+        {#if pipelineStore.running}
+          <Button
+            variant="danger"
+            testId="pipeline-cancel-button"
+            onclick={() => pipelineStore.cancel()}
+          >
+            <Icon icon="lucide:square" width="12" height="12" />
+            Cancel pipeline
+          </Button>
+        {:else}
+          <Button
+            variant="primary"
+            testId="pipeline-run-button"
+            disabled={!canRun}
+            onclick={() => pipelineStore.run(nodes, edges)}
+          >
+            <Icon icon="lucide:play" width="12" height="12" />
+            Run pipeline
+          </Button>
+        {/if}
       </div>
     {/snippet}
   </PageHeader>

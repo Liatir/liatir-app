@@ -203,11 +203,15 @@
                     {:else if lr}
                       <span
                         class="inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium
-                          {lr.status === 'done' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}"
-                        title="{lr.status === 'done' ? 'Last run succeeded' : 'Last run failed'} · {fmtDate(lr.endedAt)}"
+                          {lr.status === 'done'
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                            : lr.status === 'cancelled'
+                              ? 'border-amber-200 bg-amber-50 text-amber-700'
+                              : 'border-red-200 bg-red-50 text-red-700'}"
+                        title="{lr.status === 'done' ? 'Last run succeeded' : lr.status === 'cancelled' ? 'Last run cancelled' : 'Last run failed'} · {fmtDate(lr.endedAt)}"
                       >
-                        <Icon icon={lr.status === 'done' ? 'lucide:check' : 'lucide:x'} width="10" height="10" />
-                        {lr.status === 'done' ? 'Ran' : 'Failed'} {fmtDate(lr.endedAt)}
+                        <Icon icon={lr.status === 'done' ? 'lucide:check' : lr.status === 'cancelled' ? 'lucide:square' : 'lucide:x'} width="10" height="10" />
+                        {lr.status === 'done' ? 'Ran' : lr.status === 'cancelled' ? 'Cancelled' : 'Failed'} {fmtDate(lr.endedAt)}
                       </span>
                     {/if}
                   </div>

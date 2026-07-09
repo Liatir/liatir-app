@@ -309,7 +309,9 @@ export async function runSequenceEmbeddingStep(
 			metadata: {
 				toolId: sequenceEmbeddingDefinition.id,
 				...(runContext ? aiRunMetadata(runContext) : {})
-			}
+			},
+			signal: runContext?.signal,
+			onJobId: runContext?.onJobId
 		}
 	);
 

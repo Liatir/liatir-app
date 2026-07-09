@@ -174,7 +174,8 @@ not require the Tauri bridge.
 lifecycle gate. It covers per-pipeline isolation across navigation, off-page
 completion, deterministic failure, and interrupted-run reconciliation after a
 webview reload, including exactly-once Results identity and native child Job
-attribution.
+attribution. It also kills a real long-running child process and verifies the
+distinct `killed` Job, `cancelled` Result, and unrelated-pipeline states.
 
 ## Writing New Tests
 

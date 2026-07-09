@@ -396,7 +396,9 @@ export async function runGenomicVariantEffectStep(
 			metadata: {
 				toolId: genomicVariantEffectDefinition.id,
 				...(runContext ? aiRunMetadata(runContext) : {})
-			}
+			},
+			signal: runContext?.signal,
+			onJobId: runContext?.onJobId
 		}
 	);
 

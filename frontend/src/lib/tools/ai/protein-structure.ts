@@ -547,7 +547,9 @@ export async function runProteinStructureStep(
 				toolId: proteinStructureDefinition.id,
 				backend,
 				...(runContext ? aiRunMetadata(runContext) : {})
-			}
+			},
+			signal: runContext?.signal,
+			onJobId: runContext?.onJobId
 		}
 	);
 

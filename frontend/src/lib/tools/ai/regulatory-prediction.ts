@@ -452,7 +452,9 @@ export async function runRegulatoryPredictionStep(
 			metadata: {
 				toolId: regulatoryPredictionDefinition.id,
 				...(runContext ? aiRunMetadata(runContext) : {})
-			}
+			},
+			signal: runContext?.signal,
+			onJobId: runContext?.onJobId
 		}
 	);
 

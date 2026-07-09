@@ -5,7 +5,11 @@ import { withArtifactsMetadata } from '$lib/utils/artifacts';
 import { createAsyncStoreInitializer } from './async-store-initializer';
 import type { ToolOutput } from '$lib/types/tool-output';
 import type { RunOutputFile } from '$lib/types/pipeline';
-import type { LiatirArtifactParentRunKind, LiatirArtifactProducerKind } from '@liatir/core';
+import type {
+  LiatirArtifactParentRunKind,
+  LiatirArtifactProducerKind,
+  LiatirRunStatus,
+} from '@liatir/core';
 
 export type { RunOutputFile };
 
@@ -18,7 +22,7 @@ export interface AnalysisRunMeta {
   outputSize?: number;
   outputFiles?: RunOutputFile[];
   params: Record<string, unknown>;
-  status: 'done' | 'error';
+  status: LiatirRunStatus;
   startedAt: number;
   endedAt: number;
   durationMs: number;

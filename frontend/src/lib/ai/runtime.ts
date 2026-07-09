@@ -17,6 +17,7 @@ import {
   packageChecksForModel,
   type AiRuntimePackageCheck,
 } from '@liatir/core';
+import { RunCancelledError, throwIfRunCancelled } from '$lib/pipeline/cancellation';
 
 export {
   runtimeIdForModel,
@@ -82,6 +83,7 @@ export interface AIPythonRunOptions {
   jobLabel?: string;
   metadata?: Record<string, JsonValue>;
   onJobId?: (jobId: string) => void;
+  signal?: AbortSignal;
 }
 
 export function cachePathForModel(model: LiatirAIModelRecord): string | null {
@@ -138,6 +140,7 @@ export async function runAIPython(
   const runtimeId = runtimeIdForModel(model);
   if (!api) throw new Error('Liatir API not available');
   if (!runtimeId) throw new Error(`AI Model has no managed runtime: ${model.name}`);
+  throwIfRunCancelled(options.signal);
 
   if (options.trackJob === false) {
     return await api.invoke('lia_ai_python_run', {
@@ -164,6 +167,10 @@ export async function runAIPython(
     },
   }) as { jobId: string };
   options.onJobId?.(jobId);
+  const cancelJob = () => {
+    void api.invoke('lia_jobs_kill', { jobId }).catch(() => {});
+  };
+  options.signal?.addEventListener('abort', cancelJob, { once: true });
 
   const stdoutLines: string[] = [];
   const stderrLines: string[] = [];
@@ -171,7 +178,12 @@ export async function runAIPython(
   let stderrSeen = 0;
   const timeoutMs = (options.timeoutSeconds ?? 3600) * 1000;
 
-  while (true) {
+  try {
+    while (true) {
+      if (options.signal?.aborted) {
+        cancelJob();
+        throw new RunCancelledError();
+      }
     const since = Math.min(stdoutSeen, stderrSeen);
     const [out, entry] = await Promise.all([
       api.invoke('lia_jobs_get_output', { jobId, since }) as Promise<{
@@ -226,6 +238,9 @@ export async function runAIPython(
       };
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+  } finally {
+    options.signal?.removeEventListener('abort', cancelJob);
   }
 }

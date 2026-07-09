@@ -426,6 +426,7 @@ export async function sendApiRequest(
     provider?: ApiCollection;
     paramOverrides?: Record<string, string>;
     envVars?: Record<string, string>;
+    signal?: AbortSignal;
   } = {},
 ): Promise<ApiResponse> {
   const workspaceVars = Object.fromEntries(
@@ -513,7 +514,7 @@ export async function sendApiRequest(
   }
 
   const t0 = Date.now();
-  const res = await fetch(url, { method: req.method, headers, body });
+  const res = await fetch(url, { method: req.method, headers, body, signal: opts.signal });
   const durationMs = Date.now() - t0;
 
   const resHeaders: Record<string, string> = {};

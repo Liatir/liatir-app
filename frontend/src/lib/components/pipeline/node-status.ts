@@ -8,6 +8,7 @@ export function statusDotClass(status: StepStatus | undefined): string {
   switch (status) {
     case 'done':    return 'bg-emerald-500';
     case 'error':   return 'bg-red-500';
+    case 'cancelled': return 'bg-amber-500';
     case 'running': return 'bg-brand animate-pulse';
     case 'skipped': return 'bg-zinc-200';
     default:        return 'bg-zinc-300';
@@ -19,6 +20,7 @@ export function statusLabel(status: StepStatus | undefined): string {
     case 'running': return 'Running…';
     case 'done':    return 'Done';
     case 'error':   return 'Error';
+    case 'cancelled': return 'Cancelled';
     case 'skipped': return 'Skipped';
     default:        return 'Pending';
   }

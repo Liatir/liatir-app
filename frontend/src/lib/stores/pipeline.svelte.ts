@@ -19,6 +19,11 @@ import { isExecutablePipelineNode } from '$lib/types/pipeline';
 import type { AIPipelineRunContext } from '$lib/ai/direct-run-context';
 import type { JsonValue } from '@liatir/core';
 import { createAsyncStoreInitializer } from './async-store-initializer';
+import {
+  isRunCancelled,
+  PIPELINE_CANCELLED_MESSAGE,
+  throwIfRunCancelled,
+} from '$lib/pipeline/cancellation';
 
 interface PipelineStepRecord {
   label: string;
@@ -81,6 +86,12 @@ interface SerializedPipelineRuntimeState {
   running: boolean;
   runId: string | null;
   startedAt: number | null;
+}
+
+interface ActivePipelineExecution {
+  runId: string;
+  controller: AbortController;
+  childJobIds: Set<string>;
 }
 
 const DRAFT_PIPELINE_KEY = '__draft__';
@@ -346,6 +357,7 @@ function wouldCreateCycle(
 
 function createPipelineStore() {
   let runtimeByPipeline = $state(new Map<string, PipelineRuntimeState>());
+  const activeExecutions = new Map<string, ActivePipelineExecution>();
 
   let savedPipelines = $state<SavedPipeline[]>([]);
   let pipelineName = $state('Untitled Pipeline');
@@ -429,7 +441,8 @@ function createPipelineStore() {
   async function runNodes(
     nodes: Node[],
     edges: Edge[],
-    onLog: (line: string) => void
+    onLog: (line: string) => void,
+    parentContext?: AIPipelineRunContext,
   ): Promise<RunOutputFile[]> {
     const { nodes: graphNodes, edges: graphEdges } = executableGraph(nodes, edges);
     const localStates = new Map<string, NodeRunState>();
@@ -440,6 +453,7 @@ function createPipelineStore() {
     const allOutputFiles: RunOutputFile[] = [];
 
     for (const nodeId of order) {
+      throwIfRunCancelled(parentContext?.signal);
       if (skipped.has(nodeId)) continue;
       const node = graphNodes.find(n => n.id === nodeId);
       if (!node || node.type === 'start') continue;
@@ -463,7 +477,22 @@ function createPipelineStore() {
         );
         const logs: string[] = [];
         try {
-          const result = await entry.run(resolved, outputDir, (line) => { logs.push(line); onLog(line); });
+          const result = await entry.run(
+            resolved,
+            outputDir,
+            (line) => { logs.push(line); onLog(line); },
+            parentContext
+              ? {
+                  ...parentContext,
+                  nodeId: `${parentContext.nodeId}/${nodeId}`,
+                  toolId: entry.definition.id,
+                  label: nodeDisplayLabel(node, entry.definition.label),
+                  params: resolved,
+                  startedAt: Date.now(),
+                  outputDir,
+                }
+              : undefined,
+          );
           patch({ status: 'done', logs, outputFiles: result.outputFiles, outputValues: outputsToValues(result.metrics, result.values) });
           allOutputFiles.push(...result.outputFiles);
           await dataFiles.createFolder('Results').catch(() => {});
@@ -501,12 +530,18 @@ function createPipelineStore() {
   }
 
   return {
-    get nodeStates() { return runtimeFor().nodeStates; },
-    get running() { return runtimeFor().running; },
+    get nodeStates() {
+      return runtimeByPipeline.get(currentRuntimeKey())?.nodeStates ?? EMPTY_NODE_STATES;
+    },
+    get running() {
+      return runtimeByPipeline.get(currentRuntimeKey())?.running ?? false;
+    },
     get runningCount() {
       return [...runtimeByPipeline.values()].filter((runtime) => runtime.running).length;
     },
-    get currentRunId() { return runtimeFor().runId; },
+    get currentRunId() {
+      return runtimeByPipeline.get(currentRuntimeKey())?.runId ?? null;
+    },
     isPipelineRunning(id: string | null = pipelineId) {
       return runtimeByPipeline.get(runtimeKeyFor(id))?.running ?? false;
     },
@@ -602,6 +637,8 @@ function createPipelineStore() {
 
     reset() {
       clearTimeout(persistTimer);
+      for (const execution of activeExecutions.values()) execution.controller.abort();
+      activeExecutions.clear();
       initializer.reset();
       savedPipelines = [];
       pipelineName = 'Untitled Pipeline';
@@ -613,6 +650,8 @@ function createPipelineStore() {
     },
 
     resetRuntime() {
+      for (const execution of activeExecutions.values()) execution.controller.abort();
+      activeExecutions.clear();
       runtimeByPipeline = new Map();
       schedulePersist();
     },
@@ -735,6 +774,13 @@ function createPipelineStore() {
       const fresh = new Map<string, NodeRunState>();
       for (const n of graphNodes) fresh.set(n.id, initNodeState());
       const pipelineRunId = crypto.randomUUID();
+      const controller = new AbortController();
+      const execution: ActivePipelineExecution = {
+        runId: pipelineRunId,
+        controller,
+        childJobIds: new Set(),
+      };
+      activeExecutions.set(runKey, execution);
       setRuntime(runKey, {
         pipelineId: runPipelineId,
         pipelineName: runPipelineName,
@@ -764,6 +810,11 @@ function createPipelineStore() {
         params: resolved,
         startedAt,
         outputDir,
+        signal: controller.signal,
+        onJobId: (jobId) => {
+          const active = activeExecutions.get(runKey);
+          if (active?.runId === pipelineRunId) active.childJobIds.add(jobId);
+        },
       });
 
       // Accumulate step results to record ONE grouped pipeline run in Results.
@@ -776,6 +827,7 @@ function createPipelineStore() {
         const skipped = new Set<string>();
 
         for (const nodeId of order) {
+          throwIfRunCancelled(controller.signal);
           if (skipped.has(nodeId)) continue;
           const node = graphNodes.find(n => n.id === nodeId);
           if (!node || node.type === 'start') continue;
@@ -833,7 +885,13 @@ function createPipelineStore() {
             await dataFiles.createFolder(virtualFolder).catch(() => {});
             for (const f of outputFiles) await dataFiles.add(f.path, virtualFolder).catch(() => {});
           } catch (e) {
-            patchRunState(nodeId, { status: 'error', logs, outputFiles: [], error: String(e) });
+            const cancelled = isRunCancelled(e, controller.signal);
+            patchRunState(nodeId, {
+              status: cancelled ? 'cancelled' : 'error',
+              logs,
+              outputFiles: [],
+              error: cancelled ? PIPELINE_CANCELLED_MESSAGE : String(e),
+            });
             break;
           }
 
@@ -885,13 +943,31 @@ function createPipelineStore() {
           }
           patchRunState(nodeId, { status: 'running', logs: [`▶ Running sub-pipeline: ${nodeDisplayLabel(node, sub.name)}`] });
           try {
+            const subContext: AIPipelineRunContext = {
+              runKind: 'pipeline-step',
+              pipelineRunId,
+              pipelineId: runPipelineId,
+              pipelineName: runPipelineName,
+              nodeId,
+              toolId: 'sub-pipeline',
+              label: nodeDisplayLabel(node, sub.name),
+              params: { pipelineId: sub.id },
+              startedAt: pipeStartedAt,
+              outputDir: '',
+              signal: controller.signal,
+              onJobId: (jobId) => execution.childJobIds.add(jobId),
+            };
             const subFiles = await runNodes(sub.nodes, sub.edges, (line) => {
               const curr = states().get(nodeId);
               patchRunState(nodeId, { logs: [...(curr?.logs ?? []), line] });
-            });
+            }, subContext);
             patchRunState(nodeId, { status: 'done', outputFiles: subFiles });
           } catch (e) {
-            patchRunState(nodeId, { status: 'error', error: String(e) });
+            const cancelled = isRunCancelled(e, controller.signal);
+            patchRunState(nodeId, {
+              status: cancelled ? 'cancelled' : 'error',
+              error: cancelled ? PIPELINE_CANCELLED_MESSAGE : String(e),
+            });
             break;
           }
 
@@ -916,7 +992,12 @@ function createPipelineStore() {
           for (const [k, v] of Object.entries(resolvedOverrides)) if (v !== '') paramOverrides[k] = v;
           patchRunState(nodeId, { status: 'running', logs: [`${req.method} ${req.url}`] });
           try {
-            const resp = await sendApiRequest(req, { provider, paramOverrides, envVars: apiConnections.activeEnvVars });
+            const resp = await sendApiRequest(req, {
+              provider,
+              paramOverrides,
+              envVars: apiConnections.activeEnvVars,
+              signal: controller.signal,
+            });
             const { absDir: reqOutputDir, virtualFolder: reqVirtualFolder } = await ensureResultsDir(req.name || d.requestId!);
 
             const ts = Date.now();
@@ -968,14 +1049,27 @@ function createPipelineStore() {
             patchRunState(nodeId, { status: 'done', outputFiles, outputValues });
             pipeSteps.push({ label: nodeLabel, files: outputFiles });
           } catch (e) {
-            patchRunState(nodeId, { status: 'error', error: String(e) });
+            const cancelled = isRunCancelled(e, controller.signal);
+            patchRunState(nodeId, {
+              status: cancelled ? 'cancelled' : 'error',
+              error: cancelled ? PIPELINE_CANCELLED_MESSAGE : String(e),
+            });
             break;
           }
           }
         }
       } catch (e) {
-        fatalError = e;
-        if (e instanceof PipelineCycleError) {
+        const cancelled = isRunCancelled(e, controller.signal);
+        fatalError = cancelled ? null : e;
+        if (cancelled) {
+          const activeNode = graphNodes.find(n => states().get(n.id)?.status === 'running');
+          if (activeNode) {
+            patchRunState(activeNode.id, {
+              status: 'cancelled',
+              error: PIPELINE_CANCELLED_MESSAGE,
+            });
+          }
+        } else if (e instanceof PipelineCycleError) {
           for (const nodeId of e.nodeIds) {
             patchRunState(nodeId, { status: 'error', error: e.message });
           }
@@ -988,6 +1082,8 @@ function createPipelineStore() {
         // instead of one loose run per step.
         const finalStates = states();
         const erroredEntry = [...finalStates.entries()].find(([, s]) => s.status === 'error');
+        const cancelledEntry = [...finalStates.entries()].find(([, s]) => s.status === 'cancelled');
+        const wasCancelled = controller.signal.aborted || Boolean(cancelledEntry);
         const fatalMessage = fatalError ? errorMessage(fatalError) : null;
         if (graphNodes.length > 0) {
           const endedAt = Date.now();
@@ -1001,12 +1097,14 @@ function createPipelineStore() {
             inputs: [],
             params: { steps: pipeSteps.length, pipelineId: runPipelineId, pipelineRunId },
             outputFiles: allFiles,
-            status: erroredEntry || fatalMessage ? 'error' : 'done',
+            status: wasCancelled ? 'cancelled' : (erroredEntry || fatalMessage ? 'error' : 'done'),
             startedAt: pipeStartedAt,
             endedAt,
             durationMs: endedAt - pipeStartedAt,
-            output: erroredEntry || fatalMessage ? null : buildPipelineOutput(pipeSteps),
-            error: erroredEntry ? (finalStates.get(erroredEntry[0])?.error ?? 'Pipeline failed') : fatalMessage,
+            output: wasCancelled || erroredEntry || fatalMessage ? null : buildPipelineOutput(pipeSteps),
+            error: wasCancelled
+              ? PIPELINE_CANCELLED_MESSAGE
+              : (erroredEntry ? (finalStates.get(erroredEntry[0])?.error ?? 'Pipeline failed') : fatalMessage),
             log: logs,
           }).catch((error) => {
             console.error('[pipeline] failed to persist analysis run', error);
@@ -1020,7 +1118,24 @@ function createPipelineStore() {
           runId: pipelineRunId,
           startedAt: pipeStartedAt,
         });
+        const active = activeExecutions.get(runKey);
+        if (active?.runId === pipelineRunId) activeExecutions.delete(runKey);
       }
+    },
+
+    async cancel(id: string | null = pipelineId) {
+      const key = runtimeKeyFor(id);
+      const execution = activeExecutions.get(key);
+      if (!execution) return;
+
+      execution.controller.abort();
+      const api = liatir();
+      if (!api) return;
+      await Promise.all(
+        [...execution.childJobIds].map((jobId) =>
+          api.invoke('lia_jobs_kill', { jobId }).catch(() => false)
+        )
+      );
     },
 
     resetStates(nodeIds: string[]) {

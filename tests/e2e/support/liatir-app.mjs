@@ -15,9 +15,7 @@ export async function openSandboxWorkspace(browser) {
   const sandboxButton = await browser.$(sandboxSelector);
   if (await sandboxButton.isExisting()) {
     await sandboxButton.waitForDisplayed({ timeout: 20_000 });
-    await browser.execute((selector) => {
-      document.querySelector(selector)?.click();
-    }, sandboxSelector);
+    await sandboxButton.click();
   }
 
   await browser.waitUntil(

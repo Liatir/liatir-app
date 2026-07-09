@@ -211,7 +211,10 @@ export type LiatirStepStatus =
   | "running"
   | "done"
   | "error"
+  | "cancelled"
   | "skipped";
+
+export type LiatirRunStatus = "done" | "error" | "cancelled";
 
 export interface LiatirStatItem {
   label: string;

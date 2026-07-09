@@ -1,4 +1,6 @@
 import { createServer } from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import {
   expectNoVisibleRuntimeError,
@@ -12,6 +14,7 @@ const PIPELINE_B_ID = 'e2e-independent-pipeline';
 const PIPELINE_FAILURE_ID = 'e2e-failing-pipeline';
 const PIPELINE_INTERRUPTED_ID = 'e2e-interrupted-pipeline';
 const PIPELINE_NATIVE_JOB_ID = 'e2e-native-job-pipeline';
+const PIPELINE_CANCELLATION_ID = 'e2e-cancellable-pipeline';
 const REQUEST_ID = 'e2e-delayed-request';
 const FAILURE_REQUEST_ID = 'e2e-failing-request';
 const INTERRUPTED_RUN_ID = 'e2e-interrupted-run';
@@ -133,6 +136,28 @@ function pipelineWorkspace() {
     edges: [],
     updatedAt: now - 4,
   };
+  const cancellationPipeline = {
+    id: PIPELINE_CANCELLATION_ID,
+    name: 'Cancellable Pipeline',
+    nodes: [
+      {
+        id: 'slow-fastp-step',
+        type: 'tool',
+        position: { x: 210, y: 145 },
+        data: {
+          stepId: 'fastp',
+          label: 'Slow native step',
+          inputs: {
+            r1: '/tmp/e2e-reads.fastq',
+            r2: '',
+            threads: '1',
+          },
+        },
+      },
+    ],
+    edges: [],
+    updatedAt: now - 5,
+  };
 
   return {
     current: {
@@ -141,7 +166,14 @@ function pipelineWorkspace() {
       nodes: pipelineA.nodes,
       edges: pipelineA.edges,
     },
-    saved: [pipelineA, pipelineB, failingPipeline, interruptedPipeline, nativeJobPipeline],
+    saved: [
+      pipelineA,
+      pipelineB,
+      failingPipeline,
+      interruptedPipeline,
+      nativeJobPipeline,
+      cancellationPipeline,
+    ],
     runtime: [],
   };
 }
@@ -198,8 +230,14 @@ function apiWorkspace(url) {
 }
 
 async function seedSandbox(browser, apiUrl) {
+  const binDir = path.resolve('tests/.artifacts/bin');
+  const slowToolPath = path.join(binDir, 'e2e-slow-fastp');
+  fs.mkdirSync(binDir, { recursive: true });
+  fs.writeFileSync(slowToolPath, '#!/bin/sh\nexec sleep 30\n', { mode: 0o755 });
+  fs.chmodSync(slowToolPath, 0o755);
+
   await waitForLiatirBridge(browser);
-  await browser.execute(async (pipelineState, apiState) => {
+  await browser.execute(async (pipelineState, apiState, slowBinary) => {
     const write = (rel, value) => window.Liatir.invoke('lia_app_write_text', {
       rel,
       content: JSON.stringify(value, null, 2),
@@ -228,10 +266,18 @@ async function seedSandbox(browser, apiUrl) {
             arch: 'test',
             installedAt: Date.now(),
           },
+          fastp: {
+            binary: 'fastp',
+            version: 'e2e',
+            path: slowBinary,
+            platform: 'macos',
+            arch: 'test',
+            installedAt: Date.now(),
+          },
         },
       }),
     ]);
-  }, pipelineWorkspace(), apiWorkspace(apiUrl));
+  }, pipelineWorkspace(), apiWorkspace(apiUrl), slowToolPath);
 }
 
 async function openPipeline(browser, pipelineId) {
@@ -569,6 +615,81 @@ export const tests = [
       await jobEntry.waitForDisplayed({ timeout: 20_000 });
       const jobText = await jobEntry.getText();
       expect(jobText).toContain('Pipeline · Native Job Pipeline');
+      await expectNoVisibleRuntimeError(browser);
+    },
+  },
+  {
+    name: 'cancels only the originating pipeline and finalizes killed Job and Result state',
+    async run({ browser, expect }) {
+      await navigateSidebar(browser, '/pipelines');
+      await openPipeline(browser, PIPELINE_CANCELLATION_ID);
+      await (await browser.$('[data-testid="pipeline-run-button"]')).click();
+
+      const cancelButton = await browser.$('[data-testid="pipeline-cancel-button"]');
+      await cancelButton.waitForDisplayed({ timeout: 20_000 });
+      await browser.waitUntil(
+        async () => browser.execute(async (pipelineId) => {
+          const jobs = await window.Liatir.invoke('lia_jobs_list', {
+            workspaceId: '__test__',
+          });
+          return jobs.some(
+            (job) => job.metadata?.pipelineId === pipelineId
+              && job.status?.type === 'running',
+          );
+        }, PIPELINE_CANCELLATION_ID),
+        { timeout: 20_000, timeoutMsg: 'Cancellable child Job did not start' },
+      );
+
+      await cancelButton.click();
+      await browser.waitUntil(
+        async () => browser.execute(async (pipelineId) => {
+          const jobs = await window.Liatir.invoke('lia_jobs_list', {
+            workspaceId: '__test__',
+          });
+          const job = jobs.find((candidate) => candidate.metadata?.pipelineId === pipelineId);
+          if (job?.status?.type !== 'killed') return false;
+          try {
+            const raw = await window.Liatir.invoke('lia_app_read_text', {
+              rel: 'workspaces/__test__/analysis-runs/index.json',
+            });
+            return JSON.parse(raw).some(
+              (run) => run.id === job.metadata.pipelineRunId
+                && run.status === 'cancelled',
+            );
+          } catch {
+            return false;
+          }
+        }, PIPELINE_CANCELLATION_ID),
+        { timeout: 30_000, timeoutMsg: 'Cancellation did not finalize Job and Result state' },
+      );
+
+      const cancellationState = await browser.execute(async (pipelineId) => {
+        const jobs = await window.Liatir.invoke('lia_jobs_list', {
+          workspaceId: '__test__',
+        });
+        const job = jobs.find((candidate) => candidate.metadata?.pipelineId === pipelineId);
+        const raw = await window.Liatir.invoke('lia_app_read_text', {
+          rel: 'workspaces/__test__/analysis-runs/index.json',
+        });
+        const runs = JSON.parse(raw).filter((run) => run.id === job.metadata.pipelineRunId);
+        return { job, runs };
+      }, PIPELINE_CANCELLATION_ID);
+      expect(cancellationState.job.status.type).toBe('killed');
+      expect(cancellationState.runs).toHaveLength(1);
+      expect(cancellationState.runs[0].status).toBe('cancelled');
+      expect(cancellationState.runs[0].error).toBe('Pipeline run cancelled by user.');
+
+      await navigateSidebar(browser, '/pipelines');
+      await openPipeline(browser, PIPELINE_B_ID);
+      expect(
+        await browser.execute(
+          () => document.querySelector('[data-testid="pipeline-run-button"]')?.disabled,
+        ),
+      ).toBe(false);
+
+      await navigateSidebar(browser, '/results');
+      const resultSelector = `[data-testid="result-run"][data-run-id="${cancellationState.runs[0].id}"]`;
+      await (await browser.$(resultSelector)).waitForDisplayed({ timeout: 20_000 });
       await expectNoVisibleRuntimeError(browser);
     },
   },
