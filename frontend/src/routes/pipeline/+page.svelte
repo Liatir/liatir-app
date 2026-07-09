@@ -25,6 +25,7 @@
   import SubPipelineNode from '$lib/components/pipeline/SubPipelineNode.svelte';
   import ApiRequestNode from '$lib/components/pipeline/ApiRequestNode.svelte';
   import NoteNode from '$lib/components/pipeline/NoteNode.svelte';
+  import PipelineViewportFitter from '$lib/components/pipeline/PipelineViewportFitter.svelte';
   import DeletableEdge from '$lib/components/pipeline/DeletableEdge.svelte';
   import { PIPELINE_NODE_DATA_CONTEXT, type PipelineNodeDataContext } from '$lib/components/pipeline/node-data-commit';
   import { isExecutablePipelineNode } from '$lib/types/pipeline';
@@ -46,6 +47,7 @@
   let viewport = $state<{ x: number; y: number; zoom: number } | undefined>(undefined);
   let flowContainer = $state<HTMLDivElement | null>(null);
   let storeReady = $state(false);
+  let viewportFitRequest = $state(0);
   let showAddMenu = $state(false);
   let stepSearch = $state('');
   let stepSearchInput = $state<HTMLInputElement | null>(null);
@@ -555,6 +557,7 @@
     }
     initializeGraphHistory(createGraphSnapshot());
     storeReady = true;
+    viewportFitRequest += 1;
   });
 
   $effect(() => {
@@ -797,7 +800,8 @@
   </PageHeader>
 
   <div class="flex-1 relative" bind:this={flowContainer}>
-    <SvelteFlow bind:nodes bind:edges bind:viewport {nodeTypes} {edgeTypes} fitView fitViewOptions={{ maxZoom: 1 }} onconnect={onConnect} ondelete={onDelete} deleteKey={pipelineStore.running ? [] : ['Delete', 'Backspace']} nodesDraggable={!pipelineStore.running} nodesConnectable={!pipelineStore.running} onpanecontextmenu={onPaneContextMenu} onnodecontextmenu={onNodeContextMenu} onedgecontextmenu={onEdgeContextMenu} onnodedragstart={onGraphDragStart} onnodedragstop={onGraphDragStop} onselectiondragstart={onGraphDragStart} onselectiondragstop={onGraphDragStop} defaultEdgeOptions={{ selectable: false, style: 'stroke: #4f39f6; stroke-width:3;' }} proOptions={{ hideAttribution: true }}>
+    <SvelteFlow bind:nodes bind:edges bind:viewport {nodeTypes} {edgeTypes} onconnect={onConnect} ondelete={onDelete} deleteKey={pipelineStore.running ? [] : ['Delete', 'Backspace']} nodesDraggable={!pipelineStore.running} nodesConnectable={!pipelineStore.running} onpanecontextmenu={onPaneContextMenu} onnodecontextmenu={onNodeContextMenu} onedgecontextmenu={onEdgeContextMenu} onnodedragstart={onGraphDragStart} onnodedragstop={onGraphDragStop} onselectiondragstart={onGraphDragStart} onselectiondragstop={onGraphDragStop} defaultEdgeOptions={{ selectable: false, style: 'stroke: #4f39f6; stroke-width:3;' }} proOptions={{ hideAttribution: true }}>
+      <PipelineViewportFitter request={viewportFitRequest} />
       <Background gap={24} size={2} patternColor="#d4d4d8" variant={BackgroundVariant.Dots} />
       <Panel position="top-left" class="rounded-lg border border-border bg-white/95 shadow-sm">
         <button
