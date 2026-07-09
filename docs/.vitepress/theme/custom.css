@@ -181,6 +181,20 @@ body:has(.cookie-backdrop) {
   color: var(--vp-c-brand-1) !important;
 }
 
+/* Layout di base per schermi grandi (2 colonne uguali) */
+.VPNavBarMenuGroup .items {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+/* Layout per schermi piccoli (Smartphone) */
+@media (max-width: 600px) {
+  .VPNavBarMenuGroup .items {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
   .liatir-architecture-figure {
     margin: 24px 0;
