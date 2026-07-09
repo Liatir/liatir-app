@@ -61,9 +61,10 @@ Use these assets when referencing Liatir in articles, documentation, integration
 
 <a href="https://liatir.com/static/liatir-logo-kit.zip" download="liatir-logo-kit.zip"> Download logo kit ↓ </a>
 
-### SVG icon
+---
 
-Use the SVG icon when you need a scalable mark, favicon, or compact brand symbol.
+- Use the SVG logo when you need a scalable mark, favicon, or compact brand symbol.
+- Use the PNG logo when you need the full Liatir logo in presentations, landing pages, product listings, or visual previews.
 
 <div class="logo-card logo-card-icon">
   <img
@@ -81,28 +82,10 @@ Use the SVG icon when you need a scalable mark, favicon, or compact brand symbol
 
 ---
 
-### PNG logo
-
-Use the PNG logo when you need the full Liatir logo in presentations, landing pages, product listings, or visual previews. Download it [here](#logo-downloads).
-
-<div class="logo-card logo-card-wide">
-  <img
-    src="https://liatir.com/static/logos/sizes/normal/x96.png"
-    alt="Liatir PNG logo"
-  />
-</div>
 
 <center style="margin-top: 0px;">
 
-## Logo downloads
-
-</center>
-
-<center style="opacity: 0.3; margin-top: -5px;">
-
-<small> **B** = Black </small>
-<small style="margin-right: 2px; margin-left: 2px; opacity: 0.5;"> | </small>
-<small> **W** = White </small>
+**PNG Downloads**
 
 </center>
 
@@ -129,7 +112,15 @@ Use the PNG logo when you need the full Liatir logo in presentations, landing pa
 
 </div>
 
-<br>
+
+<center style="opacity: 0.3; margin-top: -5px;">
+
+<small> **B** = Black </small>
+<small style="margin-right: 2px; margin-left: 2px; opacity: 0.5;"> | </small>
+<small> **W** = White </small>
+
+</center>
+
 
 <center style="margin-top: 0px;">
 <a href="https://liatir.com/static/liatir-logo-kit.zip" download="liatir-logo-kit.zip"> Download all ↓ </a>
