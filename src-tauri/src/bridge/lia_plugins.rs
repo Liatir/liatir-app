@@ -723,6 +723,7 @@ pub(crate) async fn run_lia_plugin_bundle(
         options.job_label.or_else(|| Some("Liatir plugin run".to_string())),
         Some(options.job_kind),
         options.metadata,
+        None,
         Some(temp_dir.to_string_lossy().to_string()),
     ).await
 }

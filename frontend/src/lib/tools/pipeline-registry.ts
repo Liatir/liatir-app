@@ -246,79 +246,80 @@ async function runSamtoolsFaidxStep(
 async function runBwaMemStep(
   inputs: Record<string, string>,
   outputDir: string,
-  onLog: (l: string) => void
+  onLog: (l: string) => void,
+  context?: AIRunContext,
 ): Promise<StepResult> {
   const api = liatir()!;
   const runId = crypto.randomUUID();
   const outPath = `${outputDir}/bwa-${runId}.sam`;
-  const jid = `bwa-${runId}`;
   const { threads } = threadParam(inputs.threads);
 
-  onLog(`$ bwa mem -t ${threads} ${basename(inputs.reference)} ${basename(inputs.readsR1)}`);
-
-  const offStderr = await api.desktop.events.on(`jobs:stderr:${jid}`, (line: string) => {
-    if (typeof line === 'string' && line.trim()) onLog(line);
-  }) as unknown as () => void;
-
+  let indexed = true;
   try {
-    const result = await api.invoke('lia_bwa_mem', {
-      reference: inputs.reference,
-      readsR1: inputs.readsR1,
-      readsR2: inputs.readsR2 || null,
-      outputSam: outPath,
-      jobId: jid,
-      threads,
-    } as any) as { ok: boolean; exitCode: number | null; stderr: string[]; threads?: number };
-
-    if (!result.ok) throw new Error(result.stderr.slice(-5).join('\n') || `bwa failed`);
-
-    const size = await api.invoke('lia_file_size', { path: outPath }) as number;
-    const stats = parseBwaMemStats(result.stderr);
-    const output = bwaMemToToolOutput(stats, result.stderr.join('\n'), outPath);
-    return { outputFiles: [{ label: 'Output SAM', path: outPath, ext: 'sam', size }], output };
-  } finally {
-    offStderr();
+    await api.invoke('lia_file_size', { path: `${inputs.reference}.amb` });
+  } catch {
+    indexed = false;
   }
+  if (!indexed) {
+    onLog(`$ bwa index ${basename(inputs.reference)}`);
+    const indexResult = await runNativeTool(
+      'bwa',
+      ['index', inputs.reference],
+      undefined,
+      (line) => { if (line.trim()) onLog(line); },
+      nativePipelineJobOptions(context),
+    );
+    if (!indexResult.ok) {
+      throw new Error(indexResult.stderr || `bwa index exited with code ${indexResult.exitCode}`);
+    }
+  }
+
+  const args = ['mem', '-t', String(threads), inputs.reference, inputs.readsR1];
+  if (inputs.readsR2) args.push(inputs.readsR2);
+  onLog(`$ bwa mem -t ${threads} ${basename(inputs.reference)} ${basename(inputs.readsR1)}`);
+  const result = await runNativeTool(
+    'bwa',
+    args,
+    undefined,
+    (line) => { if (line.trim()) onLog(line); },
+    { ...nativePipelineJobOptions(context), stdoutPath: outPath },
+  );
+  if (!result.ok) throw new Error(result.stderr || `bwa failed with code ${result.exitCode}`);
+
+  const size = await api.invoke('lia_file_size', { path: outPath }) as number;
+  const stderr = result.stderr.split(/\r?\n/).filter(Boolean);
+  const stats = parseBwaMemStats(stderr);
+  const output = bwaMemToToolOutput(stats, result.stderr, outPath);
+  return { outputFiles: [{ label: 'Output SAM', path: outPath, ext: 'sam', size }], output };
 }
 
 async function runMinimap2Step(
   inputs: Record<string, string>,
   outputDir: string,
-  onLog: (l: string) => void
+  onLog: (l: string) => void,
+  context?: AIRunContext,
 ): Promise<StepResult> {
   const api = liatir()!;
   const runId = crypto.randomUUID();
   const outPath = `${outputDir}/minimap2-${runId}.sam`;
-  const jid = `minimap2-${runId}`;
   const preset = inputs.preset || 'sr';
   const { threads } = threadParam(inputs.threads);
 
   onLog(`$ minimap2 -t ${threads} -ax ${preset} ${basename(inputs.reference)} ${basename(inputs.reads)}`);
+  const result = await runNativeTool(
+    'minimap2',
+    ['-t', String(threads), '-ax', preset, inputs.reference, inputs.reads],
+    undefined,
+    (line) => { if (line.trim()) onLog(line); },
+    { ...nativePipelineJobOptions(context), stdoutPath: outPath },
+  );
+  if (!result.ok) throw new Error(result.stderr || `minimap2 failed with code ${result.exitCode}`);
 
-  const offStderr = await api.desktop.events.on(`jobs:stderr:${jid}`, (line: string) => {
-    if (typeof line === 'string' && line.trim()) onLog(line);
-  }) as unknown as () => void;
-
-  try {
-    const result = await api.invoke('lia_minimap2', {
-      preset,
-      reference: inputs.reference,
-      readsR1: inputs.reads,
-      readsR2: null,
-      outputSam: outPath,
-      jobId: jid,
-      threads,
-    } as any) as { ok: boolean; exitCode: number | null; stderr: string[]; threads?: number };
-
-    if (!result.ok) throw new Error(result.stderr.slice(-5).join('\n') || `minimap2 failed`);
-
-    const size = await api.invoke('lia_file_size', { path: outPath }) as number;
-    const stats = parseMinimap2Stats(result.stderr);
-    const output = minimap2ToToolOutput(stats, result.stderr.join('\n'), outPath, preset);
-    return { outputFiles: [{ label: 'Output SAM', path: outPath, ext: 'sam', size }], output };
-  } finally {
-    offStderr();
-  }
+  const size = await api.invoke('lia_file_size', { path: outPath }) as number;
+  const stderr = result.stderr.split(/\r?\n/).filter(Boolean);
+  const stats = parseMinimap2Stats(stderr);
+  const output = minimap2ToToolOutput(stats, result.stderr, outPath, preset);
+  return { outputFiles: [{ label: 'Output SAM', path: outPath, ext: 'sam', size }], output };
 }
 
 async function runBcftoolsStatsStep(
@@ -382,7 +383,8 @@ async function runBcftoolsFilterStep(
 async function runSnpeffStep(
   inputs: Record<string, string>,
   outputDir: string,
-  onLog: (l: string) => void
+  onLog: (l: string) => void,
+  context?: AIRunContext,
 ): Promise<StepResult> {
   const api = liatir()!;
   await snpEffStore.init();
@@ -395,57 +397,59 @@ async function runSnpeffStep(
   const genome = inputs.genome?.trim() || 'hg38';
   const runId = crypto.randomUUID();
   const outPath = `${outputDir}/snpeff-${runId}.vcf`;
-  const jid = `snpeff-${runId}`;
+  const statsBase = outPath.replace(/\.vcf$/, '');
+  const statsHtml = `${statsBase}-summary.html`;
+  const statsGenes = `${statsBase}-summary.genes.txt`;
 
   onLog(`$ java -Xmx${snpEffStore.jvmHeap} -jar snpEff.jar ann ${genome} ${basename(inputs.inputFile)}`);
 
-  const offStderr = await api.desktop.events.on(`jobs:stderr:${jid}`, (line: string) => {
-    if (typeof line === 'string' && line.trim()) onLog(line);
-  }) as unknown as () => void;
-
-  try {
-    const result = await api.invoke('lia_snpeff_annotate', {
+  const java = settingsStore.javaPath || 'java';
+  const result = await runNativeTool(
+    java,
+    [
+      `-Xmx${snpEffStore.jvmHeap}`,
+      '-jar',
       jarPath,
+      'ann',
+      '-dataDir',
+      snpEffStore.config.dataDir,
+      '-noLog',
+      '-stats',
+      statsHtml,
       genome,
-      dataDir: snpEffStore.config.dataDir,
-      inputVcf: inputs.inputFile,
-      outputVcf: outPath,
-      heap: snpEffStore.jvmHeap,
-      jobId: jid,
-      javaPath: settingsStore.javaPath || null,
-    } as any) as { ok: boolean; exitCode: number | null; stderr: string[]; statsHtml: string; statsGenes: string };
-
-    if (!result.ok) {
-      throw new Error(result.stderr.slice(-10).join('\n') || `SnpEff exited with code ${result.exitCode}`);
-    }
-
-    const outputFiles: RunOutputFile[] = [];
-    let size: number | undefined;
-    try { size = await api.invoke('lia_file_size', { path: outPath }) as number; } catch { /* ok */ }
-    outputFiles.push({ label: 'Annotated VCF', path: outPath, ext: 'vcf', size });
-
-    for (const [label, path, ext] of [
-      ['Summary (HTML)', result.statsHtml, 'html'],
-      ['Gene stats', result.statsGenes, 'txt'],
-    ] as const) {
-      if (!path) continue;
-      try {
-        const s = await api.invoke('lia_file_size', { path }) as number;
-        outputFiles.push({ label, path, ext, size: s });
-      } catch { /* not generated */ }
-    }
-
-    const summary = parseSnpEffStats(result.stderr.join('\n'));
-    const output = buildSnpEffOutput(summary, basename(inputs.inputFile));
-    await snpEffStore.touchGenome(genome);
-    return {
-      outputFiles,
-      output,
-      metrics: { totalVariants: summary.totalVariants, highImpact: summary.highImpact, moderateImpact: summary.moderateImpact, lowImpact: summary.lowImpact },
-    };
-  } finally {
-    offStderr();
+      inputs.inputFile,
+    ],
+    undefined,
+    (line) => { if (line.trim()) onLog(line); },
+    { ...nativePipelineJobOptions(context), stdoutPath: outPath },
+  );
+  if (!result.ok) {
+    throw new Error(result.stderr || `SnpEff exited with code ${result.exitCode}`);
   }
+
+  const outputFiles: RunOutputFile[] = [];
+  let size: number | undefined;
+  try { size = await api.invoke('lia_file_size', { path: outPath }) as number; } catch { /* ok */ }
+  outputFiles.push({ label: 'Annotated VCF', path: outPath, ext: 'vcf', size });
+
+  for (const [label, path, ext] of [
+    ['Summary (HTML)', statsHtml, 'html'],
+    ['Gene stats', statsGenes, 'txt'],
+  ] as const) {
+    try {
+      const fileSize = await api.invoke('lia_file_size', { path }) as number;
+      outputFiles.push({ label, path, ext, size: fileSize });
+    } catch { /* not generated */ }
+  }
+
+  const summary = parseSnpEffStats(result.stderr);
+  const output = buildSnpEffOutput(summary, basename(inputs.inputFile));
+  await snpEffStore.touchGenome(genome);
+  return {
+    outputFiles,
+    output,
+    metrics: { totalVariants: summary.totalVariants, highImpact: summary.highImpact, moderateImpact: summary.moderateImpact, lowImpact: summary.lowImpact },
+  };
 }
 
 // ── registry ─────────────────────────────────────────────────────────────────

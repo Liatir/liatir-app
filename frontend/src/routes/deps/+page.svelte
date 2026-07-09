@@ -225,6 +225,30 @@
 		}
 	}
 
+	async function removeManaged(binary: string) {
+		const managed = managedBins.get(binary);
+		if (!managed) return;
+		const approved = await confirm({
+			title: `Remove managed ${binary}`,
+			message: `Remove Liatir's managed ${binary} ${managed.version} installation? System and package-manager installations are not affected.`,
+			confirmLabel: 'Remove'
+		});
+		if (!approved) return;
+
+		const api = liatir();
+		if (!api) return;
+		setToolState(binary, { phase: 'pm-installing', error: null, pmLog: [`Removing ${managed.path}`] });
+		try {
+			await api.invoke('lia_managed_remove', { path: managed.path, recursive: false });
+			await managedBins.remove(binary);
+			await depsStore.recheckOne(binary);
+			setToolState(binary, { phase: 'done', pmLog: [] });
+			toast.success(`Removed managed ${binary}`);
+		} catch (error) {
+			setToolState(binary, { phase: 'error', error: String(error) });
+		}
+	}
+
 	// ── package manager install (brew / conda) ─────────────────────────
 	function pmInstallCmd(binary: string): DependencyResolverCommand | null {
 		return packageManagerInstallCommand(depRequirementForBinary(binary), resolverEnvironment);
@@ -717,6 +741,7 @@
 													<Button
 														variant="primary"
 														size="sm"
+														testId={`managed-install-${dep.binary}`}
 														onclick={() => downloadInstall(dep.binary)}
 													>
 														{dep.available || managed ? 'Download & Update' : 'Download & Install'}
@@ -757,9 +782,24 @@
 									{:else if !isBusy && (dep.available || managed) && pmChecked}
 										<div class="flex items-center gap-2 shrink-0">
 											<p class="text-xs text-zinc-400">Installed</p>
-											{#if managed && hasRelease}
-												<Button variant="secondary" size="sm" onclick={() => downloadInstall(dep.binary)}>
-													Update
+											{#if hasRelease}
+												<Button
+													variant="secondary"
+													size="sm"
+													testId={`managed-install-${dep.binary}`}
+													onclick={() => downloadInstall(dep.binary)}
+												>
+													{managed ? 'Update' : 'Install managed'}
+												</Button>
+											{/if}
+											{#if managed}
+												<Button
+													variant="danger"
+													size="sm"
+													testId={`managed-remove-${dep.binary}`}
+													onclick={() => removeManaged(dep.binary)}
+												>
+													Remove managed
 												</Button>
 											{/if}
 											{#if dep.available && canUpdateWithPm}

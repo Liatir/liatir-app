@@ -175,7 +175,15 @@ lifecycle gate. It covers per-pipeline isolation across navigation, off-page
 completion, deterministic failure, and interrupted-run reconciliation after a
 webview reload, including exactly-once Results identity and native child Job
 attribution. It also kills a real long-running child process and verifies the
-distinct `killed` Job, `cancelled` Result, and unrelated-pipeline states.
+distinct `killed` Job, `cancelled` Result, and unrelated-pipeline states. Its
+typed minimap2-to-samtools fixture additionally verifies stdout-to-artifact
+streaming, output-to-input transfer, and scientific Result provenance.
+
+`tests/e2e/specs/dependencies.e2e.mjs` includes a heavy managed-binary gate.
+With `--heavy`, it downloads the real checksummed SeqKit release into isolated
+test storage, executes it through the same bare-name Jobs resolver used by
+pipelines, and removes it. Direct managed support is intentionally limited to
+the verified [Native Tool support matrix](../roadmap/native-tool-support.md).
 
 ## Writing New Tests
 

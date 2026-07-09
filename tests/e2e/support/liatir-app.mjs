@@ -15,6 +15,9 @@ export async function openSandboxWorkspace(browser) {
   const sandboxButton = await browser.$(sandboxSelector);
   if (await sandboxButton.isExisting()) {
     await sandboxButton.waitForDisplayed({ timeout: 20_000 });
+    // The bridge is injected before Svelte finishes attaching its delegated
+    // event handlers. Give hydration one render turn before the real click.
+    await new Promise((resolve) => setTimeout(resolve, 500));
     await sandboxButton.click();
   }
 
@@ -31,9 +34,8 @@ export async function navigateSidebar(browser, route) {
   const selector = `[data-testid="sidebar-nav-item"][data-route="${route}"]`;
   const nav = await browser.$(selector);
   await nav.waitForDisplayed({ timeout: 20_000 });
-  await browser.execute((navSelector) => {
-    document.querySelector(navSelector)?.click();
-  }, selector);
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  await nav.click();
   await browser.waitUntil(
     async () => browser.execute((expectedRoute) => window.location.pathname.startsWith(expectedRoute), route),
     {

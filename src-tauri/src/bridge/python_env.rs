@@ -513,6 +513,7 @@ pub async fn spawn_in_env(
         Some(label.unwrap_or_else(|| format!("Python environment: {env_id}"))),
         Some(job_kind),
         Some(Value::Object(metadata_map)),
+        None,
         Some(run_dir.to_string_lossy().to_string()),
     )
     .await

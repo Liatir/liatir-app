@@ -27,13 +27,13 @@ feature to Verified.
 | Rust bridge compilation/tests | **Verified** | Blocking macOS `cargo test` CI job; local `cargo check` | Reduce the existing warning baseline; make Clippy blocking |
 | Plugin build contracts | **Verified** | Generated Node, Python, and WASM fixtures exercise the common manifest/schema contract | Keep fixtures generated and isolated |
 | Plugin native execution | **Partial** | Python has a native Tauri E2E; Node/WASM build and IPC contract tests exist | Native run E2E for Node and WASM, including failure, logs, progress, Jobs, and Results |
-| Jobs log/progress transport | **Implemented — unverified** | Backend IPC dispatch, per-job identity injection, Jobs UI wiring; native E2E proves native child Job attribution and kill-on-pipeline-cancel | Native E2E for concurrent non-pipeline jobs, failure, and late completion |
-| Results/provenance finalization | **Implemented — unverified** | Native E2E proves exactly-once pipeline Results for success, failure, interrupted restart, and cancellation, plus native child Job parent attribution | Extend equivalent gates to every direct Tool and AI Model runtime |
+| Jobs log/progress transport | **Verified** | Native lifecycle E2E proves child Job attribution, streaming, completion, failure, and kill-on-pipeline-cancel through the shared backend | Extend equivalent gates to direct Plugin and AI Model runtimes |
+| Results/provenance finalization | **Verified** | Native E2E proves exactly-once pipeline Results for success, failure, interrupted restart, cancellation, and typed scientific artifacts with correct parent attribution | Extend equivalent gates to every direct Tool and AI Model runtime |
 | Pipeline editor | **Implemented — unverified** | Saved graphs, typed nodes, notes, history, async viewport fitting; frontend checks pass | Native UI/visual coverage for load-fit, large graphs, notes, undo/redo, save/reopen |
-| Pipeline runtime isolation | **Implemented — unverified** | Runtime and cancellation control are keyed by pipeline/run identity; native E2E proves navigation isolation, off-page completion, failure, reload reconciliation, child Job identity, and cancellation without blocking pipeline B | Audit and migrate specialized native runners that still bypass the shared Job registry |
-| Native Tool execution | **Partial** | Shared catalog and backend managed-bin/PATH resolver exist | Install and execute every supported tool through the same backend path on supported hosts |
-| Managed Native Tool installation | **Partial** | Verified release metadata currently covers minimap2 and bwa-mem2 only | Add checksummed, versioned install/update/remove paths for the beta tool set |
-| Dependencies page | **Partial** | Real bridge dependency checks have a native E2E | Native install/update/remove/interruption tests and actionable recovery states |
+| Pipeline runtime isolation | **Verified** | Runtime/cancellation are keyed by pipeline/run identity; all pipeline Native Tool runners use shared Jobs; native E2E proves navigation isolation, off-page completion, failure, reload reconciliation, child identity, cancellation, and an unrelated runnable pipeline | Keep new runners on the shared execution context |
+| Native Tool execution | **Verified** | Native E2E executes a real managed SeqKit binary and a typed minimap2-to-samtools workflow through the shared managed-bin/PATH Jobs resolver | Expand real scientific sanity fixtures tool by tool |
+| Managed Native Tool installation | **Verified** | Checksummed immutable release registry and heavy native SeqKit install/execute/remove E2E; unsupported upstream host assets are explicitly absent | Keep the [support matrix](./native-tool-support.md) and digests current |
+| Dependencies page | **Partial** | Real bridge checks plus native managed install/execute/remove coverage | Add update interruption and actionable recovery-state E2E |
 | API Connector | **Implemented — unverified** | Saved requests and pipeline node integration exist | Native request/run E2E, auth handling, malformed responses, rate/error states, Results provenance |
 | AI Batches 1–4 | **Implemented — unverified** | Managed runtimes and Tools exist for lightweight embeddings, proteomics, and predictive genomics | Targeted real install/inference runs with scientific sanity fixtures and output validation |
 | AI Batch 5 | **Partial** | UCE is runnable; scGPT, Geneformer, and scFoundation remain preview entries | Complete one model at a time with managed assets, runtime, Jobs, Results, provenance, and native E2E |
@@ -62,14 +62,11 @@ The beta cannot ship until automated native coverage proves:
 
 ## Immediate execution order
 
-1. Add the missing native lifecycle E2E coverage for pipelines, Jobs, and
-   Results.
-2. Complete the managed Native Tool beta set and its install/recovery tests.
-3. Validate existing AI Batches 1–4 with targeted real runtime fixtures.
-4. Build the read-only Tutor vertical slice and evaluation suite.
-5. Add the MCP server with allowlisted saved-pipeline execution.
-6. Finish useful plugin, API Connector, and pipeline presets.
-7. Close macOS distribution gates and run the release-candidate matrix.
+1. Validate existing AI Batches 1–4 with targeted real runtime fixtures.
+2. Build the read-only Tutor vertical slice and evaluation suite.
+3. Add the MCP server with allowlisted saved-pipeline execution.
+4. Finish useful plugin, API Connector, and pipeline presets.
+5. Close macOS distribution gates and run the release-candidate matrix.
 
 Update this ledger only when evidence changes. Every status promotion must cite
 a repeatable gate, not a manual implementation claim.

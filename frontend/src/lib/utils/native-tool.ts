@@ -18,6 +18,7 @@ export interface NativeRunOptions {
   metadata?: Record<string, JsonValue>;
   onSpawn?: (jobId: string) => void;
   signal?: AbortSignal;
+  stdoutPath?: string;
 }
 
 /**
@@ -50,6 +51,7 @@ export async function runNativeTool(
     label: options.label,
     kind: options.kind,
     metadata: options.metadata,
+    stdoutPath: options.stdoutPath,
   }) as { jobId: string };
   options.onSpawn?.(jobId);
   const cancelJob = () => {

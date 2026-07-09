@@ -535,6 +535,7 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 Some(ctx) => Some(merge_dev_job_metadata(metadata, ctx)),
                 None => metadata,
             };
+            let stdout_path = payload["stdoutPath"].as_str().map(String::from);
 
             let result = crate::bridge::jobs::lia_jobs_spawn(
                 app.clone(),
@@ -546,6 +547,7 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 label,
                 kind,
                 metadata,
+                stdout_path,
             )
                 .await
                 .map_err(|e| anyhow::anyhow!(e))?;

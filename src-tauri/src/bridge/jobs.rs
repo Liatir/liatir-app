@@ -128,6 +128,7 @@ pub async fn lia_jobs_spawn(
     label: Option<String>,
     kind: Option<String>,
     metadata: Option<Value>,
+    stdout_path: Option<String>,
 ) -> Result<serde_json::Value, String> {
     spawn_job(
         app,
@@ -139,6 +140,7 @@ pub async fn lia_jobs_spawn(
         label,
         kind,
         metadata,
+        stdout_path,
         None,
     )
     .await
@@ -154,6 +156,7 @@ pub(crate) async fn lia_jobs_spawn_with_cleanup(
     label: Option<String>,
     kind: Option<String>,
     metadata: Option<Value>,
+    stdout_path: Option<String>,
     cleanup_dir: Option<String>,
 ) -> Result<serde_json::Value, String> {
     spawn_job(
@@ -166,6 +169,7 @@ pub(crate) async fn lia_jobs_spawn_with_cleanup(
         label,
         kind,
         metadata,
+        stdout_path,
         cleanup_dir,
     )
     .await
@@ -209,6 +213,7 @@ async fn spawn_job(
     label: Option<String>,
     kind: Option<String>,
     metadata: Option<Value>,
+    stdout_path: Option<String>,
     cleanup_dir: Option<String>,
 ) -> Result<serde_json::Value, String> {
     if cmd.is_empty() || cmd.contains("..") {
@@ -217,6 +222,19 @@ async fn spawn_job(
 
     let job_id = gen_job_id();
     let started_at_ms = now_ms();
+    let stdout_file = if let Some(path) = stdout_path.as_deref() {
+        let path = std::path::Path::new(path);
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| format!("cannot create stdout directory: {e}"))?;
+        }
+        Some(Arc::new(Mutex::new(
+            std::fs::File::create(path)
+                .map_err(|e| format!("cannot create stdout file: {e}"))?,
+        )))
+    } else {
+        None
+    };
 
     // Resolve managed native tools to their installed binary; bare names fall
     // through to PATH. The JobEntry keeps the original `cmd` for display.
@@ -279,7 +297,16 @@ async fn spawn_job(
             match event {
                 CommandEvent::Stdout(line) => {
                     let text = String::from_utf8_lossy(&line).trim_end().to_string();
-                    stdout_buf.lock().unwrap().push(text.clone());
+                    if let Some(file) = stdout_file.as_ref() {
+                        use std::io::Write;
+                        let mut file = file.lock().unwrap();
+                        let _ = file.write_all(&line);
+                        if !line.ends_with(b"\n") {
+                            let _ = file.write_all(b"\n");
+                        }
+                    } else {
+                        stdout_buf.lock().unwrap().push(text.clone());
+                    }
                     let _ = handle.emit(&format!("jobs:stdout:{jid}"), text);
                 }
                 CommandEvent::Stderr(line) => {

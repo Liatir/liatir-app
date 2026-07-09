@@ -1,86 +1,7 @@
 import { liatir } from '$lib/api';
 import { managedBins } from '$lib/stores/managedBins.svelte';
-
-export type OsPlatform = 'macos' | 'linux' | 'windows';
-export type Arch = 'x86_64' | 'arm64';
-export type ArchiveType = 'tar.gz' | 'tar.bz2' | 'zip' | 'binary';
-
-export interface BinaryRelease {
-  url: string;
-  archiveType: ArchiveType;
-  version: string;
-  binaryName: string;
-}
-
-export type BinaryReleaseMap = Partial<
-  Record<OsPlatform, Partial<Record<Arch, BinaryRelease>>>
->;
-
-/**
- * Official precompiled binary releases.
- * Only tools with verified precompiled builds are listed here.
- * Others fall back to brew/conda in the UI.
- *
- * Sources:
- *   minimap2  — https://github.com/lh3/minimap2/releases
- *   bwa-mem2  — https://github.com/bwa-mem2/bwa-mem2/releases
- */
-export const BINARY_RELEASES: Record<string, BinaryReleaseMap> = {
-  minimap2: {
-    linux: {
-      x86_64: {
-        url: 'https://github.com/lh3/minimap2/releases/download/v2.28/minimap2-2.28_x64-linux.tar.bz2',
-        archiveType: 'tar.bz2',
-        version: '2.28',
-        binaryName: 'minimap2',
-      },
-    },
-    macos: {
-      x86_64: {
-        url: 'https://github.com/lh3/minimap2/releases/download/v2.28/minimap2-2.28_x64-macosx.tar.bz2',
-        archiveType: 'tar.bz2',
-        version: '2.28',
-        binaryName: 'minimap2',
-      },
-      arm64: {
-        // Runs via Rosetta 2 on Apple Silicon
-        url: 'https://github.com/lh3/minimap2/releases/download/v2.28/minimap2-2.28_x64-macosx.tar.bz2',
-        archiveType: 'tar.bz2',
-        version: '2.28 (x86 via Rosetta)',
-        binaryName: 'minimap2',
-      },
-    },
-  },
-
-  'bwa-mem2': {
-    linux: {
-      x86_64: {
-        url: 'https://github.com/bwa-mem2/bwa-mem2/releases/download/v2.2.1/bwa-mem2-2.2.1_x64-linux.tar.bz2',
-        archiveType: 'tar.bz2',
-        version: '2.2.1',
-        binaryName: 'bwa-mem2',
-      },
-    },
-    macos: {
-      x86_64: {
-        url: 'https://github.com/bwa-mem2/bwa-mem2/releases/download/v2.2.1/bwa-mem2-2.2.1_x64-macosx.tar.bz2',
-        archiveType: 'tar.bz2',
-        version: '2.2.1',
-        binaryName: 'bwa-mem2',
-      },
-    },
-  },
-};
-
-// ── helpers ────────────────────────────────────────────────────────────────
-
-export function getRelease(
-  binary: string,
-  platform: OsPlatform,
-  arch: Arch,
-): BinaryRelease | null {
-  return BINARY_RELEASES[binary]?.[platform]?.[arch] ?? null;
-}
+import { getRelease, type Arch, type OsPlatform } from './binary-releases';
+export * from './binary-releases';
 
 // ── install orchestrator ───────────────────────────────────────────────────
 
@@ -128,6 +49,7 @@ export async function installBinary(
         id: downloadId,
         url: release.url,
         destPath: archivePath,
+        sha256: release.sha256,
       });
     } finally {
       unlisten();

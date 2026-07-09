@@ -15,6 +15,7 @@ const PIPELINE_FAILURE_ID = 'e2e-failing-pipeline';
 const PIPELINE_INTERRUPTED_ID = 'e2e-interrupted-pipeline';
 const PIPELINE_NATIVE_JOB_ID = 'e2e-native-job-pipeline';
 const PIPELINE_CANCELLATION_ID = 'e2e-cancellable-pipeline';
+const PIPELINE_SCIENTIFIC_ID = 'e2e-scientific-pipeline';
 const REQUEST_ID = 'e2e-delayed-request';
 const FAILURE_REQUEST_ID = 'e2e-failing-request';
 const INTERRUPTED_RUN_ID = 'e2e-interrupted-run';
@@ -158,6 +159,49 @@ function pipelineWorkspace() {
     edges: [],
     updatedAt: now - 5,
   };
+  const scientificPipeline = {
+    id: PIPELINE_SCIENTIFIC_ID,
+    name: 'Alignment QC Pipeline',
+    nodes: [
+      {
+        id: 'align-step',
+        type: 'tool',
+        position: { x: 120, y: 140 },
+        data: {
+          stepId: 'minimap2',
+          label: 'Align reads',
+          inputs: {
+            reference: '/tmp/e2e-reference.fa',
+            reads: '/tmp/e2e-reads.fastq',
+            threads: '1',
+          },
+        },
+      },
+      {
+        id: 'flagstat-step',
+        type: 'tool',
+        position: { x: 480, y: 140 },
+        data: {
+          stepId: 'samtools-flagstat',
+          label: 'Alignment QC',
+          inputs: {
+            inputFile: '@pipe:align-step:outputSam',
+            threads: '1',
+          },
+        },
+      },
+    ],
+    edges: [
+      {
+        id: 'align-to-qc',
+        source: 'align-step',
+        sourceHandle: 'outputSam',
+        target: 'flagstat-step',
+        targetHandle: 'inputFile',
+      },
+    ],
+    updatedAt: now - 6,
+  };
 
   return {
     current: {
@@ -173,6 +217,7 @@ function pipelineWorkspace() {
       interruptedPipeline,
       nativeJobPipeline,
       cancellationPipeline,
+      scientificPipeline,
     ],
     runtime: [],
   };
@@ -232,12 +277,38 @@ function apiWorkspace(url) {
 async function seedSandbox(browser, apiUrl) {
   const binDir = path.resolve('tests/.artifacts/bin');
   const slowToolPath = path.join(binDir, 'e2e-slow-fastp');
+  const minimapToolPath = path.join(binDir, 'e2e-minimap2');
+  const samtoolsToolPath = path.join(binDir, 'e2e-samtools');
   fs.mkdirSync(binDir, { recursive: true });
   fs.writeFileSync(slowToolPath, '#!/bin/sh\nexec sleep 30\n', { mode: 0o755 });
+  fs.writeFileSync(
+    minimapToolPath,
+    [
+      '#!/bin/sh',
+      "printf '@HD\\tVN:1.6\\tSO:unsorted\\n'",
+      "printf 'read1\\t0\\tchr1\\t1\\t60\\t4M\\t*\\t0\\t0\\tACGT\\tIIII\\n'",
+      "printf '[M::main] mapped 1 sequence\\n' >&2",
+      '',
+    ].join('\n'),
+    { mode: 0o755 },
+  );
+  fs.writeFileSync(
+    samtoolsToolPath,
+    [
+      '#!/bin/sh',
+      "printf '1 + 0 in total (QC-passed reads + QC-failed reads)\\n'",
+      "printf '1 + 0 mapped (100.00% : N/A)\\n'",
+      "printf '0 + 0 duplicates\\n'",
+      '',
+    ].join('\n'),
+    { mode: 0o755 },
+  );
   fs.chmodSync(slowToolPath, 0o755);
+  fs.chmodSync(minimapToolPath, 0o755);
+  fs.chmodSync(samtoolsToolPath, 0o755);
 
   await waitForLiatirBridge(browser);
-  await browser.execute(async (pipelineState, apiState, slowBinary) => {
+  await browser.execute(async (pipelineState, apiState, binaries) => {
     const write = (rel, value) => window.Liatir.invoke('lia_app_write_text', {
       rel,
       content: JSON.stringify(value, null, 2),
@@ -269,7 +340,23 @@ async function seedSandbox(browser, apiUrl) {
           fastp: {
             binary: 'fastp',
             version: 'e2e',
-            path: slowBinary,
+            path: binaries.slow,
+            platform: 'macos',
+            arch: 'test',
+            installedAt: Date.now(),
+          },
+          minimap2: {
+            binary: 'minimap2',
+            version: 'e2e',
+            path: binaries.minimap2,
+            platform: 'macos',
+            arch: 'test',
+            installedAt: Date.now(),
+          },
+          samtools: {
+            binary: 'samtools',
+            version: 'e2e',
+            path: binaries.samtools,
             platform: 'macos',
             arch: 'test',
             installedAt: Date.now(),
@@ -277,7 +364,11 @@ async function seedSandbox(browser, apiUrl) {
         },
       }),
     ]);
-  }, pipelineWorkspace(), apiWorkspace(apiUrl), slowToolPath);
+  }, pipelineWorkspace(), apiWorkspace(apiUrl), {
+    slow: slowToolPath,
+    minimap2: minimapToolPath,
+    samtools: samtoolsToolPath,
+  });
 }
 
 async function openPipeline(browser, pipelineId) {
@@ -690,6 +781,58 @@ export const tests = [
       await navigateSidebar(browser, '/results');
       const resultSelector = `[data-testid="result-run"][data-run-id="${cancellationState.runs[0].id}"]`;
       await (await browser.$(resultSelector)).waitForDisplayed({ timeout: 20_000 });
+      await expectNoVisibleRuntimeError(browser);
+    },
+  },
+  {
+    name: 'streams a scientific alignment artifact into a typed downstream QC step',
+    async run({ browser, expect }) {
+      await navigateSidebar(browser, '/pipelines');
+      await openPipeline(browser, PIPELINE_SCIENTIFIC_ID);
+      await (await browser.$('[data-testid="pipeline-run-button"]')).click();
+
+      await browser.waitUntil(
+        async () => browser.execute(async (pipelineId) => {
+          try {
+            const raw = await window.Liatir.invoke('lia_app_read_text', {
+              rel: 'workspaces/__test__/analysis-runs/index.json',
+            });
+            return JSON.parse(raw).some(
+              (run) => run.params?.pipelineId === pipelineId && run.status === 'done',
+            );
+          } catch {
+            return false;
+          }
+        }, PIPELINE_SCIENTIFIC_ID),
+        { timeout: 30_000, timeoutMsg: 'Scientific pipeline Result did not finalize' },
+      );
+
+      const evidence = await browser.execute(async (pipelineId) => {
+        const jobs = await window.Liatir.invoke('lia_jobs_list', {
+          workspaceId: '__test__',
+        });
+        const pipelineJobs = jobs.filter((job) => job.metadata?.pipelineId === pipelineId);
+        const raw = await window.Liatir.invoke('lia_app_read_text', {
+          rel: 'workspaces/__test__/analysis-runs/index.json',
+        });
+        const run = JSON.parse(raw).find(
+          (candidate) => candidate.params?.pipelineId === pipelineId,
+        );
+        return { pipelineJobs, run };
+      }, PIPELINE_SCIENTIFIC_ID);
+
+      expect(evidence.pipelineJobs).toHaveLength(2);
+      const alignJob = evidence.pipelineJobs.find((job) => job.metadata.nodeId === 'align-step');
+      const qcJob = evidence.pipelineJobs.find((job) => job.metadata.nodeId === 'flagstat-step');
+      expect(alignJob.status.type).toBe('done');
+      expect(qcJob.status.type).toBe('done');
+      expect(qcJob.args.at(-1)).toMatch(/minimap2-.*\.sam$/);
+      expect(evidence.run.outputFiles).toHaveLength(1);
+      expect(evidence.run.outputFiles[0].label).toBe('Output SAM');
+      expect(evidence.run.outputFiles[0].producer.nodeId).toBe('align-step');
+      expect(evidence.run.outputFiles[0].parentRun.pipelineId).toBe(PIPELINE_SCIENTIFIC_ID);
+      expect(evidence.run.outputFiles[0].parentRun.pipelineRunId).toBe(evidence.run.id);
+      expect(evidence.run.outputFiles[0].path).toBe(qcJob.args.at(-1));
       await expectNoVisibleRuntimeError(browser);
     },
   },
