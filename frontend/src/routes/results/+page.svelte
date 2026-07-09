@@ -166,6 +166,8 @@
           <div
             class="group relative flex items-start transition-colors
               {selectedId === run.id ? 'bg-brand/8' : 'hover:bg-surface-2'}"
+            data-testid="result-run"
+            data-run-id={run.id}
           >
             <button
               onclick={() => selectedId = run.id}

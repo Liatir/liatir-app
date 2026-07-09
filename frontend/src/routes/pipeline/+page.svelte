@@ -715,7 +715,11 @@
 
 <svelte:window onkeydown={handleKeyboardShortcut} />
 
-<div class="flex flex-col h-full overflow-hidden">
+<div
+  class="flex flex-col h-full overflow-hidden"
+  data-testid="pipeline-editor"
+  data-pipeline-id={pipelineStore.pipelineId ?? 'draft'}
+>
    <PageHeader title={nameInput || 'Untitled Pipeline'} description="Visual workflow builder — connect tools to automate analysis">
     {#snippet actions()}
       <div class="flex items-center gap-2">
@@ -788,6 +792,7 @@
         </div>
         <Button
           variant="primary"
+          testId="pipeline-run-button"
           disabled={!canRun}
           loading={pipelineStore.running}
           onclick={() => pipelineStore.run(nodes, edges)}

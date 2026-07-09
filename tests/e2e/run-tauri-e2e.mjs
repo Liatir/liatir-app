@@ -19,7 +19,7 @@ const appBinary = process.env.LIATIR_TAURI_APP
   ?? appBinaryCandidates.find((candidate) => fs.existsSync(candidate))
   ?? appBinaryCandidates[0];
 const artifactsDir = path.join(rootDir, 'tests', '.artifacts');
-const testHome = path.join(artifactsDir, 'home');
+const testHome = path.join(artifactsDir, 'home', `${Date.now()}-${process.pid}`);
 const logDir = path.join(artifactsDir, 'tauri-logs');
 const screenshotDir = path.join(artifactsDir, 'screenshots');
 const baselineDir = path.join(rootDir, 'tests', 'e2e', '__snapshots__');

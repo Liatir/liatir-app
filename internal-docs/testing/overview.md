@@ -146,10 +146,11 @@ standard `fetch`.
 
 ## Isolation
 
-E2E tests launch Liatir with a test-only `HOME`, `XDG_DATA_HOME`,
+E2E tests launch Liatir with a fresh per-run test-only `HOME`, `XDG_DATA_HOME`,
 `XDG_CACHE_HOME`, and `XDG_CONFIG_HOME` under `tests/.artifacts/home`. This
 prevents tests from reading or mutating the developer's real Liatir app data in
-Application Support.
+Application Support and prevents a recent test run from contaminating the next
+one.
 
 The dev smoke check uses the same isolation pattern under
 `tests/.artifacts/home-dev-smoke`.

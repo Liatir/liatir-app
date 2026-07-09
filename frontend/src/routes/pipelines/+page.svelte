@@ -176,11 +176,16 @@
             {@const stepCount = p.nodes.filter(isExecutablePipelineNode).length}
             {@const pipelineRunning = pipelineStore.isPipelineRunning(p.id)}
             {@const lr = lastRun(p.id)}
-            <div class="bg-white rounded-xl border border-border shadow-sm hover:shadow-md hover:border-brand/30 transition-all group relative">
+            <div
+              class="bg-white rounded-xl border border-border shadow-sm hover:shadow-md hover:border-brand/30 transition-all group relative"
+              data-testid="pipeline-card"
+              data-pipeline-id={p.id}
+            >
               <!-- Info area: click to open in editor -->
               <div
                 role="button"
                 tabindex="0"
+                data-testid="pipeline-card-open"
                 onclick={() => { if (renamingId !== p.id) openPipeline(p); }}
                 onkeydown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && renamingId !== p.id) { e.preventDefault(); openPipeline(p); } }}
                 class="w-full text-left p-4 pb-2 cursor-pointer"
