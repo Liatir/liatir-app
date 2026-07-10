@@ -37,6 +37,7 @@ const DEFAULT_CONFIG: LiatirQuentaProviderConfig = {
   embeddingModel: '',
   temperature: 0.2,
 };
+const DEFAULT_CONVERSATION_TITLE = 'New chat';
 
 function conversationsPath() {
   return `${getDataPrefix()}quenta/conversations.json`;
@@ -61,7 +62,7 @@ function titleForIntent(intent: LiatirQuentaIntent, focus?: LiatirQuentaFocus): 
   if (intent === 'report') return focus ? `Report for ${focus.kind} ${focus.entityId}` : 'Scientific report';
   if (intent === 'explain-failure') return focus ? `Failure explanation for ${focus.kind} ${focus.entityId}` : 'Failure explanation';
   if (intent === 'explain-result') return focus ? `Result explanation for ${focus.entityId}` : 'Result explanation';
-  return 'Quenta chat';
+  return DEFAULT_CONVERSATION_TITLE;
 }
 
 function promptForFocus(intent: LiatirQuentaIntent, focus: LiatirQuentaFocus): string {
@@ -107,7 +108,24 @@ function normalizeSettings(value: Partial<QuentaSettingsFile> | null): QuentaSet
 }
 
 function normalizeConversationName(value: string): string {
-  return value.replace(/\bLocal Tutor\b/g, 'Quenta').replace(/\bTutor\b/g, 'Quenta');
+  return value
+    .replace(/\bLocal Tutor\b/g, 'Quenta')
+    .replace(/\bTutor\b/g, 'Quenta')
+    .replace(/^Quenta chat$/, DEFAULT_CONVERSATION_TITLE);
+}
+
+function ollamaStatusErrorMessage(baseUrl: string, error: unknown): string {
+  const detail = String(error);
+  if (detail.includes('invalid Ollama URL')) {
+    return 'The Ollama address is invalid. Use a local address like http://127.0.0.1:11434.';
+  }
+  if (detail.includes('must use a local http:// endpoint')) {
+    return 'Quenta only supports a local http:// Ollama endpoint.';
+  }
+  if (detail.includes('must resolve to localhost') || detail.includes('loopback IP')) {
+    return 'Quenta only supports Ollama on localhost or a loopback IP.';
+  }
+  return `Ollama is offline or not reachable at ${baseUrl}. Start Ollama locally, then refresh models.`;
 }
 
 function normalizeLegacyConversation(conversation: LiatirQuentaConversation): LiatirQuentaConversation {
@@ -186,7 +204,13 @@ function createQuentaStore() {
         const raw = await appStorage.readText(sourcePath);
         const parsed = JSON.parse(raw) as QuentaConversationsFile;
         conversations = (parsed.conversations ?? [])
-          .map((conversation) => legacyOnly ? normalizeLegacyConversation(conversation) : conversation)
+          .map((conversation) => {
+            const normalized = legacyOnly ? normalizeLegacyConversation(conversation) : conversation;
+            return {
+              ...normalized,
+              title: normalizeConversationName(normalized.title),
+            };
+          })
           .filter((conversation) => conversation.workspaceId === workspaceId)
           .sort((a, b) => b.updatedAt - a.updatedAt)
           .slice(0, MAX_CONVERSATIONS);
@@ -218,7 +242,7 @@ function createQuentaStore() {
     const conversation: LiatirQuentaConversation = {
       id: id('quenta-conversation'),
       workspaceId,
-      title: input.title ?? 'Quenta chat',
+      title: input.title ?? DEFAULT_CONVERSATION_TITLE,
       createdAt: timestamp,
       updatedAt: timestamp,
       focus: input.focus,
@@ -390,7 +414,9 @@ function createQuentaStore() {
           runtime.status(),
           runtime.models().catch(() => [] as LiatirQuentaProviderModel[]),
         ]);
-        providerStatus = status;
+        providerStatus = status.available
+          ? status
+          : { ...status, error: ollamaStatusErrorMessage(settings.config.baseUrl, status.error) };
         providerModels = models;
         if (!settings.config.model && models.length === 1) {
           settings = normalizeSettings({ config: { ...settings.config, model: models[0].name } });
@@ -409,7 +435,7 @@ function createQuentaStore() {
 
     async newConversation() {
       await quentaStore.init();
-      createConversation({ title: 'Quenta chat' });
+      createConversation({ title: DEFAULT_CONVERSATION_TITLE });
     },
 
     async deleteConversation(conversationId: string) {
