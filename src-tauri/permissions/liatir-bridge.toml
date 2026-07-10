@@ -132,6 +132,7 @@ commands.allow = [
 
   "lia_quenta_ollama_status",
   "lia_quenta_ollama_models",
+  "lia_quenta_ollama_bootstrap",
   "lia_quenta_ollama_chat",
   "lia_quenta_ollama_embed",
 

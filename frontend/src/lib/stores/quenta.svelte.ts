@@ -21,6 +21,9 @@ const SETTINGS_FILE = 'quenta/settings.json';
 const LEGACY_SETTINGS_FILE = 'tutor/settings.json';
 const MAX_CONVERSATIONS = 40;
 const MAX_MESSAGES_PER_CONVERSATION = 120;
+const MAX_CONVERSATION_TAGS = 3;
+const MAX_CONVERSATION_TAG_LENGTH = 28;
+const MAX_CONVERSATION_TITLE_LENGTH = 96;
 export const QUENTA_DEFAULT_MODEL = 'qwen3.5:9b';
 type QuentaSetupPhase = 'idle' | 'preparing' | 'downloading' | 'ready' | 'failed';
 
@@ -118,6 +121,37 @@ function normalizeConversationName(value: string): string {
     .replace(/^Quenta chat$/, DEFAULT_CONVERSATION_TITLE);
 }
 
+function normalizeConversationTitle(value: string): string {
+  const clean = normalizeConversationName(value)
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_CONVERSATION_TITLE_LENGTH);
+  return clean || DEFAULT_CONVERSATION_TITLE;
+}
+
+function normalizeConversationTag(value: unknown): string {
+  return String(value ?? '')
+    .replace(/[#,]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_CONVERSATION_TAG_LENGTH);
+}
+
+function normalizeConversationTags(tags: unknown): string[] {
+  if (!Array.isArray(tags)) return [];
+  const normalized: string[] = [];
+  const seen = new Set<string>();
+  for (const tag of tags) {
+    const clean = normalizeConversationTag(tag);
+    const key = clean.toLocaleLowerCase();
+    if (!clean || seen.has(key)) continue;
+    seen.add(key);
+    normalized.push(clean);
+    if (normalized.length >= MAX_CONVERSATION_TAGS) break;
+  }
+  return normalized;
+}
+
 function ollamaStatusErrorMessage(baseUrl: string, error: unknown): string {
   const detail = String(error);
   if (detail.includes('invalid Ollama URL')) {
@@ -144,7 +178,8 @@ function normalizeLegacyConversation(conversation: LiatirQuentaConversation): Li
   return {
     ...conversation,
     id: conversation.id.replace(/^tutor-/, 'quenta-'),
-    title: normalizeConversationName(conversation.title),
+    title: normalizeConversationTitle(conversation.title),
+    tags: normalizeConversationTags(conversation.tags),
     messages: conversation.messages.map((message) => ({
       ...message,
       id: message.id.replace(/^tutor-/, 'quenta-'),
@@ -223,7 +258,8 @@ function createQuentaStore() {
             const normalized = legacyOnly ? normalizeLegacyConversation(conversation) : conversation;
             return {
               ...normalized,
-              title: normalizeConversationName(normalized.title),
+              title: normalizeConversationTitle(normalized.title),
+              tags: normalizeConversationTags(normalized.tags),
             };
           })
           .filter((conversation) => conversation.workspaceId === workspaceId)
@@ -257,7 +293,8 @@ function createQuentaStore() {
     const conversation: LiatirQuentaConversation = {
       id: id('quenta-conversation'),
       workspaceId,
-      title: input.title ?? DEFAULT_CONVERSATION_TITLE,
+      title: normalizeConversationTitle(input.title ?? DEFAULT_CONVERSATION_TITLE),
+      tags: [],
       createdAt: timestamp,
       updatedAt: timestamp,
       focus: input.focus,
@@ -512,6 +549,30 @@ function createQuentaStore() {
     async deleteConversation(conversationId: string) {
       conversations = conversations.filter((conversation) => conversation.id !== conversationId);
       if (selectedConversationId === conversationId) selectedConversationId = conversations[0]?.id ?? null;
+      const { [conversationId]: _sending, ...sendingRest } = sendingByConversation;
+      const { [conversationId]: _error, ...errorRest } = errorByConversation;
+      sendingByConversation = sendingRest;
+      errorByConversation = errorRest;
+      await persistConversations();
+    },
+
+    async renameConversation(conversationId: string, title: string) {
+      const updatedAt = now();
+      updateConversation(conversationId, (conversation) => ({
+        ...conversation,
+        title: normalizeConversationTitle(title),
+        updatedAt,
+      }));
+      await persistConversations();
+    },
+
+    async updateConversationTags(conversationId: string, tags: string[]) {
+      const updatedAt = now();
+      updateConversation(conversationId, (conversation) => ({
+        ...conversation,
+        tags: normalizeConversationTags(tags),
+        updatedAt,
+      }));
       await persistConversations();
     },
 

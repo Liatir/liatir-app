@@ -172,6 +172,77 @@ async function seedQuentaState(browser, baseUrl) {
   }, { baseUrl, runId: RUN_ID });
 }
 
+async function seedQuentaConversations(browser, baseUrl) {
+  await browser.execute(async (input) => {
+    const now = Date.now();
+    await window.Liatir.invoke('lia_app_write_text', {
+      rel: 'quenta/settings.json',
+      content: JSON.stringify({
+        config: {
+          provider: 'ollama',
+          baseUrl: input.baseUrl,
+          model: 'mock-local',
+          embeddingModel: '',
+          temperature: 0.1,
+          thinkingEnabled: false,
+        },
+      }, null, 2),
+      createDirs: true,
+    });
+    await window.Liatir.invoke('lia_app_write_text', {
+      rel: 'workspaces/__test__/quenta/conversations.json',
+      content: JSON.stringify({
+        conversations: [
+          {
+            id: 'quenta-e2e-variant',
+            workspaceId: '__test__',
+            title: 'Variant report',
+            tags: ['variant', 'report'],
+            createdAt: now - 3000,
+            updatedAt: now - 1000,
+            messages: [
+              {
+                id: 'quenta-e2e-variant-message',
+                role: 'user',
+                intent: 'chat',
+                content: 'Explain the BRCA1 variant report.',
+                createdAt: now - 2900,
+              },
+            ],
+          },
+          {
+            id: 'quenta-e2e-qc',
+            workspaceId: '__test__',
+            title: 'QC notes',
+            tags: ['qc'],
+            createdAt: now - 4000,
+            updatedAt: now - 2000,
+            messages: [
+              {
+                id: 'quenta-e2e-qc-message',
+                role: 'user',
+                intent: 'chat',
+                content: 'Summarize FASTQ quality control.',
+                createdAt: now - 3900,
+              },
+            ],
+          },
+          {
+            id: 'quenta-e2e-protein',
+            workspaceId: '__test__',
+            title: 'Protein planning',
+            tags: ['protein', 'report'],
+            createdAt: now - 5000,
+            updatedAt: now - 3000,
+            messages: [],
+          },
+        ],
+      }, null, 2),
+      createDirs: true,
+    });
+  }, { baseUrl });
+}
+
 async function openSandboxWorkspaceForQuenta(browser) {
   await waitForLiatirBridge(browser);
   await browser.execute(async () => {
@@ -212,6 +283,116 @@ async function openSandboxWorkspaceForQuenta(browser) {
 
 export const tests = [
   {
+    name: 'manages Quenta chat titles, tags, search filters, and deletion',
+    async run({ browser, expect }) {
+      const ollama = await startMockOllama();
+      try {
+        await openSandboxWorkspaceForQuenta(browser);
+        await seedQuentaConversations(browser, ollama.baseUrl);
+
+        await browser.execute(() => {
+          window.location.href = '/quenta';
+        });
+        await browser.waitUntil(
+          async () => browser.execute(() => window.location.pathname === '/quenta'),
+          { timeout: 20_000, timeoutMsg: 'Quenta route did not open' },
+        );
+        await browser.waitUntil(
+          async () => browser.execute(() => document.body.innerText.includes('Variant report')),
+          { timeout: 30_000, timeoutMsg: 'Seeded Quenta conversations did not render' },
+        );
+
+        const conversationCount = async () => browser.execute(
+          () => document.querySelectorAll('[data-testid="quenta-conversation"]').length,
+        );
+        expect(await conversationCount()).toBe(3);
+
+        const search = await browser.$('[data-testid="quenta-conversation-search"]');
+        await search.setValue('QC');
+        await browser.waitUntil(
+          async () => (await conversationCount()) === 1,
+          { timeout: 10_000, timeoutMsg: 'Quenta chat search did not filter conversations' },
+        );
+        expect(await (await browser.$('body')).getText()).toContain('QC notes');
+
+        await search.setValue('');
+        await browser.waitUntil(
+          async () => (await conversationCount()) === 3,
+          { timeout: 10_000, timeoutMsg: 'Quenta chat search did not clear' },
+        );
+
+        await browser.execute(() => {
+          [...document.querySelectorAll('[data-testid="quenta-tag-filter"]')]
+            .find((button) => button.textContent?.includes('#report'))
+            ?.click();
+        });
+        await browser.waitUntil(
+          async () => (await conversationCount()) === 2,
+          { timeout: 10_000, timeoutMsg: 'Quenta report tag filter did not apply' },
+        );
+
+        await browser.execute(() => {
+          [...document.querySelectorAll('[data-testid="quenta-tag-filter"]')]
+            .find((button) => button.textContent?.includes('#variant'))
+            ?.click();
+        });
+        await browser.waitUntil(
+          async () => (await conversationCount()) === 1,
+          { timeout: 10_000, timeoutMsg: 'Quenta multi-tag filter did not narrow conversations' },
+        );
+        expect(await (await browser.$('body')).getText()).toContain('Variant report');
+
+        await (await browser.$('[data-testid="quenta-rename-conversation"]')).click();
+        await (await browser.$('[data-testid="quenta-rename-input"]')).setValue('Variant report reviewed');
+        await (await browser.$('[data-testid="quenta-rename-save"]')).click();
+        await browser.waitUntil(
+          async () => browser.execute(() => document.body.innerText.includes('Variant report reviewed')),
+          { timeout: 10_000, timeoutMsg: 'Quenta chat rename did not persist in UI' },
+        );
+
+        await (await browser.$('[data-testid="quenta-edit-conversation-tags"]')).click();
+        await (await browser.$('[data-testid="quenta-tags-input"]')).setValue('variant, reviewed, release, ignored');
+        await (await browser.$('[data-testid="quenta-tags-save"]')).click();
+        await browser.waitUntil(
+          async () => browser.execute(() => document.body.innerText.includes('#reviewed')),
+          { timeout: 10_000, timeoutMsg: 'Quenta chat tags did not render after save' },
+        );
+
+        await browser.execute(() => {
+          [...document.querySelectorAll('[data-testid="quenta-tag-filter"]')]
+            .find((button) => button.textContent?.includes('#report'))
+            ?.click();
+        });
+        await browser.execute(() => {
+          [...document.querySelectorAll('[data-testid="quenta-tag-filter"]')]
+            .find((button) => button.textContent?.includes('#variant'))
+            ?.click();
+        });
+        await (await browser.$('[data-testid="quenta-delete-conversation"]')).click();
+        await (await browser.$('[data-testid="quenta-delete-confirm"]')).click();
+        await browser.waitUntil(
+          async () => browser.execute(() => !document.body.innerText.includes('Variant report reviewed')),
+          { timeout: 10_000, timeoutMsg: 'Quenta chat delete did not remove the conversation' },
+        );
+
+        const persisted = await browser.execute(async () => {
+          const raw = await window.Liatir.invoke('lia_app_read_text', {
+            rel: 'workspaces/__test__/quenta/conversations.json',
+          });
+          return JSON.parse(raw);
+        });
+        expect(persisted.conversations.some((conversation) => conversation.id === 'quenta-e2e-variant')).toBe(false);
+        expect(
+          persisted.conversations.every((conversation) => (conversation.tags ?? []).length <= 3),
+        ).toBe(true);
+
+        await expectNoVisibleRuntimeError(browser);
+      } finally {
+        await ollama.close();
+      }
+    },
+  },
+  {
     name: 'runs a read-only Quenta explanation against a mock Ollama server',
     async run({ browser, expect }) {
       const ollama = await startMockOllama();
@@ -223,12 +404,12 @@ export const tests = [
           window.location.href = `/quenta?intent=explain-result&run=${encodeURIComponent(runId)}&auto=1`;
         }, RUN_ID);
 
+        await (await browser.$('[data-testid="quenta-transcript"]')).waitForDisplayed({
+          timeout: 20_000,
+          timeoutMsg: 'Quenta transcript did not open',
+        });
         await browser.waitUntil(
-          async () => browser.execute(() => window.location.pathname === '/quenta'),
-          { timeout: 20_000, timeoutMsg: 'Quenta route did not open' },
-        );
-        await browser.waitUntil(
-          async () => browser.execute(() => document.body.innerText.includes('Mock Quenta observed')),
+          async () => (await (await browser.$('body')).getText()).includes('Mock Quenta observed'),
           { timeout: 30_000, timeoutMsg: 'Quenta did not render the mock model response' },
         );
 
@@ -263,8 +444,12 @@ export const tests = [
           window.location.href = `/quenta?intent=report&run=${encodeURIComponent(runId)}&auto=1`;
         }, RUN_ID);
 
+        await (await browser.$('[data-testid="quenta-transcript"]')).waitForDisplayed({
+          timeout: 20_000,
+          timeoutMsg: 'Quenta transcript did not open for report',
+        });
         await browser.waitUntil(
-          async () => browser.execute(() => document.body.innerText.includes('Mock Quenta report')),
+          async () => (await (await browser.$('body')).getText()).includes('Mock Quenta report'),
           { timeout: 30_000, timeoutMsg: 'Quenta report did not render' },
         );
 

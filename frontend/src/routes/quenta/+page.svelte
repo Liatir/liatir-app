@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { page } from '$app/state';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import Button from '$lib/components/ui/Button.svelte';
@@ -31,6 +31,15 @@
   let handledDeepLink = $state<string | null>(null);
   let settingsOpen = $state(false);
   let chatsCollapsed = $state(false);
+  let conversationSearch = $state('');
+  let selectedTagFilters = $state<string[]>([]);
+  let editingConversationId = $state<string | null>(null);
+  let renameDraft = $state('');
+  let renameInputEl = $state<HTMLInputElement | null>(null);
+  let editingTagsConversationId = $state<string | null>(null);
+  let tagDraft = $state('');
+  let tagInputEl = $state<HTMLInputElement | null>(null);
+  let deleteConfirmConversationId = $state<string | null>(null);
 
   const currentConversation = $derived(quentaStore.currentConversation);
   const currentError = $derived(quentaStore.errorFor(currentConversation?.id));
@@ -74,6 +83,13 @@
     value: model,
     label: model,
   })));
+  const availableConversationTags = $derived(
+    [...new Set(quentaStore.conversations.flatMap((conversation) => conversation.tags ?? []))]
+      .sort((a, b) => a.localeCompare(b)),
+  );
+  const filteredConversations = $derived(
+    quentaStore.conversations.filter((conversation) => conversationMatchesFilters(conversation)),
+  );
   const intentOptions = [
     {
       value: 'chat',
@@ -215,6 +231,110 @@
     return `${focus} · ${formatTime(conversation.updatedAt)}`;
   }
 
+  function conversationMatchesFilters(conversation: LiatirQuentaConversation): boolean {
+    const conversationTags = conversation.tags ?? [];
+    if (selectedTagFilters.length > 0) {
+      const tagSet = new Set(conversationTags.map((tag) => tag.toLocaleLowerCase()));
+      if (!selectedTagFilters.every((tag) => tagSet.has(tag.toLocaleLowerCase()))) return false;
+    }
+
+    const query = conversationSearch.trim().toLocaleLowerCase();
+    if (!query) return true;
+    const focus = conversation.focus ? `${conversation.focus.kind} ${conversation.focus.entityId}` : '';
+    const messageText = conversation.messages.map((message) => message.content).join(' ');
+    const haystack = [
+      conversation.title,
+      conversationTags.join(' '),
+      focus,
+      messageText,
+    ].join(' ').toLocaleLowerCase();
+    return haystack.includes(query);
+  }
+
+  function toggleTagFilter(tag: string) {
+    selectedTagFilters = selectedTagFilters.includes(tag)
+      ? selectedTagFilters.filter((selected) => selected !== tag)
+      : [...selectedTagFilters, tag];
+  }
+
+  function resetConversationEditing() {
+    editingConversationId = null;
+    renameDraft = '';
+    editingTagsConversationId = null;
+    tagDraft = '';
+    deleteConfirmConversationId = null;
+  }
+
+  async function startRenameConversation(conversation: LiatirQuentaConversation) {
+    editingConversationId = conversation.id;
+    renameDraft = conversation.title;
+    editingTagsConversationId = null;
+    deleteConfirmConversationId = null;
+    await tick();
+    renameInputEl?.focus();
+    renameInputEl?.select();
+  }
+
+  async function saveRenameConversation() {
+    if (!editingConversationId) return;
+    const conversationId = editingConversationId;
+    await quentaStore.renameConversation(conversationId, renameDraft);
+    editingConversationId = null;
+    renameDraft = '';
+  }
+
+  async function startTagEdit(conversation: LiatirQuentaConversation) {
+    editingTagsConversationId = conversation.id;
+    tagDraft = (conversation.tags ?? []).join(', ');
+    editingConversationId = null;
+    deleteConfirmConversationId = null;
+    await tick();
+    tagInputEl?.focus();
+    tagInputEl?.select();
+  }
+
+  async function saveConversationTags() {
+    if (!editingTagsConversationId) return;
+    const conversationId = editingTagsConversationId;
+    const tags = tagDraft
+      .split(/[,;\n]/)
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .slice(0, 3);
+    await quentaStore.updateConversationTags(conversationId, tags);
+    editingTagsConversationId = null;
+    tagDraft = '';
+  }
+
+  async function deleteConversation(conversationId: string) {
+    await quentaStore.deleteConversation(conversationId);
+    if (editingConversationId === conversationId) editingConversationId = null;
+    if (editingTagsConversationId === conversationId) editingTagsConversationId = null;
+    if (deleteConfirmConversationId === conversationId) deleteConfirmConversationId = null;
+  }
+
+  function handleRenameKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      void saveRenameConversation();
+    }
+    if (event.key === 'Escape') {
+      editingConversationId = null;
+      renameDraft = '';
+    }
+  }
+
+  function handleTagKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      void saveConversationTags();
+    }
+    if (event.key === 'Escape') {
+      editingTagsConversationId = null;
+      tagDraft = '';
+    }
+  }
+
   onMount(async () => {
     await quentaStore.init();
     syncSettingsDrafts();
@@ -279,21 +399,204 @@
     </div>
     {#if !chatsCollapsed}
       <div class="flex-1 overflow-y-auto p-2">
+        <div class="mb-2 space-y-2 px-1">
+          <div class="relative">
+            <Icon icon="lucide:search" class="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+            <input
+              class="w-full rounded-lg border border-border bg-white py-1.5 pl-7 pr-2 text-xs text-zinc-700 outline-none transition focus:border-brand"
+              bind:value={conversationSearch}
+              placeholder="Search chats"
+              aria-label="Search conversations"
+              data-testid="quenta-conversation-search"
+            />
+          </div>
+
+          {#if availableConversationTags.length > 0 || selectedTagFilters.length > 0}
+            <div class="flex flex-wrap gap-1" aria-label="Conversation tag filters">
+              {#each availableConversationTags as tag}
+                <button
+                  type="button"
+                  class="rounded-full border px-2 py-0.5 text-[10px] transition {selectedTagFilters.includes(tag) ? 'border-brand/30 bg-brand/10 text-brand' : 'border-border bg-white text-zinc-500 hover:bg-surface-2'}"
+                  onclick={() => toggleTagFilter(tag)}
+                  aria-pressed={selectedTagFilters.includes(tag)}
+                  data-testid="quenta-tag-filter"
+                >
+                  #{tag}
+                </button>
+              {/each}
+              {#if selectedTagFilters.length > 0}
+                <button
+                  type="button"
+                  class="rounded-full px-2 py-0.5 text-[10px] text-zinc-400 transition hover:bg-surface-2 hover:text-zinc-700"
+                  onclick={() => selectedTagFilters = []}
+                  aria-label="Clear tag filters"
+                >
+                  Clear
+                </button>
+              {/if}
+            </div>
+          {/if}
+        </div>
+
         {#if quentaStore.conversations.length === 0}
           <p class="px-3 py-8 text-center text-xs leading-relaxed text-zinc-400">
             No conversations yet. Ask a question or explain a Result to start.
           </p>
+        {:else if filteredConversations.length === 0}
+          <p class="px-3 py-8 text-center text-xs leading-relaxed text-zinc-400">
+            No chats match the current search or tag filters.
+          </p>
         {:else}
-          <div class="space-y-1">
-            {#each quentaStore.conversations as conversation (conversation.id)}
-              <button
-                class="w-full rounded-lg px-3 py-2 text-left transition-colors {conversation.id === quentaStore.selectedConversationId ? 'bg-brand/10 text-brand' : 'text-zinc-600 hover:bg-surface-2'}"
+          <div class="space-y-1.5">
+            {#each filteredConversations as conversation (conversation.id)}
+              <div
+                class="rounded-lg border transition-colors {conversation.id === quentaStore.selectedConversationId ? 'border-brand/20 bg-brand/10' : 'border-transparent text-zinc-600 hover:border-border hover:bg-surface-2'}"
                 data-testid="quenta-conversation"
-                onclick={() => quentaStore.selectConversation(conversation.id)}
               >
-                <p class="truncate text-xs font-medium">{conversation.title}</p>
-                <p class="mt-0.5 truncate text-[10px] text-zinc-400">{conversationSubtitle(conversation)}</p>
-              </button>
+                <div class="flex items-start gap-1 px-2 py-2">
+                  <button
+                    type="button"
+                    class="min-w-0 flex-1 text-left"
+                    onclick={() => {
+                      resetConversationEditing();
+                      quentaStore.selectConversation(conversation.id);
+                    }}
+                    aria-label={`Open ${conversation.title}`}
+                  >
+                    <p class="truncate text-xs font-medium {conversation.id === quentaStore.selectedConversationId ? 'text-brand' : 'text-zinc-700'}">
+                      {conversation.title}
+                    </p>
+                    <p class="mt-0.5 truncate text-[10px] text-zinc-400">{conversationSubtitle(conversation)}</p>
+                  </button>
+                  <div class="flex shrink-0 items-center gap-0.5">
+                    <button
+                      type="button"
+                      class="inline-flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 transition hover:bg-white hover:text-zinc-700"
+                      onclick={() => void startRenameConversation(conversation)}
+                      aria-label={`Rename ${conversation.title}`}
+                      title="Rename chat"
+                      data-testid="quenta-rename-conversation"
+                    >
+                      <Icon icon="lucide:pencil" class="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      class="inline-flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 transition hover:bg-white hover:text-zinc-700"
+                      onclick={() => void startTagEdit(conversation)}
+                      aria-label={`Edit tags for ${conversation.title}`}
+                      title="Edit tags"
+                      data-testid="quenta-edit-conversation-tags"
+                    >
+                      <Icon icon="lucide:tag" class="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      class="inline-flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 transition hover:bg-red-50 hover:text-red-600"
+                      onclick={() => {
+                        deleteConfirmConversationId = deleteConfirmConversationId === conversation.id ? null : conversation.id;
+                        editingConversationId = null;
+                        editingTagsConversationId = null;
+                      }}
+                      aria-label={`Delete ${conversation.title}`}
+                      title="Delete chat"
+                      data-testid="quenta-delete-conversation"
+                    >
+                      <Icon icon="lucide:trash-2" class="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+
+                {#if conversation.tags?.length}
+                  <div class="flex flex-wrap gap-1 px-2 pb-2">
+                    {#each conversation.tags as tag}
+                      <button
+                        type="button"
+                        class="rounded-full bg-white px-1.5 py-0.5 text-[9px] text-zinc-500 transition hover:bg-brand/10 hover:text-brand"
+                        onclick={() => toggleTagFilter(tag)}
+                        aria-label={`Filter by ${tag}`}
+                      >
+                        #{tag}
+                      </button>
+                    {/each}
+                  </div>
+                {/if}
+
+                {#if editingConversationId === conversation.id}
+                  <div class="space-y-2 border-t border-border/70 px-2 py-2">
+                    <input
+                      bind:this={renameInputEl}
+                      bind:value={renameDraft}
+                      onkeydown={handleRenameKeydown}
+                      class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
+                      maxlength="96"
+                      aria-label="Chat name"
+                      data-testid="quenta-rename-input"
+                    />
+                    <div class="flex justify-end gap-1">
+                      <Button variant="ghost" size="sm" onclick={() => {
+                        editingConversationId = null;
+                        renameDraft = '';
+                      }}>
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onclick={saveRenameConversation}
+                        disabled={!renameDraft.trim()}
+                        testId="quenta-rename-save"
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  </div>
+                {/if}
+
+                {#if editingTagsConversationId === conversation.id}
+                  <div class="space-y-2 border-t border-border/70 px-2 py-2">
+                    <input
+                      bind:this={tagInputEl}
+                      bind:value={tagDraft}
+                      onkeydown={handleTagKeydown}
+                      class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
+                      placeholder="Tags, comma separated"
+                      aria-label="Chat tags"
+                      data-testid="quenta-tags-input"
+                    />
+                    <p class="text-[10px] leading-relaxed text-zinc-400">Up to 3 tags. Separate them with commas.</p>
+                    <div class="flex justify-end gap-1">
+                      <Button variant="ghost" size="sm" onclick={() => {
+                        editingTagsConversationId = null;
+                        tagDraft = '';
+                      }}>
+                        Cancel
+                      </Button>
+                      <Button variant="primary" size="sm" onclick={saveConversationTags} testId="quenta-tags-save">
+                        Save tags
+                      </Button>
+                    </div>
+                  </div>
+                {/if}
+
+                {#if deleteConfirmConversationId === conversation.id}
+                  <div class="border-t border-red-100 bg-red-50/70 px-2 py-2">
+                    <p class="text-[11px] leading-relaxed text-red-700">Delete this chat? This only removes the saved conversation.</p>
+                    <div class="mt-2 flex justify-end gap-1">
+                      <Button variant="ghost" size="sm" onclick={() => deleteConfirmConversationId = null}>
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onclick={() => void deleteConversation(conversation.id)}
+                        testId="quenta-delete-confirm"
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                {/if}
+              </div>
             {/each}
           </div>
         {/if}

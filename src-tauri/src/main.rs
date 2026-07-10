@@ -70,9 +70,14 @@ fn main() {
   });
 
   // --- 0) Single-instance first, important for deep links ---
-  builder = builder.plugin(tauri_plugin_single_instance::init(|_app, argv, _cwd| {
-    println!("single-instance argv: {argv:?}");
-  }));
+  // Test binaries run with isolated HOME paths but the same bundle identifier.
+  // Disabling single-instance in test mode prevents WebDriver runs from closing
+  // immediately when a normal Liatir app is already open.
+  if std::env::var("LIATIR_TEST_MODE").ok().as_deref() != Some("1") {
+    builder = builder.plugin(tauri_plugin_single_instance::init(|_app, argv, _cwd| {
+      println!("single-instance argv: {argv:?}");
+    }));
+  }
 
   // --- 1) Liatir bridge plugin and native plugins ---
   builder = builder

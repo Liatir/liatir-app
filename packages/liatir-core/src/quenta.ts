@@ -52,6 +52,7 @@ export interface LiatirQuentaConversation {
   id: string;
   workspaceId: string;
   title: string;
+  tags?: string[];
   createdAt: number;
   updatedAt: number;
   focus?: LiatirQuentaFocus;
