@@ -70,7 +70,6 @@ export default defineConfig({
         items: [
           { text: 'What is Liatir', link: '/introduction/overview' },
           { text: 'How Liatir Works', link: '/introduction/architecture' },
-          { text: "Tauri", link: "/introduction/what-is-tauri" },
         ],
       },
       {

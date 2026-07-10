@@ -232,6 +232,10 @@ A more detailed version for product pages, forums, blog posts, directories, pres
 
 Alternatively you can find Liatir branding assets and guidelines here: <br> [Liatir Google Drive shared folder ↗](https://drive.google.com/drive/folders/1Av46enrsxaBSE8XTayEz6oy766uv_BmG?usp=sharing)
 
+## The name Liatir
+
+Wondering what "Liatir" means? [Here's the story](/introduction/the-name).
+
 <style>
 .brand-color-card {
   display: flex;

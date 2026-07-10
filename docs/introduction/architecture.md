@@ -58,7 +58,7 @@ plugin behaves like a normal analysis step in the UI and in pipelines.
 Plugin development is documented in the [Plugins](/plugins/overview) section.
 That is the right place for extension-specific code and bundle details.
 
-## What Liatir does not hide
+## Dependencties
 
 Bioinformatics workflows can depend on external tools, Python runtimes, model
 weights, GPUs, and large local files. Liatir tries to make those dependencies

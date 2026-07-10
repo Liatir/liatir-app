@@ -42,3 +42,8 @@ AI Models are local model runtimes that Liatir installs and manages for you. AI 
 4. [Install an AI Model](/ai/models/overview) — try local annotation, embedding, or structure workflows.
 5. [Build or import a .lia plugin](/plugins/overview) — for custom logic or pipeline orchestration.
 6. [Connect steps in a pipeline](/pipeline/overview) — outputs flow into the next step automatically.
+
+
+## The name Liatir
+
+Wondering what "Liatir" means? [Here's the story](/introduction/the-name).
