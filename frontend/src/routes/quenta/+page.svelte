@@ -266,31 +266,26 @@
           >
             {quentaStore.providerStatus?.available ? `Ollama ${quentaStore.providerStatus.version ?? ''}` : 'Ollama offline'}
           </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            class="h-8 w-8 px-0"
+          
+          <button
+            class="h-3.5 w-3.5 hover:opacity-50 flex items-center justify-center mr-2"
             title="Refresh Ollama status and models"
-            ariaLabel="Refresh Ollama status and models"
             onclick={refreshProvider}
             disabled={quentaStore.providerRefreshing}
           >
-            <Icon icon="lucide:refresh-cw" class="h-4 w-4 {quentaStore.providerRefreshing ? 'animate-spin' : ''}" />
-          </Button>
+            <Icon icon="lucide:refresh-cw" class="h-full w-full {quentaStore.providerRefreshing ? 'animate-spin' : ''}" />
+          </button>
           <div
             class="relative"
             use:clickOutside={{ enabled: settingsOpen, onOutside: () => settingsOpen = false }}
           >
-            <Button
-              variant="ghost"
-              size="sm"
-              class="h-8 w-8 px-0"
+            <button
+              class="h-4 w-4 hover:opacity-50 flex items-center justify-center"
               title="Open local AI settings"
-              ariaLabel="Open local AI settings"
               onclick={() => settingsOpen = !settingsOpen}
             >
-              <Icon icon="lucide:settings" class="h-4 w-4" />
-            </Button>
+              <Icon icon="lucide:settings" class="h-full w-full" />
+            </button>
 
             {#if settingsOpen}
               <div
