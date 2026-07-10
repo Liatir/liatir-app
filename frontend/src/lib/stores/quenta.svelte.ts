@@ -166,6 +166,33 @@ function ollamaStatusErrorMessage(baseUrl: string, error: unknown): string {
   return `Quenta could not prepare the local AI engine at ${baseUrl}.`;
 }
 
+function quentaSetupErrorMessage(error: unknown): string {
+  const detail = error instanceof Error ? error.message : String(error);
+  if (
+    detail.includes('cannot download the managed local AI runtime') ||
+    detail.includes('Request failed') ||
+    detail.includes('Download stalled') ||
+    detail.includes('Not enough disk space')
+  ) {
+    return 'Quenta needs to download its local AI engine the first time it runs. Check the internet connection and available disk space, then refresh.';
+  }
+  if (
+    detail.includes('cannot start the local AI engine') ||
+    detail.includes('did not become ready in time') ||
+    detail.includes('Ollama is unavailable') ||
+    detail.includes('error sending request')
+  ) {
+    return 'Quenta prepared the local AI engine but it is not ready yet. Keep Liatir open and refresh in a moment.';
+  }
+  if (
+    detail.includes('cannot download the recommended local AI model') ||
+    detail.includes('was not found after setup')
+  ) {
+    return 'Quenta needs to download the recommended local model before the first chat. Check the internet connection and available disk space, then refresh.';
+  }
+  return 'Quenta could not prepare local AI automatically. Check the internet connection and available disk space, then refresh.';
+}
+
 function quentaChatErrorMessage(error: unknown): string {
   const detail = error instanceof Error ? error.message : String(error);
   if (detail.includes('Ollama chat failed') || detail.includes('error sending request')) {
@@ -517,14 +544,14 @@ function createQuentaStore() {
 
           setupPhase = providerStatus?.available && settings.config.model.trim() ? 'ready' : 'failed';
           if (setupPhase === 'failed') {
-            setupError = 'Quenta could not prepare local AI automatically.';
+            setupError = quentaSetupErrorMessage(providerStatus?.error ?? 'Quenta is not available yet.');
           }
         } catch (error) {
           setupPhase = 'failed';
-          setupError = error instanceof Error ? error.message : String(error);
+          setupError = quentaSetupErrorMessage(error);
           providerStatus = {
             available: false,
-            error: 'Quenta could not prepare local AI automatically.',
+            error: setupError,
           };
           providerModels = [];
         } finally {

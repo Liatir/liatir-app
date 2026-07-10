@@ -73,7 +73,7 @@
       ? 'Ask about a result, job log, pipeline, AI model, API Connector request, or bioinformatics concept. Press Cmd/Ctrl+Enter to send.'
       : preparingQuenta
         ? `Quenta is preparing the recommended local model (${quentaStore.defaultModel}). You can chat when it is ready.`
-        : 'Quenta could not prepare local AI automatically. Open settings for details.',
+        : 'Quenta could not prepare local AI yet. Check the setup message and refresh.',
   );
   const modelOptions = $derived([...new Map([
     ...(quentaStore.config.model ? [[quentaStore.config.model, quentaStore.config.model] as const] : []),
@@ -802,7 +802,7 @@
                       ? 'Ask Quenta about Results, Jobs, pipelines, or bioinformatics context.'
                       : preparingQuenta
                         ? `Quenta is preparing the recommended local model (${quentaStore.defaultModel}).`
-                        : 'Quenta could not prepare local AI automatically. Open settings for technical details.'}
+                        : 'Quenta could not prepare local AI yet. Check the setup message and refresh.'}
                   </p>
                 </div>
                 {#if localAIReady}
