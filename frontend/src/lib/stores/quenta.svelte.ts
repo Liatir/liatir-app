@@ -27,8 +27,13 @@ const MAX_CONVERSATION_TITLE_LENGTH = 96;
 export const QUENTA_DEFAULT_MODEL = 'qwen3.5:9b';
 type QuentaSetupPhase = 'idle' | 'preparing' | 'downloading' | 'ready' | 'failed';
 
+interface QuentaComposerSettings {
+  enterToSend: boolean;
+}
+
 interface QuentaSettingsFile {
   config: LiatirQuentaProviderConfig;
+  composer: QuentaComposerSettings;
 }
 
 interface QuentaConversationsFile {
@@ -42,6 +47,9 @@ const DEFAULT_CONFIG: LiatirQuentaProviderConfig = {
   embeddingModel: '',
   temperature: 0.2,
   thinkingEnabled: false,
+};
+const DEFAULT_COMPOSER_SETTINGS: QuentaComposerSettings = {
+  enterToSend: true,
 };
 const DEFAULT_CONVERSATION_TITLE = 'New chat';
 
@@ -110,6 +118,11 @@ function normalizeSettings(value: Partial<QuentaSettingsFile> | null): QuentaSet
         ? Math.min(2, Math.max(0, temperature))
         : DEFAULT_CONFIG.temperature,
       thinkingEnabled: Boolean(value?.config?.thinkingEnabled ?? DEFAULT_CONFIG.thinkingEnabled),
+    },
+    composer: {
+      ...DEFAULT_COMPOSER_SETTINGS,
+      ...(value?.composer ?? {}),
+      enterToSend: Boolean(value?.composer?.enterToSend ?? DEFAULT_COMPOSER_SETTINGS.enterToSend),
     },
   };
 }
@@ -449,6 +462,7 @@ function createQuentaStore() {
   const quentaStore = {
     get settings() { return settings; },
     get config() { return settings.config; },
+    get composerSettings() { return settings.composer; },
     get conversations() { return conversations; },
     get selectedConversationId() { return selectedConversationId; },
     get currentConversation() { return currentConversation(); },
@@ -482,8 +496,20 @@ function createQuentaStore() {
 
     async updateConfig(patch: Partial<LiatirQuentaProviderConfig>) {
       settings = normalizeSettings({
+        ...settings,
         config: {
           ...settings.config,
+          ...patch,
+        },
+      });
+      await persistSettings();
+    },
+
+    async updateComposerSettings(patch: Partial<QuentaComposerSettings>) {
+      settings = normalizeSettings({
+        ...settings,
+        composer: {
+          ...settings.composer,
           ...patch,
         },
       });
@@ -504,7 +530,7 @@ function createQuentaStore() {
           : { ...status, error: ollamaStatusErrorMessage(settings.config.baseUrl, status.error) };
         providerModels = models;
         if (!settings.config.model && models.length === 1) {
-          settings = normalizeSettings({ config: { ...settings.config, model: models[0].name } });
+          settings = normalizeSettings({ ...settings, config: { ...settings.config, model: models[0].name } });
           await persistSettings();
         }
       } finally {
@@ -531,13 +557,13 @@ function createQuentaStore() {
             providerStatus = bootstrap.status;
             providerModels = bootstrap.models;
             if (!settings.config.model.trim()) {
-              settings = normalizeSettings({ config: { ...settings.config, model: bootstrap.model } });
+              settings = normalizeSettings({ ...settings, config: { ...settings.config, model: bootstrap.model } });
               await persistSettings();
             }
           } else {
             await quentaStore.refreshProvider();
             if (!settings.config.model.trim()) {
-              settings = normalizeSettings({ config: { ...settings.config, model: QUENTA_DEFAULT_MODEL } });
+              settings = normalizeSettings({ ...settings, config: { ...settings.config, model: QUENTA_DEFAULT_MODEL } });
               await persistSettings();
             }
           }
