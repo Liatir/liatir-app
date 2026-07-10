@@ -15,21 +15,23 @@
 </script>
 
 <div class="flex items-center justify-between border-b border-border px-6 py-4" style="max-height: {HEADER_HEIGHT}px; min-height: {HEADER_HEIGHT}px;">
-  <div>
-    <h1 class="text-base font-semibold text-zinc-900 flex items-center">
-      {title}
-      {#if info}
-        <InfoPopup text={info} />
-      {/if}
-      {#if titleActions}
-        <span class="ml-2 inline-flex items-center gap-1">
-          {@render titleActions()}
-        </span>
-      {/if}
-    </h1>
-    {#if description}
-      <p class="mt-0.5 text-[11px] text-zinc-500 max-md:hidden">{description}</p>
+  <div class="flex min-w-0 items-center gap-3">
+    {#if titleActions}
+      <div class="flex shrink-0 flex-col items-center gap-1">
+        {@render titleActions()}
+      </div>
     {/if}
+    <div class="min-w-0">
+      <h1 class="flex items-center text-base font-semibold text-zinc-900">
+        {title}
+        {#if info}
+          <InfoPopup text={info} />
+        {/if}
+      </h1>
+      {#if description}
+        <p class="mt-0.5 text-[11px] text-zinc-500 max-md:hidden">{description}</p>
+      {/if}
+    </div>
   </div>
   {#if actions}
     <div class="flex items-center gap-2">
