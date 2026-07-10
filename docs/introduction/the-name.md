@@ -3,7 +3,7 @@ title: The name Liatir
 description: Where the name Liatir comes from — lia "thread" and tir "to watch" in Tolkien's Elvish.
 ---
 
-# The name Liatir
+# The name *Liatir*
 
 *Liatir* comes from [Tolkien's Elvish](https://tolkiengateway.net/wiki/Elvish) — a compound of **lia**, "*strand*" or "*thread*", and **tir**, "*to watch*." Read together, it lands close to *strand-watcher*: the one that watches the strands. For a platform whose whole job is reading **strands** of DNA, RNA, and protein, it's about as literal as a name can get.
 
