@@ -359,56 +359,32 @@
 </script>
 
 <div class="flex h-full overflow-hidden">
-  <aside class="{chatsCollapsed ? 'w-0 hide' : 'w-80 flex flex-col'} shrink-0 border-r border-border bg-surface transition-[width] duration-150">
+  {#if !chatsCollapsed}
+  <aside class="flex w-80 shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-150">
     <div class="border-b border-border p-3" style="height: {HEADER_HEIGHT}px;">
-      {#if chatsCollapsed}
-        <!-- <div class="flex h-full flex-col items-center justify-center gap-2">
-          <button
-            type="button"
-            class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
-            onclick={() => chatsCollapsed = false}
-            aria-label="Show conversations"
-            title="Show conversations"
-            data-testid="quenta-chat-sidebar-expand"
-          >
-            <Icon icon="lucide:panel-left-open" class="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
-            onclick={() => quentaStore.newConversation()}
-            aria-label="New conversation"
-            title="New conversation"
-          >
-            <Icon icon="lucide:plus" class="h-4 w-4" />
-          </button>
-        </div> -->
-      {:else}
-        <div class="flex items-center justify-between gap-2">
-          <div>
-            <p class="text-xs font-semibold text-zinc-800">Quenta</p>
-            <p class="mt-0.5 text-[10px] text-zinc-400">Local read-only AI</p>
-          </div>
-          <div class="flex items-center gap-1">
-            <Button variant="ghost" size="sm" onclick={() => quentaStore.newConversation()}>
-              New
-            </Button>
-            <button
-              type="button"
-              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
-              onclick={() => chatsCollapsed = true}
-              aria-label="Collapse conversations"
-              title="Collapse conversations"
-              data-testid="quenta-chat-sidebar-collapse"
-            >
-              <Icon icon="lucide:panel-left-close" class="h-4 w-4" />
-            </button>
-          </div>
+      <div class="flex items-center justify-between gap-2">
+        <div>
+          <p class="text-xs font-semibold text-zinc-800">Quenta</p>
+          <p class="mt-0.5 text-[10px] text-zinc-400">Local read-only AI</p>
         </div>
-      {/if}
+        <div class="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onclick={() => quentaStore.newConversation()}>
+            New
+          </Button>
+          <button
+            type="button"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
+            onclick={() => chatsCollapsed = true}
+            aria-label="Collapse conversations"
+            title="Collapse conversations"
+            data-testid="quenta-chat-sidebar-collapse"
+          >
+            <Icon icon="lucide:panel-left-close" class="h-4 w-4" />
+          </button>
+        </div>
+      </div>
     </div>
-    {#if !chatsCollapsed}
-      <div class="flex-1 overflow-y-auto p-2">
+    <div class="flex-1 overflow-y-auto p-2">
         <div class="mb-2 space-y-2 px-1">
           <div class="relative">
             <Icon icon="lucide:search" class="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
@@ -610,9 +586,9 @@
             {/each}
           </div>
         {/if}
-      </div>
-    {/if}
+    </div>
   </aside>
+  {/if}
 
   <main class="flex min-w-0 flex-1 flex-col">
     <!-- svelte-ignore attribute_quoted -->
@@ -620,6 +596,30 @@
       title="{(quentaStore.currentConversation?.title)??'Quenta'}"
       description="Quenta is Liatir's local, read-only AI for explaining Results, Jobs, pipelines, and bioinformatics context."
     >
+      {#snippet titleActions()}
+        {#if chatsCollapsed}
+          <button
+            type="button"
+            class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
+            onclick={() => chatsCollapsed = false}
+            aria-label="Show conversations"
+            title="Show conversations"
+            data-testid="quenta-chat-sidebar-expand"
+          >
+            <Icon icon="lucide:panel-left-open" class="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
+            onclick={() => quentaStore.newConversation()}
+            aria-label="New conversation"
+            title="New conversation"
+            data-testid="quenta-new-conversation-header"
+          >
+            <Icon icon="lucide:plus" class="h-4 w-4" />
+          </button>
+        {/if}
+      {/snippet}
       {#snippet actions()}
         <div class="flex items-center gap-2">
           <span
@@ -918,29 +918,6 @@
           </div>
 
           <div class="border-t border-border bg-surface p-4 flex">
-            {#if chatsCollapsed}
-              <div class="flex h-full flex-col items-center justify-center gap-2 transition-[width] duration-150">
-                <button
-                  type="button"
-                  class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
-                  onclick={() => chatsCollapsed = false}
-                  aria-label="Show conversations"
-                  title="Show conversations"
-                  data-testid="quenta-chat-sidebar-expand"
-                >
-                  <Icon icon="lucide:panel-left-open" class="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
-                  onclick={() => quentaStore.newConversation()}
-                  aria-label="New conversation"
-                  title="New conversation"
-                >
-                  <Icon icon="lucide:plus" class="h-4 w-4" />
-                </button>
-              </div>
-            {/if}
             <div class="mx-auto max-w-4xl">
               <div class="mb-2 flex items-center gap-2">
                 <Select

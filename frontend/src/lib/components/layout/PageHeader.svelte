@@ -7,10 +7,11 @@
     title: string;
     info?: string;
     description?: string;
+    titleActions?: Snippet;
     actions?: Snippet;
   }
 
-  let { title, info, description, actions }: Props = $props();
+  let { title, info, description, titleActions, actions }: Props = $props();
 </script>
 
 <div class="flex items-center justify-between border-b border-border px-6 py-4" style="max-height: {HEADER_HEIGHT}px; min-height: {HEADER_HEIGHT}px;">
@@ -19,6 +20,11 @@
       {title}
       {#if info}
         <InfoPopup text={info} />
+      {/if}
+      {#if titleActions}
+        <span class="ml-2 inline-flex items-center gap-1">
+          {@render titleActions()}
+        </span>
       {/if}
     </h1>
     {#if description}
