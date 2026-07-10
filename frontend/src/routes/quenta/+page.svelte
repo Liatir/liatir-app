@@ -605,7 +605,7 @@
                     <span class="inline-block h-2.5 w-2.5 rounded-full bg-white transition-transform {thinkingEnabledDraft ? 'translate-x-3' : 'translate-x-0.5'}"></span>
                   </span>
                   <Icon icon="lucide:brain" class="h-3 w-3" />
-                  {thinkingEnabledDraft ? 'Thinking' : 'No thinking'}
+                  {thinkingEnabledDraft ? 'Thinking' : 'Standard'}
                 </button>
               </div>
               <textarea
