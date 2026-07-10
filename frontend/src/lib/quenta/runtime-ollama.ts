@@ -44,7 +44,35 @@ export class OllamaQuentaRuntime implements QuentaRuntime {
     const response = await this.api().invoke('lia_quenta_ollama_models', {
       baseUrl: this.baseUrl,
     }) as { models?: OllamaModel[] };
-    return (response.models ?? []).map((model) => ({
+    return this.normalizeModels(response.models ?? []);
+  }
+
+  async bootstrap(model: string): Promise<{
+    status: LiatirQuentaProviderStatus;
+    models: LiatirQuentaProviderModel[];
+    model: string;
+    downloaded: boolean;
+  }> {
+    const response = await this.api().invoke('lia_quenta_ollama_bootstrap', {
+      baseUrl: this.baseUrl,
+      model,
+    }) as {
+      available?: boolean;
+      version?: string;
+      model?: string;
+      downloaded?: boolean;
+      models?: OllamaModel[];
+    };
+    return {
+      status: { available: Boolean(response.available), version: response.version },
+      models: this.normalizeModels(response.models ?? []),
+      model: response.model ?? model,
+      downloaded: Boolean(response.downloaded),
+    };
+  }
+
+  private normalizeModels(models: OllamaModel[]): LiatirQuentaProviderModel[] {
+    return models.map((model) => ({
       name: model.name ?? model.model ?? 'unknown',
       modifiedAt: model.modified_at,
       sizeBytes: model.size,

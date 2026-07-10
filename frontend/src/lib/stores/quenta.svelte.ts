@@ -21,6 +21,8 @@ const SETTINGS_FILE = 'quenta/settings.json';
 const LEGACY_SETTINGS_FILE = 'tutor/settings.json';
 const MAX_CONVERSATIONS = 40;
 const MAX_MESSAGES_PER_CONVERSATION = 120;
+export const QUENTA_DEFAULT_MODEL = 'qwen3:4b-instruct';
+type QuentaSetupPhase = 'idle' | 'preparing' | 'downloading' | 'ready' | 'failed';
 
 interface QuentaSettingsFile {
   config: LiatirQuentaProviderConfig;
@@ -125,7 +127,15 @@ function ollamaStatusErrorMessage(baseUrl: string, error: unknown): string {
   if (detail.includes('must resolve to localhost') || detail.includes('loopback IP')) {
     return 'Quenta only supports Ollama on localhost or a loopback IP.';
   }
-  return `Ollama is offline or not reachable at ${baseUrl}. Start Ollama locally, then refresh models.`;
+  return `Quenta could not prepare the local AI engine at ${baseUrl}.`;
+}
+
+function quentaChatErrorMessage(error: unknown): string {
+  const detail = error instanceof Error ? error.message : String(error);
+  if (detail.includes('Ollama chat failed') || detail.includes('error sending request')) {
+    return 'Local AI is not running yet. Quenta is preparing it automatically; try again in a moment.';
+  }
+  return detail;
 }
 
 function normalizeLegacyConversation(conversation: LiatirQuentaConversation): LiatirQuentaConversation {
@@ -151,8 +161,11 @@ function createQuentaStore() {
   let providerStatus = $state<LiatirQuentaProviderStatus | null>(null);
   let providerModels = $state<LiatirQuentaProviderModel[]>([]);
   let providerRefreshing = $state(false);
+  let setupPhase = $state<QuentaSetupPhase>('idle');
+  let setupError = $state<string | null>(null);
   let sendingByConversation = $state<Record<string, boolean>>({});
   let errorByConversation = $state<Record<string, string>>({});
+  let bootstrapPromise: Promise<void> | null = null;
 
   async function persistSettings() {
     await appStorage.writeText(SETTINGS_FILE, JSON.stringify(settings, null, 2), { createDirs: true });
@@ -284,9 +297,6 @@ function createQuentaStore() {
     await quentaStore.init();
     const query = content.trim();
     if (!query) return;
-    if (!settings.config.model.trim()) {
-      throw new Error('Select an installed Ollama model before asking Quenta');
-    }
 
     const existing = options.conversationId
       ? conversations.find((conversation) => conversation.id === options.conversationId)
@@ -297,6 +307,11 @@ function createQuentaStore() {
     });
     selectedConversationId = conversation.id;
     setConversationError(conversation.id, null);
+
+    if (!settings.config.model.trim() || providerStatus?.available === false) {
+      setConversationError(conversation.id, 'Quenta is still preparing local AI. Try again in a moment.');
+      return;
+    }
 
     const timestamp = now();
     const userMessage: LiatirQuentaMessage = {
@@ -358,7 +373,7 @@ function createQuentaStore() {
       }));
       await persistConversations();
     } catch (error) {
-      setConversationError(conversation.id, error instanceof Error ? error.message : String(error));
+      setConversationError(conversation.id, quentaChatErrorMessage(error));
     } finally {
       setConversationSending(conversation.id, false);
     }
@@ -374,6 +389,9 @@ function createQuentaStore() {
     get providerStatus() { return providerStatus; },
     get providerModels() { return providerModels; },
     get providerRefreshing() { return providerRefreshing; },
+    get setupPhase() { return setupPhase; },
+    get setupError() { return setupError; },
+    get defaultModel() { return QUENTA_DEFAULT_MODEL; },
 
     isSending(conversationId: string | null | undefined) {
       return conversationId ? Boolean(sendingByConversation[conversationId]) : false;
@@ -425,6 +443,56 @@ function createQuentaStore() {
       } finally {
         providerRefreshing = false;
       }
+    },
+
+    async bootstrapProvider() {
+      if (bootstrapPromise) return bootstrapPromise;
+      bootstrapPromise = (async () => {
+        await quentaStore.init();
+        setupPhase = 'preparing';
+        setupError = null;
+        providerRefreshing = true;
+        try {
+          const runtime = createQuentaRuntime(settings.config);
+          const targetModel = settings.config.model.trim() || QUENTA_DEFAULT_MODEL;
+          setupPhase = 'downloading';
+          const bootstrap = runtime.bootstrap
+            ? await runtime.bootstrap(targetModel)
+            : null;
+
+          if (bootstrap) {
+            providerStatus = bootstrap.status;
+            providerModels = bootstrap.models;
+            if (!settings.config.model.trim()) {
+              settings = normalizeSettings({ config: { ...settings.config, model: bootstrap.model } });
+              await persistSettings();
+            }
+          } else {
+            await quentaStore.refreshProvider();
+            if (!settings.config.model.trim()) {
+              settings = normalizeSettings({ config: { ...settings.config, model: QUENTA_DEFAULT_MODEL } });
+              await persistSettings();
+            }
+          }
+
+          setupPhase = providerStatus?.available && settings.config.model.trim() ? 'ready' : 'failed';
+          if (setupPhase === 'failed') {
+            setupError = 'Quenta could not prepare local AI automatically.';
+          }
+        } catch (error) {
+          setupPhase = 'failed';
+          setupError = error instanceof Error ? error.message : String(error);
+          providerStatus = {
+            available: false,
+            error: 'Quenta could not prepare local AI automatically.',
+          };
+          providerModels = [];
+        } finally {
+          providerRefreshing = false;
+          bootstrapPromise = null;
+        }
+      })();
+      return bootstrapPromise;
     },
 
     selectConversation(conversationId: string) {

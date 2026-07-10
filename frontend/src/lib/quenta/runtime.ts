@@ -10,6 +10,12 @@ import { OllamaQuentaRuntime } from './runtime-ollama';
 export interface QuentaRuntime {
   status(): Promise<LiatirQuentaProviderStatus>;
   models(): Promise<LiatirQuentaProviderModel[]>;
+  bootstrap?(model: string): Promise<{
+    status: LiatirQuentaProviderStatus;
+    models: LiatirQuentaProviderModel[];
+    model: string;
+    downloaded: boolean;
+  }>;
   chat(request: LiatirQuentaChatRequest): Promise<LiatirQuentaChatResponse>;
   embed?(model: string, input: string[]): Promise<number[][]>;
 }

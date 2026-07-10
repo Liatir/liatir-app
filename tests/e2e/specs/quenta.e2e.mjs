@@ -235,7 +235,7 @@ export const tests = [
         const bodyText = await (await browser.$('body')).getText();
         expect(bodyText).toContain(`result:${RUN_ID}`);
         expect(bodyText).toContain('Quenta E2E SeqKit Stats');
-        expect(bodyText).toContain('Ollama 0.99.0-e2e');
+        expect(bodyText).toContain('Quenta ready');
 
         expect(ollama.chatRequests.length).toBeGreaterThanOrEqual(1);
         const chat = ollama.chatRequests.at(-1);

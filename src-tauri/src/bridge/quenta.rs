@@ -2,10 +2,15 @@ use reqwest::{header::CONTENT_TYPE, Client, Response};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::net::IpAddr;
+use std::path::PathBuf;
+use std::process::{Child, Command, Stdio};
+use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 use url::{Host, Url};
 
 const MAX_RESPONSE_BYTES: usize = 16 * 1024 * 1024;
+const DEFAULT_BOOT_TIMEOUT_MS: u64 = 30_000;
+static OLLAMA_SERVER_CHILD: OnceLock<Mutex<Option<Child>>> = OnceLock::new();
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -48,6 +53,168 @@ fn client(timeout: Duration) -> Result<Client, String> {
         .map_err(|error| format!("cannot create Ollama client: {error}"))
 }
 
+fn model_name_is_safe(model: &str) -> bool {
+    let trimmed = model.trim();
+    !trimmed.is_empty()
+        && trimmed.len() <= 128
+        && trimmed
+            .chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '.' | '_' | '-' | ':' | '/'))
+}
+
+fn find_executable_in_path(name: &str) -> Option<PathBuf> {
+    let path_var = std::env::var_os("PATH")?;
+    #[cfg(target_os = "windows")]
+    let extensions = ["", ".exe", ".cmd", ".bat"];
+    #[cfg(not(target_os = "windows"))]
+    let extensions = [""];
+
+    for dir in std::env::split_paths(&path_var) {
+        for ext in &extensions {
+            let candidate = dir.join(format!("{name}{ext}"));
+            if candidate.is_file() {
+                return Some(candidate);
+            }
+        }
+    }
+    None
+}
+
+fn ollama_candidates() -> Vec<PathBuf> {
+    let mut candidates = Vec::new();
+    if let Some(path) = find_executable_in_path("ollama") {
+        candidates.push(path);
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        candidates.push(PathBuf::from("/opt/homebrew/bin/ollama"));
+        candidates.push(PathBuf::from("/usr/local/bin/ollama"));
+        candidates.push(PathBuf::from(
+            "/Applications/Ollama.app/Contents/Resources/ollama",
+        ));
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        if let Some(local_app_data) = std::env::var_os("LOCALAPPDATA") {
+            candidates.push(PathBuf::from(local_app_data).join("Programs/Ollama/ollama.exe"));
+        }
+    }
+
+    candidates
+        .into_iter()
+        .filter(|candidate| candidate.is_file())
+        .collect()
+}
+
+fn start_ollama_server_process() -> Result<(), String> {
+    let child_slot = OLLAMA_SERVER_CHILD.get_or_init(|| Mutex::new(None));
+    let mut child_guard = child_slot
+        .lock()
+        .map_err(|_| "cannot lock local AI process state".to_string())?;
+
+    if let Some(child) = child_guard.as_mut() {
+        if child.try_wait().map_err(|error| format!("cannot inspect local AI process: {error}"))?.is_none() {
+            return Ok(());
+        }
+    }
+
+    let Some(ollama) = ollama_candidates().into_iter().next() else {
+        #[cfg(target_os = "macos")]
+        {
+            let _ = Command::new("open")
+                .args(["-a", "Ollama"])
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .spawn();
+        }
+        return Ok(());
+    };
+
+    let child = Command::new(ollama)
+        .arg("serve")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|error| format!("cannot start local AI engine: {error}"))?;
+    *child_guard = Some(child);
+    Ok(())
+}
+
+async fn ollama_status_value(base_url: &str, timeout: Duration) -> Result<Value, String> {
+    let endpoint = ollama_endpoint(base_url, "version")?;
+    let response = client(timeout)?
+        .get(endpoint)
+        .send()
+        .await
+        .map_err(|error| format!("Ollama is unavailable: {error}"))?;
+    json_response(response).await
+}
+
+async fn ollama_models_value(base_url: &str, timeout: Duration) -> Result<Value, String> {
+    let endpoint = ollama_endpoint(base_url, "tags")?;
+    let response = client(timeout)?
+        .get(endpoint)
+        .send()
+        .await
+        .map_err(|error| format!("cannot list Ollama models: {error}"))?;
+    json_response(response).await
+}
+
+fn models_include(value: &Value, model: &str) -> bool {
+    value
+        .get("models")
+        .and_then(Value::as_array)
+        .is_some_and(|models| {
+            models.iter().any(|item| {
+                item.get("name")
+                    .or_else(|| item.get("model"))
+                    .and_then(Value::as_str)
+                    .is_some_and(|name| name == model)
+            })
+        })
+}
+
+async fn wait_for_ollama(base_url: &str) -> Result<Value, String> {
+    let started = std::time::Instant::now();
+    let mut last_error = String::new();
+    while started.elapsed() < Duration::from_millis(DEFAULT_BOOT_TIMEOUT_MS) {
+        match ollama_status_value(base_url, Duration::from_secs(5)).await {
+            Ok(value) => return Ok(value),
+            Err(error) => {
+                last_error = error;
+                tokio::time::sleep(Duration::from_millis(750)).await;
+            }
+        }
+    }
+
+    Err(if last_error.is_empty() {
+        "local AI engine did not become ready in time".to_string()
+    } else {
+        last_error
+    })
+}
+
+async fn pull_ollama_model(base_url: &str, model: &str) -> Result<Value, String> {
+    let endpoint = ollama_endpoint(base_url, "pull")?;
+    let response = client(Duration::from_secs(45 * 60))?
+        .post(endpoint)
+        .header(CONTENT_TYPE, "application/json")
+        .body(
+            json!({
+                "model": model,
+                "stream": false
+            })
+            .to_string(),
+        )
+        .send()
+        .await
+        .map_err(|error| format!("cannot download the recommended local AI model: {error}"))?;
+    json_response(response).await
+}
+
 async fn json_response(response: Response) -> Result<Value, String> {
     let status = response.status();
     if response
@@ -77,24 +244,54 @@ async fn json_response(response: Response) -> Result<Value, String> {
 
 #[tauri::command]
 pub async fn lia_quenta_ollama_status(base_url: String) -> Result<Value, String> {
-    let endpoint = ollama_endpoint(&base_url, "version")?;
-    let response = client(Duration::from_secs(10))?
-        .get(endpoint)
-        .send()
-        .await
-        .map_err(|error| format!("Ollama is unavailable: {error}"))?;
-    json_response(response).await
+    ollama_status_value(&base_url, Duration::from_secs(10)).await
 }
 
 #[tauri::command]
 pub async fn lia_quenta_ollama_models(base_url: String) -> Result<Value, String> {
-    let endpoint = ollama_endpoint(&base_url, "tags")?;
-    let response = client(Duration::from_secs(15))?
-        .get(endpoint)
-        .send()
-        .await
-        .map_err(|error| format!("cannot list Ollama models: {error}"))?;
-    json_response(response).await
+    ollama_models_value(&base_url, Duration::from_secs(15)).await
+}
+
+#[tauri::command]
+pub async fn lia_quenta_ollama_bootstrap(base_url: String, model: String) -> Result<Value, String> {
+    let model = model.trim().to_string();
+    if !model_name_is_safe(&model) {
+        return Err("recommended local AI model name is invalid".to_string());
+    }
+
+    let status = match ollama_status_value(&base_url, Duration::from_secs(5)).await {
+        Ok(value) => value,
+        Err(_) => {
+            tauri::async_runtime::spawn_blocking(start_ollama_server_process)
+                .await
+                .map_err(|error| error.to_string())??;
+            wait_for_ollama(&base_url).await.map_err(|error| {
+                format!("Quenta could not prepare its local AI engine automatically. This app build needs a bundled local AI runtime or an available advanced local runtime. Details: {error}")
+            })?
+        }
+    };
+
+    let mut models = ollama_models_value(&base_url, Duration::from_secs(15)).await?;
+    let mut downloaded = false;
+    if !models_include(&models, &model) {
+        pull_ollama_model(&base_url, &model).await?;
+        downloaded = true;
+        models = ollama_models_value(&base_url, Duration::from_secs(15)).await?;
+    }
+
+    if !models_include(&models, &model) {
+        return Err(format!(
+            "The recommended local AI model {model} was not found after setup."
+        ));
+    }
+
+    Ok(json!({
+        "available": true,
+        "version": status.get("version").and_then(Value::as_str),
+        "model": model,
+        "downloaded": downloaded,
+        "models": models.get("models").cloned().unwrap_or_else(|| json!([])),
+    }))
 }
 
 #[tauri::command]

@@ -413,6 +413,7 @@ fn main() {
       lia_ai_python_run,
       lia_quenta_ollama_status,
       lia_quenta_ollama_models,
+      lia_quenta_ollama_bootstrap,
       lia_quenta_ollama_chat,
       lia_quenta_ollama_embed,
       lia_snpeff_annotate,

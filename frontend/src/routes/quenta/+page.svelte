@@ -4,7 +4,6 @@
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Card from '$lib/components/ui/Card.svelte';
-  import EmptyState from '$lib/components/ui/EmptyState.svelte';
   import LabelWithInfo from '$lib/components/ui/LabelWithInfo.svelte';
   import Select from '$lib/components/ui/Select.svelte';
   import Spinner from '$lib/components/ui/Spinner.svelte';
@@ -35,6 +34,37 @@
   const currentConversation = $derived(quentaStore.currentConversation);
   const currentError = $derived(quentaStore.errorFor(currentConversation?.id));
   const sending = $derived(quentaStore.isSending(currentConversation?.id));
+  const preparingQuenta = $derived(
+    quentaStore.setupPhase === 'preparing'
+    || quentaStore.setupPhase === 'downloading'
+    || quentaStore.providerRefreshing,
+  );
+  const localAIReady = $derived(Boolean(
+    quentaStore.providerStatus?.available
+    && quentaStore.config.model
+    && quentaStore.setupPhase !== 'failed',
+  ));
+  const quentaStatusLabel = $derived(
+    localAIReady
+      ? 'Quenta ready'
+      : preparingQuenta
+        ? 'Preparing Quenta'
+        : 'Quenta needs attention',
+  );
+  const quentaStatusClass = $derived(
+    localAIReady
+      ? 'bg-emerald-50 text-emerald-600'
+      : preparingQuenta
+        ? 'bg-brand/10 text-brand'
+        : 'bg-amber-50 text-amber-600',
+  );
+  const composerPlaceholder = $derived(
+    localAIReady
+      ? 'Ask about a result, job log, pipeline, AI model, API Connector request, or bioinformatics concept. Press Cmd/Ctrl+Enter to send.'
+      : preparingQuenta
+        ? `Quenta is preparing the recommended local model (${quentaStore.defaultModel}). You can chat when it is ready.`
+        : 'Quenta could not prepare local AI automatically. Open settings for details.',
+  );
   const modelOptions = $derived([...new Map([
     ...(quentaStore.config.model ? [[quentaStore.config.model, quentaStore.config.model] as const] : []),
     ...quentaStore.providerModels.map((model) => [model.name, model.name] as const),
@@ -122,7 +152,7 @@
         embeddingModel: embeddingModelDraft,
         temperature: temperatureDraft,
       });
-      await quentaStore.refreshProvider();
+      await quentaStore.bootstrapProvider();
       syncSettingsDrafts();
       settingsOpen = false;
     } finally {
@@ -131,8 +161,13 @@
   }
 
   async function refreshProvider() {
-    await quentaStore.refreshProvider();
+    await quentaStore.bootstrapProvider();
     syncSettingsDrafts();
+  }
+
+  async function ensureDefaultConversation() {
+    if (quentaStore.conversations.length > 0 || currentConversation) return;
+    await quentaStore.newConversation();
   }
 
   async function sendDraft() {
@@ -174,9 +209,13 @@
   onMount(async () => {
     await quentaStore.init();
     syncSettingsDrafts();
-    await quentaStore.refreshProvider();
+    await quentaStore.bootstrapProvider();
     syncSettingsDrafts();
-    await handleDeepLink();
+    if (page.url.searchParams.toString()) {
+      await handleDeepLink();
+    } else {
+      await ensureDefaultConversation();
+    }
   });
 </script>
 
@@ -261,15 +300,15 @@
       {#snippet actions()}
         <div class="flex items-center gap-2">
           <span
-            class="rounded-full px-2 py-1 text-[10px] font-medium {quentaStore.providerStatus?.available ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-100 text-zinc-500'}"
+            class="rounded-full px-2 py-1 text-[10px] font-medium {quentaStatusClass}"
             data-testid="quenta-provider-status"
           >
-            {quentaStore.providerStatus?.available ? `Ollama ${quentaStore.providerStatus.version ?? ''}` : 'Ollama offline'}
+            {quentaStatusLabel}
           </span>
           
           <button
             class="h-3.5 w-3.5 hover:opacity-50 flex items-center justify-center mr-2"
-            title="Refresh Ollama status and models"
+            title="Refresh Quenta local AI"
             onclick={refreshProvider}
             disabled={quentaStore.providerRefreshing}
           >
@@ -294,9 +333,9 @@
               >
                 <div class="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
                   <div>
-                    <p class="text-sm font-semibold text-zinc-800">Local AI settings</p>
+                    <p class="text-sm font-semibold text-zinc-800">Quenta settings</p>
                     <p class="mt-1 text-[11px] leading-relaxed text-zinc-500">
-                      Quenta uses Ollama on this computer. Workspace context stays local.
+                      Quenta prepares a recommended local model automatically. Advanced users can change it here.
                     </p>
                   </div>
                   <button
@@ -311,25 +350,35 @@
 
                 <div class="max-h-[min(70vh,38rem)] overflow-y-auto p-4">
                   <div class="space-y-3">
-                    <div>
-                      <LabelWithInfo
-                        text="Ollama address"
-                        targetId="quenta-base-url"
-                        info="This is where Quenta reaches your local Ollama server. Liatir only accepts localhost or loopback HTTP addresses here, so this setting cannot point Quenta at a remote cloud service."
-                      />
-                      <input
-                        id="quenta-base-url"
-                        class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
-                        bind:value={baseUrlDraft}
-                        placeholder="http://127.0.0.1:11434"
-                      />
-                      <p class="mt-1 text-[10px] text-zinc-400">Most users can keep the default address.</p>
+                    <div class="rounded-xl border border-border bg-white p-3">
+                      <div class="flex items-start gap-3">
+                        <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full {localAIReady ? 'bg-emerald-50 text-emerald-600' : preparingQuenta ? 'bg-brand/10 text-brand' : 'bg-amber-50 text-amber-600'}">
+                          {#if localAIReady}
+                            <Icon icon="lucide:check" class="h-4 w-4" />
+                          {:else if preparingQuenta}
+                            <Icon icon="lucide:loader-circle" class="h-4 w-4 animate-spin" />
+                          {:else}
+                            <Icon icon="lucide:triangle-alert" class="h-4 w-4" />
+                          {/if}
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-zinc-800">{quentaStatusLabel}</p>
+                          <p class="mt-1 text-[11px] leading-relaxed text-zinc-500">
+                            Default model: {quentaStore.defaultModel}. Quenta keeps workspace context local.
+                          </p>
+                          {#if quentaStore.setupError}
+                            <p class="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-700">
+                              {quentaStore.setupError}
+                            </p>
+                          {/if}
+                        </div>
+                      </div>
                     </div>
 
                     <div>
                       <LabelWithInfo
-                        text="Answer model"
-                        info="The local language model Quenta uses to write explanations and reports. If no model appears, start Ollama and install a chat model first."
+                        text="Model"
+                        info="The local language model Quenta uses to write explanations and reports. Liatir prepares the recommended default automatically; advanced users can choose another installed model."
                       />
                       <Select
                         value={modelDraft}
@@ -341,56 +390,72 @@
                       />
                     </div>
 
-                    <div>
-                      <LabelWithInfo
-                        text="Retrieval model"
-                        targetId="quenta-embedding-model"
-                        info="Optional. This model will be used later for semantic search over local context. Quenta can still use deterministic local retrieval when this field is empty."
-                      />
-                      <input
-                        id="quenta-embedding-model"
-                        class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
-                        bind:value={embeddingModelDraft}
-                        placeholder="Optional, for example nomic-embed-text"
-                      />
-                    </div>
+                    <details class="rounded-xl border border-border bg-surface-2">
+                      <summary class="cursor-pointer px-3 py-2 text-xs font-semibold text-zinc-700">
+                        Advanced settings
+                      </summary>
+                      <div class="space-y-3 border-t border-border p-3">
+                        <div>
+                          <LabelWithInfo
+                            text="Ollama address"
+                            targetId="quenta-base-url"
+                            info="This is where Quenta reaches the local Ollama server. Liatir only accepts localhost or loopback HTTP addresses here, so this setting cannot point Quenta at a remote cloud service."
+                          />
+                          <input
+                            id="quenta-base-url"
+                            class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
+                            bind:value={baseUrlDraft}
+                            placeholder="http://127.0.0.1:11434"
+                          />
+                          <p class="mt-1 text-[10px] text-zinc-400">Most users should keep the default address.</p>
+                        </div>
 
-                    <div>
-                      <LabelWithInfo
-                        text="Creativity"
-                        targetId="quenta-temperature"
-                        info="Lower values make responses more consistent and conservative. Higher values may be more flexible but less predictable. Scientific reports should usually stay low."
-                      />
-                      <input
-                        id="quenta-temperature"
-                        type="number"
-                        min="0"
-                        max="2"
-                        step="0.1"
-                        class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
-                        bind:value={temperatureDraft}
-                      />
-                      <p class="mt-1 text-[10px] text-zinc-400">Recommended for reports: 0.1–0.3.</p>
-                    </div>
+                        <div>
+                          <LabelWithInfo
+                            text="Retrieval model"
+                            targetId="quenta-embedding-model"
+                            info="Optional. This model will be used later for semantic search over local context. Quenta can still use deterministic local retrieval when this field is empty."
+                          />
+                          <input
+                            id="quenta-embedding-model"
+                            class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
+                            bind:value={embeddingModelDraft}
+                            placeholder="Optional, for example nomic-embed-text"
+                          />
+                        </div>
 
-                    {#if quentaStore.providerStatus?.error}
-                      <p class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-700">
-                        {quentaStore.providerStatus.error}
-                      </p>
-                    {/if}
+                        <div>
+                          <LabelWithInfo
+                            text="Creativity"
+                            targetId="quenta-temperature"
+                            info="Lower values make responses more consistent and conservative. Higher values may be more flexible but less predictable. Scientific reports should usually stay low."
+                          />
+                          <input
+                            id="quenta-temperature"
+                            type="number"
+                            min="0"
+                            max="2"
+                            step="0.1"
+                            class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
+                            bind:value={temperatureDraft}
+                          />
+                          <p class="mt-1 text-[10px] text-zinc-400">Recommended for reports: 0.1–0.3.</p>
+                        </div>
 
-                    <div class="rounded-xl border border-border bg-surface-2 px-3 py-2">
-                      <p class="text-xs font-semibold text-zinc-700">Safety boundary</p>
-                      <ul class="mt-1 space-y-1 text-[11px] leading-relaxed text-zinc-500">
-                        <li>• Local Ollama only.</li>
-                        <li>• No tool calls are sent to the model.</li>
-                        <li>• Logs, files, and results are treated as evidence, not instructions.</li>
-                      </ul>
-                    </div>
+                        <div class="rounded-xl border border-border bg-white px-3 py-2">
+                          <p class="text-xs font-semibold text-zinc-700">Safety boundary</p>
+                          <ul class="mt-1 space-y-1 text-[11px] leading-relaxed text-zinc-500">
+                            <li>• Local AI only.</li>
+                            <li>• No tool calls are sent to the model.</li>
+                            <li>• Logs, files, and results are treated as evidence, not instructions.</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </details>
 
                     <div class="flex justify-end gap-2 pt-1">
                       <Button variant="ghost" size="sm" onclick={refreshProvider} loading={quentaStore.providerRefreshing}>
-                        Refresh models
+                        Refresh
                       </Button>
                       <Button variant="primary" size="sm" onclick={saveSettings} loading={savingSettings}>
                         Save
@@ -409,10 +474,36 @@
       <section class="flex h-full min-w-0 flex-col overflow-hidden">
         {#if !currentConversation}
           <div class="flex h-full items-center justify-center p-8">
-            <EmptyState
-              title="No Quenta conversation selected"
-              description="Start a conversation, explain a Result, or generate a cited report from local workspace evidence."
-            />
+            <Card class="max-w-xl">
+              <div class="space-y-4 p-6 text-center">
+                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand/10 text-brand">
+                  {#if preparingQuenta}
+                    <Icon icon="lucide:loader-circle" class="h-5 w-5 animate-spin" />
+                  {:else}
+                    <Icon icon="lucide:sparkles" class="h-5 w-5" />
+                  {/if}
+                </div>
+                <div>
+                  <p class="text-base font-semibold text-zinc-800">{quentaStatusLabel}</p>
+                  <p class="mt-2 text-sm leading-relaxed text-zinc-500">
+                    {localAIReady
+                      ? 'Ask Quenta about Results, Jobs, pipelines, or bioinformatics context.'
+                      : preparingQuenta
+                        ? `Quenta is preparing the recommended local model (${quentaStore.defaultModel}).`
+                        : 'Quenta could not prepare local AI automatically. Open settings for technical details.'}
+                  </p>
+                </div>
+                {#if localAIReady}
+                  <Button variant="primary" size="sm" onclick={() => quentaStore.newConversation()}>
+                    New chat
+                  </Button>
+                {:else if !preparingQuenta}
+                  <Button variant="ghost" size="sm" onclick={() => settingsOpen = true}>
+                    Open settings
+                  </Button>
+                {/if}
+              </div>
+            </Card>
           </div>
         {:else}
           <div class="flex-1 overflow-y-auto p-6" data-testid="quenta-transcript">
@@ -463,7 +554,7 @@
               {#if sending}
                 <div class="flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-3 text-xs text-zinc-500">
                   <Spinner />
-                  The local model is generating a response...
+                  Quenta is generating a response...
                 </div>
               {/if}
 
@@ -495,17 +586,17 @@
               </div>
               <textarea
                 class="min-h-24 w-full resize-none rounded-xl border border-border bg-white px-3 py-2 text-sm leading-relaxed text-zinc-800 outline-none transition-colors placeholder:text-zinc-400 focus:border-brand"
-                placeholder="Ask about a result, job log, pipeline, AI model, API Connector request, or bioinformatics concept. Press Cmd/Ctrl+Enter to send."
+                placeholder={composerPlaceholder}
                 bind:value={draft}
                 onkeydown={handleComposerKeydown}
-                disabled={sending}
+                disabled={sending || !localAIReady}
                 data-testid="quenta-input"
               ></textarea>
               <div class="mt-2 flex items-center justify-between gap-3">
                 <p class="text-[10px] text-zinc-400">
                   Quenta is advisory only. It cannot run tools, pipelines, API calls, Plugins, shell commands, or mutate workspace state.
                 </p>
-                <Button variant="primary" size="sm" onclick={sendDraft} loading={sending} disabled={!draft.trim() || !quentaStore.config.model}>
+                <Button variant="primary" size="sm" onclick={sendDraft} loading={sending} disabled={!draft.trim() || !localAIReady}>
                   Send
                 </Button>
               </div>
