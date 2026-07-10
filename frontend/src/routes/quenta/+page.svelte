@@ -8,7 +8,9 @@
   import LabelWithInfo from '$lib/components/ui/LabelWithInfo.svelte';
   import Select from '$lib/components/ui/Select.svelte';
   import Spinner from '$lib/components/ui/Spinner.svelte';
+  import Icon from '@iconify/svelte';
   import { liatir } from '$lib/api';
+  import { clickOutside } from '$lib/actions/clickOutside';
   import { quentaReportToMarkdown } from '$lib/quenta/report';
   import { quentaStore } from '$lib/stores/quenta.svelte';
   import type {
@@ -27,7 +29,8 @@
   let temperatureDraft = $state(0.2);
   let savingSettings = $state(false);
   let handledDeepLink = $state<string | null>(null);
-  let settingsCollapsed = $state(true);
+  let settingsOpen = $state(false);
+  let chatsCollapsed = $state(false);
 
   const currentConversation = $derived(quentaStore.currentConversation);
   const currentError = $derived(quentaStore.errorFor(currentConversation?.id));
@@ -121,6 +124,7 @@
       });
       await quentaStore.refreshProvider();
       syncSettingsDrafts();
+      settingsOpen = false;
     } finally {
       savingSettings = false;
     }
@@ -177,38 +181,76 @@
 </script>
 
 <div class="flex h-full overflow-hidden">
-  <aside class="flex w-80 shrink-0 flex-col border-r border-border bg-surface">
+  <aside class="{chatsCollapsed ? 'w-14' : 'w-80'} flex shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-150">
     <div class="border-b border-border p-3" style="height: {HEADER_HEIGHT}px;">
-      <div class="flex items-center justify-between gap-2">
-        <div>
-          <p class="text-xs font-semibold text-zinc-800">Quenta</p>
-          <p class="mt-0.5 text-[10px] text-zinc-400">Local read-only AI</p>
+      {#if chatsCollapsed}
+        <div class="flex h-full flex-col items-center justify-center gap-2">
+          <button
+            type="button"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
+            onclick={() => chatsCollapsed = false}
+            aria-label="Show conversations"
+            title="Show conversations"
+            data-testid="quenta-chat-sidebar-expand"
+          >
+            <Icon icon="lucide:panel-left-open" class="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
+            onclick={() => quentaStore.newConversation()}
+            aria-label="New conversation"
+            title="New conversation"
+          >
+            <Icon icon="lucide:plus" class="h-4 w-4" />
+          </button>
         </div>
-        <Button variant="ghost" size="sm" onclick={() => quentaStore.newConversation()}>
-          New
-        </Button>
-      </div>
-    </div>
-    <div class="flex-1 overflow-y-auto p-2">
-      {#if quentaStore.conversations.length === 0}
-        <p class="px-3 py-8 text-center text-xs leading-relaxed text-zinc-400">
-          No conversations yet. Ask a question or explain a Result to start.
-        </p>
       {:else}
-        <div class="space-y-1">
-          {#each quentaStore.conversations as conversation (conversation.id)}
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <p class="text-xs font-semibold text-zinc-800">Quenta</p>
+            <p class="mt-0.5 text-[10px] text-zinc-400">Local read-only AI</p>
+          </div>
+          <div class="flex items-center gap-1">
+            <Button variant="ghost" size="sm" onclick={() => quentaStore.newConversation()}>
+              New
+            </Button>
             <button
-              class="w-full rounded-lg px-3 py-2 text-left transition-colors {conversation.id === quentaStore.selectedConversationId ? 'bg-brand/10 text-brand' : 'text-zinc-600 hover:bg-surface-2'}"
-              data-testid="quenta-conversation"
-              onclick={() => quentaStore.selectConversation(conversation.id)}
+              type="button"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
+              onclick={() => chatsCollapsed = true}
+              aria-label="Collapse conversations"
+              title="Collapse conversations"
+              data-testid="quenta-chat-sidebar-collapse"
             >
-              <p class="truncate text-xs font-medium">{conversation.title}</p>
-              <p class="mt-0.5 truncate text-[10px] text-zinc-400">{conversationSubtitle(conversation)}</p>
+              <Icon icon="lucide:panel-left-close" class="h-4 w-4" />
             </button>
-          {/each}
+          </div>
         </div>
       {/if}
     </div>
+    {#if !chatsCollapsed}
+      <div class="flex-1 overflow-y-auto p-2">
+        {#if quentaStore.conversations.length === 0}
+          <p class="px-3 py-8 text-center text-xs leading-relaxed text-zinc-400">
+            No conversations yet. Ask a question or explain a Result to start.
+          </p>
+        {:else}
+          <div class="space-y-1">
+            {#each quentaStore.conversations as conversation (conversation.id)}
+              <button
+                class="w-full rounded-lg px-3 py-2 text-left transition-colors {conversation.id === quentaStore.selectedConversationId ? 'bg-brand/10 text-brand' : 'text-zinc-600 hover:bg-surface-2'}"
+                data-testid="quenta-conversation"
+                onclick={() => quentaStore.selectConversation(conversation.id)}
+              >
+                <p class="truncate text-xs font-medium">{conversation.title}</p>
+                <p class="mt-0.5 truncate text-[10px] text-zinc-400">{conversationSubtitle(conversation)}</p>
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    {/if}
   </aside>
 
   <main class="flex min-w-0 flex-1 flex-col">
@@ -224,18 +266,152 @@
           >
             {quentaStore.providerStatus?.available ? `Ollama ${quentaStore.providerStatus.version ?? ''}` : 'Ollama offline'}
           </span>
-          <Button variant="ghost" size="sm" onclick={refreshProvider} loading={quentaStore.providerRefreshing}>
-            Refresh
+          <Button
+            variant="ghost"
+            size="sm"
+            class="h-8 w-8 px-0"
+            title="Refresh Ollama status and models"
+            ariaLabel="Refresh Ollama status and models"
+            onclick={refreshProvider}
+            disabled={quentaStore.providerRefreshing}
+          >
+            <Icon icon="lucide:refresh-cw" class="h-4 w-4 {quentaStore.providerRefreshing ? 'animate-spin' : ''}" />
           </Button>
+          <div
+            class="relative"
+            use:clickOutside={{ enabled: settingsOpen, onOutside: () => settingsOpen = false }}
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              class="h-8 w-8 px-0"
+              title="Open local AI settings"
+              ariaLabel="Open local AI settings"
+              onclick={() => settingsOpen = !settingsOpen}
+            >
+              <Icon icon="lucide:settings" class="h-4 w-4" />
+            </Button>
+
+            {#if settingsOpen}
+              <div
+                class="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[24rem] overflow-hidden rounded-2xl border border-border bg-surface shadow-xl"
+                data-testid="quenta-settings-popover"
+              >
+                <div class="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
+                  <div>
+                    <p class="text-sm font-semibold text-zinc-800">Local AI settings</p>
+                    <p class="mt-1 text-[11px] leading-relaxed text-zinc-500">
+                      Quenta uses Ollama on this computer. Workspace context stays local.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-surface-2 hover:text-zinc-700"
+                    onclick={() => settingsOpen = false}
+                    aria-label="Close local AI settings"
+                  >
+                    <Icon icon="lucide:x" class="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div class="max-h-[min(70vh,38rem)] overflow-y-auto p-4">
+                  <div class="space-y-3">
+                    <div>
+                      <LabelWithInfo
+                        text="Ollama address"
+                        targetId="quenta-base-url"
+                        info="This is where Quenta reaches your local Ollama server. Liatir only accepts localhost or loopback HTTP addresses here, so this setting cannot point Quenta at a remote cloud service."
+                      />
+                      <input
+                        id="quenta-base-url"
+                        class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
+                        bind:value={baseUrlDraft}
+                        placeholder="http://127.0.0.1:11434"
+                      />
+                      <p class="mt-1 text-[10px] text-zinc-400">Most users can keep the default address.</p>
+                    </div>
+
+                    <div>
+                      <LabelWithInfo
+                        text="Answer model"
+                        info="The local language model Quenta uses to write explanations and reports. If no model appears, start Ollama and install a chat model first."
+                      />
+                      <Select
+                        value={modelDraft}
+                        options={modelSelectOptions}
+                        onchange={(value) => modelDraft = value}
+                        placeholder="Select a local model"
+                        emptyText="No local models found"
+                        searchable={true}
+                      />
+                    </div>
+
+                    <div>
+                      <LabelWithInfo
+                        text="Retrieval model"
+                        targetId="quenta-embedding-model"
+                        info="Optional. This model will be used later for semantic search over local context. Quenta can still use deterministic local retrieval when this field is empty."
+                      />
+                      <input
+                        id="quenta-embedding-model"
+                        class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
+                        bind:value={embeddingModelDraft}
+                        placeholder="Optional, for example nomic-embed-text"
+                      />
+                    </div>
+
+                    <div>
+                      <LabelWithInfo
+                        text="Creativity"
+                        targetId="quenta-temperature"
+                        info="Lower values make responses more consistent and conservative. Higher values may be more flexible but less predictable. Scientific reports should usually stay low."
+                      />
+                      <input
+                        id="quenta-temperature"
+                        type="number"
+                        min="0"
+                        max="2"
+                        step="0.1"
+                        class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
+                        bind:value={temperatureDraft}
+                      />
+                      <p class="mt-1 text-[10px] text-zinc-400">Recommended for reports: 0.1–0.3.</p>
+                    </div>
+
+                    {#if quentaStore.providerStatus?.error}
+                      <p class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-700">
+                        {quentaStore.providerStatus.error}
+                      </p>
+                    {/if}
+
+                    <div class="rounded-xl border border-border bg-surface-2 px-3 py-2">
+                      <p class="text-xs font-semibold text-zinc-700">Safety boundary</p>
+                      <ul class="mt-1 space-y-1 text-[11px] leading-relaxed text-zinc-500">
+                        <li>• Local Ollama only.</li>
+                        <li>• No tool calls are sent to the model.</li>
+                        <li>• Logs, files, and results are treated as evidence, not instructions.</li>
+                      </ul>
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-1">
+                      <Button variant="ghost" size="sm" onclick={refreshProvider} loading={quentaStore.providerRefreshing}>
+                        Refresh models
+                      </Button>
+                      <Button variant="primary" size="sm" onclick={saveSettings} loading={savingSettings}>
+                        Save
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {/if}
+          </div>
         </div>
       {/snippet}
     </PageHeader>
 
-    <div class={settingsCollapsed
-      ? 'grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_3.5rem] overflow-hidden'
-      : 'grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_22rem] overflow-hidden'}
-    >
-      <section class="flex min-w-0 flex-col overflow-hidden">
+    <div class="min-h-0 flex-1 overflow-hidden">
+      <section class="flex h-full min-w-0 flex-col overflow-hidden">
         {#if !currentConversation}
           <div class="flex h-full items-center justify-center p-8">
             <EmptyState
@@ -342,136 +518,6 @@
           </div>
         {/if}
       </section>
-
-      <aside class="overflow-y-auto border-l border-border bg-surface {settingsCollapsed ? 'p-2' : 'p-4'}">
-        {#if settingsCollapsed}
-          <div class="flex h-full items-start justify-center pt-2">
-            <button
-              type="button"
-              class="flex h-32 w-9 items-center justify-center rounded-xl border border-border bg-white text-[10px] font-semibold uppercase tracking-wider text-zinc-500 shadow-sm transition hover:border-brand hover:text-brand"
-              onclick={() => settingsCollapsed = false}
-              aria-label="Show AI settings"
-              title="Show AI settings"
-              data-testid="quenta-settings-expand"
-            >
-              <span style="writing-mode: vertical-rl;">AI settings</span>
-            </button>
-          </div>
-        {:else}
-          <div class="space-y-4">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="text-sm font-semibold text-zinc-800">Local AI settings</p>
-                <p class="mt-1 text-[11px] leading-relaxed text-zinc-500">
-                  Quenta uses Ollama running on this computer to write answers and reports. Your workspace context stays local.
-                </p>
-              </div>
-              <Button variant="ghost" size="sm" onclick={() => settingsCollapsed = true}>
-                Collapse
-              </Button>
-            </div>
-
-            <Card>
-              <div class="space-y-3 p-4">
-                <div>
-                  <p class="text-sm font-semibold text-zinc-800">Connection</p>
-                  <p class="mt-0.5 text-[11px] leading-relaxed text-zinc-400">
-                    Most users can keep the default address. Change it only if Ollama is running locally on a different port.
-                  </p>
-                </div>
-
-                <div>
-                  <LabelWithInfo
-                    text="Ollama address"
-                    targetId="quenta-base-url"
-                    info="This is where Quenta reaches your local Ollama server. Liatir only accepts localhost or loopback HTTP addresses here, so this setting cannot point Quenta at a remote cloud service."
-                  />
-                  <input
-                    id="quenta-base-url"
-                    class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
-                    bind:value={baseUrlDraft}
-                    placeholder="http://127.0.0.1:11434"
-                  />
-                </div>
-
-                <div>
-                  <LabelWithInfo
-                    text="Answer model"
-                    info="The local language model Quenta uses to write explanations and reports. If no model appears, start Ollama and install a chat model first."
-                  />
-                  <Select
-                    value={modelDraft}
-                    options={modelSelectOptions}
-                    onchange={(value) => modelDraft = value}
-                    placeholder="Select a local model"
-                    emptyText="No local models found"
-                    searchable={true}
-                  />
-                </div>
-
-                <div>
-                  <LabelWithInfo
-                    text="Retrieval model"
-                    targetId="quenta-embedding-model"
-                    info="Optional. This model will be used later for semantic search over local context. Quenta can still use deterministic local retrieval when this field is empty."
-                  />
-                  <input
-                    id="quenta-embedding-model"
-                    class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
-                    bind:value={embeddingModelDraft}
-                    placeholder="Optional, for example nomic-embed-text"
-                  />
-                </div>
-
-                <div>
-                  <LabelWithInfo
-                    text="Creativity"
-                    targetId="quenta-temperature"
-                    info="Lower values make responses more consistent and conservative. Higher values may be more flexible but less predictable. Scientific reports should usually stay low."
-                  />
-                  <input
-                    id="quenta-temperature"
-                    type="number"
-                    min="0"
-                    max="2"
-                    step="0.1"
-                    class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
-                    bind:value={temperatureDraft}
-                  />
-                  <p class="mt-1 text-[10px] text-zinc-400">Recommended for reports: 0.1–0.3.</p>
-                </div>
-
-                {#if quentaStore.providerStatus?.error}
-                  <p class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-700">
-                    {quentaStore.providerStatus.error}
-                  </p>
-                {/if}
-
-                <div class="flex justify-end gap-2">
-                  <Button variant="ghost" size="sm" onclick={refreshProvider} loading={quentaStore.providerRefreshing}>
-                    Refresh models
-                  </Button>
-                  <Button variant="primary" size="sm" onclick={saveSettings} loading={savingSettings}>
-                    Save
-                  </Button>
-                </div>
-              </div>
-            </Card>
-
-            <Card>
-              <div class="space-y-2 p-4">
-                <p class="text-sm font-semibold text-zinc-800">Safety boundary</p>
-                <ul class="space-y-1 text-[11px] leading-relaxed text-zinc-500">
-                  <li>• Local Ollama only.</li>
-                  <li>• No tool calls are sent to the model.</li>
-                  <li>• Logs, files, and results are treated as evidence, not instructions.</li>
-                  <li>• Reports must cite local sources and state limitations.</li>
-                </ul>
-              </div>
-            </Card>
-          </div>
-        {/if}
-      </aside>
     </div>
   </main>
 </div>

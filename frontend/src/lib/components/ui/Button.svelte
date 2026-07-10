@@ -9,6 +9,7 @@
     loading?: boolean;
     type?: ButtonTypes;
     title?: string;
+    ariaLabel?: string;
     testId?: string;
     class?: string;
     onclick?: (e: MouseEvent) => void;
@@ -22,6 +23,7 @@
     loading = false,
     type = 'button',
     title,
+    ariaLabel,
     testId,
     class: className = '',
     onclick,
@@ -55,6 +57,7 @@
 <button
   {type}
   {title}
+  aria-label={ariaLabel}
   data-testid={testId}
   class="{base} {sizes[size]} {variants[variant]} {className}"
   disabled={disabled || loading}
