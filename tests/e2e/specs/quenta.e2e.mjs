@@ -240,6 +240,7 @@ export const tests = [
         expect(ollama.chatRequests.length).toBeGreaterThanOrEqual(1);
         const chat = ollama.chatRequests.at(-1);
         expect(chat.stream).toBe(false);
+        expect(chat.think).toBe(false);
         expect(chat.tools).toBeUndefined();
         expect(JSON.stringify(chat.messages)).toContain(`result:${RUN_ID}`);
         expect(JSON.stringify(chat.messages)).toContain('reads=42');
@@ -274,6 +275,7 @@ export const tests = [
 
         const chat = ollama.chatRequests.at(-1);
         expect(chat.format).toBeTruthy();
+        expect(chat.think).toBe(false);
         expect(chat.tools).toBeUndefined();
         expect(JSON.stringify(chat.messages)).toContain(`result:${RUN_ID}`);
 

@@ -26,6 +26,7 @@
   let modelDraft = $state('');
   let embeddingModelDraft = $state('');
   let temperatureDraft = $state(0.2);
+  let thinkingEnabledDraft = $state(false);
   let savingSettings = $state(false);
   let handledDeepLink = $state<string | null>(null);
   let settingsOpen = $state(false);
@@ -101,6 +102,7 @@
     modelDraft = quentaStore.config.model;
     embeddingModelDraft = quentaStore.config.embeddingModel ?? '';
     temperatureDraft = quentaStore.config.temperature;
+    thinkingEnabledDraft = quentaStore.config.thinkingEnabled ?? false;
   }
 
   function formatTime(ms: number) {
@@ -151,6 +153,7 @@
         model: modelDraft,
         embeddingModel: embeddingModelDraft,
         temperature: temperatureDraft,
+        thinkingEnabled: thinkingEnabledDraft,
       });
       await quentaStore.bootstrapProvider();
       syncSettingsDrafts();
@@ -162,6 +165,12 @@
 
   async function refreshProvider() {
     await quentaStore.bootstrapProvider();
+    syncSettingsDrafts();
+  }
+
+  async function setThinkingEnabled(enabled: boolean) {
+    thinkingEnabledDraft = enabled;
+    await quentaStore.updateConfig({ thinkingEnabled: enabled });
     syncSettingsDrafts();
   }
 
@@ -583,6 +592,21 @@
                     Focus: {currentConversation.focus.kind} {currentConversation.focus.entityId}
                   </span>
                 {/if}
+                <button
+                  type="button"
+                  class="ml-auto inline-flex items-center gap-2 rounded-full border px-2 py-1 text-[10px] font-medium transition {thinkingEnabledDraft ? 'border-brand/30 bg-brand/10 text-brand' : 'border-border bg-white text-zinc-500 hover:bg-surface-2'}"
+                  onclick={() => void setThinkingEnabled(!thinkingEnabledDraft)}
+                  disabled={sending}
+                  aria-pressed={thinkingEnabledDraft}
+                  title={thinkingEnabledDraft ? 'Thinking mode is on' : 'Thinking mode is off'}
+                  data-testid="quenta-thinking-toggle"
+                >
+                  <span class="relative inline-flex h-3.5 w-6 items-center rounded-full {thinkingEnabledDraft ? 'bg-brand' : 'bg-zinc-300'}">
+                    <span class="inline-block h-2.5 w-2.5 rounded-full bg-white transition-transform {thinkingEnabledDraft ? 'translate-x-3' : 'translate-x-0.5'}"></span>
+                  </span>
+                  <Icon icon="lucide:brain" class="h-3 w-3" />
+                  {thinkingEnabledDraft ? 'Thinking' : 'No thinking'}
+                </button>
               </div>
               <textarea
                 class="min-h-24 w-full resize-none rounded-xl border border-border bg-white px-3 py-2 text-sm leading-relaxed text-zinc-800 outline-none transition-colors placeholder:text-zinc-400 focus:border-brand"

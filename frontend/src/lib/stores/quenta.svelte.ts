@@ -21,7 +21,7 @@ const SETTINGS_FILE = 'quenta/settings.json';
 const LEGACY_SETTINGS_FILE = 'tutor/settings.json';
 const MAX_CONVERSATIONS = 40;
 const MAX_MESSAGES_PER_CONVERSATION = 120;
-export const QUENTA_DEFAULT_MODEL = 'qwen3:4b-instruct';
+export const QUENTA_DEFAULT_MODEL = 'qwen3.5:9b';
 type QuentaSetupPhase = 'idle' | 'preparing' | 'downloading' | 'ready' | 'failed';
 
 interface QuentaSettingsFile {
@@ -38,6 +38,7 @@ const DEFAULT_CONFIG: LiatirQuentaProviderConfig = {
   model: '',
   embeddingModel: '',
   temperature: 0.2,
+  thinkingEnabled: false,
 };
 const DEFAULT_CONVERSATION_TITLE = 'New chat';
 
@@ -105,6 +106,7 @@ function normalizeSettings(value: Partial<QuentaSettingsFile> | null): QuentaSet
       temperature: Number.isFinite(temperature)
         ? Math.min(2, Math.max(0, temperature))
         : DEFAULT_CONFIG.temperature,
+      thinkingEnabled: Boolean(value?.config?.thinkingEnabled ?? DEFAULT_CONFIG.thinkingEnabled),
     },
   };
 }
@@ -343,6 +345,7 @@ function createQuentaStore() {
         model: settings.config.model,
         messages: buildQuentaMessages(query, retrieval.context, history, intent),
         temperature: settings.config.temperature,
+        thinkingEnabled: settings.config.thinkingEnabled ?? false,
         format: intent === 'report' ? QUENTA_REPORT_SCHEMA : undefined,
       });
 

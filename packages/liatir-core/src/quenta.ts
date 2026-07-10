@@ -64,6 +64,7 @@ export interface LiatirQuentaProviderConfig {
   model: string;
   embeddingModel?: string;
   temperature: number;
+  thinkingEnabled?: boolean;
 }
 
 export interface LiatirQuentaProviderModel {
@@ -91,6 +92,7 @@ export interface LiatirQuentaChatRequest {
   model: string;
   messages: LiatirQuentaRuntimeMessage[];
   temperature: number;
+  thinkingEnabled?: boolean;
   format?: JsonValue;
 }
 

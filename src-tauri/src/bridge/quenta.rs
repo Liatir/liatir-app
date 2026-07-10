@@ -300,6 +300,7 @@ pub async fn lia_quenta_ollama_chat(
     model: String,
     messages: Vec<QuentaRuntimeMessage>,
     temperature: f64,
+    thinking_enabled: Option<bool>,
     format: Option<Value>,
 ) -> Result<Value, String> {
     if model.trim().is_empty() {
@@ -319,6 +320,7 @@ pub async fn lia_quenta_ollama_chat(
     let mut body = json!({
         "model": model,
         "messages": messages,
+        "think": thinking_enabled.unwrap_or(false),
         "stream": false,
         "options": {
             "temperature": temperature.clamp(0.0, 2.0)
