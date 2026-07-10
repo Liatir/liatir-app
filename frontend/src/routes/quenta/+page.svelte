@@ -25,7 +25,7 @@
   let baseUrlDraft = $state('http://127.0.0.1:11434');
   let modelDraft = $state('');
   let embeddingModelDraft = $state('');
-  let temperatureDraft = $state(0.2);
+  let temperatureDraft = $state(0.1);
   let thinkingEnabledDraft = $state(false);
   let savingSettings = $state(false);
   let handledDeepLink = $state<string | null>(null);
@@ -349,10 +349,10 @@
 </script>
 
 <div class="flex h-full overflow-hidden">
-  <aside class="{chatsCollapsed ? 'w-14' : 'w-80'} flex shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-150">
+  <aside class="{chatsCollapsed ? 'w-0 hide' : 'w-80 flex flex-col'} shrink-0 border-r border-border bg-surface transition-[width] duration-150">
     <div class="border-b border-border p-3" style="height: {HEADER_HEIGHT}px;">
       {#if chatsCollapsed}
-        <div class="flex h-full flex-col items-center justify-center gap-2">
+        <!-- <div class="flex h-full flex-col items-center justify-center gap-2">
           <button
             type="button"
             class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
@@ -372,7 +372,7 @@
           >
             <Icon icon="lucide:plus" class="h-4 w-4" />
           </button>
-        </div>
+        </div> -->
       {:else}
         <div class="flex items-center justify-between gap-2">
           <div>
@@ -605,8 +605,9 @@
   </aside>
 
   <main class="flex min-w-0 flex-1 flex-col">
+    <!-- svelte-ignore attribute_quoted -->
     <PageHeader
-      title="Quenta"
+      title="{(quentaStore.currentConversation?.title)??'Quenta'}"
       description="Quenta is Liatir's local, read-only AI for explaining Results, Jobs, pipelines, and bioinformatics context."
     >
       {#snippet actions()}
@@ -647,7 +648,7 @@
                   <div>
                     <p class="text-sm font-semibold text-zinc-800">Quenta settings</p>
                     <p class="mt-1 text-[11px] leading-relaxed text-zinc-500">
-                      Quenta prepares a recommended local model automatically. Advanced users can change it here.
+                      Quenta prepares a default local model automatically. Advanced users can change it here.
                     </p>
                   </div>
                   <button
@@ -701,6 +702,23 @@
                         searchable={true}
                       />
                     </div>
+                      <div>
+                        <LabelWithInfo
+                          text="Creativity"
+                          targetId="quenta-temperature"
+                          info="Lower values make responses more consistent and conservative. Higher values may be more flexible but less predictable. Scientific reports should usually stay low."
+                        />
+                        <input
+                          id="quenta-temperature"
+                          type="number"
+                          min="0"
+                          max="2"
+                          step="0.1"
+                          class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
+                          bind:value={temperatureDraft}
+                        />
+                        <p class="mt-1 text-[10px] text-zinc-400">Recommended for reports: 0.1–0.3.</p>
+                      </div>
 
                     <details class="rounded-xl border border-border bg-surface-2">
                       <summary class="cursor-pointer px-3 py-2 text-xs font-semibold text-zinc-700">
@@ -734,24 +752,6 @@
                             bind:value={embeddingModelDraft}
                             placeholder="Optional, for example nomic-embed-text"
                           />
-                        </div>
-
-                        <div>
-                          <LabelWithInfo
-                            text="Creativity"
-                            targetId="quenta-temperature"
-                            info="Lower values make responses more consistent and conservative. Higher values may be more flexible but less predictable. Scientific reports should usually stay low."
-                          />
-                          <input
-                            id="quenta-temperature"
-                            type="number"
-                            min="0"
-                            max="2"
-                            step="0.1"
-                            class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
-                            bind:value={temperatureDraft}
-                          />
-                          <p class="mt-1 text-[10px] text-zinc-400">Recommended for reports: 0.1–0.3.</p>
                         </div>
 
                         <div class="rounded-xl border border-border bg-white px-3 py-2">
@@ -878,7 +878,30 @@
             </div>
           </div>
 
-          <div class="border-t border-border bg-surface p-4">
+          <div class="border-t border-border bg-surface p-4 flex">
+            {#if chatsCollapsed}
+              <div class="flex h-full flex-col items-center justify-center gap-2 transition-[width] duration-150">
+                <button
+                  type="button"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
+                  onclick={() => chatsCollapsed = false}
+                  aria-label="Show conversations"
+                  title="Show conversations"
+                  data-testid="quenta-chat-sidebar-expand"
+                >
+                  <Icon icon="lucide:panel-left-open" class="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
+                  onclick={() => quentaStore.newConversation()}
+                  aria-label="New conversation"
+                  title="New conversation"
+                >
+                  <Icon icon="lucide:plus" class="h-4 w-4" />
+                </button>
+              </div>
+            {/if}
             <div class="mx-auto max-w-4xl">
               <div class="mb-2 flex items-center gap-2">
                 <Select
