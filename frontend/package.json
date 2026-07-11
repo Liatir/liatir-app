@@ -30,6 +30,7 @@
 		"@iconify/svelte": "^5.2.2",
 		"@sveltejs/adapter-static": "^3.0.10",
 		"@tailwindcss/vite": "^4.1.17",
+		"@tauri-apps/api": "^2.11.0",
 		"@xyflow/svelte": "^1.6.0",
 		"codemirror": "^6.0.2",
 		"plotly.js-dist-min": "^2.35.2",

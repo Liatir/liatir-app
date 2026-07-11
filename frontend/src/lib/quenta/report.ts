@@ -40,13 +40,60 @@ function stringArray(value: unknown, field: string): string[] {
   return value;
 }
 
-export function parseQuentaReport(content: string, generatedAt = new Date().toISOString()): LiatirQuentaReport {
-  let raw: Record<string, unknown>;
-  try {
-    raw = JSON.parse(content) as Record<string, unknown>;
-  } catch {
-    throw new Error('The local model returned an invalid structured report');
+function jsonObjectCandidates(content: string): string[] {
+  const trimmed = content.trim().replace(/^\uFEFF/, '');
+  const candidates = [trimmed];
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i)?.[1]?.trim();
+  if (fenced) candidates.push(fenced);
+
+  let start = -1;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = 0; index < trimmed.length; index += 1) {
+    const character = trimmed[index];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (character === '\\') escaped = true;
+      else if (character === '"') inString = false;
+      continue;
+    }
+    if (character === '"') {
+      inString = true;
+      continue;
+    }
+    if (character === '{') {
+      if (depth === 0) start = index;
+      depth += 1;
+      continue;
+    }
+    if (character === '}' && depth > 0) {
+      depth -= 1;
+      if (depth === 0 && start >= 0) {
+        candidates.push(trimmed.slice(start, index + 1));
+        start = -1;
+      }
+    }
   }
+  return [...new Set(candidates.filter(Boolean))];
+}
+
+function parseReportObject(content: string): Record<string, unknown> {
+  for (const candidate of jsonObjectCandidates(content)) {
+    try {
+      const value = JSON.parse(candidate) as unknown;
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        return value as Record<string, unknown>;
+      }
+    } catch {
+      // Try the next complete JSON object found in the model response.
+    }
+  }
+  throw new Error('The local model returned an invalid structured report');
+}
+
+export function parseQuentaReport(content: string, generatedAt = new Date().toISOString()): LiatirQuentaReport {
+  const raw = parseReportObject(content);
   for (const key of ['title', 'subject', 'executiveSummary'] as const) {
     if (typeof raw[key] !== 'string' || !raw[key].trim()) {
       throw new Error(`Quenta report field "${key}" is missing`);

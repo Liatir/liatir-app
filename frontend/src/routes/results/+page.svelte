@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
@@ -11,6 +10,9 @@
   import { fmtDuration, fmtBytes, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { liatir } from '$lib/api';
   import { exportToHtml } from '$lib/utils/export-result';
+  import { quentaDraftUrl } from '$lib/quenta/navigation';
+  import { openQuentaWindow } from '$lib/quenta/window';
+  import { toast } from '$lib/stores/toast.svelte';
   import type { ToolOutput } from '$lib/types/tool-output';
 	import Icon from '@iconify/svelte';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
@@ -118,8 +120,12 @@
     }
   }
 
-  function openQuentaForRun(run: AnalysisRunMeta, intent: 'explain-result' | 'explain-failure' | 'report') {
-    void goto(`/quenta?intent=${intent}&run=${encodeURIComponent(run.id)}&auto=1`);
+  async function openQuentaForRun(run: AnalysisRunMeta, intent: 'explain-result' | 'explain-failure' | 'report') {
+    try {
+      await openQuentaWindow(quentaDraftUrl(intent, { kind: 'result', entityId: run.id }));
+    } catch {
+      toast.error('Quenta could not open in a separate window.');
+    }
   }
 
   function fmtDate(ms: number) {
@@ -253,7 +259,7 @@
                       text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2 transition-colors"
                 data-testid="result-explain-failure"
               >
-                Explain with Quenta
+                Explain failure
               </button>
             </div>
             <div class="rounded-xl border px-4 py-3 text-sm font-mono
@@ -273,7 +279,7 @@
             </svg>
           </div>
 
-        {:else if loadedOutput}
+        {:else}
           <div>
             <div class="flex items-center justify-between mb-4">
               <div>
@@ -289,7 +295,7 @@
                         text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2 transition-colors"
                   data-testid="result-explain"
                 >
-                  Explain with Quenta
+                  Explain result
                 </button>
                 <button
                   onclick={() => openQuentaForRun(selectedRun, 'report')}
@@ -297,31 +303,39 @@
                         text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2 transition-colors"
                   data-testid="result-report"
                 >
-                  Quenta report
+                  Generate report
                 </button>
-                <button
-                  onclick={exportRun}
-                  disabled={exporting}
-                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
-                        text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2
-                        disabled:opacity-50 disabled:cursor-default transition-colors"
-                >
-                  {#if exporting}
-                    <svg class="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                    </svg>
-                    Exporting…
-                  {:else}
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
-                    Export HTML
-                  {/if}
-                </button>
+                {#if loadedOutput}
+                  <button
+                    onclick={exportRun}
+                    disabled={exporting}
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
+                          text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2
+                          disabled:opacity-50 disabled:cursor-default transition-colors"
+                  >
+                    {#if exporting}
+                      <svg class="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                      </svg>
+                      Exporting…
+                    {:else}
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                      </svg>
+                      Export HTML
+                    {/if}
+                  </button>
+                {/if}
               </div>
             </div>
-            <ToolResultView output={loadedOutput} outputFiles={selectedRun.outputFiles ?? []} />
+            {#if loadedOutput}
+              <ToolResultView output={loadedOutput} outputFiles={selectedRun.outputFiles ?? []} />
+            {:else}
+              <div class="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-zinc-500">
+                This Result has no structured preview. Quenta can still use its metadata, files, and logs.
+              </div>
+            {/if}
             <RunLog runId={selectedId} />
           </div>
         {/if}

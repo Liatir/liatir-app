@@ -29,6 +29,9 @@
 	let refreshingJobs = false;
 	let sidebarForceExpand = $state(false);
 	const isPluginDevRoute = $derived(page.url.pathname.startsWith('/plugin-dev'));
+	const isStandaloneQuenta = $derived(
+		page.url.pathname === '/quenta' && page.url.searchParams.get('window') === '1'
+	);
 
 	async function refreshJobsAndFinalize() {
 		if (refreshingJobs) return;
@@ -104,14 +107,14 @@
             : ''} flex h-screen overflow-hidden border-sandbox-500 transition-[border-width] duration-[0.48s] ease-in-out relative"
         style="background-color: var(--color-bg);"
     >
-        {#if workspaceStore.active && workspaceStore.activeId && initialized}
+        {#if workspaceStore.active && workspaceStore.activeId && initialized && !isStandaloneQuenta}
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div class="absolute left-0 top-0 h-full z-20" onmouseenter={()=>setSidebarForceExpand(true)} onmouseleave={()=>setSidebarForceExpand(false)}>
                 <Sidebar forceExpand={sidebarForceExpand}/>
             </div>
         {/if}
         
-        <main class="w-full h-full overflow-y-auto" style="padding-left: {$sidebarWidth}px;">
+		<main class="w-full h-full overflow-y-auto" style:padding-left={isStandaloneQuenta ? '0' : `${$sidebarWidth}px`}>
 			{@render children()}
 		</main>
     </div>

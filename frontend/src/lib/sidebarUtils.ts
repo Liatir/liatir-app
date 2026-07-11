@@ -15,6 +15,8 @@ export interface NavItem {
 }
 
 export const NAV_PAGES: NavItem[] = [
+    { href: '/quenta', label: 'Ask Quenta', icon: 'ri:chat-ai-line', match: '/quenta', global: false },
+    { divider: true, global: true },
     { href: '/', label: 'Dashboard', icon: 'lucide:house', match: undefined, global: false },
     { href: '/pipelines', label: 'Pipelines', icon: 'lucide:workflow', match: '/pipelines', global: false },
     { divider: true, global: false },
@@ -22,7 +24,6 @@ export const NAV_PAGES: NavItem[] = [
     { href: '/plugins', label: 'Plugins', customIcon: '/icons/lia-file-icon.svg', match: '/plugins', global: true },
     { href: '/apis', label: 'API Connector', icon: 'lucide:plug', match: '/apis', global: false },
     { href: '/ai', label: 'AI Models', icon: 'mingcute:ai-line', match: '/ai', global: true },
-    { href: '/quenta', label: 'Quenta', icon: 'lucide:scroll-text', match: '/quenta', global: false },
     { divider: true, global: true },
     { href: '/data', label: 'Data', icon: 'lucide:database', match: '/data', global: false },
     { href: '/results', label: 'Results', icon: 'lucide:inbox', match: '/results', global: false },

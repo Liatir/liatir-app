@@ -41,6 +41,23 @@ describe('Quenta reports', () => {
     expect(() => parseQuentaReport(JSON.stringify({ title: 'Incomplete' }))).toThrow(/missing/);
   });
 
+  it('extracts a valid structured report from common local-model wrappers', () => {
+    const payload = JSON.stringify({
+      title: 'Wrapped report',
+      subject: 'result:wrapped',
+      executiveSummary: 'Observed evidence was reviewed.',
+      methods: [],
+      findings: [],
+      limitations: ['No additional evidence was available.'],
+      recommendedNextSteps: [],
+      citationIds: ['result:wrapped'],
+    });
+
+    expect(parseQuentaReport(`\`\`\`json\n${payload}\n\`\`\``).title).toBe('Wrapped report');
+    expect(parseQuentaReport(`Here is the report:\n${payload}\nEnd of report.`).subject)
+      .toBe('result:wrapped');
+  });
+
   it('summarizes heterogeneous ToolOutput sections for model context', () => {
     const summary = summarizeToolOutput({
       sections: [

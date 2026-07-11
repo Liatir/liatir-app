@@ -1,10 +1,23 @@
 use serde::Serialize;
 use std::sync::atomic::Ordering;
-use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindow};
+use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 use url::Url;
 
 use crate::bridge::diagnostics::mark_clean_shutdown_now;
 use crate::helpers::states::CloseGuard;
+
+fn resolve_webview_url(value: &str) -> Result<WebviewUrl, String> {
+  if value.starts_with('/') && !value.starts_with("//") {
+    let route = value.trim_start_matches('/');
+    if route.split(['/', '?', '#']).any(|segment| segment == "..") {
+      return Err("Window route traversal is not allowed".to_string());
+    }
+    return Ok(WebviewUrl::App(route.into()));
+  }
+  Ok(WebviewUrl::External(
+    value.parse::<Url>().map_err(|error| error.to_string())?
+  ))
+}
 
 #[derive(Serialize)]
 pub struct WindowSizeInfo {
@@ -80,30 +93,45 @@ pub async fn lia_win_open(
   if app.get_webview_window(&label).is_some() {
     return Ok(());
   }
-  let s = url.to_string();
+  let webview_url = if url.is_empty() {
+    WebviewUrl::App("/".into())
+  } else {
+    resolve_webview_url(&url)?
+  };
 
-  let mut conf = app.config().app.windows.iter()
-    .find(|c| c.label == "main")
-    .ok_or_else(|| "main window config not found".to_string())?
-    .clone();
-  // This should be a unique label for all windows.
-  let mut buf = [0u8; 1];
-  assert_eq!(getrandom::fill(&mut buf), Ok(()));
-  conf.label = label;
-  conf.visible = true;
-  conf.fullscreen = fullscreen;
-  if !s.is_empty(){
-    let webview_url = WebviewUrl::External(
-        s.parse::<Url>().map_err(|e| e.to_string())?
-    );
-    conf.url = webview_url;
-  }
-  let _webview_window = tauri::WebviewWindowBuilder::from_config(&app, &conf)
-    .map_err(|e| format!("Failed to build window config: {e}"))?
+  // The main window is created programmatically, so there is no window config
+  // to clone from tauri.conf.json. Build secondary app windows the same way.
+  let _webview_window = WebviewWindowBuilder::new(&app, &label, webview_url)
+    .title(env!("MAIN_WINDOW_TITLE"))
+    .visible(true)
+    .fullscreen(fullscreen)
+    .inner_size(
+      env!("MAIN_WINDOW_WIDTH").parse::<f64>().unwrap_or(1200.0),
+      env!("MAIN_WINDOW_HEIGHT").parse::<f64>().unwrap_or(800.0),
+    )
+    .resizable(env!("MAIN_WINDOW_RESIZABLE").parse::<bool>().unwrap_or(true))
+    .initialization_script(crate::OPEN_EXTERNAL_SCRIPT)
     .build()
     .map_err(|e| format!("Failed to create window: {e}"))?;
 
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::resolve_webview_url;
+  use tauri::WebviewUrl;
+
+  #[test]
+  fn resolves_internal_window_routes_as_app_urls() {
+    match resolve_webview_url("/quenta?intent=report&run=result-1&window=1").unwrap() {
+      WebviewUrl::App(path) => {
+        assert_eq!(path.to_string_lossy(), "quenta?intent=report&run=result-1&window=1");
+      }
+      _ => panic!("Quenta route must stay inside the app"),
+    }
+    assert!(resolve_webview_url("/../settings").is_err());
+  }
 }
 
 #[tauri::command]

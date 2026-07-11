@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
+  import { replaceState } from '$app/navigation';
   import { page } from '$app/state';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import Button from '$lib/components/ui/Button.svelte';
@@ -10,11 +11,15 @@
   import Icon from '@iconify/svelte';
   import { liatir } from '$lib/api';
   import { clickOutside } from '$lib/actions/clickOutside';
+  import QuentaActivityPanel from '$lib/components/quenta/QuentaActivityPanel.svelte';
+  import QuentaMarkdown from '$lib/components/quenta/QuentaMarkdown.svelte';
+  import { consumedQuentaUrl, quentaLaunchRequest, type QuentaLaunchRequest } from '$lib/quenta/navigation';
+  import { openQuentaWindow } from '$lib/quenta/window';
   import { quentaReportToMarkdown } from '$lib/quenta/report';
-  import { quentaStore } from '$lib/stores/quenta.svelte';
+  import { quentaPromptForFocus, quentaStore } from '$lib/stores/quenta.svelte';
+  import { toast } from '$lib/stores/toast.svelte';
   import type {
     LiatirQuentaConversation,
-    LiatirQuentaFocus,
     LiatirQuentaIntent,
     LiatirQuentaMessage,
   } from '@liatir/core';
@@ -29,7 +34,6 @@
   let thinkingEnabledDraft = $state(false);
   let enterToSendDraft = $state(true);
   let savingSettings = $state(false);
-  let handledDeepLink = $state<string | null>(null);
   let settingsOpen = $state(false);
   let chatsCollapsed = $state(false);
   let conversationSearch = $state('');
@@ -41,10 +45,20 @@
   let tagDraft = $state('');
   let tagInputEl = $state<HTMLInputElement | null>(null);
   let deleteConfirmConversationId = $state<string | null>(null);
+  let transcriptEl = $state<HTMLDivElement | null>(null);
+  let lastAutoScrollKey = '';
+  let composerConversationId: string | null = null;
+
+  if (typeof window !== 'undefined') quentaStore.clearConversationSelection();
+
+  const CHATS_SIDEBAR_STATE_LOCAL_STORAGE_KEY = 'quenta-chats-sidebar-collapsed'!;
 
   const currentConversation = $derived(quentaStore.currentConversation);
   const currentError = $derived(quentaStore.errorFor(currentConversation?.id));
+  const canRetry = $derived(quentaStore.canRetry(currentConversation?.id));
   const sending = $derived(quentaStore.isSending(currentConversation?.id));
+  const stopping = $derived(quentaStore.isStopping(currentConversation?.id));
+  const activeResponse = $derived(quentaStore.activeResponseFor(currentConversation?.id));
   const preparingQuenta = $derived(
     quentaStore.setupPhase === 'preparing'
     || quentaStore.setupPhase === 'downloading'
@@ -125,6 +139,12 @@
     enterToSendDraft = quentaStore.composerSettings.enterToSend;
   }
 
+  function setChatsCollapsedState(state: boolean|null = null) {
+    if(state===null) chatsCollapsed=!chatsCollapsed;
+    else chatsCollapsed=state;
+    localStorage.setItem(CHATS_SIDEBAR_STATE_LOCAL_STORAGE_KEY,String(chatsCollapsed));
+  }
+
   function formatTime(ms: number) {
     return new Date(ms).toLocaleString([], {
       month: 'short',
@@ -134,35 +154,80 @@
     });
   }
 
-  function intentFromParam(value: string | null): LiatirQuentaIntent {
-    if (value === 'explain-result' || value === 'explain-failure' || value === 'report') return value;
-    return 'chat';
+  async function scrollTranscriptToBottom(behavior: ScrollBehavior) {
+    await tick();
+    transcriptEl?.scrollTo({
+      top: transcriptEl.scrollHeight,
+      behavior,
+    });
   }
 
-  function focusFromUrl(): LiatirQuentaFocus | null {
-    const runId = page.url.searchParams.get('run');
-    if (runId) return { kind: 'result', entityId: runId };
-    const jobId = page.url.searchParams.get('job');
-    if (jobId) return { kind: 'job', entityId: jobId };
-    return null;
-  }
+  $effect(() => {
+    const conversation = currentConversation;
+    const lastMessageId = conversation?.messages.at(-1)?.id ?? 'empty';
+    const scrollKey = conversation
+      ? `${conversation.id}:${lastMessageId}:${activeResponse?.revision ?? 'idle'}:${currentError ? 'error' : 'ok'}`
+      : '';
+    if (!scrollKey || scrollKey === lastAutoScrollKey) return;
+    const behavior: ScrollBehavior = activeResponse ? 'auto' : lastAutoScrollKey ? 'smooth' : 'auto';
+    lastAutoScrollKey = scrollKey;
+    void scrollTranscriptToBottom(behavior);
+  });
 
-  async function handleDeepLink() {
-    const key = page.url.searchParams.toString();
-    if (!key || handledDeepLink === key) return;
-    handledDeepLink = key;
-    const focus = focusFromUrl();
-    if (!focus) return;
-    const intent = intentFromParam(
-      page.url.searchParams.get('intent') ?? page.url.searchParams.get('mode'),
+  async function prepareDeepLink(launch: QuentaLaunchRequest) {
+    selectedIntent = launch.intent;
+    const conversation = await quentaStore.startFocusedConversation(
+      launch.intent,
+      launch.focus,
+      false,
     );
-    selectedIntent = intent;
-    const autoSend = page.url.searchParams.get('auto') === '1';
-    if (autoSend) {
-      await quentaStore.startFocusedConversation(intent, focus, true);
-      return;
+    syncComposerFromConversation(conversation);
+    return conversation;
+  }
+
+  function syncComposerFromConversation(conversation = currentConversation) {
+    composerConversationId = conversation?.id ?? null;
+    draft = conversation?.draft ?? '';
+    selectedIntent = conversation?.draftIntent
+      ?? conversation?.messages.at(-1)?.intent
+      ?? 'chat';
+  }
+
+  $effect(() => {
+    const conversation = currentConversation;
+    if ((conversation?.id ?? null) === composerConversationId) return;
+    syncComposerFromConversation(conversation);
+  });
+
+  function selectConversation(conversationId: string) {
+    resetConversationEditing();
+    quentaStore.selectConversation(conversationId);
+    syncComposerFromConversation();
+  }
+
+  async function persistCurrentDraft() {
+    if (!currentConversation) return;
+    if (
+      currentConversation.draft === draft
+      && currentConversation.draftIntent === selectedIntent
+    ) return;
+    await quentaStore.updateConversationDraft(currentConversation.id, draft, selectedIntent);
+  }
+
+  async function changeIntent(value: string) {
+    selectedIntent = value as LiatirQuentaIntent;
+    await persistCurrentDraft();
+  }
+
+  async function openInSeparateWindow() {
+    try {
+      await persistCurrentDraft();
+      const params = new URLSearchParams();
+      if (currentConversation) params.set('conversation', currentConversation.id);
+      await openQuentaWindow(`/quenta${params.size ? `?${params.toString()}` : ''}`);
+    } catch {
+      toast.error('Quenta could not open in a separate window.');
     }
-    await quentaStore.startFocusedConversation(intent, focus, false);
   }
 
   async function saveSettings() {
@@ -197,11 +262,6 @@
     syncSettingsDrafts();
   }
 
-  async function ensureDefaultConversation() {
-    if (quentaStore.conversations.length > 0 || currentConversation) return;
-    await quentaStore.newConversation();
-  }
-
   async function sendDraft() {
     const content = draft.trim();
     if (!content) return;
@@ -211,6 +271,16 @@
       conversationId: conversation?.id,
       focus: conversation?.focus,
     });
+  }
+
+  async function stopResponse() {
+    if (!currentConversation) return;
+    await quentaStore.stopMessage(currentConversation.id);
+  }
+
+  async function retryResponse() {
+    if (!currentConversation) return;
+    await quentaStore.retryLastMessage(currentConversation.id);
   }
 
   function handleComposerKeydown(event: KeyboardEvent) {
@@ -346,20 +416,42 @@
   }
 
   onMount(async () => {
+    const launch = quentaLaunchRequest(page.url);
+    const requestedConversationId = page.url.searchParams.get('conversation');
+    if (launch) {
+      selectedIntent = launch.intent;
+      replaceState(consumedQuentaUrl(page.url), page.state);
+    }
     await quentaStore.init();
+    let launchConversation: LiatirQuentaConversation | null = null;
+    if (launch) {
+      launchConversation = await prepareDeepLink(launch);
+    } else {
+      quentaStore.clearConversationSelection();
+      if (requestedConversationId) quentaStore.selectConversation(requestedConversationId);
+      syncComposerFromConversation();
+    }
     syncSettingsDrafts();
     await quentaStore.bootstrapProvider();
     syncSettingsDrafts();
-    if (page.url.searchParams.toString()) {
-      await handleDeepLink();
-    } else {
-      await ensureDefaultConversation();
+    if (launch?.autoSend && launchConversation) {
+      await quentaStore.sendMessage(
+        launchConversation.draft ?? quentaPromptForFocus(launch.intent, launch.focus),
+        launch.intent,
+        {
+          conversationId: launchConversation.id,
+          focus: launch.focus,
+        },
+      );
+      syncComposerFromConversation();
     }
+    const chatsSidebarState = localStorage.getItem(CHATS_SIDEBAR_STATE_LOCAL_STORAGE_KEY);
+    setChatsCollapsedState(chatsSidebarState==='true'?true:false);
   });
 </script>
 
 <div class="flex h-full overflow-hidden">
-  {#if !chatsCollapsed}
+  {#if !chatsCollapsed || !((quentaStore?.selectedConversationId)?.trim())}
   <aside class="flex w-80 shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-150">
     <div class="border-b border-border p-3" style="height: {HEADER_HEIGHT}px;">
       <div class="flex items-center justify-between gap-2">
@@ -371,16 +463,18 @@
           <Button variant="ghost" size="sm" onclick={() => quentaStore.newConversation()}>
             New
           </Button>
-          <button
-            type="button"
-            class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
-            onclick={() => chatsCollapsed = true}
-            aria-label="Collapse conversations"
-            title="Collapse conversations"
-            data-testid="quenta-chat-sidebar-collapse"
-          >
-            <Icon icon="lucide:panel-left-close" class="h-4 w-4" />
-          </button>
+          {#if (quentaStore?.selectedConversationId)?.trim()}
+            <button
+              type="button"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
+              onclick={() => setChatsCollapsedState(true)}
+              aria-label="Collapse conversations"
+              title="Collapse conversations"
+              data-testid="quenta-chat-sidebar-collapse"
+            >
+              <Icon icon="lucide:panel-left-close" class="h-5 w-5" />
+            </button>
+          {/if}
         </div>
       </div>
     </div>
@@ -438,15 +532,13 @@
               <div
                 class="rounded-lg border transition-colors {conversation.id === quentaStore.selectedConversationId ? 'border-brand/20 bg-brand/10' : 'border-transparent text-zinc-600 hover:border-border hover:bg-surface-2'}"
                 data-testid="quenta-conversation"
+                data-conversation-id={conversation.id}
               >
                 <div class="flex items-start gap-1 px-2 py-2">
                   <button
                     type="button"
                     class="min-w-0 flex-1 text-left"
-                    onclick={() => {
-                      resetConversationEditing();
-                      quentaStore.selectConversation(conversation.id);
-                    }}
+                    onclick={() => selectConversation(conversation.id)}
                     aria-label={`Open ${conversation.title}`}
                   >
                     <p class="truncate text-xs font-medium {conversation.id === quentaStore.selectedConversationId ? 'text-brand' : 'text-zinc-700'}">
@@ -597,11 +689,12 @@
       description="Quenta is Liatir's local, read-only AI for explaining Results, Jobs, pipelines, and bioinformatics context."
     >
       {#snippet titleActions()}
-        {#if chatsCollapsed}
+        {#if chatsCollapsed && (quentaStore?.selectedConversationId)?.trim()}
+        <div class="flex flex-col gap-1 pr-3 border-r border-r-border transition">
           <button
             type="button"
-            class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
-            onclick={() => chatsCollapsed = false}
+            class="inline-flex h-5 w-5 items-center justify-center rounded-lg text-zinc-500 hover:bg-surface-2 hover:text-zinc-800"
+            onclick={() => setChatsCollapsedState(false)}
             aria-label="Show conversations"
             title="Show conversations"
             data-testid="quenta-chat-sidebar-expand"
@@ -610,7 +703,7 @@
           </button>
           <button
             type="button"
-            class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
+            class="inline-flex h-5 w-5 items-center justify-center rounded-lg text-zinc-500 hover:bg-surface-2 hover:text-zinc-800"
             onclick={() => quentaStore.newConversation()}
             aria-label="New conversation"
             title="New conversation"
@@ -618,10 +711,11 @@
           >
             <Icon icon="lucide:plus" class="h-4 w-4" />
           </button>
+          </div>
         {/if}
       {/snippet}
       {#snippet actions()}
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-3">
           <span
             class="rounded-full px-2 py-1 text-[10px] font-medium {quentaStatusClass}"
             data-testid="quenta-provider-status"
@@ -630,19 +724,19 @@
           </span>
           
           <button
-            class="h-3.5 w-3.5 hover:opacity-50 flex items-center justify-center mr-2"
+            class="h-7 w-7 hover:opacity-50 flex items-center justify-center"
             title="Refresh Quenta local AI"
             onclick={refreshProvider}
             disabled={quentaStore.providerRefreshing}
           >
-            <Icon icon="lucide:refresh-cw" class="h-full w-full {quentaStore.providerRefreshing ? 'animate-spin' : ''}" />
+            <Icon icon="lucide:refresh-cw" class="h-4 w-4 {quentaStore.providerRefreshing ? 'animate-spin' : ''}" />
           </button>
           <div
             class="relative"
             use:clickOutside={{ enabled: settingsOpen, onOutside: () => settingsOpen = false }}
           >
             <button
-              class="h-4 w-4 hover:opacity-50 flex items-center justify-center"
+              class="h-5 w-5 hover:opacity-50 flex items-center justify-center"
               title="Open local AI settings"
               onclick={() => settingsOpen = !settingsOpen}
             >
@@ -667,7 +761,7 @@
                     onclick={() => settingsOpen = false}
                     aria-label="Close local AI settings"
                   >
-                    <Icon icon="lucide:x" class="h-4 w-4" />
+                    <Icon icon="lucide:x" class="h-5 w-5" />
                   </button>
                 </div>
 
@@ -677,11 +771,11 @@
                       <div class="flex items-start gap-3">
                         <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full {localAIReady ? 'bg-emerald-50 text-emerald-600' : preparingQuenta ? 'bg-brand/10 text-brand' : 'bg-amber-50 text-amber-600'}">
                           {#if localAIReady}
-                            <Icon icon="lucide:check" class="h-4 w-4" />
+                            <Icon icon="lucide:check" class="h-5 w-5" />
                           {:else if preparingQuenta}
-                            <Icon icon="lucide:loader-circle" class="h-4 w-4 animate-spin" />
+                            <Icon icon="lucide:loader-circle" class="h-5 w-5 animate-spin" />
                           {:else}
-                            <Icon icon="lucide:triangle-alert" class="h-4 w-4" />
+                            <Icon icon="lucide:triangle-alert" class="h-5 w-5" />
                           {/if}
                         </div>
                         <div>
@@ -817,6 +911,19 @@
               </div>
             {/if}
           </div>
+          <div class="w-fit h-fit pl-2 border-l border-l-border">
+          <button
+            type="button"
+            class="inline-flex h-7 w-7 items-center group justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
+            onclick={openInSeparateWindow}
+            aria-label="Open Quenta in a separate window"
+            title="Open Quenta in a separate window"
+            data-testid="quenta-open-window"
+          >
+            <Icon icon="fluent:window-new-24-regular" class="h-5 w-5 group-hover:hidden" />
+            <Icon icon="fluent:window-new-24-filled" class="h-5 w-5 hidden group-hover:inline" />
+          </button>
+        </div>
         </div>
       {/snippet}
     </PageHeader>
@@ -824,7 +931,7 @@
     <div class="min-h-0 flex-1 overflow-hidden">
       <section class="flex h-full min-w-0 flex-col overflow-hidden">
         {#if !currentConversation}
-          <div class="flex h-full items-center justify-center p-8">
+          <div class="flex h-full items-center justify-center p-8" data-testid="quenta-empty-state">
             <Card class="max-w-xl">
               <div class="space-y-4 p-6 text-center">
                 <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand/10 text-brand">
@@ -835,17 +942,26 @@
                   {/if}
                 </div>
                 <div>
-                  <p class="text-base font-semibold text-zinc-800">{quentaStatusLabel}</p>
+                  <p class="text-base font-semibold text-zinc-800">
+                    {localAIReady && quentaStore.conversations.length > 0 ? 'Choose a chat' : quentaStatusLabel}
+                  </p>
                   <p class="mt-2 text-sm leading-relaxed text-zinc-500">
                     {localAIReady
-                      ? 'Ask Quenta about Results, Jobs, pipelines, or bioinformatics context.'
+                      ? quentaStore.conversations.length > 0
+                        ? 'Select a saved chat from the sidebar, or start a new one.'
+                        : 'Ask Quenta about Results, Jobs, pipelines, or bioinformatics context.'
                       : preparingQuenta
                         ? `Quenta is preparing the recommended local model (${quentaStore.defaultModel}).`
                         : 'Quenta could not prepare local AI yet. Check the setup message and refresh.'}
                   </p>
                 </div>
                 {#if localAIReady}
-                  <Button variant="primary" size="sm" onclick={() => quentaStore.newConversation()}>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onclick={() => quentaStore.newConversation()}
+                    testId="quenta-empty-new-chat"
+                  >
                     New chat
                   </Button>
                 {:else if !preparingQuenta}
@@ -857,16 +973,20 @@
             </Card>
           </div>
         {:else}
-          <div class="flex-1 overflow-y-auto p-6" data-testid="quenta-transcript">
-            <div class="mx-auto max-w-4xl space-y-4">
+          <div bind:this={transcriptEl} class="flex-1 overflow-y-auto p-6" data-testid="quenta-transcript">
+            <div class="mx-auto max-w-4xl space-y-6">
               {#each currentConversation.messages as message (message.id)}
-                <Card class={message.role === 'assistant' ? 'bg-white' : 'bg-brand/5 border-brand/15'}>
-                  <div class="space-y-3 p-4">
+                <Card class={message.role === 'assistant' ? 'bg-transparent border-none rounded-none' : 'bg-brand/5 border-brand/15'}>
+                  <div class="space-y-3 {message.role === 'assistant' ? 'p-0' : 'p-4'}">
+                    {#if message.role === 'assistant' && message.generation}
+                      <QuentaActivityPanel generation={message.generation} intent={message.intent} />
+                    {/if}
+                    <QuentaMarkdown content={message.content} />
                     <div class="flex items-center justify-between gap-3">
                       <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide {message.role === 'assistant' ? 'text-zinc-500' : 'text-brand'}">
+                        <!-- <p class="text-[11px] font-semibold uppercase tracking-wide {message.role === 'assistant' ? 'text-zinc-500' : 'text-brand'}">
                           {message.role === 'assistant' ? 'Quenta' : 'You'}
-                        </p>
+                        </p> -->
                         <p class="mt-0.5 text-[10px] text-zinc-400">
                           {formatTime(message.createdAt)}
                           {message.model ? ` · ${message.model}` : ''}
@@ -878,8 +998,6 @@
                         </Button>
                       {/if}
                     </div>
-                    <pre class="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-zinc-800" data-selectable>{message.content}</pre>
-
                     {#if message.citations?.length}
                       <div class="border-t border-border pt-3">
                         <p class="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
@@ -902,70 +1020,118 @@
                 </Card>
               {/each}
 
-              {#if sending}
-                <div class="flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-3 text-xs text-zinc-500">
-                  <Spinner />
-                  Quenta is generating a response...
+              {#if activeResponse}
+                <div class="space-y-3" data-testid="quenta-streaming-response">
+                  <QuentaActivityPanel active={activeResponse} intent={activeResponse.intent} />
+                  {#if activeResponse.content && activeResponse.intent !== 'report'}
+                    <div data-testid="quenta-streaming-content">
+                      <QuentaMarkdown content={activeResponse.content} />
+                    </div>
+                  {/if}
+                </div>
+              {:else if sending}
+                <div class="flex items-center gap-2 text-xs text-zinc-500">
+                  <Spinner size={14} />
+                  Preparing response…
                 </div>
               {/if}
 
               {#if currentError}
-                <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" data-testid="quenta-error">
-                  {currentError}
+                <div class="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800" data-testid="quenta-error">
+                  <span class="min-w-0 flex-1">{currentError}</span>
+                  {#if canRetry}
+                    <Button variant="ghost" size="sm" onclick={retryResponse} disabled={sending || !localAIReady} testId="quenta-retry">
+                      Retry
+                    </Button>
+                  {/if}
                 </div>
               {/if}
             </div>
           </div>
 
-          <div class="border-t border-border bg-surface p-4 flex">
-            <div class="mx-auto max-w-4xl">
-              <div class="mb-2 flex items-center gap-2">
-                <Select
-                  value={selectedIntent}
-                  options={intentOptions}
-                  onchange={(value) => selectedIntent = value as LiatirQuentaIntent}
-                  disabled={sending}
-                  placeholder="Choose task"
-                  class="w-52"
-                  searchable={false}
-                />
+          <div class="border-t border-border bg-surface p-4 flex justify-center w-full">
+            <div class="max-w-4xl w-full">
+              <div class="rounded-2xl border border-border bg-white shadow-sm transition-colors focus-within:border-brand/60 focus-within:ring-2 focus-within:ring-brand/10">
                 {#if currentConversation.focus}
-                  <span class="rounded-full bg-zinc-100 px-2 py-1 text-[10px] text-zinc-500">
-                    Focus: {currentConversation.focus.kind} {currentConversation.focus.entityId}
-                  </span>
+                  <div class="px-3 pt-3" data-testid="quenta-focus-context">
+                    <div class="inline-flex max-w-full items-center gap-2 rounded-full bg-brand/8 px-2.5 py-1 text-[10px] text-brand">
+                      <Icon icon={currentConversation.focus.kind === 'result' ? 'lucide:chart-no-axes-combined' : 'lucide:terminal'} class="h-3.5 w-3.5 shrink-0" />
+                      <span class="shrink-0 font-semibold">
+                        {currentConversation.focus.kind === 'result' ? 'Result' : 'Job'}
+                      </span>
+                      <span class="truncate text-zinc-500">{currentConversation.focus.entityId}</span>
+                    </div>
+                  </div>
                 {/if}
-                <button
-                  type="button"
-                  class="ml-auto inline-flex items-center gap-2 rounded-full border px-2 py-1 text-[10px] font-medium transition {thinkingEnabledDraft ? 'border-brand/30 bg-brand/10 text-brand' : 'border-border bg-white text-zinc-500 hover:bg-surface-2'}"
-                  onclick={() => void setThinkingEnabled(!thinkingEnabledDraft)}
-                  disabled={sending}
-                  aria-pressed={thinkingEnabledDraft}
-                  title={thinkingEnabledDraft ? 'Thinking mode is on' : 'Thinking mode is off'}
-                  data-testid="quenta-thinking-toggle"
-                >
-                  <span class="relative inline-flex h-3.5 w-6 items-center rounded-full {thinkingEnabledDraft ? 'bg-brand' : 'bg-zinc-300'}">
-                    <span class="inline-block h-2.5 w-2.5 rounded-full bg-white transition-transform {thinkingEnabledDraft ? 'translate-x-3' : 'translate-x-0.5'}"></span>
-                  </span>
-                  <Icon icon="lucide:brain" class="h-3 w-3" />
-                  {thinkingEnabledDraft ? 'Thinking' : 'Standard'}
-                </button>
+                <textarea
+                  class="min-h-14 w-full resize-none border-0 bg-transparent px-4 pb-1 pt-3 text-sm leading-relaxed text-zinc-800 outline-none placeholder:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  rows="2"
+                  placeholder={composerPlaceholder}
+                  bind:value={draft}
+                  onkeydown={handleComposerKeydown}
+                  onblur={() => void persistCurrentDraft()}
+                  disabled={sending || !localAIReady}
+                  data-testid="quenta-input"
+                ></textarea>
+                <div class="flex items-center gap-2 px-2 pb-2 pt-1">
+                  <Select
+                    value={selectedIntent}
+                    options={intentOptions}
+                    onchange={(value) => void changeIntent(value)}
+                    disabled={sending}
+                    placeholder="Choose task"
+                    class="w-44"
+                    buttonClass="!rounded-full !border-0 !bg-surface-2 !px-2.5 !py-1 !shadow-none focus:!ring-0"
+                    searchable={false}
+                  />
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium transition {thinkingEnabledDraft ? 'bg-brand/10 text-brand' : 'text-zinc-500 hover:bg-surface-2'}"
+                    onclick={() => void setThinkingEnabled(!thinkingEnabledDraft)}
+                    disabled={sending}
+                    aria-pressed={thinkingEnabledDraft}
+                    title={thinkingEnabledDraft ? 'Thinking mode is on' : 'Thinking mode is off'}
+                    data-testid="quenta-thinking-toggle"
+                  >
+                    <Icon icon="lucide:brain" class="h-3.5 w-3.5" />
+                    {thinkingEnabledDraft ? 'Thinking' : 'Standard'}
+                  </button>
+                  <div class="ml-auto">
+                    {#if sending}
+                      <button
+                        type="button"
+                        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        onclick={stopResponse}
+                        disabled={stopping}
+                        aria-label={stopping ? 'Stopping Quenta response' : 'Stop Quenta response'}
+                        title={stopping ? 'Stopping response' : 'Stop response'}
+                        data-testid="quenta-stop"
+                      >
+                        {#if stopping}
+                          <Icon icon="lucide:loader-circle" class="h-5 w-5 animate-spin" />
+                        {:else}
+                          <Icon icon="lucide:square" class="h-3.5 w-3.5 fill-current" />
+                        {/if}
+                      </button>
+                    {:else}
+                      <button
+                        type="button"
+                        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-white shadow-sm shadow-brand-shadow/30 transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-40"
+                        onclick={sendDraft}
+                        disabled={!draft.trim() || !localAIReady}
+                        aria-label="Send message"
+                        title="Send message"
+                        data-testid="quenta-send"
+                      >
+                        <Icon icon="lucide:arrow-up" class="h-5 w-5" />
+                      </button>
+                    {/if}
+                  </div>
+                </div>
               </div>
-              <textarea
-                class="min-h-24 w-full resize-none rounded-xl border border-border bg-white px-3 py-2 text-sm leading-relaxed text-zinc-800 outline-none transition-colors placeholder:text-zinc-400 focus:border-brand"
-                placeholder={composerPlaceholder}
-                bind:value={draft}
-                onkeydown={handleComposerKeydown}
-                disabled={sending || !localAIReady}
-                data-testid="quenta-input"
-              ></textarea>
-              <div class="mt-2 flex items-center justify-between gap-3">
-                <p class="text-[10px] text-zinc-400">
-                  Quenta is advisory only. It cannot run tools, pipelines, API calls, Plugins, shell commands, or mutate workspace state.
-                </p>
-                <Button variant="primary" size="sm" onclick={sendDraft} loading={sending} disabled={!draft.trim() || !localAIReady}>
-                  Send
-                </Button>
-              </div>
+              <p class="mt-2 px-2 text-center text-[10px] text-zinc-400">
+                Quenta is advisory only and cannot run or modify workspace resources.
+              </p>
             </div>
           </div>
         {/if}

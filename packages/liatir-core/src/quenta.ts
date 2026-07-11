@@ -37,6 +37,15 @@ export interface LiatirQuentaFocus {
   entityId: string;
 }
 
+export interface LiatirQuentaGenerationTrace {
+  reasoning?: string;
+  durationMs?: number;
+  reasoningDurationMs?: number;
+  contextDocumentCount?: number;
+  sourceCount?: number;
+  reportRepairAttempted?: boolean;
+}
+
 export interface LiatirQuentaMessage {
   id: string;
   role: LiatirQuentaRole;
@@ -46,6 +55,7 @@ export interface LiatirQuentaMessage {
   citations?: LiatirQuentaCitation[];
   model?: string;
   report?: LiatirQuentaReport;
+  generation?: LiatirQuentaGenerationTrace;
 }
 
 export interface LiatirQuentaConversation {
@@ -56,6 +66,8 @@ export interface LiatirQuentaConversation {
   createdAt: number;
   updatedAt: number;
   focus?: LiatirQuentaFocus;
+  draft?: string;
+  draftIntent?: LiatirQuentaIntent;
   messages: LiatirQuentaMessage[];
 }
 
@@ -100,9 +112,17 @@ export interface LiatirQuentaChatRequest {
 export interface LiatirQuentaChatResponse {
   model: string;
   content: string;
+  thinking?: string;
   promptTokens?: number;
   completionTokens?: number;
   totalDurationNs?: number;
+}
+
+export type LiatirQuentaStreamEventKind = "thinking-delta" | "content-delta";
+
+export interface LiatirQuentaStreamEvent {
+  type: LiatirQuentaStreamEventKind;
+  delta: string;
 }
 
 export interface LiatirQuentaReportFinding {

@@ -11,9 +11,11 @@
 
 use std::{
     fs,
+    io::Write,
     path::{Component, Path, PathBuf},
 };
 use tauri::{AppHandle, Manager};
+use uuid::Uuid;
 
 /// Root of the isolated app-managed storage: app_data_dir/.liatir/.main/_app
 fn app_root(app: &AppHandle) -> Result<PathBuf, String> {
@@ -71,6 +73,41 @@ fn safe_join(base: &Path, rel: &str) -> Result<PathBuf, String> {
     Ok(out)
 }
 
+pub(crate) fn resolve_app_path(app: &AppHandle, rel: &str) -> Result<PathBuf, String> {
+    safe_join(&app_root(app)?, rel)
+}
+
+pub(crate) fn write_text_atomic(path: &Path, content: &str) -> Result<(), String> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| "App storage path has no parent directory".to_string())?;
+    let file_name = path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("state");
+    let temporary_path = parent.join(format!(".{file_name}.{}.tmp", Uuid::new_v4()));
+
+    let result = (|| -> Result<(), String> {
+        let mut temporary = fs::File::create(&temporary_path).map_err(|error| error.to_string())?;
+        temporary
+            .write_all(content.as_bytes())
+            .map_err(|error| error.to_string())?;
+        temporary.sync_all().map_err(|error| error.to_string())?;
+
+        #[cfg(target_os = "windows")]
+        if path.exists() {
+            fs::remove_file(path).map_err(|error| error.to_string())?;
+        }
+        fs::rename(&temporary_path, path).map_err(|error| error.to_string())?;
+        Ok(())
+    })();
+
+    if result.is_err() {
+        let _ = fs::remove_file(&temporary_path);
+    }
+    result
+}
+
 // ---------------------------------
 // Commands
 // ---------------------------------
@@ -99,13 +136,13 @@ pub fn lia_app_write_text(
     content: String,
     create_dirs: Option<bool>,
 ) -> Result<(), String> {
-    let p = safe_join(&app_root(&app)?, &rel)?;
+    let p = resolve_app_path(&app, &rel)?;
     if create_dirs.unwrap_or(true) {
         if let Some(parent) = p.parent() {
             fs::create_dir_all(parent).map_err(|e| e.to_string())?;
         }
     }
-    fs::write(&p, content.as_bytes()).map_err(|e| e.to_string())
+    write_text_atomic(&p, &content)
 }
 
 #[tauri::command]

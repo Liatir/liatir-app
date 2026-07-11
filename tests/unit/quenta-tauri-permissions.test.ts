@@ -28,8 +28,23 @@ describe('Quenta Tauri permissions', () => {
       'lia_quenta_ollama_models',
       'lia_quenta_ollama_bootstrap',
       'lia_quenta_ollama_chat',
+      'lia_quenta_ollama_cancel_chat',
       'lia_quenta_ollama_embed',
     ]);
     expect(invokedCommands.filter((command) => !allowedCommands.has(command))).toEqual([]);
+  });
+
+  it('allows the serialized Quenta conversation storage command', () => {
+    const storeSource = readFileSync(
+      resolve(rootDir, 'frontend/src/lib/stores/quenta.svelte.ts'),
+      'utf8',
+    );
+    const permissionSource = readFileSync(
+      resolve(rootDir, 'src-tauri/permissions/liatir-bridge.toml'),
+      'utf8',
+    );
+
+    expect(storeSource).toContain("invoke('lia_quenta_conversations_compare_and_swap'");
+    expect(permissionSource).toContain('"lia_quenta_conversations_compare_and_swap"');
   });
 });

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { goto } from '$app/navigation';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
@@ -12,6 +11,9 @@
 	import { jobsStore, type JobBufferedOutput, type JobEntry } from '$lib/stores/jobs.svelte';
 	import { compactPathIfLocal, fmtDuration, fmtTime, sanitizeForDisplay, sanitizeLocalPathsForDisplay } from '$lib/utils';
 	import Icon from '@iconify/svelte/dist/OfflineIcon.svelte';
+	import { quentaDraftUrl } from '$lib/quenta/navigation';
+	import { openQuentaWindow } from '$lib/quenta/window';
+	import { toast } from '$lib/stores/toast.svelte';
 
 	let expandedJobId = $state<string | null>(null);
 	let jobOutputs = $state<Record<string, JobBufferedOutput>>({});
@@ -77,8 +79,12 @@
 		return JSON.stringify(sanitizeForDisplay(job.metadata, 2), null, 2);
 	}
 
-	function openQuentaForJob(job: JobEntry, intent: 'chat' | 'explain-failure') {
-		void goto(`/quenta?intent=${intent}&job=${encodeURIComponent(job.id)}&auto=1`);
+	async function openQuentaForJob(job: JobEntry, intent: 'chat' | 'explain-failure') {
+		try {
+			await openQuentaWindow(quentaDraftUrl(intent, { kind: 'job', entityId: job.id }));
+		} catch {
+			toast.error('Quenta could not open in a separate window.');
+		}
 	}
 
 	function terminalLines(lines: string[]): string[] {
@@ -220,11 +226,11 @@
 									size="sm"
 									onclick={() => openQuentaForJob(job, 'explain-failure')}
 								>
-									Explain with Quenta
+									Explain failure
 								</Button>
 							{:else}
 								<Button variant="ghost" size="sm" onclick={() => openQuentaForJob(job, 'chat')}>
-									Explain with Quenta
+									Explain job
 								</Button>
 							{/if}
 						</div>

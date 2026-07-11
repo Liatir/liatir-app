@@ -7,12 +7,74 @@ import {
 
 const RUN_ID = 'e2e-quenta-result';
 
-async function startMockOllama() {
+async function startMockOllama(options = {}) {
   const chatRequests = [];
+  let statusRequests = 0;
+
+  async function sendChatResponse(response, request, content) {
+    const thinking = request.think
+      ? options.thinkingText ?? 'Reviewing the local evidence before writing the answer.'
+      : '';
+    if (!request.stream) {
+      response.end(JSON.stringify({
+        model: request.model,
+        message: { role: 'assistant', content, thinking },
+        prompt_eval_count: 10,
+        eval_count: 8,
+        total_duration: 1000,
+      }));
+      return;
+    }
+
+    response.setHeader('content-type', 'application/x-ndjson');
+    const records = [];
+    if (thinking) {
+      const split = Math.max(1, Math.floor(thinking.length / 2));
+      records.push(
+        { model: request.model, message: { role: 'assistant', thinking: thinking.slice(0, split) }, done: false },
+        { model: request.model, message: { role: 'assistant', thinking: thinking.slice(split) }, done: false },
+      );
+    }
+    const split = Math.max(1, Math.floor(content.length / 2));
+    records.push(
+      { model: request.model, message: { role: 'assistant', content: content.slice(0, split) }, done: false },
+      { model: request.model, message: { role: 'assistant', content: content.slice(split) }, done: false },
+      {
+        model: request.model,
+        message: { role: 'assistant', content: '' },
+        done: true,
+        prompt_eval_count: 10,
+        eval_count: 8,
+        total_duration: 1000,
+      },
+    );
+
+    for (let index = 0; index < records.length; index += 1) {
+      if (response.destroyed) return;
+      const line = `${JSON.stringify(records[index])}\n`;
+      if (index === 0 && options.splitFirstNdjsonRecord) {
+        const byteSplit = Math.max(1, Math.floor(line.length / 2));
+        response.write(line.slice(0, byteSplit));
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        response.write(line.slice(byteSplit));
+      } else {
+        response.write(line);
+      }
+      if (options.streamChunkDelayMs) {
+        await new Promise((resolve) => setTimeout(resolve, options.streamChunkDelayMs));
+      }
+    }
+    response.end();
+  }
+
   const server = createServer(async (request, response) => {
     response.setHeader('content-type', 'application/json');
 
     if (request.method === 'GET' && request.url === '/api/version') {
+      statusRequests += 1;
+      if (options.delayFirstStatusMs && statusRequests === 1) {
+        await new Promise((resolve) => setTimeout(resolve, options.delayFirstStatusMs));
+      }
       response.end(JSON.stringify({ version: '0.99.0-e2e' }));
       return;
     }
@@ -42,47 +104,37 @@ async function startMockOllama() {
       const parsed = JSON.parse(body);
       chatRequests.push(parsed);
 
+      if (options.delayFirstChatMs && chatRequests.length === 1) {
+        await new Promise((resolve) => setTimeout(resolve, options.delayFirstChatMs));
+      }
+
       if (parsed.format) {
-        response.end(JSON.stringify({
-          model: parsed.model,
-          message: {
-            role: 'assistant',
-            content: JSON.stringify({
-              title: 'Mock Quenta report',
-              subject: `result:${RUN_ID}`,
-              runStatus: 'done',
-              executiveSummary: `The mock report used result evidence from [result:${RUN_ID}].`,
-              methods: ['Reviewed local result metadata, structured output, and logs.'],
-              findings: [
-                {
-                  title: 'Read count was available',
-                  interpretation: 'The structured output includes a read count suitable for QC interpretation.',
-                  evidence: ['The result context contains reads=42.'],
-                  citationIds: [`result:${RUN_ID}`],
-                },
-              ],
-              limitations: ['This is a mock model response for deterministic E2E validation.'],
-              recommendedNextSteps: ['Validate the same run with a real local model before release sign-off.'],
+        await sendChatResponse(response, parsed, JSON.stringify({
+          title: 'Mock Quenta report',
+          subject: `result:${RUN_ID}`,
+          runStatus: 'done',
+          executiveSummary: `The mock report used result evidence from [result:${RUN_ID}].`,
+          methods: ['Reviewed local result metadata, structured output, and logs.'],
+          findings: [
+            {
+              title: 'Read count was available',
+              interpretation: 'The structured output includes a read count suitable for QC interpretation.',
+              evidence: ['The result context contains reads=42.'],
               citationIds: [`result:${RUN_ID}`],
-            }),
-          },
-          prompt_eval_count: 10,
-          eval_count: 12,
-          total_duration: 1000,
+            },
+          ],
+          limitations: ['This is a mock model response for deterministic E2E validation.'],
+          recommendedNextSteps: ['Validate the same run with a real local model before release sign-off.'],
+          citationIds: [`result:${RUN_ID}`],
         }));
         return;
       }
 
-      response.end(JSON.stringify({
-        model: parsed.model,
-        message: {
-          role: 'assistant',
-          content: `Mock Quenta observed the SeqKit QC result and cites [result:${RUN_ID}].`,
-        },
-        prompt_eval_count: 10,
-        eval_count: 8,
-        total_duration: 1000,
-      }));
+      await sendChatResponse(
+        response,
+        parsed,
+        `Mock Quenta observed the SeqKit QC result and cites [result:${RUN_ID}].`,
+      );
       return;
     }
 
@@ -108,7 +160,7 @@ async function startMockOllama() {
   };
 }
 
-async function seedQuentaState(browser, baseUrl) {
+async function seedQuentaState(browser, baseUrl, thinkingEnabled = false) {
   await browser.execute(async (input) => {
     const now = Date.now();
     const run = {
@@ -135,6 +187,7 @@ async function seedQuentaState(browser, baseUrl) {
           model: 'mock-local',
           embeddingModel: '',
           temperature: 0.1,
+          thinkingEnabled: input.thinkingEnabled,
         },
       }, null, 2),
       createDirs: true,
@@ -169,7 +222,7 @@ async function seedQuentaState(browser, baseUrl) {
       content: JSON.stringify(['SeqKit completed', 'reads=42']),
       createDirs: true,
     });
-  }, { baseUrl, runId: RUN_ID });
+  }, { baseUrl, runId: RUN_ID, thinkingEnabled });
 }
 
 async function seedQuentaConversations(browser, baseUrl) {
@@ -272,13 +325,10 @@ async function openSandboxWorkspaceForQuenta(browser) {
     window.location.href = '/';
     return true;
   });
-  await browser.waitUntil(
-    async () => browser.execute(() => Boolean(document.querySelector('[data-testid="sidebar-nav-item"]'))),
-    {
-      timeout: 20_000,
-      timeoutMsg: 'Sandbox workspace shell did not open for Quenta E2E',
-    },
-  );
+  await (await browser.$('[data-testid="sidebar-nav-item"]')).waitForDisplayed({
+    timeout: 20_000,
+    timeoutMsg: 'Sandbox workspace shell did not open for Quenta E2E',
+  });
 }
 
 export const tests = [
@@ -293,10 +343,10 @@ export const tests = [
         await browser.execute(() => {
           window.location.href = '/quenta';
         });
-        await browser.waitUntil(
-          async () => browser.execute(() => window.location.pathname === '/quenta'),
-          { timeout: 20_000, timeoutMsg: 'Quenta route did not open' },
-        );
+        await (await browser.$('[data-testid="quenta-conversation-search"]')).waitForDisplayed({
+          timeout: 20_000,
+          timeoutMsg: 'Quenta route did not open',
+        });
         await browser.waitUntil(
           async () => browser.execute(() => document.body.innerText.includes('Variant report')),
           { timeout: 30_000, timeoutMsg: 'Seeded Quenta conversations did not render' },
@@ -306,6 +356,16 @@ export const tests = [
           () => document.querySelectorAll('[data-testid="quenta-conversation"]').length,
         );
         expect(await conversationCount()).toBe(3);
+        await (await browser.$('[data-testid="quenta-empty-state"]')).waitForDisplayed({
+          timeout: 10_000,
+          timeoutMsg: 'Quenta selected a saved chat without an explicit user action',
+        });
+        expect(await (await browser.$('[data-testid="quenta-transcript"]')).isExisting()).toBe(false);
+        await (await browser.$('[aria-label="Open Variant report"]')).click();
+        await (await browser.$('[data-testid="quenta-transcript"]')).waitForDisplayed({
+          timeout: 10_000,
+          timeoutMsg: 'Explicitly selected Quenta chat did not open',
+        });
 
         const search = await browser.$('[data-testid="quenta-conversation-search"]');
         await search.setValue('QC');
@@ -358,21 +418,37 @@ export const tests = [
           { timeout: 10_000, timeoutMsg: 'Quenta chat tags did not render after save' },
         );
 
-        await browser.execute(() => {
-          [...document.querySelectorAll('[data-testid="quenta-tag-filter"]')]
-            .find((button) => button.textContent?.includes('#report'))
-            ?.click();
+        await browser.execute(() => window.location.reload());
+        await browser.waitUntil(
+          async () => browser.execute(() => document.body.innerText.includes('Variant report reviewed')),
+          { timeout: 20_000, timeoutMsg: 'Renamed Quenta chat did not survive reload' },
+        );
+        await (await browser.$('[data-testid="quenta-empty-state"]')).waitForDisplayed({
+          timeout: 10_000,
+          timeoutMsg: 'Reloaded Quenta page selected a saved chat automatically',
         });
+
         await browser.execute(() => {
           [...document.querySelectorAll('[data-testid="quenta-tag-filter"]')]
             .find((button) => button.textContent?.includes('#variant'))
             ?.click();
         });
+        await (await browser.$('[aria-label="Open Variant report reviewed"]')).click();
         await (await browser.$('[data-testid="quenta-delete-conversation"]')).click();
         await (await browser.$('[data-testid="quenta-delete-confirm"]')).click();
         await browser.waitUntil(
           async () => browser.execute(() => !document.body.innerText.includes('Variant report reviewed')),
           { timeout: 10_000, timeoutMsg: 'Quenta chat delete did not remove the conversation' },
+        );
+        await (await browser.$('[data-testid="quenta-empty-state"]')).waitForDisplayed({
+          timeout: 10_000,
+          timeoutMsg: 'Deleting the selected chat automatically selected another chat',
+        });
+
+        await browser.execute(() => window.location.reload());
+        await browser.waitUntil(
+          async () => browser.execute(() => window.location.pathname === '/quenta'),
+          { timeout: 20_000, timeoutMsg: 'Quenta did not reload after deleting a chat' },
         );
 
         const persisted = await browser.execute(async () => {
@@ -385,8 +461,234 @@ export const tests = [
         expect(
           persisted.conversations.every((conversation) => (conversation.tags ?? []).length <= 3),
         ).toBe(true);
+        await browser.waitUntil(
+          async () => browser.execute(() => (
+            document.querySelector('[data-testid="quenta-provider-status"]')?.textContent
+              ?.includes('Quenta ready') ?? false
+          )),
+          { timeout: 30_000, timeoutMsg: 'Quenta did not finish preparing after chat management reloads' },
+        );
 
         await expectNoVisibleRuntimeError(browser);
+      } finally {
+        await ollama.close();
+      }
+    },
+  },
+  {
+    name: 'opens Result report in a separate Quenta window with Structured report selected',
+    async run({ browser, expect }) {
+      const ollama = await startMockOllama();
+      let originalHandle = null;
+      let quentaHandle = null;
+      try {
+        await openSandboxWorkspaceForQuenta(browser);
+        await seedQuentaState(browser, ollama.baseUrl);
+        await browser.execute((runId) => {
+          window.location.href = `/results?run=${encodeURIComponent(runId)}`;
+        }, RUN_ID);
+        await (await browser.$('[data-testid="result-report"]')).waitForDisplayed({
+          timeout: 20_000,
+          timeoutMsg: 'Result report action did not render',
+        });
+        await (await browser.$('[data-testid="result-explain"]')).waitForDisplayed({
+          timeout: 20_000,
+          timeoutMsg: 'Explain result action did not render',
+        });
+
+        originalHandle = await browser.request('GET', '/window');
+        const handlesBefore = await browser.request('GET', '/window/handles');
+        await (await browser.$('[data-testid="result-report"]')).click();
+        await browser.waitUntil(
+          async () => (await browser.request('GET', '/window/handles')).length > handlesBefore.length,
+          { timeout: 20_000, timeoutMsg: 'Generate report did not open a separate Quenta window' },
+        );
+
+        const handlesAfter = await browser.request('GET', '/window/handles');
+        quentaHandle = handlesAfter.find((handle) => !handlesBefore.includes(handle));
+        expect(Boolean(quentaHandle)).toBe(true);
+        await browser.request('POST', '/window', { handle: quentaHandle });
+        await browser.waitUntil(
+          async () => browser.execute(() => (
+            window.location.pathname === '/quenta'
+            && document.body.innerText.includes('Structured report')
+          )),
+          { timeout: 30_000, timeoutMsg: 'Separate Quenta window did not select Structured report mode' },
+        );
+        await browser.waitUntil(
+          async () => browser.execute(() => (
+            document.querySelector('[data-testid="quenta-provider-status"]')?.textContent
+              ?.includes('Quenta ready') ?? false
+          )),
+          { timeout: 30_000, timeoutMsg: 'Separate Quenta window did not finish preparing' },
+        );
+
+        const draft = await browser.execute(() => (
+          document.querySelector('[data-testid="quenta-input"]')?.value ?? ''
+        ));
+        expect(draft).toContain('Generate a cited structured scientific report');
+
+        const conversationId = await browser.execute(async (runId) => {
+          const raw = await window.Liatir.invoke('lia_app_read_text', {
+            rel: 'workspaces/__test__/quenta/conversations.json',
+          });
+          return JSON.parse(raw).conversations
+            .find((conversation) => conversation.focus?.entityId === runId)?.id ?? null;
+        }, RUN_ID);
+        expect(Boolean(conversationId)).toBe(true);
+
+        await browser.request('POST', '/window', { handle: originalHandle });
+        await browser.execute((id) => {
+          window.location.href = `/quenta?conversation=${encodeURIComponent(id)}`;
+        }, conversationId);
+        await browser.waitUntil(
+          async () => browser.execute((id) => Boolean(
+            document.querySelector(`[data-conversation-id="${id}"]`),
+          ), conversationId),
+          { timeout: 30_000, timeoutMsg: 'Main window did not load the shared Quenta conversation' },
+        );
+        await browser.waitUntil(
+          async () => browser.execute(() => (
+            document.querySelector('[data-testid="quenta-provider-status"]')?.textContent
+              ?.includes('Quenta ready') ?? false
+          )),
+          { timeout: 30_000, timeoutMsg: 'Main Quenta window did not finish preparing' },
+        );
+
+        await browser.request('POST', '/window', { handle: quentaHandle });
+        const conversationSelector = `[data-conversation-id="${conversationId}"]`;
+        await (await browser.$(`${conversationSelector} [data-testid="quenta-rename-conversation"]`)).click();
+        await (await browser.$(`${conversationSelector} [data-testid="quenta-rename-input"]`)).setValue('Window report reviewed');
+        await (await browser.$(`${conversationSelector} [data-testid="quenta-rename-save"]`)).click();
+        await browser.waitUntil(
+          async () => browser.execute(() => document.body.innerText.includes('Window report reviewed')),
+          { timeout: 10_000, timeoutMsg: 'Separate window did not persist the chat rename' },
+        );
+
+        await browser.request('POST', '/window', { handle: originalHandle });
+        await browser.waitUntil(
+          async () => browser.execute(() => document.body.innerText.includes('Window report reviewed')),
+          { timeout: 10_000, timeoutMsg: 'Main window did not receive the separate-window rename' },
+        );
+        await (await browser.$(`${conversationSelector} [data-testid="quenta-delete-conversation"]`)).click();
+        await (await browser.$(`${conversationSelector} [data-testid="quenta-delete-confirm"]`)).click();
+        await browser.waitUntil(
+          async () => browser.execute(async (id) => {
+            const raw = await window.Liatir.invoke('lia_app_read_text', {
+              rel: 'workspaces/__test__/quenta/conversations.json',
+            });
+            return !JSON.parse(raw).conversations.some((conversation) => conversation.id === id);
+          }, conversationId),
+          { timeout: 10_000, timeoutMsg: 'Stale main window did not rebase the chat deletion' },
+        );
+
+        await browser.request('POST', '/window', { handle: quentaHandle });
+        await browser.waitUntil(
+          async () => browser.execute((id) => !document.querySelector(`[data-conversation-id="${id}"]`), conversationId),
+          { timeout: 10_000, timeoutMsg: 'Separate window did not receive the main-window deletion' },
+        );
+        await browser.execute(() => window.location.reload());
+        await browser.waitUntil(
+          async () => browser.execute(() => (
+            document.querySelector('[data-testid="quenta-provider-status"]')?.textContent
+              ?.includes('Quenta ready') ?? false
+          )),
+          { timeout: 30_000, timeoutMsg: 'Separate Quenta window did not finish reloading' },
+        );
+        await browser.waitUntil(
+          async () => browser.execute((id) => !document.querySelector(`[data-conversation-id="${id}"]`), conversationId),
+          { timeout: 30_000, timeoutMsg: 'Deleted chat reappeared after reloading the separate window' },
+        );
+      } finally {
+        if (quentaHandle) {
+          await browser.request('DELETE', '/window').catch(() => {});
+        }
+        if (originalHandle) {
+          await browser.request('POST', '/window', { handle: originalHandle }).catch(() => {});
+        }
+        await ollama.close();
+      }
+    },
+  },
+  {
+    name: 'consumes Result report deep links without duplicating the chat after reload',
+    async run({ browser, expect }) {
+      const ollama = await startMockOllama({ delayFirstStatusMs: 3_000 });
+      try {
+        await openSandboxWorkspaceForQuenta(browser);
+        await seedQuentaState(browser, ollama.baseUrl);
+        await browser.execute(async (runId) => {
+          await window.Liatir.invoke('lia_app_write_text', {
+            rel: 'workspaces/__test__/quenta/conversations.json',
+            content: JSON.stringify({ conversations: [] }, null, 2),
+            createDirs: true,
+          });
+          window.location.href = `/quenta?intent=report&run=${encodeURIComponent(runId)}`;
+        }, RUN_ID);
+
+        await browser.waitUntil(
+          async () => browser.execute(() => (
+            window.location.pathname === '/quenta'
+            && !window.location.search.includes('intent=')
+            && !window.location.search.includes('run=')
+          )),
+          { timeout: 20_000, timeoutMsg: 'Quenta did not consume the one-shot Result deep link' },
+        );
+        await browser.waitUntil(
+          async () => browser.execute(async () => {
+            const raw = await window.Liatir.invoke('lia_app_read_text', {
+              rel: 'workspaces/__test__/quenta/conversations.json',
+            });
+            return JSON.parse(raw).conversations.length === 1;
+          }),
+          { timeout: 20_000, timeoutMsg: 'Quenta did not persist the focused report chat' },
+        );
+
+        const beforeReload = await browser.execute(async () => {
+          const raw = await window.Liatir.invoke('lia_app_read_text', {
+            rel: 'workspaces/__test__/quenta/conversations.json',
+          });
+          return JSON.parse(raw).conversations;
+        });
+        expect(beforeReload).toHaveLength(1);
+
+        await browser.execute(() => window.location.reload());
+        await browser.waitUntil(
+          async () => browser.execute(() => window.location.pathname === '/quenta'),
+          { timeout: 20_000, timeoutMsg: 'Quenta did not reload after consuming the Result deep link' },
+        );
+        const afterReload = await browser.execute(async () => {
+          const raw = await window.Liatir.invoke('lia_app_read_text', {
+            rel: 'workspaces/__test__/quenta/conversations.json',
+          });
+          return JSON.parse(raw).conversations;
+        });
+        expect(afterReload.map((conversation) => conversation.id)).toEqual(
+          beforeReload.map((conversation) => conversation.id),
+        );
+        await (await browser.$('[data-testid="quenta-empty-state"]')).waitForDisplayed({
+          timeout: 20_000,
+          timeoutMsg: 'Plain Quenta reload selected the focused report chat automatically',
+        });
+        expect(await (await browser.$('[data-testid="quenta-input"]')).isExisting()).toBe(false);
+        await browser.execute((conversationId) => {
+          window.location.href = `/quenta?conversation=${encodeURIComponent(conversationId)}`;
+        }, beforeReload[0].id);
+        await browser.waitUntil(
+          async () => browser.execute(() => (
+            document.body.innerText.includes('Structured report')
+            && document.querySelector('[data-testid="quenta-input"]')?.value
+              .includes('Generate a cited structured scientific report')
+          )),
+          { timeout: 20_000, timeoutMsg: 'Prepared report prompt and mode did not survive reload' },
+        );
+        await browser.waitUntil(
+          async () => browser.execute(() => (
+            document.querySelector('[data-testid="quenta-provider-status"]')?.textContent
+              ?.includes('Quenta ready') ?? false
+          )),
+          { timeout: 30_000, timeoutMsg: 'Quenta did not finish preparing after the deep-link reload' },
+        );
       } finally {
         await ollama.close();
       }
@@ -420,13 +722,244 @@ export const tests = [
 
         expect(ollama.chatRequests.length).toBeGreaterThanOrEqual(1);
         const chat = ollama.chatRequests.at(-1);
-        expect(chat.stream).toBe(false);
+        expect(chat.stream).toBe(true);
         expect(chat.think).toBe(false);
         expect(chat.tools).toBeUndefined();
         expect(JSON.stringify(chat.messages)).toContain(`result:${RUN_ID}`);
         expect(JSON.stringify(chat.messages)).toContain('reads=42');
 
         await expectNoVisibleRuntimeError(browser);
+      } finally {
+        await ollama.close();
+      }
+    },
+  },
+  {
+    name: 'streams and persists Quenta reasoning in the chat activity panel',
+    async run({ browser, expect }) {
+      const reasoning = 'Reviewing the local evidence before writing the answer.';
+      const ollama = await startMockOllama({
+        thinkingText: reasoning,
+        streamChunkDelayMs: 250,
+        splitFirstNdjsonRecord: true,
+      });
+      try {
+        await openSandboxWorkspaceForQuenta(browser);
+        await seedQuentaState(browser, ollama.baseUrl, true);
+        await browser.execute(async () => {
+          await window.Liatir.invoke('lia_app_write_text', {
+            rel: 'workspaces/__test__/quenta/conversations.json',
+            content: JSON.stringify({ conversations: [] }, null, 2),
+            createDirs: true,
+          });
+          window.location.href = '/quenta';
+        });
+
+        const newChat = await browser.$('[data-testid="quenta-empty-new-chat"]');
+        await newChat.waitForDisplayed({
+          timeout: 30_000,
+          timeoutMsg: 'Quenta did not show the empty state for the reasoning test',
+        });
+        await newChat.click();
+        const input = await browser.$('[data-testid="quenta-input"]');
+        await input.waitForDisplayed({ timeout: 10_000 });
+        await input.setValue('Explain the observed QC result.');
+        await (await browser.$('[data-testid="quenta-send"]')).click();
+
+        const liveReasoning = await browser.$('[data-testid="quenta-reasoning-content"]');
+        await liveReasoning.waitForDisplayed({
+          timeout: 10_000,
+          timeoutMsg: 'Quenta did not render streamed reasoning',
+        });
+        expect(await liveReasoning.getText()).toContain('Reviewing the local');
+        await (await browser.$('[data-testid="quenta-streaming-content"]')).waitForDisplayed({
+          timeout: 10_000,
+          timeoutMsg: 'Quenta did not render the streamed answer',
+        });
+        await browser.waitUntil(
+          async () => browser.execute(() => document.body.innerText.includes('Mock Quenta observed')),
+          { timeout: 20_000, timeoutMsg: 'Quenta did not finalize the streamed answer' },
+        );
+
+        await browser.waitUntil(
+          async () => browser.execute(() => (
+            Boolean(document.querySelector('[data-testid="quenta-activity"][data-state="complete"]'))
+            && !document.querySelector('[data-testid="quenta-activity"][data-state="active"]')
+          )),
+          { timeout: 10_000, timeoutMsg: 'Quenta did not replace live activity with the completed response' },
+        );
+        expect(await browser.execute(() => (
+          document.querySelector('[data-testid="quenta-activity"]')?.getAttribute('data-state')
+        ))).toBe('complete');
+        await (await browser.$('[data-testid="quenta-activity-toggle"]')).click();
+        await (await browser.$('[data-testid="quenta-reasoning-content"]')).waitForDisplayed({
+          timeout: 5_000,
+          timeoutMsg: 'Completed Quenta reasoning was not expandable',
+        });
+        expect(await (await browser.$('[data-testid="quenta-reasoning-content"]')).getText()).toContain(reasoning);
+
+        const persistedAssistant = await browser.execute(async () => {
+          const raw = await window.Liatir.invoke('lia_app_read_text', {
+            rel: 'workspaces/__test__/quenta/conversations.json',
+          });
+          const conversations = JSON.parse(raw).conversations;
+          return conversations[0]?.messages.find((message) => message.role === 'assistant') ?? null;
+        });
+        expect(persistedAssistant?.generation?.reasoning).toContain(reasoning);
+        expect(persistedAssistant?.generation?.durationMs).toBeGreaterThan(0);
+
+        const chat = ollama.chatRequests.at(-1);
+        expect(chat.stream).toBe(true);
+        expect(chat.think).toBe(true);
+        expect(chat.tools).toBeUndefined();
+      } finally {
+        await ollama.close();
+      }
+    },
+  },
+  {
+    name: 'stops and retries a Quenta response without duplicating the user message',
+    async run({ browser, expect }) {
+      const ollama = await startMockOllama({ delayFirstChatMs: 3_000 });
+      const prompt = 'Explain this result after a stopped response.';
+      try {
+        await openSandboxWorkspaceForQuenta(browser);
+        await seedQuentaState(browser, ollama.baseUrl);
+        await browser.execute(async () => {
+          await window.Liatir.invoke('lia_app_write_text', {
+            rel: 'workspaces/__test__/quenta/conversations.json',
+            content: JSON.stringify({ conversations: [] }, null, 2),
+            createDirs: true,
+          });
+          window.location.href = '/quenta';
+        });
+        const emptyNewChat = await browser.$('[data-testid="quenta-empty-new-chat"]');
+        await emptyNewChat.waitForDisplayed({
+          timeout: 30_000,
+          timeoutMsg: 'Quenta empty state did not render',
+        });
+        const conversationsBeforeNewChat = await browser.execute(async () => {
+          const raw = await window.Liatir.invoke('lia_app_read_text', {
+            rel: 'workspaces/__test__/quenta/conversations.json',
+          });
+          return JSON.parse(raw).conversations.length;
+        });
+        expect(conversationsBeforeNewChat).toBe(0);
+        await emptyNewChat.click();
+        const input = await browser.$('[data-testid="quenta-input"]');
+        await input.waitForDisplayed({
+          timeout: 30_000,
+          timeoutMsg: 'Quenta did not become ready for the Stop test',
+        });
+        await input.setValue(prompt);
+        await (await browser.$('[data-testid="quenta-send"]')).click();
+        await (await browser.$('[data-testid="quenta-stop"]')).waitForDisplayed({
+          timeout: 10_000,
+          timeoutMsg: 'Stop response action did not appear',
+        });
+        await (await browser.$('[data-testid="quenta-stop"]')).click();
+        await (await browser.$('[data-testid="quenta-retry"]')).waitForDisplayed({
+          timeout: 10_000,
+          timeoutMsg: 'Retry action did not appear after stopping the response',
+        });
+        expect(await (await browser.$('[data-testid="quenta-error"]')).getText()).toContain('Response stopped');
+
+        await (await browser.$('[data-testid="quenta-retry"]')).click();
+        await browser.waitUntil(
+          async () => browser.execute(() => document.body.innerText.includes('Mock Quenta observed')),
+          { timeout: 20_000, timeoutMsg: 'Quenta retry did not produce a response' },
+        );
+
+        const messages = await browser.execute(async (content) => {
+          const raw = await window.Liatir.invoke('lia_app_read_text', {
+            rel: 'workspaces/__test__/quenta/conversations.json',
+          });
+          const conversations = JSON.parse(raw).conversations;
+          return conversations
+            .find((conversation) => conversation.messages.some((message) => message.content === content))
+            ?.messages ?? [];
+        }, prompt);
+        expect(messages.filter((message) => message.role === 'user')).toHaveLength(1);
+        expect(messages.filter((message) => message.role === 'assistant')).toHaveLength(1);
+      } finally {
+        await ollama.close();
+      }
+    },
+  },
+  {
+    name: 'recovers an interrupted Quenta response after reload without duplicating the user message',
+    async run({ browser, expect }) {
+      const ollama = await startMockOllama({ delayFirstChatMs: 3_000 });
+      const prompt = 'Explain this result after reloading an active response.';
+      try {
+        await openSandboxWorkspaceForQuenta(browser);
+        await seedQuentaState(browser, ollama.baseUrl);
+        await browser.execute(async () => {
+          await window.Liatir.invoke('lia_app_write_text', {
+            rel: 'workspaces/__test__/quenta/conversations.json',
+            content: JSON.stringify({ conversations: [] }, null, 2),
+            createDirs: true,
+          });
+          window.location.href = '/quenta';
+        });
+        const emptyNewChat = await browser.$('[data-testid="quenta-empty-new-chat"]');
+        await emptyNewChat.waitForDisplayed({
+          timeout: 30_000,
+          timeoutMsg: 'Quenta empty state did not render for the reload recovery test',
+        });
+        await emptyNewChat.click();
+        const input = await browser.$('[data-testid="quenta-input"]');
+        await input.waitForDisplayed({
+          timeout: 30_000,
+          timeoutMsg: 'Quenta did not become ready for the reload recovery test',
+        });
+        await input.setValue(prompt);
+        await (await browser.$('[data-testid="quenta-send"]')).click();
+        await (await browser.$('[data-testid="quenta-stop"]')).waitForDisplayed({
+          timeout: 10_000,
+          timeoutMsg: 'Quenta response did not start before reload',
+        });
+
+        await browser.execute(() => window.location.reload());
+        const savedConversation = await browser.$('[data-testid="quenta-conversation"] button[aria-label^="Open"]');
+        await savedConversation.waitForDisplayed({
+          timeout: 30_000,
+          timeoutMsg: 'Reloaded Quenta chat was not available for explicit selection',
+        });
+        await (await browser.$('[data-testid="quenta-empty-state"]')).waitForDisplayed({
+          timeout: 30_000,
+          timeoutMsg: 'Reloaded Quenta page selected the interrupted chat automatically',
+        });
+        await savedConversation.click();
+        await (await browser.$('[data-testid="quenta-retry"]')).waitForDisplayed({
+          timeout: 30_000,
+          timeoutMsg: 'Reloaded Quenta chat did not offer Retry',
+        });
+        await browser.waitUntil(
+          async () => browser.execute(() => (
+            !document.querySelector('[data-testid="quenta-retry"]')?.hasAttribute('disabled')
+          )),
+          { timeout: 30_000, timeoutMsg: 'Quenta did not become ready to retry after reload' },
+        );
+        expect(await (await browser.$('[data-testid="quenta-error"]')).getText()).toContain('did not finish');
+
+        await (await browser.$('[data-testid="quenta-retry"]')).click();
+        await browser.waitUntil(
+          async () => browser.execute(() => document.body.innerText.includes('Mock Quenta observed')),
+          { timeout: 20_000, timeoutMsg: 'Quenta reload retry did not produce a response' },
+        );
+
+        const messages = await browser.execute(async (content) => {
+          const raw = await window.Liatir.invoke('lia_app_read_text', {
+            rel: 'workspaces/__test__/quenta/conversations.json',
+          });
+          const conversations = JSON.parse(raw).conversations;
+          return conversations
+            .find((conversation) => conversation.messages.some((message) => message.content === content))
+            ?.messages ?? [];
+        }, prompt);
+        expect(messages.filter((message) => message.role === 'user')).toHaveLength(1);
+        expect(messages.filter((message) => message.role === 'assistant')).toHaveLength(1);
       } finally {
         await ollama.close();
       }

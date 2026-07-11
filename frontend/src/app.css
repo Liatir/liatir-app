@@ -88,7 +88,26 @@ input, textarea, [data-selectable] {
 ::-webkit-scrollbar-thumb:hover { background: #b0b0bc; }
 
 
-	/* 1. Stile per il codice inline (singolo backtick) */
+	.markdown-body > :first-child { margin-top: 0; }
+	.markdown-body > :last-child { margin-bottom: 0; }
+	.markdown-body p { margin: 0.55rem 0; }
+	.markdown-body h1,
+	.markdown-body h2,
+	.markdown-body h3 { margin: 0.9rem 0 0.4rem; font-weight: 650; color: #27272a; }
+	.markdown-body h1 { font-size: 1.2rem; }
+	.markdown-body h2 { font-size: 1.05rem; }
+	.markdown-body h3 { font-size: 0.95rem; }
+	.markdown-body ul,
+	.markdown-body ol { margin: 0.55rem 0; padding-left: 1.35rem; }
+	.markdown-body ul { list-style: disc; }
+	.markdown-body ol { list-style: decimal; }
+	.markdown-body blockquote { margin: 0.75rem 0; border-left: 3px solid #d4d4d8; padding-left: 0.8rem; color: #71717a; }
+	.markdown-body a { color: var(--color-brand); text-decoration: underline; text-underline-offset: 2px; }
+	.markdown-body table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.8rem; }
+	.markdown-body th,
+	.markdown-body td { border: 1px solid var(--color-border); padding: 0.4rem 0.55rem; text-align: left; }
+
+	/* Inline code (single backtick). */
 	.markdown-body code {
 		background-color: #eeeeee !important;
 		color: #000000 !important;

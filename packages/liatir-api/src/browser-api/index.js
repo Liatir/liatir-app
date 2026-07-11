@@ -470,7 +470,7 @@ var newWindow = async (core, options) => {
   } catch (error) {
     console.warn("Could not update used windows labels tracker");
   }
-  core.invoke("lia_win_open", {
+  await core.invoke("lia_win_open", {
     label: labelToSet,
     fullscreen: options?.fullscreen || false,
     url: options?.url ?? ""

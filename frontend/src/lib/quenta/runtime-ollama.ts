@@ -1,9 +1,11 @@
 import { liatir } from '$lib/api';
+import { Channel } from '@tauri-apps/api/core';
 import type {
   LiatirQuentaChatRequest,
   LiatirQuentaChatResponse,
   LiatirQuentaProviderModel,
   LiatirQuentaProviderStatus,
+  LiatirQuentaStreamEvent,
 } from '@liatir/core';
 import type { QuentaRuntime } from './runtime';
 
@@ -83,17 +85,31 @@ export class OllamaQuentaRuntime implements QuentaRuntime {
     }));
   }
 
-  async chat(request: LiatirQuentaChatRequest): Promise<LiatirQuentaChatResponse> {
+  async chat(
+    request: LiatirQuentaChatRequest,
+    requestId: string,
+    onEvent?: (event: LiatirQuentaStreamEvent) => void,
+  ): Promise<LiatirQuentaChatResponse> {
+    const eventChannel = new Channel<LiatirQuentaStreamEvent>((event) => {
+      if (
+        (event.type === 'thinking-delta' || event.type === 'content-delta')
+        && typeof event.delta === 'string'
+      ) {
+        onEvent?.(event);
+      }
+    });
     const response = await this.api().invoke('lia_quenta_ollama_chat', {
+      requestId,
       baseUrl: this.baseUrl,
       model: request.model,
       messages: request.messages,
       temperature: request.temperature,
       thinkingEnabled: request.thinkingEnabled ?? false,
       format: request.format ?? null,
+      onEvent: eventChannel,
     }) as {
       model?: string;
-      message?: { content?: string };
+      message?: { content?: string; thinking?: string };
       prompt_eval_count?: number;
       eval_count?: number;
       total_duration?: number;
@@ -103,10 +119,17 @@ export class OllamaQuentaRuntime implements QuentaRuntime {
     return {
       model: response.model ?? request.model,
       content,
+      thinking: response.message?.thinking?.trim() || undefined,
       promptTokens: response.prompt_eval_count,
       completionTokens: response.eval_count,
       totalDurationNs: response.total_duration,
     };
+  }
+
+  async cancelChat(requestId: string): Promise<boolean> {
+    return await this.api().invoke('lia_quenta_ollama_cancel_chat', {
+      requestId,
+    }) as boolean;
   }
 
   async embed(model: string, input: string[]): Promise<number[][]> {
