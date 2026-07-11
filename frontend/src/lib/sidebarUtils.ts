@@ -15,8 +15,6 @@ export interface NavItem {
 }
 
 export const NAV_PAGES: NavItem[] = [
-    { href: '/quenta', label: 'Ask Quenta', icon: 'ri:chat-ai-line', match: '/quenta', global: false },
-    { divider: true, global: true },
     { href: '/', label: 'Dashboard', icon: 'lucide:house', match: undefined, global: false },
     { href: '/pipelines', label: 'Pipelines', icon: 'lucide:workflow', match: '/pipelines', global: false },
     { divider: true, global: false },
@@ -28,6 +26,8 @@ export const NAV_PAGES: NavItem[] = [
     { href: '/data', label: 'Data', icon: 'lucide:database', match: '/data', global: false },
     { href: '/results', label: 'Results', icon: 'lucide:inbox', match: '/results', global: false },
     { href: '/jobs', label: 'Jobs', icon: 'lucide:radio', match: '/jobs', global: false },
+    { divider: true, global: true },
+    { href: '/quenta', label: 'Ask Quenta', icon: 'ri:chat-ai-line', match: '/quenta', global: false },
 ];
 
 export const NAV_PAGES_BOTTOM: NavItem[] = [
