@@ -9,8 +9,8 @@ import { compact, jsonSummary, summarizeToolOutput } from './output-summary';
 import type { LiatirQuentaContextDocument, LiatirQuentaFocus } from '@liatir/core';
 
 const MAX_LOG_LINES = 80;
-const MAX_RECENT_RUNS = 24;
-const MAX_RECENT_JOBS = 30;
+const MAX_RECENT_RUNS = 12;
+const MAX_RECENT_JOBS = 15;
 
 function line(label: string, value: unknown): string | null {
   if (value === undefined || value === null || value === '') return null;
@@ -82,16 +82,16 @@ async function resultDocument(run: AnalysisRunMeta, focused: boolean): Promise<L
     run.inputs.length ? run.inputs.map((input) => `- ${input}`).join('\n') : 'No inputs recorded.',
     '',
     'Parameters:',
-    jsonSummary(run.params, focused ? 8_000 : 2_000),
+    jsonSummary(run.params, focused ? 4_000 : 2_000),
     '',
     'Output files:',
     formatFiles(run.outputFiles),
     '',
     'Structured output:',
-    summarizeToolOutput(output, focused ? 14_000 : 4_000),
+    summarizeToolOutput(output, focused ? 8_000 : 4_000),
     '',
     'Recent log lines:',
-    logLines.length ? compact(logLines.join('\n'), focused ? 10_000 : 3_000) : 'No run log recorded.',
+    logLines.length ? compact(logLines.join('\n'), focused ? 4_000 : 3_000) : 'No run log recorded.',
   ].filter((part): part is string => part !== null).join('\n');
 
   return doc({
@@ -224,20 +224,26 @@ export async function buildQuentaContextDocuments(
   focus?: LiatirQuentaFocus,
 ): Promise<LiatirQuentaContextDocument[]> {
   await workspaceStore.init();
-  await Promise.allSettled([
-    analysisRuns.init(),
-    pipelineStore.init(),
-    apiConnections.init(),
-    aiModelsStore.init(),
-    jobsStore.refresh(),
-  ]);
+  if (focus?.kind === 'result') {
+    await analysisRuns.init();
+  } else if (focus?.kind === 'job') {
+    await jobsStore.refresh();
+  } else {
+    await Promise.allSettled([
+      analysisRuns.init(),
+      pipelineStore.init(),
+      apiConnections.init(),
+      aiModelsStore.init(),
+      jobsStore.refresh(),
+    ]);
+  }
 
   const documents: LiatirQuentaContextDocument[] = [
     ...LIATIR_QUENTA_KNOWLEDGE,
     workspaceDocument(),
   ];
 
-  if (pipelineStore.currentNodes.length || pipelineStore.currentEdges.length) {
+  if (!focus && (pipelineStore.currentNodes.length || pipelineStore.currentEdges.length)) {
     documents.push(doc({
       id: 'pipeline:current',
       sourceKind: 'pipeline',
@@ -254,39 +260,41 @@ export async function buildQuentaContextDocuments(
     }));
   }
 
-  for (const pipeline of pipelineStore.savedPipelines) {
-    documents.push(doc({
-      id: `pipeline:${pipeline.id}`,
-      sourceKind: 'pipeline',
-      title: pipeline.name,
-      locator: `Pipelines / ${pipeline.id}`,
-      content: pipelineNodeSummary(pipeline),
-      updatedAt: pipeline.updatedAt,
-    }));
+  if (!focus) {
+    for (const pipeline of pipelineStore.savedPipelines) {
+      documents.push(doc({
+        id: `pipeline:${pipeline.id}`,
+        sourceKind: 'pipeline',
+        title: pipeline.name,
+        locator: `Pipelines / ${pipeline.id}`,
+        content: pipelineNodeSummary(pipeline),
+        updatedAt: pipeline.updatedAt,
+      }));
+    }
   }
 
   const focusedRunId = focus?.kind === 'result' ? focus.entityId : null;
   const recentRuns = analysisRuns.runs.slice(0, MAX_RECENT_RUNS);
-  const runs = focusedRunId && !recentRuns.some((run) => run.id === focusedRunId)
-    ? [
-        ...analysisRuns.runs.filter((run) => run.id === focusedRunId),
-        ...recentRuns,
-      ]
-    : recentRuns;
+  const runs = focusedRunId
+    ? analysisRuns.runs.filter((run) => run.id === focusedRunId)
+    : focus
+      ? []
+      : recentRuns;
   documents.push(...await Promise.all(runs.map((run) => resultDocument(run, run.id === focusedRunId))));
 
   const focusedJobId = focus?.kind === 'job' ? focus.entityId : null;
   const recentJobs = [...jobsStore.jobs].sort((a, b) => b.startedAtMs - a.startedAtMs).slice(0, MAX_RECENT_JOBS);
-  const jobs = focusedJobId && !recentJobs.some((job) => job.id === focusedJobId)
-    ? [
-        ...jobsStore.jobs.filter((job) => job.id === focusedJobId),
-        ...recentJobs,
-      ]
-    : recentJobs;
+  const jobs = focusedJobId
+    ? jobsStore.jobs.filter((job) => job.id === focusedJobId)
+    : focus
+      ? []
+      : recentJobs;
   documents.push(...await Promise.all(jobs.map((job) => jobDocument(job, job.id === focusedJobId))));
 
-  documents.push(...apiDocuments());
-  documents.push(...aiModelDocuments());
+  if (!focus) {
+    documents.push(...apiDocuments());
+    documents.push(...aiModelDocuments());
+  }
 
   return documents;
 }

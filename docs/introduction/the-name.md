@@ -7,6 +7,21 @@ description: Where the name Liatir comes from — lia "thread" and tir "to watch
 
 *Liatir* comes from [Tolkien's Elvish](https://tolkiengateway.net/wiki/Elvish) — a compound of **lia**, "*strand*" or "*thread*", and **tir**, "*to watch*." Read together, it lands close to *strand-watcher*: the one that watches the strands. For a platform whose whole job is reading **strands** of DNA, RNA, and protein, it's about as literal as a name can get.
 
+
+<figure class="liatir-architecture-figure">
+  <img src="/static/middle-earth.png" alt="Middle earth map" />
+</figure>
+
+<center style="margin-top: -25px; opacity: 0.7;">
+
+<small>
+
+*"Even the smallest person can change the course of the future." — Lady Galadriel*
+
+</small>
+
+</center>
+
 ## At a glance
 
 | Element  | Language          | Meaning                  | Found in                              |

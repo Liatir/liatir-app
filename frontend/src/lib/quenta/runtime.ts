@@ -1,5 +1,6 @@
 import type {
   LiatirQuentaChatRequest,
+  LiatirQuentaChatRequestSnapshot,
   LiatirQuentaChatResponse,
   LiatirQuentaStreamEvent,
   LiatirQuentaProviderConfig,
@@ -22,7 +23,9 @@ export interface QuentaRuntime {
     requestId: string,
     onEvent?: (event: LiatirQuentaStreamEvent) => void,
   ): Promise<LiatirQuentaChatResponse>;
+  chatStatus(requestId: string): Promise<LiatirQuentaChatRequestSnapshot | null>;
   cancelChat(requestId: string): Promise<boolean>;
+  forgetChat(requestId: string): Promise<boolean>;
   embed?(model: string, input: string[]): Promise<number[][]>;
 }
 

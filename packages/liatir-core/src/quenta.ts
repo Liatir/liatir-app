@@ -118,6 +118,24 @@ export interface LiatirQuentaChatResponse {
   totalDurationNs?: number;
 }
 
+export type LiatirQuentaChatRequestStatus =
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+/** App-owned Quenta request state used to reconnect after page navigation or reload. */
+export interface LiatirQuentaChatRequestSnapshot {
+  requestId: string;
+  status: LiatirQuentaChatRequestStatus;
+  model: string;
+  thinking: string;
+  content: string;
+  response?: LiatirQuentaChatResponse;
+  error?: string;
+  updatedAt: number;
+}
+
 export type LiatirQuentaStreamEventKind = "thinking-delta" | "content-delta";
 
 export interface LiatirQuentaStreamEvent {

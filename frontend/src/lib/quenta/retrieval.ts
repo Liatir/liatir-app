@@ -60,7 +60,11 @@ export function retrieveQuentaContext(
       score: scoreDocument(query, document) + (requiredIds.has(document.id) ? 1_000 : 0),
     }))
     .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score || a.index - b.index);
+    .sort((a, b) => {
+      const aRequired = requiredIds.has(a.document.id) ? 1 : 0;
+      const bRequired = requiredIds.has(b.document.id) ? 1 : 0;
+      return bRequired - aRequired || b.score - a.score || a.index - b.index;
+    });
 
   const selected: LiatirQuentaContextDocument[] = [];
   let usedChars = 0;

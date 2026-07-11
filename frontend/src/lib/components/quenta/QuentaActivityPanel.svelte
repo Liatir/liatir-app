@@ -3,6 +3,7 @@
   import Icon from '@iconify/svelte';
   import type { LiatirQuentaGenerationTrace, LiatirQuentaIntent } from '@liatir/core';
   import type { QuentaActiveResponse, QuentaGenerationPhase } from '$lib/stores/quenta.svelte';
+  import { sanitizeQuentaReasoning } from '$lib/quenta/reasoning-safety';
 
   interface ActivityStep {
     id: string;
@@ -22,7 +23,7 @@
   let collapsedForAnswer = false;
   let clock = $state(Date.now());
 
-  const reasoning = $derived(active?.reasoning ?? generation?.reasoning ?? '');
+  const reasoning = $derived(sanitizeQuentaReasoning(active?.reasoning ?? generation?.reasoning ?? ''));
   const durationMs = $derived(active ? Math.max(0, clock - active.startedAt) : generation?.durationMs);
   const steps = $derived(activitySteps(active, generation, intent));
   const statusLabel = $derived(activityLabel(active, generation, intent, durationMs));
@@ -89,8 +90,8 @@
           status: 'complete',
         },
       ];
-      if (completed.reasoning) {
-        finished.push({ id: 'reasoning', label: 'Reasoned with the local model', status: 'complete' });
+      if (completed.reasoningDurationMs !== undefined) {
+        finished.push({ id: 'reasoning', label: 'Reviewed the selected information', status: 'complete' });
       }
       finished.push({
         id: 'response',
@@ -129,11 +130,11 @@
         status: stepStatus(current.phase, 1),
       });
     }
-    const hasReasoningStep = current.thinkingEnabled || Boolean(current.reasoning);
+    const hasReasoningStep = current.thinkingEnabled;
     if (currentPhase >= 2 && hasReasoningStep) {
       activeSteps.push({
         id: 'reasoning',
-        label: 'Reasoning with the local model',
+        label: 'Reviewing the selected information',
         status: current.phase === 'thinking' ? 'active' : 'complete',
       });
     }
@@ -180,7 +181,7 @@
       switch (current.phase) {
         case 'reading-context': return 'Reading local context';
         case 'selecting-sources': return 'Selecting relevant evidence';
-        case 'thinking': return 'Reasoning';
+        case 'thinking': return 'Reviewing information';
         case 'writing-response': return currentIntent === 'report' ? 'Drafting report' : 'Writing response';
         case 'validating-report': return 'Validating report';
         case 'repairing-report': return 'Repairing report format';
@@ -189,9 +190,9 @@
       }
     }
     const elapsed = formatDuration(duration);
-    if (completed?.reasoning) {
+    if (completed?.reasoningDurationMs !== undefined) {
       const reasoningElapsed = formatDuration(completed.reasoningDurationMs);
-      return reasoningElapsed ? `Reasoned for ${reasoningElapsed}` : 'Reasoning';
+      return reasoningElapsed ? `Information reviewed in ${reasoningElapsed}` : 'Information reviewed';
     }
     if (currentIntent === 'report') return elapsed ? `Report prepared in ${elapsed}` : 'Report prepared';
     return elapsed ? `Response prepared in ${elapsed}` : 'Response prepared';
@@ -249,7 +250,7 @@
 
       {#if reasoning}
         <div
-          class="max-h-48 overflow-y-auto whitespace-pre-wrap border-l-2 border-brand/20 pl-3 text-xs leading-relaxed text-zinc-500"
+          class="max-h-64 overflow-y-auto whitespace-pre-wrap border-l-2 border-brand/20 pl-3 text-xs leading-relaxed text-zinc-500"
           data-testid="quenta-reasoning-content"
           data-selectable
           aria-live="off"
@@ -257,6 +258,7 @@
           {reasoning}{#if active?.phase === 'thinking'}<span class="ml-1 inline-block h-3 w-1 animate-pulse rounded-full bg-zinc-400" data-testid="quenta-reasoning-cursor"></span>{/if}
         </div>
       {/if}
+
     </div>
   {/if}
 </div>

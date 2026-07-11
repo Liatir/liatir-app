@@ -2,6 +2,7 @@ import { liatir } from '$lib/api';
 import { Channel } from '@tauri-apps/api/core';
 import type {
   LiatirQuentaChatRequest,
+  LiatirQuentaChatRequestSnapshot,
   LiatirQuentaChatResponse,
   LiatirQuentaProviderModel,
   LiatirQuentaProviderStatus,
@@ -126,8 +127,54 @@ export class OllamaQuentaRuntime implements QuentaRuntime {
     };
   }
 
+  async chatStatus(requestId: string): Promise<LiatirQuentaChatRequestSnapshot | null> {
+    const snapshot = await this.api().invoke('lia_quenta_ollama_chat_status', {
+      requestId,
+    }) as null | {
+      requestId: string;
+      status: LiatirQuentaChatRequestSnapshot['status'];
+      model: string;
+      thinking: string;
+      content: string;
+      response?: {
+        model?: string;
+        message?: { content?: string; thinking?: string };
+        prompt_eval_count?: number;
+        eval_count?: number;
+        total_duration?: number;
+      };
+      error?: string;
+      updatedAt: number;
+    };
+    if (!snapshot) return null;
+    const responseContent = snapshot.response?.message?.content?.trim();
+    return {
+      requestId: snapshot.requestId,
+      status: snapshot.status,
+      model: snapshot.model,
+      thinking: snapshot.thinking,
+      content: snapshot.content,
+      response: snapshot.response && responseContent ? {
+        model: snapshot.response.model ?? snapshot.model,
+        content: responseContent,
+        thinking: snapshot.response.message?.thinking?.trim() || undefined,
+        promptTokens: snapshot.response.prompt_eval_count,
+        completionTokens: snapshot.response.eval_count,
+        totalDurationNs: snapshot.response.total_duration,
+      } : undefined,
+      error: snapshot.error,
+      updatedAt: snapshot.updatedAt,
+    };
+  }
+
   async cancelChat(requestId: string): Promise<boolean> {
     return await this.api().invoke('lia_quenta_ollama_cancel_chat', {
+      requestId,
+    }) as boolean;
+  }
+
+  async forgetChat(requestId: string): Promise<boolean> {
+    return await this.api().invoke('lia_quenta_ollama_forget_chat', {
       requestId,
     }) as boolean;
   }

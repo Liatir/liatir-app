@@ -8,6 +8,7 @@ import type {
 export type QuentaConversationMutation =
   | { kind: 'create'; conversation: LiatirQuentaConversation }
   | { kind: 'merge'; conversations: LiatirQuentaConversation[] }
+  | { kind: 'replace'; conversations: LiatirQuentaConversation[] }
   | { kind: 'delete'; conversationId: string }
   | { kind: 'rename'; conversationId: string; title: string; updatedAt: number }
   | { kind: 'tags'; conversationId: string; tags: string[]; updatedAt: number }
@@ -55,6 +56,9 @@ export function applyConversationMutation(
       ...conversations,
       ...mutation.conversations.filter((conversation) => !existingIds.has(conversation.id)),
     ], maxConversations);
+  }
+  if (mutation.kind === 'replace') {
+    return orderedConversations(mutation.conversations, maxConversations);
   }
   if (mutation.kind === 'delete') {
     return orderedConversations(

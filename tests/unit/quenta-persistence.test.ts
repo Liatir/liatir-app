@@ -107,4 +107,17 @@ describe('Quenta conversation persistence', () => {
       draftIntent: 'report',
     });
   });
+
+  it('replaces an obsolete snapshot when exact duplicate cleanup runs', () => {
+    const replacement = { ...conversation, id: 'conversation-kept', updatedAt: 3 };
+    const updated = applyConversationMutation([
+      conversation,
+      { ...conversation, id: 'conversation-duplicate', updatedAt: 2 },
+    ], {
+      kind: 'replace',
+      conversations: [replacement],
+    });
+
+    expect(updated.map((item) => item.id)).toEqual(['conversation-kept']);
+  });
 });

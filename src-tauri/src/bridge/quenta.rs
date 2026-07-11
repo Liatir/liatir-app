@@ -12,7 +12,7 @@ use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::sync::{Mutex, OnceLock};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::ipc::Channel;
 use tauri::{AppHandle, Emitter, Manager};
 use url::{Host, Url};
@@ -23,6 +23,8 @@ const MANAGED_OLLAMA_DOWNLOAD_ID: &str = "quenta-ollama-runtime";
 const OLLAMA_MACOS_DOWNLOAD_URL: &str = "https://ollama.com/download/Ollama-darwin.zip";
 static OLLAMA_SERVER_CHILD: OnceLock<Mutex<Option<Child>>> = OnceLock::new();
 static QUENTA_CHAT_CANCELLATIONS: OnceLock<Mutex<HashMap<String, Arc<AtomicBool>>>> =
+    OnceLock::new();
+static QUENTA_CHAT_REQUESTS: OnceLock<Mutex<HashMap<String, QuentaChatRequestSnapshot>>> =
     OnceLock::new();
 static QUENTA_CONVERSATIONS_WRITE_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
 static QUENTA_BOOTSTRAP_LOCK: OnceLock<tokio::sync::Mutex<()>> = OnceLock::new();
@@ -39,6 +41,19 @@ pub struct QuentaRuntimeMessage {
 pub enum QuentaChatStreamEvent {
     ThinkingDelta { delta: String },
     ContentDelta { delta: String },
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuentaChatRequestSnapshot {
+    request_id: String,
+    status: String,
+    model: String,
+    thinking: String,
+    content: String,
+    response: Option<Value>,
+    error: Option<String>,
+    updated_at: u64,
 }
 
 #[derive(Default)]
@@ -195,12 +210,43 @@ fn quenta_chat_cancellations() -> &'static Mutex<HashMap<String, Arc<AtomicBool>
     QUENTA_CHAT_CANCELLATIONS.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
+fn quenta_chat_requests() -> &'static Mutex<HashMap<String, QuentaChatRequestSnapshot>> {
+    QUENTA_CHAT_REQUESTS.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn unix_time_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
+}
+
+fn update_quenta_chat_request(
+    request_id: &str,
+    update: impl FnOnce(&mut QuentaChatRequestSnapshot),
+) {
+    if let Ok(mut requests) = quenta_chat_requests().lock() {
+        if let Some(request) = requests.get_mut(request_id) {
+            update(request);
+            request.updated_at = unix_time_ms();
+        }
+    }
+}
+
 fn request_id_is_safe(request_id: &str) -> bool {
     !request_id.is_empty()
         && request_id.len() <= 128
         && request_id
             .chars()
             .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '.' | '_' | '-' | ':'))
+}
+
+fn quenta_response_timeout(thinking_enabled: bool) -> Duration {
+    if thinking_enabled {
+        Duration::from_secs(4 * 60)
+    } else {
+        Duration::from_secs(2 * 60)
+    }
 }
 
 async fn wait_for_chat_cancellation(cancelled: Arc<AtomicBool>) {
@@ -604,7 +650,7 @@ async fn json_response(response: Response) -> Result<Value, String> {
 }
 
 fn consume_quenta_chat_stream_line(
-    on_event: &Channel<QuentaChatStreamEvent>,
+    on_event: &mut impl FnMut(QuentaChatStreamEvent),
     line: &[u8],
     accumulator: &mut QuentaChatStreamAccumulator,
 ) -> Result<(), String> {
@@ -615,13 +661,13 @@ fn consume_quenta_chat_stream_line(
     let chunk: Value = serde_json::from_slice(line)
         .map_err(|error| format!("Ollama returned an invalid response stream: {error}"))?;
     for event in accumulator.push(chunk)? {
-        let _ = on_event.send(event);
+        on_event(event);
     }
     Ok(())
 }
 
 async fn streaming_quenta_chat_response(
-    on_event: &Channel<QuentaChatStreamEvent>,
+    mut on_event: impl FnMut(QuentaChatStreamEvent),
     fallback_model: &str,
     mut response: Response,
 ) -> Result<Value, String> {
@@ -651,11 +697,11 @@ async fn streaming_quenta_chat_response(
         while let Some(newline) = pending.iter().position(|byte| *byte == b'\n') {
             let mut line = pending.drain(..=newline).collect::<Vec<_>>();
             line.pop();
-            consume_quenta_chat_stream_line(on_event, &line, &mut accumulator)?;
+            consume_quenta_chat_stream_line(&mut on_event, &line, &mut accumulator)?;
         }
     }
     if !pending.is_empty() {
-        consume_quenta_chat_stream_line(on_event, &pending, &mut accumulator)?;
+        consume_quenta_chat_stream_line(&mut on_event, &pending, &mut accumulator)?;
     }
     accumulator.finish(fallback_model)
 }
@@ -814,13 +860,17 @@ pub async fn lia_quenta_ollama_chat(
     }
 
     let endpoint = ollama_endpoint(&base_url, "chat")?;
+    let thinking_enabled = thinking_enabled.unwrap_or(false);
+    let response_timeout = quenta_response_timeout(thinking_enabled);
     let mut body = json!({
         "model": model,
         "messages": messages,
-        "think": thinking_enabled.unwrap_or(false),
+        "think": thinking_enabled,
         "stream": true,
         "options": {
-            "temperature": temperature.clamp(0.0, 2.0)
+            "temperature": temperature.clamp(0.0, 2.0),
+            "num_ctx": 16384,
+            "num_predict": if thinking_enabled { 4096 } else { 2048 }
         }
     });
     if let Some(format) = format {
@@ -837,35 +887,152 @@ pub async fn lia_quenta_ollama_chat(
         }
         cancellations.insert(request_id.clone(), cancelled.clone());
     }
-
-    // No `tools` field is ever sent. Quenta is a read-only language-model
-    // surface and cannot receive runnable callbacks from the application.
-    let request = async {
-        let response = client(Duration::from_secs(15 * 60))?
-            .post(endpoint)
-            .header(CONTENT_TYPE, "application/json")
-            .body(body.to_string())
-            .send()
-            .await
-            .map_err(|error| format!("Ollama chat failed: {error}"))?;
-        streaming_quenta_chat_response(&on_event, &model, response).await
-    };
-    let value = tokio::select! {
-        result = request => result,
-        _ = wait_for_chat_cancellation(cancelled) => Err("Quenta response stopped".to_string()),
-    };
-    if let Ok(mut cancellations) = quenta_chat_cancellations().lock() {
-        cancellations.remove(&request_id);
-    }
-    let value = value?;
-    if value
-        .pointer("/message/tool_calls")
-        .and_then(Value::as_array)
-        .is_some_and(|calls| !calls.is_empty())
     {
-        return Err("Ollama returned a tool call, which the read-only Quenta refuses".to_string());
+        let mut requests = quenta_chat_requests()
+            .lock()
+            .map_err(|_| "cannot access Quenta request state".to_string())?;
+        if requests
+            .get(&request_id)
+            .is_some_and(|request| request.status == "running")
+        {
+            if let Ok(mut cancellations) = quenta_chat_cancellations().lock() {
+                cancellations.remove(&request_id);
+            }
+            return Err("Quenta request ID is already active".to_string());
+        }
+        requests.insert(
+            request_id.clone(),
+            QuentaChatRequestSnapshot {
+                request_id: request_id.clone(),
+                status: "running".to_string(),
+                model: model.clone(),
+                thinking: String::new(),
+                content: String::new(),
+                response: None,
+                error: None,
+                updated_at: unix_time_ms(),
+            },
+        );
     }
-    Ok(value)
+
+    let background_request_id = request_id.clone();
+    let background_model = model.clone();
+    tauri::async_runtime::spawn(async move {
+        // No `tools` field is ever sent. Quenta is a read-only language-model
+        // surface and cannot receive runnable callbacks from the application.
+        let request = async {
+            let response = client(Duration::from_secs(15 * 60))?
+                .post(endpoint)
+                .header(CONTENT_TYPE, "application/json")
+                .body(body.to_string())
+                .send()
+                .await
+                .map_err(|error| format!("Ollama chat failed: {error}"))?;
+            streaming_quenta_chat_response(
+                |event| {
+                    let _ = on_event.send(event.clone());
+                    update_quenta_chat_request(&background_request_id, |snapshot| match event {
+                        QuentaChatStreamEvent::ThinkingDelta { delta } => {
+                            snapshot.thinking.push_str(&delta);
+                        }
+                        QuentaChatStreamEvent::ContentDelta { delta } => {
+                            snapshot.content.push_str(&delta);
+                        }
+                    });
+                },
+                &background_model,
+                response,
+            )
+            .await
+        };
+        let result = tokio::select! {
+            result = tokio::time::timeout(response_timeout, request) => match result {
+                Ok(result) => result,
+                Err(_) => Err("Quenta response took too long".to_string()),
+            },
+            _ = wait_for_chat_cancellation(cancelled) => Err("Quenta response stopped".to_string()),
+        };
+        if let Ok(mut cancellations) = quenta_chat_cancellations().lock() {
+            cancellations.remove(&background_request_id);
+        }
+        match result {
+            Ok(value)
+                if value
+                    .pointer("/message/tool_calls")
+                    .and_then(Value::as_array)
+                    .is_some_and(|calls| !calls.is_empty()) =>
+            {
+                update_quenta_chat_request(&background_request_id, |snapshot| {
+                    snapshot.status = "failed".to_string();
+                    snapshot.error = Some(
+                        "Ollama returned a tool call, which the read-only Quenta refuses"
+                            .to_string(),
+                    );
+                });
+            }
+            Ok(value) => update_quenta_chat_request(&background_request_id, |snapshot| {
+                snapshot.status = "completed".to_string();
+                snapshot.response = Some(value);
+            }),
+            Err(error) => update_quenta_chat_request(&background_request_id, |snapshot| {
+                snapshot.status = if error == "Quenta response stopped" {
+                    "cancelled".to_string()
+                } else {
+                    "failed".to_string()
+                };
+                snapshot.error = Some(error);
+            }),
+        }
+    });
+
+    loop {
+        let snapshot = lia_quenta_ollama_chat_status(request_id.clone())?
+            .ok_or_else(|| "Quenta request state is unavailable".to_string())?;
+        match snapshot.status.as_str() {
+            "running" => tokio::time::sleep(Duration::from_millis(50)).await,
+            "completed" => {
+                return snapshot
+                    .response
+                    .ok_or_else(|| "Quenta response is unavailable".to_string())
+            }
+            _ => {
+                return Err(snapshot
+                    .error
+                    .unwrap_or_else(|| "Quenta response stopped".to_string()))
+            }
+        }
+    }
+}
+
+#[tauri::command]
+pub fn lia_quenta_ollama_chat_status(
+    request_id: String,
+) -> Result<Option<QuentaChatRequestSnapshot>, String> {
+    if !request_id_is_safe(&request_id) {
+        return Err("Quenta request ID is invalid".to_string());
+    }
+    Ok(quenta_chat_requests()
+        .lock()
+        .map_err(|_| "cannot access Quenta request state".to_string())?
+        .get(&request_id)
+        .cloned())
+}
+
+#[tauri::command]
+pub fn lia_quenta_ollama_forget_chat(request_id: String) -> Result<bool, String> {
+    if !request_id_is_safe(&request_id) {
+        return Err("Quenta request ID is invalid".to_string());
+    }
+    let mut requests = quenta_chat_requests()
+        .lock()
+        .map_err(|_| "cannot access Quenta request state".to_string())?;
+    if requests
+        .get(&request_id)
+        .is_some_and(|request| request.status == "running")
+    {
+        return Ok(false);
+    }
+    Ok(requests.remove(&request_id).is_some())
 }
 
 #[tauri::command]
@@ -916,13 +1083,16 @@ pub async fn lia_quenta_ollama_embed(
 #[cfg(test)]
 mod tests {
     use super::{
-        lia_quenta_ollama_cancel_chat, normalized_quenta_conversations, ollama_endpoint,
-        quenta_chat_cancellations, quenta_conversations_workspace, request_id_is_safe,
+        lia_quenta_ollama_cancel_chat, lia_quenta_ollama_chat_status,
+        lia_quenta_ollama_forget_chat, normalized_quenta_conversations, ollama_endpoint,
+        quenta_chat_cancellations, quenta_chat_requests, quenta_conversations_workspace,
+        quenta_response_timeout, request_id_is_safe, QuentaChatRequestSnapshot,
         QuentaChatStreamAccumulator,
     };
     use serde_json::json;
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;
+    use std::time::Duration;
 
     #[test]
     fn accepts_only_loopback_ollama_endpoints() {
@@ -937,6 +1107,12 @@ mod tests {
         assert!(ollama_endpoint("https://localhost:11434", "chat").is_err());
         assert!(ollama_endpoint("http://example.com:11434", "chat").is_err());
         assert!(ollama_endpoint("http://127.0.0.1.evil.test", "chat").is_err());
+    }
+
+    #[test]
+    fn bounds_standard_and_thinking_response_duration() {
+        assert_eq!(quenta_response_timeout(false), Duration::from_secs(120));
+        assert_eq!(quenta_response_timeout(true), Duration::from_secs(240));
     }
 
     #[test]
@@ -962,6 +1138,41 @@ mod tests {
             .lock()
             .unwrap()
             .remove(&request_id);
+    }
+
+    #[test]
+    fn retains_finished_chat_state_for_reload_recovery_until_acknowledged() {
+        let request_id = "quenta-reload-test".to_string();
+        quenta_chat_requests().lock().unwrap().insert(
+            request_id.clone(),
+            QuentaChatRequestSnapshot {
+                request_id: request_id.clone(),
+                status: "running".to_string(),
+                model: "mock-local".to_string(),
+                thinking: "Reviewing".to_string(),
+                content: String::new(),
+                response: None,
+                error: None,
+                updated_at: 1,
+            },
+        );
+
+        assert_eq!(
+            lia_quenta_ollama_chat_status(request_id.clone())
+                .unwrap()
+                .unwrap()
+                .status,
+            "running"
+        );
+        assert_eq!(lia_quenta_ollama_forget_chat(request_id.clone()), Ok(false));
+        quenta_chat_requests()
+            .lock()
+            .unwrap()
+            .get_mut(&request_id)
+            .unwrap()
+            .status = "completed".to_string();
+        assert_eq!(lia_quenta_ollama_forget_chat(request_id.clone()), Ok(true));
+        assert!(lia_quenta_ollama_chat_status(request_id).unwrap().is_none());
     }
 
     #[test]

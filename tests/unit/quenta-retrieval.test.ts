@@ -4,6 +4,9 @@ import {
   citedSources,
   retrieveQuentaContext,
 } from '../../frontend/src/lib/quenta/retrieval';
+import { buildQuentaMessages } from '../../frontend/src/lib/quenta/prompt';
+import { quentaResponseNeedsPlainLanguageRepair } from '../../frontend/src/lib/quenta/response-safety';
+import { sanitizeQuentaReasoning } from '../../frontend/src/lib/quenta/reasoning-safety';
 import type { LiatirQuentaContextDocument } from '../../packages/liatir-core/src';
 
 const docs: LiatirQuentaContextDocument[] = [
@@ -46,6 +49,39 @@ describe('Quenta retrieval', () => {
     });
 
     expect(result.documents.map((doc) => doc.id)).toEqual(['result:run-a']);
+  });
+
+  it('identifies the exact focused result as the primary subject', () => {
+    const messages = buildQuentaMessages(
+      'Explain this result.',
+      '<source id="result:run-a">Selected result</source>',
+      [],
+      'explain-result',
+      { kind: 'result', entityId: 'run-a' },
+    );
+
+    expect(messages.at(-1)?.content).toContain('selected subject is exactly [result:run-a]');
+    expect(messages.at(-1)?.content).toContain('Do not replace it with');
+    expect(messages.at(-1)?.content).toContain('Explain the selected result thoroughly');
+  });
+
+  it('flags developer-facing answers for plain-language repair', () => {
+    expect(quentaResponseNeedsPlainLanguageRepair(
+      'Run `docker inspect image` and check the system PATH.',
+    )).toBe(true);
+    expect(quentaResponseNeedsPlainLanguageRepair(
+      'The result did not complete, so no biological interpretation is available yet.',
+    )).toBe(false);
+  });
+
+  it('keeps useful reasoning while redacting local paths and oversized lines', () => {
+    const reasoning = sanitizeQuentaReasoning(
+      `Checking /Users/lorenzo/private/result.json\n${'evidence '.repeat(200)}`,
+    );
+
+    expect(reasoning).toContain('Checking [local path]');
+    expect(reasoning).not.toContain('/Users/lorenzo');
+    expect(reasoning.split('\n')[1].length).toBeLessThanOrEqual(801);
   });
 
   it('extracts explicit citations from model text', () => {

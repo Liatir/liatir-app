@@ -2,9 +2,15 @@ import { appStorage } from './app-storage';
 import { getDataPrefix, workspaceStore } from './workspace.svelte';
 import { liatir } from '$lib/api';
 import { buildQuentaContextDocuments, requiredContextIdsForFocus } from '$lib/quenta/context';
-import { buildQuentaMessages, buildQuentaReportRepairMessages } from '$lib/quenta/prompt';
+import {
+  buildQuentaMessages,
+  buildQuentaPlainLanguageRepairMessages,
+  buildQuentaReportRepairMessages,
+} from '$lib/quenta/prompt';
 import { citedSources, retrieveQuentaContext } from '$lib/quenta/retrieval';
 import { QUENTA_REPORT_SCHEMA, parseQuentaReport, quentaReportToMarkdown } from '$lib/quenta/report';
+import { quentaResponseNeedsPlainLanguageRepair } from '$lib/quenta/response-safety';
+import { sanitizeQuentaReasoning } from '$lib/quenta/reasoning-safety';
 import { createQuentaRuntime } from '$lib/quenta/runtime';
 import {
   applyConversationMutation,
@@ -13,6 +19,7 @@ import {
 } from '$lib/quenta/persistence';
 import type {
   LiatirQuentaCitation,
+  LiatirQuentaChatResponse,
   LiatirQuentaConversation,
   LiatirQuentaFocus,
   LiatirQuentaIntent,
@@ -31,8 +38,8 @@ const MAX_MESSAGES_PER_CONVERSATION = 120;
 const MAX_CONVERSATION_TAGS = 3;
 const MAX_CONVERSATION_TAG_LENGTH = 28;
 const MAX_CONVERSATION_TITLE_LENGTH = 96;
-const MAX_REASONING_CHARS = 32_000;
-const ACTIVE_REQUESTS_SESSION_STORAGE_KEY = 'quenta-active-request-ids';
+const MAX_ACTIVE_REASONING_CHARS = 32_000;
+const ACTIVE_REQUESTS_SESSION_STORAGE_KEY = 'quenta-active-requests';
 export const QUENTA_DEFAULT_MODEL = 'qwen3.5:9b';
 type QuentaSetupPhase = 'idle' | 'preparing' | 'downloading' | 'ready' | 'failed';
 
@@ -58,6 +65,7 @@ export interface QuentaActiveResponse {
   sourceCount?: number;
   reportRepairAttempted: boolean;
   reasoning: string;
+  contentBuffer: string;
   content: string;
   revision: number;
 }
@@ -69,6 +77,7 @@ interface QuentaComposerSettings {
 interface QuentaSettingsFile {
   config: LiatirQuentaProviderConfig;
   composer: QuentaComposerSettings;
+  autoScrollToBottom: boolean;
 }
 
 interface QuentaConversationsFile {
@@ -86,6 +95,20 @@ interface QuentaConversationsWriteResult {
 interface QuentaConversationsChangedEvent {
   rel: string;
   revision: number;
+}
+
+interface StoredQuentaActiveRequest {
+  requestId: string;
+  conversationId: string;
+  workspaceId: string;
+  userMessageId: string;
+  intent: LiatirQuentaIntent;
+  focus?: LiatirQuentaFocus;
+  startedAt: number;
+  context: string;
+  citations: LiatirQuentaCitation[];
+  contextDocumentCount: number;
+  sourceCount: number;
 }
 
 const DEFAULT_CONFIG: LiatirQuentaProviderConfig = {
@@ -113,39 +136,67 @@ function now() {
   return Date.now();
 }
 
-function boundedReasoning(value: string): string | undefined {
-  const trimmed = value.trim();
-  if (!trimmed) return undefined;
-  if (trimmed.length <= MAX_REASONING_CHARS) return trimmed;
-  return `${trimmed.slice(0, MAX_REASONING_CHARS)}\n\n[Reasoning trace truncated.]`;
-}
-
-function storedActiveRequestIds(): string[] {
-  if (typeof sessionStorage === 'undefined') return [];
+function storedActiveRequests(): StoredQuentaActiveRequest[] {
+  if (typeof localStorage === 'undefined') return [];
   try {
-    const parsed = JSON.parse(sessionStorage.getItem(ACTIVE_REQUESTS_SESSION_STORAGE_KEY) ?? '[]');
-    return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === 'string') : [];
+    const parsed = JSON.parse(localStorage.getItem(ACTIVE_REQUESTS_SESSION_STORAGE_KEY) ?? '[]');
+    return Array.isArray(parsed)
+      ? parsed.filter((value): value is StoredQuentaActiveRequest => (
+          value && typeof value === 'object'
+          && typeof value.requestId === 'string'
+          && typeof value.conversationId === 'string'
+          && typeof value.workspaceId === 'string'
+          && typeof value.userMessageId === 'string'
+        ))
+      : [];
   } catch {
     return [];
   }
 }
 
-function writeStoredActiveRequestIds(requestIds: string[]) {
-  if (typeof sessionStorage === 'undefined') return;
+function writeStoredActiveRequests(requests: StoredQuentaActiveRequest[]) {
+  if (typeof localStorage === 'undefined') return;
   try {
-    if (requestIds.length === 0) sessionStorage.removeItem(ACTIVE_REQUESTS_SESSION_STORAGE_KEY);
-    else sessionStorage.setItem(ACTIVE_REQUESTS_SESSION_STORAGE_KEY, JSON.stringify(requestIds));
+    if (requests.length === 0) localStorage.removeItem(ACTIVE_REQUESTS_SESSION_STORAGE_KEY);
+    else localStorage.setItem(ACTIVE_REQUESTS_SESSION_STORAGE_KEY, JSON.stringify(requests));
   } catch {
-    // Session storage can be unavailable in restricted webviews.
+    // Local storage can be unavailable in restricted webviews.
   }
 }
 
-function rememberActiveRequest(requestId: string) {
-  writeStoredActiveRequestIds([...new Set([...storedActiveRequestIds(), requestId])]);
+function selectedConversationStorageKey(workspaceId: string): string {
+  return `quenta-selected-conversation:${workspaceId}`;
+}
+
+function rememberSelectedConversation(workspaceId: string, conversationId: string | null) {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    const key = selectedConversationStorageKey(workspaceId);
+    if (conversationId) localStorage.setItem(key, conversationId);
+    else localStorage.removeItem(key);
+  } catch {
+    // Local storage can be unavailable in restricted webviews.
+  }
+}
+
+function storedSelectedConversation(workspaceId: string): string | null {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    return localStorage.getItem(selectedConversationStorageKey(workspaceId));
+  } catch {
+    return null;
+  }
+}
+
+function rememberActiveRequest(request: StoredQuentaActiveRequest) {
+  writeStoredActiveRequests([
+    ...storedActiveRequests().filter((item) => item.requestId !== request.requestId),
+    request,
+  ]);
 }
 
 function forgetActiveRequest(requestId: string) {
-  writeStoredActiveRequestIds(storedActiveRequestIds().filter((value) => value !== requestId));
+  writeStoredActiveRequests(storedActiveRequests().filter((value) => value.requestId !== requestId));
 }
 
 function id(prefix: string) {
@@ -162,6 +213,58 @@ function titleForIntent(intent: LiatirQuentaIntent, focus?: LiatirQuentaFocus): 
   return DEFAULT_CONVERSATION_TITLE;
 }
 
+function stableFocusedConversationId(
+  workspaceId: string,
+  intent: LiatirQuentaIntent,
+  focus: LiatirQuentaFocus,
+): string {
+  const value = `${workspaceId}:${intent}:${focus.kind}:${focus.entityId}`;
+  let hash = 2_166_136_261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16_777_619);
+  }
+  return `quenta-focused-${focus.kind}-${(hash >>> 0).toString(36)}`;
+}
+
+function focusedConversationIdentity(conversation: LiatirQuentaConversation): string | null {
+  const focus = conversation.focus;
+  if (!focus || (conversation.tags?.length ?? 0) > 0) return null;
+  const userMessages = conversation.messages.filter((message) => message.role === 'user');
+  if (userMessages.length > 1) return null;
+  const intent = conversation.draftIntent ?? userMessages[0]?.intent;
+  if (!intent || intent === 'chat') return null;
+  if (conversation.title !== titleForIntent(intent, focus)) return null;
+  const expectedPrompt = quentaPromptForFocus(intent, focus);
+  if (userMessages[0] && userMessages[0].content !== expectedPrompt) return null;
+  return `${conversation.workspaceId}:${intent}:${focus.kind}:${focus.entityId}`;
+}
+
+export function dedupeFocusedConversations(
+  stored: LiatirQuentaConversation[],
+): LiatirQuentaConversation[] {
+  const winners = new Map<string, LiatirQuentaConversation>();
+  for (const conversation of stored) {
+    const key = focusedConversationIdentity(conversation);
+    if (!key) continue;
+    const current = winners.get(key);
+    if (
+      !current
+      || conversation.messages.length > current.messages.length
+      || (
+        conversation.messages.length === current.messages.length
+        && conversation.updatedAt > current.updatedAt
+      )
+    ) {
+      winners.set(key, conversation);
+    }
+  }
+  return stored.filter((conversation) => {
+    const key = focusedConversationIdentity(conversation);
+    return !key || winners.get(key)?.id === conversation.id;
+  });
+}
+
 export function quentaPromptForFocus(intent: LiatirQuentaIntent, focus: LiatirQuentaFocus): string {
   if (intent === 'report') {
     return `Generate a cited structured scientific report for ${focus.kind} ${focus.entityId}. Use observed evidence only, separate interpretation from limitations, and include recommended validation steps.`;
@@ -176,9 +279,9 @@ export function quentaPromptForFocus(intent: LiatirQuentaIntent, focus: LiatirQu
 }
 
 function messagesForHistory(messages: LiatirQuentaMessage[]): LiatirQuentaRuntimeMessage[] {
-  return messages.slice(-12).map((message) => ({
+  return messages.slice(-8).map((message) => ({
     role: message.role,
-    content: message.content,
+    content: message.content.slice(0, 2_500),
   }));
 }
 
@@ -207,6 +310,7 @@ function normalizeSettings(value: Partial<QuentaSettingsFile> | null): QuentaSet
       ...(value?.composer ?? {}),
       enterToSend: Boolean(value?.composer?.enterToSend ?? DEFAULT_COMPOSER_SETTINGS.enterToSend),
     },
+    autoScrollToBottom: (value?.autoScrollToBottom) ?? false
   };
 }
 
@@ -291,13 +395,19 @@ function quentaSetupErrorMessage(error: unknown): string {
 
 function quentaChatErrorMessage(error: unknown): string {
   const detail = error instanceof Error ? error.message : String(error);
+  if (detail.includes('selected result is unavailable') || detail.includes('selected job is unavailable')) {
+    return 'Quenta could not open the selected item. Return to Results or Jobs and try again.';
+  }
   if (detail.includes('Ollama chat failed') || detail.includes('error sending request')) {
     return 'Local AI is not running yet. Quenta is preparing it automatically; try again in a moment.';
+  }
+  if (detail.includes('response took too long') || detail.includes('timed out')) {
+    return 'Quenta took too long to finish this response. Try again with Standard mode or a shorter question.';
   }
   if (detail.includes('structured report') || detail.includes('Quenta report')) {
     return 'Quenta could not format this report. Try generating it again.';
   }
-  return detail;
+  return 'Quenta could not finish this response. Try again in a moment.';
 }
 
 function normalizeLegacyConversation(conversation: LiatirQuentaConversation): LiatirQuentaConversation {
@@ -356,7 +466,7 @@ function createQuentaStore() {
   const stoppedRequestIds = new Set<string>();
   let bootstrapPromise: Promise<void> | null = null;
   let conversationEventsPromise: Promise<void> | null = null;
-  let interruptedRequestsRecovered = false;
+  let activeRequestsRecovered = false;
   const enqueueConversationWrite = createSerializedWriteQueue();
   const conversationPersistenceByPath = new Map<string, {
     revision: number;
@@ -365,16 +475,6 @@ function createQuentaStore() {
 
   async function persistSettings() {
     await appStorage.writeText(SETTINGS_FILE, JSON.stringify(settings, null, 2), { createDirs: true });
-  }
-
-  async function cancelInterruptedRequests() {
-    if (interruptedRequestsRecovered) return;
-    interruptedRequestsRecovered = true;
-    const requestIds = storedActiveRequestIds();
-    writeStoredActiveRequestIds([]);
-    if (requestIds.length === 0) return;
-    const runtime = createQuentaRuntime(settings.config);
-    await Promise.all(requestIds.map((requestId) => runtime.cancelChat(requestId).catch(() => false)));
   }
 
   async function loadSettings() {
@@ -431,7 +531,9 @@ function createQuentaStore() {
   function applyConversationSnapshot(snapshot: QuentaConversationsWriteResult) {
     const workspaceId = workspaceStore.activeId;
     if (!workspaceId || snapshot.rel !== conversationsPath()) return;
-    const normalized = normalizeStoredConversations(snapshot.conversations, workspaceId);
+    const normalized = dedupeFocusedConversations(
+      normalizeStoredConversations(snapshot.conversations, workspaceId),
+    );
     conversationPersistenceByPath.set(snapshot.rel, {
       revision: snapshot.revision,
       conversations: normalized,
@@ -488,6 +590,7 @@ function createQuentaStore() {
     const workspaceId = workspaceStore.activeId;
     if (loadedWorkspaceId === workspaceId) return;
     loadedWorkspaceId = workspaceId;
+    activeRequestsRecovered = false;
     conversations = [];
     selectedConversationId = null;
     errorByConversation = {};
@@ -506,18 +609,30 @@ function createQuentaStore() {
       if (await appStorage.exists(sourcePath)) {
         const raw = await appStorage.readText(sourcePath);
         const parsed = JSON.parse(raw) as QuentaConversationsFile;
-        conversations = normalizeStoredConversations(
+        const normalizedConversations = normalizeStoredConversations(
           parsed.conversations ?? [],
           workspaceId,
           legacyOnly,
         );
+        conversations = dedupeFocusedConversations(normalizedConversations);
         conversationPersistenceByPath.set(currentPath, legacyOnly
           ? { revision: 0, conversations: [] }
-          : { revision: parsed.revision ?? 0, conversations });
-        selectedConversationId = null;
+          : { revision: parsed.revision ?? 0, conversations: normalizedConversations });
+        const rememberedConversationId = storedSelectedConversation(workspaceId);
+        selectedConversationId = conversations.some((item) => item.id === rememberedConversationId)
+          ? rememberedConversationId
+          : null;
+        const recoverableConversationIds = new Set(
+          storedActiveRequests()
+            .filter((request) => request.workspaceId === workspaceId)
+            .map((request) => request.conversationId),
+        );
         errorByConversation = Object.fromEntries(
           conversations
-            .filter((conversation) => conversation.messages.at(-1)?.role === 'user')
+            .filter((conversation) => (
+              conversation.messages.at(-1)?.role === 'user'
+              && !recoverableConversationIds.has(conversation.id)
+            ))
             .map((conversation) => [
               conversation.id,
               'The previous response did not finish. Retry it to continue.',
@@ -525,6 +640,8 @@ function createQuentaStore() {
         );
         if (legacyOnly) {
           await commitConversationMutation({ kind: 'merge', conversations });
+        } else if (conversations.length !== normalizedConversations.length) {
+          await commitConversationMutation({ kind: 'replace', conversations });
         }
       } else {
         conversationPersistenceByPath.set(currentPath, { revision: 0, conversations: [] });
@@ -545,6 +662,7 @@ function createQuentaStore() {
   }
 
   function createConversation(input: {
+    id?: string;
     title?: string;
     focus?: LiatirQuentaFocus;
     draft?: string;
@@ -554,7 +672,7 @@ function createQuentaStore() {
     if (!workspaceId) throw new Error('Open a workspace before using Quenta');
     const timestamp = now();
     const conversation: LiatirQuentaConversation = {
-      id: id('quenta-conversation'),
+      id: input.id ?? id('quenta-conversation'),
       workspaceId,
       title: normalizeConversationTitle(input.title ?? DEFAULT_CONVERSATION_TITLE),
       tags: [],
@@ -567,6 +685,7 @@ function createQuentaStore() {
     };
     conversations = [conversation, ...conversations].slice(0, MAX_CONVERSATIONS);
     selectedConversationId = conversation.id;
+    rememberSelectedConversation(workspaceId, conversation.id);
     return conversation;
   }
 
@@ -609,14 +728,16 @@ function createQuentaStore() {
       updateActiveResponse(conversationId, requestId, {
         phase: active.phase === 'repairing-report' ? 'repairing-report' : 'thinking',
         reasoningStartedAt: active.reasoningStartedAt ?? timestamp,
-        reasoning: `${active.reasoning}${event.delta}`.slice(0, MAX_REASONING_CHARS),
+        reasoning: `${active.reasoning}${event.delta}`.slice(-MAX_ACTIVE_REASONING_CHARS),
       });
       return;
     }
+    const contentBuffer = `${active.contentBuffer}${event.delta}`;
     updateActiveResponse(conversationId, requestId, {
       phase: active.phase === 'repairing-report' ? 'repairing-report' : 'writing-response',
       answerStartedAt: active.answerStartedAt ?? timestamp,
-      content: active.content + event.delta,
+      contentBuffer,
+      content: quentaResponseNeedsPlainLanguageRepair(contentBuffer) ? '' : contentBuffer,
     });
   }
 
@@ -636,6 +757,171 @@ function createQuentaStore() {
     }
     const { [conversationId]: _done, ...rest } = errorByConversation;
     errorByConversation = rest;
+  }
+
+  async function finalizeAssistantResponse(
+    descriptor: StoredQuentaActiveRequest,
+    initialResponse: LiatirQuentaChatResponse,
+    runtime: ReturnType<typeof createQuentaRuntime>,
+  ): Promise<void> {
+    const conversation = conversations.find((item) => item.id === descriptor.conversationId);
+    if (!conversation) return;
+    const userMessageIndex = conversation.messages.findIndex(
+      (message) => message.id === descriptor.userMessageId,
+    );
+    if (
+      userMessageIndex >= 0
+      && conversation.messages.slice(userMessageIndex + 1).some((message) => message.role === 'assistant')
+    ) return;
+
+    let response = initialResponse;
+    let assistantContent = response.content;
+    let citations = citedSources(response.content, descriptor.citations);
+    let report: LiatirQuentaMessage['report'];
+    let reportRepairAttempted = false;
+    if (descriptor.intent === 'report') {
+      updateActiveResponse(descriptor.conversationId, descriptor.requestId, { phase: 'validating-report' });
+      try {
+        report = parseQuentaReport(response.content);
+        if (quentaResponseNeedsPlainLanguageRepair(quentaReportToMarkdown(report))) {
+          throw new Error('Quenta report requires plain-language repair');
+        }
+      } catch {
+        reportRepairAttempted = true;
+        updateActiveResponse(descriptor.conversationId, descriptor.requestId, {
+          phase: 'repairing-report',
+          reportRepairAttempted: true,
+          contentBuffer: '',
+          content: '',
+        });
+        response = await runtime.chat({
+          model: settings.config.model,
+          messages: buildQuentaReportRepairMessages(response.content),
+          temperature: 0,
+          thinkingEnabled: false,
+          format: QUENTA_REPORT_SCHEMA,
+        }, descriptor.requestId, (event) => handleStreamEvent(
+          descriptor.conversationId,
+          descriptor.requestId,
+          event,
+        ));
+        report = parseQuentaReport(response.content);
+        if (quentaResponseNeedsPlainLanguageRepair(quentaReportToMarkdown(report))) {
+          throw new Error('Quenta could not format a safe report');
+        }
+      }
+      updateActiveResponse(descriptor.conversationId, descriptor.requestId, { phase: 'finalizing-report' });
+      assistantContent = quentaReportToMarkdown(report);
+      citations = citationsFromIds(report.citationIds, descriptor.citations);
+    } else if (quentaResponseNeedsPlainLanguageRepair(response.content)) {
+      updateActiveResponse(descriptor.conversationId, descriptor.requestId, {
+        phase: 'writing-response',
+        contentBuffer: '',
+        content: '',
+      });
+      response = await runtime.chat({
+        model: settings.config.model,
+        messages: buildQuentaPlainLanguageRepairMessages(response.content, descriptor.context),
+        temperature: 0,
+        thinkingEnabled: false,
+      }, descriptor.requestId, (event) => handleStreamEvent(
+        descriptor.conversationId,
+        descriptor.requestId,
+        event,
+      ));
+      assistantContent = quentaResponseNeedsPlainLanguageRepair(response.content)
+        ? 'Quenta could not turn the available information into a clear, reliable explanation. Please try again.'
+        : response.content;
+      citations = citedSources(assistantContent, descriptor.citations);
+    }
+    if (citations.length === 0) citations = descriptor.citations.slice(0, 4);
+
+    const completedAt = now();
+    const generation = activeResponsesByConversation[descriptor.conversationId];
+    const reasoning = sanitizeQuentaReasoning(response.thinking ?? generation?.reasoning ?? '');
+    const assistantMessage: LiatirQuentaMessage = {
+      id: id('quenta-message'),
+      role: 'assistant',
+      intent: descriptor.intent,
+      content: assistantContent,
+      createdAt: completedAt,
+      citations,
+      model: response.model,
+      report,
+      generation: {
+        reasoning: reasoning || undefined,
+        durationMs: completedAt - descriptor.startedAt,
+        reasoningDurationMs: generation?.reasoningStartedAt
+          ? (generation.answerStartedAt ?? completedAt) - generation.reasoningStartedAt
+          : undefined,
+        contextDocumentCount: descriptor.contextDocumentCount,
+        sourceCount: descriptor.sourceCount,
+        reportRepairAttempted,
+      },
+    };
+    clearActiveResponse(descriptor.conversationId, descriptor.requestId);
+    updateConversation(descriptor.conversationId, (item) => ({
+      ...item,
+      updatedAt: assistantMessage.createdAt,
+      messages: [...item.messages, assistantMessage].slice(-MAX_MESSAGES_PER_CONVERSATION),
+    }));
+    await commitConversationMutation({
+      kind: 'append-message',
+      conversationId: descriptor.conversationId,
+      message: assistantMessage,
+    });
+  }
+
+  async function waitForNativeResponse(
+    descriptor: StoredQuentaActiveRequest,
+    runtime: ReturnType<typeof createQuentaRuntime>,
+  ): Promise<LiatirQuentaChatResponse> {
+    while (true) {
+      const snapshot = await runtime.chatStatus(descriptor.requestId);
+      if (!snapshot) throw new Error('Quenta request state is unavailable');
+      updateActiveResponse(descriptor.conversationId, descriptor.requestId, {
+        phase: snapshot.thinking && !snapshot.content ? 'thinking' : 'writing-response',
+        reasoning: snapshot.thinking.slice(-MAX_ACTIVE_REASONING_CHARS),
+        contentBuffer: snapshot.content,
+        content: quentaResponseNeedsPlainLanguageRepair(snapshot.content) ? '' : snapshot.content,
+      });
+      if (snapshot.status === 'completed' && snapshot.response) return snapshot.response;
+      if (snapshot.status !== 'running') throw new Error(snapshot.error ?? 'Quenta response stopped');
+      await new Promise((resolve) => setTimeout(resolve, 120));
+    }
+  }
+
+  async function finishRequestLifecycle(
+    descriptor: StoredQuentaActiveRequest,
+    task: () => Promise<LiatirQuentaChatResponse>,
+  ): Promise<void> {
+    const runtime = createQuentaRuntime(settings.config);
+    let retainForReconnect = false;
+    try {
+      const response = await task();
+      if (!stoppedRequestIds.has(descriptor.requestId)) {
+        await finalizeAssistantResponse(descriptor, response, runtime);
+      }
+    } catch (error) {
+      if (!stoppedRequestIds.has(descriptor.requestId)) {
+        const snapshot = await runtime.chatStatus(descriptor.requestId).catch(() => null);
+        if (!snapshot || snapshot.status === 'running' || snapshot.status === 'completed') {
+          retainForReconnect = true;
+        } else {
+          setConversationError(descriptor.conversationId, quentaChatErrorMessage(error));
+        }
+      }
+    } finally {
+      if (retainForReconnect) return;
+      activeRequestsByConversation.delete(descriptor.conversationId);
+      stoppedRequestIds.delete(descriptor.requestId);
+      forgetActiveRequest(descriptor.requestId);
+      await runtime.forgetChat(descriptor.requestId).catch(() => false);
+      clearActiveResponse(descriptor.conversationId, descriptor.requestId);
+      const { [descriptor.conversationId]: _stopping, ...stoppingRest } = stoppingByConversation;
+      stoppingByConversation = stoppingRest;
+      setConversationSending(descriptor.conversationId, false);
+    }
   }
 
   async function sendMessage(
@@ -672,6 +958,7 @@ function createQuentaStore() {
     const priorMessages = reuseLastUserMessage
       ? conversation.messages.slice(0, -1)
       : conversation.messages;
+    let userMessageId = reuseLastUserMessage ? lastMessage!.id : '';
     if (!reuseLastUserMessage) {
       const timestamp = now();
       const userMessage: LiatirQuentaMessage = {
@@ -681,6 +968,7 @@ function createQuentaStore() {
         content: query,
         createdAt: timestamp,
       };
+      userMessageId = userMessage.id;
       updateConversation(conversation.id, (item) => ({
         ...item,
         focus: options.focus ?? item.focus,
@@ -711,11 +999,11 @@ function createQuentaStore() {
         startedAt: now(),
         reportRepairAttempted: false,
         reasoning: '',
+        contentBuffer: '',
         content: '',
         revision: 0,
       },
     };
-    rememberActiveRequest(requestId);
     setConversationSending(conversation.id, true);
     try {
       const focus = options.focus ?? conversation.focus;
@@ -724,8 +1012,22 @@ function createQuentaStore() {
         phase: 'selecting-sources',
         contextDocumentCount: documents.length,
       });
-      const retrieval = retrieveQuentaContext(query, documents, {
-        requiredIds: requiredContextIdsForFocus(focus),
+      const requiredIds = requiredContextIdsForFocus(focus);
+      const missingRequiredSource = requiredIds.find(
+        (sourceId) => !documents.some((document) => document.id === sourceId),
+      );
+      if (missingRequiredSource) {
+        throw new Error(`selected ${focus?.kind ?? 'item'} is unavailable`);
+      }
+      const retrievalDocuments = focus
+        ? documents.filter((document) => (
+            requiredIds.includes(document.id) || document.sourceKind !== focus.kind
+          ))
+        : documents;
+      const retrieval = retrieveQuentaContext(query, retrievalDocuments, {
+        requiredIds,
+        limit: focus ? 5 : 8,
+        maxChars: focus ? 18_000 : 14_000,
       });
       updateActiveResponse(conversation.id, requestId, {
         phase: settings.config.thinkingEnabled ? 'thinking' : 'writing-response',
@@ -735,94 +1037,41 @@ function createQuentaStore() {
       const runtime = createQuentaRuntime(settings.config);
       if (stoppedRequestIds.has(requestId)) return;
       activeRequest.runtimeStarted = true;
-      let response = await runtime.chat({
+      const descriptor: StoredQuentaActiveRequest = {
+        requestId,
+        conversationId: conversation.id,
+        workspaceId: conversation.workspaceId,
+        userMessageId,
+        intent,
+        focus,
+        startedAt: activeResponsesByConversation[conversation.id]?.startedAt ?? now(),
+        context: retrieval.context,
+        citations: retrieval.citations,
+        contextDocumentCount: documents.length,
+        sourceCount: retrieval.documents.length,
+      };
+      rememberActiveRequest(descriptor);
+      await finishRequestLifecycle(descriptor, () => runtime.chat({
         model: settings.config.model,
-        messages: buildQuentaMessages(query, retrieval.context, history, intent),
+        messages: buildQuentaMessages(query, retrieval.context, history, intent, focus),
         temperature: settings.config.temperature,
         thinkingEnabled: settings.config.thinkingEnabled ?? false,
         format: intent === 'report' ? QUENTA_REPORT_SCHEMA : undefined,
-      }, requestId, (event) => handleStreamEvent(conversation.id, requestId, event));
-      if (stoppedRequestIds.has(requestId)) return;
-
-      let assistantContent = response.content;
-      let citations = citedSources(response.content, retrieval.citations);
-      let report: LiatirQuentaMessage['report'];
-      let reportRepairAttempted = false;
-      if (intent === 'report') {
-        updateActiveResponse(conversation.id, requestId, { phase: 'validating-report' });
-        try {
-          report = parseQuentaReport(response.content);
-        } catch {
-          reportRepairAttempted = true;
-          updateActiveResponse(conversation.id, requestId, {
-            phase: 'repairing-report',
-            reportRepairAttempted: true,
-            content: '',
-          });
-          response = await runtime.chat({
-            model: settings.config.model,
-            messages: buildQuentaReportRepairMessages(response.content),
-            temperature: 0,
-            thinkingEnabled: false,
-            format: QUENTA_REPORT_SCHEMA,
-          }, requestId, (event) => handleStreamEvent(conversation.id, requestId, event));
-          if (stoppedRequestIds.has(requestId)) return;
-          report = parseQuentaReport(response.content);
-        }
-        updateActiveResponse(conversation.id, requestId, { phase: 'finalizing-report' });
-        assistantContent = quentaReportToMarkdown(report);
-        citations = citationsFromIds(report.citationIds, retrieval.citations);
-      }
-      if (citations.length === 0) citations = retrieval.citations.slice(0, 4);
-
-      const completedAt = now();
-      const generation = activeResponsesByConversation[conversation.id];
-      const reasoning = boundedReasoning(response.thinking ?? generation?.reasoning ?? '');
-      const assistantMessage: LiatirQuentaMessage = {
-        id: id('quenta-message'),
-        role: 'assistant',
-        intent,
-        content: assistantContent,
-        createdAt: completedAt,
-        citations,
-        model: response.model,
-        report,
-        generation: {
-          reasoning,
-          durationMs: generation ? completedAt - generation.startedAt : undefined,
-          reasoningDurationMs: generation?.reasoningStartedAt
-            ? (generation.answerStartedAt ?? completedAt) - generation.reasoningStartedAt
-            : undefined,
-          contextDocumentCount: documents.length,
-          sourceCount: retrieval.documents.length,
-          reportRepairAttempted,
-        },
-      };
-      clearActiveResponse(conversation.id, requestId);
-      updateConversation(conversation.id, (item) => ({
-        ...item,
-        updatedAt: assistantMessage.createdAt,
-        messages: [...item.messages, assistantMessage].slice(-MAX_MESSAGES_PER_CONVERSATION),
-      }));
-      await commitConversationMutation({
-        kind: 'append-message',
-        conversationId: conversation.id,
-        message: assistantMessage,
-      });
+      }, requestId, (event) => handleStreamEvent(conversation.id, requestId, event)));
+      return;
     } catch (error) {
       if (!stoppedRequestIds.has(requestId)) {
         setConversationError(conversation.id, quentaChatErrorMessage(error));
       }
     } finally {
-      if (activeRequestsByConversation.get(conversation.id)?.requestId === requestId) {
-        activeRequestsByConversation.delete(conversation.id);
+      if (!storedActiveRequests().some((request) => request.requestId === requestId)) {
+        if (activeRequestsByConversation.get(conversation.id)?.requestId === requestId) {
+          activeRequestsByConversation.delete(conversation.id);
+        }
+        stoppedRequestIds.delete(requestId);
+        clearActiveResponse(conversation.id, requestId);
+        setConversationSending(conversation.id, false);
       }
-      stoppedRequestIds.delete(requestId);
-      forgetActiveRequest(requestId);
-      clearActiveResponse(conversation.id, requestId);
-      const { [conversation.id]: _stopping, ...stoppingRest } = stoppingByConversation;
-      stoppingByConversation = stoppingRest;
-      setConversationSending(conversation.id, false);
     }
   }
 
@@ -854,10 +1103,80 @@ function createQuentaStore() {
     });
   }
 
+  async function recoverActiveRequests(): Promise<void> {
+    if (activeRequestsRecovered) return;
+    activeRequestsRecovered = true;
+    const workspaceId = workspaceStore.activeId;
+    if (!workspaceId) return;
+    const runtime = createQuentaRuntime(settings.config);
+    for (const descriptor of storedActiveRequests().filter(
+      (request) => request.workspaceId === workspaceId,
+    )) {
+      const conversation = conversations.find((item) => item.id === descriptor.conversationId);
+      if (!conversation) {
+        forgetActiveRequest(descriptor.requestId);
+        await runtime.forgetChat(descriptor.requestId).catch(() => false);
+        continue;
+      }
+      let snapshot = await runtime.chatStatus(descriptor.requestId).catch(() => null);
+      for (let attempt = 0; !snapshot && attempt < 10; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        snapshot = await runtime.chatStatus(descriptor.requestId).catch(() => null);
+      }
+      if (!snapshot) {
+        forgetActiveRequest(descriptor.requestId);
+        setConversationError(
+          descriptor.conversationId,
+          'The previous response did not finish. Retry it to continue.',
+        );
+        continue;
+      }
+      if (snapshot.status === 'failed' || snapshot.status === 'cancelled') {
+        forgetActiveRequest(descriptor.requestId);
+        await runtime.forgetChat(descriptor.requestId).catch(() => false);
+        setConversationError(descriptor.conversationId, quentaChatErrorMessage(snapshot.error));
+        continue;
+      }
+
+      selectedConversationId = descriptor.conversationId;
+      rememberSelectedConversation(workspaceId, descriptor.conversationId);
+      activeRequestsByConversation.set(descriptor.conversationId, {
+        requestId: descriptor.requestId,
+        runtimeStarted: true,
+      });
+      activeResponsesByConversation = {
+        ...activeResponsesByConversation,
+        [descriptor.conversationId]: {
+          requestId: descriptor.requestId,
+          intent: descriptor.intent,
+          phase: snapshot.thinking && !snapshot.content ? 'thinking' : 'writing-response',
+          thinkingEnabled: Boolean(snapshot.thinking),
+          startedAt: descriptor.startedAt,
+          contextDocumentCount: descriptor.contextDocumentCount,
+          sourceCount: descriptor.sourceCount,
+          reportRepairAttempted: false,
+          reasoning: snapshot.thinking.slice(-MAX_ACTIVE_REASONING_CHARS),
+          contentBuffer: snapshot.content,
+          content: quentaResponseNeedsPlainLanguageRepair(snapshot.content) ? '' : snapshot.content,
+          revision: 0,
+        },
+      };
+      setConversationError(descriptor.conversationId, null);
+      setConversationSending(descriptor.conversationId, true);
+      void finishRequestLifecycle(
+        descriptor,
+        () => snapshot.status === 'completed' && snapshot.response
+          ? Promise.resolve(snapshot.response)
+          : waitForNativeResponse(descriptor, runtime),
+      );
+    }
+  }
+
   const quentaStore = {
     get settings() { return settings; },
     get config() { return settings.config; },
     get composerSettings() { return settings.composer; },
+    get autoScrollToBottomSettings() { return settings.autoScrollToBottom; },
     get conversations() { return conversations; },
     get selectedConversationId() { return selectedConversationId; },
     get currentConversation() { return currentConversation(); },
@@ -897,8 +1216,8 @@ function createQuentaStore() {
         await workspaceStore.init();
         await ensureConversationEvents();
         await loadSettings();
-        await cancelInterruptedRequests();
         await loadConversationsForActiveWorkspace();
+        await recoverActiveRequests();
       } finally {
         initializing = false;
       }
@@ -1001,11 +1320,15 @@ function createQuentaStore() {
     selectConversation(conversationId: string) {
       if (conversations.some((conversation) => conversation.id === conversationId)) {
         selectedConversationId = conversationId;
+        if (workspaceStore.activeId) {
+          rememberSelectedConversation(workspaceStore.activeId, conversationId);
+        }
       }
     },
 
     clearConversationSelection() {
       selectedConversationId = null;
+      if (workspaceStore.activeId) rememberSelectedConversation(workspaceStore.activeId, null);
     },
 
     async newConversation() {
@@ -1017,7 +1340,10 @@ function createQuentaStore() {
     async deleteConversation(conversationId: string) {
       await stopMessage(conversationId);
       conversations = conversations.filter((conversation) => conversation.id !== conversationId);
-      if (selectedConversationId === conversationId) selectedConversationId = null;
+      if (selectedConversationId === conversationId) {
+        selectedConversationId = null;
+        if (workspaceStore.activeId) rememberSelectedConversation(workspaceStore.activeId, null);
+      }
       const { [conversationId]: _sending, ...sendingRest } = sendingByConversation;
       const { [conversationId]: _error, ...errorRest } = errorByConversation;
       const { [conversationId]: _stopping, ...stoppingRest } = stoppingByConversation;
@@ -1083,7 +1409,29 @@ function createQuentaStore() {
     async startFocusedConversation(intent: LiatirQuentaIntent, focus: LiatirQuentaFocus, autoSend = true) {
       await quentaStore.init();
       const prompt = quentaPromptForFocus(intent, focus);
+      const workspaceId = workspaceStore.activeId;
+      if (!workspaceId) throw new Error('Open a workspace before using Quenta');
+      const existing = conversations.find((conversation) => (
+        conversation.focus?.kind === focus.kind
+        && conversation.focus.entityId === focus.entityId
+        && (
+          conversation.draftIntent === intent
+          || conversation.messages.some((message) => message.intent === intent)
+          || conversation.title === titleForIntent(intent, focus)
+        )
+      ));
+      if (existing) {
+        quentaStore.selectConversation(existing.id);
+        if (autoSend && existing.messages.length === 0 && !quentaStore.isSending(existing.id)) {
+          await sendMessage(prompt, intent, {
+            conversationId: existing.id,
+            focus,
+          });
+        }
+        return existing;
+      }
       const conversation = createConversation({
+        id: stableFocusedConversationId(workspaceId, intent, focus),
         title: titleForIntent(intent, focus),
         focus,
         draft: autoSend ? undefined : prompt,

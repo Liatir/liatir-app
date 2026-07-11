@@ -28,7 +28,9 @@ describe('Quenta Tauri permissions', () => {
       'lia_quenta_ollama_models',
       'lia_quenta_ollama_bootstrap',
       'lia_quenta_ollama_chat',
+      'lia_quenta_ollama_chat_status',
       'lia_quenta_ollama_cancel_chat',
+      'lia_quenta_ollama_forget_chat',
       'lia_quenta_ollama_embed',
     ]);
     expect(invokedCommands.filter((command) => !allowedCommands.has(command))).toEqual([]);
