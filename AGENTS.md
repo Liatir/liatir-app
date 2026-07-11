@@ -8,7 +8,7 @@ This file is self-contained.
 
 ## Project context
 
-We are developing **Liatir**, a local-first Rust/Tauri desktop app for bioinformatics. The goal is to build a production-grade scientific environment where native tools, visual pipelines, `.lia` Node/WASM plugins, API Connector, AI Models, and AI Tools work together through a **single shared I/O contract defined in `packages/liatir-core`**.
+We are developing **Liatir**, a **local-first** Rust/Tauri desktop app for bioinformatics. The goal is to build a production-grade scientific environment where native tools, visual pipelines, `.lia` Node/WASM plugins, API Connector, AI Models, and AI Tools work together through a **single shared I/O contract defined in `packages/liatir-core`**.
 
 **Liatir is for non-technical users first — this is very important while designing and implementing anything.**
 
