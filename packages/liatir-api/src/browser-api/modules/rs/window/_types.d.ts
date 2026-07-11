@@ -38,4 +38,6 @@ export type NewWindowOptions = {
     label?: string;
     fullscreen?: boolean;
     url?: string;
+    width?: number;
+    height?: number;
 };

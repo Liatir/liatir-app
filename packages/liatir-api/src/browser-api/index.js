@@ -473,7 +473,9 @@ var newWindow = async (core, options) => {
   await core.invoke("lia_win_open", {
     label: labelToSet,
     fullscreen: options?.fullscreen || false,
-    url: options?.url ?? ""
+    url: options?.url ?? "",
+    width: options?.width ?? null,
+    height: options?.height ?? null
   });
 };
 var closeWindow = async (core, label) => {

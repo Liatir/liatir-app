@@ -402,7 +402,7 @@ function quentaChatErrorMessage(error: unknown): string {
     return 'Local AI is not running yet. Quenta is preparing it automatically; try again in a moment.';
   }
   if (detail.includes('response took too long') || detail.includes('timed out')) {
-    return 'Quenta took too long to finish this response. Try again with Standard mode or a shorter question.';
+    return 'Quenta could not finish this response within the extended safety limit. You can retry when ready.';
   }
   if (detail.includes('structured report') || detail.includes('Quenta report')) {
     return 'Quenta could not format this report. Try generating it again.';
@@ -464,6 +464,7 @@ function createQuentaStore() {
     runtimeStarted: boolean;
   }>();
   const stoppedRequestIds = new Set<string>();
+  let initializePromise: Promise<void> | null = null;
   let bootstrapPromise: Promise<void> | null = null;
   let conversationEventsPromise: Promise<void> | null = null;
   let activeRequestsRecovered = false;
@@ -1210,17 +1211,21 @@ function createQuentaStore() {
     },
 
     async init() {
-      if (initializing) return;
-      initializing = true;
-      try {
-        await workspaceStore.init();
-        await ensureConversationEvents();
-        await loadSettings();
-        await loadConversationsForActiveWorkspace();
-        await recoverActiveRequests();
-      } finally {
-        initializing = false;
-      }
+      if (initializePromise) return initializePromise;
+      initializePromise = (async () => {
+        initializing = true;
+        try {
+          await workspaceStore.init();
+          await ensureConversationEvents();
+          await loadSettings();
+          await loadConversationsForActiveWorkspace();
+          await recoverActiveRequests();
+        } finally {
+          initializing = false;
+          initializePromise = null;
+        }
+      })();
+      return initializePromise;
     },
 
     async updateConfig(patch: Partial<LiatirQuentaProviderConfig>) {

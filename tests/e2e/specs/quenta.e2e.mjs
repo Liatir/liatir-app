@@ -513,10 +513,24 @@ export const tests = [
           }),
           { timeout: 20_000, timeoutMsg: 'Quenta did not clean exact focused-chat duplicates' },
         );
+        await browser.waitUntil(
+          async () => browser.execute(() => (
+            document.querySelector('[data-testid="quenta-provider-status"]')?.textContent
+              ?.includes('Quenta ready') ?? false
+          )),
+          { timeout: 30_000, timeoutMsg: 'Quenta did not finish preparing before duplicate reload' },
+        );
         await browser.execute(() => window.location.reload());
         await browser.waitUntil(
           async () => browser.execute(() => window.location.pathname === '/quenta'),
           { timeout: 20_000, timeoutMsg: 'Quenta did not reload after duplicate cleanup' },
+        );
+        await browser.waitUntil(
+          async () => browser.execute(() => (
+            document.querySelector('[data-testid="quenta-provider-status"]')?.textContent
+              ?.includes('Quenta ready') ?? false
+          )),
+          { timeout: 30_000, timeoutMsg: 'Quenta did not finish preparing after duplicate reload' },
         );
         const persistedCount = await browser.execute(async () => {
           const raw = await window.Liatir.invoke('lia_app_read_text', {

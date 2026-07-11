@@ -1,6 +1,7 @@
 import { Liatir } from "../../../sdk";
 import { WINDOWS_LABELS_TRACKER_VARIABLE_NAME } from "../../../constants";
 import { LiatirAPI } from "../../../liatir/_types";
+import type { NewWindowOptions } from "./_types";
 import { wait } from "../../../utils";
 
 export const tauriReadyCheck = (): boolean =>
@@ -19,11 +20,7 @@ export const waitTauri = async () => {
 
 export const newWindow = async (
   core: { invoke: LiatirAPI["invoke"] },
-  options?: {
-    label?: string;
-    fullscreen?: boolean;
-    url?: string;
-  }
+  options?: NewWindowOptions
 ) => {
   if (options?.label){    
     if(options.label.trim().toLowerCase().startsWith("main")) throw new Error(`[Reserved window label] 'main' is an app reserved label`);
@@ -48,6 +45,8 @@ export const newWindow = async (
     label: labelToSet,
     fullscreen: (options?.fullscreen) || false,
     url: (options?.url) ?? "",
+    width: options?.width ?? null,
+    height: options?.height ?? null,
   });
 };
 

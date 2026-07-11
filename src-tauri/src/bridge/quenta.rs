@@ -243,9 +243,9 @@ fn request_id_is_safe(request_id: &str) -> bool {
 
 fn quenta_response_timeout(thinking_enabled: bool) -> Duration {
     if thinking_enabled {
-        Duration::from_secs(4 * 60)
+        Duration::from_secs(2 * 60 * 60)
     } else {
-        Duration::from_secs(2 * 60)
+        Duration::from_secs(60 * 60)
     }
 }
 
@@ -862,6 +862,9 @@ pub async fn lia_quenta_ollama_chat(
     let endpoint = ollama_endpoint(&base_url, "chat")?;
     let thinking_enabled = thinking_enabled.unwrap_or(false);
     let response_timeout = quenta_response_timeout(thinking_enabled);
+    // Keep the HTTP client slightly wider than Quenta's own response limit so
+    // the product-level timeout remains the single authoritative boundary.
+    let transport_timeout = response_timeout.saturating_add(Duration::from_secs(30));
     let mut body = json!({
         "model": model,
         "messages": messages,
@@ -921,7 +924,7 @@ pub async fn lia_quenta_ollama_chat(
         // No `tools` field is ever sent. Quenta is a read-only language-model
         // surface and cannot receive runnable callbacks from the application.
         let request = async {
-            let response = client(Duration::from_secs(15 * 60))?
+            let response = client(transport_timeout)?
                 .post(endpoint)
                 .header(CONTENT_TYPE, "application/json")
                 .body(body.to_string())
@@ -1111,8 +1114,11 @@ mod tests {
 
     #[test]
     fn bounds_standard_and_thinking_response_duration() {
-        assert_eq!(quenta_response_timeout(false), Duration::from_secs(120));
-        assert_eq!(quenta_response_timeout(true), Duration::from_secs(240));
+        assert_eq!(quenta_response_timeout(false), Duration::from_secs(60 * 60));
+        assert_eq!(
+            quenta_response_timeout(true),
+            Duration::from_secs(2 * 60 * 60)
+        );
     }
 
     #[test]

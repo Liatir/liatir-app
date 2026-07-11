@@ -167,8 +167,8 @@
     });
   }
 
-  async function scrollTranscriptToBottom(behavior: ScrollBehavior) {
-    if(!autoScrollToBottom) return;
+  async function scrollTranscriptToBottom(behavior: ScrollBehavior, force?: boolean) {
+    if(!autoScrollToBottom && !force) return;
     await tick();
     transcriptEl?.scrollTo({
       top: transcriptEl.scrollHeight,
@@ -179,14 +179,15 @@
 
   $effect(() => {
     const conversation = currentConversation;
-    const lastMessageId = conversation?.messages.at(-1)?.id ?? 'empty';
-    const scrollKey = conversation
-      ? `${conversation.id}:${lastMessageId}:${activeResponse?.revision ?? 'idle'}:${currentError ? 'error' : 'ok'}`
-      : '';
+    const lastMessage = conversation?.messages.at(-1);
+    // Streaming revisions must never take control of the user's scroll. Wait
+    // until the final assistant message replaces the active response.
+    if (activeResponse || lastMessage?.role !== 'assistant') return;
+    const scrollKey = conversation ? `${conversation.id}:${lastMessage.id}` : '';
     if (!scrollKey || scrollKey === lastAutoScrollKey) return;
-    const behavior: ScrollBehavior = activeResponse ? 'auto' : lastAutoScrollKey ? 'smooth' : 'auto';
+    const behavior: ScrollBehavior = lastAutoScrollKey ? 'smooth' : 'auto';
     lastAutoScrollKey = scrollKey;
-    if(!autoScrollToBottom) void scrollTranscriptToBottom(behavior);
+    if(autoScrollToBottom) void scrollTranscriptToBottom(behavior);
     else void tick().then(updateScrollToBottomButtonVisibility);
   });
 
@@ -887,12 +888,12 @@
                           type="button"
                           role="switch"
                           aria-checked={autoScrollToBottom}
-                          class="mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors {enterToSendDraft ? 'bg-brand' : 'bg-zinc-300'}"
+                          class="mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors {autoScrollToBottom ? 'bg-brand' : 'bg-zinc-300'}"
                           onclick={() => autoScrollToBottom = !autoScrollToBottom}
                           title={autoScrollToBottom ? 'Auto scroll to bottom enabled' : 'Auto scroll to bottom disabled'}
                           data-testid="quenta-auto-scroll-to-bottom-toggle"
                         >
-                          <span class="inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform {enterToSendDraft ? 'translate-x-5' : 'translate-x-0.5'}"></span>
+                          <span class="inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform {autoScrollToBottom ? 'translate-x-5' : 'translate-x-0.5'}"></span>
                         </button>
                       </div>
                     </div>
@@ -1017,7 +1018,8 @@
             </Card>
           </div>
         {:else}
-          <div bind:this={transcriptEl} onscroll={updateScrollToBottomButtonVisibility} class="flex-1 overflow-y-auto p-6 relative" data-testid="quenta-transcript">
+          <div class="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div bind:this={transcriptEl} onscroll={updateScrollToBottomButtonVisibility} class="h-full overflow-y-auto p-6" data-testid="quenta-transcript">
             <div class="mx-auto max-w-4xl space-y-6">
               {#each currentConversation.messages as message (message.id)}
                 <Card class={message.role === 'assistant' ? 'bg-transparent border-none rounded-none' : 'bg-brand/5 border-brand/15'}>
@@ -1100,9 +1102,10 @@
                 </div>
               {/if}
             </div>
+          </div>
             {#if showScrollToBottomButton}
-              <button id="scrollToBottomButton" class="w-fit h-fit bg-white border border-border hover:bg-zinc-50 shadow-xl cursor-pointer rounded-full p-2 absolute right-1/2 bottom-5 text-zinc-500" onclick={()=>{
-                  scrollTranscriptToBottom('smooth');
+              <button id="scrollToBottomButton" class="w-fit h-fit bg-white border border-border hover:bg-zinc-50 shadow-xl cursor-pointer rounded-full p-2 absolute bottom-5 left-1/2 -translate-x-1/2 text-zinc-500" onclick={()=>{
+                  scrollTranscriptToBottom('smooth', true);
                 }}>
                 <Icon icon="mingcute:arrow-down-line" class="h-4.5 w-4.5"/>
               </button>

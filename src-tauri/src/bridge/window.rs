@@ -89,6 +89,8 @@ pub async fn lia_win_open(
   label: String,
   fullscreen: bool,
   url: String,
+  width: Option<f64>,
+  height: Option<f64>,
 ) -> Result<(), String> {
   if app.get_webview_window(&label).is_some() {
     return Ok(());
@@ -98,6 +100,15 @@ pub async fn lia_win_open(
   } else {
     resolve_webview_url(&url)?
   };
+  let width = width.unwrap_or_else(|| {
+    env!("MAIN_WINDOW_WIDTH").parse::<f64>().unwrap_or(1200.0)
+  });
+  let height = height.unwrap_or_else(|| {
+    env!("MAIN_WINDOW_HEIGHT").parse::<f64>().unwrap_or(800.0)
+  });
+  if !width.is_finite() || !height.is_finite() || width <= 0.0 || height <= 0.0 {
+    return Err("Window dimensions must be finite positive numbers".to_string());
+  }
 
   // The main window is created programmatically, so there is no window config
   // to clone from tauri.conf.json. Build secondary app windows the same way.
@@ -105,10 +116,7 @@ pub async fn lia_win_open(
     .title(env!("MAIN_WINDOW_TITLE"))
     .visible(true)
     .fullscreen(fullscreen)
-    .inner_size(
-      env!("MAIN_WINDOW_WIDTH").parse::<f64>().unwrap_or(1200.0),
-      env!("MAIN_WINDOW_HEIGHT").parse::<f64>().unwrap_or(800.0),
-    )
+    .inner_size(width, height)
     .resizable(env!("MAIN_WINDOW_RESIZABLE").parse::<bool>().unwrap_or(true))
     .initialization_script(crate::OPEN_EXTERNAL_SCRIPT)
     .build()

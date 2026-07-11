@@ -45,7 +45,9 @@ export type WindowInfo = {
 };
 
 export type NewWindowOptions = {
-      label?: string;
-      fullscreen?: boolean;
-      url?: string;
-    }
+  label?: string;
+  fullscreen?: boolean;
+  url?: string;
+  width?: number;
+  height?: number;
+};
