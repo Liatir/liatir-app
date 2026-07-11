@@ -8,9 +8,10 @@ import type {
 import type { RunOutputFile } from '$lib/types/pipeline';
 import type { ToolOutput } from '$lib/types/tool-output';
 import { aiRunMetadata, type AIRunContext } from '$lib/ai/direct-run-context';
-import { UCE_4LAYER_MODEL_ID } from '$lib/ai/model-registry';
+import { GENEFORMER_V1_10M_MODEL_ID, UCE_4LAYER_MODEL_ID } from '$lib/ai/model-registry';
 import { cachePathForModel, runAIPython, type AIPythonRunResult } from '$lib/ai/runtime';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
+import { GENEFORMER_EMBEDDING_SCRIPT } from './python-scripts/geneformer-embedding';
 import { UCE_EMBEDDING_SCRIPT } from './python-scripts/uce-embedding';
 import { liatir } from '$lib/api';
 import { getLastSegmentsStringFromPath } from '$lib/utils';
@@ -31,7 +32,7 @@ export const singleCellEmbeddingDefinition: LiatirAIToolDefinition = {
 	type: 'ai-tool',
 	label: 'Single-cell Embedding',
 	description:
-		'Generate local UCE cell embeddings from h5ad/AnnData datasets with a managed isolated runtime.',
+		'Generate local foundation-model cell embeddings from h5ad/AnnData datasets with an isolated managed runtime.',
 	category: 'AI Tools',
 	inputSchema: {
 		modelId: {
@@ -43,7 +44,8 @@ export const singleCellEmbeddingDefinition: LiatirAIToolDefinition = {
 			type: 'file',
 			label: 'AnnData file',
 			required: true,
-			description: 'UCE expects .X to contain scRNA-seq counts and var_names to contain gene symbols.',
+			description:
+				'Use raw scRNA-seq counts. UCE expects gene symbols; Geneformer V1 expects human Ensembl IDs.',
 			accept: ['h5ad']
 		},
 		species: {
@@ -51,14 +53,15 @@ export const singleCellEmbeddingDefinition: LiatirAIToolDefinition = {
 			label: 'Species',
 			required: true,
 			default: 'human',
-			options: uceSpeciesOptions
+			options: uceSpeciesOptions,
+			description: 'UCE supports the listed species. Geneformer V1 10M supports Human only.'
 		},
 		batchSize: {
 			type: 'number',
 			label: 'Batch size',
 			required: false,
 			default: 25,
-			description: 'Per-batch cell count sent to UCE. Lower values use less memory.',
+			description: 'Number of cells processed together. Lower values use less memory.',
 			connectable: false
 		},
 		maxCsvRows: {
@@ -86,7 +89,7 @@ export const singleCellEmbeddingDefinition: LiatirAIToolDefinition = {
 	},
 	modelInputKey: 'modelId',
 	supportedCapabilities: ['single-cell-embedding'],
-	supportedModelIds: [UCE_4LAYER_MODEL_ID]
+	supportedModelIds: [UCE_4LAYER_MODEL_ID, GENEFORMER_V1_10M_MODEL_ID]
 };
 
 function basename(path: string): string {
@@ -181,6 +184,10 @@ export async function finalizeSingleCellEmbeddingResult(
 			batchSize: number;
 			previewRows: number;
 			intermediateCount: number;
+			matchedGeneCount?: number;
+			accelerator?: string;
+			embeddingLayer?: string;
+			normalization?: string;
 			warnings: string[];
 		};
 		preview: number[][];
@@ -206,7 +213,9 @@ export async function finalizeSingleCellEmbeddingResult(
 		parameters: {
 			batchSize: parsed.summary.batchSize,
 			embeddingKey: parsed.summary.embeddingKey,
-			csvPreviewRows: parsed.summary.previewRows
+			csvPreviewRows: parsed.summary.previewRows,
+			...(parsed.summary.embeddingLayer ? { embeddingLayer: parsed.summary.embeddingLayer } : {}),
+			...(parsed.summary.normalization ? { normalization: parsed.summary.normalization } : {})
 		},
 		generatedAt: new Date().toISOString()
 	};
@@ -223,7 +232,7 @@ export async function finalizeSingleCellEmbeddingResult(
 		...(await Promise.all(
 			(parsed.intermediatePaths ?? []).map((path) =>
 				fileArtifact(
-					`UCE intermediate: ${basename(path)}`,
+					`${model.name} intermediate: ${basename(path)}`,
 					path,
 					extensionFor(path),
 					'intermediateFiles',
@@ -232,6 +241,18 @@ export async function finalizeSingleCellEmbeddingResult(
 			)
 		))
 	];
+	const provenanceRows: (string | number)[][] = [
+		['AI Model', model.name],
+		['Runtime', `${model.runtime.name} (${model.runtime.kind})`],
+		['Input', basename(inputs.inputFile)],
+		['Species', parsed.summary.species],
+		['Batch size', parsed.summary.batchSize],
+		['Embedding key', parsed.summary.embeddingKey]
+	];
+	if (parsed.summary.accelerator)
+		provenanceRows.push(['Accelerator', parsed.summary.accelerator]);
+	if (parsed.summary.embeddingLayer)
+		provenanceRows.push(['Embedding layer', parsed.summary.embeddingLayer]);
 
 	return {
 		outputFiles,
@@ -249,11 +270,11 @@ export async function finalizeSingleCellEmbeddingResult(
 				},
 				{
 					type: 'single-cell-viewer',
-					label: 'UCE embeddings',
+					label: `${model.name} embeddings`,
 					description:
-						'Lightweight preview. The full embedding matrix is stored in the embedded AnnData artifact under obsm["X_uce"].',
+						`Lightweight preview. The full embedding matrix is stored in the embedded AnnData artifact under obsm["${parsed.summary.embeddingKey}"].`,
 					config: {
-						title: 'UCE embeddings',
+						title: `${model.name} embeddings`,
 						source: getLastSegmentsStringFromPath(parsed.embeddedAnnDataPath, 2),
 						embeddingKey: parsed.summary.embeddingKey,
 						previewCsv: getLastSegmentsStringFromPath(parsed.embeddingPreviewPath, 2),
@@ -288,14 +309,7 @@ export async function finalizeSingleCellEmbeddingResult(
 					type: 'table',
 					label: 'Provenance',
 					headers: ['Field', 'Value'],
-					rows: [
-						['AI Model', model.name],
-						['Runtime', `${model.runtime.name} (${model.runtime.kind})`],
-						['Input', basename(inputs.inputFile)],
-						['Species', parsed.summary.species],
-						['Batch size', parsed.summary.batchSize],
-						['Embedding key', parsed.summary.embeddingKey]
-					]
+					rows: provenanceRows
 				}
 			]
 		},
@@ -329,14 +343,16 @@ export async function runSingleCellEmbeddingStep(
 	if (!modelId) throw new Error('AI Model is required.');
 	const model = aiModelsStore.byId(modelId);
 	if (!model) throw new Error(`Unknown AI Model: ${modelId}`);
-	if (model.id !== UCE_4LAYER_MODEL_ID)
-		throw new Error('Single-cell Embedding currently requires the UCE 4-layer AI Model.');
+	if (model.id !== UCE_4LAYER_MODEL_ID && model.id !== GENEFORMER_V1_10M_MODEL_ID)
+		throw new Error('Single-cell Embedding requires UCE 4-layer or Geneformer V1 10M.');
 	if (model.status !== 'installed') throw new Error(`AI Model is not installed: ${model.name}`);
 	if (!inputs.inputFile) throw new Error('AnnData file is required.');
 
 	const batchSize = boundedInteger(inputs.batchSize, 25, 1, 256);
 	const maxCsvRows = boundedInteger(inputs.maxCsvRows, 500, 1, 5000);
 	const species = inputs.species || 'human';
+	if (model.id === GENEFORMER_V1_10M_MODEL_ID && species !== 'human')
+		throw new Error('Geneformer V1 10M supports human single-cell transcriptomes only.');
 	const cachePath = cachePathForModel(model);
 
 	onLog(`ai-tool ${singleCellEmbeddingDefinition.id}`);
@@ -344,9 +360,11 @@ export async function runSingleCellEmbeddingStep(
 	onLog(`input ${basename(inputs.inputFile)}`);
 	onLog(`species ${species}`);
 
+	const script =
+		model.id === GENEFORMER_V1_10M_MODEL_ID ? GENEFORMER_EMBEDDING_SCRIPT : UCE_EMBEDDING_SCRIPT;
 	const result = await runAIPython(
 		model,
-		UCE_EMBEDDING_SCRIPT,
+		script,
 		{
 			inputFile: inputs.inputFile,
 			outputDir,

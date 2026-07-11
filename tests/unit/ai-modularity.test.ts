@@ -64,6 +64,7 @@ describe('AI modularity boundaries', () => {
     expect(existsSync(legacyMonolith)).toBe(false);
     expect(files.map((file) => file.replace(`${scriptsDir}/`, '')).sort()).toEqual([
       'celltypist-annotate.ts',
+      'geneformer-embedding.ts',
       'genomic-variant-effect.ts',
       'index.ts',
       'protein-structure.ts',

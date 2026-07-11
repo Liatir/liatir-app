@@ -131,7 +131,8 @@ export const AI_MODEL_ARTIFACT_SPECS: AIModelArtifactSpec[] = [
 	{
 		modelId: GENEFORMER_V1_10M_MODEL_ID,
 		runtimeFamily: 'single-cell-foundation-geneformer',
-		preloadKind: 'none'
+		preloadKind: 'managed-files',
+		modelFile: 'model/model.safetensors'
 	},
 	{
 		modelId: UCE_4LAYER_MODEL_ID,

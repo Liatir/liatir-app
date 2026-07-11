@@ -233,12 +233,18 @@ function createAIModelsStore() {
   async function existingFileMatches(
     api: ReturnType<typeof liatir>,
     path: string,
-    expectedSize?: number
+    expectedSize?: number,
+    expectedSha256?: string
   ): Promise<boolean> {
     if (!api) return false;
     try {
       const size = (await api.invoke('lia_file_size', { path })) as number;
-      return expectedSize == null ? size > 0 : size === expectedSize;
+      if (expectedSize == null ? size <= 0 : size !== expectedSize) return false;
+      if (!expectedSha256) return true;
+      return (await api.invoke('lia_managed_verify_sha256', {
+        path,
+        expected: expectedSha256,
+      })) as boolean;
     } catch {
       return false;
     }
@@ -256,7 +262,7 @@ function createAIModelsStore() {
       const relativePath = safeInstallRelativePath(file.relativePath);
       const downloadId = `${modelId}-${index}-${crypto.randomUUID()}`;
       const destPath = `${baseDir}/${relativePath}`;
-      if (await existingFileMatches(api, destPath, file.sizeBytes)) {
+      if (await existingFileMatches(api, destPath, file.sizeBytes, file.sha256)) {
         onProgress?.({
           phase: 'downloading-files',
           fileIndex: index,

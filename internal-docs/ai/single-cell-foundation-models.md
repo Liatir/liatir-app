@@ -5,11 +5,11 @@ AI Model registry and public docs.
 
 ## Current status
 
-Batch 5 now has one installable/runnable slice: UCE 4-layer. The remaining
-foundation models stay visible as preview entries so users can understand the
-roadmap, but they are not installable or runnable until each runtime box has
-validated package installation, model asset handling, input preprocessing,
-output parsing, Jobs, Results, and provenance.
+Batch 5 now has two installable/runnable slices: UCE 4-layer and Geneformer V1
+10M. scGPT and scFoundation stay visible as preview entries so users can
+understand the roadmap, but they are not installable or runnable until each
+runtime box has validated package installation, model asset handling, input
+preprocessing, output parsing, Jobs, Results, and provenance.
 
 ## Official sources checked on 2026-07-02 and 2026-07-03
 
@@ -22,9 +22,13 @@ output parsing, Jobs, Results, and provenance.
 - [Geneformer](https://huggingface.co/ctheodoris/Geneformer)
   - official Hugging Face repository;
   - Apache 2.0 license;
-  - official docs require Git LFS, clone from Hugging Face, then `pip install .`;
-  - package declares Python `>=3.10`;
-  - GPU resources are strongly recommended for efficient usage.
+  - V1 10M checkpoint, configuration, token dictionary, gene medians, and
+    Ensembl mapping are pinned to revision
+    `04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5`;
+  - Liatir downloads only those V1 assets instead of cloning the moving default
+    repository with unrelated V2 checkpoints;
+  - the managed runner accepts human raw-count AnnData with Ensembl IDs and can
+    use CPU, CUDA, or Apple Metal.
 - [UCE](https://github.com/snap-stanford/UCE)
   - MIT license;
   - official workflow embeds AnnData `.h5ad` files;
@@ -43,18 +47,24 @@ Do not share these runtimes with CellTypist. CellTypist is a practical
 annotation runtime; foundation models need separate boxes because package sets,
 model files, preprocessing, and output semantics differ materially.
 
-## Implemented slice
+## Implemented slices
 
 UCE 4-layer is the first real Batch 5 implementation. It uses an isolated
 runtime ID (`single-cell-foundation-uce`), a pinned UCE source checkout, managed
 Figshare assets, and a dedicated `ai-single-cell-embedding` AI Tool.
 
+Geneformer V1 10M is the second slice. It uses the isolated runtime ID
+`single-cell-foundation-geneformer-v1-10m`, checksummed V1-only managed assets,
+Genecorpus-30M median-scaled rank encoding, and the same compatible
+`ai-single-cell-embedding` AI Tool.
+
 The tool outputs:
 
-- embedded AnnData with `obsm["X_uce"]`;
+- embedded AnnData with the model-specific `obsm["X_uce"]` or
+  `obsm["X_geneformer"]` matrix;
 - lightweight embedding preview CSV;
 - summary JSON;
-- intermediate UCE processing artifacts;
+- intermediate UCE processing artifacts when UCE is selected;
 - metrics, values, warnings, logs, and provenance.
 
 ## Required acceptance checks before enabling Install or Run

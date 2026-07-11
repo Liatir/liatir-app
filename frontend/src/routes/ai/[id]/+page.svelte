@@ -32,6 +32,7 @@
 		CELLTYPIST_MODEL_ID,
 		ENFORMER_REGULATORY_MODEL_ID,
 		ESM2_8M_ID,
+		GENEFORMER_V1_10M_MODEL_ID,
 		MOCK_AI_MODEL_ID,
 		NUCLEOTIDE_TRANSFORMER_500M_ID,
 		NUCLEOTIDE_TRANSFORMER_50M_ID,
@@ -260,7 +261,8 @@
 			id === BORZOI_K562_RNA_MODEL_ID
 		)
 			return 'regulatory';
-		if (id === UCE_4LAYER_MODEL_ID) return 'single-cell-embedding';
+		if (id === UCE_4LAYER_MODEL_ID || id === GENEFORMER_V1_10M_MODEL_ID)
+			return 'single-cell-embedding';
 		if (id === BOLTZ2_MODEL_ID) return 'protein-structure';
 		if (id === MOCK_AI_MODEL_ID) return 'mock';
 		return 'unsupported';
@@ -335,7 +337,7 @@
 			inputs = {
 				modelId: model.id,
 				inputFile,
-				species: uceSpecies,
+				species: model.id === GENEFORMER_V1_10M_MODEL_ID ? 'human' : uceSpecies,
 				batchSize: String(uceBatchSize),
 				maxCsvRows: String(uceMaxCsvRows)
 			};
@@ -652,26 +654,32 @@
 								files={h5adFiles}
 								value={inputFile}
 								label="AnnData file"
-								info={AI_MODEL_INPUT_HELP.uceAnnDataFile}
+								info={modelId === GENEFORMER_V1_10M_MODEL_ID
+									? AI_MODEL_INPUT_HELP.geneformerAnnDataFile
+									: AI_MODEL_INPUT_HELP.uceAnnDataFile}
 								emptyText="No h5ad files in Data yet."
 								disabled={formDisabled}
 								onchange={(path) => (inputFile = path)}
 							/>
-							<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-								<div>
-									<LabelWithInfo
-										targetId="uce-species"
-										text="Species"
-										info={AI_MODEL_INPUT_HELP.uceSpecies}
-									/>
-									<Select
-										id="uce-species"
-										value={uceSpecies}
-										options={uceSpeciesOptions}
-										disabled={formDisabled}
-										onchange={(value) => (uceSpecies = value)}
-									/>
-								</div>
+							<div class="grid grid-cols-1 {modelId === GENEFORMER_V1_10M_MODEL_ID
+								? 'md:grid-cols-2'
+								: 'md:grid-cols-3'} gap-3">
+								{#if modelId !== GENEFORMER_V1_10M_MODEL_ID}
+									<div>
+										<LabelWithInfo
+											targetId="uce-species"
+											text="Species"
+											info={AI_MODEL_INPUT_HELP.uceSpecies}
+										/>
+										<Select
+											id="uce-species"
+											value={uceSpecies}
+											options={uceSpeciesOptions}
+											disabled={formDisabled}
+											onchange={(value) => (uceSpecies = value)}
+										/>
+									</div>
+								{/if}
 								<div>
 									<LabelWithInfo
 										targetId="uce-batch-size"

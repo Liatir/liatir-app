@@ -73,8 +73,8 @@ regulatory target index.
 
 ## Batch 5: Single-cell foundation models
 
-Status: in progress. UCE 4-layer is implemented as the first managed
-installable/runnable slice; scGPT, Geneformer, and scFoundation remain preview
+Status: in progress. UCE 4-layer and Geneformer V1 10M are implemented as
+managed installable/runnable slices; scGPT and scFoundation remain preview
 entries.
 
 - scGPT for embeddings, batch correction, and perturbation hypotheses.

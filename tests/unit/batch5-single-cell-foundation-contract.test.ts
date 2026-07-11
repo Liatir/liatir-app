@@ -14,7 +14,6 @@ const rootDir = resolve(import.meta.dirname, '../..');
 
 const PREVIEW_BATCH5_MODEL_IDS = [
   SCGPT_WHOLE_HUMAN_MODEL_ID,
-  GENEFORMER_V1_10M_MODEL_ID,
   SCFOUNDATION_100M_MODEL_ID,
 ];
 
@@ -31,6 +30,37 @@ describe('Batch 5 single-cell foundation model contract', () => {
       expect(model?.documentation?.officialUrl, `${id} missing official source`).toMatch(/^https:\/\//);
       expect(model?.license?.verifiedAt, `${id} missing license verification date`).toBe('2026-07-02');
     }
+  });
+
+  it('enables Geneformer V1 10M with pinned managed assets and an isolated runtime', () => {
+    const model = getLocalAIModelMetadata(GENEFORMER_V1_10M_MODEL_ID);
+    const spec = artifactSpecForModelId(GENEFORMER_V1_10M_MODEL_ID);
+
+    expect(model, 'Geneformer missing model metadata').toBeTruthy();
+    expect(model?.releaseStage).toBeUndefined();
+    expect(model?.capabilities).toEqual(['single-cell-embedding']);
+    expect(model?.license?.spdxId).toBe('Apache-2.0');
+    expect(model?.license?.verifiedAt).toBe('2026-07-11');
+    expect(model?.install?.method).toBe('managed-runtime');
+    expect(model?.install?.runtimeId).toBe('single-cell-foundation-geneformer-v1-10m');
+    expect(model?.install?.modelCacheSubdir).toBe('model-cache/geneformer-v1-10m');
+    expect(model?.install?.revision).toMatch(/^[a-f0-9]{40}$/);
+    expect(model?.install?.files?.map((file) => file.relativePath).sort()).toEqual([
+      'dictionaries/ensembl_mapping_dict_gc30M.pkl',
+      'dictionaries/gene_median_dictionary_gc30M.pkl',
+      'dictionaries/token_dictionary_gc30M.pkl',
+      'model/config.json',
+      'model/model.safetensors',
+    ]);
+    for (const file of model?.install?.files ?? []) {
+      expect(file.sizeBytes, `${file.relativePath} missing byte size`).toBeGreaterThan(0);
+      expect(file.sha256, `${file.relativePath} missing SHA-256`).toMatch(/^[a-f0-9]{64}$/);
+      expect(file.url).toContain(model?.install?.revision);
+    }
+    expect(model?.install?.hostRequirements?.python?.maxVersionExclusive).toBe('3.13');
+    expect(spec?.runtimeFamily).toBe('single-cell-foundation-geneformer');
+    expect(spec?.preloadKind).toBe('managed-files');
+    expect(spec?.modelFile).toBe('model/model.safetensors');
   });
 
   it('keeps preview models paired with isolated future runtime families without enabling preload', () => {
@@ -85,12 +115,15 @@ describe('Batch 5 single-cell foundation model contract', () => {
     expect(registrySource).toContain("'ai-single-cell-embedding'");
     expect(registrySource).toContain('singleCellEmbeddingDefinition');
     expect(registrySource).toContain('runSingleCellEmbeddingStep');
-    expect(toolSource).toContain('supportedModelIds: [UCE_4LAYER_MODEL_ID]');
+    expect(toolSource).toContain(
+      'supportedModelIds: [UCE_4LAYER_MODEL_ID, GENEFORMER_V1_10M_MODEL_ID]',
+    );
     expect(toolSource).toContain("id: 'ai-single-cell-embedding'");
     expect(toolSource).toContain('batchSize');
     expect(toolSource).toContain('maxCsvRows');
     expect(toolSource.match(/connectable: false/g)?.length).toBeGreaterThanOrEqual(2);
     expect(toolSource).toContain("embeddedAnnData: { type: 'file', label: 'Embedded AnnData', ext: ['h5ad'] }");
     expect(toolSource).toContain('intermediateFiles');
+    expect(toolSource).toContain('GENEFORMER_EMBEDDING_SCRIPT');
   });
 });

@@ -78,6 +78,22 @@ const UCE_4LAYER_RUNTIME_PACKAGES = [
 	{ package: 'urllib3', version: '1.26.6', importName: 'urllib3' }
 ];
 
+const GENEFORMER_V1_10M_REVISION = '04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5';
+const GENEFORMER_V1_10M_BASE_URL =
+	`https://huggingface.co/ctheodoris/Geneformer/resolve/${GENEFORMER_V1_10M_REVISION}`;
+
+const GENEFORMER_V1_10M_RUNTIME_PACKAGES = [
+	{ package: 'torch', specifier: 'torch>=2.2,<3', importName: 'torch' },
+	{ package: 'transformers', specifier: 'transformers>=4.40,<5', importName: 'transformers' },
+	{ package: 'anndata', specifier: 'anndata>=0.10,<1', importName: 'anndata' },
+	{ package: 'numpy', specifier: 'numpy>=1.26,<2', importName: 'numpy' },
+	{ package: 'scipy', specifier: 'scipy>=1.10,<2', importName: 'scipy' },
+	{ package: 'pandas', specifier: 'pandas>=2,<3', importName: 'pandas' },
+	{ package: 'h5py', specifier: 'h5py>=3.10,<4', importName: 'h5py' },
+	{ package: 'safetensors', specifier: 'safetensors>=0.4,<1', importName: 'safetensors' },
+	{ package: 'urllib3', specifier: 'urllib3>=1.26,<2', importName: 'urllib3' }
+];
+
 const TENSORFLOW_PYTHON_3_10_TO_3_11 = {
 	minVersion: '3.10',
 	maxVersionExclusive: '3.12',
@@ -526,42 +542,89 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		id: GENEFORMER_V1_10M_MODEL_ID,
 		name: 'Geneformer V1 10M',
 		description:
-			'Preview human single-cell transcriptome foundation model for embeddings, gene-network insight, and in-silico perturbation workflows.',
+			'Managed human single-cell transcriptome foundation model for rank-encoded cell embeddings.',
 		category: 'Single-cell Foundation Models',
 		version: 'v1-10m',
-		releaseStage: 'preview',
 		runtime: {
 			kind: 'python-venv',
 			name: 'Geneformer PyTorch Runtime',
-			version: 'preview'
+			version: 'python-venv'
 		},
 		source: 'managed-runtime',
 		localOnly: true,
-		capabilities: ['single-cell-embedding', 'perturbation-prediction', 'gene-network-inference'],
+		capabilities: ['single-cell-embedding'],
 		modalities: ['single-cell'],
 		parameters: 10_000_000,
+		diskSizeBytes: 43_497_615,
 		license: {
 			name: 'Apache License 2.0',
 			spdxId: 'Apache-2.0',
 			url: 'https://huggingface.co/ctheodoris/Geneformer',
-			verifiedAt: '2026-07-02'
+			verifiedAt: '2026-07-11'
 		},
 		hardware: {
 			cpu: true,
 			gpu: true,
-			minRamGb: 16,
-			recommendedRamGb: 32,
+			minRamGb: 8,
+			recommendedRamGb: 16,
 			minVramGb: 0,
-			recommendedVramGb: 16,
+			recommendedVramGb: 8,
 			notes:
-				'GPU resources are strongly recommended by the official documentation for efficient use.'
+				'V1 10M can run on CPU for small datasets. CUDA or Apple Metal is preferred for larger cell batches.'
+		},
+		install: {
+			method: 'managed-runtime',
+			runtimeId: 'single-cell-foundation-geneformer-v1-10m',
+			modelCacheSubdir: 'model-cache/geneformer-v1-10m',
+			revision: GENEFORMER_V1_10M_REVISION,
+			runtimePackages: GENEFORMER_V1_10M_RUNTIME_PACKAGES,
+			files: [
+				{
+					url: `${GENEFORMER_V1_10M_BASE_URL}/Geneformer-V1-10M/config.json`,
+					relativePath: 'model/config.json',
+					sizeBytes: 565,
+					sha256: '9cf69ca3bdb0215c4188b54c451b6f02adfe68b8f66011a57d0f32845133fd4b'
+				},
+				{
+					url: `${GENEFORMER_V1_10M_BASE_URL}/Geneformer-V1-10M/model.safetensors`,
+					relativePath: 'model/model.safetensors',
+					sizeBytes: 41_183_536,
+					sha256: 'a5e33a757431643b3697de7ef6127950cdc49e06e58d4266b3a3ab191b683f14'
+				},
+				{
+					url: `${GENEFORMER_V1_10M_BASE_URL}/geneformer/gene_dictionaries_30m/token_dictionary_gc30M.pkl`,
+					relativePath: 'dictionaries/token_dictionary_gc30M.pkl',
+					sizeBytes: 788_424,
+					sha256: 'ab9dc40973fa5224d77b793e2fd114cacf3d08423ed9c4c49caf0ba9c7f218f1'
+				},
+				{
+					url: `${GENEFORMER_V1_10M_BASE_URL}/geneformer/gene_dictionaries_30m/gene_median_dictionary_gc30M.pkl`,
+					relativePath: 'dictionaries/gene_median_dictionary_gc30M.pkl',
+					sizeBytes: 940_965,
+					sha256: 'b3b589bb5ec75040d05fc44dd6bf0184cf87f3c362cf158d196a6ed3b7fe5f39'
+				},
+				{
+					url: `${GENEFORMER_V1_10M_BASE_URL}/geneformer/gene_dictionaries_30m/ensembl_mapping_dict_gc30M.pkl`,
+					relativePath: 'dictionaries/ensembl_mapping_dict_gc30M.pkl',
+					sizeBytes: 584_125,
+					sha256: 'eac0fb0b3007267871b6305ac0003ceba19d4f28d85686cb9067ecf142787869'
+				}
+			],
+			hostRequirements: {
+				python: {
+					minVersion: '3.10',
+					maxVersionExclusive: '3.13',
+					label: 'Python 3.10, 3.11, or 3.12',
+					reason: 'The managed Geneformer V1 runtime is validated against current PyTorch and AnnData wheels for Python 3.10-3.12.'
+				}
+			}
 		},
 		documentation: {
 			liatirPath: '/ai/models/ctheodoris-geneformer-v1-10m',
 			officialUrl: 'https://huggingface.co/ctheodoris/Geneformer',
 			paperUrl: 'https://www.nature.com/articles/s41586-023-06139-9'
 		},
-		tags: ['preview', 'single-cell', 'foundation-model', 'gene-network', 'perturbation']
+		tags: ['built-in', 'managed', 'single-cell', 'foundation-model', 'embedding', 'human']
 	},
 	{
 		id: UCE_4LAYER_MODEL_ID,

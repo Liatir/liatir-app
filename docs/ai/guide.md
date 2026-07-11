@@ -27,6 +27,7 @@ Examples:
 - Nucleotide Transformer v2 50M or 500M.
 - ESM-2 8M Protein.
 - Enformer, Basenji2, or Borzoi Mini.
+- Geneformer V1 10M.
 - UCE 4-layer.
 - Boltz-2.
 
@@ -39,7 +40,7 @@ Examples:
 
 - CellTypist Annotation uses the CellTypist AI Model.
 - Sequence Embedding can use Nucleotide Transformer or ESM-2.
-- Single-cell Embedding uses UCE 4-layer.
+- Single-cell Embedding uses Geneformer V1 10M or UCE 4-layer.
 - Genomic Variant Effect uses Nucleotide Transformer models.
 - Regulatory Prediction uses Enformer, Basenji2, or Borzoi Mini.
 - Protein Structure Prediction uses Boltz-2.
@@ -126,7 +127,8 @@ Start small:
 1. Install CellTypist and run a small `.h5ad` demo.
 2. Install Nucleotide Transformer 50M and run Sequence Embedding on a short
    FASTA.
-3. Install UCE 4-layer and run Single-cell Embedding on a small `.h5ad` demo.
+3. Install Geneformer V1 10M or UCE 4-layer and run Single-cell Embedding on a
+   small compatible `.h5ad` demo.
 4. Run Genomic Variant Effect on the demo FASTA and VCF.
 5. Install one regulatory model and run Regulatory Prediction with `targetIndex
    = 0` and a low `maxVariants`.
@@ -143,7 +145,8 @@ Use:
 
 1. AnnData `.h5ad` input.
 2. CellTypist Annotation.
-3. Single-cell Embedding with UCE 4-layer when you need foundation-model vectors.
+3. Single-cell Embedding with Geneformer V1 10M or UCE 4-layer when you need
+   foundation-model vectors.
 4. Results table or single-cell preview.
 5. Later, richer interactive single-cell views.
 

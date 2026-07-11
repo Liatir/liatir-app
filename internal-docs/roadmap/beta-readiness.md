@@ -36,7 +36,7 @@ feature to Verified.
 | Dependencies page | **Partial** | Real bridge checks plus native managed install/execute/remove coverage | Add update interruption and actionable recovery-state E2E |
 | API Connector | **Implemented — unverified** | Saved requests and pipeline node integration exist | Native request/run E2E, auth handling, malformed responses, rate/error states, Results provenance |
 | AI Batches 1–4 | **Implemented — unverified** | Managed runtimes and Tools exist for lightweight embeddings, proteomics, and predictive genomics | Targeted real install/inference runs with scientific sanity fixtures and output validation |
-| AI Batch 5 | **Partial** | UCE is runnable; scGPT, Geneformer, and scFoundation remain preview entries | Complete one model at a time with managed assets, runtime, Jobs, Results, provenance, and native E2E |
+| AI Batch 5 | **Partial** | UCE 4-layer and Geneformer V1 10M are runnable; scGPT and scFoundation remain preview entries | Complete one model at a time with managed assets, runtime, Jobs, Results, provenance, and native E2E |
 | AI Batches 6–8 | **Planned** | Roadmap only | Complete prerequisite runtime/tool gates before implementation |
 | Scientific viewers | **Implemented — unverified** | Optional local viewer runtimes and visual pages exist | Native visual/runtime coverage with real artifacts, failures, fullscreen, and capture |
 | Quenta | **Partial** | Read-only Ollama MVP with shared contracts, local retrieval, Result/Job deep links, cited reports, unit tests, Rust loopback tests, and mock-Ollama Tauri E2E | Real local Ollama evaluation matrix with recommended model(s), report-quality review, latency/error expectations, and no-tool-call audit |
