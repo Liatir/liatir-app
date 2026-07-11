@@ -1,0 +1,2 @@
+# Copy to .dev.vars for local authenticated promotion tests.
+ADMIN_TOKEN=replace-with-a-long-random-local-token

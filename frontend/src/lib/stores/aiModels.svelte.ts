@@ -9,6 +9,7 @@ import {
   cachePathForModel,
   getAIHardwareInfo,
   getAIRuntimeStatus,
+  installAIRuntimeBox,
   prepareAIRuntime,
   removeAIRuntime,
   runtimeIdForModel,
@@ -18,6 +19,7 @@ import { appStorage } from './app-storage';
 import { SANDBOX_WORKSPACE_ID, workspaceStore } from './workspace.svelte';
 import type {
   LiatirAIModelInstallFile,
+  LiatirAIModelMetadata,
   LiatirAIModelRecord,
   LiatirAIModelStatus,
   LiatirPythonRuntimeLock,
@@ -95,6 +97,10 @@ function defaultStateFor(modelId: string): StoredAIModelState {
     status: modelId === MOCK_AI_MODEL_ID ? 'installed' : 'available',
     enabled: true,
   };
+}
+
+function usesManagedPythonRuntime(model: LiatirAIModelMetadata): boolean {
+  return model.install?.method === 'managed-runtime' || model.install?.method === 'runtime-box';
 }
 
 function createAIModelsStore() {
@@ -416,7 +422,9 @@ function createAIModelsStore() {
       }
 
       for (const metadata of VISIBLE_LOCAL_AI_MODEL_REGISTRY) {
-        if (metadata.install?.method !== 'managed-runtime' && metadata.install?.method !== 'managed-download') continue;
+        if (metadata.install?.method !== 'managed-runtime'
+          && metadata.install?.method !== 'runtime-box'
+          && metadata.install?.method !== 'managed-download') continue;
         try {
           const markerFile = getInstallMarkerFile(metadata.id);
           if (!await appStorage.exists(markerFile)) continue;
@@ -481,7 +489,7 @@ function createAIModelsStore() {
 
     async refreshManagedRuntimeStatus(id: string): Promise<LiatirAIModelRecord | null> {
       const model = records().find((item) => item.id === id);
-      if (!model || model.install?.method !== 'managed-runtime') return model ?? null;
+      if (!model || !usesManagedPythonRuntime(model)) return model ?? null;
       setRuntimeChecking(id, true);
       try {
         const status = await getAIRuntimeStatus(model);
@@ -529,14 +537,14 @@ function createAIModelsStore() {
       if (!options.force && runtimeStatusesChecked) return;
       if (runtimeStatusRefreshPromise) return runtimeStatusRefreshPromise;
 
-      const managedRuntimeModels = records().filter((model) => model.install?.method === 'managed-runtime');
+      const managedRuntimeModels = records().filter(usesManagedPythonRuntime);
       for (const model of managedRuntimeModels) {
         setRuntimeChecking(model.id, true);
       }
       runtimeStatusRefreshing = true;
       runtimeStatusRefreshPromise = (async () => {
         for (const model of managedRuntimeModels) {
-          if (model.install?.method === 'managed-runtime') {
+          if (usesManagedPythonRuntime(model)) {
             await this.refreshManagedRuntimeStatus(model.id);
           }
         }
@@ -594,16 +602,71 @@ function createAIModelsStore() {
 
       const installPromise = (async () => {
         startInstall(id, {
-          phase: metadata.install?.method === 'managed-runtime' ? 'preparing-runtime' : 'downloading-files',
+          phase: usesManagedPythonRuntime(metadata) ? 'preparing-runtime' : 'downloading-files',
           fileIndex: 0,
           fileCount: metadata.install?.files?.length ?? 1,
           bytesDownloaded: 0,
           bytesTotal: null,
-          message: metadata.install?.method === 'managed-runtime' ? 'Preparing runtime' : undefined,
+          message: metadata.install?.method === 'runtime-box'
+            ? 'Downloading Runtime Box'
+            : metadata.install?.method === 'managed-runtime'
+              ? 'Preparing runtime'
+              : undefined,
           logLines: [`$ install AI Model ${id}`],
         });
 
         try {
+          if (metadata.install?.method === 'runtime-box') {
+            emitInstallProgress(id, {
+              phase: 'preparing-runtime',
+              fileIndex: 0,
+              fileCount: 1,
+              bytesDownloaded: 0,
+              bytesTotal: null,
+              message: 'Downloading Runtime Box',
+              logLines: [`$ install signed Runtime Box ${metadata.install.runtimeBox?.boxId ?? id}`],
+            }, onProgress);
+            const installed = await installAIRuntimeBox(metadata, (progress) => {
+              emitInstallProgress(id, {
+                phase: 'downloading-files',
+                fileIndex: 0,
+                fileCount: 1,
+                bytesDownloaded: progress.bytesDownloaded,
+                bytesTotal: progress.bytesTotal,
+                message: 'Downloading Runtime Box',
+              }, onProgress);
+            });
+            const record: LiatirAIModelRecord = {
+              ...metadata,
+              status: 'installed',
+              runtimePath: installed.runtimeDir,
+              localPath: installed.runtimeDir,
+              installedSizeBytes: installed.sizeBytes,
+              runtimeSizeBytes: installed.sizeBytes,
+            };
+            record.cachePath = cachePathForModel(record) ?? undefined;
+            const state: StoredAIModelState = {
+              status: 'installed',
+              runtimePath: installed.runtimeDir,
+              localPath: installed.runtimeDir,
+              cachePath: record.cachePath,
+              installedSizeBytes: installed.sizeBytes,
+              runtimeSizeBytes: installed.sizeBytes,
+              enabled: true,
+              error: undefined,
+              updatedAt: Date.now(),
+            };
+            await this.setModelState(id, state);
+            await appStorage.writeText(
+              getInstallMarkerFile(id),
+              JSON.stringify(state, null, 2),
+              { createDirs: true },
+            );
+            finishInstall(id, 'done', 'AI Runtime Box installed');
+            void this.refreshManagedRuntimeStatus(id);
+            return this.byId(id)!;
+          }
+
           if (metadata.install?.method === 'managed-runtime') {
             emitInstallProgress(id, {
               phase: 'preparing-runtime',
@@ -741,22 +804,29 @@ function createAIModelsStore() {
       const api = liatir();
       if (!api) return;
       const model = records().find((item) => item.id === id);
-      if (!model || (model.source !== 'managed-download' && model.source !== 'managed-runtime')) return;
+      if (!model || !['managed-download', 'managed-runtime', 'runtime-box'].includes(model.source)) return;
       if (model.localPath && model.source === 'managed-download') {
         await api.invoke('lia_managed_remove', { path: model.localPath, recursive: true }).catch(() => {});
       }
-      if (model.source === 'managed-runtime') {
+      if (model.source === 'managed-runtime' || model.source === 'runtime-box') {
         const runtimeId = runtimeIdForModel(model);
         const sharedRuntimeStillInstalled = runtimeId
           ? records().some((item) =>
               item.id !== id
               && item.status === 'installed'
-              && item.source === 'managed-runtime'
+              && (item.source === 'managed-runtime' || item.source === 'runtime-box')
               && runtimeIdForModel(item) === runtimeId
             )
           : false;
-        if (!sharedRuntimeStillInstalled) {
-          await removeAIRuntime(model).catch(() => {});
+        if (!sharedRuntimeStillInstalled && runtimeId) {
+          if (model.source === 'runtime-box' && model.install?.runtimeBox) {
+            await api.invoke('lia_ai_runtime_box_remove', {
+              runtimeId,
+              boxId: model.install.runtimeBox.boxId,
+            }).catch(() => {});
+          } else {
+            await removeAIRuntime(model).catch(() => {});
+          }
         }
       }
       const { [id]: _removed, ...restStates } = modelStates;

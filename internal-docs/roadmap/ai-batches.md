@@ -74,8 +74,9 @@ regulatory target index.
 ## Batch 5: Single-cell foundation models
 
 Status: in progress. UCE 4-layer and Geneformer V1 10M are implemented as
-managed installable/runnable slices; scGPT and scFoundation remain preview
-entries.
+installable/runnable slices. The signed Geneformer Runtime Box candidate is
+built for macOS arm64/Metal, while product cutover waits for live distribution.
+scGPT and scFoundation remain preview entries.
 
 - scGPT for embeddings, batch correction, and perturbation hypotheses.
 - Geneformer for cell representations and gene/network insights.
@@ -89,6 +90,31 @@ entries.
 Do not enable Install or Run for the remaining preview models until each model
 has a validated managed runtime box, explicit model-asset handling, input
 validation, output parsing, Jobs, Results, and provenance.
+
+### AI Runtime Box Distribution Foundation
+
+Status: implemented locally; production publication is externally blocked until
+R2 is enabled on the Cloudflare account.
+
+- Shared release, channel, target, rollout, revocation, signature, and
+  compatibility contracts live in `packages/liatir-core`.
+- Repository CLI supports key generation, dependency locking, native build,
+  post-extraction verification, local registry serving, immutable R2 publish,
+  trust-root publish, channel promotion, and signed revocations.
+- The macOS arm64 builder packages full standalone Python plus hash-locked
+  dependencies; it does not depend on a user-installed Python at runtime.
+- The Runtime Box Registry Worker serves small signed control documents and
+  performs authenticated, signature-verified promotions through its R2 binding.
+- Native installation uses resumable downloads, signed manifest and target
+  checks, safe ZIP extraction, a self-test, atomic activation, and rollback per
+  `runtimeId`.
+- Geneformer V1 10M is the first production recipe. Its signed 201 MB box passes
+  verification and post-extraction imports on macOS arm64.
+
+Remaining distribution gates: enable R2, provision the production signing
+public key and Worker admin secret, attach `models.liatir.app` and
+`assets.models.liatir.app`, publish/promote the immutable release, then run the
+catalog cutover, native app install/run, and scientific-parity gates.
 
 ## Batch 6: Simulations and biophysics
 

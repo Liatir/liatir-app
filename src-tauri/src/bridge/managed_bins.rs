@@ -382,13 +382,23 @@ fn extract_tar(archive_path: &str, dest_dir: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn extract_zip(archive_path: &str, dest_dir: &str) -> Result<(), String> {
+/// Extract a ZIP while rejecting traversal and symbolic-link entries. Runtime
+/// boxes use this helper before an atomic activation swap, so no archive entry
+/// may escape or redirect writes outside the staging directory.
+pub(crate) fn extract_zip(archive_path: &str, dest_dir: &str) -> Result<(), String> {
     let file = std::fs::File::open(archive_path).map_err(|e| e.to_string())?;
     let mut archive = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
+    let destination = Path::new(dest_dir);
 
     for i in 0..archive.len() {
         let mut entry = archive.by_index(i).map_err(|e| e.to_string())?;
-        let out_path = Path::new(dest_dir).join(entry.name());
+        if entry.is_symlink() {
+            return Err(format!("ZIP symbolic links are not allowed: {}", entry.name()));
+        }
+        let enclosed = entry
+            .enclosed_name()
+            .ok_or_else(|| format!("Unsafe ZIP entry path: {}", entry.name()))?;
+        let out_path = destination.join(enclosed);
 
         if entry.is_dir() {
             std::fs::create_dir_all(&out_path).map_err(|e| e.to_string())?;
@@ -398,6 +408,12 @@ fn extract_zip(archive_path: &str, dest_dir: &str) -> Result<(), String> {
             }
             let mut out_file = std::fs::File::create(&out_path).map_err(|e| e.to_string())?;
             std::io::copy(&mut entry, &mut out_file).map_err(|e| e.to_string())?;
+            #[cfg(unix)]
+            if let Some(mode) = entry.unix_mode() {
+                use std::os::unix::fs::PermissionsExt;
+                std::fs::set_permissions(&out_path, std::fs::Permissions::from_mode(mode & 0o777))
+                    .map_err(|e| e.to_string())?;
+            }
         }
     }
     Ok(())

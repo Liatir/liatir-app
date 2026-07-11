@@ -28,7 +28,8 @@ describe('AI modularity boundaries', () => {
 
   it('requires managed runtimes to declare isolated runtime and cache locations', () => {
     for (const model of LOCAL_AI_MODEL_REGISTRY) {
-      if (model.id === MOCK_AI_MODEL_ID || model.install?.method !== 'managed-runtime') continue;
+      if (model.id === MOCK_AI_MODEL_ID
+        || (model.install?.method !== 'managed-runtime' && model.install?.method !== 'runtime-box')) continue;
 
       expect(model.install.runtimeId, `${model.id} missing runtimeId`).toMatch(/^[a-z0-9][a-z0-9-_]+$/);
       expect(model.install.modelCacheSubdir, `${model.id} missing modelCacheSubdir`).toBeTruthy();

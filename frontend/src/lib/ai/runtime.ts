@@ -68,6 +68,15 @@ export interface AIRuntimePrepareResult {
   lock?: LiatirPythonRuntimeLock | null;
 }
 
+export interface AIRuntimeBoxInstallResult {
+  runtimeId: string;
+  runtimeDir: string;
+  pythonPath: string;
+  version: string;
+  sizeBytes: number;
+  rollbackAvailable: boolean;
+}
+
 export interface AIPythonRunResult {
   ok: boolean;
   exitCode: number | null;
@@ -120,6 +129,35 @@ export async function prepareAIRuntime(model: LiatirAIModelMetadata): Promise<AI
     sources: runtimeSourcesForModel(model),
     pythonRequirement: model.install?.hostRequirements?.python ?? null,
   }) as AIRuntimePrepareResult;
+}
+
+/** Download and atomically activate the signed Runtime Box selected by channel. */
+export async function installAIRuntimeBox(
+  model: LiatirAIModelMetadata,
+  onProgress?: (progress: { bytesDownloaded: number; bytesTotal: number | null }) => void,
+): Promise<AIRuntimeBoxInstallResult> {
+  const api = liatir();
+  const runtimeBox = model.install?.runtimeBox;
+  if (!api) throw new Error('Liatir API not available');
+  if (model.install?.method !== 'runtime-box' || !runtimeBox) {
+    throw new Error(`AI Model has no Runtime Box distribution: ${model.name}`);
+  }
+  const downloadId = `runtime-box-${model.id}-${crypto.randomUUID()}`;
+  const unlisten = await api.desktop.events.on(
+    `managed:progress:${downloadId}`,
+    (progress: { bytesDownloaded: number; bytesTotal: number | null }) => onProgress?.(progress),
+  );
+  try {
+    return await api.invoke('lia_ai_runtime_box_install', {
+      boxId: runtimeBox.boxId,
+      modelId: model.id,
+      channel: runtimeBox.channel,
+      registryBaseUrl: runtimeBox.registryBaseUrl,
+      downloadId,
+    }) as AIRuntimeBoxInstallResult;
+  } finally {
+    unlisten();
+  }
 }
 
 export async function removeAIRuntime(model: LiatirAIModelMetadata): Promise<boolean> {

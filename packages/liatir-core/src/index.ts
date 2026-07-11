@@ -367,7 +367,8 @@ export type LiatirAIModelSource =
   | "local-file"
   | "local-directory"
   | "managed-download"
-  | "managed-runtime";
+  | "managed-runtime"
+  | "runtime-box";
 export type LiatirAIModelStatus =
   | "available"
   | "installed"
@@ -432,6 +433,7 @@ export interface LiatirAIModelInstallSpec {
   runtimeId?: string;
   runtimePackages?: LiatirAIModelRuntimePackage[];
   runtimeSources?: LiatirAIModelRuntimeSource[];
+  runtimeBox?: import("./runtime-box").LiatirAIModelRuntimeBoxInstall;
   modelCacheSubdir?: string;
   /** Immutable upstream model/source revision, when the runtime downloads from a versioned hub. */
   revision?: string;
@@ -496,6 +498,7 @@ export interface LiatirAIModelPythonRequirement extends LiatirPythonRequirement 
 
 export interface LiatirAIModelHostRequirements {
   os?: string[];
+  arch?: string[];
   requiresCuda?: boolean;
   python?: LiatirAIModelPythonRequirement;
   reason?: string;
@@ -607,6 +610,9 @@ export type ToolOutput = LiatirToolOutput;
 // and the plugin API (@liatir/api Liatir.ai). Model ids, metadata, and runtime
 // specs live here so neither side hand-duplicates the list.
 export * from "./ai-catalog";
+
+// Signed, prebuilt AI Runtime Box distribution contracts.
+export * from "./runtime-box";
 
 // Built-in native tools catalog — bioinformatics binaries bundled with Liatir.
 export * from "./native-tools";

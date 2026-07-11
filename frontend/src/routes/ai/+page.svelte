@@ -614,7 +614,7 @@
                             </button>
                           {/if}
 
-                          {#if (model.source === 'managed-download' || model.source === 'managed-runtime') && model.status === 'installed' && !installing[model.id]}
+                          {#if (model.source === 'managed-download' || model.source === 'managed-runtime' || model.source === 'runtime-box') && model.status === 'installed' && !installing[model.id]}
                             <Button
                               size="sm"
                               variant="ghost"
@@ -676,7 +676,7 @@
                             <Button size="sm" variant="secondary" testId="ai-model-run-button" disabled={actionsLocked} onclick={() => goto(`/ai/${encodeURIComponent(model.id)}`)}>
                               Run
                             </Button>
-                          {:else if model.install?.method === 'managed-download' || model.install?.method === 'managed-runtime'}
+                          {:else if model.install?.method === 'managed-download' || model.install?.method === 'managed-runtime' || model.install?.method === 'runtime-box'}
                             {#if blocked}
                               <Button size="sm" variant="secondary" testId="ai-model-fix-dependency-button" disabled={actionsLocked} onclick={() => resolveInstallBlock(blocked)}>
                                 Fix dependency

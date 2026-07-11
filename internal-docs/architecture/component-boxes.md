@@ -58,6 +58,23 @@ For managed AI runtimes:
 - scripts should live with the tool/family that owns them;
 - preload behavior should be strategy-based, not a long manual switch.
 
+Heavy production runtimes use the signed AI Runtime Box distribution path:
+
+- immutable ZIP archive with standalone Python, exact hash-locked packages,
+  model assets, and build provenance;
+- Ed25519-signed release and channel documents using the shared contracts in
+  `packages/liatir-core/src/runtime-box.ts`;
+- exact OS, architecture, accelerator, app-version, and memory compatibility;
+- resumable checksummed download into a runtime-specific staging area;
+- safe extraction, post-extraction import self-test, atomic activation, and one
+  retained rollback runtime;
+- R2 for immutable objects and a small Worker control plane for signed channel,
+  rollout, and revocation metadata.
+
+The Worker never proxies large runtime archives. Local development uses the
+same format through `npm run runtime-box -- build|verify|serve`; production adds
+`publish` and authenticated `promote` operations.
+
 Regulatory genomics follows this model:
 
 - Enformer uses `regulatory-enformer` and a TensorFlow Hub preload strategy.

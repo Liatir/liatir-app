@@ -36,7 +36,8 @@ feature to Verified.
 | Dependencies page | **Partial** | Real bridge checks plus native managed install/execute/remove coverage | Add update interruption and actionable recovery-state E2E |
 | API Connector | **Implemented — unverified** | Saved requests and pipeline node integration exist | Native request/run E2E, auth handling, malformed responses, rate/error states, Results provenance |
 | AI Batches 1–4 | **Implemented — unverified** | Managed runtimes and Tools exist for lightweight embeddings, proteomics, and predictive genomics | Targeted real install/inference runs with scientific sanity fixtures and output validation |
-| AI Batch 5 | **Partial** | UCE 4-layer and Geneformer V1 10M are runnable; scGPT and scFoundation remain preview entries | Complete one model at a time with managed assets, runtime, Jobs, Results, provenance, and native E2E |
+| AI Runtime Box distribution | **Implemented — unverified** | Shared signed contracts, macOS arm64 builder, local registry, R2 publisher, Worker control plane, resumable native installer, safe extraction, atomic activation, rollback; Geneformer post-extraction self-test passes | Enable R2, provision production trust/domain configuration, publish the first release, and pass clean-machine native install/update/rollback E2E |
+| AI Batch 5 | **Partial** | UCE 4-layer and Geneformer V1 10M remain runnable through managed runtimes; a signed 201 MB macOS arm64 Geneformer Runtime Box candidate passes post-extraction dependency imports, but catalog cutover is intentionally deferred until distribution is live; scGPT and scFoundation remain preview entries | Publish/promote Geneformer, cut over without an unavailable-endpoint window, prove native install/inference/scientific parity, then complete one remaining model at a time with Jobs, Results, provenance, and native E2E |
 | AI Batches 6–8 | **Planned** | Roadmap only | Complete prerequisite runtime/tool gates before implementation |
 | Scientific viewers | **Implemented — unverified** | Optional local viewer runtimes and visual pages exist | Native visual/runtime coverage with real artifacts, failures, fullscreen, and capture |
 | Quenta | **Partial** | Read-only Ollama MVP with shared contracts, local retrieval, Result/Job deep links, cited reports, unit tests, Rust loopback tests, and mock-Ollama Tauri E2E | Real local Ollama evaluation matrix with recommended model(s), report-quality review, latency/error expectations, and no-tool-call audit |
@@ -62,12 +63,15 @@ The beta cannot ship until automated native coverage proves:
 
 ## Immediate execution order
 
-1. Validate existing AI Batches 1–4 with targeted real runtime fixtures.
-2. Run the real local Ollama Quenta evaluation matrix and document recommended
+1. Finish the remaining heavy AI Model integrations on the signed Runtime Box
+   foundation without widening scope to new model families.
+2. Enable and publish the R2/Worker distribution path, then validate existing AI
+   Batches 1–5 with targeted real runtime and scientific fixtures.
+3. Run the real local Ollama Quenta evaluation matrix and document recommended
    model choices.
-3. Add the MCP server with allowlisted saved-pipeline execution.
-4. Finish useful plugin, API Connector, and pipeline presets.
-5. Close macOS distribution gates and run the release-candidate matrix.
+4. Add the MCP server with allowlisted saved-pipeline execution.
+5. Finish useful plugin, API Connector, and pipeline presets.
+6. Close macOS distribution gates and run the release-candidate matrix.
 
 Update this ledger only when evidence changes. Every status promotion must cite
 a repeatable gate, not a manual implementation claim.

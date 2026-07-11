@@ -12,7 +12,7 @@ interface VersionParts {
 }
 
 export interface AIModelInstallBlock {
-  kind: 'host-os' | 'cuda' | 'python';
+  kind: 'host-os' | 'host-arch' | 'cuda' | 'python';
   summary: string;
   reason: string;
   required: string;
@@ -140,6 +140,20 @@ export function modelInstallBlock(
         `Detected: ${detected}`,
         `Required: ${required}`,
       ],
+    };
+  }
+
+  if (requirements?.arch?.length && !requirements.arch.includes(hardware.arch)) {
+    const required = requirements.arch.join(', ');
+    const detected = detectedHostLabel(hardware);
+    const basis = requirements.reason ?? `This model supports ${required} architectures only.`;
+    return {
+      kind: 'host-arch',
+      summary: 'This model is not available on this architecture',
+      required,
+      detected,
+      reason: `This model needs a ${required} build.`,
+      details: [basis, `Detected: ${detected}`, `Required: ${required}`],
     };
   }
 

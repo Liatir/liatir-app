@@ -32,18 +32,32 @@ describe('Batch 5 single-cell foundation model contract', () => {
     }
   });
 
-  it('enables Geneformer V1 10M with pinned managed assets and an isolated runtime', () => {
+  it('keeps Geneformer runnable while preparing its signed Runtime Box cutover', () => {
     const model = getLocalAIModelMetadata(GENEFORMER_V1_10M_MODEL_ID);
     const spec = artifactSpecForModelId(GENEFORMER_V1_10M_MODEL_ID);
+    const recipe = JSON.parse(readFileSync(
+      resolve(rootDir, 'runtime-boxes/recipes/geneformer-v1-10m-macos-arm64-metal/recipe.json'),
+      'utf8',
+    )) as {
+      modelId: string;
+      runtimeId: string;
+      assets: Array<{ relativePath: string; sizeBytes: number; sha256: string; url: string }>;
+    };
 
     expect(model, 'Geneformer missing model metadata').toBeTruthy();
     expect(model?.releaseStage).toBeUndefined();
     expect(model?.capabilities).toEqual(['single-cell-embedding']);
     expect(model?.license?.spdxId).toBe('Apache-2.0');
     expect(model?.license?.verifiedAt).toBe('2026-07-11');
+    expect(model?.source).toBe('managed-runtime');
     expect(model?.install?.method).toBe('managed-runtime');
     expect(model?.install?.runtimeId).toBe('single-cell-foundation-geneformer-v1-10m');
     expect(model?.install?.modelCacheSubdir).toBe('model-cache/geneformer-v1-10m');
+    expect(model?.install?.runtimeBox).toEqual({
+      boxId: 'geneformer-v1-10m',
+      channel: 'beta',
+      registryBaseUrl: 'https://models.liatir.app/v1',
+    });
     expect(model?.install?.revision).toMatch(/^[a-f0-9]{40}$/);
     expect(model?.install?.files?.map((file) => file.relativePath).sort()).toEqual([
       'dictionaries/ensembl_mapping_dict_gc30M.pkl',
@@ -52,7 +66,16 @@ describe('Batch 5 single-cell foundation model contract', () => {
       'model/config.json',
       'model/model.safetensors',
     ]);
-    for (const file of model?.install?.files ?? []) {
+    expect(recipe.modelId).toBe(GENEFORMER_V1_10M_MODEL_ID);
+    expect(recipe.runtimeId).toBe(model?.install?.runtimeId);
+    expect(recipe.assets.map((file) => file.relativePath).sort()).toEqual([
+      'model-cache/geneformer-v1-10m/dictionaries/ensembl_mapping_dict_gc30M.pkl',
+      'model-cache/geneformer-v1-10m/dictionaries/gene_median_dictionary_gc30M.pkl',
+      'model-cache/geneformer-v1-10m/dictionaries/token_dictionary_gc30M.pkl',
+      'model-cache/geneformer-v1-10m/model/config.json',
+      'model-cache/geneformer-v1-10m/model/model.safetensors',
+    ]);
+    for (const file of recipe.assets) {
       expect(file.sizeBytes, `${file.relativePath} missing byte size`).toBeGreaterThan(0);
       expect(file.sha256, `${file.relativePath} missing SHA-256`).toMatch(/^[a-f0-9]{64}$/);
       expect(file.url).toContain(model?.install?.revision);
