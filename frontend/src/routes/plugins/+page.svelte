@@ -1,3 +1,11 @@
+<!--
+	Installed `.lia` plugins: import, inspect, remove.
+
+	A plugin can be Node, Python or WASM, and the runtime is what drives most of the state on this page. Node and
+	WASM plugins are self-contained and simply work once imported. A **Python** plugin, by contrast, needs its own
+	environment installed on the user's machine — so it can be present but not yet runnable, which is why its
+	runtime status is checked separately and shown per plugin.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -17,6 +25,8 @@
 
   onMount(async () => {
     await liaPluginsStore.init();
+    // Only Python plugins have an environment that can be missing or broken; the check is per plugin and not
+    // awaited, so the list renders immediately and each row resolves its own status.
     for (const plugin of liaPluginsStore.plugins) {
       if (plugin.runtime === 'python') {
         void liaPluginsStore.ensurePythonRuntimeStatus(plugin.id);
@@ -50,12 +60,14 @@
     });
   });
 
+  /** Imports a `.lia` file and opens it. `mod` is null when the user cancelled the picker — not an error. */
   async function importPlugin() {
     importing = true;
     try {
       const mod = await liaPluginsStore.importFromPicker();
       if (mod) goto(`/plugins/${mod.id}`);
     } finally {
+      // In a `finally`, so a cancelled or failed import does not leave the button stuck in its loading state.
       importing = false;
     }
   }
@@ -74,10 +86,19 @@
     return 'Node .lia';
   }
 
+  /**
+   * What to say about a plugin's runtime.
+   *
+   * Node and WASM are static facts — one uses the system's Node, the other runs sandboxed — and are stated
+   * once. Only Python has a *state*, because only Python needs an environment built on this machine, and it can
+   * be checking, preparing, ready, unprepared, or broken. The error branch shortens any local paths, since a
+   * Python failure message is usually a traceback full of them.
+   */
   function runtimeStatusLabel(mod: LiatirPlugin): string {
     if (mod.runtime === 'node') return 'Uses system Node.js';
     if (mod.runtime === 'wasm') return 'Sandboxed runtime';
     const state = liaPluginsStore.pythonRuntimeStates[mod.id];
+    // No state yet == the check has not reported back, which is indistinguishable from still checking.
     if (!state || state.phase === 'checking') return 'Checking runtime…';
     if (state.phase === 'preparing') return 'Preparing runtime…';
     if (state.phase === 'ready') return state.sizeBytes ? `Ready · ${fmtBytes(state.sizeBytes)}` : 'Ready';
@@ -94,6 +115,7 @@
     return 'text-red-500';
   }
 
+  /** Locks a Python plugin's actions while its environment is being checked or built. */
   function pythonBusy(mod: LiatirPlugin): boolean {
     const state = liaPluginsStore.pythonRuntimeStates[mod.id];
     return mod.runtime === 'python' && (state?.phase === 'checking' || state?.phase === 'preparing');

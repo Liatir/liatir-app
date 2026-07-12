@@ -1,3 +1,12 @@
+/**
+ * Visual smoke test: screenshot each main page and compare it against a stored baseline.
+ *
+ * It catches the regressions no assertion is watching for — a broken layout, an element that renders off-screen, a
+ * page that comes up blank. A functional test would pass through all of those quite happily.
+ *
+ * `readyText` per page is what makes the comparison honest: the screenshot is taken only once the page has
+ * actually rendered its content, so a slow load produces a *failure*, not a diff against a half-drawn page.
+ */
 import {
   expectNoVisibleRuntimeError,
   navigateSidebar,

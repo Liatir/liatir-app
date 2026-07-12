@@ -1,3 +1,9 @@
+/**
+ * Runs every dependency resolver and merges what they diagnose.
+ *
+ * Adding a new diagnosis means writing a resolver and listing it below — nothing else in the app
+ * changes.
+ */
 import { homebrewLinkConflictResolver } from './homebrew-link-conflict';
 import { wrongToolResolver } from './wrong-tool';
 import type {
@@ -6,11 +12,26 @@ import type {
   DependencyResolverInput,
 } from './types';
 
+/**
+ * Order matters: it decides which message the user reads first, and which fix is offered first.
+ * `wrongTool` comes first because "this is not the program you think it is" reframes everything
+ * else — a link conflict is beside the point if the binary on PATH is a different tool entirely.
+ */
 const DEPENDENCY_RESOLVERS: DependencyResolver[] = [
   wrongToolResolver,
   homebrewLinkConflictResolver,
 ];
 
+/**
+ * Collects the diagnosis for one dependency: every message and every offered fix.
+ *
+ * All resolvers run — this is not a first-match dispatch — because a dependency can be broken in
+ * more than one way at once, and the user should see all of it rather than discovering the second
+ * problem only after fixing the first.
+ *
+ * Deduplication by ID is what makes that safe: two resolvers reaching the same conclusion (a shared
+ * "install it with Homebrew" action, say) surface it once, not twice.
+ */
 export function resolveDependency(input: DependencyResolverInput): DependencyResolution {
   const resolution: DependencyResolution = { messages: [], actions: [] };
   const seenMessages = new Set<string>();
@@ -20,6 +41,7 @@ export function resolveDependency(input: DependencyResolverInput): DependencyRes
     const partial = resolver(input);
     if (!partial) continue;
 
+    // First occurrence wins, which is why resolver order above determines precedence.
     for (const message of partial.messages) {
       if (seenMessages.has(message.id)) continue;
       seenMessages.add(message.id);

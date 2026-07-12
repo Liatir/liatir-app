@@ -1,9 +1,22 @@
+/**
+ * The test matrix: every suite in the repo, declared as data.
+ *
+ * Suites are grouped into *profiles* because they differ enormously in cost. `fast` runs in seconds and is what
+ * you use while working; `verify` adds the type checks and builds, and is the gate before committing; `ui`
+ * drives the real app through WebDriver, which needs a compiled binary; `heavy-ai` actually downloads and runs
+ * models, and takes as long as that sounds.
+ *
+ * Keeping this as a declaration rather than a shell script is what lets the runner report which suite failed,
+ * enforce a per-suite timeout, and let a caller pick a profile by name.
+ */
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
 export const testProfiles = {
   fast: ['unit'],
   verify: ['unit', 'sdk-types', 'core-build', 'frontend-check', 'frontend-build', 'src-ts-compile'],
   build: ['sdk-types', 'core-build', 'frontend-check', 'frontend-build', 'src-ts-compile'],
+  // Every UI profile begins with `tauri-prepare`: the end-to-end suites drive a real compiled binary, and it
+  // has to exist before anything can be driven.
   ui: ['tauri-prepare', 'tauri-e2e'],
   visual: ['tauri-prepare', 'visual-e2e'],
   'heavy-ai': ['tauri-prepare', 'heavy-ai-e2e'],

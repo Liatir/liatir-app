@@ -1,3 +1,22 @@
+/**
+ * AI Runtime Box registry — the Cloudflare Worker that serves the control plane.
+ *
+ * It is the middle link of the distribution chain:
+ *   signer service (holds the KMS key, signs)  ->  this Worker (stores + serves)  ->  the app
+ *   (`src-tauri/src/bridge/runtime_boxes.rs`, which verifies before installing anything).
+ *
+ * Two surfaces:
+ *   - public GET routes, serving signed channel and revocation documents straight from R2;
+ *   - admin PUT routes, which *promote* a new document (make it live).
+ *
+ * The Worker never signs anything and holds no private key. On promotion it re-verifies the
+ * signature against the trusted keys in R2 and checks the document actually matches the route
+ * it is being uploaded to, so a compromised admin token alone cannot publish a box: it can only
+ * publish something the offline signer already approved.
+ *
+ * The types come from `liatir-core`, the shared contract — the same definitions the app is
+ * built against, so the two ends cannot drift apart.
+ */
 import {
   isLiatirSignedRuntimeBoxDocument,
   type LiatirRuntimeBoxChannelManifest,
@@ -6,7 +25,12 @@ import {
 } from '../../../packages/liatir-core/src/runtime-box';
 
 const MAX_CONTROL_DOCUMENT_BYTES = 1024 * 1024;
+/** R2 object holding the Ed25519 public keys this registry accepts signatures from. */
 const TRUSTED_KEYS_OBJECT = 'control/trusted-keys.json';
+/**
+ * Every URL segment used to build an R2 key must match this: lowercase, bounded length, and no
+ * `/` or `.` sequences. That makes path traversal into another object impossible by construction.
+ */
 const SEGMENT_PATTERN = /^[a-z0-9][a-z0-9._-]{0,127}$/;
 
 interface TrustedSigningKey {
@@ -20,6 +44,7 @@ interface TrustedSigningKeys {
   keys: TrustedSigningKey[];
 }
 
+/** JSON response helper. `nosniff` is set everywhere so a response body is never re-interpreted. */
 function json(body: unknown, status = 200, extraHeaders?: HeadersInit): Response {
   const headers = new Headers(extraHeaders);
   headers.set('content-type', 'application/json; charset=utf-8');
@@ -27,15 +52,21 @@ function json(body: unknown, status = 200, extraHeaders?: HeadersInit): Response
   return Response.json(body, { status, headers });
 }
 
+/** Returns the segment only if it is safe to interpolate into an object key, else null. */
 function safeSegment(value: string): string | null {
   return SEGMENT_PATTERN.test(value) ? value : null;
 }
 
+/**
+ * Namespaces every object under a configured prefix, so staging and production can share one
+ * bucket without either being able to read or overwrite the other's documents.
+ */
 function objectKey(env: Env, key: string): string {
   const prefix = env.OBJECT_PREFIX.replace(/^\/+|\/+$/g, '');
   return prefix ? `${prefix}/${key}` : key;
 }
 
+/** Mirrors the app's URL rule: HTTPS only, with loopback HTTP tolerated for local testing. */
 function validReleaseManifestUrl(value: unknown): boolean {
   if (typeof value !== 'string') return false;
   try {
@@ -56,6 +87,13 @@ function hex(bytes: ArrayBuffer): string {
   return [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
+/**
+ * Constant-time comparison of the admin token.
+ *
+ * Both sides are hashed first for two reasons: `timingSafeEqual` requires equal-length inputs,
+ * and comparing fixed-size digests means the comparison time reveals nothing about the real
+ * token's length either. A plain `===` would leak the shared secret one character at a time.
+ */
 async function timingSafeTokenMatch(received: string, expected: string): Promise<boolean> {
   const encoder = new TextEncoder();
   const [left, right] = await Promise.all([
@@ -65,6 +103,10 @@ async function timingSafeTokenMatch(received: string, expected: string): Promise
   return crypto.subtle.timingSafeEqual(left, right);
 }
 
+/**
+ * Reads a request body with a hard size cap. Checked twice, because `content-length` is a claim
+ * by the client: the header lets us reject early, the real byte length is what actually enforces it.
+ */
 async function readBoundedJson(request: Request): Promise<unknown> {
   const contentLength = Number(request.headers.get('content-length') ?? 0);
   if (contentLength > MAX_CONTROL_DOCUMENT_BYTES) throw new Error('control_document_too_large');
@@ -75,6 +117,13 @@ async function readBoundedJson(request: Request): Promise<unknown> {
   return JSON.parse(text);
 }
 
+/**
+ * Loads the accepted signing keys from R2.
+ *
+ * Fails closed: a missing, malformed or empty key file yields an empty list, which makes every
+ * signature unverifiable and so rejects every promotion. Malformed individual entries are
+ * filtered out rather than trusted.
+ */
 async function trustedKeys(env: Env): Promise<TrustedSigningKey[]> {
   const object = await env.RUNTIME_BOXES.get(objectKey(env, TRUSTED_KEYS_OBJECT));
   if (!object) return [];
@@ -87,6 +136,14 @@ async function trustedKeys(env: Env): Promise<TrustedSigningKey[]> {
   );
 }
 
+/**
+ * Verifies a signed document and returns its decoded payload, or null if it cannot be trusted.
+ *
+ * Same shape of check the desktop app performs: confirm the checksum, then accept the document
+ * if any one signature verifies against a known key. Signatures naming an unknown key are
+ * skipped, which is what lets a document signed by both an old and a new key validate during a
+ * key rotation.
+ */
 async function verifySignedDocument(
   env: Env,
   document: LiatirSignedRuntimeBoxDocument,
@@ -118,12 +175,21 @@ async function verifySignedDocument(
   return null;
 }
 
+/** Bearer-token gate on the admin routes. An unset `ADMIN_TOKEN` denies rather than allows. */
 async function requireAdmin(request: Request, env: Env): Promise<boolean> {
   const authorization = request.headers.get('authorization');
   if (!authorization?.startsWith('Bearer ') || !env.ADMIN_TOKEN) return false;
   return timingSafeTokenMatch(authorization.slice('Bearer '.length), env.ADMIN_TOKEN);
 }
 
+/**
+ * Streams a stored document back to the client.
+ *
+ * These objects are public and self-authenticating — the signature inside them, not the
+ * transport, is what makes them trustworthy — so they can be cached and served with open CORS.
+ * Channels get a short TTL because a rollout percentage change should reach users quickly;
+ * revocations are cached longer since they are appended to rarely.
+ */
 async function serveObject(request: Request, env: Env, key: string): Promise<Response> {
   const object = await env.RUNTIME_BOXES.get(objectKey(env, key));
   if (!object) return json({ error: 'not_found' }, 404);
@@ -136,6 +202,15 @@ async function serveObject(request: Request, env: Env, key: string): Promise<Res
   return new Response(object.body, { headers });
 }
 
+/**
+ * Checks that a signed channel manifest belongs at the route it is being promoted to.
+ *
+ * The signature proves the document is authentic, not that it is being filed in the right place.
+ * Without this, a genuinely signed manifest for one box/target could be uploaded to another
+ * box's path and would be served to the wrong machines. Rebuilding the target slug from the
+ * payload and comparing it to the URL segment closes that gap; the rollout percentages and
+ * release URLs are sanity-checked at the same time.
+ */
 function validateChannelRoute(
   payload: Record<string, unknown>,
   channel: string,
@@ -150,6 +225,7 @@ function validateChannelRoute(
     || typeof targetRecord.arch !== 'string'
     || typeof targetRecord.accelerator !== 'string') return false;
   if (!Array.isArray(payload.releases) || payload.releases.length === 0) return false;
+  // Must produce the same slug the app's `target_id()` builds, e.g. `macos-aarch64-metal`.
   const routeTarget = `${targetRecord.platform}-${targetRecord.arch}-${targetRecord.accelerator}${
     typeof targetRecord.cudaVersion === 'string' ? `-cuda${targetRecord.cudaVersion}` : ''
   }`;
@@ -173,6 +249,13 @@ function isRevocationsManifest(
     && Array.isArray(payload.revocations);
 }
 
+/**
+ * Publishes a channel manifest, making a release live for everyone on that channel and target.
+ *
+ * Four gates, in order: admin token, size limit, signature, and route match. Only then is the
+ * document written — and it is stored exactly as received (signature envelope and all), because
+ * the app will verify that same envelope itself.
+ */
 async function promoteChannel(
   request: Request,
   env: Env,
@@ -195,12 +278,20 @@ async function promoteChannel(
   const body = `${JSON.stringify(input, null, 2)}\n`;
   await env.RUNTIME_BOXES.put(objectKey(env, key), body, {
     httpMetadata: { contentType: 'application/json', cacheControl: 'public, max-age=60' },
+    // Recorded alongside the object so a stored document can be identified without parsing it.
     customMetadata: { payloadSha256: input.payloadSha256 },
   });
+  // Structured, one line per event: promotions are the audit trail of what went live and when.
   console.log(JSON.stringify({ event: 'runtime_box_channel_promoted', channel, boxId, target }));
   return json({ ok: true, key });
 }
 
+/**
+ * Publishes the revocation list — the mechanism for pulling a bad box after it has shipped.
+ *
+ * Single fixed key: the list is replaced wholesale rather than appended to, so what is published
+ * is always the complete, signed set of revocations.
+ */
 async function promoteRevocations(request: Request, env: Env): Promise<Response> {
   if (!await requireAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
   let input: unknown;
@@ -221,6 +312,10 @@ async function promoteRevocations(request: Request, env: Env): Promise<Response>
 }
 
 export default {
+  /**
+   * Router. Paths are matched by exact segment count and shape rather than by prefix, so an
+   * unexpected path falls through to 404 instead of accidentally matching an admin route.
+   */
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
     if (request.method === 'GET' && url.pathname === '/health') {
@@ -230,6 +325,8 @@ export default {
       return serveObject(request, env, 'control/revocations.json');
     }
     const parts = url.pathname.split('/').filter(Boolean);
+    // GET /v1/channels/:channel/:boxId/:target — what the app calls to start an install.
+    // Every segment is validated before it reaches an object key.
     if (request.method === 'GET' && parts.length === 5 && parts[0] === 'v1' && parts[1] === 'channels') {
       const channel = safeSegment(parts[2]);
       const boxId = safeSegment(parts[3]);
@@ -237,6 +334,7 @@ export default {
       if (!channel || !boxId || !target) return json({ error: 'invalid_route' }, 400);
       return serveObject(request, env, `channels/${channel}/${boxId}/${target}.json`);
     }
+    // PUT /v1/admin/channels/:channel/:boxId/:target — release promotion (admin only).
     if (request.method === 'PUT' && parts.length === 6 && parts[0] === 'v1' && parts[1] === 'admin' && parts[2] === 'channels') {
       const channel = safeSegment(parts[3]);
       const boxId = safeSegment(parts[4]);

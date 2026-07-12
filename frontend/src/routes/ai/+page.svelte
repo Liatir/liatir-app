@@ -1,3 +1,16 @@
+<!--
+	The AI Models catalogue: browse, install, remove.
+
+	The screen's real job is *deciding what a model's state actually is*, which is more subtle than it looks.
+	A model can be installed but broken, available but incompatible with this machine, a preview that cannot
+	be installed at all, or simply still being checked. Each of those needs a different label, a different
+	badge, and different buttons — and getting it wrong means a user clicking Install on something that
+	cannot work. Hence the cluster of small `model*` helpers below: they collapse status, install progress,
+	runtime checks and compatibility into one honest answer per model.
+
+	Installs are *not* owned by this page. They live in `aiModelsStore`, so a user can start a multi-gigabyte
+	download and navigate away — the progress keeps running and is still there when they come back.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -32,11 +45,16 @@
 
   onMount(() => {
     let cancelled = false;
+    // Only show the loading state on a genuine first load: revisiting the page with the store already
+    // populated should render instantly, not flash a spinner over data we already have.
     const firstLoad = !aiModelsStore.initialized;
     loading = firstLoad;
 
     (async () => {
       await aiModelsStore.init();
+      // The runtime and hardware checks are *not* awaited: they shell out and can take a moment, and the
+      // catalogue is perfectly usable while they resolve. Each model shows "checking" until its own check
+      // lands (see `isCheckingModel`), rather than the whole page waiting on the slowest one.
       const runtimeRefresh = aiModelsStore.ensureManagedRuntimeStatuses();
       void aiModelsStore.ensureHardwareInfo();
       if (!cancelled) {
@@ -45,6 +63,7 @@
       void runtimeRefresh;
     })();
 
+    // Guards the async write above against the user navigating away mid-load.
     return () => {
       cancelled = true;
     };
@@ -81,11 +100,22 @@
     return status;
   }
 
+  /**
+   * A model is "checking" while its runtime is being inspected — *or* while the hardware probe is still
+   * out, if the model declares host requirements. The second clause matters: without the hardware answer
+   * we cannot yet say whether this model is installable here, so claiming it is "available" would be a
+   * guess the user might act on.
+   */
   function isCheckingModel(model: LiatirAIModelRecord): boolean {
     return runtimeChecks[model.id] === true
       || (Boolean(model.install?.hostRequirements) && !hardwareInfoChecked);
   }
 
+  /**
+   * The one honest label for a model's state. Order is precedence, and it is deliberate: a preview model
+   * is a preview whatever else is true, an install in progress outranks a stale stored status, and a check
+   * still running outranks the status it is about to replace.
+   */
   function modelStatusLabel(model: LiatirAIModelRecord): string {
     if (model.releaseStage === 'preview') return 'preview';
     if (installing[model.id]) return 'installing';
@@ -95,10 +125,15 @@
 
   function modelStatusVariant(model: LiatirAIModelRecord): BadgeVariants {
     if (model.releaseStage === 'preview') return 'neutral';
+    // Both installing and checking render as `running`, because both mean "something is happening, wait".
     if (installing[model.id] || isCheckingModel(model)) return 'running';
     return statusVariant(model.status);
   }
 
+  /**
+   * Disables Install/Remove while the model is busy or its state is not yet known — so the user cannot
+   * start a second install, or remove a model whose runtime is mid-inspection.
+   */
   function modelActionsLocked(model: LiatirAIModelRecord): boolean {
     return Boolean(installing[model.id]) || isCheckingModel(model);
   }
@@ -116,6 +151,13 @@
     return `${model.runtime.name}${model.runtime.version ? ` ${model.runtime.version}` : ''}`;
   }
 
+  /**
+   * Flattens everything about a model into one searchable string.
+   *
+   * Deliberately generous — capabilities, modalities, tags, licence, runtime. A user looking for a model
+   * rarely knows its name; they know what they want it to *do* ("cell annotation", "protein structure"),
+   * so searching only names would fail exactly when search is most needed.
+   */
   function modelSearchText(model: LiatirAIModelRecord): string {
     return [
       model.name,
@@ -141,6 +183,13 @@
     return model.category?.trim() || 'Other';
   }
 
+  /**
+   * Groups the catalogue by scientific domain.
+   *
+   * The order is explicit rather than alphabetical, because it is a *curated* order: the domains a user is
+   * most likely to want come first, and the development fixtures and the catch-all sit at the bottom where
+   * they belong. An unlisted category simply falls to the end.
+   */
   function groupModelsByCategory(items: LiatirAIModelRecord[]): ModelCategoryGroup[] {
     const categoryOrder = [
       'Single-cell',
@@ -274,6 +323,11 @@
     return `${file} · ${bytes}`;
   }
 
+  /**
+   * `null` when the total size is unknown — which happens when a server sends no Content-Length. The UI
+   * then shows an indeterminate bar rather than inventing a percentage that would jump around or stall
+   * at a number that means nothing.
+   */
   function installPercent(model: LiatirAIModelRecord): number | null {
     const progress = installing[model.id];
     if (!progress?.bytesTotal || progress.bytesTotal <= 0) return null;
@@ -284,6 +338,13 @@
     aiModelsStore.toggleInstallLog(modelId);
   }
 
+  /**
+   * The log to show: the live one while installing, otherwise the saved one from the last attempt.
+   *
+   * That second branch is why a *failed* install still has a readable log after it finished — the store
+   * hands the accumulated lines over to `installLogs` when the install ends, precisely so the explanation
+   * does not vanish at the moment the user needs it.
+   */
   function installLogState(modelId: string): { showLog: boolean; logLines: string[] } | null {
     const current = installing[modelId];
     if (current?.logLines.length) {
@@ -306,12 +367,15 @@
 
   async function installModel(model: LiatirAIModelRecord) {
     if (modelActionsLocked(model)) return;
+    // Compatibility is re-checked at click time, not just when the page rendered: the hardware probe may
+    // have landed since. Blocking here — before a multi-gigabyte download — is the whole point.
     const blocked = installBlock(model);
     if (blocked) {
       toast.error(blocked.reason);
       return;
     }
     try {
+      // The store owns the install, so it survives this page being unmounted.
       await aiModelsStore.installManagedModel(model.id);
       toast.success('AI Model installed');
     } catch (error) {
@@ -320,6 +384,7 @@
     }
   }
 
+  /** Removal is confirmed first: it deletes gigabytes, and the confirm text says it can be reinstalled. */
   async function removeModel(model: LiatirAIModelRecord) {
     if (modelActionsLocked(model)) return;
     const ok = await confirm({

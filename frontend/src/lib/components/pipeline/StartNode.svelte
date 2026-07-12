@@ -1,3 +1,10 @@
+<!--
+	The pipeline's entry point.
+
+	Purely structural: it holds no data and does no work. It exists so the graph has an unambiguous
+	beginning — a visible anchor to drag the first step from, and a fixed root for the executor to walk
+	from. Hence the single source Handle and no target: nothing can feed *into* the start.
+-->
 <script lang="ts">
   import { Handle, Position } from '@xyflow/svelte';
   import type { Node, NodeProps } from '@xyflow/svelte';

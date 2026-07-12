@@ -1,3 +1,18 @@
+/**
+ * Runs the test matrix: pick a profile (or individual suites), execute them in order, report what happened.
+ *
+ * The suites are declared in `test-matrix.mjs`; this file only decides *which* to run and drives them. Two
+ * behaviours worth knowing about:
+ *
+ *   - **heavy suites are opt-in.** `heavy-ai-e2e` downloads and runs real models, which costs hours and
+ *     gigabytes. It is skipped unless `--include-heavy` is passed, so `--profile all` on a laptop does not
+ *     accidentally start a multi-gigabyte download.
+ *   - **it stops on the first failure** unless `--continue-on-failure` is given. The suites build on each
+ *     other — running the end-to-end tests after the build already failed only produces noise on top of the
+ *     real error.
+ *
+ * A JSON report is written per run so CI can attribute a failure to a specific suite rather than to "the tests".
+ */
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -8,6 +23,7 @@ import { testProfiles, testSuites } from './test-matrix.mjs';
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const defaultReportDir = path.join(rootDir, 'tests', '.artifacts', 'reports');
 
+/** Accepts both `--flag value` and `--flag=value` for every option. */
 function parseArgs(argv) {
   const options = {
     continueOnFailure: false,

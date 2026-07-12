@@ -1,3 +1,9 @@
+/**
+ * `Liatir.desktop.globalShortcut` — OS-wide keyboard shortcuts, active even when Liatir is not focused.
+ *
+ * The callback always fires. `emitEvent` additionally re-broadcasts the shortcut as a Liatir event, which is
+ * what lets a part of the app that did not register the shortcut still react to it.
+ */
 import { tauriGlobalShortcut } from "../../../helpers";
 import { ShortcutsInterface } from "../../../types";
 

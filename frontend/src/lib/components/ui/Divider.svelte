@@ -1,3 +1,7 @@
+<!--
+	A horizontal rule. `my` sets the vertical margin in pixels; the rest spreads through, so a caller can
+	still pass a class or an id.
+-->
 <script lang="ts">
 
   let { my=0, ...rest } = $props();

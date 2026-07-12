@@ -1,3 +1,11 @@
+/**
+ * Tests the store initializer's two guarantees: concurrent callers share one load, and a load invalidated by a
+ * reset cannot commit its results afterwards.
+ *
+ * The second is the one that matters in practice. It is what stops a workspace's data being written into a
+ * *different* workspace when the user switches while a load is still in flight — a bug that would be nearly
+ * impossible to reproduce by hand and trivially caught here.
+ */
 import { describe, expect, it, vi } from 'vitest';
 
 import { createAsyncStoreInitializer } from '../../frontend/src/lib/stores/async-store-initializer';

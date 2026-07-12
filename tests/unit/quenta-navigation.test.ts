@@ -1,3 +1,10 @@
+/**
+ * Tests the URL handoff that opens Quenta focused on a specific run or job.
+ *
+ * The `without auto-send` in the first case is deliberate: landing with a prepared but *unsent* question lets the
+ * user adjust it. The tests also cover that the one-shot parameters are consumed, so a reload does not silently
+ * re-ask the same question.
+ */
 import { describe, expect, it } from 'vitest';
 import {
   consumedQuentaUrl,

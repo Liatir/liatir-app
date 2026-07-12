@@ -1,9 +1,24 @@
+<!--
+	The shared dropdown, used everywhere a choice is offered.
+
+	A custom listbox rather than a native `<select>`, because a native one can only show a flat list of
+	strings. The choices here need to *explain themselves* — an AI Model needs its description and size
+	beside its name, a tool needs its category — and long lists (models, tools, files) need a search box.
+	None of that is possible in a native select.
+
+	Two behaviours make it safe to use inside a pipeline node on the canvas, which is the awkward case:
+	`stopPropagation` keeps a click on the dropdown from dragging the node underneath it, and the
+	`nowheel` class on the menu keeps scrolling the list from zooming the canvas.
+-->
 <script lang="ts" module>
 	export interface SelectOption {
 		value: string;
 		label: string;
+		/** Shown under the label — this is what makes the list self-explanatory. */
 		description?: string;
+		/** A short badge (a size, a status, a category). */
 		meta?: string;
+		/** Listed but unselectable, so the user sees an option exists and that it is unavailable. */
 		disabled?: boolean;
 	}
 </script>
@@ -23,9 +38,11 @@
 		placeholder?: string;
 		searchPlaceholder?: string;
 		emptyText?: string;
+		/** Forces the search box on. It also appears automatically past 7 options — see `showSearch`. */
 		searchable?: boolean;
 		buttonClass?: string;
 		textSize?: 'xs' | 'sm' | 'md' | 'lg' | string,
+		/** Set when rendered inside a draggable canvas node: stops clicks from reaching the node. */
 		stopPropagation?: boolean;
 	}
 
@@ -49,16 +66,20 @@
 	let query = $state('');
 	let triggerEl: HTMLButtonElement | null = $state(null);
 	let searchEl: HTMLInputElement | null = $state(null);
+	// Computed when the menu opens, not fixed — see positionMenu().
 	let menuPlacement = $state<'below' | 'above'>('below');
 	let menuMaxHeight = $state(280);
 
 	const selected = $derived(options.find((option) => option.value === value));
+	// Past a handful of options, scanning the list stops being viable, so search appears on its own.
 	const showSearch = $derived(searchable || options.length > 7);
 	const filteredOptions = $derived.by(() => {
 		const normalizedQuery = query.trim().toLowerCase();
 		if (!normalizedQuery) return options;
 
 		return options.filter((option) => {
+			// Searches the description and meta too, not just the label: a user hunting for a model is as
+			// likely to type "single-cell" (its description) as its actual name.
 			const haystack = [option.label, option.description, option.meta, option.value]
 				.filter(Boolean)
 				.join(' ')
@@ -67,12 +88,20 @@
 		});
 	});
 
+	/**
+	 * Decides whether the menu opens downwards or upwards, and how tall it may be.
+	 *
+	 * A dropdown near the bottom of the window would otherwise open off-screen. It prefers below unless
+	 * there is genuinely more room above, and the height is clamped so the menu never overflows the
+	 * viewport (but is never uselessly short either).
+	 */
 	function positionMenu() {
 		if (!triggerEl) return;
 
 		const rect = triggerEl.getBoundingClientRect();
 		const availableBelow = window.innerHeight - rect.bottom - 12;
 		const availableAbove = rect.top - 12;
+		// Below wins if it has a comfortable 220px, or if it simply has more room than above.
 		menuPlacement = availableBelow >= 220 || availableBelow >= availableAbove ? 'below' : 'above';
 		const available = menuPlacement === 'below' ? availableBelow : availableAbove;
 		menuMaxHeight = Math.max(160, Math.min(320, available));
@@ -80,9 +109,12 @@
 
 	async function openMenu() {
 		if (disabled) return;
+		// Always open with an empty search: a leftover query from last time would hide most options and
+		// look like they had disappeared.
 		query = '';
 		open = true;
 		positionMenu();
+		// The search input does not exist until the menu has rendered, hence the tick before focusing.
 		await tick();
 		if (showSearch) searchEl?.focus();
 	}
@@ -102,9 +134,12 @@
 		if (option.disabled) return;
 		onchange(option.value);
 		closeMenu();
+		// Focus returns to the trigger, so keyboard navigation continues from where it left off rather
+		// than jumping back to the top of the page.
 		triggerEl?.focus();
 	}
 
+	/** Keyboard support on the trigger: Escape closes, Enter/Space/Down opens, Enter picks. */
 	function handleKeydown(event: KeyboardEvent) {
 		if (stopPropagation) event.stopPropagation();
 		if (disabled) return;
@@ -116,11 +151,14 @@
 		}
 
 		if (!open && (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown')) {
+			// preventDefault stops Space from scrolling the page.
 			event.preventDefault();
 			void openMenu();
 			return;
 		}
 
+		// Enter selects the first *selectable* match — so typing a query and pressing Enter picks the
+		// obvious result, and a disabled option is never chosen by accident.
 		if (open && event.key === 'Enter') {
 			event.preventDefault();
 			const firstEnabled = filteredOptions.find((option) => !option.disabled);
@@ -128,6 +166,10 @@
 		}
 	}
 
+	/**
+	 * The search box handles its own keys. Always stops propagation, so typing (including Escape and
+	 * Enter) is not also interpreted by the trigger's handler above.
+	 */
 	function handleSearchKeydown(event: KeyboardEvent) {
 		event.stopPropagation();
 		if (event.key === 'Escape') {
@@ -143,7 +185,9 @@
 	}
 </script>
 
+<!-- clickOutside is only armed while open, so it costs nothing when the menu is closed. -->
 <div class={`relative min-w-0 max-w-full ${className}`} use:clickOutside={{ enabled: open, onOutside: closeMenu }}>
+	<!-- The trigger. aria-haspopup/aria-expanded make it a real listbox to a screen reader. -->
 	<button
 		bind:this={triggerEl}
 		type="button"
@@ -167,6 +211,11 @@
 	</button>
 
 	{#if open}
+		<!--
+			`nowheel` tells the pipeline canvas not to treat a scroll here as a zoom, so the option list
+			scrolls normally when this Select sits inside a node. The very high z-index keeps the menu
+			above the canvas and any surrounding panels.
+		-->
 		<div
 			class={[
 				'nowheel absolute left-0 right-0 z-[9999] flex min-w-fit max-w-full flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl',

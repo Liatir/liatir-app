@@ -1,3 +1,15 @@
+/**
+ * `liatir update` — bring a plugin project's Liatir packages up to date.
+ *
+ * The two packages are always moved in lockstep: `@liatir/api` is the plugin's runtime contract
+ * and `@liatir/cli` is what builds against it, so a project with mismatched versions of the two
+ * can fail in confusing ways. Updating them together is the whole point of having this command
+ * rather than telling authors to run `npm install` themselves.
+ *
+ * Two modes:
+ *   - default: let npm resolve and install, then report what it saved;
+ *   - `--no-install`: rewrite package.json only, for offline or CI use.
+ */
 import * as fs from "fs/promises";
 import * as path from "path";
 import { execFile, spawn } from "child_process";
@@ -31,6 +43,10 @@ interface PackageJson {
   [key: string]: unknown;
 }
 
+/**
+ * All four blocks are searched, not just devDependencies, because an author may have added the
+ * packages anywhere. Update normalises them into devDependencies regardless of where it finds them.
+ */
 const DEPENDENCY_BLOCKS: DependencyBlockName[] = [
   "dependencies",
   "devDependencies",
@@ -73,6 +89,7 @@ function requireFlagValue(args: string[], index: number, flag: string): string {
   return value;
 }
 
+/** Parses the flags, accepting both `--version 1.2.3` and `--version=1.2.3`. */
 function parseUpdateArgs(args: string[]): ParsedUpdateArgs {
   const parsed: ParsedUpdateArgs = {
     install: true,
@@ -83,8 +100,10 @@ function parseUpdateArgs(args: string[]): ParsedUpdateArgs {
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
+    // Split on the first `=` only, so a value containing `=` survives intact.
     const [flag, inlineValue] = arg.includes("=") ? arg.split(/=(.*)/s, 2) : [arg, undefined];
 
+    // A bare argument is taken as the version, so `liatir update 1.2.3` works as a shorthand.
     if (!arg.startsWith("-")) {
       if (parsed.version) throw new Error(`Unexpected extra argument "${arg}".`);
       parsed.version = arg;
@@ -145,10 +164,22 @@ function hasLiatirScript(pkg: PackageJson): boolean {
   );
 }
 
+/**
+ * Three independent signals, any one of which is enough.
+ *
+ * Being generous here matters: refusing to update a project that *is* a plugin, merely because it
+ * declares itself unusually, is worse than the alternative — and this command only ever touches
+ * the two Liatir packages, so a false positive cannot damage an unrelated project.
+ */
 function isNodeLiatirProject(pkg: PackageJson): boolean {
   return hasLiatirPackageDependency(pkg) || isRecord(pkg.liatir) || hasLiatirScript(pkg);
 }
 
+/**
+ * Walks up from `startDir` looking for a file, so the command works from any subdirectory of the
+ * project rather than only from its root. Stops at the filesystem root, where `dirname` becomes a
+ * fixed point.
+ */
 async function findNearestFile(startDir: string, fileName: string): Promise<string | undefined> {
   let currentDir = path.resolve(startDir);
 
@@ -170,6 +201,13 @@ function packageSpec(packageName: LiatirPackageName, version: string | undefined
   return `${packageName}@${version ?? "latest"}`;
 }
 
+/**
+ * Turns a resolved version into what gets written to package.json.
+ *
+ * Only a plain semver gets a caret. Anything else — a dist-tag like `next`, a git URL, a range the
+ * author typed — is passed through untouched, because prefixing those with `^` would produce a
+ * specifier npm cannot resolve.
+ */
 function dependencyRange(version: string, exact: boolean): string {
   if (exact) return version;
   return /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(version) ? `^${version}` : version;
@@ -179,6 +217,12 @@ function formatCommand(command: string, args: string[]): string {
   return [command, ...args].join(" ");
 }
 
+/**
+ * Asks the registry for the latest version of each package.
+ *
+ * Only needed on the `--no-install` path: when npm does the install it resolves `@latest` itself.
+ * Run from the project root so the author's registry and auth configuration applies.
+ */
 async function fetchLatestVersions(projectRoot: string): Promise<Record<LiatirPackageName, string>> {
   const versions = {} as Record<LiatirPackageName, string>;
 
@@ -203,6 +247,17 @@ function ensureDevDependencies(pkg: PackageJson): Record<string, string> {
   return pkg.devDependencies;
 }
 
+/**
+ * Rewrites the Liatir entries in package.json (the `--no-install` path).
+ *
+ * Each package is first deleted from *every* dependency block and only then re-added under
+ * devDependencies. That order is what makes the operation idempotent and self-correcting: a
+ * project that had `@liatir/api` under `dependencies` ends up with a single entry in the right
+ * place, rather than two conflicting ones in two blocks.
+ *
+ * devDependencies is the correct home because these packages are build-time tooling — the
+ * finished `.lia` bundle does not depend on them at runtime.
+ */
 function applyPackageJsonUpdates(
   pkg: PackageJson,
   targetVersions: Record<LiatirPackageName, string>,
@@ -230,9 +285,15 @@ async function writePackageJson(projectRoot: string, pkg: PackageJson): Promise<
   await fs.writeFile(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
 }
 
+/**
+ * Runs npm with its output inherited, so the author watches the install progress live instead of
+ * staring at a silent terminal. Resolves only on exit code 0.
+ */
 function runNpm(args: string[], cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn("npm", args, { cwd, stdio: "inherit" });
+    // `error` is npm failing to launch; a non-zero `exit` is npm running and failing. Both must
+    // reject, or a failed install would look like a successful update.
     child.on("error", reject);
     child.on("exit", (code) => {
       if (code === 0) {
@@ -244,6 +305,11 @@ function runNpm(args: string[], cwd: string): Promise<void> {
   });
 }
 
+/**
+ * A WASM (Rust) plugin has no package.json and no `@liatir/api` dependency — the contract is
+ * compiled in — so there is nothing for this command to rewrite. Rather than failing with
+ * "not a Node project", point the author at the one thing that *can* be updated: the global CLI.
+ */
 function printWasmUpdateHint(projectRoot: string): void {
   console.log(
     `Found a WASM .lia tool at ${projectRoot}.\n` +
@@ -258,6 +324,12 @@ function printSavedRanges(savedRanges: Record<LiatirPackageName, string>): void 
   }
 }
 
+/**
+ * Reads back what npm actually wrote, so the summary reflects reality rather than what we asked
+ * for. Searches every block because npm honours an existing placement instead of always using
+ * devDependencies. A package that is missing afterwards means the install did not do what it
+ * claimed, which is worth failing on.
+ */
 function readSavedLiatirRanges(pkg: PackageJson): Record<LiatirPackageName, string> {
   const savedRanges = {} as Record<LiatirPackageName, string>;
 
@@ -276,6 +348,13 @@ function readSavedLiatirRanges(pkg: PackageJson): Record<LiatirPackageName, stri
   return savedRanges;
 }
 
+/**
+ * Entry point: locate the project, confirm it is a Node plugin, then either install or rewrite.
+ *
+ * The WASM fallback is checked in both failure cases — no package.json at all, and a package.json
+ * that is not a Liatir project — because in both a WASM author would otherwise get a misleading
+ * error about a Node project they never had.
+ */
 export async function update(args: string[] = []): Promise<void> {
   const parsed = parseUpdateArgs(args);
   if (parsed.help) {
@@ -307,6 +386,8 @@ export async function update(args: string[] = []): Promise<void> {
     throw new Error("This package does not look like a Node .lia plugin project.");
   }
 
+  // Both packages in one npm invocation, so they are resolved together and the lockfile is
+  // rewritten once.
   const installArgs = [
     "install",
     "--save-dev",
@@ -314,6 +395,7 @@ export async function update(args: string[] = []): Promise<void> {
     ...LIATIR_PACKAGES.map((packageName) => packageSpec(packageName, parsed.version)),
   ];
 
+  // --dry-run reports and returns before anything is written or installed.
   if (parsed.dryRun) {
     console.log(`Would update Liatir packages in ${projectRoot}.`);
     if (parsed.install) {
@@ -334,6 +416,8 @@ export async function update(args: string[] = []): Promise<void> {
     return;
   }
 
+  // Default path: npm resolves, installs and updates the lockfile. package.json is re-read
+  // afterwards so the summary shows what was actually saved, not what was requested.
   if (parsed.install) {
     console.log(`Updating Liatir packages in ${projectRoot}...`);
     await runNpm(installArgs, projectRoot);
@@ -344,6 +428,8 @@ export async function update(args: string[] = []): Promise<void> {
     return;
   }
 
+  // --no-install path: an explicit version is taken as given, otherwise the registry is queried
+  // for the latest — because package.json cannot be written without knowing a concrete version.
   const targetVersions = parsed.version
     ? Object.fromEntries(LIATIR_PACKAGES.map((packageName) => [packageName, parsed.version])) as Record<LiatirPackageName, string>
     : await fetchLatestVersions(projectRoot);
@@ -353,5 +439,7 @@ export async function update(args: string[] = []): Promise<void> {
 
   console.log("Updated package.json Liatir package ranges:");
   printSavedRanges(savedRanges);
+  // package.json and package-lock.json are now out of sync; say so rather than leaving the author
+  // to discover it at the next install.
   console.log("\nRun `npm install` to refresh package-lock.json and node_modules.");
 }

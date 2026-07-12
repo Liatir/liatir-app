@@ -1,5 +1,11 @@
 
 
+<!--
+	The status dot. Shares its variant names with Badge, so the two always agree on a colour.
+
+	Only `running` pulses (see the class binding at the bottom): the animation means "this is still
+	happening", so applying it to a finished state would be a lie the user would have to learn to ignore.
+-->
 <script lang="ts">
 
   export type DotVariant = 'running' | 'done' | 'failed' | 'killed' | 'neutral' | 'available' | 'missing' | 'brand';

@@ -1,3 +1,9 @@
+/**
+ * Tests report generation: a structured report parses, and renders to stable markdown.
+ *
+ * Stability is the property under test. A report is something a user saves and shares, so the same input has to
+ * produce the same document — not one that reshuffles between runs.
+ */
 import { describe, expect, it } from 'vitest';
 
 import {

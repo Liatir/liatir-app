@@ -1,3 +1,13 @@
+//! The bridge: every capability the Rust backend exposes to the frontend and to plugins.
+//!
+//! One module per domain (filesystem, jobs, plugins, AI runtimes, native tools, …). Each owns
+//! its `#[tauri::command]` functions — the `lia_*` entry points the TypeScript side invokes —
+//! and the glob re-exports below flatten them into `bridge::*` so `lib.rs` can list them in the
+//! Tauri handler without spelling out a module path for each.
+//!
+//! Note that a new command is not reachable from the frontend just by being declared here:
+//! it also has to be granted in `permissions/liatir-bridge.toml`.
+
 pub mod notifications;
 pub mod clipboard;
 pub mod files;
@@ -37,6 +47,14 @@ pub mod visual_capture;
 pub mod plugin_log;
 pub mod plugin_progress;
 pub mod quenta;
+
+// Flattened re-exports. Four modules declared above are deliberately missing from this list,
+// because nothing needs to reach them through `bridge::*` — each is referenced by its full path
+// from the one place that uses it:
+//   - `ipc_server`          started by main.rs
+//   - `tray`                used by menu.rs
+//   - `execution_resources` a plain helper (thread-count resolution) used by bwa.rs / minimap2.rs
+//   - `python_env`          wrapped by ai_runtime, runtime_boxes, lia_plugins and plugin_dev
 
 pub use notifications::*;
 pub use clipboard::*;

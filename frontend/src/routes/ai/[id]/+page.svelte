@@ -1,3 +1,16 @@
+<!--
+	The run page for a single AI Model: configure inputs, run it, read the result.
+
+	One page serves every model, because the *surrounding* machinery — picking a file, validating, launching a
+	tracked job, finalising into a Result, listing past runs — is identical whatever the model is. What differs
+	is only which inputs a model takes, and that is what `RunMode` captures: `runMode(id)` maps a model onto one
+	of a handful of input shapes (a single-cell file, a sequence, a genomic window, a protein), and the form
+	branches on that rather than on the model itself. Adding a model in an existing family needs no change here.
+
+	A run is dispatched as a **background job**, not awaited inline. The user can leave this page while a model
+	runs for minutes; the job carries its own identity (see `direct-run-context`) and is turned into a Result by
+	`direct-run-finalizer` whenever it finishes — with or without this page still being mounted.
+-->
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -207,12 +220,20 @@
 									: false)
 	);
 
+	// Ticks the elapsed-time display, but only while a run is active — an idle page does not re-render.
 	$effect(() => {
 		if (!modelRunActive) return;
 		const id = setInterval(() => (now = Date.now()), 1000);
 		return () => clearInterval(id);
 	});
 
+	/**
+	 * Keeps the molecule type consistent with the model.
+	 *
+	 * ESM-2 is a *protein* language model and the Nucleotide Transformers are *DNA* ones — asking either to
+	 * embed the wrong molecule is meaningless. Rather than letting the user select an impossible combination
+	 * and fail at run time, the selection is corrected the moment the model changes.
+	 */
 	$effect(() => {
 		if (modelId === ESM2_8M_ID && moleculeType !== 'protein') moleculeType = 'protein';
 		if (
@@ -223,6 +244,8 @@
 			moleculeType = 'dna';
 	});
 
+	// Loads the selected past run's output on demand. Outputs live in separate files and can be large, so they
+	// are fetched only when a run is actually opened, not eagerly for the whole history list.
 	$effect(() => {
 		const id = selectedRunId;
 		if (!id) {
@@ -240,10 +263,14 @@
 		void aiModelsStore.init();
 		void dataFiles.init();
 		void jobsStore.refresh();
+		// A failed hardware probe yields `null` (= unknown), which the compatibility check treats as
+		// permissive — it does not block the model.
 		void getAIHardwareInfo()
 			.then((info) => (hardware = info))
 			.catch(() => (hardware = null));
 		void analysisRuns.init();
+		// Polls only while something is actually running, so an idle page makes no backend calls. This is what
+		// lets the page pick a run back up after the user navigates away and returns mid-run.
 		jobRefreshInterval = setInterval(() => {
 			if (modelRunActive || jobsStore.runningCount > 0) void jobsStore.refresh();
 		}, 2000);
@@ -252,6 +279,13 @@
 		};
 	});
 
+	/**
+	 * Maps a model onto the shape of inputs it needs — the key abstraction that lets one page serve them all.
+	 *
+	 * Models are grouped by what the *user must supply*, not by architecture: every single-cell foundation
+	 * model wants an `.h5ad`, every regulatory model wants a genomic window. `unsupported` is returned for a
+	 * model with no run form yet, and the page says so rather than rendering an empty one.
+	 */
 	function runMode(id: string): RunMode {
 		if (id === CELLTYPIST_MODEL_ID) return 'celltypist';
 		if (id === NUCLEOTIDE_TRANSFORMER_50M_ID || id === NUCLEOTIDE_TRANSFORMER_500M_ID || id === ESM2_8M_ID) return 'sequence';
@@ -292,24 +326,38 @@
 		return dataFiles.files.find((file) => file.path === path)?.size;
 	}
 
+	/**
+	 * Launches a run.
+	 *
+	 * The inputs are assembled per mode, then the run is dispatched as a background job carrying its own run
+	 * context. The `runId` allocated here is the crucial part: it is the identity of the Result this job will
+	 * become, decided *before* the job starts. That is what lets the finalizer recognise the run later — and
+	 * tell "already saved" from "not yet saved" — no matter how the app was closed and reopened in between.
+	 */
 	async function runModel() {
 		if (!model || !definition || !canRun) return;
 
 		running = true;
+		// Clear the previous run's selection and output, so a new run never shows stale results while it works.
 		selectedRunId = null;
 		loadedOutput = null;
 		startedAt = Date.now();
 		logLines = [];
 
+		// Pre-allocated: this is the ID of the Result this run will finalise into. See the note above.
 		const runId = crypto.randomUUID();
 		const t0 = startedAt;
 		const logs: string[] = [];
+		// `logLines` is *reassigned* to a new array rather than mutated, because Svelte tracks the assignment —
+		// pushing into it in place would append the line without ever re-rendering the log.
 		const onLog = (line: string) => {
 			if (!line.trim()) return;
 			logs.push(line);
 			logLines = [...logs];
 		};
 
+		// Assembled per mode — this is where `runMode` pays off: one dispatch, one job, one finalizer, whatever
+		// the model.
 		let inputs: Record<string, string>;
 		let label = model.name;
 		const inputPaths: string[] = [];
@@ -438,6 +486,9 @@
 			});
 			toast.success('AI Model run complete');
 		} catch (error) {
+			// A failed run is still recorded as a Result — with its error and its full log. That is the point: a
+			// run that vanishes on failure is one the user cannot diagnose. Same run ID, same inputs, same
+			// parameters; only the status and the absence of output differ.
 			const endedAt = Date.now();
 			const message = error instanceof Error ? error.message : String(error);
 			onLog(`Error: ${message}`);
@@ -458,6 +509,8 @@
 			});
 			toast.error(message);
 		} finally {
+			// Runs on both paths, so the form is never left stuck in a running state. Selecting the run just
+			// finished means the user lands on its result (or its error) without having to go and find it.
 			running = false;
 			startedAt = null;
 			selectedRunId = runId;

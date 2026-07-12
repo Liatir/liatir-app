@@ -1,3 +1,8 @@
+/**
+ * The scGPT Runtime Box, exercised in the real app — the counterpart of `validate-scgpt-runtime.mjs`, but running
+ * through Liatir rather than standalone, so the install and inference path the user actually takes is the one
+ * under test.
+ */
 import {
   activateCleanSandbox,
   readEmbeddedPythonScript,

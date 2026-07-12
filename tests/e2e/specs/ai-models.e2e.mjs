@@ -1,3 +1,4 @@
+/** The AI Models screen: install and remove flows, and the status a model reports through them. */
 import {
   expectNoVisibleRuntimeError,
   navigateSidebar,

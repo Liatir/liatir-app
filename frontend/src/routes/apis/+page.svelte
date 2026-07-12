@@ -1,3 +1,13 @@
+<!--
+	The API Connector: define external API calls once, then use them as pipeline nodes.
+
+	The point of the feature is the typed contract. A user describes a call's parameters and its response
+	schema, and Liatir turns that into a pipeline node whose inputs and outputs can be wired to other steps —
+	so an external service becomes a first-class part of an analysis rather than something to be done by hand
+	and pasted back in.
+
+	This page is only the list; the substance lives in the provider cards and the schema editor.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import Icon from '@iconify/svelte';
@@ -9,6 +19,7 @@
   import { toast } from '$lib/stores/toast.svelte';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
 
+  /** The just-created collection, so the new card can open itself for editing rather than sit there closed. */
   let newlyAddedId = $state<string | null>(null);
 
   onMount(() => { apiConnections.init(); });

@@ -1,9 +1,21 @@
+/**
+ * Tests for the signing policy — the gate that decides what the KMS key will and will not sign.
+ *
+ * This is the last line of defence in the release chain: anything the policy accepts becomes a
+ * document every Liatir install trusts unconditionally. The two rejection tests below cover the
+ * cases that would actually be dangerous — an archive pointed at an origin we do not control, and
+ * a box that was never approved for release.
+ *
+ * Run against the real `policy.json`, not a fixture, so the deployed policy itself is what is
+ * under test.
+ */
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { validateSigningPayload } from '../src/policy.mjs';
 
 const policy = JSON.parse(await readFile(new URL('../policy.json', import.meta.url), 'utf8'));
+/** A known-good release, used as the baseline that each rejection test then perturbs one field of. */
 const release = {
   schemaVersion: 1,
   kind: 'liatir.runtime-box.release',
@@ -33,6 +45,8 @@ test('accepts an approved immutable release', () => {
   assert.doesNotThrow(() => validateSigningPayload(policy, release));
 });
 
+// Without this rule, a signed release could direct every installation to download and execute an
+// archive from a host we do not control — the signature would make it look entirely legitimate.
 test('rejects an archive hosted outside the controlled origin', () => {
   assert.throws(() => validateSigningPayload(policy, {
     ...release,
@@ -40,6 +54,8 @@ test('rejects an archive hosted outside the controlled origin', () => {
   }), /origin is not approved/);
 });
 
+// The allowlist means the signer cannot be used to bless an arbitrary new box, only the ones that
+// were explicitly approved for release.
 test('rejects a box outside the versioned allowlist', () => {
   assert.throws(() => validateSigningPayload(policy, { ...release, boxId: 'unknown' }), /not approved/);
 });

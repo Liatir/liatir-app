@@ -1,8 +1,17 @@
+/**
+ * Preloader for CellTypist, which annotates cell types in single-cell data.
+ *
+ * CellTypist ships its own model downloader, so this drives that rather than fetching files
+ * directly. The env vars in the embedded script (`HOME`, `XDG_CACHE_HOME`) are what redirect its
+ * downloads into Liatir's managed cache — the library would otherwise write into the user's home
+ * directory, where the app can neither find the models nor reclaim their space on uninstall.
+ */
 import type { LiatirAIModelRecord } from '@liatir/core';
 import type { AIModelArtifactSpec } from '$lib/ai/model-artifacts';
 import { runAIPython } from '$lib/ai/runtime';
 import { splitPreloadLog } from './shared';
 
+/** Runs inside the model's runtime, where the celltypist package is installed. */
 const CELLTYPIST_PRELOAD_SCRIPT = String.raw`
 import json
 import os
@@ -31,6 +40,8 @@ export async function preloadCelltypistModel(
 		CELLTYPIST_PRELOAD_SCRIPT,
 		{
 			runtimePath: model.runtimePath ?? model.localPath ?? null,
+			// CellTypist publishes many reference models; only the default one is fetched here, so an
+			// install does not pull down every annotation set the user will never use.
 			celltypistModel: spec.defaultAsset ?? 'Immune_All_Low.pkl'
 		},
 		{ timeoutSeconds: 7200, trackJob: false }

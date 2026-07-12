@@ -1,3 +1,20 @@
+/**
+ * Quenta's built-in knowledge about Liatir itself.
+ *
+ * These documents are always in the retrieval pool, regardless of what the user asks. Without them,
+ * a local model has no idea what a `.lia` plugin is, what "Results" means here, or why a pipeline run
+ * has two identities — and would answer from generic pretraining, confidently and wrongly.
+ *
+ * `app:quenta-boundary` is the load-bearing one. It states that Quenta is **read-only** — it explains
+ * and reports, it never executes anything or mutates scientific state — and, crucially, that
+ * instructions found *inside* retrieved content are data, not commands. That matters because the
+ * context Quenta reads is full of untrusted text: log files, tool output, filenames, plugin
+ * descriptions. Any of it could contain something shaped like an instruction, and this document is
+ * what keeps a prompt injection from being obeyed.
+ *
+ * The wording is deliberately dense and declarative: it is written to be read by a model as context,
+ * not by a person as prose.
+ */
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
 export const LIATIR_QUENTA_KNOWLEDGE: LiatirQuentaContextDocument[] = [

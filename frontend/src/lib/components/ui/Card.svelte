@@ -1,3 +1,9 @@
+<!--
+	The standard surface for a panel or a list item.
+
+	`role="button"` is applied only when an `onclick` is given, so a decorative card is not announced to a
+	screen reader as something clickable.
+-->
 <script lang="ts">
   import type { Snippet } from 'svelte';
 
@@ -5,6 +11,7 @@
     class?: string;
     children: Snippet;
     onclick?: (e: MouseEvent) => void;
+    /** Adds the hover affordance. Separate from `onclick` so a card can react without being a button. */
     hoverable?: boolean;
   }
 

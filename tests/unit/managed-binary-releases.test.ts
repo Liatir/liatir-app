@@ -1,3 +1,13 @@
+/**
+ * Security contract for the binaries Liatir downloads and then *executes* on the user's machine.
+ *
+ * Every release entry must be an immutable HTTPS asset with a declared SHA-256. Those two properties are what
+ * make the download safe: HTTPS stops it being swapped in transit, the hash stops it being swapped at the
+ * source, and pinning an immutable asset means the bytes behind a URL cannot change under us.
+ *
+ * An entry missing either one would still work perfectly — right up until it didn't. Asserting it here means a
+ * new binary cannot be added without them.
+ */
 import { describe, expect, it } from 'vitest';
 
 import {

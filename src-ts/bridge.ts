@@ -1,3 +1,18 @@
+/**
+ * The bridge: the entry point that creates `window.Liatir`.
+ *
+ * This file is compiled to `tsc/bridge.js` and embedded in the Rust binary (see `src/liatir.rs`), which
+ * injects it into every webview *before* any page script runs. That is why `Liatir.*` is simply there as a
+ * global for the frontend and for every `.lia` plugin — no import, no load order to get wrong.
+ *
+ * The whole API is assembled from `buildX(core)` factories, each of which wraps the `lia_*` Tauri commands of
+ * one domain. `core` is the single point through which every call reaches Rust, so there is exactly one place
+ * that knows how to invoke — and one place that waits for Tauri to be ready.
+ *
+ * The object is installed with `writable: false, configurable: false`: once set, page code cannot replace or
+ * redefine `window.Liatir`, so a plugin (or anything else running in the webview) cannot substitute a fake API
+ * and intercept what other code does with it.
+ */
 import type { LiatirBrowserAPI, WindowTauri } from "./types";
 import {
   buildCore,
@@ -27,7 +42,10 @@ import { buildQc } from "./modules/qc/_main";
 import { isBrowser } from "./utils";
 
 (() => {
+  // No window: not a browser context, nothing to attach to.
   if (typeof window === "undefined") return;
+  // Idempotent: the init script can be evaluated more than once per webview, and re-building the API would
+  // discard the live event listeners the existing one holds.
   if ((window as any).Liatir) return;
 
   console.log("[Liatir bridge] init script evaluated");
@@ -69,6 +87,8 @@ import { isBrowser } from "./utils";
     openBrowser: (url: string): Promise<void> => window.__TAURI__?.shell?.open(url),
   };
 
+  // Locked down on purpose — see the note at the top of the file. `enumerable: false` also keeps it out of
+  // `Object.keys(window)` and out of anything that enumerates globals.
   Object.defineProperty(window, "Liatir", {
     value: api,
     enumerable: false,
@@ -79,12 +99,18 @@ import { isBrowser } from "./utils";
   console.log("[Liatir bridge] window.Liatir assigned", (window as any).Liatir);
 })();
 
+// The API object is created synchronously above so `window.Liatir` exists from the first line of page code —
+// but Tauri's own runtime may not be ready yet. This second block waits for it, then runs the initialisers
+// that need a live connection (event listeners, deep links, and so on). Any call made before that point still
+// works: `core.invoke` awaits readiness itself.
 (async () => {
   await waitTauri();
 
   if (tauriReadyCheck()) {
     liaInitiators();
   } else {
+    // Outside the desktop app (a plain browser during development) Tauri is *expected* to be absent, so the
+    // timeout is not an error worth reporting.
     if(!isBrowser()) return;
     console.error("[Liatir bridge] Tauri did not become ready in time");
   }

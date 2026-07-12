@@ -1,3 +1,26 @@
+//! Installation, activation and rollback of AI Runtime Boxes.
+//!
+//! An AI Runtime Box is a self-contained, pre-built Python environment (interpreter +
+//! wheels + model glue) shipped as a zip archive, so heavy AI dependencies are installed
+//! only when the user actually needs them instead of being bundled into the app.
+//!
+//! Nothing is trusted by default. The install path is a chain of checks where every step
+//! must agree with the previous one:
+//!
+//! 1. fetch the *channel* document for `(box_id, host target)` — a signed list of releases;
+//! 2. verify its Ed25519 signature against the keys compiled into this build;
+//! 3. pick one release deterministically from the rollout percentages (staged rollout);
+//! 4. fetch and verify the *release manifest*, then check it matches the request, the host
+//!    and this Liatir version, and that it has not been revoked;
+//! 5. download the archive and verify its SHA-256 and byte size against the signed manifest;
+//! 6. extract into a staging directory and check the archive's own `box.json` still matches
+//!    the signed release — this binds the archive *content* to the signed metadata;
+//! 7. run a self-test (import the declared Python modules) with the box's own interpreter;
+//! 8. only then swap staging into place, keeping the previous version for rollback.
+//!
+//! Activation is a directory rename, so a box is never observed half-installed: it is either
+//! the old version or the new one.
+
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use serde::{Deserialize, Serialize};
@@ -19,15 +42,25 @@ use super::{
     python_env::env_dir,
 };
 
+/// Parent directory (under the app-managed storage scope) holding one directory per runtime.
 const AI_RUNTIME_ROOT: &str = "ai-runtimes";
+/// Hard cap for channel/release/revocation documents, so a hostile or broken registry
+/// cannot make the app buffer an unbounded response into memory.
 const MAX_CONTROL_DOCUMENT_BYTES: usize = 1024 * 1024;
+// Trust anchors are baked into the binary at compile time rather than read from disk:
+// a key the user could edit would defeat the point of signing.
 const PRODUCTION_TRUST_KEY: &str =
     include_str!("../../../runtime-boxes/trust/production-public.json");
 const DEVELOPMENT_TRUST_KEY: &str =
     include_str!("../../../runtime-boxes/trust/development-public.json");
 
+/// Runtime IDs with an install/rollback/remove currently in flight.
+///
+/// Guarded by [`InstallGuard`]. The set is keyed by runtime ID, so two *different* runtimes
+/// can still be installed concurrently — only same-runtime overlap is rejected.
 static ACTIVE_INSTALLS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 
+/// One Ed25519 public key the app is willing to accept signatures from.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct TrustedKey {
@@ -35,12 +68,16 @@ struct TrustedKey {
     public_key_base64: String,
 }
 
+/// Several trusted keys in one document, which is what makes key rotation possible:
+/// old and new key can be trusted at the same time during a changeover.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct TrustedKeyBundle {
     keys: Vec<TrustedKey>,
 }
 
+/// A trust file may hold either a bare key or a bundle; `untagged` lets both parse
+/// without a discriminator field, so older single-key files keep working.
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 enum TrustedKeyDocument {
@@ -48,6 +85,11 @@ enum TrustedKeyDocument {
     Bundle(TrustedKeyBundle),
 }
 
+/// Signing envelope shared by every control document (channel, release, revocations).
+///
+/// The signatures are computed over the *decoded* payload bytes, not over this wrapper,
+/// so the envelope can be re-encoded without invalidating them. `payload_sha256` is a
+/// cheap integrity check; the signature is the actual authenticity check.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SignedDocument {
@@ -55,6 +97,8 @@ struct SignedDocument {
     payload_encoding: String,
     payload_base64: String,
     payload_sha256: String,
+    /// Multiple signatures are allowed; the document is accepted if *any one* of them
+    /// verifies against a trusted key (see [`verify_signed_payload`]).
     signatures: Vec<DocumentSignature>,
 }
 
@@ -66,15 +110,20 @@ struct DocumentSignature {
     signature_base64: String,
 }
 
+/// The hardware/OS profile a box is built for. A box is only installable when this
+/// matches the host exactly (see [`current_target`] and [`verify_release_identity`]).
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 struct RuntimeBoxTarget {
     platform: String,
     arch: String,
+    /// Compute backend the box was built against, e.g. `metal` on macOS or `cpu`.
     accelerator: String,
     cuda_version: Option<String>,
 }
 
+/// Signed index of which releases a channel (e.g. `stable`) currently offers for one
+/// `(box_id, target)` pair. This is the entry point of an install.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ChannelManifest {
@@ -83,7 +132,10 @@ struct ChannelManifest {
     channel: String,
     box_id: String,
     target: RuntimeBoxTarget,
+    /// Mixed into the cohort hash so the same installation does not land in the same
+    /// bucket for every box, and so a rollout can be reshuffled by changing the salt.
     cohort_salt: String,
+    /// Evaluated in order — see [`select_channel_release`].
     releases: Vec<ChannelRelease>,
 }
 
@@ -92,9 +144,12 @@ struct ChannelManifest {
 struct ChannelRelease {
     version: String,
     release_manifest_url: String,
+    /// Share of installations that should receive this release, 1..=100.
     rollout_percentage: u8,
 }
 
+/// The signed description of one concrete build of a box: what it is, what it needs,
+/// where the archive lives, and how to prove the archive is the right one.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct ReleaseManifest {
@@ -102,17 +157,23 @@ struct ReleaseManifest {
     kind: String,
     box_id: String,
     model_id: String,
+    /// Identifies the installed directory; also the key used to serialise installs.
     runtime_id: String,
     version: String,
     target: RuntimeBoxTarget,
     compatibility: RuntimeBoxCompatibility,
     archive: RuntimeBoxArchive,
+    /// Path of the Python interpreter *inside* the archive, relative to its root.
     python_entry_point: String,
     model_cache_subdir: String,
     self_test: RuntimeBoxSelfTest,
+    /// Build provenance kept as opaque JSON: it is signed and persisted with the box
+    /// for auditing, but this module never interprets it.
     provenance: serde_json::Value,
 }
 
+/// Host requirements checked before downloading anything, so an incompatible box fails
+/// fast with a readable message instead of after a multi-gigabyte download.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct RuntimeBoxCompatibility {
@@ -122,6 +183,8 @@ struct RuntimeBoxCompatibility {
     min_ram_gb: Option<u64>,
 }
 
+/// Where the payload archive lives and what it must hash and weigh. Both `sha256` and
+/// `size_bytes` come from the signed manifest and are enforced after download.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct RuntimeBoxArchive {
@@ -131,6 +194,8 @@ struct RuntimeBoxArchive {
     size_bytes: u64,
 }
 
+/// Post-extraction smoke test: import these modules with the box's own interpreter.
+/// A box that unpacks but cannot import its own dependencies never gets activated.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct RuntimeBoxSelfTest {
@@ -138,6 +203,8 @@ struct RuntimeBoxSelfTest {
     timeout_seconds: u64,
 }
 
+/// Signed kill-list, letting a released box be withdrawn after the fact (e.g. because a
+/// vulnerability or a broken build was discovered) without shipping a new app version.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct RevocationsManifest {
@@ -151,10 +218,15 @@ struct RevocationsManifest {
 struct RuntimeBoxRevocation {
     box_id: String,
     version: String,
+    /// `None` revokes the version on every target; `Some` narrows it to one target.
     target: Option<RuntimeBoxTarget>,
+    /// Surfaced verbatim to the user, so it should be human-readable.
     reason: String,
 }
 
+/// The `box.json` carried *inside* the archive. Compared field by field against the signed
+/// release in [`validate_extracted_box`]: without it, a signed manifest could be paired with
+/// a different (still correctly hashed) archive.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ExtractedBoxMetadata {
@@ -167,17 +239,22 @@ struct ExtractedBoxMetadata {
     python_entry_point: String,
 }
 
+/// Returned to the frontend after a successful install.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RuntimeBoxInstallResult {
     runtime_id: String,
     runtime_dir: String,
+    /// Absolute path of the box's interpreter, ready to be spawned by the caller.
     python_path: String,
     version: String,
     size_bytes: u64,
+    /// True when a previous version was displaced and can still be restored.
     rollback_available: bool,
 }
 
+/// Returned by a rollback. `restored` is `false` when there was simply nothing to roll
+/// back to — that is a normal outcome, not an error.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RuntimeBoxRollbackResult {
@@ -186,11 +263,17 @@ pub struct RuntimeBoxRollbackResult {
     restored: bool,
 }
 
+/// RAII lock over one runtime ID.
+///
+/// Install, rollback and remove all mutate the same directory, so they must not overlap
+/// for a given runtime. Holding the guard in a local binding means the ID is released on
+/// [`Drop`] — including on early `?` returns and on panic.
 struct InstallGuard {
     runtime_id: String,
 }
 
 impl InstallGuard {
+    /// Claims `runtime_id`, or fails if another operation on it is already running.
     fn acquire(runtime_id: &str) -> Result<Self, String> {
         let installs = ACTIVE_INSTALLS.get_or_init(|| Mutex::new(HashSet::new()));
         let mut active = installs.lock().map_err(|_| "runtime install state poisoned".to_string())?;
@@ -213,10 +296,18 @@ impl Drop for InstallGuard {
     }
 }
 
+/// Lowercase hex SHA-256, matching the encoding used in the manifests.
 fn sha256_hex(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 
+/// Collects every signing key this build accepts.
+///
+/// Production keys are always trusted. Debug builds additionally trust the development key
+/// and, if `LIATIR_RUNTIME_BOX_TRUSTED_KEY_FILE` is set, a key file from disk — which is how
+/// a locally signed box can be tested without touching the production trust anchor. Both of
+/// those extra sources are behind `cfg!(debug_assertions)` and therefore cannot widen trust
+/// in a release build.
 fn trusted_keys() -> Result<Vec<TrustedKey>, String> {
     fn parse_keys(raw: &str) -> Result<Vec<TrustedKey>, String> {
         match serde_json::from_str(raw).map_err(|error| error.to_string())? {
@@ -235,17 +326,27 @@ fn trusted_keys() -> Result<Vec<TrustedKey>, String> {
                 .map_err(|error| format!("invalid debug Runtime Box trust key: {error}"))?);
         }
     }
+    // Extra production keys can be injected at *compile* time (option_env! reads the build
+    // environment, not the runtime one), which is what makes key rotation possible without
+    // editing the checked-in trust files.
     if let Some(raw) = option_env!("LIATIR_RUNTIME_BOX_TRUSTED_KEYS_JSON") {
         let mut production: Vec<TrustedKey> =
             serde_json::from_str(raw).map_err(|error| format!("invalid production Runtime Box trust keys: {error}"))?;
         keys.append(&mut production);
     }
+    // Fail closed: with no key at all every box would otherwise be unverifiable.
     if keys.is_empty() {
         return Err("This Liatir build has no trusted AI Runtime Box signing keys".to_string());
     }
     Ok(keys)
 }
 
+/// Verifies a signed control document and deserialises its payload into `T`.
+///
+/// The payload is checksummed first (cheap, catches corruption) and then must carry at least
+/// one Ed25519 signature that verifies against a trusted key. Signatures with an unknown
+/// algorithm or an unknown key ID are skipped rather than rejected, so a document signed by
+/// both an old and a new key still validates on builds that only know one of them.
 fn verify_signed_payload<T: for<'de> Deserialize<'de>>(bytes: &[u8]) -> Result<T, String> {
     let document: SignedDocument = serde_json::from_slice(bytes)
         .map_err(|error| format!("invalid signed Runtime Box document: {error}"))?;
@@ -264,6 +365,7 @@ fn verify_signed_payload<T: for<'de> Deserialize<'de>>(bytes: &[u8]) -> Result<T
         if document_signature.algorithm != "ed25519" {
             continue;
         }
+        // Unknown key ID: not necessarily an attack, just a key this build does not carry.
         let Some(key) = keys.iter().find(|candidate| candidate.key_id == document_signature.key_id) else {
             continue;
         };
@@ -286,9 +388,15 @@ fn verify_signed_payload<T: for<'de> Deserialize<'de>>(bytes: &[u8]) -> Result<T
     if !verified {
         return Err("AI Runtime Box document is not signed by a trusted Liatir key".to_string());
     }
+    // Only parsed once the bytes are proven authentic, so no attacker-controlled JSON is
+    // ever fed to the typed deserialiser.
     serde_json::from_slice(&payload).map_err(|error| format!("invalid signed Runtime Box payload: {error}"))
 }
 
+/// Every URL the registry hands us (channel, release manifest, archive) goes through here.
+///
+/// HTTPS is required so manifests and archives cannot be swapped in transit. Debug builds
+/// additionally accept loopback HTTP, which is what lets the local test registry work.
 fn validate_control_url(value: &str) -> Result<Url, String> {
     let url = Url::parse(value).map_err(|error| format!("invalid Runtime Box URL: {error}"))?;
     if url.scheme() == "https" {
@@ -303,6 +411,11 @@ fn validate_control_url(value: &str) -> Result<Url, String> {
     Err("AI Runtime Box URLs must use HTTPS; debug builds also allow loopback HTTP".to_string())
 }
 
+/// Downloads a small signed control document.
+///
+/// Returns `Ok(None)` on HTTP 404 so callers can distinguish "the registry says this does not
+/// exist" from a transport failure — [`ensure_not_revoked`] relies on that to treat a missing
+/// revocation list as "nothing revoked".
 async fn fetch_control_document(url: &str) -> Result<Option<Vec<u8>>, String> {
     validate_control_url(url)?;
     let response = reqwest::Client::builder()
@@ -322,6 +435,9 @@ async fn fetch_control_document(url: &str) -> Result<Option<Vec<u8>>, String> {
     if !response.status().is_success() {
         return Err(format!("Runtime Box registry returned HTTP {}", response.status()));
     }
+    // The size cap is applied twice on purpose: the advertised Content-Length lets us bail out
+    // before reading the body, but it can be absent or simply wrong, so the real length is
+    // checked again after buffering.
     if response.content_length().unwrap_or(0) > MAX_CONTROL_DOCUMENT_BYTES as u64 {
         return Err("Runtime Box control document exceeds the size limit".to_string());
     }
@@ -332,6 +448,7 @@ async fn fetch_control_document(url: &str) -> Result<Option<Vec<u8>>, String> {
     Ok(Some(bytes.to_vec()))
 }
 
+/// Describes the machine we are running on, in the same shape the manifests use.
 fn current_target() -> RuntimeBoxTarget {
     RuntimeBoxTarget {
         platform: match std::env::consts::OS {
@@ -342,6 +459,8 @@ fn current_target() -> RuntimeBoxTarget {
             "aarch64" => "aarch64".to_string(),
             value => value.to_string(),
         },
+        // Only the macOS GPU backend is claimed today; every other host asks for a CPU box.
+        // CUDA is consequently never requested, hence the `None` below.
         accelerator: if cfg!(target_os = "macos") {
             "metal".to_string()
         } else {
@@ -351,6 +470,7 @@ fn current_target() -> RuntimeBoxTarget {
     }
 }
 
+/// Flattens a target into the slug used in registry URLs, e.g. `macos-aarch64-metal`.
 fn target_id(target: &RuntimeBoxTarget) -> String {
     let cuda = target
         .cuda_version
@@ -360,6 +480,12 @@ fn target_id(target: &RuntimeBoxTarget) -> String {
     format!("{}-{}-{}{}", target.platform, target.arch, target.accelerator, cuda)
 }
 
+/// Rejects any path that could escape the directory it is joined onto.
+///
+/// Requiring every component to be `Component::Normal` rules out absolute paths, `..`
+/// traversal, root and Windows prefixes in one check. Manifest-supplied paths (the interpreter
+/// entry point, the model cache subdir) are joined onto the runtime directory, so without this
+/// a malicious manifest could point anywhere on the filesystem.
 fn safe_relative_path(value: &str) -> Result<PathBuf, String> {
     if value.is_empty() {
         return Err("Runtime Box path cannot be empty".to_string());
@@ -374,6 +500,10 @@ fn safe_relative_path(value: &str) -> Result<PathBuf, String> {
     Ok(path.to_path_buf())
 }
 
+/// Turns a version string into exactly three numbers so versions can be compared with `<`.
+///
+/// Splits on any non-digit and pads with zeros, so `1.2` becomes `[1, 2, 0]` and a trailing
+/// pre-release tag is simply ignored. Anything unparseable degrades to `0` rather than erroring.
 fn version_parts(value: &str) -> Vec<u64> {
     value
         .split(|character: char| !character.is_ascii_digit())
@@ -385,6 +515,12 @@ fn version_parts(value: &str) -> Vec<u64> {
         .collect()
 }
 
+/// Checks the host against the manifest's requirements before any download starts.
+///
+/// The macOS and RAM probes shell out to `sw_vers` and `sysctl`. If a probe fails we cannot
+/// conclude the host is unsuitable, so `is_some_and` lets the check pass rather than blocking
+/// an install on a missing system tool — the requirement is only enforced when the host value
+/// is actually known.
 fn check_compatibility(compatibility: &RuntimeBoxCompatibility) -> Result<(), String> {
     let app = version_parts(env!("CARGO_PKG_VERSION"));
     if app < version_parts(&compatibility.min_liatir_version) {
@@ -425,6 +561,11 @@ fn check_compatibility(compatibility: &RuntimeBoxCompatibility) -> Result<(), St
     Ok(())
 }
 
+/// Stable random ID for this installation, created on first use and persisted.
+///
+/// It exists only to make staged rollouts deterministic: the same machine must keep landing in
+/// the same cohort bucket across restarts, otherwise re-running an install could flip it onto a
+/// different release.
 fn installation_id(app: &AppHandle) -> Result<String, String> {
     let path = resolve_app_path(app, "runtime-box-installation-id")?;
     if let Ok(existing) = std::fs::read_to_string(&path) {
@@ -438,6 +579,13 @@ fn installation_id(app: &AppHandle) -> Result<String, String> {
     Ok(id)
 }
 
+/// Picks the release this installation is entitled to, implementing the staged rollout.
+///
+/// Hashing `(salt, installation id, version)` into a 0..99 bucket gives a decision that is
+/// random across machines but fixed for any one machine, with no server round-trip. Releases
+/// are tried in manifest order and the first whose bucket falls inside its percentage wins, so
+/// the registry controls precedence by ordering (typically newest first, with a full-rollout
+/// entry last as the fallback).
 fn select_channel_release<'a>(
     manifest: &'a ChannelManifest,
     installation_id: &str,
@@ -454,9 +602,16 @@ fn select_channel_release<'a>(
             return Ok(release);
         }
     }
+    // Reachable when no release is at 100%: this machine is simply not in any cohort yet.
     Err("No AI Runtime Box release is assigned to this installation".to_string())
 }
 
+/// Confirms a signed release actually is the thing we asked for, and that we can run it.
+///
+/// A valid signature only proves Liatir issued the manifest — not that it is the *right*
+/// manifest. This re-checks it against the request (`box_id`, `model_id`), the host target and
+/// the app version, and sanity-checks every field that later feeds a filesystem path, a URL or
+/// a spawned command.
 fn verify_release_identity(
     release: &ReleaseManifest,
     box_id: &str,
@@ -485,6 +640,9 @@ fn verify_release_identity(
     validate_control_url(&release.archive.url)?;
     safe_relative_path(&release.python_entry_point)?;
     safe_relative_path(&release.model_cache_subdir)?;
+    // Import names are interpolated into a Python `-c` script, so restrict them to characters
+    // that can only form a module path — no spaces, quotes or semicolons that could smuggle in
+    // extra statements.
     if release.self_test.python_imports.is_empty()
         || release.self_test.python_imports.iter().any(|name| {
             name.is_empty()
@@ -498,6 +656,11 @@ fn verify_release_identity(
     check_compatibility(&release.compatibility)
 }
 
+/// Fails the install if the chosen release appears on the signed revocation list.
+///
+/// A 404 means the registry publishes no revocations at all, which is treated as "nothing is
+/// revoked". Note the consequence: the list is only consulted when it can be fetched, so this
+/// blocks a *known-bad* box rather than guaranteeing freshness.
 async fn ensure_not_revoked(
     registry_base_url: &str,
     release: &ReleaseManifest,
@@ -510,6 +673,7 @@ async fn ensure_not_revoked(
     if manifest.schema_version != 1 || manifest.kind != "liatir.runtime-box.revocations" {
         return Err("invalid AI Runtime Box revocation document".to_string());
     }
+    // A revocation without a target applies to every target of that box version.
     if let Some(revocation) = manifest.revocations.into_iter().find(|item| {
         item.box_id == release.box_id
             && item.version == release.version
@@ -523,6 +687,13 @@ async fn ensure_not_revoked(
     Ok(())
 }
 
+/// Cross-checks the unpacked archive against the signed release and returns its interpreter.
+///
+/// The download is already hash-verified, which proves the bytes are the ones the manifest
+/// named. This proves the *contents* agree too: the archive's own `box.json` must describe the
+/// same box, version and target, closing the gap where a correctly hashed archive is paired
+/// with a manifest for something else. It also confirms the declared interpreter really exists
+/// before anything is activated.
 fn validate_extracted_box(staging: &Path, release: &ReleaseManifest) -> Result<PathBuf, String> {
     let metadata_path = staging.join("box.json");
     let metadata: ExtractedBoxMetadata = serde_json::from_slice(
@@ -547,7 +718,14 @@ fn validate_extracted_box(staging: &Path, release: &ReleaseManifest) -> Result<P
     Ok(python_path)
 }
 
+/// Runs the box's own interpreter and imports the modules the manifest declares.
+///
+/// This is the difference between "the zip unpacked" and "the environment actually works":
+/// a truncated wheel or a native library built for the wrong architecture only shows up on
+/// import. The child is polled instead of blocked on so a hung import can be killed once the
+/// timeout (clamped to 10..=600s) expires.
 fn run_self_test(python_path: &Path, self_test: &RuntimeBoxSelfTest) -> Result<(), String> {
+    // Import names were restricted to module-path characters in verify_release_identity.
     let script = self_test
         .python_imports
         .iter()
@@ -582,6 +760,8 @@ fn run_self_test(python_path: &Path, self_test: &RuntimeBoxSelfTest) -> Result<(
     }
 }
 
+/// Total size of the installed box, reported to the UI. Symlinks are not followed, so linked
+/// content is never counted twice (and a symlink loop cannot hang the walk).
 fn dir_size(path: &Path) -> Result<u64, String> {
     let mut total = 0u64;
     for entry in walkdir::WalkDir::new(path).follow_links(false) {
@@ -593,10 +773,13 @@ fn dir_size(path: &Path) -> Result<u64, String> {
     Ok(total)
 }
 
+/// Where a displaced version is parked. Kept as a dot-directory *beside* the runtime dirs, on
+/// the same filesystem, so activation can be a rename rather than a copy.
 fn rollback_root(runtime_parent: &Path, runtime_id: &str) -> PathBuf {
     runtime_parent.join(".runtime-box-rollback").join(runtime_id)
 }
 
+/// Most recently archived version, by modification time — the one a rollback restores.
 fn newest_rollback(root: &Path) -> Result<Option<PathBuf>, String> {
     if !root.is_dir() {
         return Ok(None);
@@ -615,6 +798,10 @@ fn newest_rollback(root: &Path) -> Result<Option<PathBuf>, String> {
     Ok(candidates.pop())
 }
 
+/// Keeps only the newest archived version and deletes the rest.
+///
+/// Runtime boxes are large, so history is capped at one generation: enough to undo the install
+/// that just happened, without letting old environments accumulate on disk.
 fn prune_rollbacks(root: &Path) -> Result<(), String> {
     if !root.is_dir() {
         return Ok(());
@@ -637,6 +824,13 @@ fn prune_rollbacks(root: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// Swaps the validated staging directory into place, archiving whatever was there.
+///
+/// Both steps are renames, which are atomic within a filesystem, so the runtime directory is
+/// never seen partially written. If the second rename fails the first is undone, leaving the
+/// previous version installed rather than no version at all.
+///
+/// Returns whether a previous version was displaced, which becomes `rollback_available`.
 fn activate_runtime(
     runtime_dir: &Path,
     staging: &Path,
@@ -647,6 +841,7 @@ fn activate_runtime(
         .ok_or_else(|| "AI runtime directory has no parent".to_string())?;
     let rollback = rollback_root(parent, &release.runtime_id);
     std::fs::create_dir_all(&rollback).map_err(|error| error.to_string())?;
+    // The UUID keeps the backup name unique even when the same version is reinstalled.
     let backup = rollback.join(format!("{}-{}", release.version, Uuid::new_v4()));
     let had_previous = runtime_dir.exists();
     if had_previous {
@@ -654,6 +849,7 @@ fn activate_runtime(
             .map_err(|error| format!("cannot stage previous AI runtime for rollback: {error}"))?;
     }
     if let Err(error) = std::fs::rename(staging, runtime_dir) {
+        // Put the old version back before reporting the failure.
         if had_previous {
             let _ = std::fs::rename(&backup, runtime_dir);
         }
@@ -663,6 +859,11 @@ fn activate_runtime(
     Ok(had_previous)
 }
 
+/// Installs an AI Runtime Box: resolve → verify → download → stage → self-test → activate.
+///
+/// Runs the full chain described at the top of this module. Every failure leaves the previously
+/// installed version untouched, and `download_id` lets the frontend track progress and cancel
+/// the transfer through the shared [`DownloadRegistry`].
 #[tauri::command]
 pub async fn lia_ai_runtime_box_install(
     app: AppHandle,
@@ -673,6 +874,8 @@ pub async fn lia_ai_runtime_box_install(
     registry_base_url: String,
     download_id: String,
 ) -> Result<RuntimeBoxInstallResult, String> {
+    // The download ID becomes part of an event name and a progress key, so restrict it to a
+    // bounded, well-known alphabet rather than trusting the caller.
     if download_id.is_empty()
         || download_id.len() > 160
         || !download_id
@@ -681,6 +884,8 @@ pub async fn lia_ai_runtime_box_install(
     {
         return Err("invalid AI Runtime Box download id".to_string());
     }
+    // Debug builds may be pointed at a local test registry; release builds always use the URL
+    // the caller passed, so the environment cannot redirect a production install.
     let registry_base_url = if cfg!(debug_assertions) {
         std::env::var("LIATIR_RUNTIME_BOX_REGISTRY_URL").unwrap_or(registry_base_url)
     } else {
@@ -699,6 +904,8 @@ pub async fn lia_ai_runtime_box_install(
         .await?
         .ok_or_else(|| format!("No {channel} AI Runtime Box is available for {}", target_id(&target)))?;
     let channel_manifest: ChannelManifest = verify_signed_payload(&channel_bytes)?;
+    // Signed *and* addressed to us: a valid document served from the wrong URL (or for another
+    // box or target) is still rejected.
     if channel_manifest.schema_version != 1
         || channel_manifest.kind != "liatir.runtime-box.channel"
         || channel_manifest.channel != channel
@@ -713,10 +920,13 @@ pub async fn lia_ai_runtime_box_install(
         .ok_or_else(|| "AI Runtime Box release manifest was not found".to_string())?;
     let release: ReleaseManifest = verify_signed_payload(&release_bytes)?;
     verify_release_identity(&release, &box_id, &model_id, &target)?;
+    // Ties the release back to the channel that offered it, so a signed manifest for a
+    // different version cannot be substituted at the release-manifest URL.
     if release.version != selected.version {
         return Err("AI Runtime Box release version does not match its signed channel".to_string());
     }
     ensure_not_revoked(&registry_base_url, &release).await?;
+    // Held for the rest of the function; released on Drop, including on any `?` below.
     let _install_guard = InstallGuard::acquire(&release.runtime_id)?;
 
     let runtime_dir = env_dir(&app, AI_RUNTIME_ROOT, &release.runtime_id)?;
@@ -726,11 +936,15 @@ pub async fn lia_ai_runtime_box_install(
     std::fs::create_dir_all(runtime_parent).map_err(|error| error.to_string())?;
     let downloads_dir = runtime_parent.join(".runtime-box-downloads");
     std::fs::create_dir_all(&downloads_dir).map_err(|error| error.to_string())?;
+    // Content-addressed filename: two releases never collide, and a stale partial file from a
+    // different version can never be mistaken for this one.
     let archive_path = downloads_dir.join(format!(
         "{}-{}-{}.zip",
         release.box_id, release.version, release.archive.sha256
     ));
     let cancellation = downloads.register(&download_id);
+    // stream_download enforces the SHA-256 while writing, so the archive on disk is already
+    // known to hash to the value in the signed manifest.
     let download_result = stream_download(
         &app,
         &download_id,
@@ -740,6 +954,7 @@ pub async fn lia_ai_runtime_box_install(
         &cancellation,
     )
     .await;
+    // Unregister before propagating, otherwise a failed download would leak its registry entry.
     downloads.unregister(&download_id);
     download_result?;
     if std::fs::metadata(&archive_path)
@@ -751,12 +966,18 @@ pub async fn lia_ai_runtime_box_install(
         return Err("AI Runtime Box archive size does not match the signed release".to_string());
     }
 
+    // Unpack next to the final location (same filesystem, so activation can rename) but under a
+    // unique hidden name, so a half-extracted box is never mistaken for an installed one.
     let staging = runtime_parent.join(format!(".{}.{}.staging", release.runtime_id, Uuid::new_v4()));
     std::fs::create_dir_all(&staging).map_err(|error| error.to_string())?;
+    // Closure so every failure between here and activation funnels into one cleanup path below,
+    // instead of repeating "delete staging" at each `?`.
     let install_result = (|| -> Result<RuntimeBoxInstallResult, String> {
         extract_zip(&archive_path.to_string_lossy(), &staging.to_string_lossy())?;
         let python_path = validate_extracted_box(&staging, &release)?;
         run_self_test(&python_path, &release.self_test)?;
+        // Persist the signed release inside the box: the installed directory then carries its
+        // own provenance, readable later without contacting the registry.
         write_text_atomic(
             &staging.join("runtime-box-activation.json"),
             &format!("{}\n", serde_json::to_string_pretty(&release).map_err(|error| error.to_string())?),
@@ -775,20 +996,31 @@ pub async fn lia_ai_runtime_box_install(
             rollback_available,
         })
     })();
+    // Failed attempt: drop the staged tree so a retry starts clean.
     if install_result.is_err() && staging.exists() {
         let _ = std::fs::remove_dir_all(&staging);
     }
+    // Success: the extracted box is what matters now, so reclaim the archive's disk space. The
+    // archive is deliberately kept on failure, so a retry can reuse the completed download.
     if install_result.is_ok() {
         let _ = std::fs::remove_file(&archive_path);
     }
     install_result
 }
 
+/// Restores the previously installed version of a runtime.
+///
+/// The escape hatch for a box that installs and self-tests cleanly but misbehaves in real use.
+/// Mirrors [`activate_runtime`]: the current version is moved aside first, the archived one is
+/// renamed into place, and a failure at that point puts the current version back.
+///
+/// Finding nothing to restore is reported as `restored: false`, not as an error.
 #[tauri::command]
 pub async fn lia_ai_runtime_box_rollback(
     app: AppHandle,
     runtime_id: String,
 ) -> Result<RuntimeBoxRollbackResult, String> {
+    // Same lock as install: a rollback must not race an install of the same runtime.
     let _install_guard = InstallGuard::acquire(&runtime_id)?;
     let runtime_dir = env_dir(&app, AI_RUNTIME_ROOT, &runtime_id)?;
     let parent = runtime_dir
@@ -802,6 +1034,8 @@ pub async fn lia_ai_runtime_box_rollback(
             restored: false,
         });
     };
+    // Park the version being rolled back rather than deleting it up front: it is still needed
+    // if the restore rename fails.
     let failed = parent.join(format!(".{runtime_id}.{}.failed", Uuid::new_v4()));
     if runtime_dir.exists() {
         std::fs::rename(&runtime_dir, &failed).map_err(|error| error.to_string())?;
@@ -812,6 +1046,7 @@ pub async fn lia_ai_runtime_box_rollback(
         }
         return Err(format!("cannot roll back AI Runtime Box: {error}"));
     }
+    // Restore succeeded, so the bad version can go.
     if failed.exists() {
         let _ = std::fs::remove_dir_all(failed);
     }
@@ -822,6 +1057,11 @@ pub async fn lia_ai_runtime_box_rollback(
     })
 }
 
+/// Uninstalls a runtime and reclaims everything it occupies on disk.
+///
+/// Removes three things, because a box lives in three places: the active runtime directory, its
+/// rollback archive, and any cached download. `box_id` is needed on top of `runtime_id` because
+/// cached archives are named after the box, not the runtime.
 #[tauri::command]
 pub async fn lia_ai_runtime_box_remove(
     app: AppHandle,
@@ -836,10 +1076,14 @@ pub async fn lia_ai_runtime_box_remove(
     if runtime_dir.exists() {
         std::fs::remove_dir_all(&runtime_dir).map_err(|error| error.to_string())?;
     }
+    // Dropping the rollback archive too: keeping it would strand a version that can no longer
+    // be rolled back to, since the runtime itself is gone.
     let rollback = rollback_root(parent, &runtime_id);
     if rollback.exists() {
         std::fs::remove_dir_all(rollback).map_err(|error| error.to_string())?;
     }
+    // Sweep leftover archives from interrupted installs of this box (see the content-addressed
+    // `{box_id}-{version}-{sha256}.zip` name used above).
     let downloads = parent.join(".runtime-box-downloads");
     if downloads.is_dir() {
         for entry in std::fs::read_dir(&downloads).map_err(|error| error.to_string())? {

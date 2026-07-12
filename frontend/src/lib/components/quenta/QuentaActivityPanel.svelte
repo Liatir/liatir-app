@@ -1,3 +1,13 @@
+<!--
+	Shows what Quenta is doing while it thinks.
+
+	A local model can take a long while to answer, and a silent spinner tells the user nothing about whether
+	it is working, stuck, or nearly done. So the phases are surfaced — reading context, selecting sources,
+	generating — with a running clock, which turns dead waiting time into visible progress.
+
+	The reasoning text is passed through `sanitizeQuentaReasoning` before display. That matters: a model's
+	chain-of-thought is *unfiltered* output, and it is being rendered into the app's own UI.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import Icon from '@iconify/svelte';
@@ -19,8 +29,11 @@
 
   let { active = null, generation = null, intent }: Props = $props();
   let expanded = $state(false);
+  // Not $state: these track *which* request the auto-expand/collapse has already reacted to. Nothing
+  // renders them, and making them reactive would re-trigger the effect below on every write.
   let trackedRequestId = '';
   let collapsedForAnswer = false;
+  /** Ticked once a second so the elapsed-time display advances while a request is in flight. */
   let clock = $state(Date.now());
 
   const reasoning = $derived(sanitizeQuentaReasoning(active?.reasoning ?? generation?.reasoning ?? ''));
@@ -30,12 +43,23 @@
   const isActive = $derived(Boolean(active));
 
   onMount(() => {
+    // The clock only advances while a request is running, so an idle panel does not re-render every second.
     const timer = window.setInterval(() => {
       if (active) clock = Date.now();
     }, 1_000);
     return () => window.clearInterval(timer);
   });
 
+  /**
+   * Opens the panel when a new request starts, and closes it once the answer begins arriving.
+   *
+   * That is the whole interaction: the activity is what the user wants to watch *while waiting*, and the
+   * answer is what they want to read once it comes — so the panel gets out of the way on its own rather
+   * than requiring a click.
+   *
+   * `trackedRequestId` and `collapsedForAnswer` make each transition fire once. Without them this effect
+   * would keep re-expanding the panel every time it re-ran, overriding a user who had collapsed it by hand.
+   */
   $effect(() => {
     const requestId = active?.requestId ?? '';
     if (requestId && requestId !== trackedRequestId) {

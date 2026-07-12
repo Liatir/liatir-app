@@ -1,9 +1,29 @@
+/**
+ * Publishes the public `.lia` npm packages.
+ *
+ * `@liatir/api` and `@liatir/cli` are released together at a single shared version. Keeping them
+ * in lockstep is deliberate: the CLI builds plugins against the API's contract, so a plugin author
+ * with mismatched versions of the two gets errors that are hard to attribute. One version number
+ * across both makes "which versions go together?" unambiguous.
+ *
+ * Everything that carries the version number is rewritten before publishing — including the
+ * dependency ranges in the `init` scaffold template, so a newly created plugin depends on the
+ * versions that were just released rather than on whatever was current when the template was
+ * last edited.
+ *
+ * `--dry-run` restores every file it touched afterwards, so it leaves no trace in the working tree.
+ */
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
+/** The scaffold template, whose pinned dependency ranges must follow the released version. */
 const initCommandFile = "packages/liatir-cli/src/commands/init.ts";
+/**
+ * Publish order is dependency order: `@liatir/api` first, because a freshly published `@liatir/cli`
+ * would otherwise briefly reference an API version that does not exist on the registry yet.
+ */
 const packages = [
   {
     label: "@liatir/api",
@@ -132,6 +152,12 @@ function setBump(options, bump) {
   options.bumpSet = true;
 }
 
+/**
+ * Parses a strict `x.y.z` (a leading `v` is tolerated).
+ *
+ * Pre-release and build suffixes are rejected on purpose: these are public packages, and a
+ * `1.0.0-rc1` published to the default tag would be installed by every plugin author.
+ */
 function parseVersion(version) {
   const match = String(version).trim().match(/^v?(\d+)\.(\d+)\.(\d+)$/);
   if (!match) {
@@ -173,6 +199,14 @@ function bumpVersion(version, level) {
   return `${parsed.major}.${parsed.minor}.${parsed.patch + 1}`;
 }
 
+/**
+ * Writes a file, remembering its previous contents the first time it is touched.
+ *
+ * This is what makes `--dry-run` non-destructive: the version bump has to actually land on disk
+ * for `npm publish --dry-run` to pack the right thing, so the files are written for real and then
+ * rolled back. Snapshotting only on first write keeps the *original* content even if a file is
+ * written twice.
+ */
 function writeTrackedFile(filePath, content, snapshots) {
   const abs = resolve(filePath);
   if (!snapshots.has(abs)) {
@@ -181,6 +215,7 @@ function writeTrackedFile(filePath, content, snapshots) {
   writeFileSync(abs, content);
 }
 
+/** Rolls back every tracked write. A `null` snapshot means the file did not exist before. */
 function restoreSnapshots(snapshots) {
   for (const [filePath, content] of snapshots.entries()) {
     if (content === null) continue;
@@ -188,6 +223,13 @@ function restoreSnapshots(snapshots) {
   }
 }
 
+/**
+ * Sets the version in a package's package.json *and* its lockfile.
+ *
+ * The lockfile records the package's own version in two places — the top level and the `""` (root)
+ * entry — and npm treats a lockfile that disagrees with package.json as out of date, so both must
+ * be updated to keep the pair in sync.
+ */
 function updatePackageVersionFiles(packageInfo, version, snapshots) {
   const packageJsonPath = resolve(packageInfo.dir, "package.json");
   const packageLockPath = resolve(packageInfo.dir, "package-lock.json");
@@ -204,6 +246,13 @@ function updatePackageVersionFiles(packageInfo, version, snapshots) {
   writeJson(packageLockPath, packageLock, snapshots);
 }
 
+/**
+ * Repoints the dependency ranges baked into the `liatir init` scaffold at the version being
+ * released, so a plugin created right after a release does not start life pinned to an older one.
+ *
+ * A targeted regex rather than a JSON edit, because the ranges live inside a TypeScript source
+ * file as part of a template literal.
+ */
 function updateInitTemplateVersion(version, snapshots) {
   const filePath = resolve(initCommandFile);
   let content = readFileSync(filePath, "utf8");
@@ -213,6 +262,14 @@ function updateInitTemplateVersion(version, snapshots) {
   writeTrackedFile(filePath, content, snapshots);
 }
 
+/**
+ * Decides the version to release and writes it everywhere.
+ *
+ * The baseline is the *highest* version across the packages, not the lowest and not one package's
+ * in particular. That guarantees the new version is greater than every already-published one —
+ * npm rejects republishing a version, so picking too low a baseline would fail mid-release with
+ * one package already public.
+ */
 function prepareVersions(options, snapshots) {
   const packageVersions = packages.map((packageInfo) => ({
     ...packageInfo,
@@ -228,6 +285,8 @@ function prepareVersions(options, snapshots) {
     );
   }
 
+  // Drifted versions are recoverable — this release resynchronises them — but worth saying out
+  // loud, since it means a previous release did not complete cleanly.
   const uniqueVersions = [...new Set(currentVersions)];
   if (uniqueVersions.length > 1) {
     console.warn(
@@ -245,10 +304,13 @@ function prepareVersions(options, snapshots) {
   return targetVersion;
 }
 
+/** Publishes one package. Throws on failure so the caller can stop before the next one. */
 function publishPackage(packageInfo, options) {
   const packageDir = resolve(packageInfo.dir);
   const packageVersion = readPackageVersion(packageDir);
   const args = ["publish", "--access", "public"];
+  // A dedicated cache directory keeps a publish from being disturbed by (or disturbing) whatever
+  // state the developer's default npm cache is in.
   const npmCache = process.env.LIATIR_NPM_CACHE ?? join(tmpdir(), "liatir-npm-cache");
 
   if (options.dryRun) args.push("--dry-run");
@@ -268,6 +330,7 @@ function publishPackage(packageInfo, options) {
 
   if (result.status !== 0) {
     const error = new Error(`Failed to publish ${packageInfo.label}. Stopping before the next package.`);
+    // Carried through to process.exitCode so CI sees npm's real status.
     error.exitCode = result.status ?? 1;
     throw error;
   }
@@ -283,6 +346,8 @@ if (options.dryRun) {
 try {
   prepareVersions(options, snapshots);
 
+  // Sequential, and aborting on the first failure. Publishing is irreversible, so if `@liatir/api`
+  // fails there is no point pushing a CLI that would depend on a version nobody can install.
   for (const packageInfo of packages) {
     publishPackage(packageInfo, options);
   }
@@ -290,6 +355,8 @@ try {
   console.error(`\n${error instanceof Error ? error.message : String(error)}`);
   process.exitCode = error?.exitCode ?? 1;
 } finally {
+  // Only a dry run rolls back. After a real publish the bumped versions must stay on disk — they
+  // are what was released, and they need to be committed.
   if (options.dryRun) {
     restoreSnapshots(snapshots);
     console.log("\nDry run complete. Restored version files.");

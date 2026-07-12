@@ -1,8 +1,21 @@
+/**
+ * The scientific viewers, exposed as pipeline steps.
+ *
+ * A viewer is a tool like any other here: it takes a file as input and produces a result. That is
+ * what lets visualisation be a *node in a pipeline* — align reads, call variants, then render the
+ * tracks — rather than something the user has to do by hand afterwards.
+ *
+ * These steps do not draw anything themselves. They validate the input and emit a viewer *section* in
+ * the tool output; the actual rendering happens when a user opens the Result, at which point the
+ * heavy viewer runtime is loaded on demand. That separation is what keeps a pipeline run headless and
+ * fast while still producing something interactive at the end.
+ */
 import { liatir } from '$lib/api';
 import type { PipelineStepDefinition, RunOutputFile } from '$lib/types/pipeline';
 import type { ToolOutput } from '$lib/types/tool-output';
 import type { JsonValue } from '@liatir/core';
 
+/** 3D molecular structures. `accept` lists the formats 3Dmol.js can actually read. */
 export const structureViewerDefinition: PipelineStepDefinition = {
   id: 'viewer-structure-3d',
   type: 'utility',
@@ -103,6 +116,7 @@ function extension(path: string): string {
   return ext;
 }
 
+/** Defaults to PDB: it is the most common structure format, and 3Dmol.js parses it most reliably. */
 function structureFormat(path: string): 'pdb' | 'cif' | 'mmcif' | 'sdf' | 'mol2' | 'xyz' {
   const ext = extension(path);
   if (ext === 'mmcif') return 'mmcif';
@@ -113,6 +127,7 @@ function structureFormat(path: string): 'pdb' | 'cif' | 'mmcif' | 'sdf' | 'mol2'
   return 'pdb';
 }
 
+/** `unknown` is deliberate here: a track of an unrecognised type is *not* silently guessed at. */
 function genomeTrackKind(path: string): 'gff' | 'bed' | 'vcf' | 'bam' | 'unknown' {
   const ext = extension(path);
   if (ext === 'gff') return 'gff';
@@ -122,6 +137,13 @@ function genomeTrackKind(path: string): 'gff' | 'bed' | 'vcf' | 'bam' | 'unknown
   return 'unknown';
 }
 
+/**
+ * Splits a CSV line, respecting quoted fields.
+ *
+ * `line.split(',')` would be wrong: cell-type labels routinely contain commas ("T cell, CD4+"), and
+ * splitting naively would shear one label into two and corrupt every count downstream. Tracking the
+ * quote state is what prevents that.
+ */
 function splitCsvLine(line: string): string[] {
   const cells: string[] = [];
   let current = '';
@@ -141,13 +163,23 @@ function splitCsvLine(line: string): string[] {
   return cells.map(cell => cell.trim().replace(/^"|"$/g, ''));
 }
 
+/**
+ * Counts how many cells carry each label, for the summary shown beside a single-cell view.
+ *
+ * Finding the label column is the interesting part. An explicit column wins; failing that, the header
+ * is matched against the names annotation tools actually emit (`predicted_labels`, `majority_voting`,
+ * `cell_type`, …), because there is no standard and every tool names it differently. Falling back to
+ * column 0 means a file with an unrecognised header still produces *something* rather than nothing.
+ */
 function labelCountsFromCsv(text: string, preferredColumn: string): Record<string, number> {
   const lines = text.split(/\r?\n/).filter(line => line.trim());
+  // A header alone, with no rows, has nothing to count.
   if (lines.length < 2) return {};
   const headers = splitCsvLine(lines[0]);
   const preferredIndex = preferredColumn ? headers.indexOf(preferredColumn) : -1;
   const labelIndex = preferredIndex >= 0
     ? preferredIndex
+    // Math.max(..., 0) turns findIndex's -1 (no match) into column 0.
     : Math.max(
         headers.findIndex(header => /majority|predicted|label|cell_type|annotation/i.test(header)),
         0,
@@ -155,12 +187,15 @@ function labelCountsFromCsv(text: string, preferredColumn: string): Record<strin
   const counts: Record<string, number> = {};
   for (const line of lines.slice(1)) {
     const cells = splitCsvLine(line);
+    // An empty cell is counted as `unlabeled` rather than dropped: the total must still equal the
+    // number of cells, or the summary would quietly misrepresent the dataset.
     const label = cells[labelIndex] || 'unlabeled';
     counts[label] = (counts[label] ?? 0) + 1;
   }
   return counts;
 }
 
+/** Some tools pre-compute the counts. Both shapes seen in the wild are accepted. */
 function labelCountsFromJson(text: string): Record<string, number> {
   const parsed = JSON.parse(text) as {
     counts?: Record<string, number>;
@@ -169,6 +204,10 @@ function labelCountsFromJson(text: string): Record<string, number> {
   return parsed.counts ?? parsed.summary?.counts ?? {};
 }
 
+/**
+ * Emits a structure-viewer section. Produces no files — the viewer *is* the output, rendered when the
+ * user opens the Result (see the note at the top of this file).
+ */
 export async function runStructureViewerStep(
   inputs: Record<string, string>,
   _outputDir: string,

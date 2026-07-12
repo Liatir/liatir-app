@@ -1,7 +1,24 @@
+/**
+ * Preloader for UCE (Universal Cell Embeddings), which needs more than a plain file download.
+ *
+ * UCE ships its per-species protein embeddings as a tarball, so the files it will actually read do
+ * not exist until that archive is unpacked. This preloader therefore does three things the generic
+ * managed-files preloader does not:
+ *
+ *   1. **verifies** the download is complete before touching it — a missing file here is a broken
+ *      install, and it is better to say so than to fail cryptically at inference time;
+ *   2. **extracts safely** — the embedded script rejects symlinks and any entry that would resolve
+ *      outside the destination, which is the standard defence against a tar-slip archive;
+ *   3. **verifies again** afterwards, checking every expected species embedding is present, so a
+ *      truncated archive cannot leave a half-populated directory that looks installed.
+ *
+ * Extraction is skipped when the directory already exists, which makes re-running it cheap.
+ */
 import type { JsonValue, LiatirAIModelRecord } from '@liatir/core';
 import { cachePathForModel, runAIPython } from '$lib/ai/runtime';
 import { splitPreloadLog } from './shared';
 
+/** Runs inside the model's runtime. Verifies, extracts, then verifies again. */
 const UCE_MANAGED_FILES_PRELOAD_SCRIPT = String.raw`
 import json
 import os

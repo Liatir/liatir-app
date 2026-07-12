@@ -1,3 +1,8 @@
+/**
+ * Smoke test for the bridge itself: `window.Liatir` exists in the webview, is ready, and its commands reach Rust.
+ *
+ * If this fails, nothing else in the end-to-end suite means anything — so it is worth having as its own spec.
+ */
 import {
   expectNoVisibleRuntimeError,
   openSandboxWorkspace,

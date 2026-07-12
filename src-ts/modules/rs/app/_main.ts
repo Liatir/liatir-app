@@ -1,3 +1,6 @@
+/**
+ * `Liatir.desktop.app` — app metadata (version, OS) and a clean exit.
+ */
 import { AppInfo, AppInterface, LiatirAPI } from "../../../types";
 import { I32 } from "../../../utils";
 

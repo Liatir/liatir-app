@@ -1,3 +1,11 @@
+/**
+ * Contract tests for the regulatory genomics models.
+ *
+ * They keep the registry and the artifact specs in agreement — above all on the context window, which is the
+ * number of base pairs a model consumes at once. Get it wrong and nothing crashes: the model is simply fed the
+ * wrong span of sequence and returns predictions that are quietly meaningless, which for a scientific tool is the
+ * worst possible failure.
+ */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';

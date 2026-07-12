@@ -1,8 +1,20 @@
+/**
+ * Preloader for TensorFlow Hub models (Enformer, for regulatory genomics).
+ *
+ * `hub.load()` both downloads the model and builds it, so this doubles as a validation step: a
+ * model that downloads but cannot be constructed fails here, during the install, rather than on the
+ * user's first analysis. The script reports back which inference interface the loaded object
+ * exposes, since TF Hub models differ in how they are called.
+ *
+ * `TFHUB_CACHE_DIR` redirects the download into Liatir's managed cache — the same reason as the
+ * other preloaders: a library left to its own defaults writes outside anything the app manages.
+ */
 import type { JsonValue, LiatirAIModelRecord } from '@liatir/core';
 import type { AIModelArtifactSpec } from '$lib/ai/model-artifacts';
 import { cachePathForModel, runAIPython } from '$lib/ai/runtime';
 import { splitPreloadLog } from './shared';
 
+/** Runs inside the model's runtime, where tensorflow_hub is installed. */
 const TENSORFLOW_HUB_PRELOAD_SCRIPT = String.raw`
 import json
 import os

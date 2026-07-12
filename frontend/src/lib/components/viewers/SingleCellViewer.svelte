@@ -1,3 +1,14 @@
+<!--
+	Lightweight single-cell preview: a bar chart of how many cells carry each label.
+
+	The full Vitessce runtime is not installable yet (see `runtime-registry`), so this is what Liatir shows
+	in the meantime. It is deliberately honest about that — when an `.h5ad` has no label summary, the empty
+	state says the artifact *is* Vitessce-ready and that this is only the lightweight preview, rather than
+	implying the data is unusable.
+
+	The `as*` helpers exist because the viewer config is loosely-typed JSON produced by a tool, so every
+	field is treated as untrusted and coerced rather than asserted.
+-->
 <script lang="ts">
   import VisualizationShell from '$lib/components/viewers/VisualizationShell.svelte';
   import { getLastSegmentsStringFromPath } from '$lib/utils';
@@ -20,6 +31,11 @@
     return typeof value === 'string' ? value : '';
   }
 
+  /**
+   * Normalises the label counts, sorted largest first — so the dominant cell types are at the top of the
+   * chart, where they are what the user sees. Counts that do not parse as finite numbers are dropped
+   * rather than plotted as NaN bars.
+   */
   function asCountEntries(value: JsonValue | undefined): Array<[string, number]> {
     const record = asRecord(value);
     return Object.entries(record)
@@ -32,8 +48,13 @@
   const title = $derived(asString(config.title) || section.label);
   const source = $derived(asString(config.source));
   const sourceLabel = $derived(source ? getLastSegmentsStringFromPath(source, 2) : '');
+  // Two spellings accepted, because different tools emit different key names.
   const labelCounts = $derived(asCountEntries(config.labelCounts ?? config.counts));
+  // The largest count sets the bar scale. `Math.max(1, …)` guards against a division by zero when the
+  // list is empty (the spread would otherwise yield -Infinity).
   const maxCount = $derived(Math.max(1, ...labelCounts.map(([, count]) => count)));
+  // Distinguishes "a real single-cell file we simply cannot chart" from "a file that is not one at all",
+  // which lets the empty state below say something accurate rather than generic.
   const sourceIsH5ad = $derived(source.toLowerCase().endsWith('.h5ad'));
 </script>
 
@@ -54,6 +75,8 @@
         {/if}
       </div>
     {:else}
+      <!-- Capped at 30 rows: an annotated dataset can carry hundreds of labels, and a list that long
+           stops being a summary. They are sorted by count, so these are the 30 that matter. -->
       <div class="divide-y divide-border/70">
         {#each labelCounts.slice(0, 30) as [label, count]}
           <div class="grid grid-cols-[minmax(120px,0.45fr)_minmax(0,1fr)_70px] items-center gap-3 px-3 py-2">

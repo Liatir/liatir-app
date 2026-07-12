@@ -1,3 +1,13 @@
+// The barrel of every `buildX` factory, so `bridge.ts` can import them from one place.
+//
+// Each domain lives in its own folder under a consistent three-file layout:
+//   _main.ts     the `buildX(core)` factory that produces the API object
+//   _types.ts    its interfaces
+//   _helpers.ts  anything internal to it
+//
+// `modules/rs/*` wrap Rust commands; `modules/qc/*` are the analysis tools. Adding a capability means adding a
+// folder and one line here — nothing else in the bridge changes.
+
 export * from "./core/_main";
 export * from "./liatir/_main";
 export * from "./modules/rs/files/_main";

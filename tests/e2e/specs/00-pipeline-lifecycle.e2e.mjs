@@ -1,3 +1,14 @@
+/**
+ * The pipeline lifecycle, driven end to end through the real app.
+ *
+ * Named `00-` so it runs first: it is the broadest spec, and a break here means everything after it is noise.
+ *
+ * The pipeline IDs below say what is being defended, and it is mostly **isolation**. Liatir's rule is that state
+ * belongs to a run, not to the app: a slow pipeline must not block an independent one, a failure in one must not
+ * poison another, a cancelled run must finalise as cancelled and not as an error, and a run must survive the user
+ * navigating away and coming back. None of that can be proven from a unit test — it only shows up when a real app
+ * runs two real pipelines at once, which is exactly what this does.
+ */
 import { createServer } from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';

@@ -1,3 +1,13 @@
+<!--
+	A pipeline node holding a literal value, to be wired into a step's input.
+
+	It lets a user parameterise a pipeline visually — a threshold, a sample name, a gene ID — and, because
+	it is a node, reuse the same value across several steps by connecting it to each. Without it, every
+	constant would have to be retyped into each step that needs it.
+
+	The run state is read per node ID from the pipeline store (`pipelineStore.nodeStates.get(id)`), which
+	is what keeps each node's status independent — one node running does not freeze the whole canvas.
+-->
 <script lang="ts">
   import { Handle, Position } from '@xyflow/svelte';
   import type { NodeProps } from '@xyflow/svelte';
@@ -16,6 +26,10 @@
   const state = $derived(pipelineStore.nodeStates.get(id));
   const status = $derived(state?.status ?? 'pending');
 
+  /**
+   * Updates the node *and* persists the graph — see `node-data-commit`. Both halves are needed: the
+   * first makes the change visible, the second makes it survive a reload.
+   */
   async function updateVariableData(patch: Partial<VariableNodeData>) {
     updateNodeData(id, patch);
     await commitNodeDataAfterUpdate(nodeDataContext, getNodes, getEdges);
@@ -35,6 +49,10 @@
     <NodeDeleteButton {id} class="ml-auto" />
   </div>
 
+  <!--
+    `nodrag nopan`: interacting with the controls below must not drag the node or pan the canvas. Without
+    these, selecting text in the input would move the node out from under the cursor.
+  -->
   <div class="px-3 py-2.5 space-y-2 nodrag nopan">
     <div class="flex gap-1.5">
       <button
@@ -48,6 +66,10 @@
                {data.varType === 'number' ? 'bg-amber-50 border-amber-300 text-amber-700 font-medium' : 'border-border text-zinc-400 hover:border-zinc-300'}"
       >number</button>
     </div>
+    <!--
+      Locked while the pipeline runs, and once this node has produced its value: editing it mid-run would
+      mean the value shown no longer matches the one the downstream steps actually consumed.
+    -->
     <input
       type={data.varType === 'number' ? 'number' : 'text'}
       value={data.value ?? ''}

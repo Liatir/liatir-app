@@ -1,3 +1,10 @@
+/**
+ * Checks the demo VCF fixtures are internally consistent — in particular that the plain and gzipped copies carry
+ * the same variants.
+ *
+ * They are what a new user first runs a model against, so a discrepancy between them would produce two different
+ * results from what is supposed to be the same data, and look like a bug in the model.
+ */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { gunzipSync } from 'node:zlib';

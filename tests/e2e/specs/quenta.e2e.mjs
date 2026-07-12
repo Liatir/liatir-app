@@ -1,3 +1,10 @@
+/**
+ * Quenta, driven end to end.
+ *
+ * Covers what unit tests structurally cannot: that a request survives the panel being closed and reattaches with
+ * its partial answer intact, that a focused launch from a failed run arrives with the right context, and that
+ * cancelling actually stops the generation running in Rust rather than just hiding the UI.
+ */
 import { createServer } from 'node:http';
 
 import {

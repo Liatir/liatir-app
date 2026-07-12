@@ -1,3 +1,15 @@
+<!--
+	One page serving all three standalone viewer tools (/tools/visualization/{structure,genome,single-cell}).
+
+	The three differ only in which inputs they take and which step they run — the surrounding page is
+	identical. So rather than three near-duplicate route components, the three routes each render this one
+	with a different `mode`, and the branching lives here. Adding a fourth viewer is a new branch, not a
+	new page.
+
+	It runs the *same* step functions the pipeline nodes use (`runStructureViewerStep` and friends), so a
+	viewer behaves identically whether it is opened directly or reached as a pipeline node — there is no
+	second, divergent implementation for the standalone case.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/state';
@@ -39,6 +51,8 @@
   let output = $state<ToolOutput | null>(null);
   let logLines = $state<string[]>([]);
 
+  // Each picker is pre-filtered to the formats its viewer can actually read, so the user is never offered
+  // a file that would fail — the wrong choice is simply not presented.
   const structureFiles = $derived(dataFiles.byExt('pdb', 'cif', 'mmcif', 'sdf', 'mol2', 'xyz'));
   const referenceFiles = $derived(dataFiles.byExt('fasta', 'fasta.gz'));
   const trackFiles = $derived(dataFiles.byExt('gff', 'gff3', 'bed', 'vcf', 'vcf.gz', 'bam'));
@@ -49,6 +63,8 @@
     { value: 'line', label: 'Line' },
     { value: 'sphere', label: 'Sphere' },
   ];
+  // The one required input per mode. Note the genome viewer needs only the *track* — the reference FASTA
+  // is optional, so a track can be inspected without one.
   const canRun = $derived(
     mode === 'structure'
       ? !!structureFile
@@ -78,6 +94,12 @@
     logLines = [...logLines, line];
   }
 
+  /**
+   * Runs the viewer step for the current mode.
+   *
+   * The `running` check makes it re-entrant-safe (a double-click cannot start two runs), and the previous
+   * error/output/log are cleared up front so a new run never displays stale results from the last one.
+   */
   async function runViewer() {
     if (!canRun || running) return;
     running = true;
@@ -111,6 +133,13 @@
     }
   }
 
+  /**
+   * Pre-fills the form from the URL, and runs immediately when a file was supplied.
+   *
+   * This is what makes "View this result" work from a Result page: it links here with the file already in
+   * the query string, and the user lands on the rendered viewer rather than on a form they would have to
+   * fill in with the file they just came from.
+   */
   onMount(() => {
     void dataFiles.init();
     const params = page.url.searchParams;

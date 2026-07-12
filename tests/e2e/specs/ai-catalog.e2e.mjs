@@ -1,3 +1,7 @@
+/**
+ * The AI catalogue screen: models are listed, grouped, searchable, and — importantly — that a preview or an
+ * incompatible model is presented as such and cannot be installed.
+ */
 import {
   expectNoVisibleRuntimeError,
   navigateSidebar,

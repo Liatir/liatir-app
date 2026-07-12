@@ -1,3 +1,9 @@
+/**
+ * Tests that a cancelled run is recognised as *cancelled*, not as a failure.
+ *
+ * The distinction is the whole point of the module under test: both arrive at a `catch` as a thrown value, and
+ * treating a deliberate stop as an error would show the user a failure to investigate that never happened.
+ */
 import { describe, expect, it } from 'vitest';
 
 import {

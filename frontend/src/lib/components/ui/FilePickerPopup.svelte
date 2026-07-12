@@ -1,3 +1,15 @@
+<!--
+	Picks a file from the workspace's Data.
+
+	A thin specialisation of the generic OptionPicker: it only maps files onto options and lets the picker
+	do the rest. That is the intended shape — anything with a list of choices reuses OptionPicker rather
+	than growing its own popup, so search, keyboard handling and the empty state behave identically
+	everywhere.
+
+	The mapping is what makes the list usable: the filename as the label, a shortened path beneath it (so
+	two files with the same name are distinguishable), the extension as a badge, and the size as meta.
+	The empty state links to /data, so a user with no files is told where to add them.
+-->
 <script lang="ts">
   import OptionPicker from './OptionPicker.svelte';
   import type { DataFile } from '$lib/stores/dataFiles.svelte';

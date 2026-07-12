@@ -1,3 +1,10 @@
+/**
+ * `Liatir.desktop.diagnostics` — local logging and error reporting.
+ *
+ * Everything here stays on the user's machine: records are written to log files they can read, export as a zip,
+ * and delete. `settings` is the privacy control, and `runRetention` is what stops the logs growing without
+ * bound. Nothing is sent anywhere.
+ */
 import { LiatirInstance } from "../../../main";
 import { LiatirAPI } from "../../../types";
 import { buildDiagnosticsTestFunctions, deriveAppVersion, diagnosticsSettings } from "./_helpers";

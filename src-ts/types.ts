@@ -1,3 +1,6 @@
+// Barrel of every domain's `_types.ts`, mirroring `main.ts`. Keeping the types beside the factory that
+// implements them means a capability's shape and its implementation cannot drift apart.
+
 export * from "./core/_types";
 export * from "./liatir/_types";
 export * from "./modules/rs/files/_types";

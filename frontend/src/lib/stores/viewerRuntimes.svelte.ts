@@ -1,3 +1,16 @@
+/**
+ * Store for viewer runtimes — the heavy JavaScript libraries that render scientific data
+ * (molecular structures, genome browsers, single-cell plots).
+ *
+ * They are installed on demand rather than bundled: each is megabytes of code that most users
+ * never open, and shipping them all would inflate the app for everyone. So a viewer's library is
+ * downloaded the first time it is actually needed.
+ *
+ * The shape deliberately mirrors [`aiModels.svelte.ts`]: state persisted in an aggregate file plus
+ * a durable per-runtime install marker, installs de-duplicated per ID, and a registry that is the
+ * source of truth for *what* exists while this store only tracks what is installed. Same problem,
+ * same solution — a viewer library is just a much smaller download than a model.
+ */
 import { liatir } from '$lib/api';
 import {
   VIEWER_RUNTIME_REGISTRY,
@@ -27,7 +40,9 @@ export interface ViewerRuntimeInstallProgress {
   bytesTotal: number | null;
 }
 
+/** Aggregate state for all viewer runtimes. */
 const VIEWER_RUNTIMES_FILE = 'viewer-runtimes.json';
+/** One marker per installed runtime — the durable record that survives a lost aggregate file. */
 const VIEWER_RUNTIME_MARKER_DIR = 'viewer-runtime-installs';
 
 function getInstallMarkerFile(runtimeId: string) {
@@ -43,7 +58,9 @@ function defaultState(): StoredViewerRuntimeState {
 function createViewerRuntimesStore() {
   let initialized = false;
   let runtimeStates = $state<Record<string, StoredViewerRuntimeState>>({});
+  /** Progress keyed by runtime ID, so installing one viewer never blocks the UI of another. */
   let installProgress = $state<Record<string, ViewerRuntimeInstallProgress>>({});
+  /** Single-flight per runtime: two components needing the same viewer share one install. */
   const installPromises = new Map<string, Promise<ViewerRuntimeRecord>>();
 
   function allRuntimeIds(): Set<string> {
@@ -69,6 +86,7 @@ function createViewerRuntimesStore() {
     await appStorage.writeText(VIEWER_RUNTIMES_FILE, JSON.stringify(state, null, 2), { createDirs: true });
   }
 
+  /** Registry-supplied paths are joined onto the runtime directory, so reject anything that escapes it. */
   function safeInstallRelativePath(relativePath: string): string {
     const normalized = relativePath.replace(/\\/g, '/');
     if (!normalized || normalized.startsWith('/') || normalized.split('/').includes('..')) {
@@ -77,6 +95,10 @@ function createViewerRuntimesStore() {
     return normalized;
   }
 
+  /**
+   * Whether the file is already on disk at the expected size — which makes a re-run of a partially
+   * completed install skip what it already has. Any error means "cannot confirm", so it downloads.
+   */
   async function existingFileMatches(
     api: NonNullable<ReturnType<typeof liatir>>,
     path: string,
@@ -99,10 +121,20 @@ function createViewerRuntimesStore() {
       return records().find((runtime) => runtime.id === id) ?? null;
     },
 
+    /**
+     * Runtimes able to render a given kind of data. Callers ask by *capability* ("show me a protein
+     * structure") rather than by name, so the concrete library backing a viewer can be swapped
+     * without touching the components that use it.
+     */
     byCapability(capability: ViewerRuntimeCapability): ViewerRuntimeRecord[] {
       return records().filter((runtime) => runtime.capability === capability);
     },
 
+    /**
+     * Loads persisted state, then lets the install markers override it — same precedence rule as the
+     * AI Models store: a marker only exists if an install actually finished, so it is the harder
+     * evidence and wins over a possibly stale aggregate file.
+     */
     async init() {
       if (initialized) return;
       initialized = true;
@@ -152,6 +184,13 @@ function createViewerRuntimesStore() {
       await persist();
     },
 
+    /**
+     * Downloads a viewer's library files and records it as installed.
+     *
+     * Typically triggered by opening a result that needs the viewer, which means several components
+     * can request the same runtime at once — hence the single-flight guard, which turns concurrent
+     * requests into one download rather than several racing to write the same files.
+     */
     async installManagedRuntime(
       id: string,
       onProgress?: (progress: ViewerRuntimeInstallProgress) => void,
@@ -232,6 +271,8 @@ function createViewerRuntimesStore() {
           }
         }
 
+        // The entry file is the script the loader will actually import; resolving it once here means
+        // the viewer component never has to know the runtime's internal layout.
         const entryPath = `${runtimeDir}/${safeInstallRelativePath(entryFile)}`;
         await this.setRuntimeState(id, {
           status: 'installed',
@@ -254,6 +295,8 @@ function createViewerRuntimesStore() {
         });
         return this.byId(id)!;
       })().finally(() => {
+        // Always release the single-flight slot and clear the progress entry, success or failure —
+        // otherwise a failed install would be permanently unretryable and leave a stuck progress bar.
         installPromises.delete(id);
         const { [id]: _done, ...rest } = installProgress;
         installProgress = rest;
@@ -263,6 +306,7 @@ function createViewerRuntimesStore() {
       return installPromise;
     },
 
+    /** Deletes a viewer's downloaded files and forgets it, marker included. */
     async removeManagedRuntime(id: string) {
       const api = liatir();
       if (!api) return;
@@ -273,6 +317,7 @@ function createViewerRuntimesStore() {
       }
       const { [id]: _removed, ...restStates } = runtimeStates;
       runtimeStates = restStates;
+      // The marker must go too, or the next startup would resurrect this runtime as installed.
       await appStorage.remove(getInstallMarkerFile(id)).catch(() => {});
       await persist();
     },

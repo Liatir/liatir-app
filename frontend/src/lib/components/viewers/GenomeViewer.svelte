@@ -1,3 +1,16 @@
+<!--
+	Genome track viewer, powered by JBrowse 2.
+
+	Same two-tier design as the structure viewer: JBrowse runs inside a sandboxed iframe (built from a blob
+	URL, with the library inlined as text), and if it cannot run, the component parses the tracks itself and
+	draws a simple positional strip.
+
+	The fallback is genuinely useful rather than a placeholder, because it plots the features at their real
+	coordinates — a user can still see where their variants or genes lie, and how they line up across
+	tracks. It is only available for the *text* formats (BED/GFF/VCF), which is what
+	`canPreviewAllTracksLocally` tests: a BAM is binary and indexed, and there is no honest way to render it
+	without the real runtime.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -29,9 +42,14 @@
   const viewerId = crypto.randomUUID();
 
   const refName = $derived(section.assembly.refName ?? '');
+  // When the tool did not state a window, one is inferred from the features themselves — so the fallback
+  // opens framed on the data rather than on an arbitrary stretch of empty genome.
   const visibleStart = $derived(section.assembly.start ?? inferStart(features));
   const visibleEnd = $derived(section.assembly.end ?? inferEnd(features, visibleStart));
+  // Guards against a zero-width window, which would make the feature positioning divide by zero.
   const span = $derived(Math.max(1, visibleEnd - visibleStart));
+  // The fallback can only render text formats it can parse itself. A BAM (binary, indexed) or a remote URL
+  // has no honest local rendering, so in that case there is no fallback and JBrowse is required.
   const canPreviewAllTracksLocally = $derived(
     section.tracks.length > 0 &&
       section.tracks.every(track => Boolean(track.path) && ['bed', 'gff', 'vcf'].includes(track.kind))
@@ -41,6 +59,8 @@
     features: features.filter(feature => feature.track === track.name),
   })));
 
+  // The window spans the features with a 50 bp margin, so nothing sits flush against the edge. With no
+  // features at all, a nominal 0..1000 window is used rather than a degenerate empty one.
   function inferStart(items: Feature[]): number {
     const starts = items.map(item => item.start).filter(Number.isFinite);
     return starts.length ? Math.max(0, Math.min(...starts) - 50) : 0;
@@ -51,6 +71,12 @@
     return ends.length ? Math.max(start + 1, Math.max(...ends) + 50) : start + 1000;
   }
 
+  /**
+   * Extracts a display name from a GFF attributes column (`ID=x;Name=y;...`).
+   *
+   * The keys are tried in order of usefulness to a human: `Name` is what a biologist recognises, `ID` is a
+   * fallback identifier, `gene_name` covers the GTF-style annotations that use it instead.
+   */
   function parseAttributes(raw: string): string {
     const fields = raw.split(';').map(part => part.trim());
     for (const key of ['Name=', 'ID=', 'gene_name=']) {
@@ -60,6 +86,19 @@
     return '';
   }
 
+  /**
+   * Minimal parser for the three text track formats, used only by the fallback.
+   *
+   * All three are tab-delimited with `#` comment lines, but their columns differ, hence the per-format
+   * branches. The column indices are from each format's specification:
+   *   - BED: chrom / start / end / name
+   *   - GFF: seqid / … / type / start / end / … / attributes
+   *   - VCF: chrom / pos / id / ref / alt
+   *
+   * A VCF gives a single position rather than a range, so the feature's end is derived from the length of
+   * the REF allele — which is what makes a deletion render as the span it actually covers rather than as a
+   * point.
+   */
   function parseTrackText(trackName: string, kind: string, text: string): Feature[] {
     const parsed: Feature[] = [];
     for (const line of text.split(/\r?\n/)) {
@@ -105,16 +144,30 @@
       }
     }
     return parsed
+      // Keep only the requested chromosome, when one was named — a whole-genome file would otherwise plot
+      // features from every contig on top of each other.
       .filter(item => !refName || item.refName === refName)
+      // Hard cap: an annotation file can hold millions of features, and this fallback renders one DOM
+      // element per feature. 400 is the point past which the strip stops being readable anyway.
       .slice(0, 400);
   }
 
+  /**
+   * Positions a feature on the strip as a percentage of the visible window.
+   *
+   * `Math.max(0.7, …)` gives a minimum width: a single-base variant would otherwise compute to a width of
+   * effectively zero and be invisible — which for a variant track is exactly the thing you need to see.
+   * The `Math.min(100 - left, …)` keeps a feature that runs past the window from overflowing the strip.
+   */
   function featureStyle(feature: Feature): string {
     const left = Math.max(0, Math.min(100, ((feature.start - visibleStart) / span) * 100));
     const width = Math.max(0.7, Math.min(100 - left, ((feature.end - feature.start) / span) * 100));
     return `left: ${left}%; width: ${width}%`;
   }
 
+  // Escaping for the values embedded into the iframe's HTML. A `<` in the JSON, or a `</script` inside the
+  // inlined library, would close the surrounding <script> tag early and let the rest be parsed as markup —
+  // and the track data here comes from a user's own files.
   function escapeScriptJson(value: unknown): string {
     return JSON.stringify(value).replace(/</g, '\\u003c');
   }
@@ -123,11 +176,20 @@
     return source.replace(/<\/script/gi, '<\\/script');
   }
 
+  /** A remote URL is used as-is; a local path must go through Tauri's asset protocol to be fetchable. */
   function fileUri(path?: string, url?: string): string {
     if (url) return url;
     return path ? localFileSrc(path) : '';
   }
 
+  /**
+   * Builds the JBrowse adapter for a track — its declaration of how to read the file.
+   *
+   * The VCF branch is the one with substance: given an index, the *tabix* adapter is used, which lets
+   * JBrowse seek into the region on screen instead of loading the whole file. Without an index it falls
+   * back to reading the file whole, which is fine for a small VCF and hopeless for a large one. The index
+   * type is inferred from the extension, since CSI and TBI are not interchangeable.
+   */
   function buildTrackAdapter(track: GenomeViewerSection['tracks'][number]) {
     const uri = fileUri(track.path, track.url);
     if (!uri) throw new Error(`Track "${track.name}" has no readable file path or URL.`);

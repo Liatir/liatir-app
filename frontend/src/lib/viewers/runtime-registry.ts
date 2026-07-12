@@ -1,4 +1,22 @@
+/**
+ * The catalogue of viewer runtimes — the third-party libraries that render scientific data.
+ *
+ * This is the source of truth for *what exists*; `viewerRuntimes.svelte.ts` tracks what is installed.
+ * Keeping them apart is what allows the catalogue to be a static, reviewable list while the install
+ * state lives on disk.
+ *
+ * These libraries are deliberately **not bundled**. Each is megabytes of code that most users never
+ * open, so they are fetched on demand — the same "heavy dependencies as separate boxes" principle the
+ * AI Runtime Boxes follow, scaled down to JavaScript.
+ *
+ * `license` and `sourceUrl` are recorded per entry because this is third-party code shipped to users:
+ * the attribution has to travel with the definition, not live in a document someone must remember to
+ * update.
+ */
+
+/** What a runtime can render. Components ask by capability, never by library name. */
 export type ViewerRuntimeCapability = 'structure-3d' | 'genome-browser' | 'single-cell-spatial';
+/** `planned-adapter` means the integration is designed but not yet installable — see Vitessce below. */
 export type ViewerRuntimeInstallKind = 'managed-script' | 'planned-adapter';
 export type ViewerRuntimeStatus = 'available' | 'installed' | 'unavailable' | 'error';
 
@@ -17,6 +35,7 @@ export interface ViewerRuntimeInstallSpec {
   note?: string;
 }
 
+/** The static definition: what this runtime is. Never changes at runtime. */
 export interface ViewerRuntimeDefinition {
   id: string;
   name: string;
@@ -27,9 +46,11 @@ export interface ViewerRuntimeDefinition {
   install: ViewerRuntimeInstallSpec;
 }
 
+/** A definition merged with its local install state — what the store hands to the UI. */
 export interface ViewerRuntimeRecord extends ViewerRuntimeDefinition {
   status: ViewerRuntimeStatus;
   localPath?: string;
+  /** Absolute path of the script to load. Resolved at install time; see the loader. */
   entryPath?: string;
   updatedAt?: number;
   error?: string;

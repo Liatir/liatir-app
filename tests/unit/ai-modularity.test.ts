@@ -1,3 +1,13 @@
+/**
+ * Architecture tests: they assert how the AI code is *organised*, not what it computes.
+ *
+ * The rules they defend are the ones that erode quietly. Nothing breaks the day someone merges every model's
+ * Python into one file, or adds a model to the registry without an artifact spec — it breaks weeks later, and
+ * by then the structure is gone. These tests read the source tree itself and fail the build the moment that
+ * happens, which is the only way a structural rule survives contact with a growing codebase.
+ *
+ * A failure here is not a bug in the code under test; it means the code drifted away from the architecture.
+ */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';

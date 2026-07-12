@@ -1,3 +1,11 @@
+/**
+ * Contract tests for the single-cell foundation models.
+ *
+ * They enforce that a model still being validated stays a *preview*: visible in the catalogue, honestly labelled,
+ * and not installable. A model that has not been checked end to end must not be reachable by a user who would take
+ * its output as scientific fact — so "cannot be installed before its runtime box is validated" is asserted rather
+ * than left to discipline.
+ */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

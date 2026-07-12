@@ -1,3 +1,17 @@
+/**
+ * The catalogue of external command-line dependencies Liatir knows about.
+ *
+ * One entry per binary, and each entry carries everything the app needs to *reason* about that
+ * dependency: which versions work, how to install it on each platform, and how to recognise the
+ * common ways it goes wrong.
+ *
+ * The design point is that this table is the only place these facts live. The Dependencies screen,
+ * the resolvers, the AI-Model compatibility checks and the install commands all read from here — so
+ * supporting a new tool means adding one entry, and nothing else in the app has to change.
+ *
+ * The failure-diagnosis fields (`wrongToolPatterns`, `homebrewLinkConflict`) are what let the app
+ * explain a broken dependency instead of merely reporting it — see `dependencies/resolvers/`.
+ */
 export interface InstallCmd {
   platform: string;
   cmd: string;
@@ -13,19 +27,30 @@ export interface DepRequirement {
   binary: string;
   label: string;
   description: string;
+  /** Inclusive lower bound; the upper bound is exclusive — an untested new release is not assumed to work. */
   minVersion: string;
   maxVersionExclusive?: string;
+  /** Human-readable version range, e.g. "3.10, 3.11, or 3.12". Shown instead of the raw bounds. */
   versionLabel?: string;
+  /** `global` is always checked; `model-runtime` only matters for models that ask for it. */
   scope?: 'global' | 'model-runtime' | 'optional';
   category?: 'core-runtime' | 'bioinformatics' | 'workflow' | 'ai-runtime';
+  /** Why Liatir needs this at all — shown to the user, who is entitled to ask. */
   reason?: string;
   releasesUrl: string;
+  // Package-manager names. They differ per manager (and from the binary's own name), which is
+  // precisely why they are recorded rather than derived.
   brew?: string;
   apt?: string;
   conda?: string;
   condaChannel?: string;
+  /**
+   * Signatures that identify a *different* program answering to this binary's name — a real hazard in
+   * bioinformatics, where short names collide. Matched against the tool's `--version` output.
+   */
   wrongToolPatterns?: string[];
   wrongToolMessage?: string;
+  /** Present when a known Homebrew formula can shadow this binary; drives the one-click relink fix. */
   homebrewLinkConflict?: {
     blockerFormula: string;
     targetFormula: string;
@@ -35,6 +60,7 @@ export interface DepRequirement {
     confirmMessage: string;
   };
   downloadOptions?: DownloadOption[];
+  /** Copy-pasteable commands per platform — the fallback for users with no supported package manager. */
   installCmds: InstallCmd[];
 }
 
@@ -361,33 +387,52 @@ export const DEP_REQUIREMENTS: Record<string, DepRequirement> = {
   },
 };
 
+/** Scope defaults to `global`, so omitting it means "every user needs this". */
 export function depScope(req: DepRequirement | undefined): NonNullable<DepRequirement['scope']> {
   return req?.scope ?? 'global';
 }
 
+/**
+ * A "soft" dependency is one whose absence is not a problem in itself.
+ *
+ * A model-runtime Python is only needed by the models that ask for it, and an optional tool by
+ * definition is not required. Reporting those as missing on the Dependencies screen would alarm a
+ * user about something that is not actually wrong.
+ */
 export function isSoftDep(req: DepRequirement | undefined): boolean {
   const scope = depScope(req);
   return scope === 'model-runtime' || scope === 'optional';
 }
 
+/** The version requirement as displayed: an explicit label wins, else the bounds are rendered. */
 export function depRequirementLabel(req: DepRequirement): string {
   if (req.versionLabel) return req.versionLabel;
   if (req.maxVersionExclusive) return `${req.minVersion} - <${req.maxVersionExclusive}`;
   return `${req.minVersion}+`;
 }
 
+/**
+ * Secondary index by `binary`, because a requirement's *key* in the table is not always its binary
+ * name — so lookups have to work either way (see `depRequirementForBinary`).
+ */
 const DEP_REQUIREMENTS_BY_BINARY = new Map(
   Object.values(DEP_REQUIREMENTS).map((req) => [req.binary, req])
 );
 
+/** Looks a requirement up by table key first, then by binary name. */
 export function depRequirementForBinary(binary: string): DepRequirement | undefined {
   return DEP_REQUIREMENTS[binary] ?? DEP_REQUIREMENTS_BY_BINARY.get(binary);
 }
 
+/** Normalises a key-or-binary into the actual binary name to probe on PATH. */
 export function dependencyBinaryForKeyOrBinary(value: string): string {
   return depRequirementForBinary(value)?.binary ?? value;
 }
 
+/**
+ * The binaries checked on every startup. Derived from the table rather than listed by hand, so a
+ * requirement cannot be added to the catalogue and then forgotten by the detection pass.
+ */
 export const GLOBAL_DEPENDENCY_BINARIES = Object.values(DEP_REQUIREMENTS)
   .filter((req) => depScope(req) === 'global')
   .map((req) => req.binary);

@@ -1,3 +1,7 @@
+<!--
+	The loading spinner. An inline SVG rather than an icon-font glyph, so it can be sized freely and takes
+	its colour from `currentColor` wherever it is placed.
+-->
 <script lang="ts">
   interface Props {
     size?: number;

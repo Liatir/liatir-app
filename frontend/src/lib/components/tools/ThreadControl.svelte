@@ -1,3 +1,10 @@
+<!--
+	The shared Threads input for tool forms.
+
+	`0` means "let Liatir decide", and the hint below the field spells out what that will actually be
+	("0 lets Liatir choose 8 threads") — so the default is not a mystery the user has to accept on faith.
+	The value is clamped as it is typed, so a stray keystroke cannot produce a nonsensical thread count.
+-->
 <script lang="ts">
   import { autoThreadCount, MAX_MANUAL_THREADS } from '$lib/utils/execution-resources';
 
@@ -13,6 +20,7 @@
 
   const autoThreads = $derived(autoThreadCount());
 
+  /** Clamps to 0..MAX_MANUAL_THREADS and coerces anything unparseable to 0 (= auto). */
   function onInput(event: Event) {
     const input = event.currentTarget as HTMLInputElement;
     const next = Number(input.value);

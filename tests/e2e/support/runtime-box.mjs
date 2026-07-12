@@ -1,7 +1,17 @@
+/**
+ * Support helpers for the Runtime Box end-to-end tests.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import { waitForLiatirBridge } from './liatir-app.mjs';
 
+/**
+ * Pulls a Python script out of the TypeScript file that ships it.
+ *
+ * The point is that the test then exercises the *actual shipped* script rather than a copy kept in sync by
+ * hand — the same technique the validation scripts use. A copy would eventually drift, and the test would keep
+ * passing against code nobody runs.
+ */
 export function readEmbeddedPythonScript(rootDir, relativePath, exportName) {
   const source = fs.readFileSync(path.join(rootDir, relativePath), 'utf8');
   const prefix = `export const ${exportName} = String.raw\``;
@@ -11,6 +21,14 @@ export function readEmbeddedPythonScript(rootDir, relativePath, exportName) {
   return source.slice(start + prefix.length, end);
 }
 
+/**
+ * Puts the app into a known-empty sandbox workspace before a test runs.
+ *
+ * End-to-end tests drive a *real* app against real storage, so they would otherwise inherit whatever the last
+ * run left behind — and a test that passes only because of leftover state is worse than no test. Writing a
+ * single `__test__` workspace gives every spec the same clean starting point, and keeps the tests away from any
+ * real workspace on the machine.
+ */
 export async function activateCleanSandbox(browser) {
   await waitForLiatirBridge(browser);
   await browser.execute(async () => {

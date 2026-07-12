@@ -1,3 +1,11 @@
+/**
+ * Tests the conversation reducer and the serialised write queue.
+ *
+ * The queue is the subtle part, and it is what the first test names: conversations are persisted to a single
+ * file, so two writes in flight at once could land out of order and let an older state silently overwrite a
+ * newer one — a rename or a delete undone by a create that resolved late. Ordering here is not tidiness, it is
+ * the difference between keeping the user's data and losing it.
+ */
 import { describe, expect, it } from 'vitest';
 import {
   applyConversationMutation,

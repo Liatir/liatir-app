@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * `liatir` — the CLI plugin authors use to scaffold, run and package `.lia` plugins.
+ *
+ * Entry point only: it does nothing but dispatch to the command modules, each of which owns its
+ * own argument parsing. Unrecognised input (including no command at all) prints the help text
+ * rather than erroring, since that is what a user typing `liatir` expects to see.
+ */
 import { init } from "./commands/init.js";
 import { dev } from "./commands/dev.js";
 import { build } from "./commands/build.js";
@@ -6,6 +13,7 @@ import { update } from "./commands/update.js";
 import { version } from "./commands/version.js";
 import { keygen } from "./commands/keygen.js";
 
+// argv[0] is node, argv[1] is this script; the command and its arguments follow.
 const [, , command, ...rest] = process.argv;
 
 async function main() {
@@ -51,6 +59,8 @@ Usage:
   }
 }
 
+// Plugin authors are the audience here, so a failure prints just the message — no stack trace,
+// which would bury the actual problem in noise. The non-zero exit keeps scripts and CI honest.
 main().catch((e) => {
   console.error(e instanceof Error ? e.message : e);
   process.exit(1);

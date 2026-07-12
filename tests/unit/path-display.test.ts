@@ -1,3 +1,9 @@
+/**
+ * Tests the shortening of absolute paths for display.
+ *
+ * Two things are being protected: the layout (a full `/Users/...` path wrecks a log line) and the user's privacy
+ * — their name and directory structure end up on screen, and in any screenshot they share.
+ */
 import { describe, expect, it } from 'vitest';
 import {
   getLastSegmentsStringFromPath,

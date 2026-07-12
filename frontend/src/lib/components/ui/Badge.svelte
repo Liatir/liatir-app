@@ -1,3 +1,14 @@
+<!--
+	Status pill: a coloured dot plus a label.
+
+	The variants are the app's *actual* states — a job is running/done/failed/killed, a dependency is
+	available/missing — not abstract colours. So a status is rendered by naming it, and "what does failed
+	look like" is answered once, here. The dot and the badge share the same variant names (see Dot.svelte)
+	precisely so the two can never disagree about what red means.
+
+	Falling back to rendering the variant name when no children are given is a small convenience: a badge
+	that just says "running" needs no content.
+-->
 <script lang="ts">
 	import Dot, { type DotVariant } from './Dot.svelte';
 

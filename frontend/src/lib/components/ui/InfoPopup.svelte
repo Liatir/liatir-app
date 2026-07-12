@@ -1,9 +1,22 @@
+<!--
+	The little "i" button that explains a field.
+
+	Used heavily across the AI and tool forms, because Liatir is for non-technical users first: an input
+	called "Max tokens" or "Recycling steps" means nothing without one, and putting the explanation
+	behind an icon keeps the form uncluttered for the users who already know.
+
+	The help text is markdown (see `model-help.ts`), so it can contain code spans and emphasis.
+-->
 <script lang="ts">
   let { text }: { text: string } = $props();
   let open = $state(false);
   let renderedText = $state('');
 
+  // `marked` is imported dynamically: it is a parser we only need when a popup is actually used, so it
+  // stays out of the initial bundle.
   $effect(() => {
+    // `cancelled` guards against a stale write: if `text` changes (or the component unmounts) while the
+    // parse is still running, the finished HTML must not overwrite whatever is current now.
     let cancelled = false;
     void (async () => {
       const { parse } = await import('marked');
@@ -32,6 +45,11 @@
   </button>
 
   {#if open}
+    <!--
+      A full-screen transparent backdrop: clicking anywhere outside the popup closes it. It is a
+      `<button>` rather than a `<div>` so it is focusable and keyboard-dismissible, which a bare div
+      with a click handler would not be.
+    -->
     <button
       type="button"
       aria-label="Close information"
@@ -43,6 +61,11 @@
       }}
     ></button>
 
+    <!--
+      The popup itself, above the backdrop. It stops click and key events from propagating, so
+      interacting with its content does not bubble out and dismiss it — or, when this sits inside a
+      pipeline node, drag the node underneath.
+    -->
     <div
       role="dialog"
       aria-modal="true"

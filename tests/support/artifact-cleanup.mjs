@@ -1,13 +1,22 @@
+/**
+ * Prunes old test artifacts (screenshots, reports, extracted runtimes) before a run.
+ *
+ * These accumulate quickly — a visual run alone writes a screenshot per assertion — so without this the
+ * artifacts directory grows without bound. They are kept for a week rather than deleted immediately, because
+ * the whole reason to write them is to look at them *after* a failure.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 
 const DEFAULT_TTL_DAYS = 7;
 
 function ttlDays() {
+  // Overridable, so CI can keep artifacts for a shorter or longer window than a developer's machine.
   const value = Number(process.env.LIATIR_TEST_ARTIFACT_TTL_DAYS ?? DEFAULT_TTL_DAYS);
   return Number.isFinite(value) ? value : DEFAULT_TTL_DAYS;
 }
 
+/** A file that cannot be stat'd is treated as *not* expired — cleanup must never be the thing that fails a run. */
 function isExpired(entryPath, cutoffMs) {
   try {
     return fs.statSync(entryPath).mtimeMs < cutoffMs;

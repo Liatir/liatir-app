@@ -1,3 +1,11 @@
+<!--
+	The shared button.
+
+	Every button in the app goes through here, so the visual language stays consistent and a change to
+	(say) what "danger" looks like happens in one place. The variants are semantic — `danger`, `warn`,
+	`sandbox` — not colour names, so a call site declares *what the action means* and this component
+	decides how that looks.
+-->
 <script lang="ts">
 	import type { ButtonSizes, ButtonTypes, ButtonVariants } from '$lib/types/componentes';
   import type { Snippet } from 'svelte';
@@ -6,10 +14,15 @@
     variant?: ButtonVariants;
     size?: ButtonSizes;
     disabled?: boolean;
+    /**
+     * Shows a spinner and, below, also disables the button (`disabled={disabled || loading}`) — so an
+     * in-flight action cannot be fired a second time by an impatient click.
+     */
     loading?: boolean;
     type?: ButtonTypes;
     title?: string;
     ariaLabel?: string;
+    /** Hook for the end-to-end tests to find this button. */
     testId?: string;
     class?: string;
     onclick?: (e: MouseEvent) => void;
@@ -38,6 +51,9 @@
     md: 'px-4 py-2 text-sm',
   };
 
+  // Semantic, not decorative: `danger` is for destructive actions, `warn` for reversible-but-notable
+  // ones, and `sandbox` marks anything acting on the isolated plugin-dev workspace — a visual cue that
+  // the user is not touching their real data.
   const variants: Record<string, string> = {
     primary:
       'bg-brand hover:bg-brand-hover text-white shadow-sm shadow-brand-shadow/30',

@@ -1,3 +1,15 @@
+/**
+ * The one place that says, for each AI Model, *what its weights are and how to obtain them*.
+ *
+ * The model registry describes a model to the user (name, description, size). This describes it to
+ * the code: which runtime family it belongs to, how its assets are fetched, and — for the models
+ * that need it — which specific files inside the download are the weights, the parameters and the
+ * output targets.
+ *
+ * Keeping it in a single table rather than scattered through each tool is what lets a new model be
+ * added by appending one entry, and what guarantees the preloader, the runner and the UI all agree
+ * on the same facts about it.
+ */
 import type { LiatirAIModelMetadata, LiatirAIModelRecord } from '@liatir/core';
 import {
 	BASENJI2_REGULATORY_MODEL_ID,
@@ -16,6 +28,10 @@ import {
 	UCE_4LAYER_MODEL_ID
 } from './model-registry';
 
+/**
+ * Which Python code path runs this model. Models in the same family share a runner and a runtime,
+ * which is why several models can be backed by one installed environment.
+ */
 export type AIModelRuntimeFamily =
 	| 'development-fixture'
 	| 'single-cell-celltypist'
@@ -30,6 +46,10 @@ export type AIModelRuntimeFamily =
 	| 'protein-structure-boltz'
 	| 'protein-structure-chai';
 
+/**
+ * How the weights are fetched at install time. `none` means the runtime pulls them itself on first
+ * use (Boltz and Chai do this), so there is nothing for the preloader to do.
+ */
 export type AIModelPreloadKind =
 	| 'none'
 	| 'celltypist'
@@ -40,17 +60,22 @@ export type AIModelPreloadKind =
 
 export type AIRegulatoryBackend = 'enformer' | 'basenji2' | 'borzoi-mini';
 
+/** Most fields are optional because they only apply to some families — see the table below. */
 export interface AIModelArtifactSpec {
 	modelId: string;
 	runtimeFamily: AIModelRuntimeFamily;
 	preloadKind: AIModelPreloadKind;
+	/** The model's ID upstream (Hugging Face repo, TF Hub URL) — not Liatir's own ID. */
 	upstreamModelId?: string;
+	/** Which Transformers class loads it: the wrong one yields a model that loads but cannot infer. */
 	transformersLoader?: 'auto-model' | 'masked-lm';
 	defaultAsset?: string;
 	regulatoryBackend?: AIRegulatoryBackend;
+	/** Regulatory models: how many base pairs of sequence the model consumes at once. */
 	contextWindow?: number;
 	defaultHead?: 'human' | 'mouse';
 	defaultTargetIndex?: number;
+	// For models delivered as loose files, the paths *inside* the download that matter.
 	modelFile?: string;
 	paramsFile?: string;
 	targetsFile?: string;
@@ -172,6 +197,11 @@ export function artifactSpecForModel(
 	return artifactSpecForModelId(model.id);
 }
 
+/**
+ * The `require*` variants throw instead of returning null, and are used where a missing spec is a
+ * programming error rather than a condition to handle. They carry the model's display *name* in the
+ * message, so the failure names the model the user recognises rather than an internal ID.
+ */
 export function requireArtifactSpecForModel(
 	model: Pick<LiatirAIModelMetadata | LiatirAIModelRecord, 'id' | 'name'>
 ): AIModelArtifactSpec {
@@ -180,6 +210,13 @@ export function requireArtifactSpecForModel(
 	return spec;
 }
 
+/**
+ * Everything needed to pull a model from Hugging Face, or null if it does not come from there.
+ *
+ * The revision comes from the model's install metadata, not from this table: pinning a specific
+ * commit is what stops an upstream repository update from silently changing the weights a user's
+ * results were produced with.
+ */
 export function huggingFaceArtifactForModel(
 	model: Pick<LiatirAIModelRecord, 'id' | 'install' | 'name'>
 ): { upstreamModelId: string; revision: string | null; transformersLoader: 'auto-model' | 'masked-lm' } | null {

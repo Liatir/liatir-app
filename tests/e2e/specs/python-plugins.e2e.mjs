@@ -1,3 +1,9 @@
+/**
+ * Python `.lia` plugins end to end: import, prepare the environment, run.
+ *
+ * The environment preparation is the reason this has to be a real test — a Python plugin is the one kind that can
+ * be installed and still not be runnable, and that gap only exists on a real machine.
+ */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';

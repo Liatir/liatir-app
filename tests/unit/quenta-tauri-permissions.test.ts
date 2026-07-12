@@ -1,3 +1,15 @@
+/**
+ * Guards against the single most common way to break a Tauri command: writing it, wiring it up, and forgetting
+ * to grant it.
+ *
+ * A `lia_*` command that is not listed in `permissions/liatir-bridge.toml` is simply *denied* at runtime. It
+ * compiles, it type-checks, and it fails only when a user actually clicks the thing — which for Quenta means
+ * the assistant silently stops working.
+ *
+ * So this test reads the frontend runtime and the permission file as **text** and checks that every command the
+ * code invokes is one the manifest allows. It is a static consistency check between two files that have no other
+ * link, and it is what turns a runtime failure into a failing test.
+ */
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';

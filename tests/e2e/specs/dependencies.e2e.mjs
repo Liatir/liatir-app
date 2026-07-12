@@ -1,3 +1,9 @@
+/**
+ * The Dependencies screen: detection, the diagnosis shown for a broken dependency, and the offered fix.
+ *
+ * Driven through the real app because the value of that screen is precisely what it *shows the user* when a tool
+ * is missing or shadowed — which is not something a unit test can observe.
+ */
 import {
   expectNoVisibleRuntimeError,
   navigateSidebar,

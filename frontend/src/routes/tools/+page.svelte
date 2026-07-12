@@ -1,3 +1,10 @@
+<!--
+	The Tools catalogue: the native bioinformatics tools Liatir ships with.
+
+	The list is declared here as data rather than as markup, so a tool is added by appending an entry — the page
+	itself does not change. `status: 'soon'` is what lets a planned tool be *shown* while remaining unclickable:
+	the user can see what is coming instead of wondering whether it exists.
+-->
 <script lang="ts">
   import { goto } from '$app/navigation';
   import Icon from '@iconify/svelte';
@@ -13,7 +20,9 @@
     label: string;
     description: string;
     href: string;
+    /** `soon` renders the card but disables it — announced, not yet available. */
     status: 'available' | 'soon';
+    /** Searchable keywords: a user looks for "FASTQ" or "QC", rarely for a tool's name. */
     tags: string[];
     category: string;
   }

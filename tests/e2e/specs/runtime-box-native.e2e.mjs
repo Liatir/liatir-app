@@ -1,3 +1,10 @@
+/**
+ * Exercises an installed Runtime Box against real data, in the real app.
+ *
+ * The assertions are scientific, not mechanical: the box must contain enough supported genes to be usable, and the
+ * output must be well-formed. A box that installs cleanly but cannot actually embed a dataset is broken in the way
+ * that matters, and only a check like this catches it.
+ */
 import {
   activateCleanSandbox,
   firstDownloadOffset,

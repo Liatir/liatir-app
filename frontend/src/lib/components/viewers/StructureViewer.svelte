@@ -1,3 +1,20 @@
+<!--
+	3D molecular structure viewer, powered by 3Dmol.js.
+
+	Two design decisions dominate this file.
+
+	**It runs inside an iframe, not in the page.** The 3Dmol.js source is read as *text* and inlined
+	into a self-contained HTML document served from a blob URL. That sandboxes a large third-party
+	library away from the app: it cannot reach Liatir's DOM, its stores, or the Tauri bridge. The price
+	is that everything it needs — the library, the structure, the display options — must be serialised
+	into that document, which is what the escaping helpers below exist for, and errors have to come back
+	across the boundary via postMessage.
+
+	**There is a real fallback.** If 3Dmol.js cannot run in this webview, the component parses the PDB
+	itself and draws a flat SVG projection of the atoms. It is not a pretty picture, but it is an honest
+	one: the coordinates are the file's own, so the user sees their actual structure rather than an
+	error where their result should be.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -18,13 +35,23 @@
   let frameUrl = $state('');
   let fallbackContent = $state('');
 
+  // Identifies *this* viewer instance, so a postMessage from one iframe is not acted on by another
+  // structure viewer rendered on the same page.
   const viewerId = crypto.randomUUID();
 
+  /** 3Dmol calls the mmCIF format `cif`; Liatir distinguishes them. Translated at the boundary. */
   function normalizeFormat(format: StructureViewerSection['format']): string {
     if (format === 'mmcif') return 'cif';
     return format;
   }
 
+  /**
+   * Maps Liatir's style/colour options onto 3Dmol's own style object.
+   *
+   * `Jmol` is 3Dmol's standard element-colour palette (carbon grey, oxygen red, …) — the colouring a
+   * chemist expects. `spectrum` colours along the chain instead, which is what makes secondary
+   * structure legible in a cartoon view.
+   */
   function styleFor(sectionStyle?: StructureViewerSection['style'], colorScheme?: StructureViewerSection['colorScheme']) {
     const style = sectionStyle ?? 'cartoon';
     const color = colorScheme === 'element' ? 'Jmol' : 'spectrum';
@@ -34,6 +61,14 @@
     return { cartoon: { color: colorScheme === 'chain' ? 'spectrum' : color } };
   }
 
+  /**
+   * Escaping for the two things embedded into the iframe's HTML — and both are load-bearing.
+   *
+   * The structure content is a *user's file*, so it is untrusted input being written into a document.
+   * `<` is escaped in the JSON payload, and `</script` is broken up in the inlined library, because
+   * either sequence appearing verbatim would terminate the surrounding `<script>` tag early and let
+   * whatever follows be parsed as markup.
+   */
   function escapeScriptJson(value: unknown): string {
     return JSON.stringify(value).replace(/</g, '\\u003c');
   }
@@ -42,6 +77,13 @@
     return source.replace(/<\/script/gi, '<\\/script');
   }
 
+  /**
+   * Rejects a file that is not a structure, before handing it to the viewer.
+   *
+   * Without this, feeding (say) a FASTA to the structure viewer produces an empty canvas and no
+   * explanation. The PDB check looks for the record types every real PDB file begins lines with — a
+   * cheap test that catches the mistake and names it.
+   */
   function validateStructureContent(content: string, format: StructureViewerSection['format']) {
     const trimmed = content.trim();
     if (!trimmed) throw new Error('Structure file is empty.');
@@ -61,6 +103,16 @@
     element: string;
   }
 
+  /**
+   * Minimal PDB parser, for the fallback renderer only.
+   *
+   * PDB is a **fixed-column** format, not a delimited one — the meaning of a field is its byte range,
+   * and splitting on whitespace would be wrong (a name can be padded, a field can be blank). Hence the
+   * `slice` offsets, which are taken straight from the PDB specification.
+   *
+   * Only ATOM and HETATM lines carry coordinates; everything else in the file is ignored. Atoms whose
+   * coordinates do not parse are dropped rather than plotted at NaN.
+   */
   function parsePdbAtoms(content: string): PdbAtom[] {
     return content.split(/\r?\n/)
       .filter(line => line.startsWith('ATOM') || line.startsWith('HETATM'))
@@ -72,6 +124,7 @@
         x: Number(line.slice(30, 38).trim()),
         y: Number(line.slice(38, 46).trim()),
         z: Number(line.slice(46, 54).trim()),
+        // The element column is optional in older files; fall back to inferring it from the atom name.
         element: line.slice(76, 78).trim() || line.slice(12, 14).trim(),
       }))
       .filter(atom => Number.isFinite(atom.x) && Number.isFinite(atom.y) && Number.isFinite(atom.z));
@@ -90,6 +143,11 @@
     };
   });
 
+  /**
+   * CPK-style element colours for the fallback: nitrogen blue, oxygen red, sulfur yellow, phosphorus
+   * purple, hydrogen grey, everything else (carbon and the rest) dark grey. These are the conventional
+   * colours, so the fallback still reads as chemistry rather than as an arbitrary dot plot.
+   */
   function atomColor(element: string): string {
     const normalized = element.toUpperCase();
     if (normalized === 'N') return '#2563eb';
@@ -100,6 +158,13 @@
     return '#52525b';
   }
 
+  /**
+   * Projects an atom onto the 2D fallback canvas: drop the Z axis, then scale X/Y into a 0-100 box.
+   *
+   * A flat orthographic projection, not a rendering — it conveys the molecule's shape and extent
+   * without any 3D machinery. `Math.max(1, …)` guards against a zero span (a single atom, or a planar
+   * molecule) producing a division by zero.
+   */
   function atomPoint(atom: PdbAtom): { x: number; y: number } {
     if (!fallbackBounds) return { x: 50, y: 50 };
     const pad = 10;
@@ -111,10 +176,18 @@
     };
   }
 
+  /** The iframe is fed from a blob URL, so its document has an opaque origin and no access to ours. */
   function createFrameUrl(html: string): string {
     return URL.createObjectURL(new Blob([html], { type: 'text/html' }));
   }
 
+  /**
+   * Surfaces a runtime failure — but stays quiet when the fallback has already rendered something.
+   *
+   * If 3Dmol hit the known webview incompatibility *and* the SVG fallback drew real atoms, the user is
+   * looking at their structure. Warning them about an internal failure they cannot act on, and whose
+   * consequence they cannot see, would be noise.
+   */
   function setRuntimeWarning(message: string) {
     if (fallbackAtoms.length > 0 && isViewerProxyCompatibilityError(message)) {
       runtimeWarning = null;
@@ -123,6 +196,11 @@
     runtimeWarning = viewerRuntimeFailureMessage(message, '3Dmol.js');
   }
 
+  /**
+   * Builds the sandboxed document: the payload as JSON, the 3Dmol library inlined, and a bootstrap
+   * script that renders it. Failures inside the iframe are reported back to this component by
+   * postMessage — an exception thrown in there cannot otherwise be observed out here.
+   */
   function createStructureFrame(scriptSource: string, content: string): string {
     const payload = escapeScriptJson({
       viewerId,

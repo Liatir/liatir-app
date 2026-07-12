@@ -1,3 +1,9 @@
+/**
+ * `Liatir.desktop.menu` — the native application menu.
+ *
+ * Built declaratively from a config object (or a JSON file), rather than item by item, so a menu is data the
+ * app can inspect and modify. `setEnabled`/`setChecked` then toggle individual items by id at runtime.
+ */
 import { initMenuConfig } from "../../../helpers";
 import type { LiatirAPI, MenuConfig, MenuInterface, } from "../../../types";
 

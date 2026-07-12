@@ -1,3 +1,17 @@
+<!--
+	Editor for an API Connector response schema.
+
+	The user declares what a request returns — field names, types, nesting — and that declaration is what
+	turns an opaque JSON blob into typed outputs a pipeline node can be wired from. Without it, an API
+	response could not be connected to anything downstream.
+
+	**Recursive**: it imports itself as `Self` and renders a nested editor for any `object` or `array` field,
+	so a schema of arbitrary depth is described by one component rather than by a fixed number of levels.
+	`depth` exists only for indentation.
+
+	The type labels are deliberately non-technical — "text", "yes/no", "list" — because the people describing
+	an API response here are biologists, not developers.
+-->
 <script lang="ts">
   import Self from './ApiSchemaEditor.svelte';
   import Select from '$lib/components/ui/Select.svelte';
@@ -7,6 +21,7 @@
   interface Props {
     schema: Record<string, ApiOutputSchemaField>;
     disabled?: boolean;
+    /** Nesting level — used for indentation only. */
     depth?: number;
     onchange: (schema: Record<string, ApiOutputSchemaField>) => void;
   }
@@ -24,9 +39,18 @@
 
   const entries = $derived(Object.entries(schema));
 
+  // Every mutation rebuilds the schema and hands it up via `onchange` — this component owns no state of its
+  // own. That is what lets a nested editor's change propagate cleanly to the top.
   function setField(key: string, field: ApiOutputSchemaField) {
     onchange({ ...schema, [key]: field });
   }
+  /**
+   * Renames a field, preserving key order.
+   *
+   * The object is rebuilt in place rather than delete-and-reinsert, because the latter would move the
+   * renamed field to the end and reshuffle the form under the user's cursor. A rename onto an existing name
+   * is refused, since that would silently destroy the other field.
+   */
   function rename(oldKey: string, newKey: string) {
     newKey = newKey.trim();
     if (!newKey || newKey === oldKey || schema[newKey]) return;
@@ -39,6 +63,7 @@
     delete next[key];
     onchange(next);
   }
+  /** Adds a field under a free name (`field`, `field1`, …), so a new one never collides with an existing key. */
   function addField() {
     let key = 'field', n = 1;
     while (schema[key]) key = `field${n++}`;

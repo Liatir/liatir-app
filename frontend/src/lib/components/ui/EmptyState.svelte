@@ -1,3 +1,11 @@
+<!--
+	What a list shows when it has nothing in it.
+
+	An empty screen is a dead end for a new user, so an empty state is treated as a first-class thing
+	rather than an afterthought: it names what is missing (`title`), explains why that might be
+	(`description`), and — through `action` — offers the way out. "No files in Data yet" plus an *Add
+	files* button is the difference between a user getting started and a user getting stuck.
+-->
 <script lang="ts">
   import type { Snippet } from 'svelte';
 
@@ -5,6 +13,7 @@
     icon?: Snippet;
     title: string;
     description?: string;
+    /** The way forward — typically a button that creates the thing that is missing. */
     action?: Snippet;
   }
 

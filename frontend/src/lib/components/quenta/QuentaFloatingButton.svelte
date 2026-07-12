@@ -1,3 +1,14 @@
+<!--
+	The floating "Ask Quenta" affordance.
+
+	Quenta is marked `hidden` in the sidebar, so it has no nav entry — it is reached from here instead,
+	which keeps the assistant within reach on every screen without adding another item to the navigation.
+	The button still reuses the sidebar's own definition (icon, label, href), so the two cannot drift.
+
+	The condition below is where the rules live: it appears only inside a workspace (Quenta answers
+	questions *about* a workspace's runs and data, so it is meaningless without one), and never on the
+	Workspaces page or on the Quenta page itself.
+-->
 <script lang="ts">
 	import { page } from '$app/state';
 	import { HEADER_HEIGHT } from '$lib/_constants';

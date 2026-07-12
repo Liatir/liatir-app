@@ -1,12 +1,28 @@
 #!/usr/bin/env node
 
+/**
+ * Scientific-correctness check for the Geneformer runner.
+ *
+ * Liatir ships its own Python script to tokenise and embed single-cell data with Geneformer. A
+ * subtle divergence from the upstream tokenizer would not crash anything — it would quietly
+ * produce embeddings that are *wrong*, which for a scientific tool is the worst possible failure
+ * mode. So this runs the shipped script and the upstream tokenizer side by side and compares them.
+ *
+ * Two details make the comparison meaningful rather than decorative:
+ *   - the script under test is extracted from the real product source, not a copy kept in sync
+ *     by hand, so what is validated is exactly what users run;
+ *   - it executes inside the built Runtime Box's own interpreter, so the library versions are the
+ *     ones the user will actually have.
+ */
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const ROOT = resolve(import.meta.dirname, '..');
+/** Pinned upstream commit: parity must be checked against a fixed reference, not a moving branch. */
 const REVISION = '04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5';
+/** Requires the box to have been built first (`runtime-box build`); this reads its output. */
 const ARCHIVE = join(
   ROOT,
   '.runtime-box-dist',
@@ -28,6 +44,13 @@ function run(command, args, options = {}) {
   return result.stdout?.trim() ?? '';
 }
 
+/**
+ * Pulls the Python source out of the TypeScript file that ships it.
+ *
+ * The runner lives in the product as a `String.raw` template literal, so it can be sent to the
+ * Python runtime at execution time. Extracting it here — rather than keeping a duplicate copy of
+ * the script for testing — means the validated code and the shipped code cannot drift apart.
+ */
 function extractEmbeddedScript(source) {
   const prefix = 'export const GENEFORMER_EMBEDDING_SCRIPT = String.raw`';
   const start = source.indexOf(prefix);
@@ -41,6 +64,9 @@ try {
   const runtimeDir = join(workDir, 'runtime');
   const upstreamDir = join(workDir, 'Geneformer');
   run('unzip', ['-q', ARCHIVE, '-d', runtimeDir]);
+  // The upstream repo carries model weights and is enormous. `--filter=blob:none --no-checkout`
+  // fetches no file contents up front, and the checkout below then pulls exactly one file — the
+  // tokenizer — which is all this comparison needs.
   run('git', [
     'clone', '--quiet', '--filter=blob:none', '--no-checkout',
     'https://huggingface.co/ctheodoris/Geneformer', upstreamDir,
@@ -53,6 +79,8 @@ try {
   );
   const productScript = join(workDir, 'liatir-geneformer.py');
   await writeFile(productScript, extractEmbeddedScript(productSource));
+  // Run with the box's own interpreter, so the comparison happens under the exact library versions
+  // a user gets. The Python harness does the actual numeric comparison and fails on divergence.
   const output = run(
     join(runtimeDir, 'venv/bin/python'),
     [
@@ -66,5 +94,6 @@ try {
   );
   console.log(output);
 } finally {
+  // The extracted runtime and the cloned repo are large; always clean up, including on failure.
   await rm(workDir, { recursive: true, force: true });
 }

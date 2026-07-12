@@ -1,3 +1,10 @@
+/**
+ * Global, always-visible progress for dependency installs.
+ *
+ * Keyed by binary, so several tools can install at once and each gets its own row. This is what
+ * lets the user start an install and then navigate away: the progress lives here, in a store, not
+ * in the page that started it, so leaving the Dependencies screen does not cancel or hide it.
+ */
 export interface InstallItem {
   binary: string;
   label: string;
@@ -32,12 +39,14 @@ function createInstallProgressStore() {
       items = { ...items, [binary]: { ...items[binary], ...patch } };
     },
 
+    /** Marks success and lets the row linger briefly, so the user sees it completed. */
     done(binary: string) {
       if (!items[binary]) return;
       items = { ...items, [binary]: { ...items[binary], phase: 'done', error: null } };
       setTimeout(() => remove(binary), 3500);
     },
 
+    /** Marks failure. Held much longer than a success — an error is something the user must read. */
     error(binary: string, message: string) {
       if (!items[binary]) return;
       items = { ...items, [binary]: { ...items[binary], phase: 'error', error: message } };

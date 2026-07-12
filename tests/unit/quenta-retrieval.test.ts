@@ -1,3 +1,10 @@
+/**
+ * Tests the retrieval that decides what Quenta actually sees.
+ *
+ * This is the load-bearing step of the assistant: a correct model given the wrong context produces a confident,
+ * wrong answer. So the tests cover both halves — that the *right* sources are selected, and that they are wrapped
+ * in the tagged blocks that let the answer cite them and let a fabricated citation be filtered out.
+ */
 import { describe, expect, it } from 'vitest';
 
 import {

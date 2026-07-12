@@ -1,3 +1,14 @@
+/**
+ * Index of the command-line binaries Liatir installed itself.
+ *
+ * The distinction from the dependency store matters: `deps` records what it *found* on the machine
+ * (which may be a Homebrew install, a system package, anything). This records only what Liatir
+ * downloaded and manages — so it knows what it is allowed to remove or update, and never touches a
+ * tool the user installed themselves.
+ *
+ * `platform` and `arch` are stored with each entry because a binary downloaded for one architecture
+ * is useless on another, which matters when a home directory is copied between machines.
+ */
 import { liatir } from '$lib/api';
 
 export interface ManagedBinary {
@@ -27,6 +38,7 @@ function createManagedBinsStore() {
       return bins[binary] ?? null;
     },
 
+    /** Loads the index. A missing or unreadable file simply means nothing is managed yet. */
     async init(): Promise<void> {
       if (initialized) return;
       const api = liatir();

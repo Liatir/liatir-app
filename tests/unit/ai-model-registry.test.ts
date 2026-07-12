@@ -1,3 +1,12 @@
+/**
+ * Contract tests for the AI model registry.
+ *
+ * The registry is a hand-written table, and everything downstream trusts it: models are keyed by id in the
+ * store, on disk, in job metadata and in saved Results. A duplicate or malformed id would therefore not fail
+ * loudly — it would quietly make two models share one install directory, or make a saved run unreadable.
+ *
+ * These assertions are cheap and catch that at the moment the entry is added, rather than after it has shipped.
+ */
 import { describe, expect, it } from 'vitest';
 import {
   CHAI1_MODEL_ID,

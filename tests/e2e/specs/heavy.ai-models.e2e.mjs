@@ -1,3 +1,11 @@
+/**
+ * The heavy AI suite: installs real models and runs real inference.
+ *
+ * Deliberately gated behind `--include-heavy` — it downloads gigabytes and takes a long time, so it is never part
+ * of a routine run. But it is the only thing that proves the *whole* chain works: a signed Runtime Box downloads,
+ * verifies, self-tests, activates, and then produces a usable result on this machine. Every other test mocks
+ * something in that path.
+ */
 import {
   expectNoVisibleRuntimeError,
   navigateSidebar,

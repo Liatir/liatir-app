@@ -1,3 +1,10 @@
+<!--
+	The header every page sits under.
+
+	Its height is pinned to the shared HEADER_HEIGHT constant — both min and max — because other things
+	position themselves against it (the floating Quenta button, scroll containers). Letting it grow with
+	its content would silently shift those.
+-->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import InfoPopup from '$lib/components/ui/InfoPopup.svelte';
@@ -5,9 +12,12 @@
 
   interface Props {
     title: string;
+    /** Explains what this page is for — the same "i" affordance the form fields use. */
     info?: string;
     description?: string;
+    /** Rendered beside the title (e.g. a back button). */
     titleActions?: Snippet;
+    /** Rendered on the right (e.g. Run, Save). */
     actions?: Snippet;
   }
 

@@ -1,5 +1,18 @@
+/**
+ * Plain-language explanations of AI Models and their inputs.
+ *
+ * Liatir is for non-technical users first, and that principle has to survive contact with the AI
+ * screens — where the vocabulary ("embedding", "masked-LM", "recycling steps") is otherwise
+ * impenetrable to a biologist who simply wants to annotate their cells.
+ *
+ * So every capability and every input field has a sentence here that says what it *does*, in terms
+ * of the user's work rather than the model's architecture. Note the honesty in some of these: the
+ * MSA-server help says the sequence leaves the machine, and the majority-voting help admits it can
+ * hide rare populations. A help text that only sells the feature would be worse than none.
+ */
 import type { LiatirAIModelRecord } from '@liatir/core';
 
+/** What a model *does*, in one sentence, for each capability it declares. */
 const CAPABILITY_HELP: Record<string, string> = {
   'cell-annotation': 'labels cells in a single-cell dataset using known reference cell types.',
   'single-cell-embedding': 'turns cells into numeric vectors that can be compared, clustered, or visualized.',
@@ -17,6 +30,12 @@ const CAPABILITY_HELP: Record<string, string> = {
   classification: 'assigns labels or classes to inputs.',
 };
 
+/**
+ * Per-input help, keyed by the field name a tool form uses. Several entries state the *file format*
+ * and where the data must live inside it (e.g. gene symbols in `var_names`) — because a wrong
+ * column is the single most common reason a single-cell run fails, and it is much cheaper to say so
+ * up front than to let the model reject the file.
+ */
 export const AI_MODEL_INPUT_HELP: Record<string, string> = {
   runInput: 'Inputs are the files, sequences, and settings sent to this AI Model for one run.',
   annDataFile: 'A `.h5ad` single-cell dataset. The model reads the cell expression matrix and returns predicted cell-type labels.',
@@ -55,7 +74,16 @@ export const AI_MODEL_INPUT_HELP: Record<string, string> = {
   context: 'Optional extra text or data the model can use while answering the prompt.',
 };
 
+/**
+ * Builds the description panel shown for a model: what it is, what it does in plain terms, what it
+ * needs, and — for a preview model — why its controls are disabled.
+ *
+ * Every section is optional and dropped when empty, so the panel never shows a heading with nothing
+ * under it. The output is markdown, joined by blank lines.
+ */
 export function aiModelInfo(model: LiatirAIModelRecord): string {
+  // Unknown capabilities are filtered out rather than rendered as a gap, so adding a capability to
+  // the registry without a help sentence degrades quietly instead of showing "undefined".
   const capabilityHelp = model.capabilities
     .map((capability) => CAPABILITY_HELP[capability])
     .filter(Boolean);
