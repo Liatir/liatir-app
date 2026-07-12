@@ -278,6 +278,38 @@ async function collectFiles(root, current = root) {
   return files;
 }
 
+async function extractRecipeArchive(payloadDir, archive) {
+  const archivePath = join(payloadDir, safeRelativePath(archive.relativePath));
+  if (archive.format !== 'zip') fail(`Unsupported recipe archive format: ${archive.format}`);
+  const entries = run('unzip', ['-Z1', archivePath], { capture: true })
+    .split('\n')
+    .filter(Boolean);
+  for (const entry of entries) {
+    const normalized = entry.replace(/\/$/, '');
+    if (normalized) safeRelativePath(normalized);
+  }
+  const extracted = await mkdtemp(join(tmpdir(), 'liatir-runtime-box-asset-'));
+  try {
+    run('unzip', ['-q', archivePath, '-d', extracted]);
+    let source = extracted;
+    const stripComponents = Number(archive.stripComponents ?? 0);
+    for (let index = 0; index < stripComponents; index += 1) {
+      const children = (await readdir(source, { withFileTypes: true }))
+        .filter((entry) => entry.name !== '__MACOSX' && entry.name !== '.DS_Store');
+      if (children.length !== 1 || !children[0].isDirectory()) {
+        fail(`Cannot strip component ${index + 1} from ${archive.relativePath}.`);
+      }
+      source = join(source, children[0].name);
+    }
+    const destination = join(payloadDir, safeRelativePath(archive.destination));
+    await mkdir(dirname(destination), { recursive: true });
+    await cp(source, destination, { recursive: true, dereference: true, preserveTimestamps: false });
+  } finally {
+    await rm(extracted, { recursive: true, force: true });
+  }
+  if (archive.removeAfterExtract !== false) await rm(archivePath, { force: true });
+}
+
 async function normalizeTree(root) {
   for (const file of await collectFiles(root)) await utimes(join(root, file), FIXED_ARCHIVE_TIME, FIXED_ARCHIVE_TIME);
 }
@@ -327,10 +359,16 @@ async function buildRecipe(name, flags) {
     console.log(`Downloading ${asset.relativePath}`);
     await downloadVerified(asset, join(payloadDir, safeRelativePath(asset.relativePath)));
   }
+  for (const archive of recipe.assetArchives ?? []) {
+    await extractRecipeArchive(payloadDir, archive);
+  }
   for (const requiredFile of recipe.selfTest.files) {
     if (!await fileExists(join(payloadDir, safeRelativePath(requiredFile)))) fail(`Missing self-test file: ${requiredFile}`);
   }
-  run(join(payloadDir, recipe.pythonEntryPoint), ['-c', `import ${recipe.selfTest.imports.join(', ')}`], { cwd: payloadDir });
+  const selfTestCode = recipe.selfTest.pythonCode
+    ? `import ${recipe.selfTest.imports.join(', ')}\n${recipe.selfTest.pythonCode}`
+    : `import ${recipe.selfTest.imports.join(', ')}`;
+  run(join(payloadDir, recipe.pythonEntryPoint), ['-c', selfTestCode], { cwd: payloadDir });
 
   const provenance = {
     recipeId: recipe.recipeId,

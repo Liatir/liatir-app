@@ -5,3 +5,4 @@ export { REGULATORY_PREDICTION_SCRIPT } from './regulatory-prediction';
 export { PROTEIN_STRUCTURE_SCRIPT } from './protein-structure';
 export { UCE_EMBEDDING_SCRIPT } from './uce-embedding';
 export { GENEFORMER_EMBEDDING_SCRIPT } from './geneformer-embedding';
+export { SCGPT_EMBEDDING_SCRIPT } from './scgpt-embedding';

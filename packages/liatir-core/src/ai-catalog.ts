@@ -677,7 +677,7 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		id: SCFOUNDATION_100M_MODEL_ID,
 		name: 'scFoundation 100M',
 		description:
-			'Preview large-scale single-cell foundation model candidate for embeddings and downstream cell-state analysis.',
+			'License-restricted single-cell foundation model candidate. Liatir cannot redistribute its weights in a managed Runtime Box.',
 		category: 'Single-cell Foundation Models',
 		version: '100m',
 		releaseStage: 'preview',
@@ -692,10 +692,9 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		modalities: ['single-cell'],
 		parameters: 100_000_000,
 		license: {
-			name: 'Apache License 2.0',
-			spdxId: 'Apache-2.0',
-			url: 'https://github.com/biomap-research/scFoundation',
-			verifiedAt: '2026-07-02'
+			name: 'scFoundation Model License (non-commercial research only)',
+			url: 'https://github.com/biomap-research/scFoundation/blob/397631c495eddf9ad6644fc00c6ea8139e651245/MODEL_LICENSE',
+			verifiedAt: '2026-07-12'
 		},
 		hardware: {
 			cpu: true,
@@ -712,7 +711,7 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			officialUrl: 'https://github.com/biomap-research/scFoundation',
 			paperUrl: 'https://www.nature.com/articles/s41592-024-02305-7'
 		},
-		tags: ['preview', 'single-cell', 'foundation-model', 'embedding']
+		tags: ['preview', 'license-restricted', 'single-cell', 'foundation-model', 'embedding']
 	},
 	{
 		id: ESM2_8M_ID,

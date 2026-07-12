@@ -2,7 +2,7 @@
 
 | Target | Status | Python | Accelerator | Distribution gate |
 |---|---|---:|---|---|
-| macOS arm64 | Foundation target | 3.11.9 | Apple Metal / CPU | Geneformer V1 10M native validation pending |
+| macOS arm64 | Foundation target | 3.11.9 | Apple Metal / CPU | Geneformer native lifecycle/parity passed; scGPT production publication pending |
 | macOS x86_64 | Planned | TBD | CPU | Not published |
 | Linux x86_64 | Planned | TBD | CPU / CUDA | CUDA ABI matrix required |
 | Windows x86_64 | Planned | TBD | CPU / CUDA | Relocatable runtime validation required |

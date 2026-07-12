@@ -126,7 +126,8 @@ export const AI_MODEL_ARTIFACT_SPECS: AIModelArtifactSpec[] = [
 	{
 		modelId: SCGPT_WHOLE_HUMAN_MODEL_ID,
 		runtimeFamily: 'single-cell-foundation-scgpt',
-		preloadKind: 'none'
+		preloadKind: 'managed-files',
+		modelFile: 'best_model.pt'
 	},
 	{
 		modelId: GENEFORMER_V1_10M_MODEL_ID,

@@ -20,12 +20,19 @@ npm run runtime-box -- build geneformer-v1-10m-macos-arm64-metal \
   --asset-base-url http://127.0.0.1:8790/objects --allow-dirty
 npm run runtime-box -- verify .runtime-box-dist/<release>.release.json --self-test
 npm run runtime-box -- serve
+npm run runtime-box:validate:geneformer
+npm run runtime-box:validate:scgpt
 ```
 
 `build` requires the exact `uv` version declared by the recipe. It copies the
 complete Astral-managed standalone Python distribution into the box, synchronizes
 the checked-in hash lock, downloads every asset with SHA-256 verification, runs
 the recipe self-test, and creates a normalized ZIP archive.
+
+The model-specific validation commands are intentionally separate from the
+general test matrix. Geneformer compares the product runner with the pinned
+upstream tokenizer and embedding algorithm. scGPT loads the packaged official
+checkpoint and source, runs one real CPU embedding, and validates finite output.
 
 For a fast installer-only check, build the small fixture instead:
 
@@ -74,3 +81,7 @@ The app always trusts the checked-in production public key. Additional public
 trust roots can be supplied at compile time through
 `LIATIR_RUNTIME_BOX_TRUSTED_KEYS_JSON`; private keys stay offline and must be
 backed up before the first release.
+
+scFoundation is not eligible for this distribution path: its model license
+restricts weight redistribution. The Apache-2.0 repository code license does
+not override the separate checkpoint license.

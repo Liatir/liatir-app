@@ -8,10 +8,15 @@ import type {
 import type { RunOutputFile } from '$lib/types/pipeline';
 import type { ToolOutput } from '$lib/types/tool-output';
 import { aiRunMetadata, type AIRunContext } from '$lib/ai/direct-run-context';
-import { GENEFORMER_V1_10M_MODEL_ID, UCE_4LAYER_MODEL_ID } from '$lib/ai/model-registry';
+import {
+	GENEFORMER_V1_10M_MODEL_ID,
+	SCGPT_WHOLE_HUMAN_MODEL_ID,
+	UCE_4LAYER_MODEL_ID
+} from '$lib/ai/model-registry';
 import { cachePathForModel, runAIPython, type AIPythonRunResult } from '$lib/ai/runtime';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
 import { GENEFORMER_EMBEDDING_SCRIPT } from './python-scripts/geneformer-embedding';
+import { SCGPT_EMBEDDING_SCRIPT } from './python-scripts/scgpt-embedding';
 import { UCE_EMBEDDING_SCRIPT } from './python-scripts/uce-embedding';
 import { liatir } from '$lib/api';
 import { getLastSegmentsStringFromPath } from '$lib/utils';
@@ -89,7 +94,11 @@ export const singleCellEmbeddingDefinition: LiatirAIToolDefinition = {
 	},
 	modelInputKey: 'modelId',
 	supportedCapabilities: ['single-cell-embedding'],
-	supportedModelIds: [UCE_4LAYER_MODEL_ID, GENEFORMER_V1_10M_MODEL_ID]
+	supportedModelIds: [
+		UCE_4LAYER_MODEL_ID,
+		GENEFORMER_V1_10M_MODEL_ID,
+		SCGPT_WHOLE_HUMAN_MODEL_ID
+	]
 };
 
 function basename(path: string): string {
@@ -343,16 +352,23 @@ export async function runSingleCellEmbeddingStep(
 	if (!modelId) throw new Error('AI Model is required.');
 	const model = aiModelsStore.byId(modelId);
 	if (!model) throw new Error(`Unknown AI Model: ${modelId}`);
-	if (model.id !== UCE_4LAYER_MODEL_ID && model.id !== GENEFORMER_V1_10M_MODEL_ID)
-		throw new Error('Single-cell Embedding requires UCE 4-layer or Geneformer V1 10M.');
+	if (
+		model.id !== UCE_4LAYER_MODEL_ID &&
+		model.id !== GENEFORMER_V1_10M_MODEL_ID &&
+		model.id !== SCGPT_WHOLE_HUMAN_MODEL_ID
+	)
+		throw new Error('Single-cell Embedding requires UCE 4-layer, Geneformer V1 10M, or scGPT Whole-human.');
 	if (model.status !== 'installed') throw new Error(`AI Model is not installed: ${model.name}`);
 	if (!inputs.inputFile) throw new Error('AnnData file is required.');
 
 	const batchSize = boundedInteger(inputs.batchSize, 25, 1, 256);
 	const maxCsvRows = boundedInteger(inputs.maxCsvRows, 500, 1, 5000);
 	const species = inputs.species || 'human';
-	if (model.id === GENEFORMER_V1_10M_MODEL_ID && species !== 'human')
-		throw new Error('Geneformer V1 10M supports human single-cell transcriptomes only.');
+	if (
+		(model.id === GENEFORMER_V1_10M_MODEL_ID || model.id === SCGPT_WHOLE_HUMAN_MODEL_ID) &&
+		species !== 'human'
+	)
+		throw new Error(`${model.name} supports human single-cell transcriptomes only.`);
 	const cachePath = cachePathForModel(model);
 
 	onLog(`ai-tool ${singleCellEmbeddingDefinition.id}`);
@@ -361,7 +377,11 @@ export async function runSingleCellEmbeddingStep(
 	onLog(`species ${species}`);
 
 	const script =
-		model.id === GENEFORMER_V1_10M_MODEL_ID ? GENEFORMER_EMBEDDING_SCRIPT : UCE_EMBEDDING_SCRIPT;
+		model.id === GENEFORMER_V1_10M_MODEL_ID
+			? GENEFORMER_EMBEDDING_SCRIPT
+			: model.id === SCGPT_WHOLE_HUMAN_MODEL_ID
+				? SCGPT_EMBEDDING_SCRIPT
+				: UCE_EMBEDDING_SCRIPT;
 	const result = await runAIPython(
 		model,
 		script,

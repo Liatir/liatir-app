@@ -161,10 +161,11 @@ if excluded_cells:
 if not tokenized_cells:
     raise SystemExit("Geneformer found no cells with usable human Ensembl gene counts.")
 
-if torch.cuda.is_available():
+force_cpu = os.environ.get("LIATIR_AI_FORCE_CPU") == "1"
+if not force_cpu and torch.cuda.is_available():
     device = torch.device("cuda")
     accelerator = "CUDA"
-elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+elif not force_cpu and hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
     device = torch.device("mps")
     accelerator = "Apple Metal"
 else:
