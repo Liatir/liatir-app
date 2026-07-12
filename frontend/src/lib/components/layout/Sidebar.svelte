@@ -9,7 +9,7 @@
 	import CustomIcon from '../ui/CustomIcon.svelte';
 	import Divider from '../ui/Divider.svelte';
 	import { toast } from '$lib/stores/toast.svelte';
-	import { NAV_PAGES, NAV_PAGES_BOTTOM, routeIsInSidebar, SIDEBAR_EXPANDED_WIDTH, type NavItem } from '$lib/sidebarUtils';
+	import { SIDEBAR_ITEMS_TOP, SIDEBAR_ITEMS_BOTTOM, routeIsInSidebar, SIDEBAR_EXPANDED_WIDTH, type SidebarItem, sidebarNavigateToPage } from '$lib/sidebarUtils';
 	import { sidebarCollapsed, sidebarWidth } from '$lib/stores/sidebar';
 	import { HEADER_HEIGHT } from '$lib/_constants';
 
@@ -27,24 +27,13 @@
 		localStorage.setItem('sidebar-collapsed', String(value));
 	})
 
-	function isActive(item: NavItem): boolean {
+	function isActive(item: SidebarItem): boolean {
 		if (!item.href) return false;
 		const path = page.url.pathname;
 		if (item.href === '/') return path === '/';
 		if (item.href === '/workspaces') return path === '/workspaces';
 		return path.startsWith(item.match ?? item.href);
 	}
-
-	async function navigateToPage(navItem: NavItem) {
-		if(navItem?.workspacePage) {
-			await workspaceStore.switchTo("");
-			jobsStore.refresh();
-			pipelineStore.init();
-			if(navItem?.href) goto(navItem.href);
-		} else {
-			if(navItem?.href) goto(navItem.href);
-		}
-	};
 
 	async function toggleSandboxMode() {
 		if (!workspaceStore.isSandboxMode) {
@@ -146,14 +135,14 @@
 
 	<!-- Navigation -->
 	<nav class="flex-1 overflow-y-auto px-1.5 py-3 space-y-0.5">
-		{#each NAV_PAGES as item}
+		{#each SIDEBAR_ITEMS_TOP as item}
 			{@const active = isActive(item)}
-			{#if item?.global || (workspaceStore.activeId && page.route.id!="/workspaces")}
+			{#if  item && !item?.hidden && (item?.global || (workspaceStore.activeId && page.route.id!="/workspaces"))}
 				{#if item?.divider}
 					<Divider my={5}/>
 				{:else}
 					<button
-						onclick={()=>navigateToPage(item as NavItem)}
+						onclick={()=>sidebarNavigateToPage(item as SidebarItem)}
 						title={sideCollapsed ? item.label : undefined}
 						data-testid="sidebar-nav-item"
 						data-route={item.href}
@@ -189,14 +178,14 @@
 
 	<div class="px-1.5 py-3 space-y-0.5 overflow-hidden">
 		<!-- Bottom nav -->
-		{#each NAV_PAGES_BOTTOM as item}
+		{#each SIDEBAR_ITEMS_BOTTOM as item}
 			{@const active = isActive(item)}
-			{#if item?.global || (workspaceStore.activeId && page.route.id!="/workspaces")}
+			{#if item && !item?.hidden && (item?.global || (workspaceStore.activeId && page.route.id!="/workspaces"))}
 				{#if item?.divider}
 					<Divider my={5}/>
 				{:else}
 					<button
-						onclick={()=>navigateToPage(item as NavItem)}
+						onclick={()=>sidebarNavigateToPage(item as SidebarItem)}
 						title={sideCollapsed ? item.label : undefined}
 						data-testid="sidebar-nav-item"
 						data-route={item.href}

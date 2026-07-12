@@ -20,6 +20,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { sidebarWidth } from '$lib/stores/sidebar';
+	import QuentaFloatingButton from '$lib/components/quenta/QuentaFloatingButton.svelte';
 
 	let { children } = $props();
 
@@ -125,3 +126,6 @@
 {/if}
 
 <ConfirmDialog />
+
+
+<QuentaFloatingButton/>
