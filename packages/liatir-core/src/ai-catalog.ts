@@ -580,7 +580,7 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			runtimeBox: {
 				boxId: 'geneformer-v1-10m',
 				channel: 'beta',
-				registryBaseUrl: 'https://models.liatir.app/v1'
+				registryBaseUrl: 'https://models.liatir.com/v1'
 			},
 			runtimePackages: GENEFORMER_V1_10M_RUNTIME_PACKAGES,
 			files: [

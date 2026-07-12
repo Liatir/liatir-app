@@ -56,7 +56,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
     expect(model?.install?.runtimeBox).toEqual({
       boxId: 'geneformer-v1-10m',
       channel: 'beta',
-      registryBaseUrl: 'https://models.liatir.app/v1',
+      registryBaseUrl: 'https://models.liatir.com/v1',
     });
     expect(model?.install?.revision).toMatch(/^[a-f0-9]{40}$/);
     expect(model?.install?.files?.map((file) => file.relativePath).sort()).toEqual([

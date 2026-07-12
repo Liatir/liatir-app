@@ -60,15 +60,17 @@ which `publish` refuses by default.
 
 ```bash
 npm run runtime-box -- publish .runtime-box-dist/<release>.release.json \
-  --bucket liatir-ai-runtime-boxes
-npm run runtime-box -- publish-key --bucket liatir-ai-runtime-boxes --confirm
+  --bucket liatir-storage --prefix ai-runtime-boxes
+npm run runtime-box -- publish-key --bucket liatir-storage \
+  --prefix ai-runtime-boxes --confirm
 npm run runtime-box -- promote .runtime-box-dist/<channel>.channel.json \
-  --registry https://models.liatir.app
+  --registry https://models.liatir.com --token-file .runtime-box-local/admin-token.txt
 ```
 
 The Worker admin token is provided through `LIATIR_RUNTIME_BOX_ADMIN_TOKEN`.
 The offline signing key is never uploaded to Cloudflare.
 
-Production desktop builds receive their public trust roots at compile time via
-`LIATIR_RUNTIME_BOX_TRUSTED_KEYS_JSON`. Only public keys belong in that value;
-private keys stay offline and should be backed up before the first release.
+The app always trusts the checked-in production public key. Additional public
+trust roots can be supplied at compile time through
+`LIATIR_RUNTIME_BOX_TRUSTED_KEYS_JSON`; private keys stay offline and must be
+backed up before the first release.

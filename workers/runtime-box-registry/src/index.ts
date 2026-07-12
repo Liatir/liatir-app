@@ -31,6 +31,11 @@ function safeSegment(value: string): string | null {
   return SEGMENT_PATTERN.test(value) ? value : null;
 }
 
+function objectKey(env: Env, key: string): string {
+  const prefix = env.OBJECT_PREFIX.replace(/^\/+|\/+$/g, '');
+  return prefix ? `${prefix}/${key}` : key;
+}
+
 function validReleaseManifestUrl(value: unknown): boolean {
   if (typeof value !== 'string') return false;
   try {
@@ -71,7 +76,7 @@ async function readBoundedJson(request: Request): Promise<unknown> {
 }
 
 async function trustedKeys(env: Env): Promise<TrustedSigningKey[]> {
-  const object = await env.RUNTIME_BOXES.get(TRUSTED_KEYS_OBJECT);
+  const object = await env.RUNTIME_BOXES.get(objectKey(env, TRUSTED_KEYS_OBJECT));
   if (!object) return [];
   const document = await object.json<TrustedSigningKeys>();
   if (document.schemaVersion !== 1 || !Array.isArray(document.keys)) return [];
@@ -120,7 +125,7 @@ async function requireAdmin(request: Request, env: Env): Promise<boolean> {
 }
 
 async function serveObject(request: Request, env: Env, key: string): Promise<Response> {
-  const object = await env.RUNTIME_BOXES.get(key);
+  const object = await env.RUNTIME_BOXES.get(objectKey(env, key));
   if (!object) return json({ error: 'not_found' }, 404);
   const headers = new Headers();
   object.writeHttpMetadata(headers);
@@ -188,7 +193,7 @@ async function promoteChannel(
   if (!validateChannelRoute(payload, channel, boxId, target)) return json({ error: 'channel_route_mismatch' }, 400);
   const key = `channels/${channel}/${boxId}/${target}.json`;
   const body = `${JSON.stringify(input, null, 2)}\n`;
-  await env.RUNTIME_BOXES.put(key, body, {
+  await env.RUNTIME_BOXES.put(objectKey(env, key), body, {
     httpMetadata: { contentType: 'application/json', cacheControl: 'public, max-age=60' },
     customMetadata: { payloadSha256: input.payloadSha256 },
   });
@@ -207,7 +212,7 @@ async function promoteRevocations(request: Request, env: Env): Promise<Response>
   if (!isLiatirSignedRuntimeBoxDocument(input)) return json({ error: 'invalid_signed_document' }, 400);
   const payload = await verifySignedDocument(env, input);
   if (!payload || !isRevocationsManifest(payload)) return json({ error: 'invalid_revocations' }, 400);
-  await env.RUNTIME_BOXES.put('control/revocations.json', `${JSON.stringify(input, null, 2)}\n`, {
+  await env.RUNTIME_BOXES.put(objectKey(env, 'control/revocations.json'), `${JSON.stringify(input, null, 2)}\n`, {
     httpMetadata: { contentType: 'application/json', cacheControl: 'public, max-age=300' },
     customMetadata: { payloadSha256: input.payloadSha256 },
   });

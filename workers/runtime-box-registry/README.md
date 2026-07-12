@@ -13,20 +13,22 @@ npm run runtime-box:worker:types
 npm run runtime-box:worker:dev
 ```
 
-Wrangler uses local R2 storage by default. Seed `control/trusted-keys.json` with
+Wrangler uses local R2 storage by default. Seed
+`ai-runtime-boxes/control/trusted-keys.json` with
 the public signing key before testing an authenticated promotion:
 
 ```bash
-npm run runtime-box -- publish-key --bucket liatir-ai-runtime-boxes --local --confirm
+npm run runtime-box -- publish-key --bucket liatir-storage \
+  --prefix ai-runtime-boxes --local --confirm
 ```
 
 ## Production setup
 
-1. Create the `liatir-ai-runtime-boxes` R2 bucket.
-2. Upload `control/trusted-keys.json` using Wrangler.
+1. Create the `liatir-storage` R2 bucket in the Personal account.
+2. Upload `ai-runtime-boxes/control/trusted-keys.json` using Wrangler.
 3. Set `ADMIN_TOKEN` with `wrangler secret put`; never store it in config.
-4. Attach the Worker to `models.liatir.app`.
-5. Attach the R2 public bucket/custom domain to `assets.models.liatir.app`.
+4. Attach the Worker to `models.liatir.com`.
+5. Attach the R2 custom domain to `assets.models.liatir.com`.
 
 Production publication is intentionally two phase: upload immutable archive and
 release objects first, then promote the signed channel document.

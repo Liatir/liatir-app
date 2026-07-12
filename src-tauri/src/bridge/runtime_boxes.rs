@@ -21,6 +21,8 @@ use super::{
 
 const AI_RUNTIME_ROOT: &str = "ai-runtimes";
 const MAX_CONTROL_DOCUMENT_BYTES: usize = 1024 * 1024;
+const PRODUCTION_TRUST_KEY: &str =
+    include_str!("../../../runtime-boxes/trust/production-public.json");
 const DEVELOPMENT_TRUST_KEY: &str =
     include_str!("../../../runtime-boxes/trust/development-public.json");
 
@@ -203,7 +205,9 @@ fn sha256_hex(bytes: &[u8]) -> String {
 }
 
 fn trusted_keys() -> Result<Vec<TrustedKey>, String> {
-    let mut keys = Vec::new();
+    let mut keys = vec![
+        serde_json::from_str(PRODUCTION_TRUST_KEY).map_err(|error| error.to_string())?,
+    ];
     if cfg!(debug_assertions) {
         keys.push(serde_json::from_str(DEVELOPMENT_TRUST_KEY).map_err(|error| error.to_string())?);
         if let Ok(path) = std::env::var("LIATIR_RUNTIME_BOX_TRUSTED_KEY_FILE") {

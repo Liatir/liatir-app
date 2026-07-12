@@ -112,8 +112,8 @@ R2 is enabled on the Cloudflare account.
   verification and post-extraction imports on macOS arm64.
 
 Remaining distribution gates: enable R2, provision the production signing
-public key and Worker admin secret, attach `models.liatir.app` and
-`assets.models.liatir.app`, publish/promote the immutable release, then run the
+public key and Worker admin secret, attach `models.liatir.com` and
+`assets.models.liatir.com`, publish/promote the immutable release, then run the
 catalog cutover, native app install/run, and scientific-parity gates.
 
 ## Batch 6: Simulations and biophysics

@@ -23,7 +23,7 @@
   "requirementsLock": "requirements.lock",
   "pythonEntryPoint": "venv/bin/python",
   "modelCacheSubdir": "model-cache/geneformer-v1-10m",
-  "assetBaseUrl": "https://assets.models.liatir.app",
+  "assetBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
   "assets": [
     {
       "url": "https://huggingface.co/ctheodoris/Geneformer/resolve/04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5/Geneformer-V1-10M/config.json",

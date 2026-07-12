@@ -37,6 +37,7 @@ const BUILD_ROOT = join(ROOT, '.runtime-box-build');
 const DIST_ROOT = join(ROOT, '.runtime-box-dist');
 const DEFAULT_PRIVATE_KEY = join(LOCAL_ROOT, 'signing-private.pem');
 const DEFAULT_PUBLIC_KEY = join(LOCAL_ROOT, 'signing-public.json');
+const DEFAULT_OBJECT_PREFIX = 'ai-runtime-boxes';
 const FIXED_ARCHIVE_TIME = new Date('2000-01-01T00:00:00.000Z');
 
 function fail(message) {
@@ -133,6 +134,18 @@ function releaseStem(release) {
 
 function releaseObjectPrefix(release) {
   return `boxes/${release.boxId}/${release.version}/${targetId(release.target)}`;
+}
+
+function normalizeObjectPrefix(value) {
+  const prefix = String(value ?? DEFAULT_OBJECT_PREFIX).replace(/^\/+|\/+$/g, '');
+  if (!prefix || prefix.split('/').some((segment) => !/^[a-z0-9][a-z0-9._-]*$/.test(segment))) {
+    fail(`Invalid R2 object prefix: ${value}`);
+  }
+  return prefix;
+}
+
+function prefixedObjectKey(prefix, key) {
+  return `${normalizeObjectPrefix(prefix)}/${safeRelativePath(key)}`;
 }
 
 async function keygen(flags) {
@@ -502,10 +515,11 @@ async function publish(releaseDocumentPath, flags) {
   }
   const archivePath = resolve(String(flags.get('archive') || join(dirname(releasePath), `${releaseStem(release)}.zip`)));
   if (await sha256File(archivePath) !== release.archive.sha256) fail('Refusing to publish an archive with the wrong SHA-256.');
-  const prefix = releaseObjectPrefix(release);
-  const archiveKey = `${prefix}/${release.archive.sha256}.zip`;
+  const objectPrefix = normalizeObjectPrefix(flags.get('prefix'));
+  const releasePrefix = releaseObjectPrefix(release);
+  const archiveKey = prefixedObjectKey(objectPrefix, `${releasePrefix}/${release.archive.sha256}.zip`);
   const releaseSha = await sha256File(releasePath);
-  const releaseKey = `${prefix}/${releaseSha}.release.json`;
+  const releaseKey = prefixedObjectKey(objectPrefix, `${releasePrefix}/${releaseSha}.release.json`);
   const wrangler = join(ROOT, 'node_modules', '.bin', 'wrangler');
   run(wrangler, ['r2', 'object', 'put', `${bucket}/${archiveKey}`, '--remote', `--file=${archivePath}`, '--content-type=application/zip', '--cache-control=public, max-age=31536000, immutable']);
   run(wrangler, ['r2', 'object', 'put', `${bucket}/${releaseKey}`, '--remote', `--file=${releasePath}`, '--content-type=application/json', '--cache-control=public, max-age=31536000, immutable']);
@@ -530,21 +544,25 @@ async function publishTrustedKey(flags) {
     }],
   }, null, 2)}\n`);
   const wrangler = join(ROOT, 'node_modules', '.bin', 'wrangler');
+  const objectKey = prefixedObjectKey(flags.get('prefix'), 'control/trusted-keys.json');
   const locationArgs = flags.get('local')
     ? ['--local', '--config', join(ROOT, 'workers', 'runtime-box-registry', 'wrangler.jsonc')]
     : ['--remote'];
   run(wrangler, [
-    'r2', 'object', 'put', `${bucket}/control/trusted-keys.json`,
+    'r2', 'object', 'put', `${bucket}/${objectKey}`,
     ...locationArgs,
     `--file=${documentPath}`, '--content-type=application/json', '--cache-control=no-store',
   ]);
-  console.log(`Published trust root r2://${bucket}/control/trusted-keys.json`);
+  console.log(`Published trust root r2://${bucket}/${objectKey}`);
 }
 
 async function promote(channelDocumentPath, flags) {
-  const registry = String(flags.get('registry') || 'https://models.liatir.app').replace(/\/$/, '');
-  const token = process.env.LIATIR_RUNTIME_BOX_ADMIN_TOKEN;
-  if (!token) fail('LIATIR_RUNTIME_BOX_ADMIN_TOKEN is required for channel promotion.');
+  const registry = String(flags.get('registry') || 'https://models.liatir.com').replace(/\/$/, '');
+  const tokenFile = flags.get('token-file');
+  const token = tokenFile
+    ? (await readFile(resolve(String(tokenFile)), 'utf8')).trim()
+    : process.env.LIATIR_RUNTIME_BOX_ADMIN_TOKEN;
+  if (!token) fail('LIATIR_RUNTIME_BOX_ADMIN_TOKEN or --token-file is required for channel promotion.');
   const signedBody = await readFile(resolve(channelDocumentPath));
   const { payload } = decodeSignedDocument(JSON.parse(signedBody.toString('utf8')));
   const endpoint = payload.kind === 'liatir.runtime-box.channel'

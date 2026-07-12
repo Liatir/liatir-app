@@ -4,14 +4,22 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-07-11",
   "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "models.liatir.com",
+      "custom_domain": true
+    }
+  ],
   "r2_buckets": [
     {
       "binding": "RUNTIME_BOXES",
-      "bucket_name": "liatir-ai-runtime-boxes"
+      "bucket_name": "liatir-storage"
     }
   ],
   "vars": {
-    "ENVIRONMENT": "production"
+    "ENVIRONMENT": "production",
+    "OBJECT_PREFIX": "ai-runtime-boxes"
   },
   "observability": {
     "enabled": true,

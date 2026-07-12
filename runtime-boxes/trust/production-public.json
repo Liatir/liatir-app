@@ -1,0 +1,6 @@
+{
+  "algorithm": "ed25519",
+  "keyId": "liatir-runtime-box-production-2026",
+  "publicKeyBase64": "I5vnK1XnCMrkdNMZEjHuMioQYhNg4qLL3GOROX92ymY=",
+  "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAI5vnK1XnCMrkdNMZEjHuMioQYhNg4qLL3GOROX92ymY=\n-----END PUBLIC KEY-----\n"
+}
