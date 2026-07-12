@@ -32,7 +32,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
     }
   });
 
-  it('keeps Geneformer runnable while preparing its signed Runtime Box cutover', () => {
+  it('uses the live signed Runtime Box distribution for Geneformer', () => {
     const model = getLocalAIModelMetadata(GENEFORMER_V1_10M_MODEL_ID);
     const spec = artifactSpecForModelId(GENEFORMER_V1_10M_MODEL_ID);
     const recipe = JSON.parse(readFileSync(
@@ -49,8 +49,8 @@ describe('Batch 5 single-cell foundation model contract', () => {
     expect(model?.capabilities).toEqual(['single-cell-embedding']);
     expect(model?.license?.spdxId).toBe('Apache-2.0');
     expect(model?.license?.verifiedAt).toBe('2026-07-11');
-    expect(model?.source).toBe('managed-runtime');
-    expect(model?.install?.method).toBe('managed-runtime');
+    expect(model?.source).toBe('runtime-box');
+    expect(model?.install?.method).toBe('runtime-box');
     expect(model?.install?.runtimeId).toBe('single-cell-foundation-geneformer-v1-10m');
     expect(model?.install?.modelCacheSubdir).toBe('model-cache/geneformer-v1-10m');
     expect(model?.install?.runtimeBox).toEqual({
@@ -59,13 +59,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
       registryBaseUrl: 'https://models.liatir.com/v1',
     });
     expect(model?.install?.revision).toMatch(/^[a-f0-9]{40}$/);
-    expect(model?.install?.files?.map((file) => file.relativePath).sort()).toEqual([
-      'dictionaries/ensembl_mapping_dict_gc30M.pkl',
-      'dictionaries/gene_median_dictionary_gc30M.pkl',
-      'dictionaries/token_dictionary_gc30M.pkl',
-      'model/config.json',
-      'model/model.safetensors',
-    ]);
+    expect(model?.install?.files).toBeUndefined();
     expect(recipe.modelId).toBe(GENEFORMER_V1_10M_MODEL_ID);
     expect(recipe.runtimeId).toBe(model?.install?.runtimeId);
     expect(recipe.assets.map((file) => file.relativePath).sort()).toEqual([
@@ -80,7 +74,11 @@ describe('Batch 5 single-cell foundation model contract', () => {
       expect(file.sha256, `${file.relativePath} missing SHA-256`).toMatch(/^[a-f0-9]{64}$/);
       expect(file.url).toContain(model?.install?.revision);
     }
-    expect(model?.install?.hostRequirements?.python?.maxVersionExclusive).toBe('3.13');
+    expect(model?.install?.hostRequirements).toMatchObject({
+      os: ['macos'],
+      arch: ['aarch64'],
+    });
+    expect(model?.install?.hostRequirements?.python).toBeUndefined();
     expect(spec?.runtimeFamily).toBe('single-cell-foundation-geneformer');
     expect(spec?.preloadKind).toBe('managed-files');
     expect(spec?.modelFile).toBe('model/model.safetensors');

@@ -58,12 +58,11 @@ Geneformer V1 10M is the second slice. It uses the isolated runtime ID
 recipe for macOS arm64/Metal. The 201 MB archive contains standalone Python
 3.11.9, a fully hash-locked dependency graph, checksummed V1-only assets, and
 build provenance. A post-extraction self-test proves that the packaged runtime
-is relocatable. Scientific/numerical parity and native app install/run E2E are
-still required. The product catalog deliberately remains on the existing
-managed-runtime installer until R2, production trust, and channel publication
-are live; the cutover must not point users at an unavailable registry. The
-runner uses Genecorpus-30M median-scaled rank encoding and the same compatible
-`ai-single-cell-embedding` AI Tool.
+is relocatable. The production-signed release is published on R2, its beta
+channel is live through the Registry Worker, and the product catalog now uses
+the Runtime Box installer. Scientific/numerical parity and native app
+install/run E2E are still required. The runner uses Genecorpus-30M median-scaled
+rank encoding and the same compatible `ai-single-cell-embedding` AI Tool.
 
 The tool outputs:
 

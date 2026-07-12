@@ -79,8 +79,6 @@ const UCE_4LAYER_RUNTIME_PACKAGES = [
 ];
 
 const GENEFORMER_V1_10M_REVISION = '04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5';
-const GENEFORMER_V1_10M_BASE_URL =
-	`https://huggingface.co/ctheodoris/Geneformer/resolve/${GENEFORMER_V1_10M_REVISION}`;
 
 const GENEFORMER_V1_10M_RUNTIME_PACKAGES = [
 	{ package: 'torch', specifier: 'torch>=2.2,<3', importName: 'torch' },
@@ -542,7 +540,7 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		id: GENEFORMER_V1_10M_MODEL_ID,
 		name: 'Geneformer V1 10M',
 		description:
-			'Managed human single-cell transcriptome foundation model for rank-encoded cell embeddings.',
+			'Packaged human single-cell transcriptome foundation model for rank-encoded cell embeddings.',
 		category: 'Single-cell Foundation Models',
 		version: 'v1-10m',
 		runtime: {
@@ -550,12 +548,12 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			name: 'Geneformer PyTorch Runtime',
 			version: 'python-venv'
 		},
-		source: 'managed-runtime',
+		source: 'runtime-box',
 		localOnly: true,
 		capabilities: ['single-cell-embedding'],
 		modalities: ['single-cell'],
 		parameters: 10_000_000,
-		diskSizeBytes: 43_497_615,
+		diskSizeBytes: 201_396_104,
 		license: {
 			name: 'Apache License 2.0',
 			spdxId: 'Apache-2.0',
@@ -573,7 +571,7 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 				'V1 10M can run on CPU for small datasets. CUDA or Apple Metal is preferred for larger cell batches.'
 		},
 		install: {
-			method: 'managed-runtime',
+			method: 'runtime-box',
 			runtimeId: 'single-cell-foundation-geneformer-v1-10m',
 			modelCacheSubdir: 'model-cache/geneformer-v1-10m',
 			revision: GENEFORMER_V1_10M_REVISION,
@@ -583,45 +581,10 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 				registryBaseUrl: 'https://models.liatir.com/v1'
 			},
 			runtimePackages: GENEFORMER_V1_10M_RUNTIME_PACKAGES,
-			files: [
-				{
-					url: `${GENEFORMER_V1_10M_BASE_URL}/Geneformer-V1-10M/config.json`,
-					relativePath: 'model/config.json',
-					sizeBytes: 565,
-					sha256: '9cf69ca3bdb0215c4188b54c451b6f02adfe68b8f66011a57d0f32845133fd4b'
-				},
-				{
-					url: `${GENEFORMER_V1_10M_BASE_URL}/Geneformer-V1-10M/model.safetensors`,
-					relativePath: 'model/model.safetensors',
-					sizeBytes: 41_183_536,
-					sha256: 'a5e33a757431643b3697de7ef6127950cdc49e06e58d4266b3a3ab191b683f14'
-				},
-				{
-					url: `${GENEFORMER_V1_10M_BASE_URL}/geneformer/gene_dictionaries_30m/token_dictionary_gc30M.pkl`,
-					relativePath: 'dictionaries/token_dictionary_gc30M.pkl',
-					sizeBytes: 788_424,
-					sha256: 'ab9dc40973fa5224d77b793e2fd114cacf3d08423ed9c4c49caf0ba9c7f218f1'
-				},
-				{
-					url: `${GENEFORMER_V1_10M_BASE_URL}/geneformer/gene_dictionaries_30m/gene_median_dictionary_gc30M.pkl`,
-					relativePath: 'dictionaries/gene_median_dictionary_gc30M.pkl',
-					sizeBytes: 940_965,
-					sha256: 'b3b589bb5ec75040d05fc44dd6bf0184cf87f3c362cf158d196a6ed3b7fe5f39'
-				},
-				{
-					url: `${GENEFORMER_V1_10M_BASE_URL}/geneformer/gene_dictionaries_30m/ensembl_mapping_dict_gc30M.pkl`,
-					relativePath: 'dictionaries/ensembl_mapping_dict_gc30M.pkl',
-					sizeBytes: 584_125,
-					sha256: 'eac0fb0b3007267871b6305ac0003ceba19d4f28d85686cb9067ecf142787869'
-				}
-			],
 			hostRequirements: {
-				python: {
-					minVersion: '3.10',
-					maxVersionExclusive: '3.13',
-					label: 'Python 3.10, 3.11, or 3.12',
-					reason: 'The managed Geneformer V1 runtime is validated against current PyTorch and AnnData wheels for Python 3.10-3.12.'
-				}
+				os: ['macos'],
+				arch: ['aarch64'],
+				reason: 'The current signed Geneformer Runtime Box is built for Apple silicon Macs.'
 			}
 		},
 		documentation: {
@@ -629,7 +592,7 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			officialUrl: 'https://huggingface.co/ctheodoris/Geneformer',
 			paperUrl: 'https://www.nature.com/articles/s41586-023-06139-9'
 		},
-		tags: ['built-in', 'managed', 'single-cell', 'foundation-model', 'embedding', 'human']
+		tags: ['built-in', 'runtime-box', 'single-cell', 'foundation-model', 'embedding', 'human']
 	},
 	{
 		id: UCE_4LAYER_MODEL_ID,

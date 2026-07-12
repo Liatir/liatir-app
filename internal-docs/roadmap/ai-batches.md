@@ -74,9 +74,9 @@ regulatory target index.
 ## Batch 5: Single-cell foundation models
 
 Status: in progress. UCE 4-layer and Geneformer V1 10M are implemented as
-installable/runnable slices. The signed Geneformer Runtime Box candidate is
-built for macOS arm64/Metal, while product cutover waits for live distribution.
-scGPT and scFoundation remain preview entries.
+installable/runnable slices. Geneformer now uses the live signed Runtime Box
+distribution for macOS arm64/Metal. scGPT and scFoundation remain preview
+entries.
 
 - scGPT for embeddings, batch correction, and perturbation hypotheses.
 - Geneformer for cell representations and gene/network insights.
@@ -93,8 +93,7 @@ validation, output parsing, Jobs, Results, and provenance.
 
 ### AI Runtime Box Distribution Foundation
 
-Status: implemented locally; production publication is externally blocked until
-R2 is enabled on the Cloudflare account.
+Status: production distribution path live; native app validation remains open.
 
 - Shared release, channel, target, rollout, revocation, signature, and
   compatibility contracts live in `packages/liatir-core`.
@@ -109,12 +108,12 @@ R2 is enabled on the Cloudflare account.
   checks, safe ZIP extraction, a self-test, atomic activation, and rollback per
   `runtimeId`.
 - Geneformer V1 10M is the first production recipe. Its signed 201 MB box passes
-  verification and post-extraction imports on macOS arm64.
+  verification and post-extraction imports on macOS arm64, is published under
+  `assets.models.liatir.com`, and is promoted through the beta channel at
+  `models.liatir.com`.
 
-Remaining distribution gates: enable R2, provision the production signing
-public key and Worker admin secret, attach `models.liatir.com` and
-`assets.models.liatir.com`, publish/promote the immutable release, then run the
-catalog cutover, native app install/run, and scientific-parity gates.
+Remaining distribution gates: clean-machine native app install/update/rollback,
+real Geneformer inference, and scientific-parity validation.
 
 ## Batch 6: Simulations and biophysics
 
