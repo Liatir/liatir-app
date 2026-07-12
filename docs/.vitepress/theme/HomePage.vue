@@ -75,11 +75,21 @@ const capabilities = [
         </p>
 
         <div class="actions">
-          <a class="btn btn-brand" href="#subscribe">Join the waiting list</a>
+          <a class="btn btn-brand" href="#subscribe">Waiting list</a>
           <a class="btn btn-alt" :href="withBase('/introduction/overview')">Read the docs</a>
         </div>
 
         <p class="trust">No cloud · No servers · Completely Free</p>
+      </div>
+
+      <!-- ── Mailing list ─────────────────────────────────────── -->
+      <div id="subscribe" class="container band">
+        <div class="cta">
+          <h2 style="font-size: 22px; margin-top: -10px;">Stay in the loop</h2>
+          <p style="font-size: 16px;">Liatir is under active development. Subscribe to know when it launches:</p>
+          <MailingListForm />
+          <p style="font-size: 12px; opacity: 0.5;">No spam, unsubscribe anytime.</p>
+        </div>
       </div>
     </section>
 
@@ -153,15 +163,6 @@ const capabilities = [
             <p>{{ c.text }}</p>
           </div>
         </article>
-      </div>
-    </section>
-
-    <!-- ── Mailing list ─────────────────────────────────────── -->
-    <section id="subscribe" class="container band">
-      <div class="cta">
-        <h2>Stay in the loop</h2>
-        <p>Liatir is under active development. Subscribe for occasional updates and be the first to know when it launches — no spam, unsubscribe anytime.</p>
-        <MailingListForm />
       </div>
     </section>
   </div>

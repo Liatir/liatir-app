@@ -189,6 +189,20 @@ async function submit() {
   flex-shrink: 0;
   border: none;
   cursor: pointer;
+  background-color: #4f39f6 !important;
+  border-radius: 1000px !important;
+  padding-left: 20px;
+  padding-right: 20px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+  color: white !important;
+}
+
+
+.wl-submit:hover {
+  background-color: #6351ec !important;
+  transform: translateY(-2px);
 }
 
 .wl-submit:disabled {

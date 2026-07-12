@@ -5,7 +5,7 @@ description: Where the name Liatir comes from — lia "thread" and tir "to watch
 
 # The name *Liatir*
 
-*Liatir* comes from [Tolkien's Elvish](https://tolkiengateway.net/wiki/Elvish) — a compound of **lia**, "*strand*" or "*thread*", and **tir**, "*to watch*." Read together, it lands close to *strand-watcher*: the one that watches the strands. For a platform whose whole job is reading **strands** of DNA, RNA, and protein, it's about as literal as a name can get.
+*Liatir* comes from [Tolkien's Elvish](https://tolkiengateway.net/wiki/Elvish) — a compound of **lia**, "*strand*", "*thread*" or "*filament*", and **tir**, "*to watch*." Read together, it lands close to *strand-watcher*: the one that watches the strands. For a platform whose whole job is reading **strands** of DNA, RNA, and protein, it's about as literal as a name can get.
 
 
 <figure class="liatir-architecture-figure">
@@ -31,7 +31,7 @@ description: Where the name Liatir comes from — lia "thread" and tir "to watch
 
 ## *lia* — "strand"
 
-**lia** is Quenya for "*fine thread*" or "*filament*". Tolkien recorded it in *[The Etymologies](https://tolkiengateway.net/wiki/The_Etymologies)* under the root <small>√SLIG</small>, with an older sense of "*twine*" in the *Qenya Lexicon*.
+**lia** is Quenya for "*strand*", "*fine thread*" or "*filament*". Tolkien recorded it in *[The Etymologies](https://tolkiengateway.net/wiki/The_Etymologies)* under the root <small>√SLIG</small>, with an older sense of "*twine*" in the *Qenya Lexicon*.
 
 The fit is hard to miss. A sequence is a thread in the plainest sense — a single strand read from one end to the other. Load anything into Liatir and a filament is what you're working with.
 
@@ -53,13 +53,29 @@ Put together, the two read as **the one that watches the strands** — a fair ac
 
 Liatir watches; **Quenta** speaks. Quenta is the platform's local AI assistant: it can read your results, explain them, and generate reports from them — locally, on your machine as everything else. The name is Quenya for "*tale*", "*story*," "*narrative*," or "*account*", the word behind *Quenta Silmarillion*, "the Tale of the Silmarils."
 
+:::tip
 
-**Liatir watches the strands; Quenta tells you what they say.**
+<center>
 
----
+***Liatir** watches the strands; **Quenta** tells you what they say.*
 
-<br>
+</center>
 
-::: info **Sources**
-The meanings here come from Tolkien's own writings — *The Etymologies* and the *Qenya Lexicon* — and from standard Elvish references such as Eldamo and Parf Edhellen.
 :::
+
+
+
+## Sources
+
+The meanings here come from Tolkien's own writings — *[The Etymologies](https://tolkiengateway.net/wiki/The_Etymologies)* and the *[Qenya Lexicon](https://tolkiengateway.net/wiki/Qenyaqetsa)* — and from standard Elvish references such as [Eldamo](https://eldamo.org/) and [Parf Edhellen](https://www.elfdict.com/).
+
+
+<style>
+  .tip {
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+  }
+  .tip .custom-block-title-default {
+    display: none !important;
+  }
+</style>
