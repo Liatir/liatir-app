@@ -79,6 +79,17 @@ const UCE_4LAYER_RUNTIME_PACKAGES = [
 ];
 
 const GENEFORMER_V1_10M_REVISION = '04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5';
+const SCGPT_WHOLE_HUMAN_REVISION = 'cebd6fae655b9c585a4807daa3ac31bb764f06b4';
+
+const SCGPT_WHOLE_HUMAN_RUNTIME_PACKAGES = [
+	{ package: 'torch', version: '2.4.1', importName: 'torch' },
+	{ package: 'anndata', version: '0.10.9', importName: 'anndata' },
+	{ package: 'numpy', version: '1.26.4', importName: 'numpy' },
+	{ package: 'scipy', version: '1.14.1', importName: 'scipy' },
+	{ package: 'pandas', version: '2.2.2', importName: 'pandas' },
+	{ package: 'h5py', version: '3.11.0', importName: 'h5py' },
+	{ package: 'tqdm', version: '4.66.5', importName: 'tqdm' }
+];
 
 const GENEFORMER_V1_10M_RUNTIME_PACKAGES = [
 	{ package: 'torch', specifier: 'torch>=2.2,<3', importName: 'torch' },
@@ -495,24 +506,19 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		id: SCGPT_WHOLE_HUMAN_MODEL_ID,
 		name: 'scGPT Whole-human',
 		description:
-			'Preview single-cell foundation model for cell embeddings, integration, perturbation hypotheses, and gene-network exploration.',
+			'Packaged human single-cell foundation model for deterministic local cell embeddings.',
 		category: 'Single-cell Foundation Models',
-		version: 'whole-human',
-		releaseStage: 'preview',
+		version: 'whole-human-0.2.5',
 		runtime: {
 			kind: 'python-venv',
 			name: 'scGPT PyTorch Runtime',
-			version: 'preview'
+			version: 'python-venv'
 		},
-		source: 'managed-runtime',
+		source: 'runtime-box',
 		localOnly: true,
-		capabilities: [
-			'single-cell-embedding',
-			'batch-correction',
-			'perturbation-prediction',
-			'gene-network-inference'
-		],
+		capabilities: ['single-cell-embedding'],
 		modalities: ['single-cell'],
+		diskSizeBytes: 310_415_585,
 		license: {
 			name: 'MIT License',
 			spdxId: 'MIT',
@@ -527,14 +533,31 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			minVramGb: 0,
 			recommendedVramGb: 16,
 			notes:
-				'CPU can load small examples, but meaningful foundation-model embedding and perturbation workflows should use a GPU.'
+				'CPU is supported but slow. Apple Metal is preferred for interactive embedding runs on supported Macs.'
+		},
+		install: {
+			method: 'runtime-box',
+			runtimeId: 'single-cell-foundation-scgpt-whole-human',
+			modelCacheSubdir: 'model-cache/scgpt-whole-human',
+			revision: SCGPT_WHOLE_HUMAN_REVISION,
+			runtimeBox: {
+				boxId: 'scgpt-whole-human',
+				channel: 'beta',
+				registryBaseUrl: 'https://models.liatir.com/v1'
+			},
+			runtimePackages: SCGPT_WHOLE_HUMAN_RUNTIME_PACKAGES,
+			hostRequirements: {
+				os: ['macos'],
+				arch: ['aarch64'],
+				reason: 'The current signed scGPT Runtime Box is built for Apple silicon Macs.'
+			}
 		},
 		documentation: {
 			liatirPath: '/ai/models/bowang-scgpt-whole-human',
 			officialUrl: 'https://github.com/bowang-lab/scGPT',
 			paperUrl: 'https://www.biorxiv.org/content/10.1101/2023.04.30.538439v2'
 		},
-		tags: ['preview', 'single-cell', 'foundation-model', 'embedding', 'perturbation']
+		tags: ['built-in', 'runtime-box', 'single-cell', 'foundation-model', 'embedding', 'human']
 	},
 	{
 		id: GENEFORMER_V1_10M_MODEL_ID,

@@ -1,20 +1,17 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { waitForLiatirBridge } from '../support/liatir-app.mjs';
+import {
+  activateCleanSandbox,
+  firstDownloadOffset,
+  readEmbeddedPythonScript,
+  runtimeBoxInstallError,
+  runtimeBoxInstallResult,
+  runtimeBoxInstallStatus,
+  startRuntimeBoxInstall,
+} from '../support/runtime-box.mjs';
 
 const BOX_ID = 'geneformer-v1-10m';
 const MODEL_ID = 'ctheodoris-geneformer-v1-10m';
 const RUNTIME_ID = 'single-cell-foundation-geneformer-v1-10m';
 const REGISTRY_BASE_URL = 'https://models.liatir.com/v1';
-
-function readEmbeddedPythonScript(rootDir, relativePath, exportName) {
-  const source = fs.readFileSync(path.join(rootDir, relativePath), 'utf8');
-  const prefix = `export const ${exportName} = String.raw\``;
-  const start = source.indexOf(prefix);
-  const end = source.lastIndexOf('\`;');
-  if (start < 0 || end <= start) throw new Error(`Cannot extract ${exportName} from ${relativePath}`);
-  return source.slice(start + prefix.length, end);
-}
 
 const CREATE_FIXTURE_SCRIPT = String.raw`
 import json
@@ -77,66 +74,13 @@ print(json.dumps({"exists": marker.is_file(), "contents": marker.read_text(encod
 `;
 
 async function startInstall(browser, downloadId) {
-  return browser.execute(async (input) => {
-    window.__liatirRuntimeBoxInstall ??= {};
-    const state = {
-      status: 'running',
-      progress: [],
-      result: null,
-      error: null,
-      unlisten: null,
-    };
-    window.__liatirRuntimeBoxInstall[input.downloadId] = state;
-    state.unlisten = await window.Liatir.desktop.events.on(
-      `managed:progress:${input.downloadId}`,
-      (progress) => state.progress.push(progress),
-    );
-    void window.Liatir.invoke('lia_ai_runtime_box_install', input)
-      .then((result) => {
-        state.status = 'done';
-        state.result = result;
-      })
-      .catch((error) => {
-        state.status = 'error';
-        state.error = String(error?.message ?? error);
-      })
-      .finally(() => state.unlisten?.());
-    return true;
-  }, {
+  return startRuntimeBoxInstall(browser, {
     boxId: BOX_ID,
     modelId: MODEL_ID,
     channel: 'beta',
     registryBaseUrl: REGISTRY_BASE_URL,
     downloadId,
   });
-}
-
-async function installStatus(browser, downloadId) {
-  return browser.execute(
-    (id) => window.__liatirRuntimeBoxInstall?.[id]?.status ?? null,
-    downloadId,
-  );
-}
-
-async function installError(browser, downloadId) {
-  return browser.execute(
-    (id) => window.__liatirRuntimeBoxInstall?.[id]?.error ?? null,
-    downloadId,
-  );
-}
-
-async function installResult(browser, downloadId) {
-  return browser.execute(
-    (id) => window.__liatirRuntimeBoxInstall?.[id]?.result ?? null,
-    downloadId,
-  );
-}
-
-async function firstDownloadOffset(browser, downloadId) {
-  return browser.execute((id) => {
-    const progress = window.__liatirRuntimeBoxInstall?.[id]?.progress ?? [];
-    return progress.find((item) => !item.done)?.bytesDownloaded ?? 0;
-  }, downloadId);
 }
 
 async function runPython(browser, script, inputJson) {
@@ -150,37 +94,6 @@ async function runPython(browser, script, inputJson) {
       timeoutSeconds: 600,
     },
   );
-}
-
-// Activates the isolated test workspace through the same persisted app state
-// used at startup. This keeps the Runtime Box validation independent from
-// WebDriver click timing during the very first Svelte hydration.
-async function activateCleanSandbox(browser) {
-  await waitForLiatirBridge(browser);
-  await browser.execute(async () => {
-    const now = Date.now();
-    await window.Liatir.invoke('lia_app_write_text', {
-      rel: 'workspaces.json',
-      content: JSON.stringify({
-        workspaces: [{ id: '__test__', name: 'Sandbox', createdAt: now, lastOpenedAt: now }],
-      }, null, 2),
-      createDirs: true,
-    });
-    await window.Liatir.invoke('lia_app_write_text', {
-      rel: 'active-workspace.json',
-      content: JSON.stringify({ id: '__test__' }),
-      createDirs: true,
-    });
-    return true;
-  });
-  await browser.execute(() => {
-    window.location.href = '/';
-    return true;
-  });
-  await (await browser.$('[data-testid="sidebar-nav-item"]')).waitForDisplayed({
-    timeout: 20_000,
-    timeoutMsg: 'Clean Sandbox workspace shell did not open',
-  });
 }
 
 export const tests = [
@@ -206,19 +119,19 @@ export const tests = [
       );
       expect(cancelled).toBe(true);
       await browser.waitUntil(
-        async () => (await installStatus(browser, interruptedId)) === 'error',
+        async () => (await runtimeBoxInstallStatus(browser, interruptedId)) === 'error',
         { timeout: 30_000, timeoutMsg: 'Interrupted Runtime Box install did not stop' },
       );
-      expect(await installError(browser, interruptedId)).toContain('Download cancelled');
+      expect(await runtimeBoxInstallError(browser, interruptedId)).toContain('Download cancelled');
 
       const resumedId = `runtime-box-resumed-${Date.now()}`;
       await startInstall(browser, resumedId);
       await browser.waitUntil(
-        async () => (await installStatus(browser, resumedId)) !== 'running',
+        async () => (await runtimeBoxInstallStatus(browser, resumedId)) !== 'running',
         { timeout: 180_000, timeoutMsg: 'Resumed Runtime Box install did not complete' },
       );
-      expect(await installStatus(browser, resumedId)).toBe('done');
-      const resumed = await installResult(browser, resumedId);
+      expect(await runtimeBoxInstallStatus(browser, resumedId)).toBe('done');
+      const resumed = await runtimeBoxInstallResult(browser, resumedId);
       expect(resumed.version).toBe('1.0.0-beta.1');
       expect(resumed.rollbackAvailable).toBe(false);
       const resumeOffset = await firstDownloadOffset(browser, resumedId);
@@ -298,11 +211,11 @@ export const tests = [
       const replacementId = `runtime-box-replacement-${Date.now()}`;
       await startInstall(browser, replacementId);
       await browser.waitUntil(
-        async () => (await installStatus(browser, replacementId)) !== 'running',
+        async () => (await runtimeBoxInstallStatus(browser, replacementId)) !== 'running',
         { timeout: 180_000, timeoutMsg: 'Runtime Box replacement did not complete' },
       );
-      expect(await installStatus(browser, replacementId)).toBe('done');
-      const replacement = await installResult(browser, replacementId);
+      expect(await runtimeBoxInstallStatus(browser, replacementId)).toBe('done');
+      const replacement = await runtimeBoxInstallResult(browser, replacementId);
       expect(replacement.rollbackAvailable).toBe(true);
       const markerAfterReplacement = await runPython(browser, MARKER_SCRIPT, { path: markerPath });
       expect(JSON.parse(markerAfterReplacement.stdout.trim()).exists).toBe(false);

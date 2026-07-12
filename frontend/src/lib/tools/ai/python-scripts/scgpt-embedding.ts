@@ -169,6 +169,11 @@ if len(compatible) < 130 or missing_critical:
     )
 model_state.update(compatible)
 model.load_state_dict(model_state)
+# PyTorch 2.4 enables nested-tensor conversion inside TransformerEncoder, but
+# its mask-alignment operator is unavailable on MPS. The regular tensor path is
+# numerically equivalent for inference and keeps the remaining model on Metal.
+if hasattr(model.transformer_encoder, "use_nested_tensor"):
+    model.transformer_encoder.use_nested_tensor = False
 model.eval()
 model.to(device)
 

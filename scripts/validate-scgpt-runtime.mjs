@@ -84,7 +84,9 @@ try {
     python,
     [productScript],
     {
-      env: { LIATIR_AI_FORCE_CPU: '1' },
+      env: process.env.LIATIR_VALIDATE_USE_ACCELERATOR === '1'
+        ? {}
+        : { LIATIR_AI_FORCE_CPU: '1' },
       input: JSON.stringify({
         runtimePath: runtimeDir,
         modelCacheDir: join(runtimeDir, 'model-cache/scgpt-whole-human'),

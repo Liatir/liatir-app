@@ -76,8 +76,9 @@ regulatory target index.
 Status: in progress. UCE 4-layer and Geneformer V1 10M are implemented as
 installable/runnable slices. Geneformer now uses the live signed Runtime Box
 distribution for macOS arm64/Metal and has repeatable native lifecycle plus
-scientific-parity evidence. scGPT has a hash-locked macOS arm64 recipe and a
-real CPU inference gate; production publication/cutover remains open.
+scientific-parity evidence. scGPT has a live signed macOS arm64 Runtime Box,
+hash-locked dependencies, real CPU/Metal inference gates, and targeted native
+install, Jobs, and removal evidence.
 scFoundation remains preview-only because its model license prohibits Liatir
 from redistributing the checkpoint.
 
@@ -119,7 +120,8 @@ Geneformer evidence now covers a fresh isolated home, interrupted download and
 resume, signed install, real inference, atomic replacement, rollback, removal,
 and exact CPU parity with the pinned official tokenizer/embedding algorithm.
 The remaining distribution gates are a true cross-version native update, secure
-offline signing-key backup, and scGPT production publication/native validation.
+offline signing-key backup. A true cross-version update fixture remains useful;
+same-version atomic replacement and rollback are already covered natively.
 
 ## Batch 6: Simulations and biophysics
 

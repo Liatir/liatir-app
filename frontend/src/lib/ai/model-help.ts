@@ -22,6 +22,7 @@ export const AI_MODEL_INPUT_HELP: Record<string, string> = {
   annDataFile: 'A `.h5ad` single-cell dataset. The model reads the cell expression matrix and returns predicted cell-type labels.',
   uceAnnDataFile: 'A `.h5ad` single-cell dataset for UCE. The `.X` matrix should contain scRNA-seq counts and `var_names` should contain gene symbols.',
   geneformerAnnDataFile: 'A human `.h5ad` single-cell dataset with raw counts in `.X`. Put Ensembl gene IDs in `var["ensembl_id"]`, or use Ensembl IDs as `var_names`.',
+  scgptAnnDataFile: 'A human `.h5ad` single-cell dataset with raw counts in `.X`. Put gene symbols in `var["gene_name"]`, `var["feature_name"]`, or `var_names`.',
   uceSpecies: 'The organism used to match genes against UCE protein-embedding assets. Choose the species that matches the AnnData file.',
   uceBatchSize: 'Number of cells processed together. Lower values use less memory; higher values can be faster on supported accelerators.',
   uceCsvRows: 'How many cells to export to the lightweight CSV preview. The full model-specific embedding matrix is stored in the output AnnData file.',

@@ -50,7 +50,7 @@ export const singleCellEmbeddingDefinition: LiatirAIToolDefinition = {
 			label: 'AnnData file',
 			required: true,
 			description:
-				'Use raw scRNA-seq counts. UCE expects gene symbols; Geneformer V1 expects human Ensembl IDs.',
+				'Use raw scRNA-seq counts. UCE and scGPT expect gene symbols; Geneformer V1 expects human Ensembl IDs.',
 			accept: ['h5ad']
 		},
 		species: {
@@ -59,7 +59,7 @@ export const singleCellEmbeddingDefinition: LiatirAIToolDefinition = {
 			required: true,
 			default: 'human',
 			options: uceSpeciesOptions,
-			description: 'UCE supports the listed species. Geneformer V1 10M supports Human only.'
+			description: 'UCE supports the listed species. Geneformer V1 10M and scGPT Whole-human support Human only.'
 		},
 		batchSize: {
 			type: 'number',

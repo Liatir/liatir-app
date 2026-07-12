@@ -9,7 +9,7 @@
 - Remote signature, immutable artifact, byte-range download, Worker authentication, focused TypeScript/Svelte/Rust checks, and post-extraction imports were verified.
 - A targeted fresh-home native gate now covers interruption/resume, signed install, real Geneformer inference, atomic replacement, rollback, removal, and Jobs metadata.
 - Geneformer matches the pinned official V1 tokenizer and embedding algorithm exactly on the deterministic CPU fixture (`maxAbsoluteError: 0.0`).
-- scGPT Whole-human now has a hash-locked macOS arm64 recipe and passes a real 512-dimensional CPU embedding gate; production publication is the next cutover step.
+- scGPT Whole-human `0.2.5-beta.1` is production-signed, published, promoted, and passes real 512-dimensional CPU and native Apple Metal embedding gates.
 
 ## Architecture
 
@@ -21,5 +21,4 @@ Liatir fetches the signed channel, selects a compatible release, verifies the pr
 
 - Back up the signing key to a genuinely separate encrypted offline medium; no such mounted destination was available during this work.
 - Add a true cross-version native update gate (same-version atomic replacement and rollback are already verified).
-- Publish and natively validate scGPT.
 - Do not redistribute scFoundation weights under the current non-commercial model license; select a lawful alternative or design an explicit user-supplied checkpoint flow.
