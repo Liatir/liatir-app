@@ -28,6 +28,9 @@ npm run runtime-box:validate:scgpt
 complete Astral-managed standalone Python distribution into the box, synchronizes
 the checked-in hash lock, downloads every asset with SHA-256 verification, runs
 the recipe self-test, and creates a normalized ZIP archive.
+Recipes may declare reviewed `prunePaths` for build, training, and installer
+files that are not part of the immutable inference runtime. Every pruned box
+must still pass its post-extraction self-test and real model-specific gate.
 
 The model-specific validation commands are intentionally separate from the
 general test matrix. Geneformer compares the product runner with the pinned

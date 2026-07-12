@@ -362,6 +362,9 @@ async function buildRecipe(name, flags) {
   for (const archive of recipe.assetArchives ?? []) {
     await extractRecipeArchive(payloadDir, archive);
   }
+  for (const prunePath of recipe.prunePaths ?? []) {
+    await rm(join(payloadDir, safeRelativePath(prunePath)), { recursive: true, force: true });
+  }
   for (const requiredFile of recipe.selfTest.files) {
     if (!await fileExists(join(payloadDir, safeRelativePath(requiredFile)))) fail(`Missing self-test file: ${requiredFile}`);
   }
