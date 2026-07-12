@@ -1,7 +1,7 @@
 /**
  * AI Runtime Box registry — the Cloudflare Worker that serves the control plane.
  *
- * It is the middle link of the distribution chain:
+ * It is the middle link of the distribution chain of runtime boxes:
  *   signer service (holds the KMS key, signs)  ->  this Worker (stores + serves)  ->  the app
  *   (`src-tauri/src/bridge/runtime_boxes.rs`, which verifies before installing anything).
  *
