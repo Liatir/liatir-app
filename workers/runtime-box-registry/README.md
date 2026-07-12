@@ -31,4 +31,6 @@ npm run runtime-box -- publish-key --bucket liatir-storage \
 5. Attach the R2 custom domain to `assets.models.liatir.com`.
 
 Production publication is intentionally two phase: upload immutable archive and
-release objects first, then promote the signed channel document.
+release objects first, then promote the signed channel document. Production
+documents are signed independently by the private Google Cloud Run/KMS signer;
+the Worker and R2 store only the public trust bundle and signed output.

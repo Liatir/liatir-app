@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "assetOrigin": "https://assets.models.liatir.com",
+  "objectPrefix": "ai-runtime-boxes",
+  "allowedChannels": ["beta", "stable"],
+  "boxes": [
+    {
+      "boxId": "geneformer-v1-10m",
+      "modelId": "ctheodoris-geneformer-v1-10m",
+      "runtimeId": "single-cell-foundation-geneformer-v1-10m",
+      "targets": ["macos-aarch64-metal"]
+    },
+    {
+      "boxId": "scgpt-whole-human",
+      "modelId": "bowang-scgpt-whole-human",
+      "runtimeId": "single-cell-foundation-scgpt-whole-human",
+      "targets": ["macos-aarch64-metal"]
+    }
+  ]
+}

@@ -37,6 +37,19 @@ struct TrustedKey {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+struct TrustedKeyBundle {
+    keys: Vec<TrustedKey>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum TrustedKeyDocument {
+    Single(TrustedKey),
+    Bundle(TrustedKeyBundle),
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct SignedDocument {
     schema_version: u32,
     payload_encoding: String,
@@ -205,18 +218,21 @@ fn sha256_hex(bytes: &[u8]) -> String {
 }
 
 fn trusted_keys() -> Result<Vec<TrustedKey>, String> {
-    let mut keys = vec![
-        serde_json::from_str(PRODUCTION_TRUST_KEY).map_err(|error| error.to_string())?,
-    ];
+    fn parse_keys(raw: &str) -> Result<Vec<TrustedKey>, String> {
+        match serde_json::from_str(raw).map_err(|error| error.to_string())? {
+            TrustedKeyDocument::Single(key) => Ok(vec![key]),
+            TrustedKeyDocument::Bundle(bundle) => Ok(bundle.keys),
+        }
+    }
+
+    let mut keys = parse_keys(PRODUCTION_TRUST_KEY)?;
     if cfg!(debug_assertions) {
-        keys.push(serde_json::from_str(DEVELOPMENT_TRUST_KEY).map_err(|error| error.to_string())?);
+        keys.append(&mut parse_keys(DEVELOPMENT_TRUST_KEY)?);
         if let Ok(path) = std::env::var("LIATIR_RUNTIME_BOX_TRUSTED_KEY_FILE") {
             let raw = std::fs::read_to_string(&path)
                 .map_err(|error| format!("cannot read debug Runtime Box trust key {path}: {error}"))?;
-            keys.push(
-                serde_json::from_str(&raw)
-                    .map_err(|error| format!("invalid debug Runtime Box trust key: {error}"))?,
-            );
+            keys.append(&mut parse_keys(&raw)
+                .map_err(|error| format!("invalid debug Runtime Box trust key: {error}"))?);
         }
     }
     if let Some(raw) = option_env!("LIATIR_RUNTIME_BOX_TRUSTED_KEYS_JSON") {

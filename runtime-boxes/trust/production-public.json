@@ -1,6 +1,17 @@
 {
-  "algorithm": "ed25519",
-  "keyId": "liatir-runtime-box-production-2026",
-  "publicKeyBase64": "I5vnK1XnCMrkdNMZEjHuMioQYhNg4qLL3GOROX92ymY=",
-  "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAI5vnK1XnCMrkdNMZEjHuMioQYhNg4qLL3GOROX92ymY=\n-----END PUBLIC KEY-----\n"
+  "schemaVersion": 1,
+  "keys": [
+    {
+      "algorithm": "ed25519",
+      "keyId": "liatir-runtime-box-production-2026",
+      "publicKeyBase64": "I5vnK1XnCMrkdNMZEjHuMioQYhNg4qLL3GOROX92ymY=",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAI5vnK1XnCMrkdNMZEjHuMioQYhNg4qLL3GOROX92ymY=\n-----END PUBLIC KEY-----\n"
+    },
+    {
+      "algorithm": "ed25519",
+      "keyId": "liatir-runtime-box-kms-2026",
+      "publicKeyBase64": "mCtJ+/7L/cNGBEqjkC0d6+9JFoMtOOlOkUu6nMI+StQ=",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAmCtJ+/7L/cNGBEqjkC0d6+9JFoMtOOlOkUu6nMI+StQ=\n-----END PUBLIC KEY-----\n"
+    }
+  ]
 }

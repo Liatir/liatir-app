@@ -187,9 +187,42 @@ async function readSigningKey(flags) {
   return { privateKey, metadata };
 }
 
+function readTrustedKeyEntries(value) {
+  if (Array.isArray(value?.keys)) return value.keys;
+  return [value];
+}
+
+async function signDocumentRemotely(payloadBytes, flags) {
+  const signer = String(flags.get('signer') || process.env.LIATIR_RUNTIME_BOX_SIGNER_URL || '').replace(/\/$/, '');
+  const tokenArgs = flags.get('signer-audience')
+    ? ['auth', 'print-identity-token', `--audiences=${String(flags.get('signer-audience'))}`]
+    : ['auth', 'print-identity-token'];
+  const identityToken = run('gcloud', tokenArgs, { capture: true });
+  const request = {
+    payloadBase64: payloadBytes.toString('base64'),
+    payloadSha256: sha256Buffer(payloadBytes),
+  };
+  const response = await fetch(`${signer}/v1/sign`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${identityToken}`, 'content-type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  if (!response.ok) fail(`Remote Runtime Box signing failed (${response.status}): ${await response.text()}`);
+  const document = await response.json();
+  if (document.payloadBase64 !== request.payloadBase64 || document.payloadSha256 !== request.payloadSha256) {
+    fail('Remote signer returned a different Runtime Box payload.');
+  }
+  const publicKeyPath = resolve(String(flags.get('public-key') || DEFAULT_PUBLIC_KEY));
+  await verifySignedDocument(document, publicKeyPath);
+  return document;
+}
+
 async function signDocument(payload, flags) {
-  const { privateKey, metadata } = await readSigningKey(flags);
   const payloadBytes = Buffer.from(`${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  if (flags.get('signer') || process.env.LIATIR_RUNTIME_BOX_SIGNER_URL) {
+    return signDocumentRemotely(payloadBytes, flags);
+  }
+  const { privateKey, metadata } = await readSigningKey(flags);
   return {
     schemaVersion: 1,
     payloadEncoding: 'base64-json-utf8',
@@ -211,12 +244,14 @@ function decodeSignedDocument(document) {
 }
 
 async function verifySignedDocument(document, publicKeyPath) {
-  const metadata = JSON.parse(await readFile(publicKeyPath, 'utf8'));
+  const metadata = readTrustedKeyEntries(JSON.parse(await readFile(publicKeyPath, 'utf8')));
   const { bytes, payload } = decodeSignedDocument(document);
-  const matching = document.signatures?.find((item) => item.keyId === metadata.keyId);
-  if (!matching) fail(`No signature for trusted key ${metadata.keyId}.`);
-  const valid = verify(null, bytes, createPublicKey(metadata.publicKeyPem), Buffer.from(matching.signatureBase64, 'base64'));
-  if (!valid) fail('Runtime Box Ed25519 signature verification failed.');
+  const valid = document.signatures?.some((signature) => {
+    const key = metadata.find((candidate) => candidate.keyId === signature.keyId);
+    return key?.publicKeyPem
+      && verify(null, bytes, createPublicKey(key.publicKeyPem), Buffer.from(signature.signatureBase64, 'base64'));
+  });
+  if (!valid) fail('Runtime Box document has no valid signature from a trusted Ed25519 key.');
   return payload;
 }
 
@@ -573,16 +608,16 @@ async function publishTrustedKey(flags) {
   if (!bucket) fail('publish-key requires --bucket <r2-bucket>.');
   if (!flags.get('confirm')) fail('publish-key changes the Worker trust root; pass --confirm after reviewing the public key.');
   const publicKeyPath = resolve(String(flags.get('public-key') || DEFAULT_PUBLIC_KEY));
-  const key = JSON.parse(await readFile(publicKeyPath, 'utf8'));
+  const keys = readTrustedKeyEntries(JSON.parse(await readFile(publicKeyPath, 'utf8')));
   const documentPath = join(DIST_ROOT, 'trusted-keys.json');
   await mkdir(DIST_ROOT, { recursive: true });
   await writeFile(documentPath, `${JSON.stringify({
     schemaVersion: 1,
-    keys: [{
+    keys: keys.map((key) => ({
       algorithm: key.algorithm,
       keyId: key.keyId,
       publicKeyBase64: key.publicKeyBase64,
-    }],
+    })),
   }, null, 2)}\n`);
   const wrangler = join(ROOT, 'node_modules', '.bin', 'wrangler');
   const objectKey = prefixedObjectKey(flags.get('prefix'), 'control/trusted-keys.json');
@@ -652,6 +687,10 @@ Commands:
   publish-key --bucket <name>    Publish the Worker public-key trust root
   promote <channel.json>         Promote a signed channel through the Worker
   revoke --box --version         Create a signed revocation document
+
+Production signing:
+  Pass --signer <private-cloud-run-url> to build or revoke. The CLI obtains a
+  short-lived Google identity token and verifies the returned signature locally.
 `);
 }
 

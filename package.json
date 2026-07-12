@@ -92,7 +92,10 @@
     "runtime-box:validate:scgpt": "node scripts/validate-scgpt-runtime.mjs",
     "runtime-box:worker:dev": "wrangler dev --config workers/runtime-box-registry/wrangler.jsonc",
     "runtime-box:worker:types": "wrangler types --config workers/runtime-box-registry/wrangler.jsonc workers/runtime-box-registry/worker-configuration.d.ts",
-    "runtime-box:worker:deploy": "wrangler deploy --config workers/runtime-box-registry/wrangler.jsonc"
+    "runtime-box:worker:deploy": "wrangler deploy --config workers/runtime-box-registry/wrangler.jsonc",
+    "runtime-box:signer:check": "npm run check --prefix services/runtime-box-signer",
+    "runtime-box:signer:deploy": "bash scripts/deploy-runtime-box-signer.sh",
+    "runtime-box:signer:smoke": "node scripts/validate-runtime-box-signer.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",

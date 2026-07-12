@@ -10,6 +10,8 @@ The distribution design has two separate paths:
   to R2, and promote signed channel documents.
 - Runtime Box Registry Worker: serve small signed channel/revocation documents
   and accept authenticated channel promotions. It never proxies large boxes.
+- Runtime Box Signer: validate production metadata in a private Google Cloud
+  Run service and sign it with a non-exportable Ed25519 Cloud KMS key.
 
 ## Local development
 
@@ -55,7 +57,7 @@ These debug-only overrides exercise the real signed download, resume,
 extraction, activation, and rollback path. A fixture run does not validate
 Geneformer numerics or scientific parity.
 
-Local signing keys and build outputs live under `.runtime-box-local/` and
+Development signing keys and build outputs live under `.runtime-box-local/` and
 `.runtime-box-dist/`; both are ignored. Never commit a private signing key.
 
 ## Production publication
@@ -68,6 +70,18 @@ Production builds refuse a dirty Git tree and record the builder commit in
 signed provenance. `--allow-dirty` is limited to local development artifacts,
 which `publish` refuses by default.
 
+Deploy or update the private signer, then pass its Cloud Run URL to the build.
+The CLI obtains a short-lived Google identity token and verifies the returned
+signature locally before writing the document:
+
+```bash
+npm run runtime-box:signer:deploy
+npm run runtime-box:signer:smoke -- https://PRIVATE-SERVICE-URL
+npm run runtime-box -- build <recipe> \
+  --signer https://PRIVATE-SERVICE-URL \
+  --public-key runtime-boxes/trust/production-public.json
+```
+
 ```bash
 npm run runtime-box -- publish .runtime-box-dist/<release>.release.json \
   --bucket liatir-storage --prefix ai-runtime-boxes
@@ -78,12 +92,14 @@ npm run runtime-box -- promote .runtime-box-dist/<channel>.channel.json \
 ```
 
 The Worker admin token is provided through `LIATIR_RUNTIME_BOX_ADMIN_TOKEN`.
-The offline signing key is never uploaded to Cloudflare.
+Cloudflare receives only public keys and already-signed documents. The
+production private key remains non-exportable in Cloud KMS and the Cloud Run
+service identity has only `roles/cloudkms.signerVerifier` on that key.
 
-The app always trusts the checked-in production public key. Additional public
+The app always trusts the checked-in production public-key bundle. Additional public
 trust roots can be supplied at compile time through
-`LIATIR_RUNTIME_BOX_TRUSTED_KEYS_JSON`; private keys stay offline and must be
-backed up before the first release.
+`LIATIR_RUNTIME_BOX_TRUSTED_KEYS_JSON`. The legacy public key remains in the
+bundle so already-published Runtime Boxes continue to verify during rotation.
 
 scFoundation is not eligible for this distribution path: its model license
 restricts weight redistribution. The Apache-2.0 repository code license does

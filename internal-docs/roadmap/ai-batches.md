@@ -108,6 +108,10 @@ Status: production distribution path live; native app validation remains open.
   dependencies; it does not depend on a user-installed Python at runtime.
 - The Runtime Box Registry Worker serves small signed control documents and
   performs authenticated, signature-verified promotions through its R2 binding.
+- Production signing is isolated in the `liatir-release-security` Google Cloud
+  project. A private Cloud Run service validates exact payload bytes against a
+  versioned AI Model/target/origin allowlist, then uses a non-exportable
+  Ed25519 Cloud KMS key. Cloudflare never receives signing authority.
 - Native installation uses resumable downloads, signed manifest and target
   checks, safe ZIP extraction, a self-test, atomic activation, and rollback per
   `runtimeId`.
@@ -119,8 +123,9 @@ Status: production distribution path live; native app validation remains open.
 Geneformer evidence now covers a fresh isolated home, interrupted download and
 resume, signed install, real inference, atomic replacement, rollback, removal,
 and exact CPU parity with the pinned official tokenizer/embedding algorithm.
-The remaining distribution gates are a true cross-version native update, secure
-offline signing-key backup. A true cross-version update fixture remains useful;
+The remaining distribution gates are a true cross-version native update and
+client-persisted anti-replay state for signed channel generations. The KMS
+signing key is non-exportable, IAM-restricted, and independently hosted from R2;
 same-version atomic replacement and rollback are already covered natively.
 
 ## Batch 6: Simulations and biophysics
