@@ -1,3 +1,7 @@
+/**
+ * Shared UI-adjacent types used across the bridge and the SDK (colours, routes, small unions).
+ * Pure type declarations — nothing here emits code.
+ */
 export type ColorInfo = {
     HEX: string;
     RGB: {

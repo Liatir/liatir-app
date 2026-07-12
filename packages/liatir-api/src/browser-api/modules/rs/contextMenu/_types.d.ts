@@ -1,3 +1,7 @@
+/**
+ * Shapes for native context menus: a menu is a tree of nodes (items, separators, submenus), so the type is
+ * recursive — which is what lets a menu of arbitrary depth be described as plain data.
+ */
 export type CmType = "item" | "check" | "separator" | "submenu" | "predefined";
 export type CmItem = {
     type: Extract<CmType, "item">;

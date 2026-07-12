@@ -1,3 +1,4 @@
+/** Shapes for OS notifications, including the three-state permission. */
 export type NotificationPermission = "granted" | "denied" | "default" | string;
 export interface NotificationsInterface {
     state: () => Promise<NotificationPermission>;

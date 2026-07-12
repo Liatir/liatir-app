@@ -1,3 +1,7 @@
+/**
+ * Results of the native file dialogs. `OpenResultWithBytes` is the variant that carries the file's contents
+ * along with its path, saving a second round trip for small files.
+ */
 import type { U64, U8 } from "../../../utils/utils/_integerUtils";
 export type FileWithBytes = {
     path: string;

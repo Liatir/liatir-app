@@ -1,3 +1,4 @@
+/** Shapes for OS-wide keyboard shortcuts. */
 export type ShortcutEventPayload = {
     accelerator: string;
     shortcut: string;

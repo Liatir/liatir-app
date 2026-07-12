@@ -1,3 +1,4 @@
+/** Shapes for connectivity status, probes, and the background network monitor. */
 import type { U64 } from "../../../utils/utils/_integerUtils";
 export interface NetworkInterface {
     status: () => Promise<void>;

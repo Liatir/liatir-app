@@ -761,6 +761,7 @@ function isTauri() {
 // src-ts/core/_main.ts
 function buildCore() {
   return {
+    /** Resolves once the bridge can actually talk to Rust. */
     get ready() {
       return ensureCore().then(() => true);
     },
@@ -806,16 +807,19 @@ function buildFiles(core) {
 // src-ts/modules/rs/events/_main.ts
 function buildEvents(core) {
   return {
+    // Three emit scopes: this window, every window, or one named window.
     emit: (event, payload) => core.invoke("lia_event_emit_to_current_window", { event, payload }),
     emitToAll: (event, payload) => core.invoke("lia_event_emit", { event, payload }),
     emitTo: (windowLabel, event, payload) => core.invoke("lia_event_emit_to", { windowLabel, event, payload }),
     on: async (event, handler) => listenForEvent(event, handler),
+    // Resolves on the first occurrence and unsubscribes itself, so a one-shot listener cannot leak.
     once: (event) => new Promise(async (resolve) => {
       const off = await listenForEvent(event, (p) => {
         off();
         resolve(p);
       });
     }),
+    // One handler across several events; the returned function detaches them all.
     onMany: async (events, handler) => {
       const offs = await Promise.all(events.map((n) => listenForEvent(n, (p) => handler(n, p))));
       return () => offs.forEach((off) => off());
@@ -823,6 +827,13 @@ function buildEvents(core) {
     onNetworkStatus: async (handler) => listenForEvent("network:status", handler),
     onDeeplink: async (handler) => listenForEvent("deeplink", handler),
     onShortcut: async (handler) => listenForEvent("shortcut:event", handler),
+    /**
+     * A drag-and-drop is not one event but a sequence (enter, drop, cancel), and a caller almost always wants
+     * all of them — so they are subscribed together and torn down together.
+     *
+     * `hover` fires continuously while the cursor moves over the window, so it is opt-in: most callers only
+     * care where a file was dropped, not about every pixel on the way there.
+     */
     onDragDrop: async (handler, options) => {
       const evs = ["dragdrop:enter", "dragdrop:drop", "dragdrop:cancel"];
       if (options?.includeHover) evs.push("dragdrop:hover");

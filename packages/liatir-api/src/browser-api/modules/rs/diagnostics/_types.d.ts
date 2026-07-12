@@ -1,3 +1,7 @@
+/**
+ * Shapes for the local diagnostics log: records, error payloads, and the privacy settings that govern what is
+ * written. `DiagnosticsArea` separates the log streams so they can be read and pruned independently.
+ */
 import type { U32, U64 } from "../../../utils/utils/_integerUtils";
 export interface DiagnosticsInterface {
     settings: {

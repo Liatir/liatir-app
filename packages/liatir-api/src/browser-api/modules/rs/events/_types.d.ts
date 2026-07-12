@@ -1,3 +1,7 @@
+/**
+ * Event payloads and the events interface. Every subscription returns an unsubscribe function, which is what
+ * makes a listener's lifetime the caller's to control.
+ */
 import type { DragDropPayload } from "../dragdrop/_types";
 import type { Unlisten } from "./_helpers";
 export interface EventsInterface {
