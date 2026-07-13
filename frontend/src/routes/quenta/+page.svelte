@@ -47,10 +47,9 @@
   let tagInputEl = $state<HTMLInputElement | null>(null);
   let deleteConfirmConversationId = $state<string | null>(null);
   let transcriptEl = $state<HTMLDivElement | null>(null);
-  let lastAutoScrollKey = '';
-  let lastAutoScrollConversationId = '';
+  let observedConversationId = '';
+  let observedLastMessageId = '';
   let lastStreamingRequestId = '';
-  let lastStreamingConversationId = '';
   let lastStreamingContentLength = 0;
   let composerConversationId: string | null = null;
   let showScrollToBottomButton = $state(false);
@@ -196,7 +195,6 @@
     const contentAdvanced = !isNewResponse
       && response.content.length > lastStreamingContentLength;
     lastStreamingRequestId = response.requestId;
-    lastStreamingConversationId = currentConversation?.id ?? '';
     lastStreamingContentLength = response.content.length;
 
     // Following an in-progress response is independent from Auto-scroll, but
@@ -211,22 +209,30 @@
   $effect.pre(() => {
     const conversation = currentConversation;
     const lastMessage = conversation?.messages.at(-1);
-    // Auto-scroll keeps its discrete completed-message behavior. With the
-    // setting off, finalization only follows a response that was already being
-    // watched at the bottom of this same conversation.
-    if (!conversation || activeResponse || lastMessage?.role !== 'assistant') return;
-    const scrollKey = `${conversation.id}:${lastMessage.id}`;
-    if (!scrollKey || scrollKey === lastAutoScrollKey) return;
-    const behavior: ScrollBehavior = lastAutoScrollKey ? 'smooth' : 'auto';
-    const wasFollowingThisConversation = (
-      lastAutoScrollConversationId === conversation.id
-      || lastStreamingConversationId === conversation.id
-    )
-      && transcriptIsNearBottom();
-    lastAutoScrollKey = scrollKey;
-    lastAutoScrollConversationId = conversation.id;
-    if(autoScrollToBottom || wasFollowingThisConversation) {
-      void scrollTranscriptToBottom(behavior, wasFollowingThisConversation);
+    if (!conversation) {
+      observedConversationId = '';
+      observedLastMessageId = '';
+      return;
+    }
+
+    // Opening another saved conversation establishes a baseline rather than
+    // pretending its existing last message has just arrived. Auto-scroll may
+    // still place an opened conversation at its latest message, as before.
+    if (conversation.id !== observedConversationId) {
+      observedConversationId = conversation.id;
+      observedLastMessageId = lastMessage?.id ?? '';
+      if (lastMessage?.role === 'assistant' && autoScrollToBottom) {
+        void scrollTranscriptToBottom('auto');
+      }
+      else void tick().then(updateScrollToBottomButtonVisibility);
+      return;
+    }
+
+    if (!lastMessage || lastMessage.id === observedLastMessageId) return;
+    observedLastMessageId = lastMessage.id;
+    const wasNearBottom = transcriptIsNearBottom();
+    if(autoScrollToBottom || wasNearBottom) {
+      void scrollTranscriptToBottom(lastMessage.role === 'user' ? 'auto' : 'smooth', wasNearBottom);
     }
     else void tick().then(updateScrollToBottomButtonVisibility);
   });
