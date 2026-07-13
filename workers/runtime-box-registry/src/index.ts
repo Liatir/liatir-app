@@ -5,9 +5,10 @@
  *   signer service (holds the KMS key, signs)  ->  this Worker (stores + serves)  ->  the app
  *   (`src-tauri/src/bridge/runtime_boxes.rs`, which verifies before installing anything).
  *
- * Two surfaces:
+ * Three surfaces:
  *   - public GET routes, serving signed channel and revocation documents straight from R2;
  *   - admin PUT routes, which *promote* a new document (make it live).
+ *   - admin multipart routes, which ingest content-addressed archives too large for Wrangler.
  *
  * The Worker never signs anything and holds no private key. On promotion it re-verifies the
  * signature against the trusted keys in R2 and checks the document actually matches the route
@@ -25,6 +26,8 @@ import {
 } from '../../../packages/liatir-core/src/runtime-box';
 
 const MAX_CONTROL_DOCUMENT_BYTES = 1024 * 1024;
+const MAX_MULTIPART_PART_BYTES = 64 * 1024 * 1024;
+const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 /** R2 object holding the Ed25519 public keys this registry accepts signatures from. */
 const TRUSTED_KEYS_OBJECT = 'control/trusted-keys.json';
 /**
@@ -55,6 +58,35 @@ function json(body: unknown, status = 200, extraHeaders?: HeadersInit): Response
 /** Returns the segment only if it is safe to interpolate into an object key, else null. */
 function safeSegment(value: string): string | null {
   return SEGMENT_PATTERN.test(value) ? value : null;
+}
+
+export interface MultipartArchiveIdentity {
+  boxId: string;
+  version: string;
+  target: string;
+  sha256: string;
+  key: string;
+}
+
+/** Builds the only object identity the multipart admin surface is allowed to write. */
+export function parseMultipartArchiveIdentity(
+  boxIdValue: string,
+  versionValue: string,
+  targetValue: string,
+  sha256Value: string,
+): MultipartArchiveIdentity | null {
+  const boxId = safeSegment(boxIdValue);
+  const version = safeSegment(versionValue);
+  const target = safeSegment(targetValue);
+  const sha256 = SHA256_PATTERN.test(sha256Value) ? sha256Value : null;
+  if (!boxId || !version || !target || !sha256) return null;
+  return {
+    boxId,
+    version,
+    target,
+    sha256,
+    key: `boxes/${boxId}/${version}/${target}/${sha256}.zip`,
+  };
 }
 
 /**
@@ -180,6 +212,145 @@ async function requireAdmin(request: Request, env: Env): Promise<boolean> {
   const authorization = request.headers.get('authorization');
   if (!authorization?.startsWith('Bearer ') || !env.ADMIN_TOKEN) return false;
   return timingSafeTokenMatch(authorization.slice('Bearer '.length), env.ADMIN_TOKEN);
+}
+
+/** Reads and validates the opaque upload ID without ever interpolating it into an object key. */
+function multipartUploadId(url: URL): string | null {
+  const uploadId = url.searchParams.get('uploadId');
+  return uploadId && uploadId.length <= 1024 ? uploadId : null;
+}
+
+/** Starts an authenticated multipart upload for one new content-addressed archive. */
+async function createArchiveUpload(request: Request, env: Env): Promise<Response> {
+  if (!await requireAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
+  let input: unknown;
+  try {
+    input = await readBoundedJson(request);
+  } catch (error) {
+    return json({ error: error instanceof Error ? error.message : 'invalid_json' }, 400);
+  }
+  if (!input || typeof input !== 'object') return json({ error: 'invalid_upload' }, 400);
+  const record = input as Record<string, unknown>;
+  const identity = parseMultipartArchiveIdentity(
+    String(record.boxId ?? ''),
+    String(record.version ?? ''),
+    String(record.target ?? ''),
+    String(record.sha256 ?? ''),
+  );
+  const expectedSizeBytes = Number(record.sizeBytes);
+  if (!identity || !Number.isSafeInteger(expectedSizeBytes) || expectedSizeBytes <= 0) {
+    return json({ error: 'invalid_upload' }, 400);
+  }
+  const key = objectKey(env, identity.key);
+  if (await env.RUNTIME_BOXES.head(key)) return json({ error: 'immutable_object_exists' }, 409);
+  const upload = await env.RUNTIME_BOXES.createMultipartUpload(key, {
+    httpMetadata: {
+      contentType: 'application/zip',
+      cacheControl: 'public, max-age=31536000, immutable',
+    },
+    customMetadata: {
+      expectedSha256: identity.sha256,
+      expectedSizeBytes: String(expectedSizeBytes),
+    },
+  });
+  console.log(JSON.stringify({ event: 'runtime_box_archive_upload_created', ...identity }));
+  return json({ uploadId: upload.uploadId, key: identity.key });
+}
+
+/** Streams one bounded part directly into R2 without buffering it in Worker memory. */
+async function uploadArchivePart(
+  request: Request,
+  env: Env,
+  identity: MultipartArchiveIdentity,
+  uploadId: string,
+  partNumber: number,
+): Promise<Response> {
+  if (!await requireAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
+  const contentLength = Number(request.headers.get('content-length') ?? 0);
+  if (!request.body
+    || !Number.isSafeInteger(contentLength)
+    || contentLength <= 0
+    || contentLength > MAX_MULTIPART_PART_BYTES
+    || !Number.isInteger(partNumber)
+    || partNumber < 1
+    || partNumber > 10_000) {
+    return json({ error: 'invalid_upload_part' }, 400);
+  }
+  try {
+    const upload = env.RUNTIME_BOXES.resumeMultipartUpload(objectKey(env, identity.key), uploadId);
+    const part = await upload.uploadPart(partNumber, request.body);
+    return json({ partNumber: part.partNumber, etag: part.etag });
+  } catch {
+    return json({ error: 'multipart_upload_failed' }, 400);
+  }
+}
+
+/** Completes the archive only when the uploaded byte count matches the immutable manifest. */
+async function completeArchiveUpload(
+  request: Request,
+  env: Env,
+  identity: MultipartArchiveIdentity,
+  uploadId: string,
+): Promise<Response> {
+  if (!await requireAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
+  let input: unknown;
+  try {
+    input = await readBoundedJson(request);
+  } catch (error) {
+    return json({ error: error instanceof Error ? error.message : 'invalid_json' }, 400);
+  }
+  const parts = input && typeof input === 'object' && Array.isArray((input as Record<string, unknown>).parts)
+    ? (input as { parts: unknown[] }).parts
+    : [];
+  if (parts.length === 0 || parts.length > 10_000) return json({ error: 'invalid_upload_parts' }, 400);
+  const validated: R2UploadedPart[] = [];
+  for (let index = 0; index < parts.length; index += 1) {
+    const part = parts[index];
+    if (!part || typeof part !== 'object') return json({ error: 'invalid_upload_parts' }, 400);
+    const partNumber = Number((part as Record<string, unknown>).partNumber);
+    const etag = (part as Record<string, unknown>).etag;
+    if (partNumber !== index + 1 || typeof etag !== 'string' || etag.length === 0 || etag.length > 256) {
+      return json({ error: 'invalid_upload_parts' }, 400);
+    }
+    validated.push({ partNumber, etag });
+  }
+  const key = objectKey(env, identity.key);
+  try {
+    const upload = env.RUNTIME_BOXES.resumeMultipartUpload(key, uploadId);
+    await upload.complete(validated);
+    const object = await env.RUNTIME_BOXES.head(key);
+    const expectedSizeBytes = Number(object?.customMetadata?.expectedSizeBytes);
+    if (!object || !Number.isSafeInteger(expectedSizeBytes) || object.size !== expectedSizeBytes) {
+      await env.RUNTIME_BOXES.delete(key);
+      return json({ error: 'archive_size_mismatch' }, 400);
+    }
+    console.log(JSON.stringify({
+      event: 'runtime_box_archive_upload_completed',
+      ...identity,
+      sizeBytes: object.size,
+      partCount: validated.length,
+    }));
+    return json({ ok: true, key: identity.key, sizeBytes: object.size });
+  } catch {
+    return json({ error: 'multipart_completion_failed' }, 400);
+  }
+}
+
+/** Aborts an incomplete multipart upload so failed publications do not retain orphaned parts. */
+async function abortArchiveUpload(
+  request: Request,
+  env: Env,
+  identity: MultipartArchiveIdentity,
+  uploadId: string,
+): Promise<Response> {
+  if (!await requireAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
+  try {
+    const upload = env.RUNTIME_BOXES.resumeMultipartUpload(objectKey(env, identity.key), uploadId);
+    await upload.abort();
+    return json({ ok: true });
+  } catch {
+    return json({ error: 'multipart_abort_failed' }, 400);
+  }
 }
 
 /**
@@ -341,6 +512,24 @@ export default {
       const target = safeSegment(parts[5]);
       if (!channel || !boxId || !target) return json({ error: 'invalid_route' }, 400);
       return promoteChannel(request, env, channel, boxId, target);
+    }
+    if (request.method === 'POST' && url.pathname === '/v1/admin/uploads') {
+      return createArchiveUpload(request, env);
+    }
+    // Multipart archive routes derive the R2 key only from these validated identity segments.
+    if (parts.length >= 7 && parts[0] === 'v1' && parts[1] === 'admin' && parts[2] === 'uploads') {
+      const identity = parseMultipartArchiveIdentity(parts[3], parts[4], parts[5], parts[6]);
+      const uploadId = multipartUploadId(url);
+      if (!identity || !uploadId) return json({ error: 'invalid_route' }, 400);
+      if (request.method === 'DELETE' && parts.length === 7) {
+        return abortArchiveUpload(request, env, identity, uploadId);
+      }
+      if (request.method === 'POST' && parts.length === 8 && parts[7] === 'complete') {
+        return completeArchiveUpload(request, env, identity, uploadId);
+      }
+      if (request.method === 'PUT' && parts.length === 9 && parts[7] === 'parts') {
+        return uploadArchivePart(request, env, identity, uploadId, Number(parts[8]));
+      }
     }
     if (request.method === 'PUT' && url.pathname === '/v1/admin/revocations') {
       return promoteRevocations(request, env);

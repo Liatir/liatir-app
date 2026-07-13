@@ -126,7 +126,9 @@ npm run runtime-box -- build <recipe> \
 
 ```bash
 npm run runtime-box -- publish .runtime-box-dist/<release>.release.json \
-  --bucket liatir-storage --prefix ai-runtime-boxes
+  --bucket liatir-storage --prefix ai-runtime-boxes \
+  --registry https://models.liatir.com \
+  --token-file .runtime-box-local/admin-token.txt
 npm run runtime-box -- publish-key --bucket liatir-storage \
   --prefix ai-runtime-boxes --confirm
 npm run runtime-box -- promote .runtime-box-dist/<channel>.channel.json \
@@ -137,6 +139,13 @@ The Worker admin token is provided through `LIATIR_RUNTIME_BOX_ADMIN_TOKEN`.
 Cloudflare receives only public keys and already-signed documents. The
 production private key remains non-exportable in Cloud KMS and the Cloud Run
 service identity has only `roles/cloudkms.signerVerifier` on that key.
+
+`publish` uses Wrangler for small objects. Archives above Wrangler's upload
+limit use the same Registry Worker admin token to stream bounded 64 MiB
+multipart parts directly into R2. The Worker accepts only content-addressed
+Runtime Box archive paths, refuses an existing immutable object, and checks the
+completed byte size. Before uploading the signed release document, the CLI
+streams the public archive back and verifies its complete SHA-256.
 
 The app always trusts the checked-in production public-key bundle. Additional public
 trust roots can be supplied at compile time through

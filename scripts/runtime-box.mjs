@@ -65,6 +65,8 @@ const DIST_ROOT = join(ROOT, '.runtime-box-dist');
 const DEFAULT_PRIVATE_KEY = join(LOCAL_ROOT, 'signing-private.pem');
 const DEFAULT_PUBLIC_KEY = join(LOCAL_ROOT, 'signing-public.json');
 const DEFAULT_OBJECT_PREFIX = 'ai-runtime-boxes';
+const WRANGLER_MAX_UPLOAD_BYTES = 300 * 1024 * 1024;
+const MULTIPART_PART_BYTES = 64 * 1024 * 1024;
 /**
  * Every file's mtime is forced to this constant before archiving. Zip stores per-entry
  * timestamps, so without this the same inputs would produce a different archive — and therefore
@@ -850,6 +852,154 @@ function contentType(path) {
   return 'application/octet-stream';
 }
 
+/** Splits a large archive into the contiguous, bounded parts accepted by R2 multipart upload. */
+function multipartPartRanges(sizeBytes, partSizeBytes = MULTIPART_PART_BYTES) {
+  if (!Number.isSafeInteger(sizeBytes) || sizeBytes <= 0) fail('Invalid multipart archive size.');
+  if (!Number.isSafeInteger(partSizeBytes) || partSizeBytes < 5 * 1024 * 1024) {
+    fail('Invalid multipart part size.');
+  }
+  const partCount = Math.ceil(sizeBytes / partSizeBytes);
+  if (partCount > 10_000) fail('Multipart archive requires more than 10,000 parts.');
+  return Array.from({ length: partCount }, (_, index) => {
+    const start = index * partSizeBytes;
+    const end = Math.min(sizeBytes, start + partSizeBytes) - 1;
+    return { partNumber: index + 1, start, end, sizeBytes: end - start + 1 };
+  });
+}
+
+/** Reads the registry secret without placing it in shell history or command output. */
+async function registryAdminToken(flags) {
+  const tokenFile = flags.get('token-file');
+  const token = tokenFile
+    ? (await readFile(resolve(String(tokenFile)), 'utf8')).trim()
+    : process.env.LIATIR_RUNTIME_BOX_ADMIN_TOKEN;
+  if (!token) fail('LIATIR_RUNTIME_BOX_ADMIN_TOKEN or --token-file is required.');
+  return token;
+}
+
+/** Sends one authenticated registry request and returns its JSON response. */
+async function registryAdminRequest(url, token, options) {
+  const headers = new Headers(options.headers);
+  headers.set('authorization', `Bearer ${token}`);
+  const response = await fetch(url, { ...options, headers });
+  const text = await response.text();
+  let body;
+  try {
+    body = text ? JSON.parse(text) : {};
+  } catch {
+    body = { error: text || 'invalid_registry_response' };
+  }
+  if (!response.ok) fail(`Registry request failed (${response.status}): ${JSON.stringify(body)}`);
+  return body;
+}
+
+/** Streams and hashes the public object, proving the bytes R2 serves match the signed manifest. */
+async function verifyRemoteObject(url, expectedSizeBytes, expectedSha256) {
+  const verificationUrl = new URL(url);
+  verificationUrl.searchParams.set('liatir-verify', expectedSha256);
+  const response = await fetch(verificationUrl, { headers: { 'cache-control': 'no-cache' } });
+  if (!response.ok || !response.body) fail(`Remote object verification failed (${response.status}): ${url}`);
+  const declaredSize = Number(response.headers.get('content-length'));
+  if (Number.isSafeInteger(declaredSize) && declaredSize !== expectedSizeBytes) {
+    fail(`Remote object Content-Length mismatch: ${url}`);
+  }
+  const hash = createHash('sha256');
+  let received = 0;
+  let nextProgress = 1024 * 1024 * 1024;
+  for await (const chunk of response.body) {
+    hash.update(chunk);
+    received += chunk.byteLength;
+    if (expectedSizeBytes > 1024 * 1024 * 1024 && received >= nextProgress) {
+      console.log(`Verified ${Math.min(received, expectedSizeBytes)} / ${expectedSizeBytes} remote bytes`);
+      nextProgress += 1024 * 1024 * 1024;
+    }
+  }
+  if (received !== expectedSizeBytes) fail(`Remote object size mismatch: ${url}`);
+  if (hash.digest('hex') !== expectedSha256) fail(`Remote object SHA-256 mismatch: ${url}`);
+  console.log(`Verified remote SHA-256 ${expectedSha256}: ${url}`);
+}
+
+/** Returns whether the public immutable object already exists, rejecting ambiguous HTTP errors. */
+async function remoteObjectExists(url) {
+  const response = await fetch(url, { method: 'HEAD', headers: { 'cache-control': 'no-cache' } });
+  if (response.status === 404) return false;
+  if (!response.ok) fail(`Cannot inspect remote object (${response.status}): ${url}`);
+  return true;
+}
+
+/** Uploads an archive through the authenticated Worker/R2 multipart path with bounded retries. */
+async function uploadArchiveMultipart(archivePath, release, flags) {
+  const registry = String(flags.get('registry') || 'https://models.liatir.com').replace(/\/$/, '');
+  const token = await registryAdminToken(flags);
+  const target = targetId(release.target);
+  const identityPath = [release.boxId, release.version, target, release.archive.sha256]
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+  const baseUrl = `${registry}/v1/admin/uploads/${identityPath}`;
+  const created = await registryAdminRequest(`${registry}/v1/admin/uploads`, token, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      boxId: release.boxId,
+      version: release.version,
+      target,
+      sha256: release.archive.sha256,
+      sizeBytes: release.archive.sizeBytes,
+    }),
+  });
+  if (typeof created.uploadId !== 'string' || !created.uploadId) fail('Registry did not return a multipart upload ID.');
+  const uploadUrl = `${baseUrl}?uploadId=${encodeURIComponent(created.uploadId)}`;
+  const ranges = multipartPartRanges(release.archive.sizeBytes);
+  const completedParts = [];
+  try {
+    for (const range of ranges) {
+      let completed;
+      let lastError;
+      for (let attempt = 1; attempt <= 3 && !completed; attempt += 1) {
+        try {
+          completed = await registryAdminRequest(
+            `${baseUrl}/parts/${range.partNumber}?uploadId=${encodeURIComponent(created.uploadId)}`,
+            token,
+            {
+              method: 'PUT',
+              headers: {
+                'content-type': 'application/octet-stream',
+                'content-length': String(range.sizeBytes),
+              },
+              body: createReadStream(archivePath, { start: range.start, end: range.end }),
+              duplex: 'half',
+            },
+          );
+        } catch (error) {
+          lastError = error;
+          if (attempt < 3) await new Promise((resolveRetry) => setTimeout(resolveRetry, attempt * 1000));
+        }
+      }
+      if (!completed) throw lastError;
+      if (completed.partNumber !== range.partNumber || typeof completed.etag !== 'string') {
+        fail(`Registry returned invalid metadata for multipart part ${range.partNumber}.`);
+      }
+      completedParts.push({ partNumber: completed.partNumber, etag: completed.etag });
+      if (range.partNumber === 1 || range.partNumber % 10 === 0 || range.partNumber === ranges.length) {
+        console.log(`Uploaded archive part ${range.partNumber} / ${ranges.length}`);
+      }
+    }
+    const completed = await registryAdminRequest(`${baseUrl}/complete?uploadId=${encodeURIComponent(created.uploadId)}`, token, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ parts: completedParts }),
+    });
+    if (completed.sizeBytes !== release.archive.sizeBytes) fail('Registry completed an archive with the wrong size.');
+  } catch (error) {
+    try {
+      await registryAdminRequest(uploadUrl, token, { method: 'DELETE' });
+    } catch {
+      // The primary upload error is more useful; R2 also expires incomplete uploads automatically.
+    }
+    throw error;
+  }
+}
+
 /**
  * `serve` — a local stand-in for the production registry.
  *
@@ -911,6 +1061,9 @@ async function serve(flags) {
  * Publishing does *not* make a box live; `promote` does. This only puts the content-addressed
  * objects in place, which is why they can be cached forever: their key is their hash, so the
  * bytes behind a URL can never change.
+ * Archives above Wrangler's upload limit use the Registry Worker's authenticated multipart
+ * surface. Every archive is then streamed back from the public domain and hashed before its
+ * signed release document is uploaded.
  *
  * Both guards here exist because publishing is effectively irreversible: an archive whose hash
  * no longer matches its signed manifest would be permanently unusable, and a box built from a
@@ -934,9 +1087,20 @@ async function publish(releaseDocumentPath, flags) {
   const releaseSha = await sha256File(releasePath);
   const releaseKey = prefixedObjectKey(objectPrefix, `${releasePrefix}/${releaseSha}.release.json`);
   const wrangler = join(ROOT, 'node_modules', '.bin', 'wrangler');
-  // `immutable` with a one-year TTL is safe precisely because these keys are content hashes.
-  run(wrangler, ['r2', 'object', 'put', `${bucket}/${archiveKey}`, '--remote', `--file=${archivePath}`, '--content-type=application/zip', '--cache-control=public, max-age=31536000, immutable']);
+  const archiveExists = await remoteObjectExists(release.archive.url);
+  if (!archiveExists) {
+    if ((await stat(archivePath)).size > WRANGLER_MAX_UPLOAD_BYTES) {
+      await uploadArchiveMultipart(archivePath, release, flags);
+    } else {
+      // `immutable` with a one-year TTL is safe precisely because these keys are content hashes.
+      run(wrangler, ['r2', 'object', 'put', `${bucket}/${archiveKey}`, '--remote', `--file=${archivePath}`, '--content-type=application/zip', '--cache-control=public, max-age=31536000, immutable']);
+    }
+  }
+  // Do not publish the release document until the public archive is byte-for-byte correct.
+  await verifyRemoteObject(release.archive.url, release.archive.sizeBytes, release.archive.sha256);
   run(wrangler, ['r2', 'object', 'put', `${bucket}/${releaseKey}`, '--remote', `--file=${releasePath}`, '--content-type=application/json', '--cache-control=public, max-age=31536000, immutable']);
+  const releaseUrl = `${new URL(release.archive.url).origin}/${releaseKey}`;
+  await verifyRemoteObject(releaseUrl, (await stat(releasePath)).size, releaseSha);
   console.log(`Published r2://${bucket}/${archiveKey}`);
   console.log(`Published r2://${bucket}/${releaseKey}`);
 }
@@ -992,13 +1156,7 @@ async function publishTrustedKey(flags) {
  */
 async function promote(channelDocumentPath, flags) {
   const registry = String(flags.get('registry') || 'https://models.liatir.com').replace(/\/$/, '');
-  const tokenFile = flags.get('token-file');
-  // A file is offered as an alternative to the env var so the admin token need not sit in shell
-  // history or in the process environment.
-  const token = tokenFile
-    ? (await readFile(resolve(String(tokenFile)), 'utf8')).trim()
-    : process.env.LIATIR_RUNTIME_BOX_ADMIN_TOKEN;
-  if (!token) fail('LIATIR_RUNTIME_BOX_ADMIN_TOKEN or --token-file is required for channel promotion.');
+  const token = await registryAdminToken(flags);
   const signedBody = await readFile(resolve(channelDocumentPath));
   const { payload } = decodeSignedDocument(JSON.parse(signedBody.toString('utf8')));
   // `fail` throws, so the final branch never yields a value — it rejects anything that is neither
@@ -1093,6 +1251,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
 export {
   createDeterministicZip,
   extractRecipeArchive,
+  multipartPartRanges,
   normalizeTree,
   payloadSize,
   safeRelativePath,

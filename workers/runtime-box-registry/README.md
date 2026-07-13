@@ -34,3 +34,10 @@ Production publication is intentionally two phase: upload immutable archive and
 release objects first, then promote the signed channel document. Production
 documents are signed independently by the private Google Cloud Run/KMS signer;
 the Worker and R2 store only the public trust bundle and signed output.
+
+The authenticated admin surface also exposes bounded multipart archive upload
+for Runtime Boxes larger than Wrangler's object limit. Keys are derived from a
+validated box/version/target/SHA-256 identity, existing immutable objects are
+refused, each request is limited to 64 MiB, and completion checks the expected
+byte size. The release CLI verifies the complete public SHA-256 before it
+uploads or promotes signed metadata.
