@@ -110,14 +110,6 @@ const TENSORFLOW_PYTHON_3_10_TO_3_11 = {
 	reason: 'These TensorFlow-based regulatory genomics runtimes use TensorFlow 2.15, which is not a Python 3.12 runtime.'
 };
 
-const UCE_PYTHON_3_10_TO_3_11 = {
-	minVersion: '3.10',
-	maxVersionExclusive: '3.12',
-	label: 'Python 3.10 or 3.11',
-	reason:
-		'UCE official requirements pin torch 2.1.1 and scanpy 1.10.2; Liatir validates this runtime on Python 3.10/3.11.'
-};
-
 const INTERNAL_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 	{
 		id: MOCK_AI_MODEL_ID,
@@ -621,7 +613,7 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		id: UCE_4LAYER_MODEL_ID,
 		name: 'UCE 4-layer',
 		description:
-			'Managed zero-shot Universal Cell Embeddings runtime for AnnData single-cell expression embeddings.',
+			'Packaged zero-shot Universal Cell Embeddings runtime for AnnData single-cell expression embeddings.',
 		category: 'Single-cell Foundation Models',
 		version: '4-layer',
 		runtime: {
@@ -629,10 +621,11 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			name: 'UCE PyTorch Runtime',
 			version: 'python-venv'
 		},
-		source: 'managed-runtime',
+		source: 'runtime-box',
 		localOnly: true,
 		capabilities: ['single-cell-embedding'],
 		modalities: ['single-cell'],
+		diskSizeBytes: 10_142_871_337,
 		license: {
 			name: 'MIT code / CC BY 4.0 model assets',
 			verifiedAt: '2026-07-13',
@@ -663,61 +656,24 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		hardware: {
 			cpu: true,
 			gpu: true,
-			minRamGb: 16,
-			recommendedRamGb: 32,
-			minVramGb: 0,
-			recommendedVramGb: 16,
 			notes:
-				'GPU is recommended by the model card. CPU can be used for small validation datasets, but repeated runs should use a GPU-capable workstation.'
+				'The packaged Apple silicon runtime passed its CPU packaging self-test and detected Apple Metal. Real inference memory and performance remain under focused validation.'
 		},
 		install: {
-			method: 'managed-runtime',
+			method: 'runtime-box',
 			runtimeId: 'single-cell-foundation-uce',
 			modelCacheSubdir: 'model-cache/uce',
 			revision: '8ead6e07af0c80f75653598138bb704e865b45c8',
+			runtimeBox: {
+				boxId: 'uce-4layer',
+				channel: 'beta',
+				registryBaseUrl: 'https://models.liatir.com/v1'
+			},
 			runtimePackages: UCE_4LAYER_RUNTIME_PACKAGES,
-			runtimeSources: [
-				{
-					url: 'https://github.com/snap-stanford/UCE.git',
-					revision: '8ead6e07af0c80f75653598138bb704e865b45c8',
-					relativePath: 'source/UCE',
-					pythonPath: true
-				}
-			],
-			files: [
-				{
-					url: 'https://figshare.com/ndownloader/files/42706558',
-					relativePath: 'model_files/species_chrom.csv',
-					sizeBytes: 4_097_781,
-					sha256: 'a9e801829ffaf05b5d7e6c6ef12404326cf6796ad561ad62ce701884f07969f5'
-				},
-				{
-					url: 'https://figshare.com/ndownloader/files/42706555',
-					relativePath: 'model_files/species_offsets.pkl',
-					sizeBytes: 139,
-					sha256: 'abda5b2bc4018187e408623b292686a061912f449daceb4c9c9603caf0d62538'
-				},
-				{
-					url: 'https://figshare.com/ndownloader/files/42706585',
-					relativePath: 'model_files/all_tokens.torch',
-					sizeBytes: 2_979_205_876,
-					sha256: '07397ab3828502fb7d0bab658125c47f145f989f384db8f55fe106f6826b2a54'
-				},
-				{
-					url: 'https://figshare.com/ndownloader/files/42706576',
-					relativePath: 'model_files/4layer_model.torch',
-					sizeBytes: 3_403_514_339,
-					sha256: 'acb28f3f0a1d803e4a4ffe891b9bab38bf93c84762dc06b2452f0d515da91560'
-				},
-				{
-					url: 'https://figshare.com/ndownloader/files/42715213',
-					relativePath: 'model_files/protein_embeddings.tar.gz',
-					sizeBytes: 2_735_410_523,
-					sha256: 'dc0138b50a3238979e32ccb65caab4e3f99d49146b8bc3b975f79683d9ce9ec9'
-				}
-			],
 			hostRequirements: {
-				python: UCE_PYTHON_3_10_TO_3_11
+				os: ['macos'],
+				arch: ['aarch64'],
+				reason: 'The current UCE Runtime Box is built for Apple silicon Macs.'
 			}
 		},
 		documentation: {
@@ -725,7 +681,7 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			officialUrl: 'https://github.com/snap-stanford/UCE',
 			paperUrl: 'https://www.biorxiv.org/content/10.1101/2023.11.28.568918v2'
 		},
-		tags: ['built-in', 'managed', 'single-cell', 'foundation-model', 'embedding', 'zero-shot']
+		tags: ['built-in', 'runtime-box', 'single-cell', 'foundation-model', 'embedding', 'zero-shot']
 	},
 	{
 		id: SCFOUNDATION_100M_MODEL_ID,

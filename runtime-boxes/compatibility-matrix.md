@@ -17,7 +17,7 @@ accelerator, CUDA ABI, or incompatible Liatir version.
 |---|---|---|---|
 | Geneformer v1 10M | macOS arm64 / Metal | Published | Native lifecycle and scientific parity passed |
 | scGPT Whole-human | macOS arm64 / Metal | Published | Native lifecycle and direct-run inference passed |
-| UCE 4-layer | macOS arm64 / Metal | Gate 3 passed; not published | Reproducible ZIP64 build, signature verification, installed self-test, and arm64/MPS availability passed; inference remains pending |
+| UCE 4-layer | macOS arm64 / Metal | Gate 4 catalog cutover passed; not published | One Runtime Box installer and the shared single-cell runner; reproducible packaging and installed self-test passed; inference remains pending |
 
 UCE Gate 3 measured an 8,862,120,348-byte archive and a
 10,142,871,337-byte installed payload. The packaging self-test is CPU-only;

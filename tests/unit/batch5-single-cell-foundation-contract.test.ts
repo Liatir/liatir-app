@@ -7,7 +7,7 @@
  * than left to discipline.
  */
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   GENEFORMER_V1_10M_MODEL_ID,
@@ -155,7 +155,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
     }
   });
 
-  it('enables UCE as the first installable Batch 5 runtime box', () => {
+  it('uses one signed Runtime Box installation path for UCE', () => {
     const model = getLocalAIModelMetadata(UCE_4LAYER_MODEL_ID);
     const spec = artifactSpecForModelId(UCE_4LAYER_MODEL_ID);
     const recipe = JSON.parse(readFileSync(
@@ -177,31 +177,37 @@ describe('Batch 5 single-cell foundation model contract', () => {
     expect(model, 'UCE missing model metadata').toBeTruthy();
     expect(model?.category).toBe('Single-cell Foundation Models');
     expect(model?.releaseStage).toBeUndefined();
-    expect(model?.install?.method).toBe('managed-runtime');
+    expect(model?.source).toBe('runtime-box');
+    expect(model?.install?.method).toBe('runtime-box');
     expect(model?.install?.runtimeId).toBe('single-cell-foundation-uce');
     expect(model?.install?.modelCacheSubdir).toBe('model-cache/uce');
-    expect(model?.install?.runtimeSources?.[0]?.revision).toMatch(/^[a-f0-9]{40}$/);
-    expect(model?.install?.files?.map((file) => file.relativePath).sort()).toEqual([
-      'model_files/4layer_model.torch',
-      'model_files/all_tokens.torch',
-      'model_files/protein_embeddings.tar.gz',
-      'model_files/species_chrom.csv',
-      'model_files/species_offsets.pkl',
+    expect(model?.install?.revision).toMatch(/^[a-f0-9]{40}$/);
+    expect(model?.install?.runtimeBox).toEqual({
+      boxId: 'uce-4layer',
+      channel: 'beta',
+      registryBaseUrl: 'https://models.liatir.com/v1',
+    });
+    expect(model?.install?.files).toBeUndefined();
+    expect(model?.install?.runtimeSources).toBeUndefined();
+    expect(model?.install?.hostRequirements).toMatchObject({
+      os: ['macos'],
+      arch: ['aarch64'],
+    });
+    expect(model?.install?.hostRequirements?.python).toBeUndefined();
+    expect(model?.diskSizeBytes).toBe(10_142_871_337);
+    expect(model?.license?.components?.map((component) => component.spdxId)).toEqual([
+      'MIT',
+      'CC-BY-4.0',
     ]);
-    expect(model?.install?.files?.reduce((total, file) => total + (file.sizeBytes ?? 0), 0))
-      .toBe(9_122_228_658);
-    for (const file of model?.install?.files ?? []) {
-      expect(file.sizeBytes, `${file.relativePath} missing verified byte size`).toBeGreaterThan(0);
-      expect(file.sha256, `${file.relativePath} missing verified SHA-256`).toMatch(/^[a-f0-9]{64}$/);
-    }
-    expect(model?.install?.hostRequirements?.python?.maxVersionExclusive).toBe('3.12');
     expect(spec?.runtimeFamily).toBe('single-cell-foundation-uce');
-    expect(spec?.preloadKind).toBe('uce-managed-files');
+    expect(spec?.preloadKind).toBe('managed-files');
+    expect(spec?.modelFile).toBe('model_files/4layer_model.torch');
+    expect(existsSync(resolve(rootDir, 'frontend/src/lib/ai/preloaders/uce-managed-files.ts'))).toBe(false);
     expect(recipe).toMatchObject({
       boxId: 'uce-4layer',
       modelId: UCE_4LAYER_MODEL_ID,
       runtimeId: 'single-cell-foundation-uce',
-      sourceRevision: model?.install?.runtimeSources?.[0]?.revision,
+      sourceRevision: model?.install?.revision,
       pythonVersion: '3.11.9',
       uvVersion: '0.11.28',
     });

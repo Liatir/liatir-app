@@ -11,7 +11,6 @@ import { preloadCelltypistModel } from './preloaders/celltypist';
 import { preloadHuggingFaceTransformersModel } from './preloaders/huggingface-transformers';
 import { preloadManagedModelFiles } from './preloaders/managed-files';
 import { preloadTensorFlowHubModel } from './preloaders/tensorflow-hub';
-import { preloadUCEManagedModelFiles } from './preloaders/uce-managed-files';
 
 export async function preloadManagedAIModel(
 	model: LiatirAIModelRecord,
@@ -39,11 +38,6 @@ export async function preloadManagedAIModel(
 
 	if (spec.preloadKind === 'managed-files') {
 		await preloadManagedModelFiles(model, onLog);
-		return;
-	}
-
-	if (spec.preloadKind === 'uce-managed-files') {
-		await preloadUCEManagedModelFiles(model, onLog);
 		return;
 	}
 

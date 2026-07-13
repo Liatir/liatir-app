@@ -40,8 +40,9 @@ npm run runtime-box -- verify \
 
 The measured Gate 3 evidence is recorded in
 [`measurements/uce-4layer-macos-arm64-metal.md`](measurements/uce-4layer-macos-arm64-metal.md).
-This packaging result does not enable the catalog entry, publish a production
-channel, or claim scientific inference parity.
+The catalog now selects this Runtime Box through the shared single-cell runner.
+This result does not publish a production channel or claim scientific inference
+parity.
 
 `build` requires the exact `uv` version declared by the recipe. It copies the
 complete Astral-managed standalone Python distribution into the box, synchronizes
