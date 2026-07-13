@@ -2,7 +2,7 @@
 
 | Target | Status | Python | Accelerator | Distribution gate |
 |---|---|---:|---|---|
-| macOS arm64 | Foundation target | 3.11.9 | Apple Metal / CPU | Geneformer lifecycle/parity and scGPT native inference passed |
+| macOS arm64 | Foundation target | 3.11.9 | Apple Metal / CPU | Geneformer lifecycle/parity, scGPT native inference, and focused UCE CPU/Metal parity passed |
 | macOS x86_64 | Planned | TBD | CPU | Not published |
 | Linux x86_64 | Planned | TBD | CPU / CUDA | CUDA ABI matrix required |
 | Windows x86_64 | Planned | TBD | CPU / CUDA | Relocatable runtime validation required |
@@ -17,11 +17,13 @@ accelerator, CUDA ABI, or incompatible Liatir version.
 |---|---|---|---|
 | Geneformer v1 10M | macOS arm64 / Metal | Published | Native lifecycle and scientific parity passed |
 | scGPT Whole-human | macOS arm64 / Metal | Published | Native lifecycle and direct-run inference passed |
-| UCE 4-layer | macOS arm64 / Metal | Gate 4 catalog cutover passed; not published | One Runtime Box installer and the shared single-cell runner; reproducible packaging and installed self-test passed; inference remains pending |
+| UCE 4-layer | macOS arm64 / Metal | Gate 5 product-runner validation passed; not published | One Runtime Box installer and the shared single-cell runner; reproducible packaging, complete 10-cell CPU/Metal outputs, and backend parity passed |
 
 UCE Gate 3 measured an 8,862,120,348-byte archive and a
-10,142,871,337-byte installed payload. The packaging self-test is CPU-only;
-Metal unified-memory and scientific output measurements remain separate gates.
+10,142,871,337-byte installed payload. Gate 5 then ran the exact product wrapper
+once on CPU and once on Metal, producing finite 10 x 1,280 embeddings with a
+maximum absolute backend difference of `2.5704503059387207e-7`. Native lifecycle
+and production publication remain separate gates.
 
 ## Trust and update rules
 

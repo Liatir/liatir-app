@@ -76,8 +76,10 @@ regulatory target index.
 Status: in progress. UCE 4-layer and Geneformer V1 10M are implemented as
 installable/runnable slices. UCE now has a clean, reproducible macOS arm64
 Runtime Box recipe with signed installed-size metadata and post-extraction
-self-test evidence. Its catalog entry now uses that box through the existing
-single-cell runner; inference, native lifecycle, and publication remain open.
+self-test evidence. Its catalog entry uses that box through the existing
+single-cell runner, and the exact product runner has passed one focused CPU run,
+one Apple Metal run, complete output-contract validation, and numeric backend
+parity. Native lifecycle and publication remain open.
 Geneformer uses the live signed Runtime Box
 distribution for macOS arm64/Metal and has repeatable native lifecycle plus
 scientific-parity evidence. scGPT has a live signed macOS arm64 Runtime Box,

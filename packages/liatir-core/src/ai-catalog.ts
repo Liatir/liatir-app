@@ -656,8 +656,9 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		hardware: {
 			cpu: true,
 			gpu: true,
+			minRamGb: 16,
 			notes:
-				'The packaged Apple silicon runtime passed its CPU packaging self-test and detected Apple Metal. Real inference memory and performance remain under focused validation.'
+				'A focused 10-cell run used about 7.2 GB peak process footprint on CPU and 7.9 GB on Apple Metal on a 16 GB Apple silicon Mac. Larger datasets and batches require additional memory.'
 		},
 		install: {
 			method: 'runtime-box',

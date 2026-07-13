@@ -41,8 +41,16 @@ npm run runtime-box -- verify \
 The measured Gate 3 evidence is recorded in
 [`measurements/uce-4layer-macos-arm64-metal.md`](measurements/uce-4layer-macos-arm64-metal.md).
 The catalog now selects this Runtime Box through the shared single-cell runner.
-This result does not publish a production channel or claim scientific inference
-parity.
+Gate 5 also validates that exact product runner with one deterministic CPU run
+and one Apple Metal run:
+
+```bash
+npm run runtime-box:validate:uce
+```
+
+The focused run validates finite 1,280-dimensional output, preserved raw input,
+all result artifacts and provenance, plus CPU/Metal numeric parity. It does not
+publish a production channel or cover the native install lifecycle.
 
 `build` requires the exact `uv` version declared by the recipe. It copies the
 complete Astral-managed standalone Python distribution into the box, synchronizes
