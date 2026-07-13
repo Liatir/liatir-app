@@ -1250,6 +1250,14 @@ function createQuentaStore() {
       await persistSettings();
     },
 
+    async updateAutoScrollToBottom(enabled: boolean) {
+      settings = normalizeSettings({
+        ...settings,
+        autoScrollToBottom: enabled,
+      });
+      await persistSettings();
+    },
+
     async refreshProvider() {
       await quentaStore.init();
       providerRefreshing = true;

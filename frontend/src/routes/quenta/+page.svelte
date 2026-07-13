@@ -56,7 +56,7 @@
   let showScrollToBottomButton = $state(false);
 
   const SCROLL_TO_BOTTOM_OFFSET = 120;
-  const STICKY_BOTTOM_OFFSET = 48;
+  const STICKY_BOTTOM_OFFSET = 44;
   const CHATS_SIDEBAR_STATE_LOCAL_STORAGE_KEY = 'quenta-chats-sidebar-collapsed'!;
 
   const currentConversation = $derived(quentaStore.currentConversation);
@@ -188,15 +188,24 @@
     await tick();
     if (settleLayout) {
       // The activity panel auto-expands in its own effect. Waiting for its
-      // follow-up DOM flush and one layout frame prevents scrolling against
+      // follow-up DOM flush and two layout frames prevents scrolling against
       // the shorter, not-yet-expanded height.
       await tick();
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      });
     }
     transcriptEl?.scrollTo({
       top: transcriptEl.scrollHeight,
       behavior,
     });
+    if (settleLayout) {
+      // Re-apply the exact maximum after the browser has committed the expanded
+      // activity panel. This is still one logical scroll for the new log.
+      requestAnimationFrame(() => {
+        if (transcriptEl) transcriptEl.scrollTop = transcriptEl.scrollHeight;
+      });
+    }
     shouldFollowStreaming = true;
     updateScrollToBottomButtonVisibility();
   }
@@ -335,6 +344,7 @@
       await quentaStore.updateComposerSettings({
         enterToSend: enterToSendDraft,
       });
+      await quentaStore.updateAutoScrollToBottom(autoScrollToBottom);
       await quentaStore.bootstrapProvider();
       syncSettingsDrafts();
       settingsOpen = false;
