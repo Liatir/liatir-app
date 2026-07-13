@@ -22,6 +22,14 @@ jobs, AI runtimes, viewer capture, sidecars, or `.lia` execution.
 - `npm run test:ui:visual`
   Runs the matrix visual profile. It prepares the Tauri test binary and runs the
   visual screenshot comparison suite.
+- `npm run test:visual:update`
+  Intentionally replaces visual baselines using the current Tauri test binary.
+  Normal visual runs fail when a baseline is missing instead of silently
+  creating one.
+
+GitHub Actions runs the repository CI weekly, on manual dispatch, and for pull
+requests that change code. Direct pushes to `main` are intentionally covered by
+the weekly batch instead of starting a macOS runner for every small commit.
 
 - `LIATIR_RUN_HEAVY_AI=1 npm run test:heavy:ai`
   Runs the gated heavy AI profile. This can exercise large AI Model catalog
@@ -70,7 +78,8 @@ jobs, AI runtimes, viewer capture, sidecars, or `.lia` execution.
 - `npm run test:visual`
   Runs the visual smoke suite. The harness captures PNG screenshots from the
   native webview and compares them against baselines in
-  `tests/e2e/__snapshots__`. First run creates the missing baseline.
+  `tests/e2e/__snapshots__`. Missing baselines fail unless the dedicated update
+  command is used.
 
 - `npm run test:quality`
   Runs unit tests, the normal `npm run dev` smoke check, native Tauri E2E tests,
@@ -106,6 +115,7 @@ npm run test:fast
 npm run test:verify
 npm run test:ui
 npm run test:ui:visual
+npm run test:visual:update
 npm run test:full
 npm run test:full:continue
 LIATIR_RUN_HEAVY_AI=1 npm run test:heavy:ai

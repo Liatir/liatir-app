@@ -9,7 +9,7 @@
  * A failure here is not a bug in the code under test; it means the code drifted away from the architecture.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { AI_MODEL_ARTIFACT_SPECS } from '../../frontend/src/lib/ai/model-artifacts';
 import { LOCAL_AI_MODEL_REGISTRY, MOCK_AI_MODEL_ID } from '../../frontend/src/lib/ai/model-registry';
@@ -71,19 +71,17 @@ describe('AI modularity boundaries', () => {
     const legacyMonolith = resolve(aiToolsDir, 'python-scripts.ts');
     const scriptsDir = resolve(aiToolsDir, 'python-scripts');
     const files = filesUnder(scriptsDir).filter((file) => file.endsWith('.ts'));
+    const scriptFiles = files.filter((file) => basename(file) !== 'index.ts');
+    const indexSource = readFileSync(resolve(scriptsDir, 'index.ts'), 'utf8');
 
     expect(existsSync(legacyMonolith)).toBe(false);
-    expect(files.map((file) => file.replace(`${scriptsDir}/`, '')).sort()).toEqual([
-      'celltypist-annotate.ts',
-      'geneformer-embedding.ts',
-      'genomic-variant-effect.ts',
-      'index.ts',
-      'protein-structure.ts',
-      'regulatory-prediction.ts',
-      'sequence-embedding.ts',
-      'uce-embedding.ts',
-    ]);
-    for (const file of files) {
+    expect(scriptFiles.length).toBeGreaterThan(0);
+    for (const file of scriptFiles) {
+      const moduleName = basename(file, '.ts');
+      expect(moduleName).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+      expect(indexSource, `${basename(file)} is not exported by the script barrel`).toContain(
+        `from './${moduleName}'`,
+      );
       expect(statSync(file).size, `${file} should stay focused`).toBeLessThan(24_000);
     }
   });

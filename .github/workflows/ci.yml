@@ -1,13 +1,20 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
+  # Direct pushes are intentionally batched into one weekly run to avoid
+  # spending macOS runner minutes on every small stabilization commit.
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
   pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'internal-docs/**'
 
 # Cancel superseded runs on the same ref to save runner minutes.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

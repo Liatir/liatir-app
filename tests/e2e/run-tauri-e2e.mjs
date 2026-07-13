@@ -47,12 +47,13 @@ function parseArgs(argv) {
     heavy: argv.includes('--heavy') || process.env.LIATIR_RUN_HEAVY_AI === '1',
     reportPath: process.env.LIATIR_E2E_REPORT ?? null,
     specs: [],
+    updateSnapshots: argv.includes('--update-snapshots') || process.env.LIATIR_UPDATE_SNAPSHOTS === '1',
     visual: argv.includes('--visual') || process.env.LIATIR_VISUAL === '1',
   };
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
-    if (arg === '--visual' || arg === '--heavy') continue;
+    if (arg === '--visual' || arg === '--heavy' || arg === '--update-snapshots') continue;
     if (arg === '--report') {
       options.reportPath = path.resolve(rootDir, argv[++index]);
       continue;
@@ -305,9 +306,15 @@ async function compareScreenshot(browser, name, options = {}) {
   const baselinePath = path.join(baselineDir, `${slugify(name)}.png`);
   const diffPath = path.join(diffDir, `${slugify(name)}.diff.png`);
 
-  if (!fs.existsSync(baselinePath)) {
+  if (options.updateSnapshots) {
     fs.copyFileSync(actualPath, baselinePath);
-    return { actualPath, baselinePath, baselineCreated: true, diffRatio: 0 };
+    return { actualPath, baselinePath, baselineUpdated: true, diffRatio: 0 };
+  }
+
+  if (!fs.existsSync(baselinePath)) {
+    throw new Error(
+      `Visual baseline is missing for ${name}: ${baselinePath}. Run npm run test:visual:update to create it intentionally.`,
+    );
   }
 
   const actual = PNG.sync.read(fs.readFileSync(actualPath));
@@ -364,7 +371,7 @@ function writeE2EReport(reportPath, report) {
 }
 
 async function run() {
-  const { heavy, reportPath, visual, specs: specArgs } = parseArgs(process.argv.slice(2));
+  const { heavy, reportPath, updateSnapshots, visual, specs: specArgs } = parseArgs(process.argv.slice(2));
   const specs = resolveSpecs(specArgs, visual, heavy);
   const app = startTauriApp();
   let browser = null;
@@ -392,7 +399,10 @@ async function run() {
       baselineDir,
       browser,
       captureScreenshot,
-      compareScreenshot,
+      compareScreenshot: (client, name, options = {}) => compareScreenshot(client, name, {
+        ...options,
+        updateSnapshots,
+      }),
       expect,
       rootDir,
       screenshotDir,

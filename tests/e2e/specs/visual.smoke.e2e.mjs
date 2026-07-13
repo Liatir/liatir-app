@@ -6,6 +6,8 @@
  *
  * `readyText` per page is what makes the comparison honest: the screenshot is taken only once the page has
  * actually rendered its content, so a slow load produces a *failure*, not a diff against a half-drawn page.
+ * The Dependencies page has its own functional E2E test instead: its machine-specific versions and availability
+ * make a shared pixel baseline inherently non-deterministic.
  */
 import {
   expectNoVisibleRuntimeError,
@@ -18,13 +20,6 @@ const VISUAL_PAGES = [
     name: 'ai-models',
     route: '/ai',
     readyText: 'AI Models',
-  },
-  {
-    name: 'dependencies',
-    route: '/deps',
-    readyText: 'Dependencies',
-    waitUntilAbsent: 'Checking dependencies...',
-    waitUntilPresent: 'Re-check all',
   },
   {
     name: 'jobs',
@@ -72,27 +67,11 @@ async function waitForPage(browser, page) {
     async () => browser.execute(() => !document.body.innerText.includes('Loading AI Models...')),
     { timeout: 30_000, timeoutMsg: 'AI Models loading state did not settle before visual capture' },
   );
-  if (page.waitUntilAbsent) {
-    const absentText = page.waitUntilAbsent;
-    await browser.waitUntil(
-      async () => browser.execute((value) => !document.body.innerText.includes(value), absentText),
-      {
-        timeout: 30_000,
-        timeoutMsg: `${page.readyText} page did not settle before visual capture`,
-      },
-    );
-  }
-  if (page.waitUntilPresent) {
-    const presentText = page.waitUntilPresent;
-    await browser.waitUntil(
-      async () => browser.execute((value) => document.body.innerText.includes(value), presentText),
-      {
-        timeout: 30_000,
-        timeoutMsg: `${page.readyText} page did not reach ready state before visual capture`,
-      },
-    );
-  }
   await expectNoVisibleRuntimeError(browser);
+  await browser.waitUntil(
+    async () => browser.execute(() => !document.querySelector('[data-testid="toast-item"]')),
+    { timeout: 10_000, timeoutMsg: 'Transient toast did not settle before visual capture' },
+  );
 }
 
 async function compareStableScreenshot(browser, expect, name, compareScreenshot) {

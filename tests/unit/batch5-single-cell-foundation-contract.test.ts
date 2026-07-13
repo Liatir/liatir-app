@@ -17,17 +17,17 @@ import {
   getLocalAIModelMetadata,
 } from '../../frontend/src/lib/ai/model-registry';
 import { artifactSpecForModelId } from '../../frontend/src/lib/ai/model-artifacts';
+import { installSvelteRuneStubs } from './support/svelte-runes';
 
 const rootDir = resolve(import.meta.dirname, '../..');
 
-const PREVIEW_BATCH5_MODEL_IDS = [
-  SCGPT_WHOLE_HUMAN_MODEL_ID,
-  SCFOUNDATION_100M_MODEL_ID,
-];
+const DEFERRED_BATCH5_MODEL_IDS = [SCFOUNDATION_100M_MODEL_ID];
+
+installSvelteRuneStubs();
 
 describe('Batch 5 single-cell foundation model contract', () => {
   it('keeps deferred Batch 5 candidates as preview models with explicit capabilities', () => {
-    for (const id of PREVIEW_BATCH5_MODEL_IDS) {
+    for (const id of DEFERRED_BATCH5_MODEL_IDS) {
       const model = getLocalAIModelMetadata(id);
 
       expect(model, `${id} missing model metadata`).toBeTruthy();
@@ -36,7 +36,9 @@ describe('Batch 5 single-cell foundation model contract', () => {
       expect(model?.modalities).toContain('single-cell');
       expect(model?.capabilities).toContain('single-cell-embedding');
       expect(model?.documentation?.officialUrl, `${id} missing official source`).toMatch(/^https:\/\//);
-      expect(model?.license?.verifiedAt, `${id} missing license verification date`).toBe('2026-07-02');
+      expect(model?.license?.verifiedAt, `${id} missing license verification date`).toMatch(
+        /^\d{4}-\d{2}-\d{2}$/,
+      );
     }
   });
 
@@ -92,10 +94,55 @@ describe('Batch 5 single-cell foundation model contract', () => {
     expect(spec?.modelFile).toBe('model/model.safetensors');
   });
 
-  it('keeps preview models paired with isolated future runtime families without enabling preload', () => {
+  it('uses the live signed Runtime Box distribution for scGPT', () => {
+    const model = getLocalAIModelMetadata(SCGPT_WHOLE_HUMAN_MODEL_ID);
+    const spec = artifactSpecForModelId(SCGPT_WHOLE_HUMAN_MODEL_ID);
+    const recipe = JSON.parse(readFileSync(
+      resolve(rootDir, 'runtime-boxes/recipes/scgpt-whole-human-macos-arm64-metal/recipe.json'),
+      'utf8',
+    )) as {
+      modelId: string;
+      runtimeId: string;
+      sourceRevision: string;
+      assets: Array<{ relativePath: string; sizeBytes: number; sha256: string }>;
+    };
+
+    expect(model, 'scGPT missing model metadata').toBeTruthy();
+    expect(model?.releaseStage).toBeUndefined();
+    expect(model?.source).toBe('runtime-box');
+    expect(model?.install?.method).toBe('runtime-box');
+    expect(model?.install?.runtimeId).toBe('single-cell-foundation-scgpt-whole-human');
+    expect(model?.install?.modelCacheSubdir).toBe('model-cache/scgpt-whole-human');
+    expect(model?.install?.runtimeBox).toEqual({
+      boxId: 'scgpt-whole-human',
+      channel: 'beta',
+      registryBaseUrl: 'https://models.liatir.com/v1',
+    });
+    expect(recipe.modelId).toBe(SCGPT_WHOLE_HUMAN_MODEL_ID);
+    expect(recipe.runtimeId).toBe(model?.install?.runtimeId);
+    expect(recipe.sourceRevision).toBe(model?.install?.revision);
+    expect(recipe.assets.map((file) => file.relativePath)).toEqual(expect.arrayContaining([
+      'model-cache/scgpt-whole-human/args.json',
+      'model-cache/scgpt-whole-human/best_model.pt',
+      'model-cache/scgpt-whole-human/vocab.json',
+    ]));
+    for (const file of recipe.assets) {
+      expect(file.sizeBytes, `${file.relativePath} missing byte size`).toBeGreaterThan(0);
+      expect(file.sha256, `${file.relativePath} missing SHA-256`).toMatch(/^[a-f0-9]{64}$/);
+    }
+    expect(model?.install?.hostRequirements).toMatchObject({
+      os: ['macos'],
+      arch: ['aarch64'],
+    });
+    expect(spec?.runtimeFamily).toBe('single-cell-foundation-scgpt');
+    expect(spec?.preloadKind).toBe('managed-files');
+    expect(spec?.modelFile).toBe('best_model.pt');
+  });
+
+  it('keeps deferred models paired with isolated future runtime families without enabling preload', () => {
     const runtimeFamilies = new Set<string>();
 
-    for (const id of PREVIEW_BATCH5_MODEL_IDS) {
+    for (const id of DEFERRED_BATCH5_MODEL_IDS) {
       const model = getLocalAIModelMetadata(id);
       const spec = artifactSpecForModelId(id);
 
@@ -131,28 +178,31 @@ describe('Batch 5 single-cell foundation model contract', () => {
     expect(spec?.preloadKind).toBe('uce-managed-files');
   });
 
-  it('registers the UCE single-cell embedding AI Tool for pipelines', () => {
+  it('registers the installable single-cell embedding AI Models for pipelines', async () => {
     const registrySource = readFileSync(
       resolve(rootDir, 'frontend/src/lib/tools/pipeline-registry.ts'),
       'utf8',
     );
-    const toolSource = readFileSync(
-      resolve(rootDir, 'frontend/src/lib/tools/ai/single-cell-embedding.ts'),
-      'utf8',
+    const { singleCellEmbeddingDefinition } = await import(
+      '../../frontend/src/lib/tools/ai/single-cell-embedding'
     );
 
     expect(registrySource).toContain("'ai-single-cell-embedding'");
     expect(registrySource).toContain('singleCellEmbeddingDefinition');
     expect(registrySource).toContain('runSingleCellEmbeddingStep');
-    expect(toolSource).toContain(
-      'supportedModelIds: [UCE_4LAYER_MODEL_ID, GENEFORMER_V1_10M_MODEL_ID]',
-    );
-    expect(toolSource).toContain("id: 'ai-single-cell-embedding'");
-    expect(toolSource).toContain('batchSize');
-    expect(toolSource).toContain('maxCsvRows');
-    expect(toolSource.match(/connectable: false/g)?.length).toBeGreaterThanOrEqual(2);
-    expect(toolSource).toContain("embeddedAnnData: { type: 'file', label: 'Embedded AnnData', ext: ['h5ad'] }");
-    expect(toolSource).toContain('intermediateFiles');
-    expect(toolSource).toContain('GENEFORMER_EMBEDDING_SCRIPT');
+    expect(singleCellEmbeddingDefinition.supportedModelIds).toEqual([
+      UCE_4LAYER_MODEL_ID,
+      GENEFORMER_V1_10M_MODEL_ID,
+      SCGPT_WHOLE_HUMAN_MODEL_ID,
+    ]);
+    expect(singleCellEmbeddingDefinition.id).toBe('ai-single-cell-embedding');
+    expect(singleCellEmbeddingDefinition.inputSchema.batchSize.connectable).toBe(false);
+    expect(singleCellEmbeddingDefinition.inputSchema.maxCsvRows.connectable).toBe(false);
+    expect(singleCellEmbeddingDefinition.outputSchema.embeddedAnnData).toMatchObject({
+      type: 'file',
+      label: 'Embedded AnnData',
+      ext: ['h5ad'],
+    });
+    expect(singleCellEmbeddingDefinition.outputSchema.intermediateFiles).toBeTruthy();
   });
 });

@@ -18,6 +18,7 @@
         (t.kind === 'warn' ? 'bg-amber-50 border-amber-200 text-amber-800' :
         (t.kind === 'error'   ? 'bg-red-50 border-red-200 text-red-800' :
                               'bg-white border-border text-zinc-700'))}"
+      data-testid="toast-item"
     >
       <Icon
         icon={t.kind === 'success' ? 'lucide:check-circle' : ((t.kind === 'error' || t.kind === 'warn') ? 'lucide:alert-circle' : 'lucide:info')}
