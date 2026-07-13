@@ -49,6 +49,7 @@
 		MOCK_AI_MODEL_ID,
 		NUCLEOTIDE_TRANSFORMER_500M_ID,
 		NUCLEOTIDE_TRANSFORMER_50M_ID,
+		SCGPT_WHOLE_HUMAN_MODEL_ID,
 		UCE_4LAYER_MODEL_ID
 	} from '$lib/ai/model-registry';
 	import {
@@ -107,6 +108,15 @@
 	const modelId = $derived(page.params.id ?? '');
 	const model = $derived(aiModelsStore.byId(modelId));
 	const mode = $derived(runMode(modelId));
+	const humanOnlySingleCellModel = $derived(isHumanOnlySingleCellModel(modelId));
+	const singleCellBatchSizeMax = $derived(modelId === SCGPT_WHOLE_HUMAN_MODEL_ID ? 64 : 256);
+	const singleCellInputHelp = $derived(
+		modelId === GENEFORMER_V1_10M_MODEL_ID
+			? AI_MODEL_INPUT_HELP.geneformerAnnDataFile
+			: modelId === SCGPT_WHOLE_HUMAN_MODEL_ID
+				? AI_MODEL_INPUT_HELP.scgptAnnDataFile
+				: AI_MODEL_INPUT_HELP.uceAnnDataFile
+	);
 	const definition = $derived(
 		mode === 'celltypist'
 			? celltypistAnnotateDefinition
@@ -295,11 +305,20 @@
 			id === BORZOI_K562_RNA_MODEL_ID
 		)
 			return 'regulatory';
-		if (id === UCE_4LAYER_MODEL_ID || id === GENEFORMER_V1_10M_MODEL_ID)
+		if (
+			id === UCE_4LAYER_MODEL_ID ||
+			id === GENEFORMER_V1_10M_MODEL_ID ||
+			id === SCGPT_WHOLE_HUMAN_MODEL_ID
+		)
 			return 'single-cell-embedding';
 		if (id === BOLTZ2_MODEL_ID) return 'protein-structure';
 		if (id === MOCK_AI_MODEL_ID) return 'mock';
 		return 'unsupported';
+	}
+
+	/** Returns whether a single-cell model accepts only human transcriptomes. */
+	function isHumanOnlySingleCellModel(id: string): boolean {
+		return id === GENEFORMER_V1_10M_MODEL_ID || id === SCGPT_WHOLE_HUMAN_MODEL_ID;
 	}
 
 	function basename(path: string): string {
@@ -385,8 +404,8 @@
 			inputs = {
 				modelId: model.id,
 				inputFile,
-				species: model.id === GENEFORMER_V1_10M_MODEL_ID ? 'human' : uceSpecies,
-				batchSize: String(uceBatchSize),
+				species: humanOnlySingleCellModel ? 'human' : uceSpecies,
+				batchSize: String(Math.min(uceBatchSize, singleCellBatchSizeMax)),
 				maxCsvRows: String(uceMaxCsvRows)
 			};
 			label = basename(inputFile);
@@ -707,17 +726,15 @@
 								files={h5adFiles}
 								value={inputFile}
 								label="AnnData file"
-								info={modelId === GENEFORMER_V1_10M_MODEL_ID
-									? AI_MODEL_INPUT_HELP.geneformerAnnDataFile
-									: AI_MODEL_INPUT_HELP.uceAnnDataFile}
+								info={singleCellInputHelp}
 								emptyText="No h5ad files in Data yet."
 								disabled={formDisabled}
 								onchange={(path) => (inputFile = path)}
 							/>
-							<div class="grid grid-cols-1 {modelId === GENEFORMER_V1_10M_MODEL_ID
+							<div class="grid grid-cols-1 {humanOnlySingleCellModel
 								? 'md:grid-cols-2'
 								: 'md:grid-cols-3'} gap-3">
-								{#if modelId !== GENEFORMER_V1_10M_MODEL_ID}
+								{#if !humanOnlySingleCellModel}
 									<div>
 										<LabelWithInfo
 											targetId="uce-species"
@@ -743,7 +760,7 @@
 										id="uce-batch-size"
 										type="number"
 										min="1"
-										max="256"
+										max={singleCellBatchSizeMax}
 										bind:value={uceBatchSize}
 										disabled={formDisabled}
 										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
