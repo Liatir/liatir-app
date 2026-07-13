@@ -88,11 +88,9 @@
   "prunePaths": [
     "source/UCE/README.md",
     "source/UCE/examples",
-    "source/UCE/model_files",
     "source/UCE/requirements.txt",
     "source/UCE/data_proc/Create New Species Files.ipynb",
     "source/UCE/data_proc/download_proc_czi_cxg.py",
-    "source/UCE/data_proc/gene_embeddings.py",
     "source/UCE/data_proc/generate_reduced_chrom_files.py",
     "source/UCE/data_proc/preproc_many_dataset.py",
     "venv/lib/python3.11/ensurepip",
@@ -130,8 +128,10 @@
       "source/UCE/model.py",
       "source/UCE/utils.py",
       "source/UCE/data_proc/data_utils.py",
+      "source/UCE/data_proc/gene_embeddings.py",
+      "source/UCE/model_files/new_species_protein_embeddings.csv",
       "THIRD_PARTY_NOTICES/UCE-4LAYER.md"
     ],
-    "pythonCode": "from pathlib import Path\nimport gc\nimport sys\nsys.path.insert(0, str(Path('source/UCE').resolve()))\nimport evaluate\nmodel_files = Path('model-cache/uce/model_files')\ncheckpoint = torch.load(model_files / '4layer_model.torch', map_location='cpu')\nassert tuple(checkpoint['pe_embedding.weight'].shape) == (145469, 5120)\nassert tuple(checkpoint['encoder.0.weight'].shape) == (1280, 5120)\ndel checkpoint\ngc.collect()\ntokens = torch.load(model_files / 'all_tokens.torch', map_location='cpu')\nassert tuple(tokens.shape) == (143574, 5120)\ndel tokens\ngc.collect()"
+    "pythonCode": "from pathlib import Path\nimport gc\nimport os\nimport sys\nroot = Path.cwd()\nsource = root / 'source/UCE'\nsys.path.insert(0, str(source))\nos.chdir(source)\nimport evaluate\nmodel_files = root / 'model-cache/uce/model_files'\ncheckpoint = torch.load(model_files / '4layer_model.torch', map_location='cpu')\nassert tuple(checkpoint['pe_embedding.weight'].shape) == (145469, 5120)\nassert tuple(checkpoint['encoder.0.weight'].shape) == (1280, 5120)\ndel checkpoint\ngc.collect()\ntokens = torch.load(model_files / 'all_tokens.torch', map_location='cpu')\nassert tuple(tokens.shape) == (145469, 5120)\ndel tokens\ngc.collect()"
   }
 }
