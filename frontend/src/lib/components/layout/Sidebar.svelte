@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { goto } from '$app/navigation';
 	import { jobsStore } from '$lib/stores/jobs.svelte';

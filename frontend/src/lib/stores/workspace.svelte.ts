@@ -1,6 +1,7 @@
 import { liatir } from '$lib/api';
 import { appStorage } from './app-storage';
 import type { WorkspaceMeta, WorkspacesFile, WorkspaceEnvVar, WorkspaceEnvFile } from '$lib/types/workspace';
+import { tick } from 'svelte';
 
 const WORKSPACES_FILE = 'workspaces.json';
 const ACTIVE_FILE = 'active-workspace.json';
@@ -148,6 +149,7 @@ function createWorkspaceStore() {
       if (id === SANDBOX_WORKSPACE_ID) {
         await demoInitFn?.();
       }
+      await tick();
     },
 
     async toggleFavorite(id: string) {
