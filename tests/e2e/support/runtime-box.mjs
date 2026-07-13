@@ -107,6 +107,23 @@ export async function runtimeBoxInstallResult(browser, downloadId) {
   );
 }
 
+/** Returns a compact snapshot of the progress events captured for one Runtime Box install. */
+export async function runtimeBoxInstallProgress(browser, downloadId) {
+  return browser.execute((id) => {
+    const events = window.__liatirRuntimeBoxInstall?.[id]?.progress ?? [];
+    const latest = events.at(-1) ?? null;
+    return {
+      eventCount: events.length,
+      latest,
+      maxBytesDownloaded: events.reduce(
+        (maximum, event) => Math.max(maximum, Number(event.bytesDownloaded) || 0),
+        0,
+      ),
+      bytesTotal: [...events].reverse().find((event) => event.bytesTotal != null)?.bytesTotal ?? null,
+    };
+  }, downloadId);
+}
+
 export async function firstDownloadOffset(browser, downloadId) {
   return browser.execute((id) => {
     const progress = window.__liatirRuntimeBoxInstall?.[id]?.progress ?? [];
