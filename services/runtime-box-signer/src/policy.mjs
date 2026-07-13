@@ -43,6 +43,12 @@ function validateRelease(policy, payload) {
   requireValue(payload.archive?.format === 'zip', 'only ZIP Runtime Boxes are approved');
   requireValue(SHA256.test(payload.archive?.sha256 ?? ''), 'invalid archive SHA-256');
   requireValue(Number.isSafeInteger(payload.archive?.sizeBytes) && payload.archive.sizeBytes > 0, 'invalid archive size');
+  if (payload.installedSizeBytes !== undefined) {
+    requireValue(
+      Number.isSafeInteger(payload.installedSizeBytes) && payload.installedSizeBytes > 0,
+      'invalid installed size',
+    );
+  }
   exactAssetUrl(policy, payload.archive.url, `boxes/${payload.boxId}/${payload.version}/${target}/${payload.archive.sha256}.zip`);
   requireValue(payload.provenance?.sourceTreeDirty === false, 'dirty source trees cannot be signed for production');
   for (const field of ['recipeId', 'recipeVersion', 'builderRevision', 'sourceRevision', 'pythonVersion', 'uvVersion', 'dependencyLockSha256', 'builtAt']) {

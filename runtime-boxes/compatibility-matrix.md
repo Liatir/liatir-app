@@ -14,8 +14,8 @@ accelerator, CUDA ABI, or incompatible Liatir version.
 ## Trust and update rules
 
 - Every release and channel document is signed offline with Ed25519.
-- Archive URL, size, SHA-256, compatibility, and provenance are inside the
-  signed release payload.
+- Archive URL, archive size, SHA-256, compatibility, provenance, and (for new
+  releases) exact extracted size are inside the signed release payload.
 - Production builds trust only public keys embedded at build time.
 - Debug builds may additionally trust the local development public key.
 - Channel documents support deterministic percentage rollout metadata.
@@ -23,3 +23,6 @@ accelerator, CUDA ABI, or incompatible Liatir version.
 - Installation extracts into a sibling staging directory, validates it, then
   atomically swaps it into the active runtime path. A previous runtime remains
   available for rollback.
+- New manifests fail before download when the archive and signed extracted
+  payload cannot fit beside the active runtime and retained rollback. Legacy
+  manifests without extracted-size metadata remain compatible.

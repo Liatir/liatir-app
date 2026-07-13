@@ -38,7 +38,10 @@ use uuid::Uuid;
 
 use super::{
     app_storage::{resolve_app_path, write_text_atomic},
-    managed_bins::{extract_zip, stream_download, DownloadRegistry},
+    managed_bins::{
+        available_space_for_path, extract_zip_with_expected_size, format_bytes, sha256_of_file,
+        stream_download, DownloadRegistry, DISK_SPACE_MARGIN_BYTES,
+    },
     python_env::env_dir,
 };
 
@@ -163,6 +166,9 @@ struct ReleaseManifest {
     target: RuntimeBoxTarget,
     compatibility: RuntimeBoxCompatibility,
     archive: RuntimeBoxArchive,
+    /// Exact logical payload size before activation metadata and self-test caches are added.
+    /// Optional so manifests published before this field was introduced remain installable.
+    installed_size_bytes: Option<u64>,
     /// Path of the Python interpreter *inside* the archive, relative to its root.
     python_entry_point: String,
     model_cache_subdir: String,
@@ -634,6 +640,7 @@ fn verify_release_identity(
     if release.archive.format != "zip"
         || release.archive.sha256.len() != 64
         || release.archive.size_bytes == 0
+        || release.installed_size_bytes.is_some_and(|size| size == 0)
     {
         return Err("invalid AI Runtime Box archive metadata".to_string());
     }
@@ -771,6 +778,85 @@ fn dir_size(path: &Path) -> Result<u64, String> {
         }
     }
     Ok(total)
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct RuntimeBoxDiskPlan {
+    archive_remaining_bytes: u64,
+    installed_size_bytes: u64,
+    current_runtime_bytes: u64,
+    rollback_bytes: u64,
+    peak_managed_bytes: u64,
+    required_additional_bytes: u64,
+}
+
+/// Calculate peak disk use without double-counting files already present on the volume.
+fn runtime_box_disk_plan(
+    archive_size_bytes: u64,
+    installed_size_bytes: u64,
+    archive_bytes_on_disk: u64,
+    current_runtime_bytes: u64,
+    rollback_bytes: u64,
+) -> RuntimeBoxDiskPlan {
+    let archive_remaining_bytes = archive_size_bytes.saturating_sub(archive_bytes_on_disk);
+    RuntimeBoxDiskPlan {
+        archive_remaining_bytes,
+        installed_size_bytes,
+        current_runtime_bytes,
+        rollback_bytes,
+        peak_managed_bytes: current_runtime_bytes
+            .saturating_add(rollback_bytes)
+            .saturating_add(archive_size_bytes)
+            .saturating_add(installed_size_bytes),
+        required_additional_bytes: archive_remaining_bytes
+            .saturating_add(installed_size_bytes)
+            .saturating_add(DISK_SPACE_MARGIN_BYTES),
+    }
+}
+
+fn existing_dir_size(path: &Path) -> Result<u64, String> {
+    if path.is_dir() { dir_size(path) } else { Ok(0) }
+}
+
+fn validate_runtime_box_disk_plan(
+    plan: &RuntimeBoxDiskPlan,
+    available: u64,
+) -> Result<(), String> {
+    if available < plan.required_additional_bytes {
+        return Err(format!(
+            "Not enough disk space to install this AI Model: {} additional space is required, but only {} is free. The current runtime and rollback ({}) are preserved.",
+            format_bytes(plan.required_additional_bytes),
+            format_bytes(available),
+            format_bytes(plan.current_runtime_bytes.saturating_add(plan.rollback_bytes)),
+        ));
+    }
+    Ok(())
+}
+
+/// Fail before network transfer when the signed extracted size cannot fit beside the archive,
+/// current runtime and retained rollback generation.
+fn ensure_runtime_box_disk_space(
+    runtime_parent: &Path,
+    runtime_dir: &Path,
+    rollback_dir: &Path,
+    release: &ReleaseManifest,
+    archive_bytes_on_disk: u64,
+) -> Result<RuntimeBoxDiskPlan, String> {
+    let installed_size_bytes = release
+        .installed_size_bytes
+        .ok_or_else(|| "signed installed size is unavailable".to_string())?;
+    let plan = runtime_box_disk_plan(
+        release.archive.size_bytes,
+        installed_size_bytes,
+        archive_bytes_on_disk,
+        existing_dir_size(runtime_dir)?,
+        existing_dir_size(rollback_dir)?,
+    );
+    let Some(available) = available_space_for_path(runtime_parent) else {
+        return Ok(plan);
+    };
+    validate_runtime_box_disk_plan(&plan, available)?;
+    Ok(plan)
 }
 
 /// Where a displaced version is parked. Kept as a dot-directory *beside* the runtime dirs, on
@@ -942,21 +1028,55 @@ pub async fn lia_ai_runtime_box_install(
         "{}-{}-{}.zip",
         release.box_id, release.version, release.archive.sha256
     ));
-    let cancellation = downloads.register(&download_id);
-    // stream_download enforces the SHA-256 while writing, so the archive on disk is already
-    // known to hash to the value in the signed manifest.
-    let download_result = stream_download(
-        &app,
-        &download_id,
-        &release.archive.url,
-        &archive_path.to_string_lossy(),
-        Some(&release.archive.sha256),
-        &cancellation,
-    )
-    .await;
-    // Unregister before propagating, otherwise a failed download would leak its registry entry.
-    downloads.unregister(&download_id);
-    download_result?;
+    let mut archive_ready = false;
+    if archive_path.is_file() {
+        let metadata = std::fs::metadata(&archive_path).map_err(|error| error.to_string())?;
+        archive_ready = metadata.len() == release.archive.size_bytes
+            && sha256_of_file(&archive_path.to_string_lossy())? == release.archive.sha256;
+        if !archive_ready {
+            std::fs::remove_file(&archive_path).map_err(|error| error.to_string())?;
+        }
+    }
+    let part_path = PathBuf::from(format!("{}.part", archive_path.to_string_lossy()));
+    if part_path.is_file()
+        && std::fs::metadata(&part_path).map_err(|error| error.to_string())?.len()
+            > release.archive.size_bytes
+    {
+        std::fs::remove_file(&part_path).map_err(|error| error.to_string())?;
+    }
+    let archive_bytes_on_disk = if archive_ready {
+        release.archive.size_bytes
+    } else {
+        std::fs::metadata(&part_path).map(|metadata| metadata.len()).unwrap_or(0)
+    };
+    // Legacy Geneformer/scGPT releases have no signed extracted size. They retain the existing
+    // download-only preflight; new releases receive the complete peak-space gate.
+    if release.installed_size_bytes.is_some() {
+        ensure_runtime_box_disk_space(
+            runtime_parent,
+            &runtime_dir,
+            &rollback_root(runtime_parent, &release.runtime_id),
+            &release,
+            archive_bytes_on_disk,
+        )?;
+    }
+    if !archive_ready {
+        let cancellation = downloads.register(&download_id);
+        // stream_download enforces the SHA-256 while writing, so the archive on disk is already
+        // known to hash to the value in the signed manifest.
+        let download_result = stream_download(
+            &app,
+            &download_id,
+            &release.archive.url,
+            &archive_path.to_string_lossy(),
+            Some(&release.archive.sha256),
+            &cancellation,
+        )
+        .await;
+        // Unregister before propagating, otherwise a failed download would leak its registry entry.
+        downloads.unregister(&download_id);
+        download_result?;
+    }
     if std::fs::metadata(&archive_path)
         .map_err(|error| error.to_string())?
         .len()
@@ -973,7 +1093,17 @@ pub async fn lia_ai_runtime_box_install(
     // Closure so every failure between here and activation funnels into one cleanup path below,
     // instead of repeating "delete staging" at each `?`.
     let install_result = (|| -> Result<RuntimeBoxInstallResult, String> {
-        extract_zip(&archive_path.to_string_lossy(), &staging.to_string_lossy())?;
+        extract_zip_with_expected_size(
+            &archive_path.to_string_lossy(),
+            &staging.to_string_lossy(),
+            release.installed_size_bytes,
+        )?;
+        if let Some(expected) = release.installed_size_bytes {
+            let actual = dir_size(&staging)?;
+            if actual != expected {
+                return Err("AI Runtime Box extracted size does not match the signed release".to_string());
+            }
+        }
         let python_path = validate_extracted_box(&staging, &release)?;
         run_self_test(&python_path, &release.self_test)?;
         // Persist the signed release inside the box: the installed directory then carries its
@@ -1098,4 +1228,102 @@ pub async fn lia_ai_runtime_box_remove(
         }
     }
     Ok(true)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::{Read, Seek, SeekFrom};
+
+    fn release_json() -> serde_json::Value {
+        serde_json::json!({
+            "schemaVersion": 1,
+            "kind": "liatir.runtime-box.release",
+            "boxId": "fixture",
+            "modelId": "liatir-fixture",
+            "runtimeId": "fixture-runtime",
+            "version": "1.0.0",
+            "target": { "platform": "macos", "arch": "aarch64", "accelerator": "metal" },
+            "compatibility": { "minLiatirVersion": "0.0.0" },
+            "archive": {
+                "format": "zip",
+                "url": "https://assets.models.liatir.com/fixture.zip",
+                "sha256": "a".repeat(64),
+                "sizeBytes": 10
+            },
+            "pythonEntryPoint": "venv/bin/python",
+            "modelCacheSubdir": "model-cache/fixture",
+            "selfTest": { "pythonImports": ["json"], "timeoutSeconds": 10 },
+            "provenance": {}
+        })
+    }
+
+    #[test]
+    fn legacy_release_without_installed_size_remains_deserializable() {
+        let legacy: ReleaseManifest = serde_json::from_value(release_json()).unwrap();
+        assert_eq!(legacy.installed_size_bytes, None);
+
+        let mut current = release_json();
+        current["installedSizeBytes"] = serde_json::json!(25);
+        let current: ReleaseManifest = serde_json::from_value(current).unwrap();
+        assert_eq!(current.installed_size_bytes, Some(25));
+    }
+
+    #[test]
+    fn disk_plan_accounts_for_archive_payload_runtime_and_rollback() {
+        let plan = runtime_box_disk_plan(1_000, 5_000, 400, 700, 300);
+        assert_eq!(plan.archive_remaining_bytes, 600);
+        assert_eq!(plan.installed_size_bytes, 5_000);
+        assert_eq!(plan.current_runtime_bytes, 700);
+        assert_eq!(plan.rollback_bytes, 300);
+        assert_eq!(plan.peak_managed_bytes, 7_000);
+        assert_eq!(plan.required_additional_bytes, 5_600 + DISK_SPACE_MARGIN_BYTES);
+        assert!(validate_runtime_box_disk_plan(&plan, plan.required_additional_bytes).is_ok());
+        assert!(validate_runtime_box_disk_plan(&plan, plan.required_additional_bytes - 1)
+            .unwrap_err()
+            .contains("Not enough disk space to install this AI Model"));
+    }
+
+    /// The focused foundation validator supplies a deterministic Zip64 archive containing one
+    /// logical file larger than 4 GiB. Sparse extraction proves the production helper can unpack
+    /// it without requiring another 4 GiB of physical test storage.
+    #[test]
+    #[ignore = "run through npm run runtime-box:test:foundation"]
+    fn runtime_box_large_archive_fixture() {
+        let archive = std::env::var("LIATIR_RUNTIME_BOX_LARGE_FIXTURE")
+            .expect("large Runtime Box fixture path is required");
+        let expected = (u32::MAX as u64) + 2;
+        let rejected = std::env::temp_dir().join(format!(
+            "liatir-runtime-box-large-rejected-{}",
+            Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(&rejected).unwrap();
+        assert!(extract_zip_with_expected_size(
+            &archive,
+            &rejected.to_string_lossy(),
+            Some(expected - 1),
+        )
+        .unwrap_err()
+        .contains("does not match the signed Runtime Box release"));
+        assert_eq!(std::fs::read_dir(&rejected).unwrap().count(), 0);
+        std::fs::remove_dir_all(rejected).unwrap();
+
+        let destination = std::env::temp_dir().join(format!(
+            "liatir-runtime-box-large-extract-{}",
+            Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(&destination).unwrap();
+        extract_zip_with_expected_size(&archive, &destination.to_string_lossy(), Some(expected))
+            .unwrap();
+
+        let output = destination.join("huge-zero-fixture.bin");
+        assert_eq!(std::fs::metadata(&output).unwrap().len(), expected);
+        let mut file = std::fs::File::open(output).unwrap();
+        file.seek(SeekFrom::End(-1)).unwrap();
+        let mut final_byte = [1u8; 1];
+        file.read_exact(&mut final_byte).unwrap();
+        assert_eq!(final_byte, [0]);
+
+        std::fs::remove_dir_all(destination).unwrap();
+    }
 }

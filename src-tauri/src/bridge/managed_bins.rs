@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Read, Seek, SeekFrom, Write};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -15,7 +15,17 @@ const DOWNLOAD_STALL_TIMEOUT: Duration = Duration::from_secs(60);
 
 // Keep a safety margin over the reported size so a download cannot fill the
 // disk to the last byte (which breaks the OS and other apps mid-write).
-const DISK_SPACE_MARGIN_BYTES: u64 = 256 * 1024 * 1024;
+pub(crate) const DISK_SPACE_MARGIN_BYTES: u64 = 256 * 1024 * 1024;
+
+/// Find free bytes on the volume that contains `path`, walking up when the final
+/// destination has not been created yet.
+pub(crate) fn available_space_for_path(path: &Path) -> Option<u64> {
+    let mut existing = path;
+    while !existing.exists() {
+        existing = existing.parent()?;
+    }
+    fs2::available_space(existing).ok()
+}
 
 /// Fail fast when the destination volume cannot hold the download. Only enforced
 /// when the server reports a size and disk space can be read; otherwise the
@@ -26,16 +36,7 @@ fn ensure_disk_space(dest_path: &str, needed_bytes: u64, already_have: u64) -> R
         .filter(|parent| !parent.as_os_str().is_empty())
         .map(Path::to_path_buf)
         .unwrap_or_else(|| Path::new(".").to_path_buf());
-    // Walk up to the nearest existing ancestor — the destination dir may not
-    // exist yet, but its volume does.
-    let mut existing = probe_dir.as_path();
-    while !existing.exists() {
-        match existing.parent() {
-            Some(parent) => existing = parent,
-            None => return Ok(()), // Cannot probe; let the write path handle it.
-        }
-    }
-    let Ok(available) = fs2::available_space(existing) else {
+    let Some(available) = available_space_for_path(&probe_dir) else {
         return Ok(());
     };
     let remaining = needed_bytes.saturating_sub(already_have);
@@ -50,7 +51,7 @@ fn ensure_disk_space(dest_path: &str, needed_bytes: u64, already_have: u64) -> R
     Ok(())
 }
 
-fn format_bytes(bytes: u64) -> String {
+pub(crate) fn format_bytes(bytes: u64) -> String {
     const UNITS: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
     let mut value = bytes as f64;
     let mut unit = 0;
@@ -106,9 +107,8 @@ pub struct DownloadProgress {
 
 // ── SHA-256 helper ────────────────────────────────────────────────
 
-fn sha256_of_file(path: &str) -> Result<String, String> {
+pub(crate) fn sha256_of_file(path: &str) -> Result<String, String> {
     use sha2::{Digest, Sha256};
-    use std::io::Read;
 
     let mut file = std::fs::File::open(path).map_err(|e| e.to_string())?;
     let mut hasher = Sha256::new();
@@ -386,9 +386,29 @@ fn extract_tar(archive_path: &str, dest_dir: &str) -> Result<(), String> {
 /// boxes use this helper before an atomic activation swap, so no archive entry
 /// may escape or redirect writes outside the staging directory.
 pub(crate) fn extract_zip(archive_path: &str, dest_dir: &str) -> Result<(), String> {
+    extract_zip_with_expected_size(archive_path, dest_dir, None)
+}
+
+/// Extract a ZIP and, when provided, reject an unexpected logical payload size
+/// before writing the first entry.
+pub(crate) fn extract_zip_with_expected_size(
+    archive_path: &str,
+    dest_dir: &str,
+    expected_size: Option<u64>,
+) -> Result<(), String> {
     let file = std::fs::File::open(archive_path).map_err(|e| e.to_string())?;
     let mut archive = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
     let destination = Path::new(dest_dir);
+
+    if let Some(expected) = expected_size {
+        let mut declared = 0u64;
+        for index in 0..archive.len() {
+            declared = declared.saturating_add(archive.by_index(index).map_err(|e| e.to_string())?.size());
+        }
+        if declared != expected {
+            return Err("ZIP payload size does not match the signed Runtime Box release".to_string());
+        }
+    }
 
     for i in 0..archive.len() {
         let mut entry = archive.by_index(i).map_err(|e| e.to_string())?;
@@ -407,7 +427,7 @@ pub(crate) fn extract_zip(archive_path: &str, dest_dir: &str) -> Result<(), Stri
                 std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
             }
             let mut out_file = std::fs::File::create(&out_path).map_err(|e| e.to_string())?;
-            std::io::copy(&mut entry, &mut out_file).map_err(|e| e.to_string())?;
+            copy_zip_entry_sparse(&mut entry, &mut out_file)?;
             #[cfg(unix)]
             if let Some(mode) = entry.unix_mode() {
                 use std::os::unix::fs::PermissionsExt;
@@ -417,6 +437,28 @@ pub(crate) fn extract_zip(archive_path: &str, dest_dir: &str) -> Result<(), Stri
         }
     }
     Ok(())
+}
+
+/// Copy one ZIP entry while representing all-zero regions as sparse file holes.
+/// Runtime Boxes remain byte-identical when read, while synthetic or naturally
+/// sparse multi-gigabyte files do not consume unnecessary physical storage.
+fn copy_zip_entry_sparse<R: Read>(reader: &mut R, output: &mut std::fs::File) -> Result<u64, String> {
+    let mut buffer = [0u8; 64 * 1024];
+    let mut written = 0u64;
+    loop {
+        let count = reader.read(&mut buffer).map_err(|error| error.to_string())?;
+        if count == 0 {
+            break;
+        }
+        if buffer[..count].iter().all(|byte| *byte == 0) {
+            output.seek(SeekFrom::Current(count as i64)).map_err(|error| error.to_string())?;
+        } else {
+            output.write_all(&buffer[..count]).map_err(|error| error.to_string())?;
+        }
+        written = written.saturating_add(count as u64);
+    }
+    output.set_len(written).map_err(|error| error.to_string())?;
+    Ok(written)
 }
 
 // ── Binary search + move + remove ────────────────────────────────

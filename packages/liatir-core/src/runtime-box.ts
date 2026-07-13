@@ -65,6 +65,8 @@ export interface LiatirRuntimeBoxReleaseManifest {
   target: LiatirRuntimeBoxTarget;
   compatibility: LiatirRuntimeBoxCompatibility;
   archive: LiatirRuntimeBoxArchive;
+  /** Exact sum of extracted payload file sizes before activation metadata is added. */
+  installedSizeBytes?: number;
   /** Path relative to the extracted runtime root. */
   pythonEntryPoint: string;
   /** Model/cache directory relative to the extracted runtime root. */

@@ -45,6 +45,21 @@ test('accepts an approved immutable release', () => {
   assert.doesNotThrow(() => validateSigningPayload(policy, release));
 });
 
+test('accepts a signed installed size while keeping legacy releases valid', () => {
+  assert.doesNotThrow(() => validateSigningPayload(policy, {
+    ...release,
+    installedSizeBytes: 25,
+  }));
+  assert.doesNotThrow(() => validateSigningPayload(policy, release));
+});
+
+test('rejects an invalid installed size', () => {
+  assert.throws(() => validateSigningPayload(policy, {
+    ...release,
+    installedSizeBytes: 0,
+  }), /invalid installed size/);
+});
+
 // Without this rule, a signed release could direct every installation to download and execute an
 // archive from a host we do not control — the signature would make it look entirely legitimate.
 test('rejects an archive hosted outside the controlled origin', () => {

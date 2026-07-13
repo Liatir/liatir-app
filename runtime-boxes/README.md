@@ -24,15 +24,32 @@ npm run runtime-box -- verify .runtime-box-dist/<release>.release.json --self-te
 npm run runtime-box -- serve
 npm run runtime-box:validate:geneformer
 npm run runtime-box:validate:scgpt
+npm run runtime-box:test:foundation
 ```
 
 `build` requires the exact `uv` version declared by the recipe. It copies the
 complete Astral-managed standalone Python distribution into the box, synchronizes
 the checked-in hash lock, downloads every asset with SHA-256 verification, runs
 the recipe self-test, and creates a normalized ZIP archive.
+Recipe asset archives may use `zip` or `tar.gz`. Their complete entry lists are
+validated before extraction; traversal paths, symbolic links, hard links, and
+special entries are rejected, and the compressed source is removed from the
+payload by default after successful extraction.
 Recipes may declare reviewed `prunePaths` for build, training, and installer
 files that are not part of the immutable inference runtime. Every pruned box
 must still pass its post-extraction self-test and real model-specific gate.
+
+New release manifests sign the exact logical `installedSizeBytes` produced by
+the builder. Before downloading, the app combines the remaining archive bytes,
+the extracted payload, the active runtime, the retained rollback, and a safety
+margin into a peak disk-space plan. The extracted payload size is checked again
+before self-test and activation. Older signed releases without this optional
+field remain installable and retain the download-size preflight.
+
+`runtime-box:test:foundation` is a focused infrastructure gate. It validates
+safe TAR handling and builds the same deterministic ZIP twice around a sparse
+file larger than 4 GiB, then extracts that Zip64 archive through the production
+Rust helper. It does not download or run an AI Model.
 
 The model-specific validation commands are intentionally separate from the
 general test matrix. Geneformer compares the product runner with the pinned

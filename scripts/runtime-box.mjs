@@ -50,6 +50,7 @@ import { dirname, extname, join, relative, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { pipeline } from 'node:stream/promises';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(import.meta.dirname, '..');
 /** Recipes are checked in; everything below is generated and git-ignored. */
@@ -448,28 +449,86 @@ async function collectFiles(root, current = root) {
   return files;
 }
 
+/** Sum the logical size of the exact files that will be written to the ZIP. */
+async function payloadSize(root) {
+  let total = 0;
+  for (const file of await collectFiles(root)) {
+    total += (await stat(join(root, file))).size;
+    if (!Number.isSafeInteger(total)) fail('Runtime Box installed size exceeds the safe integer range.');
+  }
+  return total;
+}
+
+/** Reject links and special nodes before any extracted asset is copied into the payload. */
+async function validateExtractedTree(root, current = root) {
+  for (const entry of await readdir(current, { withFileTypes: true })) {
+    const fullPath = join(current, entry.name);
+    if (entry.isSymbolicLink()) fail(`Archive links are not allowed: ${relative(root, fullPath)}`);
+    if (entry.isDirectory()) await validateExtractedTree(root, fullPath);
+    else if (!entry.isFile()) fail(`Archive special entries are not allowed: ${relative(root, fullPath)}`);
+  }
+}
+
+/** Validate entry names independently from the archive tool used to list them. */
+function validateArchiveEntryNames(entries) {
+  for (const entry of entries) {
+    const normalized = entry.replace(/\/$/, '');
+    if (normalized) safeRelativePath(normalized);
+  }
+}
+
+/** Accept only regular files and directories; links could redirect later extracted writes. */
+function validateArchiveEntryTypes(entries, expectedCount, relativePath) {
+  if (entries.length !== expectedCount || entries.some((entry) => !['-', 'd'].includes(entry[0]))) {
+    fail(`Archive links and special entries are not allowed: ${relativePath}`);
+  }
+}
+
+/** Create the byte-reproducible ZIP used by production builds, with automatic Zip64 support. */
+async function createDeterministicZip(payloadDir, archivePath) {
+  await rm(archivePath, { force: true });
+  const archiveEntries = await collectFiles(payloadDir);
+  if (archiveEntries.length === 0) fail('Runtime Box payload is empty.');
+  run('zip', ['-X', '-q', archivePath, '-@'], {
+    cwd: payloadDir,
+    input: `${archiveEntries.join('\n')}\n`,
+  });
+}
+
 /**
  * Unpacks a downloaded asset archive into the payload tree.
  *
- * Entries are listed and validated *before* extraction (zip-slip defence), then unpacked into a
+ * Entries are listed and validated *before* extraction (archive-slip defence), then unpacked into a
  * temp dir and copied to their destination. `stripComponents` drops the redundant top-level
  * wrapper directory that many published archives carry; it insists on finding exactly one
  * directory to strip, so a surprising layout fails loudly instead of producing a wrong tree.
  */
 async function extractRecipeArchive(payloadDir, archive) {
   const archivePath = join(payloadDir, safeRelativePath(archive.relativePath));
-  if (archive.format !== 'zip') fail(`Unsupported recipe archive format: ${archive.format}`);
-  const entries = run('unzip', ['-Z1', archivePath], { capture: true })
-    .split('\n')
-    .filter(Boolean);
-  // Reject a hostile archive before a single byte is written to disk.
-  for (const entry of entries) {
-    const normalized = entry.replace(/\/$/, '');
-    if (normalized) safeRelativePath(normalized);
+  if (!['zip', 'tar.gz'].includes(archive.format)) {
+    fail(`Unsupported recipe archive format: ${archive.format}`);
+  }
+  const listCommand = archive.format === 'zip'
+    ? ['unzip', ['-Z1', archivePath]]
+    : ['tar', ['-tzf', archivePath]];
+  const entries = run(listCommand[0], listCommand[1], { capture: true }).split('\n').filter(Boolean);
+  validateArchiveEntryNames(entries);
+  if (archive.format === 'tar.gz') {
+    const verboseEntries = run('tar', ['-tvzf', archivePath], { capture: true }).split('\n').filter(Boolean);
+    validateArchiveEntryTypes(verboseEntries, entries.length, archive.relativePath);
+  } else {
+    const verboseEntries = run('unzip', ['-Z', '-l', archivePath], { capture: true })
+      .split('\n')
+      .filter((entry) => /^[bcdlps-][rwxstST-]*\s+\d+\.\d+\s/.test(entry));
+    validateArchiveEntryTypes(verboseEntries, entries.length, archive.relativePath);
   }
   const extracted = await mkdtemp(join(tmpdir(), 'liatir-runtime-box-asset-'));
   try {
-    run('unzip', ['-q', archivePath, '-d', extracted]);
+    if (archive.format === 'zip') run('unzip', ['-q', archivePath, '-d', extracted]);
+    else run('tar', ['-xzf', archivePath, '-C', extracted]);
+    // Defence in depth: even if an archive tool's listing format changes, links are caught
+    // before `cp` can follow them or copy data from outside the extraction root.
+    await validateExtractedTree(extracted);
     let source = extracted;
     const stripComponents = Number(archive.stripComponents ?? 0);
     for (let index = 0; index < stripComponents; index += 1) {
@@ -484,9 +543,7 @@ async function extractRecipeArchive(payloadDir, archive) {
     }
     const destination = join(payloadDir, safeRelativePath(archive.destination));
     await mkdir(dirname(destination), { recursive: true });
-    // dereference: symlinks are materialised as real files, so the box is self-contained and
-    // cannot point outside itself once installed on a user's machine.
-    await cp(source, destination, { recursive: true, dereference: true, preserveTimestamps: false });
+    await cp(source, destination, { recursive: true, dereference: false, preserveTimestamps: false });
   } finally {
     // Always clean the temp dir, including when extraction threw.
     await rm(extracted, { recursive: true, force: true });
@@ -632,15 +689,13 @@ async function buildRecipe(name, flags) {
   // release, which is what binds the archive's contents to its signed metadata.
   await writeFile(join(payloadDir, 'box.json'), `${JSON.stringify(boxMetadata, null, 2)}\n`);
   await normalizeTree(payloadDir);
+  const installedSizeBytes = await payloadSize(payloadDir);
   await mkdir(DIST_ROOT, { recursive: true });
   const stem = releaseStem(recipe);
   const archivePath = join(DIST_ROOT, `${stem}.zip`);
-  await rm(archivePath, { force: true });
-  // The deterministic zip: `-X` omits extra attributes (uid/gid, extended timestamps), and the
-  // file list is fed on stdin (`-@`) in sorted order rather than letting zip walk the directory.
-  // Together with the fixed mtimes, this is what makes the archive byte-reproducible.
-  const archiveEntries = await collectFiles(payloadDir);
-  run('zip', ['-X', '-q', archivePath, '-@'], { cwd: payloadDir, input: `${archiveEntries.join('\n')}\n` });
+  // Info-ZIP selects Zip64 automatically for large entries. The shared helper is exercised by
+  // the large-archive foundation gate, so the production path and proof cannot drift apart.
+  await createDeterministicZip(payloadDir, archivePath);
 
   const archiveSha = await sha256File(archivePath);
   const archiveSize = (await stat(archivePath)).size;
@@ -664,6 +719,7 @@ async function buildRecipe(name, flags) {
       sha256: archiveSha,
       sizeBytes: archiveSize,
     },
+    installedSizeBytes,
     pythonEntryPoint: recipe.pythonEntryPoint,
     modelCacheSubdir: recipe.modelCacheSubdir,
     selfTest: {
@@ -727,6 +783,10 @@ async function verifyRelease(path, flags) {
   if (!await fileExists(archivePath)) fail(`Archive not found: ${archivePath}`);
   if ((await stat(archivePath)).size !== release.archive.sizeBytes) fail('Archive size mismatch.');
   if (await sha256File(archivePath) !== release.archive.sha256) fail('Archive SHA-256 mismatch.');
+  if (release.installedSizeBytes !== undefined
+    && (!Number.isSafeInteger(release.installedSizeBytes) || release.installedSizeBytes <= 0)) {
+    fail('Invalid installed size.');
+  }
   const entries = run('unzip', ['-Z1', archivePath], { capture: true }).split('\n').filter(Boolean);
   for (const entry of entries) safeRelativePath(entry.replace(/\/$/, ''));
   if (!entries.includes('box.json')) fail('Archive is missing box.json.');
@@ -740,6 +800,10 @@ async function verifyRelease(path, flags) {
     const extracted = await mkdtemp(join(tmpdir(), 'liatir-runtime-box-verify-'));
     try {
       run('unzip', ['-q', archivePath, '-d', extracted]);
+      if (release.installedSizeBytes !== undefined
+        && await payloadSize(extracted) !== release.installedSizeBytes) {
+        fail('Extracted payload size does not match the signed release.');
+      }
       const python = join(extracted, safeRelativePath(release.pythonEntryPoint));
       run(python, ['-c', `import ${release.selfTest.pythonImports.join(', ')}`], { cwd: extracted });
     } finally {
@@ -988,7 +1052,20 @@ async function main() {
 
 // Single failure path: every `fail()` anywhere above lands here as a one-line message and a
 // non-zero exit code, so CI and shell callers can rely on the status.
-main().catch((error) => {
-  console.error(`runtime-box: ${error instanceof Error ? error.message : String(error)}`);
-  process.exitCode = 1;
-});
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error(`runtime-box: ${error instanceof Error ? error.message : String(error)}`);
+    process.exitCode = 1;
+  });
+}
+
+export {
+  createDeterministicZip,
+  extractRecipeArchive,
+  normalizeTree,
+  payloadSize,
+  safeRelativePath,
+  sha256File,
+  validateArchiveEntryNames,
+  validateArchiveEntryTypes,
+};

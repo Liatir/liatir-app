@@ -103,6 +103,7 @@
     "docs:all:build": "npm run docs:build && npm run docs:internal:build",
 
     "runtime-box": "node scripts/runtime-box.mjs",
+    "runtime-box:test:foundation": "node scripts/validate-runtime-box-foundation.mjs",
     "runtime-box:validate:geneformer": "node scripts/validate-geneformer-parity.mjs",
     "runtime-box:validate:scgpt": "node scripts/validate-scgpt-runtime.mjs",
     "runtime-box:worker:dev": "wrangler dev --config workers/runtime-box-registry/wrangler.jsonc",
