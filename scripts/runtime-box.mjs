@@ -897,10 +897,16 @@ async function registryAdminRequest(url, token, options) {
 async function verifyRemoteObject(url, expectedSizeBytes, expectedSha256) {
   const verificationUrl = new URL(url);
   verificationUrl.searchParams.set('liatir-verify', expectedSha256);
-  const response = await fetch(verificationUrl, { headers: { 'cache-control': 'no-cache' } });
+  const response = await fetch(verificationUrl, {
+    headers: { 'accept-encoding': 'identity', 'cache-control': 'no-cache' },
+  });
   if (!response.ok || !response.body) fail(`Remote object verification failed (${response.status}): ${url}`);
-  const declaredSize = Number(response.headers.get('content-length'));
-  if (Number.isSafeInteger(declaredSize) && declaredSize !== expectedSizeBytes) {
+  const declaredSizeHeader = response.headers.get('content-length');
+  const declaredSize = declaredSizeHeader === null ? null : Number(declaredSizeHeader);
+  if (!response.headers.has('content-encoding')
+    && declaredSize !== null
+    && Number.isSafeInteger(declaredSize)
+    && declaredSize !== expectedSizeBytes) {
     fail(`Remote object Content-Length mismatch: ${url}`);
   }
   const hash = createHash('sha256');
