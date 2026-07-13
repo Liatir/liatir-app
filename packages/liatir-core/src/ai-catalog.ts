@@ -634,10 +634,31 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		capabilities: ['single-cell-embedding'],
 		modalities: ['single-cell'],
 		license: {
-			name: 'MIT License',
-			spdxId: 'MIT',
-			url: 'https://github.com/snap-stanford/UCE',
-			verifiedAt: '2026-07-02'
+			name: 'MIT code / CC BY 4.0 model assets',
+			verifiedAt: '2026-07-13',
+			components: [
+				{
+					scope: 'source-code',
+					name: 'MIT License',
+					spdxId: 'MIT',
+					url: 'https://github.com/snap-stanford/UCE/blob/8ead6e07af0c80f75653598138bb704e865b45c8/LICENSE',
+					sourceUrl:
+						'https://github.com/snap-stanford/UCE/tree/8ead6e07af0c80f75653598138bb704e865b45c8',
+					attribution: 'Copyright (c) 2023 Yanay Rosen, Yusuf Roohani, Jure Leskovec',
+					verifiedAt: '2026-07-13'
+				},
+				{
+					scope: 'model-assets',
+					name: 'Creative Commons Attribution 4.0 International',
+					spdxId: 'CC-BY-4.0',
+					url: 'https://creativecommons.org/licenses/by/4.0/',
+					sourceUrl:
+						'https://figshare.com/articles/dataset/Universal_Cell_Embedding_Model_Files/24320806',
+					attribution:
+						'Roohani, Yusuf (2023). Universal Cell Embedding Model Files. figshare. Dataset. https://doi.org/10.6084/m9.figshare.24320806.v5',
+					verifiedAt: '2026-07-13'
+				}
+			]
 		},
 		hardware: {
 			cpu: true,
@@ -666,23 +687,33 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			files: [
 				{
 					url: 'https://figshare.com/ndownloader/files/42706558',
-					relativePath: 'model_files/species_chrom.csv'
+					relativePath: 'model_files/species_chrom.csv',
+					sizeBytes: 4_097_781,
+					sha256: 'a9e801829ffaf05b5d7e6c6ef12404326cf6796ad561ad62ce701884f07969f5'
 				},
 				{
 					url: 'https://figshare.com/ndownloader/files/42706555',
-					relativePath: 'model_files/species_offsets.pkl'
+					relativePath: 'model_files/species_offsets.pkl',
+					sizeBytes: 139,
+					sha256: 'abda5b2bc4018187e408623b292686a061912f449daceb4c9c9603caf0d62538'
 				},
 				{
 					url: 'https://figshare.com/ndownloader/files/42706585',
-					relativePath: 'model_files/all_tokens.torch'
+					relativePath: 'model_files/all_tokens.torch',
+					sizeBytes: 2_979_205_876,
+					sha256: '07397ab3828502fb7d0bab658125c47f145f989f384db8f55fe106f6826b2a54'
 				},
 				{
 					url: 'https://figshare.com/ndownloader/files/42706576',
-					relativePath: 'model_files/4layer_model.torch'
+					relativePath: 'model_files/4layer_model.torch',
+					sizeBytes: 3_403_514_339,
+					sha256: 'acb28f3f0a1d803e4a4ffe891b9bab38bf93c84762dc06b2452f0d515da91560'
 				},
 				{
 					url: 'https://figshare.com/ndownloader/files/42715213',
-					relativePath: 'model_files/protein_embeddings.tar.gz'
+					relativePath: 'model_files/protein_embeddings.tar.gz',
+					sizeBytes: 2_735_410_523,
+					sha256: 'dc0138b50a3238979e32ccb65caab4e3f99d49146b8bc3b975f79683d9ce9ec9'
 				}
 			],
 			hostRequirements: {

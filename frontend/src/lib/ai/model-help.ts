@@ -104,6 +104,12 @@ export function aiModelInfo(model: LiatirAIModelRecord): string {
     : model.hardware?.recommendedRamGb != null
       ? `Recommended memory: ${model.hardware.recommendedRamGb} GB RAM.`
       : null;
+  const licenseComponents = model.license?.components
+    ?.map((component) => `${component.scope === 'source-code' ? 'Code' : component.scope === 'model-assets' ? 'Model assets' : 'Runtime'}: ${component.name}.`)
+    .join(' ');
+  const license = model.license
+    ? `License: ${licenseComponents || model.license.name}.`
+    : null;
 
   return [
     `**${model.name}**`,
@@ -114,5 +120,6 @@ export function aiModelInfo(model: LiatirAIModelRecord): string {
     local,
     runtime,
     hardware,
+    license,
   ].filter(Boolean).join('\n\n');
 }

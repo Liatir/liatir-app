@@ -12,6 +12,7 @@ import {
   CHAI1_MODEL_ID,
   LOCAL_AI_MODEL_REGISTRY,
   MOCK_AI_MODEL_ID,
+  UCE_4LAYER_MODEL_ID,
   VISIBLE_LOCAL_AI_MODEL_REGISTRY,
   getLocalAIModelMetadata,
 } from '../../frontend/src/lib/ai/model-registry';
@@ -79,5 +80,29 @@ describe('AI model registry contracts', () => {
     expect(chai?.catalogVisibility).toBe('hidden');
     expect(chai?.catalogHiddenReason?.trim()).toBeTruthy();
     expect(VISIBLE_LOCAL_AI_MODEL_REGISTRY.some((model) => model.id === CHAI1_MODEL_ID)).toBe(false);
+  });
+
+  it('records separate UCE code and model-asset licenses with attribution', () => {
+    const uce = getLocalAIModelMetadata(UCE_4LAYER_MODEL_ID);
+
+    expect(uce?.license?.name).toBe('MIT code / CC BY 4.0 model assets');
+    expect(uce?.license?.verifiedAt).toBe('2026-07-13');
+    expect(uce?.license?.components).toEqual([
+      expect.objectContaining({
+        scope: 'source-code',
+        spdxId: 'MIT',
+        verifiedAt: '2026-07-13',
+      }),
+      expect.objectContaining({
+        scope: 'model-assets',
+        spdxId: 'CC-BY-4.0',
+        verifiedAt: '2026-07-13',
+      }),
+    ]);
+    for (const component of uce?.license?.components ?? []) {
+      expect(component.url).toMatch(/^https:\/\//);
+      expect(component.sourceUrl).toMatch(/^https:\/\//);
+      expect(component.attribution?.trim()).toBeTruthy();
+    }
   });
 });

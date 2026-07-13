@@ -173,6 +173,12 @@ describe('Batch 5 single-cell foundation model contract', () => {
       'model_files/species_chrom.csv',
       'model_files/species_offsets.pkl',
     ]);
+    expect(model?.install?.files?.reduce((total, file) => total + (file.sizeBytes ?? 0), 0))
+      .toBe(9_122_228_658);
+    for (const file of model?.install?.files ?? []) {
+      expect(file.sizeBytes, `${file.relativePath} missing verified byte size`).toBeGreaterThan(0);
+      expect(file.sha256, `${file.relativePath} missing verified SHA-256`).toMatch(/^[a-f0-9]{64}$/);
+    }
     expect(model?.install?.hostRequirements?.python?.maxVersionExclusive).toBe('3.12');
     expect(spec?.runtimeFamily).toBe('single-cell-foundation-uce');
     expect(spec?.preloadKind).toBe('uce-managed-files');

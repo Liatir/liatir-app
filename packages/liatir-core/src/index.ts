@@ -407,12 +407,34 @@ export interface LiatirAIModelRuntime {
   version?: string;
 }
 
+export type LiatirAIModelLicenseScope =
+  | "source-code"
+  | "model-assets"
+  | "runtime";
+
+/** License and attribution for one independently distributed model component. */
+export interface LiatirAIModelLicenseComponent {
+  scope: LiatirAIModelLicenseScope;
+  name: string;
+  spdxId?: string;
+  /** Stable URL for the license terms. */
+  url?: string;
+  /** Official source record covered by this license. */
+  sourceUrl?: string;
+  /** Attribution text that must travel with redistributed copies. */
+  attribution?: string;
+  /** ISO date when this component was verified from an official source. */
+  verifiedAt?: string;
+}
+
 export interface LiatirAIModelLicense {
+  /** User-facing summary. Use components when code and model assets differ. */
   name: string;
   spdxId?: string;
   url?: string;
   /** ISO date when license metadata was verified from an official source. */
   verifiedAt?: string;
+  components?: LiatirAIModelLicenseComponent[];
 }
 
 export interface LiatirAIModelHardwareRequirements {

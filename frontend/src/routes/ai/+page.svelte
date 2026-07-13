@@ -172,6 +172,12 @@
       model.status,
       model.license?.name,
       model.license?.spdxId,
+      ...(model.license?.components?.flatMap((component) => [
+        component.scope,
+        component.name,
+        component.spdxId,
+        component.attribution,
+      ]) ?? []),
       ...(model.capabilities ?? []),
       ...(model.modalities ?? []),
       ...(model.tags ?? []),
@@ -765,7 +771,7 @@
 
                       {#if isModelDetailsExpanded(model.id)}
                         <div class="mx-4 mb-3 rounded-lg border border-border bg-zinc-50 px-3 py-3">
-                          <div class="grid grid-cols-1 gap-3 text-xs text-zinc-600 md:grid-cols-3">
+                          <div class="grid grid-cols-1 gap-3 text-xs text-zinc-600 md:grid-cols-2 xl:grid-cols-4">
                             <div>
                               <p class="text-[10px] font-semibold uppercase text-zinc-400">Runtime box</p>
                               <p class="mt-1 font-medium text-zinc-800">{runtimeLabel(model)}</p>
@@ -800,6 +806,28 @@
                               {/if}
                               {#if model.install?.hostRequirements?.python?.reason}
                                 <p class="mt-1 text-[11px] text-zinc-500">{model.install.hostRequirements.python.reason}</p>
+                              {/if}
+                            </div>
+
+                            <div>
+                              <p class="text-[10px] font-semibold uppercase text-zinc-400">Licenses</p>
+                              {#if model.license?.components?.length}
+                                {#each model.license.components as component}
+                                  <div class="mt-1.5 first:mt-1">
+                                    <p class="font-medium text-zinc-800">
+                                      {component.scope === 'source-code'
+                                        ? 'Code'
+                                        : component.scope === 'model-assets'
+                                          ? 'Model assets'
+                                          : 'Runtime'}: {component.name}
+                                    </p>
+                                    {#if component.attribution}
+                                      <p class="mt-0.5 text-[11px] text-zinc-500">{component.attribution}</p>
+                                    {/if}
+                                  </div>
+                                {/each}
+                              {:else}
+                                <p class="mt-1 font-medium text-zinc-800">{model.license?.name ?? 'Unspecified'}</p>
                               {/if}
                             </div>
                           </div>

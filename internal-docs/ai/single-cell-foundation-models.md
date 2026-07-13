@@ -5,11 +5,10 @@ AI Model registry and public docs.
 
 ## Current status
 
-Batch 5 now has two installable/runnable slices: UCE 4-layer and Geneformer V1
-10M. scGPT and scFoundation stay visible as preview entries so users can
-understand the roadmap, but they are not installable or runnable until each
-runtime box has validated package installation, model asset handling, input
-preprocessing, output parsing, Jobs, Results, and provenance.
+Batch 5 has three installable/runnable slices: UCE 4-layer, Geneformer V1 10M,
+and scGPT Whole-human. Geneformer and scGPT use signed Runtime Boxes; UCE still
+uses its managed runtime while its Runtime Box gates are completed.
+scFoundation stays visible as a redistribution-blocked preview entry.
 
 ## Official sources checked on 2026-07-02 and 2026-07-03
 
@@ -30,16 +29,24 @@ preprocessing, output parsing, Jobs, Results, and provenance.
   - the managed runner accepts human raw-count AnnData with Ensembl IDs and can
     use CPU, CUDA, or Apple Metal.
 - [UCE](https://github.com/snap-stanford/UCE)
-  - MIT license;
+  - source code is MIT at pinned revision
+    `8ead6e07af0c80f75653598138bb704e865b45c8`;
+  - the five official model assets are CC BY 4.0 under Figshare item 24320806,
+    version 5, and require attribution to Yusuf Roohani;
   - official workflow embeds AnnData `.h5ad` files;
   - requirements are pinned and include PyTorch, Scanpy, Accelerate, NumPy,
     SciPy, Pandas, Requests, and urllib3;
   - Liatir manages the 4-layer source checkout, model weights, token file,
-    species maps, offsets, and protein embeddings directly before run.
+    species maps, offsets, and protein embeddings directly before run;
+  - exact byte sizes, MD5 values, and SHA-256 values for all five assets were
+    verified on 2026-07-13 and are recorded in
+    `runtime-boxes/legal/uce-4layer.md` together with the dependency license
+    audit.
 - [scFoundation](https://github.com/biomap-research/scFoundation)
-  - Apache 2.0 license;
+  - source code is Apache 2.0, but checkpoint redistribution is restricted to
+    non-commercial research by its separate model license;
   - 100M-parameter model family;
-  - requires a dedicated runtime and checkpoint-management pass before install.
+  - remains blocked from a Liatir-distributed Runtime Box.
 
 ## Runtime-box rule
 
