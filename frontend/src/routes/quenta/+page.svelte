@@ -48,10 +48,15 @@
   let deleteConfirmConversationId = $state<string | null>(null);
   let transcriptEl = $state<HTMLDivElement | null>(null);
   let lastAutoScrollKey = '';
+  let lastAutoScrollConversationId = '';
+  let lastStreamingRequestId = '';
+  let lastStreamingConversationId = '';
+  let lastStreamingContentLength = 0;
   let composerConversationId: string | null = null;
   let showScrollToBottomButton = $state(false);
 
   const SCROLL_TO_BOTTOM_OFFSET = 120;
+  const STICKY_BOTTOM_OFFSET = 32;
   const CHATS_SIDEBAR_STATE_LOCAL_STORAGE_KEY = 'quenta-chats-sidebar-collapsed'!;
 
   const currentConversation = $derived(quentaStore.currentConversation);
@@ -132,6 +137,12 @@
   ];
 
 
+  function transcriptIsNearBottom() {
+    const el = transcriptEl;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight <= STICKY_BOTTOM_OFFSET;
+  }
+
   function updateScrollToBottomButtonVisibility() {
     const el = transcriptEl;
     if (!el) {
@@ -177,17 +188,46 @@
     updateScrollToBottomButtonVisibility();
   }
 
-  $effect(() => {
+  $effect.pre(() => {
+    const response = activeResponse;
+    if (!response) return;
+
+    const isNewResponse = response.requestId !== lastStreamingRequestId;
+    const contentAdvanced = !isNewResponse
+      && response.content.length > lastStreamingContentLength;
+    lastStreamingRequestId = response.requestId;
+    lastStreamingConversationId = currentConversation?.id ?? '';
+    lastStreamingContentLength = response.content.length;
+
+    // Following an in-progress response is independent from Auto-scroll, but
+    // only while the user has kept the transcript at its bottom. The activity
+    // panel gets one initial scroll; reasoning revisions do not repeatedly
+    // take control, while each visible answer delta keeps the latest line in view.
+    if ((isNewResponse || contentAdvanced) && transcriptIsNearBottom()) {
+      void scrollTranscriptToBottom('auto', true);
+    }
+  });
+
+  $effect.pre(() => {
     const conversation = currentConversation;
     const lastMessage = conversation?.messages.at(-1);
-    // Streaming revisions must never take control of the user's scroll. Wait
-    // until the final assistant message replaces the active response.
-    if (activeResponse || lastMessage?.role !== 'assistant') return;
-    const scrollKey = conversation ? `${conversation.id}:${lastMessage.id}` : '';
+    // Auto-scroll keeps its discrete completed-message behavior. With the
+    // setting off, finalization only follows a response that was already being
+    // watched at the bottom of this same conversation.
+    if (!conversation || activeResponse || lastMessage?.role !== 'assistant') return;
+    const scrollKey = `${conversation.id}:${lastMessage.id}`;
     if (!scrollKey || scrollKey === lastAutoScrollKey) return;
     const behavior: ScrollBehavior = lastAutoScrollKey ? 'smooth' : 'auto';
+    const wasFollowingThisConversation = (
+      lastAutoScrollConversationId === conversation.id
+      || lastStreamingConversationId === conversation.id
+    )
+      && transcriptIsNearBottom();
     lastAutoScrollKey = scrollKey;
-    if(autoScrollToBottom) void scrollTranscriptToBottom(behavior);
+    lastAutoScrollConversationId = conversation.id;
+    if(autoScrollToBottom || wasFollowingThisConversation) {
+      void scrollTranscriptToBottom(behavior, wasFollowingThisConversation);
+    }
     else void tick().then(updateScrollToBottomButtonVisibility);
   });
 
