@@ -106,6 +106,7 @@
     "runtime-box:test:foundation": "node scripts/validate-runtime-box-foundation.mjs",
     "runtime-box:validate:geneformer": "node scripts/validate-geneformer-parity.mjs",
     "runtime-box:validate:scgpt": "node scripts/validate-scgpt-runtime.mjs",
+    "runtime-box:validate:uce": "node scripts/validate-uce-runtime.mjs",
     "runtime-box:worker:dev": "wrangler dev --config workers/runtime-box-registry/wrangler.jsonc",
     "runtime-box:worker:types": "wrangler types --config workers/runtime-box-registry/wrangler.jsonc workers/runtime-box-registry/worker-configuration.d.ts",
     "runtime-box:worker:deploy": "wrangler deploy --config workers/runtime-box-registry/wrangler.jsonc",

@@ -270,4 +270,25 @@ describe('Batch 5 single-cell foundation model contract', () => {
     });
     expect(singleCellEmbeddingDefinition.outputSchema.intermediateFiles).toBeTruthy();
   });
+
+  it('validates UCE through the shipped product runner without a copied Python implementation', () => {
+    const packageJson = JSON.parse(readFileSync(resolve(rootDir, 'package.json'), 'utf8')) as {
+      scripts: Record<string, string>;
+    };
+    const validatorSource = readFileSync(
+      resolve(rootDir, 'scripts/validate-uce-runtime.mjs'),
+      'utf8',
+    );
+
+    expect(packageJson.scripts['runtime-box:validate:uce']).toBe(
+      'node scripts/validate-uce-runtime.mjs',
+    );
+    expect(validatorSource).toContain(
+      'frontend/src/lib/tools/ai/python-scripts/uce-embedding.ts',
+    );
+    expect(validatorSource).toContain(
+      "const prefix = 'export const UCE_EMBEDDING_SCRIPT = String.raw`'",
+    );
+    expect(validatorSource).not.toMatch(/^export const UCE_EMBEDDING_SCRIPT/m);
+  });
 });

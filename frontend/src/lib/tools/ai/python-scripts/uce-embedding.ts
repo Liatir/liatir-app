@@ -27,18 +27,36 @@ output_dir = Path(payload["outputDir"]).resolve()
 species = payload.get("species") or "human"
 batch_size = max(1, min(int(payload.get("batchSize") or 25), 256))
 max_csv_rows = max(1, min(int(payload.get("maxCsvRows") or 500), 5000))
+random_seed = int(payload.get("randomSeed") or 23)
+requested_accelerator = str(payload.get("accelerator") or "auto").lower()
 
-supported_species = {
-    "human",
-    "mouse",
-    "frog",
-    "zebrafish",
-    "mouse_lemur",
-    "pig",
-    "macaca_fascicularis",
-    "macaca_mulatta",
+if requested_accelerator not in {"auto", "cpu", "mps"}:
+    raise SystemExit(f"Unsupported UCE accelerator: {requested_accelerator}")
+if requested_accelerator == "cpu":
+    os.environ["ACCELERATE_USE_CPU"] = "true"
+elif requested_accelerator == "mps":
+    os.environ["ACCELERATE_USE_CPU"] = "false"
+
+import numpy as np
+import torch
+
+if requested_accelerator == "mps" and not torch.backends.mps.is_available():
+    raise SystemExit("UCE Apple Metal validation requested, but MPS is not available.")
+
+np.random.seed(random_seed)
+torch.manual_seed(random_seed)
+
+protein_embedding_files = {
+    "human": "Homo_sapiens.GRCh38.gene_symbol_to_embedding_ESM2.pt",
+    "mouse": "Mus_musculus.GRCm39.gene_symbol_to_embedding_ESM2.pt",
+    "frog": "Xenopus_tropicalis.Xenopus_tropicalis_v9.1.gene_symbol_to_embedding_ESM2.pt",
+    "zebrafish": "Danio_rerio.GRCz11.gene_symbol_to_embedding_ESM2.pt",
+    "mouse_lemur": "Microcebus_murinus.Mmur_3.0.gene_symbol_to_embedding_ESM2.pt",
+    "pig": "Sus_scrofa.Sscrofa11.1.gene_symbol_to_embedding_ESM2.pt",
+    "macaca_fascicularis": "Macaca_fascicularis.Macaca_fascicularis_6.0.gene_symbol_to_embedding_ESM2.pt",
+    "macaca_mulatta": "Macaca_mulatta.Mmul_10.gene_symbol_to_embedding_ESM2.pt",
 }
-if species not in supported_species:
+if species not in protein_embedding_files:
     raise SystemExit(f"Unsupported UCE species: {species}")
 if not input_file.is_file():
     raise SystemExit(f"AnnData file not found: {input_file.name}")
@@ -127,6 +145,34 @@ sys.path.insert(0, str(source_dir))
 sys.argv = argv
 try:
     os.chdir(source_dir)
+    import evaluate
+    from data_proc import gene_embeddings
+
+    # The pinned upstream preprocessing module resolves these paths relative to its checkout. The
+    # Runtime Box intentionally stores immutable model assets in the shared model cache instead, so
+    # route the official loader to that packaged location before running the upstream entry point.
+    packaged_embedding_paths = {
+        name: model_files / "protein_embeddings" / filename
+        for name, filename in protein_embedding_files.items()
+    }
+    gene_embeddings.MODEL_TO_SPECIES_TO_GENE_EMBEDDING_PATH["ESM2"] = packaged_embedding_paths
+
+    # Upstream generate_idxs loads all eight species although a run uses exactly one. Loading only
+    # the requested dictionary is scientifically identical and prevents several gigabytes of
+    # unrelated tensors from competing with the model on unified-memory Macs.
+    def load_selected_species_embeddings(_embedding_dir):
+        selected = torch.load(packaged_embedding_paths[species], map_location="cpu")
+        return {species: {key.upper(): value for key, value in selected.items()}}
+
+    evaluate.get_species_to_pe = load_selected_species_embeddings
+
+    # The locked 4-layer checkpoint already contains a full 145,469-row pe_embedding. In the pinned
+    # upstream algorithm a token tensor with that row count is loaded and then deliberately ignored.
+    # Preserve that exact branch without retaining a redundant ~3 GB tensor during inference.
+    class ExistingCheckpointTokens:
+        shape = (145469,)
+
+    evaluate.get_ESM2_embeddings = lambda _args: ExistingCheckpointTokens()
     runpy.run_path(str(script_path), run_name="__main__")
 finally:
     os.chdir(previous_cwd)
@@ -146,7 +192,7 @@ if not embedded_path.is_file():
         raise SystemExit("UCE completed but no embedded AnnData file was found in the output directory.")
 
 import anndata
-import numpy as np
+from accelerate.state import AcceleratorState
 
 embedded = anndata.read_h5ad(str(embedded_path))
 if "X_uce" not in embedded.obsm:
@@ -186,6 +232,8 @@ summary = {
     "model": "UCE 4-layer",
     "species": species,
     "batchSize": batch_size,
+    "randomSeed": random_seed,
+    "accelerator": str(AcceleratorState().device),
     "previewRows": preview_rows,
     "intermediateCount": len(intermediate_paths),
     "warnings": summary_warnings,

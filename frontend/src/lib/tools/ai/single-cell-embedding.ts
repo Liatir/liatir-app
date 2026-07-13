@@ -191,6 +191,7 @@ export async function finalizeSingleCellEmbeddingResult(
 			model: string;
 			species: string;
 			batchSize: number;
+			randomSeed?: number;
 			previewRows: number;
 			intermediateCount: number;
 			matchedGeneCount?: number;
@@ -221,6 +222,10 @@ export async function finalizeSingleCellEmbeddingResult(
 		},
 		parameters: {
 			batchSize: parsed.summary.batchSize,
+			...(parsed.summary.randomSeed !== undefined
+				? { randomSeed: parsed.summary.randomSeed }
+				: {}),
+			...(parsed.summary.accelerator ? { accelerator: parsed.summary.accelerator } : {}),
 			embeddingKey: parsed.summary.embeddingKey,
 			csvPreviewRows: parsed.summary.previewRows,
 			...(parsed.summary.embeddingLayer ? { embeddingLayer: parsed.summary.embeddingLayer } : {}),
@@ -260,6 +265,8 @@ export async function finalizeSingleCellEmbeddingResult(
 	];
 	if (parsed.summary.accelerator)
 		provenanceRows.push(['Accelerator', parsed.summary.accelerator]);
+	if (parsed.summary.randomSeed !== undefined)
+		provenanceRows.push(['Random seed', parsed.summary.randomSeed]);
 	if (parsed.summary.embeddingLayer)
 		provenanceRows.push(['Embedding layer', parsed.summary.embeddingLayer]);
 
