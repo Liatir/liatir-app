@@ -76,10 +76,12 @@ regulatory target index.
 Status: in progress. UCE 4-layer and Geneformer V1 10M are implemented as
 installable/runnable slices. UCE now has a clean, reproducible macOS arm64
 Runtime Box recipe with signed installed-size metadata and post-extraction
-self-test evidence. Its catalog entry uses that box through the existing
-single-cell runner, and the exact product runner has passed one focused CPU run,
-one Apple Metal run, complete output-contract validation, and numeric backend
-parity. Native lifecycle and publication remain open.
+self-test evidence. Its KMS-signed beta box is live through the existing
+single-cell runner. The exact product runner has passed focused CPU and Apple
+Metal runs, complete output-contract validation, numeric backend parity, and a
+fresh-home native lifecycle covering signed install, a tracked direct Job, a
+finite 1,280-dimensional Result with provenance, Jobs/Results visibility,
+removal, and Result artifact survival.
 Geneformer uses the live signed Runtime Box
 distribution for macOS arm64/Metal and has repeatable native lifecycle plus
 scientific-parity evidence. scGPT has a live signed macOS arm64 Runtime Box,
@@ -103,7 +105,7 @@ validation, output parsing, Jobs, Results, and provenance.
 
 ### AI Runtime Box Distribution Foundation
 
-Status: production distribution path live; native app validation remains open.
+Status: production distribution path live; partially native-verified.
 
 - Shared release, channel, target, rollout, revocation, signature, and
   compatibility contracts live in `packages/liatir-core`.
@@ -125,6 +127,10 @@ Status: production distribution path live; native app validation remains open.
   verification and post-extraction imports on macOS arm64, is published under
   `assets.models.liatir.com`, and is promoted through the beta channel at
   `models.liatir.com`.
+- UCE 4-layer `1.0.0-beta.1` is KMS-signed, published as an immutable
+  8,862,120,348-byte archive, promoted through the beta channel, and selected by
+  the catalog. Its 10,142,871,337-byte installed payload passed the targeted
+  native install/direct-run/Jobs/Results/removal gate on macOS arm64/Metal.
 
 Geneformer evidence now covers a fresh isolated home, interrupted download and
 resume, signed install, real inference, atomic replacement, rollback, removal,

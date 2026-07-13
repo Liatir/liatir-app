@@ -10,6 +10,10 @@
 - A targeted fresh-home native gate now covers interruption/resume, signed install, real Geneformer inference, atomic replacement, rollback, removal, and Jobs metadata.
 - Geneformer matches the pinned official V1 tokenizer and embedding algorithm exactly on the deterministic CPU fixture (`maxAbsoluteError: 0.0`).
 - scGPT Whole-human `0.2.5-beta.1` is production-signed, published, promoted, and passes real 512-dimensional CPU and native Apple Metal embedding gates.
+- UCE 4-layer `1.0.0-beta.1` is production-signed with Cloud KMS, published as an immutable 8,862,120,348-byte archive, promoted to the beta channel, and enabled in the catalog through the shared single-cell runner.
+- UCE passes the exact product-runner CPU/Metal scientific gate with finite 10 x 1,280 embeddings and a maximum absolute backend difference of `2.5704503059387207e-7`.
+- A targeted fresh-home native UCE gate verifies live signed installation, a tracked `ai-python` direct Job, Result output/artifacts/provenance, Jobs and Results visibility, removal, and Result artifact survival.
+- The final debug-build UCE lifecycle gate took 2,388,013 ms; download was fast, while full archive SHA-256 verification and ZIP extraction dominated first-install time. This is validation evidence, not a release-build performance benchmark.
 - Production signing now runs in the dedicated Google Cloud project `liatir-release-security`: private Cloud Run service `liatir-runtime-box-signer` validates a versioned policy and uses the non-exportable Ed25519 KMS key `runtime-box-production`.
 - The live R2 Worker trust bundle contains both the legacy public key and `liatir-runtime-box-kms-2026`, preserving existing releases during rotation. A live IAM-to-Cloud-Run-to-KMS smoke signature verified locally against the embedded public key.
 
