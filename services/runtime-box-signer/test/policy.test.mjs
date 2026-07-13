@@ -45,6 +45,24 @@ test('accepts an approved immutable release', () => {
   assert.doesNotThrow(() => validateSigningPayload(policy, release));
 });
 
+test('accepts the approved UCE Runtime Box identity', () => {
+  const uceRelease = {
+    ...release,
+    boxId: 'uce-4layer',
+    modelId: 'snap-stanford-uce-4layer',
+    runtimeId: 'single-cell-foundation-uce',
+    version: '1.0.0-beta.1',
+    archive: {
+      ...release.archive,
+      url: `https://assets.models.liatir.com/ai-runtime-boxes/boxes/uce-4layer/1.0.0-beta.1/macos-aarch64-metal/${'a'.repeat(64)}.zip`,
+    },
+    installedSizeBytes: 10_142_871_337,
+    modelCacheSubdir: 'model-cache/uce',
+  };
+
+  assert.doesNotThrow(() => validateSigningPayload(policy, uceRelease));
+});
+
 test('accepts a signed installed size while keeping legacy releases valid', () => {
   assert.doesNotThrow(() => validateSigningPayload(policy, {
     ...release,
