@@ -50,7 +50,8 @@
   let observedConversationId = '';
   let observedLastMessageId = '';
   let lastStreamingRequestId = '';
-  let lastStreamingContentLength = 0;
+  let streamingContentEl = $state<HTMLDivElement | null>(null);
+  let shouldFollowStreaming = true;
   let composerConversationId: string | null = null;
   let showScrollToBottomButton = $state(false);
 
@@ -149,6 +150,7 @@
       return;
     }
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    shouldFollowStreaming = transcriptIsNearBottom();
     showScrollToBottomButton = distanceFromBottom > SCROLL_TO_BOTTOM_OFFSET;
   }
 
@@ -195,6 +197,7 @@
       top: transcriptEl.scrollHeight,
       behavior,
     });
+    shouldFollowStreaming = true;
     updateScrollToBottomButtonVisibility();
   }
 
@@ -203,18 +206,33 @@
     if (!response) return;
 
     const isNewResponse = response.requestId !== lastStreamingRequestId;
-    const contentAdvanced = !isNewResponse
-      && response.content.length > lastStreamingContentLength;
     lastStreamingRequestId = response.requestId;
-    lastStreamingContentLength = response.content.length;
 
     // Following an in-progress response is independent from Auto-scroll, but
     // only while the user has kept the transcript at its bottom. The activity
-    // panel gets one initial scroll; reasoning revisions do not repeatedly
-    // take control, while each visible answer delta keeps the latest line in view.
-    if ((isNewResponse || contentAdvanced) && transcriptIsNearBottom()) {
-      void scrollTranscriptToBottom('auto', true, isNewResponse);
+    // panel gets one initial scroll; reasoning revisions do not take control.
+    if (isNewResponse) {
+      shouldFollowStreaming = transcriptIsNearBottom();
+      if (shouldFollowStreaming) void scrollTranscriptToBottom('auto', true, true);
     }
+  });
+
+  $effect(() => {
+    const el = streamingContentEl;
+    if (!el) return;
+
+    let renderedHeight = el.getBoundingClientRect().height;
+    if (shouldFollowStreaming) void scrollTranscriptToBottom('auto', true, true);
+    const observer = new ResizeObserver((entries) => {
+      const nextHeight = entries.at(-1)?.contentRect.height ?? renderedHeight;
+      const addedVisualLine = nextHeight > renderedHeight + 0.5;
+      renderedHeight = nextHeight;
+      if (addedVisualLine && shouldFollowStreaming) {
+        void scrollTranscriptToBottom('auto', true);
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
   });
 
   $effect.pre(() => {
@@ -1128,6 +1146,7 @@
                   <QuentaActivityPanel active={activeResponse} intent={activeResponse.intent} />
                   {#if activeResponse.content && activeResponse.intent !== 'report'}
                     <div
+                      bind:this={streamingContentEl}
                       data-testid="quenta-streaming-content"
                       aria-live="polite"
                       aria-busy="true"
