@@ -35,6 +35,7 @@ import {
   chmod,
   copyFile,
   cp,
+  link,
   mkdir,
   mkdtemp,
   readFile,
@@ -429,6 +430,30 @@ async function downloadVerified(asset, destination) {
   await rename(partPath, destination);
 }
 
+/** Copy a checked-in legal or runtime file into the payload after verifying its recipe hash. */
+async function copyVerifiedLocalFile(file, payloadDir) {
+  const source = join(ROOT, safeRelativePath(file.sourcePath));
+  if (!await fileExists(source) || !(await stat(source)).isFile()) {
+    fail(`Local Runtime Box file is missing: ${file.sourcePath}`);
+  }
+  if (await sha256File(source) !== file.sha256) {
+    fail(`Local Runtime Box file SHA-256 mismatch: ${file.sourcePath}`);
+  }
+  const destination = join(payloadDir, safeRelativePath(file.relativePath));
+  await mkdir(dirname(destination), { recursive: true });
+  await copyFile(source, destination);
+}
+
+/** Stage a large immutable object without duplicating its bytes on the same filesystem. */
+async function linkOrCopyFile(source, destination) {
+  await rm(destination, { force: true });
+  try {
+    await link(source, destination);
+  } catch {
+    await copyFile(source, destination);
+  }
+}
+
 /**
  * Lists every file under `root` as a sorted array of forward-slash relative paths.
  *
@@ -608,8 +633,15 @@ async function buildRecipe(name, flags) {
   }
   const buildDir = join(BUILD_ROOT, recipe.recipeId);
   const payloadDir = join(buildDir, 'payload');
+  const stem = releaseStem(recipe);
+  const archivePath = join(DIST_ROOT, `${stem}.zip`);
+  const objectPrefix = releaseObjectPrefix(recipe);
+  const objectDir = join(DIST_ROOT, 'objects', objectPrefix);
   // Always start from an empty tree: leftovers from a previous build would end up in the archive.
   await rm(buildDir, { recursive: true, force: true });
+  // Rebuilding the same release must not keep its previous multi-gigabyte local staging objects.
+  await rm(archivePath, { force: true });
+  await rm(objectDir, { recursive: true, force: true });
   await mkdir(payloadDir, { recursive: true });
 
   // `only-managed` forces uv's own standalone interpreter rather than whatever Python happens to
@@ -637,6 +669,9 @@ async function buildRecipe(name, flags) {
   for (const asset of recipe.assets) {
     console.log(`Downloading ${asset.relativePath}`);
     await downloadVerified(asset, join(payloadDir, safeRelativePath(asset.relativePath)));
+  }
+  for (const file of recipe.localFiles ?? []) {
+    await copyVerifiedLocalFile(file, payloadDir);
   }
   for (const archive of recipe.assetArchives ?? []) {
     await extractRecipeArchive(payloadDir, archive);
@@ -691,15 +726,12 @@ async function buildRecipe(name, flags) {
   await normalizeTree(payloadDir);
   const installedSizeBytes = await payloadSize(payloadDir);
   await mkdir(DIST_ROOT, { recursive: true });
-  const stem = releaseStem(recipe);
-  const archivePath = join(DIST_ROOT, `${stem}.zip`);
   // Info-ZIP selects Zip64 automatically for large entries. The shared helper is exercised by
   // the large-archive foundation gate, so the production path and proof cannot drift apart.
   await createDeterministicZip(payloadDir, archivePath);
 
   const archiveSha = await sha256File(archivePath);
   const archiveSize = (await stat(archivePath)).size;
-  const objectPrefix = releaseObjectPrefix(recipe);
   // Content-addressed: the object is named after its own hash, so publishing is idempotent and an
   // object can never be replaced with different bytes under the same URL.
   const archiveObject = `${objectPrefix}/${archiveSha}.zip`;
@@ -755,9 +787,8 @@ async function buildRecipe(name, flags) {
   await writeFile(channelPath, `${JSON.stringify(signedChannel, null, 2)}\n`);
   // A staging tree laid out exactly as the bucket, so `publish` (and the local `serve` registry)
   // upload/serve files under the same keys the manifests already point to.
-  const objectDir = join(DIST_ROOT, 'objects', objectPrefix);
   await mkdir(objectDir, { recursive: true });
-  await copyFile(archivePath, join(objectDir, `${archiveSha}.zip`));
+  await linkOrCopyFile(archivePath, join(objectDir, `${archiveSha}.zip`));
   await copyFile(releasePath, join(objectDir, `${releaseDocumentSha}.release.json`));
   console.log(`Built archive: ${relative(ROOT, archivePath)}`);
   console.log(`Signed release: ${relative(ROOT, releasePath)}`);
