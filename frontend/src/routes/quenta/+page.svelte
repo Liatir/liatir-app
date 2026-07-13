@@ -55,7 +55,7 @@
   let showScrollToBottomButton = $state(false);
 
   const SCROLL_TO_BOTTOM_OFFSET = 120;
-  const STICKY_BOTTOM_OFFSET = 32;
+  const STICKY_BOTTOM_OFFSET = 48;
   const CHATS_SIDEBAR_STATE_LOCAL_STORAGE_KEY = 'quenta-chats-sidebar-collapsed'!;
 
   const currentConversation = $derived(quentaStore.currentConversation);
@@ -177,9 +177,20 @@
     });
   }
 
-  async function scrollTranscriptToBottom(behavior: ScrollBehavior, force?: boolean) {
+  async function scrollTranscriptToBottom(
+    behavior: ScrollBehavior,
+    force?: boolean,
+    settleLayout = false,
+  ) {
     if(!autoScrollToBottom && !force) return;
     await tick();
+    if (settleLayout) {
+      // The activity panel auto-expands in its own effect. Waiting for its
+      // follow-up DOM flush and one layout frame prevents scrolling against
+      // the shorter, not-yet-expanded height.
+      await tick();
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    }
     transcriptEl?.scrollTo({
       top: transcriptEl.scrollHeight,
       behavior,
@@ -202,7 +213,7 @@
     // panel gets one initial scroll; reasoning revisions do not repeatedly
     // take control, while each visible answer delta keeps the latest line in view.
     if ((isNewResponse || contentAdvanced) && transcriptIsNearBottom()) {
-      void scrollTranscriptToBottom('auto', true);
+      void scrollTranscriptToBottom('auto', true, isNewResponse);
     }
   });
 
