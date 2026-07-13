@@ -158,6 +158,21 @@ describe('Batch 5 single-cell foundation model contract', () => {
   it('enables UCE as the first installable Batch 5 runtime box', () => {
     const model = getLocalAIModelMetadata(UCE_4LAYER_MODEL_ID);
     const spec = artifactSpecForModelId(UCE_4LAYER_MODEL_ID);
+    const recipe = JSON.parse(readFileSync(
+      resolve(rootDir, 'runtime-boxes/recipes/uce-4layer-macos-arm64-metal/recipe.json'),
+      'utf8',
+    )) as {
+      boxId: string;
+      modelId: string;
+      runtimeId: string;
+      sourceRevision: string;
+      pythonVersion: string;
+      uvVersion: string;
+      assets: Array<{ relativePath: string; sizeBytes: number; sha256: string }>;
+      assetArchives: Array<{ relativePath: string; format: string; destination: string }>;
+      localFiles: Array<{ relativePath: string; sha256: string }>;
+      selfTest: { files: string[]; pythonCode: string };
+    };
 
     expect(model, 'UCE missing model metadata').toBeTruthy();
     expect(model?.category).toBe('Single-cell Foundation Models');
@@ -182,6 +197,44 @@ describe('Batch 5 single-cell foundation model contract', () => {
     expect(model?.install?.hostRequirements?.python?.maxVersionExclusive).toBe('3.12');
     expect(spec?.runtimeFamily).toBe('single-cell-foundation-uce');
     expect(spec?.preloadKind).toBe('uce-managed-files');
+    expect(recipe).toMatchObject({
+      boxId: 'uce-4layer',
+      modelId: UCE_4LAYER_MODEL_ID,
+      runtimeId: 'single-cell-foundation-uce',
+      sourceRevision: model?.install?.runtimeSources?.[0]?.revision,
+      pythonVersion: '3.11.9',
+      uvVersion: '0.11.28',
+    });
+    expect(recipe.assets.map((asset) => asset.relativePath)).toEqual(expect.arrayContaining([
+      '.sources/uce-source.zip',
+      'model-cache/uce/model_files/4layer_model.torch',
+      'model-cache/uce/model_files/all_tokens.torch',
+      'model-cache/uce/model_files/protein_embeddings.tar.gz',
+      'model-cache/uce/model_files/species_chrom.csv',
+      'model-cache/uce/model_files/species_offsets.pkl',
+    ]));
+    for (const asset of recipe.assets) {
+      expect(asset.sizeBytes, `${asset.relativePath} missing byte size`).toBeGreaterThan(0);
+      expect(asset.sha256, `${asset.relativePath} missing SHA-256`).toMatch(/^[a-f0-9]{64}$/);
+    }
+    expect(recipe.assetArchives).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        relativePath: 'model-cache/uce/model_files/protein_embeddings.tar.gz',
+        format: 'tar.gz',
+        destination: 'model-cache/uce/model_files',
+      }),
+    ]));
+    expect(recipe.localFiles).toContainEqual(expect.objectContaining({
+      relativePath: 'THIRD_PARTY_NOTICES/UCE-4LAYER.md',
+      sha256: '821f57cc6e42d5a896d7e4391bd6d6a54fa263aaa1fc6735bfe70f92ae1fc390',
+    }));
+    expect(recipe.selfTest.files.filter((file) => file.includes('/protein_embeddings/'))).toHaveLength(8);
+    expect(recipe.selfTest.files).toEqual(expect.arrayContaining([
+      'source/UCE/data_proc/gene_embeddings.py',
+      'source/UCE/model_files/new_species_protein_embeddings.csv',
+    ]));
+    expect(recipe.selfTest.pythonCode).toContain("checkpoint['pe_embedding.weight']");
+    expect(recipe.selfTest.pythonCode).toContain('assert tuple(tokens.shape) == (145469, 5120)');
   });
 
   it('registers the installable single-cell embedding AI Models for pipelines', async () => {

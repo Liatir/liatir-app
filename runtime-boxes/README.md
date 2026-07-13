@@ -27,6 +27,22 @@ npm run runtime-box:validate:scgpt
 npm run runtime-box:test:foundation
 ```
 
+The UCE 4-layer packaging gate uses its model-specific recipe and the same
+generic build and verify commands:
+
+```bash
+npm run runtime-box -- build uce-4layer-macos-arm64-metal \
+  --asset-base-url http://127.0.0.1:8790/objects
+npm run runtime-box -- verify \
+  .runtime-box-dist/uce-4layer-1.0.0-beta.1-macos-aarch64-metal.release.json \
+  --self-test
+```
+
+The measured Gate 3 evidence is recorded in
+[`measurements/uce-4layer-macos-arm64-metal.md`](measurements/uce-4layer-macos-arm64-metal.md).
+This packaging result does not enable the catalog entry, publish a production
+channel, or claim scientific inference parity.
+
 `build` requires the exact `uv` version declared by the recipe. It copies the
 complete Astral-managed standalone Python distribution into the box, synchronizes
 the checked-in hash lock, downloads every asset with SHA-256 verification, runs
