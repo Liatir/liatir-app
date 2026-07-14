@@ -187,6 +187,8 @@ struct RuntimeBoxCompatibility {
     max_liatir_version_exclusive: Option<String>,
     min_macos_version: Option<String>,
     min_ram_gb: Option<u64>,
+    /// Execution environments validated for this payload. Kept optional for legacy releases.
+    host_environments: Option<Vec<String>>,
 }
 
 /// Where the payload archive lives and what it must hash and weigh. Both `sha256` and
@@ -1262,11 +1264,18 @@ mod tests {
     fn legacy_release_without_installed_size_remains_deserializable() {
         let legacy: ReleaseManifest = serde_json::from_value(release_json()).unwrap();
         assert_eq!(legacy.installed_size_bytes, None);
+        assert_eq!(legacy.compatibility.host_environments, None);
 
         let mut current = release_json();
         current["installedSizeBytes"] = serde_json::json!(25);
+        current["compatibility"]["hostEnvironments"] =
+            serde_json::json!(["native", "windows-wsl2"]);
         let current: ReleaseManifest = serde_json::from_value(current).unwrap();
         assert_eq!(current.installed_size_bytes, Some(25));
+        assert_eq!(
+            current.compatibility.host_environments,
+            Some(vec!["native".to_string(), "windows-wsl2".to_string()])
+        );
     }
 
     #[test]

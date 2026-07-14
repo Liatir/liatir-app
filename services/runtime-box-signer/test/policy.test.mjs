@@ -78,6 +78,51 @@ test('rejects an invalid installed size', () => {
   }), /invalid installed size/);
 });
 
+test('accepts Linux payload metadata for native and WSL2 hosts', () => {
+  const linuxTarget = { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.4' };
+  const linuxTargetId = 'linux-x86_64-cuda-cuda12.4';
+  const linuxPolicy = {
+    ...policy,
+    boxes: policy.boxes.map((box) => box.boxId === release.boxId
+      ? { ...box, targets: [...box.targets, linuxTargetId] }
+      : box),
+  };
+  assert.doesNotThrow(() => validateSigningPayload(linuxPolicy, {
+    ...release,
+    target: linuxTarget,
+    compatibility: {
+      minLiatirVersion: '0.2.1',
+      hostEnvironments: ['native', 'windows-wsl2'],
+    },
+    archive: {
+      ...release.archive,
+      url: `https://assets.models.liatir.com/ai-runtime-boxes/boxes/geneformer-v1-10m/1.0.0-beta.2/${linuxTargetId}/${'a'.repeat(64)}.zip`,
+    },
+  }));
+});
+
+test('accepts native host metadata and rejects WSL2 metadata on non-Linux payloads', () => {
+  assert.doesNotThrow(() => validateSigningPayload(policy, {
+    ...release,
+    compatibility: { minLiatirVersion: '0.2.1', hostEnvironments: ['native'] },
+  }));
+  assert.throws(() => validateSigningPayload(policy, {
+    ...release,
+    compatibility: { minLiatirVersion: '0.2.1', hostEnvironments: ['native', 'windows-wsl2'] },
+  }), /windows-wsl2 is only valid for Linux payloads/);
+});
+
+test('rejects unknown or duplicate host environments', () => {
+  assert.throws(() => validateSigningPayload(policy, {
+    ...release,
+    compatibility: { minLiatirVersion: '0.2.1', hostEnvironments: ['container'] },
+  }), /invalid host environment/);
+  assert.throws(() => validateSigningPayload(policy, {
+    ...release,
+    compatibility: { minLiatirVersion: '0.2.1', hostEnvironments: ['native', 'native'] },
+  }), /host environments must be unique/);
+});
+
 // Without this rule, a signed release could direct every installation to download and execute an
 // archive from a host we do not control — the signature would make it look entirely legitimate.
 test('rejects an archive hosted outside the controlled origin', () => {

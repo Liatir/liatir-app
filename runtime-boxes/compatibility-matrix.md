@@ -5,11 +5,20 @@
 | macOS arm64 | Foundation target | 3.11.9 | Apple Metal / CPU | Geneformer lifecycle/parity, scGPT native inference, and UCE lifecycle/CPU/Metal parity passed |
 | macOS x86_64 | Planned | TBD | CPU | Not published |
 | Linux x86_64 | Planned | TBD | CPU / CUDA | CUDA ABI matrix required |
-| Windows x86_64 | Planned | TBD | CPU / CUDA | Relocatable runtime validation required |
+| Windows x86_64 | Planned | TBD | CPU / native CUDA | Relocatable runtime validation required |
+| Windows x86_64 / WSL2 | Planned, unverified | Reuses a compatible Linux x86_64 payload | CUDA through WSL2 | Manual validation on a physical Windows NVIDIA host required before support is claimed |
 
 The first release target is `macos-aarch64-metal`. Target selection is exact;
 the app must never silently install a box built for another OS, architecture,
 accelerator, CUDA ABI, or incompatible Liatir version.
+
+Future Linux Runtime Box release manifests may declare
+`compatibility.hostEnvironments: ["native", "windows-wsl2"]`. This records that
+the same Linux payload is intended for both environments without creating a
+second model archive. It does not by itself establish Windows support: the
+Tauri-to-WSL2 launch, path translation, GPU passthrough, installation, and
+scientific fixture must pass on a physical Windows NVIDIA host before the
+`windows-wsl2` environment is published as supported.
 
 ## Model packaging evidence
 

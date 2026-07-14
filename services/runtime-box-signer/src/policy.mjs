@@ -1,6 +1,7 @@
 const SEGMENT = /^[a-z0-9][a-z0-9._-]{0,127}$/;
 const SHA256 = /^[a-f0-9]{64}$/;
 const VERSION = /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/;
+const HOST_ENVIRONMENTS = new Set(['native', 'windows-wsl2']);
 
 function requireValue(condition, message) {
   if (!condition) throw new Error(message);
@@ -33,6 +34,18 @@ function exactAssetUrl(policy, value, expectedPath) {
   requireValue(url.pathname === `/${policy.objectPrefix}/${expectedPath}`, 'asset URL path does not match the immutable object identity');
 }
 
+function validateHostEnvironments(payload) {
+  const environments = payload.compatibility?.hostEnvironments;
+  if (environments === undefined) return;
+  requireValue(Array.isArray(environments) && environments.length > 0, 'host environments must be a non-empty array');
+  requireValue(new Set(environments).size === environments.length, 'host environments must be unique');
+  requireValue(environments.every((environment) => HOST_ENVIRONMENTS.has(environment)), 'invalid host environment');
+  requireValue(
+    !environments.includes('windows-wsl2') || payload.target.platform === 'linux',
+    'windows-wsl2 is only valid for Linux payloads',
+  );
+}
+
 function validateRelease(policy, payload) {
   const box = allowedBox(policy, payload.boxId);
   requireValue(payload.modelId === box.modelId, 'model ID does not match signing policy');
@@ -49,6 +62,7 @@ function validateRelease(policy, payload) {
       'invalid installed size',
     );
   }
+  validateHostEnvironments(payload);
   exactAssetUrl(policy, payload.archive.url, `boxes/${payload.boxId}/${payload.version}/${target}/${payload.archive.sha256}.zip`);
   requireValue(payload.provenance?.sourceTreeDirty === false, 'dirty source trees cannot be signed for production');
   for (const field of ['recipeId', 'recipeVersion', 'builderRevision', 'sourceRevision', 'pythonVersion', 'uvVersion', 'dependencyLockSha256', 'builtAt']) {
