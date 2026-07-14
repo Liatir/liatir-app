@@ -1,0 +1,50 @@
+name: Runtime Box Linux CUDA preflight
+
+on:
+  workflow_dispatch:
+
+# This paid GPU runner must only start through an explicit manual dispatch.
+concurrency:
+  group: runtime-box-linux-cuda-preflight
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Linux x64 T4 CUDA
+    runs-on: liatir-linux-t4
+    timeout-minutes: 10
+
+    steps:
+      - name: Verify the Linux GPU host
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          architecture="$(uname -m)"
+          if [[ "$architecture" != "x86_64" ]]; then
+            echo "Expected x86_64, but uname reported: $architecture" >&2
+            exit 1
+          fi
+
+          gpu="$(nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader)"
+          if [[ "$gpu" != *T4* ]]; then
+            echo "Expected an NVIDIA T4 GPU, but nvidia-smi reported: $gpu" >&2
+            exit 1
+          fi
+
+          nvidia-smi
+          glibc="$(ldd --version 2>&1)"
+          glibc="${glibc%%$'\n'*}"
+
+          {
+            echo "## Linux CUDA"
+            echo
+            echo "- Runner: \`$RUNNER_NAME\`"
+            echo "- OS: \`$RUNNER_OS\`"
+            echo "- Architecture: \`$architecture\`"
+            echo "- GPU: \`$gpu\`"
+            echo "- C library: \`$glibc\`"
+          } >> "$GITHUB_STEP_SUMMARY"

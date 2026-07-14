@@ -1,0 +1,46 @@
+name: Runtime Box Windows CUDA preflight
+
+on:
+  workflow_dispatch:
+
+# This paid GPU runner must only start through an explicit manual dispatch.
+concurrency:
+  group: runtime-box-windows-cuda-preflight
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Windows native T4 CUDA
+    runs-on: liatir-windows-t4
+    timeout-minutes: 10
+
+    steps:
+      - name: Verify the Windows GPU host
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $gpu = (& nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader 2>&1) -join "`n"
+          if ($LASTEXITCODE -ne 0) {
+            throw "nvidia-smi failed on the Windows host: $gpu"
+          }
+          if ($gpu -notmatch 'T4') {
+            throw "Expected an NVIDIA T4 GPU, but nvidia-smi reported: $gpu"
+          }
+
+          nvidia-smi
+          if ($LASTEXITCODE -ne 0) {
+            throw "nvidia-smi diagnostics failed with exit code $LASTEXITCODE."
+          }
+
+          @"
+          ## Windows native CUDA
+
+          - Runner: ``$env:RUNNER_NAME``
+          - OS: ``$env:RUNNER_OS``
+          - Architecture: ``$env:PROCESSOR_ARCHITECTURE``
+          - GPU: ``$gpu``
+          "@ | Add-Content -Path $env:GITHUB_STEP_SUMMARY
