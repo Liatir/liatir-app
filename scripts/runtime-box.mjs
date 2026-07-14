@@ -52,6 +52,7 @@ import { tmpdir } from 'node:os';
 import { pipeline } from 'node:stream/promises';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { runtimeBoxTargetId } from './runtime-box/targets.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 /** Recipes are checked in; everything below is generated and git-ignored. */
@@ -174,6 +175,8 @@ async function readRecipe(name) {
   const dir = recipeDirectory(name);
   const recipe = JSON.parse(await readFile(join(dir, 'recipe.json'), 'utf8'));
   if (recipe.schemaVersion !== 1 || recipe.recipeId !== name) fail(`Invalid recipe contract: ${name}`);
+  // Reject target drift before downloads, archive creation, or any signing request.
+  runtimeBoxTargetId(recipe.target);
   // Boxes are built natively, not cross-compiled, so the builder only accepts the target it can
   // actually produce today.
   if (recipe.target.platform !== 'macos' || recipe.target.arch !== 'aarch64') {
@@ -182,20 +185,14 @@ async function readRecipe(name) {
   return { dir, recipe };
 }
 
-/** The target slug used in URLs and filenames. Must match the app's `target_id()` exactly. */
-function targetId(target) {
-  const cuda = target.cudaVersion ? `-cuda${target.cudaVersion}` : '';
-  return `${target.platform}-${target.arch}-${target.accelerator}${cuda}`;
-}
-
 /** Shared filename stem, so the archive and its release document are found as a pair. */
 function releaseStem(release) {
-  return `${release.boxId}-${release.version}-${targetId(release.target)}`;
+  return `${release.boxId}-${release.version}-${runtimeBoxTargetId(release.target)}`;
 }
 
 /** Where a release's immutable objects live in the bucket. */
 function releaseObjectPrefix(release) {
-  return `boxes/${release.boxId}/${release.version}/${targetId(release.target)}`;
+  return `boxes/${release.boxId}/${release.version}/${runtimeBoxTargetId(release.target)}`;
 }
 
 /** Validates the bucket prefix segment by segment — it is interpolated straight into object keys. */
@@ -785,7 +782,7 @@ async function buildRecipe(name, flags) {
     releases: [{ version: recipe.version, releaseManifestUrl: releaseUrl, rolloutPercentage: 100 }],
   };
   const signedChannel = await signDocument(channel, flags);
-  const channelPath = join(DIST_ROOT, `${recipe.boxId}-${channel.channel}-${targetId(recipe.target)}.channel.json`);
+  const channelPath = join(DIST_ROOT, `${recipe.boxId}-${channel.channel}-${runtimeBoxTargetId(recipe.target)}.channel.json`);
   await writeFile(channelPath, `${JSON.stringify(signedChannel, null, 2)}\n`);
   // A staging tree laid out exactly as the bucket, so `publish` (and the local `serve` registry)
   // upload/serve files under the same keys the manifests already point to.
@@ -843,7 +840,7 @@ async function verifyRelease(path, flags) {
       await rm(extracted, { recursive: true, force: true });
     }
   }
-  console.log(`Verified ${release.boxId} ${release.version} (${targetId(release.target)})`);
+  console.log(`Verified ${release.boxId} ${release.version} (${runtimeBoxTargetId(release.target)})`);
 }
 
 function contentType(path) {
@@ -937,7 +934,7 @@ async function remoteObjectExists(url) {
 async function uploadArchiveMultipart(archivePath, release, flags) {
   const registry = String(flags.get('registry') || 'https://models.liatir.com').replace(/\/$/, '');
   const token = await registryAdminToken(flags);
-  const target = targetId(release.target);
+  const target = runtimeBoxTargetId(release.target);
   const identityPath = [release.boxId, release.version, target, release.archive.sha256]
     .map((segment) => encodeURIComponent(segment))
     .join('/');
@@ -1168,7 +1165,7 @@ async function promote(channelDocumentPath, flags) {
   // `fail` throws, so the final branch never yields a value — it rejects anything that is neither
   // a channel nor a revocations manifest.
   const endpoint = payload.kind === 'liatir.runtime-box.channel'
-    ? `/v1/admin/channels/${payload.channel}/${payload.boxId}/${targetId(payload.target)}`
+    ? `/v1/admin/channels/${payload.channel}/${payload.boxId}/${runtimeBoxTargetId(payload.target)}`
     : payload.kind === 'liatir.runtime-box.revocations'
       ? '/v1/admin/revocations'
       : fail('Promotion document is not a channel or revocations manifest.');
@@ -1179,7 +1176,7 @@ async function promote(channelDocumentPath, flags) {
   });
   if (!response.ok) fail(`Channel promotion failed (${response.status}): ${await response.text()}`);
   console.log(payload.kind === 'liatir.runtime-box.channel'
-    ? `Promoted ${payload.boxId} ${payload.channel} ${targetId(payload.target)}`
+    ? `Promoted ${payload.boxId} ${payload.channel} ${runtimeBoxTargetId(payload.target)}`
     : `Promoted ${payload.revocations.length} Runtime Box revocation(s)`);
 }
 

@@ -3,7 +3,6 @@
 | Target | Status | Python | Accelerator | Distribution gate |
 |---|---|---:|---|---|
 | macOS arm64 | Foundation target | 3.11.9 | Apple Metal / CPU | Geneformer lifecycle/parity, scGPT native inference, and UCE lifecycle/CPU/Metal parity passed |
-| macOS x86_64 | Planned | TBD | CPU | Not published |
 | Linux x86_64 | Planned | TBD | CPU / CUDA | CUDA ABI matrix required |
 | Windows x86_64 | Planned | TBD | CPU / native CUDA | Relocatable runtime validation required |
 | Windows x86_64 / WSL2 | Planned, unverified | Reuses a compatible Linux x86_64 payload | CUDA through WSL2 | Manual validation on a physical Windows NVIDIA host required before support is claimed |

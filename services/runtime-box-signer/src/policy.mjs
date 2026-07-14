@@ -1,19 +1,34 @@
 const SEGMENT = /^[a-z0-9][a-z0-9._-]{0,127}$/;
 const SHA256 = /^[a-f0-9]{64}$/;
 const VERSION = /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/;
+const CUDA_VERSION = /^[1-9][0-9]*\.[0-9]+$/;
 const HOST_ENVIRONMENTS = new Set(['native', 'windows-wsl2']);
+const TARGET_ACCELERATORS = {
+  macos: { aarch64: ['metal', 'cpu'] },
+  linux: { x86_64: ['cpu', 'cuda'] },
+  windows: { x86_64: ['cpu', 'cuda'] },
+};
 
 function requireValue(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-function targetId(target) {
+/** Returns the canonical target slug after enforcing the production target matrix. */
+export function runtimeBoxTargetId(target) {
   requireValue(target && typeof target === 'object', 'target must be an object');
   for (const field of ['platform', 'arch', 'accelerator']) {
     requireValue(SEGMENT.test(target[field] ?? ''), `invalid target ${field}`);
   }
-  if (target.cudaVersion !== undefined) requireValue(SEGMENT.test(target.cudaVersion), 'invalid CUDA version');
-  return `${target.platform}-${target.arch}-${target.accelerator}${target.cudaVersion ? `-cuda${target.cudaVersion}` : ''}`;
+  requireValue(
+    TARGET_ACCELERATORS[target.platform]?.[target.arch]?.includes(target.accelerator),
+    'unsupported Runtime Box target',
+  );
+  if (target.accelerator === 'cuda') {
+    requireValue(typeof target.cudaVersion === 'string' && CUDA_VERSION.test(target.cudaVersion), 'invalid CUDA version');
+    return `${target.platform}-${target.arch}-cuda${target.cudaVersion}`;
+  }
+  requireValue(target.cudaVersion === undefined, 'CUDA version requires the CUDA accelerator');
+  return `${target.platform}-${target.arch}-${target.accelerator}`;
 }
 
 function allowedBox(policy, boxId) {
@@ -51,7 +66,7 @@ function validateRelease(policy, payload) {
   requireValue(payload.modelId === box.modelId, 'model ID does not match signing policy');
   requireValue(payload.runtimeId === box.runtimeId, 'runtime ID does not match signing policy');
   requireValue(VERSION.test(payload.version ?? ''), 'invalid release version');
-  const target = targetId(payload.target);
+  const target = runtimeBoxTargetId(payload.target);
   requireValue(box.targets.includes(target), 'target is not approved for this box');
   requireValue(payload.archive?.format === 'zip', 'only ZIP Runtime Boxes are approved');
   requireValue(SHA256.test(payload.archive?.sha256 ?? ''), 'invalid archive SHA-256');
@@ -77,7 +92,7 @@ function validateRelease(policy, payload) {
 function validateChannel(policy, payload) {
   const box = allowedBox(policy, payload.boxId);
   requireValue(policy.allowedChannels.includes(payload.channel), 'channel is not approved');
-  const target = targetId(payload.target);
+  const target = runtimeBoxTargetId(payload.target);
   requireValue(box.targets.includes(target), 'target is not approved for this box');
   requireValue(typeof payload.updatedAt === 'string' && payload.updatedAt.length > 0, 'missing channel update time');
   requireValue(typeof payload.cohortSalt === 'string' && /^[a-f0-9]{32}$/.test(payload.cohortSalt), 'invalid cohort salt');
@@ -110,7 +125,7 @@ function validateRevocations(policy, payload) {
     requireValue(VERSION.test(revocation.version ?? ''), 'invalid revoked version');
     requireValue(typeof revocation.reason === 'string' && revocation.reason.trim().length >= 8, 'revocation reason is too short');
     requireValue(typeof revocation.revokedAt === 'string' && revocation.revokedAt.length > 0, 'missing revocation time');
-    if (revocation.target) requireValue(box.targets.includes(targetId(revocation.target)), 'revocation target is not approved');
+    if (revocation.target) requireValue(box.targets.includes(runtimeBoxTargetId(revocation.target)), 'revocation target is not approved');
   }
 }
 

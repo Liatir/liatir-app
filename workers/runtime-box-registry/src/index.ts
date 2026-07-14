@@ -20,6 +20,7 @@
  */
 import {
   isLiatirSignedRuntimeBoxDocument,
+  runtimeBoxTargetId,
   type LiatirRuntimeBoxChannelManifest,
   type LiatirRuntimeBoxRevocationsManifest,
   type LiatirSignedRuntimeBoxDocument,
@@ -396,10 +397,7 @@ function validateChannelRoute(
     || typeof targetRecord.arch !== 'string'
     || typeof targetRecord.accelerator !== 'string') return false;
   if (!Array.isArray(payload.releases) || payload.releases.length === 0) return false;
-  // Must produce the same slug the app's `target_id()` builds, e.g. `macos-aarch64-metal`.
-  const routeTarget = `${targetRecord.platform}-${targetRecord.arch}-${targetRecord.accelerator}${
-    typeof targetRecord.cudaVersion === 'string' ? `-cuda${targetRecord.cudaVersion}` : ''
-  }`;
+  const routeTarget = runtimeBoxTargetIdForRoute(targetRecord);
   return routeTarget === target
     && payload.releases.every((release: unknown) =>
       Boolean(release)
@@ -409,6 +407,15 @@ function validateChannelRoute(
       && Number((release as Record<string, unknown>).rolloutPercentage) <= 100
       && validReleaseManifestUrl((release as Record<string, unknown>).releaseManifestUrl)
     );
+}
+
+/** Uses the shared target contract while turning malformed signed routes into a safe rejection. */
+export function runtimeBoxTargetIdForRoute(target: unknown): string | null {
+  try {
+    return runtimeBoxTargetId(target as LiatirRuntimeBoxChannelManifest['target']);
+  } catch {
+    return null;
+  }
 }
 
 function isRevocationsManifest(

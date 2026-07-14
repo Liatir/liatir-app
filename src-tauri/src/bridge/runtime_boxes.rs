@@ -478,14 +478,52 @@ fn current_target() -> RuntimeBoxTarget {
     }
 }
 
-/// Flattens a target into the slug used in registry URLs, e.g. `macos-aarch64-metal`.
-fn target_id(target: &RuntimeBoxTarget) -> String {
-    let cuda = target
-        .cuda_version
-        .as_ref()
-        .map(|version| format!("-cuda{version}"))
-        .unwrap_or_default();
-    format!("{}-{}-{}{}", target.platform, target.arch, target.accelerator, cuda)
+/// Flattens a validated target into the slug used in registry URLs.
+fn target_id(target: &RuntimeBoxTarget) -> Result<String, String> {
+    let supported = matches!(
+        (
+            target.platform.as_str(),
+            target.arch.as_str(),
+            target.accelerator.as_str()
+        ),
+        ("macos", "aarch64", "metal")
+            | ("macos", "aarch64", "cpu")
+            | ("linux", "x86_64", "cpu")
+            | ("linux", "x86_64", "cuda")
+            | ("windows", "x86_64", "cpu")
+            | ("windows", "x86_64", "cuda")
+    );
+    if !supported {
+        return Err(format!(
+            "Unsupported Runtime Box target: {}/{}/{}",
+            target.platform, target.arch, target.accelerator
+        ));
+    }
+    if target.accelerator == "cuda" {
+        let version = target
+            .cuda_version
+            .as_deref()
+            .filter(|version| {
+                version.split_once('.').is_some_and(|(major, minor)| {
+                    !major.is_empty()
+                        && !major.starts_with('0')
+                        && major.chars().all(|character| character.is_ascii_digit())
+                        && !minor.is_empty()
+                        && minor.chars().all(|character| character.is_ascii_digit())
+                })
+            })
+            .ok_or_else(|| {
+                "A CUDA Runtime Box target requires a numeric major.minor CUDA version".to_string()
+            })?;
+        return Ok(format!("{}-{}-cuda{version}", target.platform, target.arch));
+    }
+    if target.cuda_version.is_some() {
+        return Err("Only CUDA Runtime Box targets may declare a CUDA version".to_string());
+    }
+    Ok(format!(
+        "{}-{}-{}",
+        target.platform, target.arch, target.accelerator
+    ))
 }
 
 /// Rejects any path that could escape the directory it is joined onto.
@@ -633,10 +671,11 @@ fn verify_release_identity(
         return Err("AI Runtime Box release identity does not match the requested model".to_string());
     }
     if &release.target != target {
+        let release_target_id = target_id(&release.target)?;
+        let host_target_id = target_id(target)?;
         return Err(format!(
             "AI Runtime Box target {} does not match this host {}",
-            target_id(&release.target),
-            target_id(target)
+            release_target_id, host_target_id
         ));
     }
     if release.archive.format != "zip"
@@ -981,16 +1020,17 @@ pub async fn lia_ai_runtime_box_install(
     };
     validate_control_url(&registry_base_url)?;
     let target = current_target();
+    let target_slug = target_id(&target)?;
     let channel_url = format!(
         "{}/channels/{}/{}/{}",
         registry_base_url.trim_end_matches('/'),
         channel,
         box_id,
-        target_id(&target)
+        target_slug
     );
     let channel_bytes = fetch_control_document(&channel_url)
         .await?
-        .ok_or_else(|| format!("No {channel} AI Runtime Box is available for {}", target_id(&target)))?;
+        .ok_or_else(|| format!("No {channel} AI Runtime Box is available for {target_slug}"))?;
     let channel_manifest: ChannelManifest = verify_signed_payload(&channel_bytes)?;
     // Signed *and* addressed to us: a valid document served from the wrong URL (or for another
     // box or target) is still rejected.
@@ -1237,6 +1277,27 @@ mod tests {
     use super::*;
     use std::io::{Read, Seek, SeekFrom};
 
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct TargetIdContract {
+        valid: Vec<ValidTargetIdFixture>,
+        invalid: Vec<InvalidTargetIdFixture>,
+    }
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct ValidTargetIdFixture {
+        name: String,
+        target: RuntimeBoxTarget,
+        target_id: String,
+    }
+
+    #[derive(Deserialize)]
+    struct InvalidTargetIdFixture {
+        name: String,
+        target: RuntimeBoxTarget,
+    }
+
     fn release_json() -> serde_json::Value {
         serde_json::json!({
             "schemaVersion": 1,
@@ -1258,6 +1319,25 @@ mod tests {
             "selfTest": { "pythonImports": ["json"], "timeoutSeconds": 10 },
             "provenance": {}
         })
+    }
+
+    #[test]
+    fn matches_shared_runtime_box_target_id_contract() {
+        let contract: TargetIdContract = serde_json::from_str(include_str!(
+            "../../../runtime-boxes/target-id-contract.json"
+        ))
+        .unwrap();
+        for fixture in contract.valid {
+            assert_eq!(
+                target_id(&fixture.target).as_deref(),
+                Ok(fixture.target_id.as_str()),
+                "{}",
+                fixture.name
+            );
+        }
+        for fixture in contract.invalid {
+            assert!(target_id(&fixture.target).is_err(), "{}", fixture.name);
+        }
     }
 
     #[test]

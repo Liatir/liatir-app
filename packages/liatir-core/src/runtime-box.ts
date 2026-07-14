@@ -133,10 +133,36 @@ export interface LiatirAIModelRuntimeBoxInstall {
   registryBaseUrl: string;
 }
 
+const RUNTIME_BOX_TARGET_ACCELERATORS: Readonly<
+  Record<LiatirRuntimeBoxPlatform, Readonly<Partial<Record<LiatirRuntimeBoxArch, readonly LiatirRuntimeBoxAccelerator[]>>>>
+> = {
+  macos: { aarch64: ["metal", "cpu"] },
+  linux: { x86_64: ["cpu", "cuda"] },
+  windows: { x86_64: ["cpu", "cuda"] },
+};
+const RUNTIME_BOX_CUDA_VERSION = /^[1-9][0-9]*\.[0-9]+$/;
+
 /** Return the stable target identifier used by R2 keys and registry routes. */
 export function runtimeBoxTargetId(target: LiatirRuntimeBoxTarget): string {
-  const cuda = target.cudaVersion ? `-cuda${target.cudaVersion}` : "";
-  return `${target.platform}-${target.arch}-${target.accelerator}${cuda}`;
+  if (!target || typeof target !== "object") {
+    throw new TypeError("Runtime Box target must be an object");
+  }
+  const accelerators = RUNTIME_BOX_TARGET_ACCELERATORS[target.platform]?.[target.arch];
+  if (!accelerators?.includes(target.accelerator)) {
+    throw new TypeError(
+      `Unsupported Runtime Box target: ${target.platform}/${target.arch}/${target.accelerator}`,
+    );
+  }
+  if (target.accelerator === "cuda") {
+    if (typeof target.cudaVersion !== "string" || !RUNTIME_BOX_CUDA_VERSION.test(target.cudaVersion)) {
+      throw new TypeError("A CUDA Runtime Box target requires a numeric major.minor CUDA version");
+    }
+    return `${target.platform}-${target.arch}-cuda${target.cudaVersion}`;
+  }
+  if (target.cudaVersion !== undefined) {
+    throw new TypeError("Only CUDA Runtime Box targets may declare a CUDA version");
+  }
+  return `${target.platform}-${target.arch}-${target.accelerator}`;
 }
 
 export function isLiatirSignedRuntimeBoxDocument(

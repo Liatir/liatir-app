@@ -12,7 +12,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { validateSigningPayload } from '../src/policy.mjs';
+import { runtimeBoxTargetId, validateSigningPayload } from '../src/policy.mjs';
 
 const policy = JSON.parse(await readFile(new URL('../policy.json', import.meta.url), 'utf8'));
 /** A known-good release, used as the baseline that each rejection test then perturbs one field of. */
@@ -80,7 +80,7 @@ test('rejects an invalid installed size', () => {
 
 test('accepts Linux payload metadata for native and WSL2 hosts', () => {
   const linuxTarget = { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.4' };
-  const linuxTargetId = 'linux-x86_64-cuda-cuda12.4';
+  const linuxTargetId = 'linux-x86_64-cuda12.4';
   const linuxPolicy = {
     ...policy,
     boxes: policy.boxes.map((box) => box.boxId === release.boxId
@@ -99,6 +99,16 @@ test('accepts Linux payload metadata for native and WSL2 hosts', () => {
       url: `https://assets.models.liatir.com/ai-runtime-boxes/boxes/geneformer-v1-10m/1.0.0-beta.2/${linuxTargetId}/${'a'.repeat(64)}.zip`,
     },
   }));
+});
+
+test('matches the shared Runtime Box target ID contract', async () => {
+  const contract = JSON.parse(await readFile(new URL('../../../runtime-boxes/target-id-contract.json', import.meta.url), 'utf8'));
+  for (const fixture of contract.valid) {
+    assert.equal(runtimeBoxTargetId(fixture.target), fixture.targetId, fixture.name);
+  }
+  for (const fixture of contract.invalid) {
+    assert.throws(() => runtimeBoxTargetId(fixture.target), undefined, fixture.name);
+  }
 });
 
 test('accepts native host metadata and rejects WSL2 metadata on non-Linux payloads', () => {
