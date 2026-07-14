@@ -53,16 +53,19 @@ jobs:
             throw 'wsl.exe is not installed on this Windows GPU image.'
           }
 
-          $wslVersion = (& wsl.exe --version 2>&1) -join "`n"
+          $wslVersion = ((& wsl.exe --version 2>&1) -join "`n") -replace "`0", ''
           if ($LASTEXITCODE -ne 0) {
             $wslVersion = 'Unavailable on the inbox WSL CLI shipped with this Windows image.'
           }
-          $wslStatus = (& wsl.exe --status 2>&1) -join "`n"
+          $wslStatus = ((& wsl.exe --status 2>&1) -join "`n") -replace "`0", ''
           if ($LASTEXITCODE -ne 0) {
             $wslStatus = "Command exited with code $LASTEXITCODE.`n$wslStatus"
           }
-          $wslDistros = (& wsl.exe --list --verbose 2>&1) -join "`n"
+          $wslDistros = ((& wsl.exe --list --verbose 2>&1) -join "`n") -replace "`0", ''
           if ($LASTEXITCODE -ne 0) {
+            if ($wslDistros -match 'no installed distributions') {
+              throw 'WSL is present, but this runner image has no installed Linux distribution.'
+            }
             throw "wsl.exe --list --verbose failed: $wslDistros"
           }
 
