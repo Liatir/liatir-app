@@ -1,4 +1,4 @@
-[![CI](https://github.com/Liatir/tauri-builder/actions/workflows/ci.yml/badge.svg)](https://github.com/Liatir/tauri-builder/actions/workflows/ci.yml)
+[![CI](https://github.com/Liatir/liatir-stack/actions/workflows/ci.yml/badge.svg)](https://github.com/Liatir/liatir-stack/actions/workflows/ci.yml)
 
 ---
 

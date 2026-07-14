@@ -5,7 +5,7 @@ Last updated: 2026-07-07 (session 2)
 ## Project Identity
 
 - **Name:** Liatir
-- **Repo:** `tauri-builder` (GitHub: `Liatir/tauri-builder`)
+- **Repo:** `liatir-stack` (GitHub: `Liatir/liatir-stack`)
 - **Website:** https://liatir.com
 - **Type:** Local-first Rust/Tauri 2 desktop app for bioinformatics
 - **Current version:** 0.2.1 (package), Tauri identifier `app.liatir.app`
