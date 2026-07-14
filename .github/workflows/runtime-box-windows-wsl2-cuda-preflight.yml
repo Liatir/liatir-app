@@ -16,6 +16,10 @@ jobs:
     name: Windows T4 and WSL2 CUDA
     runs-on: liatir-windows-t4
     timeout-minutes: 15
+    env:
+      WSL_DISTRO_NAME: LiatirUbuntu2204
+      WSL_ROOTFS_URL: https://cloud-images.ubuntu.com/wsl/jammy/20250318/ubuntu-jammy-wsl-amd64-ubuntu22.04lts.rootfs.tar.gz
+      WSL_ROOTFS_SHA256: 1483cc5c1dce13064f774834cbffdff226559fd522a67a381a8ea77d63fb4109
 
     steps:
       - name: Verify the Windows GPU host
@@ -44,6 +48,41 @@ jobs:
           - GPU: ``$gpu``
           "@ | Add-Content -Path $env:GITHUB_STEP_SUMMARY
 
+      - name: Import the pinned Ubuntu WSL2 distribution
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          if (-not (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
+            throw 'wsl.exe is not installed on this Windows GPU image.'
+          }
+
+          $rootfs = Join-Path $env:RUNNER_TEMP 'ubuntu-22.04-wsl-amd64.rootfs.tar.gz'
+          $installDirectory = Join-Path $env:RUNNER_TEMP 'liatir-ubuntu-22.04'
+
+          curl.exe --fail --location --retry 3 --output $rootfs $env:WSL_ROOTFS_URL
+          if ($LASTEXITCODE -ne 0) {
+            throw "Canonical WSL rootfs download failed with exit code $LASTEXITCODE."
+          }
+
+          $actualSha256 = (Get-FileHash -Path $rootfs -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualSha256 -ne $env:WSL_ROOTFS_SHA256) {
+            throw "Canonical WSL rootfs checksum mismatch: expected $env:WSL_ROOTFS_SHA256, received $actualSha256."
+          }
+
+          New-Item -ItemType Directory -Path $installDirectory -Force | Out-Null
+          $importOutput = ((& wsl.exe --import $env:WSL_DISTRO_NAME $installDirectory $rootfs --version 2 2>&1) -join "`n") -replace "`0", ''
+          if ($LASTEXITCODE -ne 0) {
+            throw "WSL2 distribution import failed: $importOutput"
+          }
+
+          @"
+          ## Pinned WSL distribution
+
+          - Distribution: ``$env:WSL_DISTRO_NAME``
+          - Rootfs SHA-256: ``$actualSha256``
+          "@ | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+
       - name: Verify WSL2 CUDA passthrough
         shell: powershell
         run: |
@@ -69,19 +108,15 @@ jobs:
             throw "wsl.exe --list --verbose failed: $wslDistros"
           }
 
-          $distros = @(
-            & wsl.exe --list --quiet |
-              ForEach-Object { ($_ -replace "`0", '').Trim() } |
-              Where-Object { $_ }
-          )
+          $distros = @(& wsl.exe --list --quiet | ForEach-Object { ($_ -replace "`0", '').Trim() } | Where-Object { $_ })
           if ($LASTEXITCODE -ne 0) {
             throw "wsl.exe --list --quiet failed with exit code $LASTEXITCODE."
           }
-          if ($distros.Count -eq 0) {
-            throw 'WSL is present, but this runner image has no installed Linux distribution.'
+          if ($distros -notcontains $env:WSL_DISTRO_NAME) {
+            throw "Expected WSL distribution $env:WSL_DISTRO_NAME, but found: $($distros -join ', ')"
           }
 
-          $distro = $distros[0]
+          $distro = $env:WSL_DISTRO_NAME
           $kernel = (& wsl.exe --distribution $distro --exec sh -lc 'uname -r') -join "`n"
           if ($LASTEXITCODE -ne 0) {
             throw "Unable to inspect the $distro WSL kernel: $kernel"
@@ -90,7 +125,7 @@ jobs:
             throw "Expected WSL2, but $distro reported kernel: $kernel"
           }
 
-          $wslGpu = (& wsl.exe --distribution $distro --exec sh -lc 'nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader') -join "`n"
+          $wslGpu = (& wsl.exe --distribution $distro --exec sh -lc '/usr/lib/wsl/lib/nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader') -join "`n"
           if ($LASTEXITCODE -ne 0) {
             throw "nvidia-smi failed inside ${distro}: $wslGpu"
           }
