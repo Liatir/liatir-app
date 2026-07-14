@@ -19,17 +19,22 @@ jobs:
 
     steps:
       - name: Verify the Windows GPU host
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $true
 
-          $gpu = (& nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader) -join "`n"
+          $gpu = (& nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader 2>&1) -join "`n"
+          if ($LASTEXITCODE -ne 0) {
+            throw "nvidia-smi failed on the Windows host: $gpu"
+          }
           if ($gpu -notmatch 'T4') {
             throw "Expected an NVIDIA T4 GPU, but nvidia-smi reported: $gpu"
           }
 
           nvidia-smi
+          if ($LASTEXITCODE -ne 0) {
+            throw "nvidia-smi diagnostics failed with exit code $LASTEXITCODE."
+          }
 
           @"
           ## Windows GPU host
@@ -40,35 +45,52 @@ jobs:
           "@ | Add-Content -Path $env:GITHUB_STEP_SUMMARY
 
       - name: Verify WSL2 CUDA passthrough
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $true
 
           if (-not (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
             throw 'wsl.exe is not installed on this Windows GPU image.'
           }
 
           $wslVersion = (& wsl.exe --version 2>&1) -join "`n"
+          if ($LASTEXITCODE -ne 0) {
+            throw "wsl.exe --version failed: $wslVersion"
+          }
           $wslStatus = (& wsl.exe --status 2>&1) -join "`n"
+          if ($LASTEXITCODE -ne 0) {
+            throw "wsl.exe --status failed: $wslStatus"
+          }
           $wslDistros = (& wsl.exe --list --verbose 2>&1) -join "`n"
+          if ($LASTEXITCODE -ne 0) {
+            throw "wsl.exe --list --verbose failed: $wslDistros"
+          }
 
           $distros = @(
             & wsl.exe --list --quiet |
               ForEach-Object { ($_ -replace "`0", '').Trim() } |
               Where-Object { $_ }
           )
+          if ($LASTEXITCODE -ne 0) {
+            throw "wsl.exe --list --quiet failed with exit code $LASTEXITCODE."
+          }
           if ($distros.Count -eq 0) {
             throw 'WSL is present, but this runner image has no installed Linux distribution.'
           }
 
           $distro = $distros[0]
           $kernel = (& wsl.exe --distribution $distro --exec sh -lc 'uname -r') -join "`n"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Unable to inspect the $distro WSL kernel: $kernel"
+          }
           if ($kernel -notmatch 'WSL2') {
             throw "Expected WSL2, but $distro reported kernel: $kernel"
           }
 
           $wslGpu = (& wsl.exe --distribution $distro --exec sh -lc 'nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader') -join "`n"
+          if ($LASTEXITCODE -ne 0) {
+            throw "nvidia-smi failed inside $distro: $wslGpu"
+          }
           if ($wslGpu -notmatch 'T4') {
             throw "Expected CUDA passthrough for an NVIDIA T4, but WSL reported: $wslGpu"
           }
