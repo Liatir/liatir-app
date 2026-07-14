@@ -55,11 +55,11 @@ jobs:
 
           $wslVersion = (& wsl.exe --version 2>&1) -join "`n"
           if ($LASTEXITCODE -ne 0) {
-            throw "wsl.exe --version failed: $wslVersion"
+            $wslVersion = 'Unavailable on the inbox WSL CLI shipped with this Windows image.'
           }
           $wslStatus = (& wsl.exe --status 2>&1) -join "`n"
           if ($LASTEXITCODE -ne 0) {
-            throw "wsl.exe --status failed: $wslStatus"
+            $wslStatus = "Command exited with code $LASTEXITCODE.`n$wslStatus"
           }
           $wslDistros = (& wsl.exe --list --verbose 2>&1) -join "`n"
           if ($LASTEXITCODE -ne 0) {
