@@ -18,6 +18,7 @@ jobs:
     timeout-minutes: 15
     env:
       WSL_DISTRO_NAME: LiatirUbuntu2204
+      WSL_KERNEL_MSI_URL: https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi
       WSL_ROOTFS_URL: https://cloud-images.ubuntu.com/wsl/jammy/20250318/ubuntu-jammy-wsl-amd64-ubuntu22.04lts.rootfs.tar.gz
       WSL_ROOTFS_SHA256: 1483cc5c1dce13064f774834cbffdff226559fd522a67a381a8ea77d63fb4109
 
@@ -57,8 +58,24 @@ jobs:
             throw 'wsl.exe is not installed on this Windows GPU image.'
           }
 
+          $kernelMsi = Join-Path $env:RUNNER_TEMP 'wsl_update_x64.msi'
           $rootfs = Join-Path $env:RUNNER_TEMP 'ubuntu-22.04-wsl-amd64.rootfs.tar.gz'
           $installDirectory = Join-Path $env:RUNNER_TEMP 'liatir-ubuntu-22.04'
+
+          curl.exe --fail --location --retry 3 --output $kernelMsi $env:WSL_KERNEL_MSI_URL
+          if ($LASTEXITCODE -ne 0) {
+            throw "Microsoft WSL2 kernel download failed with exit code $LASTEXITCODE."
+          }
+
+          $kernelSignature = Get-AuthenticodeSignature -FilePath $kernelMsi
+          if ($kernelSignature.Status -ne 'Valid' -or $kernelSignature.SignerCertificate.Subject -notmatch 'Microsoft Corporation') {
+            throw "Microsoft WSL2 kernel signature validation failed: $($kernelSignature.Status), $($kernelSignature.StatusMessage)"
+          }
+
+          $kernelInstall = Start-Process msiexec.exe -ArgumentList @('/i', $kernelMsi, '/quiet', '/norestart') -Wait -PassThru
+          if ($kernelInstall.ExitCode -ne 0) {
+            throw "Microsoft WSL2 kernel installation failed with exit code $($kernelInstall.ExitCode)."
+          }
 
           curl.exe --fail --location --retry 3 --output $rootfs $env:WSL_ROOTFS_URL
           if ($LASTEXITCODE -ne 0) {
