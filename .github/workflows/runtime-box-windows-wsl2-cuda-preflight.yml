@@ -1,0 +1,94 @@
+name: Runtime Box Windows WSL2 CUDA preflight
+
+on:
+  workflow_dispatch:
+
+# This paid GPU runner must only start through an explicit manual dispatch.
+concurrency:
+  group: runtime-box-windows-wsl2-cuda-preflight
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Windows T4 and WSL2 CUDA
+    runs-on: liatir-windows-t4
+    timeout-minutes: 15
+
+    steps:
+      - name: Verify the Windows GPU host
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+
+          $gpu = (& nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader) -join "`n"
+          if ($gpu -notmatch 'T4') {
+            throw "Expected an NVIDIA T4 GPU, but nvidia-smi reported: $gpu"
+          }
+
+          nvidia-smi
+
+          @"
+          ## Windows GPU host
+
+          - Runner: ``$env:RUNNER_NAME``
+          - OS: ``$env:RUNNER_OS``
+          - GPU: ``$gpu``
+          "@ | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+
+      - name: Verify WSL2 CUDA passthrough
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+
+          if (-not (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
+            throw 'wsl.exe is not installed on this Windows GPU image.'
+          }
+
+          $wslVersion = (& wsl.exe --version 2>&1) -join "`n"
+          $wslStatus = (& wsl.exe --status 2>&1) -join "`n"
+          $wslDistros = (& wsl.exe --list --verbose 2>&1) -join "`n"
+
+          $distros = @(
+            & wsl.exe --list --quiet |
+              ForEach-Object { ($_ -replace "`0", '').Trim() } |
+              Where-Object { $_ }
+          )
+          if ($distros.Count -eq 0) {
+            throw 'WSL is present, but this runner image has no installed Linux distribution.'
+          }
+
+          $distro = $distros[0]
+          $kernel = (& wsl.exe --distribution $distro --exec sh -lc 'uname -r') -join "`n"
+          if ($kernel -notmatch 'WSL2') {
+            throw "Expected WSL2, but $distro reported kernel: $kernel"
+          }
+
+          $wslGpu = (& wsl.exe --distribution $distro --exec sh -lc 'nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader') -join "`n"
+          if ($wslGpu -notmatch 'T4') {
+            throw "Expected CUDA passthrough for an NVIDIA T4, but WSL reported: $wslGpu"
+          }
+
+          @"
+          ## WSL2 CUDA passthrough
+
+          - Distribution: ``$distro``
+          - Kernel: ``$kernel``
+          - GPU: ``$wslGpu``
+
+          <details>
+          <summary>WSL diagnostics</summary>
+
+          ``````text
+          $wslVersion
+
+          $wslStatus
+
+          $wslDistros
+          ``````
+          </details>
+          "@ | Add-Content -Path $env:GITHUB_STEP_SUMMARY
