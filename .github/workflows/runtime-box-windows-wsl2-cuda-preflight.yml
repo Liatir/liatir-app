@@ -89,7 +89,7 @@ jobs:
 
           $wslGpu = (& wsl.exe --distribution $distro --exec sh -lc 'nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader') -join "`n"
           if ($LASTEXITCODE -ne 0) {
-            throw "nvidia-smi failed inside $distro: $wslGpu"
+            throw "nvidia-smi failed inside ${distro}: $wslGpu"
           }
           if ($wslGpu -notmatch 'T4') {
             throw "Expected CUDA passthrough for an NVIDIA T4, but WSL reported: $wslGpu"
