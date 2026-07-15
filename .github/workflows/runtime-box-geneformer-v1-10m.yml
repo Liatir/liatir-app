@@ -39,7 +39,7 @@ on:
         options: [build, scientific, native-lifecycle]
 
 concurrency:
-  group: runtime-box-geneformer-v1-10m-${{ inputs.target_id || 'macos-aarch64-metal' }}-${{ inputs.mode || 'build' }}-${{ github.ref }}
+  group: runtime-box-geneformer-v1-10m-${{ inputs.target_id || 'macos-aarch64-metal' }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:

@@ -37,7 +37,7 @@ on:
         options: [build, scientific, native-lifecycle]
 
 concurrency:
-  group: runtime-box-uce-4layer-${{ inputs.target_id || 'macos-aarch64-metal' }}-${{ inputs.mode || 'build' }}-${{ github.ref }}
+  group: runtime-box-uce-4layer-${{ inputs.target_id || 'macos-aarch64-metal' }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:

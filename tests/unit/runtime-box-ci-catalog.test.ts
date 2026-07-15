@@ -55,10 +55,23 @@ describe('Runtime Box CI catalog', () => {
 
   it('derives the small native fixture matrix from checked runner profiles', () => {
     expect(foundationMatrix(catalog)).toEqual(expect.arrayContaining([
-      expect.objectContaining({ recipeId: 'installer-fixture-linux-x86_64', runsOn: 'ubuntu-24.04' }),
+      expect.objectContaining({ recipeId: 'installer-fixture-linux-x86_64', runsOn: 'ubuntu-24.04', heartbeatSeconds: 300 }),
       expect.objectContaining({ recipeId: 'installer-fixture-windows-x86_64', runsOn: 'windows-2025' }),
       expect.objectContaining({ recipeId: 'installer-fixture-macos-arm64', runsOn: 'macos-15' }),
     ]));
+  });
+
+  it('keeps the checked cost policy manual, serial, uncached, and low-noise', () => {
+    expect(catalog.costPolicy).toEqual({
+      maxPaidRunnerConcurrency: 1,
+      maxModelsPerGpuJob: 1,
+      maxTargetsPerGpuJob: 1,
+      heartbeatSeconds: 300,
+      gpuManualOnly: true,
+      scheduledGpuWorkflows: false,
+      linuxCudaBeforeWindowsCuda: true,
+      cacheModelWeightsOrArchives: false,
+    });
   });
 
   it('keeps UCE native CI disabled until a runner has enough working storage', () => {

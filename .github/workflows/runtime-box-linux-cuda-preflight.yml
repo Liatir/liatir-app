@@ -6,17 +6,32 @@ on:
 # This paid GPU runner must only start through an explicit manual dispatch.
 concurrency:
   group: runtime-box-linux-cuda-preflight
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
+  guard:
+    name: Cheap contracts before T4 allocation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run runtime-box:catalog:check
+
   preflight:
     name: Linux x64 T4 CUDA
+    needs: guard
     runs-on: liatir-linux-t4
     timeout-minutes: 15
     env:
+      LIATIR_RUNTIME_BOX_HEARTBEAT_SECONDS: "300"
       UV_CACHE_DIR: ${{ github.workspace }}/.runtime-box-ci/uv-cache
       UV_PYTHON_INSTALL_DIR: ${{ github.workspace }}/.runtime-box-ci/python
 
@@ -71,7 +86,10 @@ jobs:
         run: npm run test:unit -- tests/unit/runtime-box-target-adapters.test.ts tests/unit/runtime-box-target-id-contract.test.ts
 
       - name: Build and verify the Linux stdlib fixture twice
-        run: npm run runtime-box:test:native -- --recipe installer-fixture-linux-x86_64 --uv uv
+        run: >-
+          node scripts/runtime-box/heartbeat.mjs
+          --label "Linux T4 native fixture"
+          -- npm run runtime-box:test:native -- --recipe installer-fixture-linux-x86_64 --uv uv
 
       - name: Clean Runtime Box foundation state
         if: always()

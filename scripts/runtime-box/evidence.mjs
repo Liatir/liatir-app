@@ -1,12 +1,13 @@
 /** Runtime Box CI evidence probes, process tracking, validation, and compact writers. */
 
-import { spawn, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, statfsSync, writeFileSync } from 'node:fs';
 import { mkdir, readFile } from 'node:fs/promises';
 import { arch, platform } from 'node:os';
 import { dirname, resolve, sep } from 'node:path';
 import { sha256File } from './filesystem.mjs';
+import { runWithHeartbeat } from './heartbeat.mjs';
 import { runtimeBoxTargetId } from './targets.mjs';
 
 const ROOT = resolve(import.meta.dirname, '../..');
@@ -133,14 +134,12 @@ export async function runTrackedCommand(command, args, metricsOutput) {
   const timer = setInterval(sample, 2_000);
   let exitCode = null;
   try {
-    exitCode = await new Promise((resolveExit, reject) => {
-      const child = spawn(command, args, { cwd: ROOT, env: process.env, stdio: 'inherit' });
-      child.once('error', reject);
-      child.once('exit', (code, signal) => {
-        if (signal) reject(new Error(`${command} terminated by ${signal}`));
-        else resolveExit(code ?? 1);
-      });
+    const result = await runWithHeartbeat(command, args, {
+      cwd: ROOT,
+      label: 'Runtime Box native build',
     });
+    if (result.signal) throw new Error(`${command} terminated by ${result.signal}`);
+    exitCode = result.code;
   } finally {
     clearInterval(timer);
     sample();

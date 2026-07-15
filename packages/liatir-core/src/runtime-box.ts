@@ -204,8 +204,16 @@ export interface LiatirRuntimeBoxCiTargetRecord {
   validationModes: readonly LiatirRuntimeBoxCiValidationMode[];
   timeoutMinutes: number;
   requiredBuildDiskBytes: number;
+  dependencyLockSha256: string;
+  diskPlan: {
+    estimatedInstalledSizeBytes: number;
+    estimatedArchiveSizeBytes: number;
+    safetyMarginBytes: number;
+  };
   gpuRequired: boolean;
   nativeCiEnabled: boolean;
+  /** Windows CUDA cannot activate until this Linux CUDA target has scientific evidence. */
+  linuxValidationPrerequisiteTargetId?: string;
   publication?: LiatirRuntimeBoxCiPublicationEvidence;
 }
 
@@ -226,12 +234,24 @@ export interface LiatirRuntimeBoxCiModelRecord {
 /** Machine-readable CI authority for Runtime Box runners, targets, and validation gates. */
 export interface LiatirRuntimeBoxCiCatalog {
   schemaVersion: 1;
+  costPolicy: {
+    maxPaidRunnerConcurrency: 1;
+    maxModelsPerGpuJob: 1;
+    maxTargetsPerGpuJob: 1;
+    heartbeatSeconds: number;
+    gpuManualOnly: true;
+    scheduledGpuWorkflows: false;
+    linuxCudaBeforeWindowsCuda: true;
+    cacheModelWeightsOrArchives: false;
+  };
   runnerProfiles: readonly LiatirRuntimeBoxCiRunnerProfile[];
   foundationFixtures: readonly {
     recipeId: string;
     runnerProfileId: string;
     timeoutMinutes: number;
     rustLifecycle: boolean;
+    dependencyLockSha256: string;
+    requiredBuildDiskBytes: number;
   }[];
   models: readonly LiatirRuntimeBoxCiModelRecord[];
 }
@@ -285,6 +305,18 @@ export interface LiatirRuntimeBoxCiHostEvidence {
   freeDiskBytesBefore: number;
   minimumFreeDiskBytes: number | null;
   peakAdditionalDiskBytes: number | null;
+  /** Existing Runtime Box build and distribution state counted before allocating new work. */
+  existingBuildStateBytes?: number;
+  /** Static peak-disk calculation checked before a native runner is allocated. */
+  calculatedDiskPlan?: {
+    sourceAssetBytes: number;
+    localSourceBytes: number;
+    estimatedInstalledSizeBytes: number;
+    estimatedArchiveSizeBytes: number;
+    safetyMarginBytes: number;
+    calculatedPeakDiskBytes: number;
+    requiredBuildDiskBytes: number;
+  };
   gpuModel: string | null;
   driverVersion: string | null;
   reportedCudaCompatibility: string | null;

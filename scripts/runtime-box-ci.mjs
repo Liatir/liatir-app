@@ -3,8 +3,8 @@
 /** Checked Runtime Box CI catalog resolver and compact evidence writer. */
 
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { appendFileSync, existsSync, readFileSync } from 'node:fs';
+import { appendFileSync, existsSync, lstatSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { rm } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +17,7 @@ import {
   writeModelEvidence,
   writeReleaseEvidence,
 } from './runtime-box/evidence.mjs';
+import { runWithHeartbeat } from './runtime-box/heartbeat.mjs';
 import { runtimeBoxTargetId } from './runtime-box/targets.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
@@ -45,6 +46,63 @@ function requireCatalog(condition, message) {
   if (!condition) throw new Error(`Runtime Box CI catalog: ${message}`);
 }
 
+function sha256Bytes(value) {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+/** Sums existing CI build state so stale self-hosted data is visible before downloading. */
+function existingBuildStateBytes(path) {
+  if (!existsSync(path)) return 0;
+  const info = lstatSync(path);
+  if (info.isSymbolicLink()) return 0;
+  if (info.isFile()) return info.size;
+  if (!info.isDirectory()) return 0;
+  return readdirSync(path).reduce(
+    (total, entry) => total + existingBuildStateBytes(resolve(path, entry)),
+    0,
+  );
+}
+
+/** Calculates the conservative clean-build peak before any paid runner downloads assets. */
+export function runtimeBoxBuildDiskPlan(recipe, target) {
+  const sourceAssetBytes = (recipe.assets ?? []).reduce((total, asset) => total + asset.sizeBytes, 0);
+  const localSourceBytes = (recipe.localFiles ?? []).reduce((total, file) => {
+    const sourcePath = resolve(ROOT, file.sourcePath);
+    requireCatalog(existsSync(sourcePath), `missing local recipe source ${file.sourcePath}`);
+    return total + statSync(sourcePath).size;
+  }, 0);
+  const components = {
+    sourceAssetBytes,
+    localSourceBytes,
+    estimatedInstalledSizeBytes: target.diskPlan?.estimatedInstalledSizeBytes,
+    estimatedArchiveSizeBytes: target.diskPlan?.estimatedArchiveSizeBytes,
+    safetyMarginBytes: target.diskPlan?.safetyMarginBytes,
+  };
+  requireCatalog(
+    Object.values(components).every((value) => Number.isSafeInteger(value) && value >= 0),
+    `invalid disk-plan component for ${target.targetId}`,
+  );
+  const calculatedPeakDiskBytes = Object.values(components).reduce((total, value) => total + value, 0);
+  requireCatalog(Number.isSafeInteger(calculatedPeakDiskBytes), `disk plan exceeds safe integer range for ${target.targetId}`);
+  requireCatalog(
+    target.requiredBuildDiskBytes >= calculatedPeakDiskBytes,
+    `required disk ${target.requiredBuildDiskBytes} is below calculated peak ${calculatedPeakDiskBytes} for ${target.targetId}`,
+  );
+  return { ...components, calculatedPeakDiskBytes, requiredBuildDiskBytes: target.requiredBuildDiskBytes };
+}
+
+/** Enforces the reviewed Linux-first gate before any Windows CUDA model target can activate. */
+export function validateWindowsCudaPrerequisite(model, target) {
+  if (target.target.platform !== 'windows' || target.target.accelerator !== 'cuda') return;
+  const targetKey = `${model.modelId}/${target.targetId}`;
+  requireCatalog(typeof target.linuxValidationPrerequisiteTargetId === 'string', `Windows CUDA target lacks a Linux prerequisite for ${targetKey}`);
+  const prerequisite = model.targets.find((candidate) => candidate.targetId === target.linuxValidationPrerequisiteTargetId);
+  requireCatalog(prerequisite?.target.platform === 'linux' && prerequisite?.target.accelerator === 'cuda', `Windows CUDA prerequisite is not a Linux CUDA target for ${targetKey}`);
+  if (target.nativeCiEnabled) {
+    requireCatalog(['scientifically-validated', 'native-lifecycle-validated', 'published'].includes(prerequisite.status), `Windows CUDA cannot activate before Linux scientific validation for ${targetKey}`);
+  }
+}
+
 /** Finds a unique model and target selected only by catalog IDs. */
 export function resolveCiTarget(catalog, modelId, recipeId, targetId, mode) {
   const model = catalog.models.find((candidate) => candidate.modelId === modelId);
@@ -68,6 +126,8 @@ export function foundationMatrix(catalog) {
       runsOn: runner.runsOn,
       timeoutMinutes: fixture.timeoutMinutes,
       rustLifecycle: fixture.rustLifecycle,
+      requiredBuildDiskBytes: fixture.requiredBuildDiskBytes,
+      heartbeatSeconds: catalog.costPolicy.heartbeatSeconds,
     };
   });
 }
@@ -75,6 +135,14 @@ export function foundationMatrix(catalog) {
 /** Validates all static catalog invariants and its repository-owned references. */
 export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true } = {}) {
   requireCatalog(catalog?.schemaVersion === 1, 'schemaVersion must be 1');
+  requireCatalog(catalog.costPolicy?.maxPaidRunnerConcurrency === 1, 'paid runner concurrency must remain 1');
+  requireCatalog(catalog.costPolicy?.maxModelsPerGpuJob === 1, 'GPU jobs must remain scoped to one model');
+  requireCatalog(catalog.costPolicy?.maxTargetsPerGpuJob === 1, 'GPU jobs must remain scoped to one target');
+  requireCatalog(Number.isInteger(catalog.costPolicy?.heartbeatSeconds) && catalog.costPolicy.heartbeatSeconds >= 60, 'heartbeat must be at least 60 seconds');
+  requireCatalog(catalog.costPolicy?.gpuManualOnly === true, 'GPU workflows must remain manual-only');
+  requireCatalog(catalog.costPolicy?.scheduledGpuWorkflows === false, 'scheduled GPU workflows are forbidden');
+  requireCatalog(catalog.costPolicy?.linuxCudaBeforeWindowsCuda === true, 'Linux-first CUDA policy is required');
+  requireCatalog(catalog.costPolicy?.cacheModelWeightsOrArchives === false, 'model weights and archives may not be cached');
   requireCatalog(Array.isArray(catalog.runnerProfiles) && catalog.runnerProfiles.length > 0, 'runnerProfiles are required');
   requireCatalog(Array.isArray(catalog.foundationFixtures) && catalog.foundationFixtures.length > 0, 'foundationFixtures are required');
   requireCatalog(Array.isArray(catalog.models) && catalog.models.length > 0, 'models are required');
@@ -104,6 +172,10 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
     requireCatalog(recipe.recipeId === fixture.recipeId, `foundation recipeId mismatch for ${fixture.recipeId}`);
     requireCatalog(recipe.target.platform === runner.platform && recipe.target.arch === runner.arch, `foundation runner host mismatch for ${fixture.recipeId}`);
     requireCatalog(fixture.timeoutMinutes <= runner.maxTimeoutMinutes, `foundation timeout exceeds ${runner.id}`);
+    const fixtureLock = readFileSync(resolve(recipePath, '..', recipe.requirementsLock));
+    requireCatalog(/^[a-f0-9]{64}$/.test(fixture.dependencyLockSha256), `invalid fixture lock SHA-256 for ${fixture.recipeId}`);
+    requireCatalog(sha256Bytes(fixtureLock) === fixture.dependencyLockSha256, `fixture dependency lock SHA-256 mismatch for ${fixture.recipeId}`);
+    requireCatalog(Number.isSafeInteger(fixture.requiredBuildDiskBytes) && fixture.requiredBuildDiskBytes > 0, `invalid fixture disk requirement for ${fixture.recipeId}`);
     fixtureIds.add(fixture.recipeId);
   }
 
@@ -147,6 +219,15 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
       requireCatalog(recipe.recipeId === target.recipeId && recipe.modelId === model.modelId && recipe.boxId === model.boxId && recipe.runtimeId === model.runtimeId, `recipe identity mismatch for ${targetKey}`);
       requireCatalog(runtimeBoxTargetId(recipe.target) === target.targetId, `recipe target mismatch for ${targetKey}`);
       requireCatalog(readFileSync(resolve(ROOT, model.legalRecord), 'utf8').includes(recipe.sourceRevision), `legal record is not pinned to recipe source ${recipe.sourceRevision} for ${targetKey}`);
+      const lockPath = resolve(recipePath, '..', recipe.requirementsLock);
+      requireCatalog(existsSync(lockPath), `missing dependency lock for ${targetKey}`);
+      const lockBytes = readFileSync(lockPath);
+      requireCatalog(/^[a-f0-9]{64}$/.test(target.dependencyLockSha256), `invalid pinned lock SHA-256 for ${targetKey}`);
+      requireCatalog(sha256Bytes(lockBytes) === target.dependencyLockSha256, `dependency lock SHA-256 mismatch for ${targetKey}`);
+      requireCatalog(lockBytes.includes(Buffer.from('--hash=sha256:')), `dependency lock is not hash-pinned for ${targetKey}`);
+      runtimeBoxBuildDiskPlan(recipe, target);
+
+      validateWindowsCudaPrerequisite(model, target);
 
       if (target.status === 'published') {
         const publication = target.publication;
@@ -182,9 +263,29 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
       requireCatalog(workflow.includes(model.validatorPath), `caller lacks validator path scope: ${model.callerWorkflow}`);
       requireCatalog(!workflow.includes('secrets: inherit'), `caller may not inherit secrets: ${model.callerWorkflow}`);
       requireCatalog(!workflow.includes('environment:'), `caller may not use an environment: ${model.callerWorkflow}`);
+      requireCatalog(workflow.includes('cancel-in-progress: true'), `validation workflow must cancel stale runs: ${model.callerWorkflow}`);
+      const concurrencyGroup = workflow.match(/concurrency:\s*\n\s*group:\s*([^\n]+)/)?.[1] ?? '';
+      requireCatalog(concurrencyGroup && !concurrencyGroup.includes('inputs.mode'), `model and target modes may not run concurrently: ${model.callerWorkflow}`);
     }
     modelIds.add(model.modelId);
     boxIds.add(model.boxId);
+  }
+  if (requireWorkflows) {
+    for (const workflowName of ['runtime-box-linux-cuda-preflight.yml', 'runtime-box-windows-cuda-preflight.yml']) {
+      const workflow = readFileSync(resolve(ROOT, '.github/workflows', workflowName), 'utf8');
+      requireCatalog(workflow.includes('workflow_dispatch:'), `${workflowName} must be manual-only`);
+      requireCatalog(!workflow.includes('schedule:') && !workflow.includes('pull_request:') && !workflow.includes('push:'), `${workflowName} has an automatic trigger`);
+      requireCatalog(workflow.includes('cancel-in-progress: true'), `${workflowName} must cancel stale validation`);
+      requireCatalog(!workflow.includes('actions/cache'), `${workflowName} may not cache model assets`);
+      requireCatalog(workflow.includes('enable-cache: false'), `${workflowName} must keep uv caching disabled`);
+      if (workflowName.includes('windows')) {
+        requireCatalog(workflow.includes('linux_run_id:') && workflow.includes('run.head_sha === process.env.GITHUB_SHA'), 'Windows T4 preflight must prove the successful Linux run for the exact commit');
+      }
+    }
+    const foundation = readFileSync(resolve(ROOT, '.github/workflows/runtime-box-foundation.yml'), 'utf8');
+    requireCatalog(foundation.includes('max-parallel: 1'), 'foundation paid fixture concurrency must remain 1');
+    const release = readFileSync(resolve(ROOT, '.github/workflows/runtime-box-release.yml'), 'utf8');
+    requireCatalog(release.includes('cancel-in-progress: false'), 'production releases must never be cancelled');
   }
   return catalog;
 }
@@ -203,17 +304,18 @@ function parseOptions(values) {
 
 /** Runs a checked validator, preserves its logs, and stores its canonical JSON result. */
 async function runPackageScript(script, output) {
-  const startedAt = Date.now();
-  const result = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', script], {
-    cwd: ROOT,
-    env: process.env,
-    encoding: 'utf8',
-    maxBuffer: 64 * 1024 * 1024,
-  });
-  if (result.error) throw result.error;
-  if (result.stdout) process.stdout.write(result.stdout);
-  if (result.stderr) process.stderr.write(result.stderr);
-  if (result.status !== 0) throw new Error(`${script} exited with ${result.status}`);
+  const result = await runWithHeartbeat(
+    process.platform === 'win32' ? 'npm.cmd' : 'npm',
+    ['run', script],
+    {
+      label: `Scientific validator ${script}`,
+      capture: true,
+      maxBuffer: 64 * 1024 * 1024,
+      cwd: ROOT,
+    },
+  );
+  if (result.signal) throw new Error(`${script} terminated by ${result.signal}`);
+  if (result.code !== 0) throw new Error(`${script} exited with ${result.code}`);
   let validatorResult;
   try {
     validatorResult = JSON.parse(result.stdout.trim());
@@ -224,7 +326,7 @@ async function runPackageScript(script, output) {
   await writeJson(output, {
     schemaVersion: 1,
     status: 'passed',
-    elapsedMs: Date.now() - startedAt,
+    elapsedMs: result.elapsedMs,
     result: validatorResult,
   });
 }
@@ -232,8 +334,25 @@ async function runPackageScript(script, output) {
 /** Checks the current native host and free workspace capacity before a heavy build. */
 async function probeHost(target, runner, output) {
   const record = await writeHostEvidence(output, target.target, runner.runsOn);
+  const existingBytes = ['.runtime-box-build', '.runtime-box-dist'].reduce(
+    (total, name) => total + existingBuildStateBytes(resolve(ROOT, name)),
+    0,
+  );
+  record.existingBuildStateBytes = existingBytes;
+  record.calculatedDiskPlan = runtimeBoxBuildDiskPlan(
+    JSON.parse(readFileSync(resolve(ROOT, 'runtime-boxes/recipes', target.recipeId, 'recipe.json'), 'utf8')),
+    target,
+  );
+  await writeJson(output, record);
   requireCatalog(record.freeDiskBytesBefore >= target.requiredBuildDiskBytes, `only ${record.freeDiskBytesBefore} free bytes; ${target.requiredBuildDiskBytes} required`);
   console.log(JSON.stringify(record));
+}
+
+async function probeFoundationHost(fixture, runner, output) {
+  const recipe = JSON.parse(readFileSync(resolve(ROOT, 'runtime-boxes/recipes', fixture.recipeId, 'recipe.json'), 'utf8'));
+  const record = await writeHostEvidence(output, recipe.target, runner.runsOn);
+  requireCatalog(record.freeDiskBytesBefore >= fixture.requiredBuildDiskBytes, `only ${record.freeDiskBytesBefore} free bytes; ${fixture.requiredBuildDiskBytes} required`);
+  console.log(JSON.stringify({ ...record, requiredBuildDiskBytes: fixture.requiredBuildDiskBytes }));
 }
 
 /** Removes Runtime Box build state without touching repository sources. */
@@ -275,6 +394,10 @@ async function main() {
       gpu_required: resolved.target.gpuRequired ? 'true' : 'false',
       box_id: resolved.model.boxId,
       release_path: `.runtime-box-dist/${resolved.model.boxId}-${recipe.version}-${resolved.target.targetId}.release.json`,
+      dependency_lock_sha256: resolved.target.dependencyLockSha256,
+      calculated_peak_disk_bytes: runtimeBoxBuildDiskPlan(recipe, resolved.target).calculatedPeakDiskBytes,
+      required_disk_bytes: resolved.target.requiredBuildDiskBytes,
+      heartbeat_seconds: catalog.costPolicy.heartbeatSeconds,
     };
     for (const [key, value] of Object.entries(values)) setGithubOutput(key, value);
     console.log(JSON.stringify(values));
@@ -298,6 +421,10 @@ async function main() {
       box_id: model.boxId,
       release_path: `.runtime-box-dist/${model.boxId}-${recipe.version}-${target.targetId}.release.json`,
       channel_path: `.runtime-box-dist/${model.boxId}-beta-${target.targetId}.channel.json`,
+      dependency_lock_sha256: target.dependencyLockSha256,
+      calculated_peak_disk_bytes: runtimeBoxBuildDiskPlan(recipe, target).calculatedPeakDiskBytes,
+      required_disk_bytes: target.requiredBuildDiskBytes,
+      heartbeat_seconds: catalog.costPolicy.heartbeatSeconds,
     };
     for (const [key, value] of Object.entries(values)) setGithubOutput(key, value);
     console.log(JSON.stringify(values));
@@ -307,6 +434,15 @@ async function main() {
     validateRuntimeBoxCiCatalog(catalog);
     const resolved = resolveCiTarget(catalog, options.get('model'), options.get('recipe'), options.get('target'), options.get('mode'));
     await probeHost(resolved.target, resolved.runner, options.get('output') || '.runtime-box-ci/host.json');
+    return;
+  }
+  if (command === 'foundation-host-probe') {
+    validateRuntimeBoxCiCatalog(catalog);
+    const fixture = catalog.foundationFixtures.find((candidate) => candidate.recipeId === options.get('recipe'));
+    requireCatalog(fixture, `unknown foundation recipe ${options.get('recipe')}`);
+    const runner = catalog.runnerProfiles.find((candidate) => candidate.id === fixture.runnerProfileId);
+    requireCatalog(runner, `missing foundation runner ${fixture.runnerProfileId}`);
+    await probeFoundationHost(fixture, runner, options.get('output') || '.runtime-box-ci/foundation-host.json');
     return;
   }
   if (command === 'tracked-build') {

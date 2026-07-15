@@ -129,10 +129,12 @@ jobs:
     needs: preflight
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix: ${{ fromJSON(needs.preflight.outputs.matrix) }}
     runs-on: ${{ matrix.runsOn }}
     timeout-minutes: ${{ matrix.timeoutMinutes }}
     env:
+      LIATIR_RUNTIME_BOX_HEARTBEAT_SECONDS: ${{ matrix.heartbeatSeconds }}
       UV_CACHE_DIR: ${{ github.workspace }}/.runtime-box-ci/uv-cache
       UV_PYTHON_INSTALL_DIR: ${{ github.workspace }}/.runtime-box-ci/python
     steps:
@@ -151,8 +153,17 @@ jobs:
           version: "0.11.28"
           enable-cache: false
 
+      - name: Verify native fixture host and working storage
+        run: >-
+          npm run runtime-box:ci -- foundation-host-probe
+          --recipe "${{ matrix.recipeId }}"
+          --output ".runtime-box-ci/${{ matrix.recipeId }}-host.json"
+
       - name: Build and verify the native stdlib fixture twice
-        run: npm run runtime-box:test:native -- --recipe "${{ matrix.recipeId }}" --uv uv
+        run: >-
+          node scripts/runtime-box/heartbeat.mjs
+          --label "Native fixture ${{ matrix.recipeId }}"
+          -- npm run runtime-box:test:native -- --recipe "${{ matrix.recipeId }}" --uv uv
 
       - name: Select Git Bash for composite actions
         if: matrix.rustLifecycle && runner.os == 'Windows'
@@ -181,8 +192,11 @@ jobs:
 
       - name: Verify the Rust lifecycle
         if: matrix.rustLifecycle
-        working-directory: src-tauri
-        run: cargo test runtime_box -- --nocapture
+        run: >-
+          node scripts/runtime-box/heartbeat.mjs
+          --label "Rust lifecycle ${{ matrix.recipeId }}"
+          --cwd src-tauri
+          -- cargo test runtime_box -- --nocapture
 
       - name: Write native fixture evidence
         if: always()

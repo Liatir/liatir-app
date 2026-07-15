@@ -35,6 +35,7 @@ jobs:
       native_eligible: ${{ steps.resolve.outputs.native_eligible }}
       gpu_required: ${{ steps.resolve.outputs.gpu_required }}
       release_path: ${{ steps.resolve.outputs.release_path }}
+      heartbeat_seconds: ${{ steps.resolve.outputs.heartbeat_seconds }}
     steps:
       - uses: actions/checkout@v4
 
@@ -87,6 +88,7 @@ jobs:
     runs-on: ${{ needs.preflight.outputs.runs_on }}
     timeout-minutes: ${{ fromJSON(needs.preflight.outputs.timeout_minutes) }}
     env:
+      LIATIR_RUNTIME_BOX_HEARTBEAT_SECONDS: ${{ needs.preflight.outputs.heartbeat_seconds }}
       UV_CACHE_DIR: ${{ github.workspace }}/.runtime-box-ci/uv-cache
       UV_PYTHON_INSTALL_DIR: ${{ github.workspace }}/.runtime-box-ci/python
     steps:
@@ -162,8 +164,11 @@ jobs:
 
       - name: Verify the Rust Runtime Box lifecycle
         if: inputs.mode == 'native-lifecycle'
-        working-directory: src-tauri
-        run: cargo test runtime_box -- --nocapture
+        run: >-
+          node scripts/runtime-box/heartbeat.mjs
+          --label "Runtime Box Rust lifecycle"
+          --cwd src-tauri
+          -- cargo test runtime_box -- --nocapture
 
       - name: Write complete model evidence
         if: always()

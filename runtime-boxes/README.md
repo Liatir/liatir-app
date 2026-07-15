@@ -92,6 +92,38 @@ automatic events; a native model build requires an explicit manual dispatch.
 Paid GPU workflows remain separate and manual. No validation workflow uploads
 a Runtime Box archive.
 
+## CI cost controls
+
+[`catalog.json`](catalog.json) also owns the enforceable Runtime Box cost
+policy. Every model target pins its dependency-lock hash and a conservative
+pre-download disk plan made from declared source assets, estimated extracted
+payload, archive size, and a safety margin. The cheap Ubuntu preflight rejects
+an invalid lock, legal/catalog drift, an underestimated disk plan, arbitrary
+runner input, or an unapproved mode before a native or GPU runner can start.
+The native host then verifies its real free disk before downloading anything.
+
+GPU host preflights and future model GPU validation are manual-only and have no
+schedule, push, or pull-request trigger. Shared infrastructure changes can fan
+out only to cheap standard-runner contract preflights; they never request a
+native model build automatically. Validation concurrency is one model and one
+target at a time across all modes, stale validation is cancelled, foundation
+native fixtures use `max-parallel: 1`, and production releases share one queue
+that is never cancelled.
+
+The Linux T4 target is the first model CUDA gate. A Windows CUDA target cannot
+be enabled in the checked catalog until its same-model Linux CUDA prerequisite
+is at least scientifically validated. Even the Windows host preflight requires
+the run ID of a successful manual Linux T4 preflight for the exact same commit,
+and verifies it on a standard runner before allocating Windows T4. CPU
+reference and GPU parity belong in the same paid job when practical, avoiding
+duplicate setup and downloads.
+
+Long native build, scientific validator, fixture, and Rust lifecycle commands
+emit one concise heartbeat every 5 minutes. This is a liveness signal, not
+status polling. Model weights, Runtime Box archives, and uv downloads are not
+cached; npm's dependency cache remains independent of scientific
+assets. Compact evidence is the only uploaded Runtime Box artifact.
+
 Production publication and signer deployment are manual-only workflows behind
 the `runtime-box-production` and `runtime-box-signer-admin` GitHub environments.
 They become runnable only after Gate 5 provisions the environments, WIF

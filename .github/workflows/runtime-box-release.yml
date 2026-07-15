@@ -23,7 +23,7 @@ on:
         options: [beta]
 
 concurrency:
-  group: runtime-box-production-${{ inputs.model_id }}-${{ inputs.target_id }}-${{ inputs.channel }}
+  group: runtime-box-production
   cancel-in-progress: false
 
 permissions:
@@ -43,6 +43,7 @@ jobs:
       validator_script: ${{ steps.resolve.outputs.validator_script }}
       release_path: ${{ steps.resolve.outputs.release_path }}
       channel_path: ${{ steps.resolve.outputs.channel_path }}
+      heartbeat_seconds: ${{ steps.resolve.outputs.heartbeat_seconds }}
     steps:
       - name: Require the exact main ref
         run: test "${{ github.ref }}" = "refs/heads/main"
@@ -75,6 +76,7 @@ jobs:
     runs-on: ${{ needs.preflight.outputs.runs_on }}
     timeout-minutes: ${{ fromJSON(needs.preflight.outputs.timeout_minutes) }}
     env:
+      LIATIR_RUNTIME_BOX_HEARTBEAT_SECONDS: ${{ needs.preflight.outputs.heartbeat_seconds }}
       UV_CACHE_DIR: ${{ github.workspace }}/.runtime-box-ci/uv-cache
       UV_PYTHON_INSTALL_DIR: ${{ github.workspace }}/.runtime-box-ci/python
       GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_PROJECT_ID }}

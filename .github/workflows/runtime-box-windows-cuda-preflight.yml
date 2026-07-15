@@ -2,21 +2,61 @@ name: Runtime Box Windows CUDA preflight
 
 on:
   workflow_dispatch:
+    inputs:
+      linux_run_id:
+        description: Successful Linux CUDA preflight run ID for this exact commit
+        required: true
+        type: string
 
 # This paid GPU runner must only start through an explicit manual dispatch.
 concurrency:
   group: runtime-box-windows-cuda-preflight
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
+  guard:
+    name: Cheap contracts before T4 allocation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run runtime-box:catalog:check
+      - name: Require a successful Linux T4 preflight for this exact commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LINUX_RUN_ID: ${{ inputs.linux_run_id }}
+        run: |
+          set -euo pipefail
+          [[ "$LINUX_RUN_ID" =~ ^[0-9]+$ ]]
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${LINUX_RUN_ID}" > /tmp/linux-runtime-box-run.json
+          node -e '
+            const run = require("/tmp/linux-runtime-box-run.json");
+            const valid = run.name === "Runtime Box Linux CUDA preflight"
+              && run.event === "workflow_dispatch"
+              && run.conclusion === "success"
+              && run.head_sha === process.env.GITHUB_SHA;
+            if (!valid) {
+              console.error("Linux CUDA prerequisite is not a successful manual run for this exact commit.");
+              process.exit(1);
+            }
+          '
+
   preflight:
     name: Windows native T4 CUDA
+    needs: guard
     runs-on: liatir-windows-t4
     timeout-minutes: 60
     env:
+      LIATIR_RUNTIME_BOX_HEARTBEAT_SECONDS: "300"
       UV_CACHE_DIR: ${{ github.workspace }}/.runtime-box-ci/uv-cache
       UV_PYTHON_INSTALL_DIR: ${{ github.workspace }}/.runtime-box-ci/python
 
@@ -67,7 +107,10 @@ jobs:
         run: npm run test:unit -- tests/unit/runtime-box-target-adapters.test.ts tests/unit/runtime-box-target-id-contract.test.ts
 
       - name: Build and verify the Windows stdlib fixture twice
-        run: npm run runtime-box:test:native -- --recipe installer-fixture-windows-x86_64 --uv uv
+        run: >-
+          node scripts/runtime-box/heartbeat.mjs
+          --label "Windows T4 native fixture"
+          -- npm run runtime-box:test:native -- --recipe installer-fixture-windows-x86_64 --uv uv
 
       - name: Select Git Bash for composite actions
         shell: powershell
@@ -93,8 +136,11 @@ jobs:
           Set-Content -Path frontend/dist/index.html -Value '<!doctype html><title>runtime box foundation</title>'
 
       - name: Verify Runtime Box Rust lifecycle on Windows
-        working-directory: src-tauri
-        run: cargo test runtime_box -- --nocapture
+        run: >-
+          node scripts/runtime-box/heartbeat.mjs
+          --label "Windows T4 Rust lifecycle"
+          --cwd src-tauri
+          -- cargo test runtime_box -- --nocapture
 
       - name: Clean Runtime Box foundation state
         if: always()
