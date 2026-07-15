@@ -161,6 +161,77 @@ export interface LiatirAIModelRuntimeBoxInstall {
   publishedTargets: readonly LiatirRuntimeBoxTargetCandidate[];
 }
 
+export type LiatirRuntimeBoxCiValidationMode = "build" | "scientific" | "native-lifecycle";
+export type LiatirRuntimeBoxCiTargetStatus =
+  | "planned"
+  | "buildable"
+  | "scientifically-validated"
+  | "native-lifecycle-validated"
+  | "published";
+
+/** A runner selected by checked catalog ID, never by workflow input. */
+export interface LiatirRuntimeBoxCiRunnerProfile {
+  id: string;
+  runsOn: string;
+  platform: LiatirRuntimeBoxPlatform;
+  arch: LiatirRuntimeBoxArch;
+  gpu: boolean;
+  maxTimeoutMinutes: number;
+}
+
+export interface LiatirRuntimeBoxCiPublicationEvidence {
+  /** Legacy operator publications are explicitly marked and may not claim a GitHub run. */
+  source: "github-actions" | "legacy-operator";
+  releaseManifestUrl: string;
+  archiveSha256: string;
+  archiveSizeBytes: number;
+  installedSizeBytes?: number;
+  signingKeyId: string;
+  publishedAt: string;
+  workflowRunId?: string;
+  workflowRunUrl?: string;
+}
+
+export interface LiatirRuntimeBoxCiTargetRecord {
+  targetId: string;
+  target: LiatirRuntimeBoxTarget;
+  hostEnvironments: readonly LiatirRuntimeBoxHostEnvironment[];
+  recipeId: string;
+  runnerProfileId: string;
+  status: LiatirRuntimeBoxCiTargetStatus;
+  validationModes: readonly LiatirRuntimeBoxCiValidationMode[];
+  timeoutMinutes: number;
+  requiredBuildDiskBytes: number;
+  gpuRequired: boolean;
+  nativeCiEnabled: boolean;
+  publication?: LiatirRuntimeBoxCiPublicationEvidence;
+}
+
+export interface LiatirRuntimeBoxCiModelRecord {
+  modelId: string;
+  boxId: string;
+  runtimeId: string;
+  legalRecord: string;
+  legalStatus: "approved" | "blocked";
+  validatorScript: string;
+  validatorPath: string;
+  callerWorkflow: string;
+  targets: readonly LiatirRuntimeBoxCiTargetRecord[];
+}
+
+/** Machine-readable CI authority for Runtime Box runners, targets, and validation gates. */
+export interface LiatirRuntimeBoxCiCatalog {
+  schemaVersion: 1;
+  runnerProfiles: readonly LiatirRuntimeBoxCiRunnerProfile[];
+  foundationFixtures: readonly {
+    recipeId: string;
+    runnerProfileId: string;
+    timeoutMinutes: number;
+    rustLifecycle: boolean;
+  }[];
+  models: readonly LiatirRuntimeBoxCiModelRecord[];
+}
+
 const RUNTIME_BOX_TARGET_ACCELERATORS: Readonly<
   Record<LiatirRuntimeBoxPlatform, Readonly<Partial<Record<LiatirRuntimeBoxArch, readonly LiatirRuntimeBoxAccelerator[]>>>>
 > = {

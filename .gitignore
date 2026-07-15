@@ -126,6 +126,8 @@ dist
 .runtime-box-local/
 .runtime-box-build/
 .runtime-box-dist/
+.runtime-box-ci/
+gha-creds-*.json
 
 # Gatsby files
 .cache/

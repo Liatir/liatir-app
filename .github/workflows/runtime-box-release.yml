@@ -1,0 +1,179 @@
+name: Runtime Box production release
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_id:
+        description: Catalog model to build and release
+        required: true
+        type: choice
+        options:
+          - ctheodoris-geneformer-v1-10m
+          - bowang-scgpt-whole-human
+          - snap-stanford-uce-4layer
+      target_id:
+        description: Checked native target
+        required: true
+        type: choice
+        options: [macos-aarch64-metal]
+      channel:
+        description: Allowed release channel
+        required: true
+        type: choice
+        options: [beta]
+
+concurrency:
+  group: runtime-box-production-${{ inputs.model_id }}-${{ inputs.target_id }}-${{ inputs.channel }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  preflight:
+    name: Resolve protected release inputs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      recipe_id: ${{ steps.resolve.outputs.recipe_id }}
+      runs_on: ${{ steps.resolve.outputs.runs_on }}
+      timeout_minutes: ${{ steps.resolve.outputs.timeout_minutes }}
+      uv_version: ${{ steps.resolve.outputs.uv_version }}
+      validator_script: ${{ steps.resolve.outputs.validator_script }}
+      release_path: ${{ steps.resolve.outputs.release_path }}
+      channel_path: ${{ steps.resolve.outputs.channel_path }}
+    steps:
+      - name: Require the exact main ref
+        run: test "${{ github.ref }}" = "refs/heads/main"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - id: resolve
+        name: Resolve only catalog-approved release fields
+        run: >-
+          npm run runtime-box:ci -- release-resolve
+          --model "${{ inputs.model_id }}"
+          --target "${{ inputs.target_id }}"
+
+      - name: Verify the clean checked-out revision
+        run: test -z "$(git status --porcelain)"
+
+  release:
+    name: Build, validate, publish, then promote
+    needs: preflight
+    environment: runtime-box-production
+    runs-on: ${{ needs.preflight.outputs.runs_on }}
+    timeout-minutes: ${{ fromJSON(needs.preflight.outputs.timeout_minutes) }}
+    env:
+      UV_CACHE_DIR: ${{ github.workspace }}/.runtime-box-ci/uv-cache
+      UV_PYTHON_INSTALL_DIR: ${{ github.workspace }}/.runtime-box-ci/python
+      GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_RUNTIME_BOX_R2_TOKEN }}
+      LIATIR_RUNTIME_BOX_ADMIN_TOKEN: ${{ secrets.LIATIR_RUNTIME_BOX_ADMIN_TOKEN }}
+      LIATIR_RUNTIME_BOX_SIGNER_URL: ${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_RUNTIME_BOX_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_RUNTIME_BOX_RELEASE_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install pinned uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: ${{ needs.preflight.outputs.uv_version }}
+          enable-cache: false
+
+      - name: Verify native host and working storage
+        run: >-
+          npm run runtime-box:ci -- host-probe
+          --model "${{ inputs.model_id }}"
+          --recipe "${{ needs.preflight.outputs.recipe_id }}"
+          --target "${{ inputs.target_id }}"
+          --mode native-lifecycle
+
+      - name: Require a clean exact revision before signing
+        run: |
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          test -z "$(git status --porcelain)"
+
+      - name: Build with the private KMS signer and verify locally
+        run: >-
+          npm run runtime-box -- build "${{ needs.preflight.outputs.recipe_id }}"
+          --channel "${{ inputs.channel }}"
+          --signer "${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}"
+          --signer-audience "${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}"
+          --public-key runtime-boxes/trust/production-public.json
+
+      - name: Verify the signed release and native self-test
+        run: >-
+          npm run runtime-box -- verify "${{ needs.preflight.outputs.release_path }}"
+          --public-key runtime-boxes/trust/production-public.json
+          --self-test
+
+      - name: Run scientific validation before publication
+        run: >-
+          npm run runtime-box:ci -- run-validator
+          --model "${{ inputs.model_id }}"
+          --recipe "${{ needs.preflight.outputs.recipe_id }}"
+          --target "${{ inputs.target_id }}"
+          --mode native-lifecycle
+          --script "${{ needs.preflight.outputs.validator_script }}"
+
+      - name: Publish immutable objects and verify their public hashes
+        run: >-
+          npm run runtime-box -- publish "${{ needs.preflight.outputs.release_path }}"
+          --bucket liatir-storage
+          --prefix ai-runtime-boxes
+          --registry https://models.liatir.com
+          --public-key runtime-boxes/trust/production-public.json
+
+      - name: Promote beta only after immutable publication succeeds
+        run: >-
+          npm run runtime-box -- promote "${{ needs.preflight.outputs.channel_path }}"
+          --registry https://models.liatir.com
+
+      - name: Write signed release evidence
+        if: always()
+        run: >-
+          npm run runtime-box:ci -- release-evidence
+          --release "${{ needs.preflight.outputs.release_path }}"
+          --channel "${{ needs.preflight.outputs.channel_path }}"
+          --output .runtime-box-ci/release-evidence.json
+
+      - name: Upload compact release evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-box-release-${{ inputs.model_id }}-${{ inputs.target_id }}-${{ github.run_attempt }}
+          path: .runtime-box-ci/release-evidence.json
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Clean Runtime Box build state
+        if: always()
+        run: npm run runtime-box:ci -- clean

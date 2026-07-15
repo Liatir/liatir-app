@@ -103,6 +103,8 @@
     "docs:all:build": "npm run docs:build && npm run docs:internal:build",
 
     "runtime-box": "node scripts/runtime-box.mjs",
+    "runtime-box:catalog:check": "node scripts/runtime-box-ci.mjs check",
+    "runtime-box:ci": "node scripts/runtime-box-ci.mjs",
     "runtime-box:test:foundation": "node scripts/validate-runtime-box-foundation.mjs",
     "runtime-box:test:native": "node scripts/validate-runtime-box-native-fixture.mjs",
     "runtime-box:validate:geneformer": "node scripts/validate-geneformer-parity.mjs",

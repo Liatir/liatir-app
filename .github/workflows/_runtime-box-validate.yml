@@ -1,0 +1,163 @@
+name: Runtime Box reusable validation
+
+on:
+  workflow_call:
+    inputs:
+      model_id:
+        required: true
+        type: string
+      recipe_id:
+        required: true
+        type: string
+      target_id:
+        required: true
+        type: string
+      mode:
+        required: true
+        type: string
+      native_requested:
+        required: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Checked catalog preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      runs_on: ${{ steps.resolve.outputs.runs_on }}
+      timeout_minutes: ${{ steps.resolve.outputs.timeout_minutes }}
+      uv_version: ${{ steps.resolve.outputs.uv_version }}
+      validator_script: ${{ steps.resolve.outputs.validator_script }}
+      native_eligible: ${{ steps.resolve.outputs.native_eligible }}
+      gpu_required: ${{ steps.resolve.outputs.gpu_required }}
+      release_path: ${{ steps.resolve.outputs.release_path }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - id: resolve
+        name: Validate legal, recipe, target, runner, timeout, and mode
+        run: >-
+          npm run runtime-box:ci -- resolve
+          --model "${{ inputs.model_id }}"
+          --recipe "${{ inputs.recipe_id }}"
+          --target "${{ inputs.target_id }}"
+          --mode "${{ inputs.mode }}"
+          --native-requested "${{ inputs.native_requested }}"
+
+      - name: Verify focused catalog contracts
+        run: npm run test:unit -- tests/unit/runtime-box-ci-catalog.test.ts tests/unit/runtime-box-target-id-contract.test.ts
+
+  native:
+    name: Native ${{ inputs.mode }} validation
+    needs: preflight
+    if: needs.preflight.outputs.native_eligible == 'true'
+    runs-on: ${{ needs.preflight.outputs.runs_on }}
+    timeout-minutes: ${{ fromJSON(needs.preflight.outputs.timeout_minutes) }}
+    env:
+      UV_CACHE_DIR: ${{ github.workspace }}/.runtime-box-ci/uv-cache
+      UV_PYTHON_INSTALL_DIR: ${{ github.workspace }}/.runtime-box-ci/python
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install pinned uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: ${{ needs.preflight.outputs.uv_version }}
+          enable-cache: false
+
+      - name: Verify native host, GPU requirement, and working storage
+        run: >-
+          npm run runtime-box:ci -- host-probe
+          --model "${{ inputs.model_id }}"
+          --recipe "${{ inputs.recipe_id }}"
+          --target "${{ inputs.target_id }}"
+          --mode "${{ inputs.mode }}"
+
+      - name: Create an ephemeral development signing key
+        run: npm run runtime-box -- keygen
+
+      - name: Build a clean native Runtime Box
+        run: npm run runtime-box -- build "${{ inputs.recipe_id }}" --channel beta
+
+      - name: Verify signature, archive hash, layout, and self-test
+        run: npm run runtime-box -- verify "${{ needs.preflight.outputs.release_path }}" --self-test
+
+      - name: Run the model scientific validator
+        if: inputs.mode != 'build'
+        run: >-
+          npm run runtime-box:ci -- run-validator
+          --model "${{ inputs.model_id }}"
+          --recipe "${{ inputs.recipe_id }}"
+          --target "${{ inputs.target_id }}"
+          --mode "${{ inputs.mode }}"
+          --script "${{ needs.preflight.outputs.validator_script }}"
+
+      - name: Install pinned Rust 1.95.0
+        if: inputs.mode == 'native-lifecycle'
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          toolchain: "1.95.0"
+
+      - name: Generate the embedded bridge bundle
+        if: inputs.mode == 'native-lifecycle'
+        run: npm run ts:compile --prefix src-tauri
+
+      - name: Create placeholder frontend output
+        if: inputs.mode == 'native-lifecycle'
+        run: |
+          mkdir -p frontend/dist
+          echo '<!doctype html><title>runtime box lifecycle</title>' > frontend/dist/index.html
+
+      - name: Verify the Rust Runtime Box lifecycle
+        if: inputs.mode == 'native-lifecycle'
+        working-directory: src-tauri
+        run: cargo test runtime_box -- --nocapture
+
+      - name: Clean Runtime Box build state
+        if: always()
+        run: npm run runtime-box:ci -- clean
+
+  evidence:
+    name: Compact validation evidence
+    needs: [preflight, native]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write compact evidence only
+        run: >-
+          node scripts/runtime-box-ci.mjs write-evidence
+          --phase model-validation
+          --status "preflight-${{ needs.preflight.result }}-native-${{ needs.native.result }}"
+          --model "${{ inputs.model_id }}"
+          --recipe "${{ inputs.recipe_id }}"
+          --target "${{ inputs.target_id }}"
+          --mode "${{ inputs.mode }}"
+          --output .runtime-box-ci/model-validation.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: runtime-box-validation-${{ inputs.model_id }}-${{ inputs.target_id }}-${{ inputs.mode }}-${{ github.run_attempt }}
+          path: .runtime-box-ci/model-validation.*
+          retention-days: 14
+          if-no-files-found: error

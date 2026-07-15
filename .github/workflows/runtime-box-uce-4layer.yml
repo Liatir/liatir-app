@@ -1,0 +1,46 @@
+name: Runtime Box UCE 4-layer
+
+on:
+  pull_request:
+    paths:
+      - "runtime-boxes/recipes/uce-4layer-macos-arm64-metal/**"
+      - "runtime-boxes/legal/uce-4layer.md"
+      - "scripts/validate-uce-runtime.mjs"
+      - ".github/workflows/runtime-box-uce-4layer.yml"
+  push:
+    branches: [main]
+    paths:
+      - "runtime-boxes/recipes/uce-4layer-macos-arm64-metal/**"
+      - "runtime-boxes/legal/uce-4layer.md"
+      - "scripts/validate-uce-runtime.mjs"
+      - ".github/workflows/runtime-box-uce-4layer.yml"
+  workflow_dispatch:
+    inputs:
+      target_id:
+        description: Checked Runtime Box target
+        required: true
+        type: choice
+        options: [macos-aarch64-metal]
+      mode:
+        description: Native validation depth
+        required: true
+        default: build
+        type: choice
+        options: [build, scientific, native-lifecycle]
+
+concurrency:
+  group: runtime-box-uce-4layer-${{ inputs.target_id || 'macos-aarch64-metal' }}-${{ inputs.mode || 'build' }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/_runtime-box-validate.yml
+    with:
+      model_id: snap-stanford-uce-4layer
+      recipe_id: uce-4layer-macos-arm64-metal
+      target_id: ${{ inputs.target_id || 'macos-aarch64-metal' }}
+      mode: ${{ inputs.mode || 'build' }}
+      native_requested: ${{ github.event_name == 'workflow_dispatch' }}

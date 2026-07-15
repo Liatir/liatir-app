@@ -76,6 +76,34 @@ safe TAR handling and builds the same deterministic ZIP twice around a sparse
 file larger than 4 GiB, then extracts that Zip64 archive through the production
 Rust helper. It does not download or run an AI Model.
 
+## CI catalog and workflows
+
+[`catalog.json`](catalog.json) is the machine-readable authority for CI model
+identities, recipes, exact targets, runner labels, timeouts, legal gates,
+validation modes, and compact publication evidence. Run
+`npm run runtime-box:catalog:check` after changing it. Workflows accept IDs,
+but runner labels and executable validator scripts are always resolved from
+this checked catalog rather than from arbitrary dispatch input.
+
+`runtime-box-foundation.yml` runs cheap shared contract checks and small native
+fixtures on pinned Linux x64, Windows x64, and macOS arm64 runners. The
+per-model workflows use path filters and perform only the Ubuntu preflight on
+automatic events; a native model build requires an explicit manual dispatch.
+Paid GPU workflows remain separate and manual. No validation workflow uploads
+a Runtime Box archive.
+
+Production publication and signer deployment are manual-only workflows behind
+the `runtime-box-production` and `runtime-box-signer-admin` GitHub environments.
+They become runnable only after Gate 5 provisions the environments, WIF
+identities, variables, and secrets. Release concurrency is never cancelled,
+and channel promotion is the final step after immutable publication and public
+hash verification.
+
+The three publications that predate this CI foundation are recorded as
+`legacy-operator` evidence. They keep their real signed release metadata and
+deliberately do not invent GitHub workflow run IDs. Every new publication made
+by the release workflow must be recorded with `github-actions` run evidence.
+
 The model-specific validation commands are intentionally separate from the
 general test matrix. Geneformer compares the product runner with the pinned
 upstream tokenizer and embedding algorithm. scGPT loads the packaged official

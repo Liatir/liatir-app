@@ -1,0 +1,92 @@
+name: Runtime Box signer deployment
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: runtime-box-signer-deployment
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  validate:
+    name: Validate signer source and policy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Require the exact main ref
+        run: test "${{ github.ref }}" = "refs/heads/main"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: |
+          npm run runtime-box:catalog:check
+          npm run runtime-box:signer:check
+          test -z "$(git status --porcelain)"
+
+  deploy:
+    name: Deploy from the clean main revision
+    needs: validate
+    environment: runtime-box-signer-admin
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+      LIATIR_SIGNER_DEPLOY_ONLY: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_RUNTIME_BOX_SIGNER_ADMIN_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_RUNTIME_BOX_SIGNER_ADMIN_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Deploy signer source and checked policy only
+        run: npm run runtime-box:signer:deploy
+
+      - id: service
+        name: Resolve the deployed private service URL
+        run: |
+          url="$(gcloud run services describe liatir-runtime-box-signer --region europe-west1 --project "${GOOGLE_CLOUD_PROJECT}" --format='value(status.url)')"
+          test -n "$url"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke-test KMS against the app trust root
+        run: npm run runtime-box:signer:smoke -- "${{ steps.service.outputs.url }}"
+
+      - name: Write deployment evidence
+        if: always()
+        run: npm run runtime-box:ci -- write-evidence --phase signer-deploy --status "${{ job.status }}" --output .runtime-box-ci/signer-deploy.json
+
+      - name: Upload compact deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-box-signer-deploy-${{ github.run_attempt }}
+          path: .runtime-box-ci/signer-deploy.*
+          retention-days: 30
+          if-no-files-found: error

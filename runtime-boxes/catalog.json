@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "runnerProfiles": [
+    {
+      "id": "ubuntu-x64-standard",
+      "runsOn": "ubuntu-24.04",
+      "platform": "linux",
+      "arch": "x86_64",
+      "gpu": false,
+      "maxTimeoutMinutes": 90
+    },
+    {
+      "id": "windows-x64-standard",
+      "runsOn": "windows-2025",
+      "platform": "windows",
+      "arch": "x86_64",
+      "gpu": false,
+      "maxTimeoutMinutes": 90
+    },
+    {
+      "id": "macos-arm64-standard",
+      "runsOn": "macos-15",
+      "platform": "macos",
+      "arch": "aarch64",
+      "gpu": false,
+      "maxTimeoutMinutes": 180
+    },
+    {
+      "id": "linux-x64-t4",
+      "runsOn": "liatir-linux-t4",
+      "platform": "linux",
+      "arch": "x86_64",
+      "gpu": true,
+      "maxTimeoutMinutes": 180
+    },
+    {
+      "id": "windows-x64-t4",
+      "runsOn": "liatir-windows-t4",
+      "platform": "windows",
+      "arch": "x86_64",
+      "gpu": true,
+      "maxTimeoutMinutes": 180
+    }
+  ],
+  "foundationFixtures": [
+    {
+      "recipeId": "installer-fixture-linux-x86_64",
+      "runnerProfileId": "ubuntu-x64-standard",
+      "timeoutMinutes": 30,
+      "rustLifecycle": false
+    },
+    {
+      "recipeId": "installer-fixture-windows-x86_64",
+      "runnerProfileId": "windows-x64-standard",
+      "timeoutMinutes": 60,
+      "rustLifecycle": true
+    },
+    {
+      "recipeId": "installer-fixture-macos-arm64",
+      "runnerProfileId": "macos-arm64-standard",
+      "timeoutMinutes": 45,
+      "rustLifecycle": false
+    }
+  ],
+  "models": [
+    {
+      "modelId": "ctheodoris-geneformer-v1-10m",
+      "boxId": "geneformer-v1-10m",
+      "runtimeId": "single-cell-foundation-geneformer-v1-10m",
+      "legalRecord": "runtime-boxes/legal/geneformer-v1-10m.md",
+      "legalStatus": "approved",
+      "validatorScript": "runtime-box:validate:geneformer",
+      "validatorPath": "scripts/validate-geneformer-parity.mjs",
+      "callerWorkflow": ".github/workflows/runtime-box-geneformer-v1-10m.yml",
+      "targets": [
+        {
+          "targetId": "macos-aarch64-metal",
+          "target": { "platform": "macos", "arch": "aarch64", "accelerator": "metal" },
+          "hostEnvironments": ["native"],
+          "recipeId": "geneformer-v1-10m-macos-arm64-metal",
+          "runnerProfileId": "macos-arm64-standard",
+          "status": "published",
+          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "timeoutMinutes": 90,
+          "requiredBuildDiskBytes": 4294967296,
+          "gpuRequired": false,
+          "nativeCiEnabled": true,
+          "publication": {
+            "source": "legacy-operator",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/geneformer-v1-10m/1.0.0-beta.1/macos-aarch64-metal/6f7f7f5ae854c083a17455937f87613bb67fe308f6c3bfb2841cb442334fc330.release.json",
+            "archiveSha256": "7eb2274bd3bb0578a4f82b8da032a4af4268453e0e7f6b32c41ed4986271a6d4",
+            "archiveSizeBytes": 201396104,
+            "signingKeyId": "liatir-runtime-box-production-2026",
+            "publishedAt": "2026-07-12T06:01:48+02:00"
+          }
+        }
+      ]
+    },
+    {
+      "modelId": "bowang-scgpt-whole-human",
+      "boxId": "scgpt-whole-human",
+      "runtimeId": "single-cell-foundation-scgpt-whole-human",
+      "legalRecord": "runtime-boxes/legal/scgpt-whole-human.md",
+      "legalStatus": "approved",
+      "validatorScript": "runtime-box:validate:scgpt",
+      "validatorPath": "scripts/validate-scgpt-runtime.mjs",
+      "callerWorkflow": ".github/workflows/runtime-box-scgpt-whole-human.yml",
+      "targets": [
+        {
+          "targetId": "macos-aarch64-metal",
+          "target": { "platform": "macos", "arch": "aarch64", "accelerator": "metal" },
+          "hostEnvironments": ["native"],
+          "recipeId": "scgpt-whole-human-macos-arm64-metal",
+          "runnerProfileId": "macos-arm64-standard",
+          "status": "published",
+          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "timeoutMinutes": 120,
+          "requiredBuildDiskBytes": 6442450944,
+          "gpuRequired": false,
+          "nativeCiEnabled": true,
+          "publication": {
+            "source": "legacy-operator",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.1/macos-aarch64-metal/505fc819dd409c4042d1cc196d0122aa57968cb4ce526caa99980ae0fd095ebf.release.json",
+            "archiveSha256": "c6cabce7edad025daab17a20fb5073530a7c604ee02918158a0a53b3008de43a",
+            "archiveSizeBytes": 310415585,
+            "signingKeyId": "liatir-runtime-box-production-2026",
+            "publishedAt": "2026-07-12T07:09:09+02:00"
+          }
+        }
+      ]
+    },
+    {
+      "modelId": "snap-stanford-uce-4layer",
+      "boxId": "uce-4layer",
+      "runtimeId": "single-cell-foundation-uce",
+      "legalRecord": "runtime-boxes/legal/uce-4layer.md",
+      "legalStatus": "approved",
+      "validatorScript": "runtime-box:validate:uce",
+      "validatorPath": "scripts/validate-uce-runtime.mjs",
+      "callerWorkflow": ".github/workflows/runtime-box-uce-4layer.yml",
+      "targets": [
+        {
+          "targetId": "macos-aarch64-metal",
+          "target": { "platform": "macos", "arch": "aarch64", "accelerator": "metal" },
+          "hostEnvironments": ["native"],
+          "recipeId": "uce-4layer-macos-arm64-metal",
+          "runnerProfileId": "macos-arm64-standard",
+          "status": "published",
+          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "timeoutMinutes": 180,
+          "requiredBuildDiskBytes": 32212254720,
+          "gpuRequired": false,
+          "nativeCiEnabled": false,
+          "publication": {
+            "source": "legacy-operator",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/uce-4layer/1.0.0-beta.1/macos-aarch64-metal/16d0e91e1a1e5a38059e4da745d1a247ff1f89200ac8bb09a42d16e99632820d.release.json",
+            "archiveSha256": "df05a70181689a730292d0f2518503a6e1c6363fd3ba973cc0ab2f986eef3eaf",
+            "archiveSizeBytes": 8862120348,
+            "installedSizeBytes": 10142871337,
+            "signingKeyId": "liatir-runtime-box-kms-2026",
+            "publishedAt": "2026-07-13T16:40:44+02:00"
+          }
+        }
+      ]
+    }
+  ]
+}
