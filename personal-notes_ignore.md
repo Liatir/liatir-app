@@ -28,8 +28,8 @@ Gates efforts consigliati:
 
 Stima durata dei gate:
 
-0. Medium
-1. Very long
+0. Medium ✅
+1. Very long ✅
 2. Long
 3. Long
 4. Long
