@@ -1108,7 +1108,7 @@
             <div class="w-full px-6">
               <div class="w-full flex items-center justify-center pb-4 mt-6 border-dashed border-b border-b-border">
                 <p class="w-fit text-center text-[10px] text-zinc-400 hover:text-sandbox-600 cursor-help">
-                  AI can make mistakes and local models may be less accurate than cloud-based ones — always verify important information.
+                  Quenta can make mistakes and local AI models may be less accurate than cloud-based ones — always verify important information.
                 </p>
               </div>
             </div>
