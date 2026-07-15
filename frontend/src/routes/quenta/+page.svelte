@@ -1105,16 +1105,15 @@
         {:else}
           <div class="relative flex min-h-0 flex-1 flex-col overflow-hidden">
 
-            <div class="w-full px-6">
-              <div class="w-full flex items-center justify-center pb-4 mt-6 border-dashed border-b border-b-border">
+          <div bind:this={transcriptEl} onscroll={updateScrollToBottomButtonVisibility} class="h-full overflow-y-auto p-6" data-testid="quenta-transcript">
+          
+            <div class="w-full">
+              <div class="w-full flex items-center justify-center pb-4 mt-2 mb-6 border-dashed border-b border-b-border">
                 <p class="w-fit text-center text-[10px] text-zinc-400 hover:text-sandbox-600 cursor-help">
                   Quenta can make mistakes and local AI models may be less accurate than cloud-based ones — always verify important information.
                 </p>
               </div>
             </div>
-
-          <div bind:this={transcriptEl} onscroll={updateScrollToBottomButtonVisibility} class="h-full overflow-y-auto p-6" data-testid="quenta-transcript">
-          
             <div class="mx-auto max-w-4xl space-y-6">
               {#each currentConversation.messages as message (message.id)}
                 <Card class={message.role === 'assistant' ? 'bg-transparent border-none rounded-none' : 'bg-brand/5 border-brand/15'}>
