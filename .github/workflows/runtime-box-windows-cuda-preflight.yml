@@ -69,7 +69,11 @@ jobs:
       - name: Build and verify the Windows stdlib fixture twice
         run: npm run runtime-box:test:native -- --recipe installer-fixture-windows-x86_64 --uv uv
 
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Verify the hosted Rust toolchain
+        shell: powershell
+        run: |
+          rustc -Vv
+          cargo -V
 
       - name: Generate the embedded bridge bundle
         run: npm run ts:compile --prefix src-tauri
