@@ -1,7 +1,10 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { createWriteStream } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, win32 } from 'node:path';
+import { pipeline } from 'node:stream/promises';
 import { afterEach, describe, expect, it } from 'vitest';
+import yazl from 'yazl';
 import {
   createDeterministicZip,
   extractZipArchive,
@@ -157,6 +160,19 @@ describe('Runtime Box target adapters', () => {
     expect(replaced).toBe(2);
     await writeFile(archive, bytes);
     await expect(extractZipArchive(archive, join(root, 'rejected'))).rejects.toThrow(/invalid relative path|Unsafe/);
+  });
+
+  it('rejects ZIP symbolic links before extraction', async () => {
+    const root = await temporaryRoot();
+    const archive = join(root, 'link.zip');
+    const zip = new yazl.ZipFile();
+    const output = pipeline(zip.outputStream, createWriteStream(archive));
+    zip.addBuffer(Buffer.from('../outside'), 'linked-file', { mode: 0o120777 });
+    zip.end();
+    await output;
+    await expect(extractZipArchive(archive, join(root, 'rejected'))).rejects.toThrow(
+      /links and special entries are not allowed/,
+    );
   });
 
   it('preserves forward-slash ZIP names for Windows paths longer than the legacy path limit', async () => {

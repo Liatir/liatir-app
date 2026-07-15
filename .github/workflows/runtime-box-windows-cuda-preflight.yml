@@ -15,7 +15,10 @@ jobs:
   preflight:
     name: Windows native T4 CUDA
     runs-on: liatir-windows-t4
-    timeout-minutes: 10
+    timeout-minutes: 30
+    env:
+      UV_CACHE_DIR: ${{ github.workspace }}/.runtime-box-ci/uv-cache
+      UV_PYTHON_INSTALL_DIR: ${{ github.workspace }}/.runtime-box-ci/python
 
     steps:
       - name: Verify the Windows GPU host
@@ -54,5 +57,33 @@ jobs:
 
       - run: npm ci
 
-      - name: Verify Runtime Box Windows adapter contracts
+      - name: Install pinned uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.28"
+
+      - name: Verify Runtime Box adapter and archive contracts
         run: npm run test:unit -- tests/unit/runtime-box-target-adapters.test.ts tests/unit/runtime-box-target-id-contract.test.ts
+
+      - name: Build and verify the Windows stdlib fixture twice
+        run: npm run runtime-box:test:native -- --recipe installer-fixture-windows-x86_64 --uv uv
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Generate the embedded bridge bundle
+        run: npm run ts:compile --prefix src-tauri
+
+      - name: Create placeholder frontend output
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path frontend/dist | Out-Null
+          Set-Content -Path frontend/dist/index.html -Value '<!doctype html><title>runtime box foundation</title>'
+
+      - name: Verify Runtime Box Rust lifecycle on Windows
+        working-directory: src-tauri
+        run: cargo test runtime_box -- --nocapture
+
+      - name: Clean Runtime Box foundation state
+        if: always()
+        shell: powershell
+        run: Remove-Item -Recurse -Force -ErrorAction SilentlyContinue .runtime-box-build, .runtime-box-dist, .runtime-box-local, .runtime-box-ci

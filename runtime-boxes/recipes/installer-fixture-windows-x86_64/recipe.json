@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "recipeId": "installer-fixture-windows-x86_64",
+  "recipeVersion": "1.0.0",
+  "boxId": "runtime-box-installer-fixture",
+  "modelId": "liatir-runtime-box-fixture",
+  "runtimeId": "runtime-box-installer-fixture",
+  "version": "0.1.0",
+  "sourceRevision": "internal-fixture-v1",
+  "target": {
+    "platform": "windows",
+    "arch": "x86_64",
+    "accelerator": "cpu"
+  },
+  "compatibility": {
+    "minLiatirVersion": "0.2.1",
+    "minRamGb": 1
+  },
+  "pythonVersion": "3.11.9",
+  "uvVersion": "0.11.28",
+  "requirementsInput": "requirements.in",
+  "requirementsLock": "requirements.lock",
+  "pythonEntryPoint": "venv/python.exe",
+  "modelCacheSubdir": "model-cache/fixture",
+  "assetBaseUrl": "http://127.0.0.1:8790/objects",
+  "assets": [],
+  "selfTest": {
+    "imports": ["json", "sqlite3"],
+    "files": []
+  }
+}

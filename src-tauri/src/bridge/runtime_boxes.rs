@@ -1187,6 +1187,33 @@ pub async fn lia_ai_runtime_box_install(
 /// renamed into place, and a failure at that point puts the current version back.
 ///
 /// Finding nothing to restore is reported as `restored: false`, not as an error.
+fn rollback_runtime(runtime_dir: &Path, runtime_id: &str) -> Result<bool, String> {
+    let parent = runtime_dir
+        .parent()
+        .ok_or_else(|| "AI runtime directory has no parent".to_string())?;
+    let root = rollback_root(parent, runtime_id);
+    let Some(previous) = newest_rollback(&root)? else {
+        return Ok(false);
+    };
+    // Park the version being rolled back rather than deleting it up front: it is still needed
+    // if the restore rename fails.
+    let failed = parent.join(format!(".{runtime_id}.{}.failed", Uuid::new_v4()));
+    if runtime_dir.exists() {
+        std::fs::rename(runtime_dir, &failed).map_err(|error| error.to_string())?;
+    }
+    if let Err(error) = std::fs::rename(&previous, runtime_dir) {
+        if failed.exists() {
+            let _ = std::fs::rename(&failed, runtime_dir);
+        }
+        return Err(format!("cannot roll back AI Runtime Box: {error}"));
+    }
+    // Restore succeeded, so the bad version can go.
+    if failed.exists() {
+        let _ = std::fs::remove_dir_all(failed);
+    }
+    Ok(true)
+}
+
 #[tauri::command]
 pub async fn lia_ai_runtime_box_rollback(
     app: AppHandle,
@@ -1195,37 +1222,11 @@ pub async fn lia_ai_runtime_box_rollback(
     // Same lock as install: a rollback must not race an install of the same runtime.
     let _install_guard = InstallGuard::acquire(&runtime_id)?;
     let runtime_dir = env_dir(&app, AI_RUNTIME_ROOT, &runtime_id)?;
-    let parent = runtime_dir
-        .parent()
-        .ok_or_else(|| "AI runtime directory has no parent".to_string())?;
-    let root = rollback_root(parent, &runtime_id);
-    let Some(previous) = newest_rollback(&root)? else {
-        return Ok(RuntimeBoxRollbackResult {
-            runtime_id,
-            runtime_dir: runtime_dir.to_string_lossy().to_string(),
-            restored: false,
-        });
-    };
-    // Park the version being rolled back rather than deleting it up front: it is still needed
-    // if the restore rename fails.
-    let failed = parent.join(format!(".{runtime_id}.{}.failed", Uuid::new_v4()));
-    if runtime_dir.exists() {
-        std::fs::rename(&runtime_dir, &failed).map_err(|error| error.to_string())?;
-    }
-    if let Err(error) = std::fs::rename(&previous, &runtime_dir) {
-        if failed.exists() {
-            let _ = std::fs::rename(&failed, &runtime_dir);
-        }
-        return Err(format!("cannot roll back AI Runtime Box: {error}"));
-    }
-    // Restore succeeded, so the bad version can go.
-    if failed.exists() {
-        let _ = std::fs::remove_dir_all(failed);
-    }
+    let restored = rollback_runtime(&runtime_dir, &runtime_id)?;
     Ok(RuntimeBoxRollbackResult {
         runtime_id,
         runtime_dir: runtime_dir.to_string_lossy().to_string(),
-        restored: true,
+        restored,
     })
 }
 
@@ -1234,23 +1235,16 @@ pub async fn lia_ai_runtime_box_rollback(
 /// Removes three things, because a box lives in three places: the active runtime directory, its
 /// rollback archive, and any cached download. `box_id` is needed on top of `runtime_id` because
 /// cached archives are named after the box, not the runtime.
-#[tauri::command]
-pub async fn lia_ai_runtime_box_remove(
-    app: AppHandle,
-    runtime_id: String,
-    box_id: String,
-) -> Result<bool, String> {
-    let _install_guard = InstallGuard::acquire(&runtime_id)?;
-    let runtime_dir = env_dir(&app, AI_RUNTIME_ROOT, &runtime_id)?;
+fn remove_runtime_files(runtime_dir: &Path, runtime_id: &str, box_id: &str) -> Result<(), String> {
     let parent = runtime_dir
         .parent()
         .ok_or_else(|| "AI runtime directory has no parent".to_string())?;
     if runtime_dir.exists() {
-        std::fs::remove_dir_all(&runtime_dir).map_err(|error| error.to_string())?;
+        std::fs::remove_dir_all(runtime_dir).map_err(|error| error.to_string())?;
     }
     // Dropping the rollback archive too: keeping it would strand a version that can no longer
     // be rolled back to, since the runtime itself is gone.
-    let rollback = rollback_root(parent, &runtime_id);
+    let rollback = rollback_root(parent, runtime_id);
     if rollback.exists() {
         std::fs::remove_dir_all(rollback).map_err(|error| error.to_string())?;
     }
@@ -1265,10 +1259,22 @@ pub async fn lia_ai_runtime_box_remove(
                 .and_then(|name| name.to_str())
                 .is_some_and(|name| name.starts_with(&format!("{box_id}-")));
             if matches_box && path.is_file() {
-                let _ = std::fs::remove_file(path);
+                std::fs::remove_file(path).map_err(|error| error.to_string())?;
             }
         }
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn lia_ai_runtime_box_remove(
+    app: AppHandle,
+    runtime_id: String,
+    box_id: String,
+) -> Result<bool, String> {
+    let _install_guard = InstallGuard::acquire(&runtime_id)?;
+    let runtime_dir = env_dir(&app, AI_RUNTIME_ROOT, &runtime_id)?;
+    remove_runtime_files(&runtime_dir, &runtime_id, &box_id)?;
     Ok(true)
 }
 
@@ -1371,6 +1377,153 @@ mod tests {
         assert!(validate_runtime_box_disk_plan(&plan, plan.required_additional_bytes - 1)
             .unwrap_err()
             .contains("Not enough disk space to install this AI Model"));
+    }
+
+    fn fixture_release(version: &str) -> ReleaseManifest {
+        let mut value = release_json();
+        value["version"] = serde_json::json!(version);
+        serde_json::from_value(value).unwrap()
+    }
+
+    fn fixture_root(name: &str) -> PathBuf {
+        std::env::temp_dir().join(format!("liatir-runtime-box-{name}-{}", Uuid::new_v4()))
+    }
+
+    fn write_runtime_marker(root: &Path, value: &str) {
+        std::fs::create_dir_all(root).unwrap();
+        std::fs::write(root.join("marker.txt"), value).unwrap();
+    }
+
+    fn read_runtime_marker(root: &Path) -> String {
+        std::fs::read_to_string(root.join("marker.txt")).unwrap()
+    }
+
+    #[test]
+    fn runtime_box_activation_rollback_and_remove_use_production_transitions() {
+        let root = fixture_root("lifecycle");
+        std::fs::create_dir_all(&root).unwrap();
+        let runtime_id = "fixture-runtime";
+        let box_id = "fixture";
+        let runtime = root.join(runtime_id);
+
+        let first_staging = root.join(".first.staging");
+        write_runtime_marker(&first_staging, "first");
+        assert!(!activate_runtime(&runtime, &first_staging, &fixture_release("1.0.0")).unwrap());
+        assert_eq!(read_runtime_marker(&runtime), "first");
+
+        let second_staging = root.join(".second.staging");
+        write_runtime_marker(&second_staging, "second");
+        assert!(activate_runtime(&runtime, &second_staging, &fixture_release("2.0.0")).unwrap());
+        assert_eq!(read_runtime_marker(&runtime), "second");
+        let rollback = rollback_root(&root, runtime_id);
+        assert_eq!(std::fs::read_dir(&rollback).unwrap().count(), 1);
+
+        let third_staging = root.join(".third.staging");
+        write_runtime_marker(&third_staging, "third");
+        assert!(activate_runtime(&runtime, &third_staging, &fixture_release("3.0.0")).unwrap());
+        assert_eq!(read_runtime_marker(&runtime), "third");
+        // Only the directly previous generation is retained.
+        assert_eq!(std::fs::read_dir(&rollback).unwrap().count(), 1);
+        assert!(rollback_runtime(&runtime, runtime_id).unwrap());
+        assert_eq!(read_runtime_marker(&runtime), "second");
+        assert!(!rollback_runtime(&runtime, runtime_id).unwrap());
+
+        let rollback_fixture = rollback.join("older");
+        write_runtime_marker(&rollback_fixture, "older");
+        let downloads = root.join(".runtime-box-downloads");
+        std::fs::create_dir_all(&downloads).unwrap();
+        let matching_download = downloads.join("fixture-3.0.0-hash.zip.part");
+        let unrelated_download = downloads.join("other-1.0.0-hash.zip");
+        std::fs::write(&matching_download, b"partial").unwrap();
+        std::fs::write(&unrelated_download, b"keep").unwrap();
+
+        remove_runtime_files(&runtime, runtime_id, box_id).unwrap();
+        assert!(!runtime.exists());
+        assert!(!rollback.exists());
+        assert!(!matching_download.exists());
+        assert!(unrelated_download.exists());
+
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn runtime_box_failed_activation_restores_the_previous_runtime() {
+        let root = fixture_root("activation-failure");
+        std::fs::create_dir_all(&root).unwrap();
+        let runtime = root.join("fixture-runtime");
+        write_runtime_marker(&runtime, "stable");
+
+        let error = activate_runtime(
+            &runtime,
+            &root.join("missing.staging"),
+            &fixture_release("2.0.0"),
+        )
+        .unwrap_err();
+        assert!(error.contains("cannot activate AI Runtime Box"));
+        assert_eq!(read_runtime_marker(&runtime), "stable");
+        assert_eq!(
+            std::fs::read_dir(rollback_root(&root, "fixture-runtime"))
+                .unwrap()
+                .count(),
+            0
+        );
+
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn runtime_box_windows_long_paths_activate_and_remove() {
+        let root = (0..26).fold(fixture_root("windows-long-path"), |path, index| {
+            path.join(format!("runtime-segment-{index:02}"))
+        });
+        assert!(root.to_string_lossy().len() > 260);
+        std::fs::create_dir_all(&root).unwrap();
+        let runtime = root.join("fixture-runtime");
+        let staging = root.join(".fixture.staging");
+        write_runtime_marker(&staging, "long-path");
+
+        assert!(!activate_runtime(&runtime, &staging, &fixture_release("1.0.0")).unwrap());
+        assert_eq!(read_runtime_marker(&runtime), "long-path");
+        remove_runtime_files(&runtime, "fixture-runtime", "fixture").unwrap();
+        assert!(!runtime.exists());
+
+        let cleanup_root = root.ancestors().nth(26).unwrap();
+        std::fs::remove_dir_all(cleanup_root).unwrap();
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn runtime_box_windows_locked_cleanup_preserves_state() {
+        use std::os::windows::fs::OpenOptionsExt;
+
+        let root = fixture_root("windows-locked-file");
+        let runtime = root.join("fixture-runtime");
+        write_runtime_marker(&runtime, "locked");
+        let rollback = rollback_root(&root, "fixture-runtime");
+        write_runtime_marker(&rollback.join("previous"), "previous");
+        let downloads = root.join(".runtime-box-downloads");
+        std::fs::create_dir_all(&downloads).unwrap();
+        let download = downloads.join("fixture-1.0.0-hash.zip.part");
+        std::fs::write(&download, b"partial").unwrap();
+
+        let locked = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .share_mode(0)
+            .open(runtime.join("marker.txt"))
+            .unwrap();
+        assert!(remove_runtime_files(&runtime, "fixture-runtime", "fixture").is_err());
+        assert!(runtime.exists());
+        assert!(rollback.exists());
+        assert!(download.exists());
+
+        drop(locked);
+        remove_runtime_files(&runtime, "fixture-runtime", "fixture").unwrap();
+        assert!(!runtime.exists());
+        assert!(!rollback.exists());
+        assert!(!download.exists());
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     /// The focused foundation validator supplies a deterministic Zip64 archive containing one
