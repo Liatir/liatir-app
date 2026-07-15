@@ -30,7 +30,7 @@ Stima durata dei gate:
 
 0. Medium - `DONE`
 1. Very long - `DONE`
-2. Long
+2. Long - `DONE`
 3. Long
 4. Long
 5. Long
