@@ -1108,7 +1108,7 @@
             <div class="w-full px-6">
               <div class="w-full flex items-center justify-center pb-4 mt-6 border-dashed border-b border-b-border">
                 <p class="w-fit text-center text-[10px] text-zinc-400 hover:text-sandbox-600 cursor-help">
-                  Quenta is advisory only and cannot run or modify workspace resources.
+                  AI can make mistakes and local models may be less accurate than cloud-based ones — always verify important information.
                 </p>
               </div>
             </div>
@@ -1290,7 +1290,6 @@
               </div>
               <div class="w-full flex items-center justify-center mt-2 px-2">
                 <p class="w-fit text-center text-[10px] text-zinc-400 hover:text-sandbox-600 cursor-help">
-                  AI can make mistakes and local models may be less accurate than cloud-based ones — always verify important information. <br>
                   Quenta is advisory only and cannot run or modify workspace resources.
                 </p>
               </div>
