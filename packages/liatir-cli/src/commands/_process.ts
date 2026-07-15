@@ -8,7 +8,16 @@ export function formatProcessError(err: unknown): string {
   const e = err as { stdout?: unknown; stderr?: unknown; message?: unknown };
   const stdout = typeof e.stdout === "string" ? e.stdout.trim() : "";
   const stderr = typeof e.stderr === "string" ? e.stderr.trim() : "";
-  return [stdout, stderr, typeof e.message === "string" ? e.message : ""]
+  const details = [stdout, stderr, typeof e.message === "string" ? e.message : ""]
     .filter(Boolean)
-    .join("\n") || String(err);
+    .join("\n");
+  if (details) return details;
+
+  // Preserve useful fields from non-standard process errors without falling
+  // back to the unhelpful "[object Object]" representation.
+  try {
+    return JSON.stringify(err) || "Unknown process error";
+  } catch {
+    return "Unknown process error";
+  }
 }
