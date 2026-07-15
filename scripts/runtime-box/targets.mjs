@@ -5,6 +5,92 @@ const TARGET_ACCELERATORS = {
 };
 const CUDA_VERSION = /^[1-9][0-9]*\.[0-9]+$/;
 
+const ARCHIVE_BACKEND = Object.freeze({
+  format: 'zip',
+  writer: 'yazl@3.3.1',
+  reader: 'yauzl@3.4.0',
+  assetTarReader: 'tar@7.5.20',
+  zip64: true,
+});
+
+const TARGET_ADAPTERS = Object.freeze([
+  Object.freeze({
+    id: 'macos-aarch64',
+    platform: 'macos',
+    arch: 'aarch64',
+    host: Object.freeze({ platform: 'darwin', arch: 'arm64' }),
+    uvPlatform: 'aarch64-apple-darwin',
+    python: Object.freeze({
+      payloadRoot: 'venv',
+      entryPoint: 'venv/bin/python',
+      scriptsDirectory: 'venv/bin',
+      executableSuffix: '',
+      launcherKind: 'posix-polyglot',
+    }),
+    archive: ARCHIVE_BACKEND,
+    nativeLibraryInspection: Object.freeze({
+      command: 'otool',
+      argsPrefix: Object.freeze(['-L']),
+      extensions: Object.freeze(['.dylib', '.so']),
+    }),
+    validationEnvironments: Object.freeze({
+      cpu: Object.freeze({ CUDA_VISIBLE_DEVICES: '' }),
+      metal: Object.freeze({ PYTORCH_ENABLE_MPS_FALLBACK: '0' }),
+    }),
+    selfTestPython: "import sys; assert sys.platform == 'darwin'",
+  }),
+  Object.freeze({
+    id: 'linux-x86_64',
+    platform: 'linux',
+    arch: 'x86_64',
+    host: Object.freeze({ platform: 'linux', arch: 'x64' }),
+    uvPlatform: 'x86_64-unknown-linux-gnu',
+    python: Object.freeze({
+      payloadRoot: 'venv',
+      entryPoint: 'venv/bin/python',
+      scriptsDirectory: 'venv/bin',
+      executableSuffix: '',
+      launcherKind: 'posix-polyglot',
+    }),
+    archive: ARCHIVE_BACKEND,
+    nativeLibraryInspection: Object.freeze({
+      command: 'ldd',
+      argsPrefix: Object.freeze([]),
+      extensions: Object.freeze(['.so']),
+    }),
+    validationEnvironments: Object.freeze({
+      cpu: Object.freeze({ CUDA_VISIBLE_DEVICES: '' }),
+      cuda: Object.freeze({ CUDA_VISIBLE_DEVICES: '0' }),
+    }),
+    selfTestPython: "import sys; assert sys.platform.startswith('linux')",
+  }),
+  Object.freeze({
+    id: 'windows-x86_64',
+    platform: 'windows',
+    arch: 'x86_64',
+    host: Object.freeze({ platform: 'win32', arch: 'x64' }),
+    uvPlatform: 'x86_64-pc-windows-msvc',
+    python: Object.freeze({
+      payloadRoot: 'venv',
+      entryPoint: 'venv/python.exe',
+      scriptsDirectory: 'venv/Scripts',
+      executableSuffix: '.exe',
+      launcherKind: 'windows-distlib',
+    }),
+    archive: ARCHIVE_BACKEND,
+    nativeLibraryInspection: Object.freeze({
+      command: 'dumpbin',
+      argsPrefix: Object.freeze(['/DEPENDENTS']),
+      extensions: Object.freeze(['.dll', '.pyd']),
+    }),
+    validationEnvironments: Object.freeze({
+      cpu: Object.freeze({ CUDA_VISIBLE_DEVICES: '' }),
+      cuda: Object.freeze({ CUDA_VISIBLE_DEVICES: '0' }),
+    }),
+    selfTestPython: "import sys; assert sys.platform == 'win32'",
+  }),
+]);
+
 /** Returns the canonical target slug used in Runtime Box filenames, object keys, and routes. */
 export function runtimeBoxTargetId(target) {
   if (!target || typeof target !== 'object') {
@@ -26,4 +112,49 @@ export function runtimeBoxTargetId(target) {
     throw new TypeError('Only CUDA Runtime Box targets may declare a CUDA version');
   }
   return `${target.platform}-${target.arch}-${target.accelerator}`;
+}
+
+/** Returns the native builder adapter for a validated Runtime Box target. */
+export function runtimeBoxTargetAdapter(target) {
+  runtimeBoxTargetId(target);
+  const adapter = TARGET_ADAPTERS.find((candidate) =>
+    candidate.platform === target.platform && candidate.arch === target.arch);
+  if (!adapter) throw new TypeError(`No Runtime Box target adapter exists for ${target.platform}/${target.arch}`);
+  return adapter;
+}
+
+/** Ensures a build or target lock runs on the OS and architecture it will ship for. */
+export function assertRuntimeBoxNativeHost(adapter, host = process) {
+  if (host.platform !== adapter.host.platform || host.arch !== adapter.host.arch) {
+    throw new TypeError(
+      `${adapter.id} Runtime Boxes must be built natively on ${adapter.host.platform}/${adapter.host.arch}; `
+      + `current host is ${host.platform}/${host.arch}`,
+    );
+  }
+}
+
+/** Ensures the recipe entry point agrees with the adapter's standalone Python layout. */
+export function assertRuntimeBoxPythonEntryPoint(adapter, entryPoint) {
+  if (entryPoint !== adapter.python.entryPoint) {
+    throw new TypeError(
+      `${adapter.id} Runtime Box recipes must use Python entry point ${adapter.python.entryPoint}`,
+    );
+  }
+}
+
+/** Returns the deterministic uv arguments shared by local locking and CI freshness checks. */
+export function runtimeBoxLockArguments(adapter, recipe, inputPath, outputPath) {
+  return [
+    'pip', 'compile', inputPath,
+    '--output-file', outputPath,
+    '--python-version', recipe.pythonVersion,
+    '--python-platform', adapter.uvPlatform,
+    '--generate-hashes', '--only-binary', ':all:',
+    '--no-emit-index-url', '--no-annotate', '--no-header',
+  ];
+}
+
+/** Lists all adapters for contract tests and future catalog validation. */
+export function runtimeBoxTargetAdapters() {
+  return [...TARGET_ADAPTERS];
 }

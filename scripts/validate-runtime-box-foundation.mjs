@@ -4,20 +4,38 @@
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { createWriteStream } from 'node:fs';
 import { open, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
+import { pipeline } from 'node:stream/promises';
+import * as tar from 'tar';
+import yazl from 'yazl';
 import {
   createDeterministicZip,
   extractRecipeArchive,
   normalizeTree,
   payloadSize,
   sha256File,
-  validateArchiveEntryNames,
+  safeRelativePath,
 } from './runtime-box.mjs';
+import { listZipEntries } from './runtime-box/archive.mjs';
+import { runtimeBoxTargetAdapter } from './runtime-box/targets.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const ZIP64_FIXTURE_SIZE = (2 ** 32) + 1;
+const MACOS_ADAPTER = runtimeBoxTargetAdapter({
+  platform: 'macos', arch: 'aarch64', accelerator: 'metal',
+});
+
+/** Creates a ZIP symbolic-link fixture without relying on a runner-installed archive utility. */
+async function createZipLinkFixture(path) {
+  const zip = new yazl.ZipFile();
+  const output = pipeline(zip.outputStream, createWriteStream(path));
+  zip.addBuffer(Buffer.from('/etc/passwd'), 'outside-link', { mode: 0o120777 });
+  zip.end();
+  await output;
+}
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
@@ -41,7 +59,7 @@ async function validateTarFoundation(root) {
   await mkdir(source, { recursive: true });
   await writeFile(join(source, 'asset.txt'), 'verified tar asset\n');
   const archivePath = join(payload, 'downloads', 'valid.tar.gz');
-  run('tar', ['-czf', archivePath, '-C', join(root, 'tar-source'), 'wrapper']);
+  await tar.c({ file: archivePath, cwd: join(root, 'tar-source'), gzip: true }, ['wrapper']);
   await extractRecipeArchive(payload, {
     format: 'tar.gz',
     relativePath: 'downloads/valid.tar.gz',
@@ -51,7 +69,7 @@ async function validateTarFoundation(root) {
   assert.equal(await readFile(join(payload, 'model-cache/fixture/asset.txt'), 'utf8'), 'verified tar asset\n');
 
   assert.throws(
-    () => validateArchiveEntryNames(['safe/file.txt', '../../escape.txt']),
+    () => safeRelativePath('../../escape.txt'),
     /Unsafe relative path/,
   );
 
@@ -59,7 +77,7 @@ async function validateTarFoundation(root) {
   await mkdir(linkSource, { recursive: true });
   await symlink('/etc/passwd', join(linkSource, 'outside-link'));
   const linkArchive = join(payload, 'downloads', 'link.tar.gz');
-  run('tar', ['-czf', linkArchive, '-C', linkSource, 'outside-link']);
+  await tar.c({ file: linkArchive, cwd: linkSource, gzip: true }, ['outside-link']);
   await assert.rejects(
     extractRecipeArchive(payload, {
       format: 'tar.gz',
@@ -70,7 +88,7 @@ async function validateTarFoundation(root) {
   );
 
   const zipLinkArchive = join(payload, 'downloads', 'link.zip');
-  run('zip', ['-y', '-q', zipLinkArchive, 'outside-link'], { cwd: linkSource });
+  await createZipLinkFixture(zipLinkArchive);
   await assert.rejects(
     extractRecipeArchive(payload, {
       format: 'zip',
@@ -96,12 +114,12 @@ async function validateLargeArchiveFoundation(root) {
 
   const firstArchive = join(root, 'first.zip');
   const secondArchive = join(root, 'second.zip');
-  await createDeterministicZip(payload, firstArchive);
-  await createDeterministicZip(payload, secondArchive);
+  await createDeterministicZip(payload, firstArchive, MACOS_ADAPTER);
+  await createDeterministicZip(payload, secondArchive, MACOS_ADAPTER);
   assert.equal(await sha256File(firstArchive), await sha256File(secondArchive));
 
-  const listing = run('unzip', ['-Z', '-l', firstArchive], { capture: true });
-  assert.match(listing, /4294967297\s+.*huge-zero-fixture\.bin/);
+  const entries = await listZipEntries(firstArchive);
+  assert.equal(entries.find((entry) => entry.path === 'huge-zero-fixture.bin')?.size, ZIP64_FIXTURE_SIZE);
 
   run('cargo', ['test', 'runtime_box_large_archive_fixture', '--', '--ignored', '--nocapture'], {
     cwd: join(ROOT, 'src-tauri'),

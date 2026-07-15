@@ -122,6 +122,9 @@
     "buffer": "^6.0.3",
     "markdown-it-mathjax3": "^4.3.2",
     "marked": "^18.0.5",
-    "typescript": "^5.9.2"
+    "tar": "7.5.20",
+    "typescript": "^5.9.2",
+    "yauzl": "3.4.0",
+    "yazl": "3.3.1"
   }
 }

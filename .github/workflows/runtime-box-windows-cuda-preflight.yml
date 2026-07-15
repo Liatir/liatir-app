@@ -44,3 +44,15 @@ jobs:
           - Architecture: ``$env:PROCESSOR_ARCHITECTURE``
           - GPU: ``$gpu``
           "@ | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Verify Runtime Box Windows adapter contracts
+        run: npm run test:unit -- tests/unit/runtime-box-target-adapters.test.ts tests/unit/runtime-box-target-id-contract.test.ts

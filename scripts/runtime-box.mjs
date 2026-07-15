@@ -14,7 +14,7 @@
  * 1. **Reproducibility.** The archive is content-addressed by its SHA-256, and that hash is what
  *    the app enforces at install time. So the archive must be byte-identical when rebuilt from
  *    the same inputs — no embedded timestamps, no filesystem ordering, no stray caches. Hence
- *    the fixed mtimes, the sorted file list, the `zip -X`, and the hash-pinned dependency lock.
+ *    fixed mtimes, a sorted file list, a pinned streaming archive backend, and a hash-pinned lock.
  *
  * 2. **The private key is never required to be here.** Local Ed25519 keys exist for development,
  *    but a production build delegates signing to the Cloud Run signer service, which keeps the
@@ -31,28 +31,52 @@ import {
 } from 'node:crypto';
 import { createReadStream, createWriteStream } from 'node:fs';
 import {
-  access,
   chmod,
   copyFile,
-  cp,
   link,
   mkdir,
   mkdtemp,
   readFile,
-  readdir,
   rename,
   rm,
   stat,
-  utimes,
   writeFile,
 } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { dirname, extname, join, relative, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { pipeline } from 'node:stream/promises';
-import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { runtimeBoxTargetId } from './runtime-box/targets.mjs';
+import {
+  createDeterministicZip,
+  extractRecipeArchive as extractArchive,
+  extractZipArchive,
+  listZipEntries,
+  readZipEntry,
+} from './runtime-box/archive.mjs';
+import {
+  fileExists,
+  normalizeTree,
+  payloadSize,
+  safeRelativePath,
+  sha256File,
+} from './runtime-box/filesystem.mjs';
+import {
+  runtimeBoxReleaseObjectPrefix,
+  runtimeBoxReleaseStem,
+} from './runtime-box/identity.mjs';
+import { fail, run as runProcess, runResult as runProcessResult } from './runtime-box/process.mjs';
+import {
+  stageStandalonePython,
+  validateRelocatablePython,
+} from './runtime-box/python.mjs';
+import {
+  assertRuntimeBoxNativeHost,
+  assertRuntimeBoxPythonEntryPoint,
+  runtimeBoxLockArguments,
+  runtimeBoxTargetAdapter,
+  runtimeBoxTargetId,
+} from './runtime-box/targets.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 /** Recipes are checked in; everything below is generated and git-ignored. */
@@ -68,18 +92,6 @@ const DEFAULT_PUBLIC_KEY = join(LOCAL_ROOT, 'signing-public.json');
 const DEFAULT_OBJECT_PREFIX = 'ai-runtime-boxes';
 const WRANGLER_MAX_UPLOAD_BYTES = 300 * 1024 * 1024;
 const MULTIPART_PART_BYTES = 64 * 1024 * 1024;
-/**
- * Every file's mtime is forced to this constant before archiving. Zip stores per-entry
- * timestamps, so without this the same inputs would produce a different archive — and therefore
- * a different SHA-256 — on every build.
- */
-const FIXED_ARCHIVE_TIME = new Date('2000-01-01T00:00:00.000Z');
-
-/** Throws. Usable as an expression, e.g. `flags.get('x') || fail('...')`. */
-function fail(message) {
-  throw new Error(message);
-}
-
 /** Minimal flag parser supporting `--name=value`, `--name value` and bare `--name` (true). */
 function parseArgs(values) {
   const positional = [];
@@ -108,56 +120,16 @@ function parseArgs(values) {
  * returned; otherwise it is inherited so long steps (pip installs, downloads) stream live.
  */
 function run(command, args, options = {}) {
-  const result = spawnSync(command, args, {
-    cwd: options.cwd ?? ROOT,
-    env: { ...process.env, ...options.env },
-    encoding: 'utf8',
-    input: options.input,
-    maxBuffer: 64 * 1024 * 1024,
-    stdio: options.capture ? 'pipe' : ['pipe', 'inherit', 'inherit'],
-  });
-  // `error` means the binary could not be launched at all (e.g. uv not installed), which is a
-  // different failure from the command running and rejecting the input.
-  if (result.error) fail(`${command} failed to start: ${result.error.message}`);
-  if (result.status !== 0) {
-    const detail = options.capture ? `\n${result.stderr || result.stdout}` : '';
-    fail(`${command} exited with status ${result.status}${detail}`);
-  }
-  return (result.stdout ?? '').trim();
+  return runProcess(command, args, { ...options, cwd: options.cwd ?? ROOT });
+}
+
+/** Runs a subprocess while preserving the repository root as the CLI's default working tree. */
+function runResult(command, args, options = {}) {
+  return runProcessResult(command, args, { ...options, cwd: options.cwd ?? ROOT });
 }
 
 function sha256Buffer(value) {
   return createHash('sha256').update(value).digest('hex');
-}
-
-async function sha256File(path) {
-  const hash = createHash('sha256');
-  const source = createReadStream(path);
-  for await (const chunk of source) hash.update(chunk);
-  return hash.digest('hex');
-}
-
-async function fileExists(path) {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Rejects any path that could escape the tree it will be joined onto.
- *
- * Applied to every path that comes from a recipe *and* to every entry name inside a downloaded
- * zip. The latter is the important one: it is what prevents a "zip slip", where an archive entry
- * named `../../etc/something` writes outside the extraction directory.
- */
-function safeRelativePath(value) {
-  const normalized = value.replaceAll('\\', '/');
-  if (!normalized || normalized.startsWith('/') || normalized.includes('\0')) fail(`Unsafe relative path: ${value}`);
-  if (normalized.split('/').some((part) => part === '..' || part === '')) fail(`Unsafe relative path: ${value}`);
-  return normalized;
 }
 
 /** Resolves a recipe name to its directory, refusing anything that escapes the recipe root. */
@@ -176,23 +148,9 @@ async function readRecipe(name) {
   const recipe = JSON.parse(await readFile(join(dir, 'recipe.json'), 'utf8'));
   if (recipe.schemaVersion !== 1 || recipe.recipeId !== name) fail(`Invalid recipe contract: ${name}`);
   // Reject target drift before downloads, archive creation, or any signing request.
-  runtimeBoxTargetId(recipe.target);
-  // Boxes are built natively, not cross-compiled, so the builder only accepts the target it can
-  // actually produce today.
-  if (recipe.target.platform !== 'macos' || recipe.target.arch !== 'aarch64') {
-    fail('The foundation builder currently supports macOS arm64 recipes only.');
-  }
-  return { dir, recipe };
-}
-
-/** Shared filename stem, so the archive and its release document are found as a pair. */
-function releaseStem(release) {
-  return `${release.boxId}-${release.version}-${runtimeBoxTargetId(release.target)}`;
-}
-
-/** Where a release's immutable objects live in the bucket. */
-function releaseObjectPrefix(release) {
-  return `boxes/${release.boxId}/${release.version}/${runtimeBoxTargetId(release.target)}`;
+  const adapter = runtimeBoxTargetAdapter(recipe.target);
+  assertRuntimeBoxPythonEntryPoint(adapter, recipe.pythonEntryPoint);
+  return { adapter, dir, recipe };
 }
 
 /** Validates the bucket prefix segment by segment — it is interpolated straight into object keys. */
@@ -361,8 +319,10 @@ async function verifySignedDocument(document, publicKeyPath) {
  */
 function findUv(flags, requiredVersion) {
   const candidate = String(flags.get('uv') || process.env.LIATIR_RUNTIME_BOX_UV || 'uv');
-  const result = spawnSync(candidate, ['--version'], { encoding: 'utf8' });
-  if (result.status !== 0) fail(`uv ${requiredVersion} is required. Install it from https://docs.astral.sh/uv/ or pass --uv <path>.`);
+  const result = runResult(candidate, ['--version'], { capture: true });
+  if (result.error || result.status !== 0) {
+    fail(`uv ${requiredVersion} is required. Install it from https://docs.astral.sh/uv/ or pass --uv <path>.`);
+  }
   // `uv --version` prints "uv 0.x.y"; the version is the second token.
   const actual = result.stdout.trim().split(/\s+/)[1];
   if (actual !== requiredVersion) fail(`Recipe requires uv ${requiredVersion}, found ${actual}.`);
@@ -382,16 +342,15 @@ function findUv(flags, requiredVersion) {
  * committed file.
  */
 async function lockRecipe(name, flags) {
-  const { dir, recipe } = await readRecipe(name);
+  const { adapter, dir, recipe } = await readRecipe(name);
+  assertRuntimeBoxNativeHost(adapter);
   const uv = findUv(flags, recipe.uvVersion);
-  run(uv, [
-    'pip', 'compile', join(dir, recipe.requirementsInput),
-    '--output-file', join(dir, recipe.requirementsLock),
-    '--python-version', recipe.pythonVersion,
-    '--python-platform', 'aarch64-apple-darwin',
-    '--generate-hashes', '--only-binary', ':all:',
-    '--no-emit-index-url', '--no-annotate', '--no-header',
-  ]);
+  run(uv, runtimeBoxLockArguments(
+    adapter,
+    recipe,
+    join(dir, recipe.requirementsInput),
+    join(dir, recipe.requirementsLock),
+  ), { env: { UV_NO_CONFIG: '1' } });
   console.log(`Updated ${relative(ROOT, join(dir, recipe.requirementsLock))}`);
 }
 
@@ -454,72 +413,6 @@ async function linkOrCopyFile(source, destination) {
 }
 
 /**
- * Lists every file under `root` as a sorted array of forward-slash relative paths.
- *
- * Both properties are load-bearing for reproducibility: the sort removes the filesystem's
- * arbitrary directory ordering, and the exclusions drop artefacts that vary between machines and
- * between runs (`__pycache__` and `.pyc` are regenerated on every Python run; `.DS_Store` is
- * created by the Finder). Any of them would change the archive's hash.
- */
-async function collectFiles(root, current = root) {
-  const entries = await readdir(current, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
-    if (entry.name === '__pycache__' || entry.name === '.DS_Store' || entry.name.endsWith('.pyc')) continue;
-    const fullPath = join(current, entry.name);
-    if (entry.isDirectory()) files.push(...await collectFiles(root, fullPath));
-    else files.push(relative(root, fullPath).split(sep).join('/'));
-  }
-  return files;
-}
-
-/** Sum the logical size of the exact files that will be written to the ZIP. */
-async function payloadSize(root) {
-  let total = 0;
-  for (const file of await collectFiles(root)) {
-    total += (await stat(join(root, file))).size;
-    if (!Number.isSafeInteger(total)) fail('Runtime Box installed size exceeds the safe integer range.');
-  }
-  return total;
-}
-
-/** Reject links and special nodes before any extracted asset is copied into the payload. */
-async function validateExtractedTree(root, current = root) {
-  for (const entry of await readdir(current, { withFileTypes: true })) {
-    const fullPath = join(current, entry.name);
-    if (entry.isSymbolicLink()) fail(`Archive links are not allowed: ${relative(root, fullPath)}`);
-    if (entry.isDirectory()) await validateExtractedTree(root, fullPath);
-    else if (!entry.isFile()) fail(`Archive special entries are not allowed: ${relative(root, fullPath)}`);
-  }
-}
-
-/** Validate entry names independently from the archive tool used to list them. */
-function validateArchiveEntryNames(entries) {
-  for (const entry of entries) {
-    const normalized = entry.replace(/\/$/, '');
-    if (normalized) safeRelativePath(normalized);
-  }
-}
-
-/** Accept only regular files and directories; links could redirect later extracted writes. */
-function validateArchiveEntryTypes(entries, expectedCount, relativePath) {
-  if (entries.length !== expectedCount || entries.some((entry) => !['-', 'd'].includes(entry[0]))) {
-    fail(`Archive links and special entries are not allowed: ${relativePath}`);
-  }
-}
-
-/** Create the byte-reproducible ZIP used by production builds, with automatic Zip64 support. */
-async function createDeterministicZip(payloadDir, archivePath) {
-  await rm(archivePath, { force: true });
-  const archiveEntries = await collectFiles(payloadDir);
-  if (archiveEntries.length === 0) fail('Runtime Box payload is empty.');
-  run('zip', ['-X', '-q', archivePath, '-@'], {
-    cwd: payloadDir,
-    input: `${archiveEntries.join('\n')}\n`,
-  });
-}
-
-/**
  * Unpacks a downloaded asset archive into the payload tree.
  *
  * Entries are listed and validated *before* extraction (archive-slip defence), then unpacked into a
@@ -529,56 +422,15 @@ async function createDeterministicZip(payloadDir, archivePath) {
  */
 async function extractRecipeArchive(payloadDir, archive) {
   const archivePath = join(payloadDir, safeRelativePath(archive.relativePath));
-  if (!['zip', 'tar.gz'].includes(archive.format)) {
-    fail(`Unsupported recipe archive format: ${archive.format}`);
-  }
-  const listCommand = archive.format === 'zip'
-    ? ['unzip', ['-Z1', archivePath]]
-    : ['tar', ['-tzf', archivePath]];
-  const entries = run(listCommand[0], listCommand[1], { capture: true }).split('\n').filter(Boolean);
-  validateArchiveEntryNames(entries);
-  if (archive.format === 'tar.gz') {
-    const verboseEntries = run('tar', ['-tvzf', archivePath], { capture: true }).split('\n').filter(Boolean);
-    validateArchiveEntryTypes(verboseEntries, entries.length, archive.relativePath);
-  } else {
-    const verboseEntries = run('unzip', ['-Z', '-l', archivePath], { capture: true })
-      .split('\n')
-      .filter((entry) => /^[bcdlps-][rwxstST-]*\s+\d+\.\d+\s/.test(entry));
-    validateArchiveEntryTypes(verboseEntries, entries.length, archive.relativePath);
-  }
-  const extracted = await mkdtemp(join(tmpdir(), 'liatir-runtime-box-asset-'));
-  try {
-    if (archive.format === 'zip') run('unzip', ['-q', archivePath, '-d', extracted]);
-    else run('tar', ['-xzf', archivePath, '-C', extracted]);
-    // Defence in depth: even if an archive tool's listing format changes, links are caught
-    // before `cp` can follow them or copy data from outside the extraction root.
-    await validateExtractedTree(extracted);
-    let source = extracted;
-    const stripComponents = Number(archive.stripComponents ?? 0);
-    for (let index = 0; index < stripComponents; index += 1) {
-      // __MACOSX / .DS_Store are Finder artefacts that would otherwise look like a second
-      // top-level entry and defeat the "exactly one directory" check.
-      const children = (await readdir(source, { withFileTypes: true }))
-        .filter((entry) => entry.name !== '__MACOSX' && entry.name !== '.DS_Store');
-      if (children.length !== 1 || !children[0].isDirectory()) {
-        fail(`Cannot strip component ${index + 1} from ${archive.relativePath}.`);
-      }
-      source = join(source, children[0].name);
-    }
-    const destination = join(payloadDir, safeRelativePath(archive.destination));
-    await mkdir(dirname(destination), { recursive: true });
-    await cp(source, destination, { recursive: true, dereference: false, preserveTimestamps: false });
-  } finally {
-    // Always clean the temp dir, including when extraction threw.
-    await rm(extracted, { recursive: true, force: true });
-  }
+  const destination = join(payloadDir, safeRelativePath(archive.destination));
+  await extractArchive(
+    archivePath,
+    archive.format,
+    destination,
+    Number(archive.stripComponents ?? 0),
+  );
   // The compressed original is dead weight inside the payload once unpacked.
   if (archive.removeAfterExtract !== false) await rm(archivePath, { force: true });
-}
-
-/** Stamps every file with the same fixed mtime — see FIXED_ARCHIVE_TIME. */
-async function normalizeTree(root) {
-  for (const file of await collectFiles(root)) await utimes(join(root, file), FIXED_ARCHIVE_TIME, FIXED_ARCHIVE_TIME);
 }
 
 /**
@@ -587,7 +439,7 @@ async function normalizeTree(root) {
  * constant, since a wall-clock fallback would reintroduce the nondeterminism this avoids.
  */
 async function gitBuildTime() {
-  const result = spawnSync('git', ['show', '-s', '--format=%cI', 'HEAD'], { cwd: ROOT, encoding: 'utf8' });
+  const result = runResult('git', ['show', '-s', '--format=%cI', 'HEAD'], { capture: true });
   return result.status === 0 ? result.stdout.trim() : new Date(0).toISOString();
 }
 
@@ -614,10 +466,9 @@ function gitBuildState() {
  * to it and the app can verify it byte for byte.
  */
 async function buildRecipe(name, flags) {
-  // Boxes are built natively, never cross-compiled: the wheels and the interpreter must be the
-  // ones that will actually run on the target.
-  if (process.platform !== 'darwin' || process.arch !== 'arm64') fail('This foundation recipe must be built natively on macOS arm64.');
-  const { dir, recipe } = await readRecipe(name);
+  const { adapter, dir, recipe } = await readRecipe(name);
+  // Wheels, native libraries, and Python are proven on the exact OS/architecture they will ship.
+  assertRuntimeBoxNativeHost(adapter);
   const uv = findUv(flags, recipe.uvVersion);
   const lockPath = join(dir, recipe.requirementsLock);
   // Build installs from the lock and never resolves, so a missing lock is a hard error rather
@@ -632,9 +483,9 @@ async function buildRecipe(name, flags) {
   }
   const buildDir = join(BUILD_ROOT, recipe.recipeId);
   const payloadDir = join(buildDir, 'payload');
-  const stem = releaseStem(recipe);
+  const stem = runtimeBoxReleaseStem(recipe);
   const archivePath = join(DIST_ROOT, `${stem}.zip`);
-  const objectPrefix = releaseObjectPrefix(recipe);
+  const objectPrefix = runtimeBoxReleaseObjectPrefix(recipe);
   const objectDir = join(DIST_ROOT, 'objects', objectPrefix);
   // Always start from an empty tree: leftovers from a previous build would end up in the archive.
   await rm(buildDir, { recursive: true, force: true });
@@ -643,26 +494,26 @@ async function buildRecipe(name, flags) {
   await rm(objectDir, { recursive: true, force: true });
   await mkdir(payloadDir, { recursive: true });
 
-  // `only-managed` forces uv's own standalone interpreter rather than whatever Python happens to
-  // be on this machine — the box must carry a self-contained interpreter, not depend on the host.
-  // UV_NO_CONFIG keeps a developer's local uv settings from influencing the build.
-  const managedPython = run(uv, [
-    'python', 'find', recipe.pythonVersion, '--python-preference', 'only-managed',
-  ], { capture: true, env: { UV_NO_CONFIG: '1' } });
-  // `python find` returns .../bin/python3, so two levels up is the interpreter's root directory.
-  const standaloneRoot = dirname(dirname(managedPython));
-  await cp(standaloneRoot, join(payloadDir, 'venv'), {
-    recursive: true,
-    dereference: true,
-    preserveTimestamps: false,
+  const standalonePython = await stageStandalonePython({
+    adapter,
+    payloadDir,
+    pythonVersion: recipe.pythonVersion,
+    run,
+    uv,
   });
   // Installs *into the copied interpreter* (hence --python pointing inside the payload).
   // --require-hashes enforces the digests in the lock, so a tampered or swapped wheel fails the
   // build; --strict catches an inconsistent resulting environment.
   run(uv, [
-    'pip', 'sync', lockPath, '--python', join(payloadDir, recipe.pythonEntryPoint),
+    'pip', 'sync', lockPath, '--python', standalonePython.interpreter,
     '--system', '--break-system-packages', '--require-hashes', '--strict', '--no-config',
-  ]);
+  ], { env: { UV_NO_CONFIG: '1' } });
+  await validateRelocatablePython({
+    adapter,
+    ...standalonePython,
+    payloadDir,
+    run,
+  });
 
   // Model weights and other large files, each verified against the hash declared in the recipe.
   for (const asset of recipe.assets) {
@@ -687,9 +538,12 @@ async function buildRecipe(name, flags) {
   // Run with the payload's *own* interpreter: this is the same check the app repeats after
   // installing, so a box that would fail on the user's machine fails here first.
   const selfTestCode = recipe.selfTest.pythonCode
-    ? `import ${recipe.selfTest.imports.join(', ')}\n${recipe.selfTest.pythonCode}`
-    : `import ${recipe.selfTest.imports.join(', ')}`;
-  run(join(payloadDir, recipe.pythonEntryPoint), ['-c', selfTestCode], { cwd: payloadDir });
+    ? `${adapter.selfTestPython}\nimport ${recipe.selfTest.imports.join(', ')}\n${recipe.selfTest.pythonCode}`
+    : `${adapter.selfTestPython}\nimport ${recipe.selfTest.imports.join(', ')}`;
+  run(standalonePython.interpreter, ['-c', selfTestCode], {
+    cwd: payloadDir,
+    env: adapter.validationEnvironments[recipe.target.accelerator],
+  });
 
   // Everything needed to answer "where did this box come from and could I rebuild it?".
   // Signed together with the release and stored inside the installed box.
@@ -725,9 +579,7 @@ async function buildRecipe(name, flags) {
   await normalizeTree(payloadDir);
   const installedSizeBytes = await payloadSize(payloadDir);
   await mkdir(DIST_ROOT, { recursive: true });
-  // Info-ZIP selects Zip64 automatically for large entries. The shared helper is exercised by
-  // the large-archive foundation gate, so the production path and proof cannot drift apart.
-  await createDeterministicZip(payloadDir, archivePath);
+  await createDeterministicZip(payloadDir, archivePath, adapter);
 
   const archiveSha = await sha256File(archivePath);
   const archiveSize = (await stat(archivePath)).size;
@@ -808,8 +660,11 @@ async function verifyRelease(path, flags) {
   const signed = JSON.parse(await readFile(releasePath, 'utf8'));
   const release = await verifySignedDocument(signed, publicKeyPath);
   if (release.kind !== 'liatir.runtime-box.release') fail('Document is not a Runtime Box release.');
+  const adapter = runtimeBoxTargetAdapter(release.target);
+  assertRuntimeBoxPythonEntryPoint(adapter, release.pythonEntryPoint);
   // By convention the archive sits next to its release document under the shared stem.
-  const archivePath = resolve(String(flags.get('archive') || join(dirname(releasePath), `${releaseStem(release)}.zip`)));
+  const archivePath = resolve(String(flags.get('archive')
+    || join(dirname(releasePath), `${runtimeBoxReleaseStem(release)}.zip`)));
   if (!await fileExists(archivePath)) fail(`Archive not found: ${archivePath}`);
   if ((await stat(archivePath)).size !== release.archive.sizeBytes) fail('Archive size mismatch.');
   if (await sha256File(archivePath) !== release.archive.sha256) fail('Archive SHA-256 mismatch.');
@@ -817,25 +672,28 @@ async function verifyRelease(path, flags) {
     && (!Number.isSafeInteger(release.installedSizeBytes) || release.installedSizeBytes <= 0)) {
     fail('Invalid installed size.');
   }
-  const entries = run('unzip', ['-Z1', archivePath], { capture: true }).split('\n').filter(Boolean);
-  for (const entry of entries) safeRelativePath(entry.replace(/\/$/, ''));
-  if (!entries.includes('box.json')) fail('Archive is missing box.json.');
-  // Read box.json straight out of the zip (`unzip -p`) — no extraction needed for this check.
-  const box = JSON.parse(run('unzip', ['-p', archivePath, 'box.json'], { capture: true }));
+  const entries = await listZipEntries(archivePath);
+  const files = new Set(entries.filter((entry) => entry.kind === 'file').map((entry) => entry.path));
+  if (!files.has('box.json')) fail('Archive is missing box.json.');
+  const box = JSON.parse(await readZipEntry(archivePath, 'box.json'));
   for (const field of ['boxId', 'modelId', 'runtimeId', 'version', 'pythonEntryPoint']) {
     if (box[field] !== release[field]) fail(`box.json mismatch: ${field}`);
   }
-  if (!entries.includes(release.pythonEntryPoint)) fail(`Archive is missing ${release.pythonEntryPoint}.`);
+  if (!files.has(release.pythonEntryPoint)) fail(`Archive is missing ${release.pythonEntryPoint}.`);
   if (flags.get('self-test')) {
+    assertRuntimeBoxNativeHost(adapter);
     const extracted = await mkdtemp(join(tmpdir(), 'liatir-runtime-box-verify-'));
     try {
-      run('unzip', ['-q', archivePath, '-d', extracted]);
+      await extractZipArchive(archivePath, extracted);
       if (release.installedSizeBytes !== undefined
         && await payloadSize(extracted) !== release.installedSizeBytes) {
         fail('Extracted payload size does not match the signed release.');
       }
       const python = join(extracted, safeRelativePath(release.pythonEntryPoint));
-      run(python, ['-c', `import ${release.selfTest.pythonImports.join(', ')}`], { cwd: extracted });
+      run(python, ['-c', `${adapter.selfTestPython}\nimport ${release.selfTest.pythonImports.join(', ')}`], {
+        cwd: extracted,
+        env: adapter.validationEnvironments[release.target.accelerator],
+      });
     } finally {
       await rm(extracted, { recursive: true, force: true });
     }
@@ -1082,10 +940,11 @@ async function publish(releaseDocumentPath, flags) {
   if (release.provenance?.sourceTreeDirty && !flags.get('allow-dirty')) {
     fail('Refusing to publish a Runtime Box built from a dirty source tree.');
   }
-  const archivePath = resolve(String(flags.get('archive') || join(dirname(releasePath), `${releaseStem(release)}.zip`)));
+  const archivePath = resolve(String(flags.get('archive')
+    || join(dirname(releasePath), `${runtimeBoxReleaseStem(release)}.zip`)));
   if (await sha256File(archivePath) !== release.archive.sha256) fail('Refusing to publish an archive with the wrong SHA-256.');
   const objectPrefix = normalizeObjectPrefix(flags.get('prefix'));
-  const releasePrefix = releaseObjectPrefix(release);
+  const releasePrefix = runtimeBoxReleaseObjectPrefix(release);
   const archiveKey = prefixedObjectKey(objectPrefix, `${releasePrefix}/${release.archive.sha256}.zip`);
   const releaseSha = await sha256File(releasePath);
   const releaseKey = prefixedObjectKey(objectPrefix, `${releasePrefix}/${releaseSha}.release.json`);
@@ -1259,6 +1118,4 @@ export {
   payloadSize,
   safeRelativePath,
   sha256File,
-  validateArchiveEntryNames,
-  validateArchiveEntryTypes,
 };
