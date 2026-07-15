@@ -113,6 +113,7 @@ jobs:
           --recipe "${{ needs.preflight.outputs.recipe_id }}"
           --target "${{ inputs.target_id }}"
           --mode native-lifecycle
+          --output .runtime-box-ci/host.json
 
       - name: Require a clean exact revision before signing
         run: |
@@ -121,17 +122,23 @@ jobs:
 
       - name: Build with the private KMS signer and verify locally
         run: >-
-          npm run runtime-box -- build "${{ needs.preflight.outputs.recipe_id }}"
+          npm run runtime-box:ci -- tracked-build
+          --model "${{ inputs.model_id }}"
+          --recipe "${{ needs.preflight.outputs.recipe_id }}"
+          --target "${{ inputs.target_id }}"
+          --mode native-lifecycle
           --channel "${{ inputs.channel }}"
           --signer "${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}"
           --signer-audience "${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}"
           --public-key runtime-boxes/trust/production-public.json
+          --metrics .runtime-box-ci/build-metrics.json
 
       - name: Verify the signed release and native self-test
         run: >-
           npm run runtime-box -- verify "${{ needs.preflight.outputs.release_path }}"
           --public-key runtime-boxes/trust/production-public.json
           --self-test
+          --receipt .runtime-box-ci/verification.json
 
       - name: Run scientific validation before publication
         run: >-
@@ -141,6 +148,7 @@ jobs:
           --target "${{ inputs.target_id }}"
           --mode native-lifecycle
           --script "${{ needs.preflight.outputs.validator_script }}"
+          --output .runtime-box-ci/scientific-result.json
 
       - name: Publish immutable objects and verify their public hashes
         run: >-
@@ -149,18 +157,32 @@ jobs:
           --prefix "${{ vars.LIATIR_RUNTIME_BOX_PREFIX }}"
           --registry "${{ vars.LIATIR_RUNTIME_BOX_REGISTRY }}"
           --public-key runtime-boxes/trust/production-public.json
+          --receipt .runtime-box-ci/publish-receipt.json
 
       - name: Promote beta only after immutable publication succeeds
         run: >-
           npm run runtime-box -- promote "${{ needs.preflight.outputs.channel_path }}"
           --registry "${{ vars.LIATIR_RUNTIME_BOX_REGISTRY }}"
+          --receipt .runtime-box-ci/promotion-receipt.json
 
-      - name: Write signed release evidence
+      - name: Write complete signed release evidence
         if: always()
         run: >-
-          npm run runtime-box:ci -- release-evidence
+          npm run runtime-box:ci -- write-release-evidence
+          --status "${{ job.status }}"
+          --model "${{ inputs.model_id }}"
+          --recipe "${{ needs.preflight.outputs.recipe_id }}"
+          --target "${{ inputs.target_id }}"
+          --mode native-lifecycle
+          --environment runtime-box-production
           --release "${{ needs.preflight.outputs.release_path }}"
           --channel "${{ needs.preflight.outputs.channel_path }}"
+          --host .runtime-box-ci/host.json
+          --metrics .runtime-box-ci/build-metrics.json
+          --verification .runtime-box-ci/verification.json
+          --scientific .runtime-box-ci/scientific-result.json
+          --publish-receipt .runtime-box-ci/publish-receipt.json
+          --promotion-receipt .runtime-box-ci/promotion-receipt.json
           --output .runtime-box-ci/release-evidence.json
 
       - name: Upload compact release evidence only
@@ -170,7 +192,7 @@ jobs:
           name: runtime-box-release-${{ inputs.model_id }}-${{ inputs.target_id }}-${{ github.run_attempt }}
           path: .runtime-box-ci/release-evidence.json
           include-hidden-files: true
-          retention-days: 30
+          retention-days: 7
           if-no-files-found: warn
 
       - name: Clean Runtime Box build state

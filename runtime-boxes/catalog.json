@@ -71,6 +71,7 @@
       "legalStatus": "approved",
       "validatorScript": "runtime-box:validate:geneformer",
       "validatorPath": "scripts/validate-geneformer-parity.mjs",
+      "productScriptPath": "frontend/src/lib/tools/ai/python-scripts/geneformer-embedding.ts",
       "callerWorkflow": ".github/workflows/runtime-box-geneformer-v1-10m.yml",
       "targets": [
         {
@@ -104,6 +105,7 @@
       "legalStatus": "approved",
       "validatorScript": "runtime-box:validate:scgpt",
       "validatorPath": "scripts/validate-scgpt-runtime.mjs",
+      "productScriptPath": "frontend/src/lib/tools/ai/python-scripts/scgpt-embedding.ts",
       "callerWorkflow": ".github/workflows/runtime-box-scgpt-whole-human.yml",
       "targets": [
         {
@@ -137,6 +139,7 @@
       "legalStatus": "approved",
       "validatorScript": "runtime-box:validate:uce",
       "validatorPath": "scripts/validate-uce-runtime.mjs",
+      "productScriptPath": "frontend/src/lib/tools/ai/python-scripts/uce-embedding.ts",
       "callerWorkflow": ".github/workflows/runtime-box-uce-4layer.yml",
       "targets": [
         {

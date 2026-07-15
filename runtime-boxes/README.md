@@ -102,7 +102,17 @@ hash verification.
 The three publications that predate this CI foundation are recorded as
 `legacy-operator` evidence. They keep their real signed release metadata and
 deliberately do not invent GitHub workflow run IDs. Every new publication made
-by the release workflow must be recorded with `github-actions` run evidence.
+by the release workflow must be recorded with `github-actions` run evidence and
+a reviewed pointer to a compact record under [`evidence/`](evidence/README.md).
+
+The shared evidence contract lives in
+`packages/liatir-core/src/runtime-box.ts`; `scripts/runtime-box/evidence.mjs`
+collects the exact source/recipe/lock identity, native host and peak disk
+pressure, build/self-test results, scientific fixture and parity details, KMS
+signature identity, public streamed hashes, and channel-promotion receipt.
+Successful CI records are uploaded for 7 days. Runtime Box archives and model
+assets are never GitHub artifacts, and CI has no permission to update this
+directory or readiness documents itself.
 
 The model-specific validation commands are intentionally separate from the
 general test matrix. Geneformer compares the product runner with the pinned
@@ -132,9 +142,10 @@ Development signing keys and build outputs live under `.runtime-box-local/` and
 
 ## Production publication
 
-The immutable archive and release manifest are uploaded directly to R2. A
-separate promotion updates the selected channel through the Worker only after
-the immutable objects are present.
+The immutable archive and release manifest are uploaded through the
+least-privilege Registry Worker into R2. A separate promotion updates the
+selected channel only after the immutable objects are present and publicly
+verified byte for byte.
 
 Production builds refuse a dirty Git tree and record the builder commit in
 signed provenance. `--allow-dirty` is limited to local development artifacts,
@@ -168,12 +179,11 @@ Cloudflare receives only public keys and already-signed documents. The
 production private key remains non-exportable in Cloud KMS and the Cloud Run
 service identity has only `roles/cloudkms.signerVerifier` on that key.
 
-`publish` uses Wrangler for small objects. Archives above Wrangler's upload
-limit use the same Registry Worker admin token to stream bounded 64 MiB
-multipart parts directly into R2. The Worker accepts only content-addressed
-Runtime Box archive paths, refuses an existing immutable object, and checks the
-completed byte size. Before uploading the signed release document, the CLI
-streams the public archive back and verifies its complete SHA-256.
+`publish` uses the same Registry Worker admin token for bounded 64 MiB archive
+multipart uploads and small signed release documents. The Worker accepts only
+content-addressed Runtime Box paths, refuses an existing immutable object, and
+checks the completed byte size. Before uploading the signed release document,
+the CLI streams the public archive back and verifies its complete SHA-256.
 
 The app always trusts the checked-in production public-key bundle. Additional public
 trust roots can be supplied at compile time through

@@ -11,6 +11,7 @@ on:
       - "scripts/validate-runtime-box-foundation.mjs"
       - "scripts/validate-runtime-box-native-fixture.mjs"
       - "runtime-boxes/catalog.json"
+      - "runtime-boxes/evidence/**"
       - "runtime-boxes/target-id-contract.json"
       - "runtime-boxes/trust/**"
       - "runtime-boxes/recipes/installer-fixture-*/**"
@@ -31,6 +32,7 @@ on:
       - "scripts/validate-runtime-box-foundation.mjs"
       - "scripts/validate-runtime-box-native-fixture.mjs"
       - "runtime-boxes/catalog.json"
+      - "runtime-boxes/evidence/**"
       - "runtime-boxes/target-id-contract.json"
       - "runtime-boxes/trust/**"
       - "runtime-boxes/recipes/installer-fixture-*/**"
@@ -117,7 +119,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: runtime-box-foundation-preflight-${{ github.run_attempt }}
-          path: .runtime-box-ci/foundation-preflight.*
+          path: .runtime-box-ci/foundation-preflight.json
           include-hidden-files: true
           retention-days: 7
           if-no-files-found: error
@@ -191,7 +193,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: runtime-box-foundation-${{ matrix.recipeId }}-${{ github.run_attempt }}
-          path: .runtime-box-ci/${{ matrix.recipeId }}.*
+          path: .runtime-box-ci/${{ matrix.recipeId }}.json
           include-hidden-files: true
           retention-days: 7
           if-no-files-found: error

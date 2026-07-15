@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 import scipy.sparse as sp
 import torch
+import transformers
 from transformers import AutoModelForMaskedLM
 
 
@@ -201,7 +202,8 @@ def main() -> None:
     cosine = np.sum(actual * reference, axis=1) / (
         np.linalg.norm(actual, axis=1) * np.linalg.norm(reference, axis=1)
     )
-    if not np.allclose(actual, reference, rtol=1e-5, atol=1e-6):
+    finite = bool(np.isfinite(actual).all())
+    if not finite or not np.allclose(actual, reference, rtol=1e-5, atol=1e-6):
         raise SystemExit(
             f"Geneformer scientific parity failed: max absolute error {max_absolute_error:.8g}."
         )
@@ -217,6 +219,38 @@ def main() -> None:
         "maxAbsoluteError": max_absolute_error,
         "minimumCosineSimilarity": float(np.min(cosine)),
         "device": "CPU",
+        "evidence": {
+            "fixture": {
+                "id": "geneformer-pinned-4-cell-128-gene-v1",
+                "sha256": sha256(fixture),
+                "inputShapes": {"counts": [int(cell_count), int(gene_count)]},
+            },
+            "framework": {
+                "name": "torch",
+                "version": torch.__version__,
+                "backend": f"transformers-{transformers.__version__}-cpu",
+                "reportedCudaCompatibility": torch.version.cuda,
+            },
+            "accelerator": {
+                "kind": "cpu",
+                "gpuModel": None,
+                "driverVersion": None,
+                "reportedCudaCompatibility": torch.version.cuda,
+            },
+            "outputShapes": {"embeddings": list(actual.shape)},
+            "finiteValues": finite,
+            "tolerances": {"absolute": 1e-6, "relative": 1e-5},
+            "parity": {
+                "reference": "pinned-upstream-tokenizer-and-model",
+                "passed": True,
+                "maximumAbsoluteDifference": max_absolute_error,
+                "minimumCosineSimilarity": float(np.min(cosine)),
+            },
+            "peakRamBytes": None,
+            "peakVramBytes": None,
+            "outputContract": "passed",
+            "provenanceContract": "passed",
+        },
     }, indent=2))
 
 

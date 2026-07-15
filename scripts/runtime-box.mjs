@@ -111,6 +111,14 @@ function parseArgs(values) {
   return { positional, flags };
 }
 
+/** Writes an optional small machine-readable receipt without exposing credentials. */
+async function writeReceipt(flags, value) {
+  if (!flags.get('receipt')) return;
+  const path = resolve(String(flags.get('receipt')));
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, `${JSON.stringify(value, null, 2)}\n`);
+}
+
 /**
  * Runs a subprocess and throws on any non-zero exit.
  *
@@ -697,6 +705,16 @@ async function verifyRelease(path, flags) {
       await rm(extracted, { recursive: true, force: true });
     }
   }
+  await writeReceipt(flags, {
+    schemaVersion: 1,
+    status: 'passed',
+    localSignatureVerified: true,
+    signingKeyIds: signed.signatures.map((signature) => signature.keyId),
+    releasePayloadSha256: signed.payloadSha256,
+    archiveSha256: release.archive.sha256,
+    archiveSizeBytes: release.archive.sizeBytes,
+    selfTest: flags.get('self-test') ? 'passed' : 'not-requested',
+  });
   console.log(`Verified ${release.boxId} ${release.version} (${runtimeBoxTargetId(release.target)})`);
 }
 
@@ -775,8 +793,15 @@ async function verifyRemoteObject(url, expectedSizeBytes, expectedSha256) {
     }
   }
   if (received !== expectedSizeBytes) fail(`Remote object size mismatch: ${url}`);
-  if (hash.digest('hex') !== expectedSha256) fail(`Remote object SHA-256 mismatch: ${url}`);
+  const actualSha256 = hash.digest('hex');
+  if (actualSha256 !== expectedSha256) fail(`Remote object SHA-256 mismatch: ${url}`);
   console.log(`Verified remote SHA-256 ${expectedSha256}: ${url}`);
+  return {
+    url,
+    httpStatus: response.status,
+    sizeBytes: received,
+    sha256: actualSha256,
+  };
 }
 
 /** Returns whether the public immutable object already exists, rejecting ambiguous HTTP errors. */
@@ -967,12 +992,28 @@ async function publish(releaseDocumentPath, flags) {
     await uploadArchiveMultipart(archivePath, release, flags);
   }
   // Do not publish the release document until the public archive is byte-for-byte correct.
-  await verifyRemoteObject(release.archive.url, release.archive.sizeBytes, release.archive.sha256);
+  const archiveVerification = await verifyRemoteObject(
+    release.archive.url,
+    release.archive.sizeBytes,
+    release.archive.sha256,
+  );
   const releaseUrl = `${new URL(release.archive.url).origin}/${releaseKey}`;
   if (!await remoteObjectExists(releaseUrl)) {
     await uploadReleaseDocument(releasePath, release, releaseSha, flags);
   }
-  await verifyRemoteObject(releaseUrl, (await stat(releasePath)).size, releaseSha);
+  const releaseVerification = await verifyRemoteObject(
+    releaseUrl,
+    (await stat(releasePath)).size,
+    releaseSha,
+  );
+  await writeReceipt(flags, {
+    schemaVersion: 1,
+    status: 'passed',
+    bucket,
+    prefix: objectPrefix,
+    archive: archiveVerification,
+    release: releaseVerification,
+  });
   console.log(`Published r2://${bucket}/${archiveKey}`);
   console.log(`Published r2://${bucket}/${releaseKey}`);
 }
@@ -1043,7 +1084,23 @@ async function promote(channelDocumentPath, flags) {
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: signedBody,
   });
-  if (!response.ok) fail(`Channel promotion failed (${response.status}): ${await response.text()}`);
+  const responseText = await response.text();
+  if (!response.ok) fail(`Channel promotion failed (${response.status}): ${responseText}`);
+  let responseBody = {};
+  try {
+    responseBody = responseText ? JSON.parse(responseText) : {};
+  } catch {
+    responseBody = { message: responseText };
+  }
+  await writeReceipt(flags, {
+    schemaVersion: 1,
+    status: 'passed',
+    httpStatus: response.status,
+    response: responseBody,
+    channelUrl: payload.kind === 'liatir.runtime-box.channel'
+      ? `${registry}/v1/channels/${payload.channel}/${payload.boxId}/${runtimeBoxTargetId(payload.target)}`
+      : `${registry}/v1/revocations`,
+  });
   console.log(payload.kind === 'liatir.runtime-box.channel'
     ? `Promoted ${payload.boxId} ${payload.channel} ${runtimeBoxTargetId(payload.target)}`
     : `Promoted ${payload.revocations.length} Runtime Box revocation(s)`);

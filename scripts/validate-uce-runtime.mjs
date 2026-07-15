@@ -283,7 +283,7 @@ try {
 
   const mps = JSON.parse(run(python, ['-c', [
     'import json, torch',
-    'print(json.dumps({"built": torch.backends.mps.is_built(), "available": torch.backends.mps.is_available()}))',
+    'print(json.dumps({"built": torch.backends.mps.is_built(), "available": torch.backends.mps.is_available(), "torchVersion": torch.__version__, "reportedCudaCompatibility": torch.version.cuda}))',
   ].join(';')]).stdout);
   if (!mps.built || !mps.available) {
     throw new Error('UCE Gate 5 requires Apple Metal, but packaged Torch does not expose MPS.');
@@ -381,6 +381,48 @@ try {
       uvVersion: recipe.uvVersion,
       dependencyLockSha256:
         'bad8165f05e80191d7ffef0c862cb1b6882532a43182cba0a3ddf40246420bc8',
+    },
+    evidence: {
+      fixture: {
+        id: 'uce-pinned-human-10-cell-32-gene-v1',
+        sha256: inputSha256Before,
+        inputShapes: { counts: [fixture.cells, fixture.genes] },
+      },
+      framework: {
+        name: 'torch',
+        version: mps.torchVersion,
+        backend: 'cpu-reference-and-metal',
+        reportedCudaCompatibility: mps.reportedCudaCompatibility,
+      },
+      accelerator: {
+        kind: 'metal',
+        gpuModel: null,
+        driverVersion: null,
+        reportedCudaCompatibility: mps.reportedCudaCompatibility,
+      },
+      outputShapes: { embeddings: scientific.embeddingShape },
+      finiteValues: scientific.finite,
+      tolerances: {
+        absolute: ABSOLUTE_TOLERANCE,
+        relative: RELATIVE_TOLERANCE,
+        minimumCosineSimilarity: MINIMUM_COSINE_SIMILARITY,
+      },
+      parity: {
+        reference: 'pinned-cpu-product-runner',
+        passed: scientific.comparison?.allClose === true,
+        maximumAbsoluteDifference: scientific.comparison?.maximumAbsoluteDifference ?? null,
+        meanAbsoluteDifference: scientific.comparison?.meanAbsoluteDifference ?? null,
+        minimumCosineSimilarity: scientific.comparison?.minimumCosineSimilarity ?? null,
+      },
+      peakRamBytes: Math.max(
+        cpu.timing.maximumResidentSetBytes ?? 0,
+        metal.timing.maximumResidentSetBytes ?? 0,
+        cpu.timing.peakMemoryFootprintBytes ?? 0,
+        metal.timing.peakMemoryFootprintBytes ?? 0,
+      ) || null,
+      peakVramBytes: null,
+      outputContract: 'passed',
+      provenanceContract: 'passed',
     },
   }, null, 2));
 } finally {

@@ -4,12 +4,19 @@
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
-import { appendFileSync, existsSync, readFileSync, statfsSync, writeFileSync } from 'node:fs';
-import { mkdir, rm } from 'node:fs/promises';
-import { arch, platform, totalmem } from 'node:os';
-import { dirname, resolve } from 'node:path';
+import { appendFileSync, existsSync, readFileSync } from 'node:fs';
+import { rm } from 'node:fs/promises';
+import { resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  runTrackedCommand,
+  validateRuntimeBoxCiEvidence,
+  writeCompactEvidence,
+  writeHostEvidence,
+  writeJson,
+  writeModelEvidence,
+  writeReleaseEvidence,
+} from './runtime-box/evidence.mjs';
 import { runtimeBoxTargetId } from './runtime-box/targets.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
@@ -22,8 +29,6 @@ const TARGET_STATUSES = new Set([
   'native-lifecycle-validated',
   'published',
 ]);
-const HOST_PLATFORM = { darwin: 'macos', linux: 'linux', win32: 'windows' };
-const HOST_ARCH = { arm64: 'aarch64', x64: 'x86_64' };
 
 /** Reads the catalog without accepting an alternate path from CI input. */
 export function readRuntimeBoxCiCatalog() {
@@ -114,6 +119,7 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
     requireCatalog(model.legalStatus === 'approved', `${model.modelId} is not legally approved`);
     requireCatalog(existsSync(resolve(ROOT, model.legalRecord)), `missing legal record ${model.legalRecord}`);
     requireCatalog(existsSync(resolve(ROOT, model.validatorPath)), `missing validator ${model.validatorPath}`);
+    requireCatalog(existsSync(resolve(ROOT, model.productScriptPath)), `missing product script ${model.productScriptPath}`);
     requireCatalog(typeof model.validatorScript === 'string' && model.validatorScript.startsWith('runtime-box:validate:'), `invalid validator script for ${model.modelId}`);
     requireCatalog(Array.isArray(model.targets) && model.targets.length > 0, `targets are required for ${model.modelId}`);
     const signerBox = signerPolicy.boxes.find((candidate) => candidate.boxId === model.boxId);
@@ -151,6 +157,13 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
         requireCatalog(trustedKeyIds.has(publication.signingKeyId), `published target uses an untrusted key for ${targetKey}`);
         if (publication.source === 'github-actions') {
           requireCatalog(publication.workflowRunId && publication.workflowRunUrl, `GitHub publication lacks workflow evidence for ${targetKey}`);
+          requireCatalog(publication.evidenceRecord, `GitHub publication lacks a reviewed evidence record for ${targetKey}`);
+          const evidencePath = resolve(ROOT, publication.evidenceRecord);
+          requireCatalog(evidencePath.startsWith(`${resolve(ROOT, 'runtime-boxes/evidence')}${sep}`), `evidence record is outside runtime-boxes/evidence for ${targetKey}`);
+          requireCatalog(existsSync(evidencePath), `missing evidence record for ${targetKey}`);
+          const evidence = validateRuntimeBoxCiEvidence(JSON.parse(readFileSync(evidencePath, 'utf8')));
+          requireCatalog(evidence.phase === 'production-release' && evidence.status === 'passed', `reviewed publication evidence did not pass for ${targetKey}`);
+          requireCatalog(evidence.subject.modelId === model.modelId && evidence.subject.targetId === target.targetId, `reviewed publication evidence identity mismatch for ${targetKey}`);
         } else {
           requireCatalog(publication.source === 'legacy-operator', `invalid publication source for ${targetKey}`);
           requireCatalog(!publication.workflowRunId && !publication.workflowRunUrl, `legacy publication must not invent workflow evidence for ${targetKey}`);
@@ -188,100 +201,39 @@ function parseOptions(values) {
   return options;
 }
 
-/** Runs a checked package script without shell interpolation. */
-function runPackageScript(script) {
+/** Runs a checked validator, preserves its logs, and stores its canonical JSON result. */
+async function runPackageScript(script, output) {
+  const startedAt = Date.now();
   const result = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', script], {
     cwd: ROOT,
     env: process.env,
-    stdio: 'inherit',
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
   });
   if (result.error) throw result.error;
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
   if (result.status !== 0) throw new Error(`${script} exited with ${result.status}`);
-}
-
-/** Decodes a signed Runtime Box envelope and verifies its embedded payload hash shape. */
-function decodeEnvelope(path) {
-  const envelope = JSON.parse(readFileSync(resolve(ROOT, path), 'utf8'));
-  requireCatalog(envelope?.payloadEncoding === 'base64-json-utf8', `invalid signed document ${path}`);
-  const payloadBytes = Buffer.from(envelope.payloadBase64, 'base64');
-  requireCatalog(createHash('sha256').update(payloadBytes).digest('hex') === envelope.payloadSha256, `payload hash mismatch in ${path}`);
-  return { envelope, payload: JSON.parse(payloadBytes.toString('utf8')) };
-}
-
-/** Writes bounded JSON and Markdown evidence; box artifacts are never copied. */
-async function writeEvidence(options) {
-  const output = resolve(ROOT, options.get('output') || '.runtime-box-ci/evidence.json');
-  const record = {
+  let validatorResult;
+  try {
+    validatorResult = JSON.parse(result.stdout.trim());
+  } catch {
+    throw new Error(`${script} did not emit one canonical JSON result`);
+  }
+  requireCatalog(validatorResult.status === 'passed' && validatorResult.evidence, `${script} emitted incomplete evidence`);
+  await writeJson(output, {
     schemaVersion: 1,
-    phase: options.get('phase') || 'unknown',
-    status: options.get('status') || 'unknown',
-    modelId: options.get('model') || null,
-    recipeId: options.get('recipe') || null,
-    targetId: options.get('target') || null,
-    mode: options.get('mode') || null,
-    commitSha: process.env.GITHUB_SHA || null,
-    workflow: process.env.GITHUB_WORKFLOW || null,
-    runId: process.env.GITHUB_RUN_ID || null,
-    runAttempt: process.env.GITHUB_RUN_ATTEMPT || null,
-    runnerName: process.env.RUNNER_NAME || null,
-    createdAt: new Date().toISOString(),
-  };
-  await mkdir(dirname(output), { recursive: true });
-  writeFileSync(output, `${JSON.stringify(record, null, 2)}\n`);
-  writeFileSync(output.replace(/\.json$/, '.md'), [
-    `# Runtime Box ${record.phase} evidence`,
-    '',
-    `- Status: \`${record.status}\``,
-    `- Model: \`${record.modelId ?? 'n/a'}\``,
-    `- Recipe: \`${record.recipeId ?? 'n/a'}\``,
-    `- Target: \`${record.targetId ?? 'n/a'}\``,
-    `- Mode: \`${record.mode ?? 'n/a'}\``,
-    `- Commit: \`${record.commitSha ?? 'local'}\``,
-    `- Workflow run: \`${record.runId ?? 'local'}\``,
-    '',
-  ].join('\n'));
+    status: 'passed',
+    elapsedMs: Date.now() - startedAt,
+    result: validatorResult,
+  });
 }
 
 /** Checks the current native host and free workspace capacity before a heavy build. */
-function probeHost(target, runner) {
-  const actualPlatform = HOST_PLATFORM[platform()];
-  const actualArch = HOST_ARCH[arch()];
-  requireCatalog(actualPlatform === target.target.platform, `host platform ${actualPlatform} does not match ${target.target.platform}`);
-  requireCatalog(actualArch === target.target.arch, `host arch ${actualArch} does not match ${target.target.arch}`);
-  const filesystem = statfsSync(ROOT);
-  const freeDiskBytes = Number(filesystem.bavail) * Number(filesystem.bsize);
-  requireCatalog(freeDiskBytes >= target.requiredBuildDiskBytes, `only ${freeDiskBytes} free bytes; ${target.requiredBuildDiskBytes} required`);
-  if (target.gpuRequired) {
-    const probe = spawnSync(process.platform === 'win32' ? 'nvidia-smi.exe' : 'nvidia-smi', ['--query-gpu=name,driver_version,memory.total', '--format=csv,noheader'], { encoding: 'utf8' });
-    requireCatalog(probe.status === 0, 'nvidia-smi is required but unavailable');
-    console.log(probe.stdout.trim());
-  }
-  console.log(JSON.stringify({ platform: actualPlatform, arch: actualArch, totalMemoryBytes: totalmem(), freeDiskBytes, runner: runner.runsOn }));
-}
-
-/** Produces compact release evidence after build/verify and before publication. */
-async function writeReleaseEvidence(options) {
-  const release = decodeEnvelope(options.get('release'));
-  const channel = decodeEnvelope(options.get('channel'));
-  requireCatalog(release.payload.kind === 'liatir.runtime-box.release', 'release evidence input is not a release');
-  requireCatalog(channel.payload.kind === 'liatir.runtime-box.channel', 'release evidence input is not a channel');
-  const output = resolve(ROOT, options.get('output') || '.runtime-box-ci/release-evidence.json');
-  await mkdir(dirname(output), { recursive: true });
-  writeFileSync(output, `${JSON.stringify({
-    schemaVersion: 1,
-    boxId: release.payload.boxId,
-    modelId: release.payload.modelId,
-    version: release.payload.version,
-    targetId: runtimeBoxTargetId(release.payload.target),
-    archiveSha256: release.payload.archive.sha256,
-    archiveSizeBytes: release.payload.archive.sizeBytes,
-    installedSizeBytes: release.payload.installedSizeBytes ?? null,
-    releasePayloadSha256: release.envelope.payloadSha256,
-    channelPayloadSha256: channel.envelope.payloadSha256,
-    signingKeyIds: release.envelope.signatures.map((signature) => signature.keyId),
-    builderRevision: release.payload.provenance.builderRevision,
-    workflowRunId: process.env.GITHUB_RUN_ID || null,
-  }, null, 2)}\n`);
+async function probeHost(target, runner, output) {
+  const record = await writeHostEvidence(output, target.target, runner.runsOn);
+  requireCatalog(record.freeDiskBytesBefore >= target.requiredBuildDiskBytes, `only ${record.freeDiskBytesBefore} free bytes; ${target.requiredBuildDiskBytes} required`);
+  console.log(JSON.stringify(record));
 }
 
 /** Removes Runtime Box build state without touching repository sources. */
@@ -354,18 +306,39 @@ async function main() {
   if (command === 'host-probe') {
     validateRuntimeBoxCiCatalog(catalog);
     const resolved = resolveCiTarget(catalog, options.get('model'), options.get('recipe'), options.get('target'), options.get('mode'));
-    probeHost(resolved.target, resolved.runner);
+    await probeHost(resolved.target, resolved.runner, options.get('output') || '.runtime-box-ci/host.json');
+    return;
+  }
+  if (command === 'tracked-build') {
+    validateRuntimeBoxCiCatalog(catalog);
+    const resolved = resolveCiTarget(catalog, options.get('model'), options.get('recipe'), options.get('target'), options.get('mode'));
+    const args = ['run', 'runtime-box', '--', 'build', resolved.target.recipeId];
+    for (const name of ['channel', 'signer', 'signer-audience', 'public-key', 'asset-base-url']) {
+      if (options.has(name)) args.push(`--${name}`, options.get(name));
+    }
+    await runTrackedCommand(
+      process.platform === 'win32' ? 'npm.cmd' : 'npm',
+      args,
+      options.get('metrics') || '.runtime-box-ci/build-metrics.json',
+    );
     return;
   }
   if (command === 'run-validator') {
     validateRuntimeBoxCiCatalog(catalog);
     const resolved = resolveCiTarget(catalog, options.get('model'), options.get('recipe'), options.get('target'), options.get('mode'));
     requireCatalog(options.get('script') === resolved.model.validatorScript, 'validator script does not match the catalog');
-    runPackageScript(resolved.model.validatorScript);
+    await runPackageScript(
+      resolved.model.validatorScript,
+      options.get('output') || '.runtime-box-ci/scientific-result.json',
+    );
     return;
   }
-  if (command === 'write-evidence') return writeEvidence(options);
-  if (command === 'release-evidence') return writeReleaseEvidence(options);
+  const evidenceOptions = Object.fromEntries(options);
+  if (command === 'write-evidence') return writeCompactEvidence(evidenceOptions);
+  if (command === 'write-model-evidence') return writeModelEvidence(evidenceOptions, catalog);
+  if (command === 'write-release-evidence' || command === 'release-evidence') {
+    return writeReleaseEvidence(evidenceOptions, catalog);
+  }
   if (command === 'clean') return cleanBuildState();
   throw new Error(`Unknown Runtime Box CI command: ${command ?? '<none>'}`);
 }

@@ -12,6 +12,7 @@
  * That is exactly the failure this is here to catch.
  */
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -95,6 +96,11 @@ try {
     [fixtureScript],
     { input: JSON.stringify({ runtimeDir }) },
   ));
+  const fixtureSha256 = createHash('sha256').update(await readFile(fixture.inputFile)).digest('hex');
+  const framework = JSON.parse(run(python, ['-c', [
+    'import json, torch',
+    'print(json.dumps({"name":"torch","version":torch.__version__,"reportedCudaCompatibility":torch.version.cuda}))',
+  ].join(';')]));
 
   const productSource = await readFile(
     join(ROOT, 'frontend/src/lib/tools/ai/python-scripts/scgpt-embedding.ts'),
@@ -128,6 +134,9 @@ try {
   if (!finite || result.summary.cellCount !== 1 || result.summary.embeddingDim !== 512) {
     throw new Error('scGPT inference output failed validation.');
   }
+  const acceleratorKind = String(result.summary.accelerator).startsWith('mps')
+    ? 'metal'
+    : String(result.summary.accelerator).startsWith('cuda') ? 'cuda' : 'cpu';
   console.log(JSON.stringify({
     status: 'passed',
     model: result.summary.model,
@@ -136,6 +145,31 @@ try {
     embeddingShape: [result.summary.cellCount, result.summary.embeddingDim],
     accelerator: result.summary.accelerator,
     finitePreview: finite,
+    evidence: {
+      fixture: {
+        id: 'scgpt-pinned-1-cell-128-gene-v1',
+        sha256: fixtureSha256,
+        inputShapes: { counts: [fixture.cells, fixture.genes] },
+      },
+      framework: {
+        ...framework,
+        backend: String(result.summary.accelerator),
+      },
+      accelerator: {
+        kind: acceleratorKind,
+        gpuModel: null,
+        driverVersion: null,
+        reportedCudaCompatibility: framework.reportedCudaCompatibility,
+      },
+      outputShapes: { embeddings: [result.summary.cellCount, result.summary.embeddingDim] },
+      finiteValues: finite,
+      tolerances: {},
+      parity: { reference: 'pinned-checkpoint-inference', passed: true },
+      peakRamBytes: null,
+      peakVramBytes: null,
+      outputContract: 'passed',
+      provenanceContract: 'passed',
+    },
   }, null, 2));
 } finally {
   await rm(workDir, { recursive: true, force: true });

@@ -58,6 +58,28 @@ jobs:
       - name: Verify focused catalog contracts
         run: npm run test:unit -- tests/unit/runtime-box-ci-catalog.test.ts tests/unit/runtime-box-target-id-contract.test.ts
 
+      - name: Write compact preflight evidence
+        if: always()
+        run: >-
+          npm run runtime-box:ci -- write-evidence
+          --phase foundation-preflight
+          --status "${{ job.status }}"
+          --model "${{ inputs.model_id }}"
+          --recipe "${{ inputs.recipe_id }}"
+          --target "${{ inputs.target_id }}"
+          --mode "${{ inputs.mode }}"
+          --output .runtime-box-ci/model-preflight.json
+
+      - name: Upload compact preflight evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-box-preflight-${{ inputs.model_id }}-${{ inputs.target_id }}-${{ github.run_attempt }}
+          path: .runtime-box-ci/model-preflight.json
+          include-hidden-files: true
+          retention-days: 7
+          if-no-files-found: error
+
   native:
     name: Native ${{ inputs.mode }} validation
     needs: preflight
@@ -90,15 +112,26 @@ jobs:
           --recipe "${{ inputs.recipe_id }}"
           --target "${{ inputs.target_id }}"
           --mode "${{ inputs.mode }}"
+          --output .runtime-box-ci/host.json
 
       - name: Create an ephemeral development signing key
         run: npm run runtime-box -- keygen
 
       - name: Build a clean native Runtime Box
-        run: npm run runtime-box -- build "${{ inputs.recipe_id }}" --channel beta
+        run: >-
+          npm run runtime-box:ci -- tracked-build
+          --model "${{ inputs.model_id }}"
+          --recipe "${{ inputs.recipe_id }}"
+          --target "${{ inputs.target_id }}"
+          --mode "${{ inputs.mode }}"
+          --channel beta
+          --metrics .runtime-box-ci/build-metrics.json
 
       - name: Verify signature, archive hash, layout, and self-test
-        run: npm run runtime-box -- verify "${{ needs.preflight.outputs.release_path }}" --self-test
+        run: >-
+          npm run runtime-box -- verify "${{ needs.preflight.outputs.release_path }}"
+          --self-test
+          --receipt .runtime-box-ci/verification.json
 
       - name: Run the model scientific validator
         if: inputs.mode != 'build'
@@ -109,6 +142,7 @@ jobs:
           --target "${{ inputs.target_id }}"
           --mode "${{ inputs.mode }}"
           --script "${{ needs.preflight.outputs.validator_script }}"
+          --output .runtime-box-ci/scientific-result.json
 
       - name: Install pinned Rust 1.95.0
         if: inputs.mode == 'native-lifecycle'
@@ -131,34 +165,32 @@ jobs:
         working-directory: src-tauri
         run: cargo test runtime_box -- --nocapture
 
-      - name: Clean Runtime Box build state
+      - name: Write complete model evidence
         if: always()
-        run: npm run runtime-box:ci -- clean
-
-  evidence:
-    name: Compact validation evidence
-    needs: [preflight, native]
-    if: always()
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Write compact evidence only
         run: >-
-          node scripts/runtime-box-ci.mjs write-evidence
-          --phase model-validation
-          --status "preflight-${{ needs.preflight.result }}-native-${{ needs.native.result }}"
+          npm run runtime-box:ci -- write-model-evidence
+          --status "${{ job.status }}"
           --model "${{ inputs.model_id }}"
           --recipe "${{ inputs.recipe_id }}"
           --target "${{ inputs.target_id }}"
           --mode "${{ inputs.mode }}"
+          --release "${{ needs.preflight.outputs.release_path }}"
+          --host .runtime-box-ci/host.json
+          --metrics .runtime-box-ci/build-metrics.json
+          --verification .runtime-box-ci/verification.json
+          --scientific .runtime-box-ci/scientific-result.json
           --output .runtime-box-ci/model-validation.json
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload compact model evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: runtime-box-validation-${{ inputs.model_id }}-${{ inputs.target_id }}-${{ inputs.mode }}-${{ github.run_attempt }}
-          path: .runtime-box-ci/model-validation.*
+          path: .runtime-box-ci/model-validation.json
           include-hidden-files: true
-          retention-days: 14
+          retention-days: 7
           if-no-files-found: error
+
+      - name: Clean Runtime Box build state
+        if: always()
+        run: npm run runtime-box:ci -- clean

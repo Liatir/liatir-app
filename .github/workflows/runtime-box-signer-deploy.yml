@@ -81,14 +81,14 @@ jobs:
 
       - name: Write deployment evidence
         if: always()
-        run: npm run runtime-box:ci -- write-evidence --phase signer-deploy --status "${{ job.status }}" --output .runtime-box-ci/signer-deploy.json
+        run: npm run runtime-box:ci -- write-evidence --phase signer-deploy --status "${{ job.status }}" --environment runtime-box-signer-admin --output .runtime-box-ci/signer-deploy.json
 
       - name: Upload compact deployment evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: runtime-box-signer-deploy-${{ github.run_attempt }}
-          path: .runtime-box-ci/signer-deploy.*
+          path: .runtime-box-ci/signer-deploy.json
           include-hidden-files: true
-          retention-days: 30
+          retention-days: 7
           if-no-files-found: error
