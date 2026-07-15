@@ -6,6 +6,7 @@ on:
       - "runtime-boxes/recipes/uce-4layer-macos-arm64-metal/**"
       - "runtime-boxes/legal/uce-4layer.md"
       - "scripts/validate-uce-runtime.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
       - ".github/workflows/runtime-box-uce-4layer.yml"
   push:
     branches: [main]
@@ -13,6 +14,7 @@ on:
       - "runtime-boxes/recipes/uce-4layer-macos-arm64-metal/**"
       - "runtime-boxes/legal/uce-4layer.md"
       - "scripts/validate-uce-runtime.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
       - ".github/workflows/runtime-box-uce-4layer.yml"
   workflow_dispatch:
     inputs:

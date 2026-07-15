@@ -6,6 +6,7 @@ on:
       - "runtime-boxes/recipes/geneformer-v1-10m-macos-arm64-metal/**"
       - "runtime-boxes/legal/geneformer-v1-10m.md"
       - "scripts/validate-geneformer-parity.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
       - ".github/workflows/runtime-box-geneformer-v1-10m.yml"
   push:
     branches: [main]
@@ -13,6 +14,7 @@ on:
       - "runtime-boxes/recipes/geneformer-v1-10m-macos-arm64-metal/**"
       - "runtime-boxes/legal/geneformer-v1-10m.md"
       - "scripts/validate-geneformer-parity.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
       - ".github/workflows/runtime-box-geneformer-v1-10m.yml"
   workflow_dispatch:
     inputs:

@@ -6,6 +6,7 @@ on:
       - "runtime-boxes/recipes/scgpt-whole-human-macos-arm64-metal/**"
       - "runtime-boxes/legal/scgpt-whole-human.md"
       - "scripts/validate-scgpt-runtime.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
       - ".github/workflows/runtime-box-scgpt-whole-human.yml"
   push:
     branches: [main]
@@ -13,6 +14,7 @@ on:
       - "runtime-boxes/recipes/scgpt-whole-human-macos-arm64-metal/**"
       - "runtime-boxes/legal/scgpt-whole-human.md"
       - "scripts/validate-scgpt-runtime.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
       - ".github/workflows/runtime-box-scgpt-whole-human.yml"
   workflow_dispatch:
     inputs:
