@@ -61,6 +61,7 @@ jobs:
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           version: "0.11.28"
+          enable-cache: false
 
       - name: Verify Runtime Box adapter and archive contracts
         run: npm run test:unit -- tests/unit/runtime-box-target-adapters.test.ts tests/unit/runtime-box-target-id-contract.test.ts
