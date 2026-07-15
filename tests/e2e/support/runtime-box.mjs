@@ -5,6 +5,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { waitForLiatirBridge } from './liatir-app.mjs';
 
+/** Returns the published target metadata shared by the current macOS native fixtures. */
+export function macosArm64MetalRuntimeBoxTarget(minRamGb) {
+  return [{
+    target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
+    hostEnvironments: ['native'],
+    minRamGb,
+  }];
+}
+
 /**
  * Pulls a Python script out of the TypeScript file that ships it.
  *

@@ -40,6 +40,7 @@ pub mod snpeff;
 pub mod bwa;
 pub mod minimap2;
 pub mod execution_resources;
+pub mod ai_hardware;
 pub mod ai_runtime;
 pub mod runtime_boxes;
 pub mod python_env;
@@ -54,6 +55,7 @@ pub mod quenta;
 //   - `ipc_server`          started by main.rs
 //   - `tray`                used by menu.rs
 //   - `execution_resources` a plain helper (thread-count resolution) used by bwa.rs / minimap2.rs
+//   - `ai_hardware`         shared native probes used by AI runtimes and Runtime Box selection
 //   - `python_env`          wrapped by ai_runtime, runtime_boxes, lia_plugins and plugin_dev
 
 pub use notifications::*;

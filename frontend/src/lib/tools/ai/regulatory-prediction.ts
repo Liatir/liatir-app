@@ -13,6 +13,7 @@ import {
 	ENFORMER_REGULATORY_MODEL_ID
 } from '$lib/ai/model-registry';
 import { cachePathForModel, runAIPython, type AIPythonRunResult } from '$lib/ai/runtime';
+import { runtimeBoxResultProvenance } from '$lib/ai/runtime-box-provenance';
 import { requireRegulatoryArtifactForModel, regulatoryArtifactForModel } from '$lib/ai/model-artifacts';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
 import { liatir } from '$lib/api';
@@ -226,6 +227,7 @@ export async function finalizeRegulatoryPredictionResult(
 		runtimeName: model.runtime.name,
 		runtimeVersion: model.runtime.version ?? null,
 		runtimeLock: model.runtimeLock ?? null,
+		...runtimeBoxResultProvenance(result),
 		localOnly: model.localOnly,
 		inputSummary: {
 			referenceFile: inputs.referenceFile ? basename(inputs.referenceFile) : null,

@@ -37,6 +37,7 @@ use url::Url;
 use uuid::Uuid;
 
 use super::{
+    ai_hardware::{nvidia_capability, total_memory_bytes},
     app_storage::{resolve_app_path, write_text_atomic},
     managed_bins::{
         available_space_for_path, extract_zip_with_expected_size, format_bytes, sha256_of_file,
@@ -114,7 +115,7 @@ struct DocumentSignature {
 }
 
 /// The hardware/OS profile a box is built for. A box is only installable when this
-/// matches the host exactly (see [`current_target`] and [`verify_release_identity`]).
+/// matches the detected native host and passes signed release verification.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 struct RuntimeBoxTarget {
@@ -187,8 +188,28 @@ struct RuntimeBoxCompatibility {
     max_liatir_version_exclusive: Option<String>,
     min_macos_version: Option<String>,
     min_ram_gb: Option<u64>,
+    min_nvidia_driver_version: Option<String>,
     /// Execution environments validated for this payload. Kept optional for legacy releases.
     host_environments: Option<Vec<String>>,
+}
+
+/// One published target candidate supplied by the shared AI Model catalog.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeBoxTargetCandidate {
+    target: RuntimeBoxTarget,
+    host_environments: Vec<String>,
+    min_ram_gb: Option<u64>,
+    min_nvidia_driver_version: Option<String>,
+}
+
+/// Native facts used to choose one candidate without relying on mutable global selection state.
+#[derive(Debug, Clone)]
+struct RuntimeBoxHostCapabilities {
+    platform: String,
+    arch: String,
+    total_memory_bytes: Option<u64>,
+    nvidia_driver_version: Option<String>,
 }
 
 /// Where the payload archive lives and what it must hash and weigh. Both `sha256` and
@@ -247,6 +268,17 @@ struct ExtractedBoxMetadata {
     python_entry_point: String,
 }
 
+/// Durable provenance stored inside an activated Runtime Box and copied to AI Job metadata.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeBoxActivationMetadata {
+    schema_version: u32,
+    selected_target: RuntimeBoxTarget,
+    release: ReleaseManifest,
+    /// Exact verified envelope, including signatures and payload bytes.
+    signed_release: Option<serde_json::Value>,
+}
+
 /// Returned to the frontend after a successful install.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -259,6 +291,62 @@ pub struct RuntimeBoxInstallResult {
     size_bytes: u64,
     /// True when a previous version was displaced and can still be restored.
     rollback_available: bool,
+    activation: RuntimeBoxActivationMetadata,
+}
+
+/// Reads and validates durable Runtime Box provenance for AI Job/Result attribution.
+///
+/// Older installations stored the bare release manifest. They remain readable, while new
+/// activation envelopes are re-verified against the compiled trust roots before every run.
+pub(crate) fn runtime_box_activation_metadata(
+    app: &AppHandle,
+    runtime_id: &str,
+) -> Result<Option<serde_json::Value>, String> {
+    let runtime_dir = env_dir(app, AI_RUNTIME_ROOT, runtime_id)?;
+    let path = runtime_dir.join("runtime-box-activation.json");
+    if !path.is_file() {
+        return Ok(None);
+    }
+    let bytes = std::fs::read(&path)
+        .map_err(|error| format!("cannot read AI Runtime Box activation metadata: {error}"))?;
+    let value: serde_json::Value = serde_json::from_slice(&bytes)
+        .map_err(|error| format!("invalid AI Runtime Box activation metadata: {error}"))?;
+
+    let activation = if value.get("release").is_some() {
+        let activation: RuntimeBoxActivationMetadata = serde_json::from_value(value)
+            .map_err(|error| format!("invalid AI Runtime Box activation metadata: {error}"))?;
+        if activation.schema_version != 1 || activation.selected_target != activation.release.target
+        {
+            return Err("AI Runtime Box activation target does not match its release".to_string());
+        }
+        let document = activation.signed_release.as_ref().ok_or_else(|| {
+            "AI Runtime Box activation metadata is missing its signed release".to_string()
+        })?;
+        let signed_bytes = serde_json::to_vec(document).map_err(|error| error.to_string())?;
+        let verified: ReleaseManifest = verify_signed_payload(&signed_bytes)?;
+        if serde_json::to_value(&verified).map_err(|error| error.to_string())?
+            != serde_json::to_value(&activation.release).map_err(|error| error.to_string())?
+        {
+            return Err(
+                "AI Runtime Box activation release does not match its signed metadata".to_string(),
+            );
+        }
+        activation
+    } else {
+        let release: ReleaseManifest = serde_json::from_value(value).map_err(|error| {
+            format!("invalid legacy AI Runtime Box activation metadata: {error}")
+        })?;
+        RuntimeBoxActivationMetadata {
+            schema_version: 1,
+            selected_target: release.target.clone(),
+            release,
+            signed_release: None,
+        }
+    };
+
+    serde_json::to_value(activation)
+        .map(Some)
+        .map_err(|error| error.to_string())
 }
 
 /// Returned by a rollback. `restored` is `false` when there was simply nothing to roll
@@ -284,9 +372,13 @@ impl InstallGuard {
     /// Claims `runtime_id`, or fails if another operation on it is already running.
     fn acquire(runtime_id: &str) -> Result<Self, String> {
         let installs = ACTIVE_INSTALLS.get_or_init(|| Mutex::new(HashSet::new()));
-        let mut active = installs.lock().map_err(|_| "runtime install state poisoned".to_string())?;
+        let mut active = installs
+            .lock()
+            .map_err(|_| "runtime install state poisoned".to_string())?;
         if !active.insert(runtime_id.to_string()) {
-            return Err(format!("AI Runtime Box installation is already active for {runtime_id}"));
+            return Err(format!(
+                "AI Runtime Box installation is already active for {runtime_id}"
+            ));
         }
         Ok(Self {
             runtime_id: runtime_id.to_string(),
@@ -328,18 +420,21 @@ fn trusted_keys() -> Result<Vec<TrustedKey>, String> {
     if cfg!(debug_assertions) {
         keys.append(&mut parse_keys(DEVELOPMENT_TRUST_KEY)?);
         if let Ok(path) = std::env::var("LIATIR_RUNTIME_BOX_TRUSTED_KEY_FILE") {
-            let raw = std::fs::read_to_string(&path)
-                .map_err(|error| format!("cannot read debug Runtime Box trust key {path}: {error}"))?;
-            keys.append(&mut parse_keys(&raw)
-                .map_err(|error| format!("invalid debug Runtime Box trust key: {error}"))?);
+            let raw = std::fs::read_to_string(&path).map_err(|error| {
+                format!("cannot read debug Runtime Box trust key {path}: {error}")
+            })?;
+            keys.append(
+                &mut parse_keys(&raw)
+                    .map_err(|error| format!("invalid debug Runtime Box trust key: {error}"))?,
+            );
         }
     }
     // Extra production keys can be injected at *compile* time (option_env! reads the build
     // environment, not the runtime one), which is what makes key rotation possible without
     // editing the checked-in trust files.
     if let Some(raw) = option_env!("LIATIR_RUNTIME_BOX_TRUSTED_KEYS_JSON") {
-        let mut production: Vec<TrustedKey> =
-            serde_json::from_str(raw).map_err(|error| format!("invalid production Runtime Box trust keys: {error}"))?;
+        let mut production: Vec<TrustedKey> = serde_json::from_str(raw)
+            .map_err(|error| format!("invalid production Runtime Box trust keys: {error}"))?;
         keys.append(&mut production);
     }
     // Fail closed: with no key at all every box would otherwise be unverifiable.
@@ -374,7 +469,10 @@ fn verify_signed_payload<T: for<'de> Deserialize<'de>>(bytes: &[u8]) -> Result<T
             continue;
         }
         // Unknown key ID: not necessarily an attack, just a key this build does not carry.
-        let Some(key) = keys.iter().find(|candidate| candidate.key_id == document_signature.key_id) else {
+        let Some(key) = keys
+            .iter()
+            .find(|candidate| candidate.key_id == document_signature.key_id)
+        else {
             continue;
         };
         let public_bytes = BASE64
@@ -383,11 +481,13 @@ fn verify_signed_payload<T: for<'de> Deserialize<'de>>(bytes: &[u8]) -> Result<T
         let public_array: [u8; 32] = public_bytes
             .try_into()
             .map_err(|_| "trusted Ed25519 public key must contain 32 bytes".to_string())?;
-        let verifying_key = VerifyingKey::from_bytes(&public_array).map_err(|error| error.to_string())?;
+        let verifying_key =
+            VerifyingKey::from_bytes(&public_array).map_err(|error| error.to_string())?;
         let signature_bytes = BASE64
             .decode(&document_signature.signature_base64)
             .map_err(|error| format!("invalid Runtime Box signature encoding: {error}"))?;
-        let signature = Signature::from_slice(&signature_bytes).map_err(|error| error.to_string())?;
+        let signature =
+            Signature::from_slice(&signature_bytes).map_err(|error| error.to_string())?;
         if verifying_key.verify(&payload, &signature).is_ok() {
             verified = true;
             break;
@@ -398,7 +498,8 @@ fn verify_signed_payload<T: for<'de> Deserialize<'de>>(bytes: &[u8]) -> Result<T
     }
     // Only parsed once the bytes are proven authentic, so no attacker-controlled JSON is
     // ever fed to the typed deserialiser.
-    serde_json::from_slice(&payload).map_err(|error| format!("invalid signed Runtime Box payload: {error}"))
+    serde_json::from_slice(&payload)
+        .map_err(|error| format!("invalid signed Runtime Box payload: {error}"))
 }
 
 /// Every URL the registry hands us (channel, release manifest, archive) goes through here.
@@ -441,7 +542,10 @@ async fn fetch_control_document(url: &str) -> Result<Option<Vec<u8>>, String> {
         return Ok(None);
     }
     if !response.status().is_success() {
-        return Err(format!("Runtime Box registry returned HTTP {}", response.status()));
+        return Err(format!(
+            "Runtime Box registry returned HTTP {}",
+            response.status()
+        ));
     }
     // The size cap is applied twice on purpose: the advertised Content-Length lets us bail out
     // before reading the body, but it can be absent or simply wrong, so the real length is
@@ -456,9 +560,10 @@ async fn fetch_control_document(url: &str) -> Result<Option<Vec<u8>>, String> {
     Ok(Some(bytes.to_vec()))
 }
 
-/// Describes the machine we are running on, in the same shape the manifests use.
-fn current_target() -> RuntimeBoxTarget {
-    RuntimeBoxTarget {
+/// Describes the native machine facts used for per-install target selection.
+fn current_host_capabilities() -> RuntimeBoxHostCapabilities {
+    let nvidia = nvidia_capability();
+    RuntimeBoxHostCapabilities {
         platform: match std::env::consts::OS {
             "macos" => "macos".to_string(),
             value => value.to_string(),
@@ -467,15 +572,162 @@ fn current_target() -> RuntimeBoxTarget {
             "aarch64" => "aarch64".to_string(),
             value => value.to_string(),
         },
-        // Only the macOS GPU backend is claimed today; every other host asks for a CPU box.
-        // CUDA is consequently never requested, hence the `None` below.
-        accelerator: if cfg!(target_os = "macos") {
-            "metal".to_string()
-        } else {
-            "cpu".to_string()
-        },
-        cuda_version: None,
+        total_memory_bytes: total_memory_bytes(),
+        nvidia_driver_version: nvidia.map(|capability| capability.driver_version),
     }
+}
+
+/// True when a dotted numeric version is safe to compare component by component.
+fn is_numeric_version(value: &str) -> bool {
+    let parts = value.split('.').collect::<Vec<_>>();
+    parts.len() >= 2
+        && parts.iter().all(|part| {
+            !part.is_empty() && part.chars().all(|character| character.is_ascii_digit())
+        })
+}
+
+/// Selects the first published native target compatible with this exact host.
+///
+/// CUDA candidates must declare and satisfy a minimum NVIDIA driver. A later CPU candidate is a
+/// deliberate fallback; Linux payloads marked only for windows-wsl2 are never selected here.
+fn select_target_candidate<'a>(
+    candidates: &'a [RuntimeBoxTargetCandidate],
+    host: &RuntimeBoxHostCapabilities,
+) -> Result<&'a RuntimeBoxTargetCandidate, String> {
+    if candidates.is_empty() {
+        return Err("This AI Model has no published Runtime Box targets".to_string());
+    }
+    for candidate in candidates {
+        let candidate_id = target_id(&candidate.target)?;
+        if candidate.host_environments.is_empty()
+            || candidate
+                .host_environments
+                .iter()
+                .any(|environment| environment != "native" && environment != "windows-wsl2")
+        {
+            return Err(format!(
+                "Published Runtime Box target {candidate_id} has invalid host environment metadata"
+            ));
+        }
+        if candidate.min_ram_gb.is_some_and(|memory| memory == 0) {
+            return Err(format!(
+                "Published Runtime Box target {candidate_id} has an invalid memory requirement"
+            ));
+        }
+        if candidate.target.accelerator == "cuda" {
+            if !candidate
+                .min_nvidia_driver_version
+                .as_deref()
+                .is_some_and(is_numeric_version)
+            {
+                return Err(format!(
+                    "Published CUDA Runtime Box target {candidate_id} is missing a valid minimum NVIDIA driver"
+                ));
+            }
+        } else if candidate.min_nvidia_driver_version.is_some() {
+            return Err(format!(
+                "Non-CUDA Runtime Box target {candidate_id} cannot require an NVIDIA driver"
+            ));
+        }
+    }
+
+    let platform_candidates = candidates
+        .iter()
+        .filter(|candidate| candidate.target.platform == host.platform)
+        .collect::<Vec<_>>();
+    if platform_candidates.is_empty() {
+        return Err(format!(
+            "This AI Model does not have a published Runtime Box for {}",
+            match host.platform.as_str() {
+                "macos" => "macOS",
+                "windows" => "Windows",
+                "linux" => "Linux",
+                value => value,
+            }
+        ));
+    }
+    let architecture_candidates = platform_candidates
+        .into_iter()
+        .filter(|candidate| candidate.target.arch == host.arch)
+        .collect::<Vec<_>>();
+    if architecture_candidates.is_empty() {
+        return Err(format!(
+            "This AI Model does not have a published Runtime Box for {} {}",
+            host.platform, host.arch
+        ));
+    }
+    let native_candidates = architecture_candidates
+        .into_iter()
+        .filter(|candidate| {
+            candidate
+                .host_environments
+                .iter()
+                .any(|environment| environment == "native")
+        })
+        .collect::<Vec<_>>();
+    if native_candidates.is_empty() {
+        return Err(format!(
+            "This AI Model has no native Runtime Box for {} {}; WSL2 targets are not selected",
+            host.platform, host.arch
+        ));
+    }
+
+    let mut required_memory_gb = None;
+    let mut required_driver = None;
+    let mut candidates_after_memory_check = 0usize;
+    for candidate in native_candidates {
+        if let (Some(minimum_gb), Some(installed_bytes)) =
+            (candidate.min_ram_gb, host.total_memory_bytes)
+        {
+            if installed_bytes < minimum_gb.saturating_mul(1024 * 1024 * 1024) {
+                required_memory_gb = Some(required_memory_gb.unwrap_or(0).max(minimum_gb));
+                continue;
+            }
+        }
+        candidates_after_memory_check += 1;
+
+        match candidate.target.accelerator.as_str() {
+            "cuda" => {
+                let minimum = candidate.min_nvidia_driver_version.as_deref().unwrap();
+                required_driver = Some(minimum);
+                let Some(installed) = host.nvidia_driver_version.as_deref() else {
+                    continue;
+                };
+                if version_parts(installed) < version_parts(minimum) {
+                    continue;
+                }
+            }
+            "metal" if host.platform != "macos" => continue,
+            "cpu" | "metal" => {}
+            _ => continue,
+        }
+        return Ok(candidate);
+    }
+
+    if candidates_after_memory_check == 0 {
+        if let (Some(minimum_gb), Some(installed_bytes)) =
+            (required_memory_gb, host.total_memory_bytes)
+        {
+            return Err(format!(
+                "This AI Model needs at least {minimum_gb} GB of memory, but this computer has {} GB",
+                installed_bytes / (1024 * 1024 * 1024)
+            ));
+        }
+    }
+    if let Some(minimum) = required_driver {
+        return match host.nvidia_driver_version.as_deref() {
+            Some(installed) => Err(format!(
+                "This AI Model needs NVIDIA driver {minimum} or newer, but this computer has {installed}; no compatible CPU Runtime Box is published"
+            )),
+            None => Err(format!(
+                "This AI Model needs an NVIDIA GPU with driver {minimum} or newer; no compatible CPU Runtime Box is published"
+            )),
+        };
+    }
+    Err(format!(
+        "No published Runtime Box target is compatible with {} {}",
+        host.platform, host.arch
+    ))
 }
 
 /// Flattens a validated target into the slug used in registry URLs.
@@ -540,7 +792,10 @@ fn safe_relative_path(value: &str) -> Result<PathBuf, String> {
     if path.is_absolute() {
         return Err(format!("Runtime Box path must be relative: {value}"));
     }
-    if path.components().any(|component| !matches!(component, Component::Normal(_))) {
+    if path
+        .components()
+        .any(|component| !matches!(component, Component::Normal(_)))
+    {
         return Err(format!("unsafe Runtime Box path: {value}"));
     }
     Ok(path.to_path_buf())
@@ -563,11 +818,12 @@ fn version_parts(value: &str) -> Vec<u64> {
 
 /// Checks the host against the manifest's requirements before any download starts.
 ///
-/// The macOS and RAM probes shell out to `sw_vers` and `sysctl`. If a probe fails we cannot
-/// conclude the host is unsuitable, so `is_some_and` lets the check pass rather than blocking
-/// an install on a missing system tool — the requirement is only enforced when the host value
-/// is actually known.
-fn check_compatibility(compatibility: &RuntimeBoxCompatibility) -> Result<(), String> {
+/// Native probes are enforced when they return a fact. An unavailable memory probe remains
+/// unknown rather than being treated as zero, while an explicit NVIDIA minimum must be proven.
+fn check_compatibility(
+    compatibility: &RuntimeBoxCompatibility,
+    host: &RuntimeBoxHostCapabilities,
+) -> Result<(), String> {
     let app = version_parts(env!("CARGO_PKG_VERSION"));
     if app < version_parts(&compatibility.min_liatir_version) {
         return Err(format!(
@@ -577,7 +833,9 @@ fn check_compatibility(compatibility: &RuntimeBoxCompatibility) -> Result<(), St
     }
     if let Some(maximum) = compatibility.max_liatir_version_exclusive.as_deref() {
         if app >= version_parts(maximum) {
-            return Err(format!("This AI Runtime Box requires a Liatir version older than {maximum}"));
+            return Err(format!(
+                "This AI Runtime Box requires a Liatir version older than {maximum}"
+            ));
         }
     }
     #[cfg(target_os = "macos")]
@@ -588,21 +846,51 @@ fn check_compatibility(compatibility: &RuntimeBoxCompatibility) -> Result<(), St
             .ok()
             .filter(|output| output.status.success())
             .map(|output| String::from_utf8_lossy(&output.stdout).trim().to_string());
-        if installed.as_deref().map(version_parts).is_some_and(|version| version < version_parts(minimum)) {
-            return Err(format!("This AI Runtime Box requires macOS {minimum} or newer"));
+        if installed
+            .as_deref()
+            .map(version_parts)
+            .is_some_and(|version| version < version_parts(minimum))
+        {
+            return Err(format!(
+                "This AI Runtime Box requires macOS {minimum} or newer"
+            ));
         }
     }
-    #[cfg(target_os = "macos")]
     if let Some(minimum_gb) = compatibility.min_ram_gb {
-        let installed_bytes = Command::new("sysctl")
-            .args(["-n", "hw.memsize"])
-            .output()
-            .ok()
-            .filter(|output| output.status.success())
-            .and_then(|output| String::from_utf8_lossy(&output.stdout).trim().parse::<u64>().ok());
-        if installed_bytes.is_some_and(|bytes| bytes < minimum_gb * 1024 * 1024 * 1024) {
-            return Err(format!("This AI Runtime Box requires at least {minimum_gb} GB of memory"));
+        let installed_bytes = host.total_memory_bytes;
+        if installed_bytes
+            .is_some_and(|bytes| bytes < minimum_gb.saturating_mul(1024 * 1024 * 1024))
+        {
+            return Err(format!(
+                "This AI Runtime Box requires at least {minimum_gb} GB of memory"
+            ));
         }
+    }
+    if let Some(minimum) = compatibility.min_nvidia_driver_version.as_deref() {
+        if !is_numeric_version(minimum) {
+            return Err("This AI Runtime Box has an invalid NVIDIA driver requirement".to_string());
+        }
+        let installed = host.nvidia_driver_version.as_deref().ok_or_else(|| {
+            format!("This AI Runtime Box requires an NVIDIA GPU with driver {minimum} or newer")
+        })?;
+        if version_parts(installed) < version_parts(minimum) {
+            return Err(format!(
+                "This AI Runtime Box requires NVIDIA driver {minimum} or newer, but this computer has {installed}"
+            ));
+        }
+    }
+    if compatibility
+        .host_environments
+        .as_ref()
+        .is_some_and(|environments| {
+            !environments
+                .iter()
+                .any(|environment| environment == "native")
+        })
+    {
+        return Err(
+            "This AI Runtime Box is not validated for native desktop execution".to_string(),
+        );
     }
     Ok(())
 }
@@ -663,12 +951,15 @@ fn verify_release_identity(
     box_id: &str,
     model_id: &str,
     target: &RuntimeBoxTarget,
+    host: &RuntimeBoxHostCapabilities,
 ) -> Result<(), String> {
     if release.schema_version != 1 || release.kind != "liatir.runtime-box.release" {
         return Err("invalid AI Runtime Box release manifest".to_string());
     }
     if release.box_id != box_id || release.model_id != model_id {
-        return Err("AI Runtime Box release identity does not match the requested model".to_string());
+        return Err(
+            "AI Runtime Box release identity does not match the requested model".to_string(),
+        );
     }
     if &release.target != target {
         let release_target_id = target_id(&release.target)?;
@@ -685,6 +976,20 @@ fn verify_release_identity(
     {
         return Err("invalid AI Runtime Box archive metadata".to_string());
     }
+    if release.target.accelerator == "cuda" {
+        if !release
+            .compatibility
+            .min_nvidia_driver_version
+            .as_deref()
+            .is_some_and(is_numeric_version)
+        {
+            return Err(
+                "A CUDA AI Runtime Box release must declare a minimum NVIDIA driver".to_string(),
+            );
+        }
+    } else if release.compatibility.min_nvidia_driver_version.is_some() {
+        return Err("Only CUDA AI Runtime Box releases may require an NVIDIA driver".to_string());
+    }
     validate_control_url(&release.archive.url)?;
     safe_relative_path(&release.python_entry_point)?;
     safe_relative_path(&release.model_cache_subdir)?;
@@ -694,14 +999,14 @@ fn verify_release_identity(
     if release.self_test.python_imports.is_empty()
         || release.self_test.python_imports.iter().any(|name| {
             name.is_empty()
-                || !name
-                    .chars()
-                    .all(|character| character.is_ascii_alphanumeric() || character == '_' || character == '.')
+                || !name.chars().all(|character| {
+                    character.is_ascii_alphanumeric() || character == '_' || character == '.'
+                })
         })
     {
         return Err("invalid AI Runtime Box self-test imports".to_string());
     }
-    check_compatibility(&release.compatibility)
+    check_compatibility(&release.compatibility, host)
 }
 
 /// Fails the install if the chosen release appears on the signed revocation list.
@@ -725,7 +1030,10 @@ async fn ensure_not_revoked(
     if let Some(revocation) = manifest.revocations.into_iter().find(|item| {
         item.box_id == release.box_id
             && item.version == release.version
-            && item.target.as_ref().is_none_or(|target| target == &release.target)
+            && item
+                .target
+                .as_ref()
+                .is_none_or(|target| target == &release.target)
     }) {
         return Err(format!(
             "AI Runtime Box {} {} was revoked: {}",
@@ -757,11 +1065,16 @@ fn validate_extracted_box(staging: &Path, release: &ReleaseManifest) -> Result<P
         || metadata.target != release.target
         || metadata.python_entry_point != release.python_entry_point
     {
-        return Err("extracted AI Runtime Box metadata does not match the signed release".to_string());
+        return Err(
+            "extracted AI Runtime Box metadata does not match the signed release".to_string(),
+        );
     }
     let python_path = staging.join(safe_relative_path(&release.python_entry_point)?);
     if !python_path.is_file() {
-        return Err(format!("AI Runtime Box interpreter is missing: {}", python_path.display()));
+        return Err(format!(
+            "AI Runtime Box interpreter is missing: {}",
+            python_path.display()
+        ));
     }
     Ok(python_path)
 }
@@ -793,7 +1106,9 @@ fn run_self_test(python_path: &Path, self_test: &RuntimeBoxSelfTest) -> Result<(
         match child.try_wait().map_err(|error| error.to_string())? {
             Some(status) if status.success() => return Ok(()),
             Some(status) => {
-                return Err(format!("AI Runtime Box self-test failed with status {status}"));
+                return Err(format!(
+                    "AI Runtime Box self-test failed with status {status}"
+                ));
             }
             None if started.elapsed() >= timeout => {
                 let _ = child.kill();
@@ -815,7 +1130,8 @@ fn dir_size(path: &Path) -> Result<u64, String> {
     for entry in walkdir::WalkDir::new(path).follow_links(false) {
         let entry = entry.map_err(|error| error.to_string())?;
         if entry.file_type().is_file() {
-            total = total.saturating_add(entry.metadata().map_err(|error| error.to_string())?.len());
+            total =
+                total.saturating_add(entry.metadata().map_err(|error| error.to_string())?.len());
         }
     }
     Ok(total)
@@ -856,13 +1172,14 @@ fn runtime_box_disk_plan(
 }
 
 fn existing_dir_size(path: &Path) -> Result<u64, String> {
-    if path.is_dir() { dir_size(path) } else { Ok(0) }
+    if path.is_dir() {
+        dir_size(path)
+    } else {
+        Ok(0)
+    }
 }
 
-fn validate_runtime_box_disk_plan(
-    plan: &RuntimeBoxDiskPlan,
-    available: u64,
-) -> Result<(), String> {
+fn validate_runtime_box_disk_plan(plan: &RuntimeBoxDiskPlan, available: u64) -> Result<(), String> {
     if available < plan.required_additional_bytes {
         return Err(format!(
             "Not enough disk space to install this AI Model: {} additional space is required, but only {} is free. The current runtime and rollback ({}) are preserved.",
@@ -903,7 +1220,9 @@ fn ensure_runtime_box_disk_space(
 /// Where a displaced version is parked. Kept as a dot-directory *beside* the runtime dirs, on
 /// the same filesystem, so activation can be a rename rather than a copy.
 fn rollback_root(runtime_parent: &Path, runtime_id: &str) -> PathBuf {
-    runtime_parent.join(".runtime-box-rollback").join(runtime_id)
+    runtime_parent
+        .join(".runtime-box-rollback")
+        .join(runtime_id)
 }
 
 /// Most recently archived version, by modification time — the one a rollback restores.
@@ -999,15 +1318,16 @@ pub async fn lia_ai_runtime_box_install(
     model_id: String,
     channel: String,
     registry_base_url: String,
+    target_candidates: Vec<RuntimeBoxTargetCandidate>,
     download_id: String,
 ) -> Result<RuntimeBoxInstallResult, String> {
     // The download ID becomes part of an event name and a progress key, so restrict it to a
     // bounded, well-known alphabet rather than trusting the caller.
     if download_id.is_empty()
         || download_id.len() > 160
-        || !download_id
-            .chars()
-            .all(|character| character.is_ascii_alphanumeric() || character == '-' || character == '_')
+        || !download_id.chars().all(|character| {
+            character.is_ascii_alphanumeric() || character == '-' || character == '_'
+        })
     {
         return Err("invalid AI Runtime Box download id".to_string());
     }
@@ -1019,7 +1339,9 @@ pub async fn lia_ai_runtime_box_install(
         registry_base_url
     };
     validate_control_url(&registry_base_url)?;
-    let target = current_target();
+    let host = current_host_capabilities();
+    let selected_candidate = select_target_candidate(&target_candidates, &host)?;
+    let target = selected_candidate.target.clone();
     let target_slug = target_id(&target)?;
     let channel_url = format!(
         "{}/channels/{}/{}/{}",
@@ -1046,8 +1368,19 @@ pub async fn lia_ai_runtime_box_install(
     let release_bytes = fetch_control_document(&selected.release_manifest_url)
         .await?
         .ok_or_else(|| "AI Runtime Box release manifest was not found".to_string())?;
+    let signed_release: serde_json::Value = serde_json::from_slice(&release_bytes)
+        .map_err(|error| format!("invalid signed Runtime Box release document: {error}"))?;
     let release: ReleaseManifest = verify_signed_payload(&release_bytes)?;
-    verify_release_identity(&release, &box_id, &model_id, &target)?;
+    verify_release_identity(&release, &box_id, &model_id, &target, &host)?;
+    if release.compatibility.min_nvidia_driver_version
+        != selected_candidate.min_nvidia_driver_version
+        || selected_candidate.min_ram_gb.is_some()
+            && release.compatibility.min_ram_gb != selected_candidate.min_ram_gb
+    {
+        return Err(
+            "Published Runtime Box target requirements do not match the signed release".to_string(),
+        );
+    }
     // Ties the release back to the channel that offered it, so a signed manifest for a
     // different version cannot be substituted at the release-manifest URL.
     if release.version != selected.version {
@@ -1081,7 +1414,9 @@ pub async fn lia_ai_runtime_box_install(
     }
     let part_path = PathBuf::from(format!("{}.part", archive_path.to_string_lossy()));
     if part_path.is_file()
-        && std::fs::metadata(&part_path).map_err(|error| error.to_string())?.len()
+        && std::fs::metadata(&part_path)
+            .map_err(|error| error.to_string())?
+            .len()
             > release.archive.size_bytes
     {
         std::fs::remove_file(&part_path).map_err(|error| error.to_string())?;
@@ -1089,7 +1424,9 @@ pub async fn lia_ai_runtime_box_install(
     let archive_bytes_on_disk = if archive_ready {
         release.archive.size_bytes
     } else {
-        std::fs::metadata(&part_path).map(|metadata| metadata.len()).unwrap_or(0)
+        std::fs::metadata(&part_path)
+            .map(|metadata| metadata.len())
+            .unwrap_or(0)
     };
     // Legacy Geneformer/scGPT releases have no signed extracted size. They retain the existing
     // download-only preflight; new releases receive the complete peak-space gate.
@@ -1130,7 +1467,11 @@ pub async fn lia_ai_runtime_box_install(
 
     // Unpack next to the final location (same filesystem, so activation can rename) but under a
     // unique hidden name, so a half-extracted box is never mistaken for an installed one.
-    let staging = runtime_parent.join(format!(".{}.{}.staging", release.runtime_id, Uuid::new_v4()));
+    let staging = runtime_parent.join(format!(
+        ".{}.{}.staging",
+        release.runtime_id,
+        Uuid::new_v4()
+    ));
     std::fs::create_dir_all(&staging).map_err(|error| error.to_string())?;
     // Closure so every failure between here and activation funnels into one cleanup path below,
     // instead of repeating "delete staging" at each `?`.
@@ -1143,16 +1484,27 @@ pub async fn lia_ai_runtime_box_install(
         if let Some(expected) = release.installed_size_bytes {
             let actual = dir_size(&staging)?;
             if actual != expected {
-                return Err("AI Runtime Box extracted size does not match the signed release".to_string());
+                return Err(
+                    "AI Runtime Box extracted size does not match the signed release".to_string(),
+                );
             }
         }
         let python_path = validate_extracted_box(&staging, &release)?;
         run_self_test(&python_path, &release.self_test)?;
-        // Persist the signed release inside the box: the installed directory then carries its
-        // own provenance, readable later without contacting the registry.
+        // Persist both the selected target and the exact signed release envelope. The installed
+        // directory then carries complete provenance without contacting the registry.
+        let activation = RuntimeBoxActivationMetadata {
+            schema_version: 1,
+            selected_target: target.clone(),
+            release: release.clone(),
+            signed_release: Some(signed_release.clone()),
+        };
         write_text_atomic(
             &staging.join("runtime-box-activation.json"),
-            &format!("{}\n", serde_json::to_string_pretty(&release).map_err(|error| error.to_string())?),
+            &format!(
+                "{}\n",
+                serde_json::to_string_pretty(&activation).map_err(|error| error.to_string())?
+            ),
         )?;
         let size_bytes = dir_size(&staging)?;
         let rollback_available = activate_runtime(&runtime_dir, &staging, &release)?;
@@ -1166,6 +1518,7 @@ pub async fn lia_ai_runtime_box_install(
             version: release.version.clone(),
             size_bytes,
             rollback_available,
+            activation,
         })
     })();
     // Failed attempt: drop the staged tree so a retry starts clean.
@@ -1346,6 +1699,133 @@ mod tests {
         }
     }
 
+    fn target(
+        platform: &str,
+        arch: &str,
+        accelerator: &str,
+        cuda_version: Option<&str>,
+    ) -> RuntimeBoxTarget {
+        RuntimeBoxTarget {
+            platform: platform.to_string(),
+            arch: arch.to_string(),
+            accelerator: accelerator.to_string(),
+            cuda_version: cuda_version.map(str::to_string),
+        }
+    }
+
+    fn candidate(
+        target: RuntimeBoxTarget,
+        min_nvidia_driver_version: Option<&str>,
+    ) -> RuntimeBoxTargetCandidate {
+        RuntimeBoxTargetCandidate {
+            target,
+            host_environments: vec!["native".to_string()],
+            min_ram_gb: None,
+            min_nvidia_driver_version: min_nvidia_driver_version.map(str::to_string),
+        }
+    }
+
+    fn host(platform: &str, arch: &str, driver: Option<&str>) -> RuntimeBoxHostCapabilities {
+        RuntimeBoxHostCapabilities {
+            platform: platform.to_string(),
+            arch: arch.to_string(),
+            total_memory_bytes: Some(64 * 1024 * 1024 * 1024),
+            nvidia_driver_version: driver.map(str::to_string),
+        }
+    }
+
+    #[test]
+    fn selects_ordered_native_targets_for_the_required_host_matrix() {
+        let cuda_linux = candidate(
+            target("linux", "x86_64", "cuda", Some("12.4")),
+            Some("550.54"),
+        );
+        let cpu_linux = candidate(target("linux", "x86_64", "cpu", None), None);
+        let cuda_windows = candidate(
+            target("windows", "x86_64", "cuda", Some("12.4")),
+            Some("550.54"),
+        );
+        let cpu_windows = candidate(target("windows", "x86_64", "cpu", None), None);
+        let cases = vec![
+            (
+                "macOS arm64 Metal",
+                host("macos", "aarch64", None),
+                vec![candidate(target("macos", "aarch64", "metal", None), None)],
+                "macos-aarch64-metal",
+            ),
+            (
+                "Linux CPU",
+                host("linux", "x86_64", None),
+                vec![cpu_linux.clone()],
+                "linux-x86_64-cpu",
+            ),
+            (
+                "Linux CUDA",
+                host("linux", "x86_64", Some("590.48.01")),
+                vec![cuda_linux.clone(), cpu_linux.clone()],
+                "linux-x86_64-cuda12.4",
+            ),
+            (
+                "Windows CPU",
+                host("windows", "x86_64", None),
+                vec![cpu_windows.clone()],
+                "windows-x86_64-cpu",
+            ),
+            (
+                "Windows native CUDA",
+                host("windows", "x86_64", Some("590.48.01")),
+                vec![cuda_windows.clone(), cpu_windows.clone()],
+                "windows-x86_64-cuda12.4",
+            ),
+            (
+                "old NVIDIA driver falls back to CPU",
+                host("windows", "x86_64", Some("500.10")),
+                vec![cuda_windows, cpu_windows],
+                "windows-x86_64-cpu",
+            ),
+        ];
+
+        for (name, host, candidates, expected) in cases {
+            let selected = select_target_candidate(&candidates, &host).unwrap();
+            assert_eq!(target_id(&selected.target).unwrap(), expected, "{name}");
+        }
+    }
+
+    #[test]
+    fn target_selection_reports_driver_memory_and_native_target_errors() {
+        let only_cuda = vec![candidate(
+            target("windows", "x86_64", "cuda", Some("12.4")),
+            Some("550.54"),
+        )];
+        assert!(
+            select_target_candidate(&only_cuda, &host("windows", "x86_64", Some("500.10")))
+                .unwrap_err()
+                .contains("driver 550.54 or newer")
+        );
+
+        let mut high_memory = candidate(target("linux", "x86_64", "cpu", None), None);
+        high_memory.min_ram_gb = Some(32);
+        let low_memory_host = RuntimeBoxHostCapabilities {
+            total_memory_bytes: Some(16 * 1024 * 1024 * 1024),
+            ..host("linux", "x86_64", None)
+        };
+        assert!(select_target_candidate(&[high_memory], &low_memory_host)
+            .unwrap_err()
+            .contains("at least 32 GB of memory"));
+
+        let wsl_only = RuntimeBoxTargetCandidate {
+            target: target("linux", "x86_64", "cuda", Some("12.4")),
+            host_environments: vec!["windows-wsl2".to_string()],
+            min_ram_gb: None,
+            min_nvidia_driver_version: Some("550.54".to_string()),
+        };
+        let error =
+            select_target_candidate(&[wsl_only], &host("windows", "x86_64", Some("590.48.01")))
+                .unwrap_err();
+        assert!(error.contains("Windows"));
+        assert!(!error.contains("compatible with Windows through WSL"));
+    }
+
     #[test]
     fn legacy_release_without_installed_size_remains_deserializable() {
         let legacy: ReleaseManifest = serde_json::from_value(release_json()).unwrap();
@@ -1365,6 +1845,32 @@ mod tests {
     }
 
     #[test]
+    fn runtime_box_cuda_release_requires_and_enforces_a_minimum_driver() {
+        let mut value = release_json();
+        value["target"] = serde_json::json!({
+            "platform": "windows",
+            "arch": "x86_64",
+            "accelerator": "cuda",
+            "cudaVersion": "12.4"
+        });
+        let target: RuntimeBoxTarget = serde_json::from_value(value["target"].clone()).unwrap();
+        let host = host("windows", "x86_64", Some("500.10"));
+        let release: ReleaseManifest = serde_json::from_value(value.clone()).unwrap();
+        assert!(
+            verify_release_identity(&release, "fixture", "liatir-fixture", &target, &host)
+                .unwrap_err()
+                .contains("must declare a minimum NVIDIA driver")
+        );
+
+        value["compatibility"]["minNvidiaDriverVersion"] = serde_json::json!("550.54");
+        let release: ReleaseManifest = serde_json::from_value(value).unwrap();
+        let error = verify_release_identity(&release, "fixture", "liatir-fixture", &target, &host)
+            .unwrap_err();
+        assert!(error.contains("driver 550.54 or newer"));
+        assert!(error.contains("500.10"));
+    }
+
+    #[test]
     fn disk_plan_accounts_for_archive_payload_runtime_and_rollback() {
         let plan = runtime_box_disk_plan(1_000, 5_000, 400, 700, 300);
         assert_eq!(plan.archive_remaining_bytes, 600);
@@ -1372,11 +1878,16 @@ mod tests {
         assert_eq!(plan.current_runtime_bytes, 700);
         assert_eq!(plan.rollback_bytes, 300);
         assert_eq!(plan.peak_managed_bytes, 7_000);
-        assert_eq!(plan.required_additional_bytes, 5_600 + DISK_SPACE_MARGIN_BYTES);
+        assert_eq!(
+            plan.required_additional_bytes,
+            5_600 + DISK_SPACE_MARGIN_BYTES
+        );
         assert!(validate_runtime_box_disk_plan(&plan, plan.required_additional_bytes).is_ok());
-        assert!(validate_runtime_box_disk_plan(&plan, plan.required_additional_bytes - 1)
-            .unwrap_err()
-            .contains("Not enough disk space to install this AI Model"));
+        assert!(
+            validate_runtime_box_disk_plan(&plan, plan.required_additional_bytes - 1)
+                .unwrap_err()
+                .contains("Not enough disk space to install this AI Model")
+        );
     }
 
     fn fixture_release(version: &str) -> ReleaseManifest {

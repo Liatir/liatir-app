@@ -14,6 +14,7 @@ import {
 	runAIPython,
 	type AIPythonRunResult
 } from '$lib/ai/runtime';
+import { runtimeBoxResultProvenance } from '$lib/ai/runtime-box-provenance';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
 import { PROTEIN_STRUCTURE_SCRIPT } from './python-scripts/protein-structure';
 import { liatir } from '$lib/api';
@@ -334,6 +335,7 @@ export async function finalizeProteinStructureResult(
 		runtimeName: model.runtime.name,
 		runtimeVersion: model.runtime.version ?? null,
 		runtimeLock: model.runtimeLock ?? null,
+		...runtimeBoxResultProvenance(result),
 		localOnly: model.localOnly,
 		inputSummary: {
 			inputFile: inputs.inputFile ? basename(inputs.inputFile) : null,

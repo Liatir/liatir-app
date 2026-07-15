@@ -19,6 +19,7 @@
  */
 import type { LiatirAIModelRecord } from '@liatir/core';
 import type { AIPythonRunResult } from '$lib/ai/runtime';
+import { runtimeBoxActivationFromMetadata } from '$lib/ai/runtime-box-provenance';
 import { parseDirectRunContext } from '$lib/ai/direct-run-context';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
 import { analysisRuns, type RunOutputFile } from '$lib/stores/analysisRuns.svelte';
@@ -86,7 +87,8 @@ function outputToResult(
 		exitCode,
 		stdout: output.stdout.join('\n'),
 		stderr: output.stderr.join('\n'),
-		durationMs: (job.endedAtMs ?? Date.now()) - startedAt
+		durationMs: (job.endedAtMs ?? Date.now()) - startedAt,
+		runtimeBoxActivation: runtimeBoxActivationFromMetadata(job.metadata)
 	};
 }
 

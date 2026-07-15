@@ -13,11 +13,13 @@ use serde::Serialize;
 use serde_json::Value;
 use tauri::AppHandle;
 
+use super::ai_hardware::{nvidia_capability, total_memory_bytes};
 use super::python_env::{
     command_stdout, first_available, preferred_python, prepare_env, python_candidate_infos,
     remove_env, run_in_env, spawn_in_env, status_env, PythonCandidate, PythonEnvLock,
     PythonEnvPackage, PythonEnvSource, PythonRequirement, PythonRunResult,
 };
+use super::runtime_boxes::runtime_box_activation_metadata;
 
 /// Environment root passed to every `python_env` call, i.e. `<data root>/ai-runtimes/<runtime id>`.
 const AI_PYTHON_ENV_ROOT: &str = "ai-runtimes";
@@ -46,6 +48,8 @@ pub struct AiHardwareInfo {
     /// `Some(true)` when `nvidia-smi` is on PATH, otherwise `None` — never `Some(false)`,
     /// because a missing tool proves nothing about the absence of a GPU.
     pub cuda_available: Option<bool>,
+    /// Exact NVIDIA driver reported by the same probe used by Runtime Box selection.
+    pub nvidia_driver_version: Option<String>,
     pub python_path: Option<String>,
     pub python_version: Option<String>,
     pub python_candidates: Vec<AiPythonCandidate>,
@@ -86,37 +90,6 @@ pub struct AiRuntimePrepareResult {
     pub lock: Option<AiPythonRuntimeLock>,
 }
 
-/// Installed RAM, probed per platform. Windows has no implementation and yields `None`,
-/// which callers must treat as "unknown", not "zero".
-fn total_memory_bytes() -> Option<u64> {
-    #[cfg(target_os = "macos")]
-    {
-        let out = std::process::Command::new("sysctl")
-            .args(["-n", "hw.memsize"])
-            .output()
-            .ok()?;
-        String::from_utf8_lossy(&out.stdout)
-            .trim()
-            .parse::<u64>()
-            .ok()
-    }
-    #[cfg(target_os = "linux")]
-    {
-        // /proc/meminfo reports `MemTotal:  16384000 kB`, hence the kB -> bytes conversion.
-        let text = std::fs::read_to_string("/proc/meminfo").ok()?;
-        let kb = text
-            .lines()
-            .find_map(|line| line.strip_prefix("MemTotal:"))
-            .and_then(|rest| rest.split_whitespace().next())
-            .and_then(|n| n.parse::<u64>().ok())?;
-        Some(kb * 1024)
-    }
-    #[cfg(target_os = "windows")]
-    {
-        None
-    }
-}
-
 /// Probes the host: CPU, memory, GPU hints and which Python toolchains are available.
 #[tauri::command]
 pub fn lia_ai_hardware_info() -> Result<AiHardwareInfo, String> {
@@ -126,6 +99,7 @@ pub fn lia_ai_hardware_info() -> Result<AiHardwareInfo, String> {
         .and_then(|path| command_stdout(path, &["--version"]));
     let python_candidates = python_candidate_infos();
     let uv_path = first_available(&["uv"]);
+    let nvidia = nvidia_capability();
 
     Ok(AiHardwareInfo {
         os: std::env::consts::OS.to_string(),
@@ -138,7 +112,8 @@ pub fn lia_ai_hardware_info() -> Result<AiHardwareInfo, String> {
         total_memory_bytes: total_memory_bytes(),
         // Every Mac Liatir supports has Metal, so this is a build-time fact, not a probe.
         apple_metal: cfg!(target_os = "macos"),
-        cuda_available: first_available(&["nvidia-smi"]).map(|_| true),
+        cuda_available: nvidia.as_ref().map(|_| true),
+        nvidia_driver_version: nvidia.map(|capability| capability.driver_version),
         python_path,
         python_version,
         python_candidates,
@@ -265,6 +240,9 @@ pub async fn lia_ai_python_spawn(
     };
     // Stamped onto the job so Jobs and Results can attribute the run to its runtime.
     metadata_map.insert("runtimeId".to_string(), Value::String(runtime_id.clone()));
+    if let Some(activation) = runtime_box_activation_metadata(&app, &runtime_id)? {
+        metadata_map.insert("runtimeBoxActivation".to_string(), activation);
+    }
 
     spawn_in_env(
         app,

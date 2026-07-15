@@ -6,6 +6,7 @@ import type {
   LiatirAIModelPythonRequirement,
   LiatirAIModelRecord,
   LiatirPythonRuntimeLock,
+  LiatirRuntimeBoxActivationMetadata,
 } from '@liatir/core';
 // Model → runtime-parameter mapping lives in @liatir/core (shared with the
 // plugin API). Re-exported here so existing frontend imports keep working.
@@ -18,6 +19,7 @@ import {
   type AiRuntimePackageCheck,
 } from '@liatir/core';
 import { RunCancelledError, throwIfRunCancelled } from '$lib/pipeline/cancellation';
+import { runtimeBoxActivationFromMetadata } from './runtime-box-provenance';
 
 export {
   runtimeIdForModel,
@@ -38,6 +40,7 @@ export interface AIHardwareInfo {
   totalMemoryBytes: number | null;
   appleMetal: boolean;
   cudaAvailable: boolean | null;
+  nvidiaDriverVersion?: string | null;
   pythonPath?: string | null;
   pythonVersion?: string | null;
   pythonCandidates?: Array<{ path: string; version: string }>;
@@ -75,6 +78,7 @@ export interface AIRuntimeBoxInstallResult {
   version: string;
   sizeBytes: number;
   rollbackAvailable: boolean;
+  activation: LiatirRuntimeBoxActivationMetadata;
 }
 
 export interface AIPythonRunResult {
@@ -83,6 +87,7 @@ export interface AIPythonRunResult {
   stdout: string;
   stderr: string;
   durationMs: number;
+  runtimeBoxActivation?: LiatirRuntimeBoxActivationMetadata;
 }
 
 export interface AIPythonRunOptions {
@@ -153,6 +158,7 @@ export async function installAIRuntimeBox(
       modelId: model.id,
       channel: runtimeBox.channel,
       registryBaseUrl: runtimeBox.registryBaseUrl,
+      targetCandidates: runtimeBox.publishedTargets,
       downloadId,
     }) as AIRuntimeBoxInstallResult;
   } finally {
@@ -232,6 +238,7 @@ export async function runAIPython(
       }>,
       api.invoke('lia_jobs_status', { jobId }) as Promise<{
         status: { type: 'running' | 'done' | 'failed' | 'killed'; exitCode?: number | null };
+        metadata?: Record<string, unknown> | null;
       }>,
     ]);
 
@@ -253,6 +260,7 @@ export async function runAIPython(
         stdout: stdoutLines.join('\n'),
         stderr: stderrLines.join('\n'),
         durationMs: Date.now() - startedAt,
+        runtimeBoxActivation: runtimeBoxActivationFromMetadata(entry.metadata),
       };
     }
 

@@ -14,6 +14,7 @@ import {
 	UCE_4LAYER_MODEL_ID
 } from '$lib/ai/model-registry';
 import { cachePathForModel, runAIPython, type AIPythonRunResult } from '$lib/ai/runtime';
+import { runtimeBoxResultProvenance } from '$lib/ai/runtime-box-provenance';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
 import { GENEFORMER_EMBEDDING_SCRIPT } from './python-scripts/geneformer-embedding';
 import { SCGPT_EMBEDDING_SCRIPT } from './python-scripts/scgpt-embedding';
@@ -213,6 +214,7 @@ export async function finalizeSingleCellEmbeddingResult(
 		runtimeName: model.runtime.name,
 		runtimeVersion: model.runtime.version ?? null,
 		runtimeLock: model.runtimeLock ?? null,
+		...runtimeBoxResultProvenance(result),
 		localOnly: model.localOnly,
 		inputSummary: {
 			inputFile: basename(inputs.inputFile),

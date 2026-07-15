@@ -22,6 +22,11 @@ import { installSvelteRuneStubs } from './support/svelte-runes';
 const rootDir = resolve(import.meta.dirname, '../..');
 
 const DEFERRED_BATCH5_MODEL_IDS = [SCFOUNDATION_100M_MODEL_ID];
+const publishedMacosArm64MetalTargets = (minRamGb: number) => [{
+  target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
+  hostEnvironments: ['native'],
+  minRamGb,
+}];
 
 installSvelteRuneStubs();
 
@@ -67,6 +72,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
       boxId: 'geneformer-v1-10m',
       channel: 'beta',
       registryBaseUrl: 'https://models.liatir.com/v1',
+      publishedTargets: publishedMacosArm64MetalTargets(8),
     });
     expect(model?.install?.revision).toMatch(/^[a-f0-9]{40}$/);
     expect(model?.install?.files).toBeUndefined();
@@ -117,6 +123,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
       boxId: 'scgpt-whole-human',
       channel: 'beta',
       registryBaseUrl: 'https://models.liatir.com/v1',
+      publishedTargets: publishedMacosArm64MetalTargets(16),
     });
     expect(recipe.modelId).toBe(SCGPT_WHOLE_HUMAN_MODEL_ID);
     expect(recipe.runtimeId).toBe(model?.install?.runtimeId);
@@ -186,6 +193,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
       boxId: 'uce-4layer',
       channel: 'beta',
       registryBaseUrl: 'https://models.liatir.com/v1',
+      publishedTargets: publishedMacosArm64MetalTargets(16),
     });
     expect(model?.install?.files).toBeUndefined();
     expect(model?.install?.runtimeSources).toBeUndefined();

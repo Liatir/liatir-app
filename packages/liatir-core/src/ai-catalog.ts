@@ -3,6 +3,7 @@ import type {
 	LiatirAIModelRuntimePackage,
 	LiatirAIModelRuntimeSource,
 } from './index';
+import type { LiatirRuntimeBoxTargetCandidate } from './runtime-box';
 
 export const MOCK_AI_MODEL_ID = 'liatir-mock-local';
 export const CELLTYPIST_MODEL_ID = 'celltypist-local-annotation';
@@ -102,6 +103,19 @@ const GENEFORMER_V1_10M_RUNTIME_PACKAGES = [
 	{ package: 'safetensors', specifier: 'safetensors>=0.4,<1', importName: 'safetensors' },
 	{ package: 'urllib3', specifier: 'urllib3>=1.26,<2', importName: 'urllib3' }
 ];
+
+/** Builds the only target currently published for each production single-cell Runtime Box. */
+function publishedMacosArm64MetalTarget(
+	minRamGb: number
+): readonly LiatirRuntimeBoxTargetCandidate[] {
+	return [
+		{
+			target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
+			hostEnvironments: ['native'],
+			minRamGb
+		}
+	];
+}
 
 const TENSORFLOW_PYTHON_3_10_TO_3_11 = {
 	minVersion: '3.10',
@@ -535,7 +549,8 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			runtimeBox: {
 				boxId: 'scgpt-whole-human',
 				channel: 'beta',
-				registryBaseUrl: 'https://models.liatir.com/v1'
+				registryBaseUrl: 'https://models.liatir.com/v1',
+				publishedTargets: publishedMacosArm64MetalTarget(16)
 			},
 			runtimePackages: SCGPT_WHOLE_HUMAN_RUNTIME_PACKAGES,
 			hostRequirements: {
@@ -593,7 +608,8 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			runtimeBox: {
 				boxId: 'geneformer-v1-10m',
 				channel: 'beta',
-				registryBaseUrl: 'https://models.liatir.com/v1'
+				registryBaseUrl: 'https://models.liatir.com/v1',
+				publishedTargets: publishedMacosArm64MetalTarget(8)
 			},
 			runtimePackages: GENEFORMER_V1_10M_RUNTIME_PACKAGES,
 			hostRequirements: {
@@ -668,7 +684,8 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			runtimeBox: {
 				boxId: 'uce-4layer',
 				channel: 'beta',
-				registryBaseUrl: 'https://models.liatir.com/v1'
+				registryBaseUrl: 'https://models.liatir.com/v1',
+				publishedTargets: publishedMacosArm64MetalTarget(16)
 			},
 			runtimePackages: UCE_4LAYER_RUNTIME_PACKAGES,
 			hostRequirements: {

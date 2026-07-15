@@ -10,6 +10,7 @@ import { aiRunMetadata, type AIRunContext } from '$lib/ai/direct-run-context';
 import { NUCLEOTIDE_TRANSFORMER_500M_ID, NUCLEOTIDE_TRANSFORMER_50M_ID } from '$lib/ai/model-registry';
 import { huggingFaceArtifactForModel, requireHuggingFaceArtifactForModel } from '$lib/ai/model-artifacts';
 import { cachePathForModel, runAIPython, type AIPythonRunResult } from '$lib/ai/runtime';
+import { runtimeBoxResultProvenance } from '$lib/ai/runtime-box-provenance';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
 import { liatir } from '$lib/api';
 import { GENOMIC_VARIANT_EFFECT_SCRIPT } from './python-scripts/genomic-variant-effect';
@@ -208,6 +209,7 @@ export async function finalizeGenomicVariantEffectResult(
 		runtimeName: model.runtime.name,
 		runtimeVersion: model.runtime.version ?? null,
 		runtimeLock: model.runtimeLock ?? null,
+		...runtimeBoxResultProvenance(result),
 		localOnly: model.localOnly,
 		inputSummary: {
 			referenceFile: inputs.referenceFile ? basename(inputs.referenceFile) : null,

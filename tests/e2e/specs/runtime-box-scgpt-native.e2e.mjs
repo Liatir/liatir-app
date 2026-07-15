@@ -5,6 +5,7 @@
  */
 import {
   activateCleanSandbox,
+  macosArm64MetalRuntimeBoxTarget,
   readEmbeddedPythonScript,
   runtimeBoxInstallError,
   runtimeBoxInstallResult,
@@ -65,6 +66,7 @@ export const tests = [
         modelId: MODEL_ID,
         channel: 'beta',
         registryBaseUrl: 'https://models.liatir.com/v1',
+        targetCandidates: macosArm64MetalRuntimeBoxTarget(16),
         downloadId,
       });
       await browser.waitUntil(

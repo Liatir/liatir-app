@@ -8,6 +8,7 @@
 import {
   activateCleanSandbox,
   firstDownloadOffset,
+  macosArm64MetalRuntimeBoxTarget,
   readEmbeddedPythonScript,
   runtimeBoxInstallError,
   runtimeBoxInstallResult,
@@ -86,6 +87,7 @@ async function startInstall(browser, downloadId) {
     modelId: MODEL_ID,
     channel: 'beta',
     registryBaseUrl: REGISTRY_BASE_URL,
+    targetCandidates: macosArm64MetalRuntimeBoxTarget(8),
     downloadId,
   });
 }

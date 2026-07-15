@@ -44,6 +44,7 @@ import type {
   LiatirAIModelRecord,
   LiatirAIModelStatus,
   LiatirPythonRuntimeLock,
+  LiatirRuntimeBoxActivationMetadata,
 } from '@liatir/core';
 
 /** Aggregate state for every model, rewritten on each change. */
@@ -64,6 +65,7 @@ interface StoredAIModelState {
   runtimeSizeBytes?: number;
   cacheSizeBytes?: number;
   runtimeLock?: LiatirPythonRuntimeLock;
+  runtimeBoxActivation?: LiatirRuntimeBoxActivationMetadata;
   enabled?: boolean;
   updatedAt?: number;
   error?: string;
@@ -186,6 +188,7 @@ function createAIModelsStore() {
         runtimeSizeBytes: state.runtimeSizeBytes,
         cacheSizeBytes: state.cacheSizeBytes,
         runtimeLock: state.runtimeLock,
+        runtimeBoxActivation: state.runtimeBoxActivation,
         enabled: state.enabled ?? true,
         updatedAt: state.updatedAt,
         error: state.error,
@@ -790,6 +793,7 @@ function createAIModelsStore() {
               localPath: installed.runtimeDir,
               installedSizeBytes: installed.sizeBytes,
               runtimeSizeBytes: installed.sizeBytes,
+              runtimeBoxActivation: installed.activation,
             };
             record.cachePath = cachePathForModel(record) ?? undefined;
             const state: StoredAIModelState = {
@@ -799,6 +803,7 @@ function createAIModelsStore() {
               cachePath: record.cachePath,
               installedSizeBytes: installed.sizeBytes,
               runtimeSizeBytes: installed.sizeBytes,
+              runtimeBoxActivation: installed.activation,
               enabled: true,
               error: undefined,
               updatedAt: Date.now(),

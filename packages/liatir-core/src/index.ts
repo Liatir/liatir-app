@@ -578,6 +578,8 @@ export interface LiatirAIModelRecord extends LiatirAIModelMetadata {
   cacheSizeBytes?: number;
   /** Runtime dependency lock captured after preparation/install. */
   runtimeLock?: LiatirPythonRuntimeLock;
+  /** Signed Runtime Box release and the native target selected for this installation. */
+  runtimeBoxActivation?: import("./runtime-box").LiatirRuntimeBoxActivationMetadata;
   enabled?: boolean;
   addedAt?: number;
   updatedAt?: number;
@@ -602,6 +604,8 @@ export interface LiatirAIProvenance {
   runtimeName: string;
   runtimeVersion?: string | null;
   runtimeLock?: LiatirPythonRuntimeLock | null;
+  /** Present when execution used a prebuilt signed Runtime Box. */
+  runtimeBoxActivation?: import("./runtime-box").LiatirRuntimeBoxActivationMetadata | null;
   localOnly: boolean;
   inputSummary?: Record<string, JsonValue>;
   parameters?: Record<string, JsonValue>;

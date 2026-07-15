@@ -28,8 +28,25 @@ export interface LiatirRuntimeBoxCompatibility {
   maxLiatirVersionExclusive?: string;
   minMacosVersion?: string;
   minRamGb?: number;
+  /** Minimum host NVIDIA driver accepted by a CUDA payload. */
+  minNvidiaDriverVersion?: string;
   /** Host environments validated for this payload. Omitted by legacy releases. */
   hostEnvironments?: LiatirRuntimeBoxHostEnvironment[];
+}
+
+/**
+ * One published target the desktop installer may consider for a model.
+ *
+ * Entries are evaluated in array order. This is intentionally smaller than a release manifest:
+ * it contains only facts needed before the target-specific signed channel can be requested.
+ */
+export interface LiatirRuntimeBoxTargetCandidate {
+  target: LiatirRuntimeBoxTarget;
+  /** Native is required for current desktop selection; windows-wsl2 is future evidence only. */
+  hostEnvironments: readonly LiatirRuntimeBoxHostEnvironment[];
+  minRamGb?: number;
+  /** Required for CUDA candidates so selection never guesses driver compatibility. */
+  minNvidiaDriverVersion?: string;
 }
 
 export interface LiatirRuntimeBoxBuildProvenance {
@@ -126,11 +143,22 @@ export interface LiatirSignedRuntimeBoxDocument {
   signatures: LiatirRuntimeBoxSignature[];
 }
 
+/** Durable install provenance written beside the activated Runtime Box. */
+export interface LiatirRuntimeBoxActivationMetadata {
+  schemaVersion: typeof LIATIR_RUNTIME_BOX_SCHEMA_VERSION;
+  selectedTarget: LiatirRuntimeBoxTarget;
+  release: LiatirRuntimeBoxReleaseManifest;
+  /** Exact verified signing envelope. Optional only when reading installations from older builds. */
+  signedRelease?: LiatirSignedRuntimeBoxDocument;
+}
+
 export interface LiatirAIModelRuntimeBoxInstall {
   boxId: string;
   channel: LiatirRuntimeBoxChannel;
   /** Public control-plane base URL. Debug builds may override it locally. */
   registryBaseUrl: string;
+  /** Ordered targets already published for this model; unlisted targets are never requested. */
+  publishedTargets: readonly LiatirRuntimeBoxTargetCandidate[];
 }
 
 const RUNTIME_BOX_TARGET_ACCELERATORS: Readonly<

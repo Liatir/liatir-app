@@ -1,0 +1,217 @@
+import { describe, expect, it } from 'vitest';
+import {
+  BUILT_IN_AI_MODEL_REGISTRY,
+  GENEFORMER_V1_10M_MODEL_ID,
+  getLocalAIModelMetadata,
+} from '../../packages/liatir-core/src/ai-catalog';
+import type {
+  LiatirAIModelMetadata,
+  LiatirRuntimeBoxActivationMetadata,
+  LiatirRuntimeBoxTargetCandidate,
+} from '../../packages/liatir-core/src/index';
+import {
+  runtimeBoxActivationFromMetadata,
+  runtimeBoxResultProvenance,
+} from '../../frontend/src/lib/ai/runtime-box-provenance';
+import type { AIHardwareInfo } from '../../frontend/src/lib/ai/runtime';
+import {
+  modelInstallBlock,
+} from '../../frontend/src/lib/ai/model-compatibility';
+
+const baseModel = getLocalAIModelMetadata(GENEFORMER_V1_10M_MODEL_ID)!;
+
+function modelWithTargets(
+  publishedTargets: readonly LiatirRuntimeBoxTargetCandidate[],
+): LiatirAIModelMetadata {
+  return {
+    ...baseModel,
+    install: {
+      ...baseModel.install!,
+      method: 'runtime-box',
+      runtimeBox: {
+        ...baseModel.install!.runtimeBox!,
+        publishedTargets,
+      },
+    },
+  };
+}
+
+function hardware(
+  os: AIHardwareInfo['os'],
+  arch: string,
+  nvidiaDriverVersion?: string,
+): AIHardwareInfo {
+  return {
+    os,
+    arch,
+    cpuCores: 8,
+    totalMemoryBytes: 64 * 1024 ** 3,
+    appleMetal: os === 'macos',
+    cudaAvailable: nvidiaDriverVersion ? true : null,
+    nvidiaDriverVersion: nvidiaDriverVersion ?? null,
+    pythonCandidates: [],
+  };
+}
+
+function candidate(
+  platform: 'macos' | 'linux' | 'windows',
+  accelerator: 'cpu' | 'metal' | 'cuda',
+  options: {
+    arch?: 'aarch64' | 'x86_64';
+    cudaVersion?: string;
+    minNvidiaDriverVersion?: string;
+    minRamGb?: number;
+    hostEnvironments?: Array<'native' | 'windows-wsl2'>;
+  } = {},
+): LiatirRuntimeBoxTargetCandidate {
+  return {
+    target: {
+      platform,
+      arch: options.arch ?? (platform === 'macos' ? 'aarch64' : 'x86_64'),
+      accelerator,
+      ...(options.cudaVersion ? { cudaVersion: options.cudaVersion } : {}),
+    },
+    hostEnvironments: options.hostEnvironments ?? ['native'],
+    ...(options.minNvidiaDriverVersion
+      ? { minNvidiaDriverVersion: options.minNvidiaDriverVersion }
+      : {}),
+    ...(options.minRamGb ? { minRamGb: options.minRamGb } : {}),
+  };
+}
+
+describe('Runtime Box native target selection', () => {
+  it.each([
+    {
+      name: 'macOS arm64 Metal',
+      hardware: hardware('macos', 'aarch64'),
+      targets: [candidate('macos', 'metal')],
+    },
+    {
+      name: 'Linux CPU',
+      hardware: hardware('linux', 'x86_64'),
+      targets: [candidate('linux', 'cpu')],
+    },
+    {
+      name: 'Linux CUDA',
+      hardware: hardware('linux', 'x86_64', '590.48.01'),
+      targets: [
+        candidate('linux', 'cuda', {
+          cudaVersion: '12.4',
+          minNvidiaDriverVersion: '550.54',
+        }),
+        candidate('linux', 'cpu'),
+      ],
+    },
+    {
+      name: 'Windows CPU',
+      hardware: hardware('windows', 'x86_64'),
+      targets: [candidate('windows', 'cpu')],
+    },
+    {
+      name: 'Windows native CUDA',
+      hardware: hardware('windows', 'x86_64', '590.48.01'),
+      targets: [
+        candidate('windows', 'cuda', {
+          cudaVersion: '12.4',
+          minNvidiaDriverVersion: '550.54',
+        }),
+        candidate('windows', 'cpu'),
+      ],
+    },
+    {
+      name: 'driver-too-old CPU fallback',
+      hardware: hardware('windows', 'x86_64', '500.10'),
+      targets: [
+        candidate('windows', 'cuda', {
+          cudaVersion: '12.4',
+          minNvidiaDriverVersion: '550.54',
+        }),
+        candidate('windows', 'cpu'),
+      ],
+    },
+  ])('accepts $name', ({ hardware: host, targets }) => {
+    expect(modelInstallBlock(modelWithTargets(targets), host)).toBeNull();
+  });
+
+  it('explains an old driver when no CPU fallback is published', () => {
+    const block = modelInstallBlock(
+      modelWithTargets([
+        candidate('windows', 'cuda', {
+          cudaVersion: '12.4',
+          minNvidiaDriverVersion: '550.54',
+        }),
+      ]),
+      hardware('windows', 'x86_64', '500.10'),
+    );
+    expect(block?.kind).toBe('cuda');
+    expect(block?.reason).toContain('550.54 or newer');
+    expect(block?.detected).toContain('500.10');
+  });
+
+  it('reports memory and no-compatible-target errors in product language', () => {
+    const lowMemory = hardware('linux', 'x86_64');
+    lowMemory.totalMemoryBytes = 16 * 1024 ** 3;
+    const memoryBlock = modelInstallBlock(
+      modelWithTargets([candidate('linux', 'cpu', { minRamGb: 32 })]),
+      lowMemory,
+    );
+    expect(memoryBlock?.kind).toBe('memory');
+    expect(memoryBlock?.reason).toContain('at least 32 GB of memory');
+
+    const platformBlock = modelInstallBlock(
+      modelWithTargets([candidate('linux', 'cpu')]),
+      hardware('windows', 'x86_64'),
+    );
+    expect(platformBlock?.kind).toBe('host-os');
+    expect(platformBlock?.reason).toContain('Windows');
+    expect(platformBlock?.reason).not.toContain('/');
+  });
+
+  it('never treats a Linux windows-wsl2 record as a native Windows target', () => {
+    const block = modelInstallBlock(
+      modelWithTargets([
+        candidate('linux', 'cuda', {
+          cudaVersion: '12.4',
+          minNvidiaDriverVersion: '550.54',
+          hostEnvironments: ['windows-wsl2'],
+        }),
+      ]),
+      hardware('windows', 'x86_64', '590.48.01'),
+    );
+    expect(block).not.toBeNull();
+    expect(block?.reason).toContain('Windows');
+  });
+
+  it('keeps every installable Runtime Box model tied to at least one published target', () => {
+    const runtimeBoxModels = BUILT_IN_AI_MODEL_REGISTRY.filter(
+      (model) => model.install?.method === 'runtime-box',
+    );
+    expect(runtimeBoxModels.length).toBeGreaterThan(0);
+    for (const model of runtimeBoxModels) {
+      const targets = model.install?.runtimeBox?.publishedTargets;
+      expect(targets?.length, model.id).toBeGreaterThan(0);
+      expect(
+        targets?.every((item) => item.hostEnvironments.includes('native')),
+        model.id,
+      ).toBe(true);
+    }
+  });
+
+  it('carries validated activation metadata from a Job into Result provenance', () => {
+    const activation = {
+      schemaVersion: 1,
+      selectedTarget: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
+      release: { kind: 'liatir.runtime-box.release' },
+    } as unknown as LiatirRuntimeBoxActivationMetadata;
+    const fromJob = runtimeBoxActivationFromMetadata({ runtimeBoxActivation: activation });
+    expect(fromJob).toBe(activation);
+    expect(runtimeBoxResultProvenance({
+      ok: true,
+      exitCode: 0,
+      stdout: '',
+      stderr: '',
+      durationMs: 1,
+      runtimeBoxActivation: fromJob,
+    })).toEqual({ runtimeBoxActivation: activation });
+  });
+});

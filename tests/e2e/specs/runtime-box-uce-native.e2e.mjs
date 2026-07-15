@@ -7,6 +7,7 @@
  */
 import {
   activateCleanSandbox,
+  macosArm64MetalRuntimeBoxTarget,
   readEmbeddedPythonScript,
   runtimeBoxInstallError,
   runtimeBoxInstallProgress,
@@ -126,6 +127,7 @@ export const tests = [
           modelId: MODEL_ID,
           channel: 'beta',
           registryBaseUrl: REGISTRY_BASE_URL,
+          targetCandidates: macosArm64MetalRuntimeBoxTarget(16),
           downloadId,
         });
 
