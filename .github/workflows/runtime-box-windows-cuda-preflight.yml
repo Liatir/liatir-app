@@ -15,7 +15,7 @@ jobs:
   preflight:
     name: Windows native T4 CUDA
     runs-on: liatir-windows-t4
-    timeout-minutes: 30
+    timeout-minutes: 60
     env:
       UV_CACHE_DIR: ${{ github.workspace }}/.runtime-box-ci/uv-cache
       UV_PYTHON_INSTALL_DIR: ${{ github.workspace }}/.runtime-box-ci/python
