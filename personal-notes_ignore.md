@@ -48,6 +48,16 @@ Stima durata dei gate:
 > Queste durate sono relative al lavoro Codex, non equivalgono automaticamente a ore di esecuzione continua: nei gate con build o CI lunghe ti avviserò e interromperò il lavoro attivo, così potrai chiedermi di ricontrollare in seguito.
 
 ---
+
+Prompt per far procedere al gate successivo:
+
+```txt
+
+Bene, se hai fatto, per favore prosegui con il gate X del piano: [liatir-runtime-box-ci-foundation-plan.md](/Users/lorenzo/.codex/memories/extensions/ad_hoc/notes/2026-07-14T23-24-53+0200-liatir-runtime-box-ci-foundation-plan.md). Una volta fatto aggiorna velocemente la memoria sul progresso del piano, cosi da non perdere riferimento quando viene compattata la context window e tieni a mente i principi generali in AGENTS.md, e quando hai finito pusha. Detto ciò, vai con il gate X.
+
+```
+
+---
 ---
 
 <!-- IGNORE THIS FILE -->
