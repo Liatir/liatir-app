@@ -21,6 +21,9 @@
     "ENVIRONMENT": "production",
     "OBJECT_PREFIX": "ai-runtime-boxes"
   },
+  "secrets": {
+    "required": ["ADMIN_TOKEN"]
+  },
   "observability": {
     "enabled": true,
     "head_sampling_rate": 0.1

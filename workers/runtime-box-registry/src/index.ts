@@ -8,7 +8,7 @@
  * Three surfaces:
  *   - public GET routes, serving signed channel and revocation documents straight from R2;
  *   - admin PUT routes, which *promote* a new document (make it live).
- *   - admin multipart routes, which ingest content-addressed archives too large for Wrangler.
+ *   - admin immutable-object routes, which ingest archives and signed release documents.
  *
  * The Worker never signs anything and holds no private key. On promotion it re-verifies the
  * signature against the trusted keys in R2 and checks the document actually matches the route
@@ -69,6 +69,14 @@ export interface MultipartArchiveIdentity {
   key: string;
 }
 
+export interface ImmutableReleaseIdentity {
+  boxId: string;
+  version: string;
+  target: string;
+  sha256: string;
+  key: string;
+}
+
 /** Builds the only object identity the multipart admin surface is allowed to write. */
 export function parseMultipartArchiveIdentity(
   boxIdValue: string,
@@ -87,6 +95,27 @@ export function parseMultipartArchiveIdentity(
     target,
     sha256,
     key: `boxes/${boxId}/${version}/${target}/${sha256}.zip`,
+  };
+}
+
+/** Builds the only immutable signed-release object identity the admin surface may write. */
+export function parseImmutableReleaseIdentity(
+  boxIdValue: string,
+  versionValue: string,
+  targetValue: string,
+  sha256Value: string,
+): ImmutableReleaseIdentity | null {
+  const boxId = safeSegment(boxIdValue);
+  const version = safeSegment(versionValue);
+  const target = safeSegment(targetValue);
+  const sha256 = SHA256_PATTERN.test(sha256Value) ? sha256Value : null;
+  if (!boxId || !version || !target || !sha256) return null;
+  return {
+    boxId,
+    version,
+    target,
+    sha256,
+    key: `boxes/${boxId}/${version}/${target}/${sha256}.release.json`,
   };
 }
 
@@ -140,13 +169,19 @@ async function timingSafeTokenMatch(received: string, expected: string): Promise
  * Reads a request body with a hard size cap. Checked twice, because `content-length` is a claim
  * by the client: the header lets us reject early, the real byte length is what actually enforces it.
  */
-async function readBoundedJson(request: Request): Promise<unknown> {
+async function readBoundedText(request: Request): Promise<string> {
   const contentLength = Number(request.headers.get('content-length') ?? 0);
   if (contentLength > MAX_CONTROL_DOCUMENT_BYTES) throw new Error('control_document_too_large');
   const text = await request.text();
   if (new TextEncoder().encode(text).byteLength > MAX_CONTROL_DOCUMENT_BYTES) {
     throw new Error('control_document_too_large');
   }
+  return text;
+}
+
+/** Parses a bounded JSON request after enforcing the byte limit on its exact body. */
+async function readBoundedJson(request: Request): Promise<unknown> {
+  const text = await readBoundedText(request);
   return JSON.parse(text);
 }
 
@@ -354,6 +389,52 @@ async function abortArchiveUpload(
   }
 }
 
+/** Checks that a signed release belongs at the immutable route selected by its body hash. */
+export function validateImmutableReleaseRoute(
+  payload: Record<string, unknown>,
+  identity: ImmutableReleaseIdentity,
+): boolean {
+  return payload.kind === 'liatir.runtime-box.release'
+    && payload.schemaVersion === 1
+    && payload.boxId === identity.boxId
+    && payload.version === identity.version
+    && runtimeBoxTargetIdForRoute(payload.target) === identity.target;
+}
+
+/** Stores one small signed release document without granting CI direct R2 credentials. */
+async function publishImmutableRelease(
+  request: Request,
+  env: Env,
+  identity: ImmutableReleaseIdentity,
+): Promise<Response> {
+  if (!await requireAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
+  let text: string;
+  let input: unknown;
+  try {
+    text = await readBoundedText(request);
+    input = JSON.parse(text);
+  } catch (error) {
+    return json({ error: error instanceof Error ? error.message : 'invalid_json' }, 400);
+  }
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  if (hex(digest) !== identity.sha256) return json({ error: 'release_document_hash_mismatch' }, 400);
+  if (!isLiatirSignedRuntimeBoxDocument(input)) return json({ error: 'invalid_signed_document' }, 400);
+  const payload = await verifySignedDocument(env, input);
+  if (!payload) return json({ error: 'untrusted_signature' }, 400);
+  if (!validateImmutableReleaseRoute(payload, identity)) return json({ error: 'release_route_mismatch' }, 400);
+  const key = objectKey(env, identity.key);
+  if (await env.RUNTIME_BOXES.head(key)) return json({ error: 'immutable_object_exists' }, 409);
+  await env.RUNTIME_BOXES.put(key, text, {
+    httpMetadata: {
+      contentType: 'application/json; charset=utf-8',
+      cacheControl: 'public, max-age=31536000, immutable',
+    },
+    customMetadata: { payloadSha256: input.payloadSha256, documentSha256: identity.sha256 },
+  });
+  console.log(JSON.stringify({ event: 'runtime_box_release_published', ...identity }));
+  return json({ ok: true, key: identity.key });
+}
+
 /**
  * Streams a stored document back to the client.
  *
@@ -522,6 +603,12 @@ export default {
     }
     if (request.method === 'POST' && url.pathname === '/v1/admin/uploads') {
       return createArchiveUpload(request, env);
+    }
+    // PUT /v1/admin/releases/:boxId/:version/:target/:sha256 — immutable signed metadata.
+    if (request.method === 'PUT' && parts.length === 7 && parts[0] === 'v1' && parts[1] === 'admin' && parts[2] === 'releases') {
+      const identity = parseImmutableReleaseIdentity(parts[3], parts[4], parts[5], parts[6]);
+      if (!identity) return json({ error: 'invalid_route' }, 400);
+      return publishImmutableRelease(request, env, identity);
     }
     // Multipart archive routes derive the R2 key only from these validated identity segments.
     if (parts.length >= 7 && parts[0] === 'v1' && parts[1] === 'admin' && parts[2] === 'uploads') {

@@ -20,6 +20,16 @@ The repository deployment helper provisions the service:
 bash scripts/deploy-runtime-box-signer.sh
 ```
 
+GitHub OIDC identities and protected Environment variables are provisioned idempotently with:
+
+```bash
+npm run runtime-box:ci:configure
+```
+
+The release identity can only invoke this service. The separate signer deployment identity can
+deploy source and impersonate the service runtime account, but neither GitHub identity has KMS
+permissions; only the Cloud Run runtime service account may sign.
+
 After deployment, build a Runtime Box with remote signing:
 
 ```bash

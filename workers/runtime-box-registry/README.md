@@ -26,7 +26,8 @@ npm run runtime-box -- publish-key --bucket liatir-storage \
 
 1. Create the `liatir-storage` R2 bucket in the Personal account.
 2. Upload `ai-runtime-boxes/control/trusted-keys.json` using Wrangler.
-3. Set `ADMIN_TOKEN` with `wrangler secret put`; never store it in config.
+3. Set `ADMIN_TOKEN` with `wrangler secret put`; never store it in config. The required secret
+   name is declared in `wrangler.jsonc`, but its value remains encrypted by Cloudflare.
 4. Attach the Worker to `models.liatir.com`.
 5. Attach the R2 custom domain to `assets.models.liatir.com`.
 
@@ -41,3 +42,7 @@ validated box/version/target/SHA-256 identity, existing immutable objects are
 refused, each request is limited to 64 MiB, and completion checks the expected
 byte size. The release CLI verifies the complete public SHA-256 before it
 uploads or promotes signed metadata.
+
+CI uses the Registry admin surface for both archives and immutable signed release documents.
+It does not receive a Cloudflare account or R2 API token. Rotate the shared Worker/GitHub
+Environment token with `npm run runtime-box:ci:configure -- --rotate-registry-token`.

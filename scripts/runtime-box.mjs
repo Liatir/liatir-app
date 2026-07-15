@@ -90,7 +90,6 @@ const DIST_ROOT = join(ROOT, '.runtime-box-dist');
 const DEFAULT_PRIVATE_KEY = join(LOCAL_ROOT, 'signing-private.pem');
 const DEFAULT_PUBLIC_KEY = join(LOCAL_ROOT, 'signing-public.json');
 const DEFAULT_OBJECT_PREFIX = 'ai-runtime-boxes';
-const WRANGLER_MAX_UPLOAD_BYTES = 300 * 1024 * 1024;
 const MULTIPART_PART_BYTES = 64 * 1024 * 1024;
 /** Minimal flag parser supporting `--name=value`, `--name value` and bare `--name` (true). */
 function parseArgs(values) {
@@ -861,6 +860,21 @@ async function uploadArchiveMultipart(archivePath, release, flags) {
   }
 }
 
+/** Publishes one small signed release document through the same least-privilege Registry token. */
+async function uploadReleaseDocument(releasePath, release, releaseSha256, flags) {
+  const registry = String(flags.get('registry') || 'https://models.liatir.com').replace(/\/$/, '');
+  const token = await registryAdminToken(flags);
+  const target = runtimeBoxTargetId(release.target);
+  const identityPath = [release.boxId, release.version, target, releaseSha256]
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+  await registryAdminRequest(`${registry}/v1/admin/releases/${identityPath}`, token, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json; charset=utf-8' },
+    body: await readFile(releasePath),
+  });
+}
+
 /**
  * `serve` — a local stand-in for the production registry.
  *
@@ -922,9 +936,9 @@ async function serve(flags) {
  * Publishing does *not* make a box live; `promote` does. This only puts the content-addressed
  * objects in place, which is why they can be cached forever: their key is their hash, so the
  * bytes behind a URL can never change.
- * Archives above Wrangler's upload limit use the Registry Worker's authenticated multipart
- * surface. Every archive is then streamed back from the public domain and hashed before its
- * signed release document is uploaded.
+ * Archives and signed release documents use the Registry Worker's authenticated surface, so CI
+ * never receives a broad Cloudflare account token. Every archive is streamed back from the
+ * public domain and hashed before its signed release document is uploaded.
  *
  * Both guards here exist because publishing is effectively irreversible: an archive whose hash
  * no longer matches its signed manifest would be permanently unusable, and a box built from a
@@ -948,20 +962,16 @@ async function publish(releaseDocumentPath, flags) {
   const archiveKey = prefixedObjectKey(objectPrefix, `${releasePrefix}/${release.archive.sha256}.zip`);
   const releaseSha = await sha256File(releasePath);
   const releaseKey = prefixedObjectKey(objectPrefix, `${releasePrefix}/${releaseSha}.release.json`);
-  const wrangler = join(ROOT, 'node_modules', '.bin', 'wrangler');
   const archiveExists = await remoteObjectExists(release.archive.url);
   if (!archiveExists) {
-    if ((await stat(archivePath)).size > WRANGLER_MAX_UPLOAD_BYTES) {
-      await uploadArchiveMultipart(archivePath, release, flags);
-    } else {
-      // `immutable` with a one-year TTL is safe precisely because these keys are content hashes.
-      run(wrangler, ['r2', 'object', 'put', `${bucket}/${archiveKey}`, '--remote', `--file=${archivePath}`, '--content-type=application/zip', '--cache-control=public, max-age=31536000, immutable']);
-    }
+    await uploadArchiveMultipart(archivePath, release, flags);
   }
   // Do not publish the release document until the public archive is byte-for-byte correct.
   await verifyRemoteObject(release.archive.url, release.archive.sizeBytes, release.archive.sha256);
-  run(wrangler, ['r2', 'object', 'put', `${bucket}/${releaseKey}`, '--remote', `--file=${releasePath}`, '--content-type=application/json', '--cache-control=public, max-age=31536000, immutable']);
   const releaseUrl = `${new URL(release.archive.url).origin}/${releaseKey}`;
+  if (!await remoteObjectExists(releaseUrl)) {
+    await uploadReleaseDocument(releasePath, release, releaseSha, flags);
+  }
   await verifyRemoteObject(releaseUrl, (await stat(releasePath)).size, releaseSha);
   console.log(`Published r2://${bucket}/${archiveKey}`);
   console.log(`Published r2://${bucket}/${releaseKey}`);
