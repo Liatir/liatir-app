@@ -52,6 +52,13 @@ For every run or process, always verify:
 - Every feature must work well at **production level** — for real users, real files, and real scientific workflows, not only for the immediate demo.
 - Before closing work, mentally and technically run automatic tests to check everything works correctly (see the verification gate under the architecture policy).
 
+### Long-running processes and monitoring
+
+- **Never waste user credits or context on repetitive polling.** This applies to every long-running or external process, not only CI: builds, tests, deployments, jobs, downloads, services, queues, and remote workflows.
+- Do not use verbose watch commands or repeated status calls that inject unchanged state into the conversation or context window.
+- Prefer event-driven completion signals or a silent background wait. If neither exists, perform one concise status check after a meaningful interval and stop checking until another meaningful interval or a fresh user request.
+- Report only real transitions: actionable progress, failure, completion, or a change that requires a decision. Never repeatedly report that a process is still running.
+
 ## Build / test / run
 
 **Do not assume or hardcode commands — they change over time.** The authoritative commands live in the `scripts` sections of the `package.json` files in this repo. Before building, testing, running, or linting:
