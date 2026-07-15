@@ -69,11 +69,19 @@ jobs:
       - name: Build and verify the Windows stdlib fixture twice
         run: npm run runtime-box:test:native -- --recipe installer-fixture-windows-x86_64 --uv uv
 
-      - name: Verify the hosted Rust toolchain
+      - name: Select Git Bash for composite actions
         shell: powershell
         run: |
-          rustc -Vv
-          cargo -V
+          $gitBash = 'C:\Program Files\Git\bin'
+          if (-not (Test-Path "$gitBash\bash.exe")) {
+            throw "Git Bash is unavailable at $gitBash."
+          }
+          $gitBash | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Install pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          toolchain: "1.95.0"
 
       - name: Generate the embedded bridge bundle
         run: npm run ts:compile --prefix src-tauri
