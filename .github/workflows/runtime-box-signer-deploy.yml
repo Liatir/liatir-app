@@ -88,5 +88,6 @@ jobs:
         with:
           name: runtime-box-signer-deploy-${{ github.run_attempt }}
           path: .runtime-box-ci/signer-deploy.*
+          include-hidden-files: true
           retention-days: 30
           if-no-files-found: error

@@ -68,6 +68,20 @@ jobs:
 
       - run: npm ci
 
+      - name: Install Tauri Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
       - name: Install pinned Rust 1.95.0
         uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
         with:
@@ -104,6 +118,7 @@ jobs:
         with:
           name: runtime-box-foundation-preflight-${{ github.run_attempt }}
           path: .runtime-box-ci/foundation-preflight.*
+          include-hidden-files: true
           retention-days: 7
           if-no-files-found: error
 
@@ -177,6 +192,7 @@ jobs:
         with:
           name: runtime-box-foundation-${{ matrix.recipeId }}-${{ github.run_attempt }}
           path: .runtime-box-ci/${{ matrix.recipeId }}.*
+          include-hidden-files: true
           retention-days: 7
           if-no-files-found: error
 

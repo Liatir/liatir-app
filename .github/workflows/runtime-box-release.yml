@@ -171,6 +171,7 @@ jobs:
         with:
           name: runtime-box-release-${{ inputs.model_id }}-${{ inputs.target_id }}-${{ github.run_attempt }}
           path: .runtime-box-ci/release-evidence.json
+          include-hidden-files: true
           retention-days: 30
           if-no-files-found: warn
 

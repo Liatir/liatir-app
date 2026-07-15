@@ -159,5 +159,6 @@ jobs:
         with:
           name: runtime-box-validation-${{ inputs.model_id }}-${{ inputs.target_id }}-${{ inputs.mode }}-${{ github.run_attempt }}
           path: .runtime-box-ci/model-validation.*
+          include-hidden-files: true
           retention-days: 14
           if-no-files-found: error
