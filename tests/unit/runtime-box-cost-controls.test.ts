@@ -17,6 +17,8 @@ describe('Runtime Box CI cost controls', () => {
     const productBuild = readFileSync(resolve('scripts/build-tauri-test-binary.mjs'), 'utf8');
     const e2eRunner = readFileSync(resolve('tests/e2e/run-tauri-e2e.mjs'), 'utf8');
     const e2eAppSupport = readFileSync(resolve('tests/e2e/support/liatir-app.mjs'), 'utf8');
+    const tauriMain = readFileSync(resolve('src-tauri/src/main.rs'), 'utf8');
+    const diagnostics = readFileSync(resolve('src-tauri/src/bridge/diagnostics.rs'), 'utf8');
     expect(prepare.indexOf('npm run build --prefix packages/liatir-core'))
       .toBeLessThan(prepare.indexOf('npm run gen:sdk-types'));
     expect(prepare.indexOf('npm ci --prefix frontend'))
@@ -28,6 +30,10 @@ describe('Runtime Box CI cost controls', () => {
     expect(e2eRunner).toContain('Tauri log tail (last 12 KiB)');
     expect(e2eRunner).toContain("exitCode=${app.child.exitCode ?? 'running'}");
     expect(e2eAppSupport).toContain("window.location.pathname !== '/workspaces'");
+    expect(tauriMain).not.toContain('app.deep_link().register_all()?');
+    expect(tauriMain).toContain('[deep-link] Failed to register desktop deep links');
+    expect(diagnostics).toContain('let previous_hook = std::panic::take_hook();');
+    expect(diagnostics).toContain('previous_hook(info);');
   });
 
   it('pins every model lock and calculates disk before native allocation', () => {

@@ -160,7 +160,12 @@ fn main() {
     // Runtime registration only in dev on Win/Linux.
     #[cfg(any(target_os = "linux", all(debug_assertions, target_os = "windows")))]
     {
-      app.deep_link().register_all()?;
+      // Desktop integration is useful but secondary to starting the app. Minimal Linux
+      // installations may omit xdg-mime or update-desktop-database, so preserve the app
+      // and report the missing integration instead of aborting the entire Tauri setup.
+      if let Err(error) = app.deep_link().register_all() {
+        eprintln!("[deep-link] Failed to register desktop deep links: {error}");
+      }
     }
 
     // Startup deep link URLs.
