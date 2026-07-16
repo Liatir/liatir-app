@@ -356,7 +356,7 @@ function parseOptions(values) {
 async function runPackageScript(script, output, environment = {}) {
   const result = await runWithHeartbeat(
     process.platform === 'win32' ? 'npm.cmd' : 'npm',
-    ['run', script],
+    ['run', '--silent', script],
     {
       label: `Scientific validator ${script}`,
       capture: true,

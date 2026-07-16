@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import catalogJson from '../../runtime-boxes/catalog.json';
 import {
   BUILT_IN_AI_MODEL_REGISTRY,
@@ -88,6 +89,12 @@ describe('Runtime Box CI catalog', () => {
       linuxCudaBeforeWindowsCuda: true,
       cacheModelWeightsOrArchives: false,
     });
+  });
+
+  it('suppresses npm wrapper output before parsing one canonical validator result', () => {
+    const ciSource = readFileSync(new URL('../../scripts/runtime-box-ci.mjs', import.meta.url), 'utf8');
+    expect(ciSource).toContain("['run', '--silent', script]");
+    expect(ciSource).toContain('JSON.parse(result.stdout.trim())');
   });
 
   it('keeps UCE native CI disabled until a runner has enough working storage', () => {
