@@ -27,6 +27,7 @@ const diffDir = path.join(artifactsDir, 'visual-diffs');
 const embeddedPort = Number(process.env.TAURI_WEBDRIVER_PORT ?? 4445);
 const baseUrl = `http://127.0.0.1:${embeddedPort}`;
 const elementKey = 'element-6066-11e4-a52e-4f735466cecf';
+const traceLifecycle = process.env.LIATIR_E2E_TRACE === '1';
 
 cleanupTestArtifacts(rootDir);
 
@@ -111,6 +112,16 @@ function startTauriApp() {
 
   child.stdout.pipe(logStream);
   child.stderr.pipe(logStream);
+
+  if (traceLifecycle) {
+    console.error(`[e2e ${new Date().toISOString()}] spawned Tauri pid=${child.pid ?? 'unknown'} port=${embeddedPort}`);
+    child.once('error', (error) => {
+      console.error(`[e2e ${new Date().toISOString()}] Tauri spawn error: ${error.message}`);
+    });
+    child.once('exit', (code, signal) => {
+      console.error(`[e2e ${new Date().toISOString()}] Tauri exited code=${code ?? 'none'} signal=${signal ?? 'none'}`);
+    });
+  }
 
   return { child, logPath, logStream };
 }
@@ -217,6 +228,10 @@ class NativeWebDriverClient {
   }
 
   async request(method, endpoint, body) {
+    const requestStartedAt = Date.now();
+    if (traceLifecycle) {
+      console.error(`[e2e ${new Date().toISOString()}] WebDriver ${method} ${endpoint}`);
+    }
     const response = await fetch(`${baseUrl}/session/${this.sessionId}${endpoint}`, {
       method,
       headers: body === undefined ? undefined : { 'content-type': 'application/json' },
@@ -230,6 +245,10 @@ class NativeWebDriverClient {
       const error = new Error(value?.message ?? `WebDriver ${method} ${endpoint} failed with ${response.status}`);
       error.code = value?.error;
       throw error;
+    }
+
+    if (traceLifecycle) {
+      console.error(`[e2e ${new Date().toISOString()}] WebDriver ${method} ${endpoint} completed in ${Date.now() - requestStartedAt}ms`);
     }
 
     return value;
@@ -370,6 +389,16 @@ function writeE2EReport(reportPath, report) {
   fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
 }
 
+/** Returns a bounded native-app log tail so CI failures are actionable without uploading logs. */
+function readTauriLogTail(logPath, maxBytes = 12 * 1024) {
+  try {
+    const log = fs.readFileSync(logPath);
+    return log.subarray(Math.max(0, log.length - maxBytes)).toString('utf8').trim();
+  } catch {
+    return '';
+  }
+}
+
 async function run() {
   const { heavy, reportPath, updateSnapshots, visual, specs: specArgs } = parseArgs(process.argv.slice(2));
   const specs = resolveSpecs(specArgs, visual, heavy);
@@ -465,6 +494,9 @@ async function run() {
           console.error(error?.stack ?? error);
           if (failureScreenshot) console.error(`Failure screenshot: ${failureScreenshot}`);
           console.error(`Tauri log: ${app.logPath}`);
+          console.error(`Tauri process: exitCode=${app.child.exitCode ?? 'running'}, signal=${app.child.signalCode ?? 'none'}`);
+          const tauriLogTail = readTauriLogTail(app.logPath);
+          if (tauriLogTail) console.error(`Tauri log tail (last 12 KiB):\n${tauriLogTail}`);
           results.push({
             durationMs: Date.now() - testStartedAt.getTime(),
             error: error?.stack ?? String(error),

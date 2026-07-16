@@ -15,6 +15,8 @@ describe('Runtime Box CI cost controls', () => {
     const packageJson = JSON.parse(readFileSync(resolve('package.json'), 'utf8'));
     const prepare = packageJson.scripts['test:tauri:prepare'];
     const productBuild = readFileSync(resolve('scripts/build-tauri-test-binary.mjs'), 'utf8');
+    const e2eRunner = readFileSync(resolve('tests/e2e/run-tauri-e2e.mjs'), 'utf8');
+    const e2eAppSupport = readFileSync(resolve('tests/e2e/support/liatir-app.mjs'), 'utf8');
     expect(prepare.indexOf('npm run build --prefix packages/liatir-core'))
       .toBeLessThan(prepare.indexOf('npm run gen:sdk-types'));
     expect(prepare.indexOf('npm ci --prefix frontend'))
@@ -23,6 +25,9 @@ describe('Runtime Box CI cost controls', () => {
     expect(productBuild).toContain("'node_modules',");
     expect(productBuild).toContain("'.bin',");
     expect(productBuild).not.toContain("'cargo',\n    [\n      'tauri'");
+    expect(e2eRunner).toContain('Tauri log tail (last 12 KiB)');
+    expect(e2eRunner).toContain("exitCode=${app.child.exitCode ?? 'running'}");
+    expect(e2eAppSupport).toContain("window.location.pathname !== '/workspaces'");
   });
 
   it('pins every model lock and calculates disk before native allocation', () => {

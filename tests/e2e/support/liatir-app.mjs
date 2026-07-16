@@ -22,7 +22,10 @@ export async function openSandboxWorkspace(browser) {
   }
 
   await browser.waitUntil(
-    async () => browser.execute(() => Boolean(document.querySelector('[data-testid="sidebar-nav-item"]'))),
+    async () => browser.execute(() => (
+      window.location.pathname !== '/workspaces'
+      && Boolean(document.querySelector('[data-testid="sidebar-nav-item"]'))
+    )),
     {
       timeout: 20_000,
       timeoutMsg: 'Sandbox workspace shell did not open',
