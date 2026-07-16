@@ -137,12 +137,12 @@
   <div class="flex-1 overflow-y-auto p-6">
     {#if pipelineStore.savedPipelines.length === 0}
       <div class="flex flex-col items-center justify-center h-full gap-4 text-center">
-        <div class="h-16 w-16 rounded-2xl bg-white border border-border shadow-sm flex items-center justify-center">
-          <Icon icon="lucide:workflow" width="28" height="28" class="text-zinc-300" />
+        <div class="h-16 w-16 rounded-2xl bg-surface border border-border shadow-sm flex items-center justify-center">
+          <Icon icon="lucide:workflow" width="28" height="28" class="text-text-faint" />
         </div>
         <div>
-          <p class="text-sm font-medium text-zinc-600">No saved pipelines</p>
-          <p class="text-xs text-zinc-400 mt-1">Create a pipeline in the editor and save it to see it here.</p>
+          <p class="text-sm font-medium text-text-secondary">No saved pipelines</p>
+          <p class="text-xs text-text-subtle mt-1">Create a pipeline in the editor and save it to see it here.</p>
         </div>
         <Button variant="secondary" onclick={newPipeline}>
           <Icon icon="lucide:plus" width="13" height="13" />
@@ -152,16 +152,16 @@
     {:else}
       <!-- Search -->
       <div class="w-full mb-4">
-        <div class="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 w-full">
-          <Icon icon="lucide:search" width="14" height="14" class="text-zinc-400 shrink-0" />
+        <div class="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 w-full">
+          <Icon icon="lucide:search" width="14" height="14" class="text-text-subtle shrink-0" />
           <input
             type="text"
             bind:value={search}
             placeholder="Search pipelines…"
-            class="flex-1 min-w-0 text-sm bg-transparent outline-none text-zinc-800 placeholder:text-zinc-400"
+            class="flex-1 min-w-0 text-sm bg-transparent outline-none text-text placeholder:text-text-subtle"
           />
           {#if search}
-            <button onclick={() => (search = '')} class="text-zinc-400 hover:text-zinc-600" aria-label="Clear search">
+            <button onclick={() => (search = '')} class="text-text-subtle hover:text-text-secondary" aria-label="Clear search">
               <Icon icon="lucide:x" width="12" height="12" />
             </button>
           {/if}
@@ -169,7 +169,7 @@
       </div>
 
       {#if filtered.length === 0}
-        <p class="max-w-4xl text-center text-sm text-zinc-400 py-10">No pipelines match “{search}”.</p>
+        <p class="max-w-4xl text-center text-sm text-text-subtle py-10">No pipelines match “{search}”.</p>
       {:else}
         <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl">
           {#each filtered as p (p.id)}
@@ -177,7 +177,7 @@
             {@const pipelineRunning = pipelineStore.isPipelineRunning(p.id)}
             {@const lr = lastRun(p.id)}
             <div
-              class="bg-white rounded-xl border border-border shadow-sm hover:shadow-md hover:border-brand/30 transition-all group relative"
+              class="bg-surface rounded-xl border border-border shadow-sm hover:shadow-md hover:border-brand/30 transition-all group relative"
               data-testid="pipeline-card"
               data-pipeline-id={p.id}
             >
@@ -228,12 +228,12 @@
                       if (e.key === 'Enter') { e.preventDefault(); void commitRename(p); }
                       else if (e.key === 'Escape') { e.preventDefault(); renamingId = null; }
                     }}
-                    class="w-full rounded border border-brand/40 bg-white px-2 py-1 text-sm font-semibold text-zinc-800 outline-none focus:ring-1 focus:ring-brand/30"
+                    class="w-full rounded border border-brand/40 bg-surface px-2 py-1 text-sm font-semibold text-text outline-none focus:ring-1 focus:ring-brand/30"
                   />
                 {:else}
-                  <p class="text-sm font-semibold text-zinc-800 truncate">{p.name}</p>
+                  <p class="text-sm font-semibold text-text truncate">{p.name}</p>
                 {/if}
-                <p class="text-xs text-zinc-400 mt-0.5">
+                <p class="text-xs text-text-subtle mt-0.5">
                   {stepCount} step{stepCount !== 1 ? 's' : ''}
                   · {p.edges.length} connection{p.edges.length !== 1 ? 's' : ''}
                   · Edited {fmtDate(p.updatedAt)}
@@ -254,22 +254,22 @@
                   <button
                     onclick={() => (openMenuId = openMenuId === p.id ? null : p.id)}
                     aria-label="More actions"
-                    class="flex items-center justify-center h-7 w-7 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+                    class="flex items-center justify-center h-7 w-7 rounded-lg text-text-subtle hover:text-text-secondary hover:bg-surface-2 transition-colors"
                   >
                     <Icon icon="lucide:ellipsis" width="15" height="15" />
                   </button>
                   {#if openMenuId === p.id}
-                    <div class="absolute right-0 top-full mt-1 z-30 min-w-40 rounded-lg border border-border bg-white shadow-xl py-1 text-sm overflow-hidden">
-                      <button onclick={() => { openMenuId = null; openPipeline(p); }} class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-zinc-700 hover:bg-zinc-50 transition-colors">
+                    <div class="absolute right-0 top-full mt-1 z-30 min-w-40 rounded-lg border border-border bg-surface shadow-xl py-1 text-sm overflow-hidden">
+                      <button onclick={() => { openMenuId = null; openPipeline(p); }} class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-text-secondary hover:bg-surface-2 transition-colors">
                         <Icon icon="lucide:pencil" width="13" height="13" /> Open in editor
                       </button>
-                      <button onclick={() => startRename(p)} class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-zinc-700 hover:bg-zinc-50 transition-colors">
+                      <button onclick={() => startRename(p)} class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-text-secondary hover:bg-surface-2 transition-colors">
                         <Icon icon="lucide:text-cursor-input" width="13" height="13" /> Rename
                       </button>
-                      <button onclick={() => duplicatePipeline(p)} class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-zinc-700 hover:bg-zinc-50 transition-colors">
+                      <button onclick={() => duplicatePipeline(p)} class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-text-secondary hover:bg-surface-2 transition-colors">
                         <Icon icon="lucide:copy" width="13" height="13" /> Duplicate
                       </button>
-                      <button onclick={() => exportPipeline(p)} class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-zinc-700 hover:bg-zinc-50 transition-colors">
+                      <button onclick={() => exportPipeline(p)} class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-text-secondary hover:bg-surface-2 transition-colors">
                         <Icon icon="lucide:download" width="13" height="13" /> Export
                       </button>
                       <div class="my-1 border-t border-border/60"></div>
@@ -286,7 +286,7 @@
           <!-- New pipeline card -->
           <button
             onclick={newPipeline}
-            class="rounded-xl border-2 border-dashed border-border hover:border-brand/40 hover:bg-brand/3 transition-all p-6 flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-brand min-h-32"
+            class="rounded-xl border-2 border-dashed border-border hover:border-brand/40 hover:bg-brand/3 transition-all p-6 flex flex-col items-center justify-center gap-2 text-text-subtle hover:text-brand min-h-32"
           >
             <Icon icon="lucide:plus-circle" width="28" height="28" />
             <span class="text-sm font-medium">New pipeline</span>

@@ -435,46 +435,46 @@
 
   <div class="flex-1 overflow-y-auto p-6 space-y-5">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <div class="border border-border bg-white rounded-lg px-4 py-3">
-        <p class="text-[10px] font-semibold uppercase text-zinc-400">Installed</p>
-        <p class="mt-1 text-sm font-semibold text-zinc-800">{installedCount} model{installedCount === 1 ? '' : 's'}</p>
+      <div class="border border-border bg-surface rounded-lg px-4 py-3">
+        <p class="text-[10px] font-semibold uppercase text-text-subtle">Installed</p>
+        <p class="mt-1 text-sm font-semibold text-text">{installedCount} model{installedCount === 1 ? '' : 's'}</p>
       </div>
-      <div class="border border-border bg-white rounded-lg px-4 py-3">
-        <p class="text-[10px] font-semibold uppercase text-zinc-400">Runnable</p>
-        <p class="mt-1 text-sm font-semibold text-zinc-800">{runnableCount} model{runnableCount === 1 ? '' : 's'}</p>
+      <div class="border border-border bg-surface rounded-lg px-4 py-3">
+        <p class="text-[10px] font-semibold uppercase text-text-subtle">Runnable</p>
+        <p class="mt-1 text-sm font-semibold text-text">{runnableCount} model{runnableCount === 1 ? '' : 's'}</p>
       </div>
-      <div class="border border-border bg-white rounded-lg px-4 py-3 md:col-span-2">
-        <p class="text-[10px] font-semibold uppercase text-zinc-400">Host runtime</p>
-        <p class="mt-1 text-sm font-semibold text-zinc-800">
+      <div class="border border-border bg-surface rounded-lg px-4 py-3 md:col-span-2">
+        <p class="text-[10px] font-semibold uppercase text-text-subtle">Host runtime</p>
+        <p class="mt-1 text-sm font-semibold text-text">
           {hardware ? `${hardware.cpuCores} CPU cores${hardware.totalMemoryBytes ? ` · ${fmtBytes(hardware.totalMemoryBytes)} RAM` : ''}${hardware.appleMetal ? ' · Apple Metal' : ''}${hardware.cudaAvailable ? ' · CUDA' : ''}${hardware.pythonVersion ? ` · ${hardware.pythonVersion}` : ''}` : 'Hardware detection unavailable'}
         </p>
       </div>
     </div>
 
     <div class="flex justify-center gap-2 items-center w-full cursor-default group">
-      <div class="w-full h-px bg-zinc-200 group-hover:bg-zinc-300"></div>
-      <div class="min-w-fit text-[11px] text-zinc-400 text-center group-hover:text-zinc-600">
+      <div class="w-full h-px bg-surface-3 group-hover:bg-border-2"></div>
+      <div class="min-w-fit text-[11px] text-text-subtle text-center group-hover:text-text-secondary">
         AI models are installed globally, therefore available to all workspaces
       </div>
-      <div class="w-full h-px bg-zinc-200 group-hover:bg-zinc-300"></div>
+      <div class="w-full h-px bg-surface-3 group-hover:bg-border-2"></div>
     </div>
 
     <div class="space-y-3">
-      <div class="border border-border bg-white rounded-lg px-4 py-3">
+      <div class="border border-border bg-surface rounded-lg px-4 py-3">
         <div class="relative max-w-md">
-          <Icon icon="lucide:search" width="15" height="15" class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+          <Icon icon="lucide:search" width="15" height="15" class="absolute left-3 top-1/2 -translate-y-1/2 text-text-subtle" />
           <input
             type="text"
             value={searchQuery}
             placeholder="Search AI Models..."
             data-testid="ai-models-search"
-            class="h-9 w-full rounded-md border border-border bg-white pl-9 pr-9 text-sm text-zinc-700 outline-none transition-colors placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-brand/10"
+            class="h-9 w-full rounded-md border border-border bg-surface pl-9 pr-9 text-sm text-text-secondary outline-none transition-colors placeholder:text-text-subtle focus:border-brand focus:ring-2 focus:ring-brand/10"
             oninput={(event) => searchQuery = (event.target as HTMLInputElement).value}
           />
           {#if searchQuery}
             <button
               type="button"
-              class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600"
+              class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-text-subtle transition-colors hover:bg-surface-2 hover:text-text-secondary"
               aria-label="Clear AI Models search"
               onclick={() => searchQuery = ''}
             >
@@ -485,46 +485,46 @@
       </div>
 
       {#if loading}
-        <div class="border border-border bg-white rounded-lg flex flex-col gap-2 items-center justify-center px-4 py-8 text-center text-sm text-zinc-400"><Spinner class="text-zinc-300"/> <p>Loading AI Models...</p></div>
+        <div class="border border-border bg-surface rounded-lg flex flex-col gap-2 items-center justify-center px-4 py-8 text-center text-sm text-text-subtle"><Spinner class="text-text-faint"/> <p>Loading AI Models...</p></div>
       {:else if models.length === 0}
-        <div class="border border-border bg-white rounded-lg px-4 py-8 text-center text-sm text-zinc-400">No AI Models available.</div>
+        <div class="border border-border bg-surface rounded-lg px-4 py-8 text-center text-sm text-text-subtle">No AI Models available.</div>
       {:else if filteredModels.length === 0}
-        <div class="border border-border bg-white rounded-lg px-4 py-8 text-center text-sm text-zinc-400">No AI Models match your search.</div>
+        <div class="border border-border bg-surface rounded-lg px-4 py-8 text-center text-sm text-text-subtle">No AI Models match your search.</div>
       {:else}
         {#each groupedModels as group (group.name)}
           {@const expanded = isCategoryExpanded(group.name)}
-          <section class="border border-border bg-white rounded-lg overflow-hidden" data-testid="ai-model-category" data-category={group.name}>
+          <section class="border border-border bg-surface rounded-lg overflow-hidden" data-testid="ai-model-category" data-category={group.name}>
             <button
               type="button"
               data-testid="ai-model-category-toggle"
               data-category={group.name}
-              class="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors hover:bg-zinc-50"
+              class="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors hover:bg-surface-2"
               aria-expanded={expanded}
               onclick={() => toggleCategory(group.name)}
             >
               <div class="flex min-w-0 items-start gap-3">
-                <div class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-50 text-zinc-500">
+                <div class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface-2 text-text-muted">
                   <Icon icon={expanded ? 'lucide:chevron-down' : 'lucide:chevron-right'} width="15" height="15" />
                 </div>
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-sm font-semibold text-zinc-800">{group.name}</h2>
+                    <h2 class="text-sm font-semibold text-text">{group.name}</h2>
                     <Badge variant="neutral" size="xs" hideDot>{group.models.length} model{group.models.length === 1 ? '' : 's'}</Badge>
                     {#if group.installedCount > 0}
                       <Badge variant="done" size="xs">{group.installedCount} installed</Badge>
                     {/if}
                   </div>
-                  <p class="mt-1 text-xs text-zinc-500">{categoryDescription(group.name)}</p>
+                  <p class="mt-1 text-xs text-text-muted">{categoryDescription(group.name)}</p>
                 </div>
               </div>
-              <div class="hidden shrink-0 items-center gap-2 text-xs text-zinc-500 sm:flex">
+              <div class="hidden shrink-0 items-center gap-2 text-xs text-text-muted sm:flex">
                 <span>{group.runnableCount} runnable</span>
               </div>
             </button>
 
             {#if expanded}
               <div class="border-t border-border bg-surface/60 p-3">
-                <div class="grid grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(130px,0.8fr)_250px] gap-3 px-3 py-2 text-[10px] font-semibold uppercase text-zinc-400 max-xl:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_250px]">
+                <div class="grid grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(130px,0.8fr)_250px] gap-3 px-3 py-2 text-[10px] font-semibold uppercase text-text-subtle max-xl:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_250px]">
                   <span>Model</span>
                   <span class="max-xl:hidden">Runtime</span>
                   <span class="max-xl:hidden">Hardware</span>
@@ -538,11 +538,11 @@
                     {@const installLog = installLogState(model.id)}
                     {@const checking = isCheckingModel(model)}
                     {@const actionsLocked = modelActionsLocked(model)}
-                    <div class="rounded-lg border border-border bg-white" data-testid="ai-model-card" data-model-id={model.id}>
+                    <div class="rounded-lg border border-border bg-surface" data-testid="ai-model-card" data-model-id={model.id}>
                       <div class="grid grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(130px,0.8fr)_250px] gap-3 px-4 py-3 items-center max-xl:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_250px]">
                         <div class="min-w-0">
                           <div class="flex items-center gap-2 min-w-0">
-                            <p class="text-sm font-semibold text-zinc-800 truncate">{model.name}</p>
+                            <p class="text-sm font-semibold text-text truncate">{model.name}</p>
                             <span class="shrink-0">
                               <InfoPopup text={aiModelInfo(model)} />
                             </span>
@@ -551,18 +551,18 @@
                               <Badge variant="neutral" size="xs" hideDot>local</Badge>
                             {/if}
                           </div>
-                          <p class="mt-1 text-xs text-zinc-500 line-clamp-2">{model.description}</p>
+                          <p class="mt-1 text-xs text-text-muted line-clamp-2">{model.description}</p>
                           {#if model.error && model.status === 'error'}
                             <p class="mt-1 text-[11px] text-red-500 line-clamp-2">{sanitizeLocalPathsForDisplay(model.error, 2)}</p>
                           {/if}
                           {#if model.releaseStage === 'preview'}
-                            <p class="mt-1 text-[11px] text-zinc-500">
+                            <p class="mt-1 text-[11px] text-text-muted">
                               Preview model: documentation and roadmap metadata are available, but install and run are not enabled yet.
                             </p>
                           {/if}
                           <div class="mt-2 flex flex-wrap gap-1.5">
                             {#each model.capabilities as capability}
-                              <span class="rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[10px] text-zinc-500">{capability}</span>
+                              <span class="rounded border border-border bg-surface-2 px-1.5 py-0.5 text-[10px] text-text-muted">{capability}</span>
                             {/each}
                           </div>
                           {#if blocked}
@@ -591,25 +591,25 @@
                           {/if}
                         </div>
 
-                        <div class="text-xs text-zinc-600 min-w-0 max-xl:hidden">
+                        <div class="text-xs text-text-secondary min-w-0 max-xl:hidden">
                           <p class="truncate">{runtimeLabel(model)}</p>
-                          <p class="text-[10px] text-zinc-400 truncate" title={model.localPath ? getLastSegmentsStringFromPath(model.localPath, 2) : undefined}>
+                          <p class="text-[10px] text-text-subtle truncate" title={model.localPath ? getLastSegmentsStringFromPath(model.localPath, 2) : undefined}>
                             {model.localPath ? getLastSegmentsStringFromPath(model.localPath, 2) : model.runtime.kind}
                           </p>
                           {#if runtimePackages(model).length > 0}
-                            <p class="mt-1 text-[10px] text-zinc-400 truncate" title={runtimePackages(model).map(runtimePackageLabel).join(', ')}>
+                            <p class="mt-1 text-[10px] text-text-subtle truncate" title={runtimePackages(model).map(runtimePackageLabel).join(', ')}>
                               {runtimePackagesPreview(model)}
                             </p>
                           {/if}
                           {#if installedSizeLabel(model)}
-                            <p class="mt-1 text-[10px] text-zinc-500 truncate">{installedSizeLabel(model)}</p>
+                            <p class="mt-1 text-[10px] text-text-muted truncate">{installedSizeLabel(model)}</p>
                           {/if}
                         </div>
 
-                        <div class="text-xs text-zinc-600 min-w-0 max-xl:hidden">
+                        <div class="text-xs text-text-secondary min-w-0 max-xl:hidden">
                           <p class="truncate">{hardwareLabel(model)}</p>
                           {#if model.hardware?.notes}
-                            <p class="text-[10px] text-zinc-400 truncate">{model.hardware.notes}</p>
+                            <p class="text-[10px] text-text-subtle truncate">{model.hardware.notes}</p>
                           {/if}
                           {#if blocked}
                             <div class="mt-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] leading-snug text-amber-800">
@@ -637,19 +637,19 @@
                           {/if}
                         </div>
 
-                        <div class="text-xs text-zinc-600 min-w-0">
+                        <div class="text-xs text-text-secondary min-w-0">
                           <p class="truncate">{model.license?.name ?? 'Unspecified'}</p>
                           {#if model.license?.verifiedAt}
-                            <p class="text-[10px] text-zinc-400">Verified {model.license.verifiedAt}</p>
+                            <p class="text-[10px] text-text-subtle">Verified {model.license.verifiedAt}</p>
                           {:else}
-                            <p class="text-[10px] text-zinc-400">Verification required</p>
+                            <p class="text-[10px] text-text-subtle">Verification required</p>
                           {/if}
                         </div>
 
                         <div class="flex items-center justify-end gap-2 min-w-0">
                           <button
                             type="button"
-                            class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--color-surface-3)] text-zinc-500 transition-colors hover:bg-[var(--color-border-2)] hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[var(--color-surface-3)] disabled:hover:text-zinc-500"
+                            class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--color-surface-3)] text-text-muted transition-colors hover:bg-[var(--color-border-2)] hover:text-text disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[var(--color-surface-3)] disabled:hover:text-text-muted"
                             title={isModelDetailsExpanded(model.id) ? 'Hide model details' : 'Show model details'}
                             aria-label={isModelDetailsExpanded(model.id) ? 'Hide model details' : 'Show model details'}
                             aria-expanded={isModelDetailsExpanded(model.id)}
@@ -662,7 +662,7 @@
                           {#if aiModelLiatirDocsUrl(model)}
                             <button
                               type="button"
-                              class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--color-surface-3)] text-zinc-500 transition-colors hover:bg-[var(--color-border-2)] hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[var(--color-surface-3)] disabled:hover:text-zinc-500"
+                              class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--color-surface-3)] text-text-muted transition-colors hover:bg-[var(--color-border-2)] hover:text-text disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[var(--color-surface-3)] disabled:hover:text-text-muted"
                               title="Open Liatir documentation"
                               aria-label="Open Liatir documentation"
                               disabled={actionsLocked}
@@ -675,7 +675,7 @@
                           {#if aiModelOfficialUrl(model)}
                             <button
                               type="button"
-                              class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--color-surface-3)] text-zinc-500 transition-colors hover:bg-[var(--color-border-2)] hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[var(--color-surface-3)] disabled:hover:text-zinc-500"
+                              class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--color-surface-3)] text-text-muted transition-colors hover:bg-[var(--color-border-2)] hover:text-text disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[var(--color-surface-3)] disabled:hover:text-text-muted"
                               title="Open official model page"
                               aria-label="Open official model page"
                               disabled={actionsLocked}
@@ -703,7 +703,7 @@
                             <button
                               type="button"
                               onclick={() => toggleInstallLog(model.id)}
-                              class="font-mono text-[10px] text-zinc-400 transition-colors hover:text-zinc-600"
+                              class="font-mono text-[10px] text-text-subtle transition-colors hover:text-text-secondary"
                             >
                               {installLog.showLog ? 'hide' : 'log'}
                             </button>
@@ -712,7 +712,7 @@
                           {#if installing[model.id]}
                             {@const percent = installPercent(model)}
                             <div class="ml-auto min-w-0 w-full max-w-40">
-                              <div class="flex items-center justify-between gap-2 text-[10px] text-zinc-500">
+                              <div class="flex items-center justify-between gap-2 text-[10px] text-text-muted">
                                 <span class="truncate">{installLabel(model)}</span>
                                 {#if percent !== null}
                                   <span class="shrink-0 font-mono">{Math.round(percent)}%</span>
@@ -721,13 +721,13 @@
                                   <button
                                     type="button"
                                     onclick={() => toggleInstallLog(model.id)}
-                                    class="shrink-0 font-mono text-[10px] text-zinc-400 transition-colors hover:text-zinc-600"
+                                    class="shrink-0 font-mono text-[10px] text-text-subtle transition-colors hover:text-text-secondary"
                                   >
                                     {installing[model.id].showLog ? 'hide' : 'log'}
                                   </button>
                                 {/if}
                               </div>
-                              <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-zinc-100">
+                              <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
                                 {#if percent !== null}
                                   <div class="h-full rounded-full bg-brand transition-[width]" style={`width: ${percent}%`}></div>
                                 {:else}
@@ -770,51 +770,51 @@
                       {/if}
 
                       {#if isModelDetailsExpanded(model.id)}
-                        <div class="mx-4 mb-3 rounded-lg border border-border bg-zinc-50 px-3 py-3">
-                          <div class="grid grid-cols-1 gap-3 text-xs text-zinc-600 md:grid-cols-2 xl:grid-cols-4">
+                        <div class="mx-4 mb-3 rounded-lg border border-border bg-surface-2 px-3 py-3">
+                          <div class="grid grid-cols-1 gap-3 text-xs text-text-secondary md:grid-cols-2 xl:grid-cols-4">
                             <div>
-                              <p class="text-[10px] font-semibold uppercase text-zinc-400">Runtime box</p>
-                              <p class="mt-1 font-medium text-zinc-800">{runtimeLabel(model)}</p>
+                              <p class="text-[10px] font-semibold uppercase text-text-subtle">Runtime box</p>
+                              <p class="mt-1 font-medium text-text">{runtimeLabel(model)}</p>
                               {#if model.runtimeSizeBytes}
-                                <p class="mt-1 text-[11px] text-zinc-500">Installed size: {fmtBytes(model.runtimeSizeBytes)}</p>
+                                <p class="mt-1 text-[11px] text-text-muted">Installed size: {fmtBytes(model.runtimeSizeBytes)}</p>
                               {/if}
-                              <p class="mt-1 text-[11px] text-zinc-500">{runtimeLockLabel(model)}</p>
-                              <p class="mt-1 text-[11px] text-zinc-500">
+                              <p class="mt-1 text-[11px] text-text-muted">{runtimeLockLabel(model)}</p>
+                              <p class="mt-1 text-[11px] text-text-muted">
                                 Runtime packages are installed inside this AI Model environment, not as global Dependencies.
                               </p>
                             </div>
 
                             <div>
-                              <p class="text-[10px] font-semibold uppercase text-zinc-400">Model files</p>
-                              <p class="mt-1 font-medium text-zinc-800">{modelFilesLabel(model)}</p>
+                              <p class="text-[10px] font-semibold uppercase text-text-subtle">Model files</p>
+                              <p class="mt-1 font-medium text-text">{modelFilesLabel(model)}</p>
                               {#if model.diskSizeBytes}
-                                <p class="mt-1 text-[11px] text-zinc-500">Approx. {fmtBytes(model.diskSizeBytes)} on disk.</p>
+                                <p class="mt-1 text-[11px] text-text-muted">Approx. {fmtBytes(model.diskSizeBytes)} on disk.</p>
                               {/if}
                               {#if model.contextWindow}
-                                <p class="mt-1 text-[11px] text-zinc-500">Context window: {model.contextWindow.toLocaleString()} tokens/bases.</p>
+                                <p class="mt-1 text-[11px] text-text-muted">Context window: {model.contextWindow.toLocaleString()} tokens/bases.</p>
                               {/if}
                             </div>
 
                             <div>
-                              <p class="text-[10px] font-semibold uppercase text-zinc-400">Host requirement</p>
+                              <p class="text-[10px] font-semibold uppercase text-text-subtle">Host requirement</p>
                               {#if model.install?.hostRequirements?.python}
-                                <p class="mt-1 font-medium text-zinc-800">{model.install.hostRequirements.python.label ?? 'Python runtime'}</p>
+                                <p class="mt-1 font-medium text-text">{model.install.hostRequirements.python.label ?? 'Python runtime'}</p>
                               {:else if model.install?.hostRequirements?.requiresCuda}
-                                <p class="mt-1 font-medium text-zinc-800">NVIDIA CUDA</p>
+                                <p class="mt-1 font-medium text-text">NVIDIA CUDA</p>
                               {:else}
-                                <p class="mt-1 font-medium text-zinc-800">No special host runtime</p>
+                                <p class="mt-1 font-medium text-text">No special host runtime</p>
                               {/if}
                               {#if model.install?.hostRequirements?.python?.reason}
-                                <p class="mt-1 text-[11px] text-zinc-500">{model.install.hostRequirements.python.reason}</p>
+                                <p class="mt-1 text-[11px] text-text-muted">{model.install.hostRequirements.python.reason}</p>
                               {/if}
                             </div>
 
                             <div>
-                              <p class="text-[10px] font-semibold uppercase text-zinc-400">Licenses</p>
+                              <p class="text-[10px] font-semibold uppercase text-text-subtle">Licenses</p>
                               {#if model.license?.components?.length}
                                 {#each model.license.components as component}
                                   <div class="mt-1.5 first:mt-1">
-                                    <p class="font-medium text-zinc-800">
+                                    <p class="font-medium text-text">
                                       {component.scope === 'source-code'
                                         ? 'Code'
                                         : component.scope === 'model-assets'
@@ -822,22 +822,22 @@
                                           : 'Runtime'}: {component.name}
                                     </p>
                                     {#if component.attribution}
-                                      <p class="mt-0.5 text-[11px] text-zinc-500">{component.attribution}</p>
+                                      <p class="mt-0.5 text-[11px] text-text-muted">{component.attribution}</p>
                                     {/if}
                                   </div>
                                 {/each}
                               {:else}
-                                <p class="mt-1 font-medium text-zinc-800">{model.license?.name ?? 'Unspecified'}</p>
+                                <p class="mt-1 font-medium text-text">{model.license?.name ?? 'Unspecified'}</p>
                               {/if}
                             </div>
                           </div>
 
                           {#if runtimePackages(model).length > 0}
                             <div class="mt-3 border-t border-border pt-3">
-                              <p class="text-[10px] font-semibold uppercase text-zinc-400">Runtime packages</p>
+                              <p class="text-[10px] font-semibold uppercase text-text-subtle">Runtime packages</p>
                               <div class="mt-2 flex flex-wrap gap-1.5">
                                 {#each runtimePackages(model) as pkg}
-                                  <span class="rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-[10px] text-zinc-500" title={runtimePackageLabel(pkg)}>
+                                  <span class="rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] text-text-muted" title={runtimePackageLabel(pkg)}>
                                     {pkg.package}
                                   </span>
                                 {/each}
@@ -847,12 +847,12 @@
 
                           {#if model.runtimeLock?.packages?.length}
                             <div class="mt-3 border-t border-border pt-3">
-                              <p class="text-[10px] font-semibold uppercase text-zinc-400">Installed package lock</p>
+                              <p class="text-[10px] font-semibold uppercase text-text-subtle">Installed package lock</p>
                               <div class="mt-2 grid grid-cols-1 gap-1.5 md:grid-cols-2">
                                 {#each model.runtimeLock.packages as pkg}
-                                  <div class="rounded border border-zinc-200 bg-white px-2 py-1 text-[10px] text-zinc-600">
-                                    <span class="font-medium text-zinc-800">{pkg.package}</span>
-                                    <span class="text-zinc-400"> {pkg.installedVersion ?? pkg.requested}</span>
+                                  <div class="rounded border border-border bg-surface px-2 py-1 text-[10px] text-text-secondary">
+                                    <span class="font-medium text-text">{pkg.package}</span>
+                                    <span class="text-text-subtle"> {pkg.installedVersion ?? pkg.requested}</span>
                                   </div>
                                 {/each}
                               </div>
@@ -871,13 +871,13 @@
     </div>
 
     {#if workspaceStore.isSandboxMode}
-      <div class="border border-border bg-white rounded-lg px-4 py-3 flex items-start gap-3">
+      <div class="border border-border bg-surface rounded-lg px-4 py-3 flex items-start gap-3">
         <div class="h-8 w-8 rounded-lg bg-brand/10 text-brand flex items-center justify-center shrink-0">
           <Icon icon="mingcute:ai-line" width="17" height="17" />
         </div>
         <div class="min-w-0">
-          <p class="text-sm font-semibold text-zinc-800">AI Tools</p>
-          <p class="mt-1 text-xs text-zinc-500">
+          <p class="text-sm font-semibold text-text">AI Tools</p>
+          <p class="mt-1 text-xs text-text-muted">
             The sandbox workplace includes a mock AI Tool that emits a response and provenance values.
           </p>
         </div>

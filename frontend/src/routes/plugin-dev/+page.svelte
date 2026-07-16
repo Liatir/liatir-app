@@ -247,7 +247,7 @@
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div class="min-w-0">
         <div class="flex items-center gap-2">
-          <p class="truncate text-lg font-semibold text-zinc-800">{manifest?.name ?? 'Plugin dev session'}</p>
+          <p class="truncate text-lg font-semibold text-text">{manifest?.name ?? 'Plugin dev session'}</p>
           {#if session}
             <Badge hideDot size="xs" variant={ready ? 'available' : session.status === 'error' ? 'missing' : 'neutral'}>
               {ready ? 'Ready' : session.status === 'error' ? 'Build error' : session.status}
@@ -255,11 +255,11 @@
             <Badge hideDot size="xs" variant="brand">{runtimeLabel(runtime)}</Badge>
           {/if}
         </div>
-        <p class="mt-1 max-w-3xl truncate text-xs text-zinc-500">
+        <p class="mt-1 max-w-3xl truncate text-xs text-text-muted">
           {manifest?.description || 'Temporary .lia plugin dev runner'}
         </p>
         {#if session}
-          <p class="mt-1 text-[11px] text-zinc-400">
+          <p class="mt-1 text-[11px] text-text-subtle">
             Project: {getLastSegmentsStringFromPath(session.projectDir, 2)}
           </p>
         {/if}
@@ -275,7 +275,7 @@
 
   <main class="min-h-0 flex-1 overflow-y-auto p-5">
     {#if loading}
-      <div class="flex h-full items-center justify-center text-sm text-zinc-400">Loading dev session...</div>
+      <div class="flex h-full items-center justify-center text-sm text-text-subtle">Loading dev session...</div>
     {:else if loadError}
       <Card>
         <div class="px-4 py-4">
@@ -297,15 +297,15 @@
 
           <Card>
             <div class="border-b border-border px-4 py-3">
-              <p class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Inputs</p>
+              <p class="text-xs font-semibold uppercase tracking-wider text-text-muted">Inputs</p>
             </div>
             <div class="space-y-4 px-4 py-4">
               {#if Object.keys(inputSchema).length === 0}
-                <p class="text-sm text-zinc-400">This plugin takes no inputs.</p>
+                <p class="text-sm text-text-subtle">This plugin takes no inputs.</p>
               {:else}
                 {#each inputFields(inputSchema) as [key, field]}
                   <div class="flex flex-col gap-1.5">
-                    <label class="text-xs font-medium text-zinc-600" for="field-{key}">
+                    <label class="text-xs font-medium text-text-secondary" for="field-{key}">
                       {field.label ?? key}
                       {#if field.required}<span class="ml-0.5 text-red-400">*</span>{/if}
                     </label>
@@ -318,7 +318,7 @@
                           bind:value={values[key] as string}
                           placeholder="Select or paste a file path"
                           disabled={running}
-                          class="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-800 outline-none transition-colors focus:border-brand/60"
+                          class="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors focus:border-brand/60"
                         />
                         <Button variant="secondary" size="sm" onclick={() => chooseFile(key, field)} disabled={running}>
                           Choose
@@ -333,7 +333,7 @@
                           disabled={running}
                           class="rounded border-border text-brand"
                         />
-                        <span class="text-sm text-zinc-600">{field.description ?? ''}</span>
+                        <span class="text-sm text-text-secondary">{field.description ?? ''}</span>
                       </label>
                     {:else if field.type === 'number'}
                       <input
@@ -342,7 +342,7 @@
                         bind:value={values[key]}
                         placeholder={String(field.default ?? '')}
                         disabled={running}
-                        class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-800 outline-none transition-colors focus:border-brand/60"
+                        class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors focus:border-brand/60"
                       />
                     {:else}
                       <input
@@ -351,12 +351,12 @@
                         bind:value={values[key] as string}
                         placeholder={String(field.default ?? '')}
                         disabled={running}
-                        class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-800 outline-none transition-colors focus:border-brand/60"
+                        class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors focus:border-brand/60"
                       />
                     {/if}
 
                     {#if field.description && field.type !== 'boolean'}
-                      <p class="text-[11px] text-zinc-400">{field.description}</p>
+                      <p class="text-[11px] text-text-subtle">{field.description}</p>
                     {/if}
                   </div>
                 {/each}
@@ -366,15 +366,15 @@
 
           <Card>
             <div class="px-4 py-4">
-              <p class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Contract</p>
+              <p class="text-xs font-semibold uppercase tracking-wider text-text-muted">Contract</p>
               <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
                 <div class="rounded-lg border border-border bg-surface-2 px-3 py-2">
-                  <p class="text-zinc-400">Inputs</p>
-                  <p class="mt-1 font-mono text-zinc-700">{Object.keys(inputSchema).length}</p>
+                  <p class="text-text-subtle">Inputs</p>
+                  <p class="mt-1 font-mono text-text-secondary">{Object.keys(inputSchema).length}</p>
                 </div>
                 <div class="rounded-lg border border-border bg-surface-2 px-3 py-2">
-                  <p class="text-zinc-400">Outputs</p>
-                  <p class="mt-1 font-mono text-zinc-700">{Object.keys(outputSchema).length}</p>
+                  <p class="text-text-subtle">Outputs</p>
+                  <p class="mt-1 font-mono text-text-secondary">{Object.keys(outputSchema).length}</p>
                 </div>
               </div>
             </div>
@@ -385,13 +385,13 @@
           <Card>
             <div class="border-b border-border px-4 py-3">
               <div class="flex items-center justify-between gap-2">
-                <p class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Run output</p>
+                <p class="text-xs font-semibold uppercase tracking-wider text-text-muted">Run output</p>
                 {#if hasRun}
                   <span class="rounded-full px-2 py-0.5 text-[10px] font-medium {succeeded ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}">
                     {succeeded ? 'Done' : `Exit ${exitCode}`}
                   </span>
                 {:else if running}
-                  <span class="text-[10px] text-zinc-400">running...</span>
+                  <span class="text-[10px] text-text-subtle">running...</span>
                 {/if}
               </div>
             </div>
@@ -405,8 +405,8 @@
 
             {#if stdoutLines.length > 0}
               <div class="border-b border-border px-4 py-3">
-                <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">stdout</p>
-                <pre class="max-h-72 overflow-y-auto whitespace-pre-wrap font-mono text-xs leading-relaxed text-zinc-700">{sanitizeLocalPathsForDisplay(stdoutLines.join('\n'), 2)}</pre>
+                <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-text-subtle">stdout</p>
+                <pre class="max-h-72 overflow-y-auto whitespace-pre-wrap font-mono text-xs leading-relaxed text-text-secondary">{sanitizeLocalPathsForDisplay(stdoutLines.join('\n'), 2)}</pre>
               </div>
             {/if}
 
@@ -419,25 +419,25 @@
 
             {#if !running && !hasRun}
               <div class="px-4 py-16 text-center">
-                <Icon icon="lucide:play-circle" width="28" height="28" class="mx-auto text-zinc-300" />
-                <p class="mt-2 text-sm text-zinc-400">Run the temporary plugin session to inspect output.</p>
+                <Icon icon="lucide:play-circle" width="28" height="28" class="mx-auto text-text-faint" />
+                <p class="mt-2 text-sm text-text-subtle">Run the temporary plugin session to inspect output.</p>
               </div>
             {:else if running && stdoutLines.length === 0 && stderrLines.length === 0 && result === null}
-              <div class="px-4 py-16 text-center text-sm text-zinc-400">Waiting for output...</div>
+              <div class="px-4 py-16 text-center text-sm text-text-subtle">Waiting for output...</div>
             {/if}
           </Card>
           
           {#if devJobs.length > 0}
             <Card>
               <div class="border-b border-border px-4 py-3">
-                <p class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Session jobs</p>
+                <p class="text-xs font-semibold uppercase tracking-wider text-text-muted">Session jobs</p>
               </div>
               <div class="divide-y divide-border">
                 {#each devJobs as job}
                   <div class="flex items-center justify-between gap-3 px-4 py-2.5">
                     <div class="min-w-0">
-                      <p class="truncate text-xs font-medium text-zinc-700">{job.label ?? job.id}</p>
-                      <p class="truncate text-[10px] text-zinc-400">{job.kind ?? job.id}</p>
+                      <p class="truncate text-xs font-medium text-text-secondary">{job.label ?? job.id}</p>
+                      <p class="truncate text-[10px] text-text-subtle">{job.kind ?? job.id}</p>
                     </div>
                     <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium {job.status.type === 'running' ? 'bg-brand/10 text-brand' : job.status.type === 'done' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}">
                       {job.status.type}

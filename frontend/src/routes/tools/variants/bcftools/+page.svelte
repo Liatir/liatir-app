@@ -147,15 +147,15 @@
   <!-- Run history sidebar -->
   <div class="w-52 shrink-0 border-r border-border bg-surface flex flex-col">
     <div class="flex items-center justify-between px-3 py-3 border-b border-border">
-      <span class="text-xs font-medium text-zinc-600">Run history</span>
+      <span class="text-xs font-medium text-text-secondary">Run history</span>
       {#if bcftoolsRuns.length > 0}
-        <span class="text-[10px] text-zinc-400">{bcftoolsRuns.length}</span>
+        <span class="text-[10px] text-text-subtle">{bcftoolsRuns.length}</span>
       {/if}
     </div>
 
     <div class="flex-1 overflow-y-auto py-1">
       {#if bcftoolsRuns.length === 0}
-        <p class="text-xs text-zinc-400 text-center py-8 px-3 leading-relaxed">
+        <p class="text-xs text-text-subtle text-center py-8 px-3 leading-relaxed">
           No runs yet.<br />Results will appear here.
         </p>
       {:else}
@@ -173,11 +173,11 @@
                   {run.status === 'done' ? 'bg-emerald-500' : 'bg-red-500'}">
                 </span>
                 <p class="text-xs font-medium truncate
-                  {selectedRunId === run.id ? 'text-brand' : 'text-zinc-700'}">
+                  {selectedRunId === run.id ? 'text-brand' : 'text-text-secondary'}">
                   {run.label}
                 </p>
               </div>
-              <p class="text-[10px] text-zinc-400 pl-3">
+              <p class="text-[10px] text-text-subtle pl-3">
                 {fmtDate(run.startedAt)} · {fmtDuration(run.startedAt, run.endedAt)}
               </p>
             </button>
@@ -185,7 +185,7 @@
               onclick={() => deleteRun(run.id, run.label)}
               aria-label="Delete run"
               class="opacity-0 group-hover:opacity-100 p-1.5 mt-2 mr-1.5 shrink-0
-                     text-zinc-400 hover:text-red-500 transition-all rounded"
+                     text-text-subtle hover:text-red-500 transition-all rounded"
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -219,7 +219,7 @@
 
       {#if depStatus === 'ok'}
         <Card class="p-5 space-y-4">
-          <h2 class="text-sm font-semibold text-zinc-800">stats</h2>
+          <h2 class="text-sm font-semibold text-text">stats</h2>
 
           <FilePickerPopup
             files={vcfFiles}
@@ -242,7 +242,7 @@
               Run stats
             </Button>
             {#if running && startedAt}
-              <span class="text-xs text-zinc-400">
+              <span class="text-xs text-text-subtle">
                 Elapsed: {fmtDuration(startedAt, now)}
               </span>
             {/if}
@@ -256,18 +256,18 @@
           </div>
         {:else if loadingOutput}
           <div class="flex justify-center py-12">
-            <svg class="animate-spin h-5 w-5 text-zinc-400" viewBox="0 0 24 24" fill="none">
+            <svg class="animate-spin h-5 w-5 text-text-subtle" viewBox="0 0 24 24" fill="none">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
             </svg>
           </div>
         {:else if loadedOutput}
           <div>
-            <p class="mb-2 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Last run result</p>
+            <p class="mb-2 text-[10px] font-semibold text-text-subtle uppercase tracking-wider">Last run result</p>
             <div class="flex items-center justify-between mb-3">
-              <h2 class="text-xs font-medium text-zinc-700">{selectedRun?.label ?? 'Results'}</h2>
+              <h2 class="text-xs font-medium text-text-secondary">{selectedRun?.label ?? 'Results'}</h2>
               {#if selectedRun}
-                <span class="text-xs text-zinc-400">
+                <span class="text-xs text-text-subtle">
                   {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}
                 </span>
               {/if}

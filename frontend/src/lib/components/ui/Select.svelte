@@ -193,7 +193,7 @@
 		type="button"
 		{id}
 		class={[
-			`flex min-w-0 max-w-full w-full items-center justify-between gap-2 overflow-hidden rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-left text-${textSize} text-neutral-800 shadow-sm transition hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-400`,
+			`flex min-w-0 max-w-full w-full items-center justify-between gap-2 overflow-hidden rounded-lg border border-border bg-surface px-3 py-1.5 text-left text-${textSize} text-text shadow-sm transition hover:border-border-2 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-text-subtle`,
 			buttonClass
 		].join(' ')}
 		aria-haspopup="listbox"
@@ -206,7 +206,7 @@
 		<span class="min-w-0 flex-1 truncate">{selected?.label ?? placeholder}</span>
 		<Icon
 			icon="lucide:chevron-down"
-			class={`h-4 w-4 shrink-0 text-neutral-400 transition ${open ? 'rotate-180' : ''}`}
+			class={`h-4 w-4 shrink-0 text-text-subtle transition ${open ? 'rotate-180' : ''}`}
 		/>
 	</button>
 
@@ -218,7 +218,7 @@
 		-->
 		<div
 			class={[
-				'nowheel absolute left-0 right-0 z-[9999] flex min-w-fit max-w-full flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl',
+				'nowheel absolute left-0 right-0 z-[9999] flex min-w-fit max-w-full flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-xl',
 				menuPlacement === 'above' ? 'bottom-[calc(100%+6px)]' : 'top-[calc(100%+6px)]'
 			].join(' ')}
 			style={`max-height: ${menuMaxHeight}px`}
@@ -227,14 +227,14 @@
 			onkeydown={handleKeydown}
 		>
 			{#if showSearch}
-				<div class="border-b border-neutral-100 p-2">
-					<div class="flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-2">
-						<Icon icon="lucide:search" class="h-4 w-4 shrink-0 text-neutral-400" />
+				<div class="border-b border-border p-2">
+					<div class="flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-2">
+						<Icon icon="lucide:search" class="h-4 w-4 shrink-0 text-text-subtle" />
 						<input
 							bind:this={searchEl}
 							bind:value={query}
 							type="search"
-							class="min-w-0 flex-1 bg-transparent py-1.5 {`text-${textSize}`} text-neutral-800 outline-none placeholder:text-neutral-400"
+							class="min-w-0 flex-1 bg-transparent py-1.5 {`text-${textSize}`} text-text outline-none placeholder:text-text-subtle"
 							placeholder={searchPlaceholder}
 							onclick={(event) => event.stopPropagation()}
 							onkeydown={handleSearchKeydown}
@@ -245,14 +245,14 @@
 
 			<div class="min-h-0 flex-1 overflow-auto p-1">
 				{#if filteredOptions.length === 0}
-					<div class="px-3 py-1.5 text-sm text-neutral-500">{emptyText}</div>
+					<div class="px-3 py-1.5 text-sm text-text-muted">{emptyText}</div>
 				{:else}
 					{#each filteredOptions as option (option.value)}
 						<button
 							type="button"
 							class={[
 								`flex min-w-0 w-full items-center gap-2 overflow-hidden rounded-lg px-3 py-1.5 text-left text-${textSize} transition`,
-								option.value === value ? 'bg-violet-50 text-violet-700' : 'text-neutral-700 hover:bg-neutral-50',
+								option.value === value ? 'bg-violet-50 text-violet-700' : 'text-text-secondary hover:bg-surface-2',
 								option.disabled ? 'cursor-not-allowed opacity-45 hover:bg-transparent' : ''
 							].join(' ')}
 							role="option"
@@ -263,13 +263,13 @@
 							<span class="min-w-0 flex-1">
 								<span class="block truncate font-medium">{option.label}</span>
 								{#if option.description}
-									<span class="mt-0.5 block line-clamp-2 text-xs text-neutral-500">
+									<span class="mt-0.5 block line-clamp-2 text-xs text-text-muted">
 										{option.description}
 									</span>
 								{/if}
 							</span>
 							{#if option.meta}
-								<span class="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-neutral-500">
+								<span class="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-text-muted">
 									{option.meta}
 								</span>
 							{/if}

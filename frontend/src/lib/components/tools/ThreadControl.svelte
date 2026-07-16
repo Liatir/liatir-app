@@ -29,7 +29,7 @@
 </script>
 
 <div class="space-y-1.5">
-  <label for="tool-threads" class="block text-[11px] font-medium text-zinc-600">Threads</label>
+  <label for="tool-threads" class="block text-[11px] font-medium text-text-secondary">Threads</label>
   <input
     id="tool-threads"
     type="number"
@@ -39,7 +39,7 @@
     value={value}
     {disabled}
     oninput={onInput}
-    class="w-28 rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm text-zinc-800 outline-none transition-colors focus:border-brand disabled:cursor-not-allowed disabled:opacity-60"
+    class="w-28 rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm text-text outline-none transition-colors focus:border-brand disabled:cursor-not-allowed disabled:opacity-60"
   />
-  <p class="text-[10px] leading-snug text-zinc-400">0 lets Liatir choose {autoThreads} threads.</p>
+  <p class="text-[10px] leading-snug text-text-subtle">0 lets Liatir choose {autoThreads} threads.</p>
 </div>

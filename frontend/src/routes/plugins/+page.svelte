@@ -107,11 +107,11 @@
   }
 
   function runtimeStatusClass(mod: LiatirPlugin): string {
-    if (mod.runtime !== 'python') return 'text-zinc-400';
+    if (mod.runtime !== 'python') return 'text-text-subtle';
     const state = liaPluginsStore.pythonRuntimeStates[mod.id];
     if (!state || state.phase === 'checking' || state.phase === 'preparing') return 'text-amber-500';
     if (state.phase === 'ready') return 'text-emerald-600';
-    if (state.phase === 'not-prepared') return 'text-zinc-500';
+    if (state.phase === 'not-prepared') return 'text-text-muted';
     return 'text-red-500';
   }
 
@@ -150,14 +150,14 @@
   <div class="flex-1 overflow-y-auto p-6 space-y-5">
     {#if liaPluginsStore.plugins.length === 0}
       <div class="flex flex-col items-center justify-center h-full text-center gap-3">
-        <div class="h-12 w-12 rounded-xl bg-zinc-100 flex items-center justify-center">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <div class="h-12 w-12 rounded-xl bg-surface-2 flex items-center justify-center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-text-subtle)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
           </svg>
         </div>
-        <p class="text-sm font-medium text-zinc-700">No plugins yet</p>
-        <div class="text-xs text-zinc-400 max-w-md flex items-center justify-center gap-1">
-          Import a <span class="font-mono">.lia</span> plugin built with <button class="min-w-fit flex items-center justify-center gap-1 font-mono hover:bg-brand-hover hover:text-brand-shadow hover:border-brand-shadow cursor-pointer bg-zinc-200/15 py-0.5 px-1.5 rounded-sm border border-zinc-300/50" onclick={()=>{openLinkInBrowser(LIATIR_CLI_NPM_PACKAGE_URL)}}><span>@liatir/cli</span> <Icon class="text-xs opacity-40" icon="lucide:external-link"/></button>
+        <p class="text-sm font-medium text-text-secondary">No plugins yet</p>
+        <div class="text-xs text-text-subtle max-w-md flex items-center justify-center gap-1">
+          Import a <span class="font-mono">.lia</span> plugin built with <button class="min-w-fit flex items-center justify-center gap-1 font-mono hover:bg-brand-hover hover:text-brand-shadow hover:border-brand-shadow cursor-pointer bg-surface-3/15 py-0.5 px-1.5 rounded-sm border border-border-2/50" onclick={()=>{openLinkInBrowser(LIATIR_CLI_NPM_PACKAGE_URL)}}><span>@liatir/cli</span> <Icon class="text-xs opacity-40" icon="lucide:external-link"/></button>
         </div>
         <Button variant="secondary" size="sm" onclick={importPlugin} loading={importing}>
           Import .lia
@@ -167,17 +167,17 @@
     {:else}
       <div class="flex flex-col gap-3">
         <div class="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
-          <Icon icon="lucide:search" width="14" height="14" class="shrink-0 text-zinc-400" />
+          <Icon icon="lucide:search" width="14" height="14" class="shrink-0 text-text-subtle" />
           <input
             bind:value={query}
             placeholder="Search plugins…"
-            class="flex-1 bg-transparent text-sm text-zinc-800 placeholder:text-zinc-400 outline-none"
+            class="flex-1 bg-transparent text-sm text-text placeholder:text-text-subtle outline-none"
           />
           {#if query}
             <button
               type="button"
               onclick={() => query = ''}
-              class="text-zinc-400 hover:text-zinc-600 transition-colors"
+              class="text-text-subtle hover:text-text-secondary transition-colors"
               aria-label="Clear plugin search"
             >
               <Icon icon="lucide:x" width="13" height="13" />
@@ -198,7 +198,7 @@
               class="shrink-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors
                 {runtimeFilter === runtime.value
                   ? 'border-brand bg-brand/10 text-brand'
-                  : 'border-border bg-surface text-zinc-500 hover:border-zinc-300 hover:text-zinc-700'}"
+                  : 'border-border bg-surface text-text-muted hover:border-border-2 hover:text-text-secondary'}"
             >
               {runtime.label}
             </button>
@@ -210,23 +210,23 @@
 
       {#if visiblePlugins.length === 0}
         <div class="py-16 text-center">
-          <p class="text-sm font-medium text-zinc-600">No plugins found</p>
+          <p class="text-sm font-medium text-text-secondary">No plugins found</p>
         </div>
       {:else}
         <div class="grid grid-cols-1 2xl:grid-cols-2 4xl:grid-cols-3 gap-3">
           {#each visiblePlugins as mod (mod.id)}
       <Card class="overflow-hidden">
-            <div class="flex items-start gap-4 px-4 py-4 group hover:bg-zinc-100/60 transition-colors">
+            <div class="flex items-start gap-4 px-4 py-4 group hover:bg-surface-2/60 transition-colors">
 
-              <div class="flex-1 justify-between min-w-0 border-r border-r-zinc-200/80 mr-2 pr-2">
-                <p class="text-md font-medium text-zinc-800 truncate">{mod.name}</p>
+              <div class="flex-1 justify-between min-w-0 border-r border-r-border/80 mr-2 pr-2">
+                <p class="text-md font-medium text-text truncate">{mod.name}</p>
                 <div class="flex items-center gap-2 min-w-0 mt-3">
                   <Badge hideDot size="xs" variant="brand">{(runtimeLabel(mod.runtime)).replace(".lia","")}</Badge>
                   <Badge hideDot size="xs" variant="neutral">{mod.category}</Badge>
                 </div>
               </div>
 
-              <div class="hidden md:flex min-w-36 flex-col self-stretch justify-between gap-1 text-xs text-zinc-400">
+              <div class="hidden md:flex min-w-36 flex-col self-stretch justify-between gap-1 text-xs text-text-subtle">
                 <span class="font-mono">v{mod.version}</span>
                 <div class="flex items-center gap-1.5 opacity-50">
                   <Badge hideDot size='xs'>{fieldCount(mod.inputSchema)} input{fieldCount(mod.inputSchema) !== 1 ? 's' : ''}</Badge>
@@ -240,7 +240,7 @@
                   onclick={async () => liaPluginsStore.preparePythonRuntime(mod.id)}
                   disabled={pythonBusy(mod)}
                   aria-label="Prepare Python runtime"
-                  class="shrink-0 text-zinc-300 hover:text-brand transition-colors disabled:opacity-40 disabled:hover:text-zinc-300"
+                  class="shrink-0 text-text-faint hover:text-brand transition-colors disabled:opacity-40 disabled:hover:text-text-faint"
                 >
                   <Icon icon={pythonBusy(mod) ? 'lucide:loader-2' : 'lucide:download'} width="14" height="14" class={pythonBusy(mod) ? 'animate-spin' : ''} />
                 </button>
@@ -250,7 +250,7 @@
                 onclick={async () => goto(`/plugins/${mod.id}`)}
                 aria-label="Run"
                 disabled={pythonBusy(mod)}
-                class="shrink-0 text-zinc-300 hover:text-brand transition-colors disabled:opacity-40 disabled:hover:text-zinc-300"
+                class="shrink-0 text-text-faint hover:text-brand transition-colors disabled:opacity-40 disabled:hover:text-text-faint"
               >
                 <Icon icon="lucide:play" width="14" height="14" />
               </button>
@@ -261,7 +261,7 @@
                   if (ok) liaPluginsStore.remove(mod.id);
                 }}
                 aria-label="Remove"
-                class="shrink-0 text-zinc-300 hover:text-red-500 transition-colors"
+                class="shrink-0 text-text-faint hover:text-red-500 transition-colors"
               >
                 <Icon icon="lucide:trash-2" width="14" height="14" />
               </button>

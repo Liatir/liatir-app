@@ -48,25 +48,25 @@
           <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
         </svg>
       {:else}
-        <svg class="h-3.5 w-3.5 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <svg class="h-3.5 w-3.5 text-text-subtle shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
           <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
         </svg>
       {/if}
-      <span class="text-xs font-medium text-zinc-800 truncate">{download.label}</span>
+      <span class="text-xs font-medium text-text truncate">{download.label}</span>
     </div>
 
     <div class="flex items-center gap-2 shrink-0">
       {#if download.status === 'downloading'}
         <button
           onclick={() => downloadsStore.cancel(download.id)}
-          class="text-[10px] text-zinc-400 hover:text-red-500 transition-colors"
+          class="text-[10px] text-text-subtle hover:text-red-500 transition-colors"
         >
           Cancel
         </button>
       {:else}
         <button
           onclick={() => downloadsStore.remove(download.id)}
-          class="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors"
+          class="text-[10px] text-text-subtle hover:text-text-secondary transition-colors"
         >
           Dismiss
         </button>
@@ -78,7 +78,7 @@
     <p class="text-xs text-red-600 font-mono leading-relaxed">{sanitizeLocalPathsForDisplay(download.error ?? 'Download failed.', 2)}</p>
   {:else}
     <!-- Progress bar -->
-    <div class="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+    <div class="h-1.5 bg-surface-2 rounded-full overflow-hidden">
       {#if pct() !== null}
         <div
           class="h-full rounded-full transition-all duration-300
@@ -94,7 +94,7 @@
     </div>
 
     <!-- Stats row -->
-    <div class="flex items-center justify-between text-[10px] text-zinc-400 font-mono">
+    <div class="flex items-center justify-between text-[10px] text-text-subtle font-mono">
       <span>
         {fmtBytes(download.bytesDownloaded)}
         {#if download.bytesTotal}
@@ -111,7 +111,7 @@
         {:else if download.status === 'done'}
           <span class="text-emerald-600">Done</span>
         {:else if download.status === 'cancelled'}
-          <span class="text-zinc-500">Paused — can resume</span>
+          <span class="text-text-muted">Paused — can resume</span>
         {/if}
       </span>
     </div>

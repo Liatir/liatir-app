@@ -538,47 +538,47 @@
 		{#if depsStore.loading}
 				<div class="flex flex-col items-center gap-3 py-16">
 					<Spinner size={28} />
-					<p class="text-sm text-zinc-500">Checking dependencies…</p>
+					<p class="text-sm text-text-muted">Checking dependencies…</p>
 				</div>
 		{:else if !depsStore.checked}
 			<div class="flex flex-col items-center gap-4 py-16">
-				<p class="text-sm text-zinc-600">No check has been run yet.</p>
+				<p class="text-sm text-text-secondary">No check has been run yet.</p>
 				<Button variant="primary" onclick={() => depsStore.checkAll(focusedDependencies)}>Check Dependencies</Button>
 			</div>
 		{:else}
 			<!-- Summary -->
 			<div class="grid grid-cols-3 gap-3">
 				<Card class="p-4">
-					<p class="text-xs text-zinc-500 mb-1">Available</p>
+					<p class="text-xs text-text-muted mb-1">Available</p>
 					<p class="text-2xl font-semibold text-emerald-500">{depsStore.availableCount}</p>
-					<p class="text-xs text-zinc-400 mt-1">of {depsStore.results.length} dependencies</p>
+					<p class="text-xs text-text-subtle mt-1">of {depsStore.results.length} dependencies</p>
 				</Card>
 				<Card class="p-4">
-					<p class="text-xs text-zinc-500 mb-1">Core issues</p>
-					<p class="text-2xl font-semibold {needsActionCount > 0 ? 'text-red-400' : 'text-zinc-400'}">
+					<p class="text-xs text-text-muted mb-1">Core issues</p>
+					<p class="text-2xl font-semibold {needsActionCount > 0 ? 'text-red-400' : 'text-text-subtle'}">
 						{needsActionCount}
 					</p>
-					<p class="text-xs text-zinc-400 mt-1">runtime essentials</p>
+					<p class="text-xs text-text-subtle mt-1">runtime essentials</p>
 				</Card>
 				<Card class="p-4">
-					<p class="text-xs text-zinc-500 mb-1">Checked</p>
-					<p class="text-2xl font-semibold text-zinc-900">{depsStore.results.length}</p>
-					<p class="text-xs text-zinc-400 mt-1">total</p>
+					<p class="text-xs text-text-muted mb-1">Checked</p>
+					<p class="text-2xl font-semibold text-text">{depsStore.results.length}</p>
+					<p class="text-xs text-text-subtle mt-1">total</p>
 				</Card>
 										</div>
 
 			<div class="flex justify-center gap-2 items-center w-full cursor-default group">
-				<div class="w-full h-px bg-zinc-200 group-hover:bg-zinc-300"></div>
-				<div class="min-w-fit text-[11px] text-zinc-400 text-center group-hover:text-zinc-600">
+				<div class="w-full h-px bg-surface-3 group-hover:bg-border-2"></div>
+				<div class="min-w-fit text-[11px] text-text-subtle text-center group-hover:text-text-secondary">
 					Dependencies are installed globally, therefore available to all workspaces
 				</div>
-				<div class="w-full h-px bg-zinc-200 group-hover:bg-zinc-300"></div>
+				<div class="w-full h-px bg-surface-3 group-hover:bg-border-2"></div>
 			</div>
 
 			{#if focusedDependency}
-				<div class="rounded-lg border border-brand/20 bg-brand/5 px-4 py-3 text-sm text-zinc-700">
-					<p class="font-medium text-zinc-800">Resolve dependency</p>
-					<p class="mt-1 text-xs text-zinc-500">
+				<div class="rounded-lg border border-brand/20 bg-brand/5 px-4 py-3 text-sm text-text-secondary">
+					<p class="font-medium text-text">Resolve dependency</p>
+					<p class="mt-1 text-xs text-text-muted">
 						Install or update <span class="font-mono">{focusedDependency}</span>, then return to AI Models and install the model again.
 						{#if isSoftDependency(focusedDependency)}
 							This is only required by AI Models that use this runtime.
@@ -624,12 +624,12 @@
 											: dep.available || managed
 											? 'bg-emerald-500'
 											: !isCore || isSoft
-											? 'bg-zinc-300'
+											? 'bg-border-2'
 											: 'bg-red-400'}"
 									></span>
 
 									<!-- Binary name -->
-									<p class="text-sm font-mono font-medium text-zinc-800 w-24 shrink-0">
+									<p class="text-sm font-mono font-medium text-text w-24 shrink-0">
 										{dep.binary}
 									</p>
 
@@ -643,7 +643,7 @@
 										{#if managed && !dep.available}
 											<p class="text-xs text-emerald-600 truncate">
 												Managed v{managed.version} —
-												<span class="font-mono text-zinc-400" title={getLastSegmentsStringFromPath(managed.path, 2)}>
+												<span class="font-mono text-text-subtle" title={getLastSegmentsStringFromPath(managed.path, 2)}>
 													{getLastSegmentsStringFromPath(managed.path, 2)}
 												</span>
 											</p>
@@ -657,18 +657,18 @@
 													</p>
 												{/if}
 											{:else if dep.version}
-												<p class="text-xs font-mono text-zinc-500 truncate" data-selectable>
+												<p class="text-xs font-mono text-text-muted truncate" data-selectable>
 													{dep.version}{req ? ` (requires ${requirementLabel(req)})` : ''}
 												</p>
 											{:else if dep.path}
-												<p class="text-xs font-mono text-zinc-400 truncate" data-selectable>
+												<p class="text-xs font-mono text-text-subtle truncate" data-selectable>
 													<span title={getLastSegmentsStringFromPath(dep.path, 2)}>{getLastSegmentsStringFromPath(dep.path, 2)}</span>
 												</p>
 											{:else}
-												<p class="text-xs text-zinc-400">Found in PATH</p>
+												<p class="text-xs text-text-subtle">Found in PATH</p>
 											{/if}
 											{#if isSoft || !isCore}
-												<p class="mt-1 text-[10px] text-zinc-400">{dependencyKindLabel(dep.binary)}</p>
+												<p class="mt-1 text-[10px] text-text-subtle">{dependencyKindLabel(dep.binary)}</p>
 											{/if}
 										{:else if state.phase === 'downloading'}
 											<p class="text-xs text-brand">
@@ -689,7 +689,7 @@
 											<p class="text-xs text-red-500 truncate">{sanitizeLocalPathsForDisplay(state.error ?? 'Install failed.', 2)}</p>
 										{:else}
 											{#if isSoft || !isCore}
-												<p class="text-xs text-zinc-400">
+												<p class="text-xs text-text-subtle">
 													Install when needed by {isSoft ? 'an AI Model' : 'a tool'}
 													{#if pmChecked && !hasRelease && !hasPm}
 														— use <span class="font-mono">brew</span>,
@@ -698,7 +698,7 @@
 													{/if}
 												</p>
 											{:else}
-												<p class="text-xs text-zinc-400">
+												<p class="text-xs text-text-subtle">
 													Not found in PATH
 													{#if pmChecked && !hasRelease && !hasPm}
 														— install via <span class="font-mono">brew</span>,
@@ -709,7 +709,7 @@
 											{/if}
 										{/if}
 										{#if req?.reason && (isUnsupportedVersion || isSoft || !isCore || dep.binary === 'python')}
-											<p class="mt-1 text-[10px] text-zinc-400">{req.reason}</p>
+											<p class="mt-1 text-[10px] text-text-subtle">{req.reason}</p>
 										{/if}
 									</div>
 
@@ -717,7 +717,7 @@
 									{#if (state.pmLog.length > 0 || state.phase === 'error') && !isBusy}
 										<button
 											onclick={() => setToolState(dep.binary, { showLog: !state.showLog })}
-											class="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors shrink-0 font-mono"
+											class="text-[10px] text-text-subtle hover:text-text-secondary transition-colors shrink-0 font-mono"
 										>
 											{state.showLog ? 'hide' : 'log'}
 										</button>
@@ -781,7 +781,7 @@
 										</div>
 									{:else if !isBusy && (dep.available || managed) && pmChecked}
 										<div class="flex items-center gap-2 shrink-0">
-											<p class="text-xs text-zinc-400">Installed</p>
+											<p class="text-xs text-text-subtle">Installed</p>
 											{#if hasRelease}
 												<Button
 													variant="secondary"
@@ -830,12 +830,12 @@
 									<div class="mx-4 mb-3">
 										<button
 											type="button"
-											class="flex w-full items-center justify-between rounded-lg border border-border bg-zinc-50 px-2.5 py-1 font-light text-left text-[11px] text-zinc-400 hover:text-zinc-600 transition-colors hover:bg-zinc-100"
+											class="flex w-full items-center justify-between rounded-lg border border-border bg-surface-2 px-2.5 py-1 font-light text-left text-[11px] text-text-subtle hover:text-text-secondary transition-colors hover:bg-surface-2"
 											aria-expanded={isRelatedExpanded}
 											onclick={() => toggleRelatedTools(dep.binary)}
 										>
 											<span class="font-medium">Related deps</span>
-											<span class="font-mono text-[10px] text-zinc-400">
+											<span class="font-mono text-[10px] text-text-subtle">
 												{isRelatedExpanded ? 'collapse' : 'expand'}
 											</span>
 										</button>
@@ -847,7 +847,7 @@
 													{@const relatedState = toolState(relatedKey)}
 													{@const relatedBusy = relatedState.phase === 'pm-installing'}
 													{@const runtimeNote = relatedToolRuntimeNote(dep, relatedTool)}
-													<div class="rounded-lg border border-border bg-white px-3 py-3">
+													<div class="rounded-lg border border-border bg-surface px-3 py-3">
 														<div class="flex items-start gap-3">
 															<span
 																class="mt-1 h-2 w-2 rounded-full shrink-0 {relatedState.phase === 'error'
@@ -855,22 +855,22 @@
 																	: relatedState.phase === 'done'
 																	? 'bg-emerald-500'
 																	: dep.available
-																	? 'bg-zinc-300'
+																	? 'bg-border-2'
 																	: 'bg-red-400'}"
 															></span>
 															<div class="min-w-0 flex-1">
 																<div class="flex items-center gap-2">
-																	<p class="truncate text-sm font-mono font-medium text-zinc-800">
+																	<p class="truncate text-sm font-mono font-medium text-text">
 																		{relatedTool.label}
 																	</p>
 																	<InfoPopup text="{relatedTool.label} — {relatedTool.description}" />
 																</div>
-																<p class="mt-1 text-xs text-zinc-500">{relatedTool.description}</p>
+																<p class="mt-1 text-xs text-text-muted">{relatedTool.description}</p>
 																{#if runtimeNote}
-																	<p class="mt-1 text-[10px] leading-snug text-zinc-400">{runtimeNote}</p>
+																	<p class="mt-1 text-[10px] leading-snug text-text-subtle">{runtimeNote}</p>
 																{/if}
 																{#if dep.available && dep.path}
-																	<p class="mt-1 text-[10px] text-zinc-400">
+																	<p class="mt-1 text-[10px] text-text-subtle">
 																		Uses
 																		<span class="font-mono" title={getLastSegmentsStringFromPath(dep.path, 2)}>
 																			{getLastSegmentsStringFromPath(dep.path, 2)}
@@ -894,7 +894,7 @@
 																	<button
 																		type="button"
 																		onclick={() => setToolState(relatedKey, { showLog: !relatedState.showLog })}
-																		class="text-[10px] text-zinc-400 transition-colors hover:text-zinc-600 shrink-0 font-mono"
+																		class="text-[10px] text-text-subtle transition-colors hover:text-text-secondary shrink-0 font-mono"
 																	>
 																		{relatedState.showLog ? 'hide' : 'log'}
 																	</button>
@@ -921,7 +921,7 @@
 																	</p>
 																{/if}
 																{#each relatedState.pmLog as line}
-																	<p class="text-[11px] font-mono text-zinc-300 leading-relaxed">
+																	<p class="text-[11px] font-mono text-text-faint leading-relaxed">
 																		{sanitizeLocalPathsForDisplay(line, 2)}
 																	</p>
 																{/each}
@@ -941,8 +941,8 @@
 
 			<Card>
 				<div class="border-b border-border px-4 py-3">
-					<p class="text-sm font-semibold text-zinc-800">Viewer runtimes</p>
-					<p class="mt-1 text-xs text-zinc-400">
+					<p class="text-sm font-semibold text-text">Viewer runtimes</p>
+					<p class="mt-1 text-xs text-text-subtle">
 						Optional scientific visualization dependencies. Install only the runtimes needed by your workflows.
 					</p>
 				</div>
@@ -956,17 +956,17 @@
 									? 'bg-emerald-500'
 									: installable
 									? 'bg-amber-400'
-									: 'bg-zinc-300'}"
+									: 'bg-border-2'}"
 							></span>
 							<div class="min-w-0 flex-1">
 								<div class="flex items-center gap-2">
-									<p class="truncate text-sm font-medium text-zinc-800">{runtime.name}</p>
-									<span class="rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[10px] text-zinc-500">
+									<p class="truncate text-sm font-medium text-text">{runtime.name}</p>
+									<span class="rounded border border-border bg-surface-2 px-1.5 py-0.5 text-[10px] text-text-muted">
 										{runtime.capability}
 									</span>
 								</div>
-								<p class="mt-1 text-xs text-zinc-500">{runtime.description}</p>
-								<p class="mt-1 text-[10px] text-zinc-400">
+								<p class="mt-1 text-xs text-text-muted">{runtime.description}</p>
+								<p class="mt-1 text-[10px] text-text-subtle">
 									{runtime.license}
 									{#if runtime.localPath}
 										<span class="font-mono" title={getLastSegmentsStringFromPath(runtime.localPath, 2)}>
@@ -1011,7 +1011,7 @@
 
 			<!-- Footer note -->
 			{#if pmChecked}
-				<p class="text-xs text-zinc-400 text-center">
+				<p class="text-xs text-text-subtle text-center">
 					{#if brewAvailable && condaAvailable}
 						Homebrew and conda detected.
 					{:else if brewAvailable}

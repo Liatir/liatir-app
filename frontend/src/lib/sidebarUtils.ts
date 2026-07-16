@@ -24,6 +24,7 @@ export interface SidebarItem {
     icon?: string;
     /** An SVG path, for icons the icon set does not provide (e.g. the `.lia` plugin mark). */
     customIcon?: string;
+    customIconDark?: string;
     /** Prefix used to decide whether this item is the active one for the current route. */
     match?: string;
     /** True when the page is not scoped to a workspace — see the note at the top of this file. */
@@ -39,7 +40,7 @@ const NAV_PAGES = [
     { href: '/pipelines', label: 'Pipelines', icon: 'lucide:workflow', match: '/pipelines', global: false },
     { divider: true, global: false },
     { href: '/tools', label: 'Tools', icon: 'lucide:dna', match: '/tools', global: true },
-    { href: '/plugins', label: 'Plugins', customIcon: '/icons/lia-file-icon.svg', match: '/plugins', global: true },
+    { href: '/plugins', label: 'Plugins', customIcon: '/icons/lia-file-icon/light.svg', customIconDark: '/icons/lia-file-icon/dark.svg', match: '/plugins', global: true },
     { href: '/apis', label: 'API Connector', icon: 'lucide:plug', match: '/apis', global: false },
     { href: '/ai', label: 'AI Models', icon: 'ri:ai-generate-3d-line', match: '/ai', global: true },
     { divider: true, global: true },

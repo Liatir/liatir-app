@@ -10,8 +10,8 @@ export function statusDotClass(status: StepStatus | undefined): string {
     case 'error':   return 'bg-red-500';
     case 'cancelled': return 'bg-amber-500';
     case 'running': return 'bg-brand animate-pulse';
-    case 'skipped': return 'bg-zinc-200';
-    default:        return 'bg-zinc-300';
+    case 'skipped': return 'bg-surface-3';
+    default:        return 'bg-border-2';
   }
 }
 

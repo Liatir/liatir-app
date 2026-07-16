@@ -38,6 +38,7 @@
   import { defaultConditionData, isConditionConfigured } from '$lib/pipeline/conditions';
   import { confirm } from '$lib/stores/confirm.svelte';
   import { toast } from '$lib/stores/toast.svelte';
+  import { settingsStore } from '$lib/stores/settings.svelte';
 
   let nodes = $state<Node[]>([]);
   let edges = $state<Edge[]>([]);
@@ -730,12 +731,12 @@
             bind:value={nameInput}
             onblur={commitName}
             onkeydown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') commitName(); }}
-            class="text-xs font-medium bg-white border border-brand/60 rounded px-2.5 py-1.5 outline-none w-40"
+            class="text-xs font-medium bg-surface border border-brand/60 rounded px-2.5 py-1.5 outline-none w-40"
           />
         {:else}
           <button
             onclick={() => editingName = true}
-            class="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-brand transition-colors px-2 py-1.5 rounded-lg hover:bg-zinc-100"
+            class="flex items-center gap-1.5 text-xs text-text-muted hover:text-brand transition-colors px-2 py-1.5 rounded-lg hover:bg-surface-2"
           >
             <Icon icon="lucide:pencil" width="12" height="12" />
             <span class="max-lg:hidden">
@@ -745,7 +746,7 @@
         {/if}
         <!-- <button
           onclick={() => goto('/pipelines')}
-          class="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-zinc-100"
+          class="flex items-center gap-1.5 text-xs text-text-muted hover:text-text transition-colors px-2 py-1.5 rounded-lg hover:bg-surface-2"
         >
           <Icon icon="famicons:grid-outline" width="13" height="13" />
           <span class="max-lg:hidden">
@@ -759,7 +760,7 @@
             aria-label="Undo"
             onclick={() => void undoGraphChange()}
             disabled={!canUndo}
-            class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-text-muted hover:bg-surface-2 hover:text-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Icon icon="lucide:undo-2" width="13" height="13" />
           </button>
@@ -769,7 +770,7 @@
             aria-label="Redo"
             onclick={() => void redoGraphChange()}
             disabled={!canRedo}
-            class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-text-muted hover:bg-surface-2 hover:text-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Icon icon="lucide:redo-2" width="13" height="13" />
           </button>
@@ -815,17 +816,17 @@
   </PageHeader>
 
   <div class="flex-1 relative" bind:this={flowContainer}>
-    <SvelteFlow bind:nodes bind:edges bind:viewport {nodeTypes} {edgeTypes} onconnect={onConnect} ondelete={onDelete} deleteKey={pipelineStore.running ? [] : ['Delete', 'Backspace']} nodesDraggable={!pipelineStore.running} nodesConnectable={!pipelineStore.running} onpanecontextmenu={onPaneContextMenu} onnodecontextmenu={onNodeContextMenu} onedgecontextmenu={onEdgeContextMenu} onnodedragstart={onGraphDragStart} onnodedragstop={onGraphDragStop} onselectiondragstart={onGraphDragStart} onselectiondragstop={onGraphDragStop} defaultEdgeOptions={{ selectable: false, style: 'stroke: #0A948B; stroke-width:3;' }} proOptions={{ hideAttribution: true }}>
+    <SvelteFlow bind:nodes bind:edges bind:viewport {nodeTypes} {edgeTypes} onconnect={onConnect} ondelete={onDelete} deleteKey={pipelineStore.running ? [] : ['Delete', 'Backspace']} nodesDraggable={!pipelineStore.running} nodesConnectable={!pipelineStore.running} onpanecontextmenu={onPaneContextMenu} onnodecontextmenu={onNodeContextMenu} onedgecontextmenu={onEdgeContextMenu} onnodedragstart={onGraphDragStart} onnodedragstop={onGraphDragStop} onselectiondragstart={onGraphDragStart} onselectiondragstop={onGraphDragStop} defaultEdgeOptions={{ selectable: false, style: 'stroke: #0A948B; stroke-width:3;' }} proOptions={{ hideAttribution: true }} colorMode={settingsStore.resolvedTheme}>
       <PipelineViewportFitter request={viewportFitRequest} />
-      <Background gap={24} size={2} patternColor="#d4d4d8" variant={BackgroundVariant.Dots} />
-      <Panel position="top-left" class="rounded-lg border border-border bg-white/95 shadow-sm">
+      <Background gap={24} size={2} patternColor="var(--color-border-2)" variant={BackgroundVariant.Dots} />
+      <Panel position="top-left" class="rounded-lg border border-border bg-surface/95 shadow-sm">
         <button
           type="button"
           title="Add note"
           aria-label="Add note"
           onclick={() => void addNote()}
           disabled={pipelineStore.running}
-          class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:text-brand disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-zinc-600"
+          class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-brand disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-text-secondary"
         >
           <Icon icon="lucide:sticky-note" width="13" height="13" />
           Note
@@ -836,12 +837,12 @@
 
     {#if nodes.length === 0}
       <div class="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none select-none">
-        <div class="h-14 w-14 rounded-2xl bg-white border border-border shadow-sm flex items-center justify-center">
-          <Icon icon="lucide:workflow" width="24" height="24" class="text-zinc-300" />
+        <div class="h-14 w-14 rounded-2xl bg-surface border border-border shadow-sm flex items-center justify-center">
+          <Icon icon="lucide:workflow" width="24" height="24" class="text-text-faint" />
         </div>
         <div class="text-center">
-          <p class="text-sm font-medium text-zinc-600">No steps yet</p>
-          <p class="text-xs text-zinc-400 mt-1">Add a step to start building your pipeline.</p>
+          <p class="text-sm font-medium text-text-secondary">No steps yet</p>
+          <p class="text-xs text-text-subtle mt-1">Add a step to start building your pipeline.</p>
         </div>
         <button
           type="button"
@@ -866,7 +867,7 @@
         {#if pipelineStore.currentRunId}
           <button
             type="button"
-            class="rounded-lg border border-emerald-200 bg-white px-2 py-1 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
+            class="rounded-lg border border-emerald-200 bg-surface px-2 py-1 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
             onclick={() => goto(`/results?run=${pipelineStore.currentRunId}`)}
           >
             Open Results
@@ -880,7 +881,7 @@
         {#if pipelineStore.currentRunId}
           <button
             type="button"
-            class="rounded-lg border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
+            class="rounded-lg border border-red-200 bg-surface px-2 py-1 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
             onclick={() => goto(`/results?run=${pipelineStore.currentRunId}`)}
           >
             Open Results
@@ -894,8 +895,8 @@
     <button
       onclick={() => showAddMenu = !showAddMenu}
       disabled={pipelineStore.running}
-      class="flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5
-             text-sm text-zinc-600 hover:border-brand/40 hover:text-brand transition-colors shadow-sm
+      class="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5
+             text-sm text-text-secondary hover:border-brand/40 hover:text-brand transition-colors shadow-sm
              disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <Icon icon="lucide:plus" width="13" height="13" />
@@ -904,14 +905,14 @@
     <button
       onclick={() => void addNote()}
       disabled={pipelineStore.running}
-      class="flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5
-             text-sm text-zinc-600 hover:border-amber-300 hover:text-amber-700 transition-colors shadow-sm
+      class="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5
+             text-sm text-text-secondary hover:border-amber-300 hover:text-amber-700 transition-colors shadow-sm
              disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <Icon icon="lucide:sticky-note" width="13" height="13" />
       Add note
     </button>
-    <span class="text-[11px] text-zinc-400">
+    <span class="text-[11px] text-text-subtle">
       {executableNodes.length} step{executableNodes.length !== 1 ? 's' : ''}
       {#if nodes.length > 0}· Drag to move · Connect handles to wire data{/if}
     </span>
@@ -922,22 +923,22 @@
   <div class="fixed inset-0 z-40" role="presentation"
        onclick={closeCtx}
        oncontextmenu={(e) => { e.preventDefault(); closeCtx(); }}></div>
-  <div class="fixed z-50 min-w-44 rounded-lg border border-border bg-white shadow-xl py-1 text-sm overflow-hidden"
+  <div class="fixed z-50 min-w-44 rounded-lg border border-border bg-surface shadow-xl py-1 text-sm overflow-hidden"
        style="left: {ctxMenu.x}px; top: {ctxMenu.y}px;">
     {#if ctxMenu.kind === 'pane'}
       <button type="button" disabled={pipelineStore.running}
-        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-zinc-700 hover:bg-zinc-50 transition-colors disabled:opacity-40"
+        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-text-secondary hover:bg-surface-2 transition-colors disabled:opacity-40"
         onclick={() => { closeCtx(); void addNote(); }}>
         <Icon icon="lucide:sticky-note" width="13" height="13" /> Add note
       </button>
       <button type="button" disabled={pipelineStore.running}
-        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-zinc-700 hover:bg-zinc-50 transition-colors disabled:opacity-40"
+        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-text-secondary hover:bg-surface-2 transition-colors disabled:opacity-40"
         onclick={() => { closeCtx(); showAddMenu = true; }}>
         <Icon icon="lucide:plus" width="13" height="13" /> Add step
       </button>
     {:else if ctxMenu.kind === 'node'}
       <button type="button" disabled={pipelineStore.running}
-        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-zinc-700 hover:bg-zinc-50 transition-colors disabled:opacity-40"
+        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-text-secondary hover:bg-surface-2 transition-colors disabled:opacity-40"
         onclick={() => duplicateNodeById(ctxMenu!.id!)}>
         <Icon icon="lucide:copy" width="13" height="13" /> Duplicate
       </button>
@@ -958,13 +959,13 @@
 
 {#if showAddMenu}
   <div class="fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px]" role="presentation" onclick={() => { showAddMenu = false; stepSearch = ''; }}></div>
-  <div class="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-120 rounded-xl border border-border bg-white shadow-2xl overflow-hidden flex flex-col max-h-[70vh]">
+  <div class="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-120 rounded-xl border border-border bg-surface shadow-2xl overflow-hidden flex flex-col max-h-[70vh]">
     <div class="flex items-center gap-2 px-3 py-2.5 border-b border-border bg-surface">
-      <Icon icon="lucide:search" width="13" height="13" class="text-zinc-400 shrink-0" />
+      <Icon icon="lucide:search" width="13" height="13" class="text-text-subtle shrink-0" />
       <input type="text" bind:this={stepSearchInput} bind:value={stepSearch} placeholder="Search steps…"
-        class="flex-1 text-sm bg-transparent outline-none text-zinc-800 placeholder:text-zinc-400" />
+        class="flex-1 text-sm bg-transparent outline-none text-text placeholder:text-text-subtle" />
       {#if stepSearch}
-        <button onclick={() => stepSearch = ''} class="text-zinc-400 hover:text-zinc-600">
+        <button onclick={() => stepSearch = ''} class="text-text-subtle hover:text-text-secondary">
           <Icon icon="lucide:x" width="12" height="12" />
         </button>
       {/if}
@@ -972,13 +973,13 @@
 
     <div class="overflow-y-auto">
       {#if !hasResults}
-        <p class="px-4 py-6 text-center text-sm text-zinc-400">No steps match "{stepSearch}"</p>
+        <p class="px-4 py-6 text-center text-sm text-text-subtle">No steps match "{stepSearch}"</p>
       {:else}
         {#if filteredUtility.length > 0}
-          <p class="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider bg-surface sticky top-0 z-10">Logic & Control</p>
+          <p class="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-text-subtle uppercase tracking-wider bg-surface sticky top-0 z-10">Logic & Control</p>
           {#each filteredUtility as item}
             <button type="button" onclick={() => { addNode(item.type, item.id); showAddMenu = false; stepSearch = ''; }}
-              class="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-50 transition-colors">
+              class="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-surface-2 transition-colors">
               <div class="h-7 w-7 rounded-lg flex items-center justify-center shrink-0
                 {item.type === 'variable' ? 'bg-amber-100' : item.type === 'math' ? 'bg-violet-100' :
                  item.type === 'condition' ? 'bg-sky-100' : item.type === 'sub-pipeline' ? 'bg-indigo-100' : 'bg-rose-100'}">
@@ -991,20 +992,20 @@
                 />
               </div>
               <div>
-                <span class="text-sm font-medium text-zinc-800">{item.label}</span>
-                <p class="text-xs text-zinc-400 mt-0.5">{item.description}</p>
+                <span class="text-sm font-medium text-text">{item.label}</span>
+                <p class="text-xs text-text-subtle mt-0.5">{item.description}</p>
               </div>
             </button>
           {/each}
         {/if}
 
         {#each Object.entries(toolsByCategory) as [category, tools]}
-          <p class="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider bg-surface sticky top-0 z-10">{category}</p>
+          <p class="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-text-subtle uppercase tracking-wider bg-surface sticky top-0 z-10">{category}</p>
           {#each tools as tool}
             <button type="button" onclick={() => { addNode('tool', tool.id); showAddMenu = false; stepSearch = ''; }}
-              class="w-full text-left flex flex-col px-4 py-2.5 hover:bg-zinc-50 transition-colors">
-              <span class="text-sm font-medium text-zinc-800">{tool.label}</span>
-              <span class="text-xs text-zinc-400 mt-0.5">{tool.description}</span>
+              class="w-full text-left flex flex-col px-4 py-2.5 hover:bg-surface-2 transition-colors">
+              <span class="text-sm font-medium text-text">{tool.label}</span>
+              <span class="text-xs text-text-subtle mt-0.5">{tool.description}</span>
             </button>
           {/each}
         {/each}

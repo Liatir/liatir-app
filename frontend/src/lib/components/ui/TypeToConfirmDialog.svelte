@@ -59,15 +59,15 @@
               <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
           </div>
-          <p id="type-confirm-title" class="text-sm font-semibold text-zinc-800">{title}</p>
+          <p id="type-confirm-title" class="text-sm font-semibold text-text">{title}</p>
         </div>
-        <p class="text-sm text-zinc-500 leading-relaxed mt-2">{message}</p>
+        <p class="text-sm text-text-muted leading-relaxed mt-2">{message}</p>
       </div>
 
       <!-- Type to confirm -->
       <div class="px-5 py-4">
-        <p class="text-xs text-zinc-500 mb-2">
-          Type <span class="font-mono font-semibold text-zinc-700">{phrase}</span> to confirm:
+        <p class="text-xs text-text-muted mb-2">
+          Type <span class="font-mono font-semibold text-text-secondary">{phrase}</span> to confirm:
         </p>
         <input
           type="text"
@@ -75,8 +75,8 @@
           autocomplete="off"
           spellcheck="false"
           placeholder={phrase}
-          class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-mono text-zinc-800
-                 placeholder:text-zinc-300 focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-400/20
+          class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-mono text-text
+                 placeholder:text-text-faint focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-400/20
                  transition-colors"
         />
       </div>
@@ -85,7 +85,7 @@
       <div class="flex items-center justify-end gap-2 px-5 pb-5">
         <button
           onclick={oncancel}
-          class="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-zinc-600
+          class="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary
                  hover:bg-surface-2 transition-colors"
         >
           Cancel

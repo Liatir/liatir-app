@@ -12,6 +12,7 @@
 	import { SIDEBAR_ITEMS_TOP, SIDEBAR_ITEMS_BOTTOM, routeIsInSidebar, SIDEBAR_EXPANDED_WIDTH, type SidebarItem, sidebarNavigateToPage } from '$lib/sidebarUtils';
 	import { sidebarCollapsed, sidebarWidth } from '$lib/stores/sidebar';
 	import { HEADER_HEIGHT } from '$lib/_constants';
+	import { settingsStore } from '$lib/stores/settings.svelte';
 
 	let { forceExpand=false } = $props();
 
@@ -85,7 +86,7 @@
 	<!-- <button
 		onclick={()=> sidebarCollapsed.set(!sideCollapsed)}
 		title={sideCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-		class="shrink-0 w-5 h-8 p-0.5 top-[calc(50vh-10px)] font-semibold z-50 rounded-r-md absolute border-y border-r border-y-border border-r-border bg-zinc-50 text-zinc-300"
+		class="shrink-0 w-5 h-8 p-0.5 top-[calc(50vh-10px)] font-semibold z-50 rounded-r-md absolute border-y border-r border-y-border border-r-border bg-surface-2 text-text-faint"
 		id="collapse-sidebar-button"
 		style="left: {(forceExpand ? SIDEBAR_EXPANDED_WIDTH : sideWidth)}px;"
 	>
@@ -98,7 +99,7 @@
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
-		class="flex items-center justify-start border-b border-border pt-1.5 px-3 gap-2.5 text-left {workspaceStore.active?'hover:bg-zinc-100 hover:cursor-pointer':''}"
+		class="flex items-center justify-start border-b border-border pt-1.5 px-3 gap-2.5 text-left {workspaceStore.active?'hover:bg-surface-2 hover:cursor-pointer':''}"
 		id="logo-section"
 		onclick={()=>{if(workspaceStore.active) goto("/workspace-settings")}}
 		style="height: {HEADER_HEIGHT}px"
@@ -113,19 +114,19 @@
 			<div class="flex items-center justify-start min-w-0 h-9 w-full overflow-hidden">
 				<div class="h-fit w-full">
 					{#if workspaceStore.active}
-						<p class="text-[11px] text-zinc-400 truncate mb-0.5">Workspace:</p>
+						<p class="text-[11px] text-text-subtle truncate mb-0.5">Workspace:</p>
 						{#if workspaceStore.isSandboxMode}
 							<div class="flex items-center justify-start bg-sandbox-100 rounded px-1.5 h-[16px] w-fit">
 								<p class="text-[11px] font-medium text-sandbox-600 w-fit">sandbox</p>
 							</div>
 						{:else}
 							<div class="flex items-center justify-start h-[16px]">
-								<p class="text-sm font-semibold text-zinc-800 truncate">{workspaceStore.active.name}</p>
+								<p class="text-sm font-semibold text-text truncate">{workspaceStore.active.name}</p>
 							</div>
 						{/if}
 					{:else}
 						<div class="flex items-center justify-start">
-							<p class="text-md font-semibold text-zinc-800 truncate">Liatir</p>
+							<p class="text-md font-semibold text-text truncate">Liatir</p>
 						</div>
 					{/if}
 				</div>
@@ -150,10 +151,10 @@
 							{sideCollapsed ? 'justify-center' : ''}
 							{(active && !(item?.workspacePage))
 							? 'bg-brand/10 text-brand font-medium'
-							: 'text-zinc-500 hover:bg-zinc-100/90 hover:text-zinc-800'}"
+							: 'text-text-muted hover:bg-surface-2/90 hover:text-text'}"
 					>
 						{#if item?.customIcon}
-							<CustomIcon src={item.customIcon} class="w-[16px] h-[16px] opacity-60"/>
+							<CustomIcon src={settingsStore.resolvedTheme === 'light' ? (item.customIconDark??item.customIcon) : item.customIcon} class="w-[16px] h-[16px] opacity-60"/>
 						{:else if item?.icon}
 							<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
 						{/if}
@@ -193,11 +194,11 @@
 							{sideCollapsed ? 'justify-center' : ''}
 							{(active && !(item?.workspacePage))
 							? 'bg-brand/10 text-brand font-medium'
-							: 'text-zinc-500 hover:bg-zinc-100/90 hover:text-zinc-800'}"
+							: 'text-text-muted hover:bg-surface-2/90 hover:text-text'}"
 					>
 
 						{#if item?.customIcon}
-							<CustomIcon src={item.customIcon} class="w-[16px] h-[16px] opacity-60"/>
+							<CustomIcon src={settingsStore.resolvedTheme === 'light' ? (item.customIconDark??item.customIcon) : item.customIcon} class="w-[16px] h-[16px] opacity-60"/>
 						{:else if item?.icon}
 							<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
 						{/if}
@@ -216,7 +217,7 @@
 			title={sideCollapsed ? 'Toggle Sandbox' : undefined}
 			class="w-full flex items-center overflow-hidden gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
 					{sideCollapsed ? 'justify-center' : ''}
-					{workspaceStore.isSandboxMode?'text-sandbox-600 hover:bg-sandbox-50':'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100/90'}"
+					{workspaceStore.isSandboxMode?'text-sandbox-600 hover:bg-sandbox-50':'text-text-muted hover:text-text hover:bg-surface-2/90'}"
 		>
 			<Icon icon="lucide:flask-conical" width="16" height="16" class="shrink-0" />
 			{#if !sideCollapsed}
@@ -234,16 +235,16 @@
 		>
 
 			{#if $sidebarCollapsed}
-				<button data-testid="sidebar-collapse-toggle" class="w-fit text-right text-zinc-800 hover:bg-zinc-100 py-1.5 px-1.5 rounded-md" onclick={()=>sidebarCollapsed.set(false)}>
+				<button data-testid="sidebar-collapse-toggle" class="w-fit text-right text-text hover:bg-surface-2 py-1.5 px-1.5 rounded-md" onclick={()=>sidebarCollapsed.set(false)}>
 					<Icon icon="ph:sidebar-simple-light" width="17" height="17" class="shrink-0 rotate-180" />
 				</button>
 			{:else}
-				<button data-testid="sidebar-collapse-toggle" class="w-fit text-right text-zinc-800 hover:bg-zinc-100 py-1.5 px-1.5 rounded-md" onclick={()=>sidebarCollapsed.set(true)}>
+				<button data-testid="sidebar-collapse-toggle" class="w-fit text-right text-text hover:bg-surface-2 py-1.5 px-1.5 rounded-md" onclick={()=>sidebarCollapsed.set(true)}>
 					<Icon icon="ph:sidebar-simple-light" width="17" height="17" class="shrink-0" />
 				</button>
 			{/if}
 			{#if !sideCollapsed}
-				<span class="flex-1 truncate text-right text-[11px] text-zinc-300 mr-1.5">© {new Date().getFullYear()} Liatir</span>
+				<span class="flex-1 truncate text-right text-[11px] text-text-faint mr-1.5">© {new Date().getFullYear()} Liatir</span>
 			{/if}
 		</div>
 	</div>

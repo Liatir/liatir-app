@@ -14,6 +14,7 @@
 	import { initAppCloseGuard } from '$lib/stores/appCloseGuard.svelte';
 	import { installGlobalErrorHandler } from '$lib/diagnostics/global-error-handler';
 	import { jobsStore } from '$lib/stores/jobs.svelte';
+	import { settingsStore } from '$lib/stores/settings.svelte';
 	import { pipelineStore } from '$lib/stores/pipeline.svelte';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { onDestroy, onMount } from 'svelte';
@@ -49,6 +50,10 @@
 		// Capture uncaught errors app-wide (incl. the plugin-dev window) before
 		// anything else runs, so early failures are recorded too.
 		installGlobalErrorHandler();
+		// Load persisted settings early so the theme applies app-wide
+		// (including the plugin-dev window). Fire-and-forget: nothing below
+		// depends on it and the boot theme is already set from app.html.
+		void settingsStore.init();
 		if (isPluginDevRoute) {
 			initialized = true;
 			return;
@@ -104,7 +109,7 @@
 {:else}
 <div
         class="{workspaceStore.isSandboxMode
-            ? 'max-2xl:border-x-[5px] border-x-[7px]'
+            ? 'border-[1.5px] 3xl:border-2 rounded-xl'
             : ''} flex h-screen overflow-hidden border-sandbox-500 transition-[border-width] duration-[0.48s] ease-in-out relative"
         style="background-color: var(--color-bg);"
     >

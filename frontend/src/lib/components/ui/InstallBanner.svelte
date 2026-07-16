@@ -32,7 +32,7 @@
                pointer-events-auto transition-all
                {item.phase === 'done'  ? 'bg-emerald-50  border-emerald-200' :
                 item.phase === 'error' ? 'bg-red-50      border-red-200'     :
-                                         'bg-white        border-zinc-200'}"
+                                         'bg-surface        border-border'}"
       >
         <!-- Header row -->
         <div class="flex items-center gap-2">
@@ -51,11 +51,11 @@
             </svg>
           {/if}
 
-          <span class="text-xs font-semibold text-zinc-800 flex-1 truncate">{item.label}</span>
+          <span class="text-xs font-semibold text-text flex-1 truncate">{item.label}</span>
 
           <button
             onclick={() => installProgress.dismiss(item.binary)}
-            class="text-zinc-300 hover:text-zinc-500 transition-colors"
+            class="text-text-faint hover:text-text-muted transition-colors"
             aria-label="Dismiss"
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -68,13 +68,13 @@
         <p class="text-[11px] leading-none
                   {item.phase === 'done'  ? 'text-emerald-600' :
                    item.phase === 'error' ? 'text-red-500 line-clamp-2' :
-                                            'text-zinc-500'}">
+                                            'text-text-muted'}">
           {phaseLabel(item)}
         </p>
 
         <!-- Download progress bar -->
         {#if pct !== null}
-          <div class="h-1 rounded-full bg-zinc-100 overflow-hidden">
+          <div class="h-1 rounded-full bg-surface-2 overflow-hidden">
             <div
               class="h-full rounded-full bg-brand transition-all duration-300"
               style="width: {pct}%"

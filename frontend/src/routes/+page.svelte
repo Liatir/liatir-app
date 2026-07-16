@@ -63,23 +63,23 @@
       <!-- Stats -->
       <div class="grid grid-cols-3 gap-4">
         <Card class="p-4">
-          <p class="text-xs text-zinc-500 mb-1">Analyses run</p>
-          <p class="text-2xl font-semibold text-zinc-900">{analysisRuns.runs.length}</p>
-          <p class="text-xs text-zinc-400 mt-1">
+          <p class="text-xs text-text-muted mb-1">Analyses run</p>
+          <p class="text-2xl font-semibold text-text">{analysisRuns.runs.length}</p>
+          <p class="text-xs text-text-subtle mt-1">
             {analysisRuns.runs.filter(r => r.status === 'done').length} successful
           </p>
         </Card>
 
         <Card class="p-4">
-          <p class="text-xs text-zinc-500 mb-1">Data files</p>
-          <p class="text-2xl font-semibold text-zinc-900">{dataFiles.files.length}</p>
-          <p class="text-xs text-zinc-400 mt-1">imported</p>
+          <p class="text-xs text-text-muted mb-1">Data files</p>
+          <p class="text-2xl font-semibold text-text">{dataFiles.files.length}</p>
+          <p class="text-xs text-text-subtle mt-1">imported</p>
         </Card>
 
         <Card class="p-4">
-          <p class="text-xs text-zinc-500 mb-1">Running jobs</p>
-          <p class="text-2xl font-semibold text-zinc-900">{jobsStore.runningCount}</p>
-          <p class="text-xs mt-1 {jobsStore.runningCount > 0 ? 'text-sky-500' : 'text-zinc-400'}">
+          <p class="text-xs text-text-muted mb-1">Running jobs</p>
+          <p class="text-2xl font-semibold text-text">{jobsStore.runningCount}</p>
+          <p class="text-xs mt-1 {jobsStore.runningCount > 0 ? 'text-sky-500' : 'text-text-subtle'}">
             {jobsStore.runningCount > 0 ? 'Active' : 'Idle'}
           </p>
         </Card>
@@ -87,18 +87,18 @@
 
       <!-- Quick launch -->
       <div>
-        <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Quick launch</h2>
+        <h2 class="text-xs font-medium text-text-muted uppercase tracking-wider mb-3">Quick launch</h2>
         <div class="grid grid-cols-3 gap-3">
           <Card hoverable class="p-4 flex items-start gap-3" onclick={() => goto('/data')}>
-            <div class="h-8 w-8 rounded-lg bg-zinc-100 flex items-center justify-center shrink-0">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <div class="h-8 w-8 rounded-lg bg-surface-2 flex items-center justify-center shrink-0">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-text-muted)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
                 <polyline points="13 2 13 9 20 9" />
               </svg>
             </div>
             <div>
-              <p class="text-sm font-medium text-zinc-800">Import data</p>
-              <p class="text-xs text-zinc-500 mt-0.5 leading-relaxed">Add FASTQ, BAM or VCF files</p>
+              <p class="text-sm font-medium text-text">Import data</p>
+              <p class="text-xs text-text-muted mt-0.5 leading-relaxed">Add FASTQ, BAM or VCF files</p>
             </div>
           </Card>
 
@@ -109,21 +109,21 @@
               </svg>
             </div>
             <div>
-              <p class="text-sm font-medium text-zinc-800">Run FastQC</p>
-              <p class="text-xs text-zinc-500 mt-0.5 leading-relaxed">Quality control for FASTQ files</p>
+              <p class="text-sm font-medium text-text">Run FastQC</p>
+              <p class="text-xs text-text-muted mt-0.5 leading-relaxed">Quality control for FASTQ files</p>
             </div>
           </Card>
 
           <Card hoverable class="p-4 flex items-start gap-3" onclick={() => goto('/results')}>
-            <div class="h-8 w-8 rounded-lg bg-zinc-100 flex items-center justify-center shrink-0">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <div class="h-8 w-8 rounded-lg bg-surface-2 flex items-center justify-center shrink-0">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-text-muted)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
                 <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
               </svg>
             </div>
             <div>
-              <p class="text-sm font-medium text-zinc-800">View results</p>
-              <p class="text-xs text-zinc-500 mt-0.5 leading-relaxed">Browse all analysis runs</p>
+              <p class="text-sm font-medium text-text">View results</p>
+              <p class="text-xs text-text-muted mt-0.5 leading-relaxed">Browse all analysis runs</p>
             </div>
           </Card>
         </div>
@@ -132,7 +132,7 @@
       <!-- Recent analyses -->
       <div>
         <div class="flex items-center justify-between mb-3">
-          <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider">Recent analyses</h2>
+          <h2 class="text-xs font-medium text-text-muted uppercase tracking-wider">Recent analyses</h2>
           {#if analysisRuns.runs.length > 0}
             <Button variant="ghost" size="sm" onclick={() => goto('/results')}>View all</Button>
           {/if}
@@ -140,7 +140,7 @@
 
         {#if recentAnalyses.length === 0}
           <Card class="p-6">
-            <p class="text-center text-sm text-zinc-500">No analyses yet. Run a tool to get started.</p>
+            <p class="text-center text-sm text-text-muted">No analyses yet. Run a tool to get started.</p>
           </Card>
         {:else}
           <Card>
@@ -154,13 +154,13 @@
                     {run.status === 'done' ? 'bg-emerald-500' : 'bg-red-500'}">
                   </span>
                   <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-zinc-800 truncate">{run.label}</p>
-                    <p class="text-xs text-zinc-400 mt-0.5">{toolLabel(run.tool)} · {fmtDate(run.startedAt)}</p>
+                    <p class="text-sm font-medium text-text truncate">{run.label}</p>
+                    <p class="text-xs text-text-subtle mt-0.5">{toolLabel(run.tool)} · {fmtDate(run.startedAt)}</p>
                   </div>
-                  <span class="text-xs text-zinc-400 shrink-0">
+                  <span class="text-xs text-text-subtle shrink-0">
                     {fmtDuration(run.startedAt, run.endedAt)}
                   </span>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-300 shrink-0">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-text-faint shrink-0">
                     <path d="M9 18l6-6-6-6" />
                   </svg>
                 </button>
@@ -174,7 +174,7 @@
       {#if recentJobs.length > 0}
         <div>
           <div class="flex items-center justify-between mb-3">
-            <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider">Recent jobs</h2>
+            <h2 class="text-xs font-medium text-text-muted uppercase tracking-wider">Recent jobs</h2>
             <Button variant="ghost" size="sm" onclick={() => goto('/jobs')}>View all</Button>
           </div>
           <Card>
@@ -185,9 +185,9 @@
                     {jobStatusVariant(job) === 'running' ? 'Running' : jobStatusVariant(job) === 'done' ? 'Done' : jobStatusVariant(job) === 'killed' ? 'Killed' : 'Failed'}
                   </Badge>
                   <div class="flex-1 min-w-0">
-                    <p class="text-sm font-mono text-zinc-700 truncate">{job.cmd} {job.args.join(' ')}</p>
+                    <p class="text-sm font-mono text-text-secondary truncate">{job.cmd} {job.args.join(' ')}</p>
                   </div>
-                  <span class="text-xs text-zinc-400 shrink-0 font-mono">
+                  <span class="text-xs text-text-subtle shrink-0 font-mono">
                     {fmtDuration(job.startedAtMs, job.endedAtMs ?? undefined)}
                   </span>
                 </div>

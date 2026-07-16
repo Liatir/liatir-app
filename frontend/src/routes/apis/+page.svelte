@@ -54,7 +54,7 @@
           description="Add an API provider, define its calls and authentication, then initialize each call to capture its typed response — ready to plug into your pipelines."
         >
           {#snippet icon()}
-            <Icon icon="lucide:plug-zap" width="28" height="28" class="text-zinc-300" />
+            <Icon icon="lucide:plug-zap" width="28" height="28" class="text-text-faint" />
           {/snippet}
           {#snippet action()}
             <Button variant="primary" size="sm" onclick={addProvider}>

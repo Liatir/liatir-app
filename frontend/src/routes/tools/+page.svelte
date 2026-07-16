@@ -208,17 +208,17 @@
   <div class="flex-1 overflow-y-auto p-6 space-y-6">
     <div class="flex flex-col gap-3">
       <div class="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
-        <Icon icon="lucide:search" width="14" height="14" class="shrink-0 text-zinc-400" />
+        <Icon icon="lucide:search" width="14" height="14" class="shrink-0 text-text-subtle" />
         <input
           bind:value={query}
           placeholder="Search tools…"
-          class="flex-1 bg-transparent text-sm text-zinc-800 placeholder:text-zinc-400 outline-none"
+          class="flex-1 bg-transparent text-sm text-text placeholder:text-text-subtle outline-none"
         />
         {#if query}
           <button
             type="button"
             onclick={() => query = ''}
-            class="text-zinc-400 hover:text-zinc-600 transition-colors"
+            class="text-text-subtle hover:text-text-secondary transition-colors"
             aria-label="Clear tool search"
           >
             <Icon icon="lucide:x" width="13" height="13" />
@@ -233,7 +233,7 @@
           class="shrink-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors
             {selectedCategory === 'All'
               ? 'border-brand bg-brand/10 text-brand'
-              : 'border-border bg-surface text-zinc-500 hover:border-zinc-300 hover:text-zinc-700'}"
+              : 'border-border bg-surface text-text-muted hover:border-border-2 hover:text-text-secondary'}"
         >
           All
         </button>
@@ -244,7 +244,7 @@
             class="shrink-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors
               {selectedCategory === category
                 ? 'border-brand bg-brand/10 text-brand'
-                : 'border-border bg-surface text-zinc-500 hover:border-zinc-300 hover:text-zinc-700'}"
+                : 'border-border bg-surface text-text-muted hover:border-border-2 hover:text-text-secondary'}"
           >
             {category}
           </button>
@@ -254,12 +254,12 @@
 
     {#if filteredTools.length === 0}
       <div class="py-16 text-center">
-        <p class="text-sm font-medium text-zinc-600">No tools found</p>
+        <p class="text-sm font-medium text-text-secondary">No tools found</p>
       </div>
     {:else}
       {#each filteredCategories as category}
         <div>
-          <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">{category}</h2>
+          <h2 class="text-xs font-medium text-text-muted uppercase tracking-wider mb-3">{category}</h2>
           <div class="grid grid-cols-2 gap-3">
             {#each filteredTools.filter((t) => t.category === category) as tool}
               <Card
@@ -268,17 +268,17 @@
                 onclick={()=>openToolPage(tool)}
               >
                 <div class="flex items-start justify-between gap-2 mb-2">
-                  <p class="text-sm font-semibold text-zinc-900">{tool.label}</p>
+                  <p class="text-sm font-semibold text-text">{tool.label}</p>
                   {#if tool.status === 'soon'}
                     <Badge variant="neutral">Coming soon</Badge>
                   {:else}
                     <Badge variant="available">Ready</Badge>
                   {/if}
                 </div>
-                <p class="text-xs text-zinc-500 leading-relaxed mb-3">{tool.description}</p>
+                <p class="text-xs text-text-muted leading-relaxed mb-3">{tool.description}</p>
                 <div class="flex flex-wrap gap-1.5">
                   {#each tool.tags as tag}
-                    <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-100 text-zinc-600 border border-zinc-200">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-surface-2 text-text-secondary border border-border">
                       {tag}
                     </span>
                   {/each}

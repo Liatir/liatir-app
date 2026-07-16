@@ -49,24 +49,24 @@
 
 <div class="rounded-xl border border-border bg-surface/40 overflow-hidden">
   <!-- Provider header -->
-  <div class="flex items-center gap-2 px-3 py-2.5 bg-white border-b border-border">
+  <div class="flex items-center gap-2 px-3 py-2.5 bg-surface border-b border-border">
     <button type="button" onclick={() => open = !open} aria-label="Toggle"
-      class="text-zinc-400 hover:text-zinc-600 shrink-0">
+      class="text-text-subtle hover:text-text-secondary shrink-0">
       <Icon icon="lucide:chevron-right" width="14" height="14" class="transition-transform {open ? 'rotate-90' : ''}" />
     </button>
     <Icon icon="lucide:plug" width="14" height="14" class="text-brand shrink-0" />
     <input type="text" value={provider.name} placeholder="API name"
       oninput={(e) => setProvider({ name: (e.target as HTMLInputElement).value })}
-      class="flex-1 min-w-0 text-sm font-semibold text-zinc-800 bg-transparent outline-none border-b border-transparent focus:border-brand/40 pb-0.5" />
+      class="flex-1 min-w-0 text-sm font-semibold text-text bg-transparent outline-none border-b border-transparent focus:border-brand/40 pb-0.5" />
     <button type="button" onclick={() => showSettings = !showSettings}
-      class="text-[11px] flex items-center gap-1 px-2 py-1 rounded hover:bg-surface {showSettings ? 'text-brand' : 'text-zinc-400 hover:text-zinc-600'}">
+      class="text-[11px] flex items-center gap-1 px-2 py-1 rounded hover:bg-surface {showSettings ? 'text-brand' : 'text-text-subtle hover:text-text-secondary'}">
       <Icon icon="lucide:settings-2" width="12" height="12" /> Settings
     </button>
     <Button variant="secondary" size="sm" onclick={addCall}>
       <Icon icon="lucide:plus" width="11" height="11" /> API call
     </Button>
     <button type="button" onclick={del} aria-label="Delete API"
-      class="text-zinc-300 hover:text-red-400 transition-colors shrink-0">
+      class="text-text-faint hover:text-red-400 transition-colors shrink-0">
       <Icon icon="lucide:trash-2" width="14" height="14" />
     </button>
   </div>
@@ -74,15 +74,15 @@
   {#if open}
     <!-- Provider settings: auth + shared headers/params -->
     {#if showSettings}
-      <div class="px-4 py-3 bg-white border-b border-border space-y-3">
+      <div class="px-4 py-3 bg-surface border-b border-border space-y-3">
         <ApiAuthEditor auth={provider.auth} onchange={(auth: ApiAuth) => setProvider({ auth })} />
         <div>
-          <span class="text-[11px] font-medium text-zinc-500">Shared headers</span>
+          <span class="text-[11px] font-medium text-text-muted">Shared headers</span>
           <KeyValueTable rows={provider.sharedHeaders} keyPlaceholder="Header" valuePlaceholder="Value"
             onchange={(sharedHeaders: ApiKeyValue[]) => setProvider({ sharedHeaders })} />
         </div>
         <div>
-          <span class="text-[11px] font-medium text-zinc-500">Shared parameters</span>
+          <span class="text-[11px] font-medium text-text-muted">Shared parameters</span>
           <ApiParamTable rows={provider.sharedParams} onchange={(sharedParams: ApiParam[]) => setProvider({ sharedParams })} />
         </div>
       </div>
@@ -100,7 +100,7 @@
       {/each}
       {#if calls.length === 0}
         <button type="button" onclick={addCall}
-          class="w-full rounded-lg border border-dashed border-border py-4 text-xs text-zinc-400 hover:border-brand/40 hover:text-brand transition-colors">
+          class="w-full rounded-lg border border-dashed border-border py-4 text-xs text-text-subtle hover:border-brand/40 hover:text-brand transition-colors">
           + Add the first API call
         </button>
       {/if}

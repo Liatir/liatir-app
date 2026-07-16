@@ -21,6 +21,7 @@
   import { localFileSrc, readViewerRuntimeScript } from '$lib/viewers/runtime-loader';
   import { isViewerProxyCompatibilityError, viewerRuntimeFailureMessage } from '$lib/viewers/runtime-errors';
   import { sanitizeLocalPathsForDisplay } from '$lib/utils';
+  import { settingsStore } from '$lib/stores/settings.svelte';
   import type { GenomeViewerSection } from '$lib/types/tool-output';
 
   let { section }: { section: GenomeViewerSection } = $props();
@@ -244,18 +245,29 @@
     return {
       assembly,
       tracks: trackConfigs,
+      // JBrowse themes itself through MUI; `mode` is its own dark-mode switch
+      // (supported since JBrowse 2.4), so the browser chrome follows the app
+      // instead of being restyled from the outside.
+      configuration: { theme: { mode: settingsStore.resolvedTheme } },
       ...(loc ? { location: loc } : {}),
     };
   }
 
   function createJBrowseFrame(scriptSource: string, config: unknown): string {
     const payload = escapeScriptJson({ viewerId, config });
+    // The frame is a separate blob document, so it cannot inherit the app's CSS
+    // variables: the host chrome around JBrowse takes literal colours matching
+    // the theme JBrowse itself was configured with.
+    const dark = settingsStore.resolvedTheme === 'dark';
+    const frameBg = dark ? '#1c1c20' : '#fff';
+    const messageColor = dark ? '#a1a1aa' : '#71717a';
+    const errorColor = dark ? '#f87171' : '#dc2626';
     return `<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
   <style>
-    html, body, #jbrowse { height: 100%; width: 100%; margin: 0; overflow: hidden; background: #fff; }
+    html, body, #jbrowse { height: 100%; width: 100%; margin: 0; overflow: hidden; background: ${frameBg}; }
     #message {
       position: absolute;
       inset: 0;
@@ -263,12 +275,12 @@
       align-items: center;
       justify-content: center;
       padding: 24px;
-      color: #71717a;
+      color: ${messageColor};
       font: 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       text-align: center;
       box-sizing: border-box;
     }
-    #message.error { color: #dc2626; }
+    #message.error { color: ${errorColor}; }
   </style>
 </head>
 <body>
@@ -306,6 +318,16 @@
 </html>`;
   }
 
+  // The live blob URL. Held here (not in onMount) because the frame is rebuilt
+  // on theme change, and every replaced URL must be revoked or it leaks.
+  let frameObjectUrl = '';
+
+  function setFrameUrl(url: string) {
+    if (frameObjectUrl) URL.revokeObjectURL(frameObjectUrl);
+    frameObjectUrl = url;
+    jbrowseFrameUrl = url;
+  }
+
   function createFrameUrl(html: string): string {
     return URL.createObjectURL(new Blob([html], { type: 'text/html' }));
   }
@@ -323,21 +345,20 @@
       jbrowseError = null;
       const { source } = await readViewerRuntimeScript(JBROWSE_RUNTIME_ID);
       const config = buildJBrowseConfig();
-      jbrowseFrameUrl = createFrameUrl(createJBrowseFrame(source, config));
+      setFrameUrl(createFrameUrl(createJBrowseFrame(source, config)));
     } catch (err) {
-      jbrowseFrameUrl = '';
+      setFrameUrl('');
       setJBrowseError(err instanceof Error ? err.message : String(err));
     }
   }
 
   onMount(() => {
-    let objectUrl = '';
     function onMessage(event: MessageEvent) {
       const data = event.data as { type?: string; viewerId?: string; message?: string } | null;
       if (!data || data.viewerId !== viewerId) return;
       if (data.type === 'liatir-jbrowse-viewer-error') {
         setJBrowseError(data.message ?? 'JBrowse viewer failed.');
-        jbrowseFrameUrl = '';
+        setFrameUrl('');
       }
     }
     window.addEventListener('message', onMessage);
@@ -359,7 +380,6 @@
         }
         features = next;
         await initJBrowseFrame();
-        objectUrl = jbrowseFrameUrl;
       } catch (err) {
         error = err instanceof Error ? err.message : String(err);
       } finally {
@@ -369,9 +389,24 @@
 
     void loadTracks();
     return () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      if (frameObjectUrl) URL.revokeObjectURL(frameObjectUrl);
       window.removeEventListener('message', onMessage);
     };
+  });
+
+  /**
+   * JBrowse reads its theme once, at createViewState, so a theme change means
+   * rebuilding the frame. This resets the browser's navigation position — an
+   * accepted cost for a rare, deliberate user action. Guarded on an existing
+   * frame so it never races the initial mount load.
+   */
+  let lastFrameTheme = settingsStore.resolvedTheme;
+  $effect(() => {
+    const theme = settingsStore.resolvedTheme;
+    if (theme === lastFrameTheme) return;
+    lastFrameTheme = theme;
+    if (!frameObjectUrl) return;
+    void initJBrowseFrame();
   });
 </script>
 
@@ -382,7 +417,7 @@
   height={section.height ?? 420}
   openHref={section.tracks[0]?.path ? `/tools/visualization/genome?track=${encodeURIComponent(section.tracks[0].path)}${section.assembly.fastaPath ? `&reference=${encodeURIComponent(section.assembly.fastaPath)}` : ''}` : undefined}
 >
-  <div class="h-full overflow-auto bg-white">
+  <div class="h-full overflow-auto bg-surface">
     {#if jbrowseFrameUrl}
       <iframe
         title={section.label}

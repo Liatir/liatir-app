@@ -83,8 +83,8 @@
       <img src="/logo/liatir-logo.svg" alt="Liatir" class="h-full w-full object-contain" />
     </div>
     <div class="text-center">
-      <h1 class="text-xl font-semibold text-zinc-900">Liatir</h1>
-      <p class="text-sm text-zinc-500 mt-0.5">Select a workspace to continue</p>
+      <h1 class="text-xl font-semibold text-text">Liatir</h1>
+      <p class="text-sm text-text-muted mt-0.5">Select a workspace to continue</p>
     </div>
   </div>
 
@@ -104,12 +104,12 @@
                   <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/10 shrink-0">
                     <Icon icon="lucide:folder" width="15" height="15" class="text-brand" />
                   </div>
-                  <p class="text-sm font-medium text-zinc-800 truncate group-hover:text-brand transition-colors">
+                  <p class="text-sm font-medium text-text truncate group-hover:text-brand transition-colors">
                     {w.name}
                   </p>
                 </div>
               </div>
-              <div class="mt-3 flex items-center gap-1 text-xs text-zinc-400">
+              <div class="mt-3 flex items-center gap-1 text-xs text-text-subtle">
                 <span>{relativeDate(w.lastOpenedAt)}</span>
                 <div class="bg-border rounded-full w-[2.5px] h-[2.5px]"></div>
                 <span>Created {fmtDate(w.createdAt)}</span>
@@ -120,23 +120,23 @@
               onclick={(e) => { e.stopPropagation(); workspaceStore.toggleFavorite(w.id); }}
               title={w.favorite ? 'Remove from favorites' : 'Add to favorites'}
               class="absolute top-2.5 right-3 p-1 rounded opacity-0 group-hover/card:opacity-100 transition-opacity
-                     {w.favorite ? 'opacity-100 text-amber-400 hover:text-amber-500' : 'text-zinc-300 hover:text-amber-400'}"
+                     {w.favorite ? 'opacity-100 text-amber-400 hover:text-amber-500' : 'text-text-faint hover:text-amber-400'}"
             >
               <Icon icon={w.favorite ? 'ph:star-fill' : 'ph:star'} width="13" height="13" />
             </button>
           </div>
           {#if index === sortedWorkspaces.length - 1 && sortedWorkspaces.length % 2 !== 0}
             <div class="hidden md:flex group/card items-center justify-center w-full rounded-xl border border-border bg-zinc-900/1 opacity-50">
-              <span class="text-sm tracking-wide text-zinc-400/0">Empty box</span>
+              <span class="text-sm tracking-wide text-text-subtle/0">Empty box</span>
             </div>
           {/if}
         {/each}
       </div>
     {:else}
       <div class="rounded-xl border border-dashed border-border p-10 text-center">
-        <Icon icon="lucide:folder-plus" width="28" height="28" class="text-zinc-300 mx-auto mb-3" />
-        <p class="text-sm font-medium text-zinc-600">No workspaces yet</p>
-        <p class="text-xs text-zinc-400 mt-1">Create your first workspace to get started</p>
+        <Icon icon="lucide:folder-plus" width="28" height="28" class="text-text-faint mx-auto mb-3" />
+        <p class="text-sm font-medium text-text-secondary">No workspaces yet</p>
+        <p class="text-xs text-text-subtle mt-1">Create your first workspace to get started</p>
       </div>
     {/if}
 
@@ -144,15 +144,15 @@
     <div class="mt-2">
       {#if showNewForm}
         <div class="rounded-xl border border-brand/30 bg-brand/5 p-4">
-          <p class="text-xs font-medium text-zinc-600 mb-2">New workspace name</p>
+          <p class="text-xs font-medium text-text-secondary mb-2">New workspace name</p>
           <div class="flex gap-2">
             <input
               bind:this={inputEl}
               bind:value={newName}
               type="text"
               placeholder="e.g. Project Alpha"
-              class="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-800
-                     placeholder:text-zinc-300 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+              class="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text
+                     placeholder:text-text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
               onkeydown={(e) => { if (e.key === 'Enter') createAndOpen(); if (e.key === 'Escape') { showNewForm = false; } }}
             />
             <Button variant="primary" size="sm" onclick={createAndOpen} loading={creating} disabled={!newName.trim()}>
@@ -167,7 +167,7 @@
         <button
           onclick={showForm}
           class="w-full flex items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3
-                 text-sm text-zinc-400 hover:border-brand/40 hover:text-brand hover:bg-brand/5 transition-all duration-150"
+                 text-sm text-text-subtle hover:border-brand/40 hover:text-brand hover:bg-brand/5 transition-all duration-150"
         >
           <Icon icon="lucide:plus" width="15" height="15" />
           New workspace
@@ -177,7 +177,7 @@
 
     <!-- Sandbox entry -->
     <div class="mt-5">
-      <!-- <p class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-2">Sandbox</p> -->
+      <!-- <p class="text-[10px] font-semibold text-text-subtle uppercase tracking-wider mb-2">Sandbox</p> -->
       <button
         onclick={() => openWorkspace(SANDBOX_WORKSPACE_ID)}
         data-testid="workspace-sandbox-button"

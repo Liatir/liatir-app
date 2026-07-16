@@ -13,6 +13,6 @@
   const rendered = $derived(renderQuentaMarkdown(content));
 </script>
 
-<div class="markdown-body text-sm leading-relaxed text-zinc-800" data-selectable>
+<div class="markdown-body text-sm leading-relaxed text-text" data-selectable>
   {@html rendered}
 </div>

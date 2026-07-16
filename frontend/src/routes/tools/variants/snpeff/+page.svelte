@@ -392,26 +392,26 @@
   <!-- Run history sidebar -->
   <div class="w-52 shrink-0 border-r border-border bg-surface flex flex-col">
     <div class="flex items-center justify-between px-3 py-3 border-b border-border">
-      <span class="text-xs font-medium text-zinc-600">Run history</span>
+      <span class="text-xs font-medium text-text-secondary">Run history</span>
       {#if snpeffRuns.length > 0}
-        <span class="text-[10px] text-zinc-400">{snpeffRuns.length}</span>
+        <span class="text-[10px] text-text-subtle">{snpeffRuns.length}</span>
       {/if}
     </div>
     <div class="flex-1 overflow-y-auto py-1">
       {#if snpeffRuns.length === 0}
-        <p class="text-xs text-zinc-400 text-center py-8 px-3 leading-relaxed">No runs yet.<br/>Results will appear here.</p>
+        <p class="text-xs text-text-subtle text-center py-8 px-3 leading-relaxed">No runs yet.<br/>Results will appear here.</p>
       {:else}
         {#each snpeffRuns as run (run.id)}
           <div class="group relative flex items-start transition-colors {selectedRunId === run.id ? 'bg-brand/8' : 'hover:bg-surface-2'}">
             <button onclick={() => selectedRunId = run.id} class="flex-1 text-left px-3 py-2.5 min-w-0">
               <div class="flex items-center gap-1.5 mb-0.5">
                 <span class="h-1.5 w-1.5 rounded-full shrink-0 {run.status === 'done' ? 'bg-emerald-500' : 'bg-red-500'}"></span>
-                <p class="text-xs font-medium truncate {selectedRunId === run.id ? 'text-brand' : 'text-zinc-700'}">{run.label}</p>
+                <p class="text-xs font-medium truncate {selectedRunId === run.id ? 'text-brand' : 'text-text-secondary'}">{run.label}</p>
               </div>
-              <p class="text-[10px] text-zinc-400 pl-3">{fmtDate(run.startedAt)} · {fmtDuration(run.startedAt, run.endedAt)}</p>
+              <p class="text-[10px] text-text-subtle pl-3">{fmtDate(run.startedAt)} · {fmtDuration(run.startedAt, run.endedAt)}</p>
             </button>
             <button onclick={() => deleteRun(run.id, run.label)} aria-label="Delete run"
-              class="opacity-0 group-hover:opacity-100 p-1.5 mt-2 mr-1.5 shrink-0 text-zinc-400 hover:text-red-500 transition-all rounded">
+              class="opacity-0 group-hover:opacity-100 p-1.5 mt-2 mr-1.5 shrink-0 text-text-subtle hover:text-red-500 transition-all rounded">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
@@ -444,7 +444,7 @@
 
         <!-- Step 2: JAR configuration -->
         <Card class="p-5 space-y-4">
-          <h2 class="text-sm font-semibold text-zinc-800">1 — SnpEff JAR</h2>
+          <h2 class="text-sm font-semibold text-text">1 — SnpEff JAR</h2>
 
           {#if snpEffStore.config.jarPath}
             <div class="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5">
@@ -452,14 +452,14 @@
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
               <div class="flex-1 min-w-0">
-                <p class="text-xs font-medium text-zinc-800 truncate" title={getLastSegmentsStringFromPath(snpEffStore.config.jarPath, 2)}>
+                <p class="text-xs font-medium text-text truncate" title={getLastSegmentsStringFromPath(snpEffStore.config.jarPath, 2)}>
                   {getLastSegmentsStringFromPath(snpEffStore.config.jarPath, 2)}
                 </p>
               </div>
-              <button onclick={() => snpEffStore.setJarPath(null)} class="text-[10px] text-zinc-400 hover:text-zinc-600">Change</button>
+              <button onclick={() => snpEffStore.setJarPath(null)} class="text-[10px] text-text-subtle hover:text-text-secondary">Change</button>
             </div>
           {:else}
-            <p class="text-xs text-zinc-500">
+            <p class="text-xs text-text-muted">
               Select your <code class="font-mono">snpEff.jar</code>. If you don't have it yet, download SnpEff from the official website and point Liatir to the JAR.
             </p>
 
@@ -479,7 +479,7 @@
               </Button>
             </div>
 
-            <p class="text-[11px] text-zinc-400">
+            <p class="text-[11px] text-text-subtle">
               Download the ZIP from the SnpEff website, extract it, then select <code class="font-mono">snpEff.jar</code> from the extracted folder.
             </p>
           {/if}
@@ -488,21 +488,21 @@
         <!-- Step 3: Database (only if JAR is configured) -->
         {#if snpEffStore.config.jarPath}
           <Card class="p-5 space-y-3">
-            <h2 class="text-sm font-semibold text-zinc-800">2 — Genome database</h2>
+            <h2 class="text-sm font-semibold text-text">2 — Genome database</h2>
 
             <!-- Genome list -->
             <!-- Search -->
             <div class="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5">
-              <svg class="shrink-0 text-zinc-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg class="shrink-0 text-text-subtle" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
               <input
                 bind:value={genomeSearch}
                 placeholder="Search genomes…"
-                class="flex-1 text-xs bg-transparent outline-none text-zinc-700 placeholder:text-zinc-400"
+                class="flex-1 text-xs bg-transparent outline-none text-text-secondary placeholder:text-text-subtle"
               />
               {#if genomeSearch}
-                <button onclick={() => genomeSearch = ''} class="text-zinc-400 hover:text-zinc-600" aria-label="Clear genome search">
+                <button onclick={() => genomeSearch = ''} class="text-text-subtle hover:text-text-secondary" aria-label="Clear genome search">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                   </svg>
@@ -519,32 +519,32 @@
                   onclick={() => { if (!dbDownloading) { selectedGenome = g.id; customGenome = ''; } }}
                   onkeydown={(e) => e.key === 'Enter' && !dbDownloading && (selectedGenome = g.id, customGenome = '')}
                   class="flex items-center gap-3 px-3 py-2.5 transition-colors
-                    {isSelected ? 'bg-brand/5' : 'hover:bg-zinc-50'}
+                    {isSelected ? 'bg-brand/5' : 'hover:bg-surface-2'}
                     {dbDownloading && !isDownloading ? 'cursor-default' : 'cursor-pointer'}"
                 >
                   <!-- Status dot -->
                   <div class="h-2 w-2 rounded-full shrink-0
-                    {isDownloading ? 'bg-brand animate-pulse' : downloaded ? 'bg-emerald-500' : 'bg-zinc-300'}">
+                    {isDownloading ? 'bg-brand animate-pulse' : downloaded ? 'bg-emerald-500' : 'bg-border-2'}">
                   </div>
 
                   <!-- Label + progress -->
                   <div class="flex-1 min-w-0">
-                    <p class="text-xs {isSelected ? 'font-medium text-brand' : 'text-zinc-700'} truncate">{g.label}</p>
+                    <p class="text-xs {isSelected ? 'font-medium text-brand' : 'text-text-secondary'} truncate">{g.label}</p>
                     {#if isDownloading}
                       {#if dbExtracting}
-                        <p class="text-[10px] text-zinc-400 mt-0.5">Extracting…</p>
+                        <p class="text-[10px] text-text-subtle mt-0.5">Extracting…</p>
                       {:else if dbBytesTotal}
                         {@const pct = Math.round((dbBytesDownloaded / dbBytesTotal) * 100)}
                         <div class="flex items-center gap-2 mt-1">
-                          <div class="flex-1 bg-zinc-200 rounded-full h-1">
+                          <div class="flex-1 bg-surface-3 rounded-full h-1">
                             <div class="bg-brand h-1 rounded-full transition-all" style="width:{pct}%"></div>
                           </div>
-                          <span class="text-[10px] text-zinc-400 shrink-0">
+                          <span class="text-[10px] text-text-subtle shrink-0">
                             {pct}% · {(dbBytesDownloaded / 1_048_576).toFixed(0)} / {(dbBytesTotal / 1_048_576).toFixed(0)} MB
                           </span>
                         </div>
                       {:else}
-                        <p class="text-[10px] text-zinc-400 mt-0.5">Connecting…</p>
+                        <p class="text-[10px] text-text-subtle mt-0.5">Connecting…</p>
                       {/if}
                       {#if dbError}
                         <p class="text-[10px] text-red-600 mt-0.5 font-mono truncate">{sanitizeLocalPathsForDisplay(dbError, 2)}</p>
@@ -564,7 +564,7 @@
                     {:else if downloaded}
                       <button
                         onclick={() => deleteDatabase(g.id)}
-                        class="text-[10px] text-zinc-400 hover:text-red-500 px-2 py-0.5 rounded border border-transparent hover:border-red-200 transition-colors"
+                        class="text-[10px] text-text-subtle hover:text-red-500 px-2 py-0.5 rounded border border-transparent hover:border-red-200 transition-colors"
                       >
                         Delete
                       </button>
@@ -584,7 +584,7 @@
 
             <!-- Custom genome input -->
             <div class="space-y-1.5">
-              <p class="text-[11px] text-zinc-500">Custom genome ID (overrides selection above):</p>
+              <p class="text-[11px] text-text-muted">Custom genome ID (overrides selection above):</p>
               <div class="flex items-center gap-2">
                 <input
                   type="text"
@@ -592,18 +592,18 @@
                   disabled={dbDownloading}
                   placeholder="e.g. GRCh38.mane.1.5.refseq"
                   class="flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-mono
-                         placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand/30
+                         placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-brand/30
                          disabled:opacity-50"
                 />
                 {#if customGenome.trim()}
-                  <button onclick={() => customGenome = ''} class="text-xs text-zinc-400 hover:text-zinc-600">Clear</button>
+                  <button onclick={() => customGenome = ''} class="text-xs text-text-subtle hover:text-text-secondary">Clear</button>
                 {/if}
               </div>
               {#if customGenome.trim()}
-                <p class="text-[10px] text-zinc-400">
-                  Active: <code class="font-mono text-zinc-600">{effectiveGenome}</code>
+                <p class="text-[10px] text-text-subtle">
+                  Active: <code class="font-mono text-text-secondary">{effectiveGenome}</code>
                   {#if genomeChecking}
-                    <span class="ml-1 text-zinc-400">· checking…</span>
+                    <span class="ml-1 text-text-subtle">· checking…</span>
                   {:else if genomePresent === true}
                     <span class="ml-1 text-emerald-600">· ready</span>
                   {:else if genomePresent === false}
@@ -617,7 +617,7 @@
           <!-- Step 4: Annotation (only if database ready) -->
           {#if genomePresent}
             <Card class="p-5 space-y-4">
-              <h2 class="text-sm font-semibold text-zinc-800">3 — Annotate variants</h2>
+              <h2 class="text-sm font-semibold text-text">3 — Annotate variants</h2>
 
               <!-- Resource warning -->
               <div class="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
@@ -632,7 +632,7 @@
 
               <!-- JVM heap -->
               <div class="flex items-center gap-3">
-                <span class="text-[11px] text-zinc-500 shrink-0">Java heap (RAM)</span>
+                <span class="text-[11px] text-text-muted shrink-0">Java heap (RAM)</span>
                 <div class="flex gap-1.5">
                   {#each ['4g', '6g', '8g', '12g', '16g'] as heap}
                     <button
@@ -640,7 +640,7 @@
                       class="px-2.5 py-1 rounded-md border text-xs transition-colors
                         {snpEffStore.jvmHeap === heap
                           ? 'bg-brand text-white border-brand'
-                          : 'bg-surface border-border text-zinc-600 hover:border-brand/40'}"
+                          : 'bg-surface border-border text-text-secondary hover:border-brand/40'}"
                     >
                       {heap.replace('g', ' GB')}
                     </button>
@@ -670,7 +670,7 @@
                   Run annotation
                 </Button>
                 {#if running && startedAt}
-                  <span class="text-xs text-zinc-400">Elapsed: {fmtDuration(startedAt, now)}</span>
+                  <span class="text-xs text-text-subtle">Elapsed: {fmtDuration(startedAt, now)}</span>
                 {/if}
               </div>
               <TerminalOutput lines={logLines} {running} />
@@ -683,18 +683,18 @@
           <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-mono">{sanitizeLocalPathsForDisplay(displayError, 2)}</div>
         {:else if loadingOutput}
           <div class="flex justify-center py-12">
-            <svg class="animate-spin h-5 w-5 text-zinc-400" viewBox="0 0 24 24" fill="none">
+            <svg class="animate-spin h-5 w-5 text-text-subtle" viewBox="0 0 24 24" fill="none">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
             </svg>
           </div>
         {:else if loadedOutput}
           <div>
-            <p class="mb-2 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Last run result</p>
+            <p class="mb-2 text-[10px] font-semibold text-text-subtle uppercase tracking-wider">Last run result</p>
             <div class="flex items-center justify-between mb-3">
-              <h2 class="text-xs font-medium text-zinc-700">{selectedRun?.label ?? 'Results'}</h2>
+              <h2 class="text-xs font-medium text-text-secondary">{selectedRun?.label ?? 'Results'}</h2>
               {#if selectedRun}
-                <span class="text-xs text-zinc-400">
+                <span class="text-xs text-text-subtle">
                   {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}
                 </span>
               {/if}

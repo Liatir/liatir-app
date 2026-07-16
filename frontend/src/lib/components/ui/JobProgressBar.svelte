@@ -16,11 +16,11 @@
 {#if progress && !progress.done}
   <div class="space-y-1.5">
     {#if displayLabel()}
-      <p class="text-xs text-zinc-600 truncate">{displayLabel()}</p>
+      <p class="text-xs text-text-secondary truncate">{displayLabel()}</p>
     {/if}
 
     <!-- Progress bar -->
-    <div class="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+    <div class="h-1.5 bg-surface-2 rounded-full overflow-hidden">
       {#if pct() !== null}
         <div
           class="h-full rounded-full transition-all duration-300 bg-brand"
@@ -33,7 +33,7 @@
     </div>
 
     <!-- Stats row -->
-    <div class="flex items-center justify-between text-[10px] text-zinc-400 font-mono">
+    <div class="flex items-center justify-between text-[10px] text-text-subtle font-mono">
       <span>
         {progress.current}
         {#if progress.total}

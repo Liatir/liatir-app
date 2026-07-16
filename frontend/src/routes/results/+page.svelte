@@ -164,13 +164,13 @@
 
     <!-- Count -->
     <div class="px-3 py-1.5 border-b border-border">
-      <span class="text-[10px] text-zinc-400">{filtered.length} run{filtered.length !== 1 ? 's' : ''}</span>
+      <span class="text-[10px] text-text-subtle">{filtered.length} run{filtered.length !== 1 ? 's' : ''}</span>
     </div>
 
     <!-- Run list -->
     <div class="flex-1 overflow-y-auto py-1">
       {#if filtered.length === 0}
-        <p class="text-xs text-zinc-400 text-center py-10 px-4 leading-relaxed">
+        <p class="text-xs text-text-subtle text-center py-10 px-4 leading-relaxed">
           No runs match the current filters.
         </p>
       {:else}
@@ -191,11 +191,11 @@
                   {run.status === 'done' ? 'bg-emerald-500' : run.status === 'cancelled' ? 'bg-amber-500' : 'bg-red-500'}">
                 </span>
                 <p class="text-xs font-medium truncate
-                  {selectedId === run.id ? 'text-brand' : 'text-zinc-700'}">
+                  {selectedId === run.id ? 'text-brand' : 'text-text-secondary'}">
                   {run.label}
                 </p>
               </div>
-              <p class="text-[10px] text-zinc-400 pl-3">
+              <p class="text-[10px] text-text-subtle pl-3">
                 {toolLabel(run.tool)} · {fmtDate(run.startedAt)} · {fmtDuration(run.startedAt, run.endedAt)}{run.outputSize != null ? ' · ' + fmtBytes(run.outputSize) : ''}
               </p>
             </button>
@@ -203,7 +203,7 @@
               onclick={() => deleteRun(run)}
               aria-label="Delete"
               class="opacity-0 group-hover:opacity-100 p-1.5 mt-2 mr-1.5 shrink-0
-                     text-zinc-400 hover:text-red-500 transition-all rounded"
+                     text-text-subtle hover:text-red-500 transition-all rounded"
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -226,37 +226,37 @@
       <div class="flex-1 overflow-y-auto p-6">
         {#if analysisRuns.runs.length === 0}
           <div class="flex flex-col items-center justify-center h-full text-center gap-3">
-            <div class="h-12 w-12 rounded-xl bg-zinc-100 flex items-center justify-center">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <div class="h-12 w-12 rounded-xl bg-surface-2 flex items-center justify-center">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-text-subtle)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
               </svg>
             </div>
-            <p class="text-sm font-medium text-zinc-700">No analyses yet</p>
-            <p class="text-xs text-zinc-400 max-w-xs">Run a tool to see results here.</p>
+            <p class="text-sm font-medium text-text-secondary">No analyses yet</p>
+            <p class="text-xs text-text-subtle max-w-xs">Run a tool to see results here.</p>
           </div>
 
         {:else if !selectedRun}
           <div class="flex flex-col items-center justify-center h-full text-center">
             <div class="flex items-center justify-center mb-2 gap-1">
-              <!-- <Icon icon="lucide:arrow-left" class="text-zinc-400/50 h-3 w-3"/> -->
-              <Icon icon="lucide:list" class="text-zinc-400/50 h-6 w-6"/>
+              <!-- <Icon icon="lucide:arrow-left" class="text-text-subtle/50 h-3 w-3"/> -->
+              <Icon icon="lucide:list" class="text-text-subtle/50 h-6 w-6"/>
             </div>
-            <p class="text-sm text-zinc-400">Select a run from the list to view results.</p>
+            <p class="text-sm text-text-subtle">Select a run from the list to view results.</p>
           </div>
 
         {:else if selectedRun.status === 'error' || selectedRun.status === 'cancelled'}
           <div>
             <div class="flex items-center justify-between mb-4">
               <div>
-                <p class="text-sm font-semibold text-zinc-800">{selectedRun.label}</p>
-                <p class="text-xs text-zinc-400 mt-0.5">
+                <p class="text-sm font-semibold text-text">{selectedRun.label}</p>
+                <p class="text-xs text-text-subtle mt-0.5">
                   {toolLabel(selectedRun.tool)} · {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}{selectedRun.outputSize != null ? ' · ' + fmtBytes(selectedRun.outputSize) : ''}
                 </p>
               </div>
               <button
                 onclick={() => openQuentaForRun(selectedRun, 'explain-failure')}
                 class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
-                      text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2 transition-colors"
+                      text-xs text-text-secondary hover:text-text hover:bg-surface-2 transition-colors"
                 data-testid="result-explain-failure"
               >
                 Explain failure
@@ -273,7 +273,7 @@
 
         {:else if loadingOutput}
           <div class="flex justify-center py-16">
-            <svg class="animate-spin h-5 w-5 text-zinc-400" viewBox="0 0 24 24" fill="none">
+            <svg class="animate-spin h-5 w-5 text-text-subtle" viewBox="0 0 24 24" fill="none">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
             </svg>
@@ -283,8 +283,8 @@
           <div>
             <div class="flex items-center justify-between mb-4">
               <div>
-                <p class="text-sm font-semibold text-zinc-800">{selectedRun.label}</p>
-                <p class="text-xs text-zinc-400 mt-0.5">
+                <p class="text-sm font-semibold text-text">{selectedRun.label}</p>
+                <p class="text-xs text-text-subtle mt-0.5">
                   {toolLabel(selectedRun.tool)} · {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}{selectedRun.outputSize != null ? ' · ' + fmtBytes(selectedRun.outputSize) : ''}
                 </p>
               </div>
@@ -292,7 +292,7 @@
                 <button
                   onclick={() => openQuentaForRun(selectedRun, 'explain-result')}
                   class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
-                        text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2 transition-colors"
+                        text-xs text-text-secondary hover:text-text hover:bg-surface-2 transition-colors"
                   data-testid="result-explain"
                 >
                   Explain result
@@ -300,7 +300,7 @@
                 <button
                   onclick={() => openQuentaForRun(selectedRun, 'report')}
                   class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
-                        text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2 transition-colors"
+                        text-xs text-text-secondary hover:text-text hover:bg-surface-2 transition-colors"
                   data-testid="result-report"
                 >
                   Generate report
@@ -310,7 +310,7 @@
                     onclick={exportRun}
                     disabled={exporting}
                     class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
-                          text-xs text-zinc-600 hover:text-zinc-800 hover:bg-surface-2
+                          text-xs text-text-secondary hover:text-text hover:bg-surface-2
                           disabled:opacity-50 disabled:cursor-default transition-colors"
                   >
                     {#if exporting}
@@ -332,7 +332,7 @@
             {#if loadedOutput}
               <ToolResultView output={loadedOutput} outputFiles={selectedRun.outputFiles ?? []} />
             {:else}
-              <div class="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-zinc-500">
+              <div class="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text-muted">
                 This Result has no structured preview. Quenta can still use its metadata, files, and logs.
               </div>
             {/if}

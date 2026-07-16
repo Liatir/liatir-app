@@ -43,8 +43,8 @@
     if (status === 'done') return state?.activeBranch === 'true' ? 'bg-emerald-500' : 'bg-amber-500';
     if (status === 'error')   return 'bg-red-500';
     if (status === 'running') return 'bg-brand animate-pulse';
-    if (status === 'skipped') return 'bg-zinc-200';
-    return 'bg-zinc-300';
+    if (status === 'skipped') return 'bg-surface-3';
+    return 'bg-border-2';
   }
 
   async function updateConditionData(patch: Partial<ConditionNodeData>) {
@@ -66,7 +66,7 @@
 <!-- Single input handle — wire upstream value nodes in, then pick the value to test below. -->
 <Handle type="target" position={Position.Left} id="input" />
 
-<div class="min-w-56 rounded-xl border border-border bg-white shadow-md overflow-visible">
+<div class="min-w-56 rounded-xl border border-border bg-surface shadow-md overflow-visible">
   <div class="flex items-center gap-2 px-3 py-2 rounded-t-xl border-b border-border bg-sky-50 cursor-grab active:cursor-grabbing">
     <span class="h-2 w-2 rounded-full shrink-0 {statusColor()}" title={statusLabel(status)}></span>
     <EditableNodeLabel
@@ -91,7 +91,7 @@
 
   <div class="px-3 py-2.5 nodrag nopan space-y-2">
     <div>
-      <span class="block text-[10px] text-zinc-400 mb-1">Value to test</span>
+      <span class="block text-[10px] text-text-subtle mb-1">Value to test</span>
       <ValueRefInput
         value={data.valueRef ?? ''}
         options={valueOptions}
@@ -103,19 +103,19 @@
       />
     </div>
     <div>
-      <span class="block text-[10px] text-zinc-400 mb-1">Condition</span>
+      <span class="block text-[10px] text-text-subtle mb-1">Condition</span>
       <Select
         value={operator}
         options={CONDITION_OPERATOR_OPTIONS}
         disabled={disabled}
         class="w-full"
-        buttonClass="bg-surface text-zinc-700"
+        buttonClass="bg-surface text-text-secondary"
         onchange={setOperator}
       />
     </div>
     {#if needsCompareValue}
       <div>
-        <span class="block text-[10px] text-zinc-400 mb-1">Compare with</span>
+        <span class="block text-[10px] text-text-subtle mb-1">Compare with</span>
         <input
           type={operator === 'greater-than' || operator === 'greater-or-equal' || operator === 'less-than' || operator === 'less-or-equal' ? 'number' : 'text'}
           value={data.compareValue ?? ''}
@@ -123,7 +123,7 @@
           {disabled}
           placeholder="Value"
           class="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-mono
-                 placeholder:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-sky-400/40
+                 placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-sky-400/40
                  disabled:opacity-50 disabled:cursor-not-allowed"
         />
       </div>

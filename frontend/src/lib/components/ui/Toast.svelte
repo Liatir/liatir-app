@@ -17,7 +17,7 @@
       {t.kind === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
         (t.kind === 'warn' ? 'bg-amber-50 border-amber-200 text-amber-800' :
         (t.kind === 'error'   ? 'bg-red-50 border-red-200 text-red-800' :
-                              'bg-white border-border text-zinc-700'))}"
+                              'bg-surface border-border text-text-secondary'))}"
       data-testid="toast-item"
     >
       <Icon

@@ -228,7 +228,7 @@
     'gff3':     'bg-teal-100 text-teal-700 border-teal-200',
     'bed':      'bg-rose-100 text-rose-700 border-rose-200',
   };
-  function extClass(ext: string) { return EXT_COLOR[ext] ?? 'bg-zinc-100 text-zinc-600 border-zinc-200'; }
+  function extClass(ext: string) { return EXT_COLOR[ext] ?? 'bg-surface-2 text-text-secondary border-border'; }
   function fmtDate(ms: number) { return new Date(ms).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }); }
   function fmtBytes(b: number): string {
     if (b < 1024) return `${b} B`;
@@ -297,7 +297,7 @@
       const mod = lineIdx % 4;
       if (mod === 0) return { text: line, cls: 'text-brand' };
       if (mod === 1) return { text: line, cls: 'text-emerald-700' };
-      if (mod === 2) return { text: line, cls: 'text-zinc-400' };
+      if (mod === 2) return { text: line, cls: 'text-text-subtle' };
       return { text: line, cls: 'text-amber-600' };
     }
     if (ext === 'fasta' || ext === 'fa' || ext === 'fna' || ext === 'faa') {
@@ -305,19 +305,19 @@
       return { text: line, cls: 'text-emerald-700' };
     }
     if (ext === 'vcf') {
-      if (line.startsWith('##')) return { text: line, cls: 'text-zinc-400' };
-      if (line.startsWith('#')) return { text: line, cls: 'text-zinc-600 font-medium' };
-      return { text: line, cls: 'text-zinc-800' };
+      if (line.startsWith('##')) return { text: line, cls: 'text-text-subtle' };
+      if (line.startsWith('#')) return { text: line, cls: 'text-text-secondary font-medium' };
+      return { text: line, cls: 'text-text' };
     }
     if (ext === 'sam') {
-      if (line.startsWith('@')) return { text: line, cls: 'text-zinc-500' };
-      return { text: line, cls: 'text-zinc-800' };
+      if (line.startsWith('@')) return { text: line, cls: 'text-text-muted' };
+      return { text: line, cls: 'text-text' };
     }
     if (ext === 'gtf' || ext === 'gff' || ext === 'gff3') {
-      if (line.startsWith('#')) return { text: line, cls: 'text-zinc-400' };
-      return { text: line, cls: 'text-zinc-800' };
+      if (line.startsWith('#')) return { text: line, cls: 'text-text-subtle' };
+      return { text: line, cls: 'text-text' };
     }
-    return { text: line, cls: 'text-zinc-800' };
+    return { text: line, cls: 'text-text' };
   }
 
   // ── actions ────────────────────────────────────────────────────
@@ -351,7 +351,7 @@
     <!-- Folder sidebar -->
     <div class="w-44 shrink-0 border-r border-border bg-surface flex flex-col">
       <div class="px-3 py-2 border-b border-border">
-        <span class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Folders</span>
+        <span class="text-[10px] font-semibold text-text-subtle uppercase tracking-wider">Folders</span>
       </div>
 
       <div class="flex-1 overflow-y-auto py-1">
@@ -361,14 +361,14 @@
           class="w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors
             {selectedFolder === null
               ? 'bg-brand/8 text-brand font-medium'
-              : 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-700'}"
+              : 'text-text-muted hover:bg-surface-2 hover:text-text-secondary'}"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
             <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
           </svg>
           <span class="flex-1 text-left">All files</span>
-          <span class="text-[10px] text-zinc-400">{dataFiles.files.length}</span>
+          <span class="text-[10px] text-text-subtle">{dataFiles.files.length}</span>
         </button>
 
         {#if flatFolders.length > 0}
@@ -386,7 +386,7 @@
                 onkeydown={confirmRename}
                 onblur={confirmRename}
                 class="w-full text-xs border border-brand/60 rounded px-2 py-1
-                       bg-surface text-zinc-800 placeholder:text-zinc-400 outline-none"
+                       bg-surface text-text placeholder:text-text-subtle outline-none"
               />
             </div>
           {:else}
@@ -399,7 +399,7 @@
                 }}
                 style="padding-left: {f.depth * 10 + 12}px"
                 class="flex-1 flex items-center gap-1.5 py-1.5 text-xs min-w-0
-                  {selectedFolder === f.path ? 'text-brand font-medium' : 'text-zinc-500 group-hover:text-zinc-700'}"
+                  {selectedFolder === f.path ? 'text-brand font-medium' : 'text-text-muted group-hover:text-text-secondary'}"
               >
                 {#if f.hasChildren}
                   <svg
@@ -418,16 +418,16 @@
                 <span class="flex-1 text-left truncate">{f.name}</span>
               </button>
               <!-- Count (recursive, hidden on hover for non-protected) -->
-              <span class="pr-3 text-[10px] text-zinc-400 {isProtected ? '' : 'group-hover:hidden'}">{countInFolder(f.path)}</span>
+              <span class="pr-3 text-[10px] text-text-subtle {isProtected ? '' : 'group-hover:hidden'}">{countInFolder(f.path)}</span>
               {#if !isProtected}
                 <div class="pr-1.5 hidden group-hover:flex items-center">
-                  <button onclick={(e) => { e.stopPropagation(); startRename(f.path); }} title="Rename" class="p-1 text-zinc-400 hover:text-zinc-700 transition-colors rounded">
+                  <button onclick={(e) => { e.stopPropagation(); startRename(f.path); }} title="Rename" class="p-1 text-text-subtle hover:text-text-secondary transition-colors rounded">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
                   </button>
-                  <button onclick={(e) => { e.stopPropagation(); deleteFolder(f.path); }} title="Delete" class="p-1 text-zinc-400 hover:text-red-500 transition-colors rounded">
+                  <button onclick={(e) => { e.stopPropagation(); deleteFolder(f.path); }} title="Delete" class="p-1 text-text-subtle hover:text-red-500 transition-colors rounded">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <polyline points="3 6 5 6 21 6" />
                       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
@@ -438,7 +438,7 @@
                 </div>
               {:else}
                 <div class="pr-2.5">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-text-subtle)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                     <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                   </svg>
@@ -458,7 +458,7 @@
               onkeydown={confirmNewFolder}
               onblur={confirmNewFolder}
               class="w-full text-xs border border-brand/60 rounded px-2 py-1.5
-                     bg-surface text-zinc-800 placeholder:text-zinc-400 outline-none"
+                     bg-surface text-text placeholder:text-text-subtle outline-none"
             />
           </div>
         {/if}
@@ -468,8 +468,8 @@
       {#if !showNewFolderInput && !isSelectedProtected()}
         <button
           onclick={startNewFolder}
-          class="flex items-center gap-1.5 px-3 py-2.5 text-[11px] text-zinc-400
-                 hover:text-zinc-600 transition-colors border-t border-border"
+          class="flex items-center gap-1.5 px-3 py-2.5 text-[11px] text-text-subtle
+                 hover:text-text-secondary transition-colors border-t border-border"
         >
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -487,14 +487,14 @@
       {#if dataFiles.files.length === 0}
         <!-- Global empty state -->
         <div class="flex flex-col items-center justify-center h-full text-center gap-3">
-          <div class="h-12 w-12 rounded-xl bg-zinc-100 flex items-center justify-center">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <div class="h-12 w-12 rounded-xl bg-surface-2 flex items-center justify-center">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-text-subtle)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
               <polyline points="13 2 13 9 20 9" />
             </svg>
           </div>
-          <p class="text-sm font-medium text-zinc-700">No files yet</p>
-          <p class="text-xs text-zinc-400 max-w-xs">
+          <p class="text-sm font-medium text-text-secondary">No files yet</p>
+          <p class="text-xs text-text-subtle max-w-xs">
             Import files to make them available to tools like FastQC.
             Files are referenced by path — they stay where they are on disk.
           </p>
@@ -506,12 +506,12 @@
       {:else if selectedFolder !== null && visibleFiles.length === 0 && selectedSubfolders.length === 0}
         <!-- Folder empty state -->
         <div class="flex flex-col items-center justify-center h-64 text-center gap-3">
-          <div class="h-10 w-10 rounded-xl bg-zinc-100 flex items-center justify-center">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <div class="h-10 w-10 rounded-xl bg-surface-2 flex items-center justify-center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-text-subtle)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
             </svg>
           </div>
-          <p class="text-sm text-zinc-500">No files in this folder</p>
+          <p class="text-sm text-text-muted">No files in this folder</p>
           <Button variant="secondary" size="sm" onclick={importFiles} loading={importing}>Import file here</Button>
         </div>
 
@@ -522,13 +522,13 @@
             {#each selectedSubfolders as sub (sub.path)}
               <button
                 onclick={() => selectedFolder = sub.path}
-                class="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-surface hover:bg-surface-2 hover:border-zinc-300 transition-colors text-xs text-zinc-600"
+                class="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-surface hover:bg-surface-2 hover:border-border-2 transition-colors text-xs text-text-secondary"
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-zinc-400">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-text-subtle">
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                 </svg>
                 <span>{sub.name}</span>
-                <span class="text-[10px] text-zinc-400 font-mono">{countInFolder(sub.path)}</span>
+                <span class="text-[10px] text-text-subtle font-mono">{countInFolder(sub.path)}</span>
               </button>
             {/each}
           </div>
@@ -537,16 +537,16 @@
         <!-- Search bar -->
         {#if visibleFiles.length > 0 || query}
         <div class="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 mb-4">
-          <svg class="shrink-0 text-zinc-400" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="shrink-0 text-text-subtle" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input
             bind:value={query}
             placeholder="Search files…"
-            class="flex-1 text-sm bg-transparent outline-none text-zinc-800 placeholder:text-zinc-400"
+            class="flex-1 text-sm bg-transparent outline-none text-text placeholder:text-text-subtle"
           />
           {#if query}
-            <button onclick={() => query = ''} class="text-zinc-300 hover:text-zinc-500 transition-colors" aria-label="Clear file search">
+            <button onclick={() => query = ''} class="text-text-faint hover:text-text-muted transition-colors" aria-label="Clear file search">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
@@ -556,7 +556,7 @@
         {/if}
 
         {#if filteredFiles.length === 0 && query}
-          <p class="text-sm text-zinc-400 text-center py-8">No files match "{query}"</p>
+          <p class="text-sm text-text-subtle text-center py-8">No files match "{query}"</p>
         {:else if filteredFiles.length > 0}
         <Card>
           <div class="divide-y divide-border">
@@ -564,7 +564,7 @@
               <div
                 class="flex items-center gap-3 px-4 py-3 group cursor-pointer transition-colors
                   {file.missing ? 'bg-amber-50/60' : ''}
-                  {previewFileId === file.id ? 'bg-brand/5 ring-inset ring-1 ring-brand/20' : 'hover:bg-zinc-50/80'}"
+                  {previewFileId === file.id ? 'bg-brand/5 ring-inset ring-1 ring-brand/20' : 'hover:bg-surface-2/80'}"
                 onclick={() => !file.missing && openPreview(file)}
                 role="button"
                 tabindex="0"
@@ -578,9 +578,9 @@
                       if (ok) dataFiles.remove(file.id);
                     }}
                     aria-label="Remove"
-                    class="h-8 w-8 rounded-lg bg-zinc-100 border-zinc-200 border flex items-center justify-center shrink-0 group-hover:bg-red-50 group-hover:border-red-200 transition-colors"
+                    class="h-8 w-8 rounded-lg bg-surface-2 border-border border flex items-center justify-center shrink-0 group-hover:bg-red-50 group-hover:border-red-200 transition-colors"
                   >
-                    <svg class="group-hover:hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <svg class="group-hover:hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-text-muted)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
                       <polyline points="13 2 13 9 20 9" />
                     </svg>
@@ -607,8 +607,8 @@
                     </svg>
                   </button>
                 {:else}
-                  <div class="h-8 w-8 rounded-lg bg-zinc-100 border-zinc-200 border flex items-center justify-center shrink-0">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <div class="h-8 w-8 rounded-lg bg-surface-2 border-border border flex items-center justify-center shrink-0">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-text-muted)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
                       <polyline points="13 2 13 9 20 9" />
                     </svg>
@@ -616,7 +616,7 @@
                 {/if}
 
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium {file.missing ? 'text-amber-700' : 'text-zinc-800'} truncate">{file.name}</p>
+                  <p class="text-sm font-medium {file.missing ? 'text-amber-700' : 'text-text'} truncate">{file.name}</p>
                 </div>
 
                 {#if file.missing}
@@ -631,7 +631,7 @@
                   </button>
                 {:else}
                   {#if file.size != null}
-                    <span class="shrink-0 text-[11px] text-zinc-400 font-mono">{fmtBytes(file.size)}</span>
+                    <span class="shrink-0 text-[11px] text-text-subtle font-mono">{fmtBytes(file.size)}</span>
                   {/if}
 
                   <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium border {extClass(file.ext)}">
@@ -651,7 +651,7 @@
                       <button
                         onclick={(e) => { e.stopPropagation(); openFolderPicker(file.id, e.currentTarget); }}
                         class="flex items-center gap-1 text-[10px] border border-border rounded px-1.5 py-1 bg-surface
-                               text-zinc-500 hover:border-zinc-400 transition-colors w-full min-w-0"
+                               text-text-muted hover:border-zinc-400 transition-colors w-full min-w-0"
                       >
                         <span class="truncate flex-1 text-left">{file.folder || 'No folder'}</span>
                         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
@@ -686,13 +686,13 @@
         style="top:{pickerPos.top}px; left:{pickerPos.left}px; width:{pickerPos.width}px;"
       >
         <div class="flex items-center gap-2 border border-border rounded-lg px-2 py-1.5">
-          <svg class="shrink-0 text-zinc-400" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="shrink-0 text-text-subtle" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input
             bind:value={pickerQuery}
             placeholder="Search folders…"
-            class="flex-1 text-xs bg-transparent outline-none text-zinc-800 placeholder:text-zinc-400"
+            class="flex-1 text-xs bg-transparent outline-none text-text placeholder:text-text-subtle"
             onclick={(e) => e.stopPropagation()}
           />
         </div>
@@ -703,13 +703,13 @@
               class="text-[11px] rounded-md px-2 py-1 border transition-colors
                 {currentFile?.folder === opt.value
                   ? 'bg-brand/10 border-brand/30 text-brand font-medium'
-                  : 'bg-zinc-50 border-border text-zinc-600 hover:bg-zinc-100 hover:border-zinc-300'}"
+                  : 'bg-surface-2 border-border text-text-secondary hover:bg-surface-2 hover:border-border-2'}"
             >
               {opt.label}
             </button>
           {/each}
           {#if pickerOptions.length === 0}
-            <p class="text-xs text-zinc-400 py-1">No folders found</p>
+            <p class="text-xs text-text-subtle py-1">No folders found</p>
           {/if}
         </div>
       </div>
@@ -725,12 +725,12 @@
               <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
               <polyline points="13 2 13 9 20 9" />
             </svg>
-            <span class="text-xs font-medium text-zinc-700 truncate">{previewFile.name}</span>
+            <span class="text-xs font-medium text-text-secondary truncate">{previewFile.name}</span>
           </div>
           <button
             onclick={() => previewFileId = null}
             aria-label="Close preview"
-            class="shrink-0 text-zinc-400 hover:text-zinc-600 transition-colors p-0.5"
+            class="shrink-0 text-text-subtle hover:text-text-secondary transition-colors p-0.5"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -741,14 +741,14 @@
         <!-- Meta info -->
         <div class="px-3 py-2 border-b border-border space-y-1">
           <div class="flex items-center justify-between">
-            <span class="text-[10px] text-zinc-400 uppercase tracking-wider">Size</span>
-            <span class="text-xs text-zinc-600 font-mono">{previewFile.size != null ? fmtBytes(previewFile.size) : '—'}</span>
+            <span class="text-[10px] text-text-subtle uppercase tracking-wider">Size</span>
+            <span class="text-xs text-text-secondary font-mono">{previewFile.size != null ? fmtBytes(previewFile.size) : '—'}</span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-[10px] text-zinc-400 uppercase tracking-wider">Format</span>
+            <span class="text-[10px] text-text-subtle uppercase tracking-wider">Format</span>
             <span class="text-[10px] font-medium px-1.5 py-0.5 rounded border {extClass(previewFile.ext)}">{previewFile.ext || '?'}</span>
           </div>
-          <p class="text-[10px] text-zinc-400 break-all pt-0.5" title={getLastSegmentsStringFromPath(previewFile.path, 3)}>
+          <p class="text-[10px] text-text-subtle break-all pt-0.5" title={getLastSegmentsStringFromPath(previewFile.path, 3)}>
             {getLastSegmentsStringFromPath(previewFile.path, 3)}
           </p>
         </div>
@@ -757,16 +757,16 @@
         <div class="flex-1 overflow-y-auto p-3">
           {#if isBinary(previewFile.ext)}
             <div class="flex flex-col items-center justify-center h-32 gap-2 text-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-text-subtle)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01" />
               </svg>
-              <p class="text-xs text-zinc-400">Binary format</p>
-              <p class="text-[10px] text-zinc-300">Use a tool to inspect this file</p>
+              <p class="text-xs text-text-subtle">Binary format</p>
+              <p class="text-[10px] text-text-faint">Use a tool to inspect this file</p>
             </div>
 
           {:else if previewLoading}
             <div class="flex justify-center py-8">
-              <svg class="animate-spin h-4 w-4 text-zinc-400" viewBox="0 0 24 24" fill="none">
+              <svg class="animate-spin h-4 w-4 text-text-subtle" viewBox="0 0 24 24" fill="none">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
               </svg>
@@ -777,10 +777,10 @@
 
           {:else if previewContent}
             <pre class="text-[10px] font-mono leading-relaxed">{#each previewContent.split('\n') as line, i}{@const hl = highlightLine(line, previewFile.ext, i)}<span class={hl.cls}>{hl.text}</span>{'\n'}{/each}</pre>
-            <p class="text-[10px] text-zinc-300 mt-2 text-right">preview — first {PREVIEW_LINES[previewFile.ext] ?? 50} lines</p>
+            <p class="text-[10px] text-text-faint mt-2 text-right">preview — first {PREVIEW_LINES[previewFile.ext] ?? 50} lines</p>
 
           {:else}
-            <p class="text-xs text-zinc-400 text-center py-8">No content</p>
+            <p class="text-xs text-text-subtle text-center py-8">No content</p>
           {/if}
         </div>
       </div>

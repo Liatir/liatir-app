@@ -565,15 +565,15 @@
 <div class="flex h-full overflow-hidden">
 	<div class="w-56 shrink-0 border-r border-border flex flex-col">
 		<div class="flex items-end justify-between px-3 py-3 border-b border-border bg-surface" style="height: {HEADER_HEIGHT}px;">
-			<span class="text-sm font-medium text-zinc-600">Run history</span>
+			<span class="text-sm font-medium text-text-secondary">Run history</span>
 			{#if modelRuns.length > 0}
-				<span class="text-xs text-zinc-400">{modelRuns.length}</span>
+				<span class="text-xs text-text-subtle">{modelRuns.length}</span>
 			{/if}
 		</div>
 
 		<div class="flex-1 overflow-y-auto py-1 bg-surface">
 			{#if modelRuns.length === 0}
-				<p class="text-xs text-zinc-400 text-center py-8 px-3 leading-relaxed">
+				<p class="text-xs text-text-subtle text-center py-8 px-3 leading-relaxed">
 					No runs yet.<br />Results will appear here.
 				</p>
 			{:else}
@@ -596,12 +596,12 @@
 								<p
 									class="text-xs font-medium truncate {selectedRunId === run.id
 										? 'text-brand'
-										: 'text-zinc-700'}"
+										: 'text-text-secondary'}"
 								>
 									{run.label}
 								</p>
 							</div>
-							<p class="text-[10px] text-zinc-400 pl-3">
+							<p class="text-[10px] text-text-subtle pl-3">
 								{fmtDate(run.startedAt)} · {fmtDuration(run.startedAt, run.endedAt)}
 							</p>
 						</button>
@@ -609,7 +609,7 @@
 							onclick={() => deleteRun(run)}
 							disabled={running}
 							aria-label="Delete run"
-							class="opacity-0 group-hover:opacity-100 p-1.5 mt-2 mr-1.5 shrink-0 text-zinc-400 hover:text-red-500 transition-all rounded disabled:pointer-events-none disabled:opacity-20"
+							class="opacity-0 group-hover:opacity-100 p-1.5 mt-2 mr-1.5 shrink-0 text-text-subtle hover:text-red-500 transition-all rounded disabled:pointer-events-none disabled:opacity-20"
 						>
 							<Icon icon="lucide:x" width="11" height="11" />
 						</button>
@@ -648,32 +648,32 @@
 		<div class="flex-1 overflow-y-auto p-6 space-y-5">
 			{#if !model}
 				<Card class="p-5">
-					<p class="text-sm font-semibold text-zinc-800">AI Model not found</p>
-					<p class="mt-1 text-xs text-zinc-500">Open AI Models and select an available model.</p>
+					<p class="text-sm font-semibold text-text">AI Model not found</p>
+					<p class="mt-1 text-xs text-text-muted">Open AI Models and select an available model.</p>
 				</Card>
 			{:else if model.releaseStage === 'preview'}
 				<Card class="p-5">
-					<p class="text-sm font-semibold text-zinc-800">Preview model</p>
-					<p class="mt-1 text-xs text-zinc-500">
+					<p class="text-sm font-semibold text-text">Preview model</p>
+					<p class="mt-1 text-xs text-text-muted">
 						This AI Model is documented in the roadmap, but Liatir does not expose install or direct run controls until its managed runtime, model assets, and scientific runner are validated.
 					</p>
 				</Card>
 			{:else if model.status !== 'installed'}
 				<Card class="p-5">
 					{#if installBlock}
-						<p class="text-sm font-semibold text-zinc-800">Incompatible host</p>
+						<p class="text-sm font-semibold text-text">Incompatible host</p>
 						<p class="mt-1 text-xs leading-relaxed text-amber-700">{installBlock.reason}</p>
 					{:else}
-						<p class="text-sm font-semibold text-zinc-800">Install required</p>
-						<p class="mt-1 text-xs text-zinc-500">
+						<p class="text-sm font-semibold text-text">Install required</p>
+						<p class="mt-1 text-xs text-text-muted">
 							Install this AI Model before running it directly.
 						</p>
 					{/if}
 				</Card>
 			{:else if mode === 'unsupported'}
 				<Card class="p-5">
-					<p class="text-sm font-semibold text-zinc-800">No direct runner available</p>
-					<p class="mt-1 text-xs text-zinc-500">
+					<p class="text-sm font-semibold text-text">No direct runner available</p>
+					<p class="mt-1 text-xs text-text-muted">
 						This AI Model can be used by compatible AI Tools once a direct runner is implemented.
 					</p>
 				</Card>
@@ -681,10 +681,10 @@
 				<Card class="p-5 space-y-4">
 					<div>
 						<div class="flex items-center gap-1">
-							<p class="text-sm font-semibold text-zinc-800">Input</p>
+							<p class="text-sm font-semibold text-text">Input</p>
 							<InfoPopup text={AI_MODEL_INPUT_HELP.runInput} />
 						</div>
-						<p class="mt-1 text-xs text-zinc-500">
+						<p class="mt-1 text-xs text-text-muted">
 							{model.runtime.name} · {model.modalities.join(', ')}
 						</p>
 					</div>
@@ -712,10 +712,10 @@
 										type="text"
 										bind:value={celltypistModel}
 										disabled={formDisabled}
-										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text outline-none focus:border-brand transition-colors"
 									/>
 								</div>
-								<label class="flex items-end gap-2 text-xs text-zinc-600 pb-2">
+								<label class="flex items-end gap-2 text-xs text-text-secondary pb-2">
 									<input type="checkbox" bind:checked={majorityVoting} disabled={formDisabled} />
 									<span>Majority voting</span>
 									<InfoPopup text={AI_MODEL_INPUT_HELP.majorityVoting} />
@@ -763,7 +763,7 @@
 										max={singleCellBatchSizeMax}
 										bind:value={uceBatchSize}
 										disabled={formDisabled}
-										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text outline-none focus:border-brand transition-colors"
 									/>
 								</div>
 								<div>
@@ -779,7 +779,7 @@
 										max="5000"
 										bind:value={uceMaxCsvRows}
 										disabled={formDisabled}
-										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text outline-none focus:border-brand transition-colors"
 									/>
 								</div>
 							</div>
@@ -813,7 +813,7 @@
 										step="16"
 										bind:value={maxLength}
 										disabled={formDisabled}
-										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text outline-none focus:border-brand transition-colors"
 									/>
 								</div>
 							</div>
@@ -838,7 +838,7 @@
 									rows="5"
 									disabled={formDisabled}
 									placeholder="Paste a DNA, RNA, or protein sequence..."
-									class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-brand transition-colors font-mono"
+									class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-subtle outline-none focus:border-brand transition-colors font-mono"
 								></textarea>
 								{#if fileOverridesInlineSequence}
 									<p class="mt-1 text-xs text-amber-600">
@@ -868,7 +868,7 @@
 									rows="5"
 									disabled={formDisabled}
 									placeholder="Paste a DNA sequence..."
-									class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-brand transition-colors font-mono"
+									class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-subtle outline-none focus:border-brand transition-colors font-mono"
 								></textarea>
 								{#if fileOverridesInlineSequence}
 									<p class="mt-1 text-xs text-amber-600">
@@ -912,7 +912,7 @@
 										min="0"
 										bind:value={regulatoryTargetIndex}
 										disabled={formDisabled}
-										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text outline-none focus:border-brand transition-colors"
 									/>
 								</div>
 								<div>
@@ -927,7 +927,7 @@
 										min="1"
 										bind:value={regulatoryWindowStart}
 										disabled={formDisabled}
-										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text outline-none focus:border-brand transition-colors"
 									/>
 								</div>
 								<div>
@@ -943,7 +943,7 @@
 										max="1000"
 										bind:value={regulatoryMaxVariants}
 										disabled={formDisabled}
-										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text outline-none focus:border-brand transition-colors"
 									/>
 								</div>
 							</div>
@@ -969,7 +969,7 @@
 									rows="5"
 									disabled={formDisabled}
 									placeholder="Paste a protein sequence..."
-									class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-brand transition-colors font-mono"
+									class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-subtle outline-none focus:border-brand transition-colors font-mono"
 								></textarea>
 								{#if fileOverridesInlineSequence}
 									<p class="mt-1 text-xs text-amber-600">
@@ -989,7 +989,7 @@
 										type="text"
 										bind:value={ligandSmiles}
 										disabled={formDisabled}
-										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors font-mono"
+										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text outline-none focus:border-brand transition-colors font-mono"
 									/>
 								</div>
 								<div>
@@ -1003,7 +1003,7 @@
 										type="text"
 										bind:value={ligandCcd}
 										disabled={formDisabled}
-										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors font-mono"
+										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text outline-none focus:border-brand transition-colors font-mono"
 									/>
 								</div>
 							</div>
@@ -1049,7 +1049,7 @@
 										max="20"
 										bind:value={recyclingSteps}
 										disabled={formDisabled}
-										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text outline-none focus:border-brand transition-colors"
 									/>
 								</div>
 								<div>
@@ -1065,27 +1065,27 @@
 										max="25"
 										bind:value={diffusionSamples}
 										disabled={formDisabled}
-										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+										class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text outline-none focus:border-brand transition-colors"
 									/>
 								</div>
 							</div>
 							<div class="flex flex-wrap gap-4">
-								<label class="flex items-center gap-2 text-xs text-zinc-600">
+								<label class="flex items-center gap-2 text-xs text-text-secondary">
 									<input type="checkbox" bind:checked={useMsaServer} disabled={formDisabled} />
 									<span>Use MSA server</span>
 									<InfoPopup text={AI_MODEL_INPUT_HELP.useMsaServer} />
 								</label>
-								<label class="flex items-center gap-2 text-xs text-zinc-600">
+								<label class="flex items-center gap-2 text-xs text-text-secondary">
 									<input type="checkbox" bind:checked={predictAffinity} disabled={formDisabled} />
 									<span>Predict affinity</span>
 									<InfoPopup text={AI_MODEL_INPUT_HELP.predictAffinity} />
 								</label>
-								<label class="flex items-center gap-2 text-xs text-zinc-600">
+								<label class="flex items-center gap-2 text-xs text-text-secondary">
 									<input type="checkbox" bind:checked={usePotentials} disabled={formDisabled} />
 									<span>Use potentials</span>
 									<InfoPopup text={AI_MODEL_INPUT_HELP.usePotentials} />
 								</label>
-								<label class="flex items-center gap-2 text-xs text-zinc-600">
+								<label class="flex items-center gap-2 text-xs text-text-secondary">
 									<input type="checkbox" bind:checked={noKernels} disabled={formDisabled} />
 									<span>Disable CUDA kernels</span>
 									<InfoPopup text={AI_MODEL_INPUT_HELP.noKernels} />
@@ -1099,7 +1099,7 @@
 									bind:value={prompt}
 									rows="3"
 									disabled={formDisabled}
-									class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+									class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text outline-none focus:border-brand transition-colors"
 								></textarea>
 							</div>
 							<div>
@@ -1113,7 +1113,7 @@
 									bind:value={context}
 									rows="4"
 									disabled={formDisabled}
-									class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand transition-colors"
+									class="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text outline-none focus:border-brand transition-colors"
 								></textarea>
 							</div>
 						{/if}
@@ -1124,7 +1124,7 @@
 							Run
 						</Button>
 						{#if modelRunActive && runStartedAt}
-							<span class="text-xs text-zinc-400">Elapsed: {fmtDuration(runStartedAt, now)}</span>
+							<span class="text-xs text-text-subtle">Elapsed: {fmtDuration(runStartedAt, now)}</span>
 						{/if}
 						{#if activeModelJob && !running}
 							<Button variant="ghost" size="sm" onclick={() => goto('/jobs')}>
@@ -1138,11 +1138,11 @@
 
 			{#if running && logLines.length > 0}
 				<Card class="p-4">
-					<p class="mb-2 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+					<p class="mb-2 text-[10px] font-semibold text-text-subtle uppercase tracking-wider">
 						Current run log
 					</p>
 					<pre
-						class="max-h-48 overflow-auto whitespace-pre-wrap text-xs text-zinc-600 font-mono">{sanitizeLocalPathsForDisplay(logLines.join(
+						class="max-h-48 overflow-auto whitespace-pre-wrap text-xs text-text-secondary font-mono">{sanitizeLocalPathsForDisplay(logLines.join(
 							'\n'
 						), 2)}</pre>
 				</Card>
@@ -1150,10 +1150,10 @@
 				<Card class="p-4">
 					<div class="flex items-center justify-between gap-3">
 						<div>
-							<p class="mb-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+							<p class="mb-1 text-[10px] font-semibold text-text-subtle uppercase tracking-wider">
 								Active AI Model job
 							</p>
-							<p class="text-xs text-zinc-600">
+							<p class="text-xs text-text-secondary">
 								This model is still running in Jobs. Inputs are locked until the job exits.
 							</p>
 						</div>
@@ -1172,17 +1172,17 @@
 				<RunLog runId={selectedRunId} />
 			{:else if loadingOutput}
 				<div class="flex justify-center py-12">
-					<Icon icon="svg-spinners:ring-resize" width="22" height="22" class="text-zinc-400" />
+					<Icon icon="svg-spinners:ring-resize" width="22" height="22" class="text-text-subtle" />
 				</div>
 			{:else if loadedOutput}
 				<div>
-					<p class="mb-2 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+					<p class="mb-2 text-[10px] font-semibold text-text-subtle uppercase tracking-wider">
 						Last run result
 					</p>
 					<div class="flex items-center justify-between mb-3">
-						<h2 class="text-xs font-medium text-zinc-700">{selectedRun?.label ?? 'Results'}</h2>
+						<h2 class="text-xs font-medium text-text-secondary">{selectedRun?.label ?? 'Results'}</h2>
 						{#if selectedRun}
-							<span class="text-xs text-zinc-400">
+							<span class="text-xs text-text-subtle">
 								{fmtDate(selectedRun.startedAt)} · {fmtDuration(
 									selectedRun.startedAt,
 									selectedRun.endedAt

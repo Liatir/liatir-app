@@ -158,7 +158,7 @@
     <!-- Folder sidebar -->
     <div class="w-44 shrink-0 border-r border-border bg-surface flex flex-col">
       <div class="px-3 py-2 border-b border-border">
-        <span class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Folders</span>
+        <span class="text-[10px] font-semibold text-text-subtle uppercase tracking-wider">Folders</span>
       </div>
 
       <div class="flex-1 overflow-y-auto py-1">
@@ -168,14 +168,14 @@
           class="w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors
             {selectedFolder === null
               ? 'bg-brand/8 text-brand font-medium'
-              : 'text-zinc-500 hover:bg-surface-2 hover:text-zinc-700'}"
+              : 'text-text-muted hover:bg-surface-2 hover:text-text-secondary'}"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
             <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
           </svg>
           <span class="flex-1 text-left">All scripts</span>
-          <span class="text-[10px] text-zinc-400">{savedScripts.scripts.length}</span>
+          <span class="text-[10px] text-text-subtle">{savedScripts.scripts.length}</span>
         </button>
 
         {#if flatFolders.length > 0}
@@ -193,7 +193,7 @@
                 onkeydown={confirmRename}
                 onblur={confirmRename}
                 class="w-full text-xs border border-brand/60 rounded px-2 py-1
-                       bg-surface text-zinc-800 placeholder:text-zinc-400 outline-none"
+                       bg-surface text-text placeholder:text-text-subtle outline-none"
               />
             </div>
           {:else}
@@ -207,7 +207,7 @@
                 class="flex-1 flex items-center gap-2 py-1.5 text-xs min-w-0
                   {selectedFolder === f.path
                     ? 'text-brand font-medium'
-                    : 'text-zinc-500 group-hover:text-zinc-700'}"
+                    : 'text-text-muted group-hover:text-text-secondary'}"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
@@ -215,13 +215,13 @@
                 <span class="flex-1 text-left truncate">{f.name}</span>
               </button>
               <!-- Count: hidden on hover -->
-              <span class="pr-3 text-[10px] text-zinc-400 group-hover:hidden">{savedScripts.byFolder(f.path).length}</span>
+              <span class="pr-3 text-[10px] text-text-subtle group-hover:hidden">{savedScripts.byFolder(f.path).length}</span>
               <!-- Actions: shown on hover -->
               <div class="pr-1.5 hidden group-hover:flex items-center gap-0">
                 <button
                   onclick={() => startRename(f.path)}
                   title="Rename"
-                  class="p-1 text-zinc-400 hover:text-zinc-700 transition-colors rounded"
+                  class="p-1 text-text-subtle hover:text-text-secondary transition-colors rounded"
                 >
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -231,7 +231,7 @@
                 <button
                   onclick={() => deleteFolder(f.path)}
                   title="Delete"
-                  class="p-1 text-zinc-400 hover:text-red-500 transition-colors rounded"
+                  class="p-1 text-text-subtle hover:text-red-500 transition-colors rounded"
                 >
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="3 6 5 6 21 6" />
@@ -255,7 +255,7 @@
               onkeydown={confirmNewFolder}
               onblur={confirmNewFolder}
               class="w-full text-xs border border-brand/60 rounded px-2 py-1.5
-                     bg-surface text-zinc-800 placeholder:text-zinc-400 outline-none"
+                     bg-surface text-text placeholder:text-text-subtle outline-none"
             />
           </div>
         {/if}
@@ -265,8 +265,8 @@
       {#if !showNewFolderInput}
         <button
           onclick={startNewFolder}
-          class="flex items-center gap-1.5 px-3 py-2.5 text-[11px] text-zinc-400
-                 hover:text-zinc-600 transition-colors border-t border-border"
+          class="flex items-center gap-1.5 px-3 py-2.5 text-[11px] text-text-subtle
+                 hover:text-text-secondary transition-colors border-t border-border"
         >
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -282,13 +282,13 @@
       {#if savedScripts.scripts.length === 0}
         <!-- Global empty state -->
         <div class="flex flex-col items-center justify-center h-full text-center gap-3">
-          <div class="h-12 w-12 rounded-xl bg-zinc-100 flex items-center justify-center">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <div class="h-12 w-12 rounded-xl bg-surface-2 flex items-center justify-center">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-text-subtle)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
             </svg>
           </div>
-          <p class="text-sm font-medium text-zinc-700">No saved scripts</p>
-          <p class="text-xs text-zinc-400 max-w-xs">
+          <p class="text-sm font-medium text-text-secondary">No saved scripts</p>
+          <p class="text-xs text-text-subtle max-w-xs">
             Write a script in the Code editor and save it to find it here.
           </p>
           <Button variant="secondary" size="sm" onclick={newScript}>Open editor</Button>
@@ -297,27 +297,27 @@
       {:else if visibleScripts.length === 0}
         <!-- Folder empty state -->
         <div class="flex flex-col items-center justify-center h-64 text-center gap-3">
-          <div class="h-10 w-10 rounded-xl bg-zinc-100 flex items-center justify-center">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <div class="h-10 w-10 rounded-xl bg-surface-2 flex items-center justify-center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-text-subtle)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
             </svg>
           </div>
-          <p class="text-sm text-zinc-500">No scripts in this folder</p>
+          <p class="text-sm text-text-muted">No scripts in this folder</p>
         </div>
 
       {:else}
         <!-- Search bar -->
         <div class="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 mb-4">
-          <svg class="shrink-0 text-zinc-400" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="shrink-0 text-text-subtle" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input
             bind:value={query}
             placeholder="Search scripts…"
-            class="flex-1 text-sm bg-transparent outline-none text-zinc-800 placeholder:text-zinc-400"
+            class="flex-1 text-sm bg-transparent outline-none text-text placeholder:text-text-subtle"
           />
           {#if query}
-            <button onclick={() => query = ''} class="text-zinc-300 hover:text-zinc-500 transition-colors" aria-label="Clear script search">
+            <button onclick={() => query = ''} class="text-text-faint hover:text-text-muted transition-colors" aria-label="Clear script search">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
@@ -326,21 +326,21 @@
         </div>
 
         {#if filteredScripts.length === 0}
-          <p class="text-sm text-zinc-400 text-center py-8">No scripts match "{query}"</p>
+          <p class="text-sm text-text-subtle text-center py-8">No scripts match "{query}"</p>
         {:else}
         <Card>
           <div class="divide-y divide-border">
             {#each filteredScripts as script (script.id)}
               <div class="flex items-center gap-3 px-4 py-3 group">
-                <div class="h-8 w-8 rounded-lg bg-zinc-100 border border-zinc-200 flex items-center justify-center shrink-0">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <div class="h-8 w-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center shrink-0">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-text-muted)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
                   </svg>
                 </div>
 
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium text-zinc-800 truncate">{script.name}</p>
-                  <p class="text-xs text-zinc-400">{fmtDate(script.savedAt)}{script.code ? ' · ' + fmtBytes(new TextEncoder().encode(script.code).length) : ''}</p>
+                  <p class="text-sm font-medium text-text truncate">{script.name}</p>
+                  <p class="text-xs text-text-subtle">{fmtDate(script.savedAt)}{script.code ? ' · ' + fmtBytes(new TextEncoder().encode(script.code).length) : ''}</p>
                 </div>
 
                 <Select
@@ -352,7 +352,7 @@
                 <button
                   onclick={() => openScript(script)}
                   class="shrink-0 flex items-center gap-1.5 rounded-lg border border-border
-                         bg-surface px-2.5 py-1.5 text-xs font-medium text-zinc-600
+                         bg-surface px-2.5 py-1.5 text-xs font-medium text-text-secondary
                          hover:border-brand hover:text-brand transition-colors"
                 >
                   Open
@@ -366,8 +366,8 @@
                   onclick={() => savedScripts.exportScript(script.id)}
                   title="Export as .ts file"
                   class="shrink-0 flex items-center gap-1.5 rounded-lg border border-border
-                         bg-surface px-2.5 py-1.5 text-xs font-medium text-zinc-600
-                         hover:border-zinc-400 hover:text-zinc-800 transition-colors"
+                         bg-surface px-2.5 py-1.5 text-xs font-medium text-text-secondary
+                         hover:border-zinc-400 hover:text-text transition-colors"
                 >
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -382,7 +382,7 @@
                     if (ok) savedScripts.remove(script.id);
                   }}
                   aria-label="Delete"
-                  class="shrink-0 text-zinc-300 hover:text-red-500 transition-colors"
+                  class="shrink-0 text-text-faint hover:text-red-500 transition-colors"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />

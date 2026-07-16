@@ -34,7 +34,7 @@
 			data-testid="sidebar-nav-item"
 			data-route={quentaSidebarItem.href}
 			class="group relative flex w-full overflow-hidden text-left group-hover:justify-center items-center gap-0 
-             rounded-lg px-2.5 py-2 text-sm bg-white border border-border text-zinc-600 hover:text-brand"
+             rounded-lg px-2.5 py-2 text-sm bg-surface border border-border text-text-secondary hover:text-brand"
 		>
 
             {#if quentaSidebarItem?.customIcon}

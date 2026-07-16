@@ -143,7 +143,7 @@
 
 <Handle type="target" position={Position.Left} id="input" />
 
-<div class="min-w-70 max-w-80 rounded-xl border border-border bg-white shadow-md overflow-visible">
+<div class="min-w-70 max-w-80 rounded-xl border border-border bg-surface shadow-md overflow-visible">
 
   <div class="flex items-center gap-2 px-3 py-2.5 rounded-t-xl border-b border-border bg-surface cursor-grab active:cursor-grabbing">
     <span class="h-2 w-2 rounded-full shrink-0 {statusDotClass(status)}" title={statusLabel(status)}></span>
@@ -153,7 +153,7 @@
         <Icon icon="lucide:triangle-alert" width="12" height="12" />
       </span>
     {/if}
-    <span class="text-[10px] text-zinc-400 font-medium">
+    <span class="text-[10px] text-text-subtle font-medium">
       {statusLabel(status)}
     </span>
     <NodeDeleteButton {id} />
@@ -176,7 +176,7 @@
               onchange={(v) => setInput(key, v)}
             />
             {#if schema.description}
-              <p class="mt-1 text-[10px] leading-snug text-zinc-400">{schema.description}</p>
+              <p class="mt-1 text-[10px] leading-snug text-text-subtle">{schema.description}</p>
             {/if}
           </div>
         {:else if def.type === 'ai-tool' && key === 'modelId'}
@@ -193,7 +193,7 @@
           />
         {:else if selectOptions(key, schema).length > 0}
           <div>
-            <span class="block text-[11px] text-zinc-500 mb-1">
+            <span class="block text-[11px] text-text-muted mb-1">
               {schema.label ?? key}{schema.required ? '' : ' (optional)'}
             </span>
             <Select
@@ -204,12 +204,12 @@
               onchange={(v) => setInput(key, v)}
             />
             {#if schema.description}
-              <p class="mt-1 text-[10px] leading-snug text-zinc-400">{schema.description}</p>
+              <p class="mt-1 text-[10px] leading-snug text-text-subtle">{schema.description}</p>
             {/if}
           </div>
         {:else if schema.type === 'string' || schema.type === 'number'}
           <div>
-            <span class="block text-[11px] text-zinc-500 mb-1">
+            <span class="block text-[11px] text-text-muted mb-1">
               {schema.label ?? key}{schema.required ? '' : ' (optional)'}
             </span>
             <ValueRefInput
@@ -220,7 +220,7 @@
               onchange={(v) => setInput(key, v)}
             />
             {#if schema.description}
-              <p class="mt-1 text-[10px] leading-snug text-zinc-400">{schema.description}</p>
+              <p class="mt-1 text-[10px] leading-snug text-text-subtle">{schema.description}</p>
             {/if}
           </div>
         {/if}
@@ -235,7 +235,7 @@
   {/if}
 
   {#if status === 'running' && state?.logs && state.logs.length > 0}
-    <div class="px-3 pb-2 text-[10px] font-mono text-zinc-400 truncate nodrag nopan">
+    <div class="px-3 pb-2 text-[10px] font-mono text-text-subtle truncate nodrag nopan">
       {sanitizeLocalPathsForDisplay(state.logs[state.logs.length - 1], 2)}
     </div>
   {/if}
@@ -243,7 +243,7 @@
   {#if status === 'done' && state?.outputFiles && state.outputFiles.length > 0}
     <div class="px-3 pb-2.5 nodrag nopan border-t border-border/60 pt-2.5">
       <div class="mb-1.5 flex items-center justify-between gap-2">
-        <p class="text-[9px] font-semibold text-zinc-400 uppercase tracking-wider">Outputs</p>
+        <p class="text-[9px] font-semibold text-text-subtle uppercase tracking-wider">Outputs</p>
         {#if runId}
           <button
             type="button"
@@ -268,11 +268,11 @@
 
   {#if valueOutputs.length > 0}
     <div class="px-3 pb-2.5 pt-2 border-t border-border/60 nodrag nopan">
-      <p class="text-[9px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Value outputs</p>
+      <p class="text-[9px] font-semibold text-text-subtle uppercase tracking-wider mb-1">Value outputs</p>
       {#each valueOutputs as [key, schema]}
         <div class="flex items-center gap-1.5 h-5">
-          <span class="text-[10px] text-zinc-500 flex-1 truncate">{schema.label ?? key}</span>
-          <span class="text-[10px] font-mono text-zinc-600 truncate max-w-32">{fmtValue(key, schema)}</span>
+          <span class="text-[10px] text-text-muted flex-1 truncate">{schema.label ?? key}</span>
+          <span class="text-[10px] font-mono text-text-secondary truncate max-w-32">{fmtValue(key, schema)}</span>
         </div>
       {/each}
     </div>

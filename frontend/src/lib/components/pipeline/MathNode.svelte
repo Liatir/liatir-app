@@ -54,7 +54,7 @@
 <!-- Single input handle — wire upstream value nodes in, then pick each operand below. -->
 <Handle type="target" position={Position.Left} id="input" />
 
-<div class="min-w-56 rounded-xl border border-border bg-white shadow-md overflow-visible">
+<div class="min-w-56 rounded-xl border border-border bg-surface shadow-md overflow-visible">
   <div class="flex items-center gap-2 px-3 py-2 rounded-t-xl border-b border-border bg-violet-50 cursor-grab active:cursor-grabbing">
     <span class="h-2 w-2 rounded-full shrink-0 {statusDotClass(status)}" title={statusLabel(status)}></span>
     <EditableNodeLabel
@@ -78,7 +78,7 @@
 
   <div class="px-3 py-2.5 space-y-1.5 nodrag nopan">
     <div class="flex items-center gap-2">
-      <span class="text-[10px] text-zinc-400 w-3 shrink-0">A</span>
+      <span class="text-[10px] text-text-subtle w-3 shrink-0">A</span>
       <div class="flex-1 min-w-0">
         <ValueRefInput
           value={data.literalA ?? ''}
@@ -93,7 +93,7 @@
     </div>
     {#if needsB}
       <div class="flex items-center gap-2">
-        <span class="text-[10px] text-zinc-400 w-3 shrink-0">B</span>
+        <span class="text-[10px] text-text-subtle w-3 shrink-0">B</span>
         <div class="flex-1 min-w-0">
           <ValueRefInput
             value={data.literalB ?? ''}

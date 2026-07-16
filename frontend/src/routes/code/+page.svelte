@@ -142,10 +142,10 @@
   <span class="hidden">
     <div class="w-56 shrink-0 border-r border-border bg-surface flex flex-col">
       <div class="flex items-center justify-between px-3 py-3 border-b border-border">
-        <span class="text-xs font-medium text-zinc-600">Scripts</span>
+        <span class="text-xs font-medium text-text-secondary">Scripts</span>
         <!-- <button
           onclick={newScript}
-          class="text-zinc-500 hover:text-zinc-800 transition-colors p-0.5 rounded"
+          class="text-text-muted hover:text-text transition-colors p-0.5 rounded"
           title="New script"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -156,7 +156,7 @@
 
       <div class="flex-1 overflow-y-auto py-1">
         {#if savedScripts.scripts.length === 0}
-          <p class="text-xs text-zinc-400 text-center py-6 px-3">No saved scripts yet.<br/>Run and save to keep them.</p>
+          <p class="text-xs text-text-subtle text-center py-6 px-3">No saved scripts yet.<br/>Run and save to keep them.</p>
         {:else}
           <!-- Root scripts -->
           {#each scriptGroups.root as s (s.id)}
@@ -167,21 +167,21 @@
               onclick={() => loadScript(s.id)}
               onkeydown={(e) => e.key === 'Enter' && loadScript(s.id)}
               class="w-full text-left px-3 py-2 group transition-colors cursor-pointer
-                {active ? 'bg-brand/15 text-brand-soft' : 'text-zinc-600 hover:bg-surface-2 hover:text-zinc-800'}"
+                {active ? 'bg-brand/15 text-brand-soft' : 'text-text-secondary hover:bg-surface-2 hover:text-text'}"
             >
               <div class="flex items-center justify-between mt-0.5">
                 <p class="text-xs font-medium truncate">{s.name}</p>
                 <button
                   onclick={(e) => { e.stopPropagation(); deleteScript(s.id, s.name); }}
                   aria-label="Delete script"
-                  class="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-500 transition-all"
+                  class="opacity-0 group-hover:opacity-100 text-text-subtle hover:text-red-500 transition-all"
                 >
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
               </div>
-                <p class="text-[10px] text-zinc-400">
+                <p class="text-[10px] text-text-subtle">
                   {fmtDate(s.savedAt)}
                 </p>
             </div>
@@ -191,10 +191,10 @@
           {#each scriptGroups.folders as group}
             <!-- Folder header -->
             <div class="flex items-center gap-1.5 px-3 pt-2.5 pb-1 {scriptGroups.root.length > 0 || scriptGroups.folders.indexOf(group) > 0 ? 'mt-0.5' : ''}">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-zinc-400">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-text-subtle">
                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
               </svg>
-              <span class="text-[10px] font-semibold text-zinc-400 truncate uppercase tracking-wide">{group.folder}</span>
+              <span class="text-[10px] font-semibold text-text-subtle truncate uppercase tracking-wide">{group.folder}</span>
             </div>
             <!-- Scripts in this folder -->
             {#each group.scripts as s (s.id)}
@@ -205,21 +205,21 @@
                 onclick={() => loadScript(s.id)}
                 onkeydown={(e) => e.key === 'Enter' && loadScript(s.id)}
                 class="w-full text-left pl-6 pr-3 py-2 group transition-colors cursor-pointer
-                  {active ? 'bg-brand/15 text-brand-soft' : 'text-zinc-600 hover:bg-surface-2 hover:text-zinc-800'}"
+                  {active ? 'bg-brand/15 text-brand-soft' : 'text-text-secondary hover:bg-surface-2 hover:text-text'}"
               >
                 <div class="flex items-center justify-between mt-0.5">
                 <p class="text-xs font-medium truncate">{s.name}</p>
                   <button
                     onclick={(e) => { e.stopPropagation(); deleteScript(s.id, s.name); }}
                     aria-label="Delete script"
-                    class="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-500 transition-all"
+                    class="opacity-0 group-hover:opacity-100 text-text-subtle hover:text-red-500 transition-all"
                   >
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                       <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                   </button>
                 </div>
-                  <p class="text-[10px] text-zinc-400">{fmtDate(s.savedAt)}</p>
+                  <p class="text-[10px] text-text-subtle">{fmtDate(s.savedAt)}</p>
               </div>
             {/each}
           {/each}
@@ -239,7 +239,7 @@
             placeholder="Script name…"
             onkeydown={(e) => e.key === 'Enter' && saveScript()}
             class="rounded-lg border border-border bg-surface-2 px-3 py-1.5
-                   text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-brand
+                   text-sm text-text placeholder:text-text-subtle outline-none focus:border-brand
                    transition-colors w-36"
           />
           {#if folderOptions.length > 1}
@@ -282,13 +282,13 @@
             ? 'border-red-200 bg-red-50'
             : 'border-border bg-surface'}">
           <div class="flex items-center justify-between px-4 py-2 border-b border-inherit">
-            <span class="text-xs font-medium {outputType === 'error' ? 'text-red-600' : 'text-zinc-600'}">
+            <span class="text-xs font-medium {outputType === 'error' ? 'text-red-600' : 'text-text-secondary'}">
               {outputType === 'error' ? 'Error' : 'Output'}
             </span>
             <button
               aria-label="Clear output"
               onclick={() => { output = null; outputError = null; outputType = null; }}
-              class="text-zinc-400 hover:text-zinc-600 transition-colors"
+              class="text-text-subtle hover:text-text-secondary transition-colors"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />

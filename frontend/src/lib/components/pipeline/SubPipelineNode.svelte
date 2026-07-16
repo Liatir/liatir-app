@@ -38,7 +38,7 @@
 
 <Handle type="target" position={Position.Left} id="input" />
 
-<div class="min-w-56 rounded-xl border border-border bg-white shadow-md overflow-visible">
+<div class="min-w-56 rounded-xl border border-border bg-surface shadow-md overflow-visible">
   <div class="flex items-center gap-2 px-3 py-2 rounded-t-xl border-b border-border bg-indigo-50 cursor-grab active:cursor-grabbing">
     <span class="h-2 w-2 rounded-full shrink-0 {statusDotClass(status)}" title={statusLabel(status)}></span>
     <Icon icon="lucide:workflow" width="11" height="11" class="text-indigo-500 shrink-0" />
@@ -60,11 +60,11 @@
   <div class="px-3 py-2.5 nodrag nopan">
     {#if data.pipelineId}
       <div class="flex items-center gap-2">
-        <span class="flex-1 text-xs font-medium text-zinc-700 truncate">{data.pipelineName || 'Pipeline'}</span>
+        <span class="flex-1 text-xs font-medium text-text-secondary truncate">{data.pipelineName || 'Pipeline'}</span>
         {#if !disabled}
           <button
             onclick={() => showPicker = true}
-            class="text-[10px] text-zinc-400 hover:text-brand transition-colors"
+            class="text-[10px] text-text-subtle hover:text-brand transition-colors"
           >Change</button>
         {/if}
       </div>
@@ -81,7 +81,7 @@
     {/if}
 
     {#if status === 'running' && lastLog}
-      <div class="mt-2 text-[10px] font-mono text-zinc-400 truncate">{sanitizeLocalPathsForDisplay(lastLog, 2)}</div>
+      <div class="mt-2 text-[10px] font-mono text-text-subtle truncate">{sanitizeLocalPathsForDisplay(lastLog, 2)}</div>
     {/if}
     {#if status === 'error' && runState?.error}
       <div class="mt-2 text-[10px] text-red-500 font-mono">{sanitizeLocalPathsForDisplay(runState.error, 2)}</div>
@@ -102,21 +102,21 @@
 <Handle type="source" position={Position.Right} id="output" />
 
 {#if showPicker}
-  <div use:clickOutside={{ enabled: showPicker, onOutside: () => (showPicker = false) }} class="nowheel absolute left-full top-0 ml-2 z-50 w-56 rounded-xl border border-border bg-white shadow-xl overflow-hidden nodrag nopan">
+  <div use:clickOutside={{ enabled: showPicker, onOutside: () => (showPicker = false) }} class="nowheel absolute left-full top-0 ml-2 z-50 w-56 rounded-xl border border-border bg-surface shadow-xl overflow-hidden nodrag nopan">
     <div class="px-3 py-2 border-b border-border bg-surface">
-      <span class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">Select pipeline</span>
+      <span class="text-[10px] font-semibold text-text-muted uppercase tracking-wider">Select pipeline</span>
     </div>
     <div class="max-h-48 overflow-y-auto">
       {#each available as p (p.id)}
         <button
           onclick={() => selectPipeline(p.id, p.name)}
-          class="w-full text-left px-3 py-2 text-xs text-zinc-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors border-b border-border/50 last:border-0"
+          class="w-full text-left px-3 py-2 text-xs text-text-secondary hover:bg-indigo-50 hover:text-indigo-700 transition-colors border-b border-border/50 last:border-0"
         >
           <div class="font-medium">{p.name}</div>
-          <div class="text-[10px] text-zinc-400">{p.nodes.filter(isExecutablePipelineNode).length} steps</div>
+          <div class="text-[10px] text-text-subtle">{p.nodes.filter(isExecutablePipelineNode).length} steps</div>
         </button>
       {:else}
-        <div class="px-3 py-4 text-center text-xs text-zinc-400">No saved pipelines available</div>
+        <div class="px-3 py-4 text-center text-xs text-text-subtle">No saved pipelines available</div>
       {/each}
     </div>
   </div>

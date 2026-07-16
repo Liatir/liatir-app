@@ -78,15 +78,15 @@
 
 {#if hasAnything && report}
   <div
-    class="fixed bottom-4 left-4 z-40 max-w-xs w-72 rounded-xl border border-zinc-200 bg-white shadow-lg text-xs"
+    class="fixed bottom-4 left-4 z-40 max-w-xs w-72 rounded-xl border border-border bg-surface shadow-lg text-xs"
     aria-live="polite"
   >
     <!-- Header -->
-    <div class="flex items-center justify-between px-4 py-2.5 border-b border-zinc-100">
-      <span class="font-semibold text-zinc-700">Startup cleanup</span>
+    <div class="flex items-center justify-between px-4 py-2.5 border-b border-border">
+      <span class="font-semibold text-text-secondary">Startup cleanup</span>
       <button
         onclick={() => (dismissed = true)}
-        class="text-zinc-300 hover:text-zinc-500 transition-colors"
+        class="text-text-faint hover:text-text-muted transition-colors"
         aria-label="Dismiss"
       >
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -99,7 +99,7 @@
 
       <!-- Summary stats -->
       {#if report.cacheClearedBytes > 0 || report.corruptedRunsRemoved > 0}
-        <div class="text-zinc-500 space-y-0.5">
+        <div class="text-text-muted space-y-0.5">
           {#if report.cacheClearedBytes > 0}
             <p>Cache cleared: {fmtBytes(report.cacheClearedBytes)}</p>
           {/if}
@@ -112,13 +112,13 @@
       <!-- Resumable downloads -->
       {#if report.resumableDownloads.length > 0}
         <div>
-          <p class="font-medium text-zinc-700 mb-1.5">Interrupted downloads</p>
+          <p class="font-medium text-text-secondary mb-1.5">Interrupted downloads</p>
           <div class="space-y-1.5">
             {#each report.resumableDownloads as rd (rd.partPath)}
               <div class="flex items-center justify-between gap-2">
                 <div class="min-w-0">
-                  <p class="truncate font-mono text-zinc-700">{basename(rd.path)}</p>
-                  <p class="text-zinc-400">{fmtBytes(rd.sizeBytes)} saved</p>
+                  <p class="truncate font-mono text-text-secondary">{basename(rd.path)}</p>
+                  <p class="text-text-subtle">{fmtBytes(rd.sizeBytes)} saved</p>
                 </div>
                 <button
                   onclick={() => deletePart(rd)}
@@ -130,7 +130,7 @@
               </div>
             {/each}
           </div>
-          <p class="text-zinc-400 mt-1.5">Partial files can be resumed — delete only if you want to start fresh.</p>
+          <p class="text-text-subtle mt-1.5">Partial files can be resumed — delete only if you want to start fresh.</p>
         </div>
       {/if}
 

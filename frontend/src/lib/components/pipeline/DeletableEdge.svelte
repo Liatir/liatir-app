@@ -37,8 +37,8 @@
       {disabled}
       title="Remove connection"
       aria-label="Remove connection"
-      class="edge-del h-5 w-5 rounded-full bg-white border border-zinc-300 shadow-sm flex items-center justify-center
-             text-zinc-400 hover:text-red-700 hover:border-red-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      class="edge-del h-5 w-5 rounded-full bg-surface border border-border-2 shadow-sm flex items-center justify-center
+             text-text-subtle hover:text-red-700 hover:border-red-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
     >
     X
     </button>

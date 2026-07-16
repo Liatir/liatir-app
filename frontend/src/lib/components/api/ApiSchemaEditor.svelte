@@ -86,22 +86,22 @@
 
 <div class="space-y-1" style="margin-left: {depth > 0 ? 12 : 0}px">
   {#each entries as [key, field] (key)}
-    <div class="rounded border border-border/70 bg-white">
+    <div class="rounded border border-border/70 bg-surface">
       <div class="flex items-center gap-2 px-2 py-1">
         <Icon
           icon={field.type === 'object' ? 'lucide:braces' : field.type === 'array' ? 'lucide:brackets' : 'lucide:dot'}
-          width="12" height="12" class="text-zinc-400 shrink-0" />
+          width="12" height="12" class="text-text-subtle shrink-0" />
         <input type="text" value={key} {disabled}
           onblur={(e) => rename(key, (e.target as HTMLInputElement).value)}
-          class="flex-1 min-w-0 text-xs font-mono text-zinc-800 bg-transparent outline-none focus:bg-brand/5 rounded px-1 py-0.5" />
+          class="flex-1 min-w-0 text-xs font-mono text-text bg-transparent outline-none focus:bg-brand/5 rounded px-1 py-0.5" />
         <Select value={field.type} options={TYPES} onchange={(t) => changeType(key, t as ApiFieldType)} class="w-24 shrink-0" />
         {#if field.type === 'array'}
-          <span class="text-[10px] text-zinc-400">of</span>
+          <span class="text-[10px] text-text-subtle">of</span>
           <Select value={field.items?.type ?? 'string'} options={TYPES.filter(t => t.value !== 'array')}
             onchange={(t) => changeItemType(key, t as ApiFieldType)} class="w-24 shrink-0" />
         {/if}
         <button type="button" onclick={() => remove(key)} {disabled} aria-label="Remove field"
-          class="text-zinc-300 hover:text-red-400 transition-colors shrink-0">
+          class="text-text-faint hover:text-red-400 transition-colors shrink-0">
           <Icon icon="lucide:x" width="11" height="11" />
         </button>
       </div>
@@ -122,7 +122,7 @@
   {/each}
 
   <button type="button" onclick={addField} {disabled}
-    class="flex items-center gap-1.5 text-[11px] text-zinc-400 hover:text-brand transition-colors px-1 py-0.5">
+    class="flex items-center gap-1.5 text-[11px] text-text-subtle hover:text-brand transition-colors px-1 py-0.5">
     <Icon icon="lucide:plus" width="11" height="11" />
     Add field
   </button>

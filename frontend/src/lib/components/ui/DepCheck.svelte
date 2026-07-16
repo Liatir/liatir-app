@@ -61,7 +61,7 @@
   const statusColor = $derived(
     status === 'ok'       ? 'text-emerald-600' :
     status === 'outdated' ? 'text-amber-600' :
-    status === 'missing'  ? 'text-red-600' : 'text-zinc-400'
+    status === 'missing'  ? 'text-red-600' : 'text-text-subtle'
   );
 
   const requirementLabel = $derived(
@@ -77,9 +77,9 @@
     <div class="h-7 w-7 rounded-lg flex items-center justify-center shrink-0
       {status === 'ok'       ? 'bg-emerald-100' :
        status === 'outdated' ? 'bg-amber-100' :
-       status === 'missing'  ? 'bg-red-100' : 'bg-zinc-100'}">
+       status === 'missing'  ? 'bg-red-100' : 'bg-surface-2'}">
       {#if status === 'checking'}
-        <svg class="animate-spin h-3.5 w-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none">
+        <svg class="animate-spin h-3.5 w-3.5 text-text-subtle" viewBox="0 0 24 24" fill="none">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
         </svg>
@@ -103,18 +103,18 @@
     <!-- Name + version -->
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 flex-wrap">
-        <span class="text-sm font-semibold text-zinc-800">{req.label}</span>
+        <span class="text-sm font-semibold text-text">{req.label}</span>
         {#if status === 'checking'}
-          <span class="text-xs text-zinc-400">Checking…</span>
+          <span class="text-xs text-text-subtle">Checking…</span>
         {:else if status === 'ok'}
           <span class="font-mono text-xs text-emerald-600">{installed}</span>
-          <span class="text-[10px] text-zinc-400">(requires {requirementLabel})</span>
+          <span class="text-[10px] text-text-subtle">(requires {requirementLabel})</span>
         {:else if status === 'outdated'}
           <span class="font-mono text-xs text-amber-600">{installed}</span>
-          <span class="text-[10px] text-zinc-400">(requires {requirementLabel})</span>
+          <span class="text-[10px] text-text-subtle">(requires {requirementLabel})</span>
         {:else}
-          <span class="text-xs text-zinc-400">Not installed</span>
-          <span class="text-[10px] text-zinc-400">(requires {requirementLabel})</span>
+          <span class="text-xs text-text-subtle">Not installed</span>
+          <span class="text-[10px] text-text-subtle">(requires {requirementLabel})</span>
         {/if}
       </div>
     </div>
@@ -123,7 +123,7 @@
     <div class="flex items-center gap-1.5 shrink-0">
       <button
         onclick={check}
-        class="text-[11px] text-zinc-400 hover:text-zinc-600 transition-colors px-2 py-1 rounded hover:bg-zinc-100"
+        class="text-[11px] text-text-subtle hover:text-text-secondary transition-colors px-2 py-1 rounded hover:bg-surface-2"
         title="Re-check"
       >
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -134,7 +134,7 @@
       {#if status !== 'missing'}
         <button
           onclick={openReleases}
-          class="text-[11px] text-zinc-400 hover:text-zinc-600 transition-colors px-2 py-1 rounded hover:bg-zinc-100 flex items-center gap-1"
+          class="text-[11px] text-text-subtle hover:text-text-secondary transition-colors px-2 py-1 rounded hover:bg-surface-2 flex items-center gap-1"
           title="Check for updates"
         >
           Updates
@@ -150,18 +150,18 @@
   <!-- Outdated or missing: install/upgrade instructions -->
   {#if status === 'outdated' || status === 'missing'}
     <div class="rounded-lg border border-border bg-surface-2 p-3 space-y-1.5">
-      <p class="text-[11px] text-zinc-500 mb-2">
+      <p class="text-[11px] text-text-muted mb-2">
         {status === 'outdated' ? `Update ${req.label} to ${requirementLabel}:` : `Install ${req.label}:`}
       </p>
       {#each req.installCmds as { platform, cmd }}
         <div class="flex items-center gap-2 font-mono text-xs">
-          <span class="text-zinc-400 w-14 shrink-0 font-sans text-[11px]">{platform}</span>
-          <code class="bg-zinc-100 text-zinc-700 px-2 py-0.5 rounded select-all">{cmd}</code>
+          <span class="text-text-subtle w-14 shrink-0 font-sans text-[11px]">{platform}</span>
+          <code class="bg-surface-2 text-text-secondary px-2 py-0.5 rounded select-all">{cmd}</code>
         </div>
       {/each}
       {#if req.downloadOptions}
         <div class="pt-2 border-t border-border mt-2">
-          <p class="text-[11px] text-zinc-500 mb-1.5">Download installer:</p>
+          <p class="text-[11px] text-text-muted mb-1.5">Download installer:</p>
           <div class="flex flex-wrap gap-1.5">
             {#each req.downloadOptions as opt}
               <button
@@ -169,7 +169,7 @@
                 class="flex items-center gap-1 px-2.5 py-1 rounded-md border text-xs transition-colors
                   {opt.recommended
                     ? 'border-brand/40 bg-brand/5 text-brand hover:bg-brand/10'
-                    : 'border-border bg-surface text-zinc-600 hover:border-zinc-300'}"
+                    : 'border-border bg-surface text-text-secondary hover:border-border-2'}"
               >
                 {opt.label}
                 {#if opt.recommended}
@@ -184,11 +184,11 @@
           </div>
         </div>
       {/if}
-      <p class="text-[11px] text-zinc-400 mt-2 font-sans">Restart Liatir after installing.</p>
+      <p class="text-[11px] text-text-subtle mt-2 font-sans">Restart Liatir after installing.</p>
       <div class="pt-1.5">
         <button
           onclick={() => goto(`/deps?focus=${encodeURIComponent(req.binary)}`)}
-          class="inline-flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-700 transition-colors"
+          class="inline-flex items-center gap-1 text-[11px] text-text-muted hover:text-text-secondary transition-colors"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>

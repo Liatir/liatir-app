@@ -4,6 +4,20 @@
     <meta charset="utf-8" />
     <title>Liatir</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+      // Apply the saved theme before first paint to avoid a light flash.
+      // The canonical value lives in the settings file; localStorage is a
+      // synchronous mirror kept in sync by stores/settings.svelte.ts.
+      (function () {
+        try {
+          var t = localStorage.getItem('liatir-theme');
+          if (t !== 'light' && t !== 'dark') {
+            t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.dataset.theme = t;
+        } catch (e) {}
+      })();
+    </script>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">

@@ -224,19 +224,19 @@
 </script>
 
 <div
-  class="max-w-3xl text-zinc-500"
+  class="max-w-3xl text-text-muted"
   data-testid="quenta-activity"
   data-state={isActive ? 'active' : 'complete'}
   data-request-id={active?.requestId}
 >
   <button
     type="button"
-    class="group flex items-center gap-2 rounded-lg py-1 pr-2 text-left transition hover:text-zinc-700"
+    class="group flex items-center gap-2 rounded-lg py-1 pr-2 text-left transition hover:text-text-secondary"
     onclick={() => expanded = !expanded}
     aria-expanded={expanded}
     data-testid="quenta-activity-toggle"
   >
-    <span class="flex h-6 w-6 items-center justify-center rounded-full {isActive ? 'bg-brand/10 text-brand' : 'bg-surface-2 text-zinc-500'}">
+    <span class="flex h-6 w-6 items-center justify-center rounded-full {isActive ? 'bg-brand/10 text-brand' : 'bg-surface-2 text-text-muted'}">
       {#if isActive}
         <Icon icon="lucide:loader-circle" class="h-3.5 w-3.5 animate-spin" />
       {:else}
@@ -248,7 +248,7 @@
     </span>
     <Icon
       icon="lucide:chevron-down"
-      class="h-3.5 w-3.5 text-zinc-400 transition-transform {expanded ? 'rotate-180' : ''}"
+      class="h-3.5 w-3.5 text-text-subtle transition-transform {expanded ? 'rotate-180' : ''}"
     />
   </button>
 
@@ -257,7 +257,7 @@
       <div class="space-y-1.5">
         {#each steps as step (step.id)}
           <div
-            class="flex items-center gap-2 text-[11px] leading-5 {step.status === 'active' ? 'text-zinc-700' : 'text-zinc-400'}"
+            class="flex items-center gap-2 text-[11px] leading-5 {step.status === 'active' ? 'text-text-secondary' : 'text-text-subtle'}"
             data-testid="quenta-activity-step"
             data-phase={step.id}
             data-status={step.status}
@@ -274,12 +274,12 @@
 
       {#if reasoning}
         <div
-          class="max-h-64 overflow-y-auto whitespace-pre-wrap border-l-2 border-brand/20 pl-3 text-xs leading-relaxed text-zinc-500"
+          class="max-h-64 overflow-y-auto whitespace-pre-wrap border-l-2 border-brand/20 pl-3 text-xs leading-relaxed text-text-muted"
           data-testid="quenta-reasoning-content"
           data-selectable
           aria-live="off"
         >
-          {reasoning}{#if active?.phase === 'thinking'}<span class="ml-1 inline-block h-3 w-1 animate-pulse rounded-full bg-zinc-400" data-testid="quenta-reasoning-cursor"></span>{/if}
+          {reasoning}{#if active?.phase === 'thinking'}<span class="ml-1 inline-block h-3 w-1 animate-pulse rounded-full bg-text-subtle" data-testid="quenta-reasoning-cursor"></span>{/if}
         </div>
       {/if}
 

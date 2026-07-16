@@ -46,7 +46,7 @@
         {linked?.sublabel ? `${linked.sublabel} → ` : ''}{linked?.label ?? 'linked output'}
       </span>
       {#if !disabled}
-        <button onclick={() => onchange('')} class="shrink-0 text-zinc-300 hover:text-zinc-500 transition-colors" aria-label="Unlink">
+        <button onclick={() => onchange('')} class="shrink-0 text-text-faint hover:text-text-muted transition-colors" aria-label="Unlink">
           <Icon icon="lucide:x" width="11" height="11" />
         </button>
       {/if}
@@ -60,14 +60,14 @@
         {disabled}
         {placeholder}
         class="flex-1 min-w-0 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-mono
-               placeholder:text-zinc-300 focus:outline-none focus:ring-1 {accentClass}
+               placeholder:text-text-faint focus:outline-none focus:ring-1 {accentClass}
                disabled:opacity-50 disabled:cursor-not-allowed"
       />
       {#if options.length > 0 && !disabled}
         <button
           onclick={() => open = !open}
           title="Use an upstream output"
-          class="shrink-0 rounded-lg border border-border px-1.5 py-1.5 text-zinc-400
+          class="shrink-0 rounded-lg border border-border px-1.5 py-1.5 text-text-subtle
                  hover:text-brand hover:border-brand/40 transition-colors"
         >
           <Icon icon="lucide:plug" width="12" height="12" />
@@ -77,13 +77,13 @@
   {/if}
 
   {#if open}
-    <div class="nowheel absolute right-0 top-full mt-1 z-50 w-56 rounded-lg border border-border bg-white shadow-xl overflow-hidden">
-      <p class="px-3 pt-2 pb-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Upstream outputs</p>
+    <div class="nowheel absolute right-0 top-full mt-1 z-50 w-56 rounded-lg border border-border bg-surface shadow-xl overflow-hidden">
+      <p class="px-3 pt-2 pb-1 text-[10px] font-semibold text-text-subtle uppercase tracking-wider">Upstream outputs</p>
       <div class="max-h-52 overflow-y-auto pb-1">
         {#each options as o (o.value)}
           <button onclick={() => pick(o.value)} class="w-full text-left px-3 py-1.5 hover:bg-brand/5 transition-colors">
-            <span class="block text-xs text-zinc-700 truncate">{o.label}</span>
-            {#if o.sublabel}<span class="block text-[10px] text-zinc-400 truncate">{o.sublabel}</span>{/if}
+            <span class="block text-xs text-text-secondary truncate">{o.label}</span>
+            {#if o.sublabel}<span class="block text-[10px] text-text-subtle truncate">{o.sublabel}</span>{/if}
           </button>
         {/each}
       </div>

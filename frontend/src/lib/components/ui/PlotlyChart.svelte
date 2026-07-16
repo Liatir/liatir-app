@@ -1,29 +1,34 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import Plotly from 'plotly.js-dist-min';
+  import { settingsStore } from '$lib/stores/settings.svelte';
 
   let { data, layout = {} }: { data: object[]; layout?: object } = $props();
 
   let el: HTMLDivElement;
 
-  const baseLayout = {
-    paper_bgcolor: 'transparent',
-    plot_bgcolor: 'transparent',
-    margin: { l: 44, r: 12, t: 12, b: 40 },
-    xaxis: {
-      gridcolor: '#e2e2e8',
-      color: '#6b7280',
+  // Plotly draws to canvas/SVG with literal colours, so it cannot inherit the
+  // theme tokens. Reading the computed variables keeps app.css the single
+  // source of truth instead of duplicating hex values here.
+  function themedLayout() {
+    const styles = getComputedStyle(el);
+    const line = styles.getPropertyValue('--color-border').trim();
+    const tick = styles.getPropertyValue('--color-text-muted').trim();
+    const axis = {
+      gridcolor: line,
+      color: tick,
       tickfont: { size: 10 },
-      linecolor: '#e2e2e8',
-    },
-    yaxis: {
-      gridcolor: '#e2e2e8',
-      color: '#6b7280',
-      tickfont: { size: 10 },
-      linecolor: '#e2e2e8',
-    },
-    showlegend: false,
-  };
+      linecolor: line,
+    };
+    return {
+      paper_bgcolor: 'transparent',
+      plot_bgcolor: 'transparent',
+      margin: { l: 44, r: 12, t: 12, b: 40 },
+      xaxis: { ...axis },
+      yaxis: { ...axis },
+      showlegend: false,
+    };
+  }
 
   const MAX_POINTS = 10_000;
 
@@ -56,6 +61,9 @@
 
   $effect(() => {
     if (!el) return;
+    // Depend on the resolved theme so the chart is redrawn when it changes.
+    settingsStore.resolvedTheme;
+    const baseLayout = themedLayout();
     const merged = {
       ...baseLayout,
       ...layout,
@@ -80,7 +88,7 @@
 
 <div bind:this={el} class="w-full h-52"></div>
 {#if truncated}
-  <p class="text-[10px] text-zinc-400 mt-1">
+  <p class="text-[10px] text-text-subtle mt-1">
     Showing {(10_000).toLocaleString()} of {originalCount.toLocaleString()} points (downsampled for performance)
   </p>
 {/if}

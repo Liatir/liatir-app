@@ -196,7 +196,7 @@
   <div class="flex flex-col h-full">
     <PageHeader title={mod.name} description={mod.description || `Manage and run your plugin`}>
       {#snippet actions()}
-        <span class="text-xs font-mono text-zinc-400">v{mod!.version} | </span>
+        <span class="text-xs font-mono text-text-subtle">v{mod!.version} | </span>
         <Button variant="secondary" size="sm" onclick={() => goto('/plugins')}>Plugins Page</Button>
       {/snippet}
     </PageHeader>
@@ -207,12 +207,12 @@
           <Badge hideDot size="xs" variant="brand">{runtimeLabel(mod.runtime).replace('.lia', '')}</Badge>
           <Badge hideDot size="xs" variant="neutral">{mod.category}</Badge>
           {#each mod.tags ?? [] as tag}
-            <span class="rounded px-1.5 py-0.5 text-[10px] font-medium border bg-white text-zinc-500 border-zinc-200">
+            <span class="rounded px-1.5 py-0.5 text-[10px] font-medium border bg-surface text-text-muted border-border">
               {tag}
             </span>
           {/each}
-          <span class="ml-auto text-xs text-zinc-400">{Object.keys(mod.inputSchema).length} input{Object.keys(mod.inputSchema).length !== 1 ? 's' : ''}</span>
-          <span class="text-xs text-zinc-400">{Object.keys(mod.outputSchema).length} output{Object.keys(mod.outputSchema).length !== 1 ? 's' : ''}</span>
+          <span class="ml-auto text-xs text-text-subtle">{Object.keys(mod.inputSchema).length} input{Object.keys(mod.inputSchema).length !== 1 ? 's' : ''}</span>
+          <span class="text-xs text-text-subtle">{Object.keys(mod.outputSchema).length} output{Object.keys(mod.outputSchema).length !== 1 ? 's' : ''}</span>
         </div>
       </Card>
 
@@ -224,8 +224,8 @@
               <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
             <div>
-              <p class="text-sm font-medium text-zinc-700">Node.js not found</p>
-              <p class="text-xs text-zinc-400 mt-0.5">.lia plugins require Node.js ≥18. Install it from <span class="font-mono">nodejs.org</span> or via your package manager.</p>
+              <p class="text-sm font-medium text-text-secondary">Node.js not found</p>
+              <p class="text-xs text-text-subtle mt-0.5">.lia plugins require Node.js ≥18. Install it from <span class="font-mono">nodejs.org</span> or via your package manager.</p>
             </div>
           </div>
         </Card>
@@ -237,7 +237,7 @@
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div class="min-w-0">
                 <div class="flex items-center gap-2">
-                  <p class="text-sm font-medium text-zinc-700">Python runtime</p>
+                  <p class="text-sm font-medium text-text-secondary">Python runtime</p>
                   <Badge
                     hideDot
                     size="xs"
@@ -246,13 +246,13 @@
                     {pythonRuntimeState?.phase === 'ready' ? 'Ready' : pythonRuntimeState?.phase === 'preparing' ? 'Preparing' : pythonRuntimeState?.phase === 'checking' ? 'Checking' : pythonRuntimeState?.phase === 'error' ? 'Needs attention' : 'Not prepared'}
                   </Badge>
                 </div>
-                <p class="mt-1 text-xs text-zinc-500">{pythonRuntimeSummary()}</p>
+                <p class="mt-1 text-xs text-text-muted">{pythonRuntimeSummary()}</p>
                 {#if declaredPythonPackages().length > 0}
-                  <p class="mt-2 text-[11px] text-zinc-400">
+                  <p class="mt-2 text-[11px] text-text-subtle">
                     Dependencies: {declaredPythonPackages().slice(0, 4).join(', ')}{declaredPythonPackages().length > 4 ? ` +${declaredPythonPackages().length - 4}` : ''}
                   </p>
                 {:else}
-                  <p class="mt-2 text-[11px] text-zinc-400">No external Python packages declared.</p>
+                  <p class="mt-2 text-[11px] text-text-subtle">No external Python packages declared.</p>
                 {/if}
                 {#if pythonRuntimeState?.missingPackages?.length}
                   <p class="mt-2 text-[11px] text-amber-600">
@@ -288,15 +288,15 @@
       <!-- Input form -->
       <Card>
         <div class="px-4 py-3 border-b border-border">
-          <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Inputs</p>
+          <p class="text-xs font-semibold text-text-muted uppercase tracking-wider">Inputs</p>
         </div>
         <div class="px-4 py-4 space-y-4">
           {#if Object.keys(mod.inputSchema).length === 0}
-            <p class="text-sm text-zinc-400">This plugin takes no inputs.</p>
+            <p class="text-sm text-text-subtle">This plugin takes no inputs.</p>
           {:else}
             {#each inputFields(mod.inputSchema) as [key, field]}
               <div class="flex flex-col gap-1.5">
-                <label class="text-xs font-medium text-zinc-600" for="field-{key}">
+                <label class="text-xs font-medium text-text-secondary" for="field-{key}">
                   {field.label ?? key}
                   {#if field.required}<span class="text-red-400 ml-0.5">*</span>{/if}
                 </label>
@@ -326,7 +326,7 @@
                       disabled={running || pythonRuntimeBusy}
                       class="rounded border-border text-brand"
                     />
-                    <span class="text-sm text-zinc-600">{field.description ?? ''}</span>
+                    <span class="text-sm text-text-secondary">{field.description ?? ''}</span>
                   </label>
                 {:else if field.type === 'number'}
                   <input
@@ -335,7 +335,7 @@
                     bind:value={values[key]}
                     placeholder={String(field.default ?? '')}
                     disabled={running || pythonRuntimeBusy}
-                    class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand/60 transition-colors"
+                    class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-brand/60 transition-colors"
                   />
                 {:else}
                   <input
@@ -344,12 +344,12 @@
                     bind:value={values[key]}
                     placeholder={String(field.default ?? '')}
                     disabled={running || pythonRuntimeBusy}
-                    class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-zinc-800 outline-none focus:border-brand/60 transition-colors"
+                    class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-brand/60 transition-colors"
                   />
                 {/if}
 
                 {#if field.description && field.type !== 'boolean'}
-                  <p class="text-[11px] text-zinc-400">{field.description}</p>
+                  <p class="text-[11px] text-text-subtle">{field.description}</p>
                 {/if}
               </div>
             {/each}
@@ -373,13 +373,13 @@
       {#if running || hasRun}
         <Card>
           <div class="px-4 py-3 border-b border-border flex items-center gap-2">
-            <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wider flex-1">Output</p>
+            <p class="text-xs font-semibold text-text-muted uppercase tracking-wider flex-1">Output</p>
             {#if hasRun}
               <span class="rounded-full px-2 py-0.5 text-[10px] font-medium {succeeded ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}">
                 {succeeded ? 'Done' : `Exit ${exitCode}`}
               </span>
             {:else}
-              <span class="text-[10px] text-zinc-400 animate-pulse">running…</span>
+              <span class="text-[10px] text-text-subtle animate-pulse">running…</span>
             {/if}
           </div>
 
@@ -394,7 +394,7 @@
           <!-- Saved output files (→ Results) -->
           {#if savedFiles.length > 0}
             <div class="px-4 py-3 border-b border-border">
-              <p class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">Saved to Results</p>
+              <p class="text-[10px] font-semibold text-text-subtle uppercase tracking-wider mb-1.5">Saved to Results</p>
               <div class="flex flex-wrap gap-1.5">
                 {#each savedFiles as f}
                   <span class="inline-flex items-center gap-1 rounded-full bg-brand/8 border border-brand/20 px-2 py-0.5 text-[11px] text-brand font-mono">
@@ -408,8 +408,8 @@
           <!-- stdout -->
           {#if stdoutLines.length > 0}
             <div class="px-4 py-3 {stderrLines.length > 0 ? 'border-b border-border' : ''}">
-              <p class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">stdout</p>
-              <pre class="text-xs text-zinc-700 whitespace-pre-wrap font-mono leading-relaxed max-h-64 overflow-y-auto">{sanitizeLocalPathsForDisplay(stdoutLines.join('\n'), 2)}</pre>
+              <p class="text-[10px] font-semibold text-text-subtle uppercase tracking-wider mb-1.5">stdout</p>
+              <pre class="text-xs text-text-secondary whitespace-pre-wrap font-mono leading-relaxed max-h-64 overflow-y-auto">{sanitizeLocalPathsForDisplay(stdoutLines.join('\n'), 2)}</pre>
             </div>
           {/if}
 
@@ -422,7 +422,7 @@
           {/if}
 
           {#if running && stdoutLines.length === 0 && stderrLines.length === 0}
-            <div class="px-4 py-6 text-center text-xs text-zinc-400">Waiting for output…</div>
+            <div class="px-4 py-6 text-center text-xs text-text-subtle">Waiting for output…</div>
           {/if}
         </Card>
       {/if}

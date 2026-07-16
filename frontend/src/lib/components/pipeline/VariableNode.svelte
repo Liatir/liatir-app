@@ -36,7 +36,7 @@
   }
 </script>
 
-<div class="min-w-48 rounded-xl border border-border bg-white shadow-md overflow-visible">
+<div class="min-w-48 rounded-xl border border-border bg-surface shadow-md overflow-visible">
   <div class="flex items-center gap-2 px-3 py-2 rounded-t-xl border-b border-border bg-amber-50 cursor-grab active:cursor-grabbing">
     <span class="h-2 w-2 rounded-full shrink-0 {statusDotClass(status)}" title={statusLabel(status)}></span>
     <EditableNodeLabel
@@ -58,12 +58,12 @@
       <button
         onclick={() => void updateVariableData({ varType: 'string' })}
         class="flex-1 text-[10px] rounded px-2 py-1 border transition-colors
-               {data.varType !== 'number' ? 'bg-amber-50 border-amber-300 text-amber-700 font-medium' : 'border-border text-zinc-400 hover:border-zinc-300'}"
+               {data.varType !== 'number' ? 'bg-amber-50 border-amber-300 text-amber-700 font-medium' : 'border-border text-text-subtle hover:border-border-2'}"
       >string</button>
       <button
         onclick={() => void updateVariableData({ varType: 'number' })}
         class="flex-1 text-[10px] rounded px-2 py-1 border transition-colors
-               {data.varType === 'number' ? 'bg-amber-50 border-amber-300 text-amber-700 font-medium' : 'border-border text-zinc-400 hover:border-zinc-300'}"
+               {data.varType === 'number' ? 'bg-amber-50 border-amber-300 text-amber-700 font-medium' : 'border-border text-text-subtle hover:border-border-2'}"
       >number</button>
     </div>
     <!--
@@ -77,7 +77,7 @@
       disabled={pipelineStore.running || status === 'done'}
       placeholder={data.varType === 'number' ? '0' : 'value…'}
       class="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-mono
-             placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-amber-400/40
+             placeholder:text-text-subtle focus:outline-none focus:ring-1 focus:ring-amber-400/40
              disabled:opacity-50 disabled:cursor-not-allowed"
     />
     {#if status === 'done' && state?.outputValues?.value !== undefined}

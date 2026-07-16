@@ -33,25 +33,25 @@
     >
       <!-- Header -->
       <div class="px-5 pt-5 pb-4">
-        <p id="confirm-title" class="text-sm font-semibold text-zinc-800">{confirmStore.title}</p>
-        <p class="mt-1.5 text-sm text-zinc-500 leading-relaxed">{confirmStore.message}</p>
+        <p id="confirm-title" class="text-sm font-semibold text-text">{confirmStore.title}</p>
+        <p class="mt-1.5 text-sm text-text-muted leading-relaxed">{confirmStore.message}</p>
       </div>
 
       <!-- Countdown bar -->
-      <div class="h-px bg-zinc-100 mx-5">
+      <div class="h-px bg-surface-2 mx-5">
         <div
-          class="h-full bg-zinc-300 transition-all duration-1000 ease-linear"
+          class="h-full bg-border-2 transition-all duration-1000 ease-linear"
           style="width: {progress}%"
         ></div>
       </div>
 
       <!-- Actions -->
       <div class="flex items-center justify-between px-5 py-4">
-        <span class="text-[10px] text-zinc-400">Auto-cancels in {confirmStore.secondsLeft}s</span>
+        <span class="text-[10px] text-text-subtle">Auto-cancels in {confirmStore.secondsLeft}s</span>
         <div class="flex gap-2">
           <button
             onclick={confirmStore.cancel}
-            class="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-zinc-600
+            class="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary
                    hover:bg-surface-2 transition-colors"
           >
             {confirmStore.cancelLabel}

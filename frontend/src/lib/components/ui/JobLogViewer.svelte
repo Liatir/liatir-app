@@ -28,8 +28,8 @@
     switch (level) {
       case 'error': return 'text-red-600';
       case 'warn': return 'text-amber-600';
-      case 'info': return 'text-zinc-700';
-      case 'debug': return 'text-zinc-400';
+      case 'info': return 'text-text-secondary';
+      case 'debug': return 'text-text-subtle';
     }
   }
 
@@ -73,7 +73,7 @@
       <div class="flex items-center gap-2">
         <button
           onclick={() => userOpened = !userOpened}
-          class="flex items-center gap-1.5 text-[11px] text-zinc-400 hover:text-zinc-600 transition-colors"
+          class="flex items-center gap-1.5 text-[11px] text-text-subtle hover:text-text-secondary transition-colors"
         >
           <svg
             width="10" height="10" viewBox="0 0 24 24" fill="none"
@@ -88,13 +88,13 @@
         {#if open && logs.length > 0}
           <button
             onclick={copyLog}
-            class="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors"
+            class="text-[10px] text-text-subtle hover:text-text-secondary transition-colors"
           >
             {copied ? '✓ Copied' : 'Copy'}
           </button>
           <button
             onclick={exportLog}
-            class="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors"
+            class="text-[10px] text-text-subtle hover:text-text-secondary transition-colors"
           >
             Export .txt
           </button>
@@ -103,17 +103,17 @@
     {:else if logs.length > 0}
       <!-- Inline header with actions -->
       <div class="flex items-center justify-between mb-2">
-        <span class="text-[11px] text-zinc-500 font-medium">Logs ({logs.length})</span>
+        <span class="text-[11px] text-text-muted font-medium">Logs ({logs.length})</span>
         <div class="flex items-center gap-2">
           <button
             onclick={copyLog}
-            class="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors"
+            class="text-[10px] text-text-subtle hover:text-text-secondary transition-colors"
           >
             {copied ? '✓ Copied' : 'Copy'}
           </button>
           <button
             onclick={exportLog}
-            class="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors"
+            class="text-[10px] text-text-subtle hover:text-text-secondary transition-colors"
           >
             Export .txt
           </button>
@@ -123,15 +123,15 @@
 
     {#if open}
       {#if logs.length === 0}
-        <p class="text-[11px] text-zinc-400 mt-2">No logs yet for this job.</p>
+        <p class="text-[11px] text-text-subtle mt-2">No logs yet for this job.</p>
       {:else}
-        <div class="mt-2 rounded-lg bg-zinc-50 border border-zinc-200 overflow-hidden">
+        <div class="mt-2 rounded-lg bg-surface-2 border border-border overflow-hidden">
           <div class="max-h-64 overflow-y-auto p-2 font-mono text-[11px] space-y-0.5">
             {#each logs as entry, i (`${entry.timestampMs}-${i}`)}
               <div class="flex items-start gap-2 leading-relaxed">
-                <span class="text-zinc-400 shrink-0">{formatTime(entry.timestampMs)}</span>
+                <span class="text-text-subtle shrink-0">{formatTime(entry.timestampMs)}</span>
                 <span class="shrink-0 font-semibold {levelColor(entry.level)}">{levelBadge(entry.level)}</span>
-                <span class="text-zinc-700 break-all">{entry.message}</span>
+                <span class="text-text-secondary break-all">{entry.message}</span>
               </div>
             {/each}
           </div>

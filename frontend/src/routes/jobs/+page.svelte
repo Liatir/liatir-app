@@ -185,18 +185,18 @@
 								<Badge {variant} pulse={variant === 'running'}>{jobStatusLabel(job)}</Badge>
 
 								<div class="flex-1 min-w-0">
-									<p class="text-sm font-medium text-zinc-800 truncate">
+									<p class="text-sm font-medium text-text truncate">
 										{jobTitle(job)}
 									</p>
-									<p class="text-xs font-mono text-zinc-500 truncate mt-0.5">
+									<p class="text-xs font-mono text-text-muted truncate mt-0.5">
 										{jobSubtitle(job)}
 									</p>
-									<p class="text-xs text-zinc-600 mt-0.5">
+									<p class="text-xs text-text-secondary mt-0.5">
 										Started {fmtTime(job.startedAtMs)}
 									</p>
 								</div>
 
-								<span class="text-xs text-zinc-500 shrink-0 font-mono">
+								<span class="text-xs text-text-muted shrink-0 font-mono">
 									{fmtDuration(job.startedAtMs, job.endedAtMs ?? undefined)}
 								</span>
 
@@ -207,7 +207,7 @@
 									fill="none"
 									stroke="currentColor"
 									stroke-width="2"
-									class="shrink-0 text-zinc-400 transition-transform duration-150 {expandedJobId ===
+									class="shrink-0 text-text-subtle transition-transform duration-150 {expandedJobId ===
 									job.id
 										? 'rotate-180'
 										: ''}"
@@ -248,41 +248,41 @@
 							>
 								<dl class="grid grid-cols-3 gap-y-2 text-xs">
 									<div>
-										<dt class="text-zinc-400">Job ID</dt>
-										<dd class="font-mono text-zinc-700 truncate" data-selectable>{job.id}</dd>
+										<dt class="text-text-subtle">Job ID</dt>
+										<dd class="font-mono text-text-secondary truncate" data-selectable>{job.id}</dd>
 									</div>
 									<div>
-										<dt class="text-zinc-400">Command</dt>
-										<dd class="font-mono text-zinc-700" data-selectable>{compactPathIfLocal(job.cmd, 2)}</dd>
+										<dt class="text-text-subtle">Command</dt>
+										<dd class="font-mono text-text-secondary" data-selectable>{compactPathIfLocal(job.cmd, 2)}</dd>
 									</div>
 									<div>
-										<dt class="text-zinc-400">Duration</dt>
-										<dd class="text-zinc-700">
+										<dt class="text-text-subtle">Duration</dt>
+										<dd class="text-text-secondary">
 											{fmtDuration(job.startedAtMs, job.endedAtMs ?? undefined)}
 										</dd>
 									</div>
 									{#if job.kind}
 										<div>
-											<dt class="text-zinc-400">Kind</dt>
-											<dd class="font-mono text-zinc-700" data-selectable>{job.kind}</dd>
+											<dt class="text-text-subtle">Kind</dt>
+											<dd class="font-mono text-text-secondary" data-selectable>{job.kind}</dd>
 										</div>
 									{/if}
 									{#if job.label}
 										<div class="col-span-2">
-											<dt class="text-zinc-400">Label</dt>
-											<dd class="text-zinc-700" data-selectable>{job.label}</dd>
+											<dt class="text-text-subtle">Label</dt>
+											<dd class="text-text-secondary" data-selectable>{job.label}</dd>
 										</div>
 									{/if}
 									{#if pipelineJobName(job)}
 										<div class="col-span-3">
-											<dt class="text-zinc-400">Parent pipeline</dt>
-											<dd class="text-zinc-700" data-selectable>{pipelineJobName(job)}</dd>
+											<dt class="text-text-subtle">Parent pipeline</dt>
+											<dd class="text-text-secondary" data-selectable>{pipelineJobName(job)}</dd>
 										</div>
 									{/if}
 									{#if job.args.length}
 										<div class="col-span-3">
-											<dt class="text-zinc-400 mb-0.5">Arguments</dt>
-											<dd class="font-mono text-zinc-700 break-all" data-selectable>
+											<dt class="text-text-subtle mb-0.5">Arguments</dt>
+											<dd class="font-mono text-text-secondary break-all" data-selectable>
 												{displayArgs(job)}
 											</dd>
 										</div>
@@ -292,18 +292,18 @@
 								{#if job.metadata}
 									<div class="mt-3">
 										<p
-											class="mb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400"
+											class="mb-1 text-[10px] font-semibold uppercase tracking-wider text-text-subtle"
 										>
 											Metadata
 										</p>
 										<pre
-											class="max-h-28 overflow-auto rounded-md border border-border bg-white px-2 py-1.5 text-[11px] font-mono text-zinc-600"
+											class="max-h-28 overflow-auto rounded-md border border-border bg-surface px-2 py-1.5 text-[11px] font-mono text-text-secondary"
 											data-selectable>{displayMetadata(job)}</pre>
 									</div>
 								{/if}
 
 								<div class="mt-4 border-t border-border pt-3">
-									<p class="mb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+									<p class="mb-1 text-[10px] font-semibold uppercase tracking-wider text-text-subtle">
 										Plugin logs
 									</p>
 									<JobLogViewer jobId={job.id} inline />
@@ -311,10 +311,10 @@
 
 								<div class="mt-4 border-t border-border pt-3">
 									<div class="mb-2 flex items-center justify-between gap-3">
-										<p class="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+										<p class="text-[10px] font-semibold uppercase tracking-wider text-text-subtle">
 											Buffered output
 											{#if buffered}
-												<span class="ml-1 font-normal normal-case tracking-normal text-zinc-400">
+												<span class="ml-1 font-normal normal-case tracking-normal text-text-subtle">
 													stdout {buffered.stdoutTotal} · stderr {buffered.stderrTotal}
 												</span>
 											{/if}
@@ -330,13 +330,13 @@
 									</div>
 
 									{#if outputLoading[job.id] && !buffered}
-										<div class="flex items-center gap-2 text-xs text-zinc-400">
-											<Spinner class="text-zinc-300" />
+										<div class="flex items-center gap-2 text-xs text-text-subtle">
+											<Spinner class="text-text-faint" />
 											Loading output...
 										</div>
 									{:else if !buffered || (buffered.stdoutTotal === 0 && buffered.stderrTotal === 0)}
 										<p
-											class="rounded-lg border border-border bg-white px-3 py-2 text-xs text-zinc-400"
+											class="rounded-lg border border-border bg-surface px-3 py-2 text-xs text-text-subtle"
 										>
 											No buffered stdout or stderr is available for this job.
 										</p>
@@ -344,7 +344,7 @@
 										<div class="grid grid-cols-1 gap-3 xl:grid-cols-2">
 											<div>
 												<p
-													class="mb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400"
+													class="mb-1 text-[10px] font-semibold uppercase tracking-wider text-text-subtle"
 												>
 													stdout
 												</p>
@@ -359,7 +359,7 @@
 											</div>
 											<div>
 												<p
-													class="mb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400"
+													class="mb-1 text-[10px] font-semibold uppercase tracking-wider text-text-subtle"
 												>
 													stderr
 												</p>

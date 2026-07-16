@@ -96,7 +96,7 @@
 
   {#if outputFiles && outputFiles.length > 0}
     <Card class="p-4">
-      <p class="text-xs font-medium text-zinc-500 mb-3">Output files</p>
+      <p class="text-xs font-medium text-text-muted mb-3">Output files</p>
       <div class="space-y-2">
         {#each outputFiles as file (file.path)}
           <div class="flex items-center gap-3 rounded-lg border border-border bg-surface-2 px-3 py-2.5">
@@ -105,15 +105,15 @@
               <polyline points="13 2 13 9 20 9" />
             </svg>
             <div class="flex-1 min-w-0">
-              <p class="text-xs font-medium text-zinc-800 truncate">{file.label}</p>
-              <p class="text-[10px] text-zinc-400 font-mono truncate" title={getLastSegmentsStringFromPath(file.path, 2)}>
+              <p class="text-xs font-medium text-text truncate">{file.label}</p>
+              <p class="text-[10px] text-text-subtle font-mono truncate" title={getLastSegmentsStringFromPath(file.path, 2)}>
                 {getLastSegmentsStringFromPath(file.path, 2)}
               </p>
               {#if file.size != null}
-                <p class="text-[10px] text-zinc-400 font-mono">{fmtBytes(file.size)}</p>
+                <p class="text-[10px] text-text-subtle font-mono">{fmtBytes(file.size)}</p>
               {/if}
             </div>
-            <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-zinc-100 text-zinc-600 border border-zinc-200">
+            <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-surface-2 text-text-secondary border border-border">
               {file.ext}
             </span>
             <Button
@@ -151,14 +151,14 @@
         {#each s.items as item}
           {@const itemValue = displayText(String(item.value))}
           <Card class="p-4 min-w-0">
-            <p class="text-xs text-zinc-500 mb-1 flex items-center gap-1 min-w-0">
+            <p class="text-xs text-text-muted mb-1 flex items-center gap-1 min-w-0">
               <span class="truncate">{item.label}</span>
               {#if item.description}
                 <InfoPopup text={item.description} />
               {/if}
             </p>
             <p
-              class="font-semibold text-zinc-900 break-all leading-snug {itemValue.length > 16 ? 'text-sm' : 'text-lg'}"
+              class="font-semibold text-text break-all leading-snug {itemValue.length > 16 ? 'text-sm' : 'text-lg'}"
               style={item.color ? `color: ${item.color}` : ''}
             >
               {itemValue}
@@ -170,7 +170,7 @@
     {:else if section.type === 'number'}
       {@const s = section as NumberSection}
       <Card class="p-4 min-w-0">
-        <p class="text-xs text-zinc-500 mb-1 flex items-center gap-1 min-w-0">
+        <p class="text-xs text-text-muted mb-1 flex items-center gap-1 min-w-0">
           <span class="truncate">{s.label}</span>
           {#if s.description}
             <InfoPopup text={s.description} />
@@ -188,7 +188,7 @@
       {@const s = section as PlotlySection}
       <Card class="p-4">
         {#if s.title}
-          <p class="text-xs text-zinc-500 mb-1 flex items-center">
+          <p class="text-xs text-text-muted mb-1 flex items-center">
             {s.title}
             {#if s.description}
               <InfoPopup text={s.description} />
@@ -196,7 +196,7 @@
           </p>
         {/if}
         {#if s.subtitle}
-          <p class="text-[10px] text-zinc-400 mb-3">{s.subtitle}</p>
+          <p class="text-[10px] text-text-subtle mb-3">{s.subtitle}</p>
         {/if}
         <PlotlyChart data={s.data} layout={s.layout} />
       </Card>
@@ -208,18 +208,18 @@
       {@const expanded = expandedSections.has(sectionIdx)}
       {@const displayed = displayText(isLong && !expanded ? lines.slice(0, TEXT_PREVIEW_LINES).join('\n') : s.content)}
       <Card class="p-4">
-        <p class="text-xs text-zinc-500 mb-2 flex items-center">
+        <p class="text-xs text-text-muted mb-2 flex items-center">
           {s.label}
           {#if s.description}
             <InfoPopup text={s.description} />
           {/if}
           {#if isLong}
-            <span class="ml-auto text-[10px] text-zinc-400 font-normal">
+            <span class="ml-auto text-[10px] text-text-subtle font-normal">
               {lines.length.toLocaleString()} lines
             </span>
           {/if}
         </p>
-        <pre class="text-xs text-zinc-700 whitespace-pre-wrap break-all leading-relaxed max-h-96 overflow-y-auto
+        <pre class="text-xs text-text-secondary whitespace-pre-wrap break-all leading-relaxed max-h-96 overflow-y-auto
           {s.mono ? 'font-mono' : ''}">{displayed}</pre>
         {#if isLong}
           <button
@@ -237,21 +237,21 @@
     {:else if section.type === 'table'}
       {@const s = section as TableSection}
       <Card class="p-4">
-        <p class="text-xs text-zinc-500 mb-3">{s.label}</p>
+        <p class="text-xs text-text-muted mb-3">{s.label}</p>
         <div class="overflow-x-auto">
           <table class="w-full text-xs text-left border-collapse">
             <thead>
               <tr>
                 {#each s.headers as header}
-                  <th class="px-3 py-2 font-medium text-zinc-500 bg-zinc-50 border-b border-border whitespace-nowrap">{header}</th>
+                  <th class="px-3 py-2 font-medium text-text-muted bg-surface-2 border-b border-border whitespace-nowrap">{header}</th>
                 {/each}
               </tr>
             </thead>
             <tbody>
               {#each s.rows as row, i}
-                <tr class="{i % 2 === 0 ? '' : 'bg-zinc-50/50'} hover:bg-brand/5 transition-colors">
+                <tr class="{i % 2 === 0 ? '' : 'bg-surface-2/50'} hover:bg-brand/5 transition-colors">
                   {#each row as cell}
-                    <td class="px-3 py-2 text-zinc-700 border-b border-border/50 font-mono whitespace-nowrap">{displayCell(cell)}</td>
+                    <td class="px-3 py-2 text-text-secondary border-b border-border/50 font-mono whitespace-nowrap">{displayCell(cell)}</td>
                   {/each}
                 </tr>
               {/each}
@@ -259,7 +259,7 @@
           </table>
         </div>
         {#if s.rows.length === 0}
-          <p class="text-xs text-zinc-400 text-center py-4">No rows</p>
+          <p class="text-xs text-text-subtle text-center py-4">No rows</p>
         {/if}
       </Card>
     {:else if section.type === 'structure-viewer'}

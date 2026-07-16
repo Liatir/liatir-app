@@ -20,14 +20,14 @@
 </script>
 
 {#if targetId}
-  <label for={targetId} class="mb-1.5 flex items-center gap-1 text-xs text-zinc-500">
+  <label for={targetId} class="mb-1.5 flex items-center gap-1 text-xs text-text-muted">
     <span>{text}</span>
     {#if info}
       <InfoPopup text={info} />
     {/if}
   </label>
 {:else}
-  <span class="mb-1.5 flex items-center gap-1 text-xs text-zinc-500">
+  <span class="mb-1.5 flex items-center gap-1 text-xs text-text-muted">
     <span>{text}</span>
     {#if info}
       <InfoPopup text={info} />

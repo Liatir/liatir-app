@@ -71,11 +71,11 @@
     // No background AND no border — just floating text. A faint outline appears on
     // hover so the note stays discoverable/selectable.
     none: {
-      card: 'border border-transparent bg-transparent group-hover:border-zinc-200/70',
+      card: 'border border-transparent bg-transparent group-hover:border-border/70',
       shadow: '',
-      deleteBtn: 'text-zinc-400 hover:bg-zinc-100 hover:text-red-500',
-      placeholder: 'text-zinc-400',
-      swatch: 'bg-transparent ring-1 ring-inset ring-zinc-300',
+      deleteBtn: 'text-text-subtle hover:bg-surface-2 hover:text-red-500',
+      placeholder: 'text-text-subtle',
+      swatch: 'bg-transparent ring-1 ring-inset ring-border-2',
     },
   };
 
@@ -306,20 +306,20 @@
       class="absolute -top-9 left-0 z-20 pb-2 opacity-0 transition-opacity duration-150 pointer-events-none
              group-hover:opacity-100 group-hover:pointer-events-auto"
     >
-      <div class="nodrag nopan flex items-center gap-0.5 rounded-lg border border-border bg-white p-1 shadow-lg">
+      <div class="nodrag nopan flex items-center gap-0.5 rounded-lg border border-border bg-surface p-1 shadow-lg">
         <button type="button" title="Bold" aria-label="Bold"
           onmousedown={(e) => e.preventDefault()} onclick={() => applyFormat('bold')}
-          class="nodrag nopan flex h-6 w-6 items-center justify-center rounded text-zinc-600 hover:bg-zinc-100">
+          class="nodrag nopan flex h-6 w-6 items-center justify-center rounded text-text-secondary hover:bg-surface-2">
           <Icon icon="lucide:bold" width="13" height="13" />
         </button>
         <button type="button" title="Italic" aria-label="Italic"
           onmousedown={(e) => e.preventDefault()} onclick={() => applyFormat('italic')}
-          class="nodrag nopan flex h-6 w-6 items-center justify-center rounded text-zinc-600 hover:bg-zinc-100">
+          class="nodrag nopan flex h-6 w-6 items-center justify-center rounded text-text-secondary hover:bg-surface-2">
           <Icon icon="lucide:italic" width="13" height="13" />
         </button>
         <button type="button" title="Underline" aria-label="Underline"
           onmousedown={(e) => e.preventDefault()} onclick={() => applyFormat('underline')}
-          class="nodrag nopan flex h-6 w-6 items-center justify-center rounded text-zinc-600 hover:bg-zinc-100">
+          class="nodrag nopan flex h-6 w-6 items-center justify-center rounded text-text-secondary hover:bg-surface-2">
           <Icon icon="lucide:underline" width="13" height="13" />
         </button>
 
@@ -330,16 +330,16 @@
           <button type="button" title="Font" aria-label="Font"
             onmousedown={(e) => e.preventDefault()}
             onclick={() => (openMenu = openMenu === 'font' ? null : 'font')}
-            class="nodrag nopan flex h-6 items-center gap-0.5 rounded px-1.5 text-zinc-600 hover:bg-zinc-100">
+            class="nodrag nopan flex h-6 items-center gap-0.5 rounded px-1.5 text-text-secondary hover:bg-surface-2">
             <Icon icon="lucide:type" width="13" height="13" />
             <Icon icon="lucide:chevron-down" width="10" height="10" />
           </button>
           {#if openMenu === 'font'}
-            <div class="nodrag nopan absolute left-0 top-full z-30 mt-1 w-36 rounded-lg border border-border bg-white py-1 shadow-xl">
+            <div class="nodrag nopan absolute left-0 top-full z-30 mt-1 w-36 rounded-lg border border-border bg-surface py-1 shadow-xl">
               {#each FONTS as font}
                 <button type="button"
                   onmousedown={(e) => e.preventDefault()} onclick={() => pickFont(font.family)}
-                  class="block w-full px-3 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-50"
+                  class="block w-full px-3 py-1.5 text-left text-sm text-text-secondary hover:bg-surface-2"
                   style="font-family: {font.family};">
                   {font.label}
                 </button>
@@ -353,16 +353,16 @@
           <button type="button" title="Text size" aria-label="Text size"
             onmousedown={(e) => e.preventDefault()}
             onclick={() => (openMenu = openMenu === 'size' ? null : 'size')}
-            class="nodrag nopan flex h-6 items-center gap-0.5 rounded px-1.5 text-zinc-600 hover:bg-zinc-100">
+            class="nodrag nopan flex h-6 items-center gap-0.5 rounded px-1.5 text-text-secondary hover:bg-surface-2">
             <Icon icon="lucide:case-sensitive" width="15" height="15" />
             <Icon icon="lucide:chevron-down" width="10" height="10" />
           </button>
           {#if openMenu === 'size'}
-            <div class="nodrag nopan absolute left-0 top-full z-30 mt-1 flex gap-1 rounded-lg border border-border bg-white p-1.5 shadow-xl">
+            <div class="nodrag nopan absolute left-0 top-full z-30 mt-1 flex gap-1 rounded-lg border border-border bg-surface p-1.5 shadow-xl">
               {#each SIZES as size}
                 <button type="button"
                   onmousedown={(e) => e.preventDefault()} onclick={() => pickSize(size.value)}
-                  class="flex h-7 w-7 items-center justify-center rounded text-xs font-medium text-zinc-600 hover:bg-zinc-100">
+                  class="flex h-7 w-7 items-center justify-center rounded text-xs font-medium text-text-secondary hover:bg-surface-2">
                   {size.label}
                 </button>
               {/each}
@@ -377,11 +377,11 @@
           <button type="button" title="Color" aria-label="Note color"
             onmousedown={(e) => e.preventDefault()}
             onclick={() => (openMenu = openMenu === 'color' ? null : 'color')}
-            class="nodrag nopan flex h-6 w-6 items-center justify-center rounded text-zinc-600 hover:bg-zinc-100">
+            class="nodrag nopan flex h-6 w-6 items-center justify-center rounded text-text-secondary hover:bg-surface-2">
             <Icon icon="lucide:palette" width="13" height="13" />
           </button>
           {#if openMenu === 'color'}
-            <div class="nodrag nopan absolute right-0 top-full z-30 mt-1 flex items-center gap-1.5 rounded-lg border border-border bg-white p-1.5 shadow-xl">
+            <div class="nodrag nopan absolute right-0 top-full z-30 mt-1 flex items-center gap-1.5 rounded-lg border border-border bg-surface p-1.5 shadow-xl">
               {#each COLOR_ORDER as swatchColor}
                 <button type="button"
                   title={swatchColor === 'none' ? 'No background' : swatchColor}
@@ -390,7 +390,7 @@
                   class="flex h-5 w-5 items-center justify-center rounded-full transition-transform hover:scale-110 {NOTE_COLORS[swatchColor].swatch}
                          {color === swatchColor ? 'ring-2 ring-brand ring-offset-1' : ''}">
                   {#if swatchColor === 'none'}
-                    <Icon icon="lucide:ban" width="12" height="12" class="text-zinc-400" />
+                    <Icon icon="lucide:ban" width="12" height="12" class="text-text-subtle" />
                   {/if}
                 </button>
               {/each}
@@ -422,7 +422,7 @@
       onclick={handleEditorClick}
       ondblclick={enterEdit}
       onkeydown={handleEditorKeydown}
-      class="min-h-9 w-full whitespace-pre-wrap wrap-break-word px-3 py-2 text-sm leading-5 text-zinc-800 outline-none
+      class="min-h-9 w-full whitespace-pre-wrap wrap-break-word px-3 py-2 text-sm leading-5 text-text outline-none
              {editing ? 'nodrag nopan cursor-text' : readOnly ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}"
     ></div>
   </div>

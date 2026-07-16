@@ -49,7 +49,7 @@
     <div class="flex items-center gap-2">
       <button
         onclick={toggle}
-        class="flex items-center gap-1.5 text-[11px] text-zinc-400 hover:text-zinc-600 transition-colors"
+        class="flex items-center gap-1.5 text-[11px] text-text-subtle hover:text-text-secondary transition-colors"
       >
         <svg
           width="10" height="10" viewBox="0 0 24 24" fill="none"
@@ -64,13 +64,13 @@
       {#if open && log && log.length > 0}
         <button
           onclick={copyLog}
-          class="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors"
+          class="text-[10px] text-text-subtle hover:text-text-secondary transition-colors"
         >
           {copied ? '✓ Copied' : 'Copy'}
         </button>
         <button
           onclick={exportLog}
-          class="text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors"
+          class="text-[10px] text-text-subtle hover:text-text-secondary transition-colors"
         >
           Export .txt
         </button>
@@ -79,9 +79,9 @@
 
     {#if open}
       {#if loading}
-        <p class="text-[11px] text-zinc-400 mt-2">Loading…</p>
+        <p class="text-[11px] text-text-subtle mt-2">Loading…</p>
       {:else if !log || log.length === 0}
-        <p class="text-[11px] text-zinc-400 mt-2">No log available for this run.</p>
+        <p class="text-[11px] text-text-subtle mt-2">No log available for this run.</p>
       {:else}
         <div class="mt-2">
           <TerminalOutput lines={log} running={false} />

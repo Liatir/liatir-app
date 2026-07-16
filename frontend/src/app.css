@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Dark mode is driven by an explicit data-theme attribute on <html>
+   (set from user settings, see stores/settings.svelte.ts), so `dark:`
+   utilities follow the app preference instead of the OS alone. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme {
   --color-bg:         #f4f4f6;
   --color-surface:    #ffffff;
@@ -7,6 +12,13 @@
   --color-surface-3:  #e8e8ec;
   --color-border:     #e2e2e8;
   --color-border-2:   #d0d0d8;
+  /* Semantic text tiers (map to the zinc shades used across the app):
+     text > secondary > muted > subtle > faint */
+  --color-text:           #18181b;
+  --color-text-secondary: #52525b;
+  --color-text-muted:     #71717a;
+  --color-text-subtle:    #a1a1aa;
+  --color-text-faint:     #d4d4d8;
   /* Liatir sandbox */
   --color-sandbox-800:  #963B01;
   --color-sandbox-700:  #BB4D01;
@@ -47,6 +59,128 @@
   --breakpoint-5xl:     142rem;
 }
 
+html {
+  color-scheme: light;
+}
+
+/* Dark theme: overrides the semantic tokens above. Utilities like
+   bg-surface / border-border / text-text pick these up automatically. */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-bg:         #131316;
+  --color-surface:    #1c1c20;
+  --color-surface-2:  #232328;
+  --color-surface-3:  #2b2b31;
+  --color-border:     #2a2a30;
+  --color-border-2:   #3f3f46;
+
+  --color-text:           #e4e4e7;
+  --color-text-secondary: #d4d4d8;
+  --color-text-muted:     #a1a1aa;
+  --color-text-subtle:    #71717a;
+  --color-text-faint:     #52525b;
+
+  --color-brand-shadow: #0b3d39;
+
+  /* Accent shades: light tints (50/100) and borders (200) become dark tints,
+     deep text shades (600/700/800) brighten. Literal values from the Tailwind
+     default palette (300/400) because unused theme vars are pruned from the
+     build. 300/400/500 utilities are intentionally untouched (solid fills,
+     dark-panel text). */
+  --color-red-50:  color-mix(in oklab, oklch(70.4% 0.191 22.216) 15%, var(--color-surface));
+  --color-red-100: color-mix(in oklab, oklch(70.4% 0.191 22.216) 25%, var(--color-surface));
+  --color-red-200: color-mix(in oklab, oklch(70.4% 0.191 22.216) 35%, var(--color-surface));
+  --color-red-600: oklch(70.4% 0.191 22.216);
+  --color-red-700: oklch(80.8% 0.114 19.571);
+  --color-red-800: oklch(80.8% 0.114 19.571);
+
+  --color-green-50:  color-mix(in oklab, oklch(79.2% 0.209 151.711) 15%, var(--color-surface));
+  --color-green-100: color-mix(in oklab, oklch(79.2% 0.209 151.711) 25%, var(--color-surface));
+  --color-green-200: color-mix(in oklab, oklch(79.2% 0.209 151.711) 35%, var(--color-surface));
+  --color-green-600: oklch(79.2% 0.209 151.711);
+  --color-green-700: oklch(87.1% 0.15 154.449);
+  --color-green-800: oklch(87.1% 0.15 154.449);
+
+  --color-emerald-50:  color-mix(in oklab, oklch(76.5% 0.177 163.223) 15%, var(--color-surface));
+  --color-emerald-100: color-mix(in oklab, oklch(76.5% 0.177 163.223) 25%, var(--color-surface));
+  --color-emerald-200: color-mix(in oklab, oklch(76.5% 0.177 163.223) 35%, var(--color-surface));
+  --color-emerald-600: oklch(76.5% 0.177 163.223);
+  --color-emerald-700: oklch(84.5% 0.143 164.978);
+  --color-emerald-800: oklch(84.5% 0.143 164.978);
+
+  --color-amber-50:  color-mix(in oklab, oklch(82.8% 0.189 84.429) 15%, var(--color-surface));
+  --color-amber-100: color-mix(in oklab, oklch(82.8% 0.189 84.429) 25%, var(--color-surface));
+  --color-amber-200: color-mix(in oklab, oklch(82.8% 0.189 84.429) 35%, var(--color-surface));
+  --color-amber-600: oklch(82.8% 0.189 84.429);
+  --color-amber-700: oklch(87.9% 0.169 91.605);
+  --color-amber-800: oklch(87.9% 0.169 91.605);
+
+  --color-sky-50:  color-mix(in oklab, oklch(74.6% 0.16 232.661) 15%, var(--color-surface));
+  --color-sky-100: color-mix(in oklab, oklch(74.6% 0.16 232.661) 25%, var(--color-surface));
+  --color-sky-200: color-mix(in oklab, oklch(74.6% 0.16 232.661) 35%, var(--color-surface));
+  --color-sky-600: oklch(74.6% 0.16 232.661);
+  --color-sky-700: oklch(82.8% 0.111 230.318);
+  --color-sky-800: oklch(82.8% 0.111 230.318);
+
+  --color-violet-50:  color-mix(in oklab, oklch(70.2% 0.183 293.541) 15%, var(--color-surface));
+  --color-violet-100: color-mix(in oklab, oklch(70.2% 0.183 293.541) 25%, var(--color-surface));
+  --color-violet-200: color-mix(in oklab, oklch(70.2% 0.183 293.541) 35%, var(--color-surface));
+  --color-violet-600: oklch(70.2% 0.183 293.541);
+  --color-violet-700: oklch(81.1% 0.111 293.571);
+  --color-violet-800: oklch(81.1% 0.111 293.571);
+
+  --color-rose-50:  color-mix(in oklab, oklch(71.2% 0.194 13.428) 15%, var(--color-surface));
+  --color-rose-100: color-mix(in oklab, oklch(71.2% 0.194 13.428) 25%, var(--color-surface));
+  --color-rose-200: color-mix(in oklab, oklch(71.2% 0.194 13.428) 35%, var(--color-surface));
+  --color-rose-600: oklch(71.2% 0.194 13.428);
+  --color-rose-700: oklch(81% 0.117 11.638);
+  --color-rose-800: oklch(81% 0.117 11.638);
+
+  --color-orange-50:  color-mix(in oklab, oklch(75% 0.183 55.934) 15%, var(--color-surface));
+  --color-orange-100: color-mix(in oklab, oklch(75% 0.183 55.934) 25%, var(--color-surface));
+  --color-orange-200: color-mix(in oklab, oklch(75% 0.183 55.934) 35%, var(--color-surface));
+  --color-orange-600: oklch(75% 0.183 55.934);
+  --color-orange-700: oklch(83.7% 0.128 66.29);
+  --color-orange-800: oklch(83.7% 0.128 66.29);
+
+  --color-indigo-50:  color-mix(in oklab, oklch(67.3% 0.182 276.935) 15%, var(--color-surface));
+  --color-indigo-100: color-mix(in oklab, oklch(67.3% 0.182 276.935) 25%, var(--color-surface));
+  --color-indigo-200: color-mix(in oklab, oklch(67.3% 0.182 276.935) 35%, var(--color-surface));
+  --color-indigo-600: oklch(67.3% 0.182 276.935);
+  --color-indigo-700: oklch(78.5% 0.115 274.713);
+  --color-indigo-800: oklch(78.5% 0.115 274.713);
+
+  --color-teal-50:  color-mix(in oklab, oklch(77.7% 0.152 181.912) 15%, var(--color-surface));
+  --color-teal-100: color-mix(in oklab, oklch(77.7% 0.152 181.912) 25%, var(--color-surface));
+  --color-teal-200: color-mix(in oklab, oklch(77.7% 0.152 181.912) 35%, var(--color-surface));
+  --color-teal-600: oklch(77.7% 0.152 181.912);
+  --color-teal-700: oklch(85.5% 0.138 181.071);
+  --color-teal-800: oklch(85.5% 0.138 181.071);
+
+  --color-blue-50:  color-mix(in oklab, oklch(70.7% 0.165 254.624) 15%, var(--color-surface));
+  --color-blue-100: color-mix(in oklab, oklch(70.7% 0.165 254.624) 25%, var(--color-surface));
+  --color-blue-200: color-mix(in oklab, oklch(70.7% 0.165 254.624) 35%, var(--color-surface));
+  --color-blue-600: oklch(70.7% 0.165 254.624);
+  --color-blue-700: oklch(80.9% 0.105 251.813);
+  --color-blue-800: oklch(80.9% 0.105 251.813);
+
+  --color-purple-50:  color-mix(in oklab, oklch(71.4% 0.203 305.504) 15%, var(--color-surface));
+  --color-purple-100: color-mix(in oklab, oklch(71.4% 0.203 305.504) 25%, var(--color-surface));
+  --color-purple-200: color-mix(in oklab, oklch(71.4% 0.203 305.504) 35%, var(--color-surface));
+  --color-purple-600: oklch(71.4% 0.203 305.504);
+  --color-purple-700: oklch(82.7% 0.119 306.383);
+  --color-purple-800: oklch(82.7% 0.119 306.383);
+
+  /* Sandbox scale (custom brand-orange) gets the same treatment. */
+  --color-sandbox-50:  color-mix(in oklab, var(--color-sandbox-400) 15%, var(--color-surface));
+  --color-sandbox-100: color-mix(in oklab, var(--color-sandbox-400) 25%, var(--color-surface));
+  --color-sandbox-200: color-mix(in oklab, var(--color-sandbox-400) 35%, var(--color-surface));
+  --color-sandbox-600: var(--color-sandbox-400);
+  --color-sandbox-700: var(--color-sandbox-300);
+  --color-sandbox-800: var(--color-sandbox-300);
+}
+
 *,
 *::before,
 *::after {
@@ -69,7 +203,7 @@ html, body {
 
 body {
   background-color: var(--color-bg);
-  color: #18181b;
+  color: var(--color-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -84,8 +218,8 @@ input, textarea, [data-selectable] {
 
 ::-webkit-scrollbar          { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track    { background: transparent; }
-::-webkit-scrollbar-thumb    { background: #d0d0d8; border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: #b0b0bc; }
+::-webkit-scrollbar-thumb    { background: var(--color-border-2); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-subtle); }
 
 
 	.markdown-body > :first-child { margin-top: 0; }
@@ -93,7 +227,7 @@ input, textarea, [data-selectable] {
 	.markdown-body p { margin: 0.55rem 0; }
 	.markdown-body h1,
 	.markdown-body h2,
-	.markdown-body h3 { margin: 0.9rem 0 0.4rem; font-weight: 650; color: #27272a; }
+	.markdown-body h3 { margin: 0.9rem 0 0.4rem; font-weight: 650; color: var(--color-text); }
 	.markdown-body h1 { font-size: 1.2rem; }
 	.markdown-body h2 { font-size: 1.05rem; }
 	.markdown-body h3 { font-size: 0.95rem; }
@@ -101,7 +235,7 @@ input, textarea, [data-selectable] {
 	.markdown-body ol { margin: 0.55rem 0; padding-left: 1.35rem; }
 	.markdown-body ul { list-style: disc; }
 	.markdown-body ol { list-style: decimal; }
-	.markdown-body blockquote { margin: 0.75rem 0; border-left: 3px solid #d4d4d8; padding-left: 0.8rem; color: #71717a; }
+	.markdown-body blockquote { margin: 0.75rem 0; border-left: 3px solid var(--color-border-2); padding-left: 0.8rem; color: var(--color-text-muted); }
 	.markdown-body a { color: var(--color-brand); text-decoration: underline; text-underline-offset: 2px; }
 	.markdown-body table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.8rem; }
 	.markdown-body th,
@@ -109,8 +243,8 @@ input, textarea, [data-selectable] {
 
 	/* Inline code (single backtick). */
 	.markdown-body code {
-		background-color: #eeeeee !important;
-		color: #000000 !important;
+		background-color: var(--color-surface-3) !important;
+		color: var(--color-text) !important;
 		padding: 1.5px 5px !important;
 		border-radius: 4px !important;
 		font-family: monospace !important;
@@ -145,7 +279,7 @@ input, textarea, [data-selectable] {
 }
 
 .svelte-flow__handle {
-  border-color: var(--color-zinc-200) !important;
+  border-color: var(--color-border) !important;
   border-top-width: 25px !important;
   border-bottom-width: 25px !important;
   border-radius: 10px !important;

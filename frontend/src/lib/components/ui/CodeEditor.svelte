@@ -5,7 +5,8 @@
   import { keymap } from '@codemirror/view';
   import { indentWithTab } from '@codemirror/commands';
   import { type Extension } from '@codemirror/state';
-  import { liatirTheme, liatirCompletions, liatirHover } from '$lib/liatir-editor';
+  import { liatirTheme, reconfigureTheme, liatirCompletions, liatirHover } from '$lib/liatir-editor';
+  import { settingsStore } from '$lib/stores/settings.svelte';
 
   interface Props {
     value: string;
@@ -25,7 +26,7 @@
       extensions: [
         basicSetup,
         javascript({ typescript: true }),
-        ...liatirTheme,
+        liatirTheme(settingsStore.resolvedTheme),
         liatirCompletions,
         liatirHover,
         keymap.of([
@@ -55,6 +56,12 @@
         changes: { from: 0, to: view.state.doc.length, insert: value },
       });
     }
+  });
+
+  // Swap the editor theme in place, keeping undo history and cursor intact.
+  $effect(() => {
+    const theme = settingsStore.resolvedTheme;
+    if (view) reconfigureTheme(view, theme);
   });
 </script>
 

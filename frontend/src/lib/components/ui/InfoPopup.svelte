@@ -35,7 +35,7 @@
   <button
     onclick={(e) => { e.stopPropagation(); open = !open; }}
     aria-label="More information"
-    class="inline-flex items-center justify-center ml-1 text-zinc-300 hover:text-brand transition-colors"
+    class="inline-flex items-center justify-center ml-1 text-text-faint hover:text-brand transition-colors"
   >
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="10" />
@@ -76,7 +76,7 @@
              w-96 rounded-xl border border-border bg-surface shadow-xl"
     >
       <div class="flex items-center justify-between px-4 py-3 border-b border-border">
-        <span class="text-xs font-semibold text-zinc-700 flex items-center gap-1.5">
+        <span class="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0A948B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="16" x2="12" y2="12" />
@@ -87,7 +87,7 @@
         <button
           onclick={(e) => { e.stopPropagation(); open = false; }}
           aria-label="Close"
-          class="text-zinc-400 hover:text-zinc-700 transition-colors"
+          class="text-text-subtle hover:text-text-secondary transition-colors"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />

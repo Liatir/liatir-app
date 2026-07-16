@@ -33,7 +33,7 @@
     done:      'bg-emerald-500',
     failed:    'bg-red-500',
     killed:    'bg-amber-500',
-    neutral:   'bg-zinc-400',
+    neutral:   'bg-text-subtle',
     brand:     'bg-brand',
     available: 'bg-emerald-500',
     missing:   'bg-red-500',

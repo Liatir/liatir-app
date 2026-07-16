@@ -114,9 +114,9 @@
 
       <!-- Environment variables -->
       <section>
-        <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">Environment Variables</h2>
-        <p class="text-xs text-zinc-400 mb-3">
-          Use <code class="font-mono text-zinc-600">{"{{KEY}}"}</code> to interpolate these variables in API requests, pipeline inputs, and tool parameters.
+        <h2 class="text-xs font-medium text-text-muted uppercase tracking-wider mb-1">Environment Variables</h2>
+        <p class="text-xs text-text-subtle mb-3">
+          Use <code class="font-mono text-text-secondary">{"{{KEY}}"}</code> to interpolate these variables in API requests, pipeline inputs, and tool parameters.
         </p>
         <EnvVarTable
           vars={workspaceStore.envVars}
@@ -126,13 +126,13 @@
 
       <!-- Reset -->
       <section>
-        <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Sandbox Reset</h2>
+        <h2 class="text-xs font-medium text-text-muted uppercase tracking-wider mb-3">Sandbox Reset</h2>
         <div class="grid gap-3 lg:grid-cols-3">
         <Card class="p-4">
           <div class="flex h-full flex-col justify-between gap-4">
             <div>
-              <p class="text-sm font-medium text-zinc-800">Re-seed demo files</p>
-              <p class="text-xs text-zinc-500 mt-0.5">
+              <p class="text-sm font-medium text-text">Re-seed demo files</p>
+              <p class="text-xs text-text-muted mt-0.5">
                 Restore missing bundled demo files without touching your Sandbox work.
               </p>
             </div>
@@ -145,8 +145,8 @@
         <Card class="p-4">
           <div class="flex h-full flex-col justify-between gap-4">
             <div>
-              <p class="text-sm font-medium text-zinc-800">Clear runs and results</p>
-              <p class="text-xs text-zinc-500 mt-0.5">
+              <p class="text-sm font-medium text-text">Clear runs and results</p>
+              <p class="text-xs text-text-muted mt-0.5">
                 Clear Results, Analysis Runs, completed jobs, and pipeline run state.
               </p>
             </div>
@@ -159,8 +159,8 @@
         <Card class="p-4">
           <div class="flex h-full flex-col justify-between gap-4">
             <div>
-              <p class="text-sm font-medium text-zinc-800">Full Sandbox reset</p>
-              <p class="text-xs text-zinc-500 mt-0.5">
+              <p class="text-sm font-medium text-text">Full Sandbox reset</p>
+              <p class="text-xs text-text-muted mt-0.5">
                 Clear Sandbox data completely and re-seed bundled demo files.
               </p>
             </div>
@@ -175,10 +175,10 @@
     {:else}
       <!-- General -->
       <section>
-        <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">General</h2>
+        <h2 class="text-xs font-medium text-text-muted uppercase tracking-wider mb-3">General</h2>
         <Card class="p-4 space-y-3">
           <div class="space-y-1.5">
-            <label for="ws-name" class="text-sm text-zinc-600">Workspace name</label>
+            <label for="ws-name" class="text-sm text-text-secondary">Workspace name</label>
             <div class="flex gap-2">
               <input
                 id="ws-name"
@@ -186,7 +186,7 @@
                 bind:value={nameInput}
                 placeholder="My workspace"
                 class="flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm
-                       placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand/30"
+                       placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-brand/30"
                 onkeydown={(e) => { if (e.key === 'Enter') saveName(); }}
               />
               <Button
@@ -205,9 +205,9 @@
 
       <!-- Environment variables -->
       <section>
-        <h2 class="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">Environment Variables</h2>
-        <p class="text-xs text-zinc-400 mb-3">
-          Use <code class="font-mono text-zinc-600">{"{{KEY}}"}</code> to interpolate these variables in API requests, pipeline inputs, and tool parameters.
+        <h2 class="text-xs font-medium text-text-muted uppercase tracking-wider mb-1">Environment Variables</h2>
+        <p class="text-xs text-text-subtle mb-3">
+          Use <code class="font-mono text-text-secondary">{"{{KEY}}"}</code> to interpolate these variables in API requests, pipeline inputs, and tool parameters.
         </p>
         <EnvVarTable
           vars={workspaceStore.envVars}
@@ -221,8 +221,8 @@
         <Card class="p-4">
           <div class="flex items-start justify-between gap-4">
             <div>
-              <p class="text-sm font-medium text-zinc-800">Delete this workspace</p>
-              <p class="text-xs text-zinc-500 mt-0.5">
+              <p class="text-sm font-medium text-text">Delete this workspace</p>
+              <p class="text-xs text-text-muted mt-0.5">
                 Permanently delete this workspace and all its data. This action cannot be undone.
               </p>
             </div>

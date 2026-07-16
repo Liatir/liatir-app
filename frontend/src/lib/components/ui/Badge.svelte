@@ -34,7 +34,7 @@
     done:      'bg-emerald-500/12 text-emerald-700 border border-emerald-500/30',
     failed:    'bg-red-500/12 text-red-700 border border-red-500/30',
     killed:    'bg-amber-500/12 text-amber-700 border border-amber-500/30',
-    neutral:   'bg-zinc-100 text-zinc-600 border border-zinc-300',
+    neutral:   'bg-surface-2 text-text-secondary border border-border-2',
     brand:     'bg-brand/12 text-brand border border-brand/30',
     available: 'bg-emerald-500/12 text-emerald-700 border border-emerald-500/30',
     missing:   'bg-red-500/12 text-red-700 border border-red-500/30',

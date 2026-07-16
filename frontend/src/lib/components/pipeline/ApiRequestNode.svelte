@@ -30,7 +30,7 @@
 
   const METHOD_COLORS: Record<string, string> = {
     GET: 'text-emerald-600', POST: 'text-blue-600', PUT: 'text-amber-600',
-    PATCH: 'text-violet-600', DELETE: 'text-red-600', HEAD: 'text-zinc-500', OPTIONS: 'text-zinc-500',
+    PATCH: 'text-violet-600', DELETE: 'text-red-600', HEAD: 'text-text-muted', OPTIONS: 'text-text-muted',
   };
 
   let showPicker = $state(false);
@@ -95,7 +95,7 @@
 <!-- Single input handle — wire upstream value nodes in, then map them to params below. -->
 <Handle type="target" position={Position.Left} id="input" />
 
-<div class="min-w-60 max-w-72 rounded-xl border border-border bg-white shadow-md overflow-visible">
+<div class="min-w-60 max-w-72 rounded-xl border border-border bg-surface shadow-md overflow-visible">
   <div class="flex items-center gap-2 px-3 py-2 rounded-t-xl border-b border-border bg-rose-50 cursor-grab active:cursor-grabbing">
     <span class="h-2 w-2 rounded-full shrink-0 {statusDotClass(status)}" title={statusLabel(status)}></span>
     <Icon icon="lucide:plug" width="11" height="11" class="text-rose-500 shrink-0" />
@@ -117,19 +117,19 @@
   <div class="px-3 py-2.5 nodrag nopan space-y-2">
     {#if req}
       <div class="flex items-center gap-2">
-        <span class="text-[10px] font-bold font-mono {METHOD_COLORS[req.method] ?? 'text-zinc-500'}">{req.method}</span>
-        <span class="flex-1 text-xs text-zinc-700 truncate">{req.name}</span>
+        <span class="text-[10px] font-bold font-mono {METHOD_COLORS[req.method] ?? 'text-text-muted'}">{req.method}</span>
+        <span class="flex-1 text-xs text-text-secondary truncate">{req.name}</span>
         {#if !disabled}
-          <button onclick={() => showPicker = true} class="text-[10px] text-zinc-400 hover:text-brand">Change</button>
+          <button onclick={() => showPicker = true} class="text-[10px] text-text-subtle hover:text-brand">Change</button>
         {/if}
       </div>
-      <div class="text-[10px] text-zinc-400 font-mono truncate">{req.url}</div>
+      <div class="text-[10px] text-text-subtle font-mono truncate">{req.url}</div>
 
       {#if overridableParams.length > 0}
         <div class="border-t border-border/60 pt-1.5">
           <button
             onclick={() => showParams = !showParams}
-            class="w-full flex items-center justify-between text-[10px] text-zinc-500 hover:text-zinc-700"
+            class="w-full flex items-center justify-between text-[10px] text-text-muted hover:text-text-secondary"
           >
             <span>Parameter overrides{(() => { const n = Object.values(data.paramOverrides ?? {}).filter(v => v).length; return n ? ` (${n})` : ''; })()}</span>
             <Icon icon={showParams ? 'lucide:chevron-up' : 'lucide:chevron-down'} width="12" height="12" />
@@ -138,7 +138,7 @@
             <div class="mt-1.5 space-y-1.5">
               {#each overridableParams as key}
                 <div>
-                  <span class="block text-[10px] text-zinc-400 mb-0.5 font-mono">{key}</span>
+                  <span class="block text-[10px] text-text-subtle mb-0.5 font-mono">{key}</span>
                   <ValueRefInput
                     value={data.paramOverrides?.[key] ?? ''}
                     options={valueOptions}
@@ -157,12 +157,12 @@
 
       {#if outputFields.length > 0}
         <div class="border-t border-border/60 pt-1.5">
-          <p class="text-[9px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Outputs</p>
+          <p class="text-[9px] font-semibold text-text-subtle uppercase tracking-wider mb-1">Outputs</p>
           <div class="flex flex-wrap gap-1">
             {#each outputFields as f}
-              <span class="inline-flex items-center rounded-full bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 text-[10px] text-zinc-500">{f.label}</span>
+              <span class="inline-flex items-center rounded-full bg-surface-2 border border-border px-1.5 py-0.5 text-[10px] text-text-muted">{f.label}</span>
             {/each}
-            <span class="inline-flex items-center gap-1 rounded-full bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 text-[10px] text-zinc-500">
+            <span class="inline-flex items-center gap-1 rounded-full bg-surface-2 border border-border px-1.5 py-0.5 text-[10px] text-text-muted">
               <Icon icon="lucide:file" width="8" height="8" /> Response body
             </span>
           </div>
@@ -181,7 +181,7 @@
     {/if}
 
     {#if status === 'running'}
-      <div class="text-[10px] font-mono text-zinc-400">{sanitizeLocalPathsForDisplay(runState?.logs?.[0] ?? 'Sending…', 2)}</div>
+      <div class="text-[10px] font-mono text-text-subtle">{sanitizeLocalPathsForDisplay(runState?.logs?.[0] ?? 'Sending…', 2)}</div>
     {/if}
     {#if status === 'error' && runState?.error}
       <div class="text-[10px] text-red-500 font-mono">{sanitizeLocalPathsForDisplay(runState.error, 2)}</div>
@@ -211,14 +211,14 @@
 <Handle type="source" position={Position.Right} id="output" />
 
 {#if showPicker}
-  <div use:clickOutside={{ enabled: showPicker, onOutside: () => { showPicker = false; pickerQuery = ''; } }} class="nowheel absolute left-full top-0 ml-2 z-50 w-64 rounded-xl border border-border bg-white shadow-xl overflow-hidden nodrag nopan">
+  <div use:clickOutside={{ enabled: showPicker, onOutside: () => { showPicker = false; pickerQuery = ''; } }} class="nowheel absolute left-full top-0 ml-2 z-50 w-64 rounded-xl border border-border bg-surface shadow-xl overflow-hidden nodrag nopan">
     <div class="px-3 py-2 border-b border-border bg-surface flex items-center gap-2">
-      <Icon icon="lucide:search" width="11" height="11" class="text-zinc-400 shrink-0" />
+      <Icon icon="lucide:search" width="11" height="11" class="text-text-subtle shrink-0" />
       <input
         bind:this={pickerSearchInput}
         bind:value={pickerQuery}
         placeholder="Search requests…"
-        class="flex-1 text-xs bg-transparent outline-none text-zinc-800 placeholder:text-zinc-400"
+        class="flex-1 text-xs bg-transparent outline-none text-text placeholder:text-text-subtle"
         onclick={(e) => e.stopPropagation()}
       />
     </div>
@@ -229,13 +229,13 @@
           class="w-full text-left px-3 py-2 hover:bg-rose-50 transition-colors border-b border-border/50 last:border-0"
         >
           <div class="flex items-center gap-2">
-            <span class="text-[10px] font-bold font-mono {METHOD_COLORS[r.method] ?? 'text-zinc-500'}">{r.method}</span>
-            <span class="flex-1 text-xs text-zinc-700 truncate">{r.name}</span>
+            <span class="text-[10px] font-bold font-mono {METHOD_COLORS[r.method] ?? 'text-text-muted'}">{r.method}</span>
+            <span class="flex-1 text-xs text-text-secondary truncate">{r.name}</span>
           </div>
-          <div class="text-[10px] text-zinc-400 font-mono truncate">{r.url}</div>
+          <div class="text-[10px] text-text-subtle font-mono truncate">{r.url}</div>
         </button>
       {:else}
-        <div class="px-3 py-4 text-center text-xs text-zinc-400">No requests found</div>
+        <div class="px-3 py-4 text-center text-xs text-text-subtle">No requests found</div>
       {/each}
     </div>
   </div>

@@ -24,7 +24,7 @@
   {disabled}
   title="Remove node"
   aria-label="Remove node"
-  class="nodrag nopan shrink-0 h-5 w-5 rounded flex items-center justify-center text-zinc-300
+  class="nodrag nopan shrink-0 h-5 w-5 rounded flex items-center justify-center text-text-faint
          hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed {klass}"
 >
   <Icon icon="lucide:x" width="12" height="12" />

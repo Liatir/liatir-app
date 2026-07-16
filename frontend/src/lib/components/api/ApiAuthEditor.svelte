@@ -40,12 +40,12 @@
     set({ customTokenRequest: { ...ctr(), ...patch } });
   }
 
-  const fieldCls = 'w-full text-xs border border-border rounded px-2 py-1 bg-white outline-none focus:border-brand/60 font-mono';
+  const fieldCls = 'w-full text-xs border border-border rounded px-2 py-1 bg-surface outline-none focus:border-brand/60 font-mono';
 </script>
 
 <div class="space-y-2.5">
   <div class="flex items-center gap-2">
-    <span class="text-[11px] font-medium text-zinc-500 w-28 shrink-0">Authentication</span>
+    <span class="text-[11px] font-medium text-text-muted w-28 shrink-0">Authentication</span>
     <Select value={auth.type} options={options} onchange={setType} class="flex-1 max-w-72" />
   </div>
 
@@ -92,7 +92,7 @@
           oninput={(e) => setCtr({ url: (e.target as HTMLInputElement).value })} class="{fieldCls} flex-1" />
       </div>
       <div>
-        <span class="text-[10px] text-zinc-400">Token request headers</span>
+        <span class="text-[10px] text-text-subtle">Token request headers</span>
         <KeyValueTable rows={ctr().headers} {disabled} onchange={(headers: ApiKeyValue[]) => setCtr({ headers })} />
       </div>
       <textarea value={ctr().body.content} placeholder={'Token request body (JSON)\n{ "grant_type": "client_credentials" }'} {disabled}

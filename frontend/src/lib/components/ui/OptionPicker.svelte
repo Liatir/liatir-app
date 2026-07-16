@@ -88,7 +88,7 @@
 
 <div class="relative" use:clickOutside={{ enabled: open, onOutside: close }}>
   {#if label}
-    <p class="mb-1.5 flex items-center gap-1 text-xs text-zinc-500">
+    <p class="mb-1.5 flex items-center gap-1 text-xs text-text-muted">
       <span>{label}</span>
       {#if info}
         <InfoPopup text={info} />
@@ -111,17 +111,17 @@
         <span class="flex-1 min-w-0">
           <span class="block text-sm font-medium text-brand truncate">{selected.label}</span>
           {#if selected.sublabel}
-            <span class="block text-[11px] text-zinc-400 truncate">{selected.sublabel}</span>
+            <span class="block text-[11px] text-text-subtle truncate">{selected.sublabel}</span>
           {/if}
         </span>
         {#if selected.badge}
-          <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-zinc-100 text-zinc-500 border border-zinc-200">{selected.badge}</span>
+          <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-surface-2 text-text-muted border border-border">{selected.badge}</span>
         {/if}
       {:else if !hasItems}
-        <span class="flex-1 text-sm text-zinc-400">{emptyText}</span>
+        <span class="flex-1 text-sm text-text-subtle">{emptyText}</span>
       {:else}
-        <span class="flex-1 text-sm text-zinc-400">{placeholder}</span>
-        <svg class="shrink-0 text-zinc-300" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <span class="flex-1 text-sm text-text-subtle">{placeholder}</span>
+        <svg class="shrink-0 text-text-faint" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <polyline points="6 9 12 15 18 9"/>
         </svg>
       {/if}
@@ -131,7 +131,7 @@
       <button
         type="button"
         onclick={(e) => { e.stopPropagation(); pick(''); }}
-        class="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-300 hover:text-zinc-500 transition-colors p-0.5"
+        class="absolute right-2 top-1/2 -translate-y-1/2 text-text-faint hover:text-text-muted transition-colors p-0.5"
         aria-label="Clear selection"
       >
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -151,24 +151,24 @@
   {#if open}
   <!-- Popup (nowheel: scrolling the list must not zoom the pipeline canvas) -->
   <div class="nowheel fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-              w-full max-w-md rounded-xl border border-border bg-white shadow-xl overflow-hidden">
+              w-full max-w-md rounded-xl border border-border bg-surface shadow-xl overflow-hidden">
 
     <!-- Search -->
     <div class="flex items-center gap-2 px-3 py-2.5 border-b border-border">
-      <svg class="shrink-0 text-zinc-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <svg class="shrink-0 text-text-subtle" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
       </svg>
       <input
         bind:this={searchInput}
         bind:value={query}
         placeholder={searchPlaceholder}
-        class="flex-1 text-sm bg-transparent outline-none text-zinc-800 placeholder:text-zinc-400"
+        class="flex-1 text-sm bg-transparent outline-none text-text placeholder:text-text-subtle"
         onkeydown={(e) => {
           if (e.key === 'Escape') close();
           if (e.key === 'Enter' && firstResult) pick(firstResult.value);
         }}
       />
-      <button onclick={close} class="shrink-0 text-zinc-300 hover:text-zinc-500 transition-colors" aria-label="Close">
+      <button onclick={close} class="shrink-0 text-text-faint hover:text-text-muted transition-colors" aria-label="Close">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
@@ -178,13 +178,13 @@
     <!-- Options -->
     <div class="max-h-72 overflow-y-auto">
       {#if filteredCount === 0}
-        <p class="text-sm text-zinc-400 text-center py-8">
+        <p class="text-sm text-text-subtle text-center py-8">
           {query ? `No results for "${query}"` : emptyText}
         </p>
       {:else}
         {#each filteredGroups as group}
           {#if group.title}
-            <p class="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider sticky top-0 bg-white">
+            <p class="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-text-subtle uppercase tracking-wider sticky top-0 bg-surface">
               {group.title}
             </p>
           {/if}
@@ -194,21 +194,21 @@
               type="button"
               onclick={() => pick(item.value)}
               class="w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors
-                     {sel ? 'bg-brand/8' : 'hover:bg-zinc-50'}"
+                     {sel ? 'bg-brand/8' : 'hover:bg-surface-2'}"
             >
               <span class="flex-1 min-w-0">
-                <span class="block text-sm font-medium truncate {sel ? 'text-brand' : 'text-zinc-800'}">{item.label}</span>
+                <span class="block text-sm font-medium truncate {sel ? 'text-brand' : 'text-text'}">{item.label}</span>
                 {#if item.sublabel}
-                  <span class="block text-[11px] text-zinc-400 truncate">{item.sublabel}</span>
+                  <span class="block text-[11px] text-text-subtle truncate">{item.sublabel}</span>
                 {/if}
               </span>
               <div class="shrink-0 flex items-center gap-1.5">
                 {#if item.meta}
-                  <span class="text-[10px] font-mono text-zinc-400">{item.meta}</span>
+                  <span class="text-[10px] font-mono text-text-subtle">{item.meta}</span>
                 {/if}
                 {#if item.badge}
                   <span class="rounded px-1.5 py-0.5 text-[10px] font-medium border
-                    {sel ? 'bg-brand/10 border-brand/20 text-brand' : 'bg-zinc-100 border-zinc-200 text-zinc-500'}">
+                    {sel ? 'bg-brand/10 border-brand/20 text-brand' : 'bg-surface-2 border-border text-text-muted'}">
                     {item.badge}
                   </span>
                 {/if}
@@ -220,7 +220,7 @@
     </div>
 
     <!-- Footer -->
-    <div class="px-3 py-2 border-t border-border text-[10px] text-zinc-400">
+    <div class="px-3 py-2 border-t border-border text-[10px] text-text-subtle">
       {filteredCount} of {allItems.length} option{allItems.length !== 1 ? 's' : ''}
     </div>
   </div>

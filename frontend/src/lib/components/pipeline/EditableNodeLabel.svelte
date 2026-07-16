@@ -12,8 +12,8 @@
     id,
     label,
     typeName,
-    nameClass = 'text-sm font-semibold text-zinc-800',
-    typeClass = 'text-sm font-semibold text-zinc-800',
+    nameClass = 'text-sm font-semibold text-text',
+    typeClass = 'text-sm font-semibold text-text',
   }: {
     id: string;
     /** Current custom name (node data.label). */
@@ -77,7 +77,7 @@
       onclick={(e) => e.stopPropagation()}
       onpointerdown={(e) => e.stopPropagation()}
       placeholder={typeName}
-      class="nodrag nopan w-full rounded border border-brand/40 bg-white px-1.5 py-0.5 text-xs text-zinc-800 outline-none focus:ring-1 focus:ring-brand/30"
+      class="nodrag nopan w-full rounded border border-brand/40 bg-surface px-1.5 py-0.5 text-xs text-text outline-none focus:ring-1 focus:ring-brand/30"
     />
   {:else}
     <div class="group/lbl flex min-w-0 items-center gap-1" ondblclick={startEdit} role="presentation">
@@ -88,7 +88,7 @@
           onclick={startEdit}
           title="Rename node"
           aria-label="Rename node"
-          class="nodrag nopan shrink-0 text-zinc-300 opacity-0 transition-opacity hover:text-brand group-hover/lbl:opacity-100"
+          class="nodrag nopan shrink-0 text-text-faint opacity-0 transition-opacity hover:text-brand group-hover/lbl:opacity-100"
         >
           <Icon icon="lucide:pencil" width="10" height="10" />
         </button>
@@ -96,7 +96,7 @@
     </div>
     {#if hasCustom}
       <!-- Renamed indicator: tag icon + the original type/tool name as a subtitle. -->
-      <span class="flex min-w-0 items-center gap-1 text-[10px] font-medium leading-tight text-zinc-400" title="Renamed · {typeName}">
+      <span class="flex min-w-0 items-center gap-1 text-[10px] font-medium leading-tight text-text-subtle" title="Renamed · {typeName}">
         <Icon icon="lucide:tag" width="8" height="8" class="shrink-0" />
         <span class="truncate">{typeName}</span>
       </span>

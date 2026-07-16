@@ -32,14 +32,14 @@
       </div>
     {/if}
     <div class="min-w-0">
-      <h1 class="flex items-center text-base font-semibold text-zinc-900">
+      <h1 class="flex items-center text-base font-semibold text-text">
         {title}
         {#if info}
           <InfoPopup text={info} />
         {/if}
       </h1>
       {#if description}
-        <p class="mt-0.5 text-[11px] text-zinc-500 max-md:hidden">{description}</p>
+        <p class="mt-0.5 text-[11px] text-text-muted max-md:hidden">{description}</p>
       {/if}
     </div>
   </div>

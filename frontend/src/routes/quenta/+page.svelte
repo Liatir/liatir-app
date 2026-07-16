@@ -557,8 +557,8 @@
     <div class="border-b border-border p-3" style="height: {HEADER_HEIGHT}px;">
       <div class="flex items-center justify-between gap-2">
         <div>
-          <p class="text-xs font-semibold text-zinc-800">Quenta</p>
-          <p class="mt-0.5 text-[10px] text-zinc-400">Local read-only AI</p>
+          <p class="text-xs font-semibold text-text">Quenta</p>
+          <p class="mt-0.5 text-[10px] text-text-subtle">Local read-only AI</p>
         </div>
         <div class="flex items-center gap-1">
           <Button variant="ghost" size="sm" onclick={() => quentaStore.newConversation()}>
@@ -567,7 +567,7 @@
           {#if (quentaStore?.selectedConversationId)?.trim()}
             <button
               type="button"
-              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition hover:bg-surface-2 hover:text-text"
               onclick={() => setChatsCollapsedState(true)}
               aria-label="Collapse conversations"
               title="Collapse conversations"
@@ -582,9 +582,9 @@
     <div class="flex-1 overflow-y-auto p-2">
         <div class="mb-2 space-y-2 px-1">
           <div class="relative">
-            <Icon icon="lucide:search" class="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+            <Icon icon="lucide:search" class="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-subtle" />
             <input
-              class="w-full rounded-lg border border-border bg-white py-1.5 pl-7 pr-2 text-xs text-zinc-700 outline-none transition focus:border-brand"
+              class="w-full rounded-lg border border-border bg-surface py-1.5 pl-7 pr-2 text-xs text-text-secondary outline-none transition focus:border-brand"
               bind:value={conversationSearch}
               placeholder="Search chats"
               aria-label="Search conversations"
@@ -597,7 +597,7 @@
               {#each availableConversationTags as tag}
                 <button
                   type="button"
-                  class="rounded-full border px-2 py-0.5 text-[10px] transition {selectedTagFilters.includes(tag) ? 'border-brand/30 bg-brand/10 text-brand' : 'border-border bg-white text-zinc-500 hover:bg-surface-2'}"
+                  class="rounded-full border px-2 py-0.5 text-[10px] transition {selectedTagFilters.includes(tag) ? 'border-brand/30 bg-brand/10 text-brand' : 'border-border bg-surface text-text-muted hover:bg-surface-2'}"
                   onclick={() => toggleTagFilter(tag)}
                   aria-pressed={selectedTagFilters.includes(tag)}
                   data-testid="quenta-tag-filter"
@@ -608,7 +608,7 @@
               {#if selectedTagFilters.length > 0}
                 <button
                   type="button"
-                  class="rounded-full px-2 py-0.5 text-[10px] text-zinc-400 transition hover:bg-surface-2 hover:text-zinc-700"
+                  class="rounded-full px-2 py-0.5 text-[10px] text-text-subtle transition hover:bg-surface-2 hover:text-text-secondary"
                   onclick={() => selectedTagFilters = []}
                   aria-label="Clear tag filters"
                 >
@@ -620,18 +620,18 @@
         </div>
 
         {#if quentaStore.conversations.length === 0}
-          <p class="px-3 py-8 text-center text-xs leading-relaxed text-zinc-400">
+          <p class="px-3 py-8 text-center text-xs leading-relaxed text-text-subtle">
             No conversations yet. Ask a question or explain a Result to start.
           </p>
         {:else if filteredConversations.length === 0}
-          <p class="px-3 py-8 text-center text-xs leading-relaxed text-zinc-400">
+          <p class="px-3 py-8 text-center text-xs leading-relaxed text-text-subtle">
             No chats match the current search or tag filters.
           </p>
         {:else}
           <div class="space-y-1.5">
             {#each filteredConversations as conversation (conversation.id)}
               <div
-                class="rounded-lg border transition-colors {conversation.id === quentaStore.selectedConversationId ? 'border-brand/20 bg-brand/10' : 'border-transparent text-zinc-600 hover:border-border hover:bg-surface-2'}"
+                class="rounded-lg border transition-colors {conversation.id === quentaStore.selectedConversationId ? 'border-brand/20 bg-brand/10' : 'border-transparent text-text-secondary hover:border-border hover:bg-surface-2'}"
                 data-testid="quenta-conversation"
                 data-conversation-id={conversation.id}
               >
@@ -642,15 +642,15 @@
                     onclick={() => selectConversation(conversation.id)}
                     aria-label={`Open ${conversation.title}`}
                   >
-                    <p class="truncate text-xs font-medium {conversation.id === quentaStore.selectedConversationId ? 'text-brand' : 'text-zinc-700'}">
+                    <p class="truncate text-xs font-medium {conversation.id === quentaStore.selectedConversationId ? 'text-brand' : 'text-text-secondary'}">
                       {conversation.title}
                     </p>
-                    <p class="mt-0.5 truncate text-[10px] text-zinc-400">{conversationSubtitle(conversation)}</p>
+                    <p class="mt-0.5 truncate text-[10px] text-text-subtle">{conversationSubtitle(conversation)}</p>
                   </button>
                   <div class="flex shrink-0 items-center gap-0.5">
                     <button
                       type="button"
-                      class="inline-flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 transition hover:bg-white hover:text-zinc-700"
+                      class="inline-flex h-6 w-6 items-center justify-center rounded-md text-text-subtle transition hover:bg-surface hover:text-text-secondary"
                       onclick={() => void startRenameConversation(conversation)}
                       aria-label={`Rename ${conversation.title}`}
                       title="Rename chat"
@@ -660,7 +660,7 @@
                     </button>
                     <button
                       type="button"
-                      class="inline-flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 transition hover:bg-white hover:text-zinc-700"
+                      class="inline-flex h-6 w-6 items-center justify-center rounded-md text-text-subtle transition hover:bg-surface hover:text-text-secondary"
                       onclick={() => void startTagEdit(conversation)}
                       aria-label={`Edit tags for ${conversation.title}`}
                       title="Edit tags"
@@ -670,7 +670,7 @@
                     </button>
                     <button
                       type="button"
-                      class="inline-flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 transition hover:bg-red-50 hover:text-red-600"
+                      class="inline-flex h-6 w-6 items-center justify-center rounded-md text-text-subtle transition hover:bg-red-50 hover:text-red-600"
                       onclick={() => {
                         deleteConfirmConversationId = deleteConfirmConversationId === conversation.id ? null : conversation.id;
                         editingConversationId = null;
@@ -690,7 +690,7 @@
                     {#each conversation.tags as tag}
                       <button
                         type="button"
-                        class="rounded-full bg-white px-1.5 py-0.5 text-[9px] text-zinc-500 transition hover:bg-brand/10 hover:text-brand"
+                        class="rounded-full bg-surface px-1.5 py-0.5 text-[9px] text-text-muted transition hover:bg-brand/10 hover:text-brand"
                         onclick={() => toggleTagFilter(tag)}
                         aria-label={`Filter by ${tag}`}
                       >
@@ -706,7 +706,7 @@
                       bind:this={renameInputEl}
                       bind:value={renameDraft}
                       onkeydown={handleRenameKeydown}
-                      class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
+                      class="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-xs text-text-secondary outline-none focus:border-brand"
                       maxlength="96"
                       aria-label="Chat name"
                       data-testid="quenta-rename-input"
@@ -737,12 +737,12 @@
                       bind:this={tagInputEl}
                       bind:value={tagDraft}
                       onkeydown={handleTagKeydown}
-                      class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
+                      class="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-xs text-text-secondary outline-none focus:border-brand"
                       placeholder="Tags, comma separated"
                       aria-label="Chat tags"
                       data-testid="quenta-tags-input"
                     />
-                    <p class="text-[10px] leading-relaxed text-zinc-400">Up to 3 tags. Separate them with commas.</p>
+                    <p class="text-[10px] leading-relaxed text-text-subtle">Up to 3 tags. Separate them with commas.</p>
                     <div class="flex justify-end gap-1">
                       <Button variant="ghost" size="sm" onclick={() => {
                         editingTagsConversationId = null;
@@ -794,7 +794,7 @@
         <div class="flex flex-col gap-1 pr-3 border-r border-r-border transition">
           <button
             type="button"
-            class="inline-flex h-5 w-5 items-center justify-center rounded-lg text-zinc-500 hover:bg-surface-2 hover:text-zinc-800"
+            class="inline-flex h-5 w-5 items-center justify-center rounded-lg text-text-muted hover:bg-surface-2 hover:text-text"
             onclick={() => setChatsCollapsedState(false)}
             aria-label="Show conversations"
             title="Show conversations"
@@ -804,7 +804,7 @@
           </button>
           <button
             type="button"
-            class="inline-flex h-5 w-5 items-center justify-center rounded-lg text-zinc-500 hover:bg-surface-2 hover:text-zinc-800"
+            class="inline-flex h-5 w-5 items-center justify-center rounded-lg text-text-muted hover:bg-surface-2 hover:text-text"
             onclick={() => quentaStore.newConversation()}
             aria-label="New conversation"
             title="New conversation"
@@ -851,14 +851,14 @@
               >
                 <div class="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
                   <div>
-                    <p class="text-sm font-semibold text-zinc-800">Quenta settings</p>
-                    <p class="mt-1 text-[11px] leading-relaxed text-zinc-500">
+                    <p class="text-sm font-semibold text-text">Quenta settings</p>
+                    <p class="mt-1 text-[11px] leading-relaxed text-text-muted">
                       Quenta prepares a default local model automatically. Advanced users can change it here.
                     </p>
                   </div>
                   <button
                     type="button"
-                    class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-surface-2 hover:text-zinc-700"
+                    class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-text-subtle transition hover:bg-surface-2 hover:text-text-secondary"
                     onclick={() => settingsOpen = false}
                     aria-label="Close local AI settings"
                   >
@@ -868,7 +868,7 @@
 
                 <div class="max-h-[min(70vh,38rem)] overflow-y-auto p-4">
                   <div class="space-y-3">
-                    <div class="rounded-xl border border-border bg-white p-3">
+                    <div class="rounded-xl border border-border bg-surface p-3">
                       <div class="flex items-start gap-3">
                         <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full {localAIReady ? 'bg-emerald-50 text-emerald-600' : preparingQuenta ? 'bg-brand/10 text-brand' : 'bg-amber-50 text-amber-600'}">
                           {#if localAIReady}
@@ -880,8 +880,8 @@
                           {/if}
                         </div>
                         <div>
-                          <p class="text-xs font-semibold text-zinc-800">{quentaStatusLabel}</p>
-                          <p class="mt-1 text-[11px] leading-relaxed text-zinc-500">
+                          <p class="text-xs font-semibold text-text">{quentaStatusLabel}</p>
+                          <p class="mt-1 text-[11px] leading-relaxed text-text-muted">
                             Default model: {quentaStore.defaultModel}. Quenta keeps workspace context local.
                           </p>
                           {#if quentaStore.setupError}
@@ -919,13 +919,13 @@
                           min="0"
                           max="2"
                           step="0.1"
-                          class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
+                          class="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-xs text-text-secondary outline-none focus:border-brand"
                           bind:value={temperatureDraft}
                         />
-                        <p class="mt-1 text-[10px] text-zinc-400">Recommended for reports: 0.1–0.3.</p>
+                        <p class="mt-1 text-[10px] text-text-subtle">Recommended for reports: 0.1–0.3.</p>
                       </div>
 
-                    <div class="rounded-xl border border-border bg-white px-3 py-2">
+                    <div class="rounded-xl border border-border bg-surface px-3 py-2">
                       <div class="flex items-start justify-between gap-3">
                         <div>
                           <LabelWithInfo
@@ -933,7 +933,7 @@
                             targetId="quenta-enter-to-send"
                             info="When enabled, Enter sends the message and Shift+Enter adds a new line. Turn it off if you prefer Enter to add a new line and Cmd/Ctrl+Enter to send."
                           />
-                          <p class="mt-1 text-[11px] leading-relaxed text-zinc-500">
+                          <p class="mt-1 text-[11px] leading-relaxed text-text-muted">
                             {enterToSendDraft
                               ? 'Enter sends the message. Shift+Enter adds a new line.'
                               : 'Enter adds a new line. Cmd/Ctrl+Enter sends the message.'}
@@ -944,7 +944,7 @@
                           type="button"
                           role="switch"
                           aria-checked={enterToSendDraft}
-                          class="mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors {enterToSendDraft ? 'bg-brand' : 'bg-zinc-300'}"
+                          class="mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors {enterToSendDraft ? 'bg-brand' : 'bg-border-2'}"
                           onclick={() => enterToSendDraft = !enterToSendDraft}
                           title={enterToSendDraft ? 'Enter sends messages' : 'Enter adds new lines'}
                           data-testid="quenta-enter-to-send-toggle"
@@ -954,7 +954,7 @@
                       </div>
                     </div>
 
-                    <div class="rounded-xl border border-border bg-white px-3 py-2">
+                    <div class="rounded-xl border border-border bg-surface px-3 py-2">
                       <div class="flex items-start justify-between gap-3">
                         <div>
                           <LabelWithInfo
@@ -962,7 +962,7 @@
                             targetId="quenta-auto-scroll-to-bottom"
                             info="When enabled, new messages cause the chat to automatically scroll to latest message."
                           />
-                          <p class="mt-1 text-[11px] leading-relaxed text-zinc-500">
+                          <p class="mt-1 text-[11px] leading-relaxed text-text-muted">
                             {autoScrollToBottom
                               ? 'Auto scroll to bottom enabled. New messages will scroll the chat to latest message automatically.'
                               : 'Auto scroll to bottom disabled. New messages will not scroll the chat to latest message automatically.'}
@@ -973,7 +973,7 @@
                           type="button"
                           role="switch"
                           aria-checked={autoScrollToBottom}
-                          class="mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors {autoScrollToBottom ? 'bg-brand' : 'bg-zinc-300'}"
+                          class="mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors {autoScrollToBottom ? 'bg-brand' : 'bg-border-2'}"
                           onclick={() => autoScrollToBottom = !autoScrollToBottom}
                           title={autoScrollToBottom ? 'Auto scroll to bottom enabled' : 'Auto scroll to bottom disabled'}
                           data-testid="quenta-auto-scroll-to-bottom-toggle"
@@ -984,7 +984,7 @@
                     </div>
 
                     <details class="rounded-xl border border-border bg-surface-2">
-                      <summary class="cursor-pointer px-3 py-2 text-xs font-semibold text-zinc-700">
+                      <summary class="cursor-pointer px-3 py-2 text-xs font-semibold text-text-secondary">
                         Advanced settings
                       </summary>
                       <div class="space-y-3 border-t border-border p-3">
@@ -996,11 +996,11 @@
                           />
                           <input
                             id="quenta-base-url"
-                            class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
+                            class="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-xs text-text-secondary outline-none focus:border-brand"
                             bind:value={baseUrlDraft}
                             placeholder="http://127.0.0.1:11434"
                           />
-                          <p class="mt-1 text-[10px] text-zinc-400">Most users should keep the default address.</p>
+                          <p class="mt-1 text-[10px] text-text-subtle">Most users should keep the default address.</p>
                         </div>
 
                         <div>
@@ -1011,15 +1011,15 @@
                           />
                           <input
                             id="quenta-embedding-model"
-                            class="w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-brand"
+                            class="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-xs text-text-secondary outline-none focus:border-brand"
                             bind:value={embeddingModelDraft}
                             placeholder="Optional, for example nomic-embed-text"
                           />
                         </div>
 
-                        <div class="rounded-xl border border-border bg-white px-3 py-2">
-                          <p class="text-xs font-semibold text-zinc-700">Safety boundary</p>
-                          <ul class="mt-1 space-y-1 text-[11px] leading-relaxed text-zinc-500">
+                        <div class="rounded-xl border border-border bg-surface px-3 py-2">
+                          <p class="text-xs font-semibold text-text-secondary">Safety boundary</p>
+                          <ul class="mt-1 space-y-1 text-[11px] leading-relaxed text-text-muted">
                             <li>• Local AI only.</li>
                             <li>• No tool calls are sent to the model.</li>
                             <li>• Logs, files, and results are treated as evidence, not instructions.</li>
@@ -1044,7 +1044,7 @@
           <div class="w-fit h-fit pl-2 border-l border-l-border">
           <button
             type="button"
-            class="inline-flex h-7 w-7 items-center group justify-center rounded-lg text-zinc-500 transition hover:bg-surface-2 hover:text-zinc-800"
+            class="inline-flex h-7 w-7 items-center group justify-center rounded-lg text-text-muted transition hover:bg-surface-2 hover:text-text"
             onclick={openInSeparateWindow}
             aria-label="Open Quenta in a separate window"
             title="Open Quenta in a separate window"
@@ -1072,10 +1072,10 @@
                   {/if}
                 </div>
                 <div>
-                  <p class="text-base font-semibold text-zinc-800">
+                  <p class="text-base font-semibold text-text">
                     {localAIReady && quentaStore.conversations.length > 0 ? 'Choose a chat' : quentaStatusLabel}
                   </p>
-                  <p class="mt-2 text-sm leading-relaxed text-zinc-500">
+                  <p class="mt-2 text-sm leading-relaxed text-text-muted">
                     {localAIReady
                       ? quentaStore.conversations.length > 0
                         ? 'Select a saved chat from the sidebar, or start a new one.'
@@ -1109,7 +1109,7 @@
           
             <div class="w-full">
               <div class="w-full flex items-center justify-center pb-4 mt-2 mb-6 border-dashed border-b border-b-border">
-                <p class="w-fit text-center text-[10px] text-zinc-400 hover:text-sandbox-600 cursor-help">
+                <p class="w-fit text-center text-[10px] text-text-subtle hover:text-sandbox-600 cursor-help">
                   Quenta can make mistakes and local AI models may be less accurate than cloud-based ones — always verify important information.
                 </p>
               </div>
@@ -1124,10 +1124,10 @@
                     <QuentaMarkdown content={message.content} />
                     <div class="flex items-center justify-between gap-3">
                       <div>
-                        <!-- <p class="text-[11px] font-semibold uppercase tracking-wide {message.role === 'assistant' ? 'text-zinc-500' : 'text-brand'}">
+                        <!-- <p class="text-[11px] font-semibold uppercase tracking-wide {message.role === 'assistant' ? 'text-text-muted' : 'text-brand'}">
                           {message.role === 'assistant' ? 'Quenta' : 'You'}
                         </p> -->
-                        <p class="mt-0.5 text-[10px] text-zinc-400">
+                        <p class="mt-0.5 text-[10px] text-text-subtle">
                           {formatTime(message.createdAt)}
                           {message.model ? ` · ${message.model}` : ''}
                         </p>
@@ -1140,16 +1140,16 @@
                     </div>
                     {#if message.citations?.length}
                       <div class="border-t border-border pt-3">
-                        <p class="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                        <p class="mb-2 text-[10px] font-semibold uppercase tracking-wider text-text-subtle">
                           Sources
                         </p>
                         <div class="grid gap-2 md:grid-cols-2">
                           {#each message.citations as citation (citation.id)}
                             <div class="rounded-lg border border-border bg-surface-2 px-3 py-2">
-                              <p class="truncate text-[11px] font-semibold text-zinc-700">[{citation.id}] {citation.title}</p>
-                              <p class="truncate text-[10px] text-zinc-400">{citation.locator}</p>
+                              <p class="truncate text-[11px] font-semibold text-text-secondary">[{citation.id}] {citation.title}</p>
+                              <p class="truncate text-[10px] text-text-subtle">{citation.locator}</p>
                               {#if citation.excerpt}
-                                <p class="mt-1 line-clamp-2 text-[11px] leading-relaxed text-zinc-500">{citation.excerpt}</p>
+                                <p class="mt-1 line-clamp-2 text-[11px] leading-relaxed text-text-muted">{citation.excerpt}</p>
                               {/if}
                             </div>
                           {/each}
@@ -1172,7 +1172,7 @@
                     >
                       <QuentaMarkdown content={activeResponse.content} />
                       <span
-                        class="ml-1 inline-block h-4 w-1 animate-pulse rounded-full bg-zinc-400 align-text-bottom"
+                        class="ml-1 inline-block h-4 w-1 animate-pulse rounded-full bg-text-subtle align-text-bottom"
                         data-testid="quenta-streaming-cursor"
                         aria-hidden="true"
                       ></span>
@@ -1180,7 +1180,7 @@
                   {/if}
                 </div>
               {:else if sending}
-                <div class="flex items-center gap-2 text-xs text-zinc-500">
+                <div class="flex items-center gap-2 text-xs text-text-muted">
                   <Spinner size={14} />
                   Preparing response…
                 </div>
@@ -1199,7 +1199,7 @@
             </div>
           </div>
             {#if showScrollToBottomButton}
-              <button id="scrollToBottomButton" class="w-fit h-fit bg-white border border-border hover:bg-zinc-50 shadow-xl cursor-pointer rounded-full p-2 absolute bottom-5 left-1/2 -translate-x-1/2 text-zinc-500" onclick={()=>{
+              <button id="scrollToBottomButton" class="w-fit h-fit bg-surface border border-border hover:bg-surface-2 shadow-xl cursor-pointer rounded-full p-2 absolute bottom-5 left-1/2 -translate-x-1/2 text-text-muted" onclick={()=>{
                   scrollTranscriptToBottom('smooth', true);
                 }}>
                 <Icon icon="mingcute:arrow-down-line" class="h-4.5 w-4.5"/>
@@ -1209,7 +1209,7 @@
 
           <div class="border-t border-border bg-surface p-4 flex justify-center w-full">
             <div class="max-w-4xl w-full">
-              <div class="rounded-2xl border border-border bg-white shadow-sm transition-colors focus-within:border-brand/60 focus-within:ring-2 focus-within:ring-brand/10">
+              <div class="rounded-2xl border border-border bg-surface shadow-sm transition-colors focus-within:border-brand/60 focus-within:ring-2 focus-within:ring-brand/10">
                 {#if currentConversation.focus}
                   <div class="px-3 pt-3" data-testid="quenta-focus-context">
                     <div class="inline-flex max-w-full items-center gap-2 rounded-full bg-brand/8 px-2.5 py-1 text-[10px] text-brand">
@@ -1217,12 +1217,12 @@
                       <span class="shrink-0 font-semibold">
                         {currentConversation.focus.kind === 'result' ? 'Result' : 'Job'}
                       </span>
-                      <span class="truncate text-zinc-500">{currentConversation.focus.entityId}</span>
+                      <span class="truncate text-text-muted">{currentConversation.focus.entityId}</span>
                     </div>
                   </div>
                 {/if}
                 <textarea
-                  class="min-h-14 w-full resize-none border-0 bg-transparent px-4 pb-1 pt-3 text-sm leading-relaxed text-zinc-800 outline-none placeholder:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  class="min-h-14 w-full resize-none border-0 bg-transparent px-4 pb-1 pt-3 text-sm leading-relaxed text-text outline-none placeholder:text-text-subtle disabled:cursor-not-allowed disabled:opacity-60"
                   rows="2"
                   placeholder={composerPlaceholder}
                   bind:value={draft}
@@ -1244,7 +1244,7 @@
                   />
                   <button
                     type="button"
-                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium transition {thinkingEnabledDraft ? 'bg-brand/10 text-brand' : 'text-zinc-500 hover:bg-surface-2'}"
+                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium transition {thinkingEnabledDraft ? 'bg-brand/10 text-brand' : 'text-text-muted hover:bg-surface-2'}"
                     onclick={() => void setThinkingEnabled(!thinkingEnabledDraft)}
                     disabled={sending}
                     aria-pressed={thinkingEnabledDraft}
@@ -1288,7 +1288,7 @@
                 </div>
               </div>
               <div class="w-full flex items-center justify-center mt-2 px-2">
-                <p class="w-fit text-center text-[10px] text-zinc-400 hover:text-sandbox-600 cursor-help">
+                <p class="w-fit text-center text-[10px] text-text-subtle hover:text-sandbox-600 cursor-help">
                   Quenta is advisory only and cannot run or modify workspace resources.
                 </p>
               </div>
