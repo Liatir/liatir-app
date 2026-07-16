@@ -240,18 +240,19 @@ function readTrustedKeyEntries(value) {
 /**
  * Production signing path: hands the payload to the Cloud Run signer, which asks KMS to sign it.
  *
- * The caller authenticates with a short-lived Google identity token from the local `gcloud`
- * session, so no long-lived credential is stored anywhere. Two checks are applied to the
- * response before it is trusted: the signer must echo back *exactly* the payload we sent (not a
- * substituted one), and the returned signature is verified locally against the public key. A
- * remote signer is therefore not taken on faith.
+ * CI passes a short-lived audience-bound identity token minted by google-github-actions/auth.
+ * Manual operators may instead use the local `gcloud` session, so no long-lived credential is
+ * stored anywhere. Two checks are applied to the response before it is trusted: the signer must
+ * echo back *exactly* the payload we sent (not a substituted one), and the returned signature is
+ * verified locally against the public key. A remote signer is therefore not taken on faith.
  */
 async function signDocumentRemotely(payloadBytes, flags) {
   const signer = String(flags.get('signer') || process.env.LIATIR_RUNTIME_BOX_SIGNER_URL || '').replace(/\/$/, '');
   const tokenArgs = flags.get('signer-audience')
     ? ['auth', 'print-identity-token', `--audiences=${String(flags.get('signer-audience'))}`]
     : ['auth', 'print-identity-token'];
-  const identityToken = run('gcloud', tokenArgs, { capture: true });
+  const identityToken = String(process.env.LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN || '').trim()
+    || run('gcloud', tokenArgs, { capture: true });
   const request = {
     payloadBase64: payloadBytes.toString('base64'),
     payloadSha256: sha256Buffer(payloadBytes),

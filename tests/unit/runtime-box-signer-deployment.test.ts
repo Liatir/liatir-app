@@ -8,6 +8,8 @@ const deploymentWorkflow = readFileSync(
   resolve('.github/workflows/runtime-box-signer-deploy.yml'),
   'utf8',
 );
+const releaseWorkflow = readFileSync(resolve('.github/workflows/runtime-box-release.yml'), 'utf8');
+const runtimeBoxCli = readFileSync(resolve('scripts/runtime-box.mjs'), 'utf8');
 const smokeScript = readFileSync(resolve('scripts/validate-runtime-box-signer.mjs'), 'utf8');
 
 describe('Runtime Box signer deployment boundary', () => {
@@ -54,5 +56,20 @@ describe('Runtime Box signer deployment boundary', () => {
       'LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN: ${{ steps.smoke-auth.outputs.id_token }}',
     );
     expect(smokeScript).toContain('process.env.LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN');
+  });
+
+  it('uses the same audience-bound OpenID token path for production signing', () => {
+    expect(configureScript).toMatch(
+      /add-iam-policy-binding "\$RELEASE_SERVICE_ACCOUNT"[\s\S]*?"serviceAccount:\$RELEASE_SERVICE_ACCOUNT"[\s\S]*?roles\/iam\.serviceAccountOpenIdTokenCreator/,
+    );
+    expect(releaseWorkflow).toContain('id: release-auth');
+    expect(releaseWorkflow).toContain('token_format: id_token');
+    expect(releaseWorkflow).toContain(
+      'id_token_audience: ${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}',
+    );
+    expect(releaseWorkflow).toContain(
+      'LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN: ${{ steps.release-auth.outputs.id_token }}',
+    );
+    expect(runtimeBoxCli).toContain('process.env.LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN');
   });
 });

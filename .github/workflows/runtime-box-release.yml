@@ -88,11 +88,15 @@ jobs:
         with:
           ref: ${{ github.sha }}
 
-      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      - id: release-auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_RELEASE_SERVICE_ACCOUNT }}
+          token_format: id_token
+          id_token_audience: ${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}
+          id_token_include_email: true
 
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
 
@@ -145,6 +149,8 @@ jobs:
           test -z "$(git status --porcelain)"
 
       - name: Build with the private KMS signer and verify locally
+        env:
+          LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN: ${{ steps.release-auth.outputs.id_token }}
         run: >-
           npm run runtime-box:ci -- tracked-build
           --model "${{ inputs.model_id }}"
