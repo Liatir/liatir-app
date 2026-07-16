@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path';
 
 import catalog from '../../runtime-boxes/catalog.json';
 import {
+  signedBuildSourceEvidence,
   sourceEvidence,
   validateRuntimeBoxCiEvidence,
   writeModelEvidence,
@@ -95,6 +96,22 @@ function productionRecord() {
 }
 
 describe('Runtime Box CI evidence contract', () => {
+  it('keeps signed build cleanliness when later product preparation changes tracked files', () => {
+    const commitSha = 'b'.repeat(40);
+    expect(signedBuildSourceEvidence(
+      { repository: 'Liatir/liatir-stack', commitSha, sourceTreeDirty: true },
+      { builderRevision: commitSha, sourceTreeDirty: false },
+    )).toEqual({
+      repository: 'Liatir/liatir-stack',
+      commitSha,
+      sourceTreeDirty: false,
+    });
+    expect(() => signedBuildSourceEvidence(
+      { repository: 'Liatir/liatir-stack', commitSha, sourceTreeDirty: false },
+      { builderRevision: 'c'.repeat(40), sourceTreeDirty: false },
+    )).toThrow(/release commit/);
+  });
+
   it('accepts a complete protected production record', () => {
     expect(() => validateRuntimeBoxCiEvidence(productionRecord())).not.toThrow();
   });

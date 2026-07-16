@@ -47,6 +47,22 @@ export function sourceEvidence() {
   };
 }
 
+/** Keeps final evidence tied to the signed build state, not later product-test file generation. */
+export function signedBuildSourceEvidence(currentSource, provenance) {
+  requireEvidence(
+    provenance?.builderRevision === currentSource.commitSha,
+    'release commit differs from workflow commit',
+  );
+  requireEvidence(
+    typeof provenance.sourceTreeDirty === 'boolean',
+    'release source cleanliness is missing',
+  );
+  return {
+    ...currentSource,
+    sourceTreeDirty: provenance.sourceTreeDirty,
+  };
+}
+
 /** Captures immutable GitHub run identity and the protected environment when one is supplied. */
 export function workflowEvidence(environment = null) {
   const repository = process.env.GITHUB_REPOSITORY;
@@ -261,8 +277,7 @@ async function completeModelRecord(options, catalog, phase) {
     requireEvidence(release.modelId === model.modelId && release.boxId === model.boxId, 'release identity differs from catalog');
     requireEvidence(runtimeBoxTargetId(release.target) === target.targetId, 'release target differs from catalog');
     requireEvidence(verification.status === 'passed' && verification.localSignatureVerified === true, 'local release verification did not pass');
-    requireEvidence(release.provenance.builderRevision === record.source.commitSha, 'release commit differs from workflow commit');
-    requireEvidence(release.provenance.sourceTreeDirty === record.source.sourceTreeDirty, 'release cleanliness differs from recorded source state');
+    record.source = signedBuildSourceEvidence(record.source, release.provenance);
     requireEvidence(host.platform === release.target.platform && host.arch === release.target.arch, 'recorded host differs from release target');
     const lockSha256 = await sha256File(resolve(ROOT, 'runtime-boxes/recipes', target.recipeId, recipe.requirementsLock));
     requireEvidence(lockSha256 === release.provenance.dependencyLockSha256, 'checked dependency lock differs from signed provenance');

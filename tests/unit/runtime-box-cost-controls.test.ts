@@ -11,6 +11,13 @@ import {
 import { heartbeatLine } from '../../scripts/runtime-box/heartbeat.mjs';
 
 describe('Runtime Box CI cost controls', () => {
+  it('builds the shared core before generating SDK types on a clean product runner', () => {
+    const packageJson = JSON.parse(readFileSync(resolve('package.json'), 'utf8'));
+    const prepare = packageJson.scripts['test:tauri:prepare'];
+    expect(prepare.indexOf('npm run build --prefix packages/liatir-core'))
+      .toBeLessThan(prepare.indexOf('npm run gen:sdk-types'));
+  });
+
   it('pins every model lock and calculates disk before native allocation', () => {
     for (const model of catalog.models) {
       for (const target of model.targets) {
