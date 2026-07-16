@@ -1,6 +1,6 @@
 :root {
-  --vp-custom-block-tip-border: rgba(79, 57, 246, 0.28);
-  --vp-custom-block-tip-bg: rgba(79, 57, 246, 0.08);
+  --vp-custom-block-tip-border: rgba(10, 148, 139, 0.28);
+  --vp-custom-block-tip-bg: rgba(10, 148, 139, 0.08);
 }
 
 .VPNavBarTitle .title::after {

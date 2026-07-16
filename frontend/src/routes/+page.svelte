@@ -104,7 +104,7 @@
 
           <Card hoverable class="p-4 flex items-start gap-3" onclick={() => goto('/tools/qc/fastqc')}>
             <div class="h-8 w-8 rounded-lg bg-brand/10 flex items-center justify-center shrink-0">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4f39f6" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0A948B" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
               </svg>
             </div>

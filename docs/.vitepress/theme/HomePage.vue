@@ -224,7 +224,7 @@ const capabilities = [
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--vp-c-brand-1);
-  background: var(--vp-c-brand-soft);
+  background: var(--vp-c-bg-soft);
   border: 1px solid color-mix(in srgb, var(--vp-c-brand-1) 22%, transparent);
   padding: 6px 14px;
   border-radius: 999px;
@@ -288,7 +288,7 @@ const capabilities = [
   line-height: 1;
   font-weight: 800;
   letter-spacing: -0.03em;
-  background: linear-gradient(135deg, var(--vp-c-brand-1) 0%, #9b8cfc 100%);
+  background: linear-gradient(135deg, var(--vp-c-brand-1) 0%, var(--vp-c-brand-1) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;

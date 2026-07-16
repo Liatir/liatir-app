@@ -815,7 +815,7 @@
   </PageHeader>
 
   <div class="flex-1 relative" bind:this={flowContainer}>
-    <SvelteFlow bind:nodes bind:edges bind:viewport {nodeTypes} {edgeTypes} onconnect={onConnect} ondelete={onDelete} deleteKey={pipelineStore.running ? [] : ['Delete', 'Backspace']} nodesDraggable={!pipelineStore.running} nodesConnectable={!pipelineStore.running} onpanecontextmenu={onPaneContextMenu} onnodecontextmenu={onNodeContextMenu} onedgecontextmenu={onEdgeContextMenu} onnodedragstart={onGraphDragStart} onnodedragstop={onGraphDragStop} onselectiondragstart={onGraphDragStart} onselectiondragstop={onGraphDragStop} defaultEdgeOptions={{ selectable: false, style: 'stroke: #4f39f6; stroke-width:3;' }} proOptions={{ hideAttribution: true }}>
+    <SvelteFlow bind:nodes bind:edges bind:viewport {nodeTypes} {edgeTypes} onconnect={onConnect} ondelete={onDelete} deleteKey={pipelineStore.running ? [] : ['Delete', 'Backspace']} nodesDraggable={!pipelineStore.running} nodesConnectable={!pipelineStore.running} onpanecontextmenu={onPaneContextMenu} onnodecontextmenu={onNodeContextMenu} onedgecontextmenu={onEdgeContextMenu} onnodedragstart={onGraphDragStart} onnodedragstop={onGraphDragStop} onselectiondragstart={onGraphDragStart} onselectiondragstop={onGraphDragStop} defaultEdgeOptions={{ selectable: false, style: 'stroke: #0A948B; stroke-width:3;' }} proOptions={{ hideAttribution: true }}>
       <PipelineViewportFitter request={viewportFitRequest} />
       <Background gap={24} size={2} patternColor="#d4d4d8" variant={BackgroundVariant.Dots} />
       <Panel position="top-left" class="rounded-lg border border-border bg-white/95 shadow-sm">

@@ -16,8 +16,8 @@ Use these assets when referencing Liatir in articles, documentation, integration
 <div class="brand-color-card">
   <div class="brand-color-preview"></div>
   <div>
-    <strong>#4f39f6</strong>
-    <button class="copy-button" onclick="navigator.clipboard.writeText('#4f39f6').then(() => { const toast = document.querySelector('#primary-color-copied-toast'); toast.classList.add('is-visible'); clearTimeout(window.__liatirCopyToastTimer); window.__liatirCopyToastTimer = setTimeout(() => toast.classList.remove('is-visible'), 1400); });">Copy</button>
+    <strong>#0A948B</strong>
+    <button class="copy-button" onclick="navigator.clipboard.writeText('#0A948B').then(() => { const toast = document.querySelector('#primary-color-copied-toast'); toast.classList.add('is-visible'); clearTimeout(window.__liatirCopyToastTimer); window.__liatirCopyToastTimer = setTimeout(() => toast.classList.remove('is-visible'), 1400); });">Copy</button>
     <span class="copy-toast" id="primary-color-copied-toast">Copied!</span>
   </div>
 </div>
@@ -30,25 +30,25 @@ Use these assets when referencing Liatir in articles, documentation, integration
 
 ---
 ```css
-  --color-liatir: #4f39f6;
+  --color-liatir: #0A948B;
 
   var(--color-liatir);
 ```
 ---
 ```css
-  --color-liatir-2: #6254f8;
+  --color-liatir-2: #73C3BE;
 
   var(--color-liatir-2);
 ```
 ---
 ```css
-  --color-liatir-3: #7a70f8;
+  --color-liatir-3: #A4DAD5;
 
   var(--color-liatir-3);
 ```
 ---
 ```css
-  --color-liatir-soft: rgba(79, 57, 246, 0.12);
+  --color-liatir-soft: rgba(10, 148, 139, 0.12);
 
   var(--color-liatir-soft);
 ```
@@ -59,7 +59,11 @@ Use these assets when referencing Liatir in articles, documentation, integration
 
 ## Logo assets
 
-<a href="https://liatir.com/static/liatir-logo-kit.zip" download="liatir-logo-kit.zip"> Download logo kit ↓ </a>
+<div style="">
+
+<span style="margin-right: 5px;"> **Downloads:** </span> <a href="https://liatir.com/static/liatir-logo-kit.zip" download="liatir-logo-kit.zip">Logo kit ↓</a> <span style="opacity: 0.3; margin-left: 3px; margin-right: 3px;"> | </span> <a href="https://liatir.com/static/logo/svg/standard/color.svg" download="liatir-logo.svg">SVG only ↓</a>
+
+</div>
 
 ---
 
@@ -68,63 +72,11 @@ Use these assets when referencing Liatir in articles, documentation, integration
 
 <div class="logo-card logo-card-icon">
   <img
-    src="https://liatir.com/static/logos/svg/logo-color.svg"
-    style="width: 54px;"
+    src="https://liatir.com/static/logo/svg/standard/color.svg"
+    style="width: 70px;"
     alt="Liatir SVG icon"
   />
 </div>
-
-<center style="margin-top: 0px;">
-<small>
-<a href="https://liatir.com/static/logos/svg/logo-color.svg" download="liatir-logo.svg"> Download SVG </a>
-</small>
-</center>
-
----
-
-
-<center style="margin-top: 0px;">
-
-**PNG Downloads**
-
-</center>
-
-<div id="logo-downloads-table">
-<div>
-
-| **Size** | **Standard** | **Mono** | **Standard B** | **Standard W** | **Mono B** | **Mono W** |
-|---|---|---|---|---|---|---|
-| X16 | <center><a href="https://liatir.com/static/logos/sizes/normal/x16.png" download="liatir-logo-x16.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/x16.png" download="liatir-logo-mono-color-x16.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/black/x16.png" download="liatir-logo-black-x16.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/white/x16.png" download="liatir-logo-white-x16.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/black/x16.png" download="liatir-logo-mono-color-black-x16.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/white/x16.png" download="liatir-logo-mono-color-white-x16.png"> ↓ </a></center> |
-| X32 | <center><a href="https://liatir.com/static/logos/sizes/normal/x32.png" download="liatir-logo-x32.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/x32.png" download="liatir-logo-mono-color-x32.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/black/x32.png" download="liatir-logo-black-x32.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/white/x32.png" download="liatir-logo-white-x32.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/black/x32.png" download="liatir-logo-mono-color-black-x32.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/white/x32.png" download="liatir-logo-mono-color-white-x32.png"> ↓ </a></center> |
-| X48 | <center><a href="https://liatir.com/static/logos/sizes/normal/x48.png" download="liatir-logo-x48.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/x48.png" download="liatir-logo-mono-color-x48.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/black/x48.png" download="liatir-logo-black-x48.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/white/x48.png" download="liatir-logo-white-x48.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/black/x48.png" download="liatir-logo-mono-color-black-x48.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/white/x48.png" download="liatir-logo-mono-color-white-x48.png"> ↓ </a></center> |
-| X64 | <center><a href="https://liatir.com/static/logos/sizes/normal/x64.png" download="liatir-logo-x64.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/x64.png" download="liatir-logo-mono-color-x64.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/black/x64.png" download="liatir-logo-black-x64.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/white/x64.png" download="liatir-logo-white-x64.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/black/x64.png" download="liatir-logo-mono-color-black-x64.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/white/x64.png" download="liatir-logo-mono-color-white-x64.png"> ↓ </a></center> |
-| X96 | <center><a href="https://liatir.com/static/logos/sizes/normal/x96.png" download="liatir-logo-x96.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/x96.png" download="liatir-logo-mono-color-x96.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/black/x96.png" download="liatir-logo-black-x96.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/white/x96.png" download="liatir-logo-white-x96.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/black/x96.png" download="liatir-logo-mono-color-black-x96.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/white/x96.png" download="liatir-logo-mono-color-white-x96.png"> ↓ </a></center> |
-| X128 | <center><a href="https://liatir.com/static/logos/sizes/normal/x128.png" download="liatir-logo-x128.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/x128.png" download="liatir-logo-mono-color-x128.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/black/x128.png" download="liatir-logo-black-x128.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/white/x128.png" download="liatir-logo-white-x128.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/black/x128.png" download="liatir-logo-mono-color-black-x128.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/white/x128.png" download="liatir-logo-mono-color-white-x128.png"> ↓ </a></center> |
-| X150 | <center><a href="https://liatir.com/static/logos/sizes/normal/x150.png" download="liatir-logo-x150.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/x150.png" download="liatir-logo-mono-color-x150.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/black/x150.png" download="liatir-logo-black-x150.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/white/x150.png" download="liatir-logo-white-x150.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/black/x150.png" download="liatir-logo-mono-color-black-x150.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/white/x150.png" download="liatir-logo-mono-color-white-x150.png"> ↓ </a></center> |
-| X180 | <center><a href="https://liatir.com/static/logos/sizes/normal/x180.png" download="liatir-logo-x180.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/x180.png" download="liatir-logo-mono-color-x180.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/black/x180.png" download="liatir-logo-black-x180.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/white/x180.png" download="liatir-logo-white-x180.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/black/x180.png" download="liatir-logo-mono-color-black-x180.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/white/x180.png" download="liatir-logo-mono-color-white-x180.png"> ↓ </a></center> |
-| X192 | <center><a href="https://liatir.com/static/logos/sizes/normal/x192.png" download="liatir-logo-x192.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/x192.png" download="liatir-logo-mono-color-x192.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/black/x192.png" download="liatir-logo-black-x192.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/white/x192.png" download="liatir-logo-white-x192.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/black/x192.png" download="liatir-logo-mono-color-black-x192.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/white/x192.png" download="liatir-logo-mono-color-white-x192.png"> ↓ </a></center> |
-| X256 | <center><a href="https://liatir.com/static/logos/sizes/normal/x256.png" download="liatir-logo-x256.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/x256.png" download="liatir-logo-mono-color-x256.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/black/x256.png" download="liatir-logo-black-x256.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/white/x256.png" download="liatir-logo-white-x256.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/black/x256.png" download="liatir-logo-mono-color-black-x256.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/white/x256.png" download="liatir-logo-mono-color-white-x256.png"> ↓ </a></center> |
-| X384 | <center><a href="https://liatir.com/static/logos/sizes/normal/x384.png" download="liatir-logo-x384.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/x384.png" download="liatir-logo-mono-color-x384.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/black/x384.png" download="liatir-logo-black-x384.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/white/x384.png" download="liatir-logo-white-x384.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/black/x384.png" download="liatir-logo-mono-color-black-x384.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/white/x384.png" download="liatir-logo-mono-color-white-x384.png"> ↓ </a></center> |
-| X512 | <center><a href="https://liatir.com/static/logos/sizes/normal/x512.png" download="liatir-logo-x512.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/x512.png" download="liatir-logo-mono-color-x512.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/black/x512.png" download="liatir-logo-black-x512.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/white/x512.png" download="liatir-logo-white-x512.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/black/x512.png" download="liatir-logo-mono-color-black-x512.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/white/x512.png" download="liatir-logo-mono-color-white-x512.png"> ↓ </a></center> |
-| X1024 | <center><a href="https://liatir.com/static/logos/sizes/normal/x1024.png" download="liatir-logo-x1024.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/x1024.png" download="liatir-logo-mono-color-x1024.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/black/x1024.png" download="liatir-logo-black-x1024.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/normal/white/x1024.png" download="liatir-logo-white-x1024.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/black/x1024.png" download="liatir-logo-mono-color-black-x1024.png"> ↓ </a></center> | <center><a href="https://liatir.com/static/logos/sizes/mono-color/white/x1024.png" download="liatir-logo-mono-color-white-x1024.png"> ↓ </a></center> |
-
-</div>
-
-</div>
-
-
-<center style="opacity: 0.3; margin-top: -5px;">
-
-<small> **B** = Black </small>
-<small style="margin-right: 2px; margin-left: 2px; opacity: 0.5;"> | </small>
-<small> **W** = White </small>
-
-</center>
-
-
-<center style="margin-top: 0px;">
-<a href="https://liatir.com/static/liatir-logo-kit.zip" download="liatir-logo-kit.zip"> Download all ↓ </a>
-</center>
 
 ## Usage guidelines
 
@@ -143,7 +95,7 @@ When using the Liatir brand, please keep the logo readable, clear, and visually 
 
   <div class="guideline-card">
     <strong>Use the official color</strong>
-    <span>Use <code>#4f39f6</code> as the main accent color when referencing Liatir.</span>
+    <span>Use <code>#0A948B</code> as the main accent color when referencing Liatir.</span>
   </div>
 
   <div class="guideline-card">
@@ -183,7 +135,7 @@ A more detailed version for product pages, forums, blog posts, directories, pres
 
 <a class="liatir-badge liatir-badge-dark" href="https://liatir.com" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:14px;padding:14px 18px;min-width:120px;border:1px solid rgba(255,255,255,0.06);border-radius:18px;background:#1f1f1f;color:#ffffff;text-decoration:none;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;background:transparent;overflow:hidden;">
-    <img src="https://liatir.com/static/logos/svg/logo-square-color-mono.svg" alt="Liatir" style="width:100%;height:100%;object-fit:contain;display:block;" />
+    <img src="https://liatir.com/static/logo/svg/mono/color.svg" alt="Liatir" style="width:100%;height:100%;object-fit:contain;display:block;" />
   </span>
   <span style="display:flex;flex-direction:column;line-height:1.05;">
     <span style="color:rgba(255,255,255,0.68);font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.02em;">Get started with</span>
@@ -194,7 +146,7 @@ A more detailed version for product pages, forums, blog posts, directories, pres
 ```html
 <a class="liatir-badge liatir-badge-dark" href="https://liatir.com" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:14px;padding:14px 18px;min-width:120px;border:1px solid rgba(255,255,255,0.06);border-radius:18px;background:#1f1f1f;color:#ffffff;text-decoration:none;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;background:transparent;overflow:hidden;">
-    <img src="https://liatir.com/static/logos/svg/logo-square-color-mono.svg" alt="Liatir" style="width:100%;height:100%;object-fit:contain;display:block;" />
+    <img src="https://liatir.com/static/logo/svg/mono/color.svg" alt="Liatir" style="width:100%;height:100%;object-fit:contain;display:block;" />
   </span>
   <span style="display:flex;flex-direction:column;line-height:1.05;">
     <span style="color:rgba(255,255,255,0.68);font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.02em;">Get started with</span>
@@ -208,7 +160,7 @@ A more detailed version for product pages, forums, blog posts, directories, pres
 
 <a class="liatir-badge liatir-badge-light" href="https://liatir.com" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:14px;padding:14px 18px;min-width:120px;border:1px solid rgba(0,0,0,0.05);border-radius:18px;background:#ffffff;color:#111111;text-decoration:none;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;background:transparent;overflow:hidden;">
-    <img src="https://liatir.com/static/logos/svg/logo-square-color-mono.svg" alt="Liatir" style="width:100%;height:100%;object-fit:contain;display:block;" />
+    <img src="https://liatir.com/static/logo/svg/mono/color.svg" alt="Liatir" style="width:100%;height:100%;object-fit:contain;display:block;" />
   </span>
   <span style="display:flex;flex-direction:column;line-height:1.05;">
     <span style="color:rgba(0,0,0,0.52);font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.02em;">Get started with</span>
@@ -219,7 +171,7 @@ A more detailed version for product pages, forums, blog posts, directories, pres
 ```html
 <a class="liatir-badge liatir-badge-light" href="https://liatir.com" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:14px;padding:14px 18px;min-width:120px;border:1px solid rgba(0,0,0,0.05);border-radius:18px;background:#ffffff;color:#111111;text-decoration:none;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;background:transparent;overflow:hidden;">
-    <img src="https://liatir.com/static/logos/svg/logo-square-color-mono.svg" alt="Liatir" style="width:100%;height:100%;object-fit:contain;display:block;" />
+    <img src="https://liatir.com/static/logo/svg/mono/color.svg" alt="Liatir" style="width:100%;height:100%;object-fit:contain;display:block;" />
   </span>
   <span style="display:flex;flex-direction:column;line-height:1.05;">
     <span style="color:rgba(0,0,0,0.52);font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.02em;">Get started with</span>
@@ -351,14 +303,14 @@ Wondering what "Liatir" means? [Here's the story](/introduction/the-name).
 }
 
 .brand-color-card:hover .copy-button {
-  border-color: #4f39f6 !important;
-  color: #4f39f6 !important;
+  border-color: #0A948B !important;
+  color: #0A948B !important;
   opacity: 1;
 }
 
 .copy-button:hover {
-  border-color: #4f39f6 !important;
-  color: #4f39f6 !important;
+  border-color: #0A948B !important;
+  color: #0A948B !important;
   opacity: 1;
 }
 
@@ -371,7 +323,7 @@ Wondering what "Liatir" means? [Here's the story](/introduction/the-name).
   justify-content: center;
   padding: 5px 9px;
   border-radius: 999px;
-  background: #4f39f6;
+  background: #0A948B;
   color: #fff !important;
   font-size: 9pt;
   font-weight: 500;

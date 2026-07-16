@@ -21,11 +21,11 @@ export default defineConfig({
     hostname: 'https://liatir.com',
   },
 
-  // Browser-tab favicon: mono-color logo mark. SVG first for crisp scaling,
-  // PNG fallback for browsers without SVG-favicon support.
+  // Browser-tab favicon: logo mark. SVG first for crisp scaling,
+  // PNG fallback (app icon on circle) for browsers without SVG-favicon support.
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/static/logos/svg/app-icon-mono.svg' }],
-    ['link', { rel: 'icon', type: 'image/png', href: '/static/logos/png/app-icon-mono.png' }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/static/logo/svg/mono/color.svg' }],
+    ['link', { rel: 'icon', type: 'image/png', href: '/static/icons/app-icons/standard/bg-rounded/x32.png' }],
 
     ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
@@ -44,9 +44,9 @@ export default defineConfig({
 
   themeConfig: {
     logo: {
-      light: '/static/logos/svg/app-icon-mono.svg',
-      dark: '/static/logos/svg/app-icon-mono.svg',
-      alt: 'Liatir',
+      light: '/static/icons/color.png',
+      dark: '/static/icons/color.png',
+      alt: 'Liatir Logo',
     },
     siteTitle: 'Liatir',
     search: { provider: 'local' },

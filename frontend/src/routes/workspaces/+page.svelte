@@ -79,8 +79,8 @@
 <div class="flex-1 flex flex-col items-center justify-center px-6 py-12">
   <!-- Logo + title -->
   <div class="flex flex-col items-center gap-3 mb-10">
-    <div class="flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg shadow-brand/20">
-      <img src="/logo/logo-beta-badge.svg" alt="Liatir" class="h-full w-full scale-105 translate-1.5 object-contain" />
+    <div class="flex h-14 w-14 p-1.5 items-center justify-center rounded-2xl shadow-lg shadow-brand/20">
+      <img src="/logo/liatir-logo.svg" alt="Liatir" class="h-full w-full object-contain" />
     </div>
     <div class="text-center">
       <h1 class="text-xl font-semibold text-zinc-900">Liatir</h1>

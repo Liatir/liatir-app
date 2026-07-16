@@ -23,13 +23,13 @@ const highlightStyle = HighlightStyle.define([
   { tag: tags.null,                             color: '#b91c1c' },
   { tag: tags.regexp,                           color: '#047857' },
   { tag: tags.variableName,                     color: '#1f2937' },
-  { tag: tags.definition(tags.variableName),    color: '#4338ca' },
+  { tag: tags.definition(tags.variableName),    color: '#012723' },
   { tag: tags.function(tags.variableName),      color: '#1d4ed8' },
   { tag: tags.function(tags.propertyName),      color: '#1d4ed8' },
   { tag: tags.propertyName,                     color: '#047857' },
-  { tag: tags.typeName,                         color: '#4338ca' },
-  { tag: tags.className,                        color: '#4338ca' },
-  { tag: tags.namespace,                        color: '#4338ca' },
+  { tag: tags.typeName,                         color: '#012723' },
+  { tag: tags.className,                        color: '#012723' },
+  { tag: tags.namespace,                        color: '#012723' },
   { tag: tags.self,                             color: '#b91c1c' },
   { tag: tags.atom,                             color: '#b91c1c' },
   { tag: tags.invalid,                          color: '#dc2626' },
@@ -44,13 +44,13 @@ const viewTheme = EditorView.theme({
     lineHeight: '1.75',
     overflow: 'auto',
   },
-  '.cm-content': { padding: '14px 0', caretColor: '#4f39f6', color: '#1f2937' },
+  '.cm-content': { padding: '14px 0', caretColor: '#0A948B', color: '#1f2937' },
   '.cm-focused': { outline: 'none' },
-  '&.cm-focused .cm-cursor': { borderLeftColor: '#4f39f6', borderLeftWidth: '2px' },
+  '&.cm-focused .cm-cursor': { borderLeftColor: '#0A948B', borderLeftWidth: '2px' },
   '&.cm-focused .cm-selectionBackground, .cm-selectionBackground': {
-    backgroundColor: 'rgba(79, 57, 246, 0.14)',
+    backgroundColor: 'rgba(10, 148, 139, 0.14)',
   },
-  '::selection': { backgroundColor: 'rgba(79, 57, 246, 0.14)' },
+  '::selection': { backgroundColor: 'rgba(10, 148, 139, 0.14)' },
   '.cm-activeLine': { backgroundColor: 'rgba(0,0,0,0.025)' },
   '.cm-activeLineGutter': { backgroundColor: 'rgba(0,0,0,0.03)' },
   '.cm-gutters': {
@@ -80,8 +80,8 @@ const viewTheme = EditorView.theme({
   },
   '.cm-tooltip-autocomplete ul li': { padding: '4px 10px' },
   '.cm-tooltip-autocomplete ul li[aria-selected]': {
-    backgroundColor: 'rgba(79, 57, 246, 0.10)',
-    color: '#4338ca',
+    backgroundColor: 'rgba(10, 148, 139, 0.10)',
+    color: '#012723',
   },
   '.cm-completionLabel': { color: '#1f2937' },
   '.cm-completionDetail': {
@@ -91,7 +91,7 @@ const viewTheme = EditorView.theme({
     fontSize: '11px',
   },
   '.cm-completionMatchedText': {
-    color: '#4f39f6',
+    color: '#0A948B',
     textDecoration: 'none',
     fontWeight: 'bold',
   },
@@ -106,9 +106,9 @@ const viewTheme = EditorView.theme({
     lineHeight: '1.5',
   },
   '.cm-matchingBracket': {
-    color: '#4338ca !important',
+    color: '#012723 !important',
     fontWeight: 'bold',
-    outline: '1px solid rgba(79, 57, 246, 0.3)',
+    outline: '1px solid rgba(10, 148, 139, 0.3)',
     borderRadius: '2px',
   },
   // Hover tooltip
@@ -120,7 +120,7 @@ const viewTheme = EditorView.theme({
     maxWidth: '420px',
   },
   '.cm-liatir-hover-symbol': { color: '#047857' },
-  '.cm-liatir-hover-detail': { color: '#4f39f6', paddingLeft: '6px' },
+  '.cm-liatir-hover-detail': { color: '#0A948B', paddingLeft: '6px' },
   '.cm-liatir-hover-info':   { color: '#6b7280', fontFamily: 'system-ui, sans-serif', fontSize: '11px', marginTop: '4px' },
 }, { dark: false });
 

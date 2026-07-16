@@ -18,12 +18,12 @@
   --color-sandbox-100:  #FFF3C6;
   --color-sandbox-50:   #FFFBEB;
   /* Liatir brand */
-  --color-brand:        #4f39f6;
-  --color-brand-hover:  #6254f8;
-  --color-brand-dark:   #3d2bc4;
-  --color-brand-shadow: #c7c0fd;
-  --color-brand-muted:  #6d5af5;
-  --color-brand-soft:   #4338ca;
+  --color-brand:        #0A948B;
+  --color-brand-hover:  #73C3BE;
+  --color-brand-dark:   #012723;
+  --color-brand-shadow: #A4DAD5;
+  --color-brand-muted:  #73C3BE;
+  --color-brand-soft:   #012723;
 
   --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
