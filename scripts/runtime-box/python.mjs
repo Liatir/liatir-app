@@ -39,6 +39,13 @@ export async function stageStandalonePython({ adapter, payloadDir, pythonVersion
   if (!await fileExists(interpreter)) {
     fail(`${adapter.id} standalone Python is missing ${adapter.python.entryPoint}`);
   }
+  // python-build-standalone seeds pip and setuptools for development convenience. Runtime Boxes
+  // install through external pinned uv and must contain only the reviewed dependency lock, so
+  // remove those build tools from the copied payload before syncing runtime distributions.
+  run(uv, [
+    'pip', 'uninstall', 'pip', 'setuptools', '--python', interpreter,
+    '--system', '--break-system-packages', '--no-config',
+  ], { env: { UV_NO_CONFIG: '1' } });
   return { interpreter, sourceRoot, destinationRoot };
 }
 

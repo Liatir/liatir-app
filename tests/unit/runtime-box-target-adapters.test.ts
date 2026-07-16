@@ -166,6 +166,13 @@ describe('Runtime Box target adapters', () => {
         args: ['python', 'find', '3.11.9', '--python-preference', 'only-managed'],
       },
     ]);
+    expect(calls).toContainEqual({
+      command: 'uv',
+      args: [
+        'pip', 'uninstall', 'pip', 'setuptools', '--python', staged.interpreter,
+        '--system', '--break-system-packages', '--no-config',
+      ],
+    });
     expect(await readFile(staged.interpreter, 'utf8')).toBe('fixture\n');
   });
 
