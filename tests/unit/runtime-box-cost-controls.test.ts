@@ -14,10 +14,15 @@ describe('Runtime Box CI cost controls', () => {
   it('builds the shared core before generating SDK types on a clean product runner', () => {
     const packageJson = JSON.parse(readFileSync(resolve('package.json'), 'utf8'));
     const prepare = packageJson.scripts['test:tauri:prepare'];
+    const productBuild = readFileSync(resolve('scripts/build-tauri-test-binary.mjs'), 'utf8');
     expect(prepare.indexOf('npm run build --prefix packages/liatir-core'))
       .toBeLessThan(prepare.indexOf('npm run gen:sdk-types'));
     expect(prepare.indexOf('npm ci --prefix frontend'))
       .toBeLessThan(prepare.indexOf('npm run check --prefix frontend'));
+    expect(packageJson.devDependencies['@tauri-apps/cli']).toBe('2.11.4');
+    expect(productBuild).toContain("'node_modules',");
+    expect(productBuild).toContain("'.bin',");
+    expect(productBuild).not.toContain("'cargo',\n    [\n      'tauri'");
   });
 
   it('pins every model lock and calculates disk before native allocation', () => {
