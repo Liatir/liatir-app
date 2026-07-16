@@ -16,6 +16,8 @@ describe('Runtime Box CI cost controls', () => {
     const prepare = packageJson.scripts['test:tauri:prepare'];
     expect(prepare.indexOf('npm run build --prefix packages/liatir-core'))
       .toBeLessThan(prepare.indexOf('npm run gen:sdk-types'));
+    expect(prepare.indexOf('npm ci --prefix frontend'))
+      .toBeLessThan(prepare.indexOf('npm run check --prefix frontend'));
   });
 
   it('pins every model lock and calculates disk before native allocation', () => {
