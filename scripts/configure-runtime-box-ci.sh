@@ -252,6 +252,9 @@ gcloud iam service-accounts add-iam-policy-binding "$SIGNER_RUNTIME_SERVICE_ACCO
 COMPUTE_SERVICE_ACCOUNT="$PROJECT_NUMBER-compute@developer.gserviceaccount.com"
 gcloud iam service-accounts describe "$COMPUTE_SERVICE_ACCOUNT" --project "$PROJECT_ID" >/dev/null
 grant_project_role "$COMPUTE_SERVICE_ACCOUNT" roles/run.builder
+gcloud iam service-accounts add-iam-policy-binding "$COMPUTE_SERVICE_ACCOUNT" \
+  --project "$PROJECT_ID" --member "serviceAccount:$SIGNER_SERVICE_ACCOUNT" \
+  --role roles/iam.serviceAccountUser --quiet >/dev/null
 
 RELEASE_PROVIDER="$(gcloud iam workload-identity-pools providers describe "$RELEASE_PROVIDER_ID" \
   --workload-identity-pool "$POOL_ID" --location global --project "$PROJECT_ID" --format='value(name)')"
@@ -271,6 +274,7 @@ set_environment_variable "$SIGNER_ENVIRONMENT" GCP_PROJECT_ID "$PROJECT_ID"
 set_environment_variable "$SIGNER_ENVIRONMENT" GCP_REGION "$REGION"
 set_environment_variable "$SIGNER_ENVIRONMENT" GCP_WORKLOAD_IDENTITY_PROVIDER "$SIGNER_PROVIDER"
 set_environment_variable "$SIGNER_ENVIRONMENT" GCP_SIGNER_ADMIN_SERVICE_ACCOUNT "$SIGNER_SERVICE_ACCOUNT"
+set_environment_variable "$SIGNER_ENVIRONMENT" GCP_SIGNER_BUILD_SERVICE_ACCOUNT "$COMPUTE_SERVICE_ACCOUNT"
 
 assert_no_project_kms_role "$RELEASE_SERVICE_ACCOUNT"
 assert_no_project_kms_role "$SIGNER_SERVICE_ACCOUNT"

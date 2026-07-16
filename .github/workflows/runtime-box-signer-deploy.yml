@@ -45,6 +45,7 @@ jobs:
     env:
       GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_PROJECT_ID }}
       LIATIR_SIGNER_REGION: ${{ vars.GCP_REGION }}
+      LIATIR_SIGNER_BUILD_SERVICE_ACCOUNT: ${{ vars.GCP_SIGNER_BUILD_SERVICE_ACCOUNT }}
       LIATIR_SIGNER_DEPLOY_ONLY: "1"
     steps:
       - uses: actions/checkout@v4

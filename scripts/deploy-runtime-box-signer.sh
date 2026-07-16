@@ -8,8 +8,14 @@ SERVICE_ACCOUNT="${LIATIR_SIGNER_SERVICE_ACCOUNT:-runtime-box-signer}"
 KEY_RING="${LIATIR_SIGNER_KEY_RING:-liatir-release-signing}"
 KEY="${LIATIR_SIGNER_KEY:-runtime-box-production}"
 KEY_ID="${LIATIR_SIGNER_KEY_ID:-liatir-runtime-box-kms-2026}"
+BUILD_SERVICE_ACCOUNT="${LIATIR_SIGNER_BUILD_SERVICE_ACCOUNT:-}"
 DEPLOY_ONLY="${LIATIR_SIGNER_DEPLOY_ONLY:-0}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+if [[ -z "$BUILD_SERVICE_ACCOUNT" ]]; then
+  PROJECT_NUMBER="$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')"
+  BUILD_SERVICE_ACCOUNT="$PROJECT_NUMBER-compute@developer.gserviceaccount.com"
+fi
 
 if [[ "$DEPLOY_ONLY" == "1" ]]; then
   # CI deploys code and policy only. It must not access KMS directly: the post-deploy smoke test
@@ -30,6 +36,7 @@ fi
 
 KEY_VERSION="projects/$PROJECT_ID/locations/$REGION/keyRings/$KEY_RING/cryptoKeys/$KEY/cryptoKeyVersions/1"
 gcloud run deploy "$SERVICE" --source "$ROOT/services/runtime-box-signer" --region "$REGION" --project "$PROJECT_ID" \
+  --build-service-account="projects/$PROJECT_ID/serviceAccounts/$BUILD_SERVICE_ACCOUNT" \
   --service-account "$SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com" --no-allow-unauthenticated \
   --min-instances=0 --max-instances=2 --concurrency=8 --cpu=1 --memory=256Mi --timeout=30s \
   --set-env-vars="KMS_KEY_VERSION=$KEY_VERSION,RUNTIME_BOX_KEY_ID=$KEY_ID" --quiet
