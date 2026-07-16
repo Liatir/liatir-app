@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 
-// Cloudflare Turnstile site key (public). Override at build time with
-// VITE_TURNSTILE_SITE_KEY; falls back to Cloudflare's "always passes" test key
-// so the form works locally before real keys are configured.
+// Cloudflare Turnstile site key (public, safe to commit). Override at build
+// time with VITE_TURNSTILE_SITE_KEY if needed.
 const SITE_KEY =
-  (import.meta as any).env?.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'
+  (import.meta as any).env?.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAADvCPLxcKZIoTjUr'
 
 // Endpoint served by the Cloudflare Pages Function (docs/functions/api/subscribe.ts).
 const ENDPOINT = '/api/subscribe'
