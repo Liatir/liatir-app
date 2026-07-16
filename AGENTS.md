@@ -12,6 +12,12 @@ We are developing **Liatir**, a **local-first** Rust/Tauri desktop app for bioin
 
 **Liatir is for non-technical users first — this is very important while designing and implementing anything.**
 
+## Repository continuity
+
+- Durable project plans, implementation status, and handoff context required in Codespaces must live in tracked repository documentation, not only in machine-local agent memory.
+- The canonical Runtime Box CI plan and current gate status live in `internal-docs/roadmap/runtime-box-ci-foundation.md`. Read it before starting any Runtime Box CI gate and update it when a gate is completed or re-scoped.
+- Machine-local memory may be used as a convenience, but it must not be the only source for information needed to continue repository work.
+
 ## Naming (canonical terms — use exactly these)
 
 - **"Plugins"** means only `.lia` plugins.

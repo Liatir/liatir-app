@@ -107,6 +107,9 @@ validation, output parsing, Jobs, Results, and provenance.
 
 Status: production distribution path live; partially native-verified.
 
+The canonical cross-platform CI implementation plan and gate status are tracked
+in [Runtime Box CI foundation](./runtime-box-ci-foundation.md).
+
 - Shared release, channel, target, rollout, revocation, signature, and
   compatibility contracts live in `packages/liatir-core`.
 - Repository CLI supports key generation, dependency locking, native build,
