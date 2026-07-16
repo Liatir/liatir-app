@@ -142,6 +142,25 @@ export function assertRuntimeBoxPythonEntryPoint(adapter, entryPoint) {
   }
 }
 
+/** Returns the explicit PyTorch wheel backend selected by a recipe, rejecting target drift. */
+export function runtimeBoxTorchBackendArguments(recipe) {
+  if (recipe.torchBackend === undefined) return [];
+  if (typeof recipe.torchBackend !== 'string' || !/^(?:cpu|cu[0-9]{3})$/.test(recipe.torchBackend)) {
+    throw new TypeError(`Unsupported Runtime Box PyTorch backend: ${recipe.torchBackend}`);
+  }
+  const expected = recipe.target.accelerator === 'cuda'
+    ? `cu${recipe.target.cudaVersion.replace('.', '')}`
+    : recipe.target.accelerator === 'cpu'
+      ? 'cpu'
+      : null;
+  if (recipe.torchBackend !== expected) {
+    throw new TypeError(
+      `Runtime Box PyTorch backend ${recipe.torchBackend} does not match target accelerator ${recipe.target.accelerator}`,
+    );
+  }
+  return ['--torch-backend', recipe.torchBackend];
+}
+
 /** Returns the deterministic uv arguments shared by local locking and CI freshness checks. */
 export function runtimeBoxLockArguments(adapter, recipe, inputPath, outputPath) {
   return [
@@ -151,6 +170,7 @@ export function runtimeBoxLockArguments(adapter, recipe, inputPath, outputPath) 
     '--python-platform', adapter.uvPlatform,
     '--generate-hashes', '--only-binary', ':all:',
     '--no-emit-index-url', '--no-annotate', '--no-header',
+    ...runtimeBoxTorchBackendArguments(recipe),
   ];
 }
 

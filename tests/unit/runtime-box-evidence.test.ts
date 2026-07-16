@@ -105,6 +105,28 @@ describe('Runtime Box CI evidence contract', () => {
     expect(() => validateRuntimeBoxCiEvidence(record)).toThrow(/finite-value check/);
   });
 
+  it('requires full product lifecycle evidence for a successful Linux release', () => {
+    const record = productionRecord();
+    record.subject.targetId = 'linux-x86_64-cpu';
+    record.subject.recipeId = 'geneformer-v1-10m-linux-x86_64-cpu';
+    record.host.platform = 'linux';
+    record.host.arch = 'x86_64';
+    record.scientific.accelerator.kind = 'cpu';
+    expect(() => validateRuntimeBoxCiEvidence(record)).toThrow(/product lifecycle evidence/);
+
+    record.productLifecycle = {
+      status: 'passed',
+      targetId: 'linux-x86_64-cpu',
+      version: '1.0.0-beta.1',
+      jobId: 'job-1',
+      analysisRunId: 'run-1',
+      accelerator: 'CPU',
+      resultArtifactCount: 3,
+      assertions: { results: 'passed', provenance: 'passed', removal: 'passed' },
+    };
+    expect(() => validateRuntimeBoxCiEvidence(record)).not.toThrow();
+  });
+
   it('accepts compact failed evidence without manufacturing successful sections', () => {
     const record = productionRecord();
     record.phase = 'model-validation';

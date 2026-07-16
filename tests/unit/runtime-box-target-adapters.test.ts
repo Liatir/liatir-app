@@ -19,6 +19,7 @@ import {
   assertRuntimeBoxNativeHost,
   assertRuntimeBoxPythonEntryPoint,
   runtimeBoxLockArguments,
+  runtimeBoxTorchBackendArguments,
   runtimeBoxTargetAdapter,
   runtimeBoxTargetAdapters,
 } from '../../scripts/runtime-box/targets.mjs';
@@ -92,6 +93,21 @@ describe('Runtime Box target adapters', () => {
       '--only-binary', ':all:',
       '--generate-hashes',
     ]));
+  });
+
+  it('pins CPU and CUDA PyTorch wheels to the exact target backend', () => {
+    expect(runtimeBoxTorchBackendArguments({
+      target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
+      torchBackend: 'cpu',
+    })).toEqual(['--torch-backend', 'cpu']);
+    expect(runtimeBoxTorchBackendArguments({
+      target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.4' },
+      torchBackend: 'cu124',
+    })).toEqual(['--torch-backend', 'cu124']);
+    expect(() => runtimeBoxTorchBackendArguments({
+      target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.4' },
+      torchBackend: 'cpu',
+    })).toThrow(/does not match target accelerator/);
   });
 
   it('detects build-host paths in Windows launchers and Python configuration files', async () => {

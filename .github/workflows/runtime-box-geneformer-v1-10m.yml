@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "runtime-boxes/recipes/geneformer-v1-10m-macos-arm64-metal/**"
+      - "runtime-boxes/recipes/geneformer-v1-10m-linux-x86_64-cpu/**"
       - "runtime-boxes/legal/geneformer-v1-10m.md"
       - "scripts/validate-geneformer-parity.mjs"
       - "scripts/ai-validation/geneformer-parity.py"
@@ -16,6 +17,7 @@ on:
     branches: [main]
     paths:
       - "runtime-boxes/recipes/geneformer-v1-10m-macos-arm64-metal/**"
+      - "runtime-boxes/recipes/geneformer-v1-10m-linux-x86_64-cpu/**"
       - "runtime-boxes/legal/geneformer-v1-10m.md"
       - "scripts/validate-geneformer-parity.mjs"
       - "scripts/ai-validation/geneformer-parity.py"
@@ -30,7 +32,7 @@ on:
         description: Checked Runtime Box target
         required: true
         type: choice
-        options: [macos-aarch64-metal]
+        options: [macos-aarch64-metal, linux-x86_64-cpu]
       mode:
         description: Native validation depth
         required: true
@@ -50,7 +52,6 @@ jobs:
     uses: ./.github/workflows/_runtime-box-validate.yml
     with:
       model_id: ctheodoris-geneformer-v1-10m
-      recipe_id: geneformer-v1-10m-macos-arm64-metal
       target_id: ${{ inputs.target_id || 'macos-aarch64-metal' }}
       mode: ${{ inputs.mode || 'build' }}
       native_requested: ${{ github.event_name == 'workflow_dispatch' }}

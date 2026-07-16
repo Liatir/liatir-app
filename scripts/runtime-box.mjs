@@ -62,6 +62,10 @@ import {
   sha256File,
 } from './runtime-box/filesystem.mjs';
 import {
+  createPythonDependencyLicenseAudit,
+  validatePythonDependencyLicenseAudit,
+} from './runtime-box/licenses.mjs';
+import {
   runtimeBoxReleaseObjectPrefix,
   runtimeBoxReleaseStem,
 } from './runtime-box/identity.mjs';
@@ -74,6 +78,7 @@ import {
   assertRuntimeBoxNativeHost,
   assertRuntimeBoxPythonEntryPoint,
   runtimeBoxLockArguments,
+  runtimeBoxTorchBackendArguments,
   runtimeBoxTargetAdapter,
   runtimeBoxTargetId,
 } from './runtime-box/targets.mjs';
@@ -350,7 +355,6 @@ function findUv(flags, requiredVersion) {
  */
 async function lockRecipe(name, flags) {
   const { adapter, dir, recipe } = await readRecipe(name);
-  assertRuntimeBoxNativeHost(adapter);
   const uv = findUv(flags, recipe.uvVersion);
   run(uv, runtimeBoxLockArguments(
     adapter,
@@ -514,6 +518,7 @@ async function buildRecipe(name, flags) {
   run(uv, [
     'pip', 'sync', lockPath, '--python', standalonePython.interpreter,
     '--system', '--break-system-packages', '--require-hashes', '--strict', '--no-config',
+    ...runtimeBoxTorchBackendArguments(recipe),
   ], { env: { UV_NO_CONFIG: '1' } });
   await validateRelocatablePython({
     adapter,
@@ -521,6 +526,9 @@ async function buildRecipe(name, flags) {
     payloadDir,
     run,
   });
+  const sitePackagesPath = run(standalonePython.interpreter, [
+    '-c', "import sysconfig; print(sysconfig.get_paths()['purelib'])",
+  ], { capture: true });
 
   // Model weights and other large files, each verified against the hash declared in the recipe.
   for (const asset of recipe.assets) {
@@ -537,6 +545,20 @@ async function buildRecipe(name, flags) {
   // multi-gigabyte downloads for end users, so pruning is a user-facing concern, not tidiness.
   for (const prunePath of recipe.prunePaths ?? []) {
     await rm(join(payloadDir, safeRelativePath(prunePath)), { recursive: true, force: true });
+  }
+  if (recipe.dependencyLicenseAudit) {
+    const actualAudit = createPythonDependencyLicenseAudit({
+      lockBytes: await readFile(lockPath),
+      sitePackagesPath,
+      targetId: runtimeBoxTargetId(recipe.target),
+      torchBackend: recipe.torchBackend ?? null,
+    });
+    const reviewedAuditPath = resolve(ROOT, safeRelativePath(recipe.dependencyLicenseAudit));
+    const reviewedAudit = JSON.parse(await readFile(reviewedAuditPath, 'utf8'));
+    validatePythonDependencyLicenseAudit(reviewedAudit, actualAudit);
+    const auditPath = join(payloadDir, 'THIRD_PARTY_NOTICES', 'python-distributions.json');
+    await mkdir(dirname(auditPath), { recursive: true });
+    await writeFile(auditPath, `${JSON.stringify(actualAudit, null, 2)}\n`);
   }
   // Guards against over-pruning: the files the box needs at runtime must still be there.
   for (const requiredFile of recipe.selfTest.files) {

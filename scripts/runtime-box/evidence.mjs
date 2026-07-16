@@ -347,8 +347,49 @@ export async function writeReleaseEvidence(options, catalog) {
   const channel = optionalJson(options.channel) ? decodeEvidenceEnvelope(options.channel) : null;
   const publish = optionalJson(options.publishReceipt);
   const promotion = optionalJson(options.promotionReceipt);
+  const productLifecycle = optionalJson(options.productLifecycle);
   if (record.status === 'passed') {
     requireEvidence(release && channel && publish && promotion, 'successful publication evidence requires all signed documents and receipts');
+    if (record.subject.targetId.startsWith('linux-')) {
+      requireEvidence(productLifecycle, 'successful Linux publication evidence requires the real product lifecycle receipt');
+    }
+  }
+  if (productLifecycle) {
+    requireEvidence(
+      productLifecycle.schemaVersion === 1
+        && productLifecycle.kind === 'liatir.runtime-box.product-lifecycle-evidence'
+        && productLifecycle.status === 'passed',
+      'product lifecycle receipt did not pass',
+    );
+    requireEvidence(
+      productLifecycle.boxId === record.subject.boxId
+        && productLifecycle.modelId === record.subject.modelId
+        && productLifecycle.runtimeId === record.subject.runtimeId
+        && productLifecycle.targetId === record.subject.targetId
+        && productLifecycle.version === record.subject.version,
+      'product lifecycle identity differs from the release',
+    );
+    requireEvidence(
+      typeof productLifecycle.jobId === 'string'
+        && productLifecycle.jobId
+        && typeof productLifecycle.analysisRunId === 'string'
+        && productLifecycle.analysisRunId
+        && Number.isSafeInteger(productLifecycle.resultArtifactCount)
+        && productLifecycle.resultArtifactCount > 0
+        && Object.values(productLifecycle.assertions ?? {}).length >= 10
+        && Object.values(productLifecycle.assertions ?? {}).every((value) => value === 'passed'),
+      'product lifecycle receipt lacks complete Job, Result, provenance, replacement, or cleanup proof',
+    );
+    record.productLifecycle = {
+      status: 'passed',
+      targetId: productLifecycle.targetId,
+      version: productLifecycle.version,
+      jobId: productLifecycle.jobId,
+      analysisRunId: productLifecycle.analysisRunId,
+      accelerator: productLifecycle.accelerator,
+      resultArtifactCount: productLifecycle.resultArtifactCount,
+      assertions: productLifecycle.assertions,
+    };
   }
   if (release && channel && publish && promotion) {
     const signingKeyIds = release.envelope.signatures.map((signature) => signature.keyId);
@@ -416,6 +457,12 @@ export function validateRuntimeBoxCiEvidence(record) {
     requireEvidence(record.publication.archive.streamedVerification === 'passed', 'archive stream verification is missing');
     requireEvidence(record.publication.release.streamedVerification === 'passed', 'release stream verification is missing');
     requireEvidence(record.publication.promotionHttpStatus >= 200 && record.publication.promotionHttpStatus < 300, 'promotion response did not pass');
+    if (record.subject.targetId.startsWith('linux-')) {
+      requireEvidence(record.productLifecycle?.status === 'passed', 'Linux release lacks passed product lifecycle evidence');
+      requireEvidence(record.productLifecycle.assertions?.results === 'passed', 'Linux release lacks Results proof');
+      requireEvidence(record.productLifecycle.assertions?.provenance === 'passed', 'Linux release lacks provenance proof');
+      requireEvidence(record.productLifecycle.assertions?.removal === 'passed', 'Linux release lacks removal proof');
+    }
   }
   return record;
 }

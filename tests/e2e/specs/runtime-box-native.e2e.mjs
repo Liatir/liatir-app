@@ -8,18 +8,27 @@
 import {
   activateCleanSandbox,
   firstDownloadOffset,
-  macosArm64MetalRuntimeBoxTarget,
   readEmbeddedPythonScript,
   runtimeBoxInstallError,
   runtimeBoxInstallResult,
   runtimeBoxInstallStatus,
+  runtimeBoxTargetForNativeTest,
   startRuntimeBoxInstall,
 } from '../support/runtime-box.mjs';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const BOX_ID = 'geneformer-v1-10m';
 const MODEL_ID = 'ctheodoris-geneformer-v1-10m';
+const MODEL_NAME = 'Geneformer V1 10M';
 const RUNTIME_ID = 'single-cell-foundation-geneformer-v1-10m';
-const REGISTRY_BASE_URL = 'https://models.liatir.com/v1';
+const TOOL_ID = 'ai-single-cell-embedding';
+const REGISTRY_BASE_URL = process.env.LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL
+  ?? 'https://models.liatir.com/v1';
+const TARGET_ID = process.env.LIATIR_RUNTIME_BOX_TARGET_ID ?? 'macos-aarch64-metal';
+const VERSION = process.env.LIATIR_RUNTIME_BOX_EXPECTED_VERSION ?? '1.0.0-beta.1';
+const PRODUCT_EVIDENCE_PATH = process.env.LIATIR_RUNTIME_BOX_PRODUCT_EVIDENCE ?? null;
+const EXPECTED_ACCELERATOR = TARGET_ID === 'linux-x86_64-cpu' ? /^CPU/ : /^Apple Metal/;
 
 const CREATE_FIXTURE_SCRIPT = String.raw`
 import json
@@ -61,7 +70,7 @@ obs = pd.DataFrame(
 )
 var = pd.DataFrame({"ensembl_id": genes}, index=genes)
 adata = anndata.AnnData(X=sp.csr_matrix(counts), obs=obs, var=var)
-validation_dir = runtime_dir / "validation"
+validation_dir = Path(payload["validationDir"])
 validation_dir.mkdir(parents=True, exist_ok=True)
 input_path = validation_dir / "geneformer-parity-input.h5ad"
 adata.write_h5ad(input_path)
@@ -87,7 +96,7 @@ async function startInstall(browser, downloadId) {
     modelId: MODEL_ID,
     channel: 'beta',
     registryBaseUrl: REGISTRY_BASE_URL,
-    targetCandidates: macosArm64MetalRuntimeBoxTarget(8),
+    targetCandidates: runtimeBoxTargetForNativeTest(TARGET_ID, 8),
     downloadId,
   });
 }
@@ -105,11 +114,33 @@ async function runPython(browser, script, inputJson) {
   );
 }
 
+async function navigate(browser, pathname) {
+  await browser.execute((destination) => {
+    window.location.href = destination;
+    return true;
+  }, pathname);
+  await (await browser.$('[data-testid="sidebar-nav-item"]')).waitForDisplayed({
+    timeout: 20_000,
+    timeoutMsg: `Liatir did not finish navigating to ${pathname}`,
+  });
+}
+
+function section(output, type, label = null) {
+  return output.sections.find((item) => item.type === type && (label === null || item.label === label));
+}
+
 export const tests = [
   {
-    name: 'validates clean install, interruption resume, inference, replacement, and rollback',
+    name: 'validates install, resume, real Job and Result provenance, replacement, rollback, and cleanup',
+    heavy: true,
     async run({ browser, expect, rootDir }) {
       await activateCleanSandbox(browser);
+      const storage = await browser.execute(async () => ({
+        appPath: await window.Liatir.invoke('lia_app_path'),
+        dataPath: await window.Liatir.desktop.fs.data.path(),
+      }));
+      expect(storage.appPath).toContain('tests/.artifacts/home');
+      expect(storage.dataPath).toContain('tests/.artifacts/home');
 
       const interruptedId = `runtime-box-interrupted-${Date.now()}`;
       await startInstall(browser, interruptedId);
@@ -141,14 +172,19 @@ export const tests = [
       );
       expect(await runtimeBoxInstallStatus(browser, resumedId)).toBe('done');
       const resumed = await runtimeBoxInstallResult(browser, resumedId);
-      expect(resumed.version).toBe('1.0.0-beta.1');
+      expect(resumed.version).toBe(VERSION);
       expect(resumed.rollbackAvailable).toBe(false);
       const resumeOffset = await firstDownloadOffset(browser, resumedId);
       expect(resumeOffset).toBeGreaterThan(0);
 
       const runtimeDir = resumed.runtimeDir;
       const modelCacheDir = `${runtimeDir}/model-cache/geneformer-v1-10m`;
-      const fixture = await runPython(browser, CREATE_FIXTURE_SCRIPT, { runtimeDir, modelCacheDir });
+      const validationDir = `${storage.dataPath}/workspaces/__test__/geneformer-native-validation`;
+      const fixture = await runPython(browser, CREATE_FIXTURE_SCRIPT, {
+        runtimeDir,
+        modelCacheDir,
+        validationDir,
+      });
       expect(fixture.ok).toBe(true);
       const fixtureInfo = JSON.parse(fixture.stdout.trim());
       expect(fixtureInfo).toMatchObject({ cellCount: 4, geneCount: 128 });
@@ -158,6 +194,16 @@ export const tests = [
         'frontend/src/lib/tools/ai/python-scripts/geneformer-embedding.ts',
         'GENEFORMER_EMBEDDING_SCRIPT',
       );
+      const analysisRunId = crypto.randomUUID();
+      const outputDir = `${validationDir}/results/${analysisRunId}`;
+      const startedAt = Date.now();
+      const params = {
+        modelId: MODEL_ID,
+        inputFile: fixtureInfo.inputPath,
+        species: 'human',
+        batchSize: '2',
+        maxCsvRows: '4',
+      };
       const { jobId } = await browser.execute(
         async (input) => window.Liatir.invoke('lia_ai_python_spawn', input),
         {
@@ -168,14 +214,26 @@ export const tests = [
             runtimePath: runtimeDir,
             modelCacheDir,
             inputFile: fixtureInfo.inputPath,
-            outputDir: `${runtimeDir}/validation/output`,
+            outputDir,
             batchSize: 2,
             maxCsvRows: 4,
             species: 'human',
           },
           workspaceId: '__test__',
-          label: 'Geneformer native validation',
-          metadata: { modelId: MODEL_ID, validation: 'native-runtime-box' },
+          label: 'Single-cell Embedding',
+          metadata: {
+            modelId: MODEL_ID,
+            modelName: MODEL_NAME,
+            toolId: TOOL_ID,
+            runKind: 'ai-model-direct',
+            analysisRunId,
+            mode: 'single-cell-embedding',
+            label: 'geneformer-parity-input.h5ad',
+            inputPaths: [fixtureInfo.inputPath],
+            params,
+            startedAt,
+            outputDir,
+          },
         },
       );
       await browser.waitUntil(
@@ -193,7 +251,16 @@ export const tests = [
         jobId,
       );
       expect(job.status.type).toBe('done');
-      expect(job.metadata).toMatchObject({ modelId: MODEL_ID, validation: 'native-runtime-box' });
+      expect(job.kind).toBe('ai-python');
+      expect(job.workspaceId).toBe('__test__');
+      expect(job.metadata).toMatchObject({
+        modelId: MODEL_ID,
+        runtimeId: RUNTIME_ID,
+        toolId: TOOL_ID,
+        runKind: 'ai-model-direct',
+        analysisRunId,
+        mode: 'single-cell-embedding',
+      });
       const output = await browser.execute(
         async (id) => window.Liatir.invoke('lia_jobs_get_output', { jobId: id, since: 0 }),
         jobId,
@@ -208,6 +275,87 @@ export const tests = [
       });
       expect(inference.preview).toHaveLength(3);
       expect(inference.preview.flat().every(Number.isFinite)).toBe(true);
+      expect(inference.summary.accelerator).toMatch(EXPECTED_ACCELERATOR);
+
+      await navigate(browser, '/jobs');
+      const jobEntry = await browser.$(`[data-testid="job-entry"][data-job-id="${jobId}"]`);
+      await jobEntry.waitForDisplayed({
+        timeout: 20_000,
+        timeoutMsg: 'The completed Geneformer Job is missing from Jobs',
+      });
+      expect(await jobEntry.getText()).toContain('Single-cell Embedding');
+
+      const resultPrefix = 'workspaces/__test__/analysis-runs';
+      await browser.waitUntil(
+        async () => browser.execute(
+          async (rel) => window.Liatir.invoke('lia_app_exists', { rel }),
+          `${resultPrefix}/${analysisRunId}.json`,
+        ),
+        { timeout: 60_000, interval: 1_000, timeoutMsg: 'Geneformer Job was not finalized into a Result' },
+      );
+      const persisted = await browser.execute(
+        async ({ indexPath, outputPath }) => ({
+          index: JSON.parse(await window.Liatir.invoke('lia_app_read_text', { rel: indexPath })),
+          output: JSON.parse(await window.Liatir.invoke('lia_app_read_text', { rel: outputPath })),
+        }),
+        {
+          indexPath: `${resultPrefix}/index.json`,
+          outputPath: `${resultPrefix}/${analysisRunId}.json`,
+        },
+      );
+      const result = persisted.index.find((entry) => entry.id === analysisRunId);
+      expect(result).toMatchObject({
+        id: analysisRunId,
+        tool: TOOL_ID,
+        label: 'geneformer-parity-input.h5ad',
+        status: 'done',
+        params,
+      });
+      expect(result.outputFiles).toHaveLength(3);
+      expect(result.outputFiles.every((file) => (
+        file.role === 'final'
+        && file.producer?.kind === 'ai-tool'
+        && file.producer?.id === TOOL_ID
+        && file.parentRun?.runKind === 'ai-model-direct'
+        && file.parentRun?.runId === analysisRunId
+        && file.parentRun?.analysisRunId === analysisRunId
+      ))).toBe(true);
+
+      const stats = section(persisted.output, 'stats');
+      const statsByLabel = Object.fromEntries(stats.items.map((item) => [item.label, item.value]));
+      expect(statsByLabel).toMatchObject({ Cells: 4, Genes: 128, Dimensions: 256, Species: 'human' });
+      const preview = section(persisted.output, 'table', 'Embedding preview');
+      expect(preview.rows).toHaveLength(3);
+      expect(preview.rows.flatMap((row) => row.slice(1)).every(Number.isFinite)).toBe(true);
+      const provenance = section(persisted.output, 'table', 'Provenance');
+      const provenanceByField = Object.fromEntries(provenance.rows);
+      expect(provenanceByField).toMatchObject({
+        'AI Model': MODEL_NAME,
+        Species: 'human',
+        'Batch size': 2,
+        'Embedding key': 'X_geneformer',
+      });
+      expect(String(provenanceByField.Accelerator)).toMatch(EXPECTED_ACCELERATOR);
+      for (const file of result.outputFiles) {
+        const size = await browser.execute(
+          async (filePath) => window.Liatir.invoke('lia_file_size', { path: filePath }),
+          file.path,
+        );
+        expect(size).toBeGreaterThan(0);
+      }
+
+      await navigate(browser, `/results?run=${analysisRunId}`);
+      const resultEntry = await browser.$(`[data-testid="result-run"][data-run-id="${analysisRunId}"]`);
+      await resultEntry.waitForDisplayed({
+        timeout: 20_000,
+        timeoutMsg: 'The finalized Geneformer run is missing from Results',
+      });
+      expect(await resultEntry.getText()).toContain('geneformer-parity-input.h5ad');
+      await browser.waitUntil(
+        async () => browser.execute(() => document.body.innerText.includes('Geneformer V1 10M embeddings')),
+        { timeout: 20_000, timeoutMsg: 'The Geneformer Result detail did not load' },
+      );
+      expect(await browser.execute(() => document.body.innerText)).toContain('Provenance');
 
       const markerPath = `${runtimeDir}/validation/rollback-marker.txt`;
       const marker = await runPython(browser, MARKER_SCRIPT, {
@@ -245,6 +393,53 @@ export const tests = [
         { runtimeId: RUNTIME_ID, boxId: BOX_ID },
       );
       expect(removed).toBe(true);
+      const runtimeStatus = await browser.execute(
+        async (runtimeId) => window.Liatir.invoke('lia_ai_runtime_status', {
+          runtimeId,
+          packages: [],
+          sources: [],
+        }),
+        RUNTIME_ID,
+      );
+      expect(runtimeStatus.installed).toBe(false);
+      for (const file of result.outputFiles) {
+        const size = await browser.execute(
+          async (filePath) => window.Liatir.invoke('lia_file_size', { path: filePath }),
+          file.path,
+        );
+        expect(size).toBeGreaterThan(0);
+      }
+
+      if (PRODUCT_EVIDENCE_PATH) {
+        const evidencePath = path.resolve(rootDir, PRODUCT_EVIDENCE_PATH);
+        fs.mkdirSync(path.dirname(evidencePath), { recursive: true });
+        fs.writeFileSync(evidencePath, `${JSON.stringify({
+          schemaVersion: 1,
+          kind: 'liatir.runtime-box.product-lifecycle-evidence',
+          status: 'passed',
+          boxId: BOX_ID,
+          modelId: MODEL_ID,
+          runtimeId: RUNTIME_ID,
+          targetId: TARGET_ID,
+          version: VERSION,
+          jobId,
+          analysisRunId,
+          accelerator: inference.summary.accelerator,
+          resultArtifactCount: result.outputFiles.length,
+          assertions: {
+            interruptedResume: 'passed',
+            install: 'passed',
+            realInference: 'passed',
+            jobs: 'passed',
+            results: 'passed',
+            provenance: 'passed',
+            replacement: 'passed',
+            rollback: 'passed',
+            removal: 'passed',
+            resultArtifactsSurvivedRemoval: 'passed',
+          },
+        }, null, 2)}\n`);
+      }
     },
   },
 ];

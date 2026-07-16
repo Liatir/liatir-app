@@ -22,11 +22,12 @@ import { spawnSync } from 'node:child_process';
 const ROOT = resolve(import.meta.dirname, '..');
 /** Pinned upstream commit: parity must be checked against a fixed reference, not a moving branch. */
 const REVISION = '04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5';
-/** Requires the box to have been built first (`runtime-box build`); this reads its output. */
-const ARCHIVE = join(
-  ROOT,
-  '.runtime-box-dist',
-  'geneformer-v1-10m-1.0.0-beta.1-macos-aarch64-metal.zip',
+/** Requires the box to have been built first; CI supplies the catalog-resolved recipe ID. */
+const RECIPE_ID = process.env.LIATIR_RUNTIME_BOX_RECIPE_ID
+  ?? 'geneformer-v1-10m-macos-arm64-metal';
+const RUNTIME_DIR = resolve(
+  process.env.LIATIR_GENEFORMER_RUNTIME_DIR
+    ?? join(ROOT, '.runtime-box-build', RECIPE_ID, 'payload'),
 );
 
 function run(command, args, options = {}) {
@@ -61,9 +62,8 @@ function extractEmbeddedScript(source) {
 
 const workDir = await mkdtemp(join(tmpdir(), 'liatir-geneformer-parity-'));
 try {
-  const runtimeDir = join(workDir, 'runtime');
+  const runtimeDir = RUNTIME_DIR;
   const upstreamDir = join(workDir, 'Geneformer');
-  run('unzip', ['-q', ARCHIVE, '-d', runtimeDir]);
   // The upstream repo carries model weights and is enormous. `--filter=blob:none --no-checkout`
   // fetches no file contents up front, and the checkout below then pulls exactly one file — the
   // tokenizer — which is all this comparison needs.

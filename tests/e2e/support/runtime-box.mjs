@@ -14,6 +14,19 @@ export function macosArm64MetalRuntimeBoxTarget(minRamGb) {
   }];
 }
 
+/** Returns the exact published candidate selected by a native Runtime Box release test. */
+export function runtimeBoxTargetForNativeTest(targetId, minRamGb) {
+  if (targetId === 'macos-aarch64-metal') return macosArm64MetalRuntimeBoxTarget(minRamGb);
+  if (targetId === 'linux-x86_64-cpu') {
+    return [{
+      target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
+      hostEnvironments: ['native'],
+      minRamGb,
+    }];
+  }
+  throw new Error(`Unsupported native Runtime Box test target: ${targetId}`);
+}
+
 /**
  * Pulls a Python script out of the TypeScript file that ships it.
  *

@@ -6,9 +6,6 @@ on:
       model_id:
         required: true
         type: string
-      recipe_id:
-        required: true
-        type: string
       target_id:
         required: true
         type: string
@@ -28,6 +25,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     outputs:
+      recipe_id: ${{ steps.resolve.outputs.recipe_id }}
       runs_on: ${{ steps.resolve.outputs.runs_on }}
       timeout_minutes: ${{ steps.resolve.outputs.timeout_minutes }}
       uv_version: ${{ steps.resolve.outputs.uv_version }}
@@ -51,7 +49,6 @@ jobs:
         run: >-
           npm run runtime-box:ci -- resolve
           --model "${{ inputs.model_id }}"
-          --recipe "${{ inputs.recipe_id }}"
           --target "${{ inputs.target_id }}"
           --mode "${{ inputs.mode }}"
           --native-requested "${{ inputs.native_requested }}"
@@ -66,7 +63,7 @@ jobs:
           --phase foundation-preflight
           --status "${{ job.status }}"
           --model "${{ inputs.model_id }}"
-          --recipe "${{ inputs.recipe_id }}"
+          --recipe "${{ steps.resolve.outputs.recipe_id }}"
           --target "${{ inputs.target_id }}"
           --mode "${{ inputs.mode }}"
           --output .runtime-box-ci/model-preflight.json
@@ -111,7 +108,7 @@ jobs:
         run: >-
           npm run runtime-box:ci -- host-probe
           --model "${{ inputs.model_id }}"
-          --recipe "${{ inputs.recipe_id }}"
+          --recipe "${{ needs.preflight.outputs.recipe_id }}"
           --target "${{ inputs.target_id }}"
           --mode "${{ inputs.mode }}"
           --output .runtime-box-ci/host.json
@@ -123,7 +120,7 @@ jobs:
         run: >-
           npm run runtime-box:ci -- tracked-build
           --model "${{ inputs.model_id }}"
-          --recipe "${{ inputs.recipe_id }}"
+          --recipe "${{ needs.preflight.outputs.recipe_id }}"
           --target "${{ inputs.target_id }}"
           --mode "${{ inputs.mode }}"
           --channel beta
@@ -140,7 +137,7 @@ jobs:
         run: >-
           npm run runtime-box:ci -- run-validator
           --model "${{ inputs.model_id }}"
-          --recipe "${{ inputs.recipe_id }}"
+          --recipe "${{ needs.preflight.outputs.recipe_id }}"
           --target "${{ inputs.target_id }}"
           --mode "${{ inputs.mode }}"
           --script "${{ needs.preflight.outputs.validator_script }}"
@@ -176,7 +173,7 @@ jobs:
           npm run runtime-box:ci -- write-model-evidence
           --status "${{ job.status }}"
           --model "${{ inputs.model_id }}"
-          --recipe "${{ inputs.recipe_id }}"
+          --recipe "${{ needs.preflight.outputs.recipe_id }}"
           --target "${{ inputs.target_id }}"
           --mode "${{ inputs.mode }}"
           --release "${{ needs.preflight.outputs.release_path }}"

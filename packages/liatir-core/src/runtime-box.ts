@@ -205,6 +205,8 @@ export interface LiatirRuntimeBoxCiTargetRecord {
   timeoutMinutes: number;
   requiredBuildDiskBytes: number;
   dependencyLockSha256: string;
+  /** Reviewed wheel-license inventory bound to this exact dependency lock. */
+  dependencyLicenseAudit?: string;
   diskPlan: {
     estimatedInstalledSizeBytes: number;
     estimatedArchiveSizeBytes: number;
@@ -380,6 +382,17 @@ export interface LiatirRuntimeBoxCiPublicationEvidenceRecord {
   promotionResponse: Readonly<Record<string, string | number | boolean | null>>;
 }
 
+export interface LiatirRuntimeBoxCiProductLifecycleEvidence {
+  status: "passed";
+  targetId: string;
+  version: string;
+  jobId: string;
+  analysisRunId: string;
+  accelerator: string;
+  resultArtifactCount: number;
+  assertions: Readonly<Record<string, "passed">>;
+}
+
 /** Small CI artifact and checked-in review record; Runtime Box archives never belong here. */
 export interface LiatirRuntimeBoxCiEvidenceRecord {
   schemaVersion: typeof LIATIR_RUNTIME_BOX_CI_EVIDENCE_SCHEMA_VERSION;
@@ -393,6 +406,7 @@ export interface LiatirRuntimeBoxCiEvidenceRecord {
   host?: LiatirRuntimeBoxCiHostEvidence;
   build?: LiatirRuntimeBoxCiBuildEvidence;
   scientific?: LiatirRuntimeBoxCiScientificEvidence;
+  productLifecycle?: LiatirRuntimeBoxCiProductLifecycleEvidence;
   publication?: LiatirRuntimeBoxCiPublicationEvidenceRecord;
 }
 

@@ -32,6 +32,14 @@ describe('Runtime Box CI cost controls', () => {
       .toThrow(/dependency lock SHA-256 mismatch/);
   });
 
+  it('rejects reviewed Python-license audit drift before a native build', () => {
+    const changed = structuredClone(catalog);
+    const cpu = changed.models[0].targets.find((target) => target.targetId === 'linux-x86_64-cpu');
+    cpu.dependencyLicenseAudit = 'runtime-boxes/legal/audits/missing.json';
+    expect(() => validateRuntimeBoxCiCatalog(changed, { requireWorkflows: false }))
+      .toThrow(/recipe and catalog dependency license audits differ|missing dependency license audit/);
+  });
+
   it('keeps Windows CUDA disabled until same-model Linux CUDA validation passes', () => {
     const linux = {
       targetId: 'linux-x86_64-cuda12.4',

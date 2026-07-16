@@ -76,7 +76,11 @@ try {
   // compiles in the WebDriver hooks, and `--ci` keeps cargo-tauri non-interactive.
   const result = spawnSync(
     'cargo',
-    ['tauri', 'build', '--debug', '--features', 'wdio', '--bundles', 'app', '--ci'],
+    [
+      'tauri', 'build', '--debug', '--features', 'wdio',
+      ...(process.platform === 'darwin' ? ['--bundles', 'app'] : ['--no-bundle']),
+      '--ci'
+    ],
     {
       cwd: srcTauriDir,
       env,

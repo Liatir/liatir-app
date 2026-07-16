@@ -18,7 +18,8 @@ import {
   writeReleaseEvidence,
 } from './runtime-box/evidence.mjs';
 import { runWithHeartbeat } from './runtime-box/heartbeat.mjs';
-import { runtimeBoxTargetId } from './runtime-box/targets.mjs';
+import { runtimeBoxTargetId, runtimeBoxTorchBackendArguments } from './runtime-box/targets.mjs';
+import { lockedPythonDistributions } from './runtime-box/licenses.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const CATALOG_PATH = resolve(ROOT, 'runtime-boxes/catalog.json');
@@ -109,7 +110,9 @@ export function resolveCiTarget(catalog, modelId, recipeId, targetId, mode) {
   requireCatalog(model, `unknown modelId ${modelId}`);
   const target = model.targets.find((candidate) => candidate.targetId === targetId);
   requireCatalog(target, `unknown target ${modelId}/${targetId}`);
-  requireCatalog(target.recipeId === recipeId, `recipe ${recipeId} is not approved for ${modelId}/${targetId}`);
+  if (recipeId !== undefined) {
+    requireCatalog(target.recipeId === recipeId, `recipe ${recipeId} is not approved for ${modelId}/${targetId}`);
+  }
   requireCatalog(target.validationModes.includes(mode), `mode ${mode} is not approved for ${modelId}/${targetId}`);
   const runner = catalog.runnerProfiles.find((candidate) => candidate.id === target.runnerProfileId);
   requireCatalog(runner, `missing runner profile ${target.runnerProfileId}`);
@@ -218,13 +221,60 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
       const recipe = JSON.parse(readFileSync(recipePath, 'utf8'));
       requireCatalog(recipe.recipeId === target.recipeId && recipe.modelId === model.modelId && recipe.boxId === model.boxId && recipe.runtimeId === model.runtimeId, `recipe identity mismatch for ${targetKey}`);
       requireCatalog(runtimeBoxTargetId(recipe.target) === target.targetId, `recipe target mismatch for ${targetKey}`);
+      runtimeBoxTorchBackendArguments(recipe);
       requireCatalog(readFileSync(resolve(ROOT, model.legalRecord), 'utf8').includes(recipe.sourceRevision), `legal record is not pinned to recipe source ${recipe.sourceRevision} for ${targetKey}`);
+      for (const localFile of recipe.localFiles ?? []) {
+        const localPath = resolve(ROOT, localFile.sourcePath);
+        requireCatalog(existsSync(localPath), `missing local recipe file ${localFile.sourcePath} for ${targetKey}`);
+        requireCatalog(/^[a-f0-9]{64}$/.test(localFile.sha256), `invalid local recipe hash for ${targetKey}`);
+        requireCatalog(
+          sha256Bytes(readFileSync(localPath)) === localFile.sha256,
+          `local recipe file hash mismatch for ${localFile.sourcePath} in ${targetKey}`,
+        );
+      }
       const lockPath = resolve(recipePath, '..', recipe.requirementsLock);
       requireCatalog(existsSync(lockPath), `missing dependency lock for ${targetKey}`);
       const lockBytes = readFileSync(lockPath);
       requireCatalog(/^[a-f0-9]{64}$/.test(target.dependencyLockSha256), `invalid pinned lock SHA-256 for ${targetKey}`);
       requireCatalog(sha256Bytes(lockBytes) === target.dependencyLockSha256, `dependency lock SHA-256 mismatch for ${targetKey}`);
       requireCatalog(lockBytes.includes(Buffer.from('--hash=sha256:')), `dependency lock is not hash-pinned for ${targetKey}`);
+      if (target.dependencyLicenseAudit) {
+        requireCatalog(
+          recipe.dependencyLicenseAudit === target.dependencyLicenseAudit,
+          `recipe and catalog dependency license audits differ for ${targetKey}`,
+        );
+        const auditPath = resolve(ROOT, target.dependencyLicenseAudit);
+        requireCatalog(
+          auditPath.startsWith(`${resolve(ROOT, 'runtime-boxes/legal/audits')}${sep}`),
+          `dependency license audit is outside runtime-boxes/legal/audits for ${targetKey}`,
+        );
+        requireCatalog(existsSync(auditPath), `missing dependency license audit for ${targetKey}`);
+        const audit = JSON.parse(readFileSync(auditPath, 'utf8'));
+        requireCatalog(
+          audit.schemaVersion === 1
+            && audit.kind === 'liatir.runtime-box.python-dependency-license-audit'
+            && audit.targetId === target.targetId
+            && audit.torchBackend === recipe.torchBackend
+            && audit.dependencyLockSha256 === target.dependencyLockSha256,
+          `dependency license audit identity mismatch for ${targetKey}`,
+        );
+        const reviewedPackages = audit.packages.map(({ name, version }) => ({ name, version }));
+        requireCatalog(
+          JSON.stringify(reviewedPackages) === JSON.stringify(lockedPythonDistributions(lockBytes)),
+          `dependency license audit package set differs from the lock for ${targetKey}`,
+        );
+        requireCatalog(
+          audit.packages.every((entry) => (
+            typeof entry.declaredLicense === 'string'
+            && entry.declaredLicense
+            && Array.isArray(entry.licenseFiles)
+          )),
+          `dependency license audit contains an incomplete entry for ${targetKey}`,
+        );
+      }
+      if (recipe.torchBackend) {
+        requireCatalog(target.dependencyLicenseAudit, `PyTorch target lacks a reviewed dependency license audit for ${targetKey}`);
+      }
       runtimeBoxBuildDiskPlan(recipe, target);
 
       validateWindowsCudaPrerequisite(model, target);
@@ -303,7 +353,7 @@ function parseOptions(values) {
 }
 
 /** Runs a checked validator, preserves its logs, and stores its canonical JSON result. */
-async function runPackageScript(script, output) {
+async function runPackageScript(script, output, environment = {}) {
   const result = await runWithHeartbeat(
     process.platform === 'win32' ? 'npm.cmd' : 'npm',
     ['run', script],
@@ -312,6 +362,7 @@ async function runPackageScript(script, output) {
       capture: true,
       maxBuffer: 64 * 1024 * 1024,
       cwd: ROOT,
+      env: environment,
     },
   );
   if (result.signal) throw new Error(`${script} terminated by ${result.signal}`);
@@ -386,6 +437,7 @@ async function main() {
     requireCatalog(!nativeRequested || resolved.target.nativeCiEnabled, `native CI is not enabled for ${resolved.model.modelId}/${resolved.target.targetId}`);
     const recipe = JSON.parse(readFileSync(resolve(ROOT, 'runtime-boxes/recipes', resolved.target.recipeId, 'recipe.json'), 'utf8'));
     const values = {
+      recipe_id: resolved.target.recipeId,
       runs_on: resolved.runner.runsOn,
       timeout_minutes: resolved.target.timeoutMinutes,
       uv_version: recipe.uvVersion,
@@ -414,6 +466,7 @@ async function main() {
     const recipe = JSON.parse(readFileSync(resolve(ROOT, 'runtime-boxes/recipes', target.recipeId, 'recipe.json'), 'utf8'));
     const values = {
       recipe_id: target.recipeId,
+      version: recipe.version,
       runs_on: resolved.runner.runsOn,
       timeout_minutes: target.timeoutMinutes,
       uv_version: recipe.uvVersion,
@@ -466,6 +519,10 @@ async function main() {
     await runPackageScript(
       resolved.model.validatorScript,
       options.get('output') || '.runtime-box-ci/scientific-result.json',
+      {
+        LIATIR_RUNTIME_BOX_RECIPE_ID: resolved.target.recipeId,
+        LIATIR_RUNTIME_BOX_TARGET_ID: resolved.target.targetId,
+      },
     );
     return;
   }

@@ -53,6 +53,22 @@ describe('Runtime Box CI catalog', () => {
     )).toThrow(/mode arbitrary-mode is not approved/);
   });
 
+  it('derives the Linux CPU recipe and runner only from the checked model and target', () => {
+    const resolved = resolveCiTarget(
+      catalog,
+      'ctheodoris-geneformer-v1-10m',
+      undefined,
+      'linux-x86_64-cpu',
+      'native-lifecycle',
+    );
+    expect(resolved.target).toMatchObject({
+      recipeId: 'geneformer-v1-10m-linux-x86_64-cpu',
+      status: 'buildable',
+      dependencyLicenseAudit: 'runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cpu.json',
+    });
+    expect(resolved.runner).toMatchObject({ runsOn: 'ubuntu-24.04', gpu: false });
+  });
+
   it('derives the small native fixture matrix from checked runner profiles', () => {
     expect(foundationMatrix(catalog)).toEqual(expect.arrayContaining([
       expect.objectContaining({ recipeId: 'installer-fixture-linux-x86_64', runsOn: 'ubuntu-24.04', heartbeatSeconds: 300 }),

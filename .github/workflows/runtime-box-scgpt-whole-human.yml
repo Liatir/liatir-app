@@ -48,7 +48,6 @@ jobs:
     uses: ./.github/workflows/_runtime-box-validate.yml
     with:
       model_id: bowang-scgpt-whole-human
-      recipe_id: scgpt-whole-human-macos-arm64-metal
       target_id: ${{ inputs.target_id || 'macos-aarch64-metal' }}
       mode: ${{ inputs.mode || 'build' }}
       native_requested: ${{ github.event_name == 'workflow_dispatch' }}
