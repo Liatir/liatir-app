@@ -14,6 +14,7 @@ import { sha256File } from '../../scripts/runtime-box/filesystem.mjs';
 import {
   discoverStandalonePythonRoot,
   findPythonRelocationLeaks,
+  stageStandalonePython,
 } from '../../scripts/runtime-box/python.mjs';
 import {
   assertRuntimeBoxNativeHost,
@@ -132,6 +133,40 @@ describe('Runtime Box target adapters', () => {
     expect(discoverStandalonePythonRoot(interpreter, () => distribution)).toBe(distribution);
     expect(() => discoverStandalonePythonRoot(join(root, 'outside', 'python'), () => distribution))
       .toThrow(/outside sys.base_prefix/);
+  });
+
+  it('installs the exact managed Python before discovering and staging it', async () => {
+    const root = await temporaryRoot();
+    const sourceRoot = join(root, 'managed-python');
+    const sourceInterpreter = join(sourceRoot, 'bin', 'python');
+    const payloadDir = join(root, 'payload');
+    const adapter = runtimeBoxTargetAdapter({ platform: 'linux', arch: 'x86_64', accelerator: 'cpu' });
+    await mkdir(dirname(sourceInterpreter), { recursive: true });
+    await writeFile(sourceInterpreter, 'fixture\n');
+    const calls: Array<{ command: string; args: string[] }> = [];
+    const run = (command: string, args: string[]) => {
+      calls.push({ command, args });
+      if (command === 'uv' && args[1] === 'find') return sourceInterpreter;
+      if (command === sourceInterpreter) return sourceRoot;
+      return '';
+    };
+
+    const staged = await stageStandalonePython({
+      adapter,
+      payloadDir,
+      pythonVersion: '3.11.9',
+      run,
+      uv: 'uv',
+    });
+
+    expect(calls.slice(0, 2)).toEqual([
+      { command: 'uv', args: ['python', 'install', '3.11.9'] },
+      {
+        command: 'uv',
+        args: ['python', 'find', '3.11.9', '--python-preference', 'only-managed'],
+      },
+    ]);
+    expect(await readFile(staged.interpreter, 'utf8')).toBe('fixture\n');
   });
 
   it('uses one deterministic streaming ZIP implementation for creation, listing, and extraction', async () => {

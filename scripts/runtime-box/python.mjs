@@ -21,6 +21,9 @@ export function discoverStandalonePythonRoot(interpreter, run) {
 
 /** Copies the exact uv-managed standalone distribution into the adapter's payload layout. */
 export async function stageStandalonePython({ adapter, payloadDir, pythonVersion, run, uv }) {
+  // A clean native runner must not depend on a preinstalled interpreter. Pinned uv owns the
+  // download manifest and installation, after which `find` is restricted to that managed tree.
+  run(uv, ['python', 'install', pythonVersion], { env: { UV_NO_CONFIG: '1' } });
   const managedPython = run(uv, [
     'python', 'find', pythonVersion, '--python-preference', 'only-managed',
   ], { capture: true, env: { UV_NO_CONFIG: '1' } });
