@@ -3,6 +3,7 @@ import { h } from 'vue'
 import ShareThis from './ShareThis.vue'
 import HomePage from './HomePage.vue'
 import CookieBanner from './CookieBanner.vue'
+import PatreonButton from './PatreonButton.vue'
 import Tabs from './tabs-component/Tabs.vue'
 import Tab from './tabs-component/Tab.vue'
 import './custom.css'
@@ -19,6 +20,7 @@ export default {
   },
   enhanceApp({ app }) {
     app.component('HomePage', HomePage),
+    app.component('PatreonButton', PatreonButton),
     app.component('Tabs', Tabs),
     app.component('Tab', Tab)
   },

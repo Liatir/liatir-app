@@ -223,7 +223,15 @@ export default defineConfig({
       { text: `</br></br>All rights reserved</br>© ${new Date().getFullYear()} <a href="https://liatir.com" target="_blank">Liatir</a>`},
     ],
 
-    socialLinks: [],
+    socialLinks: [
+      {
+        icon:"github",
+        link: "https://github.com/Liatir/sdk"
+      },
+      {
+      icon: "patreon",
+      link: "https://www.patreon.com/16427094/join"
+    }],
 
     footer: {
       message: 'Liatir — powerful bioinformatics on your machine.<br></br>By using this app, you agree to our <a href="/privacy">Privacy Policy</a> and <a href="/terms">Terms of Service</a>.',

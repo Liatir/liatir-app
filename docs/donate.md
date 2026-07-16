@@ -28,11 +28,24 @@ If you believe in **making science accessible for everyone**, your support helps
 
 <br>
 
+<Tabs>
+<Tab title="Custom">
+
 <div id="kofiframe-wrapper">
 
 <iframe id='kofiframe' src='https://ko-fi.com/liatir/?hidefeed=true&widget=true&embed=true&preview=true' style='border:none;width:100%;padding:4px;background:#F8F8F8;' height='712' title='liatir'></iframe>
 
 </div>
+
+</Tab>
+<Tab title="Patreon">
+
+<PatreonButton />
+
+</Tab>
+</Tabs>
+
+
 
 <style>
     #kofiframe-wrapper{
