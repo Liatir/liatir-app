@@ -19,9 +19,14 @@ import { spawnSync } from 'node:child_process';
 const signer = String(process.argv[2] ?? process.env.LIATIR_RUNTIME_BOX_SIGNER_URL ?? '').replace(/\/$/, '');
 if (!signer) throw new Error('Pass the private Cloud Run signer URL as the first argument.');
 
-// The signer is private: access is proven with the operator's own short-lived Google identity token.
-const tokenResult = spawnSync('gcloud', ['auth', 'print-identity-token'], { encoding: 'utf8' });
-if (tokenResult.status !== 0) throw new Error(`Cannot obtain Google identity token: ${tokenResult.stderr}`);
+// CI passes a short-lived, audience-bound token from google-github-actions/auth. Manual operators
+// may fall back to gcloud, which can mint an identity token from an interactive Google identity.
+let identityToken = String(process.env.LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN ?? '').trim();
+if (!identityToken) {
+  const tokenResult = spawnSync('gcloud', ['auth', 'print-identity-token'], { encoding: 'utf8' });
+  if (tokenResult.status !== 0) throw new Error(`Cannot obtain Google identity token: ${tokenResult.stderr}`);
+  identityToken = tokenResult.stdout.trim();
+}
 
 // Placeholder hash: the payload has to be *shaped* like a real release to pass the signer's policy,
 // but must never be mistakable for one. The `0.0.0-signer-smoke` version and this obviously fake
@@ -62,7 +67,7 @@ const payloadSha256 = createHash('sha256').update(payloadBytes).digest('hex');
 const response = await fetch(`${signer}/v1/sign`, {
   method: 'POST',
   headers: {
-    authorization: `Bearer ${tokenResult.stdout.trim()}`,
+    authorization: `Bearer ${identityToken}`,
     'content-type': 'application/json',
   },
   body: JSON.stringify({ payloadBase64: payloadBytes.toString('base64'), payloadSha256 }),

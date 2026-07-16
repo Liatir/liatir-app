@@ -8,6 +8,7 @@ const deploymentWorkflow = readFileSync(
   resolve('.github/workflows/runtime-box-signer-deploy.yml'),
   'utf8',
 );
+const smokeScript = readFileSync(resolve('scripts/validate-runtime-box-signer.mjs'), 'utf8');
 
 describe('Runtime Box signer deployment boundary', () => {
   it('keeps direct KMS access out of the GitHub deploy-only identity', () => {
@@ -42,5 +43,16 @@ describe('Runtime Box signer deployment boundary', () => {
     expect(configureScript).toMatch(
       /add-iam-policy-binding "\$COMPUTE_SERVICE_ACCOUNT"[\s\S]*?"serviceAccount:\$SIGNER_SERVICE_ACCOUNT"[\s\S]*?roles\/iam\.serviceAccountUser/,
     );
+  });
+
+  it('uses only a short-lived audience-bound OpenID token for the signer smoke test', () => {
+    expect(configureScript).toContain('roles/iam.serviceAccountOpenIdTokenCreator');
+    expect(configureScript).not.toContain('roles/iam.serviceAccountTokenCreator');
+    expect(deploymentWorkflow).toContain('token_format: id_token');
+    expect(deploymentWorkflow).toContain('id_token_audience: ${{ steps.service.outputs.url }}');
+    expect(deploymentWorkflow).toContain(
+      'LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN: ${{ steps.smoke-auth.outputs.id_token }}',
+    );
+    expect(smokeScript).toContain('process.env.LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN');
   });
 });

@@ -235,6 +235,9 @@ gcloud iam service-accounts add-iam-policy-binding "$RELEASE_SERVICE_ACCOUNT" \
 gcloud iam service-accounts add-iam-policy-binding "$SIGNER_SERVICE_ACCOUNT" \
   --project "$PROJECT_ID" --member "$SIGNER_PRINCIPAL" --role roles/iam.workloadIdentityUser \
   --quiet >/dev/null
+gcloud iam service-accounts add-iam-policy-binding "$SIGNER_SERVICE_ACCOUNT" \
+  --project "$PROJECT_ID" --member "serviceAccount:$SIGNER_SERVICE_ACCOUNT" \
+  --role roles/iam.serviceAccountOpenIdTokenCreator --quiet >/dev/null
 
 gcloud run services add-iam-policy-binding "$SIGNER_SERVICE" --region "$REGION" \
   --project "$PROJECT_ID" --member "serviceAccount:$RELEASE_SERVICE_ACCOUNT" \
