@@ -12,9 +12,9 @@ DEPLOY_ONLY="${LIATIR_SIGNER_DEPLOY_ONLY:-0}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 if [[ "$DEPLOY_ONLY" == "1" ]]; then
-  # CI deploys code and policy only. Gate 5 must provision identities, KMS, and IAM first.
+  # CI deploys code and policy only. It must not access KMS directly: the post-deploy smoke test
+  # exercises the private Cloud Run signer, whose runtime identity is the sole KMS principal.
   gcloud iam service-accounts describe "$SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com" --project "$PROJECT_ID" >/dev/null
-  gcloud kms keys versions describe 1 --key "$KEY" --keyring "$KEY_RING" --location "$REGION" --project "$PROJECT_ID" >/dev/null
 else
   gcloud services enable run.googleapis.com cloudkms.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com --project "$PROJECT_ID"
   gcloud iam service-accounts describe "$SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com" --project "$PROJECT_ID" >/dev/null 2>&1 \
@@ -23,6 +23,7 @@ else
     || gcloud kms keyrings create "$KEY_RING" --location "$REGION" --project "$PROJECT_ID"
   gcloud kms keys describe "$KEY" --keyring "$KEY_RING" --location "$REGION" --project "$PROJECT_ID" >/dev/null 2>&1 \
     || gcloud kms keys create "$KEY" --keyring "$KEY_RING" --location "$REGION" --purpose=asymmetric-signing --default-algorithm=ec-sign-ed25519 --protection-level=software --project "$PROJECT_ID"
+  gcloud kms keys versions describe 1 --key "$KEY" --keyring "$KEY_RING" --location "$REGION" --project "$PROJECT_ID" >/dev/null
   gcloud kms keys add-iam-policy-binding "$KEY" --keyring "$KEY_RING" --location "$REGION" \
     --member="serviceAccount:$SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com" --role=roles/cloudkms.signerVerifier --project "$PROJECT_ID"
 fi
@@ -36,5 +37,5 @@ gcloud run deploy "$SERVICE" --source "$ROOT/services/runtime-box-signer" --regi
 if [[ "$DEPLOY_ONLY" != "1" ]]; then
   gcloud run services add-iam-policy-binding "$SERVICE" --region "$REGION" --project "$PROJECT_ID" \
     --member="user:$(gcloud config get-value account)" --role=roles/run.invoker
+  gcloud kms keys versions get-public-key 1 --key "$KEY" --keyring "$KEY_RING" --location "$REGION" --project "$PROJECT_ID"
 fi
-gcloud kms keys versions get-public-key 1 --key "$KEY" --keyring "$KEY_RING" --location "$REGION" --project "$PROJECT_ID"
