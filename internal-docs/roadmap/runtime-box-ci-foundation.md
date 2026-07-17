@@ -56,7 +56,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 5. GitHub identities, environments, and secrets | Complete | `4aa84f2` |
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
-| 8.1. Geneformer Linux pilot | Not started | Next authorized implementation gate |
+| 8.1. Geneformer Linux pilot | In progress | Linux CPU product lifecycle pending; CUDA not started |
 | 8.2. Geneformer Windows pilot | Not started | Requires Gate 8.1 |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
@@ -153,6 +153,62 @@ following three sub-gates.
 
 Exit only when Linux artifacts, KMS signatures, immutable R2 objects, channel
 metadata, scientific evidence, product lifecycle, and cleanup are verified.
+
+#### Gate 8.1 execution record
+
+Current state as of 2026-07-17:
+
+- The official source, license and redistribution record, exact checkpoint,
+  dependency lock, artifact layout, CPU/CUDA requirements, and T4 compatibility
+  were rechecked before execution. The repository pins source revision
+  `04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5` and the Linux CPU dependency-lock
+  SHA-256
+  `73a31b39b7f2f3eee6a1c7628d13728490ed4db31095c50ab5ce0211b98829f1`.
+- The protected signer path passed in run `29536134188`. GitHub deploys the
+  Cloud Run signer but has no direct Cloud KMS role; the signer runtime identity
+  remains the only KMS signing principal.
+- `linux-x86_64-cpu` build, archive verification, self-test, KMS signing,
+  immutable candidate publication, and pinned scientific parity have passed in
+  the latest attempts. The fixed `4 x 128` fixture produced `4 x 256`
+  embeddings with maximum absolute error `0` and minimum cosine similarity
+  `1.0` against the CPU baseline.
+- The CPU target is **not complete**. No failed attempt promoted the beta
+  channel, and final product install/run, Jobs, Results, provenance,
+  replacement/removal, and cleanup evidence is still pending a successful
+  post-fix run.
+- Commit `3766d41` corrects the last observed WebDriver readiness race. Its local
+  gate passed 8 focused unit tests, syntax checks, a clean product build, and
+  three separate cold native-app starts with 6/6 bridge assertions passing.
+- `linux-x86_64-cuda12.4` has not started and must remain blocked until the CPU
+  lifecycle is fully closed.
+
+Incident ledger:
+
+| Run | Result | Observed blocker or verification | Corrective commit |
+|---|---|---|---|
+| `29531614363` | Failed | Signer deployment crossed into manual-only KMS inspection | `e14645c` |
+| `29535230731` | Failed | Cloud Build signer build identity was not pinned explicitly | `f5d232b` |
+| `29535712126` | Failed | Signer smoke test lacked its short-lived service identity token | `0d94ee6` |
+| `29536134188` | Passed | Protected signer deployment and live signing verification completed | — |
+| `29536320468` | Failed | Clean Linux builder did not install the pinned standalone Python first | `52ef2b9` |
+| `29536831378` | Failed | Relocatable Python retained unnecessary build tooling | `3091de2` |
+| `29537269267` | Failed | Release publication lacked the signer identity token | `8f70c3e` |
+| `29537705732` | Failed | CI attempted to parse JSON from a successful silent validator | `c012bc5` |
+| `29538153057` | Failed | Clean product evidence preparation was incomplete | `9252da9` |
+| `29538835560` | Failed | Clean product build had no installed frontend dependencies | `f1fa230` |
+| `29539350276` | Failed | Clean product build had no repository-pinned Tauri CLI | `76b9b7c` |
+| `29540992199` | Failed | Product lifecycle E2E startup/session handling was not robust enough | `794d2ac` |
+| `29542218213` | Failed | Optional Linux desktop integration failure terminated the app | `f32188e` |
+| `29542962600` | Failed | Interrupted-download cancellation was nondeterministic | `607bbdb` |
+| `29544128885` | Failed | `minRamGb` was documented as decimal GB but compared as GiB | `5fcbbb3` |
+| `29544965106` | Failed | HTTP 200 from `/status` was mistaken for WebDriver readiness during initial WebKit navigation | `3766d41` |
+
+The failed release attempts consumed about 86 minutes of observed workflow wall
+time; the four signer attempts consumed about 6 minutes. At the standard Linux
+rate of USD 0.006/minute this is approximately USD 0.55 before job-minute
+rounding; GitHub billing remains the authoritative cost record. These failures
+also consumed substantial operator and agent time, so no further remote attempt
+is permitted until the complete economical local gate passes.
 
 ### Gate 8.2: Geneformer Windows pilot
 
