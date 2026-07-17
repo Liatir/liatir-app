@@ -352,6 +352,14 @@ function parseOptions(values) {
   return options;
 }
 
+/** Converts kebab-case CLI flags to the camelCase evidence API contract. */
+export function runtimeBoxEvidenceOptions(options) {
+  return Object.fromEntries([...options].map(([key, value]) => [
+    key.replace(/-([a-z0-9])/g, (_match, character) => character.toUpperCase()),
+    value,
+  ]));
+}
+
 /** Runs a checked validator, preserves its logs, and stores its canonical JSON result. */
 async function runPackageScript(script, output, environment = {}) {
   const result = await runWithHeartbeat(
@@ -526,7 +534,7 @@ async function main() {
     );
     return;
   }
-  const evidenceOptions = Object.fromEntries(options);
+  const evidenceOptions = runtimeBoxEvidenceOptions(options);
   if (command === 'write-evidence') return writeCompactEvidence(evidenceOptions);
   if (command === 'write-model-evidence') return writeModelEvidence(evidenceOptions, catalog);
   if (command === 'write-release-evidence' || command === 'release-evidence') {

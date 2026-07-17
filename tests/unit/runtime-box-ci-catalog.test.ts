@@ -9,6 +9,7 @@ import {
 import {
   foundationMatrix,
   resolveCiTarget,
+  runtimeBoxEvidenceOptions,
   validateRuntimeBoxCiCatalog,
 } from '../../scripts/runtime-box-ci.mjs';
 
@@ -95,6 +96,18 @@ describe('Runtime Box CI catalog', () => {
     const ciSource = readFileSync(new URL('../../scripts/runtime-box-ci.mjs', import.meta.url), 'utf8');
     expect(ciSource).toContain("['run', '--silent', script]");
     expect(ciSource).toContain('JSON.parse(result.stdout.trim())');
+  });
+
+  it('maps workflow receipt flags to the evidence API contract', () => {
+    expect(runtimeBoxEvidenceOptions(new Map([
+      ['publish-receipt', 'publish.json'],
+      ['promotion-receipt', 'promotion.json'],
+      ['product-lifecycle', 'product.json'],
+    ]))).toEqual({
+      publishReceipt: 'publish.json',
+      promotionReceipt: 'promotion.json',
+      productLifecycle: 'product.json',
+    });
   });
 
   it('keeps UCE native CI disabled until a runner has enough working storage', () => {
