@@ -154,7 +154,7 @@
 							: 'text-text-muted hover:bg-surface-2/90 hover:text-text'}"
 					>
 						{#if item?.customIcon}
-							<CustomIcon src={settingsStore.resolvedTheme === 'light' ? (item.customIconDark??item.customIcon) : item.customIcon} class="w-[16px] h-[16px] opacity-60"/>
+							<CustomIcon src={settingsStore.resolvedTheme === 'light' ? (item.customIconDark??item.customIcon) : item.customIcon} class="w-[16px] h-[16px] transition-none opacity-60 group-hover:opacity-100"/>
 						{:else if item?.icon}
 							<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
 						{/if}
@@ -198,7 +198,9 @@
 					>
 
 						{#if item?.customIcon}
-							<CustomIcon src={settingsStore.resolvedTheme === 'light' ? (item.customIconDark??item.customIcon) : item.customIcon} class="w-[16px] h-[16px] opacity-60"/>
+						<span>
+							<CustomIcon src={settingsStore.resolvedTheme === 'light' ? (item.customIconDark??item.customIcon) : item.customIcon} class="w-[16px] h-[16px] transition-none opacity-60 group-hover:opacity-100"/>
+						</span>
 						{:else if item?.icon}
 							<Icon icon={item.icon} width="16" height="16" class="shrink-0" />
 						{/if}

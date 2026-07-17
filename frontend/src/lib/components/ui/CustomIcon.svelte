@@ -9,8 +9,6 @@
 	user-supplied or remote URL.
 -->
 <script lang="ts">
-	import { onMount } from "svelte";
-
   let { src, ...rest } = $props();
   let svg = $state('');
 
@@ -32,6 +30,6 @@
 </span>
 
 <style>
-    #custom-icon-wrapper span { display: inline-flex; line-height: 0; }
+    #custom-icon-wrapper span { display: inline-flex; line-height: 0; color: inherit; }
     #custom-icon-wrapper span :global(svg) { width: 100%; height: 100%; }
 </style>
