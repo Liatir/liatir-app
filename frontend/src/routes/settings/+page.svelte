@@ -10,6 +10,7 @@
 	import { getLastSegmentsStringFromPath } from '$lib/utils';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
 	import { LIATIR_DOCS_URL } from '$lib/_constants';
+	import type { NavHref } from '$lib/sidebarUtils';
 
   let apiVersion = $state<string | null>(null);
   let appVersion = $state<string | null>(null);
@@ -70,6 +71,7 @@
           { label: 'App Version', value: appVersion ?? '—' },
           { label: 'Active Workspace', value: (workspaceStore?.activeId) ? (workspaceStore?.isSandboxMode)?'[sandbox]':((workspaceStore?.active?.name)??'-') : '—' },
           { label: 'API Version', value: apiVersion ?? '—' },
+          { label: 'Dependencies', value: '⟶', callback: ()=>goto(("/deps") as NavHref)},
           { label: 'Test Liatir API', value: '⟶', callback: testAPIButtonCallback, hidden: !workspaceStore.isSandboxMode },
           { label: 'Liatir Documentation', value: '⟶', callback: docsButtonCallback },
         ] as row}

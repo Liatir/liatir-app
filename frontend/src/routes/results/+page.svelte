@@ -112,7 +112,7 @@
       const filename = `liatir-${toolLabel(selectedRun.tool).toLowerCase().replace(/\s+/g, '-')}-${selectedRun.label.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 40)}.html`;
       const dest = await api.desktop.files.save(filename);
       if (dest) {
-        const html = exportToHtml(selectedRun, loadedOutput);
+        const html = await exportToHtml(selectedRun, loadedOutput);
         await api.invoke('lia_write_file_path', { path: dest, content: html } as any);
       }
     } catch { /* cancelled */ } finally {

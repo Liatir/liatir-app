@@ -27,6 +27,26 @@ function escHtml(s: string): string {
     .replace(/"/g, '&quot;');
 }
 
+// Neutralises any literal `</script>` inside JS embedded in the report, so a chart's data — or the
+// Plotly library itself — can never close its host <script> element early and break the page.
+function escScript(s: string): string {
+  return s.replace(/<\/script>/gi, '<\\/script>');
+}
+
+/**
+ * The Plotly runtime, inlined into the report as a self-contained <script>.
+ *
+ * The export used to pull Plotly from a CDN, which left every chart blank when the report was opened
+ * offline — unacceptable for a local-first app whose reports must stay readable years later. Inlining
+ * the bundled library instead makes each report fully self-contained, and uses the *same* Plotly
+ * version as the in-app charts. Loaded lazily (dynamic import) and only when a chart exists, so the
+ * ~4 MB library never enters the main app bundle nor bloats a chart-free report.
+ */
+async function inlinePlotlyRuntime(): Promise<string> {
+  const plotly = await import('plotly.js-dist-min/plotly.min.js?raw');
+  return `<script>${escScript(plotly.default)}</script>`;
+}
+
 function colorClass(color?: string): string {
   if (color === 'green') return 'color:#059669';
   if (color === 'red') return 'color:#dc2626';
@@ -82,8 +102,8 @@ function renderSection(s: ToolSection, chartIdx: { n: number }): string {
 
     case 'plotly': {
       const id = `chart${chartIdx.n++}`;
-      const dataJson = JSON.stringify(s.data);
-      const layoutJson = JSON.stringify({ ...s.layout, autosize: true });
+      const dataJson = escScript(JSON.stringify(s.data));
+      const layoutJson = escScript(JSON.stringify({ ...s.layout, autosize: true }));
       return `
         ${s.title ? `<h2>${escHtml(s.title)}</h2>` : ''}
         ${s.description ? `<p class="section-desc">${escHtml(s.description)}</p>` : ''}
@@ -96,7 +116,7 @@ function renderSection(s: ToolSection, chartIdx: { n: number }): string {
   }
 }
 
-export function exportToHtml(run: AnalysisRunMeta, output: ToolOutput): string {
+export async function exportToHtml(run: AnalysisRunMeta, output: ToolOutput): Promise<string> {
   const toolLabel = TOOL_LABELS[run.tool] ?? run.tool;
   const date = new Date(run.startedAt).toLocaleString();
   const day = new Date(run.startedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -111,13 +131,17 @@ export function exportToHtml(run: AnalysisRunMeta, output: ToolOutput): string {
     .map(s => renderSection(s, chartIdx))
     .join('\n');
 
+  // Carry the Plotly runtime only when the report actually contains a chart; a report of just stats
+  // and tables ships no JS at all and stays a few KB.
+  const plotlyRuntime = chartIdx.n > 0 ? await inlinePlotlyRuntime() : '';
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escHtml(toolLabel)} — ${escHtml(run.label)}</title>
-<script src="https://cdn.plot.ly/plotly-2.30.0.min.js" charset="utf-8"></script>
+${plotlyRuntime}
 <style>
   *, *::before, *::after { box-sizing: border-box; }
   body { font-family: system-ui, -apple-system, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1.5rem; color: #111827; background: #fff; }

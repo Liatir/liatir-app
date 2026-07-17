@@ -13,17 +13,17 @@
  * what keeps a prompt injection from being obeyed. It stays compiled into the bundle on purpose:
  * a security boundary must never sit on a path that can be replaced at runtime.
  *
- * Two corpora feed the pool from a single source of truth each, never hand-duplicated:
- *   - **Bioinformatics knowledge** is authored as Markdown in `quenta-knowledge/` and compiled into
- *     `QUENTA_KNOWLEDGE_SEED` by `scripts/build-quenta-docs.mjs`. Edit the Markdown, not this file.
- *   - **User-facing Liatir docs** live in `docs/`; their ingestion into the pool lands separately.
+ * This file is now ONLY the native, always-compiled layer. Two other corpora are retrieved on top of
+ * it and are managed separately by `knowledge-sync.ts` (seed → cache → online), each with a single
+ * Markdown source of truth, never hand-duplicated here:
+ *   - **Bioinformatics knowledge** authored in `quenta-knowledge/`;
+ *   - **User-facing Liatir docs** in `docs/`.
  *
  * The `app:*` summaries below are the native description of Liatir the assistant needs even before
  * any doc is retrieved. The wording is deliberately dense and declarative: it is written to be read
  * by a model as context, not by a person as prose.
  */
 import type { LiatirQuentaContextDocument } from '@liatir/core';
-import { QUENTA_KNOWLEDGE_SEED } from './generated/quenta-knowledge.generated';
 
 /** Native, always-present description of Liatir and the assistant's safety boundary. */
 const NATIVE_KNOWLEDGE: LiatirQuentaContextDocument[] = [
@@ -86,10 +86,7 @@ const NATIVE_KNOWLEDGE: LiatirQuentaContextDocument[] = [
 ];
 
 /**
- * The full built-in pool: native Liatir/boundary knowledge plus the curated bioinformatics corpus
- * compiled from `quenta-knowledge/`. Live app state and retrieved docs are added on top elsewhere.
+ * The native, always-present pool: Liatir identity and the safety boundary. The synced corpora
+ * (bioinformatics knowledge, docs) and live app state are added on top in `context.ts`.
  */
-export const LIATIR_QUENTA_KNOWLEDGE: LiatirQuentaContextDocument[] = [
-  ...NATIVE_KNOWLEDGE,
-  ...QUENTA_KNOWLEDGE_SEED,
-];
+export const LIATIR_QUENTA_KNOWLEDGE: LiatirQuentaContextDocument[] = [...NATIVE_KNOWLEDGE];

@@ -2,6 +2,7 @@ import { appStorage } from './app-storage';
 import { getDataPrefix, workspaceStore } from './workspace.svelte';
 import { liatir } from '$lib/api';
 import { buildQuentaContextDocuments, requiredContextIdsForFocus } from '$lib/quenta/context';
+import { initKnowledgeSync } from '$lib/quenta/knowledge-sync';
 import {
   buildQuentaMessages,
   buildQuentaPlainLanguageRepairMessages,
@@ -1029,6 +1030,9 @@ function createQuentaStore() {
         requiredIds,
         limit: focus ? 5 : 8,
         maxChars: focus ? 18_000 : 14_000,
+        // Open questions retrieve over the whole docs corpus, so reserve slots for the user's own
+        // live state; a focused question is already scoped to one entity and needs no cap.
+        referenceCap: focus ? undefined : 5,
       });
       updateActiveResponse(conversation.id, requestId, {
         phase: settings.config.thinkingEnabled ? 'thinking' : 'writing-response',
@@ -1220,6 +1224,10 @@ function createQuentaStore() {
           await loadSettings();
           await loadConversationsForActiveWorkspace();
           await recoverActiveRequests();
+          // Bring the knowledge/docs corpora up to date. Fire-and-forget on purpose: caches load and
+          // the online refresh runs in the background, so a slow or offline network never delays a
+          // usable assistant — the bundled seed already covers every corpus.
+          void initKnowledgeSync();
         } finally {
           initializing = false;
           initializePromise = null;

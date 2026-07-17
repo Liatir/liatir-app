@@ -16,6 +16,7 @@
  * keeps a single 400 MB tool output from consuming the entire prompt.
  */
 import { LIATIR_QUENTA_KNOWLEDGE } from './knowledge';
+import { syncedReferenceDocuments } from './knowledge-sync';
 import { analysisRuns, type AnalysisRunMeta } from '$lib/stores/analysisRuns.svelte';
 import { apiConnections } from '$lib/stores/apiConnections.svelte';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
@@ -300,10 +301,12 @@ export async function buildQuentaContextDocuments(
     ]);
   }
 
-  // Always present, regardless of focus: the static knowledge base (how Liatir works) and the
-  // current workspace. Both are needed to interpret anything else.
+  // Always present, regardless of focus: the native knowledge base (how Liatir works), the synced
+  // reference corpora (curated bioinformatics knowledge + the Liatir docs), and the current
+  // workspace. Together they are what lets the assistant interpret anything else.
   const documents: LiatirQuentaContextDocument[] = [
     ...LIATIR_QUENTA_KNOWLEDGE,
+    ...syncedReferenceDocuments(),
     workspaceDocument(),
   ];
 

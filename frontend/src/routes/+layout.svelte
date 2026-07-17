@@ -21,7 +21,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { sidebarWidth } from '$lib/stores/sidebar';
-	import QuentaFloatingButton from '$lib/components/quenta/QuentaFloatingButton.svelte';
+	// import QuentaFloatingButton from '$lib/components/quenta/QuentaFloatingButton.svelte';
 
 	let { children } = $props();
 
@@ -107,9 +107,10 @@
 		</svg>
 	</div>
 {:else}
+<div style="{workspaceStore.isSandboxMode ? 'background-color: var(--color-sandbox-500);' : ''}">
 <div
         class="{workspaceStore.isSandboxMode
-            ? 'border-[1.5px] 3xl:border-2 rounded-xl'
+            ? 'border 3xl:border-[1.5px] rounded-xl'
             : ''} flex h-screen overflow-hidden border-sandbox-500 transition-[border-width] duration-[0.48s] ease-in-out relative"
         style="background-color: var(--color-bg);"
     >
@@ -126,7 +127,7 @@
 			</main>
 		{/key}
     </div>
-
+</div>
 	<Toast />
 	<InstallBanner />
 	<StartupCleanupBanner />
@@ -135,4 +136,4 @@
 <ConfirmDialog />
 
 
-<QuentaFloatingButton/>
+<!-- <QuentaFloatingButton/> -->

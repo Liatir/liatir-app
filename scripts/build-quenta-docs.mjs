@@ -220,9 +220,16 @@ function writeTsSeed(outPath, exportName, documents, hash) {
 }
 
 function writeJson(outPath, name, documents, hash) {
-  const payload = { corpus: name, hash, generatedAt: new Date().toISOString(), documents };
+  const generatedAt = new Date().toISOString();
+  const payload = { corpus: name, hash, generatedAt, documents };
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, `${JSON.stringify(payload, null, 2)}\n`);
+
+  // Sibling manifest: a tiny file the app fetches first to decide, from the hash alone, whether the
+  // full artifact changed — so an unchanged corpus costs one small request, not a full re-download.
+  const manifestPath = outPath.replace(/\.json$/, '.manifest.json');
+  const manifest = { corpus: name, hash, generatedAt, count: documents.length };
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
 // ── CLI ──────────────────────────────────────────────────────────────────────

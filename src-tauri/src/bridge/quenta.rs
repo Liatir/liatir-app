@@ -1083,14 +1083,198 @@ pub async fn lia_quenta_ollama_embed(
     json_response(response).await
 }
 
+// ── Quenta knowledge / docs sync ─────────────────────────────────────────────
+// Pulls the curated knowledge and user-facing docs corpora from the public docs site and refreshes
+// a local cache. The whole update is transactional: the previous cache is replaced only after the
+// download validates end to end, so any failure (offline, HTTP error, malformed or inconsistent
+// payload) leaves the existing knowledge exactly as it was — the caller simply keeps using it.
+
+// Origin the artifacts are published to (see docs/public/quenta-*.json). Hardcoded, never taken from
+// the frontend, so a caller can never point this at an arbitrary host.
+const DOCS_SYNC_ORIGIN: &str = "https://liatir.com";
+const DOCS_SYNC_MAX_ATTEMPTS: usize = 3;
+
+/// One retrieval document, matching `LiatirQuentaContextDocument` on the wire (camelCase).
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuentaSyncDoc {
+    id: String,
+    source_kind: String,
+    title: String,
+    locator: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    excerpt: Option<String>,
+    content: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    updated_at: Option<f64>,
+}
+
+/// The full published artifact. Unknown fields (corpus, generatedAt) are ignored by serde.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct QuentaSyncPayload {
+    hash: String,
+    documents: Vec<QuentaSyncDoc>,
+}
+
+/// The tiny sibling file fetched first to detect a change from the hash alone.
+#[derive(Debug, Deserialize)]
+struct QuentaSyncManifest {
+    hash: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuentaDocsSyncResult {
+    corpus: String,
+    updated: bool,
+    hash: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    documents: Option<Vec<QuentaSyncDoc>>,
+}
+
+/// Maps a corpus name to its artifact base name, rejecting anything not on the allowlist.
+fn corpus_artifact_base(corpus: &str) -> Result<&'static str, String> {
+    match corpus {
+        "docs" => Ok("quenta-docs"),
+        "knowledge" => Ok("quenta-knowledge"),
+        _ => Err("Unknown Quenta knowledge corpus".to_string()),
+    }
+}
+
+/// Every document must carry the fields retrieval and citations depend on; a single empty one makes
+/// the whole payload untrustworthy and aborts the update.
+fn validate_sync_documents(documents: &[QuentaSyncDoc]) -> Result<(), String> {
+    if documents.is_empty() {
+        return Err("Quenta knowledge payload contains no documents".to_string());
+    }
+    for document in documents {
+        if document.id.trim().is_empty()
+            || document.source_kind.trim().is_empty()
+            || document.title.trim().is_empty()
+            || document.locator.trim().is_empty()
+            || document.content.trim().is_empty()
+        {
+            return Err("Quenta knowledge payload has a document with empty fields".to_string());
+        }
+    }
+    Ok(())
+}
+
+/// Single GET returning the body as text, with the same 16 MB safety cap as the Ollama transport.
+async fn fetch_sync_text(url: &str, timeout: Duration) -> Result<String, String> {
+    let response = client(timeout)?
+        .get(url)
+        .send()
+        .await
+        .map_err(|error| format!("request failed: {error}"))?;
+    let status = response.status();
+    if response
+        .content_length()
+        .is_some_and(|length| length > MAX_RESPONSE_BYTES as u64)
+    {
+        return Err("Quenta knowledge response exceeded the 16 MB safety limit".to_string());
+    }
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|error| format!("cannot read response: {error}"))?;
+    if bytes.len() > MAX_RESPONSE_BYTES {
+        return Err("Quenta knowledge response exceeded the 16 MB safety limit".to_string());
+    }
+    if !status.is_success() {
+        return Err(format!("server returned {status}"));
+    }
+    String::from_utf8(bytes.to_vec()).map_err(|error| format!("response was not valid UTF-8: {error}"))
+}
+
+/// Retries transient fetch failures with linear backoff. A validation error is never retried by the
+/// caller — only the network fetch goes through here, because a malformed file stays malformed.
+async fn fetch_sync_text_with_retry(
+    url: &str,
+    timeout: Duration,
+    attempts: usize,
+) -> Result<String, String> {
+    let mut last_error = "no fetch attempted".to_string();
+    for attempt in 0..attempts.max(1) {
+        match fetch_sync_text(url, timeout).await {
+            Ok(text) => return Ok(text),
+            Err(error) => {
+                last_error = error;
+                if attempt + 1 < attempts {
+                    tokio::time::sleep(Duration::from_millis(400 * (attempt as u64 + 1))).await;
+                }
+            }
+        }
+    }
+    Err(last_error)
+}
+
+#[tauri::command]
+pub async fn lia_quenta_docs_sync(
+    app: AppHandle,
+    corpus: String,
+    known_hash: Option<String>,
+) -> Result<QuentaDocsSyncResult, String> {
+    let base = corpus_artifact_base(&corpus)?;
+    let manifest_url = format!("{DOCS_SYNC_ORIGIN}/{base}.manifest.json");
+    let full_url = format!("{DOCS_SYNC_ORIGIN}/{base}.json");
+
+    // 1. Cheap change check: the manifest is tiny, so an unchanged corpus stops here.
+    let manifest_text =
+        fetch_sync_text_with_retry(&manifest_url, Duration::from_secs(15), DOCS_SYNC_MAX_ATTEMPTS)
+            .await?;
+    let manifest: QuentaSyncManifest = serde_json::from_str(&manifest_text)
+        .map_err(|error| format!("Quenta knowledge manifest is invalid: {error}"))?;
+    if manifest.hash.trim().is_empty() {
+        return Err("Quenta knowledge manifest is missing a hash".to_string());
+    }
+    if known_hash.as_deref() == Some(manifest.hash.as_str()) {
+        return Ok(QuentaDocsSyncResult {
+            corpus,
+            updated: false,
+            hash: manifest.hash,
+            documents: None,
+        });
+    }
+
+    // 2. Changed (or nothing cached yet): download the full artifact and validate before trusting it.
+    let full_text =
+        fetch_sync_text_with_retry(&full_url, Duration::from_secs(30), DOCS_SYNC_MAX_ATTEMPTS)
+            .await?;
+    let payload: QuentaSyncPayload = serde_json::from_str(&full_text)
+        .map_err(|error| format!("Quenta knowledge payload is invalid: {error}"))?;
+    // Manifest and payload must describe the same version — otherwise we caught a deploy mid-flight.
+    if payload.hash != manifest.hash {
+        return Err("Quenta knowledge manifest and payload disagree; skipping this update".to_string());
+    }
+    validate_sync_documents(&payload.documents)?;
+
+    // 3. Atomic swap. Everything above returned early on failure WITHOUT touching the cache, so the
+    //    previously cached knowledge is still intact; only now, with validated bytes, do we replace it.
+    let cache_path = resolve_app_path(&app, &format!("quenta/{corpus}-cache.json"))?;
+    if let Some(parent) = cache_path.parent() {
+        fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    }
+    write_text_atomic(&cache_path, &full_text)?;
+
+    Ok(QuentaDocsSyncResult {
+        corpus,
+        updated: true,
+        hash: payload.hash,
+        documents: Some(payload.documents),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
         lia_quenta_ollama_cancel_chat, lia_quenta_ollama_chat_status,
-        lia_quenta_ollama_forget_chat, normalized_quenta_conversations, ollama_endpoint,
-        quenta_chat_cancellations, quenta_chat_requests, quenta_conversations_workspace,
-        quenta_response_timeout, request_id_is_safe, QuentaChatRequestSnapshot,
-        QuentaChatStreamAccumulator,
+        corpus_artifact_base, lia_quenta_ollama_forget_chat, normalized_quenta_conversations,
+        ollama_endpoint, quenta_chat_cancellations, quenta_chat_requests,
+        quenta_conversations_workspace, quenta_response_timeout, request_id_is_safe,
+        validate_sync_documents, QuentaChatRequestSnapshot, QuentaChatStreamAccumulator,
+        QuentaSyncDoc,
     };
     use serde_json::json;
     use std::sync::atomic::{AtomicBool, Ordering};
@@ -1252,5 +1436,32 @@ mod tests {
             "workspace-1",
         )
         .is_err());
+    }
+
+    fn sync_doc(id: &str, content: &str) -> QuentaSyncDoc {
+        serde_json::from_value(json!({
+            "id": id,
+            "sourceKind": "documentation",
+            "title": "Title",
+            "locator": "Docs / Somewhere",
+            "content": content,
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn accepts_only_known_sync_corpora() {
+        assert_eq!(corpus_artifact_base("docs"), Ok("quenta-docs"));
+        assert_eq!(corpus_artifact_base("knowledge"), Ok("quenta-knowledge"));
+        assert!(corpus_artifact_base("secrets").is_err());
+        assert!(corpus_artifact_base("../etc/passwd").is_err());
+    }
+
+    #[test]
+    fn rejects_empty_or_incomplete_sync_payloads() {
+        assert!(validate_sync_documents(&[]).is_err());
+        assert!(validate_sync_documents(&[sync_doc("docs:a", "usable content")]).is_ok());
+        // A document whose content is only whitespace makes the whole payload untrustworthy.
+        assert!(validate_sync_documents(&[sync_doc("docs:a", "   ")]).is_err());
     }
 }

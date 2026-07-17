@@ -80,14 +80,26 @@ export interface QuentaRetrievalResult {
  * both by a +1000 score and by an explicit sort key, so the entity the user is asking about is in
  * the prompt even if it scores badly on words. Being the subject of the question is its relevance.
  */
+/**
+ * Reference material (how Liatir works, the docs, the bio knowledge) as opposed to the user's own
+ * live state (their pipelines, runs, jobs). Once the docs corpus joined the pool it became easy for
+ * a question's words to match hundreds of doc chunks and crowd the handful of live documents out of
+ * the prompt — `referenceCap` reserves room for live state by soft-capping how many reference docs
+ * may be selected. It is a *soft* cap: if there is not enough live state to fill those slots, the
+ * held-back reference docs backfill them, so a pure documentation question still retrieves in full.
+ */
+const REFERENCE_SOURCE_KINDS = new Set(['app', 'documentation', 'bioinformatics']);
+
 export function retrieveQuentaContext(
   query: string,
   documents: LiatirQuentaContextDocument[],
-  options: { limit?: number; maxChars?: number; requiredIds?: string[] } = {},
+  options: { limit?: number; maxChars?: number; requiredIds?: string[]; referenceCap?: number } = {},
 ): QuentaRetrievalResult {
   const limit = options.limit ?? 8;
   const maxChars = options.maxChars ?? 14_000;
   const requiredIds = new Set(options.requiredIds ?? []);
+  // Default to `limit`, i.e. no effective cap, so callers that don't care keep the old behaviour.
+  const referenceCap = options.referenceCap ?? limit;
   const ranked = documents
     .map((document, index) => ({
       document,
@@ -105,14 +117,36 @@ export function retrieveQuentaContext(
     });
 
   const selected: LiatirQuentaContextDocument[] = [];
+  // +80 approximates the wrapper markup added per document below.
+  const costOf = (document: LiatirQuentaContextDocument) =>
+    document.content.length + document.title.length + 80;
   let usedChars = 0;
+  let referenceUsed = 0;
+  // Reference docs held back by the cap; used to backfill leftover slots when live state runs out.
+  const deferredReference: typeof ranked = [];
   for (const item of ranked) {
     if (selected.length >= limit) break;
-    // +80 approximates the wrapper markup added per document below.
-    const cost = item.document.content.length + item.document.title.length + 80;
+    const cost = costOf(item.document);
     // `continue`, not `break`: a single oversized document is skipped, but smaller ones further
     // down the ranking can still fit. And the first document is admitted unconditionally, so the
     // best match is never dropped for being large — an empty context would be worse than a full one.
+    if (selected.length > 0 && usedChars + cost > maxChars) continue;
+    // A required (focused) document always goes in; reference docs beyond the cap are deferred so a
+    // live document lower in the ranking can claim the slot instead.
+    const required = requiredIds.has(item.document.id);
+    if (!required && REFERENCE_SOURCE_KINDS.has(item.document.sourceKind) && referenceUsed >= referenceCap) {
+      deferredReference.push(item);
+      continue;
+    }
+    selected.push(item.document);
+    usedChars += cost;
+    if (!required && REFERENCE_SOURCE_KINDS.has(item.document.sourceKind)) referenceUsed += 1;
+  }
+  // Nothing live wanted the reserved slots: fill what remains with the best deferred reference docs,
+  // preserving their ranking order, so the budget is never left half-empty on a docs-only question.
+  for (const item of deferredReference) {
+    if (selected.length >= limit) break;
+    const cost = costOf(item.document);
     if (selected.length > 0 && usedChars + cost > maxChars) continue;
     selected.push(item.document);
     usedChars += cost;

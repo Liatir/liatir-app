@@ -433,6 +433,7 @@ fn main() {
       lia_quenta_ollama_cancel_chat,
       lia_quenta_ollama_forget_chat,
       lia_quenta_ollama_embed,
+      lia_quenta_docs_sync,
       lia_snpeff_annotate,
       lia_snpeff_download_db,
       lia_bwa_mem,

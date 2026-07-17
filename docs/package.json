@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vitepress dev",
-    "generate:quenta-docs": "node ../scripts/build-quenta-docs.mjs docs --out docs/public/quenta-docs.json",
+    "generate:quenta-docs": "node ../scripts/build-quenta-docs.mjs docs --out docs/public/quenta-docs.json && node ../scripts/build-quenta-docs.mjs knowledge --out docs/public/quenta-knowledge.json",
     "prebuild": "npm run generate:quenta-docs",
     "build": "vitepress build",
     "preview": "vitepress preview",
