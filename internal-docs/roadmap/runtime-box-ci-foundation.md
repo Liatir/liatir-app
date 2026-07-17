@@ -172,10 +172,17 @@ Current state as of 2026-07-17:
   the latest attempts. The fixed `4 x 128` fixture produced `4 x 256`
   embeddings with maximum absolute error `0` and minimum cosine similarity
   `1.0` against the CPU baseline.
-- The CPU target is **not complete**. No failed attempt promoted the beta
-  channel, and final product install/run, Jobs, Results, provenance,
-  replacement/removal, and cleanup evidence is still pending a successful
-  post-fix run.
+- Run `29546883054` passed product install, interrupted resume, real inference,
+  Jobs, Results, provenance, replacement, rollback, removal, result persistence,
+  cleanup, and beta promotion. Artifact `8394509427` preserves the passing
+  product lifecycle receipt with analysis run
+  `52f23da1-4d22-4b6e-ac83-191b1431bbb9` and three Result artifacts.
+- The CPU target is **not complete**. Run `29546883054` failed only while
+  assembling the final signed release evidence because kebab-case workflow flags
+  such as `--publish-receipt` were not converted to the evidence API's camelCase
+  keys. Commit `2a72330` fixes that single CLI boundary and its focused local gate
+  passes 21/21 tests plus the catalog and syntax checks. Remote final-evidence
+  closure is still required.
 - Commit `3766d41` corrects the last observed WebDriver readiness race. Its local
   gate passed 8 focused unit tests, syntax checks, a clean product build, and
   three separate cold native-app starts with 6/6 bridge assertions passing.
@@ -202,10 +209,11 @@ Incident ledger:
 | `29542962600` | Failed | Interrupted-download cancellation was nondeterministic | `607bbdb` |
 | `29544128885` | Failed | `minRamGb` was documented as decimal GB but compared as GiB | `5fcbbb3` |
 | `29544965106` | Failed | HTTP 200 from `/status` was mistaken for WebDriver readiness during initial WebKit navigation | `3766d41` |
+| `29546883054` | Failed | Full product lifecycle and beta promotion passed; final evidence CLI lost kebab-case receipt flags | `2a72330` |
 
-The failed release attempts consumed about 86 minutes of observed workflow wall
-time; the four signer attempts consumed about 6 minutes. At the standard Linux
-rate of USD 0.006/minute this is approximately USD 0.55 before job-minute
+The release attempts consumed about 100 minutes of observed workflow wall time;
+the four signer attempts consumed about 6 minutes. At the standard Linux rate
+of USD 0.006/minute this is approximately USD 0.64 before job-minute
 rounding; GitHub billing remains the authoritative cost record. These failures
 also consumed substantial operator and agent time, so no further remote attempt
 is permitted until the complete economical local gate passes.
