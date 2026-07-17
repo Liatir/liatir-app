@@ -65,7 +65,7 @@ describe('Runtime Box CI catalog', () => {
     );
     expect(resolved.target).toMatchObject({
       recipeId: 'geneformer-v1-10m-linux-x86_64-cpu',
-      status: 'buildable',
+      status: 'published',
       dependencyLicenseAudit: 'runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cpu.json',
     });
     expect(resolved.runner).toMatchObject({ runsOn: 'ubuntu-24.04', gpu: false });

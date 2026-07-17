@@ -104,7 +104,7 @@ const GENEFORMER_V1_10M_RUNTIME_PACKAGES = [
 	{ package: 'urllib3', specifier: 'urllib3>=1.26,<2', importName: 'urllib3' }
 ];
 
-/** Builds the only target currently published for each production single-cell Runtime Box. */
+/** Builds the shared Apple silicon target used by published single-cell Runtime Boxes. */
 function publishedMacosArm64MetalTarget(
 	minRamGb: number
 ): readonly LiatirRuntimeBoxTargetCandidate[] {
@@ -113,6 +113,18 @@ function publishedMacosArm64MetalTarget(
 			target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
 			hostEnvironments: ['native'],
 			minRamGb
+		}
+	];
+}
+
+/** Lists the exact Geneformer targets that have completed native product validation. */
+function publishedGeneformerTargets(): readonly LiatirRuntimeBoxTargetCandidate[] {
+	return [
+		...publishedMacosArm64MetalTarget(8),
+		{
+			target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
+			hostEnvironments: ['native'],
+			minRamGb: 8
 		}
 	];
 }
@@ -609,13 +621,13 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 				boxId: 'geneformer-v1-10m',
 				channel: 'beta',
 				registryBaseUrl: 'https://models.liatir.com/v1',
-				publishedTargets: publishedMacosArm64MetalTarget(8)
+				publishedTargets: publishedGeneformerTargets()
 			},
 			runtimePackages: GENEFORMER_V1_10M_RUNTIME_PACKAGES,
 			hostRequirements: {
-				os: ['macos'],
-				arch: ['aarch64'],
-				reason: 'The current signed Geneformer Runtime Box is built for Apple silicon Macs.'
+				os: ['macos', 'linux'],
+				arch: ['aarch64', 'x86_64'],
+				reason: 'Signed Geneformer Runtime Boxes are available for Apple silicon Macs and native Linux x86_64 hosts.'
 			}
 		},
 		documentation: {

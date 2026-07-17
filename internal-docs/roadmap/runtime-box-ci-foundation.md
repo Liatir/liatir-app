@@ -56,7 +56,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 5. GitHub identities, environments, and secrets | Complete | `4aa84f2` |
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
-| 8.1. Geneformer Linux pilot | In progress | Linux CPU product lifecycle pending; CUDA not started |
+| 8.1. Geneformer Linux pilot | In progress | Linux CPU complete; CUDA not started |
 | 8.2. Geneformer Windows pilot | Not started | Requires Gate 8.1 |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
@@ -177,12 +177,20 @@ Current state as of 2026-07-17:
   cleanup, and beta promotion. Artifact `8394509427` preserves the passing
   product lifecycle receipt with analysis run
   `52f23da1-4d22-4b6e-ac83-191b1431bbb9` and three Result artifacts.
-- The CPU target is **not complete**. Run `29546883054` failed only while
+- Run `29546883054` failed only while
   assembling the final signed release evidence because kebab-case workflow flags
   such as `--publish-receipt` were not converted to the evidence API's camelCase
   keys. Commit `2a72330` fixes that single CLI boundary and its focused local gate
-  passes 21/21 tests plus the catalog and syntax checks. Remote final-evidence
-  closure is still required.
+  passed 21/21 tests plus the catalog and syntax checks.
+- `linux-x86_64-cpu` is **complete** in run `29547725429` at commit `3031029`.
+  Artifact `8394807365` (digest
+  `sha256:e9945cef5481a15755e9b1005974da88b0cd9f558af188ad7d18a968cc2783da`)
+  contains complete release, product lifecycle, and E2E evidence. The reviewed
+  evidence is tracked at
+  `runtime-boxes/evidence/geneformer-v1-10m-linux-x86_64-cpu-1.0.0-beta.1.json`.
+  The public beta channel, 2,467-byte release manifest, and 380,481,131-byte
+  archive all returned HTTP 200 after promotion. The archive SHA-256 is
+  `a95a1a403bff74cf2af6c1b3f96cecace1201364ff94eec621ca90b80bf5a95b`.
 - Commit `3766d41` corrects the last observed WebDriver readiness race. Its local
   gate passed 8 focused unit tests, syntax checks, a clean product build, and
   three separate cold native-app starts with 6/6 bridge assertions passing.
@@ -210,10 +218,11 @@ Incident ledger:
 | `29544128885` | Failed | `minRamGb` was documented as decimal GB but compared as GiB | `5fcbbb3` |
 | `29544965106` | Failed | HTTP 200 from `/status` was mistaken for WebDriver readiness during initial WebKit navigation | `3766d41` |
 | `29546883054` | Failed | Full product lifecycle and beta promotion passed; final evidence CLI lost kebab-case receipt flags | `2a72330` |
+| `29547725429` | Passed | Linux CPU build, parity, protected publication, product lifecycle, final evidence, and cleanup completed | — |
 
-The release attempts consumed about 100 minutes of observed workflow wall time;
+The release attempts consumed about 114 minutes of observed workflow wall time;
 the four signer attempts consumed about 6 minutes. At the standard Linux rate
-of USD 0.006/minute this is approximately USD 0.64 before job-minute
+of USD 0.006/minute this is approximately USD 0.72 before job-minute
 rounding; GitHub billing remains the authoritative cost record. These failures
 also consumed substantial operator and agent time, so no further remote attempt
 is permitted until the complete economical local gate passes.
