@@ -4,7 +4,10 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
+		"generate:quenta-knowledge": "node ../scripts/build-quenta-docs.mjs knowledge --out frontend/src/lib/quenta/generated/quenta-knowledge.generated.ts",
+		"predev": "npm run generate:quenta-knowledge",
 		"dev": "vite dev",
+		"prebuild": "npm run generate:quenta-knowledge",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",

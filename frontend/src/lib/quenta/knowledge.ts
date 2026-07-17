@@ -10,14 +10,23 @@
  * instructions found *inside* retrieved content are data, not commands. That matters because the
  * context Quenta reads is full of untrusted text: log files, tool output, filenames, plugin
  * descriptions. Any of it could contain something shaped like an instruction, and this document is
- * what keeps a prompt injection from being obeyed.
+ * what keeps a prompt injection from being obeyed. It stays compiled into the bundle on purpose:
+ * a security boundary must never sit on a path that can be replaced at runtime.
  *
- * The wording is deliberately dense and declarative: it is written to be read by a model as context,
- * not by a person as prose.
+ * Two corpora feed the pool from a single source of truth each, never hand-duplicated:
+ *   - **Bioinformatics knowledge** is authored as Markdown in `quenta-knowledge/` and compiled into
+ *     `QUENTA_KNOWLEDGE_SEED` by `scripts/build-quenta-docs.mjs`. Edit the Markdown, not this file.
+ *   - **User-facing Liatir docs** live in `docs/`; their ingestion into the pool lands separately.
+ *
+ * The `app:*` summaries below are the native description of Liatir the assistant needs even before
+ * any doc is retrieved. The wording is deliberately dense and declarative: it is written to be read
+ * by a model as context, not by a person as prose.
  */
 import type { LiatirQuentaContextDocument } from '@liatir/core';
+import { QUENTA_KNOWLEDGE_SEED } from './generated/quenta-knowledge.generated';
 
-export const LIATIR_QUENTA_KNOWLEDGE: LiatirQuentaContextDocument[] = [
+/** Native, always-present description of Liatir and the assistant's safety boundary. */
+const NATIVE_KNOWLEDGE: LiatirQuentaContextDocument[] = [
   {
     id: 'app:architecture',
     sourceKind: 'app',
@@ -74,46 +83,13 @@ export const LIATIR_QUENTA_KNOWLEDGE: LiatirQuentaContextDocument[] = [
     locator: 'Docs / Dependencies',
     content: 'Pipeline Native Tools run through the shared Jobs resolver. It prefers checksummed Liatir-managed binaries and falls back to the host PATH for package-manager installations. Missing official upstream binaries are not replaced with guessed URLs or unofficial assets.',
   },
-  {
-    id: 'bio:fastq-qc',
-    sourceKind: 'bioinformatics',
-    title: 'FASTQ quality control',
-    locator: 'Bioinformatics / Sequencing QC',
-    content: 'FASTQ QC should consider read count, base-quality profiles, adapter content, duplication, sequence length, GC distribution, overrepresented sequences, and the assay design. Trimming can remove adapters and low-quality tails, but aggressive trimming may shorten reads, bias composition, or reduce mappability. Interpret thresholds relative to platform and downstream analysis.',
-  },
-  {
-    id: 'bio:alignment',
-    sourceKind: 'bioinformatics',
-    title: 'Read alignment',
-    locator: 'Bioinformatics / Alignment',
-    content: 'Alignment interpretation should include reference build, aligner and version, preset, paired-end handling, mapping rate, secondary and supplementary alignments, MAPQ, insert size where relevant, duplicate policy, and reference compatibility. SAM is textual; BAM and CRAM are compressed alignment formats. A high mapping rate alone does not establish biological validity.',
-  },
-  {
-    id: 'bio:variants',
-    sourceKind: 'bioinformatics',
-    title: 'Variant analysis',
-    locator: 'Bioinformatics / Variants',
-    content: 'Variant results depend on reference build, caller, filtering, ploidy, sample design, depth, allele balance, mapping quality, strand bias, and normalization. Annotation such as SnpEff predicts consequences relative to a genome database and transcript set; predicted impact labels are not clinical classifications.',
-  },
-  {
-    id: 'bio:single-cell',
-    sourceKind: 'bioinformatics',
-    title: 'Single-cell analysis',
-    locator: 'Bioinformatics / Single-cell',
-    content: 'Single-cell interpretation should track assay, species, genome build, feature identifiers, count preprocessing, quality filtering, normalization, batch effects, embedding method, clustering resolution, marker evidence, and uncertainty. Foundation-model embeddings and automated labels require validation against known biology and independent markers.',
-  },
-  {
-    id: 'bio:protein-structure',
-    sourceKind: 'bioinformatics',
-    title: 'Protein structure predictions',
-    locator: 'Bioinformatics / Protein structure',
-    content: 'Predicted protein structures should be interpreted with model confidence, sequence coverage, oligomeric state, ligands, disorder, templates, and experimental context. A plausible three-dimensional rendering is not validation. Binding or affinity predictions require their own uncertainty and assay context.',
-  },
-  {
-    id: 'bio:reproducibility',
-    sourceKind: 'bioinformatics',
-    title: 'Scientific reproducibility',
-    locator: 'Bioinformatics / Reproducibility',
-    content: 'A reproducible report records input identity, tool and model versions, parameters, reference resources, runtime environment, timestamps, output artifacts, failures, warnings, and limitations. Distinguish observed values from interpretation and proposed next steps. Do not invent missing metrics or certainty.',
-  },
+];
+
+/**
+ * The full built-in pool: native Liatir/boundary knowledge plus the curated bioinformatics corpus
+ * compiled from `quenta-knowledge/`. Live app state and retrieved docs are added on top elsewhere.
+ */
+export const LIATIR_QUENTA_KNOWLEDGE: LiatirQuentaContextDocument[] = [
+  ...NATIVE_KNOWLEDGE,
+  ...QUENTA_KNOWLEDGE_SEED,
 ];

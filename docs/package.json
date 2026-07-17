@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "vitepress dev",
+    "generate:quenta-docs": "node ../scripts/build-quenta-docs.mjs docs --out docs/public/quenta-docs.json",
+    "prebuild": "npm run generate:quenta-docs",
     "build": "vitepress build",
     "preview": "vitepress preview",
     "deploy": "npm run build && npx wrangler pages deploy"
