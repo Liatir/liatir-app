@@ -77,10 +77,10 @@
   ));
   const quentaStatusLabel = $derived(
     localAIReady
-      ? 'Quenta ready'
+      ? 'Ready'
       : preparingQuenta
-        ? 'Preparing Quenta'
-        : 'Quenta needs attention',
+        ? 'Preparing'
+        : 'Needs attention',
   );
   const quentaStatusClass = $derived(
     localAIReady

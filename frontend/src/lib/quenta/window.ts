@@ -1,4 +1,5 @@
 import { liatir } from '$lib/api';
+import { workspaceStore } from '$lib/stores/workspace.svelte';
 import { standaloneQuentaUrl } from './navigation';
 
 const QUENTA_WINDOW_SCALE = 0.92;
@@ -46,6 +47,7 @@ export async function openQuentaWindow(route: string): Promise<void> {
   const api = liatir();
   if (!api) throw new Error('The Liatir window bridge is unavailable');
   const size = await quentaWindowSize(api);
+  const currentWorkspace = workspaceStore.active?.name?.trim();
   await api.desktop.window.new({
     url: standaloneQuentaUrl(route),
     ...size,

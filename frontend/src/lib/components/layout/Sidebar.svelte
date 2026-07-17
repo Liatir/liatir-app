@@ -104,8 +104,8 @@
 		onclick={()=>{if(workspaceStore.active) goto("/workspace-settings")}}
 		style="height: {HEADER_HEIGHT}px"
 		>
-		<div class="flex w-9 h-9 items-center gap-0 space-x-0 justify-center shrink-0" id="sidebar-logo-container">
-			<div class="h-9 w-9 flex justify-center items-center shrink-0" id="sidebar-logo">
+		<div class="flex w-9 h-8 items-center gap-0 space-x-0 justify-center shrink-0" id="sidebar-logo-container">
+			<div class="h-8 w-9 flex justify-center items-center shrink-0" id="sidebar-logo">
 				<img src="/logo/liatir-logo.svg" alt="Liatir" class="h-full w-full opacity-100 object-contain" />
 			</div>
 		</div>
@@ -121,7 +121,7 @@
 							</div>
 						{:else}
 							<div class="flex items-center justify-start h-[16px]">
-								<p class="text-sm font-semibold text-text truncate">{workspaceStore.active.name}</p>
+								<p class="text-[12px] font-semibold text-text truncate">{workspaceStore.active.name}</p>
 							</div>
 						{/if}
 					{:else}
