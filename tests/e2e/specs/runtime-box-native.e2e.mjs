@@ -10,6 +10,7 @@ import {
   firstDownloadOffset,
   readEmbeddedPythonScript,
   runtimeBoxInstallError,
+  runtimeBoxInstallProgress,
   runtimeBoxInstallResult,
   runtimeBoxInstallStatus,
   runtimeBoxTargetForNativeTest,
@@ -90,7 +91,7 @@ if payload.get("write"):
 print(json.dumps({"exists": marker.is_file(), "contents": marker.read_text(encoding="utf-8") if marker.is_file() else None}))
 `;
 
-async function startInstall(browser, downloadId) {
+async function startInstall(browser, downloadId, options = {}) {
   return startRuntimeBoxInstall(browser, {
     boxId: BOX_ID,
     modelId: MODEL_ID,
@@ -98,7 +99,7 @@ async function startInstall(browser, downloadId) {
     registryBaseUrl: REGISTRY_BASE_URL,
     targetCandidates: runtimeBoxTargetForNativeTest(TARGET_ID, 8),
     downloadId,
-  });
+  }, options);
 }
 
 async function runPython(browser, script, inputJson) {
@@ -143,26 +144,27 @@ export const tests = [
       expect(storage.dataPath).toContain('tests/.artifacts/home');
 
       const interruptedId = `runtime-box-interrupted-${Date.now()}`;
-      await startInstall(browser, interruptedId);
+      await startInstall(browser, interruptedId, { cancelAfterBytes: 1 });
       await browser.waitUntil(
-        async () => {
-          return browser.execute((id) => {
-            const progress = window.__liatirRuntimeBoxInstall?.[id]?.progress ?? [];
-            return progress.some((item) => item.bytesDownloaded > 64 * 1024 && !item.done);
-          }, interruptedId);
-        },
-        { timeout: 60_000, timeoutMsg: 'Runtime Box download did not begin before interruption' },
+        async () => (await runtimeBoxInstallStatus(browser, interruptedId)) !== 'running',
+        { timeout: 60_000, timeoutMsg: 'Interrupted Runtime Box install did not stop' },
       );
-      const cancelled = await browser.execute(
-        async (id) => window.Liatir.invoke('lia_managed_download_cancel', { id }),
-        interruptedId,
-      );
-      expect(cancelled).toBe(true);
+      let interruptedProgress = await runtimeBoxInstallProgress(browser, interruptedId);
+      const interruptedError = await runtimeBoxInstallError(browser, interruptedId);
+      if (!interruptedProgress.cancelRequested) {
+        throw new Error(
+          `Runtime Box install failed before the first downloadable chunk: ${interruptedError ?? 'unknown error'}`,
+        );
+      }
       await browser.waitUntil(
-        async () => (await runtimeBoxInstallStatus(browser, interruptedId)) === 'error',
-        { timeout: 30_000, timeoutMsg: 'Interrupted Runtime Box install did not stop' },
+        async () => (await runtimeBoxInstallProgress(browser, interruptedId)).cancelAccepted !== null,
+        { timeout: 5_000, timeoutMsg: 'Runtime Box cancellation did not return a result' },
       );
-      expect(await runtimeBoxInstallError(browser, interruptedId)).toContain('Download cancelled');
+      interruptedProgress = await runtimeBoxInstallProgress(browser, interruptedId);
+      expect(interruptedProgress.cancelRequested).toBe(true);
+      expect(interruptedProgress.cancelAccepted).toBe(true);
+      expect(interruptedProgress.maxBytesDownloaded).toBeGreaterThan(0);
+      expect(interruptedError).toContain('Download cancelled');
 
       const resumedId = `runtime-box-resumed-${Date.now()}`;
       await startInstall(browser, resumedId);

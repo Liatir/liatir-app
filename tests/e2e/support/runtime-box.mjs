@@ -79,8 +79,9 @@ export async function activateCleanSandbox(browser) {
   });
 }
 
-export async function startRuntimeBoxInstall(browser, input) {
+export async function startRuntimeBoxInstall(browser, input, options = {}) {
   return browser.execute(async (installInput) => {
+    const { request, cancelAfterBytes } = installInput;
     window.__liatirRuntimeBoxInstall ??= {};
     const state = {
       status: 'running',
@@ -88,13 +89,31 @@ export async function startRuntimeBoxInstall(browser, input) {
       result: null,
       error: null,
       unlisten: null,
+      cancelRequested: false,
+      cancelAccepted: null,
     };
-    window.__liatirRuntimeBoxInstall[installInput.downloadId] = state;
+    window.__liatirRuntimeBoxInstall[request.downloadId] = state;
     state.unlisten = await window.Liatir.desktop.events.on(
-      `managed:progress:${installInput.downloadId}`,
-      (progress) => state.progress.push(progress),
+      `managed:progress:${request.downloadId}`,
+      (progress) => {
+        state.progress.push(progress);
+        if (
+          cancelAfterBytes !== null
+          && !state.cancelRequested
+          && !progress.done
+          && progress.bytesDownloaded >= cancelAfterBytes
+        ) {
+          state.cancelRequested = true;
+          void window.Liatir.invoke('lia_managed_download_cancel', { id: request.downloadId })
+            .then((accepted) => { state.cancelAccepted = accepted; })
+            .catch((error) => {
+              state.cancelAccepted = false;
+              state.error = String(error?.message ?? error);
+            });
+        }
+      },
     );
-    void window.Liatir.invoke('lia_ai_runtime_box_install', installInput)
+    void window.Liatir.invoke('lia_ai_runtime_box_install', request)
       .then((result) => {
         state.status = 'done';
         state.result = result;
@@ -105,7 +124,10 @@ export async function startRuntimeBoxInstall(browser, input) {
       })
       .finally(() => state.unlisten?.());
     return true;
-  }, input);
+  }, {
+    request: input,
+    cancelAfterBytes: options.cancelAfterBytes ?? null,
+  });
 }
 
 export async function runtimeBoxInstallStatus(browser, downloadId) {
@@ -142,6 +164,8 @@ export async function runtimeBoxInstallProgress(browser, downloadId) {
         0,
       ),
       bytesTotal: [...events].reverse().find((event) => event.bytesTotal != null)?.bytesTotal ?? null,
+      cancelRequested: Boolean(window.__liatirRuntimeBoxInstall?.[id]?.cancelRequested),
+      cancelAccepted: window.__liatirRuntimeBoxInstall?.[id]?.cancelAccepted ?? null,
     };
   }, downloadId);
 }
