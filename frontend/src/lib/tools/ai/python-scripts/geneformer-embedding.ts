@@ -172,6 +172,14 @@ else:
     device = torch.device("cpu")
     accelerator = "CPU"
 
+gpu_model = None
+compute_capability = None
+if device.type == "cuda":
+    gpu_model = torch.cuda.get_device_name(device)
+    capability = torch.cuda.get_device_capability(device)
+    compute_capability = f"{capability[0]}.{capability[1]}"
+    torch.cuda.reset_peak_memory_stats(device)
+
 model = AutoModelForMaskedLM.from_pretrained(
     str(model_dir),
     local_files_only=True,
@@ -198,6 +206,11 @@ with torch.no_grad():
         mask = attention_mask.unsqueeze(-1).to(hidden.dtype)
         pooled = (hidden * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1)
         embedding_batches.append(pooled.detach().cpu().numpy().astype(np.float32))
+
+peak_vram_bytes = None
+if device.type == "cuda":
+    torch.cuda.synchronize(device)
+    peak_vram_bytes = int(torch.cuda.max_memory_allocated(device))
 
 embeddings = np.concatenate(embedding_batches, axis=0)
 result_adata = adata[kept_positions].copy()
@@ -239,6 +252,11 @@ summary = {
     "previewRows": preview_rows,
     "intermediateCount": 0,
     "accelerator": accelerator,
+    "torchVersion": torch.__version__,
+    "reportedCudaCompatibility": torch.version.cuda,
+    "gpuModel": gpu_model,
+    "computeCapability": compute_capability,
+    "peakVramBytes": peak_vram_bytes,
     "warnings": summary_warnings,
 }
 summary_path = output_dir / "geneformer-embedding-summary.json"

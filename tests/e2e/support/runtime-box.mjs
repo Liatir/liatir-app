@@ -24,6 +24,19 @@ export function runtimeBoxTargetForNativeTest(targetId, minRamGb) {
       minRamGb,
     }];
   }
+  if (targetId === 'linux-x86_64-cuda12.4') {
+    return [{
+      target: {
+        platform: 'linux',
+        arch: 'x86_64',
+        accelerator: 'cuda',
+        cudaVersion: '12.4',
+      },
+      hostEnvironments: ['native'],
+      minRamGb,
+      minNvidiaDriverVersion: '550.54.14',
+    }];
+  }
   throw new Error(`Unsupported native Runtime Box test target: ${targetId}`);
 }
 

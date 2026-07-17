@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { startRuntimeBoxInstall } from '../e2e/support/runtime-box.mjs';
+import { runtimeBoxTargetForNativeTest, startRuntimeBoxInstall } from '../e2e/support/runtime-box.mjs';
 import { waitForLiatirBridge } from '../e2e/support/liatir-app.mjs';
 
 const originalWindow = (globalThis as { window?: unknown }).window;
@@ -14,6 +14,20 @@ afterEach(() => {
 });
 
 describe('Runtime Box product E2E support', () => {
+  it('uses the exact native CUDA 12.4 candidate and driver floor', () => {
+    expect(runtimeBoxTargetForNativeTest('linux-x86_64-cuda12.4', 8)).toEqual([{
+      target: {
+        platform: 'linux',
+        arch: 'x86_64',
+        accelerator: 'cuda',
+        cudaVersion: '12.4',
+      },
+      hostEnvironments: ['native'],
+      minRamGb: 8,
+      minNvidiaDriverVersion: '550.54.14',
+    }]);
+  });
+
   it('allows one bounded script-timeout retry while the initial WebKit navigation settles', async () => {
     let executeCalls = 0;
     let waitTimeout = 0;

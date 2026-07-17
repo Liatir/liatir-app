@@ -41,6 +41,9 @@
       "platform": "linux",
       "arch": "x86_64",
       "gpu": true,
+      "expectedGpuModel": "Tesla T4",
+      "minimumGpuMemoryBytes": 15000000000,
+      "expectedComputeCapability": "7.5",
       "maxTimeoutMinutes": 180
     },
     {
@@ -49,6 +52,9 @@
       "platform": "windows",
       "arch": "x86_64",
       "gpu": true,
+      "expectedGpuModel": "Tesla T4",
+      "minimumGpuMemoryBytes": 15000000000,
+      "expectedComputeCapability": "7.5",
       "maxTimeoutMinutes": 180
     }
   ],
@@ -148,6 +154,37 @@
             "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/29547725429",
             "evidenceRecord": "runtime-boxes/evidence/geneformer-v1-10m-linux-x86_64-cpu-1.0.0-beta.1.json"
           }
+        },
+        {
+          "targetId": "linux-x86_64-cuda12.4",
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cuda",
+            "cudaVersion": "12.4"
+          },
+          "hostEnvironments": [
+            "native"
+          ],
+          "recipeId": "geneformer-v1-10m-linux-x86_64-cuda12.4",
+          "runnerProfileId": "linux-x64-t4",
+          "status": "buildable",
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
+          "timeoutMinutes": 35,
+          "requiredBuildDiskBytes": 21474836480,
+          "dependencyLockSha256": "4cc737f7bb6580de2fc6da0d89f2a17a2f200a35c82f5734f7e503c1772579ed",
+          "dependencyLicenseAudit": "runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cuda12.4.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 6442450944,
+            "estimatedArchiveSizeBytes": 3221225472,
+            "safetyMarginBytes": 6442450944
+          },
+          "gpuRequired": true,
+          "nativeCiEnabled": true
         }
       ]
     },

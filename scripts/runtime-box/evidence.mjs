@@ -91,12 +91,26 @@ function gpuIdentity(target) {
   if (target?.accelerator === 'cuda') {
     const command = process.platform === 'win32' ? 'nvidia-smi.exe' : 'nvidia-smi';
     const result = spawnSync(command, [
-      '--query-gpu=name,driver_version',
+      '--query-gpu=name,driver_version,memory.total,compute_cap',
       '--format=csv,noheader,nounits',
     ], { encoding: 'utf8' });
     requireEvidence(result.status === 0, 'CUDA evidence requires nvidia-smi');
-    const [gpuModel, driverVersion] = result.stdout.trim().split(',').map((value) => value.trim());
-    return { gpuModel: gpuModel || null, driverVersion: driverVersion || null };
+    const devices = result.stdout.trim().split(/\r?\n/).filter(Boolean).map((line) => {
+      const [gpuModel, driverVersion, memoryMiB, computeCapability] = line
+        .split(',')
+        .map((value) => value.trim());
+      const parsedMemoryMiB = Number(memoryMiB);
+      return {
+        gpuModel: gpuModel || null,
+        driverVersion: driverVersion || null,
+        gpuMemoryBytes: Number.isFinite(parsedMemoryMiB)
+          ? Math.floor(parsedMemoryMiB * 1024 * 1024)
+          : null,
+        computeCapability: computeCapability || null,
+      };
+    });
+    requireEvidence(devices.length > 0, 'CUDA evidence requires at least one NVIDIA GPU');
+    return { ...devices[0], gpuCount: devices.length };
   }
   if (target?.accelerator === 'metal' && process.platform === 'darwin') {
     const result = spawnSync('system_profiler', ['SPDisplaysDataType', '-json'], {
@@ -106,13 +120,25 @@ function gpuIdentity(target) {
     if (result.status === 0) {
       try {
         const display = JSON.parse(result.stdout).SPDisplaysDataType?.[0];
-        return { gpuModel: display?.sppci_model || display?._name || null, driverVersion: null };
+        return {
+          gpuModel: display?.sppci_model || display?._name || null,
+          gpuCount: 1,
+          gpuMemoryBytes: null,
+          computeCapability: null,
+          driverVersion: null,
+        };
       } catch {
         // A missing optional Metal model remains explicit as null.
       }
     }
   }
-  return { gpuModel: null, driverVersion: null };
+  return {
+    gpuModel: null,
+    gpuCount: null,
+    gpuMemoryBytes: null,
+    computeCapability: null,
+    driverVersion: null,
+  };
 }
 
 /** Records the exact native host and free disk before a build starts. */
@@ -134,6 +160,9 @@ export async function writeHostEvidence(output, target, runnerLabel = null) {
     minimumFreeDiskBytes: null,
     peakAdditionalDiskBytes: null,
     gpuModel: gpu.gpuModel,
+    gpuCount: gpu.gpuCount,
+    gpuMemoryBytes: gpu.gpuMemoryBytes,
+    computeCapability: gpu.computeCapability,
     driverVersion: gpu.driverVersion,
     reportedCudaCompatibility: null,
   };
@@ -402,6 +431,10 @@ export async function writeReleaseEvidence(options, catalog) {
       jobId: productLifecycle.jobId,
       analysisRunId: productLifecycle.analysisRunId,
       accelerator: productLifecycle.accelerator,
+      gpuModel: productLifecycle.gpuModel ?? null,
+      computeCapability: productLifecycle.computeCapability ?? null,
+      reportedCudaCompatibility: productLifecycle.reportedCudaCompatibility ?? null,
+      peakVramBytes: productLifecycle.peakVramBytes ?? null,
       resultArtifactCount: productLifecycle.resultArtifactCount,
       assertions: productLifecycle.assertions,
     };
@@ -463,6 +496,24 @@ export function validateRuntimeBoxCiEvidence(record) {
       requireEvidence(record.scientific.finiteValues === true, 'finite-value check did not pass');
       requireEvidence(record.scientific.outputContract === 'passed', 'output contract did not pass');
       requireEvidence(record.scientific.provenanceContract === 'passed', 'provenance contract did not pass');
+      const cudaVersion = record.subject.targetId.match(/-cuda([1-9][0-9]*\.[0-9]+)$/)?.[1] ?? null;
+      if (cudaVersion) {
+        requireEvidence(record.host.gpuCount === 1, 'CUDA evidence requires exactly one GPU');
+        requireEvidence(typeof record.host.gpuModel === 'string' && record.host.gpuModel, 'CUDA host GPU model is missing');
+        requireEvidence(Number.isSafeInteger(record.host.gpuMemoryBytes) && record.host.gpuMemoryBytes > 0, 'CUDA host GPU memory is missing');
+        requireEvidence(typeof record.host.computeCapability === 'string' && record.host.computeCapability, 'CUDA host compute capability is missing');
+        requireEvidence(typeof record.host.driverVersion === 'string' && record.host.driverVersion, 'CUDA host driver is missing');
+        requireEvidence(record.host.reportedCudaCompatibility === cudaVersion, 'CUDA host compatibility differs from the target');
+        requireEvidence(record.scientific.accelerator.kind === 'cuda', 'CUDA target lacks CUDA scientific evidence');
+        requireEvidence(record.scientific.accelerator.gpuModel === record.host.gpuModel, 'scientific GPU model differs from the host');
+        requireEvidence(Number.isSafeInteger(record.scientific.accelerator.gpuMemoryBytes) && record.scientific.accelerator.gpuMemoryBytes > 0, 'scientific GPU memory is missing');
+        requireEvidence(record.scientific.accelerator.computeCapability === record.host.computeCapability, 'scientific compute capability differs from the host');
+        requireEvidence(record.scientific.accelerator.driverVersion === record.host.driverVersion, 'scientific driver differs from the host');
+        requireEvidence(record.scientific.accelerator.reportedCudaCompatibility === cudaVersion, 'scientific CUDA compatibility differs from the target');
+        requireEvidence(Number.isSafeInteger(record.scientific.peakVramBytes) && record.scientific.peakVramBytes > 0, 'CUDA peak VRAM evidence is missing');
+        requireEvidence(record.scientific.parity?.cpuBaselinePassed === true, 'CUDA evidence lacks a passed CPU baseline');
+        requireEvidence(record.scientific.parity?.acceleratorPassed === true, 'CUDA accelerator parity did not pass');
+      }
     }
   }
   if (record.status === 'passed' && record.phase === 'production-release') {
@@ -477,6 +528,13 @@ export function validateRuntimeBoxCiEvidence(record) {
       requireEvidence(record.productLifecycle.assertions?.results === 'passed', 'Linux release lacks Results proof');
       requireEvidence(record.productLifecycle.assertions?.provenance === 'passed', 'Linux release lacks provenance proof');
       requireEvidence(record.productLifecycle.assertions?.removal === 'passed', 'Linux release lacks removal proof');
+      if (record.subject.targetId.includes('-cuda')) {
+        requireEvidence(record.productLifecycle.accelerator === 'CUDA', 'CUDA release product lifecycle did not use CUDA');
+        requireEvidence(record.productLifecycle.gpuModel === record.host.gpuModel, 'CUDA product GPU differs from the host');
+        requireEvidence(record.productLifecycle.computeCapability === record.host.computeCapability, 'CUDA product compute capability differs from the host');
+        requireEvidence(record.productLifecycle.reportedCudaCompatibility === record.host.reportedCudaCompatibility, 'CUDA product compatibility differs from the host');
+        requireEvidence(Number.isSafeInteger(record.productLifecycle.peakVramBytes) && record.productLifecycle.peakVramBytes > 0, 'CUDA product peak VRAM evidence is missing');
+      }
     }
   }
   return record;

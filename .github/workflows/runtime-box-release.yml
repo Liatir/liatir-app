@@ -15,7 +15,7 @@ on:
         description: Checked native target
         required: true
         type: choice
-        options: [macos-aarch64-metal, linux-x86_64-cpu]
+        options: [macos-aarch64-metal, linux-x86_64-cpu, linux-x86_64-cuda12.4]
       channel:
         description: Allowed release channel
         required: true
@@ -88,6 +88,20 @@ jobs:
         with:
           ref: ${{ github.sha }}
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Verify native host and working storage before paid setup
+        run: >-
+          npm run runtime-box:ci -- host-probe
+          --model "${{ inputs.model_id }}"
+          --recipe "${{ needs.preflight.outputs.recipe_id }}"
+          --target "${{ inputs.target_id }}"
+          --mode native-lifecycle
+          --output .runtime-box-ci/host.json
+
       - id: release-auth
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
@@ -99,11 +113,6 @@ jobs:
           id_token_include_email: true
 
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
 
       - run: npm ci
 
@@ -133,15 +142,6 @@ jobs:
         uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
         with:
           toolchain: "1.95.0"
-
-      - name: Verify native host and working storage
-        run: >-
-          npm run runtime-box:ci -- host-probe
-          --model "${{ inputs.model_id }}"
-          --recipe "${{ needs.preflight.outputs.recipe_id }}"
-          --target "${{ inputs.target_id }}"
-          --mode native-lifecycle
-          --output .runtime-box-ci/host.json
 
       - name: Require a clean exact revision before signing
         run: |

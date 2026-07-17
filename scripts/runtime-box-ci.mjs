@@ -51,6 +51,22 @@ function sha256Bytes(value) {
   return createHash('sha256').update(value).digest('hex');
 }
 
+/** Compares dotted numeric driver versions without floating-point truncation. */
+export function numericVersionAtLeast(actual, minimum) {
+  if (!/^\d+(?:\.\d+)*$/.test(actual ?? '') || !/^\d+(?:\.\d+)*$/.test(minimum ?? '')) {
+    return false;
+  }
+  const actualParts = actual.split('.').map(Number);
+  const minimumParts = minimum.split('.').map(Number);
+  const length = Math.max(actualParts.length, minimumParts.length);
+  for (let index = 0; index < length; index += 1) {
+    const actualPart = actualParts[index] ?? 0;
+    const minimumPart = minimumParts[index] ?? 0;
+    if (actualPart !== minimumPart) return actualPart > minimumPart;
+  }
+  return true;
+}
+
 /** Sums existing CI build state so stale self-hosted data is visible before downloading. */
 function existingBuildStateBytes(path) {
   if (!existsSync(path)) return 0;
@@ -160,6 +176,18 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
     requireCatalog(['macos', 'linux', 'windows'].includes(runner.platform), `invalid runner platform ${runner.platform}`);
     requireCatalog(['aarch64', 'x86_64'].includes(runner.arch), `invalid runner arch ${runner.arch}`);
     requireCatalog(Number.isInteger(runner.maxTimeoutMinutes) && runner.maxTimeoutMinutes > 0, `invalid timeout for ${runner.id}`);
+    if (runner.gpu) {
+      requireCatalog(typeof runner.expectedGpuModel === 'string' && runner.expectedGpuModel, `GPU runner ${runner.id} lacks an exact model`);
+      requireCatalog(Number.isSafeInteger(runner.minimumGpuMemoryBytes) && runner.minimumGpuMemoryBytes > 0, `GPU runner ${runner.id} lacks a VRAM floor`);
+      requireCatalog(/^\d+\.\d+$/.test(runner.expectedComputeCapability ?? ''), `GPU runner ${runner.id} lacks a compute capability`);
+    } else {
+      requireCatalog(
+        runner.expectedGpuModel === undefined
+          && runner.minimumGpuMemoryBytes === undefined
+          && runner.expectedComputeCapability === undefined,
+        `CPU runner ${runner.id} declares GPU-only requirements`,
+      );
+    }
     runnerIds.add(runner.id);
     runnerLabels.add(runner.runsOn);
   }
@@ -213,6 +241,9 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
       requireCatalog(runner, `unknown runner ${target.runnerProfileId}`);
       requireCatalog(runner.platform === target.target.platform && runner.arch === target.target.arch, `runner host mismatch for ${targetKey}`);
       requireCatalog(runner.gpu || !target.gpuRequired, `GPU target uses a non-GPU runner for ${targetKey}`);
+      if (target.target.accelerator === 'cuda') {
+        requireCatalog(target.gpuRequired === true, `CUDA target is not marked GPU-required for ${targetKey}`);
+      }
       requireCatalog(target.timeoutMinutes <= runner.maxTimeoutMinutes, `timeout exceeds runner maximum for ${targetKey}`);
       requireCatalog(Number.isSafeInteger(target.requiredBuildDiskBytes) && target.requiredBuildDiskBytes > 0, `invalid disk requirement for ${targetKey}`);
       requireCatalog(signerBox.targets.includes(target.targetId), `catalog target is outside signer policy for ${targetKey}`);
@@ -393,13 +424,27 @@ async function runPackageScript(script, output, environment = {}) {
 /** Checks the current native host and free workspace capacity before a heavy build. */
 async function probeHost(target, runner, output) {
   const record = await writeHostEvidence(output, target.target, runner.runsOn);
+  const recipe = JSON.parse(readFileSync(
+    resolve(ROOT, 'runtime-boxes/recipes', target.recipeId, 'recipe.json'),
+    'utf8',
+  ));
+  if (target.gpuRequired) {
+    requireCatalog(record.gpuCount === 1, `runner ${runner.id} must expose exactly one GPU`);
+    requireCatalog(record.gpuModel === runner.expectedGpuModel, `runner ${runner.id} exposed ${record.gpuModel ?? 'no GPU'} instead of ${runner.expectedGpuModel}`);
+    requireCatalog(record.gpuMemoryBytes >= runner.minimumGpuMemoryBytes, `runner ${runner.id} has only ${record.gpuMemoryBytes ?? 0} GPU bytes`);
+    requireCatalog(record.computeCapability === runner.expectedComputeCapability, `runner ${runner.id} compute capability is ${record.computeCapability ?? 'missing'} instead of ${runner.expectedComputeCapability}`);
+    requireCatalog(
+      numericVersionAtLeast(record.driverVersion, recipe.compatibility?.minNvidiaDriverVersion),
+      `runner ${runner.id} driver ${record.driverVersion ?? 'missing'} is below ${recipe.compatibility?.minNvidiaDriverVersion ?? 'the recipe minimum'}`,
+    );
+  }
   const existingBytes = ['.runtime-box-build', '.runtime-box-dist'].reduce(
     (total, name) => total + existingBuildStateBytes(resolve(ROOT, name)),
     0,
   );
   record.existingBuildStateBytes = existingBytes;
   record.calculatedDiskPlan = runtimeBoxBuildDiskPlan(
-    JSON.parse(readFileSync(resolve(ROOT, 'runtime-boxes/recipes', target.recipeId, 'recipe.json'), 'utf8')),
+    recipe,
     target,
   );
   await writeJson(output, record);

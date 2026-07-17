@@ -27,6 +27,14 @@ const publishedMacosArm64MetalTargets = (minRamGb: number) => [{
   hostEnvironments: ['native'],
   minRamGb,
 }];
+const publishedGeneformerTargets = () => [
+  ...publishedMacosArm64MetalTargets(8),
+  {
+    target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
+    hostEnvironments: ['native'],
+    minRamGb: 8,
+  },
+];
 
 installSvelteRuneStubs();
 
@@ -72,7 +80,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
       boxId: 'geneformer-v1-10m',
       channel: 'beta',
       registryBaseUrl: 'https://models.liatir.com/v1',
-      publishedTargets: publishedMacosArm64MetalTargets(8),
+      publishedTargets: publishedGeneformerTargets(),
     });
     expect(model?.install?.revision).toMatch(/^[a-f0-9]{40}$/);
     expect(model?.install?.files).toBeUndefined();
@@ -91,8 +99,8 @@ describe('Batch 5 single-cell foundation model contract', () => {
       expect(file.url).toContain(model?.install?.revision);
     }
     expect(model?.install?.hostRequirements).toMatchObject({
-      os: ['macos'],
-      arch: ['aarch64'],
+      os: ['macos', 'linux'],
+      arch: ['aarch64', 'x86_64'],
     });
     expect(model?.install?.hostRequirements?.python).toBeUndefined();
     expect(spec?.runtimeFamily).toBe('single-cell-foundation-geneformer');

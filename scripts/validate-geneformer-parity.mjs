@@ -18,6 +18,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { runtimeBoxTargetId } from './runtime-box/targets.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 /** Pinned upstream commit: parity must be checked against a fixed reference, not a moving branch. */
@@ -25,6 +26,19 @@ const REVISION = '04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5';
 /** Requires the box to have been built first; CI supplies the catalog-resolved recipe ID. */
 const RECIPE_ID = process.env.LIATIR_RUNTIME_BOX_RECIPE_ID
   ?? 'geneformer-v1-10m-macos-arm64-metal';
+const RECIPE = JSON.parse(await readFile(
+  join(ROOT, 'runtime-boxes', 'recipes', RECIPE_ID, 'recipe.json'),
+  'utf8',
+));
+const TARGET_ID = runtimeBoxTargetId(RECIPE.target);
+if (
+  process.env.LIATIR_RUNTIME_BOX_TARGET_ID
+  && process.env.LIATIR_RUNTIME_BOX_TARGET_ID !== TARGET_ID
+) {
+  throw new Error(
+    `Requested target ${process.env.LIATIR_RUNTIME_BOX_TARGET_ID} does not match recipe ${TARGET_ID}.`,
+  );
+}
 const RUNTIME_DIR = resolve(
   process.env.LIATIR_GENEFORMER_RUNTIME_DIR
     ?? join(ROOT, '.runtime-box-build', RECIPE_ID, 'payload'),
@@ -89,6 +103,7 @@ try {
       '--product-script', productScript,
       '--upstream-tokenizer', join(upstreamDir, 'geneformer/tokenizer.py'),
       '--work-dir', join(workDir, 'validation'),
+      '--target-id', TARGET_ID,
     ],
     { capture: true },
   );

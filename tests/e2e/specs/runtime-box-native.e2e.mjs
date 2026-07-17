@@ -29,7 +29,12 @@ const REGISTRY_BASE_URL = process.env.LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL
 const TARGET_ID = process.env.LIATIR_RUNTIME_BOX_TARGET_ID ?? 'macos-aarch64-metal';
 const VERSION = process.env.LIATIR_RUNTIME_BOX_EXPECTED_VERSION ?? '1.0.0-beta.1';
 const PRODUCT_EVIDENCE_PATH = process.env.LIATIR_RUNTIME_BOX_PRODUCT_EVIDENCE ?? null;
-const EXPECTED_ACCELERATOR = TARGET_ID === 'linux-x86_64-cpu' ? /^CPU/ : /^Apple Metal/;
+const CUDA_TARGET = TARGET_ID === 'linux-x86_64-cuda12.4';
+const EXPECTED_ACCELERATOR = CUDA_TARGET
+  ? /^CUDA$/
+  : TARGET_ID === 'linux-x86_64-cpu'
+    ? /^CPU$/
+    : /^Apple Metal$/;
 
 const CREATE_FIXTURE_SCRIPT = String.raw`
 import json
@@ -278,6 +283,14 @@ export const tests = [
       expect(inference.preview).toHaveLength(3);
       expect(inference.preview.flat().every(Number.isFinite)).toBe(true);
       expect(inference.summary.accelerator).toMatch(EXPECTED_ACCELERATOR);
+      if (CUDA_TARGET) {
+        expect(inference.summary).toMatchObject({
+          reportedCudaCompatibility: '12.4',
+          gpuModel: 'Tesla T4',
+          computeCapability: '7.5',
+        });
+        expect(inference.summary.peakVramBytes).toBeGreaterThan(0);
+      }
 
       await navigate(browser, '/jobs');
       const jobEntry = await browser.$(`[data-testid="job-entry"][data-job-id="${jobId}"]`);
@@ -427,6 +440,10 @@ export const tests = [
           jobId,
           analysisRunId,
           accelerator: inference.summary.accelerator,
+          gpuModel: inference.summary.gpuModel,
+          computeCapability: inference.summary.computeCapability,
+          reportedCudaCompatibility: inference.summary.reportedCudaCompatibility,
+          peakVramBytes: inference.summary.peakVramBytes,
           resultArtifactCount: result.outputFiles.length,
           assertions: {
             interruptedResume: 'passed',

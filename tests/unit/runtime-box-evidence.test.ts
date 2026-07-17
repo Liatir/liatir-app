@@ -144,6 +144,56 @@ describe('Runtime Box CI evidence contract', () => {
     expect(() => validateRuntimeBoxCiEvidence(record)).not.toThrow();
   });
 
+  it('requires complete T4, CPU-baseline, CUDA, and product-runner evidence', () => {
+    const record: any = productionRecord();
+    record.subject.targetId = 'linux-x86_64-cuda12.4';
+    record.subject.recipeId = 'geneformer-v1-10m-linux-x86_64-cuda12.4';
+    Object.assign(record.host, {
+      platform: 'linux',
+      arch: 'x86_64',
+      gpuModel: 'Tesla T4',
+      gpuCount: 1,
+      gpuMemoryBytes: 16_106_127_360,
+      computeCapability: '7.5',
+      driverVersion: '590.48.01',
+      reportedCudaCompatibility: '12.4',
+    });
+    Object.assign(record.scientific, {
+      framework: { name: 'torch', version: '2.4.1+cu124', backend: 'transformers-cu124' },
+      accelerator: {
+        kind: 'cuda',
+        gpuModel: 'Tesla T4',
+        gpuMemoryBytes: 15_814_754_304,
+        computeCapability: '7.5',
+        driverVersion: '590.48.01',
+        reportedCudaCompatibility: '12.4',
+      },
+      parity: { passed: true, cpuBaselinePassed: true, acceleratorPassed: true },
+      peakVramBytes: 1_024,
+    });
+    record.productLifecycle = {
+      status: 'passed',
+      targetId: record.subject.targetId,
+      version: record.subject.version,
+      jobId: 'job-cuda',
+      analysisRunId: 'run-cuda',
+      accelerator: 'CUDA',
+      gpuModel: 'Tesla T4',
+      computeCapability: '7.5',
+      reportedCudaCompatibility: '12.4',
+      peakVramBytes: 1_024,
+      resultArtifactCount: 3,
+      assertions: { results: 'passed', provenance: 'passed', removal: 'passed' },
+    };
+
+    expect(() => validateRuntimeBoxCiEvidence(record)).not.toThrow();
+    record.scientific.parity.cpuBaselinePassed = false;
+    expect(() => validateRuntimeBoxCiEvidence(record)).toThrow(/CPU baseline/);
+    record.scientific.parity.cpuBaselinePassed = true;
+    record.productLifecycle.peakVramBytes = null;
+    expect(() => validateRuntimeBoxCiEvidence(record)).toThrow(/product peak VRAM/);
+  });
+
   it('accepts compact failed evidence without manufacturing successful sections', () => {
     const record = productionRecord();
     record.phase = 'model-validation';

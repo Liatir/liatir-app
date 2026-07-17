@@ -56,7 +56,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 5. GitHub identities, environments, and secrets | Complete | `4aa84f2` |
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
-| 8.1. Geneformer Linux pilot | In progress | Linux CPU complete; CUDA not started |
+| 8.1. Geneformer Linux pilot | In progress | Linux CPU complete; CUDA economical local gate in progress |
 | 8.2. Geneformer Windows pilot | Not started | Requires Gate 8.1 |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
@@ -161,9 +161,12 @@ Current state as of 2026-07-17:
 - The official source, license and redistribution record, exact checkpoint,
   dependency lock, artifact layout, CPU/CUDA requirements, and T4 compatibility
   were rechecked before execution. The repository pins source revision
-  `04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5` and the Linux CPU dependency-lock
-  SHA-256
-  `73a31b39b7f2f3eee6a1c7628d13728490ed4db31095c50ab5ce0211b98829f1`.
+  `04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5`, checkpoint SHA-256
+  `a5e33a757431643b3697de7ef6127950cdc49e06e58d4266b3a3ab191b683f14`,
+  Linux CPU dependency-lock SHA-256
+  `73a31b39b7f2f3eee6a1c7628d13728490ed4db31095c50ab5ce0211b98829f1`,
+  and Linux CUDA dependency-lock SHA-256
+  `4cc737f7bb6580de2fc6da0d89f2a17a2f200a35c82f5734f7e503c1772579ed`.
 - The protected signer path passed in run `29536134188`. GitHub deploys the
   Cloud Run signer but has no direct Cloud KMS role; the signer runtime identity
   remains the only KMS signing principal.
@@ -194,8 +197,25 @@ Current state as of 2026-07-17:
 - Commit `3766d41` corrects the last observed WebDriver readiness race. Its local
   gate passed 8 focused unit tests, syntax checks, a clean product build, and
   three separate cold native-app starts with 6/6 bridge assertions passing.
-- `linux-x86_64-cuda12.4` has not started and must remain blocked until the CPU
-  lifecycle is fully closed.
+- Only after the CPU lifecycle closed, preparation started for
+  `linux-x86_64-cuda12.4`. The checked recipe uses Python 3.11.9, uv 0.11.28,
+  PyTorch 2.4.1+cu124, CUDA 12.4, NVIDIA driver 550.54.14 or newer, and an exact
+  Tesla T4 profile with compute capability 7.5 and at least 15,000,000,000 bytes
+  of usable GPU memory. The 47-wheel lock has a 2,984,892,298-byte compressed
+  set and a 5,443,678,121-byte expanded set; the legal audit retains the license
+  and notice files for all packages, including the 12 NVIDIA distributions.
+  Because four wheel metadata directories omit a bundled license file, the
+  payload also carries the shared Apache 2.0 text for the two Apache packages
+  and exact, hash-pinned MIT notices for array-api-compat 1.15.0 and Triton
+  3.0.0.
+- CUDA remains **in local preparation**. No paid GPU runner has been started.
+  The target cannot move to published or complete until the clean economical
+  gate, real T4 inference, numerical parity, protected publication, complete
+  product lifecycle, final evidence, removal, and cleanup all pass.
+- Lock reproducibility was rechecked independently with the verified uv 0.11.28
+  binary and live indexes: the resolver selected the same 47 packages and
+  reproduced dependency-lock SHA-256
+  `4cc737f7bb6580de2fc6da0d89f2a17a2f200a35c82f5734f7e503c1772579ed`.
 
 Incident ledger:
 
@@ -219,6 +239,16 @@ Incident ledger:
 | `29544965106` | Failed | HTTP 200 from `/status` was mistaken for WebDriver readiness during initial WebKit navigation | `3766d41` |
 | `29546883054` | Failed | Full product lifecycle and beta promotion passed; final evidence CLI lost kebab-case receipt flags | `2a72330` |
 | `29547725429` | Passed | Linux CPU build, parity, protected publication, product lifecycle, final evidence, and cleanup completed | — |
+| Local CUDA preparation | Corrected | Prior Runtime Box temporary build and audit directories left only 6.3 GiB free; removed known generated temporary state and restored 13 GiB before lock and license work | Pending CUDA preparation commit |
+| Local CUDA license audit | Corrected | The first exact-wheel download omitted the `linux_x86_64` platform tag used by the official PyTorch cu124 wheel; the corrected multi-tag download verified all 47 wheel hashes before metadata extraction | Pending CUDA preparation commit |
+| Local documentation review | Corrected | A draft roadmap line contained a mistyped checkpoint digest; direct comparison with the content-addressed recipe corrected it before commit or remote execution | Pending CUDA preparation commit |
+| Local release-workflow review | Corrected | The early paid-host probe ran before the workflow pinned Node 22; setup-node now precedes the dependency-free probe while authentication and downloads remain afterward | Pending CUDA preparation commit |
+| Local scientific-validator review | Corrected | The Metal compatibility branch compared arrays before rejecting a shape mismatch; shape validation now runs first, avoiding invalid broadcasting or an opaque NumPy error | Pending CUDA preparation commit |
+| Local CUDA evidence-contract review | Corrected | Draft evidence assembly discarded product GPU details and the generic validator did not require same-lock CPU-baseline, CUDA identity, compute capability, or peak-VRAM proof; the shared core and evidence validator now preserve and enforce those fields | Pending CUDA preparation commit |
+| Local lock reproduction | Corrected | The first regeneration attempt could not resolve PyPI because sandbox DNS was disabled; the same pinned command ran once with network access and reproduced all 47 packages and the exact lock hash | Pending CUDA preparation commit |
+| Local full-unit gate | Corrected | The product core correctly exposed the published Linux CPU target, but the Batch 5 Geneformer contract test still expected macOS only; the test now asserts both published targets and the matching host requirements | Pending CUDA preparation commit |
+| Local redistribution review | Corrected | Four exact wheels declare a license but omit a license file from `.dist-info`; Apache components are covered by the named inventory and shared Apache text, while exact upstream MIT texts and copyright notices were added for array-api-compat 1.15.0 and Triton 3.0.0 | Pending CUDA preparation commit |
+| Local source-hash check | Limited | The environment rejected a redundant streamed comparison after the official tagged LICENSE contents had already been read; the reviewed contents are stored locally and their local SHA-256 values are pinned in the recipe | Pending CUDA preparation commit |
 
 The release attempts consumed about 114 minutes of observed workflow wall time;
 the four signer attempts consumed about 6 minutes. At the standard Linux rate

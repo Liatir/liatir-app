@@ -178,6 +178,12 @@ export interface LiatirRuntimeBoxCiRunnerProfile {
   platform: LiatirRuntimeBoxPlatform;
   arch: LiatirRuntimeBoxArch;
   gpu: boolean;
+  /** Exact accelerator identity provisioned by a checked GPU runner profile. */
+  expectedGpuModel?: string;
+  /** Minimum usable GPU memory reported by the native driver. */
+  minimumGpuMemoryBytes?: number;
+  /** Exact CUDA compute capability required by the runner profile. */
+  expectedComputeCapability?: string;
   maxTimeoutMinutes: number;
 }
 
@@ -322,6 +328,9 @@ export interface LiatirRuntimeBoxCiHostEvidence {
     requiredBuildDiskBytes: number;
   };
   gpuModel: string | null;
+  gpuCount?: number | null;
+  gpuMemoryBytes?: number | null;
+  computeCapability?: string | null;
   driverVersion: string | null;
   reportedCudaCompatibility: string | null;
 }
@@ -360,6 +369,8 @@ export interface LiatirRuntimeBoxCiScientificEvidence {
   accelerator: {
     kind: "cpu" | "metal" | "cuda";
     gpuModel: string | null;
+    gpuMemoryBytes?: number | null;
+    computeCapability?: string | null;
     driverVersion: string | null;
     reportedCudaCompatibility: string | null;
   };
@@ -391,6 +402,10 @@ export interface LiatirRuntimeBoxCiProductLifecycleEvidence {
   jobId: string;
   analysisRunId: string;
   accelerator: string;
+  gpuModel?: string | null;
+  computeCapability?: string | null;
+  reportedCudaCompatibility?: string | null;
+  peakVramBytes?: number | null;
   resultArtifactCount: number;
   assertions: Readonly<Record<string, "passed">>;
 }

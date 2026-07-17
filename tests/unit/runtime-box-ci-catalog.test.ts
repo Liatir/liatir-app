@@ -8,6 +8,7 @@ import {
 } from '../../packages/liatir-core/src';
 import {
   foundationMatrix,
+  numericVersionAtLeast,
   resolveCiTarget,
   runtimeBoxEvidenceOptions,
   validateRuntimeBoxCiCatalog,
@@ -71,6 +72,37 @@ describe('Runtime Box CI catalog', () => {
     expect(resolved.runner).toMatchObject({ runsOn: 'ubuntu-24.04', gpu: false });
   });
 
+  it('derives the checked Linux CUDA recipe and exact T4 runner contract', () => {
+    const resolved = resolveCiTarget(
+      catalog,
+      'ctheodoris-geneformer-v1-10m',
+      undefined,
+      'linux-x86_64-cuda12.4',
+      'native-lifecycle',
+    );
+    expect(resolved.target).toMatchObject({
+      recipeId: 'geneformer-v1-10m-linux-x86_64-cuda12.4',
+      status: 'buildable',
+      timeoutMinutes: 35,
+      gpuRequired: true,
+      dependencyLockSha256: '4cc737f7bb6580de2fc6da0d89f2a17a2f200a35c82f5734f7e503c1772579ed',
+    });
+    expect(resolved.runner).toMatchObject({
+      runsOn: 'liatir-linux-t4',
+      gpu: true,
+      expectedGpuModel: 'Tesla T4',
+      minimumGpuMemoryBytes: 15_000_000_000,
+      expectedComputeCapability: '7.5',
+    });
+  });
+
+  it('compares NVIDIA driver versions component by component', () => {
+    expect(numericVersionAtLeast('590.48.01', '550.54.14')).toBe(true);
+    expect(numericVersionAtLeast('550.54.14', '550.54.14')).toBe(true);
+    expect(numericVersionAtLeast('550.54.2', '550.54.14')).toBe(false);
+    expect(numericVersionAtLeast('not-a-version', '550.54.14')).toBe(false);
+  });
+
   it('derives the small native fixture matrix from checked runner profiles', () => {
     expect(foundationMatrix(catalog)).toEqual(expect.arrayContaining([
       expect.objectContaining({ recipeId: 'installer-fixture-linux-x86_64', runsOn: 'ubuntu-24.04', heartbeatSeconds: 300 }),
@@ -90,6 +122,19 @@ describe('Runtime Box CI catalog', () => {
       linuxCudaBeforeWindowsCuda: true,
       cacheModelWeightsOrArchives: false,
     });
+  });
+
+  it('checks the paid native host under pinned Node before authentication or setup downloads', () => {
+    const workflow = readFileSync(new URL('../../.github/workflows/runtime-box-release.yml', import.meta.url), 'utf8');
+    const releaseJob = workflow.slice(workflow.indexOf('\n  release:\n'));
+    const setupNode = releaseJob.indexOf('actions/setup-node@v4');
+    const hostProbe = releaseJob.indexOf('npm run runtime-box:ci -- host-probe');
+    const releaseAuth = releaseJob.indexOf('id: release-auth');
+    const npmInstall = releaseJob.indexOf('run: npm ci');
+    expect(setupNode).toBeGreaterThanOrEqual(0);
+    expect(setupNode).toBeLessThan(hostProbe);
+    expect(hostProbe).toBeLessThan(releaseAuth);
+    expect(hostProbe).toBeLessThan(npmInstall);
   });
 
   it('suppresses npm wrapper output before parsing one canonical validator result', () => {
