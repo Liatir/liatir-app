@@ -2,7 +2,10 @@ export async function waitForLiatirBridge(browser) {
   await browser.waitUntil(
     async () => browser.execute(() => Boolean(window.Liatir?.isAvailable)),
     {
-      timeout: 30_000,
+      // WebKit can discard the first execute callback if initial navigation wins the race.
+      // One embedded-driver attempt is bounded at 30 seconds, so leave room for exactly one retry.
+      timeout: 65_000,
+      interval: 250,
       timeoutMsg: 'window.Liatir bridge was not available',
     },
   );

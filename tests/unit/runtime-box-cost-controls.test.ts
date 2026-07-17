@@ -31,6 +31,8 @@ describe('Runtime Box CI cost controls', () => {
     expect(productBuild).not.toContain("'cargo',\n    [\n      'tauri'");
     expect(e2eRunner).toContain('Tauri log tail (last 12 KiB)');
     expect(e2eRunner).toContain("exitCode=${app.child.exitCode ?? 'running'}");
+    expect(e2eRunner).toContain('payload.value?.ready === true');
+    expect(e2eRunner).toContain("windowLabel: 'main'");
     expect(e2eAppSupport).toContain("window.location.pathname !== '/workspaces'");
     expect(runtimeBoxSupport).toContain("cancelAfterBytes: options.cancelAfterBytes ?? null");
     expect(runtimeBoxProductE2E).toContain("{ cancelAfterBytes: 1 }");

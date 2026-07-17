@@ -128,6 +128,7 @@ function startTauriApp() {
 
 async function waitForWebDriver(child) {
   let lastError = null;
+  let readySince = null;
   for (let attempt = 0; attempt < 120; attempt += 1) {
     if (child.exitCode !== null) {
       throw new Error(`Tauri app exited before WebDriver became available with code ${child.exitCode}.`);
@@ -135,8 +136,18 @@ async function waitForWebDriver(child) {
 
     try {
       const response = await fetch(`${baseUrl}/status`);
-      if (response.ok) return await response.json();
+      const payload = await response.json();
+      if (response.ok && payload.value?.ready === true) {
+        readySince ??= Date.now();
+        // The embedded server can see the window just before WebKit finishes its first navigation.
+        // Require two consecutive ready checks so the first script is not sent into that transition.
+        if (Date.now() - readySince >= 500) return payload;
+      } else {
+        readySince = null;
+        lastError = new Error(payload.value?.message ?? `WebDriver status returned ${response.status}`);
+      }
     } catch (error) {
+      readySince = null;
       lastError = error;
     }
 
@@ -150,7 +161,12 @@ async function createSession() {
   const response = await fetch(`${baseUrl}/session`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ capabilities: { alwaysMatch: {}, firstMatch: [{}] } }),
+    body: JSON.stringify({
+      capabilities: {
+        alwaysMatch: { 'wdio:tauriServiceOptions': { windowLabel: 'main' } },
+        firstMatch: [{}],
+      },
+    }),
   });
   const text = await response.text();
   const payload = text ? JSON.parse(text) : {};

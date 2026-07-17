@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { startRuntimeBoxInstall } from '../e2e/support/runtime-box.mjs';
+import { waitForLiatirBridge } from '../e2e/support/liatir-app.mjs';
 
 const originalWindow = (globalThis as { window?: unknown }).window;
 
@@ -13,6 +14,37 @@ afterEach(() => {
 });
 
 describe('Runtime Box product E2E support', () => {
+  it('allows one bounded script-timeout retry while the initial WebKit navigation settles', async () => {
+    let executeCalls = 0;
+    let waitTimeout = 0;
+    const browser = {
+      execute: async () => {
+        executeCalls += 1;
+        if (executeCalls === 1) {
+          const error = new Error('Script execution timed out') as Error & { code: string };
+          error.code = 'script timeout';
+          throw error;
+        }
+        return true;
+      },
+      waitUntil: async (condition: () => Promise<boolean>, options: { timeout: number }) => {
+        waitTimeout = options.timeout;
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          try {
+            if (await condition()) return true;
+          } catch {
+            // Mirrors the runner: transient WebDriver errors are retried inside the outer bound.
+          }
+        }
+        throw new Error('condition did not recover');
+      },
+    };
+
+    await waitForLiatirBridge(browser);
+    expect(waitTimeout).toBe(65_000);
+    expect(executeCalls).toBe(2);
+  });
+
   it('cancels from the first positive progress event without polling', async () => {
     const invocations: Array<{ command: string; payload: unknown }> = [];
     let progressListener: ((progress: { bytesDownloaded: number; done: boolean }) => void) | null = null;
