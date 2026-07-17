@@ -27,6 +27,7 @@ export interface LiatirRuntimeBoxCompatibility {
   minLiatirVersion: string;
   maxLiatirVersionExclusive?: string;
   minMacosVersion?: string;
+  /** Minimum installed memory in decimal gigabytes (1 GB = 1,000,000,000 bytes). */
   minRamGb?: number;
   /** Minimum host NVIDIA driver accepted by a CUDA payload. */
   minNvidiaDriverVersion?: string;
@@ -44,6 +45,7 @@ export interface LiatirRuntimeBoxTargetCandidate {
   target: LiatirRuntimeBoxTarget;
   /** Native is required for current desktop selection; windows-wsl2 is future evidence only. */
   hostEnvironments: readonly LiatirRuntimeBoxHostEnvironment[];
+  /** Minimum installed memory in decimal gigabytes (1 GB = 1,000,000,000 bytes). */
   minRamGb?: number;
   /** Required for CUDA candidates so selection never guesses driver compatibility. */
   minNvidiaDriverVersion?: string;

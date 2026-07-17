@@ -440,7 +440,9 @@ export interface LiatirAIModelLicense {
 export interface LiatirAIModelHardwareRequirements {
   cpu?: boolean;
   gpu?: boolean;
+  /** Minimum installed memory in decimal gigabytes (1 GB = 1,000,000,000 bytes). */
   minRamGb?: number;
+  /** Recommended installed memory in decimal gigabytes (1 GB = 1,000,000,000 bytes). */
   recommendedRamGb?: number;
   minVramGb?: number;
   recommendedVramGb?: number;

@@ -51,6 +51,8 @@ const AI_RUNTIME_ROOT: &str = "ai-runtimes";
 /// Hard cap for channel/release/revocation documents, so a hostile or broken registry
 /// cannot make the app buffer an unbounded response into memory.
 const MAX_CONTROL_DOCUMENT_BYTES: usize = 1024 * 1024;
+/// `minRamGb` is a shared wire-contract value expressed in decimal gigabytes.
+const BYTES_PER_DECIMAL_GIGABYTE: u64 = 1_000_000_000;
 // Trust anchors are baked into the binary at compile time rather than read from disk:
 // a key the user could edit would defeat the point of signing.
 const PRODUCTION_TRUST_KEY: &str =
@@ -679,7 +681,7 @@ fn select_target_candidate<'a>(
         if let (Some(minimum_gb), Some(installed_bytes)) =
             (candidate.min_ram_gb, host.total_memory_bytes)
         {
-            if installed_bytes < minimum_gb.saturating_mul(1024 * 1024 * 1024) {
+            if installed_bytes < required_memory_bytes(minimum_gb) {
                 required_memory_gb = Some(required_memory_gb.unwrap_or(0).max(minimum_gb));
                 continue;
             }
@@ -710,7 +712,7 @@ fn select_target_candidate<'a>(
         {
             return Err(format!(
                 "This AI Model needs at least {minimum_gb} GB of memory, but this computer has {} GB",
-                installed_bytes / (1024 * 1024 * 1024)
+                format_memory_gigabytes(installed_bytes)
             ));
         }
     }
@@ -816,6 +818,17 @@ fn version_parts(value: &str) -> Vec<u64> {
         .collect()
 }
 
+/// Converts the shared decimal-gigabyte requirement to the native byte probe unit.
+fn required_memory_bytes(gigabytes: u64) -> u64 {
+    gigabytes.saturating_mul(BYTES_PER_DECIMAL_GIGABYTE)
+}
+
+/// Formats probed memory without rounding an undersized host up to the requirement.
+fn format_memory_gigabytes(bytes: u64) -> String {
+    let tenths = bytes.saturating_mul(10) / BYTES_PER_DECIMAL_GIGABYTE;
+    format!("{}.{:01}", tenths / 10, tenths % 10)
+}
+
 /// Checks the host against the manifest's requirements before any download starts.
 ///
 /// Native probes are enforced when they return a fact. An unavailable memory probe remains
@@ -858,9 +871,7 @@ fn check_compatibility(
     }
     if let Some(minimum_gb) = compatibility.min_ram_gb {
         let installed_bytes = host.total_memory_bytes;
-        if installed_bytes
-            .is_some_and(|bytes| bytes < minimum_gb.saturating_mul(1024 * 1024 * 1024))
-        {
+        if installed_bytes.is_some_and(|bytes| bytes < required_memory_bytes(minimum_gb)) {
             return Err(format!(
                 "This AI Runtime Box requires at least {minimum_gb} GB of memory"
             ));
@@ -1824,6 +1835,30 @@ mod tests {
                 .unwrap_err();
         assert!(error.contains("Windows"));
         assert!(!error.contains("compatible with Windows through WSL"));
+    }
+
+    #[test]
+    fn memory_requirements_use_decimal_gigabytes_from_the_shared_contract() {
+        let mut eight_gb_candidate = candidate(target("linux", "x86_64", "cpu", None), None);
+        eight_gb_candidate.min_ram_gb = Some(8);
+        let exact_host = RuntimeBoxHostCapabilities {
+            total_memory_bytes: Some(8_000_000_000),
+            ..host("linux", "x86_64", None)
+        };
+        assert!(select_target_candidate(&[eight_gb_candidate.clone()], &exact_host).is_ok());
+
+        let undersized_host = RuntimeBoxHostCapabilities {
+            total_memory_bytes: Some(7_999_999_999),
+            ..host("linux", "x86_64", None)
+        };
+        let error = select_target_candidate(&[eight_gb_candidate], &undersized_host).unwrap_err();
+        assert!(error.contains("at least 8 GB"));
+        assert!(error.contains("7.9 GB"));
+
+        let mut release: ReleaseManifest = serde_json::from_value(release_json()).unwrap();
+        release.compatibility.min_ram_gb = Some(8);
+        assert!(check_compatibility(&release.compatibility, &exact_host).is_ok());
+        assert!(check_compatibility(&release.compatibility, &undersized_host).is_err());
     }
 
     #[test]
