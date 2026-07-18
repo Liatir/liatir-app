@@ -82,7 +82,7 @@ describe('Runtime Box CI catalog', () => {
     );
     expect(resolved.target).toMatchObject({
       recipeId: 'geneformer-v1-10m-linux-x86_64-cuda12.4',
-      status: 'buildable',
+      status: 'published',
       timeoutMinutes: 35,
       gpuRequired: true,
       dependencyLockSha256: '4cc737f7bb6580de2fc6da0d89f2a17a2f200a35c82f5734f7e503c1772579ed',

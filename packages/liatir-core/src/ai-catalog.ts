@@ -125,6 +125,17 @@ function publishedGeneformerTargets(): readonly LiatirRuntimeBoxTargetCandidate[
 			target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
 			hostEnvironments: ['native'],
 			minRamGb: 8
+		},
+		{
+			target: {
+				platform: 'linux',
+				arch: 'x86_64',
+				accelerator: 'cuda',
+				cudaVersion: '12.4'
+			},
+			hostEnvironments: ['native'],
+			minRamGb: 8,
+			minNvidiaDriverVersion: '550.54.14'
 		}
 	];
 }

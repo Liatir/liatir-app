@@ -168,7 +168,7 @@
           ],
           "recipeId": "geneformer-v1-10m-linux-x86_64-cuda12.4",
           "runnerProfileId": "linux-x64-t4",
-          "status": "buildable",
+          "status": "published",
           "validationModes": [
             "build",
             "scientific",
@@ -184,7 +184,19 @@
             "safetyMarginBytes": 6442450944
           },
           "gpuRequired": true,
-          "nativeCiEnabled": true
+          "nativeCiEnabled": true,
+          "publication": {
+            "source": "github-actions",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/geneformer-v1-10m/1.0.0-beta.1/linux-x86_64-cuda12.4/4d61626492d409fb155c3d6c12e15c7a9de0cc1e062476b1f8931c6d3bc80e56.release.json",
+            "archiveSha256": "e991644d230d3d86c9c3cdd2c5bf8473c028b5fd8b09a83ba0b005736b66e544",
+            "archiveSizeBytes": 3079059631,
+            "installedSizeBytes": 5567128470,
+            "signingKeyId": "liatir-runtime-box-kms-2026",
+            "publishedAt": "2026-07-18T12:18:50.510Z",
+            "workflowRunId": "29643382673",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/29643382673",
+            "evidenceRecord": "runtime-boxes/evidence/geneformer-v1-10m-linux-x86_64-cuda12.4-1.0.0-beta.1.json"
+          }
         }
       ]
     },
