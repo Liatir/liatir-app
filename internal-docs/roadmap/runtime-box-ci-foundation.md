@@ -547,7 +547,8 @@ Current state as of 2026-07-18:
   The workflow uses the existing native bridge/storage smoke, and shared app
   readiness now requires the real document navigation to be complete. Native
   bridge path assertions are normalized for Windows without changing paths
-  passed to the product.
+  passed to the product. The scoped correction was committed and pushed as
+  `507c575` with generic push CI skipped.
 - The checked release resolver selects `windows-2025`, a 90-minute timeout,
   5,412,219,713 calculated peak bytes, and a 6 GiB hard disk gate. The release
   workflow now resolves `dumpbin.exe`, uses the recipe-owned Python entry point,
