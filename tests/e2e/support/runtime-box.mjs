@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { waitForLiatirBridge } from './liatir-app.mjs';
+import { openSandboxWorkspace } from './liatir-app.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const CATALOG = JSON.parse(fs.readFileSync(path.join(ROOT, 'runtime-boxes/catalog.json'), 'utf8'));
@@ -60,39 +60,14 @@ export function readEmbeddedPythonScript(rootDir, relativePath, exportName) {
 }
 
 /**
- * Puts the app into a known-empty sandbox workspace before a test runs.
+ * Opens the app's Sandbox workspace inside the runner's isolated, empty app-data root.
  *
- * End-to-end tests drive a *real* app against real storage, so they would otherwise inherit whatever the last
- * run left behind — and a test that passes only because of leftover state is worse than no test. Writing a
- * single `__test__` workspace gives every spec the same clean starting point, and keeps the tests away from any
- * real workspace on the machine.
+ * The E2E runner gives every process a unique native app-data root, while the product workspace store owns
+ * Sandbox creation and activation. Driving that real product flow keeps the in-memory store and persisted state
+ * synchronized; writing its private files behind the store can deadlock a Windows WebDriver script.
  */
 export async function activateCleanSandbox(browser) {
-  await waitForLiatirBridge(browser);
-  await browser.execute(async () => {
-    const now = Date.now();
-    await window.Liatir.invoke('lia_app_write_text', {
-      rel: 'workspaces.json',
-      content: JSON.stringify({
-        workspaces: [{ id: '__test__', name: 'Sandbox', createdAt: now, lastOpenedAt: now }],
-      }, null, 2),
-      createDirs: true,
-    });
-    await window.Liatir.invoke('lia_app_write_text', {
-      rel: 'active-workspace.json',
-      content: JSON.stringify({ id: '__test__' }),
-      createDirs: true,
-    });
-    return true;
-  });
-  await browser.execute(() => {
-    window.location.href = '/';
-    return true;
-  });
-  await (await browser.$('[data-testid="sidebar-nav-item"]')).waitForDisplayed({
-    timeout: 20_000,
-    timeoutMsg: 'Clean Sandbox workspace shell did not open',
-  });
+  await openSandboxWorkspace(browser);
 }
 
 export async function startRuntimeBoxInstall(browser, input, options = {}) {

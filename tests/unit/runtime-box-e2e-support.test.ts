@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+  activateCleanSandbox,
   runtimeBoxInstallTimeoutMs,
   runtimeBoxTargetForNativeTest,
   startRuntimeBoxInstall,
@@ -23,6 +24,35 @@ afterEach(() => {
 });
 
 describe('Runtime Box product E2E support', () => {
+  it('opens the isolated Sandbox through the product workspace flow', async () => {
+    let sandboxClicked = false;
+    const browser = {
+      execute: async (fn: (...args: unknown[]) => unknown) => {
+        const source = fn.toString();
+        if (source.includes('lia_app_write_text')) {
+          throw new Error('Script execution timed out');
+        }
+        if (source.includes('bridgeAvailable')) {
+          return { bridgeAvailable: true, documentReady: true, href: 'http://tauri.localhost/workspaces' };
+        }
+        if (source.includes("window.location.pathname !== '/workspaces'")) return sandboxClicked;
+        throw new Error(`Unexpected browser script: ${source}`);
+      },
+      waitUntil: async (condition: () => Promise<boolean>) => {
+        if (!await condition()) throw new Error('condition did not pass');
+        return true;
+      },
+      $: async () => ({
+        isExisting: async () => true,
+        waitForDisplayed: async () => {},
+        click: async () => { sandboxClicked = true; },
+      }),
+    };
+
+    await activateCleanSandbox(browser);
+    expect(sandboxClicked).toBe(true);
+  });
+
   it('isolates Windows app data inside the per-run test home', () => {
     expect(tauriTestEnvironment('C:\\fixture-home', 'win32')).toMatchObject({
       HOME: 'C:\\fixture-home',
