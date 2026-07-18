@@ -15,6 +15,7 @@ import {
   discoverStandalonePythonRoot,
   findPythonRelocationLeaks,
   stageStandalonePython,
+  validateRelocatablePython,
 } from '../../scripts/runtime-box/python.mjs';
 import {
   assertRuntimeBoxNativeHost,
@@ -122,6 +123,44 @@ describe('Runtime Box target adapters', () => {
       'Lib/site-packages/fixture.pth',
       'Scripts/tool.exe',
     ]);
+  });
+
+  it('repairs uv long-path POSIX launchers before relocation validation', async () => {
+    const root = await temporaryRoot();
+    const payloadDir = join(root, 'long-build-path', 'payload');
+    const destinationRoot = join(payloadDir, 'venv');
+    const scriptsRoot = join(destinationRoot, 'bin');
+    const interpreter = join(scriptsRoot, 'python');
+    const launcher = join(scriptsRoot, 'f2py');
+    const sourceRoot = join(root, 'managed-python');
+    const adapter = runtimeBoxTargetAdapter({
+      platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.4',
+    });
+    await mkdir(scriptsRoot, { recursive: true });
+    await writeFile(interpreter, 'fixture\n');
+    await writeFile(launcher, [
+      '#!/bin/sh',
+      `'''exec' '${interpreter}' "$0" "$@"`,
+      "' '''",
+      '# -*- coding: utf-8 -*-',
+      'import sys',
+      '',
+    ].join('\n'));
+
+    await validateRelocatablePython({
+      adapter,
+      destinationRoot,
+      interpreter,
+      payloadDir,
+      sourceRoot,
+      run: () => JSON.stringify({ basePrefix: destinationRoot, executable: interpreter }),
+    });
+
+    const repaired = await readFile(launcher, 'utf8');
+    expect(repaired).toContain('$(dirname -- "$0")');
+    expect(repaired).not.toContain(payloadDir);
+    expect(repaired).toContain('# -*- coding: utf-8 -*-');
+    expect(await findPythonRelocationLeaks(adapter, destinationRoot, [payloadDir])).toEqual([]);
   });
 
   it('discovers the standalone root from sys.base_prefix instead of interpreter path depth', async () => {

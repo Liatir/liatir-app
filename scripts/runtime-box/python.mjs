@@ -49,6 +49,21 @@ export async function stageStandalonePython({ adapter, payloadDir, pythonVersion
   return { interpreter, sourceRoot, destinationRoot };
 }
 
+/** Removes either a direct shebang or uv's long-path shell trampoline from a launcher. */
+function posixLauncherBody(text) {
+  const firstLineEnd = text.indexOf('\n');
+  if (firstLineEnd === -1) return '';
+  const trampolinePrefix = "#!/bin/sh\n'''exec' ";
+  const trampolineTerminator = "\n' '''\n";
+  if (text.startsWith(trampolinePrefix)) {
+    const trampolineEnd = text.indexOf(trampolineTerminator, trampolinePrefix.length);
+    if (trampolineEnd !== -1) {
+      return text.slice(trampolineEnd + trampolineTerminator.length);
+    }
+  }
+  return text.slice(firstLineEnd + 1);
+}
+
 /** Makes generated POSIX console scripts resolve Python relative to their own installed path. */
 async function repairPosixLaunchers(adapter, payloadDir, forbiddenPaths) {
   const scriptsRoot = join(payloadDir, ...adapter.python.scriptsDirectory.split('/'));
@@ -59,10 +74,10 @@ async function repairPosixLaunchers(adapter, payloadDir, forbiddenPaths) {
     const bytes = await readFile(path);
     if (!bytes.subarray(0, 2).equals(Buffer.from('#!'))) continue;
     const text = bytes.toString('utf8');
-    const lineEnd = text.indexOf('\n');
-    const shebang = lineEnd === -1 ? text : text.slice(0, lineEnd);
-    if (!forbiddenPaths.some((value) => shebang.includes(value))) continue;
-    const body = lineEnd === -1 ? '' : text.slice(lineEnd + 1);
+    // uv uses a three-line /bin/sh trampoline when the absolute interpreter shebang would
+    // exceed POSIX limits. Search the complete generated launcher, then remove either header.
+    if (!forbiddenPaths.some((value) => text.includes(value))) continue;
+    const body = posixLauncherBody(text);
     const launcher = [
       '#!/bin/sh',
       `'''exec' "$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)/${pythonName}" "$0" "$@"`,
