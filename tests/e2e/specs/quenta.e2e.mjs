@@ -490,17 +490,17 @@ export const tests = [
         await seedQuentaState(browser, ollama.baseUrl);
         await browser.execute(async (runId) => {
           const now = Date.now();
-          const prompt = `Generate a cited structured scientific report for result ${runId}. Use observed evidence only, separate interpretation from limitations, and include recommended validation steps.`;
+          const prompt = `Explain why result ${runId} failed or was cancelled. Use the recorded status, logs, metadata, and outputs. Give safe troubleshooting steps without executing anything.`;
           const conversations = Array.from({ length: 8 }, (_, index) => ({
-            id: `duplicate-focused-report-${index}`,
+            id: `duplicate-focused-explain-${index}`,
             workspaceId: '__test__',
-            title: `Report for result ${runId}`,
+            title: `Failure explanation for result ${runId}`,
             tags: [],
             createdAt: now - index,
             updatedAt: now - index,
             focus: { kind: 'result', entityId: runId },
             draft: prompt,
-            draftIntent: 'report',
+            draftIntent: 'explain-failure',
             messages: [],
           }));
           await window.Liatir.invoke('lia_app_write_text', {
@@ -508,7 +508,7 @@ export const tests = [
             content: JSON.stringify({ revision: 0, conversations }, null, 2),
             createDirs: true,
           });
-          window.location.href = `/quenta?intent=report&run=${encodeURIComponent(runId)}`;
+          window.location.href = `/quenta?intent=explain-failure&run=${encodeURIComponent(runId)}`;
         }, RUN_ID);
 
         await browser.waitUntil(

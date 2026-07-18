@@ -120,7 +120,7 @@
     }
   }
 
-  async function openQuentaForRun(run: AnalysisRunMeta, intent: 'explain-result' | 'explain-failure' | 'report') {
+  async function openQuentaForRun(run: AnalysisRunMeta, intent: 'explain-result' | 'explain-failure') {
     try {
       await openQuentaWindow(quentaDraftUrl(intent, { kind: 'result', entityId: run.id }));
     } catch {
@@ -296,14 +296,6 @@
                   data-testid="result-explain"
                 >
                   Explain result
-                </button>
-                <button
-                  onclick={() => openQuentaForRun(selectedRun, 'report')}
-                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
-                        text-xs text-text-secondary hover:text-text hover:bg-surface-2 transition-colors"
-                  data-testid="result-report"
-                >
-                  Generate report
                 </button>
                 {#if loadedOutput}
                   <button

@@ -105,14 +105,14 @@ describe('Quenta conversation persistence', () => {
     const updated = applyConversationMutation([conversation], {
       kind: 'draft',
       conversationId: conversation.id,
-      draft: 'Generate a structured report.',
-      draftIntent: 'report',
+      draft: 'Explain why this failed.',
+      draftIntent: 'explain-failure',
       updatedAt: 2,
     });
 
     expect(updated[0]).toMatchObject({
-      draft: 'Generate a structured report.',
-      draftIntent: 'report',
+      draft: 'Explain why this failed.',
+      draftIntent: 'explain-failure',
     });
   });
 

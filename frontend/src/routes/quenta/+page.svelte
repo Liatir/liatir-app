@@ -9,21 +9,19 @@
   import Select from '$lib/components/ui/Select.svelte';
   import Spinner from '$lib/components/ui/Spinner.svelte';
   import Icon from '@iconify/svelte';
-  import { liatir } from '$lib/api';
   import { clickOutside } from '$lib/actions/clickOutside';
   import QuentaActivityPanel from '$lib/components/quenta/QuentaActivityPanel.svelte';
   import QuentaMarkdown from '$lib/components/quenta/QuentaMarkdown.svelte';
   import { consumedQuentaUrl, quentaLaunchRequest, type QuentaLaunchRequest } from '$lib/quenta/navigation';
   import { openQuentaWindow } from '$lib/quenta/window';
-  import { quentaReportToMarkdown } from '$lib/quenta/report';
   import { quentaPromptForFocus, quentaStore } from '$lib/stores/quenta.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import type {
     LiatirQuentaConversation,
     LiatirQuentaIntent,
-    LiatirQuentaMessage,
   } from '@liatir/core';
 	import { HEADER_HEIGHT } from '$lib/_constants';
+	import { workspaceStore } from '$lib/stores/workspace.svelte';
 
   let draft = $state('');
   let selectedIntent = $state<LiatirQuentaIntent>('chat');
@@ -128,11 +126,6 @@
       value: 'explain-failure',
       label: 'Explain failure',
       description: 'Interpret status, logs, and likely causes without running anything.',
-    },
-    {
-      value: 'report',
-      label: 'Structured report',
-      description: 'Generate a cited scientific report from local evidence.',
     },
   ];
 
@@ -395,19 +388,6 @@
     }
   }
 
-  async function exportReport(message: LiatirQuentaMessage) {
-    if (!message.report) return;
-    const api = liatir();
-    if (!api) return;
-    const safeTitle = message.report.title.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 64) || 'quenta-report';
-    const dest = await api.desktop.files.save(`liatir-${safeTitle}.md`);
-    if (!dest) return;
-    await api.invoke('lia_write_file_path', {
-      path: dest,
-      content: quentaReportToMarkdown(message.report),
-    } as any);
-  }
-
   function conversationSubtitle(conversation: LiatirQuentaConversation): string {
     const focus = conversation.focus ? `${conversation.focus.kind} ${conversation.focus.entityId}` : 'General context';
     return `${focus} · ${formatTime(conversation.updatedAt)}`;
@@ -558,7 +538,7 @@
       <div class="flex items-center justify-between gap-2">
         <div>
           <p class="text-xs font-semibold text-text">Quenta</p>
-          <p class="mt-0.5 text-[10px] text-text-subtle">Local read-only AI</p>
+          <p class="mt-0.5 text-[10px] text-text-subtle">Local AI for explaining results, data and context.</p>
         </div>
         <div class="flex items-center gap-1">
           <Button variant="ghost" size="sm" onclick={() => quentaStore.newConversation()}>
@@ -787,7 +767,7 @@
     <!-- svelte-ignore attribute_quoted -->
     <PageHeader
       title="{(quentaStore.currentConversation?.title)??'Quenta'}"
-      description="Quenta is Liatir's local, read-only AI for explaining Results, Jobs, pipelines, and bioinformatics context."
+      description="{workspaceStore.isSandboxMode ? "Sandbox" : `Workspace: ${workspaceStore.active?.name}`}"
     >
       {#snippet titleActions()}
         {#if chatsCollapsed && (quentaStore?.selectedConversationId)?.trim()}
@@ -896,7 +876,7 @@
                     <div>
                       <LabelWithInfo
                         text="Model"
-                        info="The local language model Quenta uses to write explanations and reports. Liatir prepares the recommended default automatically; advanced users can choose another installed model."
+                        info="The local language model Quenta uses to write its explanations. Liatir prepares the recommended default automatically; advanced users can choose another installed model."
                       />
                       <Select
                         value={modelDraft}
@@ -911,7 +891,7 @@
                         <LabelWithInfo
                           text="Creativity"
                           targetId="quenta-temperature"
-                          info="Lower values make responses more consistent and conservative. Higher values may be more flexible but less predictable. Scientific reports should usually stay low."
+                          info="Lower values make responses more consistent and conservative. Higher values may be more flexible but less predictable. Scientific explanations should usually stay low."
                         />
                         <input
                           id="quenta-temperature"
@@ -922,7 +902,7 @@
                           class="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-xs text-text-secondary outline-none focus:border-brand"
                           bind:value={temperatureDraft}
                         />
-                        <p class="mt-1 text-[10px] text-text-subtle">Recommended for reports: 0.1–0.3.</p>
+                        <p class="mt-1 text-[10px] text-text-subtle">Recommended: 0.1–0.3.</p>
                       </div>
 
                     <div class="rounded-xl border border-border bg-surface px-3 py-2">
@@ -1132,11 +1112,6 @@
                           {message.model ? ` · ${message.model}` : ''}
                         </p>
                       </div>
-                      {#if message.report}
-                        <Button variant="ghost" size="sm" onclick={() => exportReport(message)}>
-                          Export report
-                        </Button>
-                      {/if}
                     </div>
                     {#if message.citations?.length}
                       <div class="border-t border-border pt-3">
@@ -1163,7 +1138,7 @@
               {#if activeResponse}
                 <div class="space-y-3" data-testid="quenta-streaming-response">
                   <QuentaActivityPanel active={activeResponse} intent={activeResponse.intent} />
-                  {#if activeResponse.content && activeResponse.intent !== 'report'}
+                  {#if activeResponse.content}
                     <div
                       bind:this={streamingContentEl}
                       data-testid="quenta-streaming-content"

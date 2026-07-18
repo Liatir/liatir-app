@@ -21,16 +21,16 @@ describe('Quenta navigation', () => {
     expect(url).not.toContain('auto=1');
   });
 
-  it('can target a standalone report window', () => {
-    expect(quentaDraftUrl('report', { kind: 'result', entityId: 'result-1' }, { standalone: true }))
-      .toBe('/quenta?intent=report&run=result-1&window=1');
+  it('can target a standalone explanation window', () => {
+    expect(quentaDraftUrl('explain-failure', { kind: 'result', entityId: 'result-1' }, { standalone: true }))
+      .toBe('/quenta?intent=explain-failure&run=result-1&window=1');
   });
 
   it('consumes focused launch parameters so reload cannot create another chat', () => {
-    const url = new URL('tauri://localhost/quenta?intent=report&run=result-1&auto=1&window=1');
+    const url = new URL('tauri://localhost/quenta?intent=explain-failure&run=result-1&auto=1&window=1');
 
     expect(quentaLaunchRequest(url)).toEqual({
-      intent: 'report',
+      intent: 'explain-failure',
       focus: { kind: 'result', entityId: 'result-1' },
       autoSend: true,
     });

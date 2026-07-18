@@ -79,10 +79,7 @@
       case 'selecting-sources': return 1;
       case 'thinking': return 2;
       case 'writing-response': return 3;
-      case 'validating-report': return 4;
-      case 'repairing-report': return 5;
-      case 'finalizing-report': return 6;
-      case 'stopping': return 7;
+      case 'stopping': return 4;
     }
   }
 
@@ -119,15 +116,9 @@
       }
       finished.push({
         id: 'response',
-        label: currentIntent === 'report' ? 'Drafted the structured report' : 'Generated the response',
+        label: 'Generated the response',
         status: 'complete',
       });
-      if (currentIntent === 'report') {
-        finished.push({ id: 'validation', label: 'Validated the report structure', status: 'complete' });
-        if (completed.reportRepairAttempted) {
-          finished.push({ id: 'repair', label: 'Repaired the report format', status: 'complete' });
-        }
-      }
       return finished;
     }
 
@@ -165,26 +156,9 @@
     if (currentPhase >= 3 || (currentPhase >= 2 && !hasReasoningStep)) {
       activeSteps.push({
         id: 'response',
-        label: currentIntent === 'report' ? 'Drafting the structured report' : 'Writing the response',
+        label: 'Writing the response',
         status: currentPhase > 3 ? 'complete' : 'active',
       });
-    }
-    if (currentIntent === 'report' && currentPhase >= 4) {
-      activeSteps.push({
-        id: 'validation',
-        label: 'Validating the report structure',
-        status: currentPhase > 4 ? 'complete' : 'active',
-      });
-    }
-    if (currentIntent === 'report' && current.reportRepairAttempted) {
-      activeSteps.push({
-        id: 'repair',
-        label: 'Repairing the report format',
-        status: currentPhase > 5 ? 'complete' : 'active',
-      });
-    }
-    if (currentIntent === 'report' && currentPhase >= 6) {
-      activeSteps.push({ id: 'finalizing', label: 'Finalizing the report', status: 'active' });
     }
     return activeSteps;
   }
@@ -206,10 +180,7 @@
         case 'reading-context': return 'Reading local context';
         case 'selecting-sources': return 'Selecting relevant evidence';
         case 'thinking': return 'Reviewing information';
-        case 'writing-response': return currentIntent === 'report' ? 'Drafting report' : 'Writing response';
-        case 'validating-report': return 'Validating report';
-        case 'repairing-report': return 'Repairing report format';
-        case 'finalizing-report': return 'Finalizing report';
+        case 'writing-response': return 'Writing response';
         case 'stopping': return 'Stopping…';
       }
     }
@@ -218,7 +189,6 @@
       const reasoningElapsed = formatDuration(completed.reasoningDurationMs);
       return reasoningElapsed ? `Information reviewed in ${reasoningElapsed}` : 'Information reviewed';
     }
-    if (currentIntent === 'report') return elapsed ? `Report prepared in ${elapsed}` : 'Report prepared';
     return elapsed ? `Response prepared in ${elapsed}` : 'Response prepared';
   }
 </script>

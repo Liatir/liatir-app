@@ -23,7 +23,7 @@ const ONE_SHOT_QUENTA_PARAMS = ['intent', 'mode', 'run', 'job', 'auto'] as const
 
 /** Anything unrecognised falls back to plain chat, so a stale or hand-edited link still works. */
 function intentFromParam(value: string | null): LiatirQuentaIntent {
-  if (value === 'explain-result' || value === 'explain-failure' || value === 'report') return value;
+  if (value === 'explain-result' || value === 'explain-failure') return value;
   return 'chat';
 }
 

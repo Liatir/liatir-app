@@ -1,12 +1,11 @@
-import type { JsonValue, LiatirRunStatus } from "./index";
+import type { JsonValue } from "./index";
 
 export type LiatirQuentaProviderKind = "ollama";
 export type LiatirQuentaRole = "user" | "assistant";
 export type LiatirQuentaIntent =
   | "chat"
   | "explain-result"
-  | "explain-failure"
-  | "report";
+  | "explain-failure";
 
 export type LiatirQuentaSourceKind =
   | "app"
@@ -43,7 +42,6 @@ export interface LiatirQuentaGenerationTrace {
   reasoningDurationMs?: number;
   contextDocumentCount?: number;
   sourceCount?: number;
-  reportRepairAttempted?: boolean;
 }
 
 export interface LiatirQuentaMessage {
@@ -54,7 +52,6 @@ export interface LiatirQuentaMessage {
   createdAt: number;
   citations?: LiatirQuentaCitation[];
   model?: string;
-  report?: LiatirQuentaReport;
   generation?: LiatirQuentaGenerationTrace;
 }
 
@@ -143,22 +140,3 @@ export interface LiatirQuentaStreamEvent {
   delta: string;
 }
 
-export interface LiatirQuentaReportFinding {
-  title: string;
-  interpretation: string;
-  evidence: string[];
-  citationIds: string[];
-}
-
-export interface LiatirQuentaReport {
-  title: string;
-  generatedAt: string;
-  subject: string;
-  runStatus?: LiatirRunStatus;
-  executiveSummary: string;
-  methods: string[];
-  findings: LiatirQuentaReportFinding[];
-  limitations: string[];
-  recommendedNextSteps: string[];
-  citationIds: string[];
-}

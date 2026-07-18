@@ -6,10 +6,8 @@ import { initKnowledgeSync } from '$lib/quenta/knowledge-sync';
 import {
   buildQuentaMessages,
   buildQuentaPlainLanguageRepairMessages,
-  buildQuentaReportRepairMessages,
 } from '$lib/quenta/prompt';
 import { citedSources, retrieveQuentaContext } from '$lib/quenta/retrieval';
-import { QUENTA_REPORT_SCHEMA, parseQuentaReport, quentaReportToMarkdown } from '$lib/quenta/report';
 import { quentaResponseNeedsPlainLanguageRepair } from '$lib/quenta/response-safety';
 import { sanitizeQuentaReasoning } from '$lib/quenta/reasoning-safety';
 import { createQuentaRuntime } from '$lib/quenta/runtime';
@@ -49,9 +47,6 @@ export type QuentaGenerationPhase =
   | 'selecting-sources'
   | 'thinking'
   | 'writing-response'
-  | 'validating-report'
-  | 'repairing-report'
-  | 'finalizing-report'
   | 'stopping';
 
 export interface QuentaActiveResponse {
@@ -64,7 +59,6 @@ export interface QuentaActiveResponse {
   answerStartedAt?: number;
   contextDocumentCount?: number;
   sourceCount?: number;
-  reportRepairAttempted: boolean;
   reasoning: string;
   contentBuffer: string;
   content: string;
@@ -208,7 +202,6 @@ function id(prefix: string) {
 }
 
 function titleForIntent(intent: LiatirQuentaIntent, focus?: LiatirQuentaFocus): string {
-  if (intent === 'report') return focus ? `Report for ${focus.kind} ${focus.entityId}` : 'Scientific report';
   if (intent === 'explain-failure') return focus ? `Failure explanation for ${focus.kind} ${focus.entityId}` : 'Failure explanation';
   if (intent === 'explain-result') return focus ? `Result explanation for ${focus.entityId}` : 'Result explanation';
   return DEFAULT_CONVERSATION_TITLE;
@@ -267,9 +260,6 @@ export function dedupeFocusedConversations(
 }
 
 export function quentaPromptForFocus(intent: LiatirQuentaIntent, focus: LiatirQuentaFocus): string {
-  if (intent === 'report') {
-    return `Generate a cited structured scientific report for ${focus.kind} ${focus.entityId}. Use observed evidence only, separate interpretation from limitations, and include recommended validation steps.`;
-  }
   if (intent === 'explain-failure') {
     return `Explain why ${focus.kind} ${focus.entityId} failed or was cancelled. Use the recorded status, logs, metadata, and outputs. Give safe troubleshooting steps without executing anything.`;
   }
@@ -284,11 +274,6 @@ function messagesForHistory(messages: LiatirQuentaMessage[]): LiatirQuentaRuntim
     role: message.role,
     content: message.content.slice(0, 2_500),
   }));
-}
-
-function citationsFromIds(ids: string[], available: LiatirQuentaCitation[]): LiatirQuentaCitation[] {
-  const wanted = new Set(ids);
-  return available.filter((citation) => wanted.has(citation.id));
 }
 
 function normalizeSettings(value: Partial<QuentaSettingsFile> | null): QuentaSettingsFile {
@@ -728,7 +713,7 @@ function createQuentaStore() {
     const timestamp = now();
     if (event.type === 'thinking-delta') {
       updateActiveResponse(conversationId, requestId, {
-        phase: active.phase === 'repairing-report' ? 'repairing-report' : 'thinking',
+        phase: 'thinking',
         reasoningStartedAt: active.reasoningStartedAt ?? timestamp,
         reasoning: `${active.reasoning}${event.delta}`.slice(-MAX_ACTIVE_REASONING_CHARS),
       });
@@ -736,7 +721,7 @@ function createQuentaStore() {
     }
     const contentBuffer = `${active.contentBuffer}${event.delta}`;
     updateActiveResponse(conversationId, requestId, {
-      phase: active.phase === 'repairing-report' ? 'repairing-report' : 'writing-response',
+      phase: 'writing-response',
       answerStartedAt: active.answerStartedAt ?? timestamp,
       contentBuffer,
       content: quentaResponseNeedsPlainLanguageRepair(contentBuffer) ? '' : contentBuffer,
@@ -779,43 +764,7 @@ function createQuentaStore() {
     let response = initialResponse;
     let assistantContent = response.content;
     let citations = citedSources(response.content, descriptor.citations);
-    let report: LiatirQuentaMessage['report'];
-    let reportRepairAttempted = false;
-    if (descriptor.intent === 'report') {
-      updateActiveResponse(descriptor.conversationId, descriptor.requestId, { phase: 'validating-report' });
-      try {
-        report = parseQuentaReport(response.content);
-        if (quentaResponseNeedsPlainLanguageRepair(quentaReportToMarkdown(report))) {
-          throw new Error('Quenta report requires plain-language repair');
-        }
-      } catch {
-        reportRepairAttempted = true;
-        updateActiveResponse(descriptor.conversationId, descriptor.requestId, {
-          phase: 'repairing-report',
-          reportRepairAttempted: true,
-          contentBuffer: '',
-          content: '',
-        });
-        response = await runtime.chat({
-          model: settings.config.model,
-          messages: buildQuentaReportRepairMessages(response.content),
-          temperature: 0,
-          thinkingEnabled: false,
-          format: QUENTA_REPORT_SCHEMA,
-        }, descriptor.requestId, (event) => handleStreamEvent(
-          descriptor.conversationId,
-          descriptor.requestId,
-          event,
-        ));
-        report = parseQuentaReport(response.content);
-        if (quentaResponseNeedsPlainLanguageRepair(quentaReportToMarkdown(report))) {
-          throw new Error('Quenta could not format a safe report');
-        }
-      }
-      updateActiveResponse(descriptor.conversationId, descriptor.requestId, { phase: 'finalizing-report' });
-      assistantContent = quentaReportToMarkdown(report);
-      citations = citationsFromIds(report.citationIds, descriptor.citations);
-    } else if (quentaResponseNeedsPlainLanguageRepair(response.content)) {
+    if (quentaResponseNeedsPlainLanguageRepair(response.content)) {
       updateActiveResponse(descriptor.conversationId, descriptor.requestId, {
         phase: 'writing-response',
         contentBuffer: '',
@@ -849,7 +798,6 @@ function createQuentaStore() {
       createdAt: completedAt,
       citations,
       model: response.model,
-      report,
       generation: {
         reasoning: reasoning || undefined,
         durationMs: completedAt - descriptor.startedAt,
@@ -858,7 +806,6 @@ function createQuentaStore() {
           : undefined,
         contextDocumentCount: descriptor.contextDocumentCount,
         sourceCount: descriptor.sourceCount,
-        reportRepairAttempted,
       },
     };
     clearActiveResponse(descriptor.conversationId, descriptor.requestId);
@@ -999,7 +946,6 @@ function createQuentaStore() {
         phase: 'reading-context',
         thinkingEnabled: settings.config.thinkingEnabled ?? false,
         startedAt: now(),
-        reportRepairAttempted: false,
         reasoning: '',
         contentBuffer: '',
         content: '',
@@ -1061,7 +1007,6 @@ function createQuentaStore() {
         messages: buildQuentaMessages(query, retrieval.context, history, intent, focus),
         temperature: settings.config.temperature,
         thinkingEnabled: settings.config.thinkingEnabled ?? false,
-        format: intent === 'report' ? QUENTA_REPORT_SCHEMA : undefined,
       }, requestId, (event) => handleStreamEvent(conversation.id, requestId, event)));
       return;
     } catch (error) {
@@ -1159,7 +1104,6 @@ function createQuentaStore() {
           startedAt: descriptor.startedAt,
           contextDocumentCount: descriptor.contextDocumentCount,
           sourceCount: descriptor.sourceCount,
-          reportRepairAttempted: false,
           reasoning: snapshot.thinking.slice(-MAX_ACTIVE_REASONING_CHARS),
           contentBuffer: snapshot.content,
           content: quentaResponseNeedsPlainLanguageRepair(snapshot.content) ? '' : snapshot.content,
