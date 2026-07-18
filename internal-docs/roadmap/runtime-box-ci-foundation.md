@@ -225,6 +225,34 @@ Current state as of 2026-07-18:
   repair strips either a direct shebang or the three-line trampoline before
   installing Liatir's relative launcher, and all 61 Runtime Box unit tests pass
   locally.
+- Corrected CUDA run `29642529231` at commit `1dfa7c0` passed the exact T4 host
+  gate, reproducible build, KMS signature, archive verification, native
+  self-test, scientific validation, immutable publication, and a real product
+  build. The 3,079,059,631-byte archive has SHA-256
+  `60bcbec2144456e1f7ea91454db00b7e90bb4942927f400acc380b9ea8ca37d4`
+  and expands to 5,567,128,470 bytes. Real T4 inference used driver 590.48.01,
+  compute capability 7.5, and 106,767,872 peak VRAM bytes. Against the pinned
+  same-lock CPU baseline, maximum absolute difference was
+  `0.0000010654330253601074` and minimum cosine similarity was `1.0`, within
+  the fixed tolerances.
+- Run `29642529231` then failed before product installation completed because
+  the native lifecycle fixture imposed one fixed 180-second bound inherited
+  from the 380 MB CPU box. The CUDA archive is 3.08 GB and the app remained
+  alive and installing when the fixture timed out; the test did not record the
+  final progress snapshot, so this remains a failed lifecycle gate rather than
+  a completed install. Beta promotion was skipped, while candidate-registry
+  shutdown and build cleanup passed. Artifact `8429189899` preserves the
+  3,076-byte failure evidence with digest
+  `sha256:b4f9ac4dcab2d4933c1573a9c5bf4f802add18d57fd743a79dd14d148c9669f1`.
+- Commit `2134b3c` replaces both fixed install/replacement waits with one
+  target-independent bound derived from the archive byte total observed in the
+  real product progress stream. The 3,079,059,631-byte CUDA archive receives a
+  547,053-millisecond bound using a conservative 8 MiB/s transfer floor plus
+  fixed verification, extraction, self-test, and activation allowance. Timeout
+  failures now include the wait error, install error, event count, downloaded
+  and total bytes, and latest progress event. The regression failed before the
+  helper existed; afterward all 63 Runtime Box tests and the full 6-suite,
+  143-test verification profile passed locally.
 - CUDA remains **in local correction**. The target cannot move to published or
   complete until the corrected commit passes the clean economical gate, real
   T4 inference, numerical parity, protected publication, complete product
@@ -269,6 +297,7 @@ Incident ledger:
 | Signer dispatch | Blocked before run | The local approval layer reported an exhausted Codex usage limit and rejected the GitHub API command before workflow creation; observed remote cost is USD 0 and an explicit post-notice authorization is required | — |
 | `29641886027` | Passed | Protected signer deployment and live signing verification completed on the current main revision | — |
 | `29642025139` | Failed | uv 0.11.28 emitted a three-line POSIX trampoline after the CUDA recipe path crossed the 127-byte shebang limit; the relocatability repair checked only its first line, then rejected the absolute path before signing or publication | `c30e423` |
+| `29642529231` | Failed | Build, signing, self-test, T4 parity, immutable publication, and product build passed; the native lifecycle fixture retained a fixed 180-second install bound from the 380 MB CPU target and timed out while installing the 3.08 GB CUDA archive | `2134b3c` |
 
 The earlier release attempts consumed about 114 minutes of observed workflow
 wall time and the first four signer attempts consumed about 6 minutes. At the
@@ -277,8 +306,12 @@ job-minute rounding. Signer run `29641886027` added 1 minute 47 seconds of run
 wall time. CUDA run `29642025139` used about 1 minute 39 seconds of the T4 job
 plus a short standard preflight; at the declared runner rates its incremental
 Actions exposure is approximately USD 0.10 before rounding. GitHub and Google
-Cloud billing remain the authoritative cost records. No corrected remote
-attempt is permitted until the complete economical local gate passes.
+Cloud billing remain the authoritative cost records. Corrected CUDA run
+`29642529231` added about 17 minutes 4 seconds on the T4 job plus a 22-second
+standard preflight, approximately USD 0.94 at the declared runner rates before
+rounding. No further remote attempt is permitted until the size-aware lifecycle
+bound, timeout diagnostics, complete economical local gate, and roadmap update
+all pass.
 
 ### Gate 8.2: Geneformer Windows pilot
 
