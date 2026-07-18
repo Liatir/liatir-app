@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Windows CPU release reached the real product startup; targeted Windows diagnostic is active before any retry |
+| 8.2. Geneformer Windows pilot | In progress | Targeted Windows product startup smoke `29655341658` is acquiring the missing native panic before any CPU release retry |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -510,6 +510,12 @@ Current state as of 2026-07-18:
   the missing panic once before a corrected production release, not as a
   generic CI trigger. The diagnostic implementation and red regression were
   committed and pushed as `2828111` with generic push CI skipped.
+- Startup smoke `29655341658` was dispatched once from exact `main` revision
+  `5732648a0cfedc101a7a34544cd03d3f8bbb9653`. Immediate readback confirmed
+  workflow `Runtime Box Windows product startup smoke`, manual event, the exact
+  revision, and the sole `Build and start the real Windows product` job. Its
+  maximum standard-runner exposure is USD 0.40 under the 40-minute timeout; no
+  GPU, model build, KMS, publication, or promotion is part of this run.
 - The checked release resolver selects `windows-2025`, a 90-minute timeout,
   5,412,219,713 calculated peak bytes, and a 6 GiB hard disk gate. The release
   workflow now resolves `dumpbin.exe`, uses the recipe-owned Python entry point,
@@ -556,7 +562,7 @@ Active Windows CPU release checklist:
   gates with the diagnostic correction.
 - [x] Commit and push the diagnostic correction from a clean technical index,
   keeping all user-owned roadmap edits unstaged.
-- [ ] Announce and dispatch exactly one manual-only Windows product startup
+- [x] Announce and dispatch exactly one manual-only Windows product startup
   smoke; verify its workflow, revision, runner, and startup job immediately.
 - [ ] Use the produced native panic to identify the root cause, add a red
   regression, apply one generic fix, and repeat all cheap gates.
