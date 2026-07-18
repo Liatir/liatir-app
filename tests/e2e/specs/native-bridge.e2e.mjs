@@ -9,6 +9,11 @@ import {
   waitForLiatirBridge,
 } from '../support/liatir-app.mjs';
 
+/** Normalizes native paths only for platform-independent containment assertions. */
+function comparablePath(value) {
+  return String(value).replaceAll('\\', '/');
+}
+
 export const tests = [
   {
     name: 'starts the real Tauri app with an isolated app storage root',
@@ -27,8 +32,8 @@ export const tests = [
       });
 
       expect(bridgeState.hasLiatir).toBe(true);
-      expect(bridgeState.appPath).toContain('tests/.artifacts/home');
-      expect(bridgeState.dataPath).toContain('tests/.artifacts/home');
+      expect(comparablePath(bridgeState.appPath)).toContain('tests/.artifacts/home');
+      expect(comparablePath(bridgeState.dataPath)).toContain('tests/.artifacts/home');
     },
   },
   {

@@ -132,7 +132,7 @@ describe('Runtime Box product E2E support', () => {
           error.code = 'script timeout';
           throw error;
         }
-        return true;
+        return { bridgeAvailable: true, documentReady: true, href: 'http://tauri.localhost/' };
       },
       waitUntil: async (condition: () => Promise<boolean>, options: { timeout: number }) => {
         waitTimeout = options.timeout;
@@ -149,6 +149,27 @@ describe('Runtime Box product E2E support', () => {
 
     await waitForLiatirBridge(browser);
     expect(waitTimeout).toBe(65_000);
+    expect(executeCalls).toBe(2);
+  });
+
+  it('rejects the transient about:blank bridge before app navigation settles', async () => {
+    let executeCalls = 0;
+    const browser = {
+      execute: async () => {
+        executeCalls += 1;
+        return executeCalls === 1
+          ? { bridgeAvailable: true, documentReady: true, href: 'about:blank' }
+          : { bridgeAvailable: true, documentReady: true, href: 'http://tauri.localhost/' };
+      },
+      waitUntil: async (condition: () => Promise<boolean>) => {
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          if (await condition()) return true;
+        }
+        throw new Error('condition did not recover');
+      },
+    };
+
+    await waitForLiatirBridge(browser);
     expect(executeCalls).toBe(2);
   });
 

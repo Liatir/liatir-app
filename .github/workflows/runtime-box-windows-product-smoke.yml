@@ -46,8 +46,8 @@ jobs:
         env:
           LIATIR_E2E_REPORT: .runtime-box-ci/windows-product-startup-e2e.json
         run: >-
-          npm run test:tauri:run -- --heavy
-          tests/e2e/specs/runtime-box-native.e2e.mjs
+          npm run test:tauri:run --
+          tests/e2e/specs/native-bridge.e2e.mjs
 
       - name: Upload the compact startup report
         if: always()

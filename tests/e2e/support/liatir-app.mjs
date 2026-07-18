@@ -1,9 +1,16 @@
 export async function waitForLiatirBridge(browser) {
   await browser.waitUntil(
-    async () => browser.execute(() => Boolean(window.Liatir?.isAvailable)),
+    async () => {
+      const state = await browser.execute(() => ({
+        bridgeAvailable: Boolean(window.Liatir?.isAvailable),
+        documentReady: document.readyState === 'complete',
+        href: window.location.href,
+      }));
+      return state.bridgeAvailable && state.documentReady && state.href !== 'about:blank';
+    },
     {
-      // WebKit can discard the first execute callback if initial navigation wins the race.
-      // One embedded-driver attempt is bounded at 30 seconds, so leave room for exactly one retry.
+      // The bridge is injected into the transient about:blank document too. Wait for the real
+      // app navigation so a following asynchronous command cannot be discarded with that page.
       timeout: 65_000,
       interval: 250,
       timeoutMsg: 'window.Liatir bridge was not available',

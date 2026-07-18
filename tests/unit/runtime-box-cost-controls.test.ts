@@ -28,6 +28,7 @@ describe('Runtime Box CI cost controls', () => {
     const productLifecycle = readFileSync(resolve('scripts/run-runtime-box-product-lifecycle.mjs'), 'utf8');
     const releaseWorkflow = readFileSync(resolve('.github/workflows/runtime-box-release.yml'), 'utf8');
     const windowsProductSmoke = readFileSync(resolve('.github/workflows/runtime-box-windows-product-smoke.yml'), 'utf8');
+    const nativeBridgeE2E = readFileSync(resolve('tests/e2e/specs/native-bridge.e2e.mjs'), 'utf8');
     expect(prepare.indexOf('npm run build --prefix packages/liatir-core'))
       .toBeLessThan(prepare.indexOf('npm run gen:sdk-types'));
     expect(prepare.indexOf('npm ci --prefix frontend'))
@@ -64,8 +65,10 @@ describe('Runtime Box CI cost controls', () => {
     expect(windowsProductSmoke).toContain('runs-on: windows-2025');
     expect(windowsProductSmoke).toContain('timeout-minutes: 40');
     expect(windowsProductSmoke).toContain('npm run test:tauri:prepare');
-    expect(windowsProductSmoke).toContain('npm run test:tauri:run -- --heavy');
+    expect(windowsProductSmoke).toContain('tests/e2e/specs/native-bridge.e2e.mjs');
+    expect(windowsProductSmoke).not.toContain('tests/e2e/specs/runtime-box-native.e2e.mjs');
     expect(windowsProductSmoke).toContain('.runtime-box-ci/windows-product-startup-e2e.json');
+    expect(nativeBridgeE2E).toContain("replaceAll('\\\\', '/')");
   });
 
   it('persists native startup failures in the compact E2E report', () => {
