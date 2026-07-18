@@ -508,7 +508,8 @@ Current state as of 2026-07-18:
   It builds the real product on one `windows-2025` runner and starts the exact
   embedded-WebDriver path with a 40-minute hard timeout. It exists to acquire
   the missing panic once before a corrected production release, not as a
-  generic CI trigger.
+  generic CI trigger. The diagnostic implementation and red regression were
+  committed and pushed as `2828111` with generic push CI skipped.
 - The checked release resolver selects `windows-2025`, a 90-minute timeout,
   5,412,219,713 calculated peak bytes, and a 6 GiB hard disk gate. The release
   workflow now resolves `dumpbin.exe`, uses the recipe-owned Python entry point,
@@ -553,7 +554,7 @@ Active Windows CPU release checklist:
   now emits one bounded diagnostic and persists a compact report.
 - [x] Pass catalog, signer-policy, focused unit, YAML, and root verification
   gates with the diagnostic correction.
-- [ ] Commit and push the diagnostic correction from a clean technical index,
+- [x] Commit and push the diagnostic correction from a clean technical index,
   keeping all user-owned roadmap edits unstaged.
 - [ ] Announce and dispatch exactly one manual-only Windows product startup
   smoke; verify its workflow, revision, runner, and startup job immediately.
