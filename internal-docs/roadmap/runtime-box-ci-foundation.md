@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Windows startup root cause from smoke `29655341658` is fixed locally; corrected smoke is required before the CPU release retry |
+| 8.2. Geneformer Windows pilot | In progress | Corrected Windows product startup smoke `29655881672` is verifying the AppData fix before the CPU release retry |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -531,6 +531,10 @@ Current state as of 2026-07-18:
   preparation helper existed; it now verifies the exact directories and both
   focused diagnostic suites pass. The correction was committed and pushed as
   `a29ee24` with generic push CI skipped.
+- Corrected startup smoke `29655881672` was dispatched from exact `main`
+  revision `c3e768b8664b7f90ccee920a0dbf8c16b90d41dc`. Immediate readback
+  confirmed the manual startup workflow, exact revision, and sole Windows
+  product job. Its result is pending; no production release retry has started.
 - The checked release resolver selects `windows-2025`, a 90-minute timeout,
   5,412,219,713 calculated peak bytes, and a 6 GiB hard disk gate. The release
   workflow now resolves `dumpbin.exe`, uses the recipe-owned Python entry point,
