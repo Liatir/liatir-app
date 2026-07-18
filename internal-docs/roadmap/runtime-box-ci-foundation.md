@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Windows CPU protected release rerun pending after cancelling incorrect validation run `29652909939` |
+| 8.2. Geneformer Windows pilot | In progress | Windows CPU protected release run `29653929900` executing exact revision `bc71b13` |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -481,6 +481,12 @@ Current state as of 2026-07-18:
   stop further cost. It did not use KMS, publish, run the product lifecycle, or
   promote a channel and therefore provides no release completion evidence.
   Windows CUDA remains blocked until every CPU release requirement passes.
+- Protected Windows CPU release run `29653929900` was dispatched through exact
+  workflow `Runtime Box production release` from revision
+  `bc71b13abe34f10fbd16f065a670caab09f4e9f1` with model
+  `ctheodoris-geneformer-v1-10m`, target `windows-x86_64-cpu`, and channel
+  `beta`. The immediate readback confirmed the workflow, revision, manual event,
+  and `Resolve protected release inputs` preflight. Its result is pending.
 - The checked release resolver selects `windows-2025`, a 90-minute timeout,
   5,412,219,713 calculated peak bytes, and a 6 GiB hard disk gate. The release
   workflow now resolves `dumpbin.exe`, uses the recipe-owned Python entry point,
@@ -506,14 +512,14 @@ Active Windows CPU release checklist:
   protected `runtime-box-production` environment, `id-token: write`, private KMS
   signer, immutable publication, Windows product lifecycle, beta promotion,
   evidence upload, and unconditional cleanup.
-- [ ] Commit and push the checklist/rule update with CI skipped, then record the
+- [x] Commit and push the checklist/rule update with CI skipped, then record the
   exact remote `main` revision to release.
-- [ ] Confirm that no `Runtime Box production release` run is queued or active.
-- [ ] Announce the exact runner, timeout, and maximum estimated cost.
-- [ ] Dispatch only `runtime-box-release.yml` from exact `main` with model
+- [x] Confirm that no `Runtime Box production release` run is queued or active.
+- [x] Announce the exact runner, timeout, and maximum estimated cost.
+- [x] Dispatch only `runtime-box-release.yml` from exact `main` with model
   `ctheodoris-geneformer-v1-10m`, target `windows-x86_64-cpu`, and channel
   `beta`.
-- [ ] Immediately verify that the created run reports workflow
+- [x] Immediately verify that the created run reports workflow
   `Runtime Box production release`, the intended revision, and the protected
   release preflight. Cancel immediately on any mismatch.
 - [ ] After one meaningful interval, record only completion or an actionable
