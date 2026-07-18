@@ -99,7 +99,7 @@
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
-		class="flex items-center justify-start border-b border-border pt-1.5 px-3 gap-2.5 text-left {workspaceStore.active?'hover:bg-surface-2 hover:cursor-pointer':''}"
+		class="flex items-center justify-start border-b border-border pt-1.5 px-3 gap-2.5 text-left {workspaceStore.active?'hover:bg-surface-2 cursor-pointer':''}"
 		id="logo-section"
 		onclick={()=>{if(workspaceStore.active) goto("/workspace-settings")}}
 		style="height: {HEADER_HEIGHT}px"
@@ -147,7 +147,7 @@
 						title={sideCollapsed ? item.label : undefined}
 						data-testid="sidebar-nav-item"
 						data-route={item.href}
-						class="group relative flex w-full overflow-hidden text-left items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
+						class="group relative flex w-full liatir-sidebar-button cursor-pointer overflow-hidden text-left items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
 							{sideCollapsed ? 'justify-center' : ''}
 							{(active && !(item?.workspacePage))
 							? 'bg-brand/10 text-brand font-medium'
@@ -190,7 +190,7 @@
 						title={sideCollapsed ? item.label : undefined}
 						data-testid="sidebar-nav-item"
 						data-route={item.href}
-						class="group relative flex overflow-hidden w-full text-left items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
+						class="group relative flex overflow-hidden liatir-sidebar-button w-full cursor-pointer text-left items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors duration-100
 							{sideCollapsed ? 'justify-center' : ''}
 							{(active && !(item?.workspacePage))
 							? 'bg-brand/10 text-brand font-medium'

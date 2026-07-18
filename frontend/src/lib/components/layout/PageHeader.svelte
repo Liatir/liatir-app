@@ -15,13 +15,14 @@
     /** Explains what this page is for — the same "i" affordance the form fields use. */
     info?: string;
     description?: string;
+    descriptionOnTop?: boolean;
     /** Rendered beside the title (e.g. a back button). */
     titleActions?: Snippet;
     /** Rendered on the right (e.g. Run, Save). */
     actions?: Snippet;
   }
 
-  let { title, info, description, titleActions, actions }: Props = $props();
+  let { title, info, description, descriptionOnTop, titleActions, actions }: Props = $props();
 </script>
 
 <div class="flex items-center justify-between border-b border-border px-6 py-4" style="max-height: {HEADER_HEIGHT}px; min-height: {HEADER_HEIGHT}px;">
@@ -31,15 +32,18 @@
         {@render titleActions()}
       </div>
     {/if}
-    <div class="min-w-0">
-      <h1 class="flex items-center text-base font-semibold text-text">
+    <div class="min-w-0 space-y-1">
+      {#if description && descriptionOnTop}
+        <div class="mt-0.5 text-[11px] text-text-muted max-md:hidden">{@html description}</div>
+      {/if}
+      <h1 class="flex items-center text-[15px] font-semibold text-text">
         {title}
         {#if info}
           <InfoPopup text={info} />
         {/if}
       </h1>
-      {#if description}
-        <p class="mt-0.5 text-[11px] text-text-muted max-md:hidden">{description}</p>
+      {#if description && !descriptionOnTop}
+        <div class="mt-0.5 text-[11px] text-text-muted max-md:hidden">{@html description}</div>
       {/if}
     </div>
   </div>

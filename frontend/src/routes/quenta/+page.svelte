@@ -766,8 +766,16 @@
   <main class="flex min-w-0 flex-1 flex-col">
     <!-- svelte-ignore attribute_quoted -->
     <PageHeader
-      title="{(quentaStore.currentConversation?.title)??'Quenta'}"
-      description="{workspaceStore.isSandboxMode ? "Sandbox" : `Workspace: ${workspaceStore.active?.name}`}"
+      title="{(quentaStore.currentConversation?.title)??'Select a conversation or create a new one'}"
+      descriptionOnTop
+      description={`
+        <div class="flex justify-start items-start gap-2">
+        Workspace:
+          <div class="flex items-center justify-start ${workspaceStore.isSandboxMode?"bg-sandbox-100":"bg-brand/10"} rounded px-1.5 h-[16px] w-fit">
+            <p class="text-[11px] font-medium ${workspaceStore.isSandboxMode?"text-sandbox-600":"text-brand"} w-fit">${workspaceStore.isSandboxMode ? "sandbox":workspaceStore.active?.name}</p>
+          </div>
+        </div>
+      `}
     >
       {#snippet titleActions()}
         {#if chatsCollapsed && (quentaStore?.selectedConversationId)?.trim()}
