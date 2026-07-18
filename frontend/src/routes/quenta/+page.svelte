@@ -23,8 +23,10 @@
 	import { HEADER_HEIGHT } from '$lib/_constants';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 
+  // Composer state (per selected conversation).
   let draft = $state('');
   let selectedIntent = $state<LiatirQuentaIntent>('chat');
+  // Settings drafts, edited locally and persisted on Save.
   let baseUrlDraft = $state('http://127.0.0.1:11434');
   let modelDraft = $state('');
   let embeddingModelDraft = $state('');
@@ -34,9 +36,11 @@
   let autoScrollToBottom = $state(true);
   let savingSettings = $state(false);
   let settingsOpen = $state(false);
+  // Sidebar state: collapse, search, and tag filters.
   let chatsCollapsed = $state(false);
   let conversationSearch = $state('');
   let selectedTagFilters = $state<string[]>([]);
+  // Inline conversation editing (rename / tags / delete confirmation).
   let editingConversationId = $state<string | null>(null);
   let renameDraft = $state('');
   let renameInputEl = $state<HTMLInputElement | null>(null);
@@ -44,6 +48,7 @@
   let tagDraft = $state('');
   let tagInputEl = $state<HTMLInputElement | null>(null);
   let deleteConfirmConversationId = $state<string | null>(null);
+  // Transcript scroll tracking for auto-scroll and streaming follow.
   let transcriptEl = $state<HTMLDivElement | null>(null);
   let observedConversationId = '';
   let observedLastMessageId = '';
@@ -57,6 +62,7 @@
   const STICKY_BOTTOM_OFFSET = 44;
   const CHATS_SIDEBAR_STATE_LOCAL_STORAGE_KEY = 'quenta-chats-sidebar-collapsed'!;
 
+  // Store-derived state for the selected conversation and provider status.
   const currentConversation = $derived(quentaStore.currentConversation);
   const currentError = $derived(quentaStore.errorFor(currentConversation?.id));
   const canRetry = $derived(quentaStore.canRetry(currentConversation?.id));
@@ -96,6 +102,7 @@
         ? `Quenta is preparing the recommended local model (${quentaStore.defaultModel}). You can chat when it is ready.`
         : 'Quenta could not prepare local AI yet. Check the setup message and refresh.',
   );
+  // Model options: the configured model first, then provider models, deduped.
   const modelOptions = $derived([...new Map([
     ...(quentaStore.config.model ? [[quentaStore.config.model, quentaStore.config.model] as const] : []),
     ...quentaStore.providerModels.map((model) => [model.name, model.name] as const),
@@ -111,6 +118,7 @@
   const filteredConversations = $derived(
     quentaStore.conversations.filter((conversation) => conversationMatchesFilters(conversation)),
   );
+  // Intents the user can pick in the composer.
   const intentOptions = [
     {
       value: 'chat',
@@ -129,13 +137,14 @@
     },
   ];
 
-
+  // True when the transcript is scrolled close enough to its bottom edge.
   function transcriptIsNearBottom() {
     const el = transcriptEl;
     if (!el) return true;
     return el.scrollHeight - el.scrollTop - el.clientHeight <= STICKY_BOTTOM_OFFSET;
   }
 
+  // Recomputes streaming-follow and the floating scroll-to-bottom button.
   function updateScrollToBottomButtonVisibility() {
     const el = transcriptEl;
     if (!el) {
@@ -147,6 +156,7 @@
     showScrollToBottomButton = distanceFromBottom > SCROLL_TO_BOTTOM_OFFSET;
   }
 
+  // Copies persisted store settings into the local draft fields.
   function syncSettingsDrafts() {
     baseUrlDraft = quentaStore.config.baseUrl;
     modelDraft = quentaStore.config.model;
@@ -157,12 +167,14 @@
     autoScrollToBottom = quentaStore.autoScrollToBottomSettings ?? false;
   }
 
+  // Sets (or toggles, when null) the chats sidebar collapse and persists it.
   function setChatsCollapsedState(state: boolean|null = null) {
     if(state===null) chatsCollapsed=!chatsCollapsed;
     else chatsCollapsed=state;
     localStorage.setItem(CHATS_SIDEBAR_STATE_LOCAL_STORAGE_KEY,String(chatsCollapsed));
   }
 
+  // Formats a timestamp as a short date/time label.
   function formatTime(ms: number) {
     return new Date(ms).toLocaleString([], {
       month: 'short',
@@ -172,6 +184,7 @@
     });
   }
 
+  // Scrolls the transcript to its bottom (skipped when auto-scroll is off, unless forced).
   async function scrollTranscriptToBottom(
     behavior: ScrollBehavior,
     force?: boolean,
@@ -203,6 +216,7 @@
     updateScrollToBottomButtonVisibility();
   }
 
+  // Detects a new streaming response and decides whether to follow it.
   $effect.pre(() => {
     const response = activeResponse;
     if (!response) return;
@@ -219,6 +233,7 @@
     }
   });
 
+  // Follows streaming output: re-scrolls whenever the rendered response grows a visual line.
   $effect(() => {
     const el = streamingContentEl;
     if (!el) return;
@@ -237,6 +252,7 @@
     return () => observer.disconnect();
   });
 
+  // Tracks conversation switches and new finalized messages to drive auto-scroll.
   $effect.pre(() => {
     const conversation = currentConversation;
     const lastMessage = conversation?.messages.at(-1);
@@ -268,6 +284,7 @@
     else void tick().then(updateScrollToBottomButtonVisibility);
   });
 
+  // Opens (or creates) the conversation requested by a deep link and syncs the composer.
   async function prepareDeepLink(launch: QuentaLaunchRequest) {
     selectedIntent = launch.intent;
     const conversation = await quentaStore.startFocusedConversation(
@@ -279,6 +296,7 @@
     return conversation;
   }
 
+  // Loads draft text and intent from the given conversation into the composer.
   function syncComposerFromConversation(conversation = currentConversation) {
     composerConversationId = conversation?.id ?? null;
     draft = conversation?.draft ?? '';
@@ -287,18 +305,21 @@
       ?? 'chat';
   }
 
+  // Re-syncs the composer when the selected conversation changes outside this page.
   $effect(() => {
     const conversation = currentConversation;
     if ((conversation?.id ?? null) === composerConversationId) return;
     syncComposerFromConversation(conversation);
   });
 
+  // Opens a sidebar conversation and resets any inline editing.
   function selectConversation(conversationId: string) {
     resetConversationEditing();
     quentaStore.selectConversation(conversationId);
     syncComposerFromConversation();
   }
 
+  // Saves the composer draft and intent onto the current conversation when changed.
   async function persistCurrentDraft() {
     if (!currentConversation) return;
     if (
@@ -308,11 +329,13 @@
     await quentaStore.updateConversationDraft(currentConversation.id, draft, selectedIntent);
   }
 
+  // Updates the selected intent and persists it with the draft.
   async function changeIntent(value: string) {
     selectedIntent = value as LiatirQuentaIntent;
     await persistCurrentDraft();
   }
 
+  // Opens Quenta in a dedicated window, deep-linking the current conversation.
   async function openInSeparateWindow() {
     try {
       await persistCurrentDraft();
@@ -324,6 +347,7 @@
     }
   }
 
+  // Persists all settings drafts and re-bootstraps the provider.
   async function saveSettings() {
     savingSettings = true;
     try {
@@ -346,17 +370,20 @@
     }
   }
 
+  // Re-checks the local provider status and refreshes the settings drafts.
   async function refreshProvider() {
     await quentaStore.bootstrapProvider();
     syncSettingsDrafts();
   }
 
+  // Toggles thinking mode immediately, without waiting for the settings Save.
   async function setThinkingEnabled(enabled: boolean) {
     thinkingEnabledDraft = enabled;
     await quentaStore.updateConfig({ thinkingEnabled: enabled });
     syncSettingsDrafts();
   }
 
+  // Sends the composer draft to the current (or a new) conversation.
   async function sendDraft() {
     const content = draft.trim();
     if (!content) return;
@@ -368,16 +395,19 @@
     });
   }
 
+  // Stops the in-progress response for the current conversation.
   async function stopResponse() {
     if (!currentConversation) return;
     await quentaStore.stopMessage(currentConversation.id);
   }
 
+  // Retries the last failed message of the current conversation.
   async function retryResponse() {
     if (!currentConversation) return;
     await quentaStore.retryLastMessage(currentConversation.id);
   }
 
+  // Sends on Enter or Cmd/Ctrl+Enter, depending on the "Enter sends" setting.
   function handleComposerKeydown(event: KeyboardEvent) {
     if (event.key !== 'Enter' || event.isComposing) return;
     const shortcutSend = event.metaKey || event.ctrlKey;
@@ -388,11 +418,13 @@
     }
   }
 
+  // Builds the sidebar subtitle: focus context plus last update time.
   function conversationSubtitle(conversation: LiatirQuentaConversation): string {
     const focus = conversation.focus ? `${conversation.focus.kind} ${conversation.focus.entityId}` : 'General context';
     return `${focus} · ${formatTime(conversation.updatedAt)}`;
   }
 
+  // Applies the sidebar tag filters and search text to a conversation.
   function conversationMatchesFilters(conversation: LiatirQuentaConversation): boolean {
     const conversationTags = conversation.tags ?? [];
     if (selectedTagFilters.length > 0) {
@@ -413,12 +445,14 @@
     return haystack.includes(query);
   }
 
+  // Adds or removes a tag from the active sidebar filters.
   function toggleTagFilter(tag: string) {
     selectedTagFilters = selectedTagFilters.includes(tag)
       ? selectedTagFilters.filter((selected) => selected !== tag)
       : [...selectedTagFilters, tag];
   }
 
+  // Closes any open rename, tag, or delete-confirmation editor.
   function resetConversationEditing() {
     editingConversationId = null;
     renameDraft = '';
@@ -427,6 +461,7 @@
     deleteConfirmConversationId = null;
   }
 
+  // Opens the inline rename editor for a conversation.
   async function startRenameConversation(conversation: LiatirQuentaConversation) {
     editingConversationId = conversation.id;
     renameDraft = conversation.title;
@@ -437,6 +472,7 @@
     renameInputEl?.select();
   }
 
+  // Persists the rename draft and closes the editor.
   async function saveRenameConversation() {
     if (!editingConversationId) return;
     const conversationId = editingConversationId;
@@ -445,6 +481,7 @@
     renameDraft = '';
   }
 
+  // Opens the inline tags editor for a conversation.
   async function startTagEdit(conversation: LiatirQuentaConversation) {
     editingTagsConversationId = conversation.id;
     tagDraft = (conversation.tags ?? []).join(', ');
@@ -455,6 +492,7 @@
     tagInputEl?.select();
   }
 
+  // Parses the tag draft (max 3 tags) and persists it, then closes the editor.
   async function saveConversationTags() {
     if (!editingTagsConversationId) return;
     const conversationId = editingTagsConversationId;
@@ -468,6 +506,7 @@
     tagDraft = '';
   }
 
+  // Deletes a conversation and clears any editor state tied to it.
   async function deleteConversation(conversationId: string) {
     await quentaStore.deleteConversation(conversationId);
     if (editingConversationId === conversationId) editingConversationId = null;
@@ -475,6 +514,7 @@
     if (deleteConfirmConversationId === conversationId) deleteConfirmConversationId = null;
   }
 
+  // Enter saves the rename, Escape cancels it.
   function handleRenameKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter') {
       event.preventDefault();
@@ -486,6 +526,7 @@
     }
   }
 
+  // Enter saves the tags, Escape cancels the editor.
   function handleTagKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter') {
       event.preventDefault();
@@ -497,6 +538,8 @@
     }
   }
 
+  // Page bootstrap: consume deep links, init the store, resolve the initial
+  // conversation selection, prepare the provider, and restore the sidebar state.
   onMount(async () => {
     const launch = quentaLaunchRequest(page.url);
     const requestedConversationId = page.url.searchParams.get('conversation');
@@ -509,7 +552,10 @@
     if (launch) {
       launchConversation = await prepareDeepLink(launch);
     } else {
+      // Plain navigation starts with no chat selected; only deep links and the
+      // separate-window "?conversation" param open a specific conversation.
       if (requestedConversationId) quentaStore.selectConversation(requestedConversationId);
+      else quentaStore.clearConversationSelection();
       syncComposerFromConversation();
     }
     syncSettingsDrafts();
