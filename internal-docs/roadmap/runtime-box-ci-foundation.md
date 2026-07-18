@@ -577,8 +577,12 @@ Current state as of 2026-07-18:
   `ctheodoris-geneformer-v1-10m`, target `windows-x86_64-cpu`, and channel
   `beta`. Immediate readback confirmed workflow `Runtime Box production
   release`, the intended manual event, revision, and protected preflight. The
-  exact-main check passed and the preflight dependency installation is in
-  progress. No Windows CUDA work has started.
+  complete preflight passed. On `windows-2025`, host/storage checks, cloud auth,
+  locked setup, exact-revision enforcement, reproducible build with private KMS
+  signing, signed native self-test, scientific validation, immutable
+  publication, and public hash verification all passed. The real product build
+  is in progress; product lifecycle, beta promotion, final evidence, and cleanup
+  remain pending. No Windows CUDA work has started.
 
 Active Windows CPU release checklist:
 
