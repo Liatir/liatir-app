@@ -71,7 +71,7 @@ describe('Runtime Box CI cost controls', () => {
       .toThrow(/dependency lock SHA-256 mismatch/);
   });
 
-  it('keeps every byte-pinned dependency lock on LF across native Git checkouts', () => {
+  it('preserves every byte-pinned recipe input across native Git checkouts', () => {
     const recipeIds = new Set([
       ...catalog.foundationFixtures.map((fixture) => fixture.recipeId),
       ...catalog.models.flatMap((model) => model.targets.map((target) => target.recipeId)),
@@ -86,6 +86,19 @@ describe('Runtime Box CI cost controls', () => {
         encoding: 'utf8',
       }).trim();
       expect(attribute).toBe(`${lockPath}: eol: lf`);
+
+      for (const localFile of recipe.localFiles ?? []) {
+        const attributes = execFileSync(
+          'git',
+          ['check-attr', 'eol', 'text', '--', localFile.sourcePath],
+          { encoding: 'utf8' },
+        ).trim().split('\n');
+        const preservesBytes = attributes.includes(`${localFile.sourcePath}: eol: lf`)
+          || attributes.includes(`${localFile.sourcePath}: text: unset`);
+        if (!preservesBytes) {
+          throw new Error(`Byte-pinned local recipe input lacks an exact Git checkout policy: ${localFile.sourcePath}`);
+        }
+      }
     }
   });
 

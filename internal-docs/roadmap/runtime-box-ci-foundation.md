@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Windows CPU preparation `618fd21`; signer run `29649289028`; first native run `29649411609` stopped pre-build and is fixed locally |
+| 8.2. Geneformer Windows pilot | In progress | Windows CPU preparation `618fd21`; signer run `29649289028`; pre-build runs `29649411609`/`29649766313` exposed checkout normalization and are fixed locally |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -405,8 +405,13 @@ Current state as of 2026-07-18:
 - A repository-wide Git attribute now forces LF for every Runtime Box
   `requirements.lock`. A red regression first reproduced `eol: unspecified` for
   the catalog recipes; it now verifies `eol: lf` for every fixture and model
-  lock, and catalog validation passes. No target-specific hash bypass or CI-only
-  fallback was added.
+  lock.
+- The next run `29649766313` passed the lock checks and then stopped on the first
+  byte-pinned local legal file, which Git for Windows had also converted to
+  CRLF. The regression and checkout policy now cover every recipe-declared local
+  input: text inputs must be forced to LF, while any future binary input must be
+  explicitly marked non-text. Catalog validation passes without a target-specific
+  hash bypass or CI-only fallback.
 - No native Windows build, paid release runner, signature, publication, or
   product lifecycle has run yet. Windows CPU is not validated, and Windows CUDA
   has not started.
@@ -432,6 +437,7 @@ Gate 8.2 incident ledger:
 | Windows product-path audit | Fixed locally before native CI | The product E2E assumed POSIX separators in app-data assertions and constructed native paths with string concatenation | Paths now use `path.join`, and containment checks normalize separators without changing the actual path passed to the product |
 | `29649289028` | Passed | Protected signer policy had to include the reviewed Windows CPU target before release | Deployed from clean `main`; live KMS signing and app trust-root verification passed |
 | `29649411609` | Failed safely before build | Git for Windows converted byte-pinned lock files to CRLF because only `text=auto` applied, so the first catalog hash mismatched | Added a repository-wide LF attribute for Runtime Box locks plus a catalog-wide red regression; no authentication, build, signature, publication, or product lifecycle occurred |
+| `29649766313` | Failed safely before build | After lock preservation passed, Git for Windows converted the first SHA-pinned local legal file to CRLF | Generalized the checkout policy and regression to every recipe-declared byte-pinned local input; no authentication, build, signature, publication, or product lifecycle occurred |
 
 ### Gate 8.3: cross-platform closure
 
