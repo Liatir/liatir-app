@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 
 /** Returns an isolated native app environment for the current desktop platform. */
@@ -16,4 +17,17 @@ export function tauriTestEnvironment(testHome, platform = process.platform) {
     APPDATA: paths.join(testHome, 'AppData', 'Roaming'),
     LOCALAPPDATA: paths.join(testHome, 'AppData', 'Local'),
   };
+}
+
+/** Creates every directory declared by the isolated native-app environment. */
+export function prepareTauriTestEnvironment(
+  testHome,
+  platform = process.platform,
+  createDirectory = (directory) => fs.mkdirSync(directory, { recursive: true }),
+) {
+  const environment = tauriTestEnvironment(testHome, platform);
+  for (const directory of new Set(Object.values(environment))) {
+    createDirectory(directory);
+  }
+  return environment;
 }

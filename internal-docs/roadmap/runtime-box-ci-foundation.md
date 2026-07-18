@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Targeted Windows product startup smoke `29655341658` is acquiring the missing native panic before any CPU release retry |
+| 8.2. Geneformer Windows pilot | In progress | Windows startup root cause from smoke `29655341658` is fixed locally; corrected smoke is required before the CPU release retry |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -515,7 +515,21 @@ Current state as of 2026-07-18:
   workflow `Runtime Box Windows product startup smoke`, manual event, the exact
   revision, and the sole `Build and start the real Windows product` job. Its
   maximum standard-runner exposure is USD 0.40 under the 40-minute timeout; no
-  GPU, model build, KMS, publication, or promotion is part of this run.
+  GPU, model build, KMS, publication, or promotion was part of this run. The
+  real product build passed, startup failed in approximately three seconds, and
+  the corrected diagnostic report preserved the full native panic.
+- The report identifies the exact root cause: the E2E environment replaced
+  `USERPROFILE`, `APPDATA`, and `LOCALAPPDATA` with per-run Windows paths but
+  created only the parent test home. Windows Known Folder resolution verifies
+  the declared AppData paths, returned `UnknownPath`, and caused built-in plugin
+  storage and IPC initialization to fail before `EnvState::init` panicked at
+  `src/main.rs:142`. This is not a WebView2, global-shortcut, or model failure.
+- The generic correction keeps per-run isolation and creates every directory
+  declared by the native-app environment before spawning Liatir. It does not
+  weaken production startup, bypass code under `LIATIR_TEST_MODE`, or fall back
+  to the host profile. A red Windows-path regression first failed because no
+  preparation helper existed; it now verifies the exact directories and both
+  focused diagnostic suites pass.
 - The checked release resolver selects `windows-2025`, a 90-minute timeout,
   5,412,219,713 calculated peak bytes, and a 6 GiB hard disk gate. The release
   workflow now resolves `dumpbin.exe`, uses the recipe-owned Python entry point,
@@ -524,7 +538,7 @@ Current state as of 2026-07-18:
 - All pre-run local gates pass: catalog validation; signer policy 11/11; shared
   archive foundation; the expanded native launcher fixture; the focused
   Windows/catalog/product regressions; workflow YAML parsing; and the root
-  verification profile with 28 suites and 154/154 unit and contract tests, SDK
+  verification profile with 28 suites and 155/155 unit and contract tests, SDK
   generation, core build, Svelte check, frontend production build, and root
   TypeScript compilation. The official `test:tauri:prepare` path also completed,
   including the local Tauri CLI JavaScript entry point and native app bundle.
@@ -564,8 +578,10 @@ Active Windows CPU release checklist:
   keeping all user-owned roadmap edits unstaged.
 - [x] Announce and dispatch exactly one manual-only Windows product startup
   smoke; verify its workflow, revision, runner, and startup job immediately.
-- [ ] Use the produced native panic to identify the root cause, add a red
+- [x] Use the produced native panic to identify the root cause, add a red
   regression, apply one generic fix, and repeat all cheap gates.
+- [ ] Dispatch one corrected startup smoke from the exact fix revision and
+  require real Windows WebDriver readiness before spending on the release.
 - [ ] Dispatch at most one corrected protected Windows CPU production release.
   Require product lifecycle, beta promotion, complete evidence, and cleanup.
 
@@ -591,6 +607,7 @@ Gate 8.2 incident ledger:
 | `29652046517` | Failed in real-product build after successful immutable publication | `scripts/build-browser-api.mjs` directly spawned `npx.cmd`; Node 22 on Windows rejected the command shim with `EINVAL`, revealing that the prior audit covered Runtime Box orchestration but not every product build helper | Audit repository-owned build/test child-process call sites, invoke JavaScript CLIs through the current Node executable, and add a focused regression before another release run; lifecycle and promotion never ran |
 | `29652909939` | Cancelled during Windows Rust lifecycle after build, self-test, and scientific validation passed | The per-model validation workflow was selected by model name without reading back its action chain; it cannot authenticate to KMS, publish, execute the product lifecycle, or promote beta | Cancel the unnecessary paid validation, add the repository-wide task-specific checklist rule, and require an exact production-workflow/input/revision readback before dispatch |
 | `29653929900` | Failed after immutable publication and real product build, before product lifecycle or promotion | The Windows app exited with Rust code 101 before embedded WebDriver readiness; the E2E startup path neither flushed nor emitted the native log and bypassed the compact report, so the original panic was unavailable | First fix and regress the generic diagnostic path, then run one manual-only Windows product startup smoke to obtain the panic without rebuilding or publishing the model; do not retry the release blindly |
+| `29655341658` | Failed after the real product build and produced the required native report | The isolated Windows environment declared but did not create AppData directories; Tauri Known Folder resolution returned `UnknownPath`, built-in plugin storage and IPC could not resolve app data, and `EnvState::init` panicked with code 101 | Create every declared isolated directory before spawn, retain the isolation boundary, add a red regression over exact Windows paths, repeat all cheap gates, and verify one corrected startup smoke before the production release retry |
 
 Run `29651651212` used 22 seconds of standard Linux preflight and 4 minutes
 18 seconds of the standard Windows runner. At the documented GitHub rates its
@@ -611,6 +628,10 @@ Failed production release `29653929900` used 15 seconds of standard Linux
 preflight and 20 minutes 14 seconds of the standard Windows runner. Its Actions
 exposure is approximately USD 0.22 after per-job per-minute rounding. The
 immutable candidate was not promoted to beta.
+
+Targeted startup smoke `29655341658` used 11 minutes 25 seconds of the standard
+Windows runner. Its Actions exposure is approximately USD 0.12 after per-minute
+rounding. It performed no model build, signing, publication, or promotion.
 
 ### Gate 8.3: cross-platform closure
 

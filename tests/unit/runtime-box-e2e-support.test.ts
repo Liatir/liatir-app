@@ -7,7 +7,10 @@ import {
   waitForRuntimeBoxInstall,
 } from '../e2e/support/runtime-box.mjs';
 import { waitForLiatirBridge } from '../e2e/support/liatir-app.mjs';
-import { tauriTestEnvironment } from '../e2e/support/tauri-process.mjs';
+import {
+  prepareTauriTestEnvironment,
+  tauriTestEnvironment,
+} from '../e2e/support/tauri-process.mjs';
 
 const originalWindow = (globalThis as { window?: unknown }).window;
 
@@ -27,6 +30,25 @@ describe('Runtime Box product E2E support', () => {
       APPDATA: 'C:\\fixture-home\\AppData\\Roaming',
       LOCALAPPDATA: 'C:\\fixture-home\\AppData\\Local',
     });
+  });
+
+  it('creates every isolated Windows directory before native app startup', () => {
+    const created: string[] = [];
+    const environment = prepareTauriTestEnvironment(
+      'C:\\fixture-home',
+      'win32',
+      (directory) => created.push(directory),
+    );
+
+    expect(environment.APPDATA).toBe('C:\\fixture-home\\AppData\\Roaming');
+    expect(created).toEqual([
+      'C:\\fixture-home',
+      'C:\\fixture-home\\.local\\share',
+      'C:\\fixture-home\\.cache',
+      'C:\\fixture-home\\.config',
+      'C:\\fixture-home\\AppData\\Roaming',
+      'C:\\fixture-home\\AppData\\Local',
+    ]);
   });
 
   it('scales the install bound from the observed archive size without target-specific branches', () => {

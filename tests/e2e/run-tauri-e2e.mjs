@@ -6,7 +6,7 @@ import { expect } from 'expect';
 import pixelmatch from 'pixelmatch';
 import { PNG } from 'pngjs';
 import { cleanupTestArtifacts } from '../support/artifact-cleanup.mjs';
-import { tauriTestEnvironment } from './support/tauri-process.mjs';
+import { prepareTauriTestEnvironment } from './support/tauri-process.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const appBinaryCandidates = process.platform === 'darwin'
@@ -32,9 +32,10 @@ const traceLifecycle = process.env.LIATIR_E2E_TRACE === '1';
 
 cleanupTestArtifacts(rootDir);
 
-for (const dir of [testHome, logDir, screenshotDir, baselineDir, diffDir]) {
+for (const dir of [logDir, screenshotDir, baselineDir, diffDir]) {
   fs.mkdirSync(dir, { recursive: true });
 }
+const tauriEnvironment = prepareTauriTestEnvironment(testHome);
 
 function slugify(value) {
   return value
@@ -98,7 +99,7 @@ function startTauriApp() {
     cwd: rootDir,
     env: {
       ...process.env,
-      ...tauriTestEnvironment(testHome),
+      ...tauriEnvironment,
       LIATIR_TEST_MODE: '1',
       NODE_ENV: 'test',
       RUST_BACKTRACE: process.env.RUST_BACKTRACE ?? '1',
