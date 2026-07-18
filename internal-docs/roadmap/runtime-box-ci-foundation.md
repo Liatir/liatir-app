@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Official recheck and Windows CPU lock/audit complete; no native run yet |
+| 8.2. Geneformer Windows pilot | In progress | Windows CPU preparation `618fd21`; signer deployment run `29649289028`; native release pending |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -393,9 +393,13 @@ Current state as of 2026-07-18:
 - The Windows CPU recipe includes the exact upstream MIT notice for
   `array-api-compat==1.15.0`, whose wheel declares MIT but contains no license
   file. The existing supplemental notice is now an explicit self-test input.
-- No native Windows build, paid runner, signature, publication, or product
-  lifecycle has run yet. Windows CPU is not validated, and Windows CUDA has not
-  started.
+- Protected signer deployment run `29649289028` succeeded from clean `main` at
+  `618fd21`. Source/policy validation, private Cloud Run deployment, a live KMS
+  smoke test against the app trust root, and compact deployment evidence all
+  completed successfully.
+- No native Windows build, paid release runner, signature, publication, or
+  product lifecycle has run yet. Windows CPU is not validated, and Windows CUDA
+  has not started.
 - The checked release resolver selects `windows-2025`, a 90-minute timeout,
   5,412,219,713 calculated peak bytes, and a 6 GiB hard disk gate. The release
   workflow now resolves `dumpbin.exe`, uses the recipe-owned Python entry point,
@@ -416,6 +420,7 @@ Gate 8.2 incident ledger:
 | Root verification | Blocked in one unrelated fixture | Sandbox DNS prevented a temporary WASM conformance project from reaching `index.crates.io`; 146/147 tests had passed | Re-ran the same current repository script once with network access; all 147/147 tests and every build/check phase passed |
 | Windows CPU license audit | Actionable inherited finding | `array-api-compat==1.15.0` has no wheel-bundled MIT text, and the already-published Linux CPU recipe did not add the existing supplemental notice | Windows includes and self-tests the exact notice; the pre-existing Linux publication is recorded for separate corrective replacement rather than silently changing its published recipe |
 | Windows product-path audit | Fixed locally before native CI | The product E2E assumed POSIX separators in app-data assertions and constructed native paths with string concatenation | Paths now use `path.join`, and containment checks normalize separators without changing the actual path passed to the product |
+| `29649289028` | Passed | Protected signer policy had to include the reviewed Windows CPU target before release | Deployed from clean `main`; live KMS signing and app trust-root verification passed |
 
 ### Gate 8.3: cross-platform closure
 
