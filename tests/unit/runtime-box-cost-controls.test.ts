@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 
 import catalog from '../../runtime-boxes/catalog.json';
 import {
@@ -26,6 +27,7 @@ describe('Runtime Box CI cost controls', () => {
     const runtimeBoxCi = readFileSync(resolve('scripts/runtime-box-ci.mjs'), 'utf8');
     const productLifecycle = readFileSync(resolve('scripts/run-runtime-box-product-lifecycle.mjs'), 'utf8');
     const releaseWorkflow = readFileSync(resolve('.github/workflows/runtime-box-release.yml'), 'utf8');
+    const windowsProductSmoke = readFileSync(resolve('.github/workflows/runtime-box-windows-product-smoke.yml'), 'utf8');
     expect(prepare.indexOf('npm run build --prefix packages/liatir-core'))
       .toBeLessThan(prepare.indexOf('npm run gen:sdk-types'));
     expect(prepare.indexOf('npm ci --prefix frontend'))
@@ -34,6 +36,9 @@ describe('Runtime Box CI cost controls', () => {
     expect(productBuild).toContain("localNodeCliInvocation('@tauri-apps/cli/tauri.js'");
     expect(productBuild).not.toContain("'cargo',\n    [\n      'tauri'");
     expect(e2eRunner).toContain('Tauri log tail (last 12 KiB)');
+    expect(e2eRunner).toContain('Tauri startup failed before WebDriver became available.');
+    expect(e2eRunner).toContain("'Native app startup'");
+    expect(e2eRunner).toContain('await closeLogStream(app.logStream)');
     expect(e2eRunner).toContain("exitCode=${app.child.exitCode ?? 'running'}");
     expect(e2eRunner).toContain('payload.value?.ready === true');
     expect(e2eRunner).toContain("windowLabel: 'main'");
@@ -54,6 +59,42 @@ describe('Runtime Box CI cost controls', () => {
       .toBe('node scripts/run-runtime-box-product-lifecycle.mjs');
     expect(releaseWorkflow).toContain('npm run runtime-box:product-lifecycle');
     expect(releaseWorkflow).toContain("startsWith(inputs.target_id, 'windows-')");
+    expect(windowsProductSmoke).toContain('workflow_dispatch:');
+    expect(windowsProductSmoke).not.toContain('push:');
+    expect(windowsProductSmoke).toContain('runs-on: windows-2025');
+    expect(windowsProductSmoke).toContain('timeout-minutes: 40');
+    expect(windowsProductSmoke).toContain('npm run test:tauri:prepare');
+    expect(windowsProductSmoke).toContain('npm run test:tauri:run -- --heavy');
+    expect(windowsProductSmoke).toContain('.runtime-box-ci/windows-product-startup-e2e.json');
+  });
+
+  it('persists native startup failures in the compact E2E report', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'liatir-e2e-startup-'));
+    const reportPath = join(tempDir, 'report.json');
+    try {
+      const result = spawnSync(
+        process.execPath,
+        ['tests/e2e/run-tauri-e2e.mjs', '--report', reportPath, 'tests/e2e/specs/runtime-box-native.e2e.mjs'],
+        {
+          cwd: resolve('.'),
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            LIATIR_TAURI_APP: process.execPath,
+          },
+          timeout: 10_000,
+        },
+      );
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('Tauri startup failed before WebDriver became available.');
+      const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+      expect(report.summary).toMatchObject({ failed: 1, total: 1 });
+      expect(report.tests).toEqual([
+        expect.objectContaining({ name: 'Native app startup', nativeLogTail: null, status: 'failed' }),
+      ]);
+    } finally {
+      rmSync(tempDir, { force: true, recursive: true });
+    }
   });
 
   it('pins every model lock and calculates disk before native allocation', () => {

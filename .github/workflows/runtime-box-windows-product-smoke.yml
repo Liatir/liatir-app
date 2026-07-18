@@ -1,0 +1,60 @@
+name: Runtime Box Windows product startup smoke
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: runtime-box-windows-product-startup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  startup:
+    name: Build and start the real Windows product
+    runs-on: windows-2025
+    timeout-minutes: 40
+    steps:
+      - name: Require the exact main ref
+        shell: powershell
+        run: |
+          if ('${{ github.ref }}' -ne 'refs/heads/main') {
+            throw 'The Windows product smoke must run from main.'
+          }
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          toolchain: "1.95.0"
+
+      - run: npm ci
+
+      - name: Build the real Liatir product test binary
+        run: npm run test:tauri:prepare
+
+      - name: Start the product through the embedded Windows WebDriver
+        env:
+          LIATIR_E2E_REPORT: .runtime-box-ci/windows-product-startup-e2e.json
+        run: >-
+          npm run test:tauri:run -- --heavy
+          tests/e2e/specs/runtime-box-native.e2e.mjs
+
+      - name: Upload the compact startup report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-box-windows-product-startup-${{ github.run_attempt }}
+          path: .runtime-box-ci/windows-product-startup-e2e.json
+          include-hidden-files: true
+          retention-days: 7
+          if-no-files-found: error

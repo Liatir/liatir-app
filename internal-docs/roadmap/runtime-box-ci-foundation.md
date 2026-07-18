@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Windows CPU protected release run `29653929900` executing exact revision `bc71b13` |
+| 8.2. Geneformer Windows pilot | In progress | Windows CPU release reached the real product startup; targeted Windows diagnostic is active before any retry |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -486,7 +486,29 @@ Current state as of 2026-07-18:
   `bc71b13abe34f10fbd16f065a670caab09f4e9f1` with model
   `ctheodoris-geneformer-v1-10m`, target `windows-x86_64-cpu`, and channel
   `beta`. The immediate readback confirmed the workflow, revision, manual event,
-  and `Resolve protected release inputs` preflight. Its result is pending.
+  and `Resolve protected release inputs` preflight. The protected preflight,
+  Windows host/storage gate, KMS-signed build, signed self-test, scientific
+  parity, immutable publication and public hash verification, and real product
+  binary build all passed. The app then exited with Rust code 101 before the
+  embedded WebDriver became ready, so Jobs, Results, provenance,
+  replacement/removal, cleanup assertions, and beta promotion did not run.
+  Artifact `8432472551` contains the compact failed release evidence; no product
+  report was created by the old runner. The content-addressed candidate remains
+  unpromoted.
+- The failure exposed a generic diagnostic defect in the E2E runner: native
+  stdout and stderr were piped to one stream that either source could close, the
+  stream was not awaited during cleanup, and startup exceptions bypassed report
+  generation and the existing per-test log-tail path. A red regression first
+  reproduced the absent startup diagnostic. The corrected runner keeps both
+  pipes open until bounded process cleanup, enables a Rust backtrace, flushes
+  the native log, prints one bounded tail, and persists the same tail plus a
+  synthetic `Native app startup` failure in the compact E2E report.
+- A manual-only `Runtime Box Windows product startup smoke` now isolates the
+  unresolved native startup from model build, KMS, publication, and promotion.
+  It builds the real product on one `windows-2025` runner and starts the exact
+  embedded-WebDriver path with a 40-minute hard timeout. It exists to acquire
+  the missing panic once before a corrected production release, not as a
+  generic CI trigger.
 - The checked release resolver selects `windows-2025`, a 90-minute timeout,
   5,412,219,713 calculated peak bytes, and a 6 GiB hard disk gate. The release
   workflow now resolves `dumpbin.exe`, uses the recipe-owned Python entry point,
@@ -495,7 +517,7 @@ Current state as of 2026-07-18:
 - All pre-run local gates pass: catalog validation; signer policy 11/11; shared
   archive foundation; the expanded native launcher fixture; the focused
   Windows/catalog/product regressions; workflow YAML parsing; and the root
-  verification profile with 28 suites and 153/153 unit and contract tests, SDK
+  verification profile with 28 suites and 154/154 unit and contract tests, SDK
   generation, core build, Svelte check, frontend production build, and root
   TypeScript compilation. The official `test:tauri:prepare` path also completed,
   including the local Tauri CLI JavaScript entry point and native app bundle.
@@ -522,9 +544,23 @@ Active Windows CPU release checklist:
 - [x] Immediately verify that the created run reports workflow
   `Runtime Box production release`, the intended revision, and the protected
   release preflight. Cancel immediately on any mismatch.
-- [ ] After one meaningful interval, record only completion or an actionable
+- [x] After one meaningful interval, record only completion or an actionable
   failure. On failure, inspect the exact log once, add the root cause and a red
   regression, rerun all cheap gates, and allow at most one corrected retry.
+- [x] Preserve run `29653929900`, artifact `8432472551`, the unpromoted state,
+  and the missing-startup-report diagnostic gap in this execution record.
+- [x] Add and pass a behavioral regression proving that native startup failure
+  now emits one bounded diagnostic and persists a compact report.
+- [x] Pass catalog, signer-policy, focused unit, YAML, and root verification
+  gates with the diagnostic correction.
+- [ ] Commit and push the diagnostic correction from a clean technical index,
+  keeping all user-owned roadmap edits unstaged.
+- [ ] Announce and dispatch exactly one manual-only Windows product startup
+  smoke; verify its workflow, revision, runner, and startup job immediately.
+- [ ] Use the produced native panic to identify the root cause, add a red
+  regression, apply one generic fix, and repeat all cheap gates.
+- [ ] Dispatch at most one corrected protected Windows CPU production release.
+  Require product lifecycle, beta promotion, complete evidence, and cleanup.
 
 Gate 8.2 incident ledger:
 
@@ -532,6 +568,8 @@ Gate 8.2 incident ledger:
 |---|---|---|---|
 | Local second lock | Blocked before resolution | The sandbox could not open the global uv cache | Re-ran with a gate-scoped cache under `/tmp`; no repository workaround |
 | Local second lock | Blocked before resolution | Sandbox DNS could not reach the official indexes | Re-ran once with approved network access; the lock reproduced byte-for-byte |
+| Local workflow syntax check | Verification command corrected | The repository does not install the optional Node `yaml` module, so the first ad-hoc parser command could not start | Used the system Ruby YAML parser once; both the new smoke and production release workflows parsed successfully without adding a dependency or changing a lockfile |
+| Local macOS runner-only probe | Invalid as Gate 8.2 evidence | `test:tauri:run` was invoked against an existing binary without running the required `test:tauri:prepare` phase in the same check; the app stayed alive without a WebDriver endpoint, unlike the Windows code-101 exit | Inspected the binary and corrected the unsupported stale-binary assumption, recorded the procedural error, and did not change product code or divert the Windows gate; the paid smoke always runs the authoritative prepare script immediately before the runner |
 | Root verification | Blocked in one unrelated fixture | Sandbox DNS prevented a temporary WASM conformance project from reaching `index.crates.io`; 146/147 tests had passed | Re-ran the same current repository script once with network access; all 147/147 tests and every build/check phase passed |
 | Windows CPU license audit | Actionable inherited finding | `array-api-compat==1.15.0` has no wheel-bundled MIT text, and the already-published Linux CPU recipe did not add the existing supplemental notice | Windows includes and self-tests the exact notice; the pre-existing Linux publication is recorded for separate corrective replacement rather than silently changing its published recipe |
 | Windows product-path audit | Fixed locally before native CI | The product E2E assumed POSIX separators in app-data assertions and constructed native paths with string concatenation | Paths now use `path.join`, and containment checks normalize separators without changing the actual path passed to the product |
@@ -545,6 +583,7 @@ Gate 8.2 incident ledger:
 | `29651651212` | Failed in scientific validation after successful build, KMS signature, and native self-test | The blobless Geneformer clone depended on Git demand-fetching tokenizer blob `8af0cfa0f336d007feb2b144129a96c88ad8a871`; the Windows checkout reported the promised object as unreadable | Replace partial Git clone with the immutable revision URL plus exact size and SHA-256 verification through the shared downloader; publication, product lifecycle, and promotion never ran |
 | `29652046517` | Failed in real-product build after successful immutable publication | `scripts/build-browser-api.mjs` directly spawned `npx.cmd`; Node 22 on Windows rejected the command shim with `EINVAL`, revealing that the prior audit covered Runtime Box orchestration but not every product build helper | Audit repository-owned build/test child-process call sites, invoke JavaScript CLIs through the current Node executable, and add a focused regression before another release run; lifecycle and promotion never ran |
 | `29652909939` | Cancelled during Windows Rust lifecycle after build, self-test, and scientific validation passed | The per-model validation workflow was selected by model name without reading back its action chain; it cannot authenticate to KMS, publish, execute the product lifecycle, or promote beta | Cancel the unnecessary paid validation, add the repository-wide task-specific checklist rule, and require an exact production-workflow/input/revision readback before dispatch |
+| `29653929900` | Failed after immutable publication and real product build, before product lifecycle or promotion | The Windows app exited with Rust code 101 before embedded WebDriver readiness; the E2E startup path neither flushed nor emitted the native log and bypassed the compact report, so the original panic was unavailable | First fix and regress the generic diagnostic path, then run one manual-only Windows product startup smoke to obtain the panic without rebuilding or publishing the model; do not retry the release blindly |
 
 Run `29651651212` used 22 seconds of standard Linux preflight and 4 minutes
 18 seconds of the standard Windows runner. At the documented GitHub rates its
@@ -560,6 +599,11 @@ Cancelled validation run `29652909939` used 24 seconds of standard Linux
 preflight and approximately 17 minutes of the standard Windows runner. Its
 Actions exposure is approximately USD 0.18 after per-minute rounding. It did
 not perform a production release.
+
+Failed production release `29653929900` used 15 seconds of standard Linux
+preflight and 20 minutes 14 seconds of the standard Windows runner. Its Actions
+exposure is approximately USD 0.22 after per-job per-minute rounding. The
+immutable candidate was not promoted to beta.
 
 ### Gate 8.3: cross-platform closure
 

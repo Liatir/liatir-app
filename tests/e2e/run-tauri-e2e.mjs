@@ -101,6 +101,7 @@ function startTauriApp() {
       ...tauriTestEnvironment(testHome),
       LIATIR_TEST_MODE: '1',
       NODE_ENV: 'test',
+      RUST_BACKTRACE: process.env.RUST_BACKTRACE ?? '1',
       RUST_LOG: process.env.RUST_LOG ?? 'warn',
       TAURI_WEBDRIVER_PORT: String(embeddedPort),
       WDIO_EMBEDDED_SERVER: 'true',
@@ -108,28 +109,44 @@ function startTauriApp() {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 
-  child.stdout.pipe(logStream);
-  child.stderr.pipe(logStream);
+  // Both native streams share one destination, which cleanup closes only after
+  // the child has finished so the final panic lines cannot be truncated.
+  child.stdout.pipe(logStream, { end: false });
+  child.stderr.pipe(logStream, { end: false });
+
+  const app = {
+    child,
+    closePromise: new Promise((resolve) => child.once('close', resolve)),
+    logPath,
+    logStream,
+    spawnError: null,
+  };
+  child.once('error', (error) => {
+    app.spawnError = error;
+    if (traceLifecycle) {
+      console.error(`[e2e ${new Date().toISOString()}] Tauri spawn error: ${error.message}`);
+    }
+  });
 
   if (traceLifecycle) {
     console.error(`[e2e ${new Date().toISOString()}] spawned Tauri pid=${child.pid ?? 'unknown'} port=${embeddedPort}`);
-    child.once('error', (error) => {
-      console.error(`[e2e ${new Date().toISOString()}] Tauri spawn error: ${error.message}`);
-    });
     child.once('exit', (code, signal) => {
       console.error(`[e2e ${new Date().toISOString()}] Tauri exited code=${code ?? 'none'} signal=${signal ?? 'none'}`);
     });
   }
 
-  return { child, logPath, logStream };
+  return app;
 }
 
-async function waitForWebDriver(child) {
+async function waitForWebDriver(app) {
   let lastError = null;
   let readySince = null;
   for (let attempt = 0; attempt < 120; attempt += 1) {
-    if (child.exitCode !== null) {
-      throw new Error(`Tauri app exited before WebDriver became available with code ${child.exitCode}.`);
+    if (app.spawnError) {
+      throw new Error(`Tauri app could not be started: ${app.spawnError.message}`, { cause: app.spawnError });
+    }
+    if (app.child.exitCode !== null) {
+      throw new Error(`Tauri app exited before WebDriver became available with code ${app.child.exitCode}.`);
     }
 
     try {
@@ -386,11 +403,29 @@ async function cleanup(browser, app) {
 
   if (app?.child && app.child.exitCode === null) {
     app.child.kill('SIGTERM');
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await Promise.race([
+      app.closePromise,
+      new Promise((resolve) => setTimeout(resolve, 2_000)),
+    ]);
     if (app.child.exitCode === null) app.child.kill('SIGKILL');
   }
 
-  app?.logStream?.end();
+  if (app?.closePromise) {
+    await Promise.race([
+      app.closePromise,
+      new Promise((resolve) => setTimeout(resolve, 2_000)),
+    ]);
+  }
+  if (app) await closeLogStream(app.logStream);
+}
+
+/** Flushes and closes the shared native-app log exactly once. */
+async function closeLogStream(logStream) {
+  if (!logStream || logStream.closed || logStream.destroyed) return;
+  await new Promise((resolve, reject) => {
+    logStream.once('error', reject);
+    logStream.end(resolve);
+  });
 }
 
 function missingRequiredEnv(test) {
@@ -421,6 +456,8 @@ async function run() {
   let failed = 0;
   let passed = 0;
   let skipped = 0;
+  let harnessError = null;
+  let startupCompleted = false;
   const runStartedAt = new Date();
   const results = [];
 
@@ -432,9 +469,10 @@ async function run() {
   process.once('SIGTERM', () => { void stop(143); });
 
   try {
-    await waitForWebDriver(app.child);
+    await waitForWebDriver(app);
     const session = await createSession();
     browser = new NativeWebDriverClient(session);
+    startupCompleted = true;
 
     const context = {
       appLogPath: app.logPath,
@@ -523,8 +561,31 @@ async function run() {
         }
       }
     }
+  } catch (error) {
+    harnessError = error;
+    failed += 1;
   } finally {
     await cleanup(browser, app);
+  }
+
+  if (harnessError) {
+    const tauriLogTail = readTauriLogTail(app.logPath);
+    results.push({
+      durationMs: Date.now() - runStartedAt.getTime(),
+      error: harnessError?.stack ?? String(harnessError),
+      heavy,
+      name: startupCompleted ? 'E2E harness' : 'Native app startup',
+      nativeLogTail: tauriLogTail || null,
+      specPath: '<runner>',
+      status: 'failed',
+    });
+    if (!startupCompleted) {
+      console.error('Tauri startup failed before WebDriver became available.');
+    }
+    console.error(harnessError?.stack ?? harnessError);
+    console.error(`Tauri log: ${app.logPath}`);
+    console.error(`Tauri process: exitCode=${app.child.exitCode ?? 'running'}, signal=${app.child.signalCode ?? 'none'}`);
+    if (tauriLogTail) console.error(`Tauri log tail (last 12 KiB):\n${tauriLogTail}`);
   }
 
   const runFinishedAt = new Date();
