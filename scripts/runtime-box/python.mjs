@@ -1,4 +1,4 @@
-import { chmod, cp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { chmod, cp, mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { collectFiles, fileExists } from './filesystem.mjs';
 import { fail } from './process.mjs';
@@ -47,6 +47,41 @@ export async function stageStandalonePython({ adapter, payloadDir, pythonVersion
     '--system', '--break-system-packages', '--no-config',
   ], { env: { UV_NO_CONFIG: '1' } });
   return { interpreter, sourceRoot, destinationRoot };
+}
+
+/** Installs the exact lock while asking uv to emit relative native launchers where required. */
+export async function syncLockedPythonDependencies({
+  adapter,
+  destinationRoot,
+  extraArgs = [],
+  interpreter,
+  lockPath,
+  run,
+  uv,
+}) {
+  const args = [
+    'pip', 'sync', lockPath, '--python', interpreter,
+    '--system', '--break-system-packages', '--require-hashes', '--strict', '--no-config',
+    ...extraArgs,
+  ];
+  if (adapter.python.launcherKind !== 'uv-windows-pe') {
+    run(uv, args, { env: { UV_NO_CONFIG: '1' } });
+    return;
+  }
+
+  // uv 0.11 reads this marker from the target environment and embeds the interpreter relative
+  // to Scripts in each Windows PE launcher. The payload itself remains a complete standalone
+  // Python distribution, so the venv marker exists only while uv writes the locked wheels.
+  const markerPath = join(destinationRoot, 'pyvenv.cfg');
+  if (await fileExists(markerPath)) {
+    fail(`Standalone Python unexpectedly contains pyvenv.cfg before dependency installation: ${markerPath}`);
+  }
+  await writeFile(markerPath, 'relocatable = true\n');
+  try {
+    run(uv, args, { env: { UV_NO_CONFIG: '1' } });
+  } finally {
+    await rm(markerPath, { force: true });
+  }
 }
 
 /** Removes either a direct shebang or uv's long-path shell trampoline from a launcher. */
@@ -142,10 +177,11 @@ export async function validateRelocatablePython({
     'print(json.dumps({"basePrefix": os.path.realpath(sys.base_prefix), "executable": os.path.realpath(sys.executable)}))',
   ].join('\n');
   const result = JSON.parse(run(interpreter, ['-c', probe], { capture: true, cwd: payloadDir }));
-  if (resolve(result.basePrefix) !== resolve(destinationRoot)) {
+  const canonicalDestinationRoot = resolve(await realpath(destinationRoot));
+  if (resolve(result.basePrefix) !== canonicalDestinationRoot) {
     fail(`Relocated Python resolved sys.base_prefix outside its payload: ${result.basePrefix}`);
   }
-  const executableRelativePath = relative(destinationRoot, resolve(result.executable));
+  const executableRelativePath = relative(canonicalDestinationRoot, resolve(result.executable));
   if (executableRelativePath === '..' || executableRelativePath.startsWith(`..${sep}`)) {
     fail(`Relocated Python resolved its executable outside the payload: ${result.executable}`);
   }

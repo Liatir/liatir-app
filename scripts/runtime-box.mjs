@@ -72,6 +72,7 @@ import {
 import { fail, run as runProcess, runResult as runProcessResult } from './runtime-box/process.mjs';
 import {
   stageStandalonePython,
+  syncLockedPythonDependencies,
   validateRelocatablePython,
 } from './runtime-box/python.mjs';
 import {
@@ -516,11 +517,14 @@ async function buildRecipe(name, flags) {
   // Installs *into the copied interpreter* (hence --python pointing inside the payload).
   // --require-hashes enforces the digests in the lock, so a tampered or swapped wheel fails the
   // build; --strict catches an inconsistent resulting environment.
-  run(uv, [
-    'pip', 'sync', lockPath, '--python', standalonePython.interpreter,
-    '--system', '--break-system-packages', '--require-hashes', '--strict', '--no-config',
-    ...runtimeBoxTorchBackendArguments(recipe),
-  ], { env: { UV_NO_CONFIG: '1' } });
+  await syncLockedPythonDependencies({
+    adapter,
+    ...standalonePython,
+    extraArgs: runtimeBoxTorchBackendArguments(recipe),
+    lockPath,
+    run,
+    uv,
+  });
   await validateRelocatablePython({
     adapter,
     ...standalonePython,

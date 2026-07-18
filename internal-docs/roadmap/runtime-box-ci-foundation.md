@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Windows CPU preparation `618fd21`; signer run `29649289028`; early Windows runs through `29650191000` are diagnosed and fixed locally |
+| 8.2. Geneformer Windows pilot | In progress | Windows CPU preparation `618fd21`; signer run `29649289028`; run `29650639895` launcher defect fixed and verified locally, native CPU rerun pending |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -419,19 +419,41 @@ Current state as of 2026-07-18:
   `npm-cli.js` through the current Node executable on Windows, retaining a
   shell-free argument boundary for all three paths. Focused regression coverage
   rejects command-shim use and verifies both npm-path resolution modes.
-- No native Windows build, paid release runner, signature, publication, or
-  product lifecycle has run yet. Windows CPU is not validated, and Windows CUDA
-  has not started.
+- Run `29650639895` proved the corrected host probe and npm invocation, installed
+  the pinned standalone Python and all 35 locked CPU dependencies, then stopped
+  at the relocatability gate. uv-generated Windows PE console launchers embedded
+  the build interpreter's absolute path because the copied standalone runtime
+  was not marked relocatable during wheel installation. The gate rejected ten
+  affected launchers before assets, signing, publication, or product execution.
+- Official uv 0.11.28 source confirms that its wheel installer reads
+  `relocatable = true` from the environment's temporary `pyvenv.cfg`, computes
+  the interpreter relative to the scripts directory, and emits Windows PE
+  launchers with native relative-path support. The Runtime Box payload must not
+  retain that temporary virtual-environment marker because the final artifact is
+  a complete standalone Python distribution, not a host-dependent venv.
+- The stdlib-only Windows foundation fixture could not expose this defect because
+  it generated no package console entry point. The corrective regression now
+  installs a deterministic local wheel with a console command, relocates the
+  complete payload, and executes that command on the native target.
+- The corrective unit regression first failed on the old Windows launcher
+  contract and missing install helper, then passed after the generic fix. The
+  expanded macOS native fixture also completed two deterministic builds, local
+  signing and verification, locked-wheel hash rejection, console-launcher
+  relocation and execution, download resume, and cleanup with uv 0.11.28. A
+  native Windows run is still required to prove the PE launcher itself.
+- No Windows CPU signature, publication, or product lifecycle has completed.
+  Windows CPU is not validated, and Windows CUDA has not started.
 - The checked release resolver selects `windows-2025`, a 90-minute timeout,
   5,412,219,713 calculated peak bytes, and a 6 GiB hard disk gate. The release
   workflow now resolves `dumpbin.exe`, uses the recipe-owned Python entry point,
   isolates Windows AppData, and keeps the candidate Registry and product E2E in
   one bounded process tree.
-- All pre-run local gates pass: catalog validation; signer policy 11/11; the
-  focused Windows/catalog/product regressions; workflow YAML parsing; and
-  the root verification profile with 26 suites and 149/149 unit and contract
-  tests, SDK generation, core build, Svelte check, frontend production build,
-  and root TypeScript compilation.
+- All pre-run local gates pass: catalog validation; signer policy 11/11; shared
+  archive foundation; the expanded native launcher fixture; the focused
+  Windows/catalog/product regressions; workflow YAML parsing; and the root
+  verification profile with 26 suites and 150/150 unit and contract tests, SDK
+  generation, core build, Svelte check, frontend production build, and root
+  TypeScript compilation.
 
 Gate 8.2 incident ledger:
 
@@ -446,6 +468,9 @@ Gate 8.2 incident ledger:
 | `29649411609` | Failed safely before build | Git for Windows converted byte-pinned lock files to CRLF because only `text=auto` applied, so the first catalog hash mismatched | Added a repository-wide LF attribute for Runtime Box locks plus a catalog-wide red regression; no authentication, build, signature, publication, or product lifecycle occurred |
 | `29649766313` | Failed safely before build | After lock preservation passed, Git for Windows converted the first SHA-pinned local legal file to CRLF | Generalized the checkout policy and regression to every recipe-declared byte-pinned local input; no authentication, build, signature, publication, or product lifecycle occurred |
 | `29650191000` | Failed before downloads or signing | Node on Windows rejected direct `npm.cmd` spawning with `EINVAL`; the probe and native setup had passed | Replaced every Runtime Box `npm.cmd` spawn with a shared shell-free Node plus `npm-cli.js` invocation and covered build, validator, and product lifecycle call sites |
+| `29650639895` | Failed after locked dependency installation, before assets or signing | uv emitted Windows PE console launchers with absolute build-interpreter paths because the copied standalone distribution was not marked relocatable while wheels were installed; the stdlib-only native fixture generated no launcher and missed this class | Use uv's reviewed relocatable-install contract without retaining a venv marker, and extend the native fixture to relocate and execute a deterministic local console entry point before another model release run |
+| Local native launcher regression | Fixed before rerun | macOS reports the canonical `/private/var/...` path for a payload created through the equivalent `/var/...` path, while the validator canonicalized only Python's value and produced a false containment failure | Canonicalize the actual destination root before comparing `sys.base_prefix` and executable containment; the stricter build-host leak scan remains unchanged |
+| Local native fixture execution | Passed after environment-only retry | The restricted sandbox could neither resolve the official Python download nor bind the fixture's loopback resume server | Re-ran the identical repository command with network and loopback access; the complete native fixture passed without a repository fallback or CI-specific bypass |
 
 ### Gate 8.3: cross-platform closure
 

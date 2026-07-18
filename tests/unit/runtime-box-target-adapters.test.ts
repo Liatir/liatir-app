@@ -1,5 +1,5 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { createWriteStream } from 'node:fs';
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import { createWriteStream, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, win32 } from 'node:path';
 import { pipeline } from 'node:stream/promises';
@@ -15,6 +15,7 @@ import {
   discoverStandalonePythonRoot,
   findPythonRelocationLeaks,
   stageStandalonePython,
+  syncLockedPythonDependencies,
   validateRelocatablePython,
 } from '../../scripts/runtime-box/python.mjs';
 import {
@@ -61,7 +62,12 @@ describe('Runtime Box target adapters', () => {
         id: 'windows-x86_64',
         host: { platform: 'win32', arch: 'x64' },
         uvPlatform: 'x86_64-pc-windows-msvc',
-        python: { entryPoint: 'venv/python.exe', scriptsDirectory: 'venv/Scripts', executableSuffix: '.exe' },
+        python: {
+          entryPoint: 'venv/python.exe',
+          scriptsDirectory: 'venv/Scripts',
+          executableSuffix: '.exe',
+          launcherKind: 'uv-windows-pe',
+        },
         archive: { writer: 'yazl@3.3.1', reader: 'yauzl@3.4.0', zip64: true },
         nativeLibraryInspection: { command: 'dumpbin' },
       },
@@ -125,6 +131,52 @@ describe('Runtime Box target adapters', () => {
     ]);
   });
 
+  it('marks Windows wheel installation relocatable only while uv generates launchers', async () => {
+    const root = await temporaryRoot();
+    const destinationRoot = join(root, 'payload', 'venv');
+    const interpreter = join(destinationRoot, 'python.exe');
+    const lockPath = join(root, 'requirements.lock');
+    const markerPath = join(destinationRoot, 'pyvenv.cfg');
+    const adapter = runtimeBoxTargetAdapter({ platform: 'windows', arch: 'x86_64', accelerator: 'cpu' });
+    await mkdir(destinationRoot, { recursive: true });
+    await writeFile(interpreter, 'fixture\n');
+    await writeFile(lockPath, 'fixture==1.0.0\n');
+    const calls: Array<{ command: string; args: string[] }> = [];
+
+    await syncLockedPythonDependencies({
+      adapter,
+      destinationRoot,
+      interpreter,
+      lockPath,
+      run: (command: string, args: string[]) => {
+        expect(readFileSync(markerPath, 'utf8')).toBe('relocatable = true\n');
+        calls.push({ command, args });
+      },
+      uv: 'uv',
+      extraArgs: ['--torch-backend', 'cpu'],
+    });
+
+    expect(calls).toEqual([{
+      command: 'uv',
+      args: [
+        'pip', 'sync', lockPath, '--python', interpreter,
+        '--system', '--break-system-packages', '--require-hashes', '--strict', '--no-config',
+        '--torch-backend', 'cpu',
+      ],
+    }]);
+    await expect(readFile(markerPath, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' });
+
+    await expect(syncLockedPythonDependencies({
+      adapter,
+      destinationRoot,
+      interpreter,
+      lockPath,
+      run: () => { throw new Error('fixture sync failed'); },
+      uv: 'uv',
+    })).rejects.toThrow('fixture sync failed');
+    await expect(readFile(markerPath, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
   it('repairs uv long-path POSIX launchers before relocation validation', async () => {
     const root = await temporaryRoot();
     const payloadDir = join(root, 'long-build-path', 'payload');
@@ -146,6 +198,8 @@ describe('Runtime Box target adapters', () => {
       'import sys',
       '',
     ].join('\n'));
+    const canonicalDestinationRoot = await realpath(destinationRoot);
+    const canonicalInterpreter = join(canonicalDestinationRoot, 'bin', 'python');
 
     await validateRelocatablePython({
       adapter,
@@ -153,7 +207,10 @@ describe('Runtime Box target adapters', () => {
       interpreter,
       payloadDir,
       sourceRoot,
-      run: () => JSON.stringify({ basePrefix: destinationRoot, executable: interpreter }),
+      run: () => JSON.stringify({
+        basePrefix: canonicalDestinationRoot,
+        executable: canonicalInterpreter,
+      }),
     });
 
     const repaired = await readFile(launcher, 'utf8');

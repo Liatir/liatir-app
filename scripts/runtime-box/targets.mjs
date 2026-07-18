@@ -75,7 +75,7 @@ const TARGET_ADAPTERS = Object.freeze([
       entryPoint: 'venv/python.exe',
       scriptsDirectory: 'venv/Scripts',
       executableSuffix: '.exe',
-      launcherKind: 'windows-distlib',
+      launcherKind: 'uv-windows-pe',
     }),
     archive: ARCHIVE_BACKEND,
     nativeLibraryInspection: Object.freeze({
