@@ -104,6 +104,38 @@ jobs:
           version: ${{ needs.preflight.outputs.uv_version }}
           enable-cache: false
 
+      - name: Select Git Bash for Windows composite actions
+        if: startsWith(inputs.target_id, 'windows-')
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $gitBash = 'C:\Program Files\Git\bin'
+          if (-not (Test-Path "$gitBash\bash.exe")) {
+            throw "Git Bash is unavailable at $gitBash."
+          }
+          $gitBash | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Add Windows native inspection tools
+        if: startsWith(inputs.target_id, 'windows-')
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path $vswhere)) {
+            throw "vswhere.exe is unavailable at $vswhere."
+          }
+          $installation = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $installation) {
+            throw 'Visual Studio C++ tools are unavailable.'
+          }
+          $toolsets = Join-Path $installation 'VC\Tools\MSVC'
+          $toolset = Get-ChildItem -Path $toolsets -Directory | Sort-Object { [version]$_.Name } -Descending | Select-Object -First 1
+          $bin = Join-Path $toolset.FullName 'bin\Hostx64\x64'
+          if (-not (Test-Path (Join-Path $bin 'dumpbin.exe'))) {
+            throw "dumpbin.exe is unavailable at $bin."
+          }
+          $bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
       - name: Verify native host, GPU requirement, and working storage
         run: >-
           npm run runtime-box:ci -- host-probe
@@ -155,9 +187,8 @@ jobs:
 
       - name: Create placeholder frontend output
         if: inputs.mode == 'native-lifecycle'
-        run: |
-          mkdir -p frontend/dist
-          echo '<!doctype html><title>runtime box lifecycle</title>' > frontend/dist/index.html
+        run: >-
+          node -e "const fs=require('node:fs');fs.mkdirSync('frontend/dist',{recursive:true});fs.writeFileSync('frontend/dist/index.html','<!doctype html><title>runtime box lifecycle</title>')"
 
       - name: Verify the Rust Runtime Box lifecycle
         if: inputs.mode == 'native-lifecycle'

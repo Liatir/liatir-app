@@ -15,7 +15,7 @@ on:
         description: Checked native target
         required: true
         type: choice
-        options: [macos-aarch64-metal, linux-x86_64-cpu, linux-x86_64-cuda12.4]
+        options: [macos-aarch64-metal, linux-x86_64-cpu, linux-x86_64-cuda12.4, windows-x86_64-cpu]
       channel:
         description: Allowed release channel
         required: true
@@ -122,6 +122,38 @@ jobs:
           version: ${{ needs.preflight.outputs.uv_version }}
           enable-cache: false
 
+      - name: Select Git Bash for Windows composite actions
+        if: startsWith(inputs.target_id, 'windows-')
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $gitBash = 'C:\Program Files\Git\bin'
+          if (-not (Test-Path "$gitBash\bash.exe")) {
+            throw "Git Bash is unavailable at $gitBash."
+          }
+          $gitBash | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Add Windows native inspection tools
+        if: startsWith(inputs.target_id, 'windows-')
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path $vswhere)) {
+            throw "vswhere.exe is unavailable at $vswhere."
+          }
+          $installation = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $installation) {
+            throw 'Visual Studio C++ tools are unavailable.'
+          }
+          $toolsets = Join-Path $installation 'VC\Tools\MSVC'
+          $toolset = Get-ChildItem -Path $toolsets -Directory | Sort-Object { [version]$_.Name } -Descending | Select-Object -First 1
+          $bin = Join-Path $toolset.FullName 'bin\Hostx64\x64'
+          if (-not (Test-Path (Join-Path $bin 'dumpbin.exe'))) {
+            throw "dumpbin.exe is unavailable at $bin."
+          }
+          $bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
       - name: Install Linux product lifecycle dependencies
         if: startsWith(inputs.target_id, 'linux-')
         run: |
@@ -137,13 +169,14 @@ jobs:
             librsvg2-dev \
             xvfb
 
-      - name: Install pinned Rust 1.95.0 for the Linux product lifecycle
-        if: startsWith(inputs.target_id, 'linux-')
+      - name: Install pinned Rust 1.95.0 for the product lifecycle
+        if: startsWith(inputs.target_id, 'linux-') || startsWith(inputs.target_id, 'windows-')
         uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
         with:
           toolchain: "1.95.0"
 
       - name: Require a clean exact revision before signing
+        shell: bash
         run: |
           test "$(git rev-parse HEAD)" = "${{ github.sha }}"
           test -z "$(git status --porcelain)"
@@ -189,18 +222,11 @@ jobs:
           --public-key runtime-boxes/trust/production-public.json
           --receipt .runtime-box-ci/publish-receipt.json
 
-      - name: Start the signed candidate registry without promoting it
-        if: startsWith(inputs.target_id, 'linux-')
-        run: |
-          npm run runtime-box -- serve --port 8790 > .runtime-box-ci/candidate-registry.log 2>&1 &
-          echo "$!" > .runtime-box-ci/candidate-registry.pid
-          curl --retry 20 --retry-connrefused --retry-delay 1 --silent --fail http://127.0.0.1:8790/health
-
       - name: Build the real Liatir product test binary
-        if: startsWith(inputs.target_id, 'linux-')
+        if: startsWith(inputs.target_id, 'linux-') || startsWith(inputs.target_id, 'windows-')
         run: npm run test:tauri:prepare
 
-      - name: Install and run the candidate through Jobs, Results, provenance, replacement, and cleanup
+      - name: Run the Linux candidate through Jobs, Results, provenance, replacement, and cleanup
         if: startsWith(inputs.target_id, 'linux-')
         env:
           LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL: http://127.0.0.1:8790/v1
@@ -210,7 +236,17 @@ jobs:
           LIATIR_E2E_REPORT: .runtime-box-ci/product-lifecycle-e2e.json
         run: >-
           xvfb-run --auto-servernum
-          npm run test:tauri:run -- --heavy tests/e2e/specs/runtime-box-native.e2e.mjs
+          node scripts/run-runtime-box-product-lifecycle.mjs
+
+      - name: Run the Windows candidate through Jobs, Results, provenance, replacement, and cleanup
+        if: startsWith(inputs.target_id, 'windows-')
+        env:
+          LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL: http://127.0.0.1:8790/v1
+          LIATIR_RUNTIME_BOX_TARGET_ID: ${{ inputs.target_id }}
+          LIATIR_RUNTIME_BOX_EXPECTED_VERSION: ${{ needs.preflight.outputs.version }}
+          LIATIR_RUNTIME_BOX_PRODUCT_EVIDENCE: .runtime-box-ci/product-lifecycle.json
+          LIATIR_E2E_REPORT: .runtime-box-ci/product-lifecycle-e2e.json
+        run: node scripts/run-runtime-box-product-lifecycle.mjs
 
       - name: Promote beta only after immutable publication and product lifecycle succeed
         run: >-
@@ -251,13 +287,6 @@ jobs:
           include-hidden-files: true
           retention-days: 7
           if-no-files-found: warn
-
-      - name: Stop the candidate registry
-        if: always() && startsWith(inputs.target_id, 'linux-')
-        run: |
-          if test -f .runtime-box-ci/candidate-registry.pid; then
-            kill "$(cat .runtime-box-ci/candidate-registry.pid)" 2>/dev/null || true
-          fi
 
       - name: Clean Runtime Box build state
         if: always()

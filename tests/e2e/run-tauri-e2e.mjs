@@ -6,6 +6,7 @@ import { expect } from 'expect';
 import pixelmatch from 'pixelmatch';
 import { PNG } from 'pngjs';
 import { cleanupTestArtifacts } from '../support/artifact-cleanup.mjs';
+import { tauriTestEnvironment } from './support/tauri-process.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const appBinaryCandidates = process.platform === 'darwin'
@@ -97,10 +98,7 @@ function startTauriApp() {
     cwd: rootDir,
     env: {
       ...process.env,
-      HOME: testHome,
-      XDG_DATA_HOME: path.join(testHome, '.local', 'share'),
-      XDG_CACHE_HOME: path.join(testHome, '.cache'),
-      XDG_CONFIG_HOME: path.join(testHome, '.config'),
+      ...tauriTestEnvironment(testHome),
       LIATIR_TEST_MODE: '1',
       NODE_ENV: 'test',
       RUST_LOG: process.env.RUST_LOG ?? 'warn',

@@ -3,7 +3,11 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { waitForLiatirBridge } from './liatir-app.mjs';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+const CATALOG = JSON.parse(fs.readFileSync(path.join(ROOT, 'runtime-boxes/catalog.json'), 'utf8'));
 
 const MIN_INSTALL_TIMEOUT_MS = 180_000;
 // Eight MiB/s is intentionally below the observed protected-release transfer rate. The fixed
@@ -19,39 +23,24 @@ export function runtimeBoxInstallTimeoutMs(archiveSizeBytes) {
   return Math.max(MIN_INSTALL_TIMEOUT_MS, INSTALL_FIXED_OVERHEAD_MS + downloadMs);
 }
 
-/** Returns the published target metadata shared by the current macOS native fixtures. */
-export function macosArm64MetalRuntimeBoxTarget(minRamGb) {
-  return [{
-    target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
-    hostEnvironments: ['native'],
-    minRamGb,
-  }];
-}
-
-/** Returns the exact published candidate selected by a native Runtime Box release test. */
-export function runtimeBoxTargetForNativeTest(targetId, minRamGb) {
-  if (targetId === 'macos-aarch64-metal') return macosArm64MetalRuntimeBoxTarget(minRamGb);
-  if (targetId === 'linux-x86_64-cpu') {
-    return [{
-      target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
-      hostEnvironments: ['native'],
-      minRamGb,
-    }];
+/** Returns candidate metadata from the same checked catalog and recipe used by the release. */
+export function runtimeBoxTargetForNativeTest(modelId, targetId) {
+  const model = CATALOG.models.find((candidate) => candidate.modelId === modelId);
+  const target = model?.targets.find((candidate) => candidate.targetId === targetId);
+  if (!target) throw new Error(`Unsupported native Runtime Box test target: ${modelId}/${targetId}`);
+  const recipe = JSON.parse(fs.readFileSync(
+    path.join(ROOT, 'runtime-boxes', 'recipes', target.recipeId, 'recipe.json'),
+    'utf8',
+  ));
+  const candidate = {
+    target: { ...target.target },
+    hostEnvironments: [...target.hostEnvironments],
+    minRamGb: recipe.compatibility.minRamGb,
+  };
+  if (recipe.compatibility.minNvidiaDriverVersion) {
+    candidate.minNvidiaDriverVersion = recipe.compatibility.minNvidiaDriverVersion;
   }
-  if (targetId === 'linux-x86_64-cuda12.4') {
-    return [{
-      target: {
-        platform: 'linux',
-        arch: 'x86_64',
-        accelerator: 'cuda',
-        cudaVersion: '12.4',
-      },
-      hostEnvironments: ['native'],
-      minRamGb,
-      minNvidiaDriverVersion: '550.54.14',
-    }];
-  }
-  throw new Error(`Unsupported native Runtime Box test target: ${targetId}`);
+  return [candidate];
 }
 
 /**

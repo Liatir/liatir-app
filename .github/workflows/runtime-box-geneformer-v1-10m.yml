@@ -5,6 +5,8 @@ on:
     paths:
       - "runtime-boxes/recipes/geneformer-v1-10m-macos-arm64-metal/**"
       - "runtime-boxes/recipes/geneformer-v1-10m-linux-x86_64-cpu/**"
+      - "runtime-boxes/recipes/geneformer-v1-10m-windows-x86_64-cpu/**"
+      - "runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cpu.json"
       - "runtime-boxes/legal/geneformer-v1-10m.md"
       - "scripts/validate-geneformer-parity.mjs"
       - "scripts/ai-validation/geneformer-parity.py"
@@ -18,6 +20,8 @@ on:
     paths:
       - "runtime-boxes/recipes/geneformer-v1-10m-macos-arm64-metal/**"
       - "runtime-boxes/recipes/geneformer-v1-10m-linux-x86_64-cpu/**"
+      - "runtime-boxes/recipes/geneformer-v1-10m-windows-x86_64-cpu/**"
+      - "runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cpu.json"
       - "runtime-boxes/legal/geneformer-v1-10m.md"
       - "scripts/validate-geneformer-parity.mjs"
       - "scripts/ai-validation/geneformer-parity.py"
@@ -32,7 +36,7 @@ on:
         description: Checked Runtime Box target
         required: true
         type: choice
-        options: [macos-aarch64-metal, linux-x86_64-cpu]
+        options: [macos-aarch64-metal, linux-x86_64-cpu, windows-x86_64-cpu]
       mode:
         description: Native validation depth
         required: true

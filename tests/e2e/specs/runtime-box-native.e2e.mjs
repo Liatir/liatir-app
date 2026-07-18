@@ -30,12 +30,14 @@ const REGISTRY_BASE_URL = process.env.LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL
 const TARGET_ID = process.env.LIATIR_RUNTIME_BOX_TARGET_ID ?? 'macos-aarch64-metal';
 const VERSION = process.env.LIATIR_RUNTIME_BOX_EXPECTED_VERSION ?? '1.0.0-beta.1';
 const PRODUCT_EVIDENCE_PATH = process.env.LIATIR_RUNTIME_BOX_PRODUCT_EVIDENCE ?? null;
-const CUDA_TARGET = TARGET_ID === 'linux-x86_64-cuda12.4';
-const EXPECTED_ACCELERATOR = CUDA_TARGET
+const TARGET_CANDIDATES = runtimeBoxTargetForNativeTest(MODEL_ID, TARGET_ID);
+const TARGET_ACCELERATOR = TARGET_CANDIDATES[0].target.accelerator;
+const CUDA_TARGET = TARGET_ACCELERATOR === 'cuda';
+const EXPECTED_ACCELERATOR = TARGET_ACCELERATOR === 'cuda'
   ? /^CUDA$/
-  : TARGET_ID === 'linux-x86_64-cpu'
-    ? /^CPU$/
-    : /^Apple Metal$/;
+  : TARGET_ACCELERATOR === 'metal'
+    ? /^Apple Metal$/
+    : /^CPU$/;
 
 const CREATE_FIXTURE_SCRIPT = String.raw`
 import json
@@ -103,7 +105,7 @@ async function startInstall(browser, downloadId, options = {}) {
     modelId: MODEL_ID,
     channel: 'beta',
     registryBaseUrl: REGISTRY_BASE_URL,
-    targetCandidates: runtimeBoxTargetForNativeTest(TARGET_ID, 8),
+    targetCandidates: TARGET_CANDIDATES,
     downloadId,
   }, options);
 }
@@ -136,6 +138,11 @@ function section(output, type, label = null) {
   return output.sections.find((item) => item.type === type && (label === null || item.label === label));
 }
 
+/** Normalizes native paths only for platform-independent containment assertions. */
+function comparablePath(value) {
+  return String(value).replaceAll('\\', '/');
+}
+
 export const tests = [
   {
     name: 'validates install, resume, real Job and Result provenance, replacement, rollback, and cleanup',
@@ -146,8 +153,8 @@ export const tests = [
         appPath: await window.Liatir.invoke('lia_app_path'),
         dataPath: await window.Liatir.desktop.fs.data.path(),
       }));
-      expect(storage.appPath).toContain('tests/.artifacts/home');
-      expect(storage.dataPath).toContain('tests/.artifacts/home');
+      expect(comparablePath(storage.appPath)).toContain('tests/.artifacts/home');
+      expect(comparablePath(storage.dataPath)).toContain('tests/.artifacts/home');
 
       const interruptedId = `runtime-box-interrupted-${Date.now()}`;
       await startInstall(browser, interruptedId, { cancelAfterBytes: 1 });
@@ -188,8 +195,13 @@ export const tests = [
       expect(resumeOffset).toBeGreaterThan(0);
 
       const runtimeDir = resumed.runtimeDir;
-      const modelCacheDir = `${runtimeDir}/model-cache/geneformer-v1-10m`;
-      const validationDir = `${storage.dataPath}/workspaces/__test__/geneformer-native-validation`;
+      const modelCacheDir = path.join(runtimeDir, 'model-cache', 'geneformer-v1-10m');
+      const validationDir = path.join(
+        storage.dataPath,
+        'workspaces',
+        '__test__',
+        'geneformer-native-validation',
+      );
       const fixture = await runPython(browser, CREATE_FIXTURE_SCRIPT, {
         runtimeDir,
         modelCacheDir,
@@ -205,7 +217,7 @@ export const tests = [
         'GENEFORMER_EMBEDDING_SCRIPT',
       );
       const analysisRunId = crypto.randomUUID();
-      const outputDir = `${validationDir}/results/${analysisRunId}`;
+      const outputDir = path.join(validationDir, 'results', analysisRunId);
       const startedAt = Date.now();
       const params = {
         modelId: MODEL_ID,
@@ -375,7 +387,7 @@ export const tests = [
       );
       expect(await browser.execute(() => document.body.innerText)).toContain('Provenance');
 
-      const markerPath = `${runtimeDir}/validation/rollback-marker.txt`;
+      const markerPath = path.join(runtimeDir, 'validation', 'rollback-marker.txt');
       const marker = await runPython(browser, MARKER_SCRIPT, {
         path: markerPath,
         write: true,

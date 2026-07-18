@@ -318,4 +318,22 @@ describe('Batch 5 single-cell foundation model contract', () => {
     );
     expect(validatorSource).not.toMatch(/^export const UCE_EMBEDDING_SCRIPT/m);
   });
+
+  it('runs Geneformer parity through the recipe interpreter without POSIX-only paths', () => {
+    const validatorSource = readFileSync(
+      resolve(rootDir, 'scripts/validate-geneformer-parity.mjs'),
+      'utf8',
+    );
+    const harnessSource = readFileSync(
+      resolve(rootDir, 'scripts/ai-validation/geneformer-parity.py'),
+      'utf8',
+    );
+
+    expect(validatorSource).toContain("...RECIPE.pythonEntryPoint.split('/')");
+    expect(validatorSource).toContain("'--accelerator', RECIPE.target.accelerator");
+    expect(harnessSource).toContain('Path(sys.executable)');
+    expect(harnessSource).toContain('if args.accelerator == "cuda":');
+    expect(harnessSource).toContain('elif args.accelerator != "cpu":');
+    expect(harnessSource).not.toContain('CUDA_TARGET_ID =');
+  });
 });

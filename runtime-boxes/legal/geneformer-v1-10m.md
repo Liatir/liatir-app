@@ -1,11 +1,11 @@
 # Geneformer V1 10M redistribution record
 
-Verification date: 2026-07-17
+Verification date: 2026-07-18
 
 ## Decision
 
 The pinned Geneformer V1 10M source and model assets are eligible for the
-Linux CPU and CUDA 12.4 Runtime Boxes under Apache License 2.0. The upstream
+reviewed Linux and Windows Runtime Box targets under Apache License 2.0. The upstream
 model card at the reviewed revision declares `apache-2.0`; that revision does
 not contain a standalone `LICENSE` or `NOTICE` file. Each Runtime Box therefore
 includes the complete Apache 2.0 license and a source-attribution notice next
@@ -41,6 +41,11 @@ Four wheels do not expose a license file inside `.dist-info`. The shared Apache
 MIT texts and copyright notices for `array-api-compat==1.15.0` from tag `1.15`
 (commit `076218e4f5aa18578418c7d04fad9ab581a16bb8`) and `triton==3.0.0` from tag
 `v3.0.0` (commit `55a4ab051c88ba2baa031e520a339d3fded6468f`).
+The Windows CPU recipe also includes and self-tests the exact
+`array-api-compat==1.15.0` MIT text. The already-published Linux CPU artifact
+predates that supplemental inclusion; it must be replaced in a separately
+authorized corrective release rather than being described as if its immutable
+payload had changed.
 
 This is an engineering compliance record, not legal advice.
 
@@ -104,11 +109,37 @@ This is an engineering compliance record, not legal advice.
   15,000,000,000 usable GPU bytes; the official runner specification is 16 GB
   VRAM, 28 GB RAM, and 176 GB SSD
 
-The CUDA audit inspected only hash-verified Linux wheel metadata and license
-files on the local non-Linux host; it did not execute foreign binaries. The
-native T4 build must still install the full lock, reproduce the same audit,
-pass CUDA imports and self-test, and record actual installed/archive size,
-peak disk, peak VRAM, GPU identity, driver, and scientific tolerances.
+The CUDA audit was first prepared from hash-verified Linux wheel metadata on a
+non-Linux host. Gate 8.1 run `29643382673` then installed the full lock on the
+native T4 runner, reproduced the audit, passed CUDA imports and self-test, and
+recorded installed/archive size, peak disk, peak VRAM, GPU identity, driver,
+and scientific tolerances.
+
+## Windows CPU dependency and layout review
+
+- Recipe: `geneformer-v1-10m-windows-x86_64-cpu`
+- Python: `3.11.9`
+- Resolver: `uv 0.11.28`
+- Wheel target: `x86_64-pc-windows-msvc`
+- PyTorch backend: `cpu`
+- Dependency lock SHA-256:
+  `b0e070dbcbf7c236db06afd086bd39dec99721221f0019ce12f9cb1affd28e7c`
+- Exact PyTorch distribution: `torch==2.4.1+cpu`
+- Locked wheel count: 35
+- Selected wheel bytes: 306,063,118 compressed and 1,484,068,521 expanded
+- Supplemental exact MIT notice:
+  `array-api-compat-1.15.0-MIT.txt` SHA-256
+  `4ffd978e3fa18d058d98c66771cfea7ed634aaf7023cf9612b8b55eee9a8f0fe`
+- Conservative build disk gate: 6 GiB, including a 2 GiB installed-payload
+  estimate, 1 GiB archive estimate, and 2 GiB safety/cache margin
+- Declared minimum RAM: 8 GiB. Actual peak RAM remains a required native-run
+  measurement.
+
+This audit inspected only hash-verified Windows wheel metadata and license
+files on the local non-Windows host; it did not execute foreign binaries. The
+native Windows build must still install the lock into standalone Python,
+reproduce the audit, pass DLL/import and scientific self-tests, and record
+actual installed/archive size, peak disk, and peak RAM.
 
 The payload layout is fixed as follows:
 
@@ -128,12 +159,11 @@ The payload layout is fixed as follows:
 
 PyTorch 2.4.1 publishes official Linux wheels for CUDA 12.4. NVIDIA documents
 the Tesla T4 as a 16 GB Turing GPU with compute capability 7.5, which is
-supported by CUDA 12.x. The target deliberately requires the CUDA 12.4 GA
-driver floor of 550.54.14. The exact lock and redistribution audit are approved
-for a native build, but publication remains blocked until the dedicated T4 run
-proves same-lock CPU baseline parity, real CUDA inference, numeric tolerance,
-peak VRAM, product Jobs/Results/provenance, replacement, rollback, removal, and
-cleanup.
+supported by CUDA 12.x. The Linux target deliberately requires the CUDA 12.4
+GA driver floor of 550.54.14 and was validated and published by Gate 8.1. The
+Windows target will require the separate Windows GA floor of 551.61. Its
+dependency lock and redistribution audit are not approved until the Windows
+CPU target closes and the CUDA recipe is reviewed.
 
 ## Sources
 
@@ -141,6 +171,7 @@ cleanup.
 - [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)
 - [Apache redistribution FAQ](https://www.apache.org/foundation/license-faq.html)
 - [PyTorch 2.4.1 CPU and CUDA 12.4 wheels](https://docs.pytorch.org/get-started/previous-versions/)
+- [uv managed Python platforms](https://docs.astral.sh/uv/concepts/python-versions/)
 - [uv PyTorch backend selection](https://docs.astral.sh/uv/guides/integration/pytorch/)
 - [NVIDIA T4 specifications](https://www.nvidia.com/en-us/data-center/tesla-t4/)
 - [NVIDIA CUDA GPU compute capabilities](https://developer.nvidia.com/cuda/gpus)

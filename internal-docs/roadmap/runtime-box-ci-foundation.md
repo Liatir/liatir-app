@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | Not started | Requires Gate 8.1 |
+| 8.2. Geneformer Windows pilot | In progress | Official recheck and Windows CPU lock/audit complete; no native run yet |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -365,6 +365,57 @@ Windows prerequisite.
 Exit only when native Python and DLL loading, archive/self-test, KMS signatures,
 immutable R2 objects, channel metadata, scientific evidence, product lifecycle,
 and cleanup are verified.
+
+#### Gate 8.2 execution record
+
+Current state as of 2026-07-18:
+
+- The official Geneformer repository still identifies revision
+  `04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5` and Apache-2.0 terms. Fresh
+  downloads of the pinned configuration, checkpoint, token dictionary, median
+  dictionary, and Ensembl mapping reproduce every recipe size and SHA-256.
+- Official uv documentation still exposes the `x86_64-pc-windows-msvc` target
+  and managed python-build-standalone runtimes. Official PyTorch indexes still
+  publish CPython 3.11 Windows x86-64 wheels for `torch==2.4.1+cpu` and
+  `torch==2.4.1+cu124`.
+- NVIDIA's CUDA 12.4 release notes require Windows driver `551.61` for the CUDA
+  12.4 GA toolchain. The planned T4 runner remains compatible at compute
+  capability 7.5 and 16 GB VRAM; the looser CUDA 12.x minor-compatibility floor
+  is not used as the target contract.
+- `windows-x86_64-cpu` now has an exact Python 3.11.9/uv 0.11.28 recipe and a
+  reproducible 35-package lock. Two independent resolutions produced SHA-256
+  `b0e070dbcbf7c236db06afd086bd39dec99721221f0019ce12f9cb1affd28e7c`
+  and selected exactly `torch==2.4.1+cpu`.
+- A local non-executing foreign-wheel audit verified all selected hashes and
+  Windows wheel identities. The dependency payload measures 306,063,118 bytes
+  compressed and 1,484,068,521 bytes expanded. The reviewed inventory is in
+  `runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cpu.json`.
+- The Windows CPU recipe includes the exact upstream MIT notice for
+  `array-api-compat==1.15.0`, whose wheel declares MIT but contains no license
+  file. The existing supplemental notice is now an explicit self-test input.
+- No native Windows build, paid runner, signature, publication, or product
+  lifecycle has run yet. Windows CPU is not validated, and Windows CUDA has not
+  started.
+- The checked release resolver selects `windows-2025`, a 90-minute timeout,
+  5,412,219,713 calculated peak bytes, and a 6 GiB hard disk gate. The release
+  workflow now resolves `dumpbin.exe`, uses the recipe-owned Python entry point,
+  isolates Windows AppData, and keeps the candidate Registry and product E2E in
+  one bounded process tree.
+- All pre-run local gates pass: catalog validation; signer policy 11/11; the
+  focused Windows/catalog/product regressions 34/34; workflow YAML parsing; and
+  the root verification profile with 26 suites and 147/147 unit and contract
+  tests, SDK generation, core build, Svelte check, frontend production build,
+  and root TypeScript compilation.
+
+Gate 8.2 incident ledger:
+
+| Evidence | Result | Root cause or finding | Corrective action |
+|---|---|---|---|
+| Local second lock | Blocked before resolution | The sandbox could not open the global uv cache | Re-ran with a gate-scoped cache under `/tmp`; no repository workaround |
+| Local second lock | Blocked before resolution | Sandbox DNS could not reach the official indexes | Re-ran once with approved network access; the lock reproduced byte-for-byte |
+| Root verification | Blocked in one unrelated fixture | Sandbox DNS prevented a temporary WASM conformance project from reaching `index.crates.io`; 146/147 tests had passed | Re-ran the same current repository script once with network access; all 147/147 tests and every build/check phase passed |
+| Windows CPU license audit | Actionable inherited finding | `array-api-compat==1.15.0` has no wheel-bundled MIT text, and the already-published Linux CPU recipe did not add the existing supplemental notice | Windows includes and self-tests the exact notice; the pre-existing Linux publication is recorded for separate corrective replacement rather than silently changing its published recipe |
+| Windows product-path audit | Fixed locally before native CI | The product E2E assumed POSIX separators in app-data assertions and constructed native paths with string concatenation | Paths now use `path.join`, and containment checks normalize separators without changing the actual path passed to the product |
 
 ### Gate 8.3: cross-platform closure
 

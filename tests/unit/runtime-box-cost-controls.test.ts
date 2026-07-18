@@ -21,6 +21,7 @@ describe('Runtime Box CI cost controls', () => {
     const runtimeBoxProductE2E = readFileSync(resolve('tests/e2e/specs/runtime-box-native.e2e.mjs'), 'utf8');
     const tauriMain = readFileSync(resolve('src-tauri/src/main.rs'), 'utf8');
     const diagnostics = readFileSync(resolve('src-tauri/src/bridge/diagnostics.rs'), 'utf8');
+    const releaseWorkflow = readFileSync(resolve('.github/workflows/runtime-box-release.yml'), 'utf8');
     expect(prepare.indexOf('npm run build --prefix packages/liatir-core'))
       .toBeLessThan(prepare.indexOf('npm run gen:sdk-types'));
     expect(prepare.indexOf('npm ci --prefix frontend'))
@@ -37,10 +38,15 @@ describe('Runtime Box CI cost controls', () => {
     expect(runtimeBoxSupport).toContain("cancelAfterBytes: options.cancelAfterBytes ?? null");
     expect(runtimeBoxProductE2E).toContain("{ cancelAfterBytes: 1 }");
     expect(runtimeBoxProductE2E).not.toContain('bytesDownloaded > 64 * 1024');
+    expect(runtimeBoxProductE2E).toContain("replaceAll('\\\\', '/')");
+    expect(runtimeBoxProductE2E).toContain("path.join(runtimeDir, 'model-cache'");
     expect(tauriMain).not.toContain('app.deep_link().register_all()?');
     expect(tauriMain).toContain('[deep-link] Failed to register desktop deep links');
     expect(diagnostics).toContain('let previous_hook = std::panic::take_hook();');
     expect(diagnostics).toContain('previous_hook(info);');
+    expect(releaseWorkflow).toContain('windows-x86_64-cpu');
+    expect(releaseWorkflow).toContain('node scripts/run-runtime-box-product-lifecycle.mjs');
+    expect(releaseWorkflow).toContain("startsWith(inputs.target_id, 'windows-')");
   });
 
   it('pins every model lock and calculates disk before native allocation', () => {

@@ -101,6 +101,28 @@ test('accepts Linux payload metadata for native and WSL2 hosts', () => {
   }));
 });
 
+test('accepts the approved native Windows CPU payload', () => {
+  const targetId = 'windows-x86_64-cpu';
+  assert.doesNotThrow(() => validateSigningPayload(policy, {
+    ...release,
+    target: { platform: 'windows', arch: 'x86_64', accelerator: 'cpu' },
+    compatibility: {
+      minLiatirVersion: '0.2.1',
+      minRamGb: 8,
+      hostEnvironments: ['native'],
+    },
+    archive: {
+      ...release.archive,
+      url: `https://assets.models.liatir.com/ai-runtime-boxes/boxes/geneformer-v1-10m/1.0.0-beta.2/${targetId}/${'a'.repeat(64)}.zip`,
+    },
+    pythonEntryPoint: 'venv/python.exe',
+    provenance: {
+      ...release.provenance,
+      recipeId: 'geneformer-v1-10m-windows-x86_64-cpu',
+    },
+  }));
+});
+
 test('matches the shared Runtime Box target ID contract', async () => {
   const contract = JSON.parse(await readFile(new URL('../../../runtime-boxes/target-id-contract.json', import.meta.url), 'utf8'));
   for (const fixture of contract.valid) {

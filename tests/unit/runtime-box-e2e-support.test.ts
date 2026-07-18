@@ -7,6 +7,7 @@ import {
   waitForRuntimeBoxInstall,
 } from '../e2e/support/runtime-box.mjs';
 import { waitForLiatirBridge } from '../e2e/support/liatir-app.mjs';
+import { tauriTestEnvironment } from '../e2e/support/tauri-process.mjs';
 
 const originalWindow = (globalThis as { window?: unknown }).window;
 
@@ -19,6 +20,15 @@ afterEach(() => {
 });
 
 describe('Runtime Box product E2E support', () => {
+  it('isolates Windows app data inside the per-run test home', () => {
+    expect(tauriTestEnvironment('C:\\fixture-home', 'win32')).toMatchObject({
+      HOME: 'C:\\fixture-home',
+      USERPROFILE: 'C:\\fixture-home',
+      APPDATA: 'C:\\fixture-home\\AppData\\Roaming',
+      LOCALAPPDATA: 'C:\\fixture-home\\AppData\\Local',
+    });
+  });
+
   it('scales the install bound from the observed archive size without target-specific branches', () => {
     const cpuArchiveTimeout = runtimeBoxInstallTimeoutMs(380_481_131);
     const cudaArchiveTimeout = runtimeBoxInstallTimeoutMs(3_079_059_631);
@@ -62,7 +72,10 @@ describe('Runtime Box product E2E support', () => {
   });
 
   it('uses the exact native CUDA 12.4 candidate and driver floor', () => {
-    expect(runtimeBoxTargetForNativeTest('linux-x86_64-cuda12.4', 8)).toEqual([{
+    expect(runtimeBoxTargetForNativeTest(
+      'ctheodoris-geneformer-v1-10m',
+      'linux-x86_64-cuda12.4',
+    )).toEqual([{
       target: {
         platform: 'linux',
         arch: 'x86_64',
@@ -72,6 +85,17 @@ describe('Runtime Box product E2E support', () => {
       hostEnvironments: ['native'],
       minRamGb: 8,
       minNvidiaDriverVersion: '550.54.14',
+    }]);
+  });
+
+  it('derives the Windows CPU candidate from the checked catalog and recipe', () => {
+    expect(runtimeBoxTargetForNativeTest(
+      'ctheodoris-geneformer-v1-10m',
+      'windows-x86_64-cpu',
+    )).toEqual([{
+      target: { platform: 'windows', arch: 'x86_64', accelerator: 'cpu' },
+      hostEnvironments: ['native'],
+      minRamGb: 8,
     }]);
   });
 

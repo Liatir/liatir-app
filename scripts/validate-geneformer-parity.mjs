@@ -96,7 +96,7 @@ try {
   // Run with the box's own interpreter, so the comparison happens under the exact library versions
   // a user gets. The Python harness does the actual numeric comparison and fails on divergence.
   const output = run(
-    join(runtimeDir, 'venv/bin/python'),
+    join(runtimeDir, ...RECIPE.pythonEntryPoint.split('/')),
     [
       join(ROOT, 'scripts/ai-validation/geneformer-parity.py'),
       '--runtime-dir', runtimeDir,
@@ -104,6 +104,11 @@ try {
       '--upstream-tokenizer', join(upstreamDir, 'geneformer/tokenizer.py'),
       '--work-dir', join(workDir, 'validation'),
       '--target-id', TARGET_ID,
+      '--accelerator', RECIPE.target.accelerator,
+      ...(RECIPE.target.accelerator === 'cuda' ? [
+        '--cuda-version', RECIPE.target.cudaVersion,
+        '--min-nvidia-driver', RECIPE.compatibility.minNvidiaDriverVersion,
+      ] : []),
     ],
     { capture: true },
   );

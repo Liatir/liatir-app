@@ -96,6 +96,23 @@ describe('Runtime Box CI catalog', () => {
     });
   });
 
+  it('derives the Windows CPU recipe and hosted runner from checked catalog state', () => {
+    const resolved = resolveCiTarget(
+      catalog,
+      'ctheodoris-geneformer-v1-10m',
+      undefined,
+      'windows-x86_64-cpu',
+      'native-lifecycle',
+    );
+    expect(resolved.target).toMatchObject({
+      recipeId: 'geneformer-v1-10m-windows-x86_64-cpu',
+      status: 'buildable',
+      dependencyLockSha256: 'b0e070dbcbf7c236db06afd086bd39dec99721221f0019ce12f9cb1affd28e7c',
+      dependencyLicenseAudit: 'runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cpu.json',
+    });
+    expect(resolved.runner).toMatchObject({ runsOn: 'windows-2025', gpu: false });
+  });
+
   it('compares NVIDIA driver versions component by component', () => {
     expect(numericVersionAtLeast('590.48.01', '550.54.14')).toBe(true);
     expect(numericVersionAtLeast('550.54.14', '550.54.14')).toBe(true);

@@ -30,9 +30,6 @@ CPU_RELATIVE_TOLERANCE = 1e-5
 ACCELERATOR_ABSOLUTE_TOLERANCE = 1e-5
 ACCELERATOR_RELATIVE_TOLERANCE = 1e-4
 ACCELERATOR_MINIMUM_COSINE = 0.99999
-CUDA_TARGET_ID = "linux-x86_64-cuda12.4"
-CUDA_VERSION = "12.4"
-MINIMUM_NVIDIA_DRIVER = "550.54.14"
 EXPECTED_T4_MODEL = "Tesla T4"
 EXPECTED_T4_CAPABILITY = (7, 5)
 MINIMUM_T4_MEMORY_BYTES = 15_000_000_000
@@ -237,7 +234,14 @@ def main() -> None:
     parser.add_argument("--upstream-tokenizer", type=Path, required=True)
     parser.add_argument("--work-dir", type=Path, required=True)
     parser.add_argument("--target-id", required=True)
+    parser.add_argument("--accelerator", choices=("cpu", "cuda", "metal"), required=True)
+    parser.add_argument("--cuda-version")
+    parser.add_argument("--min-nvidia-driver")
     args = parser.parse_args()
+    if args.accelerator == "cuda" and (
+        not args.cuda_version or not args.min_nvidia_driver
+    ):
+        raise SystemExit("CUDA parity requires an exact CUDA version and driver floor.")
 
     if sha256(args.upstream_tokenizer) != TOKENIZER_SHA256:
         raise SystemExit(
@@ -250,7 +254,7 @@ def main() -> None:
     fixture = args.work_dir / "geneformer-parity-input.h5ad"
     cell_count, gene_count = create_fixture(fixture, dictionaries_dir)
     cpu_product = run_product_script(
-        args.runtime_dir / "venv" / "bin" / "python",
+        Path(sys.executable),
         args.product_script,
         args.runtime_dir,
         fixture,
@@ -310,10 +314,10 @@ def main() -> None:
         "cpuBaselineMinimumCosineSimilarity": cpu_cosine,
     }
 
-    if args.target_id == CUDA_TARGET_ID:
-        if torch.version.cuda != CUDA_VERSION or not torch.cuda.is_available():
+    if args.accelerator == "cuda":
+        if torch.version.cuda != args.cuda_version or not torch.cuda.is_available():
             raise SystemExit(
-                f"CUDA target requires available CUDA {CUDA_VERSION}; torch reports {torch.version.cuda}."
+                f"CUDA target requires available CUDA {args.cuda_version}; torch reports {torch.version.cuda}."
             )
         torch_gpu_model = torch.cuda.get_device_name(0)
         capability = torch.cuda.get_device_capability(0)
@@ -327,13 +331,13 @@ def main() -> None:
             raise SystemExit(f"T4 compute capability mismatch: expected 7.5, found {capability}.")
         if total_memory < MINIMUM_T4_MEMORY_BYTES:
             raise SystemExit(f"T4 usable memory is below {MINIMUM_T4_MEMORY_BYTES} bytes.")
-        if not numeric_version_at_least(driver_version, MINIMUM_NVIDIA_DRIVER):
+        if not numeric_version_at_least(driver_version, args.min_nvidia_driver):
             raise SystemExit(
-                f"NVIDIA driver {driver_version} is below required {MINIMUM_NVIDIA_DRIVER}."
+                f"NVIDIA driver {driver_version} is below required {args.min_nvidia_driver}."
             )
 
         accelerator_product = run_product_script(
-            args.runtime_dir / "venv" / "bin" / "python",
+            Path(sys.executable),
             args.product_script,
             args.runtime_dir,
             fixture,
@@ -343,7 +347,7 @@ def main() -> None:
         summary = accelerator_product.get("summary", {})
         if (
             summary.get("accelerator") != "CUDA"
-            or summary.get("reportedCudaCompatibility") != CUDA_VERSION
+            or summary.get("reportedCudaCompatibility") != args.cuda_version
             or summary.get("gpuModel") != EXPECTED_T4_MODEL
             or summary.get("computeCapability") != "7.5"
             or not isinstance(summary.get("peakVramBytes"), int)
@@ -382,9 +386,9 @@ def main() -> None:
         gpu_model = EXPECTED_T4_MODEL
         gpu_memory_bytes = total_memory
         compute_capability = "7.5"
-        reported_cuda = CUDA_VERSION
+        reported_cuda = args.cuda_version
         peak_vram_bytes = summary["peakVramBytes"]
-        backend = f"transformers-{transformers.__version__}-cu124"
+        backend = f"transformers-{transformers.__version__}-cu{args.cuda_version.replace('.', '')}"
         tolerances = {
             "absolute": ACCELERATOR_ABSOLUTE_TOLERANCE,
             "relative": ACCELERATOR_RELATIVE_TOLERANCE,
@@ -406,7 +410,7 @@ def main() -> None:
         if not hasattr(torch.backends, "mps") or not torch.backends.mps.is_available():
             raise SystemExit("Apple Metal target requires an available MPS backend.")
         accelerator_product = run_product_script(
-            args.runtime_dir / "venv" / "bin" / "python",
+            Path(sys.executable),
             args.product_script,
             args.runtime_dir,
             fixture,
@@ -461,7 +465,7 @@ def main() -> None:
             "acceleratorVsCpuMaximumAbsoluteDifference": accelerator_error,
             "acceleratorVsCpuMinimumCosineSimilarity": accelerator_cosine,
         })
-    elif args.target_id != "linux-x86_64-cpu":
+    elif args.accelerator != "cpu":
         raise SystemExit(f"Unsupported Geneformer parity target: {args.target_id}")
 
     print(json.dumps({
