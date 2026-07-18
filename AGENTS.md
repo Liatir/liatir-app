@@ -58,6 +58,16 @@ For every run or process, always verify:
 - Every feature must work well at **production level** — for real users, real files, and real scientific workflows, not only for the immediate demo.
 - Before closing work, mentally and technically run automatic tests to check everything works correctly (see the verification gate under the architecture policy).
 
+### Task-specific execution checklists
+
+- For every medium-complexity or complex task, maintain a **living, task-specific internal checklist** while working. A user plan provides direction but cannot predict every implementation detail; convert discoveries, dependencies, and risks into explicit checklist items before proceeding.
+- Refresh the checklist before each materially complex step. At minimum, verify: prerequisites and current state; the exact file, command, workflow, target, and inputs; expected state changes; success evidence; failure and stop conditions; rollback or cleanup; and any cost or authorization boundary.
+- Never perform a paid, remote, publishing, release, deployment, destructive, or otherwise consequential action from memory or name inference alone. Read back the exact action definition and inputs, verify that they match the intended operation, and immediately verify the created action identity, revision, target, and mode. Stop or cancel on any mismatch.
+- Mark an item complete only from concrete evidence such as a test result, generated artifact, run ID, receipt, diff, or observed state transition. Do not infer completion from an earlier adjacent step.
+- When a new defect or unexpected condition appears, add it to the checklist with its root cause, regression coverage, required cheap rechecks, retry limit, and cleanup before attempting another expensive action.
+- Keep the checklist proportional: concise for bounded work, more detailed for releases and multi-stage changes. Do not turn it into repetitive commentary or polling. For work that must survive another session, store the evolving checklist and evidence in the canonical tracked plan or handoff document.
+- The checklist supplements, and never replaces, repository instructions, the user plan, architecture rules, or required tests.
+
 ### Long-running processes and monitoring
 
 - **Never waste user credits or context on repetitive polling.** This applies to every long-running or external process, not only CI: builds, tests, deployments, jobs, downloads, services, queues, and remote workflows.

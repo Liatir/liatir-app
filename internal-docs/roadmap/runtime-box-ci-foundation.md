@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Windows CPU native-lifecycle rerun `29652909939` dispatched from corrective commit `f2b5c75` |
+| 8.2. Geneformer Windows pilot | In progress | Windows CPU protected release rerun pending after cancelling incorrect validation run `29652909939` |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -474,9 +474,13 @@ Current state as of 2026-07-18:
   The regression was first red against the direct shim call and now passes.
   The previously failing browser API build, the full root verification profile,
   and the complete local Tauri preparation/build all pass with the correction.
-- Protected Windows CPU native-lifecycle run `29652909939` was dispatched from
-  clean corrective commit `f2b5c75`. Its bounded release result is pending;
-  Windows CUDA remains blocked until every CPU lifecycle requirement passes.
+- Run `29652909939` was incorrectly dispatched from clean corrective commit
+  `f2b5c75` through the per-model validation workflow instead of the protected
+  production release workflow. It passed Windows build, signed self-test, and
+  scientific validation, then was cancelled during the Rust lifecycle step to
+  stop further cost. It did not use KMS, publish, run the product lifecycle, or
+  promote a channel and therefore provides no release completion evidence.
+  Windows CUDA remains blocked until every CPU release requirement passes.
 - The checked release resolver selects `windows-2025`, a 90-minute timeout,
   5,412,219,713 calculated peak bytes, and a 6 GiB hard disk gate. The release
   workflow now resolves `dumpbin.exe`, uses the recipe-owned Python entry point,
@@ -489,6 +493,32 @@ Current state as of 2026-07-18:
   generation, core build, Svelte check, frontend production build, and root
   TypeScript compilation. The official `test:tauri:prepare` path also completed,
   including the local Tauri CLI JavaScript entry point and native app bundle.
+
+Active Windows CPU release checklist:
+
+- [x] Keep `windows-x86_64-cpu` as the only active target; do not prepare or
+  dispatch Windows CUDA yet.
+- [x] Preserve user-owned working-tree changes and keep them outside technical
+  commits.
+- [x] Pass catalog validation, signer policy, focused regressions, the complete
+  root verification profile, and the official local Tauri preparation path.
+- [x] Read back `.github/workflows/runtime-box-release.yml` and confirm the
+  protected `runtime-box-production` environment, `id-token: write`, private KMS
+  signer, immutable publication, Windows product lifecycle, beta promotion,
+  evidence upload, and unconditional cleanup.
+- [ ] Commit and push the checklist/rule update with CI skipped, then record the
+  exact remote `main` revision to release.
+- [ ] Confirm that no `Runtime Box production release` run is queued or active.
+- [ ] Announce the exact runner, timeout, and maximum estimated cost.
+- [ ] Dispatch only `runtime-box-release.yml` from exact `main` with model
+  `ctheodoris-geneformer-v1-10m`, target `windows-x86_64-cpu`, and channel
+  `beta`.
+- [ ] Immediately verify that the created run reports workflow
+  `Runtime Box production release`, the intended revision, and the protected
+  release preflight. Cancel immediately on any mismatch.
+- [ ] After one meaningful interval, record only completion or an actionable
+  failure. On failure, inspect the exact log once, add the root cause and a red
+  regression, rerun all cheap gates, and allow at most one corrected retry.
 
 Gate 8.2 incident ledger:
 
@@ -508,6 +538,7 @@ Gate 8.2 incident ledger:
 | Local native fixture execution | Passed after environment-only retry | The restricted sandbox could neither resolve the official Python download nor bind the fixture's loopback resume server | Re-ran the identical repository command with network and loopback access; the complete native fixture passed without a repository fallback or CI-specific bypass |
 | `29651651212` | Failed in scientific validation after successful build, KMS signature, and native self-test | The blobless Geneformer clone depended on Git demand-fetching tokenizer blob `8af0cfa0f336d007feb2b144129a96c88ad8a871`; the Windows checkout reported the promised object as unreadable | Replace partial Git clone with the immutable revision URL plus exact size and SHA-256 verification through the shared downloader; publication, product lifecycle, and promotion never ran |
 | `29652046517` | Failed in real-product build after successful immutable publication | `scripts/build-browser-api.mjs` directly spawned `npx.cmd`; Node 22 on Windows rejected the command shim with `EINVAL`, revealing that the prior audit covered Runtime Box orchestration but not every product build helper | Audit repository-owned build/test child-process call sites, invoke JavaScript CLIs through the current Node executable, and add a focused regression before another release run; lifecycle and promotion never ran |
+| `29652909939` | Cancelled during Windows Rust lifecycle after build, self-test, and scientific validation passed | The per-model validation workflow was selected by model name without reading back its action chain; it cannot authenticate to KMS, publish, execute the product lifecycle, or promote beta | Cancel the unnecessary paid validation, add the repository-wide task-specific checklist rule, and require an exact production-workflow/input/revision readback before dispatch |
 
 Run `29651651212` used 22 seconds of standard Linux preflight and 4 minutes
 18 seconds of the standard Windows runner. At the documented GitHub rates its
@@ -518,6 +549,11 @@ Run `29652046517` used 19 seconds of standard Linux preflight and 6 minutes
 1 second of the standard Windows runner. Its Actions exposure is approximately
 USD 0.08 after per-minute rounding. The candidate was published by immutable
 hash but not promoted to the beta channel.
+
+Cancelled validation run `29652909939` used 24 seconds of standard Linux
+preflight and approximately 17 minutes of the standard Windows runner. Its
+Actions exposure is approximately USD 0.18 after per-minute rounding. It did
+not perform a production release.
 
 ### Gate 8.3: cross-platform closure
 
