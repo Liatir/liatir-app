@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Run `29652046517` passed build, parity, signature, self-test, and immutable publication; product-build `.cmd` defect under correction |
+| 8.2. Geneformer Windows pilot | In progress | Windows CPU native-lifecycle rerun `29652909939` dispatched from corrective commit `f2b5c75` |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -474,6 +474,9 @@ Current state as of 2026-07-18:
   The regression was first red against the direct shim call and now passes.
   The previously failing browser API build, the full root verification profile,
   and the complete local Tauri preparation/build all pass with the correction.
+- Protected Windows CPU native-lifecycle run `29652909939` was dispatched from
+  clean corrective commit `f2b5c75`. Its bounded release result is pending;
+  Windows CUDA remains blocked until every CPU lifecycle requirement passes.
 - The checked release resolver selects `windows-2025`, a 90-minute timeout,
   5,412,219,713 calculated peak bytes, and a 6 GiB hard disk gate. The release
   workflow now resolves `dumpbin.exe`, uses the recipe-owned Python entry point,
