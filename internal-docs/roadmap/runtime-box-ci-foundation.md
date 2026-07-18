@@ -156,7 +156,7 @@ metadata, scientific evidence, product lifecycle, and cleanup are verified.
 
 #### Gate 8.1 execution record
 
-Current state as of 2026-07-17:
+Current state as of 2026-07-18:
 
 - The official source, license and redistribution record, exact checkpoint,
   dependency lock, artifact layout, CPU/CUDA requirements, and T4 compatibility
@@ -208,10 +208,27 @@ Current state as of 2026-07-17:
   payload also carries the shared Apache 2.0 text for the two Apache packages
   and exact, hash-pinned MIT notices for array-api-compat 1.15.0 and Triton
   3.0.0.
-- CUDA remains **in local preparation**. No paid GPU runner has been started.
-  The target cannot move to published or complete until the clean economical
-  gate, real T4 inference, numerical parity, protected publication, complete
-  product lifecycle, final evidence, removal, and cleanup all pass.
+- Signer deployment run `29641886027` passed at commit `7ed0f87` after explicit
+  authorization. It preserved the release-CI boundary: GitHub can invoke the
+  private signer, while only the Cloud Run runtime identity can use Cloud KMS.
+- The first paid CUDA release attempt, run `29642025139` at commit `7ed0f87`,
+  passed protected-input resolution, the exact T4 host/storage probe, setup, and
+  installation of all 47 hash-locked packages. It then stopped before signing,
+  publication, or promotion because uv 0.11.28 used its documented three-line
+  POSIX shell trampoline for console scripts whose absolute interpreter path
+  exceeded 127 bytes. The relocatability repair inspected only the first line,
+  so it correctly rejected the remaining build path but could not repair it.
+  Cleanup and compact failure-evidence upload passed. Artifact `8428926086`
+  preserves the 653-byte failure receipt with digest
+  `sha256:26dc047ee274a14d933fdc97ff5361ed96ec12d7b6555144b19da14ea9d8c50b`.
+  A regression fixture now reproduces that exact uv launcher form; the generic
+  repair strips either a direct shebang or the three-line trampoline before
+  installing Liatir's relative launcher, and all 61 Runtime Box unit tests pass
+  locally.
+- CUDA remains **in local correction**. The target cannot move to published or
+  complete until the corrected commit passes the clean economical gate, real
+  T4 inference, numerical parity, protected publication, complete product
+  lifecycle, final evidence, removal, and cleanup.
 - Lock reproducibility was rechecked independently with the verified uv 0.11.28
   binary and live indexes: the resolver selected the same 47 packages and
   reproduced dependency-lock SHA-256
@@ -250,13 +267,18 @@ Incident ledger:
 | Local redistribution review | Corrected | Four exact wheels declare a license but omit a license file from `.dist-info`; Apache components are covered by the named inventory and shared Apache text, while exact upstream MIT texts and copyright notices were added for array-api-compat 1.15.0 and Triton 3.0.0 | `113bec7` |
 | Local source-hash check | Limited | The environment rejected a redundant streamed comparison after the official tagged LICENSE contents had already been read; the reviewed contents are stored locally and their local SHA-256 values are pinned in the recipe | `113bec7` |
 | Signer dispatch | Blocked before run | The local approval layer reported an exhausted Codex usage limit and rejected the GitHub API command before workflow creation; observed remote cost is USD 0 and an explicit post-notice authorization is required | — |
+| `29641886027` | Passed | Protected signer deployment and live signing verification completed on the current main revision | — |
+| `29642025139` | Failed | uv 0.11.28 emitted a three-line POSIX trampoline after the CUDA recipe path crossed the 127-byte shebang limit; the relocatability repair checked only its first line, then rejected the absolute path before signing or publication | `c30e423` |
 
-The release attempts consumed about 114 minutes of observed workflow wall time;
-the four signer attempts consumed about 6 minutes. At the standard Linux rate
-of USD 0.006/minute this is approximately USD 0.72 before job-minute
-rounding; GitHub billing remains the authoritative cost record. These failures
-also consumed substantial operator and agent time, so no further remote attempt
-is permitted until the complete economical local gate passes.
+The earlier release attempts consumed about 114 minutes of observed workflow
+wall time and the first four signer attempts consumed about 6 minutes. At the
+standard Linux rate of USD 0.006/minute this is approximately USD 0.72 before
+job-minute rounding. Signer run `29641886027` added 1 minute 47 seconds of run
+wall time. CUDA run `29642025139` used about 1 minute 39 seconds of the T4 job
+plus a short standard preflight; at the declared runner rates its incremental
+Actions exposure is approximately USD 0.10 before rounding. GitHub and Google
+Cloud billing remain the authoritative cost records. No corrected remote
+attempt is permitted until the complete economical local gate passes.
 
 ### Gate 8.2: Geneformer Windows pilot
 
