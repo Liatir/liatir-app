@@ -529,7 +529,8 @@ Current state as of 2026-07-18:
   weaken production startup, bypass code under `LIATIR_TEST_MODE`, or fall back
   to the host profile. A red Windows-path regression first failed because no
   preparation helper existed; it now verifies the exact directories and both
-  focused diagnostic suites pass.
+  focused diagnostic suites pass. The correction was committed and pushed as
+  `a29ee24` with generic push CI skipped.
 - The checked release resolver selects `windows-2025`, a 90-minute timeout,
   5,412,219,713 calculated peak bytes, and a 6 GiB hard disk gate. The release
   workflow now resolves `dumpbin.exe`, uses the recipe-owned Python entry point,
