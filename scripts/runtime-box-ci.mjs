@@ -17,8 +17,8 @@ import {
   writeModelEvidence,
   writeReleaseEvidence,
 } from './runtime-box/evidence.mjs';
+import { npmInvocation } from './node-cli.mjs';
 import { runWithHeartbeat } from './runtime-box/heartbeat.mjs';
-import { runtimeBoxNpmInvocation } from './runtime-box/npm.mjs';
 import { runtimeBoxTargetId, runtimeBoxTorchBackendArguments } from './runtime-box/targets.mjs';
 import { lockedPythonDistributions } from './runtime-box/licenses.mjs';
 
@@ -394,7 +394,7 @@ export function runtimeBoxEvidenceOptions(options) {
 
 /** Runs a checked validator, preserves its logs, and stores its canonical JSON result. */
 async function runPackageScript(script, output, environment = {}) {
-  const invocation = runtimeBoxNpmInvocation(['run', '--silent', script]);
+  const invocation = npmInvocation(['run', '--silent', script]);
   const result = await runWithHeartbeat(
     invocation.command,
     invocation.args,
@@ -560,7 +560,7 @@ async function main() {
     for (const name of ['channel', 'signer', 'signer-audience', 'public-key', 'asset-base-url']) {
       if (options.has(name)) args.push(`--${name}`, options.get(name));
     }
-    const invocation = runtimeBoxNpmInvocation(args);
+    const invocation = npmInvocation(args);
     await runTrackedCommand(
       invocation.command,
       invocation.args,

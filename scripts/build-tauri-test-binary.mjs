@@ -10,15 +10,11 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { localNodeCliInvocation } from './node-cli.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const srcTauriDir = path.join(rootDir, 'src-tauri');
-const tauriCli = path.join(
-  rootDir,
-  'node_modules',
-  '.bin',
-  process.platform === 'win32' ? 'tauri.cmd' : 'tauri',
-);
+const tauriCli = localNodeCliInvocation('@tauri-apps/cli/tauri.js', []);
 /** WebDriver automation permissions — test-only, never shipped. */
 const testPermissions = ['wdio:default', 'wdio-webdriver:default'];
 const capabilityFiles = [
@@ -74,9 +70,6 @@ function restoreCapabilities() {
 let exitCode = 1;
 
 try {
-  if (!fs.existsSync(tauriCli)) {
-    throw new Error('The pinned local Tauri CLI is missing. Run npm ci at the repository root.');
-  }
   for (const filePath of capabilityFiles) {
     patchCapability(filePath);
   }
@@ -84,8 +77,9 @@ try {
   // `--debug` keeps the build fast (tests do not need release optimisation), `--features wdio`
   // compiles in the WebDriver hooks, and `--ci` keeps cargo-tauri non-interactive.
   const result = spawnSync(
-    tauriCli,
+    tauriCli.command,
     [
+      ...tauriCli.args,
       'build', '--debug', '--features', 'wdio',
       ...(process.platform === 'darwin' ? ['--bundles', 'app'] : ['--no-bundle']),
       '--ci'

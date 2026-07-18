@@ -8,6 +8,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { npmInvocation } from '../../../scripts/node-cli.mjs';
 import {
   expectNoVisibleRuntimeError,
   openSandboxWorkspace,
@@ -36,7 +37,8 @@ function buildPythonFixture(rootDir, artifactsDir) {
   fs.mkdirSync(path.dirname(workDir), { recursive: true });
   fs.cpSync(fixtureDir, workDir, { recursive: true });
 
-  execChecked('npm', ['run', 'build', '--prefix', 'packages/liatir-cli'], { cwd: rootDir });
+  const npm = npmInvocation(['run', 'build', '--prefix', 'packages/liatir-cli']);
+  execChecked(npm.command, npm.args, { cwd: rootDir });
   execChecked('node', [path.join(rootDir, 'packages', 'liatir-cli', 'dist', 'cli.js'), 'build'], {
     cwd: workDir,
   });

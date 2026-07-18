@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { npmInvocation } from './node-cli.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const hostHome = os.homedir();
@@ -23,7 +24,8 @@ const logStream = fs.createWriteStream(logPath, { flags: 'a' });
 let settled = false;
 let output = '';
 
-const child = spawn('npm', ['run', 'dev'], {
+const npm = npmInvocation(['run', 'dev']);
+const child = spawn(npm.command, npm.args, {
   cwd: rootDir,
   detached: true,
   env: {

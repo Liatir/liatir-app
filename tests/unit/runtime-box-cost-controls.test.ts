@@ -10,7 +10,7 @@ import {
   validateWindowsCudaPrerequisite,
 } from '../../scripts/runtime-box-ci.mjs';
 import { heartbeatLine } from '../../scripts/runtime-box/heartbeat.mjs';
-import { runtimeBoxNpmInvocation } from '../../scripts/runtime-box/npm.mjs';
+import { npmInvocation } from '../../scripts/node-cli.mjs';
 
 describe('Runtime Box CI cost controls', () => {
   it('builds the shared core before generating SDK types on a clean product runner', () => {
@@ -31,8 +31,7 @@ describe('Runtime Box CI cost controls', () => {
     expect(prepare.indexOf('npm ci --prefix frontend'))
       .toBeLessThan(prepare.indexOf('npm run check --prefix frontend'));
     expect(packageJson.devDependencies['@tauri-apps/cli']).toBe('2.11.4');
-    expect(productBuild).toContain("'node_modules',");
-    expect(productBuild).toContain("'.bin',");
+    expect(productBuild).toContain("localNodeCliInvocation('@tauri-apps/cli/tauri.js'");
     expect(productBuild).not.toContain("'cargo',\n    [\n      'tauri'");
     expect(e2eRunner).toContain('Tauri log tail (last 12 KiB)');
     expect(e2eRunner).toContain("exitCode=${app.child.exitCode ?? 'running'}");
@@ -139,7 +138,7 @@ describe('Runtime Box CI cost controls', () => {
 
   it('runs npm through the Node CLI instead of a Windows command shim', () => {
     const npmExecutable = 'C:\\hostedtoolcache\\node\\node_modules\\npm\\bin\\npm-cli.js';
-    expect(runtimeBoxNpmInvocation(['run', 'runtime-box'], {
+    expect(npmInvocation(['run', 'runtime-box'], {
       platform: 'win32',
       nodeExecutable: 'C:\\hostedtoolcache\\node\\node.exe',
       npmExecutable,
@@ -148,7 +147,7 @@ describe('Runtime Box CI cost controls', () => {
       command: 'C:\\hostedtoolcache\\node\\node.exe',
       args: [npmExecutable, 'run', 'runtime-box'],
     });
-    expect(() => runtimeBoxNpmInvocation([], {
+    expect(() => npmInvocation([], {
       platform: 'win32',
       nodeExecutable: '/missing/node.exe',
       npmExecutable: null,
@@ -156,7 +155,7 @@ describe('Runtime Box CI cost controls', () => {
     })).toThrow(/npm CLI could not be resolved/);
 
     const fallback = '/toolcache/node/node_modules/npm/bin/npm-cli.js';
-    expect(runtimeBoxNpmInvocation(['run', 'test:tauri:run'], {
+    expect(npmInvocation(['run', 'test:tauri:run'], {
       platform: 'win32',
       nodeExecutable: '/toolcache/node/node.exe',
       npmExecutable: null,

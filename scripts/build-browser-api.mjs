@@ -10,6 +10,7 @@ import {
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { localNodeCliInvocation } from "./node-cli.mjs";
 
 const runCommand = (command, args, options = {}) => {
   return new Promise((resolve, reject) => {
@@ -161,13 +162,8 @@ const run = async () => {
     )
   );
 
-  await runCommand(
-    process.platform === "win32" ? "npx.cmd" : "npx",
-    ["tsc", "-p", browserTsconfig],
-    {
-      cwd: root
-    }
-  );
+  const typescript = localNodeCliInvocation("typescript/bin/tsc", ["-p", browserTsconfig]);
+  await runCommand(typescript.command, typescript.args, { cwd: root });
 
   // src-ts/bundle.ts emits bundle.d.ts.
   // Rename it to match index.js.

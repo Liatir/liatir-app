@@ -17,6 +17,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { npmInvocation } from "./node-cli.mjs";
 
 /** The scaffold template, whose pinned dependency ranges must follow the released version. */
 const initCommandFile = "packages/liatir-cli/src/commands/init.ts";
@@ -318,7 +319,8 @@ function publishPackage(packageInfo, options) {
   if (options.otp) args.push("--otp", options.otp);
 
   console.log(`\nPublishing ${packageVersion} from ${packageInfo.dir}`);
-  const result = spawnSync("npm", args, {
+  const npm = npmInvocation(args);
+  const result = spawnSync(npm.command, npm.args, {
     cwd: packageDir,
     stdio: "inherit",
     env: {
