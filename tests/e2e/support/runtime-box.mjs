@@ -5,6 +5,20 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { waitForLiatirBridge } from './liatir-app.mjs';
 
+const MIN_INSTALL_TIMEOUT_MS = 180_000;
+// Eight MiB/s is intentionally below the observed protected-release transfer rate. The fixed
+// allowance covers signature verification, multi-gigabyte ZIP extraction, self-test, and activation.
+const INSTALL_FIXED_OVERHEAD_MS = 180_000;
+const CONSERVATIVE_DOWNLOAD_BYTES_PER_SECOND = 8 * 1024 * 1024;
+
+/** Sizes a native install bound from observed archive bytes, verification, extraction, and activation. */
+export function runtimeBoxInstallTimeoutMs(archiveSizeBytes) {
+  const bytes = Number(archiveSizeBytes);
+  if (!Number.isFinite(bytes) || bytes <= 0) return MIN_INSTALL_TIMEOUT_MS;
+  const downloadMs = Math.ceil((bytes / CONSERVATIVE_DOWNLOAD_BYTES_PER_SECOND) * 1_000);
+  return Math.max(MIN_INSTALL_TIMEOUT_MS, INSTALL_FIXED_OVERHEAD_MS + downloadMs);
+}
+
 /** Returns the published target metadata shared by the current macOS native fixtures. */
 export function macosArm64MetalRuntimeBoxTarget(minRamGb) {
   return [{
@@ -162,6 +176,31 @@ export async function runtimeBoxInstallResult(browser, downloadId) {
     (id) => window.__liatirRuntimeBoxInstall?.[id]?.result ?? null,
     downloadId,
   );
+}
+
+/** Waits for one install with a size-aware bound and preserves actionable timeout diagnostics. */
+export async function waitForRuntimeBoxInstall(browser, downloadId, options = {}) {
+  const timeout = runtimeBoxInstallTimeoutMs(options.archiveSizeBytes);
+  const timeoutMsg = options.timeoutMsg ?? 'Runtime Box install did not complete';
+  try {
+    await browser.waitUntil(
+      async () => (await runtimeBoxInstallStatus(browser, downloadId)) !== 'running',
+      { timeout, interval: 1_000, timeoutMsg },
+    );
+  } catch (error) {
+    const status = await runtimeBoxInstallStatus(browser, downloadId);
+    const progress = await runtimeBoxInstallProgress(browser, downloadId);
+    const installError = await runtimeBoxInstallError(browser, downloadId);
+    throw new Error(`${timeoutMsg} after ${Math.ceil(timeout / 1_000)} seconds: ${JSON.stringify({
+      status,
+      waitError: String(error?.message ?? error),
+      installError,
+      eventCount: progress.eventCount,
+      maxBytesDownloaded: progress.maxBytesDownloaded,
+      bytesTotal: progress.bytesTotal,
+      latest: progress.latest,
+    })}`);
+  }
 }
 
 /** Returns a compact snapshot of the progress events captured for one Runtime Box install. */

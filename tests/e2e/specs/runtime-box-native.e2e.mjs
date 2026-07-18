@@ -15,6 +15,7 @@ import {
   runtimeBoxInstallStatus,
   runtimeBoxTargetForNativeTest,
   startRuntimeBoxInstall,
+  waitForRuntimeBoxInstall,
 } from '../support/runtime-box.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -169,14 +170,16 @@ export const tests = [
       expect(interruptedProgress.cancelRequested).toBe(true);
       expect(interruptedProgress.cancelAccepted).toBe(true);
       expect(interruptedProgress.maxBytesDownloaded).toBeGreaterThan(0);
+      expect(Number(interruptedProgress.bytesTotal)).toBeGreaterThan(0);
       expect(interruptedError).toContain('Download cancelled');
+      const archiveSizeBytes = Number(interruptedProgress.bytesTotal);
 
       const resumedId = `runtime-box-resumed-${Date.now()}`;
       await startInstall(browser, resumedId);
-      await browser.waitUntil(
-        async () => (await runtimeBoxInstallStatus(browser, resumedId)) !== 'running',
-        { timeout: 180_000, timeoutMsg: 'Resumed Runtime Box install did not complete' },
-      );
+      await waitForRuntimeBoxInstall(browser, resumedId, {
+        archiveSizeBytes,
+        timeoutMsg: 'Resumed Runtime Box install did not complete',
+      });
       expect(await runtimeBoxInstallStatus(browser, resumedId)).toBe('done');
       const resumed = await runtimeBoxInstallResult(browser, resumedId);
       expect(resumed.version).toBe(VERSION);
@@ -382,10 +385,10 @@ export const tests = [
 
       const replacementId = `runtime-box-replacement-${Date.now()}`;
       await startInstall(browser, replacementId);
-      await browser.waitUntil(
-        async () => (await runtimeBoxInstallStatus(browser, replacementId)) !== 'running',
-        { timeout: 180_000, timeoutMsg: 'Runtime Box replacement did not complete' },
-      );
+      await waitForRuntimeBoxInstall(browser, replacementId, {
+        archiveSizeBytes,
+        timeoutMsg: 'Runtime Box replacement did not complete',
+      });
       expect(await runtimeBoxInstallStatus(browser, replacementId)).toBe('done');
       const replacement = await runtimeBoxInstallResult(browser, replacementId);
       expect(replacement.rollbackAvailable).toBe(true);

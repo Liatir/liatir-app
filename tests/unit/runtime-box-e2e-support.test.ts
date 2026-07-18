@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { runtimeBoxTargetForNativeTest, startRuntimeBoxInstall } from '../e2e/support/runtime-box.mjs';
+import {
+  runtimeBoxInstallTimeoutMs,
+  runtimeBoxTargetForNativeTest,
+  startRuntimeBoxInstall,
+  waitForRuntimeBoxInstall,
+} from '../e2e/support/runtime-box.mjs';
 import { waitForLiatirBridge } from '../e2e/support/liatir-app.mjs';
 
 const originalWindow = (globalThis as { window?: unknown }).window;
@@ -14,6 +19,48 @@ afterEach(() => {
 });
 
 describe('Runtime Box product E2E support', () => {
+  it('scales the install bound from the observed archive size without target-specific branches', () => {
+    const cpuArchiveTimeout = runtimeBoxInstallTimeoutMs(380_481_131);
+    const cudaArchiveTimeout = runtimeBoxInstallTimeoutMs(3_079_059_631);
+
+    expect(runtimeBoxInstallTimeoutMs(null)).toBe(180_000);
+    expect(cpuArchiveTimeout).toBeGreaterThanOrEqual(180_000);
+    expect(cudaArchiveTimeout).toBeGreaterThanOrEqual(9 * 60_000);
+    expect(cudaArchiveTimeout).toBeGreaterThan(cpuArchiveTimeout);
+  });
+
+  it('reports the last install progress when a size-aware wait expires', async () => {
+    const downloadId = 'runtime-box-timeout-test';
+    const archiveSizeBytes = 3_079_059_631;
+    let observedOptions: { timeout?: number; interval?: number } = {};
+    (globalThis as any).window = {
+      __liatirRuntimeBoxInstall: {
+        [downloadId]: {
+          status: 'running',
+          error: null,
+          progress: [{ bytesDownloaded: 2_000_000_000, bytesTotal: archiveSizeBytes, done: false }],
+        },
+      },
+    };
+    const browser = {
+      execute: async (fn: (input: unknown) => unknown, input: unknown) => fn(input),
+      waitUntil: async (_condition: () => Promise<boolean>, options: typeof observedOptions) => {
+        observedOptions = options;
+        throw new Error('fixture timeout');
+      },
+    };
+
+    await expect(waitForRuntimeBoxInstall(browser, downloadId, {
+      archiveSizeBytes,
+      timeoutMsg: 'Fixture install did not complete',
+    })).rejects.toThrow(/"maxBytesDownloaded":2000000000.*"bytesTotal":3079059631/);
+    expect(observedOptions).toEqual({
+      timeout: runtimeBoxInstallTimeoutMs(archiveSizeBytes),
+      interval: 1_000,
+      timeoutMsg: 'Fixture install did not complete',
+    });
+  });
+
   it('uses the exact native CUDA 12.4 candidate and driver floor', () => {
     expect(runtimeBoxTargetForNativeTest('linux-x86_64-cuda12.4', 8)).toEqual([{
       target: {
