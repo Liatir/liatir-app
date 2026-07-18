@@ -594,6 +594,13 @@ Current state as of 2026-07-18:
   validation, signer policy 11/11, `git diff --check`, and the complete root
   verification profile with 28 suites and 157/157 tests plus every build/check
   phase. No Windows CUDA work has started.
+- Final post-fix Windows CPU proof `29658451796` was dispatched from exact
+  `main` revision `1caa1454c73f69a2ea02a42387662800af11b070` with model
+  `ctheodoris-geneformer-v1-10m`, target `windows-x86_64-cpu`, and channel
+  `beta`. Immediate readback confirmed the production release workflow, manual
+  event, intended revision, and protected preflight; the exact-main check
+  passed. This is the final allowed CPU release attempt, and Windows CUDA
+  remains blocked.
 
 Active Windows CPU release checklist:
 
@@ -675,6 +682,7 @@ Gate 8.2 incident ledger:
 | `29655881672` | Failed after app startup, WebDriver readiness, and session creation proved the AppData fix | Shared bridge readiness accepted the injected bridge in the transient document before initial navigation settled, so the first asynchronous product command was discarded; the startup workflow also selected the full Runtime Box spec instead of a bridge-only smoke | Require a complete non-`about:blank` app document in the shared readiness helper, use the existing native bridge/storage spec, normalize its Windows path assertions, and cap paid diagnostics at one final isolated smoke |
 | `29656573972` | Passed on the exact reviewed revision | Stable app navigation plus native bridge/storage behavior after all cheap gates passed | Artifact `8433177679` records 2/2 passing tests with zero failures; permit the single protected CPU release retry without any further paid diagnostic smoke |
 | `29657385347` | Failed in product lifecycle after all build and publication checks passed | `activateCleanSandbox` bypassed the initialized workspace store and directly mutated its private files through a synchronous WebDriver script; Windows timed out before Runtime Box installation, while the app remained alive | Artifact `8433470660` preserves the failed lifecycle and signed release evidence; replace the private-state shortcut with the product-owned Sandbox flow, prove the exact timeout with a red regression, and repeat all cheap gates before any bounded remote proof |
+| `29658451796` | In progress on the exact post-fix revision | Final protected CPU proof after the product-owned Sandbox regression and all local gates passed | Require the complete signed release, product lifecycle, beta promotion, evidence, and cleanup; stop CPU and keep Windows CUDA blocked on any failure |
 
 Run `29651651212` used 22 seconds of standard Linux preflight and 4 minutes
 18 seconds of the standard Windows runner. At the documented GitHub rates its
