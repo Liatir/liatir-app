@@ -46,6 +46,9 @@ describe('Runtime Box CI cost controls', () => {
     expect(e2eAppSupport).toContain("window.location.pathname !== '/workspaces'");
     expect(runtimeBoxSupport).toContain("cancelAfterBytes: options.cancelAfterBytes ?? null");
     expect(runtimeBoxProductE2E).toContain("{ cancelAfterBytes: 1 }");
+    expect(runtimeBoxProductE2E).toContain('Resumed Runtime Box install failed');
+    expect(runtimeBoxProductE2E.indexOf('runtimeBoxInstallError(browser, resumedId)'))
+      .toBeLessThan(runtimeBoxProductE2E.indexOf('runtimeBoxInstallResult(browser, resumedId)'));
     expect(runtimeBoxProductE2E).not.toContain('bytesDownloaded > 64 * 1024');
     expect(runtimeBoxProductE2E).toContain("replaceAll('\\\\', '/')");
     expect(runtimeBoxProductE2E).toContain("path.join(runtimeDir, 'model-cache'");

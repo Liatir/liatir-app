@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Windows CPU lifecycle helper fix passes all local gates after release run `29657385347`; remote product proof remains required and Windows CUDA is blocked |
+| 8.2. Geneformer Windows pilot | In progress | Final Windows CPU run `29658451796` reached resumed installation but failed without preserving the install error; the remote cap is exhausted and Windows CUDA is blocked |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -599,8 +599,19 @@ Current state as of 2026-07-18:
   `ctheodoris-geneformer-v1-10m`, target `windows-x86_64-cpu`, and channel
   `beta`. Immediate readback confirmed the production release workflow, manual
   event, intended revision, and protected preflight; the exact-main check
-  passed. This is the final allowed CPU release attempt, and Windows CUDA
-  remains blocked.
+  passed. The complete build, KMS signature, native self-test, scientific
+  parity, immutable publication with public hash verification, and real product
+  build all passed. The corrected product-owned Sandbox flow also passed and
+  the lifecycle reached interrupted-download cancellation and resumed
+  installation. The resumed install then ended with status `error`; the test
+  reported only the status assertion and discarded the underlying install
+  error, so artifact `8433754821` cannot identify the remaining install defect.
+  Beta promotion was skipped and unconditional runner cleanup passed.
+- A red regression now requires the resumed-install error to be read before the
+  result and included in the compact failure report. The diagnostic correction
+  passes its focused suite. It does not provide the missing error retroactively,
+  and the final CPU remote-attempt cap is exhausted. Windows CPU therefore
+  remains incomplete and Windows CUDA has not started.
 
 Active Windows CPU release checklist:
 
@@ -652,9 +663,11 @@ Active Windows CPU release checklist:
 - [x] Dispatch the protected Windows CPU release allowed by the post-smoke cap;
   preserve its lifecycle failure without treating partial publication as target
   completion.
-- [ ] After the generic lifecycle correction and all cheap gates, dispatch one
-  final protected CPU proof. Require product lifecycle, beta promotion,
-  complete evidence, and cleanup; stop CPU and keep CUDA blocked if it fails.
+- [x] After the generic lifecycle correction and all cheap gates, dispatch the
+  final protected CPU proof and stop remote execution on failure.
+- [ ] Close Windows CPU only after product lifecycle, beta promotion, complete
+  evidence, and cleanup all pass. Run `29658451796` did not satisfy this item;
+  keep Windows CUDA blocked and do not dispatch another runner under this cap.
 
 Gate 8.2 incident ledger:
 
@@ -682,7 +695,7 @@ Gate 8.2 incident ledger:
 | `29655881672` | Failed after app startup, WebDriver readiness, and session creation proved the AppData fix | Shared bridge readiness accepted the injected bridge in the transient document before initial navigation settled, so the first asynchronous product command was discarded; the startup workflow also selected the full Runtime Box spec instead of a bridge-only smoke | Require a complete non-`about:blank` app document in the shared readiness helper, use the existing native bridge/storage spec, normalize its Windows path assertions, and cap paid diagnostics at one final isolated smoke |
 | `29656573972` | Passed on the exact reviewed revision | Stable app navigation plus native bridge/storage behavior after all cheap gates passed | Artifact `8433177679` records 2/2 passing tests with zero failures; permit the single protected CPU release retry without any further paid diagnostic smoke |
 | `29657385347` | Failed in product lifecycle after all build and publication checks passed | `activateCleanSandbox` bypassed the initialized workspace store and directly mutated its private files through a synchronous WebDriver script; Windows timed out before Runtime Box installation, while the app remained alive | Artifact `8433470660` preserves the failed lifecycle and signed release evidence; replace the private-state shortcut with the product-owned Sandbox flow, prove the exact timeout with a red regression, and repeat all cheap gates before any bounded remote proof |
-| `29658451796` | In progress on the exact post-fix revision | Final protected CPU proof after the product-owned Sandbox regression and all local gates passed | Require the complete signed release, product lifecycle, beta promotion, evidence, and cleanup; stop CPU and keep Windows CUDA blocked on any failure |
+| `29658451796` | Failed during resumed installation after the Sandbox correction passed | The install state ended as `error`, but the lifecycle assertion recorded only `Expected: done; Received: error` and discarded the already-held install error, preventing evidence-based root-cause classification | Artifact `8433754821` preserves the incomplete evidence; add a red regression that requires the real install error in the compact report, stop remote execution because the final cap is exhausted, and keep CPU incomplete plus CUDA blocked |
 
 Run `29651651212` used 22 seconds of standard Linux preflight and 4 minutes
 18 seconds of the standard Windows runner. At the documented GitHub rates its
@@ -722,6 +735,13 @@ preflight and 21 minutes 14 seconds of the standard Windows runner. Its Actions
 exposure is approximately USD 0.23 after per-job per-minute rounding. The
 immutable candidate was published and publicly hash-verified but not installed
 through the product or promoted to beta; unconditional runner cleanup passed.
+
+Final post-fix production release `29658451796` used 18 seconds of standard
+Linux preflight and 18 minutes 55 seconds of the standard Windows runner. Its
+Actions exposure is approximately USD 0.20 after per-job per-minute rounding.
+The immutable candidate was published and publicly hash-verified but the
+resumed product installation failed, beta promotion was skipped, and
+unconditional runner cleanup passed.
 
 ### Gate 8.3: cross-platform closure
 

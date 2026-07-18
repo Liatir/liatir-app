@@ -187,7 +187,13 @@ export const tests = [
         archiveSizeBytes,
         timeoutMsg: 'Resumed Runtime Box install did not complete',
       });
-      expect(await runtimeBoxInstallStatus(browser, resumedId)).toBe('done');
+      const resumedStatus = await runtimeBoxInstallStatus(browser, resumedId);
+      if (resumedStatus !== 'done') {
+        const resumedError = await runtimeBoxInstallError(browser, resumedId);
+        throw new Error(
+          `Resumed Runtime Box install failed with status ${resumedStatus}: ${resumedError ?? 'unknown error'}`,
+        );
+      }
       const resumed = await runtimeBoxInstallResult(browser, resumedId);
       expect(resumed.version).toBe(VERSION);
       expect(resumed.rollbackAvailable).toBe(false);
