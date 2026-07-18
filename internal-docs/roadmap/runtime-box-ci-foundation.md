@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | AppData fix and WebDriver readiness are proven; one final bridge-only Windows smoke is required before the CPU release retry |
+| 8.2. Geneformer Windows pilot | In progress | Final bridge-only Windows smoke passed; one protected CPU release retry is next, while Windows CUDA remains blocked |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -564,10 +564,13 @@ Current state as of 2026-07-18:
 - Final bridge-only startup smoke `29656573972` was dispatched from exact
   `main` revision `c310214d29b4dc2c3f5005b74536ae83e8e76cc4`. Immediate
   readback confirmed the manual startup workflow, sole `windows-2025` product
-  job, and intended revision. Checkout, pinned Rust setup, and `npm ci` passed;
-  the real product build is in progress. This capped smoke has a 40-minute
-  timeout and a maximum Actions exposure of approximately USD 0.40. It does not
-  build, download, sign, publish, install, promote, or remove a Runtime Box.
+  job, and intended revision. The run passed in 14 minutes 39 seconds: the real
+  product built, stayed alive, reached embedded WebDriver readiness, and passed
+  both native bridge/storage tests in 5.279 seconds. Compact artifact
+  `8433177679` records 2/2 passed tests, zero failures, the isolated app storage
+  root, and real workspace-store access. Its Actions exposure is approximately
+  USD 0.15 after per-minute rounding. It did not build, download, sign, publish,
+  install, promote, or remove a Runtime Box.
 
 Active Windows CPU release checklist:
 
@@ -608,7 +611,7 @@ Active Windows CPU release checklist:
   regression, apply one generic fix, and repeat all cheap gates.
 - [x] Dispatch one corrected startup smoke from the exact fix revision and
   require real Windows WebDriver readiness before spending on the release.
-- [ ] Dispatch one final bridge-only startup smoke after all cheap gates. Stop
+- [x] Dispatch one final bridge-only startup smoke after all cheap gates. Stop
   paid diagnostics and do not release if this capped verification still fails.
 - [ ] Dispatch at most one corrected protected Windows CPU production release.
   Require product lifecycle, beta promotion, complete evidence, and cleanup.
@@ -637,7 +640,7 @@ Gate 8.2 incident ledger:
 | `29653929900` | Failed after immutable publication and real product build, before product lifecycle or promotion | The Windows app exited with Rust code 101 before embedded WebDriver readiness; the E2E startup path neither flushed nor emitted the native log and bypassed the compact report, so the original panic was unavailable | First fix and regress the generic diagnostic path, then run one manual-only Windows product startup smoke to obtain the panic without rebuilding or publishing the model; do not retry the release blindly |
 | `29655341658` | Failed after the real product build and produced the required native report | The isolated Windows environment declared but did not create AppData directories; Tauri Known Folder resolution returned `UnknownPath`, built-in plugin storage and IPC could not resolve app data, and `EnvState::init` panicked with code 101 | Create every declared isolated directory before spawn, retain the isolation boundary, add a red regression over exact Windows paths, repeat all cheap gates, and verify one corrected startup smoke before the production release retry |
 | `29655881672` | Failed after app startup, WebDriver readiness, and session creation proved the AppData fix | Shared bridge readiness accepted the injected bridge in the transient document before initial navigation settled, so the first asynchronous product command was discarded; the startup workflow also selected the full Runtime Box spec instead of a bridge-only smoke | Require a complete non-`about:blank` app document in the shared readiness helper, use the existing native bridge/storage spec, normalize its Windows path assertions, and cap paid diagnostics at one final isolated smoke |
-| `29656573972` | In progress on the exact reviewed revision | Final capped verification of stable app navigation plus native bridge/storage behavior after all cheap gates passed | Do not poll continuously; inspect one completion transition after a meaningful interval, then either stop paid diagnostics on failure or permit the single protected CPU release retry on success |
+| `29656573972` | Passed on the exact reviewed revision | Stable app navigation plus native bridge/storage behavior after all cheap gates passed | Artifact `8433177679` records 2/2 passing tests with zero failures; permit the single protected CPU release retry without any further paid diagnostic smoke |
 
 Run `29651651212` used 22 seconds of standard Linux preflight and 4 minutes
 18 seconds of the standard Windows runner. At the documented GitHub rates its
@@ -666,6 +669,11 @@ rounding. It performed no model build, signing, publication, or promotion.
 Corrected startup smoke `29655881672` used 14 minutes 54 seconds of the standard
 Windows runner. Its Actions exposure is approximately USD 0.15 after per-minute
 rounding. It performed no model download, signing, publication, or promotion.
+
+Final bridge-only startup smoke `29656573972` used 14 minutes 39 seconds of the
+standard Windows runner. Its Actions exposure is approximately USD 0.15 after
+per-minute rounding. It performed no model build, download, signing,
+publication, installation, promotion, or removal.
 
 ### Gate 8.3: cross-platform closure
 
