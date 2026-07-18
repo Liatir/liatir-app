@@ -18,6 +18,7 @@ import {
   writeReleaseEvidence,
 } from './runtime-box/evidence.mjs';
 import { runWithHeartbeat } from './runtime-box/heartbeat.mjs';
+import { runtimeBoxNpmInvocation } from './runtime-box/npm.mjs';
 import { runtimeBoxTargetId, runtimeBoxTorchBackendArguments } from './runtime-box/targets.mjs';
 import { lockedPythonDistributions } from './runtime-box/licenses.mjs';
 
@@ -393,9 +394,10 @@ export function runtimeBoxEvidenceOptions(options) {
 
 /** Runs a checked validator, preserves its logs, and stores its canonical JSON result. */
 async function runPackageScript(script, output, environment = {}) {
+  const invocation = runtimeBoxNpmInvocation(['run', '--silent', script]);
   const result = await runWithHeartbeat(
-    process.platform === 'win32' ? 'npm.cmd' : 'npm',
-    ['run', '--silent', script],
+    invocation.command,
+    invocation.args,
     {
       label: `Scientific validator ${script}`,
       capture: true,
@@ -558,9 +560,10 @@ async function main() {
     for (const name of ['channel', 'signer', 'signer-audience', 'public-key', 'asset-base-url']) {
       if (options.has(name)) args.push(`--${name}`, options.get(name));
     }
+    const invocation = runtimeBoxNpmInvocation(args);
     await runTrackedCommand(
-      process.platform === 'win32' ? 'npm.cmd' : 'npm',
-      args,
+      invocation.command,
+      invocation.args,
       options.get('metrics') || '.runtime-box-ci/build-metrics.json',
     );
     return;

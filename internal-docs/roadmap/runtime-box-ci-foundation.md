@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Windows CPU preparation `618fd21`; signer run `29649289028`; pre-build runs `29649411609`/`29649766313` exposed checkout normalization and are fixed locally |
+| 8.2. Geneformer Windows pilot | In progress | Windows CPU preparation `618fd21`; signer run `29649289028`; early Windows runs through `29650191000` are diagnosed and fixed locally |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -412,6 +412,13 @@ Current state as of 2026-07-18:
   input: text inputs must be forced to LF, while any future binary input must be
   explicitly marked non-text. Catalog validation passes without a target-specific
   hash bypass or CI-only fallback.
+- Run `29650191000` passed the complete host/catalog/disk probe and all Windows
+  setup, then failed immediately when Node attempted to spawn `npm.cmd` without
+  a shell. The same unsafe invocation existed in build, scientific validation,
+  and product lifecycle paths. A shared Runtime Box process helper now invokes
+  `npm-cli.js` through the current Node executable on Windows, retaining a
+  shell-free argument boundary for all three paths. Focused regression coverage
+  rejects command-shim use and verifies both npm-path resolution modes.
 - No native Windows build, paid release runner, signature, publication, or
   product lifecycle has run yet. Windows CPU is not validated, and Windows CUDA
   has not started.
@@ -421,8 +428,8 @@ Current state as of 2026-07-18:
   isolates Windows AppData, and keeps the candidate Registry and product E2E in
   one bounded process tree.
 - All pre-run local gates pass: catalog validation; signer policy 11/11; the
-  focused Windows/catalog/product regressions 34/34; workflow YAML parsing; and
-  the root verification profile with 26 suites and 148/148 unit and contract
+  focused Windows/catalog/product regressions; workflow YAML parsing; and
+  the root verification profile with 26 suites and 149/149 unit and contract
   tests, SDK generation, core build, Svelte check, frontend production build,
   and root TypeScript compilation.
 
@@ -438,6 +445,7 @@ Gate 8.2 incident ledger:
 | `29649289028` | Passed | Protected signer policy had to include the reviewed Windows CPU target before release | Deployed from clean `main`; live KMS signing and app trust-root verification passed |
 | `29649411609` | Failed safely before build | Git for Windows converted byte-pinned lock files to CRLF because only `text=auto` applied, so the first catalog hash mismatched | Added a repository-wide LF attribute for Runtime Box locks plus a catalog-wide red regression; no authentication, build, signature, publication, or product lifecycle occurred |
 | `29649766313` | Failed safely before build | After lock preservation passed, Git for Windows converted the first SHA-pinned local legal file to CRLF | Generalized the checkout policy and regression to every recipe-declared byte-pinned local input; no authentication, build, signature, publication, or product lifecycle occurred |
+| `29650191000` | Failed before downloads or signing | Node on Windows rejected direct `npm.cmd` spawning with `EINVAL`; the probe and native setup had passed | Replaced every Runtime Box `npm.cmd` spawn with a shared shell-free Node plus `npm-cli.js` invocation and covered build, validator, and product lifecycle call sites |
 
 ### Gate 8.3: cross-platform closure
 

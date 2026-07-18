@@ -236,7 +236,7 @@ jobs:
           LIATIR_E2E_REPORT: .runtime-box-ci/product-lifecycle-e2e.json
         run: >-
           xvfb-run --auto-servernum
-          node scripts/run-runtime-box-product-lifecycle.mjs
+          npm run runtime-box:product-lifecycle
 
       - name: Run the Windows candidate through Jobs, Results, provenance, replacement, and cleanup
         if: startsWith(inputs.target_id, 'windows-')
@@ -246,7 +246,7 @@ jobs:
           LIATIR_RUNTIME_BOX_EXPECTED_VERSION: ${{ needs.preflight.outputs.version }}
           LIATIR_RUNTIME_BOX_PRODUCT_EVIDENCE: .runtime-box-ci/product-lifecycle.json
           LIATIR_E2E_REPORT: .runtime-box-ci/product-lifecycle-e2e.json
-        run: node scripts/run-runtime-box-product-lifecycle.mjs
+        run: npm run runtime-box:product-lifecycle
 
       - name: Promote beta only after immutable publication and product lifecycle succeed
         run: >-

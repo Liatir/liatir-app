@@ -4,6 +4,7 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { runtimeBoxNpmInvocation } from './runtime-box/npm.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const STATE_DIR = path.join(ROOT, '.runtime-box-ci');
@@ -32,13 +33,12 @@ async function waitForRegistry(child) {
 
 /** Runs the repository-owned native product test and forwards its compact output. */
 async function runProductLifecycle() {
-  const command = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const args = [
+  const invocation = runtimeBoxNpmInvocation([
     'run', 'test:tauri:run', '--', '--heavy',
     'tests/e2e/specs/runtime-box-native.e2e.mjs',
-  ];
+  ]);
   await new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
+    const child = spawn(invocation.command, invocation.args, {
       cwd: ROOT,
       env: process.env,
       stdio: 'inherit',

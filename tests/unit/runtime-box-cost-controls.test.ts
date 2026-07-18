@@ -10,6 +10,7 @@ import {
   validateWindowsCudaPrerequisite,
 } from '../../scripts/runtime-box-ci.mjs';
 import { heartbeatLine } from '../../scripts/runtime-box/heartbeat.mjs';
+import { runtimeBoxNpmInvocation } from '../../scripts/runtime-box/npm.mjs';
 
 describe('Runtime Box CI cost controls', () => {
   it('builds the shared core before generating SDK types on a clean product runner', () => {
@@ -22,6 +23,8 @@ describe('Runtime Box CI cost controls', () => {
     const runtimeBoxProductE2E = readFileSync(resolve('tests/e2e/specs/runtime-box-native.e2e.mjs'), 'utf8');
     const tauriMain = readFileSync(resolve('src-tauri/src/main.rs'), 'utf8');
     const diagnostics = readFileSync(resolve('src-tauri/src/bridge/diagnostics.rs'), 'utf8');
+    const runtimeBoxCi = readFileSync(resolve('scripts/runtime-box-ci.mjs'), 'utf8');
+    const productLifecycle = readFileSync(resolve('scripts/run-runtime-box-product-lifecycle.mjs'), 'utf8');
     const releaseWorkflow = readFileSync(resolve('.github/workflows/runtime-box-release.yml'), 'utf8');
     expect(prepare.indexOf('npm run build --prefix packages/liatir-core'))
       .toBeLessThan(prepare.indexOf('npm run gen:sdk-types'));
@@ -45,8 +48,12 @@ describe('Runtime Box CI cost controls', () => {
     expect(tauriMain).toContain('[deep-link] Failed to register desktop deep links');
     expect(diagnostics).toContain('let previous_hook = std::panic::take_hook();');
     expect(diagnostics).toContain('previous_hook(info);');
+    expect(runtimeBoxCi).not.toContain("'npm.cmd'");
+    expect(productLifecycle).not.toContain("'npm.cmd'");
     expect(releaseWorkflow).toContain('windows-x86_64-cpu');
-    expect(releaseWorkflow).toContain('node scripts/run-runtime-box-product-lifecycle.mjs');
+    expect(packageJson.scripts['runtime-box:product-lifecycle'])
+      .toBe('node scripts/run-runtime-box-product-lifecycle.mjs');
+    expect(releaseWorkflow).toContain('npm run runtime-box:product-lifecycle');
     expect(releaseWorkflow).toContain("startsWith(inputs.target_id, 'windows-')");
   });
 
@@ -128,6 +135,36 @@ describe('Runtime Box CI cost controls', () => {
     expect(() => validateWindowsCudaPrerequisite(model, windows)).toThrow(/before Linux scientific validation/);
     linux.status = 'scientifically-validated';
     expect(() => validateWindowsCudaPrerequisite(model, windows)).not.toThrow();
+  });
+
+  it('runs npm through the Node CLI instead of a Windows command shim', () => {
+    const npmExecutable = 'C:\\hostedtoolcache\\node\\node_modules\\npm\\bin\\npm-cli.js';
+    expect(runtimeBoxNpmInvocation(['run', 'runtime-box'], {
+      platform: 'win32',
+      nodeExecutable: 'C:\\hostedtoolcache\\node\\node.exe',
+      npmExecutable,
+      fileExists: (candidate: string) => candidate === npmExecutable,
+    })).toEqual({
+      command: 'C:\\hostedtoolcache\\node\\node.exe',
+      args: [npmExecutable, 'run', 'runtime-box'],
+    });
+    expect(() => runtimeBoxNpmInvocation([], {
+      platform: 'win32',
+      nodeExecutable: '/missing/node.exe',
+      npmExecutable: null,
+      fileExists: () => false,
+    })).toThrow(/npm CLI could not be resolved/);
+
+    const fallback = '/toolcache/node/node_modules/npm/bin/npm-cli.js';
+    expect(runtimeBoxNpmInvocation(['run', 'test:tauri:run'], {
+      platform: 'win32',
+      nodeExecutable: '/toolcache/node/node.exe',
+      npmExecutable: null,
+      fileExists: (candidate: string) => candidate === fallback,
+    })).toEqual({
+      command: '/toolcache/node/node.exe',
+      args: [fallback, 'run', 'test:tauri:run'],
+    });
   });
 
   it('uses one concise heartbeat line without verbose status output', () => {
