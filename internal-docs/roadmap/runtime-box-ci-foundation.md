@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Windows CPU preparation `618fd21`; signer run `29649289028`; run `29650639895` launcher defect fixed and verified locally, native CPU rerun pending |
+| 8.2. Geneformer Windows pilot | In progress | Run `29651651212` proved the Windows launcher fix, KMS signing, and native self-test; scientific-reference fetch defect fixed locally, rerun pending |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -439,10 +439,25 @@ Current state as of 2026-07-18:
   contract and missing install helper, then passed after the generic fix. The
   expanded macOS native fixture also completed two deterministic builds, local
   signing and verification, locked-wheel hash rejection, console-launcher
-  relocation and execution, download resume, and cleanup with uv 0.11.28. A
-  native Windows run is still required to prove the PE launcher itself.
-- No Windows CPU signature, publication, or product lifecycle has completed.
-  Windows CPU is not validated, and Windows CUDA has not started.
+  relocation and execution, download resume, and cleanup with uv 0.11.28. This
+  was the final local gate before the subsequent Windows PE proof.
+- Protected Windows CPU release run `29651651212` ran from clean fix commit
+  `46d2ca1`. It proved the corrected PE launchers: build and locked dependency
+  installation completed, KMS signing succeeded, and the signed native self-test
+  passed. Scientific validation then failed before publication because the
+  validator's blobless Git checkout could not demand-fetch the exact tokenizer
+  blob on Windows. Publication, product build/lifecycle, and promotion were
+  skipped, final failure evidence was uploaded, and build state was cleaned.
+- The exact tokenizer remains available from the immutable upstream revision:
+  34,686 bytes, Git blob `8af0cfa0f336d007feb2b144129a96c88ad8a871`,
+  and SHA-256
+  `689b71a916b75fa618fbb460a7fc460c3ab32d41e4f98064efb0ebb3ee921002`.
+  The validator now downloads that one file through the shared resumable,
+  size-and-hash-verifying asset path instead of relying on a partial-clone
+  promisor remote. A red regression first reproduced the old implementation,
+  and the exact Node download path passed locally against the official URL with
+  immediate temporary-file cleanup.
+- Windows CPU is not validated or published, and Windows CUDA has not started.
 - The checked release resolver selects `windows-2025`, a 90-minute timeout,
   5,412,219,713 calculated peak bytes, and a 6 GiB hard disk gate. The release
   workflow now resolves `dumpbin.exe`, uses the recipe-owned Python entry point,
@@ -451,7 +466,7 @@ Current state as of 2026-07-18:
 - All pre-run local gates pass: catalog validation; signer policy 11/11; shared
   archive foundation; the expanded native launcher fixture; the focused
   Windows/catalog/product regressions; workflow YAML parsing; and the root
-  verification profile with 26 suites and 150/150 unit and contract tests, SDK
+  verification profile with 27 suites and 151/151 unit and contract tests, SDK
   generation, core build, Svelte check, frontend production build, and root
   TypeScript compilation.
 
@@ -471,6 +486,12 @@ Gate 8.2 incident ledger:
 | `29650639895` | Failed after locked dependency installation, before assets or signing | uv emitted Windows PE console launchers with absolute build-interpreter paths because the copied standalone distribution was not marked relocatable while wheels were installed; the stdlib-only native fixture generated no launcher and missed this class | Use uv's reviewed relocatable-install contract without retaining a venv marker, and extend the native fixture to relocate and execute a deterministic local console entry point before another model release run |
 | Local native launcher regression | Fixed before rerun | macOS reports the canonical `/private/var/...` path for a payload created through the equivalent `/var/...` path, while the validator canonicalized only Python's value and produced a false containment failure | Canonicalize the actual destination root before comparing `sys.base_prefix` and executable containment; the stricter build-host leak scan remains unchanged |
 | Local native fixture execution | Passed after environment-only retry | The restricted sandbox could neither resolve the official Python download nor bind the fixture's loopback resume server | Re-ran the identical repository command with network and loopback access; the complete native fixture passed without a repository fallback or CI-specific bypass |
+| `29651651212` | Failed in scientific validation after successful build, KMS signature, and native self-test | The blobless Geneformer clone depended on Git demand-fetching tokenizer blob `8af0cfa0f336d007feb2b144129a96c88ad8a871`; the Windows checkout reported the promised object as unreadable | Replace partial Git clone with the immutable revision URL plus exact size and SHA-256 verification through the shared downloader; publication, product lifecycle, and promotion never ran |
+
+Run `29651651212` used 22 seconds of standard Linux preflight and 4 minutes
+18 seconds of the standard Windows runner. At the documented GitHub rates its
+Actions exposure is approximately USD 0.06 after per-minute rounding. GitHub
+billing remains authoritative.
 
 ### Gate 8.3: cross-platform closure
 

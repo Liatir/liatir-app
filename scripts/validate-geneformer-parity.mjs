@@ -18,11 +18,19 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { downloadVerified } from './runtime-box.mjs';
 import { runtimeBoxTargetId } from './runtime-box/targets.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 /** Pinned upstream commit: parity must be checked against a fixed reference, not a moving branch. */
 const REVISION = '04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5';
+/** Exact upstream tokenizer used as the scientific reference for the pinned revision. */
+const UPSTREAM_TOKENIZER = Object.freeze({
+  url: `https://huggingface.co/ctheodoris/Geneformer/resolve/${REVISION}/geneformer/tokenizer.py`,
+  relativePath: 'geneformer/tokenizer.py',
+  sizeBytes: 34_686,
+  sha256: '689b71a916b75fa618fbb460a7fc460c3ab32d41e4f98064efb0ebb3ee921002',
+});
 /** Requires the box to have been built first; CI supplies the catalog-resolved recipe ID. */
 const RECIPE_ID = process.env.LIATIR_RUNTIME_BOX_RECIPE_ID
   ?? 'geneformer-v1-10m-macos-arm64-metal';
@@ -30,6 +38,9 @@ const RECIPE = JSON.parse(await readFile(
   join(ROOT, 'runtime-boxes', 'recipes', RECIPE_ID, 'recipe.json'),
   'utf8',
 ));
+if (RECIPE.sourceRevision !== REVISION) {
+  throw new Error(`Geneformer tokenizer reference is not pinned for source revision ${RECIPE.sourceRevision}.`);
+}
 const TARGET_ID = runtimeBoxTargetId(RECIPE.target);
 if (
   process.env.LIATIR_RUNTIME_BOX_TARGET_ID
@@ -77,15 +88,11 @@ function extractEmbeddedScript(source) {
 const workDir = await mkdtemp(join(tmpdir(), 'liatir-geneformer-parity-'));
 try {
   const runtimeDir = RUNTIME_DIR;
-  const upstreamDir = join(workDir, 'Geneformer');
-  // The upstream repo carries model weights and is enormous. `--filter=blob:none --no-checkout`
-  // fetches no file contents up front, and the checkout below then pulls exactly one file — the
-  // tokenizer — which is all this comparison needs.
-  run('git', [
-    'clone', '--quiet', '--filter=blob:none', '--no-checkout',
-    'https://huggingface.co/ctheodoris/Geneformer', upstreamDir,
-  ]);
-  run('git', ['checkout', '--quiet', REVISION, '--', 'geneformer/tokenizer.py'], { cwd: upstreamDir });
+  const upstreamTokenizer = join(workDir, ...UPSTREAM_TOKENIZER.relativePath.split('/'));
+  // Fetch the one immutable source file directly. A partial Git clone relies on platform-specific
+  // demand fetching for the missing blob; the shared downloader instead enforces both bytes and
+  // SHA-256 before the scientific harness can import the reference.
+  await downloadVerified(UPSTREAM_TOKENIZER, upstreamTokenizer);
 
   const productSource = await readFile(
     join(ROOT, 'frontend/src/lib/tools/ai/python-scripts/geneformer-embedding.ts'),
@@ -101,7 +108,7 @@ try {
       join(ROOT, 'scripts/ai-validation/geneformer-parity.py'),
       '--runtime-dir', runtimeDir,
       '--product-script', productScript,
-      '--upstream-tokenizer', join(upstreamDir, 'geneformer/tokenizer.py'),
+      '--upstream-tokenizer', upstreamTokenizer,
       '--work-dir', join(workDir, 'validation'),
       '--target-id', TARGET_ID,
       '--accelerator', RECIPE.target.accelerator,
@@ -114,6 +121,6 @@ try {
   );
   console.log(output);
 } finally {
-  // The extracted runtime and the cloned repo are large; always clean up, including on failure.
+  // Always remove the extracted product script, pinned reference, and generated validation data.
   await rm(workDir, { recursive: true, force: true });
 }
