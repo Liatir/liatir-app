@@ -561,6 +561,13 @@ Current state as of 2026-07-18:
   generation, core build, Svelte check, frontend production build, and root
   TypeScript compilation. The official `test:tauri:prepare` path also completed,
   including the local Tauri CLI JavaScript entry point and native app bundle.
+- Final bridge-only startup smoke `29656573972` was dispatched from exact
+  `main` revision `c310214d29b4dc2c3f5005b74536ae83e8e76cc4`. Immediate
+  readback confirmed the manual startup workflow, sole `windows-2025` product
+  job, and intended revision. Checkout, pinned Rust setup, and `npm ci` passed;
+  the real product build is in progress. This capped smoke has a 40-minute
+  timeout and a maximum Actions exposure of approximately USD 0.40. It does not
+  build, download, sign, publish, install, promote, or remove a Runtime Box.
 
 Active Windows CPU release checklist:
 
@@ -630,6 +637,7 @@ Gate 8.2 incident ledger:
 | `29653929900` | Failed after immutable publication and real product build, before product lifecycle or promotion | The Windows app exited with Rust code 101 before embedded WebDriver readiness; the E2E startup path neither flushed nor emitted the native log and bypassed the compact report, so the original panic was unavailable | First fix and regress the generic diagnostic path, then run one manual-only Windows product startup smoke to obtain the panic without rebuilding or publishing the model; do not retry the release blindly |
 | `29655341658` | Failed after the real product build and produced the required native report | The isolated Windows environment declared but did not create AppData directories; Tauri Known Folder resolution returned `UnknownPath`, built-in plugin storage and IPC could not resolve app data, and `EnvState::init` panicked with code 101 | Create every declared isolated directory before spawn, retain the isolation boundary, add a red regression over exact Windows paths, repeat all cheap gates, and verify one corrected startup smoke before the production release retry |
 | `29655881672` | Failed after app startup, WebDriver readiness, and session creation proved the AppData fix | Shared bridge readiness accepted the injected bridge in the transient document before initial navigation settled, so the first asynchronous product command was discarded; the startup workflow also selected the full Runtime Box spec instead of a bridge-only smoke | Require a complete non-`about:blank` app document in the shared readiness helper, use the existing native bridge/storage spec, normalize its Windows path assertions, and cap paid diagnostics at one final isolated smoke |
+| `29656573972` | In progress on the exact reviewed revision | Final capped verification of stable app navigation plus native bridge/storage behavior after all cheap gates passed | Do not poll continuously; inspect one completion transition after a meaningful interval, then either stop paid diagnostics on failure or permit the single protected CPU release retry on success |
 
 Run `29651651212` used 22 seconds of standard Linux preflight and 4 minutes
 18 seconds of the standard Windows runner. At the documented GitHub rates its
