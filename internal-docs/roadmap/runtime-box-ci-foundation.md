@@ -56,7 +56,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 5. GitHub identities, environments, and secrets | Complete | `4aa84f2` |
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
-| 8.1. Geneformer Linux pilot | In progress | Linux CPU complete; CUDA economical local gate in progress |
+| 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
 | 8.2. Geneformer Windows pilot | Not started | Requires Gate 8.1 |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
@@ -253,14 +253,44 @@ Current state as of 2026-07-18:
   and total bytes, and latest progress event. The regression failed before the
   helper existed; afterward all 63 Runtime Box tests and the full 6-suite,
   143-test verification profile passed locally.
-- CUDA remains **in local correction**. The target cannot move to published or
-  complete until the corrected commit passes the clean economical gate, real
-  T4 inference, numerical parity, protected publication, complete product
-  lifecycle, final evidence, removal, and cleanup.
 - Lock reproducibility was rechecked independently with the verified uv 0.11.28
   binary and live indexes: the resolver selected the same 47 packages and
   reproduced dependency-lock SHA-256
   `4cc737f7bb6580de2fc6da0d89f2a17a2f200a35c82f5734f7e503c1772579ed`.
+- Final CUDA run `29643382673` at commit `5c96bea` passed every protected release
+  step on `liatir-linux-t4`: exact host/storage preflight, reproducible build,
+  private KMS signing, archive verification, self-test, pinned scientific
+  parity, immutable publication, real product build and install, interrupted
+  resume, real inference, Jobs, Results, provenance, replacement, rollback,
+  removal, result persistence, beta promotion, evidence upload, registry
+  shutdown, and cleanup. The product lifecycle receipt records Job `job_1`,
+  analysis run `d22ebaea-3d2c-4996-b346-7c067f4cb01b`, and three Result
+  artifacts with every assertion passed.
+- The final Tesla T4 host used driver 590.48.01, compute capability 7.5, and
+  CUDA 12.4. Peak VRAM was 106,767,872 bytes. The `4 x 256` output was finite;
+  maximum absolute difference from the pinned same-lock CPU baseline was
+  `0.0000010654330253601074` and minimum cosine similarity was `1.0`, within
+  the fixed tolerances.
+- Artifact `8429493437` (digest
+  `sha256:228c5bd72c68ce6589079c0b0da0d6e27f0d12d0104e5c392f7f3a7eb5ecbef1`)
+  contains the final release, product lifecycle, and E2E evidence. The reviewed
+  evidence is tracked at
+  `runtime-boxes/evidence/geneformer-v1-10m-linux-x86_64-cuda12.4-1.0.0-beta.1.json`.
+  The immutable 3,079,059,631-byte archive has SHA-256
+  `e991644d230d3d86c9c3cdd2c5bf8473c028b5fd8b09a83ba0b005736b66e544`
+  and expands to 5,567,128,470 bytes. The 2,575-byte release manifest has
+  SHA-256 `4d61626492d409fb155c3d6c12e15c7a9de0cc1e062476b1f8931c6d3bc80e56`.
+  The public archive, release manifest, and signed beta channel were checked
+  after promotion; they return the exact final target and hashes.
+- Commit `07c6c69` records the reviewed evidence, marks the CUDA target
+  published in the checked catalog, and exposes it from the shared
+  `packages/liatir-core` product contract with minimum NVIDIA driver 550.54.14.
+  The final local gate passed catalog validation, signer checks (10/10), the
+  focused target/catalog tests (19/19), and the root verification profile
+  (6/6 suites, 143/143 unit and contract tests, SDK generation, core build,
+  Svelte check, frontend production build, and root TypeScript compilation).
+- Gate 8.1 is **complete** with no unresolved Linux CPU or CUDA evidence gap.
+  Gate 8.2 and every later gate remain not started.
 
 Incident ledger:
 
@@ -298,6 +328,7 @@ Incident ledger:
 | `29641886027` | Passed | Protected signer deployment and live signing verification completed on the current main revision | — |
 | `29642025139` | Failed | uv 0.11.28 emitted a three-line POSIX trampoline after the CUDA recipe path crossed the 127-byte shebang limit; the relocatability repair checked only its first line, then rejected the absolute path before signing or publication | `c30e423` |
 | `29642529231` | Failed | Build, signing, self-test, T4 parity, immutable publication, and product build passed; the native lifecycle fixture retained a fixed 180-second install bound from the 380 MB CPU target and timed out while installing the 3.08 GB CUDA archive | `2134b3c` |
+| `29643382673` | Passed | Linux CUDA build, T4 parity, protected publication, complete product lifecycle, final evidence, beta promotion, and cleanup completed | `07c6c69` |
 
 The earlier release attempts consumed about 114 minutes of observed workflow
 wall time and the first four signer attempts consumed about 6 minutes. At the
@@ -309,9 +340,14 @@ Actions exposure is approximately USD 0.10 before rounding. GitHub and Google
 Cloud billing remain the authoritative cost records. Corrected CUDA run
 `29642529231` added about 17 minutes 4 seconds on the T4 job plus a 22-second
 standard preflight, approximately USD 0.94 at the declared runner rates before
-rounding. No further remote attempt is permitted until the size-aware lifecycle
-bound, timeout diagnostics, complete economical local gate, and roadmap update
-all pass.
+rounding. Final CUDA run `29643382673` added 23 minutes 29 seconds on the T4 job
+plus a 19-second standard preflight, approximately USD 1.29 at the declared
+runner rates before rounding. The documented Gate 8.1 Actions exposure is
+therefore approximately USD 3.06 in total, including the earlier CPU/signer
+attempts and the three CUDA attempts. GitHub Actions, Cloud Build, Cloud Run,
+and Cloud KMS billing remain authoritative; Codex subscription-credit usage is
+not available as a repository-verifiable measurement. Gate 8.1 requires no
+further paid run.
 
 ### Gate 8.2: Geneformer Windows pilot
 

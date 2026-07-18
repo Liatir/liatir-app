@@ -82,11 +82,11 @@ Metal runs, complete output-contract validation, numeric backend parity, and a
 fresh-home native lifecycle covering signed install, a tracked direct Job, a
 finite 1,280-dimensional Result with provenance, Jobs/Results visibility,
 removal, and Result artifact survival.
-Geneformer uses the live signed Runtime Box distribution for macOS arm64/Metal
-and Linux x86_64/CPU, with repeatable native lifecycle plus scientific-parity
-evidence on both targets. scGPT has a live signed macOS arm64 Runtime Box,
-hash-locked dependencies, real CPU/Metal inference gates, and targeted native
-install, Jobs, and removal evidence.
+Geneformer uses the live signed Runtime Box distribution for macOS arm64/Metal,
+Linux x86_64/CPU, and Linux x86_64/CUDA 12.4, with repeatable native lifecycle
+plus scientific-parity evidence on all three targets. scGPT has a live signed
+macOS arm64 Runtime Box, hash-locked dependencies, real CPU/Metal inference
+gates, and targeted native install, Jobs, and removal evidence.
 scFoundation remains preview-only because its model license prohibits Liatir
 from redistributing the checkpoint.
 
@@ -126,11 +126,11 @@ in [Runtime Box CI foundation](./runtime-box-ci-foundation.md).
 - Native installation uses resumable downloads, signed manifest and target
   checks, safe ZIP extraction, a self-test, atomic activation, and rollback per
   `runtimeId`.
-- Geneformer V1 10M is the first production recipe. Its signed macOS arm64/Metal
-  and Linux x86_64/CPU boxes pass verification, post-extraction imports,
-  scientific parity, and native product lifecycle gates; both are published
-  under `assets.models.liatir.com` and promoted through the beta channel at
-  `models.liatir.com`.
+- Geneformer V1 10M is the first production recipe. Its signed macOS arm64/Metal,
+  Linux x86_64/CPU, and Linux x86_64/CUDA 12.4 boxes pass verification,
+  post-extraction imports, scientific parity, and native product lifecycle
+  gates; all three are published under `assets.models.liatir.com` and promoted
+  through the beta channel at `models.liatir.com`.
 - UCE 4-layer `1.0.0-beta.1` is KMS-signed, published as an immutable
   8,862,120,348-byte archive, promoted through the beta channel, and selected by
   the catalog. Its 10,142,871,337-byte installed payload passed the targeted
@@ -138,8 +138,9 @@ in [Runtime Box CI foundation](./runtime-box-ci-foundation.md).
 
 Geneformer evidence now covers a fresh isolated home, interrupted download and
 resume, signed install, real inference, atomic replacement, rollback, removal,
-and exact CPU parity with the pinned official tokenizer/embedding algorithm on
-native macOS arm64 and Linux x86_64 targets.
+and pinned scientific parity on native macOS arm64/Metal, Linux x86_64/CPU, and
+Linux x86_64/CUDA 12.4. The CUDA target was validated with real Tesla T4
+inference against the same-lock CPU baseline.
 The remaining distribution gates are a true cross-version native update and
 client-persisted anti-replay state for signed channel generations. The KMS
 signing key is non-exportable, IAM-restricted, and independently hosted from R2;
