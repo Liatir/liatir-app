@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -68,6 +69,24 @@ describe('Runtime Box CI cost controls', () => {
     changed.models[0].targets[0].dependencyLockSha256 = '0'.repeat(64);
     expect(() => validateRuntimeBoxCiCatalog(changed, { requireWorkflows: false }))
       .toThrow(/dependency lock SHA-256 mismatch/);
+  });
+
+  it('keeps every byte-pinned dependency lock on LF across native Git checkouts', () => {
+    const recipeIds = new Set([
+      ...catalog.foundationFixtures.map((fixture) => fixture.recipeId),
+      ...catalog.models.flatMap((model) => model.targets.map((target) => target.recipeId)),
+    ]);
+
+    for (const recipeId of recipeIds) {
+      const recipe = JSON.parse(readFileSync(resolve(
+        `runtime-boxes/recipes/${recipeId}/recipe.json`,
+      ), 'utf8'));
+      const lockPath = `runtime-boxes/recipes/${recipeId}/${recipe.requirementsLock}`;
+      const attribute = execFileSync('git', ['check-attr', 'eol', '--', lockPath], {
+        encoding: 'utf8',
+      }).trim();
+      expect(attribute).toBe(`${lockPath}: eol: lf`);
+    }
   });
 
   it('rejects reviewed Python-license audit drift before a native build', () => {

@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Windows CPU preparation `618fd21`; signer deployment run `29649289028`; native release pending |
+| 8.2. Geneformer Windows pilot | In progress | Windows CPU preparation `618fd21`; signer run `29649289028`; first native run `29649411609` stopped pre-build and is fixed locally |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -397,6 +397,16 @@ Current state as of 2026-07-18:
   `618fd21`. Source/policy validation, private Cloud Run deployment, a live KMS
   smoke test against the app trust root, and compact deployment evidence all
   completed successfully.
+- The first Windows CPU release run `29649411609` stopped in the initial host
+  probe, before release authentication, dependency setup, signing, publication,
+  or product execution. Git for Windows had checked out byte-pinned
+  `requirements.lock` files with CRLF because their `eol` attribute was
+  unspecified, so the catalog correctly rejected the first lock hash.
+- A repository-wide Git attribute now forces LF for every Runtime Box
+  `requirements.lock`. A red regression first reproduced `eol: unspecified` for
+  the catalog recipes; it now verifies `eol: lf` for every fixture and model
+  lock, and catalog validation passes. No target-specific hash bypass or CI-only
+  fallback was added.
 - No native Windows build, paid release runner, signature, publication, or
   product lifecycle has run yet. Windows CPU is not validated, and Windows CUDA
   has not started.
@@ -407,7 +417,7 @@ Current state as of 2026-07-18:
   one bounded process tree.
 - All pre-run local gates pass: catalog validation; signer policy 11/11; the
   focused Windows/catalog/product regressions 34/34; workflow YAML parsing; and
-  the root verification profile with 26 suites and 147/147 unit and contract
+  the root verification profile with 26 suites and 148/148 unit and contract
   tests, SDK generation, core build, Svelte check, frontend production build,
   and root TypeScript compilation.
 
@@ -421,6 +431,7 @@ Gate 8.2 incident ledger:
 | Windows CPU license audit | Actionable inherited finding | `array-api-compat==1.15.0` has no wheel-bundled MIT text, and the already-published Linux CPU recipe did not add the existing supplemental notice | Windows includes and self-tests the exact notice; the pre-existing Linux publication is recorded for separate corrective replacement rather than silently changing its published recipe |
 | Windows product-path audit | Fixed locally before native CI | The product E2E assumed POSIX separators in app-data assertions and constructed native paths with string concatenation | Paths now use `path.join`, and containment checks normalize separators without changing the actual path passed to the product |
 | `29649289028` | Passed | Protected signer policy had to include the reviewed Windows CPU target before release | Deployed from clean `main`; live KMS signing and app trust-root verification passed |
+| `29649411609` | Failed safely before build | Git for Windows converted byte-pinned lock files to CRLF because only `text=auto` applied, so the first catalog hash mismatched | Added a repository-wide LF attribute for Runtime Box locks plus a catalog-wide red regression; no authentication, build, signature, publication, or product lifecycle occurred |
 
 ### Gate 8.3: cross-platform closure
 

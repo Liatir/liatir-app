@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Dependency locks are byte-pinned and must not be rewritten by Git for Windows.
+runtime-boxes/recipes/**/requirements.lock text eol=lf
