@@ -57,7 +57,8 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | The real Geneformer inference succeeds on Windows CPU (finite 256-dim embedding); the E2E now reaches Result finalization. Fixes so far: short `.stg-{uuid}` staging (MAX_PATH), `venv_python` standalone-layout resolution, 600s WebDriver script timeout, client-side E2E navigation (a hard `window.location.href` reload dropped the WebDriver connection on Windows). Latest: client-side nav removed the incidental reload-remount that finalized runs, revealing that finalization only ran while a job was polling; a reactive `$effect` on the jobs list now finalizes a completed direct AI run immediately (product fix, matches the finalizer's design). Local gates pass (svelte-check clean); one confirming Windows CPU run pending. Windows CUDA stays blocked |
+| 8.2. Geneformer Windows CPU | Complete | Release run `29706828552` (commit `f067482`) passed the full protected release on `windows-x86_64-cpu`: KMS-signed build, native self-test, scientific validation, immutable publication with public hash verification, the complete product lifecycle E2E (install, interrupted-download resume, real Geneformer inference with a finite 256-dim CPU embedding, Jobs/Results/provenance, replacement, rollback, and cleanup), and beta promotion. The `beta` channel now serves the Windows CPU box |
+| 8.2. Geneformer Windows CUDA | Not started | Unblocked by the CPU evidence above, but still requires same-model Linux CUDA evidence for the exact commit, explicit cost approval, and a manual GPU runner |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -790,9 +791,10 @@ Active Windows CPU release checklist:
 - [x] Identify the cause (WinError 206 MAX_PATH loading `torch\lib\asmjit.dll`
   from the long staging path) and shorten staging to `.stg-{uuid}`; pass all
   cheap Rust and unit gates.
-- [ ] Dispatch one confirming Windows CPU release run; close Windows CPU only
-  after product lifecycle, beta promotion, complete evidence, and cleanup all
-  pass, then unblock Windows CUDA.
+- [x] Close Windows CPU: release run `29706828552` passed the full product
+  lifecycle, beta promotion, evidence, and cleanup. Windows CUDA is now
+  unblocked but still requires Linux CUDA evidence for the exact commit and
+  explicit cost approval before a manual GPU runner.
 
 Gate 8.2 incident ledger:
 
