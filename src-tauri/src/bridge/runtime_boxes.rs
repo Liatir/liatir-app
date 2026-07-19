@@ -1104,11 +1104,14 @@ fn run_self_test(python_path: &Path, self_test: &RuntimeBoxSelfTest) -> Result<(
         .map(|name| format!("import {name}"))
         .collect::<Vec<_>>()
         .join("; ");
+    // Capture stderr so a failing import reports the Python traceback (which module and why)
+    // instead of only an exit code. The self-test emits a few lines at most, well under the pipe
+    // buffer, so reading it after the child exits cannot deadlock the bounded poll below.
     let mut child = Command::new(python_path)
         .args(["-c", &script])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .stderr(Stdio::piped())
         .spawn()
         .map_err(|error| format!("cannot start AI Runtime Box self-test: {error}"))?;
     let started = Instant::now();
@@ -1118,20 +1121,46 @@ fn run_self_test(python_path: &Path, self_test: &RuntimeBoxSelfTest) -> Result<(
             Some(status) if status.success() => return Ok(()),
             Some(status) => {
                 return Err(format!(
-                    "AI Runtime Box self-test failed with status {status}"
+                    "AI Runtime Box self-test failed with status {status}{}",
+                    self_test_stderr_suffix(&mut child)
                 ));
             }
             None if started.elapsed() >= timeout => {
                 let _ = child.kill();
                 let _ = child.wait();
                 return Err(format!(
-                    "AI Runtime Box self-test timed out after {} seconds",
-                    timeout.as_secs()
+                    "AI Runtime Box self-test timed out after {} seconds{}",
+                    timeout.as_secs(),
+                    self_test_stderr_suffix(&mut child)
                 ));
             }
             None => std::thread::sleep(Duration::from_millis(100)),
         }
     }
+}
+
+/// Reads the self-test's captured stderr for a failure message. Returns `": <tail>"` when there is
+/// output, or an empty string otherwise. Bounded to the tail because a Python traceback ends with
+/// the actual exception line, and a pathological box must not be able to flood the error.
+fn self_test_stderr_suffix(child: &mut std::process::Child) -> String {
+    const MAX_CHARS: usize = 4096;
+    let Some(mut stderr) = child.stderr.take() else {
+        return String::new();
+    };
+    let mut buffer = Vec::new();
+    if std::io::Read::read_to_end(&mut stderr, &mut buffer).is_err() {
+        return String::new();
+    }
+    let text = String::from_utf8_lossy(&buffer);
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
+        return String::new();
+    }
+    let start = trimmed.len().saturating_sub(MAX_CHARS);
+    let start = (start..=trimmed.len())
+        .find(|&index| trimmed.is_char_boundary(index))
+        .unwrap_or(0);
+    format!(": {}", &trimmed[start..])
 }
 
 /// Total size of the installed box, reported to the UI. Symlinks are not followed, so linked
@@ -2018,6 +2047,35 @@ mod tests {
         );
 
         std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn self_test_failure_reports_the_python_error_not_only_an_exit_code() {
+        // Use whichever interpreter the host provides; skip cleanly when none is on PATH.
+        let python = ["python3", "python"].into_iter().find(|candidate| {
+            Command::new(candidate)
+                .arg("--version")
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .map(|status| status.success())
+                .unwrap_or(false)
+        });
+        let Some(python) = python else {
+            return;
+        };
+        let self_test = RuntimeBoxSelfTest {
+            python_imports: vec!["liatir_missing_selftest_module".to_string()],
+            timeout_seconds: 30,
+        };
+        let error = run_self_test(Path::new(python), &self_test).unwrap_err();
+        assert!(error.contains("self-test failed"), "unexpected error: {error}");
+        // The captured stderr must identify the missing module, not just the exit code.
+        assert!(
+            error.contains("liatir_missing_selftest_module") || error.contains("No module named"),
+            "diagnostic did not include the Python error: {error}"
+        );
     }
 
     #[cfg(windows)]

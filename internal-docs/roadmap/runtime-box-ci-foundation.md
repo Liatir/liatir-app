@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Run `29658451796` reached the first product activation ever attempted on Windows and failed there; activation now rides out transient Windows rename locks (`rename_with_retry`), local Rust and unit gates pass, and one corrected Windows CPU proof is pending on the restored budget. Windows CUDA stays blocked |
+| 8.2. Geneformer Windows pilot | In progress | Release run `29695852496` surfaced the real error (the earlier `rename_with_retry` hypothesis was wrong): the product self-test fails on Windows with `self-test failed with status exit code: 1` before activation is reached. `run_self_test` discarded stderr, so which import fails is unknown; it now captures the Python traceback. One diagnostic Windows CPU run is pending to identify the failing import. Windows CUDA stays blocked |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -648,6 +648,31 @@ Current state as of 2026-07-18:
   unchanged, with a focused unit regression. The production release path does not
   use the heartbeat wrapper (its Windows steps call `npm` through PowerShell), so
   this only unblocks the free foundation validation, not the paid release.
+- The free foundation run `29695274321` then confirmed the heartbeat fix (macOS
+  and Linux fixtures passed, and the Windows fixture cleared the `npm` ENOENT)
+  but exposed a separate, pre-existing Windows regression in the native stdlib
+  fixture: `scripts/validate-runtime-box-native-fixture.mjs` fails to spawn the
+  relocated console launcher (`liatir-lock-fixture.exe ENOENT`). This is a Gate 2
+  fixture regression that does not gate the Gate 8.2 release, so it is recorded
+  for separate follow-up and was not chased here.
+- Paid release run `29695852496` (exact fix revision `657a52b`) then surfaced the
+  actual Gate 8.2 error, which the earlier discarded assertion had hidden:
+  `Resumed Runtime Box install failed with status error: AI Runtime Box self-test
+  failed with status exit code: 1`. The failure is in `run_self_test`, before
+  activation is reached, so the `rename_with_retry` hypothesis was wrong (that
+  fix is retained as correct defensive behavior but was not the blocker). The
+  build, KMS signature, scientific parity, immutable publication, product build,
+  Sandbox flow, and interrupted-download resume all passed; only the installed
+  box's Python import self-test failed on Windows. The Windows and Linux CPU
+  self-tests import the same modules (`torch`, `transformers`, `anndata`,
+  `numpy`, `scipy`, `pandas`, `h5py`, `safetensors`) and Linux passes, so this is
+  Windows-specific to the extracted/relocated box.
+- `run_self_test` discarded the child's stderr (`Stdio::null`), so which import
+  failed and why is not yet known. It now captures the self-test stderr and
+  includes the Python traceback tail in the error (bounded), with a portable unit
+  regression proving a failing import is reported by name rather than only as an
+  exit code. One diagnostic Windows CPU run is required to read the exact
+  traceback before a targeted fix.
 
 Active Windows CPU release checklist:
 
@@ -704,10 +729,13 @@ Active Windows CPU release checklist:
 - [x] Classify the resumed-install failure as the first Windows product
   activation, apply `rename_with_retry` to the activation, rollback, and
   download-rename paths, and pass all cheap Rust and unit gates.
-- [ ] Close Windows CPU only after product lifecycle, beta promotion, complete
-  evidence, and cleanup all pass. Run `29658451796` did not satisfy this item;
-  dispatch exactly one corrected Windows CPU proof from the fix revision on the
-  restored budget, and keep Windows CUDA blocked until it passes.
+- [x] Fix the heartbeat `npm` ENOENT so the free foundation Windows fixture can
+  run, then use its evidence and paid release `29695852496` to locate the real
+  failure in `run_self_test` and add self-test stderr capture with a regression.
+- [ ] Dispatch one diagnostic Windows CPU release run to read the exact failing
+  self-test import from the captured traceback; keep Windows CUDA blocked.
+- [ ] Apply the targeted self-test/box fix, then close Windows CPU only after
+  product lifecycle, beta promotion, complete evidence, and cleanup all pass.
 
 Gate 8.2 incident ledger:
 
@@ -737,6 +765,8 @@ Gate 8.2 incident ledger:
 | `29657385347` | Failed in product lifecycle after all build and publication checks passed | `activateCleanSandbox` bypassed the initialized workspace store and directly mutated its private files through a synchronous WebDriver script; Windows timed out before Runtime Box installation, while the app remained alive | Artifact `8433470660` preserves the failed lifecycle and signed release evidence; replace the private-state shortcut with the product-owned Sandbox flow, prove the exact timeout with a red regression, and repeat all cheap gates before any bounded remote proof |
 | `29658451796` | Failed during resumed installation after the Sandbox correction passed | The install state ended as `error`, but the lifecycle assertion recorded only `Expected: done; Received: error` and discarded the already-held install error, preventing evidence-based root-cause classification | Artifact `8433754821` preserves the incomplete evidence; add a red regression that requires the real install error in the compact report, stop remote execution because the final cap is exhausted, and keep CPU incomplete plus CUDA blocked |
 | Post-`29658451796` analysis | Root cause classified and fixed pending proof | The resumed install was the first Windows run to reach product activation; `activate_runtime` renames the staged box into place right after the self-test executes its interpreter, so a transient Windows lock (antivirus scan or just-exited child handle) can fail the rename with sharing-violation/access-denied where Unix never does | Added shared `rename_with_retry` (bounded backoff on transient locks only) to the activation, rollback, and download-rename paths; added cross-platform and `#[cfg(windows)]` regressions; passed all cheap Rust and unit gates; kept the diagnostic capture so a wrong hypothesis surfaces the exact error on the next run |
+| `29695274321` (free foundation) | Windows fixture failed after the heartbeat fix let it progress | `npm` ENOENT was resolved (macOS/Linux green, Windows cleared it), but the native stdlib fixture then failed to spawn the relocated console launcher `liatir-lock-fixture.exe` (ENOENT) — a separate pre-existing Gate 2 regression, not on the Gate 8.2 release path | Recorded the fixture regression for separate follow-up; did not chase it, since the release does not run the native fixture |
+| `29695852496` (paid release) | Failed in product self-test; hypothesis corrected | With the diagnostic capture in place the real error appeared: `self-test failed with status exit code: 1`, in `run_self_test` before activation — so `rename_with_retry` was not the blocker. A Windows-only Python import fails on the extracted/relocated box while the identical Linux CPU imports pass | `run_self_test` now captures and reports the self-test stderr (Python traceback), with a portable regression; dispatch one diagnostic Windows CPU run to read the exact failing import before the targeted fix |
 
 Run `29651651212` used 22 seconds of standard Linux preflight and 4 minutes
 18 seconds of the standard Windows runner. At the documented GitHub rates its
