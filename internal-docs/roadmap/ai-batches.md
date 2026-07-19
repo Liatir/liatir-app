@@ -1,7 +1,14 @@
 # AI Development Batches
 
-This page tracks the local AI roadmap for Liatir. Keep it updated when a batch
-is completed, partially completed, or deliberately deferred.
+This page tracks implementation and model-family evidence for Liatir. Keep it
+updated when a batch is completed, partially completed, or deliberately
+deferred.
+
+It is not the current product priority order. The canonical product direction,
+non-goals, phase sequence, and completion criteria are tracked in the
+[Scientific AI Workbench product plan](./scientific-ai-workbench.md). The active
+cross-platform Runtime Box execution state remains in
+[Runtime Box CI foundation](./runtime-box-ci-foundation.md).
 
 ## Global rule
 

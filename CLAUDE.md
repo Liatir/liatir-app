@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Operational instructions for Claude Code working in this repository.
+Operational instructions for Claude Code and AI coding agents working in this repository.
 Read this before implementing anything, and before proposing or building any multi-step LLM system.
 This file is self-contained.
 
@@ -8,9 +8,17 @@ This file is self-contained.
 
 ## Project context
 
-We are developing **Liatir**, a local-first Rust/Tauri desktop app for bioinformatics. The goal is to build a production-grade scientific environment where native tools, visual pipelines, `.lia` Node/WASM plugins, API Connector, AI Models, and AI Tools work together through a **single shared I/O contract defined in `packages/liatir-core`**.
+We are developing **Liatir**, a **local-first** Rust/Tauri desktop app for bioinformatics. The goal is to build a production-grade scientific environment where native tools, visual pipelines, `.lia` Node/WASM plugins, API Connector, AI Models, and AI Tools work together through a **single shared I/O contract defined in `packages/liatir-core`**.
 
 **Liatir is for non-technical users first — this is very important while designing and implementing anything.**
+
+## Repository continuity
+
+- The files that live in internal-docs/ are an important part of your memory, and must be kept up to date.
+- Always keep internal-docs/current-project-status.md up to date.
+- Durable project plans, implementation status, and handoff context required in Codespaces must live in tracked repository documentation, not only in machine-local agent memory.
+- The canonical Runtime Box CI plan and current gate status live in `internal-docs/roadmap/runtime-box-ci-foundation.md`. Read it before starting any Runtime Box CI gate and update it when a gate is completed or re-scoped.
+- Machine-local memory may be used as a convenience, but it must not be the only source for information needed to continue repository work.
 
 ## Naming (canonical terms — use exactly these)
 
@@ -51,6 +59,23 @@ For every run or process, always verify:
 - Do **NOT** introduce fake fallbacks or architectural shortcuts.
 - Every feature must work well at **production level** — for real users, real files, and real scientific workflows, not only for the immediate demo.
 - Before closing work, mentally and technically run automatic tests to check everything works correctly (see the verification gate under the architecture policy).
+
+### Task-specific execution checklists
+
+- For every medium-complexity or complex task, maintain a **living, task-specific internal checklist** while working. A user plan provides direction but cannot predict every implementation detail; convert discoveries, dependencies, and risks into explicit checklist items before proceeding.
+- Refresh the checklist before each materially complex step. At minimum, verify: prerequisites and current state; the exact file, command, workflow, target, and inputs; expected state changes; success evidence; failure and stop conditions; rollback or cleanup; and any cost or authorization boundary.
+- Never perform a paid, remote, publishing, release, deployment, destructive, or otherwise consequential action from memory or name inference alone. Read back the exact action definition and inputs, verify that they match the intended operation, and immediately verify the created action identity, revision, target, and mode. Stop or cancel on any mismatch.
+- Mark an item complete only from concrete evidence such as a test result, generated artifact, run ID, receipt, diff, or observed state transition. Do not infer completion from an earlier adjacent step.
+- When a new defect or unexpected condition appears, add it to the checklist with its root cause, regression coverage, required cheap rechecks, retry limit, and cleanup before attempting another expensive action.
+- Keep the checklist proportional: concise for bounded work, more detailed for releases and multi-stage changes. Do not turn it into repetitive commentary or polling. For work that must survive another session, store the evolving checklist and evidence in the canonical tracked plan or handoff document.
+- The checklist supplements, and never replaces, repository instructions, the user plan, architecture rules, or required tests.
+
+### Long-running processes and monitoring
+
+- **Never waste user credits or context on repetitive polling.** This applies to every long-running or external process, not only CI: builds, tests, deployments, jobs, downloads, services, queues, and remote workflows.
+- Do not use verbose watch commands or repeated status calls that inject unchanged state into the conversation or context window.
+- Prefer event-driven completion signals or a silent background wait. If neither exists, perform one concise status check after a meaningful interval and stop checking until another meaningful interval or a fresh user request.
+- Report only real transitions: actionable progress, failure, completion, or a change that requires a decision. Never repeatedly report that a process is still running.
 
 ## Build / test / run
 
@@ -125,20 +150,11 @@ If coordination is truly needed, go **linear**: agent 2 works with full knowledg
 ### Coding-agent specifics
 1. **Default = linear single agent** for writing/editing/debugging code.
 2. **Never spawn parallel subagents that write to the same codebase** — conflicting decisions (APIs, style, duplication) can't be merged cleanly. Delegate sequentially with full context handoff.
-3. **Use subagents (Task tool) for read/exploration** (understanding code, locating bugs, gathering context across files), not parallel writes.
+3. **Use subagents for read/exploration** (understanding code, locating bugs, gathering context across files), not parallel writes.
 4. For changes touching an **unpredictable number of files**, use orchestrator-worker (discover files at runtime) but apply changes coordinated, not via independent parallel writers.
 5. **Run build/tests/linter as a gate** after each significant step — this is also the "run automatic tests before closing" rule above. Get the commands from `package.json` / `Cargo.toml` as described in Build / test / run.
 6. **Cap iterations**; if tests don't converge in N passes, stop and report.
 7. Before choosing multi-agent, compare to a single agent at **equal token budget** — if the only gain is "more tokens," give a single agent more budget instead.
-
----
-
-## Claude Code specifics
-
-- **Memory:** keep this file under ~200 lines for good adherence. Use `/memory` to review what Claude Code recorded on its own and delete stale or incorrect entries.
-- **Path-scoped rules:** put area-specific rules in `.claude/rules/*.md` with a `paths:` glob so they load only when relevant (e.g. separate rules for `src-tauri/` vs `.lia` plugins) instead of growing this file.
-- **Precedence** (all levels concatenated, most specific wins): managed policy > `~/.claude/CLAUDE.md` (user) > `./CLAUDE.md` (project) > `./CLAUDE.local.md` (local).
-- This file duplicates the shared instructions on purpose (self-contained). If you also keep an `AGENTS.md`, remember to update both when the rules change.
 
 ---
 

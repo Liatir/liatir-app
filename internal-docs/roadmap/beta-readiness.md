@@ -1,8 +1,10 @@
 # Beta 1 Readiness
 
 This page is the cross-surface readiness ledger for the first production-grade
-Liatir beta. It complements the detailed [AI batch roadmap](./ai-batches.md)
-and [testing strategy](../testing/overview.md); it does not duplicate their
+Liatir beta. It complements the canonical
+[Scientific AI Workbench product plan](./scientific-ai-workbench.md), detailed
+[AI batch ledger](./ai-batches.md), and
+[testing strategy](../testing/overview.md); it does not duplicate their
 registries or runtime contracts.
 
 ## Status definitions
@@ -63,15 +65,26 @@ The beta cannot ship until automated native coverage proves:
 
 ## Immediate execution order
 
-1. Finish the remaining heavy AI Model integrations on the signed Runtime Box
-   foundation without widening scope to new model families.
-2. Validate the live R2/Worker distribution and existing AI Batches 1–5 with
-   targeted real runtime and scientific fixtures.
-3. Run the real local Ollama Quenta evaluation matrix and document recommended
-   model choices.
-4. Add the MCP server with allowlisted saved-pipeline execution.
-5. Finish useful plugin, API Connector, and pipeline presets.
-6. Close macOS distribution gates and run the release-candidate matrix.
+1. Finish the active Runtime Box CI foundation from Gate 8.2 through Gate 10 in
+   the exact order and approval boundary defined by its canonical plan.
+2. Close true cross-version Runtime Box update and client-persisted anti-replay
+   state.
+3. Close the Plugin, direct AI, API Connector, and dependency lifecycle gaps
+   required by the common execution spine.
+4. Add backward-compatible scientific artifact profiles in
+   `packages/liatir-core` and prove them first through the single-cell
+   lighthouse workflow.
+5. Complete the single-cell viewer, downstream artifact reuse, and one useful
+   no-code preset.
+6. Implement a first-class local Nextflow adapter and prove that one declared
+   output can feed an existing AI Tool or viewer.
+7. Validate the implemented predictive genomics and protein verticals before
+   adding new model families.
+8. Close the evidence-backed release matrix and public documentation.
+
+Quenta expansion, MCP, simulations, generative model families, and additional
+workflow engines remain deferred until the workbench product gate above is
+coherent. See the product plan for the full rationale and phase exit criteria.
 
 Update this ledger only when evidence changes. Every status promotion must cite
 a repeatable gate, not a manual implementation claim.

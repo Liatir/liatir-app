@@ -17,7 +17,7 @@ export default defineConfig({
       { text: 'API', link: '/api/liatir-api' },
       { text: 'AI', link: '/ai/predictive-genomics' },
       { text: 'Beta readiness', link: '/roadmap/beta-readiness' },
-      { text: 'AI Roadmap', link: '/roadmap/ai-batches' },
+      { text: 'Product plan', link: '/roadmap/scientific-ai-workbench' },
     ],
 
     sidebar: [
@@ -63,8 +63,10 @@ export default defineConfig({
         text: 'Roadmap',
         collapsed: false,
         items: [
+          { text: 'Scientific AI workbench', link: '/roadmap/scientific-ai-workbench' },
           { text: 'Beta 1 readiness', link: '/roadmap/beta-readiness' },
           { text: 'AI batches', link: '/roadmap/ai-batches' },
+          { text: 'Runtime Box CI foundation', link: '/roadmap/runtime-box-ci-foundation' },
         ],
       },
     ],
