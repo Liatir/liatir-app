@@ -264,11 +264,32 @@ class NativeWebDriverClient {
     if (traceLifecycle) {
       console.error(`[e2e ${new Date().toISOString()}] WebDriver ${method} ${endpoint}`);
     }
-    const response = await fetch(`${baseUrl}/session/${this.sessionId}${endpoint}`, {
+    // A UI navigation (window.location.href = ...) unloads the current document, and on slower
+    // Windows runners the in-flight WebDriver response can be dropped as the page tears down,
+    // surfacing as a connection-level "fetch failed" even though the app and its embedded
+    // WebDriver server stay up. Retry only that transient connection failure with a short backoff;
+    // a real WebDriver protocol error comes back as a normal response and is thrown below, never
+    // retried.
+    const url = `${baseUrl}/session/${this.sessionId}${endpoint}`;
+    const requestInit = {
       method,
       headers: body === undefined ? undefined : { 'content-type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
-    });
+    };
+    const maxAttempts = 4;
+    let response;
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        response = await fetch(url, requestInit);
+        break;
+      } catch (error) {
+        if (attempt >= maxAttempts) throw error;
+        if (traceLifecycle) {
+          console.error(`[e2e ${new Date().toISOString()}] transient WebDriver connection failure on ${method} ${endpoint} (attempt ${attempt}): ${error?.message ?? error}`);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+      }
+    }
     const text = await response.text();
     const payload = text ? JSON.parse(text) : {};
     const value = payload.value;
