@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Root cause found via captured traceback (run `29696802999`): the product self-test failed with `WinError 206` (MAX_PATH) loading `torch\lib\asmjit.dll` because the long `.{runtime_id}.{uuid}.staging` name pushed the box's nested DLL paths past 260 chars. Staging is now a short `.stg-{uuid}` name (264→219 chars measured); local gates pass. One confirming Windows CPU run is pending. Windows CUDA stays blocked |
+| 8.2. Geneformer Windows pilot | In progress | Two Windows-only bugs fixed in sequence, each surfaced by getting one step further. Run `29696802999`: MAX_PATH (`WinError 206`) in the self-test → staging shortened to `.stg-{uuid}`. Run `29697662905`: install/self-test then passed, but the first direct Job failed with `Python environment is not installed` because `venv_python()` looked for `venv\Scripts\python.exe` while the standalone box ships `venv\python.exe` (Unix layouts coincide, Windows diverges) → `venv_python` now resolves both layouts. Local gates pass; one confirming Windows CPU run pending. Windows CUDA stays blocked |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -692,6 +692,26 @@ Current state as of 2026-07-18:
   eleven `runtime_box` Rust tests pass. A confirming Windows CPU run remains.
   Long-path awareness (manifest plus OS setting) is a possible future hardening
   but is not required now that the interpreter paths are well under the limit.
+- Confirming release run `29697662905` (revision `c6eba27`) proved the MAX_PATH
+  fix: install, resume, and the self-test all passed on Windows, reaching the
+  first real direct Job ever run on Windows. That Job failed with `Python
+  environment is not installed: single-cell-foundation-geneformer-v1-10m`. The
+  cause is a second Windows-only layout mismatch: `venv_python()` resolved the
+  interpreter as `venv\Scripts\python.exe` (the Liatir-managed venv layout),
+  while the Runtime Box ships a relocated standalone Python whose Windows layout
+  places `python.exe` at the venv root — exactly what the recipe declares
+  (`pythonEntryPoint: venv/python.exe`) and what the self-test already used. On
+  macOS and Linux both layouts coincide on `venv/bin/python`, so only Windows
+  diverged and the earlier UCE/Geneformer direct-Job evidence there did not catch
+  it.
+- Fix: `venv_python` now resolves both layouts. It prefers the managed-venv path
+  and falls back to the standalone `venv\python.exe` only on Windows when the
+  managed path is absent, so Liatir-managed venvs (which genuinely use `Scripts\`)
+  are unaffected. The resolution is factored into a pure `venv_python_for` helper
+  parameterized by platform and a filesystem predicate, with a host-independent
+  unit regression covering the managed, standalone, not-yet-installed, and Unix
+  cases. All `python_env` and `runtime_box` Rust tests pass. One confirming
+  Windows CPU run remains.
 
 Active Windows CPU release checklist:
 
@@ -791,6 +811,7 @@ Gate 8.2 incident ledger:
 | `29695274321` (free foundation) | Windows fixture failed after the heartbeat fix let it progress | `npm` ENOENT was resolved (macOS/Linux green, Windows cleared it), but the native stdlib fixture then failed to spawn the relocated console launcher `liatir-lock-fixture.exe` (ENOENT) — a separate pre-existing Gate 2 regression, not on the Gate 8.2 release path | Recorded the fixture regression for separate follow-up; did not chase it, since the release does not run the native fixture |
 | `29695852496` (paid release) | Failed in product self-test; hypothesis corrected | With the diagnostic capture in place the real error appeared: `self-test failed with status exit code: 1`, in `run_self_test` before activation — so `rename_with_retry` was not the blocker. A Windows-only Python import fails on the extracted/relocated box while the identical Linux CPU imports pass | `run_self_test` now captures and reports the self-test stderr (Python traceback), with a portable regression; dispatch one diagnostic Windows CPU run to read the exact failing import before the targeted fix |
 | `29696802999` (diagnostic release) | Self-test traceback captured; root cause fixed | `[WinError 206] The filename or extension is too long` loading `torch\lib\asmjit.dll`: the `.{runtime_id}.{uuid}.staging` path (264 chars on the CI home) crossed the Windows MAX_PATH (260) the DLL loader enforces, so `import torch` failed. The final activated path was already short enough | Shortened staging to `.stg-{uuid}` (264→219 chars measured); crate compiles and all `runtime_box` tests pass; dispatch one confirming Windows CPU run |
+| `29697662905` (confirming release) | MAX_PATH fixed; a second Windows-only mismatch surfaced | Install, resume, and self-test passed, reaching the first real direct Job on Windows, which failed with `Python environment is not installed`: `venv_python()` resolved `venv\Scripts\python.exe` while the standalone box ships `venv\python.exe`. Unix layouts coincide on `venv/bin/python`, so only Windows diverged | `venv_python` now resolves both layouts (prefers managed `Scripts\`, falls back to standalone `venv\python.exe` on Windows), via a pure `venv_python_for` helper with a host-independent regression; all `python_env`/`runtime_box` tests pass; dispatch one confirming Windows CPU run |
 
 Run `29651651212` used 22 seconds of standard Linux preflight and 4 minutes
 18 seconds of the standard Windows runner. At the documented GitHub rates its

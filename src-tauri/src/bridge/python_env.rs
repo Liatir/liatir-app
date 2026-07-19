@@ -187,14 +187,30 @@ pub fn env_dir(app: &AppHandle, env_root: &str, env_id: &str) -> Result<PathBuf,
 }
 
 pub fn venv_python(dir: &Path) -> PathBuf {
-    #[cfg(target_os = "windows")]
-    {
-        venv_dir(dir).join("Scripts").join("python.exe")
+    venv_python_for(dir, cfg!(target_os = "windows"), |path| path.is_file())
+}
+
+/// Resolves the interpreter inside an environment directory for both interpreter layouts Liatir
+/// manages. A Liatir-created venv places the interpreter at `Scripts\python.exe` (Windows) or
+/// `bin/python` (Unix). A Runtime Box ships a relocated standalone Python whose Windows layout puts
+/// `python.exe` at the venv root instead of under `Scripts\`; on Unix it coincides with
+/// `bin/python`, which is why only Windows needs the fallback. Prefer the managed-venv location and
+/// use the standalone one only when the managed path is absent.
+///
+/// Parameterized by platform and a filesystem predicate so the Windows resolution is testable on
+/// any host.
+fn venv_python_for(dir: &Path, windows: bool, exists: impl Fn(&Path) -> bool) -> PathBuf {
+    if !windows {
+        return venv_dir(dir).join("bin").join("python");
     }
-    #[cfg(not(target_os = "windows"))]
-    {
-        venv_dir(dir).join("bin").join("python")
+    let scripts = venv_dir(dir).join("Scripts").join("python.exe");
+    if !exists(&scripts) {
+        let standalone = venv_dir(dir).join("python.exe");
+        if exists(&standalone) {
+            return standalone;
+        }
     }
+    scripts
 }
 
 pub fn status_env(
@@ -1314,6 +1330,28 @@ fn now_ms() -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn venv_python_prefers_scripts_then_falls_back_to_standalone_on_windows() {
+        let dir = Path::new("box-root");
+        let scripts = venv_dir(dir).join("Scripts").join("python.exe");
+        let standalone = venv_dir(dir).join("python.exe");
+
+        // Liatir-managed venv: Scripts\python.exe exists, so it wins.
+        assert_eq!(venv_python_for(dir, true, |path| path == scripts), scripts);
+        // Runtime Box standalone: only venv\python.exe exists, so it is used.
+        assert_eq!(
+            venv_python_for(dir, true, |path| path == standalone),
+            standalone,
+        );
+        // Nothing installed yet: default to the managed-venv path.
+        assert_eq!(venv_python_for(dir, true, |_| false), scripts);
+        // Unix always resolves to bin/python regardless of the predicate.
+        assert_eq!(
+            venv_python_for(dir, false, |_| true),
+            venv_dir(dir).join("bin").join("python"),
+        );
+    }
 
     #[test]
     fn import_check_script_embeds_runtime_packages_as_json_data() {
