@@ -40,8 +40,8 @@ use super::{
     ai_hardware::{nvidia_capability, total_memory_bytes},
     app_storage::{resolve_app_path, write_text_atomic},
     managed_bins::{
-        available_space_for_path, extract_zip_with_expected_size, format_bytes, sha256_of_file,
-        stream_download, DownloadRegistry, DISK_SPACE_MARGIN_BYTES,
+        available_space_for_path, extract_zip_with_expected_size, format_bytes, rename_with_retry,
+        sha256_of_file, stream_download, DownloadRegistry, DISK_SPACE_MARGIN_BYTES,
     },
     python_env::env_dir,
 };
@@ -1302,13 +1302,16 @@ fn activate_runtime(
     let backup = rollback.join(format!("{}-{}", release.version, Uuid::new_v4()));
     let had_previous = runtime_dir.exists();
     if had_previous {
-        std::fs::rename(runtime_dir, &backup)
+        rename_with_retry(runtime_dir, &backup)
             .map_err(|error| format!("cannot stage previous AI runtime for rollback: {error}"))?;
     }
-    if let Err(error) = std::fs::rename(staging, runtime_dir) {
+    // The self-test just executed this box's interpreter from `staging`, so on Windows a
+    // transient antivirus or child-process lock can still be clearing; retry the move before
+    // reporting a failure.
+    if let Err(error) = rename_with_retry(staging, runtime_dir) {
         // Put the old version back before reporting the failure.
         if had_previous {
-            let _ = std::fs::rename(&backup, runtime_dir);
+            let _ = rename_with_retry(&backup, runtime_dir);
         }
         return Err(format!("cannot activate AI Runtime Box: {error}"));
     }
@@ -1563,11 +1566,11 @@ fn rollback_runtime(runtime_dir: &Path, runtime_id: &str) -> Result<bool, String
     // if the restore rename fails.
     let failed = parent.join(format!(".{runtime_id}.{}.failed", Uuid::new_v4()));
     if runtime_dir.exists() {
-        std::fs::rename(runtime_dir, &failed).map_err(|error| error.to_string())?;
+        rename_with_retry(runtime_dir, &failed).map_err(|error| error.to_string())?;
     }
-    if let Err(error) = std::fs::rename(&previous, runtime_dir) {
+    if let Err(error) = rename_with_retry(&previous, runtime_dir) {
         if failed.exists() {
-            let _ = std::fs::rename(&failed, runtime_dir);
+            let _ = rename_with_retry(&failed, runtime_dir);
         }
         return Err(format!("cannot roll back AI Runtime Box: {error}"));
     }
@@ -2069,6 +2072,43 @@ mod tests {
         assert!(!runtime.exists());
         assert!(!rollback.exists());
         assert!(!download.exists());
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    /// Reproduces the Windows activation failure: the self-test executes the box interpreter from
+    /// `staging`, so a lock on a staged file (antivirus scan, lingering child handle) can still be
+    /// clearing when activation renames the directory into place. The bounded retry must ride out
+    /// that transient lock and complete the move once it releases.
+    #[cfg(windows)]
+    #[test]
+    fn runtime_box_windows_activate_retries_transient_lock() {
+        use std::os::windows::fs::OpenOptionsExt;
+
+        let root = fixture_root("windows-activate-lock");
+        let runtime = root.join("fixture-runtime");
+        let staging = root.join(".fixture.staging");
+        write_runtime_marker(&staging, "activate-lock");
+        let locked_path = staging.join("marker.txt");
+
+        let (locked_tx, locked_rx) = std::sync::mpsc::channel();
+        let holder = std::thread::spawn(move || {
+            let handle = std::fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .share_mode(0)
+                .open(&locked_path)
+                .unwrap();
+            locked_tx.send(()).unwrap();
+            // Hold long enough that the first rename attempts fail, then release so a retry wins.
+            std::thread::sleep(std::time::Duration::from_millis(250));
+            drop(handle);
+        });
+
+        locked_rx.recv().unwrap();
+        assert!(!activate_runtime(&runtime, &staging, &fixture_release("1.0.0")).unwrap());
+        holder.join().unwrap();
+        assert_eq!(read_runtime_marker(&runtime), "activate-lock");
+
         std::fs::remove_dir_all(root).unwrap();
     }
 

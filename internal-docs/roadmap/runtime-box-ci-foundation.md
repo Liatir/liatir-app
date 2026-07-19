@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Final Windows CPU run `29658451796` reached resumed installation but failed without preserving the install error; the remote cap is exhausted and Windows CUDA is blocked |
+| 8.2. Geneformer Windows pilot | In progress | Run `29658451796` reached the first product activation ever attempted on Windows and failed there; activation now rides out transient Windows rename locks (`rename_with_retry`), local Rust and unit gates pass, and one corrected Windows CPU proof is pending on the restored budget. Windows CUDA stays blocked |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -612,6 +612,32 @@ Current state as of 2026-07-18:
   passes its focused suite. It does not provide the missing error retroactively,
   and the final CPU remote-attempt cap is exhausted. Windows CPU therefore
   remains incomplete and Windows CUDA has not started.
+- Root-cause analysis of the failing step: run `29658451796` was the first run to
+  reach a real product activation on Windows. Every earlier run failed before it
+  (line endings, `npm.cmd`/`npx.cmd` spawning, PE relocatability, tokenizer
+  fetch, AppData, bridge readiness, Sandbox flow), so the resumed install — the
+  first full install of the E2E — was the first time `activate_runtime` renamed
+  a staged box into place on Windows. That rename runs immediately after
+  `run_self_test` executes the box interpreter from the staging tree, which is
+  exactly when Windows can still hold a transient lock (antivirus real-time
+  scanning of freshly written executables, or a just-exited child handle) and
+  return ERROR_SHARING_VIOLATION (32) or ERROR_ACCESS_DENIED (5). Unix does not
+  report these on rename, which is why every host and CI build passed while the
+  product activation did not.
+- Fix: a shared `rename_with_retry` in `managed_bins` retries a rename on
+  transient Windows locks with a bounded backoff (~1.4 s worst case) and returns
+  a genuinely permanent error on the first attempt. It is now used by
+  `activate_runtime`, `rollback_runtime`, and the download's final `.part`
+  rename, replacing the duplicated ad-hoc rename/copy logic. Cross-platform unit
+  tests cover the happy path, the permanent-error path, and the Windows
+  sharing-violation classifier; a `#[cfg(windows)]` regression holds a
+  share-denying lock on a staged file and proves activation still completes once
+  the lock releases. Local gates are green: the crate compiles, the ten existing
+  `runtime_box` Rust tests (activation and rollback included) pass, and all 74
+  runtime-box unit tests pass. The diagnostic capture from the prior commit
+  remains in place, so if this hypothesis is wrong the next run surfaces the
+  exact install error instead of discarding it. One corrected Windows CPU proof
+  is the remaining evidence.
 
 Active Windows CPU release checklist:
 
@@ -665,9 +691,13 @@ Active Windows CPU release checklist:
   completion.
 - [x] After the generic lifecycle correction and all cheap gates, dispatch the
   final protected CPU proof and stop remote execution on failure.
+- [x] Classify the resumed-install failure as the first Windows product
+  activation, apply `rename_with_retry` to the activation, rollback, and
+  download-rename paths, and pass all cheap Rust and unit gates.
 - [ ] Close Windows CPU only after product lifecycle, beta promotion, complete
   evidence, and cleanup all pass. Run `29658451796` did not satisfy this item;
-  keep Windows CUDA blocked and do not dispatch another runner under this cap.
+  dispatch exactly one corrected Windows CPU proof from the fix revision on the
+  restored budget, and keep Windows CUDA blocked until it passes.
 
 Gate 8.2 incident ledger:
 
@@ -696,6 +726,7 @@ Gate 8.2 incident ledger:
 | `29656573972` | Passed on the exact reviewed revision | Stable app navigation plus native bridge/storage behavior after all cheap gates passed | Artifact `8433177679` records 2/2 passing tests with zero failures; permit the single protected CPU release retry without any further paid diagnostic smoke |
 | `29657385347` | Failed in product lifecycle after all build and publication checks passed | `activateCleanSandbox` bypassed the initialized workspace store and directly mutated its private files through a synchronous WebDriver script; Windows timed out before Runtime Box installation, while the app remained alive | Artifact `8433470660` preserves the failed lifecycle and signed release evidence; replace the private-state shortcut with the product-owned Sandbox flow, prove the exact timeout with a red regression, and repeat all cheap gates before any bounded remote proof |
 | `29658451796` | Failed during resumed installation after the Sandbox correction passed | The install state ended as `error`, but the lifecycle assertion recorded only `Expected: done; Received: error` and discarded the already-held install error, preventing evidence-based root-cause classification | Artifact `8433754821` preserves the incomplete evidence; add a red regression that requires the real install error in the compact report, stop remote execution because the final cap is exhausted, and keep CPU incomplete plus CUDA blocked |
+| Post-`29658451796` analysis | Root cause classified and fixed pending proof | The resumed install was the first Windows run to reach product activation; `activate_runtime` renames the staged box into place right after the self-test executes its interpreter, so a transient Windows lock (antivirus scan or just-exited child handle) can fail the rename with sharing-violation/access-denied where Unix never does | Added shared `rename_with_retry` (bounded backoff on transient locks only) to the activation, rollback, and download-rename paths; added cross-platform and `#[cfg(windows)]` regressions; passed all cheap Rust and unit gates; kept the diagnostic capture so a wrong hypothesis surfaces the exact error on the next run |
 
 Run `29651651212` used 22 seconds of standard Linux preflight and 4 minutes
 18 seconds of the standard Windows runner. At the documented GitHub rates its

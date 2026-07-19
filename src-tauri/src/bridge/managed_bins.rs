@@ -62,6 +62,40 @@ pub(crate) fn format_bytes(bytes: u64) -> String {
     format!("{value:.1} {}", UNITS[unit])
 }
 
+/// `true` when a rename failure is a transient Windows lock rather than a permanent error.
+///
+/// On Windows a rename fails with ERROR_ACCESS_DENIED (5) or ERROR_SHARING_VIOLATION (32) while
+/// another handle is still open on the source tree — most often antivirus real-time scanning of
+/// freshly written executables, or a child process (such as a just-finished self-test
+/// interpreter) whose handles the OS has not released yet. These clear within a moment. Unix does
+/// not report these on rename, so this only ever changes behavior on Windows.
+fn is_transient_rename_lock(error: &std::io::Error) -> bool {
+    matches!(error.raw_os_error(), Some(5) | Some(32))
+        || error.kind() == std::io::ErrorKind::PermissionDenied
+}
+
+/// Rename `from` to `to`, retrying briefly on transient Windows sharing violations.
+///
+/// Activation and rollback move a directory into place immediately after extracting and executing
+/// its contents, which is exactly when Windows may still hold a transient lock (see
+/// [`is_transient_rename_lock`]). A bounded backoff turns a spurious sharing violation into a
+/// reliable move; a genuinely permanent error is returned on the first attempt. On Unix the first
+/// rename almost always succeeds, so this is effectively a direct rename there.
+pub(crate) fn rename_with_retry(from: &Path, to: &Path) -> std::io::Result<()> {
+    const MAX_ATTEMPTS: u32 = 8;
+    for attempt in 1..=MAX_ATTEMPTS {
+        match std::fs::rename(from, to) {
+            Ok(()) => return Ok(()),
+            Err(error) if attempt < MAX_ATTEMPTS && is_transient_rename_lock(&error) => {
+                std::thread::sleep(Duration::from_millis((50 * attempt as u64).min(400)));
+            }
+            Err(error) => return Err(error),
+        }
+    }
+    // The `attempt < MAX_ATTEMPTS` guard forces the final iteration to return.
+    unreachable!("rename_with_retry always returns on the last attempt")
+}
+
 // ── Download registry ─────────────────────────────────────────────
 
 pub struct DownloadRegistry {
@@ -323,7 +357,7 @@ pub(crate) async fn stream_download(
     if let Some(parent) = Path::new(dest_path).parent() {
         std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }
-    std::fs::rename(&part_path, dest_path)
+    rename_with_retry(Path::new(&part_path), Path::new(dest_path))
         .or_else(|_| {
             // Cross-device rename fallback
             std::fs::copy(&part_path, dest_path).map(|_| ())?;
@@ -549,4 +583,61 @@ pub fn lia_write_file_path(path: String, content: String) -> Result<(), String> 
         std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }
     std::fs::write(&path, content.as_bytes()).map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rename_with_retry_moves_a_directory_tree() {
+        let root = std::env::temp_dir().join(format!("liatir-rename-retry-{}", uuid_like()));
+        let from = root.join("from");
+        let to = root.join("to");
+        std::fs::create_dir_all(from.join("nested")).unwrap();
+        std::fs::write(from.join("nested").join("file.txt"), b"payload").unwrap();
+
+        rename_with_retry(&from, &to).unwrap();
+
+        assert!(!from.exists());
+        assert_eq!(
+            std::fs::read_to_string(to.join("nested").join("file.txt")).unwrap(),
+            "payload"
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn rename_with_retry_reports_a_permanent_error_without_looping_forever() {
+        let root = std::env::temp_dir().join(format!("liatir-rename-missing-{}", uuid_like()));
+        std::fs::create_dir_all(&root).unwrap();
+        // A missing source is a permanent error (NotFound, not a transient lock), so it must
+        // surface immediately rather than exhaust the retry budget.
+        let error = rename_with_retry(&root.join("absent"), &root.join("target")).unwrap_err();
+        assert!(!is_transient_rename_lock(&error));
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn is_transient_rename_lock_classifies_windows_sharing_violations() {
+        assert!(is_transient_rename_lock(&std::io::Error::from_raw_os_error(32)));
+        assert!(is_transient_rename_lock(&std::io::Error::from_raw_os_error(5)));
+        assert!(is_transient_rename_lock(&std::io::Error::from(
+            std::io::ErrorKind::PermissionDenied
+        )));
+        assert!(!is_transient_rename_lock(&std::io::Error::from(
+            std::io::ErrorKind::NotFound
+        )));
+    }
+
+    // A tiny process/time-seeded unique suffix so parallel test runs never share a temp path,
+    // without pulling the uuid crate into this module's test scope.
+    fn uuid_like() -> String {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        format!("{}-{}", std::process::id(), nanos)
+    }
 }
