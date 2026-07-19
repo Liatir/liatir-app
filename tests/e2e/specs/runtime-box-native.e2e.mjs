@@ -124,14 +124,30 @@ async function runPython(browser, script, inputJson) {
 }
 
 async function navigate(browser, pathname) {
+  // Navigate client-side instead of assigning window.location.href. A hard location change unloads
+  // the document, and on the slower Windows runner the embedded WebDriver connection is dropped for
+  // long enough that even bounded retries fail ("fetch failed") while the app stays alive. The app
+  // is a SvelteKit SPA, which intercepts in-app anchor clicks and routes without a reload (query
+  // strings included), so the WebDriver session is never torn down.
   await browser.execute((destination) => {
-    window.location.href = destination;
+    const link = document.createElement('a');
+    link.href = destination;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
     return true;
   }, pathname);
-  await (await browser.$('[data-testid="sidebar-nav-item"]')).waitForDisplayed({
-    timeout: 20_000,
-    timeoutMsg: `Liatir did not finish navigating to ${pathname}`,
-  });
+  // The sidebar is present on every page, so wait on the actual route instead: confirm the
+  // client-side navigation committed to the requested path (ignoring any query string).
+  const expectedPath = pathname.split('?')[0];
+  await browser.waitUntil(
+    async () => browser.execute((expected) => window.location.pathname === expected, expectedPath),
+    {
+      timeout: 20_000,
+      timeoutMsg: `Liatir did not finish navigating to ${pathname}`,
+    },
+  );
 }
 
 function section(output, type, label = null) {
