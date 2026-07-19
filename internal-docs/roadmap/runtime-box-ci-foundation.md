@@ -638,6 +638,16 @@ Current state as of 2026-07-18:
   remains in place, so if this hypothesis is wrong the next run surfaces the
   exact install error instead of discarding it. One corrected Windows CPU proof
   is the remaining evidence.
+- Free Windows validation was itself blocked: the foundation Windows fixture had
+  been failing since the heartbeat wrapper landed because
+  `scripts/runtime-box/heartbeat.mjs` spawned `npm` shell-free, which is ENOENT
+  on Windows (npm is a command shim). It never reached the wrapped
+  `cargo test runtime_box` Rust-lifecycle step, so the activation fix could not
+  be proven for free. The heartbeat runner now routes `npm` through the shared
+  `npmInvocation` (node + `npm-cli.js`) while `cargo`/`node` pass through
+  unchanged, with a focused unit regression. The production release path does not
+  use the heartbeat wrapper (its Windows steps call `npm` through PowerShell), so
+  this only unblocks the free foundation validation, not the paid release.
 
 Active Windows CPU release checklist:
 

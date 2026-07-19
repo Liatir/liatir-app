@@ -6,12 +6,24 @@ import { spawn } from 'node:child_process';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { npmInvocation } from '../node-cli.mjs';
+
 const DEFAULT_HEARTBEAT_SECONDS = 300;
 
 /** Formats the one-line progress signal emitted only at meaningful intervals. */
 export function heartbeatLine(label, elapsedMs) {
   const elapsedMinutes = Math.max(1, Math.floor(elapsedMs / 60_000));
   return `[runtime-box heartbeat] ${label} is still running (${elapsedMinutes} min elapsed)`;
+}
+
+/**
+ * Resolves the shell-free command to spawn. npm is a command shim on Windows, so a shell-free
+ * spawn of "npm" fails with ENOENT; route it through its JavaScript CLI instead. Other commands
+ * (cargo, node) pass through unchanged. Options are forwarded to `npmInvocation` for testing.
+ */
+export function resolveHeartbeatInvocation(command, args, options = {}) {
+  if (command !== 'npm') return { command, args };
+  return npmInvocation(args, options);
 }
 
 /** Runs one command without a shell while periodically proving that it is still alive. */
@@ -29,7 +41,8 @@ export async function runWithHeartbeat(command, args, options = {}) {
   const output = { stdout: '', stderr: '' };
   const maxBuffer = options.maxBuffer ?? 64 * 1024 * 1024;
   let bufferedBytes = 0;
-  const child = spawn(command, args, {
+  const invocation = resolveHeartbeatInvocation(command, args);
+  const child = spawn(invocation.command, invocation.args, {
     cwd: options.cwd,
     env: { ...process.env, ...(options.env ?? {}) },
     stdio: options.capture ? ['ignore', 'pipe', 'pipe'] : 'inherit',
