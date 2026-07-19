@@ -473,6 +473,13 @@ async function run() {
     await waitForWebDriver(app);
     const session = await createSession();
     browser = new NativeWebDriverClient(session);
+    // Heavy Runtime Box Jobs (cold torch/scipy/anndata imports plus real inference) can exceed the
+    // W3C default 30s script timeout, especially on slower Windows CPU runners, so a slow-but-
+    // successful Job would be reported as "Script execution timed out". Raise the script timeout to
+    // match the app-side Python job timeout (timeoutSeconds: 600) so the app's own limit governs.
+    await browser.request('POST', '/timeouts', {
+      script: Number(process.env.LIATIR_E2E_SCRIPT_TIMEOUT_MS) || 600_000,
+    });
     startupCompleted = true;
 
     const context = {

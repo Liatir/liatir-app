@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Two Windows-only bugs fixed in sequence, each surfaced by getting one step further. Run `29696802999`: MAX_PATH (`WinError 206`) in the self-test → staging shortened to `.stg-{uuid}`. Run `29697662905`: install/self-test then passed, but the first direct Job failed with `Python environment is not installed` because `venv_python()` looked for `venv\Scripts\python.exe` while the standalone box ships `venv\python.exe` (Unix layouts coincide, Windows diverges) → `venv_python` now resolves both layouts. Local gates pass; one confirming Windows CPU run pending. Windows CUDA stays blocked |
+| 8.2. Geneformer Windows pilot | In progress | Three Windows issues fixed in sequence, each surfaced by getting one step further: MAX_PATH self-test (`29696802999` → short `.stg-{uuid}` staging); direct-Job `Python environment is not installed` (`29697662905` → `venv_python` resolves the standalone `venv\python.exe`); then run `29702544175` reached the real Job, which hit the E2E harness's W3C default 30s script timeout on cold torch/scipy imports → the E2E now raises the WebDriver script timeout to the app-side 600s Python job limit. Local gates pass; one confirming Windows CPU run pending. Windows CUDA stays blocked |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -712,6 +712,20 @@ Current state as of 2026-07-18:
   unit regression covering the managed, standalone, not-yet-installed, and Unix
   cases. All `python_env` and `runtime_box` Rust tests pass. One confirming
   Windows CPU run remains.
+- Confirming release run `29702544175` (revision `6534f1b`) proved the
+  interpreter fix: install, resume, self-test, and the start of the first real
+  direct Job all worked on Windows. The Job then failed with `Script execution
+  timed out`. This is the E2E harness, not the product: the WebDriver session set
+  no script timeout, so the W3C default of 30 seconds applied, and the cold
+  `torch`/`scipy`/`anndata` imports plus real inference on the slower Windows CPU
+  runner exceeded it. macOS and Linux runners complete the same work fast enough
+  to stay under 30 seconds.
+- Fix: the E2E harness now raises the WebDriver script timeout after creating the
+  session to the app-side Python job limit (`timeoutSeconds: 600` → 600000 ms,
+  overridable via `LIATIR_E2E_SCRIPT_TIMEOUT_MS`), so the app's own timeout
+  governs a slow-but-successful Job instead of a premature WebDriver abort. The
+  file parses and all 74 runtime-box unit tests pass. One confirming Windows CPU
+  run remains.
 
 Active Windows CPU release checklist:
 
@@ -812,6 +826,7 @@ Gate 8.2 incident ledger:
 | `29695852496` (paid release) | Failed in product self-test; hypothesis corrected | With the diagnostic capture in place the real error appeared: `self-test failed with status exit code: 1`, in `run_self_test` before activation — so `rename_with_retry` was not the blocker. A Windows-only Python import fails on the extracted/relocated box while the identical Linux CPU imports pass | `run_self_test` now captures and reports the self-test stderr (Python traceback), with a portable regression; dispatch one diagnostic Windows CPU run to read the exact failing import before the targeted fix |
 | `29696802999` (diagnostic release) | Self-test traceback captured; root cause fixed | `[WinError 206] The filename or extension is too long` loading `torch\lib\asmjit.dll`: the `.{runtime_id}.{uuid}.staging` path (264 chars on the CI home) crossed the Windows MAX_PATH (260) the DLL loader enforces, so `import torch` failed. The final activated path was already short enough | Shortened staging to `.stg-{uuid}` (264→219 chars measured); crate compiles and all `runtime_box` tests pass; dispatch one confirming Windows CPU run |
 | `29697662905` (confirming release) | MAX_PATH fixed; a second Windows-only mismatch surfaced | Install, resume, and self-test passed, reaching the first real direct Job on Windows, which failed with `Python environment is not installed`: `venv_python()` resolved `venv\Scripts\python.exe` while the standalone box ships `venv\python.exe`. Unix layouts coincide on `venv/bin/python`, so only Windows diverged | `venv_python` now resolves both layouts (prefers managed `Scripts\`, falls back to standalone `venv\python.exe` on Windows), via a pure `venv_python_for` helper with a host-independent regression; all `python_env`/`runtime_box` tests pass; dispatch one confirming Windows CPU run |
+| `29702544175` (confirming release) | Interpreter fix proved; harness script timeout too short | Install, resume, self-test, and the first real direct Job all started on Windows, then failed with `Script execution timed out`: the E2E WebDriver session set no script timeout, so the W3C 30s default applied, and cold `torch`/`scipy`/`anndata` imports plus real inference on the slower Windows CPU runner exceeded it (macOS/Linux stay under 30s) | E2E harness now raises the WebDriver script timeout to the app-side 600s Python job limit (`LIATIR_E2E_SCRIPT_TIMEOUT_MS`); JS parses and all runtime-box unit tests pass; dispatch one confirming Windows CPU run |
 
 Run `29651651212` used 22 seconds of standard Linux preflight and 4 minutes
 18 seconds of the standard Windows runner. At the documented GitHub rates its
