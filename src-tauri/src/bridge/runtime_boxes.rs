@@ -1510,11 +1510,14 @@ pub async fn lia_ai_runtime_box_install(
 
     // Unpack next to the final location (same filesystem, so activation can rename) but under a
     // unique hidden name, so a half-extracted box is never mistaken for an installed one.
-    let staging = runtime_parent.join(format!(
-        ".{}.{}.staging",
-        release.runtime_id,
-        Uuid::new_v4()
-    ));
+    //
+    // Keep this name short. During the self-test the box's own interpreter loads deeply nested
+    // native libraries (e.g. `venv\Lib\site-packages\torch\lib\*.dll`) from inside staging, and the
+    // Windows DLL loader still enforces the 260-character MAX_PATH. The previous
+    // `.{runtime_id}.{uuid}.staging` name added ~90 characters and pushed those paths over the
+    // limit, failing the import with WinError 206. A short `.stg-{uuid}` name keeps the interpreter
+    // paths well under MAX_PATH; uniqueness still comes from the UUID.
+    let staging = runtime_parent.join(format!(".stg-{}", Uuid::new_v4()));
     std::fs::create_dir_all(&staging).map_err(|error| error.to_string())?;
     // Closure so every failure between here and activation funnels into one cleanup path below,
     // instead of repeating "delete staging" at each `?`.

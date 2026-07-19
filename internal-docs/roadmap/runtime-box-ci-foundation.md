@@ -57,7 +57,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 6. Evidence and artifact policy | Complete | `58fd1df` |
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
-| 8.2. Geneformer Windows pilot | In progress | Release run `29695852496` surfaced the real error (the earlier `rename_with_retry` hypothesis was wrong): the product self-test fails on Windows with `self-test failed with status exit code: 1` before activation is reached. `run_self_test` discarded stderr, so which import fails is unknown; it now captures the Python traceback. One diagnostic Windows CPU run is pending to identify the failing import. Windows CUDA stays blocked |
+| 8.2. Geneformer Windows pilot | In progress | Root cause found via captured traceback (run `29696802999`): the product self-test failed with `WinError 206` (MAX_PATH) loading `torch\lib\asmjit.dll` because the long `.{runtime_id}.{uuid}.staging` name pushed the box's nested DLL paths past 260 chars. Staging is now a short `.stg-{uuid}` name (264→219 chars measured); local gates pass. One confirming Windows CPU run is pending. Windows CUDA stays blocked |
 | 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
@@ -673,6 +673,25 @@ Current state as of 2026-07-18:
   regression proving a failing import is reported by name rather than only as an
   exit code. One diagnostic Windows CPU run is required to read the exact
   traceback before a targeted fix.
+- Diagnostic release run `29696802999` (revision `94d93e8`) captured the exact
+  cause: `FileNotFoundError: [WinError 206] The filename or extension is too long.
+  Error loading "...\.single-cell-foundation-geneformer-v1-10m.<uuid>.staging\
+  venv\Lib\site-packages\torch\lib\asmjit.dll"`. This is the Windows MAX_PATH
+  (260) limit, which the DLL loader still enforces. The self-test runs the box's
+  interpreter from the staging directory, and the old
+  `.{runtime_id}.{uuid}.staging` name added roughly ninety characters, so torch's
+  nested `lib\*.dll` paths crossed 260 and every `import torch` failed with
+  WinError 206. The final activated path (`ai-runtimes\{runtime_id}`) is short
+  enough; only staging was over the limit. Measured against the real CI path, the
+  staging path was 264 characters.
+- Fix: the staging directory is now a short `.stg-{uuid}` name instead of
+  `.{runtime_id}.{uuid}.staging`. Measured on the same CI path this drops the
+  interpreter DLL path from 264 to 219 characters, comfortably under MAX_PATH,
+  while the UUID keeps it unique. The CI E2E home is deeper than a normal user
+  profile, so passing there implies production safety. The crate compiles and all
+  eleven `runtime_box` Rust tests pass. A confirming Windows CPU run remains.
+  Long-path awareness (manifest plus OS setting) is a possible future hardening
+  but is not required now that the interpreter paths are well under the limit.
 
 Active Windows CPU release checklist:
 
@@ -732,10 +751,14 @@ Active Windows CPU release checklist:
 - [x] Fix the heartbeat `npm` ENOENT so the free foundation Windows fixture can
   run, then use its evidence and paid release `29695852496` to locate the real
   failure in `run_self_test` and add self-test stderr capture with a regression.
-- [ ] Dispatch one diagnostic Windows CPU release run to read the exact failing
+- [x] Dispatch one diagnostic Windows CPU release run to read the exact failing
   self-test import from the captured traceback; keep Windows CUDA blocked.
-- [ ] Apply the targeted self-test/box fix, then close Windows CPU only after
-  product lifecycle, beta promotion, complete evidence, and cleanup all pass.
+- [x] Identify the cause (WinError 206 MAX_PATH loading `torch\lib\asmjit.dll`
+  from the long staging path) and shorten staging to `.stg-{uuid}`; pass all
+  cheap Rust and unit gates.
+- [ ] Dispatch one confirming Windows CPU release run; close Windows CPU only
+  after product lifecycle, beta promotion, complete evidence, and cleanup all
+  pass, then unblock Windows CUDA.
 
 Gate 8.2 incident ledger:
 
@@ -767,6 +790,7 @@ Gate 8.2 incident ledger:
 | Post-`29658451796` analysis | Root cause classified and fixed pending proof | The resumed install was the first Windows run to reach product activation; `activate_runtime` renames the staged box into place right after the self-test executes its interpreter, so a transient Windows lock (antivirus scan or just-exited child handle) can fail the rename with sharing-violation/access-denied where Unix never does | Added shared `rename_with_retry` (bounded backoff on transient locks only) to the activation, rollback, and download-rename paths; added cross-platform and `#[cfg(windows)]` regressions; passed all cheap Rust and unit gates; kept the diagnostic capture so a wrong hypothesis surfaces the exact error on the next run |
 | `29695274321` (free foundation) | Windows fixture failed after the heartbeat fix let it progress | `npm` ENOENT was resolved (macOS/Linux green, Windows cleared it), but the native stdlib fixture then failed to spawn the relocated console launcher `liatir-lock-fixture.exe` (ENOENT) — a separate pre-existing Gate 2 regression, not on the Gate 8.2 release path | Recorded the fixture regression for separate follow-up; did not chase it, since the release does not run the native fixture |
 | `29695852496` (paid release) | Failed in product self-test; hypothesis corrected | With the diagnostic capture in place the real error appeared: `self-test failed with status exit code: 1`, in `run_self_test` before activation — so `rename_with_retry` was not the blocker. A Windows-only Python import fails on the extracted/relocated box while the identical Linux CPU imports pass | `run_self_test` now captures and reports the self-test stderr (Python traceback), with a portable regression; dispatch one diagnostic Windows CPU run to read the exact failing import before the targeted fix |
+| `29696802999` (diagnostic release) | Self-test traceback captured; root cause fixed | `[WinError 206] The filename or extension is too long` loading `torch\lib\asmjit.dll`: the `.{runtime_id}.{uuid}.staging` path (264 chars on the CI home) crossed the Windows MAX_PATH (260) the DLL loader enforces, so `import torch` failed. The final activated path was already short enough | Shortened staging to `.stg-{uuid}` (264→219 chars measured); crate compiles and all `runtime_box` tests pass; dispatch one confirming Windows CPU run |
 
 Run `29651651212` used 22 seconds of standard Linux preflight and 4 minutes
 18 seconds of the standard Windows runner. At the documented GitHub rates its
