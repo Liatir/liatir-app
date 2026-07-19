@@ -46,6 +46,18 @@
 		}
 	}
 
+	// Finalization is driven by the jobs list, not by any screen (see direct-run-finalizer): react to
+	// every change to the jobs so a completed direct AI run becomes a Result immediately. Without this
+	// a run that finished after the running-job poll interval stopped — for example one observed only
+	// once the Jobs page refreshed it into the store — would not be finalized until the interval ran
+	// again or a reload remounted this layout. The finalizer is idempotent, so overlapping calls with
+	// the interval are safe.
+	$effect(() => {
+		const jobs = jobsStore.jobs;
+		if (!initialized || isPluginDevRoute || !workspaceStore.activeId) return;
+		void finalizeCompletedAIDirectRuns(jobs);
+	});
+
 	onMount(async () => {
 		// Capture uncaught errors app-wide (incl. the plugin-dev window) before
 		// anything else runs, so early failures are recorded too.
