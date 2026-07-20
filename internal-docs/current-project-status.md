@@ -81,10 +81,24 @@ GitHub-hosted runners as custom-labelled larger runners, and cost per-minute
 while running (the priciest hosted tier).
 Ref: <https://github.blog/changelog/2024-07-08-github-actions-gpu-hosted-runners-are-now-generally-available/>
 
-On 2026-07-20 a dispatched Linux CUDA release (`29711236349`, since cancelled)
-sat queued ~8 min while the GitHub runner-admin API returned 500/503
-("service unavailable") — most likely a transient GitHub Actions degradation,
-not an offline runner. Retrying when GitHub is healthy will probably just work.
+**Root cause of the 2026-07-20 CUDA queue (confirmed in the org Runners UI):**
+the GPU larger runners are **not currently configured**. Liatir org → Settings →
+Actions → Runners lists only "Standard GitHub-hosted runners" and shows the
+"GitHub-hosted larger runners are available — Setup" onboarding banner (i.e. no
+larger runners are set up). There is no runner named `liatir-linux-t4` /
+`liatir-windows-t4`, so any `runs-on: liatir-*-t4` job queues forever with no
+matching runner. They were presumably configured for Gate 8.1's Linux CUDA run
+(`29643382673`) and later removed (cost). The GitHub runner-admin API 500/503
+seen that night was a separate transient issue, not the cause.
+
+**Fix (one-time org-admin action, maintainer must do it):** Liatir org →
+Settings → Actions → Runners → New runner → New GitHub-hosted runner → pick the
+GPU image (1x T4), create one named exactly `liatir-linux-t4` (Linux GPU) and
+one named exactly `liatir-windows-t4` (Windows GPU), matching the labels in the
+catalog `runnerProfiles`. Requires Team/Enterprise plan (already available here)
+and a spending limit that permits GPU runners; they auto-scale and bill
+per-minute only while running. After that, `runs-on: liatir-linux-t4` /
+`liatir-windows-t4` jobs pick up automatically.
 
 ## Next steps (await maintainer instruction before any paid run)
 
