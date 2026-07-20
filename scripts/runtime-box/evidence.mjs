@@ -89,10 +89,11 @@ function freeDiskBytes() {
 
 function gpuIdentity(target) {
   if (target?.accelerator === 'cuda') {
-    const queryArgs = [
-      '--query-gpu=name,driver_version,memory.total,compute_cap',
-      '--format=csv,noheader,nounits',
-    ];
+    // Compute capability is a fixed hardware property of each supported GPU. Some Windows NVIDIA
+    // drivers ship an nvidia-smi too old to expose the `compute_cap` query field, so it is derived
+    // from the nvidia-smi-reported model when the field is unavailable; the authoritative capability
+    // check still runs later against torch during scientific validation.
+    const KNOWN_COMPUTE_CAPABILITY = new Map([['Tesla T4', '7.5']]);
     // On Windows the NVIDIA driver does not always place nvidia-smi.exe on PATH, so also probe the
     // standard install locations (System32 for a modern driver, the legacy NVSMI folder otherwise).
     const candidates = process.platform === 'win32'
@@ -102,7 +103,14 @@ function gpuIdentity(target) {
           resolve(process.env.ProgramFiles || 'C:\\Program Files', 'NVIDIA Corporation', 'NVSMI', 'nvidia-smi.exe'),
         ]
       : ['nvidia-smi'];
-    let result;
+    const query = (command, fields) => spawnSync(
+      command,
+      [`--query-gpu=${fields}`, '--format=csv,noheader,nounits'],
+      { encoding: 'utf8' },
+    );
+    // The base fields are supported by every nvidia-smi, so probe with them to find a runnable one.
+    let baseResult;
+    let smiCommand;
     const attempts = [];
     for (const candidate of candidates) {
       // A bare command resolves through PATH; an absolute path is only worth trying when it exists.
@@ -110,8 +118,12 @@ function gpuIdentity(target) {
         attempts.push(`${candidate}: not found`);
         continue;
       }
-      result = spawnSync(candidate, queryArgs, { encoding: 'utf8' });
-      if (result.status === 0) break;
+      const result = query(candidate, 'name,driver_version,memory.total');
+      if (result.status === 0) {
+        baseResult = result;
+        smiCommand = candidate;
+        break;
+      }
       const reason = result.error ? (result.error.code || result.error.message) : `exit ${result.status}`;
       const output = [result.stdout, result.stderr]
         .map((stream) => (stream || '').trim())
@@ -120,13 +132,17 @@ function gpuIdentity(target) {
       attempts.push(`${candidate}: ${reason}${output ? ` -> ${output}` : ' (no output)'}`);
     }
     requireEvidence(
-      result?.status === 0,
+      baseResult,
       `CUDA evidence requires nvidia-smi; tried [${attempts.join('; ')}]`,
     );
-    const devices = result.stdout.trim().split(/\r?\n/).filter(Boolean).map((line) => {
-      const [gpuModel, driverVersion, memoryMiB, computeCapability] = line
-        .split(',')
-        .map((value) => value.trim());
+    // Prefer nvidia-smi's own compute capability; fall back to the known-model constant when the
+    // installed nvidia-smi is too old to support the compute_cap query field.
+    const capabilityResult = query(smiCommand, 'compute_cap');
+    const capabilities = capabilityResult.status === 0
+      ? capabilityResult.stdout.trim().split(/\r?\n/).map((line) => line.trim())
+      : [];
+    const devices = baseResult.stdout.trim().split(/\r?\n/).filter(Boolean).map((line, index) => {
+      const [gpuModel, driverVersion, memoryMiB] = line.split(',').map((value) => value.trim());
       const parsedMemoryMiB = Number(memoryMiB);
       return {
         gpuModel: gpuModel || null,
@@ -134,7 +150,7 @@ function gpuIdentity(target) {
         gpuMemoryBytes: Number.isFinite(parsedMemoryMiB)
           ? Math.floor(parsedMemoryMiB * 1024 * 1024)
           : null,
-        computeCapability: computeCapability || null,
+        computeCapability: capabilities[index] || KNOWN_COMPUTE_CAPABILITY.get(gpuModel) || null,
       };
     });
     requireEvidence(devices.length > 0, 'CUDA evidence requires at least one NVIDIA GPU');
