@@ -81,24 +81,20 @@ GitHub-hosted runners as custom-labelled larger runners, and cost per-minute
 while running (the priciest hosted tier).
 Ref: <https://github.blog/changelog/2024-07-08-github-actions-gpu-hosted-runners-are-now-generally-available/>
 
-**Root cause of the 2026-07-20 CUDA queue (confirmed in the org Runners UI):**
-the GPU larger runners are **not currently configured**. Liatir org → Settings →
-Actions → Runners lists only "Standard GitHub-hosted runners" and shows the
-"GitHub-hosted larger runners are available — Setup" onboarding banner (i.e. no
-larger runners are set up). There is no runner named `liatir-linux-t4` /
-`liatir-windows-t4`, so any `runs-on: liatir-*-t4` job queues forever with no
-matching runner. They were presumably configured for Gate 8.1's Linux CUDA run
-(`29643382673`) and later removed (cost). The GitHub runner-admin API 500/503
-seen that night was a separate transient issue, not the cause.
+**The GPU runners ARE configured (confirmed in the org Runners UI once GitHub
+recovered).** Liatir org → Settings → Actions → Runners shows `liatir-linux-t4`
+and `liatir-windows-t4` (runner group "Liatir Runtime Box GPU"), both **Ready**.
+The 2026-07-20 CUDA queue was purely a **transient GitHub Actions outage** that
+night (runner-admin API 500/503, Runners page would not load); it was not a
+missing/offline runner. An earlier note in this file that read "not configured"
+was wrong — it reflected the outage showing incomplete data, now corrected.
 
-**Fix (one-time org-admin action, maintainer must do it):** Liatir org →
-Settings → Actions → Runners → New runner → New GitHub-hosted runner → pick the
-GPU image (1x T4), create one named exactly `liatir-linux-t4` (Linux GPU) and
-one named exactly `liatir-windows-t4` (Windows GPU), matching the labels in the
-catalog `runnerProfiles`. Requires Team/Enterprise plan (already available here)
-and a spending limit that permits GPU runners; they auto-scale and bill
-per-minute only while running. After that, `runs-on: liatir-linux-t4` /
-`liatir-windows-t4` jobs pick up automatically.
+**Cost:** GPU runners are GitHub-managed larger runners, auto-scale to zero (no
+idle cost), billed per-minute only while running: Linux GPU (T4, 4-core)
+$0.052/min (~$1 per Linux CUDA release ≈ 18 min), Windows GPU $0.102/min (~$3.5–4
+per Windows CUDA release). Maintainer rule: **optimise for one passing run, never
+use a GPU run as a debugger** (validate cheaply on standard runners / locally
+first).
 
 ## Next steps (await maintainer instruction before any paid run)
 
