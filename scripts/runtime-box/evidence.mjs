@@ -89,12 +89,37 @@ function freeDiskBytes() {
 
 function gpuIdentity(target) {
   if (target?.accelerator === 'cuda') {
-    const command = process.platform === 'win32' ? 'nvidia-smi.exe' : 'nvidia-smi';
-    const result = spawnSync(command, [
+    const queryArgs = [
       '--query-gpu=name,driver_version,memory.total,compute_cap',
       '--format=csv,noheader,nounits',
-    ], { encoding: 'utf8' });
-    requireEvidence(result.status === 0, 'CUDA evidence requires nvidia-smi');
+    ];
+    // On Windows the NVIDIA driver does not always place nvidia-smi.exe on PATH, so also probe the
+    // standard install locations (System32 for a modern driver, the legacy NVSMI folder otherwise).
+    const candidates = process.platform === 'win32'
+      ? [
+          'nvidia-smi.exe',
+          resolve(process.env.SystemRoot || 'C:\\Windows', 'System32', 'nvidia-smi.exe'),
+          resolve(process.env.ProgramFiles || 'C:\\Program Files', 'NVIDIA Corporation', 'NVSMI', 'nvidia-smi.exe'),
+        ]
+      : ['nvidia-smi'];
+    let result;
+    const attempts = [];
+    for (const candidate of candidates) {
+      // A bare command resolves through PATH; an absolute path is only worth trying when it exists.
+      if (candidate.includes(sep) && !existsSync(candidate)) {
+        attempts.push(`${candidate}: not found`);
+        continue;
+      }
+      result = spawnSync(candidate, queryArgs, { encoding: 'utf8' });
+      if (result.status === 0) break;
+      const reason = result.error ? (result.error.code || result.error.message) : `exit ${result.status}`;
+      const stderr = result.stderr ? ` (${result.stderr.trim().split('\n')[0]})` : '';
+      attempts.push(`${candidate}: ${reason}${stderr}`);
+    }
+    requireEvidence(
+      result?.status === 0,
+      `CUDA evidence requires nvidia-smi; tried [${attempts.join('; ')}]`,
+    );
     const devices = result.stdout.trim().split(/\r?\n/).filter(Boolean).map((line) => {
       const [gpuModel, driverVersion, memoryMiB, computeCapability] = line
         .split(',')
