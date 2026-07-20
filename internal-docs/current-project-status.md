@@ -34,12 +34,23 @@ Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
   rollback, cleanup), and beta promotion. This confirms the shared fixes
   (client-side E2E navigation + reactive finalization `$effect`) do not regress
   Linux, and provides fresh Linux CUDA evidence. One run, ~$1.
-- Gate 8.2 Windows CUDA: **not started.** No `windows-x86_64-cuda12.4`
-  recipe/catalog/wiring exists yet — that GPU-free build comes first. **Cost
-  sequencing:** the Windows CUDA preflight requires Linux CUDA evidence for the
-  *exact* SHA (`run.head_sha === GITHUB_SHA`), so build the Windows CUDA recipe,
-  commit it, then run **one** Linux CUDA on that final commit, then Windows CUDA
-  on the same commit — do not re-run Linux CUDA more than necessary.
+- **Gate 8.2 Windows CUDA: recipe built and validated GPU-free (2026-07-21),
+  release run pending.** Added `runtime-boxes/recipes/geneformer-v1-10m-windows-x86_64-cuda12.4/`
+  (recipe.json + requirements.in + hash-pinned `requirements.lock` cross-resolved
+  with uv 0.11.28 for `x86_64-pc-windows-msvc` + `--torch-backend cu124`), the
+  reviewed license audit `runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cuda12.4.json`,
+  the catalog target (status `buildable`, runner `windows-x64-t4`,
+  `linuxValidationPrerequisiteTargetId: linux-x86_64-cuda12.4`), the signer-policy
+  target, and the release-workflow `target_id` option. The Windows cu124 lock is
+  the Windows CPU lock with only torch (cpu→cu124), filelock and regex bumped —
+  **no triton, no nvidia-\*** (Windows torch bundles the CUDA runtime), so the
+  legal notices are unchanged from CPU. Cheap gates all pass: `runtime-box:ci
+  check`, target resolve (peak disk ~15 GB < 20 GB required), LF line endings,
+  74 runtime-box unit tests, 11 signer-policy tests. The catalog's Windows CUDA
+  prerequisite is status-based (Linux CUDA is `published`), so **no extra Linux
+  CUDA re-run is needed** before the Windows CUDA release. Remaining: one paid
+  Windows T4 release (~$3.5-4/run), reusing the proven Windows CPU product path +
+  Linux CUDA validation.
 - Gates 8.3, 9, 10: not started.
 
 ## How Gate 8.2 Windows CPU was closed (2026-07-19/20)

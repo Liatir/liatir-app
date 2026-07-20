@@ -227,6 +227,38 @@
           },
           "gpuRequired": false,
           "nativeCiEnabled": true
+        },
+        {
+          "targetId": "windows-x86_64-cuda12.4",
+          "target": {
+            "platform": "windows",
+            "arch": "x86_64",
+            "accelerator": "cuda",
+            "cudaVersion": "12.4"
+          },
+          "hostEnvironments": [
+            "native"
+          ],
+          "recipeId": "geneformer-v1-10m-windows-x86_64-cuda12.4",
+          "runnerProfileId": "windows-x64-t4",
+          "status": "buildable",
+          "linuxValidationPrerequisiteTargetId": "linux-x86_64-cuda12.4",
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
+          "timeoutMinutes": 120,
+          "requiredBuildDiskBytes": 21474836480,
+          "dependencyLockSha256": "c7cebc7ff3116ecd3e311a8776f7b94b5d626b764e3576f351fae1b7935dd42c",
+          "dependencyLicenseAudit": "runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cuda12.4.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 6442450944,
+            "estimatedArchiveSizeBytes": 3221225472,
+            "safetyMarginBytes": 6442450944
+          },
+          "gpuRequired": true,
+          "nativeCiEnabled": true
         }
       ]
     },

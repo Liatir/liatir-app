@@ -1,0 +1,289 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.runtime-box.python-dependency-license-audit",
+  "targetId": "windows-x86_64-cuda12.4",
+  "torchBackend": "cu124",
+  "dependencyLockSha256": "c7cebc7ff3116ecd3e311a8776f7b94b5d626b764e3576f351fae1b7935dd42c",
+  "packages": [
+    {
+      "name": "anndata",
+      "version": "0.10.9",
+      "declaredLicense": "BSD-3-Clause",
+      "licenseFiles": [
+        "licenses/LICENSE"
+      ]
+    },
+    {
+      "name": "array-api-compat",
+      "version": "1.15.0",
+      "declaredLicense": "MIT",
+      "licenseFiles": []
+    },
+    {
+      "name": "certifi",
+      "version": "2026.6.17",
+      "declaredLicense": "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+      "licenseFiles": [
+        "licenses/LICENSE"
+      ]
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.4.9",
+      "declaredLicense": "MIT",
+      "licenseFiles": [
+        "licenses/LICENSE"
+      ]
+    },
+    {
+      "name": "colorama",
+      "version": "0.4.6",
+      "declaredLicense": "License :: OSI Approved :: BSD License",
+      "licenseFiles": [
+        "licenses/LICENSE.txt"
+      ]
+    },
+    {
+      "name": "filelock",
+      "version": "3.31.1",
+      "declaredLicense": "MIT",
+      "licenseFiles": [
+        "licenses/LICENSE"
+      ]
+    },
+    {
+      "name": "fsspec",
+      "version": "2026.6.0",
+      "declaredLicense": "BSD-3-Clause",
+      "licenseFiles": [
+        "licenses/LICENSE"
+      ]
+    },
+    {
+      "name": "h5py",
+      "version": "3.11.0",
+      "declaredLicense": "License :: OSI Approved :: BSD License",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "hf-xet",
+      "version": "1.5.2",
+      "declaredLicense": "Apache-2.0",
+      "licenseFiles": [
+        "licenses/LICENSE"
+      ]
+    },
+    {
+      "name": "huggingface-hub",
+      "version": "0.36.2",
+      "declaredLicense": "License :: OSI Approved :: Apache Software License",
+      "licenseFiles": [
+        "licenses/LICENSE"
+      ]
+    },
+    {
+      "name": "idna",
+      "version": "3.18",
+      "declaredLicense": "BSD-3-Clause",
+      "licenseFiles": [
+        "licenses/LICENSE.md"
+      ]
+    },
+    {
+      "name": "jinja2",
+      "version": "3.1.6",
+      "declaredLicense": "License :: OSI Approved :: BSD License",
+      "licenseFiles": [
+        "licenses/LICENSE.txt"
+      ]
+    },
+    {
+      "name": "markupsafe",
+      "version": "3.0.3",
+      "declaredLicense": "BSD-3-Clause",
+      "licenseFiles": [
+        "licenses/LICENSE.txt"
+      ]
+    },
+    {
+      "name": "mpmath",
+      "version": "1.3.0",
+      "declaredLicense": "License :: OSI Approved :: BSD License",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "natsort",
+      "version": "8.4.0",
+      "declaredLicense": "License :: OSI Approved :: MIT License",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "networkx",
+      "version": "3.6.1",
+      "declaredLicense": "BSD-3-Clause",
+      "licenseFiles": [
+        "licenses/LICENSE.txt"
+      ]
+    },
+    {
+      "name": "numpy",
+      "version": "1.26.4",
+      "declaredLicense": "License :: OSI Approved :: BSD License",
+      "licenseFiles": [
+        "LICENSE.txt"
+      ]
+    },
+    {
+      "name": "packaging",
+      "version": "26.2",
+      "declaredLicense": "Apache-2.0 OR BSD-2-Clause",
+      "licenseFiles": [
+        "licenses/LICENSE",
+        "licenses/LICENSE.APACHE",
+        "licenses/LICENSE.BSD"
+      ]
+    },
+    {
+      "name": "pandas",
+      "version": "2.2.2",
+      "declaredLicense": "License :: OSI Approved :: BSD License",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "declaredLicense": "License :: OSI Approved :: BSD License OR License :: OSI Approved :: Apache Software License",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "pytz",
+      "version": "2026.2",
+      "declaredLicense": "License :: OSI Approved :: MIT License",
+      "licenseFiles": [
+        "LICENSE.txt"
+      ]
+    },
+    {
+      "name": "pyyaml",
+      "version": "6.0.3",
+      "declaredLicense": "License :: OSI Approved :: MIT License",
+      "licenseFiles": [
+        "licenses/LICENSE"
+      ]
+    },
+    {
+      "name": "regex",
+      "version": "2026.7.19",
+      "declaredLicense": "Apache-2.0 AND CNRI-Python",
+      "licenseFiles": [
+        "licenses/LICENSE.txt"
+      ]
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "declaredLicense": "License :: OSI Approved :: Apache Software License",
+      "licenseFiles": [
+        "licenses/LICENSE",
+        "licenses/NOTICE"
+      ]
+    },
+    {
+      "name": "safetensors",
+      "version": "0.4.5",
+      "declaredLicense": "License :: OSI Approved :: Apache Software License",
+      "licenseFiles": []
+    },
+    {
+      "name": "scipy",
+      "version": "1.14.1",
+      "declaredLicense": "License :: OSI Approved :: BSD License",
+      "licenseFiles": [
+        "LICENSE.txt"
+      ]
+    },
+    {
+      "name": "six",
+      "version": "1.17.0",
+      "declaredLicense": "License :: OSI Approved :: MIT License",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "sympy",
+      "version": "1.14.0",
+      "declaredLicense": "License :: OSI Approved :: BSD License",
+      "licenseFiles": [
+        "licenses/AUTHORS",
+        "licenses/LICENSE"
+      ]
+    },
+    {
+      "name": "tokenizers",
+      "version": "0.19.1",
+      "declaredLicense": "License :: OSI Approved :: Apache Software License",
+      "licenseFiles": []
+    },
+    {
+      "name": "torch",
+      "version": "2.4.1+cu124",
+      "declaredLicense": "License :: OSI Approved :: BSD License",
+      "licenseFiles": [
+        "LICENSE",
+        "NOTICE"
+      ]
+    },
+    {
+      "name": "tqdm",
+      "version": "4.69.0",
+      "declaredLicense": "MPL-2.0 AND MIT",
+      "licenseFiles": [
+        "licenses/LICENCE"
+      ]
+    },
+    {
+      "name": "transformers",
+      "version": "4.44.2",
+      "declaredLicense": "License :: OSI Approved :: Apache Software License",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "declaredLicense": "PSF-2.0",
+      "licenseFiles": [
+        "licenses/LICENSE"
+      ]
+    },
+    {
+      "name": "tzdata",
+      "version": "2026.3",
+      "declaredLicense": "Apache-2.0",
+      "licenseFiles": [
+        "licenses/LICENSE",
+        "licenses/licenses/LICENSE_APACHE"
+      ]
+    },
+    {
+      "name": "urllib3",
+      "version": "1.26.20",
+      "declaredLicense": "License :: OSI Approved :: MIT License",
+      "licenseFiles": [
+        "LICENSE.txt"
+      ]
+    }
+  ]
+}

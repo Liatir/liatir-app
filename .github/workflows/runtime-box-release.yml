@@ -15,7 +15,7 @@ on:
         description: Checked native target
         required: true
         type: choice
-        options: [macos-aarch64-metal, linux-x86_64-cpu, linux-x86_64-cuda12.4, windows-x86_64-cpu]
+        options: [macos-aarch64-metal, linux-x86_64-cpu, linux-x86_64-cuda12.4, windows-x86_64-cpu, windows-x86_64-cuda12.4]
       channel:
         description: Allowed release channel
         required: true

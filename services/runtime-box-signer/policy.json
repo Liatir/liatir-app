@@ -8,7 +8,7 @@
       "boxId": "geneformer-v1-10m",
       "modelId": "ctheodoris-geneformer-v1-10m",
       "runtimeId": "single-cell-foundation-geneformer-v1-10m",
-      "targets": ["macos-aarch64-metal", "linux-x86_64-cpu", "linux-x86_64-cuda12.4", "windows-x86_64-cpu"]
+      "targets": ["macos-aarch64-metal", "linux-x86_64-cpu", "linux-x86_64-cuda12.4", "windows-x86_64-cpu", "windows-x86_64-cuda12.4"]
     },
     {
       "boxId": "scgpt-whole-human",
