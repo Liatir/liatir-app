@@ -69,13 +69,17 @@ Windows lifecycle E2E cannot be reproduced on the macOS dev host.
 ## GPU runner facts (established 2026-07-20 — previously undocumented)
 
 The CUDA runner labels `liatir-linux-t4` / `liatir-windows-t4` (catalog
-`runnerProfiles`) are **not** self-hosted GCE VMs in `liatir-release-security`:
-the Compute Engine API has never been enabled in that project, so there is no
-GPU VM there to start. They are almost certainly **GitHub-managed GPU larger
-runners** (i.e. "all on GitHub", provisioned on demand — nothing to power on by
-hand). Confirm the exact setup in GitHub → repo/org Settings → Actions → Runners
-(and record it here). Note: `liatir-release-security` GCP hosts only the Cloud
-Run **signer** (`liatir-runtime-box-signer`, europe-west1) and KMS — not runners.
+`runnerProfiles`) are **GitHub-managed GPU larger runners**, not self-hosted and
+not GCE VMs. Confirmed 2026-07-20: (a) the repo's Self-hosted runners tab is
+empty and the maintainer hosts nothing locally; (b) Compute Engine was never
+enabled in GCP `liatir-release-security` (that project hosts only the Cloud Run
+signer `liatir-runtime-box-signer` + KMS); (c) GitHub offers GPU-hosted larger
+runners (1x NVIDIA T4, 4-core) for **both Linux and Windows** on Team/Enterprise
+plans — fully managed, auto-scaling. So there is nothing to power on by hand;
+these runners are configured under org/repo Settings → Actions → Runners →
+GitHub-hosted runners as custom-labelled larger runners, and cost per-minute
+while running (the priciest hosted tier).
+Ref: <https://github.blog/changelog/2024-07-08-github-actions-gpu-hosted-runners-are-now-generally-available/>
 
 On 2026-07-20 a dispatched Linux CUDA release (`29711236349`, since cancelled)
 sat queued ~8 min while the GitHub runner-admin API returned 500/503
