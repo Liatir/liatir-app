@@ -66,11 +66,32 @@ Commit trail on `main`: `69b7df2`, `657a52b`, `94d93e8`, `c6eba27`, `6534f1b`,
 Windows release runs were spent isolating these one at a time, because the
 Windows lifecycle E2E cannot be reproduced on the macOS dev host.
 
+## GPU runner facts (established 2026-07-20 — previously undocumented)
+
+The CUDA runner labels `liatir-linux-t4` / `liatir-windows-t4` (catalog
+`runnerProfiles`) are **not** self-hosted GCE VMs in `liatir-release-security`:
+the Compute Engine API has never been enabled in that project, so there is no
+GPU VM there to start. They are almost certainly **GitHub-managed GPU larger
+runners** (i.e. "all on GitHub", provisioned on demand — nothing to power on by
+hand). Confirm the exact setup in GitHub → repo/org Settings → Actions → Runners
+(and record it here). Note: `liatir-release-security` GCP hosts only the Cloud
+Run **signer** (`liatir-runtime-box-signer`, europe-west1) and KMS — not runners.
+
+On 2026-07-20 a dispatched Linux CUDA release (`29711236349`, since cancelled)
+sat queued ~8 min while the GitHub runner-admin API returned 500/503
+("service unavailable") — most likely a transient GitHub Actions degradation,
+not an offline runner. Retrying when GitHub is healthy will probably just work.
+
 ## Next steps (await maintainer instruction before any paid run)
 
-1. Windows CUDA: obtain same-model Linux CUDA evidence for the current commit,
-   state the expected GPU runner/timeout/cost, get explicit approval, then run.
-2. After Windows CUDA closes: Gate 8.3 cross-platform closure, then Gates 9–10.
+1. Confirm the GPU runner type in GitHub Settings → Actions → Runners; record it
+   above. If GitHub-managed, no manual power-on is needed — just retry when
+   GitHub Actions is healthy.
+2. Windows CUDA: obtain same-model Linux CUDA evidence for the current commit
+   (re-dispatch the Linux CUDA release), then build the missing Windows CUDA
+   recipe/catalog/wiring (GPU-free work — no `windows-x86_64-cuda12.4` recipe
+   exists yet), state cost, get approval, and run the Windows CUDA release.
+3. After Windows CUDA closes: Gate 8.3 cross-platform closure, then Gates 9–10.
 
 ## Standing constraints
 
