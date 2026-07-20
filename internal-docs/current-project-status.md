@@ -48,9 +48,16 @@ Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
   check`, target resolve (peak disk ~15 GB < 20 GB required), LF line endings,
   74 runtime-box unit tests, 11 signer-policy tests. The catalog's Windows CUDA
   prerequisite is status-based (Linux CUDA is `published`), so **no extra Linux
-  CUDA re-run is needed** before the Windows CUDA release. Remaining: one paid
-  Windows T4 release (~$3.5-4/run), reusing the proven Windows CPU product path +
-  Linux CUDA validation.
+  CUDA re-run is needed** before the Windows CUDA release. Reuses the proven
+  Windows CPU product path + Linux CUDA validation.
+  - Release runs iterating on the Windows T4 (`liatir-windows-t4`). Two runner
+    quirks were hit and fixed at the cheap host-probe (~4 min / ~$0.40 each,
+    before any paid build), both in `evidence.mjs` `gpuIdentity`: the Windows
+    nvidia-smi is not always on PATH (now probes System32 + the legacy NVSMI
+    folder), and it is too old to support the `compute_cap` query field (now
+    derives compute capability from the known Tesla T4 model, with torch
+    scientific validation remaining authoritative). Commit `a9af8c6`; a Windows
+    CUDA release is in flight to prove the full lifecycle.
 - Gates 8.3, 9, 10: not started.
 
 ## How Gate 8.2 Windows CPU was closed (2026-07-19/20)

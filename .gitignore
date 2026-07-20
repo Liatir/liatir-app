@@ -165,6 +165,7 @@ gha-creds-*.json
 .tern-port
 
 # Stores VSCode versions used for testing VSCode extensions
+.vscode
 .vscode-test
 
 # yarn v2
