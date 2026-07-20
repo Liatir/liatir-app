@@ -26,9 +26,20 @@ Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
   interrupted-download resume, real Geneformer inference with a finite 256-dim
   CPU embedding, Jobs/Results/provenance, replacement, rollback, cleanup), and
   beta promotion. The `beta` channel now serves the Windows CPU box.
-- Gate 8.2 Windows CUDA: **not started.** Unblocked by the CPU evidence, but
-  still requires same-model Linux CUDA evidence for the exact commit, explicit
-  cost approval, and a manual GPU runner. **Do not dispatch without approval.**
+- **Linux CUDA re-validated on the current code (2026-07-20).** Release run
+  `29750614689` (commit `2307663`) passed the full protected release on
+  `linux-x86_64-cuda12.4` on `liatir-linux-t4`: signed build, native self-test,
+  T4 scientific validation, immutable publication, complete product lifecycle
+  (real Geneformer inference on the T4, Jobs/Results/provenance, replacement,
+  rollback, cleanup), and beta promotion. This confirms the shared fixes
+  (client-side E2E navigation + reactive finalization `$effect`) do not regress
+  Linux, and provides fresh Linux CUDA evidence. One run, ~$1.
+- Gate 8.2 Windows CUDA: **not started.** No `windows-x86_64-cuda12.4`
+  recipe/catalog/wiring exists yet — that GPU-free build comes first. **Cost
+  sequencing:** the Windows CUDA preflight requires Linux CUDA evidence for the
+  *exact* SHA (`run.head_sha === GITHUB_SHA`), so build the Windows CUDA recipe,
+  commit it, then run **one** Linux CUDA on that final commit, then Windows CUDA
+  on the same commit — do not re-run Linux CUDA more than necessary.
 - Gates 8.3, 9, 10: not started.
 
 ## How Gate 8.2 Windows CPU was closed (2026-07-19/20)
