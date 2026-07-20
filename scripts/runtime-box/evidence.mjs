@@ -113,8 +113,11 @@ function gpuIdentity(target) {
       result = spawnSync(candidate, queryArgs, { encoding: 'utf8' });
       if (result.status === 0) break;
       const reason = result.error ? (result.error.code || result.error.message) : `exit ${result.status}`;
-      const stderr = result.stderr ? ` (${result.stderr.trim().split('\n')[0]})` : '';
-      attempts.push(`${candidate}: ${reason}${stderr}`);
+      const output = [result.stdout, result.stderr]
+        .map((stream) => (stream || '').trim())
+        .filter(Boolean)
+        .join(' | ');
+      attempts.push(`${candidate}: ${reason}${output ? ` -> ${output}` : ' (no output)'}`);
     }
     requireEvidence(
       result?.status === 0,
