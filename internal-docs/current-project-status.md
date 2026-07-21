@@ -69,7 +69,17 @@ Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
     (`scripts/ai-validation/geneformer-parity.py`) generalized first. Gate 8.2 is
     otherwise closed: macOS, Linux CPU/CUDA, Windows CPU are all validated and
     beta-promoted.
-- Gates 8.3, 9, 10: not started.
+- **Gate 8.2 is closed** on every in-scope target (macOS arm64 Metal, Linux CPU,
+  Linux CUDA, Windows CPU). Per the 2026-07-21 re-scope recorded in the ledger,
+  `windows-x86_64-cuda12.4` is **deferred and out of Gate 8 scope**: it is not a
+  supported target and **must not block Gate 8.3, 9 or 10**.
+- **Gate 8.3 (cross-platform closure): ready to start**, scoped to the four
+  in-scope targets — macOS arm64 workflow regression, evidence-chain audit,
+  confirmation that one real AI Model traversed the full chain on Linux and
+  native Windows CPU, and an honest catalog/readiness matrix (CUDA validated on
+  Linux only; Windows CUDA built-but-unvalidated and unsupported).
+- Gates 9 (macOS heavy runner) and 10 (handoff): not started; Gate 9 still waits
+  for Gate 8.3 to close.
 
 ## How Gate 8.2 Windows CPU was closed (2026-07-19/20)
 

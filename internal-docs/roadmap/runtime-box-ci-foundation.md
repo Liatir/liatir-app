@@ -58,8 +58,8 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 7. Cost and trigger controls | Complete | `046190d` |
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
 | 8.2. Geneformer Windows CPU | Complete | Release run `29706828552` (commit `f067482`) passed the full protected release on `windows-x86_64-cpu`: KMS-signed build, native self-test, scientific validation, immutable publication with public hash verification, the complete product lifecycle E2E (install, interrupted-download resume, real Geneformer inference with a finite 256-dim CPU embedding, Jobs/Results/provenance, replacement, rollback, and cleanup), and beta promotion. The `beta` channel now serves the Windows CPU box |
-| 8.2. Geneformer Windows CUDA | Blocked (excluded from CI by decision) | Recipe + wiring built and validated GPU-free (commit `4127e7d`; host-probe nvidia-smi fixes through `a9af8c6`; target status `buildable`, never published). Hard blocker: the GitHub Windows T4 runner has NVIDIA driver `471.11` (R470), too old for CUDA 12.4 — host-probe rejects it (`driver 471.11 is below 551.61`) in ~1 min before any paid build. Decision 2026-07-21: excluded from CI until GitHub ships a newer Windows GPU driver (or a self-hosted R525+ runner / a separate `windows-x86_64-cuda11.8` target). Local validation on the maintainer's RTX 4060 Ti planned separately |
-| 8.3. Cross-platform closure | Not started | Requires Gate 8.2 |
+| 8.2. Geneformer Windows CUDA | Deferred — out of Gate 8 scope (2026-07-21 re-scope), not a supported target, does not block later gates | Recipe + wiring built and validated GPU-free (commit `4127e7d`; host-probe nvidia-smi fixes through `a9af8c6`; target status `buildable`, never published). Hard blocker: the GitHub Windows T4 runner has NVIDIA driver `471.11` (R470), too old for CUDA 12.4 — host-probe rejects it (`driver 471.11 is below 551.61`) in ~1 min before any paid build. Decision 2026-07-21: excluded from CI until GitHub ships a newer Windows GPU driver (or a self-hosted R525+ runner / a separate `windows-x86_64-cuda11.8` target). Local validation on the maintainer's RTX 4060 Ti planned separately |
+| 8.3. Cross-platform closure | Ready to start | Gate 8.2 prerequisite satisfied for every in-scope target (macOS arm64, Linux CPU, Linux CUDA, Windows CPU); deferred Windows CUDA is excluded by the 2026-07-21 re-scope |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
 
@@ -366,6 +366,19 @@ Windows prerequisite.
 Exit only when native Python and DLL loading, archive/self-test, KMS signatures,
 immutable R2 objects, channel metadata, scientific evidence, product lifecycle,
 and cleanup are verified.
+
+**Re-scope (2026-07-21): step 2 (`windows-x86_64-cuda12.4`) is deferred and out
+of Gate 8 scope.** The GitHub-hosted Windows T4 runner ships NVIDIA driver
+`471.11` (R470), which cannot run CUDA 12.4 (needs R525+ / R551.61); the
+host-probe rejects it in about a minute before any paid build. This is a runner
+limitation, not a product or code gap. The recipe, dependency lock, license
+audit, catalog target, signer policy, and workflow wiring are built, reviewed,
+and committed, and the catalog target stays `buildable` — never `published` — so
+no unvalidated box can ship. **Windows CUDA is therefore not a supported target
+and must not block Gate 8.3, Gate 9, or Gate 10.** It re-enters scope only when
+the Windows GPU runner offers R525+, a self-hosted R525+ Windows runner is
+added, or a separate `windows-x86_64-cuda11.8` target is approved. Gate 8.2 is
+otherwise closed on `windows-x86_64-cpu`.
 
 #### Gate 8.2 execution record
 
@@ -881,17 +894,24 @@ unconditional runner cleanup passed.
 
 ### Gate 8.3: cross-platform closure
 
+Scope note (2026-07-21): `windows-x86_64-cuda12.4` is **deferred and excluded**
+from this gate — see the re-scope note under Gate 8.2. The in-scope targets are
+macOS arm64 Metal, Linux CPU, Linux CUDA, and Windows CPU.
+
 1. Run the macOS arm64 workflow regression against the published target.
    Republish only if a shared builder change requires a new release.
 2. Audit the complete Geneformer evidence chain across macOS arm64, Linux CPU
-   and CUDA, and Windows CPU and native CUDA.
+   and CUDA, and Windows CPU.
 3. Confirm that one real AI Model has traversed legal review, dependency lock,
    build, self-test, scientific validation, KMS signing, R2 publication, channel
-   promotion, and product-runtime evidence on Linux and native Windows.
-4. Update catalog and readiness evidence only from produced, reviewed results.
+   promotion, and product-runtime evidence on Linux and native Windows CPU.
+4. Update catalog and readiness evidence only from produced, reviewed results,
+   and state the supported matrix honestly: CUDA is validated on Linux only,
+   while Windows CUDA is a built-but-unvalidated, unsupported target.
 
-Gate 8 is not complete while any target-specific gap remains. Do not start Gate
-9 before Gate 8.3 closes.
+Gate 8 is not complete while any gap remains **among the in-scope targets**. The
+deferred Windows CUDA target is a documented exception and does not hold Gate
+8.3, Gate 9, or Gate 10. Do not start Gate 9 before Gate 8.3 closes.
 
 ## Remaining gates
 
