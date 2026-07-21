@@ -55,16 +55,20 @@ Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
     (now probes System32 + the legacy NVSMI folder) and the unsupported
     `compute_cap` query field (now derives compute capability from the known
     Tesla T4 model; torch scientific validation stays authoritative).
-  - **HARD BLOCKER (infra, not code): the GitHub-hosted Windows T4 runner has
-    NVIDIA driver 471.11 (R470), too old for CUDA 12.4.** The host-probe
-    correctly rejected it (`driver 471.11 is below 551.61`) in ~1 min before any
-    paid build. CUDA 12.4 needs R525+ / R551.61; R470 cannot run `torch cu124`.
-    The recipe and wiring are correct and stay committed; Windows CUDA cannot
-    complete on this runner. Options (maintainer decision, **do not burn more GPU
-    runs until decided**): (1) wait for a newer GitHub Windows GPU driver; (2) a
-    self-hosted Windows runner with R525+; (3) a separate
-    `windows-x86_64-cuda11.8` target that may run on R470 via CUDA 11.x
-    forward-compat, at the cost of diverging from the Linux CUDA 12.4 target.
+  - **DECISION (2026-07-21): Windows CUDA is deliberately excluded from the CI
+    until GitHub ships a newer Windows GPU-runner driver.** Hard blocker: the
+    GitHub-hosted Windows T4 runner has NVIDIA driver 471.11 (R470), too old for
+    CUDA 12.4 (needs R525+ / R551.61). The host-probe correctly rejected it
+    (`driver 471.11 is below 551.61`) in ~1 min before any paid build — infra
+    limitation, not code. The recipe + wiring are correct and stay committed
+    (target status `buildable`, never `published`), so no unvalidated box ships.
+    Do NOT dispatch Windows CUDA release runs until the runner has R525+ (or a
+    self-hosted one is added), or a separate `windows-x86_64-cuda11.8` target is
+    chosen. The maintainer will separately validate Windows CUDA locally later on
+    an RTX 4060 Ti (compute 8.9) — which needs the Tesla-T4-pinned validator
+    (`scripts/ai-validation/geneformer-parity.py`) generalized first. Gate 8.2 is
+    otherwise closed: macOS, Linux CPU/CUDA, Windows CPU are all validated and
+    beta-promoted.
 - Gates 8.3, 9, 10: not started.
 
 ## How Gate 8.2 Windows CPU was closed (2026-07-19/20)
