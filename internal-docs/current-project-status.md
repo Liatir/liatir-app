@@ -50,14 +50,21 @@ Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
   prerequisite is status-based (Linux CUDA is `published`), so **no extra Linux
   CUDA re-run is needed** before the Windows CUDA release. Reuses the proven
   Windows CPU product path + Linux CUDA validation.
-  - Release runs iterating on the Windows T4 (`liatir-windows-t4`). Two runner
-    quirks were hit and fixed at the cheap host-probe (~4 min / ~$0.40 each,
-    before any paid build), both in `evidence.mjs` `gpuIdentity`: the Windows
-    nvidia-smi is not always on PATH (now probes System32 + the legacy NVSMI
-    folder), and it is too old to support the `compute_cap` query field (now
-    derives compute capability from the known Tesla T4 model, with torch
-    scientific validation remaining authoritative). Commit `a9af8c6`; a Windows
-    CUDA release is in flight to prove the full lifecycle.
+  - Two nvidia-smi quirks were fixed at the cheap host-probe (both in
+    `evidence.mjs` `gpuIdentity`, commit `a9af8c6`): nvidia-smi not on PATH
+    (now probes System32 + the legacy NVSMI folder) and the unsupported
+    `compute_cap` query field (now derives compute capability from the known
+    Tesla T4 model; torch scientific validation stays authoritative).
+  - **HARD BLOCKER (infra, not code): the GitHub-hosted Windows T4 runner has
+    NVIDIA driver 471.11 (R470), too old for CUDA 12.4.** The host-probe
+    correctly rejected it (`driver 471.11 is below 551.61`) in ~1 min before any
+    paid build. CUDA 12.4 needs R525+ / R551.61; R470 cannot run `torch cu124`.
+    The recipe and wiring are correct and stay committed; Windows CUDA cannot
+    complete on this runner. Options (maintainer decision, **do not burn more GPU
+    runs until decided**): (1) wait for a newer GitHub Windows GPU driver; (2) a
+    self-hosted Windows runner with R525+; (3) a separate
+    `windows-x86_64-cuda11.8` target that may run on R470 via CUDA 11.x
+    forward-compat, at the cost of diverging from the Linux CUDA 12.4 target.
 - Gates 8.3, 9, 10: not started.
 
 ## How Gate 8.2 Windows CPU was closed (2026-07-19/20)
