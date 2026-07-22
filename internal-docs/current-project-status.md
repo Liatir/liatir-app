@@ -1,7 +1,7 @@
 # Current project status
 
-Last updated: 2026-07-22 (remote `main` baseline `17ce3eb`; Gate 8.3 is closed
-and Gate 9 local wiring is in progress).
+Last updated: 2026-07-22 (first Gate 9 release baseline `0c8310f`; Gate 8.3 is
+closed and Gate 9 is open after one diagnosed protected-release failure).
 
 This file is the quick handoff snapshot. The canonical detailed plans are:
 
@@ -93,17 +93,29 @@ Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
   the complete marked runner root after success, failure, or interruption.
   Validation verifies the self-hosted execution context and exact `main`; the
   protected release retains OIDC to the private Cloud Run/KMS signer and no
-  local signing key. All cheap gates are green: 162/162 full verify tests,
-  22/22 focused Gate 9 tests, core/Svelte/frontend/root builds, 11 passing Rust
-  `runtime_box` tests (one established fixture ignored), catalog, YAML, shell,
-  and diff checks. No runner or workflow run has been created.
-  - **Preflight ready, activation still authorization-gated:** after the initial
-    disk stop, the exact `--preflight-only` launcher passed with
-    `39,284,838,400` free bytes against the `37,580,963,840` bootstrap floor,
-    valid GitHub authentication, and no matching registered runner. No runner
-    package, registration token, runner, or workflow was created. Do not
-    register or dispatch until the wiring is pushed to exact remote `main` and
-    explicit runner/release cost approval is obtained.
+  local signing key.
+  - **First release attempt diagnosed; no publication occurred:** after the
+    successful `39,284,838,400`-byte preflight and explicit activation approval,
+    protected run `29889431937` used exact `main` revision `0c8310f`, resolve job
+    `88826727465`, release job `88826776619`, and ephemeral runner
+    `liatir-macos-heavy-1784692230-27603`. Host validation, OIDC, setup, exact
+    revision, and every UCE asset download passed. The build then failed before
+    self-test, signing, scientific validation, publication, or beta promotion:
+    extracting the protein-embedding archive deleted sibling assets already in
+    its destination, producing a missing-self-test-file error for
+    `model-cache/uce/model_files/species_offsets.pkl`.
+  - **Evidence and cleanup:** failed evidence artifact `8517777517` is 650 bytes
+    with digest
+    `sha256:084abf567d2750410e0c105f1b325363d43d9a07195003f5cc372f0b5eacad4a`.
+    Workflow cleanup passed, the runner deregistered, the marked work root was
+    removed, diagnostics were retained, runner inventory is empty, and the host
+    recovered `38,710,562,816` free bytes.
+  - **Local fix ready for review:** archive extraction now preserves sibling
+    assets and rejects collisions. Both regressions pass; catalog validation is
+    green; the full verify profile passes 164/164 tests, SDK/core/Svelte/frontend
+    and root builds; and Rust `runtime_box` passes 11 with one established large
+    fixture ignored. A fresh explicit approval is required before the single
+    protected-release retry.
 - Gate 10 (operational handoff): not started; it follows evidence-backed Gate 9
   closure.
 
@@ -174,11 +186,12 @@ first).
 
 ## Next steps
 
-1. Review, commit, and push the Gate 9 wiring; verify the exact remote `main`
-   revision before any dispatch.
-2. After explicit approval of the self-hosted runner, 180-minute timeout,
-   bandwidth, and service cost exposure, queue one protected UCE production
-   release and start one ephemeral runner for that already-queued job.
+1. Review, commit, and push the Gate 9 extractor fix, regressions, and incident
+   record; verify the exact remote `main` revision before any retry.
+2. After fresh explicit approval of the self-hosted runner, 180-minute timeout,
+   bandwidth, and service-cost exposure, queue one new protected UCE production
+   release and start one ephemeral runner for that already-queued job. Do not
+   rerun the failed workflow attempt.
 3. Close Gate 9 only from KMS signing, publication/promotion, compact evidence,
    deregistration, offline-state, and cleanup receipts; then execute Gate 10.
 4. Do not dispatch Windows CUDA on the current hosted runner. Reconsider it only

@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import yazl from 'yazl';
 import {
   createDeterministicZip,
+  extractRecipeArchive,
   extractZipArchive,
   listZipEntries,
 } from '../../scripts/runtime-box/archive.mjs';
@@ -292,6 +293,40 @@ describe('Runtime Box target adapters', () => {
     ]));
     await extractZipArchive(first, extracted);
     expect(await readFile(join(extracted, 'box.json'), 'utf8')).toBe('{"schemaVersion":1}\n');
+  });
+
+  it('merges recipe archives without deleting previously staged assets', async () => {
+    const root = await temporaryRoot();
+    const archivePayload = join(root, 'archive-payload');
+    const archive = join(root, 'asset.zip');
+    const destination = join(root, 'payload', 'model-cache', 'uce', 'model_files');
+    const adapter = runtimeBoxTargetAdapter({ platform: 'macos', arch: 'aarch64', accelerator: 'cpu' });
+    await mkdir(join(archivePayload, 'protein_embeddings'), { recursive: true });
+    await writeFile(join(archivePayload, 'protein_embeddings', 'human.pt'), 'embedding\n');
+    await mkdir(destination, { recursive: true });
+    await writeFile(join(destination, 'species_offsets.pkl'), 'offsets\n');
+    await createDeterministicZip(archivePayload, archive, adapter);
+
+    await extractRecipeArchive(archive, 'zip', destination);
+
+    expect(await readFile(join(destination, 'species_offsets.pkl'), 'utf8')).toBe('offsets\n');
+    expect(await readFile(join(destination, 'protein_embeddings', 'human.pt'), 'utf8')).toBe('embedding\n');
+  });
+
+  it('rejects recipe archive collisions with previously staged assets', async () => {
+    const root = await temporaryRoot();
+    const archivePayload = join(root, 'archive-payload');
+    const archive = join(root, 'asset.zip');
+    const destination = join(root, 'payload');
+    const adapter = runtimeBoxTargetAdapter({ platform: 'macos', arch: 'aarch64', accelerator: 'cpu' });
+    await mkdir(archivePayload, { recursive: true });
+    await writeFile(join(archivePayload, 'asset.bin'), 'replacement\n');
+    await mkdir(destination, { recursive: true });
+    await writeFile(join(destination, 'asset.bin'), 'verified-original\n');
+    await createDeterministicZip(archivePayload, archive, adapter);
+
+    await expect(extractRecipeArchive(archive, 'zip', destination)).rejects.toThrow(/already exists/);
+    expect(await readFile(join(destination, 'asset.bin'), 'utf8')).toBe('verified-original\n');
   });
 
   it('rejects traversal entries before extraction', async () => {

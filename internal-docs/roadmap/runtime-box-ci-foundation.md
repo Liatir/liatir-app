@@ -66,7 +66,7 @@ unsupported under the 2026-07-21 re-scope.
 | 8.2. Geneformer Windows CPU | Complete | Release run `29706828552` (commit `f067482`) passed the full protected release on `windows-x86_64-cpu`: KMS-signed build, native self-test, scientific validation, immutable publication with public hash verification, the complete product lifecycle E2E (install, interrupted-download resume, real Geneformer inference with a finite 256-dim CPU embedding, Jobs/Results/provenance, replacement, rollback, and cleanup), and beta promotion. The `beta` channel now serves the Windows CPU box |
 | 8.2. Geneformer Windows CUDA | Deferred — out of Gate 8 scope (2026-07-21 re-scope), not a supported target, does not block later gates | Recipe + wiring built and validated GPU-free (commit `4127e7d`; host-probe nvidia-smi fixes through `a9af8c6`; target status `buildable`, never published). Hard blocker: the GitHub Windows T4 runner has NVIDIA driver `471.11` (R470), too old for CUDA 12.4 — host-probe rejects it (`driver 471.11 is below 551.61`) in ~1 min before any paid build. Decision 2026-07-21: excluded from CI until GitHub ships a newer Windows GPU driver (or a self-hosted R525+ runner / a separate `windows-x86_64-cuda11.8` target). Local validation on the maintainer's RTX 4060 Ti planned separately |
 | 8.3. Cross-platform closure | Complete | macOS regression run `29880520628` at `d07b6b4` passed preflight, clean native build, self-test, Metal scientific parity, Rust lifecycle, evidence upload, and cleanup; artifact `8514665653` (`sha256:b1b4911121897542bed0961bd0e93ac2ca88c7d17f6229913733a0a062630c74`). The reviewed four-target evidence chain, catalog/core alignment, and readiness matrix are recorded below. Deferred Windows CUDA remains unsupported and excluded by the 2026-07-21 re-scope |
-| 9. macOS arm64 heavy runner | In progress — local wiring and host preflight complete; awaiting explicit activation/release approval | UCE resolves only to the repository-scoped `liatir-macos-arm64-heavy` ephemeral runner. After the initial disk stop, the 2026-07-22 preflight passed with `39,284,838,400` free bytes against the `37,580,963,840` bootstrap floor, valid GitHub authentication, and no matching registered runner. No runner or workflow run was created |
+| 9. macOS arm64 heavy runner | In progress — first protected release exposed a reproduced builder defect; fix is locally verified and awaits commit/review before one explicitly approved retry | Run `29889431937` at `0c8310f` proved the exact ephemeral runner, host, OIDC, and cleanup path, then failed before signing because archive extraction deleted sibling UCE assets. No publication or promotion occurred. Failure artifact `8517777517` (`sha256:084abf567d2750410e0c105f1b325363d43d9a07195003f5cc372f0b5eacad4a`) and the incident record below preserve the evidence |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
 
 ## Completed foundation
@@ -984,7 +984,7 @@ offline outside planned builds, use a dedicated clean work directory, require a
 conservative disk preflight, clean all build state after success or failure, and
 use GitHub OIDC to Cloud Run/KMS rather than local signing keys.
 
-#### Local implementation and preflight (2026-07-22; gate remains open)
+#### Local implementation, preflight, and first release attempt (2026-07-22; gate remains open)
 
 - Added a checked `macos-arm64-heavy` runner profile with the unique
   `liatir-macos-arm64-heavy` label. Its contract is repository-scoped,
@@ -1014,8 +1014,9 @@ use GitHub OIDC to Cloud Run/KMS rather than local signing keys.
   already requires exact `main`, environment `runtime-box-production`, GitHub
   OIDC, the private Cloud Run signer, and non-exportable KMS signing. The heavy
   runner launcher creates no local signing key.
-- Cheap verification is complete: catalog check passed; the full verify profile
-  passed 162/162 unit and contract tests, SDK generation, core TypeScript,
+- Cheap verification before the first release was complete: catalog check
+  passed; the full verify profile passed 162/162 unit and contract tests, SDK
+  generation, core TypeScript,
   Svelte check, frontend production build, and root TypeScript; focused Gate 9
   tests passed 22/22; Rust `runtime_box` tests passed 11 with the one established
   large fixture ignored; workflow YAML and shell syntax parsed; and the diff is
@@ -1038,16 +1039,52 @@ use GitHub OIDC to Cloud Run/KMS rather than local signing keys.
   label had no competing registered runner. The earlier disk blocker is
   resolved; no runner package, registration token, runner, or workflow run was
   created by the passing preflight.
+- Commits `3df9ac8` and `0c8310f` were pushed to exact remote `main`. After the
+  required runner, timeout, bandwidth, and service-cost approval, protected
+  release run `29889431937` was dispatched for
+  `snap-stanford-uce-4layer` / `macos-aarch64-metal` / `beta` at exact revision
+  `0c8310f7c23a32a13710b56bae558c77710aba7c`. Resolve job `88826727465`
+  passed. Ephemeral runner `liatir-macos-heavy-1784692230-27603` accepted only
+  release job `88826776619`; clean checkout, host/storage validation, GitHub
+  OIDC authentication, gcloud setup, npm install, pinned uv setup, and the exact
+  clean-revision check all passed.
+- The build downloaded and hash-verified every declared UCE asset, then stopped
+  before self-test execution, signing, scientific validation, publication, or
+  promotion with a missing-self-test-file error for
+  `model-cache/uce/model_files/species_offsets.pkl`. The exact cause is in the
+  shared archive extractor: extracting `protein_embeddings.tar.gz` into
+  `model-cache/uce/model_files` recursively removed that destination first,
+  deleting the four already verified sibling assets. This was not a Figshare,
+  KMS, OIDC, or runner failure.
+- Run `29889431937` therefore concluded `failure`. Its compact failed release
+  evidence is artifact `8517777517`, 650 bytes, digest
+  `sha256:084abf567d2750410e0c105f1b325363d43d9a07195003f5cc372f0b5eacad4a`.
+  Publication and beta promotion steps were skipped. Unconditional workflow
+  cleanup passed; the ephemeral runner deregistered, its marked work root was
+  removed, diagnostics were retained, the repository runner inventory returned
+  to zero, and the host recovered `38,710,562,816` free bytes.
+- The target-independent local fix makes recipe archive extraction merge into
+  an existing destination while refusing collisions with already staged files.
+  Two regressions reproduce both requirements: a sibling asset survives the
+  merge, and a colliding archive entry fails without changing the verified
+  original. The focused archive suite now passes 15/15. The post-fix catalog
+  check passes, Rust `runtime_box` tests pass 11 with the established large
+  fixture ignored, and the full verify profile passes 164/164 plus SDK
+  generation, core TypeScript, zero-warning Svelte check, frontend production
+  build, and root TypeScript. No full UCE download or remote run was used to
+  debug the defect.
 
 Remaining closure sequence:
 
-1. Review, commit, and push this wiring; verify the exact remote `main` revision
-   and re-read the production workflow and its inputs.
-2. State the self-hosted runner, 180-minute job timeout, expected bandwidth and
-   service cost exposure, then obtain explicit approval.
+1. Review, commit, and push the extractor fix, regressions, and incident record;
+   verify the exact remote `main` revision and re-read the production workflow
+   and its inputs.
+2. Re-state the self-hosted runner, 180-minute job timeout, expected bandwidth
+   and service-cost exposure, then obtain fresh explicit approval for one retry.
 3. Queue exactly one protected UCE production release from `main`, start exactly
    one ephemeral runner against the already-queued job, and immediately verify
-   run revision, target, inputs, runner name, and mode.
+   run revision, target, inputs, runner name, and mode. Do not reuse or rerun the
+   failed workflow attempt.
 4. Close Gate 9 only after the KMS-signed build, scientific validation,
    immutable publication, beta promotion, compact evidence, deregistration,
    offline state, and work-root cleanup are all directly observed. Stop on any

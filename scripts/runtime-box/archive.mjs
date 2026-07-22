@@ -1,5 +1,5 @@
-import { createWriteStream } from 'node:fs';
-import { cp, mkdir, mkdtemp, rm, stat } from 'node:fs/promises';
+import { constants, createWriteStream } from 'node:fs';
+import { copyFile, mkdir, mkdtemp, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
@@ -9,6 +9,7 @@ import yazl from 'yazl';
 import {
   FIXED_ARCHIVE_TIME,
   collectFiles,
+  fileExists,
   safeRelativePath,
   validateExtractedTree,
 } from './filesystem.mjs';
@@ -194,9 +195,19 @@ export async function extractRecipeArchive(archivePath, format, destination, str
       }
       source = nextSource;
     }
-    await rm(destination, { recursive: true, force: true });
+    const files = await collectFiles(source);
+    // Archives may add a subtree beside verified assets, but must never replace those assets.
+    for (const file of files) {
+      if (await fileExists(join(destination, ...file.split('/')))) {
+        fail(`Recipe archive entry already exists in destination: ${file}`);
+      }
+    }
     await mkdir(destination, { recursive: true });
-    await cp(source, destination, { recursive: true, dereference: true, force: true });
+    for (const file of files) {
+      const outputPath = join(destination, ...file.split('/'));
+      await mkdir(dirname(outputPath), { recursive: true });
+      await copyFile(join(source, ...file.split('/')), outputPath, constants.COPYFILE_EXCL);
+    }
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
   }
