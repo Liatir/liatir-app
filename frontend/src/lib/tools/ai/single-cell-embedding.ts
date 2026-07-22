@@ -38,7 +38,7 @@ export const singleCellEmbeddingDefinition: LiatirAIToolDefinition = {
 	type: 'ai-tool',
 	label: 'Single-cell Embedding',
 	description:
-		'Generate local foundation-model cell embeddings from h5ad/AnnData datasets with an isolated managed runtime.',
+		'Generate local foundation-model cell embeddings from h5ad/AnnData datasets with an isolated signed Runtime Box.',
 	category: 'AI Tools',
 	inputSchema: {
 		modelId: {
@@ -213,7 +213,6 @@ export async function finalizeSingleCellEmbeddingResult(
 		runtimeKind: model.runtime.kind,
 		runtimeName: model.runtime.name,
 		runtimeVersion: model.runtime.version ?? null,
-		runtimeLock: model.runtimeLock ?? null,
 		...runtimeBoxResultProvenance(result),
 		localOnly: model.localOnly,
 		inputSummary: {

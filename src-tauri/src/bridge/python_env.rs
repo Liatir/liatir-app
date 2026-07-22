@@ -10,13 +10,6 @@ use std::{
 use tauri::{AppHandle, Manager};
 use walkdir::WalkDir;
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PythonCandidate {
-    pub path: String,
-    pub version: String,
-}
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PythonEnvPackage {
@@ -149,25 +142,6 @@ const PYTHON_BOOTSTRAP_REQUIREMENTS: &[&str] = &[
 
 pub fn first_available(names: &[&str]) -> Option<String> {
     names.iter().find_map(|name| find_in_path(name))
-}
-
-pub fn preferred_python() -> Option<String> {
-    first_available(&[
-        "python3.12",
-        "python3.11",
-        "python3.10",
-        "python3",
-        "python",
-    ])
-}
-
-pub fn python_candidate_infos() -> Vec<PythonCandidate> {
-    python_candidates()
-        .into_iter()
-        .filter_map(|path| {
-            command_stdout(&path, &["--version"]).map(|version| PythonCandidate { path, version })
-        })
-        .collect()
 }
 
 pub fn command_stdout(cmd: &str, args: &[&str]) -> Option<String> {
@@ -613,14 +587,6 @@ pub fn run_in_env(
         stderr: String::from_utf8_lossy(&output.stderr).to_string(),
         duration_ms: started.elapsed().as_millis(),
     })
-}
-
-pub fn remove_env(app: AppHandle, env_root: String, env_id: String) -> Result<bool, String> {
-    let dir = env_dir(&app, &env_root, &env_id)?;
-    if dir.exists() {
-        std::fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
-    }
-    Ok(true)
 }
 
 fn validate_env_root(env_root: &str) -> Result<(), String> {

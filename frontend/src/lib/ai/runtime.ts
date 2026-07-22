@@ -3,18 +3,14 @@ import { workspaceStore } from '$lib/stores/workspace.svelte';
 import type {
   JsonValue,
   LiatirAIModelMetadata,
-  LiatirAIModelPythonRequirement,
   LiatirAIModelRecord,
-  LiatirPythonRuntimeLock,
   LiatirRuntimeBoxActivationMetadata,
 } from '@liatir/core';
 // Model → runtime-parameter mapping lives in @liatir/core (shared with the
 // plugin API). Re-exported here so existing frontend imports keep working.
 import {
   runtimeIdForModel,
-  requirementsForModel,
   runtimePackagesForModel,
-  runtimeSourcesForModel,
   packageChecksForModel,
   type AiRuntimePackageCheck,
 } from '@liatir/core';
@@ -23,15 +19,11 @@ import { runtimeBoxActivationFromMetadata } from './runtime-box-provenance';
 
 export {
   runtimeIdForModel,
-  requirementsForModel,
   runtimePackagesForModel,
-  runtimeSourcesForModel,
   packageChecksForModel,
 };
 
 export type AIRuntimePackageCheck = AiRuntimePackageCheck;
-
-export type AIRuntimePythonRequirement = LiatirAIModelPythonRequirement;
 
 export interface AIHardwareInfo {
   os: string;
@@ -41,34 +33,16 @@ export interface AIHardwareInfo {
   appleMetal: boolean;
   cudaAvailable: boolean | null;
   nvidiaDriverVersion?: string | null;
-  pythonPath?: string | null;
-  pythonVersion?: string | null;
-  pythonCandidates?: Array<{ path: string; version: string }>;
-  uvPath?: string | null;
 }
 
 export interface AIRuntimeStatus {
   runtimeId: string;
   runtimeDir: string;
   pythonPath: string | null;
-  uvPath: string | null;
   installed: boolean;
   missingPackages: string[];
-  missingSources?: string[];
   error: string | null;
   sizeBytes?: number | null;
-  lock?: LiatirPythonRuntimeLock | null;
-}
-
-export interface AIRuntimePrepareResult {
-  runtimeId: string;
-  runtimeDir: string;
-  pythonPath: string;
-  installer: string;
-  stdout: string;
-  stderr: string;
-  sizeBytes?: number | null;
-  lock?: LiatirPythonRuntimeLock | null;
 }
 
 export interface AIRuntimeBoxInstallResult {
@@ -101,7 +75,7 @@ export interface AIPythonRunOptions {
 }
 
 export function cachePathForModel(model: LiatirAIModelRecord): string | null {
-  if (!model.runtimePath || !model.install?.modelCacheSubdir) return null;
+  if (!model.runtimePath) return null;
   return `${model.runtimePath}/${model.install.modelCacheSubdir}`;
 }
 
@@ -118,22 +92,7 @@ export async function getAIRuntimeStatus(model: LiatirAIModelMetadata): Promise<
   return await api.invoke('lia_ai_runtime_status', {
     runtimeId,
     packages: packageChecksForModel(model),
-    sources: runtimeSourcesForModel(model),
   }) as AIRuntimeStatus;
-}
-
-export async function prepareAIRuntime(model: LiatirAIModelMetadata): Promise<AIRuntimePrepareResult> {
-  const api = liatir();
-  const runtimeId = runtimeIdForModel(model);
-  if (!api) throw new Error('Liatir API not available');
-  if (!runtimeId) throw new Error(`AI Model has no managed runtime: ${model.name}`);
-  return await api.invoke('lia_ai_runtime_prepare', {
-    runtimeId,
-    requirements: requirementsForModel(model),
-    packages: runtimePackagesForModel(model),
-    sources: runtimeSourcesForModel(model),
-    pythonRequirement: model.install?.hostRequirements?.python ?? null,
-  }) as AIRuntimePrepareResult;
 }
 
 /** Download and atomically activate the signed Runtime Box selected by channel. */
@@ -142,11 +101,8 @@ export async function installAIRuntimeBox(
   onProgress?: (progress: { bytesDownloaded: number; bytesTotal: number | null }) => void,
 ): Promise<AIRuntimeBoxInstallResult> {
   const api = liatir();
-  const runtimeBox = model.install?.runtimeBox;
+  const runtimeBox = model.install.runtimeBox;
   if (!api) throw new Error('Liatir API not available');
-  if (model.install?.method !== 'runtime-box' || !runtimeBox) {
-    throw new Error(`AI Model has no Runtime Box distribution: ${model.name}`);
-  }
   const downloadId = `runtime-box-${model.id}-${crypto.randomUUID()}`;
   const unlisten = await api.desktop.events.on(
     `managed:progress:${downloadId}`,
@@ -166,14 +122,6 @@ export async function installAIRuntimeBox(
   }
 }
 
-export async function removeAIRuntime(model: LiatirAIModelMetadata): Promise<boolean> {
-  const api = liatir();
-  const runtimeId = runtimeIdForModel(model);
-  if (!api) throw new Error('Liatir API not available');
-  if (!runtimeId) return false;
-  return await api.invoke('lia_ai_runtime_remove', { runtimeId }) as boolean;
-}
-
 export async function runAIPython(
   model: LiatirAIModelRecord,
   script: string,
@@ -183,7 +131,7 @@ export async function runAIPython(
   const api = liatir();
   const runtimeId = runtimeIdForModel(model);
   if (!api) throw new Error('Liatir API not available');
-  if (!runtimeId) throw new Error(`AI Model has no managed runtime: ${model.name}`);
+  if (!runtimeId) throw new Error(`AI Model has no Runtime Box: ${model.name}`);
   throwIfRunCancelled(options.signal);
 
   if (options.trackJob === false) {

@@ -35,6 +35,7 @@ export default defineConfig({
           { text: 'Core principles', link: '/architecture/overview' },
           { text: 'Implementation architecture', link: '/architecture/implementation' },
           { text: 'Component boxes', link: '/architecture/component-boxes' },
+          { text: 'Runtime Boxes explained', link: '/architecture/runtime-box-system-explained' },
         ],
       },
       {

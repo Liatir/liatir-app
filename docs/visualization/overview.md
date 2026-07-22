@@ -24,6 +24,6 @@ visual state for notes or reports.
 
 Viewer nodes can be placed after tools that produce compatible artifacts:
 
-- Protein Structure Prediction to 3D Structure Viewer.
-- Regulatory Prediction to Genome Track Viewer.
-- CellTypist Annotation to Single-cell Viewer.
+- Native tools or API Connectors that produce structure files to 3D Structure Viewer.
+- Native tools or API Connectors that produce genome tracks to Genome Track Viewer.
+- Single-cell Embedding to Single-cell Viewer.

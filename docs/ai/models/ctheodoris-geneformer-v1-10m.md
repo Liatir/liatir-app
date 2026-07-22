@@ -11,7 +11,7 @@ perturbation analysis.
 
 ## Current status in Liatir
 
-Geneformer V1 10M is installable as an isolated managed runtime. Liatir pins the
+Geneformer V1 10M is installable as a signed Runtime Box. Liatir pins the
 official V1 checkpoint and matching Genecorpus-30M dictionaries to one upstream
 revision instead of following the repository's changing default model.
 
@@ -35,9 +35,9 @@ runtime.
 ## Hardware and installation
 
 The 10M-parameter V1 model can run on CPU for small datasets. CUDA or Apple
-Metal is preferred for larger cell batches. Liatir keeps Geneformer in its own
-isolated environment, separate from CellTypist, UCE, and other single-cell
-tools.
+Metal is preferred for larger cell batches. Published native targets cover
+macOS arm64 Metal, Linux x86_64 CPU/CUDA, and Windows x86_64 CPU. CUDA is
+validated only on Linux; Windows CUDA is not supported.
 
 The input matrix is normalized per cell to 10,000 counts, scaled by the official
 Genecorpus-30M gene medians, converted to the V1 rank-value encoding, and capped

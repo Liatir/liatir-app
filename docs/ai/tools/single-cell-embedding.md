@@ -3,8 +3,9 @@
 Single-cell Embedding is an AI Tool that creates numeric vectors for cells in an
 AnnData `.h5ad` dataset.
 
-Supported backends are [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) and
-[Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m).
+Supported backends are [UCE 4-layer](/ai/models/snap-stanford-uce-4layer),
+[Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m), and
+[scGPT Whole-human](/ai/models/bowang-scgpt-whole-human).
 
 ## What it does
 
@@ -20,7 +21,7 @@ creates a representation that other tools can inspect.
 
 | Input | Meaning |
 | --- | --- |
-| AI Model | Installed UCE 4-layer or Geneformer V1 10M |
+| AI Model | Installed UCE 4-layer, Geneformer V1 10M, or scGPT Whole-human |
 | AnnData file | `.h5ad` file from Data |
 | Species | Organism matching the dataset |
 | Batch size | Number of cells processed together |
@@ -28,7 +29,8 @@ creates a representation that other tools can inspect.
 
 The AnnData `.X` matrix should contain raw scRNA-seq counts. UCE expects gene
 symbols in `var_names`. Geneformer V1 is human-only and expects Ensembl IDs in
-`var["ensembl_id"]` or `var_names`.
+`var["ensembl_id"]` or `var_names`. scGPT is human-only and expects gene symbols
+in `var["gene_name"]`, `var["feature_name"]`, or `var_names`.
 
 ## Outputs
 

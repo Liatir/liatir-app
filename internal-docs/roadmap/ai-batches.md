@@ -1,199 +1,105 @@
-# AI Development Batches
+# AI Model Integration Ledger
 
-This page tracks implementation and model-family evidence for Liatir. Keep it
-updated when a batch is completed, partially completed, or deliberately
-deferred.
-
-It is not the current product priority order. The canonical product direction,
-non-goals, phase sequence, and completion criteria are tracked in the
-[Scientific AI Workbench product plan](./scientific-ai-workbench.md). The active
-cross-platform Runtime Box execution state remains in
+This ledger records the current product boundary for AI Models and AI Tools.
+The canonical Runtime Box build and publication evidence remains in
 [Runtime Box CI foundation](./runtime-box-ci-foundation.md).
 
-## Global rule
+## Product rule
 
-Before choosing or integrating real models, verify official sources for license,
-hardware requirements, artifact layout, and installation/runtime requirements.
+Liatir is a cross-platform product, so an AI Model is not release-ready merely
+because one Runtime Box exists. Each model must cover every native product
+target on which its license, upstream framework, and hardware requirements make
+execution reasonably possible. Missing implementation work is not a platform
+exception.
 
-## Batch 0: AI foundations
+An exception requires a recorded upstream or infrastructure blocker, its exact
+evidence, and honest product compatibility messaging. CPU and accelerator
+support are evaluated separately: a model may legitimately support CPU on all
+desktop operating systems while supporting CUDA only on Linux, for example, if
+the upstream framework cannot provide native Windows CUDA or macOS Metal.
 
-Status: completed and under stabilization.
+Before a model is classified as release-ready it therefore needs:
 
-- AI Models page for installed and available local models.
-- First mock AI Tool for validating pipeline I/O, model selection, logs,
-  metrics, artifacts, and provenance.
-- Runtime abstraction for Python/venv/managed runtimes, model cache, and initial
-  hardware detection.
-- Provenance in outputs: model, version, parameters, runtime, inputs, and shared
-  I/O contract compliance.
+- legally redistributable code, weights, and supporting assets;
+- signed and published Runtime Boxes for every feasible native target;
+- reviewed scientific and product-lifecycle evidence on every such target;
+- an explicit unsupported-target record for every genuine exception.
 
-## Batch 1: Practical lightweight AI Tools
+There is no legacy installer or mock-model exception. During pre-release
+development a partially expanded Runtime Box model may remain in the catalog so
+that completed targets can be tested, but the support debt must stay visible and
+must close before the model is treated as generally available.
 
-Status: implemented and under real-file validation.
+## Current product catalog
 
-- CellTypist for local single-cell annotation.
-- AnnData `.h5ad` support for AI single-cell workflows.
-- Nucleotide Transformer small/base sequence embeddings.
-- Generic DNA/protein sequence embedding tool.
-- Outputs: embeddings, labels, CSV/JSON, basic metrics.
-- Simple result UI with tables, confidence, and summary.
+| AI Model | AI Tool | Published native support | Cross-platform state |
+| --- | --- | --- | --- |
+| Geneformer V1 10M | Single-cell Embedding | macOS arm64 Metal; Linux x86_64 CPU/CUDA 12.4; Windows x86_64 CPU | Current native matrix complete; Windows CUDA remains a documented runner blocker |
+| scGPT Whole-human | Single-cell Embedding | macOS arm64 Metal | Pre-release support debt: Linux CPU/CUDA and Windows CPU remain to be built and validated; Windows CUDA follows the shared blocker policy |
+| UCE 4-layer | Single-cell Embedding | macOS arm64 Metal | Pre-release support debt: Linux CPU/CUDA and Windows CPU remain to be built and validated; Windows CUDA follows the shared blocker policy |
 
-## Batch 2: Scientific visualizations
+CUDA is validated only on Linux. The Windows CUDA 12.4 recipe is buildable but
+unvalidated, unpublished, unsupported, and absent from product target
+selection.
 
-Status: implemented and under visual validation.
+## Removed experimental integrations
 
-- Modular viewers for protein structures and genomic tracks.
-- Viewer runtime dependencies installed only when needed.
-- Viewer artifacts connected to pipeline outputs and Results.
-- Reusable output panels for non-AI tools as well.
+On 2026-07-22 the pre-release product was cut over to Runtime Box-only AI Model
+delivery. The following implementation families were removed from the catalog,
+frontend, pipeline registry, direct-run finalizer, scripts, tests, and public
+documentation:
 
-Vitessce remains an adapter-oriented future extension rather than a heavy
-always-bundled dependency.
+- the built-in mock model and Mock Inference Tool;
+- CellTypist and its annotation Tool;
+- Nucleotide Transformer and ESM-2 sequence embedding paths;
+- Nucleotide Transformer variant-effect scoring;
+- Enformer, Basenji2, and Borzoi predictive-genomics paths;
+- Boltz-2 and Chai structure-prediction paths;
+- the scFoundation preview entry.
 
-## Batch 3: Proteomics AI
+Their earlier batch implementation status is historical engineering work, not a
+current product capability. A removed family can return only as a new,
+independently reviewed Runtime Box program; old local-build or direct-download
+code must not be restored.
 
-Status: implemented and under scientific validation.
+## Candidate portability and license assessment
 
-- Boltz-2 as the primary local structure/binding runtime.
-- Chai-1 as a Linux CUDA-only runtime.
-- Inputs: protein FASTA/sequence, optional ligand information, structure
-  prediction options.
-- Outputs: PDB/mmCIF where available, confidence/affinity metadata where
-  available, and viewer-compatible artifacts.
+This is a planning classification, not publication evidence. Exact upstream
+revisions, weight terms, native dependency locks, and scientific validation
+must be reviewed again when a candidate Runtime Box program starts.
 
-## Batch 4: Predictive genomics
+| Model family | Current license assessment | Practical target assessment | Decision |
+| --- | --- | --- | --- |
+| Geneformer | Apache-2.0 model repository; accepted Runtime Box legal audits | Current macOS Metal, Linux CPU/CUDA, and Windows CPU matrix is validated | Keep and maintain |
+| scGPT | MIT code repository; the reviewed upstream revision distributes the selected checkpoint without separate checkpoint terms | PyTorch and the current wrapper can select CPU, MPS, or CUDA; native target recipes and evidence are still missing outside macOS | Expand the current model |
+| UCE | MIT code; selected Figshare model assets are CC BY 4.0 and require attribution | CPU portability is expected; CUDA selection and all non-macOS native packages require validation; the box has a large disk footprint | Expand the current model |
+| ESM-2 8M | MIT model repository and weights | PyTorch makes CPU on all three operating systems, macOS MPS, and Linux/Windows CUDA plausible, subject to native validation | Strong future candidate |
+| Boltz-2 | Upstream states that code and weights are MIT and permits commercial use | Upstream supports CPU/non-CUDA execution, although slowly, and optional CUDA; native dependencies still require validation on each operating system | Strong future candidate |
+| CellTypist | MIT code; explicit redistribution terms for the separately downloaded model files were not established by the current review | CPU execution appears portable | Hold until the model-asset license is explicit |
+| Enformer, Basenji2, Borzoi | Permissive code repositories; exact coverage of distributed weights still needs a model-asset audit | TensorFlow supports desktop CPU broadly, but not official macOS GPU and not native Windows GPU after TensorFlow 2.10 | Conditional: audit assets, then target CPU on all operating systems and Linux CUDA only |
+| Nucleotide Transformer 50M/500M | CC BY-NC-SA 4.0 model terms | Technically portable through PyTorch/Transformers | Exclude from the general product catalog unless Liatir deliberately accepts non-commercial restrictions or obtains permission |
+| scFoundation | Apache-2.0 code but separate non-commercial research terms for model weights | Technical portability does not remove the license restriction | Exclude from the general product catalog unless permission is obtained |
+| Chai-1 | Apache-2.0 code and weights with commercial use allowed | Official runtime requires Linux, CUDA, and a bfloat16-capable GPU | Exclude from the universal native desktop catalog until a validated cross-platform port exists |
 
-Status: implemented and under heavy validation.
+## Current completion criteria
 
-- Larger Nucleotide Transformer support.
-- Variant effect scoring based on reference/alternate sequence windows.
-- `.vcf` and `.vcf.gz` inputs for sequential variant scoring.
-- Genome-track-compatible BED outputs for JBrowse workflows.
-- Enformer, Basenji2, and Borzoi Mini K562 RNA-seq as isolated predictive
-  genomics runtime boxes.
-- Inputs: FASTA/VCF/VCF.GZ/BED/sequence window depending on tool.
-- Outputs: scores, embeddings, tracks, and reports.
+For each additional model:
 
-Remaining work is validation rather than architecture: heavy install/run test
-coverage, scientific output sanity checks, and better model-target UX for the
-regulatory target index.
+1. verify code, dependency, model-weight, and asset redistribution rights;
+2. pin recipe inputs and a hash-locked dependency set;
+3. build and self-test on an exact approved target;
+4. pass model-specific scientific validation;
+5. sign through the protected KMS path;
+6. publish immutable bytes and promote a reviewed channel record;
+7. pass native install, inference, Jobs, Results, provenance, replacement,
+   rollback, removal, and cleanup gates;
+8. retain reviewed evidence and update the honest support matrix;
+9. add the model to `packages/liatir-core` only after the preceding evidence is
+   complete.
 
-## Batch 5: Single-cell foundation models
-
-Status: in progress. UCE 4-layer and Geneformer V1 10M are implemented as
-installable/runnable slices. UCE now has a clean, reproducible macOS arm64
-Runtime Box recipe with signed installed-size metadata and post-extraction
-self-test evidence. Its KMS-signed beta box is live through the existing
-single-cell runner. The exact product runner has passed focused CPU and Apple
-Metal runs, complete output-contract validation, numeric backend parity, and a
-fresh-home native lifecycle covering signed install, a tracked direct Job, a
-finite 1,280-dimensional Result with provenance, Jobs/Results visibility,
-removal, and Result artifact survival.
-Geneformer uses the live signed Runtime Box distribution for macOS arm64/Metal,
-Linux x86_64/CPU, Linux x86_64/CUDA 12.4, and Windows x86_64/CPU, with reviewed
-native lifecycle plus scientific-validation evidence on all four targets.
-Gate 8.3 macOS regression run `29880520628` passed the current shared builder,
-Metal parity, Rust lifecycle, evidence upload, and cleanup without requiring a
-macOS republish.
-CUDA support is validated only on Linux. The Windows CUDA 12.4 recipe and CI
-wiring are buildable but unvalidated, unpublished, and unsupported. scGPT has a
-live signed macOS arm64 Runtime Box, hash-locked dependencies, real CPU/Metal
-inference gates, and targeted native install, Jobs, and removal evidence.
-scFoundation remains preview-only because its model license prohibits Liatir
-from redistributing the checkpoint.
-
-- scGPT for embeddings, batch correction, and perturbation hypotheses.
-- Geneformer for cell representations and gene/network insights.
-- UCE 4-layer for zero-shot single-cell embeddings from AnnData.
-- scFoundation as an advanced candidate.
-- Inputs: `.h5ad`, matrix, metadata.
-- Outputs: embeddings, UMAP-ready data, labels, gene programs, perturbation
-  predictions.
-- Visualization with Vitessce.
-
-Do not enable Install or Run for the remaining preview models until each model
-has a validated managed runtime box, explicit model-asset handling, input
-validation, output parsing, Jobs, Results, and provenance.
-
-### AI Runtime Box Distribution Foundation
-
-Status: CI foundation complete; product-level update gaps remain.
-
-The canonical cross-platform CI implementation plan and gate status are tracked
-in [Runtime Box CI foundation](./runtime-box-ci-foundation.md).
-
-- Shared release, channel, target, rollout, revocation, signature, and
-  compatibility contracts live in `packages/liatir-core`.
-- Repository CLI supports key generation, dependency locking, native build,
-  post-extraction verification, local registry serving, immutable R2 publish,
-  trust-root publish, channel promotion, and signed revocations.
-- The macOS arm64 builder packages full standalone Python plus hash-locked
-  dependencies; it does not depend on a user-installed Python at runtime.
-- The Runtime Box Registry Worker serves small signed control documents and
-  performs authenticated, signature-verified promotions through its R2 binding.
-- Production signing is isolated in the `liatir-release-security` Google Cloud
-  project. A private Cloud Run service validates exact payload bytes against a
-  versioned AI Model/target/origin allowlist, then uses a non-exportable
-  Ed25519 Cloud KMS key. Cloudflare never receives signing authority.
-- Native installation uses resumable downloads, signed manifest and target
-  checks, safe ZIP extraction, a self-test, atomic activation, and rollback per
-  `runtimeId`.
-- Geneformer V1 10M is the first production recipe. Its signed macOS arm64/Metal,
-  Linux x86_64/CPU, Linux x86_64/CUDA 12.4, and Windows x86_64/CPU boxes pass
-  verification,
-  post-extraction imports, scientific parity, and native product lifecycle
-  gates; all four are published under `assets.models.liatir.com` and promoted
-  through the beta channel at `models.liatir.com`.
-- UCE 4-layer protected release run `29909249357` KMS-signed and published the
-  immutable `1.0.0-beta.1` archive at `8,864,908,393` bytes with a signed
-  installed size of `10,142,864,860` bytes, promoted it through the beta
-  channel, and recorded CPU/Metal parity plus cleanup. Its targeted native
-  install/direct-run/Jobs/Results/removal gate is retained separately.
-- Runtime Box CI foundation Gates 0 through 10 are complete. The production
-  topology, protected identities, operator procedures, and reviewed run matrix
-  are recorded in the
-  [Runtime Box production report](./runtime-box-production-report.md).
-
-Geneformer evidence now covers a fresh isolated home, interrupted download and
-resume, signed install, real inference, atomic replacement, rollback, removal,
-and pinned scientific parity on native macOS arm64/Metal, Linux x86_64/CPU, and
-Linux x86_64/CUDA 12.4. The CUDA target was validated with real Tesla T4
-inference against the same-lock CPU baseline.
-The remaining product work is a true cross-version native update and
-client-persisted anti-replay state for signed channel generations; these are
-outside the completed CI foundation. The KMS
-signing key is non-exportable, IAM-restricted, and independently hosted from R2;
-same-version atomic replacement and rollback are already covered natively.
-
-## Batch 6: Simulations and biophysics
-
-Status: planned.
-
-- OpenMM as the first managed local engine.
-- GROMACS as a more advanced external dependency.
-- Workflows: prepare system, minimize, run molecular dynamics, analyze
-  trajectory.
-- Outputs: trajectories, energies, plots, and structure snapshots.
-- 3D viewer support for trajectories and frames.
-
-## Batch 7: Advanced generative AI
-
-Status: planned.
-
-- BioEmu for protein conformational ensembles.
-- RFdiffusion plus ProteinMPNN for protein design.
-- Evo 2 as an optional advanced genomic model for serious hardware.
-- Clear license, resource, and hardware warnings.
-- Dedicated pipelines rather than dumping advanced tools into the general menu.
-
-## Batch 8: Preset pipelines
-
-Status: planned after the underlying tools are stable.
-
-Examples:
-
-- protein sequence to structure prediction to 3D report;
-- VCF to variant effect scoring to genome browser track;
-- single-cell h5ad to annotation to embeddings to Vitessce;
-- FASTA window to regulatory prediction to report;
-- protein structure to BioEmu ensemble to comparison viewer.
+The immediate model-distribution priority is to close scGPT and UCE target
+parity across every feasible native target. No additional family should enter
+the pre-release catalog ahead of that work. Cross-version Runtime Box update,
+persisted anti-replay state, and the common execution spine defined in
+[Scientific AI Workbench](./scientific-ai-workbench.md) remain required product
+work in parallel with that model-expansion sequence.

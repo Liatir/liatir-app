@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import catalogJson from '../../runtime-boxes/catalog.json';
 import {
-  BUILT_IN_AI_MODEL_REGISTRY,
+  RUNTIME_BOX_AI_MODEL_REGISTRY,
   runtimeBoxTargetId,
   type LiatirRuntimeBoxCiCatalog,
 } from '../../packages/liatir-core/src';
@@ -24,7 +24,7 @@ describe('Runtime Box CI catalog', () => {
 
   it('keeps published core targets exactly aligned with published catalog targets', () => {
     for (const record of catalog.models) {
-      const model = BUILT_IN_AI_MODEL_REGISTRY.find((candidate) => candidate.id === record.modelId);
+      const model = RUNTIME_BOX_AI_MODEL_REGISTRY.find((candidate) => candidate.id === record.modelId);
       const appTargets = model?.install?.runtimeBox?.publishedTargets ?? [];
       const catalogTargets = record.targets.filter((target) => target.status === 'published');
 

@@ -12,7 +12,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { AI_MODEL_ARTIFACT_SPECS } from '../../frontend/src/lib/ai/model-artifacts';
-import { LOCAL_AI_MODEL_REGISTRY, MOCK_AI_MODEL_ID } from '../../frontend/src/lib/ai/model-registry';
+import { RUNTIME_BOX_AI_MODEL_REGISTRY } from '../../frontend/src/lib/ai/model-registry';
 import { VIEWER_RUNTIME_REGISTRY } from '../../frontend/src/lib/viewers/runtime-registry';
 
 const rootDir = resolve(import.meta.dirname, '../..');
@@ -31,32 +31,30 @@ describe('AI modularity boundaries', () => {
   it('keeps every registered AI Model paired with an artifact/runtime-family spec', () => {
     const artifactIds = new Set(AI_MODEL_ARTIFACT_SPECS.map((spec) => spec.modelId));
 
-    for (const model of LOCAL_AI_MODEL_REGISTRY) {
+    for (const model of RUNTIME_BOX_AI_MODEL_REGISTRY) {
       expect(artifactIds.has(model.id), `${model.id} missing artifact spec`).toBe(true);
     }
   });
 
-  it('requires managed runtimes to declare isolated runtime and cache locations', () => {
-    for (const model of LOCAL_AI_MODEL_REGISTRY) {
-      if (model.id === MOCK_AI_MODEL_ID
-        || (model.install?.method !== 'managed-runtime' && model.install?.method !== 'runtime-box')) continue;
-
+  it('requires Runtime Boxes to declare isolated runtime and cache locations', () => {
+    for (const model of RUNTIME_BOX_AI_MODEL_REGISTRY) {
+      expect(model.install.method).toBe('runtime-box');
       expect(model.install.runtimeId, `${model.id} missing runtimeId`).toMatch(/^[a-z0-9][a-z0-9-_]+$/);
       expect(model.install.modelCacheSubdir, `${model.id} missing modelCacheSubdir`).toBeTruthy();
       expect(model.install.runtimePackages?.length, `${model.id} missing runtimePackages`).toBeGreaterThan(0);
+      expect(model.install.runtimeBox.publishedTargets.length).toBeGreaterThan(0);
     }
   });
 
   it('only shares a runtimeId when package and host requirements are identical', () => {
     const byRuntime = new Map<string, string>();
 
-    for (const model of LOCAL_AI_MODEL_REGISTRY) {
-      const runtimeId = model.install?.runtimeId;
-      if (!runtimeId) continue;
+    for (const model of RUNTIME_BOX_AI_MODEL_REGISTRY) {
+      const runtimeId = model.install.runtimeId;
 
       const signature = JSON.stringify({
-        packages: model.install?.runtimePackages ?? [],
-        hostRequirements: model.install?.hostRequirements ?? null,
+        packages: model.install.runtimePackages ?? [],
+        hostRequirements: model.install.hostRequirements ?? null,
       });
       const previous = byRuntime.get(runtimeId);
       if (previous) {

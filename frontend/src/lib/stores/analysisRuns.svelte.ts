@@ -53,13 +53,7 @@ const NATIVE_ANALYSIS_TOOLS = new Set([
   'snpeff',
 ]);
 const AI_ANALYSIS_TOOLS = new Set([
-  'ai-celltypist-annotate',
-  'ai-sequence-embedding',
   'ai-single-cell-embedding',
-  'ai-genomic-variant-effect',
-  'ai-regulatory-prediction',
-  'ai-protein-structure',
-  'ai-mock-inference',
 ]);
 
 function producerKindFor(tool: string): LiatirArtifactProducerKind {

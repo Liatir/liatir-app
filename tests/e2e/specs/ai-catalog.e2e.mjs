@@ -1,7 +1,4 @@
-/**
- * The AI catalogue screen: models are listed, grouped, searchable, and — importantly — that a preview or an
- * incompatible model is presented as such and cannot be installed.
- */
+/** Verifies that the AI catalog exposes only supported Runtime Box models through stable selectors. */
 import {
   expectNoVisibleRuntimeError,
   navigateSidebar,
@@ -16,19 +13,19 @@ async function searchAIModels(browser, query) {
 
 export const tests = [
   {
-    name: 'keeps deferred AI Models out of the visible catalog',
+    name: 'keeps removed legacy AI Models out of the visible catalog',
     async run({ browser, expect }) {
       await openSandboxWorkspace(browser);
       await navigateSidebar(browser, '/ai');
 
-      await searchAIModels(browser, 'Chai');
+      await searchAIModels(browser, 'Mock Local Model');
       await browser.waitUntil(
         async () => browser.execute(() => document.body.innerText.includes('No AI Models match your search.')),
-        { timeout: 10_000, timeoutMsg: 'Deferred Chai model still appears in the AI Models catalog' },
+        { timeout: 10_000, timeoutMsg: 'Removed legacy model still appears in the AI Models catalog' },
       );
 
-      const visibleChai = await browser.execute(() => document.body.innerText.includes('Chai-1 Local Structure'));
-      expect(visibleChai).toBe(false);
+      const visibleLegacyModel = await browser.execute(() => document.body.innerText.includes('Mock Local Model'));
+      expect(visibleLegacyModel).toBe(false);
       await expectNoVisibleRuntimeError(browser);
     },
   },
@@ -38,21 +35,21 @@ export const tests = [
       await openSandboxWorkspace(browser);
       await navigateSidebar(browser, '/ai');
 
-      await searchAIModels(browser, 'boltz2-local-structure-binding');
+      await searchAIModels(browser, 'ctheodoris-geneformer-v1-10m');
       await browser.waitUntil(
-        async () => browser.execute(() => Boolean(document.querySelector('[data-testid="ai-model-card"][data-model-id="boltz2-local-structure-binding"]'))),
-        { timeout: 10_000, timeoutMsg: 'Boltz-2 AI Model card was not found by stable selector' },
+        async () => browser.execute(() => Boolean(document.querySelector('[data-testid="ai-model-card"][data-model-id="ctheodoris-geneformer-v1-10m"]'))),
+        { timeout: 10_000, timeoutMsg: 'Geneformer Runtime Box card was not found by stable selector' },
       );
 
       const state = await browser.execute(() => {
-        const card = document.querySelector('[data-testid="ai-model-card"][data-model-id="boltz2-local-structure-binding"]');
+        const card = document.querySelector('[data-testid="ai-model-card"][data-model-id="ctheodoris-geneformer-v1-10m"]');
         return {
-          hasAction: Boolean(card?.querySelector('[data-testid="ai-model-install-button"], [data-testid="ai-model-run-button"], [data-testid="ai-model-fix-dependency-button"]')),
+          hasAction: Boolean(card?.querySelector('[data-testid="ai-model-install-button"], [data-testid="ai-model-run-button"]')),
           text: card?.textContent ?? '',
         };
       });
 
-      expect(state.text).toContain('Boltz-2');
+      expect(state.text).toContain('Geneformer');
       expect(state.hasAction).toBe(true);
       await expectNoVisibleRuntimeError(browser);
     },

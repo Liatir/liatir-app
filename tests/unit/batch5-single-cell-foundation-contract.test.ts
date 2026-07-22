@@ -1,27 +1,23 @@
 /**
  * Contract tests for the single-cell foundation models.
  *
- * They enforce that a model still being validated stays a *preview*: visible in the catalogue, honestly labelled,
- * and not installable. A model that has not been checked end to end must not be reachable by a user who would take
- * its output as scientific fact — so "cannot be installed before its runtime box is validated" is asserted rather
- * than left to discipline.
+ * They enforce that the three product models use published, signed Runtime Box distributions and
+ * remain connected to the shared Single-cell Embedding AI Tool.
  */
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   GENEFORMER_V1_10M_MODEL_ID,
-  SCFOUNDATION_100M_MODEL_ID,
   SCGPT_WHOLE_HUMAN_MODEL_ID,
   UCE_4LAYER_MODEL_ID,
-  getLocalAIModelMetadata,
+  getRuntimeBoxAIModelMetadata,
 } from '../../frontend/src/lib/ai/model-registry';
 import { artifactSpecForModelId } from '../../frontend/src/lib/ai/model-artifacts';
 import { installSvelteRuneStubs } from './support/svelte-runes';
 
 const rootDir = resolve(import.meta.dirname, '../..');
 
-const DEFERRED_BATCH5_MODEL_IDS = [SCFOUNDATION_100M_MODEL_ID];
 const publishedMacosArm64MetalTargets = (minRamGb: number) => [{
   target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
   hostEnvironments: ['native'],
@@ -55,24 +51,8 @@ const publishedGeneformerTargets = () => [
 installSvelteRuneStubs();
 
 describe('Batch 5 single-cell foundation model contract', () => {
-  it('keeps deferred Batch 5 candidates as preview models with explicit capabilities', () => {
-    for (const id of DEFERRED_BATCH5_MODEL_IDS) {
-      const model = getLocalAIModelMetadata(id);
-
-      expect(model, `${id} missing model metadata`).toBeTruthy();
-      expect(model?.category).toBe('Single-cell Foundation Models');
-      expect(model?.releaseStage).toBe('preview');
-      expect(model?.modalities).toContain('single-cell');
-      expect(model?.capabilities).toContain('single-cell-embedding');
-      expect(model?.documentation?.officialUrl, `${id} missing official source`).toMatch(/^https:\/\//);
-      expect(model?.license?.verifiedAt, `${id} missing license verification date`).toMatch(
-        /^\d{4}-\d{2}-\d{2}$/,
-      );
-    }
-  });
-
   it('uses the live signed Runtime Box distribution for Geneformer', () => {
-    const model = getLocalAIModelMetadata(GENEFORMER_V1_10M_MODEL_ID);
+    const model = getRuntimeBoxAIModelMetadata(GENEFORMER_V1_10M_MODEL_ID);
     const spec = artifactSpecForModelId(GENEFORMER_V1_10M_MODEL_ID);
     const recipe = JSON.parse(readFileSync(
       resolve(rootDir, 'runtime-boxes/recipes/geneformer-v1-10m-macos-arm64-metal/recipe.json'),
@@ -84,7 +64,6 @@ describe('Batch 5 single-cell foundation model contract', () => {
     };
 
     expect(model, 'Geneformer missing model metadata').toBeTruthy();
-    expect(model?.releaseStage).toBeUndefined();
     expect(model?.capabilities).toEqual(['single-cell-embedding']);
     expect(model?.license?.spdxId).toBe('Apache-2.0');
     expect(model?.license?.verifiedAt).toBe('2026-07-11');
@@ -99,7 +78,6 @@ describe('Batch 5 single-cell foundation model contract', () => {
       publishedTargets: publishedGeneformerTargets(),
     });
     expect(model?.install?.revision).toMatch(/^[a-f0-9]{40}$/);
-    expect(model?.install?.files).toBeUndefined();
     expect(recipe.modelId).toBe(GENEFORMER_V1_10M_MODEL_ID);
     expect(recipe.runtimeId).toBe(model?.install?.runtimeId);
     expect(recipe.assets.map((file) => file.relativePath).sort()).toEqual([
@@ -118,14 +96,12 @@ describe('Batch 5 single-cell foundation model contract', () => {
       os: ['macos', 'linux', 'windows'],
       arch: ['aarch64', 'x86_64'],
     });
-    expect(model?.install?.hostRequirements?.python).toBeUndefined();
     expect(spec?.runtimeFamily).toBe('single-cell-foundation-geneformer');
-    expect(spec?.preloadKind).toBe('managed-files');
     expect(spec?.modelFile).toBe('model/model.safetensors');
   });
 
   it('uses the live signed Runtime Box distribution for scGPT', () => {
-    const model = getLocalAIModelMetadata(SCGPT_WHOLE_HUMAN_MODEL_ID);
+    const model = getRuntimeBoxAIModelMetadata(SCGPT_WHOLE_HUMAN_MODEL_ID);
     const spec = artifactSpecForModelId(SCGPT_WHOLE_HUMAN_MODEL_ID);
     const recipe = JSON.parse(readFileSync(
       resolve(rootDir, 'runtime-boxes/recipes/scgpt-whole-human-macos-arm64-metal/recipe.json'),
@@ -138,7 +114,6 @@ describe('Batch 5 single-cell foundation model contract', () => {
     };
 
     expect(model, 'scGPT missing model metadata').toBeTruthy();
-    expect(model?.releaseStage).toBeUndefined();
     expect(model?.source).toBe('runtime-box');
     expect(model?.install?.method).toBe('runtime-box');
     expect(model?.install?.runtimeId).toBe('single-cell-foundation-scgpt-whole-human');
@@ -166,28 +141,11 @@ describe('Batch 5 single-cell foundation model contract', () => {
       arch: ['aarch64'],
     });
     expect(spec?.runtimeFamily).toBe('single-cell-foundation-scgpt');
-    expect(spec?.preloadKind).toBe('managed-files');
     expect(spec?.modelFile).toBe('best_model.pt');
   });
 
-  it('keeps deferred models paired with isolated future runtime families without enabling preload', () => {
-    const runtimeFamilies = new Set<string>();
-
-    for (const id of DEFERRED_BATCH5_MODEL_IDS) {
-      const model = getLocalAIModelMetadata(id);
-      const spec = artifactSpecForModelId(id);
-
-      expect(model?.install, `${id} must not be installable before its runtime box is validated`).toBeUndefined();
-      expect(spec, `${id} missing artifact spec`).toBeTruthy();
-      expect(spec?.preloadKind).toBe('none');
-      expect(spec?.runtimeFamily.startsWith('single-cell-foundation-')).toBe(true);
-      expect(runtimeFamilies.has(spec?.runtimeFamily ?? ''), `${id} shares a runtime family unexpectedly`).toBe(false);
-      runtimeFamilies.add(spec?.runtimeFamily ?? '');
-    }
-  });
-
   it('uses one signed Runtime Box installation path for UCE', () => {
-    const model = getLocalAIModelMetadata(UCE_4LAYER_MODEL_ID);
+    const model = getRuntimeBoxAIModelMetadata(UCE_4LAYER_MODEL_ID);
     const spec = artifactSpecForModelId(UCE_4LAYER_MODEL_ID);
     const recipe = JSON.parse(readFileSync(
       resolve(rootDir, 'runtime-boxes/recipes/uce-4layer-macos-arm64-metal/recipe.json'),
@@ -207,7 +165,6 @@ describe('Batch 5 single-cell foundation model contract', () => {
 
     expect(model, 'UCE missing model metadata').toBeTruthy();
     expect(model?.category).toBe('Single-cell Foundation Models');
-    expect(model?.releaseStage).toBeUndefined();
     expect(model?.source).toBe('runtime-box');
     expect(model?.install?.method).toBe('runtime-box');
     expect(model?.install?.runtimeId).toBe('single-cell-foundation-uce');
@@ -219,20 +176,16 @@ describe('Batch 5 single-cell foundation model contract', () => {
       registryBaseUrl: 'https://models.liatir.com/v1',
       publishedTargets: publishedMacosArm64MetalTargets(16),
     });
-    expect(model?.install?.files).toBeUndefined();
-    expect(model?.install?.runtimeSources).toBeUndefined();
     expect(model?.install?.hostRequirements).toMatchObject({
       os: ['macos'],
       arch: ['aarch64'],
     });
-    expect(model?.install?.hostRequirements?.python).toBeUndefined();
-    expect(model?.diskSizeBytes).toBe(10_142_871_337);
+    expect(model?.diskSizeBytes).toBe(10_142_864_860);
     expect(model?.license?.components?.map((component) => component.spdxId)).toEqual([
       'MIT',
       'CC-BY-4.0',
     ]);
     expect(spec?.runtimeFamily).toBe('single-cell-foundation-uce');
-    expect(spec?.preloadKind).toBe('managed-files');
     expect(spec?.modelFile).toBe('model_files/4layer_model.torch');
     expect(existsSync(resolve(rootDir, 'frontend/src/lib/ai/preloaders/uce-managed-files.ts'))).toBe(false);
     expect(recipe).toMatchObject({

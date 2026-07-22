@@ -12,7 +12,7 @@ import {
   openSandboxWorkspace,
 } from '../support/liatir-app.mjs';
 
-const DEFAULT_HEAVY_MODEL_IDS = ['instadeep-nt-v2-50m-multi-species'];
+const DEFAULT_HEAVY_MODEL_IDS = ['ctheodoris-geneformer-v1-10m'];
 
 function heavyModelIds() {
   return (process.env.LIATIR_HEAVY_AI_MODELS ?? DEFAULT_HEAVY_MODEL_IDS.join(','))

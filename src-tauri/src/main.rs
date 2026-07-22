@@ -417,8 +417,6 @@ fn main() {
       lia_managed_remove,
       lia_ai_hardware_info,
       lia_ai_runtime_status,
-      lia_ai_runtime_prepare,
-      lia_ai_runtime_remove,
       lia_ai_runtime_box_install,
       lia_ai_runtime_box_rollback,
       lia_ai_runtime_box_remove,

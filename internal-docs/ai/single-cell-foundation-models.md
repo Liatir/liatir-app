@@ -9,8 +9,9 @@ Batch 5 has three installable/runnable slices: UCE 4-layer, Geneformer V1 10M,
 and scGPT Whole-human. All three use signed Runtime Boxes. UCE's protected
 macOS arm64 release completed in run `29909249357`; Geneformer has reviewed
 production and native lifecycle evidence across macOS Metal, Linux CPU/CUDA,
-and Windows CPU; scGPT has a signed macOS arm64 box.
-scFoundation stays visible as a redistribution-blocked preview entry.
+and Windows CPU; scGPT has a signed macOS arm64 box. These three entries are
+the complete product AI Model catalog; scFoundation is not registered or
+visible.
 
 ## Official sources checked on 2026-07-02 and 2026-07-03
 
@@ -48,13 +49,13 @@ scFoundation stays visible as a redistribution-blocked preview entry.
   - source code is Apache 2.0, but checkpoint redistribution is restricted to
     non-commercial research by its separate model license;
   - 100M-parameter model family;
-  - remains blocked from a Liatir-distributed Runtime Box.
+  - remains a research note only and is absent from the product catalog.
 
 ## Runtime-box rule
 
-Do not share these runtimes with CellTypist. CellTypist is a practical
-annotation runtime; foundation models need separate boxes because package sets,
-model files, preprocessing, and output semantics differ materially.
+Do not share these runtimes. Each model has a separate signed box because
+package sets, model files, preprocessing, and output semantics differ
+materially.
 
 ## Implemented slices
 
@@ -84,7 +85,7 @@ The tool outputs:
 - intermediate UCE processing artifacts when UCE is selected;
 - metrics, values, warnings, logs, and provenance.
 
-## Required acceptance checks before enabling Install or Run
+## Required acceptance checks before adding another model
 
 - Model package install works in a clean runtime directory.
 - Model files are downloaded by Liatir, not hidden inside uncontrolled script

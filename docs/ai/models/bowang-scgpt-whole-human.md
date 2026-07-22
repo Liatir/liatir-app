@@ -1,8 +1,8 @@
 # scGPT Whole-human
 
 scGPT is a single-cell foundation model built for single-cell and multi-omics
-data. In Liatir it is tracked as a preview AI Model for future embedding,
-integration, perturbation, and gene-network workflows.
+data. Liatir currently exposes the Whole-human checkpoint for local cell
+embeddings.
 
 ## What it does
 
@@ -12,13 +12,9 @@ reference mapping, batch correction, and perturbation hypotheses.
 
 ## Current status in Liatir
 
-This model is visible as a preview. Liatir documents the model and keeps its
-metadata in the AI Model registry, but install and run controls are not enabled
-yet.
-
-The next step is a managed environment that can install the model, download a
-selected checkpoint, validate AnnData inputs, and write embeddings with full
-provenance.
+scGPT is published as a signed macOS arm64 Metal Runtime Box on the beta
+channel. Liatir installs the complete tested environment and records the exact
+box release in Results provenance.
 
 ## Expected inputs
 
@@ -35,9 +31,9 @@ provenance.
 
 ## Hardware and installation
 
-Small examples may load on CPU, but practical foundation-model workflows should
-use a GPU. scGPT is heavy, so it installs in its own isolated environment and is
-never added to the base app.
+The current product target is Apple silicon with Metal. The model and its
+dependencies live inside the Runtime Box and are never added to the base app or
+the system Python.
 
 ## Official source
 

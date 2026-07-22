@@ -41,14 +41,14 @@ AI has three separate layers:
 
 - AI Model: installable local model/runtime asset.
 - AI Tool: pipeline capability that uses compatible AI Models.
-- AI runtime: isolated environment, usually a Python virtual environment under
+- AI runtime: a signed, isolated Runtime Box under
   `data/ai-runtimes/<runtimeId>`.
 
-The model registry describes install metadata. The artifact registry describes
-runtime family, upstream model id, preload strategy, and loader behavior. Tools
-must consume these registries rather than duplicating model identifiers.
+The model registry describes signed Runtime Box metadata. The artifact registry
+describes runtime family and model entry assets. Tools must consume these
+registries rather than duplicating model identifiers.
 
-For managed AI runtimes:
+For AI Model runtimes:
 
 - every installable model must have an artifact spec;
 - every managed runtime must have `runtimeId`, `runtimePackages`, and
@@ -56,9 +56,9 @@ For managed AI runtimes:
 - a shared `runtimeId` is allowed only when package and host requirements are
   identical;
 - scripts should live with the tool/family that owns them;
-- preload behavior should be strategy-based, not a long manual switch.
+- every catalog entry must expose at least one published native target.
 
-Heavy production runtimes use the signed AI Runtime Box distribution path:
+All product AI runtimes use the signed AI Runtime Box distribution path:
 
 - immutable ZIP archive with standalone Python, exact hash-locked packages,
   model assets, and build provenance;
@@ -75,20 +75,12 @@ The Worker never proxies large runtime archives. Local development uses the
 same format through `npm run runtime-box -- build|verify|serve`; production adds
 `publish` and authenticated `promote` operations.
 
-Regulatory genomics follows this model:
-
-- Enformer uses `regulatory-enformer` and a TensorFlow Hub preload strategy.
-- Basenji2 human uses `regulatory-basenji2-human` and managed upstream files.
-- Borzoi Mini K562 RNA-seq uses `regulatory-borzoi-mini-k562-rna` and managed
-  upstream files.
-
-They all communicate through `ai-regulatory-prediction`, but their packages,
-Python requirements, cache payloads, and failure boundaries stay separate.
+The former locally built and direct-download AI runtime strategies were removed
+on 2026-07-22. Future model families must not restore them.
 
 ## Heavy boxes
 
-Large scientific systems such as Enformer, Basenji, Borzoi, OpenMM, or advanced
-protein design stacks should be added as dedicated boxes:
+Large scientific systems should be added only as dedicated Runtime Boxes:
 
 - separate runtime id;
 - separate package set;

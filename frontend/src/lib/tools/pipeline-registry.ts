@@ -7,13 +7,7 @@ import { bwaMemDefinition, parseBwaMemStats, bwaMemToToolOutput } from './alignm
 import { minimap2Definition, parseMinimap2Stats, minimap2ToToolOutput } from './alignment/minimap2';
 import { bcftoolsStatsDefinition, bcftoolsFilterDefinition, parseBcftoolsStats, bcftoolsStatsToToolOutput } from './variants/bcftools';
 import { snpeffDefinition, parseSnpEffStats, buildSnpEffOutput } from './variants/snpeff';
-import { mockAIInferenceDefinition, runMockAIInferenceStep } from './ai/mock-inference';
-import { celltypistAnnotateDefinition, runCelltypistAnnotateStep } from './ai/celltypist-annotate';
-import { sequenceEmbeddingDefinition, runSequenceEmbeddingStep } from './ai/sequence-embedding';
 import { singleCellEmbeddingDefinition, runSingleCellEmbeddingStep } from './ai/single-cell-embedding';
-import { genomicVariantEffectDefinition, runGenomicVariantEffectStep } from './ai/genomic-variant-effect';
-import { regulatoryPredictionDefinition, runRegulatoryPredictionStep } from './ai/regulatory-prediction';
-import { proteinStructureDefinition, runProteinStructureStep } from './ai/protein-structure';
 import {
   genomeViewerDefinition,
   runGenomeViewerStep,
@@ -465,13 +459,7 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
   'bcftools-stats':     { definition: bcftoolsStatsDefinition,     run: runBcftoolsStatsStep },
   'bcftools-filter':    { definition: bcftoolsFilterDefinition,    run: runBcftoolsFilterStep },
   'snpeff':             { definition: snpeffDefinition,            run: runSnpeffStep },
-  'ai-mock-inference':  { definition: mockAIInferenceDefinition,   run: runMockAIInferenceStep },
-  'ai-celltypist-annotate': { definition: celltypistAnnotateDefinition, run: runCelltypistAnnotateStep },
-  'ai-sequence-embedding': { definition: sequenceEmbeddingDefinition, run: runSequenceEmbeddingStep },
   'ai-single-cell-embedding': { definition: singleCellEmbeddingDefinition, run: runSingleCellEmbeddingStep },
-  'ai-genomic-variant-effect': { definition: genomicVariantEffectDefinition, run: runGenomicVariantEffectStep },
-  'ai-regulatory-prediction': { definition: regulatoryPredictionDefinition, run: runRegulatoryPredictionStep },
-  'ai-protein-structure': { definition: proteinStructureDefinition, run: runProteinStructureStep },
   'viewer-structure-3d': { definition: structureViewerDefinition, run: runStructureViewerStep },
   'viewer-genome-track': { definition: genomeViewerDefinition, run: runGenomeViewerStep },
   'viewer-single-cell': { definition: singleCellViewerDefinition, run: runSingleCellViewerStep },

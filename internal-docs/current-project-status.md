@@ -1,8 +1,7 @@
 # Current project status
 
 Last updated: 2026-07-22 (Runtime Box CI foundation Gates 0–10 are complete;
-final protected Gate 9 release run `29909249357` passed at `8e12512`, and the
-Gate 10 evidence-backed operational handoff is locally verified).
+the product AI Model catalog has been cut over to Runtime Box-only delivery).
 
 This file is the quick handoff snapshot. The canonical detailed plans are:
 
@@ -19,9 +18,32 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
 ## Where the project is
 
 Phase 1 of the Scientific AI Workbench plan is complete: the Runtime Box CI
-foundation has closed Gates 0 through 10. The next Runtime Box work is the
-separate product-level cross-version update and client-persisted anti-replay
-state, followed by the common execution spine in Phase 2.
+foundation has closed Gates 0 through 10. Product-level Runtime Box work now
+has two explicit tracks: cross-version update with client-persisted anti-replay
+state, and cross-platform expansion of the current model catalog before new
+model families are admitted. The common execution spine follows in Phase 2.
+
+**Runtime Box-only product cutover (2026-07-22):** the AI Model catalog now
+contains exactly Geneformer V1 10M, scGPT Whole-human, and UCE 4-layer. Every
+entry is installed only from a signed, published Runtime Box. The former
+`builtin`, `managed-download`, and locally built `managed-runtime` AI Model
+paths, their preloaders, the mock model/tool, and model-specific Tools for the
+removed experimental models have been deleted. The remaining product AI Tool
+is Single-cell Embedding, shared by all three published models. Generic managed
+binary and Python-environment infrastructure remains only where it is still
+used by Native Tools, viewers, Plugins, or Runtime Box execution.
+
+**Cross-platform product policy (2026-07-22):** every AI Model must ultimately
+ship on every native product target where its license, framework, and hardware
+requirements make execution reasonably possible. A missing recipe or unstarted
+validation is support debt, not an exception. Genuine exceptions require an
+evidenced upstream or infrastructure blocker and honest compatibility messaging.
+Under this rule Geneformer has completed the current macOS Metal, Linux
+CPU/CUDA, and Windows CPU matrix; scGPT and UCE are useful pre-release catalog
+entries but are not cross-platform complete. Their Linux CPU/CUDA and Windows
+CPU Runtime Boxes must be built, published, and product-validated. Windows CUDA
+remains a shared infrastructure blocker under the existing no-dispatch decision,
+not a claim that the models themselves can never support it.
 
 Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
 
@@ -217,13 +239,19 @@ first).
 
 ## Next steps
 
-1. Close the true cross-version Runtime Box update and client-persisted signed
+1. Close scGPT and UCE parity on Linux CPU/CUDA and Windows CPU, one target at a
+   time and only after the complete cheap local gate; keep Windows CUDA under
+   the existing no-dispatch decision until its runner re-entry conditions hold.
+2. Close the true cross-version Runtime Box update and client-persisted signed
    anti-replay state as product work, not as an unclosed foundation gate.
-2. Continue with the common execution spine in Phase 2 after that bounded
+3. Continue with the common execution spine in Phase 2 after that bounded
    Runtime Box product work.
-3. Do not dispatch another Gate 9 UCE release; the on-demand runner remains
+4. Do not add another model family to the pre-release catalog until current
+   model parity is closed and its code, weights, and assets pass an exact legal
+   review. The candidate classification lives in `roadmap/ai-batches.md`.
+5. Do not dispatch another Gate 9 UCE release; the on-demand runner remains
    offline unless a separately reviewed future heavy build requires it.
-4. Do not dispatch Windows CUDA on the current hosted runner. Reconsider it only
+6. Do not dispatch Windows CUDA on the current hosted runner. Reconsider it only
    under the explicit re-entry conditions recorded in the canonical ledger.
 
 ## Standing constraints

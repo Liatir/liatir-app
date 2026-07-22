@@ -120,7 +120,7 @@ execution foundation, but some product claims are ahead of their evidence.
 | Pipeline execution | Per-pipeline runtime identity, Jobs, cancellation, and exactly-once Results are verified | Reuse this path for every new adapter and AI Tool |
 | Plugins | Build contracts are verified; native Node/WASM lifecycle coverage is incomplete | Close parity before treating every runtime as equally production-ready |
 | API Connector | Saved requests and pipeline integration exist but native execution evidence is incomplete | Validate it as another first-class node type |
-| AI Models and AI Tools | Batches 1–4 are implemented but not fully scientifically validated; Batch 5 is partial | Validate existing capabilities before adding new families |
+| AI Models and AI Tools | Runtime Box-only catalog with Geneformer, scGPT, and UCE plus the shared Single-cell Embedding Tool; legacy and mock integrations were removed on 2026-07-22 | Complete the common execution spine and product update guarantees before adding another family |
 | Runtime Box distribution | Live signed distribution; cross-platform CI foundation Gates 0–10 complete with reviewed evidence on macOS Metal, Linux CPU/CUDA, and Windows CPU | Close the separate cross-version update and client anti-replay product gaps before widening scope |
 | Scientific viewers | Protein, genome, and single-cell surfaces exist but need native visual/runtime validation | Make viewer completion part of each scientific vertical |
 | Artifact semantics | Files have paths, extensions, media types, producer, parent run, and lifecycle role; scientific meaning is not yet a versioned compatibility contract | Add semantic profiles without replacing original formats |
@@ -349,14 +349,14 @@ Work:
 
 1. make `.h5ad` validation explicit about matrix shape, layer, feature
    identifiers, organism, preprocessing assumptions, and mutation policy;
-2. present CellTypist, Geneformer, UCE, and scGPT through capability-oriented AI
-   Tools rather than a collection of unrelated model pages;
+2. present Geneformer, UCE, and scGPT through the shared Single-cell Embedding
+   Tool rather than unrelated model-specific execution paths;
 3. retain model-specific expert controls and exact model provenance;
 4. validate each supported model one at a time with realistic bounded fixtures;
 5. complete native single-cell viewer coverage and artifact handoff;
 6. provide one useful no-code preset only after the individual nodes pass;
-7. keep scFoundation unavailable unless a legally valid product path is
-   approved; do not present user-supplied weights as an automatic legal fix.
+7. add no additional model until a legally valid, signed Runtime Box product
+   path is approved and validated.
 
 Exit criteria:
 
@@ -448,10 +448,11 @@ VCF plus reference context
   -> report or downstream filter
 ```
 
-Validate the already implemented Nucleotide Transformer, Enformer, Basenji2,
-and Borzoi paths before adding another genomics family. Each integration must
-make reference build, sequence window, target index, preprocessing, and output
-meaning explicit.
+The earlier Nucleotide Transformer, Enformer, Basenji2, and Borzoi product
+integrations were removed during the Runtime Box-only cutover. A future
+predictive-genomics family must start from a new Runtime Box plan and make
+reference build, sequence window, target index, preprocessing, and output
+meaning explicit before entering the product catalog.
 
 #### Protein structure and binding
 
@@ -466,9 +467,9 @@ Protein sequence plus optional ligand
   -> downstream analysis or report
 ```
 
-Validate Boltz-2 on supported targets before widening the model set. Keep
-hardware- or license-incompatible candidates unavailable rather than presenting
-them as nominally integrated.
+The earlier Boltz-2 and Chai product integrations were removed during the
+Runtime Box-only cutover. A future structure model must first obtain a legal,
+target-specific Runtime Box and full scientific/product lifecycle evidence.
 
 Each vertical exits only when it has:
 

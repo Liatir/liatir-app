@@ -41,11 +41,7 @@ model-specific context.
 
 | AI Tool | Description |
 | --- | --- |
-| [CellTypist Annotation](/ai/tools/celltypist-annotation) | Single-cell cell-type labels from `.h5ad` inputs |
-| [Sequence Embedding](/ai/tools/sequence-embedding) | DNA/RNA/protein sequence embeddings |
-| [Genomic Variant Effect](/ai/tools/genomic-variant-effect) | Embedding-delta scores for variants |
-| [Regulatory Prediction](/ai/tools/regulatory-prediction) | Predicted regulatory signal tracks |
-| [Protein Structure Prediction](/ai/tools/protein-structure-prediction) | Protein 3D structure prediction |
+| [Single-cell Embedding](/ai/tools/single-cell-embedding) | Foundation-model cell embeddings from `.h5ad` inputs |
 
 Start with [Local AI for bioinformatics](/ai/guide) if you are new to these
 outputs.

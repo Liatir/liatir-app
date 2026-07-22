@@ -69,10 +69,7 @@ failed so you can fix the input or settings and run again.
 
 Example AI pipelines:
 
-- `.h5ad` file to [CellTypist Annotation](/ai/tools/celltypist-annotation) to label summary.
-- FASTA plus VCF to [Genomic Variant Effect](/ai/tools/genomic-variant-effect) to BED track.
-- DNA window to [Regulatory Prediction](/ai/tools/regulatory-prediction) to genome viewer.
-- Protein FASTA to [Protein Structure Prediction](/ai/tools/protein-structure-prediction) to 3D viewer.
+- `.h5ad` file to [Single-cell Embedding](/ai/tools/single-cell-embedding) to an embedded AnnData artifact and viewer.
 
 Read [Local AI for bioinformatics](/ai/guide) before interpreting AI outputs.
 

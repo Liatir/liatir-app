@@ -17,7 +17,7 @@ import type {
 } from "@liatir/core";
 import {
   BUILT_IN_NATIVE_TOOLS,
-  BUILT_IN_AI_MODEL_REGISTRY,
+  RUNTIME_BOX_AI_MODEL_REGISTRY,
   nativeTool,
   aiModel,
   liaPlugin,
@@ -339,11 +339,11 @@ export const tools = Object.fromEntries(
 ) as Record<string, LiatirToolRef>;
 
 /**
- * Typed references for AI models (scGPT, Enformer, etc.).
+ * Typed references for Runtime Box AI Models (Geneformer, scGPT, and UCE).
  * Use with `jobs.spawn(models.scgpt, args)` for type-safe model invocation.
  */
 export const models = Object.fromEntries(
-  BUILT_IN_AI_MODEL_REGISTRY.map((m) => [m.id, aiModel(m.id)])
+  RUNTIME_BOX_AI_MODEL_REGISTRY.map((m) => [m.id, aiModel(m.id)])
 ) as Record<string, LiatirToolRef>;
 
 /** Create a ToolRef for a .lia plugin by name. */

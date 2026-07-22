@@ -5,7 +5,7 @@ used by Liatir.
 
 ## Use it for
 
-- inspecting CellTypist label distributions;
+- inspecting single-cell embedding previews;
 - checking single-cell output artifacts before deeper visualization;
 - getting a quick look before richer interactive views.
 
@@ -16,12 +16,12 @@ used by Liatir.
 
 ## How to read the result
 
-Start with label counts and obvious outliers. If a label distribution looks
-unexpected, check the input preprocessing and CellTypist reference model.
+Start with cell counts, embedding dimensions, and obvious outliers. If a result
+looks unexpected, check input preprocessing, gene identifiers, and species.
 
 This viewer is a practical preview. Full interactive single-cell and spatial
 visualization is planned.
 
 ## Related tools
 
-- [CellTypist Annotation](/ai/tools/celltypist-annotation)
+- [Single-cell Embedding](/ai/tools/single-cell-embedding)

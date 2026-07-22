@@ -356,19 +356,12 @@ export interface LiatirExecutionResult {
 }
 
 export type LiatirAIModelRuntimeKind =
-  | "mock"
   | "python-venv"
   | "llama-cpp"
   | "onnx"
   | "transformers-js"
   | "custom";
-export type LiatirAIModelSource =
-  | "builtin"
-  | "local-file"
-  | "local-directory"
-  | "managed-download"
-  | "managed-runtime"
-  | "runtime-box";
+export type LiatirAIModelSource = "runtime-box";
 export type LiatirAIModelStatus =
   | "available"
   | "installed"
@@ -450,26 +443,14 @@ export interface LiatirAIModelHardwareRequirements {
 }
 
 export interface LiatirAIModelInstallSpec {
-  method: LiatirAIModelSource;
-  path?: string;
-  urls?: string[];
-  files?: LiatirAIModelInstallFile[];
-  runtimeId?: string;
+  method: "runtime-box";
+  runtimeId: string;
   runtimePackages?: LiatirAIModelRuntimePackage[];
-  runtimeSources?: LiatirAIModelRuntimeSource[];
-  runtimeBox?: import("./runtime-box").LiatirAIModelRuntimeBoxInstall;
-  modelCacheSubdir?: string;
-  /** Immutable upstream model/source revision, when the runtime downloads from a versioned hub. */
+  runtimeBox: import("./runtime-box").LiatirAIModelRuntimeBoxInstall;
+  modelCacheSubdir: string;
+  /** Immutable upstream model/source revision included in the Runtime Box. */
   revision?: string;
   hostRequirements?: LiatirAIModelHostRequirements;
-  checksum?: string;
-}
-
-export interface LiatirAIModelInstallFile {
-  url: string;
-  relativePath: string;
-  sizeBytes?: number;
-  sha256?: string;
 }
 
 export interface LiatirAIModelRuntimePackage {
@@ -482,6 +463,7 @@ export interface LiatirAIModelRuntimePackage {
 
 export interface LiatirAIModelRuntimePackageInstallOptions extends LiatirPythonRuntimePackageInstallOptions {}
 
+/** Lock metadata for generic managed Python environments, including `.lia` plugin runtimes. */
 export interface LiatirPythonRuntimeLockedPackage {
   package: string;
   importName?: string;
@@ -511,20 +493,9 @@ export interface LiatirPythonRuntimeLock {
   updatedAtMs: number;
 }
 
-export interface LiatirAIModelRuntimeSource {
-  url: string;
-  revision?: string;
-  relativePath: string;
-  pythonPath?: boolean;
-}
-
-export interface LiatirAIModelPythonRequirement extends LiatirPythonRequirement {}
-
 export interface LiatirAIModelHostRequirements {
   os?: string[];
   arch?: string[];
-  requiresCuda?: boolean;
-  python?: LiatirAIModelPythonRequirement;
   reason?: string;
 }
 
@@ -535,9 +506,6 @@ export interface LiatirAIModelDocumentation {
   officialUrl?: string;
   paperUrl?: string;
 }
-
-export type LiatirAIModelCatalogVisibility = "visible" | "hidden";
-export type LiatirAIModelReleaseStage = "ready" | "preview";
 
 export interface LiatirAIModelMetadata {
   id: string;
@@ -557,13 +525,8 @@ export interface LiatirAIModelMetadata {
   diskSizeBytes?: number;
   license?: LiatirAIModelLicense;
   hardware?: LiatirAIModelHardwareRequirements;
-  install?: LiatirAIModelInstallSpec;
+  install: LiatirAIModelInstallSpec;
   documentation?: LiatirAIModelDocumentation;
-  /** Preview models are visible for roadmap/docs but are not installable or runnable yet. */
-  releaseStage?: LiatirAIModelReleaseStage;
-  /** Hidden models remain implemented but are not exposed in normal product surfaces. */
-  catalogVisibility?: LiatirAIModelCatalogVisibility;
-  catalogHiddenReason?: string;
   tags?: string[];
 }
 
@@ -578,8 +541,6 @@ export interface LiatirAIModelRecord extends LiatirAIModelMetadata {
   runtimeSizeBytes?: number;
   /** Bytes used by model cache/weights inside the runtime box, when measured separately. */
   cacheSizeBytes?: number;
-  /** Runtime dependency lock captured after preparation/install. */
-  runtimeLock?: LiatirPythonRuntimeLock;
   /** Signed Runtime Box release and the native target selected for this installation. */
   runtimeBoxActivation?: import("./runtime-box").LiatirRuntimeBoxActivationMetadata;
   enabled?: boolean;
@@ -605,7 +566,6 @@ export interface LiatirAIProvenance {
   runtimeKind: LiatirAIModelRuntimeKind;
   runtimeName: string;
   runtimeVersion?: string | null;
-  runtimeLock?: LiatirPythonRuntimeLock | null;
   /** Present when execution used a prebuilt signed Runtime Box. */
   runtimeBoxActivation?: import("./runtime-box").LiatirRuntimeBoxActivationMetadata | null;
   localOnly: boolean;

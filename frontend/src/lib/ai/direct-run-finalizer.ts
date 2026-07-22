@@ -25,22 +25,6 @@ import { aiModelsStore } from '$lib/stores/aiModels.svelte';
 import { analysisRuns, type RunOutputFile } from '$lib/stores/analysisRuns.svelte';
 import { jobsStore, type JobBufferedOutput, type JobEntry } from '$lib/stores/jobs.svelte';
 import {
-	celltypistAnnotateDefinition,
-	finalizeCelltypistAnnotateResult
-} from '$lib/tools/ai/celltypist-annotate';
-import {
-	proteinStructureDefinition,
-	finalizeProteinStructureResult
-} from '$lib/tools/ai/protein-structure';
-import {
-	regulatoryPredictionDefinition,
-	finalizeRegulatoryPredictionResult
-} from '$lib/tools/ai/regulatory-prediction';
-import {
-	sequenceEmbeddingDefinition,
-	finalizeSequenceEmbeddingResult
-} from '$lib/tools/ai/sequence-embedding';
-import {
 	singleCellEmbeddingDefinition,
 	finalizeSingleCellEmbeddingResult
 } from '$lib/tools/ai/single-cell-embedding';
@@ -118,20 +102,8 @@ async function finalizeToolResult(
 	result: AIPythonRunResult,
 	onLog: (line: string) => void
 ): Promise<FinalizedAIToolResult> {
-	if (toolId === celltypistAnnotateDefinition.id) {
-		return await finalizeCelltypistAnnotateResult(model, params, result, onLog);
-	}
-	if (toolId === sequenceEmbeddingDefinition.id) {
-		return await finalizeSequenceEmbeddingResult(model, params, result, onLog);
-	}
 	if (toolId === singleCellEmbeddingDefinition.id) {
 		return await finalizeSingleCellEmbeddingResult(model, params, result, onLog);
-	}
-	if (toolId === regulatoryPredictionDefinition.id) {
-		return await finalizeRegulatoryPredictionResult(model, params, result, onLog);
-	}
-	if (toolId === proteinStructureDefinition.id) {
-		return await finalizeProteinStructureResult(model, params, result, onLog);
 	}
 	throw new Error(`Unsupported AI Tool finalizer: ${toolId}`);
 }

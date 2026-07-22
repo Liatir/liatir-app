@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BUILT_IN_AI_MODEL_REGISTRY,
+  RUNTIME_BOX_AI_MODEL_REGISTRY,
   GENEFORMER_V1_10M_MODEL_ID,
-  getLocalAIModelMetadata,
+  getRuntimeBoxAIModelMetadata,
 } from '../../packages/liatir-core/src/ai-catalog';
 import type {
   LiatirAIModelMetadata,
@@ -18,7 +18,7 @@ import {
   modelInstallBlock,
 } from '../../frontend/src/lib/ai/model-compatibility';
 
-const baseModel = getLocalAIModelMetadata(GENEFORMER_V1_10M_MODEL_ID)!;
+const baseModel = getRuntimeBoxAIModelMetadata(GENEFORMER_V1_10M_MODEL_ID)!;
 
 function modelWithTargets(
   publishedTargets: readonly LiatirRuntimeBoxTargetCandidate[],
@@ -49,7 +49,6 @@ function hardware(
     appleMetal: os === 'macos',
     cudaAvailable: nvidiaDriverVersion ? true : null,
     nvidiaDriverVersion: nvidiaDriverVersion ?? null,
-    pythonCandidates: [],
   };
 }
 
@@ -183,7 +182,7 @@ describe('Runtime Box native target selection', () => {
   });
 
   it('keeps every installable Runtime Box model tied to at least one published target', () => {
-    const runtimeBoxModels = BUILT_IN_AI_MODEL_REGISTRY.filter(
+    const runtimeBoxModels = RUNTIME_BOX_AI_MODEL_REGISTRY.filter(
       (model) => model.install?.method === 'runtime-box',
     );
     expect(runtimeBoxModels.length).toBeGreaterThan(0);

@@ -3,208 +3,72 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "1ae662de51f0c559854a01eb984cc28b2a21ccd3ca672e1fc3a54804e71e9445";
+export const QUENTA_DOCS_SEED_HASH = "18701c35c0f7eea4903a3efee93acfeb2ac9913091553d7db65fa2d5cf693a61";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
     "id": "docs:ai/guide",
     "sourceKind": "documentation",
-    "title": "AI Models for bioinformatics",
+    "title": "Local AI for bioinformatics",
     "locator": "Docs / Ai / Guide",
-    "excerpt": "This guide explains the AI part of Liatir without assuming that you already know single-cell analysis, genomic language models, regulatory prediction, or protein structure prediction. Liatir uses AI locally. That means model runtimes are installed on your mac…",
-    "content": "This guide explains the AI part of Liatir without assuming that you already know\nsingle-cell analysis, genomic language models, regulatory prediction, or protein\nstructure prediction.\n\nLiatir uses AI locally. That means model runtimes are installed on your machine,\nyour input files stay on your machine, and runs are recorded in Jobs, Results,\nand provenance just like other tools.\n\n[Quenta](/ai/quenta) is separate from AI Tools: it explains,\nguides, and creates cited reports from local context, but it cannot run\npipelines, tools, models, Plugins, or API requests.\n\n![Liatir local AI workflow](/static/ai-local-workflow.svg)"
+    "excerpt": "Liatir runs supported scientific AI Models locally through signed Runtime Boxes. A Runtime Box contains the model weights, Python interpreter, packages, and Liatir runner that were tested together. Liatir does not install model packages into your system Pytho…",
+    "content": "Liatir runs supported scientific AI Models locally through signed Runtime Boxes.\nA Runtime Box contains the model weights, Python interpreter, packages, and\nLiatir runner that were tested together. Liatir does not install model packages\ninto your system Python."
   },
   {
-    "id": "docs:ai/guide#the-three-pieces",
+    "id": "docs:ai/guide#ai-models-and-ai-tools",
     "sourceKind": "documentation",
-    "title": "AI Models for bioinformatics — The three pieces",
-    "locator": "Docs / Ai / Guide / The three pieces",
-    "excerpt": "The three pieces ### AI Models An AI Model is the local engine: the downloaded model weights and everything needed to run them, installed in their own isolated environment on your machine. Examples: - CellTypist Local Annotation. - Nucleotide Transformer v2 5…",
-    "content": "The three pieces\n### AI Models\n\nAn AI Model is the local engine: the downloaded model weights and everything\nneeded to run them, installed in their own isolated environment on your machine.\n\nExamples:\n\n- CellTypist Local Annotation.\n- Nucleotide Transformer v2 50M or 500M.\n- ESM-2 8M Protein.\n- Enformer, Basenji2, or Borzoi Mini.\n- Geneformer V1 10M.\n- UCE 4-layer.\n- Boltz-2.\n\n### AI Tools\n\nAn AI Tool is the actual task you run. It asks you for files and settings, then\nuses a compatible AI Model.\n\nExamples:\n\n- CellTypist Annotation uses the CellTypist AI Model.\n- Sequence Embedding can use Nucleotide Transformer or ESM-2.\n- Single-cell Embedding uses Geneformer V1 10M or UCE 4-layer.\n- Genomic Variant Effect uses Nucleotide Transformer models.\n- Regulatory Prediction uses Enformer, Basenji2, or Borzoi Mini.\n- Protein Structure Prediction uses Boltz-2.\n\n### Results\n\nResults are the output of one run. They can include:\n\n- readable tables and metrics;\n- CSV and JSON files;\n- embeddings;\n- BED genome tracks;\n- PDB or mmCIF protein structures;\n- warnings;\n- logs;\n- provenance.\n\nProvenance is important. It tells you which model, version, runtime, input files,\nparameters, and output files were used."
+    "title": "Local AI for bioinformatics — AI Models and AI Tools",
+    "locator": "Docs / Ai / Guide / AI Models and AI Tools",
+    "excerpt": "AI Models and AI Tools An **AI Model** is the packaged scientific model. An **AI Tool** is the task that sends an input to a compatible installed model and turns its output into Jobs, Results, files, and provenance. The current product catalog contains: | AI…",
+    "content": "AI Models and AI Tools\nAn **AI Model** is the packaged scientific model. An **AI Tool** is the task\nthat sends an input to a compatible installed model and turns its output into\nJobs, Results, files, and provenance.\n\nThe current product catalog contains:\n\n| AI Model | Current published targets | Main use |\n| --- | --- | --- |\n| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | macOS arm64 Metal, Linux x86_64 CPU/CUDA, Windows x86_64 CPU | human single-cell embeddings |\n| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | macOS arm64 Metal | human single-cell embeddings |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | macOS arm64 Metal | multi-species single-cell embeddings |\n\nThe current AI Tool is [Single-cell Embedding](/ai/tools/single-cell-embedding).\nNo other AI Model or AI Tool is available until it has its own reviewed,\npublished Runtime Box path."
   },
   {
-    "id": "docs:ai/guide#what-each-ai-workflow-is-for",
+    "id": "docs:ai/guide#installation",
     "sourceKind": "documentation",
-    "title": "AI Models for bioinformatics — What each AI workflow is for",
-    "locator": "Docs / Ai / Guide / What each AI workflow is for",
-    "excerpt": "What each AI workflow is for | Workflow | Use it when | Typical input | Typical output | | --- | --- | --- | --- | | Single-cell annotation | You have cells and want likely cell-type labels | `.h5ad` AnnData | labels, label counts, summary | | Single-cell emb…",
-    "content": "What each AI workflow is for\n| Workflow | Use it when | Typical input | Typical output |\n| --- | --- | --- | --- |\n| Single-cell annotation | You have cells and want likely cell-type labels | `.h5ad` AnnData | labels, label counts, summary |\n| Single-cell embedding | You want foundation-model cell vectors for comparison or downstream analysis | `.h5ad` AnnData | embedded AnnData, embedding preview, summary |\n| Sequence embedding | You want a numeric representation of DNA, RNA, or protein sequences | FASTA or pasted sequence | embedding table, dimensions, summary |\n| Variant effect scoring | You want a first local signal for which variants change sequence representation | FASTA + VCF/VCF.GZ | scores, BED track, warnings |\n| Regulatory prediction | You want predicted genomic signal tracks from DNA sequence windows | FASTA or pasted DNA, optional VCF | signal track, variant deltas |\n| Protein structure prediction | You want a predicted 3D protein structure | protein FASTA or sequence | mmCIF/PDB, confidence, optional binding outputs |"
+    "title": "Local AI for bioinformatics — Installation",
+    "locator": "Docs / Ai / Guide / Installation",
+    "excerpt": "Installation 1. Open **AI Models**. 2. Choose a model compatible with the detected computer. 3. Select **Install**. 4. Liatir downloads the target-specific Runtime Box, verifies its signature and hashes, and activates it atomically. 5. The installed model bec…",
+    "content": "Installation\n1. Open **AI Models**.\n2. Choose a model compatible with the detected computer.\n3. Select **Install**.\n4. Liatir downloads the target-specific Runtime Box, verifies its signature and\n   hashes, and activates it atomically.\n5. The installed model becomes available to direct runs and pipelines.\n\nAI Models are installed once per device and are available to all workspaces.\nRemoving a model removes its activated Runtime Box and reclaims its disk space."
   },
   {
-    "id": "docs:ai/guide#how-to-read-results",
+    "id": "docs:ai/guide#input-requirements",
     "sourceKind": "documentation",
-    "title": "AI Models for bioinformatics — How to read results",
-    "locator": "Docs / Ai / Guide / How to read results",
-    "excerpt": "How to read results ### Labels Labels are categories predicted by a model. For example, CellTypist may label cells as T cells, B cells, monocytes, or other cell types. High confidence does not mean the label is biologically final. It means the model found a s…",
-    "content": "How to read results\n### Labels\n\nLabels are categories predicted by a model. For example, CellTypist may label\ncells as T cells, B cells, monocytes, or other cell types.\n\nHigh confidence does not mean the label is biologically final. It means the\nmodel found a strong match according to its reference. If your tissue, species,\nassay, or preprocessing differs from the model reference, labels can be wrong.\n\n### Embeddings\n\nAn embedding is a vector: a list of numbers that represents a biological input.\n\nYou usually do not read every number manually. You use embeddings to compare,\ncluster, visualize, or feed another tool. Similar embeddings often mean similar\nmodel representations, not guaranteed biological identity.\n\n### Variant effect scores\n\nLiatir's current Nucleotide Transformer variant score compares the embedding of\nthe reference sequence window with the embedding of the alternate sequence\nwindow.\n\nThe score is useful for prioritization and exploration. It is not a clinical\npathogenicity label. A higher score means the model representation changed more,\nnot automatically that the variant is harmful.\n\n### Regulatory tracks\n\nRegulatory prediction models output signal across bins in a sequence window.\nLiatir writes those signals as CSV and BED so they can be inspected as genome\ntracks.\n\nThe `targetIndex` selects which model output track to inspect. Start with index\n`0` for a basic test. For serious interpretation, you need to know what the\ntarget represents.\n\n### Protein structures\n\nProtein structure tools produce a 3D structure file. Confidence and binding\nvalues help you judge whether the run looks plausible, but predicted structures\nstill need scientific review.\n\nIf a run completes without a structure file, Liatir treats that as a failed\nscientific output."
+    "title": "Local AI for bioinformatics — Input requirements",
+    "locator": "Docs / Ai / Guide / Input requirements",
+    "excerpt": "Input requirements All three models accept AnnData `.h5ad` files with raw scRNA-seq counts in `.X`, but gene identifiers differ: - Geneformer is human-only and expects Ensembl IDs in `var[\"ensembl_id\"]` or `var_names`. - scGPT is human-only and expects gene s…",
+    "content": "Input requirements\nAll three models accept AnnData `.h5ad` files with raw scRNA-seq counts in\n`.X`, but gene identifiers differ:\n\n- Geneformer is human-only and expects Ensembl IDs in `var[\"ensembl_id\"]` or\n  `var_names`.\n- scGPT is human-only and expects gene symbols in `var[\"gene_name\"]`,\n  `var[\"feature_name\"]`, or `var_names`.\n- UCE supports the species listed in its run form and expects gene symbols in\n  `var_names`."
   },
   {
-    "id": "docs:ai/guide#good-first-tests",
+    "id": "docs:ai/guide#outputs",
     "sourceKind": "documentation",
-    "title": "AI Models for bioinformatics — Good first tests",
-    "locator": "Docs / Ai / Guide / Good first tests",
-    "excerpt": "Good first tests Start small: 1. Install CellTypist and run a small `.h5ad` demo. 2. Install Nucleotide Transformer 50M and run Sequence Embedding on a short FASTA. 3. Install Geneformer V1 10M or UCE 4-layer and run Single-cell Embedding on a small compatibl…",
-    "content": "Good first tests\nStart small:\n\n1. Install CellTypist and run a small `.h5ad` demo.\n2. Install Nucleotide Transformer 50M and run Sequence Embedding on a short\n   FASTA.\n3. Install Geneformer V1 10M or UCE 4-layer and run Single-cell Embedding on a\n   small compatible `.h5ad` demo.\n4. Run Genomic Variant Effect on the demo FASTA and VCF.\n5. Install one regulatory model and run Regulatory Prediction with `targetIndex\n   = 0` and a low `maxVariants`.\n6. Run Boltz-2 on a short protein sequence and inspect the generated structure.\n\nAvoid starting with large files, many variants, or high sample counts until you\nknow the workflow is healthy."
+    "title": "Local AI for bioinformatics — Outputs",
+    "locator": "Docs / Ai / Guide / Outputs",
+    "excerpt": "Outputs A successful run creates: - an embedded AnnData file; - a lightweight CSV preview; - a JSON summary; - model-specific intermediate artifacts when required; - Runtime Box provenance identifying the exact box release and native target. The embedded AnnD…",
+    "content": "Outputs\nA successful run creates:\n\n- an embedded AnnData file;\n- a lightweight CSV preview;\n- a JSON summary;\n- model-specific intermediate artifacts when required;\n- Runtime Box provenance identifying the exact box release and native target.\n\nThe embedded AnnData file is the main scientific artifact. An embedding is a\nnumeric representation for comparison, clustering, visualization, or later\nanalysis; it is not a final biological conclusion."
   },
   {
-    "id": "docs:ai/guide#building-useful-pipelines",
+    "id": "docs:ai/guide#hardware-support",
     "sourceKind": "documentation",
-    "title": "AI Models for bioinformatics — Building useful pipelines",
-    "locator": "Docs / Ai / Guide / Building useful pipelines",
-    "excerpt": "Building useful pipelines ### Single-cell Use: 1. AnnData `.h5ad` input. 2. CellTypist Annotation. 3. Single-cell Embedding with Geneformer V1 10M or UCE 4-layer when you need foundation-model vectors. 4. Results table or single-cell preview. 5. Later, richer…",
-    "content": "Building useful pipelines\n### Single-cell\n\nUse:\n\n1. AnnData `.h5ad` input.\n2. CellTypist Annotation.\n3. Single-cell Embedding with Geneformer V1 10M or UCE 4-layer when you need\n   foundation-model vectors.\n4. Results table or single-cell preview.\n5. Later, richer interactive single-cell views.\n\n### Genomic variants\n\nUse:\n\n1. Reference FASTA.\n2. Variant VCF or VCF.GZ.\n3. Genomic Variant Effect or Regulatory Prediction.\n4. BED track output.\n5. Genome viewer.\n\n### Protein structure\n\nUse:\n\n1. Protein FASTA or pasted sequence.\n2. Protein Structure Prediction with Boltz-2.\n3. 3D viewer.\n4. Report or exported structure file."
+    "title": "Local AI for bioinformatics — Hardware support",
+    "locator": "Docs / Ai / Guide / Hardware support",
+    "excerpt": "Hardware support Liatir installs only a published target that exactly matches the operating system, architecture, accelerator, memory, and driver constraints. CUDA support is currently validated only on Linux. Windows CUDA is not a supported target.",
+    "content": "Hardware support\nLiatir installs only a published target that exactly matches the operating\nsystem, architecture, accelerator, memory, and driver constraints. CUDA support\nis currently validated only on Linux. Windows CUDA is not a supported target."
   },
   {
-    "id": "docs:ai/guide#red-flags",
+    "id": "docs:ai/guide#related-pages",
     "sourceKind": "documentation",
-    "title": "AI Models for bioinformatics — Red flags",
-    "locator": "Docs / Ai / Guide / Red flags",
-    "excerpt": "Red flags Be careful when: - the input file format is not the one the tool expects; - a single-cell matrix is raw counts when the model expects normalized data; - a single-cell matrix is normalized when the model expects raw counts; - VCF `REF` bases do not m…",
-    "content": "Red flags\nBe careful when:\n\n- the input file format is not the one the tool expects;\n- a single-cell matrix is raw counts when the model expects normalized data;\n- a single-cell matrix is normalized when the model expects raw counts;\n- VCF `REF` bases do not match the selected FASTA;\n- a regulatory model uses an unknown `targetIndex`;\n- CPU runtime takes much longer than expected;\n- a result has warnings that you have not read;\n- provenance does not match the model or input you intended to run."
-  },
-  {
-    "id": "docs:ai/guide#where-to-go-next",
-    "sourceKind": "documentation",
-    "title": "AI Models for bioinformatics — Where to go next",
-    "locator": "Docs / Ai / Guide / Where to go next",
-    "excerpt": "Where to go next - [AI Models](/ai/models/overview) - [AI Tools](/ai/tools/overview) - [Pipelines](/pipeline/overview) - [Data](/data/overview)",
-    "content": "Where to go next\n- [AI Models](/ai/models/overview)\n- [AI Tools](/ai/tools/overview)\n- [Pipelines](/pipeline/overview)\n- [Data](/data/overview)"
-  },
-  {
-    "id": "docs:ai/models/biomap-scfoundation-100m",
-    "sourceKind": "documentation",
-    "title": "scFoundation 100M",
-    "locator": "Docs / Ai / Models / Biomap Scfoundation 100m",
-    "excerpt": "scFoundation is a large single-cell foundation model candidate for expression representation and downstream cell-state analysis.",
-    "content": "scFoundation is a large single-cell foundation model candidate for expression\nrepresentation and downstream cell-state analysis."
-  },
-  {
-    "id": "docs:ai/models/biomap-scfoundation-100m#what-it-does",
-    "sourceKind": "documentation",
-    "title": "scFoundation 100M — What it does",
-    "locator": "Docs / Ai / Models / Biomap Scfoundation 100m / What it does",
-    "excerpt": "What it does scFoundation is designed to learn from large-scale single-cell expression data. In Liatir it is tracked as a future option for embeddings and related single-cell analysis workflows.",
-    "content": "What it does\nscFoundation is designed to learn from large-scale single-cell expression data.\nIn Liatir it is tracked as a future option for embeddings and related\nsingle-cell analysis workflows."
-  },
-  {
-    "id": "docs:ai/models/biomap-scfoundation-100m#current-status-in-liatir",
-    "sourceKind": "documentation",
-    "title": "scFoundation 100M — Current status in Liatir",
-    "locator": "Docs / Ai / Models / Biomap Scfoundation 100m / Current status in Liatir",
-    "excerpt": "Current status in Liatir This model is visible as a preview. Liatir does not expose install or run controls yet because the runtime, checkpoint management, and output validation need a dedicated implementation.",
-    "content": "Current status in Liatir\nThis model is visible as a preview. Liatir does not expose install or run\ncontrols yet because the runtime, checkpoint management, and output validation\nneed a dedicated implementation."
-  },
-  {
-    "id": "docs:ai/models/biomap-scfoundation-100m#expected-inputs",
-    "sourceKind": "documentation",
-    "title": "scFoundation 100M — Expected inputs",
-    "locator": "Docs / Ai / Models / Biomap Scfoundation 100m / Expected inputs",
-    "excerpt": "Expected inputs - Single-cell expression matrix or AnnData `.h5ad` file. - Gene metadata. - Optional cell metadata for downstream analysis.",
-    "content": "Expected inputs\n- Single-cell expression matrix or AnnData `.h5ad` file.\n- Gene metadata.\n- Optional cell metadata for downstream analysis."
-  },
-  {
-    "id": "docs:ai/models/biomap-scfoundation-100m#expected-outputs",
-    "sourceKind": "documentation",
-    "title": "scFoundation 100M — Expected outputs",
-    "locator": "Docs / Ai / Models / Biomap Scfoundation 100m / Expected outputs",
-    "excerpt": "Expected outputs - Cell embeddings or model representations. - Summary tables. - Provenance linked to the exact model and parameters.",
-    "content": "Expected outputs\n- Cell embeddings or model representations.\n- Summary tables.\n- Provenance linked to the exact model and parameters."
-  },
-  {
-    "id": "docs:ai/models/biomap-scfoundation-100m#hardware-and-installation",
-    "sourceKind": "documentation",
-    "title": "scFoundation 100M — Hardware and installation",
-    "locator": "Docs / Ai / Models / Biomap Scfoundation 100m / Hardware and installation",
-    "excerpt": "Hardware and installation This is a large model family. It installs as a separate, optional environment and is never bundled into the base app.",
-    "content": "Hardware and installation\nThis is a large model family. It installs as a separate, optional environment\nand is never bundled into the base app."
-  },
-  {
-    "id": "docs:ai/models/biomap-scfoundation-100m#official-source",
-    "sourceKind": "documentation",
-    "title": "scFoundation 100M — Official source",
-    "locator": "Docs / Ai / Models / Biomap Scfoundation 100m / Official source",
-    "excerpt": "Official source - [scFoundation on GitHub](https://github.com/biomap-research/scFoundation)",
-    "content": "Official source\n- [scFoundation on GitHub](https://github.com/biomap-research/scFoundation)"
-  },
-  {
-    "id": "docs:ai/models/boltz2-local-structure-binding",
-    "sourceKind": "documentation",
-    "title": "Boltz-2 Local Structure & Binding",
-    "locator": "Docs / Ai / Models / Boltz2 Local Structure Binding",
-    "excerpt": "Boltz-2 is a local structure prediction and binding-oriented model. In Liatir it is used for protein structure prediction and optional protein-ligand affinity workflows.",
-    "content": "Boltz-2 is a local structure prediction and binding-oriented model. In Liatir it\nis used for protein structure prediction and optional protein-ligand affinity\nworkflows."
-  },
-  {
-    "id": "docs:ai/models/boltz2-local-structure-binding#what-it-does",
-    "sourceKind": "documentation",
-    "title": "Boltz-2 Local Structure & Binding — What it does",
-    "locator": "Docs / Ai / Models / Boltz2 Local Structure Binding / What it does",
-    "excerpt": "What it does Boltz-2 takes protein sequence input and predicts a structure file. When ligand inputs and the selected options support it, it can also produce binding-related outputs.",
-    "content": "What it does\nBoltz-2 takes protein sequence input and predicts a structure file. When ligand\ninputs and the selected options support it, it can also produce binding-related\noutputs."
-  },
-  {
-    "id": "docs:ai/models/boltz2-local-structure-binding#when-to-use-it",
-    "sourceKind": "documentation",
-    "title": "Boltz-2 Local Structure & Binding — When to use it",
-    "locator": "Docs / Ai / Models / Boltz2 Local Structure Binding / When to use it",
-    "excerpt": "When to use it Use Boltz-2 when you want a local protein structure prediction workflow that can feed directly into Liatir structure viewers and reports.",
-    "content": "When to use it\nUse Boltz-2 when you want a local protein structure prediction workflow that can\nfeed directly into Liatir structure viewers and reports."
-  },
-  {
-    "id": "docs:ai/models/boltz2-local-structure-binding#inputs-in-liatir",
-    "sourceKind": "documentation",
-    "title": "Boltz-2 Local Structure & Binding — Inputs in Liatir",
-    "locator": "Docs / Ai / Models / Boltz2 Local Structure Binding / Inputs in Liatir",
-    "excerpt": "Inputs in Liatir - Protein FASTA/FAA file, or an inline protein sequence. - Optional ligand SMILES or CCD identifier. - Prediction options such as output format, recycling steps, diffusion samples, MSA server use, and accelerator choice.",
-    "content": "Inputs in Liatir\n- Protein FASTA/FAA file, or an inline protein sequence.\n- Optional ligand SMILES or CCD identifier.\n- Prediction options such as output format, recycling steps, diffusion samples,\n  MSA server use, and accelerator choice."
-  },
-  {
-    "id": "docs:ai/models/boltz2-local-structure-binding#outputs",
-    "sourceKind": "documentation",
-    "title": "Boltz-2 Local Structure & Binding — Outputs",
-    "locator": "Docs / Ai / Models / Boltz2 Local Structure Binding / Outputs",
-    "excerpt": "Outputs Liatir can produce: - PDB or mmCIF structure files when prediction succeeds; - confidence and binding metadata where available; - logs and runtime warnings; - viewer-compatible artifacts; - provenance with model, runtime, input, parameters, and output…",
-    "content": "Outputs\nLiatir can produce:\n\n- PDB or mmCIF structure files when prediction succeeds;\n- confidence and binding metadata where available;\n- logs and runtime warnings;\n- viewer-compatible artifacts;\n- provenance with model, runtime, input, parameters, and output files."
-  },
-  {
-    "id": "docs:ai/models/boltz2-local-structure-binding#hardware-and-installation",
-    "sourceKind": "documentation",
-    "title": "Boltz-2 Local Structure & Binding — Hardware and installation",
-    "locator": "Docs / Ai / Models / Boltz2 Local Structure Binding / Hardware and installation",
-    "excerpt": "Hardware and installation Boltz-2 can be installed for CPU-only use, but CPU inference can take a long time. CUDA GPU inference is strongly preferred for serious use. Liatir installs Boltz-2 in an isolated managed Python runtime. The runtime currently require…",
-    "content": "Hardware and installation\nBoltz-2 can be installed for CPU-only use, but CPU inference can take a long\ntime. CUDA GPU inference is strongly preferred for serious use.\n\nLiatir installs Boltz-2 in an isolated managed Python runtime. The runtime\ncurrently requires Python 3.10, 3.11, or 3.12."
-  },
-  {
-    "id": "docs:ai/models/boltz2-local-structure-binding#limits-and-cautions",
-    "sourceKind": "documentation",
-    "title": "Boltz-2 Local Structure & Binding — Limits and cautions",
-    "locator": "Docs / Ai / Models / Boltz2 Local Structure Binding / Limits and cautions",
-    "excerpt": "Limits and cautions Structure prediction can be slow and resource-heavy. A completed run without a structure file is treated as an error in Liatir because the main scientific artifact is missing. Predicted structures and affinities should be interpreted caref…",
-    "content": "Limits and cautions\nStructure prediction can be slow and resource-heavy. A completed run without a\nstructure file is treated as an error in Liatir because the main scientific\nartifact is missing.\n\nPredicted structures and affinities should be interpreted carefully and, where\nimportant, validated with additional methods.\n\nThe structure file is the main artifact. If a run produces logs but no PDB or\nmmCIF file, the scientific output is incomplete."
-  },
-  {
-    "id": "docs:ai/models/boltz2-local-structure-binding#official-source",
-    "sourceKind": "documentation",
-    "title": "Boltz-2 Local Structure & Binding — Official source",
-    "locator": "Docs / Ai / Models / Boltz2 Local Structure Binding / Official source",
-    "excerpt": "Official source - [Boltz on GitHub](https://github.com/jwohlwend/boltz)",
-    "content": "Official source\n- [Boltz on GitHub](https://github.com/jwohlwend/boltz)"
-  },
-  {
-    "id": "docs:ai/models/boltz2-local-structure-binding#related-tool",
-    "sourceKind": "documentation",
-    "title": "Boltz-2 Local Structure & Binding — Related tool",
-    "locator": "Docs / Ai / Models / Boltz2 Local Structure Binding / Related tool",
-    "excerpt": "Related tool - [Protein Structure Prediction](/ai/tools/protein-structure-prediction)",
-    "content": "Related tool\n- [Protein Structure Prediction](/ai/tools/protein-structure-prediction)"
+    "title": "Local AI for bioinformatics — Related pages",
+    "locator": "Docs / Ai / Guide / Related pages",
+    "excerpt": "Related pages - [AI Models](/ai/models/overview) - [AI Tools](/ai/tools/overview) - [Single-cell Viewer](/visualization/single-cell-viewer)",
+    "content": "Related pages\n- [AI Models](/ai/models/overview)\n- [AI Tools](/ai/tools/overview)\n- [Single-cell Viewer](/visualization/single-cell-viewer)"
   },
   {
     "id": "docs:ai/models/bowang-scgpt-whole-human",
     "sourceKind": "documentation",
     "title": "scGPT Whole-human",
     "locator": "Docs / Ai / Models / Bowang Scgpt Whole Human",
-    "excerpt": "scGPT is a single-cell foundation model built for single-cell and multi-omics data. In Liatir it is tracked as a preview AI Model for future embedding, integration, perturbation, and gene-network workflows.",
-    "content": "scGPT is a single-cell foundation model built for single-cell and multi-omics\ndata. In Liatir it is tracked as a preview AI Model for future embedding,\nintegration, perturbation, and gene-network workflows."
+    "excerpt": "scGPT is a single-cell foundation model built for single-cell and multi-omics data. Liatir currently exposes the Whole-human checkpoint for local cell embeddings.",
+    "content": "scGPT is a single-cell foundation model built for single-cell and multi-omics\ndata. Liatir currently exposes the Whole-human checkpoint for local cell\nembeddings."
   },
   {
     "id": "docs:ai/models/bowang-scgpt-whole-human#what-it-does",
@@ -219,8 +83,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "scGPT Whole-human — Current status in Liatir",
     "locator": "Docs / Ai / Models / Bowang Scgpt Whole Human / Current status in Liatir",
-    "excerpt": "Current status in Liatir This model is visible as a preview. Liatir documents the model and keeps its metadata in the AI Model registry, but install and run controls are not enabled yet. The next step is a managed environment that can install the model, downl…",
-    "content": "Current status in Liatir\nThis model is visible as a preview. Liatir documents the model and keeps its\nmetadata in the AI Model registry, but install and run controls are not enabled\nyet.\n\nThe next step is a managed environment that can install the model, download a\nselected checkpoint, validate AnnData inputs, and write embeddings with full\nprovenance."
+    "excerpt": "Current status in Liatir scGPT is published as a signed macOS arm64 Metal Runtime Box on the beta channel. Liatir installs the complete tested environment and records the exact box release in Results provenance.",
+    "content": "Current status in Liatir\nscGPT is published as a signed macOS arm64 Metal Runtime Box on the beta\nchannel. Liatir installs the complete tested environment and records the exact\nbox release in Results provenance."
   },
   {
     "id": "docs:ai/models/bowang-scgpt-whole-human#expected-inputs",
@@ -243,8 +107,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "scGPT Whole-human — Hardware and installation",
     "locator": "Docs / Ai / Models / Bowang Scgpt Whole Human / Hardware and installation",
-    "excerpt": "Hardware and installation Small examples may load on CPU, but practical foundation-model workflows should use a GPU. scGPT is heavy, so it installs in its own isolated environment and is never added to the base app.",
-    "content": "Hardware and installation\nSmall examples may load on CPU, but practical foundation-model workflows should\nuse a GPU. scGPT is heavy, so it installs in its own isolated environment and is\nnever added to the base app."
+    "excerpt": "Hardware and installation The current product target is Apple silicon with Metal. The model and its dependencies live inside the Runtime Box and are never added to the base app or the system Python.",
+    "content": "Hardware and installation\nThe current product target is Apple silicon with Metal. The model and its\ndependencies live inside the Runtime Box and are never added to the base app or\nthe system Python."
   },
   {
     "id": "docs:ai/models/bowang-scgpt-whole-human#official-source",
@@ -253,294 +117,6 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "locator": "Docs / Ai / Models / Bowang Scgpt Whole Human / Official source",
     "excerpt": "Official source - [scGPT on GitHub](https://github.com/bowang-lab/scGPT)",
     "content": "Official source\n- [scGPT on GitHub](https://github.com/bowang-lab/scGPT)"
-  },
-  {
-    "id": "docs:ai/models/calico-basenji2-human-regulatory",
-    "sourceKind": "documentation",
-    "title": "Basenji2 Human Regulatory",
-    "locator": "Docs / Ai / Models / Calico Basenji2 Human Regulatory",
-    "excerpt": "Basenji2 predicts regulatory activity from DNA sequence using a convolutional TensorFlow model trained on human regulatory targets.",
-    "content": "Basenji2 predicts regulatory activity from DNA sequence using a convolutional\nTensorFlow model trained on human regulatory targets."
-  },
-  {
-    "id": "docs:ai/models/calico-basenji2-human-regulatory#what-it-does",
-    "sourceKind": "documentation",
-    "title": "Basenji2 Human Regulatory — What it does",
-    "locator": "Docs / Ai / Models / Calico Basenji2 Human Regulatory / What it does",
-    "excerpt": "What it does Liatir uses the official Calico Basenji2 human model files to predict regulatory signal from a DNA window. With a VCF file, it can compare reference and alternate windows for focused variant-effect exploration.",
-    "content": "What it does\nLiatir uses the official Calico Basenji2 human model files to predict regulatory\nsignal from a DNA window. With a VCF file, it can compare reference and\nalternate windows for focused variant-effect exploration."
-  },
-  {
-    "id": "docs:ai/models/calico-basenji2-human-regulatory#when-to-use-it",
-    "sourceKind": "documentation",
-    "title": "Basenji2 Human Regulatory — When to use it",
-    "locator": "Docs / Ai / Models / Calico Basenji2 Human Regulatory / When to use it",
-    "excerpt": "When to use it Use Basenji2 when you want a managed local regulatory model that is lighter than very large long-context stacks and you are working with human regulatory sequence examples.",
-    "content": "When to use it\nUse Basenji2 when you want a managed local regulatory model that is lighter than\nvery large long-context stacks and you are working with human regulatory\nsequence examples."
-  },
-  {
-    "id": "docs:ai/models/calico-basenji2-human-regulatory#inputs-in-liatir",
-    "sourceKind": "documentation",
-    "title": "Basenji2 Human Regulatory — Inputs in Liatir",
-    "locator": "Docs / Ai / Models / Calico Basenji2 Human Regulatory / Inputs in Liatir",
-    "excerpt": "Inputs in Liatir - Reference FASTA/FA/FNA file, or an inline DNA sequence. - Optional VCF or VCF.GZ file. - Output head: `Human`. - Target index. - Maximum variants to score.",
-    "content": "Inputs in Liatir\n- Reference FASTA/FA/FNA file, or an inline DNA sequence.\n- Optional VCF or VCF.GZ file.\n- Output head: `Human`.\n- Target index.\n- Maximum variants to score."
-  },
-  {
-    "id": "docs:ai/models/calico-basenji2-human-regulatory#outputs",
-    "sourceKind": "documentation",
-    "title": "Basenji2 Human Regulatory — Outputs",
-    "locator": "Docs / Ai / Models / Calico Basenji2 Human Regulatory / Outputs",
-    "excerpt": "Outputs Liatir writes: - regulatory signal CSV; - BED signal track; - optional variant score CSV and BED track; - JSON summary; - Results panels and provenance.",
-    "content": "Outputs\nLiatir writes:\n\n- regulatory signal CSV;\n- BED signal track;\n- optional variant score CSV and BED track;\n- JSON summary;\n- Results panels and provenance."
-  },
-  {
-    "id": "docs:ai/models/calico-basenji2-human-regulatory#hardware-and-installation",
-    "sourceKind": "documentation",
-    "title": "Basenji2 Human Regulatory — Hardware and installation",
-    "locator": "Docs / Ai / Models / Calico Basenji2 Human Regulatory / Hardware and installation",
-    "excerpt": "Hardware and installation Liatir installs Basenji2 in its own isolated environment and downloads the official human model weights for you. CPU runs are possible for small tests. GPU acceleration is preferred for larger or repeated workflows.",
-    "content": "Hardware and installation\nLiatir installs Basenji2 in its own isolated environment and downloads the\nofficial human model weights for you.\n\nCPU runs are possible for small tests. GPU acceleration is preferred for larger\nor repeated workflows."
-  },
-  {
-    "id": "docs:ai/models/calico-basenji2-human-regulatory#limits-and-cautions",
-    "sourceKind": "documentation",
-    "title": "Basenji2 Human Regulatory — Limits and cautions",
-    "locator": "Docs / Ai / Models / Calico Basenji2 Human Regulatory / Limits and cautions",
-    "excerpt": "Limits and cautions The first Liatir integration exposes a practical target-index workflow. It does not yet include a friendly target-label browser, so target index `0` is the default starting point. Treat signal tracks as model predictions. They are useful f…",
-    "content": "Limits and cautions\nThe first Liatir integration exposes a practical target-index workflow. It does\nnot yet include a friendly target-label browser, so target index `0` is the\ndefault starting point.\n\nTreat signal tracks as model predictions. They are useful for comparing windows\nand variants, but they are not direct measurements from an experiment."
-  },
-  {
-    "id": "docs:ai/models/calico-basenji2-human-regulatory#official-source",
-    "sourceKind": "documentation",
-    "title": "Basenji2 Human Regulatory — Official source",
-    "locator": "Docs / Ai / Models / Calico Basenji2 Human Regulatory / Official source",
-    "excerpt": "Official source - [Calico Basenji cross2020 models](https://github.com/calico/basenji/tree/master/manuscripts/cross2020)",
-    "content": "Official source\n- [Calico Basenji cross2020 models](https://github.com/calico/basenji/tree/master/manuscripts/cross2020)"
-  },
-  {
-    "id": "docs:ai/models/calico-basenji2-human-regulatory#related-tool",
-    "sourceKind": "documentation",
-    "title": "Basenji2 Human Regulatory — Related tool",
-    "locator": "Docs / Ai / Models / Calico Basenji2 Human Regulatory / Related tool",
-    "excerpt": "Related tool - [Regulatory Prediction](/ai/tools/regulatory-prediction)",
-    "content": "Related tool\n- [Regulatory Prediction](/ai/tools/regulatory-prediction)"
-  },
-  {
-    "id": "docs:ai/models/calico-borzoi-mini-k562-rna",
-    "sourceKind": "documentation",
-    "title": "Borzoi Mini K562 RNA-seq",
-    "locator": "Docs / Ai / Models / Calico Borzoi Mini K562 Rna",
-    "excerpt": "Borzoi predicts RNA-seq-like signal from long DNA sequence windows. Liatir starts with the official Mini Borzoi K562 RNA-seq model because it is a smaller managed entry point into the Borzoi family.",
-    "content": "Borzoi predicts RNA-seq-like signal from long DNA sequence windows. Liatir starts\nwith the official Mini Borzoi K562 RNA-seq model because it is a smaller managed\nentry point into the Borzoi family."
-  },
-  {
-    "id": "docs:ai/models/calico-borzoi-mini-k562-rna#what-it-does",
-    "sourceKind": "documentation",
-    "title": "Borzoi Mini K562 RNA-seq — What it does",
-    "locator": "Docs / Ai / Models / Calico Borzoi Mini K562 Rna / What it does",
-    "excerpt": "What it does The model reads a long genomic sequence window and predicts a K562 RNA-seq signal. With an optional VCF file, Liatir compares reference and alternate windows to estimate signal changes for selected variants.",
-    "content": "What it does\nThe model reads a long genomic sequence window and predicts a K562 RNA-seq\nsignal. With an optional VCF file, Liatir compares reference and alternate\nwindows to estimate signal changes for selected variants."
-  },
-  {
-    "id": "docs:ai/models/calico-borzoi-mini-k562-rna#when-to-use-it",
-    "sourceKind": "documentation",
-    "title": "Borzoi Mini K562 RNA-seq — When to use it",
-    "locator": "Docs / Ai / Models / Calico Borzoi Mini K562 Rna / When to use it",
-    "excerpt": "When to use it Use this model when you want to explore RNA-seq signal prediction from DNA sequence with a managed local Borzoi runtime.",
-    "content": "When to use it\nUse this model when you want to explore RNA-seq signal prediction from DNA\nsequence with a managed local Borzoi runtime."
-  },
-  {
-    "id": "docs:ai/models/calico-borzoi-mini-k562-rna#inputs-in-liatir",
-    "sourceKind": "documentation",
-    "title": "Borzoi Mini K562 RNA-seq — Inputs in Liatir",
-    "locator": "Docs / Ai / Models / Calico Borzoi Mini K562 Rna / Inputs in Liatir",
-    "excerpt": "Inputs in Liatir - Reference FASTA/FA/FNA file, or an inline DNA sequence. - Optional VCF or VCF.GZ file. - Output head: `Human`. - Target index. - Maximum variants to score.",
-    "content": "Inputs in Liatir\n- Reference FASTA/FA/FNA file, or an inline DNA sequence.\n- Optional VCF or VCF.GZ file.\n- Output head: `Human`.\n- Target index.\n- Maximum variants to score."
-  },
-  {
-    "id": "docs:ai/models/calico-borzoi-mini-k562-rna#outputs",
-    "sourceKind": "documentation",
-    "title": "Borzoi Mini K562 RNA-seq — Outputs",
-    "locator": "Docs / Ai / Models / Calico Borzoi Mini K562 Rna / Outputs",
-    "excerpt": "Outputs Liatir writes: - predicted signal CSV; - BED signal track; - optional variant score CSV and BED track; - JSON summary; - Results panels and provenance.",
-    "content": "Outputs\nLiatir writes:\n\n- predicted signal CSV;\n- BED signal track;\n- optional variant score CSV and BED track;\n- JSON summary;\n- Results panels and provenance."
-  },
-  {
-    "id": "docs:ai/models/calico-borzoi-mini-k562-rna#hardware-and-installation",
-    "sourceKind": "documentation",
-    "title": "Borzoi Mini K562 RNA-seq — Hardware and installation",
-    "locator": "Docs / Ai / Models / Calico Borzoi Mini K562 Rna / Hardware and installation",
-    "excerpt": "Hardware and installation Borzoi uses very long input windows. Liatir installs it in its own isolated environment and downloads the official Mini Borzoi K562 RNA-seq weights for you. CPU can run small checks, but GPU is strongly preferred.",
-    "content": "Hardware and installation\nBorzoi uses very long input windows. Liatir installs it in its own isolated\nenvironment and downloads the official Mini Borzoi K562 RNA-seq weights for you.\n\nCPU can run small checks, but GPU is strongly preferred."
-  },
-  {
-    "id": "docs:ai/models/calico-borzoi-mini-k562-rna#limits-and-cautions",
-    "sourceKind": "documentation",
-    "title": "Borzoi Mini K562 RNA-seq — Limits and cautions",
-    "locator": "Docs / Ai / Models / Calico Borzoi Mini K562 Rna / Limits and cautions",
-    "excerpt": "Limits and cautions This is a focused Mini Borzoi model, not the full multi-replicate Borzoi stack. Use it to validate workflows and explore K562 RNA-seq signal prediction before moving to larger Borzoi runs. Because this model is K562-focused, interpret outp…",
-    "content": "Limits and cautions\nThis is a focused Mini Borzoi model, not the full multi-replicate Borzoi stack.\nUse it to validate workflows and explore K562 RNA-seq signal prediction before\nmoving to larger Borzoi runs.\n\nBecause this model is K562-focused, interpret outputs as a model-specific signal\nexample rather than a universal regulatory prediction for every tissue or cell\ntype."
-  },
-  {
-    "id": "docs:ai/models/calico-borzoi-mini-k562-rna#official-source",
-    "sourceKind": "documentation",
-    "title": "Borzoi Mini K562 RNA-seq — Official source",
-    "locator": "Docs / Ai / Models / Calico Borzoi Mini K562 Rna / Official source",
-    "excerpt": "Official source - [Calico Borzoi repository](https://github.com/calico/borzoi)",
-    "content": "Official source\n- [Calico Borzoi repository](https://github.com/calico/borzoi)"
-  },
-  {
-    "id": "docs:ai/models/calico-borzoi-mini-k562-rna#related-tool",
-    "sourceKind": "documentation",
-    "title": "Borzoi Mini K562 RNA-seq — Related tool",
-    "locator": "Docs / Ai / Models / Calico Borzoi Mini K562 Rna / Related tool",
-    "excerpt": "Related tool - [Regulatory Prediction](/ai/tools/regulatory-prediction)",
-    "content": "Related tool\n- [Regulatory Prediction](/ai/tools/regulatory-prediction)"
-  },
-  {
-    "id": "docs:ai/models/celltypist-local-annotation",
-    "sourceKind": "documentation",
-    "title": "CellTypist Local Annotation",
-    "locator": "Docs / Ai / Models / Celltypist Local Annotation",
-    "excerpt": "CellTypist helps annotate single-cell RNA-seq datasets by comparing cells to trained reference models. In Liatir, it is used for local `.h5ad` / AnnData workflows.",
-    "content": "CellTypist helps annotate single-cell RNA-seq datasets by comparing cells to\ntrained reference models. In Liatir, it is used for local `.h5ad` / AnnData\nworkflows."
-  },
-  {
-    "id": "docs:ai/models/celltypist-local-annotation#what-it-does",
-    "sourceKind": "documentation",
-    "title": "CellTypist Local Annotation — What it does",
-    "locator": "Docs / Ai / Models / Celltypist Local Annotation / What it does",
-    "excerpt": "What it does CellTypist takes an AnnData file and predicts likely cell labels. It can also apply majority voting to smooth labels across nearby cells when that option is enabled.",
-    "content": "What it does\nCellTypist takes an AnnData file and predicts likely cell labels. It can also\napply majority voting to smooth labels across nearby cells when that option is\nenabled."
-  },
-  {
-    "id": "docs:ai/models/celltypist-local-annotation#when-to-use-it",
-    "sourceKind": "documentation",
-    "title": "CellTypist Local Annotation — When to use it",
-    "locator": "Docs / Ai / Models / Celltypist Local Annotation / When to use it",
-    "excerpt": "When to use it Use this model when you have a single-cell dataset and want a first-pass cell type annotation. It is useful for exploration, quality checks, and preparing a dataset for deeper single-cell analysis.",
-    "content": "When to use it\nUse this model when you have a single-cell dataset and want a first-pass cell\ntype annotation. It is useful for exploration, quality checks, and preparing a\ndataset for deeper single-cell analysis."
-  },
-  {
-    "id": "docs:ai/models/celltypist-local-annotation#inputs-in-liatir",
-    "sourceKind": "documentation",
-    "title": "CellTypist Local Annotation — Inputs in Liatir",
-    "locator": "Docs / Ai / Models / Celltypist Local Annotation / Inputs in Liatir",
-    "excerpt": "Inputs in Liatir - AnnData `.h5ad` file. - CellTypist model name, such as `Immune_All_Low.pkl`. - Optional majority voting. CellTypist expects normalized single-cell expression data. If the matrix is raw counts, the run may fail or produce misleading labels.",
-    "content": "Inputs in Liatir\n- AnnData `.h5ad` file.\n- CellTypist model name, such as `Immune_All_Low.pkl`.\n- Optional majority voting.\n\nCellTypist expects normalized single-cell expression data. If the matrix is raw\ncounts, the run may fail or produce misleading labels."
-  },
-  {
-    "id": "docs:ai/models/celltypist-local-annotation#outputs",
-    "sourceKind": "documentation",
-    "title": "CellTypist Local Annotation — Outputs",
-    "locator": "Docs / Ai / Models / Celltypist Local Annotation / Outputs",
-    "excerpt": "Outputs Liatir can produce: - predicted labels; - confidence-like scores where available; - CSV/JSON summaries; - output provenance with model, parameters, input file, and runtime metadata.",
-    "content": "Outputs\nLiatir can produce:\n\n- predicted labels;\n- confidence-like scores where available;\n- CSV/JSON summaries;\n- output provenance with model, parameters, input file, and runtime metadata."
-  },
-  {
-    "id": "docs:ai/models/celltypist-local-annotation#how-to-interpret-results",
-    "sourceKind": "documentation",
-    "title": "CellTypist Local Annotation — How to interpret results",
-    "locator": "Docs / Ai / Models / Celltypist Local Annotation / How to interpret results",
-    "excerpt": "How to interpret results Read the label distribution first. If the top label covers nearly all cells, check whether that matches the biology of the dataset. CellTypist labels are reference-based suggestions. A wrong tissue, species, assay, or preprocessing me…",
-    "content": "How to interpret results\nRead the label distribution first. If the top label covers nearly all cells,\ncheck whether that matches the biology of the dataset.\n\nCellTypist labels are reference-based suggestions. A wrong tissue, species,\nassay, or preprocessing method can produce confident but misleading labels."
-  },
-  {
-    "id": "docs:ai/models/celltypist-local-annotation#hardware-and-installation",
-    "sourceKind": "documentation",
-    "title": "CellTypist Local Annotation — Hardware and installation",
-    "locator": "Docs / Ai / Models / Celltypist Local Annotation / Hardware and installation",
-    "excerpt": "Hardware and installation CellTypist runs on CPU and does not require a GPU. Memory use depends mostly on the size of the AnnData matrix. Liatir installs CellTypist in an isolated managed Python runtime.",
-    "content": "Hardware and installation\nCellTypist runs on CPU and does not require a GPU. Memory use depends mostly on\nthe size of the AnnData matrix.\n\nLiatir installs CellTypist in an isolated managed Python runtime."
-  },
-  {
-    "id": "docs:ai/models/celltypist-local-annotation#limits-and-cautions",
-    "sourceKind": "documentation",
-    "title": "CellTypist Local Annotation — Limits and cautions",
-    "locator": "Docs / Ai / Models / Celltypist Local Annotation / Limits and cautions",
-    "excerpt": "Limits and cautions Cell annotation depends on the reference model. A label can be wrong if the dataset, species, tissue, assay, or preprocessing does not match the reference well. Treat the result as an annotation aid, not as a final biological claim.",
-    "content": "Limits and cautions\nCell annotation depends on the reference model. A label can be wrong if the\ndataset, species, tissue, assay, or preprocessing does not match the reference\nwell. Treat the result as an annotation aid, not as a final biological claim."
-  },
-  {
-    "id": "docs:ai/models/celltypist-local-annotation#official-source",
-    "sourceKind": "documentation",
-    "title": "CellTypist Local Annotation — Official source",
-    "locator": "Docs / Ai / Models / Celltypist Local Annotation / Official source",
-    "excerpt": "Official source - [CellTypist on GitHub](https://github.com/Teichlab/celltypist)",
-    "content": "Official source\n- [CellTypist on GitHub](https://github.com/Teichlab/celltypist)"
-  },
-  {
-    "id": "docs:ai/models/celltypist-local-annotation#related-tool",
-    "sourceKind": "documentation",
-    "title": "CellTypist Local Annotation — Related tool",
-    "locator": "Docs / Ai / Models / Celltypist Local Annotation / Related tool",
-    "excerpt": "Related tool - [CellTypist Annotation](/ai/tools/celltypist-annotation)",
-    "content": "Related tool\n- [CellTypist Annotation](/ai/tools/celltypist-annotation)"
-  },
-  {
-    "id": "docs:ai/models/chai1-local-structure",
-    "sourceKind": "documentation",
-    "title": "Chai-1 Local Structure",
-    "locator": "Docs / Ai / Models / Chai1 Local Structure",
-    "excerpt": "Chai-1 is a local molecular structure prediction runtime. In Liatir it is available as a managed AI Model for Linux CUDA machines.",
-    "content": "Chai-1 is a local molecular structure prediction runtime. In Liatir it is\navailable as a managed AI Model for Linux CUDA machines."
-  },
-  {
-    "id": "docs:ai/models/chai1-local-structure#what-it-does",
-    "sourceKind": "documentation",
-    "title": "Chai-1 Local Structure — What it does",
-    "locator": "Docs / Ai / Models / Chai1 Local Structure / What it does",
-    "excerpt": "What it does Chai-1 predicts molecular structures from biological sequence and molecular inputs. It is part of the protein structure prediction family in Liatir.",
-    "content": "What it does\nChai-1 predicts molecular structures from biological sequence and molecular\ninputs. It is part of the protein structure prediction family in Liatir."
-  },
-  {
-    "id": "docs:ai/models/chai1-local-structure#when-to-use-it",
-    "sourceKind": "documentation",
-    "title": "Chai-1 Local Structure — When to use it",
-    "locator": "Docs / Ai / Models / Chai1 Local Structure / When to use it",
-    "excerpt": "When to use it Use Chai-1 when you have access to a compatible Linux workstation or server with CUDA and enough GPU memory. It is not intended for normal macOS CPU or Apple Metal testing.",
-    "content": "When to use it\nUse Chai-1 when you have access to a compatible Linux workstation or server with\nCUDA and enough GPU memory. It is not intended for normal macOS CPU or Apple\nMetal testing."
-  },
-  {
-    "id": "docs:ai/models/chai1-local-structure#inputs-in-liatir",
-    "sourceKind": "documentation",
-    "title": "Chai-1 Local Structure — Inputs in Liatir",
-    "locator": "Docs / Ai / Models / Chai1 Local Structure / Inputs in Liatir",
-    "excerpt": "Inputs in Liatir - Protein FASTA/FAA file, or an inline protein sequence. - Optional ligand-related inputs when supported by the tool. - Prediction options exposed by the Liatir protein structure runner.",
-    "content": "Inputs in Liatir\n- Protein FASTA/FAA file, or an inline protein sequence.\n- Optional ligand-related inputs when supported by the tool.\n- Prediction options exposed by the Liatir protein structure runner."
-  },
-  {
-    "id": "docs:ai/models/chai1-local-structure#outputs",
-    "sourceKind": "documentation",
-    "title": "Chai-1 Local Structure — Outputs",
-    "locator": "Docs / Ai / Models / Chai1 Local Structure / Outputs",
-    "excerpt": "Outputs Liatir can produce: - structure files when prediction succeeds; - logs and runtime metadata; - viewer-compatible artifacts; - provenance with model, runtime, input, parameters, and output files.",
-    "content": "Outputs\nLiatir can produce:\n\n- structure files when prediction succeeds;\n- logs and runtime metadata;\n- viewer-compatible artifacts;\n- provenance with model, runtime, input, parameters, and output files."
-  },
-  {
-    "id": "docs:ai/models/chai1-local-structure#hardware-and-installation",
-    "sourceKind": "documentation",
-    "title": "Chai-1 Local Structure — Hardware and installation",
-    "locator": "Docs / Ai / Models / Chai1 Local Structure / Hardware and installation",
-    "excerpt": "Hardware and installation The local Chai-1 runtime is restricted to Linux CUDA hosts in Liatir. It requires Python 3.10 or newer and a GPU with bfloat16 support. A100, H100, or L40S-class GPUs are recommended by the upstream project. Liatir blocks installatio…",
-    "content": "Hardware and installation\nThe local Chai-1 runtime is restricted to Linux CUDA hosts in Liatir. It requires\nPython 3.10 or newer and a GPU with bfloat16 support. A100, H100, or L40S-class\nGPUs are recommended by the upstream project.\n\nLiatir blocks installation on incompatible hosts and explains why."
-  },
-  {
-    "id": "docs:ai/models/chai1-local-structure#limits-and-cautions",
-    "sourceKind": "documentation",
-    "title": "Chai-1 Local Structure — Limits and cautions",
-    "locator": "Docs / Ai / Models / Chai1 Local Structure / Limits and cautions",
-    "excerpt": "Limits and cautions Chai-1 is not a fallback for macOS or CPU-only testing. Use Boltz-2 CPU mode for local compatibility testing on machines without CUDA, understanding that CPU runs can be slow. This model is currently hidden from normal Liatir catalog surfa…",
-    "content": "Limits and cautions\nChai-1 is not a fallback for macOS or CPU-only testing. Use Boltz-2 CPU mode for\nlocal compatibility testing on machines without CUDA, understanding that CPU\nruns can be slow.\n\nThis model is currently hidden from normal Liatir catalog surfaces until a Linux\nCUDA validation environment is available."
-  },
-  {
-    "id": "docs:ai/models/chai1-local-structure#official-source",
-    "sourceKind": "documentation",
-    "title": "Chai-1 Local Structure — Official source",
-    "locator": "Docs / Ai / Models / Chai1 Local Structure / Official source",
-    "excerpt": "Official source - [Chai-1 / chai-lab on GitHub](https://github.com/chaidiscovery/chai-lab)",
-    "content": "Official source\n- [Chai-1 / chai-lab on GitHub](https://github.com/chaidiscovery/chai-lab)"
   },
   {
     "id": "docs:ai/models/ctheodoris-geneformer-v1-10m",
@@ -563,8 +139,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Geneformer V1 10M — Current status in Liatir",
     "locator": "Docs / Ai / Models / Ctheodoris Geneformer V1 10m / Current status in Liatir",
-    "excerpt": "Current status in Liatir Geneformer V1 10M is installable as an isolated managed runtime. Liatir pins the official V1 checkpoint and matching Genecorpus-30M dictionaries to one upstream revision instead of following the repository's changing default model.",
-    "content": "Current status in Liatir\nGeneformer V1 10M is installable as an isolated managed runtime. Liatir pins the\nofficial V1 checkpoint and matching Genecorpus-30M dictionaries to one upstream\nrevision instead of following the repository's changing default model."
+    "excerpt": "Current status in Liatir Geneformer V1 10M is installable as a signed Runtime Box. Liatir pins the official V1 checkpoint and matching Genecorpus-30M dictionaries to one upstream revision instead of following the repository's changing default model.",
+    "content": "Current status in Liatir\nGeneformer V1 10M is installable as a signed Runtime Box. Liatir pins the\nofficial V1 checkpoint and matching Genecorpus-30M dictionaries to one upstream\nrevision instead of following the repository's changing default model."
   },
   {
     "id": "docs:ai/models/ctheodoris-geneformer-v1-10m#expected-inputs",
@@ -587,8 +163,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Geneformer V1 10M — Hardware and installation",
     "locator": "Docs / Ai / Models / Ctheodoris Geneformer V1 10m / Hardware and installation",
-    "excerpt": "Hardware and installation The 10M-parameter V1 model can run on CPU for small datasets. CUDA or Apple Metal is preferred for larger cell batches. Liatir keeps Geneformer in its own isolated environment, separate from CellTypist, UCE, and other single-cell too…",
-    "content": "Hardware and installation\nThe 10M-parameter V1 model can run on CPU for small datasets. CUDA or Apple\nMetal is preferred for larger cell batches. Liatir keeps Geneformer in its own\nisolated environment, separate from CellTypist, UCE, and other single-cell\ntools.\n\nThe input matrix is normalized per cell to 10,000 counts, scaled by the official\nGenecorpus-30M gene medians, converted to the V1 rank-value encoding, and capped\nat 2,048 gene tokens. Cell embeddings are mean-pooled from the second-to-last\nhidden layer. The original input file is never modified."
+    "excerpt": "Hardware and installation The 10M-parameter V1 model can run on CPU for small datasets. CUDA or Apple Metal is preferred for larger cell batches. Published native targets cover macOS arm64 Metal, Linux x86_64 CPU/CUDA, and Windows x86_64 CPU. CUDA is validate…",
+    "content": "Hardware and installation\nThe 10M-parameter V1 model can run on CPU for small datasets. CUDA or Apple\nMetal is preferred for larger cell batches. Published native targets cover\nmacOS arm64 Metal, Linux x86_64 CPU/CUDA, and Windows x86_64 CPU. CUDA is\nvalidated only on Linux; Windows CUDA is not supported.\n\nThe input matrix is normalized per cell to 10,000 counts, scaled by the official\nGenecorpus-30M gene medians, converted to the V1 rank-value encoding, and capped\nat 2,048 gene tokens. Cell embeddings are mean-pooled from the second-to-last\nhidden layer. The original input file is never modified."
   },
   {
     "id": "docs:ai/models/ctheodoris-geneformer-v1-10m#official-source",
@@ -599,356 +175,36 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "content": "Official source\n- [Geneformer on Hugging Face](https://huggingface.co/ctheodoris/Geneformer)\n- [Geneformer documentation](https://geneformer.readthedocs.io/en/latest/getstarted.html)"
   },
   {
-    "id": "docs:ai/models/deepmind-enformer-regulatory",
-    "sourceKind": "documentation",
-    "title": "Enformer Regulatory Prediction",
-    "locator": "Docs / Ai / Models / Deepmind Enformer Regulatory",
-    "excerpt": "Enformer is a long-context DNA model for predicting regulatory activity from genomic sequence.",
-    "content": "Enformer is a long-context DNA model for predicting regulatory activity from\ngenomic sequence."
-  },
-  {
-    "id": "docs:ai/models/deepmind-enformer-regulatory#what-it-does",
-    "sourceKind": "documentation",
-    "title": "Enformer Regulatory Prediction — What it does",
-    "locator": "Docs / Ai / Models / Deepmind Enformer Regulatory / What it does",
-    "excerpt": "What it does Liatir uses Enformer to read a large DNA window and produce regulatory signal tracks. When a VCF file is provided, Liatir can compare the reference and alternate windows to estimate how much a variant changes the predicted signal.",
-    "content": "What it does\nLiatir uses Enformer to read a large DNA window and produce regulatory signal\ntracks. When a VCF file is provided, Liatir can compare the reference and\nalternate windows to estimate how much a variant changes the predicted signal."
-  },
-  {
-    "id": "docs:ai/models/deepmind-enformer-regulatory#when-to-use-it",
-    "sourceKind": "documentation",
-    "title": "Enformer Regulatory Prediction — When to use it",
-    "locator": "Docs / Ai / Models / Deepmind Enformer Regulatory / When to use it",
-    "excerpt": "When to use it Use Enformer when you want to explore regulatory effects from DNA sequence and you need longer context than a short embedding model provides.",
-    "content": "When to use it\nUse Enformer when you want to explore regulatory effects from DNA sequence and\nyou need longer context than a short embedding model provides."
-  },
-  {
-    "id": "docs:ai/models/deepmind-enformer-regulatory#inputs-in-liatir",
-    "sourceKind": "documentation",
-    "title": "Enformer Regulatory Prediction — Inputs in Liatir",
-    "locator": "Docs / Ai / Models / Deepmind Enformer Regulatory / Inputs in Liatir",
-    "excerpt": "Inputs in Liatir - Reference FASTA/FA/FNA file, or an inline DNA sequence. - Optional VCF or VCF.GZ file for variant scoring. - Output head, usually `Human`. - Target index. Start with `0` for a first test, then choose a more specific track once target labels…",
-    "content": "Inputs in Liatir\n- Reference FASTA/FA/FNA file, or an inline DNA sequence.\n- Optional VCF or VCF.GZ file for variant scoring.\n- Output head, usually `Human`.\n- Target index. Start with `0` for a first test, then choose a more specific\n  track once target labels are exposed in the UI."
-  },
-  {
-    "id": "docs:ai/models/deepmind-enformer-regulatory#outputs",
-    "sourceKind": "documentation",
-    "title": "Enformer Regulatory Prediction — Outputs",
-    "locator": "Docs / Ai / Models / Deepmind Enformer Regulatory / Outputs",
-    "excerpt": "Outputs Liatir writes: - predicted regulatory signal as CSV; - BED genome track for the signal; - optional variant score CSV and BED track; - JSON summary; - Results panels and provenance.",
-    "content": "Outputs\nLiatir writes:\n\n- predicted regulatory signal as CSV;\n- BED genome track for the signal;\n- optional variant score CSV and BED track;\n- JSON summary;\n- Results panels and provenance."
-  },
-  {
-    "id": "docs:ai/models/deepmind-enformer-regulatory#hardware-and-installation",
-    "sourceKind": "documentation",
-    "title": "Enformer Regulatory Prediction — Hardware and installation",
-    "locator": "Docs / Ai / Models / Deepmind Enformer Regulatory / Hardware and installation",
-    "excerpt": "Hardware and installation Enformer uses a large input window, so CPU runs can be slow. A GPU is preferred for repeated scoring. Liatir installs Enformer and its model files in an isolated environment, so nothing is added to the base app until you install it.",
-    "content": "Hardware and installation\nEnformer uses a large input window, so CPU runs can be slow. A GPU is preferred\nfor repeated scoring.\n\nLiatir installs Enformer and its model files in an isolated environment, so\nnothing is added to the base app until you install it."
-  },
-  {
-    "id": "docs:ai/models/deepmind-enformer-regulatory#limits-and-cautions",
-    "sourceKind": "documentation",
-    "title": "Enformer Regulatory Prediction — Limits and cautions",
-    "locator": "Docs / Ai / Models / Deepmind Enformer Regulatory / Limits and cautions",
-    "excerpt": "Limits and cautions Predictions are useful for exploration and prioritization, not automatic biological conclusions. Always check the input reference, selected target index, model notes, and provenance. The current `targetIndex` is technical. Start with `0` f…",
-    "content": "Limits and cautions\nPredictions are useful for exploration and prioritization, not automatic\nbiological conclusions. Always check the input reference, selected target index,\nmodel notes, and provenance.\n\nThe current `targetIndex` is technical. Start with `0` for a smoke test, but do\nnot make biological claims until you know which target the selected index\nrepresents."
-  },
-  {
-    "id": "docs:ai/models/deepmind-enformer-regulatory#official-source",
-    "sourceKind": "documentation",
-    "title": "Enformer Regulatory Prediction — Official source",
-    "locator": "Docs / Ai / Models / Deepmind Enformer Regulatory / Official source",
-    "excerpt": "Official source - [DeepMind Enformer repository](https://github.com/google-deepmind/deepmind-research/tree/master/enformer)",
-    "content": "Official source\n- [DeepMind Enformer repository](https://github.com/google-deepmind/deepmind-research/tree/master/enformer)"
-  },
-  {
-    "id": "docs:ai/models/deepmind-enformer-regulatory#related-tool",
-    "sourceKind": "documentation",
-    "title": "Enformer Regulatory Prediction — Related tool",
-    "locator": "Docs / Ai / Models / Deepmind Enformer Regulatory / Related tool",
-    "excerpt": "Related tool - [Regulatory Prediction](/ai/tools/regulatory-prediction)",
-    "content": "Related tool\n- [Regulatory Prediction](/ai/tools/regulatory-prediction)"
-  },
-  {
-    "id": "docs:ai/models/facebook-esm2-8m-protein",
-    "sourceKind": "documentation",
-    "title": "ESM-2 8M Protein",
-    "locator": "Docs / Ai / Models / Facebook Esm2 8m Protein",
-    "excerpt": "ESM-2 8M is a small protein language model for lightweight protein sequence embeddings.",
-    "content": "ESM-2 8M is a small protein language model for lightweight protein sequence\nembeddings."
-  },
-  {
-    "id": "docs:ai/models/facebook-esm2-8m-protein#what-it-does",
-    "sourceKind": "documentation",
-    "title": "ESM-2 8M Protein — What it does",
-    "locator": "Docs / Ai / Models / Facebook Esm2 8m Protein / What it does",
-    "excerpt": "What it does The model turns amino acid sequences into embeddings. These embeddings can be used to compare proteins, feed downstream tools, or inspect sequence-level representations.",
-    "content": "What it does\nThe model turns amino acid sequences into embeddings. These embeddings can be\nused to compare proteins, feed downstream tools, or inspect sequence-level\nrepresentations."
-  },
-  {
-    "id": "docs:ai/models/facebook-esm2-8m-protein#when-to-use-it",
-    "sourceKind": "documentation",
-    "title": "ESM-2 8M Protein — When to use it",
-    "locator": "Docs / Ai / Models / Facebook Esm2 8m Protein / When to use it",
-    "excerpt": "When to use it Use this model for fast protein embedding tests, smaller workflows, and local pipeline validation. It is intentionally small compared with larger protein language models.",
-    "content": "When to use it\nUse this model for fast protein embedding tests, smaller workflows, and local\npipeline validation. It is intentionally small compared with larger protein\nlanguage models."
-  },
-  {
-    "id": "docs:ai/models/facebook-esm2-8m-protein#inputs-in-liatir",
-    "sourceKind": "documentation",
-    "title": "ESM-2 8M Protein — Inputs in Liatir",
-    "locator": "Docs / Ai / Models / Facebook Esm2 8m Protein / Inputs in Liatir",
-    "excerpt": "Inputs in Liatir - FASTA/FAA file, or an inline protein sequence. - Maximum token/window length.",
-    "content": "Inputs in Liatir\n- FASTA/FAA file, or an inline protein sequence.\n- Maximum token/window length."
-  },
-  {
-    "id": "docs:ai/models/facebook-esm2-8m-protein#outputs",
-    "sourceKind": "documentation",
-    "title": "ESM-2 8M Protein — Outputs",
-    "locator": "Docs / Ai / Models / Facebook Esm2 8m Protein / Outputs",
-    "excerpt": "Outputs Liatir can produce: - per-sequence embeddings; - JSON/CSV summaries; - basic metrics such as embedding size; - provenance with model ID, revision, runtime, input, and parameters.",
-    "content": "Outputs\nLiatir can produce:\n\n- per-sequence embeddings;\n- JSON/CSV summaries;\n- basic metrics such as embedding size;\n- provenance with model ID, revision, runtime, input, and parameters."
-  },
-  {
-    "id": "docs:ai/models/facebook-esm2-8m-protein#hardware-and-installation",
-    "sourceKind": "documentation",
-    "title": "ESM-2 8M Protein — Hardware and installation",
-    "locator": "Docs / Ai / Models / Facebook Esm2 8m Protein / Hardware and installation",
-    "excerpt": "Hardware and installation ESM-2 8M can run on CPU for short sequences. GPU or Apple Metal can improve throughput when PyTorch can use it. Liatir installs the model through a managed Python runtime using PyTorch and Transformers.",
-    "content": "Hardware and installation\nESM-2 8M can run on CPU for short sequences. GPU or Apple Metal can improve\nthroughput when PyTorch can use it.\n\nLiatir installs the model through a managed Python runtime using PyTorch and\nTransformers."
-  },
-  {
-    "id": "docs:ai/models/facebook-esm2-8m-protein#limits-and-cautions",
-    "sourceKind": "documentation",
-    "title": "ESM-2 8M Protein — Limits and cautions",
-    "locator": "Docs / Ai / Models / Facebook Esm2 8m Protein / Limits and cautions",
-    "excerpt": "Limits and cautions Protein embeddings summarize sequence patterns, but they do not by themselves predict a reliable 3D structure or binding property. Use a structure-prediction model for that. Use embeddings when you want representation or comparison. Use Bo…",
-    "content": "Limits and cautions\nProtein embeddings summarize sequence patterns, but they do not by themselves\npredict a reliable 3D structure or binding property. Use a structure-prediction\nmodel for that.\n\nUse embeddings when you want representation or comparison. Use Boltz-2 when you\nwant a structure file."
-  },
-  {
-    "id": "docs:ai/models/facebook-esm2-8m-protein#official-source",
-    "sourceKind": "documentation",
-    "title": "ESM-2 8M Protein — Official source",
-    "locator": "Docs / Ai / Models / Facebook Esm2 8m Protein / Official source",
-    "excerpt": "Official source - [ESM-2 8M on Hugging Face](https://huggingface.co/facebook/esm2_t6_8M_UR50D)",
-    "content": "Official source\n- [ESM-2 8M on Hugging Face](https://huggingface.co/facebook/esm2_t6_8M_UR50D)"
-  },
-  {
-    "id": "docs:ai/models/facebook-esm2-8m-protein#related-tool",
-    "sourceKind": "documentation",
-    "title": "ESM-2 8M Protein — Related tool",
-    "locator": "Docs / Ai / Models / Facebook Esm2 8m Protein / Related tool",
-    "excerpt": "Related tool - [Sequence Embedding](/ai/tools/sequence-embedding)",
-    "content": "Related tool\n- [Sequence Embedding](/ai/tools/sequence-embedding)"
-  },
-  {
-    "id": "docs:ai/models/instadeep-nt-v2-500m-multi-species",
-    "sourceKind": "documentation",
-    "title": "Nucleotide Transformer v2 500M",
-    "locator": "Docs / Ai / Models / Instadeep Nt V2 500m Multi Species",
-    "excerpt": "Nucleotide Transformer v2 500M is a larger DNA/RNA language model for genomic embeddings and embedding-delta variant scoring.",
-    "content": "Nucleotide Transformer v2 500M is a larger DNA/RNA language model for genomic\nembeddings and embedding-delta variant scoring."
-  },
-  {
-    "id": "docs:ai/models/instadeep-nt-v2-500m-multi-species#what-it-does",
-    "sourceKind": "documentation",
-    "title": "Nucleotide Transformer v2 500M — What it does",
-    "locator": "Docs / Ai / Models / Instadeep Nt V2 500m Multi Species / What it does",
-    "excerpt": "What it does The model reads nucleotide sequence windows and produces embeddings. In variant effect workflows, Liatir can compare embeddings from reference and alternate sequence windows to create a local effect score.",
-    "content": "What it does\nThe model reads nucleotide sequence windows and produces embeddings. In variant\neffect workflows, Liatir can compare embeddings from reference and alternate\nsequence windows to create a local effect score."
-  },
-  {
-    "id": "docs:ai/models/instadeep-nt-v2-500m-multi-species#when-to-use-it",
-    "sourceKind": "documentation",
-    "title": "Nucleotide Transformer v2 500M — When to use it",
-    "locator": "Docs / Ai / Models / Instadeep Nt V2 500m Multi Species / When to use it",
-    "excerpt": "When to use it Use this model when you need stronger genomic representations than the smaller 50M model and your machine has enough memory. It is better suited to repeated scoring and higher-quality embeddings, but it is heavier.",
-    "content": "When to use it\nUse this model when you need stronger genomic representations than the smaller\n50M model and your machine has enough memory. It is better suited to repeated\nscoring and higher-quality embeddings, but it is heavier."
-  },
-  {
-    "id": "docs:ai/models/instadeep-nt-v2-500m-multi-species#inputs-in-liatir",
-    "sourceKind": "documentation",
-    "title": "Nucleotide Transformer v2 500M — Inputs in Liatir",
-    "locator": "Docs / Ai / Models / Instadeep Nt V2 500m Multi Species / Inputs in Liatir",
-    "excerpt": "Inputs in Liatir - FASTA/FA/FNA file, or an inline DNA/RNA sequence. - For variant effect workflows: reference/alternate sequence windows derived from FASTA plus `.vcf` or `.vcf.gz` inputs. - Maximum token/window length.",
-    "content": "Inputs in Liatir\n- FASTA/FA/FNA file, or an inline DNA/RNA sequence.\n- For variant effect workflows: reference/alternate sequence windows derived\n  from FASTA plus `.vcf` or `.vcf.gz` inputs.\n- Maximum token/window length."
-  },
-  {
-    "id": "docs:ai/models/instadeep-nt-v2-500m-multi-species#outputs",
-    "sourceKind": "documentation",
-    "title": "Nucleotide Transformer v2 500M — Outputs",
-    "locator": "Docs / Ai / Models / Instadeep Nt V2 500m Multi Species / Outputs",
-    "excerpt": "Outputs Liatir can produce: - embeddings; - variant effect scores based on reference/alternate embedding differences; - JSON/CSV summaries; - genome-track-compatible artifacts where supported by the tool; - provenance with model ID, runtime, input, and parame…",
-    "content": "Outputs\nLiatir can produce:\n\n- embeddings;\n- variant effect scores based on reference/alternate embedding differences;\n- JSON/CSV summaries;\n- genome-track-compatible artifacts where supported by the tool;\n- provenance with model ID, runtime, input, and parameters."
-  },
-  {
-    "id": "docs:ai/models/instadeep-nt-v2-500m-multi-species#hardware-and-installation",
-    "sourceKind": "documentation",
-    "title": "Nucleotide Transformer v2 500M — Hardware and installation",
-    "locator": "Docs / Ai / Models / Instadeep Nt V2 500m Multi Species / Hardware and installation",
-    "excerpt": "Hardware and installation CPU can work for short windows, but GPU or Apple Metal through PyTorch is strongly preferred for repeated variant scoring. Plan for more RAM than the 50M model. Liatir installs the model through a managed Python runtime using PyTorch…",
-    "content": "Hardware and installation\nCPU can work for short windows, but GPU or Apple Metal through PyTorch is\nstrongly preferred for repeated variant scoring. Plan for more RAM than the 50M\nmodel.\n\nLiatir installs the model through a managed Python runtime using PyTorch and\nTransformers."
-  },
-  {
-    "id": "docs:ai/models/instadeep-nt-v2-500m-multi-species#limits-and-cautions",
-    "sourceKind": "documentation",
-    "title": "Nucleotide Transformer v2 500M — Limits and cautions",
-    "locator": "Docs / Ai / Models / Instadeep Nt V2 500m Multi Species / Limits and cautions",
-    "excerpt": "Limits and cautions The model license is non-commercial. Check whether your use case is allowed before using it in commercial or restricted work. Embedding-delta scoring is a useful local signal, not a replacement for a validated variant interpretation pipeli…",
-    "content": "Limits and cautions\nThe model license is non-commercial. Check whether your use case is allowed\nbefore using it in commercial or restricted work.\n\nEmbedding-delta scoring is a useful local signal, not a replacement for a\nvalidated variant interpretation pipeline.\n\nFor first tests, use the 50M model. Move to 500M when you need stronger\nrepresentations and have enough memory for slower runs."
-  },
-  {
-    "id": "docs:ai/models/instadeep-nt-v2-500m-multi-species#official-source",
-    "sourceKind": "documentation",
-    "title": "Nucleotide Transformer v2 500M — Official source",
-    "locator": "Docs / Ai / Models / Instadeep Nt V2 500m Multi Species / Official source",
-    "excerpt": "Official source - [Nucleotide Transformer v2 500M on Hugging Face](https://huggingface.co/InstaDeepAI/nucleotide-transformer-v2-500m-multi-species)",
-    "content": "Official source\n- [Nucleotide Transformer v2 500M on Hugging Face](https://huggingface.co/InstaDeepAI/nucleotide-transformer-v2-500m-multi-species)"
-  },
-  {
-    "id": "docs:ai/models/instadeep-nt-v2-500m-multi-species#related-tools",
-    "sourceKind": "documentation",
-    "title": "Nucleotide Transformer v2 500M — Related tools",
-    "locator": "Docs / Ai / Models / Instadeep Nt V2 500m Multi Species / Related tools",
-    "excerpt": "Related tools - [Sequence Embedding](/ai/tools/sequence-embedding) - [Genomic Variant Effect](/ai/tools/genomic-variant-effect)",
-    "content": "Related tools\n- [Sequence Embedding](/ai/tools/sequence-embedding)\n- [Genomic Variant Effect](/ai/tools/genomic-variant-effect)"
-  },
-  {
-    "id": "docs:ai/models/instadeep-nt-v2-50m-multi-species",
-    "sourceKind": "documentation",
-    "title": "Nucleotide Transformer v2 50M",
-    "locator": "Docs / Ai / Models / Instadeep Nt V2 50m Multi Species",
-    "excerpt": "Nucleotide Transformer v2 50M is a small DNA/RNA language model used for sequence embeddings and lightweight genomic representation tasks.",
-    "content": "Nucleotide Transformer v2 50M is a small DNA/RNA language model used for\nsequence embeddings and lightweight genomic representation tasks."
-  },
-  {
-    "id": "docs:ai/models/instadeep-nt-v2-50m-multi-species#what-it-does",
-    "sourceKind": "documentation",
-    "title": "Nucleotide Transformer v2 50M — What it does",
-    "locator": "Docs / Ai / Models / Instadeep Nt V2 50m Multi Species / What it does",
-    "excerpt": "What it does The model turns nucleotide sequences into numerical embeddings. Embeddings are vectors that summarize sequence patterns in a way downstream tools can compare, cluster, or score.",
-    "content": "What it does\nThe model turns nucleotide sequences into numerical embeddings. Embeddings are\nvectors that summarize sequence patterns in a way downstream tools can compare,\ncluster, or score."
-  },
-  {
-    "id": "docs:ai/models/instadeep-nt-v2-50m-multi-species#when-to-use-it",
-    "sourceKind": "documentation",
-    "title": "Nucleotide Transformer v2 50M — When to use it",
-    "locator": "Docs / Ai / Models / Instadeep Nt V2 50m Multi Species / When to use it",
-    "excerpt": "When to use it Use this model when you want a faster, lighter sequence embedding option. It is appropriate for short windows, demos, and early pipeline design before moving to larger models.",
-    "content": "When to use it\nUse this model when you want a faster, lighter sequence embedding option. It is\nappropriate for short windows, demos, and early pipeline design before moving to\nlarger models."
-  },
-  {
-    "id": "docs:ai/models/instadeep-nt-v2-50m-multi-species#inputs-in-liatir",
-    "sourceKind": "documentation",
-    "title": "Nucleotide Transformer v2 50M — Inputs in Liatir",
-    "locator": "Docs / Ai / Models / Instadeep Nt V2 50m Multi Species / Inputs in Liatir",
-    "excerpt": "Inputs in Liatir - FASTA/FA/FNA file, or an inline DNA/RNA sequence. - For variant effect workflows: reference FASTA plus `.vcf` or `.vcf.gz` variants. - Molecule type: DNA or RNA. - Maximum token/window length.",
-    "content": "Inputs in Liatir\n- FASTA/FA/FNA file, or an inline DNA/RNA sequence.\n- For variant effect workflows: reference FASTA plus `.vcf` or `.vcf.gz`\n  variants.\n- Molecule type: DNA or RNA.\n- Maximum token/window length."
-  },
-  {
-    "id": "docs:ai/models/instadeep-nt-v2-50m-multi-species#outputs",
-    "sourceKind": "documentation",
-    "title": "Nucleotide Transformer v2 50M — Outputs",
-    "locator": "Docs / Ai / Models / Instadeep Nt V2 50m Multi Species / Outputs",
-    "excerpt": "Outputs Liatir can produce: - per-sequence embeddings; - variant effect scores for small local VCF/VCF.GZ batches; - BED tracks for genome viewer inspection; - JSON/CSV summaries; - basic metrics such as sequence count and embedding size; - provenance with mo…",
-    "content": "Outputs\nLiatir can produce:\n\n- per-sequence embeddings;\n- variant effect scores for small local VCF/VCF.GZ batches;\n- BED tracks for genome viewer inspection;\n- JSON/CSV summaries;\n- basic metrics such as sequence count and embedding size;\n- provenance with model ID, revision, runtime, input, and parameters."
-  },
-  {
-    "id": "docs:ai/models/instadeep-nt-v2-50m-multi-species#hardware-and-installation",
-    "sourceKind": "documentation",
-    "title": "Nucleotide Transformer v2 50M — Hardware and installation",
-    "locator": "Docs / Ai / Models / Instadeep Nt V2 50m Multi Species / Hardware and installation",
-    "excerpt": "Hardware and installation This model can run on CPU for small batches. GPU or Apple Metal through PyTorch can be faster when available. Liatir installs the model through a managed Python runtime using PyTorch and Transformers.",
-    "content": "Hardware and installation\nThis model can run on CPU for small batches. GPU or Apple Metal through PyTorch\ncan be faster when available.\n\nLiatir installs the model through a managed Python runtime using PyTorch and\nTransformers."
-  },
-  {
-    "id": "docs:ai/models/instadeep-nt-v2-50m-multi-species#limits-and-cautions",
-    "sourceKind": "documentation",
-    "title": "Nucleotide Transformer v2 50M — Limits and cautions",
-    "locator": "Docs / Ai / Models / Instadeep Nt V2 50m Multi Species / Limits and cautions",
-    "excerpt": "Limits and cautions The model license is non-commercial. Check whether your use case is allowed before using it in commercial or restricted work. Embeddings are not direct biological conclusions. They are numerical representations that need downstream interpr…",
-    "content": "Limits and cautions\nThe model license is non-commercial. Check whether your use case is allowed\nbefore using it in commercial or restricted work.\n\nEmbeddings are not direct biological conclusions. They are numerical\nrepresentations that need downstream interpretation.\n\nFor variant effect scoring, a higher embedding delta means the model\nrepresentation changed more. It does not mean the variant is automatically\npathogenic or clinically important."
-  },
-  {
-    "id": "docs:ai/models/instadeep-nt-v2-50m-multi-species#official-source",
-    "sourceKind": "documentation",
-    "title": "Nucleotide Transformer v2 50M — Official source",
-    "locator": "Docs / Ai / Models / Instadeep Nt V2 50m Multi Species / Official source",
-    "excerpt": "Official source - [Nucleotide Transformer v2 50M on Hugging Face](https://huggingface.co/InstaDeepAI/nucleotide-transformer-v2-50m-multi-species)",
-    "content": "Official source\n- [Nucleotide Transformer v2 50M on Hugging Face](https://huggingface.co/InstaDeepAI/nucleotide-transformer-v2-50m-multi-species)"
-  },
-  {
-    "id": "docs:ai/models/instadeep-nt-v2-50m-multi-species#related-tools",
-    "sourceKind": "documentation",
-    "title": "Nucleotide Transformer v2 50M — Related tools",
-    "locator": "Docs / Ai / Models / Instadeep Nt V2 50m Multi Species / Related tools",
-    "excerpt": "Related tools - [Sequence Embedding](/ai/tools/sequence-embedding) - [Genomic Variant Effect](/ai/tools/genomic-variant-effect)",
-    "content": "Related tools\n- [Sequence Embedding](/ai/tools/sequence-embedding)\n- [Genomic Variant Effect](/ai/tools/genomic-variant-effect)"
-  },
-  {
     "id": "docs:ai/models/overview",
     "sourceKind": "documentation",
     "title": "AI Models",
     "locator": "Docs / Ai / Models / Overview",
-    "excerpt": "AI Models are local model runtimes that Liatir can install, manage, and use on your machine. They are different from Plugins: Plugins are `.lia` extensions, while AI Models are model assets and runtime packages used by AI Tools. If you are new to this area, s…",
-    "content": "AI Models are local model runtimes that Liatir can install, manage, and use on\nyour machine. They are different from Plugins: Plugins are `.lia` extensions,\nwhile AI Models are model assets and runtime packages used by AI Tools.\n\nIf you are new to this area, start with [Local AI for bioinformatics](/ai/guide)\nbefore choosing a model."
+    "excerpt": "Liatir exposes only AI Models distributed as signed Runtime Boxes. Each box is an immutable, target-specific bundle containing the model, interpreter, dependencies, scientific runner, and legal notices tested together.",
+    "content": "Liatir exposes only AI Models distributed as signed Runtime Boxes. Each box is\nan immutable, target-specific bundle containing the model, interpreter,\ndependencies, scientific runner, and legal notices tested together."
   },
   {
-    "id": "docs:ai/models/overview#what-ai-models-do",
+    "id": "docs:ai/models/overview#available-models",
     "sourceKind": "documentation",
-    "title": "AI Models — What AI Models do",
-    "locator": "Docs / Ai / Models / Overview / What AI Models do",
-    "excerpt": "What AI Models do An AI Model provides the local engine behind an AI Tool. For example, a single-cell annotation tool may use CellTypist, while a sequence embedding tool may use a Nucleotide Transformer or ESM-2 model. You can use AI Models in two ways: - run…",
-    "content": "What AI Models do\nAn AI Model provides the local engine behind an AI Tool. For example, a\nsingle-cell annotation tool may use CellTypist, while a sequence embedding tool\nmay use a Nucleotide Transformer or ESM-2 model.\n\nYou can use AI Models in two ways:\n\n- run a model directly from the AI Models page when Liatir provides a direct\n  runner;\n- select a compatible model inside a pipeline AI Tool."
+    "title": "AI Models — Available models",
+    "locator": "Docs / Ai / Models / Overview / Available models",
+    "excerpt": "Available models | AI Model | Input | Published support | | --- | --- | --- | | [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | human AnnData | macOS arm64 Metal; Linux x86_64 CPU/CUDA; Windows x86_64 CPU | | [scGPT Whole-human](/ai/models/bowa…",
+    "content": "Available models\n| AI Model | Input | Published support |\n| --- | --- | --- |\n| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | human AnnData | macOS arm64 Metal; Linux x86_64 CPU/CUDA; Windows x86_64 CPU |\n| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | human AnnData | macOS arm64 Metal |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | multi-species AnnData | macOS arm64 Metal |\n\nThese are the complete product catalog. Models without a published Runtime Box\nare not shown as previews and cannot be installed through a legacy path."
   },
   {
-    "id": "docs:ai/models/overview#choosing-a-model",
+    "id": "docs:ai/models/overview#installation-and-removal",
     "sourceKind": "documentation",
-    "title": "AI Models — Choosing a model",
-    "locator": "Docs / Ai / Models / Overview / Choosing a model",
-    "excerpt": "Choosing a model | Goal | Start with | Why | | --- | --- | --- | | Annotate single-cell `.h5ad` data | CellTypist Local Annotation | CPU-friendly and practical for first-pass labels | | Embed DNA/RNA sequence | Nucleotide Transformer v2 50M | Lightest genomic…",
-    "content": "Choosing a model\n| Goal | Start with | Why |\n| --- | --- | --- |\n| Annotate single-cell `.h5ad` data | CellTypist Local Annotation | CPU-friendly and practical for first-pass labels |\n| Embed DNA/RNA sequence | Nucleotide Transformer v2 50M | Lightest genomic embedding model currently exposed |\n| Embed protein sequence | ESM-2 8M Protein | Small protein language model for quick local tests |\n| Score small VCF examples | Nucleotide Transformer v2 50M | Faster variant-effect smoke tests |\n| Predict regulatory signal | Basenji2 or Enformer | Managed regulatory runtimes with BED outputs |\n| Predict protein structure | Boltz-2 | Current primary local structure model |\n| Create single-cell foundation embeddings | Geneformer V1 10M or UCE 4-layer | Managed foundation-model runtimes with AnnData embedding outputs |\n| Explore future single-cell foundation models | scGPT, scFoundation | Preview entries documented but not installable yet |"
+    "title": "AI Models — Installation and removal",
+    "locator": "Docs / Ai / Models / Overview / Installation and removal",
+    "excerpt": "Installation and removal AI Models are installed globally for the app, not per workspace. Liatir checks host compatibility before downloading, verifies the selected box before activation, and records the exact activated release. Removing a model removes its R…",
+    "content": "Installation and removal\nAI Models are installed globally for the app, not per workspace. Liatir checks\nhost compatibility before downloading, verifies the selected box before\nactivation, and records the exact activated release. Removing a model removes\nits Runtime Box from the device."
   },
   {
-    "id": "docs:ai/models/overview#installation",
+    "id": "docs:ai/models/overview#running-a-model",
     "sourceKind": "documentation",
-    "title": "AI Models — Installation",
-    "locator": "Docs / Ai / Models / Overview / Installation",
-    "excerpt": "Installation AI Models are installed globally for the app, not per workspace. Once a model is installed, every workspace can use it. Each model installs in its own isolated environment. Heavy dependencies are never added to the base app — they are downloaded…",
-    "content": "Installation\nAI Models are installed globally for the app, not per workspace. Once a model is\ninstalled, every workspace can use it.\n\nEach model installs in its own isolated environment. Heavy dependencies are\nnever added to the base app — they are downloaded only when you install the\nmodel, which keeps Liatir small.\n\nPreview models are different: they are visible in the catalog so you can see\nwhat's coming and read the docs, but Install and Run stay disabled until the\nmodel is fully validated."
-  },
-  {
-    "id": "docs:ai/models/overview#results-and-provenance",
-    "sourceKind": "documentation",
-    "title": "AI Models — Results and provenance",
-    "locator": "Docs / Ai / Models / Overview / Results and provenance",
-    "excerpt": "Results and provenance AI Model runs are recorded like other Liatir analysis runs. Outputs can include tables, JSON summaries, embeddings, structure files, genome tracks, and viewer artifacts depending on the model and tool. Each output should carry provenanc…",
-    "content": "Results and provenance\nAI Model runs are recorded like other Liatir analysis runs. Outputs can include\ntables, JSON summaries, embeddings, structure files, genome tracks, and viewer\nartifacts depending on the model and tool.\n\nEach output should carry provenance:\n\n- model ID and version;\n- runtime kind and runtime version;\n- input files or sequences;\n- user-selected parameters;\n- generated output files and metrics."
-  },
-  {
-    "id": "docs:ai/models/overview#hardware-warnings",
-    "sourceKind": "documentation",
-    "title": "AI Models — Hardware warnings",
-    "locator": "Docs / Ai / Models / Overview / Hardware warnings",
-    "excerpt": "Hardware warnings Some models can run on CPU but may be slow. Others require CUDA GPUs or a specific operating system. Liatir shows compatibility warnings before install when the current machine cannot run a model. Always check the model page before using a r…",
-    "content": "Hardware warnings\nSome models can run on CPU but may be slow. Others require CUDA GPUs or a\nspecific operating system. Liatir shows compatibility warnings before install\nwhen the current machine cannot run a model.\n\nAlways check the model page before using a result for important scientific\ndecisions."
-  },
-  {
-    "id": "docs:ai/models/overview#related-ai-tools",
-    "sourceKind": "documentation",
-    "title": "AI Models — Related AI Tools",
-    "locator": "Docs / Ai / Models / Overview / Related AI Tools",
-    "excerpt": "Related AI Tools - [CellTypist Annotation](/ai/tools/celltypist-annotation) - [Sequence Embedding](/ai/tools/sequence-embedding) - [Single-cell Embedding](/ai/tools/single-cell-embedding) - [Genomic Variant Effect](/ai/tools/genomic-variant-effect) - [Regulat…",
-    "content": "Related AI Tools\n- [CellTypist Annotation](/ai/tools/celltypist-annotation)\n- [Sequence Embedding](/ai/tools/sequence-embedding)\n- [Single-cell Embedding](/ai/tools/single-cell-embedding)\n- [Genomic Variant Effect](/ai/tools/genomic-variant-effect)\n- [Regulatory Prediction](/ai/tools/regulatory-prediction)\n- [Protein Structure Prediction](/ai/tools/protein-structure-prediction)"
-  },
-  {
-    "id": "docs:ai/models/overview#available-model-pages",
-    "sourceKind": "documentation",
-    "title": "AI Models — Available model pages",
-    "locator": "Docs / Ai / Models / Overview / Available model pages",
-    "excerpt": "Available model pages - [CellTypist Local Annotation](/ai/models/celltypist-local-annotation) - [Nucleotide Transformer v2 50M](/ai/models/instadeep-nt-v2-50m-multi-species) - [Nucleotide Transformer v2 500M](/ai/models/instadeep-nt-v2-500m-multi-species) - […",
-    "content": "Available model pages\n- [CellTypist Local Annotation](/ai/models/celltypist-local-annotation)\n- [Nucleotide Transformer v2 50M](/ai/models/instadeep-nt-v2-50m-multi-species)\n- [Nucleotide Transformer v2 500M](/ai/models/instadeep-nt-v2-500m-multi-species)\n- [Enformer Regulatory Prediction](/ai/models/deepmind-enformer-regulatory)\n- [Basenji2 Human Regulatory](/ai/models/calico-basenji2-human-regulatory)\n- [Borzoi Mini K562 RNA-seq](/ai/models/calico-borzoi-mini-k562-rna)\n- [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human)\n- [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m)\n- [UCE 4-layer](/ai/models/snap-stanford-uce-4layer)\n- [scFoundation 100M](/ai/models/biomap-scfoundation-100m)\n- [ESM-2 8M Protein](/ai/models/facebook-esm2-8m-protein)\n- [Boltz-2 Local Structure & Binding](/ai/models/boltz2-local-structure-binding)"
+    "title": "AI Models — Running a model",
+    "locator": "Docs / Ai / Models / Overview / Running a model",
+    "excerpt": "Running a model All current models run through [Single-cell Embedding](/ai/tools/single-cell-embedding), either directly from the model page or as a pipeline step. Runs produce Jobs, Results, durable output files, and Runtime Box provenance.",
+    "content": "Running a model\nAll current models run through\n[Single-cell Embedding](/ai/tools/single-cell-embedding), either directly from\nthe model page or as a pipeline step. Runs produce Jobs, Results, durable output\nfiles, and Runtime Box provenance."
   },
   {
     "id": "docs:ai/models/snap-stanford-uce-4layer",
@@ -963,16 +219,16 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "UCE 4-layer — When to use it",
     "locator": "Docs / Ai / Models / Snap Stanford Uce 4layer / When to use it",
-    "excerpt": "When to use it Use UCE when you have an AnnData `.h5ad` file and want cell embeddings rather than cell-type labels. For a first-pass annotation, start with [CellTypist Local Annotation](/ai/models/celltypist-local-annotation). For foundation-model embeddings,…",
-    "content": "When to use it\nUse UCE when you have an AnnData `.h5ad` file and want cell embeddings rather\nthan cell-type labels.\n\nFor a first-pass annotation, start with\n[CellTypist Local Annotation](/ai/models/celltypist-local-annotation). For\nfoundation-model embeddings, use UCE."
+    "excerpt": "When to use it Use UCE when you have an AnnData `.h5ad` file and want cell embeddings rather than cell-type labels. Use UCE when a multi-species foundation-model embedding is the required output.",
+    "content": "When to use it\nUse UCE when you have an AnnData `.h5ad` file and want cell embeddings rather\nthan cell-type labels.\n\nUse UCE when a multi-species foundation-model embedding is the required output."
   },
   {
     "id": "docs:ai/models/snap-stanford-uce-4layer#what-liatir-installs",
     "sourceKind": "documentation",
     "title": "UCE 4-layer — What Liatir installs",
     "locator": "Docs / Ai / Models / Snap Stanford Uce 4layer / What Liatir installs",
-    "excerpt": "What Liatir installs Liatir installs UCE in its own isolated environment, including the 4-layer model weights and everything the model needs to run. It is kept separate from CellTypist and every other AI Model, and nothing is added to the base app until you i…",
-    "content": "What Liatir installs\nLiatir installs UCE in its own isolated environment, including the 4-layer model\nweights and everything the model needs to run. It is kept separate from\nCellTypist and every other AI Model, and nothing is added to the base app until\nyou install it."
+    "excerpt": "What Liatir installs Liatir installs the signed UCE macOS arm64 Metal Runtime Box, including the 4-layer weights and complete tested environment. Nothing is added to the base app or system Python.",
+    "content": "What Liatir installs\nLiatir installs the signed UCE macOS arm64 Metal Runtime Box, including the\n4-layer weights and complete tested environment. Nothing is added to the base\napp or system Python."
   },
   {
     "id": "docs:ai/models/snap-stanford-uce-4layer#inputs",
@@ -1071,348 +327,36 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "content": "How to read Quenta answers\nTreat Quenta answers as scientific guidance. Check the cited sources and the\noriginal Result or Job before acting on conclusions.\n\nGood Quenta answers should:\n\n- cite local sources;\n- distinguish observed evidence from interpretation;\n- state limitations;\n- recommend validation steps;\n- avoid inventing missing metrics;\n- avoid clinical or diagnostic conclusions.\n\nIf a source is missing, Quenta should say what is missing instead of filling\nthe gap."
   },
   {
-    "id": "docs:ai/tools/celltypist-annotation",
-    "sourceKind": "documentation",
-    "title": "CellTypist Annotation",
-    "locator": "Docs / Ai / Tools / Celltypist Annotation",
-    "excerpt": "CellTypist Annotation labels cells in a single-cell dataset using a local CellTypist AI Model.",
-    "content": "CellTypist Annotation labels cells in a single-cell dataset using a local\nCellTypist AI Model."
-  },
-  {
-    "id": "docs:ai/tools/celltypist-annotation#use-it-for",
-    "sourceKind": "documentation",
-    "title": "CellTypist Annotation — Use it for",
-    "locator": "Docs / Ai / Tools / Celltypist Annotation / Use it for",
-    "excerpt": "Use it for - first-pass cell-type annotation; - checking whether a dataset roughly matches a known reference; - preparing a single-cell dataset for later exploration.",
-    "content": "Use it for\n- first-pass cell-type annotation;\n- checking whether a dataset roughly matches a known reference;\n- preparing a single-cell dataset for later exploration."
-  },
-  {
-    "id": "docs:ai/tools/celltypist-annotation#inputs",
-    "sourceKind": "documentation",
-    "title": "CellTypist Annotation — Inputs",
-    "locator": "Docs / Ai / Tools / Celltypist Annotation / Inputs",
-    "excerpt": "Inputs - AnnData `.h5ad` file. - CellTypist model name, for example `Immune_All_Low.pkl`. - Optional majority voting. The `.h5ad` file should contain normalized expression values. Raw counts can fail or produce poor labels.",
-    "content": "Inputs\n- AnnData `.h5ad` file.\n- CellTypist model name, for example `Immune_All_Low.pkl`.\n- Optional majority voting.\n\nThe `.h5ad` file should contain normalized expression values. Raw counts can\nfail or produce poor labels."
-  },
-  {
-    "id": "docs:ai/tools/celltypist-annotation#outputs",
-    "sourceKind": "documentation",
-    "title": "CellTypist Annotation — Outputs",
-    "locator": "Docs / Ai / Tools / Celltypist Annotation / Outputs",
-    "excerpt": "Outputs - CSV with predicted labels. - JSON summary. - Cell count. - Label count. - Top label fraction. - Provenance.",
-    "content": "Outputs\n- CSV with predicted labels.\n- JSON summary.\n- Cell count.\n- Label count.\n- Top label fraction.\n- Provenance."
-  },
-  {
-    "id": "docs:ai/tools/celltypist-annotation#how-to-read-the-result",
-    "sourceKind": "documentation",
-    "title": "CellTypist Annotation — How to read the result",
-    "locator": "Docs / Ai / Tools / Celltypist Annotation / How to read the result",
-    "excerpt": "How to read the result Start with the label distribution table. If one label dominates almost all cells, ask whether that makes sense for the dataset. The top label fraction is the fraction of cells assigned to the most common label. A very high value can be…",
-    "content": "How to read the result\nStart with the label distribution table. If one label dominates almost all\ncells, ask whether that makes sense for the dataset.\n\nThe top label fraction is the fraction of cells assigned to the most common\nlabel. A very high value can be correct for a purified dataset, but suspicious\nfor a diverse tissue sample."
-  },
-  {
-    "id": "docs:ai/tools/celltypist-annotation#good-first-pipeline",
-    "sourceKind": "documentation",
-    "title": "CellTypist Annotation — Good first pipeline",
-    "locator": "Docs / Ai / Tools / Celltypist Annotation / Good first pipeline",
-    "excerpt": "Good first pipeline 1. Add a small `.h5ad` file to Data. 2. Install CellTypist Local Annotation. 3. Add CellTypist Annotation to a pipeline. 4. Select the `.h5ad` file and model. 5. Run and inspect labels in Results.",
-    "content": "Good first pipeline\n1. Add a small `.h5ad` file to Data.\n2. Install CellTypist Local Annotation.\n3. Add CellTypist Annotation to a pipeline.\n4. Select the `.h5ad` file and model.\n5. Run and inspect labels in Results."
-  },
-  {
-    "id": "docs:ai/tools/celltypist-annotation#compatible-model",
-    "sourceKind": "documentation",
-    "title": "CellTypist Annotation — Compatible model",
-    "locator": "Docs / Ai / Tools / Celltypist Annotation / Compatible model",
-    "excerpt": "Compatible model - [CellTypist Local Annotation](/ai/models/celltypist-local-annotation) Every run records provenance: the model and version, the input file, the selected CellTypist model, and the majority-voting setting.",
-    "content": "Compatible model\n- [CellTypist Local Annotation](/ai/models/celltypist-local-annotation)\n\nEvery run records provenance: the model and version, the input file, the\nselected CellTypist model, and the majority-voting setting."
-  },
-  {
-    "id": "docs:ai/tools/genomic-variant-effect",
-    "sourceKind": "documentation",
-    "title": "Genomic Variant Effect",
-    "locator": "Docs / Ai / Tools / Genomic Variant Effect",
-    "excerpt": "Genomic Variant Effect scores variants by comparing model embeddings for reference and alternate sequence windows.",
-    "content": "Genomic Variant Effect scores variants by comparing model embeddings for\nreference and alternate sequence windows."
-  },
-  {
-    "id": "docs:ai/tools/genomic-variant-effect#use-it-for",
-    "sourceKind": "documentation",
-    "title": "Genomic Variant Effect — Use it for",
-    "locator": "Docs / Ai / Tools / Genomic Variant Effect / Use it for",
-    "excerpt": "Use it for - local variant prioritization experiments; - quick checks on small VCF/VCF.GZ files; - generating BED tracks from model-derived variant scores; - building exploratory genomics pipelines.",
-    "content": "Use it for\n- local variant prioritization experiments;\n- quick checks on small VCF/VCF.GZ files;\n- generating BED tracks from model-derived variant scores;\n- building exploratory genomics pipelines."
-  },
-  {
-    "id": "docs:ai/tools/genomic-variant-effect#inputs",
-    "sourceKind": "documentation",
-    "title": "Genomic Variant Effect — Inputs",
-    "locator": "Docs / Ai / Tools / Genomic Variant Effect / Inputs",
-    "excerpt": "Inputs - Reference FASTA/FA/FNA file, or an inline reference sequence. - VCF or VCF.GZ variant file. - Reference name when needed. - Window start. - Flank size. - Max variants. - Max tokens. - Nucleotide Transformer AI Model.",
-    "content": "Inputs\n- Reference FASTA/FA/FNA file, or an inline reference sequence.\n- VCF or VCF.GZ variant file.\n- Reference name when needed.\n- Window start.\n- Flank size.\n- Max variants.\n- Max tokens.\n- Nucleotide Transformer AI Model."
-  },
-  {
-    "id": "docs:ai/tools/genomic-variant-effect#compatible-models",
-    "sourceKind": "documentation",
-    "title": "Genomic Variant Effect — Compatible models",
-    "locator": "Docs / Ai / Tools / Genomic Variant Effect / Compatible models",
-    "excerpt": "Compatible models - [Nucleotide Transformer v2 50M](/ai/models/instadeep-nt-v2-50m-multi-species) - [Nucleotide Transformer v2 500M](/ai/models/instadeep-nt-v2-500m-multi-species)",
-    "content": "Compatible models\n- [Nucleotide Transformer v2 50M](/ai/models/instadeep-nt-v2-50m-multi-species)\n- [Nucleotide Transformer v2 500M](/ai/models/instadeep-nt-v2-500m-multi-species)"
-  },
-  {
-    "id": "docs:ai/tools/genomic-variant-effect#outputs",
-    "sourceKind": "documentation",
-    "title": "Genomic Variant Effect — Outputs",
-    "locator": "Docs / Ai / Tools / Genomic Variant Effect / Outputs",
-    "excerpt": "Outputs - Variant scores CSV. - BED genome track. - JSON summary. - Variant count. - Top embedding delta. - Warnings. - Provenance.",
-    "content": "Outputs\n- Variant scores CSV.\n- BED genome track.\n- JSON summary.\n- Variant count.\n- Top embedding delta.\n- Warnings.\n- Provenance."
-  },
-  {
-    "id": "docs:ai/tools/genomic-variant-effect#how-to-read-the-result",
-    "sourceKind": "documentation",
-    "title": "Genomic Variant Effect — How to read the result",
-    "locator": "Docs / Ai / Tools / Genomic Variant Effect / How to read the result",
-    "excerpt": "How to read the result The main score is based on how much the alternate sequence changes the model embedding compared with the reference sequence. A higher score means a bigger model-representation change. It does not mean the variant is automatically pathog…",
-    "content": "How to read the result\nThe main score is based on how much the alternate sequence changes the model\nembedding compared with the reference sequence.\n\nA higher score means a bigger model-representation change. It does not mean the\nvariant is automatically pathogenic, causal, or clinically important.\n\nAlways check warnings. The most important warning is a REF mismatch: it means the\nVCF reference allele does not match the FASTA sequence Liatir used."
-  },
-  {
-    "id": "docs:ai/tools/genomic-variant-effect#good-first-pipeline",
-    "sourceKind": "documentation",
-    "title": "Genomic Variant Effect — Good first pipeline",
-    "locator": "Docs / Ai / Tools / Genomic Variant Effect / Good first pipeline",
-    "excerpt": "Good first pipeline 1. Reference FASTA input. 2. VCF input. 3. Genomic Variant Effect with Nucleotide Transformer 50M. 4. BED output into a genome viewer. 5. Inspect top scores and provenance.",
-    "content": "Good first pipeline\n1. Reference FASTA input.\n2. VCF input.\n3. Genomic Variant Effect with Nucleotide Transformer 50M.\n4. BED output into a genome viewer.\n5. Inspect top scores and provenance."
-  },
-  {
-    "id": "docs:ai/tools/genomic-variant-effect#how-the-score-is-computed",
-    "sourceKind": "documentation",
-    "title": "Genomic Variant Effect — How the score is computed",
-    "locator": "Docs / Ai / Tools / Genomic Variant Effect / How the score is computed",
-    "excerpt": "How the score is computed The score measures how much the alternate sequence embedding differs from the reference embedding — higher means a bigger change in the model's representation. Variants are read in file order and scoring stops at `Max variants`, so n…",
-    "content": "How the score is computed\nThe score measures how much the alternate sequence embedding differs from the\nreference embedding — higher means a bigger change in the model's\nrepresentation. Variants are read in file order and scoring stops at `Max\nvariants`, so no `.tbi` index is needed."
-  },
-  {
     "id": "docs:ai/tools/overview",
     "sourceKind": "documentation",
     "title": "AI Tools",
     "locator": "Docs / Ai / Tools / Overview",
-    "excerpt": "AI Tools are the pipeline-ready tasks that use local AI Models. They are not Plugins: Plugins are `.lia` extensions, while AI Tools are built-in capabilities that run compatible AI Models.",
-    "content": "AI Tools are the pipeline-ready tasks that use local AI Models. They are not\nPlugins: Plugins are `.lia` extensions, while AI Tools are built-in capabilities\nthat run compatible AI Models."
+    "excerpt": "AI Tools are built-in scientific tasks that use compatible installed AI Models. They are not `.lia` Plugins and they do not install their own model dependencies.",
+    "content": "AI Tools are built-in scientific tasks that use compatible installed AI Models.\nThey are not `.lia` Plugins and they do not install their own model dependencies."
   },
   {
-    "id": "docs:ai/tools/overview#available-ai-tools",
+    "id": "docs:ai/tools/overview#available-ai-tool",
     "sourceKind": "documentation",
-    "title": "AI Tools — Available AI Tools",
-    "locator": "Docs / Ai / Tools / Overview / Available AI Tools",
-    "excerpt": "Available AI Tools | AI Tool | Compatible AI Models | Main output | | --- | --- | --- | | [CellTypist Annotation](/ai/tools/celltypist-annotation) | CellTypist Local Annotation | cell labels and summary | | [Sequence Embedding](/ai/tools/sequence-embedding) |…",
-    "content": "Available AI Tools\n| AI Tool | Compatible AI Models | Main output |\n| --- | --- | --- |\n| [CellTypist Annotation](/ai/tools/celltypist-annotation) | CellTypist Local Annotation | cell labels and summary |\n| [Sequence Embedding](/ai/tools/sequence-embedding) | Nucleotide Transformer 50M/500M, ESM-2 8M | embedding CSV and JSON summary |\n| [Single-cell Embedding](/ai/tools/single-cell-embedding) | UCE 4-layer | embedded AnnData, embedding preview, JSON summary |\n| [Genomic Variant Effect](/ai/tools/genomic-variant-effect) | Nucleotide Transformer 50M/500M | variant scores and BED track |\n| [Regulatory Prediction](/ai/tools/regulatory-prediction) | Enformer, Basenji2, Borzoi Mini | signal tracks and optional variant deltas |\n| [Protein Structure Prediction](/ai/tools/protein-structure-prediction) | Boltz-2 | mmCIF/PDB structure and confidence metadata |"
+    "title": "AI Tools — Available AI Tool",
+    "locator": "Docs / Ai / Tools / Overview / Available AI Tool",
+    "excerpt": "Available AI Tool | AI Tool | Compatible AI Models | Main output | | --- | --- | --- | | [Single-cell Embedding](/ai/tools/single-cell-embedding) | Geneformer V1 10M, scGPT Whole-human, UCE 4-layer | embedded AnnData, CSV preview, JSON summary, provenance | T…",
+    "content": "Available AI Tool\n| AI Tool | Compatible AI Models | Main output |\n| --- | --- | --- |\n| [Single-cell Embedding](/ai/tools/single-cell-embedding) | Geneformer V1 10M, scGPT Whole-human, UCE 4-layer | embedded AnnData, CSV preview, JSON summary, provenance |\n\nThe model selector shows only installed models allowed by the tool contract.\nThe same tool can run directly from an AI Model page or as a repeatable pipeline\nstep."
   },
   {
-    "id": "docs:ai/tools/overview#direct-run-or-pipeline",
+    "id": "docs:ai/tools/overview#reading-results",
     "sourceKind": "documentation",
-    "title": "AI Tools — Direct run or pipeline?",
-    "locator": "Docs / Ai / Tools / Overview / Direct run or pipeline?",
-    "excerpt": "Direct run or pipeline? Direct model pages are useful for quick tests. Pipelines are better when you want repeatable workflows, connected outputs, and a full run history across multiple steps. Use a pipeline when: - one output file should feed another tool; -…",
-    "content": "Direct run or pipeline?\nDirect model pages are useful for quick tests. Pipelines are better when you\nwant repeatable workflows, connected outputs, and a full run history across\nmultiple steps.\n\nUse a pipeline when:\n\n- one output file should feed another tool;\n- you want to repeat the same workflow on more samples;\n- you need Results to show the whole parent pipeline;\n- you are testing model outputs together with viewers or downstream tools."
-  },
-  {
-    "id": "docs:ai/tools/overview#how-model-selection-works",
-    "sourceKind": "documentation",
-    "title": "AI Tools — How model selection works",
-    "locator": "Docs / Ai / Tools / Overview / How model selection works",
-    "excerpt": "How model selection works Each AI Tool exposes an AI Model dropdown. Liatir only shows installed models that match the tool contract. For example, Protein Structure Prediction will not accept a Nucleotide Transformer model, because that model creates sequence…",
-    "content": "How model selection works\nEach AI Tool exposes an AI Model dropdown. Liatir only shows installed models\nthat match the tool contract.\n\nFor example, Protein Structure Prediction will not accept a Nucleotide\nTransformer model, because that model creates sequence embeddings and does not\npredict structures."
-  },
-  {
-    "id": "docs:ai/tools/overview#common-outputs",
-    "sourceKind": "documentation",
-    "title": "AI Tools — Common outputs",
-    "locator": "Docs / Ai / Tools / Overview / Common outputs",
-    "excerpt": "Common outputs AI Tools usually create both human-readable Results sections and output files. Output files are important because later pipeline steps can consume them. | Output type | What it means | | --- | --- | | CSV | Table you can inspect or pass to othe…",
-    "content": "Common outputs\nAI Tools usually create both human-readable Results sections and output files.\nOutput files are important because later pipeline steps can consume them.\n\n| Output type | What it means |\n| --- | --- |\n| CSV | Table you can inspect or pass to other tools |\n| JSON | Structured summary, metrics, warnings, and provenance |\n| BED | Genome-browser track |\n| PDB/mmCIF | Protein structure file |\n| embeddings | Numeric vectors for comparison, clustering, or downstream analysis |"
-  },
-  {
-    "id": "docs:ai/tools/overview#reading-scientific-confidence",
-    "sourceKind": "documentation",
-    "title": "AI Tools — Reading scientific confidence",
-    "locator": "Docs / Ai / Tools / Overview / Reading scientific confidence",
-    "excerpt": "Reading scientific confidence Liatir helps you inspect output, but it does not turn model output into a final scientific conclusion. Always check: - the model page; - input preprocessing requirements; - warnings; - provenance; - whether the model is meant for…",
-    "content": "Reading scientific confidence\nLiatir helps you inspect output, but it does not turn model output into a final\nscientific conclusion. Always check:\n\n- the model page;\n- input preprocessing requirements;\n- warnings;\n- provenance;\n- whether the model is meant for your organism, tissue, assay, or sequence type."
-  },
-  {
-    "id": "docs:ai/tools/protein-structure-prediction",
-    "sourceKind": "documentation",
-    "title": "Protein Structure Prediction",
-    "locator": "Docs / Ai / Tools / Protein Structure Prediction",
-    "excerpt": "Protein Structure Prediction predicts a 3D structure from a protein sequence and can optionally include ligand or binding-related outputs when the selected model supports them.",
-    "content": "Protein Structure Prediction predicts a 3D structure from a protein sequence and\ncan optionally include ligand or binding-related outputs when the selected model\nsupports them."
-  },
-  {
-    "id": "docs:ai/tools/protein-structure-prediction#use-it-for",
-    "sourceKind": "documentation",
-    "title": "Protein Structure Prediction — Use it for",
-    "locator": "Docs / Ai / Tools / Protein Structure Prediction / Use it for",
-    "excerpt": "Use it for - predicting a structure from a protein FASTA; - creating a structure file for the 3D viewer; - testing protein-ligand settings with Boltz-2; - building a sequence-to-structure pipeline.",
-    "content": "Use it for\n- predicting a structure from a protein FASTA;\n- creating a structure file for the 3D viewer;\n- testing protein-ligand settings with Boltz-2;\n- building a sequence-to-structure pipeline."
-  },
-  {
-    "id": "docs:ai/tools/protein-structure-prediction#inputs",
-    "sourceKind": "documentation",
-    "title": "Protein Structure Prediction — Inputs",
-    "locator": "Docs / Ai / Tools / Protein Structure Prediction / Inputs",
-    "excerpt": "Inputs - Protein FASTA/FA/FAA/TXT file, or inline protein sequence. - Optional ligand SMILES. - Optional ligand CCD identifier. - MSA server setting. - Accelerator setting. - Output format: mmCIF or PDB. - Recycling steps and diffusion samples. If both a file…",
-    "content": "Inputs\n- Protein FASTA/FA/FAA/TXT file, or inline protein sequence.\n- Optional ligand SMILES.\n- Optional ligand CCD identifier.\n- MSA server setting.\n- Accelerator setting.\n- Output format: mmCIF or PDB.\n- Recycling steps and diffusion samples.\n\nIf both a file and inline sequence are provided, Liatir uses the file."
-  },
-  {
-    "id": "docs:ai/tools/protein-structure-prediction#compatible-models",
-    "sourceKind": "documentation",
-    "title": "Protein Structure Prediction — Compatible models",
-    "locator": "Docs / Ai / Tools / Protein Structure Prediction / Compatible models",
-    "excerpt": "Compatible models - [Boltz-2 Local Structure & Binding](/ai/models/boltz2-local-structure-binding) Chai-1 is implemented but hidden until Linux CUDA validation is available.",
-    "content": "Compatible models\n- [Boltz-2 Local Structure & Binding](/ai/models/boltz2-local-structure-binding)\n\nChai-1 is implemented but hidden until Linux CUDA validation is available."
-  },
-  {
-    "id": "docs:ai/tools/protein-structure-prediction#outputs",
-    "sourceKind": "documentation",
-    "title": "Protein Structure Prediction — Outputs",
-    "locator": "Docs / Ai / Tools / Protein Structure Prediction / Outputs",
-    "excerpt": "Outputs - mmCIF or PDB structure file. - JSON summary. - Confidence scores when available. - Affinity scores when available. - Provenance.",
-    "content": "Outputs\n- mmCIF or PDB structure file.\n- JSON summary.\n- Confidence scores when available.\n- Affinity scores when available.\n- Provenance."
-  },
-  {
-    "id": "docs:ai/tools/protein-structure-prediction#how-to-read-the-result",
-    "sourceKind": "documentation",
-    "title": "Protein Structure Prediction — How to read the result",
-    "locator": "Docs / Ai / Tools / Protein Structure Prediction / How to read the result",
-    "excerpt": "How to read the result The structure file is the main artifact. Open it in the structure viewer and check whether a file was actually produced. Confidence and affinity outputs are model-derived estimates. They should guide inspection, not replace experimental…",
-    "content": "How to read the result\nThe structure file is the main artifact. Open it in the structure viewer and\ncheck whether a file was actually produced.\n\nConfidence and affinity outputs are model-derived estimates. They should guide\ninspection, not replace experimental validation.\n\nCPU runs can be slow. For short tests, use one diffusion sample and modest\nrecycling steps."
-  },
-  {
-    "id": "docs:ai/tools/protein-structure-prediction#good-to-know",
-    "sourceKind": "documentation",
-    "title": "Protein Structure Prediction — Good to know",
-    "locator": "Docs / Ai / Tools / Protein Structure Prediction / Good to know",
-    "excerpt": "Good to know A run that finishes without a structure file is treated as an error, because the structure is the main result. Chai-1 support is built in but hidden until Linux CUDA validation is available.",
-    "content": "Good to know\nA run that finishes without a structure file is treated as an error, because\nthe structure is the main result. Chai-1 support is built in but hidden until\nLinux CUDA validation is available."
-  },
-  {
-    "id": "docs:ai/tools/regulatory-prediction",
-    "sourceKind": "documentation",
-    "title": "Regulatory Prediction",
-    "locator": "Docs / Ai / Tools / Regulatory Prediction",
-    "excerpt": "Regulatory Prediction uses long-context genomic models to predict signal across a DNA sequence window. It can also compare reference and alternate windows for selected variants.",
-    "content": "Regulatory Prediction uses long-context genomic models to predict signal across\na DNA sequence window. It can also compare reference and alternate windows for\nselected variants."
-  },
-  {
-    "id": "docs:ai/tools/regulatory-prediction#use-it-for",
-    "sourceKind": "documentation",
-    "title": "Regulatory Prediction — Use it for",
-    "locator": "Docs / Ai / Tools / Regulatory Prediction / Use it for",
-    "excerpt": "Use it for - exploring predicted regulatory signal from DNA sequence; - creating BED tracks for genome-viewer inspection; - comparing variant effects on predicted regulatory output; - testing Enformer, Basenji2, or Borzoi Mini workflows locally.",
-    "content": "Use it for\n- exploring predicted regulatory signal from DNA sequence;\n- creating BED tracks for genome-viewer inspection;\n- comparing variant effects on predicted regulatory output;\n- testing Enformer, Basenji2, or Borzoi Mini workflows locally."
-  },
-  {
-    "id": "docs:ai/tools/regulatory-prediction#inputs",
-    "sourceKind": "documentation",
-    "title": "Regulatory Prediction — Inputs",
-    "locator": "Docs / Ai / Tools / Regulatory Prediction / Inputs",
-    "excerpt": "Inputs - Reference FASTA/FA/FNA file, or an inline DNA sequence. - Optional VCF or VCF.GZ file. - Reference name when needed. - Window start. - Output head, usually `Human`. - Target index. - Max variants.",
-    "content": "Inputs\n- Reference FASTA/FA/FNA file, or an inline DNA sequence.\n- Optional VCF or VCF.GZ file.\n- Reference name when needed.\n- Window start.\n- Output head, usually `Human`.\n- Target index.\n- Max variants."
-  },
-  {
-    "id": "docs:ai/tools/regulatory-prediction#compatible-models",
-    "sourceKind": "documentation",
-    "title": "Regulatory Prediction — Compatible models",
-    "locator": "Docs / Ai / Tools / Regulatory Prediction / Compatible models",
-    "excerpt": "Compatible models - [Enformer Regulatory Prediction](/ai/models/deepmind-enformer-regulatory) - [Basenji2 Human Regulatory](/ai/models/calico-basenji2-human-regulatory) - [Borzoi Mini K562 RNA-seq](/ai/models/calico-borzoi-mini-k562-rna)",
-    "content": "Compatible models\n- [Enformer Regulatory Prediction](/ai/models/deepmind-enformer-regulatory)\n- [Basenji2 Human Regulatory](/ai/models/calico-basenji2-human-regulatory)\n- [Borzoi Mini K562 RNA-seq](/ai/models/calico-borzoi-mini-k562-rna)"
-  },
-  {
-    "id": "docs:ai/tools/regulatory-prediction#outputs",
-    "sourceKind": "documentation",
-    "title": "Regulatory Prediction — Outputs",
-    "locator": "Docs / Ai / Tools / Regulatory Prediction / Outputs",
-    "excerpt": "Outputs - Regulatory signal CSV. - Signal BED track. - Optional variant scores CSV. - Optional variant score BED track. - JSON summary. - Bin count. - Variant count. - Top variant delta. - Warnings. - Provenance.",
-    "content": "Outputs\n- Regulatory signal CSV.\n- Signal BED track.\n- Optional variant scores CSV.\n- Optional variant score BED track.\n- JSON summary.\n- Bin count.\n- Variant count.\n- Top variant delta.\n- Warnings.\n- Provenance."
-  },
-  {
-    "id": "docs:ai/tools/regulatory-prediction#how-to-read-the-result",
-    "sourceKind": "documentation",
-    "title": "Regulatory Prediction — How to read the result",
-    "locator": "Docs / Ai / Tools / Regulatory Prediction / How to read the result",
-    "excerpt": "How to read the result Start with the signal track. It shows predicted model output across bins in the input sequence window. The `targetIndex` selects which output track to inspect. This is currently a technical parameter. Index `0` is useful for a first smo…",
-    "content": "How to read the result\nStart with the signal track. It shows predicted model output across bins in the\ninput sequence window.\n\nThe `targetIndex` selects which output track to inspect. This is currently a\ntechnical parameter. Index `0` is useful for a first smoke test, but scientific\ninterpretation requires knowing which biological assay or target that index\nrepresents.\n\nIf a VCF is provided, variant scores show how much the predicted signal changed\nbetween reference and alternate windows."
-  },
-  {
-    "id": "docs:ai/tools/regulatory-prediction#good-to-know",
-    "sourceKind": "documentation",
-    "title": "Regulatory Prediction — Good to know",
-    "locator": "Docs / Ai / Tools / Regulatory Prediction / Good to know",
-    "excerpt": "Good to know Each regulatory model installs in its own isolated environment, separate from other AI Models, because they rely on different packages and model files.",
-    "content": "Good to know\nEach regulatory model installs in its own isolated environment, separate from\nother AI Models, because they rely on different packages and model files."
-  },
-  {
-    "id": "docs:ai/tools/sequence-embedding",
-    "sourceKind": "documentation",
-    "title": "Sequence Embedding",
-    "locator": "Docs / Ai / Tools / Sequence Embedding",
-    "excerpt": "Sequence Embedding turns DNA, RNA, or protein sequences into numeric vectors.",
-    "content": "Sequence Embedding turns DNA, RNA, or protein sequences into numeric vectors."
-  },
-  {
-    "id": "docs:ai/tools/sequence-embedding#use-it-for",
-    "sourceKind": "documentation",
-    "title": "Sequence Embedding — Use it for",
-    "locator": "Docs / Ai / Tools / Sequence Embedding / Use it for",
-    "excerpt": "Use it for - comparing sequences by model representation; - creating embedding tables for later analysis; - testing local sequence models before building a larger pipeline; - feeding embeddings into downstream custom tools.",
-    "content": "Use it for\n- comparing sequences by model representation;\n- creating embedding tables for later analysis;\n- testing local sequence models before building a larger pipeline;\n- feeding embeddings into downstream custom tools."
-  },
-  {
-    "id": "docs:ai/tools/sequence-embedding#inputs",
-    "sourceKind": "documentation",
-    "title": "Sequence Embedding — Inputs",
-    "locator": "Docs / Ai / Tools / Sequence Embedding / Inputs",
-    "excerpt": "Inputs - FASTA/FA/FNA/FAA/TXT file, or an inline sequence. - Molecule type: DNA, RNA, or protein. - Max tokens. - Compatible installed AI Model. If both a file and inline sequence are provided, Liatir uses the file.",
-    "content": "Inputs\n- FASTA/FA/FNA/FAA/TXT file, or an inline sequence.\n- Molecule type: DNA, RNA, or protein.\n- Max tokens.\n- Compatible installed AI Model.\n\nIf both a file and inline sequence are provided, Liatir uses the file."
-  },
-  {
-    "id": "docs:ai/tools/sequence-embedding#compatible-models",
-    "sourceKind": "documentation",
-    "title": "Sequence Embedding — Compatible models",
-    "locator": "Docs / Ai / Tools / Sequence Embedding / Compatible models",
-    "excerpt": "Compatible models - [Nucleotide Transformer v2 50M](/ai/models/instadeep-nt-v2-50m-multi-species) - [Nucleotide Transformer v2 500M](/ai/models/instadeep-nt-v2-500m-multi-species) - [ESM-2 8M Protein](/ai/models/facebook-esm2-8m-protein)",
-    "content": "Compatible models\n- [Nucleotide Transformer v2 50M](/ai/models/instadeep-nt-v2-50m-multi-species)\n- [Nucleotide Transformer v2 500M](/ai/models/instadeep-nt-v2-500m-multi-species)\n- [ESM-2 8M Protein](/ai/models/facebook-esm2-8m-protein)"
-  },
-  {
-    "id": "docs:ai/tools/sequence-embedding#outputs",
-    "sourceKind": "documentation",
-    "title": "Sequence Embedding — Outputs",
-    "locator": "Docs / Ai / Tools / Sequence Embedding / Outputs",
-    "excerpt": "Outputs - Embeddings CSV. - JSON summary. - Sequence count. - Embedding dimension. - Mean sequence length. - Provenance.",
-    "content": "Outputs\n- Embeddings CSV.\n- JSON summary.\n- Sequence count.\n- Embedding dimension.\n- Mean sequence length.\n- Provenance."
-  },
-  {
-    "id": "docs:ai/tools/sequence-embedding#how-to-read-the-result",
-    "sourceKind": "documentation",
-    "title": "Sequence Embedding — How to read the result",
-    "locator": "Docs / Ai / Tools / Sequence Embedding / How to read the result",
-    "excerpt": "How to read the result Do not try to interpret every embedding value manually. An embedding is a vector that becomes useful when compared, clustered, visualized, or passed to another tool. Check: - sequence count matches what you expected; - embedding dimensi…",
-    "content": "How to read the result\nDo not try to interpret every embedding value manually. An embedding is a vector\nthat becomes useful when compared, clustered, visualized, or passed to another\ntool.\n\nCheck:\n\n- sequence count matches what you expected;\n- embedding dimension is stable for a model;\n- max tokens did not truncate important sequence context;\n- molecule type matches the model."
-  },
-  {
-    "id": "docs:ai/tools/sequence-embedding#good-to-know",
-    "sourceKind": "documentation",
-    "title": "Sequence Embedding — Good to know",
-    "locator": "Docs / Ai / Tools / Sequence Embedding / Good to know",
-    "excerpt": "Good to know Each sequence becomes a single embedding vector, written to a per-sequence table. The output is a numeric representation, not a final biological label.",
-    "content": "Good to know\nEach sequence becomes a single embedding vector, written to a per-sequence\ntable. The output is a numeric representation, not a final biological label."
+    "title": "AI Tools — Reading results",
+    "locator": "Docs / Ai / Tools / Overview / Reading results",
+    "excerpt": "Reading results Check the input gene identifiers, species, warnings, embedding dimensions, and Runtime Box provenance before using an embedding downstream. Model output is a scientific artifact to validate, not an automatic biological conclusion.",
+    "content": "Reading results\nCheck the input gene identifiers, species, warnings, embedding dimensions, and\nRuntime Box provenance before using an embedding downstream. Model output is a\nscientific artifact to validate, not an automatic biological conclusion."
   },
   {
     "id": "docs:ai/tools/single-cell-embedding",
     "sourceKind": "documentation",
     "title": "Single-cell Embedding",
     "locator": "Docs / Ai / Tools / Single Cell Embedding",
-    "excerpt": "Single-cell Embedding is an AI Tool that creates numeric vectors for cells in an AnnData `.h5ad` dataset. Supported backends are [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) and [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m).",
-    "content": "Single-cell Embedding is an AI Tool that creates numeric vectors for cells in an\nAnnData `.h5ad` dataset.\n\nSupported backends are [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) and\n[Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m)."
+    "excerpt": "Single-cell Embedding is an AI Tool that creates numeric vectors for cells in an AnnData `.h5ad` dataset. Supported backends are [UCE 4-layer](/ai/models/snap-stanford-uce-4layer), [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m), and [scGPT Whole…",
+    "content": "Single-cell Embedding is an AI Tool that creates numeric vectors for cells in an\nAnnData `.h5ad` dataset.\n\nSupported backends are [UCE 4-layer](/ai/models/snap-stanford-uce-4layer),\n[Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m), and\n[scGPT Whole-human](/ai/models/bowang-scgpt-whole-human)."
   },
   {
     "id": "docs:ai/tools/single-cell-embedding#what-it-does",
@@ -1427,8 +371,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Single-cell Embedding — Inputs",
     "locator": "Docs / Ai / Tools / Single Cell Embedding / Inputs",
-    "excerpt": "Inputs | Input | Meaning | | --- | --- | | AI Model | Installed UCE 4-layer or Geneformer V1 10M | | AnnData file | `.h5ad` file from Data | | Species | Organism matching the dataset | | Batch size | Number of cells processed together | | CSV preview rows | N…",
-    "content": "Inputs\n| Input | Meaning |\n| --- | --- |\n| AI Model | Installed UCE 4-layer or Geneformer V1 10M |\n| AnnData file | `.h5ad` file from Data |\n| Species | Organism matching the dataset |\n| Batch size | Number of cells processed together |\n| CSV preview rows | Number of cells exported to the lightweight CSV preview |\n\nThe AnnData `.X` matrix should contain raw scRNA-seq counts. UCE expects gene\nsymbols in `var_names`. Geneformer V1 is human-only and expects Ensembl IDs in\n`var[\"ensembl_id\"]` or `var_names`."
+    "excerpt": "Inputs | Input | Meaning | | --- | --- | | AI Model | Installed UCE 4-layer, Geneformer V1 10M, or scGPT Whole-human | | AnnData file | `.h5ad` file from Data | | Species | Organism matching the dataset | | Batch size | Number of cells processed together | |…",
+    "content": "Inputs\n| Input | Meaning |\n| --- | --- |\n| AI Model | Installed UCE 4-layer, Geneformer V1 10M, or scGPT Whole-human |\n| AnnData file | `.h5ad` file from Data |\n| Species | Organism matching the dataset |\n| Batch size | Number of cells processed together |\n| CSV preview rows | Number of cells exported to the lightweight CSV preview |\n\nThe AnnData `.X` matrix should contain raw scRNA-seq counts. UCE expects gene\nsymbols in `var_names`. Geneformer V1 is human-only and expects Ensembl IDs in\n`var[\"ensembl_id\"]` or `var_names`. scGPT is human-only and expects gene symbols\nin `var[\"gene_name\"]`, `var[\"feature_name\"]`, or `var_names`."
   },
   {
     "id": "docs:ai/tools/single-cell-embedding#outputs",
@@ -1588,7 +532,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "What is Liatir — Three ways to extend Liatir",
     "locator": "Docs / Introduction / Overview / Three ways to extend Liatir",
     "excerpt": "Three ways to extend Liatir ### Native tools Any binary installed on your machine can run as a native tool. Liatir checks availability, shows install instructions when a tool is missing, and runs it with the parameters you choose. Run history and parsed resul…",
-    "content": "Three ways to extend Liatir\n### Native tools\nAny binary installed on your machine can run as a native tool. Liatir checks availability, shows install instructions when a tool is missing, and runs it with the parameters you choose. Run history and parsed results are stored automatically.\n\n### Plugins\nA `.lia` plugin is a self-contained extension that adds custom analysis steps. Plugins can be written in Python, Node, or compiled to WebAssembly, and appear as normal tools in the UI and in pipelines. See the [Plugins](/plugins/overview) section to build one.\n\n### AI Models\nAI Models are local model runtimes that Liatir installs and manages for you. AI Tools use those models for tasks such as single-cell annotation, sequence embedding, protein structure prediction, and genomic variant scoring."
+    "content": "Three ways to extend Liatir\n### Native tools\nAny binary installed on your machine can run as a native tool. Liatir checks availability, shows install instructions when a tool is missing, and runs it with the parameters you choose. Run history and parsed results are stored automatically.\n\n### Plugins\nA `.lia` plugin is a self-contained extension that adds custom analysis steps. Plugins can be written in Python, Node, or compiled to WebAssembly, and appear as normal tools in the UI and in pipelines. See the [Plugins](/plugins/overview) section to build one.\n\n### AI Models\nAI Models are signed local Runtime Boxes that Liatir installs and manages for you. The current AI Tool uses Geneformer, scGPT, or UCE for single-cell embeddings."
   },
   {
     "id": "docs:introduction/overview#core-concepts",
@@ -1596,7 +540,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "What is Liatir — Core concepts",
     "locator": "Docs / Introduction / Overview / Core concepts",
     "excerpt": "Core concepts | Concept | Description | |---------|-------------| | **Data library** | A registry of file paths on disk. Files are never copied — Liatir tracks references and detects when files move or disappear. | | **Native tool** | A system binary wrapped…",
-    "content": "Core concepts\n| Concept | Description |\n|---------|-------------|\n| **Data library** | A registry of file paths on disk. Files are never copied — Liatir tracks references and detects when files move or disappear. |\n| **Native tool** | A system binary wrapped with a Liatir UI, dependency check, and run history. |\n| **Plugin** | A self-contained `.lia` extension that adds custom analysis steps. |\n| **AI Model** | A locally managed model runtime, installed only when needed. |\n| **Pipeline** | A visual workflow where the output of one step feeds the input of the next. |\n| **Analysis run** | A single execution: recorded inputs, stdout, parsed sections, and any output files. |"
+    "content": "Core concepts\n| Concept | Description |\n|---------|-------------|\n| **Data library** | A registry of file paths on disk. Files are never copied — Liatir tracks references and detects when files move or disappear. |\n| **Native tool** | A system binary wrapped with a Liatir UI, dependency check, and run history. |\n| **Plugin** | A self-contained `.lia` extension that adds custom analysis steps. |\n| **AI Model** | A signed Runtime Box model installed locally only when needed. |\n| **Pipeline** | A visual workflow where the output of one step feeds the input of the next. |\n| **Analysis run** | A single execution: recorded inputs, stdout, parsed sections, and any output files. |"
   },
   {
     "id": "docs:introduction/overview#getting-started",
@@ -1604,7 +548,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "What is Liatir — Getting started",
     "locator": "Docs / Introduction / Overview / Getting started",
     "excerpt": "Getting started 1. [Add files to your Data library](/data/overview) — import by path, no copying. 2. [Run a native tool](/tools/overview) — start with FastQC or fastp on FASTQ files. 3. [Read the AI guide](/ai/guide) — learn what AI Models and AI Tools do bef…",
-    "content": "Getting started\n1. [Add files to your Data library](/data/overview) — import by path, no copying.\n2. [Run a native tool](/tools/overview) — start with FastQC or fastp on FASTQ files.\n3. [Read the AI guide](/ai/guide) — learn what AI Models and AI Tools do before interpreting results.\n4. [Install an AI Model](/ai/models/overview) — try local annotation, embedding, or structure workflows.\n5. [Build or import a .lia plugin](/plugins/overview) — for custom logic or pipeline orchestration.\n6. [Connect steps in a pipeline](/pipeline/overview) — outputs flow into the next step automatically."
+    "content": "Getting started\n1. [Add files to your Data library](/data/overview) — import by path, no copying.\n2. [Run a native tool](/tools/overview) — start with FastQC or fastp on FASTQ files.\n3. [Read the AI guide](/ai/guide) — learn what AI Models and AI Tools do before interpreting results.\n4. [Install an AI Model](/ai/models/overview) — run a local single-cell embedding workflow.\n5. [Build or import a .lia plugin](/plugins/overview) — for custom logic or pipeline orchestration.\n6. [Connect steps in a pipeline](/pipeline/overview) — outputs flow into the next step automatically."
   },
   {
     "id": "docs:introduction/overview#the-name-liatir",
@@ -1716,7 +660,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Pipelines — Example workflows",
     "locator": "Docs / Pipeline / Overview / Example workflows",
     "excerpt": "Example workflows ### FASTQ quality control 1. Start from FASTQ files in **Data**. 2. Run **FastQC**. 3. Run **fastp** to trim reads. 4. Add trimmed files back to **Data** or pass them to the next step. ### Variant filtering 1. Start from a VCF or BCF file. 2…",
-    "content": "Example workflows\n### FASTQ quality control\n\n1. Start from FASTQ files in **Data**.\n2. Run **FastQC**.\n3. Run **fastp** to trim reads.\n4. Add trimmed files back to **Data** or pass them to the next step.\n\n### Variant filtering\n\n1. Start from a VCF or BCF file.\n2. Run **BCFtools stats** to inspect the callset.\n3. Run **BCFtools filter** with a quality expression.\n4. Review the filtered VCF in **Results**.\n\n### AI-assisted workflows\n\n1. Install a compatible AI Model.\n2. Add an AI Tool to the pipeline.\n3. Select the model inside the tool.\n4. Connect the generated output to viewers, reports, or later tools.\n\nExample AI pipelines:\n\n- `.h5ad` file to [CellTypist Annotation](/ai/tools/celltypist-annotation) to label summary.\n- FASTA plus VCF to [Genomic Variant Effect](/ai/tools/genomic-variant-effect) to BED track.\n- DNA window to [Regulatory Prediction](/ai/tools/regulatory-prediction) to genome viewer.\n- Protein FASTA to [Protein Structure Prediction](/ai/tools/protein-structure-prediction) to 3D viewer.\n\nRead [Local AI for bioinformatics](/ai/guide) before interpreting AI outputs."
+    "content": "Example workflows\n### FASTQ quality control\n\n1. Start from FASTQ files in **Data**.\n2. Run **FastQC**.\n3. Run **fastp** to trim reads.\n4. Add trimmed files back to **Data** or pass them to the next step.\n\n### Variant filtering\n\n1. Start from a VCF or BCF file.\n2. Run **BCFtools stats** to inspect the callset.\n3. Run **BCFtools filter** with a quality expression.\n4. Review the filtered VCF in **Results**.\n\n### AI-assisted workflows\n\n1. Install a compatible AI Model.\n2. Add an AI Tool to the pipeline.\n3. Select the model inside the tool.\n4. Connect the generated output to viewers, reports, or later tools.\n\nExample AI pipelines:\n\n- `.h5ad` file to [Single-cell Embedding](/ai/tools/single-cell-embedding) to an embedded AnnData artifact and viewer.\n\nRead [Local AI for bioinformatics](/ai/guide) before interpreting AI outputs."
   },
   {
     "id": "docs:pipeline/overview#saving-and-reusing-workflows",
@@ -2883,8 +1827,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Tools — AI Tools",
     "locator": "Docs / Tools / Overview / AI Tools",
-    "excerpt": "AI Tools AI Tools are documented separately because interpreting their results requires model-specific context. | AI Tool | Description | | --- | --- | | [CellTypist Annotation](/ai/tools/celltypist-annotation) | Single-cell cell-type labels from `.h5ad` inpu…",
-    "content": "AI Tools\nAI Tools are documented separately because interpreting their results requires\nmodel-specific context.\n\n| AI Tool | Description |\n| --- | --- |\n| [CellTypist Annotation](/ai/tools/celltypist-annotation) | Single-cell cell-type labels from `.h5ad` inputs |\n| [Sequence Embedding](/ai/tools/sequence-embedding) | DNA/RNA/protein sequence embeddings |\n| [Genomic Variant Effect](/ai/tools/genomic-variant-effect) | Embedding-delta scores for variants |\n| [Regulatory Prediction](/ai/tools/regulatory-prediction) | Predicted regulatory signal tracks |\n| [Protein Structure Prediction](/ai/tools/protein-structure-prediction) | Protein 3D structure prediction |\n\nStart with [Local AI for bioinformatics](/ai/guide) if you are new to these\noutputs."
+    "excerpt": "AI Tools AI Tools are documented separately because interpreting their results requires model-specific context. | AI Tool | Description | | --- | --- | | [Single-cell Embedding](/ai/tools/single-cell-embedding) | Foundation-model cell embeddings from `.h5ad`…",
+    "content": "AI Tools\nAI Tools are documented separately because interpreting their results requires\nmodel-specific context.\n\n| AI Tool | Description |\n| --- | --- |\n| [Single-cell Embedding](/ai/tools/single-cell-embedding) | Foundation-model cell embeddings from `.h5ad` inputs |\n\nStart with [Local AI for bioinformatics](/ai/guide) if you are new to these\noutputs."
   },
   {
     "id": "docs:tools/overview#scientific-viewers",
@@ -3155,8 +2099,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Genome Track Viewer — Use it for",
     "locator": "Docs / Visualization / Genome Track Viewer / Use it for",
-    "excerpt": "Use it for - viewing variant-effect BED tracks; - viewing regulatory prediction signal tracks; - inspecting output intervals relative to a reference sequence.",
-    "content": "Use it for\n- viewing variant-effect BED tracks;\n- viewing regulatory prediction signal tracks;\n- inspecting output intervals relative to a reference sequence."
+    "excerpt": "Use it for - viewing variant-effect BED tracks; - viewing genome-positioned signal tracks; - inspecting output intervals relative to a reference sequence.",
+    "content": "Use it for\n- viewing variant-effect BED tracks;\n- viewing genome-positioned signal tracks;\n- inspecting output intervals relative to a reference sequence."
   },
   {
     "id": "docs:visualization/genome-track-viewer#inputs",
@@ -3173,14 +2117,6 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "locator": "Docs / Visualization / Genome Track Viewer / How to read the result",
     "excerpt": "How to read the result Tracks show intervals or scores along a reference sequence. A high score means the upstream tool assigned a stronger value to that interval. The biological meaning depends on the tool that produced the track. Always inspect the originat…",
     "content": "How to read the result\nTracks show intervals or scores along a reference sequence. A high score means\nthe upstream tool assigned a stronger value to that interval. The biological\nmeaning depends on the tool that produced the track.\n\nAlways inspect the originating Result and provenance before interpreting a\ntrack."
-  },
-  {
-    "id": "docs:visualization/genome-track-viewer#related-tools",
-    "sourceKind": "documentation",
-    "title": "Genome Track Viewer — Related tools",
-    "locator": "Docs / Visualization / Genome Track Viewer / Related tools",
-    "excerpt": "Related tools - [Genomic Variant Effect](/ai/tools/genomic-variant-effect) - [Regulatory Prediction](/ai/tools/regulatory-prediction)",
-    "content": "Related tools\n- [Genomic Variant Effect](/ai/tools/genomic-variant-effect)\n- [Regulatory Prediction](/ai/tools/regulatory-prediction)"
   },
   {
     "id": "docs:visualization/overview",
@@ -3211,8 +2147,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Scientific Viewers — Pipeline use",
     "locator": "Docs / Visualization / Overview / Pipeline use",
-    "excerpt": "Pipeline use Viewer nodes can be placed after tools that produce compatible artifacts: - Protein Structure Prediction to 3D Structure Viewer. - Regulatory Prediction to Genome Track Viewer. - CellTypist Annotation to Single-cell Viewer.",
-    "content": "Pipeline use\nViewer nodes can be placed after tools that produce compatible artifacts:\n\n- Protein Structure Prediction to 3D Structure Viewer.\n- Regulatory Prediction to Genome Track Viewer.\n- CellTypist Annotation to Single-cell Viewer."
+    "excerpt": "Pipeline use Viewer nodes can be placed after tools that produce compatible artifacts: - Native tools or API Connectors that produce structure files to 3D Structure Viewer. - Native tools or API Connectors that produce genome tracks to Genome Track Viewer. -…",
+    "content": "Pipeline use\nViewer nodes can be placed after tools that produce compatible artifacts:\n\n- Native tools or API Connectors that produce structure files to 3D Structure Viewer.\n- Native tools or API Connectors that produce genome tracks to Genome Track Viewer.\n- Single-cell Embedding to Single-cell Viewer."
   },
   {
     "id": "docs:visualization/single-cell-viewer",
@@ -3227,8 +2163,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Single-cell Viewer — Use it for",
     "locator": "Docs / Visualization / Single Cell Viewer / Use it for",
-    "excerpt": "Use it for - inspecting CellTypist label distributions; - checking single-cell output artifacts before deeper visualization; - getting a quick look before richer interactive views.",
-    "content": "Use it for\n- inspecting CellTypist label distributions;\n- checking single-cell output artifacts before deeper visualization;\n- getting a quick look before richer interactive views."
+    "excerpt": "Use it for - inspecting single-cell embedding previews; - checking single-cell output artifacts before deeper visualization; - getting a quick look before richer interactive views.",
+    "content": "Use it for\n- inspecting single-cell embedding previews;\n- checking single-cell output artifacts before deeper visualization;\n- getting a quick look before richer interactive views."
   },
   {
     "id": "docs:visualization/single-cell-viewer#inputs",
@@ -3243,16 +2179,16 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Single-cell Viewer — How to read the result",
     "locator": "Docs / Visualization / Single Cell Viewer / How to read the result",
-    "excerpt": "How to read the result Start with label counts and obvious outliers. If a label distribution looks unexpected, check the input preprocessing and CellTypist reference model. This viewer is a practical preview. Full interactive single-cell and spatial visualiza…",
-    "content": "How to read the result\nStart with label counts and obvious outliers. If a label distribution looks\nunexpected, check the input preprocessing and CellTypist reference model.\n\nThis viewer is a practical preview. Full interactive single-cell and spatial\nvisualization is planned."
+    "excerpt": "How to read the result Start with cell counts, embedding dimensions, and obvious outliers. If a result looks unexpected, check input preprocessing, gene identifiers, and species. This viewer is a practical preview. Full interactive single-cell and spatial vis…",
+    "content": "How to read the result\nStart with cell counts, embedding dimensions, and obvious outliers. If a result\nlooks unexpected, check input preprocessing, gene identifiers, and species.\n\nThis viewer is a practical preview. Full interactive single-cell and spatial\nvisualization is planned."
   },
   {
     "id": "docs:visualization/single-cell-viewer#related-tools",
     "sourceKind": "documentation",
     "title": "Single-cell Viewer — Related tools",
     "locator": "Docs / Visualization / Single Cell Viewer / Related tools",
-    "excerpt": "Related tools - [CellTypist Annotation](/ai/tools/celltypist-annotation)",
-    "content": "Related tools\n- [CellTypist Annotation](/ai/tools/celltypist-annotation)"
+    "excerpt": "Related tools - [Single-cell Embedding](/ai/tools/single-cell-embedding)",
+    "content": "Related tools\n- [Single-cell Embedding](/ai/tools/single-cell-embedding)"
   },
   {
     "id": "docs:visualization/structure-viewer",
@@ -3267,8 +2203,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "3D Structure Viewer — Use it for",
     "locator": "Docs / Visualization / Structure Viewer / Use it for",
-    "excerpt": "Use it for - inspecting Boltz-2 structure outputs; - opening PDB/mmCIF/CIF files; - checking whether the predicted structure artifact is present and readable.",
-    "content": "Use it for\n- inspecting Boltz-2 structure outputs;\n- opening PDB/mmCIF/CIF files;\n- checking whether the predicted structure artifact is present and readable."
+    "excerpt": "Use it for - inspecting PDB, mmCIF, and CIF structure artifacts; - opening PDB/mmCIF/CIF files; - checking whether the predicted structure artifact is present and readable.",
+    "content": "Use it for\n- inspecting PDB, mmCIF, and CIF structure artifacts;\n- opening PDB/mmCIF/CIF files;\n- checking whether the predicted structure artifact is present and readable."
   },
   {
     "id": "docs:visualization/structure-viewer#inputs",
@@ -3285,13 +2221,5 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "locator": "Docs / Visualization / Structure Viewer / How to read the result",
     "excerpt": "How to read the result Use the viewer to check whether the structure loaded and whether the overall shape looks plausible. The visual preview does not validate scientific quality by itself. Read confidence outputs and provenance together with the structure.",
     "content": "How to read the result\nUse the viewer to check whether the structure loaded and whether the overall\nshape looks plausible. The visual preview does not validate scientific quality\nby itself. Read confidence outputs and provenance together with the structure."
-  },
-  {
-    "id": "docs:visualization/structure-viewer#related-tools",
-    "sourceKind": "documentation",
-    "title": "3D Structure Viewer — Related tools",
-    "locator": "Docs / Visualization / Structure Viewer / Related tools",
-    "excerpt": "Related tools - [Protein Structure Prediction](/ai/tools/protein-structure-prediction) - [Boltz-2 Local Structure & Binding](/ai/models/boltz2-local-structure-binding)",
-    "content": "Related tools\n- [Protein Structure Prediction](/ai/tools/protein-structure-prediction)\n- [Boltz-2 Local Structure & Binding](/ai/models/boltz2-local-structure-binding)"
   }
 ];

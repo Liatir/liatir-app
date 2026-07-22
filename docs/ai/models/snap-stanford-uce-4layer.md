@@ -9,16 +9,13 @@ clustering, visualization, and downstream analysis.
 Use UCE when you have an AnnData `.h5ad` file and want cell embeddings rather
 than cell-type labels.
 
-For a first-pass annotation, start with
-[CellTypist Local Annotation](/ai/models/celltypist-local-annotation). For
-foundation-model embeddings, use UCE.
+Use UCE when a multi-species foundation-model embedding is the required output.
 
 ## What Liatir installs
 
-Liatir installs UCE in its own isolated environment, including the 4-layer model
-weights and everything the model needs to run. It is kept separate from
-CellTypist and every other AI Model, and nothing is added to the base app until
-you install it.
+Liatir installs the signed UCE macOS arm64 Metal Runtime Box, including the
+4-layer weights and complete tested environment. Nothing is added to the base
+app or system Python.
 
 ## Inputs
 

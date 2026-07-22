@@ -1,888 +1,282 @@
-<!--
-	The AI Models catalogue: browse, install, remove.
-
-	The screen's real job is *deciding what a model's state actually is*, which is more subtle than it looks.
-	A model can be installed but broken, available but incompatible with this machine, a preview that cannot
-	be installed at all, or simply still being checked. Each of those needs a different label, a different
-	badge, and different buttons — and getting it wrong means a user clicking Install on something that
-	cannot work. Hence the cluster of small `model*` helpers below: they collapse status, install progress,
-	runtime checks and compatibility into one honest answer per model.
-
-	Installs are *not* owned by this page. They live in `aiModelsStore`, so a user can start a multi-gigabyte
-	download and navigate away — the progress keeps running and is still there when they come back.
--->
+<!-- Runtime Box-only AI Model catalog. Installs are owned by aiModelsStore and survive navigation. -->
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
-  import Icon from '@iconify/svelte';
-  import PageHeader from '$lib/components/layout/PageHeader.svelte';
-  import Badge, { type BadgeVariants } from '$lib/components/ui/Badge.svelte';
-  import Button from '$lib/components/ui/Button.svelte';
-  import InfoPopup from '$lib/components/ui/InfoPopup.svelte';
-  import { modelInstallBlock, type AIModelInstallBlock } from '$lib/ai/model-compatibility';
-  import { aiModelLiatirDocsUrl, aiModelOfficialUrl } from '$lib/ai/model-docs';
-  import { aiModelInfo } from '$lib/ai/model-help';
-  import { aiModelsStore } from '$lib/stores/aiModels.svelte';
-  import { confirm } from '$lib/stores/confirm.svelte';
-  import { toast } from '$lib/stores/toast.svelte';
-  import { fmtBytes, getLastSegmentsStringFromPath, openLinkInBrowser, sanitizeLocalPathsForDisplay } from '$lib/utils';
-  import type { LiatirAIModelRecord, LiatirAIModelRuntimePackage } from '@liatir/core';
-  import Spinner from '$lib/components/ui/Spinner.svelte';
-  import { workspaceStore } from '$lib/stores/workspace.svelte';
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import Icon from '@iconify/svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
+	import Badge, { type BadgeVariants } from '$lib/components/ui/Badge.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Spinner from '$lib/components/ui/Spinner.svelte';
+	import { modelInstallBlock } from '$lib/ai/model-compatibility';
+	import { aiModelLiatirDocsUrl, aiModelOfficialUrl } from '$lib/ai/model-docs';
+	import { aiModelInfo } from '$lib/ai/model-help';
+	import { aiModelsStore } from '$lib/stores/aiModels.svelte';
+	import { confirm } from '$lib/stores/confirm.svelte';
+	import { toast } from '$lib/stores/toast.svelte';
+	import {
+		fmtBytes,
+		getLastSegmentsStringFromPath,
+		openLinkInBrowser,
+		sanitizeLocalPathsForDisplay
+	} from '$lib/utils';
+	import type { LiatirAIModelRecord, LiatirAIModelRuntimePackage } from '@liatir/core';
 
-  type ModelCategoryGroup = {
-    name: string;
-    models: LiatirAIModelRecord[];
-    installedCount: number;
-    runnableCount: number;
-  };
+	let loading = $state(!aiModelsStore.initialized);
+	let searchQuery = $state('');
+	let expandedModelDetails = $state<Record<string, boolean>>({});
 
-  let loading = $state(!aiModelsStore.initialized);
-  let expandedCategories = $state<Record<string, boolean>>({});
-  let expandedModelDetails = $state<Record<string, boolean>>({});
-  let searchQuery = $state('');
+	onMount(() => {
+		let cancelled = false;
+		loading = !aiModelsStore.initialized;
+		void (async () => {
+			await aiModelsStore.init();
+			const runtimeRefresh = aiModelsStore.ensureRuntimeBoxStatuses();
+			void aiModelsStore.ensureHardwareInfo();
+			if (!cancelled) loading = false;
+			void runtimeRefresh;
+		})();
+		return () => {
+			cancelled = true;
+		};
+	});
 
-  onMount(() => {
-    let cancelled = false;
-    // Only show the loading state on a genuine first load: revisiting the page with the store already
-    // populated should render instantly, not flash a spinner over data we already have.
-    const firstLoad = !aiModelsStore.initialized;
-    loading = firstLoad;
+	const models = $derived(aiModelsStore.models);
+	const runtimeChecks = $derived(aiModelsStore.runtimeChecks);
+	const installing = $derived(aiModelsStore.installing);
+	const installLogs = $derived(aiModelsStore.installLogs);
+	const hardware = $derived(aiModelsStore.hardwareInfo);
+	const hardwareInfoChecked = $derived(aiModelsStore.hardwareInfoChecked);
+	const normalizedSearch = $derived(searchQuery.trim().toLowerCase());
+	const filteredModels = $derived(
+		normalizedSearch
+			? models.filter((model) => modelSearchText(model).includes(normalizedSearch))
+			: models
+	);
+	const installedCount = $derived(
+		models.filter((model) => model.status === 'installed' && !runtimeChecks[model.id]).length
+	);
+	const runnableCount = $derived(aiModelsStore.runnableModels.length);
 
-    (async () => {
-      await aiModelsStore.init();
-      // The runtime and hardware checks are *not* awaited: they shell out and can take a moment, and the
-      // catalogue is perfectly usable while they resolve. Each model shows "checking" until its own check
-      // lands (see `isCheckingModel`), rather than the whole page waiting on the slowest one.
-      const runtimeRefresh = aiModelsStore.ensureManagedRuntimeStatuses();
-      void aiModelsStore.ensureHardwareInfo();
-      if (!cancelled) {
-        loading = false;
-      }
-      void runtimeRefresh;
-    })();
+	function isChecking(model: LiatirAIModelRecord): boolean {
+		return runtimeChecks[model.id] === true ||
+			(Boolean(model.install.hostRequirements) && !hardwareInfoChecked);
+	}
 
-    // Guards the async write above against the user navigating away mid-load.
-    return () => {
-      cancelled = true;
-    };
-  });
+	function statusLabel(model: LiatirAIModelRecord): string {
+		if (installing[model.id]) return 'installing';
+		if (isChecking(model)) return 'checking';
+		if (model.status === 'installed') return 'installed';
+		if (model.status === 'error') return 'needs attention';
+		return 'not installed';
+	}
 
-  const models = $derived(aiModelsStore.models);
-  const runtimeChecks = $derived(aiModelsStore.runtimeChecks);
-  const installing = $derived(aiModelsStore.installing);
-  const installLogs = $derived(aiModelsStore.installLogs);
-  const hardware = $derived(aiModelsStore.hardwareInfo);
-  const hardwareInfoChecked = $derived(aiModelsStore.hardwareInfoChecked);
-  const normalizedSearch = $derived(searchQuery.trim().toLowerCase());
-  const filteredModels = $derived(
-    normalizedSearch
-      ? models.filter((model) => modelSearchText(model).includes(normalizedSearch))
-      : models
-  );
-  const installedCount = $derived(models.filter((model) => model.status === 'installed' && !runtimeChecks[model.id]).length);
-  const runnableCount = $derived(aiModelsStore.runnableModels.length);
-  const groupedModels = $derived(groupModelsByCategory(filteredModels));
+	function statusVariant(model: LiatirAIModelRecord): BadgeVariants {
+		if (installing[model.id] || isChecking(model)) return 'running';
+		if (model.status === 'installed') return 'done';
+		if (model.status === 'error') return 'failed';
+		return 'brand';
+	}
 
-  function statusVariant(status: LiatirAIModelRecord['status']): BadgeVariants {
-    if (status === 'error') return 'failed';
-    if (status === 'installed') return 'done';
-    if (status === 'available') return 'brand';
-    if (status === 'missing') return 'neutral';
-    return 'failed';
-  }
+	function actionsLocked(model: LiatirAIModelRecord): boolean {
+		return Boolean(installing[model.id]) || isChecking(model);
+	}
 
-  function statusLabel(status: LiatirAIModelRecord['status']): string {
-    if (status === 'installed') return 'installed';
-    if (status === 'available' || status === 'missing') return 'not installed';
-    if (status === 'error') return 'needs attention';
-    return status;
-  }
+	function modelSearchText(model: LiatirAIModelRecord): string {
+		return [
+			model.name,
+			model.id,
+			model.description,
+			model.runtime.name,
+			model.license?.name,
+			...model.capabilities,
+			...model.modalities,
+			...(model.tags ?? [])
+		].filter(Boolean).join(' ').toLowerCase();
+	}
 
-  /**
-   * A model is "checking" while its runtime is being inspected — *or* while the hardware probe is still
-   * out, if the model declares host requirements. The second clause matters: without the hardware answer
-   * we cannot yet say whether this model is installable here, so claiming it is "available" would be a
-   * guess the user might act on.
-   */
-  function isCheckingModel(model: LiatirAIModelRecord): boolean {
-    return runtimeChecks[model.id] === true
-      || (Boolean(model.install?.hostRequirements) && !hardwareInfoChecked);
-  }
+	function runtimeLabel(model: LiatirAIModelRecord): string {
+		return `${model.runtime.name}${model.runtime.version ? ` ${model.runtime.version}` : ''}`;
+	}
 
-  /**
-   * The one honest label for a model's state. Order is precedence, and it is deliberate: a preview model
-   * is a preview whatever else is true, an install in progress outranks a stale stored status, and a check
-   * still running outranks the status it is about to replace.
-   */
-  function modelStatusLabel(model: LiatirAIModelRecord): string {
-    if (model.releaseStage === 'preview') return 'preview';
-    if (installing[model.id]) return 'installing';
-    if (isCheckingModel(model)) return 'checking';
-    return statusLabel(model.status);
-  }
+	function hardwareLabel(model: LiatirAIModelRecord): string {
+		const parts: string[] = [];
+		if (model.hardware?.recommendedRamGb != null) parts.push(`${model.hardware.recommendedRamGb} GB RAM`);
+		if (model.hardware?.recommendedVramGb != null) parts.push(`${model.hardware.recommendedVramGb} GB VRAM`);
+		if (model.hardware?.gpu === false) parts.push('CPU');
+		if (model.hardware?.gpu === true) parts.push('GPU');
+		return parts.join(' / ') || 'Target-dependent';
+	}
 
-  function modelStatusVariant(model: LiatirAIModelRecord): BadgeVariants {
-    if (model.releaseStage === 'preview') return 'neutral';
-    // Both installing and checking render as `running`, because both mean "something is happening, wait".
-    if (installing[model.id] || isCheckingModel(model)) return 'running';
-    return statusVariant(model.status);
-  }
+	function runtimePackages(model: LiatirAIModelRecord): LiatirAIModelRuntimePackage[] {
+		return model.install.runtimePackages ?? [];
+	}
 
-  /**
-   * Disables Install/Remove while the model is busy or its state is not yet known — so the user cannot
-   * start a second install, or remove a model whose runtime is mid-inspection.
-   */
-  function modelActionsLocked(model: LiatirAIModelRecord): boolean {
-    return Boolean(installing[model.id]) || isCheckingModel(model);
-  }
+	function packageLabel(pkg: LiatirAIModelRuntimePackage): string {
+		if (pkg.specifier && pkg.specifier !== pkg.package) return `${pkg.package}: ${pkg.specifier}`;
+		if (pkg.version) return `${pkg.package} ${pkg.version}`;
+		return pkg.package;
+	}
 
-  function hardwareLabel(model: LiatirAIModelRecord): string {
-    const parts: string[] = [];
-    if (model.hardware?.recommendedRamGb != null) parts.push(`${model.hardware.recommendedRamGb} GB RAM`);
-    if (model.hardware?.recommendedVramGb != null) parts.push(`${model.hardware.recommendedVramGb} GB VRAM`);
-    if (model.hardware?.gpu === false) parts.push('CPU');
-    if (model.hardware?.gpu === true) parts.push('GPU');
-    return parts.join(' / ') || 'Unspecified';
-  }
+	function installedSizeLabel(model: LiatirAIModelRecord): string {
+		if (model.installedSizeBytes) return `${fmtBytes(model.installedSizeBytes)} installed`;
+		if (model.diskSizeBytes) return `Approx. ${fmtBytes(model.diskSizeBytes)}`;
+		return 'Size reported after install';
+	}
 
-  function runtimeLabel(model: LiatirAIModelRecord): string {
-    return `${model.runtime.name}${model.runtime.version ? ` ${model.runtime.version}` : ''}`;
-  }
+	function isDetailsExpanded(id: string): boolean {
+		return expandedModelDetails[id] ?? false;
+	}
 
-  /**
-   * Flattens everything about a model into one searchable string.
-   *
-   * Deliberately generous — capabilities, modalities, tags, licence, runtime. A user looking for a model
-   * rarely knows its name; they know what they want it to *do* ("cell annotation", "protein structure"),
-   * so searching only names would fail exactly when search is most needed.
-   */
-  function modelSearchText(model: LiatirAIModelRecord): string {
-    return [
-      model.name,
-      model.id,
-      model.description,
-      model.category,
-      model.version,
-      model.runtime.name,
-      model.runtime.kind,
-      model.runtime.version,
-      model.source,
-      model.status,
-      model.license?.name,
-      model.license?.spdxId,
-      ...(model.license?.components?.flatMap((component) => [
-        component.scope,
-        component.name,
-        component.spdxId,
-        component.attribution,
-      ]) ?? []),
-      ...(model.capabilities ?? []),
-      ...(model.modalities ?? []),
-      ...(model.tags ?? []),
-      model.releaseStage,
-    ].filter(Boolean).join(' ').toLowerCase();
-  }
+	function toggleDetails(id: string) {
+		expandedModelDetails = { ...expandedModelDetails, [id]: !isDetailsExpanded(id) };
+	}
 
-  function modelCategory(model: LiatirAIModelRecord): string {
-    return model.category?.trim() || 'Other';
-  }
+	function installLabel(model: LiatirAIModelRecord): string {
+		const progress = installing[model.id];
+		if (!progress) return 'Install';
+		if (progress.message) return progress.message;
+		return progress.bytesTotal
+			? `${fmtBytes(progress.bytesDownloaded)} / ${fmtBytes(progress.bytesTotal)}`
+			: fmtBytes(progress.bytesDownloaded);
+	}
 
-  /**
-   * Groups the catalogue by scientific domain.
-   *
-   * The order is explicit rather than alphabetical, because it is a *curated* order: the domains a user is
-   * most likely to want come first, and the development fixtures and the catch-all sit at the bottom where
-   * they belong. An unlisted category simply falls to the end.
-   */
-  function groupModelsByCategory(items: LiatirAIModelRecord[]): ModelCategoryGroup[] {
-    const categoryOrder = [
-      'Single-cell',
-      'Single-cell Foundation Models',
-      'Genomics',
-      'Predictive Genomics',
-      'Protein Language Models',
-      'Protein Structure',
-      'Development Fixtures',
-      'Other',
-    ];
-    const rank = new Map(categoryOrder.map((category, index) => [category, index]));
-    const groups = new Map<string, LiatirAIModelRecord[]>();
+	function installPercent(model: LiatirAIModelRecord): number | null {
+		const progress = installing[model.id];
+		if (!progress?.bytesTotal || progress.bytesTotal <= 0) return null;
+		return Math.max(0, Math.min(100, progress.bytesDownloaded / progress.bytesTotal * 100));
+	}
 
-    for (const model of items) {
-      const category = modelCategory(model);
-      groups.set(category, [...(groups.get(category) ?? []), model]);
-    }
+	function installLogState(id: string): { showLog: boolean; logLines: string[] } | null {
+		const current = installing[id];
+		if (current?.logLines.length) return current;
+		const saved = installLogs[id];
+		return saved?.logLines.length ? saved : null;
+	}
 
-    return Array.from(groups.entries())
-      .sort(([a], [b]) => (rank.get(a) ?? 999) - (rank.get(b) ?? 999) || a.localeCompare(b))
-      .map(([name, groupModels]) => ({
-        name,
-        models: groupModels,
-        installedCount: groupModels.filter((model) => model.status === 'installed' && !runtimeChecks[model.id]).length,
-        runnableCount: groupModels.filter((model) => model.releaseStage !== 'preview' && model.enabled !== false && model.status === 'installed' && !runtimeChecks[model.id]).length,
-      }));
-  }
+	function logLineClass(line: string): string {
+		const lower = line.toLowerCase();
+		return lower.includes('error') || lower.includes('failed') ? 'text-red-400' : 'text-zinc-300';
+	}
 
-  function categoryDescription(category: string): string {
-    if (category === 'Single-cell') return 'Cell annotation and AnnData workflows.';
-    if (category === 'Single-cell Foundation Models') return 'Embeddings, perturbation, and cell-state foundation-model workflows.';
-    if (category === 'Genomics') return 'DNA/RNA embeddings, regulatory prediction, and variant scoring.';
-    if (category === 'Predictive Genomics') return 'Long-context sequence models for regulatory signal and variant impact.';
-    if (category === 'Protein Language Models') return 'Protein sequence embeddings and representation models.';
-    if (category === 'Protein Structure') return 'Structure prediction and binding-oriented local runtimes.';
-    if (category === 'Development Fixtures') return 'Internal models used to validate AI Tool contracts.';
-    return 'Additional local AI Models.';
-  }
+	function errorMessage(error: unknown, fallback: string): string {
+		return error instanceof Error && error.message ? error.message : fallback;
+	}
 
-  function isCategoryExpanded(category: string): boolean {
-    if (normalizedSearch) return true;
-    return expandedCategories[category] ?? false;
-  }
+	async function installModel(model: LiatirAIModelRecord) {
+		if (actionsLocked(model)) return;
+		const blocked = modelInstallBlock(model, hardware);
+		if (blocked) {
+			toast.error(blocked.reason);
+			return;
+		}
+		try {
+			await aiModelsStore.installRuntimeBoxModel(model.id);
+			toast.success('Runtime Box installed');
+		} catch (error) {
+			toast.error(errorMessage(error, 'Failed to install Runtime Box'));
+		}
+	}
 
-  function toggleCategory(category: string) {
-    expandedCategories = {
-      ...expandedCategories,
-      [category]: !isCategoryExpanded(category),
-    };
-  }
+	async function removeModel(model: LiatirAIModelRecord) {
+		if (actionsLocked(model)) return;
+		const ok = await confirm({
+			title: 'Remove AI Model',
+			message: `Remove the Runtime Box for "${model.name}" from this device?`,
+			confirmLabel: 'Remove'
+		});
+		if (!ok) return;
+		try {
+			await aiModelsStore.removeRuntimeBoxModel(model.id);
+			toast.info('Runtime Box removed');
+		} catch (error) {
+			toast.error(errorMessage(error, 'Failed to remove Runtime Box'));
+		}
+	}
 
-  function isModelDetailsExpanded(modelId: string): boolean {
-    return expandedModelDetails[modelId] ?? false;
-  }
+	async function openModelDocs(model: LiatirAIModelRecord) {
+		const url = aiModelLiatirDocsUrl(model);
+		if (url) await openLinkInBrowser(url);
+	}
 
-  function toggleModelDetails(modelId: string) {
-    expandedModelDetails = {
-      ...expandedModelDetails,
-      [modelId]: !isModelDetailsExpanded(modelId),
-    };
-  }
-
-  function installBlock(model: LiatirAIModelRecord): AIModelInstallBlock | null {
-    return modelInstallBlock(model, hardware);
-  }
-
-  function runtimePackages(model: LiatirAIModelRecord): LiatirAIModelRuntimePackage[] {
-    return model.install?.runtimePackages ?? [];
-  }
-
-  function runtimePackageLabel(pkg: LiatirAIModelRuntimePackage): string {
-    if (pkg.specifier && pkg.specifier !== pkg.package) return `${pkg.package}: ${pkg.specifier}`;
-    if (pkg.version) return `${pkg.package} ${pkg.version}`;
-    return pkg.package;
-  }
-
-  function runtimePackagesPreview(model: LiatirAIModelRecord): string {
-    const packages = runtimePackages(model).map((pkg) => pkg.package);
-    if (packages.length === 0) return 'No runtime packages';
-    if (packages.length <= 3) return packages.join(', ');
-    return `${packages.slice(0, 3).join(', ')} +${packages.length - 3}`;
-  }
-
-  function modelFilesLabel(model: LiatirAIModelRecord): string {
-    const files = model.install?.files ?? [];
-    if (files.length === 0) return 'No managed model files';
-    return `${files.length} managed file${files.length === 1 ? '' : 's'}`;
-  }
-
-  function installedSizeLabel(model: LiatirAIModelRecord): string | null {
-    if (model.installedSizeBytes && model.installedSizeBytes > 0) {
-      return `${fmtBytes(model.installedSizeBytes)} installed`;
-    }
-    if (model.status !== 'installed' && model.diskSizeBytes && model.diskSizeBytes > 0) {
-      return `Approx. ${fmtBytes(model.diskSizeBytes)}`;
-    }
-    return null;
-  }
-
-  function runtimeLockLabel(model: LiatirAIModelRecord): string {
-    const lock = model.runtimeLock;
-    if (!lock) return 'No runtime lock captured yet';
-    const packageCount = lock.packages.length;
-    const packageLabel = `${packageCount} package${packageCount === 1 ? '' : 's'}`;
-    return `${lock.pythonVersion ?? 'Python'} · ${packageLabel} · ${lock.installer}`;
-  }
-
-  function resolveInstallBlock(blocked: AIModelInstallBlock) {
-    if (blocked.dependencyBinary) {
-      goto(`/deps?focus=${encodeURIComponent(blocked.dependencyBinary)}`);
-      return;
-    }
-    goto('/deps');
-  }
-
-  function errorMessage(error: unknown, fallback: string): string {
-    if (error instanceof Error && error.message) return error.message;
-    if (typeof error === 'string' && error.trim()) return error;
-    return fallback;
-  }
-
-  function installLabel(model: LiatirAIModelRecord): string {
-    const progress = installing[model.id];
-    if (!progress) return 'Install';
-    if (progress.message) return progress.message;
-    const file = `File ${progress.fileIndex + 1}/${progress.fileCount}`;
-    const bytes = progress.bytesTotal
-      ? `${fmtBytes(progress.bytesDownloaded)} / ${fmtBytes(progress.bytesTotal)}`
-      : fmtBytes(progress.bytesDownloaded);
-    return `${file} · ${bytes}`;
-  }
-
-  /**
-   * `null` when the total size is unknown — which happens when a server sends no Content-Length. The UI
-   * then shows an indeterminate bar rather than inventing a percentage that would jump around or stall
-   * at a number that means nothing.
-   */
-  function installPercent(model: LiatirAIModelRecord): number | null {
-    const progress = installing[model.id];
-    if (!progress?.bytesTotal || progress.bytesTotal <= 0) return null;
-    return Math.max(0, Math.min(100, (progress.bytesDownloaded / progress.bytesTotal) * 100));
-  }
-
-  function toggleInstallLog(modelId: string) {
-    aiModelsStore.toggleInstallLog(modelId);
-  }
-
-  /**
-   * The log to show: the live one while installing, otherwise the saved one from the last attempt.
-   *
-   * That second branch is why a *failed* install still has a readable log after it finished — the store
-   * hands the accumulated lines over to `installLogs` when the install ends, precisely so the explanation
-   * does not vanish at the moment the user needs it.
-   */
-  function installLogState(modelId: string): { showLog: boolean; logLines: string[] } | null {
-    const current = installing[modelId];
-    if (current?.logLines.length) {
-      return {
-        showLog: current.showLog,
-        logLines: current.logLines,
-      };
-    }
-    const saved = installLogs[modelId];
-    if (saved?.logLines.length) return saved;
-    return null;
-  }
-
-  function logLineClass(line: string): string {
-    const lower = line.toLowerCase();
-    if (lower.includes('error') || lower.includes('failed')) return 'text-red-400';
-    if (lower.includes('warning')) return 'text-red-400';
-    return 'text-zinc-300';
-  }
-
-  async function installModel(model: LiatirAIModelRecord) {
-    if (modelActionsLocked(model)) return;
-    // Compatibility is re-checked at click time, not just when the page rendered: the hardware probe may
-    // have landed since. Blocking here — before a multi-gigabyte download — is the whole point.
-    const blocked = installBlock(model);
-    if (blocked) {
-      toast.error(blocked.reason);
-      return;
-    }
-    try {
-      // The store owns the install, so it survives this page being unmounted.
-      await aiModelsStore.installManagedModel(model.id);
-      toast.success('AI Model installed');
-    } catch (error) {
-      const message = errorMessage(error, 'Failed to install AI Model');
-      toast.error(message);
-    }
-  }
-
-  /** Removal is confirmed first: it deletes gigabytes, and the confirm text says it can be reinstalled. */
-  async function removeModel(model: LiatirAIModelRecord) {
-    if (modelActionsLocked(model)) return;
-    const ok = await confirm({
-      title: 'Remove AI Model',
-      message: `Remove "${model.name}" from this device? The model can be installed again later.`,
-      confirmLabel: 'Remove',
-    });
-    if (!ok) return;
-
-    try {
-      await aiModelsStore.removeManagedModel(model.id);
-      toast.info('AI Model removed');
-    } catch (error) {
-      toast.error(errorMessage(error, 'Failed to remove AI Model'));
-    }
-  }
-
-  async function openModelDocs(model: LiatirAIModelRecord) {
-    if (modelActionsLocked(model)) return;
-    const url = aiModelLiatirDocsUrl(model);
-    if (url) await openLinkInBrowser(url);
-  }
-
-  async function openOfficialModelPage(model: LiatirAIModelRecord) {
-    if (modelActionsLocked(model)) return;
-    const url = aiModelOfficialUrl(model);
-    if (url) await openLinkInBrowser(url);
-  }
+	async function openOfficialModelPage(model: LiatirAIModelRecord) {
+		const url = aiModelOfficialUrl(model);
+		if (url) await openLinkInBrowser(url);
+	}
 </script>
 
 <div class="flex flex-col h-full overflow-hidden">
-  <PageHeader title="AI Models" description="Local model registry for pipeline AI Tools">
-    {#snippet actions()}
-      <Button size="sm" variant="secondary" onclick={() => goto('/pipeline')}>
-        <Icon icon="lucide:workflow" width="14" height="14" />
-        Pipeline
-      </Button>
-    {/snippet}
-  </PageHeader>
+	<PageHeader title="AI Models" description="Signed Runtime Boxes for local scientific AI">
+		{#snippet actions()}
+			<Button size="sm" variant="secondary" onclick={() => goto('/pipeline')}><Icon icon="lucide:workflow" width="14" height="14" />Pipeline</Button>
+		{/snippet}
+	</PageHeader>
+	<PageContent>
+		<div class="flex-1 overflow-y-auto p-6 space-y-5">
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+				<div class="border border-border bg-surface rounded-lg px-4 py-3"><p class="text-[10px] font-semibold uppercase text-text-subtle">Published catalog</p><p class="mt-1 text-sm font-semibold text-text">{models.length} Runtime Boxes</p></div>
+				<div class="border border-border bg-surface rounded-lg px-4 py-3"><p class="text-[10px] font-semibold uppercase text-text-subtle">Installed</p><p class="mt-1 text-sm font-semibold text-text">{installedCount} model{installedCount === 1 ? '' : 's'}</p></div>
+				<div class="border border-border bg-surface rounded-lg px-4 py-3"><p class="text-[10px] font-semibold uppercase text-text-subtle">Runnable</p><p class="mt-1 text-sm font-semibold text-text">{runnableCount} model{runnableCount === 1 ? '' : 's'}</p></div>
+			</div>
 
-  <PageContent>
+			<div class="border border-border bg-surface rounded-lg px-4 py-3">
+				<p class="text-[10px] font-semibold uppercase text-text-subtle">Detected host</p>
+				<p class="mt-1 text-sm font-semibold text-text">{hardware ? `${hardware.cpuCores} CPU cores${hardware.totalMemoryBytes ? ` · ${fmtBytes(hardware.totalMemoryBytes)} RAM` : ''}${hardware.appleMetal ? ' · Apple Metal' : ''}${hardware.cudaAvailable ? ' · CUDA' : ''}` : 'Hardware detection unavailable'}</p>
+			</div>
 
-  <div class="flex-1 overflow-y-auto p-6 space-y-5">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <div class="border border-border bg-surface rounded-lg px-4 py-3">
-        <p class="text-[10px] font-semibold uppercase text-text-subtle">Installed</p>
-        <p class="mt-1 text-sm font-semibold text-text">{installedCount} model{installedCount === 1 ? '' : 's'}</p>
-      </div>
-      <div class="border border-border bg-surface rounded-lg px-4 py-3">
-        <p class="text-[10px] font-semibold uppercase text-text-subtle">Runnable</p>
-        <p class="mt-1 text-sm font-semibold text-text">{runnableCount} model{runnableCount === 1 ? '' : 's'}</p>
-      </div>
-      <div class="border border-border bg-surface rounded-lg px-4 py-3 md:col-span-2">
-        <p class="text-[10px] font-semibold uppercase text-text-subtle">Host runtime</p>
-        <p class="mt-1 text-sm font-semibold text-text">
-          {hardware ? `${hardware.cpuCores} CPU cores${hardware.totalMemoryBytes ? ` · ${fmtBytes(hardware.totalMemoryBytes)} RAM` : ''}${hardware.appleMetal ? ' · Apple Metal' : ''}${hardware.cudaAvailable ? ' · CUDA' : ''}${hardware.pythonVersion ? ` · ${hardware.pythonVersion}` : ''}` : 'Hardware detection unavailable'}
-        </p>
-      </div>
-    </div>
+			<div class="relative max-w-md">
+				<Icon icon="lucide:search" width="15" height="15" class="absolute left-3 top-1/2 -translate-y-1/2 text-text-subtle" />
+				<input type="text" bind:value={searchQuery} placeholder="Search Runtime Box models..." data-testid="ai-models-search" class="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text outline-none focus:border-brand" />
+			</div>
 
-    <div class="flex justify-center gap-2 items-center w-full cursor-default group">
-      <div class="w-full h-px bg-surface-3 group-hover:bg-border-2"></div>
-      <div class="min-w-fit text-[11px] text-text-subtle text-center group-hover:text-text-secondary">
-        AI models are installed globally, therefore available to all workspaces
-      </div>
-      <div class="w-full h-px bg-surface-3 group-hover:bg-border-2"></div>
-    </div>
+			{#if loading}
+				<div class="flex justify-center py-16"><Spinner /></div>
+			{:else if filteredModels.length === 0}
+				<div class="border border-border bg-surface rounded-lg px-4 py-10 text-center text-sm text-text-muted">No Runtime Box model matches this search.</div>
+			{:else}
+				<div class="space-y-3">
+					{#each filteredModels as model (model.id)}
+						{@const blocked = modelInstallBlock(model, hardware)}
+						{@const progress = installing[model.id]}
+						{@const percent = installPercent(model)}
+						{@const installLog = installLogState(model.id)}
+						<div class="border border-border bg-surface rounded-lg overflow-hidden">
+							<div class="p-4 grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto] gap-4 items-center">
+								<div class="min-w-0">
+									<div class="flex items-center gap-2"><p class="text-sm font-semibold text-text truncate">{model.name}</p><Badge variant={statusVariant(model)}>{statusLabel(model)}</Badge></div>
+									<p class="mt-1 text-xs text-text-muted leading-relaxed">{model.description}</p>
+									<div class="mt-2 flex flex-wrap gap-1.5">{#each model.capabilities as capability}<span class="rounded border border-border bg-surface-2 px-1.5 py-0.5 text-[10px] text-text-muted">{capability}</span>{/each}</div>
+									{#if blocked}<div class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] text-amber-800"><p class="font-semibold">{blocked.summary}</p><p class="mt-0.5">{blocked.reason}</p></div>{/if}
+								</div>
+								<div class="text-xs text-text-secondary min-w-0">
+									<p>{runtimeLabel(model)}</p><p class="mt-1 text-[10px] text-text-subtle">{hardwareLabel(model)}</p><p class="mt-1 text-[10px] text-text-muted">{installedSizeLabel(model)}</p>
+									{#if model.localPath}<p class="mt-1 text-[10px] text-text-subtle truncate" title={model.localPath}>{getLastSegmentsStringFromPath(model.localPath, 2)}</p>{/if}
+								</div>
+								<div class="flex flex-wrap items-center justify-end gap-2">
+									<button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface-2 text-text-muted hover:text-text" title="Model details" aria-label="Model details" onclick={() => toggleDetails(model.id)}><Icon icon={isDetailsExpanded(model.id) ? 'lucide:chevron-up' : 'lucide:list-tree'} width="14" height="14" /></button>
+									{#if aiModelLiatirDocsUrl(model)}<button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface-2 text-text-muted hover:text-text" title="Documentation" aria-label="Documentation" onclick={() => openModelDocs(model)}><Icon icon="lucide:book-open" width="14" height="14" /></button>{/if}
+									{#if aiModelOfficialUrl(model)}<button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface-2 text-text-muted hover:text-text" title="Official page" aria-label="Official page" onclick={() => openOfficialModelPage(model)}><Icon icon="lucide:external-link" width="14" height="14" /></button>{/if}
+									{#if model.status === 'installed' && !progress}<Button size="sm" variant="ghost" testId="ai-model-remove-button" disabled={actionsLocked(model)} onclick={() => removeModel(model)}>Remove</Button><Button size="sm" variant="secondary" testId="ai-model-run-button" disabled={actionsLocked(model)} onclick={() => goto(`/ai/${encodeURIComponent(model.id)}`)}>Run</Button>{:else if !progress}<Button size="sm" variant="primary" testId="ai-model-install-button" disabled={actionsLocked(model) || !!blocked} onclick={() => installModel(model)}>Install</Button>{/if}
+								</div>
+							</div>
 
-    <div class="space-y-3">
-      <div class="border border-border bg-surface rounded-lg px-4 py-3">
-        <div class="relative max-w-md">
-          <Icon icon="lucide:search" width="15" height="15" class="absolute left-3 top-1/2 -translate-y-1/2 text-text-subtle" />
-          <input
-            type="text"
-            value={searchQuery}
-            placeholder="Search AI Models..."
-            data-testid="ai-models-search"
-            class="h-9 w-full rounded-md border border-border bg-surface pl-9 pr-9 text-sm text-text-secondary outline-none transition-colors placeholder:text-text-subtle focus:border-brand focus:ring-2 focus:ring-brand/10"
-            oninput={(event) => searchQuery = (event.target as HTMLInputElement).value}
-          />
-          {#if searchQuery}
-            <button
-              type="button"
-              class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-text-subtle transition-colors hover:bg-surface-2 hover:text-text-secondary"
-              aria-label="Clear AI Models search"
-              onclick={() => searchQuery = ''}
-            >
-              <Icon icon="lucide:x" width="14" height="14" />
-            </button>
-          {/if}
-        </div>
-      </div>
+							{#if progress}
+								<div class="mx-4 mb-3"><div class="flex items-center justify-between text-[10px] text-text-muted"><span>{installLabel(model)}</span>{#if percent !== null}<span>{Math.round(percent)}%</span>{/if}<button type="button" class="font-mono hover:text-text" onclick={() => aiModelsStore.toggleInstallLog(model.id)}>{progress.showLog ? 'hide log' : 'log'}</button></div><div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">{#if percent !== null}<div class="h-full rounded-full bg-brand" style={`width: ${percent}%`}></div>{:else}<div class="h-full w-1/2 rounded-full bg-brand/70 animate-pulse"></div>{/if}</div></div>
+							{:else if installLog}<div class="mx-4 mb-3 text-right"><button type="button" class="font-mono text-[10px] text-text-subtle hover:text-text" onclick={() => aiModelsStore.toggleInstallLog(model.id)}>{installLog.showLog ? 'hide log' : 'install log'}</button></div>{/if}
+							{#if installLog?.showLog}<div class="mx-4 mb-3 rounded-lg border border-border bg-zinc-950 px-3 py-2 max-h-40 overflow-y-auto">{#each installLog.logLines as line}<p class="text-[11px] font-mono leading-relaxed {logLineClass(line)}">{sanitizeLocalPathsForDisplay(line, 2)}</p>{/each}</div>{/if}
 
-      {#if loading}
-        <div class="border border-border bg-surface rounded-lg flex flex-col gap-2 items-center justify-center px-4 py-8 text-center text-sm text-text-subtle"><Spinner class="text-text-faint"/> <p>Loading AI Models...</p></div>
-      {:else if models.length === 0}
-        <div class="border border-border bg-surface rounded-lg px-4 py-8 text-center text-sm text-text-subtle">No AI Models available.</div>
-      {:else if filteredModels.length === 0}
-        <div class="border border-border bg-surface rounded-lg px-4 py-8 text-center text-sm text-text-subtle">No AI Models match your search.</div>
-      {:else}
-        {#each groupedModels as group (group.name)}
-          {@const expanded = isCategoryExpanded(group.name)}
-          <section class="border border-border bg-surface rounded-lg overflow-hidden" data-testid="ai-model-category" data-category={group.name}>
-            <button
-              type="button"
-              data-testid="ai-model-category-toggle"
-              data-category={group.name}
-              class="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors hover:bg-surface-2"
-              aria-expanded={expanded}
-              onclick={() => toggleCategory(group.name)}
-            >
-              <div class="flex min-w-0 items-start gap-3">
-                <div class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface-2 text-text-muted">
-                  <Icon icon={expanded ? 'lucide:chevron-down' : 'lucide:chevron-right'} width="15" height="15" />
-                </div>
-                <div class="min-w-0">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-sm font-semibold text-text">{group.name}</h2>
-                    <Badge variant="neutral" size="xs" hideDot>{group.models.length} model{group.models.length === 1 ? '' : 's'}</Badge>
-                    {#if group.installedCount > 0}
-                      <Badge variant="done" size="xs">{group.installedCount} installed</Badge>
-                    {/if}
-                  </div>
-                  <p class="mt-1 text-xs text-text-muted">{categoryDescription(group.name)}</p>
-                </div>
-              </div>
-              <div class="hidden shrink-0 items-center gap-2 text-xs text-text-muted sm:flex">
-                <span>{group.runnableCount} runnable</span>
-              </div>
-            </button>
-
-            {#if expanded}
-              <div class="border-t border-border bg-surface/60 p-3">
-                <div class="grid grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(130px,0.8fr)_250px] gap-3 px-3 py-2 text-[10px] font-semibold uppercase text-text-subtle max-xl:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_250px]">
-                  <span>Model</span>
-                  <span class="max-xl:hidden">Runtime</span>
-                  <span class="max-xl:hidden">Hardware</span>
-                  <span>License</span>
-                  <span class="text-right">Actions</span>
-                </div>
-
-                <div class="space-y-2">
-                  {#each group.models as model (model.id)}
-                    {@const blocked = installBlock(model)}
-                    {@const installLog = installLogState(model.id)}
-                    {@const checking = isCheckingModel(model)}
-                    {@const actionsLocked = modelActionsLocked(model)}
-                    <div class="rounded-lg border border-border bg-surface" data-testid="ai-model-card" data-model-id={model.id}>
-                      <div class="grid grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(130px,0.8fr)_250px] gap-3 px-4 py-3 items-center max-xl:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.8fr)_250px]">
-                        <div class="min-w-0">
-                          <div class="flex items-center gap-2 min-w-0">
-                            <p class="text-sm font-semibold text-text truncate">{model.name}</p>
-                            <span class="shrink-0">
-                              <InfoPopup text={aiModelInfo(model)} />
-                            </span>
-                            <Badge variant={modelStatusVariant(model)} hideDot={!installing[model.id] && !checking} pulse={Boolean(installing[model.id]) || checking} size="xs">{modelStatusLabel(model)}</Badge>
-                            {#if model.localOnly}
-                              <Badge variant="neutral" size="xs" hideDot>local</Badge>
-                            {/if}
-                          </div>
-                          <p class="mt-1 text-xs text-text-muted line-clamp-2">{model.description}</p>
-                          {#if model.error && model.status === 'error'}
-                            <p class="mt-1 text-[11px] text-red-500 line-clamp-2">{sanitizeLocalPathsForDisplay(model.error, 2)}</p>
-                          {/if}
-                          {#if model.releaseStage === 'preview'}
-                            <p class="mt-1 text-[11px] text-text-muted">
-                              Preview model: documentation and roadmap metadata are available, but install and run are not enabled yet.
-                            </p>
-                          {/if}
-                          <div class="mt-2 flex flex-wrap gap-1.5">
-                            {#each model.capabilities as capability}
-                              <span class="rounded border border-border bg-surface-2 px-1.5 py-0.5 text-[10px] text-text-muted">{capability}</span>
-                            {/each}
-                          </div>
-                          {#if blocked}
-                            <div class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] leading-snug text-amber-800 xl:hidden">
-                              <p class="font-semibold">{blocked.summary}</p>
-                              <p class="mt-0.5">{blocked.reason}</p>
-                              <div class="mt-2 flex flex-wrap items-center gap-2">
-                                <button
-                                  type="button"
-                                  class="text-[11px] font-semibold text-amber-900 underline decoration-amber-300 underline-offset-2 hover:text-amber-700 disabled:cursor-not-allowed disabled:opacity-40"
-                                  disabled={actionsLocked}
-                                  onclick={() => resolveInstallBlock(blocked)}
-                                >
-                                  {blocked.actionLabel ?? 'Open Dependencies'}
-                                </button>
-                                <details class="text-[10px] text-amber-700">
-                                  <summary class="cursor-pointer">Technical details</summary>
-                                  <div class="mt-1 space-y-0.5">
-                                    {#each blocked.details as detail}
-                                      <p>{sanitizeLocalPathsForDisplay(detail, 2)}</p>
-                                    {/each}
-                                  </div>
-                                </details>
-                              </div>
-                            </div>
-                          {/if}
-                        </div>
-
-                        <div class="text-xs text-text-secondary min-w-0 max-xl:hidden">
-                          <p class="truncate">{runtimeLabel(model)}</p>
-                          <p class="text-[10px] text-text-subtle truncate" title={model.localPath ? getLastSegmentsStringFromPath(model.localPath, 2) : undefined}>
-                            {model.localPath ? getLastSegmentsStringFromPath(model.localPath, 2) : model.runtime.kind}
-                          </p>
-                          {#if runtimePackages(model).length > 0}
-                            <p class="mt-1 text-[10px] text-text-subtle truncate" title={runtimePackages(model).map(runtimePackageLabel).join(', ')}>
-                              {runtimePackagesPreview(model)}
-                            </p>
-                          {/if}
-                          {#if installedSizeLabel(model)}
-                            <p class="mt-1 text-[10px] text-text-muted truncate">{installedSizeLabel(model)}</p>
-                          {/if}
-                        </div>
-
-                        <div class="text-xs text-text-secondary min-w-0 max-xl:hidden">
-                          <p class="truncate">{hardwareLabel(model)}</p>
-                          {#if model.hardware?.notes}
-                            <p class="text-[10px] text-text-subtle truncate">{model.hardware.notes}</p>
-                          {/if}
-                          {#if blocked}
-                            <div class="mt-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] leading-snug text-amber-800">
-                              <p class="font-semibold">{blocked.summary}</p>
-                              <p class="mt-0.5">{blocked.reason}</p>
-                              <div class="mt-2 flex flex-wrap items-center gap-2">
-                                <button
-                                  type="button"
-                                  class="font-semibold text-amber-900 underline decoration-amber-300 underline-offset-2 hover:text-amber-700 disabled:cursor-not-allowed disabled:opacity-40"
-                                  disabled={actionsLocked}
-                                  onclick={() => resolveInstallBlock(blocked)}
-                                >
-                                  {blocked.actionLabel ?? 'Open Dependencies'}
-                                </button>
-                                <details class="text-[10px] text-amber-700">
-                                  <summary class="cursor-pointer">Technical details</summary>
-                                  <div class="mt-1 space-y-0.5">
-                                    {#each blocked.details as detail}
-                                      <p>{sanitizeLocalPathsForDisplay(detail, 2)}</p>
-                                    {/each}
-                                  </div>
-                                </details>
-                              </div>
-                            </div>
-                          {/if}
-                        </div>
-
-                        <div class="text-xs text-text-secondary min-w-0">
-                          <p class="truncate">{model.license?.name ?? 'Unspecified'}</p>
-                          {#if model.license?.verifiedAt}
-                            <p class="text-[10px] text-text-subtle">Verified {model.license.verifiedAt}</p>
-                          {:else}
-                            <p class="text-[10px] text-text-subtle">Verification required</p>
-                          {/if}
-                        </div>
-
-                        <div class="flex items-center justify-end gap-2 min-w-0">
-                          <button
-                            type="button"
-                            class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--color-surface-3)] text-text-muted transition-colors hover:bg-[var(--color-border-2)] hover:text-text disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[var(--color-surface-3)] disabled:hover:text-text-muted"
-                            title={isModelDetailsExpanded(model.id) ? 'Hide model details' : 'Show model details'}
-                            aria-label={isModelDetailsExpanded(model.id) ? 'Hide model details' : 'Show model details'}
-                            aria-expanded={isModelDetailsExpanded(model.id)}
-                            disabled={actionsLocked}
-                            onclick={() => toggleModelDetails(model.id)}
-                          >
-                            <Icon icon={isModelDetailsExpanded(model.id) ? 'lucide:chevron-up' : 'lucide:list-tree'} width="14" height="14" />
-                          </button>
-
-                          {#if aiModelLiatirDocsUrl(model)}
-                            <button
-                              type="button"
-                              class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--color-surface-3)] text-text-muted transition-colors hover:bg-[var(--color-border-2)] hover:text-text disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[var(--color-surface-3)] disabled:hover:text-text-muted"
-                              title="Open Liatir documentation"
-                              aria-label="Open Liatir documentation"
-                              disabled={actionsLocked}
-                              onclick={() => openModelDocs(model)}
-                            >
-                              <Icon icon="lucide:book-open" width="14" height="14" />
-                            </button>
-                          {/if}
-
-                          {#if aiModelOfficialUrl(model)}
-                            <button
-                              type="button"
-                              class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--color-surface-3)] text-text-muted transition-colors hover:bg-[var(--color-border-2)] hover:text-text disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[var(--color-surface-3)] disabled:hover:text-text-muted"
-                              title="Open official model page"
-                              aria-label="Open official model page"
-                              disabled={actionsLocked}
-                              onclick={() => openOfficialModelPage(model)}
-                            >
-                              <Icon icon="lucide:external-link" width="14" height="14" />
-                            </button>
-                          {/if}
-
-                          {#if (model.source === 'managed-download' || model.source === 'managed-runtime' || model.source === 'runtime-box') && model.status === 'installed' && !installing[model.id]}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              testId="ai-model-remove-button"
-                              disabled={actionsLocked}
-                              onclick={() => removeModel(model)}
-                            >
-                              Remove
-                            </Button>
-                          {:else}
-                            <span></span>
-                          {/if}
-
-                          {#if !installing[model.id] && installLog}
-                            <button
-                              type="button"
-                              onclick={() => toggleInstallLog(model.id)}
-                              class="font-mono text-[10px] text-text-subtle transition-colors hover:text-text-secondary"
-                            >
-                              {installLog.showLog ? 'hide' : 'log'}
-                            </button>
-                          {/if}
-
-                          {#if installing[model.id]}
-                            {@const percent = installPercent(model)}
-                            <div class="ml-auto min-w-0 w-full max-w-40">
-                              <div class="flex items-center justify-between gap-2 text-[10px] text-text-muted">
-                                <span class="truncate">{installLabel(model)}</span>
-                                {#if percent !== null}
-                                  <span class="shrink-0 font-mono">{Math.round(percent)}%</span>
-                                {/if}
-                                {#if installing[model.id].logLines.length > 0}
-                                  <button
-                                    type="button"
-                                    onclick={() => toggleInstallLog(model.id)}
-                                    class="shrink-0 font-mono text-[10px] text-text-subtle transition-colors hover:text-text-secondary"
-                                  >
-                                    {installing[model.id].showLog ? 'hide' : 'log'}
-                                  </button>
-                                {/if}
-                              </div>
-                              <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
-                                {#if percent !== null}
-                                  <div class="h-full rounded-full bg-brand transition-[width]" style={`width: ${percent}%`}></div>
-                                {:else}
-                                  <div class="h-full w-1/2 rounded-full bg-brand/70 animate-pulse"></div>
-                                {/if}
-                              </div>
-                            </div>
-                          {:else if checking}
-                            <Button size="sm" variant="secondary" disabled>
-                              Checking
-                            </Button>
-                          {:else if model.releaseStage === 'preview'}
-                            <Button size="sm" variant="secondary" disabled>
-                              Preview
-                            </Button>
-                          {:else if model.status === 'installed'}
-                            <Button size="sm" variant="secondary" testId="ai-model-run-button" disabled={actionsLocked} onclick={() => goto(`/ai/${encodeURIComponent(model.id)}`)}>
-                              Run
-                            </Button>
-                          {:else if model.install?.method === 'managed-download' || model.install?.method === 'managed-runtime' || model.install?.method === 'runtime-box'}
-                            {#if blocked}
-                              <Button size="sm" variant="secondary" testId="ai-model-fix-dependency-button" disabled={actionsLocked} onclick={() => resolveInstallBlock(blocked)}>
-                                Fix dependency
-                              </Button>
-                            {:else}
-                              <Button size="sm" variant="primary" testId="ai-model-install-button" disabled={actionsLocked} onclick={() => installModel(model)}>
-                                Install
-                              </Button>
-                            {/if}
-                          {/if}
-                        </div>
-                      </div>
-
-                      {#if installLog?.showLog && installLog.logLines.length > 0}
-                        <div class="mx-4 mb-3 rounded-lg border border-border bg-zinc-950 px-3 py-2 max-h-40 overflow-y-auto">
-                          {#each installLog.logLines as line}
-                            <p class="text-[11px] font-mono leading-relaxed {logLineClass(line)}">{sanitizeLocalPathsForDisplay(line, 2)}</p>
-                          {/each}
-                        </div>
-                      {/if}
-
-                      {#if isModelDetailsExpanded(model.id)}
-                        <div class="mx-4 mb-3 rounded-lg border border-border bg-surface-2 px-3 py-3">
-                          <div class="grid grid-cols-1 gap-3 text-xs text-text-secondary md:grid-cols-2 xl:grid-cols-4">
-                            <div>
-                              <p class="text-[10px] font-semibold uppercase text-text-subtle">Runtime box</p>
-                              <p class="mt-1 font-medium text-text">{runtimeLabel(model)}</p>
-                              {#if model.runtimeSizeBytes}
-                                <p class="mt-1 text-[11px] text-text-muted">Installed size: {fmtBytes(model.runtimeSizeBytes)}</p>
-                              {/if}
-                              <p class="mt-1 text-[11px] text-text-muted">{runtimeLockLabel(model)}</p>
-                              <p class="mt-1 text-[11px] text-text-muted">
-                                Runtime packages are installed inside this AI Model environment, not as global Dependencies.
-                              </p>
-                            </div>
-
-                            <div>
-                              <p class="text-[10px] font-semibold uppercase text-text-subtle">Model files</p>
-                              <p class="mt-1 font-medium text-text">{modelFilesLabel(model)}</p>
-                              {#if model.diskSizeBytes}
-                                <p class="mt-1 text-[11px] text-text-muted">Approx. {fmtBytes(model.diskSizeBytes)} on disk.</p>
-                              {/if}
-                              {#if model.contextWindow}
-                                <p class="mt-1 text-[11px] text-text-muted">Context window: {model.contextWindow.toLocaleString()} tokens/bases.</p>
-                              {/if}
-                            </div>
-
-                            <div>
-                              <p class="text-[10px] font-semibold uppercase text-text-subtle">Host requirement</p>
-                              {#if model.install?.hostRequirements?.python}
-                                <p class="mt-1 font-medium text-text">{model.install.hostRequirements.python.label ?? 'Python runtime'}</p>
-                              {:else if model.install?.hostRequirements?.requiresCuda}
-                                <p class="mt-1 font-medium text-text">NVIDIA CUDA</p>
-                              {:else}
-                                <p class="mt-1 font-medium text-text">No special host runtime</p>
-                              {/if}
-                              {#if model.install?.hostRequirements?.python?.reason}
-                                <p class="mt-1 text-[11px] text-text-muted">{model.install.hostRequirements.python.reason}</p>
-                              {/if}
-                            </div>
-
-                            <div>
-                              <p class="text-[10px] font-semibold uppercase text-text-subtle">Licenses</p>
-                              {#if model.license?.components?.length}
-                                {#each model.license.components as component}
-                                  <div class="mt-1.5 first:mt-1">
-                                    <p class="font-medium text-text">
-                                      {component.scope === 'source-code'
-                                        ? 'Code'
-                                        : component.scope === 'model-assets'
-                                          ? 'Model assets'
-                                          : 'Runtime'}: {component.name}
-                                    </p>
-                                    {#if component.attribution}
-                                      <p class="mt-0.5 text-[11px] text-text-muted">{component.attribution}</p>
-                                    {/if}
-                                  </div>
-                                {/each}
-                              {:else}
-                                <p class="mt-1 font-medium text-text">{model.license?.name ?? 'Unspecified'}</p>
-                              {/if}
-                            </div>
-                          </div>
-
-                          {#if runtimePackages(model).length > 0}
-                            <div class="mt-3 border-t border-border pt-3">
-                              <p class="text-[10px] font-semibold uppercase text-text-subtle">Runtime packages</p>
-                              <div class="mt-2 flex flex-wrap gap-1.5">
-                                {#each runtimePackages(model) as pkg}
-                                  <span class="rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] text-text-muted" title={runtimePackageLabel(pkg)}>
-                                    {pkg.package}
-                                  </span>
-                                {/each}
-                              </div>
-                            </div>
-                          {/if}
-
-                          {#if model.runtimeLock?.packages?.length}
-                            <div class="mt-3 border-t border-border pt-3">
-                              <p class="text-[10px] font-semibold uppercase text-text-subtle">Installed package lock</p>
-                              <div class="mt-2 grid grid-cols-1 gap-1.5 md:grid-cols-2">
-                                {#each model.runtimeLock.packages as pkg}
-                                  <div class="rounded border border-border bg-surface px-2 py-1 text-[10px] text-text-secondary">
-                                    <span class="font-medium text-text">{pkg.package}</span>
-                                    <span class="text-text-subtle"> {pkg.installedVersion ?? pkg.requested}</span>
-                                  </div>
-                                {/each}
-                              </div>
-                            </div>
-                          {/if}
-                        </div>
-                      {/if}
-                    </div>
-                  {/each}
-                </div>
-              </div>
-            {/if}
-          </section>
-        {/each}
-      {/if}
-    </div>
-
-    {#if workspaceStore.isSandboxMode}
-      <div class="border border-border bg-surface rounded-lg px-4 py-3 flex items-start gap-3">
-        <div class="h-8 w-8 rounded-lg bg-brand/10 text-brand flex items-center justify-center shrink-0">
-          <Icon icon="mingcute:ai-line" width="17" height="17" />
-        </div>
-        <div class="min-w-0">
-          <p class="text-sm font-semibold text-text">AI Tools</p>
-          <p class="mt-1 text-xs text-text-muted">
-            The sandbox workplace includes a mock AI Tool that emits a response and provenance values.
-          </p>
-        </div>
-      </div>
-    {/if}
-  </div>
-  </PageContent>
+							{#if isDetailsExpanded(model.id)}
+								<div class="mx-4 mb-4 rounded-lg border border-border bg-surface-2 px-3 py-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-text-secondary">
+									<div><p class="text-[10px] font-semibold uppercase text-text-subtle">Runtime Box</p><p class="mt-1 font-medium text-text">{model.install.runtimeBox.boxId}</p><p class="mt-1 text-[11px] text-text-muted">Channel: {model.install.runtimeBox.channel}</p></div>
+									<div><p class="text-[10px] font-semibold uppercase text-text-subtle">Runtime packages</p>{#if runtimePackages(model).length}{#each runtimePackages(model) as pkg}<p class="mt-1" title={packageLabel(pkg)}>{packageLabel(pkg)}</p>{/each}{:else}<p class="mt-1">Contained in the signed box</p>{/if}</div>
+									<div><p class="text-[10px] font-semibold uppercase text-text-subtle">Licenses</p><p class="mt-1 font-medium text-text">{model.license?.name ?? 'Unspecified'}</p>{#if model.license?.verifiedAt}<p class="mt-1 text-[11px] text-text-muted">Verified {model.license.verifiedAt}</p>{/if}</div>
+									<div class="md:col-span-3 text-[11px] text-text-muted">{aiModelInfo(model)}</div>
+								</div>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</div>
+	</PageContent>
 </div>

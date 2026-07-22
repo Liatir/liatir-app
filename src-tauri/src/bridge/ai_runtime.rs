@@ -1,13 +1,7 @@
-//! Tauri commands for AI Python runtimes.
+//! Tauri commands for signed AI Runtime Boxes.
 //!
-//! This module is deliberately thin: the real work of creating venvs, resolving packages and
-//! running scripts lives in [`super::python_env`], which is generic over an "environment root".
-//! Here we bind that machinery to the AI root and expose it to the frontend.
-//!
-//! Two different ways of getting a Python environment coexist under the same root:
-//! this module *builds* one on the user's machine (pip/uv installing into a venv), while
-//! [`super::runtime_boxes`] *downloads* a pre-built, signed one. Both end up in `ai-runtimes/`
-//! keyed by runtime ID, so the code that later spawns a script does not care which produced it.
+//! Runtime installation and removal live in [`super::runtime_boxes`]. This module inspects an
+//! activated box and runs its Python entry points without modifying the environment locally.
 
 use serde::Serialize;
 use serde_json::Value;
@@ -15,23 +9,15 @@ use tauri::AppHandle;
 
 use super::ai_hardware::{nvidia_capability, total_memory_bytes};
 use super::python_env::{
-    command_stdout, first_available, preferred_python, prepare_env, python_candidate_infos,
-    remove_env, run_in_env, spawn_in_env, status_env, PythonCandidate, PythonEnvLock,
-    PythonEnvPackage, PythonEnvSource, PythonRequirement, PythonRunResult,
+    run_in_env, spawn_in_env, status_env, PythonEnvPackage, PythonRunResult,
 };
 use super::runtime_boxes::runtime_box_activation_metadata;
 
 /// Environment root passed to every `python_env` call, i.e. `<data root>/ai-runtimes/<runtime id>`.
 const AI_PYTHON_ENV_ROOT: &str = "ai-runtimes";
 
-// AI-facing names for the generic python_env contracts. These are aliases, not copies: the
-// shapes stay defined in exactly one place, so the frontend-facing AI types cannot drift away
-// from what the Python environment layer actually returns.
-pub type AiPythonCandidate = PythonCandidate;
+// AI-facing names for the generic execution contracts. These are aliases, not copies.
 pub type AiRuntimePackage = PythonEnvPackage;
-pub type AiRuntimeSource = PythonEnvSource;
-pub type AiPythonRequirement = PythonRequirement;
-pub type AiPythonRuntimeLock = PythonEnvLock;
 pub type AiPythonRunResult = PythonRunResult;
 
 /// What the machine can offer, used by the UI to tell the user which models are realistic
@@ -50,10 +36,6 @@ pub struct AiHardwareInfo {
     pub cuda_available: Option<bool>,
     /// Exact NVIDIA driver reported by the same probe used by Runtime Box selection.
     pub nvidia_driver_version: Option<String>,
-    pub python_path: Option<String>,
-    pub python_version: Option<String>,
-    pub python_candidates: Vec<AiPythonCandidate>,
-    pub uv_path: Option<String>,
 }
 
 /// Whether a runtime is ready to use, and if not, precisely what it is missing — so the UI can
@@ -64,41 +46,16 @@ pub struct AiRuntimeStatus {
     pub runtime_id: String,
     pub runtime_dir: String,
     pub python_path: Option<String>,
-    pub uv_path: Option<String>,
     pub installed: bool,
     pub missing_packages: Vec<String>,
-    pub missing_sources: Vec<String>,
     /// Set when the environment could not be inspected at all (as opposed to being incomplete).
     pub error: Option<String>,
     pub size_bytes: Option<u64>,
-    pub lock: Option<AiPythonRuntimeLock>,
 }
 
-/// Outcome of building a runtime. `stdout`/`stderr` are the installer's raw output, kept so a
-/// failed dependency resolution can be shown to the user instead of a generic error.
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AiRuntimePrepareResult {
-    pub runtime_id: String,
-    pub runtime_dir: String,
-    pub python_path: String,
-    /// Which tool actually did the install (e.g. uv or pip).
-    pub installer: String,
-    pub stdout: String,
-    pub stderr: String,
-    pub size_bytes: Option<u64>,
-    pub lock: Option<AiPythonRuntimeLock>,
-}
-
-/// Probes the host: CPU, memory, GPU hints and which Python toolchains are available.
+/// Probes the host facts used to select a compatible Runtime Box target.
 #[tauri::command]
 pub fn lia_ai_hardware_info() -> Result<AiHardwareInfo, String> {
-    let python_path = preferred_python();
-    let python_version = python_path
-        .as_deref()
-        .and_then(|path| command_stdout(path, &["--version"]));
-    let python_candidates = python_candidate_infos();
-    let uv_path = first_available(&["uv"]);
     let nvidia = nvidia_capability();
 
     Ok(AiHardwareInfo {
@@ -114,10 +71,6 @@ pub fn lia_ai_hardware_info() -> Result<AiHardwareInfo, String> {
         apple_metal: cfg!(target_os = "macos"),
         cuda_available: nvidia.as_ref().map(|_| true),
         nvidia_driver_version: nvidia.map(|capability| capability.driver_version),
-        python_path,
-        python_version,
-        python_candidates,
-        uv_path,
     })
 }
 
@@ -131,7 +84,6 @@ pub async fn lia_ai_runtime_status(
     app: AppHandle,
     runtime_id: String,
     packages: Vec<AiRuntimePackage>,
-    sources: Option<Vec<AiRuntimeSource>>,
 ) -> Result<AiRuntimeStatus, String> {
     // Cloned because the closure moves it, while the original is needed to build the response.
     let runtime_id_for_task = runtime_id.clone();
@@ -141,70 +93,17 @@ pub async fn lia_ai_runtime_status(
             AI_PYTHON_ENV_ROOT.to_string(),
             runtime_id_for_task,
             packages,
-            sources.unwrap_or_default(),
+            Vec::new(),
         )?;
         Ok(AiRuntimeStatus {
             runtime_id,
             runtime_dir: status.env_dir,
             python_path: status.python_path,
-            uv_path: status.uv_path,
             installed: status.installed,
             missing_packages: status.missing_packages,
-            missing_sources: status.missing_sources,
             error: status.error,
             size_bytes: status.size_bytes,
-            lock: status.lock,
         })
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
-
-/// Creates or repairs a runtime: makes the venv and installs everything it declares.
-///
-/// This is the "build it locally" path, as opposed to downloading a pre-built Runtime Box.
-/// It is idempotent — running it on an already complete environment is how a partially
-/// installed runtime gets repaired.
-#[tauri::command]
-pub async fn lia_ai_runtime_prepare(
-    app: AppHandle,
-    runtime_id: String,
-    requirements: Option<Vec<String>>,
-    packages: Option<Vec<AiRuntimePackage>>,
-    sources: Option<Vec<AiRuntimeSource>>,
-    python_requirement: Option<AiPythonRequirement>,
-) -> Result<AiRuntimePrepareResult, String> {
-    let runtime_id_for_task = runtime_id.clone();
-    tauri::async_runtime::spawn_blocking(move || {
-        let prepared = prepare_env(
-            app,
-            AI_PYTHON_ENV_ROOT.to_string(),
-            runtime_id_for_task,
-            requirements,
-            packages,
-            sources,
-            python_requirement,
-        )?;
-        Ok(AiRuntimePrepareResult {
-            runtime_id,
-            runtime_dir: prepared.env_dir,
-            python_path: prepared.python_path,
-            installer: prepared.installer,
-            stdout: prepared.stdout,
-            stderr: prepared.stderr,
-            size_bytes: prepared.size_bytes,
-            lock: prepared.lock,
-        })
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
-
-/// Deletes a runtime's environment directory, freeing its disk space.
-#[tauri::command]
-pub async fn lia_ai_runtime_remove(app: AppHandle, runtime_id: String) -> Result<bool, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        remove_env(app, AI_PYTHON_ENV_ROOT.to_string(), runtime_id)
     })
     .await
     .map_err(|e| e.to_string())?

@@ -260,7 +260,6 @@ function aiModelDocuments(): LiatirQuentaContextDocument[] {
       line('Name', model.name),
       line('Status', model.status),
       line('Runtime', model.runtime?.kind),
-      line('Release stage', model.releaseStage),
       line('Description', model.description),
       line('Enabled', model.enabled !== false),
       line('Updated', model.updatedAt ? new Date(model.updatedAt).toISOString() : null),
