@@ -90,10 +90,15 @@ fresh-home native lifecycle covering signed install, a tracked direct Job, a
 finite 1,280-dimensional Result with provenance, Jobs/Results visibility,
 removal, and Result artifact survival.
 Geneformer uses the live signed Runtime Box distribution for macOS arm64/Metal,
-Linux x86_64/CPU, and Linux x86_64/CUDA 12.4, with repeatable native lifecycle
-plus scientific-parity evidence on all three targets. scGPT has a live signed
-macOS arm64 Runtime Box, hash-locked dependencies, real CPU/Metal inference
-gates, and targeted native install, Jobs, and removal evidence.
+Linux x86_64/CPU, Linux x86_64/CUDA 12.4, and Windows x86_64/CPU, with reviewed
+native lifecycle plus scientific-validation evidence on all four targets.
+Gate 8.3 macOS regression run `29880520628` passed the current shared builder,
+Metal parity, Rust lifecycle, evidence upload, and cleanup without requiring a
+macOS republish.
+CUDA support is validated only on Linux. The Windows CUDA 12.4 recipe and CI
+wiring are buildable but unvalidated, unpublished, and unsupported. scGPT has a
+live signed macOS arm64 Runtime Box, hash-locked dependencies, real CPU/Metal
+inference gates, and targeted native install, Jobs, and removal evidence.
 scFoundation remains preview-only because its model license prohibits Liatir
 from redistributing the checkpoint.
 

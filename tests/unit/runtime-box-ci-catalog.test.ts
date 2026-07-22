@@ -106,7 +106,7 @@ describe('Runtime Box CI catalog', () => {
     );
     expect(resolved.target).toMatchObject({
       recipeId: 'geneformer-v1-10m-windows-x86_64-cpu',
-      status: 'buildable',
+      status: 'published',
       dependencyLockSha256: 'b0e070dbcbf7c236db06afd086bd39dec99721221f0019ce12f9cb1affd28e7c',
       dependencyLicenseAudit: 'runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cpu.json',
     });

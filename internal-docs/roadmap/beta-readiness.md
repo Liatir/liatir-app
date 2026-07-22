@@ -38,8 +38,8 @@ feature to Verified.
 | Dependencies page | **Partial** | Real bridge checks plus native managed install/execute/remove coverage | Add update interruption and actionable recovery-state E2E |
 | API Connector | **Implemented — unverified** | Saved requests and pipeline node integration exist | Native request/run E2E, auth handling, malformed responses, rate/error states, Results provenance |
 | AI Batches 1–4 | **Implemented — unverified** | Managed runtimes and Tools exist for lightweight embeddings, proteomics, and predictive genomics | Targeted real install/inference runs with scientific sanity fixtures and output validation |
-| AI Runtime Box distribution | **Production path live — partially native-verified** | Live R2/Worker distribution; private Cloud Run signer backed by non-exportable Ed25519 Cloud KMS key; targeted fresh-home native coverage for interruption/resume, signed install, real Geneformer inference, UCE direct Job/Result finalization, atomic replacement, rollback, and removal | Add a true cross-version native update and persist signed anti-replay channel state in the client |
-| AI Batch 5 | **Partial** | UCE has a live KMS-signed macOS arm64 beta box, focused exact-runner CPU/Metal parity, and a targeted native install/direct Job/finite Result/Jobs/Results/removal gate; Geneformer has live Runtime Box lifecycle and exact pinned-upstream parity evidence; scGPT has a live signed box plus real CPU/Metal and native install/Jobs/removal evidence; scFoundation checkpoint redistribution is license-blocked | Choose a legally distributable replacement or user-supplied flow for scFoundation; keep model-specific scientific gates repeatable |
+| AI Runtime Box distribution | **Production path live — partially native-verified** | Live R2/Worker distribution; private Cloud Run signer backed by non-exportable Ed25519 Cloud KMS key; Geneformer is published and beta-promoted for macOS arm64 Metal, Linux x86_64 CPU/CUDA 12.4, and Windows x86_64 CPU with native install, inference, Jobs, Results, provenance, replacement, rollback, and removal evidence | Add a true cross-version native update and persist signed anti-replay channel state in the client; keep Windows CUDA explicitly unsupported until native evidence exists |
+| AI Batch 5 | **Partial** | UCE has a live KMS-signed macOS arm64 beta box, focused exact-runner CPU/Metal parity, and a targeted native install/direct Job/finite Result/Jobs/Results/removal gate; Geneformer has reviewed lifecycle and scientific evidence on macOS Metal, Linux CPU/CUDA, and Windows CPU; scGPT has a live signed box plus real CPU/Metal and native install/Jobs/removal evidence; scFoundation checkpoint redistribution is license-blocked | Choose a legally distributable replacement or user-supplied flow for scFoundation; keep model-specific scientific gates repeatable and do not infer Windows CUDA from Linux CUDA |
 | AI Batches 6–8 | **Planned** | Roadmap only | Complete prerequisite runtime/tool gates before implementation |
 | Scientific viewers | **Implemented — unverified** | Optional local viewer runtimes and visual pages exist | Native visual/runtime coverage with real artifacts, failures, fullscreen, and capture |
 | Quenta | **Partial** | Read-only Ollama MVP with shared contracts, local retrieval, Result/Job deep links, cited reports, unit tests, Rust loopback tests, and mock-Ollama Tauri E2E | Real local Ollama evaluation matrix with recommended model(s), report-quality review, latency/error expectations, and no-tool-call audit |
@@ -48,7 +48,7 @@ feature to Verified.
 | API/pipeline presets | **Planned** | Individual tools and demo files exist | Versioned useful presets backed by small realistic fixtures and end-to-end tests |
 | Public/internal documentation | **Partial** | Both VitePress sites build successfully | Remove stale architecture, finish first-workflow and troubleshooting paths |
 | macOS distribution | **Partial** | macOS is the primary compile/test platform | Clean-machine signed and notarized install, update, migration, and uninstall validation |
-| Windows/Linux distribution | **Planned** | No production release matrix | Native CI/build/runtime matrix and explicit supported-platform decision |
+| Windows/Linux distribution | **Partial** | The Geneformer Runtime Box path is published and native-verified on Linux CPU/CUDA and Windows CPU; this does not establish the complete desktop application release matrix | Complete signed desktop packaging, install/update/migration/uninstall, and native UI coverage per supported OS; Windows CUDA remains unsupported |
 
 ## Release-blocking scenarios
 
@@ -65,7 +65,7 @@ The beta cannot ship until automated native coverage proves:
 
 ## Immediate execution order
 
-1. Finish the active Runtime Box CI foundation from Gate 8.2 through Gate 10 in
+1. Finish the active Runtime Box CI foundation from Gate 9 through Gate 10 in
    the exact order and approval boundary defined by its canonical plan.
 2. Close true cross-version Runtime Box update and client-persisted anti-replay
    state.

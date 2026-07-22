@@ -1,6 +1,7 @@
 # Current project status
 
-Last updated: 2026-07-20 (branch `main`, up to date with `origin/main` at `35be12a`).
+Last updated: 2026-07-22 (remote evidence baseline `d07b6b4`; Gate 8.3 closure
+and its local repository alignment are complete).
 
 This file is the quick handoff snapshot. The canonical detailed plans are:
 
@@ -34,8 +35,8 @@ Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
   rollback, cleanup), and beta promotion. This confirms the shared fixes
   (client-side E2E navigation + reactive finalization `$effect`) do not regress
   Linux, and provides fresh Linux CUDA evidence. One run, ~$1.
-- **Gate 8.2 Windows CUDA: recipe built and validated GPU-free (2026-07-21),
-  release run pending.** Added `runtime-boxes/recipes/geneformer-v1-10m-windows-x86_64-cuda12.4/`
+- **Gate 8.2 Windows CUDA: implementation retained, but deferred and formally
+  out of Gate 8 scope (2026-07-21).** Added `runtime-boxes/recipes/geneformer-v1-10m-windows-x86_64-cuda12.4/`
   (recipe.json + requirements.in + hash-pinned `requirements.lock` cross-resolved
   with uv 0.11.28 for `x86_64-pc-windows-msvc` + `--torch-backend cu124`), the
   reviewed license audit `runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cuda12.4.json`,
@@ -46,10 +47,9 @@ Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
   **no triton, no nvidia-\*** (Windows torch bundles the CUDA runtime), so the
   legal notices are unchanged from CPU. Cheap gates all pass: `runtime-box:ci
   check`, target resolve (peak disk ~15 GB < 20 GB required), LF line endings,
-  74 runtime-box unit tests, 11 signer-policy tests. The catalog's Windows CUDA
-  prerequisite is status-based (Linux CUDA is `published`), so **no extra Linux
-  CUDA re-run is needed** before the Windows CUDA release. Reuses the proven
-  Windows CPU product path + Linux CUDA validation.
+  74 runtime-box unit tests, 11 signer-policy tests. These checks establish only
+  that the recipe and orchestration are buildable; they do not establish native
+  CUDA support, publication, or a pending release entitlement.
   - Two nvidia-smi quirks were fixed at the cheap host-probe (both in
     `evidence.mjs` `gpuIdentity`, commit `a9af8c6`): nvidia-smi not on PATH
     (now probes System32 + the legacy NVSMI folder) and the unsupported
@@ -73,13 +73,19 @@ Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
   Linux CUDA, Windows CPU). Per the 2026-07-21 re-scope recorded in the ledger,
   `windows-x86_64-cuda12.4` is **deferred and out of Gate 8 scope**: it is not a
   supported target and **must not block Gate 8.3, 9 or 10**.
-- **Gate 8.3 (cross-platform closure): ready to start**, scoped to the four
-  in-scope targets — macOS arm64 workflow regression, evidence-chain audit,
-  confirmation that one real AI Model traversed the full chain on Linux and
-  native Windows CPU, and an honest catalog/readiness matrix (CUDA validated on
-  Linux only; Windows CUDA built-but-unvalidated and unsupported).
-- Gates 9 (macOS heavy runner) and 10 (handoff): not started; Gate 9 still waits
-  for Gate 8.3 to close.
+- **Gate 8.3 and Gate 8 are complete** for macOS arm64 Metal, Linux CPU, Linux
+  CUDA, and Windows CPU. Validation-only macOS regression run `29880520628` at
+  clean remote revision `d07b6b4` passed preflight, native build, self-test,
+  4 x 256 Metal scientific parity, Rust lifecycle, compact evidence upload, and
+  cleanup. Final artifact `8514665653` has digest
+  `sha256:b1b4911121897542bed0961bd0e93ac2ca88c7d17f6229913733a0a062630c74`.
+  The run found no shared-builder incompatibility, so the already-live macOS
+  box was not republished. The complete evidence audit, reviewed evidence
+  import, shared-core/catalog alignment, and honest readiness/support matrix are
+  also complete locally. CUDA is supported only on Linux; Windows CUDA remains
+  buildable but unvalidated, unpublished, unsupported, and out of Gate 8.
+- Gates 9 (macOS heavy runner) and 10 (handoff): not started. Gate 9 is now the
+  next gate and requires its own authorization and cost review.
 
 ## How Gate 8.2 Windows CPU was closed (2026-07-19/20)
 
@@ -146,16 +152,13 @@ per Windows CUDA release). Maintainer rule: **optimise for one passing run, neve
 use a GPU run as a debugger** (validate cheaply on standard runners / locally
 first).
 
-## Next steps (await maintainer instruction before any paid run)
+## Next steps
 
-1. Confirm the GPU runner type in GitHub Settings → Actions → Runners; record it
-   above. If GitHub-managed, no manual power-on is needed — just retry when
-   GitHub Actions is healthy.
-2. Windows CUDA: obtain same-model Linux CUDA evidence for the current commit
-   (re-dispatch the Linux CUDA release), then build the missing Windows CUDA
-   recipe/catalog/wiring (GPU-free work — no `windows-x86_64-cuda12.4` recipe
-   exists yet), state cost, get approval, and run the Windows CUDA release.
-3. After Windows CUDA closes: Gate 8.3 cross-platform closure, then Gates 9–10.
+1. Push the reviewed Gate 8.3 alignment commit to `origin/main` when authorized.
+2. Proceed to Gate 9 and then Gate 10 only under their own authorization and
+   cost boundaries.
+3. Do not dispatch Windows CUDA on the current hosted runner. Reconsider it only
+   under the explicit re-entry conditions recorded in the canonical ledger.
 
 ## Standing constraints
 

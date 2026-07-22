@@ -136,6 +136,11 @@ function publishedGeneformerTargets(): readonly LiatirRuntimeBoxTargetCandidate[
 			hostEnvironments: ['native'],
 			minRamGb: 8,
 			minNvidiaDriverVersion: '550.54.14'
+		},
+		{
+			target: { platform: 'windows', arch: 'x86_64', accelerator: 'cpu' },
+			hostEnvironments: ['native'],
+			minRamGb: 8
 		}
 	];
 }
@@ -636,9 +641,10 @@ export const BUILT_IN_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			},
 			runtimePackages: GENEFORMER_V1_10M_RUNTIME_PACKAGES,
 			hostRequirements: {
-				os: ['macos', 'linux'],
+				os: ['macos', 'linux', 'windows'],
 				arch: ['aarch64', 'x86_64'],
-				reason: 'Signed Geneformer Runtime Boxes are available for Apple silicon Macs and native Linux x86_64 hosts.'
+				reason:
+					'Signed Geneformer Runtime Boxes are available for Apple silicon Macs, native Linux x86_64 hosts, and native Windows x86_64 CPU hosts.'
 			}
 		},
 		documentation: {

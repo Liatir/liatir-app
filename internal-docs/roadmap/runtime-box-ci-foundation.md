@@ -10,7 +10,7 @@ Prove that Liatir can build, validate, sign, publish, install, run, and remove a
 real AI Model Runtime Box on every supported native target while preserving one
 shared contract in `packages/liatir-core`.
 
-The supported target identities are:
+The canonical target identities recognized by the shared contract are:
 
 - `macos-aarch64-metal`
 - `macos-aarch64-cpu`
@@ -22,6 +22,11 @@ The supported target identities are:
 macOS Intel and Linux arm64 are not active Runtime Box targets. Native Windows
 CUDA support must not be inferred from WSL2 or a Linux runner.
 
+The current supported Geneformer matrix is narrower: macOS arm64 Metal, Linux
+x86_64 CPU, Linux x86_64 CUDA 12.4, and Windows x86_64 CPU. Windows CUDA 12.4
+remains a recognized, buildable identity but is unvalidated, unpublished, and
+unsupported under the 2026-07-21 re-scope.
+
 ## Operating rules
 
 - Work linearly, one gate and one native target at a time.
@@ -29,8 +34,9 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
   and one target with concurrency `1`.
 - Run cheap legal, catalog, dependency-lock, and peak-disk checks before a paid
   runner is allocated.
-- Linux T4 is the first CUDA gate. Windows CUDA requires successful same-model
-  Linux CUDA evidence for the exact commit.
+- Linux T4 is the first CUDA gate. If Windows CUDA is explicitly brought back
+  into scope, it requires successful same-model Linux CUDA evidence for the
+  exact commit in addition to a compatible native Windows runner.
 - Cancel stale validation jobs, but never cancel production release jobs.
 - Do not cache model weights, Runtime Box archives, or uv downloads.
 - Long native and scientific commands emit one concise heartbeat every five
@@ -59,7 +65,7 @@ CUDA support must not be inferred from WSL2 or a Linux runner.
 | 8.1. Geneformer Linux pilot | Complete | CPU run `29547725429`; CUDA run `29643382673`; publication contract `07c6c69` |
 | 8.2. Geneformer Windows CPU | Complete | Release run `29706828552` (commit `f067482`) passed the full protected release on `windows-x86_64-cpu`: KMS-signed build, native self-test, scientific validation, immutable publication with public hash verification, the complete product lifecycle E2E (install, interrupted-download resume, real Geneformer inference with a finite 256-dim CPU embedding, Jobs/Results/provenance, replacement, rollback, and cleanup), and beta promotion. The `beta` channel now serves the Windows CPU box |
 | 8.2. Geneformer Windows CUDA | Deferred — out of Gate 8 scope (2026-07-21 re-scope), not a supported target, does not block later gates | Recipe + wiring built and validated GPU-free (commit `4127e7d`; host-probe nvidia-smi fixes through `a9af8c6`; target status `buildable`, never published). Hard blocker: the GitHub Windows T4 runner has NVIDIA driver `471.11` (R470), too old for CUDA 12.4 — host-probe rejects it (`driver 471.11 is below 551.61`) in ~1 min before any paid build. Decision 2026-07-21: excluded from CI until GitHub ships a newer Windows GPU driver (or a self-hosted R525+ runner / a separate `windows-x86_64-cuda11.8` target). Local validation on the maintainer's RTX 4060 Ti planned separately |
-| 8.3. Cross-platform closure | Ready to start | Gate 8.2 prerequisite satisfied for every in-scope target (macOS arm64, Linux CPU, Linux CUDA, Windows CPU); deferred Windows CUDA is excluded by the 2026-07-21 re-scope |
+| 8.3. Cross-platform closure | Complete | macOS regression run `29880520628` at `d07b6b4` passed preflight, clean native build, self-test, Metal scientific parity, Rust lifecycle, evidence upload, and cleanup; artifact `8514665653` (`sha256:b1b4911121897542bed0961bd0e93ac2ca88c7d17f6229913733a0a062630c74`). The reviewed four-target evidence chain, catalog/core alignment, and readiness matrix are recorded below. Deferred Windows CUDA remains unsupported and excluded by the 2026-07-21 re-scope |
 | 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
 
@@ -805,9 +811,9 @@ Active Windows CPU release checklist:
   from the long staging path) and shorten staging to `.stg-{uuid}`; pass all
   cheap Rust and unit gates.
 - [x] Close Windows CPU: release run `29706828552` passed the full product
-  lifecycle, beta promotion, evidence, and cleanup. Windows CUDA is now
-  unblocked but still requires Linux CUDA evidence for the exact commit and
-  explicit cost approval before a manual GPU runner.
+  lifecycle, beta promotion, evidence, and cleanup. Per the later 2026-07-21
+  re-scope, Windows CUDA remains deferred, unpublished, unsupported, and out of
+  Gate 8; do not dispatch it on the current hosted runner.
 
 Gate 8.2 incident ledger:
 
@@ -908,6 +914,61 @@ macOS arm64 Metal, Linux CPU, Linux CUDA, and Windows CPU.
 4. Update catalog and readiness evidence only from produced, reviewed results,
    and state the supported matrix honestly: CUDA is validated on Linux only,
    while Windows CUDA is a built-but-unvalidated, unsupported target.
+
+#### Gate 8.3 execution record
+
+Pre-dispatch audit and zero-cost closure work completed on 2026-07-22 against
+remote `main` revision `d07b6b4c6f0df4e7aa4e56fad3ad60ccb5193610`:
+
+- Reviewed the complete protected-release jobs and retained artifacts for Linux
+  CPU run `29547725429` (artifact `8394807365`), original Linux CUDA run
+  `29643382673` (artifact `8429493437`), current-code Linux CUDA run
+  `29750614689` at `2307663` (artifact `8465246632`), and Windows CPU run
+  `29706828552` at `f067482` (artifact `8448340646`). Every in-scope protected
+  release chain passed legal/catalog preflight, locked build, native self-test,
+  scientific validation, KMS signing, immutable R2 publication and public hash
+  verification, real product install/inference with Jobs, Results and
+  provenance, replacement/rollback/removal, beta promotion, evidence upload,
+  and unconditional cleanup.
+- Confirmed the live immutable release manifests and beta-channel endpoints for
+  macOS arm64 Metal, Linux CPU, Linux CUDA 12.4, and Windows CPU return HTTP
+  `200`. No Windows CUDA release or channel was used or claimed.
+- Rebuilt Geneformer from a clean local directory on the current Apple M1
+  checkout. Build, post-extraction self-test, cleanup, and the 4-cell x
+  256-dimension Metal scientific fixture passed. The archive SHA-256 was
+  `4c479e1600cc9154f9b08b0f876108e28f1999af58115b8d0b6ba46594986ee2`,
+  maximum absolute error was `3.8743019104003906e-7`, and minimum cosine
+  similarity was `0.9999999403953552`.
+- Passed the zero-cost repository gates before alignment: 74/74 focused Runtime
+  Box unit tests, 11/11 signer-policy tests, 11 Rust `runtime_box` tests with one
+  ignored platform-specific test, 160/160 root verification tests, a clean
+  Svelte check, core/frontend builds, and the Runtime Box catalog checker. Two
+  initial local attempts were blocked only by restricted sandbox cache/network
+  access; the identical commands passed with a gate-local cache and approved
+  network, without a code workaround.
+- Added the reviewed current Linux CUDA and Windows CPU evidence records, moved
+  Windows CPU to `published`, aligned `packages/liatir-core` target selection,
+  and corrected the compatibility/readiness documents. Windows CUDA remains
+  `buildable` with no publication record and is not exposed as a supported
+  target.
+- Validation-only Geneformer run `29880520628` completed successfully on
+  `macos-15` in mode `native-lifecycle` for `macos-aarch64-metal`, using clean
+  remote `main` revision `d07b6b4c6f0df4e7aa4e56fad3ad60ccb5193610`.
+  Preflight artifact `8514577659` proves the exact model, recipe, target, mode,
+  and clean source revision. Final artifact `8514665653` has digest
+  `sha256:b1b4911121897542bed0961bd0e93ac2ca88c7d17f6229913733a0a062630c74`
+  and records status `passed`, runner label `macos-15`, Python `3.11.9`, uv
+  `0.11.28`, archive SHA-256
+  `d88a22d649a1184f4976070605b781341e41891d9dd8dff45c4961279161dde3`,
+  4 x 256 finite Metal output, maximum accelerator-vs-CPU absolute difference
+  `7.37607479095459e-7`, and minimum cosine similarity
+  `0.9999999403953552`. The workflow also passed the Rust Runtime Box lifecycle,
+  compact evidence upload, and unconditional cleanup. The native job ran for
+  approximately five minutes, well below its 90-minute bound.
+- The regression used only an ephemeral development signing key and performed
+  no KMS signing, R2 publication, or channel promotion. It found no shared
+  builder incompatibility, so the existing published macOS box was not
+  republished. Gate 8.3 and Gate 8 are complete for the four in-scope targets.
 
 Gate 8 is not complete while any gap remains **among the in-scope targets**. The
 deferred Windows CUDA target is a documented exception and does not hold Gate

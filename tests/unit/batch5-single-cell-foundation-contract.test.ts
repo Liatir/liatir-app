@@ -45,6 +45,11 @@ const publishedGeneformerTargets = () => [
     minRamGb: 8,
     minNvidiaDriverVersion: '550.54.14',
   },
+  {
+    target: { platform: 'windows', arch: 'x86_64', accelerator: 'cpu' },
+    hostEnvironments: ['native'],
+    minRamGb: 8,
+  },
 ];
 
 installSvelteRuneStubs();
@@ -110,7 +115,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
       expect(file.url).toContain(model?.install?.revision);
     }
     expect(model?.install?.hostRequirements).toMatchObject({
-      os: ['macos', 'linux'],
+      os: ['macos', 'linux', 'windows'],
       arch: ['aarch64', 'x86_64'],
     });
     expect(model?.install?.hostRequirements?.python).toBeUndefined();

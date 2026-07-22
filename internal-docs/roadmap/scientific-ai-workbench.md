@@ -15,14 +15,14 @@ It does not replace the evidence ledgers:
 
 ## Current execution boundary
 
-The active implementation program is the Runtime Box CI foundation. Gate 8.1
-is complete. Work must continue in its existing order:
+The active implementation program is the Runtime Box CI foundation. Gate 8.3
+and Gate 8 are complete for every in-scope target. Windows CUDA 12.4 was
+deferred and removed from Gate 8 on 2026-07-21 because the hosted Windows T4
+driver cannot run CUDA 12.4; it is not supported and does not block later
+gates. Work must continue in its existing order:
 
-1. Gate 8.2 Windows CPU pilot;
-2. Gate 8.2 Windows CUDA pilot only after the CPU target succeeds;
-3. Gate 8.3 cross-platform closure;
-4. Gate 9 on-demand macOS arm64 heavy runner;
-5. Gate 10 operational handoff.
+1. Gate 9 on-demand macOS arm64 heavy runner;
+2. Gate 10 operational handoff.
 
 This product plan must not interrupt, widen, or silently reorder those gates.
 Every paid or remote run still requires the clean local gate and explicit user
@@ -250,13 +250,14 @@ mixing it with new product scope.
 
 Work:
 
-1. execute Gate 8.2 Windows CPU from a clean local preflight;
-2. execute Gate 8.2 Windows CUDA only after CPU evidence is accepted;
-3. close Gate 8.3 across macOS, Linux CPU/CUDA, and Windows CPU/CUDA;
-4. complete Gate 9 with the private on-demand macOS heavy runner;
-5. complete Gate 10 operational documentation and handoff;
-6. separately close the product-level true cross-version update and persisted
+1. complete Gate 9 with the private on-demand macOS heavy runner;
+2. complete Gate 10 operational documentation and handoff;
+3. separately close the product-level true cross-version update and persisted
    anti-replay state before calling Runtime Box distribution complete.
+
+Windows CUDA 12.4 remains a separately deferred target: its recipe and wiring
+are buildable, but it is unvalidated, unpublished, and unsupported. It must not
+be included in Gate 8.3 completion criteria or inferred from Linux CUDA.
 
 Exit criteria:
 
@@ -542,25 +543,22 @@ features as production-ready.
 This is the default sequence unless a later evidence-backed decision explicitly
 reorders it:
 
-1. finish Runtime Box Gate 8.2 Windows CPU;
-2. finish Runtime Box Gate 8.2 Windows CUDA;
-3. finish Gate 8.3 cross-platform closure;
-4. finish Gate 9 and Gate 10;
-5. close true cross-version Runtime Box update and persisted anti-replay state;
-6. close Plugin, direct AI, API Connector, and dependency lifecycle gaps needed
+1. finish Gate 9 and Gate 10;
+2. close true cross-version Runtime Box update and persisted anti-replay state;
+3. close Plugin, direct AI, API Connector, and dependency lifecycle gaps needed
    by the common execution spine;
-7. design and land the backward-compatible semantic artifact contract in
+4. design and land the backward-compatible semantic artifact contract in
    `packages/liatir-core`;
-8. implement the AnnData/single-cell profiles and lighthouse workflow;
-9. complete single-cell viewer and preset evidence;
-10. implement the local first-class Nextflow adapter;
-11. prove Nextflow output reuse through an existing AI Tool or viewer;
-12. validate the predictive/variant genomics vertical;
-13. validate the protein structure/binding vertical;
-14. publish useful verified Plugin and pipeline templates;
-15. evaluate another external workflow engine only from the reusable adapter
+5. implement the AnnData/single-cell profiles and lighthouse workflow;
+6. complete single-cell viewer and preset evidence;
+7. implement the local first-class Nextflow adapter;
+8. prove Nextflow output reuse through an existing AI Tool or viewer;
+9. validate the predictive/variant genomics vertical;
+10. validate the protein structure/binding vertical;
+11. publish useful verified Plugin and pipeline templates;
+12. evaluate another external workflow engine only from the reusable adapter
     contract;
-16. reconsider simulations, generative models, MCP, Quenta expansion, and
+13. reconsider simulations, generative models, MCP, Quenta expansion, and
     training only after the beta evidence is complete.
 
 ## Definition of done for every integration

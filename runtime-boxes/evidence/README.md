@@ -10,11 +10,15 @@ reviewed commit and point the target's `publication.evidenceRecord` field in
 `runtime-boxes/catalog.json` at it. CI deliberately has no `contents: write`
 permission and cannot accept its own evidence.
 
-Use one immutable path per publication:
+Use one immutable path per publication. The current flat paths use this form:
 
 ```text
-runtime-boxes/evidence/<box-id>/<version>/<target-id>.json
+runtime-boxes/evidence/<box-id>-<target-id>-<version>.json
 ```
+
+When the same version and target are published again after a reviewed
+revalidation, append `-run-<workflow-run-id>` before `.json`. Never overwrite
+an earlier reviewed evidence record.
 
 `npm run runtime-box:catalog:check` validates every referenced record against
 the shared contract in `packages/liatir-core/src/runtime-box.ts`, its exact

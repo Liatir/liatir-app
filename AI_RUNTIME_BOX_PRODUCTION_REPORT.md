@@ -6,6 +6,9 @@
 - `models.liatir.com` serves the authenticated Runtime Box control plane.
 - `assets.models.liatir.com` serves immutable artifacts from the `liatir-storage` R2 bucket under `ai-runtime-boxes/`.
 - Geneformer V1 10M `1.0.0-beta.1` is production-signed, published, promoted to the beta channel, and enabled in the catalog as a `runtime-box` model.
+- Geneformer is published for macOS arm64 Metal, Linux x86_64 CPU, Linux x86_64 CUDA 12.4, and Windows x86_64 CPU. Protected native release evidence is retained for Linux CPU run `29547725429`, current-code Linux CUDA run `29750614689`, and Windows CPU run `29706828552`.
+- Gate 8.3 current-builder regression run `29880520628` passed the macOS arm64 Metal build, self-test, scientific parity, Rust lifecycle, evidence upload, and cleanup. No shared-builder incompatibility was found, so the existing macOS publication did not need replacement.
+- CUDA is supported only on Linux. The Windows CUDA 12.4 recipe and CI wiring are buildable, but the target is unvalidated, unpublished, and unsupported because the hosted Windows T4 driver is too old for CUDA 12.4.
 - Remote signature, immutable artifact, byte-range download, Worker authentication, focused TypeScript/Svelte/Rust checks, and post-extraction imports were verified.
 - A targeted fresh-home native gate now covers interruption/resume, signed install, real Geneformer inference, atomic replacement, rollback, removal, and Jobs metadata.
 - Geneformer matches the pinned official V1 tokenizer and embedding algorithm exactly on the deterministic CPU fixture (`maxAbsoluteError: 0.0`).
