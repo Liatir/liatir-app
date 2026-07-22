@@ -360,13 +360,16 @@
           "gpuRequired": false,
           "nativeCiEnabled": true,
           "publication": {
-            "source": "legacy-operator",
-            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/uce-4layer/1.0.0-beta.1/macos-aarch64-metal/16d0e91e1a1e5a38059e4da745d1a247ff1f89200ac8bb09a42d16e99632820d.release.json",
-            "archiveSha256": "df05a70181689a730292d0f2518503a6e1c6363fd3ba973cc0ab2f986eef3eaf",
-            "archiveSizeBytes": 8862120348,
-            "installedSizeBytes": 10142871337,
+            "source": "github-actions",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/uce-4layer/1.0.0-beta.1/macos-aarch64-metal/8e0c8c0174acfb44a8c8d956d13a6a584fa65bb757c134e9e120a67c76e95430.release.json",
+            "archiveSha256": "63fc02de8e91699176510051be38790ab69739a92fe32052011081ad8297c960",
+            "archiveSizeBytes": 8864908393,
+            "installedSizeBytes": 10142864860,
             "signingKeyId": "liatir-runtime-box-kms-2026",
-            "publishedAt": "2026-07-13T16:40:44+02:00"
+            "publishedAt": "2026-07-22T10:17:21.214Z",
+            "workflowRunId": "29909249357",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/29909249357",
+            "evidenceRecord": "runtime-boxes/evidence/uce-4layer-macos-aarch64-metal-1.0.0-beta.1-run-29909249357.json"
           }
         }
       ]

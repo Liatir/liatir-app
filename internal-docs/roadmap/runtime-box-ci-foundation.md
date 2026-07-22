@@ -66,7 +66,7 @@ unsupported under the 2026-07-21 re-scope.
 | 8.2. Geneformer Windows CPU | Complete | Release run `29706828552` (commit `f067482`) passed the full protected release on `windows-x86_64-cpu`: KMS-signed build, native self-test, scientific validation, immutable publication with public hash verification, the complete product lifecycle E2E (install, interrupted-download resume, real Geneformer inference with a finite 256-dim CPU embedding, Jobs/Results/provenance, replacement, rollback, and cleanup), and beta promotion. The `beta` channel now serves the Windows CPU box |
 | 8.2. Geneformer Windows CUDA | Deferred — out of Gate 8 scope (2026-07-21 re-scope), not a supported target, does not block later gates | Recipe + wiring built and validated GPU-free (commit `4127e7d`; host-probe nvidia-smi fixes through `a9af8c6`; target status `buildable`, never published). Hard blocker: the GitHub Windows T4 runner has NVIDIA driver `471.11` (R470), too old for CUDA 12.4 — host-probe rejects it (`driver 471.11 is below 551.61`) in ~1 min before any paid build. Decision 2026-07-21: excluded from CI until GitHub ships a newer Windows GPU driver (or a self-hosted R525+ runner / a separate `windows-x86_64-cuda11.8` target). Local validation on the maintainer's RTX 4060 Ti planned separately |
 | 8.3. Cross-platform closure | Complete | macOS regression run `29880520628` at `d07b6b4` passed preflight, clean native build, self-test, Metal scientific parity, Rust lifecycle, evidence upload, and cleanup; artifact `8514665653` (`sha256:b1b4911121897542bed0961bd0e93ac2ca88c7d17f6229913733a0a062630c74`). The reviewed four-target evidence chain, catalog/core alignment, and readiness matrix are recorded below. Deferred Windows CUDA remains unsupported and excluded by the 2026-07-21 re-scope |
-| 9. macOS arm64 heavy runner | In progress — first protected release exposed a reproduced builder defect; fix is locally verified and awaits commit/review before one explicitly approved retry | Run `29889431937` at `0c8310f` proved the exact ephemeral runner, host, OIDC, and cleanup path, then failed before signing because archive extraction deleted sibling UCE assets. No publication or promotion occurred. Failure artifact `8517777517` (`sha256:084abf567d2750410e0c105f1b325363d43d9a07195003f5cc372f0b5eacad4a`) and the incident record below preserve the evidence |
+| 9. macOS arm64 heavy runner | Complete | Protected release run `29909249357` at `8e12512` passed on the repository-scoped ephemeral runner: clean build, KMS signing, independent native self-test, UCE Metal scientific parity, immutable R2 publication with public hash verification, beta promotion, compact evidence, unconditional workflow cleanup, runner deregistration, and marked-root removal. Artifact `8525984364` has digest `sha256:8166557f9953e4713e577558da5fe485d732e57aef299dbb54fb35630842fbaf` |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
 
 ## Completed foundation
@@ -974,7 +974,7 @@ Gate 8 is not complete while any gap remains **among the in-scope targets**. The
 deferred Windows CUDA target is a documented exception and does not hold Gate
 8.3, Gate 9, or Gate 10. Do not start Gate 9 before Gate 8.3 closes.
 
-## Remaining gates
+## Final gates
 
 ### Gate 9: macOS arm64 heavy runner
 
@@ -984,7 +984,7 @@ offline outside planned builds, use a dedicated clean work directory, require a
 conservative disk preflight, clean all build state after success or failure, and
 use GitHub OIDC to Cloud Run/KMS rather than local signing keys.
 
-#### Local implementation, preflight, and first release attempt (2026-07-22; gate remains open)
+#### Local implementation, preflight, and first release attempt (2026-07-22)
 
 - Added a checked `macos-arm64-heavy` runner profile with the unique
   `liatir-macos-arm64-heavy` label. Its contract is repository-scoped,
@@ -1074,21 +1074,48 @@ use GitHub OIDC to Cloud Run/KMS rather than local signing keys.
   build, and root TypeScript. No full UCE download or remote run was used to
   debug the defect.
 
-Remaining closure sequence:
+#### Closure evidence (2026-07-22)
 
-1. Review, commit, and push the extractor fix, regressions, and incident record;
-   verify the exact remote `main` revision and re-read the production workflow
-   and its inputs.
-2. Re-state the self-hosted runner, 180-minute job timeout, expected bandwidth
-   and service-cost exposure, then obtain fresh explicit approval for one retry.
-3. Queue exactly one protected UCE production release from `main`, start exactly
-   one ephemeral runner against the already-queued job, and immediately verify
-   run revision, target, inputs, runner name, and mode. Do not reuse or rerun the
-   failed workflow attempt.
-4. Close Gate 9 only after the KMS-signed build, scientific validation,
-   immutable publication, beta promotion, compact evidence, deregistration,
-   offline state, and work-root cleanup are all directly observed. Stop on any
-   identity mismatch; do not dispatch a validation-only run as a debugger.
+- Fix commit `8e1251274695b266fb52905e3e2d1a1b40a1b6ee` was pushed to exact
+  remote `main`. The production workflow and its catalog-derived inputs were
+  reread before dispatch. After fresh approval of the self-hosted runner,
+  180-minute job timeout, approximately 9.12 GB of source assets, approximately
+  8.86 GB of publication upload, and Cloud Run/KMS/R2 exposure, one new release
+  was queued rather than rerunning the failed attempt.
+- Protected release run `29909249357` used
+  `snap-stanford-uce-4layer` / `macos-aarch64-metal` / `beta` at exact revision
+  `8e1251274695b266fb52905e3e2d1a1b40a1b6ee`. Resolve job
+  `88887957863` passed. Release job `88888035723` ran only on ephemeral runner
+  `liatir-macos-heavy-1784713742-2693` with the exact
+  `liatir-macos-arm64-heavy` label and concluded `success`.
+- The protected job passed clean checkout and host storage, GitHub OIDC,
+  gcloud, pinned uv, the clean-revision guard, build and private KMS signing,
+  independent signed-release verification and native self-test, pinned UCE
+  Metal scientific validation, immutable publication with streamed public-hash
+  verification, beta promotion, compact evidence upload, and unconditional
+  build cleanup. The macOS-only workflow correctly skipped Linux/Windows
+  product E2E steps; Gate 8.3 separately retains the macOS Rust Runtime Box
+  lifecycle evidence used for cross-platform closure.
+- Reviewed evidence record
+  `runtime-boxes/evidence/uce-4layer-macos-aarch64-metal-1.0.0-beta.1-run-29909249357.json`
+  records status `passed`, the KMS key `liatir-runtime-box-kms-2026`, archive
+  SHA-256 `63fc02de8e91699176510051be38790ab69739a92fe32052011081ad8297c960`,
+  archive size `8,864,908,393`, installed size `10,142,864,860`, and scientific
+  output shape `10 x 1280` with finite values, maximum absolute Metal/CPU
+  difference `2.5704503059387207e-7`, and minimum cosine similarity
+  `0.9999999999969341`.
+- Compact artifact `8525984364` is 2,551 bytes with digest
+  `sha256:8166557f9953e4713e577558da5fe485d732e57aef299dbb54fb35630842fbaf`.
+  Its publication receipt points to immutable release manifest SHA-256
+  `8e0c8c0174acfb44a8c8d956d13a6a584fa65bb757c134e9e120a67c76e95430`
+  and records beta promotion HTTP `200`. A separate public read verified that
+  exact manifest hash and confirmed the signed beta channel serves the new
+  release at 100% rollout.
+- The runner listener exited `0`, removed `.credentials` and `.runner`, and the
+  launcher retained diagnostics before removing the marked work root. The
+  repository runner inventory returned to zero, the root is absent, and the
+  host recovered `43,393,630,208` free bytes. Gate 9 is complete; no runner is
+  left online and no further Gate 9 release is authorized or required.
 
 ### Gate 10: operational handoff
 

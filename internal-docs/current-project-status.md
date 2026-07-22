@@ -1,7 +1,7 @@
 # Current project status
 
-Last updated: 2026-07-22 (first Gate 9 release baseline `0c8310f`; Gate 8.3 is
-closed and Gate 9 is open after one diagnosed protected-release failure).
+Last updated: 2026-07-22 (Gate 8.3 and Gate 9 are closed; final protected Gate 9
+release run `29909249357` passed at `8e12512`).
 
 This file is the quick handoff snapshot. The canonical detailed plans are:
 
@@ -84,7 +84,7 @@ Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
   import, shared-core/catalog alignment, and honest readiness/support matrix are
   also complete locally. CUDA is supported only on Linux; Windows CUDA remains
   buildable but unvalidated, unpublished, unsupported, and out of Gate 8.
-- **Gate 9 macOS heavy runner: in progress, not closed.** UCE now resolves only
+- **Gate 9 macOS heavy runner: complete.** UCE resolves only
   to a checked repository-scoped, ephemeral, single-concurrency
   `liatir-macos-arm64-heavy` profile. The local launcher pins GitHub Actions
   runner `2.336.0`, requires a dedicated root outside the checkout, enforces a
@@ -110,14 +110,31 @@ Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
     Workflow cleanup passed, the runner deregistered, the marked work root was
     removed, diagnostics were retained, runner inventory is empty, and the host
     recovered `38,710,562,816` free bytes.
-  - **Local fix ready for review:** archive extraction now preserves sibling
+  - **Builder fix:** archive extraction now preserves sibling
     assets and rejects collisions. Both regressions pass; catalog validation is
     green; the full verify profile passes 164/164 tests, SDK/core/Svelte/frontend
     and root builds; and Rust `runtime_box` passes 11 with one established large
-    fixture ignored. A fresh explicit approval is required before the single
-    protected-release retry.
-- Gate 10 (operational handoff): not started; it follows evidence-backed Gate 9
-  closure.
+    fixture ignored.
+  - **Protected closure run:** after the fix was pushed at exact revision
+    `8e1251274695b266fb52905e3e2d1a1b40a1b6ee`, freshly approved run
+    `29909249357` passed resolve job `88887957863` and release job `88888035723`
+    on exact ephemeral runner `liatir-macos-heavy-1784713742-2693`. Build, KMS
+    signing, independent native self-test, UCE Metal scientific parity,
+    immutable R2 publication with public hash verification, beta promotion,
+    evidence upload, and workflow cleanup all passed.
+  - **Produced evidence:** reviewed record
+    `runtime-boxes/evidence/uce-4layer-macos-aarch64-metal-1.0.0-beta.1-run-29909249357.json`
+    pins archive hash `63fc02de8e91699176510051be38790ab69739a92fe32052011081ad8297c960`
+    and the KMS key. Artifact `8525984364` has digest
+    `sha256:8166557f9953e4713e577558da5fe485d732e57aef299dbb54fb35630842fbaf`.
+    The live signed beta channel was independently read and points at the new
+    immutable manifest with 100% rollout.
+  - **Runner cleanup:** listener exit `0`, local credentials/registration
+    removed, diagnostics retained, repository runner inventory zero, marked
+    root absent, and `43,393,630,208` free host bytes after cleanup. No heavy
+    runner remains online.
+- Gate 10 (operational handoff): not started; it is now the only remaining
+  Runtime Box CI foundation gate.
 
 ## How Gate 8.2 Windows CPU was closed (2026-07-19/20)
 
@@ -186,15 +203,11 @@ first).
 
 ## Next steps
 
-1. Review, commit, and push the Gate 9 extractor fix, regressions, and incident
-   record; verify the exact remote `main` revision before any retry.
-2. After fresh explicit approval of the self-hosted runner, 180-minute timeout,
-   bandwidth, and service-cost exposure, queue one new protected UCE production
-   release and start one ephemeral runner for that already-queued job. Do not
-   rerun the failed workflow attempt.
-3. Close Gate 9 only from KMS signing, publication/promotion, compact evidence,
-   deregistration, offline-state, and cleanup receipts; then execute Gate 10.
-4. Do not dispatch Windows CUDA on the current hosted runner. Reconsider it only
+1. Review, commit, and push the evidence-backed Gate 9 catalog and documentation
+   closure, then execute Gate 10 operational handoff from the produced records.
+2. Do not dispatch another Gate 9 UCE release; the on-demand runner remains
+   offline unless a separately reviewed future heavy build requires it.
+3. Do not dispatch Windows CUDA on the current hosted runner. Reconsider it only
    under the explicit re-entry conditions recorded in the canonical ledger.
 
 ## Standing constraints
