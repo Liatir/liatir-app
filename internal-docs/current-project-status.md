@@ -27,8 +27,11 @@ has two explicit tracks: cross-version update with client-persisted anti-replay
 state, and cross-platform expansion of the current model catalog before new
 model families are admitted. The common execution spine follows in Phase 2.
 The cross-platform track now has a canonical target-by-target execution plan.
-The new scGPT Linux CPU target is checked and deliberately remains `buildable`:
-no native run, publication, beta promotion, or support claim has occurred yet.
+The new scGPT Linux CPU target is checked and deliberately remains `buildable`.
+Native validation run `29951014606` stopped before self-test at a dependency
+audit/pruning contradiction; cleanup succeeded, the root cause is fixed locally
+with a catalog regression, and no publication, beta promotion, or support claim
+has occurred.
 
 **Runtime Box-only product cutover (2026-07-22):** the AI Model catalog now
 contains exactly Geneformer V1 10M, scGPT Whole-human, and UCE 4-layer. Every

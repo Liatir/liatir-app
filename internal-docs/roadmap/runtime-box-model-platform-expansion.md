@@ -322,7 +322,7 @@ This gate selects infrastructure only; it does not establish UCE support.
   builds, and the lock contains no CUDA or `nvidia-*` packages.
 - Cheap evidence completed: catalog/fixture check; target and release
   resolution; 12 signer-policy tests; 37 focused Runtime Box/evidence/catalog
-  tests; the full `test:verify` chain with 155 unit tests and clean SDK/core,
+  tests; the full `test:verify` chain with 156 unit tests and clean SDK/core,
   Svelte, frontend, and root TypeScript builds; standalone frontend TypeScript
   and Svelte checks; 11 Rust Runtime Box tests (one intentionally ignored large
   fixture); internal docs build; embedded Python syntax checks; and
@@ -333,6 +333,33 @@ This gate selects infrastructure only; it does not establish UCE support.
 - The maintainer authorized autonomous execution for this P0/P1 work while
   retaining the per-action disclosure, bounded monitoring, cost discipline,
   and no-dispatch rule for Windows CUDA.
+
+### 2026-07-22 — P1 native validation attempt 1 stopped at dependency audit
+
+- Validation run `29951014606` executed the exact checked tuple on commit
+  `b3a9a1f`: `bowang-scgpt-whole-human`,
+  `scgpt-whole-human-linux-x86_64-cpu`, `linux-x86_64-cpu`,
+  `native-lifecycle`, standard `ubuntu-24.04`, no GPU. Preflight, host/disk
+  probe, development key generation, the pinned Python install, all 22 locked
+  wheels, and all byte-pinned assets succeeded.
+- The build then stopped before self-test and inference with
+  `Runtime Box license audit: installed distributions do not exactly match the
+  dependency lock`. The unconditional evidence and cleanup steps passed.
+  Failure artifact `8542138493` records the exact failed identity and revision;
+  nothing was signed for production, uploaded to R2, promoted, or exposed.
+- Root cause: the new Linux recipe inherited four historical macOS prune paths
+  that removed the locked `networkx` and `sympy` package directories and their
+  distribution metadata before the reviewed dependency audit. The standalone
+  Linux wheel installation independently reproduced the full 22-package set
+  and matched the committed audit, isolating the contradiction to pruning.
+- Fix: retain both locked distributions and make the zero-cost catalog gate
+  reject any audited recipe that prunes a complete lock-required package or
+  its `dist-info` metadata. The focused regression, catalog check, exact target
+  resolution, and JavaScript syntax check pass locally. One native retry is
+  allowed only after the complete cheap gate passes on the fix revision.
+- Actual billed-runner exposure was approximately one rounded Linux minute for
+  preflight plus one for the native job: at most `$0.012` beyond included
+  minutes at the reviewed `$0.006/minute` standard Linux rate.
 
 ## Per-action checklist template
 

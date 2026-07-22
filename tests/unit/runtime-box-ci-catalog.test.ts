@@ -8,6 +8,7 @@ import {
 } from '../../packages/liatir-core/src';
 import {
   foundationMatrix,
+  lockedDistributionPrunePaths,
   numericVersionAtLeast,
   resolveCiTarget,
   runtimeBoxEvidenceOptions,
@@ -20,6 +21,26 @@ const catalog = catalogJson as LiatirRuntimeBoxCiCatalog;
 describe('Runtime Box CI catalog', () => {
   it('validates repository identities, legal gates, recipes, runners, and publication evidence', () => {
     expect(() => validateRuntimeBoxCiCatalog(catalog, { requireWorkflows: false })).not.toThrow();
+  });
+
+  it('rejects pruning complete packages or metadata that remain required by the lock', () => {
+    const lock = Buffer.from([
+      'networkx==3.6.1 \\',
+      '    --hash=sha256:fixture',
+      'torch==2.4.1+cpu \\',
+      '    --hash=sha256:fixture',
+    ].join('\n'));
+    expect(lockedDistributionPrunePaths({
+      prunePaths: [
+        'venv/lib/python3.11/site-packages/networkx',
+        'venv/lib/python3.11/site-packages/networkx-3.6.1.dist-info',
+        'venv/lib/python3.11/site-packages/torch/include',
+        'venv/lib/python3.11/site-packages/pip-24.1.2.dist-info',
+      ],
+    }, lock)).toEqual([
+      'venv/lib/python3.11/site-packages/networkx',
+      'venv/lib/python3.11/site-packages/networkx-3.6.1.dist-info',
+    ]);
   });
 
   it('keeps published core targets exactly aligned with published catalog targets', () => {

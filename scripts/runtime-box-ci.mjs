@@ -52,6 +52,28 @@ function sha256Bytes(value) {
   return createHash('sha256').update(value).digest('hex');
 }
 
+/** Finds prune entries that would remove a complete distribution required by the lock. */
+export function lockedDistributionPrunePaths(recipe, lockBytes) {
+  const locked = lockedPythonDistributions(lockBytes);
+  const normalize = (value) => value.toLowerCase().replace(/[-_.]+/g, '-');
+  return (recipe.prunePaths ?? []).filter((prunePath) => {
+    const path = String(prunePath).replaceAll('\\', '/');
+    const marker = '/site-packages/';
+    const markerIndex = path.toLowerCase().indexOf(marker);
+    if (markerIndex === -1) return false;
+    const remainder = path.slice(markerIndex + marker.length);
+    if (!remainder || remainder.includes('/')) return false;
+    const distributionMetadata = remainder.toLowerCase().endsWith('.dist-info')
+      ? remainder.slice(0, -'.dist-info'.length)
+      : null;
+    return locked.some(({ name, version }) => (
+      distributionMetadata
+        ? normalize(distributionMetadata) === normalize(`${name}-${version}`)
+        : normalize(remainder) === normalize(name)
+    ));
+  });
+}
+
 /** Compares dotted numeric driver versions without floating-point truncation. */
 export function numericVersionAtLeast(actual, minimum) {
   if (!/^\d+(?:\.\d+)*$/.test(actual ?? '') || !/^\d+(?:\.\d+)*$/.test(minimum ?? '')) {
@@ -326,6 +348,11 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
         requireCatalog(
           JSON.stringify(reviewedPackages) === JSON.stringify(lockedPythonDistributions(lockBytes)),
           `dependency license audit package set differs from the lock for ${targetKey}`,
+        );
+        const invalidPrunePaths = lockedDistributionPrunePaths(recipe, lockBytes);
+        requireCatalog(
+          invalidPrunePaths.length === 0,
+          `recipe prunes locked distributions for ${targetKey}: ${invalidPrunePaths.join(', ')}`,
         );
         requireCatalog(
           audit.packages.every((entry) => (
