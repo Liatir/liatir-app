@@ -185,6 +185,10 @@ jobs:
           --script "${{ needs.preflight.outputs.validator_script }}"
           --output .runtime-box-ci/scientific-result.json
 
+      - name: Install Linux product lifecycle dependencies
+        if: inputs.mode == 'native-lifecycle' && startsWith(inputs.target_id, 'linux-')
+        run: bash scripts/install-runtime-box-linux-product-deps.sh
+
       - name: Install pinned Rust 1.95.0
         if: inputs.mode == 'native-lifecycle'
         uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0

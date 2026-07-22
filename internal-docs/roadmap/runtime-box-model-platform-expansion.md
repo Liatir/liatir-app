@@ -322,7 +322,7 @@ This gate selects infrastructure only; it does not establish UCE support.
   builds, and the lock contains no CUDA or `nvidia-*` packages.
 - Cheap evidence completed: catalog/fixture check; target and release
   resolution; 12 signer-policy tests; 37 focused Runtime Box/evidence/catalog
-  tests; the full `test:verify` chain with 156 unit tests and clean SDK/core,
+  tests; the full `test:verify` chain with 157 unit tests and clean SDK/core,
   Svelte, frontend, and root TypeScript builds; standalone frontend TypeScript
   and Svelte checks; 11 Rust Runtime Box tests (one intentionally ignored large
   fixture); internal docs build; embedded Python syntax checks; and
@@ -360,6 +360,35 @@ This gate selects infrastructure only; it does not establish UCE support.
 - Actual billed-runner exposure was approximately one rounded Linux minute for
   preflight plus one for the native job: at most `$0.012` beyond included
   minutes at the reviewed `$0.006/minute` standard Linux rate.
+
+### 2026-07-22 — P1 native validation attempt 2 reached product lifecycle
+
+- Validation run `29951632568` on fix commit `ef7744f` passed the checked
+  preflight, Linux host/disk probe, 22-package dependency audit, clean native
+  build, development signature verification, archive/layout verification, and
+  self-test. The measured archive is `497,682,872` bytes with SHA-256
+  `91024613948d6a288948406c8eddd6ec89275d0691d27a3fb0dcaf49b017194b`;
+  installed size is `1,261,955,005` bytes.
+- The exact shipped scGPT runner then completed real CPU inference against the
+  pinned one-cell/128-gene fixture in `158,223` ms, producing one finite
+  512-dimensional embedding on Torch `2.4.1+cpu`. Output and provenance
+  contracts passed. Failure artifact `8542504315` retains this evidence.
+- The run stopped only when the generic Rust product lifecycle attempted to
+  compile Tauri: `_runtime-box-validate.yml` had not installed the Linux
+  GLib/WebKit/GTK development libraries already required and proven by the
+  protected release workflow. `glib-sys` therefore failed because
+  `glib-2.0.pc` was unavailable. Evidence writing and cleanup passed; nothing
+  was published or promoted.
+- Fix: one shared Linux lifecycle dependency script now owns the proven package
+  set and is called by reusable validation, protected release, and foundation
+  CI. The validation step runs only for Linux `native-lifecycle` mode and before
+  Rust compilation. Model callers track the shared script in their path
+  filters. Bash syntax, workflow contract tests, catalog/signer checks, internal
+  docs build, diff check, and the full 157-test `test:verify` gate pass locally.
+  One bounded native proof is allowed on the committed fix.
+- Actual billed-runner exposure was approximately one rounded Linux minute for
+  preflight plus six for the native job: at most `$0.042` beyond included
+  minutes at the reviewed standard Linux rate.
 
 ## Per-action checklist template
 

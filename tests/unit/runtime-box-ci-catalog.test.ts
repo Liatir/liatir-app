@@ -258,4 +258,34 @@ describe('Runtime Box CI catalog', () => {
     expect(launcher).toContain('--no-default-labels');
     expect(launcher).toContain('RUNNER_ONLINE_TIMEOUT_SECONDS=11400');
   });
+
+  it('shares the proven Linux product lifecycle dependencies across validation and release', () => {
+    const validation = readFileSync(
+      new URL('../../.github/workflows/_runtime-box-validate.yml', import.meta.url),
+      'utf8',
+    );
+    const release = readFileSync(
+      new URL('../../.github/workflows/runtime-box-release.yml', import.meta.url),
+      'utf8',
+    );
+    const foundation = readFileSync(
+      new URL('../../.github/workflows/runtime-box-foundation.yml', import.meta.url),
+      'utf8',
+    );
+    const dependencyScript = readFileSync(
+      new URL('../../scripts/install-runtime-box-linux-product-deps.sh', import.meta.url),
+      'utf8',
+    );
+    const sharedCommand = 'bash scripts/install-runtime-box-linux-product-deps.sh';
+
+    expect(validation).toContain(sharedCommand);
+    expect(validation.indexOf(sharedCommand)).toBeLessThan(
+      validation.indexOf('Install pinned Rust 1.95.0'),
+    );
+    expect(release).toContain(sharedCommand);
+    expect(foundation).toContain(sharedCommand);
+    expect(dependencyScript).toContain('libwebkit2gtk-4.1-dev');
+    expect(dependencyScript).toContain('libayatana-appindicator3-dev');
+    expect(dependencyScript).toContain('xvfb');
+  });
 });

@@ -159,18 +159,7 @@ jobs:
 
       - name: Install Linux product lifecycle dependencies
         if: startsWith(inputs.target_id, 'linux-')
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends \
-            libwebkit2gtk-4.1-dev \
-            build-essential \
-            curl \
-            file \
-            libxdo-dev \
-            libssl-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            xvfb
+        run: bash scripts/install-runtime-box-linux-product-deps.sh
 
       - name: Install pinned Rust 1.95.0 for the product lifecycle
         if: startsWith(inputs.target_id, 'linux-') || startsWith(inputs.target_id, 'windows-')
