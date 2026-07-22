@@ -2,7 +2,7 @@
 
 Last reviewed: 2026-07-22
 
-Status: **in progress — P0 local correction and P1 Linux CPU checked configuration complete**
+Status: **in progress — P0 local correction complete; P1 Linux CPU native proof awaiting one lifecycle recheck**
 
 This is the canonical execution plan for bringing scGPT Whole-human and UCE
 4-layer to every currently supported native Runtime Box product target where
@@ -293,7 +293,7 @@ This gate selects infrastructure only; it does not establish UCE support.
 | Phase | Deliverable | State | Required closure evidence |
 | --- | --- | --- | --- |
 | P0 | Portable validators and explicit accelerator contract | In progress | Local implementation and cheap gates complete; two macOS regressions remain |
-| P1 | scGPT Linux CPU | In progress | Buildable recipe/configuration and cheap gates complete; native validation/release, evidence record, and beta channel remain |
+| P1 | scGPT Linux CPU | In progress | Native build and scientific proof complete; corrected product lifecycle recheck, protected release, evidence record, and beta channel remain |
 | P2 | scGPT Windows CPU | Not started | Validation/release runs, evidence record, beta channel |
 | P3 | UCE CPU runner capacity | Not started | Measured capacity and approved checked runner profiles |
 | P4 | UCE Linux CPU | Not started | Validation/release runs, evidence record, beta channel |
@@ -389,6 +389,41 @@ This gate selects infrastructure only; it does not establish UCE support.
 - Actual billed-runner exposure was approximately one rounded Linux minute for
   preflight plus six for the native job: at most `$0.042` beyond included
   minutes at the reviewed standard Linux rate.
+
+### 2026-07-22 — P1 native validation attempt 3 exposed rollback ordering
+
+- Validation run `29952407546` on shared-dependency fix commit `cb89e6b`
+  passed the exact checked preflight, Linux host/disk probe, clean build,
+  dependency audit, archive verification, independent self-test, and real
+  scGPT CPU scientific validation. The shared Linux system-dependency installer
+  also worked: the Tauri application compiled successfully in the product
+  lifecycle job. Artifact `8543003240` and the unconditional cleanup step were
+  retained; no production signing, R2 publication, promotion, or catalog
+  support change occurred.
+- The Rust lifecycle ran 11 production-transition tests: 10 passed, the
+  established large fixture was ignored, and
+  `runtime_box_activation_rollback_and_remove_use_production_transitions`
+  failed because rollback restored `first` instead of the directly previous
+  `second` generation.
+- Root cause: activation created the correct uniquely named backup, but then
+  discarded that identity and pruned rollback candidates by filesystem
+  modification time. Consecutive Linux directory renames can have equal
+  timestamps, so the retained generation was nondeterministic.
+- Local fix: pruning now retains the exact backup path produced by the current
+  activation and removes every other candidate. A direct multi-candidate
+  regression plus the formerly failing lifecycle test pass; the complete
+  Runtime Box Rust module passes 11/11 with the large fixture intentionally
+  ignored. Catalog, signer 12/12, internal docs, and the full verify chain also
+  pass, including 157/157 unit and contract tests, SDK/core generation, Svelte,
+  frontend production build, and root TypeScript compilation.
+- `cargo fmt --check` remains unusable as a repository-wide gate because the
+  existing Rust tree has extensive unrelated formatting drift; it made no
+  changes. The task diff itself is whitespace-clean.
+- The native target remains `buildable` and unpublished. One corrected Linux
+  lifecycle recheck is still required before the protected release can be
+  considered. Approximate billed-runner exposure for this attempt was one
+  rounded preflight minute plus fourteen native minutes, at most `$0.090`
+  beyond included minutes at the reviewed standard Linux rate.
 
 ## Per-action checklist template
 

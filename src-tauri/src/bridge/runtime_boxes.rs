@@ -1284,28 +1284,26 @@ fn newest_rollback(root: &Path) -> Result<Option<PathBuf>, String> {
     Ok(candidates.pop())
 }
 
-/// Keeps only the newest archived version and deletes the rest.
+/// Keeps only the archived version created by the current activation and deletes the rest.
 ///
 /// Runtime boxes are large, so history is capped at one generation: enough to undo the install
-/// that just happened, without letting old environments accumulate on disk.
-fn prune_rollbacks(root: &Path) -> Result<(), String> {
+/// that just happened, without letting old environments accumulate on disk. The retained path is
+/// passed explicitly because filesystem modification times can tie on fast consecutive installs.
+fn prune_rollbacks(root: &Path, retained: Option<&Path>) -> Result<(), String> {
     if !root.is_dir() {
         return Ok(());
     }
-    let mut candidates = std::fs::read_dir(root)
+    let candidates = std::fs::read_dir(root)
         .map_err(|error| error.to_string())?
         .filter_map(Result::ok)
         .map(|entry| entry.path())
         .filter(|path| path.is_dir())
         .collect::<Vec<_>>();
-    candidates.sort_by_key(|path| {
-        std::fs::metadata(path)
-            .and_then(|metadata| metadata.modified())
-            .ok()
-    });
-    while candidates.len() > 1 {
-        let oldest = candidates.remove(0);
-        std::fs::remove_dir_all(oldest).map_err(|error| error.to_string())?;
+    for candidate in candidates {
+        if retained.is_some_and(|path| path == candidate) {
+            continue;
+        }
+        std::fs::remove_dir_all(candidate).map_err(|error| error.to_string())?;
     }
     Ok(())
 }
@@ -1344,7 +1342,7 @@ fn activate_runtime(
         }
         return Err(format!("cannot activate AI Runtime Box: {error}"));
     }
-    prune_rollbacks(&rollback)?;
+    prune_rollbacks(&rollback, had_previous.then_some(backup.as_path()))?;
     Ok(had_previous)
 }
 
@@ -2024,6 +2022,25 @@ mod tests {
         assert!(!matching_download.exists());
         assert!(unrelated_download.exists());
 
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn runtime_box_rollback_pruning_retains_the_current_activation_backup() {
+        let root = fixture_root("rollback-pruning");
+        let older = root.join("older");
+        let retained = root.join("retained");
+        write_runtime_marker(&older, "older");
+        write_runtime_marker(&retained, "retained");
+
+        prune_rollbacks(&root, Some(&retained)).unwrap();
+
+        assert!(!older.exists());
+        assert_eq!(read_runtime_marker(&retained), "retained");
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), 1);
+
+        prune_rollbacks(&root, None).unwrap();
+        assert!(!retained.exists());
         std::fs::remove_dir_all(root).unwrap();
     }
 

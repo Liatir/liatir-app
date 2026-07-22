@@ -16,8 +16,9 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   identities, and operator handoff.
 - [Runtime Box model platform expansion](./roadmap/runtime-box-model-platform-expansion.md) —
   the active execution plan to bring scGPT and UCE to Linux CPU/CUDA and
-  Windows CPU; its P0 local portability correction and P1 Linux CPU checked
-  configuration are complete, with native evidence still pending.
+  Windows CPU; its P0 local portability correction is complete and P1 Linux
+  CPU has real native build/scientific evidence, with one corrected lifecycle
+  recheck still pending before release.
 
 ## Where the project is
 
@@ -31,9 +32,15 @@ The new scGPT Linux CPU target is checked and deliberately remains `buildable`.
 Run `29951014606` exposed and closed a dependency-audit/pruning contradiction.
 Run `29951632568` then passed build, self-test, and real finite 512-dimensional
 CPU inference, but exposed a shared validation-workflow omission of the Linux
-Tauri system libraries at the Rust lifecycle stage. Cleanup succeeded and the
-workflow fix is local; no publication, beta promotion, or support claim has
-occurred.
+Tauri system libraries at the Rust lifecycle stage. Run `29952407546` proved
+that shared fix by compiling Tauri and again passing the native build and
+scientific chain, then exposed nondeterministic rollback pruning when Linux
+filesystem timestamps tied. The product fix now preserves the exact backup
+created by the current activation; its direct regression, all 11 Runtime Box
+Rust tests, catalog/signer/docs, and the complete 157-test verify chain pass
+locally. The target remains `buildable`: one native lifecycle recheck,
+protected release, reviewed evidence, beta promotion, and support-surface
+update still remain. No publication or support claim has occurred.
 
 **Runtime Box-only product cutover (2026-07-22):** the AI Model catalog now
 contains exactly Geneformer V1 10M, scGPT Whole-human, and UCE 4-layer. Every
@@ -252,10 +259,11 @@ first).
 ## Next steps
 
 1. Execute the [Runtime Box model platform expansion](./roadmap/runtime-box-model-platform-expansion.md):
-   first correct shared scientific validator/accelerator portability, then
-   close scGPT and UCE one target at a time on Linux CPU, Windows CPU, and Linux
-   CUDA. Keep Windows CUDA under the existing no-dispatch decision until its
-   runner re-entry conditions hold.
+   first complete the corrected scGPT Linux CPU lifecycle recheck and protected
+   release, then close scGPT and UCE one target at a time on Windows CPU, Linux
+   CPU, and Linux CUDA. Regress both existing macOS boxes to close P0, and keep
+   Windows CUDA under the existing no-dispatch decision until its runner
+   re-entry conditions hold.
 2. Close the true cross-version Runtime Box update and client-persisted signed
    anti-replay state as product work, not as an unclosed foundation gate.
 3. Continue with the common execution spine in Phase 2 after that bounded
