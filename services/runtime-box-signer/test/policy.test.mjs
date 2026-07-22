@@ -63,6 +63,32 @@ test('accepts the approved UCE Runtime Box identity', () => {
   assert.doesNotThrow(() => validateSigningPayload(policy, uceRelease));
 });
 
+test('accepts the approved scGPT Linux CPU identity', () => {
+  const targetId = 'linux-x86_64-cpu';
+  assert.doesNotThrow(() => validateSigningPayload(policy, {
+    ...release,
+    boxId: 'scgpt-whole-human',
+    modelId: 'bowang-scgpt-whole-human',
+    runtimeId: 'single-cell-foundation-scgpt-whole-human',
+    version: '0.2.5-beta.1',
+    target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
+    compatibility: {
+      minLiatirVersion: '0.2.1',
+      minRamGb: 16,
+      hostEnvironments: ['native'],
+    },
+    archive: {
+      ...release.archive,
+      url: `https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.1/${targetId}/${'a'.repeat(64)}.zip`,
+    },
+    modelCacheSubdir: 'model-cache/scgpt-whole-human',
+    provenance: {
+      ...release.provenance,
+      recipeId: 'scgpt-whole-human-linux-x86_64-cpu',
+    },
+  }));
+});
+
 test('accepts a signed installed size while keeping legacy releases valid', () => {
   assert.doesNotThrow(() => validateSigningPayload(policy, {
     ...release,

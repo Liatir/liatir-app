@@ -277,6 +277,52 @@ describe('Batch 5 single-cell foundation model contract', () => {
     expect(validatorSource).not.toMatch(/^export const UCE_EMBEDDING_SCRIPT/m);
   });
 
+  it('keeps scGPT and UCE validation recipe-driven and cross-platform', () => {
+    const scgptValidator = readFileSync(
+      resolve(rootDir, 'scripts/validate-scgpt-runtime.mjs'),
+      'utf8',
+    );
+    const uceValidator = readFileSync(
+      resolve(rootDir, 'scripts/validate-uce-runtime.mjs'),
+      'utf8',
+    );
+    const validatorContext = readFileSync(
+      resolve(rootDir, 'scripts/runtime-box/validator-context.mjs'),
+      'utf8',
+    );
+
+    for (const validator of [scgptValidator, uceValidator]) {
+      expect(validator).toContain('loadRuntimeBoxValidatorContext');
+    }
+    expect(validatorContext).toContain('LIATIR_RUNTIME_BOX_RECIPE_ID');
+    expect(validatorContext).toContain('LIATIR_RUNTIME_BOX_TARGET_ID');
+    expect(validatorContext).toContain("...recipe.pythonEntryPoint.split('/')");
+    expect(scgptValidator).not.toContain("run('unzip'");
+    expect(scgptValidator).not.toContain('macos-aarch64-metal.zip');
+    expect(uceValidator).not.toContain("run('/usr/bin/time'");
+    expect(uceValidator).not.toContain("join(RUNTIME_DIR, 'venv/bin/python')");
+  });
+
+  it('makes scGPT and UCE explicit accelerator requests fail closed', () => {
+    const scgptRunner = readFileSync(
+      resolve(rootDir, 'frontend/src/lib/tools/ai/python-scripts/scgpt-embedding.ts'),
+      'utf8',
+    );
+    const uceRunner = readFileSync(
+      resolve(rootDir, 'frontend/src/lib/tools/ai/python-scripts/uce-embedding.ts'),
+      'utf8',
+    );
+
+    for (const runner of [scgptRunner, uceRunner]) {
+      expect(runner).toContain('requested_accelerator');
+      expect(runner).toContain('"auto", "cpu", "mps", "cuda"');
+      expect(runner).toContain('requested_accelerator == "cuda"');
+      expect(runner).toContain('torch.cuda.is_available()');
+      expect(runner).toContain('requested_accelerator == "mps"');
+      expect(runner).toContain('torch.backends.mps.is_available()');
+    }
+  });
+
   it('runs Geneformer parity through the recipe interpreter without POSIX-only paths', () => {
     const validatorSource = readFileSync(
       resolve(rootDir, 'scripts/validate-geneformer-parity.mjs'),

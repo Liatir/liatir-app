@@ -14,6 +14,10 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
 - [Runtime Box production report](./roadmap/runtime-box-production-report.md) —
   the current support matrix, production topology, reviewed evidence, protected
   identities, and operator handoff.
+- [Runtime Box model platform expansion](./roadmap/runtime-box-model-platform-expansion.md) —
+  the active execution plan to bring scGPT and UCE to Linux CPU/CUDA and
+  Windows CPU; its P0 local portability correction and P1 Linux CPU checked
+  configuration are complete, with native evidence still pending.
 
 ## Where the project is
 
@@ -22,6 +26,9 @@ foundation has closed Gates 0 through 10. Product-level Runtime Box work now
 has two explicit tracks: cross-version update with client-persisted anti-replay
 state, and cross-platform expansion of the current model catalog before new
 model families are admitted. The common execution spine follows in Phase 2.
+The cross-platform track now has a canonical target-by-target execution plan.
+The new scGPT Linux CPU target is checked and deliberately remains `buildable`:
+no native run, publication, beta promotion, or support claim has occurred yet.
 
 **Runtime Box-only product cutover (2026-07-22):** the AI Model catalog now
 contains exactly Geneformer V1 10M, scGPT Whole-human, and UCE 4-layer. Every
@@ -239,9 +246,11 @@ first).
 
 ## Next steps
 
-1. Close scGPT and UCE parity on Linux CPU/CUDA and Windows CPU, one target at a
-   time and only after the complete cheap local gate; keep Windows CUDA under
-   the existing no-dispatch decision until its runner re-entry conditions hold.
+1. Execute the [Runtime Box model platform expansion](./roadmap/runtime-box-model-platform-expansion.md):
+   first correct shared scientific validator/accelerator portability, then
+   close scGPT and UCE one target at a time on Linux CPU, Windows CPU, and Linux
+   CUDA. Keep Windows CUDA under the existing no-dispatch decision until its
+   runner re-entry conditions hold.
 2. Close the true cross-version Runtime Box update and client-persisted signed
    anti-replay state as product work, not as an unclosed foundation gate.
 3. Continue with the common execution spine in Phase 2 after that bounded

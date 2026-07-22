@@ -30,11 +30,11 @@ max_csv_rows = max(1, min(int(payload.get("maxCsvRows") or 500), 5000))
 random_seed = int(payload.get("randomSeed") or 23)
 requested_accelerator = str(payload.get("accelerator") or "auto").lower()
 
-if requested_accelerator not in {"auto", "cpu", "mps"}:
+if requested_accelerator not in {"auto", "cpu", "mps", "cuda"}:
     raise SystemExit(f"Unsupported UCE accelerator: {requested_accelerator}")
 if requested_accelerator == "cpu":
     os.environ["ACCELERATE_USE_CPU"] = "true"
-elif requested_accelerator == "mps":
+elif requested_accelerator in {"mps", "cuda"}:
     os.environ["ACCELERATE_USE_CPU"] = "false"
 
 import numpy as np
@@ -42,6 +42,8 @@ import torch
 
 if requested_accelerator == "mps" and not torch.backends.mps.is_available():
     raise SystemExit("UCE Apple Metal validation requested, but MPS is not available.")
+if requested_accelerator == "cuda" and not torch.cuda.is_available():
+    raise SystemExit("UCE CUDA validation requested, but CUDA is not available.")
 
 np.random.seed(random_seed)
 torch.manual_seed(random_seed)
@@ -194,6 +196,17 @@ if not embedded_path.is_file():
 import anndata
 from accelerate.state import AcceleratorState
 
+actual_accelerator = str(AcceleratorState().device)
+actual_accelerator_kind = (
+    "cuda" if actual_accelerator.startswith("cuda")
+    else "mps" if actual_accelerator.startswith("mps")
+    else "cpu"
+)
+if requested_accelerator != "auto" and actual_accelerator_kind != requested_accelerator:
+    raise SystemExit(
+        f"UCE requested {requested_accelerator}, but executed on {actual_accelerator}."
+    )
+
 embedded = anndata.read_h5ad(str(embedded_path))
 if "X_uce" not in embedded.obsm:
     raise SystemExit('UCE output is missing obsm["X_uce"].')
@@ -233,7 +246,9 @@ summary = {
     "species": species,
     "batchSize": batch_size,
     "randomSeed": random_seed,
-    "accelerator": str(AcceleratorState().device),
+    "accelerator": actual_accelerator,
+    "requestedAccelerator": requested_accelerator,
+    "peakVramBytes": int(torch.cuda.max_memory_allocated()) if actual_accelerator_kind == "cuda" else None,
     "previewRows": preview_rows,
     "intermediateCount": len(intermediate_paths),
     "warnings": summary_warnings,

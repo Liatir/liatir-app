@@ -4,10 +4,13 @@ on:
   pull_request:
     paths:
       - "runtime-boxes/recipes/scgpt-whole-human-macos-arm64-metal/**"
+      - "runtime-boxes/recipes/scgpt-whole-human-linux-x86_64-cpu/**"
+      - "runtime-boxes/legal/audits/scgpt-whole-human-linux-x86_64-cpu.json"
       - "runtime-boxes/legal/scgpt-whole-human.md"
       - "scripts/validate-scgpt-runtime.mjs"
       - "scripts/runtime-box/evidence.mjs"
       - "scripts/runtime-box-ci.mjs"
+      - "scripts/runtime-box/validator-context.mjs"
       - "frontend/src/lib/tools/ai/python-scripts/scgpt-embedding.ts"
       - ".github/workflows/_runtime-box-validate.yml"
       - ".github/workflows/runtime-box-scgpt-whole-human.yml"
@@ -15,10 +18,13 @@ on:
     branches: [main]
     paths:
       - "runtime-boxes/recipes/scgpt-whole-human-macos-arm64-metal/**"
+      - "runtime-boxes/recipes/scgpt-whole-human-linux-x86_64-cpu/**"
+      - "runtime-boxes/legal/audits/scgpt-whole-human-linux-x86_64-cpu.json"
       - "runtime-boxes/legal/scgpt-whole-human.md"
       - "scripts/validate-scgpt-runtime.mjs"
       - "scripts/runtime-box/evidence.mjs"
       - "scripts/runtime-box-ci.mjs"
+      - "scripts/runtime-box/validator-context.mjs"
       - "frontend/src/lib/tools/ai/python-scripts/scgpt-embedding.ts"
       - ".github/workflows/_runtime-box-validate.yml"
       - ".github/workflows/runtime-box-scgpt-whole-human.yml"
@@ -28,7 +34,7 @@ on:
         description: Checked Runtime Box target
         required: true
         type: choice
-        options: [macos-aarch64-metal]
+        options: [macos-aarch64-metal, linux-x86_64-cpu]
       mode:
         description: Native validation depth
         required: true

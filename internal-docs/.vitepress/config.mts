@@ -69,6 +69,7 @@ export default defineConfig({
           { text: 'AI batches', link: '/roadmap/ai-batches' },
           { text: 'Runtime Box CI foundation', link: '/roadmap/runtime-box-ci-foundation' },
           { text: 'Runtime Box production report', link: '/roadmap/runtime-box-production-report' },
+          { text: 'Runtime Box model platform expansion', link: '/roadmap/runtime-box-model-platform-expansion' },
         ],
       },
     ],

@@ -14,21 +14,29 @@ import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import {
+  loadRuntimeBoxValidatorContext,
+  productAcceleratorForTarget,
+} from './runtime-box/validator-context.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const REVISION = '8ead6e07af0c80f75653598138bb704e865b45c8';
 const MODEL_ID = 'snap-stanford-uce-4layer';
-const RUNTIME_DIR = resolve(
-  process.env.LIATIR_UCE_RUNTIME_DIR
-    ?? join(ROOT, '.runtime-box-build/uce-4layer-macos-arm64-metal/payload'),
-);
+const {
+  recipe: RECIPE,
+  targetId: TARGET_ID,
+  runtimeDir: RUNTIME_DIR,
+  python: PYTHON,
+  dependencyLockSha256: DEPENDENCY_LOCK_SHA256,
+} = await loadRuntimeBoxValidatorContext({
+  root: ROOT,
+  defaultRecipeId: 'uce-4layer-macos-arm64-metal',
+  runtimeDirectoryEnvironment: 'LIATIR_UCE_RUNTIME_DIR',
+});
+const TARGET_ACCELERATOR = productAcceleratorForTarget(RECIPE.target);
 const PRODUCT_SOURCE = join(
   ROOT,
   'frontend/src/lib/tools/ai/python-scripts/uce-embedding.ts',
-);
-const RECIPE_PATH = join(
-  ROOT,
-  'runtime-boxes/recipes/uce-4layer-macos-arm64-metal/recipe.json',
 );
 const EXPECTED_INPUT_WARNING =
   'UCE expects .X to contain scRNA-seq counts and var_names to contain gene symbols, not Ensembl IDs.';
@@ -153,13 +161,13 @@ runs = payload["runs"]
 cpu = validate_run("cpu", runs[0], "cpu")
 comparison = None
 if len(runs) == 2:
-    metal = validate_run("metal", runs[1], "mps")
-    absolute = np.abs(cpu - metal)
-    denominator = np.linalg.norm(cpu, axis=1) * np.linalg.norm(metal, axis=1)
-    cosine = np.sum(cpu * metal, axis=1) / np.maximum(denominator, 1e-12)
+    accelerated = validate_run("accelerator", runs[1], payload["expectedAccelerator"])
+    absolute = np.abs(cpu - accelerated)
+    denominator = np.linalg.norm(cpu, axis=1) * np.linalg.norm(accelerated, axis=1)
+    cosine = np.sum(cpu * accelerated, axis=1) / np.maximum(denominator, 1e-12)
     close = np.allclose(
         cpu,
-        metal,
+        accelerated,
         atol=float(payload["absoluteTolerance"]),
         rtol=float(payload["relativeTolerance"]),
     )
@@ -171,7 +179,7 @@ if len(runs) == 2:
     }
     if not close or comparison["minimumCosineSimilarity"] < float(payload["minimumCosine"]):
         print(json.dumps(comparison), file=sys.stderr)
-        raise SystemExit("Metal output exceeds the explicit CPU-reference tolerance")
+        raise SystemExit("Accelerator output exceeds the explicit CPU-reference tolerance")
 
 print(json.dumps({
     "status": "passed",
@@ -205,21 +213,19 @@ function run(command, args, options = {}) {
   };
 }
 
-/** Runs one inference under macOS time so CPU RSS and Metal unified-memory pressure are recorded. */
+/** Runs one portable inference and records duration; host-specific memory telemetry stays optional. */
 function runTimedPython(python, script, input, accelerator) {
-  const result = run('/usr/bin/time', ['-l', python, script], {
+  const result = run(python, [script], {
     input,
     env: {
       ACCELERATE_USE_CPU: accelerator === 'cpu' ? 'true' : 'false',
-      PYTORCH_ENABLE_MPS_FALLBACK: '0',
+      ...(accelerator === 'mps' ? { PYTORCH_ENABLE_MPS_FALLBACK: '0' } : {}),
     },
   });
-  const maximumRss = result.stderr.match(/([0-9]+)\s+maximum resident set size/);
-  const peakFootprint = result.stderr.match(/([0-9]+)\s+peak memory footprint/);
   return {
     ...result,
-    maximumResidentSetBytes: maximumRss ? Number(maximumRss[1]) : null,
-    peakMemoryFootprintBytes: peakFootprint ? Number(peakFootprint[1]) : null,
+    maximumResidentSetBytes: null,
+    peakMemoryFootprintBytes: null,
   };
 }
 
@@ -255,13 +261,12 @@ async function sha256File(path) {
   return hash.digest('hex');
 }
 
-await access(join(RUNTIME_DIR, 'venv/bin/python'));
+await access(PYTHON);
 await access(join(RUNTIME_DIR, 'source/UCE/eval_single_anndata.py'));
 await access(join(RUNTIME_DIR, 'model-cache/uce/model_files/4layer_model.torch'));
 await access(join(RUNTIME_DIR, 'model-cache/uce/model_files/protein_embeddings'));
 
-const recipe = JSON.parse(await readFile(RECIPE_PATH, 'utf8'));
-if (recipe.modelId !== MODEL_ID || recipe.sourceRevision !== REVISION) {
+if (RECIPE.modelId !== MODEL_ID || RECIPE.sourceRevision !== REVISION) {
   throw new Error('UCE validation recipe provenance differs from the pinned model contract.');
 }
 
@@ -272,7 +277,7 @@ const workDir = await mkdtemp(join(tmpdir(), 'liatir-uce-validation-'));
 const keepWorkDir = process.env.LIATIR_KEEP_UCE_VALIDATION === '1';
 
 try {
-  const python = join(RUNTIME_DIR, 'venv/bin/python');
+  const python = PYTHON;
   const productScript = join(workDir, 'liatir-uce.py');
   const fixtureScript = join(workDir, 'fixture.py');
   const outputValidationScript = join(workDir, 'validate-output.py');
@@ -281,12 +286,15 @@ try {
   await writeFile(fixtureScript, FIXTURE_SCRIPT);
   await writeFile(outputValidationScript, OUTPUT_VALIDATION_SCRIPT);
 
-  const mps = JSON.parse(run(python, ['-c', [
+  const framework = JSON.parse(run(python, ['-c', [
     'import json, torch',
-    'print(json.dumps({"built": torch.backends.mps.is_built(), "available": torch.backends.mps.is_available(), "torchVersion": torch.__version__, "reportedCudaCompatibility": torch.version.cuda}))',
+    'print(json.dumps({"mpsBuilt": hasattr(torch.backends, "mps") and torch.backends.mps.is_built(), "mpsAvailable": hasattr(torch.backends, "mps") and torch.backends.mps.is_available(), "cudaAvailable": torch.cuda.is_available(), "torchVersion": torch.__version__, "reportedCudaCompatibility": torch.version.cuda}))',
   ].join(';')]).stdout);
-  if (!mps.built || !mps.available) {
-    throw new Error('UCE Gate 5 requires Apple Metal, but packaged Torch does not expose MPS.');
+  if (TARGET_ACCELERATOR === 'mps' && (!framework.mpsBuilt || !framework.mpsAvailable)) {
+    throw new Error('UCE Apple Metal validation requires packaged Torch with available MPS.');
+  }
+  if (TARGET_ACCELERATOR === 'cuda' && !framework.cudaAvailable) {
+    throw new Error('UCE CUDA validation requires packaged Torch with available CUDA.');
   }
 
   const fixture = JSON.parse(run(python, [fixtureScript], {
@@ -325,18 +333,20 @@ try {
       absoluteTolerance: ABSOLUTE_TOLERANCE,
       relativeTolerance: RELATIVE_TOLERANCE,
       minimumCosine: MINIMUM_COSINE_SIMILARITY,
+      expectedAccelerator: 'cpu',
     }),
   });
 
-  const metal = runProduct('mps');
+  const accelerated = TARGET_ACCELERATOR === 'cpu' ? null : runProduct(TARGET_ACCELERATOR);
   const scientific = JSON.parse(run(python, [outputValidationScript], {
     input: JSON.stringify({
-      runs: [cpu.result, metal.result],
+      runs: [cpu.result, ...(accelerated ? [accelerated.result] : [])],
       inputFile,
       expectedWarning: EXPECTED_INPUT_WARNING,
       absoluteTolerance: ABSOLUTE_TOLERANCE,
       relativeTolerance: RELATIVE_TOLERANCE,
       minimumCosine: MINIMUM_COSINE_SIMILARITY,
+      expectedAccelerator: TARGET_ACCELERATOR,
     }),
   }).stdout);
   const inputSha256After = await sha256File(inputFile);
@@ -348,6 +358,7 @@ try {
     status: 'passed',
     modelId: MODEL_ID,
     sourceRevision: REVISION,
+    targetId: TARGET_ID,
     productRunnerSha256,
     fixture: {
       cells: fixture.cells,
@@ -367,20 +378,19 @@ try {
       maximumResidentSetBytes: cpu.timing.maximumResidentSetBytes,
       peakMemoryFootprintBytes: cpu.timing.peakMemoryFootprintBytes,
     },
-    metal: {
-      accelerator: metal.result.summary.accelerator,
-      durationMs: metal.timing.durationMs,
-      maximumResidentSetBytes: metal.timing.maximumResidentSetBytes,
-      peakMemoryFootprintBytes: metal.timing.peakMemoryFootprintBytes,
-    },
+    accelerator: accelerated ? {
+      accelerator: accelerated.result.summary.accelerator,
+      durationMs: accelerated.timing.durationMs,
+      maximumResidentSetBytes: accelerated.timing.maximumResidentSetBytes,
+      peakMemoryFootprintBytes: accelerated.timing.peakMemoryFootprintBytes,
+    } : null,
     provenance: {
       runtimeDir: RUNTIME_DIR,
-      recipeId: recipe.recipeId,
-      recipeVersion: recipe.recipeVersion,
-      pythonVersion: recipe.pythonVersion,
-      uvVersion: recipe.uvVersion,
-      dependencyLockSha256:
-        'bad8165f05e80191d7ffef0c862cb1b6882532a43182cba0a3ddf40246420bc8',
+      recipeId: RECIPE.recipeId,
+      recipeVersion: RECIPE.recipeVersion,
+      pythonVersion: RECIPE.pythonVersion,
+      uvVersion: RECIPE.uvVersion,
+      dependencyLockSha256: DEPENDENCY_LOCK_SHA256,
     },
     evidence: {
       fixture: {
@@ -390,15 +400,15 @@ try {
       },
       framework: {
         name: 'torch',
-        version: mps.torchVersion,
-        backend: 'cpu-reference-and-metal',
-        reportedCudaCompatibility: mps.reportedCudaCompatibility,
+        version: framework.torchVersion,
+        backend: accelerated ? `cpu-reference-and-${RECIPE.target.accelerator}` : 'cpu',
+        reportedCudaCompatibility: framework.reportedCudaCompatibility,
       },
       accelerator: {
-        kind: 'metal',
+        kind: RECIPE.target.accelerator,
         gpuModel: null,
         driverVersion: null,
-        reportedCudaCompatibility: mps.reportedCudaCompatibility,
+        reportedCudaCompatibility: framework.reportedCudaCompatibility,
       },
       outputShapes: { embeddings: scientific.embeddingShape },
       finiteValues: scientific.finite,
@@ -409,18 +419,20 @@ try {
       },
       parity: {
         reference: 'pinned-cpu-product-runner',
-        passed: scientific.comparison?.allClose === true,
+        passed: scientific.comparison?.allClose ?? true,
+        cpuBaselinePassed: true,
+        acceleratorPassed: accelerated ? scientific.comparison?.allClose === true : null,
         maximumAbsoluteDifference: scientific.comparison?.maximumAbsoluteDifference ?? null,
         meanAbsoluteDifference: scientific.comparison?.meanAbsoluteDifference ?? null,
         minimumCosineSimilarity: scientific.comparison?.minimumCosineSimilarity ?? null,
       },
       peakRamBytes: Math.max(
         cpu.timing.maximumResidentSetBytes ?? 0,
-        metal.timing.maximumResidentSetBytes ?? 0,
+        accelerated?.timing.maximumResidentSetBytes ?? 0,
         cpu.timing.peakMemoryFootprintBytes ?? 0,
-        metal.timing.peakMemoryFootprintBytes ?? 0,
+        accelerated?.timing.peakMemoryFootprintBytes ?? 0,
       ) || null,
-      peakVramBytes: null,
+      peakVramBytes: accelerated?.result.summary.peakVramBytes ?? null,
       outputContract: 'passed',
       provenanceContract: 'passed',
     },

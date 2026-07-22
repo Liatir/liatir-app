@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.runtime-box.python-dependency-license-audit",
+  "targetId": "linux-x86_64-cpu",
+  "torchBackend": "cpu",
+  "dependencyLockSha256": "97d9a61da5a2530d4f69269ead81d12cc12b838acdbbdf551052e1513e298800",
+  "packages": [
+    {
+      "name": "anndata",
+      "version": "0.10.9",
+      "declaredLicense": "BSD-3-Clause",
+      "licenseFiles": [
+        "licenses/LICENSE"
+      ]
+    },
+    {
+      "name": "array-api-compat",
+      "version": "1.15.0",
+      "declaredLicense": "MIT",
+      "licenseFiles": []
+    },
+    {
+      "name": "filelock",
+      "version": "3.32.0",
+      "declaredLicense": "MIT",
+      "licenseFiles": [
+        "licenses/LICENSE"
+      ]
+    },
+    {
+      "name": "fsspec",
+      "version": "2026.6.0",
+      "declaredLicense": "BSD-3-Clause",
+      "licenseFiles": [
+        "licenses/LICENSE"
+      ]
+    },
+    {
+      "name": "h5py",
+      "version": "3.11.0",
+      "declaredLicense": "License :: OSI Approved :: BSD License",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "jinja2",
+      "version": "3.1.6",
+      "declaredLicense": "License :: OSI Approved :: BSD License",
+      "licenseFiles": [
+        "licenses/LICENSE.txt"
+      ]
+    },
+    {
+      "name": "markupsafe",
+      "version": "3.0.3",
+      "declaredLicense": "BSD-3-Clause",
+      "licenseFiles": [
+        "licenses/LICENSE.txt"
+      ]
+    },
+    {
+      "name": "mpmath",
+      "version": "1.3.0",
+      "declaredLicense": "License :: OSI Approved :: BSD License",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "natsort",
+      "version": "8.4.0",
+      "declaredLicense": "License :: OSI Approved :: MIT License",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "networkx",
+      "version": "3.6.1",
+      "declaredLicense": "BSD-3-Clause",
+      "licenseFiles": [
+        "licenses/LICENSE.txt"
+      ]
+    },
+    {
+      "name": "numpy",
+      "version": "1.26.4",
+      "declaredLicense": "License :: OSI Approved :: BSD License",
+      "licenseFiles": [
+        "LICENSE.txt"
+      ]
+    },
+    {
+      "name": "packaging",
+      "version": "26.2",
+      "declaredLicense": "Apache-2.0 OR BSD-2-Clause",
+      "licenseFiles": [
+        "licenses/LICENSE",
+        "licenses/LICENSE.APACHE",
+        "licenses/LICENSE.BSD"
+      ]
+    },
+    {
+      "name": "pandas",
+      "version": "2.2.2",
+      "declaredLicense": "License :: OSI Approved :: BSD License",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "declaredLicense": "License :: OSI Approved :: BSD License OR License :: OSI Approved :: Apache Software License",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "pytz",
+      "version": "2026.2",
+      "declaredLicense": "License :: OSI Approved :: MIT License",
+      "licenseFiles": [
+        "LICENSE.txt"
+      ]
+    },
+    {
+      "name": "scipy",
+      "version": "1.14.1",
+      "declaredLicense": "License :: OSI Approved :: BSD License",
+      "licenseFiles": [
+        "LICENSE.txt"
+      ]
+    },
+    {
+      "name": "six",
+      "version": "1.17.0",
+      "declaredLicense": "License :: OSI Approved :: MIT License",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "sympy",
+      "version": "1.14.0",
+      "declaredLicense": "License :: OSI Approved :: BSD License",
+      "licenseFiles": [
+        "licenses/AUTHORS",
+        "licenses/LICENSE"
+      ]
+    },
+    {
+      "name": "torch",
+      "version": "2.4.1+cpu",
+      "declaredLicense": "License :: OSI Approved :: BSD License",
+      "licenseFiles": [
+        "LICENSE",
+        "NOTICE"
+      ]
+    },
+    {
+      "name": "tqdm",
+      "version": "4.66.5",
+      "declaredLicense": "License :: OSI Approved :: MIT License OR License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+      "licenseFiles": [
+        "LICENCE"
+      ]
+    },
+    {
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "declaredLicense": "PSF-2.0",
+      "licenseFiles": [
+        "licenses/LICENSE"
+      ]
+    },
+    {
+      "name": "tzdata",
+      "version": "2026.3",
+      "declaredLicense": "Apache-2.0",
+      "licenseFiles": [
+        "licenses/LICENSE",
+        "licenses/licenses/LICENSE_APACHE"
+      ]
+    }
+  ]
+}

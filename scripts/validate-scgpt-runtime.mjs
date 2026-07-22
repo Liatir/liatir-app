@@ -1,36 +1,38 @@
 #!/usr/bin/env node
 
-/**
- * End-to-end inference check for the scGPT Runtime Box.
- *
- * Proves the built box does not merely import cleanly, but actually produces usable embeddings:
- * it synthesises a small single-cell input, runs the *shipped* scGPT script against it inside the
- * box's own interpreter, and asserts the output has the expected shape and contains no NaN/Inf.
- *
- * The finiteness check is the substantive one. A model that silently emits NaNs still "succeeds"
- * — no exception, no crash — and would hand the user embeddings that are quietly meaningless.
- * That is exactly the failure this is here to catch.
- */
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+/** Validates real scGPT inference through the exact product runner on the checked target. */
 import { createHash } from 'node:crypto';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import {
+  loadRuntimeBoxValidatorContext,
+  productAcceleratorForTarget,
+  runtimeBoxAcceleratorKind,
+} from './runtime-box/validator-context.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
-/** Requires the box to have been built first; this validates that build's output. */
-const ARCHIVE = join(
-  ROOT,
-  '.runtime-box-dist',
-  'scgpt-whole-human-0.2.5-beta.1-macos-aarch64-metal.zip',
-);
+const REVISION = 'cebd6fae655b9c585a4807daa3ac31bb764f06b4';
+const MODEL_ID = 'bowang-scgpt-whole-human';
+const ABSOLUTE_TOLERANCE = 0.02;
+const RELATIVE_TOLERANCE = 0.02;
+const MINIMUM_COSINE_SIMILARITY = 0.999;
+const {
+  recipe: RECIPE,
+  targetId: TARGET_ID,
+  runtimeDir: RUNTIME_DIR,
+  python: PYTHON,
+  dependencyLockSha256: DEPENDENCY_LOCK_SHA256,
+} = await loadRuntimeBoxValidatorContext({
+  root: ROOT,
+  defaultRecipeId: 'scgpt-whole-human-macos-arm64-metal',
+  runtimeDirectoryEnvironment: 'LIATIR_SCGPT_RUNTIME_DIR',
+});
+if (RECIPE.modelId !== MODEL_ID || RECIPE.sourceRevision !== REVISION) {
+  throw new Error('scGPT validation recipe provenance differs from the pinned model contract.');
+}
 
-/**
- * Builds a minimal but *valid* AnnData input: one cell, 128 genes drawn from the model's own
- * vocabulary. Taking the gene names from the box's `vocab.json` matters — genes the model does not
- * know would be dropped, and the run could pass while exercising nothing. The counts are generated
- * from a fixed formula rather than randomly, so the fixture is identical on every run.
- */
 const FIXTURE_SCRIPT = String.raw`
 import json
 from pathlib import Path
@@ -51,31 +53,35 @@ counts = np.asarray([
 ], dtype=np.int32)
 obs = pd.DataFrame(index=["cell-1"])
 var = pd.DataFrame({"gene_name": genes}, index=genes)
-fixture = runtime / "scgpt-validation-input.h5ad"
+fixture = Path(payload["fixturePath"])
 anndata.AnnData(X=sp.csr_matrix(counts), obs=obs, var=var).write_h5ad(fixture)
 print(json.dumps({"inputFile": str(fixture), "cells": 1, "genes": 128}))
 `;
 
+/** Runs a bounded child process and retains the output needed for scientific evidence. */
 function run(command, args, options = {}) {
+  const startedAt = Date.now();
   const result = spawnSync(command, args, {
     cwd: options.cwd ?? ROOT,
     env: { ...process.env, ...(options.env ?? {}) },
     input: options.input,
     encoding: 'utf8',
     stdio: 'pipe',
-    maxBuffer: 32 * 1024 * 1024,
+    maxBuffer: 64 * 1024 * 1024,
+    timeout: options.timeoutMs ?? 30 * 60 * 1000,
   });
   if (result.error) throw result.error;
   if (result.status !== 0) {
     throw new Error(`${command} failed with status ${result.status}\n${result.stderr || result.stdout}`);
   }
-  return result.stdout.trim();
+  return {
+    stdout: result.stdout.trim(),
+    stderr: result.stderr.trim(),
+    durationMs: Date.now() - startedAt,
+  };
 }
 
-/**
- * Pulls the scGPT runner out of the TypeScript file that ships it, so the script being validated
- * is literally the one users run — not a copy that could drift out of sync.
- */
+/** Extracts the exact embedded runner shipped by the frontend. */
 function extractEmbeddedScript(source) {
   const prefix = 'export const SCGPT_EMBEDDING_SCRIPT = String.raw`';
   const start = source.indexOf(prefix);
@@ -84,67 +90,135 @@ function extractEmbeddedScript(source) {
   return source.slice(start + prefix.length, end);
 }
 
+/** Finds the product runner's final structured result without trusting incidental stdout. */
+function parseLastJson(stdout) {
+  const lines = stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    if (!lines[index].startsWith('{')) continue;
+    try {
+      return JSON.parse(lines[index]);
+    } catch {
+      // Continue to the previous structured line.
+    }
+  }
+  throw new Error('scGPT runner did not emit a final JSON result.');
+}
+
+/** Reads the complete one-cell embedding from the product CSV artifact. */
+async function readEmbedding(result) {
+  const rows = (await readFile(result.embeddingPreviewPath, 'utf8')).trim().split(/\r?\n/);
+  if (rows.length !== 2) throw new Error('scGPT preview must contain one header and one cell.');
+  const values = rows[1].split(',').slice(1).map(Number);
+  if (values.length !== 512 || values.some((value) => !Number.isFinite(value))) {
+    throw new Error('scGPT embedding artifact is non-finite or has the wrong shape.');
+  }
+  return values;
+}
+
+/** Compares an accelerator result to the deterministic CPU reference. */
+function compareEmbeddings(cpu, accelerated) {
+  const differences = cpu.map((value, index) => Math.abs(value - accelerated[index]));
+  const allClose = differences.every(
+    (difference, index) => difference <= ABSOLUTE_TOLERANCE
+      + RELATIVE_TOLERANCE * Math.abs(cpu[index]),
+  );
+  const dot = cpu.reduce((total, value, index) => total + value * accelerated[index], 0);
+  const cpuNorm = Math.sqrt(cpu.reduce((total, value) => total + value * value, 0));
+  const acceleratedNorm = Math.sqrt(
+    accelerated.reduce((total, value) => total + value * value, 0),
+  );
+  const cosine = dot / Math.max(cpuNorm * acceleratedNorm, 1e-12);
+  const comparison = {
+    allClose,
+    maximumAbsoluteDifference: Math.max(...differences),
+    meanAbsoluteDifference: differences.reduce((total, value) => total + value, 0)
+      / differences.length,
+    minimumCosineSimilarity: cosine,
+  };
+  if (!allClose || cosine < MINIMUM_COSINE_SIMILARITY) {
+    throw new Error(`scGPT accelerator output exceeds tolerance: ${JSON.stringify(comparison)}`);
+  }
+  return comparison;
+}
+
 const workDir = await mkdtemp(join(tmpdir(), 'liatir-scgpt-validation-'));
 try {
-  const runtimeDir = join(workDir, 'runtime');
-  run('unzip', ['-q', ARCHIVE, '-d', runtimeDir]);
-  const python = join(runtimeDir, 'venv/bin/python');
   const fixtureScript = join(workDir, 'fixture.py');
+  const fixturePath = join(workDir, 'scgpt-validation-input.h5ad');
   await writeFile(fixtureScript, FIXTURE_SCRIPT);
-  const fixture = JSON.parse(run(
-    python,
-    [fixtureScript],
-    { input: JSON.stringify({ runtimeDir }) },
-  ));
-  const fixtureSha256 = createHash('sha256').update(await readFile(fixture.inputFile)).digest('hex');
-  const framework = JSON.parse(run(python, ['-c', [
+  const fixture = JSON.parse(run(PYTHON, [fixtureScript], {
+    input: JSON.stringify({ runtimeDir: RUNTIME_DIR, fixturePath }),
+  }).stdout);
+  const fixtureSha256 = createHash('sha256')
+    .update(await readFile(fixture.inputFile))
+    .digest('hex');
+  const framework = JSON.parse(run(PYTHON, ['-c', [
     'import json, torch',
     'print(json.dumps({"name":"torch","version":torch.__version__,"reportedCudaCompatibility":torch.version.cuda}))',
-  ].join(';')]));
+  ].join(';')]).stdout);
 
   const productSource = await readFile(
     join(ROOT, 'frontend/src/lib/tools/ai/python-scripts/scgpt-embedding.ts'),
     'utf8',
   );
+  const productRunner = extractEmbeddedScript(productSource);
+  const productRunnerSha256 = createHash('sha256').update(productRunner).digest('hex');
   const productScript = join(workDir, 'liatir-scgpt.py');
-  await writeFile(productScript, extractEmbeddedScript(productSource));
-  // CPU by default: it is the deterministic, always-available path, so a failure here is a real
-  // model problem rather than a GPU quirk. Set LIATIR_VALIDATE_USE_ACCELERATOR=1 to exercise Metal.
-  const result = JSON.parse(run(
-    python,
-    [productScript],
-    {
-      env: process.env.LIATIR_VALIDATE_USE_ACCELERATOR === '1'
-        ? {}
-        : { LIATIR_AI_FORCE_CPU: '1' },
+  await writeFile(productScript, productRunner);
+
+  const runProduct = async (accelerator) => {
+    const execution = run(PYTHON, [productScript], {
       input: JSON.stringify({
-        runtimePath: runtimeDir,
-        modelCacheDir: join(runtimeDir, 'model-cache/scgpt-whole-human'),
+        runtimePath: RUNTIME_DIR,
+        modelCacheDir: join(RUNTIME_DIR, 'model-cache/scgpt-whole-human'),
         inputFile: fixture.inputFile,
-        outputDir: join(workDir, 'output'),
+        outputDir: join(workDir, `output-${accelerator}`),
         species: 'human',
         batchSize: 1,
         maxCsvRows: 1,
+        accelerator,
       }),
-    },
-  ));
-  // The real assertion: 1 cell in, a 512-dim embedding out, and every value finite. A NaN-filled
-  // tensor would otherwise sail through as a "successful" run.
-  const finite = result.preview.flat().every(Number.isFinite);
-  if (!finite || result.summary.cellCount !== 1 || result.summary.embeddingDim !== 512) {
-    throw new Error('scGPT inference output failed validation.');
-  }
-  const acceleratorKind = String(result.summary.accelerator).startsWith('mps')
-    ? 'metal'
-    : String(result.summary.accelerator).startsWith('cuda') ? 'cuda' : 'cpu';
+    });
+    const result = parseLastJson(execution.stdout);
+    const actualKind = runtimeBoxAcceleratorKind(result.summary.accelerator);
+    const expectedKind = accelerator === 'mps' ? 'metal' : accelerator;
+    if (actualKind !== expectedKind) {
+      throw new Error(`scGPT requested ${accelerator}, but reported ${result.summary.accelerator}.`);
+    }
+    if (result.summary.cellCount !== 1 || result.summary.embeddingDim !== 512) {
+      throw new Error('scGPT inference output has the wrong shape.');
+    }
+    return { result, execution, embedding: await readEmbedding(result) };
+  };
+
+  const cpu = await runProduct('cpu');
+  const targetAccelerator = productAcceleratorForTarget(RECIPE.target);
+  const accelerated = targetAccelerator === 'cpu'
+    ? null
+    : await runProduct(targetAccelerator);
+  const comparison = accelerated ? compareEmbeddings(cpu.embedding, accelerated.embedding) : null;
+  const targetRun = accelerated ?? cpu;
+  const finite = [...cpu.embedding, ...(accelerated?.embedding ?? [])].every(Number.isFinite);
+
   console.log(JSON.stringify({
     status: 'passed',
-    model: result.summary.model,
-    cells: result.summary.cellCount,
-    genes: result.summary.geneCount,
-    embeddingShape: [result.summary.cellCount, result.summary.embeddingDim],
-    accelerator: result.summary.accelerator,
+    modelId: MODEL_ID,
+    sourceRevision: REVISION,
+    targetId: TARGET_ID,
+    productRunnerSha256,
+    embeddingShape: [1, 512],
+    accelerator: targetRun.result.summary.accelerator,
     finitePreview: finite,
+    cpuDurationMs: cpu.execution.durationMs,
+    acceleratorDurationMs: accelerated?.execution.durationMs ?? null,
+    comparison,
+    provenance: {
+      recipeId: RECIPE.recipeId,
+      recipeVersion: RECIPE.recipeVersion,
+      pythonVersion: RECIPE.pythonVersion,
+      uvVersion: RECIPE.uvVersion,
+      dependencyLockSha256: DEPENDENCY_LOCK_SHA256,
+    },
     evidence: {
       fixture: {
         id: 'scgpt-pinned-1-cell-128-gene-v1',
@@ -153,20 +227,32 @@ try {
       },
       framework: {
         ...framework,
-        backend: String(result.summary.accelerator),
+        backend: String(targetRun.result.summary.accelerator),
       },
       accelerator: {
-        kind: acceleratorKind,
+        kind: RECIPE.target.accelerator,
         gpuModel: null,
         driverVersion: null,
         reportedCudaCompatibility: framework.reportedCudaCompatibility,
       },
-      outputShapes: { embeddings: [result.summary.cellCount, result.summary.embeddingDim] },
+      outputShapes: { embeddings: [1, 512] },
       finiteValues: finite,
-      tolerances: {},
-      parity: { reference: 'pinned-checkpoint-inference', passed: true },
+      tolerances: accelerated ? {
+        absolute: ABSOLUTE_TOLERANCE,
+        relative: RELATIVE_TOLERANCE,
+        minimumCosineSimilarity: MINIMUM_COSINE_SIMILARITY,
+      } : {},
+      parity: {
+        reference: 'pinned-cpu-product-runner',
+        passed: comparison?.allClose ?? true,
+        cpuBaselinePassed: true,
+        acceleratorPassed: accelerated ? comparison?.allClose === true : null,
+        maximumAbsoluteDifference: comparison?.maximumAbsoluteDifference ?? null,
+        meanAbsoluteDifference: comparison?.meanAbsoluteDifference ?? null,
+        minimumCosineSimilarity: comparison?.minimumCosineSimilarity ?? null,
+      },
       peakRamBytes: null,
-      peakVramBytes: null,
+      peakVramBytes: targetRun.result.summary.peakVramBytes ?? null,
       outputContract: 'passed',
       provenanceContract: 'passed',
     },

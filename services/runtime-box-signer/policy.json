@@ -14,7 +14,7 @@
       "boxId": "scgpt-whole-human",
       "modelId": "bowang-scgpt-whole-human",
       "runtimeId": "single-cell-foundation-scgpt-whole-human",
-      "targets": ["macos-aarch64-metal"]
+      "targets": ["macos-aarch64-metal", "linux-x86_64-cpu"]
     },
     {
       "boxId": "uce-4layer",

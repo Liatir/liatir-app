@@ -22,6 +22,9 @@ output_dir = Path(payload["outputDir"]).resolve()
 batch_size = max(1, min(int(payload.get("batchSize") or 8), 64))
 max_csv_rows = max(1, min(int(payload.get("maxCsvRows") or 500), 5000))
 species = payload.get("species") or "human"
+requested_accelerator = str(payload.get("accelerator") or "auto").lower()
+if requested_accelerator not in {"auto", "cpu", "mps", "cuda"}:
+    raise SystemExit(f"Unsupported scGPT accelerator: {requested_accelerator}")
 if species != "human":
     raise SystemExit("scGPT Whole-human supports human single-cell transcriptomes only.")
 if not input_file.is_file():
@@ -116,15 +119,38 @@ gene_ids = np.asarray(vocab(matched_gene_names), dtype=np.int64)
 expression = matrix[:, supported_indices].tocsr()
 
 force_cpu = os.environ.get("LIATIR_AI_FORCE_CPU") == "1"
-if not force_cpu and torch.cuda.is_available():
+if force_cpu and requested_accelerator not in {"auto", "cpu"}:
+    raise SystemExit("LIATIR_AI_FORCE_CPU conflicts with the requested scGPT accelerator.")
+if force_cpu:
+    requested_accelerator = "cpu"
+
+if requested_accelerator == "cuda" and not torch.cuda.is_available():
+    raise SystemExit("scGPT CUDA was requested, but CUDA is not available.")
+if requested_accelerator == "mps" and not (
+    hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
+):
+    raise SystemExit("scGPT Apple Metal was requested, but MPS is not available.")
+
+if requested_accelerator == "cuda" or (
+    requested_accelerator == "auto" and torch.cuda.is_available()
+):
     device = torch.device("cuda")
     accelerator = "CUDA"
-elif not force_cpu and hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+elif requested_accelerator == "mps" or (
+    requested_accelerator == "auto"
+    and hasattr(torch.backends, "mps")
+    and torch.backends.mps.is_available()
+):
     device = torch.device("mps")
     accelerator = "Apple Metal"
 else:
     device = torch.device("cpu")
     accelerator = "CPU"
+
+if requested_accelerator != "auto" and device.type != requested_accelerator:
+    raise SystemExit(
+        f"scGPT requested {requested_accelerator}, but selected {device.type}."
+    )
 
 model = TransformerModel(
     ntoken=len(vocab),
@@ -275,6 +301,8 @@ summary = {
     "previewRows": preview_rows,
     "intermediateCount": 0,
     "accelerator": accelerator,
+    "requestedAccelerator": requested_accelerator,
+    "peakVramBytes": int(torch.cuda.max_memory_allocated()) if device.type == "cuda" else None,
     "warnings": summary_warnings,
 }
 summary_path = output_dir / "scgpt-embedding-summary.json"
