@@ -97,12 +97,13 @@ Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
   22/22 focused Gate 9 tests, core/Svelte/frontend/root builds, 11 passing Rust
   `runtime_box` tests (one established fixture ignored), catalog, YAML, shell,
   and diff checks. No runner or workflow run has been created.
-  - **Current stop condition:** the real preflight found only
-    `7,497,203,712` free bytes; `37,580,963,840` are required before runner
-    setup, and the in-job UCE floor is `32,212,254,720`. About 10.35 GiB of the
-    checkout is regenerable `src-tauri/target` state, which is insufficient by
-    itself; nothing was deleted. Do not register or dispatch until the 35 GiB
-    preflight passes and explicit runner/release cost approval is obtained.
+  - **Preflight ready, activation still authorization-gated:** after the initial
+    disk stop, the exact `--preflight-only` launcher passed with
+    `39,284,838,400` free bytes against the `37,580,963,840` bootstrap floor,
+    valid GitHub authentication, and no matching registered runner. No runner
+    package, registration token, runner, or workflow was created. Do not
+    register or dispatch until the wiring is pushed to exact remote `main` and
+    explicit runner/release cost approval is obtained.
 - Gate 10 (operational handoff): not started; it follows evidence-backed Gate 9
   closure.
 
@@ -173,16 +174,14 @@ first).
 
 ## Next steps
 
-1. Free enough host disk to pass the 35 GiB Gate 9 bootstrap preflight, then
-   rerun the launcher in `--preflight-only` mode.
-2. Review, commit, and push the Gate 9 wiring; verify the exact remote `main`
+1. Review, commit, and push the Gate 9 wiring; verify the exact remote `main`
    revision before any dispatch.
-3. After explicit approval of the self-hosted runner, 180-minute timeout,
+2. After explicit approval of the self-hosted runner, 180-minute timeout,
    bandwidth, and service cost exposure, queue one protected UCE production
    release and start one ephemeral runner for that already-queued job.
-4. Close Gate 9 only from KMS signing, publication/promotion, compact evidence,
+3. Close Gate 9 only from KMS signing, publication/promotion, compact evidence,
    deregistration, offline-state, and cleanup receipts; then execute Gate 10.
-5. Do not dispatch Windows CUDA on the current hosted runner. Reconsider it only
+4. Do not dispatch Windows CUDA on the current hosted runner. Reconsider it only
    under the explicit re-entry conditions recorded in the canonical ledger.
 
 ## Standing constraints

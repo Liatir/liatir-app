@@ -66,7 +66,7 @@ unsupported under the 2026-07-21 re-scope.
 | 8.2. Geneformer Windows CPU | Complete | Release run `29706828552` (commit `f067482`) passed the full protected release on `windows-x86_64-cpu`: KMS-signed build, native self-test, scientific validation, immutable publication with public hash verification, the complete product lifecycle E2E (install, interrupted-download resume, real Geneformer inference with a finite 256-dim CPU embedding, Jobs/Results/provenance, replacement, rollback, and cleanup), and beta promotion. The `beta` channel now serves the Windows CPU box |
 | 8.2. Geneformer Windows CUDA | Deferred — out of Gate 8 scope (2026-07-21 re-scope), not a supported target, does not block later gates | Recipe + wiring built and validated GPU-free (commit `4127e7d`; host-probe nvidia-smi fixes through `a9af8c6`; target status `buildable`, never published). Hard blocker: the GitHub Windows T4 runner has NVIDIA driver `471.11` (R470), too old for CUDA 12.4 — host-probe rejects it (`driver 471.11 is below 551.61`) in ~1 min before any paid build. Decision 2026-07-21: excluded from CI until GitHub ships a newer Windows GPU driver (or a self-hosted R525+ runner / a separate `windows-x86_64-cuda11.8` target). Local validation on the maintainer's RTX 4060 Ti planned separately |
 | 8.3. Cross-platform closure | Complete | macOS regression run `29880520628` at `d07b6b4` passed preflight, clean native build, self-test, Metal scientific parity, Rust lifecycle, evidence upload, and cleanup; artifact `8514665653` (`sha256:b1b4911121897542bed0961bd0e93ac2ca88c7d17f6229913733a0a062630c74`). The reviewed four-target evidence chain, catalog/core alignment, and readiness matrix are recorded below. Deferred Windows CUDA remains unsupported and excluded by the 2026-07-21 re-scope |
-| 9. macOS arm64 heavy runner | In progress — local wiring reviewed; activation blocked by host disk preflight | UCE resolves only to the repository-scoped `liatir-macos-arm64-heavy` ephemeral runner. The 2026-07-22 local preflight stopped before download or registration with `7,497,203,712` free bytes versus the `37,580,963,840` bootstrap floor. No runner or workflow run was created |
+| 9. macOS arm64 heavy runner | In progress — local wiring and host preflight complete; awaiting explicit activation/release approval | UCE resolves only to the repository-scoped `liatir-macos-arm64-heavy` ephemeral runner. After the initial disk stop, the 2026-07-22 preflight passed with `39,284,838,400` free bytes against the `37,580,963,840` bootstrap floor, valid GitHub authentication, and no matching registered runner. No runner or workflow run was created |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
 
 ## Completed foundation
@@ -1032,19 +1032,23 @@ use GitHub OIDC to Cloud Run/KMS rather than local signing keys.
   inventory was empty when audited. Approximately 10.35 GiB in
   `src-tauri/target` is locally regenerable, but removing it alone would still
   not satisfy the bootstrap floor; no files were deleted.
+- After the maintainer freed additional regenerable cache space and refreshed
+  GitHub authentication, the exact launcher `--preflight-only` command passed
+  with `39,284,838,400` free bytes. It also confirmed the custom heavy-runner
+  label had no competing registered runner. The earlier disk blocker is
+  resolved; no runner package, registration token, runner, or workflow run was
+  created by the passing preflight.
 
 Remaining closure sequence:
 
-1. Free enough disk for the 35 GiB bootstrap check, without treating the heavy
-   run as a disk debugger, then rerun the launcher in `--preflight-only` mode.
-2. Review, commit, and push this wiring; verify the exact remote `main` revision
+1. Review, commit, and push this wiring; verify the exact remote `main` revision
    and re-read the production workflow and its inputs.
-3. State the self-hosted runner, 180-minute job timeout, expected bandwidth and
+2. State the self-hosted runner, 180-minute job timeout, expected bandwidth and
    service cost exposure, then obtain explicit approval.
-4. Queue exactly one protected UCE production release from `main`, start exactly
+3. Queue exactly one protected UCE production release from `main`, start exactly
    one ephemeral runner against the already-queued job, and immediately verify
    run revision, target, inputs, runner name, and mode.
-5. Close Gate 9 only after the KMS-signed build, scientific validation,
+4. Close Gate 9 only after the KMS-signed build, scientific validation,
    immutable publication, beta promotion, compact evidence, deregistration,
    offline state, and work-root cleanup are all directly observed. Stop on any
    identity mismatch; do not dispatch a validation-only run as a debugger.
