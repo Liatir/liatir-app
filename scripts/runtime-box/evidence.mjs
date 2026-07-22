@@ -197,6 +197,7 @@ export async function writeHostEvidence(output, target, runnerLabel = null) {
     arch: actualArch,
     runnerName: process.env.RUNNER_NAME || null,
     runnerLabel,
+    runnerEnvironment: process.env.RUNNER_ENVIRONMENT || null,
     image: process.env.ImageOS && process.env.ImageVersion
       ? `${process.env.ImageOS}-${process.env.ImageVersion}`
       : process.env.ImageOS || null,

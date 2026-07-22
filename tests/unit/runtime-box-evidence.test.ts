@@ -47,6 +47,7 @@ function productionRecord() {
       arch: 'aarch64',
       runnerName: 'runner',
       runnerLabel: 'macos-15',
+      runnerEnvironment: 'github-hosted',
       image: 'macos-15',
       freeDiskBytesBefore: 50_000_000_000,
       minimumFreeDiskBytes: 45_000_000_000,
@@ -252,7 +253,7 @@ describe('Runtime Box CI evidence contract', () => {
       }));
       const files = {
         host: {
-          platform: 'macos', arch: 'aarch64', runnerName: null, runnerLabel: 'macos-15', image: null,
+          platform: 'macos', arch: 'aarch64', runnerName: null, runnerLabel: 'macos-15', runnerEnvironment: null, image: null,
           freeDiskBytesBefore: 100, minimumFreeDiskBytes: null, peakAdditionalDiskBytes: null,
           gpuModel: 'Apple', driverVersion: null, reportedCudaCompatibility: null,
         },

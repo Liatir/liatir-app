@@ -1,7 +1,7 @@
 # Current project status
 
-Last updated: 2026-07-22 (remote evidence baseline `d07b6b4`; Gate 8.3 closure
-and its local repository alignment are complete).
+Last updated: 2026-07-22 (remote `main` baseline `17ce3eb`; Gate 8.3 is closed
+and Gate 9 local wiring is in progress).
 
 This file is the quick handoff snapshot. The canonical detailed plans are:
 
@@ -84,8 +84,27 @@ Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
   import, shared-core/catalog alignment, and honest readiness/support matrix are
   also complete locally. CUDA is supported only on Linux; Windows CUDA remains
   buildable but unvalidated, unpublished, unsupported, and out of Gate 8.
-- Gates 9 (macOS heavy runner) and 10 (handoff): not started. Gate 9 is now the
-  next gate and requires its own authorization and cost review.
+- **Gate 9 macOS heavy runner: in progress, not closed.** UCE now resolves only
+  to a checked repository-scoped, ephemeral, single-concurrency
+  `liatir-macos-arm64-heavy` profile. The local launcher pins GitHub Actions
+  runner `2.336.0`, requires a dedicated root outside the checkout, enforces a
+  35 GiB bootstrap floor before any download or registration, installs no
+  service, caps online time at 190 minutes, preserves diagnostics, and removes
+  the complete marked runner root after success, failure, or interruption.
+  Validation verifies the self-hosted execution context and exact `main`; the
+  protected release retains OIDC to the private Cloud Run/KMS signer and no
+  local signing key. All cheap gates are green: 162/162 full verify tests,
+  22/22 focused Gate 9 tests, core/Svelte/frontend/root builds, 11 passing Rust
+  `runtime_box` tests (one established fixture ignored), catalog, YAML, shell,
+  and diff checks. No runner or workflow run has been created.
+  - **Current stop condition:** the real preflight found only
+    `7,497,203,712` free bytes; `37,580,963,840` are required before runner
+    setup, and the in-job UCE floor is `32,212,254,720`. About 10.35 GiB of the
+    checkout is regenerable `src-tauri/target` state, which is insufficient by
+    itself; nothing was deleted. Do not register or dispatch until the 35 GiB
+    preflight passes and explicit runner/release cost approval is obtained.
+- Gate 10 (operational handoff): not started; it follows evidence-backed Gate 9
+  closure.
 
 ## How Gate 8.2 Windows CPU was closed (2026-07-19/20)
 
@@ -154,10 +173,16 @@ first).
 
 ## Next steps
 
-1. Push the reviewed Gate 8.3 alignment commit to `origin/main` when authorized.
-2. Proceed to Gate 9 and then Gate 10 only under their own authorization and
-   cost boundaries.
-3. Do not dispatch Windows CUDA on the current hosted runner. Reconsider it only
+1. Free enough host disk to pass the 35 GiB Gate 9 bootstrap preflight, then
+   rerun the launcher in `--preflight-only` mode.
+2. Review, commit, and push the Gate 9 wiring; verify the exact remote `main`
+   revision before any dispatch.
+3. After explicit approval of the self-hosted runner, 180-minute timeout,
+   bandwidth, and service cost exposure, queue one protected UCE production
+   release and start one ephemeral runner for that already-queued job.
+4. Close Gate 9 only from KMS signing, publication/promotion, compact evidence,
+   deregistration, offline-state, and cleanup receipts; then execute Gate 10.
+5. Do not dispatch Windows CUDA on the current hosted runner. Reconsider it only
    under the explicit re-entry conditions recorded in the canonical ledger.
 
 ## Standing constraints

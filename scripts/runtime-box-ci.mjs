@@ -136,6 +136,17 @@ export function resolveCiTarget(catalog, modelId, recipeId, targetId, mode) {
   return { model, target, runner };
 }
 
+/** Rejects a heavy job unless GitHub assigned it to the reviewed ephemeral runner. */
+export function validateRunnerExecutionContext(runner, environment = process.env) {
+  if (!runner?.selfHosted) return;
+  requireCatalog(environment.GITHUB_ACTIONS === 'true', `runner ${runner.id} must execute inside GitHub Actions`);
+  requireCatalog(environment.RUNNER_ENVIRONMENT === 'self-hosted', `runner ${runner.id} must execute on a self-hosted runner`);
+  requireCatalog(
+    environment.RUNNER_NAME?.startsWith(runner.selfHosted.runnerNamePrefix),
+    `runner name ${environment.RUNNER_NAME ?? 'missing'} does not match prefix ${runner.selfHosted.runnerNamePrefix}`,
+  );
+}
+
 /** Returns the bounded native-fixture matrix used by the foundation workflow. */
 export function foundationMatrix(catalog) {
   return catalog.foundationFixtures.map((fixture) => {
@@ -177,6 +188,21 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
     requireCatalog(['macos', 'linux', 'windows'].includes(runner.platform), `invalid runner platform ${runner.platform}`);
     requireCatalog(['aarch64', 'x86_64'].includes(runner.arch), `invalid runner arch ${runner.arch}`);
     requireCatalog(Number.isInteger(runner.maxTimeoutMinutes) && runner.maxTimeoutMinutes > 0, `invalid timeout for ${runner.id}`);
+    if (runner.selfHosted) {
+      requireCatalog(runner.selfHosted.scope === 'repository', `self-hosted runner ${runner.id} must be repository-scoped`);
+      requireCatalog(runner.selfHosted.ephemeral === true, `self-hosted runner ${runner.id} must be ephemeral`);
+      requireCatalog(runner.selfHosted.maxConcurrency === 1, `self-hosted runner ${runner.id} concurrency must remain 1`);
+      requireCatalog(runner.selfHosted.cleanWorkDirectory === true, `self-hosted runner ${runner.id} must use a clean work directory`);
+      requireCatalog(
+        typeof runner.selfHosted.runnerNamePrefix === 'string' && runner.selfHosted.runnerNamePrefix.startsWith('liatir-'),
+        `self-hosted runner ${runner.id} lacks the reviewed name prefix`,
+      );
+      requireCatalog(
+        Number.isSafeInteger(runner.selfHosted.minimumBootstrapFreeDiskBytes)
+          && runner.selfHosted.minimumBootstrapFreeDiskBytes > 0,
+        `self-hosted runner ${runner.id} lacks a bootstrap disk floor`,
+      );
+    }
     if (runner.gpu) {
       requireCatalog(typeof runner.expectedGpuModel === 'string' && runner.expectedGpuModel, `GPU runner ${runner.id} lacks an exact model`);
       requireCatalog(Number.isSafeInteger(runner.minimumGpuMemoryBytes) && runner.minimumGpuMemoryBytes > 0, `GPU runner ${runner.id} lacks a VRAM floor`);
@@ -242,6 +268,12 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
       requireCatalog(runner, `unknown runner ${target.runnerProfileId}`);
       requireCatalog(runner.platform === target.target.platform && runner.arch === target.target.arch, `runner host mismatch for ${targetKey}`);
       requireCatalog(runner.gpu || !target.gpuRequired, `GPU target uses a non-GPU runner for ${targetKey}`);
+      if (runner.selfHosted) {
+        requireCatalog(
+          runner.selfHosted.minimumBootstrapFreeDiskBytes > target.requiredBuildDiskBytes,
+          `self-hosted runner bootstrap disk floor must exceed target requirement for ${targetKey}`,
+        );
+      }
       if (target.target.accelerator === 'cuda') {
         requireCatalog(target.gpuRequired === true, `CUDA target is not marked GPU-required for ${targetKey}`);
       }
@@ -425,6 +457,7 @@ async function runPackageScript(script, output, environment = {}) {
 
 /** Checks the current native host and free workspace capacity before a heavy build. */
 async function probeHost(target, runner, output) {
+  validateRunnerExecutionContext(runner);
   const record = await writeHostEvidence(output, target.target, runner.runsOn);
   const recipe = JSON.parse(readFileSync(
     resolve(ROOT, 'runtime-boxes/recipes', target.recipeId, 'recipe.json'),
@@ -499,6 +532,9 @@ async function main() {
       validator_script: resolved.model.validatorScript,
       native_eligible: nativeRequested ? 'true' : 'false',
       gpu_required: resolved.target.gpuRequired ? 'true' : 'false',
+      self_hosted: resolved.runner.selfHosted ? 'true' : 'false',
+      runner_name_prefix: resolved.runner.selfHosted?.runnerNamePrefix ?? '',
+      minimum_bootstrap_free_disk_bytes: resolved.runner.selfHosted?.minimumBootstrapFreeDiskBytes ?? 0,
       box_id: resolved.model.boxId,
       release_path: `.runtime-box-dist/${resolved.model.boxId}-${recipe.version}-${resolved.target.targetId}.release.json`,
       dependency_lock_sha256: resolved.target.dependencyLockSha256,

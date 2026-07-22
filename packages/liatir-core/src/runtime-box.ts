@@ -178,6 +178,15 @@ export interface LiatirRuntimeBoxCiRunnerProfile {
   platform: LiatirRuntimeBoxPlatform;
   arch: LiatirRuntimeBoxArch;
   gpu: boolean;
+  /** Repository-owned constraints for an on-demand self-hosted runner. */
+  selfHosted?: {
+    scope: "repository";
+    ephemeral: true;
+    maxConcurrency: 1;
+    cleanWorkDirectory: true;
+    runnerNamePrefix: string;
+    minimumBootstrapFreeDiskBytes: number;
+  };
   /** Exact accelerator identity provisioned by a checked GPU runner profile. */
   expectedGpuModel?: string;
   /** Minimum usable GPU memory reported by the native driver. */
@@ -311,6 +320,7 @@ export interface LiatirRuntimeBoxCiHostEvidence {
   arch: LiatirRuntimeBoxArch;
   runnerName: string | null;
   runnerLabel: string | null;
+  runnerEnvironment: string | null;
   image: string | null;
   freeDiskBytesBefore: number;
   minimumFreeDiskBytes: number | null;

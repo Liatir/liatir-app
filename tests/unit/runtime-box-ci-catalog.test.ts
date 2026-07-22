@@ -11,6 +11,7 @@ import {
   numericVersionAtLeast,
   resolveCiTarget,
   runtimeBoxEvidenceOptions,
+  validateRunnerExecutionContext,
   validateRuntimeBoxCiCatalog,
 } from '../../scripts/runtime-box-ci.mjs';
 
@@ -172,12 +173,68 @@ describe('Runtime Box CI catalog', () => {
     });
   });
 
-  it('keeps UCE native CI disabled until a runner has enough working storage', () => {
+  it('routes UCE native CI only to the repository-scoped ephemeral heavy runner', () => {
     const uce = catalog.models.find((model) => model.boxId === 'uce-4layer');
+    const runner = catalog.runnerProfiles.find((candidate) => candidate.id === uce?.targets[0].runnerProfileId);
     expect(uce?.targets[0]).toMatchObject({
       status: 'published',
       requiredBuildDiskBytes: 32_212_254_720,
-      nativeCiEnabled: false,
+      nativeCiEnabled: true,
+      runnerProfileId: 'macos-arm64-heavy',
     });
+    expect(runner).toMatchObject({
+      runsOn: 'liatir-macos-arm64-heavy',
+      platform: 'macos',
+      arch: 'aarch64',
+      selfHosted: {
+        scope: 'repository',
+        ephemeral: true,
+        maxConcurrency: 1,
+        cleanWorkDirectory: true,
+        runnerNamePrefix: 'liatir-macos-heavy-',
+        minimumBootstrapFreeDiskBytes: 37_580_963_840,
+      },
+    });
+  });
+
+  it('rejects a self-hosted heavy job outside the exact checked runner context', () => {
+    const runner = catalog.runnerProfiles.find((candidate) => candidate.id === 'macos-arm64-heavy');
+    expect(() => validateRunnerExecutionContext(runner, {
+      GITHUB_ACTIONS: 'true',
+      RUNNER_ENVIRONMENT: 'self-hosted',
+      RUNNER_NAME: 'liatir-macos-heavy-1721600000-1234',
+    })).not.toThrow();
+    expect(() => validateRunnerExecutionContext(runner, {
+      GITHUB_ACTIONS: 'true',
+      RUNNER_ENVIRONMENT: 'github-hosted',
+      RUNNER_NAME: 'Mac-1',
+    })).toThrow(/must execute on a self-hosted runner/);
+    expect(() => validateRunnerExecutionContext(runner, {
+      GITHUB_ACTIONS: 'true',
+      RUNNER_ENVIRONMENT: 'self-hosted',
+      RUNNER_NAME: 'unreviewed-runner',
+    })).toThrow(/does not match prefix/);
+  });
+
+  it('guards heavy native allocation and preserves OIDC signing plus unconditional cleanup', () => {
+    const validation = readFileSync(new URL('../../.github/workflows/_runtime-box-validate.yml', import.meta.url), 'utf8');
+    const release = readFileSync(new URL('../../.github/workflows/runtime-box-release.yml', import.meta.url), 'utf8');
+    const launcher = readFileSync(new URL('../../scripts/run-runtime-box-macos-heavy-runner.sh', import.meta.url), 'utf8');
+    const validationNative = validation.slice(validation.indexOf('\n  native:\n'));
+    const releaseJob = release.slice(release.indexOf('\n  release:\n'));
+
+    expect(validation).toContain('Require main before any native runner allocation');
+    expect(validation).toContain('test "${{ github.ref }}" = "refs/heads/main"');
+    expect(validationNative.indexOf('Clean stale Runtime Box state')).toBeLessThan(validationNative.indexOf('host-probe'));
+    expect(validationNative).toContain('if: always()');
+    expect(releaseJob.indexOf('Clean stale Runtime Box state')).toBeLessThan(releaseJob.indexOf('host-probe'));
+    expect(release).toContain('id-token: write');
+    expect(releaseJob).toContain('LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN');
+    expect(releaseJob).not.toContain('keygen');
+    expect(launcher).toContain('RUNNER_VERSION="2.336.0"');
+    expect(launcher).toContain('8e8839c49b7060b6b2154f4931f815df330c27f167d53ef2239ee3dfce28b079');
+    expect(launcher).toContain('--ephemeral');
+    expect(launcher).toContain('--no-default-labels');
+    expect(launcher).toContain('RUNNER_ONLINE_TIMEOUT_SECONDS=11400');
   });
 });

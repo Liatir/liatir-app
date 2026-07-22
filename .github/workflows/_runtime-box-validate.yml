@@ -35,12 +35,19 @@ jobs:
       release_path: ${{ steps.resolve.outputs.release_path }}
       heartbeat_seconds: ${{ steps.resolve.outputs.heartbeat_seconds }}
     steps:
+      - name: Require main before any native runner allocation
+        if: inputs.native_requested
+        run: test "${{ github.ref }}" = "refs/heads/main"
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
+      - name: Clean stale Runtime Box state
+        run: node scripts/runtime-box-ci.mjs clean
 
       - run: npm ci
 
@@ -95,6 +102,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
+
+      - name: Clean stale Runtime Box state
+        run: node scripts/runtime-box-ci.mjs clean
 
       - run: npm ci
 

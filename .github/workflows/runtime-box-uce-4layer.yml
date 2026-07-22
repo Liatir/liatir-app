@@ -4,10 +4,13 @@ on:
   pull_request:
     paths:
       - "runtime-boxes/recipes/uce-4layer-macos-arm64-metal/**"
+      - "runtime-boxes/catalog.json"
       - "runtime-boxes/legal/uce-4layer.md"
+      - "packages/liatir-core/src/runtime-box.ts"
       - "scripts/validate-uce-runtime.mjs"
       - "scripts/runtime-box/evidence.mjs"
       - "scripts/runtime-box-ci.mjs"
+      - "scripts/run-runtime-box-macos-heavy-runner.sh"
       - "frontend/src/lib/tools/ai/python-scripts/uce-embedding.ts"
       - ".github/workflows/_runtime-box-validate.yml"
       - ".github/workflows/runtime-box-uce-4layer.yml"
@@ -15,10 +18,13 @@ on:
     branches: [main]
     paths:
       - "runtime-boxes/recipes/uce-4layer-macos-arm64-metal/**"
+      - "runtime-boxes/catalog.json"
       - "runtime-boxes/legal/uce-4layer.md"
+      - "packages/liatir-core/src/runtime-box.ts"
       - "scripts/validate-uce-runtime.mjs"
       - "scripts/runtime-box/evidence.mjs"
       - "scripts/runtime-box-ci.mjs"
+      - "scripts/run-runtime-box-macos-heavy-runner.sh"
       - "frontend/src/lib/tools/ai/python-scripts/uce-embedding.ts"
       - ".github/workflows/_runtime-box-validate.yml"
       - ".github/workflows/runtime-box-uce-4layer.yml"

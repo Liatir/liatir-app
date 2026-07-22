@@ -66,7 +66,7 @@ unsupported under the 2026-07-21 re-scope.
 | 8.2. Geneformer Windows CPU | Complete | Release run `29706828552` (commit `f067482`) passed the full protected release on `windows-x86_64-cpu`: KMS-signed build, native self-test, scientific validation, immutable publication with public hash verification, the complete product lifecycle E2E (install, interrupted-download resume, real Geneformer inference with a finite 256-dim CPU embedding, Jobs/Results/provenance, replacement, rollback, and cleanup), and beta promotion. The `beta` channel now serves the Windows CPU box |
 | 8.2. Geneformer Windows CUDA | Deferred — out of Gate 8 scope (2026-07-21 re-scope), not a supported target, does not block later gates | Recipe + wiring built and validated GPU-free (commit `4127e7d`; host-probe nvidia-smi fixes through `a9af8c6`; target status `buildable`, never published). Hard blocker: the GitHub Windows T4 runner has NVIDIA driver `471.11` (R470), too old for CUDA 12.4 — host-probe rejects it (`driver 471.11 is below 551.61`) in ~1 min before any paid build. Decision 2026-07-21: excluded from CI until GitHub ships a newer Windows GPU driver (or a self-hosted R525+ runner / a separate `windows-x86_64-cuda11.8` target). Local validation on the maintainer's RTX 4060 Ti planned separately |
 | 8.3. Cross-platform closure | Complete | macOS regression run `29880520628` at `d07b6b4` passed preflight, clean native build, self-test, Metal scientific parity, Rust lifecycle, evidence upload, and cleanup; artifact `8514665653` (`sha256:b1b4911121897542bed0961bd0e93ac2ca88c7d17f6229913733a0a062630c74`). The reviewed four-target evidence chain, catalog/core alignment, and readiness matrix are recorded below. Deferred Windows CUDA remains unsupported and excluded by the 2026-07-21 re-scope |
-| 9. macOS arm64 heavy runner | Not started | Requires fresh approval |
+| 9. macOS arm64 heavy runner | In progress — local wiring reviewed; activation blocked by host disk preflight | UCE resolves only to the repository-scoped `liatir-macos-arm64-heavy` ephemeral runner. The 2026-07-22 local preflight stopped before download or registration with `7,497,203,712` free bytes versus the `37,580,963,840` bootstrap floor. No runner or workflow run was created |
 | 10. Documentation and operational handoff | Not started | Evidence-driven only |
 
 ## Completed foundation
@@ -983,6 +983,71 @@ single-concurrency self-hosted runner for heavy Runtime Boxes. It must remain
 offline outside planned builds, use a dedicated clean work directory, require a
 conservative disk preflight, clean all build state after success or failure, and
 use GitHub OIDC to Cloud Run/KMS rather than local signing keys.
+
+#### Local implementation and preflight (2026-07-22; gate remains open)
+
+- Added a checked `macos-arm64-heavy` runner profile with the unique
+  `liatir-macos-arm64-heavy` label. Its contract is repository-scoped,
+  ephemeral, single-concurrency, and clean-work-directory-only. UCE native CI
+  now resolves to this profile; ordinary macOS Runtime Boxes remain on
+  `macos-15`.
+- Added `scripts/run-runtime-box-macos-heavy-runner.sh`. It requires an explicit
+  absolute root outside the checkout, refuses an existing or symlinked root,
+  verifies Apple silicon and a 35 GiB bootstrap disk floor, refuses concurrent
+  registration of the custom label, and only then downloads the pinned official
+  GitHub Actions runner. The reviewed package is macOS arm64 runner `2.336.0`
+  with SHA-256
+  `8e8839c49b7060b6b2154f4931f815df330c27f167d53ef2239ee3dfce28b079`.
+- The launcher registers one repository-level runner with `--ephemeral`,
+  `--disableupdate`, and `--no-default-labels`; it installs no service. It
+  retains runner diagnostics separately, deregisters an unfinished exact
+  runner identity, and removes the marked runner root on success, failure, or
+  interruption. A 190-minute absolute online timeout prevents an unassigned
+  runner from remaining online indefinitely.
+- Native validation now rejects a self-hosted profile unless GitHub reports
+  `RUNNER_ENVIRONMENT=self-hosted` and the exact reviewed runner-name prefix.
+  Compact host evidence records the runner environment. Both validation and
+  release workflows clean stale Runtime Box state before host probing and keep
+  unconditional final cleanup. Native validation requires the exact `main` ref
+  before any native runner is allocated.
+- The protected production release remains the only Gate 9 closure path: it
+  already requires exact `main`, environment `runtime-box-production`, GitHub
+  OIDC, the private Cloud Run signer, and non-exportable KMS signing. The heavy
+  runner launcher creates no local signing key.
+- Cheap verification is complete: catalog check passed; the full verify profile
+  passed 162/162 unit and contract tests, SDK generation, core TypeScript,
+  Svelte check, frontend production build, and root TypeScript; focused Gate 9
+  tests passed 22/22; Rust `runtime_box` tests passed 11 with the one established
+  large fixture ignored; workflow YAML and shell syntax parsed; and the diff is
+  whitespace-clean. The first full unit attempt had one sandbox DNS failure
+  while fetching the crates.io index; the same focused test passed 15/15 with
+  approved network, and the subsequent full verify passed 162/162.
+- The development host is a 16 GiB Apple M1 on macOS 14.4.1. The UCE catalog
+  requires `32,212,254,720` free bytes at job host-probe time; its calculated
+  clean-build peak is `31,348,550,817` bytes. The launcher deliberately requires
+  `37,580,963,840` free bytes before runner setup so checkout, runner binaries,
+  and package setup cannot consume the build margin. The real preflight stopped
+  at `7,497,203,712` free bytes before GitHub authentication, runner download,
+  registration-token creation, or workflow dispatch. The repository runner
+  inventory was empty when audited. Approximately 10.35 GiB in
+  `src-tauri/target` is locally regenerable, but removing it alone would still
+  not satisfy the bootstrap floor; no files were deleted.
+
+Remaining closure sequence:
+
+1. Free enough disk for the 35 GiB bootstrap check, without treating the heavy
+   run as a disk debugger, then rerun the launcher in `--preflight-only` mode.
+2. Review, commit, and push this wiring; verify the exact remote `main` revision
+   and re-read the production workflow and its inputs.
+3. State the self-hosted runner, 180-minute job timeout, expected bandwidth and
+   service cost exposure, then obtain explicit approval.
+4. Queue exactly one protected UCE production release from `main`, start exactly
+   one ephemeral runner against the already-queued job, and immediately verify
+   run revision, target, inputs, runner name, and mode.
+5. Close Gate 9 only after the KMS-signed build, scientific validation,
+   immutable publication, beta promotion, compact evidence, deregistration,
+   offline state, and work-root cleanup are all directly observed. Stop on any
+   identity mismatch; do not dispatch a validation-only run as a debugger.
 
 ### Gate 10: operational handoff
 

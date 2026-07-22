@@ -108,6 +108,7 @@
     "runtime-box:ci": "node scripts/runtime-box-ci.mjs",
     "runtime-box:product-lifecycle": "node scripts/run-runtime-box-product-lifecycle.mjs",
     "runtime-box:ci:configure": "bash scripts/configure-runtime-box-ci.sh",
+    "runtime-box:runner:macos-heavy": "bash scripts/run-runtime-box-macos-heavy-runner.sh",
     "runtime-box:test:foundation": "node scripts/validate-runtime-box-foundation.mjs",
     "runtime-box:test:native": "node scripts/validate-runtime-box-native-fixture.mjs",
     "runtime-box:validate:geneformer": "node scripts/validate-geneformer-parity.mjs",

@@ -93,6 +93,9 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Clean stale Runtime Box state
+        run: node scripts/runtime-box-ci.mjs clean
+
       - name: Verify native host and working storage before paid setup
         run: >-
           npm run runtime-box:ci -- host-probe
