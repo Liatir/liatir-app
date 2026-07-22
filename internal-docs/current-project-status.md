@@ -1,21 +1,27 @@
 # Current project status
 
-Last updated: 2026-07-22 (Gate 8.3 and Gate 9 are closed; final protected Gate 9
-release run `29909249357` passed at `8e12512`).
+Last updated: 2026-07-22 (Runtime Box CI foundation Gates 0–10 are complete;
+final protected Gate 9 release run `29909249357` passed at `8e12512`, and the
+Gate 10 evidence-backed operational handoff is locally verified).
 
 This file is the quick handoff snapshot. The canonical detailed plans are:
 
 - [Scientific AI Workbench product plan](./roadmap/scientific-ai-workbench.md) —
   the overall product direction and phase gates.
 - [Runtime Box cross-platform CI foundation](./roadmap/runtime-box-ci-foundation.md) —
-  the active engineering gate ledger. Read it before touching any Runtime Box
-  CI gate; it holds the authoritative status table, execution records, and
-  incident ledger.
+  the completed foundation gate ledger. Read it before touching Runtime Box CI;
+  it holds the authoritative status table, execution records, and incident
+  ledger.
+- [Runtime Box production report](./roadmap/runtime-box-production-report.md) —
+  the current support matrix, production topology, reviewed evidence, protected
+  identities, and operator handoff.
 
 ## Where the project is
 
-All current engineering effort sits inside Phase 1 of the Scientific AI
-Workbench plan (finishing the Runtime Box CI foundation).
+Phase 1 of the Scientific AI Workbench plan is complete: the Runtime Box CI
+foundation has closed Gates 0 through 10. The next Runtime Box work is the
+separate product-level cross-version update and client-persisted anti-replay
+state, followed by the common execution spine in Phase 2.
 
 Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
 
@@ -133,8 +139,16 @@ Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
     removed, diagnostics retained, repository runner inventory zero, marked
     root absent, and `43,393,630,208` free host bytes after cleanup. No heavy
     runner remains online.
-- Gate 10 (operational handoff): not started; it is now the only remaining
-  Runtime Box CI foundation gate.
+- **Gate 10 operational handoff: complete.** The production report now records
+  the reviewed run matrix, honest support boundary, protected workflows,
+  environments, variable and secret names, WIF principal forms, service
+  accounts, signer/Registry resources, commands, cost and authorization
+  boundaries, cleanup, token/key rotation, and revocation stop conditions.
+  Runtime Box, signer, Registry, compatibility, evidence, AI roadmap, readiness,
+  and handoff documentation are aligned. Zero-cost closure gates passed:
+  catalog 3 models / 3 fixtures, signer 11/11, verify profile 164/164 plus all
+  builds/checks, and the complete internal-docs build. No remote or paid action
+  was needed.
 
 ## How Gate 8.2 Windows CPU was closed (2026-07-19/20)
 
@@ -203,17 +217,19 @@ first).
 
 ## Next steps
 
-1. Review, commit, and push the evidence-backed Gate 9 catalog and documentation
-   closure, then execute Gate 10 operational handoff from the produced records.
-2. Do not dispatch another Gate 9 UCE release; the on-demand runner remains
+1. Close the true cross-version Runtime Box update and client-persisted signed
+   anti-replay state as product work, not as an unclosed foundation gate.
+2. Continue with the common execution spine in Phase 2 after that bounded
+   Runtime Box product work.
+3. Do not dispatch another Gate 9 UCE release; the on-demand runner remains
    offline unless a separately reviewed future heavy build requires it.
-3. Do not dispatch Windows CUDA on the current hosted runner. Reconsider it only
+4. Do not dispatch Windows CUDA on the current hosted runner. Reconsider it only
    under the explicit re-entry conditions recorded in the canonical ledger.
 
 ## Standing constraints
 
 - No paid, remote, publishing, or release action from memory — read back the
-  exact workflow, inputs, and revision first (see CLAUDE.md and the Runtime Box
+  exact workflow, inputs, and revision first (see `AGENTS.md` and the Runtime Box
   plan's operating rules). GPU runners are manual-only and need explicit cost
   approval.
 - Keep user-owned roadmap edits out of technical commits.

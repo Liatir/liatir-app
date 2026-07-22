@@ -6,8 +6,10 @@ AI Model registry and public docs.
 ## Current status
 
 Batch 5 has three installable/runnable slices: UCE 4-layer, Geneformer V1 10M,
-and scGPT Whole-human. Geneformer and scGPT use signed Runtime Boxes; UCE still
-uses its managed runtime while its Runtime Box gates are completed.
+and scGPT Whole-human. All three use signed Runtime Boxes. UCE's protected
+macOS arm64 release completed in run `29909249357`; Geneformer has reviewed
+production and native lifecycle evidence across macOS Metal, Linux CPU/CUDA,
+and Windows CPU; scGPT has a signed macOS arm64 box.
 scFoundation stays visible as a redistribution-blocked preview entry.
 
 ## Official sources checked on 2026-07-02 and 2026-07-03
@@ -65,11 +67,13 @@ Geneformer V1 10M is the second slice. It uses the isolated runtime ID
 recipe for macOS arm64/Metal. The 201 MB archive contains standalone Python
 3.11.9, a fully hash-locked dependency graph, checksummed V1-only assets, and
 build provenance. A post-extraction self-test proves that the packaged runtime
-is relocatable. The production-signed release is published on R2, its beta
-channel is live through the Registry Worker, and the product catalog now uses
-the Runtime Box installer. Scientific/numerical parity and native app
-install/run E2E are still required. The runner uses Genecorpus-30M median-scaled
-rank encoding and the same compatible `ai-single-cell-embedding` AI Tool.
+is relocatable. Production-signed releases are published on R2 and live through
+the Registry Worker beta channel for macOS arm64 Metal, Linux x86_64 CPU,
+Linux x86_64 CUDA 12.4, and Windows x86_64 CPU. Reviewed scientific parity and
+native lifecycle evidence covers all four targets. The runner uses
+Genecorpus-30M median-scaled rank encoding and the same compatible
+`ai-single-cell-embedding` AI Tool. CUDA is supported only on Linux; the
+Windows CUDA recipe remains unvalidated, unpublished, and unsupported.
 
 The tool outputs:
 

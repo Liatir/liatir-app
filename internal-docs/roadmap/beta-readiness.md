@@ -38,8 +38,8 @@ feature to Verified.
 | Dependencies page | **Partial** | Real bridge checks plus native managed install/execute/remove coverage | Add update interruption and actionable recovery-state E2E |
 | API Connector | **Implemented — unverified** | Saved requests and pipeline node integration exist | Native request/run E2E, auth handling, malformed responses, rate/error states, Results provenance |
 | AI Batches 1–4 | **Implemented — unverified** | Managed runtimes and Tools exist for lightweight embeddings, proteomics, and predictive genomics | Targeted real install/inference runs with scientific sanity fixtures and output validation |
-| AI Runtime Box distribution | **Production path live — partially native-verified** | Live R2/Worker distribution; private Cloud Run signer backed by non-exportable Ed25519 Cloud KMS key; Geneformer is published and beta-promoted for macOS arm64 Metal, Linux x86_64 CPU/CUDA 12.4, and Windows x86_64 CPU with native install, inference, Jobs, Results, provenance, replacement, rollback, and removal evidence | Add a true cross-version native update and persist signed anti-replay channel state in the client; keep Windows CUDA explicitly unsupported until native evidence exists |
-| AI Batch 5 | **Partial** | UCE has a live KMS-signed macOS arm64 beta box, focused exact-runner CPU/Metal parity, and a targeted native install/direct Job/finite Result/Jobs/Results/removal gate; Geneformer has reviewed lifecycle and scientific evidence on macOS Metal, Linux CPU/CUDA, and Windows CPU; scGPT has a live signed box plus real CPU/Metal and native install/Jobs/removal evidence; scFoundation checkpoint redistribution is license-blocked | Choose a legally distributable replacement or user-supplied flow for scFoundation; keep model-specific scientific gates repeatable and do not infer Windows CUDA from Linux CUDA |
+| AI Runtime Box distribution | **Production path live — partially native-verified** | Runtime Box CI foundation Gates 0–10 are complete; live R2/Worker distribution and private Cloud Run signer use a non-exportable Ed25519 Cloud KMS key; Geneformer is published and beta-promoted for macOS arm64 Metal, Linux x86_64 CPU/CUDA 12.4, and Windows x86_64 CPU with native install, inference, Jobs, Results, provenance, replacement, rollback, and removal evidence; the evidence-backed handoff is in the [production report](./runtime-box-production-report.md) | Add a true cross-version native update and persist signed anti-replay channel state in the client; keep Windows CUDA explicitly unsupported until native evidence exists |
+| AI Batch 5 | **Partial** | UCE protected release run `29909249357` produced a live KMS-signed macOS arm64 beta box with exact-runner CPU/Metal parity and cleanup, alongside the retained targeted native install/direct Job/finite Result/Jobs/Results/removal gate; Geneformer has reviewed lifecycle and scientific evidence on macOS Metal, Linux CPU/CUDA, and Windows CPU; scGPT has a live signed box plus real CPU/Metal and native install/Jobs/removal evidence; scFoundation checkpoint redistribution is license-blocked | Choose a legally distributable replacement or user-supplied flow for scFoundation; keep model-specific scientific gates repeatable and do not infer Windows CUDA from Linux CUDA |
 | AI Batches 6–8 | **Planned** | Roadmap only | Complete prerequisite runtime/tool gates before implementation |
 | Scientific viewers | **Implemented — unverified** | Optional local viewer runtimes and visual pages exist | Native visual/runtime coverage with real artifacts, failures, fullscreen, and capture |
 | Quenta | **Partial** | Read-only Ollama MVP with shared contracts, local retrieval, Result/Job deep links, cited reports, unit tests, Rust loopback tests, and mock-Ollama Tauri E2E | Real local Ollama evaluation matrix with recommended model(s), report-quality review, latency/error expectations, and no-tool-call audit |
@@ -65,22 +65,20 @@ The beta cannot ship until automated native coverage proves:
 
 ## Immediate execution order
 
-1. Finish the active Runtime Box CI foundation from Gate 9 through Gate 10 in
-   the exact order and approval boundary defined by its canonical plan.
-2. Close true cross-version Runtime Box update and client-persisted anti-replay
+1. Close true cross-version Runtime Box update and client-persisted anti-replay
    state.
-3. Close the Plugin, direct AI, API Connector, and dependency lifecycle gaps
+2. Close the Plugin, direct AI, API Connector, and dependency lifecycle gaps
    required by the common execution spine.
-4. Add backward-compatible scientific artifact profiles in
+3. Add backward-compatible scientific artifact profiles in
    `packages/liatir-core` and prove them first through the single-cell
    lighthouse workflow.
-5. Complete the single-cell viewer, downstream artifact reuse, and one useful
+4. Complete the single-cell viewer, downstream artifact reuse, and one useful
    no-code preset.
-6. Implement a first-class local Nextflow adapter and prove that one declared
+5. Implement a first-class local Nextflow adapter and prove that one declared
    output can feed an existing AI Tool or viewer.
-7. Validate the implemented predictive genomics and protein verticals before
+6. Validate the implemented predictive genomics and protein verticals before
    adding new model families.
-8. Close the evidence-backed release matrix and public documentation.
+7. Close the evidence-backed release matrix and public documentation.
 
 Quenta expansion, MCP, simulations, generative model families, and additional
 workflow engines remain deferred until the workbench product gate above is

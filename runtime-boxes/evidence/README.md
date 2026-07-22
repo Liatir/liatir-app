@@ -26,3 +26,7 @@ model/target identity, and its successful protected-publication status.
 
 Legacy operator publications may remain summarized directly in the catalog;
 they must not invent GitHub workflow or approver metadata.
+
+The reviewed target matrix, production topology, and operational ownership are
+summarized in the internal
+[Runtime Box production report](../../internal-docs/roadmap/runtime-box-production-report.md).

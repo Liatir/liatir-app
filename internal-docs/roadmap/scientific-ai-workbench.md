@@ -15,19 +15,19 @@ It does not replace the evidence ledgers:
 
 ## Current execution boundary
 
-The active implementation program is the Runtime Box CI foundation. Gate 8.3
-and Gate 8 are complete for every in-scope target. Windows CUDA 12.4 was
-deferred and removed from Gate 8 on 2026-07-21 because the hosted Windows T4
-driver cannot run CUDA 12.4; it is not supported and does not block later
-gates. Work must continue in its existing order:
+The Runtime Box CI foundation completed Gates 0 through 10 on 2026-07-22. Its
+reviewed production state, protected identities, support boundary, and operator
+procedures are recorded in the
+[Runtime Box production report](./runtime-box-production-report.md). Windows
+CUDA 12.4 remains deferred, unvalidated, unpublished, and unsupported under the
+2026-07-21 re-scope.
 
-1. Gate 9 on-demand macOS arm64 heavy runner;
-2. Gate 10 operational handoff.
-
-This product plan must not interrupt, widen, or silently reorder those gates.
-Every paid or remote run still requires the clean local gate and explicit user
-approval defined in the Runtime Box plan. Product expansion begins only after
-the active bounded gate is closed and documented.
+The next Runtime Box work is product scope rather than unfinished foundation
+infrastructure: prove a true cross-version native update and persist signed
+anti-replay channel state in the client. After that, continue with the common
+execution spine in Phase 2. Every paid or remote action still requires its
+exact local gate, workflow/input/revision readback, cost declaration, and fresh
+explicit approval.
 
 ## Product decision
 
@@ -121,7 +121,7 @@ execution foundation, but some product claims are ahead of their evidence.
 | Plugins | Build contracts are verified; native Node/WASM lifecycle coverage is incomplete | Close parity before treating every runtime as equally production-ready |
 | API Connector | Saved requests and pipeline integration exist but native execution evidence is incomplete | Validate it as another first-class node type |
 | AI Models and AI Tools | Batches 1–4 are implemented but not fully scientifically validated; Batch 5 is partial | Validate existing capabilities before adding new families |
-| Runtime Box distribution | Live signed distribution with strong evidence on several targets; cross-platform foundation Gate 8.1 complete | Finish the active foundation program before widening scope |
+| Runtime Box distribution | Live signed distribution; cross-platform CI foundation Gates 0–10 complete with reviewed evidence on macOS Metal, Linux CPU/CUDA, and Windows CPU | Close the separate cross-version update and client anti-replay product gaps before widening scope |
 | Scientific viewers | Protein, genome, and single-cell surfaces exist but need native visual/runtime validation | Make viewer completion part of each scientific vertical |
 | Artifact semantics | Files have paths, extensions, media types, producer, parent run, and lifecycle role; scientific meaning is not yet a versioned compatibility contract | Add semantic profiles without replacing original formats |
 | External workflow engines | Nextflow and Snakemake dependencies are recognized, but their Tools are still marked as coming soon | Build one first-class Nextflow vertical slice after the artifact contract |
@@ -247,6 +247,9 @@ one bounded slice before starting the next heavy slice.
 
 Objective: complete the infrastructure program already in progress without
 mixing it with new product scope.
+
+Status: complete on 2026-07-22. See the
+[production report](./runtime-box-production-report.md).
 
 Work:
 
@@ -543,22 +546,21 @@ features as production-ready.
 This is the default sequence unless a later evidence-backed decision explicitly
 reorders it:
 
-1. finish Gate 9 and Gate 10;
-2. close true cross-version Runtime Box update and persisted anti-replay state;
-3. close Plugin, direct AI, API Connector, and dependency lifecycle gaps needed
+1. close true cross-version Runtime Box update and persisted anti-replay state;
+2. close Plugin, direct AI, API Connector, and dependency lifecycle gaps needed
    by the common execution spine;
-4. design and land the backward-compatible semantic artifact contract in
+3. design and land the backward-compatible semantic artifact contract in
    `packages/liatir-core`;
-5. implement the AnnData/single-cell profiles and lighthouse workflow;
-6. complete single-cell viewer and preset evidence;
-7. implement the local first-class Nextflow adapter;
-8. prove Nextflow output reuse through an existing AI Tool or viewer;
-9. validate the predictive/variant genomics vertical;
-10. validate the protein structure/binding vertical;
-11. publish useful verified Plugin and pipeline templates;
-12. evaluate another external workflow engine only from the reusable adapter
+4. implement the AnnData/single-cell profiles and lighthouse workflow;
+5. complete single-cell viewer and preset evidence;
+6. implement the local first-class Nextflow adapter;
+7. prove Nextflow output reuse through an existing AI Tool or viewer;
+8. validate the predictive/variant genomics vertical;
+9. validate the protein structure/binding vertical;
+10. publish useful verified Plugin and pipeline templates;
+11. evaluate another external workflow engine only from the reusable adapter
     contract;
-13. reconsider simulations, generative models, MCP, Quenta expansion, and
+12. reconsider simulations, generative models, MCP, Quenta expansion, and
     training only after the beta evidence is complete.
 
 ## Definition of done for every integration

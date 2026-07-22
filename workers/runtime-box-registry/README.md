@@ -46,3 +46,50 @@ uploads or promotes signed metadata.
 CI uses the Registry admin surface for both archives and immutable signed release documents.
 It does not receive a Cloudflare account or R2 API token. Rotate the shared Worker/GitHub
 Environment token with `npm run runtime-box:ci:configure -- --rotate-registry-token`.
+
+## Production ownership and operations
+
+The deployed Worker is `liatir-runtime-box-registry`. Its public control-plane
+domain is `models.liatir.com`; immutable R2 objects use
+`assets.models.liatir.com`. `wrangler.jsonc` binds `RUNTIME_BOXES` to bucket
+`liatir-storage`, sets `OBJECT_PREFIX=ai-runtime-boxes`, and declares the
+required Worker secret name `ADMIN_TOKEN`.
+
+The protected `runtime-box-production` GitHub Environment supplies these
+Registry-facing variables to `.github/workflows/runtime-box-release.yml`:
+
+- `LIATIR_RUNTIME_BOX_REGISTRY`
+- `LIATIR_RUNTIME_BOX_BUCKET`
+- `LIATIR_RUNTIME_BOX_PREFIX`
+
+Its corresponding Environment secret is
+`LIATIR_RUNTIME_BOX_ADMIN_TOKEN`. The Worker secret and GitHub secret must hold
+the same rotating value, but the value must never appear in repository files,
+workflow evidence, logs, or documentation.
+
+Production publication uses the protected release workflow. Direct `publish`,
+`publish-key`, `promote`, token rotation, and revocation commands are operator
+surfaces and require exact revision review plus explicit authorization. In
+particular, `publish-key` replaces the Registry trust document and must be used
+only as part of a staged key rotation that retains all keys needed by supported
+releases.
+
+Token rotation is deliberately explicit:
+
+```bash
+npm run runtime-box:ci:configure -- --rotate-registry-token
+```
+
+The helper updates Cloudflare first, probes the authenticated boundary without
+publishing data, then updates the protected GitHub Environment. If either side
+fails, stop release work and reconcile the two stores before continuing.
+
+Revocation creates and promotes a signed complete revocation list; it does not
+delete immutable R2 objects. Read the signed document before promotion and read
+back `/v1/revocations` afterward. A failed or merely uploaded candidate must
+never be represented as channel-promoted.
+
+See the internal
+[Runtime Box production report](../../internal-docs/roadmap/runtime-box-production-report.md)
+for the evidence matrix, identity boundary, exact protected workflow inputs,
+revocation sequence, and cleanup rules.

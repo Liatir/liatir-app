@@ -11,6 +11,7 @@ Use this site to keep durable decisions close to the codebase:
 - architecture rules that affect multiple surfaces;
 - testing and release checks;
 - the canonical [Scientific AI Workbench product plan](./roadmap/scientific-ai-workbench.md);
+- the evidence-backed [Runtime Box production report](./roadmap/runtime-box-production-report.md);
 - AI Models and AI Tools roadmap status;
 - Quenta and MCP trust boundaries;
 - native bridge and runtime constraints;

@@ -67,7 +67,7 @@ unsupported under the 2026-07-21 re-scope.
 | 8.2. Geneformer Windows CUDA | Deferred — out of Gate 8 scope (2026-07-21 re-scope), not a supported target, does not block later gates | Recipe + wiring built and validated GPU-free (commit `4127e7d`; host-probe nvidia-smi fixes through `a9af8c6`; target status `buildable`, never published). Hard blocker: the GitHub Windows T4 runner has NVIDIA driver `471.11` (R470), too old for CUDA 12.4 — host-probe rejects it (`driver 471.11 is below 551.61`) in ~1 min before any paid build. Decision 2026-07-21: excluded from CI until GitHub ships a newer Windows GPU driver (or a self-hosted R525+ runner / a separate `windows-x86_64-cuda11.8` target). Local validation on the maintainer's RTX 4060 Ti planned separately |
 | 8.3. Cross-platform closure | Complete | macOS regression run `29880520628` at `d07b6b4` passed preflight, clean native build, self-test, Metal scientific parity, Rust lifecycle, evidence upload, and cleanup; artifact `8514665653` (`sha256:b1b4911121897542bed0961bd0e93ac2ca88c7d17f6229913733a0a062630c74`). The reviewed four-target evidence chain, catalog/core alignment, and readiness matrix are recorded below. Deferred Windows CUDA remains unsupported and excluded by the 2026-07-21 re-scope |
 | 9. macOS arm64 heavy runner | Complete | Protected release run `29909249357` at `8e12512` passed on the repository-scoped ephemeral runner: clean build, KMS signing, independent native self-test, UCE Metal scientific parity, immutable R2 publication with public hash verification, beta promotion, compact evidence, unconditional workflow cleanup, runner deregistration, and marked-root removal. Artifact `8525984364` has digest `sha256:8166557f9953e4713e577558da5fe485d732e57aef299dbb54fb35630842fbaf` |
-| 10. Documentation and operational handoff | Not started | Evidence-driven only |
+| 10. Documentation and operational handoff | Complete | The evidence-backed `runtime-box-production-report.md` records the supported matrix, reviewed run IDs, protected environments, variable and secret names, workflows, WIF principals, service accounts, resource ownership, commands, stop conditions, and incident procedures without secret values. Runtime Box, signer, Registry, compatibility, AI roadmap, readiness, and handoff docs are aligned. Local closure gates passed: catalog `3` models / `3` fixtures, signer `11/11`, verify profile `164/164` plus all builds/checks, and the internal docs build |
 
 ## Completed foundation
 
@@ -1119,11 +1119,39 @@ use GitHub OIDC to Cloud Run/KMS rather than local signing keys.
 
 ### Gate 10: operational handoff
 
-Update Runtime Box documentation, compatibility status, signer and Registry
-operations, production report, AI roadmap, beta readiness, and this document
-only from produced evidence. Record names of environments, variables, secrets,
-workflows, WIF principals, commands, and verified run IDs, but never secret
-values.
+Completed on 2026-07-22 from the reviewed Gate 8 and Gate 9 evidence:
+
+- Added `internal-docs/roadmap/runtime-box-production-report.md` as the
+  canonical production and operator handoff. It records the exact supported
+  matrix, production run and artifact IDs, signing/hosting separation, GitHub
+  Environments, variable and secret names, workflow paths, WIF providers and
+  principal-set forms, service accounts, Cloud Run/KMS/R2/Worker resources,
+  dispatch and rotation commands, authorization boundaries, bounded
+  monitoring, evidence retention, cleanup, trust rotation, and revocation stop
+  conditions. It contains no secret values.
+- Updated `runtime-boxes/README.md`, the compatibility matrix, evidence guide,
+  signer README, and Registry README so the protected workflows are the
+  canonical production path and direct CLI commands remain explicitly
+  consequential operator surfaces.
+- Aligned the single-cell status, AI batch ledger, Beta 1 readiness, Scientific
+  AI Workbench plan, internal-docs navigation, and current handoff. The Runtime
+  Box CI foundation is complete, while a true cross-version native update and
+  client-persisted anti-replay state remain separate product backlog items.
+- Preserved the honest support boundary: CUDA is validated only on Linux;
+  `windows-x86_64-cuda12.4` remains buildable but unvalidated, unpublished,
+  unsupported, and prohibited from dispatch under the current decision.
+- Zero-cost closure validation passed: `npm run runtime-box:catalog:check`
+  validated 3 model records and 3 foundation fixtures;
+  `npm run runtime-box:signer:check` passed 11/11 tests;
+  `npm run test:verify` passed 164/164 unit and contract tests plus SDK type
+  generation, core build, Svelte check, frontend build, and root TypeScript
+  compile; `npm run docs:internal:build` rendered the complete internal site.
+  No runner, signer deployment, publication, Registry mutation, or paid remote
+  action was required.
+
+Gate 10 and the bounded Runtime Box CI foundation are complete. Future Runtime
+Box changes must continue to use the evidence, cost, identity, and
+authorization rules retained in this ledger and the production report.
 
 ## Foundation completion criteria
 

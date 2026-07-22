@@ -117,7 +117,7 @@ validation, output parsing, Jobs, Results, and provenance.
 
 ### AI Runtime Box Distribution Foundation
 
-Status: production distribution path live; partially native-verified.
+Status: CI foundation complete; product-level update gaps remain.
 
 The canonical cross-platform CI implementation plan and gate status are tracked
 in [Runtime Box CI foundation](./runtime-box-ci-foundation.md).
@@ -139,22 +139,29 @@ in [Runtime Box CI foundation](./runtime-box-ci-foundation.md).
   checks, safe ZIP extraction, a self-test, atomic activation, and rollback per
   `runtimeId`.
 - Geneformer V1 10M is the first production recipe. Its signed macOS arm64/Metal,
-  Linux x86_64/CPU, and Linux x86_64/CUDA 12.4 boxes pass verification,
+  Linux x86_64/CPU, Linux x86_64/CUDA 12.4, and Windows x86_64/CPU boxes pass
+  verification,
   post-extraction imports, scientific parity, and native product lifecycle
-  gates; all three are published under `assets.models.liatir.com` and promoted
+  gates; all four are published under `assets.models.liatir.com` and promoted
   through the beta channel at `models.liatir.com`.
-- UCE 4-layer `1.0.0-beta.1` is KMS-signed, published as an immutable
-  8,862,120,348-byte archive, promoted through the beta channel, and selected by
-  the catalog. Its 10,142,871,337-byte installed payload passed the targeted
-  native install/direct-run/Jobs/Results/removal gate on macOS arm64/Metal.
+- UCE 4-layer protected release run `29909249357` KMS-signed and published the
+  immutable `1.0.0-beta.1` archive at `8,864,908,393` bytes with a signed
+  installed size of `10,142,864,860` bytes, promoted it through the beta
+  channel, and recorded CPU/Metal parity plus cleanup. Its targeted native
+  install/direct-run/Jobs/Results/removal gate is retained separately.
+- Runtime Box CI foundation Gates 0 through 10 are complete. The production
+  topology, protected identities, operator procedures, and reviewed run matrix
+  are recorded in the
+  [Runtime Box production report](./runtime-box-production-report.md).
 
 Geneformer evidence now covers a fresh isolated home, interrupted download and
 resume, signed install, real inference, atomic replacement, rollback, removal,
 and pinned scientific parity on native macOS arm64/Metal, Linux x86_64/CPU, and
 Linux x86_64/CUDA 12.4. The CUDA target was validated with real Tesla T4
 inference against the same-lock CPU baseline.
-The remaining distribution gates are a true cross-version native update and
-client-persisted anti-replay state for signed channel generations. The KMS
+The remaining product work is a true cross-version native update and
+client-persisted anti-replay state for signed channel generations; these are
+outside the completed CI foundation. The KMS
 signing key is non-exportable, IAM-restricted, and independently hosted from R2;
 same-version atomic replacement and rollback are already covered natively.
 

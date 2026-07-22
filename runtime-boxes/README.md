@@ -131,7 +131,7 @@ identities, variables, and secrets. Release concurrency is never cancelled,
 and channel promotion is the final step after immutable publication and public
 hash verification.
 
-The three publications that predate this CI foundation are recorded as
+The two publications that still predate this CI foundation are recorded as
 `legacy-operator` evidence. They keep their real signed release metadata and
 deliberately do not invent GitHub workflow run IDs. Every new publication made
 by the release workflow must be recorded with `github-actions` run evidence and
@@ -174,6 +174,16 @@ Development signing keys and build outputs live under `.runtime-box-local/` and
 
 ## Production publication
 
+The canonical production path is the manual
+`.github/workflows/runtime-box-release.yml` workflow behind the
+`runtime-box-production` GitHub Environment. It resolves only catalog-approved
+inputs, obtains a short-lived OIDC identity, builds with the private signer,
+verifies and scientifically validates the candidate, publishes immutable
+objects, runs the applicable product lifecycle, promotes beta, writes compact
+evidence, and cleans build state. The complete resource, identity, variable,
+secret-name, evidence, and incident-operation handoff is in the internal
+[Runtime Box production report](../internal-docs/roadmap/runtime-box-production-report.md).
+
 The immutable archive and release manifest are uploaded through the
 least-privilege Registry Worker into R2. A separate promotion updates the
 selected channel only after the immutable objects are present and publicly
@@ -183,9 +193,12 @@ Production builds refuse a dirty Git tree and record the builder commit in
 signed provenance. `--allow-dirty` is limited to local development artifacts,
 which `publish` refuses by default.
 
-Deploy or update the private signer, then pass its Cloud Run URL to the build.
-The CLI obtains a short-lived Google identity token and verifies the returned
-signature locally before writing the document:
+The following direct CLI examples are operator and local-integration surfaces,
+not a substitute for the protected production workflows. Deploying the signer,
+publishing, changing the trust root, and promoting are consequential operations
+that require an exact revision readback and explicit authorization. The CLI
+obtains a short-lived Google identity token and verifies the returned signature
+locally before writing the document:
 
 ```bash
 npm run runtime-box:signer:deploy

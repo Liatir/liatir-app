@@ -2,7 +2,7 @@
 
 | Target | Status | Python | Accelerator | Distribution gate |
 |---|---|---:|---|---|
-| macOS arm64 | Supported | 3.11.9 | Apple Metal / CPU | Published Geneformer Metal lifecycle/parity and current-builder regression run `29880520628`; scGPT native inference; UCE lifecycle and CPU/Metal parity |
+| macOS arm64 | Supported | 3.11.9 | Apple Metal / CPU | Published Geneformer Metal lifecycle/parity and current-builder regression run `29880520628`; scGPT native inference; protected UCE release and CPU/Metal parity in run `29909249357` |
 | Linux x86_64 | Supported for Geneformer | 3.11.9 | CPU / CUDA 12.4 | Published native CPU lifecycle in run `29547725429`; current-code T4 CUDA lifecycle in run `29750614689` |
 | Windows x86_64 CPU | Supported for Geneformer | 3.11.9 | CPU | Published native lifecycle in run `29706828552`, including real inference, Jobs, Results, provenance, rollback, removal, and beta promotion |
 | Windows x86_64 CUDA 12.4 | Unsupported, deferred | 3.11.9 recipe | Native CUDA 12.4 | Recipe and CI wiring are buildable, but no box is validated or published; the GitHub Windows T4 driver `471.11` is below the required `551.61` |
@@ -30,16 +30,20 @@ scientific fixture must pass on a physical Windows NVIDIA host before the
 | Geneformer v1 10M | Windows x86_64 / CPU | Published (`1.0.0-beta.1`) | Full protected release and native product lifecycle passed in run `29706828552` |
 | Geneformer v1 10M | Windows x86_64 / CUDA 12.4 | Not published; unsupported | GPU-free recipe checks passed, but native validation is blocked by the hosted runner driver and must not be inferred from Linux CUDA |
 | scGPT Whole-human | macOS arm64 / Metal | Published | Native lifecycle and direct-run inference passed |
-| UCE 4-layer | macOS arm64 / Metal | Published (`1.0.0-beta.1`) | One Runtime Box installer and the shared single-cell runner; reproducible packaging, complete 10-cell CPU/Metal outputs, backend parity, and targeted native lifecycle passed |
+| UCE 4-layer | macOS arm64 / Metal | Published (`1.0.0-beta.1`) | Protected release run `29909249357` passed locked packaging, self-test, KMS signing, complete 10-cell CPU/Metal output validation, immutable publication, beta promotion, and cleanup; targeted native lifecycle evidence remains retained separately |
 
-UCE Gate 3 measured an 8,862,120,348-byte archive and a
-10,142,871,337-byte installed payload. Gate 5 then ran the exact product wrapper
-once on CPU and once on Metal, producing finite 10 x 1,280 embeddings with a
-maximum absolute backend difference of `2.5704503059387207e-7`. Native lifecycle
-and production publication then passed as separate gates: the KMS-signed beta
-release is live, and a fresh-home native run verified signed installation, a
-tracked `ai-python` direct Job, finite 10 x 1,280 Result output and provenance,
+UCE Gate 3 produced the pre-publication sizing estimate. Protected release run
+`29909249357` is the current production authority: it built an
+`8,864,908,393`-byte archive with a signed installed size of `10,142,864,860`
+bytes, then produced finite 10 x 1,280 CPU/Metal embeddings with a maximum
+absolute backend difference of `2.5704503059387207e-7` and minimum cosine
+similarity of `0.9999999999969341`. The KMS-signed beta release is live. A
+separate fresh-home native lifecycle verified signed installation, a tracked
+`ai-python` direct Job, finite 10 x 1,280 Result output and provenance,
 Jobs/Results visibility, removal, and Result artifact survival.
+
+The reviewed production evidence and operational ownership are consolidated in
+the internal [Runtime Box production report](../internal-docs/roadmap/runtime-box-production-report.md).
 
 ## Trust and update rules
 
