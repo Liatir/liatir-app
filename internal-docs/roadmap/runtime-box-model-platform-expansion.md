@@ -2,7 +2,7 @@
 
 Last reviewed: 2026-07-22
 
-Status: **in progress — P0 local correction complete; P1 Linux CPU native proof awaiting one lifecycle recheck**
+Status: **in progress — P0 local correction complete; P1 Linux CPU native proof complete and protected release stopped at the signing build**
 
 This is the canonical execution plan for bringing scGPT Whole-human and UCE
 4-layer to every currently supported native Runtime Box product target where
@@ -293,7 +293,7 @@ This gate selects infrastructure only; it does not establish UCE support.
 | Phase | Deliverable | State | Required closure evidence |
 | --- | --- | --- | --- |
 | P0 | Portable validators and explicit accelerator contract | In progress | Local implementation and cheap gates complete; two macOS regressions remain |
-| P1 | scGPT Linux CPU | In progress | Native build and scientific proof complete; corrected product lifecycle recheck, protected release, evidence record, and beta channel remain |
+| P1 | scGPT Linux CPU | In progress | Corrected native lifecycle proof complete; diagnose protected signing-build failure, then release, evidence record, and beta channel remain |
 | P2 | scGPT Windows CPU | Not started | Validation/release runs, evidence record, beta channel |
 | P3 | UCE CPU runner capacity | Not started | Measured capacity and approved checked runner profiles |
 | P4 | UCE Linux CPU | Not started | Validation/release runs, evidence record, beta channel |
@@ -424,6 +424,44 @@ This gate selects infrastructure only; it does not establish UCE support.
   considered. Approximate billed-runner exposure for this attempt was one
   rounded preflight minute plus fourteen native minutes, at most `$0.090`
   beyond included minutes at the reviewed standard Linux rate.
+
+### 2026-07-22 — P1 corrected native proof passed; first protected release stopped before publication
+
+- Validation run `29954604079` on exact clean commit `29d3ad1` passed the full
+  `native-lifecycle` chain on standard `ubuntu-24.04`: checked preflight and
+  host capacity, clean build, 22-package audit, development signature and
+  archive verification, independent self-test, real scGPT CPU inference, all
+  Rust Runtime Box lifecycle tests, compact evidence upload, and cleanup.
+- Reviewed artifact `8543832402` has digest
+  `sha256:43a819e5f7d577feadfbfb987ab6eb6f2f0fe6cc73c0d36c33bf016c613e7fef`.
+  It records archive SHA-256
+  `5fa834ec3002e2ad1c71de5392319406c32fe206419b46f074a5790ecc416900`,
+  archive size `497,682,872`, installed size `1,261,955,005`, Torch
+  `2.4.1+cpu`, and a finite `1 x 512` embedding from the pinned one-cell,
+  128-gene fixture. Output and provenance contracts passed. Approximate
+  billed-runner exposure was one rounded preflight minute plus thirteen native
+  minutes: at most `$0.084` beyond included minutes.
+- Protected release run `29955615971` then used the same exact commit, model,
+  Linux CPU target, and beta channel. Protected input resolution, host and disk
+  probe, GitHub OIDC authentication, gcloud setup, Linux lifecycle dependencies,
+  Rust 1.95, and the clean-revision check all passed. The run failed in `Build
+  with the private KMS signer and verify locally`. Scientific validation,
+  immutable R2 publication, product lifecycle, and beta promotion were never
+  reached. Unconditional evidence writing, artifact upload, credential cleanup,
+  and build-state cleanup passed. Approximate exposure was one preflight minute
+  plus three release minutes: at most `$0.024` beyond included minutes.
+- The exact signing-build error still must be retrieved before diagnosis or
+  retry. The initial log/artifact retrieval was blocked by the active Codex
+  usage limit, so no cause is inferred here. The target remains `buildable`,
+  unpublished, unpromoted, and unsupported; retry count remains zero until a
+  concrete root cause, regression, and complete cheap recheck exist.
+- The automatic foundation run `29953770028` on `29d3ad1` passed shared
+  contracts, deterministic Zip64 extraction, and Linux/macOS native fixtures,
+  but its Windows fixture repeated the pre-existing relocatable-console-launcher
+  failure: it attempted to spawn
+  `venv\\Scripts\\liatir-lock-fixture.exe` and received `ENOENT`. This is
+  separate from Linux P1 and is tracked for the Windows/P2 portability work;
+  it must not be hidden or treated as a rollback regression.
 
 ## Per-action checklist template
 

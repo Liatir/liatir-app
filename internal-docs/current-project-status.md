@@ -17,8 +17,8 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
 - [Runtime Box model platform expansion](./roadmap/runtime-box-model-platform-expansion.md) —
   the active execution plan to bring scGPT and UCE to Linux CPU/CUDA and
   Windows CPU; its P0 local portability correction is complete and P1 Linux
-  CPU has real native build/scientific evidence, with one corrected lifecycle
-  recheck still pending before release.
+  CPU has complete corrected native lifecycle evidence; its first protected
+  release stopped at the KMS-backed build before publication.
 
 ## Where the project is
 
@@ -38,9 +38,15 @@ scientific chain, then exposed nondeterministic rollback pruning when Linux
 filesystem timestamps tied. The product fix now preserves the exact backup
 created by the current activation; its direct regression, all 11 Runtime Box
 Rust tests, catalog/signer/docs, and the complete 157-test verify chain pass
-locally. The target remains `buildable`: one native lifecycle recheck,
-protected release, reviewed evidence, beta promotion, and support-surface
-update still remain. No publication or support claim has occurred.
+locally. Validation run `29954604079` then passed the complete corrected Linux
+lifecycle, including a second real finite `1 x 512` CPU inference and every
+Runtime Box Rust test; artifact `8543832402` was reviewed.
+Protected release `29955615971` passed input resolution, host capacity, OIDC,
+toolchain, and the clean-revision boundary, but failed in the private-KMS
+signing build before scientific validation, R2 publication, product lifecycle,
+or beta promotion. Cleanup passed. The exact remote error still needs retrieval
+before diagnosis because the active Codex usage limit blocked log access. The
+target remains `buildable`, unpublished, unpromoted, and unsupported.
 
 **Runtime Box-only product cutover (2026-07-22):** the AI Model catalog now
 contains exactly Geneformer V1 10M, scGPT Whole-human, and UCE 4-layer. Every
@@ -259,11 +265,14 @@ first).
 ## Next steps
 
 1. Execute the [Runtime Box model platform expansion](./roadmap/runtime-box-model-platform-expansion.md):
-   first complete the corrected scGPT Linux CPU lifecycle recheck and protected
-   release, then close scGPT and UCE one target at a time on Windows CPU, Linux
-   CPU, and Linux CUDA. Regress both existing macOS boxes to close P0, and keep
-   Windows CUDA under the existing no-dispatch decision until its runner
-   re-entry conditions hold.
+   first retrieve and diagnose the exact signing-build error from protected
+   scGPT Linux CPU release `29955615971`, repair it behind cheap gates, and
+   complete the protected release. Then close scGPT and UCE one target at a
+   time on Windows CPU, Linux CPU, and Linux CUDA. Regress both existing macOS
+   boxes to close P0, and keep Windows CUDA under the existing no-dispatch
+   decision until its runner re-entry conditions hold. The repeated Windows
+   foundation launcher `ENOENT` from run `29953770028` belongs to P2 and must
+   be fixed before claiming Windows portability.
 2. Close the true cross-version Runtime Box update and client-persisted signed
    anti-replay state as product work, not as an unclosed foundation gate.
 3. Continue with the common execution spine in Phase 2 after that bounded
