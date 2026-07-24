@@ -86,7 +86,8 @@ conda-pack 0.9.2, all installed contained under a scratchpad `PIXI_HOME` (no sys
     target.
 
 - **On-disk box layout (fixed by this spike):**
-  ```
+
+  ```text
   <box-root>/
     venv/                     # conda-pack extracted prefix (name = venv)
       bin/python -> python3.11 # Unix; venv/python.exe at root on Windows
@@ -94,6 +95,7 @@ conda-pack 0.9.2, all installed contained under a scratchpad `PIXI_HOME` (no sys
       conda-meta/ lib/ ...
     source/…  model-cache/…  box.json  …   # unchanged
   ```
+
   This keeps the **interpreter-convention invariant**: `venv/bin/python` is exactly what
   `venv_python_for` (`src-tauri/src/bridge/python_env.rs:176`) probes on Unix, unchanged. Verified
   present with both tools.
@@ -125,6 +127,8 @@ same three-line cold-import check before each of those targets is built:
   usually activation-free for import, but CUDA runtime discovery must be checked.
 - **Windows** (CPU/CUDA): the real risk — no rpath; DLL search depends on `PATH` /
   `os.add_dll_directory`, and CUDA DLL discovery in particular may force a minimal activation env.
+  A ready-to-run handoff prompt for the Windows machine (CPU + CUDA) is in
+  [runtime-box-pixi-phase0-windows-check.md](./runtime-box-pixi-phase0-windows-check.md).
 
 **Design implication for Phase 2:** make the hypothesized `activation` field on
 `LiatirRuntimeBoxReleaseManifest` **optional/nullable**. macOS boxes carry none; if a specific
