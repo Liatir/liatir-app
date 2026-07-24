@@ -1,15 +1,16 @@
 # Runtime Box pixi migration — Phase 0 relocation/activation spike (decision record)
 
 Date: 2026-07-24
-Author: local hands-on spike (macOS arm64 / Metal, macOS 14.4.1, Apple Silicon)
+Author: local hands-on spike — macOS arm64 / Metal (macOS 14.4.1, Apple Silicon), then win-64
+CPU/CUDA on Windows 11, then linux-64 CPU/CUDA under WSL2 Ubuntu 26.04 (same Windows box)
 Feeds: [Runtime Box pixi migration](./runtime-box-pixi-migration.md) — this record fixes the
 shape of Phases 1–2.
 
-Status: **DONE for macOS Metal AND Windows (CPU + CUDA). Decisive.** The one genuinely unknown risk
-in the migration plan (does a relocated conda/pixi prefix import cold with no activation env?) is
-resolved for the osx-arm64 target and — the harder, no-rpath case — for **win-64 CPU and win-64
-CUDA**. Only Linux (CPU/CUDA) still needs the same short re-confirmation before its builds (see
-"Per-OS results and remaining scope").
+Status: **DONE for macOS Metal, Windows (CPU + CUDA) AND Linux (CPU + CUDA). Decisive and
+complete.** The one genuinely unknown risk in the migration plan (does a relocated conda/pixi
+prefix import cold with no activation env?) is resolved for the osx-arm64 target, the harder
+no-rpath **win-64 CPU/CUDA** case, and **linux-64 CPU/CUDA**. **No target on any OS needs an
+activation environment.** Phase 0 has no open per-OS unknown left (see "Per-OS results").
 
 ## Question this spike had to answer
 
@@ -173,35 +174,98 @@ plan's "CUDA 12.4" label for the Windows target should be updated to **12.8** wh
 402 MB (CPU), 4.0 GB (CUDA). The CUDA tree is far larger than any current uv box → the Phase 1
 `diskPlan` floors must account for a **multi-GB CUDA box**, not just the ~833 MB macOS figure.
 
-## Per-OS results and remaining scope (must carry into Phase 5)
+## Linux result (CPU + CUDA) — decision-record fragment
+
+Date: 2026-07-24. Local hands-on spike on **WSL2** on the maintainer's Windows box: **Ubuntu
+26.04 LTS**, **glibc 2.43** (`ldd (Ubuntu GLIBC 2.43-2ubuntu2)`), native **x86_64** (no emulation),
+kernel `6.18.33.2-microsoft-standard-WSL2`, RTX 4060 Ti (Ada, compute **8.9**), NVIDIA-SMI
+`610.43.02` / KMD `610.62` / CUDA UMD **13.3**. pixi 0.73.0, conda-pack 0.9.2, all contained under a
+scratch `PIXI_HOME` (no system changes). Everything ran **inside the WSL filesystem** (`~/`), never
+under `/mnt/c`. Method matched the [Linux check prompt](./runtime-box-pixi-phase0-linux-check.md):
+conda-forge `linux-64` env → `conda-pack` → extract to a **different absolute path containing a
+space** (`~/some other place/liatir/boxes/scgpt-{cpu,cuda}/venv`) → **`conda-unpack` never run** →
+cold test under a **fully empty environment** (`env -i`: no `CONDA_PREFIX`, no `LD_LIBRARY_PATH`,
+venv not on `PATH`).
+
+> **WSL caveat (stated explicitly, as the prompt requires):** WSL2 is a real Linux kernel with a
+> real glibc/dynamic linker on native x86_64, but it reaches the GPU through a **driver bridge** —
+> the process maps `/usr/lib/wsl/lib/libcuda.so.1` (backed by
+> `/usr/lib/wsl/drivers/nv_dispsi.inf_amd64_*/libcuda.so.1.1`), not a bare-metal
+> `libcuda.so`. The CUDA result below is therefore **strong evidence, not byte-identical to
+> bare-metal Linux**. If the Phase 3 Linux CUDA runner ends up being bare metal, re-confirm there.
+> Note that only the **driver** comes from the bridge: cuDNN, cuBLAS and `libtorch_cuda` were all
+> verified to load **from the relocated prefix** (see the map evidence below), which is exactly the
+> part relocation could have broken.
+
+The answers to the exact question:
+
+- **CPU — cold import works with NO activation env? → YES.** `pytorch 2.8.0 cpu_mkl_py311_*_102`
+  (with `libtorch 2.8.0 cpu_mkl_*`), python 3.11.15, numpy 2.4.6, anndata 0.12.19 — the same
+  resolution as win-64 CPU. `env -i venv/bin/python -c "import torch, anndata, numpy, scipy,
+  pandas, h5py, tqdm"` → `IMPORT OK 2.8.0`, exit 0, and a real CPU matmul returns.
+- **CUDA — cold import works with NO activation env? → YES. CUDA compute works? → YES.**
+  `pytorch 2.8.0 cuda129_mkl_py311_h974e97e_302`. Under `env -i`: `torch.version.cuda` = **12.9**
+  (confirms the CUDA build, not a CPU fallback), `torch.cuda.is_available()` `True`, device
+  **NVIDIA GeForce RTX 4060 Ti**, compute capability `(8, 9)`, cuDNN `91002`, and a real
+  `torch.randn(512,512,device='cuda')` matmul returns a finite sum.
+- **Minimal activation env, if any → NONE for either.** conda-forge's `$ORIGIN`-relative RPATHs
+  do the whole job: no `LD_LIBRARY_PATH`, no `CONDA_PREFIX`, no `PATH` entry. The prompt's
+  "find the minimal environment" branch was never reached.
+- **No silent fallback.** After `mv`-ing the source prefix (`proj-*/.pixi/envs/default`) completely
+  away, both targets still passed cold import **and** the CUDA matmul, and `torch.__file__`
+  resolved inside the relocated `venv/`.
+- **Runtime library provenance (CUDA, under `env -i`, `/proc/self/maps`):**
+  `…/scgpt-cuda/venv/lib/libcudnn.so.9.10.2`, `…/venv/lib/libtorch_cuda.so`,
+  `…/venv/targets/x86_64-linux/lib/libcublas.so.12.9.2.10` and `libcublasLt.so.12.9.2.10` — all
+  from the **relocated** prefix, including the non-obvious `targets/x86_64-linux/lib` subtree,
+  resolved with no `LD_LIBRARY_PATH`. Only `libcuda.so.1` comes from the host (WSL bridge), which
+  is correct: the driver is always the host's.
+
+**Important recipe finding (feeds Phase 1/Phase 3/Phase 5 for linux-64 CUDA) — the CUDA pin is
+per-OS, do not copy Windows':** conda-forge builds `pytorch 2.8.0` for linux-64 against
+**CUDA 12.9** (`cuda129_mkl_*`, requiring `cuda-version >=12.9,<13`, shipping `cuda-version 12.9`,
+`cudnn 9.10.2.21`, `libcublas 12.9.2.10`). Pinning `cuda-version = "12.8.*"` — the value the win-64
+target needs — **fails to solve** for linux-64; the solver reports that pytorch 2.8.0 would require
+`cuda-version >=12.9,<13`, for which no candidates were found. So: **win-64 → 12.8,
+linux-64 → 12.9.** The package's declared driver floor is only `__cuda >=12` (CUDA minor-version
+compatibility), so any R525+ driver satisfies it; the 4060 Ti's is far newer.
+
+**Manifest-syntax note for Phase 1:** pixi 0.73.0 accepts the `[system-requirements] cuda = "…"`
+table used by this spike but warns it is **deprecated in favour of per-platform virtual packages**
+(`platforms = [{ platform = "linux-64", cuda = "12" }]`). The generated Phase 1 `pixi.toml` should
+emit the new form.
+
+**Footprint (data for the `diskPlan` floors):** extracted `linux-64` prefix **1671 MiB (≈1.63 GB)**
+CPU and **9739 MiB (≈9.5 GB)** CUDA; conda-pack `tar.gz` **527,580,718 B (≈503 MiB)** CPU and
+**6,028,567,677 B (≈5.6 GiB)** CUDA. **Linux CUDA is the largest box in the whole matrix** — ~50 %
+above win-64 CUDA (≈6.5 GB) and ~12× the macOS box — because conda-forge ships the full CUDA
+runtime (`libtorch` alone is 836 MiB) plus `cublas`/`cudnn`. The Phase 1 `diskPlan` floors must be
+sized from **this** number, and conda-pack compression of that tree took **5m24s** single-threaded,
+which is real build wall-clock to budget for.
+
+## Per-OS results (Phase 0 complete; carry into Phase 5)
 
 | Target | Cold import, NO activation | Accelerator compute, NO activation | Extracted footprint | Activation env needed |
 | --- | --- | --- | --- | --- |
 | **macOS arm64 / Metal** | ✅ yes | ✅ Metal (MPS) matmul | ≈ 833 MB | **None** |
 | **win-64 CPU** | ✅ yes | n/a (CPU) | ≈ 1.35 GB | **None** |
 | **win-64 CUDA (12.8)** | ✅ yes | ✅ CUDA matmul on RTX 4060 Ti | ≈ 6.5 GB | **None** |
-| **linux-64 CPU** | ⏳ not yet checked | — | — | TBD |
-| **linux-64 CUDA** | ⏳ not yet checked | CUDA runtime discovery TBD | — | TBD |
+| **linux-64 CPU** | ✅ yes | n/a (CPU) | ≈ 1.63 GB | **None** |
+| **linux-64 CUDA (12.9)** | ✅ yes | ✅ CUDA matmul on RTX 4060 Ti (WSL2 bridge) | ≈ 9.5 GB | **None** |
 
-Only **Linux** (CPU/CUDA) remains: `LD_LIBRARY_PATH` / `$ORIGIN` RPATH behavior — modern conda-forge
-is usually activation-free for import, but CUDA runtime discovery must be re-confirmed with the same
-three-line cold-import check before those targets are built.
+Every OS is now checked. The only residual qualification is the WSL driver-bridge caveat on the
+**linux-64 CUDA** row: import, relocation, and the CUDA runtime libraries were all proven from the
+relocated prefix, but the driver came through `/usr/lib/wsl/lib`. Re-confirm on the Phase 3 runner
+if that runner is bare-metal Linux — a three-line re-run of the same cold-import + matmul check,
+not a new spike.
 
-A ready-to-run handoff prompt is in
-[runtime-box-pixi-phase0-linux-check.md](./runtime-box-pixi-phase0-linux-check.md). The **CPU** case
-runs anywhere Linux x86_64 — a GitHub Codespace is enough, and is native x86_64 (no emulation);
-**Linux CUDA** needs a real NVIDIA GPU. It cannot be run from the maintainer's macOS machine: no
-container runtime is installed there, and an Apple-Silicon container would emulate x86_64 anyway.
-The prompt already reflects the Phase 2 finding — it tests the shipped configuration, i.e. **without
-running `conda-unpack`**.
-
-**Design implication for Phase 2 (now confirmed on the hard case):** keep the hypothesized
+**Design implication for Phase 2 (now confirmed on every OS):** keep the hypothesized
 `activation` field on `LiatirRuntimeBoxReleaseManifest` **optional/nullable**, and it stays
-**`null` for macOS *and* Windows (CPU and CUDA)** — the two OSes tested carry none. The Rust
+**`null` for macOS, Windows *and* Linux (CPU and CUDA)** — no tested target carries one. The Rust
 `run_self_test` / `spawn_in_env` / `run_in_env` / `ai_runtime` paths need **no** `CONDA_PREFIX` /
-`PATH` / `add_dll_directory` injection on Windows, exactly as on macOS. Do not hard-wire an
-activation env for any target on the strength of the spike; if Linux CUDA ever needs one it can be
-added per-box without a box-format change or a macOS/Windows rebuild.
+`PATH` / `LD_LIBRARY_PATH` / `add_dll_directory` injection anywhere. Do not hard-wire an activation
+env for any target; if some future target ever needs one it can be added per-box without a
+box-format change or a rebuild of the others.
 
 ## Not covered by this spike (out of Phase 0 scope, deliberately)
 

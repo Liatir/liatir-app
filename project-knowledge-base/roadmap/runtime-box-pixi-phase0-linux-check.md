@@ -17,7 +17,15 @@ It closes the last per-OS unknown from the Phase 0 spike.
 - **Not** the maintainer's macOS machine: no container runtime is installed, and an Apple-Silicon
   container would emulate x86_64 anyway.
 
-Status: **open.** macOS ✅ and Windows ✅ (CPU + CUDA) are done; only Linux remains.
+Status: **CLOSED — executed 2026-07-24 under WSL2 (Ubuntu 26.04, glibc 2.43, RTX 4060 Ti).**
+Both targets passed: cold import and a real CUDA matmul succeed under a fully empty environment,
+with no activation env, and still pass with the source prefix removed. Phase 0 is now complete on
+all three OSes. **The answers live in the "Linux result" section of the
+[Phase 0 decision record](./runtime-box-pixi-phase0-spike.md)** — read that, not this prompt.
+Two findings worth carrying: linux-64 pins **CUDA 12.9** (`cuda129`, not the win-64 12.8 — 12.8
+does not solve at all on linux-64), and the extracted Linux CUDA prefix is **≈9.5 GB**, the largest
+box in the matrix. The scratch environment was deleted; the record is the deliverable. The prompt
+below is retained only as the reproduction procedure.
 
 Related: [Phase 0 decision record](./runtime-box-pixi-phase0-spike.md),
 [Windows check](./runtime-box-pixi-phase0-windows-check.md),

@@ -3,15 +3,18 @@
 Last updated: 2026-07-24 (a full CI substrate migration to pixi + pixi-pack +
 conda-forge on self-hosted GitHub Actions runners has been planned and approved
 in principle — see the migration plan below. Its **Phase 0 relocation/activation
-spike is complete and decisive on macOS Metal AND Windows (CPU + CUDA)**:
-conda-pack + embedded `conda-unpack` is the chosen relocation mechanism and **no
-activation environment is required on either OS** — a relocated conda-forge prefix
-imports the whole scGPT set cold and runs accelerator compute (Metal on macOS, a
-real CUDA matmul on the RTX 4060 Ti on Windows) under an empty environment, so the
-Rust self-test/run path stays activation-free on macOS and Windows (only Linux
-still to re-confirm). One recipe correction from the Windows spike: conda-forge's
-CUDA `pytorch 2.8.0` for win-64 is **cuda128**, so the Windows CUDA target is
-pinned to **CUDA 12.8, not 12.4**. See [Phase 0 decision record](./roadmap/runtime-box-pixi-phase0-spike.md).
+spike is now complete and decisive on ALL THREE OSes: macOS Metal, Windows
+(CPU + CUDA) and Linux (CPU + CUDA)**: conda-pack is the chosen relocation
+mechanism and **no activation environment is required on any OS** — a relocated
+conda-forge prefix imports the whole scGPT set cold and runs accelerator compute
+(Metal on macOS, a real CUDA matmul on the RTX 4060 Ti on both Windows and Linux)
+under a fully empty environment, so the Rust self-test/run path stays
+activation-free everywhere and the manifest `activation` field stays `null` for
+every target. Two recipe corrections, and the CUDA pin is **per-OS**: conda-forge's
+CUDA `pytorch 2.8.0` is **cuda128** for win-64 but **cuda129** for linux-64, so
+Windows CUDA pins **12.8** and Linux CUDA pins **12.9** (neither has a 12.4 build,
+and 12.8 does not solve at all on linux-64). See
+[Phase 0 decision record](./roadmap/runtime-box-pixi-phase0-spike.md).
 No production code has changed yet. Runtime Box CI foundation Gates 0–10 are
 complete; the product AI Model catalog has been cut over to Runtime Box-only
 delivery).
@@ -36,13 +39,16 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   approved-in-principle plan to replace the uv/python-build-standalone builder
   with pixi + pixi-pack + conda-forge (Variant A + a contained PyPI escape
   hatch) on self-hosted GitHub Actions runners, standardize torch on 2.8.0, and
-  re-validate every box. **Phase 0 complete (macOS Metal + Windows CPU/CUDA);
-  Linux re-confirm pending; Phases 1–5 not started.**
+  re-validate every box. **Phase 0 complete on every OS (macOS Metal + Windows
+  CPU/CUDA + Linux CPU/CUDA); Phases 1–5 not started.**
 - [Runtime Box pixi Phase 0 spike](./roadmap/runtime-box-pixi-phase0-spike.md) —
-  the decisive local relocation/activation decision record: conda-pack + embedded
-  `conda-unpack`, **no activation env on macOS or Windows (CPU + CUDA)**, `venv/`
-  box layout, footprints ≈833 MB (macOS) / ≈1.35 GB (win CPU) / ≈6.5 GB (win CUDA),
-  win-64 CUDA pinned to 12.8; only Linux re-confirm remains.
+  the decisive local relocation/activation decision record: conda-pack, **no
+  activation env on any OS (macOS, Windows and Linux, CPU + CUDA)**, `venv/`
+  box layout, footprints ≈833 MB (macOS) / ≈1.35 GB (win CPU) / ≈6.5 GB (win CUDA)
+  / ≈1.63 GB (linux CPU) / **≈9.5 GB (linux CUDA, the largest box in the matrix)**,
+  CUDA pinned per-OS at 12.8 (win-64) and 12.9 (linux-64). The Linux CUDA proof ran
+  under WSL2's driver bridge, so it is strong evidence rather than bare metal;
+  cuDNN/cuBLAS/libtorch_cuda were all verified to load from the relocated prefix.
 
 ## Where the project is
 

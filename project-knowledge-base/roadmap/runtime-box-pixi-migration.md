@@ -2,12 +2,13 @@
 
 Last reviewed: 2026-07-24
 
-Status: **Phase 0 DONE (macOS Metal + Windows CPU/CUDA); Linux re-confirm pending; Phases 1–5 not
-started.** The zero-cost local Phase 0 spike is complete and decisive on both macOS and the harder
-no-rpath Windows case (CPU + CUDA, real RTX 4060 Ti compute) — see
-[Phase 0 decision record](./runtime-box-pixi-phase0-spike.md). **No activation env is required on
-macOS or Windows.** No production code has changed. Implementation of Phases 1+ begins only on
-explicit maintainer go-ahead, one phase at a time. Note the win-64 CUDA pin correction below.
+Status: **Phase 0 DONE on every OS (macOS Metal + Windows CPU/CUDA + Linux CPU/CUDA); Phases 1–5
+not started.** The zero-cost local Phase 0 spike is complete and decisive on macOS, on the harder
+no-rpath Windows case (CPU + CUDA, real RTX 4060 Ti compute), and on linux-64 (CPU + CUDA, same GPU
+via WSL2) — see [Phase 0 decision record](./runtime-box-pixi-phase0-spike.md). **No activation env
+is required on any OS.** No production code has changed. Implementation of Phases 1+ begins only on
+explicit maintainer go-ahead, one phase at a time. Note the **per-OS** CUDA pin corrections below:
+win-64 → 12.8, linux-64 → 12.9.
 
 Related plans: [Runtime Box model platform expansion](./runtime-box-model-platform-expansion.md)
 (the model/target re-validation this migration feeds into),
@@ -72,17 +73,23 @@ without weakening scientific reproducibility, signing, or provenance.
 
 **Predicted complexity: Low–Medium** — small hands-on POC, but its outcome is decisive and gates Phases 1–2.
 
-> **DONE 2026-07-24 (macOS Metal). Outcome — full record:
+> **DONE 2026-07-24 on macOS Metal, win-64 CPU/CUDA and linux-64 CPU/CUDA. Outcome — full record:
 > [runtime-box-pixi-phase0-spike.md](./runtime-box-pixi-phase0-spike.md).** Decision:
-> **conda-pack + embedded `conda-unpack`** is the relocation mechanism (rides inside the existing
-> ZIP + `box.json` + signing flow, no new external runtime dependency; fixer run as
-> `venv/bin/python venv/bin/conda-unpack`). **No activation env is required on macOS** — a
-> relocated conda-forge prefix imports the whole scGPT set and runs Metal compute under a fully
-> empty environment, so `run_self_test` and the Rust run path stay activation-free on macOS.
-> Box layout: extracted prefix named `venv/` (keeps the `venv/bin/python` invariant). Footprint
-> ≈ 833 MB extracted (raise `diskPlan` floors in Phase 1). **Caveat:** re-confirm "no activation
-> env" per-OS on Linux and especially Windows CUDA before those builds; make the Phase 2 manifest
-> `activation` field **optional/nullable** rather than hard-wiring one for all targets.
+> **conda-pack** is the relocation mechanism (rides inside the existing ZIP + `box.json` + signing
+> flow, no new external runtime dependency). **No activation env is required on any OS** — a
+> relocated conda-forge prefix imports the whole scGPT set under a fully empty environment and runs
+> accelerator compute (Metal on macOS; a real CUDA matmul on the RTX 4060 Ti on both Windows and
+> Linux), so `run_self_test` and the Rust run path stay activation-free everywhere.
+> Box layout: extracted prefix named `venv/` (keeps the `venv/bin/python` invariant). Footprints
+> ≈ 833 MB (macOS) / ≈ 1.35 GB (win CPU) / ≈ 6.5 GB (win CUDA) / ≈ 1.63 GB (linux CPU) /
+> **≈ 9.5 GB (linux CUDA, the largest box in the matrix)** — size the Phase 1 `diskPlan` floors
+> from the Linux CUDA figure. The Phase 2 manifest `activation` field stays **optional/nullable**
+> and `null` for every current target. The per-OS caveat is closed; the only residual is that the
+> Linux CUDA proof ran under WSL2's driver bridge (see the record) — re-confirm cheaply if the
+> Phase 3 Linux CUDA runner is bare metal.
+>
+> **SUPERSEDED detail:** the embedded `conda-unpack` fixer is **not** run — see the Phase 2 note in
+> the decision record. Boxes ship without it and the Rust install flow needs no relocation step.
 
 The one genuinely unknown risk: a conda/pixi environment needs a one-time **prefix relocation**
 after extraction to a new location, and conda libraries (e.g. torch) **may require environment
@@ -288,11 +295,14 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 - **Windows CUDA re-scope:** self-hosted on the maintainer's RTX 4060 Ti (compute 8.9; driver
   591.86, CUDA 13.1-capable) removes the hosted-driver blocker. Bring the Windows CUDA target back
   into scope as now-feasible (update the `windows-cuda-blocker-and-decision` memory and the ledger).
-  **CUDA-version correction (from the Phase 0 Windows spike):** conda-forge's CUDA `pytorch 2.8.0`
-  for win-64 is a **cuda128** build (`cuda-version >=12.8,<13`); there is **no** 12.4 CUDA build at
-  2.8.0. Pin the Windows CUDA target to **CUDA 12.8** (`cuda128`), not 12.4 — rename
-  `windows-x86_64-cuda12.4` → `windows-x86_64-cuda12.8` wherever it appears. conda ships the CUDA
-  runtime, so only the driver must be current (it is).
+  **CUDA-version correction (from the Phase 0 spikes) — the pin is PER-OS, do not share one value:**
+  conda-forge's CUDA `pytorch 2.8.0` is a **cuda128** build for win-64 (`cuda-version >=12.8,<13`)
+  but a **cuda129** build for linux-64 (`cuda-version >=12.9,<13`); pinning 12.8 on linux-64 does
+  not solve at all, and there is no 12.4 build on either. Pin **Windows CUDA → 12.8** (rename
+  `windows-x86_64-cuda12.4` → `windows-x86_64-cuda12.8` wherever it appears) and **Linux CUDA →
+  12.9** (rename `linux-x86_64-cuda12.4` → `linux-x86_64-cuda12.9`). conda ships the CUDA runtime,
+  so only the driver must be current; the packages declare merely `__cuda >=12`, which every R525+
+  driver satisfies.
 
 ## Phase 4 — Validator hardware generalization (for the local RTX 4060 Ti)
 
