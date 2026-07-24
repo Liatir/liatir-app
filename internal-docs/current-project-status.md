@@ -70,6 +70,22 @@ CPU Runtime Boxes must be built, published, and product-validated. Windows CUDA
 remains a shared infrastructure blocker under the existing no-dispatch decision,
 not a claim that the models themselves can never support it.
 
+**CPU support gating (2026-07-23):** CPU support for an AI Model is not
+mandatory. Target users are non-technical analysts working on adequate hardware;
+adapting a model to inadequate hardware is out of scope, and every supported Mac
+has Metal. A CPU Runtime Box is shipped only when the model completes a
+realistic reference dataset within an acceptable wall-clock threshold. When CPU
+execution would take hours, or is otherwise too slow to be useful, the CPU box
+is not shipped for that model and the product states honestly that the model
+requires GPU or Metal. This decision is made per model from a measured amortized
+throughput, not from the binary fact that inference runs at all. Geneformer V1
+10M remains CPU-supported because it is trivially fast on CPU. This refines the
+"reasonably possible" clause above: a technically working but hours-slow CPU box
+is a false promise for non-technical users, so it does not count as reasonable
+support. The scGPT and UCE CPU targets are therefore gated on a local,
+zero-cost CPU-vs-Metal throughput measurement before their CPU boxes are built
+or published.
+
 Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
 
 - Gates 0–7 and Gate 8.1 (Geneformer Linux CPU + CUDA pilot): **complete**.
