@@ -329,13 +329,19 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
       );
     }
     if (runner.gpu) {
-      requireCatalog(typeof runner.expectedGpuModel === 'string' && runner.expectedGpuModel, `GPU runner ${runner.id} lacks an exact model`);
+      // A GPU runner declares capability *floors*, not one exact card: the CI must be able to move
+      // between GPUs (the hosted Tesla T4 gave way to a local RTX 4060 Ti) without a contract change.
       requireCatalog(Number.isSafeInteger(runner.minimumGpuMemoryBytes) && runner.minimumGpuMemoryBytes > 0, `GPU runner ${runner.id} lacks a VRAM floor`);
-      requireCatalog(/^\d+\.\d+$/.test(runner.expectedComputeCapability ?? ''), `GPU runner ${runner.id} lacks a compute capability`);
+      requireCatalog(/^\d+\.\d+$/.test(runner.minimumComputeCapability ?? ''), `GPU runner ${runner.id} lacks a minimum compute capability`);
+      requireCatalog(
+        runner.expectedGpuModel === undefined && runner.expectedComputeCapability === undefined,
+        `GPU runner ${runner.id} still pins an exact GPU instead of declaring floors`,
+      );
     } else {
       requireCatalog(
-        runner.expectedGpuModel === undefined
+        runner.minimumComputeCapability === undefined
           && runner.minimumGpuMemoryBytes === undefined
+          && runner.expectedGpuModel === undefined
           && runner.expectedComputeCapability === undefined,
         `CPU runner ${runner.id} declares GPU-only requirements`,
       );
@@ -554,9 +560,15 @@ async function probeHost(target, runner, output) {
   ));
   if (target.gpuRequired) {
     requireCatalog(record.gpuCount === 1, `runner ${runner.id} must expose exactly one GPU`);
-    requireCatalog(record.gpuModel === runner.expectedGpuModel, `runner ${runner.id} exposed ${record.gpuModel ?? 'no GPU'} instead of ${runner.expectedGpuModel}`);
-    requireCatalog(record.gpuMemoryBytes >= runner.minimumGpuMemoryBytes, `runner ${runner.id} has only ${record.gpuMemoryBytes ?? 0} GPU bytes`);
-    requireCatalog(record.computeCapability === runner.expectedComputeCapability, `runner ${runner.id} compute capability is ${record.computeCapability ?? 'missing'} instead of ${runner.expectedComputeCapability}`);
+    // The exact card is recorded as evidence, not asserted: what has to hold is that it clears the
+    // declared capability and VRAM floors. Compute capability is compared component-wise, so 8.9
+    // satisfies a 7.5 floor.
+    requireCatalog(typeof record.gpuModel === 'string' && record.gpuModel, `runner ${runner.id} exposed no GPU model`);
+    requireCatalog(record.gpuMemoryBytes >= runner.minimumGpuMemoryBytes, `runner ${runner.id} has only ${record.gpuMemoryBytes ?? 0} GPU bytes, below the ${runner.minimumGpuMemoryBytes} floor`);
+    requireCatalog(
+      numericVersionAtLeast(record.computeCapability, runner.minimumComputeCapability),
+      `runner ${runner.id} compute capability ${record.computeCapability ?? 'missing'} is below the ${runner.minimumComputeCapability} floor`,
+    );
     requireCatalog(
       numericVersionAtLeast(record.driverVersion, recipe.compatibility?.minNvidiaDriverVersion),
       `runner ${runner.id} driver ${record.driverVersion ?? 'missing'} is below ${recipe.compatibility?.minNvidiaDriverVersion ?? 'the recipe minimum'}`,

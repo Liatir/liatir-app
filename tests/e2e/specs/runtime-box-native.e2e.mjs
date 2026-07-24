@@ -321,11 +321,12 @@ export const tests = [
       expect(inference.preview.flat().every(Number.isFinite)).toBe(true);
       expect(inference.summary.accelerator).toMatch(EXPECTED_ACCELERATOR);
       if (CUDA_TARGET) {
-        expect(inference.summary).toMatchObject({
-          reportedCudaCompatibility: '12.4',
-          gpuModel: 'Tesla T4',
-          computeCapability: '7.5',
-        });
+        // The card itself is recorded, not asserted: CI runs this on whichever GPU cleared the
+        // catalog's capability floors, which is a hosted Tesla T4 or the local RTX 4060 Ti.
+        expect(inference.summary).toMatchObject({ reportedCudaCompatibility: '12.4' });
+        expect(inference.summary.gpuModel).toEqual(expect.any(String));
+        expect(inference.summary.gpuModel.length).toBeGreaterThan(0);
+        expect(inference.summary.computeCapability).toMatch(/^\d+\.\d+$/);
         expect(inference.summary.peakVramBytes).toBeGreaterThan(0);
       }
 

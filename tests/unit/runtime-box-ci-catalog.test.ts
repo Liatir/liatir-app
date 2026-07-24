@@ -114,11 +114,13 @@ describe('Runtime Box CI catalog', () => {
     expect(resolved.runner).toMatchObject({
       runsOn: 'liatir-linux-cuda-selfhosted',
       gpu: true,
-      expectedGpuModel: 'NVIDIA GeForce RTX 4060 Ti',
-      minimumGpuMemoryBytes: 8_000_000_000,
-      expectedComputeCapability: '8.9',
+      minimumComputeCapability: '7.5',
+      minimumGpuMemoryBytes: 7_500_000_000,
       selfHosted: { ephemeral: true, maxConcurrency: 1 },
     });
+    // Floors, not an exact card: pinning a model is what blocked the move off the hosted T4.
+    expect(resolved.runner).not.toHaveProperty('expectedGpuModel');
+    expect(resolved.runner).not.toHaveProperty('expectedComputeCapability');
   });
 
   it('derives the Windows CPU recipe and self-hosted runner from checked catalog state', () => {
@@ -136,6 +138,21 @@ describe('Runtime Box CI catalog', () => {
       dependencyLicenseAudit: 'runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cpu.json',
     });
     expect(resolved.runner).toMatchObject({ runsOn: 'liatir-windows-selfhosted', gpu: false });
+  });
+
+  it('accepts any GPU that clears the declared floors, not one exact card', () => {
+    const cuda = catalog.runnerProfiles.find((candidate) => candidate.id === 'linux-x64-cuda-selfhosted');
+    const floor = cuda?.minimumComputeCapability as string;
+
+    // The hardware the CI actually moved between: hosted Tesla T4 (7.5) and local RTX 4060 Ti (8.9).
+    expect(numericVersionAtLeast('7.5', floor)).toBe(true);
+    expect(numericVersionAtLeast('8.9', floor)).toBe(true);
+    // A card below the baseline the scientific tolerances were established on is still refused.
+    expect(numericVersionAtLeast('6.1', floor)).toBe(false);
+
+    // The RTX 4060 Ti's ~8.19 GB clears the VRAM floor; a 4 GB card does not.
+    expect(8_585_740_288).toBeGreaterThanOrEqual(cuda?.minimumGpuMemoryBytes as number);
+    expect(4_294_967_296).toBeLessThan(cuda?.minimumGpuMemoryBytes as number);
   });
 
   it('compares NVIDIA driver versions component by component', () => {
@@ -367,12 +384,10 @@ describe('Runtime Box CI catalog', () => {
       // The bootstrap floor is what stops a runner coming online without room to finish.
       expect(runner?.selfHosted?.minimumBootstrapFreeDiskBytes).toBeGreaterThanOrEqual(42_949_672_960);
       if (gpu) {
-        // The local RTX 4060 Ti replaces the hosted Tesla T4; Phase 4 generalizes the validator.
-        expect(runner).toMatchObject({
-          expectedGpuModel: 'NVIDIA GeForce RTX 4060 Ti',
-          expectedComputeCapability: '8.9',
-        });
+        // Capability floors the local RTX 4060 Ti (8.9, ~8.19 GB) clears, and the hosted T4 did too.
+        expect(runner).toMatchObject({ minimumComputeCapability: '7.5' });
         expect(runner?.minimumGpuMemoryBytes).toBeLessThanOrEqual(8_585_740_288);
+        expect(runner).not.toHaveProperty('expectedGpuModel');
       }
     }
   });

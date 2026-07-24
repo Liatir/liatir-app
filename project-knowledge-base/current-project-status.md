@@ -26,9 +26,13 @@ the real GitHub API; only coordination jobs stay on cheap hosted runners, by des
 because the resolve job is what tells the operator which runner to start. **No runner
 has been registered and no job has run yet**, and native jobs now queue until the
 operator brings the matching runner online — the established Gate 9 on-demand model.
-**Phase 4 is now a hard prerequisite for any CUDA dispatch**: the parity validator
-still asserts a Tesla T4 and rejects the RTX 4060 Ti. Phase 5 has not started.
-Production code has therefore already changed under this migration. Runtime Box CI foundation Gates 0–10 are
+**Phase 4 is also complete**: GPU runner profiles now declare capability and VRAM
+**floors** (compute ≥ 7.5, ≥ 7.5 GB) instead of pinning one exact card, and the
+parity validator, host probe, evidence record and CUDA E2E no longer hard-code a
+Tesla T4 — so the local RTX 4060 Ti is accepted and CUDA dispatch is unblocked,
+though it has not been exercised on real hardware yet. The old 15 GB VRAM floor had
+no scientific basis: the reviewed CUDA run measured a peak of ~102 MiB. Phase 5 has
+not started. Production code has therefore already changed under this migration. Runtime Box CI foundation Gates 0–10 are
 complete; the product AI Model catalog has been cut over to Runtime Box-only
 delivery).
 

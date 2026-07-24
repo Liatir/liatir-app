@@ -73,9 +73,8 @@
       "platform": "linux",
       "arch": "x86_64",
       "gpu": true,
-      "expectedGpuModel": "NVIDIA GeForce RTX 4060 Ti",
-      "minimumGpuMemoryBytes": 8000000000,
-      "expectedComputeCapability": "8.9",
+      "minimumComputeCapability": "7.5",
+      "minimumGpuMemoryBytes": 7500000000,
       "selfHosted": {
         "scope": "repository",
         "ephemeral": true,
@@ -108,9 +107,8 @@
       "platform": "windows",
       "arch": "x86_64",
       "gpu": true,
-      "expectedGpuModel": "NVIDIA GeForce RTX 4060 Ti",
-      "minimumGpuMemoryBytes": 8000000000,
-      "expectedComputeCapability": "8.9",
+      "minimumComputeCapability": "7.5",
+      "minimumGpuMemoryBytes": 7500000000,
       "selfHosted": {
         "scope": "repository",
         "ephemeral": true,

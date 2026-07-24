@@ -94,7 +94,10 @@ function gpuIdentity(target) {
     // drivers ship an nvidia-smi too old to expose the `compute_cap` query field, so it is derived
     // from the nvidia-smi-reported model when the field is unavailable; the authoritative capability
     // check still runs later against torch during scientific validation.
-    const KNOWN_COMPUTE_CAPABILITY = new Map([['Tesla T4', '7.5']]);
+    const KNOWN_COMPUTE_CAPABILITY = new Map([
+      ['Tesla T4', '7.5'],
+      ['NVIDIA GeForce RTX 4060 Ti', '8.9'],
+    ]);
     // On Windows the NVIDIA driver does not always place nvidia-smi.exe on PATH, so also probe the
     // standard install locations (System32 for a modern driver, the legacy NVSMI folder otherwise).
     const candidates = process.platform === 'win32'

@@ -30,9 +30,22 @@ CPU_RELATIVE_TOLERANCE = 1e-5
 ACCELERATOR_ABSOLUTE_TOLERANCE = 1e-5
 ACCELERATOR_RELATIVE_TOLERANCE = 1e-4
 ACCELERATOR_MINIMUM_COSINE = 0.99999
-EXPECTED_T4_MODEL = "Tesla T4"
-EXPECTED_T4_CAPABILITY = (7, 5)
-MINIMUM_T4_MEMORY_BYTES = 15_000_000_000
+# GPU capability floors, not an exact card. The CI moved from a hosted Tesla T4 (7.5) to a local
+# RTX 4060 Ti (8.9), and pinning the model name would reject perfectly adequate hardware. 7.5 is
+# the capability the scientific baseline was established on; the VRAM floor is generous against a
+# measured peak of ~102 MiB for this model, and exists to reject a card too small to hold it.
+# Both can be overridden from the catalog runner profile, which is the source of truth.
+DEFAULT_MINIMUM_COMPUTE_CAPABILITY = (7, 5)
+DEFAULT_MINIMUM_GPU_MEMORY_BYTES = 7_500_000_000
+
+
+def parse_compute_capability(value: str) -> tuple[int, int]:
+    """Parses a "major.minor" compute capability into a comparable tuple."""
+    try:
+        major, minor = value.split(".", 1)
+        return (int(major), int(minor))
+    except (AttributeError, ValueError) as error:
+        raise SystemExit(f"Invalid compute capability {value!r}.") from error
 
 
 def sha256(path: Path) -> str:
@@ -237,6 +250,8 @@ def main() -> None:
     parser.add_argument("--accelerator", choices=("cpu", "cuda", "metal"), required=True)
     parser.add_argument("--cuda-version")
     parser.add_argument("--min-nvidia-driver")
+    parser.add_argument("--min-compute-capability")
+    parser.add_argument("--min-gpu-memory-bytes", type=int)
     args = parser.parse_args()
     if args.accelerator == "cuda" and (
         not args.cuda_version or not args.min_nvidia_driver
@@ -323,14 +338,27 @@ def main() -> None:
         capability = torch.cuda.get_device_capability(0)
         total_memory = int(torch.cuda.get_device_properties(0).total_memory)
         smi_gpu_model, driver_version = nvidia_smi_identity()
-        if torch_gpu_model != EXPECTED_T4_MODEL or smi_gpu_model != EXPECTED_T4_MODEL:
+        minimum_capability = (
+            parse_compute_capability(args.min_compute_capability)
+            if args.min_compute_capability
+            else DEFAULT_MINIMUM_COMPUTE_CAPABILITY
+        )
+        minimum_memory = args.min_gpu_memory_bytes or DEFAULT_MINIMUM_GPU_MEMORY_BYTES
+        # torch and nvidia-smi must agree on which card this is — a mismatch means the process is
+        # not looking at the GPU the host probe checked. The name itself is recorded, not pinned.
+        if torch_gpu_model != smi_gpu_model:
             raise SystemExit(
-                f"CUDA pilot requires {EXPECTED_T4_MODEL}; torch={torch_gpu_model}, nvidia-smi={smi_gpu_model}."
+                f"GPU identity mismatch: torch={torch_gpu_model}, nvidia-smi={smi_gpu_model}."
             )
-        if capability != EXPECTED_T4_CAPABILITY:
-            raise SystemExit(f"T4 compute capability mismatch: expected 7.5, found {capability}.")
-        if total_memory < MINIMUM_T4_MEMORY_BYTES:
-            raise SystemExit(f"T4 usable memory is below {MINIMUM_T4_MEMORY_BYTES} bytes.")
+        if capability < minimum_capability:
+            raise SystemExit(
+                f"GPU compute capability {capability[0]}.{capability[1]} is below the required "
+                f"{minimum_capability[0]}.{minimum_capability[1]}."
+            )
+        if total_memory < minimum_memory:
+            raise SystemExit(
+                f"GPU memory {total_memory} bytes is below the required {minimum_memory} bytes."
+            )
         if not numeric_version_at_least(driver_version, args.min_nvidia_driver):
             raise SystemExit(
                 f"NVIDIA driver {driver_version} is below required {args.min_nvidia_driver}."
@@ -345,15 +373,17 @@ def main() -> None:
             force_cpu=False,
         )
         summary = accelerator_product.get("summary", {})
+        # The product runner must report the same GPU this validator checked, whatever it is.
+        detected_capability = f"{capability[0]}.{capability[1]}"
         if (
             summary.get("accelerator") != "CUDA"
             or summary.get("reportedCudaCompatibility") != args.cuda_version
-            or summary.get("gpuModel") != EXPECTED_T4_MODEL
-            or summary.get("computeCapability") != "7.5"
+            or summary.get("gpuModel") != torch_gpu_model
+            or summary.get("computeCapability") != detected_capability
             or not isinstance(summary.get("peakVramBytes"), int)
             or summary["peakVramBytes"] <= 0
         ):
-            raise SystemExit("The shipped product runner did not report complete T4 CUDA evidence.")
+            raise SystemExit("The shipped product runner did not report complete CUDA evidence.")
         accelerator_actual = product_embeddings(accelerator_product)
         if accelerator_actual.shape != cpu_actual.shape:
             raise SystemExit(
@@ -381,11 +411,11 @@ def main() -> None:
         max_absolute_error = accelerator_error
         minimum_cosine = accelerator_cosine
         finite = accelerator_finite
-        device = EXPECTED_T4_MODEL
+        device = torch_gpu_model
         accelerator_kind = "cuda"
-        gpu_model = EXPECTED_T4_MODEL
+        gpu_model = torch_gpu_model
         gpu_memory_bytes = total_memory
-        compute_capability = "7.5"
+        compute_capability = detected_capability
         reported_cuda = args.cuda_version
         peak_vram_bytes = summary["peakVramBytes"]
         backend = f"transformers-{transformers.__version__}-cu{args.cuda_version.replace('.', '')}"

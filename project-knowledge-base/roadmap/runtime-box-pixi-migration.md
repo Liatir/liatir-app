@@ -24,8 +24,11 @@ Status: **Phases 0, 1 and 2 DONE; Phase 3 is next; Phases 4–5 not started.**
   runners by design. **No runner has been registered and no job has run yet** — the first dispatch
   is the maintainer's call, and the CUDA targets are gated on Phase 4. The shared launcher still
   needs a `--preflight-only` re-check on macOS before the next macOS job.
-- **Phases 4–5 — not started.** Phase 4 is now a hard prerequisite for any CUDA dispatch: the
-  parity validator still asserts a Tesla T4 and rejects the RTX 4060 Ti.
+- **Phase 4 — complete.** GPU runner profiles declare capability/VRAM **floors** instead of one
+  exact card; the parity validator, the host probe, the evidence record and the CUDA E2E no longer
+  pin a Tesla T4, so the local RTX 4060 Ti is accepted. CUDA dispatch is unblocked but has not been
+  exercised on real hardware yet.
+- **Phase 5 — not started.**
 
 **Production code HAS changed** as of Phase 1/2 (`packages/liatir-core`, `scripts/runtime-box*`,
 `runtime-boxes/catalog.json`, unit tests). Each remaining phase begins only on explicit maintainer
@@ -369,11 +372,9 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 > - **Still not proven end-to-end:** no runner has been **registered** and no job has been
 >   executed. The remaining step is a real dispatch, which is the maintainer's call and needs the
 >   matching runner brought online at the same time.
-> - **Windows CUDA is now reachable but must not be dispatched yet.** Repointing it removes the old
->   hosted-driver blocker, but `scripts/ai-validation/geneformer-parity.py` still hard-fails on
->   anything that is not a Tesla T4: it asserts the exact model, compute capability `(7,5)` and
->   ≥15 GB VRAM, and the RTX 4060 Ti is compute `8.9` with ~8.19 GB. **Phase 4 must land first** —
->   this applies equally to the Linux CUDA target.
+> - **Windows CUDA is reachable again.** Repointing removed the old hosted-driver blocker, and the
+>   Tesla-T4 pin that would have rejected the RTX 4060 Ti was removed by Phase 4 below. Both CUDA
+>   targets are now dispatchable in principle; neither has been dispatched.
 > - **Host prerequisites established on the maintainer's box:** Node 22.14.0 installed system-wide
 >   in WSL (`/usr/local/bin/node`, matching the workflows' pinned Node 22 and the Windows host) and
 >   `gh` 2.46.0 via apt. The Windows host has `gh` 2.96.0 at `C:\Program Files\GitHub CLI`,
@@ -436,6 +437,41 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 ## Phase 4 — Validator hardware generalization (for the local RTX 4060 Ti)
 
 **Predicted complexity: Low** — focused, well-scoped change to the CUDA validator and the runner GPU contract.
+
+> **DONE 2026-07-24.** The CUDA path no longer pins one exact card anywhere. A GPU runner profile
+> now declares **floors** — `minimumComputeCapability` + `minimumGpuMemoryBytes` — and the old
+> `expectedGpuModel` / `expectedComputeCapability` fields are gone, with catalog validation
+> actively rejecting their reintroduction.
+>
+> - **Floors chosen from evidence, not habit.** `minimumComputeCapability` is **7.5** — the
+>   capability the scientific tolerances were established on, which the RTX 4060 Ti (8.9) clears.
+>   `minimumGpuMemoryBytes` is **7.5 GB**, replacing the old 15 GB T4 figure that had no scientific
+>   basis: reviewed run `29750614689` records a measured **peak VRAM of 106,767,872 bytes (~102 MiB)**
+>   for this model. The floor is therefore ~70× the measured need, sized to admit an 8 GB-class card
+>   and reject a 4 GB one, not to describe the model's appetite.
+> - **`probeHost`** compares component-wise (`numericVersionAtLeast`) instead of by equality, so 8.9
+>   satisfies a 7.5 floor. The exact model is **recorded as evidence, asserted only to be present**.
+> - **`scripts/ai-validation/geneformer-parity.py`** lost `EXPECTED_T4_MODEL`,
+>   `EXPECTED_T4_CAPABILITY` and `MINIMUM_T4_MEMORY_BYTES`. It takes `--min-compute-capability` and
+>   `--min-gpu-memory-bytes`, **passed from the catalog runner profile** by
+>   `validate-geneformer-parity.mjs`, so the host probe and the scientific validator enforce one
+>   contract from one source. Scientific tolerances are untouched (cosine ≥ 0.99999, abs 1e-5,
+>   rel 1e-4). The torch-vs-nvidia-smi agreement check is kept — a mismatch means the process is not
+>   looking at the probed GPU — but it now compares the two readings against each other rather than
+>   against a fixed name.
+> - **Evidence stops carrying a fabricated identity.** The record used to stamp `"Tesla T4"` and
+>   `"7.5"` regardless of the hardware; it now carries the detected model and capability, and the
+>   product-runner cross-check compares against those detected values.
+> - **One more hard T4 pin was found and removed outside the planned scope:**
+>   `tests/e2e/specs/runtime-box-native.e2e.mjs` asserted `gpuModel: 'Tesla T4'` and
+>   `computeCapability: '7.5'` in the CUDA product-lifecycle E2E. That would have failed on the
+>   4060 Ti after everything else was generalized. It now asserts shape and presence.
+> - **Not changed, as planned:** the scGPT and UCE validators were already hardware-agnostic.
+>
+> Gates: unit **175/175** across 29 files (including a new test asserting that both 7.5 and 8.9
+> clear the floor while 6.1 does not), catalog check, `verify` 6/6, `lint:ts` 0 errors,
+> `py_compile`, knowledge-base build. **Phase 4 unblocks CUDA dispatch on the local GPU**; it has
+> not been exercised on real hardware yet, because that is a Phase 5 run.
 
 - **`scripts/ai-validation/geneformer-parity.py`:** replace `EXPECTED_T4_MODEL`,
   `EXPECTED_T4_CAPABILITY (7,5)`, `MINIMUM_T4_MEMORY_BYTES` and the single-GPU/T4 asserts with

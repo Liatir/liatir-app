@@ -55,6 +55,28 @@ const RUNTIME_DIR = resolve(
     ?? join(ROOT, '.runtime-box-build', RECIPE_ID, 'payload'),
 );
 
+/**
+ * Resolves the GPU capability floors from the catalog runner profile so the validator and the CI
+ * host probe enforce the same contract. Returns null for non-GPU targets.
+ */
+async function gpuFloorsForRecipe() {
+  if (RECIPE.target.accelerator !== 'cuda') return null;
+  const catalog = JSON.parse(await readFile(join(ROOT, 'runtime-boxes', 'catalog.json'), 'utf8'));
+  for (const model of catalog.models) {
+    for (const target of model.targets) {
+      if (target.recipeId !== RECIPE_ID) continue;
+      const runner = catalog.runnerProfiles.find((candidate) => candidate.id === target.runnerProfileId);
+      if (!runner?.gpu) break;
+      return {
+        minimumComputeCapability: runner.minimumComputeCapability,
+        minimumGpuMemoryBytes: runner.minimumGpuMemoryBytes,
+      };
+    }
+  }
+  throw new Error(`No GPU runner profile found in the catalog for recipe ${RECIPE_ID}.`);
+}
+const GPU_FLOORS = await gpuFloorsForRecipe();
+
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
     cwd: options.cwd ?? ROOT,
@@ -115,6 +137,8 @@ try {
       ...(RECIPE.target.accelerator === 'cuda' ? [
         '--cuda-version', RECIPE.target.cudaVersion,
         '--min-nvidia-driver', RECIPE.compatibility.minNvidiaDriverVersion,
+        '--min-compute-capability', GPU_FLOORS.minimumComputeCapability,
+        '--min-gpu-memory-bytes', String(GPU_FLOORS.minimumGpuMemoryBytes),
       ] : []),
     ],
     { capture: true },
