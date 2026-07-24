@@ -1,0 +1,26 @@
+# Runtime Box pixi recipe manifest — scGPT whole-human, macOS arm64 / Metal.
+#
+# Pixi-substrate replacement for requirements.in/requirements.lock (Runtime Box pixi migration,
+# Phase 1). `pixi lock` resolves this into the committed pixi.lock; `build` installs from that lock
+# with --frozen and packs the prefix with conda-pack. See project-knowledge-base/roadmap/
+# runtime-box-pixi-migration.md and runtime-box-pixi-phase0-spike.md.
+#
+# Invariants: `platforms` must equal the target's conda subdir (osx-arm64, from targets.mjs), and
+# conda-forge names the framework `pytorch` (not `torch`); on osx-arm64 this build carries MPS
+# (Metal). Exact scientific dependency pins (e.g. numpy) are re-established on torch 2.8.0 in
+# Phase 5; this pilot fixes python 3.11 and pytorch 2.8.0, matching the Phase 0 spike env.
+
+[workspace]
+name = "scgpt-whole-human-macos-arm64-metal"
+channels = ["conda-forge"]
+platforms = ["osx-arm64"]
+
+[dependencies]
+python = "3.11.*"
+pytorch = "2.8.0.*"
+anndata = "*"
+numpy = "*"
+scipy = "*"
+pandas = "*"
+h5py = "*"
+tqdm = "*"
