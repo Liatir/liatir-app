@@ -29,6 +29,7 @@ jobs:
       runs_on: ${{ steps.resolve.outputs.runs_on }}
       timeout_minutes: ${{ steps.resolve.outputs.timeout_minutes }}
       uv_version: ${{ steps.resolve.outputs.uv_version }}
+      pixi_version: ${{ steps.resolve.outputs.pixi_version }}
       validator_script: ${{ steps.resolve.outputs.validator_script }}
       native_eligible: ${{ steps.resolve.outputs.native_eligible }}
       gpu_required: ${{ steps.resolve.outputs.gpu_required }}
@@ -109,10 +110,38 @@ jobs:
       - run: npm ci
 
       - name: Install pinned uv
+        if: needs.preflight.outputs.uv_version != ''
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           version: ${{ needs.preflight.outputs.uv_version }}
           enable-cache: false
+
+      - name: Install pinned pixi and conda-pack (POSIX)
+        if: needs.preflight.outputs.pixi_version != '' && !startsWith(inputs.target_id, 'windows-')
+        shell: bash
+        env:
+          PIXI_VERSION: v${{ needs.preflight.outputs.pixi_version }}
+          PIXI_HOME: ${{ github.workspace }}/.runtime-box-ci/pixi
+          PIXI_NO_PATH_UPDATE: "1"
+        run: |
+          curl -fsSL https://pixi.sh/install.sh | bash
+          "$PIXI_HOME/bin/pixi" global install conda-pack
+          # `pixi global install` exposes the conda-pack shim next to pixi, so one PATH entry covers both.
+          echo "$PIXI_HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Install pinned pixi and conda-pack (Windows)
+        if: needs.preflight.outputs.pixi_version != '' && startsWith(inputs.target_id, 'windows-')
+        shell: pwsh
+        env:
+          PIXI_VERSION: v${{ needs.preflight.outputs.pixi_version }}
+          PIXI_HOME: ${{ github.workspace }}/.runtime-box-ci/pixi
+          PIXI_NO_PATH_UPDATE: "1"
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Invoke-WebRequest -useb https://pixi.sh/install.ps1 | Invoke-Expression
+          & "$env:PIXI_HOME\bin\pixi.exe" global install conda-pack
+          # pixi and the conda-pack shim both live in PIXI_HOME\bin.
+          "$env:PIXI_HOME\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Select Git Bash for Windows composite actions
         if: startsWith(inputs.target_id, 'windows-')
