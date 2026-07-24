@@ -21,6 +21,7 @@ import { npmInvocation } from './node-cli.mjs';
 import { runWithHeartbeat } from './runtime-box/heartbeat.mjs';
 import { runtimeBoxTargetId, runtimeBoxTorchBackendArguments } from './runtime-box/targets.mjs';
 import { lockedCondaDistributions, lockedPythonDistributions } from './runtime-box/licenses.mjs';
+import { runtimeBoxPolicyFingerprint } from '../services/runtime-box-signer/src/policy.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const CATALOG_PATH = resolve(ROOT, 'runtime-boxes/catalog.json');
@@ -550,6 +551,46 @@ async function runPackageScript(script, output, environment = {}) {
   });
 }
 
+/**
+ * Confirms the *deployed* signer serves the same policy that is committed, before a protected
+ * release spends a run only to be rejected at signing time.
+ *
+ * The signer bakes `policy.json` into its running container at deploy time, so committing a policy
+ * change (for a new box/target) does nothing until `runtime-box:signer:deploy` runs. A release
+ * against a stale deployment fails late, with a generic `signing_rejected`. This reads the live
+ * fingerprint from `/health` and compares it to the committed policy; on a mismatch it fails fast
+ * with the exact remedy. `fetchImpl` is injectable for tests.
+ */
+export async function verifyDeployedSignerPolicy({
+  signerUrl,
+  identityToken,
+  policyText,
+  fetchImpl = fetch,
+}) {
+  requireCatalog(typeof signerUrl === 'string' && signerUrl, 'a signer URL is required');
+  requireCatalog(typeof identityToken === 'string' && identityToken, 'a signer identity token is required');
+  const committedFingerprint = runtimeBoxPolicyFingerprint(JSON.parse(policyText));
+  const response = await fetchImpl(`${signerUrl.replace(/\/$/, '')}/health`, {
+    headers: { authorization: `Bearer ${identityToken}` },
+  });
+  if (!response.ok) {
+    throw new Error(`Signer health check failed (${response.status}): ${await response.text()}`);
+  }
+  const health = await response.json();
+  const deployedFingerprint = health.policyFingerprint;
+  if (!deployedFingerprint) {
+    throw new Error('The deployed signer does not report a policy fingerprint; redeploy it to expose one.');
+  }
+  if (deployedFingerprint !== committedFingerprint) {
+    throw new Error(
+      'Deployed signer policy is stale: '
+        + `deployed ${deployedFingerprint}, committed ${committedFingerprint}. `
+        + 'Run `npm run runtime-box:signer:deploy` (or dispatch the signer-deployment workflow) before releasing.',
+    );
+  }
+  return { fingerprint: committedFingerprint };
+}
+
 /** Checks the current native host and free workspace capacity before a heavy build. */
 async function probeHost(target, runner, output) {
   validateRunnerExecutionContext(runner);
@@ -687,6 +728,14 @@ async function main() {
     await probeHost(resolved.target, resolved.runner, options.get('output') || '.runtime-box-ci/host.json');
     return;
   }
+  if (command === 'verify-signer-policy') {
+    const signerUrl = options.get('signer') || process.env.LIATIR_RUNTIME_BOX_SIGNER_URL;
+    const identityToken = String(process.env.LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN || '').trim();
+    const policyText = readFileSync(resolve(ROOT, 'services/runtime-box-signer/policy.json'), 'utf8');
+    const { fingerprint } = await verifyDeployedSignerPolicy({ signerUrl, identityToken, policyText });
+    console.log(`Deployed signer policy matches the committed policy (${fingerprint}).`);
+    return;
+  }
   if (command === 'foundation-host-probe') {
     validateRuntimeBoxCiCatalog(catalog);
     const fixture = catalog.foundationFixtures.find((candidate) => candidate.recipeId === options.get('recipe'));
@@ -736,8 +785,14 @@ async function main() {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main().catch((error) => {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exitCode = 1;
-  });
+  // Exit explicitly once the awaited work is done. Some commands (e.g. verify-signer-policy) use
+  // fetch, whose undici keep-alive pool would otherwise hold the event loop open well past the
+  // point the command has finished, making the CLI look hung in CI.
+  main().then(
+    () => process.exit(process.exitCode ?? 0),
+    (error) => {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    },
+  );
 }

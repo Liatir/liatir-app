@@ -465,11 +465,21 @@ This gate selects infrastructure only; it does not establish UCE support.
   - **Fix before any retry:** deploy the signer so the served policy matches the
     repository, then re-run the protected release. No builder change is required
     and no code regression exists to write.
-  - **Systemic gap worth closing:** nothing currently detects drift between the
-    committed policy and the deployed one, so this failure mode will recur for
-    **every new target** in the pixi Phase 5 rebuilds. A cheap pre-release check
-    that reads the deployed policy and compares it against `policy.json` would
-    turn a wasted protected run into a local gate.
+  - **Systemic gap CLOSED 2026-07-24.** The release workflow now fails fast if the
+    deployed signer policy is stale, before any paid build. The signer exposes a
+    content fingerprint of its baked-in policy on `GET /health`
+    (`runtimeBoxPolicyFingerprint`, a canonicalized SHA-256 that ignores key order
+    and whitespace); a new `runtime-box:ci -- verify-signer-policy` step, wired in
+    right after GCP auth and before `Build with the private KMS signer`, reads that
+    fingerprint and compares it to the committed `policy.json`. On a mismatch it
+    exits non-zero with the exact remedy (`runtime-box:signer:deploy`). This turns
+    the wasted-run failure mode into a ~1s gate. Note it does **not** auto-deploy
+    the signer: deploying uses a separate admin service account in the
+    `runtime-box-signer-admin` environment, and giving the release job that power
+    would collapse the privilege separation that protects the key. The operator
+    still runs the deploy; the check just guarantees a release can never silently
+    proceed against a stale one. Covered by the signer policy tests and
+    `tests/unit/runtime-box-signer-policy-drift.test.ts`.
   - The target remains `buildable`, unpublished, unpromoted, and unsupported.
 - The automatic foundation run `29953770028` on `29d3ad1` passed shared
   contracts, deterministic Zip64 extraction, and Linux/macOS native fixtures,

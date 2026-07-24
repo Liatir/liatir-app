@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 const SEGMENT = /^[a-z0-9][a-z0-9._-]{0,127}$/;
 const SHA256 = /^[a-f0-9]{64}$/;
 const VERSION = /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/;
@@ -11,6 +13,28 @@ const TARGET_ACCELERATORS = {
 
 function requireValue(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+/** Recursively sorts object keys so the fingerprint depends on content, not formatting or order. */
+function canonicalize(value) {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]));
+  }
+  return value;
+}
+
+/**
+ * A content fingerprint of a signing policy.
+ *
+ * The deployed signer bakes `policy.json` into its running container at deploy time, so committing
+ * a new policy does not change the live service — only a redeploy does. Comparing this fingerprint
+ * from the live `/health` against the committed policy is how a release detects that the deployed
+ * policy is stale before it wastes a run on a `signing_rejected`. Both sides canonicalize first, so
+ * whitespace or key-order differences never produce a false mismatch.
+ */
+export function runtimeBoxPolicyFingerprint(policy) {
+  return createHash('sha256').update(JSON.stringify(canonicalize(policy))).digest('hex');
 }
 
 /** Returns the canonical target slug after enforcing the production target matrix. */

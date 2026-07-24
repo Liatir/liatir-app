@@ -119,6 +119,13 @@ jobs:
 
       - run: npm ci
 
+      - name: Fail fast if the deployed signer policy is stale
+        env:
+          LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN: ${{ steps.release-auth.outputs.id_token }}
+        run: >-
+          npm run runtime-box:ci -- verify-signer-policy
+          --signer "${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}"
+
       - name: Install pinned uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:

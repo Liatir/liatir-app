@@ -12,7 +12,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { runtimeBoxTargetId, validateSigningPayload } from '../src/policy.mjs';
+import { runtimeBoxPolicyFingerprint, runtimeBoxTargetId, validateSigningPayload } from '../src/policy.mjs';
 
 const policy = JSON.parse(await readFile(new URL('../policy.json', import.meta.url), 'utf8'));
 /** A known-good release, used as the baseline that each rejection test then perturbs one field of. */
@@ -194,4 +194,19 @@ test('rejects an archive hosted outside the controlled origin', () => {
 // were explicitly approved for release.
 test('rejects a box outside the versioned allowlist', () => {
   assert.throws(() => validateSigningPayload(policy, { ...release, boxId: 'unknown' }), /not approved/);
+});
+
+// The fingerprint is what a release compares against /health to catch a stale deployment. It must
+// depend only on content, so reordered keys or reformatted whitespace never look like drift, while
+// any real change to an approval list does.
+test('policy fingerprint is stable across key order and whitespace', () => {
+  const reordered = { boxes: policy.boxes, allowedChannels: policy.allowedChannels, ...policy };
+  assert.equal(runtimeBoxPolicyFingerprint(policy), runtimeBoxPolicyFingerprint(reordered));
+  assert.equal(runtimeBoxPolicyFingerprint(policy), runtimeBoxPolicyFingerprint(JSON.parse(JSON.stringify(policy))));
+});
+
+test('policy fingerprint changes when an approval list changes', () => {
+  const withNewTarget = structuredClone(policy);
+  withNewTarget.boxes.find((box) => box.boxId === 'scgpt-whole-human').targets.push('linux-x86_64-cuda12.4');
+  assert.notEqual(runtimeBoxPolicyFingerprint(policy), runtimeBoxPolicyFingerprint(withNewTarget));
 });

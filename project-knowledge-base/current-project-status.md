@@ -38,7 +38,12 @@ committed `pixi.lock` files, lock-derived conda licence audits (112 and 94 packa
 all licensed), measured `diskPlan` floors, and wiring into the catalog, signer policy
 and workflow. Both remain `buildable`; **nothing has been signed, published or
 promoted**. Before any protected release the signer must be deployed, because the
-previous failure was deployed-policy drift, not a build defect.
+previous failure was deployed-policy drift, not a build defect. **That drift
+is now caught automatically**: the signer exposes a policy fingerprint on
+`/health`, and the release workflow fails fast (right after GCP auth, before
+the paid build) if the deployed policy does not match the committed one,
+pointing the operator at `runtime-box:signer:deploy`. It deliberately does
+not auto-deploy — that would hand the release job the signer's admin rights.
 Production code has therefore already changed under this migration. Runtime Box CI foundation Gates 0–10 are
 complete; the product AI Model catalog has been cut over to Runtime Box-only
 delivery).

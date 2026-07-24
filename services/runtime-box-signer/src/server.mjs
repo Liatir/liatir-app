@@ -15,7 +15,7 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
-import { validateSigningPayload } from './policy.mjs';
+import { runtimeBoxPolicyFingerprint, validateSigningPayload } from './policy.mjs';
 
 /** KMS asymmetricSign takes at most 64 KiB of data; control documents are far smaller anyway. */
 const MAX_PAYLOAD_BYTES = 64 * 1024;
@@ -23,6 +23,9 @@ const MAX_PAYLOAD_BYTES = 64 * 1024;
 const MAX_BODY_BYTES = 128 * 1024;
 // Loaded once at startup: the policy is part of the deployment, not something a request can vary.
 const policy = JSON.parse(await readFile(new URL('../policy.json', import.meta.url), 'utf8'));
+// A fingerprint of the *deployed* policy, exposed on /health so a release can detect before it
+// spends a run that the live service is serving a policy older than the committed one.
+const policyFingerprint = runtimeBoxPolicyFingerprint(policy);
 /** Fully-qualified KMS key *version* — pinning the version, not just the key, matters below. */
 const keyVersion = process.env.KMS_KEY_VERSION;
 /** The key ID as it appears in the signature, matching an entry in the clients' trust list. */
@@ -119,7 +122,7 @@ async function kmsSign(payloadBytes) {
 const server = createServer(async (request, response) => {
   try {
     if (request.method === 'GET' && request.url === '/health') {
-      return json(response, 200, { ok: true, service: 'liatir-runtime-box-signer' });
+      return json(response, 200, { ok: true, service: 'liatir-runtime-box-signer', policyFingerprint });
     }
     if (request.method !== 'POST' || request.url !== '/v1/sign') return json(response, 404, { error: 'not_found' });
     const input = JSON.parse((await bodyBytes(request)).toString('utf8'));
