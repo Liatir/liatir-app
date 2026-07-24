@@ -15,7 +15,11 @@ CUDA `pytorch 2.8.0` is **cuda128** for win-64 but **cuda129** for linux-64, so
 Windows CUDA pins **12.8** and Linux CUDA pins **12.9** (neither has a 12.4 build,
 and 12.8 does not solve at all on linux-64). See
 [Phase 0 decision record](./roadmap/runtime-box-pixi-phase0-spike.md).
-No production code has changed yet. Runtime Box CI foundation Gates 0–10 are
+**Phases 1 and 2 of that migration are also complete**: the scGPT macOS pilot is a
+pure pixi recipe that builds end-to-end into a signed box whose self-test passes on
+torch 2.8.0, and the Rust layer needed no change at all. **Phase 3 (self-hosted
+ephemeral CI) is next**; Phases 4–5 have not started. Production code has therefore
+already changed under this migration. Runtime Box CI foundation Gates 0–10 are
 complete; the product AI Model catalog has been cut over to Runtime Box-only
 delivery).
 
@@ -39,8 +43,10 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   approved-in-principle plan to replace the uv/python-build-standalone builder
   with pixi + pixi-pack + conda-forge (Variant A + a contained PyPI escape
   hatch) on self-hosted GitHub Actions runners, standardize torch on 2.8.0, and
-  re-validate every box. **Phase 0 complete on every OS (macOS Metal + Windows
-  CPU/CUDA + Linux CPU/CUDA); Phases 1–5 not started.**
+  re-validate every box. **Phases 0, 1 and 2 complete** (Phase 0 on every OS;
+  Phase 1 on the scGPT macOS pilot, with the uv path retained for the seven
+  unmigrated recipes; Phase 2 with no Rust change needed). **Phase 3 —
+  self-hosted ephemeral CI — is next; Phases 4–5 not started.**
 - [Runtime Box pixi Phase 0 spike](./roadmap/runtime-box-pixi-phase0-spike.md) —
   the decisive local relocation/activation decision record: conda-pack, **no
   activation env on any OS (macOS, Windows and Linux, CPU + CUDA)**, `venv/`
@@ -310,13 +316,15 @@ first).
 
 ## Next steps
 
-> **Pending strategic change (2026-07-24):** the [Runtime Box pixi
-> migration](./roadmap/runtime-box-pixi-migration.md) will replace the box
-> builder with pixi + pixi-pack + conda-forge on self-hosted runners and
-> re-validate every box on torch 2.8.0. It is approved in principle but not
-> started, and it reframes how the model-platform-expansion targets below are
-> built and validated. Do not begin it until the maintainer gives the explicit
-> go-ahead; when it starts, it begins with the local Phase 0 spike.
+> **In-flight strategic change (2026-07-24):** the [Runtime Box pixi
+> migration](./roadmap/runtime-box-pixi-migration.md) is replacing the box
+> builder with pixi + conda-forge on self-hosted runners and will re-validate
+> every box on torch 2.8.0. **Phases 0–2 are done** (spike decisive on all three
+> OSes; scGPT macOS pilot migrated and building; Rust layer unchanged);
+> **Phase 3, self-hosted ephemeral CI, is the next one to start.** It reframes
+> how the model-platform-expansion targets below are built and validated, so
+> prefer migrating a target over rebuilding it on the old uv path. Each further
+> phase begins only on explicit maintainer go-ahead, one at a time.
 
 1. Execute the [Runtime Box model platform expansion](./roadmap/runtime-box-model-platform-expansion.md):
    first retrieve and diagnose the exact signing-build error from protected

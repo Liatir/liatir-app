@@ -2,13 +2,26 @@
 
 Last reviewed: 2026-07-24
 
-Status: **Phase 0 DONE on every OS (macOS Metal + Windows CPU/CUDA + Linux CPU/CUDA); Phases 1–5
-not started.** The zero-cost local Phase 0 spike is complete and decisive on macOS, on the harder
-no-rpath Windows case (CPU + CUDA, real RTX 4060 Ti compute), and on linux-64 (CPU + CUDA, same GPU
-via WSL2) — see [Phase 0 decision record](./runtime-box-pixi-phase0-spike.md). **No activation env
-is required on any OS.** No production code has changed. Implementation of Phases 1+ begins only on
-explicit maintainer go-ahead, one phase at a time. Note the **per-OS** CUDA pin corrections below:
-win-64 → 12.8, linux-64 → 12.9.
+Status: **Phases 0, 1 and 2 DONE; Phase 3 is next; Phases 4–5 not started.**
+
+- **Phase 0 — complete on every OS** (macOS Metal + Windows CPU/CUDA + Linux CPU/CUDA). The
+  zero-cost local spike is decisive on macOS, on the harder no-rpath Windows case (CPU + CUDA, real
+  RTX 4060 Ti compute), and on linux-64 (CPU + CUDA, same GPU via WSL2) — see
+  [Phase 0 decision record](./runtime-box-pixi-phase0-spike.md). **No activation env is required on
+  any OS.** Note the **per-OS** CUDA pin corrections below: win-64 → 12.8, linux-64 → 12.9.
+- **Phase 1 — complete on the scGPT macOS pilot.** That recipe is now pure pixi (`pixi.toml` +
+  `pixi.lock` + `recipe.json`, no uv artifacts) with a lock-derived conda license audit, and a real
+  end-to-end build produced a signed box whose self-test passed on torch 2.8.0. The uv build path
+  is deliberately retained for the seven recipes not yet migrated (Geneformer ×5, scGPT Linux, UCE
+  macOS); deleting it is a cleanup for after the Phase 5 rebuilds.
+- **Phase 2 — complete, and it needed no Rust change at all.** Provenance is opaque in
+  `runtime_boxes.rs`, so the `uvVersion`→`pixiVersion` switch was TypeScript-only; and the box
+  ships with no relocation step because running `conda-unpack` is actively harmful.
+- **Phases 3–5 — not started.** Phase 3 (self-hosted ephemeral CI) is the next one.
+
+**Production code HAS changed** as of Phase 1/2 (`packages/liatir-core`, `scripts/runtime-box*`,
+`runtime-boxes/catalog.json`, unit tests). Each remaining phase begins only on explicit maintainer
+go-ahead, one at a time.
 
 Related plans: [Runtime Box model platform expansion](./runtime-box-model-platform-expansion.md)
 (the model/target re-validation this migration feeds into),
