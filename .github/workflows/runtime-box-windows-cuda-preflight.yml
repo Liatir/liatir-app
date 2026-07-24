@@ -53,7 +53,7 @@ jobs:
   preflight:
     name: Windows native T4 CUDA
     needs: guard
-    runs-on: liatir-windows-t4
+    runs-on: liatir-windows-cuda-selfhosted
     timeout-minutes: 60
     env:
       LIATIR_RUNTIME_BOX_HEARTBEAT_SECONDS: "300"

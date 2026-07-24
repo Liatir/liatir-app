@@ -93,10 +93,10 @@ describe('Runtime Box CI catalog', () => {
       status: 'published',
       dependencyLicenseAudit: 'runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cpu.json',
     });
-    expect(resolved.runner).toMatchObject({ runsOn: 'ubuntu-24.04', gpu: false });
+    expect(resolved.runner).toMatchObject({ runsOn: 'liatir-linux-selfhosted', gpu: false });
   });
 
-  it('derives the checked Linux CUDA recipe and exact T4 runner contract', () => {
+  it('derives the checked Linux CUDA recipe and exact self-hosted GPU runner contract', () => {
     const resolved = resolveCiTarget(
       catalog,
       'ctheodoris-geneformer-v1-10m',
@@ -112,15 +112,16 @@ describe('Runtime Box CI catalog', () => {
       dependencyLockSha256: '4cc737f7bb6580de2fc6da0d89f2a17a2f200a35c82f5734f7e503c1772579ed',
     });
     expect(resolved.runner).toMatchObject({
-      runsOn: 'liatir-linux-t4',
+      runsOn: 'liatir-linux-cuda-selfhosted',
       gpu: true,
-      expectedGpuModel: 'Tesla T4',
-      minimumGpuMemoryBytes: 15_000_000_000,
-      expectedComputeCapability: '7.5',
+      expectedGpuModel: 'NVIDIA GeForce RTX 4060 Ti',
+      minimumGpuMemoryBytes: 8_000_000_000,
+      expectedComputeCapability: '8.9',
+      selfHosted: { ephemeral: true, maxConcurrency: 1 },
     });
   });
 
-  it('derives the Windows CPU recipe and hosted runner from checked catalog state', () => {
+  it('derives the Windows CPU recipe and self-hosted runner from checked catalog state', () => {
     const resolved = resolveCiTarget(
       catalog,
       'ctheodoris-geneformer-v1-10m',
@@ -134,7 +135,7 @@ describe('Runtime Box CI catalog', () => {
       dependencyLockSha256: 'b0e070dbcbf7c236db06afd086bd39dec99721221f0019ce12f9cb1affd28e7c',
       dependencyLicenseAudit: 'runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cpu.json',
     });
-    expect(resolved.runner).toMatchObject({ runsOn: 'windows-2025', gpu: false });
+    expect(resolved.runner).toMatchObject({ runsOn: 'liatir-windows-selfhosted', gpu: false });
   });
 
   it('compares NVIDIA driver versions component by component', () => {
@@ -296,6 +297,25 @@ describe('Runtime Box CI catalog', () => {
     for (const launcher of [posix, windows]) {
       expect(launcher).toContain('runner_platform');
       expect(launcher).toContain('runner_arch');
+    }
+  });
+
+  it('keeps every Linux and Windows model target off the paid hosted runners', () => {
+    // Phase 3 retired the paid native runners. Coordination jobs stay hosted on purpose — the
+    // resolve job is what tells the operator which self-hosted runner to bring online, so putting
+    // it behind one would deadlock.
+    const paidLabels = ['ubuntu-24.04', 'windows-2025', 'liatir-linux-t4', 'liatir-windows-t4'];
+    expect(catalog.runnerProfiles.map((runner) => runner.runsOn))
+      .toEqual(expect.not.arrayContaining(['liatir-linux-t4', 'liatir-windows-t4']));
+
+    for (const model of catalog.models) {
+      for (const target of model.targets) {
+        if (target.target.platform === 'macos') continue;
+        const runner = catalog.runnerProfiles.find((candidate) => candidate.id === target.runnerProfileId);
+        expect(runner?.selfHosted, `${model.boxId}/${target.targetId} is not self-hosted`).toBeDefined();
+        expect(paidLabels, `${model.boxId}/${target.targetId} still uses a paid runner`)
+          .not.toContain(runner?.runsOn);
+      }
     }
   });
 

@@ -65,7 +65,7 @@ describe('Runtime Box CI cost controls', () => {
     expect(releaseWorkflow).toContain("startsWith(inputs.target_id, 'windows-')");
     expect(windowsProductSmoke).toContain('workflow_dispatch:');
     expect(windowsProductSmoke).not.toContain('push:');
-    expect(windowsProductSmoke).toContain('runs-on: windows-2025');
+    expect(windowsProductSmoke).toContain('runs-on: liatir-windows-selfhosted');
     expect(windowsProductSmoke).toContain('timeout-minutes: 40');
     expect(windowsProductSmoke).toContain('npm run test:tauri:prepare');
     expect(windowsProductSmoke).toContain('tests/e2e/specs/native-bridge.e2e.mjs');

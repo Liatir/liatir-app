@@ -28,7 +28,7 @@ jobs:
   preflight:
     name: Linux x64 T4 CUDA
     needs: guard
-    runs-on: liatir-linux-t4
+    runs-on: liatir-linux-cuda-selfhosted
     timeout-minutes: 15
     env:
       LIATIR_RUNTIME_BOX_HEARTBEAT_SECONDS: "300"

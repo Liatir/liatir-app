@@ -17,13 +17,18 @@ and 12.8 does not solve at all on linux-64). See
 [Phase 0 decision record](./roadmap/runtime-box-pixi-phase0-spike.md).
 **Phases 1 and 2 of that migration are also complete**: the scGPT macOS pilot is a
 pure pixi recipe that builds end-to-end into a signed box whose self-test passes on
-torch 2.8.0, and the Rust layer needed no change at all. **Phase 3 is in progress**:
-the cross-OS ephemeral runner launcher (macOS + Linux/WSL), its Windows PowerShell
-counterpart, and the four Linux/Windows self-hosted runner profiles are implemented
-and locally gated, but **no runner has been registered and no job has run** — that
-needs an authenticated `gh` with write access — and no target is repointed off the
-paid runners yet. Phases 4–5 have not started. Production code has therefore
-already changed under this migration. Runtime Box CI foundation Gates 0–10 are
+torch 2.8.0, and the Rust layer needed no change at all. **Phase 3 is complete for
+Linux and Windows**: a cross-OS ephemeral runner launcher (macOS + Linux/WSL) plus a
+Windows PowerShell counterpart, four self-hosted runner profiles, every Linux and
+Windows model target repointed onto them, and the paid `liatir-linux-t4` /
+`liatir-windows-t4` profiles deleted. All four self-hosted preflights pass against
+the real GitHub API; only coordination jobs stay on cheap hosted runners, by design,
+because the resolve job is what tells the operator which runner to start. **No runner
+has been registered and no job has run yet**, and native jobs now queue until the
+operator brings the matching runner online — the established Gate 9 on-demand model.
+**Phase 4 is now a hard prerequisite for any CUDA dispatch**: the parity validator
+still asserts a Tesla T4 and rejects the RTX 4060 Ti. Phase 5 has not started.
+Production code has therefore already changed under this migration. Runtime Box CI foundation Gates 0–10 are
 complete; the product AI Model catalog has been cut over to Runtime Box-only
 delivery).
 

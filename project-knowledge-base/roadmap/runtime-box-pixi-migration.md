@@ -17,11 +17,15 @@ Status: **Phases 0, 1 and 2 DONE; Phase 3 is next; Phases 4–5 not started.**
 - **Phase 2 — complete, and it needed no Rust change at all.** Provenance is opaque in
   `runtime_boxes.rs`, so the `uvVersion`→`pixiVersion` switch was TypeScript-only; and the box
   ships with no relocation step because running `conda-unpack` is actively harmful.
-- **Phase 3 — in progress.** The cross-OS ephemeral launcher (macOS + Linux/WSL), the Windows
-  PowerShell launcher, and the four Linux/Windows self-hosted runner profiles are implemented and
-  gated locally. **No runner has been registered and no job has run**: that needs an authenticated
-  `gh` with write access to the repository. No target is repointed off the paid runners yet.
-- **Phases 4–5 — not started.**
+- **Phase 3 — complete for Linux and Windows.** Cross-OS ephemeral launcher (macOS + Linux/WSL),
+  Windows PowerShell launcher, four self-hosted runner profiles, every Linux/Windows model target
+  repointed, and the paid `liatir-linux-t4`/`liatir-windows-t4` profiles deleted. All four
+  self-hosted preflights pass against the real GitHub API. Coordination jobs stay on cheap hosted
+  runners by design. **No runner has been registered and no job has run yet** — the first dispatch
+  is the maintainer's call, and the CUDA targets are gated on Phase 4. The shared launcher still
+  needs a `--preflight-only` re-check on macOS before the next macOS job.
+- **Phases 4–5 — not started.** Phase 4 is now a hard prerequisite for any CUDA dispatch: the
+  parity validator still asserts a Tesla T4 and rejects the RTX 4060 Ti.
 
 **Production code HAS changed** as of Phase 1/2 (`packages/liatir-core`, `scripts/runtime-box*`,
 `runtime-boxes/catalog.json`, unit tests). Each remaining phase begins only on explicit maintainer
@@ -294,8 +298,10 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 
 **Predicted complexity: Medium** — mostly config + scripting reusing the Gate 9 pattern; the new Windows PowerShell launcher is the main new piece.
 
-> **Progress (2026-07-24) — launchers and runner profiles done for Linux and Windows; no runner has
-> been registered yet.**
+> **DONE 2026-07-24 for Linux and Windows.** Launchers, runner profiles, target repointing and the
+> retirement of the paid native runners are complete and verified by execution; every self-hosted
+> preflight passes against the real GitHub API. What remains is a first real dispatch (maintainer's
+> call, gated on Phase 4 for the CUDA targets) and a macOS re-check of the shared launcher.
 >
 > - **Cross-OS launcher (done).** `scripts/run-runtime-box-macos-heavy-runner.sh` is replaced by
 >   `scripts/run-runtime-box-selfhosted-runner.sh`, which covers **macOS arm64 and Linux x86_64
@@ -318,13 +324,26 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 >   repository-scoped, ephemeral, single-concurrency, clean-work-directory, with a `liatir-…-`
 >   name prefix that `validateRunnerExecutionContext` already enforces. The two CUDA profiles
 >   describe the **local RTX 4060 Ti** (compute 8.9, ≥8 GB VRAM) rather than the hosted Tesla T4.
-> - **Not yet done, deliberately:** **no target is repointed** at these profiles, and the paid
->   `ubuntu-24.04`/`windows-2025`/`liatir-linux-t4`/`liatir-windows-t4` usages are **not retired**.
->   Repointing a published target at a runner that has never come online would violate the
->   "one target at a time, all cheap gates green" invariant; each target moves as Phase 5 rebuilds
->   it. The `minimumBootstrapFreeDiskBytes` floors (40 GiB CPU, 64 GiB CUDA) are **provisional** and
->   must be re-derived from the measured `diskPlan` when the first Linux/Windows pixi box is built —
->   remember the dereferenced Linux CUDA prefix is ≈9.5 GB before inflation.
+> - **Paid native runners retired (done).** Every Linux and Windows **model target** now resolves to
+>   a self-hosted profile: Geneformer linux CPU/CUDA and windows CPU/CUDA, and scGPT linux CPU. The
+>   `linux-x64-t4` and `windows-x64-t4` profiles are **deleted** — no paid GPU runner remains
+>   reachable from the catalog. The two CUDA-preflight workflows and the (dispatch-only) Windows
+>   product smoke were repointed to the self-hosted labels as well. A regression test now fails if
+>   any non-macOS model target drifts back onto `ubuntu-24.04`, `windows-2025` or either T4 label.
+> - **What deliberately stays on paid hosted runners:** the **coordination** jobs — `resolve` in
+>   `_runtime-box-validate.yml`, `release-resolve` in `runtime-box-release.yml`, the resolve halves
+>   of both CUDA preflights, the foundation workflow, and the signer deploy. These must run when no
+>   self-hosted runner is online: the resolve job is precisely what tells the operator **which**
+>   runner to bring up, so putting it behind a self-hosted runner would deadlock. They are cheap
+>   standard runners, not GPU ones.
+> - **Operational consequence to expect:** a native job now **queues until the operator launches the
+>   matching runner**. That is the established Gate 9 on-demand model (UCE macOS heavy already works
+>   this way), not a regression — but a push touching e.g. the Geneformer paths will sit pending
+>   rather than starting on a hosted runner.
+> - **The `minimumBootstrapFreeDiskBytes` floors (40 GiB CPU, 64 GiB CUDA) are provisional** and must
+>   be re-derived from the measured `diskPlan` when the first Linux/Windows pixi box is built —
+>   remember the dereferenced Linux CUDA prefix is ≈9.5 GB before inflation. They currently clear
+>   every repointed target's `requiredBuildDiskBytes` (6 GiB CPU, 20 GiB CUDA) with margin.
 > - **Launcher behaviour verified by execution (2026-07-24), not by reading.** Every refusal path
 >   was exercised on both hosts and each one failed for the right reason, creating nothing:
 >   foreign-OS target (`Target runner is macos/aarch64 but this host is …`), target still on a paid
@@ -341,10 +360,20 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 >     quotes around a jq string literal when passing arguments to a native executable, so jq parsed
 >     the label as an expression (`function not defined: selfhosted/0`). Both call sites now fetch
 >     the runner inventory and match in PowerShell instead.
-> - **Still not proven end-to-end:** no runner has been **registered** and no job has been executed
->   on any self-hosted runner. Remaining prerequisites: `gh` inside WSL is installed (2.46.0) but
->   **not yet authenticated** — that login is interactive and belongs to the maintainer; and no
->   target is repointed, so a real job needs the Phase 5 pilot repoint first.
+> - **All four self-hosted preflights pass green against the real GitHub API** (2026-07-24), on the
+>   final repointed catalog, each registering nothing and creating no runner root:
+>   `liatir-linux-selfhosted` and `liatir-linux-cuda-selfhosted` from WSL (1,023,365,287,936 free
+>   bytes), `liatir-windows-selfhosted` and `liatir-windows-cuda-selfhosted` from Windows
+>   (≈287.35 GB free). Each exercises the whole chain: catalog resolve → self-hosted → host/target
+>   match → disk floor → `gh` auth → repository runner inventory.
+> - **Still not proven end-to-end:** no runner has been **registered** and no job has been
+>   executed. The remaining step is a real dispatch, which is the maintainer's call and needs the
+>   matching runner brought online at the same time.
+> - **Windows CUDA is now reachable but must not be dispatched yet.** Repointing it removes the old
+>   hosted-driver blocker, but `scripts/ai-validation/geneformer-parity.py` still hard-fails on
+>   anything that is not a Tesla T4: it asserts the exact model, compute capability `(7,5)` and
+>   ≥15 GB VRAM, and the RTX 4060 Ti is compute `8.9` with ~8.19 GB. **Phase 4 must land first** —
+>   this applies equally to the Linux CUDA target.
 > - **Host prerequisites established on the maintainer's box:** Node 22.14.0 installed system-wide
 >   in WSL (`/usr/local/bin/node`, matching the workflows' pinned Node 22 and the Windows host) and
 >   `gh` 2.46.0 via apt. The Windows host has `gh` 2.96.0 at `C:\Program Files\GitHub CLI`,

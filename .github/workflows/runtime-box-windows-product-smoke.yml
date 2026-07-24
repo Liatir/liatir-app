@@ -13,7 +13,7 @@ permissions:
 jobs:
   startup:
     name: Build and start the real Windows product
-    runs-on: windows-2025
+    runs-on: liatir-windows-selfhosted
     timeout-minutes: 40
     steps:
       - name: Require the exact main ref

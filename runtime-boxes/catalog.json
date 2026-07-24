@@ -120,28 +120,6 @@
         "minimumBootstrapFreeDiskBytes": 68719476736
       },
       "maxTimeoutMinutes": 180
-    },
-    {
-      "id": "linux-x64-t4",
-      "runsOn": "liatir-linux-t4",
-      "platform": "linux",
-      "arch": "x86_64",
-      "gpu": true,
-      "expectedGpuModel": "Tesla T4",
-      "minimumGpuMemoryBytes": 15000000000,
-      "expectedComputeCapability": "7.5",
-      "maxTimeoutMinutes": 180
-    },
-    {
-      "id": "windows-x64-t4",
-      "runsOn": "liatir-windows-t4",
-      "platform": "windows",
-      "arch": "x86_64",
-      "gpu": true,
-      "expectedGpuModel": "Tesla T4",
-      "minimumGpuMemoryBytes": 15000000000,
-      "expectedComputeCapability": "7.5",
-      "maxTimeoutMinutes": 180
     }
   ],
   "foundationFixtures": [
@@ -214,7 +192,7 @@
           "target": { "platform": "linux", "arch": "x86_64", "accelerator": "cpu" },
           "hostEnvironments": ["native"],
           "recipeId": "geneformer-v1-10m-linux-x86_64-cpu",
-          "runnerProfileId": "ubuntu-x64-standard",
+          "runnerProfileId": "linux-x64-selfhosted",
           "status": "published",
           "validationModes": ["build", "scientific", "native-lifecycle"],
           "timeoutMinutes": 90,
@@ -253,7 +231,7 @@
             "native"
           ],
           "recipeId": "geneformer-v1-10m-linux-x86_64-cuda12.4",
-          "runnerProfileId": "linux-x64-t4",
+          "runnerProfileId": "linux-x64-cuda-selfhosted",
           "status": "published",
           "validationModes": [
             "build",
@@ -295,7 +273,7 @@
             "native"
           ],
           "recipeId": "geneformer-v1-10m-windows-x86_64-cpu",
-          "runnerProfileId": "windows-x64-standard",
+          "runnerProfileId": "windows-x64-selfhosted",
           "status": "published",
           "validationModes": [
             "build",
@@ -338,7 +316,7 @@
             "native"
           ],
           "recipeId": "geneformer-v1-10m-windows-x86_64-cuda12.4",
-          "runnerProfileId": "windows-x64-t4",
+          "runnerProfileId": "windows-x64-cuda-selfhosted",
           "status": "buildable",
           "linuxValidationPrerequisiteTargetId": "linux-x86_64-cuda12.4",
           "validationModes": [
@@ -404,7 +382,7 @@
           "target": { "platform": "linux", "arch": "x86_64", "accelerator": "cpu" },
           "hostEnvironments": ["native"],
           "recipeId": "scgpt-whole-human-linux-x86_64-cpu",
-          "runnerProfileId": "ubuntu-x64-standard",
+          "runnerProfileId": "linux-x64-selfhosted",
           "status": "buildable",
           "validationModes": ["build", "scientific", "native-lifecycle"],
           "timeoutMinutes": 90,
