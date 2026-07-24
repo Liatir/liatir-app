@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import catalogJson from '../../runtime-boxes/catalog.json';
 import {
   RUNTIME_BOX_AI_MODEL_REGISTRY,
@@ -289,6 +291,33 @@ describe('Runtime Box CI catalog', () => {
 
     // WSL: a multi-gigabyte conda prefix must never land on the 9p Windows mount.
     expect(posix).toContain('/mnt/*');
+
+    // A hand-invoked launcher must refuse a target belonging to another OS before registering.
+    for (const launcher of [posix, windows]) {
+      expect(launcher).toContain('runner_platform');
+      expect(launcher).toContain('runner_arch');
+    }
+  });
+
+  it('exposes the resolved runner host so a launcher can refuse a foreign target', () => {
+    const resolution = execFileSync(
+      process.execPath,
+      [
+        fileURLToPath(new URL('../../scripts/runtime-box-ci.mjs', import.meta.url)),
+        'resolve',
+        '--model', 'snap-stanford-uce-4layer',
+        '--target', 'macos-aarch64-metal',
+        '--mode', 'native-lifecycle',
+        '--native-requested', 'false',
+      ],
+      { encoding: 'utf8' },
+    );
+    const resolved = JSON.parse(resolution.trim().split('\n').at(-1) as string);
+    expect(resolved).toMatchObject({
+      self_hosted: 'true',
+      runner_platform: 'macos',
+      runner_arch: 'aarch64',
+    });
   });
 
   it('declares reviewed self-hosted Linux and Windows runner profiles for the pixi substrate', () => {

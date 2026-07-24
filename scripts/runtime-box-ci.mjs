@@ -625,6 +625,10 @@ async function main() {
       self_hosted: resolved.runner.selfHosted ? 'true' : 'false',
       runner_name_prefix: resolved.runner.selfHosted?.runnerNamePrefix ?? '',
       minimum_bootstrap_free_disk_bytes: resolved.runner.selfHosted?.minimumBootstrapFreeDiskBytes ?? 0,
+      // The self-hosted launcher runs on whatever machine the operator invoked it from, so it must
+      // be able to refuse a target belonging to a different OS before it registers anything.
+      runner_platform: resolved.runner.platform,
+      runner_arch: resolved.runner.arch,
       box_id: resolved.model.boxId,
       release_path: `.runtime-box-dist/${resolved.model.boxId}-${recipe.version}-${resolved.target.targetId}.release.json`,
       dependency_lock_sha256: resolved.target.dependencyLockSha256,

@@ -82,6 +82,11 @@ case "$RUNNER_ROOT" in
     ;;
 esac
 [[ ! -L "$RUNNER_ROOT" ]] || { echo "The runner root cannot be a symbolic link." >&2; exit 2; }
+# WSL keeps Windows drives on a slow 9p mount; a multi-gigabyte conda prefix must not land there.
+if [[ "$(uname -s)" == "Linux" && "$RUNNER_ROOT" == /mnt/* ]]; then
+  echo "The runner root must live in the Linux filesystem, not on a mounted Windows drive: $RUNNER_ROOT" >&2
+  exit 2
+fi
 
 # Resolve the host archive and its pinned digest; refuse any host this launcher has not been checked on.
 HOST_KERNEL="$(uname -s)"
@@ -90,10 +95,14 @@ case "$HOST_KERNEL:$HOST_ARCH" in
   Darwin:arm64)
     RUNNER_PLATFORM="osx-arm64"
     RUNNER_ARCHIVE_SHA256="$RUNNER_ARCHIVE_SHA256_OSX_ARM64"
+    HOST_CATALOG_PLATFORM="macos"
+    HOST_CATALOG_ARCH="aarch64"
     ;;
   Linux:x86_64)
     RUNNER_PLATFORM="linux-x64"
     RUNNER_ARCHIVE_SHA256="$RUNNER_ARCHIVE_SHA256_LINUX_X64"
+    HOST_CATALOG_PLATFORM="linux"
+    HOST_CATALOG_ARCH="x86_64"
     ;;
   *)
     echo "Unsupported self-hosted host: $HOST_KERNEL $HOST_ARCH." >&2
@@ -103,7 +112,9 @@ esac
 RUNNER_ARCHIVE="actions-runner-${RUNNER_PLATFORM}-${RUNNER_VERSION}.tar.gz"
 RUNNER_ARCHIVE_URL="https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/${RUNNER_ARCHIVE}"
 
-for command in awk curl df gh node sleep tar; do
+# Local tooling first. `gh` is checked later, just before the GitHub calls, so that a wrong-host or
+# wrong-target invocation reports the real problem instead of an unrelated missing dependency.
+for command in awk curl df node sleep tar; do
   command -v "$command" >/dev/null || { echo "Missing required command: $command" >&2; exit 1; }
 done
 
@@ -115,12 +126,6 @@ elif command -v shasum >/dev/null; then
 else
   echo "Missing required command: sha256sum or shasum" >&2
   exit 1
-fi
-
-# WSL keeps Windows drives on a slow 9p mount; a multi-gigabyte conda prefix must not land there.
-if [[ "$RUNNER_PLATFORM" == "linux-x64" && "$RUNNER_ROOT" == /mnt/* ]]; then
-  echo "The runner root must live in the Linux filesystem, not on a mounted Windows drive: $RUNNER_ROOT" >&2
-  exit 2
 fi
 
 RESOLUTION="$(node "$REPOSITORY_ROOT/scripts/runtime-box-ci.mjs" resolve \
@@ -136,6 +141,16 @@ RUNNER_NAME_PREFIX="$(json_field runner_name_prefix)"
 MINIMUM_BOOTSTRAP_FREE_DISK_BYTES="$(json_field minimum_bootstrap_free_disk_bytes)"
 [[ "$(json_field self_hosted)" == "true" ]] || { echo "The resolved target is not self-hosted." >&2; exit 1; }
 
+# This launcher is invoked by hand on whichever machine the operator is sitting at, so the target's
+# host must be checked explicitly. Without this a macOS target launched from Linux would bring a
+# Linux runner online under the macOS label and collect a job it cannot build.
+TARGET_PLATFORM="$(json_field runner_platform)"
+TARGET_ARCH="$(json_field runner_arch)"
+[[ "$TARGET_PLATFORM" == "$HOST_CATALOG_PLATFORM" && "$TARGET_ARCH" == "$HOST_CATALOG_ARCH" ]] || {
+  echo "Target runner is ${TARGET_PLATFORM}/${TARGET_ARCH} but this host is ${HOST_CATALOG_PLATFORM}/${HOST_CATALOG_ARCH}." >&2
+  exit 1
+}
+
 DISK_PATH="$RUNNER_ROOT"
 while [[ ! -e "$DISK_PATH" ]]; do
   DISK_PATH="$(dirname "$DISK_PATH")"
@@ -148,6 +163,7 @@ if (( AVAILABLE_BYTES < MINIMUM_BOOTSTRAP_FREE_DISK_BYTES )); then
   exit 1
 fi
 
+command -v gh >/dev/null || { echo "Missing required command: gh (needed to mint the runner registration token)" >&2; exit 1; }
 gh auth status --hostname github.com >/dev/null
 EXISTING_RUNNERS="$(gh api "repos/$REPOSITORY/actions/runners" --paginate \
   --jq ".runners[] | select(any(.labels[]; .name == \"$RUNNER_LABEL\")) | .name")"

@@ -325,12 +325,30 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 >   it. The `minimumBootstrapFreeDiskBytes` floors (40 GiB CPU, 64 GiB CUDA) are **provisional** and
 >   must be re-derived from the measured `diskPlan` when the first Linux/Windows pixi box is built —
 >   remember the dereferenced Linux CUDA prefix is ≈9.5 GB before inflation.
-> - **Prerequisite for actually launching one:** the GitHub CLI (`gh`) must be installed and
->   authenticated with **write access** to `Liatir/liatir-stack`; the launcher mints the
->   registration token and deregisters through it. That was not satisfiable on the maintainer's box
->   at the time of writing (`gh` absent; the stored git credential is read-only for this repo), so
->   **no runner was registered and no job was executed.** Nothing here has been proven end-to-end
->   against GitHub yet.
+> - **Launcher behaviour verified by execution (2026-07-24), not by reading.** Every refusal path
+>   was exercised on both hosts and each one failed for the right reason, creating nothing:
+>   foreign-OS target (`Target runner is macos/aarch64 but this host is …`), target still on a paid
+>   runner (`not self-hosted`), runner root inside the checkout, relative runner root, and — Linux
+>   only — a root under `/mnt`. The **positive** path was then proven on Windows against the real
+>   GitHub API with a temporary, reverted catalog repoint: `Self-hosted runner preflight passed for
+>   liatir-windows-selfhosted with 287,353,413,632 free bytes`, exit 0, no runner root created.
+>   Two defects were found this way and fixed:
+>   - **Cross-OS guard was missing.** Generalizing the launcher made it possible to launch a macOS
+>     target from Linux, which would have brought a Linux runner online under the macOS label. The
+>     `resolve` output now emits `runner_platform`/`runner_arch` and both launchers refuse a
+>     mismatch before touching anything.
+>   - **The PowerShell launcher's `gh --jq` filters were broken.** Windows PowerShell drops the
+>     quotes around a jq string literal when passing arguments to a native executable, so jq parsed
+>     the label as an expression (`function not defined: selfhosted/0`). Both call sites now fetch
+>     the runner inventory and match in PowerShell instead.
+> - **Still not proven end-to-end:** no runner has been **registered** and no job has been executed
+>   on any self-hosted runner. Remaining prerequisites: `gh` inside WSL is installed (2.46.0) but
+>   **not yet authenticated** — that login is interactive and belongs to the maintainer; and no
+>   target is repointed, so a real job needs the Phase 5 pilot repoint first.
+> - **Host prerequisites established on the maintainer's box:** Node 22.14.0 installed system-wide
+>   in WSL (`/usr/local/bin/node`, matching the workflows' pinned Node 22 and the Windows host) and
+>   `gh` 2.46.0 via apt. The Windows host has `gh` 2.96.0 at `C:\Program Files\GitHub CLI`,
+>   authenticated with `repo` + `workflow` scopes.
 >
 > **Windows portability defects found and fixed while running the gates (pre-existing, not
 > introduced by this phase).** The unit suite could not run at all on a Windows checkout because

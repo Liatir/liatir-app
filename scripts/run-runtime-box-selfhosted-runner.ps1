@@ -64,6 +64,11 @@ $resolution = & node (Join-Path $RepositoryRoot 'scripts/runtime-box-ci.mjs') re
 if ($LASTEXITCODE -ne 0) { Fail 'Target resolution failed.' }
 $resolved = $resolution | ConvertFrom-Json
 if ("$($resolved.self_hosted)" -ne 'true') { Fail 'The resolved target is not self-hosted.' }
+# Checked explicitly: this launcher is invoked by hand, so a target belonging to another OS must be
+# refused before anything is registered, not discovered when the job fails to build.
+if ([string]$resolved.runner_platform -ne 'windows' -or [string]$resolved.runner_arch -ne 'x86_64') {
+  Fail "Target runner is $($resolved.runner_platform)/$($resolved.runner_arch) but this host is windows/x86_64."
+}
 $runnerLabel = [string]$resolved.runs_on
 $runnerNamePrefix = [string]$resolved.runner_name_prefix
 $minimumBootstrapFreeDiskBytes = [int64]$resolved.minimum_bootstrap_free_disk_bytes
@@ -73,12 +78,19 @@ if ($availableBytes -lt $minimumBootstrapFreeDiskBytes) {
   Fail "Self-hosted runner preflight failed: $availableBytes free bytes; $minimumBootstrapFreeDiskBytes required before setup."
 }
 
+if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+  Fail 'Missing required command: gh (needed to mint the runner registration token)'
+}
 & gh auth status --hostname github.com | Out-Null
 if ($LASTEXITCODE -ne 0) { Fail 'GitHub CLI is not authenticated.' }
-$existingRunners = & gh api "repos/$Repository/actions/runners" --paginate `
-  --jq ".runners[] | select(any(.labels[]; .name == ""$runnerLabel"")) | .name"
+
+# Filtering happens here rather than through `--jq`: Windows PowerShell drops the quotes around a
+# jq string literal when it hands arguments to a native executable, and jq then reads the label as
+# an expression. A single page of 100 is ample — this launcher enforces one runner per label.
+$inventory = (& gh api "repos/$Repository/actions/runners?per_page=100") | ConvertFrom-Json
 if ($LASTEXITCODE -ne 0) { Fail 'Unable to read the repository runner inventory.' }
-if (-not [string]::IsNullOrWhiteSpace(($existingRunners | Out-String))) {
+$conflicting = @($inventory.runners | Where-Object { $_.labels.name -contains $runnerLabel })
+if ($conflicting.Count -gt 0) {
   Fail "A runner with label $runnerLabel is already registered; refusing concurrent registration."
 }
 
@@ -130,11 +142,16 @@ finally {
     Stop-Process -Id $RunnerProcess.Id -Force -ErrorAction SilentlyContinue
   }
   if (-not [string]::IsNullOrEmpty($RunnerName)) {
-    $runnerId = & gh api "repos/$Repository/actions/runners" --paginate `
-      --jq ".runners[] | select(.name == ""$RunnerName"") | .id" 2>$null
-    if (-not [string]::IsNullOrWhiteSpace(($runnerId | Out-String))) {
-      & gh api --method DELETE "repos/$Repository/actions/runners/$($runnerId | Select-Object -First 1)" 2>$null | Out-Null
-      if ($LASTEXITCODE -ne 0) { Write-Warning "GitHub runner deregistration failed for $RunnerName." }
+    # Same reason as above: match by name here, not in a jq filter.
+    try {
+      $current = (& gh api "repos/$Repository/actions/runners?per_page=100" 2>$null) | ConvertFrom-Json
+      $mine = @($current.runners | Where-Object { $_.name -eq $RunnerName })
+      if ($mine.Count -gt 0) {
+        & gh api --method DELETE "repos/$Repository/actions/runners/$($mine[0].id)" 2>$null | Out-Null
+        if ($LASTEXITCODE -ne 0) { Write-Warning "GitHub runner deregistration failed for $RunnerName." }
+      }
+    } catch {
+      Write-Warning "GitHub runner deregistration could not be attempted for $RunnerName."
     }
   }
   $diagnosticSource = Join-Path $RunnerRoot '_diag'
