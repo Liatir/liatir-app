@@ -1,7 +1,10 @@
 # Current project status
 
-Last updated: 2026-07-22 (Runtime Box CI foundation Gates 0–10 are complete;
-the product AI Model catalog has been cut over to Runtime Box-only delivery).
+Last updated: 2026-07-24 (a full CI substrate migration to pixi + pixi-pack +
+conda-forge on self-hosted GitHub Actions runners has been planned and approved
+in principle — see the migration plan below; no code has changed yet. Runtime
+Box CI foundation Gates 0–10 are complete; the product AI Model catalog has been
+cut over to Runtime Box-only delivery).
 
 This file is the quick handoff snapshot. The canonical detailed plans are:
 
@@ -19,6 +22,12 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   Windows CPU; its P0 local portability correction is complete and P1 Linux
   CPU has complete corrected native lifecycle evidence; its first protected
   release stopped at the KMS-backed build before publication.
+- [Runtime Box pixi migration](./roadmap/runtime-box-pixi-migration.md) — the
+  approved-in-principle plan to replace the uv/python-build-standalone builder
+  with pixi + pixi-pack + conda-forge (Variant A + a contained PyPI escape
+  hatch) on self-hosted GitHub Actions runners, standardize torch on 2.8.0, and
+  re-validate every box. Not started; begins with a local Phase 0 spike on
+  maintainer go-ahead.
 
 ## Where the project is
 
@@ -210,7 +219,7 @@ Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
   Runtime Box, signer, Registry, compatibility, evidence, AI roadmap, readiness,
   and handoff documentation are aligned. Zero-cost closure gates passed:
   catalog 3 models / 3 fixtures, signer 11/11, verify profile 164/164 plus all
-  builds/checks, and the complete internal-docs build. No remote or paid action
+  builds/checks, and the complete project-knowledge-base build. No remote or paid action
   was needed.
 
 ## How Gate 8.2 Windows CPU was closed (2026-07-19/20)
@@ -279,6 +288,14 @@ use a GPU run as a debugger** (validate cheaply on standard runners / locally
 first).
 
 ## Next steps
+
+> **Pending strategic change (2026-07-24):** the [Runtime Box pixi
+> migration](./roadmap/runtime-box-pixi-migration.md) will replace the box
+> builder with pixi + pixi-pack + conda-forge on self-hosted runners and
+> re-validate every box on torch 2.8.0. It is approved in principle but not
+> started, and it reframes how the model-platform-expansion targets below are
+> built and validated. Do not begin it until the maintainer gives the explicit
+> go-ahead; when it starts, it begins with the local Phase 0 spike.
 
 1. Execute the [Runtime Box model platform expansion](./roadmap/runtime-box-model-platform-expansion.md):
    first retrieve and diagnose the exact signing-build error from protected

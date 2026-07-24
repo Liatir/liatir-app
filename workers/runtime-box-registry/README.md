@@ -90,6 +90,6 @@ back `/v1/revocations` afterward. A failed or merely uploaded candidate must
 never be represented as channel-promoted.
 
 See the internal
-[Runtime Box production report](../../internal-docs/roadmap/runtime-box-production-report.md)
+[Runtime Box production report](../../project-knowledge-base/roadmap/runtime-box-production-report.md)
 for the evidence matrix, identity boundary, exact protected workflow inputs,
 revocation sequence, and cleanup rules.

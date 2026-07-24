@@ -1121,7 +1121,7 @@ use GitHub OIDC to Cloud Run/KMS rather than local signing keys.
 
 Completed on 2026-07-22 from the reviewed Gate 8 and Gate 9 evidence:
 
-- Added `internal-docs/roadmap/runtime-box-production-report.md` as the
+- Added `project-knowledge-base/roadmap/runtime-box-production-report.md` as the
   canonical production and operator handoff. It records the exact supported
   matrix, production run and artifact IDs, signing/hosting separation, GitHub
   Environments, variable and secret names, workflow paths, WIF providers and
@@ -1134,7 +1134,7 @@ Completed on 2026-07-22 from the reviewed Gate 8 and Gate 9 evidence:
   canonical production path and direct CLI commands remain explicitly
   consequential operator surfaces.
 - Aligned the single-cell status, AI batch ledger, Beta 1 readiness, Scientific
-  AI Workbench plan, internal-docs navigation, and current handoff. The Runtime
+  AI Workbench plan, project-knowledge-base navigation, and current handoff. The Runtime
   Box CI foundation is complete, while a true cross-version native update and
   client-persisted anti-replay state remain separate product backlog items.
 - Preserved the honest support boundary: CUDA is validated only on Linux;

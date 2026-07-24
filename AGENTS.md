@@ -14,10 +14,10 @@ We are developing **Liatir**, a **local-first** Rust/Tauri desktop app for bioin
 
 ## Repository continuity
 
-- The files that live in internal-docs/ are an important part of your memory, and must be kept up to date.
-- Always keep internal-docs/current-project-status.md up to date.
+- The files that live in project-knowledge-base/ are an important part of your memory, and must be kept up to date.
+- Always keep project-knowledge-base/current-project-status.md up to date.
 - Durable project plans, implementation status, and handoff context required in Codespaces must live in tracked repository documentation, not only in machine-local agent memory.
-- The canonical Runtime Box CI plan and current gate status live in `internal-docs/roadmap/runtime-box-ci-foundation.md`. Read it before starting any Runtime Box CI gate and update it when a gate is completed or re-scoped.
+- The canonical Runtime Box CI plan and current gate status live in `project-knowledge-base/roadmap/runtime-box-ci-foundation.md`. Read it before starting any Runtime Box CI gate and update it when a gate is completed or re-scoped.
 - Machine-local memory may be used as a convenience, but it must not be the only source for information needed to continue repository work.
 
 ## Naming (canonical terms — use exactly these)

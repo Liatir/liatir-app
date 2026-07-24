@@ -43,7 +43,7 @@ separate fresh-home native lifecycle verified signed installation, a tracked
 Jobs/Results visibility, removal, and Result artifact survival.
 
 The reviewed production evidence and operational ownership are consolidated in
-the internal [Runtime Box production report](../internal-docs/roadmap/runtime-box-production-report.md).
+the internal [Runtime Box production report](../project-knowledge-base/roadmap/runtime-box-production-report.md).
 
 ## Trust and update rules
 

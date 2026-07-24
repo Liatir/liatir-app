@@ -914,9 +914,9 @@ their own scoped evidence.
 
 | Need | Source of truth |
 | --- | --- |
-| Current quick status | `internal-docs/current-project-status.md` |
-| Complete gate history | `internal-docs/roadmap/runtime-box-ci-foundation.md` |
-| Production resources and operator procedures | `internal-docs/roadmap/runtime-box-production-report.md` |
+| Current quick status | `project-knowledge-base/current-project-status.md` |
+| Complete gate history | `project-knowledge-base/roadmap/runtime-box-ci-foundation.md` |
+| Production resources and operator procedures | `project-knowledge-base/roadmap/runtime-box-production-report.md` |
 | Live model/target/publication catalog | `runtime-boxes/catalog.json` |
 | Human-readable support matrix | `runtime-boxes/compatibility-matrix.md` |
 | Reviewed compact evidence | `runtime-boxes/evidence/` |

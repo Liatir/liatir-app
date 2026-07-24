@@ -182,7 +182,7 @@ verifies and scientifically validates the candidate, publishes immutable
 objects, runs the applicable product lifecycle, promotes beta, writes compact
 evidence, and cleans build state. The complete resource, identity, variable,
 secret-name, evidence, and incident-operation handoff is in the internal
-[Runtime Box production report](../internal-docs/roadmap/runtime-box-production-report.md).
+[Runtime Box production report](../project-knowledge-base/roadmap/runtime-box-production-report.md).
 
 The immutable archive and release manifest are uploaded through the
 least-privilege Registry Worker into R2. A separate promotion updates the

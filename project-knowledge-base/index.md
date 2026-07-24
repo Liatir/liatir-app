@@ -14,6 +14,7 @@ Use this site to keep durable decisions close to the codebase:
   [Runtime Box system](./architecture/runtime-box-system-explained.md);
 - the canonical [Scientific AI Workbench product plan](./roadmap/scientific-ai-workbench.md);
 - the evidence-backed [Runtime Box production report](./roadmap/runtime-box-production-report.md);
+- the approved-in-principle [Runtime Box pixi migration plan](./roadmap/runtime-box-pixi-migration.md);
 - AI Models and AI Tools roadmap status;
 - Quenta and MCP trust boundaries;
 - native bridge and runtime constraints;
