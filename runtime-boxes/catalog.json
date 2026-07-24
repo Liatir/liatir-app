@@ -52,6 +52,76 @@
       "maxTimeoutMinutes": 180
     },
     {
+      "id": "linux-x64-selfhosted",
+      "runsOn": "liatir-linux-selfhosted",
+      "platform": "linux",
+      "arch": "x86_64",
+      "gpu": false,
+      "selfHosted": {
+        "scope": "repository",
+        "ephemeral": true,
+        "maxConcurrency": 1,
+        "cleanWorkDirectory": true,
+        "runnerNamePrefix": "liatir-linux-selfhosted-",
+        "minimumBootstrapFreeDiskBytes": 42949672960
+      },
+      "maxTimeoutMinutes": 180
+    },
+    {
+      "id": "linux-x64-cuda-selfhosted",
+      "runsOn": "liatir-linux-cuda-selfhosted",
+      "platform": "linux",
+      "arch": "x86_64",
+      "gpu": true,
+      "expectedGpuModel": "NVIDIA GeForce RTX 4060 Ti",
+      "minimumGpuMemoryBytes": 8000000000,
+      "expectedComputeCapability": "8.9",
+      "selfHosted": {
+        "scope": "repository",
+        "ephemeral": true,
+        "maxConcurrency": 1,
+        "cleanWorkDirectory": true,
+        "runnerNamePrefix": "liatir-linux-cuda-selfhosted-",
+        "minimumBootstrapFreeDiskBytes": 68719476736
+      },
+      "maxTimeoutMinutes": 180
+    },
+    {
+      "id": "windows-x64-selfhosted",
+      "runsOn": "liatir-windows-selfhosted",
+      "platform": "windows",
+      "arch": "x86_64",
+      "gpu": false,
+      "selfHosted": {
+        "scope": "repository",
+        "ephemeral": true,
+        "maxConcurrency": 1,
+        "cleanWorkDirectory": true,
+        "runnerNamePrefix": "liatir-windows-selfhosted-",
+        "minimumBootstrapFreeDiskBytes": 42949672960
+      },
+      "maxTimeoutMinutes": 180
+    },
+    {
+      "id": "windows-x64-cuda-selfhosted",
+      "runsOn": "liatir-windows-cuda-selfhosted",
+      "platform": "windows",
+      "arch": "x86_64",
+      "gpu": true,
+      "expectedGpuModel": "NVIDIA GeForce RTX 4060 Ti",
+      "minimumGpuMemoryBytes": 8000000000,
+      "expectedComputeCapability": "8.9",
+      "selfHosted": {
+        "scope": "repository",
+        "ephemeral": true,
+        "maxConcurrency": 1,
+        "cleanWorkDirectory": true,
+        "runnerNamePrefix": "liatir-windows-cuda-selfhosted-",
+        "minimumBootstrapFreeDiskBytes": 68719476736
+      },
+      "maxTimeoutMinutes": 180
+    },
+    {
       "id": "linux-x64-t4",
       "runsOn": "liatir-linux-t4",
       "platform": "linux",

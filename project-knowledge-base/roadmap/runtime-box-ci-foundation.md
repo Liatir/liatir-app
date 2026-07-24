@@ -991,7 +991,11 @@ use GitHub OIDC to Cloud Run/KMS rather than local signing keys.
   ephemeral, single-concurrency, and clean-work-directory-only. UCE native CI
   now resolves to this profile; ordinary macOS Runtime Boxes remain on
   `macos-15`.
-- Added `scripts/run-runtime-box-macos-heavy-runner.sh`. It requires an explicit
+- Added `scripts/run-runtime-box-macos-heavy-runner.sh` (**superseded 2026-07-24**
+  by the cross-OS `scripts/run-runtime-box-selfhosted-runner.sh` from the pixi
+  migration's Phase 3, which keeps this exact contract and takes `--model`,
+  `--target` and `--mode`; `npm run runtime-box:runner:macos-heavy` is unchanged
+  for the operator). It requires an explicit
   absolute root outside the checkout, refuses an existing or symlinked root,
   verifies Apple silicon and a 35 GiB bootstrap disk floor, refuses concurrent
   registration of the custom label, and only then downloads the pinned official

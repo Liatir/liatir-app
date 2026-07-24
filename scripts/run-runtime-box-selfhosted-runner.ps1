@@ -1,0 +1,157 @@
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+Runs exactly one repository-scoped, ephemeral GitHub Actions job on this Windows host.
+
+.DESCRIPTION
+Windows counterpart of scripts/run-runtime-box-selfhosted-runner.sh, holding the same contract:
+a dedicated runner root outside the repository checkout, a marker file guarding cleanup, a
+bootstrap disk floor, an online-time cap, single concurrency, and automatic deregistration plus
+full removal of the runner root after success, failure, or interruption. Every operational
+parameter (label, name prefix, disk floor) is read from runtime-boxes/catalog.json through
+`runtime-box-ci.mjs resolve`, so the launcher and CI can never disagree.
+#>
+[CmdletBinding()]
+param(
+  [Parameter(Mandatory = $true)][string]$Model,
+  [Parameter(Mandatory = $true)][string]$Target,
+  [Parameter(Mandatory = $true)][string]$Mode,
+  [Parameter(Mandatory = $true)][string]$RunnerRoot,
+  [switch]$PreflightOnly
+)
+
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
+$RepositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$Repository = 'Liatir/liatir-stack'
+$RunnerVersion = '2.336.0'
+# Pinned from https://github.com/actions/runner/releases/tag/v2.336.0
+$RunnerArchiveSha256 = 'd59123a43003e357b0805b5d0f611d0bd2f65ab67d51bd070dd4e7a0f685c162'
+$RunnerArchive = "actions-runner-win-x64-$RunnerVersion.zip"
+$RunnerArchiveUrl = "https://github.com/actions/runner/releases/download/v$RunnerVersion/$RunnerArchive"
+$RunnerOnlineTimeoutSeconds = 11400
+$MarkerName = '.liatir-runtime-box-runner'
+$RunnerName = ''
+$RunnerProcess = $null
+
+function Fail([string]$message, [int]$code = 1) {
+  Write-Error $message
+  exit $code
+}
+
+if (-not [System.IO.Path]::IsPathRooted($RunnerRoot)) { Fail '--RunnerRoot must be an explicit absolute path.' 2 }
+$RunnerRoot = [System.IO.Path]::GetFullPath($RunnerRoot)
+if ($RunnerRoot -eq [System.IO.Path]::GetPathRoot($RunnerRoot)) { Fail 'A drive root cannot be used as a runner root.' 2 }
+if ($RunnerRoot -eq $RepositoryRoot -or $RunnerRoot.StartsWith($RepositoryRoot + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) {
+  Fail 'The runner root must be outside the repository checkout.' 2
+}
+if (Test-Path -LiteralPath $RunnerRoot) {
+  $existing = Get-Item -LiteralPath $RunnerRoot -Force
+  if ($existing.Attributes.HasFlag([System.IO.FileAttributes]::ReparsePoint)) {
+    Fail 'The runner root cannot be a reparse point.' 2
+  }
+}
+
+if ($env:PROCESSOR_ARCHITECTURE -ne 'AMD64') { Fail "Unsupported self-hosted host architecture: $env:PROCESSOR_ARCHITECTURE" }
+foreach ($command in @('gh', 'node')) {
+  if (-not (Get-Command $command -ErrorAction SilentlyContinue)) { Fail "Missing required command: $command" }
+}
+
+# Resolve the runner contract from the catalog; never hardcode labels or floors here.
+$resolution = & node (Join-Path $RepositoryRoot 'scripts/runtime-box-ci.mjs') resolve `
+  --model $Model --target $Target --mode $Mode --native-requested false
+if ($LASTEXITCODE -ne 0) { Fail 'Target resolution failed.' }
+$resolved = $resolution | ConvertFrom-Json
+if ("$($resolved.self_hosted)" -ne 'true') { Fail 'The resolved target is not self-hosted.' }
+$runnerLabel = [string]$resolved.runs_on
+$runnerNamePrefix = [string]$resolved.runner_name_prefix
+$minimumBootstrapFreeDiskBytes = [int64]$resolved.minimum_bootstrap_free_disk_bytes
+
+$availableBytes = (New-Object System.IO.DriveInfo([System.IO.Path]::GetPathRoot($RunnerRoot))).AvailableFreeSpace
+if ($availableBytes -lt $minimumBootstrapFreeDiskBytes) {
+  Fail "Self-hosted runner preflight failed: $availableBytes free bytes; $minimumBootstrapFreeDiskBytes required before setup."
+}
+
+& gh auth status --hostname github.com | Out-Null
+if ($LASTEXITCODE -ne 0) { Fail 'GitHub CLI is not authenticated.' }
+$existingRunners = & gh api "repos/$Repository/actions/runners" --paginate `
+  --jq ".runners[] | select(any(.labels[]; .name == ""$runnerLabel"")) | .name"
+if ($LASTEXITCODE -ne 0) { Fail 'Unable to read the repository runner inventory.' }
+if (-not [string]::IsNullOrWhiteSpace(($existingRunners | Out-String))) {
+  Fail "A runner with label $runnerLabel is already registered; refusing concurrent registration."
+}
+
+Write-Host "Self-hosted runner preflight passed for $runnerLabel with $availableBytes free bytes."
+if ($PreflightOnly) { exit 0 }
+
+if (Test-Path -LiteralPath $RunnerRoot) { Fail "Runner root already exists: $RunnerRoot" }
+New-Item -ItemType Directory -Path $RunnerRoot | Out-Null
+New-Item -ItemType File -Path (Join-Path $RunnerRoot $MarkerName) | Out-Null
+$RunnerName = "$runnerNamePrefix$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())-$PID"
+
+try {
+  $archivePath = Join-Path $RunnerRoot $RunnerArchive
+  # TLS 1.2 is not the default negotiation on stock Windows PowerShell 5.1.
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  Invoke-WebRequest -Uri $RunnerArchiveUrl -OutFile $archivePath -UseBasicParsing
+  $actualSha256 = (Get-FileHash -Path $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($actualSha256 -ne $RunnerArchiveSha256) { Fail "Runner archive SHA-256 mismatch: $actualSha256" }
+  Expand-Archive -Path $archivePath -DestinationPath $RunnerRoot -Force
+  Remove-Item -LiteralPath $archivePath -Force
+
+  $registrationToken = & gh api --method POST "repos/$Repository/actions/runners/registration-token" --jq .token
+  if ($LASTEXITCODE -ne 0) { Fail 'Unable to mint a runner registration token.' }
+  & (Join-Path $RunnerRoot 'config.cmd') `
+    --unattended `
+    --ephemeral `
+    --disableupdate `
+    --no-default-labels `
+    --url "https://github.com/$Repository" `
+    --token $registrationToken `
+    --name $RunnerName `
+    --labels $runnerLabel `
+    --work _work
+  if ($LASTEXITCODE -ne 0) { Fail 'Runner configuration failed.' }
+  $registrationToken = $null
+
+  Write-Host "Runner $RunnerName is online for exactly one matching job."
+  $RunnerProcess = Start-Process -FilePath (Join-Path $RunnerRoot 'run.cmd') `
+    -WorkingDirectory $RunnerRoot -NoNewWindow -PassThru
+  if (-not $RunnerProcess.WaitForExit($RunnerOnlineTimeoutSeconds * 1000)) {
+    Write-Warning "Runner online timeout reached; stopping $RunnerName."
+    Stop-Process -Id $RunnerProcess.Id -Force -ErrorAction SilentlyContinue
+    $RunnerProcess.WaitForExit()
+  }
+  exit $RunnerProcess.ExitCode
+}
+finally {
+  if ($null -ne $RunnerProcess -and -not $RunnerProcess.HasExited) {
+    Stop-Process -Id $RunnerProcess.Id -Force -ErrorAction SilentlyContinue
+  }
+  if (-not [string]::IsNullOrEmpty($RunnerName)) {
+    $runnerId = & gh api "repos/$Repository/actions/runners" --paginate `
+      --jq ".runners[] | select(.name == ""$RunnerName"") | .id" 2>$null
+    if (-not [string]::IsNullOrWhiteSpace(($runnerId | Out-String))) {
+      & gh api --method DELETE "repos/$Repository/actions/runners/$($runnerId | Select-Object -First 1)" 2>$null | Out-Null
+      if ($LASTEXITCODE -ne 0) { Write-Warning "GitHub runner deregistration failed for $RunnerName." }
+    }
+  }
+  $diagnosticSource = Join-Path $RunnerRoot '_diag'
+  if (Test-Path -LiteralPath $diagnosticSource) {
+    $stamp = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssZ')
+    $diagnosticRoot = Join-Path "$RunnerRoot.logs" "$stamp-$RunnerName"
+    try {
+      New-Item -ItemType Directory -Path $diagnosticRoot -Force | Out-Null
+      Copy-Item -Path (Join-Path $diagnosticSource '*') -Destination $diagnosticRoot -Recurse -Force
+    } catch {
+      Write-Warning 'Runner diagnostic log retention failed.'
+    }
+  }
+  # The marker proves this root was created by this launcher; never delete an unmarked directory.
+  if (Test-Path -LiteralPath (Join-Path $RunnerRoot $MarkerName)) {
+    Remove-Item -LiteralPath $RunnerRoot -Recurse -Force -ErrorAction SilentlyContinue
+  } elseif (Test-Path -LiteralPath $RunnerRoot) {
+    Write-Warning "Cleanup refused because the runner marker is missing: $RunnerRoot"
+  }
+}

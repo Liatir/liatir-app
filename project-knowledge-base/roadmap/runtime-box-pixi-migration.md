@@ -17,7 +17,11 @@ Status: **Phases 0, 1 and 2 DONE; Phase 3 is next; Phases 4–5 not started.**
 - **Phase 2 — complete, and it needed no Rust change at all.** Provenance is opaque in
   `runtime_boxes.rs`, so the `uvVersion`→`pixiVersion` switch was TypeScript-only; and the box
   ships with no relocation step because running `conda-unpack` is actively harmful.
-- **Phases 3–5 — not started.** Phase 3 (self-hosted ephemeral CI) is the next one.
+- **Phase 3 — in progress.** The cross-OS ephemeral launcher (macOS + Linux/WSL), the Windows
+  PowerShell launcher, and the four Linux/Windows self-hosted runner profiles are implemented and
+  gated locally. **No runner has been registered and no job has run**: that needs an authenticated
+  `gh` with write access to the repository. No target is repointed off the paid runners yet.
+- **Phases 4–5 — not started.**
 
 **Production code HAS changed** as of Phase 1/2 (`packages/liatir-core`, `scripts/runtime-box*`,
 `runtime-boxes/catalog.json`, unit tests). Each remaining phase begins only on explicit maintainer
@@ -289,6 +293,71 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 ## Phase 3 — CI on self-hosted ephemeral runners
 
 **Predicted complexity: Medium** — mostly config + scripting reusing the Gate 9 pattern; the new Windows PowerShell launcher is the main new piece.
+
+> **Progress (2026-07-24) — launchers and runner profiles done for Linux and Windows; no runner has
+> been registered yet.**
+>
+> - **Cross-OS launcher (done).** `scripts/run-runtime-box-macos-heavy-runner.sh` is replaced by
+>   `scripts/run-runtime-box-selfhosted-runner.sh`, which covers **macOS arm64 and Linux x86_64
+>   (including WSL2)** and takes `--model`/`--target`/`--mode` instead of hardcoding UCE. The Gate 9
+>   contract is preserved exactly: absolute root outside the checkout, no symlinked root, marker
+>   file gating cleanup, catalog-driven bootstrap disk floor, refusal of concurrent registration of
+>   the label, pinned runner release verified by SHA-256, `--ephemeral --disableupdate
+>   --no-default-labels`, 190-minute online cap, deregistration + diagnostics retention + full root
+>   removal on success, failure, or interruption. Runner **2.336.0** is pinned per OS with its own
+>   reviewed digest (osx-arm64 unchanged; linux-x64 `04cf0be1…`; win-x64 `d59123a4…`, all read from
+>   the release and cross-checked against the digest already committed for macOS).
+>   Two Linux/WSL-specific guards were added: the runner root is **rejected under `/mnt/`** (the 9p
+>   Windows mount is far too slow for a multi-gigabyte conda prefix, the Phase 0 lesson), and a
+>   missing **libicu** is reported up front instead of failing opaquely inside `config.sh`.
+> - **Windows launcher (done).** `scripts/run-runtime-box-selfhosted-runner.ps1`, same contract,
+>   Windows PowerShell 5.1-compatible, cleanup in a `finally` block. Parse-checked with zero errors;
+>   the POSIX one passes `bash -n`.
+> - **Runner profiles (done).** `runtime-boxes/catalog.json` gains `linux-x64-selfhosted`,
+>   `linux-x64-cuda-selfhosted`, `windows-x64-selfhosted` and `windows-x64-cuda-selfhosted`, each
+>   repository-scoped, ephemeral, single-concurrency, clean-work-directory, with a `liatir-…-`
+>   name prefix that `validateRunnerExecutionContext` already enforces. The two CUDA profiles
+>   describe the **local RTX 4060 Ti** (compute 8.9, ≥8 GB VRAM) rather than the hosted Tesla T4.
+> - **Not yet done, deliberately:** **no target is repointed** at these profiles, and the paid
+>   `ubuntu-24.04`/`windows-2025`/`liatir-linux-t4`/`liatir-windows-t4` usages are **not retired**.
+>   Repointing a published target at a runner that has never come online would violate the
+>   "one target at a time, all cheap gates green" invariant; each target moves as Phase 5 rebuilds
+>   it. The `minimumBootstrapFreeDiskBytes` floors (40 GiB CPU, 64 GiB CUDA) are **provisional** and
+>   must be re-derived from the measured `diskPlan` when the first Linux/Windows pixi box is built —
+>   remember the dereferenced Linux CUDA prefix is ≈9.5 GB before inflation.
+> - **Prerequisite for actually launching one:** the GitHub CLI (`gh`) must be installed and
+>   authenticated with **write access** to `Liatir/liatir-stack`; the launcher mints the
+>   registration token and deregisters through it. That was not satisfiable on the maintainer's box
+>   at the time of writing (`gh` absent; the stored git credential is read-only for this repo), so
+>   **no runner was registered and no job was executed.** Nothing here has been proven end-to-end
+>   against GitHub yet.
+>
+> **Windows portability defects found and fixed while running the gates (pre-existing, not
+> introduced by this phase).** The unit suite could not run at all on a Windows checkout because
+> `* text=auto` gives CRLF working-tree files:
+>
+> 1. **vite-node cannot transform a shebang followed by CRLF** → every `scripts/*.mjs` with a
+>    shebang failed to import, taking 7 test files down with `SyntaxError: Invalid or unexpected
+>    token` and no file name. Isolated to that exact combination (shebang alone fine, CRLF alone
+>    fine).
+> 2. **The CI guard tests anchor on `"\n  <job>:\n"`**, which CRLF turns into a silent no-match;
+>    `slice(-1)` then made two workflow assertions vacuous rather than failing loudly.
+> 3. **`runtime-box-cost-controls`** built an expected npm path as a POSIX string while
+>    `npmInvocation` uses `path.resolve`, which is drive-qualified on Windows.
+> 4. **The SDK type generator produced host-dependent artifacts** — the worst of the four, because
+>    it corrupts a **committed generated product file** rather than a test. `gen:sdk-types` lifts
+>    JSDoc text into string literals in `liatir-completions.generated.ts` /
+>    `liatir-sdk-types.ts`; on Windows that text arrives CRLF and gets baked in as literal `\r\n`.
+>    Running the build on a Windows runner would therefore have produced a spurious diff in
+>    generated output on every run. Normalized at both entry points (the source read, and `getDoc`,
+>    where the TypeScript host reads files itself). Verified: regenerating on Windows now yields
+>    artifacts **byte-identical to `main`**.
+>
+> Fixes: pin `*.sh`, `*.mjs`, `*.yml`, `*.yaml` to `eol=lf` in `.gitattributes` (69 working-tree
+> files renormalized, **zero content diffs**), build the expected path with the same resolver, and
+> normalize line endings in the SDK generator.
+> Result on Windows: unit suite **172/172, 29/29 files** (was 110 passing with 7 files unloadable),
+> `verify` profile 6/6, catalog check, `lint:ts` 0 errors, knowledge-base build — all green.
 
 - **Runner launcher:** generalize `scripts/run-runtime-box-macos-heavy-runner.sh` into a cross-OS
   ephemeral launcher (keep its contract: dedicated root outside the checkout, marker file, disk

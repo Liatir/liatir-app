@@ -51,9 +51,18 @@ function stripImports(content) {
     .trim();
 }
 
+/**
+ * Reads a source file with LF line endings. On a Windows checkout the sources are CRLF, and the
+ * doc comments lifted out of them end up inside generated string literals — which would bake
+ * literal \r\n into the generated output and make the artifact differ per build host.
+ */
+function readSource(file) {
+  return fs.readFileSync(file, 'utf-8').replace(/\r\n/g, '\n');
+}
+
 function appendTypesSource(file) {
   const rel = path.relative(ROOT, file).replaceAll('\\', '/');
-  const stripped = stripImports(fs.readFileSync(file, 'utf-8'));
+  const stripped = stripImports(readSource(file));
   if (stripped) sdkBody += `\n// Source: ${rel}\n${stripped}\n`;
 }
 
@@ -142,10 +151,12 @@ function typeStr(type) {
   return checker.typeToString(type, undefined, FORMAT_FLAGS);
 }
 
-// Get the first JSDoc comment for a symbol
+// Get the first JSDoc comment for a symbol.
+// The TypeScript host reads the sources itself, so on a Windows checkout the comment text arrives
+// CRLF; normalize here, where the string is about to be embedded in the generated artifact.
 function getDoc(sym) {
   const parts = sym.getDocumentationComment(checker);
-  const text  = ts.displayPartsToString(parts).trim();
+  const text  = ts.displayPartsToString(parts).replace(/\r\n/g, '\n').trim();
   return text || undefined;
 }
 

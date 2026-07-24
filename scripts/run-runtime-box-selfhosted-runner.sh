@@ -1,17 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Runs one repository-scoped macOS heavy job, then removes the complete runner work root.
+# Runs exactly one repository-scoped, ephemeral GitHub Actions job on this host, then removes the
+# complete runner work root. Supports macOS (Apple silicon) and Linux x86_64, including WSL2.
+# The target's runner profile must declare `selfHosted` in runtime-boxes/catalog.json; every
+# operational parameter (label, name prefix, bootstrap disk floor) is read from that catalog so the
+# launcher and CI can never disagree.
 REPOSITORY_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REPOSITORY="Liatir/liatir-stack"
-MODEL_ID="snap-stanford-uce-4layer"
-TARGET_ID="macos-aarch64-metal"
-MODE="native-lifecycle"
 RUNNER_VERSION="2.336.0"
-RUNNER_ARCHIVE="actions-runner-osx-arm64-${RUNNER_VERSION}.tar.gz"
-RUNNER_ARCHIVE_SHA256="8e8839c49b7060b6b2154f4931f815df330c27f167d53ef2239ee3dfce28b079"
-RUNNER_ARCHIVE_URL="https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/${RUNNER_ARCHIVE}"
+# Pinned per OS/arch from https://github.com/actions/runner/releases/tag/v2.336.0
+RUNNER_ARCHIVE_SHA256_OSX_ARM64="8e8839c49b7060b6b2154f4931f815df330c27f167d53ef2239ee3dfce28b079"
+RUNNER_ARCHIVE_SHA256_LINUX_X64="04cf0be1aff4c3ec3554466c39124ca250e3effd8873bb7e8d68535aa9505d5d"
 RUNNER_ONLINE_TIMEOUT_SECONDS=11400
+MODEL_ID=""
+TARGET_ID=""
+MODE=""
 RUNNER_ROOT=""
 PREFLIGHT_ONLY=0
 RUNNER_NAME=""
@@ -21,20 +25,32 @@ MARKER_NAME=".liatir-runtime-box-runner"
 
 usage() {
   cat <<'EOF'
-Usage: scripts/run-runtime-box-macos-heavy-runner.sh --runner-root ABSOLUTE_PATH [--preflight-only]
+Usage: scripts/run-runtime-box-selfhosted-runner.sh \
+         --model MODEL_ID --target TARGET_ID --mode MODE \
+         --runner-root ABSOLUTE_PATH [--preflight-only]
 
-Preflights or runs one private, repository-scoped, ephemeral Apple silicon
-GitHub Actions runner. The runner root must be outside the repository checkout.
-The complete runner root is removed after success, failure, or interruption;
-runner diagnostic logs are retained beside it in ABSOLUTE_PATH.logs.
+Preflights or runs one private, repository-scoped, ephemeral GitHub Actions runner
+on macOS (Apple silicon) or Linux x86_64, including WSL2. The runner root must be
+outside the repository checkout. The complete runner root is removed after success,
+failure, or interruption; runner diagnostic logs are retained beside it in
+ABSOLUTE_PATH.logs.
+
+Under WSL2 the runner root must live in the Linux filesystem (for example ~/…), never
+under /mnt/<drive>: cross-filesystem I/O there is far too slow for a multi-gigabyte
+conda prefix.
 EOF
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --runner-root)
-      [[ $# -ge 2 ]] || { echo "--runner-root requires a value." >&2; exit 2; }
-      RUNNER_ROOT="$2"
+    --model|--target|--mode|--runner-root)
+      [[ $# -ge 2 ]] || { echo "$1 requires a value." >&2; exit 2; }
+      case "$1" in
+        --model) MODEL_ID="$2" ;;
+        --target) TARGET_ID="$2" ;;
+        --mode) MODE="$2" ;;
+        --runner-root) RUNNER_ROOT="$2" ;;
+      esac
       shift
       ;;
     --preflight-only)
@@ -53,6 +69,10 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
+for required in MODEL_ID TARGET_ID MODE RUNNER_ROOT; do
+  [[ -n "${!required}" ]] || { echo "Missing required argument for ${required}." >&2; usage >&2; exit 2; }
+done
+
 [[ "$RUNNER_ROOT" == /* ]] || { echo "--runner-root must be an explicit absolute path." >&2; exit 2; }
 [[ "$RUNNER_ROOT" != "/" ]] || { echo "The filesystem root cannot be used as a runner root." >&2; exit 2; }
 case "$RUNNER_ROOT" in
@@ -63,11 +83,45 @@ case "$RUNNER_ROOT" in
 esac
 [[ ! -L "$RUNNER_ROOT" ]] || { echo "The runner root cannot be a symbolic link." >&2; exit 2; }
 
-for command in arch awk curl df gh node shasum sleep tar; do
+# Resolve the host archive and its pinned digest; refuse any host this launcher has not been checked on.
+HOST_KERNEL="$(uname -s)"
+HOST_ARCH="$(uname -m)"
+case "$HOST_KERNEL:$HOST_ARCH" in
+  Darwin:arm64)
+    RUNNER_PLATFORM="osx-arm64"
+    RUNNER_ARCHIVE_SHA256="$RUNNER_ARCHIVE_SHA256_OSX_ARM64"
+    ;;
+  Linux:x86_64)
+    RUNNER_PLATFORM="linux-x64"
+    RUNNER_ARCHIVE_SHA256="$RUNNER_ARCHIVE_SHA256_LINUX_X64"
+    ;;
+  *)
+    echo "Unsupported self-hosted host: $HOST_KERNEL $HOST_ARCH." >&2
+    exit 1
+    ;;
+esac
+RUNNER_ARCHIVE="actions-runner-${RUNNER_PLATFORM}-${RUNNER_VERSION}.tar.gz"
+RUNNER_ARCHIVE_URL="https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/${RUNNER_ARCHIVE}"
+
+for command in awk curl df gh node sleep tar; do
   command -v "$command" >/dev/null || { echo "Missing required command: $command" >&2; exit 1; }
 done
-[[ "$(uname -s)" == "Darwin" ]] || { echo "The heavy runner requires macOS." >&2; exit 1; }
-[[ "$(arch)" == "arm64" ]] || { echo "The heavy runner requires Apple silicon." >&2; exit 1; }
+
+# sha256 tooling differs per OS: macOS ships shasum, Linux ships sha256sum.
+if command -v sha256sum >/dev/null; then
+  sha256_of() { sha256sum "$1" | awk '{ print $1 }'; }
+elif command -v shasum >/dev/null; then
+  sha256_of() { shasum -a 256 "$1" | awk '{ print $1 }'; }
+else
+  echo "Missing required command: sha256sum or shasum" >&2
+  exit 1
+fi
+
+# WSL keeps Windows drives on a slow 9p mount; a multi-gigabyte conda prefix must not land there.
+if [[ "$RUNNER_PLATFORM" == "linux-x64" && "$RUNNER_ROOT" == /mnt/* ]]; then
+  echo "The runner root must live in the Linux filesystem, not on a mounted Windows drive: $RUNNER_ROOT" >&2
+  exit 2
+fi
 
 RESOLUTION="$(node "$REPOSITORY_ROOT/scripts/runtime-box-ci.mjs" resolve \
   --model "$MODEL_ID" \
@@ -90,7 +144,7 @@ AVAILABLE_KIB="$(df -Pk "$DISK_PATH" | awk 'NR == 2 { print $4 }')"
 [[ "$AVAILABLE_KIB" =~ ^[0-9]+$ ]] || { echo "Unable to read free disk space for $DISK_PATH." >&2; exit 1; }
 AVAILABLE_BYTES=$((AVAILABLE_KIB * 1024))
 if (( AVAILABLE_BYTES < MINIMUM_BOOTSTRAP_FREE_DISK_BYTES )); then
-  echo "Heavy runner preflight failed: ${AVAILABLE_BYTES} free bytes; ${MINIMUM_BOOTSTRAP_FREE_DISK_BYTES} required before setup." >&2
+  echo "Self-hosted runner preflight failed: ${AVAILABLE_BYTES} free bytes; ${MINIMUM_BOOTSTRAP_FREE_DISK_BYTES} required before setup." >&2
   exit 1
 fi
 
@@ -102,7 +156,7 @@ EXISTING_RUNNERS="$(gh api "repos/$REPOSITORY/actions/runners" --paginate \
   exit 1
 }
 
-echo "Heavy runner preflight passed for $RUNNER_LABEL with $AVAILABLE_BYTES free bytes."
+echo "Self-hosted runner preflight passed for $RUNNER_LABEL with $AVAILABLE_BYTES free bytes."
 if [[ "$PREFLIGHT_ONLY" == "1" ]]; then
   exit 0
 fi
@@ -150,13 +204,19 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 curl --fail --location --retry 3 --output "$RUNNER_ROOT/$RUNNER_ARCHIVE" "$RUNNER_ARCHIVE_URL"
-ACTUAL_SHA256="$(shasum -a 256 "$RUNNER_ROOT/$RUNNER_ARCHIVE" | awk '{ print $1 }')"
+ACTUAL_SHA256="$(sha256_of "$RUNNER_ROOT/$RUNNER_ARCHIVE")"
 [[ "$ACTUAL_SHA256" == "$RUNNER_ARCHIVE_SHA256" ]] || {
   echo "Runner archive SHA-256 mismatch: $ACTUAL_SHA256" >&2
   exit 1
 }
 tar -xzf "$RUNNER_ROOT/$RUNNER_ARCHIVE" -C "$RUNNER_ROOT"
 /bin/rm -f -- "$RUNNER_ROOT/$RUNNER_ARCHIVE"
+
+# The Linux runner links against libicu; report it here instead of failing opaquely inside config.sh.
+if [[ "$RUNNER_PLATFORM" == "linux-x64" ]] && ! ldconfig -p 2>/dev/null | grep -q libicuuc; then
+  echo "Missing libicu. Install it once with: sudo $RUNNER_ROOT/bin/installdependencies.sh" >&2
+  exit 1
+fi
 
 REGISTRATION_TOKEN="$(gh api --method POST "repos/$REPOSITORY/actions/runners/registration-token" --jq .token)"
 (

@@ -240,7 +240,7 @@ describe('Runtime Box CI catalog', () => {
   it('guards heavy native allocation and preserves OIDC signing plus unconditional cleanup', () => {
     const validation = readFileSync(new URL('../../.github/workflows/_runtime-box-validate.yml', import.meta.url), 'utf8');
     const release = readFileSync(new URL('../../.github/workflows/runtime-box-release.yml', import.meta.url), 'utf8');
-    const launcher = readFileSync(new URL('../../scripts/run-runtime-box-macos-heavy-runner.sh', import.meta.url), 'utf8');
+    const launcher = readFileSync(new URL('../../scripts/run-runtime-box-selfhosted-runner.sh', import.meta.url), 'utf8');
     const validationNative = validation.slice(validation.indexOf('\n  native:\n'));
     const releaseJob = release.slice(release.indexOf('\n  release:\n'));
 
@@ -257,6 +257,97 @@ describe('Runtime Box CI catalog', () => {
     expect(launcher).toContain('--ephemeral');
     expect(launcher).toContain('--no-default-labels');
     expect(launcher).toContain('RUNNER_ONLINE_TIMEOUT_SECONDS=11400');
+  });
+
+  it('keeps both self-hosted launchers on one pinned runner release and one cleanup contract', () => {
+    const posix = readFileSync(new URL('../../scripts/run-runtime-box-selfhosted-runner.sh', import.meta.url), 'utf8');
+    const windows = readFileSync(new URL('../../scripts/run-runtime-box-selfhosted-runner.ps1', import.meta.url), 'utf8');
+
+    // Same pinned runner release on every OS, each with its own reviewed archive digest.
+    expect(posix).toContain('RUNNER_VERSION="2.336.0"');
+    expect(windows).toContain("$RunnerVersion = '2.336.0'");
+    expect(posix).toContain('04cf0be1aff4c3ec3554466c39124ca250e3effd8873bb7e8d68535aa9505d5d');
+    expect(windows).toContain('d59123a43003e357b0805b5d0f611d0bd2f65ab67d51bd070dd4e7a0f685c162');
+
+    // The ephemeral, single-job, no-default-label contract holds on both.
+    for (const launcher of [posix, windows]) {
+      expect(launcher).toContain('--ephemeral');
+      expect(launcher).toContain('--disableupdate');
+      expect(launcher).toContain('--no-default-labels');
+      expect(launcher).toContain('.liatir-runtime-box-runner');
+      expect(launcher).toContain('actions/runners/registration-token');
+      expect(launcher).toContain('--method DELETE');
+    }
+    expect(windows).toContain('$RunnerOnlineTimeoutSeconds = 11400');
+
+    // Operational parameters come from the catalog, never hardcoded in a launcher.
+    for (const launcher of [posix, windows]) {
+      expect(launcher).toContain('runtime-box-ci.mjs');
+      expect(launcher).not.toContain('liatir-linux-selfhosted');
+      expect(launcher).not.toContain('liatir-windows-selfhosted');
+    }
+
+    // WSL: a multi-gigabyte conda prefix must never land on the 9p Windows mount.
+    expect(posix).toContain('/mnt/*');
+  });
+
+  it('declares reviewed self-hosted Linux and Windows runner profiles for the pixi substrate', () => {
+    const expected = [
+      { id: 'linux-x64-selfhosted', runsOn: 'liatir-linux-selfhosted', platform: 'linux', gpu: false },
+      { id: 'linux-x64-cuda-selfhosted', runsOn: 'liatir-linux-cuda-selfhosted', platform: 'linux', gpu: true },
+      { id: 'windows-x64-selfhosted', runsOn: 'liatir-windows-selfhosted', platform: 'windows', gpu: false },
+      { id: 'windows-x64-cuda-selfhosted', runsOn: 'liatir-windows-cuda-selfhosted', platform: 'windows', gpu: true },
+    ];
+
+    for (const { id, runsOn, platform, gpu } of expected) {
+      const runner = catalog.runnerProfiles.find((candidate) => candidate.id === id);
+      expect(runner, `missing runner profile ${id}`).toBeDefined();
+      expect(runner).toMatchObject({
+        runsOn,
+        platform,
+        arch: 'x86_64',
+        gpu,
+        selfHosted: {
+          scope: 'repository',
+          ephemeral: true,
+          maxConcurrency: 1,
+          cleanWorkDirectory: true,
+          runnerNamePrefix: `${runsOn}-`,
+        },
+      });
+      // The bootstrap floor is what stops a runner coming online without room to finish.
+      expect(runner?.selfHosted?.minimumBootstrapFreeDiskBytes).toBeGreaterThanOrEqual(42_949_672_960);
+      if (gpu) {
+        // The local RTX 4060 Ti replaces the hosted Tesla T4; Phase 4 generalizes the validator.
+        expect(runner).toMatchObject({
+          expectedGpuModel: 'NVIDIA GeForce RTX 4060 Ti',
+          expectedComputeCapability: '8.9',
+        });
+        expect(runner?.minimumGpuMemoryBytes).toBeLessThanOrEqual(8_585_740_288);
+      }
+    }
+  });
+
+  it('rejects a self-hosted Linux or Windows job outside the exact checked runner context', () => {
+    for (const id of ['linux-x64-cuda-selfhosted', 'windows-x64-selfhosted']) {
+      const runner = catalog.runnerProfiles.find((candidate) => candidate.id === id);
+      const prefix = runner?.selfHosted?.runnerNamePrefix ?? '';
+      expect(() => validateRunnerExecutionContext(runner, {
+        GITHUB_ACTIONS: 'true',
+        RUNNER_ENVIRONMENT: 'self-hosted',
+        RUNNER_NAME: `${prefix}1721600000-1234`,
+      })).not.toThrow();
+      expect(() => validateRunnerExecutionContext(runner, {
+        GITHUB_ACTIONS: 'true',
+        RUNNER_ENVIRONMENT: 'github-hosted',
+        RUNNER_NAME: `${prefix}1721600000-1234`,
+      })).toThrow(/must execute on a self-hosted runner/);
+      expect(() => validateRunnerExecutionContext(runner, {
+        GITHUB_ACTIONS: 'true',
+        RUNNER_ENVIRONMENT: 'self-hosted',
+        RUNNER_NAME: 'unreviewed-runner',
+      })).toThrow(/does not match prefix/);
+    }
   });
 
   it('shares the proven Linux product lifecycle dependencies across validation and release', () => {

@@ -204,7 +204,9 @@ describe('Runtime Box CI cost controls', () => {
       fileExists: () => false,
     })).toThrow(/npm CLI could not be resolved/);
 
-    const fallback = '/toolcache/node/node_modules/npm/bin/npm-cli.js';
+    // Built with the same resolver the implementation uses, so the expectation holds on a
+    // Windows host too (where `resolve` yields a drive-qualified, backslash-separated path).
+    const fallback = resolve('/toolcache/node', 'node_modules', 'npm', 'bin', 'npm-cli.js');
     expect(npmInvocation(['run', 'test:tauri:run'], {
       platform: 'win32',
       nodeExecutable: '/toolcache/node/node.exe',

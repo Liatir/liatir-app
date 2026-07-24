@@ -1,6 +1,17 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 
+# Executable scripts must keep LF even on a Windows checkout. Two concrete breakages otherwise:
+# the self-hosted runner launcher is executed under WSL, where a CRLF interpreter line fails; and
+# vite-node cannot transform a shebang followed by CRLF, which makes the unit suite unrunnable.
+*.sh text eol=lf
+*.mjs text eol=lf
+
+# Workflows must keep LF: the CI guard tests anchor on "\n  <job>:\n", which CRLF silently turns
+# into a no-match, leaving the assertions vacuously scanning the wrong slice.
+*.yml text eol=lf
+*.yaml text eol=lf
+
 # Runtime Box locks and legal inputs are byte-pinned and must not be rewritten by Git for Windows.
 runtime-boxes/recipes/**/requirements.lock text eol=lf
 runtime-boxes/recipes/**/pixi.lock text eol=lf
