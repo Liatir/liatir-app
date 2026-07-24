@@ -2,9 +2,10 @@
 
 Last reviewed: 2026-07-24
 
-Status: **Proposed — approved in principle by the maintainer, not started.** No code
-has changed. Implementation begins only on explicit maintainer go-ahead, one phase at a
-time, starting with the zero-cost local Phase 0 spike.
+Status: **Phase 0 DONE (macOS Metal); Phases 1–5 not started.** The zero-cost local Phase 0
+spike is complete and decisive — see
+[Phase 0 decision record](./runtime-box-pixi-phase0-spike.md). No production code has changed.
+Implementation of Phases 1+ begins only on explicit maintainer go-ahead, one phase at a time.
 
 Related plans: [Runtime Box model platform expansion](./runtime-box-model-platform-expansion.md)
 (the model/target re-validation this migration feeds into),
@@ -68,6 +69,18 @@ without weakening scientific reproducibility, signing, or provenance.
 ## Phase 0 — Relocation/activation spike (LOCAL, zero-cost, GATES everything)
 
 **Predicted complexity: Low–Medium** — small hands-on POC, but its outcome is decisive and gates Phases 1–2.
+
+> **DONE 2026-07-24 (macOS Metal). Outcome — full record:
+> [runtime-box-pixi-phase0-spike.md](./runtime-box-pixi-phase0-spike.md).** Decision:
+> **conda-pack + embedded `conda-unpack`** is the relocation mechanism (rides inside the existing
+> ZIP + `box.json` + signing flow, no new external runtime dependency; fixer run as
+> `venv/bin/python venv/bin/conda-unpack`). **No activation env is required on macOS** — a
+> relocated conda-forge prefix imports the whole scGPT set and runs Metal compute under a fully
+> empty environment, so `run_self_test` and the Rust run path stay activation-free on macOS.
+> Box layout: extracted prefix named `venv/` (keeps the `venv/bin/python` invariant). Footprint
+> ≈ 833 MB extracted (raise `diskPlan` floors in Phase 1). **Caveat:** re-confirm "no activation
+> env" per-OS on Linux and especially Windows CUDA before those builds; make the Phase 2 manifest
+> `activation` field **optional/nullable** rather than hard-wiring one for all targets.
 
 The one genuinely unknown risk: a conda/pixi environment needs a one-time **prefix relocation**
 after extraction to a new location, and conda libraries (e.g. torch) **may require environment
