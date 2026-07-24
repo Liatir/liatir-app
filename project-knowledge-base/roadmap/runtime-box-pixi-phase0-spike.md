@@ -5,10 +5,11 @@ Author: local hands-on spike (macOS arm64 / Metal, macOS 14.4.1, Apple Silicon)
 Feeds: [Runtime Box pixi migration](./runtime-box-pixi-migration.md) — this record fixes the
 shape of Phases 1–2.
 
-Status: **DONE for macOS Metal. Decisive.** The one genuinely unknown risk in the migration plan
-(does a relocated conda/pixi prefix import cold with no activation env?) is resolved for the
-osx-arm64 target. Linux and Windows still need the same short re-confirmation before their builds
-(see "Scope and per-OS caveat").
+Status: **DONE for macOS Metal AND Windows (CPU + CUDA). Decisive.** The one genuinely unknown risk
+in the migration plan (does a relocated conda/pixi prefix import cold with no activation env?) is
+resolved for the osx-arm64 target and — the harder, no-rpath case — for **win-64 CPU and win-64
+CUDA**. Only Linux (CPU/CUDA) still needs the same short re-confirmation before its builds (see
+"Per-OS results and remaining scope").
 
 ## Question this spike had to answer
 
@@ -117,24 +118,71 @@ conda-pack 0.9.2, all installed contained under a scratchpad `PIXI_HOME` (no sys
   recipe's `torch` to `pytorch` and select the accelerator via conda subdir/variant, not a torch
   index URL.
 
-## Scope and per-OS caveat (must carry into Phase 5)
+## Windows result (CPU + CUDA) — decision-record fragment
 
-Everything above is validated for **macOS arm64 / Metal only**. The "no activation env needed"
-conclusion is **not automatically true on Linux and Windows** and must be re-confirmed with the
-same three-line cold-import check before each of those targets is built:
+Date: 2026-07-24. Local hands-on spike on the maintainer's Windows 11 box, RTX 4060 Ti (Ada,
+compute 8.9), NVIDIA driver **591.86** (CUDA 13.1-capable), PowerShell 5.1, `tar` = bsdtar 3.8.4.
+pixi 0.73.0, conda-pack 0.9.2, all contained under a scratch `PIXI_HOME` (no system changes).
+Method matched the [Windows check prompt](./runtime-box-pixi-phase0-windows-check.md): conda-forge
+`win-64` env → `conda-pack` → extract to a **different absolute path with a space**
+(`C:\Users\…\Liatir Test\boxes\scgpt-{cpu,cuda}\venv`) → `venv\python.exe
+venv\Scripts\conda-unpack-script.py` (on Windows the fixer is invoked via the `-script.py`, not the
+`conda-unpack.exe` launcher) → cold test in a **fresh shell** with `CONDA_PREFIX` empty and the venv
+**not** on `PATH`.
 
-- **Linux** (CPU/CUDA): `LD_LIBRARY_PATH` / `$ORIGIN` RPATH behavior; modern conda-forge is
-  usually activation-free for import, but CUDA runtime discovery must be checked.
-- **Windows** (CPU/CUDA): the real risk — no rpath; DLL search depends on `PATH` /
-  `os.add_dll_directory`, and CUDA DLL discovery in particular may force a minimal activation env.
-  A ready-to-run handoff prompt for the Windows machine (CPU + CUDA) is in
-  [runtime-box-pixi-phase0-windows-check.md](./runtime-box-pixi-phase0-windows-check.md).
+The answers to the exact question:
 
-**Design implication for Phase 2:** make the hypothesized `activation` field on
-`LiatirRuntimeBoxReleaseManifest` **optional/nullable**. macOS boxes carry none; if a specific
-target (most likely Windows CUDA) turns out to need a minimal env, it can be added per-box without
-a box-format change or a macOS rebuild. Do **not** hard-wire an activation env for all targets on
-the strength of a single-OS spike.
+- **CPU — cold import works with NO activation env? → YES.** `pytorch 2.8.0 cpu_mkl_py311`;
+  `import torch, anndata, numpy, scipy, pandas, h5py, tqdm` succeeds cold, and still succeeds after
+  the source `.pixi\envs\default` prefix is renamed away (no silent fallback to the build prefix).
+- **CUDA — cold import works with NO activation env? → YES.** **CUDA compute works? → YES.**
+  `pytorch 2.8.0 cuda128_mkl_py311`; in a no-activation shell `torch.cuda.is_available()` is `True`,
+  device `NVIDIA GeForce RTX 4060 Ti`, `torch.version.cuda` = `12.8` (confirms the CUDA build, not
+  the CPU fallback), and a real `torch.randn(512,512,device='cuda')` matmul returns. Both still pass
+  with the source prefix renamed away.
+- **Minimal activation env, if any → NONE for either.** The no-rpath Windows risk did not
+  materialize: conda-forge PyTorch bootstraps its own DLL search directories (torch calls
+  `os.add_dll_directory` on its `lib`/`Library\bin` at `import torch`) relative to the **relocated**
+  prefix, so no `PATH` entry, no `os.add_dll_directory` injection from Rust, and no `CONDA_PREFIX`
+  are needed for CPU import, CUDA import, or CUDA compute. Step "find the minimal activation env"
+  from the prompt was reached only as a contingency and was **not** required.
+
+**Important recipe finding (feeds Phase 1/Phase 5 for win-64 CUDA):** conda-forge has **no CUDA
+build of `pytorch 2.8.0` at cuda-version 12.4 for win-64**. The solver silently picks the
+`cpu_mkl` build unless the CUDA build is forced, and the forced CUDA build
+(`pytorch = { version = "2.8.0.*", build = "cuda*" }`) resolves to **`cuda128_*` requiring
+`cuda-version >=12.8,<13`** (ships `cuda-cudart 12.8.90`, `cudnn 9.10.2`, `libcudnn`, and
+`cudart64_12.dll` / `cudnn64_9.dll` / `cublas64_12.dll` into `venv\Library\bin`). So the win-64
+CUDA target must be pinned to **CUDA 12.8, not 12.4** — conda ships the CUDA runtime, and only the
+**driver** must be current (591.86 ≫ the R550+ / ≥551.61 floor, so 12.8 is amply supported). The
+plan's "CUDA 12.4" label for the Windows target should be updated to **12.8** wherever it appears.
+
+**Footprint (data for the `diskPlan` floors):** extracted `win-64` prefix ≈ **1345 MB** (CPU) and
+≈ **6.5 GB** (CUDA, driven by `libcudnn` ~486 MB + the CUDA runtime/`cublas`). conda-pack `tar.gz`:
+402 MB (CPU), 4.0 GB (CUDA). The CUDA tree is far larger than any current uv box → the Phase 1
+`diskPlan` floors must account for a **multi-GB CUDA box**, not just the ~833 MB macOS figure.
+
+## Per-OS results and remaining scope (must carry into Phase 5)
+
+| Target | Cold import, NO activation | Accelerator compute, NO activation | Extracted footprint | Activation env needed |
+| --- | --- | --- | --- | --- |
+| **macOS arm64 / Metal** | ✅ yes | ✅ Metal (MPS) matmul | ≈ 833 MB | **None** |
+| **win-64 CPU** | ✅ yes | n/a (CPU) | ≈ 1.35 GB | **None** |
+| **win-64 CUDA (12.8)** | ✅ yes | ✅ CUDA matmul on RTX 4060 Ti | ≈ 6.5 GB | **None** |
+| **linux-64 CPU** | ⏳ not yet checked | — | — | TBD |
+| **linux-64 CUDA** | ⏳ not yet checked | CUDA runtime discovery TBD | — | TBD |
+
+Only **Linux** (CPU/CUDA) remains: `LD_LIBRARY_PATH` / `$ORIGIN` RPATH behavior — modern conda-forge
+is usually activation-free for import, but CUDA runtime discovery must be re-confirmed with the same
+three-line cold-import check before those targets are built.
+
+**Design implication for Phase 2 (now confirmed on the hard case):** keep the hypothesized
+`activation` field on `LiatirRuntimeBoxReleaseManifest` **optional/nullable**, and it stays
+**`null` for macOS *and* Windows (CPU and CUDA)** — the two OSes tested carry none. The Rust
+`run_self_test` / `spawn_in_env` / `run_in_env` / `ai_runtime` paths need **no** `CONDA_PREFIX` /
+`PATH` / `add_dll_directory` injection on Windows, exactly as on macOS. Do not hard-wire an
+activation env for any target on the strength of the spike; if Linux CUDA ever needs one it can be
+added per-box without a box-format change or a macOS/Windows rebuild.
 
 ## Not covered by this spike (out of Phase 0 scope, deliberately)
 

@@ -3,12 +3,15 @@
 Last updated: 2026-07-24 (a full CI substrate migration to pixi + pixi-pack +
 conda-forge on self-hosted GitHub Actions runners has been planned and approved
 in principle — see the migration plan below. Its **Phase 0 relocation/activation
-spike is complete and decisive on macOS Metal**: conda-pack + embedded
-`conda-unpack` is the chosen relocation mechanism and **no activation environment
-is required** — a relocated conda-forge prefix imports the whole scGPT set and
-runs Metal compute under an empty environment, so the Rust self-test/run path
-stays activation-free on macOS (re-confirm per-OS on Linux/Windows-CUDA before
-those builds). See [Phase 0 decision record](./roadmap/runtime-box-pixi-phase0-spike.md).
+spike is complete and decisive on macOS Metal AND Windows (CPU + CUDA)**:
+conda-pack + embedded `conda-unpack` is the chosen relocation mechanism and **no
+activation environment is required on either OS** — a relocated conda-forge prefix
+imports the whole scGPT set cold and runs accelerator compute (Metal on macOS, a
+real CUDA matmul on the RTX 4060 Ti on Windows) under an empty environment, so the
+Rust self-test/run path stays activation-free on macOS and Windows (only Linux
+still to re-confirm). One recipe correction from the Windows spike: conda-forge's
+CUDA `pytorch 2.8.0` for win-64 is **cuda128**, so the Windows CUDA target is
+pinned to **CUDA 12.8, not 12.4**. See [Phase 0 decision record](./roadmap/runtime-box-pixi-phase0-spike.md).
 No production code has changed yet. Runtime Box CI foundation Gates 0–10 are
 complete; the product AI Model catalog has been cut over to Runtime Box-only
 delivery).
@@ -33,12 +36,13 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   approved-in-principle plan to replace the uv/python-build-standalone builder
   with pixi + pixi-pack + conda-forge (Variant A + a contained PyPI escape
   hatch) on self-hosted GitHub Actions runners, standardize torch on 2.8.0, and
-  re-validate every box. **Phase 0 complete (macOS Metal); Phases 1–5 not
-  started.**
+  re-validate every box. **Phase 0 complete (macOS Metal + Windows CPU/CUDA);
+  Linux re-confirm pending; Phases 1–5 not started.**
 - [Runtime Box pixi Phase 0 spike](./roadmap/runtime-box-pixi-phase0-spike.md) —
   the decisive local relocation/activation decision record: conda-pack + embedded
-  `conda-unpack`, no activation env on macOS, `venv/` box layout, ≈833 MB
-  footprint, per-OS re-confirm caveat for Linux/Windows-CUDA.
+  `conda-unpack`, **no activation env on macOS or Windows (CPU + CUDA)**, `venv/`
+  box layout, footprints ≈833 MB (macOS) / ≈1.35 GB (win CPU) / ≈6.5 GB (win CUDA),
+  win-64 CUDA pinned to 12.8; only Linux re-confirm remains.
 
 ## Where the project is
 

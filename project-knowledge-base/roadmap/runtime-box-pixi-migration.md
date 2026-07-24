@@ -2,10 +2,12 @@
 
 Last reviewed: 2026-07-24
 
-Status: **Phase 0 DONE (macOS Metal); Phases 1–5 not started.** The zero-cost local Phase 0
-spike is complete and decisive — see
-[Phase 0 decision record](./runtime-box-pixi-phase0-spike.md). No production code has changed.
-Implementation of Phases 1+ begins only on explicit maintainer go-ahead, one phase at a time.
+Status: **Phase 0 DONE (macOS Metal + Windows CPU/CUDA); Linux re-confirm pending; Phases 1–5 not
+started.** The zero-cost local Phase 0 spike is complete and decisive on both macOS and the harder
+no-rpath Windows case (CPU + CUDA, real RTX 4060 Ti compute) — see
+[Phase 0 decision record](./runtime-box-pixi-phase0-spike.md). **No activation env is required on
+macOS or Windows.** No production code has changed. Implementation of Phases 1+ begins only on
+explicit maintainer go-ahead, one phase at a time. Note the win-64 CUDA pin correction below.
 
 Related plans: [Runtime Box model platform expansion](./runtime-box-model-platform-expansion.md)
 (the model/target re-validation this migration feeds into),
@@ -185,9 +187,14 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
   unchanged. Repoint/retire the two CUDA-preflight workflows and the foundation workflow runners.
   Keep `validateRunnerExecutionContext` (name-prefix + `RUNNER_ENVIRONMENT`) and extend it to the
   new self-hosted profiles.
-- **Windows CUDA re-scope:** self-hosted on the maintainer's RTX 4060 Ti (compute 8.9, CUDA
-  12.4-capable) removes the hosted-driver blocker. Bring `windows-x86_64-cuda12.4` back into scope
-  as a now-feasible target (update the `windows-cuda-blocker-and-decision` memory and the ledger).
+- **Windows CUDA re-scope:** self-hosted on the maintainer's RTX 4060 Ti (compute 8.9; driver
+  591.86, CUDA 13.1-capable) removes the hosted-driver blocker. Bring the Windows CUDA target back
+  into scope as now-feasible (update the `windows-cuda-blocker-and-decision` memory and the ledger).
+  **CUDA-version correction (from the Phase 0 Windows spike):** conda-forge's CUDA `pytorch 2.8.0`
+  for win-64 is a **cuda128** build (`cuda-version >=12.8,<13`); there is **no** 12.4 CUDA build at
+  2.8.0. Pin the Windows CUDA target to **CUDA 12.8** (`cuda128`), not 12.4 — rename
+  `windows-x86_64-cuda12.4` → `windows-x86_64-cuda12.8` wherever it appears. conda ships the CUDA
+  runtime, so only the driver must be current (it is).
 
 ## Phase 4 — Validator hardware generalization (for the local RTX 4060 Ti)
 

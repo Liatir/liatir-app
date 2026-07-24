@@ -1,5 +1,14 @@
 # Phase 0 activation check — Windows (CPU + CUDA) handoff prompt
 
+> **DONE 2026-07-24 on the maintainer's RTX 4060 Ti box (driver 591.86). Decisive.** Result:
+> **no activation env is required on Windows for CPU or CUDA** — a relocated conda-forge `win-64`
+> prefix imports the full scGPT set cold and runs a real CUDA matmul on the RTX 4060 Ti with
+> `CONDA_PREFIX` empty and the venv not on `PATH`, and still passes with the source prefix removed.
+> One recipe correction: conda-forge's CUDA `pytorch 2.8.0` for win-64 is **cuda128** (needs
+> `cuda-version >=12.8`), so the Windows CUDA target must be pinned to **CUDA 12.8, not 12.4**.
+> Full findings + per-OS table: [Phase 0 decision record](./runtime-box-pixi-phase0-spike.md#windows-result-cpu--cuda--decision-record-fragment).
+> The prompt below is kept for reproducibility.
+
 This is a **self-contained prompt** to run in a Claude Code session **on the Windows machine**
 (the maintainer's RTX 4060 Ti box). It closes the one per-OS unknown left open by the macOS Phase 0
 spike. Paste everything under "PROMPT" into that session.
