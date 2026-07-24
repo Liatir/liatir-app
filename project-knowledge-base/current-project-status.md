@@ -37,7 +37,16 @@ in progress**: scGPT `linux-x86_64-cpu` is migrated off uv onto pixi, and
 committed `pixi.lock` files, lock-derived conda licence audits (112 and 94 packages,
 all licensed), measured `diskPlan` floors, and wiring into the catalog, signer policy
 and workflow. Both remain `buildable`; **nothing has been signed, published or
-promoted**. Before any protected release the signer must be deployed, because the
+promoted**. **scGPT Linux CPU is now scientifically validated natively on the self-hosted
+runner** — the first pixi box built and validated in CI (run `30132956412`, mode
+`scientific`, ~9.5 min on an ephemeral WSL runner): pixi 0.73.0, torch 2.8.0 CPU,
+a finite `1 x 512` embedding, self-test and output/provenance contracts all passed,
+measured installed 3.55 GB / archive 1.21 GB within the diskPlan floors. The target
+advances to `scientifically-validated`; `native-lifecycle` and the protected release
+remain. The scGPT Windows CPU box was built and verified locally but not yet run on
+CI.
+
+Before any protected release the signer must be deployed, because the
 previous failure was deployed-policy drift, not a build defect. **That drift
 is now caught automatically**: the signer exposes a policy fingerprint on
 `/health`, and the release workflow fails fast (right after GCP auth, before

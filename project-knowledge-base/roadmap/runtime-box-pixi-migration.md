@@ -528,6 +528,22 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 >   to be re-confirmed when the first Windows pixi box is built". It is now confirmed: the Rust
 >   resolver's existing probe found the conda interpreter at `venv/python.exe`, and the self-test
 >   ran with no injected environment, exactly as Phase 0 predicted for win-64.
+> - **scGPT Linux CPU validated natively on the self-hosted runner (2026-07-24) — the first pixi
+>   box built and scientifically validated in CI.** Dispatched `runtime-box-scgpt-whole-human`
+>   (mode `scientific`) at commit `70912e3`; the reusable validation workflow's `native` job ran on
+>   an ephemeral WSL runner (`liatir-linux-selfhosted-1784934442-565`, `RUNNER_ENVIRONMENT=self-hosted`)
+>   in ~9.5 min and **passed**. Run `30132956412`. Evidence (`status: passed`): pixi 0.73.0,
+>   python 3.11.15, lock sha `fb7aeff…` matching the committed one, self-test passed (all imports +
+>   local signature), and scientific validation on **torch 2.8.0 CPU** producing a finite `[1, 512]`
+>   embedding with the output and provenance contracts passing and CPU-baseline parity `passed`.
+>   Measured on the runner: installed **3.55 GB**, archive **1.21 GB** — within the `diskPlan`
+>   floors set from the local measurement, confirming them against a real CI build. The runner
+>   deregistered and its work root was removed; the repository runner inventory is empty. The
+>   catalog target advances **`buildable` → `scientifically-validated`**. Still open for this
+>   target: `native-lifecycle` mode (needs the Tauri deps, which want passwordless sudo in WSL) and
+>   the protected release (KMS sign + R2 publish + beta), which is intentionally deferred.
+> - **This also proved the CI pixi provisioning added to `_runtime-box-validate.yml`** (pinned pixi
+>   and conda-pack, with uv made conditional) works on a real self-hosted runner.
 > - **Known conservatism:** the migrated recipes carry only the *source* prune list — the conda
 >   `venv/` prunes from the macOS pilot (torch/include, sympy, networkx, stdlib extras) were not
 >   ported, because their exact `dist-info` directory names are lock-specific. The boxes are

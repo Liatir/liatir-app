@@ -417,7 +417,7 @@
           ],
           "recipeId": "scgpt-whole-human-linux-x86_64-cpu",
           "runnerProfileId": "linux-x64-selfhosted",
-          "status": "buildable",
+          "status": "scientifically-validated",
           "validationModes": [
             "build",
             "scientific",
