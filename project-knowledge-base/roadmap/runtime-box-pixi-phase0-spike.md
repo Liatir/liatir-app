@@ -68,9 +68,20 @@ conda-pack 0.9.2, all installed contained under a scratchpad `PIXI_HOME` (no sys
   field is **not needed for macOS**.
 
 - **Relocation on macOS is essentially free.** conda-forge macOS packages use
-  `@rpath`/`@loader_path`, so even a naive extract imports without any fixer. We still run the
-  fixer for full text-file correctness (shebangs, `python3.11-config`, pkgconfig, sysconfig) — it
-  is cheap and self-contained.
+  `@rpath`/`@loader_path`, so even a naive extract imports without any fixer.
+
+  > **SUPERSEDED (Phase 2, 2026-07-24): the fixer must NOT be run at all.** This record originally
+  > recommended running `conda-unpack` "for full text-file correctness". Measurement during Phase 2
+  > showed the opposite: conda-pack already rewrites the build prefix to a neutral placeholder, and
+  > running `conda-unpack` *stamps the build machine's absolute path back in* — on a probe env, **0
+  > files carried the prefix before the fixer and 36 after**. That path would then ship inside the
+  > box (a developer-path leak) and still be wrong at the user's install location. The build
+  > therefore never runs `conda-unpack`; it deletes the few service files that do carry the build
+  > prefix (`conda-meta/pixi`, `conda-meta/pixi_env_prefix`, the `conda-unpack` script) and repairs
+  > conda console-script shebangs to resolve Python next to themselves (reusing the uv path's
+  > `repairPosixLaunchers`). Verified: a rebuilt scGPT macOS box contains **zero** occurrences of
+  > the build or developer path. **Consequence: the Rust install flow needs no relocation step**,
+  > which is why Phase 2 required no change to `runtime_boxes.rs`.
 
 - **Chosen relocation mechanism: conda-pack with the embedded `conda-unpack`** (confirms the
   plan's recommended default). Reasons:
@@ -175,6 +186,14 @@ plan's "CUDA 12.4" label for the Windows target should be updated to **12.8** wh
 Only **Linux** (CPU/CUDA) remains: `LD_LIBRARY_PATH` / `$ORIGIN` RPATH behavior — modern conda-forge
 is usually activation-free for import, but CUDA runtime discovery must be re-confirmed with the same
 three-line cold-import check before those targets are built.
+
+A ready-to-run handoff prompt is in
+[runtime-box-pixi-phase0-linux-check.md](./runtime-box-pixi-phase0-linux-check.md). The **CPU** case
+runs anywhere Linux x86_64 — a GitHub Codespace is enough, and is native x86_64 (no emulation);
+**Linux CUDA** needs a real NVIDIA GPU. It cannot be run from the maintainer's macOS machine: no
+container runtime is installed there, and an Apple-Silicon container would emulate x86_64 anyway.
+The prompt already reflects the Phase 2 finding — it tests the shipped configuration, i.e. **without
+running `conda-unpack`**.
 
 **Design implication for Phase 2 (now confirmed on the hard case):** keep the hypothesized
 `activation` field on `LiatirRuntimeBoxReleaseManifest` **optional/nullable**, and it stays

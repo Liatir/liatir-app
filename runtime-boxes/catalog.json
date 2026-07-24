@@ -310,12 +310,13 @@
           "status": "published",
           "validationModes": ["build", "scientific", "native-lifecycle"],
           "timeoutMinutes": 120,
-          "requiredBuildDiskBytes": 6442450944,
-          "dependencyLockSha256": "5c2d4d83cbc1f1b877fb56851804d6911fd863225272f3b69e6ba51db9de0800",
+          "requiredBuildDiskBytes": 8589934592,
+          "dependencyLockSha256": "04f83b64db8b5f6faf65fa40c677d6596a50c7d5482c51d8c1baa173588b388a",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/scgpt-whole-human-macos-arm64-metal.json",
           "diskPlan": {
-            "estimatedInstalledSizeBytes": 2147483648,
-            "estimatedArchiveSizeBytes": 310415585,
-            "safetyMarginBytes": 3221225472
+            "estimatedInstalledSizeBytes": 2684354560,
+            "estimatedArchiveSizeBytes": 671088640,
+            "safetyMarginBytes": 4294967296
           },
           "gpuRequired": false,
           "nativeCiEnabled": true,

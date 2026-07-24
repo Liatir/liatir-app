@@ -20,6 +20,9 @@ const TARGET_ADAPTERS = Object.freeze([
     arch: 'aarch64',
     host: Object.freeze({ platform: 'darwin', arch: 'arm64' }),
     uvPlatform: 'aarch64-apple-darwin',
+    // conda/pixi platform subdir (the `platforms` value in a per-recipe pixi.toml). Added for the
+    // pixi migration; the uv `uvPlatform` above stays until every recipe is on the pixi substrate.
+    condaSubdir: 'osx-arm64',
     python: Object.freeze({
       payloadRoot: 'venv',
       entryPoint: 'venv/bin/python',
@@ -45,6 +48,7 @@ const TARGET_ADAPTERS = Object.freeze([
     arch: 'x86_64',
     host: Object.freeze({ platform: 'linux', arch: 'x64' }),
     uvPlatform: 'x86_64-unknown-linux-gnu',
+    condaSubdir: 'linux-64',
     python: Object.freeze({
       payloadRoot: 'venv',
       entryPoint: 'venv/bin/python',
@@ -70,6 +74,7 @@ const TARGET_ADAPTERS = Object.freeze([
     arch: 'x86_64',
     host: Object.freeze({ platform: 'win32', arch: 'x64' }),
     uvPlatform: 'x86_64-pc-windows-msvc',
+    condaSubdir: 'win-64',
     python: Object.freeze({
       payloadRoot: 'venv',
       entryPoint: 'venv/python.exe',
@@ -177,4 +182,36 @@ export function runtimeBoxLockArguments(adapter, recipe, inputPath, outputPath) 
 /** Lists all adapters for contract tests and future catalog validation. */
 export function runtimeBoxTargetAdapters() {
   return [...TARGET_ADAPTERS];
+}
+
+// --- pixi/conda substrate mapping (migration) -------------------------------------------------
+// These mirror the uv helpers above (uvPlatform / torchBackend / lock arguments) for the pixi +
+// conda-forge builder. They are additive: a recipe is on the pixi substrate when it carries a
+// pixi.toml/pixi.lock instead of requirements.in/lock, and the two paths coexist during migration.
+
+/** Maps a validated Runtime Box target to its conda platform subdir (the pixi `platforms` value). */
+export function runtimeBoxCondaSubdir(target) {
+  const adapter = runtimeBoxTargetAdapter(target);
+  return adapter.condaSubdir;
+}
+
+/**
+ * Returns the conda/pixi accelerator descriptor a recipe selects, rejecting target drift — the
+ * conda-forge analogue of runtimeBoxTorchBackendArguments. `metal` and `cpu` need no extra conda
+ * knobs (osx-arm64 ships MPS in the pytorch build; cpu is the default build); `cuda` pins a
+ * `cuda-version` and declares a CUDA system requirement so the solver picks the GPU pytorch build.
+ */
+export function runtimeBoxPixiAccelerator(recipe) {
+  const accelerator = recipe?.target?.accelerator;
+  if (accelerator === 'metal' || accelerator === 'cpu') {
+    return Object.freeze({ accelerator, cudaVersion: null });
+  }
+  if (accelerator === 'cuda') {
+    const cudaVersion = recipe?.target?.cudaVersion;
+    if (typeof cudaVersion !== 'string' || !CUDA_VERSION.test(cudaVersion)) {
+      throw new TypeError('A CUDA Runtime Box target requires a numeric major.minor CUDA version');
+    }
+    return Object.freeze({ accelerator, cudaVersion });
+  }
+  throw new TypeError(`Unsupported Runtime Box accelerator: ${accelerator}`);
 }

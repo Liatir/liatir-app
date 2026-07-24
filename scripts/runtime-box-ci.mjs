@@ -20,7 +20,7 @@ import {
 import { npmInvocation } from './node-cli.mjs';
 import { runWithHeartbeat } from './runtime-box/heartbeat.mjs';
 import { runtimeBoxTargetId, runtimeBoxTorchBackendArguments } from './runtime-box/targets.mjs';
-import { lockedPythonDistributions } from './runtime-box/licenses.mjs';
+import { lockedCondaDistributions, lockedPythonDistributions } from './runtime-box/licenses.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const CATALOG_PATH = resolve(ROOT, 'runtime-boxes/catalog.json');
@@ -72,6 +72,109 @@ export function lockedDistributionPrunePaths(recipe, lockBytes) {
         : normalize(remainder) === normalize(name)
     ));
   });
+}
+
+/** Validates a uv recipe's requirements.lock and its reviewed .dist-info license audit. */
+function validateUvRecipeLockAndAudit(recipe, target, recipePath, targetKey) {
+  const lockPath = resolve(recipePath, '..', recipe.requirementsLock);
+  requireCatalog(existsSync(lockPath), `missing dependency lock for ${targetKey}`);
+  const lockBytes = readFileSync(lockPath);
+  requireCatalog(/^[a-f0-9]{64}$/.test(target.dependencyLockSha256), `invalid pinned lock SHA-256 for ${targetKey}`);
+  requireCatalog(sha256Bytes(lockBytes) === target.dependencyLockSha256, `dependency lock SHA-256 mismatch for ${targetKey}`);
+  requireCatalog(lockBytes.includes(Buffer.from('--hash=sha256:')), `dependency lock is not hash-pinned for ${targetKey}`);
+  if (target.dependencyLicenseAudit) {
+    requireCatalog(
+      recipe.dependencyLicenseAudit === target.dependencyLicenseAudit,
+      `recipe and catalog dependency license audits differ for ${targetKey}`,
+    );
+    const auditPath = resolve(ROOT, target.dependencyLicenseAudit);
+    requireCatalog(
+      auditPath.startsWith(`${resolve(ROOT, 'runtime-boxes/legal/audits')}${sep}`),
+      `dependency license audit is outside runtime-boxes/legal/audits for ${targetKey}`,
+    );
+    requireCatalog(existsSync(auditPath), `missing dependency license audit for ${targetKey}`);
+    const audit = JSON.parse(readFileSync(auditPath, 'utf8'));
+    requireCatalog(
+      audit.schemaVersion === 1
+        && audit.kind === 'liatir.runtime-box.python-dependency-license-audit'
+        && audit.targetId === target.targetId
+        && audit.torchBackend === recipe.torchBackend
+        && audit.dependencyLockSha256 === target.dependencyLockSha256,
+      `dependency license audit identity mismatch for ${targetKey}`,
+    );
+    const reviewedPackages = audit.packages.map(({ name, version }) => ({ name, version }));
+    requireCatalog(
+      JSON.stringify(reviewedPackages) === JSON.stringify(lockedPythonDistributions(lockBytes)),
+      `dependency license audit package set differs from the lock for ${targetKey}`,
+    );
+    const invalidPrunePaths = lockedDistributionPrunePaths(recipe, lockBytes);
+    requireCatalog(
+      invalidPrunePaths.length === 0,
+      `recipe prunes locked distributions for ${targetKey}: ${invalidPrunePaths.join(', ')}`,
+    );
+    requireCatalog(
+      audit.packages.every((entry) => (
+        typeof entry.declaredLicense === 'string'
+        && entry.declaredLicense
+        && Array.isArray(entry.licenseFiles)
+      )),
+      `dependency license audit contains an incomplete entry for ${targetKey}`,
+    );
+  }
+  if (recipe.torchBackend) {
+    requireCatalog(target.dependencyLicenseAudit, `PyTorch target lacks a reviewed dependency license audit for ${targetKey}`);
+  }
+}
+
+/**
+ * Validates a pixi recipe's committed pixi.lock and its reviewed conda license audit.
+ *
+ * `pixi install --frozen` guarantees the installed set equals the lock, and the lock carries every
+ * package's SPDX license, so the audit is a pure function of the lock (no built prefix needed). No
+ * prune-vs-lock guard here: unlike the uv audit (derived from installed site-packages), the conda
+ * audit is lock-derived and conservatively lists the full locked set, so pruning transitive conda
+ * dependencies to shrink the box is allowed and over-discloses licenses rather than under-disclosing.
+ */
+function validatePixiRecipeLockAndAudit(recipe, target, recipePath, targetKey) {
+  const lockPath = resolve(recipePath, '..', 'pixi.lock');
+  requireCatalog(existsSync(lockPath), `missing pixi.lock for ${targetKey}`);
+  const lockBytes = readFileSync(lockPath);
+  requireCatalog(/^[a-f0-9]{64}$/.test(target.dependencyLockSha256), `invalid pinned lock SHA-256 for ${targetKey}`);
+  requireCatalog(sha256Bytes(lockBytes) === target.dependencyLockSha256, `pixi.lock SHA-256 mismatch for ${targetKey}`);
+  // Every current model bundles a framework (torch), so a pixi recipe must carry a reviewed audit.
+  requireCatalog(target.condaDependencyLicenseAudit, `pixi target lacks a reviewed conda license audit for ${targetKey}`);
+  requireCatalog(
+    recipe.condaDependencyLicenseAudit === target.condaDependencyLicenseAudit,
+    `recipe and catalog conda license audits differ for ${targetKey}`,
+  );
+  const auditPath = resolve(ROOT, target.condaDependencyLicenseAudit);
+  requireCatalog(
+    auditPath.startsWith(`${resolve(ROOT, 'runtime-boxes/legal/audits')}${sep}`),
+    `conda license audit is outside runtime-boxes/legal/audits for ${targetKey}`,
+  );
+  requireCatalog(existsSync(auditPath), `missing conda license audit for ${targetKey}`);
+  const audit = JSON.parse(readFileSync(auditPath, 'utf8'));
+  requireCatalog(
+    audit.schemaVersion === 1
+      && audit.kind === 'liatir.runtime-box.conda-dependency-license-audit'
+      && audit.targetId === target.targetId
+      && audit.dependencyLockSha256 === target.dependencyLockSha256,
+    `conda license audit identity mismatch for ${targetKey}`,
+  );
+  const reviewedPackages = audit.packages.map(({ name, version }) => ({ name, version }));
+  const lockedPackages = lockedCondaDistributions(lockBytes).map(({ name, version }) => ({ name, version }));
+  requireCatalog(
+    JSON.stringify(reviewedPackages) === JSON.stringify(lockedPackages),
+    `conda license audit package set differs from the lock for ${targetKey}`,
+  );
+  requireCatalog(
+    audit.packages.every((entry) => (
+      typeof entry.declaredLicense === 'string'
+      && entry.declaredLicense
+      && (entry.source === 'conda' || entry.source === 'pypi')
+    )),
+    `conda license audit contains an incomplete entry for ${targetKey}`,
+  );
 }
 
 /** Compares dotted numeric driver versions without floating-point truncation. */
@@ -318,53 +421,12 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
           `local recipe file hash mismatch for ${localFile.sourcePath} in ${targetKey}`,
         );
       }
-      const lockPath = resolve(recipePath, '..', recipe.requirementsLock);
-      requireCatalog(existsSync(lockPath), `missing dependency lock for ${targetKey}`);
-      const lockBytes = readFileSync(lockPath);
-      requireCatalog(/^[a-f0-9]{64}$/.test(target.dependencyLockSha256), `invalid pinned lock SHA-256 for ${targetKey}`);
-      requireCatalog(sha256Bytes(lockBytes) === target.dependencyLockSha256, `dependency lock SHA-256 mismatch for ${targetKey}`);
-      requireCatalog(lockBytes.includes(Buffer.from('--hash=sha256:')), `dependency lock is not hash-pinned for ${targetKey}`);
-      if (target.dependencyLicenseAudit) {
-        requireCatalog(
-          recipe.dependencyLicenseAudit === target.dependencyLicenseAudit,
-          `recipe and catalog dependency license audits differ for ${targetKey}`,
-        );
-        const auditPath = resolve(ROOT, target.dependencyLicenseAudit);
-        requireCatalog(
-          auditPath.startsWith(`${resolve(ROOT, 'runtime-boxes/legal/audits')}${sep}`),
-          `dependency license audit is outside runtime-boxes/legal/audits for ${targetKey}`,
-        );
-        requireCatalog(existsSync(auditPath), `missing dependency license audit for ${targetKey}`);
-        const audit = JSON.parse(readFileSync(auditPath, 'utf8'));
-        requireCatalog(
-          audit.schemaVersion === 1
-            && audit.kind === 'liatir.runtime-box.python-dependency-license-audit'
-            && audit.targetId === target.targetId
-            && audit.torchBackend === recipe.torchBackend
-            && audit.dependencyLockSha256 === target.dependencyLockSha256,
-          `dependency license audit identity mismatch for ${targetKey}`,
-        );
-        const reviewedPackages = audit.packages.map(({ name, version }) => ({ name, version }));
-        requireCatalog(
-          JSON.stringify(reviewedPackages) === JSON.stringify(lockedPythonDistributions(lockBytes)),
-          `dependency license audit package set differs from the lock for ${targetKey}`,
-        );
-        const invalidPrunePaths = lockedDistributionPrunePaths(recipe, lockBytes);
-        requireCatalog(
-          invalidPrunePaths.length === 0,
-          `recipe prunes locked distributions for ${targetKey}: ${invalidPrunePaths.join(', ')}`,
-        );
-        requireCatalog(
-          audit.packages.every((entry) => (
-            typeof entry.declaredLicense === 'string'
-            && entry.declaredLicense
-            && Array.isArray(entry.licenseFiles)
-          )),
-          `dependency license audit contains an incomplete entry for ${targetKey}`,
-        );
-      }
-      if (recipe.torchBackend) {
-        requireCatalog(target.dependencyLicenseAudit, `PyTorch target lacks a reviewed dependency license audit for ${targetKey}`);
+      // Coexisting substrates: a pixi recipe is validated against its pixi.lock + conda audit; a
+      // legacy uv recipe against requirements.lock + its .dist-info audit.
+      if (recipe.pixiVersion) {
+        validatePixiRecipeLockAndAudit(recipe, target, recipePath, targetKey);
+      } else {
+        validateUvRecipeLockAndAudit(recipe, target, recipePath, targetKey);
       }
       runtimeBoxBuildDiskPlan(recipe, target);
 
@@ -555,7 +617,8 @@ async function main() {
       recipe_id: resolved.target.recipeId,
       runs_on: resolved.runner.runsOn,
       timeout_minutes: resolved.target.timeoutMinutes,
-      uv_version: recipe.uvVersion,
+      uv_version: recipe.uvVersion ?? '',
+      pixi_version: recipe.pixiVersion ?? '',
       validator_script: resolved.model.validatorScript,
       native_eligible: nativeRequested ? 'true' : 'false',
       gpu_required: resolved.target.gpuRequired ? 'true' : 'false',
@@ -587,7 +650,8 @@ async function main() {
       version: recipe.version,
       runs_on: resolved.runner.runsOn,
       timeout_minutes: target.timeoutMinutes,
-      uv_version: recipe.uvVersion,
+      uv_version: recipe.uvVersion ?? '',
+      pixi_version: recipe.pixiVersion ?? '',
       validator_script: model.validatorScript,
       box_id: model.boxId,
       release_path: `.runtime-box-dist/${model.boxId}-${recipe.version}-${target.targetId}.release.json`,

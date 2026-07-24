@@ -26,7 +26,9 @@ export async function loadRuntimeBoxValidatorContext({
       ?? join(root, '.runtime-box-build', recipeId, 'payload'),
   );
   const python = join(runtimeDir, ...recipe.pythonEntryPoint.split('/'));
-  const lockPath = join(dirname(recipePath), recipe.requirementsLock);
+  // A pixi recipe pins its dependencies in pixi.lock; the legacy uv path uses requirements.lock.
+  const lockFile = recipe.pixiVersion ? 'pixi.lock' : recipe.requirementsLock;
+  const lockPath = join(dirname(recipePath), lockFile);
   const dependencyLockSha256 = createHash('sha256')
     .update(await readFile(lockPath))
     .digest('hex');

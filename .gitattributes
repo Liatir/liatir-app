@@ -3,4 +3,6 @@
 
 # Runtime Box locks and legal inputs are byte-pinned and must not be rewritten by Git for Windows.
 runtime-boxes/recipes/**/requirements.lock text eol=lf
+runtime-boxes/recipes/**/pixi.lock text eol=lf
+runtime-boxes/recipes/**/pixi.toml text eol=lf
 runtime-boxes/legal/** text eol=lf

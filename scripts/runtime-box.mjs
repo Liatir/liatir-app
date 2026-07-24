@@ -62,10 +62,13 @@ import {
   sha256File,
 } from './runtime-box/filesystem.mjs';
 import {
+  createCondaDependencyLicenseAudit,
   createPythonDependencyLicenseAudit,
+  validateCondaDependencyLicenseAudit,
   validatePythonDependencyLicenseAudit,
 } from './runtime-box/licenses.mjs';
 import {
+  runtimeBoxBuilderVersionFields,
   runtimeBoxReleaseObjectPrefix,
   runtimeBoxReleaseStem,
 } from './runtime-box/identity.mjs';
@@ -75,6 +78,12 @@ import {
   syncLockedPythonDependencies,
   validateRelocatablePython,
 } from './runtime-box/python.mjs';
+import {
+  findCondaPack,
+  findPixi,
+  installAndPackPixiEnvironment,
+  runtimeBoxPixiLockArguments,
+} from './runtime-box/pixi.mjs';
 import {
   assertRuntimeBoxNativeHost,
   assertRuntimeBoxPythonEntryPoint,
@@ -357,6 +366,14 @@ function findUv(flags, requiredVersion) {
  */
 async function lockRecipe(name, flags) {
   const { adapter, dir, recipe } = await readRecipe(name);
+  if (recipe.pixiVersion) {
+    // A pixi recipe resolves its committed pixi.toml into pixi.lock; the manifest pins channels and
+    // the single target platform, so resolution is host-independent with no platform flag.
+    const pixi = findPixi(flags, recipe.pixiVersion);
+    run(pixi, runtimeBoxPixiLockArguments(join(dir, 'pixi.toml')));
+    console.log(`Updated ${relative(ROOT, join(dir, 'pixi.lock'))}`);
+    return;
+  }
   const uv = findUv(flags, recipe.uvVersion);
   run(uv, runtimeBoxLockArguments(
     adapter,
@@ -482,8 +499,14 @@ async function buildRecipe(name, flags) {
   const { adapter, dir, recipe } = await readRecipe(name);
   // Wheels, native libraries, and Python are proven on the exact OS/architecture they will ship.
   assertRuntimeBoxNativeHost(adapter);
-  const uv = findUv(flags, recipe.uvVersion);
-  const lockPath = join(dir, recipe.requirementsLock);
+  // A recipe is on the pixi substrate once it declares a pixiVersion (it then carries pixi.toml +
+  // pixi.lock); otherwise it still builds through the uv + standalone-Python path. The two coexist
+  // during the migration, so tool discovery branches before anything is installed.
+  const pixiRecipe = Boolean(recipe.pixiVersion);
+  const pixi = pixiRecipe ? findPixi(flags, recipe.pixiVersion) : null;
+  const condaPack = pixiRecipe ? findCondaPack(flags) : null;
+  const uv = pixiRecipe ? null : findUv(flags, recipe.uvVersion);
+  const lockPath = join(dir, pixiRecipe ? 'pixi.lock' : recipe.requirementsLock);
   // Build installs from the lock and never resolves, so a missing lock is a hard error rather
   // than an invitation to resolve dependencies on the fly.
   if (!await fileExists(lockPath)) fail(`Missing dependency lock: ${lockPath}`);
@@ -507,33 +530,54 @@ async function buildRecipe(name, flags) {
   await rm(objectDir, { recursive: true, force: true });
   await mkdir(payloadDir, { recursive: true });
 
-  const standalonePython = await stageStandalonePython({
-    adapter,
-    payloadDir,
-    pythonVersion: recipe.pythonVersion,
-    run,
-    uv,
-  });
-  // Installs *into the copied interpreter* (hence --python pointing inside the payload).
-  // --require-hashes enforces the digests in the lock, so a tampered or swapped wheel fails the
-  // build; --strict catches an inconsistent resulting environment.
-  await syncLockedPythonDependencies({
-    adapter,
-    ...standalonePython,
-    extraArgs: runtimeBoxTorchBackendArguments(recipe),
-    lockPath,
-    run,
-    uv,
-  });
-  await validateRelocatablePython({
-    adapter,
-    ...standalonePython,
-    payloadDir,
-    run,
-  });
-  const sitePackagesPath = run(standalonePython.interpreter, [
-    '-c', "import sysconfig; print(sysconfig.get_paths()['purelib'])",
-  ], { capture: true });
+  let interpreter;
+  // Only the uv path can name a site-packages dir for the .dist-info license audit; the conda
+  // audit reads package metadata differently and lands in a later migration increment.
+  let sitePackagesPath = null;
+  if (pixiRecipe) {
+    // pixi install from the locked pixi.lock, conda-pack, extract to venv/, run the embedded
+    // conda-unpack against the final prefix, then dereference symlinks so the payload is link-free.
+    // No activation env is required (Phase 0 spike, macOS + Windows).
+    ({ interpreter } = await installAndPackPixiEnvironment({
+      pixi,
+      condaPack,
+      manifestPath: join(dir, 'pixi.toml'),
+      lockPath,
+      buildDir,
+      payloadDir,
+      adapter,
+      run,
+    }));
+  } else {
+    const standalonePython = await stageStandalonePython({
+      adapter,
+      payloadDir,
+      pythonVersion: recipe.pythonVersion,
+      run,
+      uv,
+    });
+    // Installs *into the copied interpreter* (hence --python pointing inside the payload).
+    // --require-hashes enforces the digests in the lock, so a tampered or swapped wheel fails the
+    // build; --strict catches an inconsistent resulting environment.
+    await syncLockedPythonDependencies({
+      adapter,
+      ...standalonePython,
+      extraArgs: runtimeBoxTorchBackendArguments(recipe),
+      lockPath,
+      run,
+      uv,
+    });
+    await validateRelocatablePython({
+      adapter,
+      ...standalonePython,
+      payloadDir,
+      run,
+    });
+    interpreter = standalonePython.interpreter;
+    sitePackagesPath = run(standalonePython.interpreter, [
+      '-c', "import sysconfig; print(sysconfig.get_paths()['purelib'])",
+    ], { capture: true });
+  }
 
   // Model weights and other large files, each verified against the hash declared in the recipe.
   for (const asset of recipe.assets) {
@@ -551,7 +595,9 @@ async function buildRecipe(name, flags) {
   for (const prunePath of recipe.prunePaths ?? []) {
     await rm(join(payloadDir, safeRelativePath(prunePath)), { recursive: true, force: true });
   }
-  if (recipe.dependencyLicenseAudit) {
+  // The .dist-info license audit is uv-only; a pixi/conda box audits conda metadata instead, which
+  // arrives in a later migration increment. Gate on sitePackagesPath so the pixi path skips it.
+  if (recipe.dependencyLicenseAudit && sitePackagesPath) {
     const actualAudit = createPythonDependencyLicenseAudit({
       lockBytes: await readFile(lockPath),
       sitePackagesPath,
@@ -565,6 +611,20 @@ async function buildRecipe(name, flags) {
     await mkdir(dirname(auditPath), { recursive: true });
     await writeFile(auditPath, `${JSON.stringify(actualAudit, null, 2)}\n`);
   }
+  // The pixi/conda license audit is derived from the committed pixi.lock (which carries the SPDX
+  // license of every package); `pixi install --frozen` guarantees the installed set equals it.
+  if (pixiRecipe && recipe.condaDependencyLicenseAudit) {
+    const actualAudit = createCondaDependencyLicenseAudit({
+      lockBytes: await readFile(lockPath),
+      targetId: runtimeBoxTargetId(recipe.target),
+    });
+    const reviewedAuditPath = resolve(ROOT, safeRelativePath(recipe.condaDependencyLicenseAudit));
+    const reviewedAudit = JSON.parse(await readFile(reviewedAuditPath, 'utf8'));
+    validateCondaDependencyLicenseAudit(reviewedAudit, actualAudit);
+    const auditPath = join(payloadDir, 'THIRD_PARTY_NOTICES', 'conda-distributions.json');
+    await mkdir(dirname(auditPath), { recursive: true });
+    await writeFile(auditPath, `${JSON.stringify(actualAudit, null, 2)}\n`);
+  }
   // Guards against over-pruning: the files the box needs at runtime must still be there.
   for (const requiredFile of recipe.selfTest.files) {
     if (!await fileExists(join(payloadDir, safeRelativePath(requiredFile)))) fail(`Missing self-test file: ${requiredFile}`);
@@ -574,7 +634,7 @@ async function buildRecipe(name, flags) {
   const selfTestCode = recipe.selfTest.pythonCode
     ? `${adapter.selfTestPython}\nimport ${recipe.selfTest.imports.join(', ')}\n${recipe.selfTest.pythonCode}`
     : `${adapter.selfTestPython}\nimport ${recipe.selfTest.imports.join(', ')}`;
-  run(standalonePython.interpreter, ['-c', selfTestCode], {
+  run(interpreter, ['-c', selfTestCode], {
     cwd: payloadDir,
     env: adapter.validationEnvironments[recipe.target.accelerator],
   });
@@ -588,7 +648,9 @@ async function buildRecipe(name, flags) {
     sourceTreeDirty: gitState.dirty,
     sourceRevision: recipe.sourceRevision,
     pythonVersion: recipe.pythonVersion,
-    uvVersion: recipe.uvVersion,
+    // Records the builder that produced the box: pixiVersion for the conda substrate, uvVersion for
+    // the legacy standalone-Python path.
+    ...runtimeBoxBuilderVersionFields(recipe),
     dependencyLockSha256: lockSha,
     builtAt: await gitBuildTime(),
   };

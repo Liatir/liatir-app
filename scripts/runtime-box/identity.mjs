@@ -9,3 +9,15 @@ export function runtimeBoxReleaseStem(release) {
 export function runtimeBoxReleaseObjectPrefix(release) {
   return `boxes/${release.boxId}/${release.version}/${runtimeBoxTargetId(release.target)}`;
 }
+
+/**
+ * Returns the builder-identity field for a recipe or a build provenance: exactly one of
+ * `pixiVersion` (pixi + conda-forge substrate) or `uvVersion` (legacy standalone-Python builder).
+ * Spread into provenance and evidence records so the two substrates can coexist during migration
+ * without every call site repeating the branch.
+ */
+export function runtimeBoxBuilderVersionFields(source) {
+  return source?.pixiVersion
+    ? { pixiVersion: source.pixiVersion }
+    : { uvVersion: source?.uvVersion };
+}

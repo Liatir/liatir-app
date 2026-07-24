@@ -134,7 +134,10 @@ describe('Runtime Box CI cost controls', () => {
       const recipe = JSON.parse(readFileSync(resolve(
         `runtime-boxes/recipes/${recipeId}/recipe.json`,
       ), 'utf8'));
-      const lockPath = `runtime-boxes/recipes/${recipeId}/${recipe.requirementsLock}`;
+      // Each substrate pins a different lock: pixi recipes byte-pin pixi.lock, uv recipes
+      // requirements.lock. Both must stay eol=lf so their committed hash survives a Windows checkout.
+      const lockFile = recipe.pixiVersion ? 'pixi.lock' : recipe.requirementsLock;
+      const lockPath = `runtime-boxes/recipes/${recipeId}/${lockFile}`;
       const attribute = execFileSync('git', ['check-attr', 'eol', '--', lockPath], {
         encoding: 'utf8',
       }).trim();

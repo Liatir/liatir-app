@@ -11,6 +11,7 @@ import {
   productAcceleratorForTarget,
   runtimeBoxAcceleratorKind,
 } from './runtime-box/validator-context.mjs';
+import { runtimeBoxBuilderVersionFields } from './runtime-box/identity.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const REVISION = 'cebd6fae655b9c585a4807daa3ac31bb764f06b4';
@@ -216,7 +217,7 @@ try {
       recipeId: RECIPE.recipeId,
       recipeVersion: RECIPE.recipeVersion,
       pythonVersion: RECIPE.pythonVersion,
-      uvVersion: RECIPE.uvVersion,
+      ...runtimeBoxBuilderVersionFields(RECIPE),
       dependencyLockSha256: DEPENDENCY_LOCK_SHA256,
     },
     evidence: {

@@ -8,6 +8,7 @@ import { arch, platform } from 'node:os';
 import { dirname, resolve, sep } from 'node:path';
 import { sha256File } from './filesystem.mjs';
 import { runWithHeartbeat } from './heartbeat.mjs';
+import { runtimeBoxBuilderVersionFields } from './identity.mjs';
 import { runtimeBoxTargetId } from './targets.mjs';
 
 const ROOT = resolve(import.meta.dirname, '../..');
@@ -353,7 +354,8 @@ async function completeModelRecord(options, catalog, phase) {
     requireEvidence(verification.status === 'passed' && verification.localSignatureVerified === true, 'local release verification did not pass');
     record.source = signedBuildSourceEvidence(record.source, release.provenance);
     requireEvidence(host.platform === release.target.platform && host.arch === release.target.arch, 'recorded host differs from release target');
-    const lockSha256 = await sha256File(resolve(ROOT, 'runtime-boxes/recipes', target.recipeId, recipe.requirementsLock));
+    const lockFile = recipe.pixiVersion ? 'pixi.lock' : recipe.requirementsLock;
+    const lockSha256 = await sha256File(resolve(ROOT, 'runtime-boxes/recipes', target.recipeId, lockFile));
     requireEvidence(lockSha256 === release.provenance.dependencyLockSha256, 'checked dependency lock differs from signed provenance');
     record.host = {
       ...host,
@@ -364,7 +366,7 @@ async function completeModelRecord(options, catalog, phase) {
       recipeSha256: await sha256File(resolve(ROOT, recipePath)),
       dependencyLockSha256: lockSha256,
       pythonVersion: release.provenance.pythonVersion,
-      uvVersion: release.provenance.uvVersion,
+      ...runtimeBoxBuilderVersionFields(release.provenance),
       archiveSha256: release.archive.sha256,
       archiveSizeBytes: release.archive.sizeBytes,
       installedSizeBytes: release.installedSizeBytes,

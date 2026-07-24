@@ -58,7 +58,14 @@ export interface LiatirRuntimeBoxBuildProvenance {
   sourceTreeDirty: boolean;
   sourceRevision: string;
   pythonVersion: string;
-  uvVersion: string;
+  /**
+   * The builder that produced the box: exactly one of these is present. `pixiVersion` for the
+   * pixi + conda-forge substrate (dependencyLockSha256 is then the pixi.lock hash), `uvVersion`
+   * for the legacy uv + standalone-Python builder (requirements.lock hash). Both are optional so
+   * the two substrates can coexist while recipes are migrated one target at a time.
+   */
+  uvVersion?: string;
+  pixiVersion?: string;
   dependencyLockSha256: string;
   builtAt: string;
 }
@@ -349,7 +356,9 @@ export interface LiatirRuntimeBoxCiBuildEvidence {
   recipeSha256: string;
   dependencyLockSha256: string;
   pythonVersion: string;
-  uvVersion: string;
+  /** Mirrors the provenance builder identity: exactly one of these is present. */
+  uvVersion?: string;
+  pixiVersion?: string;
   archiveSha256: string;
   archiveSizeBytes: number;
   installedSizeBytes: number;

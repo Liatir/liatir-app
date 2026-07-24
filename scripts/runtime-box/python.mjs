@@ -84,23 +84,29 @@ export async function syncLockedPythonDependencies({
   }
 }
 
-/** Removes either a direct shebang or uv's long-path shell trampoline from a launcher. */
+/**
+ * Removes either a direct shebang or a shell trampoline header from a launcher, leaving the Python
+ * body. Two trampoline dialects occur: uv closes the `'''exec'` string on its own `' '''` line,
+ * while conda closes it at the end of the same line (`… "$@" #'''`). Both are handled by scanning
+ * forward to the line that closes the quote.
+ */
 function posixLauncherBody(text) {
-  const firstLineEnd = text.indexOf('\n');
-  if (firstLineEnd === -1) return '';
-  const trampolinePrefix = "#!/bin/sh\n'''exec' ";
-  const trampolineTerminator = "\n' '''\n";
-  if (text.startsWith(trampolinePrefix)) {
-    const trampolineEnd = text.indexOf(trampolineTerminator, trampolinePrefix.length);
-    if (trampolineEnd !== -1) {
-      return text.slice(trampolineEnd + trampolineTerminator.length);
+  const lines = text.split('\n');
+  if (lines.length === 0 || !lines[0].startsWith('#!')) return text;
+  if (lines[1]?.startsWith("'''exec'")) {
+    for (let index = 1; index < lines.length; index += 1) {
+      if (lines[index].trimEnd().endsWith("'''")) return lines.slice(index + 1).join('\n');
     }
   }
-  return text.slice(firstLineEnd + 1);
+  return lines.slice(1).join('\n');
 }
 
-/** Makes generated POSIX console scripts resolve Python relative to their own installed path. */
-async function repairPosixLaunchers(adapter, payloadDir, forbiddenPaths) {
+/**
+ * Makes generated POSIX console scripts resolve Python relative to their own installed path.
+ * Shared by both substrates: uv-generated launchers and conda console scripts embed the absolute
+ * build-time interpreter path, which must never ship inside a box.
+ */
+export async function repairPosixLaunchers(adapter, payloadDir, forbiddenPaths) {
   const scriptsRoot = join(payloadDir, ...adapter.python.scriptsDirectory.split('/'));
   if (!await fileExists(scriptsRoot)) return;
   const pythonName = basename(adapter.python.entryPoint);

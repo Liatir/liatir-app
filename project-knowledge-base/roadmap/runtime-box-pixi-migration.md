@@ -114,6 +114,80 @@ pixi-created env cleanly.
 
 **Predicted complexity: High** — substantial rewrite of the core build tooling, a new recipe/lock format, and a reworked conda-based license audit.
 
+> **Progress (2026-07-24) — pixi build path proven end-to-end on the scGPT macOS pilot.**
+> Implemented incrementally, keeping the uv and pixi paths coexisting so every cheap gate stays
+> green (invariant: one target at a time, gates green).
+>
+> - **Increment 1 (done):** additive substrate — `condaSubdir` + `runtimeBoxCondaSubdir` +
+>   `runtimeBoxPixiAccelerator` in `targets.mjs`; new `scripts/runtime-box/pixi.mjs` (`findPixi`,
+>   `findCondaPack`, lock/install/conda-pack arg builders, `installAndPackPixiEnvironment`); unit
+>   tests (`runtime-box-pixi.test.ts` + adapters); pilot `pixi.toml` + `pixi.lock` (regenerated
+>   byte-identical to the maintainer-pushed lock → resolution reproducible).
+> - **Increment 2 (done):** `buildRecipe`/`lockRecipe` branch on `recipe.pixiVersion`. The pixi
+>   path runs `pixi install --frozen` → `conda-pack` → extract into `venv/` → run the embedded
+>   `conda-unpack` with the box's own interpreter → **dereference every symlink in place** (the
+>   archive layer rejects links; `collectFiles`/`normalizeTree`/the ZIP writer, and the uv path
+>   already dereferences when staging). Provenance emits `pixiVersion` + `dependencyLockSha256` =
+>   sha256(pixi.lock); the `.dist-info` audit is skipped on the pixi path (conda audit is
+>   increment 3). Recipe keeps its uv fields transitionally (so the catalog check, which validates
+>   `requirementsLock`, stays green) and adds `pixiVersion: 0.73.0`.
+> - **Verified:** a real end-to-end build produced a signed scGPT macOS box — `pixi install` →
+>   conda-pack → venv → self-test **passed** (imports **and** `best_model.pt` shape asserts on
+>   torch 2.8.0) → deterministic ZIP → signed release + channel. `verify --self-test` re-extracts
+>   and re-imports cleanly. Payload has **0 symlinks**; `box.json` provenance carries `pixiVersion`,
+>   no `uvVersion`. Gates: full unit suite 163/163, catalog check, `git diff --check` all green.
+> - **diskPlan finding:** dereferencing inflates the prefix from ~833 MB (conda env with symlinks)
+>   to **1.9 GB** (archive 625 MB). This ≈2.3× inflation scales badly for large boxes (the Windows
+>   CUDA env is ~6.5 GB with symlinks → ~13 GB dereferenced). **Decision (maintainer, 2026-07-24):**
+>   keep the simple, proven full-dereference approach and raise the disk floors; revisit
+>   safe-in-tree-symlink support in the archive layer (JS + Rust) only if box sizes become a real
+>   user problem.
+> - **Increment 3a (done):** raised the scGPT macOS `diskPlan` floors in `catalog.json` to the
+>   measured pixi footprint (installed 2.5 GiB, archive 640 MiB, margin 4 GiB, required build disk
+>   8 GiB); catalog check green.
+> - **Increment 3b (done):** `validator-context.mjs` resolves `pixi.lock` (dependencyLockSha256 =
+>   sha256(pixi.lock)) for pixi recipes, requirements.lock otherwise; unit test added.
+> **Remaining Phase 1 work — tracked so it is not lost:**
+>
+> - **Increment 3c (done): conda license audit.** `licenses.mjs` gained `lockedCondaDistributions`
+>   / `createCondaDependencyLicenseAudit` / `validateCondaDependencyLicenseAudit` +
+>   `parseCondaPackageReference`. Key simplification vs the original plan: **pixi.lock already
+>   carries the SPDX `license` of every package** (conda name/version from the filename, pypi from
+>   fields), so the audit is a pure, deterministic function of the committed lock — no built prefix
+>   needed, and it stays validatable by the cheap CI `check`. `pixi install --frozen` guarantees the
+>   installed set equals the lock (a rebuild confirmed 100 `conda-meta` files == 100 audit
+>   packages). New kind `liatir.runtime-box.conda-dependency-license-audit`; reviewed audit committed
+>   at `legal/audits/scgpt-whole-human-macos-arm64-metal.json` (100 packages, all licensed);
+>   recipe references it via `condaDependencyLicenseAudit`; `buildRecipe` validates it and writes
+>   `THIRD_PARTY_NOTICES/conda-distributions.json` into the box (confirmed by rebuild). Unit-tested
+>   in `runtime-box-conda-licenses.test.ts`. No YAML dep taken (targeted line-parser, matching the
+>   uv audit's regex-parse idiom).
+> - **Increment 3d (done): CI catalog accepts pixi recipes.** `validateRuntimeBoxCiCatalog` now
+>   branches on `recipe.pixiVersion`: the uv and pixi lock/audit validations are extracted into
+>   `validateUvRecipeLockAndAudit` / `validatePixiRecipeLockAndAudit`. The pixi branch validates the
+>   committed `pixi.lock` hash (== `target.dependencyLockSha256`) and the reviewed conda audit
+>   (identity + package set == `lockedCondaDistributions(pixi.lock)` + license/source completeness);
+>   it deliberately has no prune-vs-lock guard (the conda audit is lock-derived and lists the full
+>   set, so pruning transitive deps is allowed). The scGPT macOS catalog entry now pins
+>   `dependencyLockSha256` = sha256(pixi.lock) and carries `condaDependencyLicenseAudit`. Catalog
+>   check green (it now exercises the pixi branch for that target).
+> - **Increment 3e (done): dropped the transitional uv fields.** Removed `uvVersion`,
+>   `requirementsInput`, `requirementsLock` from the scGPT macOS recipe and `git rm`'d
+>   `requirements.in`/`requirements.lock`; set `pythonVersion` to the value pixi actually installs
+>   (3.11.15). Threaded the pixi-vs-uv lock choice through the last unconditional reader
+>   (`evidence.mjs`, was `recipe.requirementsLock`). Byte-pinned `pixi.lock` + `pixi.toml` to
+>   `eol=lf` in `.gitattributes` — a real gap the cost-controls test surfaced: the pixi.lock hash is
+>   pinned in the catalog/provenance/audit, so an unpinned CRLF checkout on Windows would have broken
+>   it. Updated that test to check the substrate's lock. **The scGPT macOS pilot is now a pure pixi
+>   recipe** (`pixi.toml` + `pixi.lock` + `recipe.json`, no uv artifacts). Full unit suite 168/168,
+>   catalog check, docs build all green.
+>
+> **Phase 1 status: the scGPT macOS pilot is fully migrated and proven on the pixi substrate.** The
+> uv build path still exists for the not-yet-migrated recipes (Geneformer ×5, scGPT Linux, UCE);
+> deleting the uv code entirely is a later cleanup once every recipe is on pixi (Phase 5 rebuilds).
+> Remaining broadly: Phase 2 (Rust/core provenance + install-flow), Phase 3+ (self-hosted CI), and
+> Phase 5 (per-target rebuild/re-validation) per the sections below.
+
 Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (adapted).
 
 - **Recipe schema** (`runtime-boxes/recipes/<id>/recipe.json`): drop `uvVersion`, `torchBackend`,
@@ -151,6 +225,30 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 ## Phase 2 — Box format + Rust/core install layer (depends on Phase 0)
 
 **Predicted complexity: High** (Medium if the Phase 0 spike shows no activation env is required) — Rust install-flow plus cross-language contract changes.
+
+> **DONE 2026-07-24 — and it turned out to need no Rust change at all.** Two findings collapsed the
+> predicted complexity:
+>
+> 1. **Provenance is opaque in Rust.** `runtime_boxes.rs` stores provenance as `serde_json::Value`,
+>    so the `uvVersion`→`pixiVersion` switch is a TypeScript-only contract change. Done in
+>    `packages/liatir-core/src/runtime-box.ts`: `uvVersion?` / `pixiVersion?` (exactly one present)
+>    on `LiatirRuntimeBoxBuildProvenance` and `LiatirRuntimeBoxCiBuildEvidence`; `dist/` regenerated.
+>    A shared `runtimeBoxBuilderVersionFields` helper (`identity.mjs`) keeps the uv/pixi branch in
+>    one place, applied to the build provenance, the CI evidence record, the CI workflow outputs
+>    (now emitting both `uv_version` and `pixi_version`), and the scGPT validator — the last of which
+>    was silently reading a field increment 3e had just removed.
+> 2. **No relocation step is needed, and running one is harmful.** See the superseded note in the
+>    [Phase 0 record](./runtime-box-pixi-phase0-spike.md): `conda-unpack` re-stamps the build path
+>    into the box (0 → 36 files on a probe). The build now never runs it, deletes the service files
+>    that carry the build prefix, and repairs conda console-script shebangs via the uv path's
+>    `repairPosixLaunchers` (extended to conda's trampoline dialect, unit-tested). A rebuilt box has
+>    **zero** build/developer-path occurrences. **No `activation` field was added** to the manifest:
+>    Phase 0 proved none is needed on macOS or Windows (CPU + CUDA).
+>
+> Gates: full unit suite 169/169, `cargo test runtime_box` 12/12, catalog check, `lint:ts` clean,
+> plus a real rebuild + `verify --self-test`. `venv_python_for` needs no change (a conda prefix is
+> `venv/bin/python` on Unix and `venv/python.exe` at the root on Windows, which its existing probes
+> already resolve) — to be re-confirmed when the first Windows pixi box is built.
 
 - **`packages/liatir-core/src/runtime-box.ts`**: in `LiatirRuntimeBoxBuildProvenance` swap
   `uvVersion`→`pixiVersion`, `dependencyLockSha256` = pixi.lock hash. If the spike shows

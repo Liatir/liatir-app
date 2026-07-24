@@ -15,6 +15,7 @@ import { sha256File } from '../../scripts/runtime-box/filesystem.mjs';
 import {
   discoverStandalonePythonRoot,
   findPythonRelocationLeaks,
+  repairPosixLaunchers,
   stageStandalonePython,
   syncLockedPythonDependencies,
   validateRelocatablePython,
@@ -22,7 +23,9 @@ import {
 import {
   assertRuntimeBoxNativeHost,
   assertRuntimeBoxPythonEntryPoint,
+  runtimeBoxCondaSubdir,
   runtimeBoxLockArguments,
+  runtimeBoxPixiAccelerator,
   runtimeBoxTorchBackendArguments,
   runtimeBoxTargetAdapter,
   runtimeBoxTargetAdapters,
@@ -47,6 +50,7 @@ describe('Runtime Box target adapters', () => {
         id: 'macos-aarch64',
         host: { platform: 'darwin', arch: 'arm64' },
         uvPlatform: 'aarch64-apple-darwin',
+        condaSubdir: 'osx-arm64',
         python: { entryPoint: 'venv/bin/python', scriptsDirectory: 'venv/bin', executableSuffix: '' },
         archive: { writer: 'yazl@3.3.1', reader: 'yauzl@3.4.0', zip64: true },
         nativeLibraryInspection: { command: 'otool' },
@@ -55,6 +59,7 @@ describe('Runtime Box target adapters', () => {
         id: 'linux-x86_64',
         host: { platform: 'linux', arch: 'x64' },
         uvPlatform: 'x86_64-unknown-linux-gnu',
+        condaSubdir: 'linux-64',
         python: { entryPoint: 'venv/bin/python', scriptsDirectory: 'venv/bin', executableSuffix: '' },
         archive: { writer: 'yazl@3.3.1', reader: 'yauzl@3.4.0', zip64: true },
         nativeLibraryInspection: { command: 'ldd' },
@@ -63,6 +68,7 @@ describe('Runtime Box target adapters', () => {
         id: 'windows-x86_64',
         host: { platform: 'win32', arch: 'x64' },
         uvPlatform: 'x86_64-pc-windows-msvc',
+        condaSubdir: 'win-64',
         python: {
           entryPoint: 'venv/python.exe',
           scriptsDirectory: 'venv/Scripts',
@@ -73,6 +79,32 @@ describe('Runtime Box target adapters', () => {
         nativeLibraryInspection: { command: 'dumpbin' },
       },
     ]);
+  });
+
+  it('maps every target to its conda subdir and rejects target drift', () => {
+    expect(runtimeBoxCondaSubdir({ platform: 'macos', arch: 'aarch64', accelerator: 'metal' })).toBe('osx-arm64');
+    expect(runtimeBoxCondaSubdir({ platform: 'linux', arch: 'x86_64', accelerator: 'cpu' })).toBe('linux-64');
+    expect(runtimeBoxCondaSubdir({
+      platform: 'windows', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.4',
+    })).toBe('win-64');
+    expect(() => runtimeBoxCondaSubdir({ platform: 'solaris', arch: 'x86_64', accelerator: 'cpu' })).toThrow(
+      /Unsupported Runtime Box target/,
+    );
+  });
+
+  it('derives the conda accelerator descriptor and pins CUDA to a numeric version', () => {
+    expect(runtimeBoxPixiAccelerator({ target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' } }))
+      .toEqual({ accelerator: 'metal', cudaVersion: null });
+    expect(runtimeBoxPixiAccelerator({ target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' } }))
+      .toEqual({ accelerator: 'cpu', cudaVersion: null });
+    expect(runtimeBoxPixiAccelerator({
+      target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.4' },
+    })).toEqual({ accelerator: 'cuda', cudaVersion: '12.4' });
+    expect(() => runtimeBoxPixiAccelerator({
+      target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda' },
+    })).toThrow(/numeric major\.minor CUDA version/);
+    expect(() => runtimeBoxPixiAccelerator({ target: { platform: 'linux', arch: 'x86_64', accelerator: 'tpu' } }))
+      .toThrow(/Unsupported Runtime Box accelerator/);
   });
 
   it('allows only the exact native host and adapter-owned Python entry point', () => {
@@ -219,6 +251,32 @@ describe('Runtime Box target adapters', () => {
     expect(repaired).not.toContain(payloadDir);
     expect(repaired).toContain('# -*- coding: utf-8 -*-');
     expect(await findPythonRelocationLeaks(adapter, destinationRoot, [payloadDir])).toEqual([]);
+  });
+
+  it('repairs conda console-script trampolines that close their quote on the same line', async () => {
+    const root = await temporaryRoot();
+    const payloadDir = join(root, 'payload');
+    const scriptsRoot = join(payloadDir, 'venv', 'bin');
+    const buildPrefix = join(root, 'pixi-workspace', '.pixi', 'envs', 'default');
+    const adapter = runtimeBoxTargetAdapter({ platform: 'macos', arch: 'aarch64', accelerator: 'metal' });
+    await mkdir(scriptsRoot, { recursive: true });
+    await writeFile(join(scriptsRoot, 'python'), 'fixture\n');
+    // conda writes `'''exec' "<abs python>" "$0" "$@" #'''` — the closing quote sits on that line.
+    await writeFile(join(scriptsRoot, 'tqdm'), [
+      '#!/bin/sh',
+      `'''exec' "${buildPrefix}/bin/python3.11" "$0" "$@" #'''`,
+      '# -*- coding: utf-8 -*-',
+      'import sys',
+      '',
+    ].join('\n'));
+
+    await repairPosixLaunchers(adapter, payloadDir, [buildPrefix]);
+
+    const repaired = await readFile(join(scriptsRoot, 'tqdm'), 'utf8');
+    expect(repaired).not.toContain(buildPrefix);
+    expect(repaired).toContain('$(dirname -- "$0")');
+    expect(repaired).toContain('# -*- coding: utf-8 -*-');
+    expect(repaired).toContain('import sys');
   });
 
   it('discovers the standalone root from sys.base_prefix instead of interpreter path depth', async () => {

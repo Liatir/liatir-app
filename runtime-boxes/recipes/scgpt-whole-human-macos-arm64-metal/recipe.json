@@ -17,10 +17,9 @@
     "minMacosVersion": "13.0",
     "minRamGb": 16
   },
-  "pythonVersion": "3.11.9",
-  "uvVersion": "0.11.28",
-  "requirementsInput": "requirements.in",
-  "requirementsLock": "requirements.lock",
+  "pythonVersion": "3.11.15",
+  "pixiVersion": "0.73.0",
+  "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/scgpt-whole-human-macos-arm64-metal.json",
   "pythonEntryPoint": "venv/bin/python",
   "modelCacheSubdir": "model-cache/scgpt-whole-human",
   "assetBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
