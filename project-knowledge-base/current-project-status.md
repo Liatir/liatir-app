@@ -31,8 +31,15 @@ operator brings the matching runner online — the established Gate 9 on-demand 
 parity validator, host probe, evidence record and CUDA E2E no longer hard-code a
 Tesla T4 — so the local RTX 4060 Ti is accepted and CUDA dispatch is unblocked,
 though it has not been exercised on real hardware yet. The old 15 GB VRAM floor had
-no scientific basis: the reviewed CUDA run measured a peak of ~102 MiB. Phase 5 has
-not started. Production code has therefore already changed under this migration. Runtime Box CI foundation Gates 0–10 are
+no scientific basis: the reviewed CUDA run measured a peak of ~102 MiB. **Phase 5 is
+in progress**: scGPT `linux-x86_64-cpu` is migrated off uv onto pixi, and
+`windows-x86_64-cpu` is added as a new target that never had a uv recipe — both with
+committed `pixi.lock` files, lock-derived conda licence audits (112 and 94 packages,
+all licensed), measured `diskPlan` floors, and wiring into the catalog, signer policy
+and workflow. Both remain `buildable`; **nothing has been signed, published or
+promoted**. Before any protected release the signer must be deployed, because the
+previous failure was deployed-policy drift, not a build defect.
+Production code has therefore already changed under this migration. Runtime Box CI foundation Gates 0–10 are
 complete; the product AI Model catalog has been cut over to Runtime Box-only
 delivery).
 
@@ -93,9 +100,16 @@ Runtime Box Rust test; artifact `8543832402` was reviewed.
 Protected release `29955615971` passed input resolution, host capacity, OIDC,
 toolchain, and the clean-revision boundary, but failed in the private-KMS
 signing build before scientific validation, R2 publication, product lifecycle,
-or beta promotion. Cleanup passed. The exact remote error still needs retrieval
-before diagnosis because the active Codex usage limit blocked log access. The
-target remains `buildable`, unpublished, unpromoted, and unsupported.
+or beta promotion. Cleanup passed. **Diagnosed 2026-07-24: it was not a build
+defect but deployed-signer policy drift.** The signer returned
+`signing_rejected / "target is not approved for this box"`. The repository policy
+already listed `scgpt-whole-human → linux-x86_64-cpu` (added by `b3a9a1f`, an
+ancestor of the released commit), but committing `policy.json` does not deploy it,
+and `runtime-box:signer:deploy` had never been run — so the live Cloud Run
+revision served an older policy. The fix is a signer deploy before the retry; no
+builder change is needed. Nothing currently detects this drift, so it will recur
+for every new target unless a cheap pre-release comparison is added. The target
+remains `buildable`, unpublished, unpromoted, and unsupported.
 
 **Runtime Box-only product cutover (2026-07-22):** the AI Model catalog now
 contains exactly Geneformer V1 10M, scGPT Whole-human, and UCE 4-layer. Every

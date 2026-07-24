@@ -450,11 +450,27 @@ This gate selects infrastructure only; it does not establish UCE support.
   reached. Unconditional evidence writing, artifact upload, credential cleanup,
   and build-state cleanup passed. Approximate exposure was one preflight minute
   plus three release minutes: at most `$0.024` beyond included minutes.
-- The exact signing-build error still must be retrieved before diagnosis or
-  retry. The initial log/artifact retrieval was blocked by the active Codex
-  usage limit, so no cause is inferred here. The target remains `buildable`,
-  unpublished, unpromoted, and unsupported; retry count remains zero until a
-  concrete root cause, regression, and complete cheap recheck exist.
+- **DIAGNOSED 2026-07-24 — root cause: deployed-signer policy drift, not a build
+  defect.** The log of failed job `89043938345` carries one error line:
+  `runtime-box: Remote Runtime Box signing failed (400):
+  {"error":"signing_rejected","message":"target is not approved for this box"}`.
+  The rejection comes from the private Cloud Run signer's own policy, not from the
+  builder. The repository's `services/runtime-box-signer/policy.json` **does**
+  list `scgpt-whole-human → linux-x86_64-cpu`; it was added by `b3a9a1f`
+  (2026-07-22 21:25 +0200), which **is an ancestor** of the released commit
+  `29d3ad1` (22:06 +0200). So the committed policy was correct and the run still
+  failed: the **deployed** Cloud Run revision was serving an older policy, because
+  committing `policy.json` does not deploy it — `npm run runtime-box:signer:deploy`
+  was never run after `b3a9a1f`.
+  - **Fix before any retry:** deploy the signer so the served policy matches the
+    repository, then re-run the protected release. No builder change is required
+    and no code regression exists to write.
+  - **Systemic gap worth closing:** nothing currently detects drift between the
+    committed policy and the deployed one, so this failure mode will recur for
+    **every new target** in the pixi Phase 5 rebuilds. A cheap pre-release check
+    that reads the deployed policy and compares it against `policy.json` would
+    turn a wasted protected run into a local gate.
+  - The target remains `buildable`, unpublished, unpromoted, and unsupported.
 - The automatic foundation run `29953770028` on `29d3ad1` passed shared
   contracts, deterministic Zip64 extraction, and Linux/macOS native fixtures,
   but its Windows fixture repeated the pre-existing relocatable-console-launcher

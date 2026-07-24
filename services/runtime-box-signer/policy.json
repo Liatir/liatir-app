@@ -2,25 +2,40 @@
   "schemaVersion": 1,
   "assetOrigin": "https://assets.models.liatir.com",
   "objectPrefix": "ai-runtime-boxes",
-  "allowedChannels": ["beta", "stable"],
+  "allowedChannels": [
+    "beta",
+    "stable"
+  ],
   "boxes": [
     {
       "boxId": "geneformer-v1-10m",
       "modelId": "ctheodoris-geneformer-v1-10m",
       "runtimeId": "single-cell-foundation-geneformer-v1-10m",
-      "targets": ["macos-aarch64-metal", "linux-x86_64-cpu", "linux-x86_64-cuda12.4", "windows-x86_64-cpu", "windows-x86_64-cuda12.4"]
+      "targets": [
+        "macos-aarch64-metal",
+        "linux-x86_64-cpu",
+        "linux-x86_64-cuda12.4",
+        "windows-x86_64-cpu",
+        "windows-x86_64-cuda12.4"
+      ]
     },
     {
       "boxId": "scgpt-whole-human",
       "modelId": "bowang-scgpt-whole-human",
       "runtimeId": "single-cell-foundation-scgpt-whole-human",
-      "targets": ["macos-aarch64-metal", "linux-x86_64-cpu"]
+      "targets": [
+        "macos-aarch64-metal",
+        "linux-x86_64-cpu",
+        "windows-x86_64-cpu"
+      ]
     },
     {
       "boxId": "uce-4layer",
       "modelId": "snap-stanford-uce-4layer",
       "runtimeId": "single-cell-foundation-uce",
-      "targets": ["macos-aarch64-metal"]
+      "targets": [
+        "macos-aarch64-metal"
+      ]
     }
   ]
 }

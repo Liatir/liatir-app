@@ -487,6 +487,57 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 
 **Predicted complexity: High (operational)** — low per-step code complexity, but long and iterative: rebuild + re-validate the full matrix one target at a time, re-establishing scientific baselines.
 
+> **In progress (2026-07-24) — scGPT Linux CPU and Windows CPU migrated to the pixi substrate,
+> local work only. Nothing has been signed, published or promoted.**
+>
+> - **scGPT `linux-x86_64-cpu` migrated off uv.** `requirements.in`/`requirements.lock` deleted;
+>   `pixi.toml` + committed `pixi.lock` added. The lock reproduces the Phase 0 Linux spike exactly:
+>   `pytorch 2.8.0 cpu_mkl_py311_hcfbaf12_102`, python 3.11.15, numpy 2.4.6, anndata 0.12.19.
+>   Lock sha256 `fb7aeff5b95faeda3277f4ba2216ac269db6f0d263c0ccf07779452b55f0dec1`;
+>   lock-derived conda licence audit of **112 packages, all licensed**.
+> - **scGPT `windows-x86_64-cpu` added as a new target** — there was no uv-era Windows scGPT recipe
+>   to migrate, so this closes a real support gap rather than porting one. Resolves to
+>   `pytorch 2.8.0 cpu_mkl_py311_h64e3758_102` at the same python/numpy/anndata versions as Linux.
+>   Lock sha256 `223f3996e052be616e6f481e1fa65db376c0da2fa555b7425bc73fa2896682c8`; audit of
+>   **94 packages, all licensed**. `pythonEntryPoint` is `venv/python.exe` (conda puts the
+>   interpreter at the prefix root on Windows). Wired into the catalog, the signer policy, and the
+>   scGPT workflow's `target_id` options and path filters.
+> - **Both locks were produced from the Windows host.** `pixi lock` resolves for the manifest's
+>   declared `platforms`, so a linux-64 lock is host-independent — no Linux machine was needed to
+>   generate it, and the result matches what the Phase 0 spike solved natively on WSL.
+> - **`diskPlan` floors set from measurement, not estimate.** Measured by installing each committed
+>   lock with `--frozen` and packing it:
+>
+>   | Target | venv installed | dereferenced payload | conda-pack `tar.gz` |
+>   | --- | --- | --- | --- |
+>   | linux-64 CPU | 1,654,241,925 B (1469 symlinks) | **2,790,991,054 B** | 527,585,007 B |
+>   | win-64 CPU | **1,407,747,346 B** (no symlinks) | same as installed | 421,401,332 B |
+>
+>   Linux inflates **1.69×** when symlinks are dereferenced, which is the size the box actually
+>   ships; Windows has no symlinks so its installed size is already the shipped size.
+> - **The Windows box was built and independently verified locally (2026-07-24).** A full
+>   `build` produced a dev-signed box — `pixi install --frozen` → conda-pack → `venv/` → asset
+>   download → self-test → deterministic ZIP → signed release + channel — and
+>   `verify --self-test` then re-extracted the signed archive, re-checked signature and hash, and
+>   **passed the self-test inside the extracted box**, including loading the 205 MB `best_model.pt`
+>   and asserting the `(60697, 512)` / `(1536, 512)` tensor shapes on torch 2.8.0. Measured:
+>   payload **1,617,324,801 B**, archive **568,684,158 B** — both comfortably under the declared
+>   `diskPlan`, which is therefore validated as conservative rather than guessed. The Linux archive
+>   estimate was raised to 1.25 GiB from the measured Windows archive/payload ratio (0.35).
+> - **This closes a Phase 2 open question.** That record noted `venv_python_for` "needs no change …
+>   to be re-confirmed when the first Windows pixi box is built". It is now confirmed: the Rust
+>   resolver's existing probe found the conda interpreter at `venv/python.exe`, and the self-test
+>   ran with no injected environment, exactly as Phase 0 predicted for win-64.
+> - **Known conservatism:** the migrated recipes carry only the *source* prune list — the conda
+>   `venv/` prunes from the macOS pilot (torch/include, sympy, networkx, stdlib extras) were not
+>   ported, because their exact `dist-info` directory names are lock-specific. The boxes are
+>   therefore larger than necessary and the `diskPlan` figures above are upper bounds. Worth
+>   closing, but it is a size optimisation, not a correctness issue.
+> - **Blocking prerequisite before any protected release, newly diagnosed:** the previous scGPT
+>   Linux release failed because the **deployed** signer served an older policy. `policy.json` now
+>   lists all three scGPT targets, but committing it does not deploy it — `runtime-box:signer:deploy`
+>   must run first. See the model-platform-expansion plan for the full diagnosis.
+
 For each target: regenerate `pixi.lock` at torch 2.8.0 (conda-forge + bioconda), rebuild the
 license audit, add/flip the catalog target to `buildable`, run cheap gates → local self-hosted
 native validation → protected release (KMS sign, R2 publish, beta) → review evidence → flip to

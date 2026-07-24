@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "recipeId": "scgpt-whole-human-linux-x86_64-cpu",
+  "recipeId": "scgpt-whole-human-windows-x86_64-cpu",
   "recipeVersion": "1.0.0",
   "boxId": "scgpt-whole-human",
   "modelId": "bowang-scgpt-whole-human",
@@ -8,7 +8,7 @@
   "version": "0.2.5-beta.1",
   "sourceRevision": "cebd6fae655b9c585a4807daa3ac31bb764f06b4",
   "target": {
-    "platform": "linux",
+    "platform": "windows",
     "arch": "x86_64",
     "accelerator": "cpu"
   },
@@ -18,8 +18,8 @@
   },
   "pythonVersion": "3.11.15",
   "pixiVersion": "0.73.0",
-  "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/scgpt-whole-human-linux-x86_64-cpu.json",
-  "pythonEntryPoint": "venv/bin/python",
+  "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/scgpt-whole-human-windows-x86_64-cpu.json",
+  "pythonEntryPoint": "venv/python.exe",
   "modelCacheSubdir": "model-cache/scgpt-whole-human",
   "assetBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
   "assets": [

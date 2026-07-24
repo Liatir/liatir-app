@@ -1,0 +1,27 @@
+# Runtime Box pixi recipe manifest — scGPT whole-human, Windows x86_64 / CPU.
+#
+# New target introduced on the pixi substrate (Runtime Box pixi migration, Phase 5); there was no
+# uv-era Windows scGPT recipe to migrate. `pixi lock` resolves this into the committed pixi.lock;
+# `build` installs from that lock with --frozen and packs the prefix with conda-pack. See
+# project-knowledge-base/roadmap/runtime-box-pixi-migration.md.
+#
+# Invariants: `platforms` must equal the target's conda subdir (win-64, from targets.mjs), and
+# conda-forge names the framework `pytorch` (not `torch`). The Phase 0 Windows check confirmed this
+# set resolves to the `cpu_mkl` build of pytorch 2.8.0 and imports cold from a relocated prefix
+# with no activation environment — on Windows the interpreter sits at the prefix root
+# (`venv/python.exe`), which is what `pythonEntryPoint` records.
+
+[workspace]
+name = "scgpt-whole-human-windows-x86_64-cpu"
+channels = ["conda-forge"]
+platforms = ["win-64"]
+
+[dependencies]
+python = "3.11.*"
+pytorch = "2.8.0.*"
+anndata = "*"
+numpy = "*"
+scipy = "*"
+pandas = "*"
+h5py = "*"
+tqdm = "*"

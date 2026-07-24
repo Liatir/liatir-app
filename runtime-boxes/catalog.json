@@ -160,12 +160,22 @@
       "targets": [
         {
           "targetId": "macos-aarch64-metal",
-          "target": { "platform": "macos", "arch": "aarch64", "accelerator": "metal" },
-          "hostEnvironments": ["native"],
+          "target": {
+            "platform": "macos",
+            "arch": "aarch64",
+            "accelerator": "metal"
+          },
+          "hostEnvironments": [
+            "native"
+          ],
           "recipeId": "geneformer-v1-10m-macos-arm64-metal",
           "runnerProfileId": "macos-arm64-standard",
           "status": "published",
-          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
           "timeoutMinutes": 90,
           "requiredBuildDiskBytes": 4294967296,
           "dependencyLockSha256": "de82d704c8379822d7fd38d2316b044539687e7a39ff07a9f381e1fd85fac29b",
@@ -187,12 +197,22 @@
         },
         {
           "targetId": "linux-x86_64-cpu",
-          "target": { "platform": "linux", "arch": "x86_64", "accelerator": "cpu" },
-          "hostEnvironments": ["native"],
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cpu"
+          },
+          "hostEnvironments": [
+            "native"
+          ],
           "recipeId": "geneformer-v1-10m-linux-x86_64-cpu",
           "runnerProfileId": "linux-x64-selfhosted",
           "status": "published",
-          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
           "timeoutMinutes": 90,
           "requiredBuildDiskBytes": 6442450944,
           "dependencyLockSha256": "73a31b39b7f2f3eee6a1c7628d13728490ed4db31095c50ab5ce0211b98829f1",
@@ -349,12 +369,22 @@
       "targets": [
         {
           "targetId": "macos-aarch64-metal",
-          "target": { "platform": "macos", "arch": "aarch64", "accelerator": "metal" },
-          "hostEnvironments": ["native"],
+          "target": {
+            "platform": "macos",
+            "arch": "aarch64",
+            "accelerator": "metal"
+          },
+          "hostEnvironments": [
+            "native"
+          ],
           "recipeId": "scgpt-whole-human-macos-arm64-metal",
           "runnerProfileId": "macos-arm64-standard",
           "status": "published",
-          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
           "timeoutMinutes": 120,
           "requiredBuildDiskBytes": 8589934592,
           "dependencyLockSha256": "04f83b64db8b5f6faf65fa40c677d6596a50c7d5482c51d8c1baa173588b388a",
@@ -377,23 +407,63 @@
         },
         {
           "targetId": "linux-x86_64-cpu",
-          "target": { "platform": "linux", "arch": "x86_64", "accelerator": "cpu" },
-          "hostEnvironments": ["native"],
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cpu"
+          },
+          "hostEnvironments": [
+            "native"
+          ],
           "recipeId": "scgpt-whole-human-linux-x86_64-cpu",
           "runnerProfileId": "linux-x64-selfhosted",
           "status": "buildable",
-          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
           "timeoutMinutes": 90,
-          "requiredBuildDiskBytes": 6442450944,
-          "dependencyLockSha256": "97d9a61da5a2530d4f69269ead81d12cc12b838acdbbdf551052e1513e298800",
-          "dependencyLicenseAudit": "runtime-boxes/legal/audits/scgpt-whole-human-linux-x86_64-cpu.json",
+          "requiredBuildDiskBytes": 10737418240,
+          "dependencyLockSha256": "fb7aeff5b95faeda3277f4ba2216ac269db6f0d263c0ccf07779452b55f0dec1",
           "diskPlan": {
-            "estimatedInstalledSizeBytes": 2147483648,
-            "estimatedArchiveSizeBytes": 536870912,
-            "safetyMarginBytes": 3221225472
+            "estimatedInstalledSizeBytes": 3758096384,
+            "estimatedArchiveSizeBytes": 1342177280,
+            "safetyMarginBytes": 4294967296
           },
           "gpuRequired": false,
-          "nativeCiEnabled": true
+          "nativeCiEnabled": true,
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/scgpt-whole-human-linux-x86_64-cpu.json"
+        },
+        {
+          "targetId": "windows-x86_64-cpu",
+          "target": {
+            "platform": "windows",
+            "arch": "x86_64",
+            "accelerator": "cpu"
+          },
+          "hostEnvironments": [
+            "native"
+          ],
+          "recipeId": "scgpt-whole-human-windows-x86_64-cpu",
+          "runnerProfileId": "windows-x64-selfhosted",
+          "status": "buildable",
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
+          "timeoutMinutes": 90,
+          "requiredBuildDiskBytes": 8589934592,
+          "dependencyLockSha256": "223f3996e052be616e6f481e1fa65db376c0da2fa555b7425bc73fa2896682c8",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 2147483648,
+            "estimatedArchiveSizeBytes": 805306368,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": false,
+          "nativeCiEnabled": true,
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/scgpt-whole-human-windows-x86_64-cpu.json"
         }
       ]
     },
@@ -410,12 +480,22 @@
       "targets": [
         {
           "targetId": "macos-aarch64-metal",
-          "target": { "platform": "macos", "arch": "aarch64", "accelerator": "metal" },
-          "hostEnvironments": ["native"],
+          "target": {
+            "platform": "macos",
+            "arch": "aarch64",
+            "accelerator": "metal"
+          },
+          "hostEnvironments": [
+            "native"
+          ],
           "recipeId": "uce-4layer-macos-arm64-metal",
           "runnerProfileId": "macos-arm64-heavy",
           "status": "published",
-          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
           "timeoutMinutes": 180,
           "requiredBuildDiskBytes": 32212254720,
           "dependencyLockSha256": "bad8165f05e80191d7ffef0c862cb1b6882532a43182cba0a3ddf40246420bc8",
