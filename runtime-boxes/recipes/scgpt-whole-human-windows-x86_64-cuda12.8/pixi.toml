@@ -1,0 +1,32 @@
+# Runtime Box pixi recipe manifest — scGPT whole-human, Windows x86_64 / CUDA 12.8.
+#
+# New target on the pixi substrate (Runtime Box pixi migration, Phase 5). `pixi lock` resolves this
+# into the committed pixi.lock; `build` installs from that lock with --frozen and packs the prefix
+# with conda-pack. See project-knowledge-base/roadmap/runtime-box-pixi-migration.md.
+#
+# CUDA pin is PER-OS (Phase 0 finding): conda-forge's CUDA pytorch 2.8.0 for win-64 is a cuda128
+# build (cuda-version >=12.8,<13), so win-64 pins 12.8 (linux-64 pins 12.9). The
+# `[system-requirements] cuda` plus the `cuda-version` pin make the solver pick the GPU build
+# instead of the cpu_mkl one. Phase 0 proved this env imports cold and runs a real CUDA matmul on
+# the RTX 4060 Ti from a relocated prefix with no activation environment; on Windows the interpreter
+# sits at the prefix root (venv/python.exe). conda ships the CUDA runtime, so only the driver must
+# be current; the packages declare merely `__cuda >=12`.
+
+[workspace]
+name = "scgpt-whole-human-windows-x86_64-cuda12.8"
+channels = ["conda-forge"]
+platforms = ["win-64"]
+
+[system-requirements]
+cuda = "12.8"
+
+[dependencies]
+python = "3.11.*"
+pytorch = "2.8.0.*"
+cuda-version = "12.8.*"
+anndata = "*"
+numpy = "*"
+scipy = "*"
+pandas = "*"
+h5py = "*"
+tqdm = "*"
