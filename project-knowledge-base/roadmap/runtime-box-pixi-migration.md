@@ -566,13 +566,23 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 >   to `native-lifecycle-validated`.** No sudo needed on Windows — the VC++ tools were already
 >   present. **Both scGPT CPU targets are now fully validated in CI at every mode** (build +
 >   scientific + native-lifecycle).
-> - **Remaining before a protected release: the macOS launcher re-check.** Phase 3 deleted the
->   macOS-only launcher, so the shared launcher's Darwin branch is unproven on a real Mac. A ready
->   handoff prompt is in
->   [runtime-box-pixi-macos-launcher-check.md](./runtime-box-pixi-macos-launcher-check.md) — a
->   zero-cost `--preflight-only` check the maintainer runs on their Mac, plus an optional native
->   pixi build. Once that passes, only the protected release (KMS sign + R2 publish + beta) is left,
->   gated on the maintainer's go-ahead and a prior `runtime-box:signer:deploy`.
+> - **macOS launcher re-check DONE (2026-07-25, local zero-cost on the maintainer's Apple-Silicon
+>   Mac).** Phase 3 deleted the macOS-only launcher; this proved the shared launcher's Darwin branch
+>   on a real Mac. **Part A (required):** `npm run runtime-box:runner:macos-heavy -- --runner-root
+>   "$HOME/liatir-runner" --preflight-only` printed `Self-hosted runner preflight passed for
+>   liatir-macos-arm64-heavy with 45410160640 free bytes` (≈45.4 GB, over the 35 GiB floor), exit 0,
+>   created no runner root, and left the repository runner inventory empty — exercising the
+>   `Darwin:arm64` host detection, the `shasum -a 256` tooling (vs Linux `sha256sum`), catalog
+>   resolve, host/target-OS guard, disk floor, and the concurrent-registration refusal. Host: Node
+>   26.4.0, `gh` authenticated with `repo` scope. **Part B (optional, run):** contained pixi 0.73.0 +
+>   conda-pack 0.9.2 under `~/.local/liatir-pixi` (no system changes) built and dev-signed the scGPT
+>   `0.2.5-beta.1` macos-aarch64-metal box on the pixi substrate (`Signed release:` / `Signed
+>   channel:`, exit 0), and `verify --self-test` passed (`Verified scgpt-whole-human 0.2.5-beta.1
+>   (macos-aarch64-metal)`), loading `best_model.pt` and asserting tensor shapes on torch 2.8.0
+>   Metal. **Measured archive 655,752,216 B (≈0.61 GB)**; `.runtime-box-build/` and
+>   `.runtime-box-dist/` were deleted afterwards. No production code changed and nothing was signed
+>   for release, published, or promoted. Once the maintainer gives the go-ahead (and after a prior
+>   `runtime-box:signer:deploy`), only the protected release (KMS sign + R2 publish + beta) is left.
 > - **Known conservatism:** the migrated recipes carry only the *source* prune list — the conda
 >   `venv/` prunes from the macOS pilot (torch/include, sympy, networkx, stdlib extras) were not
 >   ported, because their exact `dist-info` directory names are lock-specific. The boxes are

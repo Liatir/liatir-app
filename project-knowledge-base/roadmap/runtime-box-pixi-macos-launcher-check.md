@@ -11,9 +11,16 @@ Windows but **never on Darwin**, so its macOS branch — the `shasum -a 256` pat
 `sha256sum`), the `Darwin:arm64` host/target guard, and the cleanup contract — is unproven on a
 real Mac. This is the check the maintainer gated the protected release on.
 
-Status: **open.** Linux CPU and Windows CPU are fully validated on self-hosted CI (build +
-scientific + native-lifecycle). macOS only needs this launcher re-check; the scGPT macOS box itself
-was already built end-to-end on the pixi substrate in Phase 1.
+Status: **done** (2026-07-25). Executed locally on the maintainer's Apple-Silicon Mac. **Part A**
+passed: `Self-hosted runner preflight passed for liatir-macos-arm64-heavy with 45410160640 free
+bytes`, exit 0, no runner root created, runner inventory empty. **Part B** (optional) also run: the
+scGPT `0.2.5-beta.1` macos-aarch64-metal box built and dev-signed on the pixi substrate and
+`verify --self-test` passed (`Verified scgpt-whole-human 0.2.5-beta.1 (macos-aarch64-metal)`),
+loading `best_model.pt` on torch 2.8.0 Metal; measured archive **655,752,216 B (≈0.61 GB)**;
+`.runtime-box-build/`/`.runtime-box-dist/` cleaned up. No production code changed; no defect found.
+Linux CPU and Windows CPU are fully validated on self-hosted CI (build + scientific +
+native-lifecycle). The scGPT macOS box itself was already built end-to-end on the pixi substrate in
+Phase 1.
 
 Related: [pixi migration plan](./runtime-box-pixi-migration.md),
 [Phase 0 macOS spike](./runtime-box-pixi-phase0-spike.md),

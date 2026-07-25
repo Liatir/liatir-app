@@ -50,12 +50,18 @@ against the pixi box), advancing to `native-lifecycle-validated`; this needed a 
 passwordless `apt-get` on the WSL runner (`/etc/sudoers.d/liatir-runner`). scGPT
 Windows CPU `native-lifecycle` also passed (run `30136322406`; no sudo needed, VC++
 tools already present), so **both scGPT CPU targets are now fully validated in CI at
-build, scientific and native-lifecycle** and sit at `native-lifecycle-validated`.
-**The one macOS gap
-left is a shared-launcher re-check** — Phase 3 deleted the macOS-only launcher, so its
-Darwin branch is unproven; a handoff prompt is in
-[roadmap/runtime-box-pixi-macos-launcher-check.md](./roadmap/runtime-box-pixi-macos-launcher-check.md).
-After that, only the protected release remains for each target, gated on the
+build, scientific and native-lifecycle** and sit at `native-lifecycle-validated`. **The macOS
+shared-launcher re-check is now DONE** (2026-07-25, local zero-cost on the maintainer's
+Apple-Silicon Mac): the cross-OS launcher's Darwin branch passed `--preflight-only`
+(`Self-hosted runner preflight passed for liatir-macos-arm64-heavy with 45410160640
+free bytes`, exit 0, registered nothing, inventory stayed empty), exercising the
+`Darwin:arm64` host detection, `shasum -a 256` path, catalog resolve, host/target guard
+and disk floor. The optional native pixi box build was also run: scGPT
+`0.2.5-beta.1` macos-aarch64-metal built and signed on the pixi substrate, and
+`verify --self-test` passed (`Verified scgpt-whole-human 0.2.5-beta.1
+(macos-aarch64-metal)`), loading `best_model.pt` on torch 2.8.0 Metal — measured
+archive 655,752,216 B (≈0.61 GB); build/dist cleaned up afterwards.
+After this, only the protected release remains for each target, gated on the
 maintainer's go-ahead and a prior signer deploy.
 
 Before any protected release the signer must be deployed, because the
@@ -101,6 +107,15 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   CUDA pinned per-OS at 12.8 (win-64) and 12.9 (linux-64). The Linux CUDA proof ran
   under WSL2's driver bridge, so it is strong evidence rather than bare metal;
   cuDNN/cuBLAS/libtorch_cuda were all verified to load from the relocated prefix.
+- [scrollcase extraction plan](./roadmap/scrollcase-extraction-plan.md) — the
+  planned (not started) extraction of the Runtime Box **builder** into an
+  independent Apache-2.0 open-source tool named `scrollcase` that Liatir consumes
+  externally. Hard prerequisite: the pixi migration must be fully closed first.
+  Covers the CLI design (`init`/`doctor`/`build`/`verify`/`audit`, per-project
+  toolchain isolation, embed-vs-on-demand weights, pluggable signer), the
+  box-format contract inversion (scrollcase becomes the single source of truth,
+  `liatir-core` depends on it), and what stays private in Liatir (Rust/Tauri
+  consumer, KMS signer, Cloudflare registry, trust keys, model recipes).
 
 ## Where the project is
 
