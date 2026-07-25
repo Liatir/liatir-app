@@ -5,6 +5,8 @@ on:
     paths:
       - "runtime-boxes/recipes/scgpt-whole-human-macos-arm64-metal/**"
       - "runtime-boxes/recipes/scgpt-whole-human-linux-x86_64-cpu/**"
+      - "runtime-boxes/recipes/scgpt-whole-human-linux-x86_64-cuda12.9/**"
+      - "runtime-boxes/legal/audits/scgpt-whole-human-linux-x86_64-cuda12.9.json"
       - "runtime-boxes/recipes/scgpt-whole-human-windows-x86_64-cpu/**"
       - "runtime-boxes/legal/audits/scgpt-whole-human-linux-x86_64-cpu.json"
       - "runtime-boxes/legal/audits/scgpt-whole-human-windows-x86_64-cpu.json"
@@ -22,6 +24,8 @@ on:
     paths:
       - "runtime-boxes/recipes/scgpt-whole-human-macos-arm64-metal/**"
       - "runtime-boxes/recipes/scgpt-whole-human-linux-x86_64-cpu/**"
+      - "runtime-boxes/recipes/scgpt-whole-human-linux-x86_64-cuda12.9/**"
+      - "runtime-boxes/legal/audits/scgpt-whole-human-linux-x86_64-cuda12.9.json"
       - "runtime-boxes/recipes/scgpt-whole-human-windows-x86_64-cpu/**"
       - "runtime-boxes/legal/audits/scgpt-whole-human-linux-x86_64-cpu.json"
       - "runtime-boxes/legal/audits/scgpt-whole-human-windows-x86_64-cpu.json"
@@ -40,7 +44,7 @@ on:
         description: Checked Runtime Box target
         required: true
         type: choice
-        options: [macos-aarch64-metal, linux-x86_64-cpu, windows-x86_64-cpu]
+        options: [macos-aarch64-metal, linux-x86_64-cpu, linux-x86_64-cuda12.9, windows-x86_64-cpu]
       mode:
         description: Native validation depth
         required: true

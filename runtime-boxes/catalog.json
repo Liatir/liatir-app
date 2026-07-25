@@ -436,6 +436,37 @@
           "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/scgpt-whole-human-linux-x86_64-cpu.json"
         },
         {
+          "targetId": "linux-x86_64-cuda12.9",
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cuda",
+            "cudaVersion": "12.9"
+          },
+          "hostEnvironments": [
+            "native"
+          ],
+          "recipeId": "scgpt-whole-human-linux-x86_64-cuda12.9",
+          "runnerProfileId": "linux-x64-cuda-selfhosted",
+          "status": "buildable",
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
+          "timeoutMinutes": 120,
+          "requiredBuildDiskBytes": 34359738368,
+          "dependencyLockSha256": "3bc87da78d23f009d4f654f3da734f7ca226489f700f9ad5e355163b4a729194",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 17179869184,
+            "estimatedArchiveSizeBytes": 6442450944,
+            "safetyMarginBytes": 6442450944
+          },
+          "gpuRequired": true,
+          "nativeCiEnabled": true,
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/scgpt-whole-human-linux-x86_64-cuda12.9.json"
+        },
+        {
           "targetId": "windows-x86_64-cpu",
           "target": {
             "platform": "windows",
