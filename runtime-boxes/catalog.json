@@ -447,7 +447,7 @@
           ],
           "recipeId": "scgpt-whole-human-windows-x86_64-cpu",
           "runnerProfileId": "windows-x64-selfhosted",
-          "status": "buildable",
+          "status": "scientifically-validated",
           "validationModes": [
             "build",
             "scientific",

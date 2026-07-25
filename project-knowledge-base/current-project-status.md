@@ -41,10 +41,11 @@ promoted**. **scGPT Linux CPU is now scientifically validated natively on the se
 runner** — the first pixi box built and validated in CI (run `30132956412`, mode
 `scientific`, ~9.5 min on an ephemeral WSL runner): pixi 0.73.0, torch 2.8.0 CPU,
 a finite `1 x 512` embedding, self-test and output/provenance contracts all passed,
-measured installed 3.55 GB / archive 1.21 GB within the diskPlan floors. The target
-advances to `scientifically-validated`; `native-lifecycle` and the protected release
-remain. The scGPT Windows CPU box was built and verified locally but not yet run on
-CI.
+measured installed 3.55 GB / archive 1.21 GB within the diskPlan floors. **scGPT
+Windows CPU is likewise scientifically validated natively** on the self-hosted Windows
+runner (run `30134159371`, torch 2.8.0 CPU, finite `1 x 512`, installed 1.39 GB /
+archive 0.53 GB). Both scGPT CPU targets advance to `scientifically-validated`;
+`native-lifecycle` and the protected release remain for each.
 
 Before any protected release the signer must be deployed, because the
 previous failure was deployed-policy drift, not a build defect. **That drift

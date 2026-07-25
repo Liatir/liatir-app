@@ -542,8 +542,19 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 >   catalog target advances **`buildable` → `scientifically-validated`**. Still open for this
 >   target: `native-lifecycle` mode (needs the Tauri deps, which want passwordless sudo in WSL) and
 >   the protected release (KMS sign + R2 publish + beta), which is intentionally deferred.
+> - **scGPT Windows CPU validated natively on the self-hosted Windows runner (2026-07-24).** Same
+>   flow (mode `scientific`) at commit `bf58566`, on the maintainer's Windows box as an ephemeral
+>   `liatir-windows-selfhosted` runner. Run `30134159371`, **passed**: pixi 0.73.0, python 3.11.15,
+>   lock `223f3996…`, self-test passed, scientific validation on torch 2.8.0 CPU with a finite
+>   `[1, 512]` embedding and output/provenance contracts passing. Measured installed **1.39 GB**,
+>   archive **0.53 GB** — matching the local Windows build. Target advances to
+>   `scientifically-validated`. The first attempt (`30133946752`) failed only because the CI pixi
+>   step used `shell: pwsh`, which the self-hosted Windows box lacks; fixed to `shell: powershell`
+>   (commit `bf58566`), and everything before that step had already passed.
 > - **This also proved the CI pixi provisioning added to `_runtime-box-validate.yml`** (pinned pixi
->   and conda-pack, with uv made conditional) works on a real self-hosted runner.
+>   and conda-pack, with uv made conditional) on both a Linux and a Windows self-hosted runner.
+>   Both scGPT CPU targets are now scientifically validated in CI; only `native-lifecycle` and the
+>   protected release remain for each.
 > - **Known conservatism:** the migrated recipes carry only the *source* prune list — the conda
 >   `venv/` prunes from the macOS pilot (torch/include, sympy, networkx, stdlib extras) were not
 >   ported, because their exact `dist-info` directory names are lock-specific. The boxes are
