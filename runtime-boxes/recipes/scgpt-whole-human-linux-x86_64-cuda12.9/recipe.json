@@ -104,6 +104,6 @@
       "source/scGPT/scgpt/model/model.py",
       "source/scGPT/scgpt/tokenizer/gene_tokenizer.py"
     ],
-    "pythonCode": "from pathlib import Path\ncheckpoint = torch.load(Path('model-cache/scgpt-whole-human/best_model.pt'), map_location='cpu', weights_only=False)\nassert checkpoint['encoder.embedding.weight'].shape == (60697, 512)\nassert checkpoint['transformer_encoder.layers.0.self_attn.Wqkv.weight'].shape == (1536, 512)\nassert torch.version.cuda is None\nassert not torch.cuda.is_available()"
+    "pythonCode": "from pathlib import Path\ncheckpoint = torch.load(Path('model-cache/scgpt-whole-human/best_model.pt'), map_location='cpu', weights_only=False)\nassert checkpoint['encoder.embedding.weight'].shape == (60697, 512)\nassert checkpoint['transformer_encoder.layers.0.self_attn.Wqkv.weight'].shape == (1536, 512)\nassert torch.version.cuda == '12.9'\nassert torch.cuda.is_available()\nassert torch.cuda.device_count() >= 1"
   }
 }
