@@ -7,9 +7,9 @@ import {
   DEFAULT_DOCUMENT_NAMESPACE,
   decodeDocumentPayload,
   documentKinds,
-  isSignedRuntimeBoxDocument,
+  isSignedBoxDocument,
   parseDocumentKind,
-  runtimeBoxTargetId,
+  boxTargetId,
   schemaUrl,
 } from '../../src/contract/index.mjs';
 
@@ -76,7 +76,7 @@ describe('schemas describe what the builder actually emits', () => {
   it('accepts a real signed envelope and decodes the payload it wraps', () => {
     const signed = example('signed-release');
     expectValid('signed-document', signed, 'signed release');
-    expect(isSignedRuntimeBoxDocument(signed)).toBe(true);
+    expect(isSignedBoxDocument(signed)).toBe(true);
     const payload = decodeDocumentPayload(signed);
     expect(payload.kind).toBe(documentKinds().release);
     expectValid('release-manifest', payload, 'decoded release payload');
@@ -126,12 +126,12 @@ describe('the schemas and the reference implementation agree', () => {
   it('accepts exactly the targets the reference implementation accepts', () => {
     for (const fixture of contract.valid) {
       expectValid('target', fixture.target, fixture.name);
-      expect(runtimeBoxTargetId(fixture.target), fixture.name).toBe(fixture.targetId);
+      expect(boxTargetId(fixture.target), fixture.name).toBe(fixture.targetId);
     }
     for (const fixture of contract.invalid) {
       const validate = validatorFor('target');
       expect(validate(fixture.target), fixture.name).toBe(false);
-      expect(() => runtimeBoxTargetId(fixture.target), fixture.name).toThrow();
+      expect(() => boxTargetId(fixture.target), fixture.name).toThrow();
     }
   });
 });
@@ -139,7 +139,7 @@ describe('the schemas and the reference implementation agree', () => {
 describe('the envelope refuses what it cannot verify', () => {
   it('rejects a document whose payload hash does not match its bytes', () => {
     const tampered = { ...example('signed-release'), payloadSha256: 'a'.repeat(64) };
-    expect(isSignedRuntimeBoxDocument(tampered)).toBe(true);
+    expect(isSignedBoxDocument(tampered)).toBe(true);
     expect(() => decodeDocumentPayload(tampered)).toThrow(/payload hash does not match/);
   });
 
@@ -152,7 +152,7 @@ describe('the envelope refuses what it cannot verify', () => {
       ['unsigned algorithm', { signatures: [{ algorithm: 'rsa', keyId: 'k', signatureBase64: 'x' }] }],
     ]) {
       const document = { ...signed, ...mutation };
-      expect(isSignedRuntimeBoxDocument(document), label).toBe(false);
+      expect(isSignedBoxDocument(document), label).toBe(false);
       expect(validatorFor('signed-document')(document), label).toBe(false);
     }
   });

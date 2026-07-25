@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://scrollcase.dev/schema/revocations-manifest.schema.json",
-  "title": "Runtime Box revocations manifest",
+  "title": "Box revocations manifest",
   "description": "The signed list of releases that must no longer be installed or activated. A published release is immutable, so withdrawing one is an explicit statement rather than a deletion: clients keep honouring this list even when the archive is still reachable.",
   "type": "object",
   "additionalProperties": false,

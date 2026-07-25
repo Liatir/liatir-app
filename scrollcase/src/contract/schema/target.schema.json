@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://scrollcase.dev/schema/target.schema.json",
-  "title": "Runtime Box target",
+  "title": "Box target",
   "description": "The platform, architecture and accelerator a box is built for. The supported combinations are closed: a target outside this matrix has no defined identifier and cannot be built, signed, or routed.",
   "type": "object",
   "additionalProperties": false,

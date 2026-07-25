@@ -10,7 +10,7 @@
 import { createHash } from 'node:crypto';
 
 /** Format version carried by every document this contract describes. */
-export const RUNTIME_BOX_SCHEMA_VERSION = 1;
+export const BOX_SCHEMA_VERSION = 1;
 
 /** The only payload encoding the format defines. */
 export const PAYLOAD_ENCODING = 'base64-json-utf8';
@@ -67,9 +67,9 @@ export const CHANNELS = Object.freeze(['development', 'beta', 'stable']);
  * never that its signature is good. Callers must still verify the payload hash and at least one
  * signature against a trusted key before acting on the contents.
  */
-export function isSignedRuntimeBoxDocument(value) {
+export function isSignedBoxDocument(value) {
   if (!value || typeof value !== 'object') return false;
-  return value.schemaVersion === RUNTIME_BOX_SCHEMA_VERSION
+  return value.schemaVersion === BOX_SCHEMA_VERSION
     && value.payloadEncoding === PAYLOAD_ENCODING
     && typeof value.payloadBase64 === 'string'
     && typeof value.payloadSha256 === 'string'
@@ -87,13 +87,13 @@ export function isSignedRuntimeBoxDocument(value) {
  * which catches a truncated or edited document before its contents are ever read.
  */
 export function decodeDocumentPayload(document) {
-  if (!isSignedRuntimeBoxDocument(document)) {
-    throw new TypeError('Not a signed Runtime Box document');
+  if (!isSignedBoxDocument(document)) {
+    throw new TypeError('Not a signed box document');
   }
   const bytes = Buffer.from(document.payloadBase64, 'base64');
   const digest = createHash('sha256').update(bytes).digest('hex');
   if (digest !== document.payloadSha256) {
-    throw new Error('Signed Runtime Box payload hash does not match its bytes');
+    throw new Error('Signed box payload hash does not match its bytes');
   }
   return JSON.parse(bytes.toString('utf8'));
 }

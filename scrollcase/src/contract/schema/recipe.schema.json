@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://scrollcase.dev/schema/recipe.schema.json",
-  "title": "Runtime Box recipe",
+  "title": "Box recipe",
   "description": "The declarative input to a build: an identity, a target, a pinned dependency environment, the assets to fetch, and the self-test the result must pass. A recipe is checked into the consumer's repository next to its lock file; everything a build produces is derived from it.",
   "type": "object",
   "additionalProperties": false,

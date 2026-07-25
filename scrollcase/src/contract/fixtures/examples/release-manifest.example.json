@@ -17,7 +17,7 @@
   },
   "archive": {
     "format": "zip",
-    "url": "https://assets.example.org/runtime-boxes/boxes/example-model/1.0.0/macos-aarch64-metal/7d2c9a41e8b350f6c174a9de20358bf41c6e97d05a8b3f2619e4c7081da5b3f2.zip",
+    "url": "https://assets.example.org/boxes/boxes/example-model/1.0.0/macos-aarch64-metal/7d2c9a41e8b350f6c174a9de20358bf41c6e97d05a8b3f2619e4c7081da5b3f2.zip",
     "sha256": "7d2c9a41e8b350f6c174a9de20358bf41c6e97d05a8b3f2619e4c7081da5b3f2",
     "sizeBytes": 655752216
   },

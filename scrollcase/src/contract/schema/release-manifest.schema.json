@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://scrollcase.dev/schema/release-manifest.schema.json",
-  "title": "Runtime Box release manifest",
+  "title": "Box release manifest",
   "description": "The immutable description of one built box: what it is, which target it runs on, where its archive lives, and how it was produced. Published as the payload of a signed document and never edited after signing; a correction ships as a new version.",
   "type": "object",
   "additionalProperties": false,

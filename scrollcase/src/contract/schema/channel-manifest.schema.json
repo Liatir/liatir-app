@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://scrollcase.dev/schema/channel-manifest.schema.json",
-  "title": "Runtime Box channel manifest",
+  "title": "Box channel manifest",
   "description": "A small mutable pointer from a channel to the releases it currently serves. Signed independently from releases, so promoting a build never requires re-signing it.",
   "type": "object",
   "additionalProperties": false,

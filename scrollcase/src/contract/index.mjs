@@ -1,7 +1,7 @@
 /**
  * The scrollcase box-format contract.
  *
- * This module is the single source of truth for what a Runtime Box *is*: which targets exist, how a
+ * This module is the single source of truth for what a box *is*: which targets exist, how a
  * target is named, what layout the payload has, and the shape of every document a build emits. It
  * ships three things that must never disagree — a reference implementation (this code), a
  * machine-readable spec (`schema/*.json`), and golden fixtures (`fixtures/*.json`) that any other
@@ -12,26 +12,26 @@
  */
 
 export {
-  assertRuntimeBoxNativeHost,
-  assertRuntimeBoxPythonEntryPoint,
-  runtimeBoxCondaSubdir,
-  runtimeBoxLockArguments,
-  runtimeBoxPixiAccelerator,
-  runtimeBoxTargetAdapter,
-  runtimeBoxTargetAdapters,
-  runtimeBoxTargetId,
-  runtimeBoxTorchBackendArguments,
+  assertNativeHost,
+  assertPythonEntryPoint,
+  condaSubdir,
+  lockArguments,
+  pixiAccelerator,
+  boxTargetAdapter,
+  boxTargetAdapters,
+  boxTargetId,
+  torchBackendArguments,
 } from './targets.mjs';
 
 export {
   CHANNELS,
   DEFAULT_DOCUMENT_NAMESPACE,
   PAYLOAD_ENCODING,
-  RUNTIME_BOX_SCHEMA_VERSION,
+  BOX_SCHEMA_VERSION,
   SIGNATURE_ALGORITHM,
   decodeDocumentPayload,
   documentKinds,
-  isSignedRuntimeBoxDocument,
+  isSignedBoxDocument,
   parseDocumentKind,
 } from './documents.mjs';
 

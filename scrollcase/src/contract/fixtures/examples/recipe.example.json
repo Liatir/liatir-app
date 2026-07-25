@@ -25,7 +25,7 @@
   "dependencyLicenseAudit": "legal/audits/example-model-macos-arm64-metal.json",
   "pythonEntryPoint": "venv/bin/python",
   "modelCacheSubdir": "model-cache/example-model",
-  "assetBaseUrl": "https://assets.example.org/runtime-boxes",
+  "assetBaseUrl": "https://assets.example.org/boxes",
   "assets": [
     {
       "url": "https://assets.example.org/example-model/weights.safetensors",

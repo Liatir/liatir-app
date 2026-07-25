@@ -158,12 +158,45 @@ what and dragged roughly 2,000 lines of Liatir infrastructure into the tool. Cor
   target-id-contract, e2e-support, signer-deployment, evidence, cost-controls,
   validator-context}.test.ts`.
 
-### Naming cleanup
-scrollcase ships no Liatir name anywhere — done for the contract at P2 and verified by grep. Liatir's
-own types keep their `Liatir*` prefix on its side of the boundary, and `liatir-core` aliases the tool's
-neutral names at P5 so app call sites keep working. **Still open:** the tool calls its artifact a
-"Runtime Box" throughout — function names, error messages, schema titles. That is Liatir's product
-vocabulary, not the tool's, and renaming it is cheapest before the CLI and docs make it public at P3.
+### Naming cleanup — DONE (2026-07-25)
+scrollcase ships no Liatir name and no Liatir product vocabulary. "Runtime Box" was Liatir's product
+term and is gone from the tool: the artifact is a **box**, matching the `scrollcase.box` document
+namespace. The contract API is now `boxTargetId`, `boxTargetAdapter(s)`, `assertNativeHost`,
+`assertPythonEntryPoint`, `torchBackendArguments`, `lockArguments`, `condaSubdir`, `pixiAccelerator`,
+`BOX_SCHEMA_VERSION`, `isSignedBoxDocument`; schema titles and error messages follow. Liatir's own
+types keep their `Liatir*` prefix on its side of the boundary, and `liatir-core` aliases the tool's
+names at P5 so app call sites keep working.
+
+### P3 design item — accelerator parity and tolerances belong to the tool
+
+Raised by the maintainer 2026-07-25 and adopted. Today every model validator hard-codes its own
+thresholds and re-implements the same comparison: `ai-validation/geneformer-parity.py` carries
+`CPU_RELATIVE_TOLERANCE`, `CPU_ABSOLUTE_TOLERANCE`, `ACCELERATOR_RELATIVE_TOLERANCE`,
+`ACCELERATOR_ABSOLUTE_TOLERANCE` and `ACCELERATOR_MINIMUM_COSINE` as constants, and
+`validate-scgpt-runtime.mjs` carries its own `MINIMUM_COSINE_SIMILARITY` plus a hand-rolled cosine.
+
+The question those checks answer — *does this box produce the same numbers on CUDA as on CPU?* — is a
+**packaging** question, not a scientific one. It catches the wrong wheels, a CPU-only build shipped as
+CUDA, a bad BLAS. Any tool packaging a model for several accelerators faces it, and scrollcase already
+holds half the mechanism: each target adapter carries `validationEnvironments`
+(`CUDA_VISIBLE_DEVICES`, `PYTORCH_ENABLE_MPS_FALLBACK`), i.e. it already knows how to force a run onto
+CPU or onto the accelerator.
+
+So the split is:
+- **The tool owns the mechanism and the declaration.** Tolerances (`rtol`, `atol`, minimum cosine)
+  become recipe data rather than constants in per-model code; scrollcase runs the declared check
+  inside the box once per accelerator, compares the emitted arrays against the declared tolerances,
+  fails the build on a breach, and records the measured values in the box's evidence.
+- **The consumer owns the meaning.** The script that decides what to feed the model and which tensor
+  to read, the fixture, and the scientific interpretation stay with the project. scrollcase never
+  decides what is scientifically correct — it enforces a threshold its user declared.
+
+This upgrades `selfTest` from "imports plus files plus arbitrary Python" into a real numerical gate.
+It is **new capability, not a move**: nothing existing is lifted. Note that
+`scripts/runtime-box/validator-context.mjs` is the closest existing relative — its
+`productAcceleratorForTarget` and accelerator normalization are generic — but the file as written is
+Liatir's (its `LIATIR_*` environment variables and repository paths), so it is rewritten in the tool,
+not moved.
 
 ---
 
@@ -232,8 +265,10 @@ Today the box-format contract is **triplicated** and kept in sync by the golden 
 - **P2 — Carve the contract: DONE (2026-07-25).** scrollcase now owns a self-contained contract
   package — reference implementation, JSON Schemas, and golden fixtures — with its own dependencies
   and test command. Liatir was deliberately left untouched. See "P2 execution record" below.
-- **P3 — Build the CLI surface:** `init`, `doctor`, `verify`, `audit`, `--global`, weights
-  `embed|on-demand`, pluggable signer.
+- **P3 — Move the builder and build the CLI surface:** bring over the build core and the 9 modules per
+  the corrected inventory, then `init`, `doctor`, `verify`, `audit`, `--global`, weights
+  `embed|on-demand`, pluggable signer, and declared accelerator-parity tolerances (see the design item
+  above). Settle the two grey verbs, `revoke` and `serve`.
 - **P4 — New repo + Apache-2.0 packaging:** move to the standalone repo, add LICENSE/NOTICE/README, CI,
   publish to npm.
 - **P5 — Invert & consume:** make `liatir-core` depend on the published package; repoint Liatir scripts;

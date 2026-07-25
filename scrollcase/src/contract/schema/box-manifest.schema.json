@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://scrollcase.dev/schema/box-manifest.schema.json",
-  "title": "Runtime Box manifest (box.json)",
+  "title": "Box manifest (box.json)",
   "description": "The manifest packed inside the archive at box.json. It restates the box's identity, layout and provenance so an extracted box is self-describing: a consumer that has the directory but not the release document can still tell what it is holding and how it was built.",
   "type": "object",
   "additionalProperties": false,

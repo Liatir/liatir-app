@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://scrollcase.dev/schema/signed-document.schema.json",
-  "title": "Signed Runtime Box document",
+  "title": "Signed box document",
   "description": "The envelope wrapping every signed document. The payload travels as exact base64-encoded JSON so that verifying a signature means hashing the bytes as transmitted, with no canonical-JSON implementation to keep in sync across languages. Passing this schema means the envelope is well-formed, never that its signature is valid.",
   "type": "object",
   "additionalProperties": false,

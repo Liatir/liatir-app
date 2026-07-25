@@ -13,7 +13,7 @@
   "releases": [
     {
       "version": "1.0.0",
-      "releaseManifestUrl": "https://assets.example.org/runtime-boxes/boxes/example-model/1.0.0/macos-aarch64-metal/c1a0f67d97543c9f0deccffdd00fbad45662ceed828f84e866b997ab4b019d1f.release.json",
+      "releaseManifestUrl": "https://assets.example.org/boxes/boxes/example-model/1.0.0/macos-aarch64-metal/c1a0f67d97543c9f0deccffdd00fbad45662ceed828f84e866b997ab4b019d1f.release.json",
       "rolloutPercentage": 100
     }
   ]
