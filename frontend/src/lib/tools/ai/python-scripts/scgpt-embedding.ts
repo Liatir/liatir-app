@@ -303,6 +303,13 @@ summary = {
     "accelerator": accelerator,
     "requestedAccelerator": requested_accelerator,
     "peakVramBytes": int(torch.cuda.max_memory_allocated()) if device.type == "cuda" else None,
+    # GPU identity, so the scientific evidence can be checked against the host that produced it.
+    "gpuModel": torch.cuda.get_device_name(device) if device.type == "cuda" else None,
+    "gpuMemoryBytes": int(torch.cuda.get_device_properties(device).total_memory) if device.type == "cuda" else None,
+    "computeCapability": (
+        "%d.%d" % torch.cuda.get_device_capability(device) if device.type == "cuda" else None
+    ),
+    "reportedCudaCompatibility": torch.version.cuda if device.type == "cuda" else None,
     "warnings": summary_warnings,
 }
 summary_path = output_dir / "scgpt-embedding-summary.json"

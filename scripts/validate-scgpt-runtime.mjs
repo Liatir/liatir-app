@@ -232,7 +232,11 @@ try {
       },
       accelerator: {
         kind: RECIPE.target.accelerator,
-        gpuModel: null,
+        // Report the real GPU the accelerated run used, so the evidence contract can check it
+        // against the host; null for CPU/Metal, which the contract does not require.
+        gpuModel: targetRun.result.summary.gpuModel ?? null,
+        gpuMemoryBytes: targetRun.result.summary.gpuMemoryBytes ?? null,
+        computeCapability: targetRun.result.summary.computeCapability ?? null,
         driverVersion: null,
         reportedCudaCompatibility: framework.reportedCudaCompatibility,
       },
