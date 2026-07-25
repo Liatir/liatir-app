@@ -423,6 +423,67 @@ for byte-compatibility anyway, and P5 deletes the Liatir side.
 - **Liatir untouched:** `git status` shows only additions under `scrollcase/`, and
   `npm run test:unit` still passes 190/190 across 31 files.
 
+## P3 execution record — in progress (2026-07-25)
+
+**Done so far: the tool builds, signs and verifies a box on its own, proven against the real
+toolchain.** Remaining: `init`, `doctor`, `audit`, weights `embed|on-demand`, declared parity
+tolerances, and the two grey verbs `revoke` and `serve`.
+
+### The substrate decision: pixi only
+
+The uv path did not come along. scrollcase is a pixi + conda-pack + conda-forge tool, and a packaging
+tool with two dependency backends has to prove every guarantee twice. Dropped: `findUv` and the uv
+lock path, standalone-Python staging and relocation validation (`python.mjs` becomes `launchers.mjs`,
+the ~50 lines the conda path actually uses), the `.dist-info` licence audit (the conda audit is
+lock-derived and needs no built prefix), and the `--torch-backend` / `uv pip compile` helpers that P2
+had carried into the contract along with `uvPlatform`. The recipe schema requires `pixiVersion`;
+provenance records it alone.
+
+**Consequence for Liatir:** Geneformer and UCE still have uv recipes and must become pixi recipes to
+be built by scrollcase — already the direction of the pixi migration and of the revised P0. Liatir
+keeps its own uv-capable builder until P5, so nothing breaks today.
+
+### What moved, and what the tool now is
+
+`src/build/` holds the 8 modules the builder actually imports plus the ported core: recipe reading
+and provenance, verified asset staging, the build orchestration, and verify. `src/sign/` holds key
+generation, local signing, and verification. `src/cli.mjs` exposes four verbs — `keygen`, `lock`,
+`build`, `verify` — resolving every path through the workspace.
+
+**Signing is custody-agnostic.** The built-in path uses a local ed25519 key. The external path hands
+the payload to a command the operator configures, on stdin, and reads the signed document from
+stdout — any language, any credential mechanism, no plugin API. Nothing about gcloud, KMS or Cloud
+Run survives in the tool. The external signer is not trusted on its word: the returned document must
+echo the exact payload it was given, and its signature is verified locally before the build
+continues. Liatir plugs its KMS signer in here at P5 with a small wrapper.
+
+### Five more Liatir references, found and removed
+
+They arrived inside the moved modules, after the P2 grep had already passed: the
+`LIATIR_RUNTIME_BOX_PIXI` / `LIATIR_RUNTIME_BOX_CONDA_PACK` environment variables, a temp-directory
+prefix, the hard-coded licence-audit `kind` (now namespaced like every other document), and — the one
+that mattered — **the default workspace paths, which were Liatir's directory names**. Defaults are now
+`recipes/` and `.scrollcase/{build,dist,keys}`; a project that keeps its files elsewhere says so in
+its config, which is the mechanism working as designed. Lesson recorded: re-grep after every move,
+because a clean grep only describes the tree at the time it ran.
+
+### P3 evidence (all local, zero cost)
+
+- **A real box, built and verified end to end with the actual toolchain.** pixi 0.73.0 and conda-pack
+  are installed on the maintainer's Mac under a dedicated `PIXI_HOME` at `~/.local/liatir-pixi/bin`
+  (not on `PATH`, which is why a bare `which pixi` finds nothing). Against a throwaway project:
+  `scrollcase lock` resolved `pixi.toml` into a real `pixi.lock` (python 3.11.15 from conda-forge),
+  `keygen` produced a key, `build` installed from the lock, packed the prefix with conda-pack, ran
+  the self-test with the box's own interpreter, wrote a deterministic 49,812,054-byte archive
+  (`73e56c2f…`) and signed the release and channel, and `verify --self-test` extracted the archive
+  and imported `json` and `sqlite3` **with the Python inside the box**: `Verified hello-box 1.0.0
+  (macos-aarch64-metal)`, exit 0. The recipe is shipped as `examples/hello-box-macos-arm64-metal`.
+- `npm test` inside `scrollcase/`: **30/30**. The pipeline test builds, signs and verifies with the
+  environment solve stubbed, and asserts that rebuilding the same commit yields a byte-identical
+  archive, that a dirty tree is refused unless explicit, that a pruned-away self-test file fails the
+  build, and that a tampered archive and a foreign signing key are both rejected.
+- Liatir remains untouched and green at 190/190.
+
 ## Verification
 
 - **scrollcase standalone:** `npm test` (the 6 migrated vitest files) green in the new repo; a full

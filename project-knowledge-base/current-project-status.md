@@ -164,7 +164,21 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   first consumer's name. `minLiatirVersion` is likewise gone from the schemas, replaced
   by neutral pass-through compatibility fields, and every fixture example is synthetic
   with a throwaway signing key.
-  P3–P5 remain, each on explicit maintainer go-ahead.
+  **P3 is in progress and the tool now builds on its own.** The build layer and the
+  build/verify/lock/keygen core are in scrollcase with a CLI, **pixi-only**: the uv
+  substrate was deliberately left behind, so Geneformer and UCE must become pixi
+  recipes to be built through the tool (already the pixi migration's direction).
+  Signing is custody-agnostic — a local key, or an external command that receives the
+  payload on stdin and returns the signed document, verified locally before use — so
+  nothing about gcloud, KMS or Cloud Run remains in the tool; Liatir plugs its KMS
+  signer in at P5. **Proven against the real toolchain** (pixi 0.73.0 + conda-pack,
+  installed under `~/.local/liatir-pixi/bin`, off `PATH`): a throwaway project went
+  `lock` → `keygen` → `build` → `verify --self-test`, producing a 49,812,054-byte box
+  whose own Python 3.11.15 imported `json` and `sqlite3` from a real extraction. The
+  recipe ships as `scrollcase/examples/hello-box-macos-arm64-metal`. scrollcase passes
+  30/30; Liatir is untouched at 190/190. Remaining in P3: `init`, `doctor`, `audit`,
+  weights `embed|on-demand`, declared parity tolerances, and the grey verbs `revoke`
+  and `serve`. P4–P5 follow, each on explicit maintainer go-ahead.
   Covers the CLI design (`init`/`doctor`/`build`/`verify`/`audit`, per-project
   toolchain isolation, embed-vs-on-demand weights, pluggable signer), the
   box-format contract inversion (scrollcase becomes the single source of truth,
