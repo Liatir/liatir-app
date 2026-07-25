@@ -105,47 +105,65 @@ Signing is part of the **format and trust model**, so it lives in scrollcase; on
 
 ## Extraction: what moves vs what stays
 
+**REWRITTEN 2026-07-25 from the actual import graph.** The maintainer's rule, stated plainly: *scrollcase
+packages a model into a portable, locked, self-contained box for each OS using pixi + conda-pack +
+conda-forge, and nothing else.* CI, the model catalog, runner allocation, scientific validation, R2
+publication, the Cloudflare registry and KMS signing are **Liatir's**, and a consumer of the tool
+would have its own equivalents or none at all. The earlier inventory was written from what imported
+what and dragged roughly 2,000 lines of Liatir infrastructure into the tool. Corrected below.
+
 ### Moves into `scrollcase`
-- Entry point: `scripts/runtime-box.mjs` — the builder proper (`build`, `verify`, `lock`, `keygen`,
-  `publish`, `promote`, `revoke`).
-- All 12 modules in `scripts/runtime-box/` (`archive, evidence, filesystem, heartbeat, identity,
-  licenses, pixi, process, python, targets, validator-context, workspace`). `targets` and the
-  document contract were carved out at P2; `workspace` was added at P1.
-- **CORRECTED 2026-07-25 — `scripts/node-cli.mjs` does NOT move and is not copied in.** The earlier
-  wording ("the only local file imported from outside the folder — 45 LOC, copied in") was wrong.
-  Its `npmInvocation` exists to spawn *Liatir's own npm scripts*: `runtime-box-ci.mjs` uses it for
-  `npm run <scientific validator>` and `npm run runtime-box -- build …`, and `heartbeat.mjs`
-  special-cases the literal command `npm` and passes every other command (pixi, cargo, node, python)
-  straight through. That is Liatir's CI orchestrating itself through npm, not builder behaviour: a
-  standalone CLI invokes pixi/conda-pack/python directly and calls its own build as a function. The
-  file stays in Liatir, where ten other callers need it.
-- **OPEN for P3 — `scripts/runtime-box-ci.mjs` (812 LOC) must be split before anything moves.** The
-  original plan listed it as an entry point that moves wholesale, but most of it is Liatir's CI, not
-  the tool: the model catalog, runner profiles, GitHub Actions outputs, the cost policy, and the
-  evidence records. Moving it as-is would import into scrollcase exactly the coupling the extraction
-  exists to remove. Decide per concern what is builder and what is consumer CI.
-- The **box-format contract** (see Contract inversion) + `runtime-boxes/target-id-contract.json`.
-- Self-contained tests: `runtime-box-{conda-licenses, pixi, target-adapters, validator-context,
-  evidence, cost-controls}.test.ts` (depend only on the extracted modules).
-- Example recipes: the `installer-fixture-*` recipes (model-agnostic), as scaffolding samples.
-- New files: `package.json`, `LICENSE` (Apache-2.0), `NOTICE`, `README.md`,
-  `tests/unit/vitest.config.ts`, `.gitignore`, JSON Schema(s) for recipe/box/manifests,
-  `scrollcase.config.json` schema.
+- **The builder entry point, minus distribution:** `scripts/runtime-box.mjs` lines ~115–829 —
+  argument parsing, local key handling and signing, uv/pixi discovery, `lock`, verified asset
+  download, archive extraction, `buildRecipe` (the 255-line core), and `verifyRelease`. Verbs:
+  `build`, `verify`, `lock`, `keygen`.
+- **The 9 modules the builder actually imports:** `archive` (214), `filesystem` (80), `licenses`
+  (233), `identity` (23), `process` (29), `workspace` (191), `python` (194), `pixi` (202), and
+  `targets` (217, already carved out at P2 together with the document contract).
+- Self-contained tests: `runtime-box-{conda-licenses, pixi, target-adapters}.test.ts` — the three
+  that exercise only the modules above.
+- Example recipes: neutral, synthetic ones. The `installer-fixture-*` recipes are Liatir fixtures and
+  are not shipped as-is.
+- New files: `package.json`, `LICENSE` (Apache-2.0), `NOTICE`, `README.md`, a vitest config,
+  `.gitignore`, the JSON Schemas, and the `scrollcase.config.json` schema (currently parked in
+  `scripts/runtime-box/` from P1 — it belongs to the tool and moves with it).
+
+**Roughly 2,100 lines move, not 4,100.** Of those, ~430 (the contract) are already in scrollcase.
 
 ### Stays in Liatir (private)
+- **The whole CI entry point: `scripts/runtime-box-ci.mjs` (812 LOC).** Not split, not partially
+  moved — it *is* Liatir's CI: the model catalog, runner profiles and host probing, GitHub Actions
+  outputs, the cost policy, disk-plan gating, and the evidence records. A tool that packages a model
+  has no business knowing any of it.
+- **`scripts/runtime-box/evidence.mjs` (601 LOC), `heartbeat.mjs` (110) and `validator-context.mjs`
+  (62).** The import graph settles it: the builder entry point imports none of the three. `evidence`
+  and `heartbeat` are imported only by the CI entry point, and `validator-context` only by Liatir's
+  model validators (`validate-scgpt-runtime.mjs`, `validate-uce-runtime.mjs`).
+- **`scripts/node-cli.mjs` (45 LOC).** Its `npmInvocation` exists to spawn *Liatir's own npm scripts*
+  (`npm run <scientific validator>`, `npm run runtime-box -- build …`), and `heartbeat` special-cases
+  the literal command `npm` while passing pixi, cargo, node and python straight through. A standalone
+  CLI never needs it; ten other Liatir callers do.
+- **Distribution: `runtime-box.mjs` lines ~830–1223 (~390 LOC)** — multipart R2 upload, remote object
+  verification, the registry admin token, `publish`, `publish-key`, `promote`, and the local `serve`
+  helper. Liatir builds a box with scrollcase and then puts it on R2 through its own infrastructure;
+  the tool stops at a signed, verified box on disk. `revoke` and `serve` are the two grey cases to
+  settle at P3: both sign or serve format documents, but both exist to feed Liatir's registry.
 - The consumer: `src-tauri/src/bridge/runtime_boxes.rs` (+ `python_env.rs`, `ai_runtime.rs`,
   `managed_bins.rs`, `ai_hardware.rs`) — genuinely Tauri-coupled (`AppHandle`, 3 `#[tauri::command]`),
   legitimately Liatir-specific.
 - Production infra: `workers/runtime-box-registry`, `services/runtime-box-signer`, the trust keys, and
   the model-specific validators/recipes with real weights (`scgpt-*`, `geneformer-*`, `uce-*`) and their
   `.github/workflows/runtime-box-*.yml` (10 workflows) — these depend on Liatir's runners, keys, and R2.
-- Tests coupled to app internals: `runtime-box-{ci-catalog, host-selection, publisher,
-  target-id-contract, e2e-support, signer-deployment}.test.ts`.
+- Tests coupled to Liatir's CI or app internals: `runtime-box-{ci-catalog, host-selection, publisher,
+  target-id-contract, e2e-support, signer-deployment, evidence, cost-controls,
+  validator-context}.test.ts`.
 
 ### Naming cleanup
-Everything is `Liatir*`-prefixed today. scrollcase's published contract uses neutral names
-(`RuntimeBox*` / a `scrollcase` namespace). `liatir-core` re-exports/aliases them so app call sites keep
-working.
+scrollcase ships no Liatir name anywhere — done for the contract at P2 and verified by grep. Liatir's
+own types keep their `Liatir*` prefix on its side of the boundary, and `liatir-core` aliases the tool's
+neutral names at P5 so app call sites keep working. **Still open:** the tool calls its artifact a
+"Runtime Box" throughout — function names, error messages, schema titles. That is Liatir's product
+vocabulary, not the tool's, and renaming it is cheapest before the CLI and docs make it public at P3.
 
 ---
 
