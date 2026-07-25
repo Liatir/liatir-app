@@ -197,8 +197,9 @@ Today the box-format contract is **triplicated** and kept in sync by the golden 
   assumptions are gone; the builder now resolves its layout from a consumer-owned
   `scrollcase.config.json` with CLI overrides. See "P1 execution record" below for the contract and
   the evidence.
-- **P2 — Carve the contract:** extract the box-format spec + reference impl into the scrollcase package
-  boundary; add JSON Schemas; wire the golden fixtures.
+- **P2 — Carve the contract: DONE (2026-07-25).** scrollcase now owns a self-contained contract
+  package — reference implementation, JSON Schemas, and golden fixtures — with its own dependencies
+  and test command. Liatir was deliberately left untouched. See "P2 execution record" below.
 - **P3 — Build the CLI surface:** `init`, `doctor`, `verify`, `audit`, `--global`, weights
   `embed|on-demand`, pluggable signer.
 - **P4 — New repo + Apache-2.0 packaging:** move to the standalone repo, add LICENSE/NOTICE/README, CI,
@@ -270,6 +271,67 @@ scaffold that file; nothing about it lives inside scrollcase itself.
 `import.meta.dirname`. It is a Liatir-side validator that stays private and invokes the CLI with the
 repository as its working directory, so it is unaffected; it is listed here so the remaining
 assumption is not forgotten.
+
+## P2 execution record (2026-07-25)
+
+### The rule this phase established
+
+**`scrollcase/` is treated as an external repository from now on.** It is not a part of Liatir, not
+even partially: Liatir's CI does not watch it, Liatir's code does not import from it, and its tests
+run on their own. It happens to sit inside `liatir-stack` only until P4 moves it out. Liatir becomes
+an ordinary consumer of an external tool at P5, when it installs the published package and deletes
+its in-tree copies.
+
+This ruled out two designs that were considered and rejected: adding `scrollcase/**` to the Liatir
+workflow path filters (Liatir's CI would be testing an external project), and keeping a generated
+mirror of the contract at the old Liatir paths (a copy is exactly what the extraction is removing).
+The consequence is accepted deliberately: **during P2–P4 the contract exists twice** — the live copy
+Liatir still builds with, and scrollcase's, which is now the source of truth. The contract is frozen
+for byte-compatibility anyway, and P5 deletes the Liatir side.
+
+### What scrollcase now owns
+
+`scrollcase/` is a standalone package: `package.json` (Apache-2.0, `type: module`, exports
+`./contract`), `NOTICE`, its own `devDependencies` and its own `npm test`. Under
+`src/contract/`:
+
+- **Reference implementation.** `targets.mjs` (the target model, identity rule, and per-target
+  payload adapters) and `documents.mjs` (the signed-envelope contract: schema version, payload
+  encoding, signature algorithm, document kinds, a structural check, and a hash-verifying payload
+  decoder). `index.mjs` is the public surface and resolves shipped schemas and fixtures by URL.
+- **Machine-readable spec.** Seven JSON Schemas (2020-12): `target`, `signed-document`,
+  `release-manifest`, `channel-manifest`, `revocations-manifest`, `box-manifest`, `recipe`. They were
+  written from real emitted documents and from the field set the builder actually reads, not from
+  memory.
+- **Golden fixtures.** `fixtures/target-id-contract.json` (byte-identical to Liatir's, verified) plus
+  `fixtures/examples/` holding a real release manifest, channel manifest, `box.json`, signed
+  envelope, and both a uv and a pixi recipe. The pixi example is synthetic and model-neutral; no
+  Liatir model recipe, weight, or asset URL was copied into the tool.
+
+### Decisions taken, with their reasons
+
+- **Wire `kind` strings stay `liatir.runtime-box.*` verbatim.** They are baked into published boxes,
+  the deployed registry, and installed clients; renaming them is a breaking format change that can
+  only arrive with a new `schemaVersion`, never as a silent edit. Recorded in the schemas themselves.
+  A neutral rename is an open decision for a future format version, not a P2 cleanup.
+- **`https://scrollcase.dev/schema/...` is used as the schema `$id` namespace**, matching the choice
+  made in P1 for the config schema. A JSON Schema `$id` is an identifier rather than a fetched URL,
+  so this is safe, but the domain should be confirmed when publishing at P4.
+- **Ajv runs with `strict: true` but `strictRequired: false`** in scrollcase's tests. `strictRequired`
+  is an Ajv lint, not a spec rule, and it rejects `required` inside an `if`/`then` or `oneOf` branch —
+  exactly how the conditional CUDA rule and the pixi-vs-uv substrate rule are expressed.
+
+### P2 evidence (all local, zero cost)
+
+- `npm test` inside `scrollcase/`: **17/17 passed**, 2 files, on its own vitest + ajv install. The
+  suite proves the reference implementation matches every golden case, that the schemas accept the
+  real documents the builder emits, that schema and implementation accept and reject exactly the same
+  targets, and that a tampered payload hash and four malformed envelopes are refused.
+- **No drift at seeding:** `scrollcase/src/contract/targets.mjs` differs from
+  `scripts/runtime-box/targets.mjs` by exactly the 14-line header comment; the code is byte-identical.
+  `fixtures/target-id-contract.json` is byte-identical to `runtime-boxes/target-id-contract.json`.
+- **Liatir untouched:** `git status` shows only additions under `scrollcase/`, and
+  `npm run test:unit` still passes 190/190 across 31 files.
 
 ## Verification
 

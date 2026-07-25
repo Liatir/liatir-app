@@ -148,7 +148,17 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   `sourceTreeDirty` provenance flag, with a byte-identical payload. Local zero-cost
   gates: 190/190 unit tests (9 new workspace tests), catalog check, Gate 2 foundation
   validation including the Rust runtime_box archive fixture, and `lint:ts` with no
-  errors. P2–P5 remain, each on explicit maintainer go-ahead.
+  errors.
+  **P2 (carve the contract) is COMPLETE (2026-07-25).** `scrollcase/` is now treated
+  as an external repository: Liatir's CI does not watch it, Liatir's code does not
+  import from it, and it tests itself. It holds a standalone contract package —
+  reference implementation (target model + signed-envelope contract), seven JSON
+  Schemas written from real emitted documents, and golden fixtures — with its own
+  dependencies and `npm test` (17/17 green). Liatir was deliberately left untouched
+  and still passes 190/190; its copies of the contract are deleted at P5, when it
+  installs the published package. The wire `kind` strings stay `liatir.runtime-box.*`
+  verbatim because they are baked into published boxes and deployed services.
+  P3–P5 remain, each on explicit maintainer go-ahead.
   Covers the CLI design (`init`/`doctor`/`build`/`verify`/`audit`, per-project
   toolchain isolation, embed-vs-on-demand weights, pluggable signer), the
   box-format contract inversion (scrollcase becomes the single source of truth,

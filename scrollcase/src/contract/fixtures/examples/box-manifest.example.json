@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "boxId": "runtime-box-installer-fixture",
+  "modelId": "liatir-runtime-box-fixture",
+  "runtimeId": "runtime-box-installer-fixture",
+  "version": "0.1.0",
+  "target": {
+    "platform": "macos",
+    "arch": "aarch64",
+    "accelerator": "metal"
+  },
+  "pythonEntryPoint": "venv/bin/python",
+  "modelCacheSubdir": "model-cache/fixture",
+  "selfTest": {
+    "pythonImports": [
+      "json",
+      "sqlite3"
+    ],
+    "timeoutSeconds": 180
+  },
+  "provenance": {
+    "recipeId": "installer-fixture-macos-arm64",
+    "recipeVersion": "1.0.0",
+    "builderRevision": "9a5faad908c0c9f06e8c10f05e60e7f9ca6c0e24",
+    "sourceTreeDirty": true,
+    "sourceRevision": "internal-fixture-v1",
+    "pythonVersion": "3.11.9",
+    "uvVersion": "0.11.28",
+    "dependencyLockSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "builtAt": "2026-07-25T16:06:47+02:00"
+  }
+}
