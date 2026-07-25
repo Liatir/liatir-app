@@ -125,9 +125,18 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   under WSL2's driver bridge, so it is strong evidence rather than bare metal;
   cuDNN/cuBLAS/libtorch_cuda were all verified to load from the relocated prefix.
 - [scrollcase extraction plan](./roadmap/scrollcase-extraction-plan.md) — the
-  planned (not started) extraction of the Runtime Box **builder** into an
-  independent Apache-2.0 open-source tool named `scrollcase` that Liatir consumes
-  externally. Hard prerequisite: the pixi migration must be fully closed first.
+  extraction of the Runtime Box **builder** into an independent Apache-2.0
+  open-source tool named `scrollcase` that Liatir consumes externally.
+  **APPROVED TO START 2026-07-25.** The old "pixi migration fully closed on all
+  targets" prerequisite was **relaxed** to "builder validated across the full
+  OS/accelerator matrix on ≥1 representative model" — met by scGPT (macOS/Linux/
+  Windows × CPU/CUDA/Metal). The builder is model-agnostic and already decoupled,
+  so Geneformer/UCE are packaged **after** extraction, **through** the external
+  tool, not migrated in-repo first. Extraction target: `scrollcase/src/` in the
+  repo root (Apache-2.0 LICENSE + README + VitePress docs already scaffolded).
+  Two Liatir-side caveats do not gate extraction: the macOS pixi box is not yet
+  CI-validated, and no pixi box has had a protected release — both closed later
+  via scrollcase's pluggable signer.
   Covers the CLI design (`init`/`doctor`/`build`/`verify`/`audit`, per-project
   toolchain isolation, embed-vs-on-demand weights, pluggable signer), the
   box-format contract inversion (scrollcase becomes the single source of truth,

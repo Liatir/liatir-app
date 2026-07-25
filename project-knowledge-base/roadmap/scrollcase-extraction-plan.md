@@ -1,7 +1,16 @@
 # scrollcase — extracting the Runtime Box builder into an independent open-source tool
 
-**Status:** planned, not started. **Hard prerequisite:** the pixi migration must be fully closed on
-all targets before extraction begins (see `runtime-box-pixi-migration.md`).
+**Status:** APPROVED TO START (2026-07-25). **Extraction target:** `scrollcase/src/` in the repo
+root — the maintainer has scaffolded `scrollcase/` there with an Apache-2.0 `LICENSE`, a `README.md`,
+a `.gitignore`, and a VitePress `docs/` site; `src/` is empty and is where the builder is extracted.
+It is currently tracked inside `liatir-stack` (not a nested git repo, not yet a workspace member);
+P4 moves it to its own repo.
+**Prerequisite — REVISED 2026-07-25** (was: "the pixi migration must be fully closed on all
+targets"): the builder must be **validated across the full OS/accelerator matrix on ≥1
+representative model** — which is met. scGPT is validated on the pixi substrate across
+macOS/Linux/Windows × CPU/CUDA/Metal, exercising every builder code path; the remaining models
+(Geneformer, UCE) are packaged **after** extraction, **through** the external tool. See the revised
+P0 for the rationale and the two Liatir-side caveats that do **not** gate extraction.
 **Decision date:** 2026-07-25.
 
 ---
@@ -167,8 +176,23 @@ Today the box-format contract is **triplicated** and kept in sync by the golden 
 
 ## Sequencing (phases)
 
-- **P0 — Prerequisite:** pixi migration fully closed on all targets. Do not start extraction before this
-  (avoids maintaining a public API mid-change).
+- **P0 — Prerequisite (REVISED 2026-07-25): MET, extraction approved.** Original wording: "pixi
+  migration fully closed on all targets." Revised to: **"the builder validated across the full
+  OS/accelerator matrix on ≥1 representative model."** Rationale: the builder is model-agnostic and
+  already decoupled (the `.mjs` tooling imports zero `liatir-core`), so migrating Geneformer/UCE
+  in-repo would add almost no *builder* coverage — they are PyTorch, the same code paths scGPT
+  already exercised on the pixi substrate across macOS/Linux/Windows × CPU/CUDA/Metal. Doing that
+  work against a builder about to move is waste; packaging the remaining models **through** the
+  external tool is cheaper and is the strongest integration test of the frozen public API. The
+  original "don't maintain a public API mid-change" concern is therefore *better* served by
+  extracting first. **Two caveats that do NOT gate extraction** — both are Liatir-side release
+  concerns (the Rust/Tauri consumer + the private KMS signer, which stay in Liatir by design):
+  (1) the macOS pixi box has only been built locally, never validated in CI — scGPT macOS remains
+  the uv published pilot; (2) no pixi box has been through a protected release (KMS sign → R2
+  publish), only dev-signed local builds + CI validation. Both are closed **after** extraction, via
+  scrollcase's pluggable external-signer interface. Since Liatir is not released, retiring the uv
+  boxes/recipes is likewise a low-risk downstream cleanup, done per-target once each pixi box is
+  published.
 - **P1 — Parametrize paths:** replace `resolve(import.meta.dirname, '..')` root assumptions
   (`runtime-box.mjs:96`, `evidence.mjs`) with `--recipes-dir`/`--out-dir` or `scrollcase.config.json`
   discovery. This is the only mechanical refactor and is worth doing regardless.
