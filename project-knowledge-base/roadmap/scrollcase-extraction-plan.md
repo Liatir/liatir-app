@@ -310,10 +310,26 @@ for byte-compatibility anyway, and P5 deletes the Liatir side.
 
 ### Decisions taken, with their reasons
 
-- **Wire `kind` strings stay `liatir.runtime-box.*` verbatim.** They are baked into published boxes,
-  the deployed registry, and installed clients; renaming them is a breaking format change that can
-  only arrive with a new `schemaVersion`, never as a silent edit. Recorded in the schemas themselves.
-  A neutral rename is an open decision for a future format version, not a P2 cleanup.
+- **scrollcase contains no reference to Liatir, anywhere.** Not in code, schemas, fixtures, tests,
+  examples, or NOTICE — verified by grep. An earlier draft of this phase kept the wire `kind` strings
+  as `liatir.runtime-box.*` on byte-compatibility grounds and was **rejected by the maintainer**: a
+  tool that is meant to be independent cannot carry its first consumer's name in its format.
+- **The document namespace is the consumer's, not the tool's.** `kind` is `<namespace>.release` /
+  `.channel` / `.revocations`. `documentKinds(namespace)` builds them, `parseDocumentKind()` splits
+  them back, and the schemas validate the shape rather than one hard-coded string. scrollcase's own
+  default is `scrollcase.box`. This is what dissolves the apparent conflict with byte-compatibility:
+  a project with boxes already in the field keeps emitting the namespace its clients recognise by
+  declaring it, and the tool never needs to know whose it is. Liatir declares
+  `liatir.runtime-box` when it adopts scrollcase at P5, and its documents stay byte-identical.
+- **Compatibility constraints are pass-through, not Liatir's.** `minLiatirVersion` is gone from the
+  schemas; the neutral fields are `minHostAppVersion` / `maxHostAppVersionExclusive`, and the
+  `compatibility` object is open, because the builder copies it into the release manifest verbatim
+  and never interprets it. A project may declare its own constraints there — including a legacy field
+  name — without the tool defining them.
+- **Every example is synthetic.** The fixture examples were regenerated for a fictional
+  `example-model` published at `assets.example.org`, and the signed envelope was re-signed with a
+  throwaway ed25519 key whose public half ships beside it, so the example verifies without any Liatir
+  artifact, URL, model, or development key being shipped in the tool.
 - **`https://scrollcase.dev/schema/...` is used as the schema `$id` namespace**, matching the choice
   made in P1 for the config schema. A JSON Schema `$id` is an identifier rather than a fetched URL,
   so this is safe, but the domain should be confirmed when publishing at P4.
@@ -323,10 +339,17 @@ for byte-compatibility anyway, and P5 deletes the Liatir side.
 
 ### P2 evidence (all local, zero cost)
 
-- `npm test` inside `scrollcase/`: **17/17 passed**, 2 files, on its own vitest + ajv install. The
+- `npm test` inside `scrollcase/`: **21/21 passed**, 2 files, on its own vitest + ajv install. The
   suite proves the reference implementation matches every golden case, that the schemas accept the
   real documents the builder emits, that schema and implementation accept and reject exactly the same
-  targets, and that a tampered payload hash and four malformed envelopes are refused.
+  targets, that a namespace belonging to another project round-trips while a malformed one is
+  refused, and that a tampered payload hash and four malformed envelopes are rejected.
+- **No Liatir reference survives in the tool:** `grep -rin liatir` over `scrollcase/src`,
+  `scrollcase/tests`, `NOTICE` and `package.json` returns nothing. The only remaining hits under
+  `scrollcase/` are in the maintainer-authored VitePress theme (`HomePage.vue`,
+  `HomePage.released.vue`, `PatreonButton.vue`, `CookieBanner.vue`), which still carries Liatir
+  marketing copy, the Patreon label, and a `liatir-cookie-consent-v1` storage key from the site it
+  was scaffolded off. That is the maintainer's content and was left untouched.
 - **No drift at seeding:** `scrollcase/src/contract/targets.mjs` differs from
   `scripts/runtime-box/targets.mjs` by exactly the 14-line header comment; the code is byte-identical.
   `fixtures/target-id-contract.json` is byte-identical to `runtime-boxes/target-id-contract.json`.

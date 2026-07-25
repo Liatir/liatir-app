@@ -4,9 +4,11 @@ import Ajv from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { describe, expect, it } from 'vitest';
 import {
-  DOCUMENT_KINDS,
+  DEFAULT_DOCUMENT_NAMESPACE,
   decodeDocumentPayload,
+  documentKinds,
   isSignedRuntimeBoxDocument,
+  parseDocumentKind,
   runtimeBoxTargetId,
   schemaUrl,
 } from '../../src/contract/index.mjs';
@@ -76,8 +78,45 @@ describe('schemas describe what the builder actually emits', () => {
     expectValid('signed-document', signed, 'signed release');
     expect(isSignedRuntimeBoxDocument(signed)).toBe(true);
     const payload = decodeDocumentPayload(signed);
-    expect(payload.kind).toBe(DOCUMENT_KINDS.release);
+    expect(payload.kind).toBe(documentKinds().release);
     expectValid('release-manifest', payload, 'decoded release payload');
+  });
+});
+
+describe('the document namespace belongs to the publishing project', () => {
+  it('defaults to scrollcase and names one kind per document type', () => {
+    expect(documentKinds()).toEqual({
+      release: `${DEFAULT_DOCUMENT_NAMESPACE}.release`,
+      channel: `${DEFAULT_DOCUMENT_NAMESPACE}.channel`,
+      revocations: `${DEFAULT_DOCUMENT_NAMESPACE}.revocations`,
+    });
+  });
+
+  it('lets a project keep the namespace its published boxes already carry', () => {
+    // A project with clients in the field cannot have the tool rename its documents underneath it.
+    const kinds = documentKinds('acme.runtime-box');
+    expect(kinds.release).toBe('acme.runtime-box.release');
+    for (const [type, kind] of Object.entries(kinds)) {
+      expect(parseDocumentKind(kind), type).toEqual({ namespace: 'acme.runtime-box', type });
+    }
+  });
+
+  it('accepts any namespaced kind in the schemas, and nothing else', () => {
+    const release = example('release-manifest');
+    for (const kind of ['acme.runtime-box.release', 'scrollcase.box.release', 'x.release']) {
+      expectValid('release-manifest', { ...release, kind }, kind);
+    }
+    for (const kind of ['release', 'acme.runtime-box.channel', 'Acme.Release', '']) {
+      expect(validatorFor('release-manifest')({ ...release, kind }), kind).toBe(false);
+    }
+  });
+
+  it('rejects a malformed namespace instead of emitting an unusable kind', () => {
+    for (const namespace of ['', 'Acme', 'acme..box', '.acme', 42, null]) {
+      expect(() => documentKinds(namespace), String(namespace)).toThrow(TypeError);
+    }
+    expect(parseDocumentKind('acme.runtime-box.unknown')).toBeNull();
+    expect(parseDocumentKind('release')).toBeNull();
   });
 });
 

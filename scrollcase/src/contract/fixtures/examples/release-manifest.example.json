@@ -1,45 +1,45 @@
 {
   "schemaVersion": 1,
-  "kind": "liatir.runtime-box.release",
-  "boxId": "runtime-box-installer-fixture",
-  "modelId": "liatir-runtime-box-fixture",
-  "runtimeId": "runtime-box-installer-fixture",
-  "version": "0.1.0",
+  "kind": "scrollcase.box.release",
+  "boxId": "example-model",
+  "modelId": "example-org-example-model",
+  "runtimeId": "example-model-runtime",
+  "version": "1.0.0",
   "target": {
     "platform": "macos",
     "arch": "aarch64",
     "accelerator": "metal"
   },
   "compatibility": {
-    "minLiatirVersion": "0.2.1",
+    "minHostAppVersion": "1.0.0",
     "minMacosVersion": "13.0",
-    "minRamGb": 1
+    "minRamGb": 8
   },
   "archive": {
     "format": "zip",
-    "url": "http://127.0.0.1:8790/objects/boxes/runtime-box-installer-fixture/0.1.0/macos-aarch64-metal/0392d77570953f1698e957ae496a081c26feb7873dfc567bca433278e39f11dd.zip",
-    "sha256": "0392d77570953f1698e957ae496a081c26feb7873dfc567bca433278e39f11dd",
-    "sizeBytes": 15752041
+    "url": "https://assets.example.org/runtime-boxes/boxes/example-model/1.0.0/macos-aarch64-metal/7d2c9a41e8b350f6c174a9de20358bf41c6e97d05a8b3f2619e4c7081da5b3f2.zip",
+    "sha256": "7d2c9a41e8b350f6c174a9de20358bf41c6e97d05a8b3f2619e4c7081da5b3f2",
+    "sizeBytes": 655752216
   },
-  "installedSizeBytes": 39968926,
+  "installedSizeBytes": 1892340112,
   "pythonEntryPoint": "venv/bin/python",
-  "modelCacheSubdir": "model-cache/fixture",
+  "modelCacheSubdir": "model-cache/example-model",
   "selfTest": {
     "pythonImports": [
-      "json",
-      "sqlite3"
+      "torch",
+      "numpy"
     ],
     "timeoutSeconds": 180
   },
   "provenance": {
-    "recipeId": "installer-fixture-macos-arm64",
+    "recipeId": "example-model-macos-arm64-metal",
     "recipeVersion": "1.0.0",
-    "builderRevision": "e878fc921313d679ac71d716428097b15a6e3f5d",
+    "builderRevision": "4c1d9b7e2a0f5836d419e7c05b3a8f61d2704e93",
     "sourceTreeDirty": false,
-    "sourceRevision": "internal-fixture-v1",
-    "pythonVersion": "3.11.9",
-    "uvVersion": "0.11.28",
-    "dependencyLockSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "builtAt": "2026-07-25T17:40:18+02:00"
+    "sourceRevision": "9f0d3a1c4b5e6f7081920a3b4c5d6e7f80910a2b",
+    "pythonVersion": "3.11.15",
+    "pixiVersion": "0.73.0",
+    "dependencyLockSha256": "3b1f8c47a2d9e05b6c7418af23d5e69017b4c8ad91e2f350768bd4ca19e0f5b7",
+    "builtAt": "2026-07-25T12:00:00+00:00"
   }
 }

@@ -23,16 +23,30 @@
     "selfTest"
   ],
   "properties": {
-    "schemaVersion": { "const": 1 },
+    "schemaVersion": {
+      "const": 1
+    },
     "recipeId": {
       "type": "string",
       "minLength": 1,
       "description": "Must equal the name of the directory holding this file, so a recipe cannot quietly claim an identity other than the one being built."
     },
-    "recipeVersion": { "type": "string", "minLength": 1 },
-    "boxId": { "type": "string", "minLength": 1 },
-    "modelId": { "type": "string", "minLength": 1 },
-    "runtimeId": { "type": "string", "minLength": 1 },
+    "recipeVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "boxId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "modelId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "runtimeId": {
+      "type": "string",
+      "minLength": 1
+    },
     "version": {
       "type": "string",
       "minLength": 1,
@@ -43,20 +57,41 @@
       "minLength": 1,
       "description": "Upstream revision of the packaged source, recorded verbatim into provenance."
     },
-    "target": { "$ref": "https://scrollcase.dev/schema/target.schema.json" },
+    "target": {
+      "$ref": "https://scrollcase.dev/schema/target.schema.json"
+    },
     "compatibility": {
       "type": "object",
-      "additionalProperties": false,
-      "required": ["minLiatirVersion"],
+      "additionalProperties": true,
       "properties": {
-        "minLiatirVersion": { "type": "string", "minLength": 1 },
-        "maxLiatirVersionExclusive": { "type": "string", "minLength": 1 },
-        "minMacosVersion": { "type": "string", "minLength": 1 },
-        "minRamGb": { "type": "number", "exclusiveMinimum": 0 },
-        "minNvidiaDriverVersion": { "type": "string", "minLength": 1 }
-      }
+        "minHostAppVersion": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Lowest version of the installing application this box supports."
+        },
+        "maxHostAppVersionExclusive": {
+          "type": "string",
+          "minLength": 1
+        },
+        "minMacosVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "minRamGb": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "minNvidiaDriverVersion": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "description": "Constraints the installing host must satisfy. Copied through into the release manifest verbatim and never interpreted by the builder, so a project may declare its own alongside these."
     },
-    "pythonVersion": { "type": "string", "minLength": 1 },
+    "pythonVersion": {
+      "type": "string",
+      "minLength": 1
+    },
     "pixiVersion": {
       "type": "string",
       "minLength": 1,
@@ -97,7 +132,10 @@
       "minLength": 1,
       "description": "Interpreter path relative to the box root. Must match the target adapter's layout."
     },
-    "modelCacheSubdir": { "type": "string", "minLength": 1 },
+    "modelCacheSubdir": {
+      "type": "string",
+      "minLength": 1
+    },
     "assetBaseUrl": {
       "type": "string",
       "minLength": 1,
@@ -109,12 +147,27 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["url", "relativePath", "sizeBytes", "sha256"],
+        "required": [
+          "url",
+          "relativePath",
+          "sizeBytes",
+          "sha256"
+        ],
         "properties": {
-          "url": { "type": "string", "minLength": 1 },
-          "relativePath": { "$ref": "#/$defs/payloadPath" },
-          "sizeBytes": { "type": "integer", "exclusiveMinimum": 0 },
-          "sha256": { "$ref": "#/$defs/sha256" }
+          "url": {
+            "type": "string",
+            "minLength": 1
+          },
+          "relativePath": {
+            "$ref": "#/$defs/payloadPath"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "sha256": {
+            "$ref": "#/$defs/sha256"
+          }
         }
       }
     },
@@ -124,13 +177,31 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["relativePath", "format", "destination"],
+        "required": [
+          "relativePath",
+          "format",
+          "destination"
+        ],
         "properties": {
-          "relativePath": { "$ref": "#/$defs/payloadPath" },
-          "format": { "enum": ["zip", "tar.gz"] },
-          "destination": { "$ref": "#/$defs/payloadPath" },
-          "stripComponents": { "type": "integer", "minimum": 0 },
-          "removeAfterExtract": { "type": "boolean" }
+          "relativePath": {
+            "$ref": "#/$defs/payloadPath"
+          },
+          "format": {
+            "enum": [
+              "zip",
+              "tar.gz"
+            ]
+          },
+          "destination": {
+            "$ref": "#/$defs/payloadPath"
+          },
+          "stripComponents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "removeAfterExtract": {
+            "type": "boolean"
+          }
         }
       }
     },
@@ -140,33 +211,54 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["sourcePath", "relativePath", "sha256"],
+        "required": [
+          "sourcePath",
+          "relativePath",
+          "sha256"
+        ],
         "properties": {
-          "sourcePath": { "type": "string", "minLength": 1 },
-          "relativePath": { "$ref": "#/$defs/payloadPath" },
-          "sha256": { "$ref": "#/$defs/sha256" }
+          "sourcePath": {
+            "type": "string",
+            "minLength": 1
+          },
+          "relativePath": {
+            "$ref": "#/$defs/payloadPath"
+          },
+          "sha256": {
+            "$ref": "#/$defs/sha256"
+          }
         }
       }
     },
     "prunePaths": {
       "type": "array",
       "description": "Payload paths deleted before packing, to keep the box to what it actually needs at run time. Pruning a distribution the lock requires is rejected.",
-      "items": { "$ref": "#/$defs/payloadPath" }
+      "items": {
+        "$ref": "#/$defs/payloadPath"
+      }
     },
     "selfTest": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["imports", "files"],
+      "required": [
+        "imports",
+        "files"
+      ],
       "description": "Run with the payload's own interpreter before the box is archived. It doubles as the check a consumer repeats after installing.",
       "properties": {
         "imports": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "files": {
           "type": "array",
           "description": "Files that must still exist after pruning, which is what stops an over-aggressive prune from shipping a broken box.",
-          "items": { "$ref": "#/$defs/payloadPath" }
+          "items": {
+            "$ref": "#/$defs/payloadPath"
+          }
         },
         "pythonCode": {
           "type": "string",
@@ -179,13 +271,41 @@
   "oneOf": [
     {
       "title": "pixi substrate",
-      "required": ["pixiVersion"],
-      "not": { "anyOf": [{ "required": ["uvVersion"] }, { "required": ["requirementsLock"] }, { "required": ["torchBackend"] }] }
+      "required": [
+        "pixiVersion"
+      ],
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "uvVersion"
+            ]
+          },
+          {
+            "required": [
+              "requirementsLock"
+            ]
+          },
+          {
+            "required": [
+              "torchBackend"
+            ]
+          }
+        ]
+      }
     },
     {
       "title": "uv substrate",
-      "required": ["uvVersion", "requirementsInput", "requirementsLock"],
-      "not": { "required": ["pixiVersion"] }
+      "required": [
+        "uvVersion",
+        "requirementsInput",
+        "requirementsLock"
+      ],
+      "not": {
+        "required": [
+          "pixiVersion"
+        ]
+      }
     }
   ],
   "$defs": {

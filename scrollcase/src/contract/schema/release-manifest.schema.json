@@ -23,8 +23,8 @@
   "properties": {
     "schemaVersion": { "const": 1 },
     "kind": {
-      "const": "liatir.runtime-box.release",
-      "description": "Wire discriminator. Reads liatir.* for historical reasons and is frozen: renaming it would break every published box, deployed registry, and installed client, so it can only change with a new schemaVersion."
+      "$ref": "#/$defs/kind",
+      "description": "Wire discriminator, \"<namespace>.release\". The namespace belongs to the publishing project — a project with boxes already in the field must keep emitting the one its clients recognise — and defaults to scrollcase.box for a new one."
     },
     "boxId": { "$ref": "#/$defs/identifier" },
     "modelId": { "$ref": "#/$defs/identifier" },
@@ -33,12 +33,15 @@
     "target": { "$ref": "https://scrollcase.dev/schema/target.schema.json" },
     "compatibility": {
       "type": "object",
-      "additionalProperties": false,
-      "description": "What the host must satisfy before this box may be installed. A consumer that cannot evaluate a constraint must refuse the box rather than assume it passes.",
-      "required": ["minLiatirVersion"],
+      "additionalProperties": true,
+      "description": "What the host must satisfy before this box may be installed. The builder copies these constraints through verbatim and never interprets them, so a project may add its own alongside the ones defined here. A consumer that cannot evaluate a constraint must refuse the box rather than assume it passes.",
       "properties": {
-        "minLiatirVersion": { "type": "string", "minLength": 1 },
-        "maxLiatirVersionExclusive": { "type": "string", "minLength": 1 },
+        "minHostAppVersion": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Lowest version of the installing application this box supports."
+        },
+        "maxHostAppVersionExclusive": { "type": "string", "minLength": 1 },
         "minMacosVersion": { "type": "string", "minLength": 1 },
         "minRamGb": {
           "type": "number",
@@ -100,6 +103,10 @@
     "identifier": {
       "type": "string",
       "pattern": "^[a-z0-9]+(?:[-.][a-z0-9]+)*$"
+    },
+    "kind": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*\\.release$"
     },
     "sha256": {
       "type": "string",

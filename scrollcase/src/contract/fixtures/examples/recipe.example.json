@@ -1,32 +1,41 @@
 {
   "schemaVersion": 1,
-  "recipeId": "installer-fixture-macos-arm64",
+  "recipeId": "example-model-macos-arm64-metal",
   "recipeVersion": "1.0.0",
-  "boxId": "runtime-box-installer-fixture",
-  "modelId": "liatir-runtime-box-fixture",
-  "runtimeId": "runtime-box-installer-fixture",
-  "version": "0.1.0",
-  "sourceRevision": "internal-fixture-v1",
+  "boxId": "example-model",
+  "modelId": "example-org-example-model",
+  "runtimeId": "example-model-runtime",
+  "version": "1.0.0",
+  "sourceRevision": "9f0d3a1c4b5e6f7081920a3b4c5d6e7f80910a2b",
   "target": {
     "platform": "macos",
     "arch": "aarch64",
     "accelerator": "metal"
   },
   "compatibility": {
-    "minLiatirVersion": "0.2.1",
+    "minHostAppVersion": "1.0.0",
     "minMacosVersion": "13.0",
-    "minRamGb": 1
+    "minRamGb": 8
   },
   "pythonVersion": "3.11.9",
   "uvVersion": "0.11.28",
   "requirementsInput": "requirements.in",
   "requirementsLock": "requirements.lock",
+  "torchBackend": "cpu",
+  "dependencyLicenseAudit": "legal/audits/example-model-macos-arm64-metal.json",
   "pythonEntryPoint": "venv/bin/python",
-  "modelCacheSubdir": "model-cache/fixture",
-  "assetBaseUrl": "http://127.0.0.1:8790/objects",
-  "assets": [],
+  "modelCacheSubdir": "model-cache/example-model",
+  "assetBaseUrl": "https://assets.example.org/runtime-boxes",
+  "assets": [
+    {
+      "url": "https://assets.example.org/example-model/weights.safetensors",
+      "relativePath": "model-cache/example-model/weights.safetensors",
+      "sizeBytes": 205385258,
+      "sha256": "6cb5d451ab5c4b33eb673adbe4fddc61d2389df1b89b7651a9fe2e557572b922"
+    }
+  ],
   "selfTest": {
-    "imports": ["json", "sqlite3"],
-    "files": []
+    "imports": ["torch", "numpy"],
+    "files": ["model-cache/example-model/weights.safetensors"]
   }
 }

@@ -5,11 +5,6 @@
  * That choice is deliberate: verifying a signature then means hashing bytes that were transmitted
  * verbatim, so Node, Rust, a Worker, and any future client agree without each maintaining a
  * canonical-JSON implementation — historically the richest source of cross-language signature bugs.
- *
- * The `kind` strings below are wire identifiers baked into published boxes, deployed registries, and
- * already-installed clients. They read `liatir.runtime-box.*` for historical reasons and are kept
- * verbatim: renaming them is a breaking format change, and would have to arrive with a new
- * `schemaVersion`, never as a silent edit.
  */
 
 import { createHash } from 'node:crypto';
@@ -23,12 +18,44 @@ export const PAYLOAD_ENCODING = 'base64-json-utf8';
 /** The only signature algorithm the format defines. */
 export const SIGNATURE_ALGORITHM = 'ed25519';
 
-/** Wire `kind` discriminators, one per document the format defines. */
-export const DOCUMENT_KINDS = Object.freeze({
-  release: 'liatir.runtime-box.release',
-  channel: 'liatir.runtime-box.channel',
-  revocations: 'liatir.runtime-box.revocations',
-});
+/**
+ * Namespace prefixing every document's `kind` discriminator.
+ *
+ * A project that already publishes boxes owns its own namespace and must keep emitting it, or its
+ * installed clients stop recognizing the documents they are handed. So the namespace is the
+ * consumer's to declare, not the tool's to impose: this is only the default used by a project that
+ * has no published history to preserve.
+ */
+export const DEFAULT_DOCUMENT_NAMESPACE = 'scrollcase.box';
+
+const DOCUMENT_TYPES = Object.freeze(['release', 'channel', 'revocations']);
+const NAMESPACE_PATTERN = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/;
+
+/**
+ * Returns the `kind` discriminator for each document type under a namespace.
+ *
+ * Pass the namespace a project has already published under to keep its documents byte-compatible;
+ * omit it for a new project.
+ */
+export function documentKinds(namespace = DEFAULT_DOCUMENT_NAMESPACE) {
+  if (typeof namespace !== 'string' || !NAMESPACE_PATTERN.test(namespace)) {
+    throw new TypeError(`Invalid document namespace: ${namespace}`);
+  }
+  return Object.freeze(Object.fromEntries(
+    DOCUMENT_TYPES.map((type) => [type, `${namespace}.${type}`]),
+  ));
+}
+
+/** Splits a `kind` back into its namespace and document type, or returns null if it is not one. */
+export function parseDocumentKind(kind) {
+  if (typeof kind !== 'string') return null;
+  const separator = kind.lastIndexOf('.');
+  if (separator <= 0) return null;
+  const namespace = kind.slice(0, separator);
+  const type = kind.slice(separator + 1);
+  if (!DOCUMENT_TYPES.includes(type) || !NAMESPACE_PATTERN.test(namespace)) return null;
+  return { namespace, type };
+}
 
 /** Channels a box may be published to, ordered from least to most stable. */
 export const CHANNELS = Object.freeze(['development', 'beta', 'stable']);

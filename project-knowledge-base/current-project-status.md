@@ -154,10 +154,16 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   import from it, and it tests itself. It holds a standalone contract package —
   reference implementation (target model + signed-envelope contract), seven JSON
   Schemas written from real emitted documents, and golden fixtures — with its own
-  dependencies and `npm test` (17/17 green). Liatir was deliberately left untouched
+  dependencies and `npm test` (21/21 green). Liatir was deliberately left untouched
   and still passes 190/190; its copies of the contract are deleted at P5, when it
-  installs the published package. The wire `kind` strings stay `liatir.runtime-box.*`
-  verbatim because they are baked into published boxes and deployed services.
+  installs the published package. **scrollcase contains no reference to Liatir at all**
+  — the document `kind` is `<namespace>.release`, where the namespace belongs to the
+  publishing project and defaults to `scrollcase.box`. That is how independence and
+  byte-compatibility coexist: Liatir declares `liatir.runtime-box` when it adopts the
+  tool at P5 and its documents stay byte-identical, while the tool never carries its
+  first consumer's name. `minLiatirVersion` is likewise gone from the schemas, replaced
+  by neutral pass-through compatibility fields, and every fixture example is synthetic
+  with a throwaway signing key.
   P3–P5 remain, each on explicit maintainer go-ahead.
   Covers the CLI design (`init`/`doctor`/`build`/`verify`/`audit`, per-project
   toolchain isolation, embed-vs-on-demand weights, pluggable signer), the

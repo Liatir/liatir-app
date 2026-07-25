@@ -14,7 +14,7 @@
     "cudaVersion": "12.9"
   },
   "compatibility": {
-    "minLiatirVersion": "0.2.1",
+    "minHostAppVersion": "1.0.0",
     "minRamGb": 16,
     "minNvidiaDriverVersion": "525.60.13"
   },

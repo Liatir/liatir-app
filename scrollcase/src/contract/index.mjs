@@ -25,12 +25,14 @@ export {
 
 export {
   CHANNELS,
-  DOCUMENT_KINDS,
+  DEFAULT_DOCUMENT_NAMESPACE,
   PAYLOAD_ENCODING,
   RUNTIME_BOX_SCHEMA_VERSION,
   SIGNATURE_ALGORITHM,
   decodeDocumentPayload,
+  documentKinds,
   isSignedRuntimeBoxDocument,
+  parseDocumentKind,
 } from './documents.mjs';
 
 /** Absolute URL of a shipped JSON Schema, for consumers that validate documents themselves. */
