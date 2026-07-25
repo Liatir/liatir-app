@@ -560,8 +560,12 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 >   `/etc/sudoers.d/liatir-runner` (`NOPASSWD: /usr/bin/apt-get`, validated with visudo), the
 >   durable alternative to storing a password. **scGPT Linux CPU advances to
 >   `native-lifecycle-validated`.**
-> - **native-lifecycle on Windows: in progress** (run `30136322406`) — the MSVC Rust/Tauri compile
->   is slow on the first build. Result to be recorded on completion.
+> - **native-lifecycle validated on Windows (2026-07-24).** Run `30136322406` passed on the Windows
+>   self-hosted runner: MSVC Rust/Tauri compile + `cargo test runtime_box` against the pixi box,
+>   self-test passed, scientific parity `[1, 512]` on torch 2.8.0 CPU. **scGPT Windows CPU advances
+>   to `native-lifecycle-validated`.** No sudo needed on Windows — the VC++ tools were already
+>   present. **Both scGPT CPU targets are now fully validated in CI at every mode** (build +
+>   scientific + native-lifecycle).
 > - **Remaining before a protected release: the macOS launcher re-check.** Phase 3 deleted the
 >   macOS-only launcher, so the shared launcher's Darwin branch is unproven on a real Mac. A ready
 >   handoff prompt is in

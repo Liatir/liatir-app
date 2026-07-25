@@ -48,7 +48,10 @@ archive 0.53 GB). **scGPT Linux CPU has also passed `native-lifecycle` on CI** (
 `30135717742`: Tauri built with Rust 1.95 and the `cargo test runtime_box` suite run
 against the pixi box), advancing to `native-lifecycle-validated`; this needed a scoped
 passwordless `apt-get` on the WSL runner (`/etc/sudoers.d/liatir-runner`). scGPT
-Windows CPU `native-lifecycle` is in progress (run `30136322406`). **The one macOS gap
+Windows CPU `native-lifecycle` also passed (run `30136322406`; no sudo needed, VC++
+tools already present), so **both scGPT CPU targets are now fully validated in CI at
+build, scientific and native-lifecycle** and sit at `native-lifecycle-validated`.
+**The one macOS gap
 left is a shared-launcher re-check** — Phase 3 deleted the macOS-only launcher, so its
 Darwin branch is unproven; a handoff prompt is in
 [roadmap/runtime-box-pixi-macos-launcher-check.md](./roadmap/runtime-box-pixi-macos-launcher-check.md).

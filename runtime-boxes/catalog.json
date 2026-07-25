@@ -447,7 +447,7 @@
           ],
           "recipeId": "scgpt-whole-human-windows-x86_64-cpu",
           "runnerProfileId": "windows-x64-selfhosted",
-          "status": "scientifically-validated",
+          "status": "native-lifecycle-validated",
           "validationModes": [
             "build",
             "scientific",
