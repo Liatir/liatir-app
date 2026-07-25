@@ -1,12 +1,10 @@
 /**
  * scrollcase workspace resolution.
  *
- * The builder used to derive every path from its own location on disk (`import.meta.dirname/..`),
- * which only holds while the tooling lives inside the consuming repository. A workspace is instead
- * declared by the *consumer*: a `scrollcase.config.json` at the project root, overridable per
- * invocation by CLI flags. Defaults reproduce the historical layout exactly, so a project whose
- * config declares nothing — or has no config at all, with the CLI run from its root — resolves the
- * same paths as before.
+ * Where a project keeps its recipes, and where the tool writes what it builds, is the project's
+ * decision, not the tool's. A workspace is declared by a `scrollcase.config.json` at the project
+ * root, discovered by walking up from the working directory and overridable per invocation by CLI
+ * flags. A project that declares nothing gets the defaults below.
  *
  * Precedence, highest first: CLI flag, then `scrollcase.config.json`, then the built-in default.
  * Flag values resolve against the current working directory (what a shell user expects); config
@@ -18,12 +16,16 @@ import { fail } from './process.mjs';
 
 export const SCROLLCASE_CONFIG_FILENAME = 'scrollcase.config.json';
 
-/** Historical Liatir layout — the defaults every path falls back to. */
+/**
+ * The layout a project gets when it declares nothing. A project that already keeps its recipes
+ * elsewhere — or that adopted the tool after building its own convention — overrides these in its
+ * config rather than moving its files.
+ */
 export const DEFAULT_WORKSPACE_PATHS = Object.freeze({
-  recipes: 'runtime-boxes/recipes',
-  build: '.runtime-box-build',
-  dist: '.runtime-box-dist',
-  keys: '.runtime-box-local',
+  recipes: 'recipes',
+  build: '.scrollcase/build',
+  dist: '.scrollcase/dist',
+  keys: '.scrollcase/keys',
 });
 
 /** Config path key -> resolved workspace field. */

@@ -8,6 +8,7 @@
  */
 
 import { createHash } from 'node:crypto';
+import { DEFAULT_DOCUMENT_NAMESPACE } from '../contract/documents.mjs';
 
 function fail(message) {
   throw new Error(`box licence audit: ${message}`);
@@ -80,10 +81,10 @@ export function lockedCondaDistributions(lockBytes) {
 }
 
 /** Builds the deterministic conda license audit bound to one pixi.lock and target. */
-export function createCondaDependencyLicenseAudit({ lockBytes, targetId }) {
+export function createCondaDependencyLicenseAudit({ lockBytes, targetId, namespace = DEFAULT_DOCUMENT_NAMESPACE }) {
   return {
     schemaVersion: 1,
-    kind: 'liatir.runtime-box.conda-dependency-license-audit',
+    kind: `${namespace}.dependency-license-audit`,
     targetId,
     dependencyLockSha256: sha256(lockBytes),
     packages: lockedCondaDistributions(lockBytes),

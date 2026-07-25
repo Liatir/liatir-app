@@ -21,12 +21,13 @@ import { fail, runResult as defaultRunResult } from './process.mjs';
 import { repairPosixLaunchers } from './launchers.mjs';
 
 /**
- * Verifies a pinned pixi is installed, mirroring findUv's exact-version discipline: `build` and
- * `lock` must use the same pixi the recipe was pinned against, never whatever is on PATH.
- * `runResult` is injectable so the discovery logic is unit-testable without a real pixi.
+ * Verifies the pinned pixi is installed. `build` and `lock` must use the same pixi the recipe was
+ * pinned against, never whatever happens to be on PATH: a different resolver version can select
+ * different packages and silently change the box.
+ * `runResult` is injectable so a caller can drive discovery without a real pixi on PATH.
  */
-export function findPixi(flags, requiredVersion, { runResult = defaultRunResult } = {}) {
-  const candidate = String(flags.get('pixi') || process.env.LIATIR_RUNTIME_BOX_PIXI || 'pixi');
+export function findPixi({ requiredVersion, path = null, runResult = defaultRunResult }) {
+  const candidate = String(path || process.env.SCROLLCASE_PIXI || 'pixi');
   const result = runResult(candidate, ['--version'], { capture: true });
   if (result.error || result.status !== 0) {
     fail(`pixi ${requiredVersion} is required. Install it from https://pixi.sh/ or pass --pixi <path>.`);
@@ -70,8 +71,8 @@ export function condaPackArguments(prefix, outputPath) {
  * Verifies conda-pack is available. Its `--version` is unreliable (prints 0.0.0), so we only
  * confirm it runs; the exact version pin is recorded elsewhere (via the pixi global manifest).
  */
-export function findCondaPack(flags, { runResult = defaultRunResult } = {}) {
-  const candidate = String(flags.get('conda-pack') || process.env.LIATIR_RUNTIME_BOX_CONDA_PACK || 'conda-pack');
+export function findCondaPack({ path = null, runResult = defaultRunResult } = {}) {
+  const candidate = String(path || process.env.SCROLLCASE_CONDA_PACK || 'conda-pack');
   const result = runResult(candidate, ['--help'], { capture: true });
   if (result.error || result.status !== 0) {
     fail('conda-pack is required. Install it (e.g. `pixi global install conda-pack`) or pass --conda-pack <path>.');
@@ -83,9 +84,8 @@ export function findCondaPack(flags, { runResult = defaultRunResult } = {}) {
  * Replaces every symbolic link under `root` with the real content it points to, so the payload
  * contains only regular files and directories.
  *
- * The box archive layer rejects links outright (collectFiles/normalizeTree/the ZIP writer),
- * and the uv path already dereferences when it stages standalone Python. A conda prefix is dense
- * with symlinks (versioned dylibs, `bin` aliases), so the pixi path must materialize them here,
+ * The box archive layer rejects links outright (collectFiles/normalizeTree/the ZIP writer). A conda
+ * prefix is dense with symlinks (versioned dylibs, `bin` aliases), so they are materialized here,
  * *after* conda-unpack has rewritten in-prefix paths against the final location. Links that dangle
  * or resolve outside the prefix are dropped rather than pulling host files into the box.
  */

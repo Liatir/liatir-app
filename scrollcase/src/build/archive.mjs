@@ -164,7 +164,7 @@ async function validateTarArchive(archivePath) {
 
 /** Extracts recipe assets using only pinned Node archive implementations. */
 export async function extractRecipeArchive(archivePath, format, destination, stripComponents = 0) {
-  const tempRoot = await mkdtemp(join(tmpdir(), 'liatir-runtime-box-extract-'));
+  const tempRoot = await mkdtemp(join(tmpdir(), 'scrollcase-extract-'));
   try {
     if (format === 'zip') {
       await extractZipArchive(archivePath, tempRoot);
