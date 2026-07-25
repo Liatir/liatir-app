@@ -2,7 +2,9 @@
 
 Last reviewed: 2026-07-24
 
-Status: **Phases 0, 1 and 2 DONE; Phase 3 is next; Phases 4–5 not started.**
+Status: **Phases 0–4 DONE; Phase 5 in progress.** scGPT is validated in CI on every non-macOS
+target — Linux CPU, Windows CPU (build + scientific + native-lifecycle) and **Linux CUDA
+(scientific, real RTX 4060 Ti)**; the macOS launcher re-check is done. Windows CUDA is next.
 
 - **Phase 0 — complete on every OS** (macOS Metal + Windows CPU/CUDA + Linux CPU/CUDA). The
   zero-cost local spike is decisive on macOS, on the harder no-rpath Windows case (CPU + CUDA, real
@@ -24,11 +26,14 @@ Status: **Phases 0, 1 and 2 DONE; Phase 3 is next; Phases 4–5 not started.**
   runners by design. **No runner has been registered and no job has run yet** — the first dispatch
   is the maintainer's call, and the CUDA targets are gated on Phase 4. The shared launcher still
   needs a `--preflight-only` re-check on macOS before the next macOS job.
-- **Phase 4 — complete.** GPU runner profiles declare capability/VRAM **floors** instead of one
-  exact card; the parity validator, the host probe, the evidence record and the CUDA E2E no longer
-  pin a Tesla T4, so the local RTX 4060 Ti is accepted. CUDA dispatch is unblocked but has not been
-  exercised on real hardware yet.
-- **Phase 5 — not started.**
+- **Phase 4 — complete, and now proven on real hardware.** GPU runner profiles declare
+  capability/VRAM **floors** instead of one exact card; the parity validator, host probe, evidence
+  record and CUDA E2E no longer pin a Tesla T4. The scGPT Linux CUDA run below is the first CUDA
+  validation ever executed on the local RTX 4060 Ti (compute 8.9), confirming the generalization
+  end to end.
+- **Phase 5 — in progress.** scGPT Linux CPU + Windows CPU are validated at every mode; **scGPT
+  Linux CUDA 12.9 is scientifically validated on the 4060 Ti**; scGPT Windows CUDA 12.8 is next
+  (now unblocked by the linux-cuda-before-windows-cuda gate). Nothing signed/published/promoted.
 
 **Production code HAS changed** as of Phase 1/2 (`packages/liatir-core`, `scripts/runtime-box*`,
 `runtime-boxes/catalog.json`, unit tests). Each remaining phase begins only on explicit maintainer
@@ -551,8 +556,26 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 >   `scientifically-validated`. The first attempt (`30133946752`) failed only because the CI pixi
 >   step used `shell: pwsh`, which the self-hosted Windows box lacks; fixed to `shell: powershell`
 >   (commit `bf58566`), and everything before that step had already passed.
+> - **scGPT Linux CUDA 12.9 validated on the RTX 4060 Ti (2026-07-25) — the first CUDA box on the
+>   pixi substrate and the first CUDA validation on the local GPU.** Run `30141976372` (mode
+>   `scientific`) passed on `liatir-linux-cuda-selfhosted`: pixi 0.73.0, `pytorch 2.8.0 cuda129`,
+>   accelerator **CUDA**, GPU `NVIDIA GeForce RTX 4060 Ti` (compute 8.9) matching the host, peak
+>   VRAM 219,378,688 B (~209 MiB), and **CPU-vs-CUDA parity passed** (cosine 0.99999999999994, max
+>   abs diff 8.9e-8). Target advances to `scientifically-validated`.
+>   - **Real footprint (the largest box in the matrix by far):** installed **25.8 GB**, archive
+>     **15.9 GB**. Phase 0's ~9.5 GB was the symlinked prefix; dereferencing the CUDA env inflates
+>     it ~2.7×. The `diskPlan` was corrected to these measured values (required build disk 56 GiB,
+>     under the 64 GiB CUDA runner floor). A ~16 GB user download is a real product consideration.
+>   - **It took five dispatches, each a distinct defect in the new CUDA path or the WSL host, never
+>     the box or the CUDA compute** (which worked from the 4th run): (1) the self-test was cloned
+>     from the CPU recipe and asserted CUDA *absent*; (2) `verify` extracted the ~16 GB box into
+>     WSL's 8 GB `/tmp` tmpfs (ENOSPC) → TMPDIR pointed at the work volume; (3) the 205 MB checkpoint
+>     download dropped mid-stream (undici `terminated`) → bounded retry with resume; (4) the scGPT
+>     validator left `accelerator.gpuModel`/`gpuMemoryBytes` null, which the evidence contract
+>     requires for CUDA → the product runner now reports GPU identity. Each fix is permanent and
+>     benefits future targets.
 > - **This also proved the CI pixi provisioning added to `_runtime-box-validate.yml`** (pinned pixi
->   and conda-pack, with uv made conditional) on both a Linux and a Windows self-hosted runner.
+>   and conda-pack, with uv made conditional) on Linux CPU, Windows CPU **and Linux CUDA** runners.
 > - **native-lifecycle validated on Linux (2026-07-24).** Run `30135717742` (mode
 >   `native-lifecycle`) passed on the WSL runner: it installed the Tauri system libraries, built the
 >   `src-tauri` bridge with Rust 1.95, and ran the `cargo test runtime_box` lifecycle suite against

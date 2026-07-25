@@ -61,8 +61,19 @@ and disk floor. The optional native pixi box build was also run: scGPT
 `verify --self-test` passed (`Verified scgpt-whole-human 0.2.5-beta.1
 (macos-aarch64-metal)`), loading `best_model.pt` on torch 2.8.0 Metal — measured
 archive 655,752,216 B (≈0.61 GB); build/dist cleaned up afterwards.
-After this, only the protected release remains for each target, gated on the
-maintainer's go-ahead and a prior signer deploy.
+**scGPT Linux CUDA 12.9 is now scientifically validated on the RTX 4060 Ti** —
+the first CUDA box on the pixi substrate and the first CUDA validation on the
+local GPU (run `30141976372`): pytorch 2.8.0 cuda129, CPU-vs-CUDA parity passed
+(cosine 0.99999999999994), peak VRAM ~209 MiB, GPU identity matching the host.
+This proves the Phase 4 hardware generalization end to end. Real footprint is
+the largest in the matrix: installed 25.8 GB, archive 15.9 GB (a ~16 GB user
+download). It took five dispatches to get there, each a distinct defect in the
+new CUDA path or the WSL host (CPU-cloned self-test, /tmp tmpfs too small for
+verify, a dropped checkpoint download, and missing GPU-identity evidence), never
+the box or the CUDA compute itself. scGPT Windows CUDA 12.8 is next, now
+unblocked by the linux-cuda-before-windows-cuda gate. After that, only the
+protected release remains for each target, gated on the maintainer's go-ahead
+and a prior signer deploy.
 
 Before any protected release the signer must be deployed, because the
 previous failure was deployed-policy drift, not a build defect. **That drift
