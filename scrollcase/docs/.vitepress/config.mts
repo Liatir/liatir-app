@@ -50,7 +50,7 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/Suffro/scrollcase' }
+      { icon: 'github', link: 'https://github.com/suffro/scrollcase' }
     ],
 
     search: {
