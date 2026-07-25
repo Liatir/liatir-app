@@ -10,6 +10,7 @@
   },
   "exports": {
     "./contract": "./src/contract/index.mjs",
+    "./build": "./src/build/index.mjs",
     "./contract/schema/*.json": "./src/contract/schema/*.json",
     "./contract/fixtures/*.json": "./src/contract/fixtures/*.json"
   },
@@ -21,6 +22,11 @@
   ],
   "scripts": {
     "test": "vitest run --config tests/unit/vitest.config.mjs"
+  },
+  "dependencies": {
+    "tar": "7.5.20",
+    "yauzl": "3.4.0",
+    "yazl": "3.3.1"
   },
   "devDependencies": {
     "ajv": "^8.20.0",

@@ -33,9 +33,7 @@ const TARGET_ADAPTERS = Object.freeze([
     platform: 'macos',
     arch: 'aarch64',
     host: Object.freeze({ platform: 'darwin', arch: 'arm64' }),
-    uvPlatform: 'aarch64-apple-darwin',
-    // conda/pixi platform subdir (the `platforms` value in a per-recipe pixi.toml). Added for the
-    // pixi migration; the uv `uvPlatform` above stays until every recipe is on the pixi substrate.
+    // conda platform subdir: the `platforms` value in the recipe's pixi.toml.
     condaSubdir: 'osx-arm64',
     python: Object.freeze({
       payloadRoot: 'venv',
@@ -61,7 +59,6 @@ const TARGET_ADAPTERS = Object.freeze([
     platform: 'linux',
     arch: 'x86_64',
     host: Object.freeze({ platform: 'linux', arch: 'x64' }),
-    uvPlatform: 'x86_64-unknown-linux-gnu',
     condaSubdir: 'linux-64',
     python: Object.freeze({
       payloadRoot: 'venv',
@@ -87,7 +84,6 @@ const TARGET_ADAPTERS = Object.freeze([
     platform: 'windows',
     arch: 'x86_64',
     host: Object.freeze({ platform: 'win32', arch: 'x64' }),
-    uvPlatform: 'x86_64-pc-windows-msvc',
     condaSubdir: 'win-64',
     python: Object.freeze({
       payloadRoot: 'venv',
@@ -161,47 +157,10 @@ export function assertPythonEntryPoint(adapter, entryPoint) {
   }
 }
 
-/** Returns the explicit PyTorch wheel backend selected by a recipe, rejecting target drift. */
-export function torchBackendArguments(recipe) {
-  if (recipe.torchBackend === undefined) return [];
-  if (typeof recipe.torchBackend !== 'string' || !/^(?:cpu|cu[0-9]{3})$/.test(recipe.torchBackend)) {
-    throw new TypeError(`Unsupported PyTorch backend: ${recipe.torchBackend}`);
-  }
-  const expected = recipe.target.accelerator === 'cuda'
-    ? `cu${recipe.target.cudaVersion.replace('.', '')}`
-    : recipe.target.accelerator === 'cpu'
-      ? 'cpu'
-      : null;
-  if (recipe.torchBackend !== expected) {
-    throw new TypeError(
-      `Box PyTorch backend ${recipe.torchBackend} does not match target accelerator ${recipe.target.accelerator}`,
-    );
-  }
-  return ['--torch-backend', recipe.torchBackend];
-}
-
-/** Returns the deterministic uv arguments shared by local locking and CI freshness checks. */
-export function lockArguments(adapter, recipe, inputPath, outputPath) {
-  return [
-    'pip', 'compile', inputPath,
-    '--output-file', outputPath,
-    '--python-version', recipe.pythonVersion,
-    '--python-platform', adapter.uvPlatform,
-    '--generate-hashes', '--only-binary', ':all:',
-    '--no-emit-index-url', '--no-annotate', '--no-header',
-    ...torchBackendArguments(recipe),
-  ];
-}
-
 /** Lists all adapters for contract tests and future catalog validation. */
 export function boxTargetAdapters() {
   return [...TARGET_ADAPTERS];
 }
-
-// --- pixi/conda substrate mapping (migration) -------------------------------------------------
-// These mirror the uv helpers above (uvPlatform / torchBackend / lock arguments) for the pixi +
-// conda-forge builder. They are additive: a recipe is on the pixi substrate when it carries a
-// pixi.toml/pixi.lock instead of requirements.in/lock, and the two paths coexist during migration.
 
 /** Maps a validated box target to its conda platform subdir (the pixi `platforms` value). */
 export function condaSubdir(target) {
@@ -210,9 +169,8 @@ export function condaSubdir(target) {
 }
 
 /**
- * Returns the conda/pixi accelerator descriptor a recipe selects, rejecting target drift — the
- * conda-forge analogue of torchBackendArguments. `metal` and `cpu` need no extra conda
- * knobs (osx-arm64 ships MPS in the pytorch build; cpu is the default build); `cuda` pins a
+ * Returns the conda accelerator descriptor a recipe selects, rejecting target drift. `metal` and
+ * `cpu` need no extra conda knobs (osx-arm64 ships MPS in the pytorch build; cpu is the default build); `cuda` pins a
  * `cuda-version` and declares a CUDA system requirement so the solver picks the GPU pytorch build.
  */
 export function pixiAccelerator(recipe) {

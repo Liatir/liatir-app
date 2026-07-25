@@ -15,12 +15,10 @@ export {
   assertNativeHost,
   assertPythonEntryPoint,
   condaSubdir,
-  lockArguments,
   pixiAccelerator,
   boxTargetAdapter,
   boxTargetAdapters,
   boxTargetId,
-  torchBackendArguments,
 } from './targets.mjs';
 
 export {

@@ -21,16 +21,29 @@
     "provenance"
   ],
   "properties": {
-    "schemaVersion": { "const": 1 },
+    "schemaVersion": {
+      "const": 1
+    },
     "kind": {
       "$ref": "#/$defs/kind",
-      "description": "Wire discriminator, \"<namespace>.release\". The namespace belongs to the publishing project — a project with boxes already in the field must keep emitting the one its clients recognise — and defaults to scrollcase.box for a new one."
+      "description": "Wire discriminator, \"<namespace>.release\". The namespace belongs to the publishing project \u2014 a project with boxes already in the field must keep emitting the one its clients recognise \u2014 and defaults to scrollcase.box for a new one."
     },
-    "boxId": { "$ref": "#/$defs/identifier" },
-    "modelId": { "$ref": "#/$defs/identifier" },
-    "runtimeId": { "$ref": "#/$defs/identifier" },
-    "version": { "type": "string", "minLength": 1 },
-    "target": { "$ref": "https://scrollcase.dev/schema/target.schema.json" },
+    "boxId": {
+      "$ref": "#/$defs/identifier"
+    },
+    "modelId": {
+      "$ref": "#/$defs/identifier"
+    },
+    "runtimeId": {
+      "$ref": "#/$defs/identifier"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target": {
+      "$ref": "https://scrollcase.dev/schema/target.schema.json"
+    },
     "compatibility": {
       "type": "object",
       "additionalProperties": true,
@@ -41,18 +54,32 @@
           "minLength": 1,
           "description": "Lowest version of the installing application this box supports."
         },
-        "maxHostAppVersionExclusive": { "type": "string", "minLength": 1 },
-        "minMacosVersion": { "type": "string", "minLength": 1 },
+        "maxHostAppVersionExclusive": {
+          "type": "string",
+          "minLength": 1
+        },
+        "minMacosVersion": {
+          "type": "string",
+          "minLength": 1
+        },
         "minRamGb": {
           "type": "number",
           "exclusiveMinimum": 0,
           "description": "Installed memory in decimal gigabytes (1 GB = 1,000,000,000 bytes)."
         },
-        "minNvidiaDriverVersion": { "type": "string", "minLength": 1 },
+        "minNvidiaDriverVersion": {
+          "type": "string",
+          "minLength": 1
+        },
         "hostEnvironments": {
           "type": "array",
           "minItems": 1,
-          "items": { "enum": ["native", "windows-wsl2"] },
+          "items": {
+            "enum": [
+              "native",
+              "windows-wsl2"
+            ]
+          },
           "description": "Host environments this payload was validated on. Absent in early releases, which predate the field."
         }
       }
@@ -60,12 +87,27 @@
     "archive": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["format", "url", "sha256", "sizeBytes"],
+      "required": [
+        "format",
+        "url",
+        "sha256",
+        "sizeBytes"
+      ],
       "properties": {
-        "format": { "const": "zip" },
-        "url": { "type": "string", "minLength": 1 },
-        "sha256": { "$ref": "#/$defs/sha256" },
-        "sizeBytes": { "type": "integer", "exclusiveMinimum": 0 }
+        "format": {
+          "const": "zip"
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        }
       }
     },
     "installedSizeBytes": {
@@ -86,18 +128,29 @@
     "selfTest": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["pythonImports", "timeoutSeconds"],
+      "required": [
+        "pythonImports",
+        "timeoutSeconds"
+      ],
       "description": "The check a consumer repeats after installing, using the box's own interpreter. It is the same check the builder ran, so a box that would fail on the user's machine fails at build time first.",
       "properties": {
         "pythonImports": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
-        "timeoutSeconds": { "type": "integer", "exclusiveMinimum": 0 }
+        "timeoutSeconds": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        }
       }
     },
-    "provenance": { "$ref": "#/$defs/provenance" }
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    }
   },
   "$defs": {
     "identifier": {
@@ -124,11 +177,18 @@
         "sourceRevision",
         "pythonVersion",
         "dependencyLockSha256",
-        "builtAt"
+        "builtAt",
+        "pixiVersion"
       ],
       "properties": {
-        "recipeId": { "type": "string", "minLength": 1 },
-        "recipeVersion": { "type": "string", "minLength": 1 },
+        "recipeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recipeVersion": {
+          "type": "string",
+          "minLength": 1
+        },
         "builderRevision": {
           "type": "string",
           "pattern": "^[a-f0-9]{40}$",
@@ -143,19 +203,23 @@
           "minLength": 1,
           "description": "Upstream revision of the packaged model source, as declared by the recipe."
         },
-        "pythonVersion": { "type": "string", "minLength": 1 },
-        "uvVersion": { "type": "string", "minLength": 1 },
-        "pixiVersion": { "type": "string", "minLength": 1 },
+        "pythonVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pixiVersion": {
+          "type": "string",
+          "minLength": 1
+        },
         "dependencyLockSha256": {
           "$ref": "#/$defs/sha256",
-          "description": "Hash of the lock file the environment was solved from: pixi.lock on the pixi substrate, requirements.lock on the uv one."
+          "description": "Hash of the pixi.lock the environment was solved from."
         },
-        "builtAt": { "type": "string", "minLength": 1 }
-      },
-      "oneOf": [
-        { "required": ["pixiVersion"], "not": { "required": ["uvVersion"] } },
-        { "required": ["uvVersion"], "not": { "required": ["pixiVersion"] } }
-      ]
+        "builtAt": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     }
   }
 }

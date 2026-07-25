@@ -6,8 +6,8 @@
   "signatures": [
     {
       "algorithm": "ed25519",
-      "keyId": "scrollcase-example-7a4a13db0c1a9432",
-      "signatureBase64": "6VMYKUUJ+8dHuyfso0oCLtd1C+tZadHWaMM45Zzcf8o8SKfAlClSn9v0/y4hG+794o4zDpgyL994t5jvvyoBAQ=="
+      "keyId": "scrollcase-example-9ab6bbd41db506f3",
+      "signatureBase64": "IgyR+q52LpwtL9jCjOYYdQRJNBHmRcZy7k6t/fuFdwZVJDV3v2Gxw4IP8DbwvnQ0H8dJ+jS4G5b5uHzpw3M8DA=="
     }
   ]
 }

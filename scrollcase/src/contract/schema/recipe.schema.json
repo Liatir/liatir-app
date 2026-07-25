@@ -20,7 +20,8 @@
     "pythonEntryPoint",
     "modelCacheSubdir",
     "assets",
-    "selfTest"
+    "selfTest",
+    "pixiVersion"
   ],
   "properties": {
     "schemaVersion": {
@@ -95,37 +96,12 @@
     "pixiVersion": {
       "type": "string",
       "minLength": 1,
-      "description": "Pins the pixi release used to solve and install a conda-forge environment from the committed pixi.lock. Present on the pixi substrate."
-    },
-    "uvVersion": {
-      "type": "string",
-      "minLength": 1,
-      "description": "Pins the uv release used with a hash-pinned requirements.lock and a standalone Python. Present on the legacy substrate."
-    },
-    "requirementsInput": {
-      "type": "string",
-      "minLength": 1,
-      "description": "uv substrate only: the human-edited dependency list the lock is compiled from."
-    },
-    "requirementsLock": {
-      "type": "string",
-      "minLength": 1,
-      "description": "uv substrate only: the hash-pinned lock file, resolved for this exact target."
-    },
-    "torchBackend": {
-      "type": "string",
-      "pattern": "^(?:cpu|cu[0-9]{3})$",
-      "description": "uv substrate only: the PyTorch wheel backend, which must agree with the target accelerator so a CPU box can never ship CUDA wheels or the reverse."
-    },
-    "dependencyLicenseAudit": {
-      "type": "string",
-      "minLength": 1,
-      "description": "Path to the reviewed licence inventory for the installed Python distributions, bound to this exact lock. The build fails if the installed set no longer matches what was reviewed."
+      "description": "Pins the pixi release used to solve and install the conda-forge environment from the committed pixi.lock."
     },
     "condaDependencyLicenseAudit": {
       "type": "string",
       "minLength": 1,
-      "description": "Path to the reviewed licence inventory derived from pixi.lock, which carries an SPDX licence per package."
+      "description": "Path to the reviewed licence inventory derived from pixi.lock, which carries an SPDX licence per package. The build fails if the lock no longer matches what was reviewed."
     },
     "pythonEntryPoint": {
       "type": "string",
@@ -268,46 +244,6 @@
       }
     }
   },
-  "oneOf": [
-    {
-      "title": "pixi substrate",
-      "required": [
-        "pixiVersion"
-      ],
-      "not": {
-        "anyOf": [
-          {
-            "required": [
-              "uvVersion"
-            ]
-          },
-          {
-            "required": [
-              "requirementsLock"
-            ]
-          },
-          {
-            "required": [
-              "torchBackend"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "title": "uv substrate",
-      "required": [
-        "uvVersion",
-        "requirementsInput",
-        "requirementsLock"
-      ],
-      "not": {
-        "required": [
-          "pixiVersion"
-        ]
-      }
-    }
-  ],
   "$defs": {
     "sha256": {
       "type": "string",

@@ -3,13 +3,12 @@ import { describe, expect, it } from 'vitest';
 import {
   assertNativeHost,
   assertPythonEntryPoint,
-  fixtureUrl,
-  condaSubdir,
-  pixiAccelerator,
   boxTargetAdapter,
   boxTargetAdapters,
   boxTargetId,
-  torchBackendArguments,
+  condaSubdir,
+  fixtureUrl,
+  pixiAccelerator,
 } from '../../src/contract/index.mjs';
 
 const contract = JSON.parse(readFileSync(fixtureUrl('target-id-contract'), 'utf8'));
@@ -76,16 +75,11 @@ describe('target adapters', () => {
 });
 
 describe('accelerator selection', () => {
-  it('binds the PyTorch backend to the target accelerator in both directions', () => {
-    const cuda = { target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.9' }, torchBackend: 'cu129' };
-    expect(torchBackendArguments(cuda)).toEqual(['--torch-backend', 'cu129']);
-    const cpu = { target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' }, torchBackend: 'cpu' };
-    expect(torchBackendArguments(cpu)).toEqual(['--torch-backend', 'cpu']);
-    // A CPU target must never be able to declare a CUDA build, or the box would ship wheels it
-    // cannot run and only fail on a user's machine.
-    const mismatched = { target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' }, torchBackend: 'cu129' };
-    expect(() => torchBackendArguments(mismatched)).toThrow(/does not match target accelerator/);
-    expect(torchBackendArguments({ target: cpu.target })).toEqual([]);
+  it('refuses an accelerator the format does not define', () => {
+    for (const accelerator of ['rocm', 'tpu', undefined, null]) {
+      expect(() => pixiAccelerator({ target: { platform: 'linux', arch: 'x86_64', accelerator } }))
+        .toThrow(/Unsupported box accelerator/);
+    }
   });
 
   it('describes the conda accelerator a recipe selects and rejects a versionless CUDA target', () => {
