@@ -10,8 +10,10 @@ import { sha256File } from './filesystem.mjs';
 import { runWithHeartbeat } from './heartbeat.mjs';
 import { runtimeBoxBuilderVersionFields } from './identity.mjs';
 import { runtimeBoxTargetId } from './targets.mjs';
+import { getWorkspace } from './workspace.mjs';
 
-const ROOT = resolve(import.meta.dirname, '../..');
+/** Project root, read lazily so the entry point can configure the workspace from flags first. */
+const workspaceRoot = () => getWorkspace().root;
 const HOST_PLATFORM = { darwin: 'macos', linux: 'linux', win32: 'windows' };
 const HOST_ARCH = { arm64: 'aarch64', x64: 'x86_64' };
 const SHA256 = /^[a-f0-9]{64}$/;
@@ -29,7 +31,7 @@ function normalizedStatus(value) {
 }
 
 function gitValue(args, fallback = null) {
-  const result = spawnSync('git', args, { cwd: ROOT, encoding: 'utf8' });
+  const result = spawnSync('git', args, { cwd: workspaceRoot(), encoding: 'utf8' });
   return result.status === 0 ? result.stdout.trim() : fallback;
 }
 
@@ -84,7 +86,7 @@ export function workflowEvidence(environment = null) {
 }
 
 function freeDiskBytes() {
-  const filesystem = statfsSync(ROOT);
+  const filesystem = statfsSync(workspaceRoot());
   return Number(filesystem.bavail) * Number(filesystem.bsize);
 }
 
@@ -229,7 +231,7 @@ export async function runTrackedCommand(command, args, metricsOutput) {
   let exitCode = null;
   try {
     const result = await runWithHeartbeat(command, args, {
-      cwd: ROOT,
+      cwd: workspaceRoot(),
       label: 'Runtime Box native build',
     });
     if (result.signal) throw new Error(`${command} terminated by ${result.signal}`);
@@ -249,17 +251,17 @@ export async function runTrackedCommand(command, args, metricsOutput) {
 }
 
 export async function writeJson(path, value) {
-  const output = resolve(ROOT, path);
+  const output = resolve(workspaceRoot(), path);
   await mkdir(dirname(output), { recursive: true });
   writeFileSync(output, `${JSON.stringify(value, null, 2)}\n`);
 }
 
 function readJson(path) {
-  return JSON.parse(readFileSync(resolve(ROOT, path), 'utf8'));
+  return JSON.parse(readFileSync(resolve(workspaceRoot(), path), 'utf8'));
 }
 
 function optionalJson(path) {
-  return path && existsSync(resolve(ROOT, path)) ? readJson(path) : null;
+  return path && existsSync(resolve(workspaceRoot(), path)) ? readJson(path) : null;
 }
 
 /** Decodes a signed envelope while proving its embedded payload hash. */
@@ -321,7 +323,8 @@ async function completeModelRecord(options, catalog, phase) {
   const target = model.targets.find((candidate) => candidate.targetId === options.target);
   requireEvidence(target, `unknown target ${options.model}/${options.target}`);
   requireEvidence(target.recipeId === options.recipe, 'recipe does not match catalog target');
-  const recipePath = `runtime-boxes/recipes/${target.recipeId}/recipe.json`;
+  const recipeDir = resolve(getWorkspace().recipesDir, target.recipeId);
+  const recipePath = resolve(recipeDir, 'recipe.json');
   const recipe = readJson(recipePath);
   const record = baseRecord({
     phase,
@@ -358,7 +361,7 @@ async function completeModelRecord(options, catalog, phase) {
     record.source = signedBuildSourceEvidence(record.source, release.provenance);
     requireEvidence(host.platform === release.target.platform && host.arch === release.target.arch, 'recorded host differs from release target');
     const lockFile = recipe.pixiVersion ? 'pixi.lock' : recipe.requirementsLock;
-    const lockSha256 = await sha256File(resolve(ROOT, 'runtime-boxes/recipes', target.recipeId, lockFile));
+    const lockSha256 = await sha256File(resolve(recipeDir, lockFile));
     requireEvidence(lockSha256 === release.provenance.dependencyLockSha256, 'checked dependency lock differs from signed provenance');
     record.host = {
       ...host,
@@ -366,7 +369,7 @@ async function completeModelRecord(options, catalog, phase) {
       peakAdditionalDiskBytes: metrics.peakAdditionalDiskBytes,
     };
     record.build = {
-      recipeSha256: await sha256File(resolve(ROOT, recipePath)),
+      recipeSha256: await sha256File(recipePath),
       dependencyLockSha256: lockSha256,
       pythonVersion: release.provenance.pythonVersion,
       ...runtimeBoxBuilderVersionFields(release.provenance),
@@ -387,7 +390,7 @@ async function completeModelRecord(options, catalog, phase) {
     const evidence = result?.evidence;
     requireEvidence(scientificRun.status === 'passed' && evidence, 'validator result lacks canonical evidence');
     requireEvidence(result.status === 'passed', 'scientific validator did not pass');
-    const productScriptSha256 = await sha256File(resolve(ROOT, model.productScriptPath));
+    const productScriptSha256 = await sha256File(resolve(workspaceRoot(), model.productScriptPath));
     const accelerator = {
       ...evidence.accelerator,
       gpuModel: evidence.accelerator.gpuModel ?? record.host?.gpuModel ?? null,
@@ -401,7 +404,7 @@ async function completeModelRecord(options, catalog, phase) {
     record.scientific = {
       validator: {
         path: model.validatorPath,
-        sha256: await sha256File(resolve(ROOT, model.validatorPath)),
+        sha256: await sha256File(resolve(workspaceRoot(), model.validatorPath)),
       },
       productScript: { path: model.productScriptPath, sha256: productScriptSha256 },
       fixture: evidence.fixture,
@@ -592,7 +595,7 @@ export function validateRuntimeBoxCiEvidence(record) {
 
 /** Loads and validates a reviewed checked-in record referenced by the CI catalog. */
 export async function readCheckedEvidence(path) {
-  const resolved = resolve(ROOT, path);
-  requireEvidence(resolved.startsWith(`${resolve(ROOT, 'runtime-boxes/evidence')}${sep}`), 'checked evidence must live under runtime-boxes/evidence');
+  const resolved = resolve(workspaceRoot(), path);
+  requireEvidence(resolved.startsWith(`${resolve(workspaceRoot(), 'runtime-boxes/evidence')}${sep}`), 'checked evidence must live under runtime-boxes/evidence');
   return validateRuntimeBoxCiEvidence(JSON.parse(await readFile(resolved, 'utf8')));
 }

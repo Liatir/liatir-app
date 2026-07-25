@@ -137,6 +137,18 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   Two Liatir-side caveats do not gate extraction: the macOS pixi box is not yet
   CI-validated, and no pixi box has had a protected release — both closed later
   via scrollcase's pluggable signer.
+  **P1 (parametrize paths) is COMPLETE (2026-07-25).** The builder no longer derives
+  its root from `import.meta.dirname`: it resolves recipes, build, dist and key
+  directories from a consumer-owned `scrollcase.config.json` (schema shipped with the
+  tool, defaults identical to the historical layout) with `--config`/`--project-root`/
+  `--recipes-dir`/`--build-dir`/`--out-dir`/`--keys-dir` overrides. Liatir's config is
+  committed at the repo root and its `runtime-box*` npm scripts are unchanged.
+  Behavioral identity was proven by an A/B build of the macOS installer fixture in the
+  same directory: the unpacked boxes differ in exactly one line, the honest
+  `sourceTreeDirty` provenance flag, with a byte-identical payload. Local zero-cost
+  gates: 190/190 unit tests (9 new workspace tests), catalog check, Gate 2 foundation
+  validation including the Rust runtime_box archive fixture, and `lint:ts` with no
+  errors. P2–P5 remain, each on explicit maintainer go-ahead.
   Covers the CLI design (`init`/`doctor`/`build`/`verify`/`audit`, per-project
   toolchain isolation, embed-vs-on-demand weights, pluggable signer), the
   box-format contract inversion (scrollcase becomes the single source of truth,

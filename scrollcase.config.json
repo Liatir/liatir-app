@@ -1,0 +1,10 @@
+{
+  "$schema": "./scripts/runtime-box/scrollcase.config.schema.json",
+  "version": 1,
+  "paths": {
+    "recipes": "runtime-boxes/recipes",
+    "build": ".runtime-box-build",
+    "dist": ".runtime-box-dist",
+    "keys": ".runtime-box-local"
+  }
+}

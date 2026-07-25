@@ -22,9 +22,21 @@ import { runWithHeartbeat } from './runtime-box/heartbeat.mjs';
 import { runtimeBoxTargetId, runtimeBoxTorchBackendArguments } from './runtime-box/targets.mjs';
 import { lockedCondaDistributions, lockedPythonDistributions } from './runtime-box/licenses.mjs';
 import { runtimeBoxPolicyFingerprint } from '../services/runtime-box-signer/src/policy.mjs';
+import { configureWorkspace, getWorkspace, workspaceOverridesFromArgv } from './runtime-box/workspace.mjs';
 
-const ROOT = resolve(import.meta.dirname, '..');
-const CATALOG_PATH = resolve(ROOT, 'runtime-boxes/catalog.json');
+/**
+ * Workspace accessors. These read lazily so `main()` can configure the workspace from flags before
+ * any path is resolved. The catalog, legal records, trust keys and workflows are Liatir-side inputs
+ * addressed relative to the project root; recipes and build state come from the workspace layout.
+ */
+const workspaceRoot = () => getWorkspace().root;
+const catalogPath = () => resolve(workspaceRoot(), 'runtime-boxes/catalog.json');
+const recipePathFor = (recipeId) => resolve(getWorkspace().recipesDir, recipeId, 'recipe.json');
+/** Generated directories the builder owns, in the order it is safe to remove them. */
+const buildStateDirectories = () => {
+  const workspace = getWorkspace();
+  return [workspace.buildDir, workspace.distDir, workspace.keysDir, resolve(workspace.root, '.runtime-box-ci')];
+};
 const VALIDATION_MODES = new Set(['build', 'scientific', 'native-lifecycle']);
 const TARGET_STATUSES = new Set([
   'planned',
@@ -36,7 +48,7 @@ const TARGET_STATUSES = new Set([
 
 /** Reads the catalog without accepting an alternate path from CI input. */
 export function readRuntimeBoxCiCatalog() {
-  return JSON.parse(readFileSync(CATALOG_PATH, 'utf8'));
+  return JSON.parse(readFileSync(catalogPath(), 'utf8'));
 }
 
 /** Adds one key to GitHub job outputs when running under Actions. */
@@ -88,9 +100,9 @@ function validateUvRecipeLockAndAudit(recipe, target, recipePath, targetKey) {
       recipe.dependencyLicenseAudit === target.dependencyLicenseAudit,
       `recipe and catalog dependency license audits differ for ${targetKey}`,
     );
-    const auditPath = resolve(ROOT, target.dependencyLicenseAudit);
+    const auditPath = resolve(workspaceRoot(), target.dependencyLicenseAudit);
     requireCatalog(
-      auditPath.startsWith(`${resolve(ROOT, 'runtime-boxes/legal/audits')}${sep}`),
+      auditPath.startsWith(`${resolve(workspaceRoot(), 'runtime-boxes/legal/audits')}${sep}`),
       `dependency license audit is outside runtime-boxes/legal/audits for ${targetKey}`,
     );
     requireCatalog(existsSync(auditPath), `missing dependency license audit for ${targetKey}`);
@@ -148,9 +160,9 @@ function validatePixiRecipeLockAndAudit(recipe, target, recipePath, targetKey) {
     recipe.condaDependencyLicenseAudit === target.condaDependencyLicenseAudit,
     `recipe and catalog conda license audits differ for ${targetKey}`,
   );
-  const auditPath = resolve(ROOT, target.condaDependencyLicenseAudit);
+  const auditPath = resolve(workspaceRoot(), target.condaDependencyLicenseAudit);
   requireCatalog(
-    auditPath.startsWith(`${resolve(ROOT, 'runtime-boxes/legal/audits')}${sep}`),
+    auditPath.startsWith(`${resolve(workspaceRoot(), 'runtime-boxes/legal/audits')}${sep}`),
     `conda license audit is outside runtime-boxes/legal/audits for ${targetKey}`,
   );
   requireCatalog(existsSync(auditPath), `missing conda license audit for ${targetKey}`);
@@ -211,7 +223,7 @@ function existingBuildStateBytes(path) {
 export function runtimeBoxBuildDiskPlan(recipe, target) {
   const sourceAssetBytes = (recipe.assets ?? []).reduce((total, asset) => total + asset.sizeBytes, 0);
   const localSourceBytes = (recipe.localFiles ?? []).reduce((total, file) => {
-    const sourcePath = resolve(ROOT, file.sourcePath);
+    const sourcePath = resolve(workspaceRoot(), file.sourcePath);
     requireCatalog(existsSync(sourcePath), `missing local recipe source ${file.sourcePath}`);
     return total + statSync(sourcePath).size;
   }, 0);
@@ -354,7 +366,7 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
   const fixtureIds = new Set();
   for (const fixture of catalog.foundationFixtures) {
     requireCatalog(!fixtureIds.has(fixture.recipeId), `duplicate foundation recipe ${fixture.recipeId}`);
-    const recipePath = resolve(ROOT, 'runtime-boxes/recipes', fixture.recipeId, 'recipe.json');
+    const recipePath = recipePathFor(fixture.recipeId);
     requireCatalog(existsSync(recipePath), `missing foundation recipe ${fixture.recipeId}`);
     const recipe = JSON.parse(readFileSync(recipePath, 'utf8'));
     const runner = catalog.runnerProfiles.find((candidate) => candidate.id === fixture.runnerProfileId);
@@ -369,8 +381,8 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
     fixtureIds.add(fixture.recipeId);
   }
 
-  const signerPolicy = JSON.parse(readFileSync(resolve(ROOT, 'services/runtime-box-signer/policy.json'), 'utf8'));
-  const productionTrust = JSON.parse(readFileSync(resolve(ROOT, 'runtime-boxes/trust/production-public.json'), 'utf8'));
+  const signerPolicy = JSON.parse(readFileSync(resolve(workspaceRoot(), 'services/runtime-box-signer/policy.json'), 'utf8'));
+  const productionTrust = JSON.parse(readFileSync(resolve(workspaceRoot(), 'runtime-boxes/trust/production-public.json'), 'utf8'));
   const trustedKeyIds = new Set(productionTrust.keys.map((key) => key.keyId));
   const modelIds = new Set();
   const boxIds = new Set();
@@ -379,9 +391,9 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
     requireCatalog(!modelIds.has(model.modelId), `duplicate modelId ${model.modelId}`);
     requireCatalog(!boxIds.has(model.boxId), `duplicate boxId ${model.boxId}`);
     requireCatalog(model.legalStatus === 'approved', `${model.modelId} is not legally approved`);
-    requireCatalog(existsSync(resolve(ROOT, model.legalRecord)), `missing legal record ${model.legalRecord}`);
-    requireCatalog(existsSync(resolve(ROOT, model.validatorPath)), `missing validator ${model.validatorPath}`);
-    requireCatalog(existsSync(resolve(ROOT, model.productScriptPath)), `missing product script ${model.productScriptPath}`);
+    requireCatalog(existsSync(resolve(workspaceRoot(), model.legalRecord)), `missing legal record ${model.legalRecord}`);
+    requireCatalog(existsSync(resolve(workspaceRoot(), model.validatorPath)), `missing validator ${model.validatorPath}`);
+    requireCatalog(existsSync(resolve(workspaceRoot(), model.productScriptPath)), `missing product script ${model.productScriptPath}`);
     requireCatalog(typeof model.validatorScript === 'string' && model.validatorScript.startsWith('runtime-box:validate:'), `invalid validator script for ${model.modelId}`);
     requireCatalog(Array.isArray(model.targets) && model.targets.length > 0, `targets are required for ${model.modelId}`);
     const signerBox = signerPolicy.boxes.find((candidate) => candidate.boxId === model.boxId);
@@ -412,15 +424,15 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
       requireCatalog(target.timeoutMinutes <= runner.maxTimeoutMinutes, `timeout exceeds runner maximum for ${targetKey}`);
       requireCatalog(Number.isSafeInteger(target.requiredBuildDiskBytes) && target.requiredBuildDiskBytes > 0, `invalid disk requirement for ${targetKey}`);
       requireCatalog(signerBox.targets.includes(target.targetId), `catalog target is outside signer policy for ${targetKey}`);
-      const recipePath = resolve(ROOT, 'runtime-boxes/recipes', target.recipeId, 'recipe.json');
+      const recipePath = recipePathFor(target.recipeId);
       requireCatalog(existsSync(recipePath), `missing recipe ${target.recipeId}`);
       const recipe = JSON.parse(readFileSync(recipePath, 'utf8'));
       requireCatalog(recipe.recipeId === target.recipeId && recipe.modelId === model.modelId && recipe.boxId === model.boxId && recipe.runtimeId === model.runtimeId, `recipe identity mismatch for ${targetKey}`);
       requireCatalog(runtimeBoxTargetId(recipe.target) === target.targetId, `recipe target mismatch for ${targetKey}`);
       runtimeBoxTorchBackendArguments(recipe);
-      requireCatalog(readFileSync(resolve(ROOT, model.legalRecord), 'utf8').includes(recipe.sourceRevision), `legal record is not pinned to recipe source ${recipe.sourceRevision} for ${targetKey}`);
+      requireCatalog(readFileSync(resolve(workspaceRoot(), model.legalRecord), 'utf8').includes(recipe.sourceRevision), `legal record is not pinned to recipe source ${recipe.sourceRevision} for ${targetKey}`);
       for (const localFile of recipe.localFiles ?? []) {
-        const localPath = resolve(ROOT, localFile.sourcePath);
+        const localPath = resolve(workspaceRoot(), localFile.sourcePath);
         requireCatalog(existsSync(localPath), `missing local recipe file ${localFile.sourcePath} for ${targetKey}`);
         requireCatalog(/^[a-f0-9]{64}$/.test(localFile.sha256), `invalid local recipe hash for ${targetKey}`);
         requireCatalog(
@@ -449,8 +461,8 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
         if (publication.source === 'github-actions') {
           requireCatalog(publication.workflowRunId && publication.workflowRunUrl, `GitHub publication lacks workflow evidence for ${targetKey}`);
           requireCatalog(publication.evidenceRecord, `GitHub publication lacks a reviewed evidence record for ${targetKey}`);
-          const evidencePath = resolve(ROOT, publication.evidenceRecord);
-          requireCatalog(evidencePath.startsWith(`${resolve(ROOT, 'runtime-boxes/evidence')}${sep}`), `evidence record is outside runtime-boxes/evidence for ${targetKey}`);
+          const evidencePath = resolve(workspaceRoot(), publication.evidenceRecord);
+          requireCatalog(evidencePath.startsWith(`${resolve(workspaceRoot(), 'runtime-boxes/evidence')}${sep}`), `evidence record is outside runtime-boxes/evidence for ${targetKey}`);
           requireCatalog(existsSync(evidencePath), `missing evidence record for ${targetKey}`);
           const evidence = validateRuntimeBoxCiEvidence(JSON.parse(readFileSync(evidencePath, 'utf8')));
           requireCatalog(evidence.phase === 'production-release' && evidence.status === 'passed', `reviewed publication evidence did not pass for ${targetKey}`);
@@ -464,7 +476,7 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
     }
 
     if (requireWorkflows) {
-      const workflowPath = resolve(ROOT, model.callerWorkflow);
+      const workflowPath = resolve(workspaceRoot(), model.callerWorkflow);
       requireCatalog(existsSync(workflowPath), `missing caller workflow ${model.callerWorkflow}`);
       const workflow = readFileSync(workflowPath, 'utf8');
       requireCatalog(workflow.includes('uses: ./.github/workflows/_runtime-box-validate.yml'), `caller does not use reusable validation: ${model.callerWorkflow}`);
@@ -482,7 +494,7 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
   }
   if (requireWorkflows) {
     for (const workflowName of ['runtime-box-linux-cuda-preflight.yml', 'runtime-box-windows-cuda-preflight.yml']) {
-      const workflow = readFileSync(resolve(ROOT, '.github/workflows', workflowName), 'utf8');
+      const workflow = readFileSync(resolve(workspaceRoot(), '.github/workflows', workflowName), 'utf8');
       requireCatalog(workflow.includes('workflow_dispatch:'), `${workflowName} must be manual-only`);
       requireCatalog(!workflow.includes('schedule:') && !workflow.includes('pull_request:') && !workflow.includes('push:'), `${workflowName} has an automatic trigger`);
       requireCatalog(workflow.includes('cancel-in-progress: true'), `${workflowName} must cancel stale validation`);
@@ -492,9 +504,9 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
         requireCatalog(workflow.includes('linux_run_id:') && workflow.includes('run.head_sha === process.env.GITHUB_SHA'), 'Windows T4 preflight must prove the successful Linux run for the exact commit');
       }
     }
-    const foundation = readFileSync(resolve(ROOT, '.github/workflows/runtime-box-foundation.yml'), 'utf8');
+    const foundation = readFileSync(resolve(workspaceRoot(), '.github/workflows/runtime-box-foundation.yml'), 'utf8');
     requireCatalog(foundation.includes('max-parallel: 1'), 'foundation paid fixture concurrency must remain 1');
-    const release = readFileSync(resolve(ROOT, '.github/workflows/runtime-box-release.yml'), 'utf8');
+    const release = readFileSync(resolve(workspaceRoot(), '.github/workflows/runtime-box-release.yml'), 'utf8');
     requireCatalog(release.includes('cancel-in-progress: false'), 'production releases must never be cancelled');
   }
   return catalog;
@@ -530,7 +542,7 @@ async function runPackageScript(script, output, environment = {}) {
       label: `Scientific validator ${script}`,
       capture: true,
       maxBuffer: 64 * 1024 * 1024,
-      cwd: ROOT,
+      cwd: workspaceRoot(),
       env: environment,
     },
   );
@@ -596,7 +608,7 @@ async function probeHost(target, runner, output) {
   validateRunnerExecutionContext(runner);
   const record = await writeHostEvidence(output, target.target, runner.runsOn);
   const recipe = JSON.parse(readFileSync(
-    resolve(ROOT, 'runtime-boxes/recipes', target.recipeId, 'recipe.json'),
+    recipePathFor(target.recipeId),
     'utf8',
   ));
   if (target.gpuRequired) {
@@ -615,8 +627,8 @@ async function probeHost(target, runner, output) {
       `runner ${runner.id} driver ${record.driverVersion ?? 'missing'} is below ${recipe.compatibility?.minNvidiaDriverVersion ?? 'the recipe minimum'}`,
     );
   }
-  const existingBytes = ['.runtime-box-build', '.runtime-box-dist'].reduce(
-    (total, name) => total + existingBuildStateBytes(resolve(ROOT, name)),
+  const existingBytes = [getWorkspace().buildDir, getWorkspace().distDir].reduce(
+    (total, directory) => total + existingBuildStateBytes(directory),
     0,
   );
   record.existingBuildStateBytes = existingBytes;
@@ -630,7 +642,7 @@ async function probeHost(target, runner, output) {
 }
 
 async function probeFoundationHost(fixture, runner, output) {
-  const recipe = JSON.parse(readFileSync(resolve(ROOT, 'runtime-boxes/recipes', fixture.recipeId, 'recipe.json'), 'utf8'));
+  const recipe = JSON.parse(readFileSync(recipePathFor(fixture.recipeId), 'utf8'));
   const record = await writeHostEvidence(output, recipe.target, runner.runsOn);
   requireCatalog(record.freeDiskBytesBefore >= fixture.requiredBuildDiskBytes, `only ${record.freeDiskBytesBefore} free bytes; ${fixture.requiredBuildDiskBytes} required`);
   console.log(JSON.stringify({ ...record, requiredBuildDiskBytes: fixture.requiredBuildDiskBytes }));
@@ -638,14 +650,16 @@ async function probeFoundationHost(fixture, runner, output) {
 
 /** Removes Runtime Box build state without touching repository sources. */
 async function cleanBuildState() {
-  for (const name of ['.runtime-box-build', '.runtime-box-dist', '.runtime-box-local', '.runtime-box-ci']) {
-    await rm(resolve(ROOT, name), { recursive: true, force: true });
+  for (const directory of buildStateDirectories()) {
+    await rm(directory, { recursive: true, force: true });
   }
 }
 
 /** Dispatches bounded CI commands. */
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
+  // The workspace must be resolved before the catalog is read: every later path derives from it.
+  configureWorkspace({ overrides: workspaceOverridesFromArgv(rest) });
   const catalog = readRuntimeBoxCiCatalog();
   if (command === 'check') {
     validateRuntimeBoxCiCatalog(catalog);
@@ -665,7 +679,7 @@ async function main() {
     const resolved = resolveCiTarget(catalog, options.get('model'), options.get('recipe'), options.get('target'), options.get('mode'));
     const nativeRequested = options.get('native-requested') === 'true';
     requireCatalog(!nativeRequested || resolved.target.nativeCiEnabled, `native CI is not enabled for ${resolved.model.modelId}/${resolved.target.targetId}`);
-    const recipe = JSON.parse(readFileSync(resolve(ROOT, 'runtime-boxes/recipes', resolved.target.recipeId, 'recipe.json'), 'utf8'));
+    const recipe = JSON.parse(readFileSync(recipePathFor(resolved.target.recipeId), 'utf8'));
     const values = {
       recipe_id: resolved.target.recipeId,
       runs_on: resolved.runner.runsOn,
@@ -701,7 +715,7 @@ async function main() {
     requireCatalog(target, `unknown target ${model.modelId}/${options.get('target')}`);
     const resolved = resolveCiTarget(catalog, model.modelId, target.recipeId, target.targetId, 'native-lifecycle');
     requireCatalog(resolved.target.nativeCiEnabled, `native CI is not enabled for ${model.modelId}/${target.targetId}`);
-    const recipe = JSON.parse(readFileSync(resolve(ROOT, 'runtime-boxes/recipes', target.recipeId, 'recipe.json'), 'utf8'));
+    const recipe = JSON.parse(readFileSync(recipePathFor(target.recipeId), 'utf8'));
     const values = {
       recipe_id: target.recipeId,
       version: recipe.version,
@@ -731,7 +745,7 @@ async function main() {
   if (command === 'verify-signer-policy') {
     const signerUrl = options.get('signer') || process.env.LIATIR_RUNTIME_BOX_SIGNER_URL;
     const identityToken = String(process.env.LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN || '').trim();
-    const policyText = readFileSync(resolve(ROOT, 'services/runtime-box-signer/policy.json'), 'utf8');
+    const policyText = readFileSync(resolve(workspaceRoot(), 'services/runtime-box-signer/policy.json'), 'utf8');
     const { fingerprint } = await verifyDeployedSignerPolicy({ signerUrl, identityToken, policyText });
     console.log(`Deployed signer policy matches the committed policy (${fingerprint}).`);
     return;

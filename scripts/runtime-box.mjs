@@ -73,6 +73,7 @@ import {
   runtimeBoxReleaseStem,
 } from './runtime-box/identity.mjs';
 import { fail, run as runProcess, runResult as runProcessResult } from './runtime-box/process.mjs';
+import { configureWorkspace, getWorkspace, workspaceOverridesFromFlags } from './runtime-box/workspace.mjs';
 import {
   stageStandalonePython,
   syncLockedPythonDependencies,
@@ -93,17 +94,21 @@ import {
   runtimeBoxTargetId,
 } from './runtime-box/targets.mjs';
 
-const ROOT = resolve(import.meta.dirname, '..');
-/** Recipes are checked in; everything below is generated and git-ignored. */
-const RECIPE_ROOT = join(ROOT, 'runtime-boxes', 'recipes');
-/** Local dev signing keys — never used for production releases. */
-const LOCAL_ROOT = join(ROOT, '.runtime-box-local');
-/** Scratch space where the payload tree is assembled. */
-const BUILD_ROOT = join(ROOT, '.runtime-box-build');
-/** Finished artefacts: archives, signed documents, and the objects to upload. */
-const DIST_ROOT = join(ROOT, '.runtime-box-dist');
-const DEFAULT_PRIVATE_KEY = join(LOCAL_ROOT, 'signing-private.pem');
-const DEFAULT_PUBLIC_KEY = join(LOCAL_ROOT, 'signing-public.json');
+/**
+ * Workspace directories, read through getters so `main()` can configure them from flags before the
+ * first path is used. `root` is the project root; `recipes` is checked in, and `build`, `dist` and
+ * `keys` are generated and git-ignored. See `runtime-box/workspace.mjs` for the resolution rules.
+ */
+const paths = {
+  get root() { return getWorkspace().root; },
+  get recipes() { return getWorkspace().recipesDir; },
+  get build() { return getWorkspace().buildDir; },
+  get dist() { return getWorkspace().distDir; },
+  /** Local dev signing keys — never used for production releases. */
+  get keys() { return getWorkspace().keysDir; },
+};
+const defaultPrivateKeyPath = () => join(paths.keys, 'signing-private.pem');
+const defaultPublicKeyPath = () => join(paths.keys, 'signing-public.json');
 const DEFAULT_OBJECT_PREFIX = 'ai-runtime-boxes';
 const MULTIPART_PART_BYTES = 64 * 1024 * 1024;
 /** Minimal flag parser supporting `--name=value`, `--name value` and bare `--name` (true). */
@@ -142,12 +147,12 @@ async function writeReceipt(flags, value) {
  * returned; otherwise it is inherited so long steps (pip installs, downloads) stream live.
  */
 function run(command, args, options = {}) {
-  return runProcess(command, args, { ...options, cwd: options.cwd ?? ROOT });
+  return runProcess(command, args, { ...options, cwd: options.cwd ?? paths.root });
 }
 
 /** Runs a subprocess while preserving the repository root as the CLI's default working tree. */
 function runResult(command, args, options = {}) {
-  return runProcessResult(command, args, { ...options, cwd: options.cwd ?? ROOT });
+  return runProcessResult(command, args, { ...options, cwd: options.cwd ?? paths.root });
 }
 
 function sha256Buffer(value) {
@@ -156,8 +161,8 @@ function sha256Buffer(value) {
 
 /** Resolves a recipe name to its directory, refusing anything that escapes the recipe root. */
 function recipeDirectory(name) {
-  const path = resolve(RECIPE_ROOT, name);
-  if (path !== RECIPE_ROOT && !path.startsWith(`${RECIPE_ROOT}${sep}`)) fail(`Invalid recipe: ${name}`);
+  const path = resolve(paths.recipes, name);
+  if (path !== paths.recipes && !path.startsWith(`${paths.recipes}${sep}`)) fail(`Invalid recipe: ${name}`);
   return path;
 }
 
@@ -195,8 +200,8 @@ function prefixedObjectKey(prefix, key) {
  * invalidate every document previously signed with it.
  */
 async function keygen(flags) {
-  const privatePath = resolve(String(flags.get('private-key') || DEFAULT_PRIVATE_KEY));
-  const publicPath = resolve(String(flags.get('public-key') || DEFAULT_PUBLIC_KEY));
+  const privatePath = resolve(String(flags.get('private-key') || defaultPrivateKeyPath()));
+  const publicPath = resolve(String(flags.get('public-key') || defaultPublicKeyPath()));
   if ((await fileExists(privatePath)) && !flags.get('force')) {
     fail(`Signing key already exists: ${privatePath}. Pass --force to rotate it explicitly.`);
   }
@@ -220,8 +225,8 @@ async function keygen(flags) {
     publicKeyBase64: rawPublicKey.toString('base64'),
     publicKeyPem: publicPem,
   }, null, 2)}\n`);
-  console.log(`Created private key: ${relative(ROOT, privatePath)}`);
-  console.log(`Created public key:  ${relative(ROOT, publicPath)}`);
+  console.log(`Created private key: ${relative(paths.root, privatePath)}`);
+  console.log(`Created public key:  ${relative(paths.root, publicPath)}`);
 }
 
 /**
@@ -229,13 +234,13 @@ async function keygen(flags) {
  * mismatched pair is caught here rather than producing documents nobody can verify.
  */
 async function readSigningKey(flags) {
-  const privatePath = resolve(String(flags.get('private-key') || DEFAULT_PRIVATE_KEY));
+  const privatePath = resolve(String(flags.get('private-key') || defaultPrivateKeyPath()));
   if (!await fileExists(privatePath)) fail(`Signing key not found: ${privatePath}. Run the keygen command first.`);
   const privateKey = createPrivateKey(await readFile(privatePath, 'utf8'));
   const publicKey = createPublicKey(privateKey);
   const publicDer = publicKey.export({ type: 'spki', format: 'der' });
   const rawPublicKey = publicDer.subarray(publicDer.length - 32);
-  const publicMetadataPath = resolve(String(flags.get('public-key') || DEFAULT_PUBLIC_KEY));
+  const publicMetadataPath = resolve(String(flags.get('public-key') || defaultPublicKeyPath()));
   const metadata = JSON.parse(await readFile(publicMetadataPath, 'utf8'));
   if (metadata.publicKeyBase64 !== rawPublicKey.toString('base64')) fail('Private and public Runtime Box signing keys do not match.');
   return { privateKey, metadata };
@@ -277,7 +282,7 @@ async function signDocumentRemotely(payloadBytes, flags) {
   if (document.payloadBase64 !== request.payloadBase64 || document.payloadSha256 !== request.payloadSha256) {
     fail('Remote signer returned a different Runtime Box payload.');
   }
-  const publicKeyPath = resolve(String(flags.get('public-key') || DEFAULT_PUBLIC_KEY));
+  const publicKeyPath = resolve(String(flags.get('public-key') || defaultPublicKeyPath()));
   await verifySignedDocument(document, publicKeyPath);
   return document;
 }
@@ -371,7 +376,7 @@ async function lockRecipe(name, flags) {
     // the single target platform, so resolution is host-independent with no platform flag.
     const pixi = findPixi(flags, recipe.pixiVersion);
     run(pixi, runtimeBoxPixiLockArguments(join(dir, 'pixi.toml')));
-    console.log(`Updated ${relative(ROOT, join(dir, 'pixi.lock'))}`);
+    console.log(`Updated ${relative(paths.root, join(dir, 'pixi.lock'))}`);
     return;
   }
   const uv = findUv(flags, recipe.uvVersion);
@@ -381,7 +386,7 @@ async function lockRecipe(name, flags) {
     join(dir, recipe.requirementsInput),
     join(dir, recipe.requirementsLock),
   ), { env: { UV_NO_CONFIG: '1' } });
-  console.log(`Updated ${relative(ROOT, join(dir, recipe.requirementsLock))}`);
+  console.log(`Updated ${relative(paths.root, join(dir, recipe.requirementsLock))}`);
 }
 
 /**
@@ -435,7 +440,7 @@ async function downloadVerified(asset, destination) {
 
 /** Copy a checked-in legal or runtime file into the payload after verifying its recipe hash. */
 async function copyVerifiedLocalFile(file, payloadDir) {
-  const source = join(ROOT, safeRelativePath(file.sourcePath));
+  const source = join(paths.root, safeRelativePath(file.sourcePath));
   if (!await fileExists(source) || !(await stat(source)).isFile()) {
     fail(`Local Runtime Box file is missing: ${file.sourcePath}`);
   }
@@ -532,12 +537,12 @@ async function buildRecipe(name, flags) {
   if (gitState.dirty && !flags.get('allow-dirty')) {
     fail('Refusing to build a release from a dirty source tree. Commit first or pass --allow-dirty for local development.');
   }
-  const buildDir = join(BUILD_ROOT, recipe.recipeId);
+  const buildDir = join(paths.build, recipe.recipeId);
   const payloadDir = join(buildDir, 'payload');
   const stem = runtimeBoxReleaseStem(recipe);
-  const archivePath = join(DIST_ROOT, `${stem}.zip`);
+  const archivePath = join(paths.dist, `${stem}.zip`);
   const objectPrefix = runtimeBoxReleaseObjectPrefix(recipe);
-  const objectDir = join(DIST_ROOT, 'objects', objectPrefix);
+  const objectDir = join(paths.dist, 'objects', objectPrefix);
   // Always start from an empty tree: leftovers from a previous build would end up in the archive.
   await rm(buildDir, { recursive: true, force: true });
   // Rebuilding the same release must not keep its previous multi-gigabyte local staging objects.
@@ -619,7 +624,7 @@ async function buildRecipe(name, flags) {
       targetId: runtimeBoxTargetId(recipe.target),
       torchBackend: recipe.torchBackend ?? null,
     });
-    const reviewedAuditPath = resolve(ROOT, safeRelativePath(recipe.dependencyLicenseAudit));
+    const reviewedAuditPath = resolve(paths.root, safeRelativePath(recipe.dependencyLicenseAudit));
     const reviewedAudit = JSON.parse(await readFile(reviewedAuditPath, 'utf8'));
     validatePythonDependencyLicenseAudit(reviewedAudit, actualAudit);
     const auditPath = join(payloadDir, 'THIRD_PARTY_NOTICES', 'python-distributions.json');
@@ -633,7 +638,7 @@ async function buildRecipe(name, flags) {
       lockBytes: await readFile(lockPath),
       targetId: runtimeBoxTargetId(recipe.target),
     });
-    const reviewedAuditPath = resolve(ROOT, safeRelativePath(recipe.condaDependencyLicenseAudit));
+    const reviewedAuditPath = resolve(paths.root, safeRelativePath(recipe.condaDependencyLicenseAudit));
     const reviewedAudit = JSON.parse(await readFile(reviewedAuditPath, 'utf8'));
     validateCondaDependencyLicenseAudit(reviewedAudit, actualAudit);
     const auditPath = join(payloadDir, 'THIRD_PARTY_NOTICES', 'conda-distributions.json');
@@ -689,7 +694,7 @@ async function buildRecipe(name, flags) {
   await writeFile(join(payloadDir, 'box.json'), `${JSON.stringify(boxMetadata, null, 2)}\n`);
   await normalizeTree(payloadDir);
   const installedSizeBytes = await payloadSize(payloadDir);
-  await mkdir(DIST_ROOT, { recursive: true });
+  await mkdir(paths.dist, { recursive: true });
   await createDeterministicZip(payloadDir, archivePath, adapter);
 
   const archiveSha = await sha256File(archivePath);
@@ -723,7 +728,7 @@ async function buildRecipe(name, flags) {
     provenance,
   };
   const signedRelease = await signDocument(release, flags);
-  const releasePath = join(DIST_ROOT, `${stem}.release.json`);
+  const releasePath = join(paths.dist, `${stem}.release.json`);
   await writeFile(releasePath, `${JSON.stringify(signedRelease, null, 2)}\n`);
   // The channel points at the release document by *its* hash too, so the whole chain is
   // content-addressed: channel -> release document -> archive.
@@ -745,16 +750,16 @@ async function buildRecipe(name, flags) {
     releases: [{ version: recipe.version, releaseManifestUrl: releaseUrl, rolloutPercentage: 100 }],
   };
   const signedChannel = await signDocument(channel, flags);
-  const channelPath = join(DIST_ROOT, `${recipe.boxId}-${channel.channel}-${runtimeBoxTargetId(recipe.target)}.channel.json`);
+  const channelPath = join(paths.dist, `${recipe.boxId}-${channel.channel}-${runtimeBoxTargetId(recipe.target)}.channel.json`);
   await writeFile(channelPath, `${JSON.stringify(signedChannel, null, 2)}\n`);
   // A staging tree laid out exactly as the bucket, so `publish` (and the local `serve` registry)
   // upload/serve files under the same keys the manifests already point to.
   await mkdir(objectDir, { recursive: true });
   await linkOrCopyFile(archivePath, join(objectDir, `${archiveSha}.zip`));
   await copyFile(releasePath, join(objectDir, `${releaseDocumentSha}.release.json`));
-  console.log(`Built archive: ${relative(ROOT, archivePath)}`);
-  console.log(`Signed release: ${relative(ROOT, releasePath)}`);
-  console.log(`Signed channel: ${relative(ROOT, channelPath)}`);
+  console.log(`Built archive: ${relative(paths.root, archivePath)}`);
+  console.log(`Signed release: ${relative(paths.root, releasePath)}`);
+  console.log(`Signed channel: ${relative(paths.root, channelPath)}`);
 }
 
 /**
@@ -767,7 +772,7 @@ async function buildRecipe(name, flags) {
  */
 async function verifyRelease(path, flags) {
   const releasePath = resolve(path);
-  const publicKeyPath = resolve(String(flags.get('public-key') || DEFAULT_PUBLIC_KEY));
+  const publicKeyPath = resolve(String(flags.get('public-key') || defaultPublicKeyPath()));
   const signed = JSON.parse(await readFile(releasePath, 'utf8'));
   const release = await verifySignedDocument(signed, publicKeyPath);
   if (release.kind !== 'liatir.runtime-box.release') fail('Document is not a Runtime Box release.');
@@ -1022,9 +1027,9 @@ async function serve(flags) {
       const channelMatch = url.pathname.match(/^\/v1\/channels\/([^/]+)\/([^/]+)\/([^/]+)$/);
       if (channelMatch) {
         const [, channel, boxId, target] = channelMatch;
-        localPath = join(DIST_ROOT, `${safeRelativePath(boxId)}-${safeRelativePath(channel)}-${safeRelativePath(target)}.channel.json`);
+        localPath = join(paths.dist, `${safeRelativePath(boxId)}-${safeRelativePath(channel)}-${safeRelativePath(target)}.channel.json`);
       } else if (url.pathname.startsWith('/objects/')) {
-        localPath = join(DIST_ROOT, 'objects', safeRelativePath(url.pathname.slice('/objects/'.length)));
+        localPath = join(paths.dist, 'objects', safeRelativePath(url.pathname.slice('/objects/'.length)));
       } else {
         response.writeHead(url.pathname === '/health' ? 200 : 404, { 'Content-Type': 'application/json' });
         response.end(JSON.stringify(url.pathname === '/health' ? { ok: true } : { error: 'not_found' }));
@@ -1034,7 +1039,7 @@ async function serve(flags) {
       // inside the dist root before reading it. A miss is reported as 404, not as an error, so
       // the server does not disclose what exists outside the served tree.
       const resolvedPath = resolve(localPath);
-      if (!resolvedPath.startsWith(`${DIST_ROOT}${sep}`) || !await fileExists(resolvedPath)) {
+      if (!resolvedPath.startsWith(`${paths.dist}${sep}`) || !await fileExists(resolvedPath)) {
         response.writeHead(404, { 'Content-Type': 'application/json' });
         response.end(JSON.stringify({ error: 'not_found' }));
         return;
@@ -1078,7 +1083,7 @@ async function publish(releaseDocumentPath, flags) {
   if (!bucket) fail('publish requires --bucket <r2-bucket>.');
   const releasePath = resolve(releaseDocumentPath);
   const signed = JSON.parse(await readFile(releasePath, 'utf8'));
-  const publicKeyPath = resolve(String(flags.get('public-key') || DEFAULT_PUBLIC_KEY));
+  const publicKeyPath = resolve(String(flags.get('public-key') || defaultPublicKeyPath()));
   const release = await verifySignedDocument(signed, publicKeyPath);
   if (release.provenance?.sourceTreeDirty && !flags.get('allow-dirty')) {
     fail('Refusing to publish a Runtime Box built from a dirty source tree.');
@@ -1134,10 +1139,10 @@ async function publishTrustedKey(flags) {
   const bucket = String(flags.get('bucket') || '');
   if (!bucket) fail('publish-key requires --bucket <r2-bucket>.');
   if (!flags.get('confirm')) fail('publish-key changes the Worker trust root; pass --confirm after reviewing the public key.');
-  const publicKeyPath = resolve(String(flags.get('public-key') || DEFAULT_PUBLIC_KEY));
+  const publicKeyPath = resolve(String(flags.get('public-key') || defaultPublicKeyPath()));
   const keys = readTrustedKeyEntries(JSON.parse(await readFile(publicKeyPath, 'utf8')));
-  const documentPath = join(DIST_ROOT, 'trusted-keys.json');
-  await mkdir(DIST_ROOT, { recursive: true });
+  const documentPath = join(paths.dist, 'trusted-keys.json');
+  await mkdir(paths.dist, { recursive: true });
   // Only the public fields are copied out — never the PEM, and obviously never a private key.
   await writeFile(documentPath, `${JSON.stringify({
     schemaVersion: 1,
@@ -1147,10 +1152,10 @@ async function publishTrustedKey(flags) {
       publicKeyBase64: key.publicKeyBase64,
     })),
   }, null, 2)}\n`);
-  const wrangler = join(ROOT, 'node_modules', '.bin', 'wrangler');
+  const wrangler = join(paths.root, 'node_modules', '.bin', 'wrangler');
   const objectKey = prefixedObjectKey(flags.get('prefix'), 'control/trusted-keys.json');
   const locationArgs = flags.get('local')
-    ? ['--local', '--config', join(ROOT, 'workers', 'runtime-box-registry', 'wrangler.jsonc')]
+    ? ['--local', '--config', join(paths.root, 'workers', 'runtime-box-registry', 'wrangler.jsonc')]
     : ['--remote'];
   run(wrangler, [
     'r2', 'object', 'put', `${bucket}/${objectKey}`,
@@ -1229,10 +1234,10 @@ async function createRevocation(flags) {
     revocations: [{ boxId, version, reason, revokedAt: new Date().toISOString() }],
   };
   const signed = await signDocument(manifest, flags);
-  await mkdir(DIST_ROOT, { recursive: true });
-  const path = join(DIST_ROOT, 'runtime-box-revocations.json');
+  await mkdir(paths.dist, { recursive: true });
+  const path = join(paths.dist, 'runtime-box-revocations.json');
   await writeFile(path, `${JSON.stringify(signed, null, 2)}\n`);
-  console.log(`Signed revocations: ${relative(ROOT, path)}`);
+  console.log(`Signed revocations: ${relative(paths.root, path)}`);
 }
 
 function usage() {
@@ -1249,6 +1254,16 @@ Commands:
   promote <channel.json>         Promote a signed channel through the Worker
   revoke --box --version         Create a signed revocation document
 
+Workspace:
+  Paths come from scrollcase.config.json at the project root (discovered by
+  walking up from the working directory) and can be overridden per invocation:
+  --config <file>                Use this workspace config explicitly
+  --project-root <dir>           Treat this directory as the project root
+  --recipes-dir <dir>            Where recipes live (default runtime-boxes/recipes)
+  --build-dir <dir>              Payload scratch space (default .runtime-box-build)
+  --out-dir <dir>                Built artefacts (default .runtime-box-dist)
+  --keys-dir <dir>               Local dev signing keys (default .runtime-box-local)
+
 Production signing:
   Pass --signer <private-cloud-run-url> to build or revoke. The CLI obtains a
   short-lived Google identity token and verifies the returned signature locally.
@@ -1260,6 +1275,8 @@ async function main() {
   const [command, ...rest] = process.argv.slice(2);
   const { positional, flags } = parseArgs(rest);
   if (!command || command === 'help' || command === '--help') return usage();
+  // Resolve the workspace before any command touches a path, so flags win over the project config.
+  configureWorkspace({ overrides: workspaceOverridesFromFlags(flags) });
   if (command === 'keygen') return keygen(flags);
   if (command === 'lock') return lockRecipe(positional[0] || fail('lock requires a recipe name.'), flags);
   if (command === 'build') return buildRecipe(positional[0] || fail('build requires a recipe name.'), flags);

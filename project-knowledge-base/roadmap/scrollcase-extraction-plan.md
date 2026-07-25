@@ -193,9 +193,10 @@ Today the box-format contract is **triplicated** and kept in sync by the golden 
   scrollcase's pluggable external-signer interface. Since Liatir is not released, retiring the uv
   boxes/recipes is likewise a low-risk downstream cleanup, done per-target once each pixi box is
   published.
-- **P1 — Parametrize paths:** replace `resolve(import.meta.dirname, '..')` root assumptions
-  (`runtime-box.mjs:96`, `evidence.mjs`) with `--recipes-dir`/`--out-dir` or `scrollcase.config.json`
-  discovery. This is the only mechanical refactor and is worth doing regardless.
+- **P1 — Parametrize paths: DONE (2026-07-25).** The `resolve(import.meta.dirname, '..')` root
+  assumptions are gone; the builder now resolves its layout from a consumer-owned
+  `scrollcase.config.json` with CLI overrides. See "P1 execution record" below for the contract and
+  the evidence.
 - **P2 — Carve the contract:** extract the box-format spec + reference impl into the scrollcase package
   boundary; add JSON Schemas; wire the golden fixtures.
 - **P3 — Build the CLI surface:** `init`, `doctor`, `verify`, `audit`, `--global`, weights
@@ -206,6 +207,69 @@ Today the box-format contract is **triplicated** and kept in sync by the golden 
   plug in KMS signer; delete the in-tree copy.
 
 ---
+
+## P1 execution record (2026-07-25)
+
+### The path contract (approved by the maintainer before implementation)
+
+A workspace is declared by the **consumer**, never by the tool — the same model as `tsconfig.json`
+or `wrangler.jsonc`. scrollcase ships the resolver, the defaults, and the JSON Schema; each project
+that consumes it keeps its own `scrollcase.config.json` at its root. `scrollcase init` (P3) will
+scaffold that file; nothing about it lives inside scrollcase itself.
+
+- **Config file:** `scrollcase.config.json`, `{ "version": 1, "paths": { recipes, build, dist, keys } }`.
+  Every field is optional. Schema: `scripts/runtime-box/scrollcase.config.schema.json` (moves with the
+  tool). Relative values resolve against the project root, so the file is portable; absolute values
+  are taken as given. Unknown keys, a wrong version, and empty values are hard errors rather than
+  silent fallbacks.
+- **Defaults (unchanged from the historical layout):** `runtime-boxes/recipes`, `.runtime-box-build`,
+  `.runtime-box-dist`, `.runtime-box-local`.
+- **CLI overrides:** `--config`, `--project-root`, `--recipes-dir`, `--build-dir`, `--out-dir`,
+  `--keys-dir`. Flag values resolve against the working directory, which is what a shell user expects.
+- **Precedence:** CLI flag > `scrollcase.config.json` > built-in default. The root is the
+  `--project-root`, else the directory of an explicit `--config`, else the nearest
+  `scrollcase.config.json` found walking up from the working directory, else the working directory.
+- **Liatir's own config is committed at the repo root**, which makes the root explicit rather than
+  cwd-dependent and is the natural integration point for P5.
+
+### What changed
+
+- New `scripts/runtime-box/workspace.mjs` (resolver, memoized per process, with a test seam) and
+  `scripts/runtime-box/scrollcase.config.schema.json`.
+- `runtime-box.mjs`, `runtime-box-ci.mjs` and `runtime-box/evidence.mjs` read paths through lazy
+  workspace accessors instead of module-level constants derived from `import.meta.dirname`, so the
+  entry point can configure the layout from flags before the first path is resolved.
+- Liatir's `runtime-box*` npm scripts are untouched and keep working: they run from the repo root,
+  where the committed config resolves to exactly the previous paths.
+- `scrollcase.config.json` committed at the liatir-stack root.
+- New `tests/unit/runtime-box-workspace.test.ts` (9 tests) covering defaults, walk-up discovery,
+  flag-over-config precedence, absolute paths, argv scanning, malformed-config rejection, and memoization.
+
+### Evidence (all local, zero cost)
+
+- **Behavioral identity proven by A/B build.** The `installer-fixture-macos-arm64` box was built in
+  the same directory from HEAD and from the P1 tree. Unzipping both and diffing the trees recursively
+  reports exactly one differing file, `box.json`, whose only differing line is
+  `"sourceTreeDirty": false` → `true` — the builder honestly recording that the P1 changes were still
+  uncommitted. The payload is byte-identical; archive hashes are `7ff006f4…9775` (HEAD, clean tree)
+  and `a72eb1fa…b383` (P1, dirty tree). A HEAD build in a separate worktree produced the identical
+  `7ff006f4…9775`, confirming the archive does not depend on the build directory and isolating the
+  provenance flag as the sole cause.
+- `node scripts/validate-runtime-box-native-fixture.mjs --recipe installer-fixture-macos-arm64`
+  passed on the P1 tree: build, deterministic rebuild (the validator asserts the two archives are
+  byte-identical), signature verification, and `verify --self-test`.
+- `npm run test:unit`: **190/190 passed**, 31 files (was 181; the 9 new workspace tests are the delta).
+- `npm run runtime-box:catalog:check`: 3 model records, 3 foundation fixtures validated.
+- `npm run runtime-box:test:foundation`: Gate 2 foundation validation passed, including the Rust
+  `bridge::runtime_boxes` large-archive fixture test.
+- `npm run lint:ts`: 0 errors (43 pre-existing warnings under `packages/`, unrelated).
+
+### Follow-up noted, deliberately not done in P1
+
+`scripts/validate-runtime-box-native-fixture.mjs` still derives its own root from
+`import.meta.dirname`. It is a Liatir-side validator that stays private and invokes the CLI with the
+repository as its working directory, so it is unaffected; it is listed here so the remaining
+assumption is not forgotten.
 
 ## Verification
 
