@@ -1,6 +1,6 @@
 # Current project status
 
-Last updated: 2026-07-24 (a full CI substrate migration to pixi + pixi-pack +
+Last updated: 2026-07-25 (a full CI substrate migration to pixi + pixi-pack +
 conda-forge on self-hosted GitHub Actions runners has been planned and approved
 in principle — see the migration plan below. Its **Phase 0 relocation/activation
 spike is now complete and decisive on ALL THREE OSes: macOS Metal, Windows
@@ -23,21 +23,22 @@ Windows PowerShell counterpart, four self-hosted runner profiles, every Linux an
 Windows model target repointed onto them, and the paid `liatir-linux-t4` /
 `liatir-windows-t4` profiles deleted. All four self-hosted preflights pass against
 the real GitHub API; only coordination jobs stay on cheap hosted runners, by design,
-because the resolve job is what tells the operator which runner to start. **No runner
-has been registered and no job has run yet**, and native jobs now queue until the
-operator brings the matching runner online — the established Gate 9 on-demand model.
+because the resolve job is what tells the operator which runner to start. Native jobs
+queue until the operator brings the matching runner online — the established Gate 9
+on-demand model — and **many self-hosted validation runs have since executed** (the
+scGPT results below).
 **Phase 4 is also complete**: GPU runner profiles now declare capability and VRAM
 **floors** (compute ≥ 7.5, ≥ 7.5 GB) instead of pinning one exact card, and the
 parity validator, host probe, evidence record and CUDA E2E no longer hard-code a
-Tesla T4 — so the local RTX 4060 Ti is accepted and CUDA dispatch is unblocked,
-though it has not been exercised on real hardware yet. The old 15 GB VRAM floor had
+Tesla T4 — so the local RTX 4060 Ti is accepted. CUDA has since been **exercised for
+real on the 4060 Ti** (the scGPT CUDA runs below). The old 15 GB VRAM floor had
 no scientific basis: the reviewed CUDA run measured a peak of ~102 MiB. **Phase 5 is
 in progress**: scGPT `linux-x86_64-cpu` is migrated off uv onto pixi, and
 `windows-x86_64-cpu` is added as a new target that never had a uv recipe — both with
 committed `pixi.lock` files, lock-derived conda licence audits (112 and 94 packages,
 all licensed), measured `diskPlan` floors, and wiring into the catalog, signer policy
-and workflow. Both remain `buildable`; **nothing has been signed, published or
-promoted**. **scGPT Linux CPU is now scientifically validated natively on the self-hosted
+and workflow. They started `buildable`; their current validated statuses are below, and
+**nothing has been signed, published or promoted**. **scGPT Linux CPU is now scientifically validated natively on the self-hosted
 runner** — the first pixi box built and validated in CI (run `30132956412`, mode
 `scientific`, ~9.5 min on an ephemeral WSL runner): pixi 0.73.0, torch 2.8.0 CPU,
 a finite `1 x 512` embedding, self-test and output/provenance contracts all passed,
@@ -110,10 +111,11 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   approved-in-principle plan to replace the uv/python-build-standalone builder
   with pixi + pixi-pack + conda-forge (Variant A + a contained PyPI escape
   hatch) on self-hosted GitHub Actions runners, standardize torch on 2.8.0, and
-  re-validate every box. **Phases 0, 1 and 2 complete** (Phase 0 on every OS;
-  Phase 1 on the scGPT macOS pilot, with the uv path retained for the seven
-  unmigrated recipes; Phase 2 with no Rust change needed). **Phase 3 —
-  self-hosted ephemeral CI — is next; Phases 4–5 not started.**
+  re-validate every box. **Phases 0–4 complete; Phase 5 in progress** — scGPT is
+  validated on the pixi substrate across every non-macOS target (Linux CPU/CUDA,
+  Windows CPU/CUDA) plus the published macOS pilot, all on self-hosted CI including
+  real CUDA on the RTX 4060 Ti. Remaining Phase 5: migrate Geneformer and UCE, then
+  the protected releases. The uv path is retained for the not-yet-migrated recipes.
 - [Runtime Box pixi Phase 0 spike](./roadmap/runtime-box-pixi-phase0-spike.md) —
   the decisive local relocation/activation decision record: conda-pack, **no
   activation env on any OS (macOS, Windows and Linux, CPU + CUDA)**, `venv/`
@@ -140,6 +142,9 @@ has two explicit tracks: cross-version update with client-persisted anti-replay
 state, and cross-platform expansion of the current model catalog before new
 model families are admitted. The common execution spine follows in Phase 2.
 The cross-platform track now has a canonical target-by-target execution plan.
+(This section from `29951xxxxx` onward is the pre-pixi uv-era narrative, kept as
+history; the pixi migration has since superseded these target states — see the top
+of this file and the pixi migration plan for current statuses.)
 The new scGPT Linux CPU target is checked and deliberately remains `buildable`.
 Run `29951014606` exposed and closed a dependency-audit/pruning contradiction.
 Run `29951632568` then passed build, self-test, and real finite 512-dimensional
@@ -163,9 +168,11 @@ already listed `scgpt-whole-human → linux-x86_64-cpu` (added by `b3a9a1f`, an
 ancestor of the released commit), but committing `policy.json` does not deploy it,
 and `runtime-box:signer:deploy` had never been run — so the live Cloud Run
 revision served an older policy. The fix is a signer deploy before the retry; no
-builder change is needed. Nothing currently detects this drift, so it will recur
-for every new target unless a cheap pre-release comparison is added. The target
-remains `buildable`, unpublished, unpromoted, and unsupported.
+builder change is needed. The drift check is now automated (the release fails fast
+if the deployed signer policy is stale — see the pixi migration plan). **Superseded:**
+this uv-era Linux CPU target has since been migrated to pixi and, on that substrate,
+validated at build + scientific + native-lifecycle; the uv release above was never
+retried.
 
 **Runtime Box-only product cutover (2026-07-22):** the AI Model catalog now
 contains exactly Geneformer V1 10M, scGPT Whole-human, and UCE 4-layer. Every
@@ -409,15 +416,16 @@ first).
 > prefer migrating a target over rebuilding it on the old uv path. Each further
 > phase begins only on explicit maintainer go-ahead, one at a time.
 
-1. Execute the [Runtime Box model platform expansion](./roadmap/runtime-box-model-platform-expansion.md):
-   first retrieve and diagnose the exact signing-build error from protected
-   scGPT Linux CPU release `29955615971`, repair it behind cheap gates, and
-   complete the protected release. Then close scGPT and UCE one target at a
-   time on Windows CPU, Linux CPU, and Linux CUDA. Regress both existing macOS
-   boxes to close P0, and keep Windows CUDA under the existing no-dispatch
-   decision until its runner re-entry conditions hold. The repeated Windows
-   foundation launcher `ENOENT` from run `29953770028` belongs to P2 and must
-   be fixed before claiming Windows portability.
+1. Continue the [pixi migration](./roadmap/runtime-box-pixi-migration.md) Phase 5,
+   which has **reframed and largely absorbed** the old model-platform-expansion
+   plan. Done: the `29955615971` signing failure was diagnosed (deployed-signer
+   policy drift, now auto-detected before every release) and scGPT is validated
+   on the pixi substrate across all non-macOS targets (Linux CPU/CUDA, Windows
+   CPU/CUDA) plus the published macOS pilot. Remaining: migrate Geneformer and
+   UCE to pixi and validate them the same way, then run the protected releases
+   (each gated on the maintainer's go-ahead and a prior `runtime-box:signer:deploy`).
+   Windows CUDA is no longer under the no-dispatch decision — it now validates on
+   the self-hosted RTX 4060 Ti.
 2. Close the true cross-version Runtime Box update and client-persisted signed
    anti-replay state as product work, not as an unclosed foundation gate.
 3. Continue with the common execution spine in Phase 2 after that bounded
