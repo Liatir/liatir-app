@@ -106,10 +106,24 @@ Signing is part of the **format and trust model**, so it lives in scrollcase; on
 ## Extraction: what moves vs what stays
 
 ### Moves into `scrollcase`
-- Entry points: `scripts/runtime-box.mjs`, `scripts/runtime-box-ci.mjs`, and `scripts/node-cli.mjs`
-  (the only local file imported from outside the folder — 45 LOC, copied in).
-- All 11 modules in `scripts/runtime-box/` (`archive, evidence, filesystem, heartbeat, identity,
-  licenses, pixi, process, python, targets, validator-context`).
+- Entry point: `scripts/runtime-box.mjs` — the builder proper (`build`, `verify`, `lock`, `keygen`,
+  `publish`, `promote`, `revoke`).
+- All 12 modules in `scripts/runtime-box/` (`archive, evidence, filesystem, heartbeat, identity,
+  licenses, pixi, process, python, targets, validator-context, workspace`). `targets` and the
+  document contract were carved out at P2; `workspace` was added at P1.
+- **CORRECTED 2026-07-25 — `scripts/node-cli.mjs` does NOT move and is not copied in.** The earlier
+  wording ("the only local file imported from outside the folder — 45 LOC, copied in") was wrong.
+  Its `npmInvocation` exists to spawn *Liatir's own npm scripts*: `runtime-box-ci.mjs` uses it for
+  `npm run <scientific validator>` and `npm run runtime-box -- build …`, and `heartbeat.mjs`
+  special-cases the literal command `npm` and passes every other command (pixi, cargo, node, python)
+  straight through. That is Liatir's CI orchestrating itself through npm, not builder behaviour: a
+  standalone CLI invokes pixi/conda-pack/python directly and calls its own build as a function. The
+  file stays in Liatir, where ten other callers need it.
+- **OPEN for P3 — `scripts/runtime-box-ci.mjs` (812 LOC) must be split before anything moves.** The
+  original plan listed it as an entry point that moves wholesale, but most of it is Liatir's CI, not
+  the tool: the model catalog, runner profiles, GitHub Actions outputs, the cost policy, and the
+  evidence records. Moving it as-is would import into scrollcase exactly the coupling the extraction
+  exists to remove. Decide per concern what is builder and what is consumer CI.
 - The **box-format contract** (see Contract inversion) + `runtime-boxes/target-id-contract.json`.
 - Self-contained tests: `runtime-box-{conda-licenses, pixi, target-adapters, validator-context,
   evidence, cost-controls}.test.ts` (depend only on the extracted modules).
