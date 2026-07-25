@@ -150,6 +150,42 @@
     },
     "provenance": {
       "$ref": "#/$defs/provenance"
+    },
+    "weights": {
+      "const": "on-demand",
+      "description": "Present only when the assets were deliberately left out of the archive. Absent means the box is self-contained: everything it needs is inside it."
+    },
+    "assets": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Assets the consumer must fetch and place under the box root before first use. Present only with on-demand weights. The declared hash is what makes fetching them safe.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "url",
+          "relativePath",
+          "sizeBytes",
+          "sha256"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "minLength": 1
+          },
+          "relativePath": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "sha256": {
+            "$ref": "#/$defs/sha256"
+          }
+        }
+      }
     }
   },
   "$defs": {
@@ -221,5 +257,13 @@
         }
       }
     }
+  },
+  "dependentRequired": {
+    "assets": [
+      "weights"
+    ],
+    "weights": [
+      "assets"
+    ]
   }
 }

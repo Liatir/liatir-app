@@ -25,6 +25,7 @@ import { createDeterministicZip } from './archive.mjs';
 import { fileExists, normalizeTree, payloadSize, safeRelativePath, sha256File } from './filesystem.mjs';
 import { boxReleaseObjectPrefix, boxReleaseStem, builderVersionFields } from './identity.mjs';
 import { createCondaDependencyLicenseAudit, validateCondaDependencyLicenseAudit } from './licenses.mjs';
+import { checkParity } from './parity.mjs';
 import { findCondaPack, findPixi, installAndPackPixiEnvironment } from './pixi.mjs';
 import { fail, run as runProcess } from './process.mjs';
 import { readRecipe, sourceBuildState, sourceBuildTime } from './recipe.mjs';
@@ -64,6 +65,7 @@ export async function buildBox(name, options = {}) {
   const {
     allowDirty = false,
     channel = 'beta',
+    weights = null,
     assetBaseUrl: assetBaseUrlOverride = null,
     namespace,
     signerCommand = null,
@@ -121,15 +123,31 @@ export async function buildBox(name, options = {}) {
     run,
   });
 
-  for (const asset of recipe.assets) {
+  // `embed` packs the assets into the archive, so an installed box needs no network and works
+  // air-gapped. `on-demand` leaves them out and lets the consumer fetch them at install time from the
+  // descriptors carried in the signed release — the declared hash is what keeps that safe. The choice
+  // trades archive size against an install-time dependency on the asset host, so it is the project's
+  // to make, per build.
+  const weightsMode = weights || recipe.weights || 'embed';
+  if (weightsMode !== 'embed' && weightsMode !== 'on-demand') {
+    fail(`Unsupported weights mode: ${weightsMode}. Use embed or on-demand.`);
+  }
+  const embedded = weightsMode === 'embed';
+  for (const asset of embedded ? recipe.assets : []) {
     log(`Downloading ${asset.relativePath}`);
     await downloadVerified(asset, join(payloadDir, safeRelativePath(asset.relativePath)));
   }
+  const deferredAssets = new Set(embedded ? [] : recipe.assets.map((asset) => asset.relativePath));
   for (const file of recipe.localFiles ?? []) {
     await copyVerifiedLocalFile(file, payloadDir, workspace.root);
   }
-  for (const archive of recipe.assetArchives ?? []) {
+  for (const archive of embedded ? recipe.assetArchives ?? [] : []) {
     await expandAssetArchive(payloadDir, archive);
+  }
+  if (!embedded && (recipe.assetArchives ?? []).length > 0) {
+    // An archive is expanded into the payload at build time, so there is nothing sensible to defer:
+    // saying otherwise would produce a box whose declared layout never materialises.
+    fail('on-demand weights cannot be combined with assetArchives, which are expanded at build time.');
   }
   // Drops what is only needed to build (tests, docs, bundled sample data). A box is a multi-gigabyte
   // download for an end user, so pruning is a user-facing concern rather than tidiness.
@@ -139,11 +157,26 @@ export async function buildBox(name, options = {}) {
   await writeLicenceAudit({ recipe, lockPath, payloadDir, projectRoot: workspace.root });
   // Guards against over-pruning: the files the box needs at run time must still be there.
   for (const requiredFile of recipe.selfTest.files ?? []) {
+    // A deferred asset is legitimately absent from the payload; anything else missing means pruning
+    // removed something the box needs at run time.
+    if (deferredAssets.has(requiredFile)) continue;
     if (!await fileExists(join(payloadDir, safeRelativePath(requiredFile)))) {
       fail(`Missing self-test file: ${requiredFile}`);
     }
   }
   runSelfTest({ interpreter, adapter, recipe, payloadDir, run });
+  // Parity runs after the self-test, on the same payload: there is no point comparing accelerators
+  // in a box that cannot import its dependencies in the first place.
+  const parity = await checkParity({
+    parity: recipe.parity,
+    adapter,
+    interpreter,
+    payloadDir,
+    run,
+  });
+  if (parity) {
+    log(`Parity passed on ${parity.comparisons.map((c) => c.accelerator).join(', ')} against ${parity.comparisons[0].reference}`);
+  }
 
   // Everything needed to answer "where did this box come from, and could I rebuild it?".
   const provenance = {
@@ -161,6 +194,13 @@ export async function buildBox(name, options = {}) {
     pythonImports: recipe.selfTest.imports,
     timeoutSeconds: SELF_TEST_TIMEOUT_SECONDS,
   };
+  // Descriptors travel with the box only when the consumer has to fetch the assets itself.
+  const deferred = embedded ? {} : {
+    weights: 'on-demand',
+    assets: recipe.assets.map(({ url, relativePath, sizeBytes, sha256 }) => ({
+      url, relativePath, sizeBytes, sha256,
+    })),
+  };
   const identity = {
     boxId: recipe.boxId,
     modelId: recipe.modelId,
@@ -176,6 +216,7 @@ export async function buildBox(name, options = {}) {
     pythonEntryPoint: recipe.pythonEntryPoint,
     modelCacheSubdir: recipe.modelCacheSubdir,
     selfTest,
+    ...deferred,
     provenance,
   }, null, 2)}\n`);
   await normalizeTree(payloadDir);
@@ -204,6 +245,7 @@ export async function buildBox(name, options = {}) {
     pythonEntryPoint: recipe.pythonEntryPoint,
     modelCacheSubdir: recipe.modelCacheSubdir,
     selfTest,
+    ...deferred,
     provenance,
   };
   const releasePath = join(workspace.distDir, `${stem}.release.json`);
@@ -241,5 +283,5 @@ export async function buildBox(name, options = {}) {
   log(`Built archive: ${archivePath}`);
   log(`Signed release: ${releasePath}`);
   log(`Signed channel: ${channelPath}`);
-  return { archivePath, releasePath, channelPath, archiveSha256: archiveSha, installedSizeBytes };
+  return { archivePath, releasePath, channelPath, archiveSha256: archiveSha, installedSizeBytes, weights: weightsMode, parity };
 }

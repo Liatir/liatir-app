@@ -176,9 +176,16 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   `lock` → `keygen` → `build` → `verify --self-test`, producing a 49,812,054-byte box
   whose own Python 3.11.15 imported `json` and `sqlite3` from a real extraction. The
   recipe ships as `scrollcase/examples/hello-box-macos-arm64-metal`. scrollcase passes
-  30/30; Liatir is untouched at 190/190. Remaining in P3: `init`, `doctor`, `audit`,
-  weights `embed|on-demand`, declared parity tolerances, and the grey verbs `revoke`
-  and `serve`. P4–P5 follow, each on explicit maintainer go-ahead.
+  51/51 across 5 files; Liatir is untouched at 190/190. **P3 is now COMPLETE**: seven
+  verbs (`init`, `doctor`, `keygen`, `lock`, `audit`, `build`, `verify`), weights
+  `embed|on-demand` (embedded by default; on-demand carries verified descriptors so a
+  consumer fetches at install), and declared accelerator-parity tolerances — the
+  capability the maintainer identified, where the tool owns the comparison and the
+  project owns the meaning. `revoke` and `serve` were settled as Liatir's: both exist
+  to feed a registry, and distribution is the consumer's. Deliberately deferred to P4:
+  toolchain bootstrap and the `--global` flag, which need per-platform checksum pinning.
+  P4 (own repo, Apache-2.0 packaging, CI, npm) and P5 (Liatir consumes the published
+  package) follow, each on explicit maintainer go-ahead.
   Covers the CLI design (`init`/`doctor`/`build`/`verify`/`audit`, per-project
   toolchain isolation, embed-vs-on-demand weights, pluggable signer), the
   box-format contract inversion (scrollcase becomes the single source of truth,

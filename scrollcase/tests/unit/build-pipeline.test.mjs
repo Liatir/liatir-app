@@ -134,6 +134,9 @@ describe('the build pipeline', () => {
     expect(release.provenance.builderRevision).toMatch(/^[a-f0-9]{40}$/);
     expect(release.compatibility).toEqual(RECIPE.compatibility);
     expect(release.installedSizeBytes).toBeGreaterThan(0);
+    // Embed is the default, and a self-contained box says nothing about assets to fetch.
+    expect(release.weights).toBeUndefined();
+    expect(release.assets).toBeUndefined();
 
     // The channel points at the release document by its own hash, closing the chain.
     const channel = decodeDocumentPayload(JSON.parse(await readFile(built.channelPath, 'utf8')));
@@ -179,6 +182,33 @@ describe('the build pipeline', () => {
     const { keys, payloadDir } = await makeProject(recipe);
     await expect(buildBox(RECIPE.recipeId, { ...keys, ...fakeToolchain(payloadDir), log: () => {} }))
       .rejects.toThrow(/Missing self-test file/);
+  });
+
+  it('leaves assets out of the archive on demand, and carries their descriptors instead', async () => {
+    const asset = {
+      url: 'https://assets.example.org/weights.bin',
+      relativePath: 'model-cache/example-model/weights.bin',
+      sizeBytes: 4,
+      sha256: 'b'.repeat(64),
+    };
+    const recipe = {
+      ...RECIPE,
+      assets: [asset],
+      selfTest: { imports: ['json'], files: [asset.relativePath] },
+    };
+    const { keys, payloadDir } = await makeProject(recipe);
+    // Nothing is downloaded: the fake toolchain would throw on an unexpected command, and the
+    // self-test file that lives at the asset's path is legitimately absent from the payload.
+    const built = await buildBox(RECIPE.recipeId, {
+      ...keys, weights: 'on-demand', ...fakeToolchain(payloadDir), log: () => {},
+    });
+    expect(built.weights).toBe('on-demand');
+    const release = decodeDocumentPayload(JSON.parse(await readFile(built.releasePath, 'utf8')));
+    expect(release.weights).toBe('on-demand');
+    // The hash travels with the descriptor, which is what makes fetching it later safe.
+    expect(release.assets).toEqual([asset]);
+    await expect(verifyBox(built.releasePath, { publicPath: keys.publicPath, log: () => {} }))
+      .resolves.toMatchObject({ status: 'passed' });
   });
 
   it('detects an archive that no longer matches its signed release', async () => {

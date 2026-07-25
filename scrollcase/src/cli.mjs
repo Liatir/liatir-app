@@ -3,21 +3,25 @@
 /**
  * The scrollcase command line.
  *
- * Four verbs, one job: turn a recipe into a portable, locked, self-contained box and prove it works.
- * `lock` resolves dependencies once so a human can review and commit the result, `build` installs
- * only from that lock, `verify` re-runs a consumer's install-time checks, and `keygen` produces the
- * signing key that makes any of it trustworthy.
+ * One job: turn a recipe into a portable, locked, self-contained box and prove it works. `init` and
+ * `doctor` get a machine ready, `lock` resolves dependencies once so a human can review and commit
+ * the result, `audit` reports what licences that pulls in, `build` installs only from the lock,
+ * `verify` re-runs a consumer's install-time checks, and `keygen` produces the signing key that makes
+ * any of it trustworthy.
  *
  * Every command resolves its paths through the workspace, so the tool runs from anywhere against any
  * project that declares a scrollcase.config.json.
  */
 
 import { join, resolve } from 'node:path';
+import { auditRecipe } from './build/audit.mjs';
 import { buildBox } from './build/box.mjs';
 import { findPixi, pixiLockArguments } from './build/pixi.mjs';
 import { fail, run } from './build/process.mjs';
+import { diagnose, initProject } from './build/project.mjs';
 import { readRecipe } from './build/recipe.mjs';
 import { verifyBox } from './build/verify.mjs';
+import { boxTargetAdapters } from './contract/targets.mjs';
 import { configureWorkspace, getWorkspace, workspaceOverridesFromFlags } from './build/workspace.mjs';
 import { generateSigningKey } from './sign/index.mjs';
 
@@ -79,11 +83,67 @@ async function lock(name, flags) {
   console.log(`Updated ${join(dir, 'pixi.lock')}`);
 }
 
+/** `init` — scaffold a project. Writes files; never touches the network. */
+async function init(flags) {
+  const root = getWorkspace().root;
+  const platform = text(flags, 'platform') || { darwin: 'macos', linux: 'linux', win32: 'windows' }[process.platform];
+  const adapter = boxTargetAdapters().find((candidate) => candidate.platform === platform)
+    || fail(`No target adapter for platform ${platform}.`);
+  const accelerator = text(flags, 'accelerator') || (platform === 'macos' ? 'metal' : 'cpu');
+  const result = await initProject({
+    root,
+    target: { platform: adapter.platform, arch: adapter.arch, accelerator },
+    pixiVersion: text(flags, 'pixi-version'),
+    recipeId: text(flags, 'recipe-id') || `example-box-${adapter.platform}-${adapter.arch}-${accelerator}`,
+  });
+  for (const path of result.written) console.log(`Created ${path}`);
+  for (const path of result.skipped) console.log(`Kept    ${path} (already present)`);
+  if (!text(flags, 'pixi-version')) {
+    console.log(`\nSet pixiVersion in ${result.recipeDir}/recipe.json to the pixi release you build with.`);
+  }
+  console.log('\nNext:');
+  console.log(`  scrollcase lock ${result.recipeId}`);
+  console.log(`  scrollcase keygen`);
+  console.log(`  scrollcase build ${result.recipeId}`);
+}
+
+/** `doctor` — report whether this machine can build a box. Reads only; never writes. */
+async function doctor(flags) {
+  let pixiVersion = text(flags, 'pixi-version');
+  const recipeName = text(flags, 'recipe');
+  if (!pixiVersion && recipeName) pixiVersion = (await readRecipe(recipeName)).recipe.pixiVersion;
+  const { checks, ok } = await diagnose({
+    workspace: getWorkspace(),
+    pixiVersion,
+    pixiPath: text(flags, 'pixi'),
+    condaPackPath: text(flags, 'conda-pack'),
+  });
+  for (const check of checks) {
+    console.log(`${check.ok ? 'ok  ' : 'FAIL'}  ${check.name.padEnd(11)} ${check.detail}`);
+    if (!check.ok && check.remedy) console.log(`        -> ${check.remedy}`);
+  }
+  if (!ok) fail('Some checks failed; see the remedies above.');
+}
+
+/** `audit` — the dependency licence inventory, derived from the lock without building. */
+async function audit(name, flags) {
+  const write = Boolean(flags.get('write'));
+  const { summary, reviewed, written } = await auditRecipe(name, {
+    write,
+    namespace: text(flags, 'namespace') || undefined,
+  });
+  console.log(`${summary.packageCount} packages for ${summary.recipeId} (${summary.targetId})`);
+  for (const entry of summary.licenses) console.log(`  ${String(entry.count).padStart(4)}  ${entry.license}`);
+  if (written) console.log(`\nWrote reviewed audit: ${reviewed}`);
+  else if (reviewed) console.log(`\nMatches the reviewed audit: ${reviewed}`);
+}
+
 async function build(name, flags) {
   await buildBox(name, {
     ...keyPaths(flags),
     allowDirty: Boolean(flags.get('allow-dirty')),
     channel: text(flags, 'channel') || 'beta',
+    weights: text(flags, 'weights'),
     assetBaseUrl: text(flags, 'asset-base-url'),
     namespace: text(flags, 'namespace') || undefined,
     signerCommand: text(flags, 'signer-command'),
@@ -104,13 +164,31 @@ function usage() {
   console.log(`Usage: scrollcase <command> [options]
 
 Commands:
+  init                       Scaffold a config, an example recipe, and ignore rules
+  doctor                     Report whether this machine can build a box
   keygen                     Create a local ed25519 signing key
   lock <recipe>              Resolve the recipe's pixi manifest into pixi.lock
+  audit <recipe>             Dependency licence inventory, derived from the lock
   build <recipe>             Build, self-test, archive, and sign a box
   verify <release.json>      Verify signature, archive hash, and layout
 
+Init options:
+  --platform <name>          macos, linux or windows (default: this machine)
+  --accelerator <name>       cpu, metal or cuda (default: metal on macOS, else cpu)
+  --pixi-version <version>   Pin the example recipe to this pixi release
+  --recipe-id <name>         Name the example recipe
+
+Doctor options:
+  --recipe <name>            Take the required pixi version from this recipe
+  --pixi-version <version>   Check for this pixi release
+
+Audit options:
+  --write                    Write the inventory to the recipe's reviewed audit path
+
 Build options:
   --channel <name>           Channel the signed pointer names (default beta)
+  --weights <mode>           embed (default: assets packed in, works air-gapped) or
+                             on-demand (fetched by the consumer at install time)
   --asset-base-url <url>     Override the recipe's published base URL
   --namespace <ns>           Document kind namespace (default scrollcase.box)
   --allow-dirty              Permit a build from an uncommitted source tree
@@ -146,7 +224,10 @@ async function main() {
   if (!command || command === 'help' || command === '--help') return usage();
   // Resolve the workspace before any command touches a path, so flags win over the project config.
   configureWorkspace({ overrides: workspaceOverridesFromFlags(flags) });
+  if (command === 'init') return init(flags);
+  if (command === 'doctor') return doctor(flags);
   if (command === 'keygen') return keygen(flags);
+  if (command === 'audit') return audit(positional[0] || fail('audit requires a recipe name.'), flags);
   if (command === 'lock') return lock(positional[0] || fail('lock requires a recipe name.'), flags);
   if (command === 'build') return build(positional[0] || fail('build requires a recipe name.'), flags);
   if (command === 'verify') return verify(positional[0] || fail('verify requires a signed release document.'), flags);

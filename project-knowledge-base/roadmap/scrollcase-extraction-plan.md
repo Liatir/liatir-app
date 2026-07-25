@@ -265,10 +265,13 @@ Today the box-format contract is **triplicated** and kept in sync by the golden 
 - **P2 — Carve the contract: DONE (2026-07-25).** scrollcase now owns a self-contained contract
   package — reference implementation, JSON Schemas, and golden fixtures — with its own dependencies
   and test command. Liatir was deliberately left untouched. See "P2 execution record" below.
-- **P3 — Move the builder and build the CLI surface:** bring over the build core and the 9 modules per
-  the corrected inventory, then `init`, `doctor`, `verify`, `audit`, `--global`, weights
-  `embed|on-demand`, pluggable signer, and declared accelerator-parity tolerances (see the design item
-  above). Settle the two grey verbs, `revoke` and `serve`.
+- **P3 — Move the builder and build the CLI surface: DONE (2026-07-25).** Seven verbs, pixi-only,
+  pluggable signer, weights `embed|on-demand`, declared parity tolerances. `revoke` and `serve` were
+  settled as Liatir's. See the P3 execution record. **Not done, deliberately deferred:** toolchain
+  bootstrap (`init` downloading a pinned pixi and installing conda-pack) and the `--global` shared
+  toolchain flag. Doing that responsibly means pinning a release checksum per platform, which is
+  release engineering for P4, not something to fake now; `doctor` meanwhile names the exact missing
+  tool and how to install it.
 - **P4 — New repo + Apache-2.0 packaging:** move to the standalone repo, add LICENSE/NOTICE/README, CI,
   publish to npm.
 - **P5 — Invert & consume:** make `liatir-core` depend on the published package; repoint Liatir scripts;
@@ -423,11 +426,12 @@ for byte-compatibility anyway, and P5 deletes the Liatir side.
 - **Liatir untouched:** `git status` shows only additions under `scrollcase/`, and
   `npm run test:unit` still passes 190/190 across 31 files.
 
-## P3 execution record — in progress (2026-07-25)
+## P3 execution record — COMPLETE (2026-07-25)
 
-**Done so far: the tool builds, signs and verifies a box on its own, proven against the real
-toolchain.** Remaining: `init`, `doctor`, `audit`, weights `embed|on-demand`, declared parity
-tolerances, and the two grey verbs `revoke` and `serve`.
+scrollcase is a working tool: it sets a project up, tells you what your machine is missing, resolves
+and audits dependencies, builds a signed box, and verifies one. Seven verbs — `init`, `doctor`,
+`keygen`, `lock`, `audit`, `build`, `verify` — plus declared accelerator-parity tolerances and a
+choice of embedded or on-demand weights.
 
 ### The substrate decision: pixi only
 
@@ -467,6 +471,38 @@ that mattered — **the default workspace paths, which were Liatir's directory n
 its config, which is the mechanism working as designed. Lesson recorded: re-grep after every move,
 because a clean grep only describes the tree at the time it ran.
 
+### The rest of the CLI surface
+
+- **`init`** scaffolds a config, an example recipe with the manifest already pinned to the target's
+  conda subdirectory, and the ignore rules for generated state. It never overwrites: existing files
+  are reported as kept, so a half-configured project is completed by running it again.
+- **`doctor`** reports whether the machine can build — workspace, recipes directory, git, pixi at the
+  required version, conda-pack — with a remedy per failure, and exits non-zero. It reports rather than
+  throws on the first problem, so someone with nothing installed learns everything in one run.
+  `init` writes and never touches the network; `doctor` reads and never writes. That line is what
+  makes `doctor` safe in CI and `init` safe to re-run.
+- **`audit`** produces the licence inventory straight from the lock, with no build. Licence review is
+  a human step that belongs when dependencies change, not at the end of a multi-gigabyte build.
+  `--write` records the reviewed copy; without it the inventory is compared and any drift fails.
+- **Weights `embed|on-demand`.** `embed` (default) packs assets into the archive, so an installed box
+  needs no network and works air-gapped. `on-demand` leaves them out and carries their descriptors —
+  url, path, size, SHA-256 — in the signed release and in `box.json`, so a consumer fetches and
+  verifies them at install. The declared hash is what makes that safe. Deferred assets are excluded
+  from the self-test file check (they are legitimately absent), and combining on-demand with
+  `assetArchives` is refused, since an archive is expanded at build time and cannot be deferred.
+- **Declared parity tolerances**, as designed above: `parity` in the recipe names a script inside the
+  box, the accelerators to run it under, and the bounds (`absolute`, `relative`, `minimumCosine`).
+  The first accelerator is the reference. Non-finite output is rejected explicitly, being the classic
+  symptom of a broken accelerator build, and relative error is only counted where the reference has
+  magnitude, with the absolute bound guarding entries near zero.
+
+### `revoke` and `serve`: settled — both stay in Liatir
+
+Both sign or serve format documents, which is why they looked like tool verbs. Neither is: `revoke`
+exists to tell a *registry* to stop serving a release, and `serve` exists to stand in for one
+locally. Distribution is the consumer's, so a tool that stops at a signed, verified box on disk has
+no business with either. They stay in Liatir with `publish`, `publish-key` and `promote`.
+
 ### P3 evidence (all local, zero cost)
 
 - **A real box, built and verified end to end with the actual toolchain.** pixi 0.73.0 and conda-pack
@@ -478,10 +514,24 @@ because a clean grep only describes the tree at the time it ran.
   (`73e56c2f…`) and signed the release and channel, and `verify --self-test` extracted the archive
   and imported `json` and `sqlite3` **with the Python inside the box**: `Verified hello-box 1.0.0
   (macos-aarch64-metal)`, exit 0. The recipe is shipped as `examples/hello-box-macos-arm64-metal`.
-- `npm test` inside `scrollcase/`: **30/30**. The pipeline test builds, signs and verifies with the
-  environment solve stubbed, and asserts that rebuilding the same commit yields a byte-identical
-  archive, that a dirty tree is refused unless explicit, that a pruned-away self-test file fails the
-  build, and that a tampered archive and a foreign signing key are both rejected.
+- **`doctor` and `audit` against that same real project.** `doctor` passed all five checks naming the
+  real pixi and conda-pack; `audit` listed the 13 packages of the example lock with their SPDX
+  licences (MIT ×2, 0BSD, Apache-2.0, GPL-3.0-only, Python-2.0, TCL, X11 AND BSD-3-Clause, …) without
+  building anything. `init` scaffolded a fresh project, and `doctor` then reported exactly what that
+  machine was missing — no git checkout, no pixi, no conda-pack — each with its remedy, exiting 1.
+- `npm test` inside `scrollcase/`: **51/51 across 5 files.** The pipeline test builds, signs and
+  verifies with the environment solve stubbed, and asserts that rebuilding the same commit yields a
+  byte-identical archive, that a dirty tree is refused unless explicit, that a pruned-away self-test
+  file fails the build, that a tampered archive and a foreign signing key are rejected, and that
+  on-demand weights leave the payload out while carrying verified descriptors. The parity suite
+  covers the comparison arithmetic, each tolerance breach, non-finite output, malformed check output,
+  and an accelerator the target does not define. The project suite covers scaffolding, re-running
+  `init` safely, cross-platform scaffolding, all-at-once diagnosis, a wrong pixi version, that
+  `doctor` writes nothing, and that a stale reviewed audit fails.
+- **A real defect the extraction introduced, caught by those tests:** trimming `licenses.mjs` to its
+  conda half dropped the `CONDA_PACKAGE_FILE` constant its parser uses, so every audit threw
+  `ReferenceError`. The P2 tests had not exercised that path end to end. Restored, with the audit
+  suite now covering it.
 - Liatir remains untouched and green at 190/190.
 
 ## Verification

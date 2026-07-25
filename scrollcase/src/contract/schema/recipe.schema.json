@@ -242,6 +242,63 @@
           "description": "Extra Python executed after the imports succeed, for checks a bare import cannot make."
         }
       }
+    },
+    "weights": {
+      "enum": [
+        "embed",
+        "on-demand"
+      ],
+      "default": "embed",
+      "description": "Whether assets are packed into the archive (embed, the default: the box installs with no network and works air-gapped) or fetched by the consumer at install time from the descriptors in the signed release (on-demand). A build may override this."
+    },
+    "parity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "script",
+        "accelerators",
+        "tolerances"
+      ],
+      "description": "An optional numerical gate: run a check inside the box on more than one accelerator and require the results to agree. This catches a mis-solved environment \u2014 CPU-only wheels shipped as CUDA, a broken BLAS \u2014 on the build machine rather than on a user's. The tool runs the check and enforces the thresholds; what the check computes, and what closeness is acceptable, belong to the project.",
+      "properties": {
+        "script": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path inside the box, run with the box's own interpreter. It must print a JSON array of numbers, or an object with a \"values\" array."
+        },
+        "accelerators": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "enum": [
+              "cpu",
+              "metal",
+              "cuda"
+            ]
+          },
+          "description": "Accelerators to run under, each with its target's validation environment. The first is the reference the others are compared against \u2014 conventionally cpu, being the one available everywhere."
+        },
+        "tolerances": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "description": "At least one bound. Absolute guards entries near zero, where relative error is meaningless; cosine similarity catches a result that drifted in direction rather than magnitude.",
+          "properties": {
+            "absolute": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "relative": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "minimumCosine": {
+              "type": "number",
+              "maximum": 1
+            }
+          }
+        }
+      }
     }
   },
   "$defs": {

@@ -18,6 +18,9 @@ function sha256(value) {
   return createHash('sha256').update(value).digest('hex');
 }
 
+/** conda ships packages as `.conda` or the older `.tar.bz2`; both encode name-version-build. */
+const CONDA_PACKAGE_FILE = /\.(?:conda|tar\.bz2)$/;
+
 /** Derives (name, version) from a conda package filename: `name-version-build.conda`. */
 export function parseCondaPackageReference(url) {
   const file = String(url).split('/').pop() ?? '';
