@@ -2,9 +2,11 @@
 
 Last reviewed: 2026-07-24
 
-Status: **Phases 0–4 DONE; Phase 5 in progress.** scGPT is validated in CI on every non-macOS
-target — Linux CPU, Windows CPU (build + scientific + native-lifecycle) and **Linux CUDA
-(scientific, real RTX 4060 Ti)**; the macOS launcher re-check is done. Windows CUDA is next.
+Status: **Phases 0–4 DONE; Phase 5 in progress.** scGPT is validated in CI on **every non-macOS
+target** — Linux CPU + Windows CPU (build + scientific + native-lifecycle) and Linux CUDA 12.9 +
+Windows CUDA 12.8 (scientific, real RTX 4060 Ti); the macOS box is the published pilot and the
+launcher re-check is done. Remaining Phase 5: migrate Geneformer and UCE, then the protected
+releases. Nothing signed/published/promoted on the pixi substrate yet.
 
 - **Phase 0 — complete on every OS** (macOS Metal + Windows CPU/CUDA + Linux CPU/CUDA). The
   zero-cost local spike is decisive on macOS, on the harder no-rpath Windows case (CPU + CUDA, real
@@ -31,9 +33,13 @@ target — Linux CPU, Windows CPU (build + scientific + native-lifecycle) and **
   record and CUDA E2E no longer pin a Tesla T4. The scGPT Linux CUDA run below is the first CUDA
   validation ever executed on the local RTX 4060 Ti (compute 8.9), confirming the generalization
   end to end.
-- **Phase 5 — in progress.** scGPT Linux CPU + Windows CPU are validated at every mode; **scGPT
-  Linux CUDA 12.9 is scientifically validated on the 4060 Ti**; scGPT Windows CUDA 12.8 is next
-  (now unblocked by the linux-cuda-before-windows-cuda gate). Nothing signed/published/promoted.
+- **Phase 5 — in progress; scGPT is now validated on every non-macOS target.** Linux CPU + Windows
+  CPU at every mode (build + scientific + native-lifecycle); **Linux CUDA 12.9 and Windows CUDA 12.8
+  scientifically validated on the RTX 4060 Ti** (run `30143289750`, CPU-vs-CUDA parity cosine
+  0.9999999999999, box installed 6.58 GB / archive 4.08 GB — far smaller than Linux CUDA because
+  Windows conda envs have no symlinks to dereference). Windows CUDA passed on the first dispatch by
+  applying the Linux CUDA lessons up front. Geneformer and UCE are not yet migrated. Nothing
+  signed/published/promoted.
 
 **Production code HAS changed** as of Phase 1/2 (`packages/liatir-core`, `scripts/runtime-box*`,
 `runtime-boxes/catalog.json`, unit tests). Each remaining phase begins only on explicit maintainer
