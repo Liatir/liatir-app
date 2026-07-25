@@ -1,5 +1,5 @@
 {
-  "name": "tauri-skeleton",
+  "name": "liatir-stack",
   "version": "0.1.0",
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260711.1",
