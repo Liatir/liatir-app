@@ -553,8 +553,22 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 >   (commit `bf58566`), and everything before that step had already passed.
 > - **This also proved the CI pixi provisioning added to `_runtime-box-validate.yml`** (pinned pixi
 >   and conda-pack, with uv made conditional) on both a Linux and a Windows self-hosted runner.
->   Both scGPT CPU targets are now scientifically validated in CI; only `native-lifecycle` and the
->   protected release remain for each.
+> - **native-lifecycle validated on Linux (2026-07-24).** Run `30135717742` (mode
+>   `native-lifecycle`) passed on the WSL runner: it installed the Tauri system libraries, built the
+>   `src-tauri` bridge with Rust 1.95, and ran the `cargo test runtime_box` lifecycle suite against
+>   the pixi box. This required passwordless `apt-get` on the WSL host — configured as a scoped
+>   `/etc/sudoers.d/liatir-runner` (`NOPASSWD: /usr/bin/apt-get`, validated with visudo), the
+>   durable alternative to storing a password. **scGPT Linux CPU advances to
+>   `native-lifecycle-validated`.**
+> - **native-lifecycle on Windows: in progress** (run `30136322406`) — the MSVC Rust/Tauri compile
+>   is slow on the first build. Result to be recorded on completion.
+> - **Remaining before a protected release: the macOS launcher re-check.** Phase 3 deleted the
+>   macOS-only launcher, so the shared launcher's Darwin branch is unproven on a real Mac. A ready
+>   handoff prompt is in
+>   [runtime-box-pixi-macos-launcher-check.md](./runtime-box-pixi-macos-launcher-check.md) — a
+>   zero-cost `--preflight-only` check the maintainer runs on their Mac, plus an optional native
+>   pixi build. Once that passes, only the protected release (KMS sign + R2 publish + beta) is left,
+>   gated on the maintainer's go-ahead and a prior `runtime-box:signer:deploy`.
 > - **Known conservatism:** the migrated recipes carry only the *source* prune list — the conda
 >   `venv/` prunes from the macOS pilot (torch/include, sympy, networkx, stdlib extras) were not
 >   ported, because their exact `dist-info` directory names are lock-specific. The boxes are

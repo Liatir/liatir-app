@@ -44,8 +44,16 @@ a finite `1 x 512` embedding, self-test and output/provenance contracts all pass
 measured installed 3.55 GB / archive 1.21 GB within the diskPlan floors. **scGPT
 Windows CPU is likewise scientifically validated natively** on the self-hosted Windows
 runner (run `30134159371`, torch 2.8.0 CPU, finite `1 x 512`, installed 1.39 GB /
-archive 0.53 GB). Both scGPT CPU targets advance to `scientifically-validated`;
-`native-lifecycle` and the protected release remain for each.
+archive 0.53 GB). **scGPT Linux CPU has also passed `native-lifecycle` on CI** (run
+`30135717742`: Tauri built with Rust 1.95 and the `cargo test runtime_box` suite run
+against the pixi box), advancing to `native-lifecycle-validated`; this needed a scoped
+passwordless `apt-get` on the WSL runner (`/etc/sudoers.d/liatir-runner`). scGPT
+Windows CPU `native-lifecycle` is in progress (run `30136322406`). **The one macOS gap
+left is a shared-launcher re-check** — Phase 3 deleted the macOS-only launcher, so its
+Darwin branch is unproven; a handoff prompt is in
+[roadmap/runtime-box-pixi-macos-launcher-check.md](./roadmap/runtime-box-pixi-macos-launcher-check.md).
+After that, only the protected release remains for each target, gated on the
+maintainer's go-ahead and a prior signer deploy.
 
 Before any protected release the signer must be deployed, because the
 previous failure was deployed-policy drift, not a build defect. **That drift
