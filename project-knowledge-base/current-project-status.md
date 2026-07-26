@@ -1,6 +1,9 @@
 # Current project status
 
-Last updated: 2026-07-25 (a full CI substrate migration to pixi + pixi-pack +
+Last updated: 2026-07-26 (the Runtime Box builder extraction is complete:
+Scrollcase is an independent Apache-2.0 project and `scrollcase@0.1.0` is public
+on npm. Liatir adoption remains a separate open downstream phase. The full CI
+substrate migration to pixi + pixi-pack +
 conda-forge on self-hosted GitHub Actions runners has been planned and approved
 in principle — see the migration plan below. Its **Phase 0 relocation/activation
 spike is now complete and decisive on ALL THREE OSes: macOS Metal, Windows
@@ -126,71 +129,30 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   cuDNN/cuBLAS/libtorch_cuda were all verified to load from the relocated prefix.
 - [scrollcase extraction plan](./roadmap/scrollcase-extraction-plan.md) — the
   extraction of the Runtime Box **builder** into an independent Apache-2.0
-  open-source tool named `scrollcase` that Liatir consumes externally.
-  **APPROVED TO START 2026-07-25.** The old "pixi migration fully closed on all
-  targets" prerequisite was **relaxed** to "builder validated across the full
-  OS/accelerator matrix on ≥1 representative model" — met by scGPT (macOS/Linux/
-  Windows × CPU/CUDA/Metal). The builder is model-agnostic and already decoupled,
-  so Geneformer/UCE are packaged **after** extraction, **through** the external
-  tool, not migrated in-repo first. Extraction target: `scrollcase/src/` in the
-  repo root (Apache-2.0 LICENSE + README + VitePress docs already scaffolded).
-  Two Liatir-side caveats do not gate extraction: the macOS pixi box is not yet
-  CI-validated, and no pixi box has had a protected release — both closed later
-  via scrollcase's pluggable signer.
-  **P1 (parametrize paths) is COMPLETE (2026-07-25).** The builder no longer derives
-  its root from `import.meta.dirname`: it resolves recipes, build, dist and key
-  directories from a consumer-owned `scrollcase.config.json` (schema shipped with the
-  tool, defaults identical to the historical layout) with `--config`/`--project-root`/
-  `--recipes-dir`/`--build-dir`/`--out-dir`/`--keys-dir` overrides. Liatir's config is
-  committed at the repo root and its `runtime-box*` npm scripts are unchanged.
-  Behavioral identity was proven by an A/B build of the macOS installer fixture in the
-  same directory: the unpacked boxes differ in exactly one line, the honest
-  `sourceTreeDirty` provenance flag, with a byte-identical payload. Local zero-cost
-  gates: 190/190 unit tests (9 new workspace tests), catalog check, Gate 2 foundation
-  validation including the Rust runtime_box archive fixture, and `lint:ts` with no
-  errors.
-  **P2 (carve the contract) is COMPLETE (2026-07-25).** `scrollcase/` is now treated
-  as an external repository: Liatir's CI does not watch it, Liatir's code does not
-  import from it, and it tests itself. It holds a standalone contract package —
-  reference implementation (target model + signed-envelope contract), seven JSON
-  Schemas written from real emitted documents, and golden fixtures — with its own
-  dependencies and `npm test` (21/21 green). Liatir was deliberately left untouched
-  and still passes 190/190; its copies of the contract are deleted at P5, when it
-  installs the published package. **scrollcase contains no reference to Liatir at all**
-  — the document `kind` is `<namespace>.release`, where the namespace belongs to the
-  publishing project and defaults to `scrollcase.box`. That is how independence and
-  byte-compatibility coexist: Liatir declares `liatir.runtime-box` when it adopts the
-  tool at P5 and its documents stay byte-identical, while the tool never carries its
-  first consumer's name. `minLiatirVersion` is likewise gone from the schemas, replaced
-  by neutral pass-through compatibility fields, and every fixture example is synthetic
-  with a throwaway signing key.
-  **P3 is in progress and the tool now builds on its own.** The build layer and the
-  build/verify/lock/keygen core are in scrollcase with a CLI, **pixi-only**: the uv
-  substrate was deliberately left behind, so Geneformer and UCE must become pixi
-  recipes to be built through the tool (already the pixi migration's direction).
-  Signing is custody-agnostic — a local key, or an external command that receives the
-  payload on stdin and returns the signed document, verified locally before use — so
-  nothing about gcloud, KMS or Cloud Run remains in the tool; Liatir plugs its KMS
-  signer in at P5. **Proven against the real toolchain** (pixi 0.73.0 + conda-pack,
-  installed under `~/.local/liatir-pixi/bin`, off `PATH`): a throwaway project went
-  `lock` → `keygen` → `build` → `verify --self-test`, producing a 49,812,054-byte box
-  whose own Python 3.11.15 imported `json` and `sqlite3` from a real extraction. The
-  recipe ships as `scrollcase/examples/hello-box-macos-arm64-metal`. scrollcase passes
-  51/51 across 5 files; Liatir is untouched at 190/190. **P3 is now COMPLETE**: seven
-  verbs (`init`, `doctor`, `keygen`, `lock`, `audit`, `build`, `verify`), weights
-  `embed|on-demand` (embedded by default; on-demand carries verified descriptors so a
-  consumer fetches at install), and declared accelerator-parity tolerances — the
-  capability the maintainer identified, where the tool owns the comparison and the
-  project owns the meaning. `revoke` and `serve` were settled as Liatir's: both exist
-  to feed a registry, and distribution is the consumer's. Deliberately deferred to P4:
-  toolchain bootstrap and the `--global` flag, which need per-platform checksum pinning.
-  P4 (own repo, Apache-2.0 packaging, CI, npm) and P5 (Liatir consumes the published
-  package) follow, each on explicit maintainer go-ahead.
-  Covers the CLI design (`init`/`doctor`/`build`/`verify`/`audit`, per-project
-  toolchain isolation, embed-vs-on-demand weights, pluggable signer), the
-  box-format contract inversion (scrollcase becomes the single source of truth,
-  `liatir-core` depends on it), and what stays private in Liatir (Rust/Tauri
-  consumer, KMS signer, Cloudflare registry, trust keys, model recipes).
+  open-source tool named Scrollcase. **Extraction phases P1–P4 are complete
+  (2026-07-26):** the canonical source is now the standalone public repository
+  `https://github.com/suffro/scrollcase`, documentation is live at
+  `https://scrollcase.dev`, and `scrollcase@0.1.0` is public on npm. The temporary
+  in-tree copy was removed from Liatir in `6b4934e`.
+  Scrollcase is a pixi + conda-pack + conda-forge CLI and library with seven verbs
+  (`init`, `doctor`, `keygen`, `lock`, `audit`, `build`, `verify`), deterministic
+  signed boxes, generated schema-derived contract types, licence audit,
+  embed/on-demand weights, declared accelerator parity, and local or external
+  signing. Its managed per-project toolchain bootstrap requires explicit consent
+  and verifies the downloaded pixi archive; the shared `--global` toolchain is
+  deliberately outside `0.1.0`. The standalone suite passes 84 tests across 10
+  files, and CI run `30209373381` passed all 11 Node 20/22/24 jobs across Linux,
+  macOS and Windows plus package/audit/docs gates.
+  **P5 remains open in Liatir and is not part of Scrollcase's extraction:** the root
+  `runtime-box*` scripts still invoke Liatir's local builder, `@liatir/core` still
+  owns the local contract, and the private KMS signer has not yet been connected
+  through `--signer-command`. P5 installs the published package, keeps the existing
+  `liatir.runtime-box` namespace for byte compatibility, repoints the scripts and
+  Rust contract fixtures, then deletes the superseded local builder/contract copies.
+  Geneformer and UCE still require pixi recipes before Scrollcase can build them.
+  Liatir continues to own Runtime Box distribution and product concerns: CI/runner
+  policy, scientific validation, R2/Registry publication, KMS custody, trust roots,
+  Rust/Tauri installation, Jobs, Results and provenance.
 
 ## Where the project is
 

@@ -1,10 +1,15 @@
 # scrollcase — extracting the Runtime Box builder into an independent open-source tool
 
-**Status:** APPROVED TO START (2026-07-25). **Extraction target:** `scrollcase/src/` in the repo
-root — the maintainer has scaffolded `scrollcase/` there with an Apache-2.0 `LICENSE`, a `README.md`,
-a `.gitignore`, and a VitePress `docs/` site; `src/` is empty and is where the builder is extracted.
-It is currently tracked inside `liatir-stack` (not a nested git repo, not yet a workspace member);
-P4 moves it to its own repo.
+**Status:** **EXTRACTION COMPLETE (P1–P4, 2026-07-26).** Scrollcase is an independent
+Apache-2.0 project at `https://github.com/suffro/scrollcase`, its documentation is live at
+`https://scrollcase.dev`, and `scrollcase@0.1.0` is public on npm. The temporary in-tree
+`scrollcase/` copy was removed from Liatir in commit `6b4934e`.
+
+**Remaining downstream work:** **P5 is open in Liatir.** Liatir still uses its historical
+in-tree Runtime Box builder and local contract. P5 makes it consume the published Scrollcase
+package, plugs the private KMS signer into the external-signer interface, and then deletes the
+superseded local builder and contract copies. This integration does not change Scrollcase's
+completed extraction or its independence.
 **Prerequisite — REVISED 2026-07-25** (was: "the pixi migration must be fully closed on all
 targets"): the builder must be **validated across the full OS/accelerator matrix on ≥1
 representative model** — which is met. scGPT is validated on the pixi substrate across
@@ -272,10 +277,12 @@ Today the box-format contract is **triplicated** and kept in sync by the golden 
   toolchain flag. Doing that responsibly means pinning a release checksum per platform, which is
   release engineering for P4, not something to fake now; `doctor` meanwhile names the exact missing
   tool and how to install it.
-- **P4 — New repo + Apache-2.0 packaging:** move to the standalone repo, add LICENSE/NOTICE/README, CI,
-  publish to npm.
-- **P5 — Invert & consume:** make `liatir-core` depend on the published package; repoint Liatir scripts;
-  plug in KMS signer; delete the in-tree copy.
+- **P4 — New repo + Apache-2.0 packaging: DONE (2026-07-26).** Scrollcase now lives in its
+  standalone public repository with its own CI, documentation and package surface;
+  `scrollcase@0.1.0` is public on npm. See the P4 execution record.
+- **P5 — Invert & consume: OPEN in Liatir.** Make `liatir-core` depend on the published
+  package; repoint Liatir scripts; plug in the private KMS signer; delete Liatir's local
+  builder and contract copies.
 
 ---
 
@@ -346,11 +353,12 @@ assumption is not forgotten.
 
 ### The rule this phase established
 
-**`scrollcase/` is treated as an external repository from now on.** It is not a part of Liatir, not
-even partially: Liatir's CI does not watch it, Liatir's code does not import from it, and its tests
-run on their own. It happens to sit inside `liatir-stack` only until P4 moves it out. Liatir becomes
-an ordinary consumer of an external tool at P5, when it installs the published package and deletes
-its in-tree copies.
+**From P2 onward, `scrollcase/` was treated as an external repository.** It was not part
+of Liatir even while temporarily tracked there: Liatir's CI did not watch it, Liatir's
+code did not import from it, and its tests ran on their own. P4 subsequently moved it to
+the standalone repository and commit `6b4934e` removed the temporary in-tree copy. Liatir
+becomes an ordinary package consumer at P5, when it installs the published package and
+deletes its local contract and builder copies.
 
 This ruled out two designs that were considered and rejected: adding `scrollcase/**` to the Liatir
 workflow path filters (Liatir's CI would be testing an external project), and keeping a generated
@@ -534,9 +542,73 @@ no business with either. They stay in Liatir with `publish`, `publish-key` and `
   suite now covering it.
 - Liatir remains untouched and green at 190/190.
 
-## Verification
+## P4 execution record — COMPLETE (2026-07-26)
 
-- **scrollcase standalone:** `npm test` (the 6 migrated vitest files) green in the new repo; a full
+Scrollcase is no longer a directory or implicit workspace inside Liatir. It is a standalone,
+vendor-neutral open-source project with its own repository, release lifecycle, tests and
+documentation. Liatir is only its first downstream consumer.
+
+### Public release and package surface
+
+- Repository: `https://github.com/suffro/scrollcase`.
+- Documentation: `https://scrollcase.dev`.
+- npm package: unscoped `scrollcase@0.1.0`, published
+  `2026-07-26T16:15:08.771Z`; executable name `scrollcase`.
+- Registry tarball:
+  `https://registry.npmjs.org/scrollcase/-/scrollcase-0.1.0.tgz`, SHA-1
+  `e6e0f4f44e6f2f9220a9b234f692d312f100fc2f`.
+- Public library entry points: `scrollcase/contract`, `scrollcase/contract/types`,
+  schema and fixture wildcard exports, `scrollcase/build`, and `scrollcase/sign`.
+- Runtime dependencies are only `tar`, `yauzl`, and `yazl`; the package is
+  Apache-2.0 and contains no consumer-specific name or Liatir product vocabulary.
+- The release includes generated TypeScript contract types derived from the JSON
+  Schemas. A drift test regenerates and compares them, and line-ending normalization
+  keeps that exact-byte gate portable across Windows and POSIX checkouts.
+
+Publication was performed by the maintainer. The final package dry run contained 44 files
+(66.8 kB packed, 228.1 kB unpacked); a fresh consumer installed the packed tarball,
+imported every public entry point and ran the CLI. Root runtime and documentation audits
+reported zero vulnerabilities.
+
+### Toolchain and verification evidence
+
+- `init` can install pinned pixi and conda-pack into the project's own
+  `.scrollcase/toolchain/`, but only with explicit consent. The pixi release archive is
+  checksum-verified and the verified digest is committed in `scrollcase.config.json`.
+  Tool discovery is explicit flag, environment override, project toolchain, then `PATH`.
+- The managed toolchain was proven against a throwaway project: pixi `0.73.0` and
+  conda-pack `0.9.2` were installed, then `doctor` found both without environment
+  overrides. The optional shared `--global` toolchain remains deliberately unimplemented;
+  it is not part of the `0.1.0` contract.
+- A real clean project completed `lock` → `keygen` → `build` →
+  `verify --self-test`. The resulting
+  `hello-box-1.0.0-macos-aarch64-metal.zip` was 49,811,879 bytes with SHA-256
+  `17c0e0a771f8244acbee2e0e0698c30dd00fa131c6f38332869d28d7673721dc`;
+  verification imported `json` and `sqlite3` with the Python inside the extracted box.
+- The standalone suite passed 84 tests across 10 files without network or a real
+  toolchain. CI run `30209373381` passed all 11 jobs: Node 20, 22 and 24 on Linux,
+  macOS and Windows, plus package-surface/audit and documentation gates.
+- The release head verified during closure was
+  `a0f48de3b3bcad160ca5e7a4bac963e8e64bb4ac`.
+
+### Liatir boundary after extraction
+
+Commit `6b4934e` removed the temporary full `scrollcase/` tree from `liatir-stack`; the
+standalone repository is now the only Scrollcase source tree. Liatir deliberately retained
+the consumer-side pieces that never belonged to the tool: Runtime Box CI and runner policy,
+model recipes and scientific validators, R2/Registry publication, KMS signer deployment and
+key custody, the Rust/Tauri installer, Jobs/Results/provenance integration, and production
+trust roots.
+
+P5 is not yet complete: the root `runtime-box*` scripts still invoke Liatir's local
+`scripts/runtime-box*.mjs`, `@liatir/core` does not yet depend on `scrollcase`, and the local
+box-format contract remains in place. Geneformer and UCE also still need pixi recipes before
+Scrollcase can build them. These are Liatir adoption and model-migration tasks, not missing
+pieces of the extracted tool.
+
+## P5 acceptance criteria
+
+- **scrollcase standalone:** `npm test` green in the new repo; a full
   `scrollcase init` → `build <installer-fixture>` → `verify` cycle passes on a clean machine with only
   Node installed (proves the bootstrap story). Local `keygen` → sign → `verify` round-trips.
 - **Contract parity:** the target-id contract test passes against scrollcase's published fixtures in all

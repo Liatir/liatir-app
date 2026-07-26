@@ -1,24 +1,12 @@
 # AGENTS.md
 
-Operational instructions for AI coding agents working in this repository.
-Read this before implementing anything, and before proposing or building any multi-step LLM system.
-This file is self-contained.
+Operational instructions for AI coding agents working in this repository. Read this before implementing anything.
+
+**Liatir** is a **local-first** Rust/Tauri desktop app for bioinformatics: native tools, visual pipelines, `.lia` Node/WASM plugins, API Connectors, AI Models and AI Tools, all speaking a single shared I/O contract.
+
+**Liatir is for non-technical users first.** This outranks technical elegance in every UX decision.
 
 ---
-
-## Project context
-
-We are developing **Liatir**, a **local-first** Rust/Tauri desktop app for bioinformatics. The goal is to build a production-grade scientific environment where native tools, visual pipelines, `.lia` Node/WASM plugins, API Connector, AI Models, and AI Tools work together through a **single shared I/O contract defined in `packages/liatir-core`**.
-
-**Liatir is for non-technical users first — this is very important while designing and implementing anything.**
-
-## Repository continuity
-
-- The files that live in project-knowledge-base/ are an important part of your memory, and must be kept up to date.
-- Always keep project-knowledge-base/current-project-status.md up to date.
-- Durable project plans, implementation status, and handoff context required in Codespaces must live in tracked repository documentation, not only in machine-local agent memory.
-- The canonical Runtime Box CI plan and current gate status live in `project-knowledge-base/roadmap/runtime-box-ci-foundation.md`. Read it before starting any Runtime Box CI gate and update it when a gate is completed or re-scoped.
-- Machine-local memory may be used as a convenience, but it must not be the only source for information needed to continue repository work.
 
 ## Naming (canonical terms — use exactly these)
 
@@ -26,138 +14,96 @@ We are developing **Liatir**, a **local-first** Rust/Tauri desktop app for bioin
 - **"AI Models"** means locally installable/manageable model assets.
 - **"AI Tools"** means AI capabilities exposed in pipelines.
 
-## Architecture rules
+## Invariants
 
-- The general architecture must be **modular and scalable**, designed for order, maintainability, and long-term growth. Code and folders must stay organized, coherent, and easy to navigate.
-- Heavy dependencies must be **modular and installed only when needed**, like separate boxes integrated through common standards.
-- **Avoid manual duplicated types/contracts: the shared core (`packages/liatir-core`) must remain the source of truth.**
+Things that must stay true after your change. If one of them is in the way, stop and ask — do not work around it.
 
-## Conventions
-
-- **Language:** comments, UI text, code, CLI output, and developer-facing docs must always be in **English**.
-- **Comments:** add explainer comments as a guide where they clarify non-obvious or big/complex logic, and small comments over any function about what it does — but don't generate too much comment noise.
-- **DRY:** duplicated code must always be avoided unless there is truly no reasonable alternative. Prefer shared helpers, shared contracts, and existing local patterns over copy-pasted logic or parallel implementations.
+- **`packages/liatir-core` is the single source of truth for shared types and contracts.** Never hand-write a parallel type in the frontend, in `src-ts`, or in Rust. Generated artifacts (`frontend/src/lib/liatir-sdk-types.ts`, `frontend/src/lib/liatir-completions.generated.ts`) come from `npm run gen:sdk-types` — regenerate, never edit.
+- **The app must keep working offline.** `services/runtime-box-signer` and `workers/runtime-box-registry` are build and distribution infrastructure. They must never become a runtime dependency of running a pipeline, a tool, or an installed AI Model.
+- **Heavy dependencies stay modular and installed on demand.** Nothing heavy may become mandatory for app start, or for a workflow that doesn't use it. Boxes integrate through common standards; they are never wired into the core.
+- **A change to the native bridge crosses three surfaces** — `src-tauri/src/bridge/*.rs`, `src-ts/`, `frontend/src/lib/`. Keep them consistent through the shared contract; a new Rust command with no matching contract update is an incomplete change.
+- **Runtime Box identity is a contract.** `runtime-boxes/target-id-contract.json`, `catalog.json`, `trust/` and `evidence/` are tracked data that other machines and CI depend on. Changing a target ID, a catalog entry, or a trust root invalidates existing boxes — treat it as a breaking change, never as cleanup.
+- **Correctness before convenience.** Never keep a faster or simpler path that produces unexplained differences in scientific output, provenance, or logs.
 
 ## State & concurrency (ownership per entity)
 
-Before implementing or modifying a feature, identify the **real entity that owns the state**: workspace, pipeline, pipeline run, tool run, AI model job, plugin run, dependency install, result artifact, etc. **Never use a single global state if the domain allows multiple concurrent or saved instances.**
+Before implementing or modifying a feature, identify the **real entity that owns the state**: workspace, pipeline, pipeline run, tool run, AI Model job, plugin run, dependency install, result artifact. **Never use a single global state if the domain allows multiple concurrent or saved instances.**
 
-For every run or process, always verify:
+For every run or process, verify:
+
 - stable parent identity;
 - state separated per instance;
-- behavior across page navigation;
-- what happens when the user returns to the screen/page;
-- how it appears in Jobs (if related);
-- how it finalizes into Results (if related);
+- behavior across page navigation, and on returning to the screen;
+- how it appears in Jobs, and how it finalizes into Results (if related);
 - correct logs, outputs, provenance, and parent association;
-- inputs disabled only for the entity that is actually running (if relevant);
+- inputs disabled only for the entity that is actually running;
 - no UI blocking for unrelated pipelines, tools, plugins, or models.
 
-## Working principles
+## Layout
 
-- Be **pragmatic but rigorous**: read the real repo, follow existing patterns, keep changes organized and verifiable.
-- Do **NOT** introduce fake fallbacks or architectural shortcuts.
-- Every feature must work well at **production level** — for real users, real files, and real scientific workflows, not only for the immediate demo.
-- Before closing work, mentally and technically run automatic tests to check everything works correctly (see the verification gate under the architecture policy).
+- `src-tauri/` — the Rust/Tauri app. `src/bridge/*.rs` is one file per native capability (`jobs`, `files`, `deps`, `ai_runtime`, `lia_plugins`, …) and is the main IPC surface; `src/helpers/` holds shared Rust logic. `tauri.conf.json`, `capabilities/` and `permissions/` are generated from `conf-templates/` by the `*conf` scripts.
+- `packages/` — `liatir-core` (shared contracts: `runtime-box.ts`, `ai-catalog.ts`, `native-tools.ts`, `quenta.ts`), plus `liatir-api`, `liatir-cli`, `liatir-output-parser`. These are published npm packages.
+- `frontend/` — SvelteKit UI. `src/lib/` holds components, `stores/`, `pipeline/`, `ai/`, `tools/`, `quenta/`, `viewers/`.
+- `src-ts/` — the TypeScript side of the bridge and the plugin-facing runtime (`core/`, `liatir/`, `modules/`).
+- `sdk/`, `public-sdk/`, `wasm-modules/` — the plugin SDK, its published surface, and WASM tool modules.
+- `runtime-boxes/` — Runtime Box data: `recipes/`, `catalog.json`, `trust/`, `evidence/`, `measurements/`, `legal/`. `infra/runtime-box-ci/` is the CI side; `services/runtime-box-signer` and `workers/runtime-box-registry` are the remote services.
+- `scripts/` — build, conf, publishing and Runtime Box orchestration entry points behind the npm scripts.
+- `tests/` — `unit/` (vitest), `e2e/` (a real compiled binary driven over WebDriver), and `test-matrix.mjs`, which declares every suite and profile as data.
+- `project-knowledge-base/` — internal maintainer docs (see Repository continuity). `docs/` is the public product site. `quenta-knowledge/` is curated scientific content.
 
-### Task-specific execution checklists
-
-- For every medium-complexity or complex task, maintain a **living, task-specific internal checklist** while working. A user plan provides direction but cannot predict every implementation detail; convert discoveries, dependencies, and risks into explicit checklist items before proceeding.
-- Refresh the checklist before each materially complex step. At minimum, verify: prerequisites and current state; the exact file, command, workflow, target, and inputs; expected state changes; success evidence; failure and stop conditions; rollback or cleanup; and any cost or authorization boundary.
-- Never perform a paid, remote, publishing, release, deployment, destructive, or otherwise consequential action from memory or name inference alone. Read back the exact action definition and inputs, verify that they match the intended operation, and immediately verify the created action identity, revision, target, and mode. Stop or cancel on any mismatch.
-- Mark an item complete only from concrete evidence such as a test result, generated artifact, run ID, receipt, diff, or observed state transition. Do not infer completion from an earlier adjacent step.
-- When a new defect or unexpected condition appears, add it to the checklist with its root cause, regression coverage, required cheap rechecks, retry limit, and cleanup before attempting another expensive action.
-- Keep the checklist proportional: concise for bounded work, more detailed for releases and multi-stage changes. Do not turn it into repetitive commentary or polling. For work that must survive another session, store the evolving checklist and evidence in the canonical tracked plan or handoff document.
-- The checklist supplements, and never replaces, repository instructions, the user plan, architecture rules, or required tests.
-
-### Long-running processes and monitoring
-
-- **Never waste user credits or context on repetitive polling.** This applies to every long-running or external process, not only CI: builds, tests, deployments, jobs, downloads, services, queues, and remote workflows.
-- Do not use verbose watch commands or repeated status calls that inject unchanged state into the conversation or context window.
-- Prefer event-driven completion signals or a silent background wait. If neither exists, perform one concise status check after a meaningful interval and stop checking until another meaningful interval or a fresh user request.
-- Report only real transitions: actionable progress, failure, completion, or a change that requires a decision. Never repeatedly report that a process is still running.
+This list is not complete — read the files for more.
 
 ## Build / test / run
 
-**Do not assume or hardcode commands — they change over time.** The authoritative commands live in the `scripts` sections of the `package.json` files in this repo. Before building, testing, running, or linting:
-1. Read the root `package.json` and the `package.json` of the relevant workspace/package (e.g. `packages/*`), and use the scripts defined there.
-2. For Rust crates, use the standard `cargo` commands per the relevant `Cargo.toml` (build/test/clippy).
-3. If you're unsure which script applies, list the available scripts and pick the one whose name matches the intent (dev, build, test, lint) rather than inventing a command.
+These are the current commands. If one no longer exists, read the `scripts` section of the root `package.json` (or of the relevant workspace) **and update this file**, rather than leaving the next agent to rediscover it.
 
-Run the appropriate test and lint scripts before declaring a task done.
+- `npm run dev` — run the app in development. `npm run dev:frontend` for UI-only work.
+- `npm run build:dev` / `npm run build` — dev and production builds.
+- `npm run test:fast` — unit and contract tests. Use this while working.
+- `npm run test:verify` — **the gate before declaring work done**: unit + SDK type generation + core build + frontend check/build + `src-ts` compile.
+- `npm run test:ui` — end-to-end against a real compiled binary. `npm run test:ui:visual` for visual snapshots.
+- `npm run lint:ts`, plus `cargo clippy` / `cargo test` inside `src-tauri/` for Rust work.
+
+Run `test:verify` before closing any task, and add `test:ui` when you touched UI, navigation, or the job/results lifecycle. Never mark work done on the strength of a successful build alone.
+
+## Safety
+
+Learned the hard way. These are not style preferences.
+
+- **GPU CI runners cost real money.** Never trigger, re-run, or "just try" a GPU Runtime Box workflow to see what happens. Prepare the change so the first run passes, and ask before launching one.
+- **Heavy AI tests download and run real models** (`test:heavy:ai`, `LIATIR_RUN_HEAVY_AI=1`, `--include-heavy`). Do not run them casually, and never as a substitute for `test:verify`.
+- **Never perform a paid, remote, publishing, release, deployment, or destructive action from memory or name inference.** Read back the exact action definition and its inputs, confirm they match the intent, then immediately verify the created identity, revision, target and mode. Stop or cancel on any mismatch.
+- **Windows CUDA is currently out of CI** (the hosted runner driver is too old for the required CUDA version). Do not "fix" it by loosening version constraints; see `project-knowledge-base/roadmap/runtime-box-ci-foundation.md`.
 
 ## Boundaries — do not touch
 
-Default boundaries (extend as needed for this repo):
-- Generated bindings/types derived from `packages/liatir-core` — regenerate from the source of truth, never hand-edit.
-- Lockfiles (`package-lock.json`, `pnpm-lock.yaml`, `Cargo.lock`) unless the task is explicitly a dependency change.
-- Secrets and environment files (`.env*`), credentials, signing keys.
+- Generated bindings and types derived from `packages/liatir-core` — regenerate from the source of truth.
+- Lockfiles (`package-lock.json`, `Cargo.lock`) unless the task *is* a dependency change.
+- Secrets, `.env*`, credentials, signing keys, and `trust/` roots.
 - Build output and artifacts (`dist/`, `target/`, `build/`, bundled `.lia` outputs).
 
----
+## Quality rules
 
-## Architecture policy: workflows and agents
+- **Keep the implementation small, sharp, and easy to understand.** Don't settle for the first design that comes to mind; look for the minimal one that actually works. No slop: no fragile code that patches a single case, no dead code, no machinery more complicated than the problem it solves.
+- **No fake fallbacks, no architectural shortcuts.** A path that silently pretends to succeed is worse than a visible failure.
+- **DRY.** Prefer shared helpers, shared contracts, and existing local patterns over copy-pasted logic or a parallel implementation, unless there is genuinely no reasonable alternative.
+- **Comments explain why** — a non-obvious ordering, a lifetime, a state-ownership choice, a scientific constraint. A short comment above a function saying what it does is welcome; commentary noise is not.
+- **Language:** comments, UI text, code, CLI output, and developer-facing docs are always in **English**.
+- Keep folders and modules organized and coherent. The architecture must stay modular and navigable as it grows.
 
-**Rule zero — start simple.** Use the least complex option that solves the task. A single well-designed LLM call (with retrieval + a few examples) is often enough. Every added layer (workflow → agent → multi-agent) adds latency, token cost, and failure surface, and must be justified by a measurable gain. Do NOT add a second step/agent for "safety" or "completeness" if one step already works.
+## Repository continuity
 
-### Decision tree (stop at the first match)
+- `project-knowledge-base/` is authoritative memory, not decoration. Keep `current-project-status.md` up to date.
+- Durable plans, implementation status, and handoff context must live in tracked repository docs. Machine-local agent memory is a convenience, never the only source for continuing work.
+- The canonical Runtime Box CI plan and gate status live in `project-knowledge-base/roadmap/runtime-box-ci-foundation.md`. Read it before starting a Runtime Box CI gate, and update it when a gate is completed or re-scoped.
 
-1. Solvable in a **single call**? → use a single call. Build nothing more.
-2. Steps **fixed and known in advance**? → use a **workflow** (chaining / routing). If you can draw the decision tree, implement it in code — more accuracy, more control, lower cost than any agent.
-3. **Ambiguous** (can't pre-map steps) **but verifiable** (tests/compilation/clear criteria) **and high-value**? → consider an **autonomous agent** with verification. If not verifiable or low-value → stay on workflow/single call.
-4. Decomposes into **independent, parallelizable, read-mostly** threads, or info **exceeds one context window**? → consider **multi-agent**. Otherwise → do NOT use multi-agent.
+## Working discipline
 
-### Workflow patterns — use / avoid
+- For medium or complex tasks, keep a **living internal checklist**: prerequisites and current state, the exact file/command/target and its inputs, expected state change, success evidence, stop conditions, rollback or cleanup. Refresh it before each complex step. Keep it proportional — a working tool, not commentary.
+- **Mark an item done only from concrete evidence**: a test result, an artifact, a run ID, a diff, an observed state transition. Never infer completion from an adjacent step.
+- **Never poll.** For any long-running process — build, test, deploy, job, download, CI — prefer an event-driven signal or a silent background wait. If neither exists, do one status check after a meaningful interval, then stop. Report only real transitions: actionable progress, failure, completion, or a decision you need. Never repeatedly report that something is still running.
+- When a new defect appears, add it to the checklist with its root cause, the regression coverage it needs, a retry limit, and cheap rechecks, before attempting another expensive action.
 
-| Pattern | Use when | Avoid when |
-|---|---|---|
-| **Prompt chaining** | Fixed, predictable subtasks; add gates between steps | Steps depend on input / not known ahead → orchestrator-worker |
-| **Routing** | Distinct categories, accurate classification | Categories overlap or classifier unreliable |
-| **Parallelization** (sectioning/voting) | Independent subtasks; multiple perspectives for confidence | Branches depend on each other, or outputs must merge into one written artifact |
-| **Orchestrator-workers** | Can't predict which/how many subtasks (e.g. how many files to change) | Subtasks are always the same → static parallelization |
-| **Evaluator-optimizer** | Clear eval criteria; iteration measurably improves output | No articulable quality criterion; single pass already good enough |
+## Designing multi-step LLM systems
 
-### Autonomous agent — all three must hold
-1. **Ambiguous** (can't map the tree in advance)
-2. **Verifiable** (cheap, reliable success signal — tests, compile, checker)
-3. **Valuable** enough to justify ~4× token cost
-
-Always set an **iteration cap**, an **explicit stop criterion**, and a **verification check every pass**. In a loop, each iteration multiplies the failure rate of the weakest link.
-
-### Multi-agent — use only when ALL hold
-- Threads are **genuinely independent** (no shared state needed)
-- Threads are **mostly read/exploration** (reads parallelize; writes don't)
-- Info **exceeds a single context window**
-- **Value > cost** (~15× tokens)
-
-**Do NOT use multi-agent when any of these is true:**
-- Agents must **share context** or have **many mutual dependencies** (not a fit today)
-- **Shared writing**: multiple agents edit the same artifact → conflicting implicit decisions that can't be merged
-- **Strong sequential dependencies** (B needs A) → use a linear workflow / single agent
-- The task is **already solved** by a single agent or workflow
-
-If coordination is truly needed, go **linear**: agent 2 works with full knowledge of agent 1's output. Share full context and traces, not just messages.
-
-### Red flags — stop if you see them
-- Monolithic "do-everything" mega-prompt
-- Over-engineered planning for a task a single call solves
-- No tracing / correlation IDs before scaling complexity
-- Parallelizing writes to the same artifact
-- Agentic loops with no verification signal or no iteration cap
-- Multi-agent debate/ensemble as a default (rarely beats single-agent at equal compute)
-- Adding agents to fix a weak prompt (first ask if the agent is context-bound)
-
-### Coding-agent specifics
-1. **Default = linear single agent** for writing/editing/debugging code.
-2. **Never spawn parallel subagents that write to the same codebase** — conflicting decisions (APIs, style, duplication) can't be merged cleanly. Delegate sequentially with full context handoff.
-3. **Use subagents for read/exploration** (understanding code, locating bugs, gathering context across files), not parallel writes.
-4. For changes touching an **unpredictable number of files**, use orchestrator-worker (discover files at runtime) but apply changes coordinated, not via independent parallel writers.
-5. **Run build/tests/linter as a gate** after each significant step — this is also the "run automatic tests before closing" rule above. Get the commands from `package.json` / `Cargo.toml` as described in Build / test / run.
-6. **Cap iterations**; if tests don't converge in N passes, stop and report.
-7. Before choosing multi-agent, compare to a single agent at **equal token budget** — if the only gain is "more tokens," give a single agent more budget instead.
-
----
-
-## Basis
-
-The architecture policy above synthesizes: Anthropic "Building Effective Agents" and "How we built our multi-agent research system"; Cemri et al. "Why Do Multi-Agent LLM Systems Fail?" (MAST, arXiv:2503.13657); Tran & Kiela (arXiv:2604.02460); Cognition "Don't Build Multi-Agents"; LangChain "How and when to build multi-agent systems". Numeric figures (15×, 80%, 90.2%) are from specific evaluations, not universal constants.
+**Before proposing, designing, or building any multi-step LLM system — a workflow, an autonomous agent, a multi-agent setup, or AI Tool orchestration — read `AGENT-POLICY.md` first.** It is not needed for ordinary code work; skip it otherwise.
