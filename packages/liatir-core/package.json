@@ -11,6 +11,9 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch"
   },
+  "dependencies": {
+    "scrollcase": "0.1.2"
+  },
   "devDependencies": {
     "typescript": "^5.0.0"
   }

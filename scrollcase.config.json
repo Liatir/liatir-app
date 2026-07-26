@@ -1,5 +1,4 @@
 {
-  "$schema": "./scripts/runtime-box/scrollcase.config.schema.json",
   "version": 1,
   "paths": {
     "recipes": "runtime-boxes/recipes",

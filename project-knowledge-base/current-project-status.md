@@ -132,7 +132,9 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   open-source tool named Scrollcase. **Extraction phases P1–P4 are complete
   (2026-07-26):** the canonical source is now the standalone public repository
   `https://github.com/suffro/scrollcase`, documentation is live at
-  `https://scrollcase.dev`, and `scrollcase@0.1.0` is public on npm. The temporary
+  `https://scrollcase.dev`, and `scrollcase@0.1.2` is public on npm (`0.1.0` was the
+  original release, `0.1.1` added public TypeScript declarations, and `0.1.2`
+  added browser-safe contract helpers). The temporary
   in-tree copy was removed from Liatir in `6b4934e`.
   Scrollcase is a pixi + conda-pack + conda-forge CLI and library with seven verbs
   (`init`, `doctor`, `keygen`, `lock`, `audit`, `build`, `verify`), deterministic
@@ -140,19 +142,32 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   embed/on-demand weights, declared accelerator parity, and local or external
   signing. Its managed per-project toolchain bootstrap requires explicit consent
   and verifies the downloaded pixi archive; the shared `--global` toolchain is
-  deliberately outside `0.1.0`. The standalone suite passes 84 tests across 10
-  files, and CI run `30209373381` passed all 11 Node 20/22/24 jobs across Linux,
-  macOS and Windows plus package/audit/docs gates.
-  **P5 remains open in Liatir and is not part of Scrollcase's extraction:** the root
-  `runtime-box*` scripts still invoke Liatir's local builder, `@liatir/core` still
-  owns the local contract, and the private KMS signer has not yet been connected
-  through `--signer-command`. P5 installs the published package, keeps the existing
-  `liatir.runtime-box` namespace for byte compatibility, repoints the scripts and
-  Rust contract fixtures, then deletes the superseded local builder/contract copies.
+  deliberately outside the current package. The `0.1.2` standalone release gate
+  passes 113 tests across 11 files, generated-declaration checks, the docs build,
+  tarball inspection, and a browser bundle. The original extraction CI run
+  `30209373381` passed all 11 Node 20/22/24 jobs across Linux, macOS and Windows
+  plus package/audit/docs gates.
+  **P5.0 and P5.1 are complete in Liatir and are not part of Scrollcase's
+  extraction:** `@liatir/core` now consumes/refines the published generic contract,
+  while the root `runtime-box*` scripts still invoke Liatir's local builder and the
+  private KMS signer has not yet been connected through `--signer-command`. The
+  remaining P5 phases keep the existing `liatir.runtime-box` namespace for byte
+  compatibility, repoint the scripts, migrate uv recipes, then delete the
+  superseded local builder/contract copies.
   Geneformer and UCE still require pixi recipes before Scrollcase can build them.
   Liatir continues to own Runtime Box distribution and product concerns: CI/runner
   policy, scientific validation, R2/Registry publication, KMS custody, trust roots,
   Rust/Tauri installation, Jobs, Results and provenance.
+- [Scrollcase P5 — Liatir adoption](./roadmap/scrollcase-p5-liatir-adoption.md) —
+  the detailed implementation plan for consuming the published package, inverting
+  the generic contract, adding the Liatir signer/evidence/distribution adapter,
+  migrating the nine remaining uv recipes, preserving legacy CUDA target identity,
+  and retiring the local generic builder. Status: **P5.0 and P5.1 complete;
+  stopped before P5.2**. Liatir pins public `scrollcase@0.1.2`, consumes generic
+  types and the browser-safe helpers, preserves `liatir.runtime-box.*`, and passes
+  the complete `test:verify` gate. The
+  local builder, uv recipes, distribution commands, signer adapter, trust roots,
+  and published boxes are unchanged.
 
 ## Where the project is
 

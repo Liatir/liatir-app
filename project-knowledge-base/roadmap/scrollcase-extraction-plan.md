@@ -2,14 +2,20 @@
 
 **Status:** **EXTRACTION COMPLETE (P1–P4, 2026-07-26).** Scrollcase is an independent
 Apache-2.0 project at `https://github.com/suffro/scrollcase`, its documentation is live at
-`https://scrollcase.dev`, and `scrollcase@0.1.0` is public on npm. The temporary in-tree
-`scrollcase/` copy was removed from Liatir in commit `6b4934e`.
+`https://scrollcase.dev`, and `scrollcase@0.1.2` is public on npm (`0.1.0` was the
+original release). The temporary in-tree `scrollcase/` copy was removed from Liatir
+in commit `6b4934e`.
 
-**Remaining downstream work:** **P5 is open in Liatir.** Liatir still uses its historical
-in-tree Runtime Box builder and local contract. P5 makes it consume the published Scrollcase
-package, plugs the private KMS signer into the external-signer interface, and then deletes the
-superseded local builder and contract copies. This integration does not change Scrollcase's
-completed extraction or its independence.
+**Remaining downstream work:** **P5 is in progress in Liatir; P5.0 and P5.1 are
+complete, and execution is stopped before P5.2.** Liatir pins the published
+browser-safe `scrollcase@0.1.2` and the contract inversion passes the full
+frontend gate. Liatir still uses the historical in-tree Runtime Box builder.
+The remaining phases plug
+the private KMS signer into the external-signer interface, migrate the remaining uv
+recipes, and then delete the superseded local builder and generic contract copies.
+This integration does not change Scrollcase's completed extraction or its
+independence. The detailed canonical execution plan is
+[Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md).
 **Prerequisite — REVISED 2026-07-25** (was: "the pixi migration must be fully closed on all
 targets"): the builder must be **validated across the full OS/accelerator matrix on ≥1
 representative model** — which is met. scGPT is validated on the pixi substrate across
@@ -280,9 +286,13 @@ Today the box-format contract is **triplicated** and kept in sync by the golden 
 - **P4 — New repo + Apache-2.0 packaging: DONE (2026-07-26).** Scrollcase now lives in its
   standalone public repository with its own CI, documentation and package surface;
   `scrollcase@0.1.0` is public on npm. See the P4 execution record.
-- **P5 — Invert & consume: OPEN in Liatir.** Make `liatir-core` depend on the published
-  package; repoint Liatir scripts; plug in the private KMS signer; delete Liatir's local
-  builder and contract copies.
+- **P5 — Invert & consume: IN PROGRESS. P5.0 and P5.1 complete; stopped before P5.2.**
+  Core contract aliases/refinements and compatibility fixtures across Node,
+  Worker, signer and Rust are implemented and the full frontend gate passes with
+  the published browser-safe `scrollcase@0.1.2`. Follow the
+  [canonical P5 execution plan](./scrollcase-p5-liatir-adoption.md): prove the published
+  package surface, invert the contract, add the Liatir signer/evidence/distribution adapter,
+  migrate all active uv recipes, then delete the local generic builder.
 
 ---
 
@@ -606,7 +616,12 @@ box-format contract remains in place. Geneformer and UCE also still need pixi re
 Scrollcase can build them. These are Liatir adoption and model-migration tasks, not missing
 pieces of the extracted tool.
 
-## P5 acceptance criteria
+## P5 acceptance summary
+
+The detailed phase gates, recipe inventory, CUDA identity migration, stop conditions and
+rollback are maintained in
+[Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md). This section remains
+only the extraction-level completion summary.
 
 - **scrollcase standalone:** `npm test` green in the new repo; a full
   `scrollcase init` → `build <installer-fixture>` → `verify` cycle passes on a clean machine with only

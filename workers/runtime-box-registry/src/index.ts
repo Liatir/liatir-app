@@ -464,7 +464,7 @@ async function serveObject(request: Request, env: Env, key: string): Promise<Res
  * payload and comparing it to the URL segment closes that gap; the rollout percentages and
  * release URLs are sanity-checked at the same time.
  */
-function validateChannelRoute(
+export function validateChannelRoute(
   payload: Record<string, unknown>,
   channel: string,
   boxId: string,
@@ -499,7 +499,7 @@ export function runtimeBoxTargetIdForRoute(target: unknown): string | null {
   }
 }
 
-function isRevocationsManifest(
+export function isRevocationsManifest(
   payload: Record<string, unknown>,
 ): payload is Record<string, unknown> & LiatirRuntimeBoxRevocationsManifest {
   return payload.kind === 'liatir.runtime-box.revocations'

@@ -7,33 +7,39 @@
  * JSON implementations.
  */
 
-export const LIATIR_RUNTIME_BOX_SCHEMA_VERSION = 1 as const;
+import {
+  BOX_SCHEMA_VERSION,
+  boxTargetId,
+  isSignedBoxDocument,
+} from "scrollcase/contract/browser";
+import type {
+  BoxChannelManifest,
+  BoxReleaseManifest,
+  BoxRevocationsManifest,
+  BoxTarget,
+  Provenance,
+  SignedBoxDocument,
+} from "scrollcase/contract/types";
 
-export type LiatirRuntimeBoxPlatform = "macos" | "linux" | "windows";
-export type LiatirRuntimeBoxArch = "aarch64" | "x86_64";
-export type LiatirRuntimeBoxAccelerator = "cpu" | "metal" | "cuda";
-export type LiatirRuntimeBoxChannel = "development" | "beta" | "stable";
+export const LIATIR_RUNTIME_BOX_SCHEMA_VERSION = BOX_SCHEMA_VERSION;
+
+export type LiatirRuntimeBoxPlatform = BoxTarget["platform"];
+export type LiatirRuntimeBoxArch = BoxTarget["arch"];
+export type LiatirRuntimeBoxAccelerator = BoxTarget["accelerator"];
+export type LiatirRuntimeBoxChannel = BoxChannelManifest["channel"];
 export type LiatirRuntimeBoxHostEnvironment = "native" | "windows-wsl2";
 
-export interface LiatirRuntimeBoxTarget {
-  platform: LiatirRuntimeBoxPlatform;
-  arch: LiatirRuntimeBoxArch;
-  accelerator: LiatirRuntimeBoxAccelerator;
-  /** Required CUDA ABI when accelerator is cuda, for example "12.4". */
-  cudaVersion?: string;
-}
+export type LiatirRuntimeBoxTarget = BoxTarget;
 
-export interface LiatirRuntimeBoxCompatibility {
+export type LiatirRuntimeBoxCompatibility = Omit<
+  BoxReleaseManifest["compatibility"],
+  "minHostAppVersion" | "maxHostAppVersionExclusive" | "hostEnvironments"
+> & {
   minLiatirVersion: string;
   maxLiatirVersionExclusive?: string;
-  minMacosVersion?: string;
-  /** Minimum installed memory in decimal gigabytes (1 GB = 1,000,000,000 bytes). */
-  minRamGb?: number;
-  /** Minimum host NVIDIA driver accepted by a CUDA payload. */
-  minNvidiaDriverVersion?: string;
   /** Host environments validated for this payload. Omitted by legacy releases. */
   hostEnvironments?: LiatirRuntimeBoxHostEnvironment[];
-}
+};
 
 /**
  * One published target the desktop installer may consider for a model.
@@ -51,106 +57,46 @@ export interface LiatirRuntimeBoxTargetCandidate {
   minNvidiaDriverVersion?: string;
 }
 
-export interface LiatirRuntimeBoxBuildProvenance {
-  recipeId: string;
-  recipeVersion: string;
-  builderRevision: string;
-  sourceTreeDirty: boolean;
-  sourceRevision: string;
-  pythonVersion: string;
+export type LiatirRuntimeBoxBuildProvenance = Omit<Provenance, "pixiVersion"> & (
   /**
-   * The builder that produced the box: exactly one of these is present. `pixiVersion` for the
-   * pixi + conda-forge substrate (dependencyLockSha256 is then the pixi.lock hash), `uvVersion`
-   * for the legacy uv + standalone-Python builder (requirements.lock hash). Both are optional so
-   * the two substrates can coexist while recipes are migrated one target at a time.
+   * Legacy uv provenance remains readable while P5 migrates the existing recipes one target at
+   * a time. New Scrollcase builds always produce the pixi branch.
    */
-  uvVersion?: string;
-  pixiVersion?: string;
-  dependencyLockSha256: string;
-  builtAt: string;
-}
+  | { uvVersion: string; pixiVersion?: never }
+  | { pixiVersion: string; uvVersion?: never }
+);
 
-export interface LiatirRuntimeBoxArchive {
-  format: "zip";
-  url: string;
-  sha256: string;
-  sizeBytes: number;
-}
-
-export interface LiatirRuntimeBoxSelfTest {
-  /** Import names checked with the box interpreter before activation. */
-  pythonImports: string[];
-  timeoutSeconds: number;
-}
+export type LiatirRuntimeBoxArchive = BoxReleaseManifest["archive"];
+export type LiatirRuntimeBoxSelfTest = BoxReleaseManifest["selfTest"];
 
 /** Immutable release document signed offline by Liatir. */
-export interface LiatirRuntimeBoxReleaseManifest {
-  schemaVersion: typeof LIATIR_RUNTIME_BOX_SCHEMA_VERSION;
+export type LiatirRuntimeBoxReleaseManifest = Omit<
+  BoxReleaseManifest,
+  "kind" | "target" | "compatibility" | "selfTest" | "provenance"
+> & {
   kind: "liatir.runtime-box.release";
-  boxId: string;
-  modelId: string;
-  runtimeId: string;
-  version: string;
   target: LiatirRuntimeBoxTarget;
   compatibility: LiatirRuntimeBoxCompatibility;
-  archive: LiatirRuntimeBoxArchive;
-  /** Exact sum of extracted payload file sizes before activation metadata is added. */
-  installedSizeBytes?: number;
-  /** Path relative to the extracted runtime root. */
-  pythonEntryPoint: string;
-  /** Model/cache directory relative to the extracted runtime root. */
-  modelCacheSubdir: string;
   selfTest: LiatirRuntimeBoxSelfTest;
   provenance: LiatirRuntimeBoxBuildProvenance;
-}
+};
 
-export interface LiatirRuntimeBoxChannelRelease {
-  version: string;
-  releaseManifestUrl: string;
-  /** Integer percentage from 1 to 100. Releases are evaluated in order. */
-  rolloutPercentage: number;
-}
+export type LiatirRuntimeBoxChannelRelease = BoxChannelManifest["releases"][number];
 
 /** Small mutable channel pointer. It is signed independently from releases. */
-export interface LiatirRuntimeBoxChannelManifest {
-  schemaVersion: typeof LIATIR_RUNTIME_BOX_SCHEMA_VERSION;
+export type LiatirRuntimeBoxChannelManifest = Omit<BoxChannelManifest, "kind"> & {
   kind: "liatir.runtime-box.channel";
-  channel: LiatirRuntimeBoxChannel;
-  boxId: string;
-  target: LiatirRuntimeBoxTarget;
-  updatedAt: string;
-  cohortSalt: string;
-  releases: LiatirRuntimeBoxChannelRelease[];
-}
+};
 
-export interface LiatirRuntimeBoxRevocation {
-  boxId: string;
-  version: string;
-  target?: LiatirRuntimeBoxTarget;
-  reason: string;
-  revokedAt: string;
-}
+export type LiatirRuntimeBoxRevocation = BoxRevocationsManifest["revocations"][number];
 
-export interface LiatirRuntimeBoxRevocationsManifest {
-  schemaVersion: typeof LIATIR_RUNTIME_BOX_SCHEMA_VERSION;
+export type LiatirRuntimeBoxRevocationsManifest = Omit<BoxRevocationsManifest, "kind"> & {
   kind: "liatir.runtime-box.revocations";
-  updatedAt: string;
-  revocations: LiatirRuntimeBoxRevocation[];
-}
+};
 
-export interface LiatirRuntimeBoxSignature {
-  algorithm: "ed25519";
-  keyId: string;
-  signatureBase64: string;
-}
+export type LiatirRuntimeBoxSignature = SignedBoxDocument["signatures"][number];
 
-export interface LiatirSignedRuntimeBoxDocument {
-  schemaVersion: typeof LIATIR_RUNTIME_BOX_SCHEMA_VERSION;
-  payloadEncoding: "base64-json-utf8";
-  payloadBase64: string;
-  payloadSha256: string;
-  signatures: LiatirRuntimeBoxSignature[];
-}
+export type LiatirSignedRuntimeBoxDocument = SignedBoxDocument;
 
 /** Durable install provenance written beside the activated Runtime Box. */
 export interface LiatirRuntimeBoxActivationMetadata {
@@ -446,52 +392,13 @@ export interface LiatirRuntimeBoxCiEvidenceRecord {
   publication?: LiatirRuntimeBoxCiPublicationEvidenceRecord;
 }
 
-const RUNTIME_BOX_TARGET_ACCELERATORS: Readonly<
-  Record<LiatirRuntimeBoxPlatform, Readonly<Partial<Record<LiatirRuntimeBoxArch, readonly LiatirRuntimeBoxAccelerator[]>>>>
-> = {
-  macos: { aarch64: ["metal", "cpu"] },
-  linux: { x86_64: ["cpu", "cuda"] },
-  windows: { x86_64: ["cpu", "cuda"] },
-};
-const RUNTIME_BOX_CUDA_VERSION = /^[1-9][0-9]*\.[0-9]+$/;
-
 /** Return the stable target identifier used by R2 keys and registry routes. */
 export function runtimeBoxTargetId(target: LiatirRuntimeBoxTarget): string {
-  if (!target || typeof target !== "object") {
-    throw new TypeError("Runtime Box target must be an object");
-  }
-  const accelerators = RUNTIME_BOX_TARGET_ACCELERATORS[target.platform]?.[target.arch];
-  if (!accelerators?.includes(target.accelerator)) {
-    throw new TypeError(
-      `Unsupported Runtime Box target: ${target.platform}/${target.arch}/${target.accelerator}`,
-    );
-  }
-  if (target.accelerator === "cuda") {
-    if (typeof target.cudaVersion !== "string" || !RUNTIME_BOX_CUDA_VERSION.test(target.cudaVersion)) {
-      throw new TypeError("A CUDA Runtime Box target requires a numeric major.minor CUDA version");
-    }
-    return `${target.platform}-${target.arch}-cuda${target.cudaVersion}`;
-  }
-  if (target.cudaVersion !== undefined) {
-    throw new TypeError("Only CUDA Runtime Box targets may declare a CUDA version");
-  }
-  return `${target.platform}-${target.arch}-${target.accelerator}`;
+  return boxTargetId(target);
 }
 
 export function isLiatirSignedRuntimeBoxDocument(
   value: unknown,
 ): value is LiatirSignedRuntimeBoxDocument {
-  if (!value || typeof value !== "object") return false;
-  const document = value as Partial<LiatirSignedRuntimeBoxDocument>;
-  return document.schemaVersion === LIATIR_RUNTIME_BOX_SCHEMA_VERSION
-    && document.payloadEncoding === "base64-json-utf8"
-    && typeof document.payloadBase64 === "string"
-    && typeof document.payloadSha256 === "string"
-    && Array.isArray(document.signatures)
-    && document.signatures.length > 0
-    && document.signatures.every((signature) =>
-      signature?.algorithm === "ed25519"
-      && typeof signature.keyId === "string"
-      && typeof signature.signatureBase64 === "string"
-    );
+  return isSignedBoxDocument(value);
 }

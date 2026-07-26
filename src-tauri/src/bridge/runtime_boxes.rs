@@ -1743,6 +1743,38 @@ mod tests {
         }
     }
 
+    #[test]
+    fn accepts_scrollcase_contract_compatibility_fixtures() {
+        let fixtures: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../runtime-boxes/contract-compatibility-fixtures.json"
+        ))
+        .unwrap();
+
+        let release: ReleaseManifest =
+            serde_json::from_value(fixtures["release"].clone()).unwrap();
+        assert_eq!(release.schema_version, 1);
+        assert_eq!(release.kind, "liatir.runtime-box.release");
+
+        let legacy_release: ReleaseManifest =
+            serde_json::from_value(fixtures["legacyUvRelease"].clone()).unwrap();
+        assert_eq!(
+            legacy_release.provenance["uvVersion"],
+            serde_json::Value::String("0.11.28".to_string())
+        );
+
+        let channel: ChannelManifest =
+            serde_json::from_value(fixtures["channel"].clone()).unwrap();
+        assert_eq!(channel.schema_version, 1);
+        assert_eq!(channel.kind, "liatir.runtime-box.channel");
+        assert_eq!(channel.releases.len(), 1);
+
+        let revocations: RevocationsManifest =
+            serde_json::from_value(fixtures["revocations"].clone()).unwrap();
+        assert_eq!(revocations.schema_version, 1);
+        assert_eq!(revocations.kind, "liatir.runtime-box.revocations");
+        assert_eq!(revocations.revocations.len(), 1);
+    }
+
     fn target(
         platform: &str,
         arch: &str,

@@ -49,7 +49,11 @@ Related plans: [Runtime Box model platform expansion](./runtime-box-model-platfo
 (the model/target re-validation this migration feeds into),
 [Runtime Box CI foundation](./runtime-box-ci-foundation.md) (the historical uv-based
 foundation being replaced), and [Runtime Box production report](./runtime-box-production-report.md)
-(the trust/distribution spine that stays unchanged).
+(the trust/distribution spine that stays unchanged). The remaining recipe migration
+and builder retirement now execute through
+[Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md); that plan is
+canonical for package adoption, contract inversion, the three uv foundation fixtures,
+and preservation of the published Geneformer CUDA 12.4 identity.
 
 ## Context
 
