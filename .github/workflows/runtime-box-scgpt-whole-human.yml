@@ -3,6 +3,10 @@ name: Runtime Box scGPT Whole-human
 on:
   pull_request:
     paths:
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/runtime-box.mjs"
+      - "scripts/runtime-box/**"
       - "runtime-boxes/recipes/scgpt-whole-human-macos-arm64-metal/**"
       - "runtime-boxes/recipes/scgpt-whole-human-linux-x86_64-cpu/**"
       - "runtime-boxes/recipes/scgpt-whole-human-linux-x86_64-cuda12.9/**"
@@ -24,6 +28,10 @@ on:
   push:
     branches: [main]
     paths:
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/runtime-box.mjs"
+      - "scripts/runtime-box/**"
       - "runtime-boxes/recipes/scgpt-whole-human-macos-arm64-metal/**"
       - "runtime-boxes/recipes/scgpt-whole-human-linux-x86_64-cpu/**"
       - "runtime-boxes/recipes/scgpt-whole-human-linux-x86_64-cuda12.9/**"

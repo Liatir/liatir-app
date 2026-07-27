@@ -1,7 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { localNodeCliInvocation } from '../../scripts/node-cli.mjs';
+import {
+  localNodeCliInvocation,
+  publishedNodeCliInvocation,
+} from '../../scripts/node-cli.mjs';
 import { resolveHeartbeatInvocation } from '../../scripts/runtime-box/heartbeat.mjs';
 
 const childProcessOwners = [
@@ -37,6 +40,33 @@ describe('Windows Node CLI invocation', () => {
       command: 'C:\\hostedtoolcache\\node\\node.exe',
       args: [cli, '-p', 'tsconfig.json'],
     });
+  });
+
+  it('resolves a published package bin without invoking a Windows command shim', () => {
+    const contract = '/repo/node_modules/scrollcase/src/contract/index.mjs';
+    const packageJson = '/repo/node_modules/scrollcase/package.json';
+    const cli = '/repo/node_modules/scrollcase/src/cli.mjs';
+    expect(publishedNodeCliInvocation('scrollcase', 'contract', 'scrollcase', ['verify', 'x.json'], {
+      nodeExecutable: WINDOWS_NODE,
+      resolveModule: () => contract,
+      fileExists: (candidate) => candidate === packageJson || candidate === cli,
+      readText: () => JSON.stringify({ bin: { scrollcase: 'src/cli.mjs' } }),
+    })).toEqual({
+      command: WINDOWS_NODE,
+      args: [cli, 'verify', 'x.json'],
+    });
+  });
+
+  it('resolves the installed ESM-only Scrollcase package through its public export', () => {
+    const invocation = publishedNodeCliInvocation(
+      'scrollcase',
+      'contract',
+      'scrollcase',
+      ['--help'],
+    );
+    expect(invocation.command).toBe(process.execPath);
+    expect(invocation.args[0]).toMatch(/node_modules[/\\]scrollcase[/\\]src[/\\]cli\.mjs$/);
+    expect(invocation.args.slice(1)).toEqual(['--help']);
   });
 });
 

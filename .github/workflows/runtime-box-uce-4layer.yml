@@ -3,6 +3,10 @@ name: Runtime Box UCE 4-layer
 on:
   pull_request:
     paths:
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/runtime-box.mjs"
+      - "scripts/runtime-box/**"
       - "runtime-boxes/recipes/uce-4layer-macos-arm64-metal/**"
       - "runtime-boxes/catalog.json"
       - "runtime-boxes/legal/uce-4layer.md"
@@ -19,6 +23,10 @@ on:
   push:
     branches: [main]
     paths:
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/runtime-box.mjs"
+      - "scripts/runtime-box/**"
       - "runtime-boxes/recipes/uce-4layer-macos-arm64-metal/**"
       - "runtime-boxes/catalog.json"
       - "runtime-boxes/legal/uce-4layer.md"

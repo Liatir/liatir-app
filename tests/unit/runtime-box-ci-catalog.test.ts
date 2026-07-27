@@ -443,4 +443,37 @@ describe('Runtime Box CI catalog', () => {
     expect(dependencyScript).toContain('libayatana-appindicator3-dev');
     expect(dependencyScript).toContain('xvfb');
   });
+
+  it('keeps tracked builds on the stable adapter and watches the package boundary', () => {
+    const ciDispatcher = readFileSync(
+      new URL('../../scripts/runtime-box-ci.mjs', import.meta.url),
+      'utf8',
+    );
+    const stableCli = readFileSync(
+      new URL('../../scripts/runtime-box.mjs', import.meta.url),
+      'utf8',
+    );
+    expect(ciDispatcher).toContain(
+      "const args = ['run', 'runtime-box', '--', 'build', resolved.target.recipeId];",
+    );
+    expect(stableCli).toContain(
+      "import { dispatchRuntimeBox } from './runtime-box/scrollcase-adapter.mjs';",
+    );
+
+    for (const workflowName of [
+      'runtime-box-foundation.yml',
+      'runtime-box-scgpt-whole-human.yml',
+      'runtime-box-geneformer-v1-10m.yml',
+      'runtime-box-uce-4layer.yml',
+    ]) {
+      const workflow = readFileSync(
+        new URL(`../../.github/workflows/${workflowName}`, import.meta.url),
+        'utf8',
+      );
+      expect(workflow).toContain('- "package.json"');
+      expect(workflow).toContain('- "package-lock.json"');
+      expect(workflow).toContain('- "scripts/runtime-box.mjs"');
+      expect(workflow).toContain('- "scripts/runtime-box/**"');
+    }
+  });
 });

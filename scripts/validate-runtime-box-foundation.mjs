@@ -13,13 +13,15 @@ import * as tar from 'tar';
 import yazl from 'yazl';
 import {
   createDeterministicZip,
-  extractRecipeArchive,
+  listZipEntries,
+} from './runtime-box/archive.mjs';
+import {
   normalizeTree,
   payloadSize,
-  sha256File,
   safeRelativePath,
-} from './runtime-box.mjs';
-import { listZipEntries } from './runtime-box/archive.mjs';
+  sha256File,
+} from './runtime-box/filesystem.mjs';
+import { extractRecipeArchive } from './runtime-box/legacy-cli.mjs';
 import { runtimeBoxTargetAdapter } from './runtime-box/targets.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');

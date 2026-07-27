@@ -9,7 +9,7 @@ const deploymentWorkflow = readFileSync(
   'utf8',
 );
 const releaseWorkflow = readFileSync(resolve('.github/workflows/runtime-box-release.yml'), 'utf8');
-const runtimeBoxCli = readFileSync(resolve('scripts/runtime-box.mjs'), 'utf8');
+const signerCommand = readFileSync(resolve('scripts/runtime-box/signer-command.mjs'), 'utf8');
 const smokeScript = readFileSync(resolve('scripts/validate-runtime-box-signer.mjs'), 'utf8');
 
 describe('Runtime Box signer deployment boundary', () => {
@@ -70,6 +70,6 @@ describe('Runtime Box signer deployment boundary', () => {
     expect(releaseWorkflow).toContain(
       'LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN: ${{ steps.release-auth.outputs.id_token }}',
     );
-    expect(runtimeBoxCli).toContain('process.env.LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN');
+    expect(signerCommand).toContain('process.env.LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN');
   });
 });

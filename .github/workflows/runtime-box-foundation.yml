@@ -3,6 +3,8 @@ name: Runtime Box foundation
 on:
   pull_request:
     paths:
+      - "package.json"
+      - "package-lock.json"
       - "packages/liatir-core/src/runtime-box.ts"
       - "packages/liatir-core/src/ai-catalog.ts"
       - "scripts/runtime-box.mjs"
@@ -24,6 +26,8 @@ on:
   push:
     branches: [main]
     paths:
+      - "package.json"
+      - "package-lock.json"
       - "packages/liatir-core/src/runtime-box.ts"
       - "packages/liatir-core/src/ai-catalog.ts"
       - "scripts/runtime-box.mjs"

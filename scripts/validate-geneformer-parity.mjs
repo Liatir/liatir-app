@@ -18,7 +18,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { downloadVerified } from './runtime-box.mjs';
+import { downloadVerified } from './runtime-box/legacy-cli.mjs';
 import { runtimeBoxTargetId } from './runtime-box/targets.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');

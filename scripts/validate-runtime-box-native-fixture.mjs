@@ -24,12 +24,9 @@ import { pathToFileURL } from 'node:url';
 import { pipeline } from 'node:stream/promises';
 import { spawnSync } from 'node:child_process';
 import yazl from 'yazl';
-import {
-  downloadVerified,
-  payloadSize,
-  sha256File,
-} from './runtime-box.mjs';
+import { downloadVerified } from './runtime-box/legacy-cli.mjs';
 import { extractZipArchive, listZipEntries } from './runtime-box/archive.mjs';
+import { payloadSize, sha256File } from './runtime-box/filesystem.mjs';
 import {
   syncLockedPythonDependencies,
   validateRelocatablePython,

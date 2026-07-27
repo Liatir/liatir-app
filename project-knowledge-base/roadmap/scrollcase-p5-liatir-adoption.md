@@ -2,7 +2,7 @@
 
 Last reviewed: 2026-07-27
 
-Status: **in progress — P5.0 and P5.1 complete; stopped before P5.2**
+Status: **in progress — P5.0 through P5.2 complete; stopped before P5.3**
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project and
@@ -156,7 +156,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | --- | --- | --- |
 | P5.0 — published-package/API preflight | Complete | Exact public `scrollcase@0.1.2`; clean install and package/API probes green |
 | P5.1 — contract inversion | Complete | Core, Node, Worker, signer, Rust and frontend production build agree |
-| P5.2 — Liatir adapter and distribution split | Pending | Scrollcase builds/verifies through the stable Liatir operator surface |
+| P5.2 — Liatir adapter and distribution split | Complete | Stable adapter routes pixi work to Scrollcase and keeps distribution in Liatir |
 | P5.3 — fixture migration | Pending | Three pixi fixtures; foundation gates green |
 | P5.4 — model-recipe migration | Pending | Geneformer/UCE active recipes no longer require uv |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
@@ -401,8 +401,7 @@ core build, zero-error Svelte check, frontend production build, and root TypeScr
 compile passed. The targeted Rust compatibility-fixture test also passed.
 
 No recipe, builder caller, distribution command, signer adapter, release, runner,
-promotion, or trust root was changed. Execution stops here until P5.2 is explicitly
-authorized.
+promotion, or trust root was changed at this checkpoint.
 
 ## P5.2 — Liatir adapter and distribution split
 
@@ -494,6 +493,62 @@ from file existence or console text alone.
 - verification receipts feed the current evidence builder;
 - publish/promote/revoke/serve tests remain Liatir-owned and green;
 - no distribution or credential knowledge enters Scrollcase.
+
+### P5.2 implementation record — complete
+
+The stable `npm run runtime-box -- ...` surface now enters the thin
+`scripts/runtime-box.mjs` dispatcher. `scripts/runtime-box/scrollcase-adapter.mjs`
+resolves the executable declared by the exact installed `scrollcase@0.1.2`
+package through a public ESM export, invokes it through the current Node
+executable without a shell, forces `liatir.runtime-box` exactly once, and writes
+the existing compact verification receipt only after Scrollcase succeeds and
+the signed payload, archive size and archive SHA-256 have been checked locally.
+
+`scripts/runtime-box/signer-command.mjs` is the Liatir-private external signer
+adapter. It receives the exact payload bytes on stdin, obtains either the
+explicit short-lived token or a shell-free audience-bound `gcloud` token, calls
+the private `/v1/sign` endpoint, emits only the returned JSON document on stdout,
+and does not echo credentials or private service bodies in diagnostics.
+Scrollcase remains responsible for rejecting payload substitution, invalid
+signatures, malformed JSON and non-zero signer exits. Liatir revocation now uses
+the public Scrollcase signing envelope rather than a second local implementation.
+
+Distribution remains entirely Liatir-owned. The temporary
+`scripts/runtime-box/legacy-cli.mjs` contains the nine-recipe uv compatibility
+builder plus the existing publish, publish-key, promote, revoke and serve
+implementation until P5.3/P5.4 migrate those recipes and P5.5 removes the generic
+legacy builder. The stable dispatcher routes those command sets explicitly and
+the legacy module fails closed if called directly for pixi lock/build, so a pixi
+recipe cannot bypass Scrollcase. This is a visible migration boundary, not a
+silent fallback.
+
+`runtime-box-ci.mjs tracked-build` still enters through the stable npm command and
+therefore reaches the adapter while preserving the existing heartbeat and metric
+wrapper. Foundation, scGPT, Geneformer and UCE workflow path filters now watch the
+root package manifest, lockfile, stable CLI and adapter modules. The package bin,
+npm, heartbeat and signer invocations remain shell-free on Windows and preserve
+quoted arguments.
+
+The synthetic adapter fixture exercises real key generation through the installed
+published CLI, pixi build routing with the frozen namespace, verification and
+receipt composition, local shared-envelope signing, all Liatir distribution
+routes, and the temporary uv branch. Native box construction is deliberately
+deferred to the one-target-at-a-time P5.3/P5.4 gates; P5.2 did not download a
+toolchain or model, allocate a runner, publish, promote, deploy, or change a trust
+root.
+
+Evidence on 2026-07-27:
+
+- `npm run test:unit`: 35 files and 218 tests passed;
+- `npm run test:verify`: unit/contract tests, SDK generation, core build,
+  zero-error Svelte check, frontend production build and root TypeScript compile
+  passed;
+- `npm run runtime-box:test:foundation`: TAR safety, deterministic Zip64 and the
+  Rust large-archive compatibility fixture passed;
+- targeted adapter, signer, receipt, publisher, deployment, CI path-filter and
+  Windows invocation regressions passed.
+
+Execution stops here before P5.3.
 
 ## P5.3 — Migrate the three foundation fixtures
 

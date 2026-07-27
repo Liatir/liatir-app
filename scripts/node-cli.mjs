@@ -1,8 +1,9 @@
 /** Resolves shell-free JavaScript CLI invocations for repository child processes. */
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { dirname, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 
@@ -41,5 +42,46 @@ export function localNodeCliInvocation(moduleId, args, options = {}) {
   return {
     command: options.nodeExecutable ?? process.execPath,
     args: [cli, ...args],
+  };
+}
+
+/**
+ * Resolves a package's declared executable from one of its public exports.
+ *
+ * npm's Windows command shims require shell parsing, which is the wrong boundary for quoted signer
+ * commands. Resolving the checked package metadata lets every platform invoke the published CLI
+ * through the current Node executable with an argument array.
+ */
+export function publishedNodeCliInvocation(packageName, publicExport, binName, args, options = {}) {
+  const resolveModule = options.resolveModule
+    ?? ((moduleId) => fileURLToPath(import.meta.resolve(moduleId)));
+  const fileExists = options.fileExists ?? existsSync;
+  const readText = options.readText ?? ((path) => readFileSync(path, 'utf8'));
+  const publicEntry = resolveModule(`${packageName}/${publicExport}`);
+  let packageRoot = dirname(publicEntry);
+  let packageJsonPath = null;
+  for (let depth = 0; depth < 8; depth += 1) {
+    const candidate = join(packageRoot, 'package.json');
+    if (fileExists(candidate)) {
+      packageJsonPath = candidate;
+      break;
+    }
+    const parent = dirname(packageRoot);
+    if (parent === packageRoot) break;
+    packageRoot = parent;
+  }
+  if (!packageJsonPath) throw new Error(`Package metadata could not be resolved for ${packageName}.`);
+  const packageJson = JSON.parse(readText(packageJsonPath));
+  const relativeBin = typeof packageJson.bin === 'string'
+    ? packageJson.bin
+    : packageJson.bin?.[binName];
+  if (typeof relativeBin !== 'string') {
+    throw new Error(`Package ${packageName} does not declare the ${binName} executable.`);
+  }
+  const executable = resolve(packageRoot, relativeBin);
+  if (!fileExists(executable)) throw new Error(`Published package CLI is missing: ${executable}`);
+  return {
+    command: options.nodeExecutable ?? process.execPath,
+    args: [executable, ...args],
   };
 }

@@ -147,13 +147,16 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   tarball inspection, and a browser bundle. The original extraction CI run
   `30209373381` passed all 11 Node 20/22/24 jobs across Linux, macOS and Windows
   plus package/audit/docs gates.
-  **P5.0 and P5.1 are complete in Liatir and are not part of Scrollcase's
-  extraction:** `@liatir/core` now consumes/refines the published generic contract,
-  while the root `runtime-box*` scripts still invoke Liatir's local builder and the
-  private KMS signer has not yet been connected through `--signer-command`. The
-  remaining P5 phases keep the existing `liatir.runtime-box` namespace for byte
-  compatibility, repoint the scripts, migrate uv recipes, then delete the
-  superseded local builder/contract copies.
+  **P5.0 through P5.2 are complete in Liatir and are not part of Scrollcase's
+  extraction:** `@liatir/core` consumes/refines the published generic contract,
+  and the stable Runtime Box CLI now routes keygen/verify and pixi lock/build
+  through the exact installed package. Liatir forces the existing namespace,
+  supplies its private Cloud Run signer through Scrollcase's external-command
+  boundary, composes verification receipts only after local checks, and retains
+  all CI/evidence and distribution verbs. The nine uv recipes remain on an
+  explicit temporary compatibility path and direct pixi use of that path fails
+  closed. The remaining P5 phases migrate those recipes, then delete the
+  superseded local generic builder/contract copies.
   Geneformer and UCE still require pixi recipes before Scrollcase can build them.
   Liatir continues to own Runtime Box distribution and product concerns: CI/runner
   policy, scientific validation, R2/Registry publication, KMS custody, trust roots,
@@ -162,12 +165,14 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   the detailed implementation plan for consuming the published package, inverting
   the generic contract, adding the Liatir signer/evidence/distribution adapter,
   migrating the nine remaining uv recipes, preserving legacy CUDA target identity,
-  and retiring the local generic builder. Status: **P5.0 and P5.1 complete;
-  stopped before P5.2**. Liatir pins public `scrollcase@0.1.2`, consumes generic
-  types and the browser-safe helpers, preserves `liatir.runtime-box.*`, and passes
-  the complete `test:verify` gate. The
-  local builder, uv recipes, distribution commands, signer adapter, trust roots,
-  and published boxes are unchanged.
+  and retiring the local generic builder. Status: **P5.0 through P5.2 complete;
+  stopped before P5.3**. Liatir pins public `scrollcase@0.1.2`, consumes generic
+  types and browser-safe helpers, preserves `liatir.runtime-box.*`, and passes
+  the complete `test:verify` gate with 218 unit/contract tests. The stable CLI is
+  a thin adapter; pixi operations use Scrollcase, while distribution and the
+  visible temporary uv compatibility branch remain Liatir-owned. No recipe,
+  trust root, published box, remote runner, publication, promotion or deployment
+  changed in P5.2.
 
 ## Where the project is
 
