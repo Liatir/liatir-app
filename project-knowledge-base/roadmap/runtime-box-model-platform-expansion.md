@@ -1,18 +1,28 @@
 # Runtime Box model platform expansion
 
-Last reviewed: 2026-07-22
+Last reviewed: 2026-07-27
 
-Status: **in progress — P0 local correction complete; P1 Linux CPU native proof complete and protected release stopped at the signing build**
+Status: **historical pre-pixi execution ledger — do not dispatch from this
+document.** Its completed evidence remains valid, but current recipe/target
+execution is routed through the
+[pixi migration](./runtime-box-pixi-migration.md) and
+[Scrollcase P5 adoption](./scrollcase-p5-liatir-adoption.md).
 
-This is the canonical execution plan for bringing scGPT Whole-human and UCE
-4-layer to every currently supported native Runtime Box product target where
-the model is technically and legally viable. The completed CI foundation and
-its historical evidence remain in
+This was the execution plan for bringing scGPT Whole-human and UCE 4-layer to
+the uv-era Runtime Box target matrix. It is retained for defect, run and
+evidence history, not as a current command source. Scrollcase is now an
+independent external build tool consumed from npm; no Scrollcase source belongs
+in Liatir. The completed CI foundation and its historical evidence remain in
 [Runtime Box CI foundation](./runtime-box-ci-foundation.md). Current production
 facts and operator procedures remain in the
 [Runtime Box production report](./runtime-box-production-report.md).
 
 ## Outcome and exact scope
+
+The table below is the historical scope used by this ledger. It predates the
+pixi CUDA identities (`linux-x86_64-cuda12.9` and
+`windows-x86_64-cuda12.8`) and the self-hosted scGPT validation evidence. Use
+`runtime-boxes/catalog.json` for live target identity and status.
 
 | Target | scGPT | UCE | Scope decision |
 | --- | --- | --- | --- |

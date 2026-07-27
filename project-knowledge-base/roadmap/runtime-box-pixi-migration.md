@@ -8,16 +8,27 @@ Windows CUDA 12.8 (scientific, real RTX 4060 Ti); the macOS box is the published
 launcher re-check is done. Remaining Phase 5: migrate Geneformer and UCE, then the protected
 releases. Nothing signed/published/promoted on the pixi substrate yet.
 
+**Current ownership correction (2026-07-27):** the generic pixi/conda-pack
+builder now belongs to the independent external Scrollcase project, not to
+Liatir. This roadmap remains the Liatir recipe, runner and scientific-validation
+migration record. Liatir consumes exact public `scrollcase@0.1.2`; it must not
+vendor, deep-import or modify Scrollcase source. The live inventory is five
+pixi scGPT recipes and nine uv compatibility recipes (five Geneformer, one UCE
+and three foundation fixtures). The canonical downstream cutover status is in
+[Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md).
+
 - **Phase 0 — complete on every OS** (macOS Metal + Windows CPU/CUDA + Linux CPU/CUDA). The
   zero-cost local spike is decisive on macOS, on the harder no-rpath Windows case (CPU + CUDA, real
   RTX 4060 Ti compute), and on linux-64 (CPU + CUDA, same GPU via WSL2) — see
   [Phase 0 decision record](./runtime-box-pixi-phase0-spike.md). **No activation env is required on
   any OS.** Note the **per-OS** CUDA pin corrections below: win-64 → 12.8, linux-64 → 12.9.
-- **Phase 1 — complete on the scGPT macOS pilot.** That recipe is now pure pixi (`pixi.toml` +
+- **Phase 1 — complete on the scGPT macOS pilot.** At that phase checkpoint the
+  recipe was pure pixi (`pixi.toml` +
   `pixi.lock` + `recipe.json`, no uv artifacts) with a lock-derived conda license audit, and a real
   end-to-end build produced a signed box whose self-test passed on torch 2.8.0. The uv build path
-  is deliberately retained for the seven recipes not yet migrated (Geneformer ×5, scGPT Linux, UCE
-  macOS); deleting it is a cleanup for after the Phase 5 rebuilds.
+  was deliberately retained for the seven recipes then in scope. The current
+  nine-recipe compatibility inventory is recorded above; deleting it is P5
+  cleanup after migration.
 - **Phase 2 — complete, and it needed no Rust change at all.** Provenance is opaque in
   `runtime_boxes.rs`, so the `uvVersion`→`pixiVersion` switch was TypeScript-only; and the box
   ships with no relocation step because running `conda-unpack` is actively harmful.
@@ -25,9 +36,9 @@ releases. Nothing signed/published/promoted on the pixi substrate yet.
   Windows PowerShell launcher, four self-hosted runner profiles, every Linux/Windows model target
   repointed, and the paid `liatir-linux-t4`/`liatir-windows-t4` profiles deleted. All four
   self-hosted preflights pass against the real GitHub API. Coordination jobs stay on cheap hosted
-  runners by design. **No runner has been registered and no job has run yet** — the first dispatch
-  is the maintainer's call, and the CUDA targets are gated on Phase 4. The shared launcher still
-  needs a `--preflight-only` re-check on macOS before the next macOS job.
+  runners by design. **Historical Phase 3 checkpoint:** no runner had yet been
+  registered and no job had run. That statement is superseded by the Phase 4/5
+  native evidence below.
 - **Phase 4 — complete, and now proven on real hardware.** GPU runner profiles declare
   capability/VRAM **floors** instead of one exact card; the parity validator, host probe, evidence
   record and CUDA E2E no longer pin a Tesla T4. The scGPT Linux CUDA run below is the first CUDA
@@ -56,6 +67,10 @@ canonical for package adoption, contract inversion, the three uv foundation fixt
 and preservation of the published Geneformer CUDA 12.4 identity.
 
 ## Context
+
+This context describes the uv-era baseline that motivated the migration. It is
+not the current builder ownership: Scrollcase now owns the generic pixi builder,
+while Liatir owns the consuming recipes and product pipeline.
 
 The Runtime Box AI packaging system currently builds each box with a hand-rolled
 **uv + python-build-standalone + custom relocatability** stack. The incident ledger in
@@ -642,8 +657,12 @@ shift; re-pin fixtures — accepted).
 
 ## Representative files
 
-- Build tooling: `scripts/runtime-box.mjs`, `scripts/runtime-box-ci.mjs`,
-  `scripts/runtime-box/{python,targets,licenses,validator-context,archive}.mjs`.
+- Generic pixi build tooling: external exact npm dependency `scrollcase@0.1.2`.
+- Liatir adapter/orchestration: `scripts/runtime-box.mjs`,
+  `scripts/runtime-box/scrollcase-adapter.mjs`, `scripts/runtime-box-ci.mjs`,
+  `scripts/runtime-box/{signer-command,evidence,validator-context}.mjs`.
+- Temporary uv compatibility: `scripts/runtime-box/legacy-cli.mjs` plus the
+  uv-only helpers retained until P5 migration.
 - Recipes/catalog: `runtime-boxes/recipes/<id>/{recipe.json,pixi.toml,pixi.lock}`,
   `runtime-boxes/catalog.json`, `runtime-boxes/legal/audits/*.json`.
 - Rust/core: `src-tauri/src/bridge/{runtime_boxes,python_env,ai_runtime,managed_bins}.rs`,

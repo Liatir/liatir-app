@@ -1,8 +1,10 @@
 # Current project status
 
-Last updated: 2026-07-26 (the Runtime Box builder extraction is complete:
-Scrollcase is an independent Apache-2.0 project and `scrollcase@0.1.0` is public
-on npm. Liatir adoption remains a separate open downstream phase. The full CI
+Last updated: 2026-07-27 (the Runtime Box builder extraction is complete:
+Scrollcase is an independent Apache-2.0 project outside this repository and
+`scrollcase@0.1.2` is the exact public npm package consumed by Liatir. Scrollcase
+is not a Liatir workspace, vendored source tree, or codebase to modify from this
+repository. Liatir adoption remains a separate open downstream phase. The full CI
 substrate migration to pixi + pixi-pack +
 conda-forge on self-hosted GitHub Actions runners has been planned and approved
 in principle — see the migration plan below. Its **Phase 0 relocation/activation
@@ -106,15 +108,15 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   the current support matrix, production topology, reviewed evidence, protected
   identities, and operator handoff.
 - [Runtime Box model platform expansion](./roadmap/runtime-box-model-platform-expansion.md) —
-  the active execution plan to bring scGPT and UCE to Linux CPU/CUDA and
-  Windows CPU; its P0 local portability correction is complete and P1 Linux
-  CPU has complete corrected native lifecycle evidence; its first protected
-  release stopped at the KMS-backed build before publication.
+  the historical pre-pixi execution ledger for scGPT/UCE portability and early
+  protected-release defects. Its evidence remains useful, but its target table
+  and dispatch instructions are superseded by the pixi migration and Scrollcase
+  P5 plan.
 - [Runtime Box pixi migration](./roadmap/runtime-box-pixi-migration.md) — the
-  approved-in-principle plan to replace the uv/python-build-standalone builder
-  with pixi + pixi-pack + conda-forge (Variant A + a contained PyPI escape
-  hatch) on self-hosted GitHub Actions runners, standardize torch on 2.8.0, and
-  re-validate every box. **Phases 0–4 complete; Phase 5 in progress** — scGPT is
+  active Liatir recipe/runner/scientific migration onto the independent
+  Scrollcase pixi + conda-pack + conda-forge builder (Variant A + a contained
+  PyPI escape hatch), using self-hosted GitHub Actions runners and torch 2.8.0.
+  **Phases 0–4 complete; Phase 5 in progress** — scGPT is
   validated on the pixi substrate across every non-macOS target (Linux CPU/CUDA,
   Windows CPU/CUDA) plus the published macOS pilot, all on self-hosted CI including
   real CUDA on the RTX 4060 Ti. Remaining Phase 5: migrate Geneformer and UCE, then
@@ -147,16 +149,19 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   tarball inspection, and a browser bundle. The original extraction CI run
   `30209373381` passed all 11 Node 20/22/24 jobs across Linux, macOS and Windows
   plus package/audit/docs gates.
-  **P5.0 through P5.2 are complete in Liatir and are not part of Scrollcase's
-  extraction:** `@liatir/core` consumes/refines the published generic contract,
-  and the stable Runtime Box CLI now routes keygen/verify and pixi lock/build
-  through the exact installed package. Liatir forces the existing namespace,
-  supplies its private Cloud Run signer through Scrollcase's external-command
-  boundary, composes verification receipts only after local checks, and retains
-  all CI/evidence and distribution verbs. The nine uv recipes remain on an
-  explicit temporary compatibility path and direct pixi use of that path fails
-  closed. The remaining P5 phases migrate those recipes, then delete the
-  superseded local generic builder/contract copies.
+  **P5.0 and P5.1 are complete; P5.2 has a local implementation checkpoint but
+  its exit gate is still open.** `@liatir/core` consumes/refines the published
+  generic contract. The local P5.2 adapter checkpoint routes keygen/verify and pixi
+  lock/build through the exact installed package, forces the existing namespace,
+  supplies the private Cloud Run signer through Scrollcase's external-command
+  boundary, and keeps CI/evidence/distribution in Liatir. That is consumer-side
+  integration only: no Scrollcase source is present or modified here.
+  The checkpoint is not yet a closed adoption gate because build/verify have only
+  adapter-level synthetic coverage, not a real clean Scrollcase fixture cycle,
+  and the proposed workflow path changes have not been reconciled with the
+  self-hosted/manual native-runner policy. The nine uv recipes remain on an
+  explicit temporary compatibility path. The remaining P5 phases close that gate,
+  migrate those recipes, then delete the superseded local generic builder copies.
   Geneformer and UCE still require pixi recipes before Scrollcase can build them.
   Liatir continues to own Runtime Box distribution and product concerns: CI/runner
   policy, scientific validation, R2/Registry publication, KMS custody, trust roots,
@@ -165,14 +170,17 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   the detailed implementation plan for consuming the published package, inverting
   the generic contract, adding the Liatir signer/evidence/distribution adapter,
   migrating the nine remaining uv recipes, preserving legacy CUDA target identity,
-  and retiring the local generic builder. Status: **P5.0 through P5.2 complete;
-  stopped before P5.3**. Liatir pins public `scrollcase@0.1.2`, consumes generic
+  and retiring the local generic builder. Status: **P5.0 and P5.1 complete;
+  P5.2 implementation in progress; P5.3 not started**. Liatir pins public
+  `scrollcase@0.1.2`, consumes generic
   types and browser-safe helpers, preserves `liatir.runtime-box.*`, and passes
   the complete `test:verify` gate with 218 unit/contract tests. The stable CLI is
-  a thin adapter; pixi operations use Scrollcase, while distribution and the
-  visible temporary uv compatibility branch remain Liatir-owned. No recipe,
-  trust root, published box, remote runner, publication, promotion or deployment
-  changed in P5.2.
+  locally implemented as a thin adapter; pixi operations are intended to use the
+  installed external tool, while distribution and the visible temporary uv
+  compatibility branch remain Liatir-owned. A real synthetic package cycle and
+  accepted self-hosted/manual workflow wiring still gate P5.2 completion. No
+  recipe, trust root, published box, remote runner, publication, promotion or
+  deployment changed at this checkpoint.
 
 ## Where the project is
 
@@ -414,7 +422,13 @@ Commit trail on `main`: `69b7df2`, `657a52b`, `94d93e8`, `c6eba27`, `6534f1b`,
 Windows release runs were spent isolating these one at a time, because the
 Windows lifecycle E2E cannot be reproduced on the macOS dev host.
 
-## GPU runner facts (established 2026-07-20 — previously undocumented)
+## Historical hosted GPU runner snapshot (2026-07-20 — superseded)
+
+This section records the old paid larger-runner configuration and the incidents
+that occurred on it. It is not the current runner topology. The
+`liatir-linux-t4` and `liatir-windows-t4` profiles were later deleted; current
+Linux/Windows model-native validation resolves to reviewed on-demand
+self-hosted profiles. Only coordination/preflight jobs remain hosted by design.
 
 The CUDA runner labels `liatir-linux-t4` / `liatir-windows-t4` (catalog
 `runnerProfiles`) are **GitHub-managed GPU larger runners**, not self-hosted and
@@ -446,15 +460,14 @@ first).
 
 ## Next steps
 
-> **In-flight strategic change (2026-07-24):** the [Runtime Box pixi
-> migration](./roadmap/runtime-box-pixi-migration.md) is replacing the box
-> builder with pixi + conda-forge on self-hosted runners and will re-validate
-> every box on torch 2.8.0. **Phases 0–2 are done** (spike decisive on all three
-> OSes; scGPT macOS pilot migrated and building; Rust layer unchanged);
-> **Phase 3, self-hosted ephemeral CI, is the next one to start.** It reframes
-> how the model-platform-expansion targets below are built and validated, so
-> prefer migrating a target over rebuilding it on the old uv path. Each further
-> phase begins only on explicit maintainer go-ahead, one at a time.
+> **Current strategic routing (2026-07-27):** the [Runtime Box pixi
+> migration](./roadmap/runtime-box-pixi-migration.md) owns Liatir recipe,
+> self-hosted-runner and scientific migration. The independent external
+> Scrollcase package owns the generic pixi builder, and
+> [Scrollcase P5](./roadmap/scrollcase-p5-liatir-adoption.md) owns downstream
+> adoption/legacy retirement. Phases 0–4 of the pixi migration are complete;
+> Phase 5 and P5.2 are in progress. Do not use the historical platform-expansion
+> target table as a dispatch source.
 
 1. Continue the [pixi migration](./roadmap/runtime-box-pixi-migration.md) Phase 5,
    which has **reframed and largely absorbed** the old model-platform-expansion
@@ -475,8 +488,10 @@ first).
    review. The candidate classification lives in `roadmap/ai-batches.md`.
 5. Do not dispatch another Gate 9 UCE release; the on-demand runner remains
    offline unless a separately reviewed future heavy build requires it.
-6. Do not dispatch Windows CUDA on the current hosted runner. Reconsider it only
-   under the explicit re-entry conditions recorded in the canonical ledger.
+6. Do not dispatch the legacy Geneformer Windows CUDA 12.4 candidate from the
+   historical hosted-runner plan. scGPT Windows CUDA 12.8 has self-hosted
+   scientific evidence but remains unpublished; any further validation or
+   release still needs one explicit reviewed target authorization.
 
 ## Standing constraints
 

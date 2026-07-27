@@ -8,6 +8,8 @@ For the exact production resources and evidence, see the
 [Runtime Box production report](../roadmap/runtime-box-production-report.md).
 For the complete engineering history, see the
 [Runtime Box CI foundation ledger](../roadmap/runtime-box-ci-foundation.md).
+For the current builder ownership and migration boundary, see
+[Scrollcase P5 — Liatir adoption](../roadmap/scrollcase-p5-liatir-adoption.md).
 
 ## The short version
 
@@ -22,6 +24,13 @@ An AI Model usually needs much more than one model file. It may need:
 
 A **Runtime Box** packages those pieces into one signed, target-specific,
 installable archive.
+
+The generic box builder is **Scrollcase**, an independent Apache-2.0 tool
+published on npm and consumed by Liatir as an exact build-time dependency.
+Scrollcase is not part of this repository and is not used by the installed
+desktop app at runtime. Liatir owns the recipes, scientific validation,
+private-signer adapter, CI/evidence, distribution and product integration
+around the generic tool.
 
 You can think of it as a sealed scientific appliance:
 
@@ -55,11 +64,12 @@ The complete current product catalog is:
 | UCE 4-layer | macOS arm64 Metal |
 
 All three run through the shared Single-cell Embedding AI Tool. Geneformer has
-completed the current native matrix. scGPT and UCE currently have only their
-macOS boxes, so they still carry pre-release cross-platform support debt: Linux
-CPU/CUDA and Windows CPU must be built and validated before either model is
-generally available. Windows CUDA is not supported; CUDA validation currently
-exists only on Linux.
+completed its currently supported published matrix. scGPT and UCE currently
+have only their macOS boxes published, so they still carry pre-release
+cross-platform support debt. scGPT Linux CPU/CUDA and Windows CPU/CUDA
+candidates have native or scientific validation on self-hosted hardware but are
+not published. Windows CUDA therefore remains unsupported in the product even
+though the scGPT candidate path has hardware evidence.
 
 A future model must complete the same legal, build, scientific, signing,
 publication, product lifecycle, and evidence gates for every feasible native
@@ -124,7 +134,7 @@ installation.
 A **recipe** is the reviewed build instruction for one model and one target. It
 declares items such as:
 
-- the Python and `uv` versions;
+- the Python and pinned pixi versions for the current Scrollcase substrate;
 - the dependency lock;
 - source and model asset URLs;
 - SHA-256 hashes;
@@ -135,6 +145,11 @@ declares items such as:
 
 The recipe is not the Runtime Box itself. It is the reproducible instruction
 used to build the box.
+
+Five scGPT recipes currently use pixi and are eligible for the Scrollcase path.
+Nine older Geneformer, UCE and foundation recipes still use uv through an
+explicit Liatir compatibility builder while P5 migration remains open. That
+compatibility path is transitional, not a second generic source of truth.
 
 ### Dependency lock
 
@@ -303,8 +318,10 @@ Unknown combinations stop before an expensive machine is allocated.
 
 #### 4. Perform cheap preflight checks
 
-Standard runners validate the catalog, legal records, target contract,
-dependency-lock hash, workflow input, and calculated disk requirement first.
+Coordination/preflight jobs validate the catalog, legal records, target
+contract, dependency-lock hash, workflow input, and calculated disk requirement
+before native allocation. Heavy model-native jobs use the reviewed on-demand
+self-hosted runner profiles; a preflight job does not authorize starting one.
 
 This is important because a GPU or private runner should not be used to
 discover a typo that a cheap check could have found.
@@ -316,16 +333,18 @@ discover a typo that a cheap check could have found.
 The native runner verifies its actual platform, architecture, free disk, and,
 when relevant, GPU model and driver.
 
-This is where the Windows CUDA runner was rejected: its NVIDIA driver is too
-old for CUDA 12.4. The failure occurs before downloading and building the large
-runtime.
+The historical hosted Windows CUDA runner was rejected because its NVIDIA
+driver was too old for CUDA 12.4. Current candidate validation uses reviewed
+self-hosted profiles, but a validated candidate is still not a published or
+supported product target.
 
 #### 6. Build the Runtime Box
 
-The builder:
+For a migrated pixi recipe, Liatir's stable operator command invokes the exact
+installed Scrollcase executable. Scrollcase:
 
-1. installs the pinned standalone Python distribution;
-2. synchronizes the exact dependency lock;
+1. installs the exact environment from the committed `pixi.lock`;
+2. packs and relocates the conda-forge environment with conda-pack;
 3. downloads and hash-checks every model asset;
 4. safely extracts approved archives;
 5. removes only explicitly reviewed unnecessary files;
@@ -334,14 +353,18 @@ The builder:
 8. creates a normalized immutable archive;
 9. calculates archive and installed sizes.
 
-“Standalone Python” means the final user does not need to install the correct
-Python version separately.
+The resulting box remains self-contained: the final user does not install
+Scrollcase, pixi, conda-pack, or Python. The nine uv recipes temporarily follow
+Liatir's checked compatibility builder until they migrate; new generic pixi
+work must not bypass Scrollcase.
 
 #### 7. Run an independent self-test
 
-After building, CI verifies the signed release and extracts it again as an
-independent consumer would. It checks the signature, archive hash, layout, and
-required imports.
+After building, Scrollcase verifies the signed release and extracts it again as
+an independent consumer would. Liatir composes its evidence receipt only after
+that verification succeeds and the signed payload, archive size and archive
+SHA-256 agree. Required imports and model-specific scientific checks remain
+Liatir evidence.
 
 This catches boxes that worked only inside the temporary build directory.
 
@@ -385,8 +408,12 @@ Approved GitHub workflow
   -> signature verified with the public key
 ```
 
-The current build operation obtains the signature before publication. The
-workflow still blocks publication and promotion unless the later independent
+For protected builds, Scrollcase hands the exact canonical payload bytes to
+Liatir's external signer command. That adapter obtains the short-lived identity
+and calls the private Cloud Run service; Scrollcase accepts the result only if
+the returned envelope contains the same payload and a locally valid signature.
+No Cloud Run, GCP, KMS, Registry or Liatir credential knowledge enters
+Scrollcase. Publication and promotion remain blocked until the later
 verification and scientific checks pass.
 
 #### 10. Publish immutable objects
@@ -556,6 +583,11 @@ Define identities
 
 ## What each gate accomplished
 
+The gate summaries below are historical evidence from the original uv-era
+foundation. They explain what was proven, not who owns the generic builder
+today. Scrollcase extraction and P5 adoption preserve those Runtime Box product,
+trust and lifecycle guarantees while replacing the producer implementation.
+
 ### Gate 0: one target identity contract
 
 **Question:** Do all languages and components mean the same thing when they say
@@ -705,7 +737,7 @@ We audited macOS arm64 Metal, Linux CPU, Linux CUDA, and Windows CPU. We aligned
 the catalog, shared core, support matrix, readiness claims, production records,
 and product evidence.
 
-macOS regression run `29880520628` proved that the current shared builder still
+macOS regression run `29880520628` proved that the then-current shared builder still
 passed clean build, self-test, Metal parity, Rust lifecycle, evidence, and
 cleanup. It did not republish because no shared-builder incompatibility was
 found.
@@ -923,8 +955,11 @@ their own scoped evidence.
 | Recipes and dependency locks | `runtime-boxes/recipes/` |
 | Legal reviews | `runtime-boxes/legal/` |
 | Shared TypeScript contract | `packages/liatir-core/src/runtime-box.ts` |
-| Build, verify, publish, promote, and revoke CLI | `scripts/runtime-box.mjs` |
-| CI orchestration helpers | `scripts/runtime-box-ci.mjs` and `scripts/runtime-box/` |
+| Generic box contract, pixi build, signing envelope and verify | External exact npm dependency `scrollcase@0.1.2`; public exports and declared `scrollcase` executable only |
+| Stable Liatir operator dispatcher | `scripts/runtime-box.mjs` and `scripts/runtime-box/scrollcase-adapter.mjs` |
+| Private signer adapter | `scripts/runtime-box/signer-command.mjs` |
+| Liatir distribution and temporary uv compatibility | `scripts/runtime-box/legacy-cli.mjs` until P5 migration splits/deletes the generic legacy path |
+| CI orchestration and evidence | `scripts/runtime-box-ci.mjs`, `scripts/runtime-box/evidence.mjs`, and model validators |
 | Protected production release | `.github/workflows/runtime-box-release.yml` |
 | Protected signer deployment | `.github/workflows/runtime-box-signer-deploy.yml` |
 | Signer policy | `services/runtime-box-signer/policy.json` |

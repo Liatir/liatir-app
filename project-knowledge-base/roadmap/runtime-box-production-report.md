@@ -8,6 +8,16 @@ Box CI foundation. The canonical gate history remains in
 machine-readable release state remains in `runtime-boxes/catalog.json` and its
 referenced compact evidence records.
 
+This report is a production-evidence snapshot, not the current builder
+implementation guide. The releases below were built before Liatir adopted the
+external Scrollcase package and remain valid because P5 preserves their signed
+`liatir.runtime-box` wire contract, target IDs, trust roots and immutable object
+paths. For new build ownership and migration status, use
+[Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md):
+Scrollcase owns the generic pixi build/signing-envelope/verify implementation;
+Liatir consumes the published tool and retains recipes, scientific validation,
+private signer custody, CI/evidence, distribution and product lifecycle.
+
 ## Foundation outcome
 
 Gates 0 through 10 are complete for the approved foundation scope. The

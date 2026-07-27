@@ -31,6 +31,15 @@ GitHub Actions runs the repository CI weekly, on manual dispatch, and for pull
 requests that change code. Direct pushes to `main` are intentionally covered by
 the weekly batch instead of starting a macOS runner for every small commit.
 
+Runtime Box workflows have their own trigger and cost policy and are not
+described by that general rule. Heavy model-native jobs resolve to reviewed
+on-demand self-hosted runner profiles; hosted jobs are coordination/preflight
+only. The older foundation workflow still has path-filtered push/schedule
+triggers and a standard hosted OS fixture matrix. Its relationship to the P5
+Scrollcase adapter changes is currently under review: do not widen or trigger
+that matrix as an incidental consequence of a normal push, and never treat a
+queued job as authorization to start a self-hosted runner.
+
 - `LIATIR_RUN_HEAVY_AI=1 npm run test:heavy:ai`
   Runs the gated heavy AI profile. This can exercise large AI Model catalog
   checks and, when `LIATIR_HEAVY_AI_INSTALL=1` is also set, install selected

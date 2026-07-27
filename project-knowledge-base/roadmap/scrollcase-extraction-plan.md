@@ -7,12 +7,14 @@ original release). The temporary in-tree `scrollcase/` copy was removed from Lia
 in commit `6b4934e`.
 
 **Remaining downstream work:** **P5 is in progress in Liatir; P5.0 and P5.1 are
-complete, and execution is stopped before P5.2.** Liatir pins the published
-browser-safe `scrollcase@0.1.2` and the contract inversion passes the full
-frontend gate. Liatir still uses the historical in-tree Runtime Box builder.
-The remaining phases plug
-the private KMS signer into the external-signer interface, migrate the remaining uv
-recipes, and then delete the superseded local builder and generic contract copies.
+complete, P5.2 has a local implementation checkpoint with open exit
+gates, and P5.3 has not started.** Liatir pins the published browser-safe
+`scrollcase@0.1.2` and the contract inversion passes the full frontend gate.
+The local P5.2 checkpoint adds the consumer adapter, private-signer command and
+explicit distribution/legacy-uv routing, but still needs a real clean
+Scrollcase fixture cycle and accepted self-hosted/manual workflow wiring.
+The remaining phases close that boundary, migrate the remaining uv recipes,
+and then delete the superseded local generic builder copies.
 This integration does not change Scrollcase's completed extraction or its
 independence. The detailed canonical execution plan is
 [Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md).
@@ -27,6 +29,10 @@ P0 for the rationale and the two Liatir-side caveats that do **not** gate extrac
 ---
 
 ## Context (why)
+
+The following context and move map describe the pre-extraction Liatir source at
+the time P1–P4 were planned. They are historical provenance, not a claim that
+Scrollcase source still exists in this repository.
 
 The Runtime Box builder (`scripts/runtime-box*.mjs` + `scripts/runtime-box/`, ~3,900 LOC) turns a
 declarative **recipe** into a signed, verifiable, installable Python environment box for scientific
@@ -286,10 +292,13 @@ Today the box-format contract is **triplicated** and kept in sync by the golden 
 - **P4 — New repo + Apache-2.0 packaging: DONE (2026-07-26).** Scrollcase now lives in its
   standalone public repository with its own CI, documentation and package surface;
   `scrollcase@0.1.0` is public on npm. See the P4 execution record.
-- **P5 — Invert & consume: IN PROGRESS. P5.0 and P5.1 complete; stopped before P5.2.**
+- **P5 — Invert & consume: IN PROGRESS. P5.0 and P5.1 complete; P5.2 local
+  implementation checkpoint under review; P5.3 not started.**
   Core contract aliases/refinements and compatibility fixtures across Node,
   Worker, signer and Rust are implemented and the full frontend gate passes with
-  the published browser-safe `scrollcase@0.1.2`. Follow the
+  the published browser-safe `scrollcase@0.1.2`. The local adapter checkpoint is
+  not a closed gate until a real package fixture and the self-hosted/manual
+  workflow boundary are proven. Follow the
   [canonical P5 execution plan](./scrollcase-p5-liatir-adoption.md): prove the published
   package surface, invert the contract, add the Liatir signer/evidence/distribution adapter,
   migrate all active uv recipes, then delete the local generic builder.
@@ -601,7 +610,7 @@ reported zero vulnerabilities.
 - The release head verified during closure was
   `a0f48de3b3bcad160ca5e7a4bac963e8e64bb4ac`.
 
-### Liatir boundary after extraction
+### Liatir boundary at P4 extraction closure (historical snapshot)
 
 Commit `6b4934e` removed the temporary full `scrollcase/` tree from `liatir-stack`; the
 standalone repository is now the only Scrollcase source tree. Liatir deliberately retained
@@ -610,11 +619,20 @@ model recipes and scientific validators, R2/Registry publication, KMS signer dep
 key custody, the Rust/Tauri installer, Jobs/Results/provenance integration, and production
 trust roots.
 
-P5 is not yet complete: the root `runtime-box*` scripts still invoke Liatir's local
-`scripts/runtime-box*.mjs`, `@liatir/core` does not yet depend on `scrollcase`, and the local
-box-format contract remains in place. Geneformer and UCE also still need pixi recipes before
-Scrollcase can build them. These are Liatir adoption and model-migration tasks, not missing
-pieces of the extracted tool.
+At P4 closure, the root `runtime-box*` scripts still invoked Liatir's local
+builder, `@liatir/core` did not yet depend on `scrollcase`, and the local
+box-format contract remained in place. That paragraph is no longer the current
+P5 state; it records why downstream adoption remained necessary.
+
+### Current downstream boundary
+
+Liatir now consumes the exact published package for the generic contract.
+The P5.2 checkpoint also routes generic pixi commands through the
+installed package and keeps signer adaptation, CI/evidence and distribution in
+Liatir. Nine uv recipes still require the explicit compatibility builder.
+Geneformer and UCE still need pixi recipes before Scrollcase can build them.
+These are Liatir adoption and model-migration tasks, not missing pieces of the
+independent tool.
 
 ## P5 acceptance summary
 

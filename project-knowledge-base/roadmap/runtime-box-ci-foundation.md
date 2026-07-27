@@ -4,6 +4,18 @@ This tracked document is the durable implementation plan and handoff source for
 Runtime Box CI work. Keep it current so development can continue from a local
 checkout or GitHub Codespaces without relying on machine-local agent memory.
 
+**Current routing note (2026-07-27):** Gates 0–10 below are closed historical
+evidence for the original uv-era foundation. They remain authoritative for the
+product, trust, distribution and lifecycle guarantees they proved, but not for
+current generic builder ownership or every later target status. Scrollcase is
+now an independent external npm tool and Liatir's active adoption/migration
+state lives in
+[Scrollcase P5](./scrollcase-p5-liatir-adoption.md),
+[the pixi migration](./runtime-box-pixi-migration.md), and
+`runtime-boxes/catalog.json`. Statements such as “CUDA is validated only on
+Linux” are true at the dated Gate 10 closure, not a claim about later scGPT
+self-hosted candidate evidence.
+
 ## Objective
 
 Prove that Liatir can build, validate, sign, publish, install, run, and remove a

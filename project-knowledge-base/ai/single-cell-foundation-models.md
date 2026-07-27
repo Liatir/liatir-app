@@ -9,9 +9,15 @@ Batch 5 has three installable/runnable slices: UCE 4-layer, Geneformer V1 10M,
 and scGPT Whole-human. All three use signed Runtime Boxes. UCE's protected
 macOS arm64 release completed in run `29909249357`; Geneformer has reviewed
 production and native lifecycle evidence across macOS Metal, Linux CPU/CUDA,
-and Windows CPU; scGPT has a signed macOS arm64 box. These three entries are
-the complete product AI Model catalog; scFoundation is not registered or
-visible.
+and Windows CPU; scGPT has a signed macOS arm64 box plus unpublished
+self-hosted validation evidence for Linux CPU/CUDA 12.9 and Windows CPU/CUDA
+12.8. These three entries are the complete product AI Model catalog;
+scFoundation is not registered or visible.
+
+Runtime Box production uses Scrollcase as an independent external build-time
+tool. Liatir consumes its exact published npm package and owns the
+model-specific recipes, scientific validation, signer custody, distribution
+and product lifecycle. Scrollcase source is not part of this repository.
 
 ## Official sources checked on 2026-07-02 and 2026-07-03
 

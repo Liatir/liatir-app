@@ -2,7 +2,8 @@
 
 Last reviewed: 2026-07-27
 
-Status: **in progress — P5.0 through P5.2 complete; stopped before P5.3**
+Status: **in progress — P5.0 and P5.1 complete; P5.2 local implementation
+checkpoint under review; P5.3 not started**
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project and
@@ -87,14 +88,15 @@ P5 is complete only when all of the following are true:
 
 ### Builder and orchestration
 
-`scripts/runtime-box.mjs` currently combines two different responsibilities:
+The local P5.2 checkpoint makes `scripts/runtime-box.mjs` a small consumer-side
+dispatcher. Generic pixi commands are routed to the executable declared by the
+exact installed `scrollcase@0.1.2` package; Liatir distribution commands remain
+local. The nine uv recipes still use an explicit compatibility implementation
+under `scripts/runtime-box/legacy-cli.mjs` until P5.3/P5.4 migrate them.
 
-- generic builder commands: `keygen`, `lock`, `build`, `verify`;
-- Liatir distribution commands: `publish`, `promote`, `revoke`, `serve`.
-
-The second group stays in Liatir. Scrollcase deliberately has no distribution
-verbs. `scripts/runtime-box-ci.mjs`, the validation/release workflows, and the
-product-lifecycle launcher also rely on Liatir-only flags and receipts:
+Scrollcase deliberately has no Liatir distribution verbs.
+`scripts/runtime-box-ci.mjs`, the validation/release workflows, and the
+product-lifecycle launcher rely on Liatir-only flags and receipts:
 
 - private signer URL and audience;
 - `.runtime-box-ci` verification/build/publication receipts;
@@ -156,7 +158,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | --- | --- | --- |
 | P5.0 — published-package/API preflight | Complete | Exact public `scrollcase@0.1.2`; clean install and package/API probes green |
 | P5.1 — contract inversion | Complete | Core, Node, Worker, signer, Rust and frontend production build agree |
-| P5.2 — Liatir adapter and distribution split | Complete | Stable adapter routes pixi work to Scrollcase and keeps distribution in Liatir |
+| P5.2 — Liatir adapter and distribution split | In progress | Local adapter implemented; real package cycle and accepted self-hosted/manual workflow wiring still required |
 | P5.3 — fixture migration | Pending | Three pixi fixtures; foundation gates green |
 | P5.4 — model-recipe migration | Pending | Geneformer/UCE active recipes no longer require uv |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
@@ -208,9 +210,10 @@ reading history, but it is not an acceptable dependency or test input.
 - `scrollcase/contract/types` is a declared types-only export; runtime helpers are
   under `scrollcase/contract`. Verify that TypeScript can type the runtime import
   under Liatir's `moduleResolution` settings.
-- The source repository contains high-level `buildBox` and `verifyBox` functions,
-  but `scrollcase@0.1.0` must be judged only by its published `exports` map. Do not
-  deep-import those source files.
+- At the P5.0 checkpoint, the source repository contained high-level `buildBox`
+  and `verifyBox` functions, but `scrollcase@0.1.0` had to be judged only by its
+  published `exports` map. The same consumer rule applies to the current
+  `0.1.2` pin: source-repository visibility never authorizes a deep import.
 - The Scrollcase CLI correctly does not understand Liatir's signer URL, audience,
   receipt, publish, promote, revoke, or serve flags. P5.2 supplies those
   consumer-side adapters.
@@ -220,10 +223,11 @@ reading history, but it is not an acceptable dependency or test input.
 If a required generic capability cannot be reached through the published package:
 
 1. stop the Liatir cutover;
-2. add the smallest vendor-neutral public API or declaration in the Scrollcase
-   repository with its own tests/docs/changelog;
-3. ask the maintainer to publish a new Scrollcase version;
-4. pin that new immutable version in this plan before resuming.
+2. record the smallest vendor-neutral public API or declaration that the
+   external tool would need;
+3. stop and ask the Scrollcase maintainer to implement and publish it in that
+   independent project; Liatir-side work must not modify the external source;
+4. pin the resulting immutable published version in this plan before resuming.
 
 Never work around a missing export with a deep import, sibling path, copied module,
 postinstall patch, or `any` declaration. Only the maintainer may run `npm publish`.
@@ -494,7 +498,7 @@ from file existence or console text alone.
 - publish/promote/revoke/serve tests remain Liatir-owned and green;
 - no distribution or credential knowledge enters Scrollcase.
 
-### P5.2 implementation record — complete
+### P5.2 local implementation checkpoint — exit gate open
 
 The stable `npm run runtime-box -- ...` surface now enters the thin
 `scripts/runtime-box.mjs` dispatcher. `scripts/runtime-box/scrollcase-adapter.mjs`
@@ -524,18 +528,26 @@ silent fallback.
 
 `runtime-box-ci.mjs tracked-build` still enters through the stable npm command and
 therefore reaches the adapter while preserving the existing heartbeat and metric
-wrapper. Foundation, scGPT, Geneformer and UCE workflow path filters now watch the
-root package manifest, lockfile, stable CLI and adapter modules. The package bin,
-npm, heartbeat and signer invocations remain shell-free on Windows and preserve
-quoted arguments.
+wrapper. The package bin, npm, heartbeat and signer invocations remain shell-free
+on Windows and preserve quoted arguments.
+
+The checkpoint also proposed widening foundation and model workflow path filters
+to the package manifest, lockfile and adapter. That wiring is **not accepted as
+the final P5.2 state**: it can cause a normal push to enqueue GitHub-hosted
+foundation jobs, while the current heavy-model policy uses explicit,
+on-demand self-hosted native runners with only coordination work hosted. Reconcile
+or remove those automatic triggers before push; do not treat a path-filter match
+as authorization to allocate any runner.
 
 The synthetic adapter fixture exercises real key generation through the installed
 published CLI, pixi build routing with the frozen namespace, verification and
 receipt composition, local shared-envelope signing, all Liatir distribution
-routes, and the temporary uv branch. Native box construction is deliberately
-deferred to the one-target-at-a-time P5.3/P5.4 gates; P5.2 did not download a
-toolchain or model, allocate a runner, publish, promote, deploy, or change a trust
-root.
+routes, and the temporary uv branch. Build and verify subprocesses are injected
+in that adapter test; this is not the exit gate's required clean, real
+Scrollcase keygen/build/verify fixture cycle. Native model construction remains
+outside P5.2, but the small real package fixture must still close the adapter
+boundary before P5.3. This checkpoint did not download a toolchain or model,
+allocate a runner, publish, promote, deploy, or change a trust root.
 
 Evidence on 2026-07-27:
 
@@ -548,7 +560,8 @@ Evidence on 2026-07-27:
 - targeted adapter, signer, receipt, publisher, deployment, CI path-filter and
   Windows invocation regressions passed.
 
-Execution stops here before P5.3.
+P5.2 remains open. Do not start P5.3 until the real synthetic package cycle is
+green and the workflow trigger/runner policy has an explicitly accepted shape.
 
 ## P5.3 — Migrate the three foundation fixtures
 
@@ -847,7 +860,8 @@ into one readiness claim.
 
 Stop and report evidence when any of these occurs:
 
-1. `scrollcase@0.1.0` lacks a required public export or usable declaration.
+1. The exact pinned `scrollcase@0.1.2` package lacks a required public export or
+   usable declaration.
 2. A Liatir build would require a deep import, copied Scrollcase code, sibling
    checkout, global install, or `any` contract shim.
 3. A wire fixture, namespace, target ID, payload encoding, signature, archive
