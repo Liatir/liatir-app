@@ -43,6 +43,7 @@ describe('scrollcase workspace resolution', () => {
     expect(workspace.buildDir).toBe(resolve(root, DEFAULT_WORKSPACE_PATHS.build));
     expect(workspace.distDir).toBe(resolve(root, DEFAULT_WORKSPACE_PATHS.dist));
     expect(workspace.keysDir).toBe(resolve(root, DEFAULT_WORKSPACE_PATHS.keys));
+    expect(workspace.toolchainDir).toBe(resolve(root, DEFAULT_WORKSPACE_PATHS.toolchain));
   });
 
   it('discovers the project config by walking up from a nested working directory', async () => {
@@ -72,6 +73,30 @@ describe('scrollcase workspace resolution', () => {
     expect(workspace.recipesDir).toBe(join(root, 'boxes'));
   });
 
+  it('accepts the toolchain path emitted by the published Scrollcase initializer', async () => {
+    const root = await makeProject({
+      version: 1,
+      paths: {
+        recipes: 'recipes',
+        build: '.scrollcase/build',
+        dist: '.scrollcase/dist',
+        keys: '.scrollcase/keys',
+        toolchain: '.scrollcase/toolchain',
+      },
+    });
+    created.push(root);
+    const workspace = resolveWorkspace({ cwd: root });
+    expect(workspace.toolchainDir).toBe(join(root, '.scrollcase', 'toolchain'));
+
+    const overridden = resolveWorkspace({
+      cwd: root,
+      overrides: workspaceOverridesFromFlags(
+        new Map([['toolchain-dir', 'checked-toolchain']]),
+      ),
+    });
+    expect(overridden.toolchainDir).toBe(join(root, 'checked-toolchain'));
+  });
+
   it('accepts absolute path overrides and an explicit project root', async () => {
     const root = await makeProject();
     created.push(root);
@@ -98,9 +123,15 @@ describe('scrollcase workspace resolution', () => {
   });
 
   it('reads workspace flags out of raw arguments in both forms and ignores the rest', async () => {
-    expect(workspaceOverridesFromArgv(['--model', 'x', '--recipes-dir', 'r', '--out-dir=o'])).toEqual({
+    expect(workspaceOverridesFromArgv([
+      '--model', 'x',
+      '--recipes-dir', 'r',
+      '--out-dir=o',
+      '--toolchain-dir', 't',
+    ])).toEqual({
       recipes: 'r',
       dist: 'o',
+      toolchain: 't',
     });
     expect(workspaceOverridesFromArgv(['--mode', 'build'])).toEqual({});
   });

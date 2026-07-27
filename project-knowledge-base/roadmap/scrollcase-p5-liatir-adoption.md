@@ -2,8 +2,9 @@
 
 Last reviewed: 2026-07-27
 
-Status: **in progress — P5.0 and P5.1 complete; P5.2 local implementation
-checkpoint under review; P5.3 not started**
+Status: **blocked — P5.0 and P5.1 complete; the Liatir side of P5.2 is
+implemented, but the real consumer cycle exposes a packaging defect in published
+`scrollcase@0.1.2`; P5.3 not started**
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project and
@@ -158,7 +159,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | --- | --- | --- |
 | P5.0 — published-package/API preflight | Complete | Exact public `scrollcase@0.1.2`; clean install and package/API probes green |
 | P5.1 — contract inversion | Complete | Core, Node, Worker, signer, Rust and frontend production build agree |
-| P5.2 — Liatir adapter and distribution split | In progress | Local adapter implemented; real package cycle and accepted self-hosted/manual workflow wiring still required |
+| P5.2 — Liatir adapter and distribution split | Blocked on external package | Liatir adapter and manual native-workflow guard implemented; published `scrollcase@0.1.2` fails the real fixture build while safely extracting the conda-pack tar |
 | P5.3 — fixture migration | Pending | Three pixi fixtures; foundation gates green |
 | P5.4 — model-recipe migration | Pending | Geneformer/UCE active recipes no longer require uv |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
@@ -498,7 +499,7 @@ from file existence or console text alone.
 - publish/promote/revoke/serve tests remain Liatir-owned and green;
 - no distribution or credential knowledge enters Scrollcase.
 
-### P5.2 local implementation checkpoint — exit gate open
+### P5.2 local implementation checkpoint — blocked on the published package
 
 The stable `npm run runtime-box -- ...` surface now enters the thin
 `scripts/runtime-box.mjs` dispatcher. `scripts/runtime-box/scrollcase-adapter.mjs`
@@ -531,37 +532,71 @@ therefore reaches the adapter while preserving the existing heartbeat and metric
 wrapper. The package bin, npm, heartbeat and signer invocations remain shell-free
 on Windows and preserve quoted arguments.
 
-The checkpoint also proposed widening foundation and model workflow path filters
-to the package manifest, lockfile and adapter. That wiring is **not accepted as
-the final P5.2 state**: it can cause a normal push to enqueue GitHub-hosted
-foundation jobs, while the current heavy-model policy uses explicit,
-on-demand self-hosted native runners with only coordination work hosted. Reconcile
-or remove those automatic triggers before push; do not treat a path-filter match
-as authorization to allocate any runner.
+The proposed model-workflow path-filter widening has been removed. The existing
+foundation workflow still watches Liatir's Runtime Box adapter files for its cheap
+preflight, but its legacy hosted native-fixture matrix is now guarded by
+`github.event_name == 'workflow_dispatch'`. Pull requests, normal pushes and the
+schedule cannot allocate those native fixture jobs. Model-native validation
+remains explicit and on-demand on the checked self-hosted profiles; no workflow
+was dispatched while completing this checkpoint. P5.3 will migrate and rewire
+the three foundation fixtures one target at a time rather than using this
+historical hosted matrix as migration evidence.
 
 The synthetic adapter fixture exercises real key generation through the installed
 published CLI, pixi build routing with the frozen namespace, verification and
 receipt composition, local shared-envelope signing, all Liatir distribution
-routes, and the temporary uv branch. Build and verify subprocesses are injected
-in that adapter test; this is not the exit gate's required clean, real
-Scrollcase keygen/build/verify fixture cycle. Native model construction remains
-outside P5.2, but the small real package fixture must still close the adapter
-boundary before P5.3. This checkpoint did not download a toolchain or model,
-allocate a runner, publish, promote, deploy, or change a trust root.
+routes, and the temporary uv branch. The first real package cycle also exposed
+and fixed one Liatir-side defect: the consumer workspace parser did not accept
+the public `paths.toolchain` key emitted by `scrollcase init`. The parser now
+accepts that key and the corresponding `--toolchain-dir` override, with a direct
+regression.
+
+A clean temporary consumer checkout then used the stable Liatir command with the
+managed, checksum-verified pixi 0.73.0 and conda-pack 0.9.2 toolchain:
+
+1. `keygen` completed through the exact installed package;
+2. `lock` resolved and committed the generated macOS arm64 Python 3.11 lock;
+3. `build` installed the frozen environment and completed conda-pack;
+4. the package then failed while extracting its own conda-pack tar with
+   `TAR_SYMLINK_ERROR: Cannot extract through symbolic link`.
+
+A fresh diagnostic extraction with the same pinned Node `tar` implementation
+identified the exact legitimate in-prefix structure: the archive contains
+`lib/icu/current` as a symlink and later
+`lib/icu/current/pkgdata.inc`; strict extraction rejects the latter as extraction
+through a symlink. This occurs before Scrollcase's documented in-place symlink
+materialisation step. No release document or receipt was created, so `verify`
+could not truthfully run.
+
+This is not a Liatir adapter or recipe-policy decision and must not be patched
+around by pruning a dependency, deep-importing package internals, copying the
+builder, loosening archive safety, or modifying the external source from this
+repository. Under the P5.0 stop rule, the smallest required upstream change is a
+vendor-neutral safe extraction implementation that accepts legitimate
+in-prefix symlink-parent entries while still rejecting path escape, followed by
+a new immutable Scrollcase release. Liatir must then pin that release and repeat
+the complete real `keygen → lock → build → verify` cycle.
+
+This checkpoint downloaded only the small declared toolchain and stdlib fixture.
+It did not download a model, allocate a runner, publish, promote, deploy, or
+change a trust root.
 
 Evidence on 2026-07-27:
 
-- `npm run test:unit`: 35 files and 218 tests passed;
+- `npm run test:unit`: 35 files and 219 tests passed;
 - `npm run test:verify`: unit/contract tests, SDK generation, core build,
   zero-error Svelte check, frontend production build and root TypeScript compile
   passed;
 - `npm run runtime-box:test:foundation`: TAR safety, deterministic Zip64 and the
   Rust large-archive compatibility fixture passed;
+- `npm run docs:internal:build`: the tracked maintainer documentation built;
 - targeted adapter, signer, receipt, publisher, deployment, CI path-filter and
   Windows invocation regressions passed.
+- real consumer proof: keygen and lock passed; build reached frozen install and
+  conda-pack, then failed with the external extraction defect described above.
 
-P5.2 remains open. Do not start P5.3 until the real synthetic package cycle is
-green and the workflow trigger/runner policy has an explicitly accepted shape.
+P5.2 is blocked, not complete. Do not start P5.3 until a corrected published
+Scrollcase version is pinned and the real synthetic package cycle is green.
 
 ## P5.3 — Migrate the three foundation fixtures
 

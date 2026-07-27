@@ -444,7 +444,7 @@ describe('Runtime Box CI catalog', () => {
     expect(dependencyScript).toContain('xvfb');
   });
 
-  it('keeps tracked builds on the stable adapter and watches the package boundary', () => {
+  it('keeps tracked builds on the stable adapter without automatically allocating native fixtures', () => {
     const ciDispatcher = readFileSync(
       new URL('../../scripts/runtime-box-ci.mjs', import.meta.url),
       'utf8',
@@ -460,20 +460,14 @@ describe('Runtime Box CI catalog', () => {
       "import { dispatchRuntimeBox } from './runtime-box/scrollcase-adapter.mjs';",
     );
 
-    for (const workflowName of [
-      'runtime-box-foundation.yml',
-      'runtime-box-scgpt-whole-human.yml',
-      'runtime-box-geneformer-v1-10m.yml',
-      'runtime-box-uce-4layer.yml',
-    ]) {
-      const workflow = readFileSync(
-        new URL(`../../.github/workflows/${workflowName}`, import.meta.url),
-        'utf8',
-      );
-      expect(workflow).toContain('- "package.json"');
-      expect(workflow).toContain('- "package-lock.json"');
-      expect(workflow).toContain('- "scripts/runtime-box.mjs"');
-      expect(workflow).toContain('- "scripts/runtime-box/**"');
-    }
+    const foundationWorkflow = readFileSync(
+      new URL('../../.github/workflows/runtime-box-foundation.yml', import.meta.url),
+      'utf8',
+    );
+    expect(foundationWorkflow).toContain('- "scripts/runtime-box.mjs"');
+    expect(foundationWorkflow).toContain('- "scripts/runtime-box/**"');
+    expect(foundationWorkflow).toMatch(
+      /native-fixtures:\n(?:.*\n){0,4}\s+if: github\.event_name == 'workflow_dispatch'/,
+    );
   });
 });

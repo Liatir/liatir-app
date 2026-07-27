@@ -3,8 +3,6 @@ name: Runtime Box foundation
 on:
   pull_request:
     paths:
-      - "package.json"
-      - "package-lock.json"
       - "packages/liatir-core/src/runtime-box.ts"
       - "packages/liatir-core/src/ai-catalog.ts"
       - "scripts/runtime-box.mjs"
@@ -26,8 +24,6 @@ on:
   push:
     branches: [main]
     paths:
-      - "package.json"
-      - "package-lock.json"
       - "packages/liatir-core/src/runtime-box.ts"
       - "packages/liatir-core/src/ai-catalog.ts"
       - "scripts/runtime-box.mjs"
@@ -120,6 +116,7 @@ jobs:
   native-fixtures:
     name: Native fixture (${{ matrix.recipeId }})
     needs: preflight
+    if: github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       max-parallel: 1

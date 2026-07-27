@@ -3,10 +3,6 @@ name: Runtime Box Geneformer V1 10M
 on:
   pull_request:
     paths:
-      - "package.json"
-      - "package-lock.json"
-      - "scripts/runtime-box.mjs"
-      - "scripts/runtime-box/**"
       - "runtime-boxes/recipes/geneformer-v1-10m-macos-arm64-metal/**"
       - "runtime-boxes/recipes/geneformer-v1-10m-linux-x86_64-cpu/**"
       - "runtime-boxes/recipes/geneformer-v1-10m-windows-x86_64-cpu/**"
@@ -23,10 +19,6 @@ on:
   push:
     branches: [main]
     paths:
-      - "package.json"
-      - "package-lock.json"
-      - "scripts/runtime-box.mjs"
-      - "scripts/runtime-box/**"
       - "runtime-boxes/recipes/geneformer-v1-10m-macos-arm64-metal/**"
       - "runtime-boxes/recipes/geneformer-v1-10m-linux-x86_64-cpu/**"
       - "runtime-boxes/recipes/geneformer-v1-10m-windows-x86_64-cpu/**"

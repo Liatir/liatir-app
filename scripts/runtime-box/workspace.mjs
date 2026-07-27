@@ -24,6 +24,7 @@ export const DEFAULT_WORKSPACE_PATHS = Object.freeze({
   build: '.runtime-box-build',
   dist: '.runtime-box-dist',
   keys: '.runtime-box-local',
+  toolchain: '.scrollcase/toolchain',
 });
 
 /** Config path key -> resolved workspace field. */
@@ -32,6 +33,7 @@ const PATH_FIELDS = Object.freeze({
   build: 'buildDir',
   dist: 'distDir',
   keys: 'keysDir',
+  toolchain: 'toolchainDir',
 });
 
 /** CLI flag -> config path key. */
@@ -40,6 +42,7 @@ const PATH_FLAGS = Object.freeze({
   'build-dir': 'build',
   'out-dir': 'dist',
   'keys-dir': 'keys',
+  'toolchain-dir': 'toolchain',
 });
 
 /** Walks up from `startDir` to the filesystem root looking for a workspace config. */
