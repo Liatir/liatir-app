@@ -2,19 +2,19 @@
 
 **Status:** **EXTRACTION COMPLETE (P1–P4, 2026-07-26).** Scrollcase is an independent
 Apache-2.0 project at `https://github.com/suffro/scrollcase`, its documentation is live at
-`https://scrollcase.dev`, and `scrollcase@0.1.2` is public on npm (`0.1.0` was the
+`https://scrollcase.dev`, and `scrollcase@0.1.3` is public on npm (`0.1.0` was the
 original release). The temporary in-tree `scrollcase/` copy was removed from Liatir
 in commit `6b4934e`.
 
-**Remaining downstream work:** **P5 is in progress in Liatir; P5.0 and P5.1 are
-complete, P5.2 has a local implementation checkpoint with open exit
-gates, and P5.3 has not started.** Liatir pins the published browser-safe
-`scrollcase@0.1.2` and the contract inversion passes the full frontend gate.
-The local P5.2 checkpoint adds the consumer adapter, private-signer command and
-explicit distribution/legacy-uv routing, but still needs a real clean
-Scrollcase fixture cycle and accepted self-hosted/manual workflow wiring.
-The remaining phases close that boundary, migrate the remaining uv recipes,
-and then delete the superseded local generic builder copies.
+**Remaining downstream work:** **P5 is in progress in Liatir; P5.0, P5.1 and
+P5.2 are complete, and P5.3 has not started.** Liatir pins the published
+browser-safe `scrollcase@0.1.3`; the contract inversion passes the full frontend
+gate and the real clean keygen/lock/build/verify consumer cycle is green.
+The P5.2 implementation adds the consumer adapter, private-signer command and
+explicit distribution/legacy-uv routing while keeping native fixture execution
+manual.
+The remaining phases migrate the foundation fixtures and active uv recipes,
+then delete the superseded local generic builder copies.
 This integration does not change Scrollcase's completed extraction or its
 independence. The detailed canonical execution plan is
 [Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md).
@@ -292,13 +292,12 @@ Today the box-format contract is **triplicated** and kept in sync by the golden 
 - **P4 — New repo + Apache-2.0 packaging: DONE (2026-07-26).** Scrollcase now lives in its
   standalone public repository with its own CI, documentation and package surface;
   `scrollcase@0.1.0` is public on npm. See the P4 execution record.
-- **P5 — Invert & consume: IN PROGRESS. P5.0 and P5.1 complete; P5.2 local
-  implementation checkpoint under review; P5.3 not started.**
+- **P5 — Invert & consume: IN PROGRESS. P5.0, P5.1 and P5.2 complete; P5.3 not
+  started.**
   Core contract aliases/refinements and compatibility fixtures across Node,
   Worker, signer and Rust are implemented and the full frontend gate passes with
-  the published browser-safe `scrollcase@0.1.2`. The local adapter checkpoint is
-  not a closed gate until a real package fixture and the self-hosted/manual
-  workflow boundary are proven. Follow the
+  the published browser-safe `scrollcase@0.1.3`. The real clean package fixture
+  and the self-hosted/manual workflow boundary are proven. Follow the
   [canonical P5 execution plan](./scrollcase-p5-liatir-adoption.md): prove the published
   package surface, invert the contract, add the Liatir signer/evidence/distribution adapter,
   migrate all active uv recipes, then delete the local generic builder.

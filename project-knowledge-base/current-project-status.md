@@ -2,7 +2,7 @@
 
 Last updated: 2026-07-27 (the Runtime Box builder extraction is complete:
 Scrollcase is an independent Apache-2.0 project outside this repository and
-`scrollcase@0.1.2` is the exact public npm package consumed by Liatir. Scrollcase
+`scrollcase@0.1.3` is the exact public npm package consumed by Liatir. Scrollcase
 is not a Liatir workspace, vendored source tree, or codebase to modify from this
 repository. Liatir adoption remains a separate open downstream phase. The full CI
 substrate migration to pixi + pixi-pack +
@@ -134,9 +134,10 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   open-source tool named Scrollcase. **Extraction phases P1–P4 are complete
   (2026-07-26):** the canonical source is now the standalone public repository
   `https://github.com/suffro/scrollcase`, documentation is live at
-  `https://scrollcase.dev`, and `scrollcase@0.1.2` is public on npm (`0.1.0` was the
+  `https://scrollcase.dev`, and `scrollcase@0.1.3` is public on npm (`0.1.0` was the
   original release, `0.1.1` added public TypeScript declarations, and `0.1.2`
-  added browser-safe contract helpers). The temporary
+  added browser-safe contract helpers; `0.1.3` safely handles conda symlink
+  chains and removes machine-specific conda metadata). The temporary
   in-tree copy was removed from Liatir in `6b4934e`.
   Scrollcase is a pixi + conda-pack + conda-forge CLI and library with seven verbs
   (`init`, `doctor`, `keygen`, `lock`, `audit`, `build`, `verify`), deterministic
@@ -149,23 +150,21 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   tarball inspection, and a browser bundle. The original extraction CI run
   `30209373381` passed all 11 Node 20/22/24 jobs across Linux, macOS and Windows
   plus package/audit/docs gates.
-  **P5.0 and P5.1 are complete; the Liatir side of P5.2 is implemented, but its
-  exit gate is blocked on published `scrollcase@0.1.2`.**
+  **P5.0, P5.1 and P5.2 are complete; P5.3 has not started.**
   `@liatir/core` consumes/refines the published
-  generic contract. The local P5.2 adapter checkpoint routes keygen/verify and pixi
+  generic contract. The P5.2 adapter routes keygen/verify and pixi
   lock/build through the exact installed package, forces the existing namespace,
   supplies the private Cloud Run signer through Scrollcase's external-command
   boundary, and keeps CI/evidence/distribution in Liatir. That is consumer-side
   integration only: no Scrollcase source is present or modified here.
   The workflow widening was removed and foundation native fixtures are now
-  manual-only; model-native jobs remain explicit and self-hosted. The real clean
-  fixture completed key generation, lock resolution, frozen installation and
-  conda-pack through the stable Liatir command, then Scrollcase failed before
-  signing with `TAR_SYMLINK_ERROR`: the valid conda prefix contains
-  `lib/icu/current` as a symlink followed by
-  `lib/icu/current/pkgdata.inc`. This must be fixed by a new external Scrollcase
-  release without weakening safe extraction; no Liatir workaround or upstream
-  source change is permitted. The nine uv recipes remain on an
+  manual-only; heavy model-native jobs remain explicit and self-hosted. The
+  independent `0.1.3` fix was consumed only through its published package.
+  A new clean fixture completed real key generation, committed lock resolution,
+  frozen installation, conda-pack, safe symlink materialisation, stdlib
+  self-test, signed `liatir.runtime-box.release`, separate
+  `verify --self-test`, and checked Liatir build/verify receipts with matching
+  archive and payload hashes. The nine uv recipes remain on an
   explicit temporary compatibility path. The remaining P5 phases close that gate,
   migrate those recipes, then delete the superseded local generic builder copies.
   Geneformer and UCE still require pixi recipes before Scrollcase can build them.
@@ -176,17 +175,15 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   the detailed implementation plan for consuming the published package, inverting
   the generic contract, adding the Liatir signer/evidence/distribution adapter,
   migrating the nine remaining uv recipes, preserving legacy CUDA target identity,
-  and retiring the local generic builder. Status: **P5.0 and P5.1 complete;
-  P5.2 blocked on an external `scrollcase@0.1.2` extraction defect; P5.3 not
-  started**. Liatir pins public
-  `scrollcase@0.1.2`, consumes generic
+  and retiring the local generic builder. Status: **P5.0, P5.1 and P5.2
+  complete; P5.3 not started**. Liatir pins public
+  `scrollcase@0.1.3`, consumes generic
   types and browser-safe helpers, preserves `liatir.runtime-box.*`, and passes
   the complete `test:verify` gate with 219 unit/contract tests. The stable CLI is
   locally implemented as a thin adapter; pixi operations are intended to use the
   installed external tool, while distribution and the visible temporary uv
-  compatibility branch remain Liatir-owned. The workflow wiring is corrected,
-  but a corrected immutable Scrollcase release and a green repeat of the real
-  synthetic package cycle still gate P5.2 completion. No
+  compatibility branch remain Liatir-owned. The workflow wiring is corrected
+  and the real synthetic package cycle is green. No
   recipe, trust root, published box, remote runner, publication, promotion or
   deployment changed at this checkpoint.
 
@@ -474,8 +471,7 @@ first).
 > Scrollcase package owns the generic pixi builder, and
 > [Scrollcase P5](./roadmap/scrollcase-p5-liatir-adoption.md) owns downstream
 > adoption/legacy retirement. Phases 0–4 of the pixi migration are complete;
-> Phase 5 is in progress and P5.2 is blocked on the external package defect
-> recorded above. Do not use the historical platform-expansion
+> Phase 5 is in progress and P5.2 is complete. Do not use the historical platform-expansion
 > target table as a dispatch source.
 
 1. Continue the [pixi migration](./roadmap/runtime-box-pixi-migration.md) Phase 5,

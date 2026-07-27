@@ -11,7 +11,7 @@ releases. Nothing signed/published/promoted on the pixi substrate yet.
 **Current ownership correction (2026-07-27):** the generic pixi/conda-pack
 builder now belongs to the independent external Scrollcase project, not to
 Liatir. This roadmap remains the Liatir recipe, runner and scientific-validation
-migration record. Liatir consumes exact public `scrollcase@0.1.2`; it must not
+migration record. Liatir consumes exact public `scrollcase@0.1.3`; it must not
 vendor, deep-import or modify Scrollcase source. The live inventory is five
 pixi scGPT recipes and nine uv compatibility recipes (five Geneformer, one UCE
 and three foundation fixtures). The canonical downstream cutover status is in
@@ -657,7 +657,7 @@ shift; re-pin fixtures — accepted).
 
 ## Representative files
 
-- Generic pixi build tooling: external exact npm dependency `scrollcase@0.1.2`.
+- Generic pixi build tooling: external exact npm dependency `scrollcase@0.1.3`.
 - Liatir adapter/orchestration: `scripts/runtime-box.mjs`,
   `scripts/runtime-box/scrollcase-adapter.mjs`, `scripts/runtime-box-ci.mjs`,
   `scripts/runtime-box/{signer-command,evidence,validator-context}.mjs`.

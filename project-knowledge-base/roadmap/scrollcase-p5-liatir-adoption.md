@@ -2,13 +2,11 @@
 
 Last reviewed: 2026-07-27
 
-Status: **blocked — P5.0 and P5.1 complete; the Liatir side of P5.2 is
-implemented, but the real consumer cycle exposes a packaging defect in published
-`scrollcase@0.1.2`; P5.3 not started**
+Status: **in progress — P5.0, P5.1 and P5.2 complete; P5.3 not started**
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project and
-`scrollcase@0.1.2` is public on npm. P5 is downstream Liatir work: consume that
+`scrollcase@0.1.3` is public on npm. P5 is downstream Liatir work: consume that
 published tool without weakening the existing Runtime Box product, trust,
 distribution, scientific-validation, or evidence contracts.
 
@@ -67,9 +65,11 @@ P5 is complete only when all of the following are true:
 
 ### Package and contract
 
-- Published package: `scrollcase@0.1.2`. Version `0.1.1` added the public
+- Published package: `scrollcase@0.1.3`. Version `0.1.1` added the public
   TypeScript declarations required by the P5.0 preflight; `0.1.2` adds the
-  browser-safe generic contract helpers required by Liatir's frontend build.
+  browser-safe generic contract helpers required by Liatir's frontend build;
+  `0.1.3` safely unpacks legitimate conda symlink chains and removes
+  machine-specific conda metadata from deterministic boxes.
 - Public entry points:
   - `scrollcase/contract`;
   - `scrollcase/contract/browser`;
@@ -91,7 +91,7 @@ P5 is complete only when all of the following are true:
 
 The local P5.2 checkpoint makes `scripts/runtime-box.mjs` a small consumer-side
 dispatcher. Generic pixi commands are routed to the executable declared by the
-exact installed `scrollcase@0.1.2` package; Liatir distribution commands remain
+exact installed `scrollcase@0.1.3` package; Liatir distribution commands remain
 local. The nine uv recipes still use an explicit compatibility implementation
 under `scripts/runtime-box/legacy-cli.mjs` until P5.3/P5.4 migrate them.
 
@@ -157,9 +157,9 @@ never a dependency of installing or running an already downloaded Runtime Box.
 
 | Phase | State | Exit evidence |
 | --- | --- | --- |
-| P5.0 — published-package/API preflight | Complete | Exact public `scrollcase@0.1.2`; clean install and package/API probes green |
+| P5.0 — published-package/API preflight | Complete | Exact public `scrollcase@0.1.3`; clean install and package/API probes green |
 | P5.1 — contract inversion | Complete | Core, Node, Worker, signer, Rust and frontend production build agree |
-| P5.2 — Liatir adapter and distribution split | Blocked on external package | Liatir adapter and manual native-workflow guard implemented; published `scrollcase@0.1.2` fails the real fixture build while safely extracting the conda-pack tar |
+| P5.2 — Liatir adapter and distribution split | Complete | Real clean `keygen → lock → build → verify --self-test` cycle through the stable Liatir command; namespace, archive hash and receipts checked |
 | P5.3 — fixture migration | Pending | Three pixi fixtures; foundation gates green |
 | P5.4 — model-recipe migration | Pending | Geneformer/UCE active recipes no longer require uv |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
@@ -214,7 +214,7 @@ reading history, but it is not an acceptable dependency or test input.
 - At the P5.0 checkpoint, the source repository contained high-level `buildBox`
   and `verifyBox` functions, but `scrollcase@0.1.0` had to be judged only by its
   published `exports` map. The same consumer rule applies to the current
-  `0.1.2` pin: source-repository visibility never authorizes a deep import.
+  `0.1.3` pin: source-repository visibility never authorizes a deep import.
 - The Scrollcase CLI correctly does not understand Liatir's signer URL, audience,
   receipt, publish, promote, revoke, or serve flags. P5.2 supplies those
   consumer-side adapters.
@@ -254,15 +254,23 @@ The fix was made upstream without any Liatir behavior or vocabulary:
 - npm integrity
   `sha512-HmqKS3r7UnAEZXQEXGMSeJgUtaWLINe7aEnTorC43fhLhmIBWtm8qts9EfOlvU9CIHRrFH7lrVr5flZQfHpYyQ==`.
 
-Liatir pins `0.1.2` in the root graph and `@liatir/core`. The package regression
+Liatir pins `0.1.3` in the root graph and `@liatir/core`. The package regression
 checks the exact package name, version, executable, export map, tarball identity,
 strict TypeScript declarations, runtime imports, schemas, fixtures, CLI discovery,
 and rejection of unpublished deep/sibling/file imports. The invalid local
 configuration `$schema` hint was removed because Scrollcase does not publish a
 configuration schema. The fail-closed parser remains the authority.
 
+The P5.2 closure advanced the immutable pin from `0.1.2` to `0.1.3` after the
+real consumer build exposed a valid conda symlink-chain layout that `0.1.2`
+could not unpack. The public npm identity read back before installation is:
+
+- npm SHA-1 `eafb801264ed62f80bf087c6c46fde7120ecb7e8`;
+- npm integrity
+  `sha512-dyrCX0IH+eqjB9q+dwQsdLcMflL5xScVprFNi8dpbL0NDINSidNOZZkRaIGxi7zei8zzawdSXwQQRH+Ryzz3hg==`.
+
 The stable P5.0 boundary is the published CLI for high-level `lock`, `build`, and
-`verify`, with public primitives used where exported. P5.2 will wrap that CLI for
+`verify`, with public primitives used where exported. P5.2 wraps that CLI for
 Liatir receipts, distribution, and signer translation. It must not deep-import the
 high-level functions that are intentionally outside the package export map.
 
@@ -499,11 +507,11 @@ from file existence or console text alone.
 - publish/promote/revoke/serve tests remain Liatir-owned and green;
 - no distribution or credential knowledge enters Scrollcase.
 
-### P5.2 local implementation checkpoint — blocked on the published package
+### P5.2 execution record — complete
 
 The stable `npm run runtime-box -- ...` surface now enters the thin
 `scripts/runtime-box.mjs` dispatcher. `scripts/runtime-box/scrollcase-adapter.mjs`
-resolves the executable declared by the exact installed `scrollcase@0.1.2`
+resolves the executable declared by the exact installed `scrollcase@0.1.3`
 package through a public ESM export, invokes it through the current Node
 executable without a shell, forces `liatir.runtime-box` exactly once, and writes
 the existing compact verification receipt only after Scrollcase succeeds and
@@ -551,7 +559,7 @@ the public `paths.toolchain` key emitted by `scrollcase init`. The parser now
 accepts that key and the corresponding `--toolchain-dir` override, with a direct
 regression.
 
-A clean temporary consumer checkout then used the stable Liatir command with the
+A first clean temporary consumer checkout used the stable Liatir command with the
 managed, checksum-verified pixi 0.73.0 and conda-pack 0.9.2 toolchain:
 
 1. `keygen` completed through the exact installed package;
@@ -577,6 +585,29 @@ in-prefix symlink-parent entries while still rejecting path escape, followed by
 a new immutable Scrollcase release. Liatir must then pin that release and repeat
 the complete real `keygen → lock → build → verify` cycle.
 
+The independent maintainer published that vendor-neutral fix as
+`scrollcase@0.1.3`. Liatir updated both exact dependency pins and the root
+lockfile, preserved the unchanged public export map, and repeated the same
+macOS arm64/Python 3.11/ICU 78.3 fixture from a new clean temporary Git checkout.
+Through `scripts/runtime-box.mjs`:
+
+1. `keygen` created a local Ed25519 key;
+2. `lock` resolved and the generated `pixi.lock` was committed;
+3. `build` installed from that frozen lock, packed and safely unpacked the conda
+   environment, ran the declared stdlib self-test, emitted the frozen
+   `liatir.runtime-box.release` namespace, signed the release and wrote a checked
+   Liatir build receipt;
+4. a separate `verify --self-test` invocation verified the signature, safe
+   archive, manifest agreement and extracted interpreter, then wrote the checked
+   verification receipt.
+
+Both receipts report `status: passed`, `localSignatureVerified: true` and
+`selfTest: passed`. The clean release records `sourceTreeDirty: false`. The
+96,978,171-byte archive SHA-256 is
+`6deb058e1ed288c74ba73f20fda494059cfc280f5b2101467d0ea504aa2147b4`,
+matching the signed release and both receipts; the release payload SHA-256 is
+`032fc3bda759ab4008af7dfcf0236320dd677939232c150d1c3145f8d2ee2b17`.
+
 This checkpoint downloaded only the small declared toolchain and stdlib fixture.
 It did not download a model, allocate a runner, publish, promote, deploy, or
 change a trust root.
@@ -592,11 +623,12 @@ Evidence on 2026-07-27:
 - `npm run docs:internal:build`: the tracked maintainer documentation built;
 - targeted adapter, signer, receipt, publisher, deployment, CI path-filter and
   Windows invocation regressions passed.
-- real consumer proof: keygen and lock passed; build reached frozen install and
-  conda-pack, then failed with the external extraction defect described above.
+- real consumer proof on `scrollcase@0.1.3`: clean keygen, committed lock,
+  frozen build, self-test, signed release, separate verify and both Liatir
+  receipts passed with matching hashes.
 
-P5.2 is blocked, not complete. Do not start P5.3 until a corrected published
-Scrollcase version is pinned and the real synthetic package cycle is green.
+P5.2 is complete. P5.3 may now migrate the three foundation fixtures one target
+at a time under the documented self-hosted/manual runner policy.
 
 ## P5.3 — Migrate the three foundation fixtures
 
@@ -895,7 +927,7 @@ into one readiness claim.
 
 Stop and report evidence when any of these occurs:
 
-1. The exact pinned `scrollcase@0.1.2` package lacks a required public export or
+1. The exact pinned `scrollcase@0.1.3` package lacks a required public export or
    usable declaration.
 2. A Liatir build would require a deep import, copied Scrollcase code, sibling
    checkout, global install, or `any` contract shim.
