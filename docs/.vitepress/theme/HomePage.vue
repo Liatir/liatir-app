@@ -232,8 +232,9 @@ const capabilities = [
   height: 100%;
   z-index: 0;
   pointer-events: none;
-  mask-image: radial-gradient(ellipse at 50% 30%, black 10%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse at 50% 30%, black 10%, transparent 75%);
+  /* Maschera spostata al 0% (in cima) per far partire i dati attaccati alla nav */
+  mask-image: radial-gradient(ellipse at 50% 0%, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 0%, black 30%, transparent 80%);
 }
 
 .grid-layer {
@@ -248,14 +249,14 @@ const capabilities = [
 
 .genomic-tracks {
   position: absolute;
-  top: 15%;
+  top: 0; /* <-- Modificato: Ora partono esattamente da in cima */
   left: 50%;
   transform: translateX(-50%);
   width: 120vw;
   display: flex;
   flex-direction: column;
   gap: 24px;
-  opacity: 0.4;
+  opacity: 0.45; /* Leggermente aumentata per farli risaltare un po' di più sotto la nav */
 }
 
 .track {
