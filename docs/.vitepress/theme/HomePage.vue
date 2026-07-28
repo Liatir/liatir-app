@@ -6,7 +6,7 @@ const pillars = [
   {
     icon: 'shield',
     title: 'Private by design',
-    text: 'Your genomic data never leaves the machine. No API calls, no telemetry, no licence checks — Liatir runs the same on an air-gapped workstation as on a connected laptop.',
+    text: 'Stay on your machine. You can work without API calls, servers, cloud, nor telemetry — Liatir runs the same on an air-gapped workstation with no access to the web as on a connected laptop.',
   },
   {
     icon: 'bolt',
@@ -24,7 +24,7 @@ const capabilities = [
   {
     icon: 'terminal',
     title: 'Powerful tools',
-    text: 'FastQC, fastp, seqkit, samtools, bcftools, BWA-MEM, minimap2, SnpEff and more, ready to run — no setup, no containers.',
+    text: 'AI Models, FastQC, fastp, seqkit, samtools, bcftools, BWA-MEM, minimap2, SnpEff and more, ready to run — no setup, no containers.',
   },
   {
     icon: 'flow',
@@ -44,7 +44,7 @@ const capabilities = [
   {
     icon: 'plug',
     title: 'API connectors',
-    text: 'Wire external services into your workflows and drop them into pipelines as ordinary nodes — configured visually, not hand-coded.',
+    text: 'If needed, you can wire external services into your workflows and drop them into pipelines as ordinary nodes — configured visually, not hand-coded.',
   },
   {
     icon: 'eye',
@@ -58,10 +58,27 @@ const capabilities = [
   <div class="home">
     <!-- ── Hero ─────────────────────────────────────────────── -->
     <section class="hero">
-      <div class="hero-glow" aria-hidden="true"></div>
+      
+      <!-- Scientific Data Background -->
+      <div class="scientific-canvas" aria-hidden="true">
+        <div class="grid-layer"></div>
+        <div class="genomic-tracks">
+          <div class="track t1"></div>
+          <div class="track t2"></div>
+          <div class="track t3"></div>
+          <div class="track t4"></div>
+          <div class="track t5"></div>
+        </div>
+      </div>
+
+      <!-- Placeholder per eventuali grafiche 3D laterali (es. DNA/Proteine) -->
+      <!-- <img class="hero-side-graphic left" src="..." alt="" /> -->
+      <!-- <img class="hero-side-graphic right" src="..." alt="" /> -->
 
       <div class="container hero-inner">
-        <span class="status"><span class="status-dot" aria-hidden="true"></span>In active development · Coming soon</span>
+        <div class="status-wrapper">
+          <span class="status"><span class="status-dot" aria-hidden="true"></span>In active development · Coming soon</span>
+        </div>
 
         <img class="hero-logo" :src="withBase('/static/logos/svg/logo-color.svg')" alt="" aria-hidden="true" />
 
@@ -71,7 +88,7 @@ const capabilities = [
 
         <p class="tagline">
           A desktop app that runs bioinformatics tools, AI, and pipelines locally.<br>Your data never leaves your machine 
-          — Rust-powered native speed, even on multi-gigabyte files
+          — Rust-powered native speed, even on multi-gigabyte files.
         </p>
 
         <div class="actions">
@@ -79,7 +96,22 @@ const capabilities = [
           <a class="btn btn-alt" :href="withBase('/introduction/overview')">Read the docs</a>
         </div>
 
-        <p class="trust">No cloud · No servers · Completely Free</p>
+        <div class="trust-metrics">
+          <div class="metric">
+            <span class="metric-val"></span>
+            <span class="metric-label">No cloud or server</span>
+          </div>
+          <div class="metric-divider hide-on-small-screens"></div>
+          <div class="metric hide-on-small-screens">
+            <span class="metric-val"></span>
+            <span class="metric-label">Endlessly Extensible</span>
+          </div>
+          <div class="metric-divider"></div>
+          <div class="metric">
+            <span class="metric-val"></span>
+            <span class="metric-label">100% Free Forever</span>
+          </div>
+        </div>
       </div>
 
       <!-- ── Mailing list ─────────────────────────────────────── -->
@@ -188,25 +220,57 @@ const capabilities = [
   position: relative;
   overflow: hidden;
   padding-top: 88px;
-  padding-bottom: 8px;
+  padding-bottom: 32px;
 }
 
-.hero-glow {
+/* Sfondo Scientifico (Sostituisce il glow) */
+.scientific-canvas {
   position: absolute;
-  top: -220px;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse at 50% 30%, black 10%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 30%, black 10%, transparent 75%);
+}
+
+.grid-layer {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(var(--vp-c-divider) 1px, transparent 1px),
+    linear-gradient(90deg, var(--vp-c-divider) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 0.3;
+}
+
+.genomic-tracks {
+  position: absolute;
+  top: 15%;
   left: 50%;
   transform: translateX(-50%);
-  width: 900px;
-  height: 600px;
-  background: radial-gradient(
-    circle at center,
-    color-mix(in srgb, var(--vp-c-brand-1) 26%, transparent) 0%,
-    transparent 62%
-  );
-  filter: blur(20px);
-  pointer-events: none;
-  z-index: 0;
+  width: 120vw;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  opacity: 0.4;
 }
+
+.track {
+  height: 12px;
+  width: 100%;
+  background-repeat: repeat-x;
+}
+
+/* Pattern CSS per simulare gli allineamenti / blocchi genomici */
+.t1 { background-image: repeating-linear-gradient(90deg, var(--vp-c-brand-1) 0, var(--vp-c-brand-1) 40px, transparent 40px, transparent 90px, var(--vp-c-brand-2) 90px, var(--vp-c-brand-2) 160px, transparent 160px, transparent 220px); }
+.t2 { background-image: repeating-linear-gradient(90deg, transparent 0, transparent 60px, var(--vp-c-text-2) 60px, var(--vp-c-text-2) 100px, transparent 100px, transparent 180px, var(--vp-c-brand-3, var(--vp-c-brand-1)) 180px, var(--vp-c-brand-3, var(--vp-c-brand-1)) 210px, transparent 210px, transparent 260px); }
+.t3 { background-image: repeating-linear-gradient(90deg, var(--vp-c-brand-2) 0, var(--vp-c-brand-2) 20px, transparent 20px, transparent 110px, var(--vp-c-text-3) 110px, var(--vp-c-text-3) 150px, transparent 150px, transparent 200px); }
+.t4 { background-image: repeating-linear-gradient(90deg, transparent 0, transparent 30px, var(--vp-c-brand-1) 30px, var(--vp-c-brand-1) 80px, transparent 80px, transparent 140px, var(--vp-c-brand-2) 140px, var(--vp-c-brand-2) 190px, transparent 190px, transparent 250px); }
+.t5 { background-image: repeating-linear-gradient(90deg, var(--vp-c-text-2) 0, var(--vp-c-text-2) 50px, transparent 50px, transparent 120px, var(--vp-c-brand-1) 120px, var(--vp-c-brand-1) 160px, transparent 160px, transparent 280px); }
+
 
 .hero-inner {
   position: relative;
@@ -217,59 +281,31 @@ const capabilities = [
   align-items: center;
 }
 
-.eyebrow {
-  display: inline-block;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--vp-c-brand-1);
-  background: var(--vp-c-bg-soft);
-  border: 1px solid color-mix(in srgb, var(--vp-c-brand-1) 22%, transparent);
-  padding: 6px 14px;
-  border-radius: 999px;
+.status-wrapper {
+  margin-bottom: 24px;
 }
 
-/* ── Status pill (coming soon) ─────────────────────────── */
+/* ── Status pill (più netta e rigorosa) ─────────────────────────── */
 .status {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--vp-c-brand-1);
-  background: var(--vp-c-brand-soft);
-  border: 1px solid color-mix(in srgb, var(--vp-c-brand-1) 22%, transparent);
-  padding: 6px 14px 6px 12px;
-  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--vp-c-text-1);
+  background: var(--vp-c-bg);
+  border: 1px solid var(--vp-c-divider);
+  padding: 6px 16px;
+  border-radius: 4px; /* Angoli più spigolosi = più "strumento tecnico" */
 }
 
 .status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
   background: var(--vp-c-brand-1);
-  box-shadow: 0 0 0 0 color-mix(in srgb, var(--vp-c-brand-1) 60%, transparent);
-  animation: status-pulse 2s ease-out infinite;
-}
-
-@keyframes status-pulse {
-  0% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--vp-c-brand-1) 55%, transparent);
-  }
-  70% {
-    box-shadow: 0 0 0 7px color-mix(in srgb, var(--vp-c-brand-1) 0%, transparent);
-  }
-  100% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--vp-c-brand-1) 0%, transparent);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .status-dot {
-    animation: none;
-  }
 }
 
 #subscribe {
@@ -277,136 +313,169 @@ const capabilities = [
 }
 
 .hero-logo {
-  height: 78px;
+  height: 64px; /* Leggermente ridotto per pulizia */
   width: auto;
-  margin: 30px 0 0;
+  margin: 0;
 }
 
 .name {
-  margin: 16px 0 0;
-  font-size: clamp(3.25rem, 9vw, 5.5rem);
-  line-height: 1;
+  margin: 20px 0 0;
+  font-size: clamp(3rem, 8vw, 5rem);
+  line-height: 1.1;
   font-weight: 800;
-  letter-spacing: -0.03em;
-  background: linear-gradient(135deg, var(--vp-c-brand-1) 0%, var(--vp-c-brand-1) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.04em;
+  color: var(--vp-c-text-1); /* Sostituito il gradiente con un nero/bianco netto */
 }
 
 .headline {
-  margin: 20px auto 0;
-  max-width: 620px;
-  font-size: clamp(1.25rem, 2.6vw, 1.6rem);
-  line-height: 1.3;
-  font-weight: 600;
+  margin: 16px auto 0;
+  max-width: 680px;
+  font-size: clamp(1.4rem, 2.8vw, 2rem);
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--vp-c-text-1);
 }
 
 .tagline {
   margin: 16px auto 0;
-  max-width: 560px;
-  font-size: 1.02rem;
-  line-height: 1.65;
+  max-width: 580px;
+  font-size: 1.1rem;
+  line-height: 1.6;
   color: var(--vp-c-text-2);
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 16px;
   justify-content: center;
-  margin-top: 34px;
+  margin-top: 40px;
 }
 
 .btn {
   display: inline-flex;
   align-items: center;
-  height: 46px;
-  padding: 0 24px;
-  border-radius: 999px;
+  height: 48px;
+  padding: 0 28px;
+  border-radius: 6px; /* Più "software", meno "app consumer" */
   font-size: 0.95rem;
   font-weight: 600;
-  transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
-}
-
-.btn:hover {
-  transform: translateY(-2px);
+  transition: all 0.2s ease;
 }
 
 .btn-brand {
   color: #fff;
-  background: var(--vp-c-brand-1);
-  border: 1px solid var(--vp-c-brand-1);
+  background: var(--vp-c-text-1); /* Bottone scuro ad alto contrasto (stile Vercel/Linear) */
+  border: 1px solid var(--vp-c-text-1);
 }
 
 .btn-brand:hover {
-  background: var(--vp-c-brand-2);
-  border-color: var(--vp-c-brand-2);
+  background: var(--vp-c-text-2);
+  border-color: var(--vp-c-text-2);
+}
+
+html.dark .btn-brand {
+  color: #000;
 }
 
 .btn-alt {
   color: var(--vp-c-text-1);
-  background: var(--vp-c-bg-soft);
+  background: transparent;
   border: 1px solid var(--vp-c-divider);
 }
 
 .btn-alt:hover {
-  border-color: var(--vp-c-brand-1);
+  background: var(--vp-c-bg-soft);
+  border-color: var(--vp-c-text-2);
 }
 
-.trust {
-  margin-top: 26px;
-  font-size: 0.85rem;
-  letter-spacing: 0.01em;
+/* Stile metriche (ispirato a Biotx e Regenetix) */
+.trust-metrics {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  margin-top: 56px;
+  padding-top: 32px;
+  border-top: 1px solid var(--vp-c-divider);
+  width: 100%;
+  max-width: 400px;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.metric-val {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--vp-c-text-1);
+  letter-spacing: -0.02em;
+}
+
+.metric-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--vp-c-text-3);
+}
+
+.metric-divider {
+  width: 1px;
+  height: 40px;
+  background: var(--vp-c-divider);
 }
 
 /* ── Section heads ─────────────────────────────────────── */
 .section-head {
   text-align: center;
-  margin-bottom: 36px;
+  margin-bottom: 48px;
 }
 
 .section-head h2 {
-  font-size: clamp(1.5rem, 3.5vw, 2rem);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   margin: 0;
+  color: var(--vp-c-text-1);
 }
 
 .section-head p {
-  margin: 10px auto 0;
+  margin: 12px auto 0;
   max-width: 520px;
   color: var(--vp-c-text-2);
+  font-size: 1.1rem;
 }
 
 /* ── Cards ─────────────────────────────────────────────── */
 .card {
-  background: var(--vp-c-bg-soft);
+  background: var(--vp-c-bg); /* Rimosso il bg-soft per un look più piatto e clean */
   border: 1px solid var(--vp-c-divider);
-  border-radius: 16px;
-  padding: 26px;
-  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  border-radius: 8px; /* Più tech, meno giocattoloso */
+  padding: 32px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in srgb, var(--vp-c-brand-1) 45%, var(--vp-c-divider));
-  box-shadow: 0 12px 30px color-mix(in srgb, var(--vp-c-brand-1) 12%, transparent);
+  border-color: var(--vp-c-text-2);
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.05);
 }
 
 .card h3 {
-  margin: 0 0 6px;
-  font-size: 1.05rem;
-  font-weight: 650;
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--vp-c-text-1);
 }
 
 .card p {
   margin: 0;
-  font-size: 0.93rem;
+  font-size: 0.95rem;
   line-height: 1.6;
   color: var(--vp-c-text-2);
 }
@@ -414,23 +483,24 @@ const capabilities = [
 .pillars {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 24px;
 }
 
 .pillar h3 {
-  margin-top: 18px;
+  margin-top: 24px;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 24px;
 }
 
 .cap {
   display: flex;
-  gap: 16px;
+  gap: 20px;
   align-items: flex-start;
+  padding: 24px;
 }
 
 /* ── Icon chips ────────────────────────────────────────── */
@@ -438,12 +508,12 @@ const capabilities = [
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  color: var(--vp-c-brand-1);
-  background: var(--vp-c-brand-soft);
-  border: 1px solid color-mix(in srgb, var(--vp-c-brand-1) 18%, transparent);
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  color: var(--vp-c-text-1);
+  background: var(--vp-c-bg-soft);
+  border: 1px solid var(--vp-c-divider);
   flex-shrink: 0;
 }
 
@@ -455,44 +525,39 @@ const capabilities = [
 .icon-chip.sm {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: 6px;
 }
 
 .icon-chip.sm svg {
-  width: 21px;
-  height: 21px;
+  width: 20px;
+  height: 20px;
 }
 
 /* ── Closing CTA ───────────────────────────────────────── */
 .cta {
   text-align: center;
-  padding: 56px 32px;
-  border-radius: 24px;
+  padding: 72px 32px;
+  border-radius: 8px;
   border: 1px solid var(--vp-c-divider);
-  background:
-    radial-gradient(
-      circle at 50% 0%,
-      var(--vp-c-brand-soft) 0%,
-      transparent 70%
-    ),
-    var(--vp-c-bg-soft);
+  background: var(--vp-c-bg-soft);
 }
 
 .cta h2 {
-  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
   font-weight: 750;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   margin: 0;
+  color: var(--vp-c-text-1);
 }
 
 .cta p {
-  margin: 12px auto 0;
+  margin: 16px auto 0;
   max-width: 460px;
   color: var(--vp-c-text-2);
 }
 
 .cta .actions {
-  margin-top: 28px;
+  margin-top: 32px;
 }
 
 /* ── Responsive ────────────────────────────────────────── */
@@ -500,6 +565,10 @@ const capabilities = [
   .pillars,
   .grid {
     grid-template-columns: 1fr;
+  }
+
+  .hide-on-small-screens {
+    display: none !important;
   }
 
   .band {
