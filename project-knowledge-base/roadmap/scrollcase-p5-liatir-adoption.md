@@ -802,8 +802,8 @@ P5.2V is complete.
   Registry client or Python product dependency.
 - The synthetic stdlib fixture completed
   `keygen → lock → build twice → verify --self-test`: the reviewed lock was
-  unchanged byte-for-byte, both archives had SHA-256
-  `c4203635776eff18bd4951437c641136f50f4bf82ce14cb9a414f3dd77beb184`,
+  unchanged byte-for-byte, both clean-source archives had SHA-256
+  `e0e5a8d668724532bb425a8d43b54b21bf6f74a5245f73721b1113a121e89a03`,
   the external Liatir signer adapter returned a v2 envelope, Node safely
   extracted and ran the declared shell-free entry point, and Rust passed archive
   agreement, activation/rollback/removal and explicit v1 rejection.
@@ -872,7 +872,7 @@ execution still requires a separately approved runner/session.
   without changing it, built twice deterministically, exercised the external
   signer adapter, separate verify/self-test, Node consumer extraction/execution,
   and Rust archive plus activation/rollback/removal checks. Measured installed
-  size is `257776216` bytes; archive size is `96979088` bytes. Only after that
+  size is `257776217` bytes; archive size is `96979089` bytes. Only after that
   proof passed were the macOS uv recipe and requirements files removed.
 - The Linux and Windows v2 inputs are ready, but their old uv recipe files remain
   intentionally present until each matching native proof passes.

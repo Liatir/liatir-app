@@ -176,8 +176,8 @@
       "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/installer-fixture-macos-arm64-conda.json",
       "requiredBuildDiskBytes": 1073741824,
       "diskPlan": {
-        "estimatedInstalledSizeBytes": 257776216,
-        "estimatedArchiveSizeBytes": 96979088,
+        "estimatedInstalledSizeBytes": 257776217,
+        "estimatedArchiveSizeBytes": 96979089,
         "safetyMarginBytes": 268435456
       }
     }
