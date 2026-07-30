@@ -10,6 +10,7 @@ import {
 import type {
   BoxChannelManifest,
   BoxReleaseManifest,
+  BoxScroll,
   BoxTarget,
   SignedBoxDocument,
 } from "scrollcase/contract/types";
@@ -18,6 +19,11 @@ import {
   collectFiles,
   createDeterministicZip,
 } from "scrollcase/build";
+import {
+  runBox,
+  runExtractedBox,
+  verifyAndExtractBox,
+} from "scrollcase/consumer";
 import {
   signDocument,
   verifySignedDocument,
@@ -31,6 +37,7 @@ const target: BoxTarget = {
 
 const release = {} as BoxReleaseManifest;
 const channel = {} as BoxChannelManifest;
+const scroll = {} as BoxScroll;
 const signed = {} as SignedBoxDocument;
 
 void BOX_SCHEMA_VERSION;
@@ -44,3 +51,7 @@ void createDeterministicZip;
 void signDocument;
 void verifySignedDocument;
 void channel;
+void scroll;
+void runBox;
+void runExtractedBox;
+void verifyAndExtractBox;

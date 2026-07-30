@@ -1,7 +1,7 @@
 {
   "version": 1,
   "paths": {
-    "recipes": "runtime-boxes/recipes",
+    "scrolls": "runtime-boxes/scrolls",
     "build": ".runtime-box-build",
     "dist": ".runtime-box-dist",
     "keys": ".runtime-box-local"

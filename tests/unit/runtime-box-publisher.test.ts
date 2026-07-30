@@ -63,14 +63,14 @@ describe('Runtime Box large-archive publisher', () => {
       key: `boxes/geneformer-v1-10m/1.0.0-beta.1/macos-aarch64-metal/${sha256}.release.json`,
     });
     expect(validateImmutableReleaseRoute({
-      schemaVersion: 1,
+      schemaVersion: 2,
       kind: 'liatir.runtime-box.release',
       boxId: 'geneformer-v1-10m',
       version: '1.0.0-beta.1',
       target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
     }, identity!)).toBe(true);
     expect(validateImmutableReleaseRoute({
-      schemaVersion: 1,
+      schemaVersion: 2,
       kind: 'liatir.runtime-box.release',
       boxId: 'scgpt-whole-human',
       version: '1.0.0-beta.1',

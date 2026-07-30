@@ -8,13 +8,17 @@ on:
       - "scripts/runtime-box.mjs"
       - "scripts/runtime-box/**"
       - "scripts/runtime-box-ci.mjs"
+      - "scripts/run-runtime-box-selfhosted-runner.sh"
+      - "scripts/run-runtime-box-selfhosted-runner.ps1"
       - "scripts/validate-runtime-box-foundation.mjs"
       - "scripts/validate-runtime-box-native-fixture.mjs"
       - "runtime-boxes/catalog.json"
       - "runtime-boxes/evidence/**"
       - "runtime-boxes/target-id-contract.json"
       - "runtime-boxes/trust/**"
-      - "runtime-boxes/recipes/installer-fixture-*/**"
+      - "runtime-boxes/scrolls/runtime-box-installer-fixture/**"
+      - "runtime-boxes/fixtures/**"
+      - "runtime-boxes/legal/audits/installer-fixture-*-conda.json"
       - "services/runtime-box-signer/**"
       - "workers/runtime-box-registry/**"
       - "src-tauri/src/bridge/runtime_boxes.rs"
@@ -29,13 +33,17 @@ on:
       - "scripts/runtime-box.mjs"
       - "scripts/runtime-box/**"
       - "scripts/runtime-box-ci.mjs"
+      - "scripts/run-runtime-box-selfhosted-runner.sh"
+      - "scripts/run-runtime-box-selfhosted-runner.ps1"
       - "scripts/validate-runtime-box-foundation.mjs"
       - "scripts/validate-runtime-box-native-fixture.mjs"
       - "runtime-boxes/catalog.json"
       - "runtime-boxes/evidence/**"
       - "runtime-boxes/target-id-contract.json"
       - "runtime-boxes/trust/**"
-      - "runtime-boxes/recipes/installer-fixture-*/**"
+      - "runtime-boxes/scrolls/runtime-box-installer-fixture/**"
+      - "runtime-boxes/fixtures/**"
+      - "runtime-boxes/legal/audits/installer-fixture-*-conda.json"
       - "services/runtime-box-signer/**"
       - "workers/runtime-box-registry/**"
       - "src-tauri/src/bridge/runtime_boxes.rs"
@@ -45,6 +53,15 @@ on:
   schedule:
     - cron: "17 4 * * 0"
   workflow_dispatch:
+    inputs:
+      fixture_id:
+        description: One foundation fixture to validate natively
+        required: true
+        type: choice
+        options:
+          - installer-fixture-linux-x86_64
+          - installer-fixture-windows-x86_64
+          - installer-fixture-macos-arm64
 
 concurrency:
   group: runtime-box-foundation-${{ github.ref }}
@@ -69,6 +86,10 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Require main before any native runner allocation
+        if: github.event_name == 'workflow_dispatch'
+        run: test "${{ github.ref }}" = "refs/heads/main"
 
       - name: Install Tauri Linux system dependencies
         run: bash scripts/install-runtime-box-linux-product-deps.sh
@@ -97,7 +118,9 @@ jobs:
 
       - id: matrix
         name: Resolve the native fixture matrix
-        run: npm run runtime-box:ci -- foundation-matrix
+        run: >-
+          npm run runtime-box:ci -- foundation-matrix
+          --recipe "${{ inputs.fixture_id }}"
 
       - name: Write preflight evidence
         if: always()
@@ -125,8 +148,6 @@ jobs:
     timeout-minutes: ${{ matrix.timeoutMinutes }}
     env:
       LIATIR_RUNTIME_BOX_HEARTBEAT_SECONDS: ${{ matrix.heartbeatSeconds }}
-      UV_CACHE_DIR: ${{ github.workspace }}/.runtime-box-ci/uv-cache
-      UV_PYTHON_INSTALL_DIR: ${{ github.workspace }}/.runtime-box-ci/python
     steps:
       - uses: actions/checkout@v4
 
@@ -137,11 +158,31 @@ jobs:
 
       - run: npm ci
 
-      - name: Install pinned uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
-        with:
-          version: "0.11.28"
-          enable-cache: false
+      - name: Install pinned pixi and conda-pack (POSIX)
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          PIXI_VERSION: v0.73.0
+          PIXI_HOME: ${{ runner.temp }}/liatir-pixi
+          PIXI_NO_PATH_UPDATE: "1"
+        run: |
+          curl -fsSL https://pixi.sh/install.sh | bash
+          "$PIXI_HOME/bin/pixi" global install "conda-pack==0.9.2"
+          echo "$PIXI_HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Install pinned pixi and conda-pack (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        env:
+          PIXI_VERSION: v0.73.0
+          PIXI_HOME: ${{ runner.temp }}\liatir-pixi
+          PIXI_NO_PATH_UPDATE: "1"
+        run: |
+          $ErrorActionPreference = 'Stop'
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          Invoke-WebRequest -UseBasicParsing https://pixi.sh/install.ps1 | Invoke-Expression
+          & "$env:PIXI_HOME\bin\pixi.exe" global install "conda-pack==0.9.2"
+          "$env:PIXI_HOME\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Verify native fixture host and working storage
         run: >-
@@ -149,11 +190,9 @@ jobs:
           --recipe "${{ matrix.recipeId }}"
           --output ".runtime-box-ci/${{ matrix.recipeId }}-host.json"
 
-      - name: Build and verify the native stdlib fixture twice
-        run: >-
-          node scripts/runtime-box/heartbeat.mjs
-          --label "Native fixture ${{ matrix.recipeId }}"
-          -- npm run runtime-box:test:native -- --recipe "${{ matrix.recipeId }}" --uv uv
+      - name: Install Tauri Linux system dependencies
+        if: matrix.rustLifecycle && runner.os == 'Linux'
+        run: bash scripts/install-runtime-box-linux-product-deps.sh
 
       - name: Select Git Bash for composite actions
         if: matrix.rustLifecycle && runner.os == 'Windows'
@@ -180,13 +219,13 @@ jobs:
           mkdir -p frontend/dist
           echo '<!doctype html><title>runtime box foundation</title>' > frontend/dist/index.html
 
-      - name: Verify the Rust lifecycle
-        if: matrix.rustLifecycle
+      - name: Build, consume, and verify the native v2 fixture twice
         run: >-
           node scripts/runtime-box/heartbeat.mjs
-          --label "Rust lifecycle ${{ matrix.recipeId }}"
-          --cwd src-tauri
-          -- cargo test runtime_box -- --nocapture
+          --label "Native v2 fixture ${{ matrix.recipeId }}"
+          -- npm run runtime-box:test:native --
+          --recipe "${{ matrix.recipeId }}"
+          --output ".runtime-box-ci/${{ matrix.recipeId }}-native-result.json"
 
       - name: Write native fixture evidence
         if: always()
@@ -197,7 +236,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: runtime-box-foundation-${{ matrix.recipeId }}-${{ github.run_attempt }}
-          path: .runtime-box-ci/${{ matrix.recipeId }}.json
+          path: |
+            .runtime-box-ci/${{ matrix.recipeId }}.json
+            .runtime-box-ci/${{ matrix.recipeId }}-host.json
+            .runtime-box-ci/${{ matrix.recipeId }}-native-result.json
           include-hidden-files: true
           retention-days: 7
           if-no-files-found: error

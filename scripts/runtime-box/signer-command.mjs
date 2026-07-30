@@ -10,7 +10,6 @@
  */
 
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fail, runResult as defaultRunResult } from './process.mjs';
@@ -34,6 +33,13 @@ function parseArgs(values) {
 
 function sha256Bytes(value) {
   return createHash('sha256').update(value).digest('hex');
+}
+
+/** Reads the exact signer payload from a portable Node stream, including Node 26+. */
+export async function readSignerPayload(input = process.stdin) {
+  const chunks = [];
+  for await (const chunk of input) chunks.push(Buffer.from(chunk));
+  return Buffer.concat(chunks);
 }
 
 /** Quotes one argument for Scrollcase's shell-free external-command parser. */
@@ -117,7 +123,7 @@ export async function signPayloadWithPrivateService(payloadBytes, {
 
 async function main() {
   const flags = parseArgs(process.argv.slice(2));
-  const payloadBytes = await readFile(0);
+  const payloadBytes = await readSignerPayload();
   const document = await signPayloadWithPrivateService(payloadBytes, {
     signerUrl: flags.get('signer') || process.env.LIATIR_RUNTIME_BOX_SIGNER_URL,
     audience: flags.get('audience') || process.env.LIATIR_RUNTIME_BOX_SIGNER_AUDIENCE || null,

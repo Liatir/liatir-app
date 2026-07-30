@@ -125,7 +125,7 @@ jobs:
           PIXI_NO_PATH_UPDATE: "1"
         run: |
           curl -fsSL https://pixi.sh/install.sh | bash
-          "$PIXI_HOME/bin/pixi" global install conda-pack
+          "$PIXI_HOME/bin/pixi" global install "conda-pack==0.9.2"
           # `pixi global install` exposes the conda-pack shim next to pixi, so one PATH entry covers both.
           echo "$PIXI_HOME/bin" >> "$GITHUB_PATH"
 
@@ -141,7 +141,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
           Invoke-WebRequest -UseBasicParsing https://pixi.sh/install.ps1 | Invoke-Expression
-          & "$env:PIXI_HOME\bin\pixi.exe" global install conda-pack
+          & "$env:PIXI_HOME\bin\pixi.exe" global install "conda-pack==0.9.2"
           # pixi and the conda-pack shim both live in PIXI_HOME\bin.
           "$env:PIXI_HOME\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 

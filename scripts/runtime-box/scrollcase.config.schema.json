@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://scrollcase.dev/schema/scrollcase.config.schema.json",
   "title": "scrollcase workspace configuration",
-  "description": "Declares where a project keeps its Runtime Box recipes and where the builder writes its artefacts. Lives at the root of the project that consumes scrollcase, never inside scrollcase itself. Every field is optional; omitted paths fall back to the built-in defaults, and relative paths resolve against the directory holding this file.",
+  "description": "Declares where a project keeps its Runtime Box scrolls and where the builder writes its artefacts. Lives at the root of the project that consumes scrollcase, never inside scrollcase itself. Every field is optional; omitted paths fall back to the built-in defaults, and relative paths resolve against the directory holding this file.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -19,11 +19,11 @@
       "additionalProperties": false,
       "description": "Workspace directories. A relative value resolves against the project root; an absolute value is used as given.",
       "properties": {
-        "recipes": {
+        "scrolls": {
           "type": "string",
           "minLength": 1,
-          "default": "runtime-boxes/recipes",
-          "description": "Directory holding one subdirectory per recipe, each with a recipe.json."
+          "default": "runtime-boxes/scrolls",
+          "description": "Directory holding canonical <boxId>/<targetId>/scroll.json inputs."
         },
         "build": {
           "type": "string",

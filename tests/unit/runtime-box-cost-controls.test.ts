@@ -125,25 +125,30 @@ describe('Runtime Box CI cost controls', () => {
   });
 
   it('preserves every byte-pinned recipe input across native Git checkouts', () => {
-    const recipeIds = new Set([
-      ...catalog.foundationFixtures.map((fixture) => fixture.recipeId),
-      ...catalog.models.flatMap((model) => model.targets.map((target) => target.recipeId)),
-    ]);
+    const pinnedInputs = [
+      ...catalog.foundationFixtures.map((fixture) => ({
+        descriptorPath: `runtime-boxes/scrolls/runtime-box-installer-fixture/${fixture.targetId}/scroll.json`,
+        lockPath: `runtime-boxes/scrolls/runtime-box-installer-fixture/${fixture.targetId}/pixi.lock`,
+      })),
+      ...catalog.models.flatMap((model) => model.targets.map((target) => ({
+        descriptorPath: `runtime-boxes/recipes/${target.recipeId}/recipe.json`,
+        lockPath: null,
+      }))),
+    ];
 
-    for (const recipeId of recipeIds) {
-      const recipe = JSON.parse(readFileSync(resolve(
-        `runtime-boxes/recipes/${recipeId}/recipe.json`,
-      ), 'utf8'));
-      // Each substrate pins a different lock: pixi recipes byte-pin pixi.lock, uv recipes
-      // requirements.lock. Both must stay eol=lf so their committed hash survives a Windows checkout.
-      const lockFile = recipe.pixiVersion ? 'pixi.lock' : recipe.requirementsLock;
-      const lockPath = `runtime-boxes/recipes/${recipeId}/${lockFile}`;
+    for (const input of pinnedInputs) {
+      const descriptor = JSON.parse(readFileSync(resolve(input.descriptorPath), 'utf8'));
+      // Foundation scrolls byte-pin pixi.lock; compatibility recipes retain their substrate-specific
+      // lock until P5.4. Every lock must survive a Windows checkout byte-for-byte.
+      const lockPath = input.lockPath ?? `runtime-boxes/recipes/${descriptor.recipeId}/${
+        descriptor.pixiVersion ? 'pixi.lock' : descriptor.requirementsLock
+      }`;
       const attribute = execFileSync('git', ['check-attr', 'eol', '--', lockPath], {
         encoding: 'utf8',
       }).trim();
       expect(attribute).toBe(`${lockPath}: eol: lf`);
 
-      for (const localFile of recipe.localFiles ?? []) {
+      for (const localFile of descriptor.localFiles ?? []) {
         const attributes = execFileSync(
           'git',
           ['check-attr', 'eol', 'text', '--', localFile.sourcePath],

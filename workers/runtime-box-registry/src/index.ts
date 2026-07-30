@@ -395,7 +395,7 @@ export function validateImmutableReleaseRoute(
   identity: ImmutableReleaseIdentity,
 ): boolean {
   return payload.kind === 'liatir.runtime-box.release'
-    && payload.schemaVersion === 1
+    && payload.schemaVersion === 2
     && payload.boxId === identity.boxId
     && payload.version === identity.version
     && runtimeBoxTargetIdForRoute(payload.target) === identity.target;
@@ -470,7 +470,7 @@ export function validateChannelRoute(
   boxId: string,
   target: string,
 ): payload is Record<string, unknown> & LiatirRuntimeBoxChannelManifest {
-  if (payload.kind !== 'liatir.runtime-box.channel') return false;
+  if (payload.schemaVersion !== 2 || payload.kind !== 'liatir.runtime-box.channel') return false;
   if (payload.channel !== channel || payload.boxId !== boxId) return false;
   if (!payload.target || typeof payload.target !== 'object') return false;
   const targetRecord = payload.target as Record<string, unknown>;
@@ -503,7 +503,7 @@ export function isRevocationsManifest(
   payload: Record<string, unknown>,
 ): payload is Record<string, unknown> & LiatirRuntimeBoxRevocationsManifest {
   return payload.kind === 'liatir.runtime-box.revocations'
-    && payload.schemaVersion === 1
+    && payload.schemaVersion === 2
     && typeof payload.updatedAt === 'string'
     && Array.isArray(payload.revocations);
 }

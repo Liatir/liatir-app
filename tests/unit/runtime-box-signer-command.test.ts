@@ -6,6 +6,7 @@ import {
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { Readable } from 'node:stream';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   generateSigningKey,
@@ -13,6 +14,7 @@ import {
 } from 'scrollcase/sign';
 import {
   liatirSignerCommand,
+  readSignerPayload,
   signPayloadWithPrivateService,
   signerIdentityToken,
 } from '../../scripts/runtime-box/signer-command.mjs';
@@ -47,7 +49,7 @@ function envelope(
   signedBytes = payload,
 ) {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     payloadEncoding: 'base64-json-utf8',
     payloadBase64: payload.toString('base64'),
     payloadSha256: createHash('sha256').update(payload).digest('hex'),
@@ -60,6 +62,14 @@ function envelope(
 }
 
 describe('Liatir Scrollcase signer command', () => {
+  it('reads exact payload bytes from stdin without relying on numeric file descriptors', async () => {
+    const payload = Buffer.from('{"schemaVersion":2}\\n', 'utf8');
+    expect(await readSignerPayload(Readable.from([
+      payload.subarray(0, 7),
+      payload.subarray(7),
+    ]))).toEqual(payload);
+  });
+
   it('preserves quoted Windows executable and script paths without a shell', async () => {
     const fixture = await signingFixture();
     const node = 'C:\\Program Files\\nodejs\\node.exe';

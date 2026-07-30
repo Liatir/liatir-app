@@ -123,27 +123,63 @@
   "foundationFixtures": [
     {
       "recipeId": "installer-fixture-linux-x86_64",
-      "runnerProfileId": "ubuntu-x64-standard",
+      "targetId": "linux-x86_64-cpu",
+      "target": {
+        "platform": "linux",
+        "arch": "x86_64",
+        "accelerator": "cpu"
+      },
+      "runnerProfileId": "linux-x64-selfhosted",
       "timeoutMinutes": 30,
-      "rustLifecycle": false,
-      "dependencyLockSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "requiredBuildDiskBytes": 1073741824
+      "rustLifecycle": true,
+      "dependencyLockSha256": "17970126804c669d5f706c9a0b2180ca881569845642ac18b10ff202e35b09fa",
+      "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/installer-fixture-linux-x86_64-conda.json",
+      "requiredBuildDiskBytes": 1073741824,
+      "diskPlan": {
+        "estimatedInstalledSizeBytes": 134217728,
+        "estimatedArchiveSizeBytes": 67108864,
+        "safetyMarginBytes": 268435456
+      }
     },
     {
       "recipeId": "installer-fixture-windows-x86_64",
-      "runnerProfileId": "windows-x64-standard",
+      "targetId": "windows-x86_64-cpu",
+      "target": {
+        "platform": "windows",
+        "arch": "x86_64",
+        "accelerator": "cpu"
+      },
+      "runnerProfileId": "windows-x64-selfhosted",
       "timeoutMinutes": 60,
       "rustLifecycle": true,
-      "dependencyLockSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "requiredBuildDiskBytes": 1073741824
+      "dependencyLockSha256": "da093ee9f8ef2357e507eece0371ae16a78f9e7e7ef378451572c948ae61fff1",
+      "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/installer-fixture-windows-x86_64-conda.json",
+      "requiredBuildDiskBytes": 1073741824,
+      "diskPlan": {
+        "estimatedInstalledSizeBytes": 134217728,
+        "estimatedArchiveSizeBytes": 67108864,
+        "safetyMarginBytes": 268435456
+      }
     },
     {
       "recipeId": "installer-fixture-macos-arm64",
+      "targetId": "macos-aarch64-metal",
+      "target": {
+        "platform": "macos",
+        "arch": "aarch64",
+        "accelerator": "metal"
+      },
       "runnerProfileId": "macos-arm64-standard",
       "timeoutMinutes": 45,
-      "rustLifecycle": false,
-      "dependencyLockSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "requiredBuildDiskBytes": 1073741824
+      "rustLifecycle": true,
+      "dependencyLockSha256": "63eb875e7ad348a4478e3ac32a7a99eb22d5971d87885bf57b0b8b0defac5de8",
+      "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/installer-fixture-macos-arm64-conda.json",
+      "requiredBuildDiskBytes": 1073741824,
+      "diskPlan": {
+        "estimatedInstalledSizeBytes": 257776216,
+        "estimatedArchiveSizeBytes": 96979088,
+        "safetyMarginBytes": 268435456
+      }
     }
   ],
   "models": [

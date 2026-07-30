@@ -23,6 +23,7 @@ import { runtimeBoxTargetId, runtimeBoxTorchBackendArguments } from './runtime-b
 import { lockedCondaDistributions, lockedPythonDistributions } from './runtime-box/licenses.mjs';
 import { runtimeBoxPolicyFingerprint } from '../services/runtime-box-signer/src/policy.mjs';
 import { configureWorkspace, getWorkspace, workspaceOverridesFromArgv } from './runtime-box/workspace.mjs';
+import { boxTargetId } from 'scrollcase/contract/browser';
 
 /**
  * Workspace accessors. These read lazily so `main()` can configure the workspace from flags before
@@ -32,6 +33,24 @@ import { configureWorkspace, getWorkspace, workspaceOverridesFromArgv } from './
 const workspaceRoot = () => getWorkspace().root;
 const catalogPath = () => resolve(workspaceRoot(), 'runtime-boxes/catalog.json');
 const recipePathFor = (recipeId) => resolve(getWorkspace().recipesDir, recipeId, 'recipe.json');
+
+/** Finds one canonical v2 scroll by its stable Liatir provenance identity. */
+function scrollPathForId(scrollId) {
+  const matches = [];
+  const root = getWorkspace().scrollsDir;
+  for (const boxId of existsSync(root) ? readdirSync(root) : []) {
+    const boxDirectory = resolve(root, boxId);
+    if (!statSync(boxDirectory).isDirectory()) continue;
+    for (const targetId of readdirSync(boxDirectory)) {
+      const path = resolve(boxDirectory, targetId, 'scroll.json');
+      if (!existsSync(path)) continue;
+      const scroll = JSON.parse(readFileSync(path, 'utf8'));
+      if (scroll.scrollId === scrollId) matches.push(path);
+    }
+  }
+  requireCatalog(matches.length === 1, `expected one v2 scroll for ${scrollId}, found ${matches.length}`);
+  return matches[0];
+}
 /** Generated directories the builder owns, in the order it is safe to remove them. */
 const buildStateDirectories = () => {
   const workspace = getWorkspace();
@@ -167,9 +186,13 @@ function validatePixiRecipeLockAndAudit(recipe, target, recipePath, targetKey) {
   );
   requireCatalog(existsSync(auditPath), `missing conda license audit for ${targetKey}`);
   const audit = JSON.parse(readFileSync(auditPath, 'utf8'));
+  const expectedAuditIdentity = recipe.schemaVersion === 2
+    ? audit.schemaVersion === 2
+      && audit.kind === 'scrollcase.box.dependency-license-audit'
+    : audit.schemaVersion === 1
+      && audit.kind === 'liatir.runtime-box.conda-dependency-license-audit';
   requireCatalog(
-    audit.schemaVersion === 1
-      && audit.kind === 'liatir.runtime-box.conda-dependency-license-audit'
+    expectedAuditIdentity
       && audit.targetId === target.targetId
       && audit.dependencyLockSha256 === target.dependencyLockSha256,
     `conda license audit identity mismatch for ${targetKey}`,
@@ -286,8 +309,15 @@ export function validateRunnerExecutionContext(runner, environment = process.env
 }
 
 /** Returns the bounded native-fixture matrix used by the foundation workflow. */
-export function foundationMatrix(catalog) {
-  return catalog.foundationFixtures.map((fixture) => {
+export function foundationMatrix(catalog, recipeId = '') {
+  const fixtures = recipeId
+    ? catalog.foundationFixtures.filter((fixture) => fixture.recipeId === recipeId)
+    : catalog.foundationFixtures;
+  requireCatalog(
+    !recipeId || fixtures.length === 1,
+    `unknown or ambiguous foundation recipe ${recipeId}`,
+  );
+  return fixtures.map((fixture) => {
     const runner = catalog.runnerProfiles.find((candidate) => candidate.id === fixture.runnerProfileId);
     requireCatalog(runner, `missing foundation runner ${fixture.runnerProfileId}`);
     return {
@@ -366,17 +396,28 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
   const fixtureIds = new Set();
   for (const fixture of catalog.foundationFixtures) {
     requireCatalog(!fixtureIds.has(fixture.recipeId), `duplicate foundation recipe ${fixture.recipeId}`);
-    const recipePath = recipePathFor(fixture.recipeId);
-    requireCatalog(existsSync(recipePath), `missing foundation recipe ${fixture.recipeId}`);
+    const recipePath = scrollPathForId(fixture.recipeId);
     const recipe = JSON.parse(readFileSync(recipePath, 'utf8'));
     const runner = catalog.runnerProfiles.find((candidate) => candidate.id === fixture.runnerProfileId);
     requireCatalog(runner, `unknown foundation runner ${fixture.runnerProfileId}`);
-    requireCatalog(recipe.recipeId === fixture.recipeId, `foundation recipeId mismatch for ${fixture.recipeId}`);
+    requireCatalog(recipe.schemaVersion === 2, `foundation scroll is not schema v2 for ${fixture.recipeId}`);
+    requireCatalog(recipe.scrollId === fixture.recipeId, `foundation scrollId mismatch for ${fixture.recipeId}`);
+    requireCatalog(boxTargetId(recipe.target) === fixture.targetId, `foundation target mismatch for ${fixture.recipeId}`);
+    requireCatalog(
+      JSON.stringify(recipe.target) === JSON.stringify(fixture.target),
+      `foundation target contract differs for ${fixture.recipeId}`,
+    );
     requireCatalog(recipe.target.platform === runner.platform && recipe.target.arch === runner.arch, `foundation runner host mismatch for ${fixture.recipeId}`);
     requireCatalog(fixture.timeoutMinutes <= runner.maxTimeoutMinutes, `foundation timeout exceeds ${runner.id}`);
-    const fixtureLock = readFileSync(resolve(recipePath, '..', recipe.requirementsLock));
-    requireCatalog(/^[a-f0-9]{64}$/.test(fixture.dependencyLockSha256), `invalid fixture lock SHA-256 for ${fixture.recipeId}`);
-    requireCatalog(sha256Bytes(fixtureLock) === fixture.dependencyLockSha256, `fixture dependency lock SHA-256 mismatch for ${fixture.recipeId}`);
+    for (const localFile of recipe.localFiles ?? []) {
+      const localPath = resolve(workspaceRoot(), localFile.sourcePath);
+      requireCatalog(
+        existsSync(localPath) && sha256Bytes(readFileSync(localPath)) === localFile.sha256,
+        `foundation local file hash mismatch for ${fixture.recipeId}`,
+      );
+    }
+    validatePixiRecipeLockAndAudit(recipe, fixture, recipePath, fixture.recipeId);
+    runtimeBoxBuildDiskPlan(recipe, fixture);
     requireCatalog(Number.isSafeInteger(fixture.requiredBuildDiskBytes) && fixture.requiredBuildDiskBytes > 0, `invalid fixture disk requirement for ${fixture.recipeId}`);
     fixtureIds.add(fixture.recipeId);
   }
@@ -499,13 +540,29 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
       requireCatalog(!workflow.includes('schedule:') && !workflow.includes('pull_request:') && !workflow.includes('push:'), `${workflowName} has an automatic trigger`);
       requireCatalog(workflow.includes('cancel-in-progress: true'), `${workflowName} must cancel stale validation`);
       requireCatalog(!workflow.includes('actions/cache'), `${workflowName} may not cache model assets`);
-      requireCatalog(workflow.includes('enable-cache: false'), `${workflowName} must keep uv caching disabled`);
+      requireCatalog(workflow.includes('PIXI_VERSION: v0.73.0'), `${workflowName} must pin pixi 0.73.0`);
+      requireCatalog(workflow.includes('conda-pack==0.9.2'), `${workflowName} must pin conda-pack 0.9.2`);
+      requireCatalog(!workflow.includes('--uv') && !workflow.includes('setup-uv'), `${workflowName} must not invoke the deprecated uv fixture path`);
       if (workflowName.includes('windows')) {
         requireCatalog(workflow.includes('linux_run_id:') && workflow.includes('run.head_sha === process.env.GITHUB_SHA'), 'Windows T4 preflight must prove the successful Linux run for the exact commit');
       }
     }
     const foundation = readFileSync(resolve(workspaceRoot(), '.github/workflows/runtime-box-foundation.yml'), 'utf8');
     requireCatalog(foundation.includes('max-parallel: 1'), 'foundation paid fixture concurrency must remain 1');
+    requireCatalog(
+      foundation.includes('fixture_id:')
+        && foundation.includes('foundation-matrix')
+        && foundation.includes('--recipe "${{ inputs.fixture_id }}"'),
+      'foundation manual dispatch must select exactly one fixture',
+    );
+    requireCatalog(
+      foundation.includes('Require main before any native runner allocation'),
+      'foundation native allocation must require main',
+    );
+    requireCatalog(
+      !foundation.includes('--uv') && !foundation.includes('requirements.lock'),
+      'foundation workflow must remain v2/pixi-only',
+    );
     const release = readFileSync(resolve(workspaceRoot(), '.github/workflows/runtime-box-release.yml'), 'utf8');
     requireCatalog(release.includes('cancel-in-progress: false'), 'production releases must never be cancelled');
   }
@@ -642,8 +699,10 @@ async function probeHost(target, runner, output) {
 }
 
 async function probeFoundationHost(fixture, runner, output) {
-  const recipe = JSON.parse(readFileSync(recipePathFor(fixture.recipeId), 'utf8'));
-  const record = await writeHostEvidence(output, recipe.target, runner.runsOn);
+  const scroll = JSON.parse(readFileSync(scrollPathForId(fixture.recipeId), 'utf8'));
+  const record = await writeHostEvidence(output, scroll.target, runner.runsOn);
+  record.calculatedDiskPlan = runtimeBoxBuildDiskPlan(scroll, fixture);
+  await writeJson(output, record);
   requireCatalog(record.freeDiskBytesBefore >= fixture.requiredBuildDiskBytes, `only ${record.freeDiskBytesBefore} free bytes; ${fixture.requiredBuildDiskBytes} required`);
   console.log(JSON.stringify({ ...record, requiredBuildDiskBytes: fixture.requiredBuildDiskBytes }));
 }
@@ -668,12 +727,43 @@ async function main() {
   }
   if (command === 'foundation-matrix') {
     validateRuntimeBoxCiCatalog(catalog);
-    const matrix = JSON.stringify({ include: foundationMatrix(catalog) });
+    const options = parseOptions(rest);
+    const matrix = JSON.stringify({
+      include: foundationMatrix(catalog, options.get('recipe') || ''),
+    });
     setGithubOutput('matrix', matrix);
     console.log(matrix);
     return;
   }
   const options = parseOptions(rest);
+  if (command === 'resolve-foundation') {
+    validateRuntimeBoxCiCatalog(catalog);
+    const fixture = catalog.foundationFixtures.find(
+      (candidate) => candidate.recipeId === options.get('recipe'),
+    );
+    requireCatalog(fixture, `unknown foundation recipe ${options.get('recipe')}`);
+    const runner = catalog.runnerProfiles.find(
+      (candidate) => candidate.id === fixture.runnerProfileId,
+    );
+    requireCatalog(runner, `missing foundation runner ${fixture.runnerProfileId}`);
+    const values = {
+      recipe_id: fixture.recipeId,
+      target_id: fixture.targetId,
+      runs_on: runner.runsOn,
+      timeout_minutes: fixture.timeoutMinutes,
+      self_hosted: runner.selfHosted ? 'true' : 'false',
+      runner_name_prefix: runner.selfHosted?.runnerNamePrefix ?? '',
+      minimum_bootstrap_free_disk_bytes:
+        runner.selfHosted?.minimumBootstrapFreeDiskBytes ?? 0,
+      runner_platform: runner.platform,
+      runner_arch: runner.arch,
+      required_disk_bytes: fixture.requiredBuildDiskBytes,
+      heartbeat_seconds: catalog.costPolicy.heartbeatSeconds,
+    };
+    for (const [key, value] of Object.entries(values)) setGithubOutput(key, value);
+    console.log(JSON.stringify(values));
+    return;
+  }
   if (command === 'resolve') {
     validateRuntimeBoxCiCatalog(catalog);
     const resolved = resolveCiTarget(catalog, options.get('model'), options.get('recipe'), options.get('target'), options.get('mode'));

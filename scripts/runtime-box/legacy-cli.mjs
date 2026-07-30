@@ -663,7 +663,7 @@ async function verifyRelease(path, flags) {
   assertRuntimeBoxPythonEntryPoint(adapter, release.pythonEntryPoint);
   // By convention the archive sits next to its release document under the shared stem.
   const archivePath = resolve(String(flags.get('archive')
-    || join(dirname(releasePath), `${runtimeBoxReleaseStem(release)}.zip`)));
+    || join(dirname(releasePath), `${release.archive.sha256}.zip`)));
   if (!await fileExists(archivePath)) fail(`Archive not found: ${archivePath}`);
   if ((await stat(archivePath)).size !== release.archive.sizeBytes) fail('Archive size mismatch.');
   if (await sha256File(archivePath) !== release.archive.sha256) fail('Archive SHA-256 mismatch.');
@@ -910,9 +910,17 @@ async function serve(flags) {
       const channelMatch = url.pathname.match(/^\/v1\/channels\/([^/]+)\/([^/]+)\/([^/]+)$/);
       if (channelMatch) {
         const [, channel, boxId, target] = channelMatch;
-        localPath = join(paths.dist, `${safeRelativePath(boxId)}-${safeRelativePath(channel)}-${safeRelativePath(target)}.channel.json`);
+        localPath = join(
+          paths.dist,
+          'channels',
+          safeRelativePath(boxId),
+          safeRelativePath(channel),
+          `${safeRelativePath(target)}.json`,
+        );
+      } else if (url.pathname === '/v1/revocations') {
+        localPath = join(paths.dist, 'runtime-box-revocations.json');
       } else if (url.pathname.startsWith('/objects/')) {
-        localPath = join(paths.dist, 'objects', safeRelativePath(url.pathname.slice('/objects/'.length)));
+        localPath = join(paths.dist, safeRelativePath(url.pathname.slice('/objects/'.length)));
       } else {
         response.writeHead(url.pathname === '/health' ? 200 : 404, { 'Content-Type': 'application/json' });
         response.end(JSON.stringify(url.pathname === '/health' ? { ok: true } : { error: 'not_found' }));
@@ -926,6 +934,15 @@ async function serve(flags) {
         response.writeHead(404, { 'Content-Type': 'application/json' });
         response.end(JSON.stringify({ error: 'not_found' }));
         return;
+      }
+      if (resolvedPath.endsWith('.json')) {
+        const document = JSON.parse(await readFile(resolvedPath, 'utf8'));
+        const { payload } = decodeSignedDocument(document);
+        if (document.schemaVersion !== 2 || payload.schemaVersion !== 2) {
+          response.writeHead(409, { 'Content-Type': 'application/json' });
+          response.end(JSON.stringify({ error: 'unsupported_runtime_box_format' }));
+          return;
+        }
       }
       const info = await stat(resolvedPath);
       response.writeHead(200, {
@@ -1111,7 +1128,7 @@ async function createRevocation(flags) {
   // Surfaced verbatim to users, so it should explain why the box was pulled.
   const reason = String(flags.get('reason') || fail('revoke requires --reason <text>.'));
   const manifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: 'liatir.runtime-box.revocations',
     updatedAt: new Date().toISOString(),
     revocations: [{ boxId, version, reason, revokedAt: new Date().toISOString() }],

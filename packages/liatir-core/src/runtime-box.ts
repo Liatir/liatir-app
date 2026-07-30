@@ -57,14 +57,7 @@ export interface LiatirRuntimeBoxTargetCandidate {
   minNvidiaDriverVersion?: string;
 }
 
-export type LiatirRuntimeBoxBuildProvenance = Omit<Provenance, "pixiVersion"> & (
-  /**
-   * Legacy uv provenance remains readable while P5 migrates the existing recipes one target at
-   * a time. New Scrollcase builds always produce the pixi branch.
-   */
-  | { uvVersion: string; pixiVersion?: never }
-  | { pixiVersion: string; uvVersion?: never }
-);
+export type LiatirRuntimeBoxBuildProvenance = Provenance;
 
 export type LiatirRuntimeBoxArchive = BoxReleaseManifest["archive"];
 export type LiatirRuntimeBoxSelfTest = BoxReleaseManifest["selfTest"];
@@ -103,8 +96,8 @@ export interface LiatirRuntimeBoxActivationMetadata {
   schemaVersion: typeof LIATIR_RUNTIME_BOX_SCHEMA_VERSION;
   selectedTarget: LiatirRuntimeBoxTarget;
   release: LiatirRuntimeBoxReleaseManifest;
-  /** Exact verified signing envelope. Optional only when reading installations from older builds. */
-  signedRelease?: LiatirSignedRuntimeBoxDocument;
+  /** Exact verified signing envelope persisted for offline re-verification before dispatch. */
+  signedRelease: LiatirSignedRuntimeBoxDocument;
 }
 
 export interface LiatirAIModelRuntimeBoxInstall {
@@ -219,11 +212,19 @@ export interface LiatirRuntimeBoxCiCatalog {
   runnerProfiles: readonly LiatirRuntimeBoxCiRunnerProfile[];
   foundationFixtures: readonly {
     recipeId: string;
+    targetId: string;
+    target: LiatirRuntimeBoxTarget;
     runnerProfileId: string;
     timeoutMinutes: number;
     rustLifecycle: boolean;
     dependencyLockSha256: string;
+    condaDependencyLicenseAudit: string;
     requiredBuildDiskBytes: number;
+    diskPlan: {
+      estimatedInstalledSizeBytes: number;
+      estimatedArchiveSizeBytes: number;
+      safetyMarginBytes: number;
+    };
   }[];
   models: readonly LiatirRuntimeBoxCiModelRecord[];
 }

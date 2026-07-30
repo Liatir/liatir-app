@@ -10,6 +10,7 @@ import {
 } from "scrollcase/contract";
 import * as browserContract from "scrollcase/contract/browser";
 import * as contract from "scrollcase/contract";
+import * as consumer from "scrollcase/consumer";
 import * as sign from "scrollcase/sign";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -36,6 +37,10 @@ const expectedExports = {
     types: "./src/build/index.d.mts",
     import: "./src/build/index.mjs",
   },
+  "./consumer": {
+    types: "./src/consumer/index.d.mts",
+    import: "./src/consumer/index.mjs",
+  },
   "./contract/schema/*.json": "./src/contract/schema/*.json",
   "./contract/fixtures/*.json": "./src/contract/fixtures/*.json",
   "./sign": {
@@ -58,15 +63,15 @@ function sourceFiles(directory: string): string[] {
 describe("published Scrollcase package surface", () => {
   it("pins the immutable package and all required public entry points", () => {
     expect(packageJson.name).toBe("scrollcase");
-    expect(packageJson.version).toBe("0.1.3");
+    expect(packageJson.version).toBe("0.4.11");
     expect(packageJson.bin).toEqual({ scrollcase: "src/cli.mjs" });
     expect(packageJson.exports).toEqual(expectedExports);
-    expect(rootPackageJson.dependencies.scrollcase).toBe("0.1.3");
-    expect(corePackageJson.dependencies.scrollcase).toBe("0.1.3");
+    expect(rootPackageJson.dependencies.scrollcase).toBe("0.4.11");
+    expect(corePackageJson.dependencies.scrollcase).toBe("0.4.11");
     expect(lockfile.packages["node_modules/scrollcase"]).toMatchObject({
-      version: "0.1.3",
-      resolved: "https://registry.npmjs.org/scrollcase/-/scrollcase-0.1.3.tgz",
-      integrity: "sha512-dyrCX0IH+eqjB9q+dwQsdLcMflL5xScVprFNi8dpbL0NDINSidNOZZkRaIGxi7zei8zzawdSXwQQRH+Ryzz3hg==",
+      version: "0.4.11",
+      resolved: "https://registry.npmjs.org/scrollcase/-/scrollcase-0.4.11.tgz",
+      integrity: "sha512-/BLoSjwN4rcKOx+gTtfb0tBrN4+hlsno3pIl4L/m1jHSHBGgM4qPA1GY7ns9BEK7Cj8nWfrqYqNDtz3FoZvCWw==",
     });
   });
 
@@ -77,10 +82,13 @@ describe("published Scrollcase package surface", () => {
     expect(browserContract.isSignedBoxDocument).toBeTypeOf("function");
     expect(build.createDeterministicZip).toBeTypeOf("function");
     expect(build.boxReleaseStem).toBeTypeOf("function");
+    expect(consumer.verifyAndExtractBox).toBeTypeOf("function");
+    expect(consumer.runExtractedBox).toBeTypeOf("function");
+    expect(consumer.runBox).toBeTypeOf("function");
     expect(sign.signDocument).toBeTypeOf("function");
     expect(sign.verifySignedDocument).toBeTypeOf("function");
     expect(JSON.parse(readFileSync(schemaUrl("release-manifest"), "utf8")).$id)
-      .toBe("https://scrollcase.dev/schema/release-manifest.schema.json");
+      .toBe("https://scrollcase.dev/schema/v2/release-manifest.schema.json");
     expect(JSON.parse(readFileSync(fixtureUrl("target-id-contract"), "utf8")).valid)
       .toBeInstanceOf(Array);
   });
@@ -134,6 +142,7 @@ describe("published Scrollcase package surface", () => {
       "scrollcase/contract/browser",
       "scrollcase/contract/types",
       "scrollcase/build",
+      "scrollcase/consumer",
       "scrollcase/sign",
     ]);
     for (const path of sourceFiles(resolve(root, "packages"))) {
@@ -164,6 +173,7 @@ describe("published Scrollcase package surface", () => {
     });
     expect([0, 1]).toContain(doctor.status);
     expect(doctor.stdout).toContain(`config ${resolve(root, "scrollcase.config.json")}`);
-    expect(doctor.stdout).toContain(`recipes     ${resolve(root, "runtime-boxes/recipes")}`);
+    expect(doctor.stdout).toContain("scrolls");
+    expect(doctor.stdout).toContain(resolve(root, "runtime-boxes/scrolls"));
   });
 });

@@ -2,15 +2,15 @@
 
 Last reviewed: 2026-07-30
 
-Status: **in progress — the schema-v1 P5.0–P5.2 record is historical;
-the v2-only cutover and P5.3 have not started**
+Status: **in progress — P5.2V complete; P5.3 macOS complete, Linux and
+Windows native proofs pending**
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project. The selected P5
 target is exact `scrollcase@0.4.11`, whose published tarball contains the v2-only
-contract. The checkout still pins the historical `0.1.3` baseline until P5.2V
-implements the dependency and contract cutover. P5 is downstream Liatir work:
-cut over to `0.4.11` and consume it without weakening the existing Runtime Box
+contract. The checkout now pins `0.4.11` exactly and consumes it only through
+its published package surface. P5 is downstream Liatir work: consume Scrollcase
+without weakening the existing Runtime Box
 product, trust, distribution, scientific-validation, or evidence contracts.
 Schema v1 is fully deprecated and is not part of the target Liatir architecture.
 
@@ -81,8 +81,7 @@ P5 is complete only when all of the following are true:
   Its published schemas require `schemaVersion: 2`; it uses `scroll.json` under
   `scrolls/<boxId>/<targetId>/`, adds `scrollcase/consumer` and `scrollcase run`,
   and does not accept schema-v1 authoring/wire documents.
-- Historical checkout pin pending P5.2V implementation: exact
-  `scrollcase@0.1.3`. Version `0.1.1` added the public
+- Historical pre-cutover pin: exact `scrollcase@0.1.3`. Version `0.1.1` added the public
   TypeScript declarations required by the P5.0 preflight; `0.1.2` adds the
   browser-safe generic contract helpers required by Liatir's frontend build;
   `0.1.3` safely unpacks legitimate conda symlink chains and removes
@@ -111,12 +110,13 @@ P5 is complete only when all of the following are true:
 
 ### Builder and orchestration
 
-The completed schema-v1 P5.2 checkpoint makes `scripts/runtime-box.mjs` a small consumer-side
-dispatcher. Generic pixi commands are routed to the executable declared by the
-exact installed `scrollcase@0.1.3` package; Liatir distribution commands remain
-local. The nine uv recipes still use an explicit compatibility implementation
-under `scripts/runtime-box/legacy-cli.mjs` until the v2 boundary is accepted and
-P5.3/P5.4 migrate them.
+The v2-only P5.2V cutover keeps `scripts/runtime-box.mjs` as a small consumer-side
+dispatcher. Generic `doctor`, `keygen`, `lock`, `audit`, `build` and `verify`
+commands are routed to the executable declared by exact installed
+`scrollcase@0.4.11`; Liatir distribution commands remain local. Schema-v1
+authoring is rejected rather than routed to the file-local legacy builder. That
+legacy implementation remains only as P5.4/P5.5 deletion inventory while the
+frozen pre-v2 model inputs are migrated.
 
 Scrollcase deliberately has no Liatir distribution verbs.
 `scripts/runtime-box-ci.mjs`, the validation/release workflows, and the
@@ -183,9 +183,9 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.0 — historical schema-v1 package/API preflight | Complete | Exact public `scrollcase@0.1.3`; clean install and package/API probes green |
 | P5.1 — contract inversion | Complete | Core, Node, Worker, signer, Rust and frontend production build agree |
 | P5.2 — Liatir adapter and distribution split | Complete | Real clean `keygen → lock → build → verify --self-test` cycle through the stable Liatir command; namespace, archive hash and receipts checked |
-| P5.2V — Scrollcase v2-only cutover | Pending | Exact `scrollcase@0.4.11`; all active contracts and consumers use v2; v1 is explicitly unsupported |
-| P5.3 — v2 foundation-fixture migration | Pending | Three schema-v2 pixi fixtures; v1 rejection and foundation gates green |
-| P5.4 — model-recipe migration | Pending | Geneformer/UCE active recipes no longer require uv |
+| P5.2V — Scrollcase v2-only cutover | Complete | Exact `scrollcase@0.4.11`; active contracts and consumers use v2; v1 is explicitly unsupported; clean local v2 proof green |
+| P5.3 — v2 foundation-fixture migration | In progress | Three reviewed v2 scrolls/locks/audits; macOS native proof green; Linux and Windows native proofs pending |
+| P5.4 — model-recipe migration | Pending | Every active model input is a v2 scroll; Geneformer/UCE no longer require uv |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
 | P5.6 — local/native closure | Pending | Full cheap gate plus one reviewed non-production product lifecycle |
 | P5.7 — documentation handoff | Pending | Status, inventories and operator docs match the implemented boundary |
@@ -774,6 +774,46 @@ Before migrating a recipe:
 - no recipe, catalog identity, trust root, public object, channel or protected
   release changed during the cutover phase.
 
+### P5.2V completion evidence — 2026-07-30
+
+P5.2V is complete.
+
+- Root and `packages/liatir-core` pin exact `scrollcase@0.4.11`. Immediate npm
+  readback matched SHA-1
+  `7bb8364ff820dd44dc749e9ef28a6df9cc9808ac` and integrity
+  `sha512-/BLoSjwN4rcKOx+gTtfb0tBrN4+hlsno3pIl4L/m1jHSHBGgM4qPA1GY7ns9BEK7Cj8nWfrqYqNDtz3FoZvCWw==`.
+  The package-surface regression compiles the browser contract, generated
+  declarations, signer helpers and bounded Node consumer from the installed
+  tarball. The v2 work appearing under `Unreleased` in the packaged changelog is
+  accepted as release-note lag; the immutable tarball schemas and exports are
+  the operative contract.
+- `packages/liatir-core` imports the v2 types and browser-safe helpers from public
+  Scrollcase exports. There is no npm alias, deep import, sibling checkout,
+  v1/v2 union or frontend shadow type.
+- Signer policy, signed envelopes, Registry release/channel/revocation routing,
+  local candidate serving, Rust installation/anti-replay state and frontend
+  runnable provenance are v2-only. Schema v1 and unknown versions fail closed.
+- Installed v1 state is marked unsupported and disabled per model. Rust never
+  interprets its v1 release document; removal uses product-owned filesystem
+  identity, leaves unrelated models and jobs alone, and preserves already
+  persisted Results/provenance records.
+- `scrollcase/consumer` is used only by the native validation harness as an
+  independent build/test oracle. It is not a desktop runtime, downloader,
+  Registry client or Python product dependency.
+- The synthetic stdlib fixture completed
+  `keygen → lock → build twice → verify --self-test`: the reviewed lock was
+  unchanged byte-for-byte, both archives had SHA-256
+  `c4203635776eff18bd4951437c641136f50f4bf82ce14cb9a414f3dd77beb184`,
+  the external Liatir signer adapter returned a v2 envelope, Node safely
+  extracted and ran the declared shell-free entry point, and Rust passed archive
+  agreement, activation/rollback/removal and explicit v1 rejection.
+- `npm run test:verify` passed 35 files / 220 tests, SDK type generation, core
+  build, zero-error Svelte check, frontend production build and root TypeScript
+  compile. Catalog, signer and foundation gates also passed.
+
+No trust root, public object, channel, protected release, publication or remote
+runner changed in P5.2V.
+
 ## P5.3 — Migrate the three foundation fixtures to v2
 
 Begin only after P5.2V is green. Migrate the cheapest native artifacts before
@@ -818,19 +858,57 @@ execution still requires a separately approved runner/session.
   and unit group pass;
 - no foundation workflow invokes `--uv` or expects a requirements lock.
 
+### P5.3 execution evidence — 2026-07-30
+
+- All three canonical
+  `runtime-boxes/scrolls/runtime-box-installer-fixture/<targetId>/scroll.json`
+  inputs, single-platform `pixi.toml` files, pixi `0.73.0` locks and
+  lock-derived conda licence audits are reviewed and catalog-bound. Stable
+  recipe provenance IDs, `boxId`, `runtimeId`, target IDs and
+  `liatir.runtime-box` namespace are unchanged.
+- Cross-platform lock resolution is complete. It is not counted as native
+  execution evidence.
+- macOS Apple Silicon is complete. The native proof resolved the reviewed lock
+  without changing it, built twice deterministically, exercised the external
+  signer adapter, separate verify/self-test, Node consumer extraction/execution,
+  and Rust archive plus activation/rollback/removal checks. Measured installed
+  size is `257776216` bytes; archive size is `96979088` bytes. Only after that
+  proof passed were the macOS uv recipe and requirements files removed.
+- The Linux and Windows v2 inputs are ready, but their old uv recipe files remain
+  intentionally present until each matching native proof passes.
+- `runtime-box-foundation.yml` accepts exactly one reviewed fixture per manual
+  dispatch. Linux uses `liatir-linux-selfhosted` with a 30-minute bound; Windows
+  uses `liatir-windows-selfhosted` with a 60-minute bound. The shared ephemeral
+  launchers resolve foundation runner identity and disk floors directly from
+  the catalog. No foundation workflow invokes `--uv`.
+
+P5.3 remains open until the separately approved Linux and Windows native
+sessions pass, their measured disk plans are recorded, and only then their two
+uv fixture directories are removed.
+
 ## P5.4 — Migrate active model recipes
 
-Use the model ordering from the pixi migration, with one target in flight:
+Migrate every active model authoring record, not only the uv substrates. The
+five already-pixi scGPT inputs still use the old schema-v1 `recipe.json` layout
+and therefore are not accepted by the v2-only adapter. Convert them first
+because their dependency locks and native/scientific baselines already exist.
+Keep one target in flight:
 
-1. Geneformer macOS Metal;
-2. Geneformer Linux CPU;
-3. Geneformer Windows CPU;
-4. UCE macOS Metal;
-5. Geneformer Linux CUDA successor;
-6. Geneformer Windows CUDA successor only when its no-dispatch rule is lifted.
+1. scGPT macOS Metal;
+2. scGPT Linux CPU;
+3. scGPT Windows CPU;
+4. scGPT Linux CUDA 12.9;
+5. scGPT Windows CUDA 12.8;
+6. Geneformer macOS Metal;
+7. Geneformer Linux CPU;
+8. Geneformer Windows CPU;
+9. UCE macOS Metal;
+10. Geneformer Linux CUDA successor;
+11. Geneformer Windows CUDA successor only when its no-dispatch rule is lifted.
 
-The lighter CPU/Metal Geneformer targets establish the public Scrollcase path
-before the large UCE and CUDA builds.
+The scGPT conversion proves schema-v2 authoring without also changing the pixi
+substrate. The lighter CPU/Metal Geneformer targets then establish the uv-to-pixi
+migration path before the large UCE and CUDA builds.
 
 ### Repeated recipe gate
 

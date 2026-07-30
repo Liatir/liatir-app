@@ -39,6 +39,7 @@ describe('scrollcase workspace resolution', () => {
     const workspace = resolveWorkspace({ cwd: root });
     expect(workspace.configPath).toBeNull();
     expect(workspace.root).toBe(root);
+    expect(workspace.scrollsDir).toBe(resolve(root, DEFAULT_WORKSPACE_PATHS.scrolls));
     expect(workspace.recipesDir).toBe(resolve(root, DEFAULT_WORKSPACE_PATHS.recipes));
     expect(workspace.buildDir).toBe(resolve(root, DEFAULT_WORKSPACE_PATHS.build));
     expect(workspace.distDir).toBe(resolve(root, DEFAULT_WORKSPACE_PATHS.dist));
@@ -47,7 +48,7 @@ describe('scrollcase workspace resolution', () => {
   });
 
   it('discovers the project config by walking up from a nested working directory', async () => {
-    const root = await makeProject({ version: 1, paths: { recipes: 'boxes' } });
+    const root = await makeProject({ version: 1, paths: { scrolls: 'boxes' } });
     created.push(root);
     const nested = join(root, 'deep', 'nested', 'dir');
     await mkdir(nested, { recursive: true });
@@ -55,12 +56,12 @@ describe('scrollcase workspace resolution', () => {
     const workspace = resolveWorkspace({ cwd: nested });
     expect(workspace.root).toBe(root);
     // Config paths resolve against the project root, not the working directory.
-    expect(workspace.recipesDir).toBe(join(root, 'boxes'));
+    expect(workspace.scrollsDir).toBe(join(root, 'boxes'));
     expect(workspace.distDir).toBe(resolve(root, DEFAULT_WORKSPACE_PATHS.dist));
   });
 
   it('lets a flag override the config, resolving it against the working directory', async () => {
-    const root = await makeProject({ version: 1, paths: { recipes: 'boxes', dist: 'out' } });
+    const root = await makeProject({ version: 1, paths: { scrolls: 'boxes', dist: 'out' } });
     created.push(root);
     const nested = join(root, 'work');
     await mkdir(nested, { recursive: true });
@@ -70,14 +71,14 @@ describe('scrollcase workspace resolution', () => {
     });
     expect(workspace.root).toBe(root);
     expect(workspace.distDir).toBe(join(nested, 'artefacts'));
-    expect(workspace.recipesDir).toBe(join(root, 'boxes'));
+    expect(workspace.scrollsDir).toBe(join(root, 'boxes'));
   });
 
   it('accepts the toolchain path emitted by the published Scrollcase initializer', async () => {
     const root = await makeProject({
       version: 1,
       paths: {
-        recipes: 'recipes',
+        scrolls: 'scrolls',
         build: '.scrollcase/build',
         dist: '.scrollcase/dist',
         keys: '.scrollcase/keys',
@@ -87,6 +88,7 @@ describe('scrollcase workspace resolution', () => {
     created.push(root);
     const workspace = resolveWorkspace({ cwd: root });
     expect(workspace.toolchainDir).toBe(join(root, '.scrollcase', 'toolchain'));
+    expect(workspace.scrollsDir).toBe(join(root, 'scrolls'));
 
     const overridden = resolveWorkspace({
       cwd: root,
@@ -125,10 +127,12 @@ describe('scrollcase workspace resolution', () => {
   it('reads workspace flags out of raw arguments in both forms and ignores the rest', async () => {
     expect(workspaceOverridesFromArgv([
       '--model', 'x',
+      '--scrolls-dir', 's',
       '--recipes-dir', 'r',
       '--out-dir=o',
       '--toolchain-dir', 't',
     ])).toEqual({
+      scrolls: 's',
       recipes: 'r',
       dist: 'o',
       toolchain: 't',
@@ -150,9 +154,9 @@ describe('scrollcase workspace resolution', () => {
     created.push(badKey);
     expect(() => resolveWorkspace({ cwd: badKey })).toThrow(/Unknown "paths" entry "recipe"/);
 
-    const badValue = await makeProject({ version: 1, paths: { recipes: '' } });
+    const badValue = await makeProject({ version: 1, paths: { scrolls: '' } });
     created.push(badValue);
-    expect(() => resolveWorkspace({ cwd: badValue })).toThrow(/Invalid "paths.recipes"/);
+    expect(() => resolveWorkspace({ cwd: badValue })).toThrow(/Invalid "paths.scrolls"/);
   });
 
   it('fails loudly when an explicitly named config does not exist', async () => {

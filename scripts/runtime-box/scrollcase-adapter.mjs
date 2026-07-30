@@ -7,9 +7,10 @@
  * compatibility path remain explicitly Liatir-owned.
  */
 
-import { readFile, mkdir, stat, writeFile } from 'node:fs/promises';
+import { readFile, mkdir, readdir, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve, sep } from 'node:path';
-import { boxReleaseStem, sha256File } from 'scrollcase/build';
+import { sha256File } from 'scrollcase/build';
+import { boxTargetId } from 'scrollcase/contract/browser';
 import { verifySignedDocument } from 'scrollcase/sign';
 import { publishedNodeCliInvocation } from '../node-cli.mjs';
 import { fail, runResult as defaultRunResult } from './process.mjs';
@@ -39,11 +40,12 @@ const VALUE_FLAGS = new Set([
   'project-root',
   'public-key',
   'receipt',
-  'recipes-dir',
+  'scrolls-dir',
   'signer',
   'signer-audience',
   'signer-command',
   'toolchain-dir',
+  'target',
   'weights',
 ]);
 
@@ -103,19 +105,56 @@ async function writeReceipt(path, value) {
   await writeFile(output, `${JSON.stringify(value, null, 2)}\n`);
 }
 
-function recipePath(name) {
-  const recipes = getWorkspace().recipesDir;
-  const path = resolve(recipes, name, 'recipe.json');
-  if (!path.startsWith(`${recipes}${sep}`)) fail(`Invalid recipe: ${name}`);
-  return path;
+async function readScroll(selector) {
+  const [boxId, targetId, ...extra] = selector.split('/');
+  if (!boxId || !targetId || extra.length > 0) fail(`Invalid scroll selector: ${selector}`);
+  const scrolls = getWorkspace().scrollsDir;
+  const path = resolve(scrolls, boxId, targetId, 'scroll.json');
+  if (!path.startsWith(`${scrolls}${sep}`)) fail(`Invalid scroll selector: ${selector}`);
+  const scroll = JSON.parse(await readFile(path, 'utf8'));
+  if (scroll.schemaVersion !== 2 || scroll.boxId !== boxId || boxTargetId(scroll.target) !== targetId) {
+    fail(`Invalid Scrollcase v2 scroll contract: ${selector}`);
+  }
+  return { scroll, selector };
 }
 
-async function readRecipe(name) {
-  const recipe = JSON.parse(await readFile(recipePath(name), 'utf8'));
-  if (recipe.schemaVersion !== 1 || recipe.recipeId !== name) {
-    fail(`Invalid recipe contract: ${name}`);
+/** Resolves the stable Liatir recipe ID to one canonical Scrollcase v2 selector. */
+async function resolveScrollReference(name, targetOverride) {
+  if (name.includes('/')) return readScroll(name);
+  if (typeof targetOverride === 'string') return readScroll(`${name}/${targetOverride}`);
+  const matches = [];
+  const scrolls = getWorkspace().scrollsDir;
+  for (const boxId of await readdir(scrolls).catch(() => [])) {
+    const boxDirectory = join(scrolls, boxId);
+    for (const targetId of await readdir(boxDirectory).catch(() => [])) {
+      try {
+        const candidate = await readScroll(`${boxId}/${targetId}`);
+        if (candidate.scroll.scrollId === name) matches.push(candidate);
+      } catch {
+        // Invalid or unrelated filesystem entries are not candidates.
+      }
+    }
   }
-  return recipe;
+  if (matches.length === 1) return matches[0];
+  if (matches.length > 1) fail(`Scroll ID is ambiguous: ${name}`);
+  fail(
+    `Unsupported Runtime Box input: ${name}. Schema-v1 recipes are deprecated; `
+      + 'migrate it to a canonical Scrollcase v2 scroll.',
+  );
+}
+
+function replaceFirstPositional(values, replacement) {
+  const result = [...values];
+  for (let index = 0; index < result.length; index += 1) {
+    if (result[index].startsWith('--')) {
+      const [name, inline] = result[index].slice(2).split('=', 2);
+      if (inline === undefined && VALUE_FLAGS.has(name)) index += 1;
+      continue;
+    }
+    result[index] = replacement;
+    return result;
+  }
+  return [replacement, ...result];
 }
 
 function publicKeyPath(flags) {
@@ -130,11 +169,11 @@ export async function verificationReceipt(releaseDocumentPath, flags, {
   const releasePath = resolve(releaseDocumentPath);
   const signed = JSON.parse(await readFile(releasePath, 'utf8'));
   const release = await verifySignedDocument(signed, publicKeyPath(flags));
-  if (release.kind !== 'liatir.runtime-box.release') {
+  if (release.schemaVersion !== 2 || release.kind !== 'liatir.runtime-box.release') {
     fail('Document is not a Liatir Runtime Box release.');
   }
   const archivePath = resolve(String(flags.get('archive')
-    || join(dirname(releasePath), `${boxReleaseStem(release)}.zip`)));
+    || join(dirname(releasePath), `${release.archive.sha256}.zip`)));
   const archive = await stat(archivePath);
   if (archive.size !== release.archive.sizeBytes) fail('Archive size mismatch after verification.');
   if (await sha256File(archivePath) !== release.archive.sha256) {
@@ -163,11 +202,14 @@ function scrollcaseArguments(command, values, flags) {
   let forwarded = withoutFlags(values, ['receipt']);
   if (command === 'build') {
     checkedNamespace(flags);
+    forwarded = withoutFlags(forwarded, ['namespace']);
+    forwarded.push('--namespace', LIATIR_SCROLLCASE_NAMESPACE);
+  }
+  if (command === 'build') {
     if (flags.has('signer-command')) {
       fail('Liatir owns the protected signer command; pass --signer and --signer-audience.');
     }
-    forwarded = withoutFlags(forwarded, ['namespace', 'signer', 'signer-audience']);
-    forwarded.push('--namespace', LIATIR_SCROLLCASE_NAMESPACE);
+    forwarded = withoutFlags(forwarded, ['signer', 'signer-audience']);
     const signerUrl = flags.get('signer') || process.env.LIATIR_RUNTIME_BOX_SIGNER_URL;
     if (signerUrl) {
       forwarded.push('--signer-command', liatirSignerCommand({
@@ -195,7 +237,23 @@ export function runScrollcaseCli(args, {
   if (result.status !== 0) fail(`Scrollcase exited with status ${result.status}`);
 }
 
-async function runPublishedCommand(command, values, parsed, options) {
+async function builtReleasePath(scroll) {
+  const directory = join(
+    getWorkspace().distDir,
+    'boxes',
+    scroll.boxId,
+    scroll.version,
+    boxTargetId(scroll.target),
+  );
+  const candidates = (await readdir(directory))
+    .filter((name) => name.endsWith('.release.json'));
+  if (candidates.length !== 1) {
+    fail(`Expected exactly one built v2 release in ${directory}; found ${candidates.length}.`);
+  }
+  return join(directory, candidates[0]);
+}
+
+async function runPublishedCommand(command, values, parsed, options, selected = null) {
   const args = scrollcaseArguments(command, values, parsed.flags);
   runScrollcaseCli(args, options);
   if (command === 'verify' && parsed.flags.get('receipt')) {
@@ -206,9 +264,7 @@ async function runPublishedCommand(command, values, parsed, options) {
     await writeReceipt(parsed.flags.get('receipt'), receipt);
   }
   if (command === 'build' && parsed.flags.get('receipt')) {
-    const name = parsed.positional[0] || fail('build requires a recipe name.');
-    const recipe = await readRecipe(name);
-    const releasePath = join(getWorkspace().distDir, `${boxReleaseStem(recipe)}.release.json`);
+    const releasePath = await builtReleasePath(selected.scroll);
     const receipt = await verificationReceipt(releasePath, parsed.flags, { selfTest: true });
     await writeReceipt(parsed.flags.get('receipt'), receipt);
   }
@@ -218,9 +274,11 @@ export function usage() {
   console.log(`Usage: npm run runtime-box -- <command> [options]
 
 Generic box commands (published Scrollcase):
+  doctor                         Report whether this machine can build
   keygen                         Create a local Ed25519 signing key
-  lock <recipe>                  Regenerate a pixi dependency lock
-  build <recipe>                 Build, self-test, archive, and sign a box
+  lock <scroll>                  Regenerate a pixi dependency lock
+  audit <scroll>                 Derive and optionally write the licence inventory
+  build <scroll>                 Build, self-test, archive, and sign a box
   verify <release.json>          Verify signature, archive hash, and layout
 
 Liatir distribution commands:
@@ -235,7 +293,7 @@ translate --signer and --signer-audience into Scrollcase's external signer comma
 `);
 }
 
-/** Stable Liatir dispatcher. The uv branch is temporary and removed after P5.3/P5.4. */
+/** Stable Liatir dispatcher. Schema-v1 authoring is unsupported; distribution remains local. */
 export async function dispatchRuntimeBox(command, values, options = {}) {
   if (!command || command === 'help' || command === '--help') return usage();
   const parsed = parseRuntimeBoxArguments(values);
@@ -244,17 +302,20 @@ export async function dispatchRuntimeBox(command, values, options = {}) {
   if (DISTRIBUTION_COMMANDS.has(command)) {
     return legacyCommand(command, values);
   }
-  if (command === 'keygen' || command === 'verify') {
+  if (command === 'doctor' || command === 'keygen' || command === 'verify') {
     return runPublishedCommand(command, values, parsed, options);
   }
-  if (command === 'lock' || command === 'build') {
-    const name = parsed.positional[0] || fail(`${command} requires a recipe name.`);
-    const recipe = await readRecipe(name);
-    if (!recipe.pixiVersion) {
-      console.error(`runtime-box: ${name} remains on the temporary uv compatibility path.`);
-      return legacyCommand(command, values);
-    }
-    return runPublishedCommand(command, values, parsed, options);
+  if (command === 'lock' || command === 'audit' || command === 'build') {
+    const name = parsed.positional[0] || fail(`${command} requires a scroll name.`);
+    const selected = await resolveScrollReference(name, parsed.flags.get('target'));
+    const forwarded = replaceFirstPositional(values, selected.selector);
+    return runPublishedCommand(
+      command,
+      forwarded,
+      parseRuntimeBoxArguments(forwarded),
+      options,
+      selected,
+    );
   }
   fail(`Unknown command: ${command}`);
 }

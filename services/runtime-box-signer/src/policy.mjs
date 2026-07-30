@@ -104,7 +104,7 @@ function validateRelease(policy, payload) {
   validateHostEnvironments(payload);
   exactAssetUrl(policy, payload.archive.url, `boxes/${payload.boxId}/${payload.version}/${target}/${payload.archive.sha256}.zip`);
   requireValue(payload.provenance?.sourceTreeDirty === false, 'dirty source trees cannot be signed for production');
-  for (const field of ['recipeId', 'recipeVersion', 'builderRevision', 'sourceRevision', 'pythonVersion', 'uvVersion', 'dependencyLockSha256', 'builtAt']) {
+  for (const field of ['scrollId', 'scrollVersion', 'builderRevision', 'sourceRevision', 'pythonVersion', 'pixiVersion', 'dependencyLockSha256', 'builtAt']) {
     requireValue(typeof payload.provenance?.[field] === 'string' && payload.provenance[field].length > 0, `missing provenance ${field}`);
   }
   requireValue(SHA256.test(payload.provenance.dependencyLockSha256), 'invalid dependency lock SHA-256');
@@ -156,7 +156,7 @@ function validateRevocations(policy, payload) {
 /** Validate the exact payload before KMS is allowed to sign it. */
 export function validateSigningPayload(policy, payload) {
   requireValue(payload && typeof payload === 'object' && !Array.isArray(payload), 'payload must be an object');
-  requireValue(payload.schemaVersion === 1, 'unsupported Runtime Box schema');
+  requireValue(payload.schemaVersion === 2, 'unsupported Runtime Box schema');
   if (payload.kind === 'liatir.runtime-box.release') validateRelease(policy, payload);
   else if (payload.kind === 'liatir.runtime-box.channel') validateChannel(policy, payload);
   else if (payload.kind === 'liatir.runtime-box.revocations') validateRevocations(policy, payload);

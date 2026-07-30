@@ -16,6 +16,7 @@ RUNNER_ONLINE_TIMEOUT_SECONDS=11400
 MODEL_ID=""
 TARGET_ID=""
 MODE=""
+FOUNDATION_ID=""
 RUNNER_ROOT=""
 PREFLIGHT_ONLY=0
 RUNNER_NAME=""
@@ -26,7 +27,7 @@ MARKER_NAME=".liatir-runtime-box-runner"
 usage() {
   cat <<'EOF'
 Usage: scripts/run-runtime-box-selfhosted-runner.sh \
-         --model MODEL_ID --target TARGET_ID --mode MODE \
+         (--model MODEL_ID --target TARGET_ID --mode MODE | --foundation FIXTURE_ID) \
          --runner-root ABSOLUTE_PATH [--preflight-only]
 
 Preflights or runs one private, repository-scoped, ephemeral GitHub Actions runner
@@ -43,12 +44,13 @@ EOF
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --model|--target|--mode|--runner-root)
+    --model|--target|--mode|--foundation|--runner-root)
       [[ $# -ge 2 ]] || { echo "$1 requires a value." >&2; exit 2; }
       case "$1" in
         --model) MODEL_ID="$2" ;;
         --target) TARGET_ID="$2" ;;
         --mode) MODE="$2" ;;
+        --foundation) FOUNDATION_ID="$2" ;;
         --runner-root) RUNNER_ROOT="$2" ;;
       esac
       shift
@@ -69,9 +71,17 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-for required in MODEL_ID TARGET_ID MODE RUNNER_ROOT; do
-  [[ -n "${!required}" ]] || { echo "Missing required argument for ${required}." >&2; usage >&2; exit 2; }
-done
+[[ -n "$RUNNER_ROOT" ]] || { echo "Missing required argument for RUNNER_ROOT." >&2; usage >&2; exit 2; }
+if [[ -n "$FOUNDATION_ID" ]]; then
+  [[ -z "$MODEL_ID" && -z "$TARGET_ID" && -z "$MODE" ]] || {
+    echo "--foundation cannot be combined with --model, --target, or --mode." >&2
+    exit 2
+  }
+else
+  for required in MODEL_ID TARGET_ID MODE; do
+    [[ -n "${!required}" ]] || { echo "Missing required argument for ${required}." >&2; usage >&2; exit 2; }
+  done
+fi
 
 [[ "$RUNNER_ROOT" == /* ]] || { echo "--runner-root must be an explicit absolute path." >&2; exit 2; }
 [[ "$RUNNER_ROOT" != "/" ]] || { echo "The filesystem root cannot be used as a runner root." >&2; exit 2; }
@@ -128,11 +138,16 @@ else
   exit 1
 fi
 
-RESOLUTION="$(node "$REPOSITORY_ROOT/scripts/runtime-box-ci.mjs" resolve \
-  --model "$MODEL_ID" \
-  --target "$TARGET_ID" \
-  --mode "$MODE" \
-  --native-requested false)"
+if [[ -n "$FOUNDATION_ID" ]]; then
+  RESOLUTION="$(node "$REPOSITORY_ROOT/scripts/runtime-box-ci.mjs" resolve-foundation \
+    --recipe "$FOUNDATION_ID")"
+else
+  RESOLUTION="$(node "$REPOSITORY_ROOT/scripts/runtime-box-ci.mjs" resolve \
+    --model "$MODEL_ID" \
+    --target "$TARGET_ID" \
+    --mode "$MODE" \
+    --native-requested false)"
+fi
 json_field() {
   node -e 'const value=JSON.parse(process.argv[1]); process.stdout.write(String(value[process.argv[2]]));' "$RESOLUTION" "$1"
 }

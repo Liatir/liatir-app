@@ -164,10 +164,17 @@ describe('Runtime Box CI catalog', () => {
 
   it('derives the small native fixture matrix from checked runner profiles', () => {
     expect(foundationMatrix(catalog)).toEqual(expect.arrayContaining([
-      expect.objectContaining({ recipeId: 'installer-fixture-linux-x86_64', runsOn: 'ubuntu-24.04', heartbeatSeconds: 300 }),
-      expect.objectContaining({ recipeId: 'installer-fixture-windows-x86_64', runsOn: 'windows-2025' }),
+      expect.objectContaining({ recipeId: 'installer-fixture-linux-x86_64', runsOn: 'liatir-linux-selfhosted', heartbeatSeconds: 300 }),
+      expect.objectContaining({ recipeId: 'installer-fixture-windows-x86_64', runsOn: 'liatir-windows-selfhosted' }),
       expect.objectContaining({ recipeId: 'installer-fixture-macos-arm64', runsOn: 'macos-15' }),
     ]));
+    expect(foundationMatrix(catalog, 'installer-fixture-linux-x86_64')).toEqual([
+      expect.objectContaining({
+        recipeId: 'installer-fixture-linux-x86_64',
+        runsOn: 'liatir-linux-selfhosted',
+      }),
+    ]);
+    expect(() => foundationMatrix(catalog, 'missing')).toThrow(/unknown or ambiguous/);
   });
 
   it('keeps the checked cost policy manual, serial, uncached, and low-noise', () => {
@@ -303,6 +310,7 @@ describe('Runtime Box CI catalog', () => {
     // Operational parameters come from the catalog, never hardcoded in a launcher.
     for (const launcher of [posix, windows]) {
       expect(launcher).toContain('runtime-box-ci.mjs');
+      expect(launcher).toContain('resolve-foundation');
       expect(launcher).not.toContain('liatir-linux-selfhosted');
       expect(launcher).not.toContain('liatir-windows-selfhosted');
     }

@@ -102,6 +102,20 @@ function defaultStateFor(_modelId: string): StoredAIModelState {
   };
 }
 
+/** Keeps schema-v1 installs removable but prevents them from being dispatched or updated. */
+function rejectUnsupportedRuntimeBoxState(state: StoredAIModelState): StoredAIModelState {
+  const activation = state.runtimeBoxActivation as
+    | { schemaVersion?: number }
+    | undefined;
+  if (!activation || activation.schemaVersion === 2) return state;
+  return {
+    ...state,
+    status: 'error',
+    enabled: false,
+    error: 'This AI Model uses an unsupported Runtime Box format. Remove and reinstall it.',
+  };
+}
+
 function createAIModelsStore() {
   let initialized = false;
   let modelStates = $state<Record<string, StoredAIModelState>>({});
@@ -284,7 +298,11 @@ function createAIModelsStore() {
       // Outside the desktop app (e.g. a browser preview) there is no storage to read.
       if (!liatir()) return;
       try {
-        modelStates = await readStoredStateFile(file);
+        modelStates = Object.fromEntries(
+          Object.entries(await readStoredStateFile(file)).map(
+            ([id, state]) => [id, rejectUnsupportedRuntimeBoxState(state)],
+          ),
+        );
       } catch {
         // A corrupted aggregate file is not fatal — the markers below can rebuild what matters.
         modelStates = {};
@@ -296,16 +314,17 @@ function createAIModelsStore() {
           if (!await appStorage.exists(markerFile)) continue;
           const raw = await appStorage.readText(markerFile);
           const marker = JSON.parse(raw) as StoredAIModelState;
+          const recovered = rejectUnsupportedRuntimeBoxState({
+            ...defaultStateFor(metadata.id),
+            ...(modelStates[metadata.id] ?? {}),
+            ...marker,
+            status: 'installed',
+            // `enabled` is a user preference, so keep whatever was set rather than resetting it.
+            enabled: marker.enabled ?? modelStates[metadata.id]?.enabled ?? true,
+          });
           modelStates = {
             ...modelStates,
-            [metadata.id]: {
-              ...defaultStateFor(metadata.id),
-              ...(modelStates[metadata.id] ?? {}),
-              ...marker,
-              status: 'installed',
-              // `enabled` is a user preference, so keep whatever was set rather than resetting it.
-              enabled: marker.enabled ?? modelStates[metadata.id]?.enabled ?? true,
-            },
+            [metadata.id]: recovered,
           };
         } catch { /* marker recovery is best-effort */ }
       }

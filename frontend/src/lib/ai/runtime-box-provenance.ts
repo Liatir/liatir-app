@@ -9,7 +9,12 @@ export function runtimeBoxActivationFromMetadata(
 	const activation = (metadata as Record<string, unknown>).runtimeBoxActivation;
 	if (!activation || typeof activation !== 'object' || Array.isArray(activation)) return undefined;
 	const value = activation as Partial<LiatirRuntimeBoxActivationMetadata>;
-	if (value.schemaVersion !== 1 || !value.selectedTarget || !value.release) return undefined;
+	if (
+		value.schemaVersion !== 2 ||
+		!value.selectedTarget ||
+		!value.release ||
+		!value.signedRelease
+	) return undefined;
 	return value as LiatirRuntimeBoxActivationMetadata;
 }
 

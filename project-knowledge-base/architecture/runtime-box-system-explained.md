@@ -354,9 +354,9 @@ installed Scrollcase executable. Scrollcase:
 9. calculates archive and installed sizes.
 
 The resulting box remains self-contained: the final user does not install
-Scrollcase, pixi, conda-pack, or Python. The nine uv recipes temporarily follow
-Liatir's checked compatibility builder until they migrate; new generic pixi
-work must not bypass Scrollcase.
+Scrollcase, pixi, conda-pack, or Python. Model authoring records that have not
+yet moved to schema-v2 scrolls are frozen build inputs until P5.4 migrates them;
+new generic pixi work must not bypass Scrollcase.
 
 #### 7. Run an independent self-test
 
@@ -952,10 +952,11 @@ their own scoped evidence.
 | Live model/target/publication catalog | `runtime-boxes/catalog.json` |
 | Human-readable support matrix | `runtime-boxes/compatibility-matrix.md` |
 | Reviewed compact evidence | `runtime-boxes/evidence/` |
-| Recipes and dependency locks | `runtime-boxes/recipes/` |
+| V2 scrolls and dependency locks | `runtime-boxes/scrolls/` |
+| Frozen pre-v2 model authoring records | `runtime-boxes/recipes/` until P5.4 |
 | Legal reviews | `runtime-boxes/legal/` |
 | Shared TypeScript contract | `packages/liatir-core/src/runtime-box.ts` |
-| Generic box contract, pixi build, signing envelope and verify | Selected v2-only external dependency `scrollcase@0.4.11`; the checkout remains on historical `0.1.3` until P5.2V; public exports and declared `scrollcase` executable only |
+| Generic box contract, pixi build, signing envelope and verify | Exact v2-only external dependency `scrollcase@0.4.11`; public exports and declared `scrollcase` executable only |
 | Stable Liatir operator dispatcher | `scripts/runtime-box.mjs` and `scripts/runtime-box/scrollcase-adapter.mjs` |
 | Private signer adapter | `scripts/runtime-box/signer-command.mjs` |
 | Liatir distribution and temporary uv compatibility | `scripts/runtime-box/legacy-cli.mjs` until P5 migration splits/deletes the generic legacy path |

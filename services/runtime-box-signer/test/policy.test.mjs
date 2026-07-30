@@ -17,7 +17,7 @@ import { runtimeBoxPolicyFingerprint, runtimeBoxTargetId, validateSigningPayload
 const policy = JSON.parse(await readFile(new URL('../policy.json', import.meta.url), 'utf8'));
 /** A known-good release, used as the baseline that each rejection test then perturbs one field of. */
 const release = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   kind: 'liatir.runtime-box.release',
   boxId: 'geneformer-v1-10m',
   modelId: 'ctheodoris-geneformer-v1-10m',
@@ -34,9 +34,9 @@ const release = {
   modelCacheSubdir: 'model-cache/geneformer-v1-10m',
   selfTest: { pythonImports: ['torch'], timeoutSeconds: 180 },
   provenance: {
-    recipeId: 'geneformer-v1-10m-macos-arm64-metal', recipeVersion: '1.0.0',
+    scrollId: 'geneformer-v1-10m-macos-arm64-metal', scrollVersion: '1.0.0',
     builderRevision: 'revision', sourceTreeDirty: false, sourceRevision: 'source',
-    pythonVersion: '3.11.9', uvVersion: '0.11.28', dependencyLockSha256: 'b'.repeat(64),
+    pythonVersion: '3.11.9', pixiVersion: '0.73.0', dependencyLockSha256: 'b'.repeat(64),
     builtAt: '2026-07-12T00:00:00.000Z',
   },
 };
@@ -84,12 +84,12 @@ test('accepts the approved scGPT Linux CPU identity', () => {
     modelCacheSubdir: 'model-cache/scgpt-whole-human',
     provenance: {
       ...release.provenance,
-      recipeId: 'scgpt-whole-human-linux-x86_64-cpu',
+      scrollId: 'scgpt-whole-human-linux-x86_64-cpu',
     },
   }));
 });
 
-test('accepts a signed installed size while keeping legacy releases valid', () => {
+test('accepts an optional signed installed size', () => {
   assert.doesNotThrow(() => validateSigningPayload(policy, {
     ...release,
     installedSizeBytes: 25,
@@ -144,7 +144,7 @@ test('accepts the approved native Windows CPU payload', () => {
     pythonEntryPoint: 'venv/python.exe',
     provenance: {
       ...release.provenance,
-      recipeId: 'geneformer-v1-10m-windows-x86_64-cpu',
+      scrollId: 'geneformer-v1-10m-windows-x86_64-cpu',
     },
   }));
 });
@@ -157,6 +157,13 @@ test('matches the shared Runtime Box target ID contract', async () => {
   for (const fixture of contract.invalid) {
     assert.throws(() => runtimeBoxTargetId(fixture.target), undefined, fixture.name);
   }
+});
+
+test('rejects schema-v1 payloads explicitly', () => {
+  assert.throws(
+    () => validateSigningPayload(policy, { ...release, schemaVersion: 1 }),
+    /unsupported Runtime Box schema/,
+  );
 });
 
 test('accepts native host metadata and rejects WSL2 metadata on non-Linux payloads', () => {

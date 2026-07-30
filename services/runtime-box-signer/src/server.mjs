@@ -143,7 +143,7 @@ const server = createServer(async (request, response) => {
     // One structured line per signature: this is the audit record of everything ever signed.
     console.log(JSON.stringify({ event: 'runtime_box_document_signed', kind: payload.kind, boxId: payload.boxId ?? null, payloadSha256 }));
     return json(response, 200, {
-      schemaVersion: 1,
+      schemaVersion: 2,
       payloadEncoding: 'base64-json-utf8',
       // Echoed back verbatim, not re-encoded: this is the exact string the signature covers.
       payloadBase64: input.payloadBase64,

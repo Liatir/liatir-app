@@ -53,6 +53,8 @@ const AI_RUNTIME_ROOT: &str = "ai-runtimes";
 const MAX_CONTROL_DOCUMENT_BYTES: usize = 1024 * 1024;
 /// `minRamGb` is a shared wire-contract value expressed in decimal gigabytes.
 const BYTES_PER_DECIMAL_GIGABYTE: u64 = 1_000_000_000;
+/// Scrollcase v2 is the only Runtime Box wire format accepted by this build.
+const RUNTIME_BOX_SCHEMA_VERSION: u32 = 2;
 // Trust anchors are baked into the binary at compile time rather than read from disk:
 // a key the user could edit would defeat the point of signing.
 const PRODUCTION_TRUST_KEY: &str =
@@ -176,6 +178,9 @@ struct ReleaseManifest {
     python_entry_point: String,
     model_cache_subdir: String,
     self_test: RuntimeBoxSelfTest,
+    execution: Option<serde_json::Value>,
+    weights: Option<String>,
+    assets: Option<serde_json::Value>,
     /// Build provenance kept as opaque JSON: it is signed and persisted with the box
     /// for auditing, but this module never interprets it.
     provenance: serde_json::Value,
@@ -183,7 +188,7 @@ struct ReleaseManifest {
 
 /// Host requirements checked before downloading anything, so an incompatible box fails
 /// fast with a readable message instead of after a multi-gigabyte download.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 struct RuntimeBoxCompatibility {
     min_liatir_version: String,
@@ -227,7 +232,7 @@ struct RuntimeBoxArchive {
 
 /// Post-extraction smoke test: import these modules with the box's own interpreter.
 /// A box that unpacks but cannot import its own dependencies never gets activated.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 struct RuntimeBoxSelfTest {
     python_imports: Vec<String>,
@@ -268,6 +273,12 @@ struct ExtractedBoxMetadata {
     version: String,
     target: RuntimeBoxTarget,
     python_entry_point: String,
+    model_cache_subdir: String,
+    self_test: RuntimeBoxSelfTest,
+    execution: Option<serde_json::Value>,
+    weights: Option<String>,
+    assets: Option<serde_json::Value>,
+    provenance: serde_json::Value,
 }
 
 /// Durable provenance stored inside an activated Runtime Box and copied to AI Job metadata.
@@ -298,8 +309,9 @@ pub struct RuntimeBoxInstallResult {
 
 /// Reads and validates durable Runtime Box provenance for AI Job/Result attribution.
 ///
-/// Older installations stored the bare release manifest. They remain readable, while new
-/// activation envelopes are re-verified against the compiled trust roots before every run.
+/// Schema-v1 installations remain removable through filesystem ownership, but are never parsed
+/// or dispatched. V2 activation envelopes are re-verified against the compiled trust roots before
+/// every run.
 pub(crate) fn runtime_box_activation_metadata(
     app: &AppHandle,
     runtime_id: &str,
@@ -314,37 +326,32 @@ pub(crate) fn runtime_box_activation_metadata(
     let value: serde_json::Value = serde_json::from_slice(&bytes)
         .map_err(|error| format!("invalid AI Runtime Box activation metadata: {error}"))?;
 
-    let activation = if value.get("release").is_some() {
-        let activation: RuntimeBoxActivationMetadata = serde_json::from_value(value)
-            .map_err(|error| format!("invalid AI Runtime Box activation metadata: {error}"))?;
-        if activation.schema_version != 1 || activation.selected_target != activation.release.target
-        {
-            return Err("AI Runtime Box activation target does not match its release".to_string());
-        }
-        let document = activation.signed_release.as_ref().ok_or_else(|| {
-            "AI Runtime Box activation metadata is missing its signed release".to_string()
-        })?;
-        let signed_bytes = serde_json::to_vec(document).map_err(|error| error.to_string())?;
-        let verified: ReleaseManifest = verify_signed_payload(&signed_bytes)?;
-        if serde_json::to_value(&verified).map_err(|error| error.to_string())?
-            != serde_json::to_value(&activation.release).map_err(|error| error.to_string())?
-        {
-            return Err(
-                "AI Runtime Box activation release does not match its signed metadata".to_string(),
-            );
-        }
-        activation
-    } else {
-        let release: ReleaseManifest = serde_json::from_value(value).map_err(|error| {
-            format!("invalid legacy AI Runtime Box activation metadata: {error}")
-        })?;
-        RuntimeBoxActivationMetadata {
-            schema_version: 1,
-            selected_target: release.target.clone(),
-            release,
-            signed_release: None,
-        }
-    };
+    if value.get("release").is_none()
+        || value.get("schemaVersion").and_then(serde_json::Value::as_u64)
+            != Some(u64::from(RUNTIME_BOX_SCHEMA_VERSION))
+    {
+        return Err(
+            "AI Runtime Box format is unsupported; remove and reinstall this Runtime Box"
+                .to_string(),
+        );
+    }
+    let activation: RuntimeBoxActivationMetadata = serde_json::from_value(value)
+        .map_err(|error| format!("invalid AI Runtime Box activation metadata: {error}"))?;
+    if activation.selected_target != activation.release.target {
+        return Err("AI Runtime Box activation target does not match its release".to_string());
+    }
+    let document = activation.signed_release.as_ref().ok_or_else(|| {
+        "AI Runtime Box activation metadata is missing its signed release".to_string()
+    })?;
+    let signed_bytes = serde_json::to_vec(document).map_err(|error| error.to_string())?;
+    let verified: ReleaseManifest = verify_signed_payload(&signed_bytes)?;
+    if serde_json::to_value(&verified).map_err(|error| error.to_string())?
+        != serde_json::to_value(&activation.release).map_err(|error| error.to_string())?
+    {
+        return Err(
+            "AI Runtime Box activation release does not match its signed metadata".to_string(),
+        );
+    }
 
     serde_json::to_value(activation)
         .map(Some)
@@ -455,7 +462,9 @@ fn trusted_keys() -> Result<Vec<TrustedKey>, String> {
 fn verify_signed_payload<T: for<'de> Deserialize<'de>>(bytes: &[u8]) -> Result<T, String> {
     let document: SignedDocument = serde_json::from_slice(bytes)
         .map_err(|error| format!("invalid signed Runtime Box document: {error}"))?;
-    if document.schema_version != 1 || document.payload_encoding != "base64-json-utf8" {
+    if document.schema_version != RUNTIME_BOX_SCHEMA_VERSION
+        || document.payload_encoding != "base64-json-utf8"
+    {
         return Err("unsupported signed Runtime Box document".to_string());
     }
     let payload = BASE64
@@ -964,7 +973,9 @@ fn verify_release_identity(
     target: &RuntimeBoxTarget,
     host: &RuntimeBoxHostCapabilities,
 ) -> Result<(), String> {
-    if release.schema_version != 1 || release.kind != "liatir.runtime-box.release" {
+    if release.schema_version != RUNTIME_BOX_SCHEMA_VERSION
+        || release.kind != "liatir.runtime-box.release"
+    {
         return Err("invalid AI Runtime Box release manifest".to_string());
     }
     if release.box_id != box_id || release.model_id != model_id {
@@ -1034,7 +1045,9 @@ async fn ensure_not_revoked(
         return Ok(());
     };
     let manifest: RevocationsManifest = verify_signed_payload(&bytes)?;
-    if manifest.schema_version != 1 || manifest.kind != "liatir.runtime-box.revocations" {
+    if manifest.schema_version != RUNTIME_BOX_SCHEMA_VERSION
+        || manifest.kind != "liatir.runtime-box.revocations"
+    {
         return Err("invalid AI Runtime Box revocation document".to_string());
     }
     // A revocation without a target applies to every target of that box version.
@@ -1068,13 +1081,19 @@ fn validate_extracted_box(staging: &Path, release: &ReleaseManifest) -> Result<P
             .map_err(|error| format!("cannot read extracted box.json: {error}"))?,
     )
     .map_err(|error| format!("invalid extracted box.json: {error}"))?;
-    if metadata.schema_version != 1
+    if metadata.schema_version != RUNTIME_BOX_SCHEMA_VERSION
         || metadata.box_id != release.box_id
         || metadata.model_id != release.model_id
         || metadata.runtime_id != release.runtime_id
         || metadata.version != release.version
         || metadata.target != release.target
         || metadata.python_entry_point != release.python_entry_point
+        || metadata.model_cache_subdir != release.model_cache_subdir
+        || metadata.self_test != release.self_test
+        || metadata.execution != release.execution
+        || metadata.weights != release.weights
+        || metadata.assets != release.assets
+        || metadata.provenance != release.provenance
     {
         return Err(
             "extracted AI Runtime Box metadata does not match the signed release".to_string(),
@@ -1397,7 +1416,7 @@ pub async fn lia_ai_runtime_box_install(
     let channel_manifest: ChannelManifest = verify_signed_payload(&channel_bytes)?;
     // Signed *and* addressed to us: a valid document served from the wrong URL (or for another
     // box or target) is still rejected.
-    if channel_manifest.schema_version != 1
+    if channel_manifest.schema_version != RUNTIME_BOX_SCHEMA_VERSION
         || channel_manifest.kind != "liatir.runtime-box.channel"
         || channel_manifest.channel != channel
         || channel_manifest.box_id != box_id
@@ -1538,7 +1557,7 @@ pub async fn lia_ai_runtime_box_install(
         // Persist both the selected target and the exact signed release envelope. The installed
         // directory then carries complete provenance without contacting the registry.
         let activation = RuntimeBoxActivationMetadata {
-            schema_version: 1,
+            schema_version: RUNTIME_BOX_SCHEMA_VERSION,
             selected_target: target.clone(),
             release: release.clone(),
             signed_release: Some(signed_release.clone()),
@@ -1703,7 +1722,7 @@ mod tests {
 
     fn release_json() -> serde_json::Value {
         serde_json::json!({
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "kind": "liatir.runtime-box.release",
             "boxId": "fixture",
             "modelId": "liatir-fixture",
@@ -1752,27 +1771,42 @@ mod tests {
 
         let release: ReleaseManifest =
             serde_json::from_value(fixtures["release"].clone()).unwrap();
-        assert_eq!(release.schema_version, 1);
+        assert_eq!(release.schema_version, RUNTIME_BOX_SCHEMA_VERSION);
         assert_eq!(release.kind, "liatir.runtime-box.release");
-
-        let legacy_release: ReleaseManifest =
-            serde_json::from_value(fixtures["legacyUvRelease"].clone()).unwrap();
         assert_eq!(
-            legacy_release.provenance["uvVersion"],
-            serde_json::Value::String("0.11.28".to_string())
+            release.provenance["pixiVersion"],
+            serde_json::Value::String("0.50.0".to_string())
         );
 
         let channel: ChannelManifest =
             serde_json::from_value(fixtures["channel"].clone()).unwrap();
-        assert_eq!(channel.schema_version, 1);
+        assert_eq!(channel.schema_version, RUNTIME_BOX_SCHEMA_VERSION);
         assert_eq!(channel.kind, "liatir.runtime-box.channel");
         assert_eq!(channel.releases.len(), 1);
 
         let revocations: RevocationsManifest =
             serde_json::from_value(fixtures["revocations"].clone()).unwrap();
-        assert_eq!(revocations.schema_version, 1);
+        assert_eq!(revocations.schema_version, RUNTIME_BOX_SCHEMA_VERSION);
         assert_eq!(revocations.kind, "liatir.runtime-box.revocations");
         assert_eq!(revocations.revocations.len(), 1);
+    }
+
+    #[test]
+    fn rejects_schema_v1_release_manifests() {
+        let mut value = release_json();
+        value["schemaVersion"] = serde_json::json!(1);
+        let release: ReleaseManifest = serde_json::from_value(value).unwrap();
+        let host = host("macos", "aarch64", None);
+        assert_eq!(
+            verify_release_identity(
+                &release,
+                "fixture",
+                "liatir-fixture",
+                &target("macos", "aarch64", "metal", None),
+                &host,
+            ),
+            Err("invalid AI Runtime Box release manifest".to_string()),
+        );
     }
 
     fn target(
@@ -2220,6 +2254,38 @@ mod tests {
         assert_eq!(read_runtime_marker(&runtime), "activate-lock");
 
         std::fs::remove_dir_all(root).unwrap();
+    }
+
+    /// The native P5.3 validator supplies a Scrollcase-v2 archive and its already verified release
+    /// payload. This exercises the production Rust extractor and complete box.json agreement on
+    /// each matching host without adding a second signing implementation to the fixture.
+    #[test]
+    #[ignore = "run through npm run runtime-box:test:native"]
+    fn runtime_box_v2_archive_fixture() {
+        let archive = std::env::var("LIATIR_RUNTIME_BOX_V2_ARCHIVE_FIXTURE")
+            .expect("v2 Runtime Box fixture archive path is required");
+        let release_path = std::env::var("LIATIR_RUNTIME_BOX_V2_RELEASE_FIXTURE")
+            .expect("v2 Runtime Box fixture release path is required");
+        let release: ReleaseManifest = serde_json::from_slice(
+            &std::fs::read(release_path).expect("cannot read v2 fixture release"),
+        )
+        .expect("cannot parse v2 fixture release");
+        assert_eq!(release.schema_version, RUNTIME_BOX_SCHEMA_VERSION);
+
+        let destination = std::env::temp_dir().join(format!(
+            "liatir-runtime-box-v2-extract-{}",
+            Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(&destination).unwrap();
+        extract_zip_with_expected_size(
+            &archive,
+            &destination.to_string_lossy(),
+            release.installed_size_bytes,
+        )
+        .unwrap();
+        let python = validate_extracted_box(&destination, &release).unwrap();
+        assert!(python.is_file());
+        std::fs::remove_dir_all(destination).unwrap();
     }
 
     /// The focused foundation validator supplies a deterministic Zip64 archive containing one

@@ -1,6 +1,6 @@
 {
   "release": {
-    "schemaVersion": 1,
+    "schemaVersion": 2,
     "kind": "liatir.runtime-box.release",
     "boxId": "fixture",
     "modelId": "liatir-fixture",
@@ -36,60 +36,19 @@
       "timeoutSeconds": 10
     },
     "provenance": {
-      "recipeId": "fixture-macos-arm64",
-      "recipeVersion": "1.0.0",
+      "scrollId": "fixture-macos-arm64",
+      "scrollVersion": "1.0.0",
       "builderRevision": "0123456789abcdef0123456789abcdef01234567",
       "sourceTreeDirty": false,
-      "sourceRevision": "fixture-source-v1",
+      "sourceRevision": "fixture-source-v2",
       "pythonVersion": "3.11.9",
       "pixiVersion": "0.50.0",
       "dependencyLockSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "builtAt": "2026-07-26T12:00:00.000Z"
     }
   },
-  "legacyUvRelease": {
-    "schemaVersion": 1,
-    "kind": "liatir.runtime-box.release",
-    "boxId": "fixture",
-    "modelId": "liatir-fixture",
-    "runtimeId": "fixture-runtime",
-    "version": "0.9.0",
-    "target": {
-      "platform": "macos",
-      "arch": "aarch64",
-      "accelerator": "metal"
-    },
-    "compatibility": {
-      "minLiatirVersion": "0.2.1"
-    },
-    "archive": {
-      "format": "zip",
-      "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/fixture/0.9.0/macos-aarch64-metal/cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.zip",
-      "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-      "sizeBytes": 512
-    },
-    "pythonEntryPoint": "venv/bin/python",
-    "modelCacheSubdir": "model-cache/fixture",
-    "selfTest": {
-      "pythonImports": [
-        "json"
-      ],
-      "timeoutSeconds": 10
-    },
-    "provenance": {
-      "recipeId": "fixture-macos-arm64",
-      "recipeVersion": "0.9.0",
-      "builderRevision": "fedcba9876543210fedcba9876543210fedcba98",
-      "sourceTreeDirty": false,
-      "sourceRevision": "fixture-source-v0",
-      "pythonVersion": "3.11.9",
-      "uvVersion": "0.11.28",
-      "dependencyLockSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-      "builtAt": "2026-07-12T12:00:00.000Z"
-    }
-  },
   "channel": {
-    "schemaVersion": 1,
+    "schemaVersion": 2,
     "kind": "liatir.runtime-box.channel",
     "channel": "beta",
     "boxId": "fixture",
@@ -109,7 +68,7 @@
     ]
   },
   "revocations": {
-    "schemaVersion": 1,
+    "schemaVersion": 2,
     "kind": "liatir.runtime-box.revocations",
     "updatedAt": "2026-07-26T12:00:00.000Z",
     "revocations": [

@@ -39,7 +39,6 @@ import {
 
 interface CompatibilityFixtures {
   release: LiatirRuntimeBoxReleaseManifest;
-  legacyUvRelease: LiatirRuntimeBoxReleaseManifest;
   channel: LiatirRuntimeBoxChannelManifest;
   revocations: LiatirRuntimeBoxRevocationsManifest;
   expected: {
@@ -58,7 +57,8 @@ const fixtures = JSON.parse(
 
 const schemaNames = [
   "target",
-  "recipe",
+  "execution",
+  "scroll",
   "box-manifest",
   "release-manifest",
   "channel-manifest",
@@ -112,7 +112,7 @@ describe("Liatir contract inversion over Scrollcase", () => {
   });
 
   it("keeps target and immutable object identity byte-compatible", () => {
-    expect(BOX_SCHEMA_VERSION).toBe(1);
+    expect(BOX_SCHEMA_VERSION).toBe(2);
     expect(runtimeBoxTargetId(fixtures.release.target)).toBe(fixtures.expected.targetId);
     expect(boxReleaseStem(fixtures.release)).toBe(fixtures.expected.releaseStem);
     expect(runtimeBoxReleaseStem(fixtures.release)).toBe(fixtures.expected.releaseStem);
@@ -144,7 +144,7 @@ describe("Liatir contract inversion over Scrollcase", () => {
       expectSchema("signed-document", signed);
       expect(isSignedBoxDocument(signed)).toBe(true);
       expect(isLiatirSignedRuntimeBoxDocument(signed)).toBe(true);
-      expect(signed.schemaVersion).toBe(1);
+      expect(signed.schemaVersion).toBe(2);
       expect(signed.payloadEncoding).toBe("base64-json-utf8");
       expect(signed.signatures[0].algorithm).toBe("ed25519");
       expect(Buffer.from(signed.payloadBase64, "base64")).toEqual(expectedBytes);
@@ -153,10 +153,17 @@ describe("Liatir contract inversion over Scrollcase", () => {
     }
   });
 
-  it("keeps already-issued uv provenance readable without treating it as a new Scrollcase build", async () => {
-    expect(fixtures.legacyUvRelease.provenance).toMatchObject({ uvVersion: "0.11.28" });
-    const signed = await signDocument(fixtures.legacyUvRelease, { privatePath, publicPath });
-    expect(isLiatirSignedRuntimeBoxDocument(signed)).toBe(true);
-    expect(await verifySignedDocument(signed, publicPath)).toEqual(fixtures.legacyUvRelease);
+  it("rejects schema-v1 signed envelopes instead of retaining a compatibility path", () => {
+    expect(isLiatirSignedRuntimeBoxDocument({
+      schemaVersion: 1,
+      payloadEncoding: "base64-json-utf8",
+      payloadBase64: "e30=",
+      payloadSha256: "0".repeat(64),
+      signatures: [{
+        keyId: "legacy-v1",
+        algorithm: "ed25519",
+        signatureBase64: "AA==",
+      }],
+    })).toBe(false);
   });
 });

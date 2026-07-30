@@ -13,9 +13,10 @@ parameter (label, name prefix, disk floor) is read from runtime-boxes/catalog.js
 #>
 [CmdletBinding()]
 param(
-  [Parameter(Mandatory = $true)][string]$Model,
-  [Parameter(Mandatory = $true)][string]$Target,
-  [Parameter(Mandatory = $true)][string]$Mode,
+  [string]$Model = '',
+  [string]$Target = '',
+  [string]$Mode = '',
+  [string]$Foundation = '',
   [Parameter(Mandatory = $true)][string]$RunnerRoot,
   [switch]$PreflightOnly
 )
@@ -53,14 +54,27 @@ if (Test-Path -LiteralPath $RunnerRoot) {
   }
 }
 
+if (-not [string]::IsNullOrEmpty($Foundation)) {
+  if (-not [string]::IsNullOrEmpty($Model) -or -not [string]::IsNullOrEmpty($Target) -or -not [string]::IsNullOrEmpty($Mode)) {
+    Fail '-Foundation cannot be combined with -Model, -Target, or -Mode.' 2
+  }
+} elseif ([string]::IsNullOrEmpty($Model) -or [string]::IsNullOrEmpty($Target) -or [string]::IsNullOrEmpty($Mode)) {
+  Fail 'Provide either -Foundation or all of -Model, -Target, and -Mode.' 2
+}
+
 if ($env:PROCESSOR_ARCHITECTURE -ne 'AMD64') { Fail "Unsupported self-hosted host architecture: $env:PROCESSOR_ARCHITECTURE" }
 foreach ($command in @('gh', 'node')) {
   if (-not (Get-Command $command -ErrorAction SilentlyContinue)) { Fail "Missing required command: $command" }
 }
 
 # Resolve the runner contract from the catalog; never hardcode labels or floors here.
-$resolution = & node (Join-Path $RepositoryRoot 'scripts/runtime-box-ci.mjs') resolve `
-  --model $Model --target $Target --mode $Mode --native-requested false
+if (-not [string]::IsNullOrEmpty($Foundation)) {
+  $resolution = & node (Join-Path $RepositoryRoot 'scripts/runtime-box-ci.mjs') resolve-foundation `
+    --recipe $Foundation
+} else {
+  $resolution = & node (Join-Path $RepositoryRoot 'scripts/runtime-box-ci.mjs') resolve `
+    --model $Model --target $Target --mode $Mode --native-requested false
+}
 if ($LASTEXITCODE -ne 0) { Fail 'Target resolution failed.' }
 $resolved = $resolution | ConvertFrom-Json
 if ("$($resolved.self_hosted)" -ne 'true') { Fail 'The resolved target is not self-hosted.' }

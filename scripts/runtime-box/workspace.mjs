@@ -20,6 +20,7 @@ export const SCROLLCASE_CONFIG_FILENAME = 'scrollcase.config.json';
 
 /** Historical Liatir layout — the defaults every path falls back to. */
 export const DEFAULT_WORKSPACE_PATHS = Object.freeze({
+  scrolls: 'runtime-boxes/scrolls',
   recipes: 'runtime-boxes/recipes',
   build: '.runtime-box-build',
   dist: '.runtime-box-dist',
@@ -29,7 +30,7 @@ export const DEFAULT_WORKSPACE_PATHS = Object.freeze({
 
 /** Config path key -> resolved workspace field. */
 const PATH_FIELDS = Object.freeze({
-  recipes: 'recipesDir',
+  scrolls: 'scrollsDir',
   build: 'buildDir',
   dist: 'distDir',
   keys: 'keysDir',
@@ -38,6 +39,7 @@ const PATH_FIELDS = Object.freeze({
 
 /** CLI flag -> config path key. */
 const PATH_FLAGS = Object.freeze({
+  'scrolls-dir': 'scrolls',
   'recipes-dir': 'recipes',
   'build-dir': 'build',
   'out-dir': 'dist',
@@ -165,6 +167,10 @@ export function resolveWorkspace({ cwd = process.cwd(), overrides = {} } = {}) {
     // Config and default values belong to the project, so they resolve from its root.
     workspace[field] = resolve(root, declared ?? DEFAULT_WORKSPACE_PATHS[key]);
   }
+  const legacyRecipes = overrides.recipes;
+  workspace.recipesDir = legacyRecipes !== undefined
+    ? (isAbsolute(legacyRecipes) ? legacyRecipes : resolve(base, legacyRecipes))
+    : resolve(root, DEFAULT_WORKSPACE_PATHS.recipes);
   return Object.freeze(workspace);
 }
 

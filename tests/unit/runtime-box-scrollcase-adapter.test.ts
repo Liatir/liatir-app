@@ -9,7 +9,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { boxReleaseStem } from 'scrollcase/build';
+import { boxTargetId } from 'scrollcase/contract/browser';
 import {
   generateSigningKey,
   signDocument,
@@ -19,7 +19,6 @@ import {
   dispatchRuntimeBox,
   LIATIR_SCROLLCASE_NAMESPACE,
 } from '../../scripts/runtime-box/scrollcase-adapter.mjs';
-import { runLegacyRuntimeBoxCommand } from '../../scripts/runtime-box/legacy-cli.mjs';
 
 const temporaryDirectories: string[] = [];
 
@@ -30,24 +29,30 @@ afterEach(() => {
   }
 });
 
-function workspace(recipeId: string, recipe: Record<string, unknown>) {
+function workspace(scrollId: string, scroll: Record<string, unknown>) {
   const root = mkdtempSync(join(tmpdir(), 'liatir-scrollcase-adapter-'));
   temporaryDirectories.push(root);
-  const recipeDir = join(root, 'recipes', recipeId);
-  mkdirSync(recipeDir, { recursive: true });
+  const target = (scroll.target as Record<string, string> | undefined)
+    ?? { platform: 'macos', arch: 'aarch64', accelerator: 'metal' };
+  const boxId = String(scroll.boxId ?? 'synthetic-box');
+  const targetId = boxTargetId(target as Parameters<typeof boxTargetId>[0]);
+  const scrollDir = join(root, 'scrolls', boxId, targetId);
+  mkdirSync(scrollDir, { recursive: true });
   writeFileSync(join(root, 'scrollcase.config.json'), `${JSON.stringify({
     version: 1,
     paths: {
-      recipes: 'recipes',
+      scrolls: 'scrolls',
       build: 'build',
       dist: 'dist',
       keys: 'keys',
     },
   }, null, 2)}\n`);
-  writeFileSync(join(recipeDir, 'recipe.json'), `${JSON.stringify({
-    schemaVersion: 1,
-    recipeId,
-    ...recipe,
+  writeFileSync(join(scrollDir, 'scroll.json'), `${JSON.stringify({
+    schemaVersion: 2,
+    scrollId,
+    boxId,
+    target,
+    ...scroll,
   }, null, 2)}\n`);
   return root;
 }
@@ -89,12 +94,12 @@ describe('Liatir Scrollcase adapter', () => {
   });
 
   it('forces the frozen Liatir namespace and translates the private signer shell-free', async () => {
-    const recipeId = 'synthetic-pixi';
-    const root = workspace(recipeId, { pixiVersion: '0.73.0' });
+    const scrollId = 'synthetic-pixi';
+    const root = workspace(scrollId, { pixiVersion: '0.73.0' });
     const calls: Array<{ command: string; args: string[] }> = [];
 
     await dispatchRuntimeBox('build', [
-      recipeId,
+      scrollId,
       '--project-root', root,
       '--namespace', LIATIR_SCROLLCASE_NAMESPACE,
       '--signer', 'https://signer.example',
@@ -131,18 +136,27 @@ describe('Liatir Scrollcase adapter', () => {
     expect(calls).toHaveLength(0);
   });
 
-  it('keeps the temporary uv and permanent distribution paths explicit and Liatir-owned', async () => {
-    const root = workspace('legacy-uv', { uvVersion: '0.11.28' });
+  it('rejects schema-v1 authoring while keeping distribution paths Liatir-owned', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'liatir-scrollcase-adapter-v1-'));
+    temporaryDirectories.push(root);
+    mkdirSync(join(root, 'runtime-boxes', 'recipes', 'legacy-uv'), { recursive: true });
+    writeFileSync(join(root, 'scrollcase.config.json'), `${JSON.stringify({
+      version: 1,
+      paths: { scrolls: 'scrolls', build: 'build', dist: 'dist', keys: 'keys' },
+    })}\n`);
+    writeFileSync(
+      join(root, 'runtime-boxes', 'recipes', 'legacy-uv', 'recipe.json'),
+      `${JSON.stringify({ schemaVersion: 1, recipeId: 'legacy-uv', uvVersion: '0.11.28' })}\n`,
+    );
     const legacyCalls: Array<{ command: string; args: string[] }> = [];
-    const warning = vi.spyOn(console, 'error').mockImplementation(() => {});
     const legacyCommand = async (command: string, args: string[]) => {
       legacyCalls.push({ command, args });
     };
 
-    await dispatchRuntimeBox('build', [
+    await expect(dispatchRuntimeBox('build', [
       'legacy-uv',
       '--project-root', root,
-    ], { legacyCommand });
+    ], { legacyCommand })).rejects.toThrow(/Schema-v1 recipes are deprecated/);
     for (const [command, argument] of [
       ['publish', 'release.json'],
       ['publish-key', '--confirm'],
@@ -156,33 +170,13 @@ describe('Liatir Scrollcase adapter', () => {
       ], { legacyCommand });
     }
 
-    expect(warning).toHaveBeenCalledWith(
-      'runtime-box: legacy-uv remains on the temporary uv compatibility path.',
-    );
     expect(legacyCalls.map(({ command }) => command)).toEqual([
-      'build',
       'publish',
       'publish-key',
       'promote',
       'revoke',
       'serve',
     ]);
-  });
-
-  it('refuses to let the temporary legacy module build or lock a pixi recipe', async () => {
-    const root = workspace('synthetic-pixi', {
-      pixiVersion: '0.73.0',
-      target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
-      pythonEntryPoint: 'venv/bin/python',
-    });
-    await expect(runLegacyRuntimeBoxCommand('lock', [
-      'synthetic-pixi',
-      '--project-root', root,
-    ])).rejects.toThrow(/must be locked through the published Scrollcase CLI/);
-    await expect(runLegacyRuntimeBoxCommand('build', [
-      'synthetic-pixi',
-      '--project-root', root,
-    ])).rejects.toThrow(/must be built through the published Scrollcase CLI/);
   });
 
   it('writes the existing compact receipt only after published verification succeeds', async () => {
@@ -197,7 +191,7 @@ describe('Liatir Scrollcase adapter', () => {
     const archive = Buffer.from('synthetic verified archive');
     const archiveSha256 = createHash('sha256').update(archive).digest('hex');
     const release = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       kind: 'liatir.runtime-box.release',
       boxId: 'synthetic-box',
       modelId: 'synthetic-model',
@@ -211,8 +205,8 @@ describe('Liatir Scrollcase adapter', () => {
         sizeBytes: archive.length,
       },
     };
-    const releasePath = join(dist, `${boxReleaseStem(release)}.release.json`);
-    writeFileSync(join(dist, `${boxReleaseStem(release)}.zip`), archive);
+    const releasePath = join(dist, `${archiveSha256}.release.json`);
+    writeFileSync(join(dist, `${archiveSha256}.zip`), archive);
     writeFileSync(releasePath, `${JSON.stringify(await signDocument(release, {
       privatePath,
       publicPath,
@@ -276,7 +270,7 @@ describe('Liatir Scrollcase adapter', () => {
       publicPath,
     );
     expect(payload).toMatchObject({
-      schemaVersion: 1,
+      schemaVersion: 2,
       kind: 'liatir.runtime-box.revocations',
       revocations: [{
         boxId: 'synthetic-box',
