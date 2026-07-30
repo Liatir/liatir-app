@@ -548,16 +548,31 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
       }
     }
     const foundation = readFileSync(resolve(workspaceRoot(), '.github/workflows/runtime-box-foundation.yml'), 'utf8');
-    requireCatalog(foundation.includes('max-parallel: 1'), 'foundation paid fixture concurrency must remain 1');
+    requireCatalog(
+      foundation.includes('workflow_dispatch:')
+        && !foundation.includes('schedule:')
+        && !foundation.includes('pull_request:')
+        && !foundation.includes('push:'),
+      'foundation workflow must remain manual-only',
+    );
     requireCatalog(
       foundation.includes('fixture_id:')
-        && foundation.includes('foundation-matrix')
+        && foundation.includes('installer-fixture-linux-x86_64')
+        && foundation.includes('installer-fixture-windows-x86_64')
         && foundation.includes('--recipe "${{ inputs.fixture_id }}"'),
       'foundation manual dispatch must select exactly one fixture',
     );
     requireCatalog(
-      foundation.includes('Require main before any native runner allocation'),
+      foundation.includes("if: github.ref == 'refs/heads/main'"),
       'foundation native allocation must require main',
+    );
+    requireCatalog(
+      foundation.includes("'liatir-linux-selfhosted'")
+        && foundation.includes("'liatir-windows-selfhosted'")
+        && !foundation.includes('ubuntu-')
+        && !foundation.includes('windows-2025')
+        && !foundation.includes('macos-'),
+      'foundation execution must remain entirely self-hosted',
     );
     requireCatalog(
       !foundation.includes('--uv') && !foundation.includes('requirements.lock'),

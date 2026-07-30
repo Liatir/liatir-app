@@ -565,15 +565,15 @@ therefore reaches the adapter while preserving the existing heartbeat and metric
 wrapper. The package bin, npm, heartbeat and signer invocations remain shell-free
 on Windows and preserve quoted arguments.
 
-The proposed model-workflow path-filter widening has been removed. The existing
-foundation workflow still watches Liatir's Runtime Box adapter files for its cheap
-preflight, but its legacy hosted native-fixture matrix is now guarded by
-`github.event_name == 'workflow_dispatch'`. Pull requests, normal pushes and the
-schedule cannot allocate those native fixture jobs. Model-native validation
-remains explicit and on-demand on the checked self-hosted profiles; no workflow
-was dispatched while completing this checkpoint. P5.3 will migrate and rewire
-the three foundation fixtures one target at a time rather than using this
-historical hosted matrix as migration evidence.
+The proposed model-workflow path-filter widening has been removed. Foundation
+validation is manual-only and allocates exactly one checked ephemeral self-hosted
+Linux or Windows runner. Its contract, archive-safety and signer checks execute
+first on that same runner, before the native build; there is no separate
+GitHub-hosted preflight and no automatic pull-request, push or scheduled
+allocation. Model-native validation remains explicit and on-demand on the
+checked self-hosted profiles; no workflow was dispatched while completing this
+checkpoint. P5.3 migrates and proves the remaining foundation fixtures one
+target at a time.
 
 The synthetic adapter fixture exercises real key generation through the installed
 published CLI, pixi build routing with the frozen namespace, verification and
@@ -878,9 +878,10 @@ execution still requires a separately approved runner/session.
   intentionally present until each matching native proof passes.
 - `runtime-box-foundation.yml` accepts exactly one reviewed fixture per manual
   dispatch. Linux uses `liatir-linux-selfhosted` with a 30-minute bound; Windows
-  uses `liatir-windows-selfhosted` with a 60-minute bound. The shared ephemeral
-  launchers resolve foundation runner identity and disk floors directly from
-  the catalog. No foundation workflow invokes `--uv`.
+  uses `liatir-windows-selfhosted` with a 60-minute bound. All foundation checks
+  run on the selected self-hosted runner; no GitHub-hosted preflight exists.
+  The shared ephemeral launchers resolve foundation runner identity and disk
+  floors directly from the catalog. No foundation workflow invokes `--uv`.
 
 P5.3 remains open until the separately approved Linux and Windows native
 sessions pass, their measured disk plans are recorded, and only then their two

@@ -368,9 +368,11 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 >   reachable from the catalog. The two CUDA-preflight workflows and the (dispatch-only) Windows
 >   product smoke were repointed to the self-hosted labels as well. A regression test now fails if
 >   any non-macOS model target drifts back onto `ubuntu-24.04`, `windows-2025` or either T4 label.
-> - **What deliberately stays on paid hosted runners:** the **coordination** jobs — `resolve` in
->   `_runtime-box-validate.yml`, `release-resolve` in `runtime-box-release.yml`, the resolve halves
->   of both CUDA preflights, the foundation workflow, and the signer deploy. These must run when no
+> - **What deliberately stays on paid hosted runners:** only indispensable **coordination** jobs —
+>   `resolve` in `_runtime-box-validate.yml`, `release-resolve` in
+>   `runtime-box-release.yml`, the resolve halves of both CUDA preflights, and the signer deploy.
+>   The foundation workflow does not need that bootstrap and is entirely self-hosted. The remaining
+>   coordination jobs must run when no
 >   self-hosted runner is online: the resolve job is precisely what tells the operator **which**
 >   runner to bring up, so putting it behind a self-hosted runner would deadlock. They are cheap
 >   standard runners, not GPU ones.

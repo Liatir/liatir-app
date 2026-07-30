@@ -199,9 +199,9 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   published-v2 contract, active v1 parsing is removed, and installed v1 state
   has explicit unsupported/removal behavior without rewriting historical signed
   boxes. The foundation workflow is manual, selects one fixture per dispatch,
-  and uses the established ephemeral self-hosted Linux/Windows labels. No trust
-  root, published box, remote runner, publication, promotion or deployment
-  changed at this checkpoint.
+  runs all checks on the selected ephemeral self-hosted Linux/Windows runner,
+  and has no GitHub-hosted preflight. No trust root, published box, remote
+  runner, publication, promotion or deployment changed at this checkpoint.
 
 ## Where the project is
 

@@ -1,57 +1,6 @@
 name: Runtime Box foundation
 
 on:
-  pull_request:
-    paths:
-      - "packages/liatir-core/src/runtime-box.ts"
-      - "packages/liatir-core/src/ai-catalog.ts"
-      - "scripts/runtime-box.mjs"
-      - "scripts/runtime-box/**"
-      - "scripts/runtime-box-ci.mjs"
-      - "scripts/run-runtime-box-selfhosted-runner.sh"
-      - "scripts/run-runtime-box-selfhosted-runner.ps1"
-      - "scripts/validate-runtime-box-foundation.mjs"
-      - "scripts/validate-runtime-box-native-fixture.mjs"
-      - "runtime-boxes/catalog.json"
-      - "runtime-boxes/evidence/**"
-      - "runtime-boxes/target-id-contract.json"
-      - "runtime-boxes/trust/**"
-      - "runtime-boxes/scrolls/runtime-box-installer-fixture/**"
-      - "runtime-boxes/fixtures/**"
-      - "runtime-boxes/legal/audits/installer-fixture-*-conda.json"
-      - "services/runtime-box-signer/**"
-      - "workers/runtime-box-registry/**"
-      - "src-tauri/src/bridge/runtime_boxes.rs"
-      - "tests/unit/runtime-box-*.test.ts"
-      - ".github/workflows/runtime-box-*.yml"
-      - ".github/workflows/_runtime-box-validate.yml"
-  push:
-    branches: [main]
-    paths:
-      - "packages/liatir-core/src/runtime-box.ts"
-      - "packages/liatir-core/src/ai-catalog.ts"
-      - "scripts/runtime-box.mjs"
-      - "scripts/runtime-box/**"
-      - "scripts/runtime-box-ci.mjs"
-      - "scripts/run-runtime-box-selfhosted-runner.sh"
-      - "scripts/run-runtime-box-selfhosted-runner.ps1"
-      - "scripts/validate-runtime-box-foundation.mjs"
-      - "scripts/validate-runtime-box-native-fixture.mjs"
-      - "runtime-boxes/catalog.json"
-      - "runtime-boxes/evidence/**"
-      - "runtime-boxes/target-id-contract.json"
-      - "runtime-boxes/trust/**"
-      - "runtime-boxes/scrolls/runtime-box-installer-fixture/**"
-      - "runtime-boxes/fixtures/**"
-      - "runtime-boxes/legal/audits/installer-fixture-*-conda.json"
-      - "services/runtime-box-signer/**"
-      - "workers/runtime-box-registry/**"
-      - "src-tauri/src/bridge/runtime_boxes.rs"
-      - "tests/unit/runtime-box-*.test.ts"
-      - ".github/workflows/runtime-box-*.yml"
-      - ".github/workflows/_runtime-box-validate.yml"
-  schedule:
-    - cron: "17 4 * * 0"
   workflow_dispatch:
     inputs:
       fixture_id:
@@ -61,7 +10,6 @@ on:
         options:
           - installer-fixture-linux-x86_64
           - installer-fixture-windows-x86_64
-          - installer-fixture-macos-arm64
 
 concurrency:
   group: runtime-box-foundation-${{ github.ref }}
@@ -71,12 +19,13 @@ permissions:
   contents: read
 
 jobs:
-  preflight:
-    name: Shared contracts and archive foundation
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
+  native-fixtures:
+    name: Native fixture (${{ inputs.fixture_id }})
+    if: github.ref == 'refs/heads/main'
+    runs-on: ${{ inputs.fixture_id == 'installer-fixture-linux-x86_64' && 'liatir-linux-selfhosted' || 'liatir-windows-selfhosted' }}
+    timeout-minutes: ${{ inputs.fixture_id == 'installer-fixture-linux-x86_64' && 30 || 60 }}
+    env:
+      LIATIR_RUNTIME_BOX_HEARTBEAT_SECONDS: "300"
     steps:
       - uses: actions/checkout@v4
 
@@ -86,26 +35,6 @@ jobs:
           cache: npm
 
       - run: npm ci
-
-      - name: Require main before any native runner allocation
-        if: github.event_name == 'workflow_dispatch'
-        run: test "${{ github.ref }}" = "refs/heads/main"
-
-      - name: Install Tauri Linux system dependencies
-        run: bash scripts/install-runtime-box-linux-product-deps.sh
-
-      - name: Install pinned Rust 1.95.0
-        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
-        with:
-          toolchain: "1.95.0"
-
-      - name: Generate the embedded bridge bundle
-        run: npm run ts:compile --prefix src-tauri
-
-      - name: Create placeholder frontend output
-        run: |
-          mkdir -p frontend/dist
-          echo '<!doctype html><title>runtime box foundation</title>' > frontend/dist/index.html
 
       - name: Verify catalog and shared contracts
         run: |
@@ -115,48 +44,6 @@ jobs:
 
       - name: Verify TAR safety and deterministic Zip64 extraction
         run: npm run runtime-box:test:foundation
-
-      - id: matrix
-        name: Resolve the native fixture matrix
-        run: >-
-          npm run runtime-box:ci -- foundation-matrix
-          --recipe "${{ inputs.fixture_id }}"
-
-      - name: Write preflight evidence
-        if: always()
-        run: npm run runtime-box:ci -- write-evidence --phase foundation-preflight --status "${{ job.status }}" --output .runtime-box-ci/foundation-preflight.json
-
-      - name: Upload preflight evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: runtime-box-foundation-preflight-${{ github.run_attempt }}
-          path: .runtime-box-ci/foundation-preflight.json
-          include-hidden-files: true
-          retention-days: 7
-          if-no-files-found: error
-
-  native-fixtures:
-    name: Native fixture (${{ matrix.recipeId }})
-    needs: preflight
-    if: github.event_name == 'workflow_dispatch'
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix: ${{ fromJSON(needs.preflight.outputs.matrix) }}
-    runs-on: ${{ matrix.runsOn }}
-    timeout-minutes: ${{ matrix.timeoutMinutes }}
-    env:
-      LIATIR_RUNTIME_BOX_HEARTBEAT_SECONDS: ${{ matrix.heartbeatSeconds }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - run: npm ci
 
       - name: Install pinned pixi and conda-pack (POSIX)
         if: runner.os != 'Windows'
@@ -187,15 +74,15 @@ jobs:
       - name: Verify native fixture host and working storage
         run: >-
           npm run runtime-box:ci -- foundation-host-probe
-          --recipe "${{ matrix.recipeId }}"
-          --output ".runtime-box-ci/${{ matrix.recipeId }}-host.json"
+          --recipe "${{ inputs.fixture_id }}"
+          --output ".runtime-box-ci/${{ inputs.fixture_id }}-host.json"
 
       - name: Install Tauri Linux system dependencies
-        if: matrix.rustLifecycle && runner.os == 'Linux'
+        if: runner.os == 'Linux'
         run: bash scripts/install-runtime-box-linux-product-deps.sh
 
       - name: Select Git Bash for composite actions
-        if: matrix.rustLifecycle && runner.os == 'Windows'
+        if: runner.os == 'Windows'
         shell: powershell
         run: |
           $gitBash = 'C:\Program Files\Git\bin'
@@ -203,17 +90,14 @@ jobs:
           $gitBash | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Install pinned Rust 1.95.0
-        if: matrix.rustLifecycle
         uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
         with:
           toolchain: "1.95.0"
 
       - name: Generate the embedded bridge bundle
-        if: matrix.rustLifecycle
         run: npm run ts:compile --prefix src-tauri
 
       - name: Create placeholder frontend output
-        if: matrix.rustLifecycle
         shell: bash
         run: |
           mkdir -p frontend/dist
@@ -222,24 +106,24 @@ jobs:
       - name: Build, consume, and verify the native v2 fixture twice
         run: >-
           node scripts/runtime-box/heartbeat.mjs
-          --label "Native v2 fixture ${{ matrix.recipeId }}"
+          --label "Native v2 fixture ${{ inputs.fixture_id }}"
           -- npm run runtime-box:test:native --
-          --recipe "${{ matrix.recipeId }}"
-          --output ".runtime-box-ci/${{ matrix.recipeId }}-native-result.json"
+          --recipe "${{ inputs.fixture_id }}"
+          --output ".runtime-box-ci/${{ inputs.fixture_id }}-native-result.json"
 
       - name: Write native fixture evidence
         if: always()
-        run: npm run runtime-box:ci -- write-evidence --phase foundation-native --status "${{ job.status }}" --recipe "${{ matrix.recipeId }}" --output ".runtime-box-ci/${{ matrix.recipeId }}.json"
+        run: npm run runtime-box:ci -- write-evidence --phase foundation-native --status "${{ job.status }}" --recipe "${{ inputs.fixture_id }}" --output ".runtime-box-ci/${{ inputs.fixture_id }}.json"
 
       - name: Upload native fixture evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: runtime-box-foundation-${{ matrix.recipeId }}-${{ github.run_attempt }}
+          name: runtime-box-foundation-${{ inputs.fixture_id }}-${{ github.run_attempt }}
           path: |
-            .runtime-box-ci/${{ matrix.recipeId }}.json
-            .runtime-box-ci/${{ matrix.recipeId }}-host.json
-            .runtime-box-ci/${{ matrix.recipeId }}-native-result.json
+            .runtime-box-ci/${{ inputs.fixture_id }}.json
+            .runtime-box-ci/${{ inputs.fixture_id }}-host.json
+            .runtime-box-ci/${{ inputs.fixture_id }}-native-result.json
           include-hidden-files: true
           retention-days: 7
           if-no-files-found: error

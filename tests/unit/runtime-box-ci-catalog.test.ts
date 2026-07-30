@@ -452,7 +452,7 @@ describe('Runtime Box CI catalog', () => {
     expect(dependencyScript).toContain('xvfb');
   });
 
-  it('keeps tracked builds on the stable adapter without automatically allocating native fixtures', () => {
+  it('keeps foundation validation manual and entirely self-hosted', () => {
     const ciDispatcher = readFileSync(
       new URL('../../scripts/runtime-box-ci.mjs', import.meta.url),
       'utf8',
@@ -472,10 +472,13 @@ describe('Runtime Box CI catalog', () => {
       new URL('../../.github/workflows/runtime-box-foundation.yml', import.meta.url),
       'utf8',
     );
-    expect(foundationWorkflow).toContain('- "scripts/runtime-box.mjs"');
-    expect(foundationWorkflow).toContain('- "scripts/runtime-box/**"');
-    expect(foundationWorkflow).toMatch(
-      /native-fixtures:\n(?:.*\n){0,4}\s+if: github\.event_name == 'workflow_dispatch'/,
-    );
+    expect(foundationWorkflow).toContain('workflow_dispatch:');
+    expect(foundationWorkflow).not.toContain('pull_request:');
+    expect(foundationWorkflow).not.toContain('push:');
+    expect(foundationWorkflow).not.toContain('schedule:');
+    expect(foundationWorkflow).toContain("'liatir-linux-selfhosted'");
+    expect(foundationWorkflow).toContain("'liatir-windows-selfhosted'");
+    expect(foundationWorkflow).not.toContain('ubuntu-');
+    expect(foundationWorkflow).not.toContain('macos-');
   });
 });
