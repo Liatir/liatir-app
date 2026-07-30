@@ -2,19 +2,26 @@
 
 **Status:** **EXTRACTION COMPLETE (P1–P4, 2026-07-26).** Scrollcase is an independent
 Apache-2.0 project at `https://github.com/suffro/scrollcase`, its documentation is live at
-`https://scrollcase.dev`, and `scrollcase@0.1.3` is public on npm (`0.1.0` was the
-original release). The temporary in-tree `scrollcase/` copy was removed from Liatir
-in commit `6b4934e`.
+`https://scrollcase.dev`, and Liatir's verified extraction baseline is
+`scrollcase@0.1.3` (`0.1.0` was the original release). The public package has
+since advanced to the v2-only `scrollcase@0.4.11`; adopting that line is
+downstream Liatir work, not a reopening of extraction. The temporary in-tree
+`scrollcase/` copy was removed from Liatir in commit `6b4934e`.
 
-**Remaining downstream work:** **P5 is in progress in Liatir; P5.0, P5.1 and
-P5.2 are complete, and P5.3 has not started.** Liatir pins the published
-browser-safe `scrollcase@0.1.3`; the contract inversion passes the full frontend
-gate and the real clean keygen/lock/build/verify consumer cycle is green.
+**Remaining downstream work:** **P5 is in progress in Liatir; exact
+`scrollcase@0.4.11` is selected for the v2-only P5.2V cutover, which has not
+started.** The checkout still pins the historical browser-safe
+`scrollcase@0.1.3`; its contract inversion and real clean
+keygen/lock/build/verify consumer cycle are recorded as prior evidence, not the
+target architecture.
 The P5.2 implementation adds the consumer adapter, private-signer command and
 explicit distribution/legacy-uv routing while keeping native fixture execution
 manual.
-The remaining phases migrate the foundation fixtures and active uv recipes,
-then delete the superseded local generic builder copies.
+P5.2V must first replace the active contract with v2 across every Liatir surface,
+remove v1 parsing, and define explicit unsupported/removal handling for installed
+v1 state without duplicating the shared contract. The remaining phases then
+migrate the foundation fixtures and active uv recipes before deleting the
+superseded local generic builder copies.
 This integration does not change Scrollcase's completed extraction or its
 independence. The detailed canonical execution plan is
 [Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md).
@@ -292,15 +299,17 @@ Today the box-format contract is **triplicated** and kept in sync by the golden 
 - **P4 — New repo + Apache-2.0 packaging: DONE (2026-07-26).** Scrollcase now lives in its
   standalone public repository with its own CI, documentation and package surface;
   `scrollcase@0.1.0` is public on npm. See the P4 execution record.
-- **P5 — Invert & consume: IN PROGRESS. P5.0, P5.1 and P5.2 complete; P5.3 not
+- **P5 — Invert & consume: IN PROGRESS. The schema-v1 P5.0–P5.2 work is a
+  completed historical checkpoint; the v2-only P5.2V cutover and P5.3 have not
   started.**
-  Core contract aliases/refinements and compatibility fixtures across Node,
-  Worker, signer and Rust are implemented and the full frontend gate passes with
-  the published browser-safe `scrollcase@0.1.3`. The real clean package fixture
-  and the self-hosted/manual workflow boundary are proven. Follow the
+  The historical core contract aliases/refinements and compatibility fixtures
+  across Node, Worker, signer and Rust pass with `scrollcase@0.1.3`; they will be
+  replaced, not extended. Exact `scrollcase@0.4.11` is the selected P5 target.
+  Follow the
   [canonical P5 execution plan](./scrollcase-p5-liatir-adoption.md): prove the published
-  package surface, invert the contract, add the Liatir signer/evidence/distribution adapter,
-  migrate all active uv recipes, then delete the local generic builder.
+  package surface, replace the active contract with v2 across every Liatir
+  boundary, add the signer/evidence/distribution adapter, migrate all active uv
+  recipes, then delete the local generic builder and every v1 consumer path.
 
 ---
 

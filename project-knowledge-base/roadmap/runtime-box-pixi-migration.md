@@ -11,11 +11,17 @@ releases. Nothing signed/published/promoted on the pixi substrate yet.
 **Current ownership correction (2026-07-27):** the generic pixi/conda-pack
 builder now belongs to the independent external Scrollcase project, not to
 Liatir. This roadmap remains the Liatir recipe, runner and scientific-validation
-migration record. Liatir consumes exact public `scrollcase@0.1.3`; it must not
-vendor, deep-import or modify Scrollcase source. The live inventory is five
-pixi scGPT recipes and nine uv compatibility recipes (five Geneformer, one UCE
-and three foundation fixtures). The canonical downstream cutover status is in
+migration record. The checkout still consumes historical
+`scrollcase@0.1.3`; exact `scrollcase@0.4.11` is selected for the v2-only P5.2V
+cutover. Liatir must not vendor, deep-import or modify Scrollcase source. The
+live inventory is five pixi scGPT recipes and nine uv compatibility recipes
+(five Geneformer, one UCE and three foundation fixtures). The canonical
+downstream cutover status is in
 [Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md).
+Before this roadmap migrates another recipe, P5.2V must replace every active
+Liatir Runtime Box contract and consumer with schema v2, make schema v1
+explicitly unsupported, and define bounded cleanup for already installed v1
+state without preserving a parallel v1 reader.
 
 - **Phase 0 — complete on every OS** (macOS Metal + Windows CPU/CUDA + Linux CPU/CUDA). The
   zero-cost local spike is decisive on macOS, on the harder no-rpath Windows case (CPU + CUDA, real
@@ -657,7 +663,9 @@ shift; re-pin fixtures — accepted).
 
 ## Representative files
 
-- Generic pixi build tooling: external exact npm dependency `scrollcase@0.1.3`.
+- Generic pixi build tooling after P5.2V: external exact npm dependency
+  `scrollcase@0.4.11` (the checkout remains on historical `0.1.3` until that
+  cutover slice).
 - Liatir adapter/orchestration: `scripts/runtime-box.mjs`,
   `scripts/runtime-box/scrollcase-adapter.mjs`, `scripts/runtime-box-ci.mjs`,
   `scripts/runtime-box/{signer-command,evidence,validator-context}.mjs`.

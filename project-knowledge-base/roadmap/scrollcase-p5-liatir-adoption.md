@@ -1,14 +1,18 @@
 # Scrollcase P5 — Liatir adoption and legacy builder retirement
 
-Last reviewed: 2026-07-27
+Last reviewed: 2026-07-30
 
-Status: **in progress — P5.0, P5.1 and P5.2 complete; P5.3 not started**
+Status: **in progress — the schema-v1 P5.0–P5.2 record is historical;
+the v2-only cutover and P5.3 have not started**
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
-are complete: Scrollcase is an independent Apache-2.0 project and
-`scrollcase@0.1.3` is public on npm. P5 is downstream Liatir work: consume that
-published tool without weakening the existing Runtime Box product, trust,
-distribution, scientific-validation, or evidence contracts.
+are complete: Scrollcase is an independent Apache-2.0 project. The selected P5
+target is exact `scrollcase@0.4.11`, whose published tarball contains the v2-only
+contract. The checkout still pins the historical `0.1.3` baseline until P5.2V
+implements the dependency and contract cutover. P5 is downstream Liatir work:
+cut over to `0.4.11` and consume it without weakening the existing Runtime Box
+product, trust, distribution, scientific-validation, or evidence contracts.
+Schema v1 is fully deprecated and is not part of the target Liatir architecture.
 
 This plan does not authorize implementation, a remote runner, a protected release,
 publication, promotion, or deployment. Each remote/native allocation and every
@@ -28,9 +32,11 @@ P5 is complete only when all of the following are true:
 3. `packages/liatir-core` imports or refines the published contract rather than
    hand-writing a second generic type layer. Liatir-specific activation, catalog,
    CI, evidence, product compatibility, and support types remain in Liatir.
-4. Every new document built by Liatir keeps the frozen
-   `liatir.runtime-box` namespace and schema version 1. Existing signed documents,
-   installed boxes, target IDs, trust roots, and public object paths remain valid.
+4. Every supported Liatir Runtime Box document, build, signer, Registry response
+   and product consumer uses Scrollcase schema v2 while keeping the frozen
+   `liatir.runtime-box` namespace and canonical target IDs. Schema-v1 objects
+   remain immutable historical bytes, but new Liatir rejects them as unsupported
+   rather than maintaining a second reader or silently converting them.
 5. Liatir supplies its private KMS signer through Scrollcase's external-signer
    boundary. The package never learns about Cloud Run, GCP, OIDC, R2, Liatir
    credentials, or Liatir policy.
@@ -45,9 +51,10 @@ P5 is complete only when all of the following are true:
    all callers are green on the published package. The stable
    `npm run runtime-box -- ...` operator surface may remain as a thin Liatir
    orchestration/distribution CLI.
-9. Cheap gates, contract parity, native consumer tests, and one complete
-   non-production product lifecycle prove the cutover. No support or publication
-   claim is made from build-only evidence.
+9. Cheap gates, v2 contract parity, explicit v1-rejection regressions, native
+   consumer tests, migration cleanup for already installed v1 state, and one
+   complete non-production v2 product lifecycle prove the cutover. No support or
+   publication claim is made from build-only evidence.
 
 ## Non-goals
 
@@ -57,6 +64,8 @@ P5 is complete only when all of the following are true:
   change Jobs/Results UX.
 - P5 does not rename a target ID, replace a trust root, rewrite an existing signed
   document, or overwrite immutable R2 bytes.
+- P5 does not preserve schema-v1 Runtime Box support. Historical v1 objects stay
+  immutable but are unsupported by the v2-only Liatir cutover.
 - P5 does not move Liatir CI, model recipes, validators, evidence, distribution, or
   key custody into Scrollcase.
 - P5 does not require the optional Scrollcase `--global` toolchain mode.
@@ -65,11 +74,23 @@ P5 is complete only when all of the following are true:
 
 ### Package and contract
 
-- Published package: `scrollcase@0.1.3`. Version `0.1.1` added the public
+- Selected P5 target: exact `scrollcase@0.4.11`, read from npm on 2026-07-30.
+  SHA-1:
+  `7bb8364ff820dd44dc749e9ef28a6df9cc9808ac`. Integrity:
+  `sha512-/BLoSjwN4rcKOx+gTtfb0tBrN4+hlsno3pIl4L/m1jHSHBGgM4qPA1GY7ns9BEK7Cj8nWfrqYqNDtz3FoZvCWw==`.
+  Its published schemas require `schemaVersion: 2`; it uses `scroll.json` under
+  `scrolls/<boxId>/<targetId>/`, adds `scrollcase/consumer` and `scrollcase run`,
+  and does not accept schema-v1 authoring/wire documents.
+- Historical checkout pin pending P5.2V implementation: exact
+  `scrollcase@0.1.3`. Version `0.1.1` added the public
   TypeScript declarations required by the P5.0 preflight; `0.1.2` adds the
   browser-safe generic contract helpers required by Liatir's frontend build;
   `0.1.3` safely unpacks legitimate conda symlink chains and removes
   machine-specific conda metadata from deterministic boxes.
+- The `0.4.11` tarball's changelog describes the v2-only work under
+  `Unreleased`, despite the package already shipping v2. Treat that
+  package/documentation mismatch as an adoption preflight item; do not infer a
+  release boundary from the repository or changelog.
 - Public entry points:
   - `scrollcase/contract`;
   - `scrollcase/contract/browser`;
@@ -77,6 +98,7 @@ P5 is complete only when all of the following are true:
   - `scrollcase/contract/schema/*.json`;
   - `scrollcase/contract/fixtures/*.json`;
   - `scrollcase/build`;
+  - `scrollcase/consumer`;
   - `scrollcase/sign`;
   - the `scrollcase` executable.
 - `packages/liatir-core/src/runtime-box.ts` aliases/refines Scrollcase's generic
@@ -89,11 +111,12 @@ P5 is complete only when all of the following are true:
 
 ### Builder and orchestration
 
-The local P5.2 checkpoint makes `scripts/runtime-box.mjs` a small consumer-side
+The completed schema-v1 P5.2 checkpoint makes `scripts/runtime-box.mjs` a small consumer-side
 dispatcher. Generic pixi commands are routed to the executable declared by the
 exact installed `scrollcase@0.1.3` package; Liatir distribution commands remain
 local. The nine uv recipes still use an explicit compatibility implementation
-under `scripts/runtime-box/legacy-cli.mjs` until P5.3/P5.4 migrate them.
+under `scripts/runtime-box/legacy-cli.mjs` until the v2 boundary is accepted and
+P5.3/P5.4 migrate them.
 
 Scrollcase deliberately has no Liatir distribution verbs.
 `scripts/runtime-box-ci.mjs`, the validation/release workflows, and the
@@ -141,13 +164,13 @@ preserved as a historical/installed compatibility identity.
 
 | Concern | Owner after P5 | Boundary |
 | --- | --- | --- |
-| Box schemas, generated types, target rules and golden fixtures | Scrollcase | Consumed only through published exports |
+| V2 box schemas, generated types, target rules and golden fixtures | Scrollcase | Consumed only through published exports |
 | Lock, licence audit, deterministic build, local/external signing, verify | Scrollcase | pixi + conda-pack only |
 | Liatir type names and product refinements | `packages/liatir-core` | Thin aliases/refinements over Scrollcase generic types |
 | Runtime Box catalog, runner policy, evidence and scientific validators | Liatir | Never imported into Scrollcase |
 | KMS/OIDC HTTP invocation | Liatir signer-command adapter | Payload on stdin, signed envelope on stdout |
 | R2 upload, Registry, channel promotion, revocation and candidate serving | Liatir distribution CLI | Operates on Scrollcase-produced documents |
-| Installation, anti-replay, activation, rollback/removal, Jobs/Results/provenance | Rust/Tauri + frontend | Wire-compatible consumer; no Scrollcase runtime dependency |
+| Installation, anti-replay, activation, rollback/removal, Jobs/Results/provenance | Rust/Tauri + frontend | V2-only consumer; schema v1 fails explicitly as unsupported |
 | Model source/assets and recipes | Liatir | Project-owned scientific and legal inputs |
 
 The desktop app remains offline-capable. Scrollcase is a build-time dependency,
@@ -157,10 +180,11 @@ never a dependency of installing or running an already downloaded Runtime Box.
 
 | Phase | State | Exit evidence |
 | --- | --- | --- |
-| P5.0 — published-package/API preflight | Complete | Exact public `scrollcase@0.1.3`; clean install and package/API probes green |
+| P5.0 — historical schema-v1 package/API preflight | Complete | Exact public `scrollcase@0.1.3`; clean install and package/API probes green |
 | P5.1 — contract inversion | Complete | Core, Node, Worker, signer, Rust and frontend production build agree |
 | P5.2 — Liatir adapter and distribution split | Complete | Real clean `keygen → lock → build → verify --self-test` cycle through the stable Liatir command; namespace, archive hash and receipts checked |
-| P5.3 — fixture migration | Pending | Three pixi fixtures; foundation gates green |
+| P5.2V — Scrollcase v2-only cutover | Pending | Exact `scrollcase@0.4.11`; all active contracts and consumers use v2; v1 is explicitly unsupported |
+| P5.3 — v2 foundation-fixture migration | Pending | Three schema-v2 pixi fixtures; v1 rejection and foundation gates green |
 | P5.4 — model-recipe migration | Pending | Geneformer/UCE active recipes no longer require uv |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
 | P5.6 — local/native closure | Pending | Full cheap gate plus one reviewed non-production product lifecycle |
@@ -169,13 +193,14 @@ never a dependency of installing or running an already downloaded Runtime Box.
 Mark a phase complete only from its listed evidence. Do not infer completion from
 the next phase starting.
 
-## P5.0 — Published-package and API preflight
+## P5.0 — Historical schema-v1 package/API preflight
 
 ### Purpose
 
-Prove that the selected published Scrollcase version is sufficient for Liatir
-before changing a contract or deleting code. The sibling checkout is useful for
-reading history, but it is not an acceptable dependency or test input.
+This completed section records how `scrollcase@0.1.3` was proven before the v2
+line existed. It is evidence and rollback history, not the package-selection
+procedure for current work. P5.2V is the only operative package/contract
+preflight.
 
 ### Work
 
@@ -313,7 +338,7 @@ Generic-module inventory:
 | `targets`: uv lock and PyTorch-index arguments | Legacy Liatir compatibility only until uv recipes are migrated |
 | `workspace`: discovery, resolution, configuration, overrides | Matching `scrollcase/build` exports; reset remains test-local |
 
-## P5.1 — Contract inversion
+## P5.1 — Historical schema-v1 contract inversion
 
 ### Type split
 
@@ -416,7 +441,7 @@ compile passed. The targeted Rust compatibility-fixture test also passed.
 No recipe, builder caller, distribution command, signer adapter, release, runner,
 promotion, or trust root was changed at this checkpoint.
 
-## P5.2 — Liatir adapter and distribution split
+## P5.2 — Historical schema-v1 adapter and distribution split
 
 ### Stable operator surface
 
@@ -627,12 +652,132 @@ Evidence on 2026-07-27:
   frozen build, self-test, signed release, separate verify and both Liatir
   receipts passed with matching hashes.
 
-P5.2 is complete. P5.3 may now migrate the three foundation fixtures one target
-at a time under the documented self-hosted/manual runner policy.
+P5.2 is complete for the immutable `scrollcase@0.1.3`/schema-v1 baseline. Do not
+start the fixture conversion by changing recipes under that assumption:
+Scrollcase's current public line is v2-only and must pass P5.2V first.
 
-## P5.3 — Migrate the three foundation fixtures
+## P5.2V — Cut Liatir over to the published Scrollcase v2 contract
 
-Migrate the cheapest native artifacts before model recipes:
+This is a new migration phase, not a reopening of the evidence that closed
+P5.0–P5.2. That proof remains historical evidence for the package version that
+produced it, not a compatibility requirement for new Liatir. P5.2V replaces the
+active schema-v1 contract completely: there is no dual reader, npm alias,
+generated v1 compatibility layer or v1/v2 union in the target architecture.
+
+### P5.2V.0 — Verify the selected immutable `scrollcase@0.4.11`
+
+The initial npm/tarball identity readback is complete and recorded above. Repeat
+it immediately before installation so a registry or maintainer change cannot be
+mistaken for the reviewed package.
+
+1. Read back the exact npm name, version, SHA-1, integrity, executable and
+   `exports` map immediately before changing a dependency.
+2. Inspect only the published tarball. Do not use a sibling Scrollcase checkout
+   as an implementation or test input.
+3. Record the v1-to-v2 delta for:
+   - scroll/recipe input and workspace layout;
+   - release, channel, revocation and signed-envelope schemas;
+   - target identity;
+   - archive layout and content-addressed output names;
+   - external signer payload;
+   - verification and execution metadata;
+   - browser-safe helpers, Node consumer and generated declarations.
+4. Resolve or explicitly accept the `0.4.11` release-note inconsistency: its
+   published tarball is v2-only while its changelog places that work under
+   `Unreleased`. `0.4.11` remains the selected version unless the maintainer
+   explicitly changes this plan; a newer version requires a fresh immutable
+   identity readback and restarts only this preflight.
+5. Add a package-surface regression for every public entry point Liatir will use,
+   including `scrollcase/consumer` only if the architecture decision below keeps
+   it.
+
+### P5.2V.1 — Replace the shared contract once
+
+1. Upgrade the root and `packages/liatir-core` exact dependency to
+   `scrollcase@0.4.11` in one dependency slice.
+2. Make `packages/liatir-core` import/refine only Scrollcase v2 public
+   declarations and helpers. Regenerate SDK artifacts; never hand-write a
+   frontend, `src-ts`, Worker or Rust v2 shadow contract.
+3. Replace every active schema-v1 fixture, parser, signer payload, Registry
+   document and product IPC type with schema v2.
+4. Remove schema-v1 authoring, verification and installation paths rather than
+   retaining aliases, unions or fallback parsing.
+5. Preserve `liatir.runtime-box.*`, canonical target IDs and trust roots as
+   product identity. Schema version changes; product identity does not.
+6. Reject schema v1 and every unknown schema version with a stable explicit
+   unsupported-format error. Never guess the version from a filename, channel,
+   box version or target ID.
+
+Existing v1 release/channel/archive objects stay byte-for-byte immutable as
+historical artefacts. They are not converted, resigned, republished or accepted
+by the v2-only client.
+
+### P5.2V.2 — Define the installed-v1 product cutover
+
+Dropping the v1 parser must not leave stale installed state pretending to be
+usable. Before the code cutover:
+
+1. inventory how installed Runtime Box metadata records its schema version;
+2. detect v1 state before normal selection or execution and mark it explicitly
+   unsupported;
+3. disable dispatch and update for that box without blocking unrelated Jobs,
+   models or pipelines;
+4. offer bounded removal/reinstall-to-v2 handling using installation metadata
+   and filesystem ownership, not v1 document interpretation;
+5. preserve completed Results and provenance records even when their producing
+   v1 runtime is no longer runnable;
+6. ensure a v1 channel or cached release cannot be selected as an update for a
+   v2-only client;
+7. document the compatibility break and the minimum Liatir version for the first
+   v2 box before any protected publication.
+
+If safe removal cannot be performed without keeping the v1 wire parser, stop and
+choose an explicit one-time application migration before deleting it. That
+migration may inspect only the product-owned installed-state record; it must not
+become a permanent v1 Runtime Box consumer.
+
+### P5.2V.3 — Prove every Liatir-owned boundary
+
+Before migrating a recipe:
+
+1. make the signer policy validate only the exact v2 payload and reject v1;
+2. make the Registry Worker and local candidate server serve only supported v2
+   documents and fail closed on v1 or unknown versions;
+3. make Rust/Tauri installation, persisted anti-replay state and frontend
+   selection v2-only;
+4. prove stable explicit rejection and product-owned cleanup for installed or
+   offered v1 state;
+5. prove a synthetic v2 release through keygen, external signer translation,
+   build, separate verify/self-test, Liatir receipts and safe extraction;
+6. compare namespace, target ID, archive hash, payload hash and manifest
+   agreement from parsed documents rather than filenames;
+7. decide whether `scrollcase/consumer` is only a Node conformance oracle or has
+   a bounded build/test role. It must not become a desktop runtime dependency,
+   download layer, registry client or substitute for Rust/Tauri lifecycle;
+8. keep Scrollcase's Python consumer outside Liatir unless a separately approved
+   product requirement appears.
+
+### P5.2V exit gate
+
+- the selected exact v2 package identity and release-note disposition are
+  recorded;
+- all active types/schemas come from the published v2 package through
+  `packages/liatir-core`;
+- no schema-v1 package alias, shared type, parser, signer, Registry path,
+  installation path or fallback remains;
+- core, frontend, Worker, signer and Rust accept v2 and explicitly reject v1 and
+  unknown schema versions;
+- installed-v1 state has a bounded product-owned unsupported/removal path that
+  preserves Results and provenance;
+- one clean synthetic v2 `keygen → lock → build → verify --self-test` proof is
+  green;
+- no recipe, catalog identity, trust root, public object, channel or protected
+  release changed during the cutover phase.
+
+## P5.3 — Migrate the three foundation fixtures to v2
+
+Begin only after P5.2V is green. Migrate the cheapest native artifacts before
+model recipes:
 
 1. macOS fixture;
 2. Linux fixture;
@@ -640,17 +785,24 @@ Migrate the cheapest native artifacts before model recipes:
 
 For each fixture, one at a time:
 
-1. create a single-platform `pixi.toml`;
-2. generate and review `pixi.lock` with the exact pinned pixi version;
-3. add a lock-derived conda licence audit where the foundation contract requires
+1. create one schema-v2
+   `scrolls/<boxId>/<targetId>/scroll.json` and its single-platform `pixi.toml`;
+2. preserve the existing `recipeId`, `boxId`, runtime identity, target ID and
+   Liatir namespace; do not derive a replacement identity from the new path;
+3. generate and review `pixi.lock` with the exact pinned pixi version;
+4. add a lock-derived conda licence audit where the foundation contract requires
    it;
-4. update recipe provenance fields and remove uv-only fields/files;
-5. update catalog lock hash and disk plan from measured output;
-6. refactor `validate-runtime-box-native-fixture.mjs` so it validates the
-   Scrollcase/pixi layout rather than standalone-Python/uv assumptions;
-7. run build, verify, Rust archive fixture and activation/rollback/removal checks
-   on the matching native host;
-8. clean only generated fixture build state.
+5. carry shell-free execution/self-test metadata explicitly into the v2 signed
+   manifests;
+6. update catalog lock hash and disk plan from measured output;
+7. refactor `validate-runtime-box-native-fixture.mjs` so it validates the
+   Scrollcase v2/pixi layout rather than standalone-Python/uv assumptions;
+8. build through the exact published v2 executable, use Liatir's external signer
+   adapter, then run separate verify/self-test;
+9. run the Rust archive fixture and activation/rollback/removal checks on the
+   matching native host, while retaining the explicit v1-rejection regression;
+10. remove that fixture's uv-only fields/files only after its native v2 proof is
+    green, then clean only generated fixture build state.
 
 Locks may be resolved without dispatch where pixi supports the target platform,
 but a cross-resolved lock is not native self-test evidence. Linux/Windows native
@@ -659,7 +811,9 @@ execution still requires a separately approved runner/session.
 ### Exit gate
 
 - all three fixture recipes are pixi-only;
-- foundation validation imports generic helpers from the package;
+- all three build inputs are schema-v2 scrolls in the canonical nested layout;
+- foundation validation imports active generic helpers from the v2 package;
+- schema-v1 documents remain explicitly unsupported on every product boundary;
 - `npm run runtime-box:test:foundation`, the relevant Rust tests, catalog check
   and unit group pass;
 - no foundation workflow invokes `--uv` or expects a requirements lock.
@@ -683,13 +837,15 @@ before the large UCE and CUDA builds.
 For every target:
 
 1. preserve model/source/asset hashes, legal record, box ID and runtime ID;
-2. create the exact single-target pixi manifest and committed lock;
+2. create the exact schema-v2 nested scroll, single-target pixi manifest and
+   committed lock;
 3. verify packages, channels, source-build absence and native-library closure;
 4. generate and review the conda licence audit;
 5. update `pythonVersion` to the interpreter actually installed;
 6. remove `uvVersion`, `requirementsInput`, `requirementsLock` and their files;
 7. update catalog dependency hash, audit path and measured disk plan;
-8. preserve `minLiatirVersion`, namespace and product-owned compatibility fields;
+8. preserve or explicitly translate `minLiatirVersion`, namespace and all
+   product-owned compatibility fields into the v2 manifest;
 9. build through the published package on the matching native host;
 10. pass self-test, model scientific validator, Jobs/Results/provenance and
     removal/rollback as required by the target's validation mode;
@@ -701,6 +857,11 @@ Published uv boxes cannot be rebuilt as different pixi bytes under the same
 release version. Before any protected publication, select a new version and
 prove that its immutable object keys do not collide. P5 may validate a candidate
 locally, but it must not upload or promote it.
+
+The schema transition does not authorize rewriting an existing release. A v2
+successor receives a new box version and content-addressed objects; prior v1
+release/channel objects remain preserved and immutable but unsupported by the
+v2-only client.
 
 The same rule applies to the published scGPT macOS pilot: its current pixi recipe
 must receive a new release version before any future pixi publication replaces
@@ -792,8 +953,13 @@ Add checks proving:
 - no Liatir source deep-imports `scrollcase/src/...`;
 - no sibling checkout path or `file:` dependency exists;
 - no Liatir build emits the default `scrollcase.box` namespace;
+- no active build or consumer accepts schema v1, while rejection fixtures remain
+  green;
 - no generated binding was edited by hand;
-- the package fixture and tracked compatibility fixture are identical.
+- active v2 package fixtures and tracked v2 compatibility fixtures are
+  identical;
+- historical v1 artefacts remain byte-for-byte unchanged and outside active
+  fixture resolution.
 
 ### Exit gate
 
@@ -846,7 +1012,7 @@ When tracked knowledge changes, run `npm run docs:internal:build`.
 ### Native acceptance
 
 Before declaring P5 complete, run one reviewed non-production lifecycle on a
-Scrollcase-built candidate:
+Scrollcase-v2-built candidate:
 
 ```text
 install -> self-test -> real inference -> Job -> Result -> provenance ->
@@ -855,6 +1021,10 @@ replacement/rollback -> removal -> Result survival -> cleanup
 
 Prefer the smallest representative target whose recipe and runner are already
 approved. This is not a protected release and must not publish or promote.
+
+Separately prove that a v1 fixture cannot install, update or execute, produces
+the stable unsupported-format state, can be removed through the bounded
+product-owned cleanup path, and does not delete completed Results or provenance.
 
 Additional native target runs belong to the per-target recipe migration and keep
 their explicit approval boundary.
@@ -865,8 +1035,8 @@ From a clean checkout with no generated Runtime Box output:
 
 - install dependencies from the committed lockfile;
 - build `@liatir/core`;
-- resolve the Scrollcase binary and public exports;
-- run the synthetic fixture;
+- resolve the exact active v2 Scrollcase binary and public exports;
+- run the synthetic v2 fixture and the v1 rejection/cleanup fixture;
 - prove no sibling repository, global npm package, warm build tree, or untracked
   key is required.
 
@@ -874,8 +1044,8 @@ From a clean checkout with no generated Runtime Box output:
 
 Record:
 
-- exact Scrollcase package version and lockfile integrity;
-- contract/fixture parity result;
+- exact active-v2 package identity and lockfile integrity;
+- v2 contract/fixture parity and v1 rejection results;
 - recipe inventory at zero active uv entries;
 - deleted-versus-retained module inventory;
 - cheap-gate counts;
@@ -907,7 +1077,7 @@ into one readiness claim.
 
 ## Rollback and cleanup
 
-- Implement P5.0–P5.4 in small commits while the old builder still exists, so a
+- Implement P5.2V–P5.4 in small commits while the old builder still exists, so a
   failed slice can revert to the previous local path without touching installed
   boxes or public state.
 - Do not delete the legacy builder in the same change that first exercises the
@@ -927,20 +1097,22 @@ into one readiness claim.
 
 Stop and report evidence when any of these occurs:
 
-1. The exact pinned `scrollcase@0.1.3` package lacks a required public export or
-   usable declaration.
+1. The selected exact v2 package lacks a required public export, usable
+   declaration or unambiguous immutable release identity.
 2. A Liatir build would require a deep import, copied Scrollcase code, sibling
    checkout, global install, or `any` contract shim.
-3. A wire fixture, namespace, target ID, payload encoding, signature, archive
+3. Any active surface still needs a schema-v1 parser, package alias, shared type,
+   signer path, Registry path or installation fallback after cutover.
+4. A wire fixture, namespace, target ID, payload encoding, signature, archive
    layout or Rust consumer result changes unexpectedly.
-4. A recipe needs source builds, has an incomplete licence audit, changes a model
+5. A recipe needs source builds, has an incomplete licence audit, changes a model
    asset hash without review, or cannot self-test natively.
-5. A CUDA successor would overwrite or rename a 12.4 identity.
-6. Any active uv recipe or caller remains when deletion begins.
-7. A heavy model build, remote runner, paid resource, deployment, protected
+6. A CUDA successor would overwrite or rename a 12.4 identity.
+7. Any active uv recipe or caller remains when deletion begins.
+8. A heavy model build, remote runner, paid resource, deployment, protected
    release, publication or promotion becomes necessary without specific approval.
-8. A failed protected or native run lacks its exact underlying log.
-9. User-owned work overlaps a required file and cannot be preserved safely.
+9. A failed protected or native run lacks its exact underlying log.
+10. User-owned work overlaps a required file and cannot be preserved safely.
 
 After a new defect: record the symptom, root cause, regression, retry limit,
 cheap rechecks and cleanup before another expensive attempt.
@@ -951,7 +1123,9 @@ The initial P5 go-ahead authorizes local implementation and cheap verification
 only. Pause later for:
 
 1. any upstream Scrollcase patch and new npm publication;
-2. the Geneformer CUDA legacy/successor catalog design;
-3. each Linux/Windows/native or heavy UCE allocation;
-4. any protected signer deploy or release;
-5. final deletion if the active-recipe/caller inventory is not exactly zero.
+2. the one-time installed-v1 cleanup mechanism if product-owned state is
+   insufficient for safe removal without a v1 wire parser;
+3. the Geneformer CUDA legacy/successor catalog design;
+4. each Linux/Windows/native or heavy UCE allocation;
+5. any protected signer deploy or release;
+6. final deletion if the active-recipe/caller inventory is not exactly zero.

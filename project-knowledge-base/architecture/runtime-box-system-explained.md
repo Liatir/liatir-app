@@ -955,7 +955,7 @@ their own scoped evidence.
 | Recipes and dependency locks | `runtime-boxes/recipes/` |
 | Legal reviews | `runtime-boxes/legal/` |
 | Shared TypeScript contract | `packages/liatir-core/src/runtime-box.ts` |
-| Generic box contract, pixi build, signing envelope and verify | External exact npm dependency `scrollcase@0.1.3`; public exports and declared `scrollcase` executable only |
+| Generic box contract, pixi build, signing envelope and verify | Selected v2-only external dependency `scrollcase@0.4.11`; the checkout remains on historical `0.1.3` until P5.2V; public exports and declared `scrollcase` executable only |
 | Stable Liatir operator dispatcher | `scripts/runtime-box.mjs` and `scripts/runtime-box/scrollcase-adapter.mjs` |
 | Private signer adapter | `scripts/runtime-box/signer-command.mjs` |
 | Liatir distribution and temporary uv compatibility | `scripts/runtime-box/legacy-cli.mjs` until P5 migration splits/deletes the generic legacy path |
