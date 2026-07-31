@@ -5,10 +5,11 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createWriteStream } from 'node:fs';
-import { open, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { open, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { pipeline } from 'node:stream/promises';
+import { gzipSync } from 'node:zlib';
 import * as tar from 'tar';
 import yazl from 'yazl';
 import {
@@ -37,6 +38,26 @@ async function createZipLinkFixture(path) {
   zip.addBuffer(Buffer.from('/etc/passwd'), 'outside-link', { mode: 0o120777 });
   zip.end();
   await output;
+}
+
+/** Creates a TAR symbolic-link fixture without requiring host symlink privileges. */
+async function createTarLinkFixture(path) {
+  const header = Buffer.alloc(512);
+  header.write('outside-link', 0, 100, 'utf8');
+  header.write('0000777\0', 100, 8, 'ascii');
+  header.write('0000000\0', 108, 8, 'ascii');
+  header.write('0000000\0', 116, 8, 'ascii');
+  header.write('00000000000\0', 124, 12, 'ascii');
+  header.write('00000000000\0', 136, 12, 'ascii');
+  header.fill(0x20, 148, 156);
+  header.write('2', 156, 1, 'ascii');
+  header.write('/etc/passwd', 157, 100, 'utf8');
+  header.write('ustar\0', 257, 6, 'ascii');
+  header.write('00', 263, 2, 'ascii');
+  const checksum = header.reduce((sum, byte) => sum + byte, 0);
+  header.write(`${checksum.toString(8).padStart(6, '0')}\0 `, 148, 8, 'ascii');
+
+  await writeFile(path, gzipSync(Buffer.concat([header, Buffer.alloc(1024)])));
 }
 
 function run(command, args, options = {}) {
@@ -75,11 +96,8 @@ async function validateTarFoundation(root) {
     /Unsafe relative path/,
   );
 
-  const linkSource = join(root, 'tar-link-source');
-  await mkdir(linkSource, { recursive: true });
-  await symlink('/etc/passwd', join(linkSource, 'outside-link'));
   const linkArchive = join(payload, 'downloads', 'link.tar.gz');
-  await tar.c({ file: linkArchive, cwd: linkSource, gzip: true }, ['outside-link']);
+  await createTarLinkFixture(linkArchive);
   await assert.rejects(
     extractRecipeArchive(payload, {
       format: 'tar.gz',
