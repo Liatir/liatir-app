@@ -1,9 +1,9 @@
 # Scrollcase P5 — Liatir adoption and legacy builder retirement
 
-Last reviewed: 2026-07-30
+Last reviewed: 2026-07-31
 
-Status: **in progress — P5.2V complete; P5.3 macOS complete, Linux and
-Windows native proofs pending**
+Status: **in progress — P5.2V complete; P5.3 macOS and Linux complete,
+Windows native proof pending**
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project. The selected P5
@@ -140,12 +140,10 @@ Five scGPT recipes are already pixi recipes:
 - `scgpt-whole-human-windows-x86_64-cpu`;
 - `scgpt-whole-human-windows-x86_64-cuda12.8`.
 
-Nine recipes still use uv and block complete builder retirement:
+Seven recipes still use uv and block complete builder retirement:
 
 | Group | Recipe | Current target state |
 | --- | --- | --- |
-| Fixture | `installer-fixture-macos-arm64` | Foundation fixture |
-| Fixture | `installer-fixture-linux-x86_64` | Foundation fixture |
 | Fixture | `installer-fixture-windows-x86_64` | Foundation fixture |
 | Geneformer | `geneformer-v1-10m-macos-arm64-metal` | Published |
 | Geneformer | `geneformer-v1-10m-linux-x86_64-cpu` | Published |
@@ -184,7 +182,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.1 — contract inversion | Complete | Core, Node, Worker, signer, Rust and frontend production build agree |
 | P5.2 — Liatir adapter and distribution split | Complete | Real clean `keygen → lock → build → verify --self-test` cycle through the stable Liatir command; namespace, archive hash and receipts checked |
 | P5.2V — Scrollcase v2-only cutover | Complete | Exact `scrollcase@0.4.11`; active contracts and consumers use v2; v1 is explicitly unsupported; clean local v2 proof green |
-| P5.3 — v2 foundation-fixture migration | In progress | Three reviewed v2 scrolls/locks/audits; macOS native proof green; Linux and Windows native proofs pending |
+| P5.3 — v2 foundation-fixture migration | In progress | Three reviewed v2 scrolls/locks/audits; macOS and Linux native proofs green; Windows native proof pending |
 | P5.4 — model-recipe migration | Pending | Every active model input is a v2 scroll; Geneformer/UCE no longer require uv |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
 | P5.6 — local/native closure | Pending | Full cheap gate plus one reviewed non-production product lifecycle |
@@ -858,7 +856,7 @@ execution still requires a separately approved runner/session.
   and unit group pass;
 - no foundation workflow invokes `--uv` or expects a requirements lock.
 
-### P5.3 execution evidence — 2026-07-30
+### P5.3 execution evidence — 2026-07-30–31
 
 - All three canonical
   `runtime-boxes/scrolls/runtime-box-installer-fixture/<targetId>/scroll.json`
@@ -874,8 +872,27 @@ execution still requires a separately approved runner/session.
   and Rust archive plus activation/rollback/removal checks. Measured installed
   size is `257776217` bytes; archive size is `96979089` bytes. Only after that
   proof passed were the macOS uv recipe and requirements files removed.
-- The Linux and Windows v2 inputs are ready, but their old uv recipe files remain
-  intentionally present until each matching native proof passes.
+- Linux x86_64 is complete. The first authorized dispatch, run `30565143883`,
+  failed before the native fixture because the clean checkout ran the Rust
+  foundation gate before generating `src-tauri/tsc/bridge.js`; it produced only
+  failure evidence and is retained as incident provenance, not acceptance
+  evidence. Commit `3de11868c510665544d54f9251496c479d02866a` moved the
+  existing bridge-generation step before the gate and added an ordering
+  regression. The single authorized retry, run `30594110843`, passed on
+  `liatir-linux-selfhosted-1785458323-362` from that exact clean revision.
+  It reproduced the reviewed lock byte-for-byte, built twice with identical
+  archive bytes, exercised the external schema-v2 signer adapter, separate
+  verify/self-test, shell-free Node consumer extraction/execution, Rust archive
+  and activation/rollback/removal checks, and explicit schema-v1 rejection.
+  Archive SHA-256 is
+  `4968084661a0fc98b36dd2e86f37e5642ba092afd8078459e7a7a1ae5fc94fca`;
+  measured archive size is `200216832` bytes and installed size is
+  `506827820` bytes. Artifact `8779573721` has digest
+  `sha256:19e10ac80b33b36bfd53d185490b9401b134f5579674bc54dcfeb5b006f0e260`.
+  Only after this proof passed were the Linux uv recipe and requirements files
+  removed.
+- The Windows v2 input is ready, but its old uv recipe files remain
+  intentionally present until the matching native proof passes.
 - `runtime-box-foundation.yml` accepts exactly one reviewed fixture per manual
   dispatch. Linux uses `liatir-linux-selfhosted` with a 30-minute bound; Windows
   uses `liatir-windows-selfhosted` with a 60-minute bound. All foundation checks
@@ -883,9 +900,9 @@ execution still requires a separately approved runner/session.
   The shared ephemeral launchers resolve foundation runner identity and disk
   floors directly from the catalog. No foundation workflow invokes `--uv`.
 
-P5.3 remains open until the separately approved Linux and Windows native
-sessions pass, their measured disk plans are recorded, and only then their two
-uv fixture directories are removed.
+P5.3 remains open until the separately approved Windows native session passes,
+its measured disk plan is recorded, and only then its uv fixture directory is
+removed.
 
 ## P5.4 — Migrate active model recipes
 
