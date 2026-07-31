@@ -930,19 +930,23 @@ Migrate every active model authoring record, not only the uv substrates. The
 five already-pixi scGPT inputs still use the old schema-v1 `recipe.json` layout
 and therefore are not accepted by the v2-only adapter. Convert them first
 because their dependency locks and native/scientific baselines already exist.
-Keep one target in flight:
 
-1. scGPT macOS Metal;
-2. scGPT Linux CPU;
-3. scGPT Windows CPU;
-4. scGPT Linux CUDA 12.9;
-5. scGPT Windows CUDA 12.8;
-6. Geneformer macOS Metal;
-7. Geneformer Linux CPU;
-8. Geneformer Windows CPU;
-9. UCE macOS Metal;
-10. Geneformer Linux CUDA successor;
-11. Geneformer Windows CUDA successor only when its no-dispatch rule is lifted.
+P5.4 remains one phase. It is organized into three operational blocks, not new
+subphases or acceptance checkpoints:
+
+1. **scGPT v2:** convert the existing macOS Metal, Linux CPU, Windows CPU,
+   Linux CUDA 12.9 and Windows CUDA 12.8 pixi inputs to schema-v2 authoring,
+   reusing their reviewed locks and native/scientific baselines;
+2. **Geneformer CPU/Metal + UCE:** migrate Geneformer macOS Metal, Linux CPU
+   and Windows CPU from uv to pixi, then migrate the large UCE macOS Metal
+   recipe;
+3. **Geneformer CUDA legacy decision:** preserve the frozen CUDA 12.4
+   identities and introduce a Linux CUDA 12.9 successor; introduce a Windows
+   CUDA 12.8 successor only after its no-dispatch rule is explicitly lifted.
+
+Within each block, keep one target in flight. Native runs are sequential
+evidence for the same P5.4 phase; they do not create P5.4.1–P5.4.11 or separate
+planning documents.
 
 The scGPT conversion proves schema-v2 authoring without also changing the pixi
 substrate. The lighter CPU/Metal Geneformer targets then establish the uv-to-pixi

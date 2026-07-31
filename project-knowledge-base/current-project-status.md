@@ -8,7 +8,9 @@ tree, or codebase to modify from this repository. Schema v1 is explicitly
 unsupported rather than retained as a parallel reader. P5.3 is complete:
 all three foundation v2 scrolls/locks/audits passed matching native validation
 on macOS, self-hosted Linux and self-hosted Windows, and each old uv fixture was
-removed only after its native proof. P5.4 is pending and has not started. The full CI
+removed only after its native proof. P5.4 is pending and has not started; it is
+one phase with three operational blocks: scGPT v2, Geneformer CPU/Metal plus
+UCE, and the Geneformer CUDA legacy/successor decision. The full CI
 substrate migration to pixi + pixi-pack +
 conda-forge on self-hosted GitHub Actions runners has been planned and approved
 in principle — see the migration plan below. Its **Phase 0 relocation/activation
@@ -501,7 +503,9 @@ first).
 > adoption/legacy retirement. Phases 0–4 of the pixi migration are complete;
 > Phase 5 is in progress; the historical v1 P5.2 checkpoint, v2-only P5.2V
 > cutover and all three native P5.3 foundation proofs are complete. P5.4 model
-> recipe migration is pending and has not started. Do not use the historical
+> recipe migration is pending and has not started; it remains one phase with
+> three operational blocks rather than a new numbered checkpoint per target.
+> Do not use the historical
 > platform-expansion target table as a dispatch source.
 
 1. Continue the [pixi migration](./roadmap/runtime-box-pixi-migration.md) Phase 5,
