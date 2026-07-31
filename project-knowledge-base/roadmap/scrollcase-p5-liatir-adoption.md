@@ -2,8 +2,7 @@
 
 Last reviewed: 2026-07-31
 
-Status: **in progress — P5.2V complete; P5.3 macOS and Linux complete,
-Windows native proof pending**
+Status: **in progress — P5.2V and P5.3 complete; P5.4 pending and not started**
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project. The selected P5
@@ -140,11 +139,10 @@ Five scGPT recipes are already pixi recipes:
 - `scgpt-whole-human-windows-x86_64-cpu`;
 - `scgpt-whole-human-windows-x86_64-cuda12.8`.
 
-Seven recipes still use uv and block complete builder retirement:
+Six recipes still use uv and block complete builder retirement:
 
 | Group | Recipe | Current target state |
 | --- | --- | --- |
-| Fixture | `installer-fixture-windows-x86_64` | Foundation fixture |
 | Geneformer | `geneformer-v1-10m-macos-arm64-metal` | Published |
 | Geneformer | `geneformer-v1-10m-linux-x86_64-cpu` | Published |
 | Geneformer | `geneformer-v1-10m-linux-x86_64-cuda12.4` | Published legacy CUDA target |
@@ -182,7 +180,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.1 — contract inversion | Complete | Core, Node, Worker, signer, Rust and frontend production build agree |
 | P5.2 — Liatir adapter and distribution split | Complete | Real clean `keygen → lock → build → verify --self-test` cycle through the stable Liatir command; namespace, archive hash and receipts checked |
 | P5.2V — Scrollcase v2-only cutover | Complete | Exact `scrollcase@0.4.11`; active contracts and consumers use v2; v1 is explicitly unsupported; clean local v2 proof green |
-| P5.3 — v2 foundation-fixture migration | In progress | Three reviewed v2 scrolls/locks/audits; macOS and Linux native proofs green; Windows native proof pending |
+| P5.3 — v2 foundation-fixture migration | Complete | Three reviewed v2 scrolls/locks/audits; macOS, Linux and Windows native proofs green; every foundation uv fixture removed only after its matching proof |
 | P5.4 — model-recipe migration | Pending | Every active model input is a v2 scroll; Geneformer/UCE no longer require uv |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
 | P5.6 — local/native closure | Pending | Full cheap gate plus one reviewed non-production product lifecycle |
@@ -891,8 +889,30 @@ execution still requires a separately approved runner/session.
   `sha256:19e10ac80b33b36bfd53d185490b9401b134f5579674bc54dcfeb5b006f0e260`.
   Only after this proof passed were the Linux uv recipe and requirements files
   removed.
-- The Windows v2 input is ready, but its old uv recipe files remain
-  intentionally present until the matching native proof passes.
+- Windows x86_64 is complete. The first authorized dispatch, run
+  `30594990987` at commit
+  `2e3943a68138f39e8e76d29b4a24096cba90a489`, stopped in the foundation
+  TAR safety gate because creating the malicious symlink fixture itself
+  requires Developer Mode or administrator privilege on Windows. It produced
+  only failure artifact `8779808344`
+  (`sha256:96ac1dc53055d83172ef5a499a99a512d9ec6a2251a01a44f54abb58a8606941`)
+  and is retained as incident provenance, not acceptance evidence. Commit
+  `1dc25fd25d299f970fbc0501197267e03ec50d16` made that regression portable
+  by constructing the TAR link entry directly, without weakening the
+  extraction rejection. The single authorized retry, run `30595863980`
+  (job `91047973218`), passed from that exact clean revision on
+  `liatir-windows-selfhosted-1785460565-23168`. It reproduced the reviewed
+  lock byte-for-byte, built twice with identical archive bytes, exercised the
+  external schema-v2 signer adapter, separate verify/self-test, shell-free
+  Node consumer extraction/execution, Rust archive and
+  activation/rollback/removal checks, and explicit schema-v1 rejection.
+  Archive SHA-256 is
+  `e0455e6de2fa86b18ae47581e2cb47048520b114d7f003141fef1d5a8561c4bc`;
+  measured archive size is `44718074` bytes and installed size is `126224685`
+  bytes. Artifact `8780252596` has digest
+  `sha256:d81d6db1c24c41b13f03dc74629ea986006838f92147e75bd97fe8f6dcf55832`.
+  Only after this proof passed were the Windows uv recipe and requirements
+  files removed.
 - `runtime-box-foundation.yml` accepts exactly one reviewed fixture per manual
   dispatch. Linux uses `liatir-linux-selfhosted` with a 30-minute bound; Windows
   uses `liatir-windows-selfhosted` with a 60-minute bound. All foundation checks
@@ -900,9 +920,9 @@ execution still requires a separately approved runner/session.
   The shared ephemeral launchers resolve foundation runner identity and disk
   floors directly from the catalog. No foundation workflow invokes `--uv`.
 
-P5.3 remains open until the separately approved Windows native session passes,
-its measured disk plan is recorded, and only then its uv fixture directory is
-removed.
+P5.3 is complete. The cancelled historical foundation run `30548041903`
+targeted the preceding revision and is explicitly excluded from acceptance
+evidence. P5.4 remains pending and has not started.
 
 ## P5.4 — Migrate active model recipes
 

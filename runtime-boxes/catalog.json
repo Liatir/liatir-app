@@ -156,8 +156,8 @@
       "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/installer-fixture-windows-x86_64-conda.json",
       "requiredBuildDiskBytes": 1073741824,
       "diskPlan": {
-        "estimatedInstalledSizeBytes": 134217728,
-        "estimatedArchiveSizeBytes": 67108864,
+        "estimatedInstalledSizeBytes": 126224685,
+        "estimatedArchiveSizeBytes": 44718074,
         "safetyMarginBytes": 268435456
       }
     },

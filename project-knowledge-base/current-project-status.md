@@ -1,14 +1,14 @@
 # Current project status
 
-Last updated: 2026-07-30 (the Runtime Box builder extraction is complete:
+Last updated: 2026-07-31 (the Runtime Box builder extraction is complete:
 Scrollcase is an independent Apache-2.0 project outside this repository.
 Liatir now pins exact public `scrollcase@0.4.11` and P5.2V has completed the
 v2-only contract cutover. Scrollcase is not a Liatir workspace, vendored source
 tree, or codebase to modify from this repository. Schema v1 is explicitly
-unsupported rather than retained as a parallel reader. P5.3 is in progress:
-all three foundation v2 scrolls/locks/audits are prepared and macOS native
-validation is green; Linux and Windows still require their separately approved
-self-hosted native sessions. The full CI
+unsupported rather than retained as a parallel reader. P5.3 is complete:
+all three foundation v2 scrolls/locks/audits passed matching native validation
+on macOS, self-hosted Linux and self-hosted Windows, and each old uv fixture was
+removed only after its native proof. P5.4 is pending and has not started. The full CI
 substrate migration to pixi + pixi-pack +
 conda-forge on self-hosted GitHub Actions runners has been planned and approved
 in principle — see the migration plan below. Its **Phase 0 relocation/activation
@@ -155,7 +155,7 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   `30209373381` passed all 11 Node 20/22/24 jobs across Linux, macOS and Windows
   plus package/audit/docs gates.
   **The schema-v1 P5.0–P5.2 record is historical. P5.2V is complete on exact
-  `scrollcase@0.4.11`; P5.3 is complete on macOS and pending native Linux/Windows
+  `scrollcase@0.4.11`; P5.3 is complete on macOS, Linux and Windows native
   evidence.**
   `@liatir/core` consumes/refines the published
   generic contract. The active adapter routes doctor/keygen/verify and pixi
@@ -170,8 +170,20 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   resolution, two deterministic builds, conda-pack, stdlib self-test, a signed
   `liatir.runtime-box.release`, separate `verify --self-test`, Node consumer
   execution and Rust activation/rollback/removal plus v1 rejection. The macOS
-  foundation uv recipe was removed only after that native proof; the Linux and
-  Windows uv fixture files remain until their native proofs. Public
+  foundation uv recipe was removed only after that native proof. Linux run
+  `30594110843` passed on
+  `3de11868c510665544d54f9251496c479d02866a` with archive SHA-256
+  `4968084661a0fc98b36dd2e86f37e5642ba092afd8078459e7a7a1ae5fc94fca`,
+  archive size `200216832` bytes and installed size `506827820` bytes.
+  Windows run `30595863980` passed on
+  `1dc25fd25d299f970fbc0501197267e03ec50d16` with archive SHA-256
+  `e0455e6de2fa86b18ae47581e2cb47048520b114d7f003141fef1d5a8561c4bc`,
+  archive size `44718074` bytes and installed size `126224685` bytes. Both
+  matching uv fixture directories were removed only after those proofs.
+  Failed precursor runs `30565143883` (missing generated bridge ordering) and
+  `30594990987` (Windows symlink privilege in the TAR rejection fixture) remain
+  incident provenance, not acceptance evidence; cancelled old run
+  `30548041903` is also not valid evidence. Public
   `scrollcase@0.4.11`, inspected
   from its npm tarball on 2026-07-30, requires schema v2 and a nested
   `scrolls/<boxId>/<targetId>/scroll.json` authoring layout. The canonical P5 plan
@@ -186,12 +198,12 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
 - [Scrollcase P5 — Liatir adoption](./roadmap/scrollcase-p5-liatir-adoption.md) —
   the detailed implementation plan for consuming the published package, inverting
   the generic contract, adding the Liatir signer/evidence/distribution adapter,
-  migrating the nine remaining uv recipes, preserving legacy CUDA target identity,
+  migrating the remaining uv model recipes, preserving legacy CUDA target identity,
   and retiring the local generic builder. Status: **the v1 P5.0–P5.2 baseline is
   historical; P5.2V is complete on exact `scrollcase@0.4.11`, and P5.3 is
-  complete on macOS with Linux/Windows native proofs pending**. It consumes generic
+  complete on macOS, Linux and Windows; P5.4 is pending and not started**. It consumes generic
   types and browser-safe helpers, preserves `liatir.runtime-box.*`, and passes
-  the complete `test:verify` gate with 219 unit/contract tests. The stable CLI is
+  the complete `test:verify` gate with 220 unit/contract tests. The stable CLI is
   locally implemented as a thin adapter; pixi operations are intended to use the
   installed external tool, while distribution and the visible temporary uv
   compatibility branch remain Liatir-owned only for not-yet-migrated P5.4 model
@@ -487,10 +499,10 @@ first).
 > Scrollcase package owns the generic pixi builder, and
 > [Scrollcase P5](./roadmap/scrollcase-p5-liatir-adoption.md) owns downstream
 > adoption/legacy retirement. Phases 0–4 of the pixi migration are complete;
-> Phase 5 is in progress; the historical v1 P5.2 checkpoint and v2-only P5.2V
-> cutover are complete. P5.3 next needs one approved Linux fixture session and
-> then one approved Windows fixture session. Do not use the historical platform-expansion
-> target table as a dispatch source.
+> Phase 5 is in progress; the historical v1 P5.2 checkpoint, v2-only P5.2V
+> cutover and all three native P5.3 foundation proofs are complete. P5.4 model
+> recipe migration is pending and has not started. Do not use the historical
+> platform-expansion target table as a dispatch source.
 
 1. Continue the [pixi migration](./roadmap/runtime-box-pixi-migration.md) Phase 5,
    which has **reframed and largely absorbed** the old model-platform-expansion

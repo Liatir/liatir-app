@@ -16,6 +16,23 @@ state lives in
 Linux” are true at the dated Gate 10 closure, not a claim about later scGPT
 self-hosted candidate evidence.
 
+**P5.3 v2 foundation revalidation (2026-07-31):** the manual-only
+`runtime-box-foundation.yml` remained entirely self-hosted and completed the
+remaining native proofs without any GitHub-hosted job. Linux run `30594110843`
+passed at `3de11868c510665544d54f9251496c479d02866a` on
+`liatir-linux-selfhosted-1785458323-362`; artifact `8779573721` records archive
+SHA-256
+`4968084661a0fc98b36dd2e86f37e5642ba092afd8078459e7a7a1ae5fc94fca`,
+`200216832` archive bytes and `506827820` installed bytes. Windows run
+`30595863980` passed at `1dc25fd25d299f970fbc0501197267e03ec50d16` on
+`liatir-windows-selfhosted-1785460565-23168`; artifact `8780252596` records
+archive SHA-256
+`e0455e6de2fa86b18ae47581e2cb47048520b114d7f003141fef1d5a8561c4bc`,
+`44718074` archive bytes and `126224685` installed bytes. Failed precursor runs
+`30565143883` and `30594990987` are retained only as incident provenance. The
+cancelled run `30548041903` targeted an earlier revision and is not acceptance
+evidence. P5.3 is complete; P5.4 remains pending and was not started.
+
 ## Objective
 
 Prove that Liatir can build, validate, sign, publish, install, run, and remove a
