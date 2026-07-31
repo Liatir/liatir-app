@@ -4,6 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolveRuntimeBoxAuthoringInput } from '../../../scripts/runtime-box/authoring-input.mjs';
 import { openSandboxWorkspace } from './liatir-app.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -28,10 +29,13 @@ export function runtimeBoxTargetForNativeTest(modelId, targetId) {
   const model = CATALOG.models.find((candidate) => candidate.modelId === modelId);
   const target = model?.targets.find((candidate) => candidate.targetId === targetId);
   if (!target) throw new Error(`Unsupported native Runtime Box test target: ${modelId}/${targetId}`);
-  const recipe = JSON.parse(fs.readFileSync(
-    path.join(ROOT, 'runtime-boxes', 'recipes', target.recipeId, 'recipe.json'),
-    'utf8',
-  ));
+  const recipe = resolveRuntimeBoxAuthoringInput({
+    recipeId: target.recipeId,
+    recipesDir: path.join(ROOT, 'runtime-boxes', 'recipes'),
+    scrollsDir: path.join(ROOT, 'runtime-boxes', 'scrolls'),
+    expectedBoxId: model.boxId,
+    expectedTargetId: target.targetId,
+  }).document;
   const candidate = {
     target: { ...target.target },
     hostEnvironments: [...target.hostEnvironments],

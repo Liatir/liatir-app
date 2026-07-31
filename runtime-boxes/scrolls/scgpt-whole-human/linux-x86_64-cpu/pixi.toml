@@ -10,6 +10,7 @@
 # set resolves to the `cpu_mkl` build of pytorch 2.8.0 and imports cold from a relocated prefix
 # with no activation environment.
 
+# Canonical Scrollcase v2 authoring input.
 [workspace]
 name = "scgpt-whole-human-linux-x86_64-cpu"
 channels = ["conda-forge"]

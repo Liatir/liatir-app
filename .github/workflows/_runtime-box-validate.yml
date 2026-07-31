@@ -190,6 +190,7 @@ jobs:
         run: npm run runtime-box -- keygen
 
       - name: Build a clean native Runtime Box
+        id: build
         run: >-
           npm run runtime-box:ci -- tracked-build
           --model "${{ inputs.model_id }}"
@@ -205,7 +206,7 @@ jobs:
         env:
           TMPDIR: ${{ runner.temp }}
         run: >-
-          npm run runtime-box -- verify "${{ needs.preflight.outputs.release_path }}"
+          npm run runtime-box -- verify "${{ steps.build.outputs.release_path }}"
           --self-test
           --receipt .runtime-box-ci/verification.json
 
@@ -258,7 +259,7 @@ jobs:
           --recipe "${{ needs.preflight.outputs.recipe_id }}"
           --target "${{ inputs.target_id }}"
           --mode "${{ inputs.mode }}"
-          --release "${{ needs.preflight.outputs.release_path }}"
+          --release "${{ steps.build.outputs.release_path }}"
           --host .runtime-box-ci/host.json
           --metrics .runtime-box-ci/build-metrics.json
           --verification .runtime-box-ci/verification.json

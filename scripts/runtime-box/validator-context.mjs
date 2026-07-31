@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
+import { resolveRuntimeBoxAuthoringInput } from './authoring-input.mjs';
 import { runtimeBoxTargetId } from './targets.mjs';
 
 /** Resolves a scientific validator exclusively from the catalog-checked recipe and target inputs. */
@@ -10,8 +11,14 @@ export async function loadRuntimeBoxValidatorContext({
   runtimeDirectoryEnvironment,
 }) {
   const recipeId = process.env.LIATIR_RUNTIME_BOX_RECIPE_ID ?? defaultRecipeId;
-  const recipePath = join(root, 'runtime-boxes', 'recipes', recipeId, 'recipe.json');
-  const recipe = JSON.parse(await readFile(recipePath, 'utf8'));
+  const authoring = resolveRuntimeBoxAuthoringInput({
+    root,
+    recipeId,
+    recipesDir: join(root, 'runtime-boxes', 'recipes'),
+    scrollsDir: join(root, 'runtime-boxes', 'scrolls'),
+  });
+  const recipePath = authoring.documentPath;
+  const recipe = authoring.document;
   const targetId = runtimeBoxTargetId(recipe.target);
   if (
     process.env.LIATIR_RUNTIME_BOX_TARGET_ID
@@ -26,14 +33,13 @@ export async function loadRuntimeBoxValidatorContext({
       ?? join(root, '.runtime-box-build', recipeId, 'payload'),
   );
   const python = join(runtimeDir, ...recipe.pythonEntryPoint.split('/'));
-  // A pixi recipe pins its dependencies in pixi.lock; the legacy uv path uses requirements.lock.
-  const lockFile = recipe.pixiVersion ? 'pixi.lock' : recipe.requirementsLock;
-  const lockPath = join(dirname(recipePath), lockFile);
   const dependencyLockSha256 = createHash('sha256')
-    .update(await readFile(lockPath))
+    .update(await readFile(authoring.lockPath))
     .digest('hex');
   return {
     recipeId,
+    authoringId: authoring.authoringId,
+    authoringVersion: authoring.authoringVersion,
     recipePath,
     recipe,
     targetId,

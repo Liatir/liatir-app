@@ -21,6 +21,8 @@ const RELATIVE_TOLERANCE = 0.02;
 const MINIMUM_COSINE_SIMILARITY = 0.999;
 const {
   recipe: RECIPE,
+  authoringId: AUTHORING_ID,
+  authoringVersion: AUTHORING_VERSION,
   targetId: TARGET_ID,
   runtimeDir: RUNTIME_DIR,
   python: PYTHON,
@@ -214,8 +216,8 @@ try {
     acceleratorDurationMs: accelerated?.execution.durationMs ?? null,
     comparison,
     provenance: {
-      recipeId: RECIPE.recipeId,
-      recipeVersion: RECIPE.recipeVersion,
+      recipeId: AUTHORING_ID,
+      recipeVersion: AUTHORING_VERSION,
       pythonVersion: RECIPE.pythonVersion,
       ...runtimeBoxBuilderVersionFields(RECIPE),
       dependencyLockSha256: DEPENDENCY_LOCK_SHA256,

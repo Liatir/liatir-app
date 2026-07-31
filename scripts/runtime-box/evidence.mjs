@@ -7,6 +7,7 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { arch, platform } from 'node:os';
 import { dirname, resolve, sep } from 'node:path';
 import { sha256File } from './filesystem.mjs';
+import { resolveRuntimeBoxAuthoringInput } from './authoring-input.mjs';
 import { runWithHeartbeat } from './heartbeat.mjs';
 import { runtimeBoxBuilderVersionFields } from './identity.mjs';
 import { runtimeBoxTargetId } from './targets.mjs';
@@ -323,9 +324,16 @@ async function completeModelRecord(options, catalog, phase) {
   const target = model.targets.find((candidate) => candidate.targetId === options.target);
   requireEvidence(target, `unknown target ${options.model}/${options.target}`);
   requireEvidence(target.recipeId === options.recipe, 'recipe does not match catalog target');
-  const recipeDir = resolve(getWorkspace().recipesDir, target.recipeId);
-  const recipePath = resolve(recipeDir, 'recipe.json');
-  const recipe = readJson(recipePath);
+  const workspace = getWorkspace();
+  const authoring = resolveRuntimeBoxAuthoringInput({
+    recipeId: target.recipeId,
+    recipesDir: workspace.recipesDir,
+    scrollsDir: workspace.scrollsDir,
+    expectedBoxId: model.boxId,
+    expectedTargetId: target.targetId,
+  });
+  const recipePath = authoring.documentPath;
+  const recipe = authoring.document;
   const record = baseRecord({
     phase,
     status: options.status,
@@ -334,8 +342,8 @@ async function completeModelRecord(options, catalog, phase) {
       modelId: model.modelId,
       boxId: model.boxId,
       runtimeId: model.runtimeId,
-      recipeId: recipe.recipeId,
-      recipeVersion: recipe.recipeVersion,
+      recipeId: authoring.authoringId,
+      recipeVersion: authoring.authoringVersion,
       version: recipe.version,
       targetId: target.targetId,
       mode: options.mode,
@@ -360,8 +368,7 @@ async function completeModelRecord(options, catalog, phase) {
     requireEvidence(verification.status === 'passed' && verification.localSignatureVerified === true, 'local release verification did not pass');
     record.source = signedBuildSourceEvidence(record.source, release.provenance);
     requireEvidence(host.platform === release.target.platform && host.arch === release.target.arch, 'recorded host differs from release target');
-    const lockFile = recipe.pixiVersion ? 'pixi.lock' : recipe.requirementsLock;
-    const lockSha256 = await sha256File(resolve(recipeDir, lockFile));
+    const lockSha256 = await sha256File(authoring.lockPath);
     requireEvidence(lockSha256 === release.provenance.dependencyLockSha256, 'checked dependency lock differs from signed provenance');
     record.host = {
       ...host,

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 
 import catalog from '../../runtime-boxes/catalog.json';
 import {
@@ -11,7 +11,20 @@ import {
   validateWindowsCudaPrerequisite,
 } from '../../scripts/runtime-box-ci.mjs';
 import { heartbeatLine } from '../../scripts/runtime-box/heartbeat.mjs';
+import { resolveRuntimeBoxAuthoringInput } from '../../scripts/runtime-box/authoring-input.mjs';
 import { npmInvocation } from '../../scripts/node-cli.mjs';
+
+function authoringInput(recipeId: string) {
+  return resolveRuntimeBoxAuthoringInput({
+    recipeId,
+    recipesDir: resolve('runtime-boxes/recipes'),
+    scrollsDir: resolve('runtime-boxes/scrolls'),
+  });
+}
+
+function repositoryPath(path: string) {
+  return relative(process.cwd(), path).replaceAll('\\', '/');
+}
 
 describe('Runtime Box CI cost controls', () => {
   it('builds the shared core before generating SDK types on a clean product runner', () => {
@@ -106,9 +119,7 @@ describe('Runtime Box CI cost controls', () => {
   it('pins every model lock and calculates disk before native allocation', () => {
     for (const model of catalog.models) {
       for (const target of model.targets) {
-        const recipe = JSON.parse(readFileSync(resolve(
-          `runtime-boxes/recipes/${target.recipeId}/recipe.json`,
-        ), 'utf8'));
+        const recipe = authoringInput(target.recipeId).document;
         const plan = runtimeBoxBuildDiskPlan(recipe, target);
         expect(target.dependencyLockSha256).toMatch(/^[a-f0-9]{64}$/);
         expect(plan.calculatedPeakDiskBytes).toBeLessThanOrEqual(target.requiredBuildDiskBytes);
@@ -131,8 +142,8 @@ describe('Runtime Box CI cost controls', () => {
         lockPath: `runtime-boxes/scrolls/runtime-box-installer-fixture/${fixture.targetId}/pixi.lock`,
       })),
       ...catalog.models.flatMap((model) => model.targets.map((target) => ({
-        descriptorPath: `runtime-boxes/recipes/${target.recipeId}/recipe.json`,
-        lockPath: null,
+        descriptorPath: repositoryPath(authoringInput(target.recipeId).documentPath),
+        lockPath: repositoryPath(authoringInput(target.recipeId).lockPath),
       }))),
     ];
 
@@ -140,9 +151,7 @@ describe('Runtime Box CI cost controls', () => {
       const descriptor = JSON.parse(readFileSync(resolve(input.descriptorPath), 'utf8'));
       // Foundation scrolls byte-pin pixi.lock; compatibility recipes retain their substrate-specific
       // lock until P5.4. Every lock must survive a Windows checkout byte-for-byte.
-      const lockPath = input.lockPath ?? `runtime-boxes/recipes/${descriptor.recipeId}/${
-        descriptor.pixiVersion ? 'pixi.lock' : descriptor.requirementsLock
-      }`;
+      const lockPath = input.lockPath;
       const attribute = execFileSync('git', ['check-attr', 'eol', '--', lockPath], {
         encoding: 'utf8',
       }).trim();

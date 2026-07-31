@@ -74,6 +74,46 @@ describe('Runtime Box scientific validator context', () => {
     }
   });
 
+  it('resolves a migrated validator from its canonical v2 scroll and unchanged pixi lock', async () => {
+    const { createHash } = await import('node:crypto');
+    const root = await mkdtemp(join(tmpdir(), 'liatir-validator-context-v2-'));
+    const recipeId = 'fixture-linux-cpu';
+    const directory = join(
+      root,
+      'runtime-boxes',
+      'scrolls',
+      'fixture-box',
+      'linux-x86_64-cpu',
+    );
+    const pixiLock = 'version: 6\nfixture: v2\n';
+    await mkdir(directory, { recursive: true });
+    await writeFile(join(directory, 'pixi.lock'), pixiLock);
+    await writeFile(join(directory, 'scroll.json'), JSON.stringify({
+      schemaVersion: 2,
+      scrollId: recipeId,
+      scrollVersion: '1.0.0',
+      boxId: 'fixture-box',
+      pythonEntryPoint: 'venv/bin/python',
+      target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
+    }));
+    process.env.LIATIR_RUNTIME_BOX_RECIPE_ID = recipeId;
+    delete process.env.LIATIR_RUNTIME_BOX_TARGET_ID;
+
+    try {
+      const context = await loadRuntimeBoxValidatorContext({
+        root,
+        defaultRecipeId: 'unused',
+        runtimeDirectoryEnvironment: 'LIATIR_TEST_RUNTIME_DIR',
+      });
+      expect(context.recipePath).toBe(join(directory, 'scroll.json'));
+      expect(context.dependencyLockSha256).toBe(
+        createHash('sha256').update(pixiLock).digest('hex'),
+      );
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   it('rejects a checked target that does not match the selected recipe', async () => {
     const root = await mkdtemp(join(tmpdir(), 'liatir-validator-context-'));
     const recipeId = 'fixture-linux-cpu';

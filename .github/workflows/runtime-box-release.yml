@@ -181,6 +181,7 @@ jobs:
           test -z "$(git status --porcelain)"
 
       - name: Build with the private KMS signer and verify locally
+        id: build
         env:
           LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN: ${{ steps.release-auth.outputs.id_token }}
         run: >-
@@ -201,7 +202,7 @@ jobs:
         env:
           TMPDIR: ${{ runner.temp }}
         run: >-
-          npm run runtime-box -- verify "${{ needs.preflight.outputs.release_path }}"
+          npm run runtime-box -- verify "${{ steps.build.outputs.release_path }}"
           --public-key runtime-boxes/trust/production-public.json
           --self-test
           --receipt .runtime-box-ci/verification.json
@@ -220,7 +221,7 @@ jobs:
 
       - name: Publish immutable objects and verify their public hashes
         run: >-
-          npm run runtime-box -- publish "${{ needs.preflight.outputs.release_path }}"
+          npm run runtime-box -- publish "${{ steps.build.outputs.release_path }}"
           --bucket "${{ vars.LIATIR_RUNTIME_BOX_BUCKET }}"
           --prefix "${{ vars.LIATIR_RUNTIME_BOX_PREFIX }}"
           --registry "${{ vars.LIATIR_RUNTIME_BOX_REGISTRY }}"
@@ -269,7 +270,7 @@ jobs:
           --target "${{ inputs.target_id }}"
           --mode native-lifecycle
           --environment runtime-box-production
-          --release "${{ needs.preflight.outputs.release_path }}"
+          --release "${{ steps.build.outputs.release_path }}"
           --channel "${{ needs.preflight.outputs.channel_path }}"
           --host .runtime-box-ci/host.json
           --metrics .runtime-box-ci/build-metrics.json

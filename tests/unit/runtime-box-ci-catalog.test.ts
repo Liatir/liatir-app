@@ -442,6 +442,9 @@ describe('Runtime Box CI catalog', () => {
     const sharedCommand = 'bash scripts/install-runtime-box-linux-product-deps.sh';
 
     expect(validation).toContain(sharedCommand);
+    expect(validation).toContain('id: build');
+    expect(validation).toContain('verify "${{ steps.build.outputs.release_path }}"');
+    expect(validation).toContain('--release "${{ steps.build.outputs.release_path }}"');
     expect(validation.indexOf(sharedCommand)).toBeLessThan(
       validation.indexOf('Install pinned Rust 1.95.0'),
     );

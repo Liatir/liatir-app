@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { appendFileSync, existsSync, lstatSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { rm } from 'node:fs/promises';
-import { resolve, sep } from 'node:path';
+import { relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   runTrackedCommand,
@@ -24,6 +24,7 @@ import { lockedCondaDistributions, lockedPythonDistributions } from './runtime-b
 import { runtimeBoxPolicyFingerprint } from '../services/runtime-box-signer/src/policy.mjs';
 import { configureWorkspace, getWorkspace, workspaceOverridesFromArgv } from './runtime-box/workspace.mjs';
 import { boxTargetId } from 'scrollcase/contract/browser';
+import { resolveRuntimeBoxAuthoringInput } from './runtime-box/authoring-input.mjs';
 
 /**
  * Workspace accessors. These read lazily so `main()` can configure the workspace from flags before
@@ -32,24 +33,26 @@ import { boxTargetId } from 'scrollcase/contract/browser';
  */
 const workspaceRoot = () => getWorkspace().root;
 const catalogPath = () => resolve(workspaceRoot(), 'runtime-boxes/catalog.json');
-const recipePathFor = (recipeId) => resolve(getWorkspace().recipesDir, recipeId, 'recipe.json');
+
+function authoringInputFor(recipeId, {
+  expectedBoxId,
+  expectedTargetId,
+  allowLegacy = true,
+} = {}) {
+  const workspace = getWorkspace();
+  return resolveRuntimeBoxAuthoringInput({
+    recipeId,
+    recipesDir: workspace.recipesDir,
+    scrollsDir: workspace.scrollsDir,
+    expectedBoxId,
+    expectedTargetId,
+    allowLegacy,
+  });
+}
 
 /** Finds one canonical v2 scroll by its stable Liatir provenance identity. */
 function scrollPathForId(scrollId) {
-  const matches = [];
-  const root = getWorkspace().scrollsDir;
-  for (const boxId of existsSync(root) ? readdirSync(root) : []) {
-    const boxDirectory = resolve(root, boxId);
-    if (!statSync(boxDirectory).isDirectory()) continue;
-    for (const targetId of readdirSync(boxDirectory)) {
-      const path = resolve(boxDirectory, targetId, 'scroll.json');
-      if (!existsSync(path)) continue;
-      const scroll = JSON.parse(readFileSync(path, 'utf8'));
-      if (scroll.scrollId === scrollId) matches.push(path);
-    }
-  }
-  requireCatalog(matches.length === 1, `expected one v2 scroll for ${scrollId}, found ${matches.length}`);
-  return matches[0];
+  return authoringInputFor(scrollId, { allowLegacy: false }).documentPath;
 }
 /** Generated directories the builder owns, in the order it is safe to remove them. */
 const buildStateDirectories = () => {
@@ -197,8 +200,15 @@ function validatePixiRecipeLockAndAudit(recipe, target, recipePath, targetKey) {
       && audit.dependencyLockSha256 === target.dependencyLockSha256,
     `conda license audit identity mismatch for ${targetKey}`,
   );
-  const reviewedPackages = audit.packages.map(({ name, version }) => ({ name, version }));
-  const lockedPackages = lockedCondaDistributions(lockBytes).map(({ name, version }) => ({ name, version }));
+  const byIdentity = (left, right) => (
+    left.name.localeCompare(right.name) || left.version.localeCompare(right.version)
+  );
+  const reviewedPackages = audit.packages
+    .map(({ name, version }) => ({ name, version }))
+    .sort(byIdentity);
+  const lockedPackages = lockedCondaDistributions(lockBytes)
+    .map(({ name, version }) => ({ name, version }))
+    .sort(byIdentity);
   requireCatalog(
     JSON.stringify(reviewedPackages) === JSON.stringify(lockedPackages),
     `conda license audit package set differs from the lock for ${targetKey}`,
@@ -465,10 +475,19 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
       requireCatalog(target.timeoutMinutes <= runner.maxTimeoutMinutes, `timeout exceeds runner maximum for ${targetKey}`);
       requireCatalog(Number.isSafeInteger(target.requiredBuildDiskBytes) && target.requiredBuildDiskBytes > 0, `invalid disk requirement for ${targetKey}`);
       requireCatalog(signerBox.targets.includes(target.targetId), `catalog target is outside signer policy for ${targetKey}`);
-      const recipePath = recipePathFor(target.recipeId);
-      requireCatalog(existsSync(recipePath), `missing recipe ${target.recipeId}`);
-      const recipe = JSON.parse(readFileSync(recipePath, 'utf8'));
-      requireCatalog(recipe.recipeId === target.recipeId && recipe.modelId === model.modelId && recipe.boxId === model.boxId && recipe.runtimeId === model.runtimeId, `recipe identity mismatch for ${targetKey}`);
+      const authoring = authoringInputFor(target.recipeId, {
+        expectedBoxId: model.boxId,
+        expectedTargetId: target.targetId,
+      });
+      const recipePath = authoring.documentPath;
+      const recipe = authoring.document;
+      requireCatalog(
+        authoring.authoringId === target.recipeId
+          && recipe.modelId === model.modelId
+          && recipe.boxId === model.boxId
+          && recipe.runtimeId === model.runtimeId,
+        `authoring identity mismatch for ${targetKey}`,
+      );
       requireCatalog(runtimeBoxTargetId(recipe.target) === target.targetId, `recipe target mismatch for ${targetKey}`);
       runtimeBoxTorchBackendArguments(recipe);
       requireCatalog(readFileSync(resolve(workspaceRoot(), model.legalRecord), 'utf8').includes(recipe.sourceRevision), `legal record is not pinned to recipe source ${recipe.sourceRevision} for ${targetKey}`);
@@ -521,7 +540,19 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
       requireCatalog(existsSync(workflowPath), `missing caller workflow ${model.callerWorkflow}`);
       const workflow = readFileSync(workflowPath, 'utf8');
       requireCatalog(workflow.includes('uses: ./.github/workflows/_runtime-box-validate.yml'), `caller does not use reusable validation: ${model.callerWorkflow}`);
-      requireCatalog(workflow.includes(`runtime-boxes/recipes/${model.targets[0].recipeId}/**`), `caller lacks recipe path scope: ${model.callerWorkflow}`);
+      requireCatalog(workflow.includes(`runtime-boxes/recipes/${model.targets[0].recipeId}/**`)
+        || authoringInputFor(model.targets[0].recipeId).kind === 'scroll-v2',
+      `caller lacks recipe path scope: ${model.callerWorkflow}`);
+      for (const target of model.targets) {
+        const authoring = authoringInputFor(target.recipeId, {
+          expectedBoxId: model.boxId,
+          expectedTargetId: target.targetId,
+        });
+        if (authoring.kind === 'scroll-v2') {
+          const pathScope = `runtime-boxes/scrolls/${model.boxId}/${target.targetId}/**`;
+          requireCatalog(workflow.includes(pathScope), `caller lacks authoring path scope ${pathScope}: ${model.callerWorkflow}`);
+        }
+      }
       requireCatalog(workflow.includes(model.legalRecord), `caller lacks legal path scope: ${model.callerWorkflow}`);
       requireCatalog(workflow.includes(model.validatorPath), `caller lacks validator path scope: ${model.callerWorkflow}`);
       requireCatalog(!workflow.includes('secrets: inherit'), `caller may not inherit secrets: ${model.callerWorkflow}`);
@@ -676,13 +707,13 @@ export async function verifyDeployedSignerPolicy({
 }
 
 /** Checks the current native host and free workspace capacity before a heavy build. */
-async function probeHost(target, runner, output) {
+async function probeHost(model, target, runner, output) {
   validateRunnerExecutionContext(runner);
   const record = await writeHostEvidence(output, target.target, runner.runsOn);
-  const recipe = JSON.parse(readFileSync(
-    recipePathFor(target.recipeId),
-    'utf8',
-  ));
+  const recipe = authoringInputFor(target.recipeId, {
+    expectedBoxId: model.boxId,
+    expectedTargetId: target.targetId,
+  }).document;
   if (target.gpuRequired) {
     requireCatalog(record.gpuCount === 1, `runner ${runner.id} must expose exactly one GPU`);
     // The exact card is recorded as evidence, not asserted: what has to hold is that it clears the
@@ -720,6 +751,32 @@ async function probeFoundationHost(fixture, runner, output) {
   await writeJson(output, record);
   requireCatalog(record.freeDiskBytesBefore >= fixture.requiredBuildDiskBytes, `only ${record.freeDiskBytesBefore} free bytes; ${fixture.requiredBuildDiskBytes} required`);
   console.log(JSON.stringify({ ...record, requiredBuildDiskBytes: fixture.requiredBuildDiskBytes }));
+}
+
+function builtReleasePath(authoring, targetId) {
+  if (authoring.kind === 'legacy-recipe') {
+    const path = resolve(
+      getWorkspace().distDir,
+      `${authoring.document.boxId}-${authoring.document.version}-${targetId}.release.json`,
+    );
+    requireCatalog(existsSync(path), `missing built release for ${authoring.authoringId}`);
+    return path;
+  }
+  const directory = resolve(
+    getWorkspace().distDir,
+    'boxes',
+    authoring.document.boxId,
+    authoring.document.version,
+    targetId,
+  );
+  const candidates = existsSync(directory)
+    ? readdirSync(directory).filter((name) => name.endsWith('.release.json'))
+    : [];
+  requireCatalog(
+    candidates.length === 1,
+    `expected one built v2 release for ${authoring.authoringId}, found ${candidates.length}`,
+  );
+  return resolve(directory, candidates[0]);
 }
 
 /** Removes Runtime Box build state without touching repository sources. */
@@ -784,7 +841,11 @@ async function main() {
     const resolved = resolveCiTarget(catalog, options.get('model'), options.get('recipe'), options.get('target'), options.get('mode'));
     const nativeRequested = options.get('native-requested') === 'true';
     requireCatalog(!nativeRequested || resolved.target.nativeCiEnabled, `native CI is not enabled for ${resolved.model.modelId}/${resolved.target.targetId}`);
-    const recipe = JSON.parse(readFileSync(recipePathFor(resolved.target.recipeId), 'utf8'));
+    const authoring = authoringInputFor(resolved.target.recipeId, {
+      expectedBoxId: resolved.model.boxId,
+      expectedTargetId: resolved.target.targetId,
+    });
+    const recipe = authoring.document;
     const values = {
       recipe_id: resolved.target.recipeId,
       runs_on: resolved.runner.runsOn,
@@ -802,7 +863,9 @@ async function main() {
       runner_platform: resolved.runner.platform,
       runner_arch: resolved.runner.arch,
       box_id: resolved.model.boxId,
-      release_path: `.runtime-box-dist/${resolved.model.boxId}-${recipe.version}-${resolved.target.targetId}.release.json`,
+      release_path: authoring.kind === 'legacy-recipe'
+        ? `.runtime-box-dist/${resolved.model.boxId}-${recipe.version}-${resolved.target.targetId}.release.json`
+        : '',
       dependency_lock_sha256: resolved.target.dependencyLockSha256,
       calculated_peak_disk_bytes: runtimeBoxBuildDiskPlan(recipe, resolved.target).calculatedPeakDiskBytes,
       required_disk_bytes: resolved.target.requiredBuildDiskBytes,
@@ -820,7 +883,11 @@ async function main() {
     requireCatalog(target, `unknown target ${model.modelId}/${options.get('target')}`);
     const resolved = resolveCiTarget(catalog, model.modelId, target.recipeId, target.targetId, 'native-lifecycle');
     requireCatalog(resolved.target.nativeCiEnabled, `native CI is not enabled for ${model.modelId}/${target.targetId}`);
-    const recipe = JSON.parse(readFileSync(recipePathFor(target.recipeId), 'utf8'));
+    const authoring = authoringInputFor(target.recipeId, {
+      expectedBoxId: model.boxId,
+      expectedTargetId: target.targetId,
+    });
+    const recipe = authoring.document;
     const values = {
       recipe_id: target.recipeId,
       version: recipe.version,
@@ -830,7 +897,9 @@ async function main() {
       pixi_version: recipe.pixiVersion ?? '',
       validator_script: model.validatorScript,
       box_id: model.boxId,
-      release_path: `.runtime-box-dist/${model.boxId}-${recipe.version}-${target.targetId}.release.json`,
+      release_path: authoring.kind === 'legacy-recipe'
+        ? `.runtime-box-dist/${model.boxId}-${recipe.version}-${target.targetId}.release.json`
+        : '',
       channel_path: `.runtime-box-dist/${model.boxId}-beta-${target.targetId}.channel.json`,
       dependency_lock_sha256: target.dependencyLockSha256,
       calculated_peak_disk_bytes: runtimeBoxBuildDiskPlan(recipe, target).calculatedPeakDiskBytes,
@@ -844,7 +913,12 @@ async function main() {
   if (command === 'host-probe') {
     validateRuntimeBoxCiCatalog(catalog);
     const resolved = resolveCiTarget(catalog, options.get('model'), options.get('recipe'), options.get('target'), options.get('mode'));
-    await probeHost(resolved.target, resolved.runner, options.get('output') || '.runtime-box-ci/host.json');
+    await probeHost(
+      resolved.model,
+      resolved.target,
+      resolved.runner,
+      options.get('output') || '.runtime-box-ci/host.json',
+    );
     return;
   }
   if (command === 'verify-signer-policy') {
@@ -867,6 +941,10 @@ async function main() {
   if (command === 'tracked-build') {
     validateRuntimeBoxCiCatalog(catalog);
     const resolved = resolveCiTarget(catalog, options.get('model'), options.get('recipe'), options.get('target'), options.get('mode'));
+    const authoring = authoringInputFor(resolved.target.recipeId, {
+      expectedBoxId: resolved.model.boxId,
+      expectedTargetId: resolved.target.targetId,
+    });
     const args = ['run', 'runtime-box', '--', 'build', resolved.target.recipeId];
     for (const name of ['channel', 'signer', 'signer-audience', 'public-key', 'asset-base-url']) {
       if (options.has(name)) args.push(`--${name}`, options.get(name));
@@ -877,6 +955,12 @@ async function main() {
       invocation.args,
       options.get('metrics') || '.runtime-box-ci/build-metrics.json',
     );
+    const releasePath = relative(
+      workspaceRoot(),
+      builtReleasePath(authoring, resolved.target.targetId),
+    ).replaceAll('\\', '/');
+    setGithubOutput('release_path', releasePath);
+    console.log(JSON.stringify({ release_path: releasePath }));
     return;
   }
   if (command === 'run-validator') {
