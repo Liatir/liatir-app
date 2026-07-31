@@ -268,11 +268,19 @@ describe('Runtime Box CI catalog', () => {
     const validation = readFileSync(new URL('../../.github/workflows/_runtime-box-validate.yml', import.meta.url), 'utf8');
     const release = readFileSync(new URL('../../.github/workflows/runtime-box-release.yml', import.meta.url), 'utf8');
     const launcher = readFileSync(new URL('../../scripts/run-runtime-box-selfhosted-runner.sh', import.meta.url), 'utf8');
+    const validationPreflight = validation.slice(
+      validation.indexOf('\n  preflight:\n'),
+      validation.indexOf('\n  native:\n'),
+    );
     const validationNative = validation.slice(validation.indexOf('\n  native:\n'));
     const releaseJob = release.slice(release.indexOf('\n  release:\n'));
 
     expect(validation).toContain('Require main before any native runner allocation');
     expect(validation).toContain('test "${{ github.ref }}" = "refs/heads/main"');
+    expect(validationPreflight.indexOf('run: npm ci'))
+      .toBeLessThan(validationPreflight.indexOf('Clean stale Runtime Box state'));
+    expect(validationNative.indexOf('run: npm ci'))
+      .toBeLessThan(validationNative.indexOf('Clean stale Runtime Box state'));
     expect(validationNative.indexOf('Clean stale Runtime Box state')).toBeLessThan(validationNative.indexOf('host-probe'));
     expect(validationNative).toContain('if: always()');
     expect(releaseJob.indexOf('Clean stale Runtime Box state')).toBeLessThan(releaseJob.indexOf('host-probe'));

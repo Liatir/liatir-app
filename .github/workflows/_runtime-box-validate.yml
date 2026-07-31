@@ -47,10 +47,10 @@ jobs:
           node-version: 22
           cache: npm
 
+      - run: npm ci
+
       - name: Clean stale Runtime Box state
         run: node scripts/runtime-box-ci.mjs clean
-
-      - run: npm ci
 
       - id: resolve
         name: Validate legal, recipe, target, runner, timeout, and mode
@@ -104,10 +104,10 @@ jobs:
           node-version: 22
           cache: npm
 
+      - run: npm ci
+
       - name: Clean stale Runtime Box state
         run: node scripts/runtime-box-ci.mjs clean
-
-      - run: npm ci
 
       - name: Install pinned uv
         if: needs.preflight.outputs.uv_version != ''
