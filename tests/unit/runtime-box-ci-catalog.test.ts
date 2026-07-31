@@ -480,5 +480,7 @@ describe('Runtime Box CI catalog', () => {
     expect(foundationWorkflow).toContain("'liatir-windows-selfhosted'");
     expect(foundationWorkflow).not.toContain('ubuntu-');
     expect(foundationWorkflow).not.toContain('macos-');
+    expect(foundationWorkflow.indexOf('npm run ts:compile --prefix src-tauri'))
+      .toBeLessThan(foundationWorkflow.indexOf('npm run runtime-box:test:foundation'));
   });
 });

@@ -42,6 +42,9 @@ jobs:
           npm run test:unit -- tests/unit/runtime-box-ci-catalog.test.ts tests/unit/runtime-box-target-adapters.test.ts tests/unit/runtime-box-target-id-contract.test.ts tests/unit/runtime-box-publisher.test.ts
           npm run runtime-box:signer:check
 
+      - name: Generate the embedded bridge bundle
+        run: npm run ts:compile --prefix src-tauri
+
       - name: Verify TAR safety and deterministic Zip64 extraction
         run: npm run runtime-box:test:foundation
 
@@ -93,9 +96,6 @@ jobs:
         uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
         with:
           toolchain: "1.95.0"
-
-      - name: Generate the embedded bridge bundle
-        run: npm run ts:compile --prefix src-tauri
 
       - name: Create placeholder frontend output
         shell: bash

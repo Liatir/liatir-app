@@ -43,9 +43,10 @@ describe('Windows Node CLI invocation', () => {
   });
 
   it('resolves a published package bin without invoking a Windows command shim', () => {
-    const contract = '/repo/node_modules/scrollcase/src/contract/index.mjs';
-    const packageJson = '/repo/node_modules/scrollcase/package.json';
-    const cli = '/repo/node_modules/scrollcase/src/cli.mjs';
+    const packageRoot = resolve('package-fixture/node_modules/scrollcase');
+    const contract = resolve(packageRoot, 'src/contract/index.mjs');
+    const packageJson = resolve(packageRoot, 'package.json');
+    const cli = resolve(packageRoot, 'src/cli.mjs');
     expect(publishedNodeCliInvocation('scrollcase', 'contract', 'scrollcase', ['verify', 'x.json'], {
       nodeExecutable: WINDOWS_NODE,
       resolveModule: () => contract,
