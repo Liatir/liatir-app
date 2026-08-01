@@ -12,6 +12,8 @@
 # sits at the prefix root (venv/python.exe). conda ships the CUDA runtime, so only the driver must
 # be current; the packages declare merely `__cuda >=12`.
 
+# Canonical Scrollcase v2 authoring input.
+
 [workspace]
 name = "scgpt-whole-human-windows-x86_64-cuda12.8"
 channels = ["conda-forge"]
