@@ -11,6 +11,7 @@
 # with no activation environment — on Windows the interpreter sits at the prefix root
 # (`venv/python.exe`), which is what `pythonEntryPoint` records.
 
+# Canonical Scrollcase v2 authoring input.
 [workspace]
 name = "scgpt-whole-human-windows-x86_64-cpu"
 channels = ["conda-forge"]

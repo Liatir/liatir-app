@@ -962,8 +962,11 @@ archive size `1212137655` bytes and installed size `3544428400` bytes. Peak
 additional runner disk was `5217239040` bytes; the measured catalog disk plan
 is `9270355105` bytes within the retained `10737418240`-byte floor. Compact
 artifact `8781444892` preserves the successful build, verify, scientific and
-Rust lifecycle evidence. Windows CPU is the next target; no other block is in
-flight.
+Rust lifecycle evidence. Windows CPU is now the only target in flight: its
+schema-v2 scroll and 94-package Scrollcase audit replace the legacy descriptor,
+while pixi lock SHA-256
+`223f3996e052be616e6f481e1fa65db376c0da2fa555b7425bc73fa2896682c8`
+remains byte-identical. Its native proof is still pending.
 
 The scGPT conversion proves schema-v2 authoring without also changing the pixi
 substrate. The lighter CPU/Metal Geneformer targets then establish the uv-to-pixi

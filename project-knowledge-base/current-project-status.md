@@ -17,7 +17,9 @@ passed in run `30599143569` on self-hosted runner
 `liatir-linux-selfhosted-1785464985-360`: archive SHA-256
 `1cdaafa35270bf53a6bdc722a7f3d8e0d26fec70f5e359192322a053ff3b5801`,
 archive `1212137655` bytes, installed `3544428400` bytes and compact artifact
-`8781444892`. Windows CPU is next; P5.4 is not complete. The full CI
+`8781444892`. Windows CPU is now migrated locally to a single schema-v2 scroll
+with its exact existing lock and a 94-package Scrollcase audit; its native proof
+is pending, so P5.4 is not complete. The full CI
 substrate migration to pixi + pixi-pack +
 conda-forge on self-hosted GitHub Actions runners has been planned and approved
 in principle — see the migration plan below. Its **Phase 0 relocation/activation
