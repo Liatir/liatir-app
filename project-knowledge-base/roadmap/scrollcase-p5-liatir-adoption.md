@@ -181,7 +181,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.2 — Liatir adapter and distribution split | Complete | Real clean `keygen → lock → build → verify --self-test` cycle through the stable Liatir command; namespace, archive hash and receipts checked |
 | P5.2V — Scrollcase v2-only cutover | Complete | Exact `scrollcase@0.4.11`; active contracts and consumers use v2; v1 is explicitly unsupported; clean local v2 proof green |
 | P5.3 — v2 foundation-fixture migration | Complete | Three reviewed v2 scrolls/locks/audits; macOS, Linux and Windows native proofs green; every foundation uv fixture removed only after its matching proof |
-| P5.4 — model-recipe migration | In progress | scGPT Linux and Windows CPU inputs are v2 and natively proven; CUDA and later blocks remain |
+| P5.4 — model-recipe migration | In progress | All four Linux/Windows scGPT inputs are v2 and natively proven; macOS and later blocks remain |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
 | P5.6 — local/native closure | Pending | Full cheap gate plus one reviewed non-production product lifecycle |
 | P5.7 — documentation handoff | Pending | Status, inventories and operator docs match the implemented boundary |
@@ -998,8 +998,26 @@ additional disk was `45279006720` bytes; the measured plan is `50391988084`
 bytes within the retained `60129542144`-byte floor. CUDA 12.9 scientific parity
 passed at cosine `0.99999999999994`, maximum absolute difference
 `8.940696716308594e-8`, and peak VRAM `219378688` bytes. Compact artifact
-`8821789904` and preflight artifact `8821296478` preserve the proof. Windows
-CUDA 12.8 is next; P5.4 remains incomplete.
+`8821789904` and preflight artifact `8821296478` preserve the proof.
+
+Windows CUDA 12.8 completed the requested Linux/Windows set in run
+`30711089971`, jobs `91398563744` and `91398620522`, on runner
+`liatir-windows-cuda-selfhosted-1785606195-22696` at commit
+`f3c719a9de169c0a5f429ffe6d9a7c2195aa4e68`. Its lock remained byte-identical
+at SHA-256
+`138eaefb4820a0e16288c87f01f799ff440b84e10f77e65639c631be739db6a8`,
+and published Scrollcase regenerated and checked the 110-package v2 audit. The
+RTX 4060 Ti build produced archive SHA-256
+`1ad3b68cb526d976ecd280479d053cd6323a1c5ea7af4bfe8aab1b07f6218e39`,
+archive size `4378954604` bytes and installed size `7053500062` bytes. Peak
+additional disk was `11645431808` bytes; the measured plan is `17019985540`
+bytes within the retained `25769803776`-byte floor. CUDA 12.8 scientific parity
+passed at cosine `0.9999999999998881`, maximum absolute difference
+`1.1920928955078125e-7`, and peak VRAM `219378688` bytes. Compact artifact
+`8822298430` and preflight artifact `8821892037` preserve the proof. All four
+Linux/Windows scGPT targets are canonical v2 and native-lifecycle validated.
+The macOS Metal scGPT input and later P5.4 blocks remain, so neither block 1 nor
+P5.4 is complete.
 
 The scGPT conversion proves schema-v2 authoring without also changing the pixi
 substrate. The lighter CPU/Metal Geneformer targets then establish the uv-to-pixi

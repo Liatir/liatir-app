@@ -17,8 +17,8 @@ complete. Liatir must not vendor, deep-import or modify Scrollcase source.
 P5.3 is complete: the macOS, Linux and Windows foundation fixtures all passed
 their matching native v2 proofs, their measured disk plans are catalogued, and
 each old uv fixture was removed only after its proof. P5.4 model migration is
-in progress: scGPT Linux CPU, Windows CPU and Linux CUDA 12.9 have canonical v2
-inputs and complete native proofs; Windows CUDA, macOS and later blocks remain. The canonical
+in progress: all four scGPT Linux/Windows CPU/CUDA targets have canonical v2
+inputs and complete native proofs; macOS and later blocks remain. The canonical
 downstream cutover status is in
 [Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md).
 Every active Liatir Runtime Box contract and consumer now uses schema v2,

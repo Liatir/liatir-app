@@ -545,7 +545,7 @@
           ],
           "recipeId": "scgpt-whole-human-windows-x86_64-cuda12.8",
           "runnerProfileId": "windows-x64-cuda-selfhosted",
-          "status": "scientifically-validated",
+          "status": "native-lifecycle-validated",
           "validationModes": [
             "build",
             "scientific",
@@ -555,8 +555,8 @@
           "requiredBuildDiskBytes": 25769803776,
           "dependencyLockSha256": "138eaefb4820a0e16288c87f01f799ff440b84e10f77e65639c631be739db6a8",
           "diskPlan": {
-            "estimatedInstalledSizeBytes": 8053063680,
-            "estimatedArchiveSizeBytes": 5368709120,
+            "estimatedInstalledSizeBytes": 7053500062,
+            "estimatedArchiveSizeBytes": 4378954604,
             "safetyMarginBytes": 5368709120
           },
           "gpuRequired": true,
