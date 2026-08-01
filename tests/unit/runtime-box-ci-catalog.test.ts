@@ -245,6 +245,24 @@ describe('Runtime Box CI catalog', () => {
     });
   });
 
+  it('routes scGPT macOS Metal validation to the self-hosted Apple-Silicon runner', () => {
+    const scgpt = catalog.models.find((model) => model.boxId === 'scgpt-whole-human');
+    const macos = scgpt?.targets.find((target) => target.targetId === 'macos-aarch64-metal');
+    const runner = catalog.runnerProfiles.find((candidate) => candidate.id === macos?.runnerProfileId);
+
+    expect(macos).toMatchObject({
+      recipeId: 'scgpt-whole-human-macos-arm64-metal',
+      nativeCiEnabled: true,
+      runnerProfileId: 'macos-arm64-heavy',
+    });
+    expect(runner).toMatchObject({
+      runsOn: 'liatir-macos-arm64-heavy',
+      platform: 'macos',
+      arch: 'aarch64',
+      selfHosted: expect.any(Object),
+    });
+  });
+
   it('rejects a self-hosted heavy job outside the exact checked runner context', () => {
     const runner = catalog.runnerProfiles.find((candidate) => candidate.id === 'macos-arm64-heavy');
     expect(() => validateRunnerExecutionContext(runner, {

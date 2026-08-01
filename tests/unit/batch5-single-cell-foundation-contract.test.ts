@@ -103,8 +103,8 @@ describe('Batch 5 single-cell foundation model contract', () => {
   it('uses the live signed Runtime Box distribution for scGPT', () => {
     const model = getRuntimeBoxAIModelMetadata(SCGPT_WHOLE_HUMAN_MODEL_ID);
     const spec = artifactSpecForModelId(SCGPT_WHOLE_HUMAN_MODEL_ID);
-    const recipe = JSON.parse(readFileSync(
-      resolve(rootDir, 'runtime-boxes/recipes/scgpt-whole-human-macos-arm64-metal/recipe.json'),
+    const scroll = JSON.parse(readFileSync(
+      resolve(rootDir, 'runtime-boxes/scrolls/scgpt-whole-human/macos-aarch64-metal/scroll.json'),
       'utf8',
     )) as {
       modelId: string;
@@ -124,15 +124,15 @@ describe('Batch 5 single-cell foundation model contract', () => {
       registryBaseUrl: 'https://models.liatir.com/v1',
       publishedTargets: publishedMacosArm64MetalTargets(16),
     });
-    expect(recipe.modelId).toBe(SCGPT_WHOLE_HUMAN_MODEL_ID);
-    expect(recipe.runtimeId).toBe(model?.install?.runtimeId);
-    expect(recipe.sourceRevision).toBe(model?.install?.revision);
-    expect(recipe.assets.map((file) => file.relativePath)).toEqual(expect.arrayContaining([
+    expect(scroll.modelId).toBe(SCGPT_WHOLE_HUMAN_MODEL_ID);
+    expect(scroll.runtimeId).toBe(model?.install?.runtimeId);
+    expect(scroll.sourceRevision).toBe(model?.install?.revision);
+    expect(scroll.assets.map((file) => file.relativePath)).toEqual(expect.arrayContaining([
       'model-cache/scgpt-whole-human/args.json',
       'model-cache/scgpt-whole-human/best_model.pt',
       'model-cache/scgpt-whole-human/vocab.json',
     ]));
-    for (const file of recipe.assets) {
+    for (const file of scroll.assets) {
       expect(file.sizeBytes, `${file.relativePath} missing byte size`).toBeGreaterThan(0);
       expect(file.sha256, `${file.relativePath} missing SHA-256`).toMatch(/^[a-f0-9]{64}$/);
     }

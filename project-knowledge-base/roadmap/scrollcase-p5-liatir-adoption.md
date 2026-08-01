@@ -928,9 +928,9 @@ evidence. P5.4 is now in progress.
 
 Migrate every active model authoring record, not only the uv substrates. At the
 start of P5.4 all five already-pixi scGPT inputs still used the old schema-v1
-`recipe.json` layout and were not accepted by the v2-only adapter. The four
-Linux/Windows inputs are now canonical v2 scrolls with native lifecycle proof;
-only the macOS Metal scGPT input remains on the legacy authoring layout.
+`recipe.json` layout and were not accepted by the v2-only adapter. All five
+inputs are now canonical v2 scrolls. The four Linux/Windows inputs have native
+lifecycle proof; macOS Metal is prepared and awaits that proof.
 
 P5.4 remains one phase. It is organized into three operational blocks, not new
 subphases or acceptance checkpoints:
@@ -1020,19 +1020,18 @@ Linux/Windows scGPT targets are canonical v2 and native-lifecycle validated.
 The macOS Metal scGPT input and later P5.4 blocks remain, so neither block 1 nor
 P5.4 is complete.
 
-**Continuation point after commit
-`0f283430d985c29dd01905dbac623fdc9b070905`:** resume block 1 with only
-`scgpt-whole-human-macos-arm64-metal`. Its current tracked authoring input is
-`runtime-boxes/recipes/scgpt-whole-human-macos-arm64-metal/recipe.json`; preserve
-the existing pixi lock byte-for-byte at SHA-256
-`04f83b64db8b5f6faf65fa40c677d6596a50c7d5482c51d8c1baa173588b388a`.
-Convert it to the matching canonical v2 scroll, regenerate/review its audit only
-through published `scrollcase@0.4.11`, and use the existing POSIX launcher on a
-dedicated self-hosted Apple-Silicon runner for its native proof. The published
+**Current continuation point:** finish block 1 with only
+`scgpt-whole-human-macos-arm64-metal`. Its authoring input is now the canonical
+`runtime-boxes/scrolls/scgpt-whole-human/macos-aarch64-metal/scroll.json`.
+The existing pixi lock remains byte-identical at SHA-256
+`04f83b64db8b5f6faf65fa40c677d6596a50c7d5482c51d8c1baa173588b388a`,
+and published `scrollcase@0.4.11` generated and checked the matching 100-package
+schema-v2 audit. The catalog routes the native proof to the dedicated
+`liatir-macos-arm64-heavy` self-hosted Apple-Silicon runner. The published
 `0.2.5-beta.1` release, production signature, archive, catalog publication
 metadata and historical evidence are immutable; this continuation authorizes no
-publication or channel change. Do not begin block 2 until the macOS proof and
-measured disk plan are recorded.
+publication or channel change. Do not begin block 2 until the macOS native proof
+and measured disk plan are recorded.
 
 The scGPT conversion proves schema-v2 authoring without also changing the pixi
 substrate. The lighter CPU/Metal Geneformer targets then establish the uv-to-pixi

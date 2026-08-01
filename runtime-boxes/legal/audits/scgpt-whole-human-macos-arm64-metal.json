@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 1,
-  "kind": "liatir.runtime-box.conda-dependency-license-audit",
+  "schemaVersion": 2,
+  "kind": "scrollcase.box.dependency-license-audit",
   "targetId": "macos-aarch64-metal",
   "dependencyLockSha256": "04f83b64db8b5f6faf65fa40c677d6596a50c7d5482c51d8c1baa173588b388a",
   "packages": [
@@ -95,13 +95,13 @@
       "source": "conda"
     },
     {
-      "name": "cached_property",
+      "name": "cached-property",
       "version": "1.5.2",
       "declaredLicense": "BSD-3-Clause",
       "source": "conda"
     },
     {
-      "name": "cached-property",
+      "name": "cached_property",
       "version": "1.5.2",
       "declaredLicense": "BSD-3-Clause",
       "source": "conda"
@@ -461,12 +461,6 @@
       "source": "conda"
     },
     {
-      "name": "python_abi",
-      "version": "3.11",
-      "declaredLicense": "BSD-3-Clause",
-      "source": "conda"
-    },
-    {
       "name": "python-dateutil",
       "version": "2.9.0.post0",
       "declaredLicense": "Apache-2.0",
@@ -476,6 +470,12 @@
       "name": "python-tzdata",
       "version": "2026.3",
       "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "python_abi",
+      "version": "3.11",
+      "declaredLicense": "BSD-3-Clause",
       "source": "conda"
     },
     {
@@ -563,13 +563,13 @@
       "source": "conda"
     },
     {
-      "name": "typing_extensions",
+      "name": "typing-extensions",
       "version": "4.16.0",
       "declaredLicense": "PSF-2.0",
       "source": "conda"
     },
     {
-      "name": "typing-extensions",
+      "name": "typing_extensions",
       "version": "4.16.0",
       "declaredLicense": "PSF-2.0",
       "source": "conda"

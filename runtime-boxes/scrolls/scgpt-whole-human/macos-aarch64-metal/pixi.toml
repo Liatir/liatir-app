@@ -10,6 +10,7 @@
 # (Metal). Exact scientific dependency pins (e.g. numpy) are re-established on torch 2.8.0 in
 # Phase 5; this pilot fixes python 3.11 and pytorch 2.8.0, matching the Phase 0 spike env.
 
+# Canonical Scrollcase v2 authoring input.
 [workspace]
 name = "scgpt-whole-human-macos-arm64-metal"
 channels = ["conda-forge"]

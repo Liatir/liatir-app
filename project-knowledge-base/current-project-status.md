@@ -31,13 +31,15 @@ in native lifecycle run `30711089971`: archive SHA-256
 `1ad3b68cb526d976ecd280479d053cd6323a1c5ea7af4bfe8aab1b07f6218e39`,
 archive `4378954604` bytes, installed `7053500062` bytes and compact artifact
 `8822298430`. All four Linux/Windows scGPT targets are now canonical v2 and
-natively proven. macOS Metal and the later blocks remain, so P5.4 is not
-complete. The next continuation point is only
-`scgpt-whole-human-macos-arm64-metal`: migrate its remaining schema-v1 authoring
-record while preserving lock SHA-256
-`04f83b64db8b5f6faf65fa40c677d6596a50c7d5482c51d8c1baa173588b388a`
-and all published `0.2.5-beta.1` objects; do not start block 2 before its native
-proof is recorded. The full CI
+natively proven. The macOS Metal authoring input is also canonical v2: its
+existing pixi lock remains byte-identical at SHA-256
+`04f83b64db8b5f6faf65fa40c677d6596a50c7d5482c51d8c1baa173588b388a`,
+published `scrollcase@0.4.11` generated and checked its 100-package audit, and
+native CI resolves to the dedicated `liatir-macos-arm64-heavy` self-hosted
+runner. Its native lifecycle proof and the later blocks remain, so P5.4 is not
+complete. The next continuation point is only the approved macOS Metal native
+proof; all published `0.2.5-beta.1` objects remain immutable, and block 2 must
+not start before that proof and its measured disk plan are recorded. The full CI
 substrate migration to pixi + pixi-pack +
 conda-forge on self-hosted GitHub Actions runners has been planned and approved
 in principle — see the migration plan below. Its **Phase 0 relocation/activation

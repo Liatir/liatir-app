@@ -414,7 +414,7 @@
             "native"
           ],
           "recipeId": "scgpt-whole-human-macos-arm64-metal",
-          "runnerProfileId": "macos-arm64-standard",
+          "runnerProfileId": "macos-arm64-heavy",
           "status": "published",
           "validationModes": [
             "build",

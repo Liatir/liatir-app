@@ -3,7 +3,8 @@ name: Runtime Box scGPT Whole-human
 on:
   pull_request:
     paths:
-      - "runtime-boxes/recipes/scgpt-whole-human-macos-arm64-metal/**"
+      - "runtime-boxes/scrolls/scgpt-whole-human/macos-aarch64-metal/**"
+      - "runtime-boxes/legal/audits/scgpt-whole-human-macos-arm64-metal.json"
       - "runtime-boxes/scrolls/scgpt-whole-human/linux-x86_64-cpu/**"
       - "runtime-boxes/scrolls/scgpt-whole-human/linux-x86_64-cuda12.9/**"
       - "runtime-boxes/legal/audits/scgpt-whole-human-linux-x86_64-cuda12.9.json"
@@ -24,7 +25,8 @@ on:
   push:
     branches: [main]
     paths:
-      - "runtime-boxes/recipes/scgpt-whole-human-macos-arm64-metal/**"
+      - "runtime-boxes/scrolls/scgpt-whole-human/macos-aarch64-metal/**"
+      - "runtime-boxes/legal/audits/scgpt-whole-human-macos-arm64-metal.json"
       - "runtime-boxes/scrolls/scgpt-whole-human/linux-x86_64-cpu/**"
       - "runtime-boxes/scrolls/scgpt-whole-human/linux-x86_64-cuda12.9/**"
       - "runtime-boxes/legal/audits/scgpt-whole-human-linux-x86_64-cuda12.9.json"
