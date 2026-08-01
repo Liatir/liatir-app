@@ -981,7 +981,25 @@ the Windows Pixi bootstrap and an overlong conda prefix respectively; failure
 artifact `8820610374` is retained as provenance, not acceptance evidence. Liatir
 now verifies the pinned official Pixi binary and bounds its own checkout build
 path; no Scrollcase source was modified or simulated. Both CPU targets are
-proven. Linux CUDA 12.9 is next and P5.4 remains incomplete.
+proven.
+
+Linux CUDA 12.9 then moved to the same canonical v2 authoring layout without
+changing pixi lock SHA-256
+`3bc87da78d23f009d4f654f3da734f7ca226489f700f9ad5e355163b4a729194`.
+Published `scrollcase@0.4.11` regenerated and checked the 142-package v2 audit.
+Complete native lifecycle run `30709157030`, jobs `91393417061` and
+`91393467655`, passed on runner
+`liatir-linux-cuda-selfhosted-1785603174-361` at commit
+`ca123fea99a5c71d6681fbd32907433c139395bb`. The RTX 4060 Ti build produced
+archive SHA-256
+`006796c1636eead60acaa65b8825054aa005bed96807f0768fcc60f1564135d7`,
+archive size `17098121591` bytes and installed size `27706335619` bytes. Peak
+additional disk was `45279006720` bytes; the measured plan is `50391988084`
+bytes within the retained `60129542144`-byte floor. CUDA 12.9 scientific parity
+passed at cosine `0.99999999999994`, maximum absolute difference
+`8.940696716308594e-8`, and peak VRAM `219378688` bytes. Compact artifact
+`8821789904` and preflight artifact `8821296478` preserve the proof. Windows
+CUDA 12.8 is next; P5.4 remains incomplete.
 
 The scGPT conversion proves schema-v2 authoring without also changing the pixi
 substrate. The lighter CPU/Metal Geneformer targets then establish the uv-to-pixi

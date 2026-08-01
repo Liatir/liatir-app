@@ -22,7 +22,11 @@ and 94-package Scrollcase audit, and passed the complete native lifecycle in run
 `30707681953` on runner `liatir-windows-selfhosted-1785600732-2300`: archive
 SHA-256 `99fce2900499b83a6db83fe3de61403f792adf7cefaad26276b433a50e44f235`,
 archive `566942596` bytes, installed `1478447610` bytes and compact artifact
-`8821068033`. Linux CUDA 12.9 is next, so P5.4 is not complete. The full CI
+`8821068033`. Linux CUDA 12.9 is likewise canonical v2 with its lock preserved
+byte-for-byte and passed native lifecycle run `30709157030` on the RTX 4060 Ti:
+archive SHA-256 `006796c1636eead60acaa65b8825054aa005bed96807f0768fcc60f1564135d7`,
+archive `17098121591` bytes, installed `27706335619` bytes and compact artifact
+`8821789904`. Windows CUDA 12.8 is next, so P5.4 is not complete. The full CI
 substrate migration to pixi + pixi-pack +
 conda-forge on self-hosted GitHub Actions runners has been planned and approved
 in principle — see the migration plan below. Its **Phase 0 relocation/activation
@@ -216,7 +220,8 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   and retiring the local generic builder. Status: **the v1 P5.0–P5.2 baseline is
   historical; P5.2V is complete on exact `scrollcase@0.4.11`, and P5.3 is
   complete on macOS, Linux and Windows; P5.4 is in progress, with scGPT Linux
-  and Windows CPU migrated and natively proven while Linux CUDA 12.9 is next**. It consumes generic
+  CPU, Windows CPU and Linux CUDA 12.9 migrated and natively proven while
+  Windows CUDA 12.8 is next**. It consumes generic
   types and browser-safe helpers, preserves `liatir.runtime-box.*`, and passes
   the complete `test:verify` gate with 224 unit/contract tests. The stable CLI is
   locally implemented as a thin adapter; pixi operations are intended to use the
@@ -516,8 +521,9 @@ first).
 > adoption/legacy retirement. Phases 0–4 of the pixi migration are complete;
 > Phase 5 is in progress; the historical v1 P5.2 checkpoint, v2-only P5.2V
 > cutover and all three native P5.3 foundation proofs are complete. P5.4 model
-> recipe migration is in progress: scGPT Linux and Windows CPU are v2 and
-> natively proven, while CUDA and the later blocks remain. It remains one phase with
+> recipe migration is in progress: scGPT Linux CPU, Windows CPU and Linux CUDA
+> 12.9 are v2 and natively proven, while Windows CUDA, macOS and the later
+> blocks remain. It remains one phase with
 > three operational blocks rather than a new numbered checkpoint per target.
 > Do not use the historical
 > platform-expansion target table as a dispatch source.
