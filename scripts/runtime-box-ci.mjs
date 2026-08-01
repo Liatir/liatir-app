@@ -874,6 +874,7 @@ async function main() {
       // be able to refuse a target belonging to a different OS before it registers anything.
       runner_platform: resolved.runner.platform,
       runner_arch: resolved.runner.arch,
+      build_dir_relative: relative(workspaceRoot(), getWorkspace().buildDir).replaceAll('\\', '/'),
       box_id: resolved.model.boxId,
       release_path: authoring.kind === 'legacy-recipe'
         ? `.runtime-box-dist/${resolved.model.boxId}-${recipe.version}-${resolved.target.targetId}.release.json`

@@ -32,6 +32,7 @@ $RunnerArchiveSha256 = 'd59123a43003e357b0805b5d0f611d0bd2f65ab67d51bd070dd4e7a0
 $RunnerArchive = "actions-runner-win-x64-$RunnerVersion.zip"
 $RunnerArchiveUrl = "https://github.com/actions/runner/releases/download/v$RunnerVersion/$RunnerArchive"
 $RunnerOnlineTimeoutSeconds = 11400
+$MaxWindowsCondaPrefixLength = 150
 $MarkerName = '.liatir-runtime-box-runner'
 $RunnerName = ''
 $RunnerProcess = $null
@@ -82,6 +83,18 @@ if ("$($resolved.self_hosted)" -ne 'true') { Fail 'The resolved target is not se
 # refused before anything is registered, not discovered when the job fails to build.
 if ([string]$resolved.runner_platform -ne 'windows' -or [string]$resolved.runner_arch -ne 'x86_64') {
   Fail "Target runner is $($resolved.runner_platform)/$($resolved.runner_arch) but this host is windows/x86_64."
+}
+if ([string]::IsNullOrEmpty($Foundation)) {
+  $buildDirectoryRelative = [string]$resolved.build_dir_relative
+  if ([string]::IsNullOrWhiteSpace($buildDirectoryRelative) -or [System.IO.Path]::IsPathRooted($buildDirectoryRelative) -or $buildDirectoryRelative.StartsWith('..')) {
+    Fail "Unsafe configured Runtime Box build directory: $buildDirectoryRelative"
+  }
+  # Pixi relocates files inside the prefix. On Windows, longer prefixes can rewrite conda-managed
+  # bytecode and make conda-pack correctly reject the environment, so fail before registration.
+  $expectedCondaPrefix = Join-Path $RunnerRoot "_work\liatir-stack\liatir-stack\$buildDirectoryRelative\$($resolved.recipe_id)\pixi-workspace\.pixi\envs\default"
+  if ($expectedCondaPrefix.Length -gt $MaxWindowsCondaPrefixLength) {
+    Fail "Runner root is too long for a relocatable Windows conda prefix ($($expectedCondaPrefix.Length) characters; maximum $MaxWindowsCondaPrefixLength): $RunnerRoot"
+  }
 }
 $runnerLabel = [string]$resolved.runs_on
 $runnerNamePrefix = [string]$resolved.runner_name_prefix

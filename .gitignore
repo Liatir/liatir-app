@@ -125,6 +125,7 @@ dist
 # Local AI Runtime Box signing keys, build roots, and release artifacts
 .runtime-box-local/
 .runtime-box-build/
+.rb/
 .runtime-box-dist/
 .runtime-box-ci/
 gha-creds-*.json

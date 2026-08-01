@@ -314,6 +314,9 @@ describe('Runtime Box CI catalog', () => {
       expect(launcher).toContain('--method DELETE');
     }
     expect(windows).toContain('$RunnerOnlineTimeoutSeconds = 11400');
+    expect(windows).toContain('$MaxWindowsCondaPrefixLength = 150');
+    expect(windows).toContain('$resolved.build_dir_relative');
+    expect(windows).toContain('$expectedCondaPrefix.Length -gt $MaxWindowsCondaPrefixLength');
 
     // Operational parameters come from the catalog, never hardcoded in a launcher.
     for (const launcher of [posix, windows]) {

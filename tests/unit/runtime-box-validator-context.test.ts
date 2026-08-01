@@ -87,6 +87,10 @@ describe('Runtime Box scientific validator context', () => {
     );
     const pixiLock = 'version: 6\nfixture: v2\n';
     await mkdir(directory, { recursive: true });
+    await writeFile(join(root, 'scrollcase.config.json'), JSON.stringify({
+      version: 1,
+      paths: { build: '.rb' },
+    }));
     await writeFile(join(directory, 'pixi.lock'), pixiLock);
     await writeFile(join(directory, 'scroll.json'), JSON.stringify({
       schemaVersion: 2,
@@ -109,6 +113,7 @@ describe('Runtime Box scientific validator context', () => {
       expect(context.dependencyLockSha256).toBe(
         createHash('sha256').update(pixiLock).digest('hex'),
       );
+      expect(context.runtimeDir).toBe(join(root, '.rb', recipeId, 'payload'));
     } finally {
       await rm(root, { recursive: true, force: true });
     }

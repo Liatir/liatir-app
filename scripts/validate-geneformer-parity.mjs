@@ -20,6 +20,7 @@ import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { downloadVerified } from './runtime-box/legacy-cli.mjs';
 import { runtimeBoxTargetId } from './runtime-box/targets.mjs';
+import { resolveWorkspace } from './runtime-box/workspace.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 /** Pinned upstream commit: parity must be checked against a fixed reference, not a moving branch. */
@@ -52,7 +53,7 @@ if (
 }
 const RUNTIME_DIR = resolve(
   process.env.LIATIR_GENEFORMER_RUNTIME_DIR
-    ?? join(ROOT, '.runtime-box-build', RECIPE_ID, 'payload'),
+    ?? join(resolveWorkspace({ cwd: ROOT }).buildDir, RECIPE_ID, 'payload'),
 );
 
 /**
