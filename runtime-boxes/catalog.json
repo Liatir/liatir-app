@@ -524,8 +524,8 @@
           "requiredBuildDiskBytes": 8589934592,
           "dependencyLockSha256": "223f3996e052be616e6f481e1fa65db376c0da2fa555b7425bc73fa2896682c8",
           "diskPlan": {
-            "estimatedInstalledSizeBytes": 2147483648,
-            "estimatedArchiveSizeBytes": 805306368,
+            "estimatedInstalledSizeBytes": 1478447610,
+            "estimatedArchiveSizeBytes": 566942596,
             "safetyMarginBytes": 4294967296
           },
           "gpuRequired": false,

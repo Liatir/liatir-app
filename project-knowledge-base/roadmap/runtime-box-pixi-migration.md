@@ -1,6 +1,6 @@
 # Runtime Box CI migration → pixi + pixi-pack + conda-forge (self-hosted GHA)
 
-Last reviewed: 2026-07-31
+Last reviewed: 2026-08-01
 
 Status: **Phases 0–4 DONE; Phase 5 in progress.** scGPT is validated in CI on **every non-macOS
 target** — Linux CPU + Windows CPU (build + scientific + native-lifecycle) and Linux CUDA 12.9 +
@@ -17,7 +17,8 @@ complete. Liatir must not vendor, deep-import or modify Scrollcase source.
 P5.3 is complete: the macOS, Linux and Windows foundation fixtures all passed
 their matching native v2 proofs, their measured disk plans are catalogued, and
 each old uv fixture was removed only after its proof. P5.4 model migration is
-pending and has not started. The canonical
+in progress: scGPT Linux and Windows CPU have canonical v2 inputs and complete
+native proofs; the scGPT CUDA inputs and later blocks remain. The canonical
 downstream cutover status is in
 [Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md).
 Every active Liatir Runtime Box contract and consumer now uses schema v2,

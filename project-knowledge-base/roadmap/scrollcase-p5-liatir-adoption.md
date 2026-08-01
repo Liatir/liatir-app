@@ -181,7 +181,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.2 — Liatir adapter and distribution split | Complete | Real clean `keygen → lock → build → verify --self-test` cycle through the stable Liatir command; namespace, archive hash and receipts checked |
 | P5.2V — Scrollcase v2-only cutover | Complete | Exact `scrollcase@0.4.11`; active contracts and consumers use v2; v1 is explicitly unsupported; clean local v2 proof green |
 | P5.3 — v2 foundation-fixture migration | Complete | Three reviewed v2 scrolls/locks/audits; macOS, Linux and Windows native proofs green; every foundation uv fixture removed only after its matching proof |
-| P5.4 — model-recipe migration | Pending | Every active model input is a v2 scroll; Geneformer/UCE no longer require uv |
+| P5.4 — model-recipe migration | In progress | scGPT Linux and Windows CPU inputs are v2 and natively proven; CUDA and later blocks remain |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
 | P5.6 — local/native closure | Pending | Full cheap gate plus one reviewed non-production product lifecycle |
 | P5.7 — documentation handoff | Pending | Status, inventories and operator docs match the implemented boundary |
@@ -962,11 +962,26 @@ archive size `1212137655` bytes and installed size `3544428400` bytes. Peak
 additional runner disk was `5217239040` bytes; the measured catalog disk plan
 is `9270355105` bytes within the retained `10737418240`-byte floor. Compact
 artifact `8781444892` preserves the successful build, verify, scientific and
-Rust lifecycle evidence. Windows CPU is now the only target in flight: its
-schema-v2 scroll and 94-package Scrollcase audit replace the legacy descriptor,
-while pixi lock SHA-256
-`223f3996e052be616e6f481e1fa65db376c0da2fa555b7425bc73fa2896682c8`
-remains byte-identical. Its native proof is still pending.
+Rust lifecycle evidence.
+
+Windows CPU then passed the same complete lifecycle in run `30707681953`, jobs
+`91389511757` and `91389564939`, on runner
+`liatir-windows-selfhosted-1785600732-2300` at commit
+`0817376dd579b18a3602e0b4f19eb2ca58dc65b2`. Its schema-v2 scroll and
+94-package Scrollcase audit replace the legacy descriptor while pixi lock
+SHA-256 `223f3996e052be616e6f481e1fa65db376c0da2fa555b7425bc73fa2896682c8`
+remained byte-identical. The clean build produced archive SHA-256
+`99fce2900499b83a6db83fe3de61403f792adf7cefaad26276b433a50e44f235`,
+archive size `566942596` bytes and installed size `1478447610` bytes. Peak
+additional runner disk was `2248216576` bytes; the measured catalog disk plan
+is `6559179256` bytes within the retained `8589934592`-byte floor. Compact
+artifact `8821068033` and preflight artifact `8820836697` preserve the proof.
+Historical runs `30706215540` and `30706781234` stopped before a valid build on
+the Windows Pixi bootstrap and an overlong conda prefix respectively; failure
+artifact `8820610374` is retained as provenance, not acceptance evidence. Liatir
+now verifies the pinned official Pixi binary and bounds its own checkout build
+path; no Scrollcase source was modified or simulated. Both CPU targets are
+proven. Linux CUDA 12.9 is next and P5.4 remains incomplete.
 
 The scGPT conversion proves schema-v2 authoring without also changing the pixi
 substrate. The lighter CPU/Metal Geneformer targets then establish the uv-to-pixi
