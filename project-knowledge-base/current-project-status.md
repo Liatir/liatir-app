@@ -12,8 +12,12 @@ removed only after its native proof. P5.4 is now in progress as one phase with
 three operational blocks: scGPT v2, Geneformer CPU/Metal plus UCE, and the
 Geneformer CUDA legacy/successor decision. Block 1 started with the scGPT Linux
 CPU input: it is now a single schema-v2 scroll with the existing pixi lock
-preserved byte-for-byte and a Scrollcase v2 audit; native validation is still
-pending, so the target and P5.4 are not complete. The full CI
+preserved byte-for-byte and a Scrollcase v2 audit. Its complete native proof
+passed in run `30599143569` on self-hosted runner
+`liatir-linux-selfhosted-1785464985-360`: archive SHA-256
+`1cdaafa35270bf53a6bdc722a7f3d8e0d26fec70f5e359192322a053ff3b5801`,
+archive `1212137655` bytes, installed `3544428400` bytes and compact artifact
+`8781444892`. Windows CPU is next; P5.4 is not complete. The full CI
 substrate migration to pixi + pixi-pack +
 conda-forge on self-hosted GitHub Actions runners has been planned and approved
 in principle — see the migration plan below. Its **Phase 0 relocation/activation
@@ -206,9 +210,8 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   migrating the remaining uv model recipes, preserving legacy CUDA target identity,
   and retiring the local generic builder. Status: **the v1 P5.0–P5.2 baseline is
   historical; P5.2V is complete on exact `scrollcase@0.4.11`, and P5.3 is
-  complete on macOS, Linux and Windows; P5.4 is in progress, with only the scGPT
-  Linux CPU authoring input migrated locally and its native proof still
-  pending**. It consumes generic
+  complete on macOS, Linux and Windows; P5.4 is in progress, with scGPT Linux
+  CPU migrated and natively proven while Windows CPU is next**. It consumes generic
   types and browser-safe helpers, preserves `liatir.runtime-box.*`, and passes
   the complete `test:verify` gate with 224 unit/contract tests. The stable CLI is
   locally implemented as a thin adapter; pixi operations are intended to use the
