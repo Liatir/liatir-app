@@ -565,6 +565,16 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
     boxIds.add(model.boxId);
   }
   if (requireWorkflows) {
+    const windowsPixiInstaller = readFileSync(
+      resolve(workspaceRoot(), 'scripts/install-pixi-windows.ps1'),
+      'utf8',
+    );
+    requireCatalog(
+      windowsPixiInstaller.includes('pixi-x86_64-pc-windows-msvc.exe')
+        && windowsPixiInstaller.includes('Get-FileHash')
+        && windowsPixiInstaller.includes("conda-pack==0.9.2"),
+      'shared Windows pixi installer must verify the official executable and pin conda-pack 0.9.2',
+    );
     for (const workflowName of ['runtime-box-linux-cuda-preflight.yml', 'runtime-box-windows-cuda-preflight.yml']) {
       const workflow = readFileSync(resolve(workspaceRoot(), '.github/workflows', workflowName), 'utf8');
       requireCatalog(workflow.includes('workflow_dispatch:'), `${workflowName} must be manual-only`);
@@ -572,10 +582,12 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
       requireCatalog(workflow.includes('cancel-in-progress: true'), `${workflowName} must cancel stale validation`);
       requireCatalog(!workflow.includes('actions/cache'), `${workflowName} may not cache model assets`);
       requireCatalog(workflow.includes('PIXI_VERSION: v0.73.0'), `${workflowName} must pin pixi 0.73.0`);
-      requireCatalog(workflow.includes('conda-pack==0.9.2'), `${workflowName} must pin conda-pack 0.9.2`);
       requireCatalog(!workflow.includes('--uv') && !workflow.includes('setup-uv'), `${workflowName} must not invoke the deprecated uv fixture path`);
       if (workflowName.includes('windows')) {
+        requireCatalog(workflow.includes('scripts/install-pixi-windows.ps1'), `${workflowName} must use the shared Windows pixi installer`);
         requireCatalog(workflow.includes('linux_run_id:') && workflow.includes('run.head_sha === process.env.GITHUB_SHA'), 'Windows T4 preflight must prove the successful Linux run for the exact commit');
+      } else {
+        requireCatalog(workflow.includes('conda-pack==0.9.2'), `${workflowName} must pin conda-pack 0.9.2`);
       }
     }
     const foundation = readFileSync(resolve(workspaceRoot(), '.github/workflows/runtime-box-foundation.yml'), 'utf8');

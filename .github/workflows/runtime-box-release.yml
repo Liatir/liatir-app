@@ -270,7 +270,7 @@ jobs:
           --target "${{ inputs.target_id }}"
           --mode native-lifecycle
           --environment runtime-box-production
-          --release "${{ steps.build.outputs.release_path }}"
+          --release "${{ steps.build.outputs.release_path || '__not_built__' }}"
           --channel "${{ needs.preflight.outputs.channel_path }}"
           --host .runtime-box-ci/host.json
           --metrics .runtime-box-ci/build-metrics.json

@@ -447,12 +447,18 @@ describe('Runtime Box CI catalog', () => {
       new URL('../../scripts/install-runtime-box-linux-product-deps.sh', import.meta.url),
       'utf8',
     );
+    const windowsPixiInstaller = readFileSync(
+      new URL('../../scripts/install-pixi-windows.ps1', import.meta.url),
+      'utf8',
+    );
     const sharedCommand = 'bash scripts/install-runtime-box-linux-product-deps.sh';
 
     expect(validation).toContain(sharedCommand);
     expect(validation).toContain('id: build');
     expect(validation).toContain('verify "${{ steps.build.outputs.release_path }}"');
-    expect(validation).toContain('--release "${{ steps.build.outputs.release_path }}"');
+    expect(validation).toContain('--release "${{ steps.build.outputs.release_path || \'__not_built__\' }}"');
+    expect(validation).toContain('scripts/install-pixi-windows.ps1');
+    expect(validation).toContain('02c3e1bb4712199f62124deb1b1e9a5ddae32c413d21fda1586e198cd6f9cf2a');
     expect(validation.indexOf(sharedCommand)).toBeLessThan(
       validation.indexOf('Install pinned Rust 1.95.0'),
     );
@@ -461,6 +467,10 @@ describe('Runtime Box CI catalog', () => {
     expect(dependencyScript).toContain('libwebkit2gtk-4.1-dev');
     expect(dependencyScript).toContain('libayatana-appindicator3-dev');
     expect(dependencyScript).toContain('xvfb');
+    expect(windowsPixiInstaller).toContain('pixi-x86_64-pc-windows-msvc.exe');
+    expect(windowsPixiInstaller).toContain('Get-FileHash');
+    expect(windowsPixiInstaller).toContain('curl.exe --fail --location --retry 3');
+    expect(windowsPixiInstaller).toContain('conda-pack==0.9.2');
   });
 
   it('keeps foundation validation manual and entirely self-hosted', () => {

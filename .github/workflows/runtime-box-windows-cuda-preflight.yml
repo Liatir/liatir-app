@@ -103,9 +103,10 @@ jobs:
           PIXI_NO_PATH_UPDATE: "1"
         run: |
           $ErrorActionPreference = 'Stop'
-          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-          Invoke-WebRequest -UseBasicParsing https://pixi.sh/install.ps1 | Invoke-Expression
-          & "$env:PIXI_HOME\bin\pixi.exe" global install "conda-pack==0.9.2"
+          scripts/install-pixi-windows.ps1 `
+            -Version $env:PIXI_VERSION `
+            -PixiHome $env:PIXI_HOME `
+            -ExpectedSha256 '02c3e1bb4712199f62124deb1b1e9a5ddae32c413d21fda1586e198cd6f9cf2a'
           "$env:PIXI_HOME\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Select Git Bash for composite actions
