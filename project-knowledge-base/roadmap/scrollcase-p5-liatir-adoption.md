@@ -926,10 +926,11 @@ evidence. P5.4 is now in progress.
 
 ## P5.4 — Migrate active model recipes
 
-Migrate every active model authoring record, not only the uv substrates. The
-five already-pixi scGPT inputs still use the old schema-v1 `recipe.json` layout
-and therefore are not accepted by the v2-only adapter. Convert them first
-because their dependency locks and native/scientific baselines already exist.
+Migrate every active model authoring record, not only the uv substrates. At the
+start of P5.4 all five already-pixi scGPT inputs still used the old schema-v1
+`recipe.json` layout and were not accepted by the v2-only adapter. The four
+Linux/Windows inputs are now canonical v2 scrolls with native lifecycle proof;
+only the macOS Metal scGPT input remains on the legacy authoring layout.
 
 P5.4 remains one phase. It is organized into three operational blocks, not new
 subphases or acceptance checkpoints:
@@ -1018,6 +1019,20 @@ passed at cosine `0.9999999999998881`, maximum absolute difference
 Linux/Windows scGPT targets are canonical v2 and native-lifecycle validated.
 The macOS Metal scGPT input and later P5.4 blocks remain, so neither block 1 nor
 P5.4 is complete.
+
+**Continuation point after commit
+`0f283430d985c29dd01905dbac623fdc9b070905`:** resume block 1 with only
+`scgpt-whole-human-macos-arm64-metal`. Its current tracked authoring input is
+`runtime-boxes/recipes/scgpt-whole-human-macos-arm64-metal/recipe.json`; preserve
+the existing pixi lock byte-for-byte at SHA-256
+`04f83b64db8b5f6faf65fa40c677d6596a50c7d5482c51d8c1baa173588b388a`.
+Convert it to the matching canonical v2 scroll, regenerate/review its audit only
+through published `scrollcase@0.4.11`, and use the existing POSIX launcher on a
+dedicated self-hosted Apple-Silicon runner for its native proof. The published
+`0.2.5-beta.1` release, production signature, archive, catalog publication
+metadata and historical evidence are immutable; this continuation authorizes no
+publication or channel change. Do not begin block 2 until the macOS proof and
+measured disk plan are recorded.
 
 The scGPT conversion proves schema-v2 authoring without also changing the pixi
 substrate. The lighter CPU/Metal Geneformer targets then establish the uv-to-pixi

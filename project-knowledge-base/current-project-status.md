@@ -32,7 +32,12 @@ in native lifecycle run `30711089971`: archive SHA-256
 archive `4378954604` bytes, installed `7053500062` bytes and compact artifact
 `8822298430`. All four Linux/Windows scGPT targets are now canonical v2 and
 natively proven. macOS Metal and the later blocks remain, so P5.4 is not
-complete. The full CI
+complete. The next continuation point is only
+`scgpt-whole-human-macos-arm64-metal`: migrate its remaining schema-v1 authoring
+record while preserving lock SHA-256
+`04f83b64db8b5f6faf65fa40c677d6596a50c7d5482c51d8c1baa173588b388a`
+and all published `0.2.5-beta.1` objects; do not start block 2 before its native
+proof is recorded. The full CI
 substrate migration to pixi + pixi-pack +
 conda-forge on self-hosted GitHub Actions runners has been planned and approved
 in principle — see the migration plan below. Its **Phase 0 relocation/activation
