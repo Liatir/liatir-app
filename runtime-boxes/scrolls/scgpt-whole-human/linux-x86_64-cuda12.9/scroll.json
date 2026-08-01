@@ -1,7 +1,8 @@
 {
-  "schemaVersion": 1,
-  "recipeId": "scgpt-whole-human-linux-x86_64-cuda12.9",
-  "recipeVersion": "1.0.0",
+  "$schema": "https://scrollcase.dev/schema/v2/scroll.schema.json",
+  "schemaVersion": 2,
+  "scrollId": "scgpt-whole-human-linux-x86_64-cuda12.9",
+  "scrollVersion": "1.0.0",
   "boxId": "scgpt-whole-human",
   "modelId": "bowang-scgpt-whole-human",
   "runtimeId": "single-cell-foundation-scgpt-whole-human",
