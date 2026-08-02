@@ -212,15 +212,15 @@ describe('Runtime Box CI evidence contract', () => {
     const workDir = await mkdtemp(join(root, '.runtime-box-ci/evidence-unit-'));
     try {
       const recipe = JSON.parse(await readFile(
-        join(root, 'runtime-boxes/recipes/geneformer-v1-10m-macos-arm64-metal/recipe.json'),
+        join(root, 'runtime-boxes/scrolls/geneformer-v1-10m/macos-aarch64-metal/scroll.json'),
         'utf8',
       ));
       const lockSha256 = createHash('sha256').update(await readFile(
-        join(root, 'runtime-boxes/recipes/geneformer-v1-10m-macos-arm64-metal/requirements.lock'),
+        join(root, 'runtime-boxes/scrolls/geneformer-v1-10m/macos-aarch64-metal/pixi.lock'),
       )).digest('hex');
       const source = sourceEvidence();
       const release = {
-        schemaVersion: 1,
+        schemaVersion: 2,
         kind: 'liatir.runtime-box.release',
         boxId: recipe.boxId,
         modelId: recipe.modelId,
@@ -231,13 +231,13 @@ describe('Runtime Box CI evidence contract', () => {
         installedSizeBytes: 20,
         selfTest: { pythonImports: ['torch'], timeoutSeconds: 180 },
         provenance: {
-          recipeId: recipe.recipeId,
-          recipeVersion: recipe.recipeVersion,
+          scrollId: recipe.scrollId,
+          scrollVersion: recipe.scrollVersion,
           builderRevision: source.commitSha,
           sourceTreeDirty: source.sourceTreeDirty,
           sourceRevision: recipe.sourceRevision,
           pythonVersion: recipe.pythonVersion,
-          uvVersion: recipe.uvVersion,
+          pixiVersion: recipe.pixiVersion,
           dependencyLockSha256: lockSha256,
           builtAt: '2026-07-15T18:00:00.000Z',
         },
@@ -245,7 +245,7 @@ describe('Runtime Box CI evidence contract', () => {
       const payload = Buffer.from(JSON.stringify(release));
       const releasePath = join(workDir, 'release.json');
       await writeFile(releasePath, JSON.stringify({
-        schemaVersion: 1,
+        schemaVersion: 2,
         payloadEncoding: 'base64-json-utf8',
         payloadBase64: payload.toString('base64'),
         payloadSha256: createHash('sha256').update(payload).digest('hex'),
@@ -287,7 +287,7 @@ describe('Runtime Box CI evidence contract', () => {
       await writeModelEvidence({
         status: 'passed',
         model: recipe.modelId,
-        recipe: recipe.recipeId,
+        recipe: recipe.scrollId,
         target: 'macos-aarch64-metal',
         mode: 'scientific',
         release: releasePath,

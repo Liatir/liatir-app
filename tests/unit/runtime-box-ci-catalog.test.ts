@@ -70,7 +70,12 @@ describe('Runtime Box CI catalog', () => {
       'macos-aarch64-metal',
       'scientific',
     );
-    expect(resolved.runner).toMatchObject({ runsOn: 'macos-15', platform: 'macos', arch: 'aarch64' });
+    expect(resolved.runner).toMatchObject({
+      runsOn: 'liatir-macos-arm64-heavy',
+      platform: 'macos',
+      arch: 'aarch64',
+      selfHosted: expect.any(Object),
+    });
     expect(() => resolveCiTarget(
       catalog,
       'ctheodoris-geneformer-v1-10m',

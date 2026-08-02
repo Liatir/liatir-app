@@ -55,7 +55,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
     const model = getRuntimeBoxAIModelMetadata(GENEFORMER_V1_10M_MODEL_ID);
     const spec = artifactSpecForModelId(GENEFORMER_V1_10M_MODEL_ID);
     const recipe = JSON.parse(readFileSync(
-      resolve(rootDir, 'runtime-boxes/recipes/geneformer-v1-10m-macos-arm64-metal/recipe.json'),
+      resolve(rootDir, 'runtime-boxes/scrolls/geneformer-v1-10m/macos-aarch64-metal/scroll.json'),
       'utf8',
     )) as {
       modelId: string;

@@ -205,7 +205,7 @@
             "native"
           ],
           "recipeId": "geneformer-v1-10m-macos-arm64-metal",
-          "runnerProfileId": "macos-arm64-standard",
+          "runnerProfileId": "macos-arm64-heavy",
           "status": "published",
           "validationModes": [
             "build",
@@ -213,12 +213,13 @@
             "native-lifecycle"
           ],
           "timeoutMinutes": 90,
-          "requiredBuildDiskBytes": 4294967296,
-          "dependencyLockSha256": "de82d704c8379822d7fd38d2316b044539687e7a39ff07a9f381e1fd85fac29b",
+          "requiredBuildDiskBytes": 8589934592,
+          "dependencyLockSha256": "3e9841b2296656458715aa1276ece999b2bdfe4566e8dfdf77c0e29496c4d19f",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/geneformer-v1-10m-macos-arm64-metal.json",
           "diskPlan": {
-            "estimatedInstalledSizeBytes": 734003200,
-            "estimatedArchiveSizeBytes": 201396104,
-            "safetyMarginBytes": 2147483648
+            "estimatedInstalledSizeBytes": 2179953894,
+            "estimatedArchiveSizeBytes": 659082636,
+            "safetyMarginBytes": 4294967296
           },
           "gpuRequired": false,
           "nativeCiEnabled": true,

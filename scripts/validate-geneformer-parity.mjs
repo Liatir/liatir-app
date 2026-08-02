@@ -19,6 +19,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { downloadVerified } from './runtime-box/legacy-cli.mjs';
+import { resolveRuntimeBoxAuthoringInput } from './runtime-box/authoring-input.mjs';
 import { runtimeBoxTargetId } from './runtime-box/targets.mjs';
 import { resolveWorkspace } from './runtime-box/workspace.mjs';
 
@@ -35,10 +36,12 @@ const UPSTREAM_TOKENIZER = Object.freeze({
 /** Requires the box to have been built first; CI supplies the catalog-resolved recipe ID. */
 const RECIPE_ID = process.env.LIATIR_RUNTIME_BOX_RECIPE_ID
   ?? 'geneformer-v1-10m-macos-arm64-metal';
-const RECIPE = JSON.parse(await readFile(
-  join(ROOT, 'runtime-boxes', 'recipes', RECIPE_ID, 'recipe.json'),
-  'utf8',
-));
+const WORKSPACE = resolveWorkspace({ cwd: ROOT });
+const RECIPE = resolveRuntimeBoxAuthoringInput({
+  recipeId: RECIPE_ID,
+  recipesDir: WORKSPACE.recipesDir,
+  scrollsDir: WORKSPACE.scrollsDir,
+}).document;
 if (RECIPE.sourceRevision !== REVISION) {
   throw new Error(`Geneformer tokenizer reference is not pinned for source revision ${RECIPE.sourceRevision}.`);
 }
@@ -53,7 +56,7 @@ if (
 }
 const RUNTIME_DIR = resolve(
   process.env.LIATIR_GENEFORMER_RUNTIME_DIR
-    ?? join(resolveWorkspace({ cwd: ROOT }).buildDir, RECIPE_ID, 'payload'),
+    ?? join(WORKSPACE.buildDir, RECIPE_ID, 'payload'),
 );
 
 /**

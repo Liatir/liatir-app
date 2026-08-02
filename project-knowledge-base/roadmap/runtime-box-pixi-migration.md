@@ -1,12 +1,13 @@
 # Runtime Box CI migration → pixi + pixi-pack + conda-forge (self-hosted GHA)
 
-Last reviewed: 2026-08-01
+Last reviewed: 2026-08-02
 
-Status: **Phases 0–4 DONE; Phase 5 in progress.** scGPT is validated in CI on **every non-macOS
-target** — Linux CPU + Windows CPU (build + scientific + native-lifecycle) and Linux CUDA 12.9 +
-Windows CUDA 12.8 (scientific, real RTX 4060 Ti); the macOS box is the published pilot and the
-launcher re-check is done. Remaining Phase 5: migrate Geneformer and UCE, then the protected
-releases. Nothing signed/published/promoted on the pixi substrate yet.
+Status: **Phases 0–4 DONE; Phase 5 in progress.** All five scGPT targets have
+complete native v2 proof. The first Geneformer target, macOS Metal, has been
+migrated locally to schema v2 + pixi and passes build, independent self-test and
+scientific Metal parity; its clean self-hosted native lifecycle is next.
+Remaining Phase 5: complete Geneformer and UCE, then the protected releases.
+Nothing has been production-signed, published or promoted by this migration.
 
 **Current ownership correction (2026-07-27):** the generic pixi/conda-pack
 builder now belongs to the independent external Scrollcase project, not to
@@ -17,8 +18,10 @@ complete. Liatir must not vendor, deep-import or modify Scrollcase source.
 P5.3 is complete: the macOS, Linux and Windows foundation fixtures all passed
 their matching native v2 proofs, their measured disk plans are catalogued, and
 each old uv fixture was removed only after its proof. P5.4 model migration is
-in progress: all four scGPT Linux/Windows CPU/CUDA targets have canonical v2
-inputs and complete native proofs; macOS and later blocks remain. The canonical
+in progress: all five scGPT targets have canonical v2 inputs and complete native
+proofs, and the Geneformer macOS v2 input has passed local build, self-test and
+scientific validation. Its clean self-hosted native lifecycle and later targets
+remain. The canonical
 downstream cutover status is in
 [Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md).
 Every active Liatir Runtime Box contract and consumer now uses schema v2,
@@ -52,13 +55,17 @@ product-owned removal without a parallel v1 reader.
   record and CUDA E2E no longer pin a Tesla T4. The scGPT Linux CUDA run below is the first CUDA
   validation ever executed on the local RTX 4060 Ti (compute 8.9), confirming the generalization
   end to end.
-- **Phase 5 — in progress; scGPT is now validated on every non-macOS target.** Linux CPU + Windows
+- **Phase 5 — in progress; scGPT is now validated on every target.** Linux CPU + Windows
   CPU at every mode (build + scientific + native-lifecycle); **Linux CUDA 12.9 and Windows CUDA 12.8
   scientifically validated on the RTX 4060 Ti** (run `30143289750`, CPU-vs-CUDA parity cosine
   0.9999999999999, box installed 6.58 GB / archive 4.08 GB — far smaller than Linux CUDA because
   Windows conda envs have no symlinks to dereference). Windows CUDA passed on the first dispatch by
-  applying the Linux CUDA lessons up front. Geneformer and UCE are not yet migrated. Nothing
-  signed/published/promoted.
+  applying the Linux CUDA lessons up front. The Geneformer macOS input is now a
+  schema-v2 scroll with lock `3e9841b2…` and a 161-package conda audit. Its
+  local dev-signed build, independent self-test and torch 2.8.0 Metal parity
+  passed; clean self-hosted native lifecycle remains before advancing to the
+  next target. UCE and the other Geneformer targets are not yet migrated.
+  Nothing has been production-signed, published or promoted.
 
 **Production code HAS changed** as of Phase 1/2 (`packages/liatir-core`, `scripts/runtime-box*`,
 `runtime-boxes/catalog.json`, unit tests). Each remaining phase begins only on explicit maintainer

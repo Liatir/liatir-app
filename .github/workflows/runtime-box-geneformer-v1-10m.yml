@@ -3,9 +3,10 @@ name: Runtime Box Geneformer V1 10M
 on:
   pull_request:
     paths:
-      - "runtime-boxes/recipes/geneformer-v1-10m-macos-arm64-metal/**"
+      - "runtime-boxes/scrolls/geneformer-v1-10m/macos-aarch64-metal/**"
       - "runtime-boxes/recipes/geneformer-v1-10m-linux-x86_64-cpu/**"
       - "runtime-boxes/recipes/geneformer-v1-10m-windows-x86_64-cpu/**"
+      - "runtime-boxes/legal/audits/geneformer-v1-10m-macos-arm64-metal.json"
       - "runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cpu.json"
       - "runtime-boxes/legal/geneformer-v1-10m.md"
       - "scripts/validate-geneformer-parity.mjs"
@@ -19,9 +20,10 @@ on:
   push:
     branches: [main]
     paths:
-      - "runtime-boxes/recipes/geneformer-v1-10m-macos-arm64-metal/**"
+      - "runtime-boxes/scrolls/geneformer-v1-10m/macos-aarch64-metal/**"
       - "runtime-boxes/recipes/geneformer-v1-10m-linux-x86_64-cpu/**"
       - "runtime-boxes/recipes/geneformer-v1-10m-windows-x86_64-cpu/**"
+      - "runtime-boxes/legal/audits/geneformer-v1-10m-macos-arm64-metal.json"
       - "runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cpu.json"
       - "runtime-boxes/legal/geneformer-v1-10m.md"
       - "scripts/validate-geneformer-parity.mjs"

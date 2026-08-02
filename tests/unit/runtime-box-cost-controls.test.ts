@@ -142,11 +142,28 @@ describe('Runtime Box CI cost controls', () => {
     }
   });
 
+  it('uses one canonical v2 pixi input for the active Geneformer macOS migration', () => {
+    const authoring = authoringInput('geneformer-v1-10m-macos-arm64-metal');
+    expect(authoring.kind).toBe('scroll-v2');
+    expect(authoring.document).toMatchObject({
+      schemaVersion: 2,
+      scrollId: 'geneformer-v1-10m-macos-arm64-metal',
+      scrollVersion: '1.0.0',
+      pixiVersion: '0.73.0',
+      pythonVersion: '3.11.15',
+      condaDependencyLicenseAudit:
+        'runtime-boxes/legal/audits/geneformer-v1-10m-macos-arm64-metal.json',
+    });
+    expect(authoring.document).not.toHaveProperty('uvVersion');
+    expect(authoring.document).not.toHaveProperty('requirementsInput');
+    expect(authoring.document).not.toHaveProperty('requirementsLock');
+  });
+
   it('rejects lock drift before any native runner is resolved', () => {
     const changed = structuredClone(catalog);
     changed.models[0].targets[0].dependencyLockSha256 = '0'.repeat(64);
     expect(() => validateRuntimeBoxCiCatalog(changed, { requireWorkflows: false }))
-      .toThrow(/dependency lock SHA-256 mismatch/);
+      .toThrow(/(?:dependency lock|pixi\.lock) SHA-256 mismatch/);
   });
 
   it('preserves every byte-pinned recipe input across native Git checkouts', () => {

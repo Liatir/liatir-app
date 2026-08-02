@@ -2,7 +2,7 @@
 
 Last reviewed: 2026-08-02
 
-Status: **in progress — P5.2V and P5.3 complete; P5.4 block 1 complete, block 2 next**
+Status: **in progress — P5.2V and P5.3 complete; P5.4 block 1 complete, block 2 in progress**
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project. The selected P5
@@ -1077,6 +1077,30 @@ All five scGPT inputs are now canonical schema-v2 scrolls with complete native
 lifecycle evidence. P5.4 block 1 is complete. The next one-target continuation
 is block 2 target `geneformer-v1-10m-macos-arm64-metal`; do not start another
 Geneformer or UCE target concurrently.
+
+**Block 2 first-target preparation:** `geneformer-v1-10m-macos-arm64-metal` is
+now a single canonical v2 scroll. The old schema-v1 uv descriptor,
+`requirements.in` and `requirements.lock` are removed. Pixi 0.73.0 resolves
+Python 3.11.15, PyTorch 2.8.0 and the preserved scientific dependency versions
+entirely from conda-forge, with no PyPI or source-build path. Committed lock
+SHA-256 is
+`3e9841b2296656458715aa1276ece999b2bdfe4566e8dfdf77c0e29496c4d19f`;
+published `scrollcase@0.4.11` generated and checked the matching 161-package v2
+audit. The target now routes only native work to the
+`liatir-macos-arm64-heavy` self-hosted runner.
+
+A local dirty-tree, dev-signed build through the published package passed frozen
+installation, conda-pack relocation, asset verification and self-test. The
+payload is `2179953894` bytes; the `659082636`-byte archive has SHA-256
+`714a2eadb2f4d39c5953093e103cab058510d85ad047d81db1b88eac86030cb5`.
+Independent extraction and self-test passed. The real 4-cell by 128-gene
+scientific validator passed on torch 2.8.0 Apple Metal with finite `[4, 256]`
+embeddings, maximum absolute error `8.121132850646973e-7` and minimum cosine
+similarity `0.9999999403953552`; output and provenance contracts passed. This
+local result is preparation only, not acceptance evidence. One clean
+self-hosted `native-lifecycle` run must pass before the next Geneformer target
+starts. It authorizes no production signing, publication, promotion or mutation
+of the published `1.0.0-beta.1` objects.
 
 The scGPT conversion proves schema-v2 authoring without also changing the pixi
 substrate. The lighter CPU/Metal Geneformer targets then establish the uv-to-pixi
