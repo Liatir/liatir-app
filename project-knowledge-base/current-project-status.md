@@ -1,6 +1,6 @@
 # Current project status
 
-Last updated: 2026-08-01 (the Runtime Box builder extraction is complete:
+Last updated: 2026-08-02 (the Runtime Box builder extraction is complete:
 Scrollcase is an independent Apache-2.0 project outside this repository.
 Liatir now pins exact public `scrollcase@0.4.11` and P5.2V has completed the
 v2-only contract cutover. Scrollcase is not a Liatir workspace, vendored source
@@ -36,10 +36,17 @@ existing pixi lock remains byte-identical at SHA-256
 `04f83b64db8b5f6faf65fa40c677d6596a50c7d5482c51d8c1baa173588b388a`,
 published `scrollcase@0.4.11` generated and checked its 100-package audit, and
 native CI resolves to the dedicated `liatir-macos-arm64-heavy` self-hosted
-runner. Its native lifecycle proof and the later blocks remain, so P5.4 is not
-complete. The next continuation point is only the approved macOS Metal native
-proof; all published `0.2.5-beta.1` objects remain immutable, and block 2 must
-not start before that proof and its measured disk plan are recorded. The full CI
+runner. First native run `30715635531` at commit `c855e66` passed the clean
+build, local signing, archive verification and self-test, then failed closed in
+the real scientific forward because the inherited macOS prune list removed
+locked `sympy`, which PyTorch 2.8 imports lazily. Rust lifecycle therefore did
+not run. Failure artifact `8823318701` is incident provenance, not acceptance
+evidence. The Liatir scroll now retains every locked runtime dependency, matching
+the other four scGPT v2 targets, and a cross-target regression forbids `venv/`
+prune paths. One separately approved native retry and the later blocks remain,
+so P5.4 is not complete. All published `0.2.5-beta.1` objects remain immutable,
+and block 2 must not start before the macOS proof and its measured disk plan are
+recorded. The full CI
 substrate migration to pixi + pixi-pack +
 conda-forge on self-hosted GitHub Actions runners has been planned and approved
 in principle — see the migration plan below. Its **Phase 0 relocation/activation

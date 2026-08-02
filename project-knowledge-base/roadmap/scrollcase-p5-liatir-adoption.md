@@ -1033,6 +1033,30 @@ metadata and historical evidence are immutable; this continuation authorizes no
 publication or channel change. Do not begin block 2 until the macOS native proof
 and measured disk plan are recorded.
 
+The first authorized macOS native run `30715635531`, job `91410651050`, at
+commit `c855e66efd9ca64eefc0b450af250de9ded7ad15` is retained as failure
+provenance, not acceptance evidence. It passed clean checkout, pinned pixi and
+conda-pack setup, host probe, local signing, build, archive verification and
+self-test. The build produced archive SHA-256
+`c2bd4df34882ae58af5e1c0d0712535540a96dba2ccaf09865fbfc6023b3b5f7`,
+archive size `664045178` bytes and installed size `1787639135` bytes. The real
+scientific forward then failed with `ModuleNotFoundError: No module named
+'sympy'`; Rust lifecycle correctly remained skipped. Compact failure artifact
+`8823318701` has digest
+`sha256:de2dc0d4f586410a2b7a440a25429c0d9a0dacbd1320f2da39fb99ce16dc419f`.
+
+Root cause is Liatir's inherited macOS-only prune list, not Scrollcase or a
+scientific parity difference: it removed complete locked runtime dependencies,
+including `sympy`, while PyTorch 2.8 imports `sympy` lazily only during the
+transformer forward. Import checks and the existing checkpoint self-test could
+therefore pass without proving inference. The correction retains every locked
+runtime dependency, aligning macOS with the other four canonical scGPT v2
+scrolls. A regression checks all five scGPT targets and rejects any `venv/`
+prune path. Cheap rechecks are the focused cost/catalog/product contracts,
+catalog validation, Scrollcase audit agreement, frozen lock hash, full
+`test:verify`, internal docs build and `git diff --check`. Only one native retry
+may be requested after those gates pass; no automatic retry is permitted.
+
 The scGPT conversion proves schema-v2 authoring without also changing the pixi
 substrate. The lighter CPU/Metal Geneformer targets then establish the uv-to-pixi
 migration path before the large UCE and CUDA builds.

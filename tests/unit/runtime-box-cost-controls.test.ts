@@ -128,6 +128,20 @@ describe('Runtime Box CI cost controls', () => {
     }
   });
 
+  it('keeps every locked runtime dependency in all canonical scGPT boxes', () => {
+    const scgpt = catalog.models.find((model) => model.boxId === 'scgpt-whole-human');
+    expect(scgpt).toBeDefined();
+
+    for (const target of scgpt?.targets ?? []) {
+      const authoring = authoringInput(target.recipeId);
+      expect(authoring.kind, target.targetId).toBe('scroll-v2');
+      expect(
+        (authoring.document.prunePaths ?? []).filter((path: string) => path.startsWith('venv/')),
+        target.targetId,
+      ).toEqual([]);
+    }
+  });
+
   it('rejects lock drift before any native runner is resolved', () => {
     const changed = structuredClone(catalog);
     changed.models[0].targets[0].dependencyLockSha256 = '0'.repeat(64);
