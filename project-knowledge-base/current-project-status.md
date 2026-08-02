@@ -196,10 +196,11 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   open-source tool named Scrollcase. **Extraction phases P1–P4 are complete
   (2026-07-26):** the canonical source is now the standalone public repository
   `https://github.com/suffro/scrollcase`, documentation is live at
-  `https://scrollcase.dev`, and `scrollcase@0.1.3` is public on npm (`0.1.0` was the
-  original release, `0.1.1` added public TypeScript declarations, and `0.1.2`
-  added browser-safe contract helpers; `0.1.3` safely handles conda symlink
-  chains and removes machine-specific conda metadata). The temporary
+  `https://scrollcase.dev`, and Liatir now consumes exact public
+  `scrollcase@0.4.11`. The `0.1.0`–`0.1.3` releases remain historical extraction
+  milestones: `0.1.1` added public TypeScript declarations, `0.1.2` added
+  browser-safe contract helpers, and `0.1.3` safely handled conda symlink chains
+  while removing machine-specific conda metadata. The temporary
   in-tree copy was removed from Liatir in `6b4934e`.
   Scrollcase is a pixi + conda-pack + conda-forge CLI and library with seven verbs
   (`init`, `doctor`, `keygen`, `lock`, `audit`, `build`, `verify`), deterministic

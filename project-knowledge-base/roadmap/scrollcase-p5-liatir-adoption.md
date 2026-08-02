@@ -532,9 +532,11 @@ from file existence or console text alone.
 
 The stable `npm run runtime-box -- ...` surface now enters the thin
 `scripts/runtime-box.mjs` dispatcher. `scripts/runtime-box/scrollcase-adapter.mjs`
-resolves the executable declared by the exact installed `scrollcase@0.1.3`
-package through a public ESM export, invokes it through the current Node
-executable without a shell, forces `liatir.runtime-box` exactly once, and writes
+resolved the executable declared by exact installed `scrollcase@0.1.3` at this
+historical P5.2 checkpoint. The current adapter uses exact `scrollcase@0.4.11`.
+It resolves the package through a public ESM export, invokes it through the
+current Node executable without a shell, forces `liatir.runtime-box` exactly
+once, and writes
 the existing compact verification receipt only after Scrollcase succeeds and
 the signed payload, archive size and archive SHA-256 have been checked locally.
 
@@ -561,15 +563,14 @@ therefore reaches the adapter while preserving the existing heartbeat and metric
 wrapper. The package bin, npm, heartbeat and signer invocations remain shell-free
 on Windows and preserve quoted arguments.
 
-The proposed model-workflow path-filter widening has been removed. Foundation
-validation is manual-only and allocates exactly one checked ephemeral self-hosted
-Linux or Windows runner. Its contract, archive-safety and signer checks execute
-first on that same runner, before the native build; there is no separate
-GitHub-hosted preflight and no automatic pull-request, push or scheduled
-allocation. Model-native validation remains explicit and on-demand on the
-checked self-hosted profiles; no workflow was dispatched while completing this
-checkpoint. P5.3 migrates and proves the remaining foundation fixtures one
-target at a time.
+At the P5.2 checkpoint, foundation validation was manual-only and allocated one
+checked ephemeral self-hosted Linux or Windows runner; it had no separate hosted
+preflight, automatic pull-request, push or scheduled allocation. That remains
+the foundation-fixture design. The current model workflow adds one essential,
+bounded `ubuntu-24.04` catalog preflight (`timeout-minutes: 15`) before allocating
+exactly one checked ephemeral self-hosted native runner. Model build, scientific
+validation and lifecycle never use a GitHub-hosted runner. No model workflow was
+dispatched while completing P5.2; later run evidence is recorded under P5.4.
 
 The synthetic adapter fixture exercises real key generation through the installed
 published CLI, pixi build routing with the frozen namespace, verification and
