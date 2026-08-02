@@ -1109,6 +1109,25 @@ the next one-target continuation is `geneformer-v1-10m-linux-x86_64-cpu`.
 No production signing, publication, promotion or mutation of the published
 `1.0.0-beta.1` objects occurred.
 
+**Block 2 second-target preparation:** `geneformer-v1-10m-linux-x86_64-cpu`
+is now a canonical schema-v2 scroll backed by pixi 0.73.0. The legacy uv
+`recipe.json`, `requirements.in` and `requirements.lock` are removed. The
+committed conda-forge-only lock resolves Python 3.11.15 and PyTorch 2.8.0 CPU
+with SHA-256
+`551716a80946450c076c9c0184458b5a29da855117b13a9da98129f4a19e16b4`.
+Published `scrollcase@0.4.11` generated and rechecked the reviewed 171-package
+conda licence audit with no unresolved licence. Catalog identity, asset hashes
+and immutable publication metadata are preserved; its dependency audit field
+and caller paths now point only at the v2 input. A conservative 12 GiB native
+build floor is retained until measured evidence replaces the estimate.
+
+Frozen-lock validation, Scrollcase audit agreement, catalog validation and 60
+focused contract tests pass. This is local preparation only: the target still
+needs a clean build, real CPU scientific validation and Rust lifecycle on an
+ephemeral `liatir-linux-selfhosted` runner. Do not mark it complete or begin the
+next Geneformer target until that evidence is recorded. No production signing,
+publication, promotion or published-object mutation occurred.
+
 The scGPT conversion proves schema-v2 authoring without also changing the pixi
 substrate. The lighter CPU/Metal Geneformer targets then establish the uv-to-pixi
 migration path before the large UCE and CUDA builds.

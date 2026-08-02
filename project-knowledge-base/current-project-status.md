@@ -67,7 +67,18 @@ The finite `[4, 256]` embedding passed at maximum absolute error
 `8.121132850646973e-7` and minimum cosine similarity
 `0.9999999403953552`. Compact artifact `8839187730` preserves the acceptance
 evidence. The runner deregistered and its marked root was removed. The next
-one-target continuation is `geneformer-v1-10m-linux-x86_64-cpu`. Published
+one-target continuation, `geneformer-v1-10m-linux-x86_64-cpu`, is now prepared
+as a single schema-v2 scroll on pixi 0.73.0 with Python 3.11.15 and PyTorch
+2.8.0. The legacy uv descriptor and locks are removed. The committed Linux
+lock SHA-256 is
+`551716a80946450c076c9c0184458b5a29da855117b13a9da98129f4a19e16b4`;
+the matching `scrollcase@0.4.11` conda audit reviews 171 packages with no
+unresolved licence. Catalog and workflow routing use only the v2 input, and the
+conservative pre-native disk floor is 12 GiB. Local lock, audit, catalog and
+focused contract gates pass. This target is **not complete yet**: its clean
+build, scientific CPU validation and Rust lifecycle still require one reviewed
+run on a matching ephemeral Linux self-hosted runner. No signing, publication
+or promotion occurred during preparation. Published
 scGPT `0.2.5-beta.1` and Geneformer `1.0.0-beta.1` objects remain immutable. The
 full CI substrate migration to pixi + pixi-pack +
 conda-forge on self-hosted GitHub Actions runners has been planned and approved
@@ -140,12 +151,14 @@ This proves the Phase 4 hardware generalization end to end. **scGPT Windows CUDA
 0.9999999999999, box installed 6.58 GB / archive 4.08 GB — much smaller than
 Linux CUDA, which inflates from symlink dereference that Windows does not do); it
 passed on the first dispatch by applying the Linux CUDA lessons up front. **scGPT
-is now validated on every non-macOS target** (Linux CPU/CUDA, Windows CPU/CUDA);
-the macOS box is the published pilot. The Linux CUDA run took five dispatches,
+is now natively proven on all five targets**, including the macOS Metal v2
+rebuild. The Linux CUDA run took five dispatches,
 each a distinct defect in the new CUDA path or the WSL host (CPU-cloned self-test,
 /tmp tmpfs too small for verify, a dropped checkpoint download, missing
 GPU-identity evidence), never the box or the CUDA compute itself; those fixes are
-permanent. Remaining Phase 5: migrate Geneformer and UCE. After that, only the
+permanent. Geneformer macOS Metal is also complete on v2; Linux CPU is locally
+prepared and awaits its native proof. Remaining Phase 5: complete the later
+Geneformer and UCE targets. After that, only the
 protected release remains per target, gated on the maintainer's go-ahead and a
 prior signer deploy.
 
@@ -180,11 +193,12 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   active Liatir recipe/runner/scientific migration onto the independent
   Scrollcase pixi + conda-pack + conda-forge builder (Variant A + a contained
   PyPI escape hatch), using self-hosted GitHub Actions runners and torch 2.8.0.
-  **Phases 0–4 complete; Phase 5 in progress** — scGPT is
-  validated on the pixi substrate across every non-macOS target (Linux CPU/CUDA,
-  Windows CPU/CUDA) plus the published macOS pilot, all on self-hosted CI including
-  real CUDA on the RTX 4060 Ti. Remaining Phase 5: migrate Geneformer and UCE, then
-  the protected releases. The uv path is retained for the not-yet-migrated recipes.
+  **Phases 0–4 complete; Phase 5 in progress** — all five scGPT targets and
+  Geneformer macOS Metal have complete native v2 proof, including real CUDA on
+  the self-hosted RTX 4060 Ti. Geneformer Linux CPU is prepared on v2 and awaits
+  its matching native proof. Remaining Phase 5: complete later Geneformer and
+  UCE targets, then the protected releases. The uv path is retained only for
+  not-yet-migrated recipes.
 - [Runtime Box pixi Phase 0 spike](./roadmap/runtime-box-pixi-phase0-spike.md) —
   the decisive local relocation/activation decision record: conda-pack, **no
   activation env on any OS (macOS, Windows and Linux, CPU + CUDA)**, `venv/`
@@ -252,7 +266,8 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   v1 explicitly, provide bounded cleanup for already installed v1 state while
   preserving Results/provenance, then migrate those recipes and delete the
   superseded local generic builder copies.
-  Geneformer and UCE still require pixi recipes before Scrollcase can build them.
+  The remaining Geneformer and UCE targets still require pixi recipes before
+  Scrollcase can build them.
   Liatir continues to own Runtime Box distribution and product concerns: CI/runner
   policy, scientific validation, R2/Registry publication, KMS custody, trust roots,
   Rust/Tauri installation, Jobs, Results and provenance.
@@ -262,11 +277,11 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   migrating the remaining uv model recipes, preserving legacy CUDA target identity,
   and retiring the local generic builder. Status: **the v1 P5.0–P5.2 baseline is
   historical; P5.2V is complete on exact `scrollcase@0.4.11`, and P5.3 is
-  complete on macOS, Linux and Windows; P5.4 is in progress, with scGPT Linux
-  CPU/CUDA and Windows CPU/CUDA migrated and natively proven; macOS and later
-  blocks remain**. It consumes generic
+  complete on macOS, Linux and Windows; P5.4 is in progress, with all five scGPT
+  targets and Geneformer macOS migrated and natively proven, while Geneformer
+  Linux CPU is prepared and awaits native proof**. It consumes generic
   types and browser-safe helpers, preserves `liatir.runtime-box.*`, and passes
-  the complete `test:verify` gate with 224 unit/contract tests. The stable CLI is
+  the complete `test:verify` gate with 227 unit/contract tests. The stable CLI is
   locally implemented as a thin adapter; pixi operations are intended to use the
   installed external tool, while distribution and the visible temporary uv
   compatibility branch remain Liatir-owned only for not-yet-migrated P5.4 model
@@ -564,8 +579,9 @@ first).
 > adoption/legacy retirement. Phases 0–4 of the pixi migration are complete;
 > Phase 5 is in progress; the historical v1 P5.2 checkpoint, v2-only P5.2V
 > cutover and all three native P5.3 foundation proofs are complete. P5.4 model
-> recipe migration is in progress: all four scGPT Linux/Windows CPU/CUDA
-> targets are v2 and natively proven, while macOS and the later blocks remain.
+> recipe migration is in progress: all five scGPT targets and Geneformer macOS
+> are v2 and natively proven; Geneformer Linux CPU is prepared and is the sole
+> target currently awaiting native proof.
 > It remains one phase with
 > three operational blocks rather than a new numbered checkpoint per target.
 > Do not use the historical
@@ -574,10 +590,10 @@ first).
 1. Continue the [pixi migration](./roadmap/runtime-box-pixi-migration.md) Phase 5,
    which has **reframed and largely absorbed** the old model-platform-expansion
    plan. Done: the `29955615971` signing failure was diagnosed (deployed-signer
-   policy drift, now auto-detected before every release) and scGPT is validated
-   on the pixi substrate across all non-macOS targets (Linux CPU/CUDA, Windows
-   CPU/CUDA) plus the published macOS pilot. Remaining: migrate Geneformer and
-   UCE to pixi and validate them the same way, then run the protected releases
+   policy drift, now auto-detected before every release), all five scGPT targets
+   and Geneformer macOS are natively proven on v2, and Geneformer Linux CPU is
+   locally prepared. Remaining: run its reviewed Linux native proof, then migrate
+   and validate later Geneformer and UCE targets before protected releases
    (each gated on the maintainer's go-ahead and a prior `runtime-box:signer:deploy`).
    Windows CUDA is no longer under the no-dispatch decision — it now validates on
    the self-hosted RTX 4060 Ti.

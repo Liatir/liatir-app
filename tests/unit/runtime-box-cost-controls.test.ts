@@ -142,21 +142,33 @@ describe('Runtime Box CI cost controls', () => {
     }
   });
 
-  it('uses one canonical v2 pixi input for the active Geneformer macOS migration', () => {
-    const authoring = authoringInput('geneformer-v1-10m-macos-arm64-metal');
-    expect(authoring.kind).toBe('scroll-v2');
-    expect(authoring.document).toMatchObject({
-      schemaVersion: 2,
-      scrollId: 'geneformer-v1-10m-macos-arm64-metal',
-      scrollVersion: '1.0.0',
-      pixiVersion: '0.73.0',
-      pythonVersion: '3.11.15',
-      condaDependencyLicenseAudit:
-        'runtime-boxes/legal/audits/geneformer-v1-10m-macos-arm64-metal.json',
-    });
-    expect(authoring.document).not.toHaveProperty('uvVersion');
-    expect(authoring.document).not.toHaveProperty('requirementsInput');
-    expect(authoring.document).not.toHaveProperty('requirementsLock');
+  it('uses canonical v2 pixi inputs for the active Geneformer migrations', () => {
+    const migrations = [
+      {
+        scrollId: 'geneformer-v1-10m-macos-arm64-metal',
+        auditPath: 'runtime-boxes/legal/audits/geneformer-v1-10m-macos-arm64-metal.json',
+      },
+      {
+        scrollId: 'geneformer-v1-10m-linux-x86_64-cpu',
+        auditPath: 'runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cpu.json',
+      },
+    ];
+
+    for (const { scrollId, auditPath } of migrations) {
+      const authoring = authoringInput(scrollId);
+      expect(authoring.kind, scrollId).toBe('scroll-v2');
+      expect(authoring.document).toMatchObject({
+        schemaVersion: 2,
+        scrollId,
+        scrollVersion: '1.0.0',
+        pixiVersion: '0.73.0',
+        pythonVersion: '3.11.15',
+        condaDependencyLicenseAudit: auditPath,
+      });
+      expect(authoring.document).not.toHaveProperty('uvVersion');
+      expect(authoring.document).not.toHaveProperty('requirementsInput');
+      expect(authoring.document).not.toHaveProperty('requirementsLock');
+    }
   });
 
   it('rejects lock drift before any native runner is resolved', () => {
@@ -206,9 +218,9 @@ describe('Runtime Box CI cost controls', () => {
   it('rejects reviewed Python-license audit drift before a native build', () => {
     const changed = structuredClone(catalog);
     const cpu = changed.models[0].targets.find((target) => target.targetId === 'linux-x86_64-cpu');
-    cpu.dependencyLicenseAudit = 'runtime-boxes/legal/audits/missing.json';
+    cpu.condaDependencyLicenseAudit = 'runtime-boxes/legal/audits/missing.json';
     expect(() => validateRuntimeBoxCiCatalog(changed, { requireWorkflows: false }))
-      .toThrow(/recipe and catalog dependency license audits differ|missing dependency license audit/);
+      .toThrow(/recipe and catalog conda license audits differ|missing conda dependency license audit/);
   });
 
   it('keeps Windows CUDA disabled until same-model Linux CUDA validation passes', () => {

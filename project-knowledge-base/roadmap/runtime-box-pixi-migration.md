@@ -5,7 +5,8 @@ Last reviewed: 2026-08-02
 Status: **Phases 0–4 DONE; Phase 5 in progress.** All five scGPT targets have
 complete native v2 proof. The first Geneformer target, macOS Metal, has been
 migrated to schema v2 + pixi and has complete clean self-hosted native-lifecycle
-proof. Geneformer Linux CPU is next.
+proof. Geneformer Linux CPU is prepared on v2 and awaits its matching native
+self-hosted proof.
 Remaining Phase 5: complete Geneformer and UCE, then the protected releases.
 Nothing has been production-signed, published or promoted by this migration.
 
@@ -20,8 +21,9 @@ their matching native v2 proofs, their measured disk plans are catalogued, and
 each old uv fixture was removed only after its proof. P5.4 model migration is
 in progress: all five scGPT targets have canonical v2 inputs and complete native
 proofs, and the Geneformer macOS v2 input has passed local build, self-test and
-scientific validation plus clean native lifecycle. Geneformer Linux CPU and
-later targets remain. The canonical
+scientific validation plus clean native lifecycle. Geneformer Linux CPU has a
+canonical v2 input, exact lock and reviewed conda audit, but still awaits native
+acceptance; later targets remain. The canonical
 downstream cutover status is in
 [Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md).
 Every active Liatir Runtime Box contract and consumer now uses schema v2,
@@ -657,6 +659,33 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 >   Linux release failed because the **deployed** signer served an older policy. `policy.json` now
 >   lists all three scGPT targets, but committing it does not deploy it — `runtime-box:signer:deploy`
 >   must run first. See the model-platform-expansion plan for the full diagnosis.
+
+### Phase 5 current slice — Geneformer Linux CPU preparation (2026-08-02)
+
+`geneformer-v1-10m-linux-x86_64-cpu` is migrated locally from the legacy uv
+input to one canonical schema-v2 Scrollcase input:
+
+- `scroll.json`, `pixi.toml` and committed `pixi.lock` are the only authoring
+  files; the old `recipe.json`, `requirements.in` and `requirements.lock` are
+  removed;
+- pixi 0.73.0 resolves Python 3.11.15, PyTorch 2.8.0 CPU and the preserved
+  scientific stack entirely from conda-forge, with lock SHA-256
+  `551716a80946450c076c9c0184458b5a29da855117b13a9da98129f4a19e16b4`;
+- published `scrollcase@0.4.11` generated and rechecked the reviewed
+  171-package conda licence audit; no package has an unresolved licence;
+- catalog identity, asset hashes and published metadata remain unchanged;
+  only the dependency lock/audit substrate and a conservative 12 GiB build
+  disk floor change;
+- the Geneformer caller watches the v2 directory and its Linux conda audit,
+  while the native job remains routed to `liatir-linux-selfhosted`;
+- frozen-lock check, Scrollcase audit agreement, catalog validation and 60
+  focused Runtime Box contract tests pass after one diagnosed test-only retry.
+
+This records preparation, not acceptance. A clean build, real Geneformer CPU
+scientific validation and Rust install/activate/rollback/removal lifecycle must
+still pass on one matching ephemeral Linux self-hosted runner before this target
+is complete. No production signing, publication, promotion or mutation of the
+published `1.0.0-beta.1` object occurred.
 
 For each target: regenerate `pixi.lock` at torch 2.8.0 (conda-forge + bioconda), rebuild the
 license audit, add/flip the catalog target to `buildable`, run cheap gates → local self-hosted

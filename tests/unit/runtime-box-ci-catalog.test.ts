@@ -96,7 +96,7 @@ describe('Runtime Box CI catalog', () => {
     expect(resolved.target).toMatchObject({
       recipeId: 'geneformer-v1-10m-linux-x86_64-cpu',
       status: 'published',
-      dependencyLicenseAudit: 'runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cpu.json',
+      condaDependencyLicenseAudit: 'runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cpu.json',
     });
     expect(resolved.runner).toMatchObject({ runsOn: 'liatir-linux-selfhosted', gpu: false });
   });
