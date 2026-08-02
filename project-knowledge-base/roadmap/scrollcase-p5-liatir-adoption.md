@@ -1,8 +1,8 @@
 # Scrollcase P5 — Liatir adoption and legacy builder retirement
 
-Last reviewed: 2026-07-31
+Last reviewed: 2026-08-02
 
-Status: **in progress — P5.2V and P5.3 complete; P5.4 block 1 in progress**
+Status: **in progress — P5.2V and P5.3 complete; P5.4 block 1 complete, block 2 next**
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project. The selected P5
@@ -929,8 +929,8 @@ evidence. P5.4 is now in progress.
 Migrate every active model authoring record, not only the uv substrates. At the
 start of P5.4 all five already-pixi scGPT inputs still used the old schema-v1
 `recipe.json` layout and were not accepted by the v2-only adapter. All five
-inputs are now canonical v2 scrolls. The four Linux/Windows inputs have native
-lifecycle proof; macOS Metal is prepared and awaits that proof.
+inputs are now canonical v2 scrolls. All five inputs have complete native
+lifecycle proof.
 
 P5.4 remains one phase. It is organized into three operational blocks, not new
 subphases or acceptance checkpoints:
@@ -1017,10 +1017,9 @@ passed at cosine `0.9999999999998881`, maximum absolute difference
 `1.1920928955078125e-7`, and peak VRAM `219378688` bytes. Compact artifact
 `8822298430` and preflight artifact `8821892037` preserve the proof. All four
 Linux/Windows scGPT targets are canonical v2 and native-lifecycle validated.
-The macOS Metal scGPT input and later P5.4 blocks remain, so neither block 1 nor
-P5.4 is complete.
+The macOS Metal proof below completes block 1; later P5.4 blocks remain.
 
-**Current continuation point:** finish block 1 with only
+**macOS Metal completion:**
 `scgpt-whole-human-macos-arm64-metal`. Its authoring input is now the canonical
 `runtime-boxes/scrolls/scgpt-whole-human/macos-aarch64-metal/scroll.json`.
 The existing pixi lock remains byte-identical at SHA-256
@@ -1030,8 +1029,7 @@ schema-v2 audit. The catalog routes the native proof to the dedicated
 `liatir-macos-arm64-heavy` self-hosted Apple-Silicon runner. The published
 `0.2.5-beta.1` release, production signature, archive, catalog publication
 metadata and historical evidence are immutable; this continuation authorizes no
-publication or channel change. Do not begin block 2 until the macOS native proof
-and measured disk plan are recorded.
+publication or channel change.
 
 The first authorized macOS native run `30715635531`, job `91410651050`, at
 commit `c855e66efd9ca64eefc0b450af250de9ded7ad15` is retained as failure
@@ -1054,8 +1052,31 @@ runtime dependency, aligning macOS with the other four canonical scGPT v2
 scrolls. A regression checks all five scGPT targets and rejects any `venv/`
 prune path. Cheap rechecks are the focused cost/catalog/product contracts,
 catalog validation, Scrollcase audit agreement, frozen lock hash, full
-`test:verify`, internal docs build and `git diff --check`. Only one native retry
-may be requested after those gates pass; no automatic retry is permitted.
+`test:verify`, internal docs build and `git diff --check`.
+
+The single authorized retry, run `30763954679`, jobs `91539295552` and
+`91539336858`, passed at clean commit
+`fd1819195dd77e033286ca083e05afa440c0d649` on self-hosted runner
+`liatir-macos-heavy-1785699749-3285`. It completed the frozen-lock build, local
+signing, archive verification and self-test, real CPU/Metal scientific parity,
+and Rust archive/install/activate/rollback/removal lifecycle. Archive SHA-256 is
+`d1d39e44a24de0ef4808df27225eb8a9834c0e10d4a40a2171e2c76140231e81`;
+archive size is `687615488` bytes, installed size is `1863803480` bytes and peak
+additional runner disk is `3340029952` bytes. The measured catalog disk plan is
+`7065208018` bytes within the retained `8589934592`-byte floor. Metal parity
+passed at cosine `0.9999999999999255`, maximum absolute difference
+`5.960464477539063e-8`, and mean absolute difference
+`1.3292677181198087e-8`; output and provenance contracts passed. Compact
+artifact `8838446367` has digest
+`sha256:b891dc6cccc26f91082f0d2fb13191fe3561c701c8280944e55b147612d1404a`;
+preflight artifact `8838334277` has digest
+`sha256:21663e80b3c6d1db53eefb5b039f7b0b1e7d4d13d9fb754964ed9cedda41984b`.
+The ephemeral runner deregistered and its marked root was removed.
+
+All five scGPT inputs are now canonical schema-v2 scrolls with complete native
+lifecycle evidence. P5.4 block 1 is complete. The next one-target continuation
+is block 2 target `geneformer-v1-10m-macos-arm64-metal`; do not start another
+Geneformer or UCE target concurrently.
 
 The scGPT conversion proves schema-v2 authoring without also changing the pixi
 substrate. The lighter CPU/Metal Geneformer targets then establish the uv-to-pixi

@@ -426,8 +426,8 @@
           "dependencyLockSha256": "04f83b64db8b5f6faf65fa40c677d6596a50c7d5482c51d8c1baa173588b388a",
           "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/scgpt-whole-human-macos-arm64-metal.json",
           "diskPlan": {
-            "estimatedInstalledSizeBytes": 2684354560,
-            "estimatedArchiveSizeBytes": 671088640,
+            "estimatedInstalledSizeBytes": 1863803480,
+            "estimatedArchiveSizeBytes": 687615488,
             "safetyMarginBytes": 4294967296
           },
           "gpuRequired": false,

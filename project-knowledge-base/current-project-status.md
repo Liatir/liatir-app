@@ -10,8 +10,8 @@ all three foundation v2 scrolls/locks/audits passed matching native validation
 on macOS, self-hosted Linux and self-hosted Windows, and each old uv fixture was
 removed only after its native proof. P5.4 is now in progress as one phase with
 three operational blocks: scGPT v2, Geneformer CPU/Metal plus UCE, and the
-Geneformer CUDA legacy/successor decision. Block 1 started with the scGPT Linux
-CPU input: it is now a single schema-v2 scroll with the existing pixi lock
+Geneformer CUDA legacy/successor decision. Block 1 is complete. It started with
+the scGPT Linux CPU input: it is now a single schema-v2 scroll with the existing pixi lock
 preserved byte-for-byte and a Scrollcase v2 audit. Its complete native proof
 passed in run `30599143569` on self-hosted runner
 `liatir-linux-selfhosted-1785464985-360`: archive SHA-256
@@ -43,10 +43,16 @@ locked `sympy`, which PyTorch 2.8 imports lazily. Rust lifecycle therefore did
 not run. Failure artifact `8823318701` is incident provenance, not acceptance
 evidence. The Liatir scroll now retains every locked runtime dependency, matching
 the other four scGPT v2 targets, and a cross-target regression forbids `venv/`
-prune paths. One separately approved native retry and the later blocks remain,
-so P5.4 is not complete. All published `0.2.5-beta.1` objects remain immutable,
-and block 2 must not start before the macOS proof and its measured disk plan are
-recorded. The full CI
+prune paths. The single authorized retry, run `30763954679`, job `91539336858`,
+passed clean build, signature and archive verification, scientific Metal parity
+and Rust install/activate/rollback/removal lifecycle on runner
+`liatir-macos-heavy-1785699749-3285`. Archive SHA-256 is
+`d1d39e44a24de0ef4808df27225eb8a9834c0e10d4a40a2171e2c76140231e81`,
+archive size is `687615488` bytes, installed size is `1863803480` bytes and
+compact artifact `8838446367` preserves the proof. All five scGPT targets are
+now canonical v2 and natively proven, so block 1 is complete. P5.4 remains open
+at block 2; the next target is `geneformer-v1-10m-macos-arm64-metal`. All
+published `0.2.5-beta.1` objects remain immutable. The full CI
 substrate migration to pixi + pixi-pack +
 conda-forge on self-hosted GitHub Actions runners has been planned and approved
 in principle — see the migration plan below. Its **Phase 0 relocation/activation
