@@ -217,8 +217,8 @@
           "dependencyLockSha256": "3e9841b2296656458715aa1276ece999b2bdfe4566e8dfdf77c0e29496c4d19f",
           "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/geneformer-v1-10m-macos-arm64-metal.json",
           "diskPlan": {
-            "estimatedInstalledSizeBytes": 2179953894,
-            "estimatedArchiveSizeBytes": 659082636,
+            "estimatedInstalledSizeBytes": 2179953895,
+            "estimatedArchiveSizeBytes": 672331169,
             "safetyMarginBytes": 4294967296
           },
           "gpuRequired": false,

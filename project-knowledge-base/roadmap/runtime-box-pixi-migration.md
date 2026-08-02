@@ -4,8 +4,8 @@ Last reviewed: 2026-08-02
 
 Status: **Phases 0–4 DONE; Phase 5 in progress.** All five scGPT targets have
 complete native v2 proof. The first Geneformer target, macOS Metal, has been
-migrated locally to schema v2 + pixi and passes build, independent self-test and
-scientific Metal parity; its clean self-hosted native lifecycle is next.
+migrated to schema v2 + pixi and has complete clean self-hosted native-lifecycle
+proof. Geneformer Linux CPU is next.
 Remaining Phase 5: complete Geneformer and UCE, then the protected releases.
 Nothing has been production-signed, published or promoted by this migration.
 
@@ -20,8 +20,8 @@ their matching native v2 proofs, their measured disk plans are catalogued, and
 each old uv fixture was removed only after its proof. P5.4 model migration is
 in progress: all five scGPT targets have canonical v2 inputs and complete native
 proofs, and the Geneformer macOS v2 input has passed local build, self-test and
-scientific validation. Its clean self-hosted native lifecycle and later targets
-remain. The canonical
+scientific validation plus clean native lifecycle. Geneformer Linux CPU and
+later targets remain. The canonical
 downstream cutover status is in
 [Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md).
 Every active Liatir Runtime Box contract and consumer now uses schema v2,
@@ -62,9 +62,9 @@ product-owned removal without a parallel v1 reader.
   Windows conda envs have no symlinks to dereference). Windows CUDA passed on the first dispatch by
   applying the Linux CUDA lessons up front. The Geneformer macOS input is now a
   schema-v2 scroll with lock `3e9841b2…` and a 161-package conda audit. Its
-  local dev-signed build, independent self-test and torch 2.8.0 Metal parity
-  passed; clean self-hosted native lifecycle remains before advancing to the
-  next target. UCE and the other Geneformer targets are not yet migrated.
+  clean self-hosted native-lifecycle run `30766478916` passed build, independent
+  self-test, torch 2.8.0 Metal parity and Rust lifecycle. Geneformer Linux CPU
+  is next. UCE and the other Geneformer targets are not yet migrated.
   Nothing has been production-signed, published or promoted.
 
 **Production code HAS changed** as of Phase 1/2 (`packages/liatir-core`, `scripts/runtime-box*`,

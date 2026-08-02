@@ -1090,18 +1090,24 @@ published `scrollcase@0.4.11` generated and checked the matching 161-package v2
 audit. The target now routes only native work to the
 `liatir-macos-arm64-heavy` self-hosted runner.
 
-A local dirty-tree, dev-signed build through the published package passed frozen
-installation, conda-pack relocation, asset verification and self-test. The
-payload is `2179953894` bytes; the `659082636`-byte archive has SHA-256
-`714a2eadb2f4d39c5953093e103cab058510d85ad047d81db1b88eac86030cb5`.
-Independent extraction and self-test passed. The real 4-cell by 128-gene
-scientific validator passed on torch 2.8.0 Apple Metal with finite `[4, 256]`
-embeddings, maximum absolute error `8.121132850646973e-7` and minimum cosine
-similarity `0.9999999403953552`; output and provenance contracts passed. This
-local result is preparation only, not acceptance evidence. One clean
-self-hosted `native-lifecycle` run must pass before the next Geneformer target
-starts. It authorizes no production signing, publication, promotion or mutation
-of the published `1.0.0-beta.1` objects.
+Native-lifecycle run `30766478916`, jobs `91546006154` and `91546052389`, passed
+at clean commit `6fe5a077da16c0c2f9abe8c6986e3639aaa98650` on ephemeral
+self-hosted runner `liatir-macos-heavy-1785703738-15134`. It completed frozen
+installation, local signing, archive verification and self-test, real CPU/Metal
+scientific parity, and Rust install/activate/rollback/removal lifecycle. The
+payload is `2179953895` bytes; the `672331169`-byte archive has SHA-256
+`3ce6e4baecae7a641da6a6ecd2a71148f3d9c62f44e42fd5baa04a8110b0ae62`.
+The real 4-cell by 128-gene validator produced finite `[4, 256]` embeddings at
+maximum absolute error `8.121132850646973e-7` and minimum cosine similarity
+`0.9999999403953552`; output and provenance contracts passed. Peak additional
+runner disk was `4608819200` bytes. Compact artifact `8839187730` has digest
+`sha256:37d124cefe4fe48e3473ef9dc037d1001ac163c0e3cbcd5d2d7d767ddf53f382`;
+preflight artifact `8839102700` has digest
+`sha256:4ebab7ef836ab92c921fb9051d9af36dc7cf2bb4df9f640e806f3f18535e7d2f`.
+The runner deregistered and its marked root was removed. This target is complete;
+the next one-target continuation is `geneformer-v1-10m-linux-x86_64-cpu`.
+No production signing, publication, promotion or mutation of the published
+`1.0.0-beta.1` objects occurred.
 
 The scGPT conversion proves schema-v2 authoring without also changing the pixi
 substrate. The lighter CPU/Metal Geneformer targets then establish the uv-to-pixi

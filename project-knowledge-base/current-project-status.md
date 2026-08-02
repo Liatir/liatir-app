@@ -56,18 +56,20 @@ single schema-v2 scroll on pixi 0.73.0 with Python 3.11.15 and PyTorch 2.8.0;
 the old schema-v1 uv input and lock are removed. Lock SHA-256 is
 `3e9841b2296656458715aa1276ece999b2bdfe4566e8dfdf77c0e29496c4d19f`,
 and the matching Scrollcase v2 audit covers 161 conda packages with no PyPI or
-source-build escape hatch. A local dev-signed build and independent verification
-with self-test passed; installed size is `2179953894` bytes, archive size is
-`659082636` bytes and archive SHA-256 is
-`714a2eadb2f4d39c5953093e103cab058510d85ad047d81db1b88eac86030cb5`.
-The real 4-cell scientific fixture passed on torch 2.8.0 Apple Metal with a
-finite `[4, 256]` embedding, maximum absolute error
+source-build escape hatch. Native-lifecycle run `30766478916`, jobs
+`91546006154` and `91546052389`, passed from clean commit `6fe5a07` on ephemeral
+self-hosted runner `liatir-macos-heavy-1785703738-15134`: frozen build,
+signature/archive verification and self-test, real torch 2.8.0 Metal parity,
+and Rust install/activate/rollback/removal lifecycle. Installed size is
+`2179953895` bytes, archive size is `672331169` bytes and archive SHA-256 is
+`3ce6e4baecae7a641da6a6ecd2a71148f3d9c62f44e42fd5baa04a8110b0ae62`.
+The finite `[4, 256]` embedding passed at maximum absolute error
 `8.121132850646973e-7` and minimum cosine similarity
-`0.9999999403953552`. This dirty-tree local proof is preparation, not native CI
-acceptance: the target still needs one clean self-hosted native-lifecycle run
-before the next Geneformer target starts. Published scGPT `0.2.5-beta.1` and
-Geneformer `1.0.0-beta.1` objects remain immutable. The full CI
-substrate migration to pixi + pixi-pack +
+`0.9999999403953552`. Compact artifact `8839187730` preserves the acceptance
+evidence. The runner deregistered and its marked root was removed. The next
+one-target continuation is `geneformer-v1-10m-linux-x86_64-cpu`. Published
+scGPT `0.2.5-beta.1` and Geneformer `1.0.0-beta.1` objects remain immutable. The
+full CI substrate migration to pixi + pixi-pack +
 conda-forge on self-hosted GitHub Actions runners has been planned and approved
 in principle — see the migration plan below. Its **Phase 0 relocation/activation
 spike is now complete and decisive on ALL THREE OSes: macOS Metal, Windows
