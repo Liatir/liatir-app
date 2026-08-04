@@ -631,16 +631,30 @@ first).
    (each gated on the maintainer's go-ahead and a prior `runtime-box:signer:deploy`).
    Windows CUDA is no longer under the no-dispatch decision — it now validates on
    the self-hosted RTX 4060 Ti.
-2. Close the true cross-version Runtime Box update and client-persisted signed
+2. **Do not raise the Scrollcase pin during P5.4.** Recorded 2026-08-04: Liatir
+   pins exact `0.4.11` while npm `latest` is `0.7.0` (published 2026-08-03), with
+   `0.5.0`, `0.6.0` and `0.6.1` in between. `0.6.0` carries symbolic links inside
+   the box payload and `0.7.0` stores already-compressed paths instead of
+   deflating them, so both change archive bytes and sizes — raising the pin
+   invalidates the recorded archive hashes, measured sizes and catalog
+   `diskPlan` floors of every target already natively proven on `0.4.11`. A
+   consumer predating `0.6.0` also rejects a link entry outright, so the Rust
+   consumer needs the link rule before any upgrade. This is tracked as
+   [P5.4V](./roadmap/scrollcase-p5-liatir-adoption.md), scheduled after P5.4,
+   together with the Rust gaps that are already real on `0.4.11`: no
+   `deny_unknown_fields` on any Runtime Box struct, and `execution`, `assets` and
+   `weights` held as opaque JSON. The package's 65-case language-neutral
+   `consumer-conformance.json` is the cheap oracle for closing them.
+3. Close the true cross-version Runtime Box update and client-persisted signed
    anti-replay state as product work, not as an unclosed foundation gate.
-3. Continue with the common execution spine in Phase 2 after that bounded
+4. Continue with the common execution spine in Phase 2 after that bounded
    Runtime Box product work.
-4. Do not add another model family to the pre-release catalog until current
+5. Do not add another model family to the pre-release catalog until current
    model parity is closed and its code, weights, and assets pass an exact legal
    review. The candidate classification lives in `roadmap/ai-batches.md`.
-5. Do not dispatch another Gate 9 UCE release; the on-demand runner remains
+6. Do not dispatch another Gate 9 UCE release; the on-demand runner remains
    offline unless a separately reviewed future heavy build requires it.
-6. Do not dispatch the legacy Geneformer Windows CUDA 12.4 candidate from the
+7. Do not dispatch the legacy Geneformer Windows CUDA 12.4 candidate from the
    historical hosted-runner plan. scGPT Windows CUDA 12.8 has self-hosted
    scientific evidence but remains unpublished; any further validation or
    release still needs one explicit reviewed target authorization.

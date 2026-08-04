@@ -184,6 +184,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.2V — Scrollcase v2-only cutover | Complete | Exact `scrollcase@0.4.11`; active contracts and consumers use v2; v1 is explicitly unsupported; clean local v2 proof green |
 | P5.3 — v2 foundation-fixture migration | Complete | Three reviewed v2 scrolls/locks/audits; macOS, Linux and Windows native proofs green; every foundation uv fixture removed only after its matching proof |
 | P5.4 — model-recipe migration | In progress | All five scGPT inputs are v2 and natively proven; Geneformer macOS Metal, Linux CPU and Windows CPU are proven; UCE and the CUDA identity decision remain |
+| P5.4V — Scrollcase `0.4.11` → current-line upgrade | Pending, not started | A reviewed version delta, an explicit rebuild-or-freeze decision per already-proven target, and a Rust consumer aligned with the selected version |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
 | P5.6 — local/native closure | Pending | Full cheap gate plus one reviewed non-production product lifecycle |
 | P5.7 — documentation handoff | Pending | Status, inventories and operator docs match the implemented boundary |
@@ -1285,6 +1286,147 @@ UCE is a multi-gigabyte build. Before running it:
 - each migrated target has reviewed lock/audit and native scientific evidence;
 - legacy CUDA identity is represented honestly;
 - no target is marked published from P5 validation alone.
+
+## P5.4V — Scrollcase version delta (`0.4.11` → current line)
+
+Recorded 2026-08-04 from npm and the published `0.7.0` tarball. This phase is
+**not started** and is deliberately scheduled **after** P5.4 completes. Nothing
+here authorizes changing the pin.
+
+### Why this is a phase and not a dependency bump
+
+Liatir pins exact `scrollcase@0.4.11`. The npm `latest` tag is `0.7.0`, published
+`2026-08-03`, with `0.5.0`, `0.6.0` and `0.6.1` in between. Two of those releases
+change **archive bytes and payload layout**, so raising the pin invalidates the
+recorded archive SHA-256, measured archive/installed sizes and catalog
+`diskPlan` floors of every target already natively proven on `0.4.11` — the five
+scGPT targets, Geneformer macOS Metal and Linux CPU, and the three foundation
+fixtures. That is a re-proof decision per target, not a lockfile change.
+
+Read the published tarball, not the changelog heading: `0.7.0` again files its
+new work under `Unreleased`, exactly as `0.4.11` did. Version selection follows
+the P5.2V.0 immutable-identity readback procedure.
+
+### Delta the pin is missing
+
+Confirmed absent from installed `0.4.11` (`rg` over the tarball returns nothing
+for the first three):
+
+- `payloadDigest` on the release manifest, the canonical `payload-digest.v1`
+  list inside the archive, and the `verifyExtractedPayload` /
+  `scrollcase verify --extracted <dir>` integrity operation;
+- `attachExtractedBox`, which mints a fresh process-bound `PreparedBox` after an
+  application restart without retaining or re-extracting the archive — the exact
+  shape Liatir's install-then-run-later lifecycle needs;
+- the optional `environment` declaration on scrolls, `box.json` and signed
+  release manifests, with precedence `signed release > caller > inherited host`,
+  and the structured environment report with masked/revealed values;
+- **`0.6.0` payload symbolic links.** A link that provably resolves inside the
+  payload to a regular file is now carried instead of materialised. Linux example
+  box: 483 → 228 MB extracted; macOS: 126 → 94 MB. `schemaVersion` is unchanged,
+  and a consumer predating this **rejects a link entry**. The rule lives in the
+  package's `src/contract/links.mjs`: relative targets only, resolved inside the
+  payload, ending at a regular file, no cycles, directory links refused outright;
+- **`0.7.0` stored-not-deflated paths** for `assets` and the new optional
+  `uncompressedPaths`, which changes archive size again;
+- `0.6.1` fixes a Node/Python consumer divergence on exactly the accepting side
+  of the link rule. Treat the link path as delicate, not routine.
+
+### Rust consumer gaps that are already real on `0.4.11`
+
+These do not need the upgrade. They are current defects against the pinned
+contract and may be fixed independently, before or during P5.4V:
+
+1. **No struct rejects unknown fields.** `rg deny_unknown_fields src-tauri/src`
+   returns nothing. `ReleaseManifest` and `ExtractedBoxMetadata` in
+   `src-tauri/src/bridge/runtime_boxes.rs` therefore accept and silently discard
+   any field the pinned schema adds. This is what makes a silent divergence
+   possible rather than loud.
+2. **`execution` is not interpreted.** It is held as
+   `Option<serde_json::Value>`, while `0.4.11` already publishes
+   `contract/schema/execution.schema.json` as a closed `oneOf` over
+   `python-script` and `python-module` with `additionalProperties: false`.
+3. **`assets` and `weights` are not interpreted**, so on-demand asset
+   descriptors carry no Rust-side size/hash enforcement.
+4. **Hostile-archive defense is generic, not box-specific.**
+   `runtime_boxes.rs` imports `extract_zip_with_expected_size` from
+   `managed_bins`, a helper shared with managed binaries. Link entries, special
+   and encrypted entries, extraction collisions and file/directory collisions are
+   handled there, outside the Runtime Box security boundary and outside the
+   conformance cases that name them.
+
+### The conformance matrix is the lever
+
+`scrollcase/contract/fixtures/consumer-conformance.json` in `0.7.0` is a
+**language-neutral** declarative matrix: 65 cases over five actions —
+`prepare` (25), `attach` (13), `verify-payload` (12), `run-prepared` (12),
+`run-box` (3) — each an `id` plus `action`, `fixture` and `expected`. It already
+names the cases that matter here: `altered-environment-metadata`,
+`altered-execution-metadata`, `release-box-disagreement`, `link-entry`,
+`linked-interpreter`, `special-entry`, `encrypted-entry`, `traversal-entry`,
+`absolute-entry`, `extraction-collision`, `file-directory-collision`, the
+`on-demand-asset-*` triple and the `payload-verification-*` group.
+
+Liatir's Rust consumer can be driven against this matrix without Scrollcase
+shipping anything new. Doing so converts "the Rust drifted from the contract"
+from a finding that costs a self-hosted native run into a cheap failure inside
+`cargo test`. Prefer this over waiting for an upstream Rust implementation.
+
+### The announced Scrollcase Rust consumer
+
+There is no Rust consumer in `0.7.0`; the package ships Node, and the Python
+consumer is distributed separately. The Scrollcase maintainer stated on
+2026-08-04 that a Rust consumer release is imminent, so plan for it rather than
+treating it as hypothetical — but do not pin, schedule or claim it before an
+immutable published version exists, and do not let its arrival reopen P5.4.
+
+When it lands it does **not** automatically replace
+`src-tauri/src/bridge/runtime_boxes.rs`. Adopt it as a **bounded inner layer**,
+never as the lifecycle owner:
+
+- in scope for delegation: signed-envelope and trust verification, safe
+  extraction including the link rule, payload-digest verification, attach,
+  execution-model resolution, on-demand asset checks — the part where a subtle
+  divergence is a security bug and where a shared implementation is worth more
+  than local control;
+- permanently Liatir-owned: Registry/channel fetch and control-document
+  validation, trust roots, revocation and persisted anti-replay state, host
+  capability matching and target selection, `minLiatirVersion` and product
+  compatibility, disk planning, activation, rollback retention and pruning,
+  removal, Jobs/Results/provenance.
+
+Adoption conditions, all required: it is a published crate with an immutable
+version and no `file:`/git dependency; it does not pull a runtime network,
+registry or download layer into the desktop binary; its dependency and licence
+footprint pass the existing audit; it does not force a Tokio/OpenSSL or similar
+runtime conflict with Tauri; and it passes the same conformance matrix Liatir's
+own consumer is held to, so the swap is verifiable rather than assumed. If
+adopted, the two implementations must not both remain live — one owns the
+boundary, the other is deleted, per the P5.5 no-parallel-implementation rule.
+
+Losing the current cross-implementation check is a real cost of adopting it:
+today a Rust/Node disagreement on a real box surfaces in native validation. Keep
+the conformance matrix as the replacement oracle before removing anything.
+
+### P5.4V entry conditions
+
+Do not start until all of these hold:
+
+- P5.4 is complete on `0.4.11`, including Geneformer Windows CPU, UCE and the
+  CUDA identity decision;
+- the maintainer has explicitly decided, per already-proven target, whether it is
+  rebuilt on the new pin or frozen with its `0.4.11` evidence intact;
+- the immutable identity of the selected version has been read back from npm
+  immediately before the dependency change;
+- the Rust link-entry rule, the closed `execution` model and unknown-field
+  rejection have landed with regressions, since a `≥0.6.0` box is unreadable by
+  the current consumer.
+
+No published object, channel, trust root or protected release changes in P5.4V.
+
+Its order relative to P5.5 is deliberately left open. Running P5.5 first deletes
+the legacy builder against a pin that is already proven; running P5.4V first
+avoids re-proving targets twice. That is a maintainer decision, not a default.
 
 ## P5.5 — Final cutover and legacy deletion
 
