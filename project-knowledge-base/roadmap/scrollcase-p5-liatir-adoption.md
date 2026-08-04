@@ -3,8 +3,8 @@
 Last reviewed: 2026-08-04
 
 Status: **in progress — P5.2V and P5.3 complete; P5.4 block 1 complete, block 2
-in progress with Geneformer macOS Metal and Linux CPU natively proven and
-Windows CPU prepared on v2, awaiting its native proof**
+in progress with Geneformer macOS Metal, Linux CPU and Windows CPU natively
+proven; UCE remains**
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project. The selected P5
@@ -183,7 +183,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.2 — Liatir adapter and distribution split | Complete | Real clean `keygen → lock → build → verify --self-test` cycle through the stable Liatir command; namespace, archive hash and receipts checked |
 | P5.2V — Scrollcase v2-only cutover | Complete | Exact `scrollcase@0.4.11`; active contracts and consumers use v2; v1 is explicitly unsupported; clean local v2 proof green |
 | P5.3 — v2 foundation-fixture migration | Complete | Three reviewed v2 scrolls/locks/audits; macOS, Linux and Windows native proofs green; every foundation uv fixture removed only after its matching proof |
-| P5.4 — model-recipe migration | In progress | All five scGPT inputs are v2 and natively proven; Geneformer macOS Metal and Linux CPU are proven; Geneformer Windows CPU is prepared on v2 and awaits its native proof; UCE and the CUDA identity decision remain |
+| P5.4 — model-recipe migration | In progress | All five scGPT inputs are v2 and natively proven; Geneformer macOS Metal, Linux CPU and Windows CPU are proven; UCE and the CUDA identity decision remain |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
 | P5.6 — local/native closure | Pending | Full cheap gate plus one reviewed non-production product lifecycle |
 | P5.7 — documentation handoff | Pending | Status, inventories and operator docs match the implemented boundary |
@@ -1151,7 +1151,7 @@ continuation is `geneformer-v1-10m-windows-x86_64-cpu`. No production signing,
 publication, promotion or mutation of the published `1.0.0-beta.1` objects
 occurred.
 
-**Block 2 third-target preparation — prepared, awaits native proof.**
+**Block 2 third-target preparation.**
 `geneformer-v1-10m-windows-x86_64-cpu` is now a canonical schema-v2 scroll
 backed by pixi 0.73.0. The legacy uv `recipe.json`, `requirements.in` and
 `requirements.lock` are removed. The committed conda-forge-only lock resolves
@@ -1170,15 +1170,41 @@ in place of `python-distributions.json`. `pythonEntryPoint` remains
 values are preserved byte-for-byte. The catalog target keeps its `published`
 status and immutable publication metadata; only `dependencyLockSha256`, the
 move from `dependencyLicenseAudit` to `condaDependencyLicenseAudit` and the
-disk plan change, with a conservative 12 GiB build floor retained until measured
-evidence replaces the estimate. The Geneformer caller workflow now watches the
+disk plan change. The Geneformer caller workflow now watches the
 v2 directory. Local gates green: frozen lock check, audit write/recheck,
 `runtime-box:catalog:check`, the focused Runtime Box catalog/cost-control/conda
 licence/target-identity/adapter suites, full `test:verify`, the internal docs
 build and `git diff --check`.
 
-**No native proof exists for this target yet.** It must not be counted as
-complete until a self-hosted `native-lifecycle` run passes.
+Native-lifecycle run `30915003666`, jobs `92010824861` and `92011005131`,
+passed on the first dispatch at clean commit
+`d3379778a2cdfb3bd110bf5bc4028d8cf3a9a7f7` on ephemeral self-hosted runner
+`liatir-windows-selfhosted-1785850729-16884` (`RUNNER_ENVIRONMENT=self-hosted`,
+label `liatir-windows-selfhosted`, no GPU). It completed the frozen-lock
+installation, local ephemeral signing, archive verification and self-test, real
+CPU scientific validation, and the Rust install/activate/rollback/removal
+lifecycle; the uv and POSIX-pixi steps were correctly skipped. The committed
+lock hash `17aaea6d…` was reproduced unchanged. The clean build produced archive
+SHA-256
+`afc48a00f1f6cfe3b557069c8d77169f95327b257887c50a1c32126eb5a4a684`,
+archive `493253025` bytes and installed `1824134154` bytes in `691133` ms on
+pixi 0.73.0, Python 3.11.15 and PyTorch 2.8.0 CPU
+(`transformers-4.44.2-cpu`). The real 4-cell by 128-gene fixture produced finite
+`[4, 256]` embeddings at maximum absolute difference `4.470348358154297e-7` and
+minimum cosine similarity `1`, with CPU baseline parity, output and provenance
+contracts all passing. Peak additional runner disk was `3558084608` bytes, so
+the catalog disk plan now carries the measured installed/archive pair, giving a
+calculated plan of `6655863971` bytes inside a reduced `8589934592`-byte floor
+that matches the sibling scGPT Windows CPU target. Compact artifact `8895358103`
+has digest
+`sha256:4d30dc73a743178db8c73533d5be6408bece11fc4af0570f12a57a3130fd85fc`;
+preflight artifact `8894675619` has digest
+`sha256:48a8dc44ae7cf84946cd92943f5575d7cfb78f868e69aff3ceef15d452665f55`.
+The runner deregistered, its marked root was removed, diagnostics were retained
+and the repository self-hosted inventory is empty. This target is complete; the
+remaining block-2 work is UCE, and the CUDA identity decision stays in block 3.
+No production signing, publication, promotion or mutation of the published
+`1.0.0-beta.1` objects occurred.
 
 The scGPT conversion proves schema-v2 authoring without also changing the pixi
 substrate. The lighter CPU/Metal Geneformer targets then establish the uv-to-pixi

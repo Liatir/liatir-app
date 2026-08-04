@@ -85,18 +85,30 @@ output and provenance contracts green. Peak additional runner disk was
 `6244888576` bytes, so the catalog disk plan now carries those measured sizes
 inside the retained 12 GiB floor. Compact artifact `8878554308` preserves the
 acceptance evidence; the runner deregistered and its marked root was removed.
-The third block-2 target, `geneformer-v1-10m-windows-x86_64-cpu`, is now
-**prepared on v2 and awaits its native proof**: one schema-v2 scroll on pixi
-0.73.0 with Python 3.11.15 and PyTorch 2.8.0 `cpu_mkl`, resolved only from
-conda-forge, with the legacy uv descriptor and locks removed. The committed
-Windows lock SHA-256 is
+The third block-2 target, `geneformer-v1-10m-windows-x86_64-cpu`, is also a
+single schema-v2 scroll on pixi 0.73.0 with Python 3.11.15 and PyTorch 2.8.0
+`cpu_mkl`, resolved only from conda-forge; the legacy uv descriptor and locks
+are removed. The committed Windows lock SHA-256 is
 `17aaea6dd7c4fdca8d37c6898c82020c210b21458f53d22d03b2f3b3324438ab`,
 and the matching `scrollcase@0.4.11` conda audit reviews 150 packages with no
-unresolved licence. `pythonEntryPoint` stays `venv/python.exe`, catalog
+unresolved licence. `pythonEntryPoint` stays `venv/python.exe`, and catalog
 identity, asset hashes and the immutable `1.0.0-beta.1` publication metadata
-are unchanged, and a conservative 12 GiB build floor is carried until measured
-native evidence replaces the estimate. No native run has been dispatched for it
-yet, so it must not be counted as complete.
+are unchanged. Native-lifecycle run `30915003666`, jobs `92010824861` and
+`92011005131`, passed on the first dispatch at clean commit `d337977` on
+ephemeral self-hosted runner `liatir-windows-selfhosted-1785850729-16884`:
+frozen build, signature/archive verification and self-test, real torch 2.8.0 CPU
+scientific validation, and Rust install/activate/rollback/removal lifecycle.
+Installed size is `1824134154` bytes, archive size is `493253025` bytes and
+archive SHA-256 is
+`afc48a00f1f6cfe3b557069c8d77169f95327b257887c50a1c32126eb5a4a684`.
+The finite `[4, 256]` embedding passed at maximum absolute error
+`4.470348358154297e-7` and minimum cosine similarity `1`, with output and
+provenance contracts green. Peak additional runner disk was `3558084608` bytes,
+so the catalog disk plan carries those measured sizes inside a reduced 8 GiB
+floor. Compact artifact `8895358103` preserves the acceptance evidence; the
+runner deregistered and its marked root was removed. All three Geneformer
+CPU/Metal targets are now v2 and natively proven. The next block-2 continuation
+is UCE.
 No signing, publication or promotion occurred. Published
 scGPT `0.2.5-beta.1` and Geneformer `1.0.0-beta.1` objects remain immutable. The
 full CI substrate migration to pixi + pixi-pack +
@@ -175,7 +187,8 @@ rebuild. The Linux CUDA run took five dispatches,
 each a distinct defect in the new CUDA path or the WSL host (CPU-cloned self-test,
 /tmp tmpfs too small for verify, a dropped checkpoint download, missing
 GPU-identity evidence), never the box or the CUDA compute itself; those fixes are
-permanent. Geneformer macOS Metal and Linux CPU are also complete on v2.
+permanent. Geneformer macOS Metal, Linux CPU and Windows CPU are also complete
+on v2.
 Remaining Phase 5: complete the later Geneformer and UCE targets. After that,
 only the
 protected release remains per target, gated on the maintainer's go-ahead and a
@@ -213,7 +226,8 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   Scrollcase pixi + conda-pack + conda-forge builder (Variant A + a contained
   PyPI escape hatch), using self-hosted GitHub Actions runners and torch 2.8.0.
   **Phases 0–4 complete; Phase 5 in progress** — all five scGPT targets plus
-  Geneformer macOS Metal and Linux CPU have complete native v2 proof, including
+  Geneformer macOS Metal, Linux CPU and Windows CPU have complete native v2
+  proof, including
   real CUDA on the self-hosted RTX 4060 Ti. Remaining Phase 5: complete later
   Geneformer and UCE targets, then the protected releases. The uv path is
   retained only for not-yet-migrated recipes.
@@ -296,7 +310,8 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   and retiring the local generic builder. Status: **the v1 P5.0–P5.2 baseline is
   historical; P5.2V is complete on exact `scrollcase@0.4.11`, and P5.3 is
   complete on macOS, Linux and Windows; P5.4 is in progress, with all five scGPT
-  targets plus Geneformer macOS Metal and Linux CPU migrated and natively
+  targets plus Geneformer macOS Metal, Linux CPU and Windows CPU migrated and
+  natively
   proven**. It consumes generic
   types and browser-safe helpers, preserves `liatir.runtime-box.*`, and passes
   the complete `test:verify` gate with 227 unit/contract tests. The stable CLI is
@@ -598,9 +613,8 @@ first).
 > Phase 5 is in progress; the historical v1 P5.2 checkpoint, v2-only P5.2V
 > cutover and all three native P5.3 foundation proofs are complete. P5.4 model
 > recipe migration is in progress: all five scGPT targets plus Geneformer macOS
-> Metal and Linux CPU are v2 and natively proven; Geneformer Windows CPU is the
-> one-target continuation in flight, prepared on v2 and awaiting its native
-> proof.
+> Metal, Linux CPU and Windows CPU are v2 and natively proven; UCE is the next
+> one-target continuation.
 > It remains one phase with
 > three operational blocks rather than a new numbered checkpoint per target.
 > Do not use the historical
@@ -610,7 +624,8 @@ first).
    which has **reframed and largely absorbed** the old model-platform-expansion
    plan. Done: the `29955615971` signing failure was diagnosed (deployed-signer
    policy drift, now auto-detected before every release), and all five scGPT
-   targets plus Geneformer macOS Metal and Linux CPU are natively proven on v2.
+   targets plus Geneformer macOS Metal, Linux CPU and Windows CPU are natively
+   proven on v2.
    Remaining: migrate
    and validate later Geneformer and UCE targets before protected releases
    (each gated on the maintainer's go-ahead and a prior `runtime-box:signer:deploy`).

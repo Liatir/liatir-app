@@ -336,12 +336,12 @@
             "native-lifecycle"
           ],
           "timeoutMinutes": 90,
-          "requiredBuildDiskBytes": 12884901888,
+          "requiredBuildDiskBytes": 8589934592,
           "dependencyLockSha256": "17aaea6dd7c4fdca8d37c6898c82020c210b21458f53d22d03b2f3b3324438ab",
           "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cpu.json",
           "diskPlan": {
-            "estimatedInstalledSizeBytes": 3221225472,
-            "estimatedArchiveSizeBytes": 1073741824,
+            "estimatedInstalledSizeBytes": 1824134154,
+            "estimatedArchiveSizeBytes": 493253025,
             "safetyMarginBytes": 4294967296
           },
           "gpuRequired": false,

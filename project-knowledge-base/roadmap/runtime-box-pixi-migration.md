@@ -3,11 +3,11 @@
 Last reviewed: 2026-08-04
 
 Status: **Phases 0–4 DONE; Phase 5 in progress.** All five scGPT targets have
-complete native v2 proof. Two Geneformer targets, macOS Metal and Linux CPU, are
-migrated to schema v2 + pixi and each has complete clean self-hosted
-native-lifecycle proof. Geneformer Windows CPU is **prepared on v2 and awaits
-its native proof**.
-Remaining Phase 5: complete Geneformer and UCE, then the protected releases.
+complete native v2 proof. Three Geneformer targets — macOS Metal, Linux CPU and
+Windows CPU — are migrated to schema v2 + pixi and each has complete clean
+self-hosted native-lifecycle proof.
+Remaining Phase 5: the Geneformer CUDA identities and UCE, then the protected
+releases.
 Nothing has been production-signed, published or promoted by this migration.
 
 **Current ownership correction (2026-07-27):** the generic pixi/conda-pack
@@ -20,10 +20,9 @@ P5.3 is complete: the macOS, Linux and Windows foundation fixtures all passed
 their matching native v2 proofs, their measured disk plans are catalogued, and
 each old uv fixture was removed only after its proof. P5.4 model migration is
 in progress: all five scGPT targets have canonical v2 inputs and complete native
-proofs, and the Geneformer macOS and Linux CPU v2 inputs have each passed build,
-self-test and scientific validation plus clean native lifecycle. Geneformer
-Windows CPU has a prepared v2 input but no native proof yet; UCE and the CUDA
-identity decision also remain. The canonical
+proofs, and the Geneformer macOS, Linux CPU and Windows CPU v2 inputs have each
+passed build, self-test and scientific validation plus clean native lifecycle.
+UCE and the CUDA identity decision remain. The canonical
 downstream cutover status is in
 [Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md).
 Every active Liatir Runtime Box contract and consumer now uses schema v2,
@@ -68,8 +67,9 @@ product-owned removal without a parallel v1 reader.
   self-test, torch 2.8.0 Metal parity and Rust lifecycle. Geneformer Linux CPU
   followed with run `30872534594`, which passed the same complete lifecycle on
   torch 2.8.0 CPU. Geneformer Windows CPU is now a canonical v2 scroll with lock
-  `17aaea6d…` and a 150-package conda audit, prepared and awaiting its native
-  proof. UCE and the Geneformer CUDA identities are not yet migrated.
+  `17aaea6d…` and a 150-package conda audit, and its run `30915003666` passed
+  the same complete lifecycle on the first dispatch. UCE and the Geneformer CUDA
+  identities are not yet migrated.
   Nothing has been production-signed, published or promoted.
 
 **Production code HAS changed** as of Phase 1/2 (`packages/liatir-core`, `scripts/runtime-box*`,
@@ -721,10 +721,24 @@ input to one canonical schema-v2 Scrollcase input:
   interpreter at the prefix root;
 - catalog identity, asset hashes and published `1.0.0-beta.1` metadata are
   unchanged; only the lock/audit substrate and the disk plan move;
-- a conservative 12 GiB build floor is carried until measured native evidence
-  replaces the estimate.
+- the catalog disk plan now carries measured sizes inside a `8589934592`-byte
+  floor, matching the sibling scGPT Windows CPU target.
 
-**Native acceptance: not yet run.** This slice is prepared only.
+**Native acceptance (2026-08-04).** Run `30915003666` passed the complete
+lifecycle on the first dispatch at clean commit `d337977` on ephemeral
+self-hosted runner `liatir-windows-selfhosted-1785850729-16884`: frozen-lock
+build (`17aaea6d…` reproduced), local ephemeral signing, archive verification,
+self-test, real CPU scientific validation and the Rust
+install/activate/rollback/removal suite. Archive SHA-256 `afc48a00…`, archive
+`493253025` bytes, installed `1824134154` bytes, build `691133` ms, Python
+3.11.15 on PyTorch 2.8.0 CPU. The 4-cell by 128-gene fixture gave finite
+`[4, 256]` embeddings at maximum absolute difference `4.470348358154297e-7` and
+minimum cosine similarity `1`. Peak additional runner disk was `3558084608`
+bytes, so the `diskPlan` now carries the measured installed/archive pair; the
+calculated plan of `6655863971` bytes stays inside the retained 8 GiB floor. The
+runner deregistered and its marked root was removed. No production signing,
+publication, promotion or mutation of the published `1.0.0-beta.1` object
+occurred.
 
 For each target: regenerate `pixi.lock` at torch 2.8.0 (conda-forge + bioconda), rebuild the
 license audit, add/flip the catalog target to `buildable`, run cheap gates → local self-hosted
