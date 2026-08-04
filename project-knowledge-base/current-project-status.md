@@ -85,7 +85,18 @@ output and provenance contracts green. Peak additional runner disk was
 `6244888576` bytes, so the catalog disk plan now carries those measured sizes
 inside the retained 12 GiB floor. Compact artifact `8878554308` preserves the
 acceptance evidence; the runner deregistered and its marked root was removed.
-The next one-target continuation is `geneformer-v1-10m-windows-x86_64-cpu`.
+The third block-2 target, `geneformer-v1-10m-windows-x86_64-cpu`, is now
+**prepared on v2 and awaits its native proof**: one schema-v2 scroll on pixi
+0.73.0 with Python 3.11.15 and PyTorch 2.8.0 `cpu_mkl`, resolved only from
+conda-forge, with the legacy uv descriptor and locks removed. The committed
+Windows lock SHA-256 is
+`17aaea6dd7c4fdca8d37c6898c82020c210b21458f53d22d03b2f3b3324438ab`,
+and the matching `scrollcase@0.4.11` conda audit reviews 150 packages with no
+unresolved licence. `pythonEntryPoint` stays `venv/python.exe`, catalog
+identity, asset hashes and the immutable `1.0.0-beta.1` publication metadata
+are unchanged, and a conservative 12 GiB build floor is carried until measured
+native evidence replaces the estimate. No native run has been dispatched for it
+yet, so it must not be counted as complete.
 No signing, publication or promotion occurred. Published
 scGPT `0.2.5-beta.1` and Geneformer `1.0.0-beta.1` objects remain immutable. The
 full CI substrate migration to pixi + pixi-pack +
@@ -588,7 +599,8 @@ first).
 > cutover and all three native P5.3 foundation proofs are complete. P5.4 model
 > recipe migration is in progress: all five scGPT targets plus Geneformer macOS
 > Metal and Linux CPU are v2 and natively proven; Geneformer Windows CPU is the
-> next one-target continuation.
+> one-target continuation in flight, prepared on v2 and awaiting its native
+> proof.
 > It remains one phase with
 > three operational blocks rather than a new numbered checkpoint per target.
 > Do not use the historical

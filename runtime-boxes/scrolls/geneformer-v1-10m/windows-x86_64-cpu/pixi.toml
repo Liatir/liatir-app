@@ -1,0 +1,20 @@
+# Canonical Scrollcase v2 pixi manifest — Geneformer V1 10M, Windows x86_64 / CPU.
+#
+# `platforms` must equal the target's conda subdir (win-64). conda-forge names the framework
+# `pytorch`, and its win-64 pytorch 2.8.0 build is CPU-only, which the scroll self-test asserts.
+[workspace]
+name = "geneformer-v1-10m-windows-x86_64-cpu"
+channels = ["conda-forge"]
+platforms = ["win-64"]
+
+[dependencies]
+python = "3.11.*"
+pytorch = "2.8.0.*"
+transformers = "4.44.2.*"
+anndata = "0.10.9.*"
+numpy = "1.26.4.*"
+scipy = "1.14.1.*"
+pandas = "2.2.2.*"
+h5py = "3.11.0.*"
+safetensors = "0.4.5.*"
+urllib3 = "1.26.20.*"

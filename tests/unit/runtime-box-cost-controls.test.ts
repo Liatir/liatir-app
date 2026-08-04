@@ -147,14 +147,22 @@ describe('Runtime Box CI cost controls', () => {
       {
         scrollId: 'geneformer-v1-10m-macos-arm64-metal',
         auditPath: 'runtime-boxes/legal/audits/geneformer-v1-10m-macos-arm64-metal.json',
+        pythonEntryPoint: 'venv/bin/python',
       },
       {
         scrollId: 'geneformer-v1-10m-linux-x86_64-cpu',
         auditPath: 'runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cpu.json',
+        pythonEntryPoint: 'venv/bin/python',
+      },
+      {
+        scrollId: 'geneformer-v1-10m-windows-x86_64-cpu',
+        auditPath: 'runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cpu.json',
+        // Windows conda prefixes put the interpreter at the prefix root, not under bin/.
+        pythonEntryPoint: 'venv/python.exe',
       },
     ];
 
-    for (const { scrollId, auditPath } of migrations) {
+    for (const { scrollId, auditPath, pythonEntryPoint } of migrations) {
       const authoring = authoringInput(scrollId);
       expect(authoring.kind, scrollId).toBe('scroll-v2');
       expect(authoring.document).toMatchObject({
@@ -164,6 +172,7 @@ describe('Runtime Box CI cost controls', () => {
         pixiVersion: '0.73.0',
         pythonVersion: '3.11.15',
         condaDependencyLicenseAudit: auditPath,
+        pythonEntryPoint,
       });
       expect(authoring.document).not.toHaveProperty('uvVersion');
       expect(authoring.document).not.toHaveProperty('requirementsInput');

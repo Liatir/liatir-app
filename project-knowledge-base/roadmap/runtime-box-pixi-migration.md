@@ -5,7 +5,8 @@ Last reviewed: 2026-08-04
 Status: **Phases 0–4 DONE; Phase 5 in progress.** All five scGPT targets have
 complete native v2 proof. Two Geneformer targets, macOS Metal and Linux CPU, are
 migrated to schema v2 + pixi and each has complete clean self-hosted
-native-lifecycle proof. Geneformer Windows CPU is next.
+native-lifecycle proof. Geneformer Windows CPU is **prepared on v2 and awaits
+its native proof**.
 Remaining Phase 5: complete Geneformer and UCE, then the protected releases.
 Nothing has been production-signed, published or promoted by this migration.
 
@@ -21,7 +22,8 @@ each old uv fixture was removed only after its proof. P5.4 model migration is
 in progress: all five scGPT targets have canonical v2 inputs and complete native
 proofs, and the Geneformer macOS and Linux CPU v2 inputs have each passed build,
 self-test and scientific validation plus clean native lifecycle. Geneformer
-Windows CPU, UCE and the CUDA identity decision remain. The canonical
+Windows CPU has a prepared v2 input but no native proof yet; UCE and the CUDA
+identity decision also remain. The canonical
 downstream cutover status is in
 [Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md).
 Every active Liatir Runtime Box contract and consumer now uses schema v2,
@@ -65,8 +67,9 @@ product-owned removal without a parallel v1 reader.
   clean self-hosted native-lifecycle run `30766478916` passed build, independent
   self-test, torch 2.8.0 Metal parity and Rust lifecycle. Geneformer Linux CPU
   followed with run `30872534594`, which passed the same complete lifecycle on
-  torch 2.8.0 CPU. Geneformer Windows CPU is next. UCE and the Geneformer CUDA
-  identities are not yet migrated.
+  torch 2.8.0 CPU. Geneformer Windows CPU is now a canonical v2 scroll with lock
+  `17aaea6d…` and a 150-package conda audit, prepared and awaiting its native
+  proof. UCE and the Geneformer CUDA identities are not yet migrated.
   Nothing has been production-signed, published or promoted.
 
 **Production code HAS changed** as of Phase 1/2 (`packages/liatir-core`, `scripts/runtime-box*`,
@@ -696,6 +699,32 @@ the calculated plan of `9530222601` bytes stays inside the retained 12 GiB
 floor. The runner deregistered and its marked root was removed. No production
 signing, publication, promotion or mutation of the published `1.0.0-beta.1`
 object occurred.
+
+### Phase 5 current slice — Geneformer Windows CPU (2026-08-04)
+
+`geneformer-v1-10m-windows-x86_64-cpu` is migrated locally from the legacy uv
+input to one canonical schema-v2 Scrollcase input:
+
+- `scroll.json`, `pixi.toml` and committed `pixi.lock` are the only authoring
+  files; the old `recipe.json`, `requirements.in` and `requirements.lock` are
+  removed;
+- pixi 0.73.0 resolves Python 3.11.15 and PyTorch 2.8.0 `cpu_mkl` entirely from
+  conda-forge, with no PyPI or source-build escape hatch, at lock SHA-256
+  `17aaea6dd7c4fdca8d37c6898c82020c210b21458f53d22d03b2f3b3324438ab`;
+- published `scrollcase@0.4.11` generated and rechecked the reviewed
+  150-package conda licence audit; no package has an unresolved licence;
+- the uv-era manual `array-api-compat` licence notice is dropped because
+  conda-forge ships that package with a declared licence, which the generated
+  `THIRD_PARTY_NOTICES/conda-distributions.json` now records — the self-test
+  file list follows that rename;
+- `pythonEntryPoint` stays `venv/python.exe`: a Windows conda prefix keeps the
+  interpreter at the prefix root;
+- catalog identity, asset hashes and published `1.0.0-beta.1` metadata are
+  unchanged; only the lock/audit substrate and the disk plan move;
+- a conservative 12 GiB build floor is carried until measured native evidence
+  replaces the estimate.
+
+**Native acceptance: not yet run.** This slice is prepared only.
 
 For each target: regenerate `pixi.lock` at torch 2.8.0 (conda-forge + bioconda), rebuild the
 license audit, add/flip the catalog target to `buildable`, run cheap gates → local self-hosted

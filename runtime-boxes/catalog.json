@@ -336,13 +336,13 @@
             "native-lifecycle"
           ],
           "timeoutMinutes": 90,
-          "requiredBuildDiskBytes": 6442450944,
-          "dependencyLockSha256": "b0e070dbcbf7c236db06afd086bd39dec99721221f0019ce12f9cb1affd28e7c",
-          "dependencyLicenseAudit": "runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cpu.json",
+          "requiredBuildDiskBytes": 12884901888,
+          "dependencyLockSha256": "17aaea6dd7c4fdca8d37c6898c82020c210b21458f53d22d03b2f3b3324438ab",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cpu.json",
           "diskPlan": {
-            "estimatedInstalledSizeBytes": 2147483648,
+            "estimatedInstalledSizeBytes": 3221225472,
             "estimatedArchiveSizeBytes": 1073741824,
-            "safetyMarginBytes": 2147483648
+            "safetyMarginBytes": 4294967296
           },
           "gpuRequired": false,
           "nativeCiEnabled": true,

@@ -3,7 +3,8 @@
 Last reviewed: 2026-08-04
 
 Status: **in progress — P5.2V and P5.3 complete; P5.4 block 1 complete, block 2
-in progress with Geneformer macOS Metal and Linux CPU natively proven**
+in progress with Geneformer macOS Metal and Linux CPU natively proven and
+Windows CPU prepared on v2, awaiting its native proof**
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project. The selected P5
@@ -182,7 +183,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.2 — Liatir adapter and distribution split | Complete | Real clean `keygen → lock → build → verify --self-test` cycle through the stable Liatir command; namespace, archive hash and receipts checked |
 | P5.2V — Scrollcase v2-only cutover | Complete | Exact `scrollcase@0.4.11`; active contracts and consumers use v2; v1 is explicitly unsupported; clean local v2 proof green |
 | P5.3 — v2 foundation-fixture migration | Complete | Three reviewed v2 scrolls/locks/audits; macOS, Linux and Windows native proofs green; every foundation uv fixture removed only after its matching proof |
-| P5.4 — model-recipe migration | In progress | All five scGPT inputs are v2 and natively proven; Geneformer macOS Metal and Linux CPU are proven; Geneformer Windows CPU, UCE and the CUDA identity decision remain |
+| P5.4 — model-recipe migration | In progress | All five scGPT inputs are v2 and natively proven; Geneformer macOS Metal and Linux CPU are proven; Geneformer Windows CPU is prepared on v2 and awaits its native proof; UCE and the CUDA identity decision remain |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
 | P5.6 — local/native closure | Pending | Full cheap gate plus one reviewed non-production product lifecycle |
 | P5.7 — documentation handoff | Pending | Status, inventories and operator docs match the implemented boundary |
@@ -1149,6 +1150,35 @@ self-hosted inventory is empty. This target is complete; the next one-target
 continuation is `geneformer-v1-10m-windows-x86_64-cpu`. No production signing,
 publication, promotion or mutation of the published `1.0.0-beta.1` objects
 occurred.
+
+**Block 2 third-target preparation — prepared, awaits native proof.**
+`geneformer-v1-10m-windows-x86_64-cpu` is now a canonical schema-v2 scroll
+backed by pixi 0.73.0. The legacy uv `recipe.json`, `requirements.in` and
+`requirements.lock` are removed. The committed conda-forge-only lock resolves
+Python 3.11.15 and PyTorch 2.8.0 `cpu_mkl` with SHA-256
+`17aaea6dd7c4fdca8d37c6898c82020c210b21458f53d22d03b2f3b3324438ab`;
+`pixi lock --check` reports it already up to date, and it contains no PyPI or
+source-build entry. Published `scrollcase@0.4.11` generated the reviewed
+150-package conda licence audit with `audit --write` and then rematched it
+without `--write`; every package carries a declared licence. The uv-era manual
+`array-api-compat` licence notice is translated away because conda-forge ships
+that package with its own declared licence, recorded in the generated
+`THIRD_PARTY_NOTICES/conda-distributions.json` that the self-test now requires
+in place of `python-distributions.json`. `pythonEntryPoint` remains
+`venv/python.exe`, and `boxId`, `modelId`, `runtimeId`, version
+`1.0.0-beta.1`, source revision, compatibility, asset URLs, sizes and SHA-256
+values are preserved byte-for-byte. The catalog target keeps its `published`
+status and immutable publication metadata; only `dependencyLockSha256`, the
+move from `dependencyLicenseAudit` to `condaDependencyLicenseAudit` and the
+disk plan change, with a conservative 12 GiB build floor retained until measured
+evidence replaces the estimate. The Geneformer caller workflow now watches the
+v2 directory. Local gates green: frozen lock check, audit write/recheck,
+`runtime-box:catalog:check`, the focused Runtime Box catalog/cost-control/conda
+licence/target-identity/adapter suites, full `test:verify`, the internal docs
+build and `git diff --check`.
+
+**No native proof exists for this target yet.** It must not be counted as
+complete until a self-hosted `native-lifecycle` run passes.
 
 The scGPT conversion proves schema-v2 authoring without also changing the pixi
 substrate. The lighter CPU/Metal Geneformer targets then establish the uv-to-pixi
