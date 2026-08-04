@@ -1,12 +1,11 @@
 # Runtime Box CI migration → pixi + pixi-pack + conda-forge (self-hosted GHA)
 
-Last reviewed: 2026-08-02
+Last reviewed: 2026-08-04
 
 Status: **Phases 0–4 DONE; Phase 5 in progress.** All five scGPT targets have
-complete native v2 proof. The first Geneformer target, macOS Metal, has been
-migrated to schema v2 + pixi and has complete clean self-hosted native-lifecycle
-proof. Geneformer Linux CPU is prepared on v2 and awaits its matching native
-self-hosted proof.
+complete native v2 proof. Two Geneformer targets, macOS Metal and Linux CPU, are
+migrated to schema v2 + pixi and each has complete clean self-hosted
+native-lifecycle proof. Geneformer Windows CPU is next.
 Remaining Phase 5: complete Geneformer and UCE, then the protected releases.
 Nothing has been production-signed, published or promoted by this migration.
 
@@ -20,10 +19,9 @@ P5.3 is complete: the macOS, Linux and Windows foundation fixtures all passed
 their matching native v2 proofs, their measured disk plans are catalogued, and
 each old uv fixture was removed only after its proof. P5.4 model migration is
 in progress: all five scGPT targets have canonical v2 inputs and complete native
-proofs, and the Geneformer macOS v2 input has passed local build, self-test and
-scientific validation plus clean native lifecycle. Geneformer Linux CPU has a
-canonical v2 input, exact lock and reviewed conda audit, but still awaits native
-acceptance; later targets remain. The canonical
+proofs, and the Geneformer macOS and Linux CPU v2 inputs have each passed build,
+self-test and scientific validation plus clean native lifecycle. Geneformer
+Windows CPU, UCE and the CUDA identity decision remain. The canonical
 downstream cutover status is in
 [Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md).
 Every active Liatir Runtime Box contract and consumer now uses schema v2,
@@ -66,7 +64,9 @@ product-owned removal without a parallel v1 reader.
   schema-v2 scroll with lock `3e9841b2…` and a 161-package conda audit. Its
   clean self-hosted native-lifecycle run `30766478916` passed build, independent
   self-test, torch 2.8.0 Metal parity and Rust lifecycle. Geneformer Linux CPU
-  is next. UCE and the other Geneformer targets are not yet migrated.
+  followed with run `30872534594`, which passed the same complete lifecycle on
+  torch 2.8.0 CPU. Geneformer Windows CPU is next. UCE and the Geneformer CUDA
+  identities are not yet migrated.
   Nothing has been production-signed, published or promoted.
 
 **Production code HAS changed** as of Phase 1/2 (`packages/liatir-core`, `scripts/runtime-box*`,
@@ -660,7 +660,7 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 >   lists all three scGPT targets, but committing it does not deploy it — `runtime-box:signer:deploy`
 >   must run first. See the model-platform-expansion plan for the full diagnosis.
 
-### Phase 5 current slice — Geneformer Linux CPU preparation (2026-08-02)
+### Phase 5 current slice — Geneformer Linux CPU (2026-08-02 → 2026-08-04)
 
 `geneformer-v1-10m-linux-x86_64-cpu` is migrated locally from the legacy uv
 input to one canonical schema-v2 Scrollcase input:
@@ -674,18 +674,28 @@ input to one canonical schema-v2 Scrollcase input:
 - published `scrollcase@0.4.11` generated and rechecked the reviewed
   171-package conda licence audit; no package has an unresolved licence;
 - catalog identity, asset hashes and published metadata remain unchanged;
-  only the dependency lock/audit substrate and a conservative 12 GiB build
-  disk floor change;
+  only the dependency lock/audit substrate, the measured disk plan and a
+  conservative 12 GiB build disk floor change;
 - the Geneformer caller watches the v2 directory and its Linux conda audit,
   while the native job remains routed to `liatir-linux-selfhosted`;
 - frozen-lock check, Scrollcase audit agreement, catalog validation and 60
   focused Runtime Box contract tests pass after one diagnosed test-only retry.
 
-This records preparation, not acceptance. A clean build, real Geneformer CPU
-scientific validation and Rust install/activate/rollback/removal lifecycle must
-still pass on one matching ephemeral Linux self-hosted runner before this target
-is complete. No production signing, publication, promotion or mutation of the
-published `1.0.0-beta.1` object occurred.
+**Native acceptance (2026-08-04).** Run `30872534594` passed the complete
+lifecycle at clean commit `6a26a35` on ephemeral self-hosted runner
+`liatir-linux-selfhosted-1785811312-359`: frozen-lock build (`551716a8…`
+reproduced), local signing, archive verification, self-test, real CPU scientific
+validation and the Rust install/activate/rollback/removal suite. Archive SHA-256
+`ead3546f…`, archive `1232703132` bytes, installed `3959042677` bytes, build
+`310019` ms, Python 3.11.15 on PyTorch 2.8.0 CPU. The 4-cell by 128-gene fixture
+gave finite `[4, 256]` embeddings at maximum absolute difference
+`8.67992639541626e-7` and minimum cosine similarity `0.9999999403953552`. Peak
+additional runner disk was `6244888576` bytes, so the catalog `diskPlan` now
+carries the measured installed/archive sizes instead of the earlier estimates;
+the calculated plan of `9530222601` bytes stays inside the retained 12 GiB
+floor. The runner deregistered and its marked root was removed. No production
+signing, publication, promotion or mutation of the published `1.0.0-beta.1`
+object occurred.
 
 For each target: regenerate `pixi.lock` at torch 2.8.0 (conda-forge + bioconda), rebuild the
 license audit, add/flip the catalog target to `buildable`, run cheap gates → local self-hosted
