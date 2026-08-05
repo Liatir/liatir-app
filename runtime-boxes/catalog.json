@@ -233,90 +233,6 @@
           }
         },
         {
-          "targetId": "linux-x86_64-cpu",
-          "target": {
-            "platform": "linux",
-            "arch": "x86_64",
-            "accelerator": "cpu"
-          },
-          "hostEnvironments": [
-            "native"
-          ],
-          "recipeId": "geneformer-v1-10m-linux-x86_64-cpu",
-          "runnerProfileId": "linux-x64-selfhosted",
-          "status": "published",
-          "validationModes": [
-            "build",
-            "scientific",
-            "native-lifecycle"
-          ],
-          "timeoutMinutes": 90,
-          "requiredBuildDiskBytes": 12884901888,
-          "dependencyLockSha256": "551716a80946450c076c9c0184458b5a29da855117b13a9da98129f4a19e16b4",
-          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cpu.json",
-          "diskPlan": {
-            "estimatedInstalledSizeBytes": 3959042677,
-            "estimatedArchiveSizeBytes": 1232703132,
-            "safetyMarginBytes": 4294967296
-          },
-          "gpuRequired": false,
-          "nativeCiEnabled": true,
-          "publication": {
-            "source": "github-actions",
-            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/geneformer-v1-10m/1.0.0-beta.1/linux-x86_64-cpu/9356339be26eb6fdf411bd8141169a34ce852710461c9d9af0859c802962a397.release.json",
-            "archiveSha256": "a95a1a403bff74cf2af6c1b3f96cecace1201364ff94eec621ca90b80bf5a95b",
-            "archiveSizeBytes": 380481131,
-            "installedSizeBytes": 1211538007,
-            "signingKeyId": "liatir-runtime-box-kms-2026",
-            "publishedAt": "2026-07-17T01:46:51.123Z",
-            "workflowRunId": "29547725429",
-            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/29547725429",
-            "evidenceRecord": "runtime-boxes/evidence/geneformer-v1-10m-linux-x86_64-cpu-1.0.0-beta.1.json"
-          }
-        },
-        {
-          "targetId": "windows-x86_64-cpu",
-          "target": {
-            "platform": "windows",
-            "arch": "x86_64",
-            "accelerator": "cpu"
-          },
-          "hostEnvironments": [
-            "native"
-          ],
-          "recipeId": "geneformer-v1-10m-windows-x86_64-cpu",
-          "runnerProfileId": "windows-x64-selfhosted",
-          "status": "published",
-          "validationModes": [
-            "build",
-            "scientific",
-            "native-lifecycle"
-          ],
-          "timeoutMinutes": 90,
-          "requiredBuildDiskBytes": 8589934592,
-          "dependencyLockSha256": "17aaea6dd7c4fdca8d37c6898c82020c210b21458f53d22d03b2f3b3324438ab",
-          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cpu.json",
-          "diskPlan": {
-            "estimatedInstalledSizeBytes": 1824134154,
-            "estimatedArchiveSizeBytes": 493253025,
-            "safetyMarginBytes": 4294967296
-          },
-          "gpuRequired": false,
-          "nativeCiEnabled": true,
-          "publication": {
-            "source": "github-actions",
-            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/geneformer-v1-10m/1.0.0-beta.1/windows-x86_64-cpu/8c32ae2a48fdd1d29800a24e625e6ee943cd2c604441ebf9b301fd900f3b7af1.release.json",
-            "archiveSha256": "3283b7a05d3dcbb44802c6c5a7293dceb9768f13977a5d3fe78984e723c90db4",
-            "archiveSizeBytes": 367763748,
-            "installedSizeBytes": 1574254513,
-            "signingKeyId": "liatir-runtime-box-kms-2026",
-            "publishedAt": "2026-07-19T23:10:39.873Z",
-            "workflowRunId": "29706828552",
-            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/29706828552",
-            "evidenceRecord": "runtime-boxes/evidence/geneformer-v1-10m-windows-x86_64-cpu-1.0.0-beta.1.json"
-          }
-        },
-        {
           "targetId": "linux-x86_64-cuda12.9",
           "target": {
             "platform": "linux",
@@ -346,6 +262,38 @@
           },
           "gpuRequired": true,
           "nativeCiEnabled": true
+        },
+        {
+          "targetId": "windows-x86_64-cuda12.8",
+          "target": {
+            "platform": "windows",
+            "arch": "x86_64",
+            "accelerator": "cuda",
+            "cudaVersion": "12.8"
+          },
+          "hostEnvironments": [
+            "native"
+          ],
+          "recipeId": "geneformer-v1-10m-windows-x86_64-cuda12.8",
+          "runnerProfileId": "windows-x64-cuda-selfhosted",
+          "status": "buildable",
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
+          "timeoutMinutes": 120,
+          "requiredBuildDiskBytes": 25769803776,
+          "dependencyLockSha256": "ce2e51ed2985b58607f84082ae7362811b9adc613b4d311e171f5fb06b92b5ec",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cuda12.8.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 12000000000,
+            "estimatedArchiveSizeBytes": 5000000000,
+            "safetyMarginBytes": 3221225472
+          },
+          "gpuRequired": true,
+          "nativeCiEnabled": false,
+          "linuxValidationPrerequisiteTargetId": "linux-x86_64-cuda12.9"
         }
       ]
     },

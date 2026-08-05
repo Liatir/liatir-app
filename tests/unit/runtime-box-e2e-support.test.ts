@@ -142,12 +142,12 @@ describe('Runtime Box product E2E support', () => {
 
   it('derives the Windows CPU candidate from the checked catalog and recipe', () => {
     expect(runtimeBoxTargetForNativeTest(
-      'ctheodoris-geneformer-v1-10m',
+      'bowang-scgpt-whole-human',
       'windows-x86_64-cpu',
     )).toEqual([{
       target: { platform: 'windows', arch: 'x86_64', accelerator: 'cpu' },
       hostEnvironments: ['native'],
-      minRamGb: 8,
+      minRamGb: 16,
     }]);
   });
 

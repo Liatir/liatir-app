@@ -1,15 +1,9 @@
 {
   "schemaVersion": 2,
   "kind": "scrollcase.box.dependency-license-audit",
-  "targetId": "linux-x86_64-cpu",
-  "dependencyLockSha256": "551716a80946450c076c9c0184458b5a29da855117b13a9da98129f4a19e16b4",
+  "targetId": "windows-x86_64-cuda12.8",
+  "dependencyLockSha256": "ce2e51ed2985b58607f84082ae7362811b9adc613b4d311e171f5fb06b92b5ec",
   "packages": [
-    {
-      "name": "_openmp_mutex",
-      "version": "4.5",
-      "declaredLicense": "BSD-3-Clause",
-      "source": "conda"
-    },
     {
       "name": "_python_abi3_support",
       "version": "1.0",
@@ -209,9 +203,51 @@
       "source": "conda"
     },
     {
+      "name": "colorama",
+      "version": "0.4.6",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
       "name": "cpython",
       "version": "3.11.15",
       "declaredLicense": "Python-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "cuda-cudart",
+      "version": "12.8.90",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "cuda-cudart_win-64",
+      "version": "12.8.90",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "cuda-cupti",
+      "version": "12.8.90",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "cuda-nvrtc",
+      "version": "12.8.93",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "cuda-version",
+      "version": "12.8",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "cudnn",
+      "version": "9.10.2.21",
+      "declaredLicense": "LicenseRef-cuDNN-Software-License-Agreement",
       "source": "conda"
     },
     {
@@ -248,30 +284,6 @@
       "name": "fsspec",
       "version": "2026.7.0",
       "declaredLicense": "BSD-3-Clause",
-      "source": "conda"
-    },
-    {
-      "name": "gflags",
-      "version": "2.3.1",
-      "declaredLicense": "BSD-3-Clause",
-      "source": "conda"
-    },
-    {
-      "name": "glog",
-      "version": "0.7.1",
-      "declaredLicense": "BSD-3-Clause",
-      "source": "conda"
-    },
-    {
-      "name": "gmp",
-      "version": "6.3.0",
-      "declaredLicense": "GPL-2.0-or-later OR LGPL-3.0-or-later",
-      "source": "conda"
-    },
-    {
-      "name": "gmpy2",
-      "version": "2.3.0",
-      "declaredLicense": "LGPL-3.0-or-later",
       "source": "conda"
     },
     {
@@ -323,21 +335,9 @@
       "source": "conda"
     },
     {
-      "name": "keyutils",
-      "version": "1.6.3",
-      "declaredLicense": "LGPL-2.1-or-later",
-      "source": "conda"
-    },
-    {
       "name": "krb5",
       "version": "1.22.2",
       "declaredLicense": "MIT",
-      "source": "conda"
-    },
-    {
-      "name": "ld_impl_linux-64",
-      "version": "2.46.1",
-      "declaredLicense": "GPL-3.0-only",
       "source": "conda"
     },
     {
@@ -419,21 +419,57 @@
       "source": "conda"
     },
     {
+      "name": "libcublas",
+      "version": "12.8.5.5",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "libcudnn",
+      "version": "9.10.2.21",
+      "declaredLicense": "LicenseRef-cuDNN-Software-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "libcudnn-dev",
+      "version": "9.10.2.21",
+      "declaredLicense": "LicenseRef-cuDNN-Software-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "libcudss",
+      "version": "0.7.1.4",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "libcufft",
+      "version": "11.3.3.83",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "libcurand",
+      "version": "10.3.9.90",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
       "name": "libcurl",
       "version": "8.21.0",
       "declaredLicense": "curl",
       "source": "conda"
     },
     {
-      "name": "libedit",
-      "version": "3.1.20250104",
-      "declaredLicense": "BSD-2-Clause",
+      "name": "libcusolver",
+      "version": "11.7.3.90",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
       "source": "conda"
     },
     {
-      "name": "libev",
-      "version": "4.33",
-      "declaredLicense": "BSD-2-Clause",
+      "name": "libcusparse",
+      "version": "12.5.8.93",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
       "source": "conda"
     },
     {
@@ -452,30 +488,6 @@
       "name": "libffi",
       "version": "3.5.2",
       "declaredLicense": "MIT",
-      "source": "conda"
-    },
-    {
-      "name": "libgcc",
-      "version": "16.1.0",
-      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
-      "source": "conda"
-    },
-    {
-      "name": "libgcc-ng",
-      "version": "16.1.0",
-      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
-      "source": "conda"
-    },
-    {
-      "name": "libgfortran",
-      "version": "16.1.0",
-      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
-      "source": "conda"
-    },
-    {
-      "name": "libgfortran5",
-      "version": "16.1.0",
-      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
       "source": "conda"
     },
     {
@@ -521,27 +533,15 @@
       "source": "conda"
     },
     {
-      "name": "libnghttp2",
-      "version": "1.68.1",
-      "declaredLicense": "MIT",
+      "name": "libmagma",
+      "version": "2.9.0",
+      "declaredLicense": "BSD-3-Clause",
       "source": "conda"
     },
     {
-      "name": "libnsl",
-      "version": "2.0.1",
-      "declaredLicense": "LGPL-2.1-only",
-      "source": "conda"
-    },
-    {
-      "name": "libopentelemetry-cpp",
-      "version": "1.21.0",
-      "declaredLicense": "Apache-2.0",
-      "source": "conda"
-    },
-    {
-      "name": "libopentelemetry-cpp-headers",
-      "version": "1.21.0",
-      "declaredLicense": "Apache-2.0",
+      "name": "libnvjitlink",
+      "version": "12.9.86",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
       "source": "conda"
     },
     {
@@ -581,18 +581,6 @@
       "source": "conda"
     },
     {
-      "name": "libstdcxx",
-      "version": "16.1.0",
-      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
-      "source": "conda"
-    },
-    {
-      "name": "libstdcxx-ng",
-      "version": "16.1.0",
-      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
-      "source": "conda"
-    },
-    {
       "name": "libthrift",
       "version": "0.22.0",
       "declaredLicense": "Apache-2.0",
@@ -611,21 +599,15 @@
       "source": "conda"
     },
     {
-      "name": "libuuid",
-      "version": "2.42.2",
-      "declaredLicense": "BSD-3-Clause",
-      "source": "conda"
-    },
-    {
       "name": "libuv",
       "version": "1.52.1",
       "declaredLicense": "MIT",
       "source": "conda"
     },
     {
-      "name": "libxcrypt",
-      "version": "4.4.36",
-      "declaredLicense": "LGPL-2.1-or-later",
+      "name": "libwinpthread",
+      "version": "12.0.0.r4.gg4f2fc60ca",
+      "declaredLicense": "MIT AND BSD-3-Clause-Clear",
       "source": "conda"
     },
     {
@@ -671,18 +653,6 @@
       "source": "conda"
     },
     {
-      "name": "mpc",
-      "version": "1.4.0",
-      "declaredLicense": "LGPL-3.0-or-later",
-      "source": "conda"
-    },
-    {
-      "name": "mpfr",
-      "version": "4.2.2",
-      "declaredLicense": "LGPL-3.0-only",
-      "source": "conda"
-    },
-    {
       "name": "mpmath",
       "version": "1.4.1",
       "declaredLicense": "BSD-3-Clause",
@@ -707,21 +677,9 @@
       "source": "conda"
     },
     {
-      "name": "ncurses",
-      "version": "6.6",
-      "declaredLicense": "X11 AND BSD-3-Clause",
-      "source": "conda"
-    },
-    {
       "name": "networkx",
       "version": "3.6.1",
       "declaredLicense": "BSD-3-Clause",
-      "source": "conda"
-    },
-    {
-      "name": "nlohmann_json",
-      "version": "3.12.0",
-      "declaredLicense": "MIT",
       "source": "conda"
     },
     {
@@ -756,7 +714,7 @@
     },
     {
       "name": "packaging",
-      "version": "26.2",
+      "version": "26.3",
       "declaredLicense": "Apache-2.0",
       "source": "conda"
     },
@@ -764,12 +722,6 @@
       "name": "pandas",
       "version": "2.2.2",
       "declaredLicense": "BSD-3-Clause",
-      "source": "conda"
-    },
-    {
-      "name": "prometheus-cpp",
-      "version": "1.3.0",
-      "declaredLicense": "MIT",
       "source": "conda"
     },
     {
@@ -875,12 +827,6 @@
       "source": "conda"
     },
     {
-      "name": "readline",
-      "version": "8.3",
-      "declaredLicense": "GPL-3.0-only",
-      "source": "conda"
-    },
-    {
       "name": "regex",
       "version": "2026.7.19",
       "declaredLicense": "Apache-2.0 AND CNRI-Python",
@@ -889,12 +835,6 @@
     {
       "name": "requests",
       "version": "2.34.2",
-      "declaredLicense": "Apache-2.0",
-      "source": "conda"
-    },
-    {
-      "name": "s2n",
-      "version": "1.6.2",
       "declaredLicense": "Apache-2.0",
       "source": "conda"
     },
@@ -989,9 +929,45 @@
       "source": "conda"
     },
     {
+      "name": "ucrt",
+      "version": "10.0.26100.0",
+      "declaredLicense": "LicenseRef-MicrosoftWindowsSDK10",
+      "source": "conda"
+    },
+    {
       "name": "urllib3",
       "version": "1.26.20",
       "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "vc",
+      "version": "14.5",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "vc14_runtime",
+      "version": "14.51.36247",
+      "declaredLicense": "LicenseRef-MicrosoftVisualCpp2015-2022Runtime",
+      "source": "conda"
+    },
+    {
+      "name": "vcomp14",
+      "version": "14.51.36247",
+      "declaredLicense": "LicenseRef-MicrosoftVisualCpp2015-2022Runtime",
+      "source": "conda"
+    },
+    {
+      "name": "vs2015_runtime",
+      "version": "14.51.36247",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "win_inet_pton",
+      "version": "1.1.0",
+      "declaredLicense": "LicenseRef-Public-Domain",
       "source": "conda"
     },
     {
@@ -1016,12 +992,6 @@
       "name": "zipp",
       "version": "4.1.0",
       "declaredLicense": "MIT",
-      "source": "conda"
-    },
-    {
-      "name": "zlib",
-      "version": "1.3.2",
-      "declaredLicense": "Zlib",
       "source": "conda"
     },
     {

@@ -4,12 +4,10 @@ on:
   pull_request:
     paths:
       - "runtime-boxes/scrolls/geneformer-v1-10m/macos-aarch64-metal/**"
-      - "runtime-boxes/scrolls/geneformer-v1-10m/linux-x86_64-cpu/**"
-      - "runtime-boxes/scrolls/geneformer-v1-10m/windows-x86_64-cpu/**"
+      - "runtime-boxes/scrolls/geneformer-v1-10m/windows-x86_64-cuda12.8/**"
       - "runtime-boxes/scrolls/geneformer-v1-10m/linux-x86_64-cuda12.9/**"
       - "runtime-boxes/legal/audits/geneformer-v1-10m-macos-arm64-metal.json"
-      - "runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cpu.json"
-      - "runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cpu.json"
+      - "runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cuda12.8.json"
       - "runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cuda12.9.json"
       - "runtime-boxes/legal/geneformer-v1-10m.md"
       - "scripts/validate-geneformer-parity.mjs"
@@ -24,12 +22,10 @@ on:
     branches: [main]
     paths:
       - "runtime-boxes/scrolls/geneformer-v1-10m/macos-aarch64-metal/**"
-      - "runtime-boxes/scrolls/geneformer-v1-10m/linux-x86_64-cpu/**"
-      - "runtime-boxes/scrolls/geneformer-v1-10m/windows-x86_64-cpu/**"
+      - "runtime-boxes/scrolls/geneformer-v1-10m/windows-x86_64-cuda12.8/**"
       - "runtime-boxes/scrolls/geneformer-v1-10m/linux-x86_64-cuda12.9/**"
       - "runtime-boxes/legal/audits/geneformer-v1-10m-macos-arm64-metal.json"
-      - "runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cpu.json"
-      - "runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cpu.json"
+      - "runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cuda12.8.json"
       - "runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cuda12.9.json"
       - "runtime-boxes/legal/geneformer-v1-10m.md"
       - "scripts/validate-geneformer-parity.mjs"
@@ -46,7 +42,7 @@ on:
         description: Checked Runtime Box target
         required: true
         type: choice
-        options: [macos-aarch64-metal, linux-x86_64-cpu, windows-x86_64-cpu, linux-x86_64-cuda12.9]
+        options: [macos-aarch64-metal, linux-x86_64-cuda12.9, windows-x86_64-cuda12.8]
       mode:
         description: Native validation depth
         required: true

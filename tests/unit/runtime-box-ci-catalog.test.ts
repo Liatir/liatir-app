@@ -88,15 +88,14 @@ describe('Runtime Box CI catalog', () => {
   it('derives the Linux CPU recipe and runner only from the checked model and target', () => {
     const resolved = resolveCiTarget(
       catalog,
-      'ctheodoris-geneformer-v1-10m',
+      'bowang-scgpt-whole-human',
       undefined,
       'linux-x86_64-cpu',
       'native-lifecycle',
     );
     expect(resolved.target).toMatchObject({
-      recipeId: 'geneformer-v1-10m-linux-x86_64-cpu',
-      status: 'published',
-      condaDependencyLicenseAudit: 'runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cpu.json',
+      recipeId: 'scgpt-whole-human-linux-x86_64-cpu',
+      condaDependencyLicenseAudit: 'runtime-boxes/legal/audits/scgpt-whole-human-linux-x86_64-cpu.json',
     });
     expect(resolved.runner).toMatchObject({ runsOn: 'liatir-linux-selfhosted', gpu: false });
   });
@@ -131,16 +130,14 @@ describe('Runtime Box CI catalog', () => {
   it('derives the Windows CPU recipe and self-hosted runner from checked catalog state', () => {
     const resolved = resolveCiTarget(
       catalog,
-      'ctheodoris-geneformer-v1-10m',
+      'bowang-scgpt-whole-human',
       undefined,
       'windows-x86_64-cpu',
       'native-lifecycle',
     );
     expect(resolved.target).toMatchObject({
-      recipeId: 'geneformer-v1-10m-windows-x86_64-cpu',
-      status: 'published',
-      dependencyLockSha256: '17aaea6dd7c4fdca8d37c6898c82020c210b21458f53d22d03b2f3b3324438ab',
-      condaDependencyLicenseAudit: 'runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cpu.json',
+      recipeId: 'scgpt-whole-human-windows-x86_64-cpu',
+      condaDependencyLicenseAudit: 'runtime-boxes/legal/audits/scgpt-whole-human-windows-x86_64-cpu.json',
     });
     expect(resolved.runner).toMatchObject({ runsOn: 'liatir-windows-selfhosted', gpu: false });
   });

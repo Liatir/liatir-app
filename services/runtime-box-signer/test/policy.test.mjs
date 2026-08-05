@@ -127,14 +127,15 @@ test('accepts Linux payload metadata for native and WSL2 hosts', () => {
   }));
 });
 
-test('accepts the approved native Windows CPU payload', () => {
-  const targetId = 'windows-x86_64-cpu';
+test('accepts the approved native Windows CUDA payload', () => {
+  const targetId = 'windows-x86_64-cuda12.8';
   assert.doesNotThrow(() => validateSigningPayload(policy, {
     ...release,
-    target: { platform: 'windows', arch: 'x86_64', accelerator: 'cpu' },
+    target: { platform: 'windows', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.8' },
     compatibility: {
       minLiatirVersion: '0.2.1',
-      minRamGb: 8,
+      minRamGb: 16,
+      minNvidiaDriverVersion: '527.41',
       hostEnvironments: ['native'],
     },
     archive: {
@@ -144,7 +145,7 @@ test('accepts the approved native Windows CPU payload', () => {
     pythonEntryPoint: 'venv/python.exe',
     provenance: {
       ...release.provenance,
-      scrollId: 'geneformer-v1-10m-windows-x86_64-cpu',
+      scrollId: 'geneformer-v1-10m-windows-x86_64-cuda12.8',
     },
   }));
 });

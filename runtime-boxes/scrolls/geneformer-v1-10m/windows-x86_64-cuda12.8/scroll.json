@@ -1,7 +1,7 @@
 {
   "$schema": "https://scrollcase.dev/schema/v2/scroll.schema.json",
   "schemaVersion": 2,
-  "scrollId": "geneformer-v1-10m-linux-x86_64-cpu",
+  "scrollId": "geneformer-v1-10m-windows-x86_64-cuda12.8",
   "scrollVersion": "1.0.0",
   "boxId": "geneformer-v1-10m",
   "modelId": "ctheodoris-geneformer-v1-10m",
@@ -9,18 +9,20 @@
   "version": "1.0.0-beta.1",
   "sourceRevision": "04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5",
   "target": {
-    "platform": "linux",
+    "platform": "windows",
     "arch": "x86_64",
-    "accelerator": "cpu"
+    "accelerator": "cuda",
+    "cudaVersion": "12.8"
   },
   "compatibility": {
     "minLiatirVersion": "0.2.1",
-    "minRamGb": 8
+    "minRamGb": 16,
+    "minNvidiaDriverVersion": "527.41"
   },
   "pythonVersion": "3.11.15",
   "pixiVersion": "0.73.0",
-  "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cpu.json",
-  "pythonEntryPoint": "venv/bin/python",
+  "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cuda12.8.json",
+  "pythonEntryPoint": "venv/python.exe",
   "modelCacheSubdir": "model-cache/geneformer-v1-10m",
   "assetBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
   "assets": [
@@ -68,7 +70,16 @@
     }
   ],
   "selfTest": {
-    "imports": ["torch", "transformers", "anndata", "numpy", "scipy", "pandas", "h5py", "safetensors"],
+    "imports": [
+      "torch",
+      "transformers",
+      "anndata",
+      "numpy",
+      "scipy",
+      "pandas",
+      "h5py",
+      "safetensors"
+    ],
     "files": [
       "licenses/Apache-2.0.txt",
       "THIRD_PARTY_NOTICES/Geneformer-V1-10M.txt",
@@ -79,6 +90,6 @@
       "model-cache/geneformer-v1-10m/dictionaries/gene_median_dictionary_gc30M.pkl",
       "model-cache/geneformer-v1-10m/dictionaries/ensembl_mapping_dict_gc30M.pkl"
     ],
-    "pythonCode": "assert torch.version.cuda is None\nassert not torch.cuda.is_available()"
+    "pythonCode": "assert torch.version.cuda is not None\nassert torch.version.cuda.startswith('12.8')"
   }
 }

@@ -150,13 +150,13 @@ describe('Runtime Box CI cost controls', () => {
         pythonEntryPoint: 'venv/bin/python',
       },
       {
-        scrollId: 'geneformer-v1-10m-linux-x86_64-cpu',
-        auditPath: 'runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cpu.json',
+        scrollId: 'geneformer-v1-10m-linux-x86_64-cuda12.9',
+        auditPath: 'runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cuda12.9.json',
         pythonEntryPoint: 'venv/bin/python',
       },
       {
-        scrollId: 'geneformer-v1-10m-windows-x86_64-cpu',
-        auditPath: 'runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cpu.json',
+        scrollId: 'geneformer-v1-10m-windows-x86_64-cuda12.8',
+        auditPath: 'runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cuda12.8.json',
         // Windows conda prefixes put the interpreter at the prefix root, not under bin/.
         pythonEntryPoint: 'venv/python.exe',
       },
@@ -226,8 +226,8 @@ describe('Runtime Box CI cost controls', () => {
 
   it('rejects reviewed Python-license audit drift before a native build', () => {
     const changed = structuredClone(catalog);
-    const cpu = changed.models[0].targets.find((target) => target.targetId === 'linux-x86_64-cpu');
-    cpu.condaDependencyLicenseAudit = 'runtime-boxes/legal/audits/missing.json';
+    const target = changed.models[0].targets[0];
+    target.condaDependencyLicenseAudit = 'runtime-boxes/legal/audits/missing.json';
     expect(() => validateRuntimeBoxCiCatalog(changed, { requireWorkflows: false }))
       .toThrow(/recipe and catalog conda license audits differ|missing conda dependency license audit/);
   });

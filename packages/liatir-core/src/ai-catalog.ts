@@ -59,16 +59,6 @@ function publishedMacosArm64MetalTarget(
 function publishedGeneformerTargets(): readonly LiatirRuntimeBoxTargetCandidate[] {
 	return [
 		...publishedMacosArm64MetalTarget(8),
-		{
-			target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
-			hostEnvironments: ['native'],
-			minRamGb: 8
-		},
-		{
-			target: { platform: 'windows', arch: 'x86_64', accelerator: 'cpu' },
-			hostEnvironments: ['native'],
-			minRamGb: 8
-		}
 	];
 }
 
@@ -162,14 +152,14 @@ export const RUNTIME_BOX_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			verifiedAt: '2026-07-11'
 		},
 		hardware: {
-			cpu: true,
+			cpu: false,
 			gpu: true,
 			minRamGb: 8,
 			recommendedRamGb: 16,
-			minVramGb: 0,
+			minVramGb: 8,
 			recommendedVramGb: 8,
 			notes:
-				'V1 10M can run on CPU for small datasets. CUDA or Apple Metal is preferred for larger cell batches.'
+				'Needs Apple Metal or an NVIDIA GPU. Measured CPU throughput is about 160 ms per cell, so a 10,000-cell study would take around 27 minutes and a 50,000-cell one over two hours; no CPU Runtime Box is shipped.'
 		},
 		install: {
 			method: 'runtime-box',
@@ -184,10 +174,10 @@ export const RUNTIME_BOX_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			},
 			runtimePackages: GENEFORMER_V1_10M_RUNTIME_PACKAGES,
 			hostRequirements: {
-				os: ['macos', 'linux', 'windows'],
-				arch: ['aarch64', 'x86_64'],
+				os: ['macos'],
+				arch: ['aarch64'],
 				reason:
-					'Signed Geneformer Runtime Boxes are available for Apple silicon Macs, native Linux x86_64 hosts, and native Windows x86_64 CPU hosts.'
+					'The current signed Geneformer Runtime Box is built for Apple silicon Macs. The Linux and Windows NVIDIA targets are built but not yet published.'
 			}
 		},
 		documentation: {

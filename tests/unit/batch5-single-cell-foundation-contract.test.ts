@@ -23,19 +23,9 @@ const publishedMacosArm64MetalTargets = (minRamGb: number) => [{
   hostEnvironments: ['native'],
   minRamGb,
 }];
-const publishedGeneformerTargets = () => [
-  ...publishedMacosArm64MetalTargets(8),
-  {
-    target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
-    hostEnvironments: ['native'],
-    minRamGb: 8,
-  },
-  {
-    target: { platform: 'windows', arch: 'x86_64', accelerator: 'cpu' },
-    hostEnvironments: ['native'],
-    minRamGb: 8,
-  },
-];
+// Geneformer ships no CPU box: measured CPU throughput is ~160 ms per cell. Only the
+// Apple silicon Metal target is published; the NVIDIA successors are built, not published.
+const publishedGeneformerTargets = () => [...publishedMacosArm64MetalTargets(8)];
 
 installSvelteRuneStubs();
 
@@ -82,9 +72,11 @@ describe('Batch 5 single-cell foundation model contract', () => {
       expect(file.url).toContain(model?.install?.revision);
     }
     expect(model?.install?.hostRequirements).toMatchObject({
-      os: ['macos', 'linux', 'windows'],
-      arch: ['aarch64', 'x86_64'],
+      os: ['macos'],
+      arch: ['aarch64'],
     });
+    // No CPU box ships for this model, so the product must not advertise CPU support.
+    expect(model?.hardware?.cpu).toBe(false);
     expect(spec?.runtimeFamily).toBe('single-cell-foundation-geneformer');
     expect(spec?.modelFile).toBe('model/model.safetensors');
   });
