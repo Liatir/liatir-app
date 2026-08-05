@@ -736,16 +736,26 @@ first).
    successor, so there is nothing left to dispatch there. scGPT Windows CUDA
    12.8 has self-hosted scientific evidence but remains unpublished; any further
    validation or release still needs one explicit reviewed target authorization.
-8. Measure Geneformer CPU throughput on a realistic reference dataset before any
-   user-facing CPU-only claim. This is the open condition attached to dropping
-   Geneformer CUDA: the existing timings come from the 4-cell validator fixture
-   and measure overhead, not throughput. It is a zero-cost local measurement,
-   but it is **blocked as of 2026-08-05**: the current app cannot install any
-   published Geneformer box (schema v1 on the beta channel, see above), and the
-   v2 boxes that will actually ship are not published. It unblocks with the
-   first Geneformer v2 protected release. Until then the CUDA question stays
-   open on the record — do not close it from the 4-cell numbers, and do not
-   substitute a measurement taken on the uv-era box that will not ship.
+8. **DONE 2026-08-05, and it failed.** The measurement did not need a published
+   box after all: the v2 scroll was built and signed locally with a local key,
+   verified with `verify --self-test`, and measured directly — no channel, no
+   publication, no uv-era box. On Apple Silicon, running the shipped product
+   script under `LIATIR_AI_FORCE_CPU=1` at batch size 16 over 1024 genes:
+   500 cells in `74.8` s and 2000 cells in `321.9` s, linear at **~160 ms per
+   cell**, ~4 GB peak RSS. That extrapolates to **~27 minutes for 10 000 cells**
+   and **~2.2 hours for 50 000**, past the CPU-gating policy's own "would take
+   hours, or is otherwise too slow to be useful" line. **The repeated claim that
+   Geneformer V1 10M is trivially fast on CPU holds only for the 4-cell
+   validator fixture and is retired.** The earlier CPU-beats-CUDA reading
+   (`11073` ms against `15104` ms) measured startup overhead, nothing else.
+   Consequently the **no-CUDA-successor half** of the 2026-08-04 decision does
+   not stand; deleting both 12.4 identities does stand, and a successor is still
+   purely additive. Now open, and needing a product decision rather than more
+   validation: whether to build a Geneformer CUDA successor or state honestly
+   that the model needs Metal or a GPU for realistic datasets; whether the
+   published `linux-x86_64-cpu` and `windows-x86_64-cpu` targets are *useful*
+   even though they are valid and proven; and the unmeasured Metal comparison,
+   which would say whether macOS is fine while CPU-only platforms are not.
 9. **Re-release each migrated target before any user-facing install claim.**
    Every v2 target is natively proven but unpublished, so the public beta
    catalog is uninstallable by the current app. This is a release blocker for

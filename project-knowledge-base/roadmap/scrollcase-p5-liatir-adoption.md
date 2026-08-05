@@ -1291,6 +1291,54 @@ CUDA successor is added then — and because both 12.4 identities are gone, that
 addition is purely additive, with a fresh target ID and no identity conflict.
 The decision is cheap to reverse by construction.
 
+#### The measurement was taken on 2026-08-05, and it fails
+
+**The no-successor decision above does not survive it.** Measured on Apple
+Silicon against a locally built, locally signed v2 box — the real
+`geneformer-v1-10m/macos-aarch64-metal` scroll on pixi `0.73.0`, verified with
+`verify --self-test` — running the shipped product script
+(`frontend/src/lib/tools/ai/python-scripts/geneformer-embedding.ts`) under
+`LIATIR_AI_FORCE_CPU=1`, batch size 16, 1024 genes per cell:
+
+| Cells | Wall clock | Per cell | Peak RSS |
+| --- | --- | --- | --- |
+| 500 | 74.8 s | 149.6 ms | 3.9 GB |
+| 2000 | 321.9 s | 160.9 ms | 4.2 GB |
+
+Cost is linear in cells at roughly **160 ms per cell**, so a realistic study
+extrapolates to about **27 minutes for 10 000 cells** and **2.2 hours for
+50 000**. The CPU-gating policy in `current-project-status.md` says in terms:
+"When CPU execution would take hours, or is otherwise too slow to be useful, the
+CPU box is not shipped for that model."
+
+This also retires a claim the repository has been repeating without evidence.
+"Geneformer V1 10M remains CPU-supported because it is trivially fast on CPU" is
+true only of the 4-cell validator fixture. At realistic scale it is false, and
+the earlier CPU-beats-CUDA reading (11 073 ms against 15 104 ms) measured
+nothing but fixed startup overhead — exactly the residual gap recorded above,
+now fired.
+
+**Consequences, none of which this section may decide on its own:**
+
+1. Geneformer must not be presented to users as CPU-only. Either a CUDA
+   successor is built, or the product states honestly that Geneformer needs
+   Metal or a GPU for realistic datasets;
+2. the same question is open for the *published* CPU targets
+   `linux-x86_64-cpu` and `windows-x86_64-cpu`. They are natively proven and
+   scientifically valid; the doubt is whether they are *useful*, which is a
+   product decision, not a validation one;
+3. the Metal number is unmeasured. It is the obvious comparison and would say
+   whether macOS is fine while CPU-only platforms are not;
+4. a Geneformer CUDA successor is still purely additive, since both 12.4
+   identities were deleted. Nothing about the deletion needs reversing — only
+   the "no successor" half of the decision.
+
+Measurement caveat, stated so it is not over-read: this is one Apple Silicon
+host with a synthetic 1024-gene fixture and batch size 16. It establishes the
+order of magnitude, not a tuned figure. A batch-size sweep or a real reference
+dataset could move it by a factor, but not by the factor of ten that would be
+needed to rescue the CPU-only claim.
+
 Removed together with the two targets: their catalog entries, uv recipes,
 licence audits, evidence records, signer-policy entries, release-workflow
 options, `@liatir/core` published-target candidates, and the legal record's CUDA
@@ -1300,6 +1348,51 @@ sections. The generic CUDA cases in `target-id-contract.json`,
 The two catalog-reading tests were repointed at scGPT's real
 `linux-x86_64-cuda12.9`, preserving GPU runner-contract and driver-floor
 coverage rather than deleting it.
+
+### UCE migration scoping — measured 2026-08-05
+
+`uce-4layer-macos-arm64-metal` is the last block-2 target and is still the only
+schema-v1 uv recipe left in `runtime-boxes/recipes/`. Everything else in that
+directory is now gone; three empty leftover directories were removed. Measured
+inputs before starting:
+
+- 6 assets totalling `9.12 GB`, dominated by `4layer_model.torch` (3.40 GB),
+  `all_tokens.torch` (2.98 GB) and `protein_embeddings.tar.gz` (2.74 GB);
+- catalog disk plan: `10142871337` installed, `8862120348` archive,
+  `3221225472` margin — about 22 GB before the pixi environment and the
+  conda-pack intermediate.
+
+**A local build is not viable on the maintainer's machine.** Free space measured
+26–28 GiB during this session, against ~22 GB of plan plus the packing
+intermediate. UCE keeps its `macos-arm64-heavy` self-hosted runner, whose Gate 9
+record required a 35 GiB bootstrap floor. Preparation — v2 scroll, `pixi.toml`,
+resolved lock, licence audit — is local and cheap because `pixi lock` resolves
+metadata without downloading packages.
+
+Three migration hazards this target carries that earlier ones did not:
+
+1. **12 `venv/` prune paths.** `ensurepip`, `distutils`, `idlelib`, `lib2to3`,
+   `pydoc_data`, `tkinter`, `pip`, `pkg_resources`, `setuptools` and
+   `torch/include`. This is exactly the inherited prune list that removed locked
+   `sympy` from scGPT macOS and failed the real forward after build, self-test
+   and archive verification had all passed. The cross-target regression added
+   then already forbids `venv/` prune paths, so they must all go — which will
+   grow the payload past the current `10142871337`-byte plan. Re-measure the
+   disk plan from the native run rather than adjusting the estimate by hand.
+2. **`assetArchives` with `removeAfterExtract`.** The source zip and the
+   protein-embedding tarball expand in place. `0.7.0` added `uncompressedPaths`
+   precisely for trees an `assetArchives` entry expanded into, but Liatir is
+   pinned at `0.4.11`, so on the current pin those expanded bytes are deflated
+   again at no benefit. That is a P5.4V argument, not a blocker here.
+3. **PyTorch moves from `2.1.1` to the conda-forge `2.8.0` substrate.** Every
+   other migrated target held its scientific baseline because the version was
+   already aligned; UCE's is not. Treat its Metal parity as a fresh baseline
+   requiring review, not as a reproduction of the published `1.0.0-beta.1`
+   numbers.
+
+The published `1.0.0-beta.1` UCE objects, their evidence record and the beta
+channel stay immutable. Per the immutable-version rule, a pixi rebuild cannot
+replace those bytes under the same version.
 
 ### UCE capacity rule
 
