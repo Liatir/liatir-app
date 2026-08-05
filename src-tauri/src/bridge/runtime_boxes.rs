@@ -34,6 +34,7 @@ use std::{
 // the safe-path rule. Liatir keeps the product lifecycle around it — registry, revocation,
 // anti-replay, disk planning, activation, rollback and removal.
 use scrollcase_consumer::{
+    archive::extract_zip_archive,
     contract::{documents::SignedDocument, targets::box_target_id},
     path::safe_relative_path as scrollcase_safe_relative_path,
     trust::{verify_signed_document, TrustedKey},
@@ -46,7 +47,7 @@ use super::{
     ai_hardware::{nvidia_capability, total_memory_bytes},
     app_storage::{resolve_app_path, write_text_atomic},
     managed_bins::{
-        available_space_for_path, extract_zip_with_expected_size, format_bytes, rename_with_retry,
+        available_space_for_path, format_bytes, rename_with_retry,
         sha256_of_file, stream_download, DownloadRegistry, DISK_SPACE_MARGIN_BYTES,
     },
     python_env::env_dir,
@@ -1421,11 +1422,12 @@ pub async fn lia_ai_runtime_box_install(
     // Closure so every failure between here and activation funnels into one cleanup path below,
     // instead of repeating "delete staging" at each `?`.
     let install_result = (|| -> Result<RuntimeBoxInstallResult, String> {
-        extract_zip_with_expected_size(
-            &archive_path.to_string_lossy(),
-            &staging.to_string_lossy(),
-            release.installed_size_bytes,
-        )?;
+        // Scrollcase extracts, not the shared managed-binary helper: a box archive is
+        // attacker-reachable input, and the package refuses encrypted and special entries,
+        // entry collisions, links that leave the payload and entries written through a link.
+        // Those rules belong to the box format and are exercised by its own conformance suite.
+        extract_zip_archive(&archive_path, &staging)
+            .map_err(|error| format!("invalid AI Runtime Box archive: {}", error.message()))?;
         if let Some(expected) = release.installed_size_bytes {
             let actual = dir_size(&staging)?;
             if actual != expected {
@@ -2159,12 +2161,10 @@ mod tests {
             Uuid::new_v4()
         ));
         std::fs::create_dir_all(&destination).unwrap();
-        extract_zip_with_expected_size(
-            &archive,
-            &destination.to_string_lossy(),
-            release.installed_size_bytes,
-        )
-        .unwrap();
+        extract_zip_archive(std::path::Path::new(&archive), &destination).unwrap();
+        if let Some(expected) = release.installed_size_bytes {
+            assert_eq!(dir_size(&destination).unwrap(), expected);
+        }
         let python = validate_extracted_box(&destination, &release).unwrap();
         assert!(python.is_file());
         std::fs::remove_dir_all(destination).unwrap();
@@ -2179,28 +2179,16 @@ mod tests {
         let archive = std::env::var("LIATIR_RUNTIME_BOX_LARGE_FIXTURE")
             .expect("large Runtime Box fixture path is required");
         let expected = (u32::MAX as u64) + 2;
-        let rejected = std::env::temp_dir().join(format!(
-            "liatir-runtime-box-large-rejected-{}",
-            Uuid::new_v4()
-        ));
-        std::fs::create_dir_all(&rejected).unwrap();
-        assert!(extract_zip_with_expected_size(
-            &archive,
-            &rejected.to_string_lossy(),
-            Some(expected - 1),
-        )
-        .unwrap_err()
-        .contains("does not match the signed Runtime Box release"));
-        assert_eq!(std::fs::read_dir(&rejected).unwrap().count(), 0);
-        std::fs::remove_dir_all(rejected).unwrap();
 
         let destination = std::env::temp_dir().join(format!(
             "liatir-runtime-box-large-extract-{}",
             Uuid::new_v4()
         ));
         std::fs::create_dir_all(&destination).unwrap();
-        extract_zip_with_expected_size(&archive, &destination.to_string_lossy(), Some(expected))
-            .unwrap();
+        // The production Runtime Box path extracts through Scrollcase, so Zip64 has to be proven
+        // there and not only in the shared managed-binary helper: the largest published box is a
+        // 17 GB CUDA archive, well past the 4 GiB Zip64 boundary this fixture sits on.
+        extract_zip_archive(std::path::Path::new(&archive), &destination).unwrap();
 
         let output = destination.join("huge-zero-fixture.bin");
         assert_eq!(std::fs::metadata(&output).unwrap().len(), expected);
