@@ -315,6 +315,37 @@
             "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/29706828552",
             "evidenceRecord": "runtime-boxes/evidence/geneformer-v1-10m-windows-x86_64-cpu-1.0.0-beta.1.json"
           }
+        },
+        {
+          "targetId": "linux-x86_64-cuda12.9",
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cuda",
+            "cudaVersion": "12.9"
+          },
+          "hostEnvironments": [
+            "native"
+          ],
+          "recipeId": "geneformer-v1-10m-linux-x86_64-cuda12.9",
+          "runnerProfileId": "linux-x64-cuda-selfhosted",
+          "status": "buildable",
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
+          "timeoutMinutes": 120,
+          "requiredBuildDiskBytes": 25769803776,
+          "dependencyLockSha256": "2f2e22e0dedbde6a2fdfa02f52c048f61b585351b2eb3a752e8c79b1bab35ae4",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cuda12.9.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 12000000000,
+            "estimatedArchiveSizeBytes": 5000000000,
+            "safetyMarginBytes": 3221225472
+          },
+          "gpuRequired": true,
+          "nativeCiEnabled": true
         }
       ]
     },
