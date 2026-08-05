@@ -245,7 +245,7 @@
           ],
           "recipeId": "geneformer-v1-10m-linux-x86_64-cuda12.9",
           "runnerProfileId": "linux-x64-cuda-selfhosted",
-          "status": "buildable",
+          "status": "native-lifecycle-validated",
           "validationModes": [
             "build",
             "scientific",
@@ -292,7 +292,7 @@
             "safetyMarginBytes": 3221225472
           },
           "gpuRequired": true,
-          "nativeCiEnabled": false,
+          "nativeCiEnabled": true,
           "linuxValidationPrerequisiteTargetId": "linux-x86_64-cuda12.9"
         }
       ]
