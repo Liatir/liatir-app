@@ -1,6 +1,6 @@
 # Current project status
 
-Last updated: 2026-08-04 (the Runtime Box builder extraction is complete:
+Last updated: 2026-08-05 (the Runtime Box builder extraction is complete:
 Scrollcase is an independent Apache-2.0 project outside this repository.
 Liatir now pins exact public `scrollcase@0.4.11` and P5.2V has completed the
 v2-only contract cutover. Scrollcase is not a Liatir workspace, vendored source
@@ -126,6 +126,42 @@ presented to users as CPU-only, the CPU-gating policy's own realistic-dataset
 throughput measurement is required; if it misses the UX threshold, a CUDA
 successor is added then, and because both 12.4 identities are gone that addition
 is purely additive.
+**The published beta objects are schema v1, and the current app rejects them
+(2026-08-05).** Attempting to close that throughput measurement established a
+larger fact: no published AI Model Runtime Box can be installed by the current
+app. The beta channel serves schema-v1 signed documents for all three Geneformer
+targets — `linux-x86_64-cpu`, `windows-x86_64-cpu` and `macos-aarch64-metal` —
+while `RUNTIME_BOX_SCHEMA_VERSION` is `2`. The install fails at the first step,
+on the channel document, in `verify_signed_payload`
+(`src-tauri/src/bridge/runtime_boxes.rs`), with `unsupported signed Runtime Box
+document`; the release-manifest and identity checks never run. The same rejection
+reproduces independently through the v2 verifier the app delegates to after
+P5.4R: `scrollcase@0.4.11` `decodeSignedDocument` raises `Unsupported
+schemaVersion 1; rebuild this box with Scrollcase v2.` The published bytes
+themselves are intact — the downloaded Linux CPU archive hashes to
+`a95a1a403bff74cf2af6c1b3f96cecace1201364ff94eec621ca90b80bf5a95b`, matching both
+the signed release and the catalog pin — so this is a document-schema rejection,
+not corruption. `scgpt-whole-human` `linux-x86_64-cpu` is not on the beta channel
+at all (`404`), and the v2 Linux Geneformer archive `ead3546f…` from
+native-lifecycle run `30872534594` is absent from the asset bucket (`404`).
+Root cause: the v2 pixi rebuilds were natively validated but never re-released,
+so beta still serves the uv-era objects published on 2026-07-17.
+`runtime-boxes/catalog.json` carries that split inside a single target:
+`dependencyLockSha256` `551716a80946450c076c9c0184458b5a29da855117b13a9da98129f4a19e16b4`
+and `diskPlan.estimatedInstalledSizeBytes` `3959042677` are v2 pixi, while
+`publication.archiveSha256` `a95a1a40…` and `publication.installedSizeBytes`
+`1211538007` are v1 uv. The tracked evidence record
+`runtime-boxes/evidence/geneformer-v1-10m-linux-x86_64-cpu-1.0.0-beta.1.json`
+(created `2026-07-17T01:46:51Z`, Python 3.11.9, uv 0.11.28) records
+`productLifecycle.assertions.install: passed` for the **uv** box against the app
+of that date — so it must not be read as evidence that the current app installs
+anything from beta. No such evidence exists for any target.
+This is not a new decision: the migration plan already ends every target with
+"protected release (KMS sign, R2 publish, beta) → flip to `published`". What is
+new is the consequence of the gap between validation and release — the published
+catalog is currently uninstallable, and any user-facing install or CPU-only claim
+is unsupportable until each target is re-released. No signing, publication or
+promotion was performed while establishing this.
 **P5.4R first slice is complete (2026-08-04).** `src-tauri` pins exact
 `scrollcase-consumer = "=0.1.2"`, and `runtime_boxes.rs` now delegates signed
 document verification, trust-key parsing, target identity and the safe-path rule
@@ -703,7 +739,20 @@ first).
 8. Measure Geneformer CPU throughput on a realistic reference dataset before any
    user-facing CPU-only claim. This is the open condition attached to dropping
    Geneformer CUDA: the existing timings come from the 4-cell validator fixture
-   and measure overhead, not throughput. It is a zero-cost local measurement.
+   and measure overhead, not throughput. It is a zero-cost local measurement,
+   but it is **blocked as of 2026-08-05**: the current app cannot install any
+   published Geneformer box (schema v1 on the beta channel, see above), and the
+   v2 boxes that will actually ship are not published. It unblocks with the
+   first Geneformer v2 protected release. Until then the CUDA question stays
+   open on the record — do not close it from the 4-cell numbers, and do not
+   substitute a measurement taken on the uv-era box that will not ship.
+9. **Re-release each migrated target before any user-facing install claim.**
+   Every v2 target is natively proven but unpublished, so the public beta
+   catalog is uninstallable by the current app. This is a release blocker for
+   the product, not an open Runtime Box CI gate: the gates passed. Each
+   protected release still needs the maintainer's explicit per-target
+   authorization and a prior `runtime-box:signer:deploy`. Re-check the split
+   `publication` blocks in `runtime-boxes/catalog.json` as part of that work.
 
 ## Standing constraints
 

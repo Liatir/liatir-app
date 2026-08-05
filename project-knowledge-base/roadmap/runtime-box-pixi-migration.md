@@ -797,3 +797,15 @@ shift; re-pin fixtures — accepted).
 7. **Disk footprint** — conda envs may be larger than the uv trees; revisit `diskPlan` floors.
 8. **PyPI escape hatch** — not needed for the current 3 (all pure conda-forge-coverable);
    reserved for TensorFlow-on-Windows and un-vendored PyPI-only model packages (future).
+9. **Validated-but-unreleased targets leave the published catalog uninstallable**
+   (observed 2026-08-05). A migrated target is not consumable until its protected
+   release runs: the beta channel keeps serving the uv-era schema-v1 documents,
+   and the v2 app rejects those before any identity check — `unsupported signed
+   Runtime Box document` in `verify_signed_payload`, matching `scrollcase@0.4.11`'s
+   `Unsupported schemaVersion 1; rebuild this box with Scrollcase v2.` This
+   currently holds for all three Geneformer targets. Two consequences for this
+   plan: the per-target release step is a hard product dependency rather than
+   bookkeeping, and while a target sits validated-but-unreleased its catalog entry
+   mixes eras (v2 `dependencyLockSha256`/`diskPlan` beside a v1 `publication`
+   block), so neither field set describes an installable box. See
+   `current-project-status.md` (2026-08-05) for the full evidence.
