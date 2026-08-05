@@ -21,16 +21,22 @@
 //! Activation is a directory rename, so a box is never observed half-installed: it is either
 //! the old version or the new one.
 
-use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
-use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
     collections::HashSet,
-    path::{Component, Path, PathBuf},
+    path::{Path, PathBuf},
     process::{Command, Stdio},
     sync::{Mutex, OnceLock},
     time::{Duration, Instant},
+};
+// Scrollcase owns the generic box format: signed-envelope verification, target identity and
+// the safe-path rule. Liatir keeps the product lifecycle around it — registry, revocation,
+// anti-replay, disk planning, activation, rollback and removal.
+use scrollcase_consumer::{
+    contract::{documents::SignedDocument, targets::box_target_id},
+    path::safe_relative_path as scrollcase_safe_relative_path,
+    trust::{verify_signed_document, TrustedKey},
 };
 use tauri::AppHandle;
 use url::Url;
@@ -69,13 +75,6 @@ const DEVELOPMENT_TRUST_KEY: &str =
 static ACTIVE_INSTALLS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 
 /// One Ed25519 public key the app is willing to accept signatures from.
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct TrustedKey {
-    key_id: String,
-    public_key_base64: String,
-}
-
 /// Several trusted keys in one document, which is what makes key rotation possible:
 /// old and new key can be trusted at the same time during a changeover.
 #[derive(Debug, Deserialize)]
@@ -93,42 +92,13 @@ enum TrustedKeyDocument {
     Bundle(TrustedKeyBundle),
 }
 
-/// Signing envelope shared by every control document (channel, release, revocations).
-///
-/// The signatures are computed over the *decoded* payload bytes, not over this wrapper,
-/// so the envelope can be re-encoded without invalidating them. `payload_sha256` is a
-/// cheap integrity check; the signature is the actual authenticity check.
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct SignedDocument {
-    schema_version: u32,
-    payload_encoding: String,
-    payload_base64: String,
-    payload_sha256: String,
-    /// Multiple signatures are allowed; the document is accepted if *any one* of them
-    /// verifies against a trusted key (see [`verify_signed_payload`]).
-    signatures: Vec<DocumentSignature>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct DocumentSignature {
-    algorithm: String,
-    key_id: String,
-    signature_base64: String,
-}
-
 /// The hardware/OS profile a box is built for. A box is only installable when this
 /// matches the detected native host and passes signed release verification.
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-struct RuntimeBoxTarget {
-    platform: String,
-    arch: String,
-    /// Compute backend the box was built against, e.g. `metal` on macOS or `cpu`.
-    accelerator: String,
-    cuda_version: Option<String>,
-}
+///
+/// This is Scrollcase's generic wire type under a Liatir name: the shape is part of the box
+/// format, not a Liatir decision, and taking it from the package also rejects unknown fields
+/// rather than silently discarding them.
+type RuntimeBoxTarget = scrollcase_consumer::contract::targets::BoxTarget;
 
 /// Signed index of which releases a channel (e.g. `stable`) currently offers for one
 /// `(box_id, target)` pair. This is the entry point of an install.
@@ -405,11 +375,6 @@ impl Drop for InstallGuard {
     }
 }
 
-/// Lowercase hex SHA-256, matching the encoding used in the manifests.
-fn sha256_hex(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
-}
-
 /// Collects every signing key this build accepts.
 ///
 /// Production keys are always trusted. Debug builds additionally trust the development key
@@ -462,54 +427,20 @@ fn trusted_keys() -> Result<Vec<TrustedKey>, String> {
 fn verify_signed_payload<T: for<'de> Deserialize<'de>>(bytes: &[u8]) -> Result<T, String> {
     let document: SignedDocument = serde_json::from_slice(bytes)
         .map_err(|error| format!("invalid signed Runtime Box document: {error}"))?;
-    if document.schema_version != RUNTIME_BOX_SCHEMA_VERSION
-        || document.payload_encoding != "base64-json-utf8"
-    {
+    // Schema version is checked here, from the parsed integer, before the crate sees the
+    // document. A v1 or unknown box must produce Liatir's own stable unsupported-format
+    // state, which drives product-owned cleanup; it must never depend on matching an
+    // upstream error string.
+    if document.schema_version != RUNTIME_BOX_SCHEMA_VERSION {
         return Err("unsupported signed Runtime Box document".to_string());
     }
-    let payload = BASE64
-        .decode(document.payload_base64)
-        .map_err(|error| format!("invalid signed payload encoding: {error}"))?;
-    if sha256_hex(&payload) != document.payload_sha256.to_lowercase() {
-        return Err("signed Runtime Box payload checksum mismatch".to_string());
-    }
     let keys = trusted_keys()?;
-    let mut verified = false;
-    for document_signature in document.signatures {
-        if document_signature.algorithm != "ed25519" {
-            continue;
-        }
-        // Unknown key ID: not necessarily an attack, just a key this build does not carry.
-        let Some(key) = keys
-            .iter()
-            .find(|candidate| candidate.key_id == document_signature.key_id)
-        else {
-            continue;
-        };
-        let public_bytes = BASE64
-            .decode(&key.public_key_base64)
-            .map_err(|error| format!("invalid trusted public key: {error}"))?;
-        let public_array: [u8; 32] = public_bytes
-            .try_into()
-            .map_err(|_| "trusted Ed25519 public key must contain 32 bytes".to_string())?;
-        let verifying_key =
-            VerifyingKey::from_bytes(&public_array).map_err(|error| error.to_string())?;
-        let signature_bytes = BASE64
-            .decode(&document_signature.signature_base64)
-            .map_err(|error| format!("invalid Runtime Box signature encoding: {error}"))?;
-        let signature =
-            Signature::from_slice(&signature_bytes).map_err(|error| error.to_string())?;
-        if verifying_key.verify(&payload, &signature).is_ok() {
-            verified = true;
-            break;
-        }
-    }
-    if !verified {
-        return Err("AI Runtime Box document is not signed by a trusted Liatir key".to_string());
-    }
+    let verified = verify_signed_document(&document, &keys).map_err(|error| {
+        format!("AI Runtime Box document is not signed by a trusted Liatir key: {error}")
+    })?;
     // Only parsed once the bytes are proven authentic, so no attacker-controlled JSON is
     // ever fed to the typed deserialiser.
-    serde_json::from_slice(&payload)
+    serde_json::from_slice(&verified.bytes)
         .map_err(|error| format!("invalid signed Runtime Box payload: {error}"))
 }
 
@@ -742,74 +673,25 @@ fn select_target_candidate<'a>(
 }
 
 /// Flattens a validated target into the slug used in registry URLs.
+///
+/// The rule belongs to the box format, so Scrollcase computes it. Only the wording is
+/// Liatir's: this message can reach a non-technical user, and it must name the product
+/// concept rather than the packaging tool.
 fn target_id(target: &RuntimeBoxTarget) -> Result<String, String> {
-    let supported = matches!(
-        (
-            target.platform.as_str(),
-            target.arch.as_str(),
-            target.accelerator.as_str()
-        ),
-        ("macos", "aarch64", "metal")
-            | ("macos", "aarch64", "cpu")
-            | ("linux", "x86_64", "cpu")
-            | ("linux", "x86_64", "cuda")
-            | ("windows", "x86_64", "cpu")
-            | ("windows", "x86_64", "cuda")
-    );
-    if !supported {
-        return Err(format!(
-            "Unsupported Runtime Box target: {}/{}/{}",
-            target.platform, target.arch, target.accelerator
-        ));
-    }
-    if target.accelerator == "cuda" {
-        let version = target
-            .cuda_version
-            .as_deref()
-            .filter(|version| {
-                version.split_once('.').is_some_and(|(major, minor)| {
-                    !major.is_empty()
-                        && !major.starts_with('0')
-                        && major.chars().all(|character| character.is_ascii_digit())
-                        && !minor.is_empty()
-                        && minor.chars().all(|character| character.is_ascii_digit())
-                })
-            })
-            .ok_or_else(|| {
-                "A CUDA Runtime Box target requires a numeric major.minor CUDA version".to_string()
-            })?;
-        return Ok(format!("{}-{}-cuda{version}", target.platform, target.arch));
-    }
-    if target.cuda_version.is_some() {
-        return Err("Only CUDA Runtime Box targets may declare a CUDA version".to_string());
-    }
-    Ok(format!(
-        "{}-{}-{}",
-        target.platform, target.arch, target.accelerator
-    ))
+    // "box target" also rewrites the plural "box targets" in the CUDA-version message.
+    box_target_id(target).map_err(|error| error.message().replace("box target", "Runtime Box target"))
 }
 
 /// Rejects any path that could escape the directory it is joined onto.
 ///
-/// Requiring every component to be `Component::Normal` rules out absolute paths, `..`
-/// traversal, root and Windows prefixes in one check. Manifest-supplied paths (the interpreter
-/// entry point, the model cache subdir) are joined onto the runtime directory, so without this
-/// a malicious manifest could point anywhere on the filesystem.
+/// Manifest-supplied paths (the interpreter entry point, the model cache subdir) are joined
+/// onto the runtime directory, so without this a malicious manifest could point anywhere on
+/// the filesystem. The rule is the box format's, so Scrollcase owns it — including the
+/// Windows-prefix and drive-relative cases that a component walk on Unix does not see.
 fn safe_relative_path(value: &str) -> Result<PathBuf, String> {
-    if value.is_empty() {
-        return Err("Runtime Box path cannot be empty".to_string());
-    }
-    let path = Path::new(value);
-    if path.is_absolute() {
-        return Err(format!("Runtime Box path must be relative: {value}"));
-    }
-    if path
-        .components()
-        .any(|component| !matches!(component, Component::Normal(_)))
-    {
-        return Err(format!("unsafe Runtime Box path: {value}"));
-    }
-    Ok(path.to_path_buf())
+    scrollcase_safe_relative_path(value)
+        .map(PathBuf::from)
+        .map_err(|error| format!("unsafe Runtime Box path: {}", error.message()))
 }
 
 /// Turns a version string into exactly three numbers so versions can be compared with `<`.
