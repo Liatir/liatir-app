@@ -1512,7 +1512,74 @@ covered by `accepts_scrollcase_contract_compatibility_fixtures` (real Liatir
 signed fixtures), `matches_shared_runtime_box_target_id_contract`,
 `rejects_schema_v1_release_manifests` and the large-archive foundation fixture.
 
-**Still open, and deliberately not in this slice:**
+### P5.4R step 3 record — 2026-08-04, second slice
+
+Extraction now goes through `archive::extract_zip_archive`. This closes the gap
+recorded above as "hostile-archive defense is generic, not box-specific": the
+package refuses encrypted entries, special entries, entry collisions, links that
+do not resolve to a file inside the payload, and entries written through a link.
+`managed_bins::extract_zip_with_expected_size` is off the Runtime Box path and
+now serves only its original managed-binary callers.
+
+Both Rust archive fixtures were repointed at the production path. The
+large-archive fixture mattered most: it sits on the 4 GiB Zip64 boundary, and
+the largest published box is a `17098121591`-byte CUDA archive, so Zip64 has to
+be proven through Scrollcase rather than only through the helper.
+
+**Behavioural change, stated rather than buried.** The old helper rejected a
+declared-size mismatch *before* writing anything; the check is now
+`dir_size` *after* extraction. The archive is hash-verified before extraction
+and the disk plan is enforced beforehand, so a hash-matching archive whose
+extracted size disagrees with its own signed release is an internal
+inconsistency rather than an attack. The cost is that such a box is written out
+before being rejected. The corresponding pre-extraction assertion was removed
+from the large-archive fixture rather than left testing a helper the path no
+longer uses.
+
+**`verify_and_extract_box` is deliberately not adopted.** Its signature takes a
+release-document path and a trust-key file path, while Liatir holds the verified
+release in memory and compiles its trust anchors into the binary precisely so a
+user-editable key cannot defeat signing. Satisfying that signature would mean
+writing trust keys to disk, which inverts the intent. The same reasoning applies
+to `attach_extracted_box`; adopting it would require the same on-disk trust
+file. This is a genuine boundary mismatch, not a deferral — if it is ever worth
+closing, the vendor-neutral upstream shape is an entry point accepting
+already-verified release bytes and an in-memory key set, and that is a
+maintainer decision, not a P5 dependency.
+
+Green on this slice: `cargo clippy` with no new `runtime_boxes.rs` finding,
+`cargo test runtime_box` 14 passed / 2 ignored, `runtime-box:test:foundation`
+(the Zip64 fixture, now through Scrollcase),
+**`runtime-box:test:native` end to end** — real key generation, two builds,
+external signer, separate verify with self-test, Node consumer extraction and
+execution, Rust archive and activation/rollback/removal, and explicit v1
+rejection — plus `runtime-box:catalog:check` and `test:verify` at 6/6.
+
+The native fixture reproduced `installedSizeBytes` `257776217` exactly against
+the pre-change baseline, which is the meaningful invariant: the extracted tree
+is byte-identical. The archive SHA-256 differs between the two runs only because
+each build stamps the current commit into provenance.
+
+The local toolchain was installed for this slice: pinned pixi `0.73.0` and
+conda-pack `0.9.2` under `.scrollcase/toolchain`, now git-ignored. The
+`toolchain` block that `scrollcase init` offers to write into
+`scrollcase.config.json` was **not** taken: it records a host-specific asset
+checksum, while CI provisions its own pixi from the scroll's `pixiVersion`
+under the workflow pin `runtime-box-ci.mjs` already enforces. Note that
+`scrollcase init --help` runs `init` rather than printing help; the example
+scroll, `SCROLLCASE.md`, `box-entrypoints/` and `consumer-templates/` it created
+were reverted, and `--no-example` avoids them.
+
+**Still open after both slices:**
+
+1. `prepare::verify_extracted_payload` and `verify_required_assets` remain
+   unused. The first needs a release carrying `payloadDigest`, which only
+   `0.7.0` builds emit, so it belongs to P5.4V rather than here;
+2. the call-order regression pinning verify → revocation/anti-replay → disk →
+   extract. The ordering is already correct in the install path, but nothing
+   fails if a later change reorders it;
+
+**Superseded, from the first slice:**
 
 1. the extraction path. `verify_release_identity`, `validate_extracted_box` and
    `managed_bins::extract_zip_with_expected_size` are unchanged, so

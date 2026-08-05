@@ -134,8 +134,20 @@ unknown fields are now rejected instead of silently discarded. Signature
 verification also strengthens to `verify_strict`. Schema-version detection stays
 Liatir's, from the parsed integer before the crate is called, so the
 unsupported-format state never depends on an upstream error string. The
-extraction path is deliberately untouched and is the next slice. Note the
-accepted cost: the crate's `zip 8` / `ed25519-dalek 3` / `sha2 0.11` / `base64
+**P5.4R second slice is also complete:** extraction now goes through
+`archive::extract_zip_archive`, so encrypted entries, special entries, entry
+collisions, links leaving the payload and entries written through a link are
+refused at the Runtime Box boundary instead of in a helper shared with managed
+binaries. `runtime-box:test:native` passed end to end on the new path and
+reproduced `installedSizeBytes` `257776217` exactly against the pre-change
+baseline. Zip64 is proven through Scrollcase, which matters because the largest
+published box is a 17 GB CUDA archive. One behavioural change: a declared-size
+mismatch is now caught after extraction by `dir_size` rather than before writing
+anything. `verify_and_extract_box` and `attach_extracted_box` are deliberately
+not adopted — they take a trust-key *file* path, while Liatir compiles its trust
+anchors into the binary so a user-editable key cannot defeat signing. Still
+open: `verify_extracted_payload` needs a `payloadDigest`, which only `0.7.0`
+builds emit, so it belongs to P5.4V. Note the accepted cost: the crate's `zip 8` / `ed25519-dalek 3` / `sha2 0.11` / `base64
 0.23` majors coexist with Liatir's own `zip 2` / `ed25519-dalek 2` / `sha2 0.10`
 / `base64 0.22`, which stay because `lia_plugins`, `quenta`, `snpeff`,
 `diagnostics` and `managed_bins` still use them.
