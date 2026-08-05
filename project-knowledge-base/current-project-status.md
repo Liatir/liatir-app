@@ -126,6 +126,33 @@ presented to users as CPU-only, the CPU-gating policy's own realistic-dataset
 throughput measurement is required; if it misses the UX threshold, a CUDA
 successor is added then, and because both 12.4 identities are gone that addition
 is purely additive.
+**That successor now exists, and Geneformer Linux CUDA 12.9 is native-lifecycle
+proven (2026-08-05).** The `~160` ms per cell CPU measurement missed the UX
+threshold, so the no-successor half of the 2026-08-04 decision was reversed as
+that decision anticipated: `linux-x86_64-cuda12.9` (`d47f277`) and
+`windows-x86_64-cuda12.8` (`53c3a21`) were added as purely additive targets with
+fresh identities. Geneformer now has no CPU box at all; these two plus macOS
+Metal are the model's entire matrix. Linux passed the complete native lifecycle
+in run `31048217909`, preflight job `92448923182` and native job `92449033200`,
+on runner `liatir-linux-cuda-selfhosted-1785964781-457` at commit
+`53c3a215e0b6aab32965273a1d755b86c0a3a198`, lock SHA-256 `2f2e22e0…5ae4`
+unchanged. The RTX 4060 Ti build (cc `8.9`, driver `610.62`, CUDA `12.9`, pixi
+`0.73.0`, Python `3.11.15`) produced archive SHA-256
+`2065bf14c7c6e0121ae1806716558d42e6c7137b307acbfca75386f18ac66819`, archive
+`17118987830` bytes, installed `28120935919` bytes. Parity against the same-lock
+CPU baseline passed at minimum cosine `0.9999999403953552` and maximum absolute
+difference `6.593763828277588e-7`, peak VRAM `106767872` bytes. Compact artifact
+`8948374199`, preflight artifact `8947316103`. **The authored disk plan was
+wrong and is now measured** (`9063053`): estimates of `12000000000`/`5000000000`
+against real `28120935919`/`17118987830`, so the calculated peak rose to
+`48504658717` and the `25769803776` floor could not stand — the build consumed
+`45849923584` additional bytes. The floor is now `60129542144`, matching scGPT's
+Linux CUDA 12.9 target under the same `68719476736` bootstrap requirement. The
+`16863` ms scientific figure is still the 4-cell fixture and does not re-open
+the throughput comparison. No signature, publication or channel change occurred.
+Windows CUDA 12.8 is **not yet dispatched**: its gate reads the Linux target's
+catalog `status`, not the run result, so it stays closed while Linux is recorded
+`buildable`.
 **The published beta objects are schema v1, and the current app rejects them
 (2026-08-05).** Attempting to close that throughput measurement established a
 larger fact: no published AI Model Runtime Box can be installed by the current
@@ -732,10 +759,13 @@ first).
    review. The candidate classification lives in `roadmap/ai-batches.md`.
 6. Do not dispatch another Gate 9 UCE release; the on-demand runner remains
    offline unless a separately reviewed future heavy build requires it.
-7. Both Geneformer CUDA 12.4 targets were deleted on 2026-08-04 and have no
-   successor, so there is nothing left to dispatch there. scGPT Windows CUDA
-   12.8 has self-hosted scientific evidence but remains unpublished; any further
-   validation or release still needs one explicit reviewed target authorization.
+7. Both Geneformer CUDA 12.4 targets were deleted on 2026-08-04. They have
+   successors as of 2026-08-05 with fresh identities:
+   `linux-x86_64-cuda12.9` is native-lifecycle proven with a measured disk plan,
+   and `windows-x86_64-cuda12.8` is built but undispatched behind its Linux-first
+   gate. Neither is published. scGPT Windows CUDA 12.8 has self-hosted scientific
+   evidence but remains unpublished; any further validation or release still
+   needs one explicit reviewed target authorization.
 8. **DONE 2026-08-05, and it failed.** The measurement did not need a published
    box after all: the v2 scroll was built and signed locally with a local key,
    verified with `verify --self-test`, and measured directly — no channel, no
@@ -750,12 +780,13 @@ first).
    (`11073` ms against `15104` ms) measured startup overhead, nothing else.
    Consequently the **no-CUDA-successor half** of the 2026-08-04 decision does
    not stand; deleting both 12.4 identities does stand, and a successor is still
-   purely additive. Now open, and needing a product decision rather than more
-   validation: whether to build a Geneformer CUDA successor or state honestly
-   that the model needs Metal or a GPU for realistic datasets; whether the
-   published `linux-x86_64-cpu` and `windows-x86_64-cpu` targets are *useful*
-   even though they are valid and proven; and the unmeasured Metal comparison,
-   which would say whether macOS is fine while CPU-only platforms are not.
+   purely additive. **The successor question is now answered in code
+   (2026-08-05):** both CUDA successors were added, the Geneformer CPU boxes were
+   dropped, and Linux CUDA 12.9 is native-lifecycle proven — see the block 3
+   paragraph above for the run evidence. Still open: the unmeasured Metal
+   comparison, which would say whether Apple Silicon is comfortable at realistic
+   cell counts, and the dispatch of Windows CUDA 12.8, which needs its Linux
+   prerequisite recorded in the catalog before its gate opens.
 9. **Re-release each migrated target before any user-facing install claim.**
    Every v2 target is natively proven but unpublished, so the public beta
    catalog is uninstallable by the current app. This is a release blocker for

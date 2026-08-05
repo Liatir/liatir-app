@@ -1349,6 +1349,69 @@ The two catalog-reading tests were repointed at scGPT's real
 `linux-x86_64-cuda12.9`, preserving GPU runner-contract and driver-floor
 coverage rather than deleting it.
 
+#### The CUDA successors were added 2026-08-05, and Linux is validated
+
+Consequence 1 above is now acted on: Geneformer has two additive CUDA
+successors, `linux-x86_64-cuda12.9` (commit `d47f277`) and
+`windows-x86_64-cuda12.8` (commit `53c3a21`). Neither reuses a deleted 12.4
+identity. Both carry a reviewed v2 scroll, a resolved pixi lock and a licence
+audit, and the caller workflow accepts both target IDs. The accelerator split
+recorded in `current-project-status.md` holds: conda-forge `pytorch 2.8.0` is
+`cuda129` on linux-64 and `cuda128` on win-64, because win-64 has no 12.9 build.
+Both locks were checked statically before any runner was allocated —
+`pytorch-2.8.0-cuda129_mkl_py311_h974e97e_302` for Linux and
+`pytorch-2.8.0-cuda128_mkl_py311_h889696f_302` for Windows, with no `cpu_mkl`
+build in either — so the "system-requirements did not bite" failure mode was
+excluded at zero cost rather than discovered on a GPU runner.
+
+**Linux CUDA 12.9 passed the complete native lifecycle** in run `31048217909`,
+preflight job `92448923182` and native job `92449033200`, on runner
+`liatir-linux-cuda-selfhosted-1785964781-457` at commit
+`53c3a215e0b6aab32965273a1d755b86c0a3a198`. The pixi lock stayed byte-identical
+at SHA-256
+`2f2e22e0dedbde6a2fdfa02f52c048f61b585351b2eb3a752e8c79b1bab35ae4`.
+The RTX 4060 Ti build (compute capability `8.9`, driver `610.62`, reported CUDA
+compatibility `12.9`) ran on pixi `0.73.0` and Python `3.11.15` and produced
+archive SHA-256
+`2065bf14c7c6e0121ae1806716558d42e6c7137b307acbfca75386f18ac66819`,
+archive size `17118987830` bytes and installed size `28120935919` bytes.
+Scientific parity passed against the same-lock CPU baseline at minimum cosine
+`0.9999999403953552` and maximum absolute difference `6.593763828277588e-7`
+(CPU baseline `8.67992639541626e-7`), with peak VRAM `106767872` bytes, finite
+values, and output and provenance contracts green. Build took `1617893` ms and
+the scientific forward `16863` ms. Compact artifact `8948374199` and preflight
+artifact `8947316103` preserve the proof.
+
+**The disk plan was estimated wrong by a wide margin, and is now measured**
+(commit `9063053`). The authored placeholders were `12000000000` installed and
+`5000000000` archive; the real figures are `28120935919` and `17118987830`, so
+the conda CUDA substrate dominates rather than the 10M-parameter weights, and
+this target sits in the same size class as scGPT's `linux-x86_64-cuda12.9`, not
+near Geneformer's own Metal target. Substituting the measurements raises the
+calculated peak to `48504658717`, which the previous `25769803776` floor could
+not hold: the build actually consumed `45849923584` additional bytes and
+survived only because the host had far more free. The floor is now
+`60129542144`, matching scGPT's Linux CUDA 12.9 target on the same runner
+profile and staying under that profile's `68719476736` bootstrap requirement.
+This is the same hazard the UCE scoping below warns about — re-measure the plan
+from the native run instead of adjusting an estimate by hand.
+
+**What this run does and does not settle.** It settles that Geneformer has a
+working, scientifically valid CUDA path on Linux. It does *not* re-open the
+CPU-versus-CUDA throughput comparison: the `16863` ms scientific figure comes
+from the same pinned 4-cell by 128-gene fixture that measures fixed overhead, so
+it is not comparable to the `~160` ms per cell CPU throughput measured on a
+realistic cell count. That CPU measurement, not this run's elapsed time, is what
+justifies a CUDA box for this model.
+
+Windows CUDA 12.8 remains `buildable` with `nativeCiEnabled: false` and
+`linuxValidationPrerequisiteTargetId: linux-x86_64-cuda12.9`. Note for whoever
+runs it next: a passing Linux run does not by itself open that gate.
+`validateWindowsCudaPrerequisite` reads the Linux target's catalog `status`
+field, which no run updates automatically, so Windows cannot be dispatched while
+Linux is still recorded as `buildable`. No production signature, publication or
+channel change occurred for either target.
+
 ### UCE migration scoping — measured 2026-08-05
 
 `uce-4layer-macos-arm64-metal` is the last block-2 target and is still the only
