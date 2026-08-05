@@ -123,20 +123,20 @@ describe('Runtime Box product E2E support', () => {
     });
   });
 
-  it('uses the exact native CUDA 12.4 candidate and driver floor', () => {
+  it('uses the exact native CUDA candidate and driver floor', () => {
     expect(runtimeBoxTargetForNativeTest(
-      'ctheodoris-geneformer-v1-10m',
-      'linux-x86_64-cuda12.4',
+      'bowang-scgpt-whole-human',
+      'linux-x86_64-cuda12.9',
     )).toEqual([{
       target: {
         platform: 'linux',
         arch: 'x86_64',
         accelerator: 'cuda',
-        cudaVersion: '12.4',
+        cudaVersion: '12.9',
       },
       hostEnvironments: ['native'],
-      minRamGb: 8,
-      minNvidiaDriverVersion: '550.54.14',
+      minRamGb: 16,
+      minNvidiaDriverVersion: '525.60.13',
     }]);
   });
 

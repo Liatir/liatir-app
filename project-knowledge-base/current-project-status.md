@@ -109,6 +109,36 @@ floor. Compact artifact `8895358103` preserves the acceptance evidence; the
 runner deregistered and its marked root was removed. All three Geneformer
 CPU/Metal targets are now v2 and natively proven. The next block-2 continuation
 is UCE.
+**P5.4 block 3 (Geneformer CUDA) is resolved and closed without a successor
+(2026-08-04).** Liatir is not released, so neither CUDA 12.4 identity has
+installed users, and both `linux-x86_64-cuda12.4` and `windows-x86_64-cuda12.4`
+were deleted outright — catalog entries, uv recipes, licence audits, evidence
+records, signer-policy entries, release-workflow options, `@liatir/core`
+published-target candidates and the legal record's CUDA sections. No frozen
+"installable but not buildable" catalog status was needed. No CUDA successor is
+introduced for Geneformer: the recorded evidence for the same validator shows
+CPU at `11073` ms against CUDA at `15104`/`14573` ms, so at 10M parameters the
+GPU never earns back its initialisation cost. CUDA capability is unaffected —
+scGPT keeps `linux-x86_64-cuda12.9` and `windows-x86_64-cuda12.8`, both natively
+proven. **Residual gap:** those timings come from the pinned 4-cell by 128-gene
+fixture, so they measure fixed overhead, not throughput. Before Geneformer is
+presented to users as CPU-only, the CPU-gating policy's own realistic-dataset
+throughput measurement is required; if it misses the UX threshold, a CUDA
+successor is added then, and because both 12.4 identities are gone that addition
+is purely additive.
+**P5.4R first slice is complete (2026-08-04).** `src-tauri` pins exact
+`scrollcase-consumer = "=0.1.2"`, and `runtime_boxes.rs` now delegates signed
+document verification, trust-key parsing, target identity and the safe-path rule
+to the crate; `RuntimeBoxTarget` is a type alias for the crate's `BoxTarget`, so
+unknown fields are now rejected instead of silently discarded. Signature
+verification also strengthens to `verify_strict`. Schema-version detection stays
+Liatir's, from the parsed integer before the crate is called, so the
+unsupported-format state never depends on an upstream error string. The
+extraction path is deliberately untouched and is the next slice. Note the
+accepted cost: the crate's `zip 8` / `ed25519-dalek 3` / `sha2 0.11` / `base64
+0.23` majors coexist with Liatir's own `zip 2` / `ed25519-dalek 2` / `sha2 0.10`
+/ `base64 0.22`, which stay because `lia_plugins`, `quenta`, `snpeff`,
+`diagnostics` and `managed_bins` still use them.
 No signing, publication or promotion occurred. Published
 scGPT `0.2.5-beta.1` and Geneformer `1.0.0-beta.1` objects remain immutable. The
 full CI substrate migration to pixi + pixi-pack +
@@ -654,10 +684,14 @@ first).
    review. The candidate classification lives in `roadmap/ai-batches.md`.
 6. Do not dispatch another Gate 9 UCE release; the on-demand runner remains
    offline unless a separately reviewed future heavy build requires it.
-7. Do not dispatch the legacy Geneformer Windows CUDA 12.4 candidate from the
-   historical hosted-runner plan. scGPT Windows CUDA 12.8 has self-hosted
-   scientific evidence but remains unpublished; any further validation or
-   release still needs one explicit reviewed target authorization.
+7. Both Geneformer CUDA 12.4 targets were deleted on 2026-08-04 and have no
+   successor, so there is nothing left to dispatch there. scGPT Windows CUDA
+   12.8 has self-hosted scientific evidence but remains unpublished; any further
+   validation or release still needs one explicit reviewed target authorization.
+8. Measure Geneformer CPU throughput on a realistic reference dataset before any
+   user-facing CPU-only claim. This is the open condition attached to dropping
+   Geneformer CUDA: the existing timings come from the 4-cell validator fixture
+   and measure overhead, not throughput. It is a zero-cost local measurement.
 
 ## Standing constraints
 

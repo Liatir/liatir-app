@@ -184,6 +184,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.2V — Scrollcase v2-only cutover | Complete | Exact `scrollcase@0.4.11`; active contracts and consumers use v2; v1 is explicitly unsupported; clean local v2 proof green |
 | P5.3 — v2 foundation-fixture migration | Complete | Three reviewed v2 scrolls/locks/audits; macOS, Linux and Windows native proofs green; every foundation uv fixture removed only after its matching proof |
 | P5.4 — model-recipe migration | In progress | All five scGPT inputs are v2 and natively proven; Geneformer macOS Metal, Linux CPU and Windows CPU are proven; UCE and the CUDA identity decision remain |
+| P5.4R — adopt `scrollcase-consumer` in the Rust bridge | In progress | `runtime_boxes.rs` delegates format verification to exact `scrollcase-consumer 0.1.2`, keeps the product lifecycle, and proves the Liatir-owned call order |
 | P5.4V — Scrollcase `0.4.11` → current-line upgrade | Pending, not started | A reviewed version delta, an explicit rebuild-or-freeze decision per already-proven target, and a Rust consumer aligned with the selected version |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
 | P5.6 — local/native closure | Pending | Full cheap gate plus one reviewed non-production product lifecycle |
@@ -1246,29 +1247,59 @@ The same rule applies to the published scGPT macOS pilot: its current pixi recip
 must receive a new release version before any future pixi publication replaces
 the uv-built beta in the channel.
 
-### Geneformer CUDA identity migration
+### Geneformer CUDA — resolved 2026-08-04: both targets removed, no successor
 
-Never mutate these identities in place:
+The maintainer confirmed Liatir is **not released**, which removes the
+constraint this section was built around. With no shipped client, neither CUDA
+12.4 identity has installed users to protect, so the frozen-legacy design — a
+new catalog status meaning "still installable but no longer buildable" — is
+unnecessary. Both targets are deleted outright:
 
-- published `linux-x86_64-cuda12.4`;
-- buildable `windows-x86_64-cuda12.4`.
+- `linux-x86_64-cuda12.4` (was `published`);
+- `windows-x86_64-cuda12.4` (was `buildable`, never built or dispatched).
 
-Recommended migration:
+**No CUDA successor is introduced for Geneformer.** The decision rests on the
+only direct CPU-versus-CUDA comparison this repository holds, from the recorded
+evidence of the same validator on the same model:
 
-1. preserve the old target records, evidence and public objects as frozen legacy
-   compatibility;
-2. add new recipes/records for `linux-x86_64-cuda12.9` and
-   `windows-x86_64-cuda12.8`;
-3. add an explicit catalog status/field for a frozen historical target if the
-   current schema cannot represent “still installable but no longer buildable”;
-4. keep installed-client support and signed old channels honest;
-5. expose a successor target to new clients only after its own scientific,
-   native-lifecycle and protected-release evidence.
+| Target | `scientific.elapsedMs` |
+| --- | --- |
+| `linux-x86_64-cpu` | 11 073 |
+| `linux-x86_64-cuda12.4` | 15 104 and 14 573 |
+| `windows-x86_64-cpu` | 16 292 |
 
-This is a breaking catalog evolution and requires a specific maintainer decision
-before implementation. The fallback is to retain a narrow legacy builder for
-those recipes, in which case P5 remains incomplete; silently relabelling CUDA
-12.9/12.8 bytes as CUDA 12.4 is forbidden.
+CUDA was **slower**. At 10M parameters the GPU never earns back its
+initialisation cost, so a CUDA box for this model would add a runner class, a
+recipe, a licence audit and a paid validation run in exchange for a regression.
+CUDA capability itself is unaffected: scGPT keeps `linux-x86_64-cuda12.9` and
+`windows-x86_64-cuda12.8`, both natively proven, so the GPU path stays
+exercised. This is exactly the per-model judgement the CPU-gating policy in
+`current-project-status.md` prescribes.
+
+**The residual gap, stated honestly.** Those timings come from the pinned
+4-cell by 128-gene validator fixture, so they measure fixed overhead, not
+throughput on a realistic dataset. They prove CUDA does not help at that scale;
+they do not by themselves prove CPU stays comfortable on a large study. The
+repository's own CPU-gating rule already demands "a realistic reference dataset
+within an acceptable wall-clock threshold" measured from amortized throughput,
+and that measurement has never been recorded for Geneformer.
+
+Therefore: **before Geneformer is presented to users as CPU-only, a zero-cost
+local CPU throughput measurement on a realistic cell count is required.** If it
+lands within the UX threshold, this decision stands unchanged. If it does not, a
+CUDA successor is added then — and because both 12.4 identities are gone, that
+addition is purely additive, with a fresh target ID and no identity conflict.
+The decision is cheap to reverse by construction.
+
+Removed together with the two targets: their catalog entries, uv recipes,
+licence audits, evidence records, signer-policy entries, release-workflow
+options, `@liatir/core` published-target candidates, and the legal record's CUDA
+sections. The generic CUDA cases in `target-id-contract.json`,
+`runtime_boxes.rs` tests, signer policy tests and cost-control tests are
+**kept**: they exercise the CUDA target-ID rule itself, not a Geneformer target.
+The two catalog-reading tests were repointed at scGPT's real
+`linux-x86_64-cuda12.9`, preserving GPU runner-contract and driver-floor
+coverage rather than deleting it.
 
 ### UCE capacity rule
 
@@ -1286,6 +1317,234 @@ UCE is a multi-gigabyte build. Before running it:
 - each migrated target has reviewed lock/audit and native scientific evidence;
 - legacy CUDA identity is represented honestly;
 - no target is marked published from P5 validation alone.
+
+## P5.4R — Adopt `scrollcase-consumer` in the Rust bridge
+
+Recorded 2026-08-04. **Not started.** This phase splits
+`src-tauri/src/bridge/runtime_boxes.rs` along the line the architecture table
+already draws: **format verification** is delegated to the published crate,
+**product lifecycle** stays in Liatir. It is implementation work, not a
+dependency bump, and it is separate from P5.4V.
+
+### Why it can precede the npm upgrade
+
+`scrollcase-consumer` versions the *consumer* independently of the npm
+*builder*. The crate reads schema v2, which is what pinned `scrollcase@0.4.11`
+produces, and a release built before payload digests existed still prepares
+normally — `src/prepare.rs:585` refuses a missing digest only inside the
+explicit `verify_extracted_payload` operation, never on the install path. So
+P5.4R runs against today's boxes and today's pin.
+
+It also **de-risks P5.4V rather than depending on it**. The `0.6.0` payload-link
+rule is the part of the upgrade that would otherwise require Liatir to
+hand-write security-critical extraction logic; the crate already implements it
+in `src/contract/links.rs` and `filesystem::validate_extracted_tree`. Adopting
+the crate first means the pin upgrade stops being a Rust rewrite.
+
+Sequencing is therefore a recommendation, not a constraint: prefer P5.4R before
+P5.4V, and neither before P5.4 closes.
+
+### Selected version
+
+`scrollcase-consumer 0.1.2`, read from the sparse index on 2026-08-04. It adds
+what `0.1.1` lacked for Liatir: `errorPatterns` now carries 28 contractual
+strings including `unsupported-schema-version` → `"Unsupported schemaVersion 1"`,
+with a matching `prepare` conformance case expecting `rejected` and
+`destinationExists: false`. The suite is 66 cases. Re-read the exact immutable
+identity immediately before adding the dependency, per the P5.2V.0 rule.
+
+### The split
+
+Replace — these are generic format rules with no Liatir behavior:
+
+| `runtime_boxes.rs` today | Crate item |
+| --- | --- |
+| `trusted_keys` (420) | `trust::load_trusted_keys` → `Vec<TrustedKey>` |
+| `verify_signed_payload` (462) | `trust::verify_signed_document`, `verify::inspect_release_document_with_keys` |
+| `target_id` (745) | `contract::targets::box_target_id` |
+| `safe_relative_path` (798) | `path::safe_relative_path` |
+| `sha256_hex` (409) over files | `filesystem::sha256_file` |
+| `verify_release_identity` (969) | `verify::inspect_box_archive`, `verify::inspect_archive_for` |
+| `validate_extracted_box` (1077) | `verify::assert_box_manifest_agreement`, `contract::targets::assert_python_entry_point` |
+| `extract_zip_with_expected_size` from `managed_bins` | `prepare::verify_and_extract_box`, `filesystem::validate_extracted_tree` |
+| *(absent today)* | `prepare::attach_extracted_box`, `prepare::verify_extracted_payload`, `prepare::verify_required_assets` |
+
+Keep — these are product decisions the crate explicitly disclaims ("selects no
+channel, downloads nothing, updates nothing, knows about no registry"):
+
+- `validate_control_url` (520), `fetch_control_document` (539),
+  `select_channel_release` (943), `ensure_not_revoked` (1039), `installation_id`
+  (923) and persisted anti-replay state;
+- `current_host_capabilities` (575), `select_target_candidate` (604),
+  `check_compatibility` (845) with `minLiatirVersion`, and the version helpers
+  (592, 819, 831, 836);
+- `dir_size` (1187), `runtime_box_disk_plan` (1210), `existing_dir_size` (1233),
+  `validate_runtime_box_disk_plan` (1241), `ensure_runtime_box_disk_space` (1255);
+- `activate_runtime` (1337), `rollback_root` (1281), `newest_rollback` (1288),
+  `prune_rollbacks` (1311), `rollback_runtime` (1606), `remove_runtime_files`
+  (1654);
+- the three `#[tauri::command]` entry points and all Jobs/Results/provenance
+  integration.
+
+Two items need a decision rather than a mechanical move:
+
+1. **`run_self_test` (1118).** Execution belongs to `run::run_extracted_box`,
+   but Liatir's version captures self-test stderr specifically because opaque
+   `exit code 1` failures cost roughly nine Windows release runs during Gate 8.2.
+   Do not lose that diagnostic. Evaluate whether `RunOptions` stdio capture
+   covers it before deleting anything.
+2. **`runtime-boxes/target-id-contract.json`.** P5.1 keeps it as a tracked
+   compatibility fixture with the Rust mirror checked against it. Once Rust calls
+   `box_target_id`, that check becomes a drift check between the crate and the
+   fixture, exactly as the TypeScript side already works. Keep the file; change
+   what the test asserts.
+
+### Ordering rule inside the install path
+
+The crate makes verification callable before extraction, and the install path
+must use that ordering: parse and verify the signed release, **then** run
+Liatir's revocation and anti-replay checks, **then** check the disk plan,
+**then** extract. Do not extract a revoked or replayed box and reject it
+afterwards.
+
+Schema-v1 detection stays Liatir's, from the product-owned installed-state
+record as an integer, per P5.2V.2. The crate's pinned
+`unsupported-schema-version` string is the last line of defence, not the
+detector, and Liatir must not branch on error text.
+
+### P5.4R work order
+
+1. add exact `scrollcase-consumer = "=0.1.2"` to `src-tauri/Cargo.toml`; confirm
+   resolution and that the transitive licence footprint passes audit;
+2. add integration regressions for the **call order** Liatir owns — verify,
+   then revocation and anti-replay, then disk plan, then extract — since that
+   ordering is Liatir's responsibility and no upstream test covers it;
+3. replace the table's left column one row at a time, keeping
+   `cargo test runtime_box` green between rows;
+4. delete the superseded Liatir implementations only once no caller remains, and
+   never in the same commit that first exercises the crate path;
+5. re-run the Rust archive, activation, rollback, removal and explicit
+   v1-rejection regressions.
+
+#### The conformance suite is not a Liatir gate
+
+Recorded 2026-08-04. `consumer-conformance.json` ships inside the crate but is
+reachable only from the crate's own `tests/` through
+`include_str!("../fixtures/…")`. There is no public Rust accessor, and a
+downstream crate cannot `include_str!` from a dependency's source tree.
+
+This does not matter, because the reasoning that made the suite valuable stops
+applying at the moment of delegation. While Liatir owned a second
+implementation, the suite was the cheap oracle proving the two agreed. Once
+`runtime_boxes.rs` calls the crate, running those 66 cases in Liatir would test
+upstream code that upstream CI already tests, and would prove nothing about
+Liatir.
+
+What Liatir must test after delegation is its own integration: the call order in
+step 2, the product lifecycle, and explicit v1 rejection. Do **not** vendor a
+copy of the fixture to satisfy a gate that no longer earns its place. If a
+future need for the suite appears, the vendor-neutral upstream request is a
+public accessor for the fixture bytes, not a copy in this repository.
+
+### P5.4R step 1 record — 2026-08-04
+
+Exact `scrollcase-consumer = "=0.1.2"` is in `src-tauri/Cargo.toml`. `cargo
+fetch` resolved and `cargo check` compiled the whole tree with it; the 56
+warnings are pre-existing and unrelated.
+
+**The "no duplicate majors" adoption condition is not met, and cannot be.** The
+crate requires `zip ^8.6`, `ed25519-dalek ^3.0`, `sha2 ^0.11` and `base64
+^0.23`, while `src-tauri` uses `zip 2.4.2`, `ed25519-dalek 2.1.1`, `sha2 0.10`
+and `base64 0.22.1`. Those are incompatible semver majors, so Cargo now builds
+both copies of each, plus the transitive `digest 0.10/0.11` and `crypto-common
+0.1/0.2` pairs.
+
+Aligning them is not available as a fix inside P5.4R. Liatir's own copies are
+not Runtime Box code and survive the migration: `zip` is used by `quenta`,
+`lia_plugins`, `snpeff`, `diagnostics` and `managed_bins`; `ed25519-dalek` by
+`lia_plugins` for signed `.lia` bundle verification; `sha2` by `managed_bins`
+and `lia_plugins`; `base64` by `fs`, `plugin_files`, `diagnostics` and
+`lia_plugins`. Upgrading them would mean touching plugin signature verification,
+which is a separate dependency task with its own risk.
+
+The condition is therefore **waived for P5.4R** with the cost stated: a larger
+binary carrying two ZIP, two Ed25519 and two SHA-2 implementations. The tree
+already carried duplicate `zip` (2.4.2 and 4.6.1) and `rustix` (0.38 and 1.1)
+before this change, so this is a larger instance of an existing condition, not a
+new principle. Measure the release-binary delta before deciding whether a later
+dependency-alignment task is worth its own risk; do not infer the cost.
+
+### P5.4R step 3 record — 2026-08-04, first slice
+
+The security core is delegated. Replaced in
+`src-tauri/src/bridge/runtime_boxes.rs`:
+
+- the local `TrustedKey`/`SignedDocument`/`DocumentSignature` structs are gone;
+  the crate's types are used directly. Liatir's checked trust roots already
+  carry `publicKeyPem` beside `publicKeyBase64`, so they deserialize into
+  `trust::TrustedKey` unchanged, and `trusted_keys()` keeps every Liatir-owned
+  rule — production anchors, debug-only development key and env-var key file,
+  compile-time `option_env!` rotation, and fail-closed on an empty set;
+- `verify_signed_payload` now calls `trust::verify_signed_document`. This also
+  strengthens the check: the crate uses `verify_strict`, which additionally
+  refuses small-order keys and non-canonical signatures;
+- `RuntimeBoxTarget` is a type alias for `contract::targets::BoxTarget`, which
+  carries `deny_unknown_fields` — closing one of the three unknown-field gaps
+  recorded above;
+- `target_id` delegates to `box_target_id`, and `safe_relative_path` to the
+  crate's rule, which also covers Windows prefix and drive-relative cases a
+  `Component::Normal` walk does not see on Unix. Both keep Liatir's product
+  wording, because these messages can reach a non-technical user;
+- the now-dead local `sha256_hex` was removed. `base64`, `ed25519_dalek` and the
+  `Component` import are no longer needed by this module.
+
+**Schema-version detection stays Liatir's.** `verify_signed_payload` compares
+the parsed `schemaVersion` integer against `RUNTIME_BOX_SCHEMA_VERSION` *before*
+handing the document to the crate, so the unsupported-format state that drives
+product-owned cleanup never depends on matching an upstream error string — even
+now that `unsupported-schema-version` is a pinned pattern.
+
+Green: `cargo check`, `cargo clippy` with no new `runtime_boxes.rs` finding,
+`cargo test runtime_box` at 14 passed / 2 ignored, `runtime-box:test:foundation`,
+`runtime-box:catalog:check`, `runtime-box:signer:check` at 15/15, and
+`test:verify` at 6/6 suites with 227 unit tests. The changed surface is directly
+covered by `accepts_scrollcase_contract_compatibility_fixtures` (real Liatir
+signed fixtures), `matches_shared_runtime_box_target_id_contract`,
+`rejects_schema_v1_release_manifests` and the large-archive foundation fixture.
+
+**Still open, and deliberately not in this slice:**
+
+1. the extraction path. `verify_release_identity`, `validate_extracted_box` and
+   `managed_bins::extract_zip_with_expected_size` are unchanged, so
+   `prepare::verify_and_extract_box`, `attach_extracted_box`,
+   `verify_extracted_payload` and `verify_required_assets` are not yet used.
+   That is the structural half and it carries the install-path reordering, so it
+   gets its own slice — the plan forbids first exercising a new path and
+   deleting the old one in one change;
+2. `runtime-box:test:native` could not run on this host: it builds a real box
+   and requires pixi 0.73.0, which is not installed. It exercises the extraction
+   path, which this slice did not touch, so it does not gate what changed here —
+   but it must pass before the extraction slice closes;
+3. the call-order regression from step 2 belongs with the extraction slice,
+   since the order it pins is verify → revocation/anti-replay → disk → extract.
+
+### P5.4R exit gate
+
+- `runtime_boxes.rs` contains no local signature verification, target-ID
+  computation, safe-path rule, archive-identity check or extraction primitive;
+- the product lifecycle listed above is unchanged and still Liatir-owned;
+- the call-order regression from step 2 is green, and no conformance fixture was
+  vendored into this repository;
+- `managed_bins::extract_zip_with_expected_size` is no longer on the Runtime Box
+  path, and its remaining callers are unaffected;
+- one already-proven target reinstalls and runs from its existing evidence
+  bytes, proving the swap changed no observable behavior;
+- no recipe, catalog identity, trust root, published object or channel changed.
+
+Native re-validation is **not** required to close P5.4R: the crate changes how a
+box is verified, not how it is built. If a native run is wanted for confidence,
+prefer the cheapest already-approved foundation fixture and keep its explicit
+allocation boundary.
 
 ## P5.4V — Scrollcase version delta (`0.4.11` → current line)
 
@@ -1367,22 +1626,50 @@ names the cases that matter here: `altered-environment-metadata`,
 `absolute-entry`, `extraction-collision`, `file-directory-collision`, the
 `on-demand-asset-*` triple and the `payload-verification-*` group.
 
-Liatir's Rust consumer can be driven against this matrix without Scrollcase
-shipping anything new. Doing so converts "the Rust drifted from the contract"
-from a finding that costs a self-hosted native run into a cheap failure inside
-`cargo test`. Prefer this over waiting for an upstream Rust implementation.
+Liatir's own Rust consumer can be driven against this matrix directly, without
+adopting anything upstream. Doing so converts "the Rust drifted from the
+contract" from a finding that costs a self-hosted native run into a cheap
+failure inside `cargo test`. It is also the oracle that would make a later swap
+to `scrollcase-consumer` verifiable rather than assumed, so it is worth doing
+either way.
 
-### The announced Scrollcase Rust consumer
+### The published Scrollcase Rust consumer
 
-There is no Rust consumer in `0.7.0`; the package ships Node, and the Python
-consumer is distributed separately. The Scrollcase maintainer stated on
-2026-08-04 that a Rust consumer release is imminent, so plan for it rather than
-treating it as hypothetical — but do not pin, schedule or claim it before an
-immutable published version exists, and do not let its arrival reopen P5.4.
+`scrollcase-consumer` is on crates.io. Read from the sparse index and the
+`0.1.1` crate on 2026-08-04:
 
-When it lands it does **not** automatically replace
-`src-tauri/src/bridge/runtime_boxes.rs`. Adopt it as a **bounded inner layer**,
-never as the lifecycle owner:
+- versions `0.1.0` and `0.1.1`, neither yanked; Apache-2.0; `rust-version 1.88`;
+  `unsafe_code = "forbid"`, `missing_docs = "warn"`, clippy pedantic;
+- dependencies are `ed25519-dalek` (pkcs8, pem), `sha2`, `zip` (deflate only,
+  `default-features = false`), `serde`, `serde_json`, `base64`, and `rustix` on
+  Unix only. **No async runtime, no TLS stack, no HTTP client** — it is
+  synchronous and offline, so a Tauri command wraps it in `spawn_blocking`
+  without dragging Tokio or OpenSSL into the desktop binary;
+- its own crate docs state it is "deliberately not a distribution system: it
+  selects no channel, downloads nothing, updates nothing, and knows about no
+  registry", which is exactly the boundary this plan already assigns to Liatir;
+- `PreparedBox` has private fields and no public constructor, so a receipt
+  proving verification can only come from a function that performed it;
+- `tests/conformance.rs` runs the same 65-case shared suite as the Node and
+  Python consumers, from the same `consumer-conformance.json`.
+
+Its public surface is already decomposed the way Liatir's lifecycle needs:
+
+| Step | Crate item |
+| --- | --- |
+| Verify the signed release without extracting | `verify::inspect_release_document{,_with_keys}` |
+| Load a trust-key set | `trust::load_trusted_keys` → `Vec<TrustedKey>` |
+| Check archive identity | `verify::inspect_box_archive`, `verify::inspect_archive_for` |
+| Extract | `prepare::verify_and_extract_box` |
+| Re-identify after an app restart | `prepare::attach_extracted_box` |
+| Re-check installed payload integrity | `prepare::verify_extracted_payload` |
+| Execute | `run::run_extracted_box`, `run::run_box` |
+
+Because verification is callable before extraction, Liatir can still run
+revocation and anti-replay between the two, and still own the staging → atomic
+activation → rollback-retention sequence. Adopting the crate does **not**
+replace `src-tauri/src/bridge/runtime_boxes.rs` wholesale. Adopt it as a
+**bounded inner layer**, never as the lifecycle owner:
 
 - in scope for delegation: signed-envelope and trust verification, safe
   extraction including the link rule, payload-digest verification, attach,
@@ -1395,18 +1682,52 @@ never as the lifecycle owner:
   compatibility, disk planning, activation, rollback retention and pruning,
   removal, Jobs/Results/provenance.
 
-Adoption conditions, all required: it is a published crate with an immutable
-version and no `file:`/git dependency; it does not pull a runtime network,
-registry or download layer into the desktop binary; its dependency and licence
-footprint pass the existing audit; it does not force a Tokio/OpenSSL or similar
-runtime conflict with Tauri; and it passes the same conformance matrix Liatir's
-own consumer is held to, so the swap is verifiable rather than assumed. If
-adopted, the two implementations must not both remain live — one owns the
+Adoption conditions. Four are already satisfied by inspection above — published
+immutable version, no network/registry/download layer, no async-runtime or TLS
+conflict, and the shared conformance suite. Still to check before adopting:
+
+- an exact-version pin and a clean `cargo` resolution against the existing tree,
+  with no duplicate or conflicting `zip`/`sha2`/`ed25519-dalek` major versions
+  already used elsewhere in `src-tauri`;
+- the transitive licence footprint passes the existing audit;
+- the crate's supported schema version matches the pinned npm builder version,
+  since builder and consumer are released independently.
+
+If adopted, the two implementations must not both remain live — one owns the
 boundary, the other is deleted, per the P5.5 no-parallel-implementation rule.
 
 Losing the current cross-implementation check is a real cost of adopting it:
 today a Rust/Node disagreement on a real box surfaces in native validation. Keep
 the conformance matrix as the replacement oracle before removing anything.
+
+#### Open point: schema-version rejection is not a pinned error pattern
+
+Scrollcase deliberately exposes **one opaque error struct, not an enum**;
+`src/error.rs` argues that matching on variants would let a caller invent its own
+equivalence between rejections, and that each new variant would be a breaking
+change to a security-relevant API. The shared fixture compensates by pinning
+error substrings: `consumer-conformance.json` carries an `errorPatterns` map of
+27 contractual strings — `invalid-signature`, `archive-hash`, `link-entry`,
+`payload-mismatch` and so on — enforced across all three implementations.
+
+`Unsupported schemaVersion` is **not** among those 27, and no conformance case
+covers it, even though the crate emits a stable message from three sites
+(`src/verify.rs`, `src/contract/documents.rs`, `src/release.rs`). Matching that
+string would therefore be matching an unpinned implementation detail: a reworded
+message in a later release would break Liatir's v1 detection **silently**,
+falling through to the generic-error branch rather than failing loudly.
+
+This does not block adoption, because Liatir must not depend on the crate for
+this decision anyway. P5.2V already requires installed-v1 cleanup to key off the
+**product-owned installed-state record and filesystem identity**, never the
+interpretation of a v1 document. Liatir therefore reads its own recorded
+`schemaVersion` as an integer before calling the crate; the crate stays the last
+line of defence, not the detector.
+
+The vendor-neutral upstream request, if it is ever wanted, is small and preserves
+the existing design: add `unsupported-schema-version` to `errorPatterns` with a
+matching conformance case. That pins the string as a contract without
+introducing an error variant. It is a maintainer decision, not a P5 dependency.
 
 ### P5.4V entry conditions
 
@@ -1418,9 +1739,11 @@ Do not start until all of these hold:
   rebuilt on the new pin or frozen with its `0.4.11` evidence intact;
 - the immutable identity of the selected version has been read back from npm
   immediately before the dependency change;
-- the Rust link-entry rule, the closed `execution` model and unknown-field
-  rejection have landed with regressions, since a `≥0.6.0` box is unreadable by
-  the current consumer.
+- the Rust consumer can read a `≥0.6.0` box. P5.4R satisfies this by delegating
+  the link rule, the closed `execution` model and strict deserialization to
+  `scrollcase-consumer`. If P5.4R is skipped or deferred, those three must be
+  hand-written in Liatir with regressions first, because the current consumer
+  rejects a payload link entry outright.
 
 No published object, channel, trust root or protected release changes in P5.4V.
 

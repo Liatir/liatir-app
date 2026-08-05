@@ -104,17 +104,17 @@ describe('Runtime Box CI catalog', () => {
   it('derives the checked Linux CUDA recipe and exact self-hosted GPU runner contract', () => {
     const resolved = resolveCiTarget(
       catalog,
-      'ctheodoris-geneformer-v1-10m',
+      'bowang-scgpt-whole-human',
       undefined,
-      'linux-x86_64-cuda12.4',
+      'linux-x86_64-cuda12.9',
       'native-lifecycle',
     );
     expect(resolved.target).toMatchObject({
-      recipeId: 'geneformer-v1-10m-linux-x86_64-cuda12.4',
-      status: 'published',
-      timeoutMinutes: 35,
+      recipeId: 'scgpt-whole-human-linux-x86_64-cuda12.9',
+      status: 'native-lifecycle-validated',
+      timeoutMinutes: 120,
       gpuRequired: true,
-      dependencyLockSha256: '4cc737f7bb6580de2fc6da0d89f2a17a2f200a35c82f5734f7e503c1772579ed',
+      dependencyLockSha256: '3bc87da78d23f009d4f654f3da734f7ca226489f700f9ad5e355163b4a729194',
     });
     expect(resolved.runner).toMatchObject({
       runsOn: 'liatir-linux-cuda-selfhosted',

@@ -14,9 +14,7 @@
       "targets": [
         "macos-aarch64-metal",
         "linux-x86_64-cpu",
-        "linux-x86_64-cuda12.4",
-        "windows-x86_64-cpu",
-        "windows-x86_64-cuda12.4"
+        "windows-x86_64-cpu"
       ]
     },
     {
