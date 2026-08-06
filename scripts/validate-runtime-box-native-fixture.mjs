@@ -38,12 +38,11 @@ const HOST_FIXTURES = new Map([
 ]);
 
 function parseArgs(values) {
-  const options = {
-    recipe: '',
-    pixi: process.env.SCROLLCASE_PIXI || 'pixi',
-    condaPack: process.env.SCROLLCASE_CONDA_PACK || 'conda-pack',
-    output: '',
-  };
+  // Empty means "let Scrollcase resolve it". Its own precedence is explicit path, then
+  // SCROLLCASE_PIXI / SCROLLCASE_CONDA_PACK, then the toolchain the project installed for
+  // itself, then PATH. Naming a bare `pixi` here would take the highest slot and defeat the
+  // project-local toolchain, so the flag is forwarded only when the caller actually chose one.
+  const options = { recipe: '', pixi: '', condaPack: '', output: '' };
   for (let index = 0; index < values.length; index += 1) {
     if (values[index] === '--recipe') options.recipe = values[++index] ?? '';
     else if (values[index] === '--pixi') options.pixi = values[++index] ?? '';
@@ -52,6 +51,14 @@ function parseArgs(values) {
     else throw new Error(`Unknown native fixture option: ${values[index]}`);
   }
   return options;
+}
+
+/** Forwards only the toolchain paths the caller chose, so Scrollcase resolves the rest. */
+function toolchainFlags({ condaPack = false } = {}) {
+  const flags = [];
+  if (options.pixi) flags.push('--pixi', options.pixi);
+  if (condaPack && options.condaPack) flags.push('--conda-pack', options.condaPack);
+  return flags;
 }
 
 /** Runs one argv-only child command and preserves its output on failure. */
@@ -185,7 +192,7 @@ try {
     RUNTIME_BOX_CLI,
     'lock',
     fixtureId,
-    '--pixi', options.pixi,
+    ...toolchainFlags(),
   ]);
   const resolvedLock = await readFile(lockPath);
   assert.deepEqual(resolvedLock, reviewedLock, 'native lock resolution changed the reviewed pixi.lock');
@@ -196,8 +203,7 @@ try {
     RUNTIME_BOX_CLI,
     'build',
     fixtureId,
-    '--pixi', options.pixi,
-    '--conda-pack', options.condaPack,
+    ...toolchainFlags({ condaPack: true }),
     '--signer', signer.url,
     '--signer-audience', signer.url,
     '--public-key', publicPath,
@@ -242,11 +248,23 @@ try {
   });
   assert.equal(prepared.targetId, targetId);
   assert.deepEqual(prepared.execution, scroll.execution);
-  assert.deepEqual(await runExtractedBox(prepared, {
+  const ran = await runExtractedBox(prepared, {
     stdin: 'ignore',
     stdout: 'inherit',
     stderr: 'inherit',
-  }), { exitCode: 0, signal: null });
+  });
+  assert.equal(ran.exitCode, 0);
+  assert.equal(ran.signal, null);
+  // Scrollcase 0.7.0 added the environment declaration, so a run now reports what the child
+  // was given. This fixture declares none, and asserting that is the point: a box that starts
+  // silently inheriting host variables, or revealing their values, is a provenance change.
+  assert.equal(ran.environmentReport.mode, 'summary');
+  assert.equal(ran.environmentReport.hostValuesRevealed, false);
+  assert.equal(ran.environmentReport.releaseVariableCount, 0);
+  assert.equal(ran.environmentReport.conflictCount, 0);
+  assert.deepEqual(ran.environmentReport.dangerousHostVariables, []);
+  assert.deepEqual(ran.environmentReport.variables, []);
+  assert.equal(typeof ran.environmentReport.remainingVariableCount, 'number');
 
   const payloadPath = join(temporary, 'release-payload.json');
   await writeFile(payloadPath, `${JSON.stringify(release, null, 2)}\n`);
