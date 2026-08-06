@@ -149,10 +149,29 @@ against real `28120935919`/`17118987830`, so the calculated peak rose to
 `45849923584` additional bytes. The floor is now `60129542144`, matching scGPT's
 Linux CUDA 12.9 target under the same `68719476736` bootstrap requirement. The
 `16863` ms scientific figure is still the 4-cell fixture and does not re-open
-the throughput comparison. No signature, publication or channel change occurred.
-Windows CUDA 12.8 is **not yet dispatched**: its gate reads the Linux target's
-catalog `status`, not the run result, so it stays closed while Linux is recorded
-`buildable`.
+the throughput comparison.
+**Windows CUDA 12.8 followed and Geneformer's matrix is now complete
+(2026-08-05).** Its Linux-first gate reads the Linux target's catalog `status`
+rather than any run result, so recording Linux as `native-lifecycle-validated` —
+the status the run earned, carried by all four proven scGPT targets with no
+`publication` object — is what opened it (`5960026`). Windows then passed the
+complete native lifecycle in run `31057320891`, preflight job `92477540997` and
+native job `92477608909`, on runner
+`liatir-windows-cuda-selfhosted-1785973279-480` at commit
+`5960026f93a65d59a493942d46a620fd48920dd9`, lock `ce2e51ed…b5ec` unchanged. The
+backend resolved to `transformers-4.44.2-cu128`, confirming win-64 has no 12.9
+build. Archive SHA-256
+`cee651ca0b30f4d6a9b7329dbddc247412c98db199ba3ef0d63a7d86ade2e0c2`, archive
+`4304659539` bytes, installed `7398569837` bytes, parity at minimum cosine `1`
+and maximum absolute difference `1.4901161193847656e-6`, peak VRAM `106767872`
+bytes — the same VRAM as Linux. Compact artifact `8951371593`, preflight artifact
+`8950746395`. Its measured plan of `14967964344` fits the retained
+`25769803776` floor, because the win-64 conda CUDA substrate is about a quarter
+the size of the linux-64 one; that asymmetry is why each target's plan had to be
+measured rather than shared. Both CUDA targets are `native-lifecycle-validated`
+and **unpublished** — no signature, publication, channel promotion or release for
+either, and `published` is still held only by `macos-aarch64-metal`. Both
+ephemeral runners deregistered and both marked roots were removed.
 **The published beta objects are schema v1, and the current app rejects them
 (2026-08-05).** Attempting to close that throughput measurement established a
 larger fact: no published AI Model Runtime Box can be installed by the current
@@ -717,9 +736,11 @@ first).
 > adoption/legacy retirement. Phases 0–4 of the pixi migration are complete;
 > Phase 5 is in progress; the historical v1 P5.2 checkpoint, v2-only P5.2V
 > cutover and all three native P5.3 foundation proofs are complete. P5.4 model
-> recipe migration is in progress: all five scGPT targets plus Geneformer macOS
-> Metal, Linux CPU and Windows CPU are v2 and natively proven; UCE is the next
-> one-target continuation.
+> recipe migration is in progress: all five scGPT targets are v2 and natively
+> proven, and so is Geneformer's entire current matrix — macOS Metal plus the
+> `linux-x86_64-cuda12.9` and `windows-x86_64-cuda12.8` successors. Geneformer's
+> CPU targets were dropped once CPU throughput was measured, so it has no CPU box
+> at all. UCE is the next one-target continuation.
 > It remains one phase with
 > three operational blocks rather than a new numbered checkpoint per target.
 > Do not use the historical
@@ -760,12 +781,12 @@ first).
 6. Do not dispatch another Gate 9 UCE release; the on-demand runner remains
    offline unless a separately reviewed future heavy build requires it.
 7. Both Geneformer CUDA 12.4 targets were deleted on 2026-08-04. They have
-   successors as of 2026-08-05 with fresh identities:
-   `linux-x86_64-cuda12.9` is native-lifecycle proven with a measured disk plan,
-   and `windows-x86_64-cuda12.8` is built but undispatched behind its Linux-first
-   gate. Neither is published. scGPT Windows CUDA 12.8 has self-hosted scientific
-   evidence but remains unpublished; any further validation or release still
-   needs one explicit reviewed target authorization.
+   successors as of 2026-08-05 with fresh identities: `linux-x86_64-cuda12.9` and
+   `windows-x86_64-cuda12.8` are both native-lifecycle proven with measured disk
+   plans, and both are unpublished, so nothing remains to dispatch there.
+   Releasing either needs a separate explicit authorization. scGPT Windows CUDA
+   12.8 has self-hosted scientific evidence but remains unpublished; any further
+   validation or release still needs one explicit reviewed target authorization.
 8. **DONE 2026-08-05, and it failed.** The measurement did not need a published
    box after all: the v2 scroll was built and signed locally with a local key,
    verified with `verify --self-test`, and measured directly — no channel, no

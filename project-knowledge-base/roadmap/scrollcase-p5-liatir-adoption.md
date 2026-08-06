@@ -183,7 +183,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.2 — Liatir adapter and distribution split | Complete | Real clean `keygen → lock → build → verify --self-test` cycle through the stable Liatir command; namespace, archive hash and receipts checked |
 | P5.2V — Scrollcase v2-only cutover | Complete | Exact `scrollcase@0.4.11`; active contracts and consumers use v2; v1 is explicitly unsupported; clean local v2 proof green |
 | P5.3 — v2 foundation-fixture migration | Complete | Three reviewed v2 scrolls/locks/audits; macOS, Linux and Windows native proofs green; every foundation uv fixture removed only after its matching proof |
-| P5.4 — model-recipe migration | In progress | All five scGPT inputs are v2 and natively proven; Geneformer macOS Metal, Linux CPU and Windows CPU are proven; UCE and the CUDA identity decision remain |
+| P5.4 — model-recipe migration | In progress | All five scGPT inputs are v2 and natively proven; the CUDA identity decision is resolved and Geneformer's whole matrix — macOS Metal plus both CUDA successors — is proven, its CPU targets having been dropped on measurement; UCE remains |
 | P5.4R — adopt `scrollcase-consumer` in the Rust bridge | In progress | `runtime_boxes.rs` delegates format verification to exact `scrollcase-consumer 0.1.2`, keeps the product lifecycle, and proves the Liatir-owned call order |
 | P5.4V — Scrollcase `0.4.11` → current-line upgrade | Pending, not started | A reviewed version delta, an explicit rebuild-or-freeze decision per already-proven target, and a Rust consumer aligned with the selected version |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
@@ -1404,13 +1404,54 @@ it is not comparable to the `~160` ms per cell CPU throughput measured on a
 realistic cell count. That CPU measurement, not this run's elapsed time, is what
 justifies a CUDA box for this model.
 
-Windows CUDA 12.8 remains `buildable` with `nativeCiEnabled: false` and
-`linuxValidationPrerequisiteTargetId: linux-x86_64-cuda12.9`. Note for whoever
-runs it next: a passing Linux run does not by itself open that gate.
-`validateWindowsCudaPrerequisite` reads the Linux target's catalog `status`
-field, which no run updates automatically, so Windows cannot be dispatched while
-Linux is still recorded as `buildable`. No production signature, publication or
-channel change occurred for either target.
+**The Linux-first gate does not read run results, only catalog status.**
+`validateWindowsCudaPrerequisite` checks the Linux target's `status` field, and
+no run updates that field automatically, so a passing Linux run does not open the
+gate on its own: `nativeCiEnabled` could not go true on
+`windows-x86_64-cuda12.8` while Linux was still recorded `buildable`. Recording
+Linux as `native-lifecycle-validated` — the status its run had earned, and the
+one all four proven scGPT targets carry with no `publication` object — is what
+opened it (commit `5960026`). `resolve --native-requested true` then reported
+`native_eligible` for Windows, checked locally before any runner was allocated.
+
+**Windows CUDA 12.8 then passed the complete native lifecycle** in run
+`31057320891`, preflight job `92477540997` and native job `92477608909`, on
+runner `liatir-windows-cuda-selfhosted-1785973279-480` at commit
+`5960026f93a65d59a493942d46a620fd48920dd9`, with its lock byte-identical at
+SHA-256
+`ce2e51ed2985b58607f84082ae7362811b9adc613b4d311e171f5fb06b92b5ec`.
+The backend resolved to `transformers-4.44.2-cu128`, confirming the per-OS pin:
+win-64 has no 12.9 build. On the same RTX 4060 Ti, pixi `0.73.0` and Python
+`3.11.15` produced archive SHA-256
+`cee651ca0b30f4d6a9b7329dbddc247412c98db199ba3ef0d63a7d86ade2e0c2`,
+archive size `4304659539` bytes and installed size `7398569837` bytes. Parity
+passed at minimum cosine `1` and maximum absolute difference
+`1.4901161193847656e-6`, peak VRAM `106767872` bytes — identical VRAM to Linux,
+as the same model and fixture should give. Build took `1263921` ms and the
+scientific forward `59881` ms. Compact artifact `8951371593` and preflight
+artifact `8950746395` preserve the proof.
+
+**Windows needed no floor change, and that asymmetry is the point.** Its
+measured `7398569837` installed and `4304659539` archive put the plan at
+`14967964344`, inside the retained `25769803776` floor with `10801839432` bytes
+spare, against a real peak of `11986161664`. Linux needed `60129542144` for the
+same model: the win-64 conda CUDA substrate is roughly a quarter the size of the
+linux-64 one, which is why one estimate held and the other missed by a wide
+margin. Neither number was predictable from the other, so both had to be
+measured rather than shared.
+
+One operational hazard is worth carrying forward: the Windows launcher rejects a
+runner root whose relocatable conda prefix would exceed 150 characters, and the
+natural name `C:\liatir-runners\geneformer-win-cuda128` overflows it at 152. This
+run used `C:\liatir-runners\gf-win-cuda128` (prefix 144). That limit is the same
+one an earlier scGPT Windows attempt hit after a full build.
+
+Both CUDA targets are now `native-lifecycle-validated` and **unpublished**. No
+production signature, publication, channel promotion or release occurred for
+either; `published` remains a state neither has reached, held only by
+`macos-aarch64-metal`, which this work did not touch. Both ephemeral runners
+deregistered and both marked runner roots were removed, with diagnostic logs
+retained beside them.
 
 ### UCE migration scoping — measured 2026-08-05
 
