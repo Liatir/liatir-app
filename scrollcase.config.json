@@ -1,9 +1,0 @@
-{
-  "version": 1,
-  "paths": {
-    "scrolls": "runtime-boxes/scrolls",
-    "build": ".rb",
-    "dist": ".runtime-box-dist",
-    "keys": ".runtime-box-local"
-  }
-}

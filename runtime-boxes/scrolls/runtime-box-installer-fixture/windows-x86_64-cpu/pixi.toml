@@ -1,7 +1,0 @@
-[workspace]
-name = "installer-fixture-windows-x86_64"
-channels = ["conda-forge"]
-platforms = ["win-64"]
-
-[dependencies]
-python = "3.11.15.*"
