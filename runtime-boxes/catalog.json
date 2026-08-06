@@ -276,7 +276,7 @@
           ],
           "recipeId": "geneformer-v1-10m-windows-x86_64-cuda12.8",
           "runnerProfileId": "windows-x64-cuda-selfhosted",
-          "status": "buildable",
+          "status": "native-lifecycle-validated",
           "validationModes": [
             "build",
             "scientific",
@@ -287,8 +287,8 @@
           "dependencyLockSha256": "ce2e51ed2985b58607f84082ae7362811b9adc613b4d311e171f5fb06b92b5ec",
           "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cuda12.8.json",
           "diskPlan": {
-            "estimatedInstalledSizeBytes": 12000000000,
-            "estimatedArchiveSizeBytes": 5000000000,
+            "estimatedInstalledSizeBytes": 7398569837,
+            "estimatedArchiveSizeBytes": 4304659539,
             "safetyMarginBytes": 3221225472
           },
           "gpuRequired": true,
