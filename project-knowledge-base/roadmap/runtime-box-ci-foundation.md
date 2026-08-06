@@ -33,6 +33,46 @@ archive SHA-256
 cancelled run `30548041903` targeted an earlier revision and is not acceptance
 evidence. P5.3 is complete; P5.4 remains pending and was not started.
 
+**Native Windows CUDA is validated for the first time (2026-08-05).** The Gate
+8.2 re-scope below named three re-entry conditions; one of them — "a self-hosted
+R525+ Windows runner is added" — is now exercised, and the "local validation on
+the maintainer's RTX 4060 Ti planned separately" note in the gate table is
+executed. Geneformer `windows-x86_64-cuda12.8` passed a complete native
+lifecycle in run `31057320891` on `liatir-windows-cuda-selfhosted-1785973279-480`
+(driver `610.62`, compute capability `8.9`), after Geneformer
+`linux-x86_64-cuda12.9` passed in run `31048217909` on
+`liatir-linux-cuda-selfhosted-1785964781-457`. Both are recorded
+`native-lifecycle-validated` and unpublished; details live in
+[Scrollcase P5](./scrollcase-p5-liatir-adoption.md) and
+`runtime-boxes/catalog.json`.
+
+Four boundaries on that sentence, so it is not over-read:
+
+1. **No gate is reopened or re-closed.** Gate 8.2's own subject was
+   `windows-x86_64-cuda12.4`, which was deleted on 2026-08-04 together with
+   `linux-x86_64-cuda12.4`. The validated targets are new, additive identities,
+   not the deferred one revived. Gate 8.2 stays closed on `windows-x86_64-cpu`
+   as recorded.
+2. **The hosted-runner blocker is unchanged.** The GitHub-hosted Windows GPU
+   runner's driver is still too old, so Windows CUDA remains out of hosted CI and
+   the `AGENTS.md` safety note still applies verbatim. What changed is that a
+   self-hosted path now exists and has been used; nothing about version
+   constraints was loosened.
+3. **The Linux-first rule held, through code rather than convention.** The
+   catalog enforces it: `windows-x86_64-cuda12.8` carries
+   `linuxValidationPrerequisiteTargetId` and could not set `nativeCiEnabled`
+   until the Linux target's status recorded scientific validation. The operating
+   rule below asks for same-model Linux CUDA evidence "for the exact commit";
+   the Linux run is at `53c3a21` and the Windows run at `5960026`, and that
+   delta contains no scroll, lock, licence audit, validator, product script or
+   workflow change — only catalog bookkeeping and documentation.
+4. **The uv-era identity list under "Objective" below is not current.** It
+   predates the CUDA 12.4 deletions and the 12.9/12.8 successors, and the
+   Geneformer matrix it describes — including Linux and Windows CPU — no longer
+   exists; Geneformer's CPU boxes were dropped on a measured `~160` ms per cell.
+   Read `runtime-boxes/catalog.json` for live target identities, per the routing
+   note above.
+
 ## Objective
 
 Prove that Liatir can build, validate, sign, publish, install, run, and remove a
