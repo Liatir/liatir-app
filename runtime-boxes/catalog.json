@@ -501,12 +501,12 @@
             "native-lifecycle"
           ],
           "timeoutMinutes": 180,
-          "requiredBuildDiskBytes": 32212254720,
+          "requiredBuildDiskBytes": 36507222016,
           "dependencyLockSha256": "a539412003c6ac355da2ce1dca05b7aa76ef3274a71150839c0b3396ae824a98",
           "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/uce-4layer-macos-arm64-metal.json",
           "diskPlan": {
-            "estimatedInstalledSizeBytes": 10142871337,
-            "estimatedArchiveSizeBytes": 8862120348,
+            "estimatedInstalledSizeBytes": 11169027146,
+            "estimatedArchiveSizeBytes": 9899283947,
             "safetyMarginBytes": 3221225472
           },
           "gpuRequired": false,

@@ -228,10 +228,14 @@ describe('Runtime Box CI catalog', () => {
     const runner = catalog.runnerProfiles.find((candidate) => candidate.id === uce?.targets[0].runnerProfileId);
     expect(uce?.targets[0]).toMatchObject({
       status: 'published',
-      requiredBuildDiskBytes: 32_212_254_720,
+      requiredBuildDiskBytes: 36_507_222_016,
       nativeCiEnabled: true,
       runnerProfileId: 'macos-arm64-heavy',
     });
+    // The floor must stay strictly under the runner's bootstrap floor, or a target could be
+    // registered that its own runner is never allowed to accept.
+    expect(uce?.targets[0].requiredBuildDiskBytes)
+      .toBeLessThan(runner?.selfHosted?.minimumBootstrapFreeDiskBytes);
     expect(runner).toMatchObject({
       runsOn: 'liatir-macos-arm64-heavy',
       platform: 'macos',
