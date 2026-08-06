@@ -1065,13 +1065,17 @@ fn self_test_stderr_suffix(child: &mut std::process::Child) -> String {
     format!(": {}", &trimmed[start..])
 }
 
-/// Total size of the installed box, reported to the UI. Symlinks are not followed, so linked
-/// content is never counted twice (and a symlink loop cannot hang the walk).
+/// Total size of the installed box, reported to the UI and compared against the size the signed
+/// release declares. Symlinks are not followed, so linked content is never counted twice (and a
+/// symlink loop cannot hang the walk), but a link is still counted at its own few bytes: since
+/// Scrollcase 0.6.0 a payload carries links instead of materialising them, and the builder sizes
+/// the payload the same way. Skipping links here would report less than the release declares and
+/// fail an otherwise valid box.
 fn dir_size(path: &Path) -> Result<u64, String> {
     let mut total = 0u64;
     for entry in walkdir::WalkDir::new(path).follow_links(false) {
         let entry = entry.map_err(|error| error.to_string())?;
-        if entry.file_type().is_file() {
+        if entry.file_type().is_file() || entry.file_type().is_symlink() {
             total =
                 total.saturating_add(entry.metadata().map_err(|error| error.to_string())?.len());
         }
@@ -1625,6 +1629,24 @@ mod tests {
             "selfTest": { "pythonImports": ["json"], "timeoutSeconds": 10 },
             "provenance": {}
         })
+    }
+
+    /// A payload carries links rather than materialising them, and the builder counts each link
+    /// at its own size when it declares `installedSizeBytes`. Measuring the installed tree any
+    /// other way rejects a valid box, and only a real native build would otherwise reveal it.
+    #[cfg(unix)]
+    #[test]
+    fn dir_size_counts_a_payload_link_without_following_it() {
+        let root = std::env::temp_dir().join(format!("liatir-dir-size-{}", Uuid::new_v4()));
+        std::fs::create_dir_all(root.join("lib")).unwrap();
+        std::fs::write(root.join("lib/real.so"), vec![0u8; 4096]).unwrap();
+        std::os::unix::fs::symlink("real.so", root.join("lib/linked.so")).unwrap();
+
+        let link_bytes = std::fs::symlink_metadata(root.join("lib/linked.so"))
+            .unwrap()
+            .len();
+        assert_eq!(dir_size(&root).unwrap(), 4096 + link_bytes);
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
