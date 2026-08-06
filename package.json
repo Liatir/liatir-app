@@ -131,7 +131,7 @@
     "buffer": "^6.0.3",
     "markdown-it-mathjax3": "^4.3.2",
     "marked": "^18.0.5",
-    "scrollcase": "0.4.11",
+    "scrollcase": "0.7.1",
     "tar": "7.5.20",
     "typescript": "^5.9.2",
     "yauzl": "3.4.0",
