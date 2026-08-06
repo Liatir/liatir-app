@@ -2154,16 +2154,17 @@ rejection. New archive SHA-256
 because links are carried rather than materialised, and the archive is smaller
 again because already-compressed paths are stored rather than deflated. The
 macOS fixture's catalog plan now carries the measurement (`fe3f41a`). The Linux
-and Windows fixture plans still hold `0.4.11`-era numbers: overstatements, which
-are safe because a plan only reserves space, but stale, and corrected by their
-own native runs rather than inferred from this one.
+and Windows fixture plans held `0.4.11`-era numbers at this checkpoint:
+overstatements, which are safe because a plan only reserves space, but stale.
+Both were corrected by their own native runs rather than inferred from this one
+— see the rebuild table below.
 
 The same is true of every model target. `assets` are stored automatically, so no
 scroll needed a `uncompressedPaths` declaration; scGPT's one `assetArchives`
 entry expands into Python source, which compresses well and should keep
 deflating.
 
-#### Rebuilds: every macOS target is done, seven remain (2026-08-06)
+#### Rebuilds: macOS and both fixtures are done, six remain (2026-08-06)
 
 A target proven on `0.4.11` describes bytes this builder no longer produces.
 Nothing is published, so no identity breaks — this is runner time, not a
@@ -2182,13 +2183,24 @@ and `diskPlan`.
 | Geneformer Linux CUDA 12.9 | pending, GPU | | | |
 | Geneformer Windows CUDA 12.8 | pending, GPU | | | |
 | Fixture Linux CPU | done, run `31114218644` | `357a385e…fced` | `239853779` | −53% |
-| Fixture Windows CPU | pending | | | |
+| Fixture Windows CPU | done, run `31115179668` | `ccc5f563…2c79` | `126577170` | +0.3% |
 
-**The format's size effect is now measured three times and is consistent.**
-scGPT and Geneformer each lost roughly a quarter with no scroll change, from
-carried links and stored assets alone. UCE gained 10% because its migration
-also dropped twelve `venv/` prune paths; the two effects are separable, and
-only UCE paid the second one.
+**The format's size effect is measured, and it is a POSIX effect.** scGPT and
+Geneformer each lost roughly a quarter on macOS with no scroll change, from
+carried links and stored assets alone; the Linux fixture lost 53% and the macOS
+fixture 43%, the largest deltas in the set, because a fixture is almost entirely
+the conda prefix that the link rule stops materialising, with no weights to
+dilute it. UCE gained 10% because its migration also dropped twelve `venv/`
+prune paths; the two effects are separable, and only UCE paid the second one.
+
+**The Windows fixture did not shrink at all** — `126224685` to `126577170`
+installed, `+0.3%`. That is the expected result, not an anomaly: conda
+materialises files on Windows instead of linking them, so a Windows payload has
+no link entries for `0.6.0` to carry, and this fixture declares no `assets` for
+`0.7.0` to store rather than deflate. The small increase is the new
+`payload-digest.v1` list the archive now carries. **Predict no size win for
+either Windows model target**, and treat a large Windows delta as a signal to
+stop and look rather than as good news.
 
 **Geneformer's Metal parity reproduced its `0.4.11` figures exactly** — maximum
 absolute difference `8.121132850646973e-7`, minimum cosine
