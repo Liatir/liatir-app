@@ -185,7 +185,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.3 — v2 foundation-fixture migration | Complete | Three reviewed v2 scrolls/locks/audits; macOS, Linux and Windows native proofs green; every foundation uv fixture removed only after its matching proof |
 | P5.4 — model-recipe migration | In progress | All five scGPT inputs are v2 and natively proven; the CUDA identity decision is resolved and Geneformer's whole matrix — macOS Metal plus both CUDA successors — is proven, its CPU targets having been dropped on measurement; UCE remains |
 | P5.4R — adopt `scrollcase-consumer` in the Rust bridge | In progress | `runtime_boxes.rs` delegates format verification to exact `scrollcase-consumer 0.1.2`, keeps the product lifecycle, and proves the Liatir-owned call order |
-| P5.4V — Scrollcase `0.4.11` → current-line upgrade | Pending, not started | A reviewed version delta, an explicit rebuild-or-freeze decision per already-proven target, and a Rust consumer aligned with the selected version |
+| P5.4V — Scrollcase `0.4.11` → current-line upgrade | Pin raised and locally proven; rebuilds outstanding | Exact `scrollcase@0.7.1` with its npm identity read back into the lockfile, `scrollcase-consumer 0.1.2` confirmed ahead of the format, the macOS foundation fixture rebuilt and passed end to end through the Rust lifecycle, and the maintainer decision recorded that every proven target rebuilds rather than freezes |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
 | P5.6 — local/native closure | Pending | Full cheap gate plus one reviewed non-production product lifecycle |
 | P5.7 — documentation handoff | Pending | Status, inventories and operator docs match the implemented boundary |
@@ -1812,9 +1812,11 @@ allocation boundary.
 
 ## P5.4V — Scrollcase version delta (`0.4.11` → current line)
 
-Recorded 2026-08-04 from npm and the published `0.7.0` tarball. This phase is
-**not started** and is deliberately scheduled **after** P5.4 completes. Nothing
-here authorizes changing the pin.
+Recorded 2026-08-04 from npm and the published `0.7.0` tarball, when this phase
+was scheduled after P5.4. **That order was inverted by the maintainer on
+2026-08-06 and the pin is now raised** — see the execution record at the end of
+this section. The delta below is kept as written because it is what the decision
+was made against.
 
 ### Why this is a phase and not a dependency bump
 
@@ -1995,25 +1997,123 @@ introducing an error variant. It is a maintainer decision, not a P5 dependency.
 
 ### P5.4V entry conditions
 
-Do not start until all of these hold:
+Four conditions were written for this phase. Three held at entry; the first was
+deliberately overridden.
 
-- P5.4 is complete on `0.4.11`, including Geneformer Windows CPU, UCE and the
-  CUDA identity decision;
-- the maintainer has explicitly decided, per already-proven target, whether it is
-  rebuilt on the new pin or frozen with its `0.4.11` evidence intact;
-- the immutable identity of the selected version has been read back from npm
-  immediately before the dependency change;
-- the Rust consumer can read a `≥0.6.0` box. P5.4R satisfies this by delegating
-  the link rule, the closed `execution` model and strict deserialization to
-  `scrollcase-consumer`. If P5.4R is skipped or deferred, those three must be
-  hand-written in Liatir with regressions first, because the current consumer
-  rejects a payload link entry outright.
+- ~~P5.4 is complete on `0.4.11`, including Geneformer Windows CPU, UCE and the
+  CUDA identity decision~~ — **overridden by the maintainer, 2026-08-06.** UCE is
+  the one target left, and it is the largest and most expensive build in the
+  matrix. Building it on `0.4.11` would have meant either rebuilding it
+  immediately on the new pin or freezing the whole model on a builder generation
+  nothing else in the matrix used. Liatir is unreleased, so the condition was
+  protecting evidence that no user depends on. The order was inverted:
+  raise the pin first, then author UCE against it once.
+- The immutable identity of the selected version was read back from npm
+  immediately before the change — `0.7.1`, published `2026-08-05T17:27:42.996Z`,
+  integrity `sha512-xVeJkv4J…yjQQ==`, which the lockfile now records.
+- The Rust consumer can read a `≥0.6.0` box. `scrollcase-consumer 0.1.2` carries
+  `contract/links.rs` and `contract/payload_digest.rs`; all three crate versions
+  were published on 2026-08-05, after the `0.7.0` format work, so the pin was
+  already ahead of the boxes and did not move.
+- Per-target rebuild-or-freeze is decided: **every proven target rebuilds.**
+  Nothing stays on `0.4.11`.
 
-No published object, channel, trust root or protected release changes in P5.4V.
+No published object, channel, trust root or protected release changed.
 
-Its order relative to P5.5 is deliberately left open. Running P5.5 first deletes
-the legacy builder against a pin that is already proven; running P5.4V first
-avoids re-proving targets twice. That is a maintainer decision, not a default.
+### Execution record (2026-08-06)
+
+**The pin is raised and locally proven** (`b5434e9`, `5aaecc6`, `e76ed23`,
+`fe3f41a`). Exact `scrollcase@0.7.1` in the root package, in `@liatir/core` and
+in the surface test that guards all three.
+
+The JavaScript surface turned out to be **purely additive** across the four
+intervening releases: export map, bin entry and the three runtime dependencies
+are byte-identical to `0.4.11`, and the only new files are `contract/links`,
+`contract/payload-digest`, `environment` and the payload-digest fixture. No
+Liatir build, sign, contract or consumer call site had to change.
+
+`0.7.1` itself changes **no archive byte**. Diffed against the `0.7.0` tarball it
+touches only `CHANGELOG`, `README`, `package.json` and
+`consumer-conformance.json`, where it adds the 66th case and the 28th error
+pattern, both `unsupported-schema-version`. That is exactly the upstream request
+the "schema-version rejection is not a pinned error pattern" section above
+described as small and vendor-neutral, now shipped. Liatir's detector does not
+move: it still reads its own `schemaVersion` as an integer before calling any
+verifier, and the pinned string only makes the last line of defence auditable.
+
+**Two real defects surfaced, both of which only a native build could find.**
+
+1. `runExtractedBox` now returns an `environmentReport` beside the exit code, and
+   the native fixture compared the whole result with `deepEqual`. Fixed by
+   asserting the report on its own terms rather than loosening the comparison:
+   this box declares no environment, so the run must reveal no host values, carry
+   no release variables, report no conflicts and name no dangerous host
+   variables. A box that silently began inheriting the host environment is a
+   provenance change and should fail here.
+2. **`dir_size` under-counted an installed box.** Since `0.6.0` a payload carries
+   links instead of materialising them, and the builder sizes the payload with
+   `lstat` — a link costs its own few bytes. Liatir counted only regular files,
+   so every link fell out of the total: 15638 bytes against a declared
+   146593318 on the macOS fixture, enough to reject an entirely valid box at the
+   declared-size check right after extraction. The walk still does not follow
+   links; links are simply counted at their own size. A unit test pins it, so the
+   next occurrence of this class costs a `cargo test` rather than a native run.
+
+**Native proof.** The macOS foundation fixture rebuilt and passed end to end on
+the new pin: frozen build, local signing, signature and archive verification,
+self-test, extraction and run through `scrollcase/consumer`, the Rust archive
+fixture, the activation/rollback/removal transitions and the schema-v1
+rejection. New archive SHA-256
+`c437c2d7e34d86153fede63a30f46575fb0692d47058773b4370544521c9a8ba`.
+
+**The measured format delta is large.** Installed `146593318` against
+`257776217`, archive `54172964` against `96979089` — the payload is 43% smaller
+because links are carried rather than materialised, and the archive is smaller
+again because already-compressed paths are stored rather than deflated. The
+macOS fixture's catalog plan now carries the measurement (`fe3f41a`). The Linux
+and Windows fixture plans still hold `0.4.11`-era numbers: overstatements, which
+are safe because a plan only reserves space, but stale, and corrected by their
+own native runs rather than inferred from this one.
+
+The same is true of every model target. `assets` are stored automatically, so no
+scroll needed a `uncompressedPaths` declaration; scGPT's one `assetArchives`
+entry expands into Python source, which compresses well and should keep
+deflating.
+
+#### Outstanding: eight rebuilds
+
+Every natively proven target still describes bytes this builder no longer
+produces. None is published, so no identity breaks and nothing is invalidated
+for a user — this is runner time, not a migration.
+
+| Model | Targets to rebuild |
+| --- | --- |
+| scGPT | macOS Metal, Linux CPU, Windows CPU, Linux CUDA 12.9, Windows CUDA 12.8 |
+| Geneformer | macOS Metal, Linux CUDA 12.9, Windows CUDA 12.8 |
+| Foundation fixtures | Linux CPU, Windows CPU (macOS done) |
+
+Four of these are GPU runs. Per `AGENTS.md` they are paid and need explicit
+authorization; none was dispatched. Each rebuild replaces the target's archive
+SHA-256, measured sizes and `diskPlan`, and its plan should shrink.
+
+#### Upstream gap: payload verification needs a key file
+
+`verify_extracted_payload` and `attach_extracted_box` take
+`AttachOptions.public_key_path`, a **trust file on disk**. Liatir compiles its
+trust anchors into the binary with `include_str!` precisely so a user-editable
+key cannot defeat signing, so neither is adoptable as written — the same reason
+`verify_and_extract_box` was left unadopted in P5.4R.
+
+`verify::inspect_release_document_with_keys` already shows the shape that works:
+the same operation taking `&[TrustedKey]` directly. The vendor-neutral request is
+to add the matching `_with_keys` variants for attach and payload verification.
+Until then the P5.4R remainder stays open — not for want of `payloadDigest`,
+which `0.7.1` now emits, but because the entry point cannot be called without
+writing a trust key to disk.
+
+The order question this section left open — P5.4V before or after P5.5 — is
+answered by the same decision. P5.4V ran first, so P5.5 will delete the legacy
+builder against `0.7.1`, the pin the remaining work is authored on.
 
 ## P5.5 — Final cutover and legacy deletion
 

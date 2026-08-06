@@ -1,8 +1,9 @@
 # Current project status
 
-Last updated: 2026-08-05 (the Runtime Box builder extraction is complete:
+Last updated: 2026-08-06 (the Runtime Box builder extraction is complete:
 Scrollcase is an independent Apache-2.0 project outside this repository.
-Liatir now pins exact public `scrollcase@0.4.11` and P5.2V has completed the
+Liatir now pins exact public `scrollcase@0.7.1` — raised from `0.4.11` on
+2026-08-06, see next step 2 — and P5.2V has completed the
 v2-only contract cutover. Scrollcase is not a Liatir workspace, vendored source
 tree, or codebase to modify from this repository. Schema v1 is explicitly
 unsupported rather than retained as a parallel reader. P5.3 is complete:
@@ -369,7 +370,7 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   (2026-07-26):** the canonical source is now the standalone public repository
   `https://github.com/suffro/scrollcase`, documentation is live at
   `https://scrollcase.dev`, and Liatir now consumes exact public
-  `scrollcase@0.4.11`. The `0.1.0`–`0.1.3` releases remain historical extraction
+  `scrollcase@0.7.1` (`0.4.11` until 2026-08-06). The `0.1.0`–`0.1.3` releases remain historical extraction
   milestones: `0.1.1` added public TypeScript declarations, `0.1.2` added
   browser-safe contract helpers, and `0.1.3` safely handled conda symlink chains
   while removing machine-specific conda metadata. The temporary
@@ -390,7 +391,7 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   evidence.**
   `@liatir/core` consumes/refines the published
   generic contract. The active adapter routes doctor/keygen/verify and pixi
-  lock/audit/build through exact installed `scrollcase@0.4.11`, forces the existing namespace,
+  lock/audit/build through exact installed `scrollcase@0.7.1`, forces the existing namespace,
   supplies the private Cloud Run signer through Scrollcase's external-command
   boundary, and keeps CI/evidence/distribution in Liatir. That is consumer-side
   integration only: no Scrollcase source is present or modified here.
@@ -432,11 +433,13 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
   the generic contract, adding the Liatir signer/evidence/distribution adapter,
   migrating the remaining uv model recipes, preserving legacy CUDA target identity,
   and retiring the local generic builder. Status: **the v1 P5.0–P5.2 baseline is
-  historical; P5.2V is complete on exact `scrollcase@0.4.11`, and P5.3 is
+  historical; P5.2V completed on exact `scrollcase@0.4.11`, and P5.3 is
   complete on macOS, Linux and Windows; P5.4 is in progress, with all five scGPT
-  targets plus Geneformer macOS Metal, Linux CPU and Windows CPU migrated and
-  natively
-  proven**. It consumes generic
+  targets plus Geneformer's whole matrix — macOS Metal and both CUDA successors,
+  its CPU targets having been dropped on measurement — migrated and natively
+  proven, UCE remaining; P5.4V has raised the pin to `0.7.1`, so those proofs
+  describe bytes the current builder no longer produces and each target owes a
+  rebuild**. It consumes generic
   types and browser-safe helpers, preserves `liatir.runtime-box.*`, and passes
   the complete `test:verify` gate with 227 unit/contract tests. The stable CLI is
   locally implemented as a thin adapter; pixi operations are intended to use the
@@ -757,20 +760,30 @@ first).
    (each gated on the maintainer's go-ahead and a prior `runtime-box:signer:deploy`).
    Windows CUDA is no longer under the no-dispatch decision — it now validates on
    the self-hosted RTX 4060 Ti.
-2. **Do not raise the Scrollcase pin during P5.4.** Recorded 2026-08-04: Liatir
-   pins exact `0.4.11` while npm `latest` is `0.7.0` (published 2026-08-03), with
-   `0.5.0`, `0.6.0` and `0.6.1` in between. `0.6.0` carries symbolic links inside
-   the box payload and `0.7.0` stores already-compressed paths instead of
-   deflating them, so both change archive bytes and sizes — raising the pin
-   invalidates the recorded archive hashes, measured sizes and catalog
-   `diskPlan` floors of every target already natively proven on `0.4.11`. A
-   consumer predating `0.6.0` also rejects a link entry outright, so the Rust
-   consumer needs the link rule before any upgrade. This is tracked as
-   [P5.4V](./roadmap/scrollcase-p5-liatir-adoption.md), scheduled after P5.4,
-   together with the Rust gaps that are already real on `0.4.11`: no
-   `deny_unknown_fields` on any Runtime Box struct, and `execution`, `assets` and
-   `weights` held as opaque JSON. The package's 65-case language-neutral
-   `consumer-conformance.json` is the cheap oracle for closing them.
+2. **The Scrollcase pin is raised to `0.7.1`; eight targets now need a rebuild.**
+   The 2026-08-04 hold ("do not raise the pin during P5.4") was **lifted by the
+   maintainer on 2026-08-06** and the pin moved. The hold existed to protect
+   recorded evidence, and Liatir is unreleased, so no user depends on that
+   evidence; leaving UCE — the largest build in the matrix — to be authored on
+   `0.4.11` and then rebuilt, or frozen alone on an older builder, was the worse
+   trade. So the order was inverted: raise first, author UCE once, publish after.
+   The pin is exact `scrollcase@0.7.1`, identity read back from npm into the
+   lockfile, and the JavaScript surface turned out purely additive — no Liatir
+   call site changed. `scrollcase-consumer 0.1.2` was already ahead of the
+   format and did not move. The macOS foundation fixture rebuilt and passed the
+   whole chain, which is what found the two real defects: `runExtractedBox` now
+   returns an `environmentReport` the fixture compared away, and `dir_size`
+   skipped payload links entirely, under-counting an installed box by 15638
+   bytes and rejecting a valid one at the declared-size check. Both fixed, the
+   second with a unit test. **Outstanding:** every natively proven target still
+   describes bytes this builder no longer produces — five scGPT, three
+   Geneformer, two foundation fixtures. Nothing is published, so no identity
+   breaks; this is runner time. Four are GPU runs and none was dispatched. The
+   remaining P5.4R work is blocked upstream rather than on `payloadDigest`, which
+   `0.7.1` emits: `verify_extracted_payload` and `attach_extracted_box` take a
+   trust-key *file*, while Liatir compiles its anchors into the binary, so they
+   need `_with_keys` variants like `inspect_release_document_with_keys` already
+   has. See [P5.4V](./roadmap/scrollcase-p5-liatir-adoption.md).
 3. Close the true cross-version Runtime Box update and client-persisted signed
    anti-replay state as product work, not as an unclosed foundation gate.
 4. Continue with the common execution spine in Phase 2 after that bounded
