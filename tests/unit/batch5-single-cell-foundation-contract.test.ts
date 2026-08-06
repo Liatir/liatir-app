@@ -129,7 +129,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
     const model = getRuntimeBoxAIModelMetadata(UCE_4LAYER_MODEL_ID);
     const spec = artifactSpecForModelId(UCE_4LAYER_MODEL_ID);
     const recipe = JSON.parse(readFileSync(
-      resolve(rootDir, 'runtime-boxes/recipes/uce-4layer-macos-arm64-metal/recipe.json'),
+      resolve(rootDir, 'runtime-boxes/scrolls/uce-4layer/macos-aarch64-metal/scroll.json'),
       'utf8',
     )) as {
       boxId: string;
@@ -137,9 +137,12 @@ describe('Batch 5 single-cell foundation model contract', () => {
       runtimeId: string;
       sourceRevision: string;
       pythonVersion: string;
-      uvVersion: string;
+      pixiVersion: string;
+      uvVersion?: string;
       assets: Array<{ relativePath: string; sizeBytes: number; sha256: string }>;
       assetArchives: Array<{ relativePath: string; format: string; destination: string }>;
+      uncompressedPaths: string[];
+      prunePaths: string[];
       localFiles: Array<{ relativePath: string; sha256: string }>;
       selfTest: { files: string[]; pythonCode: string };
     };
@@ -174,9 +177,18 @@ describe('Batch 5 single-cell foundation model contract', () => {
       modelId: UCE_4LAYER_MODEL_ID,
       runtimeId: 'single-cell-foundation-uce',
       sourceRevision: model?.install?.revision,
-      pythonVersion: '3.11.9',
-      uvVersion: '0.11.28',
+      pythonVersion: '3.11.15',
+      pixiVersion: '0.73.0',
     });
+    expect(recipe.uvVersion).toBeUndefined();
+    // The packed conda prefix must arrive whole. scGPT's macOS box failed its scientific
+    // forward because an inherited prune list removed locked sympy, which PyTorch 2.8 imports
+    // lazily, so no target may prune inside venv/.
+    expect(recipe.prunePaths.filter((path) => path.startsWith('venv/'))).toEqual([]);
+    // Protein embeddings are float tensors that arrive inside a tar.gz. Deflating them a second
+    // time costs build minutes and returns nothing, so the tree the archive expands into is
+    // declared already-compressed.
+    expect(recipe.uncompressedPaths).toEqual(['model-cache/uce/model_files/protein_embeddings']);
     expect(recipe.assets.map((asset) => asset.relativePath)).toEqual(expect.arrayContaining([
       '.sources/uce-source.zip',
       'model-cache/uce/model_files/4layer_model.torch',

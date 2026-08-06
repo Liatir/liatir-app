@@ -1,7 +1,8 @@
 {
-  "schemaVersion": 1,
-  "recipeId": "uce-4layer-macos-arm64-metal",
-  "recipeVersion": "1.0.0",
+  "$schema": "https://scrollcase.dev/schema/v2/scroll.schema.json",
+  "schemaVersion": 2,
+  "scrollId": "uce-4layer-macos-arm64-metal",
+  "scrollVersion": "1.0.0",
   "boxId": "uce-4layer",
   "modelId": "snap-stanford-uce-4layer",
   "runtimeId": "single-cell-foundation-uce",
@@ -17,10 +18,9 @@
     "minMacosVersion": "13.0",
     "minRamGb": 16
   },
-  "pythonVersion": "3.11.9",
-  "uvVersion": "0.11.28",
-  "requirementsInput": "requirements.in",
-  "requirementsLock": "requirements.lock",
+  "pythonVersion": "3.11.15",
+  "pixiVersion": "0.73.0",
+  "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/uce-4layer-macos-arm64-metal.json",
   "pythonEntryPoint": "venv/bin/python",
   "modelCacheSubdir": "model-cache/uce",
   "assetBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
@@ -85,6 +85,9 @@
       "removeAfterExtract": true
     }
   ],
+  "uncompressedPaths": [
+    "model-cache/uce/model_files/protein_embeddings"
+  ],
   "prunePaths": [
     "source/UCE/README.md",
     "source/UCE/examples",
@@ -92,19 +95,7 @@
     "source/UCE/data_proc/Create New Species Files.ipynb",
     "source/UCE/data_proc/download_proc_czi_cxg.py",
     "source/UCE/data_proc/generate_reduced_chrom_files.py",
-    "source/UCE/data_proc/preproc_many_dataset.py",
-    "venv/lib/python3.11/ensurepip",
-    "venv/lib/python3.11/distutils",
-    "venv/lib/python3.11/idlelib",
-    "venv/lib/python3.11/lib2to3",
-    "venv/lib/python3.11/pydoc_data",
-    "venv/lib/python3.11/tkinter",
-    "venv/lib/python3.11/site-packages/pip",
-    "venv/lib/python3.11/site-packages/pip-24.1.2.dist-info",
-    "venv/lib/python3.11/site-packages/pkg_resources",
-    "venv/lib/python3.11/site-packages/setuptools",
-    "venv/lib/python3.11/site-packages/setuptools-70.3.0.dist-info",
-    "venv/lib/python3.11/site-packages/torch/include"
+    "source/UCE/data_proc/preproc_many_dataset.py"
   ],
   "selfTest": {
     "imports": ["torch", "scanpy", "accelerate", "anndata", "numpy", "scipy", "pandas", "h5py", "tqdm"],

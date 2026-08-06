@@ -502,7 +502,8 @@
           ],
           "timeoutMinutes": 180,
           "requiredBuildDiskBytes": 32212254720,
-          "dependencyLockSha256": "bad8165f05e80191d7ffef0c862cb1b6882532a43182cba0a3ddf40246420bc8",
+          "dependencyLockSha256": "a539412003c6ac355da2ce1dca05b7aa76ef3274a71150839c0b3396ae824a98",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/uce-4layer-macos-arm64-metal.json",
           "diskPlan": {
             "estimatedInstalledSizeBytes": 10142871337,
             "estimatedArchiveSizeBytes": 8862120348,

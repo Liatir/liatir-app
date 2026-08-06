@@ -128,17 +128,19 @@ describe('Runtime Box CI cost controls', () => {
     }
   });
 
-  it('keeps every locked runtime dependency in all canonical scGPT boxes', () => {
-    const scgpt = catalog.models.find((model) => model.boxId === 'scgpt-whole-human');
-    expect(scgpt).toBeDefined();
-
-    for (const target of scgpt?.targets ?? []) {
-      const authoring = authoringInput(target.recipeId);
-      expect(authoring.kind, target.targetId).toBe('scroll-v2');
-      expect(
-        (authoring.document.prunePaths ?? []).filter((path: string) => path.startsWith('venv/')),
-        target.targetId,
-      ).toEqual([]);
+  // scGPT's macOS box failed its scientific forward because an inherited prune list removed
+  // locked sympy, which PyTorch 2.8 imports lazily. The rule is not scGPT's: a packed conda
+  // prefix is only sound whole, and every model pays a native run to rediscover that.
+  it('keeps every locked runtime dependency in every canonical model box', () => {
+    for (const model of catalog.models) {
+      for (const target of model.targets ?? []) {
+        const authoring = authoringInput(target.recipeId);
+        expect(authoring.kind, target.targetId).toBe('scroll-v2');
+        expect(
+          (authoring.document.prunePaths ?? []).filter((path: string) => path.startsWith('venv/')),
+          `${model.boxId} ${target.targetId}`,
+        ).toEqual([]);
+      }
     }
   });
 

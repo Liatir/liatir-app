@@ -3,7 +3,8 @@ name: Runtime Box UCE 4-layer
 on:
   pull_request:
     paths:
-      - "runtime-boxes/recipes/uce-4layer-macos-arm64-metal/**"
+      - "runtime-boxes/scrolls/uce-4layer/macos-aarch64-metal/**"
+      - "runtime-boxes/legal/audits/uce-4layer-macos-arm64-metal.json"
       - "runtime-boxes/catalog.json"
       - "runtime-boxes/legal/uce-4layer.md"
       - "packages/liatir-core/src/runtime-box.ts"
@@ -19,7 +20,8 @@ on:
   push:
     branches: [main]
     paths:
-      - "runtime-boxes/recipes/uce-4layer-macos-arm64-metal/**"
+      - "runtime-boxes/scrolls/uce-4layer/macos-aarch64-metal/**"
+      - "runtime-boxes/legal/audits/uce-4layer-macos-arm64-metal.json"
       - "runtime-boxes/catalog.json"
       - "runtime-boxes/legal/uce-4layer.md"
       - "packages/liatir-core/src/runtime-box.ts"
