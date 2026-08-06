@@ -177,3 +177,6 @@ gha-creds-*.json
 .pnp.*
 # scrollcase build state
 .scrollcase/
+
+# Per-machine agent settings (permissions granted on this machine only)
+.claude/settings.local.json
