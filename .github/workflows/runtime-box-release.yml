@@ -40,7 +40,6 @@ jobs:
       version: ${{ steps.resolve.outputs.version }}
       runs_on: ${{ steps.resolve.outputs.runs_on }}
       timeout_minutes: ${{ steps.resolve.outputs.timeout_minutes }}
-      uv_version: ${{ steps.resolve.outputs.uv_version }}
       validator_script: ${{ steps.resolve.outputs.validator_script }}
       release_path: ${{ steps.resolve.outputs.release_path }}
       channel_path: ${{ steps.resolve.outputs.channel_path }}
@@ -78,7 +77,6 @@ jobs:
     timeout-minutes: ${{ fromJSON(needs.preflight.outputs.timeout_minutes) }}
     env:
       LIATIR_RUNTIME_BOX_HEARTBEAT_SECONDS: ${{ needs.preflight.outputs.heartbeat_seconds }}
-      UV_CACHE_DIR: ${{ github.workspace }}/.runtime-box-ci/uv-cache
       UV_PYTHON_INSTALL_DIR: ${{ github.workspace }}/.runtime-box-ci/python
       GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_PROJECT_ID }}
       LIATIR_RUNTIME_BOX_ADMIN_TOKEN: ${{ secrets.LIATIR_RUNTIME_BOX_ADMIN_TOKEN }}
@@ -125,12 +123,6 @@ jobs:
         run: >-
           npm run runtime-box:ci -- verify-signer-policy
           --signer "${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}"
-
-      - name: Install pinned uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
-        with:
-          version: ${{ needs.preflight.outputs.uv_version }}
-          enable-cache: false
 
       - name: Select Git Bash for Windows composite actions
         if: startsWith(inputs.target_id, 'windows-')

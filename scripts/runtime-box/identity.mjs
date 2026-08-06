@@ -11,13 +11,10 @@ export function runtimeBoxReleaseObjectPrefix(release) {
 }
 
 /**
- * Returns the builder-identity field for a recipe or a build provenance: exactly one of
- * `pixiVersion` (pixi + conda-forge substrate) or `uvVersion` (legacy standalone-Python builder).
- * Spread into provenance and evidence records so the two substrates can coexist during migration
- * without every call site repeating the branch.
+ * Returns the builder-identity field for a scroll or a build provenance. One substrate remains,
+ * pixi + conda-forge, but the shape stays a spread so provenance and evidence records keep a
+ * single place to name the builder rather than repeating the field at every call site.
  */
 export function runtimeBoxBuilderVersionFields(source) {
-  return source?.pixiVersion
-    ? { pixiVersion: source.pixiVersion }
-    : { uvVersion: source?.uvVersion };
+  return { pixiVersion: source?.pixiVersion };
 }

@@ -48,12 +48,12 @@ describe('Runtime Box authoring input resolution', () => {
     });
   });
 
-  it('keeps one explicit legacy compatibility path for targets not yet migrated', async () => {
+  it('refuses a target that has no v2 scroll instead of looking for a uv recipe', async () => {
     const paths = await workspace();
-    const directory = join(paths.recipesDir, 'legacy-linux-cpu');
-    await mkdir(directory, { recursive: true });
-    await writeFile(join(directory, 'requirements.lock'), 'example==1.0.0\n');
-    await writeFile(join(directory, 'recipe.json'), JSON.stringify({
+    // The schema-v1 fallback is gone. A missing scroll must fail by name rather than silently
+    // resolving something else, which is what the removed legacy branch used to do.
+    await mkdir(join(paths.recipesDir, 'legacy-linux-cpu'), { recursive: true });
+    await writeFile(join(paths.recipesDir, 'legacy-linux-cpu', 'recipe.json'), JSON.stringify({
       recipeId: 'legacy-linux-cpu',
       recipeVersion: '1.0.0',
       boxId: 'legacy-box',
@@ -61,38 +61,29 @@ describe('Runtime Box authoring input resolution', () => {
       target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
     }));
 
-    expect(resolveRuntimeBoxAuthoringInput({
+    expect(() => resolveRuntimeBoxAuthoringInput({
       ...paths,
       recipeId: 'legacy-linux-cpu',
-    })).toMatchObject({
-      kind: 'legacy-recipe',
-      authoringId: 'legacy-linux-cpu',
-      authoringVersion: '1.0.0',
-      lockPath: join(directory, 'requirements.lock'),
-    });
+    })).toThrow(/Missing Scrollcase v2 authoring input/);
   });
 
-  it('rejects parallel v2 and legacy authoring for the same target', async () => {
+  it('refuses two v2 scrolls claiming the same recipe identity', async () => {
     const paths = await workspace();
-    const legacyDirectory = join(paths.recipesDir, 'duplicate-linux-cpu');
-    const scrollDirectory = join(paths.scrollsDir, 'duplicate-box', 'linux-x86_64-cpu');
-    await mkdir(legacyDirectory, { recursive: true });
-    await mkdir(scrollDirectory, { recursive: true });
-    await writeFile(join(legacyDirectory, 'recipe.json'), JSON.stringify({
-      recipeId: 'duplicate-linux-cpu',
-      target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
-    }));
-    await writeFile(join(scrollDirectory, 'scroll.json'), JSON.stringify({
-      schemaVersion: 2,
-      scrollId: 'duplicate-linux-cpu',
-      scrollVersion: '1.0.0',
-      boxId: 'duplicate-box',
-      target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
-    }));
+    for (const boxId of ['duplicate-box-a', 'duplicate-box-b']) {
+      const directory = join(paths.scrollsDir, boxId, 'linux-x86_64-cpu');
+      await mkdir(directory, { recursive: true });
+      await writeFile(join(directory, 'scroll.json'), JSON.stringify({
+        schemaVersion: 2,
+        scrollId: 'duplicate-linux-cpu',
+        scrollVersion: '1.0.0',
+        boxId,
+        target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
+      }));
+    }
 
     expect(() => resolveRuntimeBoxAuthoringInput({
       ...paths,
       recipeId: 'duplicate-linux-cpu',
-    })).toThrow(/Both v2 and legacy authoring inputs exist/);
+    })).toThrow(/Expected one v2 scroll/);
   });
 });

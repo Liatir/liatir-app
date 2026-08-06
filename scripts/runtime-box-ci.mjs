@@ -20,7 +20,7 @@ import {
 import { npmInvocation } from './node-cli.mjs';
 import { runWithHeartbeat } from './runtime-box/heartbeat.mjs';
 import { runtimeBoxTargetId, runtimeBoxTorchBackendArguments } from './runtime-box/targets.mjs';
-import { lockedCondaDistributions, lockedPythonDistributions } from './runtime-box/licenses.mjs';
+import { lockedCondaDistributions } from './runtime-box/licenses.mjs';
 import { runtimeBoxPolicyFingerprint } from '../services/runtime-box-signer/src/policy.mjs';
 import { configureWorkspace, getWorkspace, workspaceOverridesFromArgv } from './runtime-box/workspace.mjs';
 import { boxTargetId } from 'scrollcase/contract/browser';
@@ -34,25 +34,18 @@ import { resolveRuntimeBoxAuthoringInput } from './runtime-box/authoring-input.m
 const workspaceRoot = () => getWorkspace().root;
 const catalogPath = () => resolve(workspaceRoot(), 'runtime-boxes/catalog.json');
 
-function authoringInputFor(recipeId, {
-  expectedBoxId,
-  expectedTargetId,
-  allowLegacy = true,
-} = {}) {
-  const workspace = getWorkspace();
+function authoringInputFor(recipeId, { expectedBoxId, expectedTargetId } = {}) {
   return resolveRuntimeBoxAuthoringInput({
     recipeId,
-    recipesDir: workspace.recipesDir,
-    scrollsDir: workspace.scrollsDir,
+    scrollsDir: getWorkspace().scrollsDir,
     expectedBoxId,
     expectedTargetId,
-    allowLegacy,
   });
 }
 
 /** Finds one canonical v2 scroll by its stable Liatir provenance identity. */
 function scrollPathForId(scrollId) {
-  return authoringInputFor(scrollId, { allowLegacy: false }).documentPath;
+  return authoringInputFor(scrollId).documentPath;
 }
 /** Generated directories the builder owns, in the order it is safe to remove them. */
 const buildStateDirectories = () => {
@@ -87,86 +80,12 @@ function sha256Bytes(value) {
   return createHash('sha256').update(value).digest('hex');
 }
 
-/** Finds prune entries that would remove a complete distribution required by the lock. */
-export function lockedDistributionPrunePaths(recipe, lockBytes) {
-  const locked = lockedPythonDistributions(lockBytes);
-  const normalize = (value) => value.toLowerCase().replace(/[-_.]+/g, '-');
-  return (recipe.prunePaths ?? []).filter((prunePath) => {
-    const path = String(prunePath).replaceAll('\\', '/');
-    const marker = '/site-packages/';
-    const markerIndex = path.toLowerCase().indexOf(marker);
-    if (markerIndex === -1) return false;
-    const remainder = path.slice(markerIndex + marker.length);
-    if (!remainder || remainder.includes('/')) return false;
-    const distributionMetadata = remainder.toLowerCase().endsWith('.dist-info')
-      ? remainder.slice(0, -'.dist-info'.length)
-      : null;
-    return locked.some(({ name, version }) => (
-      distributionMetadata
-        ? normalize(distributionMetadata) === normalize(`${name}-${version}`)
-        : normalize(remainder) === normalize(name)
-    ));
-  });
-}
-
-/** Validates a uv recipe's requirements.lock and its reviewed .dist-info license audit. */
-function validateUvRecipeLockAndAudit(recipe, target, recipePath, targetKey) {
-  const lockPath = resolve(recipePath, '..', recipe.requirementsLock);
-  requireCatalog(existsSync(lockPath), `missing dependency lock for ${targetKey}`);
-  const lockBytes = readFileSync(lockPath);
-  requireCatalog(/^[a-f0-9]{64}$/.test(target.dependencyLockSha256), `invalid pinned lock SHA-256 for ${targetKey}`);
-  requireCatalog(sha256Bytes(lockBytes) === target.dependencyLockSha256, `dependency lock SHA-256 mismatch for ${targetKey}`);
-  requireCatalog(lockBytes.includes(Buffer.from('--hash=sha256:')), `dependency lock is not hash-pinned for ${targetKey}`);
-  if (target.dependencyLicenseAudit) {
-    requireCatalog(
-      recipe.dependencyLicenseAudit === target.dependencyLicenseAudit,
-      `recipe and catalog dependency license audits differ for ${targetKey}`,
-    );
-    const auditPath = resolve(workspaceRoot(), target.dependencyLicenseAudit);
-    requireCatalog(
-      auditPath.startsWith(`${resolve(workspaceRoot(), 'runtime-boxes/legal/audits')}${sep}`),
-      `dependency license audit is outside runtime-boxes/legal/audits for ${targetKey}`,
-    );
-    requireCatalog(existsSync(auditPath), `missing dependency license audit for ${targetKey}`);
-    const audit = JSON.parse(readFileSync(auditPath, 'utf8'));
-    requireCatalog(
-      audit.schemaVersion === 1
-        && audit.kind === 'liatir.runtime-box.python-dependency-license-audit'
-        && audit.targetId === target.targetId
-        && audit.torchBackend === recipe.torchBackend
-        && audit.dependencyLockSha256 === target.dependencyLockSha256,
-      `dependency license audit identity mismatch for ${targetKey}`,
-    );
-    const reviewedPackages = audit.packages.map(({ name, version }) => ({ name, version }));
-    requireCatalog(
-      JSON.stringify(reviewedPackages) === JSON.stringify(lockedPythonDistributions(lockBytes)),
-      `dependency license audit package set differs from the lock for ${targetKey}`,
-    );
-    const invalidPrunePaths = lockedDistributionPrunePaths(recipe, lockBytes);
-    requireCatalog(
-      invalidPrunePaths.length === 0,
-      `recipe prunes locked distributions for ${targetKey}: ${invalidPrunePaths.join(', ')}`,
-    );
-    requireCatalog(
-      audit.packages.every((entry) => (
-        typeof entry.declaredLicense === 'string'
-        && entry.declaredLicense
-        && Array.isArray(entry.licenseFiles)
-      )),
-      `dependency license audit contains an incomplete entry for ${targetKey}`,
-    );
-  }
-  if (recipe.torchBackend) {
-    requireCatalog(target.dependencyLicenseAudit, `PyTorch target lacks a reviewed dependency license audit for ${targetKey}`);
-  }
-}
-
 /**
  * Validates a pixi recipe's committed pixi.lock and its reviewed conda license audit.
  *
  * `pixi install --frozen` guarantees the installed set equals the lock, and the lock carries every
  * package's SPDX license, so the audit is a pure function of the lock (no built prefix needed). No
- * prune-vs-lock guard here: unlike the uv audit (derived from installed site-packages), the conda
+ * prune-vs-lock guard here: the conda
  * audit is lock-derived and conservatively lists the full locked set, so pruning transitive conda
  * dependencies to shrink the box is allowed and over-discloses licenses rather than under-disclosing.
  */
@@ -500,13 +419,8 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
           `local recipe file hash mismatch for ${localFile.sourcePath} in ${targetKey}`,
         );
       }
-      // Coexisting substrates: a pixi recipe is validated against its pixi.lock + conda audit; a
-      // legacy uv recipe against requirements.lock + its .dist-info audit.
-      if (recipe.pixiVersion) {
-        validatePixiRecipeLockAndAudit(recipe, target, recipePath, targetKey);
-      } else {
-        validateUvRecipeLockAndAudit(recipe, target, recipePath, targetKey);
-      }
+      requireCatalog(recipe.pixiVersion, `authoring input is not a pixi scroll for ${targetKey}`);
+      validatePixiRecipeLockAndAudit(recipe, target, recipePath, targetKey);
       runtimeBoxBuildDiskPlan(recipe, target);
 
       validateWindowsCudaPrerequisite(model, target);
@@ -766,14 +680,6 @@ async function probeFoundationHost(fixture, runner, output) {
 }
 
 function builtReleasePath(authoring, targetId) {
-  if (authoring.kind === 'legacy-recipe') {
-    const path = resolve(
-      getWorkspace().distDir,
-      `${authoring.document.boxId}-${authoring.document.version}-${targetId}.release.json`,
-    );
-    requireCatalog(existsSync(path), `missing built release for ${authoring.authoringId}`);
-    return path;
-  }
   const directory = resolve(
     getWorkspace().distDir,
     'boxes',
@@ -862,7 +768,6 @@ async function main() {
       recipe_id: resolved.target.recipeId,
       runs_on: resolved.runner.runsOn,
       timeout_minutes: resolved.target.timeoutMinutes,
-      uv_version: recipe.uvVersion ?? '',
       pixi_version: recipe.pixiVersion ?? '',
       validator_script: resolved.model.validatorScript,
       native_eligible: nativeRequested ? 'true' : 'false',
@@ -876,9 +781,7 @@ async function main() {
       runner_arch: resolved.runner.arch,
       build_dir_relative: relative(workspaceRoot(), getWorkspace().buildDir).replaceAll('\\', '/'),
       box_id: resolved.model.boxId,
-      release_path: authoring.kind === 'legacy-recipe'
-        ? `.runtime-box-dist/${resolved.model.boxId}-${recipe.version}-${resolved.target.targetId}.release.json`
-        : '',
+      release_path: '',
       dependency_lock_sha256: resolved.target.dependencyLockSha256,
       calculated_peak_disk_bytes: runtimeBoxBuildDiskPlan(recipe, resolved.target).calculatedPeakDiskBytes,
       required_disk_bytes: resolved.target.requiredBuildDiskBytes,
@@ -906,13 +809,10 @@ async function main() {
       version: recipe.version,
       runs_on: resolved.runner.runsOn,
       timeout_minutes: target.timeoutMinutes,
-      uv_version: recipe.uvVersion ?? '',
       pixi_version: recipe.pixiVersion ?? '',
       validator_script: model.validatorScript,
       box_id: model.boxId,
-      release_path: authoring.kind === 'legacy-recipe'
-        ? `.runtime-box-dist/${model.boxId}-${recipe.version}-${target.targetId}.release.json`
-        : '',
+      release_path: '',
       channel_path: `.runtime-box-dist/${model.boxId}-beta-${target.targetId}.channel.json`,
       dependency_lock_sha256: target.dependencyLockSha256,
       calculated_peak_disk_bytes: runtimeBoxBuildDiskPlan(recipe, target).calculatedPeakDiskBytes,

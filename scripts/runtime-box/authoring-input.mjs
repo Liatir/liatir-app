@@ -22,75 +22,46 @@ function matchingScrollPaths(scrollsDir, recipeId) {
 }
 
 /**
- * Resolves one stable Liatir recipe identity to its active authoring document.
+ * Resolves one stable Liatir recipe identity to its authoring document.
  *
- * Migrated targets live only in the canonical Scrollcase v2 tree. Targets still
- * waiting for P5.4 remain readable by Liatir's CI/evidence compatibility layer,
- * while the stable build command continues to reject schema-v1 authoring.
+ * Every target lives in the canonical Scrollcase v2 tree. The schema-v1 uv path this
+ * function used to fall back to is gone with the last recipe it read.
  */
 export function resolveRuntimeBoxAuthoringInput({
   recipeId,
-  recipesDir,
   scrollsDir,
   expectedBoxId,
   expectedTargetId,
-  allowLegacy = true,
 }) {
-  const legacyPath = resolve(recipesDir, recipeId, 'recipe.json');
   const matches = matchingScrollPaths(scrollsDir, recipeId);
   if (matches.length > 1) {
     throw new Error(`Expected one v2 scroll for ${recipeId}, found ${matches.length}.`);
   }
-  if (matches.length === 1) {
-    if (existsSync(legacyPath)) {
-      throw new Error(`Both v2 and legacy authoring inputs exist for ${recipeId}.`);
-    }
-    const documentPath = matches[0];
-    const document = readDocument(documentPath);
-    const targetId = boxTargetId(document.target);
-    if (
-      document.schemaVersion !== 2
-      || document.scrollId !== recipeId
-      || typeof document.scrollVersion !== 'string'
-      || !document.scrollVersion
-      || (expectedBoxId && document.boxId !== expectedBoxId)
-      || (expectedTargetId && targetId !== expectedTargetId)
-    ) {
-      throw new Error(`Invalid Scrollcase v2 authoring identity for ${recipeId}.`);
-    }
-    const directory = resolve(documentPath, '..');
-    return {
-      kind: 'scroll-v2',
-      document,
-      documentPath,
-      directory,
-      lockPath: resolve(directory, 'pixi.lock'),
-      authoringId: document.scrollId,
-      authoringVersion: document.scrollVersion,
-      targetId,
-    };
+  if (matches.length === 0) {
+    throw new Error(`Missing Scrollcase v2 authoring input for ${recipeId}.`);
   }
-
-  if (!allowLegacy) throw new Error(`Missing Scrollcase v2 authoring input for ${recipeId}.`);
-  if (!existsSync(legacyPath)) throw new Error(`Missing authoring input for ${recipeId}.`);
-  const document = readDocument(legacyPath);
+  const documentPath = matches[0];
+  const document = readDocument(documentPath);
+  const targetId = boxTargetId(document.target);
   if (
-    document.recipeId !== recipeId
+    document.schemaVersion !== 2
+    || document.scrollId !== recipeId
+    || typeof document.scrollVersion !== 'string'
+    || !document.scrollVersion
     || (expectedBoxId && document.boxId !== expectedBoxId)
-    || (expectedTargetId && boxTargetId(document.target) !== expectedTargetId)
+    || (expectedTargetId && targetId !== expectedTargetId)
   ) {
-    throw new Error(`Invalid legacy authoring identity for ${recipeId}.`);
+    throw new Error(`Invalid Scrollcase v2 authoring identity for ${recipeId}.`);
   }
-  const directory = resolve(legacyPath, '..');
-  const lockName = document.pixiVersion ? 'pixi.lock' : document.requirementsLock;
+  const directory = resolve(documentPath, '..');
   return {
-    kind: 'legacy-recipe',
+    kind: 'scroll-v2',
     document,
-    documentPath: legacyPath,
+    documentPath,
     directory,
-    lockPath: resolve(directory, lockName),
-    authoringId: document.recipeId,
-    authoringVersion: document.recipeVersion,
-    targetId: boxTargetId(document.target),
+    lockPath: resolve(directory, 'pixi.lock'),
+    authoringId: document.scrollId,
+    authoringVersion: document.scrollVersion,
+    targetId,
   };
 }

@@ -28,7 +28,6 @@ jobs:
       recipe_id: ${{ steps.resolve.outputs.recipe_id }}
       runs_on: ${{ steps.resolve.outputs.runs_on }}
       timeout_minutes: ${{ steps.resolve.outputs.timeout_minutes }}
-      uv_version: ${{ steps.resolve.outputs.uv_version }}
       pixi_version: ${{ steps.resolve.outputs.pixi_version }}
       validator_script: ${{ steps.resolve.outputs.validator_script }}
       native_eligible: ${{ steps.resolve.outputs.native_eligible }}
@@ -94,7 +93,6 @@ jobs:
     timeout-minutes: ${{ fromJSON(needs.preflight.outputs.timeout_minutes) }}
     env:
       LIATIR_RUNTIME_BOX_HEARTBEAT_SECONDS: ${{ needs.preflight.outputs.heartbeat_seconds }}
-      UV_CACHE_DIR: ${{ github.workspace }}/.runtime-box-ci/uv-cache
       UV_PYTHON_INSTALL_DIR: ${{ github.workspace }}/.runtime-box-ci/python
     steps:
       - uses: actions/checkout@v4
@@ -108,13 +106,6 @@ jobs:
 
       - name: Clean stale Runtime Box state
         run: node scripts/runtime-box-ci.mjs clean
-
-      - name: Install pinned uv
-        if: needs.preflight.outputs.uv_version != ''
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
-        with:
-          version: ${{ needs.preflight.outputs.uv_version }}
-          enable-cache: false
 
       - name: Install pinned pixi and conda-pack (POSIX)
         if: needs.preflight.outputs.pixi_version != '' && !startsWith(inputs.target_id, 'windows-')

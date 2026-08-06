@@ -389,7 +389,7 @@ try {
       recipeId: RECIPE.recipeId,
       recipeVersion: RECIPE.recipeVersion,
       pythonVersion: RECIPE.pythonVersion,
-      uvVersion: RECIPE.uvVersion,
+      pixiVersion: RECIPE.pixiVersion,
       dependencyLockSha256: DEPENDENCY_LOCK_SHA256,
     },
     evidence: {

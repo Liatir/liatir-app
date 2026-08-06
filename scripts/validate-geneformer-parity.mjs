@@ -39,7 +39,6 @@ const RECIPE_ID = process.env.LIATIR_RUNTIME_BOX_RECIPE_ID
 const WORKSPACE = resolveWorkspace({ cwd: ROOT });
 const RECIPE = resolveRuntimeBoxAuthoringInput({
   recipeId: RECIPE_ID,
-  recipesDir: WORKSPACE.recipesDir,
   scrollsDir: WORKSPACE.scrollsDir,
 }).document;
 if (RECIPE.sourceRevision !== REVISION) {

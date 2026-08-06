@@ -15,7 +15,6 @@ export async function loadRuntimeBoxValidatorContext({
   const authoring = resolveRuntimeBoxAuthoringInput({
     root,
     recipeId,
-    recipesDir: join(root, 'runtime-boxes', 'recipes'),
     scrollsDir: join(root, 'runtime-boxes', 'scrolls'),
   });
   const recipePath = authoring.documentPath;

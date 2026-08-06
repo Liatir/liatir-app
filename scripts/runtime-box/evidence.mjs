@@ -327,7 +327,6 @@ async function completeModelRecord(options, catalog, phase) {
   const workspace = getWorkspace();
   const authoring = resolveRuntimeBoxAuthoringInput({
     recipeId: target.recipeId,
-    recipesDir: workspace.recipesDir,
     scrollsDir: workspace.scrollsDir,
     expectedBoxId: model.boxId,
     expectedTargetId: target.targetId,

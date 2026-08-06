@@ -38,42 +38,6 @@ describe('Runtime Box scientific validator context', () => {
     );
   });
 
-  it('resolves the pixi.lock hash for a pixi recipe and requirements.lock otherwise', async () => {
-    const { createHash } = await import('node:crypto');
-    for (const kind of ['pixi', 'uv'] as const) {
-      const root = await mkdtemp(join(tmpdir(), 'liatir-validator-context-lock-'));
-      const recipeId = 'fixture-linux-cpu';
-      const recipeDirectory = join(root, 'runtime-boxes', 'recipes', recipeId);
-      await mkdir(recipeDirectory, { recursive: true });
-      const pixiLock = 'version: 6\nfixture: pixi\n';
-      const requirementsLock = 'fixture==1.0.0\n';
-      await writeFile(join(recipeDirectory, 'pixi.lock'), pixiLock);
-      await writeFile(join(recipeDirectory, 'requirements.lock'), requirementsLock);
-      await writeFile(join(recipeDirectory, 'recipe.json'), JSON.stringify({
-        recipeId,
-        ...(kind === 'pixi' ? { pixiVersion: '0.73.0' } : {}),
-        requirementsLock: 'requirements.lock',
-        pythonEntryPoint: 'venv/bin/python',
-        target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
-      }));
-      process.env.LIATIR_RUNTIME_BOX_RECIPE_ID = recipeId;
-      delete process.env.LIATIR_RUNTIME_BOX_TARGET_ID;
-      try {
-        const context = await loadRuntimeBoxValidatorContext({
-          root,
-          defaultRecipeId: 'unused',
-          runtimeDirectoryEnvironment: 'LIATIR_TEST_RUNTIME_DIR',
-        });
-        const expected = createHash('sha256')
-          .update(kind === 'pixi' ? pixiLock : requirementsLock)
-          .digest('hex');
-        expect(context.dependencyLockSha256).toBe(expected);
-      } finally {
-        await rm(root, { recursive: true, force: true });
-      }
-    }
-  });
-
   it('resolves a migrated validator from its canonical v2 scroll and unchanged pixi lock', async () => {
     const { createHash } = await import('node:crypto');
     const root = await mkdtemp(join(tmpdir(), 'liatir-validator-context-v2-'));
@@ -122,12 +86,14 @@ describe('Runtime Box scientific validator context', () => {
   it('rejects a checked target that does not match the selected recipe', async () => {
     const root = await mkdtemp(join(tmpdir(), 'liatir-validator-context-'));
     const recipeId = 'fixture-linux-cpu';
-    const recipeDirectory = join(root, 'runtime-boxes', 'recipes', recipeId);
-    await mkdir(recipeDirectory, { recursive: true });
-    await writeFile(join(recipeDirectory, 'requirements.lock'), 'fixture==1.0.0\n');
-    await writeFile(join(recipeDirectory, 'recipe.json'), JSON.stringify({
-      recipeId,
-      requirementsLock: 'requirements.lock',
+    const directory = join(root, 'runtime-boxes', 'scrolls', 'fixture-box', 'linux-x86_64-cpu');
+    await mkdir(directory, { recursive: true });
+    await writeFile(join(directory, 'pixi.lock'), 'version: 6\nfixture: mismatch\n');
+    await writeFile(join(directory, 'scroll.json'), JSON.stringify({
+      schemaVersion: 2,
+      scrollId: recipeId,
+      scrollVersion: '1.0.0',
+      boxId: 'fixture-box',
       pythonEntryPoint: 'venv/bin/python',
       target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
     }));

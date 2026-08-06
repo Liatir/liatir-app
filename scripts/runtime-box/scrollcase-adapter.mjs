@@ -3,8 +3,8 @@
  *
  * Generic pixi box work goes through the package executable. Liatir injects its frozen document
  * namespace, translates its private signer into Scrollcase's command contract, and writes CI
- * receipts only after the package has returned success. Distribution and the temporary uv
- * compatibility path remain explicitly Liatir-owned.
+ * receipts only after the package has returned success. Distribution remains explicitly
+ * Liatir-owned; the temporary uv compatibility path is gone.
  */
 
 import { readFile, mkdir, readdir, stat, writeFile } from 'node:fs/promises';
