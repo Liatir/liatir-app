@@ -2080,7 +2080,7 @@ scroll needed a `uncompressedPaths` declaration; scGPT's one `assetArchives`
 entry expands into Python source, which compresses well and should keep
 deflating.
 
-#### Outstanding: eight rebuilds
+#### Outstanding: ten rebuilds
 
 Every natively proven target still describes bytes this builder no longer
 produces. None is published, so no identity breaks and nothing is invalidated
