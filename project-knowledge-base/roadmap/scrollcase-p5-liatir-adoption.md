@@ -183,7 +183,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.2 — Liatir adapter and distribution split | Complete | Real clean `keygen → lock → build → verify --self-test` cycle through the stable Liatir command; namespace, archive hash and receipts checked |
 | P5.2V — Scrollcase v2-only cutover | Complete | Exact `scrollcase@0.4.11`; active contracts and consumers use v2; v1 is explicitly unsupported; clean local v2 proof green |
 | P5.3 — v2 foundation-fixture migration | Complete | Three reviewed v2 scrolls/locks/audits; macOS, Linux and Windows native proofs green; every foundation uv fixture removed only after its matching proof |
-| P5.4 — model-recipe migration | In progress | All five scGPT inputs are v2 and natively proven; the CUDA identity decision is resolved and Geneformer's whole matrix — macOS Metal plus both CUDA successors — is proven, its CPU targets having been dropped on measurement; UCE remains |
+| P5.4 — model-recipe migration | Authoring complete; UCE unproven | All five scGPT inputs are v2 and natively proven; the CUDA identity decision is resolved and Geneformer's whole matrix — macOS Metal plus both CUDA successors — is proven, its CPU targets having been dropped on measurement; UCE is now a v2 scroll authored on `0.7.1`, so no uv recipe remains, but it has no native run |
 | P5.4R — adopt `scrollcase-consumer` in the Rust bridge | In progress | `runtime_boxes.rs` delegates format verification to exact `scrollcase-consumer 0.1.2`, keeps the product lifecycle, and proves the Liatir-owned call order |
 | P5.4V — Scrollcase `0.4.11` → current-line upgrade | Pin raised and locally proven; rebuilds outstanding | Exact `scrollcase@0.7.1` with its npm identity read back into the lockfile, `scrollcase-consumer 0.1.2` confirmed ahead of the format, the macOS foundation fixture rebuilt and passed end to end through the Rust lifecycle, and the maintainer decision recorded that every proven target rebuilds rather than freezes |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
@@ -1497,6 +1497,59 @@ Three migration hazards this target carries that earlier ones did not:
 The published `1.0.0-beta.1` UCE objects, their evidence record and the beta
 channel stay immutable. Per the immutable-version rule, a pixi rebuild cannot
 replace those bytes under the same version.
+
+#### UCE authoring is done (2026-08-06, `4f84c34`)
+
+Authored directly on `0.7.1`, not migrated to `0.4.11` and rebuilt — that
+inversion is the whole point of running P5.4V first. UCE is now a single v2
+scroll at `runtime-boxes/scrolls/uce-4layer/macos-aarch64-metal/`, and the uv
+recipe is gone: the resolver refuses a target that has both authoring inputs, so
+this is one commit, not two.
+
+Lock SHA-256
+`a539412003c6ac355da2ce1dca05b7aa76ef3274a71150839c0b3396ae824a98`, 194 conda
+packages, all conda-forge, no PyPI or source-build escape hatch. Python resolves
+to `3.11.15`, matching the sibling macOS targets. The 194-package licence audit
+has no undeclared licence, and its copyleft set is the class the two proven
+macOS boxes already ship — `libgcc`/`libgfortran` under GPL-3 with the GCC
+runtime exception, `readline`, `mpfr` — plus `gmp`, `gmpy2` and `mpc`, which are
+LGPL-3 or dual-licensed. No new exposure.
+
+All three hazards above are resolved rather than deferred:
+
+1. **The 12 `venv/` prune paths are gone**, leaving only the seven `source/UCE`
+   ones. The regression that forbade them was scoped to scGPT; it is now
+   cross-model, so the next box cannot pay a native run to rediscover the rule.
+2. **`uncompressedPaths` now names
+   `model-cache/uce/model_files/protein_embeddings`** — this is the argument that
+   was "a P5.4V argument, not a blocker", and P5.4V has since happened. The
+   float tensors inside the 2.74 GB tarball are stored rather than deflated a
+   second time. `source/UCE` keeps deflating, because it is Python.
+3. **PyTorch moves to `2.8.0`.** conda-forge has no `2.1.1` for this substrate,
+   and the lock resolves the same
+   `pytorch-2.8.0-cpu_generic_py311_hf0c13c8_2` build that carries Metal for
+   scGPT and Geneformer. Metal parity for UCE is therefore a fresh baseline
+   requiring review, not a reproduction of the published `1.0.0-beta.1` numbers.
+
+The scientific pins carry over exactly: numpy `1.26.4`, scipy `1.14.1`, pandas
+`2.2.2`, tqdm `4.66.5`, scanpy `1.10.2`. `accelerate`, `requests` and `urllib3`
+are left to the solver — their uv pins (`0.24.0`, `2.25.1`, `1.26.6`) predate
+this framework by years and would constrain the solve without protecting a
+result. They resolve to `1.14.0`, `2.34.2` and `2.7.0`.
+
+**Nothing is proven.** No native run, no build, no signature, no publication. The
+`requiredBuildDiskBytes` floor and the disk plan still hold their uv-era values,
+which are now overstatements under a builder that carries links and stores
+weights; they are corrected by measurement, not by inference. Two of those
+uv-era numbers pull in opposite directions and neither can be predicted: dropping
+the `venv/` prunes grows the payload, while carried links and stored weights
+shrink it.
+
+**Disk is no longer the blocker.** The `macos-arm64-heavy` preflight passes:
+`39503192064` free bytes against the profile's `37580963840` bootstrap floor, a
+margin of about 1.8 GiB. That margin is thin and the floor is itself a `0.4.11`
+figure, so the native run should be treated as the measurement that replaces
+both.
 
 ### UCE capacity rule
 

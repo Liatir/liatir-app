@@ -767,6 +767,12 @@ first).
    evidence; leaving UCE — the largest build in the matrix — to be authored on
    `0.4.11` and then rebuilt, or frozen alone on an older builder, was the worse
    trade. So the order was inverted: raise first, author UCE once, publish after.
+   **UCE is now authored** (`4f84c34`): a single v2 scroll on `0.7.1`, lock
+   `a539412003c6ac355da2ce1dca05b7aa76ef3274a71150839c0b3396ae824a98`, 194
+   conda-forge packages with no undeclared licence, all twelve `venv/` prune
+   paths dropped and `uncompressedPaths` naming the protein-embedding tree. No
+   uv recipe remains anywhere in the repository. It has no native run yet, and
+   the `macos-arm64-heavy` preflight passes with about 1.8 GiB of margin.
    The pin is exact `scrollcase@0.7.1`, identity read back from npm into the
    lockfile, and the JavaScript surface turned out purely additive — no Liatir
    call site changed. `scrollcase-consumer 0.1.2` was already ahead of the
