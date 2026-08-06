@@ -1,0 +1,117 @@
+name: Sync public SDK
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/liatir-core/**"
+      - "packages/liatir-api/**"
+      - "packages/liatir-cli/**"
+      - "public-sdk/**"
+      - ".github/workflows/sync-public-sdk.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: sync-public-sdk
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    name: Mirror Core, API and CLI to liatir/sdk
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.LIATIR_MIRROR_APP_ID }}
+          private-key: ${{ secrets.LIATIR_MIRROR_APP_PRIVATE_KEY }}
+          owner: liatir
+          repositories: sdk
+
+      - name: Checkout private monorepo
+        uses: actions/checkout@v4
+        with:
+          path: source
+          persist-credentials: false
+
+      - name: Checkout public SDK repo
+        uses: actions/checkout@v4
+        with:
+          repository: liatir/sdk
+          ref: main
+          path: public-sdk-repo
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
+
+      - name: Reset public repo content
+        run: |
+          find public-sdk-repo -mindepth 1 \
+            ! -path "public-sdk-repo/.git" \
+            ! -path "public-sdk-repo/.git/*" \
+            -exec rm -rf {} +
+
+      - name: Copy public root files
+        run: |
+          cp -R source/public-sdk/. public-sdk-repo/
+
+      - name: Copy mirrored packages
+        run: |
+          mkdir -p public-sdk-repo/packages
+
+          rsync -av --delete \
+            --exclude=".git" \
+            --exclude="node_modules" \
+            --exclude="dist" \
+            --exclude=".turbo" \
+            --exclude=".DS_Store" \
+            --exclude="package-lock.json" \
+            source/packages/liatir-core/ public-sdk-repo/packages/liatir-core/
+
+          rsync -av --delete \
+            --exclude=".git" \
+            --exclude="node_modules" \
+            --exclude="dist" \
+            --exclude=".turbo" \
+            --exclude=".DS_Store" \
+            --exclude="package-lock.json" \
+            source/packages/liatir-api/ public-sdk-repo/packages/liatir-api/
+
+          rsync -av --delete \
+            --exclude=".git" \
+            --exclude="node_modules" \
+            --exclude="dist" \
+            --exclude=".turbo" \
+            --exclude=".DS_Store" \
+            --exclude="package-lock.json" \
+            source/packages/liatir-cli/ public-sdk-repo/packages/liatir-cli/
+
+      - name: Safety check - no obvious secrets
+        working-directory: public-sdk-repo
+        run: |
+          if grep -R "PRIVATE_KEY\|SECRET_KEY\|OPENAI_API_KEY\|ANTHROPIC_API_KEY\|AWS_SECRET_ACCESS_KEY\|GITHUB_TOKEN" .; then
+            echo "Possible secret found."
+            exit 1
+          fi
+
+      - name: Configure Git author
+        working-directory: public-sdk-repo
+        run: |
+          git config user.name "liatir-sdk-mirror[bot]"
+          git config user.email "liatir-sdk-mirror[bot]@users.noreply.github.com"
+
+      - name: Commit and push mirror
+        working-directory: public-sdk-repo
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "sync: mirror public SDK from private monorepo"
+            git push origin main
+          else
+            echo "No changes to mirror."
+          fi

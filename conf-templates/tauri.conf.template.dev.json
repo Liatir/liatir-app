@@ -1,0 +1,41 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Liatir",
+  "version": "0.0.1",
+  "identifier": "app.liatir.app",
+  "plugins": {
+    "updater": {
+      "active": false
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "liatir"
+        ]
+      }
+    }
+  },
+  "build": {
+    "removeUnusedCommands": true
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "security": {
+      "capabilities": [
+        "remote"
+      ],
+      "csp": null
+    },
+    "windows": []
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "dmg"
+    ],
+    "icon": ["icons/icon.png", "icons/icon.icns", "icons/icon.ico"],
+    "macOS": {
+      "entitlements": "Entitlements.plist"
+    }
+  }
+}

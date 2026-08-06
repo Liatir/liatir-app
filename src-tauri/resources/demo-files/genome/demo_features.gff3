@@ -1,0 +1,7 @@
+##gff-version 3
+chr1	Liatir	gene	120	520	.	+	.	ID=gene_demo_1;Name=DemoGeneA
+chr1	Liatir	mRNA	120	520	.	+	.	ID=tx_demo_1;Parent=gene_demo_1;Name=DemoTranscriptA
+chr1	Liatir	exon	120	210	.	+	.	ID=exon_demo_1;Parent=tx_demo_1
+chr1	Liatir	exon	330	520	.	+	.	ID=exon_demo_2;Parent=tx_demo_1
+chr1	Liatir	gene	690	940	.	-	.	ID=gene_demo_2;Name=DemoGeneB
+chr1	Liatir	exon	690	940	.	-	.	ID=exon_demo_3;Parent=gene_demo_2

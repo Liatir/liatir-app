@@ -1,0 +1,140 @@
+{
+  "name": "liatir-stack",
+  "version": "0.1.0",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260711.1",
+    "@eslint/js": "^9.39.4",
+    "@tauri-apps/cli": "2.11.4",
+    "@types/node": "^25.9.1",
+    "esbuild": "^0.28.1",
+    "eslint": "^9.39.4",
+    "expect": "^30.4.1",
+    "globals": "^15.15.0",
+    "pixelmatch": "^7.2.0",
+    "pngjs": "^7.0.0",
+    "rollup": "^4.62.2",
+    "rollup-plugin-dts": "^6.4.1",
+    "tsup": "^8.5.1",
+    "tsx": "^4.22.4",
+    "typescript-eslint": "^8.62.1",
+    "vitepress": "^2.0.0-alpha.17",
+    "vitepress-plugin-tabs": "^0.9.0",
+    "vitest": "^4.1.9",
+    "wrangler": "^4.110.0"
+  },
+  "overrides": {
+    "vite": {
+      "esbuild": "^0.28.1"
+    }
+  },
+  "scripts": {
+    "lint:ts": "eslint \"packages/*/src/**/*.ts\"",
+
+    "devconf": "bash scripts/dev-conf.sh",
+    "localdevconf": "bash scripts/local-dev-conf.sh",
+    "prodconf": "bash scripts/prod-conf.sh",
+
+    "ts:clean": "find . -type f -name \"_companion_context.js\" -delete && find . -type f -name \"bridge.js\" -delete && find . -type f -name \"_constants.js\" -delete && find . -type f -name \"_helpers.js\" -delete && find . -type f -name \"_types.js\" -delete && find . -type f -name \"_main.js\" -delete && npm run clean:ts --prefix src-tauri/",
+    "ts:compile": "npm run build --prefix packages/liatir-core && npx tsc -p tsconfig.json && npm run ts:compile --prefix src-tauri/",
+    "ts:compile:src-ts": "npm run build --prefix packages/liatir-core && npx tsc -p tsconfig.json",
+    "ts:compile:bridge": "npm run ts:compile --prefix src-tauri/",
+
+    "clean": "npm run clean --prefix src-tauri/",
+    "clean:deep": "npm run ts:clean && npm run clean:deep --prefix src-tauri/",
+
+    "build": "npm install && npm run build --prefix src-tauri/",
+    "build:dev": "npm install && npm run build:dev --prefix src-tauri/",
+    "build:dev:clean": "npm install && npm run build:dev:clean --prefix src-tauri/",
+    "build:local": "npm install && npm run build:local --prefix src-tauri/",
+    "build:clean": "npm run build:clean --prefix src-tauri/",
+    "build:log": "npm run build:log --prefix src-tauri/",
+    "build:wasm": "npm run build:wasm --prefix src-tauri/",
+    "build:frontend": "npm ci --prefix frontend/ && npm run build --prefix frontend/",
+    "build:worker": "npm run build:worker --prefix src-tauri/",
+
+    "dev": "npm run dev --prefix src-tauri/",
+    "dev:keepsandbox": "npm run dev:keepsandbox --prefix src-tauri/",
+    "dev:local": "npm run dev:local --prefix src-tauri/",
+    "dev:clean": "npm run dev:clean --prefix src-tauri/",
+    "dev:log": "npm run dev:log --prefix src-tauri/",
+    "dev:frontend": "npm run dev --prefix frontend/",
+    
+    "test:unit": "vitest run --config tests/unit/vitest.config.ts",
+    "test:tauri:prepare": "npm run localdevconf && npm run build --prefix packages/liatir-core && npm run gen:sdk-types && npm ci --prefix frontend && npm run check --prefix frontend && npm run build --prefix frontend && npm run ts:compile --prefix src-tauri && node scripts/build-tauri-test-binary.mjs",
+    "test:tauri": "npm run test:tauri:prepare && npm run test:tauri:run",
+    "test:tauri:dev-smoke": "node scripts/smoke-tauri-dev.mjs",
+    "test:tauri:run": "node tests/e2e/run-tauri-e2e.mjs",
+    "test:visual": "node tests/e2e/run-tauri-e2e.mjs --visual tests/e2e/specs/visual.smoke.e2e.mjs",
+    "test:visual:update": "node tests/e2e/run-tauri-e2e.mjs --visual --update-snapshots tests/e2e/specs/visual.smoke.e2e.mjs",
+    "test:quality": "npm run test:unit && npm run test:tauri:dev-smoke && npm run test:tauri && npm run test:visual",
+    "test:fast": "node tests/run-test-matrix.mjs --profile fast",
+    "test:verify": "node tests/run-test-matrix.mjs --profile verify",
+    "test:ui": "node tests/run-test-matrix.mjs --profile ui",
+    "test:ui:visual": "node tests/run-test-matrix.mjs --profile visual",
+    "test:heavy:ai": "node tests/run-test-matrix.mjs --profile heavy-ai --include-heavy",
+    "test:full": "node tests/run-test-matrix.mjs --profile all",
+    "test:full:continue": "node tests/run-test-matrix.mjs --profile all --continue-on-failure",
+    "test:full:heavy": "LIATIR_RUN_HEAVY_AI=1 node tests/run-test-matrix.mjs --profile all --include-heavy",
+    "test:full:heavy:install": "LIATIR_RUN_HEAVY_AI=1 LIATIR_HEAVY_AI_INSTALL=1 node tests/run-test-matrix.mjs --profile all --include-heavy",
+    "test:report": "node tests/run-test-matrix.mjs --profile verify",
+
+    "gen:sdk-types": "npm run browser-api:build && node scripts/generate-sdk-types.mjs",
+
+    "liatir:publish": "npm run browser-api:build && node scripts/publish-liatir-packages.mjs",
+    "liatir:publish:dry": "npm run browser-api:build && node scripts/publish-liatir-packages.mjs --dry-run",
+
+    "browser-api:build": "node scripts/build-browser-api.mjs",
+
+    "sdk:build": "npm run build --prefix sdk/",
+    "sdk:publish": "npm run pub --prefix sdk/",
+    "sdk:syncVersion": "npm run syncVersion --prefix sdk/",
+
+    "cargo:update": "npm run cargo:update --prefix src-tauri/",
+
+    "linecount": "cloc $(git ls-files)",
+    "linecount:ignored": "cloc .",
+
+    "docs:dev": "vitepress dev docs --port 5175",
+    "docs:build": "vitepress build docs",
+    "docs:deploy": "npm run deploy --prefix docs/",
+    "docs:preview": "vitepress preview docs",
+    "docs:internal:dev": "vitepress dev project-knowledge-base --port 5176",
+    "docs:internal:build": "vitepress build project-knowledge-base",
+    "docs:internal:preview": "vitepress preview project-knowledge-base",
+    "docs:all:build": "npm run docs:build && npm run docs:internal:build",
+
+    "runtime-box": "node scripts/runtime-box.mjs",
+    "runtime-box:catalog:check": "node scripts/runtime-box-ci.mjs check",
+    "runtime-box:ci": "node scripts/runtime-box-ci.mjs",
+    "runtime-box:product-lifecycle": "node scripts/run-runtime-box-product-lifecycle.mjs",
+    "runtime-box:ci:configure": "bash scripts/configure-runtime-box-ci.sh",
+    "runtime-box:runner": "bash scripts/run-runtime-box-selfhosted-runner.sh",
+    "runtime-box:runner:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-runtime-box-selfhosted-runner.ps1",
+    "runtime-box:runner:macos-heavy": "bash scripts/run-runtime-box-selfhosted-runner.sh --model snap-stanford-uce-4layer --target macos-aarch64-metal --mode native-lifecycle",
+    "runtime-box:test:foundation": "node scripts/validate-runtime-box-foundation.mjs",
+    "runtime-box:test:native": "node scripts/validate-runtime-box-native-fixture.mjs",
+    "runtime-box:validate:geneformer": "node scripts/validate-geneformer-parity.mjs",
+    "runtime-box:validate:scgpt": "node scripts/validate-scgpt-runtime.mjs",
+    "runtime-box:validate:uce": "node scripts/validate-uce-runtime.mjs",
+    "runtime-box:worker:dev": "wrangler dev --config workers/runtime-box-registry/wrangler.jsonc",
+    "runtime-box:worker:types": "wrangler types --config workers/runtime-box-registry/wrangler.jsonc workers/runtime-box-registry/worker-configuration.d.ts",
+    "runtime-box:worker:deploy": "wrangler deploy --config workers/runtime-box-registry/wrangler.jsonc",
+    "runtime-box:signer:check": "npm run check --prefix services/runtime-box-signer",
+    "runtime-box:signer:deploy": "bash scripts/deploy-runtime-box-signer.sh",
+    "runtime-box:signer:smoke": "node scripts/validate-runtime-box-signer.mjs"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.8.0",
+    "@wasmer/wasi": "^1.2.2",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "buffer": "^6.0.3",
+    "markdown-it-mathjax3": "^4.3.2",
+    "marked": "^18.0.5",
+    "scrollcase": "0.7.1",
+    "tar": "7.5.20",
+    "typescript": "^5.9.2",
+    "yauzl": "3.4.0",
+    "yazl": "3.3.1"
+  }
+}

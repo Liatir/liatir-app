@@ -1,0 +1,65 @@
+name: Runtime Box UCE 4-layer
+
+on:
+  pull_request:
+    paths:
+      - "runtime-boxes/scrolls/uce-4layer/macos-aarch64-metal/**"
+      - "runtime-boxes/legal/audits/uce-4layer-macos-arm64-metal.json"
+      - "runtime-boxes/catalog.json"
+      - "runtime-boxes/legal/uce-4layer.md"
+      - "packages/liatir-core/src/runtime-box.ts"
+      - "scripts/validate-uce-runtime.mjs"
+      - "scripts/runtime-box/evidence.mjs"
+      - "scripts/runtime-box-ci.mjs"
+      - "scripts/runtime-box/validator-context.mjs"
+      - "scripts/install-runtime-box-linux-product-deps.sh"
+      - "scripts/run-runtime-box-selfhosted-runner.sh"
+      - "frontend/src/lib/tools/ai/python-scripts/uce-embedding.ts"
+      - ".github/workflows/_runtime-box-validate.yml"
+      - ".github/workflows/runtime-box-uce-4layer.yml"
+  push:
+    branches: [main]
+    paths:
+      - "runtime-boxes/scrolls/uce-4layer/macos-aarch64-metal/**"
+      - "runtime-boxes/legal/audits/uce-4layer-macos-arm64-metal.json"
+      - "runtime-boxes/catalog.json"
+      - "runtime-boxes/legal/uce-4layer.md"
+      - "packages/liatir-core/src/runtime-box.ts"
+      - "scripts/validate-uce-runtime.mjs"
+      - "scripts/runtime-box/evidence.mjs"
+      - "scripts/runtime-box-ci.mjs"
+      - "scripts/runtime-box/validator-context.mjs"
+      - "scripts/install-runtime-box-linux-product-deps.sh"
+      - "scripts/run-runtime-box-selfhosted-runner.sh"
+      - "frontend/src/lib/tools/ai/python-scripts/uce-embedding.ts"
+      - ".github/workflows/_runtime-box-validate.yml"
+      - ".github/workflows/runtime-box-uce-4layer.yml"
+  workflow_dispatch:
+    inputs:
+      target_id:
+        description: Checked Runtime Box target
+        required: true
+        type: choice
+        options: [macos-aarch64-metal]
+      mode:
+        description: Native validation depth
+        required: true
+        default: build
+        type: choice
+        options: [build, scientific, native-lifecycle]
+
+concurrency:
+  group: runtime-box-uce-4layer-${{ inputs.target_id || 'macos-aarch64-metal' }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/_runtime-box-validate.yml
+    with:
+      model_id: snap-stanford-uce-4layer
+      target_id: ${{ inputs.target_id || 'macos-aarch64-metal' }}
+      mode: ${{ inputs.mode || 'build' }}
+      native_requested: ${{ github.event_name == 'workflow_dispatch' }}

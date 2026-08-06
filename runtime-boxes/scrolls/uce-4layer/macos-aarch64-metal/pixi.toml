@@ -1,0 +1,26 @@
+# Canonical Scrollcase v2 pixi manifest — UCE 4-layer, macOS arm64 / Metal.
+#
+# The uv input this replaces pinned torch 2.1.1. conda-forge carries no such build for this
+# substrate, and every other target in the catalog is on 2.8.0, so UCE moves with them. That makes
+# Metal numerical parity a fresh baseline for this model rather than a comparison against the
+# published 1.0.0-beta.1 box, which was built on the older framework.
+#
+# The scientific pins are carried over exactly from the uv recipe. `accelerate`, `requests` and
+# `urllib3` are left to the solver: their uv pins (0.24.0, 2.25.1, 1.26.6) predate this framework
+# by years, and holding them would constrain the solve without protecting a result.
+[workspace]
+name = "uce-4layer-macos-arm64-metal"
+channels = ["conda-forge"]
+platforms = ["osx-arm64"]
+
+[dependencies]
+python = "3.11.*"
+pytorch = "2.8.0.*"
+scanpy = "1.10.2.*"
+numpy = "1.26.4.*"
+scipy = "1.14.1.*"
+pandas = "2.2.2.*"
+tqdm = "4.66.5.*"
+accelerate = "*"
+requests = "*"
+urllib3 = "*"

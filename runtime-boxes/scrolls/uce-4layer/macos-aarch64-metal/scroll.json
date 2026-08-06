@@ -1,0 +1,128 @@
+{
+  "$schema": "https://scrollcase.dev/schema/v2/scroll.schema.json",
+  "schemaVersion": 2,
+  "scrollId": "uce-4layer-macos-arm64-metal",
+  "scrollVersion": "1.0.0",
+  "boxId": "uce-4layer",
+  "modelId": "snap-stanford-uce-4layer",
+  "runtimeId": "single-cell-foundation-uce",
+  "version": "1.0.0-beta.1",
+  "sourceRevision": "8ead6e07af0c80f75653598138bb704e865b45c8",
+  "target": {
+    "platform": "macos",
+    "arch": "aarch64",
+    "accelerator": "metal"
+  },
+  "compatibility": {
+    "minLiatirVersion": "0.2.1",
+    "minMacosVersion": "13.0",
+    "minRamGb": 16
+  },
+  "pythonVersion": "3.11.15",
+  "pixiVersion": "0.73.0",
+  "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/uce-4layer-macos-arm64-metal.json",
+  "pythonEntryPoint": "venv/bin/python",
+  "modelCacheSubdir": "model-cache/uce",
+  "assetBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
+  "assets": [
+    {
+      "url": "https://ndownloader.figshare.com/files/42706555",
+      "relativePath": "model-cache/uce/model_files/species_offsets.pkl",
+      "sizeBytes": 139,
+      "sha256": "abda5b2bc4018187e408623b292686a061912f449daceb4c9c9603caf0d62538"
+    },
+    {
+      "url": "https://ndownloader.figshare.com/files/42706558",
+      "relativePath": "model-cache/uce/model_files/species_chrom.csv",
+      "sizeBytes": 4097781,
+      "sha256": "a9e801829ffaf05b5d7e6c6ef12404326cf6796ad561ad62ce701884f07969f5"
+    },
+    {
+      "url": "https://ndownloader.figshare.com/files/42706576",
+      "relativePath": "model-cache/uce/model_files/4layer_model.torch",
+      "sizeBytes": 3403514339,
+      "sha256": "acb28f3f0a1d803e4a4ffe891b9bab38bf93c84762dc06b2452f0d515da91560"
+    },
+    {
+      "url": "https://ndownloader.figshare.com/files/42706585",
+      "relativePath": "model-cache/uce/model_files/all_tokens.torch",
+      "sizeBytes": 2979205876,
+      "sha256": "07397ab3828502fb7d0bab658125c47f145f989f384db8f55fe106f6826b2a54"
+    },
+    {
+      "url": "https://ndownloader.figshare.com/files/42715213",
+      "relativePath": "model-cache/uce/model_files/protein_embeddings.tar.gz",
+      "sizeBytes": 2735410523,
+      "sha256": "dc0138b50a3238979e32ccb65caab4e3f99d49146b8bc3b975f79683d9ce9ec9"
+    },
+    {
+      "url": "https://codeload.github.com/snap-stanford/UCE/zip/8ead6e07af0c80f75653598138bb704e865b45c8",
+      "relativePath": ".sources/uce-source.zip",
+      "sizeBytes": 98135,
+      "sha256": "fb1284122eb2773c194ccfa6f952a1bfa18218b519f9e83f85b7ceabf2ba88b9"
+    }
+  ],
+  "localFiles": [
+    {
+      "sourcePath": "runtime-boxes/legal/uce-4layer.md",
+      "relativePath": "THIRD_PARTY_NOTICES/UCE-4LAYER.md",
+      "sha256": "821f57cc6e42d5a896d7e4391bd6d6a54fa263aaa1fc6735bfe70f92ae1fc390"
+    }
+  ],
+  "assetArchives": [
+    {
+      "relativePath": ".sources/uce-source.zip",
+      "format": "zip",
+      "destination": "source/UCE",
+      "stripComponents": 1,
+      "removeAfterExtract": true
+    },
+    {
+      "relativePath": "model-cache/uce/model_files/protein_embeddings.tar.gz",
+      "format": "tar.gz",
+      "destination": "model-cache/uce/model_files",
+      "stripComponents": 0,
+      "removeAfterExtract": true
+    }
+  ],
+  "uncompressedPaths": [
+    "model-cache/uce/model_files/protein_embeddings"
+  ],
+  "prunePaths": [
+    "source/UCE/README.md",
+    "source/UCE/examples",
+    "source/UCE/requirements.txt",
+    "source/UCE/data_proc/Create New Species Files.ipynb",
+    "source/UCE/data_proc/download_proc_czi_cxg.py",
+    "source/UCE/data_proc/generate_reduced_chrom_files.py",
+    "source/UCE/data_proc/preproc_many_dataset.py"
+  ],
+  "selfTest": {
+    "imports": ["torch", "scanpy", "accelerate", "anndata", "numpy", "scipy", "pandas", "h5py", "tqdm"],
+    "files": [
+      "model-cache/uce/model_files/species_offsets.pkl",
+      "model-cache/uce/model_files/species_chrom.csv",
+      "model-cache/uce/model_files/4layer_model.torch",
+      "model-cache/uce/model_files/all_tokens.torch",
+      "model-cache/uce/model_files/protein_embeddings/Homo_sapiens.GRCh38.gene_symbol_to_embedding_ESM2.pt",
+      "model-cache/uce/model_files/protein_embeddings/Mus_musculus.GRCm39.gene_symbol_to_embedding_ESM2.pt",
+      "model-cache/uce/model_files/protein_embeddings/Xenopus_tropicalis.Xenopus_tropicalis_v9.1.gene_symbol_to_embedding_ESM2.pt",
+      "model-cache/uce/model_files/protein_embeddings/Danio_rerio.GRCz11.gene_symbol_to_embedding_ESM2.pt",
+      "model-cache/uce/model_files/protein_embeddings/Microcebus_murinus.Mmur_3.0.gene_symbol_to_embedding_ESM2.pt",
+      "model-cache/uce/model_files/protein_embeddings/Sus_scrofa.Sscrofa11.1.gene_symbol_to_embedding_ESM2.pt",
+      "model-cache/uce/model_files/protein_embeddings/Macaca_fascicularis.Macaca_fascicularis_6.0.gene_symbol_to_embedding_ESM2.pt",
+      "model-cache/uce/model_files/protein_embeddings/Macaca_mulatta.Mmul_10.gene_symbol_to_embedding_ESM2.pt",
+      "source/UCE/LICENSE",
+      "source/UCE/eval_single_anndata.py",
+      "source/UCE/evaluate.py",
+      "source/UCE/eval_data.py",
+      "source/UCE/model.py",
+      "source/UCE/utils.py",
+      "source/UCE/data_proc/data_utils.py",
+      "source/UCE/data_proc/gene_embeddings.py",
+      "source/UCE/model_files/new_species_protein_embeddings.csv",
+      "THIRD_PARTY_NOTICES/UCE-4LAYER.md"
+    ],
+    "pythonCode": "from pathlib import Path\nimport gc\nimport os\nimport sys\nroot = Path.cwd()\nsource = root / 'source/UCE'\nsys.path.insert(0, str(source))\nos.chdir(source)\nimport evaluate\nmodel_files = root / 'model-cache/uce/model_files'\ncheckpoint = torch.load(model_files / '4layer_model.torch', map_location='cpu')\nassert tuple(checkpoint['pe_embedding.weight'].shape) == (145469, 5120)\nassert tuple(checkpoint['encoder.0.weight'].shape) == (1280, 5120)\ndel checkpoint\ngc.collect()\ntokens = torch.load(model_files / 'all_tokens.torch', map_location='cpu')\nassert tuple(tokens.shape) == (145469, 5120)\ndel tokens\ngc.collect()"
+  }
+}

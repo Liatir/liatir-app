@@ -1,0 +1,42 @@
+{
+	"name": "frontend",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"generate:quenta": "node ../scripts/build-quenta-docs.mjs knowledge --out frontend/src/lib/quenta/generated/quenta-knowledge.generated.ts && node ../scripts/build-quenta-docs.mjs docs --out frontend/src/lib/quenta/generated/quenta-docs.generated.ts",
+		"predev": "npm run generate:quenta",
+		"dev": "vite dev",
+		"prebuild": "npm run generate:quenta",
+		"build": "vite build",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"format": "prettier --write .",
+		"lint": "prettier --check ."
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-auto": "^7.0.0",
+		"@sveltejs/kit": "^2.48.5",
+		"@sveltejs/vite-plugin-svelte": "^6.2.1",
+		"prettier": "^3.6.2",
+		"prettier-plugin-svelte": "^3.4.0",
+		"svelte": "^5.43.8",
+		"svelte-check": "^4.3.4",
+		"typescript": "^5.9.3",
+		"vite": "^7.2.2"
+	},
+	"dependencies": {
+		"@codemirror/lang-javascript": "^6.2.5",
+		"@iconify-json/lucide": "^1.2.114",
+		"@iconify/svelte": "^5.2.2",
+		"@sveltejs/adapter-static": "^3.0.10",
+		"@tailwindcss/vite": "^4.1.17",
+		"@tauri-apps/api": "^2.11.0",
+		"@xyflow/svelte": "^1.6.0",
+		"codemirror": "^6.0.2",
+		"plotly.js-dist-min": "^2.35.2",
+		"tailwindcss": "^4.1.17"
+	}
+}

@@ -1,0 +1,29 @@
+/**
+ * `Liatir.desktop.worker` — calls into the WASM worker.
+ *
+ * Runs a module out of the main thread, so a long computation cannot freeze the UI. `timeoutMs` matters here:
+ * a WASM module has no way of being interrupted from outside, so a bound on how long it may run is the only
+ * protection against one that never returns.
+ */
+import { LiatirAPI } from "../../../types";
+import { U64, U8 } from "../../../utils";
+import { WorkerCallPayload, WorkerInterface } from "./_types";
+import { normalizeModuleName } from "../../../helpers";
+
+export function buildWorker(core: { invoke: LiatirAPI["invoke"] }) {
+    return {
+      call: (method: string, payload: WorkerCallPayload, timeoutMs?: U64): Promise<string> => core.invoke("lia_worker_call", {modulePath: normalizeModuleName(method), payload, timeoutMs}),
+      status: (): Promise<boolean> => core.invoke("lia_worker_status"),
+      restart: (): Promise<boolean> => core.invoke("lia_worker_restart"),
+      // delivery: (id: string, result: string): Promise<boolean> => core.invoke("lia_worker_delivery", {id, result}),
+      modules: {
+        list: (): Promise<string[]> => core.invoke("lia_worker_list_modules"),
+        remove: (name: string): Promise<boolean> => core.invoke("lia_worker_remove_module", {name: normalizeModuleName(name)}),
+        addFromBytes: (name: string, contents: U8[]): Promise<boolean> => core.invoke("lia_worker_add_module", {name: normalizeModuleName(name), contents}),
+        add: (name: string, maxBytes?: U64): Promise<boolean> => core.invoke("lia_worker_pick_and_add_module", {maxBytes, defaultName: normalizeModuleName(name)}),
+      },
+      clearSandbox: (): Promise<boolean> => core.invoke("lia_worker_clear_all"),
+      paths: (): Promise<{ externalModules: string; sandbox: string }> => core.invoke("lia_worker_paths"),
+    };
+  }
+  

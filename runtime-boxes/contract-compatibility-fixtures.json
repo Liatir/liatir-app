@@ -1,0 +1,93 @@
+{
+  "release": {
+    "schemaVersion": 2,
+    "kind": "liatir.runtime-box.release",
+    "boxId": "fixture",
+    "modelId": "liatir-fixture",
+    "runtimeId": "fixture-runtime",
+    "version": "1.0.0",
+    "target": {
+      "platform": "macos",
+      "arch": "aarch64",
+      "accelerator": "metal"
+    },
+    "compatibility": {
+      "minLiatirVersion": "0.2.1",
+      "maxLiatirVersionExclusive": "1.0.0",
+      "minMacosVersion": "13.0",
+      "minRamGb": 8,
+      "hostEnvironments": [
+        "native"
+      ]
+    },
+    "archive": {
+      "format": "zip",
+      "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/fixture/1.0.0/macos-aarch64-metal/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.zip",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sizeBytes": 1024
+    },
+    "installedSizeBytes": 2048,
+    "pythonEntryPoint": "venv/bin/python",
+    "modelCacheSubdir": "model-cache/fixture",
+    "selfTest": {
+      "pythonImports": [
+        "json"
+      ],
+      "timeoutSeconds": 10
+    },
+    "provenance": {
+      "scrollId": "fixture-macos-arm64",
+      "scrollVersion": "1.0.0",
+      "builderRevision": "0123456789abcdef0123456789abcdef01234567",
+      "sourceTreeDirty": false,
+      "sourceRevision": "fixture-source-v2",
+      "pythonVersion": "3.11.9",
+      "pixiVersion": "0.50.0",
+      "dependencyLockSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "builtAt": "2026-07-26T12:00:00.000Z"
+    }
+  },
+  "channel": {
+    "schemaVersion": 2,
+    "kind": "liatir.runtime-box.channel",
+    "channel": "beta",
+    "boxId": "fixture",
+    "target": {
+      "platform": "macos",
+      "arch": "aarch64",
+      "accelerator": "metal"
+    },
+    "updatedAt": "2026-07-26T12:00:00.000Z",
+    "cohortSalt": "fixture-beta-v1",
+    "releases": [
+      {
+        "version": "1.0.0",
+        "releaseManifestUrl": "https://registry.models.liatir.com/ai-runtime-boxes/boxes/fixture/1.0.0/macos-aarch64-metal/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.release.json",
+        "rolloutPercentage": 100
+      }
+    ]
+  },
+  "revocations": {
+    "schemaVersion": 2,
+    "kind": "liatir.runtime-box.revocations",
+    "updatedAt": "2026-07-26T12:00:00.000Z",
+    "revocations": [
+      {
+        "boxId": "fixture",
+        "version": "0.8.0",
+        "target": {
+          "platform": "macos",
+          "arch": "aarch64",
+          "accelerator": "metal"
+        },
+        "reason": "Synthetic compatibility fixture",
+        "revokedAt": "2026-07-26T12:00:00.000Z"
+      }
+    ]
+  },
+  "expected": {
+    "targetId": "macos-aarch64-metal",
+    "releaseStem": "fixture-1.0.0-macos-aarch64-metal",
+    "releaseObjectPrefix": "boxes/fixture/1.0.0/macos-aarch64-metal"
+  }
+}

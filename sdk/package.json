@@ -1,0 +1,19 @@
+{
+  "name": "liatir",
+  "version": "0.2.1",
+  "description": "JS/TS SDK for the Liatir native bridge",
+  "main": "dist-sdk/sdk/index.js",
+  "types": "dist-sdk/sdk/index.d.ts",
+  "module": "dist-sdk/sdk/index.js",
+  "sideEffects": false,
+  "files": [
+    "dist-sdk/**/*",
+    "README.md"
+  ],
+  "scripts": {
+    "syncVersion": "bash ../scripts/sync-api-version.sh",
+    "build": "rm -rf dist-sdk && npm run syncVersion && tsc -p ../tsconfig.sdk.json",
+    "pub": "npm run build && npm publish --access=public",
+    "prepublishOnly": "npm run build"
+  }
+}

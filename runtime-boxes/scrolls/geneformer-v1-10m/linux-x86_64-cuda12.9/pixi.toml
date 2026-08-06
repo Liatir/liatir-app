@@ -1,0 +1,31 @@
+# Canonical Scrollcase v2 pixi manifest — Geneformer V1 10M, Linux x86_64 / CUDA 12.9.
+#
+# Additive CUDA successor. The deleted `linux-x86_64-cuda12.4` identity is not reused: conda-forge
+# publishes no CUDA 12.4 build of pytorch 2.8.0, and relabelling 12.9 bytes as 12.4 is forbidden.
+#
+# CUDA is pinned per OS (Phase 0 finding): linux-64 resolves only to cuda129, win-64 to cuda128.
+# `[system-requirements] cuda` plus the `cuda-version` pin make the solver pick the GPU build
+# instead of cpu_mkl. conda ships the CUDA runtime, so only the host driver must be current.
+#
+# Dependency versions are held identical to the CPU target so the successor differs in the
+# accelerator alone; a version drift here would make its scientific parity incomparable.
+[workspace]
+name = "geneformer-v1-10m-linux-x86_64-cuda12.9"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[system-requirements]
+cuda = "12.9"
+
+[dependencies]
+python = "3.11.*"
+pytorch = "2.8.0.*"
+cuda-version = "12.9.*"
+transformers = "4.44.2.*"
+anndata = "0.10.9.*"
+numpy = "1.26.4.*"
+scipy = "1.14.1.*"
+pandas = "2.2.2.*"
+h5py = "3.11.0.*"
+safetensors = "0.4.5.*"
+urllib3 = "1.26.20.*"

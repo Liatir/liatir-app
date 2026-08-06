@@ -1,0 +1,17 @@
+{
+  "name": "@liatir/output-parser",
+  "version": "1.0.0",
+  "description": "Shared bioinformatics output parsers (tool stdout/JSON → ToolOutput). Single source of truth consumed by the Liatir frontend, the @liatir/api adapter, and the browser SDK. Internal — never published (bundled into consumers).",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
