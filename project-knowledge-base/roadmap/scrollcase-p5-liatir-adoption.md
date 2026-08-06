@@ -5,8 +5,9 @@ Last reviewed: 2026-08-06
 Status: **in progress — P5.2V, P5.3 and P5.4 complete. Every model target is a
 schema-v2 scroll and natively proven, and no uv recipe remains anywhere. P5.4V
 has raised the pin to `0.7.1`; UCE was authored and proven on it, while the other
-eight model targets and two foundation fixtures were proven on `0.4.11` and owe a
-rebuild.**
+the three macOS targets are rebuilt and measured on it. Six Linux/Windows model
+targets and two foundation fixtures still carry `0.4.11` archives and need their
+own hosts. The schema-v1 uv authoring path is deleted.**
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project. The P5 target was
@@ -2162,21 +2163,48 @@ scroll needed a `uncompressedPaths` declaration; scGPT's one `assetArchives`
 entry expands into Python source, which compresses well and should keep
 deflating.
 
-#### Outstanding: ten rebuilds
+#### Rebuilds: every macOS target is done, eight remain (2026-08-06)
 
-Every natively proven target still describes bytes this builder no longer
-produces. None is published, so no identity breaks and nothing is invalidated
-for a user — this is runner time, not a migration.
+A target proven on `0.4.11` describes bytes this builder no longer produces.
+Nothing is published, so no identity breaks — this is runner time, not a
+migration. Every rebuild replaces the target's archive SHA-256, measured sizes
+and `diskPlan`.
 
-| Model | Targets to rebuild |
-| --- | --- |
-| scGPT | macOS Metal, Linux CPU, Windows CPU, Linux CUDA 12.9, Windows CUDA 12.8 |
-| Geneformer | macOS Metal, Linux CUDA 12.9, Windows CUDA 12.8 |
-| Foundation fixtures | Linux CPU, Windows CPU (macOS done) |
+| Target | State | Archive SHA-256 | Installed | Δ |
+| --- | --- | --- | --- | --- |
+| UCE macOS Metal | done, run `31070450837` | `d08f7c80…fe29f` | `11169027146` | +10% |
+| scGPT macOS Metal | done, run `31103405667` | `638f02a8…d21b` | `1372956773` | −26% |
+| Geneformer macOS Metal | done, run `31104336539` | `4d591de9…f92a` | `1538447044` | −29% |
+| scGPT Linux CPU | pending | | | |
+| scGPT Linux CUDA 12.9 | pending, GPU | | | |
+| scGPT Windows CPU | pending | | | |
+| scGPT Windows CUDA 12.8 | pending, GPU | | | |
+| Geneformer Linux CUDA 12.9 | pending, GPU | | | |
+| Geneformer Windows CUDA 12.8 | pending, GPU | | | |
+| Fixture Linux CPU | pending | | | |
+| Fixture Windows CPU | pending | | | |
 
-Four of these are GPU runs. Per `AGENTS.md` they are paid and need explicit
-authorization; none was dispatched. Each rebuild replaces the target's archive
-SHA-256, measured sizes and `diskPlan`, and its plan should shrink.
+**The format's size effect is now measured three times and is consistent.**
+scGPT and Geneformer each lost roughly a quarter with no scroll change, from
+carried links and stored assets alone. UCE gained 10% because its migration
+also dropped twelve `venv/` prune paths; the two effects are separable, and
+only UCE paid the second one.
+
+**Geneformer's Metal parity reproduced its `0.4.11` figures exactly** — maximum
+absolute difference `8.121132850646973e-7`, minimum cosine
+`0.9999999403953552`, CPU baseline exact. The archive changed and the science
+did not, which is the assurance the whole rebuild set rests on.
+
+The four GPU runs are paid and need explicit authorization per `AGENTS.md`.
+None has been dispatched.
+
+**Operating hazard, learned by losing a run.** The model workflows trigger on
+push for paths including `scripts/runtime-box-ci.mjs`, and their concurrency
+group is `runtime-box-<model>-<target>-<ref>` with `cancel-in-progress: true`.
+A push touching a shared path therefore **cancels an in-flight dispatched native
+run** for that model. Run `31102785007` died seven minutes in exactly this way.
+Do not push anything matching a model workflow's path filters while its native
+run is in flight.
 
 #### Upstream gap: payload verification needs a key file
 

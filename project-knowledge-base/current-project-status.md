@@ -795,11 +795,27 @@ first).
    returns an `environmentReport` the fixture compared away, and `dir_size`
    skipped payload links entirely, under-counting an installed box by 15638
    bytes and rejecting a valid one at the declared-size check. Both fixed, the
-   second with a unit test. **Outstanding:** every natively proven target still
-   describes bytes this builder no longer produces — five scGPT, three
-   Geneformer, two foundation fixtures. Nothing is published, so no identity
-   breaks; this is runner time. Four are GPU runs and none was dispatched. The
-   remaining P5.4R work is blocked upstream rather than on `payloadDigest`, which
+   second with a unit test. **The schema-v1 uv authoring path is now deleted**
+   (`f467399`): `runtime-boxes/recipes/` is gone, the resolver has no legacy
+   branch, the uv licence validator is gone, and both workflows lost their
+   pinned-uv install. The guards that keep uv out stay. `legacy-cli.mjs` is
+   deliberately untouched — despite its name it owns distribution, which the
+   pending re-release needs; its unreachable build path comes out after the
+   release, not before it.
+   **Rebuilds: all three macOS targets are done and measured** — UCE
+   (`31070450837`), scGPT (`31103405667`), Geneformer (`31104336539`). The format
+   effect is consistent: scGPT −26%, Geneformer −29% from carried links and
+   stored assets alone, while UCE gained 10% because its migration also dropped
+   twelve `venv/` prune paths. Geneformer's Metal parity reproduced its `0.4.11`
+   figures exactly, so the archive changed and the science did not.
+   **Eight rebuilds remain and need the other hosts**: scGPT Linux CPU, Linux
+   CUDA 12.9, Windows CPU and Windows CUDA 12.8; Geneformer Linux CUDA 12.9 and
+   Windows CUDA 12.8; and the Linux and Windows foundation fixtures. Four are GPU
+   runs and none was dispatched. Nothing is published, so no identity breaks.
+   **Operating hazard:** a push touching a model workflow's path filters cancels
+   that model's in-flight dispatched native run, through the shared concurrency
+   group with `cancel-in-progress`. Run `31102785007` was lost this way.
+   The remaining P5.4R work is blocked upstream rather than on `payloadDigest`, which
    `0.7.1` emits: `verify_extracted_payload` and `attach_extracted_box` take a
    trust-key *file*, while Liatir compiles its anchors into the binary, so they
    need `_with_keys` variants like `inspect_release_document_with_keys` already
