@@ -1,15 +1,18 @@
 # Scrollcase P5 — Liatir adoption and legacy builder retirement
 
-Last reviewed: 2026-08-04
+Last reviewed: 2026-08-06
 
-Status: **in progress — P5.2V and P5.3 complete; P5.4 block 1 complete, block 2
-in progress with Geneformer macOS Metal, Linux CPU and Windows CPU natively
-proven; UCE remains**
+Status: **in progress — P5.2V, P5.3 and P5.4 complete. Every model target is a
+schema-v2 scroll and natively proven, and no uv recipe remains anywhere. P5.4V
+has raised the pin to `0.7.1`; UCE was authored and proven on it, while the other
+eight model targets and two foundation fixtures were proven on `0.4.11` and owe a
+rebuild.**
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
-are complete: Scrollcase is an independent Apache-2.0 project. The selected P5
-target is exact `scrollcase@0.4.11`, whose published tarball contains the v2-only
-contract. The checkout now pins `0.4.11` exactly and consumes it only through
+are complete: Scrollcase is an independent Apache-2.0 project. The P5 target was
+exact `scrollcase@0.4.11`, whose published tarball contains the v2-only
+contract; P5.4V has since raised it to exact `0.7.1`. The checkout pins that
+version exactly and consumes it only through
 its published package surface. P5 is downstream Liatir work: consume Scrollcase
 without weakening the existing Runtime Box
 product, trust, distribution, scientific-validation, or evidence contracts.
@@ -183,7 +186,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.2 — Liatir adapter and distribution split | Complete | Real clean `keygen → lock → build → verify --self-test` cycle through the stable Liatir command; namespace, archive hash and receipts checked |
 | P5.2V — Scrollcase v2-only cutover | Complete | Exact `scrollcase@0.4.11`; active contracts and consumers use v2; v1 is explicitly unsupported; clean local v2 proof green |
 | P5.3 — v2 foundation-fixture migration | Complete | Three reviewed v2 scrolls/locks/audits; macOS, Linux and Windows native proofs green; every foundation uv fixture removed only after its matching proof |
-| P5.4 — model-recipe migration | Authoring complete; UCE unproven | All five scGPT inputs are v2 and natively proven; the CUDA identity decision is resolved and Geneformer's whole matrix — macOS Metal plus both CUDA successors — is proven, its CPU targets having been dropped on measurement; UCE is now a v2 scroll authored on `0.7.1`, so no uv recipe remains, but it has no native run |
+| P5.4 — model-recipe migration | Complete | All five scGPT inputs, Geneformer's whole matrix (macOS Metal plus both CUDA successors, its CPU targets dropped on measurement) and UCE are v2 and natively proven. No uv recipe remains anywhere. UCE was authored on `0.7.1` and passed on first dispatch; the other eight model targets were proven on `0.4.11` and owe a rebuild, as do two foundation fixtures, tracked in P5.4V |
 | P5.4R — adopt `scrollcase-consumer` in the Rust bridge | In progress | `runtime_boxes.rs` delegates format verification to exact `scrollcase-consumer 0.1.2`, keeps the product lifecycle, and proves the Liatir-owned call order |
 | P5.4V — Scrollcase `0.4.11` → current-line upgrade | Pin raised and locally proven; rebuilds outstanding | Exact `scrollcase@0.7.1` with its npm identity read back into the lockfile, `scrollcase-consumer 0.1.2` confirmed ahead of the format, the macOS foundation fixture rebuilt and passed end to end through the Rust lifecycle, and the maintainer decision recorded that every proven target rebuilds rather than freezes |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
@@ -1204,7 +1207,8 @@ preflight artifact `8894675619` has digest
 `sha256:48a8dc44ae7cf84946cd92943f5575d7cfb78f868e69aff3ceef15d452665f55`.
 The runner deregistered, its marked root was removed, diagnostics were retained
 and the repository self-hosted inventory is empty. This target is complete; the
-remaining block-2 work is UCE, and the CUDA identity decision stays in block 3.
+remaining block-2 work was UCE, closed on 2026-08-06, and the CUDA identity
+decision stays in block 3.
 No production signing, publication, promotion or mutation of the published
 `1.0.0-beta.1` objects occurred.
 
@@ -1537,19 +1541,44 @@ are left to the solver — their uv pins (`0.24.0`, `2.25.1`, `1.26.6`) predate
 this framework by years and would constrain the solve without protecting a
 result. They resolve to `1.14.0`, `2.34.2` and `2.7.0`.
 
-**Nothing is proven.** No native run, no build, no signature, no publication. The
-`requiredBuildDiskBytes` floor and the disk plan still hold their uv-era values,
-which are now overstatements under a builder that carries links and stores
-weights; they are corrected by measurement, not by inference. Two of those
-uv-era numbers pull in opposite directions and neither can be predicted: dropping
-the `venv/` prunes grows the payload, while carried links and stored weights
-shrink it.
+#### UCE is natively proven (2026-08-06, run `31070450837`)
 
-**Disk is no longer the blocker.** The `macos-arm64-heavy` preflight passes:
-`39503192064` free bytes against the profile's `37580963840` bootstrap floor, a
-margin of about 1.8 GiB. That margin is thin and the floor is itself a `0.4.11`
-figure, so the native run should be treated as the measurement that replaces
-both.
+**Passed on the first dispatch**, every step, at clean commit `07e01f6` on
+ephemeral self-hosted runner `liatir-macos-heavy-1785989332-65951`: frozen build,
+signature and archive verification, self-test, the real Metal scientific
+validator, and the Rust install/activate/rollback/removal lifecycle. Preflight
+job `92517133620`, native job `92517203321`, compact artifact `8955681270`,
+preflight artifact `8955434558`. The runner deregistered and its marked root was
+removed.
+
+Archive SHA-256
+`d08f7c80e00ee82686b5d5f1b5863f650cc8281b9a217928c095ea26699fe29f`. The whole
+job took 16 minutes.
+
+**Metal parity on the fresh 2.8.0 baseline is excellent.** torch `2.8.0`, backend
+`cpu-reference-and-metal` on an Apple M1, finite `[10, 1280]` embeddings, minimum
+cosine similarity `0.9999999999904319` and maximum absolute difference
+`4.0046870708465576e-7` against a `0.999` threshold — with the CPU baseline and
+the accelerator forward both passing, and the output and provenance contracts
+green. Moving off torch `2.1.1` cost nothing measurable.
+
+**Both disk estimates were low, not high** (`2bbb40d`): installed `11169027146`
+against `10142871337`, archive `9899283947` against `8862120348`. The calculated
+peak rose to `33411870225` and no longer fit the `32212254720` floor, which is
+now `36507222016`. It cannot be the round 35 GiB that would match the runner's
+bootstrap floor, because the catalog requires a target's build floor to be
+strictly under its runner's — otherwise a target could be registered that its own
+runner may never accept. A regression pins that relationship now.
+
+So the uncertainty this section refused to resolve by inference resolved against
+the smaller payload: **dropping the twelve `venv/` prune paths grew the box more
+than carried links and stored weights shrank it.** Real peak additional disk was
+`22328135680` against `37116641280` free, so the plan remains conservative by
+roughly half.
+
+Status stays `published` against the immutable `1.0.0-beta.1` uv objects,
+matching the two proven macOS siblings. Nothing was signed, published or
+promoted.
 
 ### UCE capacity rule
 

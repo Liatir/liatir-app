@@ -108,8 +108,8 @@ provenance contracts green. Peak additional runner disk was `3558084608` bytes,
 so the catalog disk plan carries those measured sizes inside a reduced 8 GiB
 floor. Compact artifact `8895358103` preserves the acceptance evidence; the
 runner deregistered and its marked root was removed. All three Geneformer
-CPU/Metal targets are now v2 and natively proven. The next block-2 continuation
-is UCE.
+CPU/Metal targets are now v2 and natively proven. Block 2 closed with UCE on
+2026-08-06; see next step 2 for its proof.
 **P5.4 block 3 (Geneformer CUDA) is resolved and closed without a successor
 (2026-08-04).** Liatir is not released, so neither CUDA 12.4 identity has
 installed users, and both `linux-x86_64-cuda12.4` and `windows-x86_64-cuda12.4`
@@ -771,8 +771,22 @@ first).
    `a539412003c6ac355da2ce1dca05b7aa76ef3274a71150839c0b3396ae824a98`, 194
    conda-forge packages with no undeclared licence, all twelve `venv/` prune
    paths dropped and `uncompressedPaths` naming the protein-embedding tree. No
-   uv recipe remains anywhere in the repository. It has no native run yet, and
-   the `macos-arm64-heavy` preflight passes with about 1.8 GiB of margin.
+   uv recipe remains anywhere in the repository. **UCE then passed native
+   validation on the first dispatch** (run `31070450837`, jobs `92517133620` and
+   `92517203321`, runner `liatir-macos-heavy-1785989332-65951`, clean commit
+   `07e01f6`): frozen build, signature and archive verification, self-test, the
+   real Metal scientific validator and the full Rust lifecycle, in 16 minutes.
+   Archive SHA-256
+   `d08f7c80e00ee82686b5d5f1b5863f650cc8281b9a217928c095ea26699fe29f`. Metal
+   parity on the fresh torch 2.8.0 baseline came in at minimum cosine
+   `0.9999999999904319` and maximum absolute difference
+   `4.0046870708465576e-7`, so moving off torch 2.1.1 cost nothing measurable.
+   Both disk estimates were **low**: installed `11169027146`, archive
+   `9899283947`, pushing the calculated peak past the old floor, which is now
+   `36507222016` — dropping the twelve `venv/` prune paths grew the box more than
+   carried links and stored weights shrank it. **P5.4 is therefore complete**:
+   every model target is v2 and natively proven. It stays `published` against the
+   immutable v1 uv objects; nothing was signed, published or promoted.
    The pin is exact `scrollcase@0.7.1`, identity read back from npm into the
    lockfile, and the JavaScript surface turned out purely additive — no Liatir
    call site changed. `scrollcase-consumer 0.1.2` was already ahead of the
