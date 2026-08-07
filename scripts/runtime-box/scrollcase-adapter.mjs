@@ -13,6 +13,7 @@ import { sha256File } from 'scrollcase/build';
 import { boxTargetId } from 'scrollcase/contract/browser';
 import { verifySignedDocument } from 'scrollcase/sign';
 import { publishedNodeCliInvocation } from '../node-cli.mjs';
+import { runtimeBoxArchivePath } from './identity.mjs';
 import { fail, runResult as defaultRunResult } from './process.mjs';
 import {
   configureWorkspace,
@@ -173,7 +174,7 @@ export async function verificationReceipt(releaseDocumentPath, flags, {
     fail('Document is not a Liatir Runtime Box release.');
   }
   const archivePath = resolve(String(flags.get('archive')
-    || join(dirname(releasePath), `${release.archive.sha256}.zip`)));
+    || runtimeBoxArchivePath(releasePath, release)));
   const archive = await stat(archivePath);
   if (archive.size !== release.archive.sizeBytes) fail('Archive size mismatch after verification.');
   if (await sha256File(archivePath) !== release.archive.sha256) {

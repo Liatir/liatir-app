@@ -27,6 +27,7 @@ import {
   type LiatirRuntimeBoxRevocationsManifest,
 } from "../../packages/liatir-core/src/runtime-box";
 import {
+  runtimeBoxArchivePath,
   runtimeBoxReleaseObjectPrefix,
   runtimeBoxReleaseStem,
 } from "../../scripts/runtime-box/identity.mjs";
@@ -118,6 +119,23 @@ describe("Liatir contract inversion over Scrollcase", () => {
     expect(runtimeBoxReleaseStem(fixtures.release)).toBe(fixtures.expected.releaseStem);
     expect(boxReleaseObjectPrefix(fixtures.release)).toBe(fixtures.expected.releaseObjectPrefix);
     expect(runtimeBoxReleaseObjectPrefix(fixtures.release)).toBe(fixtures.expected.releaseObjectPrefix);
+
+    // A built box is laid out exactly as the bucket serves it, so the archive sits beside its
+    // release document under its own SHA-256 — not under the shared stem, which is only a name
+    // for the pair. Verification and publication must agree on this: they did not, and a
+    // stem-named lookup passed verify and then failed publish after a full signed build.
+    expect(runtimeBoxArchivePath(
+      `/dist/${fixtures.expected.releaseObjectPrefix}/abc.release.json`,
+      fixtures.release,
+    )).toBe(`/dist/${fixtures.expected.releaseObjectPrefix}/${fixtures.release.archive.sha256}.zip`);
+    for (const module of ['distribution-cli.mjs', 'scrollcase-adapter.mjs']) {
+      const source = readFileSync(resolve(`scripts/runtime-box/${module}`), 'utf8');
+      expect(source, module).toContain('runtimeBoxArchivePath(');
+      // The bucket object key is still built inline and should be — it is a key, not a path.
+      // What must not come back is a second local resolution beside the release document.
+      expect(source, `${module} must not resolve the archive path itself`)
+        .not.toContain('dirname(releasePath)');
+    }
 
     const route = parseImmutableReleaseIdentity(
       fixtures.release.boxId,

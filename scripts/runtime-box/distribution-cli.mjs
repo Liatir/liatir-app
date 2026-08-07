@@ -33,7 +33,7 @@ import {
   verifySignedDocument as verifyScrollcaseDocument,
 } from 'scrollcase/sign';
 import { fileExists, safeRelativePath, sha256File } from './filesystem.mjs';
-import { runtimeBoxReleaseObjectPrefix, runtimeBoxReleaseStem } from './identity.mjs';
+import { runtimeBoxArchivePath, runtimeBoxReleaseObjectPrefix } from './identity.mjs';
 import { fail, run as runProcess } from './process.mjs';
 import { configureWorkspace, getWorkspace, workspaceOverridesFromFlags } from './workspace.mjs';
 import { runtimeBoxTargetId } from './targets.mjs';
@@ -420,7 +420,7 @@ async function publish(releaseDocumentPath, flags) {
     fail('Refusing to publish a Runtime Box built from a dirty source tree.');
   }
   const archivePath = resolve(String(flags.get('archive')
-    || join(dirname(releasePath), `${runtimeBoxReleaseStem(release)}.zip`)));
+    || runtimeBoxArchivePath(releasePath, release)));
   if (await sha256File(archivePath) !== release.archive.sha256) fail('Refusing to publish an archive with the wrong SHA-256.');
   const objectPrefix = normalizeObjectPrefix(flags.get('prefix'));
   const releasePrefix = runtimeBoxReleaseObjectPrefix(release);
