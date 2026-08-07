@@ -20,6 +20,7 @@ import {
 import { npmInvocation } from './node-cli.mjs';
 import { runWithHeartbeat } from './runtime-box/heartbeat.mjs';
 import { runtimeBoxTargetId, runtimeBoxTorchBackendArguments } from './runtime-box/targets.mjs';
+import { runtimeBoxChannelDocumentPath } from './runtime-box/identity.mjs';
 import { lockedCondaDistributions } from './runtime-box/licenses.mjs';
 import { runtimeBoxPolicyFingerprint } from '../services/runtime-box-signer/src/policy.mjs';
 import { configureWorkspace, getWorkspace, workspaceOverridesFromArgv } from './runtime-box/workspace.mjs';
@@ -813,7 +814,12 @@ async function main() {
       validator_script: model.validatorScript,
       box_id: model.boxId,
       release_path: '',
-      channel_path: `.runtime-box-dist/${model.boxId}-beta-${target.targetId}.channel.json`,
+      // Where the builder actually writes it, resolved through the shared helper rather than
+      // reconstructed: the flat name here was the old local builder's and no longer exists.
+      channel_path: relative(
+        workspaceRoot(),
+        runtimeBoxChannelDocumentPath(getWorkspace().distDir, model.boxId, 'beta', target.targetId),
+      ),
       dependency_lock_sha256: target.dependencyLockSha256,
       calculated_peak_disk_bytes: runtimeBoxBuildDiskPlan(recipe, target).calculatedPeakDiskBytes,
       required_disk_bytes: target.requiredBuildDiskBytes,

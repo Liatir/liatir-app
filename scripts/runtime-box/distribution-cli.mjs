@@ -33,7 +33,11 @@ import {
   verifySignedDocument as verifyScrollcaseDocument,
 } from 'scrollcase/sign';
 import { fileExists, safeRelativePath, sha256File } from './filesystem.mjs';
-import { runtimeBoxArchivePath, runtimeBoxReleaseObjectPrefix } from './identity.mjs';
+import {
+  runtimeBoxArchivePath,
+  runtimeBoxChannelDocumentPath,
+  runtimeBoxReleaseObjectPrefix,
+} from './identity.mjs';
 import { fail, run as runProcess } from './process.mjs';
 import { configureWorkspace, getWorkspace, workspaceOverridesFromFlags } from './workspace.mjs';
 import { runtimeBoxTargetId } from './targets.mjs';
@@ -341,12 +345,11 @@ async function serve(flags) {
       const channelMatch = url.pathname.match(/^\/v1\/channels\/([^/]+)\/([^/]+)\/([^/]+)$/);
       if (channelMatch) {
         const [, channel, boxId, target] = channelMatch;
-        localPath = join(
+        localPath = runtimeBoxChannelDocumentPath(
           paths.dist,
-          'channels',
           safeRelativePath(boxId),
           safeRelativePath(channel),
-          `${safeRelativePath(target)}.json`,
+          safeRelativePath(target),
         );
       } else if (url.pathname === '/v1/revocations') {
         localPath = join(paths.dist, 'runtime-box-revocations.json');

@@ -1,6 +1,6 @@
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -28,6 +28,7 @@ import {
 } from "../../packages/liatir-core/src/runtime-box";
 import {
   runtimeBoxArchivePath,
+  runtimeBoxChannelDocumentPath,
   runtimeBoxReleaseObjectPrefix,
   runtimeBoxReleaseStem,
 } from "../../scripts/runtime-box/identity.mjs";
@@ -135,6 +136,18 @@ describe("Liatir contract inversion over Scrollcase", () => {
       // What must not come back is a second local resolution beside the release document.
       expect(source, `${module} must not resolve the archive path itself`)
         .not.toContain('dirname(releasePath)');
+    }
+
+    // A channel is filed by channel, not by version. The release orchestration told promote where
+    // to find it and the local registry served it from somewhere else; only the second matched the
+    // builder, so promote failed after a box was already published immutably.
+    expect(runtimeBoxChannelDocumentPath('.runtime-box-dist', 'scgpt-whole-human', 'beta', 'macos-aarch64-metal'))
+      .toBe(join('.runtime-box-dist', 'channels', 'scgpt-whole-human', 'beta', 'macos-aarch64-metal.json'));
+    for (const module of ['scripts/runtime-box-ci.mjs', 'scripts/runtime-box/distribution-cli.mjs']) {
+      const source = readFileSync(resolve(module), 'utf8');
+      expect(source, module).toContain('runtimeBoxChannelDocumentPath(');
+      expect(source, `${module} must not name a channel document itself`)
+        .not.toContain('.channel.json');
     }
 
     const route = parseImmutableReleaseIdentity(

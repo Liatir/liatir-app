@@ -25,6 +25,18 @@ export function runtimeBoxArchivePath(releaseDocumentPath, release) {
 }
 
 /**
+ * Returns a channel document's path inside a dist tree.
+ *
+ * Filed by channel rather than by version, because a channel is a pointer: the next release moves
+ * it instead of adding a second one. Shared for the same reason as the archive path — the builder,
+ * the local registry and the release orchestration each need this location, and the one that was
+ * written independently is the one that was wrong.
+ */
+export function runtimeBoxChannelDocumentPath(distDir, boxId, channel, targetId) {
+  return join(distDir, 'channels', boxId, channel, `${targetId}.json`);
+}
+
+/**
  * Returns the builder-identity field for a scroll or a build provenance. One substrate remains,
  * pixi + conda-forge, but the shape stays a spread so provenance and evidence records keep a
  * single place to name the builder rather than repeating the field at every call site.
