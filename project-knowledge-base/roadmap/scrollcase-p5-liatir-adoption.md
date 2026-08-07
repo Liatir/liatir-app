@@ -2164,7 +2164,7 @@ scroll needed a `uncompressedPaths` declaration; scGPT's one `assetArchives`
 entry expands into Python source, which compresses well and should keep
 deflating.
 
-#### Rebuilds: macOS, both fixtures and scGPT Linux CPU are done, five remain (2026-08-07)
+#### Rebuilds: every non-GPU target is done, the four GPU targets remain (2026-08-07)
 
 A target proven on `0.4.11` describes bytes this builder no longer produces.
 Nothing is published, so no identity breaks — this is runner time, not a
@@ -2178,7 +2178,7 @@ and `diskPlan`.
 | Geneformer macOS Metal | done, run `31104336539` | `4d591de9…f92a` | `1538447044` | −29% |
 | scGPT Linux CPU | done, run `31140132988` | `dc931489…0d6b` | `2415353627` | −32% |
 | scGPT Linux CUDA 12.9 | pending, GPU | | | |
-| scGPT Windows CPU | pending | | | |
+| scGPT Windows CPU | done, run `31141105901` | `c8ee79c3…f3b8` | `1481631149` | +0.2% |
 | scGPT Windows CUDA 12.8 | pending, GPU | | | |
 | Geneformer Linux CUDA 12.9 | pending, GPU | | | |
 | Geneformer Windows CUDA 12.8 | pending, GPU | | | |
@@ -2202,13 +2202,24 @@ no link entries for `0.6.0` to carry, and this fixture declares no `assets` for
 either Windows model target**, and treat a large Windows delta as a signal to
 stop and look rather than as good news.
 
+**scGPT Windows CPU confirmed that prediction** at `+0.2%` installed, against
+`−32%` for the same model on Linux. It also separated the two format effects
+cleanly, because its archive grew `+3.1%` while its payload grew `+0.2%`: the
+`0.6.0` link rule is pure saving and Windows collects none of it, while the
+`0.7.0` stored-not-deflated path is a pure *cost* on a box carrying 218 MB of
+source assets. On Linux that cost is buried under the link saving; on Windows
+nothing hides it. Both mechanisms are now measured independently.
+
 **Geneformer's Metal parity reproduced its `0.4.11` figures exactly** — maximum
 absolute difference `8.121132850646973e-7`, minimum cosine
 `0.9999999403953552`, CPU baseline exact. The archive changed and the science
 did not, which is the assurance the whole rebuild set rests on.
 
-The four GPU runs are paid and need explicit authorization per `AGENTS.md`.
-None has been dispatched.
+The four GPU runs are paid and need explicit authorization per `AGENTS.md`. The
+maintainer gave it explicitly on 2026-08-07, after every non-GPU target was
+green, and the catalog `linuxCudaBeforeWindowsCuda` rule fixes their order:
+scGPT Linux CUDA, scGPT Windows CUDA, Geneformer Linux CUDA, Geneformer Windows
+CUDA, one at a time.
 
 **Operating hazard, learned by losing a run.** The model workflows trigger on
 push for paths including `scripts/runtime-box-ci.mjs`, and their concurrency
