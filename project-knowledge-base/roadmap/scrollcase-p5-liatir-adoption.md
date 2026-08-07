@@ -2,22 +2,25 @@
 
 Last reviewed: 2026-08-07
 
-Status: **in progress — P5.2V, P5.3, P5.4 and P5.4V complete. Every model target
-is a schema-v2 scroll and natively proven, and no uv recipe remains anywhere.
-P5.4V raised the pin to `0.7.1` and the rebuild matrix is now closed: all eleven
-targets — three macOS, two foundation fixtures, and the six Linux/Windows model
-targets including all four CUDA ones — are built, measured and catalog-bound on
-`0.7.1`, each on a single dispatch. Every lock reproduced byte-identical and
-every parity figure reproduced its `0.4.11` value exactly. Nothing is published,
-so the re-release is one separate authorized decision. The schema-v1 uv
-authoring path is deleted. P5.4R remains blocked upstream on `_with_keys`
-variants; P5.5 is the next phase.**
+Status: **in progress — P5.2V, P5.3, P5.4, P5.4V and P5.4W complete. Every model
+target is a schema-v2 scroll and natively proven, and no uv recipe remains
+anywhere. P5.4V raised the pin to `0.7.1` and closed the rebuild matrix: all
+eleven targets — three macOS, two foundation fixtures, and the six Linux/Windows
+model targets including all four CUDA ones — are built, measured and
+catalog-bound on `0.7.1`, each on a single dispatch. Every lock reproduced
+byte-identical and every parity figure reproduced its `0.4.11` value exactly.
+P5.4W then raised the pin to `0.8.0`, which changes no archive byte, so the
+matrix stays valid without a single rebuild. Nothing is published, so the
+re-release is one separate authorized decision. The schema-v1 uv authoring path
+is deleted. P5.4R's upstream blocker is resolved — `scrollcase-consumer 0.2.0`
+replaced `public_key_path` with `TrustAnchors`, and Liatir already pins `0.3.0` —
+so its remainder is Liatir work again. P5.5 is the next phase.**
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project. The P5 target was
 exact `scrollcase@0.4.11`, whose published tarball contains the v2-only
-contract; P5.4V has since raised it to exact `0.7.1`. The checkout pins that
-version exactly and consumes it only through
+contract; P5.4V has since raised it to exact `0.7.1` and P5.4W to exact `0.8.0`.
+The checkout pins that version exactly and consumes it only through
 its published package surface. P5 is downstream Liatir work: consume Scrollcase
 without weakening the existing Runtime Box
 product, trust, distribution, scientific-validation, or evidence contracts.
@@ -192,10 +195,11 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.2V — Scrollcase v2-only cutover | Complete | Exact `scrollcase@0.4.11`; active contracts and consumers use v2; v1 is explicitly unsupported; clean local v2 proof green |
 | P5.3 — v2 foundation-fixture migration | Complete | Three reviewed v2 scrolls/locks/audits; macOS, Linux and Windows native proofs green; every foundation uv fixture removed only after its matching proof |
 | P5.4 — model-recipe migration | Complete | All five scGPT inputs, Geneformer's whole matrix (macOS Metal plus both CUDA successors, its CPU targets dropped on measurement) and UCE are v2 and natively proven. No uv recipe remains anywhere. UCE was authored on `0.7.1` and passed on first dispatch; the other eight model targets were proven on `0.4.11` and owe a rebuild, as do two foundation fixtures, tracked in P5.4V |
-| P5.4R — adopt `scrollcase-consumer` in the Rust bridge | In progress | `runtime_boxes.rs` delegates format verification to exact `scrollcase-consumer` (now `0.3.0`, see P5.4E), keeps the product lifecycle, and proves the Liatir-owned call order |
+| P5.4R — adopt `scrollcase-consumer` in the Rust bridge | In progress, no longer blocked | `runtime_boxes.rs` delegates format verification to exact `scrollcase-consumer` (now `0.3.0`, see P5.4E), keeps the product lifecycle, and proves the Liatir-owned call order. The remainder — `attach_extracted_box`, `verify_extracted_payload`, `prepare_box` — was blocked while those entry points took a trust-file path; `0.2.0` replaced it with `TrustAnchors`, so compiled-in anchors are now a first-class source and the remainder is Liatir work |
 | P5.4T — `scrollcase-consumer 0.2.0` pin and delegation sweep | Complete | Exact `=0.2.0`; hand-written trust parser replaced by `trust::parse_trusted_keys` with all three key sources on one format; `dir_size` → `filesystem::payload_size`; `RuntimeBoxArchive`, `RuntimeBoxSelfTest` and `ExtractedBoxMetadata` deleted in favour of the box format's own types; the 13-field comparison replaced by `assert_box_manifest_agreement`, which closes the uncompared `environment` field; `min_ram_gb` → `f64`, matching the shared TS contract. `cargo clippy` clean and 41/41 Rust tests green |
 | P5.4E — Rust `Compatibility` carries project constraints | Resolved upstream, adopted | The Rust `Compatibility` was `deny_unknown_fields`, stricter than the schema the crate itself ships (`additionalProperties: true`, "a project may add its own"). Measured at the time: the Node consumer accepted `runtime-boxes/contract-compatibility-fixtures.json`, the Rust type rejected the same bytes. Fixed upstream in `scrollcase-consumer 0.3.0`, which carries unknown constraints in `Compatibility::additional` and states that an application finding one it does not understand must refuse the box. Liatir pins `=0.3.0`, has **deleted its own `ReleaseManifest` and `RuntimeBoxCompatibility`** in favour of the box format's types, reads `minLiatirVersion` / `maxLiatirVersionExclusive` from `additional`, and refuses any other entry. `to_box_format` is gone |
 | P5.4V — Scrollcase `0.4.11` → current-line upgrade | Complete | Exact `scrollcase@0.7.1` with its npm identity read back into the lockfile, `scrollcase-consumer` confirmed ahead of the format, and the maintainer decision recorded that every proven target rebuilds rather than freezes. All eleven targets rebuilt, measured and catalog-bound on `0.7.1`, one dispatch each, no retry: every lock byte-identical, every parity figure reproduced exactly including all four CUDA targets, every `diskPlan` measured on its own host. Nothing signed with a production key, published or promoted |
+| P5.4W — Scrollcase `0.7.1` → `0.8.0` pin raise | Complete | Exact `scrollcase@0.8.0` (published 2026-08-06T17:28:03.966Z, integrity `sha512-zC2rply…pcxEQ==`) read back from npm into the lockfile before the change. Diffed against the `0.7.1` tarball it touches only `CHANGELOG`, `package.json`, `build/verify`, the two consumer entry points and `sign/`: `src/contract` is **byte-identical** and no archive-producing code moved, so the eleven-target matrix carries over with zero rebuilds. The change is additive — every operation now takes `publicPath` **or** `trustedKeys`, and `verifySignedDocument` still accepts a path — so no Liatir call site changed. `test:verify` 6/6 and the macOS native fixture lifecycle green on the new pin |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
 | P5.6 — local/native closure | Pending | Full cheap gate plus one reviewed non-production product lifecycle |
 | P5.7 — documentation handoff | Pending | Status, inventories and operator docs match the implemented boundary |
@@ -2185,6 +2189,11 @@ below. No box was signed with a production key, published, promoted or released;
 the whole matrix stays unpublished, which is what makes a release a single
 separate decision rather than eleven.
 
+**The `0.8.0` pin raise of P5.4W does not disturb this table.** That release
+changes no archive-producing code — `src/contract` is byte-identical to `0.7.1`
+and `src/build` differs only in `verify` — so every hash, size and delta below
+is still what the current builder produces. Read them as current, not historical.
+
 | Target | State | Archive SHA-256 | Installed | Δ |
 | --- | --- | --- | --- | --- |
 | UCE macOS Metal | done, run `31070450837` | `d08f7c80…fe29f` | `11169027146` | +10% |
@@ -2280,24 +2289,34 @@ run** for that model. Run `31102785007` died seven minutes in exactly this way.
 Do not push anything matching a model workflow's path filters while its native
 run is in flight.
 
-#### Upstream gap: payload verification needs a key file
+#### Upstream gap: closed — the entry points take trust anchors now
 
-`verify_extracted_payload` and `attach_extracted_box` take
-`AttachOptions.public_key_path`, a **trust file on disk**. Liatir compiles its
-trust anchors into the binary with `include_str!` precisely so a user-editable
-key cannot defeat signing, so neither is adoptable as written — the same reason
-`verify_and_extract_box` was left unadopted in P5.4R.
+**This gap is resolved and the request it recorded is satisfied.** It read:
+`verify_extracted_payload` and `attach_extracted_box` took
+`AttachOptions.public_key_path`, a **trust file on disk**, while Liatir compiles
+its trust anchors into the binary with `include_str!` precisely so a
+user-editable key cannot defeat signing. Neither was adoptable as written — the
+same reason `verify_and_extract_box` was left unadopted in P5.4R — and the
+vendor-neutral ask was for `_with_keys` variants mirroring
+`inspect_release_document_with_keys`.
 
-`verify::inspect_release_document_with_keys` already shows the shape that works:
-the same operation taking `&[TrustedKey]` directly. The vendor-neutral request is
-to add the matching `_with_keys` variants for attach and payload verification.
-Until then the P5.4R remainder stays open — not for want of `payloadDigest`,
-which `0.7.1` now emits, but because the entry point cannot be called without
-writing a trust key to disk.
+`scrollcase-consumer 0.2.0` answered it better than the ask. Rather than adding a
+second entry point per operation, the field became `trust: TrustAnchors`, which
+is either a key file or the keys themselves: one way to state a trust decision
+instead of two, and `inspect_release_document_with_keys` was removed as
+redundant. Liatir already pins `=0.3.0`, so `AttachOptions { trust:
+TrustAnchors::Keys(&anchors), .. }` is callable today against the anchors the
+binary already carries.
+
+The P5.4R remainder is therefore no longer blocked on anything upstream: what
+remains — adopting `attach_extracted_box`, `verify_extracted_payload` and
+`prepare_box` in place of the Liatir-side extraction and agreement steps — is
+Liatir work, to be scheduled on its own merits rather than waited on.
 
 The order question this section left open — P5.4V before or after P5.5 — is
 answered by the same decision. P5.4V ran first, so P5.5 will delete the legacy
-builder against `0.7.1`, the pin the remaining work is authored on.
+builder against the current pin, `0.8.0`, the version the remaining work is
+authored on.
 
 ## P5.5 — Final cutover and legacy deletion
 

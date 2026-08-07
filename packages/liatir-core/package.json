@@ -12,7 +12,7 @@
     "dev": "tsc -p tsconfig.json --watch"
   },
   "dependencies": {
-    "scrollcase": "0.7.1"
+    "scrollcase": "0.8.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
