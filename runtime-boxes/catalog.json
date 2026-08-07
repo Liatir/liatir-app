@@ -256,8 +256,8 @@
           "dependencyLockSha256": "2f2e22e0dedbde6a2fdfa02f52c048f61b585351b2eb3a752e8c79b1bab35ae4",
           "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cuda12.9.json",
           "diskPlan": {
-            "estimatedInstalledSizeBytes": 28120935919,
-            "estimatedArchiveSizeBytes": 17118987830,
+            "estimatedInstalledSizeBytes": 13488585227,
+            "estimatedArchiveSizeBytes": 7803294017,
             "safetyMarginBytes": 3221225472
           },
           "gpuRequired": true,
