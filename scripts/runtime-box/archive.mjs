@@ -212,3 +212,22 @@ export async function extractRecipeArchive(archivePath, format, destination, str
     await rm(tempRoot, { recursive: true, force: true });
   }
 }
+
+/**
+ * Unpacks an archive that already sits inside a payload tree, in place.
+ *
+ * `stripComponents` drops the redundant top-level wrapper directory many published archives carry,
+ * and the compressed original is removed afterwards unless the declaration asks to keep it, since
+ * inside a payload it is dead weight once unpacked.
+ */
+export async function extractPayloadArchive(payloadDir, archive) {
+  const archivePath = join(payloadDir, safeRelativePath(archive.relativePath));
+  const destination = join(payloadDir, safeRelativePath(archive.destination));
+  await extractRecipeArchive(
+    archivePath,
+    archive.format,
+    destination,
+    Number(archive.stripComponents ?? 0),
+  );
+  if (archive.removeAfterExtract !== false) await rm(archivePath, { force: true });
+}

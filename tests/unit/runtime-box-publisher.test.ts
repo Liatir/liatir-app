@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { multipartPartRanges } from '../../scripts/runtime-box/legacy-cli.mjs';
+import { multipartPartRanges } from '../../scripts/runtime-box/distribution-cli.mjs';
 import {
   parseImmutableReleaseIdentity,
   parseMultipartArchiveIdentity,

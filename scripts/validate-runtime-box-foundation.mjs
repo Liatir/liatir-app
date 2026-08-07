@@ -22,7 +22,7 @@ import {
   safeRelativePath,
   sha256File,
 } from './runtime-box/filesystem.mjs';
-import { extractRecipeArchive } from './runtime-box/legacy-cli.mjs';
+import { extractPayloadArchive } from './runtime-box/archive.mjs';
 import { runtimeBoxTargetAdapter } from './runtime-box/targets.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
@@ -83,7 +83,7 @@ async function validateTarFoundation(root) {
   await writeFile(join(source, 'asset.txt'), 'verified tar asset\n');
   const archivePath = join(payload, 'downloads', 'valid.tar.gz');
   await tar.c({ file: archivePath, cwd: join(root, 'tar-source'), gzip: true }, ['wrapper']);
-  await extractRecipeArchive(payload, {
+  await extractPayloadArchive(payload, {
     format: 'tar.gz',
     relativePath: 'downloads/valid.tar.gz',
     destination: 'model-cache/fixture',
@@ -99,7 +99,7 @@ async function validateTarFoundation(root) {
   const linkArchive = join(payload, 'downloads', 'link.tar.gz');
   await createTarLinkFixture(linkArchive);
   await assert.rejects(
-    extractRecipeArchive(payload, {
+    extractPayloadArchive(payload, {
       format: 'tar.gz',
       relativePath: 'downloads/link.tar.gz',
       destination: 'model-cache/rejected',
@@ -110,7 +110,7 @@ async function validateTarFoundation(root) {
   const zipLinkArchive = join(payload, 'downloads', 'link.zip');
   await createZipLinkFixture(zipLinkArchive);
   await assert.rejects(
-    extractRecipeArchive(payload, {
+    extractPayloadArchive(payload, {
       format: 'zip',
       relativePath: 'downloads/link.zip',
       destination: 'model-cache/rejected-zip',

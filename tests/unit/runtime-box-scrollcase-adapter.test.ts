@@ -148,15 +148,15 @@ describe('Liatir Scrollcase adapter', () => {
       join(root, 'runtime-boxes', 'recipes', 'legacy-uv', 'recipe.json'),
       `${JSON.stringify({ schemaVersion: 1, recipeId: 'legacy-uv', uvVersion: '0.11.28' })}\n`,
     );
-    const legacyCalls: Array<{ command: string; args: string[] }> = [];
-    const legacyCommand = async (command: string, args: string[]) => {
-      legacyCalls.push({ command, args });
+    const distributionCalls: Array<{ command: string; args: string[] }> = [];
+    const distributionCommand = async (command: string, args: string[]) => {
+      distributionCalls.push({ command, args });
     };
 
     await expect(dispatchRuntimeBox('build', [
       'legacy-uv',
       '--project-root', root,
-    ], { legacyCommand })).rejects.toThrow(/Schema-v1 recipes are deprecated/);
+    ], { distributionCommand })).rejects.toThrow(/Schema-v1 recipes are deprecated/);
     for (const [command, argument] of [
       ['publish', 'release.json'],
       ['publish-key', '--confirm'],
@@ -167,10 +167,10 @@ describe('Liatir Scrollcase adapter', () => {
       await dispatchRuntimeBox(command, [
         argument,
         '--project-root', root,
-      ], { legacyCommand });
+      ], { distributionCommand });
     }
 
-    expect(legacyCalls.map(({ command }) => command)).toEqual([
+    expect(distributionCalls.map(({ command }) => command)).toEqual([
       'publish',
       'publish-key',
       'promote',
@@ -278,5 +278,26 @@ describe('Liatir Scrollcase adapter', () => {
         reason: 'Synthetic withdrawal',
       }],
     });
+  });
+
+  // Deletion guard. The distribution module used to carry a second, Liatir-owned builder beside
+  // these commands; Scrollcase owns building now, and a builder growing back here would mean two
+  // implementations of one archive format again — the exact drift P5 exists to end.
+  it('keeps the distribution module free of any local builder', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'scripts/runtime-box/distribution-cli.mjs'),
+      'utf8',
+    );
+    for (const forbidden of [
+      './licenses.mjs',
+      './pixi.mjs',
+      './python.mjs',
+      'createDeterministicZip',
+      'findUv',
+      'buildRecipe',
+      'lockRecipe',
+    ]) {
+      expect(source, forbidden).not.toContain(forbidden);
+    }
   });
 });

@@ -4,7 +4,7 @@
  * Generic pixi box work goes through the package executable. Liatir injects its frozen document
  * namespace, translates its private signer into Scrollcase's command contract, and writes CI
  * receipts only after the package has returned success. Distribution remains explicitly
- * Liatir-owned; the temporary uv compatibility path is gone.
+ * Liatir-owned; no local builder remains behind this surface.
  */
 
 import { readFile, mkdir, readdir, stat, writeFile } from 'node:fs/promises';
@@ -19,7 +19,7 @@ import {
   getWorkspace,
   workspaceOverridesFromFlags,
 } from './workspace.mjs';
-import { runLegacyRuntimeBoxCommand } from './legacy-cli.mjs';
+import { runRuntimeBoxDistributionCommand } from './distribution-cli.mjs';
 import { liatirSignerCommand } from './signer-command.mjs';
 
 export const LIATIR_SCROLLCASE_NAMESPACE = 'liatir.runtime-box';
@@ -298,9 +298,9 @@ export async function dispatchRuntimeBox(command, values, options = {}) {
   if (!command || command === 'help' || command === '--help') return usage();
   const parsed = parseRuntimeBoxArguments(values);
   configureWorkspace({ overrides: workspaceOverridesFromFlags(parsed.flags) });
-  const legacyCommand = options.legacyCommand ?? runLegacyRuntimeBoxCommand;
+  const distributionCommand = options.distributionCommand ?? runRuntimeBoxDistributionCommand;
   if (DISTRIBUTION_COMMANDS.has(command)) {
-    return legacyCommand(command, values);
+    return distributionCommand(command, values);
   }
   if (command === 'doctor' || command === 'keygen' || command === 'verify') {
     return runPublishedCommand(command, values, parsed, options);
