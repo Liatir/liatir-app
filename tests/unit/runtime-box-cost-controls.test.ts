@@ -42,6 +42,32 @@ describe('Runtime Box CI cost controls', () => {
     const releaseWorkflow = readFileSync(resolve('.github/workflows/runtime-box-release.yml'), 'utf8');
     const windowsProductSmoke = readFileSync(resolve('.github/workflows/runtime-box-windows-product-smoke.yml'), 'utf8');
     const nativeBridgeE2E = readFileSync(resolve('tests/e2e/specs/native-bridge.e2e.mjs'), 'utf8');
+    // Every job that runs a Runtime Box script on a bare ephemeral runner must install
+    // dependencies first: the CI entry point imports the published Scrollcase contract, so
+    // without node_modules it cannot start at all. Release run 31225652966 died here, on the
+    // first release dispatched after the adoption, having reached no paid step. The check is
+    // per job, not per file — a sibling job's `npm ci` installs nothing on this runner.
+    for (const [name, workflow] of [
+      ['release', releaseWorkflow],
+      ['validate', readFileSync(resolve('.github/workflows/_runtime-box-validate.yml'), 'utf8')],
+    ] as const) {
+      const jobs = workflow.split(/\n {2}(?=[a-z][\w-]*:\n)/);
+      let checked = 0;
+      for (const job of jobs) {
+        const first = Math.min(
+          ...['node scripts/runtime-box-ci.mjs', 'npm run runtime-box:ci']
+            .map((script) => job.indexOf(script))
+            .filter((index) => index !== -1),
+        );
+        if (!Number.isFinite(first)) continue;
+        checked += 1;
+        const install = job.indexOf('- run: npm ci');
+        expect(install, `${name}: job runs a Runtime Box script without npm ci`).toBeGreaterThan(-1);
+        expect(install, `${name}: npm ci must precede the first Runtime Box script`)
+          .toBeLessThan(first);
+      }
+      expect(checked, `${name}: no job parsed`).toBeGreaterThan(0);
+    }
     expect(prepare.indexOf('npm run build --prefix packages/liatir-core'))
       .toBeLessThan(prepare.indexOf('npm run gen:sdk-types'));
     expect(prepare.indexOf('npm ci --prefix frontend'))

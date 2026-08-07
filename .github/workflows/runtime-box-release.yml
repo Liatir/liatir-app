@@ -91,6 +91,12 @@ jobs:
           node-version: 22
           cache: npm
 
+      # Dependencies come before the first script, and before the host probe, because the CI
+      # entry point imports the published Scrollcase contract: on an ephemeral runner with no
+      # node_modules it cannot even start. This is not the paid setup the probe guards — that is
+      # the pixi environment, the model weights and the build, all of which still come after it.
+      - run: npm ci
+
       - name: Clean stale Runtime Box state
         run: node scripts/runtime-box-ci.mjs clean
 
@@ -114,8 +120,6 @@ jobs:
           id_token_include_email: true
 
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
-
-      - run: npm ci
 
       - name: Fail fast if the deployed signer policy is stale
         env:
