@@ -1,6 +1,6 @@
 # Current project status
 
-Last updated: 2026-08-06 (the Runtime Box builder extraction is complete:
+Last updated: 2026-08-07 (the Runtime Box builder extraction is complete:
 Scrollcase is an independent Apache-2.0 project outside this repository.
 Liatir now pins exact public `scrollcase@0.7.1` — raised from `0.4.11` on
 2026-08-06, see next step 2 — and P5.2V has completed the
@@ -9,9 +9,13 @@ tree, or codebase to modify from this repository. Schema v1 is explicitly
 unsupported rather than retained as a parallel reader. P5.3 is complete:
 all three foundation v2 scrolls/locks/audits passed matching native validation
 on macOS, self-hosted Linux and self-hosted Windows, and each old uv fixture was
-removed only after its native proof. P5.4 is now in progress as one phase with
+removed only after its native proof. P5.4 is complete, as one phase with
 three operational blocks: scGPT v2, Geneformer CPU/Metal plus UCE, and the
-Geneformer CUDA legacy/successor decision. Block 1 is complete. It started with
+Geneformer CUDA legacy/successor decision. **P5.4V is complete too: every one of
+the eleven targets was rebuilt and re-measured on `scrollcase@0.7.1` by
+2026-08-07, so every archive SHA-256, archive size and installed size quoted in
+the rest of this paragraph is the superseded `0.4.11`-era proof. The current
+figures are in next step 2 and in the P5.4V rebuild table.** Block 1 started with
 the scGPT Linux CPU input: it is now a single schema-v2 scroll with the existing pixi lock
 preserved byte-for-byte and a Scrollcase v2 audit. Its complete native proof
 passed in run `30599143569` on self-hosted runner
@@ -839,12 +843,15 @@ first).
 > adoption/legacy retirement. Phases 0–4 of the pixi migration are complete;
 > Phase 5 is in progress; the historical v1 P5.2 checkpoint, v2-only P5.2V
 > cutover and all three native P5.3 foundation proofs are complete. P5.4 model
-> recipe migration is in progress: all five scGPT targets are v2 and natively
+> recipe migration is complete: all five scGPT targets are v2 and natively
 > proven, and so is Geneformer's entire current matrix — macOS Metal plus the
-> `linux-x86_64-cuda12.9` and `windows-x86_64-cuda12.8` successors. Geneformer's
-> CPU targets were dropped once CPU throughput was measured, so it has no CPU box
-> at all. UCE is the next one-target continuation.
-> It remains one phase with
+> `linux-x86_64-cuda12.9` and `windows-x86_64-cuda12.8` successors — and UCE.
+> Geneformer's CPU targets were dropped once CPU throughput was measured, so it
+> has no CPU box at all. **P5.4V is complete as of 2026-08-07: all eleven targets
+> are rebuilt and measured on `scrollcase@0.7.1`, and none is published.** The
+> next continuation is P5.5 legacy deletion, or the separately authorized
+> re-release of the rebuilt matrix.
+> P5.4 remained one phase with
 > three operational blocks rather than a new numbered checkpoint per target.
 > Do not use the historical
 > platform-expansion target table as a dispatch source.
@@ -854,10 +861,10 @@ first).
    plan. Done: the `29955615971` signing failure was diagnosed (deployed-signer
    policy drift, now auto-detected before every release), and all five scGPT
    targets plus Geneformer macOS Metal, Linux CPU and Windows CPU are natively
-   proven on v2.
-   Remaining: migrate
-   and validate later Geneformer and UCE targets before protected releases
-   (each gated on the maintainer's go-ahead and a prior `runtime-box:signer:deploy`).
+   proven on v2, as are Geneformer's CUDA successors and UCE.
+   Remaining: the protected re-release of the rebuilt matrix, gated on the
+   maintainer's go-ahead and a prior `runtime-box:signer:deploy`. Every target is
+   migrated and natively validated, so no migration work is left here.
    Windows CUDA is no longer under the no-dispatch decision — it now validates on
    the self-hosted RTX 4060 Ti.
 2. **The Scrollcase pin is raised to `0.7.1` and the whole rebuild matrix is

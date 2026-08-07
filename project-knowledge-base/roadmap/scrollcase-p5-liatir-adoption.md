@@ -1,13 +1,17 @@
 # Scrollcase P5 — Liatir adoption and legacy builder retirement
 
-Last reviewed: 2026-08-06
+Last reviewed: 2026-08-07
 
-Status: **in progress — P5.2V, P5.3 and P5.4 complete. Every model target is a
-schema-v2 scroll and natively proven, and no uv recipe remains anywhere. P5.4V
-has raised the pin to `0.7.1`; UCE was authored and proven on it, while the other
-the three macOS targets are rebuilt and measured on it. Six Linux/Windows model
-targets and two foundation fixtures still carry `0.4.11` archives and need their
-own hosts. The schema-v1 uv authoring path is deleted.**
+Status: **in progress — P5.2V, P5.3, P5.4 and P5.4V complete. Every model target
+is a schema-v2 scroll and natively proven, and no uv recipe remains anywhere.
+P5.4V raised the pin to `0.7.1` and the rebuild matrix is now closed: all eleven
+targets — three macOS, two foundation fixtures, and the six Linux/Windows model
+targets including all four CUDA ones — are built, measured and catalog-bound on
+`0.7.1`, each on a single dispatch. Every lock reproduced byte-identical and
+every parity figure reproduced its `0.4.11` value exactly. Nothing is published,
+so the re-release is one separate authorized decision. The schema-v1 uv
+authoring path is deleted. P5.4R remains blocked upstream on `_with_keys`
+variants; P5.5 is the next phase.**
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project. The P5 target was
@@ -191,7 +195,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.4R — adopt `scrollcase-consumer` in the Rust bridge | In progress | `runtime_boxes.rs` delegates format verification to exact `scrollcase-consumer` (now `0.3.0`, see P5.4E), keeps the product lifecycle, and proves the Liatir-owned call order |
 | P5.4T — `scrollcase-consumer 0.2.0` pin and delegation sweep | Complete | Exact `=0.2.0`; hand-written trust parser replaced by `trust::parse_trusted_keys` with all three key sources on one format; `dir_size` → `filesystem::payload_size`; `RuntimeBoxArchive`, `RuntimeBoxSelfTest` and `ExtractedBoxMetadata` deleted in favour of the box format's own types; the 13-field comparison replaced by `assert_box_manifest_agreement`, which closes the uncompared `environment` field; `min_ram_gb` → `f64`, matching the shared TS contract. `cargo clippy` clean and 41/41 Rust tests green |
 | P5.4E — Rust `Compatibility` carries project constraints | Resolved upstream, adopted | The Rust `Compatibility` was `deny_unknown_fields`, stricter than the schema the crate itself ships (`additionalProperties: true`, "a project may add its own"). Measured at the time: the Node consumer accepted `runtime-boxes/contract-compatibility-fixtures.json`, the Rust type rejected the same bytes. Fixed upstream in `scrollcase-consumer 0.3.0`, which carries unknown constraints in `Compatibility::additional` and states that an application finding one it does not understand must refuse the box. Liatir pins `=0.3.0`, has **deleted its own `ReleaseManifest` and `RuntimeBoxCompatibility`** in favour of the box format's types, reads `minLiatirVersion` / `maxLiatirVersionExclusive` from `additional`, and refuses any other entry. `to_box_format` is gone |
-| P5.4V — Scrollcase `0.4.11` → current-line upgrade | Pin raised and locally proven; rebuilds outstanding | Exact `scrollcase@0.7.1` with its npm identity read back into the lockfile, `scrollcase-consumer 0.1.2` confirmed ahead of the format, the macOS foundation fixture rebuilt and passed end to end through the Rust lifecycle, and the maintainer decision recorded that every proven target rebuilds rather than freezes |
+| P5.4V — Scrollcase `0.4.11` → current-line upgrade | Complete | Exact `scrollcase@0.7.1` with its npm identity read back into the lockfile, `scrollcase-consumer` confirmed ahead of the format, and the maintainer decision recorded that every proven target rebuilds rather than freezes. All eleven targets rebuilt, measured and catalog-bound on `0.7.1`, one dispatch each, no retry: every lock byte-identical, every parity figure reproduced exactly including all four CUDA targets, every `diskPlan` measured on its own host. Nothing signed with a production key, published or promoted |
 | P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
 | P5.6 — local/native closure | Pending | Full cheap gate plus one reviewed non-production product lifecycle |
 | P5.7 — documentation handoff | Pending | Status, inventories and operator docs match the implemented boundary |
