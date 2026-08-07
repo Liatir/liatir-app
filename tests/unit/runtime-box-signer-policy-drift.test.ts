@@ -3,7 +3,11 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { verifyDeployedSignerPolicy } from '../../scripts/runtime-box-ci.mjs';
-import { runtimeBoxPolicyFingerprint } from '../../services/runtime-box-signer/src/policy.mjs';
+import { signerSmokePayload } from '../../scripts/validate-runtime-box-signer.mjs';
+import {
+  runtimeBoxPolicyFingerprint,
+  validateSigningPayload,
+} from '../../services/runtime-box-signer/src/policy.mjs';
 
 // The exact committed policy the deployed signer is supposed to be serving.
 const policyText = readFileSync(
@@ -84,5 +88,14 @@ describe('deployed signer policy drift check', () => {
     // It must run before signing, so a stale policy fails fast rather than after the build.
     expect(release.indexOf('verify-signer-policy'))
       .toBeLessThan(release.indexOf('Build with the private KMS signer'));
+  });
+
+  // The smoke test is the last gate of a signer deployment, and the only thing that ever sends the
+  // policy a document. When the two drift, the deployment half-lands: the service is replaced and
+  // then declared failed. Run 31226041300 did exactly that, because the payload still declared
+  // schemaVersion 1 after the v2 cutover. Holding it against the committed policy here costs
+  // nothing and moves the discovery off the deployment path.
+  it('keeps the deployment smoke payload signable under the committed policy', () => {
+    expect(() => validateSigningPayload(JSON.parse(policyText), signerSmokePayload())).not.toThrow();
   });
 });
