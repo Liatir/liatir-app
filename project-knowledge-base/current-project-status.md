@@ -948,7 +948,9 @@ first).
    change is additive — every operation now accepts `publicPath` *or*
    `trustedKeys`, and `verifySignedDocument` still takes a path — so again no
    Liatir call site changed. `test:verify` 6/6, 42/42 Rust tests, and the macOS
-   native fixture lifecycle green on the new pin.
+   native fixture lifecycle green on the new pin — and the fixture proves the
+   diff empirically, rebuilding to archive `54172964` and installed `146593318`
+   bytes, the exact figures the catalog recorded from its `0.7.1` build.
    **P5.4R is no longer blocked upstream.** The gap was that
    `verify_extracted_payload` and `attach_extracted_box` took a trust-key *file*
    while Liatir compiles its anchors into the binary;
