@@ -863,11 +863,22 @@ first).
    policy drift, now auto-detected before every release), and all five scGPT
    targets plus Geneformer macOS Metal, Linux CPU and Windows CPU are natively
    proven on v2, as are Geneformer's CUDA successors and UCE.
-   Remaining: the protected re-release of the rebuilt matrix, gated on the
-   maintainer's go-ahead and a prior `runtime-box:signer:deploy`. Every target is
+   Remaining: the protected re-release of the rebuilt matrix. Every target is
    migrated and natively validated, so no migration work is left here.
    Windows CUDA is no longer under the no-dispatch decision — it now validates on
    the self-hosted RTX 4060 Ti.
+   **The maintainer authorized the re-release on 2026-08-07 and it is prepared,
+   not done.** Every box version is bumped (`3497f12`) so the rebuilt archives
+   can publish without one version naming two different sets of bytes:
+   `geneformer-v1-10m` and `uce-4layer` to `1.0.0-beta.2`, `scgpt-whole-human` to
+   `0.2.5-beta.2`. What each half waits on is **a host, not a decision**: the
+   three macOS targets need `37580963840` free bytes before the ephemeral runner
+   will set up and this Mac has `34587353088`, short by 2.79 GiB after local
+   build scratch was reclaimed; the six Linux/Windows targets need their own
+   machines' runners, exactly as their rebuilds did. Release before revoking —
+   and never revoke UCE `1.0.0-beta.1` until its successor is promoted, because
+   it is UCE's only publication. Full readiness record in
+   [P5.4P](./roadmap/scrollcase-p5-liatir-adoption.md).
 2. **The Scrollcase pin is raised to `0.7.1` and the whole rebuild matrix is
    complete (2026-08-07).**
    The 2026-08-04 hold ("do not raise the pin during P5.4") was **lifted by the
@@ -907,10 +918,20 @@ first).
    second with a unit test. **The schema-v1 uv authoring path is now deleted**
    (`f467399`): `runtime-boxes/recipes/` is gone, the resolver has no legacy
    branch, the uv licence validator is gone, and both workflows lost their
-   pinned-uv install. The guards that keep uv out stay. `legacy-cli.mjs` is
-   deliberately untouched — despite its name it owns distribution, which the
-   pending re-release needs; its unreachable build path comes out after the
-   release, not before it.
+   pinned-uv install. The guards that keep uv out stay.
+   **The local builder is now deleted too** (`5f52f5e`). `legacy-cli.mjs` had
+   been kept through the rebuild matrix only because the distribution half of the
+   same file is what a release runs; the matrix is closed, so it went: 515 lines
+   covering `buildRecipe`, `lockRecipe`, `verifyRelease` (which had no dispatch
+   entry at all and was dead twice over), `findUv`, and the
+   licence/pixi/python/target-adapter imports only they used. Two reachable
+   helpers moved rather than died, since a validator needs each —
+   `downloadVerified` to `assets.mjs`, and the payload-archive wrapper to
+   `archive.mjs` as `extractPayloadArchive`, which also ends the confusion of two
+   different functions sharing the name `extractRecipeArchive`. The file is now
+   `distribution-cli.mjs`: nothing in it is legacy — it owns R2 publication, the
+   Worker trust root, promotion, revocation and the loopback registry — and a
+   deletion guard fails if a builder grows back.
    **Rebuilds: all three macOS targets are done and measured** — UCE
    (`31070450837`), scGPT (`31103405667`), Geneformer (`31104336539`). The format
    effect is consistent: scGPT −26%, Geneformer −29% from carried links and

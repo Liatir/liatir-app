@@ -200,7 +200,8 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.4E — Rust `Compatibility` carries project constraints | Resolved upstream, adopted | The Rust `Compatibility` was `deny_unknown_fields`, stricter than the schema the crate itself ships (`additionalProperties: true`, "a project may add its own"). Measured at the time: the Node consumer accepted `runtime-boxes/contract-compatibility-fixtures.json`, the Rust type rejected the same bytes. Fixed upstream in `scrollcase-consumer 0.3.0`, which carries unknown constraints in `Compatibility::additional` and states that an application finding one it does not understand must refuse the box. Liatir pins `=0.3.0`, has **deleted its own `ReleaseManifest` and `RuntimeBoxCompatibility`** in favour of the box format's types, reads `minLiatirVersion` / `maxLiatirVersionExclusive` from `additional`, and refuses any other entry. `to_box_format` is gone |
 | P5.4V — Scrollcase `0.4.11` → current-line upgrade | Complete | Exact `scrollcase@0.7.1` with its npm identity read back into the lockfile, `scrollcase-consumer` confirmed ahead of the format, and the maintainer decision recorded that every proven target rebuilds rather than freezes. All eleven targets rebuilt, measured and catalog-bound on `0.7.1`, one dispatch each, no retry: every lock byte-identical, every parity figure reproduced exactly including all four CUDA targets, every `diskPlan` measured on its own host. Nothing signed with a production key, published or promoted |
 | P5.4W — Scrollcase `0.7.1` → `0.8.0` pin raise | Complete | Exact `scrollcase@0.8.0` (published 2026-08-06T17:28:03.966Z, integrity `sha512-zC2rply…pcxEQ==`) read back from npm into the lockfile before the change. Diffed against the `0.7.1` tarball it touches only `CHANGELOG`, `package.json`, `build/verify`, the two consumer entry points and `sign/`: `src/contract` is **byte-identical** and no archive-producing code moved, so the eleven-target matrix carries over with zero rebuilds. The change is additive — every operation now takes `publicPath` **or** `trustedKeys`, and `verifySignedDocument` still accepts a path — so no Liatir call site changed. `test:verify` 6/6, 42/42 Rust tests, and the macOS native fixture lifecycle green on the new pin. **The fixture confirms the diff empirically**: rebuilt on `0.8.0` it produced archive `54172964` and installed `146593318` bytes, the exact figures measured on `0.7.1` and recorded in the catalog |
-| P5.5 — final cutover and legacy deletion | Pending | No generic local builder caller or active uv recipe remains |
+| P5.4P — re-release of the rebuilt matrix | Prepared, blocked on hosts | Every box version bumped (`geneformer-v1-10m` and `uce-4layer` to `1.0.0-beta.2`, `scgpt-whole-human` to `0.2.5-beta.2`) so the rebuilt archives publish without making one version name two different sets of bytes. Nothing is published yet: see the release-readiness section |
+| P5.5 — final cutover and legacy deletion | In progress | The local builder is deleted (`5f52f5e`) and `legacy-cli.mjs` is now `distribution-cli.mjs`, holding only R2 publication, the Worker trust root, promotion, revocation and the loopback registry, with a deletion guard against a builder growing back |
 | P5.6 — local/native closure | Pending | Full cheap gate plus one reviewed non-production product lifecycle |
 | P5.7 — documentation handoff | Pending | Status, inventories and operator docs match the implemented boundary |
 
@@ -567,14 +568,14 @@ Scrollcase remains responsible for rejecting payload substitution, invalid
 signatures, malformed JSON and non-zero signer exits. Liatir revocation now uses
 the public Scrollcase signing envelope rather than a second local implementation.
 
-Distribution remains entirely Liatir-owned. The temporary
-`scripts/runtime-box/legacy-cli.mjs` contains the nine-recipe uv compatibility
-builder plus the existing publish, publish-key, promote, revoke and serve
-implementation until P5.3/P5.4 migrate those recipes and P5.5 removes the generic
-legacy builder. The stable dispatcher routes those command sets explicitly and
-the legacy module fails closed if called directly for pixi lock/build, so a pixi
-recipe cannot bypass Scrollcase. This is a visible migration boundary, not a
-silent fallback.
+Distribution remains entirely Liatir-owned, in
+`scripts/runtime-box/distribution-cli.mjs`: publish, publish-key, promote, revoke
+and serve. It held a second, Liatir-owned uv builder beside them until the
+rebuild matrix closed; `5f52f5e` deleted it, renamed the module for what it
+actually owns, and added a guard that fails if a builder grows back. The stable
+dispatcher routes the distribution commands here and everything generic to the
+published Scrollcase CLI, so there is no longer a second implementation of the
+archive format to bypass.
 
 `runtime-box-ci.mjs tracked-build` still enters through the stable npm command and
 therefore reaches the adapter while preserving the existing heartbeat and metric
@@ -2317,6 +2318,47 @@ The order question this section left open — P5.4V before or after P5.5 — is
 answered by the same decision. P5.4V ran first, so P5.5 will delete the legacy
 builder against the current pin, `0.8.0`, the version the remaining work is
 authored on.
+
+### P5.4P — Release readiness: prepared, and what each half waits on
+
+The matrix is built, measured and version-bumped. **Nothing is published**, and the
+two halves are blocked on different things.
+
+**Versions moved because they had to.** Object keys are content-addressed, so a
+new archive would not overwrite an old one — but a channel resolves one release
+per version, and pointing it at different bytes would make an already-installed
+`0.2.5-beta.1` and a freshly installed `0.2.5-beta.1` two different boxes. So
+`geneformer-v1-10m` and `uce-4layer` go to `1.0.0-beta.2` and `scgpt-whole-human`
+to `0.2.5-beta.2` (`3497f12`). A version is per box, so all five scGPT scrolls
+moved together rather than splitting one box across two version lines.
+
+**The three macOS targets are blocked on this Mac's free disk.** The
+`macos-arm64-heavy` profile declares `minimumBootstrapFreeDiskBytes`
+`37580963840` (35 GiB) and the launcher enforces it before setup — for every
+target on that profile, not only UCE. Measured 2026-08-07 after reclaiming the
+local build scratch: `34587353088` free, **short by `2993610752` bytes (2.79
+GiB)**. `src-tauri/target` alone holds 6.2 GiB and is the obvious source, but it
+is a build artefact this plan does not touch. Do not lower the floor to fit the
+machine: it is the guarantee that a paid build cannot run out of disk halfway,
+and the catalog rule that every `requiredBuildDiskBytes` stays strictly under it
+depends on it.
+
+**The six Linux/Windows targets are blocked on their own hosts,** exactly as the
+rebuilds were. Each needs its ephemeral runner started on the machine that owns
+the platform.
+
+**Order, once a host is available.** Release, then revoke — never the reverse.
+Revoking a version withdraws it from installs, so revoking `0.2.5-beta.1` before
+`0.2.5-beta.2` is promoted takes scGPT away from every user for the length of the
+gap. **UCE is the case to be careful with:** its `1.0.0-beta.1` is its only
+publication, so it must not be revoked until its `1.0.0-beta.2` is live, whatever
+happens to the other two.
+
+**What the e2e specs still assert is deliberate.** `runtime-box-uce-native`,
+`runtime-box-scgpt-native` and `runtime-box-native` pin the versions the public
+beta channel serves *today* — `1.0.0-beta.1`, `0.2.5-beta.1`. They are correct
+until each release is promoted, and each must be updated in the same commit that
+records its promotion, not before.
 
 ## P5.5 — Final cutover and legacy deletion
 
