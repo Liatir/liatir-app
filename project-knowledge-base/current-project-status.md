@@ -860,7 +860,8 @@ first).
    (each gated on the maintainer's go-ahead and a prior `runtime-box:signer:deploy`).
    Windows CUDA is no longer under the no-dispatch decision — it now validates on
    the self-hosted RTX 4060 Ti.
-2. **The Scrollcase pin is raised to `0.7.1`; eight targets now need a rebuild.**
+2. **The Scrollcase pin is raised to `0.7.1` and the whole rebuild matrix is
+   complete (2026-08-07).**
    The 2026-08-04 hold ("do not raise the pin during P5.4") was **lifted by the
    maintainer on 2026-08-06** and the pin moved. The hold existed to protect
    recorded evidence, and Liatir is unreleased, so no user depends on that
@@ -908,10 +909,26 @@ first).
    stored assets alone, while UCE gained 10% because its migration also dropped
    twelve `venv/` prune paths. Geneformer's Metal parity reproduced its `0.4.11`
    figures exactly, so the archive changed and the science did not.
-   **Eight rebuilds remain and need the other hosts**: scGPT Linux CPU, Linux
-   CUDA 12.9, Windows CPU and Windows CUDA 12.8; Geneformer Linux CUDA 12.9 and
-   Windows CUDA 12.8; and the Linux and Windows foundation fixtures. Four are GPU
-   runs and none was dispatched. Nothing is published, so no identity breaks.
+   **The remaining eight rebuilds are now done (2026-08-07), each on one
+   dispatch with no retry**, on the maintainer's self-hosted WSL and Windows
+   hosts: the Linux fixture (`31114218644`) and Windows fixture
+   (`31115179668`); scGPT Linux CPU (`31140132988`), Windows CPU
+   (`31141105901`), Linux CUDA 12.9 (`31142985671`) and Windows CUDA 12.8
+   (`31145063888`); Geneformer Linux CUDA 12.9 (`31182952388`) and Windows CUDA
+   12.8 (`31185755710`). The four GPU runs were explicitly authorized by the
+   maintainer on 2026-08-07 and ran Linux-before-Windows per the catalog rule.
+   Every lock reproduced byte-identical and every parity figure reproduced its
+   `0.4.11` value exactly, including all four CUDA targets. **All eleven targets
+   are on `0.7.1` with measured `diskPlan`s; nothing is published, so no identity
+   breaks, and the release remains one separate authorized decision.**
+   **The size effect splits on platform and nothing else**: the four Windows
+   targets moved `+0.3%`/`+0.2%`/`+0.05%`/`+0.05%` while the POSIX ones moved
+   `−53%`/`−43%`/`−32%`/`−52%` (plus macOS `−26%`/`−29%`). conda materialises
+   files on Windows instead of linking them, so a Windows payload has no link
+   entries for the `0.6.0` rule to carry. The two CUDA pairs prove it by holding
+   the model constant and varying only the OS. **Never infer a Windows
+   `diskPlan` from a POSIX measurement or the reverse** — it is wrong by about a
+   factor of two in either direction.
    **Operating hazard:** a push touching a model workflow's path filters cancels
    that model's in-flight dispatched native run, through the shared concurrency
    group with `cancel-in-progress`. Run `31102785007` was lost this way.

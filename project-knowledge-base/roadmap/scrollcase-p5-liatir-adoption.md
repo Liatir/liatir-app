@@ -2166,12 +2166,20 @@ scroll needed a `uncompressedPaths` declaration; scGPT's one `assetArchives`
 entry expands into Python source, which compresses well and should keep
 deflating.
 
-#### Rebuilds: every non-GPU target is done, the four GPU targets remain (2026-08-07)
+#### Rebuilds: the matrix is complete, all eleven targets are on `0.7.1` (2026-08-07)
 
 A target proven on `0.4.11` describes bytes this builder no longer produces.
 Nothing is published, so no identity breaks — this is runner time, not a
 migration. Every rebuild replaces the target's archive SHA-256, measured sizes
 and `diskPlan`.
+
+**All eleven targets are now rebuilt, measured and catalog-bound**, each on one
+dispatch with no retry. Every lock was reproduced byte-identical, so no build
+resolved a different package set and only the archive format moved. Every target
+that produces parity numbers reproduced them exactly — see the parity section
+below. No box was signed with a production key, published, promoted or released;
+the whole matrix stays unpublished, which is what makes a release a single
+separate decision rather than eleven.
 
 | Target | State | Archive SHA-256 | Installed | Δ |
 | --- | --- | --- | --- | --- |
@@ -2183,7 +2191,7 @@ and `diskPlan`.
 | scGPT Windows CPU | done, run `31141105901` | `c8ee79c3…f3b8` | `1481631149` | +0.2% |
 | scGPT Windows CUDA 12.8 | done, run `31145063888` | `548135c1…1323` | `7056692402` | +0.05% |
 | Geneformer Linux CUDA 12.9 | done, run `31182952388` | `1b7aa91b…5cfa` | `13488585227` | −52% |
-| Geneformer Windows CUDA 12.8 | pending, GPU | | | |
+| Geneformer Windows CUDA 12.8 | done, run `31185755710` | `62668efa…80f2` | `7402549049` | +0.05% |
 | Fixture Linux CPU | done, run `31114218644` | `357a385e…fced` | `239853779` | −53% |
 | Fixture Windows CPU | done, run `31115179668` | `ccc5f563…2c79` | `126577170` | +0.3% |
 
@@ -2212,6 +2220,20 @@ cleanly, because its archive grew `+3.1%` while its payload grew `+0.2%`: the
 source assets. On Linux that cost is buried under the link saving; on Windows
 nothing hides it. Both mechanisms are now measured independently.
 
+**The completed matrix splits cleanly along the platform line, and nothing
+else.** Four Windows targets: `+0.3%`, `+0.2%`, `+0.05%`, `+0.05%`. Four POSIX
+targets: `−53%`, `−43%`, `−32%`, `−52%`, plus the two macOS model targets at
+`−26%` and `−29%`. The split does not follow model, accelerator, or box size —
+scGPT loses 52% on Linux CUDA and gains 0.05% on Windows CUDA, the same model on
+the same accelerator class. **It follows only whether the platform's conda
+prefix contains symlinks.** The two CUDA pairs are the cleanest evidence,
+because each pair holds the model constant and varies nothing but the OS.
+
+A practical consequence for anyone reading a `diskPlan`: **a Windows plan
+authored against a POSIX measurement will under-reserve by roughly a factor of
+two**, and the reverse over-reserves. Each target's plan must keep being
+measured on its own host, never inferred from its sibling.
+
 **Geneformer's Metal parity reproduced its `0.4.11` figures exactly** — maximum
 absolute difference `8.121132850646973e-7`, minimum cosine
 `0.9999999403953552`, CPU baseline exact. The archive changed and the science
@@ -2224,6 +2246,21 @@ leaves them `null` by construction: maximum absolute difference
 `8.940696716308594e-8`, mean `1.208566402510769e-8`, minimum cosine
 `0.99999999999994`, peak VRAM `219378688` — every digit identical to the
 `0.4.11` run on a box whose archive SHA-256 changed completely.
+
+**All four CUDA targets did the same.** Every figure below is identical to the
+one its `0.4.11` run recorded, on four archives whose SHA-256 all changed:
+
+| Target | Max absolute difference | Minimum cosine | Peak VRAM |
+| --- | --- | --- | --- |
+| scGPT Linux CUDA 12.9 | `8.940696716308594e-8` | `0.99999999999994` | `219378688` |
+| scGPT Windows CUDA 12.8 | `1.1920928955078125e-7` | `0.9999999999998881` | `219378688` |
+| Geneformer Linux CUDA 12.9 | `6.593763828277588e-7` | `0.9999999403953552` | `106767872` |
+| Geneformer Windows CUDA 12.8 | `1.4901161193847656e-6` | `1` | `106767872` |
+
+Each also resolved its expected accelerator substrate rather than a CPU build:
+`cu129` on linux-64, `cu128` on win-64, torch on the CUDA backend at compute
+capability `8.9`. That is the assurance the rebuild set needed, taken four
+independent times.
 
 The four GPU runs are paid and need explicit authorization per `AGENTS.md`. The
 maintainer gave it explicitly on 2026-08-07, after every non-GPU target was
