@@ -2179,7 +2179,7 @@ and `diskPlan`.
 | scGPT macOS Metal | done, run `31103405667` | `638f02a8…d21b` | `1372956773` | −26% |
 | Geneformer macOS Metal | done, run `31104336539` | `4d591de9…f92a` | `1538447044` | −29% |
 | scGPT Linux CPU | done, run `31140132988` | `dc931489…0d6b` | `2415353627` | −32% |
-| scGPT Linux CUDA 12.9 | pending, GPU | | | |
+| scGPT Linux CUDA 12.9 | done, run `31142985671` | `467bd4c9…8f23` | `13278575284` | −52% |
 | scGPT Windows CPU | done, run `31141105901` | `c8ee79c3…f3b8` | `1481631149` | +0.2% |
 | scGPT Windows CUDA 12.8 | pending, GPU | | | |
 | Geneformer Linux CUDA 12.9 | pending, GPU | | | |
@@ -2216,6 +2216,14 @@ nothing hides it. Both mechanisms are now measured independently.
 absolute difference `8.121132850646973e-7`, minimum cosine
 `0.9999999403953552`, CPU baseline exact. The archive changed and the science
 did not, which is the assurance the whole rebuild set rests on.
+
+**scGPT Linux CUDA reproduced its own figures exactly too**, and it is the
+stronger evidence of the two because a CUDA target compares the accelerator
+against the CPU baseline and therefore produces real numbers, where a CPU target
+leaves them `null` by construction: maximum absolute difference
+`8.940696716308594e-8`, mean `1.208566402510769e-8`, minimum cosine
+`0.99999999999994`, peak VRAM `219378688` — every digit identical to the
+`0.4.11` run on a box whose archive SHA-256 changed completely.
 
 The four GPU runs are paid and need explicit authorization per `AGENTS.md`. The
 maintainer gave it explicitly on 2026-08-07, after every non-GPU target was
