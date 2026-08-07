@@ -175,13 +175,21 @@ describe('Runtime Box CI catalog', () => {
     const workflow = readFileSync(new URL('../../.github/workflows/runtime-box-release.yml', import.meta.url), 'utf8');
     const releaseJob = workflow.slice(workflow.indexOf('\n  release:\n'));
     const setupNode = releaseJob.indexOf('actions/setup-node@v4');
+    const npmInstall = releaseJob.indexOf('run: npm ci');
     const hostProbe = releaseJob.indexOf('npm run runtime-box:ci -- host-probe');
     const releaseAuth = releaseJob.indexOf('id: release-auth');
-    const npmInstall = releaseJob.indexOf('run: npm ci');
+    const trackedBuild = releaseJob.indexOf('runtime-box:ci -- tracked-build');
     expect(setupNode).toBeGreaterThanOrEqual(0);
-    expect(setupNode).toBeLessThan(hostProbe);
+    // `npm ci` sits between pinned Node and the probe rather than after it: the probe runs
+    // through the CI entry point, which imports the published Scrollcase contract and cannot
+    // start without node_modules. It is a prerequisite of probing, not a paid download.
+    expect(setupNode).toBeLessThan(npmInstall);
+    expect(npmInstall).toBeLessThan(hostProbe);
+    // What the probe actually guards is unchanged: no credential, and nothing that downloads a
+    // pixi environment or a model weight, happens until the host has been accepted.
     expect(hostProbe).toBeLessThan(releaseAuth);
-    expect(hostProbe).toBeLessThan(npmInstall);
+    expect(hostProbe).toBeLessThan(trackedBuild);
+    expect(trackedBuild).toBeGreaterThanOrEqual(0);
   });
 
   it('suppresses npm wrapper output before parsing one canonical validator result', () => {
