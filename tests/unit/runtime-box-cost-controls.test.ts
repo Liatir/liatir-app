@@ -68,6 +68,28 @@ describe('Runtime Box CI cost controls', () => {
       }
       expect(checked, `${name}: no job parsed`).toBeGreaterThan(0);
     }
+    // Release and validation run the same build on the same self-hosted runners, so any host
+    // setup one needs, the other needs identically. Only validation was exercised between the
+    // pixi migration and the first re-release, and the release workflow silently fell behind it
+    // three times over — no npm ci before its scripts, then no pinned pixi or conda-pack at all,
+    // each found by burning a runner. Pin the shared setup rather than rediscovering it.
+    const validateWorkflow = readFileSync(resolve('.github/workflows/_runtime-box-validate.yml'), 'utf8');
+    for (const setup of [
+      'Install pinned pixi and conda-pack (POSIX)',
+      'Install pinned pixi and conda-pack (Windows)',
+      'Select Git Bash for Windows composite actions',
+      'Add Windows native inspection tools',
+      'Install Linux product lifecycle dependencies',
+      'PIXI_VERSION: v${{ needs.preflight.outputs.pixi_version }}',
+      "ExpectedSha256 '02c3e1bb4712199f62124deb1b1e9a5ddae32c413d21fda1586e198cd6f9cf2a'",
+      "conda-pack==0.9.2",
+    ]) {
+      expect(validateWorkflow, `validate: ${setup}`).toContain(setup);
+      expect(releaseWorkflow, `release: ${setup}`).toContain(setup);
+    }
+    // The toolchain has to be on PATH before the build asks Scrollcase to resolve it.
+    expect(releaseWorkflow.indexOf('Install pinned pixi and conda-pack (POSIX)'))
+      .toBeLessThan(releaseWorkflow.indexOf('runtime-box:ci -- tracked-build'));
     expect(prepare.indexOf('npm run build --prefix packages/liatir-core'))
       .toBeLessThan(prepare.indexOf('npm run gen:sdk-types'));
     expect(prepare.indexOf('npm ci --prefix frontend'))
