@@ -6,7 +6,7 @@
   "boxId": "geneformer-v1-10m",
   "modelId": "ctheodoris-geneformer-v1-10m",
   "runtimeId": "single-cell-foundation-geneformer-v1-10m",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "sourceRevision": "04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5",
   "target": {
     "platform": "windows",

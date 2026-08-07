@@ -6,7 +6,7 @@
   "boxId": "uce-4layer",
   "modelId": "snap-stanford-uce-4layer",
   "runtimeId": "single-cell-foundation-uce",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "sourceRevision": "8ead6e07af0c80f75653598138bb704e865b45c8",
   "target": {
     "platform": "macos",
