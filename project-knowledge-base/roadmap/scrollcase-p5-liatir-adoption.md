@@ -2164,7 +2164,7 @@ scroll needed a `uncompressedPaths` declaration; scGPT's one `assetArchives`
 entry expands into Python source, which compresses well and should keep
 deflating.
 
-#### Rebuilds: macOS and both fixtures are done, six remain (2026-08-06)
+#### Rebuilds: macOS, both fixtures and scGPT Linux CPU are done, five remain (2026-08-07)
 
 A target proven on `0.4.11` describes bytes this builder no longer produces.
 Nothing is published, so no identity breaks — this is runner time, not a
@@ -2176,7 +2176,7 @@ and `diskPlan`.
 | UCE macOS Metal | done, run `31070450837` | `d08f7c80…fe29f` | `11169027146` | +10% |
 | scGPT macOS Metal | done, run `31103405667` | `638f02a8…d21b` | `1372956773` | −26% |
 | Geneformer macOS Metal | done, run `31104336539` | `4d591de9…f92a` | `1538447044` | −29% |
-| scGPT Linux CPU | pending | | | |
+| scGPT Linux CPU | done, run `31140132988` | `dc931489…0d6b` | `2415353627` | −32% |
 | scGPT Linux CUDA 12.9 | pending, GPU | | | |
 | scGPT Windows CPU | pending | | | |
 | scGPT Windows CUDA 12.8 | pending, GPU | | | |
