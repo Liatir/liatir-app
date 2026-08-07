@@ -2181,7 +2181,7 @@ and `diskPlan`.
 | scGPT Linux CPU | done, run `31140132988` | `dc931489…0d6b` | `2415353627` | −32% |
 | scGPT Linux CUDA 12.9 | done, run `31142985671` | `467bd4c9…8f23` | `13278575284` | −52% |
 | scGPT Windows CPU | done, run `31141105901` | `c8ee79c3…f3b8` | `1481631149` | +0.2% |
-| scGPT Windows CUDA 12.8 | pending, GPU | | | |
+| scGPT Windows CUDA 12.8 | done, run `31145063888` | `548135c1…1323` | `7056692402` | +0.05% |
 | Geneformer Linux CUDA 12.9 | pending, GPU | | | |
 | Geneformer Windows CUDA 12.8 | pending, GPU | | | |
 | Fixture Linux CPU | done, run `31114218644` | `357a385e…fced` | `239853779` | −53% |
