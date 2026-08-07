@@ -36,8 +36,13 @@ use std::{
 use scrollcase_consumer::{
     archive::extract_zip_archive,
     contract::{documents::SignedDocument, targets::box_target_id},
+    filesystem::payload_size as scrollcase_payload_size,
     path::safe_relative_path as scrollcase_safe_relative_path,
-    trust::{verify_signed_document, TrustedKey},
+    release::{
+        BoxManifest, Compatibility as BoxCompatibility, ReleaseManifest as BoxRelease, SelfTest,
+    },
+    trust::{parse_trusted_keys, verify_signed_document, TrustedKey},
+    verify::assert_box_manifest_agreement,
 };
 use tauri::AppHandle;
 use url::Url;
@@ -75,24 +80,6 @@ const DEVELOPMENT_TRUST_KEY: &str =
 /// can still be installed concurrently — only same-runtime overlap is rejected.
 static ACTIVE_INSTALLS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 
-/// One Ed25519 public key the app is willing to accept signatures from.
-/// Several trusted keys in one document, which is what makes key rotation possible:
-/// old and new key can be trusted at the same time during a changeover.
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct TrustedKeyBundle {
-    keys: Vec<TrustedKey>,
-}
-
-/// A trust file may hold either a bare key or a bundle; `untagged` lets both parse
-/// without a discriminator field, so older single-key files keep working.
-#[derive(Debug, Deserialize)]
-#[serde(untagged)]
-enum TrustedKeyDocument {
-    Single(TrustedKey),
-    Bundle(TrustedKeyBundle),
-}
-
 /// The hardware/OS profile a box is built for. A box is only installable when this
 /// matches the detected native host and passes signed release verification.
 ///
@@ -127,49 +114,19 @@ struct ChannelRelease {
     rollout_percentage: u8,
 }
 
-/// The signed description of one concrete build of a box: what it is, what it needs,
-/// where the archive lives, and how to prove the archive is the right one.
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct ReleaseManifest {
-    schema_version: u32,
-    kind: String,
-    box_id: String,
-    model_id: String,
-    /// Identifies the installed directory; also the key used to serialise installs.
-    runtime_id: String,
-    version: String,
-    target: RuntimeBoxTarget,
-    compatibility: RuntimeBoxCompatibility,
-    archive: RuntimeBoxArchive,
-    /// Exact logical payload size before activation metadata and self-test caches are added.
-    /// Optional so manifests published before this field was introduced remain installable.
-    installed_size_bytes: Option<u64>,
-    /// Path of the Python interpreter *inside* the archive, relative to its root.
-    python_entry_point: String,
-    model_cache_subdir: String,
-    self_test: RuntimeBoxSelfTest,
-    execution: Option<serde_json::Value>,
-    weights: Option<String>,
-    assets: Option<serde_json::Value>,
-    /// Build provenance kept as opaque JSON: it is signed and persisted with the box
-    /// for auditing, but this module never interprets it.
-    provenance: serde_json::Value,
-}
+/// The signed description of one concrete build of a box.
+///
+/// This is the box format's own type. Liatir's releases carry two constraints the format does not
+/// define — `minLiatirVersion` and `maxLiatirVersionExclusive` — which the format deliberately
+/// permits and carries in [`BoxCompatibility::additional`]; evaluating them is Liatir's job, in
+/// [`check_compatibility`].
+type ReleaseManifest = BoxRelease;
 
-/// Host requirements checked before downloading anything, so an incompatible box fails
-/// fast with a readable message instead of after a multi-gigabyte download.
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-struct RuntimeBoxCompatibility {
-    min_liatir_version: String,
-    max_liatir_version_exclusive: Option<String>,
-    min_macos_version: Option<String>,
-    min_ram_gb: Option<u64>,
-    min_nvidia_driver_version: Option<String>,
-    /// Execution environments validated for this payload. Kept optional for legacy releases.
-    host_environments: Option<Vec<String>>,
-}
+/// The product constraint every Liatir release must declare, held in the box format's
+/// open-ended `additional` map because it is Liatir's vocabulary and not the format's.
+const MIN_LIATIR_VERSION: &str = "minLiatirVersion";
+/// Upper bound of the same constraint. Optional.
+const MAX_LIATIR_VERSION_EXCLUSIVE: &str = "maxLiatirVersionExclusive";
 
 /// One published target candidate supplied by the shared AI Model catalog.
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -177,7 +134,7 @@ struct RuntimeBoxCompatibility {
 pub struct RuntimeBoxTargetCandidate {
     target: RuntimeBoxTarget,
     host_environments: Vec<String>,
-    min_ram_gb: Option<u64>,
+    min_ram_gb: Option<f64>,
     min_nvidia_driver_version: Option<String>,
 }
 
@@ -188,26 +145,6 @@ struct RuntimeBoxHostCapabilities {
     arch: String,
     total_memory_bytes: Option<u64>,
     nvidia_driver_version: Option<String>,
-}
-
-/// Where the payload archive lives and what it must hash and weigh. Both `sha256` and
-/// `size_bytes` come from the signed manifest and are enforced after download.
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct RuntimeBoxArchive {
-    format: String,
-    url: String,
-    sha256: String,
-    size_bytes: u64,
-}
-
-/// Post-extraction smoke test: import these modules with the box's own interpreter.
-/// A box that unpacks but cannot import its own dependencies never gets activated.
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-struct RuntimeBoxSelfTest {
-    python_imports: Vec<String>,
-    timeout_seconds: u64,
 }
 
 /// Signed kill-list, letting a released box be withdrawn after the fact (e.g. because a
@@ -229,27 +166,6 @@ struct RuntimeBoxRevocation {
     target: Option<RuntimeBoxTarget>,
     /// Surfaced verbatim to the user, so it should be human-readable.
     reason: String,
-}
-
-/// The `box.json` carried *inside* the archive. Compared field by field against the signed
-/// release in [`validate_extracted_box`]: without it, a signed manifest could be paired with
-/// a different (still correctly hashed) archive.
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct ExtractedBoxMetadata {
-    schema_version: u32,
-    box_id: String,
-    model_id: String,
-    runtime_id: String,
-    version: String,
-    target: RuntimeBoxTarget,
-    python_entry_point: String,
-    model_cache_subdir: String,
-    self_test: RuntimeBoxSelfTest,
-    execution: Option<serde_json::Value>,
-    weights: Option<String>,
-    assets: Option<serde_json::Value>,
-    provenance: serde_json::Value,
 }
 
 /// Durable provenance stored inside an activated Runtime Box and copied to AI Job metadata.
@@ -383,12 +299,14 @@ impl Drop for InstallGuard {
 /// a locally signed box can be tested without touching the production trust anchor. Both of
 /// those extra sources are behind `cfg!(debug_assertions)` and therefore cannot widen trust
 /// in a release build.
+///
+/// Every source goes through Scrollcase's own `parse_trusted_keys`, so a bare key and a
+/// `{ "keys": [...] }` bundle mean the same thing wherever they appear. Reading the trust
+/// format a second time here is how a signer and the app that must trust it identically
+/// come to disagree about which keys are valid.
 fn trusted_keys() -> Result<Vec<TrustedKey>, String> {
     fn parse_keys(raw: &str) -> Result<Vec<TrustedKey>, String> {
-        match serde_json::from_str(raw).map_err(|error| error.to_string())? {
-            TrustedKeyDocument::Single(key) => Ok(vec![key]),
-            TrustedKeyDocument::Bundle(bundle) => Ok(bundle.keys),
-        }
+        parse_trusted_keys(raw.as_bytes()).map_err(|error| error.to_string())
     }
 
     let mut keys = parse_keys(PRODUCTION_TRUST_KEY)?;
@@ -408,9 +326,10 @@ fn trusted_keys() -> Result<Vec<TrustedKey>, String> {
     // environment, not the runtime one), which is what makes key rotation possible without
     // editing the checked-in trust files.
     if let Some(raw) = option_env!("LIATIR_RUNTIME_BOX_TRUSTED_KEYS_JSON") {
-        let mut production: Vec<TrustedKey> = serde_json::from_str(raw)
-            .map_err(|error| format!("invalid production Runtime Box trust keys: {error}"))?;
-        keys.append(&mut production);
+        keys.append(
+            &mut parse_keys(raw)
+                .map_err(|error| format!("invalid production Runtime Box trust keys: {error}"))?,
+        );
     }
     // Fail closed: with no key at all every box would otherwise be unverifiable.
     if keys.is_empty() {
@@ -552,7 +471,12 @@ fn select_target_candidate<'a>(
                 "Published Runtime Box target {candidate_id} has invalid host environment metadata"
             ));
         }
-        if candidate.min_ram_gb.is_some_and(|memory| memory == 0) {
+        // NaN and infinity are rejected alongside zero: none of them express a requirement, and
+        // a comparison against NaN would otherwise silently pass every host.
+        if candidate
+            .min_ram_gb
+            .is_some_and(|memory| !memory.is_finite() || memory <= 0.0)
+        {
             return Err(format!(
                 "Published Runtime Box target {candidate_id} has an invalid memory requirement"
             ));
@@ -623,7 +547,7 @@ fn select_target_candidate<'a>(
             (candidate.min_ram_gb, host.total_memory_bytes)
         {
             if installed_bytes < required_memory_bytes(minimum_gb) {
-                required_memory_gb = Some(required_memory_gb.unwrap_or(0).max(minimum_gb));
+                required_memory_gb = Some(required_memory_gb.unwrap_or(0.0f64).max(minimum_gb));
                 continue;
             }
         }
@@ -711,8 +635,16 @@ fn version_parts(value: &str) -> Vec<u64> {
 }
 
 /// Converts the shared decimal-gigabyte requirement to the native byte probe unit.
-fn required_memory_bytes(gigabytes: u64) -> u64 {
-    gigabytes.saturating_mul(BYTES_PER_DECIMAL_GIGABYTE)
+///
+/// Rounded *up*: a fractional requirement must never be satisfied by a host that is short of it,
+/// which is what truncation would allow. A non-finite or non-positive value cannot express a
+/// requirement at all and yields zero, leaving the check to the validation that rejects it.
+fn required_memory_bytes(gigabytes: f64) -> u64 {
+    let bytes = gigabytes * BYTES_PER_DECIMAL_GIGABYTE as f64;
+    if !bytes.is_finite() || bytes <= 0.0 {
+        return 0;
+    }
+    bytes.ceil().min(u64::MAX as f64) as u64
 }
 
 /// Formats probed memory without rounding an undersized host up to the requirement.
@@ -721,22 +653,55 @@ fn format_memory_gigabytes(bytes: u64) -> String {
     format!("{}.{:01}", tenths / 10, tenths % 10)
 }
 
+/// Reads one of Liatir's own constraints out of the box format's open-ended block.
+///
+/// A constraint that is present but not a string is a malformed release, not an absent
+/// constraint: silently skipping it would install a box whose requirement was never checked.
+fn liatir_constraint<'a>(
+    compatibility: &'a BoxCompatibility,
+    name: &str,
+) -> Result<Option<&'a str>, String> {
+    match compatibility.additional.get(name) {
+        None => Ok(None),
+        Some(serde_json::Value::String(value)) if !value.is_empty() => Ok(Some(value)),
+        Some(_) => Err(format!(
+            "This AI Runtime Box declares an unreadable {name} requirement"
+        )),
+    }
+}
+
 /// Checks the host against the manifest's requirements before any download starts.
 ///
 /// Native probes are enforced when they return a fact. An unavailable memory probe remains
 /// unknown rather than being treated as zero, while an explicit NVIDIA minimum must be proven.
+///
+/// This is also where the box format hands Liatir its own half of the contract. The format
+/// carries constraints it does not define but never evaluates them, and requires that an
+/// application refuse a box whose constraints it cannot evaluate — so an unrecognised entry is
+/// rejected here rather than ignored. Ignoring one would install a box on a host the publisher
+/// had explicitly excluded.
 fn check_compatibility(
-    compatibility: &RuntimeBoxCompatibility,
+    compatibility: &BoxCompatibility,
     host: &RuntimeBoxHostCapabilities,
 ) -> Result<(), String> {
+    for name in compatibility.additional.keys() {
+        if name != MIN_LIATIR_VERSION && name != MAX_LIATIR_VERSION_EXCLUSIVE {
+            return Err(format!(
+                "This AI Runtime Box declares a requirement this version of Liatir cannot check ({name})"
+            ));
+        }
+    }
     let app = version_parts(env!("CARGO_PKG_VERSION"));
-    if app < version_parts(&compatibility.min_liatir_version) {
+    // Required: a release that names no minimum has not been through Liatir's publishing path.
+    let minimum = liatir_constraint(compatibility, MIN_LIATIR_VERSION)?.ok_or_else(|| {
+        "This AI Runtime Box does not declare which Liatir versions it supports".to_string()
+    })?;
+    if app < version_parts(minimum) {
         return Err(format!(
-            "This AI Runtime Box requires Liatir {} or newer",
-            compatibility.min_liatir_version
+            "This AI Runtime Box requires Liatir {minimum} or newer"
         ));
     }
-    if let Some(maximum) = compatibility.max_liatir_version_exclusive.as_deref() {
+    if let Some(maximum) = liatir_constraint(compatibility, MAX_LIATIR_VERSION_EXCLUSIVE)? {
         if app >= version_parts(maximum) {
             return Err(format!(
                 "This AI Runtime Box requires a Liatir version older than {maximum}"
@@ -959,29 +924,16 @@ async fn ensure_not_revoked(
 /// before anything is activated.
 fn validate_extracted_box(staging: &Path, release: &ReleaseManifest) -> Result<PathBuf, String> {
     let metadata_path = staging.join("box.json");
-    let metadata: ExtractedBoxMetadata = serde_json::from_slice(
+    let metadata: BoxManifest = serde_json::from_slice(
         &std::fs::read(&metadata_path)
             .map_err(|error| format!("cannot read extracted box.json: {error}"))?,
     )
     .map_err(|error| format!("invalid extracted box.json: {error}"))?;
-    if metadata.schema_version != RUNTIME_BOX_SCHEMA_VERSION
-        || metadata.box_id != release.box_id
-        || metadata.model_id != release.model_id
-        || metadata.runtime_id != release.runtime_id
-        || metadata.version != release.version
-        || metadata.target != release.target
-        || metadata.python_entry_point != release.python_entry_point
-        || metadata.model_cache_subdir != release.model_cache_subdir
-        || metadata.self_test != release.self_test
-        || metadata.execution != release.execution
-        || metadata.weights != release.weights
-        || metadata.assets != release.assets
-        || metadata.provenance != release.provenance
-    {
-        return Err(
-            "extracted AI Runtime Box metadata does not match the signed release".to_string(),
-        );
-    }
+    // Which fields must agree is the box format's rule, not Liatir's, so Scrollcase applies it:
+    // restating the list here is how a field added upstream silently stops being checked.
+    assert_box_manifest_agreement(&metadata, release).map_err(|error| {
+        format!("extracted AI Runtime Box metadata does not match the signed release: {}", error.message())
+    })?;
     let python_path = staging.join(safe_relative_path(&release.python_entry_point)?);
     if !python_path.is_file() {
         return Err(format!(
@@ -998,7 +950,7 @@ fn validate_extracted_box(staging: &Path, release: &ReleaseManifest) -> Result<P
 /// a truncated wheel or a native library built for the wrong architecture only shows up on
 /// import. The child is polled instead of blocked on so a hung import can be killed once the
 /// timeout (clamped to 10..=600s) expires.
-fn run_self_test(python_path: &Path, self_test: &RuntimeBoxSelfTest) -> Result<(), String> {
+fn run_self_test(python_path: &Path, self_test: &SelfTest) -> Result<(), String> {
     // Import names were restricted to module-path characters in verify_release_identity.
     let script = self_test
         .python_imports
@@ -1066,21 +1018,16 @@ fn self_test_stderr_suffix(child: &mut std::process::Child) -> String {
 }
 
 /// Total size of the installed box, reported to the UI and compared against the size the signed
-/// release declares. Symlinks are not followed, so linked content is never counted twice (and a
-/// symlink loop cannot hang the walk), but a link is still counted at its own few bytes: since
-/// Scrollcase 0.6.0 a payload carries links instead of materialising them, and the builder sizes
-/// the payload the same way. Skipping links here would report less than the release declares and
-/// fail an otherwise valid box.
+/// release declares.
+///
+/// Delegated to Scrollcase because the *builder* sizes the payload with this same rule when it
+/// writes `installedSizeBytes`: measuring it a second time here is how the two come to disagree
+/// and fail an honest box. Links are counted at their own few bytes and never followed — since
+/// Scrollcase 0.6.0 a payload carries links instead of materialising them, so skipping them
+/// would report less than the signed release declares.
 fn dir_size(path: &Path) -> Result<u64, String> {
-    let mut total = 0u64;
-    for entry in walkdir::WalkDir::new(path).follow_links(false) {
-        let entry = entry.map_err(|error| error.to_string())?;
-        if entry.file_type().is_file() || entry.file_type().is_symlink() {
-            total =
-                total.saturating_add(entry.metadata().map_err(|error| error.to_string())?.len());
-        }
-    }
-    Ok(total)
+    scrollcase_payload_size(path)
+        .map_err(|error| format!("cannot size the AI Runtime Box: {}", error.message()))
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -1627,7 +1574,19 @@ mod tests {
             "pythonEntryPoint": "venv/bin/python",
             "modelCacheSubdir": "model-cache/fixture",
             "selfTest": { "pythonImports": ["json"], "timeoutSeconds": 10 },
-            "provenance": {}
+            // Provenance is the box format's own type, so every field it requires must be
+            // present; an empty object is no longer a release this build would accept.
+            "provenance": {
+                "scrollId": "fixture-macos-arm64",
+                "scrollVersion": "1.0.0",
+                "builderRevision": "0".repeat(40),
+                "sourceTreeDirty": false,
+                "sourceRevision": "fixture-source-v2",
+                "pythonVersion": "3.11.9",
+                "dependencyLockSha256": "b".repeat(64),
+                "builtAt": "2026-07-26T12:00:00.000Z",
+                "pixiVersion": "0.50.0"
+            }
         })
     }
 
@@ -1679,10 +1638,7 @@ mod tests {
             serde_json::from_value(fixtures["release"].clone()).unwrap();
         assert_eq!(release.schema_version, RUNTIME_BOX_SCHEMA_VERSION);
         assert_eq!(release.kind, "liatir.runtime-box.release");
-        assert_eq!(
-            release.provenance["pixiVersion"],
-            serde_json::Value::String("0.50.0".to_string())
-        );
+        assert_eq!(release.provenance.pixi_version, "0.50.0");
 
         let channel: ChannelManifest =
             serde_json::from_value(fixtures["channel"].clone()).unwrap();
@@ -1820,7 +1776,7 @@ mod tests {
         );
 
         let mut high_memory = candidate(target("linux", "x86_64", "cpu", None), None);
-        high_memory.min_ram_gb = Some(32);
+        high_memory.min_ram_gb = Some(32.0);
         let low_memory_host = RuntimeBoxHostCapabilities {
             total_memory_bytes: Some(16 * 1024 * 1024 * 1024),
             ..host("linux", "x86_64", None)
@@ -1845,7 +1801,7 @@ mod tests {
     #[test]
     fn memory_requirements_use_decimal_gigabytes_from_the_shared_contract() {
         let mut eight_gb_candidate = candidate(target("linux", "x86_64", "cpu", None), None);
-        eight_gb_candidate.min_ram_gb = Some(8);
+        eight_gb_candidate.min_ram_gb = Some(8.0);
         let exact_host = RuntimeBoxHostCapabilities {
             total_memory_bytes: Some(8_000_000_000),
             ..host("linux", "x86_64", None)
@@ -1861,9 +1817,103 @@ mod tests {
         assert!(error.contains("7.9 GB"));
 
         let mut release: ReleaseManifest = serde_json::from_value(release_json()).unwrap();
-        release.compatibility.min_ram_gb = Some(8);
+        release.compatibility.min_ram_gb = Some(8.0);
         assert!(check_compatibility(&release.compatibility, &exact_host).is_ok());
         assert!(check_compatibility(&release.compatibility, &undersized_host).is_err());
+    }
+
+    /// A fractional requirement is what the shared catalog contract and the box format have always
+    /// allowed; only the Rust side used to narrow it to whole gigabytes. Rounding must go up, or a
+    /// host that is short of the requirement would satisfy it by truncation.
+    #[test]
+    fn fractional_memory_requirements_are_enforced_without_rounding_down() {
+        assert_eq!(required_memory_bytes(7.5), 7_500_000_000);
+        // A requirement that cannot be expressed must not silently become "no requirement met".
+        assert_eq!(required_memory_bytes(f64::NAN), 0);
+        assert_eq!(required_memory_bytes(-1.0), 0);
+
+        let mut candidate = candidate(target("linux", "x86_64", "cpu", None), None);
+        candidate.min_ram_gb = Some(7.5);
+        let short_host = RuntimeBoxHostCapabilities {
+            total_memory_bytes: Some(7_499_999_999),
+            ..host("linux", "x86_64", None)
+        };
+        assert!(select_target_candidate(&[candidate.clone()], &short_host).is_err());
+        let exact_host = RuntimeBoxHostCapabilities {
+            total_memory_bytes: Some(7_500_000_000),
+            ..host("linux", "x86_64", None)
+        };
+        assert!(select_target_candidate(&[candidate], &exact_host).is_ok());
+    }
+
+    /// The box format carries constraints it does not define and never evaluates them, requiring
+    /// instead that the application refuse a box whose constraints it cannot check. Liatir is that
+    /// application, so an unrecognised entry must stop the install rather than be skipped —
+    /// skipping it would install a box on a host the publisher had explicitly excluded.
+    #[test]
+    fn publisher_constraints_this_build_cannot_check_are_refused() {
+        let host = host("macos", "aarch64", None);
+
+        let known: ReleaseManifest = serde_json::from_value(release_json()).unwrap();
+        assert_eq!(
+            known.compatibility.additional.keys().collect::<Vec<_>>(),
+            vec![MIN_LIATIR_VERSION],
+            "the fixture's product constraint must land in the format's open block"
+        );
+        assert!(check_compatibility(&known.compatibility, &host).is_ok());
+
+        let mut unknown = release_json();
+        unknown["compatibility"]["minQuantumCores"] = serde_json::json!(4);
+        let unknown: ReleaseManifest = serde_json::from_value(unknown).unwrap();
+        let error = check_compatibility(&unknown.compatibility, &host).unwrap_err();
+        assert!(error.contains("minQuantumCores"), "unexpected: {error}");
+
+        // A release naming no minimum never went through Liatir's publishing path.
+        let mut absent = release_json();
+        absent["compatibility"]
+            .as_object_mut()
+            .unwrap()
+            .remove(MIN_LIATIR_VERSION);
+        let absent: ReleaseManifest = serde_json::from_value(absent).unwrap();
+        assert!(check_compatibility(&absent.compatibility, &host).is_err());
+
+        // Present but not a string is malformed, not absent: it must not pass unchecked.
+        let mut malformed = release_json();
+        malformed["compatibility"][MIN_LIATIR_VERSION] = serde_json::json!(3);
+        let malformed: ReleaseManifest = serde_json::from_value(malformed).unwrap();
+        assert!(check_compatibility(&malformed.compatibility, &host).is_err());
+    }
+
+    /// The archive-agreement check is the step that stops a signed release being paired with a
+    /// different, still correctly hashed archive. The rule now lives in Scrollcase, so this pins
+    /// that Liatir still calls it, still refuses a disagreeing `box.json`, and still names the
+    /// field that differed.
+    #[test]
+    fn extracted_box_must_agree_with_the_signed_release() {
+        let release: ReleaseManifest = serde_json::from_value(release_json()).unwrap();
+        let staging = std::env::temp_dir().join(format!("liatir-agreement-{}", Uuid::new_v4()));
+        std::fs::create_dir_all(staging.join("venv/bin")).unwrap();
+        std::fs::write(staging.join("venv/bin/python"), b"#!/bin/sh\n").unwrap();
+
+        let box_json = |value: serde_json::Value| {
+            std::fs::write(staging.join("box.json"), value.to_string()).unwrap();
+        };
+        let mut agreeing = release_json();
+        // box.json carries the shared half of the release; the transport fields are release-only.
+        for release_only in ["kind", "compatibility", "archive", "installedSizeBytes"] {
+            agreeing.as_object_mut().unwrap().remove(release_only);
+        }
+
+        box_json(agreeing.clone());
+        assert!(validate_extracted_box(&staging, &release).is_ok());
+
+        let mut disagreeing = agreeing.clone();
+        disagreeing["modelId"] = serde_json::json!("a-different-model");
+        box_json(disagreeing);
+        let error = validate_extracted_box(&staging, &release).unwrap_err();
+        assert!(error.contains("modelId"), "field not named: {error}");
+
+        std::fs::remove_dir_all(staging).unwrap();
     }
 
     #[test]
@@ -2057,7 +2107,7 @@ mod tests {
         let Some(python) = python else {
             return;
         };
-        let self_test = RuntimeBoxSelfTest {
+        let self_test = SelfTest {
             python_imports: vec!["liatir_missing_selftest_module".to_string()],
             timeout_seconds: 30,
         };

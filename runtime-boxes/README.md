@@ -235,6 +235,13 @@ trust roots can be supplied at compile time through
 `LIATIR_RUNTIME_BOX_TRUSTED_KEYS_JSON`. The legacy public key remains in the
 bundle so already-published Runtime Boxes continue to verify during rotation.
 
+Every trust source — the checked-in bundles, the debug key file and that compile-time
+variable — is read by Scrollcase's own `parse_trusted_keys`, so all three accept the
+same two shapes: a single key object, or a `{ "keys": [...] }` bundle. Prefer the
+bundle: with the anchors compiled into the binary, rotating a key means shipping a
+release, and a bundle keeps the outgoing and incoming key valid at the same time so
+the changeover does not invalidate already-signed boxes.
+
 scFoundation is not eligible for this distribution path: its model license
 restricts weight redistribution. The Apache-2.0 repository code license does
 not override the separate checkpoint license.

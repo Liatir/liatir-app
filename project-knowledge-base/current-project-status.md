@@ -210,7 +210,8 @@ catalog is currently uninstallable, and any user-facing install or CPU-only clai
 is unsupportable until each target is re-released. No signing, publication or
 promotion was performed while establishing this.
 **P5.4R first slice is complete (2026-08-04).** `src-tauri` pins exact
-`scrollcase-consumer = "=0.1.2"`, and `runtime_boxes.rs` now delegates signed
+`scrollcase-consumer` — `=0.1.2` then, raised to `=0.2.0` by P5.4T and `=0.3.0` by P5.4E —
+and `runtime_boxes.rs` now delegates signed
 document verification, trust-key parsing, target identity and the safe-path rule
 to the crate; `RuntimeBoxTarget` is a type alias for the crate's `BoxTarget`, so
 unknown fields are now rejected instead of silently discarded. Signature
@@ -226,14 +227,113 @@ reproduced `installedSizeBytes` `257776217` exactly against the pre-change
 baseline. Zip64 is proven through Scrollcase, which matters because the largest
 published box is a 17 GB CUDA archive. One behavioural change: a declared-size
 mismatch is now caught after extraction by `dir_size` rather than before writing
-anything. `verify_and_extract_box` and `attach_extracted_box` are deliberately
-not adopted — they take a trust-key *file* path, while Liatir compiles its trust
-anchors into the binary so a user-editable key cannot defeat signing. Still
+anything. `verify_and_extract_box` and `attach_extracted_box` were
+not adopted — they took a trust-key *file* path, while Liatir compiles its trust
+anchors into the binary so a user-editable key cannot defeat signing. That
+objection is resolved upstream by P5.4T, but adoption is still blocked by the
+release-schema divergence measured below, which is the real gate. Still
 open: `verify_extracted_payload` needs a `payloadDigest`, which only `0.7.0`
 builds emit, so it belongs to P5.4V. Note the accepted cost: the crate's `zip 8` / `ed25519-dalek 3` / `sha2 0.11` / `base64
 0.23` majors coexist with Liatir's own `zip 2` / `ed25519-dalek 2` / `sha2 0.10`
 / `base64 0.22`, which stay because `lia_plugins`, `quenta`, `snpeff`,
 `diagnostics` and `managed_bins` still use them.
+**P5.4T is complete (2026-08-06).** The pin is exact `scrollcase-consumer =
+"=0.2.0"` at the time, since raised to `=0.3.0` by P5.4E. Its breaking change — every entry point takes `TrustAnchors` instead of
+a `public_key_path` — cost Liatir nothing, because the bridge never used a
+path-taking entry point and already passed compiled-in keys to
+`verify_signed_document`, whose signature is unchanged. The gain is
+`trust::parse_trusted_keys`, which replaces the `TrustedKeyBundle` /
+`TrustedKeyDocument` pair Liatir had hand-written over the same trust-file format.
+That also removed a real inconsistency: `LIATIR_RUNTIME_BOX_TRUSTED_KEYS_JSON` used
+to deserialise a *bare array*, so the compile-time trust source disagreed with the
+file sources about what a valid trust document looks like. All three now read the
+single-key-or-bundle shapes identically. `runtime-boxes/README.md` documents the
+accepted shapes and the reason to prefer the bundle. No box format, signature or
+published artefact changed; 39/39 Rust tests and `test:verify` green.
+
+**Only `compatibility` diverges from the box format; everything else now delegates
+(2026-08-06).** All five entry points — `verify_and_extract_box`,
+`attach_extracted_box`, `verify_extracted_payload`, `inspect_box_archive`,
+`run_box` — funnel through `inspect_release_document`, which parses the release
+with Scrollcase's own `release::ReleaseManifest`. That type is
+`deny_unknown_fields`, and its compatibility block was neutralised during
+extraction to `minHostAppVersion` / `maxHostAppVersionExclusive`, while every
+Liatir scroll, fixture and *published, signed* release still carries
+`minLiatirVersion` / `maxLiatirVersionExclusive`. Measured directly against
+`runtime-boxes/contract-compatibility-fixtures.json`:
+
+> `unknown field 'maxLiatirVersionExclusive', expected one of 'minHostAppVersion',
+> 'maxHostAppVersionExclusive', 'minMacosVersion', 'minRamGb',
+> 'minNvidiaDriverVersion', 'hostEnvironments'`
+
+Renaming the fields on the Liatir side is not available: the compatibility block
+sits *inside the signed payload*, so it would invalidate every published box and
+force a re-sign and re-publish of the whole catalog — a breaking change to box
+identity, not cleanup.
+
+**P5.4E is resolved upstream and adopted; Liatir no longer owns a release type
+(2026-08-07).** `minLiatirVersion` was never a Liatir deviation: Scrollcase's own
+schema sets `additionalProperties: true` on `compatibility` and states the
+builder "copies these constraints through verbatim and never interprets them, so
+a project may add its own alongside the ones defined here". The Rust
+`Compatibility` was nevertheless `deny_unknown_fields` — stricter than the schema
+the crate itself ships. The two consumers were measured disagreeing about the
+same bytes: `runtime-boxes/contract-compatibility-fixtures.json` validated
+**ACCEPTED** through the Node consumer's own schema validation while the Rust
+type rejected it. An intermediate revision of this file argued the refusal was
+intentional, reading "a consumer that cannot evaluate a constraint must refuse
+the box" as authority; that was wrong, and the disagreement between the two
+consumers is what settled it. The sentence governs *evaluation*, not parsing.
+
+`scrollcase-consumer 0.3.0` fixes it: `Compatibility::additional` carries the
+constraints the format does not define, and the crate states that an application
+finding one it does not understand must refuse the box. Liatir pins `=0.3.0` and
+has **deleted `ReleaseManifest` and `RuntimeBoxCompatibility` outright** — the
+release type is now the box format's own, `to_box_format` is gone, and
+`assert_box_manifest_agreement` is called directly. Verified by parsing a real
+Liatir release through Scrollcase's type: accepted, with
+`{minLiatirVersion, maxLiatirVersionExclusive}` landing in `additional`.
+
+Evaluating those two is now explicitly Liatir's half of the contract, in
+`check_compatibility`, which also **refuses any constraint it does not
+recognise** rather than skipping it — skipping one would install a box on a host
+the publisher had excluded. A constraint present but not a string is treated as
+malformed, not absent, for the same reason, and a release naming no minimum at
+all is rejected as never having been through Liatir's publishing path. All three
+cases carry regression coverage.
+
+**Everything except `compatibility` now delegates (P5.4T, second slice).** The
+divergence turned out to be exactly one block: `provenance` in Liatir's real
+documents already matches Scrollcase's `Provenance` field for field, and so do
+`archive`, `selfTest`, `assets` and `execution`. So Liatir's `ReleaseManifest` now
+holds the box format's own types, and `RuntimeBoxArchive`, `RuntimeBoxSelfTest`
+and `ExtractedBoxMetadata` are deleted. `validate_extracted_box` no longer
+restates which fields must agree: it parses `box.json` as `BoxManifest` and calls
+`assert_box_manifest_agreement`, bridging the one divergent block through
+`ReleaseManifest::to_box_format`. That conversion mirrors a pattern the shared TS
+contract already established — `LiatirRuntimeBoxCompatibility` is literally
+`Omit<BoxReleaseManifest["compatibility"], "minHostAppVersion" | …> & {
+minLiatirVersion … }` — so the two sides now translate the same way.
+
+Three things came out of it. The hand-written comparison was checking 13 fields
+where the format has 14: `environment` was never compared, so a signed
+environment map could have differed from the archive's copy unnoticed. No box
+carries one today, so it was latent, and it is now closed. Errors now name the
+field that differed instead of saying only "does not match". And `min_ram_gb`
+becomes `f64`: TypeScript already derived it from Scrollcase's type, so `u64` was
+the outlier — Rust was the only side that could not express a fractional
+requirement. Conversion rounds *up*, or a host short of the requirement would
+satisfy it by truncation; NaN and infinity are rejected rather than compared.
+`dir_size` is now `filesystem::payload_size`, which matters beyond DRY: the
+*builder* sizes the payload with that rule when it writes `installedSizeBytes`, so
+a second implementation here is how the two come to disagree and fail an honest
+box. Not adopted: `filesystem::validate_extracted_tree` (Liatir has no
+equivalent, so it would be a new rejection path, and no real box was available to
+prove it accepts the current catalog) and `filesystem::sha256_file` (Liatir's
+hasher is shared with plugins and managed binaries; swapping only this call site
+would leave two hashers in the app). 41/41 Rust tests, including new coverage for
+the agreement delegation and for fractional memory requirements.
+
 No signing, publication or promotion occurred. Published
 scGPT `0.2.5-beta.1` and Geneformer `1.0.0-beta.1` objects remain immutable. The
 full CI substrate migration to pixi + pixi-pack +
