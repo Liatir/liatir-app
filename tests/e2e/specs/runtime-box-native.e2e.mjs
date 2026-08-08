@@ -28,7 +28,7 @@ const TOOL_ID = 'ai-single-cell-embedding';
 const REGISTRY_BASE_URL = process.env.LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL
   ?? 'https://models.liatir.com/v1';
 const TARGET_ID = process.env.LIATIR_RUNTIME_BOX_TARGET_ID ?? 'macos-aarch64-metal';
-const VERSION = process.env.LIATIR_RUNTIME_BOX_EXPECTED_VERSION ?? '1.0.0-beta.1';
+const VERSION = process.env.LIATIR_RUNTIME_BOX_EXPECTED_VERSION ?? '1.0.0-beta.2';
 const PRODUCT_EVIDENCE_PATH = process.env.LIATIR_RUNTIME_BOX_PRODUCT_EVIDENCE ?? null;
 const TARGET_CANDIDATES = runtimeBoxTargetForNativeTest(MODEL_ID, TARGET_ID);
 const TARGET_ACCELERATOR = TARGET_CANDIDATES[0].target.accelerator;

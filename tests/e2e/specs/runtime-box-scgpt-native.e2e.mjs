@@ -76,7 +76,7 @@ export const tests = [
       expect(await runtimeBoxInstallStatus(browser, downloadId)).toBe('done');
       expect(await runtimeBoxInstallError(browser, downloadId)).toBe(null);
       const installed = await runtimeBoxInstallResult(browser, downloadId);
-      expect(installed.version).toBe('0.2.5-beta.1');
+      expect(installed.version).toBe('0.2.5-beta.2');
       expect(installed.rollbackAvailable).toBe(false);
 
       const fixture = await runPython(browser, CREATE_FIXTURE_SCRIPT, {

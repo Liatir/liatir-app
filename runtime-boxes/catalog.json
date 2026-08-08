@@ -218,18 +218,21 @@
           "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/geneformer-v1-10m-macos-arm64-metal.json",
           "diskPlan": {
             "estimatedInstalledSizeBytes": 1538447044,
-            "estimatedArchiveSizeBytes": 463378934,
+            "estimatedArchiveSizeBytes": 463378929,
             "safetyMarginBytes": 4294967296
           },
           "gpuRequired": false,
           "nativeCiEnabled": true,
           "publication": {
-            "source": "legacy-operator",
-            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/geneformer-v1-10m/1.0.0-beta.1/macos-aarch64-metal/6f7f7f5ae854c083a17455937f87613bb67fe308f6c3bfb2841cb442334fc330.release.json",
-            "archiveSha256": "7eb2274bd3bb0578a4f82b8da032a4af4268453e0e7f6b32c41ed4986271a6d4",
-            "archiveSizeBytes": 201396104,
-            "signingKeyId": "liatir-runtime-box-production-2026",
-            "publishedAt": "2026-07-12T06:01:48+02:00"
+            "source": "github-actions",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/geneformer-v1-10m/1.0.0-beta.2/macos-aarch64-metal/423cab5c19a8abf22e041c541eb073bdcc0e331218af50197a474331c4b8583f.release.json",
+            "archiveSha256": "f88f54f178bce6460ba5752ecba1dcfabb8d9a3b0e80501c8684ab6164614449",
+            "archiveSizeBytes": 463378929,
+            "signingKeyId": "liatir-runtime-box-kms-2026",
+            "publishedAt": "2026-08-08T01:55:47+02:00",
+            "workflowRunId": "31229152183",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/31229152183",
+            "evidenceRecord": "runtime-boxes/evidence/geneformer-v1-10m-macos-aarch64-metal-1.0.0-beta.2-run-31229152183.json"
           }
         },
         {
@@ -332,18 +335,21 @@
           "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/scgpt-whole-human-macos-arm64-metal.json",
           "diskPlan": {
             "estimatedInstalledSizeBytes": 1372956773,
-            "estimatedArchiveSizeBytes": 532421323,
+            "estimatedArchiveSizeBytes": 532421324,
             "safetyMarginBytes": 4294967296
           },
           "gpuRequired": false,
           "nativeCiEnabled": true,
           "publication": {
-            "source": "legacy-operator",
-            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.1/macos-aarch64-metal/505fc819dd409c4042d1cc196d0122aa57968cb4ce526caa99980ae0fd095ebf.release.json",
-            "archiveSha256": "c6cabce7edad025daab17a20fb5073530a7c604ee02918158a0a53b3008de43a",
-            "archiveSizeBytes": 310415585,
-            "signingKeyId": "liatir-runtime-box-production-2026",
-            "publishedAt": "2026-07-12T07:09:09+02:00"
+            "source": "github-actions",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.2/macos-aarch64-metal/a6168a152a5f2aac1b19ddcb47091315a7bf2fb1eb061aacb3b9911ed52b0920.release.json",
+            "archiveSha256": "86c0415da87742c2106daa4078603330de925727da23995020e8f14613a9a199",
+            "archiveSizeBytes": 532421324,
+            "signingKeyId": "liatir-runtime-box-kms-2026",
+            "publishedAt": "2026-08-08T01:55:47+02:00",
+            "workflowRunId": "31228656398",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/31228656398",
+            "evidenceRecord": "runtime-boxes/evidence/scgpt-whole-human-macos-aarch64-metal-0.2.5-beta.2-run-31228656398.json"
           }
         },
         {
@@ -506,22 +512,21 @@
           "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/uce-4layer-macos-arm64-metal.json",
           "diskPlan": {
             "estimatedInstalledSizeBytes": 11169027146,
-            "estimatedArchiveSizeBytes": 9899283947,
+            "estimatedArchiveSizeBytes": 9899283940,
             "safetyMarginBytes": 3221225472
           },
           "gpuRequired": false,
           "nativeCiEnabled": true,
           "publication": {
             "source": "github-actions",
-            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/uce-4layer/1.0.0-beta.1/macos-aarch64-metal/8e0c8c0174acfb44a8c8d956d13a6a584fa65bb757c134e9e120a67c76e95430.release.json",
-            "archiveSha256": "63fc02de8e91699176510051be38790ab69739a92fe32052011081ad8297c960",
-            "archiveSizeBytes": 8864908393,
-            "installedSizeBytes": 10142864860,
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/uce-4layer/1.0.0-beta.2/macos-aarch64-metal/085caca43a287e867e37f57f7365511efba13cf151bf2faf29aef7f4aac1beb4.release.json",
+            "archiveSha256": "86c84e2dec706449196bad890a79b88442df6f4105fa9563dcc9743974265945",
+            "archiveSizeBytes": 9899283940,
             "signingKeyId": "liatir-runtime-box-kms-2026",
-            "publishedAt": "2026-07-22T10:17:21.214Z",
-            "workflowRunId": "29909249357",
-            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/29909249357",
-            "evidenceRecord": "runtime-boxes/evidence/uce-4layer-macos-aarch64-metal-1.0.0-beta.1-run-29909249357.json"
+            "publishedAt": "2026-08-08T01:55:47+02:00",
+            "workflowRunId": "31230276512",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/31230276512",
+            "evidenceRecord": "runtime-boxes/evidence/uce-4layer-macos-aarch64-metal-1.0.0-beta.2-run-31230276512.json"
           }
         }
       ]
