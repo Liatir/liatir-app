@@ -125,10 +125,13 @@ describe("Liatir contract inversion over Scrollcase", () => {
     // release document under its own SHA-256 — not under the shared stem, which is only a name
     // for the pair. Verification and publication must agree on this: they did not, and a
     // stem-named lookup passed verify and then failed publish after a full signed build.
+    // Built with `join` on both sides: the helper returns native separators, so a literal
+    // forward-slash expectation only holds off Windows.
+    const releaseDirectory = join("dist", ...fixtures.expected.releaseObjectPrefix.split("/"));
     expect(runtimeBoxArchivePath(
-      `/dist/${fixtures.expected.releaseObjectPrefix}/abc.release.json`,
+      join(releaseDirectory, "abc.release.json"),
       fixtures.release,
-    )).toBe(`/dist/${fixtures.expected.releaseObjectPrefix}/${fixtures.release.archive.sha256}.zip`);
+    )).toBe(join(releaseDirectory, `${fixtures.release.archive.sha256}.zip`));
     for (const module of ['distribution-cli.mjs', 'scrollcase-adapter.mjs']) {
       const source = readFileSync(resolve(`scripts/runtime-box/${module}`), 'utf8');
       expect(source, module).toContain('runtimeBoxArchivePath(');

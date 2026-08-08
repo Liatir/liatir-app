@@ -56,6 +56,10 @@ sha2 = "0.10"
 fs2 = "0.4.3"
 # Ed25519 verification of signed .lia plugin bundles (signing happens in the CLI).
 ed25519-dalek = "2.1.1"
+# Runtime Box format verification: signature, archive identity, safe extraction and
+# manifest agreement. Liatir keeps the product lifecycle around it (registry, revocation,
+# anti-replay, disk, activation, rollback, removal). Pinned exactly, like the npm builder.
+scrollcase-consumer = "=0.3.0"
 
 anyhow = "1.0.100"
 
