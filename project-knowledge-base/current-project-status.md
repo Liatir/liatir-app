@@ -847,11 +847,12 @@ first).
 > `linux-x86_64-cuda12.9` and `windows-x86_64-cuda12.8` successors — and UCE.
 > Geneformer's CPU targets were dropped once CPU throughput was measured, so it
 > has no CPU box at all. **P5.4V is complete as of 2026-08-07: all eleven targets
-> are rebuilt and measured on `scrollcase@0.7.1`, and none is published. P5.4W
-> then raised the pin to `0.8.0`, which changes no archive byte, so that matrix
-> stands as measured.** The
-> next continuation is P5.5 legacy deletion, or the separately authorized
-> re-release of the rebuilt matrix.
+> are rebuilt and measured on `scrollcase@0.7.1`. P5.4W then raised the pin to
+> `0.8.0`, which changes no archive byte, so that matrix stands as measured. P5.4P
+> has published and promoted all three macOS boxes on 2026-08-08; the six
+> Linux/Windows targets await their own hosts.** The
+> next continuation is those six releases, P5.5 legacy deletion, or retiring the
+> superseded `beta.1` versions.
 > P5.4 remained one phase with
 > three operational blocks rather than a new numbered checkpoint per target.
 > Do not use the historical
@@ -867,17 +868,31 @@ first).
    migrated and natively validated, so no migration work is left here.
    Windows CUDA is no longer under the no-dispatch decision — it now validates on
    the self-hosted RTX 4060 Ti.
-   **The maintainer authorized the re-release on 2026-08-07 and it is prepared,
-   not done.** Every box version is bumped (`3497f12`) so the rebuilt archives
-   can publish without one version naming two different sets of bytes:
-   `geneformer-v1-10m` and `uce-4layer` to `1.0.0-beta.2`, `scgpt-whole-human` to
-   `0.2.5-beta.2`. What each half waits on is **a host, not a decision**: the
-   three macOS targets need `37580963840` free bytes before the ephemeral runner
-   will set up and this Mac has `34587353088`, short by 2.79 GiB after local
-   build scratch was reclaimed; the six Linux/Windows targets need their own
-   machines' runners, exactly as their rebuilds did. Release before revoking —
-   and never revoke UCE `1.0.0-beta.1` until its successor is promoted, because
-   it is UCE's only publication. Full readiness record in
+   **The re-release is done on macOS (2026-08-08).** All three boxes are
+   KMS-signed, scientifically validated on Metal, published as immutable
+   content-addressed objects and promoted to `beta` at 100%: `scgpt-whole-human`
+   `0.2.5-beta.2` (run `31228656398`), `geneformer-v1-10m` `1.0.0-beta.2`
+   (`31229152183`), `uce-4layer` `1.0.0-beta.2` (`31230276512`). Every channel
+   was read back from the public registry and every installed size reproduces the
+   rebuild measurement exactly.
+   **It took six runs to get the first one through**, because release CI had run
+   nothing between the v2/pixi cutover and this re-release and had drifted behind
+   it in six places — `npm ci` after the first script that imports Scrollcase, a
+   signer smoke payload still on `schemaVersion: 1`, no pinned pixi at all, a
+   stem-named archive lookup where the format uses the SHA-256, a flat channel
+   path where the builder files by channel, and `scrollcase-consumer` missing from
+   the *generated* Cargo manifest. All fixed and pinned by regressions; the two
+   path defects now resolve through one shared helper each. **Both the signer and
+   the Registry Worker were stale deployments** — the Worker was still on
+   2026-07-15, before the cutover, and refused every v2 document — and had to be
+   replaced, which this plan listed under non-goals.
+   Remaining: the six Linux/Windows targets, which need their own hosts and
+   should now pass first time since every defect was in shared code; and retiring
+   the superseded `beta.1` versions, which needs multi-entry revocation support
+   (the Worker replaces the revocations document wholesale, so one entry at a
+   time would leave only the last) plus a KMS-authorized principal. Low urgency:
+   the `beta.1` documents are `schemaVersion: 1`, which the v2-only app already
+   refuses. Full record in
    [P5.4P](./roadmap/scrollcase-p5-liatir-adoption.md).
 2. **The Scrollcase pin is raised to `0.7.1` and the whole rebuild matrix is
    complete (2026-08-07).**

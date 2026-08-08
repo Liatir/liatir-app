@@ -10,11 +10,15 @@ model targets including all four CUDA ones — are built, measured and
 catalog-bound on `0.7.1`, each on a single dispatch. Every lock reproduced
 byte-identical and every parity figure reproduced its `0.4.11` value exactly.
 P5.4W then raised the pin to `0.8.0`, which changes no archive byte, so the
-matrix stays valid without a single rebuild. Nothing is published, so the
-re-release is one separate authorized decision. The schema-v1 uv authoring path
-is deleted. P5.4R's upstream blocker is resolved — `scrollcase-consumer 0.2.0`
-replaced `public_key_path` with `TrustAnchors`, and Liatir already pins `0.3.0` —
-so its remainder is Liatir work again. P5.5 is the next phase.**
+matrix stays valid without a single rebuild. **P5.4P has since published and
+promoted all three macOS boxes** — `scgpt-whole-human 0.2.5-beta.2`,
+`geneformer-v1-10m` and `uce-4layer 1.0.0-beta.2` — KMS-signed, scientifically
+validated and serving on `beta`; the six Linux/Windows targets await their own
+hosts, and retiring the superseded `beta.1` versions is still open. The schema-v1
+uv authoring path is deleted. P5.4R's upstream blocker is resolved —
+`scrollcase-consumer 0.2.0` replaced `public_key_path` with `TrustAnchors`, and
+Liatir already pins `0.3.0` — so its remainder is Liatir work again. P5.5 is the
+next phase.**
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project. The P5 target was
@@ -200,7 +204,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.4E — Rust `Compatibility` carries project constraints | Resolved upstream, adopted | The Rust `Compatibility` was `deny_unknown_fields`, stricter than the schema the crate itself ships (`additionalProperties: true`, "a project may add its own"). Measured at the time: the Node consumer accepted `runtime-boxes/contract-compatibility-fixtures.json`, the Rust type rejected the same bytes. Fixed upstream in `scrollcase-consumer 0.3.0`, which carries unknown constraints in `Compatibility::additional` and states that an application finding one it does not understand must refuse the box. Liatir pins `=0.3.0`, has **deleted its own `ReleaseManifest` and `RuntimeBoxCompatibility`** in favour of the box format's types, reads `minLiatirVersion` / `maxLiatirVersionExclusive` from `additional`, and refuses any other entry. `to_box_format` is gone |
 | P5.4V — Scrollcase `0.4.11` → current-line upgrade | Complete | Exact `scrollcase@0.7.1` with its npm identity read back into the lockfile, `scrollcase-consumer` confirmed ahead of the format, and the maintainer decision recorded that every proven target rebuilds rather than freezes. All eleven targets rebuilt, measured and catalog-bound on `0.7.1`, one dispatch each, no retry: every lock byte-identical, every parity figure reproduced exactly including all four CUDA targets, every `diskPlan` measured on its own host. Nothing signed with a production key, published or promoted |
 | P5.4W — Scrollcase `0.7.1` → `0.8.0` pin raise | Complete | Exact `scrollcase@0.8.0` (published 2026-08-06T17:28:03.966Z, integrity `sha512-zC2rply…pcxEQ==`) read back from npm into the lockfile before the change. Diffed against the `0.7.1` tarball it touches only `CHANGELOG`, `package.json`, `build/verify`, the two consumer entry points and `sign/`: `src/contract` is **byte-identical** and no archive-producing code moved, so the eleven-target matrix carries over with zero rebuilds. The change is additive — every operation now takes `publicPath` **or** `trustedKeys`, and `verifySignedDocument` still accepts a path — so no Liatir call site changed. `test:verify` 6/6, 42/42 Rust tests, and the macOS native fixture lifecycle green on the new pin. **The fixture confirms the diff empirically**: rebuilt on `0.8.0` it produced archive `54172964` and installed `146593318` bytes, the exact figures measured on `0.7.1` and recorded in the catalog |
-| P5.4P — re-release of the rebuilt matrix | Prepared, blocked on hosts | Every box version bumped (`geneformer-v1-10m` and `uce-4layer` to `1.0.0-beta.2`, `scgpt-whole-human` to `0.2.5-beta.2`) so the rebuilt archives publish without making one version name two different sets of bytes. Nothing is published yet: see the release-readiness section |
+| P5.4P — re-release of the rebuilt matrix | macOS complete, Linux/Windows await their hosts | Every box version bumped (`geneformer-v1-10m` and `uce-4layer` to `1.0.0-beta.2`, `scgpt-whole-human` to `0.2.5-beta.2`) so the rebuilt archives publish without making one version name two different sets of bytes. **All three macOS boxes are KMS-signed, scientifically validated, published immutably and promoted to `beta` at 100%**, each channel read back from the public registry and each installed size reproducing the rebuild measurement exactly. It took six runs to get the first one through: the release path had drifted behind the v2/pixi cutover in six places, all now fixed and pinned by regressions, and both the signer and the Registry Worker were stale deployments that had to be replaced. Retiring the superseded `beta.1` versions is still open |
 | P5.5 — final cutover and legacy deletion | In progress | The local builder is deleted (`5f52f5e`) and `legacy-cli.mjs` is now `distribution-cli.mjs`, holding only R2 publication, the Worker trust root, promotion, revocation and the loopback registry, with a deletion guard against a builder growing back |
 | P5.6 — local/native closure | Pending | Full cheap gate plus one reviewed non-production product lifecycle |
 | P5.7 — documentation handoff | Pending | Status, inventories and operator docs match the implemented boundary |
@@ -2319,10 +2323,85 @@ answered by the same decision. P5.4V ran first, so P5.5 will delete the legacy
 builder against the current pin, `0.8.0`, the version the remaining work is
 authored on.
 
-### P5.4P — Release readiness: prepared, and what each half waits on
+### P5.4P — Release: macOS is live, and what the first real release cost
 
-The matrix is built, measured and version-bumped. **Nothing is published**, and the
-two halves are blocked on different things.
+**All three macOS boxes are published and promoted (2026-08-08).** Each was built
+from its pixi scroll, signed by KMS, self-tested, passed its real Metal
+scientific validator, published as content-addressed objects whose public bytes
+were streamed back and re-hashed, and promoted to `beta` at 100%.
+
+| Box | Version | Run | Archive SHA-256 | Installed |
+| --- | --- | --- | --- | --- |
+| `scgpt-whole-human` | `0.2.5-beta.2` | `31228656398` | `86c0415d…a199` | `1372956773` |
+| `geneformer-v1-10m` | `1.0.0-beta.2` | `31229152183` | `f88f54f1…4449` | `1538447044` |
+| `uce-4layer` | `1.0.0-beta.2` | `31230276512` | `86c84e2d…5945` | `11169027146` |
+
+Every channel was read back from the public registry rather than assumed: all
+three serve a `schemaVersion: 2` envelope pointing at the new version. **The
+installed sizes reproduce the rebuild measurements exactly**, so what a user
+installs is what the matrix measured.
+
+#### The first release after a cutover pays for everything the cutover missed
+
+Six defects, in six separate runs, before one succeeded. Every one had the same
+cause: **release ran nothing between the v2/pixi cutover and this re-release, so
+it drifted behind validation and behind the box format, silently.** Each was
+found by burning a runner, and each is now pinned by a regression.
+
+| # | Defect | Found at | Fix |
+| --- | --- | --- | --- |
+| 1 | `npm ci` ran *after* the first Runtime Box script, which imports Scrollcase | 22 s, no paid step | `14a328d` + per-job regression |
+| 2 | Signer smoke payload still `schemaVersion: 1` — deployment half-landed | signer deploy | `0844b33` + policy-validation test |
+| 3 | No pinned pixi or conda-pack in the release workflow at all | build start | `89a590d` + shared-setup regression |
+| 4 | `publish` looked for a stem-named archive; the format uses the SHA-256 | after KMS sign + validator | `6ba9330`, one shared helper |
+| 5 | `promote` looked for a flat channel file; the builder files by channel | **after immutable publication** | `1dec388`, one shared helper |
+| 6 | `scrollcase-consumer` missing from the *generated* Cargo manifest | after publication, in the product build | `ece6ac1` + template-render test |
+
+Defects 4 and 5 are the same shape one directory apart, and both are the shape
+worth remembering: **two call sites independently answered "where does this
+file live", and only the unused one was right.** Verification followed the box
+format while publication did not, so verify passed and publish failed — after
+the expensive part had already run. Both now resolve through one helper in
+`identity.mjs`, and the regressions forbid a second local resolution.
+
+Defect 2 is worth its own note because it is the one that half-landed: the
+deployment replaced the running service and *then* failed its own smoke test, so
+the signer moved while the job reported failure.
+
+**Two production services were stale and had to be redeployed**, neither
+anticipated by this plan, which lists both under non-goals:
+
+- the **signer**, which reported no policy fingerprint at all (an older
+  revision), blocking every release at the fail-fast gate;
+- the **Registry Worker**, last deployed 2026-07-15 — before the v2 cutover — so
+  it answered `invalid_signed_document` to every v2 release document. Verified
+  after deploying that it still serves the existing channels and published
+  objects.
+
+#### What remains, and what each part waits on
+
+**The six Linux/Windows targets wait on their own hosts,** exactly as their
+rebuilds did. Each needs its ephemeral runner started on the machine that owns
+the platform, then `runtime-box-release.yml` with its `model_id`/`target_id`.
+They should now pass first time: every defect above was in shared code or the
+shared workflow, not in anything macOS-specific.
+
+**Retiring the superseded `beta.1` publications is not done, and needs two
+things it does not have.** `revoke` builds a revocations document holding exactly
+one entry, and the Worker *replaces* `control/revocations.json` wholesale on
+promotion — so revoking three boxes one at a time would leave only the last one
+revoked. It needs multi-entry support first. It also needs a KMS-authorized
+principal: there is no revocation workflow, and signing locally requires gcloud
+credentials this session does not have. Nothing is currently revoked
+(`/v1/revocations` is `404`), so no existing state is at risk either way.
+
+The urgency is low and should be stated so nobody rushes it: the `beta.1`
+documents are `schemaVersion: 1`, which the v2-only app already refuses as
+unsupported. Revocation would make that explicit, not newly true.
+
+#### How this was prepared, for the record
+
+The matrix was built, measured and version-bumped before any of the above.
 
 **Versions moved because they had to.** Object keys are content-addressed, so a
 new archive would not overwrite an old one — but a channel resolves one release
