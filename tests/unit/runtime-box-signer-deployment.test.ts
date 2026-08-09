@@ -72,4 +72,29 @@ describe('Runtime Box signer deployment boundary', () => {
     );
     expect(signerCommand).toContain('process.env.LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN');
   });
+
+  /**
+   * A release must reach the signer on the injected token alone. `signer-command.mjs` falls back to
+   * `gcloud auth print-identity-token` when none is given, and that fallback is for a manual
+   * operator: if a release ever took it, the run would depend on a CLI it has no reason to install.
+   * Installing it anyway was not free — on a self-hosted Windows runner with no preinstalled SDK,
+   * setup-gcloud downloads to an extensionless temp file and `Expand-Archive` refuses it, which
+   * killed run 31296206018 before any paid setup. The deployment workflow keeps the CLI, because
+   * `gcloud run deploy` genuinely needs it.
+   */
+  it('releases without the gcloud CLI, on the injected identity token alone', () => {
+    // The action, not the word: the workflow explains in a comment why it does not install it.
+    expect(releaseWorkflow).not.toMatch(/uses:\s*google-github-actions\/setup-gcloud/);
+    expect(deploymentWorkflow).toMatch(/uses:\s*google-github-actions\/setup-gcloud/);
+
+    const releaseJob = releaseWorkflow.slice(releaseWorkflow.indexOf('\n  release:\n'));
+    // Every step that can reach the signer carries the token, so the fallback is unreachable.
+    for (const step of ['verify-signer-policy', 'tracked-build']) {
+      const stepStart = releaseJob.lastIndexOf('- name:', releaseJob.indexOf(step));
+      expect(releaseJob.slice(stepStart, releaseJob.indexOf(step)), step)
+        .toContain('LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN');
+    }
+    // publish and promote authenticate to the Registry instead, and promote never signs.
+    expect(releaseWorkflow).toContain('LIATIR_RUNTIME_BOX_ADMIN_TOKEN');
+  });
 });

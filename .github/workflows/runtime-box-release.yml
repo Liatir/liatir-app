@@ -120,8 +120,18 @@ jobs:
           id_token_audience: ${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}
           id_token_include_email: true
 
-      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
-
+      # No setup-gcloud here on purpose. The release never shells out to the CLI: the auth action
+      # above mints the audience-bound identity token itself, both steps that reach the signer are
+      # handed that token explicitly, and publish and promote authenticate to the Registry with its
+      # admin token — promote only uploads a document the build already signed. The `gcloud auth
+      # print-identity-token` path in signer-command.mjs is the manual-operator fallback, which a
+      # release never takes.
+      #
+      # Installing it was also actively harmful on a self-hosted Windows host, where the runner has
+      # no preinstalled SDK: the action downloads the archive to an extensionless temp file and
+      # `Expand-Archive` refuses anything not named `.zip`, so run 31296206018 died there before
+      # reaching any paid setup. GitHub-hosted Windows never hit it because gcloud ships in the
+      # image and the download is skipped.
       - name: Fail fast if the deployed signer policy is stale
         env:
           LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN: ${{ steps.release-auth.outputs.id_token }}
