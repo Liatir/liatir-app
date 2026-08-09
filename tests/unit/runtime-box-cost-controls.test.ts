@@ -110,6 +110,17 @@ describe('Runtime Box CI cost controls', () => {
     expect(runtimeBoxProductE2E).toContain('Resumed Runtime Box install failed');
     expect(runtimeBoxProductE2E.indexOf('runtimeBoxInstallError(browser, resumedId)'))
       .toBeLessThan(runtimeBoxProductE2E.indexOf('runtimeBoxInstallResult(browser, resumedId)'));
+    // The same rule for every spec the release routes to. A failed install is only diagnosable from
+    // the error the app recorded, and the box is gone with the ephemeral runner moments later — so
+    // asserting the status first, as scGPT's spec did, loses the only account of what went wrong
+    // (run 31296511194: "expected done, received error", cause unknown).
+    for (const specPath of ['runtime-box-scgpt-native', 'runtime-box-uce-native']) {
+      const spec = readFileSync(resolve(`tests/e2e/specs/${specPath}.e2e.mjs`), 'utf8');
+      const readsError = spec.indexOf('runtimeBoxInstallError(');
+      const assertsDone = spec.indexOf("toBe('done')");
+      expect(readsError, specPath).toBeGreaterThan(-1);
+      if (assertsDone > -1) expect(readsError, specPath).toBeLessThan(assertsDone);
+    }
     expect(runtimeBoxProductE2E).not.toContain('bytesDownloaded > 64 * 1024');
     expect(runtimeBoxProductE2E).toContain("replaceAll('\\\\', '/')");
     expect(runtimeBoxProductE2E).toContain("path.join(runtimeDir, 'model-cache'");

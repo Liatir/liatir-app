@@ -154,8 +154,16 @@ export const tests = [
           },
         );
 
-        expect(await runtimeBoxInstallStatus(browser, downloadId)).toBe('done');
-        expect(await runtimeBoxInstallError(browser, downloadId)).toBe(null);
+        // Error first, status second: a bare `expected "done", received "error"` discards the only
+        // account of the failure, and after a 9 GB install nobody gets a cheap second attempt.
+        const status = await runtimeBoxInstallStatus(browser, downloadId);
+        const installError = await runtimeBoxInstallError(browser, downloadId);
+        if (status !== 'done') {
+          throw new Error(
+            `Live UCE Runtime Box install failed with status ${status}: ${installError ?? 'unknown error'}`,
+          );
+        }
+        expect(installError).toBe(null);
         const progress = await runtimeBoxInstallProgress(browser, downloadId);
         expect(progress.eventCount).toBeGreaterThan(0);
         expect(progress.bytesTotal).toBe(ARCHIVE_SIZE_BYTES);

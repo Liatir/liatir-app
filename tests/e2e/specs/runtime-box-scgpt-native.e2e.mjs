@@ -76,8 +76,18 @@ export const tests = [
         async () => (await runtimeBoxInstallStatus(browser, downloadId)) !== 'running',
         { timeout: 300_000, timeoutMsg: 'Live scGPT Runtime Box install did not complete' },
       );
-      expect(await runtimeBoxInstallStatus(browser, downloadId)).toBe('done');
-      expect(await runtimeBoxInstallError(browser, downloadId)).toBe(null);
+      // Read the install error before asserting the status, never after: a bare
+      // `expected "done", received "error"` throws away the only description of what actually went
+      // wrong, and the box is gone with the ephemeral runner before anyone can ask again. Release
+      // run 31296511194 was lost that way. The Geneformer spec learned this first.
+      const status = await runtimeBoxInstallStatus(browser, downloadId);
+      const installError = await runtimeBoxInstallError(browser, downloadId);
+      if (status !== 'done') {
+        throw new Error(
+          `Live scGPT Runtime Box install failed with status ${status}: ${installError ?? 'unknown error'}`,
+        );
+      }
+      expect(installError).toBe(null);
       const installed = await runtimeBoxInstallResult(browser, downloadId);
       expect(installed.version).toBe(process.env.LIATIR_RUNTIME_BOX_EXPECTED_VERSION ?? '0.2.5-beta.2');
       expect(installed.rollbackAvailable).toBe(false);
