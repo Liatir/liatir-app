@@ -23,8 +23,8 @@ const publishedMacosArm64MetalTargets = (minRamGb: number) => [{
   hostEnvironments: ['native'],
   minRamGb,
 }];
-// Geneformer ships no CPU box: measured CPU throughput is ~160 ms per cell. Apple silicon Metal and
-// Linux CUDA 12.9 are published; the native Windows CUDA target is built and not yet published.
+// Geneformer ships no CPU box: measured CPU throughput is ~160 ms per cell. All three published
+// targets are here: Apple silicon Metal, Linux CUDA 12.9 and native Windows CUDA 12.8.
 const publishedGeneformerTargets = () => [
   ...publishedMacosArm64MetalTargets(8),
   {
@@ -32,6 +32,12 @@ const publishedGeneformerTargets = () => [
     hostEnvironments: ['native'],
     minRamGb: 16,
     minNvidiaDriverVersion: '525.60.13',
+  },
+  {
+    target: { platform: 'windows', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.8' },
+    hostEnvironments: ['native'],
+    minRamGb: 16,
+    minNvidiaDriverVersion: '527.41',
   },
 ];
 
@@ -80,7 +86,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
       expect(file.url).toContain(model?.install?.revision);
     }
     expect(model?.install?.hostRequirements).toMatchObject({
-      os: ['macos', 'linux'],
+      os: ['macos', 'linux', 'windows'],
       arch: ['aarch64', 'x86_64'],
     });
     // No CPU box ships for this model, so the product must not advertise CPU support.
