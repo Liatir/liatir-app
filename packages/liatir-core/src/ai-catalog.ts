@@ -59,6 +59,12 @@ function publishedMacosArm64MetalTarget(
 function publishedGeneformerTargets(): readonly LiatirRuntimeBoxTargetCandidate[] {
 	return [
 		...publishedMacosArm64MetalTarget(8),
+		{
+			target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.9' },
+			hostEnvironments: ['native'],
+			minRamGb: 16,
+			minNvidiaDriverVersion: '525.60.13'
+		}
 	];
 }
 
@@ -174,10 +180,10 @@ export const RUNTIME_BOX_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			},
 			runtimePackages: GENEFORMER_V1_10M_RUNTIME_PACKAGES,
 			hostRequirements: {
-				os: ['macos'],
-				arch: ['aarch64'],
+				os: ['macos', 'linux'],
+				arch: ['aarch64', 'x86_64'],
 				reason:
-					'The current signed Geneformer Runtime Box is built for Apple silicon Macs. The Linux and Windows NVIDIA targets are built but not yet published.'
+					'Geneformer ships as a signed Runtime Box for Apple silicon Macs and for Linux x86_64 with an NVIDIA GPU on CUDA 12.9. The native Windows CUDA target is built but not yet published.'
 			}
 		},
 		documentation: {
