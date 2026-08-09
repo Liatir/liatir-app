@@ -262,7 +262,7 @@ jobs:
         if: startsWith(inputs.target_id, 'linux-') || startsWith(inputs.target_id, 'windows-')
         run: npm run test:tauri:prepare
 
-      - name: Run the Linux candidate through Jobs, Results, provenance, replacement, and cleanup
+      - name: Run the Linux candidate through the model's product lifecycle spec
         if: startsWith(inputs.target_id, 'linux-')
         env:
           LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL: http://127.0.0.1:8790/v1
@@ -275,7 +275,7 @@ jobs:
           xvfb-run --auto-servernum
           npm run runtime-box:product-lifecycle
 
-      - name: Run the Windows candidate through Jobs, Results, provenance, replacement, and cleanup
+      - name: Run the Windows candidate through the model's product lifecycle spec
         if: startsWith(inputs.target_id, 'windows-')
         env:
           LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL: http://127.0.0.1:8790/v1
