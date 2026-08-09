@@ -31,11 +31,29 @@ async function waitForRegistry(child) {
   throw new Error(`Candidate registry did not become ready: ${lastError?.message ?? 'unknown error'}`);
 }
 
+/**
+ * Resolves the spec that drives this model's lifecycle from the same catalog the release uses.
+ *
+ * Never a default: each spec pins its own box and model, so running the wrong one fails on an
+ * unknown target instead of validating the candidate. The Geneformer spec used to be hardcoded
+ * here, which only worked while Geneformer was the sole model with a native lifecycle.
+ */
+function productLifecycleSpec() {
+  const modelId = String(process.env.LIATIR_RUNTIME_BOX_MODEL_ID ?? '').trim();
+  if (!modelId) throw new Error('LIATIR_RUNTIME_BOX_MODEL_ID is required to select the lifecycle spec.');
+  const catalog = JSON.parse(fs.readFileSync(path.join(ROOT, 'runtime-boxes/catalog.json'), 'utf8'));
+  const model = catalog.models.find((candidate) => candidate.modelId === modelId);
+  if (!model?.productLifecycleSpec) {
+    throw new Error(`No product lifecycle spec in the catalog for ${modelId}.`);
+  }
+  return model.productLifecycleSpec;
+}
+
 /** Runs the repository-owned native product test and forwards its compact output. */
 async function runProductLifecycle() {
   const invocation = npmInvocation([
     'run', 'test:tauri:run', '--', '--heavy',
-    'tests/e2e/specs/runtime-box-native.e2e.mjs',
+    productLifecycleSpec(),
   ]);
   await new Promise((resolve, reject) => {
     const child = spawn(invocation.command, invocation.args, {

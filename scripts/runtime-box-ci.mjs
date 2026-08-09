@@ -365,6 +365,7 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
     requireCatalog(existsSync(resolve(workspaceRoot(), model.legalRecord)), `missing legal record ${model.legalRecord}`);
     requireCatalog(existsSync(resolve(workspaceRoot(), model.validatorPath)), `missing validator ${model.validatorPath}`);
     requireCatalog(existsSync(resolve(workspaceRoot(), model.productScriptPath)), `missing product script ${model.productScriptPath}`);
+    requireCatalog(existsSync(resolve(workspaceRoot(), model.productLifecycleSpec)), `missing product lifecycle spec ${model.productLifecycleSpec}`);
     requireCatalog(typeof model.validatorScript === 'string' && model.validatorScript.startsWith('runtime-box:validate:'), `invalid validator script for ${model.modelId}`);
     requireCatalog(Array.isArray(model.targets) && model.targets.length > 0, `targets are required for ${model.modelId}`);
     const signerBox = signerPolicy.boxes.find((candidate) => candidate.boxId === model.boxId);

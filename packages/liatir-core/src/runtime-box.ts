@@ -192,6 +192,13 @@ export interface LiatirRuntimeBoxCiModelRecord {
   validatorPath: string;
   /** Product-owned runner source validated by the model-specific scientific gate. */
   productScriptPath: string;
+  /**
+   * The end-to-end spec that drives this model's real product lifecycle before promotion.
+   *
+   * Per model, because each spec pins its own box, model and expected artifacts: running another
+   * model's spec fails on an unknown target rather than validating anything.
+   */
+  productLifecycleSpec: string;
   callerWorkflow: string;
   targets: readonly LiatirRuntimeBoxCiTargetRecord[];
 }

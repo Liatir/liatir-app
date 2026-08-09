@@ -305,6 +305,41 @@ describe('Runtime Box CI catalog', () => {
     expect(launcher).toContain('RUNNER_ONLINE_TIMEOUT_SECONDS=11400');
   });
 
+  // The release drives each model's real product lifecycle through an end-to-end spec, and every
+  // spec pins its own box and model. The runner used to hardcode Geneformer's, which only worked
+  // while Geneformer was the only model with a native lifecycle: run 31288741734 published the
+  // scGPT Linux CPU box and then failed the lifecycle with "Unsupported native Runtime Box test
+  // target: ctheodoris-geneformer-v1-10m/linux-x86_64-cpu". macOS never caught it because the
+  // release skips the lifecycle there.
+  it('resolves one product lifecycle spec per model, and never a hardcoded default', () => {
+    const runner = readFileSync(
+      new URL('../../scripts/run-runtime-box-product-lifecycle.mjs', import.meta.url),
+      'utf8',
+    );
+    const release = readFileSync(
+      new URL('../../.github/workflows/runtime-box-release.yml', import.meta.url),
+      'utf8',
+    );
+
+    const specs = catalog.models.map((model) => model.productLifecycleSpec);
+    expect(specs.every((spec) => spec.startsWith('tests/e2e/specs/'))).toBe(true);
+    // One spec per model: a shared spec would validate the wrong box for someone.
+    expect(new Set(specs).size).toBe(specs.length);
+    for (const model of catalog.models) {
+      const spec = readFileSync(new URL(`../../${model.productLifecycleSpec}`, import.meta.url), 'utf8');
+      expect(spec, model.modelId).toContain(`'${model.modelId}'`);
+      expect(spec, model.modelId).toContain(`'${model.boxId}'`);
+    }
+
+    // The runner must read the spec from the catalog and be told which model it is releasing.
+    expect(runner).toContain('productLifecycleSpec');
+    expect(runner).toContain('LIATIR_RUNTIME_BOX_MODEL_ID');
+    expect(runner).not.toContain("'tests/e2e/specs/runtime-box-native.e2e.mjs'");
+    // Both platform lifecycle steps carry the model, or one of them silently picks the wrong spec.
+    expect(release.match(/LIATIR_RUNTIME_BOX_MODEL_ID: \$\{\{ inputs\.model_id \}\}/g))
+      .toHaveLength(2);
+  });
+
   it('keeps both self-hosted launchers on one pinned runner release and one cleanup contract', () => {
     const posix = readFileSync(new URL('../../scripts/run-runtime-box-selfhosted-runner.sh', import.meta.url), 'utf8');
     const windows = readFileSync(new URL('../../scripts/run-runtime-box-selfhosted-runner.ps1', import.meta.url), 'utf8');
