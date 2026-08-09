@@ -58,6 +58,37 @@ export async function navigateSidebar(browser, route) {
   );
 }
 
+/**
+ * Routes to a path the way the app itself does.
+ *
+ * Client-side, never by assigning `window.location.href`. A hard location change unloads the
+ * document, and on a slower Windows runner the embedded WebDriver connection drops for long enough
+ * that even bounded retries fail with `fetch failed` while the app is perfectly alive. Liatir is a
+ * SvelteKit SPA and intercepts in-app anchor clicks, so the session is never torn down.
+ */
+export async function navigateInApp(browser, pathname) {
+  await browser.execute((destination) => {
+    const link = document.createElement('a');
+    link.href = destination;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    return true;
+  }, pathname);
+  // The sidebar is on every page, so wait on the committed route instead, ignoring any query string.
+  const expectedPath = pathname.split('?')[0];
+  await browser.waitUntil(
+    async () => browser.execute((expected) => window.location.pathname === expected, expectedPath),
+    { timeout: 20_000, timeoutMsg: `Liatir did not finish navigating to ${pathname}` },
+  );
+}
+
+/** Finds one section of a persisted Result output document. */
+export function outputSection(output, type, label = null) {
+  return output.sections.find((item) => item.type === type && (label === null || item.label === label));
+}
+
 export async function expectNoVisibleRuntimeError(browser) {
   const body = await browser.$('body');
   const text = await body.getText();

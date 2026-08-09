@@ -17,6 +17,7 @@ import {
   startRuntimeBoxInstall,
   waitForRuntimeBoxInstall,
 } from '../support/runtime-box.mjs';
+import { navigateInApp, outputSection } from '../support/liatir-app.mjs';
 import { comparablePath, isolatedTestHome } from '../support/tauri-process.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -122,37 +123,6 @@ async function runPython(browser, script, inputJson) {
       timeoutSeconds: 600,
     },
   );
-}
-
-async function navigate(browser, pathname) {
-  // Navigate client-side instead of assigning window.location.href. A hard location change unloads
-  // the document, and on the slower Windows runner the embedded WebDriver connection is dropped for
-  // long enough that even bounded retries fail ("fetch failed") while the app stays alive. The app
-  // is a SvelteKit SPA, which intercepts in-app anchor clicks and routes without a reload (query
-  // strings included), so the WebDriver session is never torn down.
-  await browser.execute((destination) => {
-    const link = document.createElement('a');
-    link.href = destination;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    return true;
-  }, pathname);
-  // The sidebar is present on every page, so wait on the actual route instead: confirm the
-  // client-side navigation committed to the requested path (ignoring any query string).
-  const expectedPath = pathname.split('?')[0];
-  await browser.waitUntil(
-    async () => browser.execute((expected) => window.location.pathname === expected, expectedPath),
-    {
-      timeout: 20_000,
-      timeoutMsg: `Liatir did not finish navigating to ${pathname}`,
-    },
-  );
-}
-
-function section(output, type, label = null) {
-  return output.sections.find((item) => item.type === type && (label === null || item.label === label));
 }
 
 export const tests = [
@@ -347,7 +317,7 @@ export const tests = [
         expect(inference.summary.peakVramBytes).toBeGreaterThan(0);
       }
 
-      await navigate(browser, '/jobs');
+      await navigateInApp(browser, '/jobs');
       const jobEntry = await browser.$(`[data-testid="job-entry"][data-job-id="${jobId}"]`);
       await jobEntry.waitForDisplayed({
         timeout: 20_000,
@@ -391,13 +361,13 @@ export const tests = [
         && file.parentRun?.analysisRunId === analysisRunId
       ))).toBe(true);
 
-      const stats = section(persisted.output, 'stats');
+      const stats = outputSection(persisted.output, 'stats');
       const statsByLabel = Object.fromEntries(stats.items.map((item) => [item.label, item.value]));
       expect(statsByLabel).toMatchObject({ Cells: 4, Genes: 128, Dimensions: 256, Species: 'human' });
-      const preview = section(persisted.output, 'table', 'Embedding preview');
+      const preview = outputSection(persisted.output, 'table', 'Embedding preview');
       expect(preview.rows).toHaveLength(3);
       expect(preview.rows.flatMap((row) => row.slice(1)).every(Number.isFinite)).toBe(true);
-      const provenance = section(persisted.output, 'table', 'Provenance');
+      const provenance = outputSection(persisted.output, 'table', 'Provenance');
       const provenanceByField = Object.fromEntries(provenance.rows);
       expect(provenanceByField).toMatchObject({
         'AI Model': MODEL_NAME,
@@ -414,7 +384,7 @@ export const tests = [
         expect(size).toBeGreaterThan(0);
       }
 
-      await navigate(browser, `/results?run=${analysisRunId}`);
+      await navigateInApp(browser, `/results?run=${analysisRunId}`);
       const resultEntry = await browser.$(`[data-testid="result-run"][data-run-id="${analysisRunId}"]`);
       await resultEntry.waitForDisplayed({
         timeout: 20_000,

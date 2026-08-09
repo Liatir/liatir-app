@@ -122,6 +122,28 @@ describe('Runtime Box CI cost controls', () => {
       expect(readsError, specPath).toBeGreaterThan(-1);
       if (assertsDone > -1) expect(readsError, specPath).toBeLessThan(assertsDone);
     }
+
+    // A release refuses to certify a Linux publication without a receipt carrying a Job, an analysis
+    // run, Result artifacts and ten passing assertions. A spec that installs and embeds cannot
+    // produce one, which is how scGPT Linux CPU ended up promoted with no usable evidence. Both
+    // lifecycle specs must cover the same ground, and neither may keep a private copy of the
+    // navigation and section helpers that let the two drift apart in the first place.
+    for (const specPath of ['runtime-box-native', 'runtime-box-scgpt-native']) {
+      const spec = readFileSync(resolve(`tests/e2e/specs/${specPath}.e2e.mjs`), 'utf8');
+      for (const phase of [
+        'interruptedResume', 'install', 'realInference', 'jobs', 'results',
+        'provenance', 'replacement', 'rollback', 'removal', 'resultArtifactsSurvivedRemoval',
+      ]) {
+        expect(spec, `${specPath} lifecycle receipt lacks ${phase}`).toContain(`${phase}: 'passed'`);
+      }
+      expect(spec, specPath).toContain('lia_ai_runtime_box_rollback');
+      expect(spec, specPath).toContain('lia_ai_runtime_box_remove');
+      expect(spec, specPath).toContain('analysisRunId');
+      expect(spec, specPath).toContain("kind: 'liatir.runtime-box.product-lifecycle-evidence'");
+      expect(spec, specPath).toContain('navigateInApp(');
+      expect(spec, `${specPath} must not keep a private navigate helper`)
+        .not.toContain('async function navigate(');
+    }
     expect(runtimeBoxProductE2E).not.toContain('bytesDownloaded > 64 * 1024');
     // Path normalisation lives in the shared support helper now, so both specs get it from one
     // place, and the isolation assertion names the home the runner actually used rather than a
