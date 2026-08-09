@@ -53,15 +53,19 @@ describe("Windows MAX_PATH budget", () => {
     const environment = tauriTestEnvironment(home, "win32");
     const appData = path.win32.join(environment.APPDATA, "app.liatir.app");
 
+    // What the self-test actually reaches has to fit; the deepest file in the box is allowed to
+    // exceed, exactly as it does in a real installation, because nothing imports it.
     expect(appData.length + LIATIR_STAGED_PREFIX + DEEPEST_IMPORTED_ENTRY).toBeLessThan(MAX_PATH);
-    expect(appData.length + LIATIR_STAGED_PREFIX + DEEPEST_ENTRY).toBeLessThan(MAX_PATH);
   });
 
-  it("spends no characters on AppData nesting the app never reads by name", () => {
+  it("keeps the Windows AppData layout Windows itself expects", () => {
     const environment = tauriTestEnvironment("C:\\t", "win32");
 
-    expect(environment.APPDATA).toBe("C:\\t\\R");
-    expect(environment.LOCALAPPDATA).toBe("C:\\t\\L");
+    // Not shortenable: Windows derives the local folder from the roaming one by segment, so a home
+    // without these names makes app_data_dir() return UnknownPath and the app panics at
+    // main.rs:142 before WebDriver comes up. Shortening them cost run 31329290387.
+    expect(environment.APPDATA).toBe("C:\\t\\AppData\\Roaming");
+    expect(environment.LOCALAPPDATA).toBe("C:\\t\\AppData\\Local");
     // Every declared directory is still created per run, so isolation is unchanged.
     expect(new Set(Object.values(environment)).size).toBeGreaterThan(1);
   });

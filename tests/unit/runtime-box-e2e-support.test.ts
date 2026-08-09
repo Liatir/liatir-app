@@ -57,11 +57,11 @@ describe('Runtime Box product E2E support', () => {
     expect(tauriTestEnvironment('C:\\fixture-home', 'win32')).toMatchObject({
       HOME: 'C:\\fixture-home',
       USERPROFILE: 'C:\\fixture-home',
-      // Short names on purpose: a box installed under these has to fit inside Windows'
-      // 260-character MAX_PATH, and `AppData\Roaming` would spend fourteen of it for nothing — the
-      // app reads both only through the environment.
-      APPDATA: 'C:\\fixture-home\\R',
-      LOCALAPPDATA: 'C:\\fixture-home\\L',
+      // These exact names are load-bearing: Windows derives the local folder from the roaming one
+      // by segment, so shortening them makes app_data_dir() resolve to nothing and the app panic
+      // before startup. MAX_PATH budget is bought by keeping the home short, not these.
+      APPDATA: 'C:\\fixture-home\\AppData\\Roaming',
+      LOCALAPPDATA: 'C:\\fixture-home\\AppData\\Local',
     });
   });
 
@@ -73,14 +73,14 @@ describe('Runtime Box product E2E support', () => {
       (directory) => created.push(directory),
     );
 
-    expect(environment.APPDATA).toBe('C:\\fixture-home\\R');
+    expect(environment.APPDATA).toBe('C:\\fixture-home\\AppData\\Roaming');
     expect(created).toEqual([
       'C:\\fixture-home',
       'C:\\fixture-home\\.local\\share',
       'C:\\fixture-home\\.cache',
       'C:\\fixture-home\\.config',
-      'C:\\fixture-home\\R',
-      'C:\\fixture-home\\L',
+      'C:\\fixture-home\\AppData\\Roaming',
+      'C:\\fixture-home\\AppData\\Local',
     ]);
   });
 

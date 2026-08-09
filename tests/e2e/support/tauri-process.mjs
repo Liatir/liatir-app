@@ -11,15 +11,19 @@ export function tauriTestEnvironment(testHome, platform = process.platform) {
     XDG_CONFIG_HOME: paths.join(testHome, '.config'),
   };
   if (platform !== 'win32') return environment;
-  // `R` and `L` instead of `AppData\Roaming` and `AppData\Local`. The app reads both only through
-  // these variables, so the conventional names buy nothing here and cost fourteen characters of the
-  // 260-character MAX_PATH budget that the installed box's own tree has to fit inside. Isolation is
-  // unchanged: they are still per-run directories under the test home, and both are created.
+  // `AppData\Roaming` and `AppData\Local` exactly, even though fourteen characters of MAX_PATH
+  // budget would be welcome elsewhere. Windows Known Folder resolution does not simply read these
+  // variables: it derives the local folder from the roaming one by segment, so a home whose layout
+  // does not carry those names resolves to nothing. Shortening them to `R` and `L` made
+  // `app_data_dir()` return UnknownPath and the app panicked at `main.rs:142` before WebDriver came
+  // up — the same failure a29ee24 fixed, reintroduced from the other side (run 31329290387).
+  //
+  // The budget is bought by keeping the home itself short instead; see run-tauri-e2e.mjs.
   return {
     ...environment,
     USERPROFILE: testHome,
-    APPDATA: paths.join(testHome, 'R'),
-    LOCALAPPDATA: paths.join(testHome, 'L'),
+    APPDATA: paths.join(testHome, 'AppData', 'Roaming'),
+    LOCALAPPDATA: paths.join(testHome, 'AppData', 'Local'),
   };
 }
 
