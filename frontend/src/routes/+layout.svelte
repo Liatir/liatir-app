@@ -122,7 +122,7 @@
 <div style="{workspaceStore.isSandboxMode ? 'background-color: var(--color-sandbox-500);' : ''}">
 <div
         class="{workspaceStore.isSandboxMode
-            ? 'border 3xl:border-[1.5px] rounded-xl'
+            ? 'border-t-2 3xl:border-t-3'
             : ''} flex h-screen overflow-hidden border-sandbox-500 transition-[border-width] duration-[0.48s] ease-in-out relative"
         style="background-color: var(--color-bg);"
     >
