@@ -1363,13 +1363,35 @@ pub async fn lia_ai_runtime_box_install(
     // unique hidden name, so a half-extracted box is never mistaken for an installed one.
     //
     // Keep this name short. During the self-test the box's own interpreter loads deeply nested
-    // native libraries (e.g. `venv\Lib\site-packages\torch\lib\*.dll`) from inside staging, and the
-    // Windows DLL loader still enforces the 260-character MAX_PATH. The previous
-    // `.{runtime_id}.{uuid}.staging` name added ~90 characters and pushed those paths over the
-    // limit, failing the import with WinError 206. A short `.stg-{uuid}` name keeps the interpreter
-    // paths well under MAX_PATH; uniqueness still comes from the UUID.
-    let staging = runtime_parent.join(format!(".stg-{}", Uuid::new_v4()));
-    std::fs::create_dir_all(&staging).map_err(|error| error.to_string())?;
+    // modules and native libraries from inside staging, and Windows still enforces the
+    // 260-character MAX_PATH for anything that has not opted into long paths — the box's Python
+    // among them. Staging is pure overhead on top of the final path, so every character here is
+    // one the box's own tree cannot use.
+    //
+    // Measured against the published scGPT Windows box, whose deepest importable module is 115
+    // characters: `.stg-{uuid}` spent 42 and took the self-test to 267, over the limit, while the
+    // activated path sits at 225. An earlier `.{runtime_id}.{uuid}.staging` was worse still and
+    // failed with WinError 206.
+    //
+    // Eight hex characters are enough because `InstallGuard` already serialises installs of the
+    // same runtime; the retry below settles the rest without lengthening the name, and refuses an
+    // existing directory rather than reusing one whose contents are not ours.
+    let staging = {
+        let mut attempt = 0;
+        loop {
+            let candidate = runtime_parent.join(format!(
+                ".s-{}",
+                &Uuid::new_v4().simple().to_string()[..8]
+            ));
+            match std::fs::create_dir(&candidate) {
+                Ok(()) => break candidate,
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists && attempt < 8 => {
+                    attempt += 1;
+                }
+                Err(error) => return Err(error.to_string()),
+            }
+        }
+    };
     // Closure so every failure between here and activation funnels into one cleanup path below,
     // instead of repeating "delete staging" at each `?`.
     let install_result = (|| -> Result<RuntimeBoxInstallResult, String> {

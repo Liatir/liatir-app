@@ -6,6 +6,7 @@
  * the whole reason to write them is to look at them *after* a failure.
  */
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 const DEFAULT_TTL_DAYS = 7;
@@ -56,6 +57,19 @@ export function cleanupTestArtifacts(rootDir) {
     const entryPath = path.join(artifactsDir, stateDir);
     if (isExpired(entryPath, cutoffMs)) {
       fs.rmSync(entryPath, { force: true, recursive: true });
+    }
+  }
+
+  // The Windows E2E home lives in the system temp directory, not here: the checkout is too deep to
+  // leave the installed box room under MAX_PATH. It still has to be pruned, or a machine that runs
+  // the suite regularly keeps every past run's extracted box.
+  if (process.platform === 'win32') {
+    const temp = os.tmpdir();
+    for (const entry of fs.readdirSync(temp).filter((name) => /^lt-\d+$/.test(name))) {
+      const entryPath = path.join(temp, entry);
+      if (isExpired(entryPath, cutoffMs)) {
+        fs.rmSync(entryPath, { force: true, recursive: true });
+      }
     }
   }
 

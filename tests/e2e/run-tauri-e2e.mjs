@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { expect } from 'expect';
@@ -20,7 +21,16 @@ const appBinary = process.env.LIATIR_TAURI_APP
   ?? appBinaryCandidates.find((candidate) => fs.existsSync(candidate))
   ?? appBinaryCandidates[0];
 const artifactsDir = path.join(rootDir, 'tests', '.artifacts');
-const testHome = path.join(artifactsDir, 'home', `${Date.now()}-${process.pid}`);
+// Windows enforces the 260-character MAX_PATH for anything that has not opted into long paths — the
+// box's own Python among them — and a Runtime Box carries a deep tree: the published scGPT Windows
+// box's deepest importable module is 115 characters on its own. An isolated home inside the
+// checkout spends about eighty more before that tree even starts, which is what pushed the release
+// self-test over the limit and failed the import with a bare ModuleNotFoundError (run 31320714202).
+// Keep the Windows home short and outside the repository; every other platform keeps it beside the
+// rest of the artifacts, where the cleanup already prunes it.
+const testHome = process.platform === 'win32'
+  ? path.join(os.tmpdir(), `lt-${process.pid}`)
+  : path.join(artifactsDir, 'home', `${Date.now()}-${process.pid}`);
 const logDir = path.join(artifactsDir, 'tauri-logs');
 const screenshotDir = path.join(artifactsDir, 'screenshots');
 const baselineDir = path.join(rootDir, 'tests', 'e2e', '__snapshots__');

@@ -11,11 +11,15 @@ export function tauriTestEnvironment(testHome, platform = process.platform) {
     XDG_CONFIG_HOME: paths.join(testHome, '.config'),
   };
   if (platform !== 'win32') return environment;
+  // `R` and `L` instead of `AppData\Roaming` and `AppData\Local`. The app reads both only through
+  // these variables, so the conventional names buy nothing here and cost fourteen characters of the
+  // 260-character MAX_PATH budget that the installed box's own tree has to fit inside. Isolation is
+  // unchanged: they are still per-run directories under the test home, and both are created.
   return {
     ...environment,
     USERPROFILE: testHome,
-    APPDATA: paths.join(testHome, 'AppData', 'Roaming'),
-    LOCALAPPDATA: paths.join(testHome, 'AppData', 'Local'),
+    APPDATA: paths.join(testHome, 'R'),
+    LOCALAPPDATA: paths.join(testHome, 'L'),
   };
 }
 

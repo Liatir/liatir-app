@@ -323,7 +323,12 @@ export const tests = [
       if (CUDA_TARGET) {
         // The card itself is recorded, not asserted: CI runs this on whichever GPU cleared the
         // catalog's capability floors, which is a hosted Tesla T4 or the local RTX 4060 Ti.
-        expect(inference.summary).toMatchObject({ reportedCudaCompatibility: '12.4' });
+        // From the target under test, never a literal: this said '12.4' long after 12.4 was
+        // deleted and replaced by the 12.9 and 12.8 targets, so it failed run 31322545157 after a
+        // complete 7.8 GB install and a real CUDA inference had already passed.
+        expect(inference.summary).toMatchObject({
+          reportedCudaCompatibility: TARGET_CANDIDATES[0].target.cudaVersion,
+        });
         expect(inference.summary.gpuModel).toEqual(expect.any(String));
         expect(inference.summary.gpuModel.length).toBeGreaterThan(0);
         expect(inference.summary.computeCapability).toMatch(/^\d+\.\d+$/);
