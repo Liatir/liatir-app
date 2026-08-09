@@ -5260,9 +5260,9 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "scrollcase-consumer"
-version = "0.3.0"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d3f216a354e6ff30c0ed6a18e927678a819493bd3f0eb8a171d37c587cdae85"
+checksum = "be5beb61a3f1124ba40a6f790fb7a944cfb25a0e0673986351d89413f99adf2d"
 dependencies = [
  "base64 0.23.1",
  "ed25519-dalek 3.0.0",
