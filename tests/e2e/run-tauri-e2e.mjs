@@ -6,7 +6,7 @@ import { expect } from 'expect';
 import pixelmatch from 'pixelmatch';
 import { PNG } from 'pngjs';
 import { cleanupTestArtifacts } from '../support/artifact-cleanup.mjs';
-import { prepareTauriTestEnvironment } from './support/tauri-process.mjs';
+import { headlessWebKitEnvironment, prepareTauriTestEnvironment } from './support/tauri-process.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const appBinaryCandidates = process.platform === 'darwin'
@@ -100,6 +100,7 @@ function startTauriApp() {
     env: {
       ...process.env,
       ...tauriEnvironment,
+      ...headlessWebKitEnvironment(),
       LIATIR_TEST_MODE: '1',
       NODE_ENV: 'test',
       RUST_BACKTRACE: process.env.RUST_BACKTRACE ?? '1',

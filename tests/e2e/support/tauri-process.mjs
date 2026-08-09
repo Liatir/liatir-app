@@ -31,3 +31,28 @@ export function prepareTauriTestEnvironment(
   }
   return environment;
 }
+
+/**
+ * Keeps WebKitGTK off the GPU paths that do not exist under a headless X server.
+ *
+ * On Linux the suite runs inside `xvfb`, which offers no DRI device, so WebKitGTK's accelerated
+ * compositor and DMA-BUF renderer fail to initialise — visible as `failed to create dri2 screen`
+ * and `ZINK: failed to choose pdev`. It degrades quietly until the machine is under real load, and
+ * then the web process dies. Losing it destroys the `main` window, and `main.rs` lets the app exit
+ * once that window is gone, so the app disappears with status 0 and every later WebDriver call
+ * fails with a bare `fetch failed`.
+ *
+ * That is exactly how release run 31290534596 failed: it had already built, signed, validated and
+ * published the Geneformer CUDA box, and died while the product extracted the multi-gigabyte
+ * archive. Forcing the software path costs nothing here — these tests never assert on rendering.
+ *
+ * Both variables are honoured only by WebKitGTK, and each is left alone if the operator set it.
+ */
+export function headlessWebKitEnvironment() {
+  if (process.platform !== 'linux') return {};
+  return {
+    WEBKIT_DISABLE_COMPOSITING_MODE: process.env.WEBKIT_DISABLE_COMPOSITING_MODE ?? '1',
+    WEBKIT_DISABLE_DMABUF_RENDERER: process.env.WEBKIT_DISABLE_DMABUF_RENDERER ?? '1',
+  };
+}
+
