@@ -27,6 +27,25 @@ export function tauriTestEnvironment(testHome, platform = process.platform) {
   };
 }
 
+/** Normalises native paths for platform-independent containment assertions. */
+export function comparablePath(value) {
+  return String(value).replaceAll('\\', '/');
+}
+
+/**
+ * The isolated home the app under test is using, in comparable form.
+ *
+ * Specs assert that the app writes under this rather than the developer's real profile. They used
+ * to spell it `tests/.artifacts/home`, which stopped being true the moment the Windows home moved
+ * into the system temp directory to stay inside MAX_PATH — and cost run 31332018306. Reading it
+ * back from the runner keeps the assertion about isolation instead of about a location.
+ */
+export function isolatedTestHome() {
+  const home = process.env.LIATIR_E2E_TEST_HOME;
+  if (!home) throw new Error('LIATIR_E2E_TEST_HOME is not set; the E2E runner must publish it.');
+  return comparablePath(home);
+}
+
 /** Creates every directory declared by the isolated native-app environment. */
 export function prepareTauriTestEnvironment(
   testHome,

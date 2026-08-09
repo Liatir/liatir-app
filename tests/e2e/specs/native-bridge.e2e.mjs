@@ -8,11 +8,7 @@ import {
   openSandboxWorkspace,
   waitForLiatirBridge,
 } from '../support/liatir-app.mjs';
-
-/** Normalizes native paths only for platform-independent containment assertions. */
-function comparablePath(value) {
-  return String(value).replaceAll('\\', '/');
-}
+import { comparablePath, isolatedTestHome } from '../support/tauri-process.mjs';
 
 export const tests = [
   {
@@ -32,8 +28,8 @@ export const tests = [
       });
 
       expect(bridgeState.hasLiatir).toBe(true);
-      expect(comparablePath(bridgeState.appPath)).toContain('tests/.artifacts/home');
-      expect(comparablePath(bridgeState.dataPath)).toContain('tests/.artifacts/home');
+      expect(comparablePath(bridgeState.appPath)).toContain(isolatedTestHome());
+      expect(comparablePath(bridgeState.dataPath)).toContain(isolatedTestHome());
     },
   },
   {

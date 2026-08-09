@@ -42,6 +42,7 @@ describe('Runtime Box CI cost controls', () => {
     const releaseWorkflow = readFileSync(resolve('.github/workflows/runtime-box-release.yml'), 'utf8');
     const windowsProductSmoke = readFileSync(resolve('.github/workflows/runtime-box-windows-product-smoke.yml'), 'utf8');
     const nativeBridgeE2E = readFileSync(resolve('tests/e2e/specs/native-bridge.e2e.mjs'), 'utf8');
+    const tauriProcessSupport = readFileSync(resolve('tests/e2e/support/tauri-process.mjs'), 'utf8');
     // Every job that runs a Runtime Box script on a bare ephemeral runner must install
     // dependencies first: the CI entry point imports the published Scrollcase contract, so
     // without node_modules it cannot start at all. Release run 31225652966 died here, on the
@@ -122,7 +123,11 @@ describe('Runtime Box CI cost controls', () => {
       if (assertsDone > -1) expect(readsError, specPath).toBeLessThan(assertsDone);
     }
     expect(runtimeBoxProductE2E).not.toContain('bytesDownloaded > 64 * 1024');
-    expect(runtimeBoxProductE2E).toContain("replaceAll('\\\\', '/')");
+    // Path normalisation lives in the shared support helper now, so both specs get it from one
+    // place, and the isolation assertion names the home the runner actually used rather than a
+    // literal that stopped being true when the Windows home moved out of the checkout.
+    expect(runtimeBoxProductE2E).toContain('isolatedTestHome()');
+    expect(tauriProcessSupport).toContain("replaceAll('\\\\', '/')");
     expect(runtimeBoxProductE2E).toContain("path.join(runtimeDir, 'model-cache'");
     expect(tauriMain).not.toContain('app.deep_link().register_all()?');
     expect(tauriMain).toContain('[deep-link] Failed to register desktop deep links');
@@ -143,7 +148,7 @@ describe('Runtime Box CI cost controls', () => {
     expect(windowsProductSmoke).toContain('tests/e2e/specs/native-bridge.e2e.mjs');
     expect(windowsProductSmoke).not.toContain('tests/e2e/specs/runtime-box-native.e2e.mjs');
     expect(windowsProductSmoke).toContain('.runtime-box-ci/windows-product-startup-e2e.json');
-    expect(nativeBridgeE2E).toContain("replaceAll('\\\\', '/')");
+    expect(nativeBridgeE2E).toContain('isolatedTestHome()');
   });
 
   it('persists native startup failures in the compact E2E report', () => {

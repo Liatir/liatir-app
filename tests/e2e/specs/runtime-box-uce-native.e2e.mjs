@@ -15,6 +15,7 @@ import {
   runtimeBoxInstallStatus,
   startRuntimeBoxInstall,
 } from '../support/runtime-box.mjs';
+import { comparablePath, isolatedTestHome } from '../support/tauri-process.mjs';
 
 const BOX_ID = 'uce-4layer';
 const MODEL_ID = 'snap-stanford-uce-4layer';
@@ -116,8 +117,8 @@ export const tests = [
         appPath: await window.Liatir.invoke('lia_app_path'),
         dataPath: await window.Liatir.desktop.fs.data.path(),
       }));
-      expect(storage.appPath).toContain('tests/.artifacts/home');
-      expect(storage.dataPath).toContain('tests/.artifacts/home');
+      expect(comparablePath(storage.appPath)).toContain(isolatedTestHome());
+      expect(comparablePath(storage.dataPath)).toContain(isolatedTestHome());
 
       const downloadId = `runtime-box-uce-${Date.now()}`;
       let installed = null;

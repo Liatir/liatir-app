@@ -46,6 +46,9 @@ for (const dir of [logDir, screenshotDir, baselineDir, diffDir]) {
   fs.mkdirSync(dir, { recursive: true });
 }
 const tauriEnvironment = prepareTauriTestEnvironment(testHome);
+// Published to the specs, which assert the app writes under this isolated home rather than the
+// developer's real profile. It is no longer a fixed path they can spell out.
+process.env.LIATIR_E2E_TEST_HOME = testHome;
 
 function slugify(value) {
   return value
