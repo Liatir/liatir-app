@@ -5,7 +5,7 @@
  */
 import {
   activateCleanSandbox,
-  macosArm64MetalRuntimeBoxTarget,
+  runtimeBoxTargetForNativeTest,
   readEmbeddedPythonScript,
   runtimeBoxInstallError,
   runtimeBoxInstallResult,
@@ -16,6 +16,9 @@ import {
 const BOX_ID = 'scgpt-whole-human';
 const MODEL_ID = 'bowang-scgpt-whole-human';
 const RUNTIME_ID = 'single-cell-foundation-scgpt-whole-human';
+const TARGET_ID = process.env.LIATIR_RUNTIME_BOX_TARGET_ID ?? 'macos-aarch64-metal';
+const REGISTRY_BASE_URL = process.env.LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL
+  ?? 'https://models.liatir.com/v1';
 
 const CREATE_FIXTURE_SCRIPT = String.raw`
 import json
@@ -65,8 +68,8 @@ export const tests = [
         boxId: BOX_ID,
         modelId: MODEL_ID,
         channel: 'beta',
-        registryBaseUrl: 'https://models.liatir.com/v1',
-        targetCandidates: macosArm64MetalRuntimeBoxTarget(16),
+        registryBaseUrl: REGISTRY_BASE_URL,
+        targetCandidates: runtimeBoxTargetForNativeTest(MODEL_ID, TARGET_ID),
         downloadId,
       });
       await browser.waitUntil(
@@ -76,7 +79,7 @@ export const tests = [
       expect(await runtimeBoxInstallStatus(browser, downloadId)).toBe('done');
       expect(await runtimeBoxInstallError(browser, downloadId)).toBe(null);
       const installed = await runtimeBoxInstallResult(browser, downloadId);
-      expect(installed.version).toBe('0.2.5-beta.2');
+      expect(installed.version).toBe(process.env.LIATIR_RUNTIME_BOX_EXPECTED_VERSION ?? '0.2.5-beta.2');
       expect(installed.rollbackAvailable).toBe(false);
 
       const fixture = await runPython(browser, CREATE_FIXTURE_SCRIPT, {

@@ -7,7 +7,7 @@
  */
 import {
   activateCleanSandbox,
-  macosArm64MetalRuntimeBoxTarget,
+  runtimeBoxTargetForNativeTest,
   readEmbeddedPythonScript,
   runtimeBoxInstallError,
   runtimeBoxInstallProgress,
@@ -21,8 +21,10 @@ const MODEL_ID = 'snap-stanford-uce-4layer';
 const MODEL_NAME = 'UCE 4-layer';
 const RUNTIME_ID = 'single-cell-foundation-uce';
 const TOOL_ID = 'ai-single-cell-embedding';
-const REGISTRY_BASE_URL = 'https://models.liatir.com/v1';
-const VERSION = '1.0.0-beta.2';
+const TARGET_ID = process.env.LIATIR_RUNTIME_BOX_TARGET_ID ?? 'macos-aarch64-metal';
+const REGISTRY_BASE_URL = process.env.LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL
+  ?? 'https://models.liatir.com/v1';
+const VERSION = process.env.LIATIR_RUNTIME_BOX_EXPECTED_VERSION ?? '1.0.0-beta.2';
 const ARCHIVE_SIZE_BYTES = 9_899_283_940;
 const INSTALL_TIMEOUT_MS = 45 * 60 * 1000;
 const INFERENCE_TIMEOUT_MS = 30 * 60 * 1000;
@@ -127,7 +129,7 @@ export const tests = [
           modelId: MODEL_ID,
           channel: 'beta',
           registryBaseUrl: REGISTRY_BASE_URL,
-          targetCandidates: macosArm64MetalRuntimeBoxTarget(16),
+          targetCandidates: runtimeBoxTargetForNativeTest(MODEL_ID, TARGET_ID),
           downloadId,
         });
 
