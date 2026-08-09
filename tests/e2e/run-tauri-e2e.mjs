@@ -21,15 +21,21 @@ const appBinary = process.env.LIATIR_TAURI_APP
   ?? appBinaryCandidates.find((candidate) => fs.existsSync(candidate))
   ?? appBinaryCandidates[0];
 const artifactsDir = path.join(rootDir, 'tests', '.artifacts');
-// Windows enforces the 260-character MAX_PATH for anything that has not opted into long paths — the
-// box's own Python among them — and a Runtime Box carries a deep tree: the published scGPT Windows
-// box's deepest importable module is 115 characters on its own. An isolated home inside the
-// checkout spends about eighty more before that tree even starts, which is what pushed the release
-// self-test over the limit and failed the import with a bare ModuleNotFoundError (run 31320714202).
-// Keep the Windows home short and outside the repository; every other platform keeps it beside the
-// rest of the artifacts, where the cleanup already prunes it.
+// Windows enforces the 260-character MAX_PATH for anything that has not opted into long paths, and
+// the box's own Python has not. A Runtime Box carries a deep tree — transformers alone ships
+// `utils/dummy_essentia_and_librosa_and_pretty_midi_and_scipy_and_torch_objects.py`, 115 characters
+// from the box root — and the app adds 84 more for its data directory and staging. That leaves
+// about sixty for the home, which is why this sits at the root of the temp drive rather than under
+// it: `%TEMP%` alone is 33 characters, and the AppData nesting Windows requires costs 31 more.
+//
+// The isolated home has been the whole budget twice. Inside the checkout it failed the scGPT
+// Windows self-test with a bare ModuleNotFoundError (run 31320714202); under `%TEMP%` it left
+// transformers unimportable and failed Geneformer Windows CUDA (run 31336647075), because Rust
+// extracts through verbatim paths and writes the file happily while Python cannot open it.
+//
+// Every other platform keeps the home beside the rest of the artifacts, where cleanup prunes it.
 const testHome = process.platform === 'win32'
-  ? path.join(os.tmpdir(), `lt-${process.pid}`)
+  ? path.join(path.parse(os.tmpdir()).root, `lt-${process.pid}`)
   : path.join(artifactsDir, 'home', `${Date.now()}-${process.pid}`);
 const logDir = path.join(artifactsDir, 'tauri-logs');
 const screenshotDir = path.join(artifactsDir, 'screenshots');

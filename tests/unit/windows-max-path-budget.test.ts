@@ -33,9 +33,15 @@ const LIATIR_STAGED_PREFIX = [
   "",
 ].join(SEP).length;
 
-/** Measured from the published box: the deepest module an import of torch actually reaches. */
+/**
+ * Measured from the published boxes: the deepest file an import actually reaches.
+ *
+ * `transformers/__init__.py` imports this one whenever an optional dependency is missing, which is
+ * always here, so a box whose copy Python cannot open fails with an ImportError that names the
+ * dummy module and nothing else. Geneformer Windows CUDA run 31336647075 ended exactly there.
+ */
 const DEEPEST_IMPORTED_ENTRY =
-  "venv/Lib/site-packages/torch/_strobelight/compile_time_profiler.py".length;
+  "venv/Lib/site-packages/transformers/utils/dummy_essentia_and_librosa_and_pretty_midi_and_scipy_and_torch_objects.py".length;
 /** Measured from the same box: the deepest importable file it contains at all. */
 const DEEPEST_ENTRY =
   "venv/Lib/site-packages/torch/ao/pruning/_experimental/data_sparsifier/lightning/callbacks/_data_sparstity_utils.py".length;
@@ -49,12 +55,14 @@ describe("Windows MAX_PATH budget", () => {
   });
 
   it("keeps the E2E home short enough to install the same box", () => {
-    const home = path.win32.join("C:\\Users\\loren\\AppData\\Local\\Temp", "lt-12345");
+    // The root of the temp drive, as the runner picks it. Under `%TEMP%` instead this lands at 273
+    // and transformers becomes unimportable; that is not a margin worth shaving.
+    const home = path.win32.join("C:\\", "lt-12345");
     const environment = tauriTestEnvironment(home, "win32");
     const appData = path.win32.join(environment.APPDATA, "app.liatir.app");
 
-    // What the self-test actually reaches has to fit; the deepest file in the box is allowed to
-    // exceed, exactly as it does in a real installation, because nothing imports it.
+    // What an import actually reaches has to fit. The deepest file in the box may still exceed,
+    // exactly as it does in a real installation, because nothing imports it.
     expect(appData.length + LIATIR_STAGED_PREFIX + DEEPEST_IMPORTED_ENTRY).toBeLessThan(MAX_PATH);
   });
 
@@ -74,10 +82,10 @@ describe("Windows MAX_PATH budget", () => {
     const runner = readFileSync(new URL("../e2e/run-tauri-e2e.mjs", import.meta.url), "utf8");
     const cleanup = readFileSync(new URL("../support/artifact-cleanup.mjs", import.meta.url), "utf8");
 
-    expect(runner).toContain("os.tmpdir()");
-    expect(runner).toMatch(/process\.platform === 'win32'\s*\?\s*path\.join\(os\.tmpdir\(\)/);
+    // The drive root, not `%TEMP%` under it: those 33 characters are budget the box needs.
+    expect(runner).toMatch(/path\.join\(path\.parse\(os\.tmpdir\(\)\)\.root, `lt-\$\{process\.pid\}`\)/);
     // Moving it out of tests/.artifacts takes it out of that pruning, so cleanup must follow it.
-    expect(cleanup).toContain("os.tmpdir()");
+    expect(cleanup).toContain("path.parse(os.tmpdir()).root");
     expect(cleanup).toMatch(/lt-/);
   });
 

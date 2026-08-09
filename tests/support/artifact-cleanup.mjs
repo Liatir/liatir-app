@@ -60,13 +60,13 @@ export function cleanupTestArtifacts(rootDir) {
     }
   }
 
-  // The Windows E2E home lives in the system temp directory, not here: the checkout is too deep to
-  // leave the installed box room under MAX_PATH. It still has to be pruned, or a machine that runs
-  // the suite regularly keeps every past run's extracted box.
+  // The Windows E2E home lives at the root of the temp drive, not here: neither the checkout nor
+  // `%TEMP%` leaves the installed box room under MAX_PATH. It still has to be pruned, or a machine
+  // that runs the suite regularly keeps every past run's extracted box — several gigabytes each.
   if (process.platform === 'win32') {
-    const temp = os.tmpdir();
-    for (const entry of fs.readdirSync(temp).filter((name) => /^lt-\d+$/.test(name))) {
-      const entryPath = path.join(temp, entry);
+    const driveRoot = path.parse(os.tmpdir()).root;
+    for (const entry of fs.readdirSync(driveRoot).filter((name) => /^lt-\d+$/.test(name))) {
+      const entryPath = path.join(driveRoot, entry);
       if (isExpired(entryPath, cutoffMs)) {
         fs.rmSync(entryPath, { force: true, recursive: true });
       }
