@@ -290,7 +290,23 @@ export const tests = [
         async (id) => window.Liatir.invoke('lia_jobs_status', { jobId: id }),
         jobId,
       );
-      expect(job.status.type).toBe('done');
+      // The job's own output before the status, for the same reason the install error is read
+      // first: `expected "done", received "failed"` names nothing, the runner is ephemeral, and a
+      // CUDA job that fails only on one platform is exactly the case worth reading. Run
+      // 31333974762 ended here with no account of why.
+      if (job.status.type !== 'done') {
+        const output = await browser.execute(
+          async (id) => window.Liatir.invoke('lia_jobs_get_output', { jobId: id, since: 0 }),
+          jobId,
+        );
+        const tail = (lines) => (lines ?? []).filter(Boolean).join('\n').slice(-4000);
+        throw new Error(
+          `Real Geneformer inference finished as ${job.status.type}`
+            + ` (exit code ${job.status.exitCode ?? 'none'})`
+            + `\nstderr:\n${tail(output.stderr) || '<empty>'}`
+            + `\nstdout:\n${tail(output.stdout) || '<empty>'}`,
+        );
+      }
       expect(job.kind).toBe('ai-python');
       expect(job.workspaceId).toBe('__test__');
       expect(job.metadata).toMatchObject({
