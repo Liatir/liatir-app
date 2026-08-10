@@ -1,5 +1,88 @@
 # Current project status
 
+## The re-release is complete: all nine targets are published (2026-08-10)
+
+Every Runtime Box target is published and promoted on the `beta` channel, signed
+by `liatir-runtime-box-kms-2026` under the v2 envelope. Verified against the public
+registry rather than inferred from run logs — nine of nine channels serve the
+expected version:
+
+| Box | Target | Version | Release run |
+|---|---|---|---|
+| geneformer-v1-10m | macos-aarch64-metal | 1.0.0-beta.2 | `31229152183` |
+| geneformer-v1-10m | linux-x86_64-cuda12.9 | 1.0.0-beta.2 | `31325208258` |
+| geneformer-v1-10m | windows-x86_64-cuda12.8 | 1.0.0-beta.2 | `31339302550` |
+| scgpt-whole-human | macos-aarch64-metal | 0.2.5-beta.2 | `31228656398` |
+| scgpt-whole-human | linux-x86_64-cpu | 0.2.5-beta.2 | `31347244733` |
+| scgpt-whole-human | windows-x86_64-cpu | 0.2.5-beta.2 | `31348613035` |
+| scgpt-whole-human | linux-x86_64-cuda12.9 | 0.2.5-beta.2 | `31350903591` |
+| scgpt-whole-human | windows-x86_64-cuda12.8 | 0.2.5-beta.2 | `31354595144` |
+| uce-4layer | macos-aarch64-metal | 1.0.0-beta.2 | `31230276512` |
+
+Each carries a reviewed evidence record under `runtime-boxes/evidence/`, and every
+Linux and Windows target's receipt covers the complete product lifecycle: ten
+assertions — interrupted resume, install, real inference, Jobs, Results,
+provenance, replacement, rollback, removal, and Result artifacts outliving the
+runtime — all passing. `liatir-core` lists every published target, so the installer
+offers them.
+
+**Still outstanding: the two revocations.** `geneformer-v1-10m 1.0.0-beta.1` and
+`scgpt-whole-human 0.2.5-beta.1` are superseded but not withdrawn. Two things make
+this a maintainer action rather than a CI one, and both are recorded here because
+neither is obvious from the commands:
+
+1. **Promoting the second revocation erases the first.** `revoke` writes a document
+   holding one entry and overwrites `.runtime-box-dist/runtime-box-revocations.json`;
+   the Worker `put`s that document at `control/revocations.json` whole, with no
+   merge. Running the documented revoke/promote pair once per model therefore leaves
+   only the second revocation live and silently restores the first box. The contract
+   allows 1–100 entries per document, so the correct end state is one signed document
+   carrying both — which the CLI cannot currently produce.
+2. **There is no revocation workflow.** `revoke` signs through the private Cloud Run
+   signer, which needs an audience-bound Google identity token, and `promote` needs
+   `LIATIR_RUNTIME_BOX_ADMIN_TOKEN`. Both live in the `runtime-box-production`
+   environment and neither is available outside CI, so the revocation currently
+   depends on a maintainer workstation holding production credentials.
+
+## What the re-release cost, and why
+
+Seventeen defects stood between a validated matrix and a published one. Not one was
+a fault in a Runtime Box or in the product's science: every one was a path that had
+fallen behind the repository and had not been executed since. The pattern is worth
+keeping, because it will recur at the next migration.
+
+- **Deployed services outlive their source.** The Cloud Run signer's smoke payload
+  still declared schema v1 after the v2 cutover, so every deployment ended red; the
+  Registry Worker itself had never been redeployed since `bc99ea3`, and rejected
+  every v2 signed document with `invalid_signed_document`. Neither was detectable
+  from the repository.
+- **The release workflow drifted behind the validation workflow.** It installed no
+  pixi, resolved the archive under the pre-Scrollcase stem, promoted a channel
+  document from a path the builder no longer writes, and installed a gcloud CLI it
+  never calls — which broke self-hosted Windows outright. Validation exercised all of
+  this; release had not run since the migration.
+- **Generated files were edited instead of their templates.** `scrollcase-consumer`
+  was added to `src-tauri/Cargo.toml`, which every `*conf` script regenerates from
+  `conf-templates/`, so the dependency vanished at the first real build and took
+  `npm run dev` and `npm run build` with it.
+- **Three specs each kept a private copy of the same helpers and drifted apart.**
+  Two had been unloadable for three weeks. scGPT's covered install plus one
+  embedding, which the evidence contract correctly refuses for a Linux publication —
+  so a box could be promoted with no record the product could use it.
+- **Windows MAX_PATH is a budget, not an edge case.** A box is a packaged conda
+  environment: transformers ships a 115-character module path on its own, and the
+  app's data directory and staging add 84. Rust extracts through verbatim paths and
+  writes those files happily; the box's Python cannot open them. A real install has
+  room, with about two characters to spare for a long user name — see the standing
+  constraint below.
+- **Assertions that name a literal outlive what they name.** A hardcoded CUDA `12.4`
+  survived the 12.9/12.8 migration and failed a release after a complete 7.8 GB
+  install and a real CUDA inference had already passed.
+- **A failure that reports only its shape costs a whole run.** Three separate
+  failures — an install error, an install status, a job status — were asserted before
+  the app's own account of them was read, on an ephemeral runner that takes the logs
+  with it. Every one of them had to be re-run purely to learn the cause.
+
 Last updated: 2026-08-07 (the Runtime Box builder extraction is complete:
 Scrollcase is an independent Apache-2.0 project outside this repository.
 Liatir now pins exact public `scrollcase@0.8.0` — raised from `0.4.11` to
@@ -1047,3 +1130,16 @@ first).
   approval.
 - Keep user-owned roadmap edits out of technical commits.
 - Update this file and the Runtime Box ledger whenever a gate changes state.
+- **Windows path length is a shared budget, and the product owns most of it.** The
+  app spends 84 characters between the app data directory and the box's own tree
+  (`.liatir\.main\data\ai-runtimes\<runtime-id>` plus staging), and a packaged conda
+  environment brings paths over 110 more. A real install of the largest box reaches
+  245 characters for a five-character user name and 258 for an eighteen-character
+  one, against Windows' 260 limit for anything not long-path aware — which includes
+  the box's Python. Shortening that prefix would return thirty characters, but every
+  installed box already lives there, so it is a migration and not a cleanup. Do not
+  answer a MAX_PATH failure by enabling long paths on a machine: that fixes one host
+  and no user.
+- **Never assert the shape of a failure before reading its cause.** Install status,
+  job status and install errors are all recorded by the app; on an ephemeral runner
+  they disappear with the job. Read the error, then assert.
