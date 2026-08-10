@@ -63,6 +63,11 @@ function publishedScgptTargets(): readonly LiatirRuntimeBoxTargetCandidate[] {
 			target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
 			hostEnvironments: ['native'],
 			minRamGb: 16
+		},
+		{
+			target: { platform: 'windows', arch: 'x86_64', accelerator: 'cpu' },
+			hostEnvironments: ['native'],
+			minRamGb: 16
 		}
 	];
 }
@@ -139,10 +144,10 @@ export const RUNTIME_BOX_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			},
 			runtimePackages: SCGPT_WHOLE_HUMAN_RUNTIME_PACKAGES,
 			hostRequirements: {
-				os: ['macos', 'linux'],
+				os: ['macos', 'linux', 'windows'],
 				arch: ['aarch64', 'x86_64'],
 				reason:
-					'scGPT ships as a signed Runtime Box for Apple silicon Macs and for Linux x86_64 on CPU. The Windows and NVIDIA targets are built but not yet published.'
+					'scGPT ships as a signed Runtime Box for Apple silicon Macs and for Linux and Windows x86_64 on CPU. The NVIDIA targets are built but not yet published.'
 			}
 		},
 		documentation: {

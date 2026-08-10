@@ -34,6 +34,11 @@ const publishedScgptTargets = () => [
     hostEnvironments: ['native'],
     minRamGb: 16,
   },
+  {
+    target: { platform: 'windows', arch: 'x86_64', accelerator: 'cpu' },
+    hostEnvironments: ['native'],
+    minRamGb: 16,
+  },
 ];
 const publishedGeneformerTargets = () => [
   ...publishedMacosArm64MetalTargets(8),
@@ -142,7 +147,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
       expect(file.sha256, `${file.relativePath} missing SHA-256`).toMatch(/^[a-f0-9]{64}$/);
     }
     expect(model?.install?.hostRequirements).toMatchObject({
-      os: ['macos', 'linux'],
+      os: ['macos', 'linux', 'windows'],
       arch: ['aarch64', 'x86_64'],
     });
     expect(spec?.runtimeFamily).toBe('single-cell-foundation-scgpt');
