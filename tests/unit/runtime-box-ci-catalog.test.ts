@@ -89,7 +89,7 @@ describe('Runtime Box CI catalog', () => {
     );
     expect(resolved.target).toMatchObject({
       recipeId: 'scgpt-whole-human-linux-x86_64-cuda12.9',
-      status: 'native-lifecycle-validated',
+      status: 'published',
       timeoutMinutes: 120,
       gpuRequired: true,
       dependencyLockSha256: '3bc87da78d23f009d4f654f3da734f7ca226489f700f9ad5e355163b4a729194',

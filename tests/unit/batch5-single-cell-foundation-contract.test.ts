@@ -39,6 +39,12 @@ const publishedScgptTargets = () => [
     hostEnvironments: ['native'],
     minRamGb: 16,
   },
+  {
+    target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.9' },
+    hostEnvironments: ['native'],
+    minRamGb: 16,
+    minNvidiaDriverVersion: '525.60.13',
+  },
 ];
 const publishedGeneformerTargets = () => [
   ...publishedMacosArm64MetalTargets(8),
