@@ -11,6 +11,7 @@ SIGNER_RUNTIME_SERVICE_ACCOUNT="${LIATIR_SIGNER_SERVICE_ACCOUNT:-runtime-box-sig
 POOL_ID="${LIATIR_WIF_POOL_ID:-liatir-github-actions}"
 RELEASE_PROVIDER_ID="${LIATIR_RELEASE_PROVIDER_ID:-runtime-box-production}"
 SIGNER_PROVIDER_ID="${LIATIR_SIGNER_PROVIDER_ID:-runtime-box-signer-admin}"
+REVOCATION_PROVIDER_ID="${LIATIR_REVOCATION_PROVIDER_ID:-runtime-box-revocation}"
 RELEASE_SERVICE_ACCOUNT_ID="${LIATIR_RELEASE_SERVICE_ACCOUNT_ID:-runtime-box-release-ci}"
 SIGNER_SERVICE_ACCOUNT_ID="${LIATIR_SIGNER_ADMIN_SERVICE_ACCOUNT_ID:-runtime-box-signer-deploy-ci}"
 PRODUCTION_ENVIRONMENT="runtime-box-production"
@@ -219,6 +220,15 @@ ensure_provider "$RELEASE_PROVIDER_ID" "Runtime Box production releases" \
   "$PRODUCTION_ENVIRONMENT" "runtime-box-release.yml"
 ensure_provider "$SIGNER_PROVIDER_ID" "Runtime Box signer deployments" \
   "$SIGNER_ENVIRONMENT" "runtime-box-signer-deploy.yml"
+# Revocation withdraws a published box, so it signs with the same production key and runs in the
+# same Environment as a release — but it gets its own provider rather than sharing the release one.
+# Each condition pins a single exact `workflow_ref`, which is what stops a token minted for one
+# workflow from being usable by another; widening the release condition to name a second workflow
+# would trade that guarantee for one fewer resource. No extra IAM follows from this: the principal
+# set is keyed on `attribute.environment`, so this provider resolves to the release service account
+# that already holds Cloud Run Invoker on the signer.
+ensure_provider "$REVOCATION_PROVIDER_ID" "Runtime Box revocations" \
+  "$PRODUCTION_ENVIRONMENT" "runtime-box-revoke.yml"
 
 ensure_service_account "$RELEASE_SERVICE_ACCOUNT_ID" "Runtime Box release CI"
 ensure_service_account "$SIGNER_SERVICE_ACCOUNT_ID" "Runtime Box signer deployment CI"
@@ -266,11 +276,14 @@ RELEASE_PROVIDER="$(gcloud iam workload-identity-pools providers describe "$RELE
   --workload-identity-pool "$POOL_ID" --location global --project "$PROJECT_ID" --format='value(name)')"
 SIGNER_PROVIDER="$(gcloud iam workload-identity-pools providers describe "$SIGNER_PROVIDER_ID" \
   --workload-identity-pool "$POOL_ID" --location global --project "$PROJECT_ID" --format='value(name)')"
+REVOCATION_PROVIDER="$(gcloud iam workload-identity-pools providers describe "$REVOCATION_PROVIDER_ID" \
+  --workload-identity-pool "$POOL_ID" --location global --project "$PROJECT_ID" --format='value(name)')"
 
 set_environment_variable "$PRODUCTION_ENVIRONMENT" GCP_PROJECT_ID "$PROJECT_ID"
 set_environment_variable "$PRODUCTION_ENVIRONMENT" GCP_REGION "$REGION"
 set_environment_variable "$PRODUCTION_ENVIRONMENT" LIATIR_RUNTIME_BOX_SIGNER_URL "$SIGNER_URL"
 set_environment_variable "$PRODUCTION_ENVIRONMENT" GCP_WORKLOAD_IDENTITY_PROVIDER "$RELEASE_PROVIDER"
+set_environment_variable "$PRODUCTION_ENVIRONMENT" GCP_REVOCATION_WORKLOAD_IDENTITY_PROVIDER "$REVOCATION_PROVIDER"
 set_environment_variable "$PRODUCTION_ENVIRONMENT" GCP_RELEASE_SERVICE_ACCOUNT "$RELEASE_SERVICE_ACCOUNT"
 set_environment_variable "$PRODUCTION_ENVIRONMENT" LIATIR_RUNTIME_BOX_REGISTRY https://models.liatir.com
 set_environment_variable "$PRODUCTION_ENVIRONMENT" LIATIR_RUNTIME_BOX_BUCKET liatir-storage

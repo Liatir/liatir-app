@@ -52,8 +52,24 @@ been removed in the repository, and neither was obvious from the commands.
    summary before anything is signed, and a final check that reads
    `/v1/revocations` back from the public registry and fails unless it serves every
    requested entry. It shares the `runtime-box-production` concurrency group with the
-   release workflow, since both mutate the same control objects. **It has not been
-   run yet** — dispatch it from `main` with the plan below and `confirm: REVOKE`.
+   release workflow, since both mutate the same control objects.
+3. **A protected workflow is inert until its own WIF provider exists.** The first
+   dispatch (run `31378512709`) validated the plan, then died at the auth step with
+   `unauthorized_client: The given credential is rejected by the attribute condition`.
+   Every provider condition in `configure-runtime-box-ci.sh` pins one exact
+   `workflow_ref` — that is what stops a token minted for one workflow being usable by
+   another — so `runtime-box-production` accepts the release workflow and nothing else.
+   The script now provisions a third provider, `runtime-box-revocation`, under the same
+   Environment, and exports it as `GCP_REVOCATION_WORKLOAD_IDENTITY_PROVIDER`. No extra
+   IAM follows: the principal set is keyed on `attribute.environment`, so the provider
+   resolves to the release service account, which already holds Cloud Run Invoker on the
+   signer. `tests/unit/runtime-box-ci-identity.test.ts` now fails if a workflow
+   authenticates to Google without a provider naming it.
+
+**Next step, in order.** Run `scripts/configure-runtime-box-ci.sh` once — it is
+idempotent, derives the repository ID and project number itself, and needs `gcloud`
+plus `gh` with admin on `liatir-release-security`. Then dispatch **Runtime Box
+revocation** from `main` with `confirm: REVOKE` and the plan below.
 
 ```json
 [

@@ -39,14 +39,23 @@ repository moves to a plan that supports them for private repositories.
 
 ## Google Workload Identity Federation
 
-Project `liatir-release-security` contains pool `liatir-github-actions` with two providers:
+Project `liatir-release-security` contains pool `liatir-github-actions` with three providers:
 
 - `runtime-box-production` accepts only the release workflow on `main`, using the production
   Environment and `workflow_dispatch` event;
 - `runtime-box-signer-admin` accepts only the signer deployment workflow under the equivalent
-  signer-admin constraints.
+  signer-admin constraints;
+- `runtime-box-revocation` accepts only the revocation workflow, under the same production
+  Environment constraints as the release provider.
 
-Both providers also bind the immutable GitHub repository ID. The release service account has only
+Each condition pins one exact `workflow_ref`. That is what stops a token minted for one workflow
+being usable by another, so a new protected workflow gets a new provider rather than an extra
+`workflow_ref` bolted onto an existing condition — and dispatching a protected workflow before its
+provider exists fails closed, with `unauthorized_client: rejected by the attribute condition`.
+Because the principal set is keyed on `attribute.environment`, a provider in an existing
+Environment inherits that Environment's service account and needs no further IAM.
+
+All providers also bind the immutable GitHub repository ID. The release service account has only
 Cloud Run Invoker on the private signer. The signer deployment service account has Cloud Run Source
 Developer, Service Usage Consumer, Service Account User on the signer runtime identity, and Invoker
 for the post-deploy smoke test. Neither GitHub service account has project-level or key-level Cloud

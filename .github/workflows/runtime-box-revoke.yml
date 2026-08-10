@@ -93,7 +93,9 @@ jobs:
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
-          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          # Its own provider, not the release one: each provider's attribute condition pins a single
+          # exact workflow_ref, so the release provider rejects this workflow by design.
+          workload_identity_provider: ${{ vars.GCP_REVOCATION_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_RELEASE_SERVICE_ACCOUNT }}
           token_format: id_token
           id_token_audience: ${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}
