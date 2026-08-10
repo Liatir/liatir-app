@@ -26,23 +26,50 @@ provenance, replacement, rollback, removal, and Result artifacts outliving the
 runtime — all passing. `liatir-core` lists every published target, so the installer
 offers them.
 
-**Still outstanding: the two revocations.** `geneformer-v1-10m 1.0.0-beta.1` and
-`scgpt-whole-human 0.2.5-beta.1` are superseded but not withdrawn. Two things make
-this a maintainer action rather than a CI one, and both are recorded here because
-neither is obvious from the commands:
+**Still outstanding: the two revocations — the tooling is ready, the run is not.**
+`geneformer-v1-10m 1.0.0-beta.1` and `scgpt-whole-human 0.2.5-beta.1` are superseded
+but still installable: `GET https://models.liatir.com/v1/revocations` returns 404, so
+the registry publishes no revocations at all. Both obstacles recorded here have now
+been removed in the repository, and neither was obvious from the commands.
 
-1. **Promoting the second revocation erases the first.** `revoke` writes a document
-   holding one entry and overwrites `.runtime-box-dist/runtime-box-revocations.json`;
-   the Worker `put`s that document at `control/revocations.json` whole, with no
-   merge. Running the documented revoke/promote pair once per model therefore leaves
-   only the second revocation live and silently restores the first box. The contract
-   allows 1–100 entries per document, so the correct end state is one signed document
-   carrying both — which the CLI cannot currently produce.
-2. **There is no revocation workflow.** `revoke` signs through the private Cloud Run
-   signer, which needs an audience-bound Google identity token, and `promote` needs
-   `LIATIR_RUNTIME_BOX_ADMIN_TOKEN`. Both live in the `runtime-box-production`
-   environment and neither is available outside CI, so the revocation currently
-   depends on a maintainer workstation holding production credentials.
+1. **Promoting the second revocation erased the first.** `revoke` wrote a document
+   holding one entry, and the Worker `put`s it at `control/revocations.json` whole,
+   with no merge — running the documented revoke/promote pair once per model left
+   only the second revocation live and silently restored the first box. The Worker
+   *cannot* merge: the object carries one signature over one exact byte string, and
+   appending an entry server-side would invalidate it. Completeness is therefore the
+   signer's job, and `revoke` now enforces it two ways — `--box`/`--version` repeat
+   so one signature covers several boxes (`--from <file>` takes the same entries as
+   JSON, which is how the workflow passes them), and whatever the registry already
+   serves is verified and carried forward into the new document. `--no-carry-forward`
+   opts out for local and loopback use. Regression coverage in
+   `tests/unit/runtime-box-scrollcase-adapter.test.ts` pins both properties, plus the
+   rule that an unreadable live set fails instead of being read as empty.
+2. **There is no revocation workflow — now there is.**
+   `.github/workflows/runtime-box-revoke.yml` runs the whole action in the
+   `runtime-box-production` environment: workload-identity auth for the audience-bound
+   signer token, the admin token for promote, a validated plan echoed to the run
+   summary before anything is signed, and a final check that reads
+   `/v1/revocations` back from the public registry and fails unless it serves every
+   requested entry. It shares the `runtime-box-production` concurrency group with the
+   release workflow, since both mutate the same control objects. **It has not been
+   run yet** — dispatch it from `main` with the plan below and `confirm: REVOKE`.
+
+```json
+[
+  {"boxId": "geneformer-v1-10m", "version": "1.0.0-beta.1",
+   "reason": "superseded by 1.0.0-beta.2, which republishes every target on the pixi/Scrollcase v2 toolchain"},
+  {"boxId": "scgpt-whole-human", "version": "0.2.5-beta.1",
+   "reason": "superseded by 0.2.5-beta.2, which republishes every target on the pixi/Scrollcase v2 toolchain"}
+]
+```
+
+A maintainer workstation cannot stand in for that workflow, and this one was checked
+rather than assumed: the Mac's `gcloud` service-account config is workload-identity
+federation bound to a GitHub Actions OIDC subject token that has expired, a user
+account cannot mint an audience-bound identity token at all, and
+`LIATIR_RUNTIME_BOX_ADMIN_TOKEN` is not present. Production credentials on a
+workstation were the wrong fix regardless; the workflow is the right one.
 
 ## What the re-release cost, and why
 

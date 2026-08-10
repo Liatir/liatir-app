@@ -1,0 +1,163 @@
+name: Runtime Box revocation
+
+# Withdrawing a published box is the one production signing action that had no workflow, so it
+# depended on a maintainer workstation holding both the signer identity and the Registry admin
+# token. Neither belongs there: they live in the `runtime-box-production` environment, and this
+# workflow is how they get used.
+#
+# Revocation takes effect on installs that have already shipped, so the order is always release
+# first, revoke second — never the reverse.
+
+on:
+  workflow_dispatch:
+    inputs:
+      revocations:
+        description: >-
+          JSON array of {"boxId","version","reason"} — the boxes to withdraw. The document signed
+          here also carries forward everything the registry already serves, so this lists what is
+          being *added*, not the complete set.
+        required: true
+        type: string
+        default: '[{"boxId":"","version":"","reason":""}]'
+      confirm:
+        description: Type REVOKE to confirm these versions should stop being installable
+        required: true
+        type: string
+
+concurrency:
+  # Shared with the release workflow on purpose. Both mutate the same registry control objects, and
+  # a revocation racing a promotion would decide the live set by whichever finished last.
+  group: runtime-box-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  revoke:
+    name: Sign and promote a complete revocation set
+    environment: runtime-box-production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+      LIATIR_RUNTIME_BOX_ADMIN_TOKEN: ${{ secrets.LIATIR_RUNTIME_BOX_ADMIN_TOKEN }}
+      REGISTRY: ${{ vars.LIATIR_RUNTIME_BOX_REGISTRY }}
+    steps:
+      - name: Require the exact main ref
+        run: test "${{ github.ref }}" = "refs/heads/main"
+
+      - name: Require an explicit confirmation
+        run: test "${{ inputs.confirm }}" = "REVOKE"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Validated before anything is signed, and against the same rules the deployed signer policy
+      # enforces, so a malformed entry fails here rather than after a KMS round trip. A reason is
+      # shown verbatim to users in the app, which is why it is also held to one line.
+      - name: Validate and read back the exact revocation plan
+        id: plan
+        env:
+          REVOCATIONS: ${{ inputs.revocations }}
+        run: |
+          set -euo pipefail
+          jq -e '
+            if type != "array" or length == 0 then error("revocations must be a non-empty array")
+            elif length > 100 then error("a revocations document holds at most 100 entries")
+            else . end
+            | map(
+                if (.boxId | type) != "string" or (.boxId | length) == 0 then error("missing boxId")
+                elif (.version | test("^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$") | not) then error("invalid version: \(.version)")
+                elif (.reason | type) != "string" or ((.reason | ltrimstr(" ") | length) < 8) then error("revocation reason is too short")
+                elif ((.boxId + .version + .reason) | test("[\n\r]")) then error("revocation fields cannot contain newlines")
+                else . end
+              )' <<< "$REVOCATIONS" > plan.json
+          {
+            echo '### Revocation plan'
+            echo
+            jq -r '.[] | "- `\(.boxId)` `\(.version)` — \(.reason)"' plan.json
+          } >> "$GITHUB_STEP_SUMMARY"
+          jq -r '.[] | "\(.boxId) \(.version)"' plan.json
+
+      - id: revoke-auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_RELEASE_SERVICE_ACCOUNT }}
+          token_format: id_token
+          id_token_audience: ${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}
+          id_token_include_email: true
+
+      - name: Fail fast if the deployed signer policy is stale
+        env:
+          LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN: ${{ steps.revoke-auth.outputs.id_token }}
+        run: >-
+          npm run runtime-box:ci -- verify-signer-policy
+          --signer "${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}"
+
+      # One signature over every entry — the requested ones plus whatever the registry already
+      # serves. The registry stores this document whole and cannot merge into it, so anything left
+      # out here would be silently un-revoked.
+      - name: Sign the complete revocation set
+        env:
+          LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN: ${{ steps.revoke-auth.outputs.id_token }}
+        # The plan is handed over as a file rather than rebuilt into flags, so a free-text
+        # reason never has to survive shell quoting on its way to a document signed by the
+        # production key.
+        run: >-
+          npm run runtime-box -- revoke
+          --from plan.json
+          --registry "$REGISTRY"
+          --signer "${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}"
+          --signer-audience "${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}"
+          --public-key runtime-boxes/trust/production-public.json
+
+      - name: Promote the revocations through the Registry
+        run: >-
+          npm run runtime-box -- promote .runtime-box-dist/runtime-box-revocations.json
+          --registry "$REGISTRY"
+          --receipt .runtime-box-ci/revocation-receipt.json
+
+      # The promote response is the Worker's word for it. This reads back what the public registry
+      # actually serves, which is the only statement that matters to an installing app.
+      - name: Verify the public registry serves every revocation
+        run: |
+          set -euo pipefail
+          curl -fsS --retry 3 --retry-delay 2 -H 'cache-control: no-cache' \
+            "$REGISTRY/v1/revocations" > served.json
+          jq -r '.payloadBase64' served.json | base64 -d | jq '.revocations' > served-entries.json
+          jq -e --slurpfile served served-entries.json '
+            (($served[0] // []) | map({boxId, version})) as $live
+            | map({boxId, version})
+            | if all(.[]; . as $wanted | $live | any(. == $wanted)) then .
+              else error("the registry does not serve every requested revocation") end
+          ' plan.json > /dev/null
+          {
+            echo
+            echo '### Live revocations'
+            echo
+            jq -r '.[] | "- `\(.boxId)` `\(.version)`"' served-entries.json
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the revocation receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-box-revocation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            plan.json
+            served-entries.json
+            .runtime-box-ci/revocation-receipt.json
+          if-no-files-found: warn
+          retention-days: 90

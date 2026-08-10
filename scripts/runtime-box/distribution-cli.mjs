@@ -57,11 +57,39 @@ const paths = {
 const defaultPrivateKeyPath = () => join(paths.keys, 'signing-private.pem');
 const defaultPublicKeyPath = () => join(paths.keys, 'signing-public.json');
 const DEFAULT_OBJECT_PREFIX = 'ai-runtime-boxes';
+const DEFAULT_REGISTRY = 'https://models.liatir.com';
 const MULTIPART_PART_BYTES = 64 * 1024 * 1024;
+/** The registry the command talks to, trailing slash removed so paths can be appended directly. */
+function registryBaseUrl(flags) {
+  return String(flags.get('registry') || DEFAULT_REGISTRY).replace(/\/$/, '');
+}
+
+/**
+ * Flag bag with the usual last-value-wins `get`, plus `all()` for genuinely repeatable flags.
+ *
+ * A plain Map discarded every repeat, which is precisely the failure this module exists to avoid
+ * elsewhere: a second `--box` looked accepted and silently replaced the first.
+ */
+class Flags extends Map {
+  #repeats = new Map();
+
+  set(name, value) {
+    const values = this.#repeats.get(name);
+    if (values) values.push(value);
+    else this.#repeats.set(name, [value]);
+    return super.set(name, value);
+  }
+
+  /** Every value given for `name`, in command-line order. */
+  all(name) {
+    return this.#repeats.get(name) ?? [];
+  }
+}
+
 /** Minimal flag parser supporting `--name=value`, `--name value` and bare `--name` (true). */
 function parseArgs(values) {
   const positional = [];
-  const flags = new Map();
+  const flags = new Flags();
   for (let index = 0; index < values.length; index += 1) {
     const value = values[index];
     if (!value.startsWith('--')) {
@@ -241,7 +269,7 @@ async function remoteObjectExists(url) {
 
 /** Uploads an archive through the authenticated Worker/R2 multipart path with bounded retries. */
 async function uploadArchiveMultipart(archivePath, release, flags) {
-  const registry = String(flags.get('registry') || 'https://models.liatir.com').replace(/\/$/, '');
+  const registry = registryBaseUrl(flags);
   const token = await registryAdminToken(flags);
   const target = runtimeBoxTargetId(release.target);
   const identityPath = [release.boxId, release.version, target, release.archive.sha256]
@@ -314,7 +342,7 @@ async function uploadArchiveMultipart(archivePath, release, flags) {
 
 /** Publishes one small signed release document through the same least-privilege Registry token. */
 async function uploadReleaseDocument(releasePath, release, releaseSha256, flags) {
-  const registry = String(flags.get('registry') || 'https://models.liatir.com').replace(/\/$/, '');
+  const registry = registryBaseUrl(flags);
   const token = await registryAdminToken(flags);
   const target = runtimeBoxTargetId(release.target);
   const identityPath = [release.boxId, release.version, target, releaseSha256]
@@ -511,7 +539,7 @@ async function publishTrustedKey(flags) {
  * could alter the JSON and break the signature it carries.
  */
 async function promote(channelDocumentPath, flags) {
-  const registry = String(flags.get('registry') || 'https://models.liatir.com').replace(/\/$/, '');
+  const registry = registryBaseUrl(flags);
   const token = await registryAdminToken(flags);
   const signedBody = await readFile(resolve(channelDocumentPath));
   const { payload } = decodeSignedDocument(JSON.parse(signedBody.toString('utf8')));
@@ -549,29 +577,169 @@ async function promote(channelDocumentPath, flags) {
     : `Promoted ${payload.revocations.length} Runtime Box revocation(s)`);
 }
 
+/** The contract's cap on one revocations document, mirrored by the signer policy. */
+const MAX_REVOCATIONS_PER_DOCUMENT = 100;
+
+/** Reads one repeated flag as strings, rejecting the bare `--flag` form that carries no value. */
+function repeatedStringFlag(flags, name) {
+  return flags.all(name).map((value) => {
+    if (typeof value !== 'string' || value.trim() === '') fail(`--${name} requires a value.`);
+    return value.trim();
+  });
+}
+
+/** Rejects an entry whose fields are missing or blank, whatever form it arrived in. */
+function normalizeRevocationEntry(entry, revokedAt, source) {
+  const field = (name) => {
+    const value = entry?.[name];
+    if (typeof value !== 'string' || value.trim() === '') fail(`${source} entry is missing "${name}".`);
+    return value.trim();
+  };
+  return {
+    boxId: field('boxId'),
+    version: field('version'),
+    // Surfaced verbatim to users, so it should explain why the box was pulled.
+    reason: field('reason'),
+    revokedAt,
+  };
+}
+
 /**
- * `revoke` — signs a document that withdraws a released box.
+ * Reads entries from a JSON file — the form automation passes them in, where building a repeated
+ * flag list would mean quoting free-text reasons through a shell.
+ */
+async function revocationEntriesFromFile(path, revokedAt) {
+  const resolved = resolve(path);
+  let entries;
+  try {
+    entries = JSON.parse(await readFile(resolved, 'utf8'));
+  } catch (error) {
+    fail(`Cannot read revocation entries from ${path}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  if (!Array.isArray(entries)) fail(`${path} must hold a JSON array of revocation entries.`);
+  return entries.map((entry) => normalizeRevocationEntry(entry, revokedAt, path));
+}
+
+/**
+ * Builds the entries named on the command line, pairing `--box` with `--version` in the order given.
+ *
+ * The counts must agree exactly. Pairing by position is only safe if a missing `--version` is an
+ * error rather than a silent shift that would revoke the wrong version of the wrong box.
+ */
+function revocationEntriesFromFlags(flags, revokedAt) {
+  const boxIds = repeatedStringFlag(flags, 'box');
+  const versions = repeatedStringFlag(flags, 'version');
+  const reasons = repeatedStringFlag(flags, 'reason');
+  if (boxIds.length === 0) return [];
+  if (versions.length !== boxIds.length) {
+    fail(`revoke requires one --version per --box (got ${boxIds.length} --box and ${versions.length} --version).`);
+  }
+  // One reason may cover the whole batch; otherwise every entry states its own.
+  if (reasons.length !== 1 && reasons.length !== boxIds.length) {
+    fail(`revoke requires one --reason, or one per --box (got ${reasons.length} for ${boxIds.length} --box).`);
+  }
+  return boxIds.map((boxId, index) => ({
+    boxId,
+    version: versions[index],
+    reason: reasons.length === 1 ? reasons[0] : reasons[index],
+    revokedAt,
+  }));
+}
+
+/**
+ * Reads the revocation set the registry currently serves, so a new document extends it.
+ *
+ * A 404 is the registry stating it publishes no revocations, which is a real answer. A transport
+ * or signature failure is not, and must never be softened into an empty list: that would produce a
+ * document silently restoring every box already withdrawn.
+ */
+async function liveRevocations(registry, publicKeyPath) {
+  const url = `${registry}/v1/revocations`;
+  const response = await fetch(url, { headers: { 'cache-control': 'no-cache' } });
+  if (response.status === 404) return [];
+  if (!response.ok) fail(`Cannot read the current revocations (${response.status}): ${url}`);
+  let document;
+  try {
+    document = JSON.parse(await response.text());
+  } catch {
+    fail(`Registry served a malformed revocations document: ${url}`);
+  }
+  const payload = await verifySignedDocument(document, publicKeyPath);
+  if (payload.kind !== 'liatir.runtime-box.revocations') {
+    fail(`Registry served a document that is not a revocations manifest: ${url}`);
+  }
+  return payload.revocations ?? [];
+}
+
+/**
+ * Merges the newly named entries over the carried-forward ones, keyed the way a client matches them.
+ *
+ * Re-revoking an entry refreshes its reason but keeps the original `revokedAt`: when a box was
+ * withdrawn is a historical fact, and an unrelated later revocation must not rewrite it.
+ */
+function mergeRevocations(carried, added) {
+  const identity = (entry) => [
+    entry.boxId,
+    entry.version,
+    entry.target ? runtimeBoxTargetId(entry.target) : '',
+  ].join(' ');
+  const merged = new Map(carried.map((entry) => [identity(entry), entry]));
+  for (const entry of added) {
+    const previous = merged.get(identity(entry));
+    merged.set(identity(entry), previous ? { ...entry, revokedAt: previous.revokedAt } : entry);
+  }
+  return [...merged.values()];
+}
+
+/**
+ * `revoke` — signs the document that withdraws released boxes.
+ *
+ * The registry stores this document whole and *cannot* merge into it: the object carries one
+ * signature over one exact byte string, and a Worker that appended an entry could not re-sign the
+ * result. Completeness is therefore the signer's job — what gets promoted must always be the entire
+ * revocation set. Two things make that true by construction rather than by memory:
+ *
+ * 1. `--box`/`--version` repeat, so several boxes are withdrawn in one signature and one promote;
+ * 2. whatever the registry already serves is carried forward, so adding a revocation can never
+ *    quietly restore a box withdrawn earlier.
  *
  * This only *creates* the signed manifest; it takes effect once `promote` publishes it, after
- * which installs of that box and version are refused by the app.
+ * which installs of those boxes and versions are refused by the app.
  */
 async function createRevocation(flags) {
-  // `fail` throws, so these read as "required flag or abort".
-  const boxId = String(flags.get('box') || fail('revoke requires --box <id>.'));
-  const version = String(flags.get('version') || fail('revoke requires --version <version>.'));
-  // Surfaced verbatim to users, so it should explain why the box was pulled.
-  const reason = String(flags.get('reason') || fail('revoke requires --reason <text>.'));
+  // One timestamp for the batch: these entries are withdrawn by a single act.
+  const revokedAt = new Date().toISOString();
+  const added = [
+    ...(flags.get('from') ? await revocationEntriesFromFile(String(flags.get('from')), revokedAt) : []),
+    ...revocationEntriesFromFlags(flags, revokedAt),
+  ];
+  if (added.length === 0) fail('revoke requires --box <id> or --from <file>.');
+  // The same trust file that verifies the signature this command is about to produce.
+  const publicKeyPath = resolve(String(flags.get('public-key') || defaultPublicKeyPath()));
+  const carried = flags.get('no-carry-forward')
+    ? []
+    : await liveRevocations(registryBaseUrl(flags), publicKeyPath);
+  const revocations = mergeRevocations(carried, added);
+  if (revocations.length > MAX_REVOCATIONS_PER_DOCUMENT) {
+    fail(`A revocations document holds at most ${MAX_REVOCATIONS_PER_DOCUMENT} entries (got ${revocations.length}).`);
+  }
   const manifest = {
     schemaVersion: 2,
     kind: 'liatir.runtime-box.revocations',
     updatedAt: new Date().toISOString(),
-    revocations: [{ boxId, version, reason, revokedAt: new Date().toISOString() }],
+    revocations,
   };
   const signed = await signDocument(manifest, flags);
   await mkdir(paths.dist, { recursive: true });
   const path = join(paths.dist, 'runtime-box-revocations.json');
   await writeFile(path, `${JSON.stringify(signed, null, 2)}\n`);
-  console.log(`Signed revocations: ${relative(paths.root, path)}`);
+  // Printed in full: this document replaces the live set, so the operator should see all of it.
+  const addedIdentities = new Set(added.map((entry) => `${entry.boxId} ${entry.version}`));
+  for (const entry of revocations) {
+    const origin = addedIdentities.has(`${entry.boxId} ${entry.version}`) ? 'revoked' : 'carried forward';
+    console.log(`  ${entry.boxId} ${entry.version} (${origin})`);
+  }
+  console.log(`Signed ${revocations.length} revocation(s): ${relative(paths.root, path)}`);
 }
 
 function usage() {
@@ -583,6 +751,19 @@ Commands:
   publish-key --bucket <name>    Publish the Worker public-key trust root
   promote <channel.json>         Promote a signed channel through the Worker
   revoke --box --version         Create a signed revocation document
+
+Revocation:
+  --box and --version repeat and pair in order, so one signed document can
+  withdraw several boxes. --reason is either given once for the batch or once
+  per --box. --from <file> reads the same entries as a JSON array of
+  {"boxId","version","reason"}, which is how automation passes them. The
+  registry stores the document whole and cannot merge into it, so the entries
+  it already serves are carried forward into the new one; pass
+  --no-carry-forward only for local or loopback use, where dropping the live
+  set is intended.
+
+    revoke --box a --version 1.0.0 --box b --version 2.0.0 --reason "<why>"
+    revoke --from revocations.json
 
 Workspace:
   Paths come from scrollcase.config.json at the project root (discovered by

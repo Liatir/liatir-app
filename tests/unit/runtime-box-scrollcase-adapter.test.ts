@@ -261,6 +261,7 @@ describe('Liatir Scrollcase adapter', () => {
       '--box', 'synthetic-box',
       '--version', '1.0.0',
       '--reason', 'Synthetic withdrawal',
+      '--no-carry-forward',
       '--project-root', root,
     ]);
 
@@ -277,6 +278,169 @@ describe('Liatir Scrollcase adapter', () => {
         version: '1.0.0',
         reason: 'Synthetic withdrawal',
       }],
+    });
+  });
+
+  // The registry stores a revocations document whole and cannot merge into it — it holds one
+  // signature over one exact byte string. Promoting a second single-entry document therefore used
+  // to un-revoke the box withdrawn by the first. These four cases pin the two properties that
+  // replace that trap: several entries per signature, and a live set that survives the next one.
+  describe('revocation completeness', () => {
+    async function revocationWorkspace(keyId: string) {
+      const root = workspace('synthetic-pixi', { pixiVersion: '0.73.0' });
+      const keys = join(root, 'keys');
+      mkdirSync(keys, { recursive: true });
+      const privatePath = join(keys, 'signing-private.pem');
+      const publicPath = join(keys, 'signing-public.json');
+      await generateSigningKey({ privatePath, publicPath, keyId });
+      return { root, privatePath, publicPath };
+    }
+
+    const signedRevocations = async (
+      revocations: Array<Record<string, unknown>>,
+      keyPaths: { privatePath: string; publicPath: string },
+    ) => signDocument({
+      schemaVersion: 2,
+      kind: 'liatir.runtime-box.revocations',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      revocations,
+    }, keyPaths);
+
+    it('withdraws several boxes in one signed document', async () => {
+      const { root, publicPath } = await revocationWorkspace('liatir-multi-revocation-key');
+
+      await dispatchRuntimeBox('revoke', [
+        '--box', 'geneformer-v1-10m', '--version', '1.0.0-beta.1',
+        '--box', 'scgpt-whole-human', '--version', '0.2.5-beta.1',
+        '--reason', 'superseded by the pixi/Scrollcase v2 toolchain',
+        '--no-carry-forward',
+        '--project-root', root,
+      ]);
+
+      const payload = await verifySignedDocument(
+        JSON.parse(readFileSync(join(root, 'dist', 'runtime-box-revocations.json'), 'utf8')),
+        publicPath,
+      ) as { revocations: Array<{ boxId: string; version: string; reason: string }> };
+      expect(payload.revocations).toHaveLength(2);
+      expect(payload.revocations.map(({ boxId, version }) => `${boxId} ${version}`)).toEqual([
+        'geneformer-v1-10m 1.0.0-beta.1',
+        'scgpt-whole-human 0.2.5-beta.1',
+      ]);
+      // A single --reason covers the whole batch rather than being dropped for the later entries.
+      for (const entry of payload.revocations) {
+        expect(entry.reason).toBe('superseded by the pixi/Scrollcase v2 toolchain');
+      }
+    });
+
+    it('carries the live revocations forward so a new one cannot restore an old box', async () => {
+      const { root, privatePath, publicPath } = await revocationWorkspace('liatir-carry-forward-key');
+      const live = await signedRevocations([{
+        boxId: 'geneformer-v1-10m',
+        version: '1.0.0-beta.1',
+        reason: 'superseded by 1.0.0-beta.2',
+        revokedAt: '2026-01-01T00:00:00.000Z',
+      }], { privatePath, publicPath });
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+        expect(String(input)).toBe('https://registry.invalid/v1/revocations');
+        return new Response(JSON.stringify(live), { status: 200 });
+      });
+
+      await dispatchRuntimeBox('revoke', [
+        '--box', 'scgpt-whole-human',
+        '--version', '0.2.5-beta.1',
+        '--reason', 'superseded by 0.2.5-beta.2',
+        '--registry', 'https://registry.invalid',
+        '--project-root', root,
+      ]);
+
+      const payload = await verifySignedDocument(
+        JSON.parse(readFileSync(join(root, 'dist', 'runtime-box-revocations.json'), 'utf8')),
+        publicPath,
+      ) as { revocations: Array<{ boxId: string; version: string; revokedAt: string }> };
+      expect(payload.revocations.map(({ boxId }) => boxId)).toEqual([
+        'geneformer-v1-10m',
+        'scgpt-whole-human',
+      ]);
+      // The earlier withdrawal keeps the moment it actually happened.
+      expect(payload.revocations[0].revokedAt).toBe('2026-01-01T00:00:00.000Z');
+    });
+
+    // How the revocation workflow passes entries: a free-text reason reaching a production-signed
+    // document must not depend on surviving shell quoting.
+    it('reads the entries from a JSON plan file', async () => {
+      const { root, publicPath } = await revocationWorkspace('liatir-plan-file-key');
+      const planPath = join(root, 'plan.json');
+      writeFileSync(planPath, `${JSON.stringify([
+        { boxId: 'geneformer-v1-10m', version: '1.0.0-beta.1', reason: 'superseded by 1.0.0-beta.2' },
+        { boxId: 'scgpt-whole-human', version: '0.2.5-beta.1', reason: 'superseded by 0.2.5-beta.2' },
+      ])}\n`);
+
+      await dispatchRuntimeBox('revoke', [
+        '--from', planPath,
+        '--no-carry-forward',
+        '--project-root', root,
+      ]);
+
+      const payload = await verifySignedDocument(
+        JSON.parse(readFileSync(join(root, 'dist', 'runtime-box-revocations.json'), 'utf8')),
+        publicPath,
+      ) as { revocations: Array<{ boxId: string; version: string; reason: string }> };
+      expect(payload.revocations).toEqual([
+        expect.objectContaining({
+          boxId: 'geneformer-v1-10m',
+          version: '1.0.0-beta.1',
+          reason: 'superseded by 1.0.0-beta.2',
+        }),
+        expect.objectContaining({
+          boxId: 'scgpt-whole-human',
+          version: '0.2.5-beta.1',
+          reason: 'superseded by 0.2.5-beta.2',
+        }),
+      ]);
+    });
+
+    it('refuses a plan entry that is missing a field', async () => {
+      const { root } = await revocationWorkspace('liatir-plan-field-key');
+      const planPath = join(root, 'plan.json');
+      writeFileSync(planPath, `${JSON.stringify([
+        { boxId: 'geneformer-v1-10m', version: '1.0.0-beta.1' },
+      ])}\n`);
+
+      await expect(dispatchRuntimeBox('revoke', [
+        '--from', planPath,
+        '--no-carry-forward',
+        '--project-root', root,
+      ])).rejects.toThrow(/is missing "reason"/);
+      expect(() => readFileSync(join(root, 'dist', 'runtime-box-revocations.json'), 'utf8')).toThrow();
+    });
+
+    it('refuses to pair a --box with the wrong --version', async () => {
+      const { root } = await revocationWorkspace('liatir-unpaired-revocation-key');
+
+      await expect(dispatchRuntimeBox('revoke', [
+        '--box', 'geneformer-v1-10m', '--version', '1.0.0-beta.1',
+        '--box', 'scgpt-whole-human',
+        '--reason', 'superseded by the pixi/Scrollcase v2 toolchain',
+        '--no-carry-forward',
+        '--project-root', root,
+      ])).rejects.toThrow(/one --version per --box/);
+      expect(() => readFileSync(join(root, 'dist', 'runtime-box-revocations.json'), 'utf8')).toThrow();
+    });
+
+    it('fails rather than treating an unreadable live set as empty', async () => {
+      const { root } = await revocationWorkspace('liatir-unreachable-registry-key');
+      vi.spyOn(globalThis, 'fetch').mockImplementation(
+        async () => new Response('upstream failure', { status: 503 }),
+      );
+
+      await expect(dispatchRuntimeBox('revoke', [
+        '--box', 'scgpt-whole-human',
+        '--version', '0.2.5-beta.1',
+        '--reason', 'superseded by 0.2.5-beta.2',
+        '--registry', 'https://registry.invalid',
+        '--project-root', root,
+      ])).rejects.toThrow(/Cannot read the current revocations \(503\)/);
+      expect(() => readFileSync(join(root, 'dist', 'runtime-box-revocations.json'), 'utf8')).toThrow();
     });
   });
 
