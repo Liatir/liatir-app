@@ -551,7 +551,8 @@ features as production-ready.
 This is the default sequence unless a later evidence-backed decision explicitly
 reorders it:
 
-1. close the remaining Scrollcase P5 consumer-boundary and legacy-deletion work;
+1. complete the remaining Scrollcase P5 legacy-deletion audit; the Rust consumer
+   boundary is closed;
 2. close true cross-version Runtime Box update and persisted anti-replay state;
 3. close Plugin, direct AI, API Connector, and dependency lifecycle gaps needed
    by the common execution spine;

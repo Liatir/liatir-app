@@ -111,7 +111,10 @@ describe("Windows MAX_PATH budget", () => {
     // A full UUID here cost 42 characters and put the self-test over the limit.
     expect(source).not.toContain('".stg-{}", Uuid::new_v4()');
     expect(source).toContain("simple().to_string()[..8]");
-    // Short names only stay safe because an existing directory is refused and retried.
-    expect(source).toContain("ErrorKind::AlreadyExists");
+    // Scrollcase owns destination creation, so Liatir must select an absent short path without
+    // pre-creating or reusing something it does not own.
+    expect(source).toContain("symlink_metadata(&candidate)");
+    expect(source).toContain("ErrorKind::NotFound");
+    expect(source).not.toContain("create_dir(&candidate)");
   });
 });

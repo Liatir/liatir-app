@@ -85,14 +85,39 @@ document. It is not selected by the `beta` channel and the v2-only client reject
 it, but it is not present in the live revocations document. Decide deliberately
 whether to revoke it; do not infer retirement from the two model revocations above.
 
+## The Rust Scrollcase consumer boundary is closed (P5.4R, 2026-08-10)
+
+`src-tauri` remains pinned to exact `scrollcase-consumer 0.3.2`. Runtime Box
+installation now uses `prepare::verify_and_extract_box` with Liatir's compiled-in
+`TrustAnchors::Keys`; the returned receipt is required to match the exact signed
+release payload already selected, compatibility-checked and revocation-checked by
+Liatir. Scrollcase owns the generic second verification, archive identity, safe
+extraction, installed size and complete `box.json` agreement. Liatir still owns
+Registry/channel selection, product compatibility, revocation, disk planning,
+self-test diagnostics, activation, rollback, removal and provenance.
+
+An executable state guard and regression pin verified release → product
+policy/revocation → disk → archive → extraction. Persisted anti-replay is not
+present and remains the next product-hardening slice after P5. Automatic
+`attach_extracted_box` is rejected because its `PreparedBox` receipt is
+in-process rather than restart-durable; `verify_extracted_payload` is reserved for
+a future explicit O(box size) integrity diagnostic; `verify_required_assets`
+waits for a real on-demand-assets product path.
+
+Final local evidence: `cargo test runtime_box` 18 passed / 2 ignored,
+`cargo clippy --tests` completed with only the repository's pre-existing warning
+set, and `npm run test:verify` passed 42 test files / 266 tests plus all build and
+type gates. The native fixture is wired to the combined API and remains the P5.6
+final-lifecycle gate; no model, catalog, trust, signed object or channel changed.
+
 ## Current continuation
 
 The Runtime Box migration and the nine-target re-release are complete. Continue
 Liatir development in this order:
 
-1. close the remaining Scrollcase P5 adoption work: finish the consumer-boundary
-   audit and remove only the local generic helpers proven redundant with the
-   public package;
+1. finish P5 in order: complete the P5.5 surviving-helper audit against public
+   `scrollcase@0.8.0`, run the reviewed non-production native lifecycle for P5.6,
+   then close the P5.7 documentation handoff;
 2. implement persisted anti-replay/version-floor state for Runtime Box control
    documents, with its ownership and recovery semantics defined before code;
 3. complete the common pipeline/run/result spine before widening the model
@@ -100,7 +125,7 @@ Liatir development in this order:
 4. return to connector and broader scientific-workbench expansion only after the
    shared lifecycle is reliable.
 
-P5.4P is complete, P5.4R is partial, P5.5 is partial, and P5.6/P5.7 remain open.
+P5.4P and P5.4R are complete, P5.5 is partial, and P5.6/P5.7 remain open.
 The canonical detailed ledger is
 [Scrollcase P5](./roadmap/scrollcase-p5-liatir-adoption.md). The sections below
 this point are retained as implementation history and must not override this

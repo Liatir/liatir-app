@@ -266,8 +266,6 @@ try {
   assert.deepEqual(ran.environmentReport.variables, []);
   assert.equal(typeof ran.environmentReport.remainingVariableCount, 'number');
 
-  const payloadPath = join(temporary, 'release-payload.json');
-  await writeFile(payloadPath, `${JSON.stringify(release, null, 2)}\n`);
   await run('cargo', [
     'test',
     'runtime_box_v2_archive_fixture',
@@ -278,7 +276,8 @@ try {
   ], {
     env: {
       LIATIR_RUNTIME_BOX_V2_ARCHIVE_FIXTURE: built.archivePath,
-      LIATIR_RUNTIME_BOX_V2_RELEASE_FIXTURE: payloadPath,
+      LIATIR_RUNTIME_BOX_V2_RELEASE_FIXTURE: built.releasePath,
+      LIATIR_RUNTIME_BOX_TRUSTED_KEY_FILE: publicPath,
     },
   });
   await run('cargo', [

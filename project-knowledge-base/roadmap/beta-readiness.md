@@ -67,7 +67,8 @@ The beta cannot ship until automated native coverage proves:
 
 ## Immediate execution order
 
-1. Close the remaining Scrollcase P5 consumer-boundary and legacy-deletion work.
+1. Complete the remaining Scrollcase P5 legacy-deletion audit; the Rust consumer
+   boundary is closed.
 2. Close true cross-version Runtime Box update and client-persisted anti-replay
    state.
 3. Close the Plugin, direct AI, API Connector, and dependency lifecycle gaps

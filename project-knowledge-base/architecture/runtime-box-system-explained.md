@@ -149,8 +149,8 @@ used to build the box.
 
 Every active Runtime Box scroll now uses pixi/conda-pack through the published
 Scrollcase path. No uv recipe or local generic builder remains. P5 stays open
-only for the remaining consumer-boundary and duplicate-helper deletion audit,
-plus its final local/native closure and handoff.
+only for the duplicate-helper deletion audit, plus its final local/native closure
+and handoff; the Rust consumer boundary is complete.
 
 ### Dependency lock
 
@@ -849,7 +849,8 @@ scope and that support claims can be tied to concrete evidence.
 
 The next Runtime Box product work is separate from the completed CI foundation:
 
-1. close the Scrollcase P5 consumer-boundary and legacy-deletion work;
+1. complete the Scrollcase P5 legacy-deletion audit now that the Rust consumer
+   boundary is closed;
 2. prove a true native update from one version to a different version;
 3. persist anti-replay channel state in the client so an older signed channel
    generation cannot silently replace a newer one after restart.

@@ -13,8 +13,8 @@
 //! 4. fetch and verify the *release manifest*, then check it matches the request, the host
 //!    and this Liatir version, and that it has not been revoked;
 //! 5. download the archive and verify its SHA-256 and byte size against the signed manifest;
-//! 6. extract into a staging directory and check the archive's own `box.json` still matches
-//!    the signed release — this binds the archive *content* to the signed metadata;
+//! 6. let Scrollcase re-verify the signed release and archive, safely extract into staging,
+//!    check `box.json` agreement and return a preparation receipt bound to the release payload;
 //! 7. run a self-test (import the declared Python modules) with the box's own interpreter;
 //! 8. only then swap staging into place, keeping the previous version for rollback.
 //!
@@ -32,17 +32,17 @@ use std::{
 };
 // Scrollcase owns the generic box format: signed-envelope verification, target identity and
 // the safe-path rule. Liatir keeps the product lifecycle around it — registry, revocation,
-// anti-replay, disk planning, activation, rollback and removal.
+// disk planning, activation, rollback and removal. Persisted anti-replay is a separate slice.
 use scrollcase_consumer::{
-    archive::extract_zip_archive,
-    contract::{documents::SignedDocument, targets::box_target_id},
+    contract::{
+        documents::SignedDocument,
+        targets::{assert_python_entry_point, box_target_adapter, box_target_id},
+    },
     filesystem::payload_size as scrollcase_payload_size,
     path::safe_relative_path as scrollcase_safe_relative_path,
-    release::{
-        BoxManifest, Compatibility as BoxCompatibility, ReleaseManifest as BoxRelease, SelfTest,
-    },
-    trust::{parse_trusted_keys, verify_signed_document, TrustedKey},
-    verify::assert_box_manifest_agreement,
+    prepare::{verify_and_extract_box, EnvironmentReportOptions, PrepareOptions},
+    release::{Compatibility as BoxCompatibility, ReleaseManifest as BoxRelease, SelfTest},
+    trust::{parse_trusted_keys, verify_signed_document, TrustAnchors, TrustedKey},
 };
 use tauri::AppHandle;
 use url::Url;
@@ -289,6 +289,117 @@ impl Drop for InstallGuard {
                 active.remove(&self.runtime_id);
             }
         }
+    }
+}
+
+/// A signed release envelope materialized only while Scrollcase prepares one box.
+///
+/// The public preparation API is path-based. Keeping ownership in a guard makes normal errors and
+/// unwinding clean the file without adding another persistent source of release state.
+struct TemporaryReleaseDocument {
+    path: PathBuf,
+}
+
+impl TemporaryReleaseDocument {
+    fn write(path: PathBuf, content: &str) -> Result<Self, String> {
+        write_text_atomic(&path, content)?;
+        Ok(Self { path })
+    }
+
+    fn path(&self) -> &Path {
+        &self.path
+    }
+}
+
+impl Drop for TemporaryReleaseDocument {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(&self.path);
+    }
+}
+
+/// The Liatir-owned ordering around Scrollcase preparation.
+///
+/// Scrollcase guarantees that its own trust and archive checks precede extraction. Liatir owns the
+/// product checks around that operation: a verified release must pass channel/revocation policy and
+/// the peak-disk gate before its archive is allowed to reach the extractor. Keeping that order as a
+/// state machine makes the security boundary executable rather than a comment beside a long
+/// command handler.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RuntimeBoxInstallPhase {
+    Started,
+    ReleaseVerified,
+    ProductPolicyChecked,
+    DiskChecked,
+    ArchiveVerified,
+    Extracted,
+}
+
+struct RuntimeBoxInstallOrder {
+    phase: RuntimeBoxInstallPhase,
+}
+
+impl RuntimeBoxInstallOrder {
+    fn new() -> Self {
+        Self {
+            phase: RuntimeBoxInstallPhase::Started,
+        }
+    }
+
+    fn advance(
+        &mut self,
+        expected: RuntimeBoxInstallPhase,
+        next: RuntimeBoxInstallPhase,
+    ) -> Result<(), String> {
+        if self.phase != expected {
+            return Err(format!(
+                "internal AI Runtime Box install order error: expected {expected:?}, found {:?}",
+                self.phase
+            ));
+        }
+        self.phase = next;
+        Ok(())
+    }
+
+    fn release_verified(&mut self) -> Result<(), String> {
+        self.advance(
+            RuntimeBoxInstallPhase::Started,
+            RuntimeBoxInstallPhase::ReleaseVerified,
+        )
+    }
+
+    fn product_policy_checked(&mut self) -> Result<(), String> {
+        self.advance(
+            RuntimeBoxInstallPhase::ReleaseVerified,
+            RuntimeBoxInstallPhase::ProductPolicyChecked,
+        )
+    }
+
+    fn disk_checked(&mut self) -> Result<(), String> {
+        self.advance(
+            RuntimeBoxInstallPhase::ProductPolicyChecked,
+            RuntimeBoxInstallPhase::DiskChecked,
+        )
+    }
+
+    fn archive_verified(&mut self) -> Result<(), String> {
+        self.advance(
+            RuntimeBoxInstallPhase::DiskChecked,
+            RuntimeBoxInstallPhase::ArchiveVerified,
+        )
+    }
+
+    /// Runs the extractor only after every Liatir-owned precondition has advanced in order.
+    fn extract<T>(&mut self, prepare: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
+        if self.phase != RuntimeBoxInstallPhase::ArchiveVerified {
+            return Err(format!(
+                "internal AI Runtime Box install order error: extraction requires {:?}, found {:?}",
+                RuntimeBoxInstallPhase::ArchiveVerified,
+                self.phase
+            ));
+        }
+        let prepared = prepare()?;
+        self.phase = RuntimeBoxInstallPhase::Extracted;
+        Ok(prepared)
     }
 }
 
@@ -821,9 +932,10 @@ fn verify_release_identity(
     target: &RuntimeBoxTarget,
     host: &RuntimeBoxHostCapabilities,
 ) -> Result<(), String> {
-    if release.schema_version != RUNTIME_BOX_SCHEMA_VERSION
-        || release.kind != "liatir.runtime-box.release"
-    {
+    release
+        .validate()
+        .map_err(|error| format!("invalid AI Runtime Box release manifest: {}", error.message()))?;
+    if release.kind != "liatir.runtime-box.release" {
         return Err("invalid AI Runtime Box release manifest".to_string());
     }
     if release.box_id != box_id || release.model_id != model_id {
@@ -838,13 +950,6 @@ fn verify_release_identity(
             "AI Runtime Box target {} does not match this host {}",
             release_target_id, host_target_id
         ));
-    }
-    if release.archive.format != "zip"
-        || release.archive.sha256.len() != 64
-        || release.archive.size_bytes == 0
-        || release.installed_size_bytes.is_some_and(|size| size == 0)
-    {
-        return Err("invalid AI Runtime Box archive metadata".to_string());
     }
     if release.target.accelerator == "cuda" {
         if !release
@@ -861,7 +966,14 @@ fn verify_release_identity(
         return Err("Only CUDA AI Runtime Box releases may require an NVIDIA driver".to_string());
     }
     validate_control_url(&release.archive.url)?;
-    safe_relative_path(&release.python_entry_point)?;
+    let adapter = box_target_adapter(&release.target)
+        .map_err(|error| format!("invalid AI Runtime Box target: {}", error.message()))?;
+    assert_python_entry_point(adapter, &release.python_entry_point).map_err(|error| {
+        format!(
+            "invalid AI Runtime Box interpreter path: {}",
+            error.message()
+        )
+    })?;
     safe_relative_path(&release.model_cache_subdir)?;
     // Import names are interpolated into a Python `-c` script, so restrict them to characters
     // that can only form a module path — no spaces, quotes or semicolons that could smuggle in
@@ -913,35 +1025,6 @@ async fn ensure_not_revoked(
         ));
     }
     Ok(())
-}
-
-/// Cross-checks the unpacked archive against the signed release and returns its interpreter.
-///
-/// The download is already hash-verified, which proves the bytes are the ones the manifest
-/// named. This proves the *contents* agree too: the archive's own `box.json` must describe the
-/// same box, version and target, closing the gap where a correctly hashed archive is paired
-/// with a manifest for something else. It also confirms the declared interpreter really exists
-/// before anything is activated.
-fn validate_extracted_box(staging: &Path, release: &ReleaseManifest) -> Result<PathBuf, String> {
-    let metadata_path = staging.join("box.json");
-    let metadata: BoxManifest = serde_json::from_slice(
-        &std::fs::read(&metadata_path)
-            .map_err(|error| format!("cannot read extracted box.json: {error}"))?,
-    )
-    .map_err(|error| format!("invalid extracted box.json: {error}"))?;
-    // Which fields must agree is the box format's rule, not Liatir's, so Scrollcase applies it:
-    // restating the list here is how a field added upstream silently stops being checked.
-    assert_box_manifest_agreement(&metadata, release).map_err(|error| {
-        format!("extracted AI Runtime Box metadata does not match the signed release: {}", error.message())
-    })?;
-    let python_path = staging.join(safe_relative_path(&release.python_entry_point)?);
-    if !python_path.is_file() {
-        return Err(format!(
-            "AI Runtime Box interpreter is missing: {}",
-            python_path.display()
-        ));
-    }
-    Ok(python_path)
 }
 
 /// Runs the box's own interpreter and imports the modules the manifest declares.
@@ -1237,6 +1320,7 @@ pub async fn lia_ai_runtime_box_install(
     let selected_candidate = select_target_candidate(&target_candidates, &host)?;
     let target = selected_candidate.target.clone();
     let target_slug = target_id(&target)?;
+    let mut install_order = RuntimeBoxInstallOrder::new();
     let channel_url = format!(
         "{}/channels/{}/{}/{}",
         registry_base_url.trim_end_matches('/'),
@@ -1280,7 +1364,14 @@ pub async fn lia_ai_runtime_box_install(
     if release.version != selected.version {
         return Err("AI Runtime Box release version does not match its signed channel".to_string());
     }
+    let release_payload_sha256 = signed_release
+        .get("payloadSha256")
+        .and_then(serde_json::Value::as_str)
+        .ok_or_else(|| "invalid signed Runtime Box release document".to_string())?
+        .to_string();
+    install_order.release_verified()?;
     ensure_not_revoked(&registry_base_url, &release).await?;
+    install_order.product_policy_checked()?;
     // Held for the rest of the function; released on Drop, including on any `?` below.
     let _install_guard = InstallGuard::acquire(&release.runtime_id)?;
 
@@ -1333,6 +1424,7 @@ pub async fn lia_ai_runtime_box_install(
             archive_bytes_on_disk,
         )?;
     }
+    install_order.disk_checked()?;
     if !archive_ready {
         let cancellation = downloads.register(&download_id);
         // stream_download enforces the SHA-256 while writing, so the archive on disk is already
@@ -1358,6 +1450,7 @@ pub async fn lia_ai_runtime_box_install(
         let _ = std::fs::remove_file(&archive_path);
         return Err("AI Runtime Box archive size does not match the signed release".to_string());
     }
+    install_order.archive_verified()?;
 
     // Unpack next to the final location (same filesystem, so activation can rename) but under a
     // unique hidden name, so a half-extracted box is never mistaken for an installed one.
@@ -1374,8 +1467,9 @@ pub async fn lia_ai_runtime_box_install(
     // failed with WinError 206.
     //
     // Eight hex characters are enough because `InstallGuard` already serialises installs of the
-    // same runtime; the retry below settles the rest without lengthening the name, and refuses an
-    // existing directory rather than reusing one whose contents are not ours.
+    // same runtime; the retry below settles the rest without lengthening the name. Scrollcase owns
+    // creation of the destination and refuses an existing path, so this chooses a name without
+    // pre-creating it.
     let staging = {
         let mut attempt = 0;
         loop {
@@ -1383,33 +1477,49 @@ pub async fn lia_ai_runtime_box_install(
                 ".s-{}",
                 &Uuid::new_v4().simple().to_string()[..8]
             ));
-            match std::fs::create_dir(&candidate) {
-                Ok(()) => break candidate,
-                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists && attempt < 8 => {
+            match std::fs::symlink_metadata(&candidate) {
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => break candidate,
+                Ok(_) if attempt < 8 => {
                     attempt += 1;
                 }
+                Ok(_) => return Err("cannot allocate AI Runtime Box staging path".to_string()),
                 Err(error) => return Err(error.to_string()),
             }
         }
     };
+    // Scrollcase's combined preparation API is path-based. Persist the exact envelope only for the
+    // duration of preparation; trust still comes from the keys compiled into this build, and the
+    // payload hash below binds the receipt back to the release that already passed Liatir policy.
+    let preparation_keys = trusted_keys()?;
+    let release_document_path =
+        downloads_dir.join(format!("{release_payload_sha256}.release.json"));
+    let release_document_text = std::str::from_utf8(&release_bytes)
+        .map_err(|error| format!("invalid signed Runtime Box release document: {error}"))?;
+    let release_document =
+        TemporaryReleaseDocument::write(release_document_path, release_document_text)?;
     // Closure so every failure between here and activation funnels into one cleanup path below,
     // instead of repeating "delete staging" at each `?`.
     let install_result = (|| -> Result<RuntimeBoxInstallResult, String> {
-        // Scrollcase extracts, not the shared managed-binary helper: a box archive is
-        // attacker-reachable input, and the package refuses encrypted and special entries,
-        // entry collisions, links that leave the payload and entries written through a link.
-        // Those rules belong to the box format and are exercised by its own conformance suite.
-        extract_zip_archive(&archive_path, &staging)
-            .map_err(|error| format!("invalid AI Runtime Box archive: {}", error.message()))?;
-        if let Some(expected) = release.installed_size_bytes {
-            let actual = dir_size(&staging)?;
-            if actual != expected {
-                return Err(
-                    "AI Runtime Box extracted size does not match the signed release".to_string(),
-                );
-            }
+        let prepared = install_order.extract(|| {
+            verify_and_extract_box(
+                release_document.path(),
+                &PrepareOptions {
+                    trust: TrustAnchors::Keys(&preparation_keys),
+                    archive: Some(&archive_path),
+                    destination: &staging,
+                    environment: EnvironmentReportOptions::default(),
+                },
+            )
+            .map_err(|error| format!("AI Runtime Box preparation failed: {}", error.message()))
+        })?;
+        if prepared.release_payload_sha256() != release_payload_sha256 {
+            return Err(
+                "Prepared AI Runtime Box does not match the release approved by Liatir".to_string(),
+            );
         }
-        let python_path = validate_extracted_box(&staging, &release)?;
+        let python_path = prepared
+            .root()
+            .join(safe_relative_path(prepared.python_entry_point())?);
         run_self_test(&python_path, &release.self_test)?;
         // Persist both the selected target and the exact signed release envelope. The installed
         // directory then carries complete provenance without contacting the registry.
@@ -1681,16 +1791,15 @@ mod tests {
         value["schemaVersion"] = serde_json::json!(1);
         let release: ReleaseManifest = serde_json::from_value(value).unwrap();
         let host = host("macos", "aarch64", None);
-        assert_eq!(
-            verify_release_identity(
-                &release,
-                "fixture",
-                "liatir-fixture",
-                &target("macos", "aarch64", "metal", None),
-                &host,
-            ),
-            Err("invalid AI Runtime Box release manifest".to_string()),
-        );
+        let error = verify_release_identity(
+            &release,
+            "fixture",
+            "liatir-fixture",
+            &target("macos", "aarch64", "metal", None),
+            &host,
+        )
+        .unwrap_err();
+        assert!(error.contains("Unsupported schemaVersion 1"));
     }
 
     fn target(
@@ -1906,36 +2015,43 @@ mod tests {
         assert!(check_compatibility(&malformed.compatibility, &host).is_err());
     }
 
-    /// The archive-agreement check is the step that stops a signed release being paired with a
-    /// different, still correctly hashed archive. The rule now lives in Scrollcase, so this pins
-    /// that Liatir still calls it, still refuses a disagreeing `box.json`, and still names the
-    /// field that differed.
     #[test]
-    fn extracted_box_must_agree_with_the_signed_release() {
-        let release: ReleaseManifest = serde_json::from_value(release_json()).unwrap();
-        let staging = std::env::temp_dir().join(format!("liatir-agreement-{}", Uuid::new_v4()));
-        std::fs::create_dir_all(staging.join("venv/bin")).unwrap();
-        std::fs::write(staging.join("venv/bin/python"), b"#!/bin/sh\n").unwrap();
+    fn runtime_box_install_order_blocks_extraction_until_product_gates_pass() {
+        let mut order = RuntimeBoxInstallOrder::new();
+        assert!(order.product_policy_checked().is_err());
+        assert!(order.disk_checked().is_err());
 
-        let box_json = |value: serde_json::Value| {
-            std::fs::write(staging.join("box.json"), value.to_string()).unwrap();
-        };
-        let mut agreeing = release_json();
-        // box.json carries the shared half of the release; the transport fields are release-only.
-        for release_only in ["kind", "compatibility", "archive", "installedSizeBytes"] {
-            agreeing.as_object_mut().unwrap().remove(release_only);
-        }
+        let invoked = std::cell::Cell::new(false);
+        let early = order.extract(|| {
+            invoked.set(true);
+            Ok(())
+        });
+        assert!(early.is_err());
+        assert!(!invoked.get(), "extractor ran before release verification");
 
-        box_json(agreeing.clone());
-        assert!(validate_extracted_box(&staging, &release).is_ok());
+        order.release_verified().unwrap();
+        assert!(order.disk_checked().is_err());
+        order.product_policy_checked().unwrap();
+        assert!(order.archive_verified().is_err());
+        order.disk_checked().unwrap();
 
-        let mut disagreeing = agreeing.clone();
-        disagreeing["modelId"] = serde_json::json!("a-different-model");
-        box_json(disagreeing);
-        let error = validate_extracted_box(&staging, &release).unwrap_err();
-        assert!(error.contains("modelId"), "field not named: {error}");
+        let before_archive = order.extract(|| {
+            invoked.set(true);
+            Ok(())
+        });
+        assert!(before_archive.is_err());
+        assert!(!invoked.get(), "extractor ran before archive verification");
 
-        std::fs::remove_dir_all(staging).unwrap();
+        order.archive_verified().unwrap();
+        let prepared = order
+            .extract(|| {
+                invoked.set(true);
+                Ok("prepared")
+            })
+            .unwrap();
+        assert_eq!(prepared, "prepared");
+        assert!(invoked.get());
+        assert_eq!(order.phase, RuntimeBoxInstallPhase::Extracted);
     }
 
     #[test]
@@ -1965,6 +2081,7 @@ mod tests {
             "accelerator": "cuda",
             "cudaVersion": "12.4"
         });
+        value["pythonEntryPoint"] = serde_json::json!("venv/python.exe");
         let target: RuntimeBoxTarget = serde_json::from_value(value["target"].clone()).unwrap();
         let host = host("windows", "x86_64", Some("500.10"));
         let release: ReleaseManifest = serde_json::from_value(value.clone()).unwrap();
@@ -2234,9 +2351,9 @@ mod tests {
         std::fs::remove_dir_all(root).unwrap();
     }
 
-    /// The native P5.3 validator supplies a Scrollcase-v2 archive and its already verified release
-    /// payload. This exercises the production Rust extractor and complete box.json agreement on
-    /// each matching host without adding a second signing implementation to the fixture.
+    /// The native validator supplies a signed Scrollcase-v2 release and its archive. This exercises
+    /// the same combined preparation API as the product install path, including in-memory trust,
+    /// archive identity, complete box.json agreement and extraction on each matching host.
     #[test]
     #[ignore = "run through npm run runtime-box:test:native"]
     fn runtime_box_v2_archive_fixture() {
@@ -2244,22 +2361,42 @@ mod tests {
             .expect("v2 Runtime Box fixture archive path is required");
         let release_path = std::env::var("LIATIR_RUNTIME_BOX_V2_RELEASE_FIXTURE")
             .expect("v2 Runtime Box fixture release path is required");
-        let release: ReleaseManifest = serde_json::from_slice(
-            &std::fs::read(release_path).expect("cannot read v2 fixture release"),
-        )
-        .expect("cannot parse v2 fixture release");
+        let release_bytes = std::fs::read(&release_path).expect("cannot read v2 fixture release");
+        let signed: SignedDocument =
+            serde_json::from_slice(&release_bytes).expect("cannot parse v2 fixture release");
+        let release: ReleaseManifest =
+            verify_signed_payload(&release_bytes).expect("cannot verify v2 fixture release");
         assert_eq!(release.schema_version, RUNTIME_BOX_SCHEMA_VERSION);
 
         let destination = std::env::temp_dir().join(format!(
             "liatir-runtime-box-v2-extract-{}",
             Uuid::new_v4()
         ));
-        std::fs::create_dir_all(&destination).unwrap();
-        extract_zip_archive(std::path::Path::new(&archive), &destination).unwrap();
+        let keys = trusted_keys().expect("cannot load v2 fixture trust key");
+        let mut order = RuntimeBoxInstallOrder::new();
+        order.release_verified().unwrap();
+        order.product_policy_checked().unwrap();
+        order.disk_checked().unwrap();
+        order.archive_verified().unwrap();
+        let prepared = order
+            .extract(|| {
+                verify_and_extract_box(
+                    std::path::Path::new(&release_path),
+                    &PrepareOptions {
+                        trust: TrustAnchors::Keys(&keys),
+                        archive: Some(std::path::Path::new(&archive)),
+                        destination: &destination,
+                        environment: EnvironmentReportOptions::default(),
+                    },
+                )
+                .map_err(|error| error.message().to_string())
+            })
+            .unwrap();
+        assert_eq!(prepared.release_payload_sha256(), signed.payload_sha256);
         if let Some(expected) = release.installed_size_bytes {
-            assert_eq!(dir_size(&destination).unwrap(), expected);
+            assert_eq!(prepared.installed_size_bytes(), expected);
         }
-        let python = validate_extracted_box(&destination, &release).unwrap();
+        let python = destination.join(safe_relative_path(prepared.python_entry_point()).unwrap());
         assert!(python.is_file());
         std::fs::remove_dir_all(destination).unwrap();
     }
@@ -2282,7 +2419,11 @@ mod tests {
         // The production Runtime Box path extracts through Scrollcase, so Zip64 has to be proven
         // there and not only in the shared managed-binary helper: the largest published box is a
         // 17 GB CUDA archive, well past the 4 GiB Zip64 boundary this fixture sits on.
-        extract_zip_archive(std::path::Path::new(&archive), &destination).unwrap();
+        scrollcase_consumer::archive::extract_zip_archive(
+            std::path::Path::new(&archive),
+            &destination,
+        )
+        .unwrap();
 
         let output = destination.join("huge-zero-fixture.bin");
         assert_eq!(std::fs::metadata(&output).unwrap().len(), expected);

@@ -11,20 +11,21 @@ and updating that line is downstream Liatir work, not a reopening of extraction.
 `scrollcase/` copy was removed from Liatir in commit `6b4934e`.
 
 **Remaining downstream work:** **P5 is in progress in Liatir; P5.0, P5.1,
-P5.2, P5.2V, P5.3, P5.4, P5.4T, P5.4E, P5.4V, P5.4W and P5.4P are complete.**
+P5.2, P5.2V, P5.3, P5.4, P5.4R, P5.4T, P5.4E, P5.4V, P5.4W and P5.4P are complete.**
 Exact `scrollcase@0.8.0` is installed,
 the v2-only cutover is complete, all active recipes use pixi/conda-pack, and all
-nine current model targets are published. P5.4R and P5.5 are partial; P5.6 and
-P5.7 remain open.
+nine current model targets are published. P5.5 is partial; P5.6 and P5.7 remain
+open.
 The historical `scrollcase@0.1.3` contract inversion and clean
 keygen/lock/build/verify consumer cycle remain prior evidence, not the target
 architecture.
 P5.2/P5.2V added the consumer and signer/distribution adapters, replaced the
 active contract with v2 across every Liatir surface, removed active v1 parsing,
 and defined explicit unsupported/removal handling for installed v1 state.
-P5.3/P5.4 completed every foundation and model migration, and the local builder
-was deleted. The remaining work is the Rust delegation and duplicate-helper
-audit recorded in the canonical P5 plan, followed by final local/native closure.
+P5.3/P5.4 completed every foundation and model migration, the local builder was
+deleted, and P5.4R closed the Rust delegation boundary. The remaining work is the
+duplicate-helper audit recorded in the canonical P5 plan, followed by final
+local/native closure.
 This integration does not change Scrollcase's completed extraction or its
 independence. The detailed canonical execution plan is
 [Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md).

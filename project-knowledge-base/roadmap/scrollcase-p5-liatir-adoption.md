@@ -2,18 +2,17 @@
 
 Last reviewed: 2026-08-10
 
-Status: **in progress — P5.0, P5.1, P5.2, P5.2V, P5.3, P5.4, P5.4T,
-P5.4E, P5.4V, P5.4W and P5.4P are complete.** All
+Status: **in progress — P5.0, P5.1, P5.2, P5.2V, P5.3, P5.4, P5.4R,
+P5.4T, P5.4E, P5.4V, P5.4W and P5.4P are complete.** All
 nine current model targets are schema-v2 Runtime Boxes, natively proven, KMS-signed,
 published and promoted on `beta`: three Geneformer, five scGPT and
 one UCE. Geneformer `1.0.0-beta.1` and scGPT `0.2.5-beta.1` are present together
 in the live signed revocations document. UCE `1.0.0-beta.1` is not channel-selected
 and is rejected by the v2-only app, but remains an explicit retirement decision
-because it is not revoked. P5.4R is partial on exact
-`scrollcase-consumer 0.3.2`; P5.5 is partial after deletion of the local
-builder and rename of the distribution CLI. P5.6 and P5.7 remain open. The next
-implementation work is the consumer-boundary/deletion audit, not another model
-release.
+because it is not revoked. P5.5 is partial after deletion of the local builder
+and rename of the distribution CLI. P5.6 and P5.7 remain open. The next
+implementation work is the P5.5 duplicate-helper ownership/deletion audit, not
+another model release.
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project. The P5 target was
@@ -197,7 +196,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.2V — Scrollcase v2-only cutover | Complete | Exact `scrollcase@0.4.11`; active contracts and consumers use v2; v1 is explicitly unsupported; clean local v2 proof green |
 | P5.3 — v2 foundation-fixture migration | Complete | Three reviewed v2 scrolls/locks/audits; macOS, Linux and Windows native proofs green; every foundation uv fixture removed only after its matching proof |
 | P5.4 — model-recipe migration | Complete | All five scGPT inputs, Geneformer's whole matrix (macOS Metal plus both CUDA successors, its CPU targets dropped on measurement) and UCE are v2 and natively proven. No uv recipe remains anywhere. UCE was authored on `0.7.1` and passed on first dispatch; the rebuild owed by the other eight model targets and two foundation fixtures was subsequently completed in P5.4V |
-| P5.4R — adopt `scrollcase-consumer` in the Rust bridge | Partial | Exact `scrollcase-consumer 0.3.2`. `runtime_boxes.rs` delegates trust parsing, signature and target verification, safe path checks, manifest agreement and archive extraction while retaining the Liatir lifecycle. It does not yet use the crate's combined prepare/attach/extracted-payload entry points, and no regression pins the complete Liatir-owned call order. Finish or explicitly reject each remaining delegation from current APIs, not from the historical `public_key_path` blocker |
+| P5.4R — adopt `scrollcase-consumer` in the Rust bridge | Complete | Exact `scrollcase-consumer 0.3.2`. The install path uses `prepare::verify_and_extract_box` with compiled-in `TrustAnchors::Keys`, binds its receipt to the exact release already approved by Liatir, and has an executable regression for verify → product policy/revocation → disk → archive → extraction. `attach_extracted_box`, `verify_extracted_payload` and `verify_required_assets` are explicitly rejected as automatic install/run gates for the current lifecycle; the detailed record below states their future diagnostic/on-demand conditions |
 | P5.4T — `scrollcase-consumer 0.2.0` pin and delegation sweep | Complete | Exact `=0.2.0`; hand-written trust parser replaced by `trust::parse_trusted_keys` with all three key sources on one format; `dir_size` → `filesystem::payload_size`; `RuntimeBoxArchive`, `RuntimeBoxSelfTest` and `ExtractedBoxMetadata` deleted in favour of the box format's own types; the 13-field comparison replaced by `assert_box_manifest_agreement`, which closes the uncompared `environment` field; `min_ram_gb` → `f64`, matching the shared TS contract. `cargo clippy` clean and 41/41 Rust tests green |
 | P5.4E — Rust `Compatibility` carries project constraints | Resolved upstream, adopted | The Rust `Compatibility` was `deny_unknown_fields`, stricter than the schema the crate itself ships (`additionalProperties: true`, "a project may add its own"). Measured at the time: the Node consumer accepted `runtime-boxes/contract-compatibility-fixtures.json`, the Rust type rejected the same bytes. Fixed upstream in `scrollcase-consumer 0.3.0`, which carries unknown constraints in `Compatibility::additional` and states that an application finding one it does not understand must refuse the box. Liatir adopted the fix and now pins `=0.3.2`; it has **deleted its own `ReleaseManifest` and `RuntimeBoxCompatibility`** in favour of the box format's types, reads `minLiatirVersion` / `maxLiatirVersionExclusive` from `additional`, and refuses any other entry. `to_box_format` is gone |
 | P5.4V — Scrollcase `0.4.11` → current-line upgrade | Complete | Exact `scrollcase@0.7.1` with its npm identity read back into the lockfile, `scrollcase-consumer` confirmed ahead of the format, and the maintainer decision recorded that every proven target rebuilds rather than freezes. All eleven targets rebuilt, measured and catalog-bound on `0.7.1`, one dispatch each, no retry: every lock byte-identical, every parity figure reproduced exactly including all four CUDA targets, every `diskPlan` measured on its own host. Nothing signed with a production key, published or promoted |
@@ -214,24 +213,18 @@ the next phase starting.
 
 Work locally and cheaply until the boundary is clear:
 
-1. **Finish the P5.4R decision.** Compare the current Rust sequence in
-   `src-tauri/src/bridge/runtime_boxes.rs` with the public
-   `scrollcase-consumer 0.3.2` prepare/attach/extracted-payload APIs. Record why
-   each remaining step is delegated or deliberately Liatir-owned, then add one
-   regression that pins the resulting trust → verify → extract/attach → product
-   compatibility → activation order.
-2. **Complete the P5.5 import and ownership audit before deletion.**
+1. **Complete the P5.5 import and ownership audit before deletion.**
    `pixi.mjs` and `python.mjs` currently form a test-only chain, and the local
    `scrollcase.config.schema.json` has no live reference. `archive.mjs`,
    `filesystem.mjs`, `licenses.mjs`, `targets.mjs` and `workspace.mjs` still have
    production or validation callers. Compare each surviving operation with the
    public `scrollcase@0.8.0` build/contract exports; delete only generic overlap,
    and keep Liatir-specific validation, evidence, runner and distribution logic.
-3. **Close P5.6** with the full cheap gate and one reviewed non-production native
+2. **Close P5.6** with the full cheap gate and one reviewed non-production native
    lifecycle using the final boundary. No protected publication or paid GPU run
    is needed for this closure.
-4. **Close P5.7** by updating the inventories and operator documentation once
-   P5.4R/P5.5/P5.6 are actually complete.
+3. **Close P5.7** by updating the inventories and operator documentation once
+   P5.5/P5.6 are actually complete.
 
 Persisted anti-replay/version-floor state is the next product-hardening slice
 after P5, not a reason to keep generic builder code. The possible UCE `beta.1`
@@ -1641,7 +1634,7 @@ UCE is a multi-gigabyte build. Before running it:
 
 ## P5.4R — Adopt `scrollcase-consumer` in the Rust bridge
 
-Recorded 2026-08-04. **Not started.** This phase splits
+Recorded 2026-08-04; **completed 2026-08-10.** This phase splits
 `src-tauri/src/bridge/runtime_boxes.rs` along the line the architecture table
 already draws: **format verification** is delegated to the published crate,
 **product lifecycle** stays in Liatir. It is implementation work, not a
@@ -1665,7 +1658,7 @@ the crate first means the pin upgrade stops being a Rust rewrite.
 Sequencing is therefore a recommendation, not a constraint: prefer P5.4R before
 P5.4V, and neither before P5.4 closes.
 
-### Selected version
+### Original selected version
 
 `scrollcase-consumer 0.1.2`, read from the sparse index on 2026-08-04. It adds
 what `0.1.1` lacked for Liatir: `errorPatterns` now carries 28 contractual
@@ -1673,6 +1666,11 @@ strings including `unsupported-schema-version` → `"Unsupported schemaVersion 1
 with a matching `prepare` conformance case expecting `rejected` and
 `destinationExists: false`. The suite is 66 cases. Re-read the exact immutable
 identity immediately before adding the dependency, per the P5.2V.0 rule.
+
+The completed boundary pins exact `scrollcase-consumer 0.3.2`. The intervening
+P5.4T/P5.4E work added in-memory `TrustAnchors` and made the crate's compatibility
+type match its extensible schema, removing the two blockers described in the
+historical records below.
 
 ### The split
 
@@ -1694,8 +1692,8 @@ Keep — these are product decisions the crate explicitly disclaims ("selects no
 channel, downloads nothing, updates nothing, knows about no registry"):
 
 - `validate_control_url` (520), `fetch_control_document` (539),
-  `select_channel_release` (943), `ensure_not_revoked` (1039), `installation_id`
-  (923) and persisted anti-replay state;
+  `select_channel_release` (943), `ensure_not_revoked` (1039) and
+  `installation_id` (923). Persisted anti-replay remains the next product slice;
 - `current_host_capabilities` (575), `select_target_candidate` (604),
   `check_compatibility` (845) with `minLiatirVersion`, and the version helpers
   (592, 819, 831, 836);
@@ -1724,9 +1722,10 @@ Two items need a decision rather than a mechanical move:
 
 The crate makes verification callable before extraction, and the install path
 must use that ordering: parse and verify the signed release, **then** run
-Liatir's revocation and anti-replay checks, **then** check the disk plan,
-**then** extract. Do not extract a revoked or replayed box and reject it
-afterwards.
+Liatir's product policy and revocation checks, **then** check the disk plan,
+**then** verify the archive and extract. Persisted anti-replay will be inserted
+into the product-policy phase when that separate slice is implemented. Do not
+extract a revoked box and reject it afterwards.
 
 Schema-v1 detection stays Liatir's, from the product-owned installed-state
 record as an integer, per P5.2V.2. The crate's pinned
@@ -1738,7 +1737,7 @@ detector, and Liatir must not branch on error text.
 1. add exact `scrollcase-consumer = "=0.1.2"` to `src-tauri/Cargo.toml`; confirm
    resolution and that the transitive licence footprint passes audit;
 2. add integration regressions for the **call order** Liatir owns — verify,
-   then revocation and anti-replay, then disk plan, then extract — since that
+   then product policy/revocation, then disk plan, then extract — since that
    ordering is Liatir's responsibility and no upstream test covers it;
 3. replace the table's left column one row at a time, keeping
    `cargo test runtime_box` green between rows;
@@ -1914,19 +1913,87 @@ were reverted, and `--no-example` avoids them.
    path, which this slice did not touch, so it does not gate what changed here —
    but it must pass before the extraction slice closes;
 3. the call-order regression from step 2 belongs with the extraction slice,
-   since the order it pins is verify → revocation/anti-replay → disk → extract.
+   since the order it pins is verify → product policy/revocation → disk → extract.
+
+### P5.4R completion record — 2026-08-10
+
+The historical file-path blocker above is gone in exact
+`scrollcase-consumer 0.3.2`, and the final boundary is now implemented:
+
+- the install path calls `prepare::verify_and_extract_box` with
+  `TrustAnchors::Keys(&keys)`, so trust remains the compiled-in Liatir key set;
+- because the public API is path-based for the signed release, Liatir writes the
+  exact already-verified envelope to a content-addressed temporary file owned by
+  an RAII guard. The file is not durable release state and is removed on normal
+  return, error or unwind;
+- the returned `PreparedBox` receipt must carry the same release-payload SHA-256
+  that Liatir approved before revocation and disk policy. This binds the crate's
+  path-based re-read to the exact signed payload selected from the channel;
+- Scrollcase now owns the authoritative second release/archive verification,
+  destination creation, safe extraction, installed-size check, complete
+  `box.json` agreement and post-extraction archive re-hash. The local
+  `validate_extracted_box` implementation is deleted;
+- `ReleaseManifest::validate`, `box_target_adapter` and
+  `assert_python_entry_point` replace the remaining generic release/entry-point
+  checks. Liatir still owns its namespace, catalog/host match, CUDA and
+  application compatibility, archive URL, model-cache path, revocation, disk
+  plan, self-test diagnostics, activation, rollback, removal and provenance;
+- `RuntimeBoxInstallOrder` makes the Liatir sequence executable: verified release
+  → product policy/revocation → disk → archive → combined preparation. Its
+  regression proves the preparation closure is not invoked from an earlier
+  phase. Persisted anti-replay is absent by design and will join the product
+  policy phase in the separately planned hardening slice.
+
+The remaining public consumer operations were decided, not silently deferred:
+
+1. **Do not attach automatically on restart.** `attach_extracted_box` performs a
+   fresh all-file inspection and returns an in-process `PreparedBox`; that
+   receipt is not durable across app restarts. Liatir already persists the exact
+   signed activation envelope and re-verifies it before dispatch. Revisit attach
+   only if execution itself migrates to a `PreparedBox`-owned lifecycle.
+2. **Do not make full payload verification an install or run gate.**
+   `verify_extracted_payload` deliberately reads the entire installed payload,
+   is O(box size), requires the optional payload digest, and proves only a
+   point-in-time state. It is suitable for a future explicit integrity diagnostic,
+   not for every run of multi-gigabyte AI Models.
+3. **Do not invent an on-demand-assets path.** `verify_required_assets` becomes
+   relevant only when a Liatir Runtime Box actually declares assets that are not
+   embedded. Current published boxes do not.
+4. **Keep Liatir's self-test.** It captures Python stderr and reports the actual
+   missing module or loader error; replacing it with a less diagnostic execution
+   wrapper would regress an already-proven operational requirement.
+
+Evidence on the final local boundary:
+
+- `cargo test runtime_box -- --nocapture`: 18 passed, 2 explicitly ignored native
+  fixtures, 0 failed;
+- `cargo clippy --tests`: completed with the repository's pre-existing warnings
+  and no new finding in the P5.4R code;
+- `npm run test:verify`: 42 test files / 266 tests, SDK generation, core build,
+  frontend check/build and `src-ts` compile all green;
+- `git diff --check`: green. `cargo fmt --check` could not run because the pinned
+  Rust toolchain has no `rustfmt` component installed; the changed Rust was
+  checked manually and compiled by both test and clippy.
+
+The existing native fixture was updated to feed the signed release envelope and
+the same in-memory trust source through `verify_and_extract_box`. It was not
+re-run in this slice: the phase rule below explicitly does not require native
+re-validation for a verifier-only swap, and P5.6 still owns the reviewed final
+non-production native lifecycle. No recipe, catalog entry, trust root, signed
+object or channel changed.
 
 ### P5.4R exit gate
 
 - `runtime_boxes.rs` contains no local signature verification, target-ID
-  computation, safe-path rule, archive-identity check or extraction primitive;
+  computation, safe-path rule, authoritative archive-identity check or extraction
+  primitive;
 - the product lifecycle listed above is unchanged and still Liatir-owned;
 - the call-order regression from step 2 is green, and no conformance fixture was
   vendored into this repository;
 - `managed_bins::extract_zip_with_expected_size` is no longer on the Runtime Box
   path, and its remaining callers are unaffected;
-- one already-proven target reinstalls and runs from its existing evidence
-  bytes, proving the swap changed no observable behavior;
+- the earlier native proof remains the observable baseline, and the native
+  fixture is wired to exercise the final combined preparation path in P5.6;
 - no recipe, catalog identity, trust root, published object or channel changed.
 
 Native re-validation is **not** required to close P5.4R: the crate changes how a
@@ -2339,11 +2406,10 @@ redundant. Liatir now pins `=0.3.2`, so `AttachOptions { trust:
 TrustAnchors::Keys(&anchors), .. }` is callable today against the anchors the
 binary already carries.
 
-The P5.4R remainder is therefore no longer blocked on anything upstream: decide
-and test whether `verify_and_extract_box`, `attach_extracted_box` and
-`verify_extracted_payload` should replace the remaining Liatir-side sequence,
-then pin the chosen call order with a regression. That is Liatir work, to be
-scheduled on its own merits rather than waited on.
+That decision is now closed by the 2026-08-10 completion record above:
+`verify_and_extract_box` owns combined preparation, while automatic attach and
+full-payload verification are rejected for the current lifecycle, and the chosen
+call order has a regression. No upstream wait remains.
 
 The order question this section left open — P5.4V before or after P5.5 — is
 answered by the same decision. P5.4V ran first, so P5.5 will delete the legacy
