@@ -18,18 +18,19 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { resolveWorkspace } from 'scrollcase/build';
+import { boxTargetId } from 'scrollcase/contract/browser';
 import { downloadVerified } from './runtime-box/assets.mjs';
 import { resolveRuntimeBoxAuthoringInput } from './runtime-box/authoring-input.mjs';
-import { runtimeBoxTargetId } from './runtime-box/targets.mjs';
-import { resolveWorkspace } from './runtime-box/workspace.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 /** Pinned upstream commit: parity must be checked against a fixed reference, not a moving branch. */
 const REVISION = '04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5';
 /** Exact upstream tokenizer used as the scientific reference for the pinned revision. */
 const UPSTREAM_TOKENIZER = Object.freeze({
+  label: 'Geneformer tokenizer',
+  destinationSegments: Object.freeze(['geneformer', 'tokenizer.py']),
   url: `https://huggingface.co/ctheodoris/Geneformer/resolve/${REVISION}/geneformer/tokenizer.py`,
-  relativePath: 'geneformer/tokenizer.py',
   sizeBytes: 34_686,
   sha256: '689b71a916b75fa618fbb460a7fc460c3ab32d41e4f98064efb0ebb3ee921002',
 });
@@ -44,7 +45,7 @@ const RECIPE = resolveRuntimeBoxAuthoringInput({
 if (RECIPE.sourceRevision !== REVISION) {
   throw new Error(`Geneformer tokenizer reference is not pinned for source revision ${RECIPE.sourceRevision}.`);
 }
-const TARGET_ID = runtimeBoxTargetId(RECIPE.target);
+const TARGET_ID = boxTargetId(RECIPE.target);
 if (
   process.env.LIATIR_RUNTIME_BOX_TARGET_ID
   && process.env.LIATIR_RUNTIME_BOX_TARGET_ID !== TARGET_ID
@@ -113,7 +114,7 @@ function extractEmbeddedScript(source) {
 const workDir = await mkdtemp(join(tmpdir(), 'liatir-geneformer-parity-'));
 try {
   const runtimeDir = RUNTIME_DIR;
-  const upstreamTokenizer = join(workDir, ...UPSTREAM_TOKENIZER.relativePath.split('/'));
+  const upstreamTokenizer = join(workDir, ...UPSTREAM_TOKENIZER.destinationSegments);
   // Fetch the one immutable source file directly. A partial Git clone relies on platform-specific
   // demand fetching for the missing blob; the shared downloader instead enforces both bytes and
   // SHA-256 before the scientific harness can import the reference.

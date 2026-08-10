@@ -6,12 +6,12 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { builderVersionFields } from 'scrollcase/build';
 import {
   loadRuntimeBoxValidatorContext,
   productAcceleratorForTarget,
   runtimeBoxAcceleratorKind,
 } from './runtime-box/validator-context.mjs';
-import { runtimeBoxBuilderVersionFields } from './runtime-box/identity.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const REVISION = 'cebd6fae655b9c585a4807daa3ac31bb764f06b4';
@@ -219,7 +219,7 @@ try {
       recipeId: AUTHORING_ID,
       recipeVersion: AUTHORING_VERSION,
       pythonVersion: RECIPE.pythonVersion,
-      ...runtimeBoxBuilderVersionFields(RECIPE),
+      ...builderVersionFields(RECIPE),
       dependencyLockSha256: DEPENDENCY_LOCK_SHA256,
     },
     evidence: {

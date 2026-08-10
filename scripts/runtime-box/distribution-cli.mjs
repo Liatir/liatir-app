@@ -28,25 +28,30 @@ import { createServer } from 'node:http';
 import { dirname, extname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  boxReleaseObjectPrefix,
+  configureWorkspace,
+  fileExists,
+  getWorkspace,
+  sha256File,
+  workspaceOverridesFromFlags,
+} from 'scrollcase/build';
+import { boxTargetId } from 'scrollcase/contract/browser';
+import {
   decodeSignedDocument as decodeScrollcaseDocument,
   signDocument as signScrollcaseDocument,
   verifySignedDocument as verifyScrollcaseDocument,
 } from 'scrollcase/sign';
-import { fileExists, safeRelativePath, sha256File } from './filesystem.mjs';
 import {
   runtimeBoxArchivePath,
   runtimeBoxChannelDocumentPath,
-  runtimeBoxReleaseObjectPrefix,
 } from './identity.mjs';
 import { fail, run as runProcess } from './process.mjs';
-import { configureWorkspace, getWorkspace, workspaceOverridesFromFlags } from './workspace.mjs';
-import { runtimeBoxTargetId } from './targets.mjs';
 import { liatirSignerCommand } from './signer-command.mjs';
 
 /**
  * Workspace directories, read through getters so `main()` can configure them from flags before the
  * first path is used. `root` is the project root; `dist` and `keys` are generated and git-ignored.
- * See `runtime-box/workspace.mjs` for the resolution rules.
+ * Scrollcase's public workspace resolver owns the resolution rules.
  */
 const paths = {
   get root() { return getWorkspace().root; },
@@ -134,8 +139,19 @@ function normalizeObjectPrefix(value) {
   return prefix;
 }
 
+/** Validates a Liatir Registry/R2 relative object path before it reaches a URL or filesystem join. */
+function safeDistributionPath(value) {
+  const path = String(value).replaceAll('\\', '/');
+  const segments = path.split('/');
+  if (!path || path.startsWith('/') || path.includes('\0') || /^[A-Za-z]:\//.test(path)
+    || segments.some((segment) => segment === '' || segment === '..')) {
+    fail(`Invalid Runtime Box distribution path: ${value}`);
+  }
+  return path;
+}
+
 function prefixedObjectKey(prefix, key) {
-  return `${normalizeObjectPrefix(prefix)}/${safeRelativePath(key)}`;
+  return `${normalizeObjectPrefix(prefix)}/${safeDistributionPath(key)}`;
 }
 
 /** Accepts both trust-file shapes: a bundle of keys, or a single bare key. */
@@ -271,7 +287,7 @@ async function remoteObjectExists(url) {
 async function uploadArchiveMultipart(archivePath, release, flags) {
   const registry = registryBaseUrl(flags);
   const token = await registryAdminToken(flags);
-  const target = runtimeBoxTargetId(release.target);
+  const target = boxTargetId(release.target);
   const identityPath = [release.boxId, release.version, target, release.archive.sha256]
     .map((segment) => encodeURIComponent(segment))
     .join('/');
@@ -344,7 +360,7 @@ async function uploadArchiveMultipart(archivePath, release, flags) {
 async function uploadReleaseDocument(releasePath, release, releaseSha256, flags) {
   const registry = registryBaseUrl(flags);
   const token = await registryAdminToken(flags);
-  const target = runtimeBoxTargetId(release.target);
+  const target = boxTargetId(release.target);
   const identityPath = [release.boxId, release.version, target, releaseSha256]
     .map((segment) => encodeURIComponent(segment))
     .join('/');
@@ -375,14 +391,14 @@ async function serve(flags) {
         const [, channel, boxId, target] = channelMatch;
         localPath = runtimeBoxChannelDocumentPath(
           paths.dist,
-          safeRelativePath(boxId),
-          safeRelativePath(channel),
-          safeRelativePath(target),
+          safeDistributionPath(boxId),
+          safeDistributionPath(channel),
+          safeDistributionPath(target),
         );
       } else if (url.pathname === '/v1/revocations') {
         localPath = join(paths.dist, 'runtime-box-revocations.json');
       } else if (url.pathname.startsWith('/objects/')) {
-        localPath = join(paths.dist, safeRelativePath(url.pathname.slice('/objects/'.length)));
+        localPath = join(paths.dist, safeDistributionPath(url.pathname.slice('/objects/'.length)));
       } else {
         response.writeHead(url.pathname === '/health' ? 200 : 404, { 'Content-Type': 'application/json' });
         response.end(JSON.stringify(url.pathname === '/health' ? { ok: true } : { error: 'not_found' }));
@@ -454,7 +470,7 @@ async function publish(releaseDocumentPath, flags) {
     || runtimeBoxArchivePath(releasePath, release)));
   if (await sha256File(archivePath) !== release.archive.sha256) fail('Refusing to publish an archive with the wrong SHA-256.');
   const objectPrefix = normalizeObjectPrefix(flags.get('prefix'));
-  const releasePrefix = runtimeBoxReleaseObjectPrefix(release);
+  const releasePrefix = boxReleaseObjectPrefix(release);
   const archiveKey = prefixedObjectKey(objectPrefix, `${releasePrefix}/${release.archive.sha256}.zip`);
   const releaseSha = await sha256File(releasePath);
   const releaseKey = prefixedObjectKey(objectPrefix, `${releasePrefix}/${releaseSha}.release.json`);
@@ -546,7 +562,7 @@ async function promote(channelDocumentPath, flags) {
   // `fail` throws, so the final branch never yields a value — it rejects anything that is neither
   // a channel nor a revocations manifest.
   const endpoint = payload.kind === 'liatir.runtime-box.channel'
-    ? `/v1/admin/channels/${payload.channel}/${payload.boxId}/${runtimeBoxTargetId(payload.target)}`
+    ? `/v1/admin/channels/${payload.channel}/${payload.boxId}/${boxTargetId(payload.target)}`
     : payload.kind === 'liatir.runtime-box.revocations'
       ? '/v1/admin/revocations'
       : fail('Promotion document is not a channel or revocations manifest.');
@@ -569,11 +585,11 @@ async function promote(channelDocumentPath, flags) {
     httpStatus: response.status,
     response: responseBody,
     channelUrl: payload.kind === 'liatir.runtime-box.channel'
-      ? `${registry}/v1/channels/${payload.channel}/${payload.boxId}/${runtimeBoxTargetId(payload.target)}`
+      ? `${registry}/v1/channels/${payload.channel}/${payload.boxId}/${boxTargetId(payload.target)}`
       : `${registry}/v1/revocations`,
   });
   console.log(payload.kind === 'liatir.runtime-box.channel'
-    ? `Promoted ${payload.boxId} ${payload.channel} ${runtimeBoxTargetId(payload.target)}`
+    ? `Promoted ${payload.boxId} ${payload.channel} ${boxTargetId(payload.target)}`
     : `Promoted ${payload.revocations.length} Runtime Box revocation(s)`);
 }
 
@@ -681,7 +697,7 @@ function mergeRevocations(carried, added) {
   const identity = (entry) => [
     entry.boxId,
     entry.version,
-    entry.target ? runtimeBoxTargetId(entry.target) : '',
+    entry.target ? boxTargetId(entry.target) : '',
   ].join(' ');
   const merged = new Map(carried.map((entry) => [identity(entry), entry]));
   for (const entry of added) {

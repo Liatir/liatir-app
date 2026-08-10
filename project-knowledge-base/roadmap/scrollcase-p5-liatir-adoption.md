@@ -3,16 +3,15 @@
 Last reviewed: 2026-08-10
 
 Status: **in progress — P5.0, P5.1, P5.2, P5.2V, P5.3, P5.4, P5.4R,
-P5.4T, P5.4E, P5.4V, P5.4W and P5.4P are complete.** All
+P5.4T, P5.4E, P5.4V, P5.4W, P5.4P and P5.5 are complete.** All
 nine current model targets are schema-v2 Runtime Boxes, natively proven, KMS-signed,
 published and promoted on `beta`: three Geneformer, five scGPT and
 one UCE. Geneformer `1.0.0-beta.1` and scGPT `0.2.5-beta.1` are present together
 in the live signed revocations document. UCE `1.0.0-beta.1` is not channel-selected
 and is rejected by the v2-only app, but remains an explicit retirement decision
-because it is not revoked. P5.5 is partial after deletion of the local builder
-and rename of the distribution CLI. P5.6 and P5.7 remain open. The next
-implementation work is the P5.5 duplicate-helper ownership/deletion audit, not
-another model release.
+because it is not revoked. The local generic builder and its duplicate helper
+modules are retired. P5.6 and P5.7 remain open. The next implementation work is
+the reviewed non-production native lifecycle for P5.6, not another model release.
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project. The P5 target was
@@ -202,7 +201,7 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.4V — Scrollcase `0.4.11` → current-line upgrade | Complete | Exact `scrollcase@0.7.1` with its npm identity read back into the lockfile, `scrollcase-consumer` confirmed ahead of the format, and the maintainer decision recorded that every proven target rebuilds rather than freezes. All eleven targets rebuilt, measured and catalog-bound on `0.7.1`, one dispatch each, no retry: every lock byte-identical, every parity figure reproduced exactly including all four CUDA targets, every `diskPlan` measured on its own host. Nothing signed with a production key, published or promoted |
 | P5.4W — Scrollcase `0.7.1` → `0.8.0` pin raise | Complete | Exact `scrollcase@0.8.0` (published 2026-08-06T17:28:03.966Z, integrity `sha512-zC2rply…pcxEQ==`) read back from npm into the lockfile before the change. Diffed against the `0.7.1` tarball it touches only `CHANGELOG`, `package.json`, `build/verify`, the two consumer entry points and `sign/`: `src/contract` is **byte-identical** and no archive-producing code moved, so the eleven-target matrix carries over with zero rebuilds. The change is additive — every operation now takes `publicPath` **or** `trustedKeys`, and `verifySignedDocument` still accepts a path — so no Liatir call site changed. `test:verify` 6/6, 42/42 Rust tests, and the macOS native fixture lifecycle green on the new pin. **The fixture confirms the diff empirically**: rebuilt on `0.8.0` it produced archive `54172964` and installed `146593318` bytes, the exact figures measured on `0.7.1` and recorded in the catalog |
 | P5.4P — re-release of the rebuilt matrix | Complete | All nine targets are KMS-signed, scientifically validated, published immutably and promoted on `beta`, with public channel readback. Geneformer `1.0.0-beta.1` and scGPT `0.2.5-beta.1` are jointly revoked in the live signed document. UCE `1.0.0-beta.1` is not selected and is v2-incompatible, but whether to add it to revocations remains an explicit product decision |
-| P5.5 — final cutover and legacy deletion | Partial | The local builder is deleted (`5f52f5e`) and `legacy-cli.mjs` is now `distribution-cli.mjs`. Before deleting more, audit the still-used local filesystem, identity, licence, pixi/Python and workspace helpers against the public `scrollcase@0.8.0` exports; retain only Liatir-specific orchestration and distribution behavior |
+| P5.5 — final cutover and legacy deletion | Complete | Every active caller uses public `scrollcase@0.8.0` build/contract exports. The local archive, filesystem, licence, pixi, standalone-Python/uv, target and workspace copies plus the unused config schema are deleted; `identity.mjs` retains only Liatir distribution paths. Static deletion/legacy-field/package-surface guards, 38 unit files / 232 tests, catalog, signer, published-build + Rust Zip64 foundation, Rust Runtime Box and the full TypeScript/build gate are green |
 | P5.6 — local/native closure | Pending | Full cheap gate plus one reviewed non-production product lifecycle |
 | P5.7 — documentation handoff | Pending | Status, inventories and operator docs match the implemented boundary |
 
@@ -213,17 +212,10 @@ the next phase starting.
 
 Work locally and cheaply until the boundary is clear:
 
-1. **Complete the P5.5 import and ownership audit before deletion.**
-   `pixi.mjs` and `python.mjs` currently form a test-only chain, and the local
-   `scrollcase.config.schema.json` has no live reference. `archive.mjs`,
-   `filesystem.mjs`, `licenses.mjs`, `targets.mjs` and `workspace.mjs` still have
-   production or validation callers. Compare each surviving operation with the
-   public `scrollcase@0.8.0` build/contract exports; delete only generic overlap,
-   and keep Liatir-specific validation, evidence, runner and distribution logic.
-2. **Close P5.6** with the full cheap gate and one reviewed non-production native
+1. **Close P5.6** with the full cheap gate and one reviewed non-production native
    lifecycle using the final boundary. No protected publication or paid GPU run
    is needed for this closure.
-3. **Close P5.7** by updating the inventories and operator documentation once
+2. **Close P5.7** by updating the inventories and operator documentation once
    P5.5/P5.6 are actually complete.
 
 Persisted anti-replay/version-floor state is the next product-hardening slice
@@ -2550,7 +2542,37 @@ records its promotion, not before.
 
 ## P5.5 — Final cutover and legacy deletion
 
-Only begin after P5.0–P5.4 are green.
+**Complete 2026-08-10.** Active callers were moved to public
+`scrollcase@0.8.0` exports before deletion. Removed from `scripts/runtime-box/`:
+`archive.mjs`, `filesystem.mjs`, `licenses.mjs`, `pixi.mjs`, `python.mjs`,
+`targets.mjs`, `workspace.mjs` and the unused `scrollcase.config.schema.json`.
+The root direct `tar`, `yauzl` and `yazl` dependencies disappeared with those
+copies; their transitive versions remain an implementation detail of Scrollcase.
+
+`identity.mjs` deliberately remains, but now holds only the two product-specific
+distribution paths: an archive beside its release document under the archive
+hash, and a channel document filed by channel. Registry/R2 path validation also
+remains inside the Liatir distribution module because it is a product control-plane
+boundary, not box build behavior. CI/catalog/evidence, heartbeat, model validators,
+signer policy/adapter, distribution/promotion/revocation, product lifecycle and the
+Rust consumer remain Liatir-owned.
+
+The static package-surface guard scans production sources, proves the deleted files
+stay absent, rejects imports of them and rejects deep/sibling/file Scrollcase
+resolution. Catalog validation rejects `uvVersion`, `requirementsInput`,
+`requirementsLock` and `torchBackend` on every active foundation or model scroll.
+Existing v2 fixture parity, namespace, v1-rejection, immutable historical-fixture
+and generated-type checks remain green.
+
+Exit evidence: `npm run test:unit` passed 38 files / 232 tests;
+`runtime-box:catalog:check` validated 3 models and 3 foundation fixtures;
+`runtime-box:signer:check` passed 15/15; the rewritten foundation gate passed the
+public deterministic-Zip64 API and Rust large-archive fixture; `cargo test
+runtime_box` passed 18 with 2 explicit fixture ignores; `npm run test:verify`
+passed all unit, SDK generation, core, frontend and TypeScript build gates; lint
+reported zero errors and the pre-existing 43 warnings. The diff contains no trust,
+signed object, catalog, generated binding or model change. No native lifecycle was
+run; that remains P5.6.
 
 ### Delete or replace the generic copies
 
@@ -2630,9 +2652,7 @@ npm run lint:ts
 Run the relevant focused unit files before the full gate:
 
 - contract/target identity;
-- workspace/package surface;
-- target adapters;
-- conda licences;
+- published package surface and deleted-module guards;
 - catalog and evidence;
 - publisher/distribution;
 - signer deployment/policy drift;

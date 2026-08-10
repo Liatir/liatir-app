@@ -8,9 +8,9 @@
 
 import { createWriteStream } from 'node:fs';
 import { mkdir, rename, stat } from 'node:fs/promises';
-import { dirname, sep } from 'node:path';
+import { dirname, join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
-import { fileExists, safeRelativePath, sha256File } from './filesystem.mjs';
+import { fileExists, sha256File } from 'scrollcase/build';
 import { fail } from './process.mjs';
 
 /**
@@ -23,8 +23,9 @@ import { fail } from './process.mjs';
  * corrupted transfer can never masquerade as a finished asset.
  */
 export async function downloadVerified(asset, destination) {
-  const expectedPath = safeRelativePath(asset.relativePath).split('/').join(sep);
-  if (!destination.endsWith(expectedPath)) fail(`Unexpected asset destination: ${destination}`);
+  const label = asset.label ?? asset.url;
+  const expectedSuffix = join(...asset.destinationSegments);
+  if (!destination.endsWith(expectedSuffix)) fail(`Unexpected asset destination for ${label}: ${destination}`);
   await mkdir(dirname(destination), { recursive: true });
   if (await fileExists(destination)) {
     const current = await stat(destination);
@@ -52,12 +53,12 @@ export async function downloadVerified(asset, destination) {
       // `fail` (asset URL / status) is a hard error, not a transient network drop — do not retry it.
       const message = error instanceof Error ? error.message : String(error);
       if (message.startsWith('Asset download failed') || attempt >= maxAttempts) throw error;
-      console.error(`runtime-box: asset ${asset.relativePath} download attempt ${attempt} failed (${message}); retrying.`);
+      console.error(`runtime-box: asset ${label} download attempt ${attempt} failed (${message}); retrying.`);
       await new Promise((wait) => setTimeout(wait, 2000 * attempt));
     }
   }
   const downloaded = await stat(partPath);
-  if (downloaded.size !== asset.sizeBytes) fail(`Asset size mismatch for ${asset.relativePath}.`);
-  if (await sha256File(partPath) !== asset.sha256) fail(`Asset SHA-256 mismatch for ${asset.relativePath}.`);
+  if (downloaded.size !== asset.sizeBytes) fail(`Asset size mismatch for ${label}.`);
+  if (await sha256File(partPath) !== asset.sha256) fail(`Asset SHA-256 mismatch for ${label}.`);
   await rename(partPath, destination);
 }

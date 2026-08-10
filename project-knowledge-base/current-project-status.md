@@ -85,6 +85,33 @@ document. It is not selected by the `beta` channel and the v2-only client reject
 it, but it is not present in the live revocations document. Decide deliberately
 whether to revoke it; do not infer retirement from the two model revocations above.
 
+## The local generic Runtime Box copies are retired (P5.5, 2026-08-10)
+
+All active build and CI callers now use the public `scrollcase@0.8.0` exports for
+workspace resolution, target identity/adapters, deterministic ZIP and filesystem
+primitives, builder identity and conda licence parsing. The local generic archive,
+filesystem, licences, pixi, standalone-Python/uv, targets and workspace modules,
+plus the unused local config schema, are deleted. Their package-owned unit suites
+are deleted with them rather than preserving downstream tests of an upstream
+implementation. The root no longer directly depends on `tar`, `yauzl` or `yazl`;
+they remain transitively owned by Scrollcase.
+
+Liatir still owns the thin command dispatcher, CI/catalog/evidence and heartbeat,
+scientific validators, signer command and policy, Registry/R2 distribution and
+path containment, product lifecycle, and Rust/Tauri consumer. `identity.mjs` now
+contains only the two Liatir distribution-layout helpers that previously drifted
+during publication: archive beside release-by-hash and channel-by-channel path.
+
+Static guards fail on a deleted-module import, an unpublished/deep/sibling
+Scrollcase reference, or any active catalog scroll carrying `uvVersion`,
+`requirementsInput`, `requirementsLock` or `torchBackend`. Final local evidence:
+38 unit files / 232 tests, catalog 3 models + 3 foundation fixtures, signer 15/15,
+published-build + Rust Zip64 foundation 1/1, Rust Runtime Box 18 passed / 2 ignored,
+and `npm run test:verify` fully green. `npm run lint:ts` has zero errors and the
+repository's existing 43 warnings. No trust root, signed document, catalog entry,
+generated binding, model asset or channel changed. P5.6 still owns the reviewed
+non-production native lifecycle; it was not run as part of this deletion slice.
+
 ## The Rust Scrollcase consumer boundary is closed (P5.4R, 2026-08-10)
 
 `src-tauri` remains pinned to exact `scrollcase-consumer 0.3.2`. Runtime Box
@@ -115,8 +142,7 @@ final-lifecycle gate; no model, catalog, trust, signed object or channel changed
 The Runtime Box migration and the nine-target re-release are complete. Continue
 Liatir development in this order:
 
-1. finish P5 in order: complete the P5.5 surviving-helper audit against public
-   `scrollcase@0.8.0`, run the reviewed non-production native lifecycle for P5.6,
+1. finish P5 in order: run the reviewed non-production native lifecycle for P5.6,
    then close the P5.7 documentation handoff;
 2. implement persisted anti-replay/version-floor state for Runtime Box control
    documents, with its ownership and recovery semantics defined before code;
@@ -125,7 +151,7 @@ Liatir development in this order:
 4. return to connector and broader scientific-workbench expansion only after the
    shared lifecycle is reliable.
 
-P5.4P and P5.4R are complete, P5.5 is partial, and P5.6/P5.7 remain open.
+P5.4P, P5.4R and P5.5 are complete; P5.6/P5.7 remain open.
 The canonical detailed ledger is
 [Scrollcase P5](./roadmap/scrollcase-p5-liatir-adoption.md). The sections below
 this point are retained as implementation history and must not override this
@@ -1024,7 +1050,8 @@ first).
 > has published and promoted all three macOS boxes on 2026-08-08, and the six
 > Linux/Windows targets followed: all nine targets are published, and the two
 > superseded `beta.1` versions were revoked on 2026-08-10 (see the top of this
-> file).** The next continuation is P5.5 legacy deletion.
+> file). P5.5 subsequently retired the remaining local generic helper copies.**
+> The next continuation is the P5.6 reviewed non-production native lifecycle.
 > P5.4 remained one phase with
 > three operational blocks rather than a new numbered checkpoint per target.
 > Do not use the historical

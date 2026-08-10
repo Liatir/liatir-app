@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { resolveWorkspace } from 'scrollcase/build';
+import { boxTargetId } from 'scrollcase/contract/browser';
 import { resolveRuntimeBoxAuthoringInput } from './authoring-input.mjs';
-import { runtimeBoxTargetId } from './targets.mjs';
-import { resolveWorkspace } from './workspace.mjs';
 
 /** Resolves a scientific validator exclusively from the catalog-checked recipe and target inputs. */
 export async function loadRuntimeBoxValidatorContext({
@@ -20,7 +20,7 @@ export async function loadRuntimeBoxValidatorContext({
   const recipePath = authoring.documentPath;
   const recipe = authoring.document;
   const workspace = resolveWorkspace({ cwd: root });
-  const targetId = runtimeBoxTargetId(recipe.target);
+  const targetId = boxTargetId(recipe.target);
   if (
     process.env.LIATIR_RUNTIME_BOX_TARGET_ID
     && process.env.LIATIR_RUNTIME_BOX_TARGET_ID !== targetId

@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -56,7 +56,7 @@ function sourceFiles(directory: string): string[] {
       return [];
     }
     if (statSync(path).isDirectory()) return sourceFiles(path);
-    return /\.(?:ts|mjs|js|svelte)$/.test(entry) ? [path] : [];
+    return /\.(?:[cm]?[jt]s|svelte)$/.test(entry) ? [path] : [];
   });
 }
 
@@ -82,6 +82,11 @@ describe("published Scrollcase package surface", () => {
     expect(browserContract.isSignedBoxDocument).toBeTypeOf("function");
     expect(build.createDeterministicZip).toBeTypeOf("function");
     expect(build.boxReleaseStem).toBeTypeOf("function");
+    expect(build.builderVersionFields).toBeTypeOf("function");
+    expect(build.configureWorkspace).toBeTypeOf("function");
+    expect(build.fileExists).toBeTypeOf("function");
+    expect(build.lockedCondaDistributions).toBeTypeOf("function");
+    expect(build.sha256File).toBeTypeOf("function");
     expect(consumer.verifyAndExtractBox).toBeTypeOf("function");
     expect(consumer.runExtractedBox).toBeTypeOf("function");
     expect(consumer.runBox).toBeTypeOf("function");
@@ -145,12 +150,45 @@ describe("published Scrollcase package surface", () => {
       "scrollcase/consumer",
       "scrollcase/sign",
     ]);
-    for (const path of sourceFiles(resolve(root, "packages"))) {
+    const sourceRoots = [
+      "scripts",
+      "services/runtime-box-signer/src",
+      "workers/runtime-box-registry/src",
+      "packages",
+      "frontend/src",
+      "src-ts",
+    ];
+    for (const path of sourceRoots.flatMap((directory) => sourceFiles(resolve(root, directory)))) {
       const source = readFileSync(path, "utf8");
       for (const match of source.matchAll(/from\s+["'](scrollcase[^"']*)["']/g)) {
         expect(publicSpecifiers.has(match[1]), `${path}: ${match[1]}`).toBe(true);
       }
       expect(source).not.toContain("/Users/lorenzo/Documents/GitHub/scrollcase");
+    }
+  });
+
+  it("does not retain deleted generic Runtime Box modules or imports", () => {
+    const deletedModules = [
+      "archive.mjs",
+      "filesystem.mjs",
+      "licenses.mjs",
+      "pixi.mjs",
+      "python.mjs",
+      "targets.mjs",
+      "workspace.mjs",
+      "scrollcase.config.schema.json",
+    ];
+    for (const module of deletedModules) {
+      expect(existsSync(resolve(root, "scripts/runtime-box", module)), module).toBe(false);
+    }
+
+    const sourceRoots = ["scripts", "services", "workers", "packages", "frontend/src", "src-ts"];
+    for (const path of sourceRoots.flatMap((directory) => sourceFiles(resolve(root, directory)))) {
+      const source = readFileSync(path, "utf8");
+      for (const module of deletedModules.filter((name) => name.endsWith(".mjs"))) {
+        expect(source, `${path}: ${module}`)
+          .not.toMatch(new RegExp(`from\\s+["'][^"']*(?:runtime-box/|\\./)${module.replace(".", "\\.")}["']`));
+      }
     }
   });
 

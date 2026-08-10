@@ -9,17 +9,17 @@
 
 import { readFile, mkdir, readdir, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve, sep } from 'node:path';
-import { sha256File } from 'scrollcase/build';
+import {
+  configureWorkspace,
+  getWorkspace,
+  sha256File,
+  workspaceOverridesFromFlags,
+} from 'scrollcase/build';
 import { boxTargetId } from 'scrollcase/contract/browser';
 import { verifySignedDocument } from 'scrollcase/sign';
 import { publishedNodeCliInvocation } from '../node-cli.mjs';
 import { runtimeBoxArchivePath } from './identity.mjs';
 import { fail, runResult as defaultRunResult } from './process.mjs';
-import {
-  configureWorkspace,
-  getWorkspace,
-  workspaceOverridesFromFlags,
-} from './workspace.mjs';
 import { runRuntimeBoxDistributionCommand } from './distribution-cli.mjs';
 import { liatirSignerCommand } from './signer-command.mjs';
 

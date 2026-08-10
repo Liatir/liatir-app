@@ -29,8 +29,6 @@ import {
 import {
   runtimeBoxArchivePath,
   runtimeBoxChannelDocumentPath,
-  runtimeBoxReleaseObjectPrefix,
-  runtimeBoxReleaseStem,
 } from "../../scripts/runtime-box/identity.mjs";
 import {
   isRevocationsManifest,
@@ -117,9 +115,7 @@ describe("Liatir contract inversion over Scrollcase", () => {
     expect(BOX_SCHEMA_VERSION).toBe(2);
     expect(runtimeBoxTargetId(fixtures.release.target)).toBe(fixtures.expected.targetId);
     expect(boxReleaseStem(fixtures.release)).toBe(fixtures.expected.releaseStem);
-    expect(runtimeBoxReleaseStem(fixtures.release)).toBe(fixtures.expected.releaseStem);
     expect(boxReleaseObjectPrefix(fixtures.release)).toBe(fixtures.expected.releaseObjectPrefix);
-    expect(runtimeBoxReleaseObjectPrefix(fixtures.release)).toBe(fixtures.expected.releaseObjectPrefix);
 
     // A built box is laid out exactly as the bucket serves it, so the archive sits beside its
     // release document under its own SHA-256 — not under the shared stem, which is only a name

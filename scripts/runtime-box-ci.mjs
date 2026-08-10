@@ -9,6 +9,13 @@ import { rm } from 'node:fs/promises';
 import { relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  configureWorkspace,
+  getWorkspace,
+  lockedCondaDistributions,
+  workspaceOverridesFromArgv,
+} from 'scrollcase/build';
+import { boxTargetId } from 'scrollcase/contract/browser';
+import {
   runTrackedCommand,
   validateRuntimeBoxCiEvidence,
   writeCompactEvidence,
@@ -19,12 +26,8 @@ import {
 } from './runtime-box/evidence.mjs';
 import { npmInvocation } from './node-cli.mjs';
 import { runWithHeartbeat } from './runtime-box/heartbeat.mjs';
-import { runtimeBoxTargetId, runtimeBoxTorchBackendArguments } from './runtime-box/targets.mjs';
 import { runtimeBoxChannelDocumentPath } from './runtime-box/identity.mjs';
-import { lockedCondaDistributions } from './runtime-box/licenses.mjs';
 import { runtimeBoxPolicyFingerprint } from '../services/runtime-box-signer/src/policy.mjs';
-import { configureWorkspace, getWorkspace, workspaceOverridesFromArgv } from './runtime-box/workspace.mjs';
-import { boxTargetId } from 'scrollcase/contract/browser';
 import { resolveRuntimeBoxAuthoringInput } from './runtime-box/authoring-input.mjs';
 
 /**
@@ -34,6 +37,18 @@ import { resolveRuntimeBoxAuthoringInput } from './runtime-box/authoring-input.m
  */
 const workspaceRoot = () => getWorkspace().root;
 const catalogPath = () => resolve(workspaceRoot(), 'runtime-boxes/catalog.json');
+const LEGACY_AUTHORING_FIELDS = Object.freeze([
+  'uvVersion',
+  'requirementsInput',
+  'requirementsLock',
+  'torchBackend',
+]);
+
+function requireNoLegacyAuthoringFields(scroll, identity) {
+  for (const field of LEGACY_AUTHORING_FIELDS) {
+    requireCatalog(!(field in scroll), `${identity} retains deprecated ${field}`);
+  }
+}
 
 function authoringInputFor(recipeId, { expectedBoxId, expectedTargetId } = {}) {
   return resolveRuntimeBoxAuthoringInput({
@@ -337,6 +352,7 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
       JSON.stringify(recipe.target) === JSON.stringify(fixture.target),
       `foundation target contract differs for ${fixture.recipeId}`,
     );
+    requireNoLegacyAuthoringFields(recipe, `foundation scroll ${fixture.recipeId}`);
     requireCatalog(recipe.target.platform === runner.platform && recipe.target.arch === runner.arch, `foundation runner host mismatch for ${fixture.recipeId}`);
     requireCatalog(fixture.timeoutMinutes <= runner.maxTimeoutMinutes, `foundation timeout exceeds ${runner.id}`);
     for (const localFile of recipe.localFiles ?? []) {
@@ -374,7 +390,7 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
     for (const target of model.targets) {
       const targetKey = `${model.modelId}/${target.targetId}`;
       requireCatalog(!targetKeys.has(targetKey), `duplicate target ${targetKey}`);
-      requireCatalog(runtimeBoxTargetId(target.target) === target.targetId, `targetId mismatch for ${targetKey}`);
+      requireCatalog(boxTargetId(target.target) === target.targetId, `targetId mismatch for ${targetKey}`);
       requireCatalog(TARGET_STATUSES.has(target.status), `invalid status for ${targetKey}`);
       requireCatalog(target.validationModes.length > 0 && target.validationModes.every((mode) => VALIDATION_MODES.has(mode)), `invalid validation mode for ${targetKey}`);
       requireCatalog(target.hostEnvironments.length > 0, `host environments are required for ${targetKey}`);
@@ -409,8 +425,8 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
           && recipe.runtimeId === model.runtimeId,
         `authoring identity mismatch for ${targetKey}`,
       );
-      requireCatalog(runtimeBoxTargetId(recipe.target) === target.targetId, `recipe target mismatch for ${targetKey}`);
-      runtimeBoxTorchBackendArguments(recipe);
+      requireCatalog(boxTargetId(recipe.target) === target.targetId, `recipe target mismatch for ${targetKey}`);
+      requireNoLegacyAuthoringFields(recipe, `scroll ${target.recipeId}`);
       requireCatalog(readFileSync(resolve(workspaceRoot(), model.legalRecord), 'utf8').includes(recipe.sourceRevision), `legal record is not pinned to recipe source ${recipe.sourceRevision} for ${targetKey}`);
       for (const localFile of recipe.localFiles ?? []) {
         const localPath = resolve(workspaceRoot(), localFile.sourcePath);

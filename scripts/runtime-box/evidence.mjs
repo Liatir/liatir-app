@@ -6,12 +6,10 @@ import { existsSync, readFileSync, statfsSync, writeFileSync } from 'node:fs';
 import { mkdir, readFile } from 'node:fs/promises';
 import { arch, platform } from 'node:os';
 import { dirname, resolve, sep } from 'node:path';
-import { sha256File } from './filesystem.mjs';
+import { builderVersionFields, getWorkspace, sha256File } from 'scrollcase/build';
+import { boxTargetId } from 'scrollcase/contract/browser';
 import { resolveRuntimeBoxAuthoringInput } from './authoring-input.mjs';
 import { runWithHeartbeat } from './heartbeat.mjs';
-import { runtimeBoxBuilderVersionFields } from './identity.mjs';
-import { runtimeBoxTargetId } from './targets.mjs';
-import { getWorkspace } from './workspace.mjs';
 
 /** Project root, read lazily so the entry point can configure the workspace from flags first. */
 const workspaceRoot = () => getWorkspace().root;
@@ -363,7 +361,7 @@ async function completeModelRecord(options, catalog, phase) {
     const release = releaseDocument.payload;
     requireEvidence(release.kind === 'liatir.runtime-box.release', 'release receipt input is not a Runtime Box release');
     requireEvidence(release.modelId === model.modelId && release.boxId === model.boxId, 'release identity differs from catalog');
-    requireEvidence(runtimeBoxTargetId(release.target) === target.targetId, 'release target differs from catalog');
+    requireEvidence(boxTargetId(release.target) === target.targetId, 'release target differs from catalog');
     requireEvidence(verification.status === 'passed' && verification.localSignatureVerified === true, 'local release verification did not pass');
     record.source = signedBuildSourceEvidence(record.source, release.provenance);
     requireEvidence(host.platform === release.target.platform && host.arch === release.target.arch, 'recorded host differs from release target');
@@ -378,7 +376,7 @@ async function completeModelRecord(options, catalog, phase) {
       recipeSha256: await sha256File(recipePath),
       dependencyLockSha256: lockSha256,
       pythonVersion: release.provenance.pythonVersion,
-      ...runtimeBoxBuilderVersionFields(release.provenance),
+      ...builderVersionFields(release.provenance),
       archiveSha256: release.archive.sha256,
       archiveSizeBytes: release.archive.sizeBytes,
       installedSizeBytes: release.installedSizeBytes,

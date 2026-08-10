@@ -6,7 +6,6 @@ import {
   runtimeBoxTargetId as coreTargetId,
   type LiatirRuntimeBoxTarget,
 } from '../../packages/liatir-core/src/runtime-box';
-import { runtimeBoxTargetId as cliTargetId } from '../../scripts/runtime-box/targets.mjs';
 import { runtimeBoxTargetId as signerTargetId } from '../../services/runtime-box-signer/src/policy.mjs';
 import { runtimeBoxTargetIdForRoute } from '../../workers/runtime-box-registry/src/index';
 
@@ -27,10 +26,9 @@ describe('Runtime Box target ID cross-language contract', () => {
     expect(contract).toEqual(publishedContract);
   });
 
-  it('keeps core, CLI, signer, and Worker IDs identical', () => {
+  it('keeps core, signer, and Worker IDs identical', () => {
     for (const fixture of contract.valid) {
       expect(coreTargetId(fixture.target), fixture.name).toBe(fixture.targetId);
-      expect(cliTargetId(fixture.target), fixture.name).toBe(fixture.targetId);
       expect(signerTargetId(fixture.target), fixture.name).toBe(fixture.targetId);
       expect(runtimeBoxTargetIdForRoute(fixture.target), fixture.name).toBe(fixture.targetId);
     }
@@ -39,7 +37,6 @@ describe('Runtime Box target ID cross-language contract', () => {
   it('rejects unsupported targets and invalid CUDA combinations before signing or routing', () => {
     for (const fixture of contract.invalid) {
       expect(() => coreTargetId(fixture.target), fixture.name).toThrow();
-      expect(() => cliTargetId(fixture.target), fixture.name).toThrow();
       expect(() => signerTargetId(fixture.target), fixture.name).toThrow();
       expect(runtimeBoxTargetIdForRoute(fixture.target), fixture.name).toBeNull();
     }
