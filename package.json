@@ -83,7 +83,7 @@
     "liatir:publish": "npm run browser-api:build && node scripts/publish-liatir-packages.mjs",
     "liatir:publish:dry": "npm run browser-api:build && node scripts/publish-liatir-packages.mjs --dry-run",
 
-    "browser-api:build": "node scripts/build-browser-api.mjs",
+    "browser-api:build": "npm run build --prefix packages/liatir-core && node scripts/build-browser-api.mjs",
 
     "sdk:build": "npm run build --prefix sdk/",
     "sdk:publish": "npm run pub --prefix sdk/",
