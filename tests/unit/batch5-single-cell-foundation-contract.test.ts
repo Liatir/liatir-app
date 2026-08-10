@@ -25,6 +25,16 @@ const publishedMacosArm64MetalTargets = (minRamGb: number) => [{
 }];
 // Geneformer ships no CPU box: measured CPU throughput is ~160 ms per cell. All three published
 // targets are here: Apple silicon Metal, Linux CUDA 12.9 and native Windows CUDA 12.8.
+// scGPT publishes Apple silicon Metal and Linux x86_64 CPU; Windows and the NVIDIA targets are
+// built and not yet published.
+const publishedScgptTargets = () => [
+  ...publishedMacosArm64MetalTargets(16),
+  {
+    target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
+    hostEnvironments: ['native'],
+    minRamGb: 16,
+  },
+];
 const publishedGeneformerTargets = () => [
   ...publishedMacosArm64MetalTargets(8),
   {
@@ -117,7 +127,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
       boxId: 'scgpt-whole-human',
       channel: 'beta',
       registryBaseUrl: 'https://models.liatir.com/v1',
-      publishedTargets: publishedMacosArm64MetalTargets(16),
+      publishedTargets: publishedScgptTargets(),
     });
     expect(scroll.modelId).toBe(SCGPT_WHOLE_HUMAN_MODEL_ID);
     expect(scroll.runtimeId).toBe(model?.install?.runtimeId);
@@ -132,8 +142,8 @@ describe('Batch 5 single-cell foundation model contract', () => {
       expect(file.sha256, `${file.relativePath} missing SHA-256`).toMatch(/^[a-f0-9]{64}$/);
     }
     expect(model?.install?.hostRequirements).toMatchObject({
-      os: ['macos'],
-      arch: ['aarch64'],
+      os: ['macos', 'linux'],
+      arch: ['aarch64', 'x86_64'],
     });
     expect(spec?.runtimeFamily).toBe('single-cell-foundation-scgpt');
     expect(spec?.modelFile).toBe('best_model.pt');

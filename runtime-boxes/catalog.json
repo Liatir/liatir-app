@@ -388,7 +388,7 @@
           ],
           "recipeId": "scgpt-whole-human-linux-x86_64-cpu",
           "runnerProfileId": "linux-x64-selfhosted",
-          "status": "native-lifecycle-validated",
+          "status": "published",
           "validationModes": [
             "build",
             "scientific",
@@ -404,7 +404,18 @@
           },
           "gpuRequired": false,
           "nativeCiEnabled": true,
-          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/scgpt-whole-human-linux-x86_64-cpu.json"
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/scgpt-whole-human-linux-x86_64-cpu.json",
+          "publication": {
+            "source": "github-actions",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.2/linux-x86_64-cpu/b89b9a8585d04aee266ab148ed91bae23ef03e30b2aa55963aa2e7b80d2d656f.release.json",
+            "archiveSha256": "5072e1bf2fcc1f4bfc83cf295870ff05f70609a624f3b806d8ae15de97d1f678",
+            "archiveSizeBytes": 880900458,
+            "signingKeyId": "liatir-runtime-box-kms-2026",
+            "publishedAt": "2026-08-10T01:54:34.349Z",
+            "workflowRunId": "31347244733",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/31347244733",
+            "evidenceRecord": "runtime-boxes/evidence/scgpt-whole-human-linux-x86_64-cpu-0.2.5-beta.2-run-31347244733.json"
+          }
         },
         {
           "targetId": "linux-x86_64-cuda12.9",

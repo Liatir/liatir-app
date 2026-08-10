@@ -55,6 +55,18 @@ function publishedMacosArm64MetalTarget(
 	];
 }
 
+/** Lists the exact scGPT targets that have completed native product validation. */
+function publishedScgptTargets(): readonly LiatirRuntimeBoxTargetCandidate[] {
+	return [
+		...publishedMacosArm64MetalTarget(16),
+		{
+			target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
+			hostEnvironments: ['native'],
+			minRamGb: 16
+		}
+	];
+}
+
 /** Lists the exact Geneformer targets that have completed native product validation. */
 function publishedGeneformerTargets(): readonly LiatirRuntimeBoxTargetCandidate[] {
 	return [
@@ -123,13 +135,14 @@ export const RUNTIME_BOX_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 				boxId: 'scgpt-whole-human',
 				channel: 'beta',
 				registryBaseUrl: 'https://models.liatir.com/v1',
-				publishedTargets: publishedMacosArm64MetalTarget(16)
+				publishedTargets: publishedScgptTargets()
 			},
 			runtimePackages: SCGPT_WHOLE_HUMAN_RUNTIME_PACKAGES,
 			hostRequirements: {
-				os: ['macos'],
-				arch: ['aarch64'],
-				reason: 'The current signed scGPT Runtime Box is built for Apple silicon Macs.'
+				os: ['macos', 'linux'],
+				arch: ['aarch64', 'x86_64'],
+				reason:
+					'scGPT ships as a signed Runtime Box for Apple silicon Macs and for Linux x86_64 on CPU. The Windows and NVIDIA targets are built but not yet published.'
 			}
 		},
 		documentation: {

@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.runtime-box.ci-evidence",
+  "phase": "production-release",
+  "status": "passed",
+  "createdAt": "2026-08-10T01:53:36.983Z",
+  "subject": {
+    "modelId": "bowang-scgpt-whole-human",
+    "boxId": "scgpt-whole-human",
+    "runtimeId": "single-cell-foundation-scgpt-whole-human",
+    "recipeId": "scgpt-whole-human-linux-x86_64-cpu",
+    "recipeVersion": "1.0.0",
+    "version": "0.2.5-beta.2",
+    "targetId": "linux-x86_64-cpu",
+    "mode": "native-lifecycle"
+  },
+  "source": {
+    "repository": "Liatir/liatir-stack",
+    "commitSha": "25d98c1751676a8a73e8eadeb7b846b79f26b348",
+    "sourceTreeDirty": false
+  },
+  "workflow": {
+    "provider": "github-actions",
+    "workflow": "Runtime Box production release",
+    "runId": "31347244733",
+    "runAttempt": "1",
+    "runUrl": "https://github.com/Liatir/liatir-stack/actions/runs/31347244733",
+    "actor": "suffro",
+    "triggeringActor": "suffro",
+    "environment": "runtime-box-production",
+    "approver": null
+  },
+  "host": {
+    "platform": "linux",
+    "arch": "x86_64",
+    "runnerName": "liatir-linux-selfhosted-1786325367-525",
+    "runnerLabel": "liatir-linux-selfhosted",
+    "runnerEnvironment": "self-hosted",
+    "image": null,
+    "freeDiskBytesBefore": 1006017003520,
+    "minimumFreeDiskBytes": 1002096185344,
+    "peakAdditionalDiskBytes": 3753009152,
+    "gpuModel": null,
+    "gpuCount": null,
+    "gpuMemoryBytes": null,
+    "computeCapability": null,
+    "driverVersion": null,
+    "reportedCudaCompatibility": null,
+    "existingBuildStateBytes": 0,
+    "calculatedDiskPlan": {
+      "sourceAssetBytes": 218821754,
+      "localSourceBytes": 0,
+      "estimatedInstalledSizeBytes": 2415353627,
+      "estimatedArchiveSizeBytes": 880900452,
+      "safetyMarginBytes": 4294967296,
+      "calculatedPeakDiskBytes": 7810043129,
+      "requiredBuildDiskBytes": 10737418240
+    }
+  },
+  "build": {
+    "recipeSha256": "eb7e1a741f6a8f7a79e05ddebe665da6a939fc271fe70d0c32764a6b06b5589c",
+    "dependencyLockSha256": "fb7aeff5b95faeda3277f4ba2216ac269db6f0d263c0ccf07779452b55f0dec1",
+    "pythonVersion": "3.11.15",
+    "pixiVersion": "0.73.0",
+    "archiveSha256": "5072e1bf2fcc1f4bfc83cf295870ff05f70609a624f3b806d8ae15de97d1f678",
+    "archiveSizeBytes": 880900458,
+    "installedSizeBytes": 2415353627,
+    "elapsedMs": 253474,
+    "selfTest": {
+      "status": "passed",
+      "imports": [
+        "torch",
+        "anndata",
+        "numpy",
+        "scipy",
+        "pandas",
+        "h5py",
+        "tqdm"
+      ],
+      "localSignatureVerified": true
+    }
+  },
+  "scientific": {
+    "validator": {
+      "path": "scripts/validate-scgpt-runtime.mjs",
+      "sha256": "05ad9ffc0b12d594893066ca122f03bb24672b80320904acd149fe10307b244c"
+    },
+    "productScript": {
+      "path": "frontend/src/lib/tools/ai/python-scripts/scgpt-embedding.ts",
+      "sha256": "8034f4f2a350464e1b2b191c2649bdc817280585a62fd387f21ade0291541297"
+    },
+    "fixture": {
+      "id": "scgpt-pinned-1-cell-128-gene-v1",
+      "sha256": "ca8212b78e3f73f9ad686a24589450a05656d50cbcf7df78e40fa1efccdf2c0d",
+      "inputShapes": {
+        "counts": [
+          1,
+          128
+        ]
+      }
+    },
+    "sources": [
+      {
+        "kind": "checkpoint",
+        "identity": "https://drive.usercontent.google.com/download?id=1hh2zGKyWAx3DyovD30GStZ3QlzmSqdk1&export=download&confirm=t",
+        "revision": "cebd6fae655b9c585a4807daa3ac31bb764f06b4",
+        "sha256": "c18e075e018140cb8b2d9029387b9de26607a5ce6a8ccabd6ead70cd76b95d60"
+      },
+      {
+        "kind": "checkpoint",
+        "identity": "https://drive.usercontent.google.com/download?id=14AebJfGOUF047Eg40hk57HCtrb0fyDTm&export=download&confirm=t",
+        "revision": "cebd6fae655b9c585a4807daa3ac31bb764f06b4",
+        "sha256": "6cb5d451ab5c4b33eb673adbe4fddc61d2389df1b89b7651a9fe2e557572b922"
+      },
+      {
+        "kind": "checkpoint",
+        "identity": "https://drive.usercontent.google.com/download?id=1H3E_MJ-Dl36AQV6jLbna2EdvgPaqvqcC&export=download&confirm=t",
+        "revision": "cebd6fae655b9c585a4807daa3ac31bb764f06b4",
+        "sha256": "acca93d114ca62c3f0f50debbd23e8c87f0714f4737764454f6b2b13f2e8580f"
+      },
+      {
+        "kind": "source",
+        "identity": "https://codeload.github.com/bowang-lab/scGPT/zip/cebd6fae655b9c585a4807daa3ac31bb764f06b4",
+        "revision": "cebd6fae655b9c585a4807daa3ac31bb764f06b4",
+        "sha256": "1b825a687b4855dbb8c7b530f17cc246ef677d93d0e2df3fbc82330ff9d189db"
+      }
+    ],
+    "framework": {
+      "name": "torch",
+      "version": "2.8.0",
+      "backend": "CPU"
+    },
+    "accelerator": {
+      "kind": "cpu",
+      "gpuModel": null,
+      "gpuMemoryBytes": null,
+      "computeCapability": null,
+      "driverVersion": null,
+      "reportedCudaCompatibility": null
+    },
+    "outputShapes": {
+      "embeddings": [
+        1,
+        512
+      ]
+    },
+    "finiteValues": true,
+    "tolerances": {},
+    "parity": {
+      "reference": "pinned-cpu-product-runner",
+      "passed": true,
+      "cpuBaselinePassed": true,
+      "acceleratorPassed": null,
+      "maximumAbsoluteDifference": null,
+      "meanAbsoluteDifference": null,
+      "minimumCosineSimilarity": null
+    },
+    "elapsedMs": 164845,
+    "peakRamBytes": null,
+    "peakVramBytes": null,
+    "outputContract": "passed",
+    "provenanceContract": "passed"
+  },
+  "productLifecycle": {
+    "status": "passed",
+    "targetId": "linux-x86_64-cpu",
+    "version": "0.2.5-beta.2",
+    "jobId": "job_1",
+    "analysisRunId": "d50a2f7f-1a0a-414c-940c-2dbcedd48aac",
+    "accelerator": "CPU",
+    "gpuModel": null,
+    "computeCapability": null,
+    "reportedCudaCompatibility": null,
+    "peakVramBytes": null,
+    "resultArtifactCount": 3,
+    "assertions": {
+      "interruptedResume": "passed",
+      "install": "passed",
+      "realInference": "passed",
+      "jobs": "passed",
+      "results": "passed",
+      "provenance": "passed",
+      "replacement": "passed",
+      "rollback": "passed",
+      "removal": "passed",
+      "resultArtifactsSurvivedRemoval": "passed"
+    }
+  },
+  "publication": {
+    "signingKeyIds": [
+      "liatir-runtime-box-kms-2026"
+    ],
+    "localSignatureVerified": true,
+    "archive": {
+      "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.2/linux-x86_64-cpu/5072e1bf2fcc1f4bfc83cf295870ff05f70609a624f3b806d8ae15de97d1f678.zip",
+      "sizeBytes": 880900458,
+      "sha256": "5072e1bf2fcc1f4bfc83cf295870ff05f70609a624f3b806d8ae15de97d1f678",
+      "streamedVerification": "passed"
+    },
+    "release": {
+      "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.2/linux-x86_64-cpu/b89b9a8585d04aee266ab148ed91bae23ef03e30b2aa55963aa2e7b80d2d656f.release.json",
+      "sizeBytes": 2619,
+      "sha256": "b89b9a8585d04aee266ab148ed91bae23ef03e30b2aa55963aa2e7b80d2d656f",
+      "streamedVerification": "passed"
+    },
+    "channelUrl": "https://models.liatir.com/v1/channels/beta/scgpt-whole-human/linux-x86_64-cpu",
+    "promotionHttpStatus": 200,
+    "promotionResponse": {
+      "ok": true,
+      "key": "channels/beta/scgpt-whole-human/linux-x86_64-cpu.json"
+    }
+  }
+}
