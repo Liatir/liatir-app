@@ -26,66 +26,58 @@ provenance, replacement, rollback, removal, and Result artifacts outliving the
 runtime — all passing. `liatir-core` lists every published target, so the installer
 offers them.
 
-**Still outstanding: the two revocations — the tooling is ready, the run is not.**
-`geneformer-v1-10m 1.0.0-beta.1` and `scgpt-whole-human 0.2.5-beta.1` are superseded
-but still installable: `GET https://models.liatir.com/v1/revocations` returns 404, so
-the registry publishes no revocations at all. Both obstacles recorded here have now
-been removed in the repository, and neither was obvious from the commands.
+**The two superseded versions are withdrawn (2026-08-10).**
+`geneformer-v1-10m 1.0.0-beta.1` and `scgpt-whole-human 0.2.5-beta.1` are no longer
+installable. `GET https://models.liatir.com/v1/revocations` serves one document signed
+by `liatir-runtime-box-kms-2026` carrying **both** entries, each with its own reason —
+verified by reading the public registry, not by trusting the run. Done by
+`.github/workflows/runtime-box-revoke.yml`, run `31401308564`, all thirteen steps green.
+
+Three things had to be fixed first, and none was visible from the commands:
 
 1. **Promoting the second revocation erased the first.** `revoke` wrote a document
-   holding one entry, and the Worker `put`s it at `control/revocations.json` whole,
-   with no merge — running the documented revoke/promote pair once per model left
-   only the second revocation live and silently restored the first box. The Worker
-   *cannot* merge: the object carries one signature over one exact byte string, and
-   appending an entry server-side would invalidate it. Completeness is therefore the
-   signer's job, and `revoke` now enforces it two ways — `--box`/`--version` repeat
-   so one signature covers several boxes (`--from <file>` takes the same entries as
-   JSON, which is how the workflow passes them), and whatever the registry already
-   serves is verified and carried forward into the new document. `--no-carry-forward`
-   opts out for local and loopback use. Regression coverage in
-   `tests/unit/runtime-box-scrollcase-adapter.test.ts` pins both properties, plus the
-   rule that an unreadable live set fails instead of being read as empty.
-2. **There is no revocation workflow — now there is.**
-   `.github/workflows/runtime-box-revoke.yml` runs the whole action in the
-   `runtime-box-production` environment: workload-identity auth for the audience-bound
-   signer token, the admin token for promote, a validated plan echoed to the run
-   summary before anything is signed, and a final check that reads
-   `/v1/revocations` back from the public registry and fails unless it serves every
-   requested entry. It shares the `runtime-box-production` concurrency group with the
-   release workflow, since both mutate the same control objects.
+   holding one entry, and the Worker `put`s it at `control/revocations.json` whole, with
+   no merge — the documented revoke/promote pair, run once per model, left only the
+   second revocation live and silently restored the first box. The Worker *cannot*
+   merge: the object carries one signature over one exact byte string, so appending an
+   entry server-side would invalidate it. Completeness is the signer's job, and `revoke`
+   now enforces it two ways — `--box`/`--version` repeat so one signature covers several
+   boxes (`--from <file>` takes the same entries as JSON, which is how the workflow
+   passes them), and whatever the registry already serves is verified and carried
+   forward. `--no-carry-forward` opts out for local and loopback use. Regression
+   coverage in `tests/unit/runtime-box-scrollcase-adapter.test.ts` pins both properties,
+   plus the rule that an unreadable live set fails instead of being read as empty.
+2. **There was no revocation workflow.** Signing needs an audience-bound identity token
+   and promote needs the Registry admin token; both live in the `runtime-box-production`
+   environment, so the action ran nowhere rather than depending on a workstation holding
+   production keys. The workflow validates and echoes the plan before anything is
+   signed, then reads `/v1/revocations` back from the public registry and fails unless
+   it serves every requested entry. It shares the `runtime-box-production` concurrency
+   group with the release workflow, since both mutate the same control objects.
 3. **A protected workflow is inert until its own WIF provider exists.** The first
-   dispatch (run `31378512709`) validated the plan, then died at the auth step with
+   dispatch (run `31378512709`) validated the plan, then died at auth with
    `unauthorized_client: The given credential is rejected by the attribute condition`.
    Every provider condition in `configure-runtime-box-ci.sh` pins one exact
    `workflow_ref` — that is what stops a token minted for one workflow being usable by
    another — so `runtime-box-production` accepts the release workflow and nothing else.
-   The script now provisions a third provider, `runtime-box-revocation`, under the same
-   Environment, and exports it as `GCP_REVOCATION_WORKLOAD_IDENTITY_PROVIDER`. No extra
-   IAM follows: the principal set is keyed on `attribute.environment`, so the provider
-   resolves to the release service account, which already holds Cloud Run Invoker on the
-   signer. `tests/unit/runtime-box-ci-identity.test.ts` now fails if a workflow
-   authenticates to Google without a provider naming it.
+   The fix was a third provider, `runtime-box-revocation`, under the same Environment,
+   exported as `GCP_REVOCATION_WORKLOAD_IDENTITY_PROVIDER`; widening the release
+   condition to name a second workflow would have traded that guarantee for one fewer
+   resource. No extra IAM followed: the principal set is keyed on
+   `attribute.environment`, so the provider resolves to the release service account,
+   which already holds Cloud Run Invoker on the signer.
+   `tests/unit/runtime-box-ci-identity.test.ts` now fails if a workflow authenticates to
+   Google without a provider naming it.
 
-**Next step, in order.** Run `scripts/configure-runtime-box-ci.sh` once — it is
-idempotent, derives the repository ID and project number itself, and needs `gcloud`
-plus `gh` with admin on `liatir-release-security`. Then dispatch **Runtime Box
-revocation** from `main` with `confirm: REVOKE` and the plan below.
-
-```json
-[
-  {"boxId": "geneformer-v1-10m", "version": "1.0.0-beta.1",
-   "reason": "superseded by 1.0.0-beta.2, which republishes every target on the pixi/Scrollcase v2 toolchain"},
-  {"boxId": "scgpt-whole-human", "version": "0.2.5-beta.1",
-   "reason": "superseded by 0.2.5-beta.2, which republishes every target on the pixi/Scrollcase v2 toolchain"}
-]
-```
-
-A maintainer workstation cannot stand in for that workflow, and this one was checked
-rather than assumed: the Mac's `gcloud` service-account config is workload-identity
-federation bound to a GitHub Actions OIDC subject token that has expired, a user
-account cannot mint an audience-bound identity token at all, and
-`LIATIR_RUNTIME_BOX_ADMIN_TOKEN` is not present. Production credentials on a
-workstation were the wrong fix regardless; the workflow is the right one.
+Two notes for whoever provisions this next. `configure-runtime-box-ci.sh` is idempotent
+but re-runs `update-oidc` over the *existing* providers, so confirm the conditions it
+would regenerate match production before running it — for the release and signer
+providers they did, byte for byte. And a maintainer workstation cannot stand in for the
+workflow: this was checked, not assumed. The Mac's `gcloud` service-account config is
+workload-identity federation bound to an expired GitHub Actions OIDC subject token, a
+user account cannot mint an audience-bound identity token at all, and
+`LIATIR_RUNTIME_BOX_ADMIN_TOKEN` is not present. Production credentials on a workstation
+were the wrong fix regardless.
 
 ## What the re-release cost, and why
 
@@ -975,10 +967,10 @@ first).
 > has no CPU box at all. **P5.4V is complete as of 2026-08-07: all eleven targets
 > are rebuilt and measured on `scrollcase@0.7.1`. P5.4W then raised the pin to
 > `0.8.0`, which changes no archive byte, so that matrix stands as measured. P5.4P
-> has published and promoted all three macOS boxes on 2026-08-08; the six
-> Linux/Windows targets await their own hosts.** The
-> next continuation is those six releases, P5.5 legacy deletion, or retiring the
-> superseded `beta.1` versions.
+> has published and promoted all three macOS boxes on 2026-08-08, and the six
+> Linux/Windows targets followed: all nine targets are published, and the two
+> superseded `beta.1` versions were revoked on 2026-08-10 (see the top of this
+> file).** The next continuation is P5.5 legacy deletion.
 > P5.4 remained one phase with
 > three operational blocks rather than a new numbered checkpoint per target.
 > Do not use the historical
