@@ -1,24 +1,19 @@
 # Scrollcase P5 — Liatir adoption and legacy builder retirement
 
-Last reviewed: 2026-08-07
+Last reviewed: 2026-08-10
 
-Status: **in progress — P5.2V, P5.3, P5.4, P5.4V and P5.4W complete. Every model
-target is a schema-v2 scroll and natively proven, and no uv recipe remains
-anywhere. P5.4V raised the pin to `0.7.1` and closed the rebuild matrix: all
-eleven targets — three macOS, two foundation fixtures, and the six Linux/Windows
-model targets including all four CUDA ones — are built, measured and
-catalog-bound on `0.7.1`, each on a single dispatch. Every lock reproduced
-byte-identical and every parity figure reproduced its `0.4.11` value exactly.
-P5.4W then raised the pin to `0.8.0`, which changes no archive byte, so the
-matrix stays valid without a single rebuild. **P5.4P has since published and
-promoted all three macOS boxes** — `scgpt-whole-human 0.2.5-beta.2`,
-`geneformer-v1-10m` and `uce-4layer 1.0.0-beta.2` — KMS-signed, scientifically
-validated and serving on `beta`; the six Linux/Windows targets await their own
-hosts, and retiring the superseded `beta.1` versions is still open. The schema-v1
-uv authoring path is deleted. P5.4R's upstream blocker is resolved —
-`scrollcase-consumer 0.2.0` replaced `public_key_path` with `TrustAnchors`, and
-Liatir already pins `0.3.0` — so its remainder is Liatir work again. P5.5 is the
-next phase.**
+Status: **in progress — P5.0, P5.1, P5.2, P5.2V, P5.3, P5.4, P5.4T,
+P5.4E, P5.4V, P5.4W and P5.4P are complete.** All
+nine current model targets are schema-v2 Runtime Boxes, natively proven, KMS-signed,
+published and promoted on `beta`: three Geneformer, five scGPT and
+one UCE. Geneformer `1.0.0-beta.1` and scGPT `0.2.5-beta.1` are present together
+in the live signed revocations document. UCE `1.0.0-beta.1` is not channel-selected
+and is rejected by the v2-only app, but remains an explicit retirement decision
+because it is not revoked. P5.4R is partial on exact
+`scrollcase-consumer 0.3.2`; P5.5 is partial after deletion of the local
+builder and rename of the distribution CLI. P5.6 and P5.7 remain open. The next
+implementation work is the consumer-boundary/deletion audit, not another model
+release.
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project. The P5 target was
@@ -56,10 +51,8 @@ P5 is complete only when all of the following are true:
 5. Liatir supplies its private KMS signer through Scrollcase's external-signer
    boundary. The package never learns about Cloud Run, GCP, OIDC, R2, Liatir
    credentials, or Liatir policy.
-6. Every active build recipe uses pixi + conda-pack + conda-forge. The current nine
-   uv recipes are either migrated, or a legacy target is formally frozen through
-   an approved compatibility mechanism; the generic uv builder is not silently
-   retained.
+6. Every active build recipe uses pixi + conda-pack + conda-forge. No uv recipe
+   or generic uv builder remains.
 7. Runtime Box CI, runner allocation, model-specific scientific validators,
    evidence, Registry/R2 distribution, promotion/revocation, the Rust/Tauri
    consumer, Jobs, Results, provenance, and trust roots remain owned by Liatir.
@@ -74,7 +67,8 @@ P5 is complete only when all of the following are true:
 
 ## Non-goals
 
-- P5 does not publish or promote a new Runtime Box.
+- P5 adoption work does not itself authorize publication or promotion. The
+  separately authorized P5.4P release is complete and recorded as evidence.
 - P5 does not deploy the signer or Registry.
 - P5 does not add a model family, enable on-demand weights in the product, or
   change Jobs/Results UX.
@@ -86,7 +80,11 @@ P5 is complete only when all of the following are true:
   key custody into Scrollcase.
 - P5 does not require the optional Scrollcase `--global` toolchain mode.
 
-## Current state at the P5 boundary
+## Historical state at the P5 boundary
+
+This section records the inputs from which P5 started. Its package versions,
+recipe inventory and publication states are not current; use the execution
+ledger and the status block at the top for present state.
 
 ### Package and contract
 
@@ -158,7 +156,7 @@ Five scGPT recipes are already pixi recipes:
 
 Six recipes still use uv and block complete builder retirement:
 
-| Group | Recipe | Current target state |
+| Group | Recipe | P5-boundary target state |
 | --- | --- | --- |
 | Geneformer | `geneformer-v1-10m-macos-arm64-metal` | Published |
 | Geneformer | `geneformer-v1-10m-linux-x86_64-cpu` | Published |
@@ -198,19 +196,47 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.2 — Liatir adapter and distribution split | Complete | Real clean `keygen → lock → build → verify --self-test` cycle through the stable Liatir command; namespace, archive hash and receipts checked |
 | P5.2V — Scrollcase v2-only cutover | Complete | Exact `scrollcase@0.4.11`; active contracts and consumers use v2; v1 is explicitly unsupported; clean local v2 proof green |
 | P5.3 — v2 foundation-fixture migration | Complete | Three reviewed v2 scrolls/locks/audits; macOS, Linux and Windows native proofs green; every foundation uv fixture removed only after its matching proof |
-| P5.4 — model-recipe migration | Complete | All five scGPT inputs, Geneformer's whole matrix (macOS Metal plus both CUDA successors, its CPU targets dropped on measurement) and UCE are v2 and natively proven. No uv recipe remains anywhere. UCE was authored on `0.7.1` and passed on first dispatch; the other eight model targets were proven on `0.4.11` and owe a rebuild, as do two foundation fixtures, tracked in P5.4V |
-| P5.4R — adopt `scrollcase-consumer` in the Rust bridge | In progress, no longer blocked | `runtime_boxes.rs` delegates format verification to exact `scrollcase-consumer` (now `0.3.0`, see P5.4E), keeps the product lifecycle, and proves the Liatir-owned call order. The remainder — `attach_extracted_box`, `verify_extracted_payload`, `prepare_box` — was blocked while those entry points took a trust-file path; `0.2.0` replaced it with `TrustAnchors`, so compiled-in anchors are now a first-class source and the remainder is Liatir work |
+| P5.4 — model-recipe migration | Complete | All five scGPT inputs, Geneformer's whole matrix (macOS Metal plus both CUDA successors, its CPU targets dropped on measurement) and UCE are v2 and natively proven. No uv recipe remains anywhere. UCE was authored on `0.7.1` and passed on first dispatch; the rebuild owed by the other eight model targets and two foundation fixtures was subsequently completed in P5.4V |
+| P5.4R — adopt `scrollcase-consumer` in the Rust bridge | Partial | Exact `scrollcase-consumer 0.3.2`. `runtime_boxes.rs` delegates trust parsing, signature and target verification, safe path checks, manifest agreement and archive extraction while retaining the Liatir lifecycle. It does not yet use the crate's combined prepare/attach/extracted-payload entry points, and no regression pins the complete Liatir-owned call order. Finish or explicitly reject each remaining delegation from current APIs, not from the historical `public_key_path` blocker |
 | P5.4T — `scrollcase-consumer 0.2.0` pin and delegation sweep | Complete | Exact `=0.2.0`; hand-written trust parser replaced by `trust::parse_trusted_keys` with all three key sources on one format; `dir_size` → `filesystem::payload_size`; `RuntimeBoxArchive`, `RuntimeBoxSelfTest` and `ExtractedBoxMetadata` deleted in favour of the box format's own types; the 13-field comparison replaced by `assert_box_manifest_agreement`, which closes the uncompared `environment` field; `min_ram_gb` → `f64`, matching the shared TS contract. `cargo clippy` clean and 41/41 Rust tests green |
-| P5.4E — Rust `Compatibility` carries project constraints | Resolved upstream, adopted | The Rust `Compatibility` was `deny_unknown_fields`, stricter than the schema the crate itself ships (`additionalProperties: true`, "a project may add its own"). Measured at the time: the Node consumer accepted `runtime-boxes/contract-compatibility-fixtures.json`, the Rust type rejected the same bytes. Fixed upstream in `scrollcase-consumer 0.3.0`, which carries unknown constraints in `Compatibility::additional` and states that an application finding one it does not understand must refuse the box. Liatir pins `=0.3.0`, has **deleted its own `ReleaseManifest` and `RuntimeBoxCompatibility`** in favour of the box format's types, reads `minLiatirVersion` / `maxLiatirVersionExclusive` from `additional`, and refuses any other entry. `to_box_format` is gone |
+| P5.4E — Rust `Compatibility` carries project constraints | Resolved upstream, adopted | The Rust `Compatibility` was `deny_unknown_fields`, stricter than the schema the crate itself ships (`additionalProperties: true`, "a project may add its own"). Measured at the time: the Node consumer accepted `runtime-boxes/contract-compatibility-fixtures.json`, the Rust type rejected the same bytes. Fixed upstream in `scrollcase-consumer 0.3.0`, which carries unknown constraints in `Compatibility::additional` and states that an application finding one it does not understand must refuse the box. Liatir adopted the fix and now pins `=0.3.2`; it has **deleted its own `ReleaseManifest` and `RuntimeBoxCompatibility`** in favour of the box format's types, reads `minLiatirVersion` / `maxLiatirVersionExclusive` from `additional`, and refuses any other entry. `to_box_format` is gone |
 | P5.4V — Scrollcase `0.4.11` → current-line upgrade | Complete | Exact `scrollcase@0.7.1` with its npm identity read back into the lockfile, `scrollcase-consumer` confirmed ahead of the format, and the maintainer decision recorded that every proven target rebuilds rather than freezes. All eleven targets rebuilt, measured and catalog-bound on `0.7.1`, one dispatch each, no retry: every lock byte-identical, every parity figure reproduced exactly including all four CUDA targets, every `diskPlan` measured on its own host. Nothing signed with a production key, published or promoted |
 | P5.4W — Scrollcase `0.7.1` → `0.8.0` pin raise | Complete | Exact `scrollcase@0.8.0` (published 2026-08-06T17:28:03.966Z, integrity `sha512-zC2rply…pcxEQ==`) read back from npm into the lockfile before the change. Diffed against the `0.7.1` tarball it touches only `CHANGELOG`, `package.json`, `build/verify`, the two consumer entry points and `sign/`: `src/contract` is **byte-identical** and no archive-producing code moved, so the eleven-target matrix carries over with zero rebuilds. The change is additive — every operation now takes `publicPath` **or** `trustedKeys`, and `verifySignedDocument` still accepts a path — so no Liatir call site changed. `test:verify` 6/6, 42/42 Rust tests, and the macOS native fixture lifecycle green on the new pin. **The fixture confirms the diff empirically**: rebuilt on `0.8.0` it produced archive `54172964` and installed `146593318` bytes, the exact figures measured on `0.7.1` and recorded in the catalog |
-| P5.4P — re-release of the rebuilt matrix | macOS complete, Linux/Windows await their hosts | Every box version bumped (`geneformer-v1-10m` and `uce-4layer` to `1.0.0-beta.2`, `scgpt-whole-human` to `0.2.5-beta.2`) so the rebuilt archives publish without making one version name two different sets of bytes. **All three macOS boxes are KMS-signed, scientifically validated, published immutably and promoted to `beta` at 100%**, each channel read back from the public registry and each installed size reproducing the rebuild measurement exactly. It took six runs to get the first one through: the release path had drifted behind the v2/pixi cutover in six places, all now fixed and pinned by regressions, and both the signer and the Registry Worker were stale deployments that had to be replaced. Retiring the superseded `beta.1` versions is still open |
-| P5.5 — final cutover and legacy deletion | In progress | The local builder is deleted (`5f52f5e`) and `legacy-cli.mjs` is now `distribution-cli.mjs`, holding only R2 publication, the Worker trust root, promotion, revocation and the loopback registry, with a deletion guard against a builder growing back |
+| P5.4P — re-release of the rebuilt matrix | Complete | All nine targets are KMS-signed, scientifically validated, published immutably and promoted on `beta`, with public channel readback. Geneformer `1.0.0-beta.1` and scGPT `0.2.5-beta.1` are jointly revoked in the live signed document. UCE `1.0.0-beta.1` is not selected and is v2-incompatible, but whether to add it to revocations remains an explicit product decision |
+| P5.5 — final cutover and legacy deletion | Partial | The local builder is deleted (`5f52f5e`) and `legacy-cli.mjs` is now `distribution-cli.mjs`. Before deleting more, audit the still-used local filesystem, identity, licence, pixi/Python and workspace helpers against the public `scrollcase@0.8.0` exports; retain only Liatir-specific orchestration and distribution behavior |
 | P5.6 — local/native closure | Pending | Full cheap gate plus one reviewed non-production product lifecycle |
 | P5.7 — documentation handoff | Pending | Status, inventories and operator docs match the implemented boundary |
 
 Mark a phase complete only from its listed evidence. Do not infer completion from
 the next phase starting.
+
+## Current continuation from the 2026-08-10 checkpoint
+
+Work locally and cheaply until the boundary is clear:
+
+1. **Finish the P5.4R decision.** Compare the current Rust sequence in
+   `src-tauri/src/bridge/runtime_boxes.rs` with the public
+   `scrollcase-consumer 0.3.2` prepare/attach/extracted-payload APIs. Record why
+   each remaining step is delegated or deliberately Liatir-owned, then add one
+   regression that pins the resulting trust → verify → extract/attach → product
+   compatibility → activation order.
+2. **Complete the P5.5 import and ownership audit before deletion.**
+   `pixi.mjs` and `python.mjs` currently form a test-only chain, and the local
+   `scrollcase.config.schema.json` has no live reference. `archive.mjs`,
+   `filesystem.mjs`, `licenses.mjs`, `targets.mjs` and `workspace.mjs` still have
+   production or validation callers. Compare each surviving operation with the
+   public `scrollcase@0.8.0` build/contract exports; delete only generic overlap,
+   and keep Liatir-specific validation, evidence, runner and distribution logic.
+3. **Close P5.6** with the full cheap gate and one reviewed non-production native
+   lifecycle using the final boundary. No protected publication or paid GPU run
+   is needed for this closure.
+4. **Close P5.7** by updating the inventories and operator documentation once
+   P5.4R/P5.5/P5.6 are actually complete.
+
+Persisted anti-replay/version-floor state is the next product-hardening slice
+after P5, not a reason to keep generic builder code. The possible UCE `beta.1`
+revocation is an independent product decision and is not authorization to run
+the protected revocation workflow.
 
 ## P5.0 — Historical schema-v1 package/API preflight
 
@@ -556,7 +582,7 @@ from file existence or console text alone.
 The stable `npm run runtime-box -- ...` surface now enters the thin
 `scripts/runtime-box.mjs` dispatcher. `scripts/runtime-box/scrollcase-adapter.mjs`
 resolved the executable declared by exact installed `scrollcase@0.1.3` at this
-historical P5.2 checkpoint. The current adapter uses exact `scrollcase@0.4.11`.
+historical P5.2 checkpoint. The current adapter uses exact `scrollcase@0.8.0`.
 It resolves the package through a public ESM export, invokes it through the
 current Node executable without a shell, forces `liatir.runtime-box` exactly
 once, and writes
@@ -2309,21 +2335,38 @@ vendor-neutral ask was for `_with_keys` variants mirroring
 second entry point per operation, the field became `trust: TrustAnchors`, which
 is either a key file or the keys themselves: one way to state a trust decision
 instead of two, and `inspect_release_document_with_keys` was removed as
-redundant. Liatir already pins `=0.3.0`, so `AttachOptions { trust:
+redundant. Liatir now pins `=0.3.2`, so `AttachOptions { trust:
 TrustAnchors::Keys(&anchors), .. }` is callable today against the anchors the
 binary already carries.
 
-The P5.4R remainder is therefore no longer blocked on anything upstream: what
-remains — adopting `attach_extracted_box`, `verify_extracted_payload` and
-`prepare_box` in place of the Liatir-side extraction and agreement steps — is
-Liatir work, to be scheduled on its own merits rather than waited on.
+The P5.4R remainder is therefore no longer blocked on anything upstream: decide
+and test whether `verify_and_extract_box`, `attach_extracted_box` and
+`verify_extracted_payload` should replace the remaining Liatir-side sequence,
+then pin the chosen call order with a regression. That is Liatir work, to be
+scheduled on its own merits rather than waited on.
 
 The order question this section left open — P5.4V before or after P5.5 — is
 answered by the same decision. P5.4V ran first, so P5.5 will delete the legacy
 builder against the current pin, `0.8.0`, the version the remaining work is
 authored on.
 
-### P5.4P — Release: macOS is live, and what the first real release cost
+### P5.4P — Release complete; historical execution record follows
+
+**Closed 2026-08-10.** The six Linux/Windows releases that were open at the
+2026-08-08 checkpoint below have completed, so the live matrix is now:
+
+| Box | Published `beta` targets | Version |
+| --- | --- | --- |
+| `geneformer-v1-10m` | `macos-aarch64-metal`, `linux-x86_64-cuda12.9`, `windows-x86_64-cuda12.8` | `1.0.0-beta.2` |
+| `scgpt-whole-human` | `macos-aarch64-metal`, Linux/Windows CPU, Linux CUDA 12.9, Windows CUDA 12.8 | `0.2.5-beta.2` |
+| `uce-4layer` | `macos-aarch64-metal` | `1.0.0-beta.2` |
+
+Every channel and the signed revocations document was read back from the public
+registry. Geneformer `1.0.0-beta.1` and scGPT `0.2.5-beta.1` are revoked together.
+UCE `1.0.0-beta.1` remains outside that document; it is unselected and rejected
+by the v2-only app, but its explicit revocation is still a product decision.
+
+#### Historical checkpoint recorded on 2026-08-08
 
 **All three macOS boxes are published and promoted (2026-08-08).** Each was built
 from its pixi scroll, signed by KMS, self-tested, passed its real Metal
@@ -2378,7 +2421,7 @@ anticipated by this plan, which lists both under non-goals:
   after deploying that it still serves the existing channels and published
   objects.
 
-#### What remains, and what each part waits on
+#### Historical blockers before the 2026-08-10 closure
 
 **The six Linux/Windows targets wait on their own hosts,** exactly as their
 rebuilds did. Each needs its ephemeral runner started on the machine that owns
@@ -2399,7 +2442,7 @@ The urgency is low and should be stated so nobody rushes it: the `beta.1`
 documents are `schemaVersion: 1`, which the v2-only app already refuses as
 unsupported. Revocation would make that explicit, not newly true.
 
-#### How this was prepared, for the record
+#### Historical release preparation
 
 The matrix was built, measured and version-bumped before any of the above.
 

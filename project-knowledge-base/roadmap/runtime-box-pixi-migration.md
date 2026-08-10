@@ -1,28 +1,28 @@
 # Runtime Box CI migration → pixi + pixi-pack + conda-forge (self-hosted GHA)
 
-Last reviewed: 2026-08-04
+Last reviewed: 2026-08-10
 
-Status: **Phases 0–4 DONE; Phase 5 in progress.** All five scGPT targets have
-complete native v2 proof. Three Geneformer targets — macOS Metal, Linux CPU and
-Windows CPU — are migrated to schema v2 + pixi and each has complete clean
-self-hosted native-lifecycle proof.
-Remaining Phase 5: the Geneformer CUDA identities and UCE, then the protected
-releases.
-Nothing has been production-signed, published or promoted by this migration.
+Status: **complete — Phases 0–5 are closed.** Every active recipe uses the
+schema-v2 pixi/conda-pack path, no uv recipe remains, and all eleven migration
+targets (nine model targets plus two foundation fixtures) were rebuilt and
+re-measured on the current Scrollcase line. The nine model targets were then
+KMS-signed, scientifically validated, published immutably and promoted on
+`beta`: three Geneformer, five scGPT and one UCE. Geneformer and scGPT `beta.1`
+are jointly revoked. UCE `1.0.0-beta.1` is unselected and v2-incompatible but
+still needs an explicit decision if revocation is desired. Further work belongs
+to the P5 consumer/deletion closeout and product anti-replay hardening, not this
+migration.
 
 **Current ownership correction (2026-07-27):** the generic pixi/conda-pack
 builder now belongs to the independent external Scrollcase project, not to
 Liatir. This roadmap remains the Liatir recipe, runner and scientific-validation
 migration record. The checkout consumes exact
-`scrollcase@0.4.11` through its published v2-only package surface; P5.2V is
+`scrollcase@0.8.0` through its published v2-only package surface; P5.2V is
 complete. Liatir must not vendor, deep-import or modify Scrollcase source.
 P5.3 is complete: the macOS, Linux and Windows foundation fixtures all passed
 their matching native v2 proofs, their measured disk plans are catalogued, and
-each old uv fixture was removed only after its proof. P5.4 model migration is
-in progress: all five scGPT targets have canonical v2 inputs and complete native
-proofs, and the Geneformer macOS, Linux CPU and Windows CPU v2 inputs have each
-passed build, self-test and scientific validation plus clean native lifecycle.
-UCE and the CUDA identity decision remain. The canonical
+each old uv fixture was removed only after its proof. P5.4 model migration and
+P5.4P release are complete for the current nine-target model matrix. The canonical
 downstream cutover status is in
 [Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md).
 Every active Liatir Runtime Box contract and consumer now uses schema v2,
@@ -38,9 +38,8 @@ product-owned removal without a parallel v1 reader.
   recipe was pure pixi (`pixi.toml` +
   `pixi.lock` + `recipe.json`, no uv artifacts) with a lock-derived conda license audit, and a real
   end-to-end build produced a signed box whose self-test passed on torch 2.8.0. The uv build path
-  was deliberately retained for the seven recipes then in scope. The current
-  nine-recipe compatibility inventory is recorded above; deleting it is P5
-  cleanup after migration.
+  was deliberately retained for the seven recipes then in scope. That
+  compatibility inventory was later deleted through P5 after migration.
 - **Phase 2 — complete, and it needed no Rust change at all.** Provenance is opaque in
   `runtime_boxes.rs`, so the `uvVersion`→`pixiVersion` switch was TypeScript-only; and the box
   ships with no relocation step because running `conda-unpack` is actively harmful.
@@ -56,35 +55,28 @@ product-owned removal without a parallel v1 reader.
   record and CUDA E2E no longer pin a Tesla T4. The scGPT Linux CUDA run below is the first CUDA
   validation ever executed on the local RTX 4060 Ti (compute 8.9), confirming the generalization
   end to end.
-- **Phase 5 — in progress; scGPT is now validated on every target.** Linux CPU + Windows
-  CPU at every mode (build + scientific + native-lifecycle); **Linux CUDA 12.9 and Windows CUDA 12.8
-  scientifically validated on the RTX 4060 Ti** (run `30143289750`, CPU-vs-CUDA parity cosine
-  0.9999999999999, box installed 6.58 GB / archive 4.08 GB — far smaller than Linux CUDA because
-  Windows conda envs have no symlinks to dereference). Windows CUDA passed on the first dispatch by
-  applying the Linux CUDA lessons up front. The Geneformer macOS input is now a
-  schema-v2 scroll with lock `3e9841b2…` and a 161-package conda audit. Its
-  clean self-hosted native-lifecycle run `30766478916` passed build, independent
-  self-test, torch 2.8.0 Metal parity and Rust lifecycle. Geneformer Linux CPU
-  followed with run `30872534594`, which passed the same complete lifecycle on
-  torch 2.8.0 CPU. Geneformer Windows CPU is now a canonical v2 scroll with lock
-  `17aaea6d…` and a 150-package conda audit, and its run `30915003666` passed
-  the same complete lifecycle on the first dispatch. UCE and the Geneformer CUDA
-  identities are not yet migrated.
-  Nothing has been production-signed, published or promoted.
+- **Phase 5 — complete.** All five scGPT targets, Geneformer macOS Metal and its
+  Linux CUDA 12.9/Windows CUDA 12.8 successors, and UCE macOS Metal have complete
+  native lifecycle and scientific proof. Geneformer CPU targets were dropped
+  after measured throughput showed they were not viable product targets. The
+  full current matrix has since been production-signed, published and promoted;
+  the detailed execution evidence below is historical.
 
-**Production code HAS changed** as of Phase 1/2 (`packages/liatir-core`, `scripts/runtime-box*`,
-`runtime-boxes/catalog.json`, unit tests). Each remaining phase begins only on explicit maintainer
-go-ahead, one at a time.
+**Production code changed** during Phase 1/2 (`packages/liatir-core`,
+`scripts/runtime-box*`, `runtime-boxes/catalog.json`, unit tests). The historical
+authorization boundaries recorded below still explain how the work was executed;
+there is no remaining migration dispatch.
 
 Related plans: [Runtime Box model platform expansion](./runtime-box-model-platform-expansion.md)
 (the model/target re-validation this migration feeds into),
 [Runtime Box CI foundation](./runtime-box-ci-foundation.md) (the historical uv-based
-foundation being replaced), and [Runtime Box production report](./runtime-box-production-report.md)
-(the trust/distribution spine that stays unchanged). The remaining recipe migration
-and builder retirement now execute through
-[Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md); that plan is
-canonical for package adoption, contract inversion, the three uv foundation fixtures,
-and preservation of the published Geneformer CUDA 12.4 identity.
+foundation that this migration replaced), and [Runtime Box production report](./runtime-box-production-report.md)
+(the trust/distribution spine that stayed unchanged). The completed recipe
+migration and current consumer/deletion closeout are tracked in
+[Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md); that plan
+is canonical for package adoption and contract inversion. The old Geneformer
+CUDA 12.4 identities are historical and were replaced by additive 12.9/12.8
+targets rather than renamed in place.
 
 ## Context
 
@@ -92,7 +84,7 @@ This context describes the uv-era baseline that motivated the migration. It is
 not the current builder ownership: Scrollcase now owns the generic pixi builder,
 while Liatir owns the consuming recipes and product pipeline.
 
-The Runtime Box AI packaging system currently builds each box with a hand-rolled
+At this baseline, the Runtime Box AI packaging system built each box with a hand-rolled
 **uv + python-build-standalone + custom relocatability** stack. The incident ledger in
 `runtime-box-ci-foundation.md` shows this layer is the single biggest source of engineering
 cost and failed remote runs: PE-launcher relocatability, MAX_PATH, CRLF/LF, `npm.cmd`/`npx.cmd`
@@ -535,7 +527,13 @@ Replace the uv/relocatability layer; keep the recipe/catalog *contract* shape (a
 - scGPT/UCE validators (`validate-scgpt-runtime.mjs`, `validate-uce-runtime.mjs`) are already
   hardware-agnostic — no change.
 
-## Phase 5 — Re-validation (one model/target at a time)
+## Phase 5 — Re-validation (complete; historical execution ledger)
+
+**Completion record (2026-08-10).** All current model targets completed native
+re-validation, the eleven-target rebuild matrix was reproduced on the current
+Scrollcase line, and all nine product targets were released on `beta`. The dated
+notes below preserve the order in which the phase was executed; their statements
+about work still open are superseded by this completion record.
 
 **Predicted complexity: High (operational)** — low per-step code complexity, but long and iterative: rebuild + re-validate the full matrix one target at a time, re-establishing scientific baselines.
 

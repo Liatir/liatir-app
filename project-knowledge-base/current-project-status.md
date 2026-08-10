@@ -79,6 +79,35 @@ user account cannot mint an audience-bound identity token at all, and
 `LIATIR_RUNTIME_BOX_ADMIN_TOKEN` is not present. Production credentials on a workstation
 were the wrong fix regardless.
 
+**One old object still needs an explicit product decision.**
+`uce-4layer 1.0.0-beta.1` remains publicly addressable as an immutable release
+document. It is not selected by the `beta` channel and the v2-only client rejects
+it, but it is not present in the live revocations document. Decide deliberately
+whether to revoke it; do not infer retirement from the two model revocations above.
+
+## Current continuation
+
+The Runtime Box migration and the nine-target re-release are complete. Continue
+Liatir development in this order:
+
+1. close the remaining Scrollcase P5 adoption work: finish the consumer-boundary
+   audit and remove only the local generic helpers proven redundant with the
+   public package;
+2. implement persisted anti-replay/version-floor state for Runtime Box control
+   documents, with its ownership and recovery semantics defined before code;
+3. complete the common pipeline/run/result spine before widening the model
+   catalog or starting another Runtime Box migration;
+4. return to connector and broader scientific-workbench expansion only after the
+   shared lifecycle is reliable.
+
+P5.4P is complete, P5.4R is partial, P5.5 is partial, and P5.6/P5.7 remain open.
+The canonical detailed ledger is
+[Scrollcase P5](./roadmap/scrollcase-p5-liatir-adoption.md). The sections below
+this point are retained as implementation history and must not override this
+current continuation.
+
+## Historical re-release and migration record
+
 ## What the re-release cost, and why
 
 Seventeen defects stood between a validated matrix and a published one. Not one was
@@ -950,7 +979,7 @@ per Windows CUDA release). Maintainer rule: **optimise for one passing run, neve
 use a GPU run as a debugger** (validate cheaply on standard runners / locally
 first).
 
-## Next steps
+## Historical next-steps ledger (superseded 2026-08-10)
 
 > **Current strategic routing (2026-07-27):** the [Runtime Box pixi
 > migration](./roadmap/runtime-box-pixi-migration.md) owns Liatir recipe,

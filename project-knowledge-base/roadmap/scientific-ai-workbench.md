@@ -1,5 +1,7 @@
 # Scientific AI Workbench Product Plan
 
+Last reviewed: 2026-08-10
+
 This document is the canonical product direction and execution sequence for
 Liatir during and after the current Runtime Box CI foundation program. It turns
 the existing feature inventory into one coherent product: a local-first
@@ -7,27 +9,29 @@ scientific AI workbench for life sciences.
 
 It does not replace the evidence ledgers:
 
-- [Runtime Box CI foundation](./runtime-box-ci-foundation.md) owns the active
-  cross-platform Runtime Box gate state;
+- [Runtime Box CI foundation](./runtime-box-ci-foundation.md) preserves the
+  completed cross-platform foundation gate record;
 - [AI development batches](./ai-batches.md) records what has been implemented
   or validated by model family;
 - [Beta 1 readiness](./beta-readiness.md) owns cross-surface release evidence.
 
 ## Current execution boundary
 
-The Runtime Box CI foundation completed Gates 0 through 10 on 2026-07-22. Its
-reviewed production state, protected identities, support boundary, and operator
-procedures are recorded in the
-[Runtime Box production report](./runtime-box-production-report.md). Windows
-CUDA 12.4 remains deferred, unvalidated, unpublished, and unsupported under the
-2026-07-21 re-scope.
+The Runtime Box CI foundation completed Gates 0 through 10 on 2026-07-22, and
+the subsequent pixi/Scrollcase migration and protected re-release are now
+complete. The public `beta` matrix has nine schema-v2 targets: Geneformer on
+macOS Metal plus Linux CUDA 12.9 and Windows CUDA 12.8; scGPT on macOS Metal,
+Linux/Windows CPU and both CUDA targets; and UCE on macOS Metal. The old CUDA
+12.4 identities were deleted rather than renamed, and the successor targets are
+published. Geneformer and scGPT `beta.1` are revoked; UCE `beta.1` remains an
+explicit retirement decision.
 
-The next Runtime Box work is product scope rather than unfinished foundation
-infrastructure: prove a true cross-version native update and persist signed
-anti-replay channel state in the client. After that, continue with the common
-execution spine in Phase 2. Every paid or remote action still requires its
-exact local gate, workflow/input/revision readback, cost declaration, and fresh
-explicit approval.
+The next work is product and adoption scope: close the remaining Scrollcase P5
+consumer/deletion boundary, then prove a true cross-version native update and
+persist signed anti-replay channel state in the client. After that, continue
+with the common execution spine in Phase 2. Every paid or remote action still
+requires its exact local gate, workflow/input/revision readback, cost
+declaration, and fresh explicit approval.
 
 ## Product decision
 
@@ -121,7 +125,7 @@ execution foundation, but some product claims are ahead of their evidence.
 | Plugins | Build contracts are verified; native Node/WASM lifecycle coverage is incomplete | Close parity before treating every runtime as equally production-ready |
 | API Connector | Saved requests and pipeline integration exist but native execution evidence is incomplete | Validate it as another first-class node type |
 | AI Models and AI Tools | Runtime Box-only catalog with Geneformer, scGPT, and UCE plus the shared Single-cell Embedding Tool; legacy and mock integrations were removed on 2026-07-22 | Complete the common execution spine and product update guarantees before adding another family |
-| Runtime Box distribution | Live signed distribution; cross-platform CI foundation Gates 0–10 complete with reviewed evidence on macOS Metal, Linux CPU/CUDA, and Windows CPU | Close the separate cross-version update and client anti-replay product gaps before widening scope |
+| Runtime Box distribution | Nine current schema-v2 targets are live and product-lifecycle verified on macOS Metal, Linux CPU/CUDA, and Windows CPU/CUDA | Finish the P5 consumer/deletion boundary, then close cross-version update and persisted client anti-replay gaps before widening scope |
 | Scientific viewers | Protein, genome, and single-cell surfaces exist but need native visual/runtime validation | Make viewer completion part of each scientific vertical |
 | Artifact semantics | Files have paths, extensions, media types, producer, parent run, and lifecycle role; scientific meaning is not yet a versioned compatibility contract | Add semantic profiles without replacing original formats |
 | External workflow engines | Nextflow and Snakemake dependencies are recognized, but their Tools are still marked as coming soon | Build one first-class Nextflow vertical slice after the artifact contract |
@@ -255,12 +259,12 @@ Work:
 
 1. complete Gate 9 with the private on-demand macOS heavy runner;
 2. complete Gate 10 operational documentation and handoff;
-3. separately close the product-level true cross-version update and persisted
-   anti-replay state before calling Runtime Box distribution complete.
+3. separately complete the later pixi/Scrollcase migration and protected
+   schema-v2 re-release.
 
-Windows CUDA 12.4 remains a separately deferred target: its recipe and wiring
-are buildable, but it is unvalidated, unpublished, and unsupported. It must not
-be included in Gate 8.3 completion criteria or inferred from Linux CUDA.
+The historical Windows CUDA 12.4 target was never validated or published and
+was deleted. Its `windows-x86_64-cuda12.8` successor is a distinct, natively
+validated and published identity; no evidence is inferred from Linux CUDA.
 
 Exit criteria:
 
@@ -547,21 +551,22 @@ features as production-ready.
 This is the default sequence unless a later evidence-backed decision explicitly
 reorders it:
 
-1. close true cross-version Runtime Box update and persisted anti-replay state;
-2. close Plugin, direct AI, API Connector, and dependency lifecycle gaps needed
+1. close the remaining Scrollcase P5 consumer-boundary and legacy-deletion work;
+2. close true cross-version Runtime Box update and persisted anti-replay state;
+3. close Plugin, direct AI, API Connector, and dependency lifecycle gaps needed
    by the common execution spine;
-3. design and land the backward-compatible semantic artifact contract in
+4. design and land the backward-compatible semantic artifact contract in
    `packages/liatir-core`;
-4. implement the AnnData/single-cell profiles and lighthouse workflow;
-5. complete single-cell viewer and preset evidence;
-6. implement the local first-class Nextflow adapter;
-7. prove Nextflow output reuse through an existing AI Tool or viewer;
-8. validate the predictive/variant genomics vertical;
-9. validate the protein structure/binding vertical;
-10. publish useful verified Plugin and pipeline templates;
-11. evaluate another external workflow engine only from the reusable adapter
+5. implement the AnnData/single-cell profiles and lighthouse workflow;
+6. complete single-cell viewer and preset evidence;
+7. implement the local first-class Nextflow adapter;
+8. prove Nextflow output reuse through an existing AI Tool or viewer;
+9. validate the predictive/variant genomics vertical;
+10. validate the protein structure/binding vertical;
+11. publish useful verified Plugin and pipeline templates;
+12. evaluate another external workflow engine only from the reusable adapter
     contract;
-12. reconsider simulations, generative models, MCP, Quenta expansion, and
+13. reconsider simulations, generative models, MCP, Quenta expansion, and
     training only after the beta evidence is complete.
 
 ## Definition of done for every integration

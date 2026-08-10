@@ -1,18 +1,21 @@
 # Single-cell Foundation Models
 
+Last reviewed: 2026-08-10
+
 This page tracks Batch 5 implementation constraints. Keep this aligned with the
 AI Model registry and public docs.
 
 ## Current status
 
 Batch 5 has three installable/runnable slices: UCE 4-layer, Geneformer V1 10M,
-and scGPT Whole-human. All three use signed Runtime Boxes. UCE's protected
-macOS arm64 release completed in run `29909249357`; Geneformer has reviewed
-production and native lifecycle evidence across macOS Metal, Linux CPU/CUDA,
-and Windows CPU; scGPT has a signed macOS arm64 box plus unpublished
-self-hosted validation evidence for Linux CPU/CUDA 12.9 and Windows CPU/CUDA
-12.8. These three entries are the complete product AI Model catalog;
-scFoundation is not registered or visible.
+and scGPT Whole-human. All use KMS-signed schema-v2 Runtime Boxes. The public
+`beta` matrix contains nine targets: Geneformer on macOS Metal, Linux CUDA 12.9
+and Windows CUDA 12.8; scGPT on macOS Metal, Linux/Windows CPU and both CUDA
+targets; UCE on macOS Metal. Every target has reviewed native lifecycle and
+scientific evidence. Geneformer and scGPT `beta.1` are revoked; UCE `beta.1` is
+unselected and rejected by the v2-only client but not explicitly revoked. These
+three entries are the complete product AI Model catalog; scFoundation is not
+registered or visible.
 
 Runtime Box production uses Scrollcase as an independent external build-time
 tool. Liatir consumes its exact published npm package and owns the
@@ -70,22 +73,21 @@ runtime ID (`single-cell-foundation-uce`), a pinned UCE source checkout, managed
 Figshare assets, and a dedicated `ai-single-cell-embedding` AI Tool.
 
 Geneformer V1 10M is the second slice. It uses the isolated runtime ID
-`single-cell-foundation-geneformer-v1-10m` and the first signed Runtime Box
-recipe for macOS arm64/Metal. The 201 MB archive contains standalone Python
-3.11.9, a fully hash-locked dependency graph, checksummed V1-only assets, and
-build provenance. A post-extraction self-test proves that the packaged runtime
-is relocatable. Production-signed releases are published on R2 and live through
-the Registry Worker beta channel for macOS arm64 Metal, Linux x86_64 CPU,
-Linux x86_64 CUDA 12.4, and Windows x86_64 CPU. Reviewed scientific parity and
-native lifecycle evidence covers all four targets. The runner uses
-Genecorpus-30M median-scaled rank encoding and the same compatible
-`ai-single-cell-embedding` AI Tool. CUDA is supported only on Linux; the
-Windows CUDA recipe remains unvalidated, unpublished, and unsupported.
+`single-cell-foundation-geneformer-v1-10m`, checksummed V1-only assets and the
+same compatible `ai-single-cell-embedding` AI Tool. The runner uses
+Genecorpus-30M median-scaled rank encoding. Its current published matrix is
+macOS arm64 Metal, Linux x86_64 CUDA 12.9 and Windows x86_64 CUDA 12.8; CPU
+targets were dropped after measured throughput showed they were not viable.
+
+scGPT Whole-human is the third slice. It uses runtime ID
+`single-cell-foundation-scgpt-whole-human`, the pinned Whole-human checkpoint
+and the shared embedding Tool. Its current published matrix is macOS arm64
+Metal, Linux and Windows CPU, Linux CUDA 12.9 and Windows CUDA 12.8.
 
 The tool outputs:
 
-- embedded AnnData with the model-specific `obsm["X_uce"]` or
-  `obsm["X_geneformer"]` matrix;
+- embedded AnnData with the model-specific `obsm["X_uce"]`,
+  `obsm["X_geneformer"]` or `obsm["X_scGPT"]` matrix;
 - lightweight embedding preview CSV;
 - summary JSON;
 - intermediate UCE processing artifacts when UCE is selected;

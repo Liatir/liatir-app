@@ -1,27 +1,30 @@
 # scrollcase — extracting the Runtime Box builder into an independent open-source tool
 
+Last reviewed: 2026-08-10
+
 **Status:** **EXTRACTION COMPLETE (P1–P4, 2026-07-26).** Scrollcase is an independent
 Apache-2.0 project at `https://github.com/suffro/scrollcase`, its documentation is live at
 `https://scrollcase.dev`, and Liatir's verified extraction baseline is
 `scrollcase@0.1.3` (`0.1.0` was the original release). The public package has
-since advanced to the v2-only `scrollcase@0.4.11`; adopting that line is
-downstream Liatir work, not a reopening of extraction. The temporary in-tree
+since advanced and Liatir now pins exact v2-only `scrollcase@0.8.0`; adopting
+and updating that line is downstream Liatir work, not a reopening of extraction. The temporary in-tree
 `scrollcase/` copy was removed from Liatir in commit `6b4934e`.
 
-**Remaining downstream work:** **P5 is in progress in Liatir; exact
-`scrollcase@0.4.11` is installed and the v2-only P5.2V cutover is complete.**
+**Remaining downstream work:** **P5 is in progress in Liatir; P5.0, P5.1,
+P5.2, P5.2V, P5.3, P5.4, P5.4T, P5.4E, P5.4V, P5.4W and P5.4P are complete.**
+Exact `scrollcase@0.8.0` is installed,
+the v2-only cutover is complete, all active recipes use pixi/conda-pack, and all
+nine current model targets are published. P5.4R and P5.5 are partial; P5.6 and
+P5.7 remain open.
 The historical `scrollcase@0.1.3` contract inversion and clean
 keygen/lock/build/verify consumer cycle remain prior evidence, not the target
 architecture.
-The P5.2 implementation adds the consumer adapter, private-signer command and
-explicit distribution/legacy-uv routing while keeping native fixture execution
-manual.
-P5.2V replaced the active contract with v2 across every Liatir surface, removed
-active v1 parsing, and defined explicit unsupported/removal handling for
-installed v1 state without duplicating the shared contract. P5.3 has completed
-the macOS foundation fixture; Linux and Windows native proofs remain before
-their uv fixture files can be deleted. Later phases migrate active model recipes
-before deleting the superseded local generic builder copies.
+P5.2/P5.2V added the consumer and signer/distribution adapters, replaced the
+active contract with v2 across every Liatir surface, removed active v1 parsing,
+and defined explicit unsupported/removal handling for installed v1 state.
+P5.3/P5.4 completed every foundation and model migration, and the local builder
+was deleted. The remaining work is the Rust delegation and duplicate-helper
+audit recorded in the canonical P5 plan, followed by final local/native closure.
 This integration does not change Scrollcase's completed extraction or its
 independence. The detailed canonical execution plan is
 [Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md).

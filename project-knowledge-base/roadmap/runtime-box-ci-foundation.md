@@ -4,7 +4,7 @@ This tracked document is the durable implementation plan and handoff source for
 Runtime Box CI work. Keep it current so development can continue from a local
 checkout or GitHub Codespaces without relying on machine-local agent memory.
 
-**Current routing note (2026-07-27):** Gates 0–10 below are closed historical
+**Current routing note (2026-08-10):** Gates 0–10 below are closed historical
 evidence for the original uv-era foundation. They remain authoritative for the
 product, trust, distribution and lifecycle guarantees they proved, but not for
 current generic builder ownership or every later target status. Scrollcase is
@@ -12,9 +12,12 @@ now an independent external npm tool and Liatir's active adoption/migration
 state lives in
 [Scrollcase P5](./scrollcase-p5-liatir-adoption.md),
 [the pixi migration](./runtime-box-pixi-migration.md), and
-`runtime-boxes/catalog.json`. Statements such as “CUDA is validated only on
-Linux” are true at the dated Gate 10 closure, not a claim about later scGPT
-self-hosted candidate evidence.
+`runtime-boxes/catalog.json`. The later migration and release are complete: the
+public `beta` channel serves nine schema-v2 targets across Geneformer, scGPT and
+UCE, including Linux CUDA 12.9 and Windows CUDA 12.8. Geneformer and scGPT
+`beta.1` are revoked; UCE `beta.1` is unselected and v2-incompatible but not
+explicitly revoked. Statements such as “CUDA is validated only on Linux” are
+true only at the dated Gate 10 closure.
 
 **P5.3 v2 foundation revalidation (2026-07-31):** the manual-only
 `runtime-box-foundation.yml` remained entirely self-hosted and completed the
@@ -42,7 +45,8 @@ lifecycle in run `31057320891` on `liatir-windows-cuda-selfhosted-1785973279-480
 (driver `610.62`, compute capability `8.9`), after Geneformer
 `linux-x86_64-cuda12.9` passed in run `31048217909` on
 `liatir-linux-cuda-selfhosted-1785964781-457`. Both are recorded
-`native-lifecycle-validated` and unpublished; details live in
+`native-lifecycle-validated` at that checkpoint and were subsequently published
+as `beta.2`; details live in
 [Scrollcase P5](./scrollcase-p5-liatir-adoption.md) and
 `runtime-boxes/catalog.json`.
 
@@ -73,7 +77,7 @@ Four boundaries on that sentence, so it is not over-read:
    Read `runtime-boxes/catalog.json` for live target identities, per the routing
    note above.
 
-## Objective
+## Historical objective at foundation start
 
 Prove that Liatir can build, validate, sign, publish, install, run, and remove a
 real AI Model Runtime Box on every supported native target while preserving one

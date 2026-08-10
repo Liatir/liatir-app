@@ -1,5 +1,7 @@
 # AI Model Integration Ledger
 
+Last reviewed: 2026-08-10
+
 This ledger records the current product boundary for AI Models and AI Tools.
 The canonical Runtime Box build and publication evidence remains in
 [Runtime Box CI foundation](./runtime-box-ci-foundation.md).
@@ -37,15 +39,13 @@ must close before the model is treated as generally available.
 
 | AI Model | AI Tool | Published native support | Cross-platform state |
 | --- | --- | --- | --- |
-| Geneformer V1 10M | Single-cell Embedding | macOS arm64 Metal; Linux x86_64 CPU/CUDA 12.4; Windows x86_64 CPU | Current native matrix complete; Windows CUDA remains a documented runner blocker |
-| scGPT Whole-human | Single-cell Embedding | macOS arm64 Metal | Linux CPU and Windows CPU are native-lifecycle-validated; Linux CUDA 12.9 and Windows CUDA 12.8 are scientifically validated on self-hosted hardware; none is published yet |
-| UCE 4-layer | Single-cell Embedding | macOS arm64 Metal | Pre-release support debt: Linux CPU/CUDA and Windows CPU remain to be built and validated; Windows CUDA follows the shared blocker policy |
+| Geneformer V1 10M | Single-cell Embedding | macOS arm64 Metal; Linux x86_64 CUDA 12.9; Windows x86_64 CUDA 12.8 | Current published matrix complete; CPU targets were dropped after measured throughput showed they were not viable |
+| scGPT Whole-human | Single-cell Embedding | macOS arm64 Metal; Linux/Windows CPU; Linux CUDA 12.9; Windows CUDA 12.8 | All five current targets are published and product-lifecycle verified |
+| UCE 4-layer | Single-cell Embedding | macOS arm64 Metal | Current P5 release target is published and product-lifecycle verified; broader platform feasibility and the model's large footprint require a separate expansion decision |
 
-Published CUDA support currently exists only for Geneformer Linux CUDA 12.4.
-The scGPT Linux CUDA 12.9 and Windows CUDA 12.8 candidates have scientific
-evidence but remain unpublished and unsupported in the product. Geneformer's
-legacy Windows CUDA 12.4 candidate remains buildable, unvalidated and
-unpublished.
+Published CUDA support now exists on Linux CUDA 12.9 and Windows CUDA 12.8 for
+both Geneformer and scGPT. The old Geneformer CUDA 12.4 identities were deleted,
+not renamed; their successors have independent evidence and publication records.
 
 ## Removed experimental integrations
 
@@ -75,9 +75,9 @@ must be reviewed again when a candidate Runtime Box program starts.
 
 | Model family | Current license assessment | Practical target assessment | Decision |
 | --- | --- | --- | --- |
-| Geneformer | Apache-2.0 model repository; accepted Runtime Box legal audits | Current macOS Metal, Linux CPU/CUDA, and Windows CPU matrix is validated | Keep and maintain |
-| scGPT | MIT code repository; the reviewed upstream revision distributes the selected checkpoint without separate checkpoint terms | Pixi recipes and self-hosted evidence now cover macOS Metal, Linux CPU/CUDA 12.9 and Windows CPU/CUDA 12.8; only macOS is published | Complete protected releases and reviewed product lifecycle evidence |
-| UCE | MIT code; selected Figshare model assets are CC BY 4.0 and require attribution | CPU portability is expected; CUDA selection and all non-macOS native packages require validation; the box has a large disk footprint | Expand the current model |
+| Geneformer | Apache-2.0 model repository; accepted Runtime Box legal audits | Published and validated on macOS Metal, Linux CUDA 12.9 and Windows CUDA 12.8; measured CPU throughput was not viable | Keep and maintain |
+| scGPT | MIT code repository; the reviewed upstream revision distributes the selected checkpoint without separate checkpoint terms | Published and validated on macOS Metal, Linux/Windows CPU, Linux CUDA 12.9 and Windows CUDA 12.8 | Keep and maintain |
+| UCE | MIT code; selected Figshare model assets are CC BY 4.0 and require attribution | Published and validated on macOS Metal; non-macOS expansion needs its own feasibility, footprint and evidence review | Keep current target; re-plan expansion separately |
 | ESM-2 8M | MIT model repository and weights | PyTorch makes CPU on all three operating systems, macOS MPS, and Linux/Windows CUDA plausible, subject to native validation | Strong future candidate |
 | Boltz-2 | Upstream states that code and weights are MIT and permits commercial use | Upstream supports CPU/non-CUDA execution, although slowly, and optional CUDA; native dependencies still require validation on each operating system | Strong future candidate |
 | CellTypist | MIT code; explicit redistribution terms for the separately downloaded model files were not established by the current review | CPU execution appears portable | Hold until the model-asset license is explicit |
@@ -102,9 +102,10 @@ For each additional model:
 9. add the model to `packages/liatir-core` only after the preceding evidence is
    complete.
 
-The immediate model-distribution priority is to close scGPT and UCE target
-parity across every feasible native target. No additional family should enter
-the pre-release catalog ahead of that work. Cross-version Runtime Box update,
-persisted anti-replay state, and the common execution spine defined in
-[Scientific AI Workbench](./scientific-ai-workbench.md) remain required product
-work in parallel with that model-expansion sequence.
+The current nine-target release matrix is complete. The immediate priority is
+not another model family: close the Scrollcase P5 consumer/deletion boundary,
+then cross-version Runtime Box update, persisted anti-replay state, and the
+common execution spine defined in
+[Scientific AI Workbench](./scientific-ai-workbench.md). UCE platform expansion
+must be re-planned as a separate evidence-backed decision rather than inferred
+from the completed macOS target.

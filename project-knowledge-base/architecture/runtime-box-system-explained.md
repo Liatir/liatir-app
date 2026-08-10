@@ -1,5 +1,7 @@
 # Runtime Boxes, Explained from Zero
 
+Last reviewed: 2026-08-10
+
 This guide explains the Liatir Runtime Box system for a reader who knows
 nothing about CI, Python environments, cloud services, digital signatures, or
 AI model packaging.
@@ -59,17 +61,16 @@ The complete current product catalog is:
 
 | AI Model | Published native targets |
 | --- | --- |
-| Geneformer V1 10M | macOS arm64 Metal, Linux x86_64 CPU/CUDA 12.4, Windows x86_64 CPU |
-| scGPT Whole-human | macOS arm64 Metal |
+| Geneformer V1 10M | macOS arm64 Metal, Linux x86_64 CUDA 12.9, Windows x86_64 CUDA 12.8 |
+| scGPT Whole-human | macOS arm64 Metal, Linux/Windows CPU, Linux CUDA 12.9, Windows CUDA 12.8 |
 | UCE 4-layer | macOS arm64 Metal |
 
-All three run through the shared Single-cell Embedding AI Tool. Geneformer has
-completed its currently supported published matrix. scGPT and UCE currently
-have only their macOS boxes published, so they still carry pre-release
-cross-platform support debt. scGPT Linux CPU/CUDA and Windows CPU/CUDA
-candidates have native or scientific validation on self-hosted hardware but are
-not published. Windows CUDA therefore remains unsupported in the product even
-though the scGPT candidate path has hardware evidence.
+All three run through the shared Single-cell Embedding AI Tool. Every listed
+target has reviewed scientific and product-lifecycle evidence and is served by
+the public `beta` channel. Geneformer CPU targets were dropped after measured
+throughput showed they were not viable. UCE expansion beyond macOS is not part
+of the completed P5 release matrix and needs a separate feasibility and evidence
+decision.
 
 A future model must complete the same legal, build, scientific, signing,
 publication, product lifecycle, and evidence gates for every feasible native
@@ -146,10 +147,10 @@ declares items such as:
 The recipe is not the Runtime Box itself. It is the reproducible instruction
 used to build the box.
 
-Five scGPT recipes currently use pixi and are eligible for the Scrollcase path.
-Nine older Geneformer, UCE and foundation recipes still use uv through an
-explicit Liatir compatibility builder while P5 migration remains open. That
-compatibility path is transitional, not a second generic source of truth.
+Every active Runtime Box scroll now uses pixi/conda-pack through the published
+Scrollcase path. No uv recipe or local generic builder remains. P5 stays open
+only for the remaining consumer-boundary and duplicate-helper deletion audit,
+plus its final local/native closure and handoff.
 
 ### Dependency lock
 
@@ -164,7 +165,8 @@ combination. Examples are:
 
 - `macos-aarch64-metal`;
 - `linux-x86_64-cpu`;
-- `linux-x86_64-cuda12.4`;
+- `linux-x86_64-cuda12.9`;
+- `windows-x86_64-cuda12.8`;
 - `windows-x86_64-cpu`.
 
 A Linux CUDA box is not a Windows CUDA box. A CPU box is not silently treated
@@ -334,9 +336,10 @@ The native runner verifies its actual platform, architecture, free disk, and,
 when relevant, GPU model and driver.
 
 The historical hosted Windows CUDA runner was rejected because its NVIDIA
-driver was too old for CUDA 12.4. Current candidate validation uses reviewed
-self-hosted profiles, but a validated candidate is still not a published or
-supported product target.
+driver was too old for CUDA 12.4. The successor CUDA 12.9/12.8 targets were
+validated on reviewed self-hosted profiles and subsequently published. In
+general, validation alone still does not make a candidate a supported product
+target; it also needs protected publication and promotion.
 
 #### 6. Build the Runtime Box
 
@@ -808,27 +811,29 @@ documentation build. Gate 10 required no paid or remote execution.
 | Target | State |
 | --- | --- |
 | macOS arm64 Metal | Supported and published |
-| Linux x86_64 CPU | Supported and published |
-| Linux x86_64 CUDA 12.4 | Supported and published |
-| Windows x86_64 CPU | Supported and published |
-| Windows x86_64 CUDA 12.4 | Buildable recipe, but unvalidated, unpublished, and unsupported |
+| Linux x86_64 CUDA 12.9 | Supported and published |
+| Windows x86_64 CUDA 12.8 | Supported and published |
+| Linux/Windows x86_64 CPU | Not product targets; measured throughput was not viable |
 
 ### Other current boxes
 
 - UCE 4-layer: supported and published for macOS arm64 Metal.
-- scGPT Whole-human: supported and published for macOS arm64 Metal.
+- scGPT Whole-human: supported and published for macOS arm64 Metal,
+  Linux/Windows CPU, Linux CUDA 12.9 and Windows CUDA 12.8.
 - WSL2 Runtime Box execution: unsupported and unverified.
 - macOS Intel: not an active Runtime Box target.
 
 CUDA support must always be stated with its operating system. “CUDA works” is
-too vague; the reviewed evidence currently proves CUDA only on Linux.
+too vague; the reviewed evidence covers the specific Linux 12.9 and Windows
+12.8 targets above.
 
 ## What the completed foundation does not prove
 
 Completing Gates 0–10 does **not** mean:
 
 - every Liatir AI Model is validated on every platform;
-- Windows CUDA works;
+- every future Windows/CUDA combination works beyond the exact published
+  Windows CUDA 12.8 targets;
 - WSL2 works;
 - every scientific integration in Liatir is production-ready;
 - the complete desktop application release matrix is finished;
@@ -844,8 +849,9 @@ scope and that support claims can be tied to concrete evidence.
 
 The next Runtime Box product work is separate from the completed CI foundation:
 
-1. prove a true native update from one version to a different version;
-2. persist anti-replay channel state in the client so an older signed channel
+1. close the Scrollcase P5 consumer-boundary and legacy-deletion work;
+2. prove a true native update from one version to a different version;
+3. persist anti-replay channel state in the client so an older signed channel
    generation cannot silently replace a newer one after restart.
 
 After that bounded work, the broader Scientific AI Workbench roadmap continues
@@ -908,12 +914,11 @@ Windows has different executable layouts, path limits, shell behavior, file
 locking, and WebDriver behavior. Linux success cannot prove native Windows
 behavior.
 
-### Why is Windows CUDA listed if it is unsupported?
+### Is Windows CUDA supported?
 
-Keeping the canonical target and reviewed recipe lets work resume without
-discarding the implementation. Its `buildable` state is deliberately different
-from `published`. The product must not present it as supported until native
-validation and publication succeed on compatible hardware.
+Yes, for the exact published `windows-x86_64-cuda12.8` Geneformer and scGPT
+targets. This does not imply support for old CUDA 12.4 identities, arbitrary
+CUDA versions, WSL2 execution, or another model without its own evidence.
 
 ### Does a successful self-test prove scientific correctness?
 
@@ -932,9 +937,12 @@ Liatir supports signed revocation documents. New installation or activation of
 a revoked version is refused. Immutable R2 objects are retained for audit
 rather than silently deleted.
 
-The current CLI creates a single-entry revocation document and does not merge
-an already-live revocation list. An operator must stop and use a reviewed merge
-procedure or add merge support before replacing a non-empty live list.
+The distribution CLI accepts multiple entries and, by default, verifies and
+carries forward the complete live revocation set before signing a replacement.
+The protected `runtime-box-revoke.yml` workflow reads the public document back
+and fails unless every requested entry is served. The current live document
+jointly revokes Geneformer `1.0.0-beta.1` and scGPT `0.2.5-beta.1`; UCE
+`1.0.0-beta.1` is not included and needs an explicit decision if it should be.
 
 ### Does “foundation complete” mean there will never be more Runtime Box work?
 
@@ -953,15 +961,16 @@ their own scoped evidence.
 | Human-readable support matrix | `runtime-boxes/compatibility-matrix.md` |
 | Reviewed compact evidence | `runtime-boxes/evidence/` |
 | V2 scrolls and dependency locks | `runtime-boxes/scrolls/` |
-| Frozen pre-v2 model authoring records | `runtime-boxes/recipes/` until P5.4 |
 | Legal reviews | `runtime-boxes/legal/` |
 | Shared TypeScript contract | `packages/liatir-core/src/runtime-box.ts` |
-| Generic box contract, pixi build, signing envelope and verify | Exact v2-only external dependency `scrollcase@0.4.11`; public exports and declared `scrollcase` executable only |
+| Generic box contract, pixi build, signing envelope and verify | Exact v2-only external dependency `scrollcase@0.8.0`; public exports and declared `scrollcase` executable only |
+| Rust generic consumer | Exact `scrollcase-consumer 0.3.2` through its public API |
 | Stable Liatir operator dispatcher | `scripts/runtime-box.mjs` and `scripts/runtime-box/scrollcase-adapter.mjs` |
 | Private signer adapter | `scripts/runtime-box/signer-command.mjs` |
-| Liatir distribution and temporary uv compatibility | `scripts/runtime-box/legacy-cli.mjs` until P5 migration splits/deletes the generic legacy path |
+| Liatir distribution operations | `scripts/runtime-box/distribution-cli.mjs` |
 | CI orchestration and evidence | `scripts/runtime-box-ci.mjs`, `scripts/runtime-box/evidence.mjs`, and model validators |
 | Protected production release | `.github/workflows/runtime-box-release.yml` |
+| Protected revocation | `.github/workflows/runtime-box-revoke.yml` |
 | Protected signer deployment | `.github/workflows/runtime-box-signer-deploy.yml` |
 | Signer policy | `services/runtime-box-signer/policy.json` |
 | Signer operations | `services/runtime-box-signer/README.md` |

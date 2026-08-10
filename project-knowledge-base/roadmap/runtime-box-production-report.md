@@ -1,6 +1,6 @@
 # Runtime Box Production Report
 
-Last reviewed: 2026-07-22
+Last reviewed: 2026-08-10
 
 This is the evidence-backed production and operational handoff for the Runtime
 Box CI foundation. The canonical gate history remains in
@@ -18,7 +18,24 @@ Scrollcase owns the generic pixi build/signing-envelope/verify implementation;
 Liatir consumes the published tool and retains recipes, scientific validation,
 private signer custody, CI/evidence, distribution and product lifecycle.
 
-## Foundation outcome
+## Current live-state addendum (2026-08-10)
+
+The tables below are the immutable Gate 10/uv-era evidence snapshot, not the
+current channel matrix. The subsequent schema-v2 re-release is complete: the
+public `beta` registry serves three Geneformer targets (macOS Metal, Linux CUDA
+12.9, Windows CUDA 12.8), five scGPT targets (macOS Metal, Linux/Windows CPU and
+both CUDA targets), and UCE macOS Metal. All nine are KMS-signed and have
+reviewed product-lifecycle evidence in `runtime-boxes/evidence/`.
+
+The live signed revocations document jointly withdraws Geneformer
+`1.0.0-beta.1` and scGPT `0.2.5-beta.1`. UCE `1.0.0-beta.1` is not channel-selected
+and is rejected by the v2-only app, but it is not in that document; explicit
+revocation remains a product decision. For current execution state use
+[Scrollcase P5](./scrollcase-p5-liatir-adoption.md) and
+`runtime-boxes/catalog.json`; preserve the rest of this report as historical
+production evidence.
+
+## Historical foundation outcome
 
 Gates 0 through 10 are complete for the approved foundation scope. The
 supported Geneformer targets are macOS arm64 Metal, Linux x86_64 CPU, Linux

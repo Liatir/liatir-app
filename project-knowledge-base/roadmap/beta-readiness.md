@@ -1,5 +1,7 @@
 # Beta 1 Readiness
 
+Last reviewed: 2026-08-10
+
 This page is the cross-surface readiness ledger for the first production-grade
 Liatir beta. It complements the canonical
 [Scientific AI Workbench product plan](./scientific-ai-workbench.md), detailed
@@ -38,7 +40,7 @@ feature to Verified.
 | Dependencies page | **Partial** | Real bridge checks plus native managed install/execute/remove coverage | Add update interruption and actionable recovery-state E2E |
 | API Connector | **Implemented — unverified** | Saved requests and pipeline node integration exist | Native request/run E2E, auth handling, malformed responses, rate/error states, Results provenance |
 | Legacy AI batches | **Removed** | The pre-release mock, local-build, direct-download, CellTypist, sequence/genomics, regulatory, and structure model paths were removed on 2026-07-22 | Do not restore a legacy installer; reintroduce a family only after its signed Runtime Box and product lifecycle are validated |
-| Runtime Box AI Model distribution | **Blocked — nothing published is installable** | The product catalog contains exactly Geneformer V1 10M, scGPT Whole-human, and UCE 4-layer; Runtime Box CI foundation Gates 0–10 are complete; live R2/Worker distribution and private Cloud Run signer use a non-exportable Ed25519 Cloud KMS key; reviewed evidence is in the [production report](./runtime-box-production-report.md). **As of 2026-08-05 the published objects are unusable**: every beta channel still serves the uv-era schema-v1 documents, which the v2 app rejects in `verify_signed_payload` before any identity check, so no AI Model can be installed from the public catalog. The v2 rebuilds are natively proven but unreleased. Both Geneformer CUDA 12.4 targets were deleted on 2026-08-04 with no successor | Re-release each migrated target (KMS sign → R2 publish → beta) under explicit per-target authorization, then re-verify a real install; add a true cross-version native update and persisted signed anti-replay state; add no model without equivalent evidence |
+| Runtime Box AI Model distribution | **Partial** | The public `beta` catalog serves nine KMS-signed schema-v2 targets: Geneformer on macOS Metal plus Linux CUDA 12.9 and Windows CUDA 12.8; scGPT on macOS Metal, Linux/Windows CPU and both CUDA targets; UCE on macOS Metal. Every target has reviewed native product-lifecycle evidence. Geneformer and scGPT `beta.1` are jointly revoked. UCE `beta.1` is unselected and v2-incompatible but not revoked | Complete the P5 consumer/deletion boundary, prove a true cross-version native update, persist signed anti-replay/version-floor state, and decide explicitly whether UCE `beta.1` belongs in revocations |
 | Single-cell Embedding AI Tool | **Implemented — model evidence varies by target** | One shared Tool runs Geneformer, scGPT, and UCE through their signed boxes and produces AnnData, preview, summary, Jobs, Results, and Runtime Box provenance | Complete common execution-spine parity and keep model-specific scientific gates repeatable |
 | Future AI families | **Deferred** | No preview entries or dormant product integrations remain | Re-plan each family from legal review through published Runtime Box evidence after current workbench gates close |
 | Scientific viewers | **Implemented — unverified** | Optional local viewer runtimes and visual pages exist | Native visual/runtime coverage with real artifacts, failures, fullscreen, and capture |
@@ -48,7 +50,7 @@ feature to Verified.
 | API/pipeline presets | **Planned** | Individual tools and demo files exist | Versioned useful presets backed by small realistic fixtures and end-to-end tests |
 | Public/internal documentation | **Partial** | Both VitePress sites build successfully | Remove stale architecture, finish first-workflow and troubleshooting paths |
 | macOS distribution | **Partial** | macOS is the primary compile/test platform | Clean-machine signed and notarized install, update, migration, and uninstall validation |
-| Windows/Linux distribution | **Partial** | The Geneformer Runtime Box path is native-verified on Linux CPU and Windows CPU, but its published objects are not installable by the current app (see the Runtime Box row); Linux CUDA 12.4 was deleted on 2026-08-04. This does not establish the complete desktop application release matrix | Complete signed desktop packaging, install/update/migration/uninstall, and native UI coverage per supported OS; Windows CUDA remains unsupported |
+| Windows/Linux distribution | **Partial** | The current Linux and Windows Runtime Box targets are published and product-lifecycle verified, including CUDA on both systems and scGPT CPU. This is model-distribution evidence, not a complete desktop application release matrix | Complete signed desktop packaging, install/update/migration/uninstall, and native UI coverage per supported OS |
 
 ## Release-blocking scenarios
 
@@ -65,20 +67,21 @@ The beta cannot ship until automated native coverage proves:
 
 ## Immediate execution order
 
-1. Close true cross-version Runtime Box update and client-persisted anti-replay
+1. Close the remaining Scrollcase P5 consumer-boundary and legacy-deletion work.
+2. Close true cross-version Runtime Box update and client-persisted anti-replay
    state.
-2. Close the Plugin, direct AI, API Connector, and dependency lifecycle gaps
+3. Close the Plugin, direct AI, API Connector, and dependency lifecycle gaps
    required by the common execution spine.
-3. Add backward-compatible scientific artifact profiles in
+4. Add backward-compatible scientific artifact profiles in
    `packages/liatir-core` and prove them first through the single-cell
    lighthouse workflow.
-4. Complete the single-cell viewer, downstream artifact reuse, and one useful
+5. Complete the single-cell viewer, downstream artifact reuse, and one useful
    no-code preset.
-5. Implement a first-class local Nextflow adapter and prove that one declared
+6. Implement a first-class local Nextflow adapter and prove that one declared
    output can feed an existing AI Tool or viewer.
-6. Validate the implemented predictive genomics and protein verticals before
+7. Validate the implemented predictive genomics and protein verticals before
    adding new model families.
-7. Close the evidence-backed release matrix and public documentation.
+8. Close the evidence-backed desktop release matrix and public documentation.
 
 Quenta expansion, MCP, simulations, generative model families, and additional
 workflow engines remain deferred until the workbench product gate above is

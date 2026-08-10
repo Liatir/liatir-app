@@ -12,9 +12,11 @@ Use this site to keep durable decisions close to the codebase:
 - testing and release checks;
 - a beginner-friendly explanation of the
   [Runtime Box system](./architecture/runtime-box-system-explained.md);
+- the canonical [current project status](./current-project-status.md) and
+  continuation order;
 - the canonical [Scientific AI Workbench product plan](./roadmap/scientific-ai-workbench.md);
 - the evidence-backed [Runtime Box production report](./roadmap/runtime-box-production-report.md);
-- the approved-in-principle [Runtime Box pixi migration plan](./roadmap/runtime-box-pixi-migration.md);
+- the completed [Runtime Box pixi migration record](./roadmap/runtime-box-pixi-migration.md);
 - the completed independent
   [Scrollcase extraction record](./roadmap/scrollcase-extraction-plan.md) and the
   active downstream [Liatir adoption plan](./roadmap/scrollcase-p5-liatir-adoption.md);
