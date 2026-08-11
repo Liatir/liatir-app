@@ -1,6 +1,6 @@
 # Current project status
 
-## Runtime Box update security is complete on macOS (Gate 1 macOS, 2026-08-11)
+## Runtime Box update security is cross-platform complete (Gate 1, 2026-08-11)
 
 The install bridge now owns one app-global, atomic
 `runtime-box-control-floors.json`. Mutable signed channels are separated by
@@ -15,21 +15,23 @@ signed release.
 
 `npm run runtime-box:test:security` is a lightweight native product proof, not a
 model download. It creates signed schema-v2 versions A and B and uses two native
-Tauri processes over the same isolated app-data root. On macOS arm64 it passed
-A install, true A-to-B update, rollback to A, persisted floors after app
-restart, old/equivocal channel rejection, old/equivocal revocation rejection,
-corrupt-state update blocking, and continued execution of installed A. The
-suite is part of the `ui` and `all` test profiles. Focused Rust evidence is 19
-passed / 2 intentionally ignored; `cargo clippy --tests` completed with the
-repository's existing warning set; `npm run test:verify` passed 38 files / 236
-tests plus every build and type gate.
+Tauri processes over the same isolated app-data root. The unchanged macOS arm64
+proof and the new native Windows x86_64 and WSL2 Linux x86_64 proofs all pass A
+install, true A-to-B update, rollback to A, persisted floors after app restart,
+old/equivocal channel and revocation rejection, refusal when an accepted
+revocation later returns 404, corrupt-state blocking for both updates and fresh
+installs, and continued offline execution of installed A.
 
-The available Lima `default` VM was inspected and restored to its original
-stopped state. It is Linux aarch64 and has no Node, Rust, GTK or Xvfb, while the
-supported Liatir Runtime Box target is Linux x86_64. It is therefore not valid
-Linux native evidence. Gate 1 remains platform-partial until this same suite is
-run on provisioned Linux x86_64 and Windows hosts; the product implementation
-itself is present and macOS-verified.
+The Windows proof used the real `liatir.exe` and the fixture's minimal native PE
+launcher. The WSL proof first confirmed `uname -m = x86_64`, then compiled a
+separate Tauri application entirely inside WSL and verified it as an ELF64
+x86-64 executable before running the same two-process suite under Xvfb; no
+Windows executable was used as Linux evidence. Windows Rust evidence is 21
+passed / 2 intentionally ignored and Linux is 19 passed / 2 intentionally
+ignored. `cargo clippy --tests` passed on both hosts with the existing warning
+baseline, and `npm run test:verify` passed 38 files / 236 tests plus every build
+and type gate. The suite remains part of the `ui` and `all` profiles. Gate 1 is
+complete on macOS arm64, native Windows x86_64, and Linux x86_64 in WSL2.
 
 ## Scrollcase P5 adoption is complete (P5.7, 2026-08-11)
 
@@ -54,9 +56,9 @@ promotion/revocation and the product lifecycle. The local candidate Registry's
 `serve` command now supports HTTP byte ranges for real resume testing. P5 has no
 remaining gate. The next Runtime Box product slice was app-global
 anti-replay/version-floor state; its macOS implementation and product proof are
-now complete as recorded above. Linux x86_64 and Windows evidence remain, then
-the common pipeline/run/result spine follows. None of this is continued
-Scrollcase migration.
+now complete as recorded above, together with native Windows x86_64 and WSL2
+Linux x86_64 evidence. The common pipeline/run/result spine follows. None of
+this is continued Scrollcase migration.
 
 ## Scrollcase adoption has native closure (P5.6, 2026-08-11)
 
@@ -233,17 +235,15 @@ channel changed.
 The Runtime Box migration and the nine-target re-release are complete. Continue
 Liatir development in this order:
 
-1. repeat the completed Runtime Box security lifecycle on supported Linux
-   x86_64 and Windows hosts to close Gate 1 platform evidence;
-2. audit asynchronous pipeline settlement so spawned child work cannot release
+1. audit asynchronous pipeline settlement so spawned child work cannot release
    downstream nodes or Results before terminal state and durable outputs;
-3. complete the common pipeline/run/result spine and nested-run contract;
-4. add versioned scientific artifact profiles, beginning with AnnData;
-5. complete the single-cell lighthouse workflow, viewer and no-code preset;
-6. add Nextflow as the first saved External Workflow, runnable standalone and
+2. complete the common pipeline/run/result spine and nested-run contract;
+3. add versioned scientific artifact profiles, beginning with AnnData;
+4. complete the single-cell lighthouse workflow, viewer and no-code preset;
+5. add Nextflow as the first saved External Workflow, runnable standalone and
    by reference from a Liatir pipeline;
-7. close the signed desktop Beta 1 release matrix and public documentation;
-8. expose controlled local MCP access after Beta 1.
+6. close the signed desktop Beta 1 release matrix and public documentation;
+7. expose controlled local MCP access after Beta 1.
 
 P5.0 through P5.7 are complete; the Scrollcase P5 plan is closed.
 The canonical detailed ledger is
@@ -1291,9 +1291,9 @@ first).
    which takes keys directly, and Liatir already pins `=0.3.0`. What remains is
    Liatir work to schedule, not an upstream wait.
    See [P5.4V](./roadmap/scrollcase-p5-liatir-adoption.md).
-3. Carry the now-macOS-verified cross-version update and client-persisted signed
-   anti-replay lifecycle to Linux x86_64 and Windows as product evidence, not as
-   an unclosed foundation gate.
+3. The cross-version update and client-persisted signed anti-replay lifecycle is
+   now product-verified on macOS arm64, native Windows x86_64, and WSL2 Linux
+   x86_64; it is not an unclosed foundation gate.
 4. Continue with the common execution spine in Phase 2 after that bounded
    Runtime Box product work.
 5. Do not add another model family to the pre-release catalog until current

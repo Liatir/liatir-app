@@ -3,7 +3,7 @@
 /** Runs the lightweight Runtime Box anti-replay lifecycle across two native app processes. */
 
 import { createHash, randomBytes } from 'node:crypto';
-import { spawn } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import {
   mkdir,
   mkdtemp,
@@ -15,6 +15,7 @@ import {
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
+import { promisify } from 'node:util';
 import { createDeterministicZip } from 'scrollcase/build';
 import { boxTargetAdapter, boxTargetId } from 'scrollcase/contract';
 import { generateSigningKey, signDocument } from 'scrollcase/sign';
@@ -26,10 +27,12 @@ const RESTART_SPEC = join(ROOT, 'tests', 'e2e', 'specs', 'runtime-box-security-r
 const BOX_ID = 'security-fixture-box';
 const MODEL_ID = 'security-fixture-model';
 const RUNTIME_ID = 'security-fixture-runtime';
+const execFileAsync = promisify(execFile);
 
 const HOST_TARGETS = new Map([
   ['darwin/arm64', { platform: 'macos', arch: 'aarch64', accelerator: 'cpu' }],
   ['linux/x64', { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' }],
+  ['win32/x64', { platform: 'windows', arch: 'x86_64', accelerator: 'cpu' }],
 ]);
 
 function sha256(bytes) {
@@ -86,9 +89,60 @@ function provenance(version) {
   };
 }
 
+async function createPythonLauncher(root, payloadDir, target, version) {
+  if (target.platform !== 'windows') {
+    const launcherPath = join(payloadDir, 'venv', 'bin', 'python');
+    await mkdir(dirname(launcherPath), { recursive: true });
+    await writeFile(
+      launcherPath,
+      `#!/bin/sh\nexport LIATIR_SECURITY_FIXTURE_VERSION=${version}\nexec python3 "$@"\n`,
+      { mode: 0o755 },
+    );
+    return 'venv/bin/python';
+  }
+
+  // Runtime Boxes execute their declared interpreter directly, so a .cmd shim would not exercise
+  // the native Windows product path. Compile one tiny PE launcher with the Rust toolchain already
+  // required by the Tauri build; it delegates to the test host's Python and preserves stdio/status.
+  const sourcePath = join(root, `security-fixture-launcher-${version}.rs`);
+  const launcherPath = join(payloadDir, 'venv', 'python.exe');
+  await mkdir(dirname(launcherPath), { recursive: true });
+  await writeFile(sourcePath, `
+use std::process::{exit, Command};
+
+fn main() {
+    let Some(host_python) = std::env::var_os("LIATIR_RUNTIME_BOX_SECURITY_HOST_PYTHON") else {
+        eprintln!("LIATIR_RUNTIME_BOX_SECURITY_HOST_PYTHON is not set");
+        exit(1);
+    };
+    match Command::new(host_python)
+        .args(std::env::args_os().skip(1))
+        .env("LIATIR_SECURITY_FIXTURE_VERSION", ${JSON.stringify(version)})
+        .status()
+    {
+        Ok(status) => exit(status.code().unwrap_or(1)),
+        Err(error) => {
+            eprintln!("cannot start the Runtime Box security fixture host Python: {error}");
+            exit(1);
+        }
+    }
+}
+`);
+  await execFileAsync('rustc', [
+    sourcePath,
+    '--crate-name', 'liatir_runtime_box_security_launcher',
+    '--edition', '2021',
+    '-C', 'opt-level=z',
+    '-C', 'strip=symbols',
+    '-o', launcherPath,
+  ]);
+  return 'venv/python.exe';
+}
+
 async function createFixtureArchive(root, target, version) {
   const payloadDir = join(root, `payload-${version}`);
   const archivePath = join(root, `security-fixture-${version}.zip`);
+  const pythonEntryPoint = await createPythonLauncher(root, payloadDir, target, version);
   const shared = {
     schemaVersion: 2,
     boxId: BOX_ID,
@@ -96,18 +150,12 @@ async function createFixtureArchive(root, target, version) {
     runtimeId: RUNTIME_ID,
     version,
     target,
-    pythonEntryPoint: 'venv/bin/python',
+    pythonEntryPoint,
     modelCacheSubdir: 'model-cache/security-fixture',
     selfTest: { pythonImports: ['json'], timeoutSeconds: 10 },
     provenance: provenance(version),
   };
-  await mkdir(join(payloadDir, 'venv', 'bin'), { recursive: true });
   await writeFile(join(payloadDir, 'box.json'), `${JSON.stringify(shared, null, 2)}\n`);
-  await writeFile(
-    join(payloadDir, 'venv', 'bin', 'python'),
-    `#!/bin/sh\nexport LIATIR_SECURITY_FIXTURE_VERSION=${version}\nexec python3 "$@"\n`,
-    { mode: 0o755 },
-  );
   await createDeterministicZip(payloadDir, archivePath, boxTargetAdapter(target));
   const bytes = await readFile(archivePath);
   return {
@@ -209,10 +257,15 @@ async function startRegistry({ root, target, privatePath, publicPath }) {
         return;
       }
       if (url.pathname === '/v1/revocations') {
+        const document = state.documents.revocations[state.revocations];
+        if (document === null) {
+          sendJson(response, 404, { error: 'not_found' });
+          return;
+        }
         sendBuffer(
           request,
           response,
-          state.documents.revocations[state.revocations],
+          document,
           'application/json',
         );
         return;
@@ -287,6 +340,7 @@ async function startRegistry({ root, target, privatePath, publicPath }) {
       a: encode(await signDocument(revocationsA, signing)),
       b: encode(await signDocument(revocationsB, signing)),
       'equivocal-b': encode(await signDocument(revocationsEquivocalB, signing)),
+      missing: null,
     },
   };
   return {
@@ -353,9 +407,30 @@ async function readableReports(paths) {
   return readable;
 }
 
+async function resolveHostPythonExecutable() {
+  for (const [command, prefixArgs] of [
+    ['python.exe', []],
+    ['python3.exe', []],
+    ['py.exe', ['-3']],
+  ]) {
+    try {
+      const { stdout } = await execFileAsync(command, [
+        ...prefixArgs,
+        '-c',
+        'import sys; print(sys.executable)',
+      ]);
+      const executable = stdout.toString('utf8').trim();
+      if (executable) return executable;
+    } catch {
+      // Try the next standard Windows Python entry point.
+    }
+  }
+  throw new Error('Windows Runtime Box security E2E requires an available Python 3 interpreter.');
+}
+
 const target = HOST_TARGETS.get(`${process.platform}/${process.arch}`);
 if (!target) {
-  console.log(`Runtime Box security E2E skipped on ${process.platform}/${process.arch}; Gate 1 covers macOS arm64 and Linux x64.`);
+  console.log(`Runtime Box security E2E skipped on ${process.platform}/${process.arch}; Gate 1 covers macOS arm64, Linux x64, and Windows x64.`);
   process.exit(0);
 }
 
@@ -372,12 +447,14 @@ try {
     keyId: 'liatir-runtime-box-security-e2e',
   });
   registry = await startRegistry({ root: temporary, target, privatePath, publicPath });
+  const hostPython = process.platform === 'win32' ? await resolveHostPythonExecutable() : null;
   const commonEnvironment = {
     LIATIR_E2E_TEST_HOME_OVERRIDE: sharedHome,
     LIATIR_RUNTIME_BOX_SECURITY_CONTROL_TOKEN: registry.controlToken,
     LIATIR_RUNTIME_BOX_SECURITY_REGISTRY_URL: registry.baseUrl,
     LIATIR_RUNTIME_BOX_SECURITY_TARGET_JSON: JSON.stringify(target),
     LIATIR_RUNTIME_BOX_TRUSTED_KEY_FILE: publicPath,
+    ...(hostPython ? { LIATIR_RUNTIME_BOX_SECURITY_HOST_PYTHON: hostPython } : {}),
   };
   let runError = null;
   try {

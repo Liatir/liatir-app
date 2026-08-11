@@ -41,7 +41,7 @@ feature to Verified.
 | Dependencies page | **Partial** | Real bridge checks plus native managed install/execute/remove coverage | Add update interruption and actionable recovery-state E2E |
 | API Connector | **Implemented — unverified** | Saved requests and pipeline node integration exist | Native request/run E2E, auth handling, malformed responses, rate/error states, Results provenance |
 | Legacy AI batches | **Removed** | The pre-release mock, local-build, direct-download, CellTypist, sequence/genomics, regulatory, and structure model paths were removed on 2026-07-22 | Do not restore a legacy installer; reintroduce a family only after its signed Runtime Box and product lifecycle are validated |
-| Runtime Box AI Model distribution | **Partial — macOS security verified** | The public `beta` catalog serves nine KMS-signed schema-v2 targets and every target has reviewed native product-lifecycle evidence. Scrollcase P5 is complete. A lightweight macOS native suite now proves true A-to-B update, rollback, app-global persisted anti-replay across restart, old/equivocal channel and revocation rejection, and corrupt-state isolation. Geneformer and scGPT `beta.1` are jointly revoked; UCE `beta.1` is unselected and v2-incompatible but not revoked | Repeat the security lifecycle on supported Linux x86_64 and Windows hosts, then decide explicitly whether UCE `beta.1` belongs in revocations |
+| Runtime Box AI Model distribution | **Verified — cross-platform security** | The public `beta` catalog serves nine KMS-signed schema-v2 targets and every target has reviewed native product-lifecycle evidence. Scrollcase P5 and security Gate 1 are complete. One lightweight native suite proves true A-to-B update, rollback, app-global persisted anti-replay across restart, old/equivocal channel and revocation rejection, accepted-revocation retention across 404, and corrupt-state isolation on macOS arm64, Windows x86_64, and Linux x86_64. Geneformer and scGPT `beta.1` are jointly revoked; UCE `beta.1` is unselected and v2-incompatible but not revoked | Keep the security lifecycle repeatable on all three platforms and decide explicitly whether UCE `beta.1` belongs in revocations |
 | Single-cell Embedding AI Tool | **Implemented — model evidence varies by target** | One shared Tool runs Geneformer, scGPT, and UCE through their signed boxes and produces AnnData, preview, summary, Jobs, Results, and Runtime Box provenance | Complete common execution-spine parity and keep model-specific scientific gates repeatable |
 | Future AI families | **Deferred** | No preview entries or dormant product integrations remain | Re-plan each family from legal review through published Runtime Box evidence after current workbench gates close |
 | Scientific viewers | **Implemented — unverified** | Optional local viewer runtimes and visual pages exist | Native visual/runtime coverage with real artifacts, failures, fullscreen, and capture |
@@ -71,22 +71,20 @@ The beta cannot ship until automated native coverage proves:
 
 ## Immediate execution order
 
-1. Repeat the completed Runtime Box security lifecycle on supported Linux
-   x86_64 and Windows hosts to close the platform evidence matrix.
-2. Audit asynchronous pipeline settlement and prevent premature downstream or
+1. Audit asynchronous pipeline settlement and prevent premature downstream or
    Result finalization.
-3. Close the Plugin, direct AI, API Connector, dependency and nested-run
+2. Close the Plugin, direct AI, API Connector, dependency and nested-run
    lifecycle gaps required by the common execution spine.
-4. Add backward-compatible scientific artifact profiles in
+3. Add backward-compatible scientific artifact profiles in
    `packages/liatir-core` and prove them first through the single-cell
    lighthouse workflow.
-5. Complete the single-cell viewer, downstream artifact reuse, and one useful
+4. Complete the single-cell viewer, downstream artifact reuse, and one useful
    no-code preset.
-6. Implement a saved local Nextflow External Workflow, runnable standalone and
+5. Implement a saved local Nextflow External Workflow, runnable standalone and
    as a referenced pipeline node, then prove declared output reuse.
-7. Close the evidence-backed desktop release matrix and public Beta 1
+6. Close the evidence-backed desktop release matrix and public Beta 1
    documentation.
-8. Implement controlled local MCP access with a real client after Beta 1.
+7. Implement controlled local MCP access with a real client after Beta 1.
 
 Quenta expansion, simulations, generative model families, additional scientific
 verticals, and additional workflow engines remain deferred until the workbench

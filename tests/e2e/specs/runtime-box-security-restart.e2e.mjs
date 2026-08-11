@@ -46,6 +46,9 @@ export const tests = [{
     await setSecurityRegistryState('b', 'equivocal-b');
     await expectRejectedInstall(browser, expect, 'equivocal', 'equivocal-revocations');
 
+    await setSecurityRegistryState('b', 'missing');
+    await expectRejectedInstall(browser, expect, 'disappeared', 'missing-revocations');
+
     await setSecurityRegistryState('b', 'b');
     const corrupted = await invokeOutcome(browser, 'lia_app_write_text', {
       rel: SECURITY_STATE_FILE,
@@ -53,7 +56,7 @@ export const tests = [{
       createDirs: true,
     });
     expect(corrupted.ok).toBe(true);
-    await expectRejectedInstall(browser, expect, 'security state is unreadable or corrupt', 'corrupt-state');
+    await expectRejectedInstall(browser, expect, 'security state is unreadable or corrupt', 'corrupt-update');
 
     // Runtime activation verifies its immutable signed release, not mutable install/update state.
     expect(await runSecurityFixtureVersion(browser)).toEqual({
@@ -66,5 +69,6 @@ export const tests = [{
       boxId: SECURITY_BOX_ID,
     });
     expect(removed).toEqual({ ok: true, value: true });
+    await expectRejectedInstall(browser, expect, 'security state is unreadable or corrupt', 'corrupt-install');
   },
 }];

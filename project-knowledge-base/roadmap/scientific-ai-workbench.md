@@ -26,15 +26,14 @@ Linux/Windows CPU and both CUDA targets; and UCE on macOS Metal. The old CUDA
 published. Geneformer and scGPT `beta.1` are revoked; UCE `beta.1` remains an
 explicit retirement decision.
 
-Scrollcase adoption P5.0 through P5.7 is complete. The Runtime Box security
-implementation and its macOS slice are also complete: a lightweight signed
-fixture proves a real cross-version update, app restart, rollback, replay and
-equivocation rejection, and corrupt-state isolation. The complete Gate 1 still
-needs the same native evidence on supported Linux x86_64 and Windows hosts.
-After that, work closes asynchronous settlement and the common execution spine
-before widening scientific scope. Every paid or remote action still requires
-its exact local gate, workflow/input/revision readback, cost declaration, and
-fresh explicit approval.
+Scrollcase adoption P5.0 through P5.7 is complete. Runtime Box security Gate 1
+is also complete: one lightweight signed fixture proves a real cross-version
+update, app restart, rollback, replay and equivocation rejection, accepted
+revocation retention, and corrupt-state isolation on macOS arm64, native
+Windows x86_64, and WSL2 Linux x86_64. Work now closes asynchronous settlement
+and the common execution spine before widening scientific scope. Every paid or
+remote action still requires its exact local gate, workflow/input/revision
+readback, cost declaration, and fresh explicit approval.
 
 ## Product decision
 
@@ -130,7 +129,7 @@ execution foundation, but some product claims are ahead of their evidence.
 | Plugins | Build contracts are verified; native Node/WASM lifecycle coverage is incomplete | Close parity before treating every runtime as equally production-ready |
 | API Connector | Saved requests and pipeline integration exist but native execution evidence is incomplete | Validate it as another first-class node type |
 | AI Models and AI Tools | Runtime Box-only catalog with Geneformer, scGPT, and UCE plus the shared Single-cell Embedding Tool; legacy and mock integrations were removed on 2026-07-22 | Complete the common execution spine and product update guarantees before adding another family |
-| Runtime Box distribution | Nine current schema-v2 targets are live and product-lifecycle verified; Scrollcase P5 is complete; app-global anti-replay and true A-to-B rollback are natively verified on macOS across an app restart | Repeat the focused security lifecycle on supported Linux x86_64 and Windows hosts, then decide whether UCE `beta.1` belongs in revocations |
+| Runtime Box distribution | Nine current schema-v2 targets are live and product-lifecycle verified; Scrollcase P5 and security Gate 1 are complete; app-global anti-replay and true A-to-B rollback are natively verified across app restart on macOS arm64, Windows x86_64, and Linux x86_64 | Keep the focused security suite repeatable on all three platforms, then decide whether UCE `beta.1` belongs in revocations |
 | Scientific viewers | Protein, genome, and single-cell surfaces exist but need native visual/runtime validation | Make viewer completion part of each scientific vertical |
 | Artifact semantics | Files have paths, extensions, media types, producer, parent run, and lifecycle role; scientific meaning is not yet a versioned compatibility contract | Add semantic profiles without replacing original formats |
 | External workflow engines | Nextflow and Snakemake dependencies are recognized, but no first-class External Workflow entity exists yet | Build Nextflow first, runnable both standalone and as a pipeline node, after the artifact contract |
@@ -263,8 +262,8 @@ Indicators used below:
 
 **Difficulty:** `4/5` · **Codex effort:** `xhigh` · **Windows** · **Linux**
 
-**Status (2026-08-11): macOS slice complete; Linux x86_64 and Windows native
-evidence pending.**
+**Status (2026-08-11): complete on macOS arm64, native Windows x86_64, and
+WSL2 Linux x86_64.**
 
 Prove a real version A to version B update and rollback. Persist anti-replay
 state globally for the app rather than per workspace. A signed control document
@@ -283,13 +282,15 @@ using its immutable signed release.
 
 `npm run runtime-box:test:security` generates two tiny schema-v2 boxes and an
 ephemeral signing key, then drives two consecutive native app processes over the
-same isolated app-data root. On macOS arm64 it proves A install, A-to-B update,
+same isolated app-data root. The same suite proves A install, A-to-B update,
 persisted channel and revocation floors, rollback to A, restart survival, older
-and equivocal channel/revocation rejection, corrupt-state blocking, and the
-rolled-back runtime still executing. The existing Lima VM was inspected and
-returned to its original stopped state; it is Linux aarch64 with no Node, Rust,
-GTK or Xvfb, so it cannot prove Liatir's supported Linux x86_64 target without a
-separately provisioned VM.
+and equivocal channel/revocation rejection, refusal of a 404 after a revocation
+has been accepted, corrupt-state blocking for updates and fresh installs, and
+continued offline execution of the rolled-back runtime. The macOS arm64 behavior
+is unchanged. Windows uses the native Tauri executable and a minimal PE fixture
+launcher. WSL first confirms x86_64, compiles a separate native Tauri ELF64
+x86-64 executable entirely inside Linux, and runs it under Xvfb; a Windows
+executable is never accepted as Linux evidence.
 
 ### Gate 2: audit asynchronous pipeline settlement
 
@@ -713,25 +714,23 @@ implemented-but-unverified features as production-ready.
 This is the default sequence unless a later evidence-backed decision explicitly
 reorders it:
 
-1. repeat the completed Runtime Box security lifecycle on supported Linux
-   x86_64 and Windows hosts to close Gate 1 platform evidence;
-2. audit asynchronous pipeline settlement and prevent premature downstream or
+1. audit asynchronous pipeline settlement and prevent premature downstream or
    Result finalization;
-3. close Plugin, direct AI, API Connector, dependency and nested-run lifecycle
+2. close Plugin, direct AI, API Connector, dependency and nested-run lifecycle
    gaps needed by the common execution spine;
-4. design and land the backward-compatible semantic artifact contract in
+3. design and land the backward-compatible semantic artifact contract in
    `packages/liatir-core`;
-5. implement the AnnData/single-cell profiles and lighthouse workflow;
-6. complete single-cell viewer and preset evidence;
-7. implement one saved local Nextflow External Workflow with direct and nested
+4. implement the AnnData/single-cell profiles and lighthouse workflow;
+5. complete single-cell viewer and preset evidence;
+6. implement one saved local Nextflow External Workflow with direct and nested
    execution;
-8. prove Nextflow output reuse through an existing AI Tool or viewer;
-9. close the desktop release matrix and public Beta 1 documentation;
-10. implement controlled local MCP access with a real client after Beta 1;
-11. validate the predictive/variant genomics and protein structure/binding
+7. prove Nextflow output reuse through an existing AI Tool or viewer;
+8. close the desktop release matrix and public Beta 1 documentation;
+9. implement controlled local MCP access with a real client after Beta 1;
+10. validate the predictive/variant genomics and protein structure/binding
     verticals;
-12. publish useful verified Plugin and pipeline templates;
-13. evaluate another external workflow engine only from the reusable adapter
+11. publish useful verified Plugin and pipeline templates;
+12. evaluate another external workflow engine only from the reusable adapter
     contract, then reconsider other advanced expansion.
 
 ## Definition of done for every integration

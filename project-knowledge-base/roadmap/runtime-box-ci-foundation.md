@@ -1230,6 +1230,13 @@ Gate 10 and the bounded Runtime Box CI foundation are complete. Future Runtime
 Box changes must continue to use the evidence, cost, identity, and
 authorization rules retained in this ledger and the production report.
 
+Post-foundation product closure (2026-08-11): the separate true cross-version
+update and client-persisted anti-replay backlog named above is now complete.
+One lightweight native suite passed on macOS arm64, native Windows x86_64, and
+WSL2 Linux x86_64 using a separately compiled and verified ELF64 binary under
+Xvfb. This later product evidence does not alter the historical foundation
+gates, catalog identities, signed releases, or trust roots recorded here.
+
 ## Foundation completion criteria
 
 The foundation is complete only when:
