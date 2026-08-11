@@ -1,6 +1,6 @@
 # scrollcase — extracting the Runtime Box builder into an independent open-source tool
 
-Last reviewed: 2026-08-10
+Last reviewed: 2026-08-11
 
 **Status:** **EXTRACTION COMPLETE (P1–P4, 2026-07-26).** Scrollcase is an independent
 Apache-2.0 project at `https://github.com/suffro/scrollcase`, its documentation is live at
@@ -11,10 +11,10 @@ and updating that line is downstream Liatir work, not a reopening of extraction.
 `scrollcase/` copy was removed from Liatir in commit `6b4934e`.
 
 **Remaining downstream work:** **P5 is in progress in Liatir; P5.0, P5.1,
-P5.2, P5.2V, P5.3, P5.4, P5.4R, P5.4T, P5.4E, P5.4V, P5.4W, P5.4P and P5.5 are complete.**
+P5.2, P5.2V, P5.3, P5.4, P5.4R, P5.4T, P5.4E, P5.4V, P5.4W, P5.4P, P5.5 and P5.6 are complete.**
 Exact `scrollcase@0.8.0` is installed,
 the v2-only cutover is complete, all active recipes use pixi/conda-pack, and all
-nine current model targets are published. P5.6 and P5.7 remain open.
+nine current model targets are published. Only P5.7 remains open.
 The historical `scrollcase@0.1.3` contract inversion and clean
 keygen/lock/build/verify consumer cycle remain prior evidence, not the target
 architecture.
@@ -23,8 +23,8 @@ active contract with v2 across every Liatir surface, removed active v1 parsing,
 and defined explicit unsupported/removal handling for installed v1 state.
 P5.3/P5.4 completed every foundation and model migration, P5.4R closed the Rust
 delegation boundary, and P5.5 deleted the local builder plus every superseded
-generic helper copy. The remaining work is final local/native closure followed
-by the documentation handoff.
+generic helper copy. P5.6 then closed the final local/native product lifecycle;
+the remaining work is the documentation/operator handoff.
 This integration does not change Scrollcase's completed extraction or its
 independence. The detailed canonical execution plan is
 [Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md).

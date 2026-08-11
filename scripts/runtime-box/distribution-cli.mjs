@@ -195,6 +195,32 @@ function contentType(path) {
   return 'application/octet-stream';
 }
 
+/** Parses one HTTP byte range, including suffix ranges, for the loopback candidate registry. */
+function parseHttpByteRange(value, sizeBytes) {
+  if (value === undefined) return null;
+  const match = /^bytes=(\d*)-(\d*)$/.exec(String(value).trim());
+  if (!match || (!match[1] && !match[2]) || !Number.isSafeInteger(sizeBytes) || sizeBytes <= 0) {
+    return { satisfiable: false };
+  }
+  let start;
+  let end;
+  if (!match[1]) {
+    const suffixBytes = Number(match[2]);
+    if (!Number.isSafeInteger(suffixBytes) || suffixBytes <= 0) return { satisfiable: false };
+    start = Math.max(0, sizeBytes - suffixBytes);
+    end = sizeBytes - 1;
+  } else {
+    start = Number(match[1]);
+    end = match[2] ? Number(match[2]) : sizeBytes - 1;
+    if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end)
+      || start >= sizeBytes || end < start) {
+      return { satisfiable: false };
+    }
+    end = Math.min(end, sizeBytes - 1);
+  }
+  return { satisfiable: true, start, end, sizeBytes: end - start + 1 };
+}
+
 /** Splits a large archive into the contiguous, bounded parts accepted by R2 multipart upload. */
 function multipartPartRanges(sizeBytes, partSizeBytes = MULTIPART_PART_BYTES) {
   if (!Number.isSafeInteger(sizeBytes) || sizeBytes <= 0) fail('Invalid multipart archive size.');
@@ -423,13 +449,30 @@ async function serve(flags) {
         }
       }
       const info = await stat(resolvedPath);
-      response.writeHead(200, {
+      const range = parseHttpByteRange(request.headers.range, info.size);
+      if (range && !range.satisfiable) {
+        response.writeHead(416, {
+          'Content-Range': `bytes */${info.size}`,
+          'Accept-Ranges': 'bytes',
+          'Cache-Control': 'no-store',
+        });
+        response.end();
+        return;
+      }
+      const responseHeaders = {
         'Content-Type': contentType(resolvedPath),
-        'Content-Length': info.size,
+        'Content-Length': range?.sizeBytes ?? info.size,
         'Cache-Control': 'no-store',
         'Access-Control-Allow-Origin': '*',
-      });
-      createReadStream(resolvedPath).pipe(response);
+        'Accept-Ranges': 'bytes',
+      };
+      if (range) responseHeaders['Content-Range'] = `bytes ${range.start}-${range.end}/${info.size}`;
+      response.writeHead(range ? 206 : 200, responseHeaders);
+      if (request.method === 'HEAD') response.end();
+      else createReadStream(
+        resolvedPath,
+        range ? { start: range.start, end: range.end } : undefined,
+      ).pipe(response);
     } catch (error) {
       response.writeHead(400, { 'Content-Type': 'application/json' });
       response.end(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }));
@@ -823,4 +866,4 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   });
 }
 
-export { multipartPartRanges };
+export { multipartPartRanges, parseHttpByteRange };

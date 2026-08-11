@@ -1,5 +1,37 @@
 # Current project status
 
+## Scrollcase adoption has native closure (P5.6, 2026-08-11)
+
+P5.6 is complete on exact public `scrollcase@0.8.0`. From a checkout with no
+generated Runtime Box state, the committed lockfile installed cleanly; the full
+cheap/type/build/Rust gates passed; and the synthetic v2 fixture completed
+deterministic build, verify/self-test, combined Node/Rust consumer, activation,
+rollback and removal while its signed v1 counterpart was rejected.
+
+The reviewed non-production product proof used scGPT Whole-human
+`0.2.5-beta.2` on `macos-aarch64-metal`. A clean, locally signed candidate
+(archive SHA-256 `7b4c9a9f…`, `527233742` bytes; installed `1372956773` bytes)
+ran through the real compiled Tauri app. The five-minute E2E receipt is green:
+interrupted download and resume, install/self-test, real Apple Metal inference,
+Job `job_1`, three finalized Result artifacts and provenance, replacement,
+rollback, v1 rejection on inline and Job execution, bounded removal, and Result
+artifacts surviving the runtime. All thirteen assertions passed.
+
+The run closed two product-path gaps. Inline Python execution now applies the
+same activation schema gate as Job execution, so installed v1 state cannot run.
+The loopback candidate Registry now honors single HTTP byte ranges (`206` plus
+exact `Content-Range`) instead of forcing a resumed download back to zero; unit
+coverage includes open, bounded, suffix and invalid ranges, and a real archive
+probe confirmed `bytes 128-255/527233742` before the successful lifecycle.
+
+Final local evidence is 38 unit files / 234 tests, catalog 3 models + 3
+foundation fixtures, signer 15/15, foundation 1/1, Rust Runtime Box 18 passed /
+2 ignored, full `test:verify`, and lint with zero errors (43 existing warnings).
+All Runtime Box generated state and temporary processes were removed. Nothing
+was production-signed, published, promoted, deployed, or changed in trust,
+catalog or channel state. Only P5.7, the documentation/operator handoff, remains
+before the Scrollcase P5 adoption plan can close.
+
 ## The re-release is complete: all nine targets are published (2026-08-10)
 
 Every Runtime Box target is published and promoted on the `beta` channel, signed
@@ -109,8 +141,8 @@ Scrollcase reference, or any active catalog scroll carrying `uvVersion`,
 published-build + Rust Zip64 foundation 1/1, Rust Runtime Box 18 passed / 2 ignored,
 and `npm run test:verify` fully green. `npm run lint:ts` has zero errors and the
 repository's existing 43 warnings. No trust root, signed document, catalog entry,
-generated binding, model asset or channel changed. P5.6 still owns the reviewed
-non-production native lifecycle; it was not run as part of this deletion slice.
+generated binding, model asset or channel changed. P5.6 subsequently completed
+the reviewed non-production native lifecycle recorded above.
 
 ## The Rust Scrollcase consumer boundary is closed (P5.4R, 2026-08-10)
 
@@ -134,16 +166,17 @@ waits for a real on-demand-assets product path.
 Final local evidence: `cargo test runtime_box` 18 passed / 2 ignored,
 `cargo clippy --tests` completed with only the repository's pre-existing warning
 set, and `npm run test:verify` passed 42 test files / 266 tests plus all build and
-type gates. The native fixture is wired to the combined API and remains the P5.6
-final-lifecycle gate; no model, catalog, trust, signed object or channel changed.
+type gates. P5.6 subsequently exercised that combined API in the native fixture
+and real scGPT product lifecycle; no model, catalog, trust, signed object or
+channel changed.
 
 ## Current continuation
 
 The Runtime Box migration and the nine-target re-release are complete. Continue
 Liatir development in this order:
 
-1. finish P5 in order: run the reviewed non-production native lifecycle for P5.6,
-   then close the P5.7 documentation handoff;
+1. close the P5.7 documentation/operator handoff, now that P5.5 deletion and
+   P5.6 native closure are complete;
 2. implement persisted anti-replay/version-floor state for Runtime Box control
    documents, with its ownership and recovery semantics defined before code;
 3. complete the common pipeline/run/result spine before widening the model
@@ -151,7 +184,7 @@ Liatir development in this order:
 4. return to connector and broader scientific-workbench expansion only after the
    shared lifecycle is reliable.
 
-P5.4P, P5.4R and P5.5 are complete; P5.6/P5.7 remain open.
+P5.4P, P5.4R, P5.5 and P5.6 are complete; only P5.7 remains open.
 The canonical detailed ledger is
 [Scrollcase P5](./roadmap/scrollcase-p5-liatir-adoption.md). The sections below
 this point are retained as implementation history and must not override this

@@ -1,17 +1,18 @@
 # Scrollcase P5 — Liatir adoption and legacy builder retirement
 
-Last reviewed: 2026-08-10
+Last reviewed: 2026-08-11
 
 Status: **in progress — P5.0, P5.1, P5.2, P5.2V, P5.3, P5.4, P5.4R,
-P5.4T, P5.4E, P5.4V, P5.4W, P5.4P and P5.5 are complete.** All
+P5.4T, P5.4E, P5.4V, P5.4W, P5.4P, P5.5 and P5.6 are complete.** All
 nine current model targets are schema-v2 Runtime Boxes, natively proven, KMS-signed,
 published and promoted on `beta`: three Geneformer, five scGPT and
 one UCE. Geneformer `1.0.0-beta.1` and scGPT `0.2.5-beta.1` are present together
 in the live signed revocations document. UCE `1.0.0-beta.1` is not channel-selected
 and is rejected by the v2-only app, but remains an explicit retirement decision
 because it is not revoked. The local generic builder and its duplicate helper
-modules are retired. P5.6 and P5.7 remain open. The next implementation work is
-the reviewed non-production native lifecycle for P5.6, not another model release.
+modules are retired, and the final local/native product lifecycle is proven on a
+non-production scGPT macOS Metal candidate. P5.7 remains open. The next work is
+the documentation/operator handoff, not another model release.
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project. The P5 target was
@@ -202,21 +203,18 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.4W — Scrollcase `0.7.1` → `0.8.0` pin raise | Complete | Exact `scrollcase@0.8.0` (published 2026-08-06T17:28:03.966Z, integrity `sha512-zC2rply…pcxEQ==`) read back from npm into the lockfile before the change. Diffed against the `0.7.1` tarball it touches only `CHANGELOG`, `package.json`, `build/verify`, the two consumer entry points and `sign/`: `src/contract` is **byte-identical** and no archive-producing code moved, so the eleven-target matrix carries over with zero rebuilds. The change is additive — every operation now takes `publicPath` **or** `trustedKeys`, and `verifySignedDocument` still accepts a path — so no Liatir call site changed. `test:verify` 6/6, 42/42 Rust tests, and the macOS native fixture lifecycle green on the new pin. **The fixture confirms the diff empirically**: rebuilt on `0.8.0` it produced archive `54172964` and installed `146593318` bytes, the exact figures measured on `0.7.1` and recorded in the catalog |
 | P5.4P — re-release of the rebuilt matrix | Complete | All nine targets are KMS-signed, scientifically validated, published immutably and promoted on `beta`, with public channel readback. Geneformer `1.0.0-beta.1` and scGPT `0.2.5-beta.1` are jointly revoked in the live signed document. UCE `1.0.0-beta.1` is not selected and is v2-incompatible, but whether to add it to revocations remains an explicit product decision |
 | P5.5 — final cutover and legacy deletion | Complete | Every active caller uses public `scrollcase@0.8.0` build/contract exports. The local archive, filesystem, licence, pixi, standalone-Python/uv, target and workspace copies plus the unused config schema are deleted; `identity.mjs` retains only Liatir distribution paths. Static deletion/legacy-field/package-surface guards, 38 unit files / 232 tests, catalog, signer, published-build + Rust Zip64 foundation, Rust Runtime Box and the full TypeScript/build gate are green |
-| P5.6 — local/native closure | Pending | Full cheap gate plus one reviewed non-production product lifecycle |
+| P5.6 — local/native closure | Complete | Clean install and full cheap/Rust gates; deterministic v2/v1 native fixture; real scGPT macOS Metal lifecycle with resume, self-test, inference, Job, three Result artifacts, provenance, replacement/rollback, v1 execution rejection, removal and Result survival; generated state removed; no publication |
 | P5.7 — documentation handoff | Pending | Status, inventories and operator docs match the implemented boundary |
 
 Mark a phase complete only from its listed evidence. Do not infer completion from
 the next phase starting.
 
-## Current continuation from the 2026-08-10 checkpoint
+## Current continuation from the 2026-08-11 checkpoint
 
 Work locally and cheaply until the boundary is clear:
 
-1. **Close P5.6** with the full cheap gate and one reviewed non-production native
-   lifecycle using the final boundary. No protected publication or paid GPU run
-   is needed for this closure.
-2. **Close P5.7** by updating the inventories and operator documentation once
-   P5.5/P5.6 are actually complete.
+1. **Close P5.7** by reconciling the remaining inventories and operator
+   documentation with the now-complete P5.5/P5.6 boundary.
 
 Persisted anti-replay/version-floor state is the next product-hardening slice
 after P5, not a reason to keep generic builder code. The possible UCE `beta.1`
@@ -2713,6 +2711,51 @@ Record:
 - native lifecycle report;
 - generated-state cleanup;
 - explicit statement that no protected release/publication occurred.
+
+### Execution record (2026-08-11)
+
+P5.6 is complete on the final `scrollcase@0.8.0` boundary (lockfile integrity
+`sha512-zC2rplyt3XagumT2uznu17Mq33yfX/9p7WFfc5Ogh389tyZe8Q5b+qfOfSOL+GcLN9rD2hjR32oQ/6172pcxEQ==`).
+The checkout started without generated Runtime Box state; `npm ci` installed only
+the committed dependency graph, and the package-surface/deletion guards found no
+sibling, deep, file or global Scrollcase path, no active uv field and no retired
+generic module. The synthetic native fixture built twice deterministically,
+verified and self-tested its v2 box, exercised the combined Node/Rust consumer,
+activation, rollback and removal, and rejected the signed v1 fixture. Its measured
+archive was `54172961` bytes and installed payload `146593318` bytes.
+
+The reviewed product candidate was scGPT Whole-human `0.2.5-beta.2` for
+`macos-aarch64-metal`, built from clean commit `0338f5a` with a disposable local
+key and loopback-only signed asset URLs. Scrollcase verify plus self-test passed;
+archive SHA-256 was
+`7b4c9a9ff2ce5a23008fbf5075daf056b2c2cd81f0d6e2d02791b3936b5e4b78`,
+archive size `527233742` bytes and installed size `1372956773` bytes. The real
+compiled Tauri app then completed the five-minute lifecycle: interrupted download
+and non-zero resume, install/self-test, real 4-cell × 128-gene scGPT inference on
+Apple Metal, `job_1`, analysis run
+`d36526e4-9cf7-42b4-b3d5-c6a21dd87d1f`, three finalized Result artifacts with
+provenance, replacement, rollback, removal and survival of every Result artifact.
+The receipt has thirteen passing assertions, including rejection of both inline
+and Job execution for an installed v1 activation and bounded v1 cleanup.
+
+The closure found and fixed two lifecycle gaps rather than weakening the proof.
+`lia_ai_python_run` lacked the v1 activation gate already used by the Job path;
+both execution surfaces now return the stable unsupported-format error. The local
+candidate Registry ignored HTTP `Range`, so Liatir correctly restarted a partial
+download from byte zero; it now serves single byte ranges with `206`, exact
+`Content-Range`/`Content-Length`, suffix support and `416` for invalid ranges. A
+real 128-byte probe returned `bytes 128-255/527233742` before the successful UI
+retry, and focused regressions cover both defects.
+
+Final evidence is 38 unit files / 234 tests, catalog 3 models + 3 foundation
+fixtures, signer 15/15, published-build + Rust Zip64 foundation 1/1, Rust Runtime
+Box 18 passed / 2 ignored, full TypeScript/type-generation/frontend/build gate,
+and lint with zero errors (43 pre-existing warnings). `cargo clippy` completed
+with only the existing warning set; `cargo fmt --check` was unavailable because
+the pinned Rust 1.95 toolchain has no `rustfmt` component. All configured Runtime
+Box generated directories were removed and no Registry, E2E runner or Tauri app
+process remained. No production key, trust root, catalog/channel, signed public
+object, protected workflow, publication, promotion or deployment was touched.
 
 ## P5.7 — Documentation and handoff
 

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { multipartPartRanges } from '../../scripts/runtime-box/distribution-cli.mjs';
+import {
+  multipartPartRanges,
+  parseHttpByteRange,
+} from '../../scripts/runtime-box/distribution-cli.mjs';
 import {
   parseImmutableReleaseIdentity,
   parseMultipartArchiveIdentity,
@@ -77,5 +80,36 @@ describe('Runtime Box large-archive publisher', () => {
       target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
     }, identity!)).toBe(false);
     expect(parseImmutableReleaseIdentity('../geneformer', '1.0.0', 'macos-aarch64-metal', sha256)).toBeNull();
+  });
+});
+
+describe('Runtime Box candidate registry byte ranges', () => {
+  it('serves the resume ranges requested by Liatir downloads', () => {
+    expect(parseHttpByteRange(undefined, 1_000)).toBeNull();
+    expect(parseHttpByteRange('bytes=128-', 1_000)).toEqual({
+      satisfiable: true,
+      start: 128,
+      end: 999,
+      sizeBytes: 872,
+    });
+    expect(parseHttpByteRange('bytes=128-255', 1_000)).toEqual({
+      satisfiable: true,
+      start: 128,
+      end: 255,
+      sizeBytes: 128,
+    });
+    expect(parseHttpByteRange('bytes=-64', 1_000)).toEqual({
+      satisfiable: true,
+      start: 936,
+      end: 999,
+      sizeBytes: 64,
+    });
+  });
+
+  it('rejects invalid or unsatisfiable ranges', () => {
+    expect(parseHttpByteRange('bytes=1000-', 1_000)).toEqual({ satisfiable: false });
+    expect(parseHttpByteRange('bytes=400-399', 1_000)).toEqual({ satisfiable: false });
+    expect(parseHttpByteRange('bytes=0-1,4-5', 1_000)).toEqual({ satisfiable: false });
+    expect(parseHttpByteRange('items=0-1', 1_000)).toEqual({ satisfiable: false });
   });
 });
