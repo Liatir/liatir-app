@@ -20,7 +20,7 @@ export const testProfiles = {
   build: ['sdk-types', 'core-build', 'frontend-check', 'frontend-build', 'src-ts-compile'],
   // Every UI profile begins with `tauri-prepare`: the end-to-end suites drive a real compiled binary, and it
   // has to exist before anything can be driven.
-  ui: ['tauri-prepare', 'tauri-e2e'],
+  ui: ['tauri-prepare', 'tauri-e2e', 'runtime-box-security-e2e'],
   visual: ['tauri-prepare', 'visual-e2e'],
   'heavy-ai': ['tauri-prepare', 'heavy-ai-e2e'],
   all: [
@@ -32,6 +32,7 @@ export const testProfiles = {
     'src-ts-compile',
     'tauri-prepare',
     'tauri-e2e',
+    'runtime-box-security-e2e',
     'visual-e2e',
     'heavy-ai-e2e',
   ],
@@ -120,6 +121,16 @@ export const testSuites = [
     timeoutMs: 300_000,
     e2eReport: true,
     description: 'Captures and compares native webview screenshots against baselines.',
+  },
+  {
+    id: 'runtime-box-security-e2e',
+    label: 'Runtime Box security lifecycle',
+    layer: 'tauri',
+    command: 'node',
+    args: ['scripts/run-runtime-box-security-e2e.mjs'],
+    timeoutMs: 300_000,
+    e2eReport: true,
+    description: 'Runs signed A to B update, app restart, rollback, anti-replay, equivocation, and corrupt-state checks.',
   },
   {
     id: 'heavy-ai-e2e',

@@ -19,7 +19,7 @@ Use this site to keep durable decisions close to the codebase:
 - the completed [Runtime Box pixi migration record](./roadmap/runtime-box-pixi-migration.md);
 - the completed independent
   [Scrollcase extraction record](./roadmap/scrollcase-extraction-plan.md) and the
-  active downstream [Liatir adoption plan](./roadmap/scrollcase-p5-liatir-adoption.md);
+  completed downstream [Liatir adoption record](./roadmap/scrollcase-p5-liatir-adoption.md);
 - AI Models and AI Tools roadmap status;
 - Quenta and MCP trust boundaries;
 - native bridge and runtime constraints;

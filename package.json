@@ -113,6 +113,7 @@
     "runtime-box:runner:macos-heavy": "bash scripts/run-runtime-box-selfhosted-runner.sh --model snap-stanford-uce-4layer --target macos-aarch64-metal --mode native-lifecycle",
     "runtime-box:test:foundation": "node scripts/validate-runtime-box-foundation.mjs",
     "runtime-box:test:native": "node scripts/validate-runtime-box-native-fixture.mjs",
+    "runtime-box:test:security": "node scripts/run-runtime-box-security-e2e.mjs",
     "runtime-box:validate:geneformer": "node scripts/validate-geneformer-parity.mjs",
     "runtime-box:validate:scgpt": "node scripts/validate-scgpt-runtime.mjs",
     "runtime-box:validate:uce": "node scripts/validate-uce-runtime.mjs",

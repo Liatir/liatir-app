@@ -1,6 +1,6 @@
 # Scientific AI Workbench Product Plan
 
-Last reviewed: 2026-08-10
+Last reviewed: 2026-08-11
 
 This document is the canonical product direction and execution sequence for
 Liatir during and after the current Runtime Box CI foundation program. It turns
@@ -26,12 +26,15 @@ Linux/Windows CPU and both CUDA targets; and UCE on macOS Metal. The old CUDA
 published. Geneformer and scGPT `beta.1` are revoked; UCE `beta.1` remains an
 explicit retirement decision.
 
-The next work is product and adoption scope: close the remaining Scrollcase P5
-consumer/deletion boundary, then prove a true cross-version native update and
-persist signed anti-replay channel state in the client. After that, continue
-with the common execution spine in Phase 2. Every paid or remote action still
-requires its exact local gate, workflow/input/revision readback, cost
-declaration, and fresh explicit approval.
+Scrollcase adoption P5.0 through P5.7 is complete. The Runtime Box security
+implementation and its macOS slice are also complete: a lightweight signed
+fixture proves a real cross-version update, app restart, rollback, replay and
+equivocation rejection, and corrupt-state isolation. The complete Gate 1 still
+needs the same native evidence on supported Linux x86_64 and Windows hosts.
+After that, work closes asynchronous settlement and the common execution spine
+before widening scientific scope. Every paid or remote action still requires
+its exact local gate, workflow/input/revision readback, cost declaration, and
+fresh explicit approval.
 
 ## Product decision
 
@@ -72,10 +75,12 @@ different layers.
 | AI | Installable AI Models, capability-oriented AI Tools, hardware/license preflight, scientific output validation | Only AI steps explicitly authored inside an external workflow |
 | Observability | Cross-system Jobs and Results with stable identities and normalized provenance | Engine-specific trace, timeline, logs, and cache/resume behavior |
 
-Liatir may execute a Nextflow pipeline as one node, consume its declared
-outputs, inspect its trace, and pass a result into an AI Tool or Plugin. It must
-not reproduce Nextflow DSL2, its scheduler, its executor ecosystem, or its
-cache/resume implementation.
+Liatir may save and execute a Nextflow pipeline as a standalone External
+Workflow, or reference that same saved definition as one node in a Liatir
+pipeline. In either mode it may consume declared outputs, inspect the engine
+trace, and pass a result into an AI Tool or Plugin. It must not reproduce
+Nextflow DSL2, its scheduler, its executor ecosystem, or its cache/resume
+implementation.
 
 ## Initial product boundary
 
@@ -125,10 +130,10 @@ execution foundation, but some product claims are ahead of their evidence.
 | Plugins | Build contracts are verified; native Node/WASM lifecycle coverage is incomplete | Close parity before treating every runtime as equally production-ready |
 | API Connector | Saved requests and pipeline integration exist but native execution evidence is incomplete | Validate it as another first-class node type |
 | AI Models and AI Tools | Runtime Box-only catalog with Geneformer, scGPT, and UCE plus the shared Single-cell Embedding Tool; legacy and mock integrations were removed on 2026-07-22 | Complete the common execution spine and product update guarantees before adding another family |
-| Runtime Box distribution | Nine current schema-v2 targets are live and product-lifecycle verified on macOS Metal, Linux CPU/CUDA, and Windows CPU/CUDA | Finish the P5 consumer/deletion boundary, then close cross-version update and persisted client anti-replay gaps before widening scope |
+| Runtime Box distribution | Nine current schema-v2 targets are live and product-lifecycle verified; Scrollcase P5 is complete; app-global anti-replay and true A-to-B rollback are natively verified on macOS across an app restart | Repeat the focused security lifecycle on supported Linux x86_64 and Windows hosts, then decide whether UCE `beta.1` belongs in revocations |
 | Scientific viewers | Protein, genome, and single-cell surfaces exist but need native visual/runtime validation | Make viewer completion part of each scientific vertical |
 | Artifact semantics | Files have paths, extensions, media types, producer, parent run, and lifecycle role; scientific meaning is not yet a versioned compatibility contract | Add semantic profiles without replacing original formats |
-| External workflow engines | Nextflow and Snakemake dependencies are recognized, but their Tools are still marked as coming soon | Build one first-class Nextflow vertical slice after the artifact contract |
+| External workflow engines | Nextflow and Snakemake dependencies are recognized, but no first-class External Workflow entity exists yet | Build Nextflow first, runnable both standalone and as a pipeline node, after the artifact contract |
 | Quenta | Read-only explanatory MVP | Keep it explanatory until the workbench is trustworthy without it |
 
 ## Target architecture
@@ -242,12 +247,154 @@ These are product modes, not loopholes. Each model still needs a legal review,
 hardware matrix, input contract, output parser, scientific validation, and
 provenance record.
 
-## Delivery phases
+## Active delivery sequence
+
+Execution is linear and gate-based. Finish, verify, document, and hand off one
+bounded slice before starting the next heavy slice.
+
+Indicators used below:
+
+- **Difficulty** is indicative implementation complexity from `1/5` to `5/5`.
+- **Codex effort** is the recommended reasoning effort for implementation.
+- **Windows** or **Linux** appears only when the gate requires a real machine
+  on that platform, not merely portable unit coverage.
+
+### Gate 1: secure Runtime Box updates
+
+**Difficulty:** `4/5` · **Codex effort:** `xhigh` · **Windows** · **Linux**
+
+**Status (2026-08-11): macOS slice complete; Linux x86_64 and Windows native
+evidence pending.**
+
+Prove a real version A to version B update and rollback. Persist anti-replay
+state globally for the app rather than per workspace. A signed control document
+older than the accepted floor must be rejected; the same signed timestamp with
+a different payload must fail as equivocation. Corrupt security state must
+block new installs or updates with actionable recovery, while already installed
+models remain runnable offline.
+
+The implementation stores one atomic app-global
+`runtime-box-control-floors.json`. Each channel identity is scoped by Registry,
+channel, box and target; revocations are scoped by Registry. The accepted value
+is the signed `updatedAt` instant plus `payloadSha256`: an older instant is a
+replay, while the same instant with another digest is equivocation. A malformed
+state file fails closed only on install/update paths; installed activation keeps
+using its immutable signed release.
+
+`npm run runtime-box:test:security` generates two tiny schema-v2 boxes and an
+ephemeral signing key, then drives two consecutive native app processes over the
+same isolated app-data root. On macOS arm64 it proves A install, A-to-B update,
+persisted channel and revocation floors, rollback to A, restart survival, older
+and equivocal channel/revocation rejection, corrupt-state blocking, and the
+rolled-back runtime still executing. The existing Lima VM was inspected and
+returned to its original stopped state; it is Linux aarch64 with no Node, Rust,
+GTK or Xvfb, so it cannot prove Liatir's supported Linux x86_64 target without a
+separately provisioned VM.
+
+### Gate 2: audit asynchronous pipeline settlement
+
+**Difficulty:** `4/5` · **Codex effort:** `high`
+
+Audit Native Tools, Plugins, AI Tools, API Connector requests and sub-pipelines.
+A step may launch background work, but it remains `running` until every required
+child process is terminal and every declared output is durable. A downstream
+step must never start merely because a Job returned from spawn. Cover
+cancellation, navigation, restart reconciliation, child-process attribution and
+premature Result finalization.
+
+For Beta 1, keep ready nodes within one Liatir pipeline sequential. Independent
+pipeline runs remain concurrent, and Nextflow retains the parallelism of its own
+engine. Parallel DAG scheduling inside Liatir is a later optimization, not part
+of this correctness gate.
+
+### Gate 3: close the common execution spine
+
+**Difficulty:** `5/5` · **Codex effort:** `max`
+
+Unify identity, Jobs, Results, logs, progress, cancellation, failure and restart
+recovery across direct and pipeline execution. Add the nested-run contract and
+stable External Workflow Run identity needed by workflow engines. Every
+terminal path must finalize exactly once, retain the correct parent, and leave
+unrelated work usable.
+
+### Gate 4: standardize scientific I/O
+
+**Difficulty:** `5/5` · **Codex effort:** `xhigh`
+
+Extend `packages/liatir-core` with backward-compatible, versioned scientific
+artifact profiles. Separate transport, format and scientific compatibility;
+preserve the original format, digest, provenance, lineage and transformations.
+Adopt the contract incrementally, beginning with AnnData and single-cell
+artifacts.
+
+### Gate 5: complete the single-cell lighthouse
+
+**Difficulty:** `4/5` · **Codex effort:** `xhigh`
+
+Prove AnnData validation, the Single-cell Embedding Tool, supported AI Models,
+viewer handoff and downstream reuse as one coherent workflow. Direct and
+pipeline execution must produce equivalent artifacts and provenance. Add one
+useful no-code preset only after the individual nodes and viewer pass.
+
+### Gate 6: integrate Nextflow as an External Workflow
+
+**Difficulty:** `5/5` · **Codex effort:** `max` · **Windows** · **Linux**
+
+Introduce External Workflow as a first-class saved entity and add
+`external-workflow` to the shared contracts. Nextflow is the first adapter; it
+is neither a `.lia` Plugin nor an ordinary Native Tool. One saved definition
+owns the engine, local or version-pinned source, parameter schema, declared
+inputs and output mapping.
+
+Expose the definition under Tools / External Workflows for standalone runs and
+allow a Liatir pipeline node to reference the same definition by ID. A
+standalone run owns a top-level External Workflow Run, Job and Result. A nested
+run also carries its parent `pipelineRunId`; both paths use the same adapter,
+parameters, output rules and provenance.
+
+The first slice uses system-installed Nextflow and Java. It stages inputs
+without modifying originals; records source revision, profile, configuration,
+environment, work/output locations, logs, trace, report, timeline and exit
+state; and converts only declared outputs into reusable Liatir artifacts.
+Ambiguous outputs require explicit mapping. Nextflow continues to own DSL2,
+scheduling, internal parallelism, cache and resume.
+
+### Gate 7: close Beta 1 readiness
+
+**Difficulty:** `4/5` · **Codex effort:** `high` · **Windows** · **Linux**
+
+Run the complete single-cell and Nextflow verticals, including standalone and
+nested Nextflow execution and downstream output reuse. Close signed installer,
+update, migration, recovery and uninstall evidence for every platform claimed
+by the beta. Finish public installation, first-analysis, limitations and
+troubleshooting documentation. Do not claim unsupported platforms or
+implemented-but-unverified features.
+
+### Gate 8: expose controlled MCP access after Beta 1
+
+**Difficulty:** `5/5` · **Codex effort:** `max`
+
+Provide a local Liatir MCP server with read-only resources and controlled
+execution of saved pipelines. A start request returns a stable asynchronous run
+identity; status, logs, cancellation and Results are queried separately. Require
+an explicit allowlist, user authorization, audit records and correct
+Jobs/Results attribution, and verify the boundary with a real MCP client.
+
+The first MCP surface excludes arbitrary shell access, autonomous pipeline
+mutation and models that silently choose scientific data, preprocessing or
+parameters. MCP is an interoperability boundary, not an autonomous owner of
+scientific execution.
+
+## Detailed capability specifications
+
+The following sections retain the implementation detail and exit criteria for
+the active gates and later expansion. The numbered gate sequence above, not the
+historical section order below, is authoritative.
 
 Execution remains linear and gate-based. Finish, verify, document, and hand off
 one bounded slice before starting the next heavy slice.
 
-### Phase 1: finish the active Runtime Box CI foundation
+### Completed Runtime Box CI foundation
 
 Objective: complete the infrastructure program already in progress without
 mixing it with new product scope.
@@ -275,23 +422,26 @@ Exit criteria:
   replacement, rollback, removal, and cleanup are covered as required;
 - no paid or remote run is used as an iterative debugger.
 
-### Phase 2: close the common execution spine
+### Common execution spine
 
 Objective: ensure that every node class behaves like part of the same product
 before adding another class of orchestration.
 
 Work:
 
-1. add native lifecycle coverage for Node and WASM Plugins, including progress,
+1. audit the settlement contract of every pipeline runner: returning from spawn
+   is not completion, and downstream nodes wait for terminal child work plus
+   durable outputs;
+2. add native lifecycle coverage for Node and WASM Plugins, including progress,
    logs, failure, cancellation, Jobs, Results, and navigation isolation;
-2. extend direct AI Model and Plugin runs to the same exactly-once Results and
+3. extend direct AI Model and Plugin runs to the same exactly-once Results and
    restart-reconciliation guarantees already verified for pipelines;
-3. validate API Connector execution, authentication handling, malformed
+4. validate API Connector execution, authentication handling, malformed
    responses, rate/error states, cancellation, and provenance;
-4. close dependency update interruption and recovery behavior;
-5. define a shared nested-run contract suitable for external workflow engines
+5. close dependency update interruption and recovery behavior;
+6. define a shared nested-run contract suitable for external workflow engines
    without implementing an engine adapter yet;
-6. keep all state owned by the actual workspace, pipeline, pipeline run,
+7. keep all state owned by the actual workspace, pipeline, pipeline run,
    external workflow run, model run, tool run, or dependency install.
 
 Exit criteria:
@@ -300,9 +450,11 @@ Exit criteria:
 - one running entity never disables or corrupts an unrelated entity;
 - every terminal path finalizes once and remains coherent after navigation or
   restart;
+- a delayed child Job cannot release a downstream node or finalize its parent
+  Result before terminal status and durable output registration;
 - new node kinds can reuse the contract without a parallel state system.
 
-### Phase 3: add scientific artifact semantics
+### Scientific artifact semantics
 
 Objective: make downstream composition scientifically safer than passing paths
 and extensions.
@@ -332,7 +484,7 @@ Exit criteria:
 - the contract does not claim scientific equivalence merely because extensions
   match.
 
-### Phase 4: ship the single-cell lighthouse vertical
+### Single-cell lighthouse vertical
 
 Objective: prove the full workbench experience with the strongest existing AI
 foundation.
@@ -375,10 +527,11 @@ Exit criteria:
 - the final artifact can be consumed by another node without manual file path
   copying.
 
-### Phase 5: integrate Nextflow as a first-class external workflow adapter
+### Nextflow External Workflow
 
 Objective: demonstrate that Liatir is a laboratory above multiple execution
-systems, not another isolated pipeline editor.
+systems, not another isolated pipeline editor, and that an external workflow is
+useful both independently and as one component of a larger Liatir pipeline.
 
 The first slice should use a system-installed Nextflow, matching the current
 dependency boundary. Managed Nextflow installation, remote executors, HPC, and
@@ -386,33 +539,39 @@ cloud backends can follow only after the local adapter is reliable.
 
 Work:
 
-1. add a core external-workflow definition and run identity rather than hiding
-   production integration inside a bespoke Plugin;
+1. add a first-class, saved External Workflow definition and stable External
+   Workflow Run identity in the shared core rather than hiding production
+   integration inside a bespoke Plugin or ordinary Native Tool;
 2. support a saved local or version-pinned repository pipeline source;
 3. expose pipeline parameters through a generated form when a machine-readable
    schema exists and a structured fallback when it does not;
 4. map Liatir artifacts into Nextflow parameters or staged input paths without
    mutating the originals;
-5. run Nextflow as a child of the owning Liatir pipeline run or as a direct
-   external workflow run;
-6. capture command, revision, profile, configuration, environment, work/output
+5. expose the saved definition under Tools / External Workflows and run it
+   directly with its own Job, Result and provenance;
+6. let a Liatir pipeline node reference that same definition by ID and run it as
+   a child of the owning pipeline run without duplicating configuration;
+7. capture command, revision, profile, configuration, environment, work/output
    locations, logs, trace, report, timeline, and engine exit status where
    available;
-7. support cancellation and make engine-native resume an explicit expert action
+8. support cancellation and make engine-native resume an explicit expert action
    rather than pretending Liatir owns Nextflow cache semantics;
-8. map declared outputs into Liatir artifacts and require user mapping for
+9. map declared outputs into Liatir artifacts and require user mapping for
    ambiguous outputs instead of guessing;
-9. display workflow-level progress first and process/task detail as nested
+10. display workflow-level progress first and process/task detail as nested
    observability, without flattening every process into unrelated top-level
    Jobs;
-10. allow a Nextflow node's outputs to feed an AI Tool, Plugin, native tool,
+11. allow a Nextflow run's outputs to feed an AI Tool, Plugin, native tool,
     API Connector request, viewer, or another Liatir pipeline.
 
-First proof workflow:
+First proof workflows:
 
 ```text
-Liatir input artifact
-  -> Nextflow pipeline node
+Liatir input artifact -> standalone Nextflow External Workflow
+  -> declared scientific output artifact
+  -> top-level Liatir Result
+
+Liatir input artifact -> Nextflow External Workflow node
   -> declared scientific output artifact
   -> Liatir validation/profile enrichment
   -> existing AI Tool or viewer
@@ -424,6 +583,8 @@ Exit criteria:
 - pipeline source and revision are reproducible;
 - parameters, engine configuration, inputs, outputs, and reports remain
   inspectable;
+- direct and nested runs reference one saved definition and produce equivalent
+  declared artifacts and engine provenance;
 - cancellation, failure, navigation, restart reconciliation, and Results
   finalization follow Liatir lifecycle rules;
 - an output can be used downstream without manually searching the Nextflow work
@@ -434,7 +595,7 @@ Do not start a visual Nextflow DSL builder in this phase. Revisit it only if
 real user evidence shows that schema-generated parameter forms, presets, and
 result inspection are insufficient.
 
-### Phase 6: complete the genomics and protein verticals
+### Later genomics and protein verticals
 
 Objective: prove that the artifact and capability architecture generalizes
 beyond single-cell data.
@@ -485,7 +646,7 @@ Each vertical exits only when it has:
 - an evidence-backed hardware and license support matrix;
 - one useful no-code preset built from already verified nodes.
 
-### Phase 7: make extension quality reproducible
+### Reproducible extension quality
 
 Objective: let Liatir grow without turning the official catalog into unverified
 wrappers.
@@ -507,7 +668,7 @@ Work:
 Third-party extensions may be powerful, but official support must remain
 distinguishable from locally installed, user-trusted code.
 
-### Phase 8: defer advanced expansion until the core thesis is proven
+### Deferred advanced expansion
 
 Potential later programs include:
 
@@ -516,7 +677,6 @@ Potential later programs include:
 - model comparisons and ensembles;
 - remote, HPC, and cloud workflow executors;
 - training and fine-tuning;
-- controlled MCP access;
 - Quenta-assisted explanation and report drafting;
 - carefully bounded agentic workflows.
 
@@ -534,41 +694,45 @@ The recommended minimum coherent beta includes:
 2. the evidence-backed platform and Runtime Box support matrix;
 3. semantic artifact profiles for the first lighthouse workflow;
 4. one complete single-cell AI workflow with viewer and downstream reuse;
-5. one first-class local Nextflow integration that emits reusable Liatir
-   artifacts;
+5. one saved Nextflow External Workflow that runs both standalone and as a
+   pipeline node, emitting equivalent reusable Liatir artifacts;
 6. readable Jobs, Results, logs, provenance, compatibility explanations, and
    failure recovery across those paths;
-7. public documentation for installation, first analysis, limitations, and
+7. signed desktop install/update/migration/uninstall evidence for every claimed
+   platform;
+8. public documentation for installation, first analysis, limitations, and
    troubleshooting.
 
-Beta 1 does not need every implemented model, every operating system, Quenta,
-MCP, simulations, or generative design to be called complete. It must state its
-support matrix honestly and avoid presenting implemented-but-unverified
-features as production-ready.
+Beta 1 does not need every implemented model, every future scientific vertical,
+Quenta, MCP, simulations, or generative design to be called complete. It must
+state its support matrix honestly and avoid presenting
+implemented-but-unverified features as production-ready.
 
 ## Ordered backlog from the current state
 
 This is the default sequence unless a later evidence-backed decision explicitly
 reorders it:
 
-1. complete the remaining Scrollcase P5 legacy-deletion audit; the Rust consumer
-   boundary is closed;
-2. close true cross-version Runtime Box update and persisted anti-replay state;
-3. close Plugin, direct AI, API Connector, and dependency lifecycle gaps needed
-   by the common execution spine;
+1. repeat the completed Runtime Box security lifecycle on supported Linux
+   x86_64 and Windows hosts to close Gate 1 platform evidence;
+2. audit asynchronous pipeline settlement and prevent premature downstream or
+   Result finalization;
+3. close Plugin, direct AI, API Connector, dependency and nested-run lifecycle
+   gaps needed by the common execution spine;
 4. design and land the backward-compatible semantic artifact contract in
    `packages/liatir-core`;
 5. implement the AnnData/single-cell profiles and lighthouse workflow;
 6. complete single-cell viewer and preset evidence;
-7. implement the local first-class Nextflow adapter;
+7. implement one saved local Nextflow External Workflow with direct and nested
+   execution;
 8. prove Nextflow output reuse through an existing AI Tool or viewer;
-9. validate the predictive/variant genomics vertical;
-10. validate the protein structure/binding vertical;
-11. publish useful verified Plugin and pipeline templates;
-12. evaluate another external workflow engine only from the reusable adapter
-    contract;
-13. reconsider simulations, generative models, MCP, Quenta expansion, and
-    training only after the beta evidence is complete.
+9. close the desktop release matrix and public Beta 1 documentation;
+10. implement controlled local MCP access with a real client after Beta 1;
+11. validate the predictive/variant genomics and protein structure/binding
+    verticals;
+12. publish useful verified Plugin and pipeline templates;
+13. evaluate another external workflow engine only from the reusable adapter
+    contract, then reconsider other advanced expansion.
 
 ## Definition of done for every integration
 

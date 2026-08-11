@@ -1,5 +1,36 @@
 # Current project status
 
+## Runtime Box update security is complete on macOS (Gate 1 macOS, 2026-08-11)
+
+The install bridge now owns one app-global, atomic
+`runtime-box-control-floors.json`. Mutable signed channels are separated by
+Registry, channel, box and target; the complete revocation set is separated by
+Registry. Each floor records the signed `updatedAt` instant and exact
+`payloadSha256`. Older generations are rejected as replay, equal timestamps
+with another digest are rejected as equivocation, and a revocation document
+cannot silently disappear after one has been accepted. A corrupt or unreadable
+state file blocks new installs and updates with a fail-closed diagnostic; it is
+not consulted when an already installed Runtime Box executes its immutable
+signed release.
+
+`npm run runtime-box:test:security` is a lightweight native product proof, not a
+model download. It creates signed schema-v2 versions A and B and uses two native
+Tauri processes over the same isolated app-data root. On macOS arm64 it passed
+A install, true A-to-B update, rollback to A, persisted floors after app
+restart, old/equivocal channel rejection, old/equivocal revocation rejection,
+corrupt-state update blocking, and continued execution of installed A. The
+suite is part of the `ui` and `all` test profiles. Focused Rust evidence is 19
+passed / 2 intentionally ignored; `cargo clippy --tests` completed with the
+repository's existing warning set; `npm run test:verify` passed 38 files / 236
+tests plus every build and type gate.
+
+The available Lima `default` VM was inspected and restored to its original
+stopped state. It is Linux aarch64 and has no Node, Rust, GTK or Xvfb, while the
+supported Liatir Runtime Box target is Linux x86_64. It is therefore not valid
+Linux native evidence. Gate 1 remains platform-partial until this same suite is
+run on provisioned Linux x86_64 and Windows hosts; the product implementation
+itself is present and macOS-verified.
+
 ## Scrollcase P5 adoption is complete (P5.7, 2026-08-11)
 
 The Scrollcase handoff is closed, with four states kept deliberately separate:
@@ -21,9 +52,11 @@ The operator command surface has not changed. Scrollcase owns generic authoring,
 build and verify; Liatir owns CI/evidence, signing integration, Registry/R2,
 promotion/revocation and the product lifecycle. The local candidate Registry's
 `serve` command now supports HTTP byte ranges for real resume testing. P5 has no
-remaining gate. The next Runtime Box product slice is persisted
-anti-replay/version-floor state, followed by the common pipeline/run/result
-spine; neither should be described as continued Scrollcase migration.
+remaining gate. The next Runtime Box product slice was app-global
+anti-replay/version-floor state; its macOS implementation and product proof are
+now complete as recorded above. Linux x86_64 and Windows evidence remain, then
+the common pipeline/run/result spine follows. None of this is continued
+Scrollcase migration.
 
 ## Scrollcase adoption has native closure (P5.6, 2026-08-11)
 
@@ -181,9 +214,9 @@ Registry/channel selection, product compatibility, revocation, disk planning,
 self-test diagnostics, activation, rollback, removal and provenance.
 
 An executable state guard and regression pin verified release → product
-policy/revocation → disk → archive → extraction. Persisted anti-replay is not
-present and remains the next product-hardening slice after P5. Automatic
-`attach_extracted_box` is rejected because its `PreparedBox` receipt is
+policy/revocation → disk → archive → extraction. At P5.4R, persisted anti-replay
+was not present; the macOS slice is now complete in the newer status above.
+Automatic `attach_extracted_box` is rejected because its `PreparedBox` receipt is
 in-process rather than restart-durable; `verify_extracted_payload` is reserved for
 a future explicit O(box size) integrity diagnostic; `verify_required_assets`
 waits for a real on-demand-assets product path.
@@ -200,18 +233,25 @@ channel changed.
 The Runtime Box migration and the nine-target re-release are complete. Continue
 Liatir development in this order:
 
-1. implement persisted anti-replay/version-floor state for Runtime Box control
-   documents, with its ownership and recovery semantics defined before code;
-2. complete the common pipeline/run/result spine before widening the model
-   catalog or starting another Runtime Box migration;
-3. return to connector and broader scientific-workbench expansion only after the
-   shared lifecycle is reliable.
+1. repeat the completed Runtime Box security lifecycle on supported Linux
+   x86_64 and Windows hosts to close Gate 1 platform evidence;
+2. audit asynchronous pipeline settlement so spawned child work cannot release
+   downstream nodes or Results before terminal state and durable outputs;
+3. complete the common pipeline/run/result spine and nested-run contract;
+4. add versioned scientific artifact profiles, beginning with AnnData;
+5. complete the single-cell lighthouse workflow, viewer and no-code preset;
+6. add Nextflow as the first saved External Workflow, runnable standalone and
+   by reference from a Liatir pipeline;
+7. close the signed desktop Beta 1 release matrix and public documentation;
+8. expose controlled local MCP access after Beta 1.
 
 P5.0 through P5.7 are complete; the Scrollcase P5 plan is closed.
 The canonical detailed ledger is
 [Scrollcase P5](./roadmap/scrollcase-p5-liatir-adoption.md). The sections below
 this point are retained as implementation history and must not override this
-current continuation.
+current continuation. Difficulty, recommended Codex effort, platform flags and
+gate exit criteria live in the canonical
+[Scientific AI Workbench plan](./roadmap/scientific-ai-workbench.md).
 
 ## Historical re-release and migration record
 
@@ -814,9 +854,10 @@ This file is the quick handoff snapshot. The canonical detailed plans are:
 
 Phase 1 of the Scientific AI Workbench plan is complete: the Runtime Box CI
 foundation has closed Gates 0 through 10. Product-level Runtime Box work now
-has two explicit tracks: cross-version update with client-persisted anti-replay
-state, and cross-platform expansion of the current model catalog before new
-model families are admitted. The common execution spine follows in Phase 2.
+has two explicit tracks: finish Linux x86_64 and Windows native evidence for the
+implemented anti-replay/update lifecycle, and maintain cross-platform parity of
+the current model catalog before new model families are admitted. The common
+execution spine follows in Phase 2.
 The cross-platform track now has a canonical target-by-target execution plan.
 (This section from `29951xxxxx` onward is the pre-pixi uv-era narrative, kept as
 history; the pixi migration has since superseded these target states — see the top
@@ -1250,8 +1291,9 @@ first).
    which takes keys directly, and Liatir already pins `=0.3.0`. What remains is
    Liatir work to schedule, not an upstream wait.
    See [P5.4V](./roadmap/scrollcase-p5-liatir-adoption.md).
-3. Close the true cross-version Runtime Box update and client-persisted signed
-   anti-replay state as product work, not as an unclosed foundation gate.
+3. Carry the now-macOS-verified cross-version update and client-persisted signed
+   anti-replay lifecycle to Linux x86_64 and Windows as product evidence, not as
+   an unclosed foundation gate.
 4. Continue with the common execution spine in Phase 2 after that bounded
    Runtime Box product work.
 5. Do not add another model family to the pre-release catalog until current

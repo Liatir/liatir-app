@@ -34,9 +34,22 @@ const artifactsDir = path.join(rootDir, 'tests', '.artifacts');
 // extracts through verbatim paths and writes the file happily while Python cannot open it.
 //
 // Every other platform keeps the home beside the rest of the artifacts, where cleanup prunes it.
-const testHome = process.platform === 'win32'
+// The security lifecycle uses a temporary override for two consecutive app processes. Keep that
+// escape hatch under a test-owned temporary root so a typo cannot point the test app at a real home.
+const testHomeOverride = process.env.LIATIR_E2E_TEST_HOME_OVERRIDE
+  ? path.resolve(process.env.LIATIR_E2E_TEST_HOME_OVERRIDE)
+  : null;
+if (testHomeOverride) {
+  const allowedRoots = [path.resolve(os.tmpdir()), path.resolve(artifactsDir, 'home')];
+  const isTestOwned = allowedRoots.some((root) => {
+    const relative = path.relative(root, testHomeOverride);
+    return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
+  });
+  if (!isTestOwned) throw new Error(`LIATIR_E2E_TEST_HOME_OVERRIDE must be inside a test temporary root: ${testHomeOverride}`);
+}
+const testHome = testHomeOverride ?? (process.platform === 'win32'
   ? path.join(path.parse(os.tmpdir()).root, `lt-${process.pid}`)
-  : path.join(artifactsDir, 'home', `${Date.now()}-${process.pid}`);
+  : path.join(artifactsDir, 'home', `${Date.now()}-${process.pid}`));
 const logDir = path.join(artifactsDir, 'tauri-logs');
 const screenshotDir = path.join(artifactsDir, 'screenshots');
 const baselineDir = path.join(rootDir, 'tests', 'e2e', '__snapshots__');

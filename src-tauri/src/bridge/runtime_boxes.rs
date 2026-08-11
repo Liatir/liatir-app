@@ -21,6 +21,7 @@
 //! Activation is a directory rename, so a box is never observed half-installed: it is either
 //! the old version or the new one.
 
+use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
@@ -32,7 +33,7 @@ use std::{
 };
 // Scrollcase owns the generic box format: signed-envelope verification, target identity and
 // the safe-path rule. Liatir keeps the product lifecycle around it — registry, revocation,
-// disk planning, activation, rollback and removal. Persisted anti-replay is a separate slice.
+// disk planning, activation, rollback, removal and app-global mutable-document anti-replay.
 use scrollcase_consumer::{
     contract::{
         documents::SignedDocument,
@@ -63,6 +64,13 @@ const AI_RUNTIME_ROOT: &str = "ai-runtimes";
 /// Hard cap for channel/release/revocation documents, so a hostile or broken registry
 /// cannot make the app buffer an unbounded response into memory.
 const MAX_CONTROL_DOCUMENT_BYTES: usize = 1024 * 1024;
+/// App-global anti-replay state is intentionally small and bounded. A local attacker or a
+/// damaged file must not be able to make an install allocate an arbitrary amount of memory.
+const MAX_ANTI_REPLAY_STATE_BYTES: usize = 1024 * 1024;
+/// Wire version for Liatir's own durable control-document freshness state.
+const ANTI_REPLAY_STATE_SCHEMA_VERSION: u32 = 1;
+/// App-global path under `.liatir/.main/_app`; never scoped to a workspace or model.
+const ANTI_REPLAY_STATE_PATH: &str = "runtime-box-control-floors.json";
 /// `minRamGb` is a shared wire-contract value expressed in decimal gigabytes.
 const BYTES_PER_DECIMAL_GIGABYTE: u64 = 1_000_000_000;
 /// Scrollcase v2 is the only Runtime Box wire format accepted by this build.
@@ -79,6 +87,10 @@ const DEVELOPMENT_TRUST_KEY: &str =
 /// Guarded by [`InstallGuard`]. The set is keyed by runtime ID, so two *different* runtimes
 /// can still be installed concurrently — only same-runtime overlap is rejected.
 static ACTIVE_INSTALLS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
+/// Serialises the read/compare/write transaction over the app-global anti-replay file.
+/// Different Runtime Boxes may install concurrently, but their accepted control-document
+/// generations must never overwrite one another with two stale snapshots of the same file.
+static ANTI_REPLAY_STATE_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
 
 /// The hardware/OS profile a box is built for. A box is only installable when this
 /// matches the detected native host and passes signed release verification.
@@ -98,6 +110,9 @@ struct ChannelManifest {
     channel: String,
     box_id: String,
     target: RuntimeBoxTarget,
+    /// Signed freshness generation. It is compared as an RFC 3339 instant, never against the
+    /// local clock, so a wrong machine clock cannot make an authentic document unusable.
+    updated_at: String,
     /// Mixed into the cohort hash so the same installation does not land in the same
     /// bucket for every box, and so a rollout can be reshuffled by changing the salt.
     cohort_salt: String,
@@ -154,7 +169,57 @@ struct RuntimeBoxHostCapabilities {
 struct RevocationsManifest {
     schema_version: u32,
     kind: String,
+    /// Signed freshness generation shared by the complete revocation set.
+    updated_at: String,
     revocations: Vec<RuntimeBoxRevocation>,
+}
+
+/// Exact mutable control-document namespace whose accepted generation is remembered.
+///
+/// The registry base is part of the identity: a test/private registry cannot advance or satisfy
+/// the production registry's floor. Channel floors are further separated by channel, box and
+/// target, while revocations are one complete registry-wide set.
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
+#[serde(
+    tag = "kind",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+enum RuntimeBoxControlIdentity {
+    Channel {
+        registry_base_url: String,
+        channel: String,
+        box_id: String,
+        target_id: String,
+    },
+    Revocations {
+        registry_base_url: String,
+    },
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct RuntimeBoxControlFloor {
+    identity: RuntimeBoxControlIdentity,
+    updated_at: String,
+    payload_sha256: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct RuntimeBoxAntiReplayState {
+    schema_version: u32,
+    entries: Vec<RuntimeBoxControlFloor>,
+}
+
+impl Default for RuntimeBoxAntiReplayState {
+    fn default() -> Self {
+        Self {
+            schema_version: ANTI_REPLAY_STATE_SCHEMA_VERSION,
+            entries: Vec::new(),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -166,6 +231,7 @@ struct RuntimeBoxRevocation {
     target: Option<RuntimeBoxTarget>,
     /// Surfaced verbatim to the user, so it should be human-readable.
     reason: String,
+    revoked_at: String,
 }
 
 /// Durable provenance stored inside an activated Runtime Box and copied to AI Job metadata.
@@ -455,7 +521,9 @@ fn trusted_keys() -> Result<Vec<TrustedKey>, String> {
 /// one Ed25519 signature that verifies against a trusted key. Signatures with an unknown
 /// algorithm or an unknown key ID are skipped rather than rejected, so a document signed by
 /// both an old and a new key still validates on builds that only know one of them.
-fn verify_signed_payload<T: for<'de> Deserialize<'de>>(bytes: &[u8]) -> Result<T, String> {
+fn verify_signed_payload_with_digest<T: for<'de> Deserialize<'de>>(
+    bytes: &[u8],
+) -> Result<(T, String), String> {
     let document: SignedDocument = serde_json::from_slice(bytes)
         .map_err(|error| format!("invalid signed Runtime Box document: {error}"))?;
     // Schema version is checked here, from the parsed integer, before the crate sees the
@@ -471,8 +539,13 @@ fn verify_signed_payload<T: for<'de> Deserialize<'de>>(bytes: &[u8]) -> Result<T
     })?;
     // Only parsed once the bytes are proven authentic, so no attacker-controlled JSON is
     // ever fed to the typed deserialiser.
-    serde_json::from_slice(&verified.bytes)
-        .map_err(|error| format!("invalid signed Runtime Box payload: {error}"))
+    let payload = serde_json::from_slice(&verified.bytes)
+        .map_err(|error| format!("invalid signed Runtime Box payload: {error}"))?;
+    Ok((payload, document.payload_sha256))
+}
+
+fn verify_signed_payload<T: for<'de> Deserialize<'de>>(bytes: &[u8]) -> Result<T, String> {
+    verify_signed_payload_with_digest(bytes).map(|(payload, _)| payload)
 }
 
 /// Every URL the registry hands us (channel, release manifest, archive) goes through here.
@@ -491,6 +564,213 @@ fn validate_control_url(value: &str) -> Result<Url, String> {
         return Ok(url);
     }
     Err("AI Runtime Box URLs must use HTTPS; debug builds also allow loopback HTTP".to_string())
+}
+
+/// Canonical registry namespace used both for requests and durable anti-replay identity.
+fn canonical_registry_base_url(value: &str) -> Result<String, String> {
+    let url = validate_control_url(value)?;
+    if !url.username().is_empty()
+        || url.password().is_some()
+        || url.query().is_some()
+        || url.fragment().is_some()
+    {
+        return Err(
+            "AI Runtime Box registry URLs cannot contain credentials, a query, or a fragment"
+                .to_string(),
+        );
+    }
+    Ok(url.as_str().trim_end_matches('/').to_string())
+}
+
+fn control_document_label(identity: &RuntimeBoxControlIdentity) -> String {
+    match identity {
+        RuntimeBoxControlIdentity::Channel {
+            channel,
+            box_id,
+            target_id,
+            ..
+        } => format!("channel {channel} for {box_id}/{target_id}"),
+        RuntimeBoxControlIdentity::Revocations { .. } => "revocation list".to_string(),
+    }
+}
+
+fn parse_control_updated_at(value: &str) -> Result<DateTime<chrono::FixedOffset>, String> {
+    DateTime::parse_from_rfc3339(value)
+        .map_err(|error| format!("updatedAt must be an RFC 3339 timestamp: {error}"))
+}
+
+fn validate_payload_sha256(value: &str) -> Result<(), String> {
+    if value.len() == 64
+        && value
+            .chars()
+            .all(|character| character.is_ascii_hexdigit() && !character.is_ascii_uppercase())
+    {
+        Ok(())
+    } else {
+        Err("payloadSha256 must be 64 lowercase hexadecimal characters".to_string())
+    }
+}
+
+fn validate_anti_replay_state(state: &RuntimeBoxAntiReplayState) -> Result<(), String> {
+    if state.schema_version != ANTI_REPLAY_STATE_SCHEMA_VERSION {
+        return Err(format!(
+            "unsupported schemaVersion {}",
+            state.schema_version
+        ));
+    }
+    let mut identities = HashSet::new();
+    for entry in &state.entries {
+        if !identities.insert(entry.identity.clone()) {
+            return Err(format!(
+                "duplicate {} entry",
+                control_document_label(&entry.identity)
+            ));
+        }
+        parse_control_updated_at(&entry.updated_at)?;
+        validate_payload_sha256(&entry.payload_sha256)?;
+        match &entry.identity {
+            RuntimeBoxControlIdentity::Channel {
+                registry_base_url,
+                channel,
+                box_id,
+                target_id,
+            } => {
+                if canonical_registry_base_url(registry_base_url)? != *registry_base_url
+                    || channel.is_empty()
+                    || box_id.is_empty()
+                    || target_id.is_empty()
+                {
+                    return Err("invalid channel identity".to_string());
+                }
+            }
+            RuntimeBoxControlIdentity::Revocations { registry_base_url } => {
+                if canonical_registry_base_url(registry_base_url)? != *registry_base_url {
+                    return Err("invalid revocation-list identity".to_string());
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn load_anti_replay_state(path: &Path) -> Result<RuntimeBoxAntiReplayState, String> {
+    let bytes = match std::fs::read(path) {
+        Ok(bytes) => bytes,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(RuntimeBoxAntiReplayState::default());
+        }
+        Err(error) => return Err(format!("cannot read {}: {error}", path.display())),
+    };
+    if bytes.len() > MAX_ANTI_REPLAY_STATE_BYTES {
+        return Err(format!(
+            "{} exceeds the {} byte size limit",
+            path.display(),
+            MAX_ANTI_REPLAY_STATE_BYTES
+        ));
+    }
+    let state: RuntimeBoxAntiReplayState = serde_json::from_slice(&bytes)
+        .map_err(|error| format!("cannot parse {}: {error}", path.display()))?;
+    validate_anti_replay_state(&state)?;
+    Ok(state)
+}
+
+/// Compares an authentic mutable document with its accepted floor.
+///
+/// Returns `true` only when the state changed. Equal timestamp + equal payload is an idempotent
+/// re-read; equal timestamp + different payload is equivocation even if both documents have a
+/// valid Liatir signature.
+fn advance_control_floor(
+    state: &mut RuntimeBoxAntiReplayState,
+    identity: RuntimeBoxControlIdentity,
+    updated_at: &str,
+    payload_sha256: &str,
+) -> Result<bool, String> {
+    let incoming_time = parse_control_updated_at(updated_at)
+        .map_err(|error| format!("invalid signed Runtime Box {error}"))?;
+    validate_payload_sha256(payload_sha256)
+        .map_err(|error| format!("invalid signed Runtime Box {error}"))?;
+    if let Some(existing) = state
+        .entries
+        .iter_mut()
+        .find(|entry| entry.identity == identity)
+    {
+        let accepted_time = parse_control_updated_at(&existing.updated_at)
+            .expect("validated anti-replay state contains a valid timestamp");
+        if incoming_time < accepted_time {
+            return Err(format!(
+                "Signed AI Runtime Box {} is older than the newest document already accepted by this app",
+                control_document_label(&identity)
+            ));
+        }
+        if incoming_time == accepted_time {
+            if payload_sha256 == existing.payload_sha256 {
+                return Ok(false);
+            }
+            return Err(format!(
+                "Signed AI Runtime Box {} is equivocal: the same updatedAt identifies a different payload",
+                control_document_label(&identity)
+            ));
+        }
+        existing.updated_at = updated_at.to_string();
+        existing.payload_sha256 = payload_sha256.to_string();
+        return Ok(true);
+    }
+    state.entries.push(RuntimeBoxControlFloor {
+        identity,
+        updated_at: updated_at.to_string(),
+        payload_sha256: payload_sha256.to_string(),
+    });
+    Ok(true)
+}
+
+fn persist_anti_replay_state(
+    path: &Path,
+    state: &RuntimeBoxAntiReplayState,
+) -> Result<(), String> {
+    let mut json = serde_json::to_string_pretty(state).map_err(|error| error.to_string())?;
+    json.push('\n');
+    write_text_atomic(path, &json)
+}
+
+fn security_state_unavailable(error: String) -> String {
+    format!(
+        "AI Runtime Box security state is unreadable or corrupt. Installed AI Models remain available, but new installs and updates are blocked until the state is repaired: {error}"
+    )
+}
+
+fn accept_control_document(
+    app: &AppHandle,
+    identity: RuntimeBoxControlIdentity,
+    updated_at: &str,
+    payload_sha256: &str,
+) -> Result<(), String> {
+    let _guard = ANTI_REPLAY_STATE_LOCK
+        .get_or_init(|| Mutex::new(()))
+        .lock()
+        .map_err(|_| "AI Runtime Box security-state lock is poisoned".to_string())?;
+    let path = resolve_app_path(app, ANTI_REPLAY_STATE_PATH)?;
+    let mut state = load_anti_replay_state(&path).map_err(security_state_unavailable)?;
+    if advance_control_floor(&mut state, identity, updated_at, payload_sha256)? {
+        persist_anti_replay_state(&path, &state).map_err(|error| {
+            format!(
+                "Cannot persist AI Runtime Box security state, so this install or update was blocked: {error}"
+            )
+        })?;
+    }
+    Ok(())
+}
+
+fn has_accepted_control_document(
+    app: &AppHandle,
+    identity: &RuntimeBoxControlIdentity,
+) -> Result<bool, String> {
+    let _guard = ANTI_REPLAY_STATE_LOCK
+        .get_or_init(|| Mutex::new(()))
+        .lock()
+        .map_err(|_| "AI Runtime Box security-state lock is poisoned".to_string())?;
+    let path = resolve_app_path(app, ANTI_REPLAY_STATE_PATH)?;
+    let state = load_anti_replay_state(&path).map_err(security_state_unavailable)?;
+    Ok(state.entries.iter().any(|entry| &entry.identity == identity))
 }
 
 /// Downloads a small signed control document.
@@ -919,6 +1199,43 @@ fn select_channel_release<'a>(
     Err("No AI Runtime Box release is assigned to this installation".to_string())
 }
 
+/// Validates every signed channel field the install path will rely on before its freshness floor
+/// is advanced. A signed but malformed future generation must not permanently eclipse the newest
+/// usable generation.
+fn validate_channel_manifest(
+    manifest: &ChannelManifest,
+    expected_channel: &str,
+    expected_box_id: &str,
+    expected_target: &RuntimeBoxTarget,
+) -> Result<(), String> {
+    if manifest.schema_version != RUNTIME_BOX_SCHEMA_VERSION
+        || manifest.kind != "liatir.runtime-box.channel"
+        || manifest.channel != expected_channel
+        || manifest.box_id != expected_box_id
+        || &manifest.target != expected_target
+    {
+        return Err("AI Runtime Box channel does not match this request and host".to_string());
+    }
+    parse_control_updated_at(&manifest.updated_at)
+        .map_err(|error| format!("invalid AI Runtime Box channel: {error}"))?;
+    if manifest.cohort_salt.is_empty() || manifest.releases.is_empty() || manifest.releases.len() > 10
+    {
+        return Err("invalid AI Runtime Box channel".to_string());
+    }
+    let mut versions = HashSet::new();
+    for release in &manifest.releases {
+        if release.version.is_empty()
+            || !versions.insert(release.version.as_str())
+            || release.rollout_percentage == 0
+            || release.rollout_percentage > 100
+        {
+            return Err("invalid AI Runtime Box channel release".to_string());
+        }
+        validate_control_url(&release.release_manifest_url)?;
+    }
+    Ok(())
+}
+
 /// Confirms a signed release actually is the thing we asked for, and that we can run it.
 ///
 /// A valid signature only proves Liatir issued the manifest — not that it is the *right*
@@ -993,23 +1310,38 @@ fn verify_release_identity(
 
 /// Fails the install if the chosen release appears on the signed revocation list.
 ///
-/// A 404 means the registry publishes no revocations at all, which is treated as "nothing is
-/// revoked". Note the consequence: the list is only consulted when it can be fetched, so this
-/// blocks a *known-bad* box rather than guaranteeing freshness.
+/// A first-use 404 means the registry has not published a revocation set. Once this app has
+/// accepted a signed set, its disappearance is rejected: treating that later 404 as empty would
+/// replay a state older than every revocation generation the app already knows.
 async fn ensure_not_revoked(
+    app: &AppHandle,
     registry_base_url: &str,
     release: &ReleaseManifest,
 ) -> Result<(), String> {
     let url = format!("{}/revocations", registry_base_url.trim_end_matches('/'));
+    let identity = RuntimeBoxControlIdentity::Revocations {
+        registry_base_url: registry_base_url.to_string(),
+    };
     let Some(bytes) = fetch_control_document(&url).await? else {
+        if has_accepted_control_document(app, &identity)? {
+            return Err(
+                "The AI Runtime Box revocation list disappeared after this app accepted a signed generation"
+                    .to_string(),
+            );
+        }
         return Ok(());
     };
-    let manifest: RevocationsManifest = verify_signed_payload(&bytes)?;
-    if manifest.schema_version != RUNTIME_BOX_SCHEMA_VERSION
-        || manifest.kind != "liatir.runtime-box.revocations"
-    {
-        return Err("invalid AI Runtime Box revocation document".to_string());
-    }
+    let (manifest, payload_sha256): (RevocationsManifest, String) =
+        verify_signed_payload_with_digest(&bytes)?;
+    validate_revocations_manifest(&manifest)?;
+    // Persist the authentic generation before acting on its contents. A later install can never
+    // fall back to an older kill-list, even if this install fails for an unrelated reason.
+    accept_control_document(
+        app,
+        identity,
+        &manifest.updated_at,
+        &payload_sha256,
+    )?;
     // A revocation without a target applies to every target of that box version.
     if let Some(revocation) = manifest.revocations.into_iter().find(|item| {
         item.box_id == release.box_id
@@ -1023,6 +1355,33 @@ async fn ensure_not_revoked(
             "AI Runtime Box {} {} was revoked: {}",
             release.box_id, release.version, revocation.reason
         ));
+    }
+    Ok(())
+}
+
+/// Validates the complete signed kill-list before remembering its generation.
+fn validate_revocations_manifest(manifest: &RevocationsManifest) -> Result<(), String> {
+    if manifest.schema_version != RUNTIME_BOX_SCHEMA_VERSION
+        || manifest.kind != "liatir.runtime-box.revocations"
+        || manifest.revocations.is_empty()
+        || manifest.revocations.len() > 100
+    {
+        return Err("invalid AI Runtime Box revocation document".to_string());
+    }
+    parse_control_updated_at(&manifest.updated_at)
+        .map_err(|error| format!("invalid AI Runtime Box revocation document: {error}"))?;
+    for revocation in &manifest.revocations {
+        if revocation.box_id.is_empty()
+            || revocation.version.is_empty()
+            || revocation.reason.trim().len() < 8
+        {
+            return Err("invalid AI Runtime Box revocation document".to_string());
+        }
+        parse_control_updated_at(&revocation.revoked_at)
+            .map_err(|error| format!("invalid AI Runtime Box revocation document: {error}"))?;
+        if let Some(target) = &revocation.target {
+            target_id(target)?;
+        }
     }
     Ok(())
 }
@@ -1315,7 +1674,7 @@ pub async fn lia_ai_runtime_box_install(
     } else {
         registry_base_url
     };
-    validate_control_url(&registry_base_url)?;
+    let registry_base_url = canonical_registry_base_url(&registry_base_url)?;
     let host = current_host_capabilities();
     let selected_candidate = select_target_candidate(&target_candidates, &host)?;
     let target = selected_candidate.target.clone();
@@ -1331,17 +1690,25 @@ pub async fn lia_ai_runtime_box_install(
     let channel_bytes = fetch_control_document(&channel_url)
         .await?
         .ok_or_else(|| format!("No {channel} AI Runtime Box is available for {target_slug}"))?;
-    let channel_manifest: ChannelManifest = verify_signed_payload(&channel_bytes)?;
-    // Signed *and* addressed to us: a valid document served from the wrong URL (or for another
-    // box or target) is still rejected.
-    if channel_manifest.schema_version != RUNTIME_BOX_SCHEMA_VERSION
-        || channel_manifest.kind != "liatir.runtime-box.channel"
-        || channel_manifest.channel != channel
-        || channel_manifest.box_id != box_id
-        || channel_manifest.target != target
-    {
-        return Err("AI Runtime Box channel does not match this request and host".to_string());
-    }
+    let (channel_manifest, channel_payload_sha256): (ChannelManifest, String) =
+        verify_signed_payload_with_digest(&channel_bytes)?;
+    // Signed, structurally usable and addressed to us: a valid document served from the wrong URL
+    // (or for another box or target) is still rejected and does not advance persistent state.
+    validate_channel_manifest(&channel_manifest, &channel, &box_id, &target)?;
+    // The mutable channel is now both authentic and semantically bound to its route. Advance the
+    // app-global floor before selecting or fetching anything from it, so a later failure cannot
+    // make an older channel acceptable again.
+    accept_control_document(
+        &app,
+        RuntimeBoxControlIdentity::Channel {
+            registry_base_url: registry_base_url.clone(),
+            channel: channel.clone(),
+            box_id: box_id.clone(),
+            target_id: target_slug.clone(),
+        },
+        &channel_manifest.updated_at,
+        &channel_payload_sha256,
+    )?;
     let selected = select_channel_release(&channel_manifest, &installation_id(&app)?)?;
     let release_bytes = fetch_control_document(&selected.release_manifest_url)
         .await?
@@ -1370,7 +1737,7 @@ pub async fn lia_ai_runtime_box_install(
         .ok_or_else(|| "invalid signed Runtime Box release document".to_string())?
         .to_string();
     install_order.release_verified()?;
-    ensure_not_revoked(&registry_base_url, &release).await?;
+    ensure_not_revoked(&app, &registry_base_url, &release).await?;
     install_order.product_policy_checked()?;
     // Held for the rest of the function; released on Drop, including on any `?` below.
     let _install_guard = InstallGuard::acquire(&release.runtime_id)?;
@@ -1783,6 +2150,102 @@ mod tests {
         assert_eq!(revocations.schema_version, RUNTIME_BOX_SCHEMA_VERSION);
         assert_eq!(revocations.kind, "liatir.runtime-box.revocations");
         assert_eq!(revocations.revocations.len(), 1);
+    }
+
+    fn fixture_channel_identity() -> RuntimeBoxControlIdentity {
+        RuntimeBoxControlIdentity::Channel {
+            registry_base_url: "https://models.example.test/v1".to_string(),
+            channel: "beta".to_string(),
+            box_id: "fixture".to_string(),
+            target_id: "macos-aarch64-metal".to_string(),
+        }
+    }
+
+    #[test]
+    fn anti_replay_floor_rejects_older_and_equivocal_signed_documents() {
+        let identity = fixture_channel_identity();
+        let mut state = RuntimeBoxAntiReplayState::default();
+        let first_digest = "a".repeat(64);
+
+        assert!(advance_control_floor(
+            &mut state,
+            identity.clone(),
+            "2026-08-10T12:00:00Z",
+            &first_digest,
+        )
+        .unwrap());
+        assert!(!advance_control_floor(
+            &mut state,
+            identity.clone(),
+            "2026-08-10T12:00:00Z",
+            &first_digest,
+        )
+        .unwrap());
+
+        let older = advance_control_floor(
+            &mut state,
+            identity.clone(),
+            "2026-08-09T23:59:59Z",
+            &"b".repeat(64),
+        )
+        .unwrap_err();
+        assert!(older.contains("older than the newest document"));
+
+        let equivocal = advance_control_floor(
+            &mut state,
+            identity.clone(),
+            "2026-08-10T12:00:00Z",
+            &"b".repeat(64),
+        )
+        .unwrap_err();
+        assert!(equivocal.contains("equivocal"));
+
+        assert!(advance_control_floor(
+            &mut state,
+            identity,
+            "2026-08-11T00:00:00Z",
+            &"c".repeat(64),
+        )
+        .unwrap());
+        assert_eq!(state.entries[0].updated_at, "2026-08-11T00:00:00Z");
+    }
+
+    #[test]
+    fn anti_replay_state_persists_and_corruption_fails_closed() {
+        let root = std::env::temp_dir().join(format!(
+            "liatir-runtime-box-anti-replay-{}",
+            Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(&root).unwrap();
+        let path = root.join(ANTI_REPLAY_STATE_PATH);
+        let identity = fixture_channel_identity();
+        let digest = "d".repeat(64);
+        let mut state = RuntimeBoxAntiReplayState::default();
+        advance_control_floor(
+            &mut state,
+            identity.clone(),
+            "2026-08-11T08:00:00Z",
+            &digest,
+        )
+        .unwrap();
+        persist_anti_replay_state(&path, &state).unwrap();
+
+        // Loading a fresh value from disk, rather than retaining a process-global cache, is the
+        // restart boundary: the accepted floor survives a new app process.
+        let mut reloaded = load_anti_replay_state(&path).unwrap();
+        let replay = advance_control_floor(
+            &mut reloaded,
+            identity,
+            "2026-08-10T08:00:00Z",
+            &"e".repeat(64),
+        )
+        .unwrap_err();
+        assert!(replay.contains("older than the newest document"));
+
+        std::fs::write(&path, b"{ damaged").unwrap();
+        let corrupt = load_anti_replay_state(&path).unwrap_err();
+        assert!(corrupt.contains("cannot parse"));
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
