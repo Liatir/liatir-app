@@ -35,6 +35,8 @@ describe('Runtime Box CI cost controls', () => {
     const e2eAppSupport = readFileSync(resolve('tests/e2e/support/liatir-app.mjs'), 'utf8');
     const runtimeBoxSupport = readFileSync(resolve('tests/e2e/support/runtime-box.mjs'), 'utf8');
     const runtimeBoxProductE2E = readFileSync(resolve('tests/e2e/specs/runtime-box-native.e2e.mjs'), 'utf8');
+    const scgptRuntimeBoxProductE2E = readFileSync(resolve('tests/e2e/specs/runtime-box-scgpt-native.e2e.mjs'), 'utf8');
+    const aiRuntime = readFileSync(resolve('src-tauri/src/bridge/ai_runtime.rs'), 'utf8');
     const tauriMain = readFileSync(resolve('src-tauri/src/main.rs'), 'utf8');
     const diagnostics = readFileSync(resolve('src-tauri/src/bridge/diagnostics.rs'), 'utf8');
     const runtimeBoxCi = readFileSync(resolve('scripts/runtime-box-ci.mjs'), 'utf8');
@@ -144,6 +146,16 @@ describe('Runtime Box CI cost controls', () => {
       expect(spec, `${specPath} must not keep a private navigate helper`)
         .not.toContain('async function navigate(');
     }
+    for (const phase of [
+      'legacyV1InlineExecutionRejected',
+      'legacyV1JobExecutionRejected',
+      'legacyV1Cleanup',
+    ]) {
+      expect(scgptRuntimeBoxProductE2E, `P5.6 lifecycle receipt lacks ${phase}`)
+        .toContain(`${phase}: 'passed'`);
+    }
+    const inlineRun = aiRuntime.slice(aiRuntime.indexOf('pub async fn lia_ai_python_run'));
+    expect(inlineRun).toContain('runtime_box_activation_metadata(&app, &runtime_id)?;');
     expect(runtimeBoxProductE2E).not.toContain('bytesDownloaded > 64 * 1024');
     // Path normalisation lives in the shared support helper now, so both specs get it from one
     // place, and the isolation assertion names the home the runner actually used rather than a

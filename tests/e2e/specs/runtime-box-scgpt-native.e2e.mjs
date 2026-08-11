@@ -405,11 +405,57 @@ export const tests = [
         contents: 'first-activation',
       });
 
+      // A pre-v2 activation may still be present on a machine upgraded in place. It must remain
+      // removable, but neither execution surface may dispatch its interpreter. Overwriting the
+      // metadata of this otherwise valid runtime makes the regression meaningful: without the
+      // schema gate both calls below would execute successfully.
+      fs.writeFileSync(
+        path.join(runtimeDir, 'runtime-box-activation.json'),
+        `${JSON.stringify({ schemaVersion: 1 }, null, 2)}\n`,
+      );
+      const legacyInlineError = await browser.execute(async (runtimeId) => {
+        try {
+          await window.Liatir.invoke('lia_ai_python_run', {
+            runtimeId,
+            script: 'print("legacy-inline-executed")',
+            args: [],
+            inputJson: {},
+            timeoutSeconds: 30,
+          });
+          return null;
+        } catch (error) {
+          return String(error);
+        }
+      }, RUNTIME_ID);
+      expect(legacyInlineError).toBe(
+        'AI Runtime Box format is unsupported; remove and reinstall this Runtime Box',
+      );
+      const legacyJobError = await browser.execute(async (runtimeId) => {
+        try {
+          await window.Liatir.invoke('lia_ai_python_spawn', {
+            runtimeId,
+            script: 'print("legacy-job-executed")',
+            args: [],
+            inputJson: {},
+            workspaceId: '__test__',
+            label: 'Unsupported Runtime Box fixture',
+            metadata: {},
+          });
+          return null;
+        } catch (error) {
+          return String(error);
+        }
+      }, RUNTIME_ID);
+      expect(legacyJobError).toBe(
+        'AI Runtime Box format is unsupported; remove and reinstall this Runtime Box',
+      );
+
       const removed = await browser.execute(
         async (input) => window.Liatir.invoke('lia_ai_runtime_box_remove', input),
         { runtimeId: RUNTIME_ID, boxId: BOX_ID },
       );
       expect(removed).toBe(true);
+      expect(fs.existsSync(runtimeDir)).toBe(false);
       const runtimeStatus = await browser.execute(
         async (runtimeId) => window.Liatir.invoke('lia_ai_runtime_status', {
           runtimeId,
@@ -458,6 +504,9 @@ export const tests = [
             provenance: 'passed',
             replacement: 'passed',
             rollback: 'passed',
+            legacyV1InlineExecutionRejected: 'passed',
+            legacyV1JobExecutionRejected: 'passed',
+            legacyV1Cleanup: 'passed',
             removal: 'passed',
             resultArtifactsSurvivedRemoval: 'passed',
           },

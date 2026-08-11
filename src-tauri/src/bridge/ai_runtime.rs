@@ -175,6 +175,9 @@ pub async fn lia_ai_python_run(
     input_json: Value,
     timeout_seconds: Option<u64>,
 ) -> Result<AiPythonRunResult, String> {
+    // Keep the inline path under the same Runtime Box gate as tracked Jobs. Without this check a
+    // schema-v1 activation was blocked by `lia_ai_python_spawn` but could still execute here.
+    runtime_box_activation_metadata(&app, &runtime_id)?;
     tauri::async_runtime::spawn_blocking(move || {
         run_in_env(
             app,
