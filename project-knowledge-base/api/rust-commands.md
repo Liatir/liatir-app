@@ -212,10 +212,19 @@ const manifest = await api.invoke('lia_liatir_read_manifest', { path: liaPath })
 api.invoke('lia_liatir_run', {
   path: string
   inputs: Record<string, unknown>
-}) → unknown
+  workspaceId?: string
+  jobLabel?: string
+  jobKind?: string
+  metadata?: Record<string, unknown>
+}) → { jobId: string } | { ok: boolean, value?: unknown, stdout?: string, stderr?: string }
 ```
 
-Validates the bundle signature, extracts it to a temp directory, and runs `node index.js` with inputs serialised as environment variables. Waits for the `__LIATIR_RESULT__` marker on stdout and returns the parsed JSON.
+Validates the bundle signature and executes the runtime declared by its
+manifest. Node and Python return a Job spawn acknowledgement; the caller must
+wait for terminal `lia_jobs_status`, drain `lia_jobs_get_output`, and read the
+`__LIATIR_RESULT__` marker before treating the Plugin as settled. The optional
+workspace, label, kind and metadata fields attribute that Job to its owning run.
+WASM returns its settled outcome directly.
 
 ```typescript
 const result = await api.invoke('lia_liatir_run', {
@@ -224,6 +233,9 @@ const result = await api.invoke('lia_liatir_run', {
     reads: '/data/sample.fastq.gz',
     threshold: 20,
   },
+  workspaceId: '__test__',
+  jobKind: 'pipeline-step',
+  metadata: { pipelineRunId, pipelineId, nodeId },
 })
 ```
 

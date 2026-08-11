@@ -20,7 +20,7 @@ export const testProfiles = {
   build: ['sdk-types', 'core-build', 'frontend-check', 'frontend-build', 'src-ts-compile'],
   // Every UI profile begins with `tauri-prepare`: the end-to-end suites drive a real compiled binary, and it
   // has to exist before anything can be driven.
-  ui: ['tauri-prepare', 'tauri-e2e', 'runtime-box-security-e2e'],
+  ui: ['tauri-prepare', 'tauri-e2e', 'pipeline-settlement-restart-e2e', 'runtime-box-security-e2e'],
   visual: ['tauri-prepare', 'visual-e2e'],
   'heavy-ai': ['tauri-prepare', 'heavy-ai-e2e'],
   all: [
@@ -32,6 +32,7 @@ export const testProfiles = {
     'src-ts-compile',
     'tauri-prepare',
     'tauri-e2e',
+    'pipeline-settlement-restart-e2e',
     'runtime-box-security-e2e',
     'visual-e2e',
     'heavy-ai-e2e',
@@ -121,6 +122,16 @@ export const testSuites = [
     timeoutMs: 300_000,
     e2eReport: true,
     description: 'Captures and compares native webview screenshots against baselines.',
+  },
+  {
+    id: 'pipeline-settlement-restart-e2e',
+    label: 'Pipeline settlement restart lifecycle',
+    layer: 'tauri',
+    command: 'node',
+    args: ['scripts/run-pipeline-settlement-restart-e2e.mjs'],
+    timeoutMs: 180_000,
+    e2eReport: true,
+    description: 'Runs an active API pipeline across two native app processes and verifies exactly-once interrupted recovery.',
   },
   {
     id: 'runtime-box-security-e2e',

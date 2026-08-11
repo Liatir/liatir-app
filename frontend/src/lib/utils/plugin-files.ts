@@ -31,7 +31,7 @@ export async function savePluginOutput(
   opts: { base64?: boolean; label?: string; fieldKey?: string } = {}
 ): Promise<PluginSaveResult | null> {
   const api = liatir();
-  if (!api) return null;
+  if (!api) throw new Error('Liatir API not available');
 
   const entry = await api.invoke('lia_plugin_save_output', {
     plugin: pluginName,
@@ -43,9 +43,9 @@ export async function savePluginOutput(
 
   // Mirror the tool-output flow: ensure the virtual Results folders exist,
   // then register the file by absolute path.
-  await dataFiles.createFolder('Results').catch(() => {});
-  await dataFiles.createFolder(entry.virtualFolder).catch(() => {});
-  await dataFiles.add(entry.path, entry.virtualFolder).catch(() => {});
+  await dataFiles.createFolder('Results');
+  await dataFiles.createFolder(entry.virtualFolder);
+  await dataFiles.add(entry.path, entry.virtualFolder);
 
   return {
     ...entry,
@@ -82,9 +82,9 @@ async function registerExistingPluginOutput(
   await api.invoke('lia_file_size', { path });
 
   const virtualFolder = `Results/${safeResultName(pluginName)}`;
-  await dataFiles.createFolder('Results').catch(() => {});
-  await dataFiles.createFolder(virtualFolder).catch(() => {});
-  await dataFiles.add(path, virtualFolder).catch(() => {});
+  await dataFiles.createFolder('Results');
+  await dataFiles.createFolder(virtualFolder);
+  await dataFiles.add(path, virtualFolder);
 
   return {
     label: opts.label,

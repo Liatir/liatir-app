@@ -30,8 +30,9 @@ Scrollcase adoption P5.0 through P5.7 is complete. Runtime Box security Gate 1
 is also complete: one lightweight signed fixture proves a real cross-version
 update, app restart, rollback, replay and equivocation rejection, accepted
 revocation retention, and corrupt-state isolation on macOS arm64, native
-Windows x86_64, and WSL2 Linux x86_64. Work now closes asynchronous settlement
-and the common execution spine before widening scientific scope. Every paid or
+Windows x86_64, and WSL2 Linux x86_64. Gate 2 has now closed asynchronous
+settlement on the native product path, so Gate 3 and the common execution spine
+are the active implementation boundary. Every paid or
 remote action still requires its exact local gate, workflow/input/revision
 readback, cost declaration, and fresh explicit approval.
 
@@ -296,6 +297,8 @@ executable is never accepted as Linux evidence.
 
 **Difficulty:** `4/5` · **Codex effort:** `high`
 
+**Status (2026-08-11): complete.**
+
 Audit Native Tools, Plugins, AI Tools, API Connector requests and sub-pipelines.
 A step may launch background work, but it remains `running` until every required
 child process is terminal and every declared output is durable. A downstream
@@ -307,6 +310,23 @@ For Beta 1, keep ready nodes within one Liatir pipeline sequential. Independent
 pipeline runs remain concurrent, and Nextflow retains the parallelism of its own
 engine. Parallel DAG scheduling inside Liatir is a later optimization, not part
 of this correctness gate.
+
+Native Tools, Node/Python Plugins and AI Tools now share one Job settlement
+barrier with a terminal-status wait, final output drain, timeout and
+owner-scoped cancellation. API Connector requests propagate cancellation and
+all Tool, Plugin and API artifacts must exist and be registered in Data before
+the node becomes `done`. Terminal node state is flushed before the grouped
+Result becomes observable. Sub-pipelines execute and await Tool, API and nested
+sub-pipeline children and propagate their failures.
+
+The 10-case native lifecycle suite proves delayed spawn settlement, sequential
+Native Tool Jobs, concurrent independent pipelines, Plugin/API/sub-pipeline
+success and cancellation, child failure propagation, navigation and durable
+outputs. `npm run pipeline:test:settlement-restart` uses two separate native
+Tauri processes on one isolated app-data root and proves exactly-once
+interrupted recovery with the downstream node still pending. AI Tool settlement
+and cancellation are additionally pinned at the shared runtime boundary without
+downloading a model.
 
 ### Gate 3: close the common execution spine
 
@@ -714,23 +734,21 @@ implemented-but-unverified features as production-ready.
 This is the default sequence unless a later evidence-backed decision explicitly
 reorders it:
 
-1. audit asynchronous pipeline settlement and prevent premature downstream or
-   Result finalization;
-2. close Plugin, direct AI, API Connector, dependency and nested-run lifecycle
+1. close Plugin, direct AI, API Connector, dependency and nested-run lifecycle
    gaps needed by the common execution spine;
-3. design and land the backward-compatible semantic artifact contract in
+2. design and land the backward-compatible semantic artifact contract in
    `packages/liatir-core`;
-4. implement the AnnData/single-cell profiles and lighthouse workflow;
-5. complete single-cell viewer and preset evidence;
-6. implement one saved local Nextflow External Workflow with direct and nested
+3. implement the AnnData/single-cell profiles and lighthouse workflow;
+4. complete single-cell viewer and preset evidence;
+5. implement one saved local Nextflow External Workflow with direct and nested
    execution;
-7. prove Nextflow output reuse through an existing AI Tool or viewer;
-8. close the desktop release matrix and public Beta 1 documentation;
-9. implement controlled local MCP access with a real client after Beta 1;
-10. validate the predictive/variant genomics and protein structure/binding
+6. prove Nextflow output reuse through an existing AI Tool or viewer;
+7. close the desktop release matrix and public Beta 1 documentation;
+8. implement controlled local MCP access with a real client after Beta 1;
+9. validate the predictive/variant genomics and protein structure/binding
     verticals;
-11. publish useful verified Plugin and pipeline templates;
-12. evaluate another external workflow engine only from the reusable adapter
+10. publish useful verified Plugin and pipeline templates;
+11. evaluate another external workflow engine only from the reusable adapter
     contract, then reconsider other advanced expansion.
 
 ## Definition of done for every integration

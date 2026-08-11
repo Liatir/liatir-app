@@ -64,6 +64,7 @@
     "test:tauri": "npm run test:tauri:prepare && npm run test:tauri:run",
     "test:tauri:dev-smoke": "node scripts/smoke-tauri-dev.mjs",
     "test:tauri:run": "node tests/e2e/run-tauri-e2e.mjs",
+    "pipeline:test:settlement-restart": "node scripts/run-pipeline-settlement-restart-e2e.mjs",
     "test:visual": "node tests/e2e/run-tauri-e2e.mjs --visual tests/e2e/specs/visual.smoke.e2e.mjs",
     "test:visual:update": "node tests/e2e/run-tauri-e2e.mjs --visual --update-snapshots tests/e2e/specs/visual.smoke.e2e.mjs",
     "test:quality": "npm run test:unit && npm run test:tauri:dev-smoke && npm run test:tauri && npm run test:visual",

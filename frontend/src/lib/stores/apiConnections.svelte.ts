@@ -335,7 +335,11 @@ async function signJwt(auth: ApiAuth, env: Record<string, string>): Promise<stri
 // OAuth2 token cache keyed by the auth's identifying fields.
 const tokenCache = new Map<string, { token: string; expiresAt: number }>();
 
-async function fetchOAuth2Token(auth: ApiAuth, env: Record<string, string>): Promise<string> {
+async function fetchOAuth2Token(
+  auth: ApiAuth,
+  env: Record<string, string>,
+  signal?: AbortSignal,
+): Promise<string> {
   const r = (s: string) => resolveVars(s, env);
   const cacheKey = JSON.stringify([auth.type, auth.tokenUrl, auth.clientId, auth.username, auth.scope]);
   const cached = tokenCache.get(cacheKey);
@@ -352,7 +356,7 @@ async function fetchOAuth2Token(auth: ApiAuth, env: Record<string, string>): Pro
     for (const h of ctr.headers) if (h.enabled && h.key) headers[r(h.key)] = r(h.value);
     body = r(ctr.body.content);
     if (ctr.body.type === 'json') headers['Content-Type'] ??= 'application/json';
-    const res = await fetch(url, { method: ctr.method, headers, body: body || undefined });
+    const res = await fetch(url, { method: ctr.method, headers, body: body || undefined, signal });
     const json = JSON.parse(await res.text());
     const token = String(getValueAtPath(json, auth.tokenPath ?? 'access_token') ?? '');
     const expiresIn = Number((json as Record<string, unknown>).expires_in ?? 3600);
@@ -369,7 +373,7 @@ async function fetchOAuth2Token(auth: ApiAuth, env: Record<string, string>): Pro
   if (auth.clientSecret) form.set('client_secret', r(auth.clientSecret));
   if (auth.scope) form.set('scope', r(auth.scope));
   url = r(auth.tokenUrl ?? '');
-  const res = await fetch(url, { method: 'POST', headers, body: form.toString() });
+  const res = await fetch(url, { method: 'POST', headers, body: form.toString(), signal });
   const json = JSON.parse(await res.text());
   const token = String(getValueAtPath(json, auth.tokenPath ?? 'access_token') ?? '');
   const expiresIn = Number((json as Record<string, unknown>).expires_in ?? 3600);
@@ -382,7 +386,10 @@ async function fetchOAuth2Token(auth: ApiAuth, env: Record<string, string>): Pro
  * query pairs to append (for url-based key auth). `inherit` is resolved by the caller.
  */
 async function applyAuth(
-  auth: ApiAuth, headers: Record<string, string>, env: Record<string, string>,
+  auth: ApiAuth,
+  headers: Record<string, string>,
+  env: Record<string, string>,
+  signal?: AbortSignal,
 ): Promise<[string, string][]> {
   const r = (s: string) => resolveVars(s, env);
   const keyName = auth.keyName ?? auth.apiKeyHeader ?? '';
@@ -403,7 +410,7 @@ async function applyAuth(
       return keyName ? [[r(keyName), r(keyValue)]] : [];
     case 'oauth2-password':
     case 'oauth2-custom': {
-      const token = await fetchOAuth2Token(auth, env);
+      const token = await fetchOAuth2Token(auth, env, signal);
       if (token) headers['Authorization'] = `${auth.headerPrefix ?? 'Bearer'} ${token}`;
       return [];
     }
@@ -485,7 +492,7 @@ export async function sendApiRequest(
   const effectiveAuth: ApiAuth = req.auth.type === 'inherit'
     ? (opts.provider?.auth ?? { type: 'none' })
     : req.auth;
-  const authQuery = await applyAuth(effectiveAuth, headers, env);
+  const authQuery = await applyAuth(effectiveAuth, headers, env, opts.signal);
   url = appendQuery(url, authQuery);
 
   // Build the body.

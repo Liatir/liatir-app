@@ -1,0 +1,11 @@
+{
+  "name": "pipeline-settlement-plugin",
+  "version": "1.0.0",
+  "description": "Lightweight asynchronous Plugin fixture for native pipeline settlement tests.",
+  "type": "module",
+  "liatir": {
+    "displayName": "Pipeline Settlement Plugin",
+    "category": "Testing",
+    "tags": ["settlement"]
+  }
+}

@@ -1,5 +1,42 @@
 # Current project status
 
+## Asynchronous pipeline settlement is complete (Gate 2, 2026-08-11)
+
+Pipeline spawn acknowledgement is no longer treated as completion. Native
+Tools, Node/Python Plugins and AI Tools now share one Job settlement barrier:
+the node remains `running` until the child Job is terminal, then performs a
+final buffered-output drain so late diagnostics and Plugin result markers
+cannot be lost. Pipeline Plugin Jobs carry workspace, parent run, pipeline and
+node identity and are killed with their owning pipeline. WASM Plugins remain a
+synchronous invocation and receive cancellation checkpoints before and after
+that settled call.
+
+API Connector requests, including OAuth token acquisition, now receive the
+pipeline abort signal. API, Plugin and Tool outputs must exist and be durably
+registered in Data before the node becomes `done`. The persisted terminal node
+state is flushed before the grouped Result is published, so a Result cannot be
+observed while its node still appears `running`. Sub-pipelines now execute API
+and nested sub-pipeline nodes instead of silently skipping them, propagate child
+failure/cancellation, and keep their parent node running until child outputs
+settle.
+
+Beta 1 scheduling is deliberately unchanged: nodes within one pipeline execute
+sequentially, while independent pipelines remain concurrent. Native Tauri E2E
+proves an independent pipeline actually completes while another is active,
+spawn does not release downstream work, Native Tool Jobs are ordered by their
+terminal timestamps, and Plugin/API/sub-pipeline success, failure,
+cancellation, navigation and durable output registration all settle correctly.
+The lifecycle suite is 10/10. A separate lightweight two-process native suite
+starts an API pipeline, terminates the first app while its request is active,
+then proves the second app reconciles exactly one interrupted Result and never
+runs the downstream node; both phases pass.
+
+Final local evidence is 40 unit files / 243 tests, `npm run test:verify`,
+`cargo test` (44 passed / 2 intentionally ignored), `cargo clippy --tests` with
+the existing warning baseline, the 10-case native lifecycle suite, and the
+two-phase restart suite. Gate 2 is complete. Gate 3, the common
+pipeline/run/result spine and nested-run contract, is next.
+
 ## Runtime Box update security is cross-platform complete (Gate 1, 2026-08-11)
 
 The install bridge now owns one app-global, atomic
@@ -235,15 +272,13 @@ channel changed.
 The Runtime Box migration and the nine-target re-release are complete. Continue
 Liatir development in this order:
 
-1. audit asynchronous pipeline settlement so spawned child work cannot release
-   downstream nodes or Results before terminal state and durable outputs;
-2. complete the common pipeline/run/result spine and nested-run contract;
-3. add versioned scientific artifact profiles, beginning with AnnData;
-4. complete the single-cell lighthouse workflow, viewer and no-code preset;
-5. add Nextflow as the first saved External Workflow, runnable standalone and
+1. complete the common pipeline/run/result spine and nested-run contract;
+2. add versioned scientific artifact profiles, beginning with AnnData;
+3. complete the single-cell lighthouse workflow, viewer and no-code preset;
+4. add Nextflow as the first saved External Workflow, runnable standalone and
    by reference from a Liatir pipeline;
-6. close the signed desktop Beta 1 release matrix and public documentation;
-7. expose controlled local MCP access after Beta 1.
+5. close the signed desktop Beta 1 release matrix and public documentation;
+6. expose controlled local MCP access after Beta 1.
 
 P5.0 through P5.7 are complete; the Scrollcase P5 plan is closed.
 The canonical detailed ledger is

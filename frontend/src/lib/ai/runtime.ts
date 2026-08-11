@@ -14,7 +14,8 @@ import {
   packageChecksForModel,
   type AiRuntimePackageCheck,
 } from '@liatir/core';
-import { RunCancelledError, throwIfRunCancelled } from '$lib/pipeline/cancellation';
+import { throwIfRunCancelled } from '$lib/pipeline/cancellation';
+import { waitForJobSettlement } from '$lib/pipeline/job-settlement';
 import { runtimeBoxActivationFromMetadata } from './runtime-box-provenance';
 
 export {
@@ -159,82 +160,35 @@ export async function runAIPython(
     },
   }) as { jobId: string };
   options.onJobId?.(jobId);
-  const cancelJob = () => {
-    void api.invoke('lia_jobs_kill', { jobId }).catch(() => {});
-  };
-  options.signal?.addEventListener('abort', cancelJob, { once: true });
-
-  const stdoutLines: string[] = [];
-  const stderrLines: string[] = [];
-  let stdoutSeen = 0;
-  let stderrSeen = 0;
   const timeoutMs = (options.timeoutSeconds ?? 3600) * 1000;
-
-  try {
-    while (true) {
-      if (options.signal?.aborted) {
-        cancelJob();
-        throw new RunCancelledError();
-      }
-    const since = Math.min(stdoutSeen, stderrSeen);
-    const [out, entry] = await Promise.all([
-      api.invoke('lia_jobs_get_output', { jobId, since }) as Promise<{
-        stdout: string[];
-        stderr: string[];
-        stdoutTotal: number;
-        stderrTotal: number;
-      }>,
-      api.invoke('lia_jobs_status', { jobId }) as Promise<{
-        status: { type: 'running' | 'done' | 'failed' | 'killed'; exitCode?: number | null };
-        metadata?: Record<string, unknown> | null;
-      }>,
-    ]);
-
-    const stdoutStart = Math.max(0, stdoutSeen - since);
-    const stderrStart = Math.max(0, stderrSeen - since);
-    stdoutLines.push(...out.stdout.slice(stdoutStart));
-    stderrLines.push(...out.stderr.slice(stderrStart));
-    stdoutSeen = out.stdoutTotal;
-    stderrSeen = out.stderrTotal;
-
-    if (entry.status.type !== 'running') {
-      const exitCode = entry.status.type === 'done' || entry.status.type === 'failed'
-        ? entry.status.exitCode ?? null
-        : null;
-      const completed = entry.status.type === 'done' && (exitCode === null || exitCode === 0);
-      return {
-        ok: completed,
-        exitCode,
-        stdout: stdoutLines.join('\n'),
-        stderr: stderrLines.join('\n'),
-        durationMs: Date.now() - startedAt,
-        runtimeBoxActivation: runtimeBoxActivationFromMetadata(entry.metadata),
-      };
-    }
-
-    if (Date.now() - startedAt > timeoutMs) {
-      await api.invoke('lia_jobs_kill', { jobId });
-      const out = await api.invoke('lia_jobs_get_output', { jobId }) as {
-        stdout: string[];
-        stderr: string[];
-      };
-      const stdout = out.stdout.join('\n');
-      const stderr = [
-        out.stderr.join('\n'),
+  const settlement = await waitForJobSettlement(api, jobId, {
+    signal: options.signal,
+    timeoutMs,
+    pollIntervalMs: 200,
+  });
+  if (settlement.timedOut) {
+    return {
+      ok: false,
+      exitCode: null,
+      stdout: settlement.stdout.join('\n'),
+      stderr: [
+        settlement.stderr.join('\n'),
         `AI runtime timed out after ${Math.round(timeoutMs / 1000)} seconds`,
-      ].filter(Boolean).join('\n');
-      return {
-        ok: false,
-        exitCode: null,
-        stdout,
-        stderr,
-        durationMs: Date.now() - startedAt,
-      };
-    }
-
-      await new Promise((resolve) => setTimeout(resolve, 200));
-    }
-  } finally {
-    options.signal?.removeEventListener('abort', cancelJob);
+      ].filter(Boolean).join('\n'),
+      durationMs: Date.now() - startedAt,
+    };
   }
+
+  const exitCode = settlement.entry.status.type === 'done' || settlement.entry.status.type === 'failed'
+    ? settlement.entry.status.exitCode ?? null
+    : null;
+  const completed = settlement.entry.status.type === 'done' && (exitCode === null || exitCode === 0);
+  return {
+    ok: completed,
+    exitCode,
+    stdout: settlement.stdout.join('\n'),
+    stderr: settlement.stderr.join('\n'),
+    durationMs: Date.now() - startedAt,
+    runtimeBoxActivation: runtimeBoxActivationFromMetadata(settlement.entry.metadata),
+  };
 }

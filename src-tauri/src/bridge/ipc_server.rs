@@ -747,9 +747,17 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                     }
                     Ok(result)
                 }
-                None => crate::bridge::lia_plugins::lia_liatir_run(app.clone(), path, inputs)
-                    .await
-                    .map_err(|e| anyhow::anyhow!(e)),
+                None => crate::bridge::lia_plugins::lia_liatir_run(
+                    app.clone(),
+                    path,
+                    inputs,
+                    payload["workspaceId"].as_str().map(String::from),
+                    payload["jobLabel"].as_str().map(String::from),
+                    payload["jobKind"].as_str().map(String::from),
+                    payload.get("metadata").filter(|value| !value.is_null()).cloned(),
+                )
+                .await
+                .map_err(|e| anyhow::anyhow!(e)),
             }
         }
 

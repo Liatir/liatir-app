@@ -482,8 +482,24 @@ pub async fn lia_liatir_run(
     app: AppHandle,
     path: String,
     inputs: Value,
+    workspace_id: Option<String>,
+    job_label: Option<String>,
+    job_kind: Option<String>,
+    metadata: Option<Value>,
 ) -> Result<Value, String> {
-    run_lia_plugin_bundle(app, path, inputs, LiaPluginRunOptions::default()).await
+    run_lia_plugin_bundle(
+        app,
+        path,
+        inputs,
+        LiaPluginRunOptions {
+            workspace_id,
+            job_label,
+            job_kind: job_kind.unwrap_or_else(|| "lia-plugin".to_string()),
+            metadata,
+            ..Default::default()
+        },
+    )
+    .await
 }
 
 #[derive(Debug, Clone)]

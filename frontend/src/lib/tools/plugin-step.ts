@@ -9,6 +9,8 @@ import type { ToolOutput } from '$lib/types/tool-output';
 import { runLiatirPlugin } from '$lib/utils/plugin-run';
 import { savePluginResultFiles } from '$lib/utils/plugin-files';
 import type { JsonValue } from '@liatir/core';
+import { workspaceStore } from '$lib/stores/workspace.svelte';
+import { aiRunMetadata } from '$lib/ai/direct-run-context';
 
 export const LIA_PLUGIN_STEP_PREFIX = 'plugin:';
 export const LEGACY_LIA_PLUGIN_STEP_PREFIX = 'module:';
@@ -72,8 +74,22 @@ export function pluginToDefinition(plugin: LiatirPlugin): PipelineStepDefinition
 export function pluginToRegistryEntry(plugin: LiatirPlugin): PipelineRegistryEntry {
   return {
     definition: pluginToDefinition(plugin),
-    run: async (inputs, _outputDir, onLog) => {
-      const out = await runLiatirPlugin(plugin, inputs, (_stream, line) => onLog(line));
+    run: async (inputs, _outputDir, onLog, context) => {
+      const out = await runLiatirPlugin(
+        plugin,
+        inputs,
+        (_stream, line) => onLog(line),
+        context?.runKind === 'pipeline-step'
+          ? {
+              workspaceId: workspaceStore.activeId,
+              label: context.label,
+              kind: 'pipeline-step',
+              metadata: aiRunMetadata(context),
+              signal: context.signal,
+              onSpawn: context.onJobId,
+            }
+          : {},
+      );
       if (out.exitCode !== 0) {
         throw new Error(out.stderr.join('\n') || `Plugin "${plugin.name}" exited with code ${out.exitCode}`);
       }

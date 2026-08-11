@@ -3,6 +3,7 @@ import { liatir } from '$lib/api';
 import { appStorage } from './app-storage';
 import { getDataPrefix } from './workspace.svelte';
 import { dataFiles } from './dataFiles.svelte';
+import { liaPluginsStore } from './lia-plugins.svelte';
 import { apiConnections, sendApiRequest } from './apiConnections.svelte';
 import { analysisRuns } from './analysisRuns.svelte';
 import { resolveStepEntry } from '$lib/tools/pipeline-registry';
@@ -29,6 +30,13 @@ interface PipelineStepRecord {
   label: string;
   output?: ToolOutput;
   files: RunOutputFile[];
+}
+
+interface ApiStepResult {
+  label: string;
+  outputFiles: RunOutputFile[];
+  outputValues: Record<string, string>;
+  virtualFolder: string;
 }
 
 /** Combine each step's result into one grouped ToolOutput (a heading per step). */
@@ -437,12 +445,120 @@ function createPipelineStore() {
     persistTimer = setTimeout(persist, 800);
   }
 
+  async function flushPersist() {
+    clearTimeout(persistTimer);
+    persistTimer = undefined;
+    await persist();
+  }
+
+  /** A file output is settled only after it exists and its Data registration is durable. */
+  async function registerSettledFiles(files: RunOutputFile[], virtualFolder: string): Promise<void> {
+    if (files.length === 0) return;
+    const api = liatir();
+    if (!api) throw new Error('Liatir API not available');
+
+    await dataFiles.createFolder('Results');
+    await dataFiles.createFolder(virtualFolder);
+    for (const file of files) {
+      await api.invoke('lia_file_size', { path: file.path });
+      await dataFiles.add(file.path, virtualFolder);
+    }
+  }
+
+  async function executeApiRequestNode(
+    node: Node,
+    graphNodes: Node[],
+    nodeStates: Map<string, NodeRunState>,
+    signal: AbortSignal | undefined,
+    runIdentity: {
+      pipelineRunId: string;
+      pipelineId: string | null;
+      nodeId: string;
+    },
+  ): Promise<ApiStepResult> {
+    const d = node.data as unknown as ApiRequestNodeData;
+    if (!d.requestId) throw new Error('No request selected');
+    const req = apiConnections.requestById(d.requestId);
+    if (!req) throw new Error('Request not found');
+    const api = liatir();
+    if (!api) throw new Error('Liatir API not available');
+
+    const label = nodeDisplayLabel(node, req.name || 'API Request');
+    const provider = apiConnections.collectionById(req.collectionId) ?? undefined;
+    const resolvedOverrides = resolveInputs(
+      graphNodes,
+      nodeStates,
+      (node.data?.paramOverrides as Record<string, string>) ?? {},
+    );
+    const paramOverrides: Record<string, string> = {};
+    for (const [key, value] of Object.entries(resolvedOverrides)) {
+      if (value !== '') paramOverrides[key] = value;
+    }
+
+    const response = await sendApiRequest(req, {
+      provider,
+      paramOverrides,
+      envVars: apiConnections.activeEnvVars,
+      signal,
+    });
+    throwIfRunCancelled(signal);
+
+    const { absDir, virtualFolder } = await ensureResultsDir(req.name || d.requestId);
+    const artifactId = crypto.randomUUID();
+    const bodyPath = `${absDir}/response-${artifactId}.json`;
+    await api.invoke('lia_write_file_path', { path: bodyPath, content: response.body });
+
+    let outputFiles: RunOutputFile[] = [{ label: 'Response Body', path: bodyPath, ext: 'json' }];
+    const outputValues: Record<string, string> = { status: String(response.status) };
+
+    if (req.outputSchema) {
+      let parsed: unknown;
+      try { parsed = JSON.parse(response.body); } catch { /* not JSON */ }
+      if (parsed !== undefined) {
+        for (const [key, field] of Object.entries(req.outputSchema)) {
+          const value = getValueAtPath(parsed, field.path);
+          if (value === undefined) continue;
+          const valuePath = `${absDir}/${key}-${artifactId}.json`;
+          await api.invoke('lia_write_file_path', { path: valuePath, content: JSON.stringify(value) });
+          outputFiles.push({ label: field.label || key, path: valuePath, ext: 'json' });
+          outputValues[key] = value !== null && typeof value === 'object'
+            ? JSON.stringify(value)
+            : String(value);
+        }
+      }
+    }
+
+    outputFiles = withArtifactsMetadata(outputFiles, {
+      role: 'final',
+      createdAt: Date.now(),
+      producer: {
+        kind: 'api-request',
+        id: d.requestId,
+        label,
+        nodeId: runIdentity.nodeId,
+      },
+      parentRun: {
+        runKind: 'pipeline-step',
+        runId: runIdentity.pipelineRunId,
+        analysisRunId: runIdentity.pipelineRunId,
+        pipelineRunId: runIdentity.pipelineRunId,
+        pipelineId: runIdentity.pipelineId,
+        nodeId: runIdentity.nodeId,
+      },
+    });
+    await registerSettledFiles(outputFiles, virtualFolder);
+    throwIfRunCancelled(signal);
+
+    return { label, outputFiles, outputValues, virtualFolder };
+  }
+
   // Run a set of nodes inline (used for sub-pipeline execution)
   async function runNodes(
     nodes: Node[],
     edges: Edge[],
     onLog: (line: string) => void,
     parentContext?: AIPipelineRunContext,
+    pipelineStack: string[] = [],
   ): Promise<RunOutputFile[]> {
     const { nodes: graphNodes, edges: graphEdges } = executableGraph(nodes, edges);
     const localStates = new Map<string, NodeRunState>();
@@ -465,7 +581,11 @@ function createPipelineStore() {
 
       if (node.type === 'tool') {
         const entry = resolveStepEntry(node.data?.stepId as string ?? '');
-        if (!entry) { patch({ status: 'error', error: `Unknown tool: ${node.data?.stepId}` }); break; }
+        if (!entry) {
+          const error = new Error(`Unknown tool: ${node.data?.stepId}`);
+          patch({ status: 'error', error: error.message });
+          throw error;
+        }
 
         patch({ status: 'running' });
         const { absDir: outputDir, virtualFolder } = await ensureResultsDir(entry.definition.label);
@@ -477,6 +597,7 @@ function createPipelineStore() {
         );
         const logs: string[] = [];
         try {
+          const nestedNodeId = parentContext ? `${parentContext.nodeId}/${nodeId}` : nodeId;
           const result = await entry.run(
             resolved,
             outputDir,
@@ -484,7 +605,7 @@ function createPipelineStore() {
             parentContext
               ? {
                   ...parentContext,
-                  nodeId: `${parentContext.nodeId}/${nodeId}`,
+                  nodeId: nestedNodeId,
                   toolId: entry.definition.id,
                   label: nodeDisplayLabel(node, entry.definition.label),
                   params: resolved,
@@ -493,14 +614,43 @@ function createPipelineStore() {
                 }
               : undefined,
           );
-          patch({ status: 'done', logs, outputFiles: result.outputFiles, outputValues: outputsToValues(result.metrics, result.values) });
-          allOutputFiles.push(...result.outputFiles);
-          await dataFiles.createFolder('Results').catch(() => {});
-          await dataFiles.createFolder(virtualFolder).catch(() => {});
-          for (const f of result.outputFiles) await dataFiles.add(f.path, virtualFolder).catch(() => {});
+          const outputFiles = parentContext
+            ? withArtifactsMetadata(result.outputFiles, {
+                role: 'final',
+                createdAt: Date.now(),
+                producer: {
+                  kind: entry.definition.type,
+                  id: entry.definition.id,
+                  label: nodeDisplayLabel(node, entry.definition.label),
+                  nodeId: nestedNodeId,
+                },
+                parentRun: {
+                  runKind: 'pipeline-step',
+                  runId: parentContext.pipelineRunId,
+                  analysisRunId: parentContext.pipelineRunId,
+                  pipelineRunId: parentContext.pipelineRunId,
+                  pipelineId: parentContext.pipelineId,
+                  nodeId: nestedNodeId,
+                },
+              })
+            : result.outputFiles;
+          await registerSettledFiles(outputFiles, virtualFolder);
+          throwIfRunCancelled(parentContext?.signal);
+          patch({
+            status: 'done',
+            logs,
+            outputFiles,
+            outputValues: outputsToValues(result.metrics, result.values),
+          });
+          allOutputFiles.push(...outputFiles);
         } catch (e) {
-          patch({ status: 'error', error: String(e) });
-          break;
+          const cancelled = isRunCancelled(e, parentContext?.signal);
+          patch({
+            status: cancelled ? 'cancelled' : 'error',
+            logs,
+            error: cancelled ? PIPELINE_CANCELLED_MESSAGE : errorMessage(e),
+          });
+          throw e;
         }
       } else if (node.type === 'variable') {
         const d = node.data as unknown as VariableNodeData;
@@ -517,13 +667,95 @@ function createPipelineStore() {
         const evaluated = evaluateConditionNode(d, value);
         if (evaluated.error) {
           patch({ status: 'error', error: evaluated.error });
-          break;
+          throw new Error(evaluated.error);
         }
         const ok = evaluated.ok;
         const branch: 'true' | 'false' = ok ? 'true' : 'false';
         patch({ status: 'done', activeBranch: branch, outputValues: { trueBranch: ok ? value : '', falseBranch: !ok ? value : '' } });
         const dead = findDeadBranchNodes(graphNodes, graphEdges, nodeId, ok ? 'falseBranch' : 'trueBranch', localStates);
         for (const s of dead) { skipped.add(s); localStates.set(s, { ...initNodeState(), status: 'skipped' }); }
+      } else if (node.type === 'api-request') {
+        patch({
+          status: 'running',
+          logs: [`Running API Connector request`],
+        });
+        try {
+          const nestedNodeId = parentContext ? `${parentContext.nodeId}/${nodeId}` : nodeId;
+          const result = await executeApiRequestNode(
+            node,
+            graphNodes,
+            localStates,
+            parentContext?.signal,
+            {
+              pipelineRunId: parentContext?.pipelineRunId ?? crypto.randomUUID(),
+              pipelineId: parentContext?.pipelineId ?? null,
+              nodeId: nestedNodeId,
+            },
+          );
+          patch({
+            status: 'done',
+            logs: [`API Connector request completed`],
+            outputFiles: result.outputFiles,
+            outputValues: result.outputValues,
+          });
+          allOutputFiles.push(...result.outputFiles);
+        } catch (e) {
+          const cancelled = isRunCancelled(e, parentContext?.signal);
+          patch({
+            status: cancelled ? 'cancelled' : 'error',
+            error: cancelled ? PIPELINE_CANCELLED_MESSAGE : errorMessage(e),
+          });
+          throw e;
+        }
+      } else if (node.type === 'sub-pipeline') {
+        const d = node.data as unknown as SubPipelineNodeData;
+        if (!d.pipelineId) {
+          patch({ status: 'error', error: 'No pipeline selected' });
+          throw new Error('No pipeline selected');
+        }
+        if (pipelineStack.includes(d.pipelineId)) {
+          const error = new Error(`Sub-pipeline cycle detected at ${d.pipelineId}`);
+          patch({ status: 'error', error: error.message });
+          throw error;
+        }
+        const sub = savedPipelines.find((pipeline) => pipeline.id === d.pipelineId);
+        if (!sub) {
+          patch({ status: 'error', error: 'Pipeline not found' });
+          throw new Error('Pipeline not found');
+        }
+
+        const nestedNodeId = parentContext ? `${parentContext.nodeId}/${nodeId}` : nodeId;
+        patch({ status: 'running', logs: [`▶ Running sub-pipeline: ${nodeDisplayLabel(node, sub.name)}`] });
+        try {
+          const subContext: AIPipelineRunContext | undefined = parentContext
+            ? {
+                ...parentContext,
+                nodeId: nestedNodeId,
+                toolId: 'sub-pipeline',
+                label: nodeDisplayLabel(node, sub.name),
+                params: { pipelineId: sub.id },
+                startedAt: Date.now(),
+                outputDir: '',
+              }
+            : undefined;
+          const subFiles = await runNodes(
+            sub.nodes,
+            sub.edges,
+            onLog,
+            subContext,
+            [...pipelineStack, d.pipelineId],
+          );
+          throwIfRunCancelled(parentContext?.signal);
+          patch({ status: 'done', outputFiles: subFiles });
+          allOutputFiles.push(...subFiles);
+        } catch (e) {
+          const cancelled = isRunCancelled(e, parentContext?.signal);
+          patch({
+            status: cancelled ? 'cancelled' : 'error',
+            error: cancelled ? PIPELINE_CANCELLED_MESSAGE : errorMessage(e),
+          });
+          throw e;
+        }
       }
     }
     return allOutputFiles;
@@ -770,6 +1002,11 @@ function createPipelineStore() {
       if (existingRuntime.running || graphNodes.length === 0) return;
       const api = liatir();
       if (!api) return;
+      await Promise.all([
+        dataFiles.init(),
+        apiConnections.init(),
+        liaPluginsStore.init(),
+      ]);
 
       const fresh = new Map<string, NodeRunState>();
       for (const n of graphNodes) fresh.set(n.id, initNodeState());
@@ -873,6 +1110,8 @@ function createPipelineStore() {
                 nodeId,
               },
             });
+            await registerSettledFiles(outputFiles, virtualFolder);
+            throwIfRunCancelled(controller.signal);
             patchRunState(nodeId, {
               status: 'done',
               logs,
@@ -881,9 +1120,6 @@ function createPipelineStore() {
               outputValues: outputsToValues(result.metrics, result.values),
             });
             pipeSteps.push({ label: nodeLabel, output: result.output, files: outputFiles });
-            await dataFiles.createFolder('Results').catch(() => {});
-            await dataFiles.createFolder(virtualFolder).catch(() => {});
-            for (const f of outputFiles) await dataFiles.add(f.path, virtualFolder).catch(() => {});
           } catch (e) {
             const cancelled = isRunCancelled(e, controller.signal);
             patchRunState(nodeId, {
@@ -957,11 +1193,19 @@ function createPipelineStore() {
               signal: controller.signal,
               onJobId: (jobId) => execution.childJobIds.add(jobId),
             };
-            const subFiles = await runNodes(sub.nodes, sub.edges, (line) => {
-              const curr = states().get(nodeId);
-              patchRunState(nodeId, { logs: [...(curr?.logs ?? []), line] });
-            }, subContext);
+            const subFiles = await runNodes(
+              sub.nodes,
+              sub.edges,
+              (line) => {
+                const curr = states().get(nodeId);
+                patchRunState(nodeId, { logs: [...(curr?.logs ?? []), line] });
+              },
+              subContext,
+              runPipelineId ? [runPipelineId, sub.id] : [sub.id],
+            );
+            throwIfRunCancelled(controller.signal);
             patchRunState(nodeId, { status: 'done', outputFiles: subFiles });
+            pipeSteps.push({ label: nodeDisplayLabel(node, sub.name), files: subFiles });
           } catch (e) {
             const cancelled = isRunCancelled(e, controller.signal);
             patchRunState(nodeId, {
@@ -983,71 +1227,21 @@ function createPipelineStore() {
             patchRunState(nodeId, { status: 'error', error: 'Request not found' });
             break;
           }
-          const nodeLabel = nodeDisplayLabel(node, req.name || 'API Request');
-          const provider = apiConnections.collectionById(req.collectionId) ?? undefined;
-          // Per-param overrides configured on the node (literal or `@pipe:` ref).
-          // Only non-empty values override the request's own params.
-          const resolvedOverrides = resolveInputs(graphNodes, states(), (node.data?.paramOverrides as Record<string, string>) ?? {});
-          const paramOverrides: Record<string, string> = {};
-          for (const [k, v] of Object.entries(resolvedOverrides)) if (v !== '') paramOverrides[k] = v;
           patchRunState(nodeId, { status: 'running', logs: [`${req.method} ${req.url}`] });
           try {
-            const resp = await sendApiRequest(req, {
-              provider,
-              paramOverrides,
-              envVars: apiConnections.activeEnvVars,
-              signal: controller.signal,
+            const result = await executeApiRequestNode(
+              node,
+              graphNodes,
+              states(),
+              controller.signal,
+              { pipelineRunId, pipelineId: runPipelineId, nodeId },
+            );
+            patchRunState(nodeId, {
+              status: 'done',
+              outputFiles: result.outputFiles,
+              outputValues: result.outputValues,
             });
-            const { absDir: reqOutputDir, virtualFolder: reqVirtualFolder } = await ensureResultsDir(req.name || d.requestId!);
-
-            const ts = Date.now();
-            const bodyPath = `${reqOutputDir}/response-${ts}.json`;
-            await api.invoke('lia_write_file_path', { path: bodyPath, content: resp.body }).catch(() => {});
-
-            let outputFiles: RunOutputFile[] = [{ label: 'Response Body', path: bodyPath, ext: 'json' }];
-            const outputValues: Record<string, string> = { status: String(resp.status) };
-
-            if (req.outputSchema) {
-              let parsed: unknown;
-              try { parsed = JSON.parse(resp.body); } catch { /* not JSON */ }
-              if (parsed !== undefined) {
-                for (const [key, field] of Object.entries(req.outputSchema)) {
-                  const val = getValueAtPath(parsed, field.path);
-                  if (val !== undefined) {
-                    const valPath = `${reqOutputDir}/${key}-${ts}.json`;
-                    await api.invoke('lia_write_file_path', { path: valPath, content: JSON.stringify(val) }).catch(() => {});
-                    outputFiles.push({ label: field.label || key, path: valPath, ext: 'json' });
-                    outputValues[key] = (val !== null && typeof val === 'object') ? JSON.stringify(val) : String(val);
-                  }
-                }
-              }
-            }
-
-            outputFiles = withArtifactsMetadata(outputFiles, {
-              role: 'final',
-              createdAt: ts,
-              producer: {
-                kind: 'api-request',
-                id: d.requestId!,
-                label: nodeLabel,
-                nodeId,
-              },
-              parentRun: {
-                runKind: 'pipeline-step',
-                runId: pipelineRunId,
-                analysisRunId: pipelineRunId,
-                pipelineRunId,
-                pipelineId: runPipelineId,
-                nodeId,
-              },
-            });
-
-            await dataFiles.createFolder('Results').catch(() => {});
-            await dataFiles.createFolder(reqVirtualFolder).catch(() => {});
-            for (const f of outputFiles) await dataFiles.add(f.path, reqVirtualFolder).catch(() => {});
-
-            patchRunState(nodeId, { status: 'done', outputFiles, outputValues });
-            pipeSteps.push({ label: nodeLabel, files: outputFiles });
+            pipeSteps.push({ label: result.label, files: result.outputFiles });
           } catch (e) {
             const cancelled = isRunCancelled(e, controller.signal);
             patchRunState(nodeId, {
@@ -1086,6 +1280,10 @@ function createPipelineStore() {
         const wasCancelled = controller.signal.aborted || Boolean(cancelledEntry);
         const fatalMessage = fatalError ? errorMessage(fatalError) : null;
         if (graphNodes.length > 0) {
+          // The Result index is the public completion signal. Persist every
+          // terminal node state first so readers can never observe a completed
+          // Result while its pipeline nodes are still running or absent.
+          await flushPersist();
           const endedAt = Date.now();
           const logs = [...finalStates.values()].flatMap(s => s.logs ?? []);
           const allFiles = pipeSteps.flatMap(s => s.files);
@@ -1118,6 +1316,7 @@ function createPipelineStore() {
           runId: pipelineRunId,
           startedAt: pipeStartedAt,
         });
+        await flushPersist();
         const active = activeExecutions.get(runKey);
         if (active?.runId === pipelineRunId) activeExecutions.delete(runKey);
       }
