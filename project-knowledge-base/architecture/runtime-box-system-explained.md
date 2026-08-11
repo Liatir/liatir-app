@@ -148,9 +148,9 @@ The recipe is not the Runtime Box itself. It is the reproducible instruction
 used to build the box.
 
 Every active Runtime Box scroll now uses pixi/conda-pack through the published
-Scrollcase path. No uv recipe or local generic builder remains. P5 stays open
-only for the duplicate-helper deletion audit, plus its final local/native closure
-and handoff; the Rust consumer boundary is complete.
+Scrollcase path. No uv recipe or local generic builder remains. Scrollcase P5
+adoption, including the Rust consumer boundary, duplicate-helper deletion,
+final local/native lifecycle and documentation handoff, is complete.
 
 ### Dependency lock
 

@@ -2,8 +2,8 @@
 
 Last reviewed: 2026-08-11
 
-Status: **in progress — P5.0, P5.1, P5.2, P5.2V, P5.3, P5.4, P5.4R,
-P5.4T, P5.4E, P5.4V, P5.4W, P5.4P, P5.5 and P5.6 are complete.** All
+Status: **complete — P5.0, P5.1, P5.2, P5.2V, P5.3, P5.4, P5.4R,
+P5.4T, P5.4E, P5.4V, P5.4W, P5.4P, P5.5, P5.6 and P5.7 are complete.** All
 nine current model targets are schema-v2 Runtime Boxes, natively proven, KMS-signed,
 published and promoted on `beta`: three Geneformer, five scGPT and
 one UCE. Geneformer `1.0.0-beta.1` and scGPT `0.2.5-beta.1` are present together
@@ -11,8 +11,9 @@ in the live signed revocations document. UCE `1.0.0-beta.1` is not channel-selec
 and is rejected by the v2-only app, but remains an explicit retirement decision
 because it is not revoked. The local generic builder and its duplicate helper
 modules are retired, and the final local/native product lifecycle is proven on a
-non-production scGPT macOS Metal candidate. P5.7 remains open. The next work is
-the documentation/operator handoff, not another model release.
+non-production scGPT macOS Metal candidate. The documentation and operator
+handoff now matches that implemented boundary. Future Runtime Box work starts
+with persisted anti-replay/version-floor state; it is not another P5 migration.
 
 This is the canonical execution plan for **Scrollcase extraction phase P5**. P1–P4
 are complete: Scrollcase is an independent Apache-2.0 project. The P5 target was
@@ -204,17 +205,22 @@ never a dependency of installing or running an already downloaded Runtime Box.
 | P5.4P — re-release of the rebuilt matrix | Complete | All nine targets are KMS-signed, scientifically validated, published immutably and promoted on `beta`, with public channel readback. Geneformer `1.0.0-beta.1` and scGPT `0.2.5-beta.1` are jointly revoked in the live signed document. UCE `1.0.0-beta.1` is not selected and is v2-incompatible, but whether to add it to revocations remains an explicit product decision |
 | P5.5 — final cutover and legacy deletion | Complete | Every active caller uses public `scrollcase@0.8.0` build/contract exports. The local archive, filesystem, licence, pixi, standalone-Python/uv, target and workspace copies plus the unused config schema are deleted; `identity.mjs` retains only Liatir distribution paths. Static deletion/legacy-field/package-surface guards, 38 unit files / 232 tests, catalog, signer, published-build + Rust Zip64 foundation, Rust Runtime Box and the full TypeScript/build gate are green |
 | P5.6 — local/native closure | Complete | Clean install and full cheap/Rust gates; deterministic v2/v1 native fixture; real scGPT macOS Metal lifecycle with resume, self-test, inference, Job, three Result artifacts, provenance, replacement/rollback, v1 execution rejection, removal and Result survival; generated state removed; no publication |
-| P5.7 — documentation handoff | Pending | Status, inventories and operator docs match the implemented boundary |
+| P5.7 — documentation handoff | Complete | Canonical status, extraction and pixi histories, architecture inventory and production/operator handoff distinguish extraction, adoption, validation and publication; stable commands and post-P5 continuation are explicit |
 
 Mark a phase complete only from its listed evidence. Do not infer completion from
 the next phase starting.
 
-## Current continuation from the 2026-08-11 checkpoint
+## Post-P5 continuation from the 2026-08-11 checkpoint
 
-Work locally and cheaply until the boundary is clear:
+P5 has no remaining implementation or documentation gate. Continue Liatir in
+this order:
 
-1. **Close P5.7** by reconciling the remaining inventories and operator
-   documentation with the now-complete P5.5/P5.6 boundary.
+1. define and implement persisted anti-replay/version-floor state for Runtime
+   Box control documents, including ownership and recovery semantics;
+2. complete the common pipeline/run/result spine before widening the model
+   catalog;
+3. return to connector and broader scientific-workbench expansion only after
+   the shared lifecycle is reliable.
 
 Persisted anti-replay/version-floor state is the next product-hardening slice
 after P5, not a reason to keep generic builder code. The possible UCE `beta.1`
@@ -1968,8 +1974,9 @@ Evidence on the final local boundary:
 The existing native fixture was updated to feed the signed release envelope and
 the same in-memory trust source through `verify_and_extract_box`. It was not
 re-run in this slice: the phase rule below explicitly does not require native
-re-validation for a verifier-only swap, and P5.6 still owns the reviewed final
-non-production native lifecycle. No recipe, catalog entry, trust root, signed
+re-validation for a verifier-only swap. At this checkpoint P5.6 still owned the
+reviewed final non-production native lifecycle; it subsequently completed that
+combined path on scGPT macOS Metal. No recipe, catalog entry, trust root, signed
 object or channel changed.
 
 ### P5.4R exit gate
@@ -1983,7 +1990,8 @@ object or channel changed.
 - `managed_bins::extract_zip_with_expected_size` is no longer on the Runtime Box
   path, and its remaining callers are unaffected;
 - the earlier native proof remains the observable baseline, and the native
-  fixture is wired to exercise the final combined preparation path in P5.6;
+  fixture was wired for the final combined preparation path, which P5.6 later
+  exercised together with the real product lifecycle;
 - no recipe, catalog identity, trust root, published object or channel changed.
 
 Native re-validation is **not** required to close P5.4R: the crate changes how a
@@ -2570,7 +2578,8 @@ runtime_box` passed 18 with 2 explicit fixture ignores; `npm run test:verify`
 passed all unit, SDK generation, core, frontend and TypeScript build gates; lint
 reported zero errors and the pre-existing 43 warnings. The diff contains no trust,
 signed object, catalog, generated binding or model change. No native lifecycle was
-run; that remains P5.6.
+run. At this checkpoint that remained P5.6; the 2026-08-11 execution record
+below closes it.
 
 ### Delete or replace the generic copies
 
@@ -2777,6 +2786,38 @@ The final handoff must state separately:
 
 Do not collapse “uses Scrollcase”, “scientifically validated”, and “published”
 into one readiness claim.
+
+### Execution record (2026-08-11)
+
+P5.7 closes the adoption plan without changing code, commands or production
+state. The final handoff is:
+
+- **Scrollcase extraction:** P1–P4 remain complete and independent. Scrollcase
+  lives outside this repository as an Apache-2.0 project; Liatir contains no
+  vendored source, sibling resolution, deep import or local generic builder.
+- **Liatir adoption:** P5 is complete on exact public `scrollcase@0.8.0` and
+  exact `scrollcase-consumer 0.3.2`. Active authoring, contracts and consumers
+  are schema v2 only; installed v1 state is non-runnable but removable. The
+  deleted and retained module inventories in P5.5 match the checkout.
+- **Model and target validation:** the migration inventory is three models,
+  nine product targets and three foundation fixtures. The eleven-input `0.7.1`
+  matrix (nine product plus Linux/Windows foundations) was rebuilt and measured;
+  the macOS foundation was separately rebuilt and proven on `0.8.0`. Every
+  product target has native/scientific evidence appropriate to its target.
+- **Protected publication:** all nine product targets are KMS-signed, published
+  immutably and selected on `beta`. Geneformer `1.0.0-beta.1` and scGPT
+  `0.2.5-beta.1` are jointly revoked. UCE `1.0.0-beta.1` remains unselected and
+  v2-incompatible but not revoked; changing that remains a separate product
+  decision, not unfinished P5 work.
+
+The stable operator surface is unchanged: Scrollcase owns `doctor`, `keygen`,
+`lock`, `audit`, `build` and generic `verify`; Liatir owns receipts plus
+`serve`, `publish`, `publish-key`, `promote` and `revoke`. The loopback `serve`
+path now honors single HTTP byte ranges so the product's resumable download is
+exercised locally. No `AGENTS.md` update is needed because no repository command
+or ownership boundary changed in P5.7. Documentation build, full unit/contract
+tests and `test:verify` are the closure gates; no model build, native allocation,
+signing, publication, promotion or deployment is part of this handoff.
 
 ## Rollback and cleanup
 

@@ -1,6 +1,6 @@
 # Runtime Box CI migration → pixi + pixi-pack + conda-forge (self-hosted GHA)
 
-Last reviewed: 2026-08-10
+Last reviewed: 2026-08-11
 
 Status: **complete — Phases 0–5 are closed.** Every active recipe uses the
 schema-v2 pixi/conda-pack path, no uv recipe remains, and all eleven migration
@@ -10,15 +10,15 @@ KMS-signed, scientifically validated, published immutably and promoted on
 `beta`: three Geneformer, five scGPT and one UCE. Geneformer and scGPT `beta.1`
 are jointly revoked. UCE `1.0.0-beta.1` is unselected and v2-incompatible but
 still needs an explicit decision if revocation is desired. Further work belongs
-to the P5 consumer/deletion closeout and product anti-replay hardening, not this
-migration.
+to product anti-replay hardening, not this migration; the downstream Scrollcase
+P5 adoption and deletion closeout are complete.
 
 **Current ownership correction (2026-07-27):** the generic pixi/conda-pack
 builder now belongs to the independent external Scrollcase project, not to
 Liatir. This roadmap remains the Liatir recipe, runner and scientific-validation
 migration record. The checkout consumes exact
-`scrollcase@0.8.0` through its published v2-only package surface; P5.2V is
-complete. Liatir must not vendor, deep-import or modify Scrollcase source.
+`scrollcase@0.8.0` through its published v2-only package surface; the full P5
+adoption is complete. Liatir must not vendor, deep-import or modify Scrollcase source.
 P5.3 is complete: the macOS, Linux and Windows foundation fixtures all passed
 their matching native v2 proofs, their measured disk plans are catalogued, and
 each old uv fixture was removed only after its proof. P5.4 model migration and
@@ -72,7 +72,7 @@ Related plans: [Runtime Box model platform expansion](./runtime-box-model-platfo
 [Runtime Box CI foundation](./runtime-box-ci-foundation.md) (the historical uv-based
 foundation that this migration replaced), and [Runtime Box production report](./runtime-box-production-report.md)
 (the trust/distribution spine that stayed unchanged). The completed recipe
-migration and current consumer/deletion closeout are tracked in
+migration and completed consumer/deletion/native closeout are tracked in
 [Scrollcase P5 — Liatir adoption](./scrollcase-p5-liatir-adoption.md); that plan
 is canonical for package adoption and contract inversion. The old Geneformer
 CUDA 12.4 identities are historical and were replaced by additive 12.9/12.8

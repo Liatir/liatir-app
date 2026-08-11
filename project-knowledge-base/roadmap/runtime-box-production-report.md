@@ -1,6 +1,6 @@
 # Runtime Box Production Report
 
-Last reviewed: 2026-08-10
+Last reviewed: 2026-08-11
 
 This is the evidence-backed production and operational handoff for the Runtime
 Box CI foundation. The canonical gate history remains in
@@ -34,6 +34,14 @@ revocation remains a product decision. For current execution state use
 [Scrollcase P5](./scrollcase-p5-liatir-adoption.md) and
 `runtime-boxes/catalog.json`; preserve the rest of this report as historical
 production evidence.
+
+Scrollcase P5 adoption is now complete. The stable operator commands did not
+change during P5.6/P5.7: generic authoring/build/verify still route through the
+exact published package, while Liatir retains distribution and control-plane
+verbs. The local `serve` implementation now honors HTTP byte ranges, which lets
+the real product resume an interrupted candidate download without publishing
+the candidate. This changes no production Registry, asset, trust or workflow
+contract.
 
 ## Historical foundation outcome
 

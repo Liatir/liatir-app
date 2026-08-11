@@ -73,7 +73,9 @@ All product AI runtimes use the signed AI Runtime Box distribution path:
 
 The Worker never proxies large runtime archives. Local development uses the
 same format through `npm run runtime-box -- build|verify|serve`; production adds
-`publish` and authenticated `promote` operations.
+`publish` and authenticated `promote` operations. The loopback `serve` path
+supports HTTP byte ranges so local product tests exercise download resume rather
+than silently restarting from byte zero.
 
 The former locally built and direct-download AI runtime strategies were removed
 on 2026-07-22. Future model families must not restore them.

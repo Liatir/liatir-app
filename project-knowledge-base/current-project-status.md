@@ -1,5 +1,30 @@
 # Current project status
 
+## Scrollcase P5 adoption is complete (P5.7, 2026-08-11)
+
+The Scrollcase handoff is closed, with four states kept deliberately separate:
+
+- **Extraction:** Scrollcase P1–P4 is complete in the independent Apache-2.0
+  project; no Scrollcase source or generic builder remains in Liatir.
+- **Adoption:** Liatir P5 is complete on exact `scrollcase@0.8.0` and
+  `scrollcase-consumer 0.3.2`, using only published surfaces and schema v2.
+- **Validation:** three models, nine product targets and three foundation
+  fixtures make up the current inventory; every product target has its required
+  native/scientific evidence, and P5.6 adds the final reviewed local product
+  lifecycle on scGPT macOS Metal.
+- **Publication:** all nine targets are KMS-signed, immutable and selected on
+  `beta`. The two superseded Geneformer/scGPT `beta.1` versions are revoked;
+  unselected UCE `1.0.0-beta.1` still requires a separate decision if explicit
+  revocation is desired.
+
+The operator command surface has not changed. Scrollcase owns generic authoring,
+build and verify; Liatir owns CI/evidence, signing integration, Registry/R2,
+promotion/revocation and the product lifecycle. The local candidate Registry's
+`serve` command now supports HTTP byte ranges for real resume testing. P5 has no
+remaining gate. The next Runtime Box product slice is persisted
+anti-replay/version-floor state, followed by the common pipeline/run/result
+spine; neither should be described as continued Scrollcase migration.
+
 ## Scrollcase adoption has native closure (P5.6, 2026-08-11)
 
 P5.6 is complete on exact public `scrollcase@0.8.0`. From a checkout with no
@@ -29,8 +54,8 @@ foundation fixtures, signer 15/15, foundation 1/1, Rust Runtime Box 18 passed /
 2 ignored, full `test:verify`, and lint with zero errors (43 existing warnings).
 All Runtime Box generated state and temporary processes were removed. Nothing
 was production-signed, published, promoted, deployed, or changed in trust,
-catalog or channel state. Only P5.7, the documentation/operator handoff, remains
-before the Scrollcase P5 adoption plan can close.
+catalog or channel state. P5.7 subsequently reconciled the documentation and
+operator handoff, closing the Scrollcase P5 adoption plan.
 
 ## The re-release is complete: all nine targets are published (2026-08-10)
 
@@ -175,16 +200,14 @@ channel changed.
 The Runtime Box migration and the nine-target re-release are complete. Continue
 Liatir development in this order:
 
-1. close the P5.7 documentation/operator handoff, now that P5.5 deletion and
-   P5.6 native closure are complete;
-2. implement persisted anti-replay/version-floor state for Runtime Box control
+1. implement persisted anti-replay/version-floor state for Runtime Box control
    documents, with its ownership and recovery semantics defined before code;
-3. complete the common pipeline/run/result spine before widening the model
+2. complete the common pipeline/run/result spine before widening the model
    catalog or starting another Runtime Box migration;
-4. return to connector and broader scientific-workbench expansion only after the
+3. return to connector and broader scientific-workbench expansion only after the
    shared lifecycle is reliable.
 
-P5.4P, P5.4R, P5.5 and P5.6 are complete; only P5.7 remains open.
+P5.0 through P5.7 are complete; the Scrollcase P5 plan is closed.
 The canonical detailed ledger is
 [Scrollcase P5](./roadmap/scrollcase-p5-liatir-adoption.md). The sections below
 this point are retained as implementation history and must not override this
@@ -1084,7 +1107,8 @@ first).
 > Linux/Windows targets followed: all nine targets are published, and the two
 > superseded `beta.1` versions were revoked on 2026-08-10 (see the top of this
 > file). P5.5 subsequently retired the remaining local generic helper copies.**
-> The next continuation is the P5.6 reviewed non-production native lifecycle.
+> That checkpoint's next continuation was P5.6; P5.6 and the P5.7 handoff have
+> since completed, as recorded at the top of this file.
 > P5.4 remained one phase with
 > three operational blocks rather than a new numbered checkpoint per target.
 > Do not use the historical
