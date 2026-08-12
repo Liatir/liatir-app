@@ -25,6 +25,7 @@
     emptyText?: string;
     emptyHref?: string;
     disabled?: boolean;
+    testId?: string;
     onchange: (value: string) => void;
   }
 
@@ -38,6 +39,7 @@
     emptyText = 'No options available.',
     emptyHref,
     disabled = false,
+    testId,
     onchange,
   }: Props = $props();
 
@@ -100,6 +102,7 @@
     <!-- Trigger -->
     <button
       type="button"
+      data-testid={testId}
       onclick={tryOpen}
       {disabled}
       class="w-full flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors

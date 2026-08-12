@@ -17,6 +17,7 @@ function workspaceEnvPath(id: string) {
 
 let resetFn: ((scope: WorkspaceResetScope) => void) | null = null;
 let demoInitFn: (() => Promise<void>) | null = null;
+let activateFn: (() => Promise<void>) | null = null;
 
 export function setResetFn(fn: (scope: WorkspaceResetScope) => void) {
   resetFn = fn;
@@ -24,6 +25,11 @@ export function setResetFn(fn: (scope: WorkspaceResetScope) => void) {
 
 export function setDemoInitFn(fn: () => Promise<void>) {
   demoInitFn = fn;
+}
+
+/** Inject workspace-scoped startup work without creating store dependency cycles. */
+export function setActivateFn(fn: () => Promise<void>) {
+  activateFn = fn;
 }
 
 function createWorkspaceStore() {
@@ -149,6 +155,7 @@ function createWorkspaceStore() {
       if (id === SANDBOX_WORKSPACE_ID) {
         await demoInitFn?.();
       }
+      await activateFn?.();
       await tick();
     },
 
@@ -196,6 +203,7 @@ function createWorkspaceStore() {
       if (level === 'runs') {
         resetFn?.('runs');
         try { await appStorage.remove(`workspaces/${SANDBOX_WORKSPACE_ID}/analysis-runs`, true); } catch { /* ok */ }
+        try { await appStorage.remove(`workspaces/${SANDBOX_WORKSPACE_ID}/execution-runs`, true); } catch { /* ok */ }
         if (api) {
           try { await api.desktop.fs.data.remove(`workspaces/${SANDBOX_WORKSPACE_ID}/Results`, true); } catch { /* ok */ }
           try { await api.invoke('lia_jobs_clear_done', { workspaceId: SANDBOX_WORKSPACE_ID }); } catch { /* ok */ }

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import NodeWrapper from './layout/NodeContentWrapper.svelte';
   import { Handle, Position } from '@xyflow/svelte';
   import type { NodeProps } from '@xyflow/svelte';
   import type { Node, Edge } from '@xyflow/svelte';
@@ -8,12 +9,12 @@
   import { upstreamOptions } from '$lib/tools/pipeline-io';
   import { sanitizeLocalPathsForDisplay } from '$lib/utils';
   import Select from '$lib/components/ui/Select.svelte';
-  import ValueRefInput from './ValueRefInput.svelte';
-  import NodeDeleteButton from './NodeDeleteButton.svelte';
-  import EditableNodeLabel from './EditableNodeLabel.svelte';
+  import ValueRefInput from './actions/ValueRefInput.svelte';
+  import NodeDeleteButton from './actions/NodeDeleteButton.svelte';
+  import EditableNodeLabel from './actions/EditableNodeLabel.svelte';
   import Icon from '@iconify/svelte';
-  import { statusLabel } from './node-status';
-  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
+  import { statusLabel } from './scripts/node-status';
+  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './scripts/node-data-commit';
   import {
     CONDITION_OPERATOR_OPTIONS,
     conditionNeedsCompareValue,
@@ -62,6 +63,8 @@
     void updateConditionData(patch);
   }
 </script>
+
+<NodeWrapper>
 
 <!-- Single input handle — wire upstream value nodes in, then pick the value to test below. -->
 <Handle type="target" position={Position.Left} id="input" />
@@ -141,3 +144,5 @@
 <Handle type="source" position={Position.Right} id="falseBranch" style="top: 70px">
   <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[9px] text-amber-600 font-semibold pointer-events-none select-none">F</span>
 </Handle>
+
+</NodeWrapper>

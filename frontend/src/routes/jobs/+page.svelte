@@ -217,7 +217,7 @@
 							</button>
 
 							{#if variant === 'running'}
-								<Button variant="danger" size="sm" onclick={() => jobsStore.kill(job.id)}>
+								<Button variant="danger" size="sm" onclick={() => jobsStore.kill(job.id)} testId="job-kill-button">
 									Kill
 								</Button>
 							{:else if variant === 'failed' || variant === 'killed'}

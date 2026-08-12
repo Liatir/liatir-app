@@ -21,6 +21,7 @@
 		sanitizeLocalPathsForDisplay
 	} from '$lib/utils';
 	import type { LiatirAIModelRecord, LiatirAIModelRuntimePackage } from '@liatir/core';
+	import Divider from '$lib/components/ui/Divider.svelte';
 
 	let loading = $state(!aiModelsStore.initialized);
 	let searchQuery = $state('');
@@ -55,6 +56,9 @@
 	);
 	const installedCount = $derived(
 		models.filter((model) => model.status === 'installed' && !runtimeChecks[model.id]).length
+	);
+	const filteredInstalledCount = $derived(
+		filteredModels.filter((model) => model.status === 'installed' && !runtimeChecks[model.id]).length
 	);
 	const runnableCount = $derived(aiModelsStore.runnableModels.length);
 
@@ -118,9 +122,9 @@
 		return pkg.package;
 	}
 
-	function installedSizeLabel(model: LiatirAIModelRecord): string {
+	function installedSize(model: LiatirAIModelRecord): string {
 		if (model.installedSizeBytes) return `${fmtBytes(model.installedSizeBytes)} installed`;
-		if (model.diskSizeBytes) return `Approx. ${fmtBytes(model.diskSizeBytes)}`;
+		if (model.diskSizeBytes) return `${fmtBytes(model.diskSizeBytes)}`;
 		return 'Size reported after install';
 	}
 
@@ -243,20 +247,22 @@
 						<div class="border border-border bg-surface rounded-lg overflow-hidden">
 							<div class="p-4 grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto] gap-4 items-center">
 								<div class="min-w-0">
-									<div class="flex items-center gap-2"><p class="text-sm font-semibold text-text truncate">{model.name}</p><Badge variant={statusVariant(model)}>{statusLabel(model)}</Badge></div>
+									<div class="flex items-center gap-2"><p class="text-sm font-semibold text-text truncate">{model.name}</p><Badge variant={statusVariant(model)} size="xs">{statusLabel(model)}</Badge></div>
 									<p class="mt-1 text-xs text-text-muted leading-relaxed">{model.description}</p>
 									<div class="mt-2 flex flex-wrap gap-1.5">{#each model.capabilities as capability}<span class="rounded border border-border bg-surface-2 px-1.5 py-0.5 text-[10px] text-text-muted">{capability}</span>{/each}</div>
 									{#if blocked}<div class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] text-amber-800"><p class="font-semibold">{blocked.summary}</p><p class="mt-0.5">{blocked.reason}</p></div>{/if}
 								</div>
 								<div class="text-xs text-text-secondary min-w-0">
-									<p>{runtimeLabel(model)}</p><p class="mt-1 text-[10px] text-text-subtle">{hardwareLabel(model)}</p><p class="mt-1 text-[10px] text-text-muted">{installedSizeLabel(model)}</p>
-									{#if model.localPath}<p class="mt-1 text-[10px] text-text-subtle truncate" title={model.localPath}>{getLastSegmentsStringFromPath(model.localPath, 2)}</p>{/if}
+									<p>{runtimeLabel(model)}</p>
+									<div class="rounded-lg border bg-brand/12 text-brand border-brand/30 px-2 py-1 mt-2 group cursor-default" title="&#13; Hardware: &#13; {hardwareLabel(model)} &#13;&#13; Approx. model size: &#13; {installedSize(model)} &#13;">
+										<p class="mt-1 text-[10px] opacity-65 group-hover:opacity-100"><span class="block font-bold mb-0.5">Hardware:</span>{hardwareLabel(model)}</p><p class="mt-1.5 text-[10px]">~ model size: {installedSize(model)}</p>
+									</div>
 								</div>
-								<div class="flex flex-wrap items-center justify-end gap-2">
+								<div class="flex flex-wrap items-stretch justify-end gap-2 ml-2">
 									<button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface-2 text-text-muted hover:text-text" title="Model details" aria-label="Model details" onclick={() => toggleDetails(model.id)}><Icon icon={isDetailsExpanded(model.id) ? 'lucide:chevron-up' : 'lucide:list-tree'} width="14" height="14" /></button>
 									{#if aiModelLiatirDocsUrl(model)}<button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface-2 text-text-muted hover:text-text" title="Documentation" aria-label="Documentation" onclick={() => openModelDocs(model)}><Icon icon="lucide:book-open" width="14" height="14" /></button>{/if}
 									{#if aiModelOfficialUrl(model)}<button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface-2 text-text-muted hover:text-text" title="Official page" aria-label="Official page" onclick={() => openOfficialModelPage(model)}><Icon icon="lucide:external-link" width="14" height="14" /></button>{/if}
-									{#if model.status === 'installed' && !progress}<Button size="sm" variant="ghost" testId="ai-model-remove-button" disabled={actionsLocked(model)} onclick={() => removeModel(model)}>Remove</Button><Button size="sm" variant="secondary" testId="ai-model-run-button" disabled={actionsLocked(model)} onclick={() => goto(`/ai/${encodeURIComponent(model.id)}`)}>Run</Button>{:else if !progress}<Button size="sm" variant="primary" testId="ai-model-install-button" disabled={actionsLocked(model) || !!blocked} onclick={() => installModel(model)}>Install</Button>{/if}
+									{#if model.status === 'installed' && !(isChecking(model)) && !progress}<Button size="sm" variant="secondary" class="hover:bg-red-500" testId="ai-model-remove-button" disabled={actionsLocked(model)} onclick={() => removeModel(model)}><Icon icon="lucide:trash"></Icon></Button><Button size="sm" variant="secondary" testId="ai-model-run-button" disabled={actionsLocked(model)} class="min-w-[60px] hover:bg-brand" onclick={() => goto(`/ai/${encodeURIComponent(model.id)}`)}>Run</Button>{:else if !progress && !(isChecking(model))}<Button size="sm" variant="secondary" style="opacity: 0.2; pointer-events: none; {(filteredInstalledCount<=filteredModels.length&&filteredInstalledCount>0)?"":"display: none;"}" disabled><Icon icon="lucide:trash"></Icon></Button><Button size="sm" variant="primary" testId="ai-model-install-button" class="min-w-[60px]" disabled={actionsLocked(model) || !!blocked} onclick={() => installModel(model)}>Install</Button>{/if}
 								</div>
 							</div>
 
@@ -267,7 +273,10 @@
 
 							{#if isDetailsExpanded(model.id)}
 								<div class="mx-4 mb-4 rounded-lg border border-border bg-surface-2 px-3 py-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-text-secondary">
-									<div><p class="text-[10px] font-semibold uppercase text-text-subtle">Runtime Box</p><p class="mt-1 font-medium text-text">{model.install.runtimeBox.boxId}</p><p class="mt-1 text-[11px] text-text-muted">Channel: {model.install.runtimeBox.channel}</p></div>
+									<div>
+										<p class="text-[10px] font-semibold uppercase text-text-subtle">Runtime Box</p><p class="mt-1 font-medium text-text">{model.install.runtimeBox.boxId}</p><p class="my-1 text-[11px] text-text-muted">Channel: {model.install.runtimeBox.channel}</p>
+										{#if model.localPath}<Divider/><p class="mt-1 text-[10px] text-text-subtle truncate" title={model.localPath}>Local path:<br>.../{getLastSegmentsStringFromPath(model.localPath, 2)}</p>{/if}
+									</div>
 									<div><p class="text-[10px] font-semibold uppercase text-text-subtle">Runtime packages</p>{#if runtimePackages(model).length}{#each runtimePackages(model) as pkg}<p class="mt-1" title={packageLabel(pkg)}>{packageLabel(pkg)}</p>{/each}{:else}<p class="mt-1">Contained in the signed box</p>{/if}</div>
 									<div><p class="text-[10px] font-semibold uppercase text-text-subtle">Licenses</p><p class="mt-1 font-medium text-text">{model.license?.name ?? 'Unspecified'}</p>{#if model.license?.verifiedAt}<p class="mt-1 text-[11px] text-text-muted">Verified {model.license.verifiedAt}</p>{/if}</div>
 									<div class="md:col-span-3 text-[11px] text-text-muted">{aiModelInfo(model)}</div>

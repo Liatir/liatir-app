@@ -137,6 +137,7 @@ export type LiatirArtifactProducerKind =
   | "pipeline"
   | "ai-model"
   | "dependency"
+  | "external-workflow"
   | "system"
   | "unknown";
 
@@ -153,6 +154,13 @@ export type LiatirArtifactParentRunKind =
   | "pipeline"
   | "pipeline-step"
   | "ai-model-direct"
+  | "native-tool"
+  | "ai-model"
+  | "ai-tool"
+  | "lia-plugin"
+  | "api-request"
+  | "external-workflow"
+  | "external-workflow-step"
   | "dependency"
   | "unknown";
 
@@ -162,6 +170,8 @@ export interface LiatirArtifactParentRun {
   analysisRunId?: string;
   pipelineId?: string | null;
   pipelineRunId?: string;
+  externalWorkflowRunId?: string;
+  parentRunId?: string;
   nodeId?: string;
   jobId?: string;
 }
@@ -594,6 +604,10 @@ export type SingleCellViewerSection = LiatirSingleCellViewerSection;
 export type ToolSection = LiatirToolSection;
 export type ToolOutput = LiatirToolOutput;
 
+// Durable identity and lifecycle shared by direct, pipeline and future
+// External Workflow execution.
+export * from "./execution";
+
 // Built-in AI model catalog — the single source of truth shared by the app UI
 // and the plugin API (@liatir/api Liatir.ai). Model ids, metadata, and runtime
 // specs live here so neither side hand-duplicates the list.
@@ -668,9 +682,30 @@ export interface LiatirPluginLogEntry {
  */
 export interface LiatirJobProgress {
   current: number;
-  total?: number;
-  label?: string;
+  total?: number | null;
+  label?: string | null;
   done: boolean;
+}
+
+export type LiatirJobStatus =
+  | { type: "running" }
+  | { type: "done"; exitCode: number | null }
+  | { type: "failed"; exitCode: number | null }
+  | { type: "killed" };
+
+/** Native Job transport record. Execution identity lives in metadata.execution. */
+export interface LiatirJobEntry {
+  id: string;
+  cmd: string;
+  args: string[];
+  label?: string | null;
+  kind?: string | null;
+  metadata?: Record<string, unknown> | null;
+  status: LiatirJobStatus;
+  startedAtMs: number;
+  endedAtMs: number | null;
+  workspaceId?: string | null;
+  progress?: LiatirJobProgress | null;
 }
 
 // Read-only Quenta contracts. Quenta may explain app/scientific state

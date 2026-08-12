@@ -9,7 +9,9 @@
   import { fmtDuration, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
+  import { executionRuns } from '$lib/stores/executionRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
+  import { beginDirectNativeToolRun } from '$lib/execution/direct-native-tool';
   import { runNativeTool } from '$lib/utils/native-tool';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
@@ -42,6 +44,7 @@
   let startedAt  = $state<number | null>(null);
   let now        = $state(Date.now());
   let logLines  = $state<string[]>([]);
+  let activeExecutionRunId = $state<string | null>(null);
 
   $effect(() => {
     if (!running) return;
@@ -94,6 +97,24 @@
 
     const api = liatir();
     if (!api) { running = false; return; }
+    const params = { expression: expression.trim(), threads: threadInfo.threads, threadsMode: threadInfo.mode };
+    const execution = await beginDirectNativeToolRun({
+      runId,
+      toolId: 'bcftools-filter',
+      label: fileName,
+      inputs: [filePath],
+      params,
+      startedAt: t0,
+    }).catch(async (error) => {
+      await notify('BCFtools filter failed', String(error));
+      return null;
+    });
+    if (!execution) {
+      running = false;
+      startedAt = null;
+      return;
+    }
+    activeExecutionRunId = runId;
 
     try {
       const { data: dataDir } = await api.invoke('lia_fs_paths') as { data: string; cache: string };
@@ -109,7 +130,7 @@
         '-O', 'z',
         '-o', outPath,
         filePath,
-      ], undefined, (l) => { if (typeof l === 'string' && l.trim()) logLines.push(l); });
+      ], undefined, (line) => { if (line.trim()) logLines.push(line); }, execution.nativeOptions());
 
       if (!result.ok && result.stderr.includes('Error')) {
         throw new Error(result.stderr || `bcftools filter exited with code ${result.exitCode}`);
@@ -118,13 +139,22 @@
       // Count retained variants (run bcftools stats on output)
       let retainedCount = 0;
       try {
-        const statsResult = await runNativeTool('bcftools', ['stats', '--threads', String(threadInfo.threads), outPath]);
+        const statsResult = await runNativeTool(
+          'bcftools',
+          ['stats', '--threads', String(threadInfo.threads), outPath],
+          undefined,
+          undefined,
+          execution.nativeOptions({ label: `${fileName} stats` }),
+        );
         const recordsLine = statsResult.stdout.split('\n')
           .find(l => l.startsWith('SN') && l.includes('number of records'));
         if (recordsLine) {
           retainedCount = parseInt(recordsLine.split('\t')[3] ?? '0', 10);
         }
-      } catch { /* non-critical */ }
+      } catch (error) {
+        if (execution.isCancelled(error)) throw error;
+        // Counting is supplementary; a valid filtered VCF remains the result.
+      }
 
       const outFileSize = await api.invoke('lia_file_size', { path: outPath }) as number;
 
@@ -138,32 +168,38 @@
       const output = buildOutput(expression.trim(), fileName, retainedCount, outPath);
       const endedAt = Date.now();
 
-      await analysisRuns.add({
+      await execution.finalize('done', {
         id: runId, tool: 'bcftools-filter', label: fileName,
         inputs: [filePath], inputSizes,
-        params: { expression: expression.trim(), threads: threadInfo.threads, threadsMode: threadInfo.mode },
-        status: 'done',
+        params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
-        output, outputFiles, error: null,
+        output, outputFiles, error: null, log: [...logLines],
       });
       await notify('BCFtools filter complete', `${fileName} filtered in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
     } catch (e) {
       const endedAt = Date.now();
-      await analysisRuns.add({
+      const cancelled = execution.isCancelled(e);
+      const message = cancelled ? 'BCFtools filter run was cancelled.' : String(e);
+      logLines.push(cancelled ? `■ ${message}` : `✗ Error: ${message}`);
+      await execution.finalize(cancelled ? 'cancelled' : 'error', {
         id: runId, tool: 'bcftools-filter', label: fileName,
         inputs: [filePath], inputSizes,
-        params: { expression: expression.trim(), threads: threadInfo.threads, threadsMode: threadInfo.mode },
-        status: 'error',
+        params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
-        output: null, error: String(e),
+        output: null, error: message,
         log: [...logLines],
       });
-      await notify('BCFtools filter failed', String(e));
+      await notify(cancelled ? 'BCFtools filter cancelled' : 'BCFtools filter failed', message);
     } finally {
       running   = false;
       startedAt = null;
+      activeExecutionRunId = null;
       selectedRunId = runId;
     }
+  }
+
+  async function cancelRun() {
+    if (activeExecutionRunId) await executionRuns.cancel(activeExecutionRunId);
   }
 
   function buildOutput(expr: string, inputName: string, retained: number, outPath: string): ToolOutput {
@@ -349,12 +385,16 @@
           <div class="flex items-center gap-3 pt-1">
             <Button
               variant="primary"
+              testId="direct-native-run"
               disabled={!filePath || !expression.trim() || running}
               loading={running}
               onclick={runFilter}
             >
               Run filter
             </Button>
+            {#if running && activeExecutionRunId}
+              <Button variant="secondary" testId="direct-native-cancel" onclick={cancelRun}>Cancel</Button>
+            {/if}
             {#if running && startedAt}
               <span class="text-xs text-text-subtle">Elapsed: {fmtDuration(startedAt, now)}</span>
             {/if}

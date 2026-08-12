@@ -8,6 +8,32 @@ export const RESTART_PIPELINE_ID = 'e2e-settlement-restart-pipeline';
 export const RESTART_NODE_ID = 'restart-api-step';
 export const RESTART_DOWNSTREAM_ID = 'restart-downstream';
 export const INTERRUPTED_ERROR = 'Pipeline run was interrupted before Liatir could finalize it.';
+export const DIRECT_RESTART_RUNS = [
+  {
+    runId: 'e2e-direct-ai-interrupted',
+    runKind: 'ai-model',
+    entityId: 'e2e-ai-model',
+    label: 'Interrupted AI Model',
+  },
+  {
+    runId: 'e2e-direct-plugin-interrupted',
+    runKind: 'lia-plugin',
+    entityId: 'e2e-plugin',
+    label: 'Interrupted Plugin',
+  },
+  {
+    runId: 'e2e-direct-native-tool-interrupted',
+    runKind: 'native-tool',
+    entityId: 'e2e-native-tool',
+    label: 'Interrupted Native Tool',
+  },
+  {
+    runId: 'e2e-direct-api-interrupted',
+    runKind: 'api-request',
+    entityId: 'e2e-api-request',
+    label: 'Interrupted API Connector',
+  },
+];
 const REQUEST_ID = 'e2e-settlement-restart-request';
 const COLLECTION_ID = 'e2e-settlement-restart-api';
 
@@ -109,6 +135,58 @@ export async function openRestartPipeline(browser) {
   );
 }
 
+/** Add direct runs only after the pending pipeline has flushed its own identities. */
+export async function seedInterruptedDirectRuns(browser) {
+  await browser.waitUntil(
+    async () => browser.execute(async () => {
+      try {
+        const raw = await window.Liatir.invoke('lia_app_read_text', {
+          rel: 'workspaces/__test__/execution-runs/index.json',
+        });
+        const records = JSON.parse(raw);
+        return records.some((record) => record.identity?.runKind === 'pipeline' && record.status === 'running')
+          && records.some((record) => record.identity?.runKind === 'api-request' && record.status === 'running');
+      } catch {
+        return false;
+      }
+    }),
+    { timeout: 20_000, timeoutMsg: 'Pending pipeline execution identities were not durable' },
+  );
+
+  await browser.execute(async (definitions) => {
+    const rel = 'workspaces/__test__/execution-runs/index.json';
+    const records = JSON.parse(await window.Liatir.invoke('lia_app_read_text', { rel }));
+    const now = Date.now();
+    for (const definition of definitions) {
+      records.unshift({
+        identity: {
+          schemaVersion: 1,
+          runId: definition.runId,
+          runKind: definition.runKind,
+          workspaceId: '__test__',
+          rootRunId: definition.runId,
+          entityId: definition.entityId,
+        },
+        label: definition.label,
+        status: 'running',
+        resultPolicy: 'own',
+        resultId: definition.runId,
+        jobIds: [],
+        inputs: [],
+        params: { restartFixture: true },
+        logs: [],
+        startedAt: now,
+        updatedAt: now,
+      });
+    }
+    await window.Liatir.invoke('lia_app_write_text', {
+      rel,
+      content: JSON.stringify(records, null, 2),
+      createDirs: true,
+    });
+  }, DIRECT_RESTART_RUNS);
+}
+
 export async function readRestartState(browser) {
   return browser.execute(async (pipelineId) => {
     const read = async (rel) => {
@@ -119,13 +197,17 @@ export async function readRestartState(browser) {
         return null;
       }
     };
-    const [workspace, runs] = await Promise.all([
+    const [workspace, runs, executions] = await Promise.all([
       read('workspaces/__test__/pipeline-workspace.json'),
       read('workspaces/__test__/analysis-runs/index.json'),
+      read('workspaces/__test__/execution-runs/index.json'),
     ]);
+    const allRuns = runs ?? [];
     return {
       runtime: workspace?.runtime?.find((entry) => entry.key === pipelineId) ?? null,
-      runs: (runs ?? []).filter((run) => run.params?.pipelineId === pipelineId),
+      runs: allRuns.filter((run) => run.params?.pipelineId === pipelineId),
+      directRuns: allRuns.filter((run) => run.params?.restartFixture === true),
+      executions: executions ?? [],
     };
   }, RESTART_PIPELINE_ID);
 }

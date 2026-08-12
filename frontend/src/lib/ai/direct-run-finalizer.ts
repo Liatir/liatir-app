@@ -29,6 +29,7 @@ import {
 	finalizeSingleCellEmbeddingResult
 } from '$lib/tools/ai/single-cell-embedding';
 import type { ToolOutput } from '$lib/types/tool-output';
+import { finalizeExecutionResult } from '$lib/execution/finalization';
 
 type FinalizedAIToolResult = {
 	outputFiles: RunOutputFile[];
@@ -163,7 +164,7 @@ export async function finalizeCompletedAIDirectRuns(jobs: JobEntry[]): Promise<v
 				onLog
 			);
 
-			await analysisRuns.add({
+			await finalizeExecutionResult(context.execution.runId, 'done', {
 				id: context.analysisRunId,
 				tool: context.toolId,
 				label: context.label,
@@ -171,7 +172,6 @@ export async function finalizeCompletedAIDirectRuns(jobs: JobEntry[]): Promise<v
 				inputSizes: context.inputSizes,
 				outputFiles: finalized.outputFiles,
 				params: context.params,
-				status: 'done',
 				startedAt: context.startedAt,
 				endedAt,
 				durationMs: endedAt - context.startedAt,
@@ -186,19 +186,19 @@ export async function finalizeCompletedAIDirectRuns(jobs: JobEntry[]): Promise<v
 			const logs = output ? outputToLog(job, output) : [`$ ${[job.cmd, ...job.args].join(' ')}`];
 			logs.push(`Error: ${message}`);
 
-			await analysisRuns.add({
+			const terminalStatus = job.status.type === 'killed' ? 'cancelled' : 'error';
+			await finalizeExecutionResult(context.execution.runId, terminalStatus, {
 				id: context.analysisRunId,
 				tool: context.toolId,
 				label: context.label,
 				inputs: context.inputPaths,
 				inputSizes: context.inputSizes,
 				params: context.params,
-				status: 'error',
 				startedAt: context.startedAt,
 				endedAt,
 				durationMs: endedAt - context.startedAt,
 				output: null,
-				error: message,
+				error: terminalStatus === 'cancelled' ? 'AI Model run was cancelled.' : message,
 				log: logs
 			});
 		} finally {

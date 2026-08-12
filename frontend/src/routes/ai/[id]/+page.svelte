@@ -39,6 +39,10 @@
 	import type { ToolOutput } from '$lib/types/tool-output';
 	import type { RunOutputFile } from '$lib/types/pipeline';
 	import { HEADER_HEIGHT } from '$lib/_constants';
+	import { createLiatirRootExecutionIdentity } from '@liatir/core';
+	import { workspaceStore } from '$lib/stores/workspace.svelte';
+	import { executionRuns } from '$lib/stores/executionRuns.svelte';
+	import { finalizeExecutionResult } from '$lib/execution/finalization';
 
 	const modelId = $derived(page.params.id ?? '');
 	const model = $derived(aiModelsStore.byId(modelId));
@@ -67,6 +71,7 @@
 	let species = $state('human');
 	let batchSize = $state(25);
 	let maxCsvRows = $state(500);
+	let activeExecutionRunId = $state<string | null>(null);
 
 	const h5adFiles = $derived(dataFiles.byExt('h5ad'));
 	const modelRuns = $derived(
@@ -155,7 +160,8 @@
 	}
 
 	async function runModel() {
-		if (!model || !canRun) return;
+		const workspaceId = workspaceStore.activeId;
+		if (!model || !canRun || !workspaceId) return;
 		running = true;
 		selectedRunId = null;
 		loadedOutput = null;
@@ -163,12 +169,14 @@
 		logLines = [];
 
 		const runId = crypto.randomUUID();
+		activeExecutionRunId = runId;
 		const t0 = startedAt;
 		const logs: string[] = [];
 		const onLog = (line: string) => {
 			if (!line.trim()) return;
 			logs.push(line);
 			logLines = [...logs];
+			void executionRuns.appendLog(runId, line, { stream: 'system' }).catch(() => {});
 		};
 		const inputs = {
 			modelId: model.id,
@@ -179,11 +187,26 @@
 		};
 		const label = basename(inputFile);
 		const inputSizes = [inputSize(inputFile) ?? 0];
+		const execution = createLiatirRootExecutionIdentity({
+			runId,
+			runKind: 'ai-model',
+			workspaceId,
+			entityId: model.id
+		});
 
 		try {
+			await executionRuns.begin({
+				identity: execution,
+				label,
+				resultPolicy: 'own',
+				resultId: runId,
+				inputs: [inputFile],
+				params: inputs
+			});
 			const { absDir } = await ensureResultsDir(singleCellEmbeddingDefinition.label);
 			const context: AIDirectRunContext = {
 				runKind: 'ai-model-direct',
+				execution,
 				analysisRunId: runId,
 				toolId: singleCellEmbeddingDefinition.id,
 				mode: 'single-cell-embedding',
@@ -192,12 +215,14 @@
 				inputSizes,
 				params: inputs,
 				startedAt: t0,
-				outputDir: absDir
+				outputDir: absDir,
+				signal: executionRuns.signal(runId),
+				onJobId: (jobId) => void executionRuns.attachJob(runId, jobId).catch(() => {})
 			};
 			const result = await runSingleCellEmbeddingStep(inputs, absDir, onLog, context);
 			const endedAt = Date.now();
 			onLog(`Completed in ${fmtDuration(t0, endedAt)}`);
-			await analysisRuns.add({
+			await finalizeExecutionResult(runId, 'done', {
 				id: runId,
 				tool: singleCellEmbeddingDefinition.id,
 				label,
@@ -205,7 +230,6 @@
 				inputSizes,
 				outputFiles: result.outputFiles as RunOutputFile[],
 				params: inputs,
-				status: 'done',
 				startedAt: t0,
 				endedAt,
 				durationMs: endedAt - t0,
@@ -218,27 +242,36 @@
 			const endedAt = Date.now();
 			const message = error instanceof Error ? error.message : String(error);
 			onLog(`Error: ${message}`);
-			await analysisRuns.add({
-				id: runId,
-				tool: singleCellEmbeddingDefinition.id,
-				label,
-				inputs: [inputFile],
-				inputSizes,
-				params: inputs,
-				status: 'error',
-				startedAt: t0,
-				endedAt,
-				durationMs: endedAt - t0,
-				output: null,
-				error: message,
-				log: [...logs]
-			});
+			const cancelled = executionRuns.byId(runId)?.status === 'cancelling' ||
+				(error instanceof DOMException && error.name === 'AbortError');
+			if (executionRuns.byId(runId)) {
+				await finalizeExecutionResult(runId, cancelled ? 'cancelled' : 'error', {
+					id: runId,
+					tool: singleCellEmbeddingDefinition.id,
+					label,
+					inputs: [inputFile],
+					inputSizes,
+					params: inputs,
+					startedAt: t0,
+					endedAt,
+					durationMs: endedAt - t0,
+					output: null,
+					error: cancelled ? 'AI Model run was cancelled.' : message,
+					log: [...logs]
+				}).catch(() => {});
+			}
 			toast.error(message);
 		} finally {
 			running = false;
+			activeExecutionRunId = null;
 			startedAt = null;
 			selectedRunId = runId;
 		}
+	}
+
+	async function cancelModelRun() {
+		if (!activeExecutionRunId) return;
+		await executionRuns.cancel(activeExecutionRunId);
 	}
 
 	async function deleteRun(run: AnalysisRunMeta) {
@@ -335,6 +368,7 @@
 						</fieldset>
 						<div class="flex items-center gap-3 pt-1">
 							<Button variant="primary" disabled={!canRun} loading={running} onclick={runModel}>Run</Button>
+							{#if running}<Button variant="secondary" size="sm" onclick={cancelModelRun}>Cancel</Button>{/if}
 							{#if modelRunActive && runStartedAt}<span class="text-xs text-text-subtle">Elapsed: {fmtDuration(runStartedAt, now)}</span>{/if}
 							{#if activeModelJob && !running}<Button variant="ghost" size="sm" onclick={() => goto('/jobs')}><Icon icon="lucide:radio" width="13" height="13" />Open Jobs</Button>{/if}
 						</div>

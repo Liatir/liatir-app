@@ -9,16 +9,17 @@
 	is what keeps each node's status independent — one node running does not freeze the whole canvas.
 -->
 <script lang="ts">
+	import NodeWrapper from './layout/NodeContentWrapper.svelte';
   import { Handle, Position } from '@xyflow/svelte';
   import type { NodeProps } from '@xyflow/svelte';
   import type { Node } from '@xyflow/svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import type { VariableNodeData } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
-  import NodeDeleteButton from './NodeDeleteButton.svelte';
-  import EditableNodeLabel from './EditableNodeLabel.svelte';
-  import { statusDotClass, statusLabel } from './node-status';
-  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
+  import NodeDeleteButton from './actions/NodeDeleteButton.svelte';
+  import EditableNodeLabel from './actions/EditableNodeLabel.svelte';
+  import { statusDotClass, statusLabel } from './scripts/node-status';
+  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './scripts/node-data-commit';
 
   let { id, data }: NodeProps<Node<VariableNodeData>> = $props();
   const { updateNodeData, getNodes, getEdges } = useSvelteFlow();
@@ -35,6 +36,8 @@
     await commitNodeDataAfterUpdate(nodeDataContext, getNodes, getEdges);
   }
 </script>
+
+<NodeWrapper>
 
 <div class="min-w-48 rounded-xl border border-border bg-surface shadow-md overflow-visible">
   <div class="flex items-center gap-2 px-3 py-2 rounded-t-xl border-b border-border bg-amber-50 cursor-grab active:cursor-grabbing">
@@ -87,3 +90,5 @@
 </div>
 
 <Handle type="source" position={Position.Right} id="value" />
+
+</NodeWrapper>

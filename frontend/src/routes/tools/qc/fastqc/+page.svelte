@@ -10,7 +10,10 @@
   import { fmtDuration, fmtBytes, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns, type AnalysisRun } from '$lib/stores/analysisRuns.svelte';
+  import { executionRuns } from '$lib/stores/executionRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
+  import { beginDirectNativeToolRun } from '$lib/execution/direct-native-tool';
+  import { liatirExecutionMetadata } from '@liatir/core';
   import type { ToolOutput } from '$lib/types/tool-output';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
@@ -25,6 +28,7 @@
   let startedAt = $state<number | null>(null);
   let now       = $state(Date.now());
   let logLines  = $state<string[]>([]);
+  let activeExecutionRunId = $state<string | null>(null);
 
   $effect(() => {
     if (!running) return;
@@ -82,6 +86,8 @@
     const t0 = startedAt;
     const fileSize = dataFiles.files.find(f => f.path === filePath)?.size;
     const inputSizes = fileSize != null ? [fileSize] : undefined;
+    const params: Record<string, number> = { timeoutSec };
+    if (maxReads !== undefined) params.maxReads = maxReads;
     const sizeLine = fileSize != null ? ` (${fmtBytes(fileSize)})` : '';
     logLines = [
       `$ fastqc ${fileName}`,
@@ -89,15 +95,46 @@
       `→ Running WASM quality analysis…`,
     ];
 
+    const execution = await beginDirectNativeToolRun({
+      runId,
+      toolId: 'fastqc',
+      label: fileName,
+      inputs: [filePath],
+      params,
+      startedAt: t0,
+    }).catch(async (error) => {
+      await notify('FastQC failed', String(error));
+      return null;
+    });
+    if (!execution) {
+      running = false;
+      startedAt = null;
+      return;
+    }
+    activeExecutionRunId = runId;
+
     try {
-      const output = await api.qc.fastqc.run({ input: filePath, maxReads, timeoutMs: timeoutSec * 1000 });
+      await Promise.all(logLines.map((line) => execution.appendLog(line)));
+      const jobId = `fastqc-${runId}`;
+      const outputPromise = api.qc.fastqc.run(
+        { input: filePath, maxReads, timeoutMs: timeoutSec * 1000 },
+        {
+          jobId,
+          workspaceId: execution.identity.workspaceId,
+          jobLabel: fileName,
+          jobKind: 'native-tool',
+          metadata: { ...liatirExecutionMetadata(execution.identity), toolId: 'fastqc' },
+        },
+      );
+      await execution.attachJob(jobId);
+      const output = await outputPromise;
       const endedAt = Date.now();
       logLines.push(`✓ Analysis complete in ${fmtDuration(t0, endedAt)}`);
-      await analysisRuns.add({
+      await execution.appendLog(logLines.at(-1) ?? 'Analysis complete', 'stdout');
+      await execution.finalize('done', {
         id: runId, tool: 'fastqc', label: fileName,
         inputs: [filePath], inputSizes,
-        params: maxReads !== undefined ? { maxReads } : {},
-        status: 'done',
+        params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, error: null,
         log: [...logLines],
@@ -105,22 +142,29 @@
       await notify('FastQC complete', `${fileName} finished in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
     } catch (e) {
       const endedAt = Date.now();
-      logLines.push(`✗ Error: ${String(e)}`);
-      await analysisRuns.add({
+      const cancelled = execution.isCancelled(e);
+      const message = cancelled ? 'FastQC run was cancelled.' : String(e);
+      logLines.push(cancelled ? `■ ${message}` : `✗ Error: ${message}`);
+      await execution.appendLog(message, 'stderr', cancelled ? 'warn' : 'error').catch(() => {});
+      await execution.finalize(cancelled ? 'cancelled' : 'error', {
         id: runId, tool: 'fastqc', label: fileName,
         inputs: [filePath], inputSizes,
-        params: maxReads !== undefined ? { maxReads } : {},
-        status: 'error',
+        params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
-        output: null, error: String(e),
+        output: null, error: message,
         log: [...logLines],
       });
-      await notify('FastQC failed', String(e));
+      await notify(cancelled ? 'FastQC cancelled' : 'FastQC failed', message);
     } finally {
       running = false;
       startedAt = null;
+      activeExecutionRunId = null;
       selectedRunId = runId;
     }
+  }
+
+  async function cancelRun() {
+    if (activeExecutionRunId) await executionRuns.cancel(activeExecutionRunId);
   }
 
   async function deleteRun(id: string, label: string) {
@@ -225,6 +269,7 @@
         <FilePickerPopup
           files={fastqFiles}
           value={filePath}
+          testId="direct-native-input"
           label="FASTQ file"
           emptyText="No FASTQ files in Data yet."
           onchange={(p) => {
@@ -278,12 +323,16 @@
         <div class="flex items-center gap-3 pt-1">
           <Button
             variant="primary"
+            testId="direct-native-run"
             disabled={!filePath || running}
             loading={running}
             onclick={runFastqc}
           >
             Run Analysis
           </Button>
+          {#if running && activeExecutionRunId}
+            <Button variant="secondary" testId="direct-native-cancel" onclick={cancelRun}>Cancel</Button>
+          {/if}
           {#if running && startedAt}
             <span class="text-xs text-text-subtle">
               Elapsed: {fmtDuration(startedAt, now)}

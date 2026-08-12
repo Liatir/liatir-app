@@ -1280,6 +1280,22 @@ function buildJobs(core) {
       kind: opts.kind,
       metadata: opts.metadata
     }),
+    beginLogical: (name, opts = {}) => core.invoke("lia_jobs_begin_logical", {
+      name,
+      label: opts.label,
+      kind: opts.kind,
+      metadata: opts.metadata
+    }),
+    appendLogicalOutput: (jobId, stream, line) => core.invoke("lia_jobs_append_logical_output", { jobId, stream, line }),
+    setProgress: (jobId, progress) => core.invoke("lia_plugin_progress", {
+      jobId,
+      current: progress.current,
+      total: progress.total ?? null,
+      label: progress.label ?? null,
+      delta: null,
+      done: progress.done
+    }),
+    finishLogical: (jobId, ok) => core.invoke("lia_jobs_finish_logical", { jobId, ok }),
     kill: (jobId) => core.invoke("lia_jobs_kill", { jobId }),
     status: (jobId) => core.invoke("lia_jobs_status", { jobId }),
     list: () => core.invoke("lia_jobs_list"),
@@ -1401,13 +1417,14 @@ function toToolOutput(r) {
 }
 function buildFastqc(core) {
   return {
-    run: async (args) => {
+    run: async (args, execution) => {
       const hostReadPaths = [parentDir(args.input)];
       const result = await core.invoke("lia_plugin_call", {
         plugin: MODULE,
         payload: { fn: "run", args },
         timeoutMs: args.timeoutMs ?? 3e5,
-        hostReadPaths
+        hostReadPaths,
+        ...execution ?? {}
       });
       if (!result.ok) {
         const msg = result.stderr?.trim() || result.error || "fastqc failed";

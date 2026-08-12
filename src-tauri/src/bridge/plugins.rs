@@ -3,7 +3,10 @@ use serde::{Deserialize, Serialize};
 use std::{
     fs,
     path::{Path, PathBuf},
-    sync::atomic::{AtomicU64, Ordering},
+    sync::{
+        atomic::{AtomicBool, AtomicU64, Ordering},
+        Arc,
+    },
     time::Instant,
 };
 use tauri::{AppHandle, Manager};
@@ -323,9 +326,15 @@ pub async fn lia_plugin_call(
     // filesystem (e.g. FASTQ, BAM) that cannot be passed through stdin.
     // Each entry must be an absolute path to an existing directory.
     host_read_paths: Option<Vec<String>>,
+    // When present, expose this in-process WASM call through Jobs using the
+    // caller-allocated ID and ownership metadata.
+    job_id: Option<String>,
+    workspace_id: Option<String>,
+    job_label: Option<String>,
+    job_kind: Option<String>,
+    metadata: Option<serde_json::Value>,
 ) -> Result<serde_json::Value, String> {
     let started = Instant::now();
-    let id = gen_plugin_job_id();
     let timeout_ms = timeout_ms.unwrap_or(300_000);
     let plugin = plugin
         .or(module)
@@ -334,13 +343,87 @@ pub async fn lia_plugin_call(
     let validated_paths = validate_host_read_paths(host_read_paths.unwrap_or_default())
         .map_err(|e| e.to_string())?;
 
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        run_plugin_job(app, id, plugin, None, payload, timeout_ms, started, validated_paths)
-    })
-    .await
-    .map_err(|e| format!("plugin task join error: {e}"))?;
+    let tracked_job = if let Some(job_id) = job_id {
+        let (id, cancelled) = super::jobs::create_in_process_job_with_id(
+            &app,
+            job_id,
+            format!("wasm:{plugin}"),
+            Vec::new(),
+            workspace_id,
+            job_label,
+            Some(job_kind.unwrap_or_else(|| "native-tool".to_string())),
+            metadata,
+        )?;
+        let _ = super::plugin_progress::lia_plugin_progress(
+            app.clone(),
+            id.clone(),
+            Some(0),
+            Some(1),
+            Some("Running".to_string()),
+            None,
+            Some(false),
+        );
+        Some((id, cancelled))
+    } else {
+        None
+    };
+    let id = tracked_job
+        .as_ref()
+        .map(|(id, _)| id.clone())
+        .unwrap_or_else(gen_plugin_job_id);
+    let cancelled = tracked_job.as_ref().map(|(_, flag)| flag.clone());
+    let app_for_run = app.clone();
+    let run_id = id.clone();
 
-    result.map_err(|e| e.to_string())
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        run_plugin_job(
+            app_for_run,
+            run_id,
+            plugin,
+            None,
+            payload,
+            timeout_ms,
+            started,
+            validated_paths,
+            cancelled,
+        )
+    })
+    .await;
+
+    let response = match result {
+        Ok(result) => result.map_err(|e| e.to_string()),
+        Err(error) => Err(format!("plugin task join error: {error}")),
+    };
+
+    if tracked_job.is_some() {
+        let ok = response
+            .as_ref()
+            .ok()
+            .and_then(|value| value.get("ok"))
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false);
+        if let Ok(value) = response.as_ref() {
+            for (field, stream) in [("stdout", "stdout"), ("stderr", "stderr")] {
+                if let Some(output) = value.get(field).and_then(serde_json::Value::as_str) {
+                    for line in output.lines().filter(|line| !line.is_empty()) {
+                        super::jobs::append_in_process_output(&app, &id, stream, line.to_string());
+                    }
+                }
+            }
+        }
+        let _ = super::plugin_progress::lia_plugin_progress(
+            app.clone(),
+            id.clone(),
+            Some(if ok { 1 } else { 0 }),
+            Some(1),
+            Some(if ok { "Completed" } else { "Failed" }.to_string()),
+            None,
+            Some(true),
+        );
+        super::jobs::finish_in_process_job(&app, &id, ok);
+    }
+
+    response
 }
 
 fn validate_host_read_paths(raw: Vec<String>) -> Result<Vec<PathBuf>> {
@@ -431,6 +514,7 @@ fn run_plugin_job(
     timeout_ms: u64,
     started: Instant,
     host_read_paths: Vec<PathBuf>,
+    cancelled: Option<Arc<AtomicBool>>,
 ) -> Result<serde_json::Value> {
     let job_dir = plugin_job_dir(&app, &id)?;
     let storage_dir = plugin_storage_dir(&app, &plugin_name)?;
@@ -445,6 +529,7 @@ fn run_plugin_job(
         &job_dir,
         &storage_dir,
         &host_read_paths,
+        cancelled,
     );
 
     let duration_ms = started.elapsed().as_millis() as u64;
@@ -486,6 +571,7 @@ pub fn run_wasm_bundle(
     payload: serde_json::Value,
     timeout_ms: Option<u64>,
     host_read_paths: Vec<String>,
+    cancelled: Arc<AtomicBool>,
 ) -> Result<serde_json::Value> {
     let id = gen_plugin_job_id();
     let timeout_ms = timeout_ms.unwrap_or(300_000);
@@ -500,6 +586,7 @@ pub fn run_wasm_bundle(
         timeout_ms,
         Instant::now(),
         validated_paths,
+        Some(cancelled),
     )
 }
 
@@ -516,6 +603,7 @@ fn run_plugin_job_inner(
     job_dir: &Path,
     storage_dir: &Path,
     host_read_paths: &[PathBuf],
+    cancelled: Option<Arc<AtomicBool>>,
 ) -> Result<PluginResponse> {
     let wasm_bytes = match wasm_bytes_override {
         Some(bytes) => bytes,
@@ -587,8 +675,19 @@ fn run_plugin_job_inner(
     let engine_for_timeout = engine.clone();
 
     std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(timeout_ms));
-        engine_for_timeout.increment_epoch();
+        let started = Instant::now();
+        loop {
+            if cancelled
+                .as_ref()
+                .map(|flag| flag.load(Ordering::SeqCst))
+                .unwrap_or(false)
+                || started.elapsed() >= std::time::Duration::from_millis(timeout_ms)
+            {
+                engine_for_timeout.increment_epoch();
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(25));
+        }
     });
 
     let mut linker = Linker::<WasiP1Ctx>::new(&engine);

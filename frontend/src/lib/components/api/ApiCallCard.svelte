@@ -10,6 +10,8 @@
   import { toast } from '$lib/stores/toast.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import type { ApiRequest, ApiCollection, ApiParam, ApiKeyValue, ApiBody, HttpMethod, ApiResponse, ApiOutputSchemaField } from '$lib/types/api-connection';
+  import { runApiConnectorDirect } from '$lib/api/direct-run';
+  import { executionRuns } from '$lib/stores/executionRuns.svelte';
 
   interface Props {
     request: ApiRequest;
@@ -40,6 +42,7 @@
   let initValues = $state<Record<string, string>>({});
   let sending = $state(false);
   let response = $state<ApiResponse | null>(initialResponseState());
+  let activeRunId = $state<string | null>(null);
 
   const METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
   const METHOD_COLORS: Record<string, string> = {
@@ -58,8 +61,10 @@
   async function initialize() {
     if (sending) return;
     sending = true;
+    const runId = crypto.randomUUID();
+    activeRunId = runId;
     try {
-      const { response: resp, schema } = await apiConnections.initializeCall(request, initValues);
+      const { response: resp, schema } = await runApiConnectorDirect(runId, request, initValues);
       response = resp;
       // Bubble behaviour: the detected schema populates the editable return values.
       set({ outputSchema: schema, lastResponse: { ...resp, timestamp: Date.now() } });
@@ -68,7 +73,13 @@
       toast.error(`Call failed: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       sending = false;
+      activeRunId = null;
     }
+  }
+
+  async function cancelInitialize() {
+    if (!activeRunId) return;
+    await executionRuns.cancel(activeRunId);
   }
 
   async function del() {
@@ -81,10 +92,11 @@
   }
 </script>
 
-<div class="rounded-lg border border-border bg-surface">
+<div class="rounded-lg border border-border bg-surface" data-testid="api-connector-card" data-request-id={request.id}>
   <!-- Header -->
   <div class="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-surface/60 rounded-t-lg"
        role="button" tabindex="0"
+       data-testid="api-connector-card-toggle"
        onclick={() => open = !open}
        onkeydown={(e) => e.key === 'Enter' && (open = !open)}>
     <Icon icon="lucide:chevron-right" width="12" height="12" class="text-text-subtle shrink-0 transition-transform {open ? 'rotate-90' : ''}" />
@@ -160,10 +172,13 @@
       <div class="rounded-lg border border-border bg-surface/50 p-3 space-y-2.5">
         <div class="flex items-center justify-between">
           <span class="text-[11px] font-semibold text-text-secondary">Initialize call</span>
-          <Button variant="primary" size="sm" loading={sending} onclick={initialize} disabled={!request.url}>
+          <Button variant="primary" size="sm" loading={sending} onclick={initialize} disabled={!request.url} testId="api-connector-run-button">
             <Icon icon="lucide:play" width="11" height="11" />
             {request.outputSchema ? 'Reinitialize' : 'Initialize call'}
           </Button>
+          {#if sending}
+            <Button variant="secondary" size="sm" onclick={cancelInitialize} testId="api-connector-cancel-button">Cancel</Button>
+          {/if}
         </div>
 
         {#if inputParams.length}

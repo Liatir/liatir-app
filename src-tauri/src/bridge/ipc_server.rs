@@ -570,6 +570,69 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
             Ok(serde_json::json!(ok))
         }
 
+        "lia_jobs_begin_logical" => {
+            let name = payload["name"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("name required"))?
+                .to_string();
+            let workspace_id = dev_context
+                .as_ref()
+                .map(|_| crate::bridge::jobs::SANDBOX_WORKSPACE_ID.to_string())
+                .or_else(|| payload["workspaceId"].as_str().map(String::from));
+            let label = payload["label"].as_str().map(String::from);
+            let kind = match dev_context.as_ref() {
+                Some(_) => Some("lia-plugin-dev-logical".to_string()),
+                None => payload["kind"].as_str().map(String::from),
+            };
+            let metadata = payload.get("metadata").filter(|value| !value.is_null()).cloned();
+            let metadata = match dev_context.as_ref() {
+                Some(ctx) => Some(merge_dev_job_metadata(metadata, ctx)),
+                None => metadata,
+            };
+            let result = crate::bridge::jobs::lia_jobs_begin_logical(
+                app.clone(), name, workspace_id, label, kind, metadata,
+            ).map_err(|e| anyhow::anyhow!(e))?;
+            if let (Some(ctx), Some(job_id)) = (
+                dev_context.as_ref(),
+                result.get("jobId").and_then(Value::as_str),
+            ) {
+                crate::bridge::plugin_dev::track_dev_job(app, &ctx.session_id, job_id);
+            }
+            Ok(result)
+        }
+
+        "lia_jobs_append_logical_output" => {
+            let job_id = payload["jobId"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("jobId required"))?
+                .to_string();
+            ensure_dev_job_access(app, dev_context.as_ref(), &job_id)?;
+            let stream = payload["stream"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("stream required"))?
+                .to_string();
+            let line = payload["line"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("line required"))?
+                .to_string();
+            crate::bridge::jobs::lia_jobs_append_logical_output(
+                app.clone(), job_id, stream, line,
+            ).map_err(|e| anyhow::anyhow!(e))?;
+            Ok(Value::Null)
+        }
+
+        "lia_jobs_finish_logical" => {
+            let job_id = payload["jobId"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("jobId required"))?
+                .to_string();
+            ensure_dev_job_access(app, dev_context.as_ref(), &job_id)?;
+            let ok = payload["ok"].as_bool().unwrap_or(false);
+            crate::bridge::jobs::lia_jobs_finish_logical(app.clone(), job_id, ok)
+                .map_err(|e| anyhow::anyhow!(e))?;
+            Ok(Value::Null)
+        }
+
         "lia_jobs_status" => {
             let job_id = payload["jobId"]
                 .as_str()
@@ -903,7 +966,24 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
             let host_read_paths = payload["hostReadPaths"]
                 .as_array()
                 .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect());
-            crate::bridge::plugins::lia_plugin_call(app.clone(), Some(plugin), None, plugin_payload, timeout_ms, host_read_paths)
+            let job_id = payload["jobId"].as_str().map(String::from);
+            let workspace_id = payload["workspaceId"].as_str().map(String::from);
+            let job_label = payload["jobLabel"].as_str().map(String::from);
+            let job_kind = payload["jobKind"].as_str().map(String::from);
+            let metadata = payload.get("metadata").cloned().filter(|value| !value.is_null());
+            crate::bridge::plugins::lia_plugin_call(
+                app.clone(),
+                Some(plugin),
+                None,
+                plugin_payload,
+                timeout_ms,
+                host_read_paths,
+                job_id,
+                workspace_id,
+                job_label,
+                job_kind,
+                metadata,
+            )
                 .await
                 .map_err(|e| anyhow::anyhow!(e))
         }

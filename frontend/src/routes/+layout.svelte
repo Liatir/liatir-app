@@ -17,6 +17,8 @@
 	import { settingsStore } from '$lib/stores/settings.svelte';
 	import { pipelineStore } from '$lib/stores/pipeline.svelte';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
+	import { executionRuns } from '$lib/stores/executionRuns.svelte';
+	import { reconcileExecutionResults } from '$lib/execution/finalization';
 	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -77,13 +79,15 @@
 			initialized = true;
 			return;
 		}
+		await executionRuns.init();
+		await reconcileExecutionResults();
 		await refreshJobsAndFinalize();
 		jobRefreshInterval = setInterval(() => {
 			if (jobsStore.runningCount > 0 || hasRunningDirectAIJob(jobsStore.jobs)) {
 				void refreshJobsAndFinalize();
 			}
 		}, 2000);
-		pipelineStore.init();
+		await pipelineStore.init();
 		
 		initialized = true;
 	});

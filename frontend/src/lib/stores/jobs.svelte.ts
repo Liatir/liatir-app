@@ -1,18 +1,14 @@
 import { liatir } from '$lib/api';
 import { workspaceStore } from './workspace.svelte';
+import { executionRuns } from './executionRuns.svelte';
+import type {
+	LiatirJobEntry,
+	LiatirJobProgress,
+	LiatirJobStatus,
+} from '@liatir/core';
 
-export type JobStatus =
-	| { type: 'running' }
-	| { type: 'done'; exitCode: number | null }
-	| { type: 'failed'; exitCode: number | null }
-	| { type: 'killed' };
-
-export interface JobProgress {
-	current: number;
-	total?: number | null;
-	label?: string | null;
-	done: boolean;
-}
+export type JobStatus = LiatirJobStatus;
+export type JobProgress = LiatirJobProgress;
 
 export type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
@@ -24,25 +20,20 @@ export interface PluginLogEntry {
 	timestampMs: number;
 }
 
-export interface JobEntry {
-	id: string;
-	cmd: string;
-	args: string[];
-	label?: string | null;
-	kind?: string | null;
-	metadata?: Record<string, unknown> | null;
-	status: JobStatus;
-	startedAtMs: number;
-	endedAtMs: number | null;
-	workspaceId?: string | null;
-	progress?: JobProgress | null;
-}
+export type JobEntry = LiatirJobEntry;
 
 export interface JobBufferedOutput {
 	stdout: string[];
 	stderr: string[];
 	stdoutTotal: number;
 	stderrTotal: number;
+}
+
+function executionRunId(job: Pick<JobEntry, 'metadata'> | undefined): string | null {
+	const execution = job?.metadata?.execution;
+	if (!execution || typeof execution !== 'object' || Array.isArray(execution)) return null;
+	const runId = (execution as Record<string, unknown>).runId;
+	return typeof runId === 'string' ? runId : null;
 }
 
 function createJobsStore() {
@@ -76,6 +67,14 @@ function createJobsStore() {
 				const entry = raw as PluginLogEntry;
 				const existing = jobLogs.get(jobId) ?? [];
 				jobLogs = new Map(jobLogs).set(jobId, [...existing, entry]);
+				const runId = executionRunId(jobs.find((job) => job.id === jobId));
+				if (runId && executionRuns.byId(runId)) {
+					void executionRuns.appendLog(runId, entry.message, {
+						level: entry.level,
+						stream: entry.level === 'error' ? 'stderr' : 'system',
+						timestampMs: entry.timestampMs,
+					}).catch(() => {});
+				}
 			}
 		) as unknown as () => void;
 		logUnlisteners.set(jobId, logUnlisten);
@@ -86,6 +85,10 @@ function createJobsStore() {
 			(raw: unknown) => {
 				const progress = raw as JobProgress;
 				jobProgress = new Map(jobProgress).set(jobId, progress);
+				const runId = executionRunId(jobs.find((job) => job.id === jobId));
+				if (runId && executionRuns.byId(runId)) {
+					void executionRuns.setProgress(runId, progress).catch(() => {});
+				}
 
 				// Also update the job entry's progress field
 				const jobIndex = jobs.findIndex((j) => j.id === jobId);
@@ -159,6 +162,11 @@ function createJobsStore() {
 				// plugin elsewhere) so their live log/progress events are captured too.
 				// subscribeToJob() de-dupes, so re-subscribing an already-tracked job is cheap.
 				for (const job of jobs) {
+					const runId = executionRunId(job);
+					if (runId && executionRuns.byId(runId)) {
+						void executionRuns.attachJob(runId, job.id).catch(() => {});
+						if (job.progress) void executionRuns.setProgress(runId, job.progress).catch(() => {});
+					}
 					if (job.status.type === 'running') void subscribeToJob(job.id);
 				}
 			} catch (e) {
@@ -197,10 +205,57 @@ function createJobsStore() {
 			return result;
 		},
 
+		async beginLogical(
+			name: string,
+			options: { label?: string; kind?: string; metadata?: Record<string, unknown> } = {},
+		): Promise<{ jobId: string } | null> {
+			const api = liatir();
+			if (!api) return null;
+			const result = await api.invoke('lia_jobs_begin_logical', {
+				name,
+				workspaceId: workspaceStore.activeId,
+				...options,
+			}) as { jobId: string };
+			await this.refresh();
+			await subscribeToJob(result.jobId);
+			return result;
+		},
+
+		async appendLogicalOutput(jobId: string, stream: 'stdout' | 'stderr', line: string): Promise<void> {
+			const api = liatir();
+			if (!api) return;
+			await api.invoke('lia_jobs_append_logical_output', { jobId, stream, line });
+		},
+
+		async setProgress(jobId: string, progress: JobProgress): Promise<void> {
+			const api = liatir();
+			if (!api) return;
+			await api.invoke('lia_plugin_progress', {
+				jobId,
+				current: progress.current,
+				total: progress.total ?? null,
+				label: progress.label ?? null,
+				delta: null,
+				done: progress.done,
+			});
+		},
+
+		async finishLogical(jobId: string, ok: boolean): Promise<void> {
+			const api = liatir();
+			if (!api) return;
+			await api.invoke('lia_jobs_finish_logical', { jobId, ok });
+			await this.refresh();
+		},
+
 		async kill(jobId: string) {
 			const api = liatir();
 			if (!api) return;
-			await api.invoke('lia_jobs_kill', { jobId });
+			const runId = executionRunId(jobs.find((job) => job.id === jobId));
+			if (runId && executionRuns.byId(runId)) {
+				await executionRuns.cancel(runId);
+			} else {
+				await api.invoke('lia_jobs_kill', { jobId });
+			}
 			cleanupJobListeners(jobId);
 			await this.refresh();
 		},

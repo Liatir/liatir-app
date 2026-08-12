@@ -9,7 +9,9 @@
   import { fmtDuration, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
+  import { executionRuns } from '$lib/stores/executionRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
+  import { beginDirectNativeToolRun } from '$lib/execution/direct-native-tool';
   import { runNativeTool } from '$lib/utils/native-tool';
   import { parseFastpJson, fastpToToolOutput } from '$lib/tools/qc/fastp';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
@@ -34,6 +36,7 @@
   let startedAt   = $state<number | null>(null);
   let logLines    = $state<string[]>([]);
   let now         = $state(Date.now());
+  let activeExecutionRunId = $state<string | null>(null);
 
   $effect(() => {
     if (!running) return;
@@ -87,8 +90,27 @@
     const r1Size = dataFiles.files.find(f => f.path === r1Path)?.size;
     const r2Size = isPaired ? dataFiles.files.find(f => f.path === r2Path)?.size : undefined;
     const inputSizes = [r1Size, r2Size].filter((s): s is number => s != null);
+    const inputs = isPaired ? [r1Path, r2Path] : [r1Path];
+    const params = { paired: isPaired, threads: threadInfo.threads, threadsMode: threadInfo.mode };
 
     const api = liatir();
+    const execution = await beginDirectNativeToolRun({
+      runId,
+      toolId: 'fastp',
+      label,
+      inputs,
+      params,
+      startedAt: t0,
+    }).catch(async (error) => {
+      await notify('fastp failed', String(error));
+      return null;
+    });
+    if (!execution) {
+      running = false;
+      startedAt = null;
+      return;
+    }
+    activeExecutionRunId = runId;
 
     try {
       const paths = await api!.invoke('lia_fs_paths', {}) as { data: string; cache: string };
@@ -109,7 +131,13 @@
       }
 
       logLines = [`$ fastp --thread ${threadInfo.threads} --in1 ${r1Path.split(/[\\/]/).pop()}${r2Path ? ' --in2 ' + r2Path.split(/[\\/]/).pop() : ''}`];
-      const result = await runNativeTool('fastp', args, undefined, (l) => { if (typeof l === 'string' && l.trim()) logLines.push(l); });
+      const result = await runNativeTool(
+        'fastp',
+        args,
+        undefined,
+        (line) => { if (line.trim()) logLines.push(line); },
+        execution.nativeOptions(),
+      );
 
       if (!result.ok) {
         throw new Error(result.stderr || `fastp exited with code ${result.exitCode}`);
@@ -128,13 +156,12 @@
         outputFiles.push({ label: 'Trimmed R2', path: out2Path, ext: 'fastq.gz', size: await trySize(out2Path) });
       }
 
-      await analysisRuns.add({
+      await execution.finalize('done', {
         id: runId, tool: 'fastp', label,
-        inputs: isPaired ? [r1Path, r2Path] : [r1Path],
+        inputs,
         inputSizes: inputSizes.length > 0 ? inputSizes : undefined,
-        params: { paired: isPaired, threads: threadInfo.threads, threadsMode: threadInfo.mode },
+        params,
         outputFiles,
-        status: 'done',
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, error: null,
         log: [...logLines],
@@ -142,22 +169,29 @@
       await notify('fastp complete', `${label} finished in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
     } catch (e) {
       const endedAt = Date.now();
-      await analysisRuns.add({
+      const cancelled = execution.isCancelled(e);
+      const message = cancelled ? 'fastp run was cancelled.' : String(e);
+      logLines.push(cancelled ? `■ ${message}` : `✗ Error: ${message}`);
+      await execution.finalize(cancelled ? 'cancelled' : 'error', {
         id: runId, tool: 'fastp', label,
-        inputs: isPaired ? [r1Path, r2Path] : [r1Path],
+        inputs,
         inputSizes: inputSizes.length > 0 ? inputSizes : undefined,
-        params: { paired: isPaired, threads: threadInfo.threads, threadsMode: threadInfo.mode },
-        status: 'error',
+        params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
-        output: null, error: String(e),
+        output: null, error: message,
         log: [...logLines],
       });
-      await notify('fastp failed', String(e));
+      await notify(cancelled ? 'fastp cancelled' : 'fastp failed', message);
     } finally {
       running   = false;
       startedAt = null;
+      activeExecutionRunId = null;
       selectedRunId = runId;
     }
+  }
+
+  async function cancelRun() {
+    if (activeExecutionRunId) await executionRuns.cancel(activeExecutionRunId);
   }
 
   async function deleteRun(id: string, label: string) {
@@ -299,12 +333,16 @@
           <div class="flex items-center gap-3 pt-1">
             <Button
               variant="primary"
+              testId="direct-native-run"
               disabled={!r1Path || running}
               loading={running}
               onclick={runFastp}
             >
               Run fastp
             </Button>
+            {#if running && activeExecutionRunId}
+              <Button variant="secondary" testId="direct-native-cancel" onclick={cancelRun}>Cancel</Button>
+            {/if}
             {#if running && startedAt}
               <span class="text-xs text-text-subtle">
                 Elapsed: {fmtDuration(startedAt, now)}

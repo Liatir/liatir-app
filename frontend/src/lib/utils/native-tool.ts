@@ -1,8 +1,13 @@
 import { liatir } from '$lib/api';
 import { workspaceStore } from '$lib/stores/workspace.svelte';
-import type { JsonValue } from '@liatir/core';
+import {
+  liatirExecutionMetadata,
+  type JsonValue,
+  type LiatirExecutionIdentity,
+} from '@liatir/core';
 import { throwIfRunCancelled } from '$lib/pipeline/cancellation';
 import { waitForJobSettlement } from '$lib/pipeline/job-settlement';
+import { executionRuns } from '$lib/stores/executionRuns.svelte';
 
 export interface NativeRunResult {
   jobId: string;
@@ -20,6 +25,8 @@ export interface NativeRunOptions {
   onSpawn?: (jobId: string) => void;
   signal?: AbortSignal;
   stdoutPath?: string;
+  /** Stable owner copied into the Job and durable execution record. */
+  execution?: LiatirExecutionIdentity;
 }
 
 /**
@@ -39,7 +46,18 @@ export async function runNativeTool(
 ): Promise<NativeRunResult> {
   const api = liatir();
   if (!api) throw new Error('Liatir API not available');
-  throwIfRunCancelled(options.signal);
+  const signal = options.signal ?? (
+    options.execution ? executionRuns.signal(options.execution.runId) : undefined
+  );
+  throwIfRunCancelled(signal);
+
+  const executionMetadata = options.execution
+    ? liatirExecutionMetadata(options.execution)
+    : {};
+  const metadata = {
+    ...options.metadata,
+    ...executionMetadata,
+  };
 
   // Spawn via invoke directly so the job is tagged with the active workspace.
   // The backend resolves managed native tools to their installed binary (single
@@ -51,14 +69,30 @@ export async function runNativeTool(
     env: options.env,
     label: options.label,
     kind: options.kind,
-    metadata: options.metadata,
+    metadata,
     stdoutPath: options.stdoutPath,
   }) as { jobId: string };
+  if (options.execution && executionRuns.byId(options.execution.runId)) {
+    await executionRuns.attachJob(options.execution.runId, jobId);
+  }
   options.onSpawn?.(jobId);
   const settlement = await waitForJobSettlement(api, jobId, {
-    signal: options.signal,
-    onStdout,
-    onStderr,
+    signal,
+    onStdout: (line) => {
+      onStdout?.(line);
+      if (options.execution && executionRuns.byId(options.execution.runId)) {
+        void executionRuns.appendLog(options.execution.runId, line, { stream: 'stdout' }).catch(() => {});
+      }
+    },
+    onStderr: (line) => {
+      onStderr?.(line);
+      if (options.execution && executionRuns.byId(options.execution.runId)) {
+        void executionRuns.appendLog(options.execution.runId, line, {
+          stream: 'stderr',
+          level: 'error',
+        }).catch(() => {});
+      }
+    },
   });
   const exitCode = settlement.entry.status.type === 'done' || settlement.entry.status.type === 'failed'
     ? settlement.entry.status.exitCode ?? null

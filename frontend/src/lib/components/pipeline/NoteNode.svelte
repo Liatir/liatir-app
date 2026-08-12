@@ -7,8 +7,8 @@
   import type { NoteNodeData, NoteColor } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
   import { openLinkInBrowser } from '$lib/utils';
-  import NodeDeleteButton from './NodeDeleteButton.svelte';
-  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
+  import NodeDeleteButton from './actions/NodeDeleteButton.svelte';
+  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './scripts/node-data-commit';
 
   const DEFAULT_WIDTH = 260;
   const MIN_WIDTH = 160;

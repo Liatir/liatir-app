@@ -1,4 +1,5 @@
 <script lang="ts">
+	import NodeWrapper from './layout/NodeContentWrapper.svelte';
   import { Handle, Position } from '@xyflow/svelte';
   import type { NodeProps } from '@xyflow/svelte';
   import type { Node, Edge } from '@xyflow/svelte';
@@ -10,12 +11,12 @@
   import { apiConnections } from '$lib/stores/apiConnections.svelte';
   import { upstreamOptions } from '$lib/tools/pipeline-io';
   import { sanitizeLocalPathsForDisplay } from '$lib/utils';
-  import ValueRefInput from './ValueRefInput.svelte';
-  import NodeDeleteButton from './NodeDeleteButton.svelte';
-  import EditableNodeLabel from './EditableNodeLabel.svelte';
-  import { statusDotClass, statusLabel } from './node-status';
+  import ValueRefInput from './actions/ValueRefInput.svelte';
+  import NodeDeleteButton from './actions/NodeDeleteButton.svelte';
+  import EditableNodeLabel from './actions/EditableNodeLabel.svelte';
+  import { statusDotClass, statusLabel } from './scripts/node-status';
   import { clickOutside } from '$lib/actions/clickOutside';
-  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
+  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './scripts/node-data-commit';
 
   let { id, data }: NodeProps<Node<ApiRequestNodeData>> = $props();
   const { updateNodeData, getNodes, getEdges } = useSvelteFlow();
@@ -91,6 +92,8 @@
     if (showPicker && pickerSearchInput) setTimeout(() => pickerSearchInput?.focus(), 30);
   });
 </script>
+
+<NodeWrapper>
 
 <!-- Single input handle — wire upstream value nodes in, then map them to params below. -->
 <Handle type="target" position={Position.Left} id="input" />
@@ -240,3 +243,5 @@
     </div>
   </div>
 {/if}
+
+</NodeWrapper>

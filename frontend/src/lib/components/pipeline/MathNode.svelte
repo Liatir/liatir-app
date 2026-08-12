@@ -1,4 +1,5 @@
 <script lang="ts">
+	import NodeWrapper from './layout/NodeContentWrapper.svelte';
   import { Handle, Position } from '@xyflow/svelte';
   import type { NodeProps } from '@xyflow/svelte';
   import type { Node, Edge } from '@xyflow/svelte';
@@ -6,11 +7,11 @@
   import type { MathNodeData, MathOperation } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
   import { upstreamOptions } from '$lib/tools/pipeline-io';
-  import ValueRefInput from './ValueRefInput.svelte';
-  import NodeDeleteButton from './NodeDeleteButton.svelte';
-  import EditableNodeLabel from './EditableNodeLabel.svelte';
-  import { statusDotClass, statusLabel } from './node-status';
-  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
+  import ValueRefInput from './actions/ValueRefInput.svelte';
+  import NodeDeleteButton from './actions/NodeDeleteButton.svelte';
+  import EditableNodeLabel from './actions/EditableNodeLabel.svelte';
+  import { statusDotClass, statusLabel } from './scripts/node-status';
+  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './scripts/node-data-commit';
   import Select from '$lib/components/ui/Select.svelte';
   import { sanitizeLocalPathsForDisplay } from '$lib/utils';
 
@@ -50,6 +51,8 @@
     await commitNodeDataAfterUpdate(nodeDataContext, getNodes, getEdges);
   }
 </script>
+
+<NodeWrapper>
 
 <!-- Single input handle — wire upstream value nodes in, then pick each operand below. -->
 <Handle type="target" position={Position.Left} id="input" />
@@ -118,3 +121,5 @@
 
 <!-- Single output handle (numeric result). -->
 <Handle type="source" position={Position.Right} id="result" />
+
+</NodeWrapper>

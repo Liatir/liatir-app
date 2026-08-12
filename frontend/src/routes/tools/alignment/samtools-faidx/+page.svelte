@@ -9,7 +9,9 @@
   import { fmtDuration, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
+  import { executionRuns } from '$lib/stores/executionRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
+  import { beginDirectNativeToolRun } from '$lib/execution/direct-native-tool';
   import { runNativeTool } from '$lib/utils/native-tool';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
@@ -32,6 +34,7 @@
   let startedAt = $state<number | null>(null);
   let now       = $state(Date.now());
   let logLines  = $state<string[]>([]);
+  let activeIndexExecutionRunId = $state<string | null>(null);
 
   $effect(() => {
     if (!running) return;
@@ -44,6 +47,7 @@
   let extractRunning = $state(false);
   let extractOutput  = $state<string | null>(null);
   let extractError   = $state<string | null>(null);
+  let activeExtractExecutionRunId = $state<string | null>(null);
 
   // ── history ──────────────────────────────────────────────────────
   let selectedRunId = $state<string | null>(null);
@@ -86,11 +90,35 @@
     const fileSize = dataFiles.files.find(f => f.path === filePath)?.size;
     const inputSizes = fileSize != null ? [fileSize] : undefined;
     const threadInfo = threadParam(threads);
+    const params = { subcommand: 'faidx', threads: threadInfo.threads, threadsMode: threadInfo.mode };
+    const execution = await beginDirectNativeToolRun({
+      runId,
+      toolId: 'samtools-faidx',
+      label: fileName,
+      inputs: [filePath],
+      params,
+      startedAt: t0,
+    }).catch(async (error) => {
+      await notify('Samtools faidx failed', String(error));
+      return null;
+    });
+    if (!execution) {
+      running = false;
+      startedAt = null;
+      return;
+    }
+    activeIndexExecutionRunId = runId;
 
     try {
       logLines = [`$ samtools faidx -@ ${threadInfo.threads} ${fileName}`];
       // samtools faidx writes the index to <file>.fai (no stdout output)
-      const result = await runNativeTool('samtools', ['faidx', '-@', String(threadInfo.threads), filePath], undefined, (l) => { if (typeof l === 'string' && l.trim()) logLines.push(l); });
+      const result = await runNativeTool(
+        'samtools',
+        ['faidx', '-@', String(threadInfo.threads), filePath],
+        undefined,
+        (line) => { if (line.trim()) logLines.push(line); },
+        execution.nativeOptions(),
+      );
 
       if (!result.ok) {
         throw new Error(result.stderr || `samtools faidx exited with code ${result.exitCode}`);
@@ -114,11 +142,10 @@
         size: await api.invoke('lia_file_size', { path: faiPath }) as number,
       }];
 
-      await analysisRuns.add({
+      await execution.finalize('done', {
         id: runId, tool: 'samtools-faidx', label: fileName,
         inputs: [filePath], inputSizes,
-        params: { subcommand: 'faidx', threads: threadInfo.threads, threadsMode: threadInfo.mode },
-        status: 'done',
+        params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, outputFiles, error: null,
         log: [...logLines],
@@ -126,19 +153,22 @@
       await notify('Samtools faidx complete', `${fileName} finished in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
     } catch (e) {
       const endedAt = Date.now();
-      await analysisRuns.add({
+      const cancelled = execution.isCancelled(e);
+      const message = cancelled ? 'Samtools faidx run was cancelled.' : String(e);
+      logLines.push(cancelled ? `■ ${message}` : `✗ Error: ${message}`);
+      await execution.finalize(cancelled ? 'cancelled' : 'error', {
         id: runId, tool: 'samtools-faidx', label: fileName,
         inputs: [filePath], inputSizes,
-        params: { subcommand: 'faidx', threads: threadInfo.threads, threadsMode: threadInfo.mode },
-        status: 'error',
+        params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
-        output: null, error: String(e),
+        output: null, error: message,
         log: [...logLines],
       });
-      await notify('Samtools faidx failed', String(e));
+      await notify(cancelled ? 'Samtools faidx cancelled' : 'Samtools faidx failed', message);
     } finally {
       running   = false;
       startedAt = null;
+      activeIndexExecutionRunId = null;
       selectedRunId = runId;
     }
   }
@@ -149,20 +179,90 @@
     extractRunning = true;
     extractOutput  = null;
     extractError   = null;
+    const runId = crypto.randomUUID();
+    const started = Date.now();
+    const region = extractRegion.trim();
+    const fileName = filePath.split(/[\\/]/).pop() ?? filePath;
+    const threadInfo = threadParam(threads);
+    const params = { subcommand: 'faidx-extract', region, threads: threadInfo.threads, threadsMode: threadInfo.mode };
+    const execution = await beginDirectNativeToolRun({
+      runId,
+      toolId: 'samtools-faidx',
+      label: `${fileName} · ${region}`,
+      inputs: [filePath],
+      params,
+      startedAt: started,
+    }).catch(async (error) => {
+      extractError = String(error);
+      return null;
+    });
+    if (!execution) {
+      extractRunning = false;
+      return;
+    }
+    activeExtractExecutionRunId = runId;
 
     try {
-      const threadInfo = threadParam(threads);
-      logLines = [`$ samtools faidx -@ ${threadInfo.threads} ${filePath.split(/[\\/]/).pop()} ${extractRegion.trim()}`];
-      const result = await runNativeTool('samtools', ['faidx', '-@', String(threadInfo.threads), filePath, extractRegion.trim()], undefined, (l) => { if (typeof l === 'string' && l.trim()) logLines.push(l); });
+      logLines = [`$ samtools faidx -@ ${threadInfo.threads} ${fileName} ${region}`];
+      const result = await runNativeTool(
+        'samtools',
+        ['faidx', '-@', String(threadInfo.threads), filePath, region],
+        undefined,
+        (line) => { if (line.trim()) logLines.push(line); },
+        execution.nativeOptions({ label: `${fileName} · ${region}` }),
+      );
       if (!result.ok && result.stdout.trim() === '') {
         throw new Error(result.stderr || `samtools faidx exited with code ${result.exitCode}`);
       }
       extractOutput = result.stdout;
+      const endedAt = Date.now();
+      await execution.finalize('done', {
+        id: runId,
+        tool: 'samtools-faidx',
+        label: `${fileName} · ${region}`,
+        inputs: [filePath],
+        params,
+        startedAt: started,
+        endedAt,
+        durationMs: endedAt - started,
+        output: {
+          sections: [{ type: 'text', label: 'Extracted subsequence', content: result.stdout, mono: true }],
+        },
+        error: null,
+        log: [...logLines],
+      });
+      selectedRunId = runId;
     } catch (e) {
-      extractError = String(e);
+      const endedAt = Date.now();
+      const cancelled = execution.isCancelled(e);
+      const message = cancelled ? 'Subsequence extraction was cancelled.' : String(e);
+      extractError = message;
+      await execution.finalize(cancelled ? 'cancelled' : 'error', {
+        id: runId,
+        tool: 'samtools-faidx',
+        label: `${fileName} · ${region}`,
+        inputs: [filePath],
+        params,
+        startedAt: started,
+        endedAt,
+        durationMs: endedAt - started,
+        output: null,
+        error: message,
+        log: [...logLines, cancelled ? `■ ${message}` : `✗ Error: ${message}`],
+      });
+      selectedRunId = runId;
     } finally {
       extractRunning = false;
+      activeExtractExecutionRunId = null;
     }
+  }
+
+  async function cancelIndexRun() {
+    if (activeIndexExecutionRunId) await executionRuns.cancel(activeIndexExecutionRunId);
+  }
+
+  async function cancelExtractRun() {
+    if (activeExtractExecutionRunId) await executionRuns.cancel(activeExtractExecutionRunId);
   }
 
   function parseFaiToToolOutput(faiText: string, faiPath: string): ToolOutput {
@@ -322,12 +422,16 @@
           <div class="flex items-center gap-3 pt-1">
             <Button
               variant="primary"
-              disabled={!filePath || running}
+              testId="direct-native-run"
+              disabled={!filePath || running || extractRunning}
               loading={running}
               onclick={runFaidx}
             >
               Create index
             </Button>
+            {#if running && activeIndexExecutionRunId}
+              <Button variant="secondary" testId="direct-native-cancel" onclick={cancelIndexRun}>Cancel</Button>
+            {/if}
             {#if running && startedAt}
               <span class="text-xs text-text-subtle">Elapsed: {fmtDuration(startedAt, now)}</span>
             {/if}
@@ -360,12 +464,16 @@
 
             <Button
               variant="secondary"
-              disabled={!extractRegion.trim() || extractRunning}
+              testId="direct-native-extract-run"
+              disabled={!extractRegion.trim() || extractRunning || running}
               loading={extractRunning}
               onclick={extractSubsequence}
             >
               Extract
             </Button>
+            {#if extractRunning && activeExtractExecutionRunId}
+              <Button variant="secondary" testId="direct-native-extract-cancel" onclick={cancelExtractRun}>Cancel</Button>
+            {/if}
 
             {#if extractError}
               <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 font-mono">

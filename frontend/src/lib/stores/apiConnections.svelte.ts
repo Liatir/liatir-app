@@ -5,6 +5,11 @@ import type {
   ApiCollection, ApiRequest, ApiResponse, ApiKeyValue, ApiParam, ApiOutputSchemaField,
   ApiFieldType, ApiEnvironment, ApiAuth, HttpMethod,
 } from '$lib/types/api-connection';
+import {
+  ApiConnectorError,
+  parseOAuthTokenResponse,
+  validateApiConnectorResponse,
+} from '$lib/api/response-validation';
 
 function getFile() { return `${getDataPrefix()}api-workspace.json`; }
 
@@ -357,9 +362,14 @@ async function fetchOAuth2Token(
     body = r(ctr.body.content);
     if (ctr.body.type === 'json') headers['Content-Type'] ??= 'application/json';
     const res = await fetch(url, { method: ctr.method, headers, body: body || undefined, signal });
-    const json = JSON.parse(await res.text());
-    const token = String(getValueAtPath(json, auth.tokenPath ?? 'access_token') ?? '');
-    const expiresIn = Number((json as Record<string, unknown>).expires_in ?? 3600);
+    const response: ApiResponse = {
+      status: res.status,
+      statusText: res.statusText,
+      headers: Object.fromEntries(res.headers.entries()),
+      body: await res.text(),
+      durationMs: 0,
+    };
+    const { token, expiresIn } = parseOAuthTokenResponse(response, auth.tokenPath ?? 'access_token');
     tokenCache.set(cacheKey, { token, expiresAt: Date.now() + expiresIn * 1000 });
     return token;
   }
@@ -374,9 +384,14 @@ async function fetchOAuth2Token(
   if (auth.scope) form.set('scope', r(auth.scope));
   url = r(auth.tokenUrl ?? '');
   const res = await fetch(url, { method: 'POST', headers, body: form.toString(), signal });
-  const json = JSON.parse(await res.text());
-  const token = String(getValueAtPath(json, auth.tokenPath ?? 'access_token') ?? '');
-  const expiresIn = Number((json as Record<string, unknown>).expires_in ?? 3600);
+  const response: ApiResponse = {
+    status: res.status,
+    statusText: res.statusText,
+    headers: Object.fromEntries(res.headers.entries()),
+    body: await res.text(),
+    durationMs: 0,
+  };
+  const { token, expiresIn } = parseOAuthTokenResponse(response, auth.tokenPath ?? 'access_token');
   tokenCache.set(cacheKey, { token, expiresAt: Date.now() + expiresIn * 1000 });
   return token;
 }
@@ -521,13 +536,30 @@ export async function sendApiRequest(
   }
 
   const t0 = Date.now();
-  const res = await fetch(url, { method: req.method, headers, body, signal: opts.signal });
+  let res: Response;
+  try {
+    res = await fetch(url, { method: req.method, headers, body, signal: opts.signal });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') throw error;
+    throw new ApiConnectorError(
+      'network',
+      `API request could not reach the server: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
   const durationMs = Date.now() - t0;
 
   const resHeaders: Record<string, string> = {};
   res.headers.forEach((v, k) => { resHeaders[k] = v; });
 
-  return { status: res.status, statusText: res.statusText, headers: resHeaders, body: await res.text(), durationMs };
+  const response = {
+    status: res.status,
+    statusText: res.statusText,
+    headers: resHeaders,
+    body: await res.text(),
+    durationMs,
+  };
+  validateApiConnectorResponse(req, response);
+  return response;
 }
 
 function escapeRe(s: string): string {

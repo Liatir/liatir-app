@@ -592,19 +592,100 @@ pub(crate) async fn run_lia_plugin_bundle(
             })
             .unwrap_or_else(|| "plugin.wasm".to_string()));
 
-        return tauri::async_runtime::spawn_blocking(move || {
-            super::plugins::run_wasm_bundle(
-                app,
-                storage_name,
-                wasm_bytes,
-                inputs,
+        let (job_id, cancelled) = super::jobs::create_in_process_job(
+            &app,
+            "liatir-wasm".to_string(),
+            vec![path],
+            options.workspace_id,
+            options.job_label.or_else(|| Some("Liatir WASM plugin run".to_string())),
+            Some(options.job_kind),
+            options.metadata,
+        );
+        let _ = super::plugin_progress::lia_plugin_progress(
+            app.clone(),
+            job_id.clone(),
+            Some(0),
+            Some(1),
+            Some("Running WASM plugin".to_string()),
+            None,
+            Some(false),
+        );
+
+        let background_app = app.clone();
+        let background_job_id = job_id.clone();
+        tauri::async_runtime::spawn(async move {
+            let result = tauri::async_runtime::spawn_blocking(move || {
+                super::plugins::run_wasm_bundle(
+                    background_app.clone(),
+                    storage_name,
+                    wasm_bytes,
+                    inputs,
+                    None,
+                    host_read_paths,
+                    cancelled,
+                )
+                .map_err(|e| e.to_string())
+            })
+            .await;
+
+            let response = match result {
+                Ok(Ok(response)) => response,
+                Ok(Err(error)) => serde_json::json!({ "ok": false, "error": error }),
+                Err(error) => serde_json::json!({
+                    "ok": false,
+                    "error": format!("WASM plugin runtime failed: {error}")
+                }),
+            };
+            let ok = response.get("ok").and_then(Value::as_bool).unwrap_or(false);
+            if let Some(stdout) = response.get("stdout").and_then(Value::as_str) {
+                for line in stdout.lines().filter(|line| !line.is_empty()) {
+                    super::jobs::append_in_process_output(
+                        &app,
+                        &background_job_id,
+                        "stdout",
+                        line.to_string(),
+                    );
+                }
+            }
+            if let Some(value) = response.get("value").filter(|value| !value.is_null()) {
+                super::jobs::append_in_process_output(
+                    &app,
+                    &background_job_id,
+                    "stdout",
+                    format!("__LIATIR_RESULT__{value}"),
+                );
+            }
+            if let Some(stderr) = response.get("stderr").and_then(Value::as_str) {
+                for line in stderr.lines().filter(|line| !line.is_empty()) {
+                    super::jobs::append_in_process_output(
+                        &app,
+                        &background_job_id,
+                        "stderr",
+                        line.to_string(),
+                    );
+                }
+            }
+            if let Some(error) = response.get("error").and_then(Value::as_str) {
+                super::jobs::append_in_process_output(
+                    &app,
+                    &background_job_id,
+                    "stderr",
+                    error.to_string(),
+                );
+            }
+            let _ = super::plugin_progress::lia_plugin_progress(
+                app.clone(),
+                background_job_id.clone(),
+                Some(1),
+                Some(1),
+                Some(if ok { "Completed" } else { "Failed" }.to_string()),
                 None,
-                host_read_paths,
-            )
-            .map_err(|e| e.to_string())
-        })
-        .await
-        .map_err(|e| format!("WASM plugin runtime failed: {e}"))?;
+                Some(true),
+            );
+            super::jobs::finish_in_process_job(&app, &background_job_id, ok);
+        });
+
+        return Ok(serde_json::json!({ "jobId": job_id }));
     }
 
     if runtime == "python" {

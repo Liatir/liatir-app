@@ -397,6 +397,9 @@ fn main() {
       lia_jobs_list,
       lia_jobs_clear_done,
       lia_jobs_get_output,
+      lia_jobs_begin_logical,
+      lia_jobs_append_logical_output,
+      lia_jobs_finish_logical,
 
       // plugin log & progress
       lia_plugin_log,

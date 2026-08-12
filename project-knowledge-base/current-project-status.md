@@ -1,5 +1,46 @@
 # Current project status
 
+## The common execution spine is complete (Gate 3, 2026-08-11)
+
+`packages/liatir-core` now owns one versioned execution identity and lifecycle
+contract for Pipeline Runs, pipeline steps, standalone runs and nested runs. An
+identity is allocated before work starts and carries stable workspace, root,
+parent, Pipeline Run, node and entity ownership into Jobs, Results and artifact
+provenance. The same contract already reserves standalone and nested External
+Workflow Run identity without implementing Nextflow early.
+
+Execution state is durable and workspace-scoped. Terminal transitions are
+first-writer-wins, Result publication is idempotent, and startup reconciliation
+either adopts the already durable Result or creates exactly one interrupted
+Result. Cancellation follows only the selected run tree and its Jobs. Pipeline
+children use the same identities and cannot release downstream work or publish
+their parent Result before terminal child settlement and durable output
+registration.
+
+Direct AI Model, Plugin, API Connector and Native Tool execution now use this
+spine. All current standalone Native Tool pages run through the shared Jobs
+backend; their logs, progress, cancellation and Results retain the same
+identity. In-process WASM Plugin calls, including FastQC, now create real Jobs
+with progress, buffered logs and cancellation. Managed dependency work is
+separately owned and interrupted downloads retain verified partial bytes for a
+real HTTP Range resume.
+
+Final local evidence is 44 unit files / 257 tests through
+`npm run test:verify`, `cargo test` (45 passed / 2 intentionally ignored),
+`cargo clippy --tests` with the existing warning baseline, the unchanged
+10/10 pipeline lifecycle suite, the 5/5 common-spine native suite, and the
+two-process restart suite. Restart recovery covers one active pipeline plus
+direct AI Model, Plugin, Native Tool and API Connector runs, then repeats after
+reload without duplicate Results.
+
+The broad `npm run test:ui` baseline is not globally green: 21 passed, 11
+failed and 8 were skipped. Every Gate 2/3 lifecycle case passed; the failures
+remain in stale AI catalog expectations, the intentionally hidden Dependencies
+sidebar route and Quenta reload/selection tests, where the first selection
+failure cascades into later cases. These are separate readiness work and are
+not represented as Gate 3 evidence. Gate 4, versioned scientific artifact
+profiles beginning with AnnData, is now the active boundary.
+
 ## Asynchronous pipeline settlement is complete (Gate 2, 2026-08-11)
 
 Pipeline spawn acknowledgement is no longer treated as completion. Native
@@ -31,11 +72,11 @@ starts an API pipeline, terminates the first app while its request is active,
 then proves the second app reconciles exactly one interrupted Result and never
 runs the downstream node; both phases pass.
 
-Final local evidence is 40 unit files / 243 tests, `npm run test:verify`,
+Gate 2 evidence at closure was 40 unit files / 243 tests, `npm run test:verify`,
 `cargo test` (44 passed / 2 intentionally ignored), `cargo clippy --tests` with
 the existing warning baseline, the 10-case native lifecycle suite, and the
-two-phase restart suite. Gate 2 is complete. Gate 3, the common
-pipeline/run/result spine and nested-run contract, is next.
+two-phase restart suite. Gate 2 is complete; Gate 3 subsequently closed the
+common pipeline/run/result spine and nested-run contract as recorded above.
 
 ## Runtime Box update security is cross-platform complete (Gate 1, 2026-08-11)
 
@@ -272,13 +313,12 @@ channel changed.
 The Runtime Box migration and the nine-target re-release are complete. Continue
 Liatir development in this order:
 
-1. complete the common pipeline/run/result spine and nested-run contract;
-2. add versioned scientific artifact profiles, beginning with AnnData;
-3. complete the single-cell lighthouse workflow, viewer and no-code preset;
-4. add Nextflow as the first saved External Workflow, runnable standalone and
+1. add versioned scientific artifact profiles, beginning with AnnData;
+2. complete the single-cell lighthouse workflow, viewer and no-code preset;
+3. add Nextflow as the first saved External Workflow, runnable standalone and
    by reference from a Liatir pipeline;
-5. close the signed desktop Beta 1 release matrix and public documentation;
-6. expose controlled local MCP access after Beta 1.
+4. close the signed desktop Beta 1 release matrix and public documentation;
+5. expose controlled local MCP access after Beta 1.
 
 P5.0 through P5.7 are complete; the Scrollcase P5 plan is closed.
 The canonical detailed ledger is

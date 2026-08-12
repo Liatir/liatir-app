@@ -20,7 +20,8 @@ export interface PluginRunOptions {
  * page and the pipeline engine. `lia_liatir_run` instruments the runtime:
  *  - Node/Python → return `{ jobId }`; buffered output is polled until exit and
  *                  the runner marker is parsed for the structured result.
- *  - WASM        → returns the sandboxed result directly (`{ ok, value, stdout, … }`).
+ *  - WASM        → runs as an in-process Job with the same buffered
+ *                  settlement and cancellation contract.
  */
 export async function runLiatirPlugin(
   plugin: { path: string; runtime: PluginRuntime },

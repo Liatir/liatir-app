@@ -25,9 +25,9 @@
   import SubPipelineNode from '$lib/components/pipeline/SubPipelineNode.svelte';
   import ApiRequestNode from '$lib/components/pipeline/ApiRequestNode.svelte';
   import NoteNode from '$lib/components/pipeline/NoteNode.svelte';
-  import PipelineViewportFitter from '$lib/components/pipeline/PipelineViewportFitter.svelte';
-  import DeletableEdge from '$lib/components/pipeline/DeletableEdge.svelte';
-  import { PIPELINE_NODE_DATA_CONTEXT, type PipelineNodeDataContext } from '$lib/components/pipeline/node-data-commit';
+  import PipelineViewportFitter from '$lib/components/pipeline/layout/PipelineViewportFitter.svelte';
+  import DeletableEdge from '$lib/components/pipeline/actions/DeletableEdge.svelte';
+  import { PIPELINE_NODE_DATA_CONTEXT, type PipelineNodeDataContext } from '$lib/components/pipeline/scripts/node-data-commit';
   import { isExecutablePipelineNode } from '$lib/types/pipeline';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { apiConnections } from '$lib/stores/apiConnections.svelte';

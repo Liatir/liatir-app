@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
@@ -16,6 +15,11 @@
   import { toast } from '$lib/stores/toast.svelte';
   import { fmtBytes, getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
+  import { createLiatirRootExecutionIdentity, liatirExecutionMetadata, type JsonValue } from '@liatir/core';
+  import { workspaceStore } from '$lib/stores/workspace.svelte';
+  import { executionRuns } from '$lib/stores/executionRuns.svelte';
+  import { finalizeExecutionResult } from '$lib/execution/finalization';
+  import type { ToolOutput } from '$lib/types/tool-output';
 
   const id = $derived((page.params as { id: string }).id);
   let mod = $state<LiatirPlugin | null>(null);
@@ -31,6 +35,8 @@
   let exitCode = $state<number | null | undefined>(undefined);
   let result = $state<unknown>(null);
   let savedFiles = $state<PluginSaveResult[]>([]);
+  let currentRunId = $state<string | null>(null);
+  let loadGeneration = 0;
 
   // Node.js availability
   let nodeAvailable = $state<boolean | null>(null);
@@ -41,6 +47,7 @@
 
   function resetRunOutput() {
     running = false;
+    currentRunId = null;
     jobId = null;
     stdoutLines = [];
     stderrLines = [];
@@ -49,11 +56,15 @@
     savedFiles = [];
   }
 
-  onMount(async () => {
+  async function loadPlugin(pluginId: string) {
+    const generation = ++loadGeneration;
     resetRunOutput();
     values = {};
+    mod = null;
+    nodeAvailable = null;
     await liaPluginsStore.init();
-    mod = liaPluginsStore.byId(id);
+    if (generation !== loadGeneration || id !== pluginId) return;
+    mod = liaPluginsStore.byId(pluginId);
     if (!mod) { goto('/plugins'); return; }
 
     // Pre-fill defaults
@@ -73,6 +84,11 @@
     if (mod.runtime === 'python') {
       await liaPluginsStore.ensurePythonRuntimeStatus(mod.id);
     }
+  }
+
+  $effect(() => {
+    const pluginId = id;
+    queueMicrotask(() => void loadPlugin(pluginId));
   });
 
   function inputFields(schema: Record<string, FieldDef>) {
@@ -119,7 +135,11 @@
   }
 
   async function run() {
-    if (!mod) return;
+    const workspaceId = workspaceStore.activeId;
+    const plugin = mod;
+    const api = liatir();
+    if (!plugin || !workspaceId || !api) return;
+    const runValues = { ...values };
     running = true;
     jobId = null;
     stdoutLines = [];
@@ -128,36 +148,138 @@
     result = null;
     savedFiles = [];
     const runId = crypto.randomUUID();
-
-    const api = liatir();
-    if (!api) { running = false; return; }
+    const runStdout: string[] = [];
+    const runStderr: string[] = [];
+    let runResult: unknown = null;
+    let runSavedFiles: PluginSaveResult[] = [];
+    const isCurrentPageRun = () => currentRunId === runId && id === plugin.id;
+    currentRunId = runId;
+    const startedAt = Date.now();
+    const execution = createLiatirRootExecutionIdentity({
+      runId,
+      runKind: 'lia-plugin',
+      workspaceId,
+      entityId: plugin.id,
+    });
 
     try {
-      // Execute via the shared runner (Node job streaming OR WASM direct result).
-      const out = await runLiatirPlugin(mod, values, (stream, line) => {
-        if (stream === 'stdout') stdoutLines = [...stdoutLines, line];
-        else stderrLines = [...stderrLines, line];
+      await executionRuns.begin({
+        identity: execution,
+        label: plugin.name,
+        resultPolicy: 'own',
+        resultId: runId,
+        inputs: Object.values(runValues) as JsonValue,
+        params: runValues as JsonValue,
+        startedAt,
       });
-      result = out.result;
-      exitCode = out.exitCode;
+      const out = await runLiatirPlugin(plugin, runValues, (stream, line) => {
+        if (stream === 'stdout') runStdout.push(line);
+        else runStderr.push(line);
+        if (isCurrentPageRun()) {
+          stdoutLines = [...runStdout];
+          stderrLines = [...runStderr];
+        }
+        void executionRuns.appendLog(runId, line, {
+          stream,
+          level: stream === 'stderr' ? 'error' : 'info',
+        }).catch(() => {});
+      }, {
+        workspaceId,
+        label: plugin.name,
+        kind: 'lia-plugin',
+        metadata: {
+          ...liatirExecutionMetadata(execution),
+          pluginId: plugin.id,
+          pluginRuntime: plugin.runtime,
+        },
+        signal: executionRuns.signal(runId),
+        onSpawn: (spawnedJobId) => {
+          if (isCurrentPageRun()) jobId = spawnedJobId;
+          void executionRuns.attachJob(runId, spawnedJobId).catch(() => {});
+        },
+      });
+      runResult = out.result;
+      if (isCurrentPageRun()) {
+        result = runResult;
+        exitCode = out.exitCode;
+      }
+
+      if (out.exitCode !== 0) {
+        throw new Error(out.stderr.at(-1) ?? `Plugin exited with code ${out.exitCode}.`);
+      }
 
       // Persist any file-typed outputs into Results (same as native tools).
-      if (exitCode === 0 && mod && Object.keys(mod.outputSchema).length > 0) {
+      if (Object.keys(plugin.outputSchema).length > 0) {
         try {
-          savedFiles = await savePluginResultFiles(mod.name, mod.outputSchema, result, runId);
-          if (savedFiles.length > 0) {
-            toast.success(`Saved ${savedFiles.length} file${savedFiles.length > 1 ? 's' : ''} to Results`);
+          runSavedFiles = await savePluginResultFiles(plugin.name, plugin.outputSchema, runResult, runId);
+          if (isCurrentPageRun()) savedFiles = runSavedFiles;
+          if (runSavedFiles.length > 0) {
+            toast.success(`Saved ${runSavedFiles.length} file${runSavedFiles.length > 1 ? 's' : ''} to Results`);
           }
         } catch (e) {
           toast.error(`Failed to save plugin outputs: ${e}`);
+          throw e;
         }
       }
+      const endedAt = Date.now();
+      const output: ToolOutput = {
+        sections: [{
+          type: 'text',
+          label: 'Plugin result',
+          content: runResult === null ? 'Plugin completed.' : JSON.stringify(runResult, null, 2),
+          mono: runResult !== null,
+        }],
+      };
+      await finalizeExecutionResult(runId, 'done', {
+        id: runId,
+        tool: plugin.id,
+        label: plugin.name,
+        inputs: Object.values(runValues).filter((value): value is string => typeof value === 'string'),
+        outputFiles: runSavedFiles,
+        params: { ...runValues, runtime: plugin.runtime, pluginVersion: plugin.version },
+        startedAt,
+        endedAt,
+        durationMs: endedAt - startedAt,
+        output,
+        error: null,
+        log: [...runStderr, ...runStdout],
+      });
     } catch (e) {
-      stderrLines = [String(e)];
-      exitCode = 1;
+      const message = e instanceof Error ? e.message : String(e);
+      if (!runStderr.includes(message)) runStderr.push(message);
+      if (isCurrentPageRun()) {
+        stderrLines = [...runStderr];
+        exitCode = 1;
+      }
+      const cancelled = executionRuns.byId(runId)?.status === 'cancelling' ||
+        (e instanceof DOMException && e.name === 'AbortError');
+      if (executionRuns.byId(runId)) {
+        const endedAt = Date.now();
+        await finalizeExecutionResult(runId, cancelled ? 'cancelled' : 'error', {
+          id: runId,
+          tool: plugin.id,
+          label: plugin.name,
+          inputs: Object.values(runValues).filter((value): value is string => typeof value === 'string'),
+          params: { ...runValues, runtime: plugin.runtime, pluginVersion: plugin.version },
+          startedAt,
+          endedAt,
+          durationMs: endedAt - startedAt,
+          output: null,
+          error: cancelled ? 'Plugin run was cancelled.' : message,
+          log: [...runStderr, ...runStdout],
+        }).catch(() => {});
+      }
     } finally {
-      running = false;
+      if (isCurrentPageRun()) {
+        running = false;
+        currentRunId = null;
+      }
     }
+  }
+
+  async function cancelRun() {
+    if (!currentRunId) return;
+    await executionRuns.cancel(currentRunId);
   }
 
   const hasRun = $derived(exitCode !== undefined);
@@ -362,16 +484,20 @@
               loading={running}
               disabled={!canRun}
               onclick={run}
+              testId="plugin-run-button"
             >
               {running ? 'Running…' : mod.runtime === 'python' && !pythonRuntimeReady ? 'Prepare runtime first' : 'Run'}
             </Button>
+            {#if running}
+              <Button variant="secondary" size="sm" onclick={cancelRun} testId="plugin-cancel-button">Cancel</Button>
+            {/if}
           </div>
         </div>
       </Card>
 
       <!-- Output -->
       {#if running || hasRun}
-        <Card>
+        <Card testId="plugin-run-output">
           <div class="px-4 py-3 border-b border-border flex items-center gap-2">
             <p class="text-xs font-semibold text-text-muted uppercase tracking-wider flex-1">Output</p>
             {#if hasRun}

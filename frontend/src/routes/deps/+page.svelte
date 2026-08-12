@@ -45,6 +45,14 @@
 	} from '$lib/dependencies/resolvers';
 	import { versionGte, versionLt } from '$lib/utils/versions';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
+	import {
+		createLiatirRootExecutionIdentity,
+		liatirExecutionMetadata,
+		type LiatirExecutionIdentity,
+	} from '@liatir/core';
+	import { workspaceStore } from '$lib/stores/workspace.svelte';
+	import { executionRuns } from '$lib/stores/executionRuns.svelte';
+	import { jobsStore } from '$lib/stores/jobs.svelte';
 
 	interface RelatedDependencyTool {
 		id: string;
@@ -111,6 +119,41 @@
 		depsStore.appendProcessLog(key, line);
 	}
 
+	async function beginDependencyExecution(
+		binary: string,
+		label: string,
+		operation: 'install' | 'update',
+	): Promise<LiatirExecutionIdentity> {
+		const workspaceId = workspaceStore.activeId;
+		if (!workspaceId) throw new Error('No active workspace.');
+		const identity = createLiatirRootExecutionIdentity({
+			runId: crypto.randomUUID(),
+			runKind: 'dependency',
+			workspaceId,
+			entityId: binary,
+		});
+		await executionRuns.begin({
+			identity,
+			label: `${operation === 'update' ? 'Update' : 'Install'} ${label}`,
+			resultPolicy: 'none',
+			params: { binary, operation },
+		});
+		installProgress.start(binary, label, identity.runId);
+		return identity;
+	}
+
+	function isCancelledDependencyRun(identity: LiatirExecutionIdentity, error: unknown): boolean {
+		return executionRuns.byId(identity.runId)?.status === 'cancelling' ||
+			(error instanceof DOMException && error.name === 'AbortError') ||
+			(error instanceof Error && /cancelled/i.test(error.message));
+	}
+
+	function activeDependencyRunId(binary: string): string | null {
+		return executionRuns.active.find((execution) =>
+			execution.identity.runKind === 'dependency' && execution.identity.entityId === binary
+		)?.identity.runId ?? null;
+	}
+
 	function pythonPackageManager(dep: DepResult): 'brew' | 'conda' | null {
 		const path = dep.path ?? '';
 		if (
@@ -160,6 +203,16 @@
 		void depsStore.checkAll(focusedDependencies);
 		await managedBins.init();
 		await viewerRuntimesStore.init();
+		await executionRuns.init();
+		for (const execution of executionRuns.records) {
+			if (execution.identity.runKind !== 'dependency' || execution.status !== 'interrupted') continue;
+			const binary = execution.identity.entityId;
+			if (!binary) continue;
+			const label = depRequirementForBinary(binary)?.label ?? binary;
+			const message = 'Previous install was interrupted. Run it again to resume safely.';
+			installProgress.recoverable(binary, label, message);
+			setToolState(binary, { phase: 'error', error: message, showLog: true });
+		}
 
 		const api = liatir();
 		if (api) {
@@ -190,14 +243,27 @@
 	// ── download install (precompiled binary) ──────────────────────────
 	async function downloadInstall(binary: string) {
 		const label = depRequirementForBinary(binary)?.label ?? binary;
+		const operation = managedBins.get(binary) ? 'update' : 'install';
+		const execution = await beginDependencyExecution(binary, label, operation);
 		setToolState(binary, {
 			phase: 'downloading',
 			error: null,
 			bytesDownloaded: 0,
 			bytesTotal: null
 		});
-		installProgress.start(binary, label);
+		let logicalJobId: string | null = null;
 		try {
+			const logical = await jobsStore.beginLogical('managed-dependency-install', {
+				label: `${operation === 'update' ? 'Update' : 'Install'} ${label}`,
+				kind: 'dependency',
+				metadata: {
+					...liatirExecutionMetadata(execution),
+					binary,
+					operation,
+				},
+			});
+			logicalJobId = logical?.jobId ?? null;
+			if (logicalJobId) await executionRuns.attachJob(execution.runId, logicalJobId);
 			await installBinary(binary, platformOs, platformArch, (p) => {
 				if (p.phase === 'downloading') {
 					setToolState(binary, {
@@ -210,18 +276,67 @@
 						bytesDownloaded: p.bytesDownloaded,
 						bytesTotal: p.bytesTotal
 					});
+					void executionRuns.setProgress(execution.runId, {
+						current: p.bytesDownloaded,
+						total: p.bytesTotal,
+						label: 'Downloading',
+						done: false,
+					}).catch(() => {});
+					if (logicalJobId) {
+						void jobsStore.setProgress(logicalJobId, {
+							current: p.bytesDownloaded,
+							total: p.bytesTotal,
+							label: 'Downloading',
+							done: false,
+						}).catch(() => {});
+					}
 				} else if (p.phase === 'extracting') {
 					setToolState(binary, { phase: 'extracting' });
 					installProgress.update(binary, { phase: 'extracting' });
+					void executionRuns.setProgress(execution.runId, {
+						current: 0, total: 1, label: 'Extracting', done: false,
+					}).catch(() => {});
+					if (logicalJobId) {
+						void jobsStore.setProgress(logicalJobId, {
+							current: 0, total: 1, label: 'Extracting', done: false,
+						}).catch(() => {});
+					}
 				} else if (p.phase === 'done') {
 					setToolState(binary, { phase: 'done' });
+					void executionRuns.setProgress(execution.runId, {
+						current: 1, total: 1, label: 'Installed', done: true,
+					}).catch(() => {});
+					if (logicalJobId) {
+						void jobsStore.setProgress(logicalJobId, {
+							current: 1, total: 1, label: 'Installed', done: true,
+						}).catch(() => {});
+					}
 				}
-			});
+			}, { downloadId: execution.runId, signal: executionRuns.signal(execution.runId) });
 			await depsStore.recheckOne(binary);
+			if (logicalJobId) await jobsStore.finishLogical(logicalJobId, true);
+			await executionRuns.finish(execution.runId, 'done');
 			installProgress.done(binary);
 		} catch (e) {
-			setToolState(binary, { phase: 'error', error: String(e) });
-			installProgress.error(binary, String(e));
+			const cancelled = isCancelledDependencyRun(execution, e);
+			const message = cancelled
+				? 'Install cancelled. Run it again to resume the retained download.'
+				: e instanceof Error ? e.message : String(e);
+			if (logicalJobId) await jobsStore.finishLogical(logicalJobId, false).catch(() => {});
+			if (logicalJobId) {
+				await jobsStore.setProgress(logicalJobId, {
+					current: 0,
+					total: 1,
+					label: cancelled ? 'Cancelled' : 'Failed',
+					done: true,
+				}).catch(() => {});
+			}
+			if (executionRuns.byId(execution.runId)) {
+				await executionRuns.finish(execution.runId, cancelled ? 'cancelled' : 'error', message);
+			}
+			setToolState(binary, { phase: 'error', error: message, showLog: true });
+			if (cancelled) installProgress.recoverable(binary, label, message);
+			else installProgress.error(binary, message);
 		}
 	}
 
@@ -263,28 +378,56 @@
 		if (!cmd) return;
 
 		const label = depRequirementForBinary(binary)?.label ?? binary;
+		const execution = await beginDependencyExecution(binary, label, operation);
 		setToolState(binary, { phase: 'pm-installing', error: null, pmLog: [], pmOperation: operation, showLog: true });
-		installProgress.start(binary, label);
 		installProgress.update(binary, { phase: 'pm-installing' });
 		try {
 			setToolState(binary, { pmLog: [`$ ${cmd.cmd} ${cmd.args.join(' ')}`] });
-			const result = await runNativeTool(cmd.cmd, cmd.args, (line) => {
-				appendToolLog(binary, line);
-			}, (line) => {
-				appendToolLog(binary, line);
-			}, { env: pmRunEnv(cmd.cmd) });
-			if (!result.ok) {
+				const result = await runNativeTool(cmd.cmd, cmd.args, (line) => {
+					appendToolLog(binary, line);
+					void executionRuns.appendLog(execution.runId, line, { stream: 'stdout' }).catch(() => {});
+				}, (line) => {
+					appendToolLog(binary, line);
+					void executionRuns.appendLog(execution.runId, line, { stream: 'stderr', level: 'error' }).catch(() => {});
+				}, {
+					env: pmRunEnv(cmd.cmd),
+					label: `${operation === 'update' ? 'Update' : 'Install'} ${label}`,
+					kind: 'dependency',
+					metadata: { ...liatirExecutionMetadata(execution), binary, operation },
+					signal: executionRuns.signal(execution.runId),
+					onSpawn: (jobId) => {
+						void executionRuns.attachJob(execution.runId, jobId).catch(() => {});
+						void jobsStore.setProgress(jobId, {
+							current: 0, total: 1, label: operation === 'update' ? 'Updating' : 'Installing', done: false,
+						}).catch(() => {});
+					},
+				});
+				if (!result.ok) {
 				const msg = result.stderr || `Exited ${result.exitCode}`;
 				setToolState(binary, { phase: 'error', error: msg });
-				installProgress.error(binary, msg);
-			} else {
+					installProgress.error(binary, msg);
+					await jobsStore.setProgress(result.jobId, {
+						current: 0, total: 1, label: 'Failed', done: true,
+					}).catch(() => {});
+					await executionRuns.finish(execution.runId, 'error', msg);
+				} else {
 				setToolState(binary, { phase: 'done' });
 				await depsStore.recheckOne(binary);
-				installProgress.done(binary);
-			}
+					installProgress.done(binary);
+					await jobsStore.setProgress(result.jobId, {
+						current: 1, total: 1, label: 'Installed', done: true,
+					}).catch(() => {});
+					await executionRuns.finish(execution.runId, 'done');
+				}
 		} catch (e) {
-			setToolState(binary, { phase: 'error', error: String(e) });
-			installProgress.error(binary, String(e));
+			const cancelled = isCancelledDependencyRun(execution, e);
+			const message = cancelled ? 'Dependency update was cancelled; it can be run again safely.' : String(e);
+			setToolState(binary, { phase: 'error', error: message });
+			if (cancelled) installProgress.recoverable(binary, label, message);
+			else installProgress.error(binary, message);
+			if (executionRuns.byId(execution.runId)) {
+				await executionRuns.finish(execution.runId, cancelled ? 'cancelled' : 'error', message);
+			}
 		}
 	}
 
@@ -309,6 +452,7 @@
 		if (!ok) return;
 
 		const label = req.label ?? binary;
+		const execution = await beginDependencyExecution(binary, label, 'update');
 		setToolState(binary, {
 			phase: 'pm-installing',
 			error: null,
@@ -316,38 +460,60 @@
 			pmOperation: 'update',
 			showLog: true,
 		});
-		installProgress.start(binary, label);
 		installProgress.update(binary, { phase: 'pm-installing' });
 
 		try {
 			for (const command of action.commands) {
-				appendToolLog(binary, `$ ${command.cmd} ${command.args.join(' ')}`);
+				const commandLog = `$ ${command.cmd} ${command.args.join(' ')}`;
+				appendToolLog(binary, commandLog);
+				await executionRuns.appendLog(execution.runId, commandLog, { stream: 'system' });
 				const result = await runNativeTool(
 					command.cmd,
 					command.args,
-					(line) => appendToolLog(binary, line),
-					(line) => appendToolLog(binary, line),
-					{ env: pmRunEnv(command.cmd) },
+					(line) => {
+						appendToolLog(binary, line);
+						void executionRuns.appendLog(execution.runId, line, { stream: 'stdout' }).catch(() => {});
+					},
+					(line) => {
+						appendToolLog(binary, line);
+						void executionRuns.appendLog(execution.runId, line, { stream: 'stderr', level: 'error' }).catch(() => {});
+					},
+					{
+						env: pmRunEnv(command.cmd),
+						label: `${action.label}: ${label}`,
+						kind: 'dependency',
+						metadata: { ...liatirExecutionMetadata(execution), binary, operation: 'update' },
+						signal: executionRuns.signal(execution.runId),
+						onSpawn: (jobId) => void executionRuns.attachJob(execution.runId, jobId).catch(() => {}),
+					},
 				);
 				if (!result.ok) {
 					const msg = result.stderr || result.stdout || `Exited ${result.exitCode}`;
 					setToolState(binary, { phase: 'error', error: msg });
 					installProgress.error(binary, msg);
+					await executionRuns.finish(execution.runId, 'error', msg);
 					return;
 				}
 			}
 			setToolState(binary, { phase: 'done' });
 			await depsStore.recheckOne(binary);
 			installProgress.done(binary);
+			await executionRuns.finish(execution.runId, 'done');
 		} catch (e) {
-			setToolState(binary, { phase: 'error', error: String(e) });
-			installProgress.error(binary, String(e));
+			const cancelled = isCancelledDependencyRun(execution, e);
+			const message = cancelled ? 'Dependency update was cancelled; it can be run again safely.' : String(e);
+			setToolState(binary, { phase: 'error', error: message });
+			if (cancelled) installProgress.recoverable(binary, label, message);
+			else installProgress.error(binary, message);
+			await executionRuns.finish(execution.runId, cancelled ? 'cancelled' : 'error', message).catch(() => {});
 		}
 	}
 
 	async function updateRelatedTool(dep: DepResult, tool: RelatedDependencyTool) {
 		if (tool.id !== 'pip') return;
 		const key = relatedToolStateKey(dep.binary, tool.id);
+		const label = `${tool.label} for ${depRequirementForBinary(dep.binary)?.label ?? dep.binary}`;
+		const execution = await beginDependencyExecution(dep.binary, label, 'update');
 		const manager = pythonPackageManager(dep);
 		const managedCmd =
 			manager === 'brew'
@@ -355,52 +521,38 @@
 				: manager === 'conda'
 					? { cmd: 'conda', args: ['install', '-c', 'conda-forge', '-y', 'pip'] }
 					: null;
-		if (managedCmd) {
-			setToolState(key, {
-				phase: 'pm-installing',
-				error: null,
-				pmLog: [
-					`$ ${managedCmd.cmd} ${managedCmd.args.join(' ')}`,
-					relatedToolRuntimeNote(dep, tool) ?? ''
-				].filter(Boolean),
-				pmOperation: 'update',
-				showLog: true
-			});
-
-			try {
-				const result = await runNativeTool(managedCmd.cmd, managedCmd.args, (line) => {
-					appendToolLog(key, line);
-				}, (line) => {
-					appendToolLog(key, line);
-				}, { env: pmRunEnv(managedCmd.cmd) });
-				if (!result.ok) {
-					const msg = result.stderr || result.stdout || `Exited ${result.exitCode}`;
-					setToolState(key, { phase: 'error', error: msg });
-					return;
-				}
-				setToolState(key, { phase: 'done' });
-				await depsStore.recheckOne(dep.binary);
-			} catch (e) {
-				setToolState(key, { phase: 'error', error: String(e) });
-			}
-			return;
-		}
-
 		const python = dep.path ?? dep.binary;
-		const args = ['-m', 'pip', 'install', '--upgrade', 'pip'];
+		const command = managedCmd ?? { cmd: python, args: ['-m', 'pip', 'install', '--upgrade', 'pip'] };
+		const commandLog = `$ ${managedCmd ? command.cmd : getLastSegmentsStringFromPath(command.cmd, 2)} ${command.args.join(' ')}`;
 		setToolState(key, {
 			phase: 'pm-installing',
 			error: null,
-			pmLog: [`$ ${getLastSegmentsStringFromPath(python, 2)} ${args.join(' ')}`],
+			pmLog: [commandLog, relatedToolRuntimeNote(dep, tool) ?? ''].filter(Boolean),
 			pmOperation: 'update',
 			showLog: true
 		});
+		installProgress.update(dep.binary, { phase: 'pm-installing' });
 
 		try {
-			const result = await runNativeTool(python, args, (line) => {
+			await executionRuns.appendLog(execution.runId, commandLog, { stream: 'system' });
+			const result = await runNativeTool(command.cmd, command.args, (line) => {
 				appendToolLog(key, line);
+				void executionRuns.appendLog(execution.runId, line, { stream: 'stdout' }).catch(() => {});
 			}, (line) => {
 				appendToolLog(key, line);
+				void executionRuns.appendLog(execution.runId, line, { stream: 'stderr', level: 'error' }).catch(() => {});
+			}, {
+				env: pmRunEnv(command.cmd),
+				label,
+				kind: 'dependency',
+				metadata: {
+					...liatirExecutionMetadata(execution),
+					binary: dep.binary,
+					operation: 'update',
+					relatedTool: tool.id,
+				},
+				signal: executionRuns.signal(execution.runId),
+				onSpawn: (jobId) => void executionRuns.attachJob(execution.runId, jobId).catch(() => {}),
 			});
 			if (!result.ok) {
 				const rawMsg = result.stderr || result.stdout || `Exited ${result.exitCode}`;
@@ -408,11 +560,21 @@
 					? 'This Python environment is externally managed. Update pip through the Python package manager, or use a virtual environment. Liatir managed AI runtimes already create isolated Python environments for model dependencies.'
 					: rawMsg;
 				setToolState(key, { phase: 'error', error: msg });
+				installProgress.error(dep.binary, msg);
+				await executionRuns.finish(execution.runId, 'error', msg);
 				return;
 			}
 			setToolState(key, { phase: 'done' });
+			await depsStore.recheckOne(dep.binary);
+			installProgress.done(dep.binary);
+			await executionRuns.finish(execution.runId, 'done');
 		} catch (e) {
-			setToolState(key, { phase: 'error', error: String(e) });
+			const cancelled = isCancelledDependencyRun(execution, e);
+			const message = cancelled ? 'Dependency update was cancelled; it can be run again safely.' : String(e);
+			setToolState(key, { phase: 'error', error: message });
+			if (cancelled) installProgress.recoverable(dep.binary, label, message);
+			else installProgress.error(dep.binary, message);
+			await executionRuns.finish(execution.runId, cancelled ? 'cancelled' : 'error', message).catch(() => {});
 		}
 	}
 
@@ -596,7 +758,8 @@
 							{@const state = toolState(dep.binary)}
 							{@const hasRelease = !!getRelease(dep.binary, platformOs, platformArch)}
 							{@const hasPm = !!pmInstallCmd(dep.binary)}
-							{@const managed = managedBins.get(dep.binary)}
+								{@const managed = managedBins.get(dep.binary)}
+								{@const activeDependencyRun = activeDependencyRunId(dep.binary)}
 							{@const isBusy =
 								state.phase === 'downloading' ||
 								state.phase === 'extracting' ||
@@ -766,7 +929,7 @@
 											{/if}
 										</div>
 									{:else if isBusy}
-										<div class="shrink-0">
+										<div class="shrink-0 flex items-center gap-2">
 											<svg class="animate-spin h-4 w-4 text-brand" viewBox="0 0 24 24" fill="none">
 												<circle
 													class="opacity-25"
@@ -778,6 +941,9 @@
 												/>
 												<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
 											</svg>
+											{#if activeDependencyRun}
+												<Button variant="secondary" size="sm" onclick={() => executionRuns.cancel(activeDependencyRun)}>Cancel</Button>
+											{/if}
 										</div>
 									{:else if !isBusy && (dep.available || managed) && pmChecked}
 										<div class="flex items-center gap-2 shrink-0">

@@ -6,6 +6,14 @@ export type FastqcArgs = {
     /** Max milliseconds to wait for the WASM module to complete (default 300 000) */
     timeoutMs?: number;
 };
+/** Internal lifecycle options used by the desktop's standalone FastQC page. */
+export type FastqcExecutionOptions = {
+    jobId: string;
+    workspaceId: string;
+    jobLabel?: string;
+    jobKind?: string;
+    metadata?: Record<string, unknown>;
+};
 export type FastqcResult = {
     readCount: number;
     totalBases: number;
@@ -21,5 +29,5 @@ export type FastqcResult = {
 };
 import type { ToolOutput } from "../_types";
 export interface FastqcInterface {
-    run: (args: FastqcArgs) => Promise<ToolOutput>;
+    run: (args: FastqcArgs, execution?: FastqcExecutionOptions) => Promise<ToolOutput>;
 }

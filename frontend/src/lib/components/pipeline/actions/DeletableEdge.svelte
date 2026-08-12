@@ -1,4 +1,5 @@
 <script lang="ts">
+	import NodeWrapper from '../layout/NodeContentWrapper.svelte';
   // Custom edge with a delete button at its midpoint, so connections are easy
   // to remove (the default thin line is hard to select). EdgeLabelRenderer is
   // not exported in this @xyflow/svelte version, so we render a foreignObject.

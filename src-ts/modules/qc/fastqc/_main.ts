@@ -1,4 +1,4 @@
-import { FastqcArgs, FastqcInterface, FastqcResult } from "./_types";
+import { FastqcArgs, FastqcExecutionOptions, FastqcInterface, FastqcResult } from "./_types";
 import type { ToolOutput, ToolSection } from "../_types";
 import type { LiatirAPI } from "../../../types";
 
@@ -126,7 +126,7 @@ function toToolOutput(r: FastqcResult): ToolOutput {
 
 export function buildFastqc(core: { invoke: LiatirAPI["invoke"] }): FastqcInterface {
   return {
-    run: async (args: FastqcArgs): Promise<ToolOutput> => {
+    run: async (args: FastqcArgs, execution?: FastqcExecutionOptions): Promise<ToolOutput> => {
       const hostReadPaths = [parentDir(args.input)];
 
       const result = await core.invoke<WasmCallResult>("lia_plugin_call", {
@@ -134,6 +134,7 @@ export function buildFastqc(core: { invoke: LiatirAPI["invoke"] }): FastqcInterf
         payload: { fn: "run", args },
         timeoutMs: args.timeoutMs ?? 300_000,
         hostReadPaths,
+        ...(execution ?? {}),
       });
 
       if (!result.ok) {

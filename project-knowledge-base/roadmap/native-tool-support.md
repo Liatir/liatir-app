@@ -1,6 +1,7 @@
 # Native Tool Support Matrix
 
-Liatir resolves every pipeline Native Tool through the shared Jobs backend.
+Liatir resolves every pipeline and standalone Native Tool through the shared
+Jobs backend.
 The resolver prefers a Liatir-managed binary registered in
 `managed-bins/index.json`, then falls back to the host `PATH`. This keeps
 execution, cancellation, logs, parent pipeline identity, and provenance
@@ -29,7 +30,7 @@ button. Those hosts use the explicit package-manager path instead.
 | fastp | Package manager | Package manager | Package manager | Package manager | Package manager |
 
 SnpEff remains a modular Java/JAR runtime with its databases managed
-separately. It uses the same Jobs execution path once its runtime box is ready.
+separately. Direct and pipeline annotation use the same Jobs execution path.
 
 ## Verification gates
 
@@ -41,6 +42,9 @@ separately. It uses the same Jobs execution path once its runtime box is ready.
 - The native pipeline lifecycle E2E runs a typed minimap2-to-samtools workflow
   through the shared Jobs backend and verifies downstream file transfer,
   parent pipeline/run identity, and exactly-once Result provenance.
+- The common execution-spine E2E runs FastQC directly through its in-process
+  WASM Job and verifies progress, logs, cancellation, stable execution identity
+  and exactly-once Results without affecting an earlier successful run.
 
 The matrix is a product support boundary, not a claim that every upstream tool
 publishes binaries for every desktop platform.

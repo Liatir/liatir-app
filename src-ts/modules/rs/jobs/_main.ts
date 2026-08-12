@@ -10,7 +10,7 @@
  * finished job into a Result (see `direct-run-context` on the frontend side).
  */
 import { LiatirAPI } from "../../../types";
-import { JobEntry, JobsInterface, SpawnOptions, SpawnResult } from "./_types";
+import { JobEntry, JobsInterface, LogicalJobOptions, SpawnOptions, SpawnResult } from "./_types";
 
 export function buildJobs(core: { invoke: LiatirAPI["invoke"] }): JobsInterface {
   return {
@@ -24,6 +24,30 @@ export function buildJobs(core: { invoke: LiatirAPI["invoke"] }): JobsInterface 
         kind: opts.kind,
         metadata: opts.metadata,
       }),
+
+    beginLogical: (name: string, opts: LogicalJobOptions = {}): Promise<SpawnResult> =>
+      core.invoke("lia_jobs_begin_logical", {
+        name,
+        label: opts.label,
+        kind: opts.kind,
+        metadata: opts.metadata,
+      }),
+
+    appendLogicalOutput: (jobId, stream, line): Promise<void> =>
+      core.invoke("lia_jobs_append_logical_output", { jobId, stream, line }),
+
+    setProgress: (jobId, progress): Promise<void> =>
+      core.invoke("lia_plugin_progress", {
+        jobId,
+        current: progress.current,
+        total: progress.total ?? null,
+        label: progress.label ?? null,
+        delta: null,
+        done: progress.done,
+      }),
+
+    finishLogical: (jobId, ok): Promise<void> =>
+      core.invoke("lia_jobs_finish_logical", { jobId, ok }),
 
     kill: (jobId: string): Promise<boolean> =>
       core.invoke("lia_jobs_kill", { jobId }),

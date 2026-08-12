@@ -13,7 +13,10 @@
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
+  import { executionRuns } from '$lib/stores/executionRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
+  import { beginDirectNativeToolRun } from '$lib/execution/direct-native-tool';
+  import { runNativeTool } from '$lib/utils/native-tool';
   import { notify } from '$lib/utils/notify';
   import { fmtDuration, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { liatir } from '$lib/api';
@@ -34,6 +37,7 @@
   let startedAt  = $state<number | null>(null);
   let now        = $state(Date.now());
   let logLines   = $state<string[]>([]);
+  let activeExecutionRunId = $state<string | null>(null);
 
   $effect(() => {
     if (!running) return;
@@ -90,53 +94,61 @@
       dataFiles.files.find(f => f.path === refPath)?.size,
       dataFiles.files.find(f => f.path === r1Path)?.size,
     ].filter((s): s is number => s != null);
-
-    let offStderr: (() => void) | undefined;
+    const params = { preset, threads: threadInfo.threads, threadsMode: threadInfo.mode };
+    const execution = await beginDirectNativeToolRun({
+      runId,
+      toolId: 'minimap2',
+      label: r1Name,
+      inputs: [refPath, r1Path],
+      params,
+      startedAt: t0,
+    }).catch(async (error) => {
+      await notify('Minimap2 failed', String(error));
+      return null;
+    });
+    if (!execution) {
+      running = false;
+      startedAt = null;
+      return;
+    }
+    activeExecutionRunId = runId;
 
     try {
       const { data: dataDir } = await api.invoke('lia_fs_paths') as { data: string; cache: string };
       const outPath = `${dataDir}/tool-outputs/minimap2-${runId}.sam`;
-      const jid = `minimap2-${runId}`;
-
       logLines = [
         `$ minimap2 -t ${threadInfo.threads} -ax ${preset} ${refName} ${r1Name}`,
         `→ Output: minimap2-${runId}.sam`,
       ];
 
-      offStderr = await api.desktop.events.on(`jobs:stderr:${jid}`, (line: string) => {
-        if (typeof line === 'string' && line.trim() && logLines.length < 500) logLines.push(line);
-      }) as unknown as () => void;
-
-      const result = await api.invoke('lia_minimap2', {
-        preset,
-        reference: refPath,
-        readsR1: r1Path,
-        readsR2: null,
-        outputSam: outPath,
-        jobId: jid,
-        threads: threadInfo.threads,
-      } as any) as { ok: boolean; exitCode: number | null; stderr: string[]; threads?: number };
+      const result = await runNativeTool(
+        'minimap2',
+        ['-t', String(threadInfo.threads), '-ax', preset, refPath, r1Path],
+        undefined,
+        (line) => { if (line.trim() && logLines.length < 500) logLines.push(line); },
+        execution.nativeOptions({ stdoutPath: outPath }),
+      );
 
       if (!result.ok) {
-        throw new Error(result.stderr.slice(-10).join('\n') || `minimap2 exited with code ${result.exitCode}`);
+        throw new Error(result.stderr || `minimap2 exited with code ${result.exitCode}`);
       }
 
       const outSize = await api.invoke('lia_file_size', { path: outPath }) as number;
       await dataFiles.addToResults(outPath, 'minimap2');
 
-      const stats = parseMinimap2Stats(result.stderr);
-      const output = minimap2ToToolOutput(stats, result.stderr.join('\n'), outPath, preset);
+      const stderrLines = result.stderr.split(/\r?\n/).filter(Boolean);
+      const stats = parseMinimap2Stats(stderrLines);
+      const output = minimap2ToToolOutput(stats, result.stderr, outPath, preset);
       const endedAt = Date.now();
       logLines.push(`✓ Done in ${fmtDuration(t0, endedAt)} — ${(outSize / 1_048_576).toFixed(1)} MB`);
 
       const outputFiles: RunOutputFile[] = [{ label: 'Output SAM', path: outPath, ext: 'sam', size: outSize }];
 
-      await analysisRuns.add({
+      await execution.finalize('done', {
         id: runId, tool: 'minimap2', label: r1Name,
         inputs: [refPath, r1Path],
         inputSizes: inputSizes.length ? inputSizes : undefined,
-        params: { preset, threads: result.threads ?? threadInfo.threads, threadsMode: threadInfo.mode },
-        status: 'done',
+        params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, outputFiles, error: null,
         log: [...logLines],
@@ -144,23 +156,29 @@
       await notify('Minimap2 complete', `${r1Name} aligned in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
     } catch (e) {
       const endedAt = Date.now();
-      logLines.push(`✗ Error: ${String(e)}`);
-      await analysisRuns.add({
-        id: runId, tool: 'minimap2', label: r1Path.split(/[\\/]/).pop() ?? r1Path,
+      const cancelled = execution.isCancelled(e);
+      const message = cancelled ? 'Minimap2 run was cancelled.' : String(e);
+      logLines.push(cancelled ? `■ ${message}` : `✗ Error: ${message}`);
+      await execution.finalize(cancelled ? 'cancelled' : 'error', {
+        id: runId, tool: 'minimap2', label: r1Name,
         inputs: [refPath, r1Path],
-        params: { preset, threads: threadInfo.threads, threadsMode: threadInfo.mode },
-        status: 'error',
+        inputSizes: inputSizes.length ? inputSizes : undefined,
+        params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
-        output: null, error: String(e),
+        output: null, error: message,
         log: [...logLines],
       });
-      await notify('Minimap2 failed', String(e));
+      await notify(cancelled ? 'Minimap2 cancelled' : 'Minimap2 failed', message);
     } finally {
-      offStderr?.();
       running = false;
       startedAt = null;
+      activeExecutionRunId = null;
       selectedRunId = runId;
     }
+  }
+
+  async function cancelRun() {
+    if (activeExecutionRunId) await executionRuns.cancel(activeExecutionRunId);
   }
 
   async function deleteRun(id: string, label: string) {
@@ -276,12 +294,16 @@
           <div class="flex items-center gap-3 pt-1">
             <Button
               variant="primary"
+              testId="direct-native-run"
               disabled={!refPath || !r1Path || running}
               loading={running}
               onclick={runMinimap2}
             >
               Run alignment
             </Button>
+            {#if running && activeExecutionRunId}
+              <Button variant="secondary" testId="direct-native-cancel" onclick={cancelRun}>Cancel</Button>
+            {/if}
             {#if running && startedAt}
               <span class="text-xs text-text-subtle">Elapsed: {fmtDuration(startedAt, now)}</span>
             {/if}

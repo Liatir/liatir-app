@@ -8,7 +8,8 @@
 export interface InstallItem {
   binary: string;
   label: string;
-  phase: 'downloading' | 'extracting' | 'pm-installing' | 'done' | 'error';
+  phase: 'downloading' | 'extracting' | 'pm-installing' | 'recoverable' | 'done' | 'error';
+  runId?: string;
   bytesDownloaded: number;
   bytesTotal: number | null;
   error: string | null;
@@ -27,10 +28,24 @@ function createInstallProgressStore() {
     get list(): InstallItem[] { return Object.values(items); },
     get hasAny(): boolean { return Object.keys(items).length > 0; },
 
-    start(binary: string, label: string) {
+    start(binary: string, label: string, runId?: string) {
       items = {
         ...items,
-        [binary]: { binary, label, phase: 'downloading', bytesDownloaded: 0, bytesTotal: null, error: null },
+        [binary]: { binary, label, phase: 'downloading', runId, bytesDownloaded: 0, bytesTotal: null, error: null },
+      };
+    },
+
+    recoverable(binary: string, label: string, message: string) {
+      items = {
+        ...items,
+        [binary]: {
+          binary,
+          label,
+          phase: 'recoverable',
+          bytesDownloaded: 0,
+          bytesTotal: null,
+          error: message,
+        },
       };
     },
 

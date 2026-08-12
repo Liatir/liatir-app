@@ -177,9 +177,13 @@ export const LIATIR_API: Record<string, ApiNode> = {
   } },
   jobs: { type: "property", detail: "JobsInterface", info: "Async process manager — spawn, stream, kill any system binary.", children: {
       spawn: { type: "method", detail: "(cmd: string, args: string[], opts?: SpawnOptions): Promise<SpawnResult>", info: "Spawn an async process. Returns immediately with a jobId.\nSubscribe to events via Liatir.desktop.events:\n  \"jobs:stdout:<jobId>\" → line: string\n  \"jobs:stderr:<jobId>\" → line: string\n  \"jobs:exit:<jobId>\"   → { jobId, exitCode, ok }" },
+      beginLogical: { type: "method", detail: "(name: string, opts?: LogicalJobOptions): Promise<SpawnResult>", info: "Track asynchronous work performed inside the app rather than a child process." },
+      appendLogicalOutput: { type: "method", detail: "(jobId: string, stream: \"stdout\" | \"stderr\", line: string): Promise<void>" },
+      setProgress: { type: "method", detail: "(jobId: string, progress: LiatirJobProgress): Promise<void>" },
+      finishLogical: { type: "method", detail: "(jobId: string, ok: boolean): Promise<void>" },
       kill: { type: "method", detail: "(jobId: string): Promise<boolean>" },
-      status: { type: "method", detail: "(jobId: string): Promise<JobEntry>" },
-      list: { type: "method", detail: "(): Promise<JobEntry[]>" },
+      status: { type: "method", detail: "(jobId: string): Promise<LiatirJobEntry>" },
+      list: { type: "method", detail: "(): Promise<LiatirJobEntry[]>" },
       clearDone: { type: "method", detail: "(): Promise<number>", info: "Remove all completed/failed/killed jobs from the registry" },
   } },
   deps: { type: "property", detail: "DepsInterface", info: "Check whether system tools are installed and get their versions.", children: {
@@ -188,7 +192,7 @@ export const LIATIR_API: Record<string, ApiNode> = {
   } },
   qc: { type: "property", detail: "QcInterface", children: {
       fastqc: { type: "property", detail: "FastqcInterface", children: {
-          run: { type: "method", detail: "(args: FastqcArgs): Promise<LiatirToolOutput>" },
+          run: { type: "method", detail: "(args: FastqcArgs, execution?: FastqcExecutionOptions): Promise<LiatirToolOutput>" },
       } },
   } },
   tauri: { type: "property", detail: "WindowTauri", children: {

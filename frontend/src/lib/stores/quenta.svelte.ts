@@ -315,6 +315,22 @@ function normalizeConversationTitle(value: string): string {
   return clean || DEFAULT_CONVERSATION_TITLE;
 }
 
+function generateAutoTitle(content: string): string {
+  // Pulisce gli a capo e gli spazi in eccesso
+  const clean = content.replace(/[\r\n]+/g, ' ').trim();
+  if (!clean) return DEFAULT_CONVERSATION_TITLE;
+  
+  const maxLength = 36;
+  if (clean.length <= maxLength) return clean.charAt(0).toUpperCase() + clean.slice(1);
+  
+  // Taglia alla lunghezza massima, cercando di non spezzare l'ultima parola
+  const truncated = clean.slice(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(' ');
+  const finalTitle = lastSpace > 10 ? truncated.slice(0, lastSpace) : truncated;
+  
+  return `${finalTitle.charAt(0).toUpperCase() + finalTitle.slice(1)}...`;
+}
+
 function normalizeConversationTag(value: unknown): string {
   return String(value ?? '')
     .replace(/[#,]/g, ' ')
@@ -907,6 +923,28 @@ function createQuentaStore() {
     const priorMessages = reuseLastUserMessage
       ? conversation.messages.slice(0, -1)
       : conversation.messages;
+
+    // Se è il primissimo messaggio della chat e il titolo non è stato ancora modificato
+    if (priorMessages.length === 0 && conversation.title === DEFAULT_CONVERSATION_TITLE) {
+      const autoTitle = normalizeConversationTitle(generateAutoTitle(query));
+      const updatedAt = now();
+      
+      // 1. Aggiorna immediatamente lo stato locale
+      updateConversation(conversation.id, (item) => ({
+        ...item,
+        title: autoTitle,
+        updatedAt,
+      }));
+      
+      // 2. Accoda il rename persistente (fire and forget)
+      commitConversationMutation({
+        kind: 'rename',
+        conversationId: conversation.id,
+        title: autoTitle,
+        updatedAt,
+      }).catch(() => undefined);
+    }
+
     let userMessageId = reuseLastUserMessage ? lastMessage!.id : '';
     if (!reuseLastUserMessage) {
       const timestamp = now();

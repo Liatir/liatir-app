@@ -3,6 +3,7 @@ import {
   readRestartState,
   RESTART_DOWNSTREAM_ID,
   RESTART_NODE_ID,
+  seedInterruptedDirectRuns,
   seedRestartPipeline,
 } from '../support/pipeline-settlement-restart.mjs';
 
@@ -28,7 +29,10 @@ export const tests = [{
       { timeout: 20_000, timeoutMsg: 'Active pipeline state was not persisted before app exit' },
     );
 
+    await seedInterruptedDirectRuns(browser);
+
     const state = await readRestartState(browser);
     expect(state.runs).toHaveLength(0);
+    expect(state.directRuns).toHaveLength(0);
   },
 }];

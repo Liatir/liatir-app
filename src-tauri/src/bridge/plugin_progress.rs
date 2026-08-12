@@ -51,29 +51,20 @@ pub fn lia_plugin_progress(
         .get_mut(&job_id)
         .ok_or_else(|| format!("job not found: {}", job_id))?;
 
-    // Calculate new progress
-    let progress = if done.unwrap_or(false) {
-        JobProgress {
-            current: 0,
-            total: None,
-            label: None,
-            done: true,
-        }
+    // Preserve the last meaningful counters when a caller marks progress done.
+    // Resetting a completed Job to 0/unknown made its durable history disagree
+    // with the progress users had just observed.
+    let prev = state.entry.progress.as_ref();
+    let new_current = if let Some(d) = delta {
+        prev.map(|p| p.current).unwrap_or(0) + d
     } else {
-        let prev = state.entry.progress.as_ref();
-
-        let new_current = if let Some(d) = delta {
-            prev.map(|p| p.current).unwrap_or(0) + d
-        } else {
-            current.unwrap_or(0)
-        };
-
-        JobProgress {
-            current: new_current,
-            total: total.or_else(|| prev.and_then(|p| p.total)),
-            label: label.or_else(|| prev.and_then(|p| p.label.clone())),
-            done: false,
-        }
+        current.unwrap_or_else(|| prev.map(|p| p.current).unwrap_or(0))
+    };
+    let progress = JobProgress {
+        current: new_current,
+        total: total.or_else(|| prev.and_then(|p| p.total)),
+        label: label.or_else(|| prev.and_then(|p| p.label.clone())),
+        done: done.unwrap_or(false),
     };
 
     state.entry.progress = Some(progress.clone());

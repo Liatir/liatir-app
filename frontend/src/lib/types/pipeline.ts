@@ -112,6 +112,8 @@ export function isExecutablePipelineNode(node: { type?: string | null }): boolea
 }
 
 export interface NodeRunState {
+  /** Stable child-run identity allocated before this node starts. */
+  executionRunId?: string;
   status: StepStatus;
   logs: string[];
   outputFiles: RunOutputFile[];

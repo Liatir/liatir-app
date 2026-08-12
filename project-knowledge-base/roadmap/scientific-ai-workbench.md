@@ -31,8 +31,9 @@ is also complete: one lightweight signed fixture proves a real cross-version
 update, app restart, rollback, replay and equivocation rejection, accepted
 revocation retention, and corrupt-state isolation on macOS arm64, native
 Windows x86_64, and WSL2 Linux x86_64. Gate 2 has now closed asynchronous
-settlement on the native product path, so Gate 3 and the common execution spine
-are the active implementation boundary. Every paid or
+settlement on the native product path, and Gate 3 has closed the common
+execution spine for direct, pipeline and nested runs. Gate 4 and versioned
+scientific artifact profiles are the active implementation boundary. Every paid or
 remote action still requires its exact local gate, workflow/input/revision
 readback, cost declaration, and fresh explicit approval.
 
@@ -332,11 +333,35 @@ downloading a model.
 
 **Difficulty:** `5/5` · **Codex effort:** `max`
 
+**Status (2026-08-11): complete.**
+
 Unify identity, Jobs, Results, logs, progress, cancellation, failure and restart
 recovery across direct and pipeline execution. Add the nested-run contract and
 stable External Workflow Run identity needed by workflow engines. Every
 terminal path must finalize exactly once, retain the correct parent, and leave
 unrelated work usable.
+
+The shared core now defines versioned root and child execution identities,
+including standalone and nested External Workflow Runs. One workspace-scoped
+durable store owns lifecycle, logs, progress, Job attachment, run-tree
+cancellation and restart recovery. Terminal state is first-writer-wins and the
+Result finalizer is idempotent across concurrent observers, navigation, process
+exit and a later reload.
+
+Pipeline steps and direct AI Model, Plugin, API Connector, Native Tool and
+dependency runs use that ownership model. Standalone Native Tools all use the
+shared Jobs backend, while in-process WASM Plugins expose real Job progress,
+logs, failure and cancellation. Interrupted dependency downloads preserve
+partial bytes and resume through HTTP Range instead of silently restarting.
+
+Evidence includes 44 unit files / 257 tests in `npm run test:verify`, 45 Rust
+tests passed / 2 intentionally ignored, Clippy with the existing warning
+baseline, the 10/10 pipeline lifecycle suite, the 5/5 common execution spine
+native suite, and the two-process restart suite. The latter reconciles the
+pipeline plus direct AI Model, Plugin, Native Tool and API Connector runs
+exactly once, then proves reload idempotence. The broad UI baseline still has
+unrelated stale AI catalog, hidden Dependencies navigation and Quenta tests;
+none of the Gate 2/3 lifecycle cases fail.
 
 ### Gate 4: standardize scientific I/O
 

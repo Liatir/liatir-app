@@ -25,6 +25,7 @@
     /** Hook for the end-to-end tests to find this button. */
     testId?: string;
     class?: string;
+    style?: string;
     onclick?: (e: MouseEvent) => void;
     children: Snippet;
   }
@@ -39,6 +40,7 @@
     ariaLabel,
     testId,
     class: className = '',
+    style: styles = '',
     onclick,
     children,
   }: Props = $props();
@@ -77,6 +79,7 @@
   data-testid={testId}
   class="{base} {sizes[size]} {variants[variant]} {className}"
   disabled={disabled || loading}
+  style="{styles}"
   {onclick}
 >
   {#if loading}

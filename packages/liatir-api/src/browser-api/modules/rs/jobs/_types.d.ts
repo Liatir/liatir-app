@@ -1,28 +1,10 @@
-export type JobStatus = {
-    type: "running";
-} | {
-    type: "done";
-    exitCode: number | null;
-} | {
-    type: "failed";
-    exitCode: number | null;
-} | {
-    type: "killed";
-};
-export type JobEntry = {
-    id: string;
-    cmd: string;
-    args: string[];
-    label?: string | null;
-    kind?: string | null;
-    metadata?: Record<string, unknown> | null;
-    status: JobStatus;
-    startedAtMs: number;
-    endedAtMs: number | null;
-};
+import type { LiatirJobEntry, LiatirJobProgress, LiatirJobStatus } from "@liatir/core";
+export type JobStatus = LiatirJobStatus;
+export type JobEntry = LiatirJobEntry;
 export type SpawnResult = {
     jobId: string;
 };
+export type LogicalJobOptions = Pick<SpawnOptions, "label" | "kind" | "metadata">;
 export type SpawnOptions = {
     /** Working directory for the spawned process */
     cwd?: string;
@@ -44,6 +26,11 @@ export interface JobsInterface {
      *   "jobs:exit:<jobId>"   → { jobId, exitCode, ok }
      */
     spawn: (cmd: string, args: string[], opts?: SpawnOptions) => Promise<SpawnResult>;
+    /** Track asynchronous work performed inside the app rather than a child process. */
+    beginLogical: (name: string, opts?: LogicalJobOptions) => Promise<SpawnResult>;
+    appendLogicalOutput: (jobId: string, stream: "stdout" | "stderr", line: string) => Promise<void>;
+    setProgress: (jobId: string, progress: LiatirJobProgress) => Promise<void>;
+    finishLogical: (jobId: string, ok: boolean) => Promise<void>;
     kill: (jobId: string) => Promise<boolean>;
     status: (jobId: string) => Promise<JobEntry>;
     list: () => Promise<JobEntry[]>;

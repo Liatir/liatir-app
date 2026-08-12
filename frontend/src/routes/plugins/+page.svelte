@@ -250,6 +250,8 @@
                 onclick={async () => goto(`/plugins/${mod.id}`)}
                 aria-label="Run"
                 disabled={pythonBusy(mod)}
+                data-testid="plugin-card-run"
+                data-plugin-id={mod.id}
                 class="shrink-0 text-text-faint hover:text-brand transition-colors disabled:opacity-40 disabled:hover:text-text-faint"
               >
                 <Icon icon="lucide:play" width="14" height="14" />

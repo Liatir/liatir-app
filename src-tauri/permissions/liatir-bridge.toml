@@ -124,6 +124,9 @@ commands.allow = [
   "lia_plugin_dev_end_session",
 
   "lia_jobs_spawn",
+  "lia_jobs_begin_logical",
+  "lia_jobs_append_logical_output",
+  "lia_jobs_finish_logical",
   "lia_jobs_kill",
   "lia_jobs_status",
   "lia_jobs_list",

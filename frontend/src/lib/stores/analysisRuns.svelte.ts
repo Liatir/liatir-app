@@ -8,8 +8,10 @@ import type { RunOutputFile } from '$lib/types/pipeline';
 import type {
   LiatirArtifactParentRunKind,
   LiatirArtifactProducerKind,
+  LiatirExecutionIdentity,
   LiatirRunStatus,
 } from '@liatir/core';
+import { executionRuns } from './executionRuns.svelte';
 
 export type { RunOutputFile };
 
@@ -27,6 +29,9 @@ export interface AnalysisRunMeta {
   endedAt: number;
   durationMs: number;
   error: string | null;
+  /** Stable identity shared with Jobs and the durable execution spine. */
+  execution?: LiatirExecutionIdentity;
+  jobIds?: string[];
 }
 
 export interface AnalysisRun extends AnalysisRunMeta {
@@ -63,10 +68,52 @@ function producerKindFor(tool: string): LiatirArtifactProducerKind {
   return 'unknown';
 }
 
+function artifactProducerKind(run: AnalysisRun): LiatirArtifactProducerKind {
+  const kind = run.execution?.runKind;
+  if (
+    kind === 'native-tool' || kind === 'ai-model' || kind === 'ai-tool' ||
+    kind === 'lia-plugin' || kind === 'api-request' || kind === 'dependency' ||
+    kind === 'external-workflow' || kind === 'pipeline'
+  ) return kind;
+  return producerKindFor(run.tool);
+}
+
 function parentRunKindFor(tool: string): LiatirArtifactParentRunKind {
   if (tool === 'pipeline') return 'pipeline';
   if (AI_ANALYSIS_TOOLS.has(tool)) return 'ai-model-direct';
   return 'tool';
+}
+
+function artifactParentRun(run: AnalysisRun): {
+  runKind: LiatirArtifactParentRunKind;
+  runId: string;
+  analysisRunId: string;
+  pipelineId?: string | null;
+  pipelineRunId?: string;
+  externalWorkflowRunId?: string;
+  parentRunId?: string;
+  nodeId?: string;
+} {
+  const identity = run.execution;
+  if (!identity) {
+    return {
+      runKind: parentRunKindFor(run.tool),
+      runId: run.id,
+      analysisRunId: run.id,
+    };
+  }
+  return {
+    runKind: identity.runKind === 'ai-model' ? 'ai-model' : identity.runKind,
+    runId: identity.runId,
+    analysisRunId: run.id,
+    ...(identity.pipelineId !== undefined ? { pipelineId: identity.pipelineId } : {}),
+    ...(identity.pipelineRunId ? { pipelineRunId: identity.pipelineRunId } : {}),
+    ...(identity.externalWorkflowRunId
+      ? { externalWorkflowRunId: identity.externalWorkflowRunId }
+      : {}),
+    ...(identity.parentRunId ? { parentRunId: identity.parentRunId } : {}),
+    ...(identity.nodeId ? { nodeId: identity.nodeId } : {}),
+  };
 }
 
 function getDir() { return `${getDataPrefix()}analysis-runs`; }
@@ -78,6 +125,7 @@ function createAnalysisRunsStore() {
   let runs = $state<AnalysisRunMeta[]>([]);
   const initializer = createAsyncStoreInitializer();
   const outputCache = new Map<string, ToolOutput | null>();
+  const addLocks = new Map<string, Promise<boolean>>();
 
   async function persistIndex() {
     await appStorage.writeText(getIndex(), JSON.stringify(runs), { createDirs: true });
@@ -114,23 +162,30 @@ function createAnalysisRunsStore() {
       });
     },
 
-    async add(run: AnalysisRun) {
+    async add(run: AnalysisRun): Promise<boolean> {
+      const pending = addLocks.get(run.id);
+      if (pending) {
+        await pending;
+        return false;
+      }
+
+      const operation = (async () => {
+      await this.init();
       const api = liatir();
-      if (!api) return;
+      if (!api) return false;
+      // First writer wins. This check is made after init and under the per-ID
+      // in-flight lock, so page and background observers cannot both commit.
+      if (runs.some((item) => item.id === run.id)) return false;
 
       const outputFiles = withArtifactsMetadata(run.outputFiles, {
         role: 'final',
         createdAt: run.endedAt,
         producer: {
-          kind: producerKindFor(run.tool),
+          kind: artifactProducerKind(run),
           id: run.tool,
           label: run.label,
         },
-        parentRun: {
-          runKind: parentRunKindFor(run.tool),
-          runId: run.id,
-          analysisRunId: run.id,
-        },
+        parentRun: artifactParentRun(run),
       });
       const normalizedRun: AnalysisRun = { ...run, outputFiles };
 
@@ -160,6 +215,23 @@ function createAnalysisRunsStore() {
       const { output: _output, log: _log, ...meta } = normalizedRun;
       runs = [{ ...meta, outputSize }, ...runs.filter(r => r.id !== normalizedRun.id)].slice(0, MAX_RUNS);
       await persistIndex();
+      const execution = executionRuns.byId(run.execution?.runId ?? run.id);
+      if (execution) {
+        await executionRuns.markResultFinalized(
+          execution.identity.runId,
+          normalizedRun.id,
+          normalizedRun.endedAt,
+        ).catch(() => {});
+      }
+      return true;
+      })();
+
+      addLocks.set(run.id, operation);
+      try {
+        return await operation;
+      } finally {
+        addLocks.delete(run.id);
+      }
     },
 
     async remove(id: string) {
@@ -190,6 +262,7 @@ function createAnalysisRunsStore() {
       initializer.reset();
       runs = [];
       outputCache.clear();
+      addLocks.clear();
     },
 
     byTool(tool: string): AnalysisRunMeta[] {

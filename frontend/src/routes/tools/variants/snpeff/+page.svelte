@@ -13,7 +13,10 @@
   import { fmtDuration, getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
+  import { executionRuns } from '$lib/stores/executionRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
+  import { beginDirectNativeToolRun } from '$lib/execution/direct-native-tool';
+  import { runNativeTool } from '$lib/utils/native-tool';
   import { snpEffStore } from '$lib/stores/snpeff.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
@@ -64,6 +67,7 @@
   let startedAt        = $state<number | null>(null);
   let logLines         = $state<string[]>([]);
   let now              = $state(Date.now());
+  let activeExecutionRunId = $state<string | null>(null);
 
   $effect(() => {
     if (!running) return;
@@ -283,8 +287,24 @@
     const genome   = effectiveGenome;
     const api = liatir();
     if (!api) { running = false; return; }
-
-    let offStderr: (() => void) | undefined;
+    const params = { genome, heap: snpEffStore.jvmHeap };
+    const execution = await beginDirectNativeToolRun({
+      runId,
+      toolId: 'snpeff',
+      label: fileName,
+      inputs: [filePath],
+      params,
+      startedAt: t0,
+    }).catch(async (error) => {
+      await notify('SnpEff failed', String(error));
+      return null;
+    });
+    if (!execution) {
+      running = false;
+      startedAt = null;
+      return;
+    }
+    activeExecutionRunId = runId;
 
     try {
       const { data: dataDir } = await api.invoke('lia_fs_paths') as { data: string; cache: string };
@@ -297,25 +317,29 @@
         `→ Loading SnpEff database (this may take 1–2 min)…`,
       ];
 
-      const jid = `snpeff-${runId}`;
-      offStderr = await api.desktop.events.on(`jobs:stderr:${jid}`, (line: string) => {
-        if (typeof line === 'string' && line.trim() && logLines.length < 500) logLines.push(line);
-      }) as unknown as () => void;
-
-      // lia_snpeff_annotate streams stdout directly to disk — no OOM risk
-      const result = await api.invoke('lia_snpeff_annotate', {
-        jarPath: snpEffStore.config.jarPath,
-        genome,
-        dataDir: snpEffStore.config.dataDir,
-        inputVcf: filePath,
-        outputVcf: outPath,
-        heap: snpEffStore.jvmHeap,
-        jobId: jid,
-        javaPath: settingsStore.javaPath || null,
-      } as any) as { ok: boolean; exitCode: number | null; stderr: string[]; statsHtml: string; statsGenes: string };
+      const statsBase = outPath.replace(/\.vcf$/, '');
+      const statsHtml = `${statsBase}-summary.html`;
+      const statsGenes = `${statsBase}-summary.genes.txt`;
+      const java = settingsStore.javaPath || 'java';
+      const result = await runNativeTool(
+        java,
+        [
+          `-Xmx${snpEffStore.jvmHeap}`,
+          '-jar', snpEffStore.config.jarPath,
+          'ann',
+          '-dataDir', snpEffStore.config.dataDir,
+          '-noLog',
+          '-stats', statsHtml,
+          genome,
+          filePath,
+        ],
+        undefined,
+        (line) => { if (line.trim() && logLines.length < 500) logLines.push(line); },
+        execution.nativeOptions({ stdoutPath: outPath }),
+      );
 
       if (!result.ok) {
-        throw new Error(result.stderr.join('\n') || `SnpEff exited with code ${result.exitCode}`);
+        throw new Error(result.stderr || `SnpEff exited with code ${result.exitCode}`);
       }
 
       const outFileSize = await api.invoke('lia_file_size', { path: outPath }) as number;
@@ -329,8 +353,8 @@
 
       // Stats files are optional — SnpEff may not produce them on failure
       for (const [label, path, ext] of [
-        ['Summary (HTML)', result.statsHtml,  'html'],
-        ['Gene stats',     result.statsGenes, 'txt'],
+        ['Summary (HTML)', statsHtml,  'html'],
+        ['Gene stats',     statsGenes, 'txt'],
       ] as const) {
         try {
           const size = await api.invoke('lia_file_size', { path }) as number;
@@ -338,17 +362,16 @@
         } catch { /* not generated */ }
       }
 
-      const summary = parseSnpEffStats(result.stderr.join('\n'));
+      const summary = parseSnpEffStats(result.stderr);
       const output  = buildSnpEffOutput(summary, fileName);
       const endedAt = Date.now();
       logLines.push(`✓ Annotation complete in ${fmtDuration(t0, endedAt)}`);
 
       await snpEffStore.touchGenome(genome);
-      await analysisRuns.add({
+      await execution.finalize('done', {
         id: runId, tool: 'snpeff', label: fileName,
         inputs: [filePath], inputSizes,
-        params: { genome },
-        status: 'done',
+        params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, outputFiles, error: null,
         log: [...logLines],
@@ -356,23 +379,28 @@
       await notify('SnpEff complete', `${fileName} finished in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
     } catch (e) {
       const endedAt = Date.now();
-      logLines.push(`✗ Error: ${String(e)}`);
-      await analysisRuns.add({
+      const cancelled = execution.isCancelled(e);
+      const message = cancelled ? 'SnpEff run was cancelled.' : String(e);
+      logLines.push(cancelled ? `■ ${message}` : `✗ Error: ${message}`);
+      await execution.finalize(cancelled ? 'cancelled' : 'error', {
         id: runId, tool: 'snpeff', label: fileName,
         inputs: [filePath], inputSizes,
-        params: { genome },
-        status: 'error',
+        params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
-        output: null, error: String(e),
+        output: null, error: message,
         log: [...logLines],
       });
-      await notify('SnpEff failed', String(e));
+      await notify(cancelled ? 'SnpEff cancelled' : 'SnpEff failed', message);
     } finally {
-      offStderr?.();
       running       = false;
       startedAt     = null;
+      activeExecutionRunId = null;
       selectedRunId = runId;
     }
+  }
+
+  async function cancelRun() {
+    if (activeExecutionRunId) await executionRuns.cancel(activeExecutionRunId);
   }
 
   async function deleteRun(id: string, label: string) {
@@ -663,12 +691,16 @@
               <div class="flex items-center gap-3 pt-1">
                 <Button
                   variant="primary"
+                  testId="direct-native-run"
                   disabled={!filePath || running}
                   loading={running}
                   onclick={runAnnotation}
                 >
                   Run annotation
                 </Button>
+                {#if running && activeExecutionRunId}
+                  <Button variant="secondary" testId="direct-native-cancel" onclick={cancelRun}>Cancel</Button>
+                {/if}
                 {#if running && startedAt}
                   <span class="text-xs text-text-subtle">Elapsed: {fmtDuration(startedAt, now)}</span>
                 {/if}

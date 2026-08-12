@@ -6,7 +6,7 @@
   import Icon from '@iconify/svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
-  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
+  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from '../scripts/node-data-commit';
 
   let {
     id,

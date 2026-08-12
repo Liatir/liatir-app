@@ -1,4 +1,5 @@
 <script lang="ts">
+	import NodeWrapper from './layout/NodeContentWrapper.svelte';
   import { Handle, Position } from '@xyflow/svelte';
   import type { NodeProps } from '@xyflow/svelte';
   import type { Node } from '@xyflow/svelte';
@@ -8,11 +9,11 @@
   import { isExecutablePipelineNode } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
   import { sanitizeLocalPathsForDisplay } from '$lib/utils';
-  import NodeDeleteButton from './NodeDeleteButton.svelte';
-  import EditableNodeLabel from './EditableNodeLabel.svelte';
-  import { statusDotClass, statusLabel } from './node-status';
+  import NodeDeleteButton from './actions/NodeDeleteButton.svelte';
+  import EditableNodeLabel from './actions/EditableNodeLabel.svelte';
+  import { statusDotClass, statusLabel } from './scripts/node-status';
   import { clickOutside } from '$lib/actions/clickOutside';
-  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
+  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './scripts/node-data-commit';
 
   let { id, data }: NodeProps<Node<SubPipelineNodeData>> = $props();
   const { updateNodeData, getNodes, getEdges } = useSvelteFlow();
@@ -36,6 +37,8 @@
   const lastLog = $derived(runState?.logs?.[runState.logs.length - 1] ?? null);
 </script>
 
+<NodeWrapper>
+
 <Handle type="target" position={Position.Left} id="input" />
 
 <div class="min-w-56 rounded-xl border border-border bg-surface shadow-md overflow-visible">
@@ -57,26 +60,28 @@
     <NodeDeleteButton {id} class="ml-auto" />
   </div>
 
-  <div class="px-3 py-2.5 nodrag nopan">
+  <div class="px-3 py-2.5 nodrag nopan min-h-[35px]">
     {#if data.pipelineId}
-      <div class="flex items-center gap-2">
-        <span class="flex-1 text-xs font-medium text-text-secondary truncate">{data.pipelineName || 'Pipeline'}</span>
+      <button
+        onmouseup={() => {
+          if(!disabled) showPicker = !showPicker;
+        }}
+        class="flex items-center gap-2 w-full rounded-lg border hover:border-indigo-500/40 {showPicker?"border-indigo-500/40":"border-border"} transition-colors px-3 py-2">
+        <span class="flex-1 text-xs font-medium text-text-secondary truncate w-full text-left">{data.pipelineName || 'Pipeline'}</span>
         {#if !disabled}
-          <button
-            onclick={() => showPicker = true}
-            class="text-[10px] text-text-subtle hover:text-brand transition-colors"
-          >Change</button>
+          <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" class="h-4 w-4 shrink-0 text-text-subtle transition {showPicker?"rotate-180":""}" width="1em" height="1em" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9l6 6l6-6"></path></svg>
         {/if}
-      </div>
+      </button>
     {:else}
       <button
-        onclick={() => showPicker = true}
+        onmouseup={() => {
+          if(!disabled) showPicker = !showPicker;
+        }}
         {disabled}
-        class="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-indigo-300 px-3 py-2
-               text-[11px] text-indigo-500 hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        class="flex items-center gap-2 w-full rounded-lg border border-indigo-500 border-dashed hover:bg-indigo-500/10 {(!disabled)?"cursor-pointer":"cursor-default"} {showPicker?"border-indigo-500/40":"border-border"} transition-colors px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <Icon icon="lucide:plus" width="10" height="10" />
-        Select pipeline
+        <span class="flex-1 text-xs font-medium text-indigo-500 truncate w-full text-left">Select pipeline</span>
+        <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" class="h-4 w-4 shrink-0 text-text-subtle transition {showPicker?"rotate-180":""}" width="1em" height="1em" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9l6 6l6-6"></path></svg>
       </button>
     {/if}
 
@@ -102,7 +107,7 @@
 <Handle type="source" position={Position.Right} id="output" />
 
 {#if showPicker}
-  <div use:clickOutside={{ enabled: showPicker, onOutside: () => (showPicker = false) }} class="nowheel absolute left-full top-0 ml-2 z-50 w-56 rounded-xl border border-border bg-surface shadow-xl overflow-hidden nodrag nopan">
+  <div use:clickOutside={{ enabled: showPicker, onOutside: () => (showPicker = false) }} class="nowheel absolute top-full mt-1 z-50 w-56 rounded-xl border border-border bg-surface shadow-xl overflow-hidden nodrag nopan">
     <div class="px-3 py-2 border-b border-border bg-surface">
       <span class="text-[10px] font-semibold text-text-muted uppercase tracking-wider">Select pipeline</span>
     </div>
@@ -121,3 +126,5 @@
     </div>
   </div>
 {/if}
+
+</NodeWrapper>

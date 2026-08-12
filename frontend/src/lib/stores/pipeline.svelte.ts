@@ -1,11 +1,13 @@
 import type { Node, Edge } from '@xyflow/svelte';
 import { liatir } from '$lib/api';
 import { appStorage } from './app-storage';
-import { getDataPrefix } from './workspace.svelte';
+import { getDataPrefix, workspaceStore } from './workspace.svelte';
 import { dataFiles } from './dataFiles.svelte';
 import { liaPluginsStore } from './lia-plugins.svelte';
 import { apiConnections, sendApiRequest } from './apiConnections.svelte';
 import { analysisRuns } from './analysisRuns.svelte';
+import { executionRuns } from './executionRuns.svelte';
+import { finalizeExecutionResult } from '$lib/execution/finalization';
 import { resolveStepEntry } from '$lib/tools/pipeline-registry';
 import { ensureResultsDir } from '$lib/utils/results';
 import { withArtifactsMetadata } from '$lib/utils/artifacts';
@@ -18,7 +20,14 @@ import type {
 } from '$lib/types/pipeline';
 import { isExecutablePipelineNode } from '$lib/types/pipeline';
 import type { AIPipelineRunContext } from '$lib/ai/direct-run-context';
-import type { JsonValue } from '@liatir/core';
+import {
+  createLiatirChildExecutionIdentity,
+  createLiatirRootExecutionIdentity,
+  isLiatirExecutionTerminalStatus,
+  type JsonValue,
+  type LiatirExecutionIdentity,
+  type LiatirExecutionRunKind,
+} from '@liatir/core';
 import { createAsyncStoreInitializer } from './async-store-initializer';
 import {
   isRunCancelled,
@@ -223,6 +232,52 @@ function errorMessage(error: unknown): string {
 // anything user-facing (Results headings, logs, artifact metadata).
 function nodeDisplayLabel(node: Node, fallback: string): string {
   return ((node.data?.label as string) ?? '').trim() || fallback;
+}
+
+function executionKindForStep(type: PipelineStepDefinition['type']): LiatirExecutionRunKind {
+  if (type === 'native-tool') return 'native-tool';
+  if (type === 'ai-tool') return 'ai-tool';
+  if (type === 'api-request') return 'api-request';
+  if (type === 'lia-plugin' || type === 'wasm-plugin') return 'lia-plugin';
+  return 'pipeline-step';
+}
+
+async function beginPipelineChild(
+  parent: LiatirExecutionIdentity,
+  input: {
+    runKind: Exclude<LiatirExecutionRunKind, 'pipeline' | 'external-workflow'>;
+    nodeId: string;
+    entityId: string;
+    label: string;
+    inputs?: JsonValue;
+    params?: JsonValue;
+  },
+): Promise<LiatirExecutionIdentity> {
+  const identity = createLiatirChildExecutionIdentity(parent, {
+    runId: crypto.randomUUID(),
+    runKind: input.runKind,
+    nodeId: input.nodeId,
+    entityId: input.entityId,
+  });
+  await executionRuns.begin({
+    identity,
+    label: input.label,
+    resultPolicy: 'parent',
+    inputs: input.inputs,
+    params: input.params,
+  });
+  return identity;
+}
+
+function recordExecutionLog(
+  identity: LiatirExecutionIdentity,
+  message: string,
+  stream: 'stdout' | 'stderr' | 'system' = 'system',
+): void {
+  void executionRuns.appendLog(identity.runId, message, {
+    stream,
+    level: stream === 'stderr' ? 'error' : 'info',
+  }).catch(() => {});
 }
 
 // Convert non-file node outputs into string outputValues so they can be
@@ -470,11 +525,7 @@ function createPipelineStore() {
     graphNodes: Node[],
     nodeStates: Map<string, NodeRunState>,
     signal: AbortSignal | undefined,
-    runIdentity: {
-      pipelineRunId: string;
-      pipelineId: string | null;
-      nodeId: string;
-    },
+    runIdentity: LiatirExecutionIdentity,
   ): Promise<ApiStepResult> {
     const d = node.data as unknown as ApiRequestNodeData;
     if (!d.requestId) throw new Error('No request selected');
@@ -495,6 +546,7 @@ function createPipelineStore() {
       if (value !== '') paramOverrides[key] = value;
     }
 
+    recordExecutionLog(runIdentity, `${req.method} ${req.url}`);
     const response = await sendApiRequest(req, {
       provider,
       paramOverrides,
@@ -502,6 +554,11 @@ function createPipelineStore() {
       signal,
     });
     throwIfRunCancelled(signal);
+    recordExecutionLog(
+      runIdentity,
+      `HTTP ${response.status} ${response.statusText} in ${response.durationMs}ms`,
+      'stdout',
+    );
 
     const { absDir, virtualFolder } = await ensureResultsDir(req.name || d.requestId);
     const artifactId = crypto.randomUUID();
@@ -538,11 +595,12 @@ function createPipelineStore() {
         nodeId: runIdentity.nodeId,
       },
       parentRun: {
-        runKind: 'pipeline-step',
-        runId: runIdentity.pipelineRunId,
-        analysisRunId: runIdentity.pipelineRunId,
+        runKind: runIdentity.runKind,
+        runId: runIdentity.runId,
+        analysisRunId: runIdentity.pipelineRunId ?? runIdentity.rootRunId,
         pipelineRunId: runIdentity.pipelineRunId,
         pipelineId: runIdentity.pipelineId,
+        parentRunId: runIdentity.parentRunId,
         nodeId: runIdentity.nodeId,
       },
     });
@@ -557,7 +615,7 @@ function createPipelineStore() {
     nodes: Node[],
     edges: Edge[],
     onLog: (line: string) => void,
-    parentContext?: AIPipelineRunContext,
+    parentContext: AIPipelineRunContext,
     pipelineStack: string[] = [],
   ): Promise<RunOutputFile[]> {
     const { nodes: graphNodes, edges: graphEdges } = executableGraph(nodes, edges);
@@ -569,10 +627,11 @@ function createPipelineStore() {
     const allOutputFiles: RunOutputFile[] = [];
 
     for (const nodeId of order) {
-      throwIfRunCancelled(parentContext?.signal);
+      throwIfRunCancelled(parentContext.signal);
       if (skipped.has(nodeId)) continue;
       const node = graphNodes.find(n => n.id === nodeId);
       if (!node || node.type === 'start') continue;
+      const nestedNodeId = `${parentContext.nodeId}/${nodeId}`;
 
       const patch = (p: Partial<NodeRunState>) => {
         const prev = localStates.get(nodeId) ?? initNodeState();
@@ -583,114 +642,158 @@ function createPipelineStore() {
         const entry = resolveStepEntry(node.data?.stepId as string ?? '');
         if (!entry) {
           const error = new Error(`Unknown tool: ${node.data?.stepId}`);
-          patch({ status: 'error', error: error.message });
+          const identity = await beginPipelineChild(parentContext.execution, {
+            runKind: 'pipeline-step',
+            nodeId: nestedNodeId,
+            entityId: String(node.data?.stepId ?? 'unknown-tool'),
+            label: nodeDisplayLabel(node, 'Unknown tool'),
+          });
+          patch({ executionRunId: identity.runId, status: 'error', error: error.message });
+          await executionRuns.finish(identity.runId, 'error', error.message);
           throw error;
         }
-
-        patch({ status: 'running' });
-        const { absDir: outputDir, virtualFolder } = await ensureResultsDir(entry.definition.label);
 
         const resolved = resolveInputs(
           graphNodes,
           localStates,
           inputsWithDefaults(entry.definition, node.data?.inputs as Record<string, string> ?? {})
         );
+        const childIdentity = await beginPipelineChild(parentContext.execution, {
+          runKind: executionKindForStep(entry.definition.type) as Exclude<LiatirExecutionRunKind, 'pipeline' | 'external-workflow'>,
+          nodeId: nestedNodeId,
+          entityId: entry.definition.id,
+          label: nodeDisplayLabel(node, entry.definition.label),
+          inputs: Object.values(resolved),
+          params: resolved,
+        });
+        patch({ executionRunId: childIdentity.runId, status: 'running' });
+        const { absDir: outputDir, virtualFolder } = await ensureResultsDir(entry.definition.label);
         const logs: string[] = [];
         try {
-          const nestedNodeId = parentContext ? `${parentContext.nodeId}/${nodeId}` : nodeId;
           const result = await entry.run(
             resolved,
             outputDir,
-            (line) => { logs.push(line); onLog(line); },
-            parentContext
-              ? {
-                  ...parentContext,
-                  nodeId: nestedNodeId,
-                  toolId: entry.definition.id,
-                  label: nodeDisplayLabel(node, entry.definition.label),
-                  params: resolved,
-                  startedAt: Date.now(),
-                  outputDir,
-                }
-              : undefined,
+            (line) => {
+              logs.push(line);
+              onLog(line);
+              recordExecutionLog(childIdentity, line);
+            },
+            {
+              ...parentContext,
+              execution: childIdentity,
+              nodeId: nestedNodeId,
+              toolId: entry.definition.id,
+              label: nodeDisplayLabel(node, entry.definition.label),
+              params: resolved,
+              startedAt: Date.now(),
+              outputDir,
+              onJobId: (jobId) => {
+                void executionRuns.attachJob(childIdentity.runId, jobId).catch(() => {});
+                parentContext.onJobId?.(jobId);
+              },
+            },
           );
-          const outputFiles = parentContext
-            ? withArtifactsMetadata(result.outputFiles, {
-                role: 'final',
-                createdAt: Date.now(),
-                producer: {
-                  kind: entry.definition.type,
-                  id: entry.definition.id,
-                  label: nodeDisplayLabel(node, entry.definition.label),
-                  nodeId: nestedNodeId,
-                },
-                parentRun: {
-                  runKind: 'pipeline-step',
-                  runId: parentContext.pipelineRunId,
-                  analysisRunId: parentContext.pipelineRunId,
-                  pipelineRunId: parentContext.pipelineRunId,
-                  pipelineId: parentContext.pipelineId,
-                  nodeId: nestedNodeId,
-                },
-              })
-            : result.outputFiles;
+          const outputFiles = withArtifactsMetadata(result.outputFiles, {
+            role: 'final',
+            createdAt: Date.now(),
+            producer: {
+              kind: entry.definition.type,
+              id: entry.definition.id,
+              label: nodeDisplayLabel(node, entry.definition.label),
+              nodeId: nestedNodeId,
+            },
+            parentRun: {
+              runKind: childIdentity.runKind,
+              runId: childIdentity.runId,
+              analysisRunId: childIdentity.rootRunId,
+              pipelineRunId: childIdentity.pipelineRunId,
+              pipelineId: childIdentity.pipelineId,
+              parentRunId: childIdentity.parentRunId,
+              nodeId: nestedNodeId,
+            },
+          });
           await registerSettledFiles(outputFiles, virtualFolder);
-          throwIfRunCancelled(parentContext?.signal);
+          throwIfRunCancelled(parentContext.signal);
           patch({
             status: 'done',
             logs,
             outputFiles,
             outputValues: outputsToValues(result.metrics, result.values),
           });
+          await executionRuns.finish(childIdentity.runId, 'done');
           allOutputFiles.push(...outputFiles);
         } catch (e) {
-          const cancelled = isRunCancelled(e, parentContext?.signal);
+          const cancelled = isRunCancelled(e, parentContext.signal);
           patch({
             status: cancelled ? 'cancelled' : 'error',
             logs,
             error: cancelled ? PIPELINE_CANCELLED_MESSAGE : errorMessage(e),
           });
+          await executionRuns.finish(
+            childIdentity.runId,
+            cancelled ? 'cancelled' : 'error',
+            cancelled ? PIPELINE_CANCELLED_MESSAGE : errorMessage(e),
+          );
           throw e;
         }
       } else if (node.type === 'variable') {
         const d = node.data as unknown as VariableNodeData;
-        patch({ status: 'done', outputValues: { value: d.value ?? '' } });
+        const identity = await beginPipelineChild(parentContext.execution, {
+          runKind: 'pipeline-step', nodeId: nestedNodeId, entityId: 'variable',
+          label: nodeDisplayLabel(node, 'Variable'), params: { value: d.value ?? '' },
+        });
+        patch({ executionRunId: identity.runId, status: 'done', outputValues: { value: d.value ?? '' } });
+        await executionRuns.finish(identity.runId, 'done');
       } else if (node.type === 'math') {
         const d = node.data as unknown as MathNodeData;
         const a = Number(resolveRef(d.literalA ?? '', graphNodes, localStates) || 0);
         const b = Number(resolveRef(d.literalB ?? '', graphNodes, localStates) || 0);
         const res = computeMath(d.operation, a, b);
-        patch({ status: 'done', outputValues: { result: String(res) } });
+        const identity = await beginPipelineChild(parentContext.execution, {
+          runKind: 'pipeline-step', nodeId: nestedNodeId, entityId: 'math',
+          label: nodeDisplayLabel(node, 'Math'), params: { operation: d.operation ?? '', a, b },
+        });
+        patch({ executionRunId: identity.runId, status: 'done', outputValues: { result: String(res) } });
+        await executionRuns.finish(identity.runId, 'done');
       } else if (node.type === 'condition') {
         const d = node.data as unknown as ConditionNodeData;
         const value = resolveRef(d.valueRef ?? '', graphNodes, localStates);
+        const identity = await beginPipelineChild(parentContext.execution, {
+          runKind: 'pipeline-step', nodeId: nestedNodeId, entityId: 'condition',
+          label: nodeDisplayLabel(node, 'Condition'), params: { value },
+        });
         const evaluated = evaluateConditionNode(d, value);
         if (evaluated.error) {
-          patch({ status: 'error', error: evaluated.error });
+          patch({ executionRunId: identity.runId, status: 'error', error: evaluated.error });
+          await executionRuns.finish(identity.runId, 'error', evaluated.error);
           throw new Error(evaluated.error);
         }
         const ok = evaluated.ok;
         const branch: 'true' | 'false' = ok ? 'true' : 'false';
-        patch({ status: 'done', activeBranch: branch, outputValues: { trueBranch: ok ? value : '', falseBranch: !ok ? value : '' } });
+        patch({ executionRunId: identity.runId, status: 'done', activeBranch: branch, outputValues: { trueBranch: ok ? value : '', falseBranch: !ok ? value : '' } });
+        await executionRuns.finish(identity.runId, 'done');
         const dead = findDeadBranchNodes(graphNodes, graphEdges, nodeId, ok ? 'falseBranch' : 'trueBranch', localStates);
         for (const s of dead) { skipped.add(s); localStates.set(s, { ...initNodeState(), status: 'skipped' }); }
       } else if (node.type === 'api-request') {
+        const d = node.data as unknown as ApiRequestNodeData;
+        const identity = await beginPipelineChild(parentContext.execution, {
+          runKind: 'api-request', nodeId: nestedNodeId,
+          entityId: d.requestId ?? 'missing-request',
+          label: nodeDisplayLabel(node, d.requestName || 'API Request'),
+          params: (d.paramOverrides ?? {}) as JsonValue,
+        });
         patch({
+          executionRunId: identity.runId,
           status: 'running',
           logs: [`Running API Connector request`],
         });
         try {
-          const nestedNodeId = parentContext ? `${parentContext.nodeId}/${nodeId}` : nodeId;
           const result = await executeApiRequestNode(
             node,
             graphNodes,
             localStates,
-            parentContext?.signal,
-            {
-              pipelineRunId: parentContext?.pipelineRunId ?? crypto.randomUUID(),
-              pipelineId: parentContext?.pipelineId ?? null,
-              nodeId: nestedNodeId,
-            },
+            parentContext.signal,
+            identity,
           );
           patch({
             status: 'done',
@@ -698,46 +801,59 @@ function createPipelineStore() {
             outputFiles: result.outputFiles,
             outputValues: result.outputValues,
           });
+          await executionRuns.finish(identity.runId, 'done');
           allOutputFiles.push(...result.outputFiles);
         } catch (e) {
-          const cancelled = isRunCancelled(e, parentContext?.signal);
+          const cancelled = isRunCancelled(e, parentContext.signal);
           patch({
             status: cancelled ? 'cancelled' : 'error',
             error: cancelled ? PIPELINE_CANCELLED_MESSAGE : errorMessage(e),
           });
+          await executionRuns.finish(
+            identity.runId,
+            cancelled ? 'cancelled' : 'error',
+            cancelled ? PIPELINE_CANCELLED_MESSAGE : errorMessage(e),
+          );
           throw e;
         }
       } else if (node.type === 'sub-pipeline') {
         const d = node.data as unknown as SubPipelineNodeData;
+        const identity = await beginPipelineChild(parentContext.execution, {
+          runKind: 'pipeline-step', nodeId: nestedNodeId,
+          entityId: d.pipelineId ?? 'missing-pipeline',
+          label: nodeDisplayLabel(node, d.pipelineName || 'Sub-pipeline'),
+          params: { pipelineId: d.pipelineId },
+        });
         if (!d.pipelineId) {
-          patch({ status: 'error', error: 'No pipeline selected' });
+          patch({ executionRunId: identity.runId, status: 'error', error: 'No pipeline selected' });
+          await executionRuns.finish(identity.runId, 'error', 'No pipeline selected');
           throw new Error('No pipeline selected');
         }
         if (pipelineStack.includes(d.pipelineId)) {
           const error = new Error(`Sub-pipeline cycle detected at ${d.pipelineId}`);
-          patch({ status: 'error', error: error.message });
+          patch({ executionRunId: identity.runId, status: 'error', error: error.message });
+          await executionRuns.finish(identity.runId, 'error', error.message);
           throw error;
         }
         const sub = savedPipelines.find((pipeline) => pipeline.id === d.pipelineId);
         if (!sub) {
-          patch({ status: 'error', error: 'Pipeline not found' });
+          patch({ executionRunId: identity.runId, status: 'error', error: 'Pipeline not found' });
+          await executionRuns.finish(identity.runId, 'error', 'Pipeline not found');
           throw new Error('Pipeline not found');
         }
 
-        const nestedNodeId = parentContext ? `${parentContext.nodeId}/${nodeId}` : nodeId;
-        patch({ status: 'running', logs: [`▶ Running sub-pipeline: ${nodeDisplayLabel(node, sub.name)}`] });
+        patch({ executionRunId: identity.runId, status: 'running', logs: [`▶ Running sub-pipeline: ${nodeDisplayLabel(node, sub.name)}`] });
         try {
-          const subContext: AIPipelineRunContext | undefined = parentContext
-            ? {
-                ...parentContext,
-                nodeId: nestedNodeId,
-                toolId: 'sub-pipeline',
-                label: nodeDisplayLabel(node, sub.name),
-                params: { pipelineId: sub.id },
-                startedAt: Date.now(),
-                outputDir: '',
-              }
-            : undefined;
+          const subContext: AIPipelineRunContext = {
+            ...parentContext,
+            execution: identity,
+            nodeId: nestedNodeId,
+            toolId: 'sub-pipeline',
+            label: nodeDisplayLabel(node, sub.name),
+            params: { pipelineId: sub.id },
+            startedAt: Date.now(),
+            outputDir: '',
+          };
           const subFiles = await runNodes(
             sub.nodes,
             sub.edges,
@@ -745,15 +861,21 @@ function createPipelineStore() {
             subContext,
             [...pipelineStack, d.pipelineId],
           );
-          throwIfRunCancelled(parentContext?.signal);
+          throwIfRunCancelled(parentContext.signal);
           patch({ status: 'done', outputFiles: subFiles });
+          await executionRuns.finish(identity.runId, 'done');
           allOutputFiles.push(...subFiles);
         } catch (e) {
-          const cancelled = isRunCancelled(e, parentContext?.signal);
+          const cancelled = isRunCancelled(e, parentContext.signal);
           patch({
             status: cancelled ? 'cancelled' : 'error',
             error: cancelled ? PIPELINE_CANCELLED_MESSAGE : errorMessage(e),
           });
+          await executionRuns.finish(
+            identity.runId,
+            cancelled ? 'cancelled' : 'error',
+            cancelled ? PIPELINE_CANCELLED_MESSAGE : errorMessage(e),
+          );
           throw e;
         }
       }
@@ -1001,7 +1123,8 @@ function createPipelineStore() {
       const { nodes: graphNodes, edges: graphEdges } = executableGraph(nodes, edges);
       if (existingRuntime.running || graphNodes.length === 0) return;
       const api = liatir();
-      if (!api) return;
+      const workspaceId = workspaceStore.activeId;
+      if (!api || !workspaceId) return;
       await Promise.all([
         dataFiles.init(),
         apiConnections.init(),
@@ -1011,6 +1134,20 @@ function createPipelineStore() {
       const fresh = new Map<string, NodeRunState>();
       for (const n of graphNodes) fresh.set(n.id, initNodeState());
       const pipelineRunId = crypto.randomUUID();
+      const rootIdentity = createLiatirRootExecutionIdentity({
+        runId: pipelineRunId,
+        runKind: 'pipeline',
+        workspaceId,
+        pipelineId: runPipelineId,
+        entityId: runPipelineId ?? 'draft-pipeline',
+      });
+      await executionRuns.begin({
+        identity: rootIdentity,
+        label: runPipelineName,
+        resultPolicy: 'own',
+        resultId: pipelineRunId,
+        params: { pipelineId: runPipelineId, pipelineName: runPipelineName },
+      });
       const controller = new AbortController();
       const execution: ActivePipelineExecution = {
         runId: pipelineRunId,
@@ -1030,6 +1167,7 @@ function createPipelineStore() {
       const states = () => runtimeNodeStates(runKey);
       const patchRunState = (nodeId: string, patch: Partial<NodeRunState>) => patchStateFor(runKey, nodeId, patch);
       const pipelineStepContext = (
+        executionIdentity: LiatirExecutionIdentity,
         nodeId: string,
         definition: PipelineStepDefinition,
         label: string,
@@ -1038,6 +1176,7 @@ function createPipelineStore() {
         startedAt: number
       ): AIPipelineRunContext => ({
         runKind: 'pipeline-step',
+        execution: executionIdentity,
         pipelineRunId,
         pipelineId: runPipelineId,
         pipelineName: runPipelineName,
@@ -1051,6 +1190,8 @@ function createPipelineStore() {
         onJobId: (jobId) => {
           const active = activeExecutions.get(runKey);
           if (active?.runId === pipelineRunId) active.childJobIds.add(jobId);
+          void executionRuns.attachJob(executionIdentity.runId, jobId).catch(() => {});
+          void executionRuns.attachJob(rootIdentity.runId, jobId).catch(() => {});
         },
       });
 
@@ -1068,12 +1209,31 @@ function createPipelineStore() {
           if (skipped.has(nodeId)) continue;
           const node = graphNodes.find(n => n.id === nodeId);
           if (!node || node.type === 'start') continue;
+          const stepEntry = node.type === 'tool'
+            ? resolveStepEntry(node.data?.stepId as string ?? '')
+            : null;
+          const childIdentity = await beginPipelineChild(rootIdentity, {
+            runKind: node.type === 'tool' && stepEntry
+              ? executionKindForStep(stepEntry.definition.type) as Exclude<LiatirExecutionRunKind, 'pipeline' | 'external-workflow'>
+              : node.type === 'api-request' ? 'api-request' : 'pipeline-step',
+            nodeId,
+            entityId: node.type === 'tool'
+              ? String(node.data?.stepId ?? 'unknown-tool')
+              : node.type === 'api-request'
+                ? String(node.data?.requestId ?? 'missing-request')
+                : String(node.type ?? 'pipeline-step'),
+            label: node.type === 'tool' && stepEntry
+              ? nodeDisplayLabel(node, stepEntry.definition.label)
+              : nodeDisplayLabel(node, node.type === 'sub-pipeline' ? 'Sub-pipeline' : node.type ?? 'Pipeline step'),
+          });
+          patchRunState(nodeId, { executionRunId: childIdentity.runId });
 
         // ── Tool node ──────────────────────────────────────────────────────────
         if (node.type === 'tool') {
-          const entry = resolveStepEntry(node.data?.stepId as string ?? '');
+          const entry = stepEntry;
           if (!entry) {
             patchRunState(nodeId, { status: 'error', error: `Unknown tool: ${node.data?.stepId}` });
+            await executionRuns.finish(childIdentity.runId, 'error', `Unknown tool: ${node.data?.stepId}`);
             break;
           }
           const nodeLabel = nodeDisplayLabel(node, entry.definition.label);
@@ -1091,7 +1251,9 @@ function createPipelineStore() {
             const result = await entry.run(resolved, outputDir, (line) => {
               logs.push(line);
               patchRunState(nodeId, { logs: [...logs] });
-            }, pipelineStepContext(nodeId, entry.definition, nodeLabel, resolved, outputDir, pipeStartedAt));
+              recordExecutionLog(childIdentity, line);
+              recordExecutionLog(rootIdentity, line);
+            }, pipelineStepContext(childIdentity, nodeId, entry.definition, nodeLabel, resolved, outputDir, pipeStartedAt));
             const outputFiles = withArtifactsMetadata(result.outputFiles, {
               role: 'final',
               createdAt: Date.now(),
@@ -1102,11 +1264,12 @@ function createPipelineStore() {
                 nodeId,
               },
               parentRun: {
-                runKind: 'pipeline-step',
-                runId: pipelineRunId,
+                runKind: childIdentity.runKind,
+                runId: childIdentity.runId,
                 analysisRunId: pipelineRunId,
                 pipelineRunId,
                 pipelineId: runPipelineId,
+                parentRunId: childIdentity.parentRunId,
                 nodeId,
               },
             });
@@ -1119,6 +1282,7 @@ function createPipelineStore() {
               error: null,
               outputValues: outputsToValues(result.metrics, result.values),
             });
+            await executionRuns.finish(childIdentity.runId, 'done');
             pipeSteps.push({ label: nodeLabel, output: result.output, files: outputFiles });
           } catch (e) {
             const cancelled = isRunCancelled(e, controller.signal);
@@ -1128,6 +1292,11 @@ function createPipelineStore() {
               outputFiles: [],
               error: cancelled ? PIPELINE_CANCELLED_MESSAGE : String(e),
             });
+            await executionRuns.finish(
+              childIdentity.runId,
+              cancelled ? 'cancelled' : 'error',
+              cancelled ? PIPELINE_CANCELLED_MESSAGE : errorMessage(e),
+            );
             break;
           }
 
@@ -1135,6 +1304,7 @@ function createPipelineStore() {
         } else if (node.type === 'variable') {
           const d = node.data as unknown as VariableNodeData;
           patchRunState(nodeId, { status: 'done', outputValues: { value: d.value ?? '' } });
+          await executionRuns.finish(childIdentity.runId, 'done');
 
         // ── Math node ──────────────────────────────────────────────────────────
         } else if (node.type === 'math') {
@@ -1142,6 +1312,7 @@ function createPipelineStore() {
           const a = Number(resolveRef(d.literalA ?? '', graphNodes, states()) || 0);
           const b = Number(resolveRef(d.literalB ?? '', graphNodes, states()) || 0);
           patchRunState(nodeId, { status: 'done', outputValues: { result: String(computeMath(d.operation, a, b)) } });
+          await executionRuns.finish(childIdentity.runId, 'done');
 
         // ── Condition node ─────────────────────────────────────────────────────
         } else if (node.type === 'condition') {
@@ -1150,6 +1321,7 @@ function createPipelineStore() {
           const evaluated = evaluateConditionNode(d, value);
           if (evaluated.error) {
             patchRunState(nodeId, { status: 'error', error: evaluated.error });
+            await executionRuns.finish(childIdentity.runId, 'error', evaluated.error);
             break;
           }
           const ok = evaluated.ok;
@@ -1164,23 +1336,27 @@ function createPipelineStore() {
             skipped.add(s);
             patchRunState(s, { status: 'skipped' });
           }
+          await executionRuns.finish(childIdentity.runId, 'done');
 
         // ── Sub-pipeline node ──────────────────────────────────────────────────
         } else if (node.type === 'sub-pipeline') {
           const d = node.data as unknown as SubPipelineNodeData;
           if (!d.pipelineId) {
             patchRunState(nodeId, { status: 'error', error: 'No pipeline selected' });
+            await executionRuns.finish(childIdentity.runId, 'error', 'No pipeline selected');
             break;
           }
           const sub = savedPipelines.find(p => p.id === d.pipelineId);
           if (!sub) {
             patchRunState(nodeId, { status: 'error', error: 'Pipeline not found' });
+            await executionRuns.finish(childIdentity.runId, 'error', 'Pipeline not found');
             break;
           }
           patchRunState(nodeId, { status: 'running', logs: [`▶ Running sub-pipeline: ${nodeDisplayLabel(node, sub.name)}`] });
           try {
             const subContext: AIPipelineRunContext = {
               runKind: 'pipeline-step',
+              execution: childIdentity,
               pipelineRunId,
               pipelineId: runPipelineId,
               pipelineName: runPipelineName,
@@ -1191,7 +1367,11 @@ function createPipelineStore() {
               startedAt: pipeStartedAt,
               outputDir: '',
               signal: controller.signal,
-              onJobId: (jobId) => execution.childJobIds.add(jobId),
+              onJobId: (jobId) => {
+                execution.childJobIds.add(jobId);
+                void executionRuns.attachJob(childIdentity.runId, jobId).catch(() => {});
+                void executionRuns.attachJob(rootIdentity.runId, jobId).catch(() => {});
+              },
             };
             const subFiles = await runNodes(
               sub.nodes,
@@ -1199,12 +1379,15 @@ function createPipelineStore() {
               (line) => {
                 const curr = states().get(nodeId);
                 patchRunState(nodeId, { logs: [...(curr?.logs ?? []), line] });
+                recordExecutionLog(childIdentity, line);
+                recordExecutionLog(rootIdentity, line);
               },
               subContext,
               runPipelineId ? [runPipelineId, sub.id] : [sub.id],
             );
             throwIfRunCancelled(controller.signal);
             patchRunState(nodeId, { status: 'done', outputFiles: subFiles });
+            await executionRuns.finish(childIdentity.runId, 'done');
             pipeSteps.push({ label: nodeDisplayLabel(node, sub.name), files: subFiles });
           } catch (e) {
             const cancelled = isRunCancelled(e, controller.signal);
@@ -1212,6 +1395,11 @@ function createPipelineStore() {
               status: cancelled ? 'cancelled' : 'error',
               error: cancelled ? PIPELINE_CANCELLED_MESSAGE : String(e),
             });
+            await executionRuns.finish(
+              childIdentity.runId,
+              cancelled ? 'cancelled' : 'error',
+              cancelled ? PIPELINE_CANCELLED_MESSAGE : errorMessage(e),
+            );
             break;
           }
 
@@ -1220,11 +1408,13 @@ function createPipelineStore() {
           const d = node.data as unknown as ApiRequestNodeData;
           if (!d.requestId) {
             patchRunState(nodeId, { status: 'error', error: 'No request selected' });
+            await executionRuns.finish(childIdentity.runId, 'error', 'No request selected');
             break;
           }
           const req = apiConnections.requestById(d.requestId);
           if (!req) {
             patchRunState(nodeId, { status: 'error', error: 'Request not found' });
+            await executionRuns.finish(childIdentity.runId, 'error', 'Request not found');
             break;
           }
           patchRunState(nodeId, { status: 'running', logs: [`${req.method} ${req.url}`] });
@@ -1234,13 +1424,14 @@ function createPipelineStore() {
               graphNodes,
               states(),
               controller.signal,
-              { pipelineRunId, pipelineId: runPipelineId, nodeId },
+              childIdentity,
             );
             patchRunState(nodeId, {
               status: 'done',
               outputFiles: result.outputFiles,
               outputValues: result.outputValues,
             });
+            await executionRuns.finish(childIdentity.runId, 'done');
             pipeSteps.push({ label: result.label, files: result.outputFiles });
           } catch (e) {
             const cancelled = isRunCancelled(e, controller.signal);
@@ -1248,6 +1439,11 @@ function createPipelineStore() {
               status: cancelled ? 'cancelled' : 'error',
               error: cancelled ? PIPELINE_CANCELLED_MESSAGE : String(e),
             });
+            await executionRuns.finish(
+              childIdentity.runId,
+              cancelled ? 'cancelled' : 'error',
+              cancelled ? PIPELINE_CANCELLED_MESSAGE : errorMessage(e),
+            );
             break;
           }
           }
@@ -1279,36 +1475,34 @@ function createPipelineStore() {
         const cancelledEntry = [...finalStates.entries()].find(([, s]) => s.status === 'cancelled');
         const wasCancelled = controller.signal.aborted || Boolean(cancelledEntry);
         const fatalMessage = fatalError ? errorMessage(fatalError) : null;
-        if (graphNodes.length > 0) {
-          // The Result index is the public completion signal. Persist every
-          // terminal node state first so readers can never observe a completed
-          // Result while its pipeline nodes are still running or absent.
-          await flushPersist();
-          const endedAt = Date.now();
-          const logs = [...finalStates.values()].flatMap(s => s.logs ?? []);
-          const allFiles = pipeSteps.flatMap(s => s.files);
-          await analysisRuns.init();
-          await analysisRuns.add({
-            id: pipelineRunId,
-            tool: 'pipeline',
-            label: runPipelineName,
-            inputs: [],
-            params: { steps: pipeSteps.length, pipelineId: runPipelineId, pipelineRunId },
-            outputFiles: allFiles,
-            status: wasCancelled ? 'cancelled' : (erroredEntry || fatalMessage ? 'error' : 'done'),
-            startedAt: pipeStartedAt,
-            endedAt,
-            durationMs: endedAt - pipeStartedAt,
-            output: wasCancelled || erroredEntry || fatalMessage ? null : buildPipelineOutput(pipeSteps),
-            error: wasCancelled
-              ? PIPELINE_CANCELLED_MESSAGE
-              : (erroredEntry ? (finalStates.get(erroredEntry[0])?.error ?? 'Pipeline failed') : fatalMessage),
-            log: logs,
-          }).catch((error) => {
-            console.error('[pipeline] failed to persist analysis run', error);
-          });
-        }
+        let finalStatus: 'done' | 'error' | 'cancelled' = wasCancelled
+          ? 'cancelled'
+          : (erroredEntry || fatalMessage ? 'error' : 'done');
+        let finalError = wasCancelled
+          ? PIPELINE_CANCELLED_MESSAGE
+          : (erroredEntry ? (finalStates.get(erroredEntry[0])?.error ?? 'Pipeline failed') : fatalMessage);
 
+        // A setup failure can happen after a child identity is allocated but
+        // before the node-specific try/catch begins. Close every still-active
+        // descendant before publishing the parent Result.
+        const activeDescendants = executionRuns.records.filter((record) =>
+          record.identity.rootRunId === pipelineRunId &&
+          record.identity.runId !== pipelineRunId &&
+          !isLiatirExecutionTerminalStatus(record.status)
+        );
+        if (activeDescendants.length > 0 && finalStatus === 'done') {
+          finalStatus = 'error';
+          finalError = 'Pipeline child did not settle before parent finalization.';
+        }
+        await Promise.all(activeDescendants.map((record) => executionRuns.finish(
+          record.identity.runId,
+          finalStatus,
+          finalError,
+        )));
+
+        // The grouped Result is the public completion signal. Persist both
+        // terminal nodes and the run-level `running: false` state before it is
+        // observable, so navigation cannot race a final runtime-state update.
         const runtime = runtimeFor(runKey, runPipelineId, runPipelineName);
         setRuntime(runKey, {
           ...runtime,
@@ -1317,6 +1511,35 @@ function createPipelineStore() {
           startedAt: pipeStartedAt,
         });
         await flushPersist();
+        if (graphNodes.length > 0) {
+          const endedAt = Date.now();
+          const logs = [...finalStates.values()].flatMap(s => s.logs ?? []);
+          const allFiles = pipeSteps.flatMap(s => s.files);
+          await analysisRuns.init();
+          try {
+            await finalizeExecutionResult(pipelineRunId, finalStatus, {
+              id: pipelineRunId,
+              tool: 'pipeline',
+              label: runPipelineName,
+              inputs: [],
+              params: { steps: pipeSteps.length, pipelineId: runPipelineId, pipelineRunId },
+              outputFiles: allFiles,
+              startedAt: pipeStartedAt,
+              endedAt,
+              durationMs: endedAt - pipeStartedAt,
+              output: finalStatus === 'done' ? buildPipelineOutput(pipeSteps) : null,
+              error: finalError,
+              log: logs,
+            });
+          } catch (error) {
+            await executionRuns.finish(
+              pipelineRunId,
+              'error',
+              `Result finalization failed: ${errorMessage(error)}`,
+            ).catch(() => {});
+            console.error('[pipeline] failed to finalize execution result', error);
+          }
+        }
         const active = activeExecutions.get(runKey);
         if (active?.runId === pipelineRunId) activeExecutions.delete(runKey);
       }
@@ -1328,6 +1551,7 @@ function createPipelineStore() {
       if (!execution) return;
 
       execution.controller.abort();
+      await executionRuns.cancel(execution.runId).catch(() => {});
       const api = liatir();
       if (!api) return;
       await Promise.all(

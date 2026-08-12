@@ -152,7 +152,11 @@ const run = async () => {
           strict: true,
           skipLibCheck: true,
           moduleDetection: "force",
-          noEmitOnError: false
+          noEmitOnError: false,
+          baseUrl: ".",
+          paths: {
+            "@liatir/core": ["packages/liatir-core/dist/index.d.ts"]
+          }
         },
         include: ["src-ts/**/*.ts"],
         exclude: ["node_modules"]

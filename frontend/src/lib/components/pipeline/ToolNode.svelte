@@ -1,4 +1,5 @@
 <script lang="ts">
+	import NodeWrapper from './layout/NodeContentWrapper.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
@@ -15,11 +16,11 @@
   import Select from '$lib/components/ui/Select.svelte';
   import { fmtBytes, getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { upstreamOptions } from '$lib/tools/pipeline-io';
-  import ValueRefInput from './ValueRefInput.svelte';
-  import NodeDeleteButton from './NodeDeleteButton.svelte';
-  import EditableNodeLabel from './EditableNodeLabel.svelte';
-  import { statusDotClass, statusLabel } from './node-status';
-  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './node-data-commit';
+  import ValueRefInput from './actions/ValueRefInput.svelte';
+  import NodeDeleteButton from './actions/NodeDeleteButton.svelte';
+  import EditableNodeLabel from './actions/EditableNodeLabel.svelte';
+  import { statusDotClass, statusLabel } from './scripts/node-status';
+  import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './scripts/node-data-commit';
 
   let { id, data }: NodeProps<Node<ToolNodeData>> = $props();
 
@@ -140,6 +141,8 @@
     if (runId) goto(`/results?run=${runId}`);
   }
 </script>
+
+<NodeWrapper>
 
 <Handle type="target" position={Position.Left} id="input" />
 
@@ -282,3 +285,5 @@
 
 <!-- Single output handle — wire to a downstream node, then pick which value/file to use there. -->
 <Handle type="source" position={Position.Right} id="output" />
+
+</NodeWrapper>

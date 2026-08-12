@@ -24,6 +24,7 @@
     emptyHref?: string;
     emptyText?: string;
     disabled?: boolean;
+    testId?: string;
     onchange: (path: string) => void;
   }
 
@@ -36,6 +37,7 @@
     emptyHref = '/data',
     emptyText = 'No files in Data yet.',
     disabled = false,
+    testId,
     onchange,
   }: Props = $props();
 
@@ -60,5 +62,6 @@
   {emptyText}
   {emptyHref}
   {disabled}
+  {testId}
   {onchange}
 />

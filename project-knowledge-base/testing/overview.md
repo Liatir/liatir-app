@@ -198,6 +198,24 @@ distinct `killed` Job, `cancelled` Result, and unrelated-pipeline states. Its
 typed minimap2-to-samtools fixture additionally verifies stdout-to-artifact
 streaming, output-to-input transfer, and scientific Result provenance.
 
+`tests/e2e/specs/execution-spine.e2e.mjs` is the common execution-spine gate.
+Its five native cases cover independent logical Job settlement, standalone API
+Connector success and cancellation, standalone Native Tool Job/Result identity,
+WASM Plugin success/failure/progress/logs/off-page cancellation, and resumable
+dependency download after cancellation through a real HTTP Range request.
+
+`npm run pipeline:test:settlement-restart` is the process-restart companion.
+The first Tauri process persists an active pipeline plus direct AI Model,
+Plugin, Native Tool and API Connector executions. The second process reconciles
+one interrupted Result for each owner, leaves downstream pipeline work pending,
+and reloads once more to prove that no Result is duplicated.
+
+As of the Gate 3 closure on 2026-08-11, the broad `npm run test:ui` baseline is
+21 passed / 11 failed / 8 skipped. Gate 2 and Gate 3 lifecycle suites are green.
+The remaining failures are the stale AI catalog expectations, the hidden
+Dependencies sidebar route and Quenta reload/selection cases; keep them separate
+from common-spine regression triage until those surfaces are realigned.
+
 `tests/e2e/specs/dependencies.e2e.mjs` includes a heavy managed-binary gate.
 With `--heavy`, it downloads the real checksummed SeqKit release into isolated
 test storage, executes it through the same bare-name Jobs resolver used by

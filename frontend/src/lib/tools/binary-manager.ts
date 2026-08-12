@@ -11,11 +11,18 @@ export type InstallProgress =
   | { phase: 'done'; path: string }
   | { phase: 'error'; message: string };
 
+export interface InstallBinaryOptions {
+  /** Stable per-attempt ID used by cancellation and progress events. */
+  downloadId?: string;
+  signal?: AbortSignal;
+}
+
 export async function installBinary(
   binary: string,
   platform: OsPlatform,
   arch: Arch,
   onProgress: (p: InstallProgress) => void,
+  options: InstallBinaryOptions = {},
 ): Promise<void> {
   const api = liatir();
   if (!api) throw new Error('Liatir API not available');
@@ -35,32 +42,73 @@ export async function installBinary(
   const binaryExt = platform === 'windows' ? '.exe' : '';
   const finalPath = `${binDir}/${release.binaryName}${binaryExt}`;
 
+  let installed = false;
+  const downloadId = options.downloadId ?? crypto.randomUUID();
+  const cancelDownload = () => {
+    void api.invoke('lia_managed_download_cancel', { id: downloadId }).catch(() => false);
+  };
+  if (options.signal?.aborted) throw new DOMException('Install cancelled', 'AbortError');
+  options.signal?.addEventListener('abort', cancelDownload, { once: true });
+
   try {
     // 1. Download
-    const downloadId = crypto.randomUUID();
-    const unlisten = await api.desktop.events.on(
-      `managed:progress:${downloadId}`,
-      (p: { bytesDownloaded: number; bytesTotal: number | null }) => {
-        onProgress({ phase: 'downloading', bytesDownloaded: p.bytesDownloaded, bytesTotal: p.bytesTotal });
-      },
-    );
+    // A fully downloaded archive may remain after extraction or activation was
+    // interrupted. Reuse it only after re-verifying its pinned checksum.
+    let archiveReady = false;
+    let archiveBytes: number | null = null;
     try {
-      await api.invoke('lia_managed_download', {
-        id: downloadId,
-        url: release.url,
-        destPath: archivePath,
-        sha256: release.sha256,
-      });
-    } finally {
-      unlisten();
+      archiveBytes = await api.invoke('lia_file_size', { path: archivePath }) as number;
+    } catch { /* no completed archive */ }
+    if (archiveBytes !== null) {
+      archiveReady = await api.invoke('lia_managed_verify_sha256', {
+        path: archivePath,
+        expected: release.sha256,
+      }) as boolean;
+      if (archiveReady) {
+        onProgress({ phase: 'downloading', bytesDownloaded: archiveBytes, bytesTotal: archiveBytes });
+      } else {
+        await api.invoke('lia_managed_remove', { path: archivePath, recursive: false });
+      }
     }
+
+    // A previous interruption leaves `<archive>.part`; the native downloader
+    // resumes it with an HTTP Range request instead of discarding good bytes.
+    if (!archiveReady) {
+      try {
+        const resumedBytes = await api.invoke('lia_file_size', { path: `${archivePath}.part` }) as number;
+        if (resumedBytes > 0) {
+          onProgress({ phase: 'downloading', bytesDownloaded: resumedBytes, bytesTotal: null });
+        }
+      } catch { /* no partial download */ }
+      const unlisten = await api.desktop.events.on(
+        `managed:progress:${downloadId}`,
+        (p: { bytesDownloaded: number; bytesTotal: number | null }) => {
+          onProgress({ phase: 'downloading', bytesDownloaded: p.bytesDownloaded, bytesTotal: p.bytesTotal });
+        },
+      );
+      try {
+        await api.invoke('lia_managed_download', {
+          id: downloadId,
+          url: release.url,
+          destPath: archivePath,
+          sha256: release.sha256,
+        });
+      } finally {
+        unlisten();
+      }
+    }
+    if (options.signal?.aborted) throw new DOMException('Install cancelled', 'AbortError');
 
     // 2. Extract
     onProgress({ phase: 'extracting' });
+    // Extraction is restartable, not resumable. Remove only stale extracted
+    // files; the verified archive and any download .part remain available.
+    await api.invoke('lia_managed_remove', { path: extractDir, recursive: true }).catch(() => {});
     await api.invoke('lia_managed_extract', {
       archivePath,
       destDir: extractDir,
     });
+    if (options.signal?.aborted) throw new DOMException('Install cancelled', 'AbortError');
 
     // 3. Find binary inside extracted dir
     const foundPath = (await api.invoke('lia_managed_find_binary', {
@@ -70,6 +118,7 @@ export async function installBinary(
     if (!foundPath) {
       throw new Error(`Binary "${release.binaryName}" not found in archive`);
     }
+    if (options.signal?.aborted) throw new DOMException('Install cancelled', 'AbortError');
 
     // 4. Move to final location + chmod +x
     await api.invoke('lia_managed_move', { src: foundPath, dest: finalPath });
@@ -87,9 +136,14 @@ export async function installBinary(
     });
 
     onProgress({ phase: 'done', path: finalPath });
+    installed = true;
 
   } finally {
-    // Cleanup tmp (best-effort)
-    await api.invoke('lia_managed_remove', { path: tmpRoot, recursive: true }).catch(() => {});
+    options.signal?.removeEventListener('abort', cancelDownload);
+    // Only a committed install owns the temporary tree. Interrupted or failed
+    // attempts retain the archive/.part so the next attempt can recover.
+    if (installed) {
+      await api.invoke('lia_managed_remove', { path: tmpRoot, recursive: true }).catch(() => {});
+    }
   }
 }

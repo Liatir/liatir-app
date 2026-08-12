@@ -8,7 +8,9 @@
   import { fmtDuration, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns, type AnalysisRun } from '$lib/stores/analysisRuns.svelte';
+  import { executionRuns } from '$lib/stores/executionRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
+  import { beginDirectNativeToolRun } from '$lib/execution/direct-native-tool';
   import { runNativeTool } from '$lib/utils/native-tool';
   import { parseFlagstatResult, flagstatToToolOutput } from '$lib/tools/alignment/samtools';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
@@ -31,6 +33,7 @@
   let startedAt = $state<number | null>(null);
   let now       = $state(Date.now());
   let logLines  = $state<string[]>([]);
+  let activeExecutionRunId = $state<string | null>(null);
 
   $effect(() => {
     if (!running) return;
@@ -79,10 +82,34 @@
     const fileSize = dataFiles.files.find(f => f.path === filePath)?.size;
     const inputSizes = fileSize != null ? [fileSize] : undefined;
     const threadInfo = threadParam(threads);
+    const params = { subcommand: 'flagstat', threads: threadInfo.threads, threadsMode: threadInfo.mode };
+    const execution = await beginDirectNativeToolRun({
+      runId,
+      toolId: 'samtools',
+      label: fileName,
+      inputs: [filePath],
+      params,
+      startedAt: t0,
+    }).catch(async (error) => {
+      await notify('Samtools failed', String(error));
+      return null;
+    });
+    if (!execution) {
+      running = false;
+      startedAt = null;
+      return;
+    }
+    activeExecutionRunId = runId;
 
     try {
       logLines = [`$ samtools flagstat -@ ${threadInfo.threads} ${fileName}`];
-      const result = await runNativeTool('samtools', ['flagstat', '-@', String(threadInfo.threads), filePath], undefined, (l) => { if (typeof l === 'string' && l.trim()) logLines.push(l); });
+      const result = await runNativeTool(
+        'samtools',
+        ['flagstat', '-@', String(threadInfo.threads), filePath],
+        undefined,
+        (line) => { if (line.trim()) logLines.push(line); },
+        execution.nativeOptions(),
+      );
 
       if (!result.ok && result.stdout.trim() === '') {
         throw new Error(result.stderr || `samtools exited with code ${result.exitCode}`);
@@ -92,11 +119,10 @@
       const output = flagstatToToolOutput(parsed, result.stdout);
       const endedAt = Date.now();
 
-      await analysisRuns.add({
+      await execution.finalize('done', {
         id: runId, tool: 'samtools', label: fileName,
         inputs: [filePath], inputSizes,
-        params: { subcommand: 'flagstat', threads: threadInfo.threads, threadsMode: threadInfo.mode },
-        status: 'done',
+        params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, error: null,
         log: [...logLines],
@@ -104,21 +130,28 @@
       await notify('Samtools complete', `${fileName} finished in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
     } catch (e) {
       const endedAt = Date.now();
-      await analysisRuns.add({
+      const cancelled = execution.isCancelled(e);
+      const message = cancelled ? 'Samtools run was cancelled.' : String(e);
+      logLines.push(cancelled ? `■ ${message}` : `✗ Error: ${message}`);
+      await execution.finalize(cancelled ? 'cancelled' : 'error', {
         id: runId, tool: 'samtools', label: fileName,
         inputs: [filePath], inputSizes,
-        params: { subcommand: 'flagstat', threads: threadInfo.threads, threadsMode: threadInfo.mode },
-        status: 'error',
+        params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
-        output: null, error: String(e),
+        output: null, error: message,
         log: [...logLines],
       });
-      await notify('Samtools failed', String(e));
+      await notify(cancelled ? 'Samtools cancelled' : 'Samtools failed', message);
     } finally {
       running = false;
       startedAt = null;
+      activeExecutionRunId = null;
       selectedRunId = runId;
     }
+  }
+
+  async function cancelRun() {
+    if (activeExecutionRunId) await executionRuns.cancel(activeExecutionRunId);
   }
 
   async function deleteRun(id: string, label: string) {
@@ -235,12 +268,16 @@
           <div class="flex items-center gap-3 pt-1">
             <Button
               variant="primary"
+              testId="direct-native-run"
               disabled={!filePath || running}
               loading={running}
               onclick={runFlagstat}
             >
               Run flagstat
             </Button>
+            {#if running && activeExecutionRunId}
+              <Button variant="secondary" testId="direct-native-cancel" onclick={cancelRun}>Cancel</Button>
+            {/if}
             {#if running && startedAt}
               <span class="text-xs text-text-subtle">
                 Elapsed: {fmtDuration(startedAt, now)}

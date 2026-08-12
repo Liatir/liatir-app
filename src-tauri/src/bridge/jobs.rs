@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::{
     collections::HashMap,
     sync::{
-        atomic::{AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
         Arc, Mutex,
     },
     time::{SystemTime, UNIX_EPOCH},
@@ -20,6 +20,14 @@ static JOB_COUNTER: AtomicU64 = AtomicU64::new(1);
 fn gen_job_id() -> String {
     let n = JOB_COUNTER.fetch_add(1, Ordering::SeqCst);
     format!("job_{:x}", n)
+}
+
+fn is_safe_job_id(job_id: &str) -> bool {
+    !job_id.is_empty()
+        && job_id.len() <= 128
+        && job_id
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || character == '-' || character == '_')
 }
 
 fn now_ms() -> u64 {
@@ -74,6 +82,8 @@ pub(crate) struct JobState {
     pub(crate) child: Option<tauri_plugin_shell::process::CommandChild>,
     pub(crate) stdout: Arc<Mutex<Vec<String>>>,
     pub(crate) stderr: Arc<Mutex<Vec<String>>>,
+    /// Cooperative cancellation for in-process jobs such as WASM plugins.
+    pub(crate) cancelled: Option<Arc<AtomicBool>>,
 }
 
 // ---------------------------------
@@ -284,6 +294,7 @@ async fn spawn_job(
                 child: Some(child),
                 stdout: stdout_buf.clone(),
                 stderr: stderr_buf.clone(),
+                cancelled: None,
             },
         );
     }
@@ -360,6 +371,191 @@ async fn spawn_job(
     Ok(serde_json::json!({ "jobId": job_id }))
 }
 
+/// Register work executed inside the app so it has the same Jobs lifecycle as
+/// a child process. The returned cancellation flag is checked by the runner.
+pub(crate) fn create_in_process_job(
+    app: &AppHandle,
+    cmd: String,
+    args: Vec<String>,
+    workspace_id: Option<String>,
+    label: Option<String>,
+    kind: Option<String>,
+    metadata: Option<Value>,
+) -> (String, Arc<AtomicBool>) {
+    loop {
+        let job_id = gen_job_id();
+        match create_in_process_job_with_id(
+            app,
+            job_id,
+            cmd.clone(),
+            args.clone(),
+            workspace_id.clone(),
+            label.clone(),
+            kind.clone(),
+            metadata.clone(),
+        ) {
+            Ok(job) => return job,
+            Err(error) if error.starts_with("job ID already exists:") => continue,
+            Err(error) => panic!("generated an invalid in-process Job ID: {error}"),
+        }
+    }
+}
+
+/// Register a caller-allocated stable Job ID. This is used when the frontend
+/// must know the identity before an in-process WASM invocation starts so it can
+/// attach cancellation and ownership immediately.
+pub(crate) fn create_in_process_job_with_id(
+    app: &AppHandle,
+    job_id: String,
+    cmd: String,
+    args: Vec<String>,
+    workspace_id: Option<String>,
+    label: Option<String>,
+    kind: Option<String>,
+    metadata: Option<Value>,
+) -> Result<(String, Arc<AtomicBool>), String> {
+    if !is_safe_job_id(&job_id) {
+        return Err("job ID must contain only ASCII letters, numbers, '-' or '_'".to_string());
+    }
+    let cancelled = Arc::new(AtomicBool::new(false));
+    let entry = JobEntry {
+        id: job_id.clone(),
+        cmd,
+        args,
+        label,
+        kind,
+        metadata,
+        status: JobStatus::Running,
+        started_at_ms: now_ms(),
+        ended_at_ms: None,
+        workspace_id,
+        progress: None,
+    };
+    let registry = app.state::<JobRegistry>();
+    let mut jobs = registry.0.lock().unwrap();
+    if jobs.contains_key(&job_id) {
+        return Err(format!("job ID already exists: {job_id}"));
+    }
+    jobs.insert(
+        job_id.clone(),
+        JobState {
+            entry,
+            child: None,
+            stdout: Arc::new(Mutex::new(Vec::new())),
+            stderr: Arc::new(Mutex::new(Vec::new())),
+            cancelled: Some(cancelled.clone()),
+        },
+    );
+    Ok((job_id, cancelled))
+}
+
+pub(crate) fn append_in_process_output(
+    app: &AppHandle,
+    job_id: &str,
+    stream: &str,
+    line: String,
+) {
+    let registry = app.state::<JobRegistry>();
+    let jobs = registry.0.lock().unwrap();
+    let Some(state) = jobs.get(job_id) else { return };
+    if stream == "stderr" {
+        state.stderr.lock().unwrap().push(line.clone());
+    } else {
+        state.stdout.lock().unwrap().push(line.clone());
+    }
+    drop(jobs);
+    let _ = app.emit(&format!("jobs:{stream}:{job_id}"), line);
+}
+
+pub(crate) fn finish_in_process_job(app: &AppHandle, job_id: &str, ok: bool) {
+    let registry = app.state::<JobRegistry>();
+    let mut jobs = registry.0.lock().unwrap();
+    let Some(state) = jobs.get_mut(job_id) else { return };
+    if state.entry.status == JobStatus::Killed {
+        return;
+    }
+    let exit_code = Some(if ok { 0 } else { 1 });
+    state.entry.status = if ok {
+        JobStatus::Done { exit_code }
+    } else {
+        JobStatus::Failed { exit_code }
+    };
+    state.entry.ended_at_ms = Some(now_ms());
+    state.cancelled = None;
+    drop(jobs);
+    let _ = app.emit(
+        &format!("jobs:exit:{job_id}"),
+        serde_json::json!({ "jobId": job_id, "exitCode": exit_code, "ok": ok }),
+    );
+}
+
+#[tauri::command]
+pub fn lia_jobs_begin_logical(
+    app: AppHandle,
+    name: String,
+    workspace_id: Option<String>,
+    label: Option<String>,
+    kind: Option<String>,
+    metadata: Option<Value>,
+) -> Result<serde_json::Value, String> {
+    if name.trim().is_empty() {
+        return Err("logical job name must not be empty".to_string());
+    }
+    let (job_id, _) = create_in_process_job(
+        &app,
+        name,
+        Vec::new(),
+        workspace_id,
+        label,
+        kind,
+        metadata,
+    );
+    Ok(serde_json::json!({ "jobId": job_id }))
+}
+
+#[tauri::command]
+pub fn lia_jobs_append_logical_output(
+    app: AppHandle,
+    job_id: String,
+    stream: String,
+    line: String,
+) -> Result<(), String> {
+    if stream != "stdout" && stream != "stderr" {
+        return Err("stream must be stdout or stderr".to_string());
+    }
+    {
+        let registry = app.state::<JobRegistry>();
+        let jobs = registry.0.lock().unwrap();
+        let state = jobs
+            .get(&job_id)
+            .ok_or_else(|| format!("job not found: {job_id}"))?;
+        if state.child.is_some() || state.cancelled.is_none() {
+            return Err("job is not an in-process logical job".to_string());
+        }
+        if state.entry.status != JobStatus::Running {
+            return Err("logical job is already terminal".to_string());
+        }
+    }
+    append_in_process_output(&app, &job_id, &stream, line);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn lia_jobs_finish_logical(app: AppHandle, job_id: String, ok: bool) -> Result<(), String> {
+    {
+        let registry = app.state::<JobRegistry>();
+        let jobs = registry.0.lock().unwrap();
+        let state = jobs
+            .get(&job_id)
+            .ok_or_else(|| format!("job not found: {job_id}"))?;
+        if state.child.is_some() || state.cancelled.is_none() {
+            return Err("job is not an in-process logical job".to_string());
+        }
+    }
+    finish_in_process_job(&app, &job_id, ok);
+    Ok(())
+}
+
 #[tauri::command]
 pub fn lia_jobs_kill(app: AppHandle, job_id: String) -> Result<bool, String> {
     let registry = app.state::<JobRegistry>();
@@ -369,11 +565,23 @@ pub fn lia_jobs_kill(app: AppHandle, job_id: String) -> Result<bool, String> {
         .get_mut(&job_id)
         .ok_or_else(|| format!("job not found: {job_id}"))?;
 
+    if state.entry.status != JobStatus::Running {
+        return Ok(true);
+    }
+    if let Some(cancelled) = state.cancelled.as_ref() {
+        cancelled.store(true, Ordering::SeqCst);
+    }
     if let Some(child) = state.child.take() {
         child.kill().map_err(|e| format!("kill failed: {e}"))?;
-        state.entry.status = JobStatus::Killed;
-        state.entry.ended_at_ms = Some(now_ms());
     }
+    state.entry.status = JobStatus::Killed;
+    state.entry.ended_at_ms = Some(now_ms());
+    let ended_at_ms = state.entry.ended_at_ms;
+    drop(jobs);
+    let _ = app.emit(
+        &format!("jobs:exit:{job_id}"),
+        serde_json::json!({ "jobId": job_id, "exitCode": null, "ok": false, "endedAtMs": ended_at_ms }),
+    );
 
     Ok(true)
 }
@@ -459,4 +667,19 @@ pub fn lia_jobs_get_output(
         stdout_total: stdout_buffer.len(),
         stderr_total: stderr_buffer.len(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_safe_job_id;
+
+    #[test]
+    fn caller_allocated_job_ids_are_path_safe() {
+        assert!(is_safe_job_id("fastqc-550e8400-e29b-41d4-a716-446655440000"));
+        assert!(is_safe_job_id("job_1"));
+        assert!(!is_safe_job_id("../escape"));
+        assert!(!is_safe_job_id("nested/job"));
+        assert!(!is_safe_job_id(""));
+        assert!(!is_safe_job_id(&"a".repeat(129)));
+    }
 }

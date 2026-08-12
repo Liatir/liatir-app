@@ -14,12 +14,13 @@
  * step. They differ in what identifies them — a standalone analysis run versus a node inside a
  * pipeline run — which is exactly why they are separate types rather than one with optional fields.
  */
-import type { JsonValue } from '@liatir/core';
+import type { JsonValue, LiatirExecutionIdentity } from '@liatir/core';
 
 export type AIDirectRunMode = 'single-cell-embedding';
 
 export interface AIDirectRunContext {
 	runKind: 'ai-model-direct';
+	execution: LiatirExecutionIdentity;
 	/** Allocated *before* the job starts — see the note above. */
 	analysisRunId: string;
 	toolId: string;
@@ -38,6 +39,7 @@ export interface AIDirectRunContext {
 
 export interface AIPipelineRunContext {
 	runKind: 'pipeline-step';
+	execution: LiatirExecutionIdentity;
 	/** A pipeline step is identified by its parent run *and* its node — neither alone is enough. */
 	pipelineRunId: string;
 	pipelineId: string | null;
@@ -90,6 +92,7 @@ function stringRecord(value: unknown): Record<string, string> {
 export function directRunMetadata(context: AIDirectRunContext): Record<string, JsonValue> {
 	return {
 		runKind: context.runKind,
+		execution: context.execution as unknown as JsonValue,
 		analysisRunId: context.analysisRunId,
 		toolId: context.toolId,
 		mode: context.mode,
@@ -107,6 +110,7 @@ export function aiRunMetadata(context: AIRunContext): Record<string, JsonValue> 
 	if (context.runKind === 'ai-model-direct') return directRunMetadata(context);
 	return {
 		runKind: context.runKind,
+		execution: context.execution as unknown as JsonValue,
 		pipelineRunId: context.pipelineRunId,
 		pipelineId: context.pipelineId,
 		pipelineName: context.pipelineName,
@@ -140,9 +144,11 @@ export function parseDirectRunContext(metadata: unknown): AIDirectRunContext | n
 	if (typeof record.label !== 'string') return null;
 	if (typeof record.startedAt !== 'number') return null;
 	if (typeof record.outputDir !== 'string') return null;
+	if (!record.execution || typeof record.execution !== 'object' || Array.isArray(record.execution)) return null;
 
 	return {
 		runKind: 'ai-model-direct',
+		execution: record.execution as unknown as LiatirExecutionIdentity,
 		analysisRunId: record.analysisRunId,
 		toolId: record.toolId,
 		mode: record.mode,

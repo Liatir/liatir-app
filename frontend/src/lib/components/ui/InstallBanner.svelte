@@ -1,6 +1,15 @@
 <script lang="ts">
   import { installProgress, type InstallItem } from '$lib/stores/installProgress.svelte';
   import { fmtBytes } from '$lib/utils';
+  import { executionRuns } from '$lib/stores/executionRuns.svelte';
+
+  function dismissOrCancel(item: InstallItem) {
+    if (item.runId && ['downloading', 'extracting', 'pm-installing'].includes(item.phase)) {
+      void executionRuns.cancel(item.runId);
+      return;
+    }
+    installProgress.dismiss(item.binary);
+  }
 
   function phaseLabel(item: InstallItem): string {
     switch (item.phase) {
@@ -10,6 +19,7 @@
         return 'Downloading…';
       case 'extracting':    return 'Extracting…';
       case 'pm-installing': return 'Installing…';
+      case 'recoverable':   return item.error ?? 'Interrupted — run install again to resume.';
       case 'done':          return 'Installed';
       case 'error':         return item.error ? `Error: ${item.error}` : 'Failed';
     }
@@ -32,6 +42,7 @@
                pointer-events-auto transition-all
                {item.phase === 'done'  ? 'bg-emerald-50  border-emerald-200' :
                 item.phase === 'error' ? 'bg-red-50      border-red-200'     :
+                item.phase === 'recoverable' ? 'bg-amber-50 border-amber-200' :
                                          'bg-surface        border-border'}"
       >
         <!-- Header row -->
@@ -44,6 +55,10 @@
             <svg class="h-4 w-4 text-red-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
+          {:else if item.phase === 'recoverable'}
+            <svg class="h-4 w-4 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/>
+            </svg>
           {:else}
             <svg class="h-4 w-4 text-brand shrink-0 animate-spin" viewBox="0 0 24 24" fill="none">
               <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
@@ -54,9 +69,9 @@
           <span class="text-xs font-semibold text-text flex-1 truncate">{item.label}</span>
 
           <button
-            onclick={() => installProgress.dismiss(item.binary)}
+            onclick={() => dismissOrCancel(item)}
             class="text-text-faint hover:text-text-muted transition-colors"
-            aria-label="Dismiss"
+            aria-label={item.runId && ['downloading', 'extracting', 'pm-installing'].includes(item.phase) ? 'Cancel install' : 'Dismiss'}
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -68,6 +83,7 @@
         <p class="text-[11px] leading-none
                   {item.phase === 'done'  ? 'text-emerald-600' :
                    item.phase === 'error' ? 'text-red-500 line-clamp-2' :
+                   item.phase === 'recoverable' ? 'text-amber-700 line-clamp-2' :
                                             'text-text-muted'}">
           {phaseLabel(item)}
         </p>

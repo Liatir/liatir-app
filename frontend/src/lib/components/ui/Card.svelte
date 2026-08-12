@@ -11,15 +11,18 @@
     class?: string;
     children: Snippet;
     onclick?: (e: MouseEvent) => void;
+    /** Hook for end-to-end tests that need to observe a whole panel. */
+    testId?: string;
     /** Adds the hover affordance. Separate from `onclick` so a card can react without being a button. */
     hoverable?: boolean;
   }
 
 
-  let { class: cls = '', children, onclick, hoverable = false }: Props = $props();
+  let { class: cls = '', children, onclick, testId, hoverable = false }: Props = $props();
 </script>
 
 <div
+  data-testid={testId}
   class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] {hoverable
     ? 'cursor-pointer hover:border-[var(--color-border-2)] hover:bg-[var(--color-surface-2)] transition-colors duration-150'
     : ''} {cls}"
