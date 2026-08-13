@@ -36,14 +36,14 @@ fn preferred_python() -> Option<String> {
     ])
 }
 
-fn resolve_dependency_command(binary: &str) -> Option<String> {
+pub(crate) fn resolve_dependency_command(binary: &str) -> Option<String> {
     if binary == "python" {
         return preferred_python();
     }
     find_in_path(binary)
 }
 
-fn select_version_line(text: &str) -> Option<String> {
+pub(crate) fn select_version_line(text: &str) -> Option<String> {
     let lines = text
         .lines()
         .map(str::trim)
@@ -60,7 +60,7 @@ fn select_version_line(text: &str) -> Option<String> {
         .map(|line| (*line).to_string())
 }
 
-fn try_get_version(command: &str) -> Option<String> {
+pub(crate) fn try_get_version(command: &str) -> Option<String> {
     for flag in &["--version", "-version", "version", "-v"] {
         let Ok(output) = std::process::Command::new(command).arg(flag).output() else {
             continue;

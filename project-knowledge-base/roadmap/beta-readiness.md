@@ -1,6 +1,6 @@
 # Beta 1 Readiness
 
-Last reviewed: 2026-08-13
+Last reviewed: 2026-08-14
 
 This page is the cross-surface readiness ledger for the first production-grade
 Liatir beta. It complements the canonical
@@ -46,7 +46,7 @@ feature to Verified.
 | Single-cell Embedding AI Tool | **Verified — lighthouse orchestration; model evidence varies by target** | One shared Tool runs Geneformer, scGPT, and UCE through their signed boxes and produces profiled immutable AnnData, bounded PCA preview, summary, Jobs, Results, Runtime Box provenance, digest and lineage through the common execution identity. Native Gate 5 E2E proves viewer handoff and Data reuse without re-running heavy models | Keep model-specific product gates repeatable and label bounded previews separately from full scientific analyses |
 | Future AI families | **Deferred** | No preview entries or dormant product integrations remain | Re-plan each family from legal review through published Runtime Box evidence after current workbench gates close |
 | Scientific viewers | **Partial — single-cell verified** | Native Gate 5 E2E proves profiled AnnData handoff, bounded preview rendering, validation/provenance display and Result-to-Data-to-viewer reuse. Protein and genome surfaces remain unverified | Add native visual/runtime coverage for the remaining viewers, failures, fullscreen and capture |
-| External Workflows / Nextflow | **Verified — macOS arm64; Windows/Linux pending** | Core-owned saved definitions, isolated native staging, one shared direct/pipeline Nextflow adapter, stable standalone/nested identity, exact declared output reuse, complete engine provenance, cancellation and exactly-once restart recovery. Native Gate 6 is 3/3 with system Nextflow and related regressions are 16/16 on macOS arm64 | Verify the Linux app with a separately built WSL2 ELF binary, then implement and prove the native Windows client against the supported WSL execution backend |
+| External Workflows / Nextflow | **Verified — cross-platform Gate 6** | Core-owned saved definitions and one direct/pipeline adapter are verified on macOS arm64, native Linux x86_64, and the native Windows x86_64 app through WSL2 Linux x86_64. The Windows backend owns safe path mapping, per-run staging/control, token-scoped process-tree cancellation, exact output collection, provenance, parent identity, and two-process restart cleanup. Windows app-to-WSL and Linux Xvfb suites are each 3/3; Windows restart is 2/2 phases; both platforms pass 51 files / 296 tests, Rust tests, and Clippy | Keep the focused product and restart gates repeatable; do not infer native-Windows Nextflow, WSL1/ARM64, managed installation, or HPC/cloud support |
 | Quenta | **Partial** | Read-only Ollama MVP with shared contracts, local retrieval, Result/Job deep links, cited reports, unit tests, Rust loopback tests, and mock-Ollama Tauri E2E | Real local Ollama evaluation matrix with recommended model(s), report-quality review, latency/error expectations, and no-tool-call audit |
 | Liatir MCP server | **Planned** | Product boundary agreed: resources plus controlled saved-pipeline execution | Threat model, allowlist, asynchronous run identity, audit, Jobs/Results attribution, real client test |
 | Plugin templates | **Partial** | CLI scaffolds supported runtimes | Replace toy examples with useful, tested scientific templates for every supported runtime |
@@ -72,12 +72,9 @@ The beta cannot ship until automated native coverage proves:
 
 ## Immediate execution order
 
-1. Repeat the Nextflow External Workflow product gate on WSL2 Linux x86_64,
-   then implement and prove the native Windows app-to-WSL execution boundary;
-   the Linux run alone is not Windows app evidence.
-2. Close the evidence-backed desktop release matrix and public Beta 1
+1. Close the evidence-backed desktop release matrix and public Beta 1
    documentation.
-3. Implement controlled local MCP access with a real client after Beta 1.
+2. Implement controlled local MCP access with a real client after Beta 1.
 
 Quenta expansion, simulations, generative model families, additional scientific
 verticals, and additional workflow engines remain deferred until the workbench

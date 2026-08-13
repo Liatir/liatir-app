@@ -418,7 +418,7 @@ fn cleanup_record(
     let mut errors: Vec<String> = Vec::new();
 
     for job_id in &record.job_ids {
-        let _ = super::jobs::lia_jobs_kill(app.clone(), job_id.clone());
+        let _ = super::jobs::lia_jobs_kill_blocking(app.clone(), job_id.clone());
     }
 
     for env_id in record.python_env_ids {

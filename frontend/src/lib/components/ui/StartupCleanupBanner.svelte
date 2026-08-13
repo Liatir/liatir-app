@@ -12,6 +12,7 @@
     resumableDownloads: ResumableDownload[];
     cacheClearedBytes: number;
     corruptedRunsRemoved: number;
+    wslExternalWorkflowsReconciled: number;
     errors: string[];
   }
 
@@ -34,7 +35,8 @@
     !dismissed && report !== null && (
       report.resumableDownloads.length > 0 ||
       report.cacheClearedBytes > 0 ||
-      report.corruptedRunsRemoved > 0
+      report.corruptedRunsRemoved > 0 ||
+      report.wslExternalWorkflowsReconciled > 0
     )
   );
 
@@ -66,7 +68,8 @@
       if (
         report.resumableDownloads.length === 0 &&
         report.cacheClearedBytes === 0 &&
-        report.corruptedRunsRemoved === 0
+        report.corruptedRunsRemoved === 0 &&
+        report.wslExternalWorkflowsReconciled === 0
       ) {
         dismissed = true;
       }
@@ -98,13 +101,16 @@
     <div class="px-4 py-3 space-y-3">
 
       <!-- Summary stats -->
-      {#if report.cacheClearedBytes > 0 || report.corruptedRunsRemoved > 0}
+      {#if report.cacheClearedBytes > 0 || report.corruptedRunsRemoved > 0 || report.wslExternalWorkflowsReconciled > 0}
         <div class="text-text-muted space-y-0.5">
           {#if report.cacheClearedBytes > 0}
             <p>Cache cleared: {fmtBytes(report.cacheClearedBytes)}</p>
           {/if}
           {#if report.corruptedRunsRemoved > 0}
             <p>Corrupted run records removed: {report.corruptedRunsRemoved}</p>
+          {/if}
+          {#if report.wslExternalWorkflowsReconciled > 0}
+            <p>Interrupted WSL2 workflows stopped: {report.wslExternalWorkflowsReconciled}</p>
           {/if}
         </div>
       {/if}

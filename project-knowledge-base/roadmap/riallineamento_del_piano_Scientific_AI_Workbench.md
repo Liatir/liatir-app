@@ -1,6 +1,6 @@
 # Riallineamento del piano “Scientific AI Workbench”
 
-Ultima revisione: 2026-08-13
+Ultima revisione: 2026-08-14
 
 ## Stato corrente
 
@@ -11,7 +11,7 @@ Ultima revisione: 2026-08-13
 | 3. Common execution spine | Completato |
 | 4. I/O scientifico standardizzato | Completato localmente su macOS arm64 |
 | 5. Lighthouse single-cell | Completato localmente su macOS arm64 |
-| 6. Nextflow come External Workflow | Completato localmente su macOS arm64; WSL2 e integrazione Windows→WSL da chiudere |
+| 6. Nextflow come External Workflow | Completato su macOS arm64, Linux x86_64 e app Windows x86_64 con backend WSL2 Linux x86_64 |
 | 7–8 | Pianificati |
 
 ## Indicatori
@@ -114,8 +114,8 @@ rimasta verde 1/1.
 
 **Difficoltà:** `5/5` · **Codex effort:** `max` · **Windows** · **Linux**
 
-**Stato (2026-08-13): completato localmente su macOS arm64; verifica WSL2
-Linux x86_64 e integrazione del client Windows con WSL ancora richieste.**
+**Stato (2026-08-14): completato su macOS arm64, Linux x86_64 e client
+Windows x86_64 con backend WSL2 Linux x86_64.**
 
 - Aggiungere una nuova entità `External Workflow` e il relativo tipo `external-workflow` nei contratti condivisi.
 - Una definizione salvata contiene motore, sorgente locale o revisione repository, parametri, input e output dichiarati.
@@ -146,18 +146,25 @@ trace, report, timeline, sessione, task, output, digest e codice d'uscita.
 Cancellazione e fallimento restano leggibili; `-resume` è un'azione esperta
 esplicita e compatibile con la stessa revisione della definizione.
 
-Evidenza locale: Nextflow `26.04.6 build 12646` con Java `21.0.11`, E2E nativo
-Gate 6 3/3 per esecuzione diretta, doppio riuso nella stessa pipeline, output
-downstream, fallimento, cancellazione e recovery esattamente una volta; 16/16
-regressioni pipeline/execution-spine/lighthouse; `npm run test:verify` 51 file /
-293 test; `cargo test` 52 passati / 2 ignorati intenzionalmente; `cargo clippy
---tests` sul warning baseline esistente. Questa evidenza non vale come prova
-Windows o Linux. Nextflow supporta Windows attraverso WSL: servono sia il gate
-con un binario ELF Linux compilato ed eseguito in WSL2 sotto Xvfb, sia una
-integrazione esplicita del client Windows nativo con quel backend WSL, inclusi
-mapping dei path, staging, cancellazione e raccolta output. Un wrapper Windows
-ad hoc o il solo run Linux in WSL non dimostrano il comportamento dell'app
-Windows.
+La chiusura cross-platform mantiene il backend POSIX nativo di macOS/Linux e
+aggiunge un confine esplicito `liatir.exe → wsl.exe → Nextflow` su Windows. Il
+bridge seleziona e verifica WSL2 Linux x86_64, converte in sicurezza soltanto
+path assoluti, conserva staging e raccolta output per singola run, avvia un
+nuovo process group identificato da token e lo cancella con TERM/KILL limitati
+alla run. I control record persistiti consentono al successivo processo
+dell'app di eliminare l'albero orfano e riconciliare una sola volta Job, Result
+e parent identity. Il contratto condiviso e i backend macOS/Linux non cambiano.
+
+Evidenza Windows 11 Pro x86_64 build 26200 con WSL `2.7.10.0`, Ubuntu 26.04
+LTS, kernel WSL2 `6.18.33.2`, Nextflow `26.04.6 build 12646` e OpenJDK
+`21.0.11`: E2E dell'app Windows verso WSL 3/3 e prova restart in due processi
+2/2; `npm run test:verify` 51 file / 296 test; `cargo test` 53 passati / 2
+ignorati intenzionalmente; `cargo clippy --tests` verde sul warning baseline.
+Evidenza Linux nativa nello stesso WSL2, da checkout nel filesystem Linux:
+nuovo binario ELF 64-bit x86-64, E2E Xvfb 3/3, `test:verify` 51 / 296,
+`cargo test` 52 passati / 2 ignorati e Clippy verde. Dettagli, comandi e
+limitazioni sono in
+[Gate 6 Nextflow cross-platform evidence](./gate-6-nextflow-cross-platform.md).
 
 ### 7. Gate Beta 1
 

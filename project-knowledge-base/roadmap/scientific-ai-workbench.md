@@ -1,6 +1,6 @@
 # Scientific AI Workbench Product Plan
 
-Last reviewed: 2026-08-13
+Last reviewed: 2026-08-14
 
 This document is the canonical product direction and execution sequence for
 Liatir during and after the current Runtime Box CI foundation program. It turns
@@ -36,9 +36,10 @@ execution spine for direct, pipeline and nested runs. Gate 4 has now completed
 the first versioned scientific artifact contract and its AnnData/single-cell
 adoption. Gate 5 has completed the single-cell lighthouse with viewer handoff,
 downstream reuse and a no-code preset. Gate 6 has completed the first saved
-Nextflow External Workflow, runnable standalone and by reference in pipelines,
-on macOS arm64. WSL2 Linux verification and the native Windows app-to-WSL
-execution boundary remain before its cross-platform closure and Gate 7.
+Nextflow External Workflow, runnable standalone and by reference in pipelines.
+Its native macOS arm64 and Linux x86_64 paths and the native Windows x86_64
+app-to-WSL2 Linux x86_64 boundary are now verified, completing Gate 6 before
+Gate 7.
 Every paid or remote action still requires its exact local gate, workflow/input/revision
 readback, cost declaration, and fresh explicit approval.
 
@@ -139,7 +140,7 @@ execution foundation, but some product claims are ahead of their evidence.
 | Runtime Box distribution | Nine current schema-v2 targets are live and product-lifecycle verified; Scrollcase P5 and security Gate 1 are complete; app-global anti-replay and true A-to-B rollback are natively verified across app restart on macOS arm64, Windows x86_64, and Linux x86_64 | Keep the focused security suite repeatable on all three platforms, then decide whether UCE `beta.1` belongs in revocations |
 | Scientific viewers | Protein, genome, and single-cell surfaces exist but need native visual/runtime validation | Make viewer completion part of each scientific vertical |
 | Artifact semantics | Verified versioned core contract plus AnnData profile with streamed SHA-256 identity, separate transport/format/scientific compatibility, validation and lineage | Extend profiles incrementally without replacing original formats; prove viewer and downstream reuse in Gate 5 |
-| External workflow engines | First-class saved Nextflow External Workflows are implemented and natively verified on macOS arm64 for direct and pipeline use | Verify the Linux app in WSL2 and implement/test the native Windows app-to-WSL boundary before expanding engines |
+| External workflow engines | First-class saved Nextflow External Workflows are verified on macOS arm64, native Linux x86_64, and the native Windows x86_64 app through WSL2 Linux x86_64 for direct, pipeline, failure, cancellation, and restart paths | Keep Gate 6 repeatable and do not expand engines before Beta 1 release readiness |
 | Quenta | Read-only explanatory MVP | Keep it explanatory until the workbench is trustworthy without it |
 
 ## Target architecture
@@ -433,8 +434,8 @@ green 1/1.
 
 **Difficulty:** `5/5` · **Codex effort:** `max` · **Windows** · **Linux**
 
-**Status (2026-08-13): complete locally on macOS arm64; WSL2 Linux x86_64
-verification and native Windows app-to-WSL integration pending.**
+**Status (2026-08-14): complete on macOS arm64, native Linux x86_64, and the
+native Windows x86_64 app using WSL2 Linux x86_64.**
 
 Introduce External Workflow as a first-class saved entity and add
 `external-workflow` to the shared contracts. Nextflow is the first adapter; it
@@ -471,17 +472,28 @@ trace, report, timeline, DAG, session, task states and exit code. Cancellation,
 failure and restart reconciliation preserve readable evidence; Nextflow resume
 is an explicit compatible expert action.
 
-Local evidence uses system Nextflow `26.04.6 build 12646` and Java `21.0.11`:
-the native Gate 6 suite is 3/3 for direct execution, two-node pipeline reuse,
-declared output handoff, failure, cancellation and exactly-once restart
-reconciliation. Pipeline/execution-spine/single-cell regressions are 16/16,
-`npm run test:verify` is 51 files / 293 tests, `cargo test` is 52 passed / 2
-intentionally ignored, and `cargo clippy --tests` passes with the existing
-warning baseline. This does not yet establish Windows or Linux support.
-Nextflow officially runs on POSIX systems and on Windows through WSL, so the
-remaining Windows work is an explicit `liatir.exe` to WSL execution boundary,
-not an unsupported native Nextflow installation. It must preserve path mapping,
-staging, cancellation, output collection and the same execution identity.
+The cross-platform implementation preserves the native POSIX backend on macOS
+and Linux and adds an explicit `liatir.exe -> wsl.exe -> Nextflow` boundary on
+Windows. The bridge verifies WSL2 Linux x86_64 and its Nextflow/Java utilities,
+maps validated absolute paths through `wslpath`, retains per-run staging and
+host-side exact output collection, and starts a token-owned Linux process group.
+Cancellation waits for TERM/KILL of only that group before Result finalization.
+A persisted run control record lets the next app process clean an orphan and
+the common execution reconciler retain the original Job, Result, and parent
+identity exactly once. No shared core contract or native POSIX behavior was
+forked.
+
+Windows evidence is from Windows 11 Pro x86_64 build 26200, WSL `2.7.10.0`,
+Ubuntu 26.04 LTS, Linux `6.18.33.2-microsoft-standard-WSL2`, Nextflow `26.04.6
+build 12646`, and OpenJDK `21.0.11`. The real Windows app-to-WSL suite is 3/3
+and the separate two-process restart proof is 2/2; `npm run test:verify` is 51
+files / 296 tests, `cargo test` is 53 passed / 2 intentionally ignored, and
+`cargo clippy --tests` exits successfully. An independent checkout in the WSL
+Linux filesystem produced a confirmed ELF 64-bit x86-64 app; its Xvfb product
+suite is 3/3, `test:verify` is 51 / 296, `cargo test` is 52 passed / 2 ignored,
+and Clippy exits successfully. The complete commands, ownership decisions, and
+remaining limits are in
+[Gate 6 Nextflow cross-platform evidence](./gate-6-nextflow-cross-platform.md).
 
 ### Gate 7: close Beta 1 readiness
 
@@ -842,15 +854,12 @@ implemented-but-unverified features as production-ready.
 This is the default sequence unless a later evidence-backed decision explicitly
 reorders it:
 
-1. repeat the complete Gate 6 Nextflow product proof with a separately compiled
-   WSL2 Linux ELF binary under Xvfb, then implement and prove the native Windows
-   client against that WSL execution backend;
-2. close the desktop release matrix and public Beta 1 documentation;
-3. implement controlled local MCP access with a real client after Beta 1;
-4. validate the predictive/variant genomics and protein structure/binding
+1. close the desktop release matrix and public Beta 1 documentation;
+2. implement controlled local MCP access with a real client after Beta 1;
+3. validate the predictive/variant genomics and protein structure/binding
     verticals;
-5. publish useful verified Plugin and pipeline templates;
-6. evaluate another external workflow engine only from the reusable adapter
+4. publish useful verified Plugin and pipeline templates;
+5. evaluate another external workflow engine only from the reusable adapter
     contract, then reconsider other advanced expansion.
 
 ## Definition of done for every integration

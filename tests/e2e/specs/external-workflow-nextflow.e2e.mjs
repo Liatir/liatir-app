@@ -1,6 +1,7 @@
 /** Native Gate 6 proof for one saved Nextflow definition in direct and pipeline runs. */
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 import {
   expectNoVisibleRuntimeError,
@@ -9,8 +10,8 @@ import {
   waitForLiatirBridge,
 } from '../support/liatir-app.mjs';
 
-const DEFINITION_ID = 'gate-6-nextflow';
-const STEP_ID = `external-workflow:${DEFINITION_ID}`;
+export const DEFINITION_ID = 'gate-6-nextflow';
+export const STEP_ID = `external-workflow:${DEFINITION_ID}`;
 const SUCCESS_PIPELINE_ID = 'gate-6-nextflow-success';
 const FAILURE_PIPELINE_ID = 'gate-6-nextflow-failure';
 const RESTART_RUN_ID = 'gate-6-nextflow-interrupted';
@@ -28,14 +29,29 @@ async function writeWorkspaceJson(browser, rel, value) {
   }, rel, value);
 }
 
-async function readWorkspaceJson(browser, rel) {
+export async function readWorkspaceJson(browser, rel) {
   return browser.execute(async (file) => {
     const raw = await window.Liatir.invoke('lia_app_read_text', { rel: file });
     return JSON.parse(raw);
   }, rel);
 }
 
-function workflowDefinition(mainScriptPath) {
+/** Reload without unloading the WebView2 document before WebDriver acknowledges the command. */
+export async function reloadLiatirApp(browser) {
+  const previousTimeOrigin = await browser.execute(() => performance.timeOrigin);
+  await browser.execute(() => {
+    window.setTimeout(() => window.location.reload(), 50);
+    return true;
+  });
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  await browser.waitUntil(
+    async () => browser.execute((previous) => performance.timeOrigin !== previous, previousTimeOrigin),
+    { timeout: 20_000, timeoutMsg: 'Liatir did not complete the requested reload' },
+  );
+  await waitForLiatirBridge(browser);
+}
+
+function workflowDefinition(mainScriptPath, configFilePath) {
   const timestamp = Date.now();
   return {
     schemaVersion: 1,
@@ -58,6 +74,7 @@ function workflowDefinition(mainScriptPath) {
       mediaType: 'text/csv',
     }],
     outputDirectoryParameter: 'outdir',
+    nextflow: { configFilePath },
     createdAt: timestamp,
     updatedAt: timestamp,
   };
@@ -119,7 +136,7 @@ function pipelineWorkspace(inputPath) {
   };
 }
 
-async function ensureSeeded({ artifactsDir, browser, rootDir }) {
+export async function ensureSeeded({ artifactsDir, browser, rootDir }) {
   if (seeded) return seeded;
   await openSandboxWorkspace(browser);
   const fixtureDir = path.join(artifactsDir, 'reports', 'external-workflow-nextflow-e2e');
@@ -127,9 +144,12 @@ async function ensureSeeded({ artifactsDir, browser, rootDir }) {
   const inputPath = path.join(fixtureDir, 'input.txt');
   const originalContent = 'Liatir Gate 6 immutable input\n';
   fs.writeFileSync(inputPath, originalContent);
+  const configFilePath = path.join(fixtureDir, 'nextflow.config');
+  const configContent = "process.executor = 'local'\n";
+  fs.writeFileSync(configFilePath, configContent);
   const mainScriptPath = path.join(rootDir, 'tests', 'fixtures', 'external-workflow-nextflow', 'main.nf');
-  const definition = workflowDefinition(mainScriptPath);
-  seeded = { definition, inputPath, mainScriptPath, originalContent };
+  const definition = workflowDefinition(mainScriptPath, configFilePath);
+  seeded = { definition, inputPath, mainScriptPath, originalContent, configFilePath, configContent };
 
   await Promise.all([
     writeWorkspaceJson(browser, 'workspaces/__test__/external-workflows.json', {
@@ -151,13 +171,12 @@ async function ensureSeeded({ artifactsDir, browser, rootDir }) {
     writeWorkspaceJson(browser, 'workspaces/__test__/pipeline-workspace.json', pipelineWorkspace(inputPath)),
   ]);
 
-  await browser.execute(() => window.location.reload());
-  await waitForLiatirBridge(browser);
+  await reloadLiatirApp(browser);
   await openSandboxWorkspace(browser);
   return seeded;
 }
 
-async function chooseWorkflowInput(browser, fileName) {
+export async function chooseWorkflowInput(browser, fileName) {
   const trigger = await browser.$('[data-testid="external-workflow-input-input"]');
   await trigger.waitForDisplayed({ timeout: 20_000 });
   await trigger.click();
@@ -176,7 +195,7 @@ async function chooseWorkflowInput(browser, fileName) {
   if (!selected) throw new Error(`Could not select External Workflow input ${fileName}.`);
 }
 
-async function waitForDefinitionReady(browser) {
+export async function waitForDefinitionReady(browser) {
   await browser.waitUntil(
     async () => browser.execute(() => (
       document.body.textContent?.includes('Nextflow + Java ready')
@@ -186,7 +205,7 @@ async function waitForDefinitionReady(browser) {
   );
 }
 
-async function waitForResult(browser, matcher, timeout = 120_000) {
+export async function waitForResult(browser, matcher, timeout = 120_000) {
   await browser.waitUntil(
     async () => browser.execute(async (expected) => {
       try {
@@ -231,7 +250,7 @@ async function openPipeline(browser, pipelineId) {
   );
 }
 
-async function workflowJobs(browser, definitionId) {
+export async function workflowJobs(browser, definitionId) {
   return browser.execute(async (id) => {
     const jobs = await window.Liatir.invoke('lia_jobs_list', { workspaceId: '__test__' });
     return jobs.filter((job) => job.metadata?.externalWorkflowDefinitionId === id);
@@ -242,6 +261,24 @@ function provenanceFromEvidence(entry) {
   return entry?.evidence?.externalWorkflow ?? null;
 }
 
+async function nextflowRuntime(browser) {
+  return browser.execute(() => window.Liatir.externalWorkflows.runtimeInfo());
+}
+
+export function wslTokenProcessIds(distribution, token) {
+  const script = `token=$1
+for environment in /proc/[0-9]*/environ; do
+  [ -r "$environment" ] || continue
+  if { tr '\\000' '\\n' < "$environment"; } 2>/dev/null | grep -Fqx "LIATIR_WSL_RUN_TOKEN=$token"; then
+    basename "$(dirname "$environment")"
+  fi
+done`;
+  return execFileSync('wsl.exe', [
+    '--distribution', distribution,
+    '--exec', '/bin/sh', '-c', script, 'liatir-nextflow-e2e', token,
+  ], { encoding: 'utf8' }).trim().split(/\r?\n/).filter(Boolean);
+}
+
 export const tests = [
   {
     name: 'runs one saved Nextflow definition directly and twice in a reusable pipeline',
@@ -249,6 +286,20 @@ export const tests = [
     async run(context) {
       const { browser, expect } = context;
       const fixture = await ensureSeeded(context);
+      const runtime = await nextflowRuntime(browser);
+      expect(runtime).toMatchObject({ available: true, platform: process.platform === 'darwin' ? 'macos' : 'linux' });
+      if (process.platform === 'win32') {
+        expect(runtime).toMatchObject({
+          backend: 'wsl2',
+          architecture: 'x86_64',
+          distribution: expect.any(String),
+          nextflow: { available: true, path: expect.stringMatching(/^\//) },
+          java: { available: true, path: expect.stringMatching(/^\//) },
+        });
+        expect(runtime.kernelVersion).toMatch(/wsl2/i);
+      } else {
+        expect(runtime.backend).toBe('native');
+      }
       await navigateInApp(browser, `/tools/external-workflows/${DEFINITION_ID}`);
       await waitForDefinitionReady(browser);
       await chooseWorkflowInput(browser, path.basename(fixture.inputPath));
@@ -284,6 +335,25 @@ export const tests = [
       expect(directProvenance.engineVersion).toMatch(/\b\d+\.\d+\.\d+\b/);
       expect(directProvenance.javaVersion).toBeTruthy();
       expect(directProvenance.sessionId).toMatch(/^[0-9a-f-]{36}$/i);
+      expect(directProvenance.configSha256).toMatch(/^[0-9a-f]{64}$/);
+      const configArgument = directProvenance.command.indexOf('-c');
+      const runArgument = directProvenance.command.indexOf('run');
+      expect(configArgument).toBeGreaterThan(0);
+      expect(runArgument).toBeGreaterThan(configArgument);
+      if (process.platform === 'win32') {
+        expect(directProvenance).toMatchObject({ platform: 'linux', architecture: 'x86_64' });
+        expect(directProvenance.command.slice(0, 5)).toEqual([
+          'wsl.exe', '--distribution', runtime.distribution, '--exec', '/bin/sh',
+        ]);
+        expect(directProvenance.command[5]).toMatch(/^\/mnt\/[a-z]\//);
+        expect(directProvenance.parameters.input).toMatch(/^\/mnt\/[a-z]\//);
+        expect(directProvenance.parameters.outdir).toMatch(/^\/mnt\/[a-z]\//);
+        expect(directProvenance.command[configArgument + 1]).toMatch(/^\/mnt\/[a-z]\//);
+        expect(directProvenance.command[runArgument + 1]).toMatch(/^\/mnt\/[a-z]\//);
+        expect(directProvenance.locations.runDirectory).toMatch(/^[A-Za-z]:\\/);
+      } else {
+        expect(directProvenance.command[0]).toBe('nextflow');
+      }
       expect(directProvenance.tasks).toEqual(expect.arrayContaining([
         expect.objectContaining({ process: expect.stringContaining('SUMMARIZE'), status: 'COMPLETED' }),
       ]));
@@ -304,6 +374,32 @@ export const tests = [
         .filter((job) => job.metadata?.execution?.runId === direct.id);
       expect(directJobs).toHaveLength(1);
       expect(directJobs[0]).toMatchObject({ kind: 'external-workflow', status: { type: 'done' } });
+      if (process.platform === 'win32') {
+        expect(directJobs[0].metadata).toMatchObject({
+          executionBackend: 'wsl2',
+          executionPlatform: 'linux',
+          executionArchitecture: 'x86_64',
+          nextflowEnvironment: { NXF_ANSI_LOG: 'false' },
+          wslDistribution: runtime.distribution,
+          externalWorkflowRunId: direct.id,
+        });
+        expect(fs.existsSync(directJobs[0].metadata.wslControlFile)).toBe(false);
+      }
+      const directExecutionRecords = await readWorkspaceJson(
+        browser,
+        'workspaces/__test__/execution-runs/index.json',
+      );
+      const directExecution = directExecutionRecords.find((record) => record.identity.runId === direct.id);
+      expect(directExecution.logs.map((entry) => entry.message)).toEqual(expect.arrayContaining([
+        expect.stringMatching(process.platform === 'win32'
+          ? /Execution backend: WSL2 .* Linux x86_64/
+          : /Execution backend: native/),
+      ]));
+      if (process.platform === 'win32') {
+        expect(directExecution.logs.map((entry) => entry.message)).toContain(
+          'Nextflow environment: NXF_ANSI_LOG=false; other variables come from the selected WSL2 distribution.',
+        );
+      }
 
       const addButton = await browser.$('[data-testid="add-output-to-data-summary"]');
       await addButton.waitForDisplayed({ timeout: 20_000 });
@@ -318,8 +414,7 @@ export const tests = [
         { timeout: 20_000, timeoutMsg: 'Direct Nextflow output was not reusable from Data' },
       );
 
-      await browser.execute(() => window.location.reload());
-      await waitForLiatirBridge(browser);
+      await reloadLiatirApp(browser);
       await openSandboxWorkspace(browser);
       const reloadedRuns = await readWorkspaceJson(browser, 'workspaces/__test__/analysis-runs/index.json');
       expect(reloadedRuns.filter((run) => run.id === direct.id)).toHaveLength(1);
@@ -457,6 +552,20 @@ export const tests = [
         }, DEFINITION_ID, cancelStartedAt),
         { timeout: 30_000, timeoutMsg: 'Cancellable Nextflow Job did not start' },
       );
+      const runningJob = (await workflowJobs(browser, DEFINITION_ID))
+        .find((job) => job.startedAtMs >= cancelStartedAt && job.status?.type === 'running');
+      expect(runningJob).toBeTruthy();
+      let wslControl = null;
+      if (process.platform === 'win32') {
+        expect(runningJob.metadata).toMatchObject({
+          executionBackend: 'wsl2',
+          executionArchitecture: 'x86_64',
+          wslDistribution: expect.any(String),
+          wslControlFile: expect.any(String),
+        });
+        wslControl = JSON.parse(fs.readFileSync(runningJob.metadata.wslControlFile, 'utf8'));
+        expect(wslTokenProcessIds(wslControl.distribution, wslControl.token).length).toBeGreaterThan(0);
+      }
       const cancelButton = await browser.$('[data-testid="cancel-external-workflow"]');
       await cancelButton.waitForDisplayed({ timeout: 20_000 });
       await cancelButton.click();
@@ -475,7 +584,15 @@ export const tests = [
         .filter((job) => job.metadata?.execution?.runId === cancelled.id);
       expect(cancelledJobs).toHaveLength(1);
       expect(cancelledJobs[0].status.type).toBe('killed');
+      if (process.platform === 'win32') {
+        expect(fs.existsSync(runningJob.metadata.wslControlFile)).toBe(false);
+        await browser.waitUntil(
+          async () => wslTokenProcessIds(wslControl.distribution, wslControl.token).length === 0,
+          { timeout: 15_000, timeoutMsg: 'Cancelled WSL2 process group remained alive' },
+        );
+      }
       expect(fs.readFileSync(fixture.inputPath, 'utf8')).toBe(fixture.originalContent);
+      expect(fs.readFileSync(fixture.configFilePath, 'utf8')).toBe(fixture.configContent);
       await expectNoVisibleRuntimeError(browser);
     },
   },
@@ -515,8 +632,7 @@ export const tests = [
       });
       await writeWorkspaceJson(browser, 'workspaces/__test__/execution-runs/index.json', records);
 
-      await browser.execute(() => window.location.reload());
-      await waitForLiatirBridge(browser);
+      await reloadLiatirApp(browser);
       await openSandboxWorkspace(browser);
       const recovered = await waitForResult(browser, {
         id: RESTART_RUN_ID,
@@ -530,8 +646,7 @@ export const tests = [
         entityId: DEFINITION_ID,
       });
 
-      await browser.execute(() => window.location.reload());
-      await waitForLiatirBridge(browser);
+      await reloadLiatirApp(browser);
       await openSandboxWorkspace(browser);
       const runs = await readWorkspaceJson(browser, 'workspaces/__test__/analysis-runs/index.json');
       expect(runs.filter((run) => run.id === RESTART_RUN_ID)).toHaveLength(1);

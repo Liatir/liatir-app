@@ -81,8 +81,9 @@ queued job as authorization to start a self-hosted runner.
 
 - `npm run test:tauri:run`
   Runs the native E2E suite against an already-built
-  `src-tauri/target/debug/bundle/macos/Liatir.app` debug bundle on macOS. Use
-  this after `npm run test:tauri:prepare` while iterating on tests.
+  platform-specific debug app. On macOS it prefers the app bundle; on Windows
+  and Linux it drives the freshly compiled native executable. Use this after
+  `npm run test:tauri:prepare` while iterating on tests.
 
 - `npm run test:visual`
   Runs the visual smoke suite. The harness captures PNG screenshots from the
@@ -248,10 +249,11 @@ LIATIR_E2E_NEXTFLOW=1 node tests/e2e/run-tauri-e2e.mjs tests/e2e/specs/external-
 already present in `NXF_HOME`. This is useful for a deterministic offline rerun,
 but an empty offline cache is expected to fail before the product test.
 
-Nextflow supports Windows through WSL rather than as a native Windows runtime.
-Gate 6 therefore has two distinct remaining proofs. First, inside WSL2, keep
-the checkout in the Linux filesystem, compile a separate Linux binary there,
-confirm it is native x86_64 ELF, and run the suite under Xvfb:
+Nextflow support on Windows uses the explicit native-app-to-WSL2 backend rather
+than a native Windows runtime. Gate 6 keeps two distinct proofs. For native
+Linux inside WSL2, keep the checkout in the Linux filesystem, compile a
+separate Linux binary there, confirm it is x86_64 ELF, and run the suite under
+Xvfb:
 
 ```bash
 uname -m
@@ -263,16 +265,39 @@ LIATIR_E2E_NEXTFLOW=1 xvfb-run -a node tests/e2e/run-tauri-e2e.mjs tests/e2e/spe
 ```
 
 Record the E2E report plus `npm run test:verify`, `cargo test`, `cargo clippy
---tests`, `uname -m`, and `file` output. This closes the Linux path only.
+--tests`, `uname -m`, and `file` output. This remains Linux product evidence,
+not evidence for the Windows app.
 
-Second, before claiming support from the native Windows desktop app, implement
-an explicit `liatir.exe` to WSL execution backend. Its gate must start from the
-Windows UI and prove Windows/WSL path translation, run-owned staging, one Job,
-owner-scoped cancellation, exact output collection, provenance and restart
-reconciliation. Do not install an unofficial native Nextflow runtime or hide
-`wsl.exe` behind an ad hoc `nextflow.cmd` wrapper: either the supported bridge
-passes its own native Windows E2E, or the Beta support matrix must state that
-Nextflow External Workflows are unavailable in the Windows app.
+For the native Windows app, install Nextflow and Java inside an x86_64 WSL2
+distribution, prepare a Windows binary, and run both the product suite and its
+two-process restart companion from Windows PowerShell:
+
+```powershell
+wsl.exe --exec uname -m
+wsl.exe --exec nextflow -version
+wsl.exe --exec java -version
+npm run test:tauri:prepare
+$env:LIATIR_E2E_NEXTFLOW = '1'
+node tests/e2e/run-tauri-e2e.mjs tests/e2e/specs/external-workflow-nextflow.e2e.mjs
+npm run external-workflow:test:wsl-restart
+```
+
+The main suite starts from the real Windows UI. In addition to the common
+direct, pipeline, output, failure, cancellation, and reload assertions, it
+checks the reported WSL2 x86_64 runtime, the real `wsl.exe` provenance command,
+mapped Linux paths, Job backend metadata, the per-run control lifecycle, and
+that no token-owned process survives cancellation. The restart companion uses
+two separate Tauri processes sharing isolated app data. The first persists a
+real running Nextflow tree and its control identity; the second proves startup
+cleanup kills that exact tree, preserves the original Job/Result parent, and
+does not duplicate the interrupted Result after reload.
+
+Gate 6 closed on 2026-08-14. The Windows app-to-WSL suite passed 3/3 and its
+restart companion passed 2/2 phases. The independently compiled Linux x86_64
+ELF app passed 3/3 under Xvfb. Both checkouts passed 51 files / 296 tests in
+`npm run test:verify`, Rust tests, and `cargo clippy --tests`; exact platform
+versions and limitations are recorded in
+[Gate 6 Nextflow cross-platform evidence](../roadmap/gate-6-nextflow-cross-platform.md).
 
 `npm run pipeline:test:settlement-restart` is the process-restart companion.
 The first Tauri process persists an active pipeline plus direct AI Model,

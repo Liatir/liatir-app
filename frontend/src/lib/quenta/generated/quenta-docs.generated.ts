@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "70771fa87545ae9b56595527468e25bb60aa4141237f0e7e4ff7e1b272725f34";
+export const QUENTA_DOCS_SEED_HASH = "18456431bfaa7c52655465b5b703b9bf841fc7daebd6fafd84036884410cd977";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -1675,8 +1675,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "External Workflows — Requirements",
     "locator": "Docs / Tools / External Workflows / Requirements",
-    "excerpt": "Requirements Install [Nextflow](https://docs.seqera.io/nextflow/install) and a compatible Java runtime on a supported execution host. Nextflow runs on POSIX systems and uses WSL on Windows. Both `nextflow` and `java` must be available on `PATH`; Liatir checks…",
-    "content": "Requirements\nInstall [Nextflow](https://docs.seqera.io/nextflow/install) and a compatible\nJava runtime on a supported execution host. Nextflow runs on POSIX systems and\nuses WSL on Windows. Both `nextflow` and `java` must be available on `PATH`;\nLiatir checks them before a run.\n\nThis first Liatir adapter is currently verified on macOS arm64. Linux and the\nnative Windows-to-WSL path will be listed as supported only after their native\nproduct gates pass.\n\nThe first release does not install Nextflow, configure HPC or cloud executors,\nor download workflow dependencies for you. Local workflows can run without a\nnetwork connection when their own dependencies are already available. A\nrepository source may need network access unless Nextflow has cached it."
+    "excerpt": "Requirements Install [Nextflow](https://docs.seqera.io/nextflow/install) and a compatible Java runtime on the execution host. Both `nextflow` and `java` must be available on `PATH`; Liatir checks their paths and versions before a run. The verified execution p…",
+    "content": "Requirements\nInstall [Nextflow](https://docs.seqera.io/nextflow/install) and a compatible\nJava runtime on the execution host. Both `nextflow` and `java` must be available\non `PATH`; Liatir checks their paths and versions before a run.\n\nThe verified execution paths are:\n\n| Liatir app | Nextflow backend |\n| --- | --- |\n| macOS arm64 | Native macOS arm64 |\n| Linux x86_64 | Native Linux x86_64 |\n| Windows 11 x86_64 | WSL2 Linux x86_64 |\n\nOn Windows, install Nextflow and Java inside an x86_64 WSL2 distribution. Do\nnot install an unofficial native Windows Nextflow build or add a\n`nextflow.cmd` wrapper. Liatir calls `wsl.exe` directly, validates that the\nselected distribution is WSL2 x86_64, and checks its Linux utilities before\nenabling a run. The default WSL distribution is used unless the advanced\n`LIATIR_WSL_DISTRIBUTION` environment variable is set before Liatir starts.\nWSL1 and WSL ARM64 are not supported by this adapter.\n\nThe first release does not install Nextflow, configure HPC or cloud executors,\nor download workflow dependencies for you. Local workflows can run without a\nnetwork connection when their own dependencies are already available. A\nrepository source may need network access unless Nextflow has cached it."
   },
   {
     "id": "docs:tools/external-workflows#save-a-workflow",
@@ -1692,7 +1692,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "External Workflows — Run it directly",
     "locator": "Docs / Tools / External Workflows / Run it directly",
     "excerpt": "Run it directly Open the saved definition, choose its inputs and parameters, then select **Run workflow**. The run receives its own Job and Result. Liatir copies the source, configuration and inputs into an isolated run folder; it does not modify the original…",
-    "content": "Run it directly\nOpen the saved definition, choose its inputs and parameters, then select\n**Run workflow**. The run receives its own Job and Result. Liatir copies the\nsource, configuration and inputs into an isolated run folder; it does not\nmodify the originals.\n\nThe Result includes the declared files plus the Nextflow and Java versions,\ncommand, source revision, parameters, profile, configuration digest, task\nstates, logs, trace, report, timeline and exit status. Declared files can be\nadded to **Data** and reused without searching the Nextflow work directory."
+    "content": "Run it directly\nOpen the saved definition, choose its inputs and parameters, then select\n**Run workflow**. The run receives its own Job and Result. Liatir copies the\nsource, configuration and inputs into an isolated run folder; it does not\nmodify the originals.\n\nThe Result includes the declared files plus the actual execution backend,\nNextflow and Java versions, command, source revision, parameters, profile,\nconfiguration digest, task states, logs, trace, report, timeline and exit\nstatus. Declared files can be added to **Data** and reused without searching\nthe Nextflow work directory.\n\nFor a Windows run, Liatir creates one run-owned staging folder on the host,\ncopies source, optional configuration and inputs into it, and safely maps those\npaths for the selected WSL distribution. Nextflow sees Linux paths, while\nLiatir collects and hashes only the declared output files back on Windows. The\noriginal source and inputs are never changed."
   },
   {
     "id": "docs:tools/external-workflows#use-it-in-a-pipeline",
@@ -1707,8 +1707,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "External Workflows — Cancellation and resume",
     "locator": "Docs / Tools / External Workflows / Cancellation and resume",
-    "excerpt": "Cancellation and resume Cancelling a run stops only that External Workflow Job. Failed and cancelled runs keep their available logs and provenance in Results. Nextflow resume is available as an explicit expert option for a compatible past run. Liatir does not…",
-    "content": "Cancellation and resume\nCancelling a run stops only that External Workflow Job. Failed and cancelled\nruns keep their available logs and provenance in Results.\n\nNextflow resume is available as an explicit expert option for a compatible past\nrun. Liatir does not claim ownership of Nextflow cache semantics, and it will\nnot resume against a changed workflow definition or source revision."
+    "excerpt": "Cancellation and resume Cancelling a run stops only that External Workflow Job. On Windows, every run has a separate Linux process group and unguessable ownership token; Liatir stops that group without shutting down the WSL distribution or unrelated Linux wor…",
+    "content": "Cancellation and resume\nCancelling a run stops only that External Workflow Job. On Windows, every run\nhas a separate Linux process group and unguessable ownership token; Liatir\nstops that group without shutting down the WSL distribution or unrelated Linux\nwork. Failed and cancelled runs keep their available logs and provenance in\nResults.\n\nIf Liatir exits while a Windows-to-WSL run is active, the next app start uses\nthe persisted run identity to stop only the orphaned process tree and reconcile\none interrupted Result with its original Job and parent. It does not present an\nabandoned run as still active.\n\nNextflow resume is available as an explicit expert option for a compatible past\nrun. Liatir does not claim ownership of Nextflow cache semantics, and it will\nnot resume against a changed workflow definition or source revision."
   },
   {
     "id": "docs:tools/fastp",

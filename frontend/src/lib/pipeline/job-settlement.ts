@@ -57,8 +57,13 @@ export async function waitForJobSettlement(
 	const startedAt = Date.now();
 	const pollIntervalMs = options.pollIntervalMs ?? 100;
 
-	const kill = async () => {
-		await bridge.invoke('lia_jobs_kill', { jobId }).catch(() => false);
+	let killPromise: Promise<void> | null = null;
+	const kill = () => {
+		killPromise ??= bridge.invoke('lia_jobs_kill', { jobId }).then(
+			() => undefined,
+			() => undefined
+		);
+		return killPromise;
 	};
 	const abort = () => {
 		void kill();
@@ -92,6 +97,10 @@ export async function waitForJobSettlement(
 			]);
 
 			if (entry.status.type !== 'running') {
+				if (options.signal?.aborted) {
+					await kill();
+					throw new RunCancelledError();
+				}
 				await drain();
 				return { entry, stdout, stderr, timedOut: false };
 			}

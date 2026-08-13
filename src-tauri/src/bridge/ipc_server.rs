@@ -566,6 +566,7 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 .to_string();
             ensure_dev_job_access(app, dev_context.as_ref(), &job_id)?;
             let ok = crate::bridge::jobs::lia_jobs_kill(app.clone(), job_id)
+                .await
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(serde_json::json!(ok))
         }

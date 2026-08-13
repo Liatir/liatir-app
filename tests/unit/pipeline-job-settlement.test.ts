@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { RunCancelledError } from '../../frontend/src/lib/pipeline/cancellation';
 import {
@@ -64,6 +64,47 @@ describe('pipeline Job settlement barrier', () => {
       pollIntervalMs: 0,
     })).rejects.toBeInstanceOf(RunCancelledError);
     expect(commands).toContain('lia_jobs_kill');
+  });
+
+  it('does not finalize cancellation before the backend process tree has stopped', async () => {
+    const controller = new AbortController();
+    let finishKill: (() => void) | null = null;
+    let killStarted = false;
+    const bridge: JobSettlementBridge = {
+      async invoke(command) {
+        if (command === 'lia_jobs_status') {
+          controller.abort();
+          return { status: { type: 'killed' } };
+        }
+        if (command === 'lia_jobs_get_output') {
+          return { stdout: [], stderr: [], stdoutTotal: 0, stderrTotal: 0 };
+        }
+        if (command === 'lia_jobs_kill') {
+          killStarted = true;
+          await new Promise<void>((resolve) => { finishKill = resolve; });
+          return true;
+        }
+        throw new Error(`Unexpected command: ${command}`);
+      },
+    };
+
+    let settled = false;
+    const outcome = waitForJobSettlement(bridge, 'job-slow-cancel', {
+      signal: controller.signal,
+      pollIntervalMs: 0,
+    }).then(
+      () => 'settled',
+      (error) => {
+        expect(error).toBeInstanceOf(RunCancelledError);
+        return 'cancelled';
+      },
+    ).finally(() => { settled = true; });
+
+    await vi.waitFor(() => expect(killStarted).toBe(true));
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    finishKill?.();
+    await expect(outcome).resolves.toBe('cancelled');
   });
 
   it('kills a timed-out Job and returns its final buffered diagnostics', async () => {

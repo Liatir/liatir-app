@@ -90,6 +90,16 @@ pub(crate) struct JobState {
     pub(crate) stderr: Arc<Mutex<Vec<String>>>,
     /// Cooperative cancellation for in-process jobs such as WASM plugins.
     pub(crate) cancelled: Option<Arc<AtomicBool>>,
+    /// Optional backend-specific cancellation invoked before the launcher is killed.
+    pub(crate) kill_command: Option<JobKillCommand>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct JobKillCommand {
+    pub(crate) program: String,
+    pub(crate) args: Vec<String>,
+    /// Written first so a run that has not published its Linux PID yet still observes cancellation.
+    pub(crate) cancel_marker: Option<String>,
 }
 
 // ---------------------------------
@@ -158,6 +168,7 @@ pub async fn lia_jobs_spawn(
         metadata,
         stdout_path,
         None,
+        None,
     )
     .await
 }
@@ -187,6 +198,37 @@ pub(crate) async fn lia_jobs_spawn_with_cleanup(
         metadata,
         stdout_path,
         cleanup_dir,
+        None,
+    )
+    .await
+}
+
+pub(crate) async fn lia_jobs_spawn_with_kill_command(
+    app: AppHandle,
+    cmd: String,
+    args: Vec<String>,
+    cwd: Option<String>,
+    workspace_id: Option<String>,
+    env: Option<HashMap<String, String>>,
+    label: Option<String>,
+    kind: Option<String>,
+    metadata: Option<Value>,
+    stdout_path: Option<String>,
+    kill_command: JobKillCommand,
+) -> Result<serde_json::Value, String> {
+    spawn_job(
+        app,
+        cmd,
+        args,
+        cwd,
+        workspace_id,
+        env,
+        label,
+        kind,
+        metadata,
+        stdout_path,
+        None,
+        Some(kill_command),
     )
     .await
 }
@@ -231,6 +273,7 @@ async fn spawn_job(
     metadata: Option<Value>,
     stdout_path: Option<String>,
     cleanup_dir: Option<String>,
+    kill_command: Option<JobKillCommand>,
 ) -> Result<serde_json::Value, String> {
     if cmd.is_empty() || cmd.contains("..") {
         return Err(format!("invalid command: {cmd:?}"));
@@ -301,6 +344,7 @@ async fn spawn_job(
                 stdout: stdout_buf.clone(),
                 stderr: stderr_buf.clone(),
                 cancelled: None,
+                kill_command,
             },
         );
     }
@@ -450,6 +494,7 @@ pub(crate) fn create_in_process_job_with_id(
             stdout: Arc::new(Mutex::new(Vec::new())),
             stderr: Arc::new(Mutex::new(Vec::new())),
             cancelled: Some(cancelled.clone()),
+            kill_command: None,
         },
     );
     Ok((job_id, cancelled))
@@ -562,8 +607,7 @@ pub fn lia_jobs_finish_logical(app: AppHandle, job_id: String, ok: bool) -> Resu
     Ok(())
 }
 
-#[tauri::command]
-pub fn lia_jobs_kill(app: AppHandle, job_id: String) -> Result<bool, String> {
+fn kill_job_blocking(app: AppHandle, job_id: String) -> Result<bool, String> {
     let registry = app.state::<JobRegistry>();
     let mut jobs = registry.0.lock().unwrap();
 
@@ -577,19 +621,66 @@ pub fn lia_jobs_kill(app: AppHandle, job_id: String) -> Result<bool, String> {
     if let Some(cancelled) = state.cancelled.as_ref() {
         cancelled.store(true, Ordering::SeqCst);
     }
-    if let Some(child) = state.child.take() {
-        child.kill().map_err(|e| format!("kill failed: {e}"))?;
-    }
+    let child = state.child.take();
+    let kill_command = state.kill_command.clone();
+    let stderr = state.stderr.clone();
     state.entry.status = JobStatus::Killed;
     state.entry.ended_at_ms = Some(now_ms());
     let ended_at_ms = state.entry.ended_at_ms;
     drop(jobs);
+
+    let mut cancellation_errors = Vec::new();
+    if let Some(command) = kill_command {
+        if let Some(marker) = command.cancel_marker.as_deref() {
+            if let Err(error) = std::fs::write(marker, b"cancelled\n") {
+                cancellation_errors.push(format!("could not write cancellation marker: {error}"));
+            }
+        }
+        match std::process::Command::new(&command.program)
+            .args(&command.args)
+            .output()
+        {
+            Ok(output) if output.status.success() => {}
+            Ok(output) => {
+                let detail = String::from_utf8_lossy(&output.stderr).trim().to_string();
+                cancellation_errors.push(if detail.is_empty() {
+                    format!("backend cancellation exited with {}", output.status)
+                } else {
+                    format!("backend cancellation failed: {detail}")
+                });
+            }
+            Err(error) => cancellation_errors.push(format!("backend cancellation failed: {error}")),
+        }
+    }
+    if let Some(child) = child {
+        if let Err(error) = child.kill() {
+            cancellation_errors.push(format!("launcher kill failed: {error}"));
+        }
+    }
+    for error in &cancellation_errors {
+        stderr.lock().unwrap().push(error.clone());
+        let _ = app.emit(&format!("jobs:stderr:{job_id}"), error);
+    }
     let _ = app.emit(
         &format!("jobs:exit:{job_id}"),
         serde_json::json!({ "jobId": job_id, "exitCode": null, "ok": false, "endedAtMs": ended_at_ms }),
     );
 
-    Ok(true)
+    Ok(cancellation_errors.is_empty())
+}
+
+pub(crate) fn lia_jobs_kill_blocking(
+    app: AppHandle,
+    job_id: String,
+) -> Result<bool, String> {
+    kill_job_blocking(app, job_id)
+}
+
+#[tauri::command]
+pub async fn lia_jobs_kill(app: AppHandle, job_id: String) -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(move || kill_job_blocking(app, job_id))
+        .await
+        .map_err(|error| format!("Job cancellation task failed: {error}"))?
 }
 
 #[tauri::command]

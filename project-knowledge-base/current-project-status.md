@@ -1,6 +1,6 @@
 # Current project status
 
-## Nextflow External Workflows are complete locally (Gate 6, 2026-08-13)
+## Nextflow External Workflows are cross-platform complete (Gate 6, 2026-08-14)
 
 Liatir now has a first-class, workspace-scoped External Workflow definition in
 the shared core. A definition owns its Nextflow engine, local snapshot or
@@ -9,13 +9,25 @@ declared outputs. The same saved definition is runnable from Tools / External
 Workflows and reusable by ID as a Liatir pipeline node; it is neither a `.lia`
 Plugin nor an ordinary Native Tool.
 
-Every run gets an isolated native staging area and one workflow-level Job.
-Source, optional config and inputs are copied without mutating originals,
-symlinks are rejected at the staging boundary, and only exact declared outputs
-become reusable artifacts. Direct runs own a top-level External Workflow Run
-and Result. Pipeline runs use the same adapter and retain both their External
+Every run gets an isolated staging area and one workflow-level Job. Source,
+optional config and inputs are copied without mutating originals, symlinks are
+rejected at the staging boundary, and only exact declared outputs become
+reusable artifacts. Direct runs own a top-level External Workflow Run and
+Result. Pipeline runs use the same adapter and retain both their External
 Workflow Run identity and `pipelineRunId`. Nextflow process tasks remain nested
 observability rather than unrelated top-level Jobs.
+
+macOS and Linux keep the native POSIX backend. On Windows the bridge now owns an
+explicit supported `liatir.exe -> wsl.exe -> Nextflow` backend. It probes the
+selected WSL distribution, requires WSL2 Linux x86_64 plus Java and Nextflow,
+maps only validated absolute Windows paths with `wslpath`, and persists a
+run-owned runtime/control record. A fresh Linux session and token identify each
+run's process group. Cancellation writes a marker, sends TERM with a bounded
+wait, escalates to KILL when needed, and does not terminate the distribution or
+unrelated WSL work. Startup cleanup accepts only valid run control records and
+token-matched processes before exactly-once Result reconciliation. Output
+collection and hashing remain on the Windows host and publish only the paths
+declared by that run.
 
 Results preserve engine and Java versions, source/revision and digests,
 parameters, profile/configuration, environment, command, work/output paths,
@@ -24,21 +36,26 @@ exit code. Failure and cancellation remain inspectable. Engine-native resume is
 an explicit expert action accepted only against a compatible saved definition,
 and interrupted runs reconcile exactly one Result after restart.
 
-Final macOS arm64 evidence uses system Nextflow `26.04.6 build 12646` and Java
-`21.0.11`: the native Gate 6 suite is 3/3 for direct execution, the same
-definition twice in one reusable pipeline, downstream output handoff, failure,
-cancellation and restart recovery. Related pipeline, common execution-spine and
-single-cell regressions are 16/16. `npm run test:verify` passes 51 files / 293
-tests; `cargo test` passes 52 / 54 with two intentional Runtime Box ignores;
-`cargo clippy --tests` passes with the existing warning baseline.
+Cross-platform closure evidence is recorded in
+[Gate 6 Nextflow cross-platform evidence](./roadmap/gate-6-nextflow-cross-platform.md).
+The previously verified macOS arm64 path remains unchanged. On Windows 11 Pro
+x86_64 (build 26200), the real native app used WSL 2.7.10.0, Ubuntu 26.04 LTS,
+Linux `6.18.33.2-microsoft-standard-WSL2`, Nextflow `26.04.6 build 12646`, and
+OpenJDK `21.0.11`: the focused product suite passed 3/3 and the separate
+two-process restart suite passed 2/2 phases. `npm run test:verify` passed 51
+files / 296 tests; `cargo test` passed 53 tests with two intentional Runtime Box
+ignores; `cargo clippy --tests` exited successfully on the existing warning
+baseline.
 
-Gate 6 is not cross-platform complete yet. Nextflow officially supports Windows
-through WSL, not as a native Windows runtime. It still requires the focused
-suite with an independently built Linux x86_64 ELF binary inside WSL2 under
-Xvfb, plus an explicit native `liatir.exe` to WSL execution boundary with path
-mapping, staging, cancellation and output collection coverage. The WSL Linux
-run alone is not Windows app evidence. Gate 7 remains planned until that
-handoff is recorded.
+The independent checkout at `/home/lorenzo/liatir-stack-gate6` was inside the
+WSL Linux filesystem. Its newly compiled app was confirmed by `file` as an ELF
+64-bit x86-64 PIE executable, and the focused E2E passed 3/3 under Xvfb.
+`npm run test:verify` passed 51 files / 296 tests, `cargo test` passed 52 tests
+with two intentional ignores, and `cargo clippy --tests` exited successfully.
+Gate 6 is therefore cross-platform complete for macOS arm64, native Linux
+x86_64, and the native Windows x86_64 app using WSL2 Linux x86_64. This does not
+claim native-Windows Nextflow, WSL1, WSL ARM64, managed Nextflow installation,
+or HPC/cloud executors. Gate 7 remains planned.
 
 ## The single-cell lighthouse is complete (Gate 5, 2026-08-13)
 
@@ -411,10 +428,10 @@ channel changed.
 The Runtime Box migration and the nine-target re-release are complete. Continue
 Liatir development in this order:
 
-1. repeat the focused Nextflow Gate 6 with a WSL2 Linux x86_64 binary, then
-   implement and verify the native Windows app-to-WSL execution boundary;
-2. close the signed desktop Beta 1 release matrix and public documentation;
-3. expose controlled local MCP access after Beta 1.
+1. close the signed desktop Beta 1 release matrix and public documentation;
+2. expose controlled local MCP access after Beta 1;
+3. continue the evidence-backed scientific verticals and extension work in the
+   canonical product-plan order.
 
 P5.0 through P5.7 are complete; the Scrollcase P5 plan is closed.
 The canonical detailed ledger is

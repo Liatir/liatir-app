@@ -39,6 +39,7 @@
     type ExternalWorkflowResumeSource,
   } from '$lib/external-workflows/nextflow';
   import type { ToolOutput } from '$lib/types/tool-output';
+  import type { ExternalWorkflowRuntimeInfo } from '../../../../../../src-ts/modules/rs/externalWorkflows/_types';
 
   type ParameterDraft = Omit<LiatirExternalWorkflowParameter, 'default'> & { defaultText: string };
   type InputDraft = Omit<LiatirExternalWorkflowInput, 'accept'> & { acceptText: string };
@@ -67,6 +68,7 @@
   ]);
 
   let dependencyState = $state<'checking' | 'ready' | 'missing'>('checking');
+  let runtime = $state<ExternalWorkflowRuntimeInfo | null>(null);
   let running = $state(false);
   let activeExecutionRunId = $state<string | null>(null);
   let logLines = $state<string[]>([]);
@@ -135,8 +137,12 @@
     }
     const api = liatir();
     if (!api) return;
-    const checks = await api.deps.checkMany(['nextflow', 'java']);
-    dependencyState = checks.every((check) => check.available) ? 'ready' : 'missing';
+    try {
+      runtime = await api.externalWorkflows.runtimeInfo();
+      dependencyState = runtime.available ? 'ready' : 'missing';
+    } catch {
+      dependencyState = 'missing';
+    }
   });
 
   function currentSavedDefinition(): LiatirExternalWorkflowDefinition | null {
@@ -465,7 +471,7 @@
             <p class="mt-1 text-xs text-text-muted">Describe the workflow once. Liatir uses these same inputs and outputs everywhere.</p>
           </div>
           <Badge variant={dependencyState === 'ready' ? 'available' : dependencyState === 'missing' ? 'failed' : 'neutral'}>
-            {dependencyState === 'ready' ? 'Nextflow + Java ready' : dependencyState === 'missing' ? 'Dependency missing' : 'Checking dependencies'}
+            {dependencyState === 'ready' ? `Nextflow + Java ready${runtime?.backend === 'wsl2' ? ` in WSL2 (${runtime.distribution ?? 'default'})` : ''}` : dependencyState === 'missing' ? 'Dependency missing' : 'Checking dependencies'}
           </Badge>
         </div>
 

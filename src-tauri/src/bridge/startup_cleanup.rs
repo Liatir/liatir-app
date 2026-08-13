@@ -18,6 +18,7 @@ pub struct CleanupReport {
     pub resumable_downloads: Vec<ResumableDownload>,
     pub cache_cleared_bytes: u64,
     pub corrupted_runs_removed: u32,
+    pub wsl_external_workflows_reconciled: u32,
     pub errors: Vec<String>,
 }
 
@@ -41,6 +42,7 @@ pub fn lia_startup_cleanup(app: AppHandle) -> Result<CleanupReport, String> {
         resumable_downloads: Vec::new(),
         cache_cleared_bytes: 0,
         corrupted_runs_removed: 0,
+        wsl_external_workflows_reconciled: 0,
         errors: Vec::new(),
     };
 
@@ -126,6 +128,16 @@ pub fn lia_startup_cleanup(app: AppHandle) -> Result<CleanupReport, String> {
     // on disk (crashed CLI/app) are cleaned here. Active sessions survive.
     for error in crate::bridge::plugin_dev::cleanup_orphan_dev_residues(&app) {
         report.errors.push(format!("plugin-dev residue: {error}"));
+    }
+
+    // Stop only process groups carrying a persisted per-run WSL token.
+    // Execution records are reconciled separately into exactly one Result.
+    let data_root = crate::bridge::fs::base_dir(&app, true);
+    let (reconciled, errors) =
+        crate::bridge::external_workflows::cleanup_orphaned_wsl_runs(&data_root);
+    report.wsl_external_workflows_reconciled = reconciled;
+    for error in errors {
+        report.errors.push(format!("external-workflow WSL2 residue: {error}"));
     }
 
     Ok(report)

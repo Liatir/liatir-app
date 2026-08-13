@@ -11,6 +11,12 @@ import { isRunCancelled, throwIfRunCancelled } from '$lib/pipeline/cancellation'
 import type { RunOutputFile } from '$lib/types/pipeline';
 import type { ToolOutput } from '$lib/types/tool-output';
 import { runNativeTool } from '$lib/utils/native-tool';
+import type {
+  ExternalWorkflowCollectedOutput as CollectedOutput,
+  ExternalWorkflowExecutionLayout,
+  ExternalWorkflowRunLayout as PreparedRunLayout,
+  ExternalWorkflowRuntimeInfo,
+} from '../../../../src-ts/modules/rs/externalWorkflows/_types';
 
 export interface ExternalWorkflowResumeSource {
   runId: string;
@@ -45,45 +51,6 @@ export class ExternalWorkflowRunError extends Error {
     this.name = 'ExternalWorkflowRunError';
     this.result = result;
   }
-}
-
-interface PreparedRunLayout {
-  runDirectory: string;
-  launchDirectory: string;
-  workDirectory: string;
-  outputDirectory: string;
-  sourceSnapshot?: string | null;
-  sourceMainScript?: string | null;
-  sourceSnapshotSha256?: string | null;
-  stagedConfigFile?: string | null;
-  configSha256?: string | null;
-  stagedInputs: Array<{
-    key: string;
-    originalPath: string;
-    stagedPath: string;
-    sizeBytes: number;
-    sha256: string;
-  }>;
-  paramsFile: string;
-  logFile: string;
-  traceFile: string;
-  reportFile: string;
-  timelineFile: string;
-  dagFile: string;
-}
-
-interface CollectedOutput {
-  key: string;
-  path: string;
-  sizeBytes: number;
-  sha256: string;
-}
-
-interface DependencyCheck {
-  available: boolean;
-  binary: string;
-  path: string | null;
-  version: string | null;
 }
 
 function missing(value: unknown): boolean {
@@ -138,7 +105,17 @@ export function resolveExternalWorkflowParameters(
 
 export interface BuildNextflowArgsInput {
   definition: LiatirExternalWorkflowDefinition;
-  layout: PreparedRunLayout;
+  layout: Pick<ExternalWorkflowExecutionLayout,
+    | 'logFile'
+    | 'stagedConfigFile'
+    | 'sourceMainScript'
+    | 'workDirectory'
+    | 'outputDirectory'
+    | 'paramsFile'
+    | 'traceFile'
+    | 'reportFile'
+    | 'timelineFile'
+    | 'dagFile'>;
   workDirectory?: string;
   resumeSessionId?: string;
 }
@@ -346,12 +323,9 @@ export async function runExternalWorkflowDefinition(
   }
   throwIfRunCancelled(context.signal);
 
-  const dependencyChecks = await api.deps.checkMany(['nextflow', 'java']) as DependencyCheck[];
-  const nextflow = dependencyChecks.find((item) => item.binary === 'nextflow');
-  const java = dependencyChecks.find((item) => item.binary === 'java');
-  const missingDependencies = dependencyChecks.filter((item) => !item.available).map((item) => item.binary);
-  if (missingDependencies.length > 0) {
-    throw new Error(`Install ${missingDependencies.join(' and ')} and make it available on PATH before running this External Workflow.`);
+  const runtime = await api.externalWorkflows.runtimeInfo() as ExternalWorkflowRuntimeInfo;
+  if (!runtime.available) {
+    throw new Error(runtime.error ?? 'Nextflow and Java are not available on the supported execution backend.');
   }
 
   const resolved = resolveExternalWorkflowParameters(definition, values);
@@ -365,25 +339,42 @@ export async function runExternalWorkflowDefinition(
     sourceMainScript,
     inputFiles: resolved.inputFiles,
     configFile: definition.nextflow?.configFilePath,
+    resumeWorkDirectory: context.resume?.workDirectory,
   }) as PreparedRunLayout;
   throwIfRunCancelled(context.signal);
+  const execution = layout.execution;
+  const runRuntime = execution.runtime;
+  const backendLabel = execution.backend === 'wsl2'
+    ? `WSL2 · ${runRuntime.distribution ?? 'unknown distribution'} · Linux ${runRuntime.architecture}`
+    : `native · ${runRuntime.platform} ${runRuntime.architecture}`;
+  onLog(`Execution backend: ${backendLabel}`);
+  if (execution.backend === 'wsl2') {
+    onLog('Nextflow environment: NXF_ANSI_LOG=false; other variables come from the selected WSL2 distribution.');
+  }
 
   const parameters: Record<string, JsonValue> = { ...resolved.scalars };
-  for (const input of layout.stagedInputs) parameters[input.key] = input.stagedPath;
-  parameters[definition.outputDirectoryParameter] = layout.outputDirectory;
+  const engineInputs = new Map(execution.stagedInputs.map((input) => [input.key, input.path]));
+  for (const input of layout.stagedInputs) {
+    const enginePath = engineInputs.get(input.key);
+    if (!enginePath) throw new Error(`The execution backend did not map staged input ${input.key}.`);
+    parameters[input.key] = enginePath;
+  }
+  parameters[definition.outputDirectoryParameter] = execution.outputDirectory;
   await api.invoke('lia_write_file_path', {
     path: layout.paramsFile,
     content: JSON.stringify(parameters, null, 2),
   });
 
   const actualWorkDirectory = context.resume?.workDirectory ?? layout.workDirectory;
+  const engineWorkDirectory = execution.resumeWorkDirectory ?? execution.workDirectory;
   const args = buildNextflowArgs({
     definition,
-    layout,
-    workDirectory: actualWorkDirectory,
+    layout: execution,
+    workDirectory: engineWorkDirectory,
     resumeSessionId: context.resume?.sessionId,
   });
-  const command = ['nextflow', ...args];
+  const commandArgs = [...execution.argumentsPrefix, ...args];
+  const command = [execution.command, ...commandArgs];
   onLog(`$ ${commandForDisplay(command)}`);
 
   let jobId = '';
@@ -393,18 +384,25 @@ export async function runExternalWorkflowDefinition(
   let cancelled = false;
   try {
     const result = await runNativeTool(
-      'nextflow',
-      args,
+      execution.command,
+      commandArgs,
       (line) => { if (line.trim()) onLog(line); },
       (line) => { if (line.trim()) onLog(line); },
       {
-        cwd: layout.launchDirectory,
+        cwd: execution.backend === 'native' ? layout.launchDirectory : undefined,
         label: context.label,
         kind: 'external-workflow',
         metadata: {
           ...context.metadata,
           externalWorkflowDefinitionId: definition.id,
           sourceKind: definition.source.kind,
+          executionBackend: execution.backend,
+          executionPlatform: runRuntime.platform,
+          executionArchitecture: runRuntime.architecture,
+          ...(execution.backend === 'wsl2'
+            ? { nextflowEnvironment: { NXF_ANSI_LOG: 'false' } }
+            : {}),
+          ...(runRuntime.distribution ? { wslDistribution: runRuntime.distribution } : {}),
           ...(definition.source.kind === 'repository' ? { sourceRevision: definition.source.revision } : {}),
         },
         execution: context.execution,
@@ -413,6 +411,17 @@ export async function runExternalWorkflowDefinition(
           jobId = id;
           context.onJobId?.(id);
         },
+        ...(execution.backend === 'wsl2' ? {
+          spawn: (request) => api.externalWorkflows.spawnNextflow({
+            workspaceId: context.execution.workspaceId,
+            definitionId: definition.id,
+            runId: context.execution.runId,
+            args,
+            label: request.label,
+            kind: request.kind,
+            metadata: request.metadata,
+          }),
+        } : {}),
       },
     );
     jobId = result.jobId;
@@ -444,10 +453,9 @@ export async function runExternalWorkflowDefinition(
     }
   }
 
-  const [trace, history, appInfo] = await Promise.all([
+  const [trace, history] = await Promise.all([
     readTextIfPresent(layout.traceFile),
     readTextIfPresent(`${layout.launchDirectory}/.nextflow/history`),
-    api.desktop.app.info(),
   ]);
   const endedAt = Date.now();
   const finalStatus: LiatirExternalWorkflowRunProvenance['finalStatus'] = cancelled
@@ -459,15 +467,15 @@ export async function runExternalWorkflowDefinition(
     definitionId: definition.id,
     definitionUpdatedAt: definition.updatedAt,
     engine: 'nextflow',
-    engineVersion: nextflow?.version ?? null,
-    javaVersion: java?.version ?? null,
+    engineVersion: runRuntime.nextflow.version ?? null,
+    javaVersion: runRuntime.java.version ?? null,
     source: definition.source,
     ...(layout.sourceSnapshotSha256 ? { sourceSnapshotSha256: layout.sourceSnapshotSha256 } : {}),
     ...(layout.configSha256 ? { configSha256: layout.configSha256 } : {}),
     ...(definition.nextflow?.profile ? { profile: definition.nextflow.profile } : {}),
     ...(definition.nextflow?.entryWorkflow ? { entryWorkflow: definition.nextflow.entryWorkflow } : {}),
-    platform: appInfo.os,
-    architecture: appInfo.arch,
+    platform: runRuntime.platform,
+    architecture: runRuntime.architecture,
     command,
     parameters,
     inputs: layout.stagedInputs,

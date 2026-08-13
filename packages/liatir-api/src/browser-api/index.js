@@ -1315,7 +1315,9 @@ function buildDeps(core) {
 // src-ts/modules/rs/externalWorkflows/_main.ts
 function buildExternalWorkflows(core) {
   return {
+    runtimeInfo: () => core.invoke("lia_external_workflow_runtime_info"),
     prepareRun: (options) => core.invoke("lia_external_workflow_prepare_run", { ...options }),
+    spawnNextflow: (options) => core.invoke("lia_external_workflow_spawn_nextflow", { ...options }),
     collectOutputs: (options) => core.invoke("lia_external_workflow_collect_outputs", { ...options })
   };
 }

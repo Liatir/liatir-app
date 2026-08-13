@@ -17,6 +17,18 @@ export interface NativeRunResult {
   ok: boolean;
 }
 
+export interface NativeJobSpawnRequest {
+  cmd: string;
+  args: string[];
+  cwd?: string;
+  workspaceId: string | null;
+  env?: Record<string, string>;
+  label?: string;
+  kind?: string;
+  metadata: Record<string, JsonValue>;
+  stdoutPath?: string;
+}
+
 export interface NativeRunOptions {
   cwd?: string;
   env?: Record<string, string>;
@@ -28,6 +40,8 @@ export interface NativeRunOptions {
   stdoutPath?: string;
   /** Stable owner copied into the Job and durable execution record. */
   execution?: LiatirExecutionIdentity;
+  /** Capability-owned spawn boundary for backends that require stronger process control. */
+  spawn?: (request: NativeJobSpawnRequest) => Promise<{ jobId: string }>;
 }
 
 /**
@@ -63,7 +77,7 @@ export async function runNativeTool(
   // Spawn via invoke directly so the job is tagged with the active workspace.
   // The backend resolves managed native tools to their installed binary (single
   // source of truth, shared with plugins); bare names fall through to PATH.
-  const { jobId } = await api.invoke('lia_jobs_spawn', {
+  const spawnRequest: NativeJobSpawnRequest = {
     cmd,
     args,
     workspaceId: workspaceStore.activeId,
@@ -73,7 +87,10 @@ export async function runNativeTool(
     kind: options.kind,
     metadata,
     stdoutPath: options.stdoutPath,
-  }) as { jobId: string };
+  };
+  const { jobId } = options.spawn
+    ? await options.spawn(spawnRequest)
+    : await api.invoke('lia_jobs_spawn', { ...spawnRequest }) as { jobId: string };
   if (options.execution && executionRuns.byId(options.execution.runId)) {
     await executionRuns.attachJob(options.execution.runId, jobId);
   }

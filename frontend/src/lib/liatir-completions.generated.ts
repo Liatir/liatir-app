@@ -192,7 +192,9 @@ export const LIATIR_API: Record<string, ApiNode> = {
       checkMany: { type: "method", detail: "(binaries: string[]): Promise<DepCheckResult[]>", info: "Check multiple binaries at once" },
   } },
   externalWorkflows: { type: "property", detail: "ExternalWorkflowsInterface", info: "Saved external scientific workflows executed through system engines such as Nextflow.", children: {
+      runtimeInfo: { type: "method", detail: "(): Promise<ExternalWorkflowRuntimeInfo>" },
       prepareRun: { type: "method", detail: "(options: PrepareExternalWorkflowRunOptions): Promise<ExternalWorkflowRunLayout>" },
+      spawnNextflow: { type: "method", detail: "(options: SpawnExternalWorkflowNextflowOptions): Promise<{ jobId: string; }>" },
       collectOutputs: { type: "method", detail: "(options: CollectExternalWorkflowOutputsOptions): Promise<ExternalWorkflowCollectedOutput[]>" },
   } },
   qc: { type: "property", detail: "QcInterface", children: {

@@ -10,17 +10,24 @@
   import { externalWorkflowsStore } from '$lib/stores/externalWorkflows.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import { liatir } from '$lib/api';
+  import type { ExternalWorkflowRuntimeInfo } from '../../../../../src-ts/modules/rs/externalWorkflows/_types';
 
   let nextflowReady = $state<boolean | null>(null);
   let javaReady = $state<boolean | null>(null);
+  let runtime = $state<ExternalWorkflowRuntimeInfo | null>(null);
 
   onMount(async () => {
     await externalWorkflowsStore.init();
     const api = liatir();
     if (!api) return;
-    const checks = await api.deps.checkMany(['nextflow', 'java']);
-    nextflowReady = checks.find((item) => item.binary === 'nextflow')?.available ?? false;
-    javaReady = checks.find((item) => item.binary === 'java')?.available ?? false;
+    try {
+      runtime = await api.externalWorkflows.runtimeInfo();
+      nextflowReady = runtime.nextflow.available;
+      javaReady = runtime.java.available;
+    } catch {
+      nextflowReady = false;
+      javaReady = false;
+    }
   });
 
   async function removeDefinition(id: string, name: string) {
@@ -56,7 +63,7 @@
           <div>
             <p class="text-sm font-semibold text-text">Nextflow adapter</p>
             <p class="mt-1 text-xs leading-relaxed text-text-muted max-w-2xl">
-              Liatir uses your system-installed Nextflow and Java. Each run stages its own inputs and
+              Liatir uses Nextflow and Java from the supported local backend{runtime?.backend === 'wsl2' ? `: WSL2 (${runtime.distribution ?? 'default distribution'})` : ''}. Each run stages its own inputs and
               exposes only the exact outputs declared in the saved definition.
             </p>
           </div>

@@ -11,13 +11,24 @@ the common inputs, Jobs, Results, provenance and output handoff around it.
 ## Requirements
 
 Install [Nextflow](https://docs.seqera.io/nextflow/install) and a compatible
-Java runtime on a supported execution host. Nextflow runs on POSIX systems and
-uses WSL on Windows. Both `nextflow` and `java` must be available on `PATH`;
-Liatir checks them before a run.
+Java runtime on the execution host. Both `nextflow` and `java` must be available
+on `PATH`; Liatir checks their paths and versions before a run.
 
-This first Liatir adapter is currently verified on macOS arm64. Linux and the
-native Windows-to-WSL path will be listed as supported only after their native
-product gates pass.
+The verified execution paths are:
+
+| Liatir app | Nextflow backend |
+| --- | --- |
+| macOS arm64 | Native macOS arm64 |
+| Linux x86_64 | Native Linux x86_64 |
+| Windows 11 x86_64 | WSL2 Linux x86_64 |
+
+On Windows, install Nextflow and Java inside an x86_64 WSL2 distribution. Do
+not install an unofficial native Windows Nextflow build or add a
+`nextflow.cmd` wrapper. Liatir calls `wsl.exe` directly, validates that the
+selected distribution is WSL2 x86_64, and checks its Linux utilities before
+enabling a run. The default WSL distribution is used unless the advanced
+`LIATIR_WSL_DISTRIBUTION` environment variable is set before Liatir starts.
+WSL1 and WSL ARM64 are not supported by this adapter.
 
 The first release does not install Nextflow, configure HPC or cloud executors,
 or download workflow dependencies for you. Local workflows can run without a
@@ -43,10 +54,17 @@ Open the saved definition, choose its inputs and parameters, then select
 source, configuration and inputs into an isolated run folder; it does not
 modify the originals.
 
-The Result includes the declared files plus the Nextflow and Java versions,
-command, source revision, parameters, profile, configuration digest, task
-states, logs, trace, report, timeline and exit status. Declared files can be
-added to **Data** and reused without searching the Nextflow work directory.
+The Result includes the declared files plus the actual execution backend,
+Nextflow and Java versions, command, source revision, parameters, profile,
+configuration digest, task states, logs, trace, report, timeline and exit
+status. Declared files can be added to **Data** and reused without searching
+the Nextflow work directory.
+
+For a Windows run, Liatir creates one run-owned staging folder on the host,
+copies source, optional configuration and inputs into it, and safely maps those
+paths for the selected WSL distribution. Nextflow sees Linux paths, while
+Liatir collects and hashes only the declared output files back on Windows. The
+original source and inputs are never changed.
 
 ## Use it in a pipeline
 
@@ -62,8 +80,16 @@ inside the workflow Job instead of becoming unrelated top-level Jobs.
 
 ## Cancellation and resume
 
-Cancelling a run stops only that External Workflow Job. Failed and cancelled
-runs keep their available logs and provenance in Results.
+Cancelling a run stops only that External Workflow Job. On Windows, every run
+has a separate Linux process group and unguessable ownership token; Liatir
+stops that group without shutting down the WSL distribution or unrelated Linux
+work. Failed and cancelled runs keep their available logs and provenance in
+Results.
+
+If Liatir exits while a Windows-to-WSL run is active, the next app start uses
+the persisted run identity to stop only the orphaned process tree and reconcile
+one interrupted Result with its original Job and parent. It does not present an
+abandoned run as still active.
 
 Nextflow resume is available as an explicit expert option for a compatible past
 run. Liatir does not claim ownership of Nextflow cache semantics, and it will
