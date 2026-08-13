@@ -4,14 +4,16 @@ Pipelines let you connect analysis steps visually so that the output from one
 step becomes the input for the next one.
 
 Use pipelines when you want to repeat a workflow, avoid manual file handoffs,
-or combine built-in tools, `.lia` plugins, and AI Tools in one place.
+or combine built-in tools, `.lia` plugins, AI Tools, and saved External
+Workflows in one place.
 
 ## What a pipeline contains
 
 A pipeline is made of nodes and connections:
 
 - **Input nodes** provide starting files or values.
-- **Tool nodes** run built-in tools, `.lia` plugins, or AI Tools.
+- **Tool nodes** run built-in tools, `.lia` plugins, AI Tools, or saved External
+  Workflows.
 - **Logic nodes** help control simple branching or conditional behavior.
 - **Connections** pass compatible outputs into later inputs.
 
@@ -28,6 +30,14 @@ are filtered by compatible format whenever possible.
 
 While a pipeline is running, it is locked to prevent accidental edits. You can
 still work in other pipelines and elsewhere in the app.
+
+## Starting from a preset
+
+The Pipelines page includes small, editable workflows with their artifact
+handoffs already connected. **Single-cell embedding and preview** asks only for
+an AnnData file and an installed AI Model, then validates the input, creates an
+immutable embedded AnnData result, opens its bounded preview, and leaves the
+artifact in Data for later nodes.
 
 ## Jobs and Results
 
@@ -69,9 +79,17 @@ failed so you can fix the input or settings and run again.
 
 Example AI pipelines:
 
-- `.h5ad` file to [Single-cell Embedding](/ai/tools/single-cell-embedding) to an embedded AnnData artifact and viewer.
+- `.h5ad` file to [Single-cell Embedding](/ai/tools/single-cell-embedding) to an embedded AnnData artifact and [Single-cell Viewer](/visualization/single-cell-viewer).
 
 Read [Local AI for bioinformatics](/ai/guide) before interpreting AI outputs.
+
+### External workflow integration
+
+A saved [External Workflow](/tools/external-workflows) appears as a reusable
+pipeline node. Its declared files and parameters become node inputs, and only
+its exact declared outputs are available to downstream nodes. The external
+engine keeps ownership of its internal scheduling while Liatir keeps the parent
+Pipeline Run, Job, Result and cross-tool provenance.
 
 ## Saving and reusing workflows
 

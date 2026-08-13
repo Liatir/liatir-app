@@ -9,7 +9,7 @@ important for AI outputs because raw files alone are often hard to understand.
 | --- | --- | --- |
 | [3D Structure Viewer](/visualization/structure-viewer) | protein structure inspection | PDB, mmCIF, CIF |
 | [Genome Track Viewer](/visualization/genome-track-viewer) | genome interval or score tracks | FASTA plus BED/GFF/VCF-like tracks |
-| [Single-cell Viewer](/visualization/single-cell-viewer) | single-cell labels or embeddings | CSV/JSON/AnnData-derived artifacts |
+| [Single-cell Viewer](/visualization/single-cell-viewer) | validated single-cell embeddings | profiled AnnData plus an optional bounded preview CSV |
 
 Some viewers download what they need the first time you use them, so the base
 app stays small.

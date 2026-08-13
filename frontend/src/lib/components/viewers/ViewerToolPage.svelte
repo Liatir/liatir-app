@@ -27,6 +27,7 @@
     runGenomeViewerStep,
     runSingleCellViewerStep,
     runStructureViewerStep,
+    singleCellViewerAnnDataRequirement,
   } from '$lib/tools/viewers/scientific-viewers';
 	import PageContent from '../layout/PageContent.svelte';
 
@@ -45,7 +46,8 @@
   let trackFile = $state('');
   let refName = $state('');
   let singleCellFile = $state('');
-  let labelColumn = $state('');
+  let singleCellPreviewFile = $state('');
+  let singleCellEmbeddingKey = $state('');
   let running = $state(false);
   let error = $state<string | null>(null);
   let output = $state<ToolOutput | null>(null);
@@ -56,7 +58,8 @@
   const structureFiles = $derived(dataFiles.byExt('pdb', 'cif', 'mmcif', 'sdf', 'mol2', 'xyz'));
   const referenceFiles = $derived(dataFiles.byExt('fasta', 'fasta.gz'));
   const trackFiles = $derived(dataFiles.byExt('gff', 'gff3', 'bed', 'vcf', 'vcf.gz', 'bam'));
-  const singleCellFiles = $derived(dataFiles.byExt('h5ad', 'csv', 'json'));
+  const singleCellFiles = $derived(dataFiles.byExt('h5ad'));
+  const singleCellPreviewFiles = $derived(dataFiles.byExt('csv'));
   const structureStyleOptions = [
     { value: 'cartoon', label: 'Cartoon' },
     { value: 'stick', label: 'Stick' },
@@ -86,7 +89,7 @@
       ? 'Inspect molecular structure artifacts with the optional 3Dmol.js runtime.'
       : mode === 'genome'
         ? 'Preview genomic tracks and use the optional JBrowse 2 runtime when installed.'
-        : 'Inspect single-cell label summaries and Vitessce-ready artifacts.',
+        : 'Inspect validated AnnData embeddings and their bounded preview.',
   );
 
   function appendLog(line: string) {
@@ -121,7 +124,11 @@
               appendLog,
             )
           : await runSingleCellViewerStep(
-              { inputFile: singleCellFile, labelColumn },
+              {
+                inputFile: singleCellFile,
+                previewFile: singleCellPreviewFile,
+                embeddingKey: singleCellEmbeddingKey,
+              },
               '',
               appendLog,
             );
@@ -154,6 +161,8 @@
       shouldAutoRun = !!trackFile;
     } else {
       singleCellFile = params.get('file') ?? '';
+      singleCellPreviewFile = params.get('preview') ?? '';
+      singleCellEmbeddingKey = params.get('embeddingKey') ?? '';
       shouldAutoRun = !!singleCellFile;
     }
     if (shouldAutoRun) queueMicrotask(() => void runViewer());
@@ -226,17 +235,31 @@
             <FilePickerPopup
               files={singleCellFiles}
               value={singleCellFile}
-              label="Single-cell artifact"
-              emptyText="No h5ad/CSV/JSON files in Data yet."
+              label="AnnData artifact"
+              emptyText="No h5ad files in Data yet."
               disabled={running}
+              artifactRequirement={singleCellViewerAnnDataRequirement}
               onchange={(path) => singleCellFile = path}
             />
-            <label class="grid gap-1.5">
-              <span class="text-xs font-medium text-zinc-500">Label column</span>
-              <input
-                bind:value={labelColumn}
+            <div class="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
+              <FilePickerPopup
+                files={singleCellPreviewFiles}
+                value={singleCellPreviewFile}
+                label="Embedding preview CSV (optional)"
+                emptyText="No CSV previews in Data yet."
                 disabled={running}
-                placeholder="predicted_labels"
+                onchange={(path) => singleCellPreviewFile = path}
+              />
+              <Button size="sm" variant="ghost" disabled={running || !singleCellPreviewFile} onclick={() => singleCellPreviewFile = ''}>
+                Clear
+              </Button>
+            </div>
+            <label class="grid gap-1.5">
+              <span class="text-xs font-medium text-zinc-500">Embedding key</span>
+              <input
+                bind:value={singleCellEmbeddingKey}
+                disabled={running}
+                placeholder="X_geneformer"
                 class="h-9 rounded-lg border border-border bg-white px-3 text-sm text-zinc-800 outline-none placeholder:text-zinc-400 focus:border-brand"
               />
             </label>

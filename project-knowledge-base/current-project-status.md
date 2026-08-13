@@ -1,5 +1,103 @@
 # Current project status
 
+## Nextflow External Workflows are complete locally (Gate 6, 2026-08-13)
+
+Liatir now has a first-class, workspace-scoped External Workflow definition in
+the shared core. A definition owns its Nextflow engine, local snapshot or
+version-pinned repository source, typed parameters, staged inputs and exact
+declared outputs. The same saved definition is runnable from Tools / External
+Workflows and reusable by ID as a Liatir pipeline node; it is neither a `.lia`
+Plugin nor an ordinary Native Tool.
+
+Every run gets an isolated native staging area and one workflow-level Job.
+Source, optional config and inputs are copied without mutating originals,
+symlinks are rejected at the staging boundary, and only exact declared outputs
+become reusable artifacts. Direct runs own a top-level External Workflow Run
+and Result. Pipeline runs use the same adapter and retain both their External
+Workflow Run identity and `pipelineRunId`. Nextflow process tasks remain nested
+observability rather than unrelated top-level Jobs.
+
+Results preserve engine and Java versions, source/revision and digests,
+parameters, profile/configuration, environment, command, work/output paths,
+logs, trace, report, timeline, DAG, session ID, task states, output digests and
+exit code. Failure and cancellation remain inspectable. Engine-native resume is
+an explicit expert action accepted only against a compatible saved definition,
+and interrupted runs reconcile exactly one Result after restart.
+
+Final macOS arm64 evidence uses system Nextflow `26.04.6 build 12646` and Java
+`21.0.11`: the native Gate 6 suite is 3/3 for direct execution, the same
+definition twice in one reusable pipeline, downstream output handoff, failure,
+cancellation and restart recovery. Related pipeline, common execution-spine and
+single-cell regressions are 16/16. `npm run test:verify` passes 51 files / 293
+tests; `cargo test` passes 52 / 54 with two intentional Runtime Box ignores;
+`cargo clippy --tests` passes with the existing warning baseline.
+
+Gate 6 is not cross-platform complete yet. Nextflow officially supports Windows
+through WSL, not as a native Windows runtime. It still requires the focused
+suite with an independently built Linux x86_64 ELF binary inside WSL2 under
+Xvfb, plus an explicit native `liatir.exe` to WSL execution boundary with path
+mapping, staging, cancellation and output collection coverage. The WSL Linux
+run alone is not Windows app evidence. Gate 7 remains planned until that
+handoff is recorded.
+
+## The single-cell lighthouse is complete (Gate 5, 2026-08-13)
+
+The Single-cell Embedding Tool now hands its profiled immutable AnnData output
+and bounded embedding preview directly to the single-cell viewer. The viewer
+preserves artifact identity, validation and embedding-key provenance and plots
+a deterministic PCA preview of at most 1,000 cells. It explicitly does not
+present this bounded preview as full-dataset UMAP, clustering or annotation.
+
+Results can register the output AnnData and preview in Data and reopen them in
+the standalone viewer. The saved `single-cell-embedding-viewer-v1` preset wires
+the typed Tool outputs to the viewer, so a non-technical user only chooses the
+input AnnData and an installed supported AI Model. Direct and pipeline runs use
+the same artifact finalizer, provenance and viewer hints.
+
+Final local evidence is `npm run test:verify` (48 unit files / 279 tests),
+`cargo test` (46 passed / 2 intentionally ignored), `cargo clippy --tests` with
+the existing warning baseline, the 1/1 native Gate 5 suite, the unchanged 1/1
+scientific-artifact suite, 10/10 pipeline lifecycle and 5/5 common execution
+spine. Existing tracked Runtime Box publication and product-lifecycle evidence
+remains the model layer; no heavy model was downloaded or run for this UI and
+orchestration gate. Gate 6 subsequently completed its macOS implementation and
+native proof, as recorded above.
+
+The focused native Gate 5 and regression suites passed after the main
+implementation. Two later parser/PCA edge-case corrections pass unit tests and
+`test:verify`; the focused suite was rerun against the final Gate 6 binary and
+remained green 1/1.
+
+## Scientific I/O is standardized for AnnData (Gate 4, 2026-08-13)
+
+`packages/liatir-core` now owns the optional, versioned scientific artifact
+contract and the first profile, `org.liatir.scientific.anndata@1.0.0`. Profile
+minor and patch revisions are backward-compatible within their major version;
+legacy file and Result records remain readable without metadata. Compatibility
+is reported separately for physical transport, concrete format and scientific
+meaning, and unknown facts remain partial instead of being guessed.
+
+The native file bridge streams byte size, SHA-256 and the HDF5 signature without
+loading large datasets into the webview. Data persists the profile and detects
+content changes; relevant direct and pipeline selectors expose validation and
+disable known incompatible choices. Results show profile, scientific type,
+digest and transformation lineage and retain the full machine-readable record.
+
+The Single-cell Embedding AI Tool declares AnnData input/output semantics for
+Geneformer, scGPT and UCE. Both direct and pipeline runs re-hash inputs before
+compute, reject known organism, modality, feature-namespace or preprocessing
+mismatches, and produce a distinct immutable output with model parameters,
+source revision, embedding hints and source lineage. The original AnnData file
+is never silently rewritten.
+
+Final local evidence is `npm run test:verify` (47 unit files / 272 tests),
+`cargo test` (46 passed / 2 intentionally ignored), `cargo clippy --tests` with
+the existing warning baseline, the new 1/1 native scientific-artifact suite,
+the unchanged 10/10 pipeline lifecycle suite and the 5/5 common execution-spine
+suite. The broad UI baseline was not rerun and its previously recorded unrelated
+failures are unchanged. Gate 5—the full single-cell viewer handoff, downstream
+reuse and one useful no-code preset—is now the active boundary.
+
 ## The common execution spine is complete (Gate 3, 2026-08-11)
 
 `packages/liatir-core` now owns one versioned execution identity and lifecycle
@@ -38,8 +136,8 @@ failed and 8 were skipped. Every Gate 2/3 lifecycle case passed; the failures
 remain in stale AI catalog expectations, the intentionally hidden Dependencies
 sidebar route and Quenta reload/selection tests, where the first selection
 failure cascades into later cases. These are separate readiness work and are
-not represented as Gate 3 evidence. Gate 4, versioned scientific artifact
-profiles beginning with AnnData, is now the active boundary.
+not represented as Gate 3 evidence. Gate 4 subsequently closed the versioned
+AnnData scientific artifact contract, as recorded above.
 
 ## Asynchronous pipeline settlement is complete (Gate 2, 2026-08-11)
 
@@ -313,12 +411,10 @@ channel changed.
 The Runtime Box migration and the nine-target re-release are complete. Continue
 Liatir development in this order:
 
-1. add versioned scientific artifact profiles, beginning with AnnData;
-2. complete the single-cell lighthouse workflow, viewer and no-code preset;
-3. add Nextflow as the first saved External Workflow, runnable standalone and
-   by reference from a Liatir pipeline;
-4. close the signed desktop Beta 1 release matrix and public documentation;
-5. expose controlled local MCP access after Beta 1.
+1. repeat the focused Nextflow Gate 6 with a WSL2 Linux x86_64 binary, then
+   implement and verify the native Windows app-to-WSL execution boundary;
+2. close the signed desktop Beta 1 release matrix and public documentation;
+3. expose controlled local MCP access after Beta 1.
 
 P5.0 through P5.7 are complete; the Scrollcase P5 plan is closed.
 The canonical detailed ledger is

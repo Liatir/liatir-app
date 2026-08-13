@@ -32,12 +32,20 @@ import { threadInputSchema, threadParam } from '$lib/utils/execution-resources';
 import type { AIRunContext } from '$lib/ai/direct-run-context';
 import { aiRunMetadata } from '$lib/ai/direct-run-context';
 import type { NativeRunOptions } from '$lib/utils/native-tool';
+import { externalWorkflowsStore } from '$lib/stores/externalWorkflows.svelte';
+import {
+  LIATIR_EXTERNAL_WORKFLOW_STEP_PREFIX,
+  externalWorkflowToStepDefinition,
+  type LiatirExternalWorkflowDefinition,
+} from '@liatir/core';
+import { runExternalWorkflowDefinition } from '$lib/external-workflows/nextflow';
 
 type StepResult = {
   outputFiles: RunOutputFile[];
   output?: ToolOutput;
   metrics?: Record<string, number>;
   values?: Record<string, JsonValue>;
+  executionEvidence?: Record<string, JsonValue>;
 };
 
 function basename(p: string) { return p.split(/[\\/]/).pop() ?? p; }
@@ -472,6 +480,12 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
 
 /** Resolve a step entry by id: a native tool OR an imported .lia plugin. */
 export function resolveStepEntry(stepId: string): PipelineRegistryEntry | undefined {
+  if (stepId.startsWith(LIATIR_EXTERNAL_WORKFLOW_STEP_PREFIX)) {
+    const definition = externalWorkflowsStore.byId(
+      stepId.slice(LIATIR_EXTERNAL_WORKFLOW_STEP_PREFIX.length),
+    );
+    return definition ? externalWorkflowRegistryEntry(definition) : undefined;
+  }
   if (stepId.startsWith(LIA_PLUGIN_STEP_PREFIX)) {
     const plugin = liaPluginsStore.byId(stepId.slice(LIA_PLUGIN_STEP_PREFIX.length));
     return plugin ? pluginToRegistryEntry(plugin) : undefined;
@@ -481,6 +495,31 @@ export function resolveStepEntry(stepId: string): PipelineRegistryEntry | undefi
     return plugin ? pluginToRegistryEntry(plugin) : undefined;
   }
   return PIPELINE_REGISTRY[stepId];
+}
+
+function externalWorkflowRegistryEntry(
+  saved: LiatirExternalWorkflowDefinition,
+): PipelineRegistryEntry {
+  return {
+    definition: externalWorkflowToStepDefinition(saved),
+    async run(inputs, _outputDir, onLog, context) {
+      if (!context) throw new Error('External Workflow pipeline context is missing.');
+      return runExternalWorkflowDefinition(saved, inputs, onLog, {
+        execution: context.execution,
+        label: context.label,
+        startedAt: context.startedAt,
+        signal: context.signal,
+        onJobId: context.onJobId,
+        metadata: context.runKind === 'pipeline-step' ? {
+          runKind: 'external-workflow',
+          pipelineRunId: context.pipelineRunId,
+          pipelineId: context.pipelineId,
+          pipelineName: context.pipelineName,
+          nodeId: context.nodeId,
+        } : undefined,
+      });
+    },
+  };
 }
 
 /** Step definitions for every imported .lia plugin — for the pipeline tool palette. */
@@ -493,5 +532,6 @@ export function allStepDefinitions(): PipelineStepDefinition[] {
   return [
     ...Object.values(PIPELINE_REGISTRY).map((e) => e.definition),
     ...pluginStepDefinitions(),
+    ...externalWorkflowsStore.definitions.map(externalWorkflowToStepDefinition),
   ];
 }

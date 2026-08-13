@@ -43,6 +43,23 @@ fn resolve_dependency_command(binary: &str) -> Option<String> {
     find_in_path(binary)
 }
 
+fn select_version_line(text: &str) -> Option<String> {
+    let lines = text
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .collect::<Vec<_>>();
+
+    lines
+        .iter()
+        .find(|line| {
+            let lower = line.to_ascii_lowercase();
+            lower.starts_with("version ") || lower.starts_with("version:")
+        })
+        .or_else(|| lines.first())
+        .map(|line| (*line).to_string())
+}
+
 fn try_get_version(command: &str) -> Option<String> {
     for flag in &["--version", "-version", "version", "-v"] {
         let Ok(output) = std::process::Command::new(command).arg(flag).output() else {
@@ -54,8 +71,8 @@ fn try_get_version(command: &str) -> Option<String> {
         let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
         let text = if !stdout.is_empty() { stdout } else { stderr };
-        if !text.is_empty() {
-            return Some(text.lines().next().unwrap_or(&text).trim().to_string());
+        if let Some(version) = select_version_line(&text) {
+            return Some(version);
         }
     }
 
@@ -84,6 +101,35 @@ fn try_get_version(command: &str) -> Option<String> {
     }
 
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::select_version_line;
+
+    #[test]
+    fn version_line_prefers_an_explicit_version_over_a_banner() {
+        let output = r#"
+      N E X T F L O W
+      version 26.04.6 build 12646
+      created 30-06-2026 12:34 UTC
+        cite doi:10.1038/nbt.3820
+        http://nextflow.io
+        "#;
+
+        assert_eq!(
+            select_version_line(output),
+            Some("version 26.04.6 build 12646".to_string())
+        );
+    }
+
+    #[test]
+    fn version_line_preserves_a_single_line_version() {
+        assert_eq!(
+            select_version_line("seqkit v2.10.1\n"),
+            Some("seqkit v2.10.1".to_string())
+        );
+    }
 }
 
 // ---------------------------------

@@ -37,12 +37,13 @@ in `var["gene_name"]`, `var["feature_name"]`, or `var_names`.
 | Output | Meaning |
 | --- | --- |
 | Embedded AnnData | Main `.h5ad` artifact with `obsm["X_uce"]` or `obsm["X_geneformer"]` |
-| Embedding preview CSV | Small table for quick inspection |
+| Embedding preview CSV | Bounded table with raw embedding dimensions and two preview PCA columns |
 | Summary JSON | Counts, dimensions, settings, warnings, and provenance |
 | Intermediate files | UCE processing artifacts when UCE is selected, marked as intermediate |
 
 Use the embedded AnnData file for downstream scientific work. The CSV preview is
-only meant for quick inspection.
+only meant for quick inspection. Its PCA is computed over the bounded exported
+rows, not over the whole dataset.
 
 ## In pipelines
 
@@ -54,6 +55,11 @@ Use this tool when you want:
 
 In the pipeline editor, the AI Model dropdown only shows compatible installed
 models.
+
+For the ready-made path, open **Pipelines**, choose **Single-cell embedding and
+preview**, select the AnnData file and an installed AI Model, and run. The
+preset connects both the embedded AnnData and its preview to the Single-cell
+Viewer. Pipeline outputs are registered in Data before the viewer step starts.
 
 ## Reading the result
 

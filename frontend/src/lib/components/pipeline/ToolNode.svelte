@@ -21,6 +21,8 @@
   import EditableNodeLabel from './actions/EditableNodeLabel.svelte';
   import { statusDotClass, statusLabel } from './scripts/node-status';
   import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './scripts/node-data-commit';
+  import { artifactCompatibility, artifactValidationLabel } from '$lib/scientific-artifacts';
+  import type { LiatirArtifactRequirement } from '@liatir/core';
 
   let { id, data }: NodeProps<Node<ToolNodeData>> = $props();
 
@@ -98,7 +100,7 @@
   });
 
   // File-input picker: compatible file outputs of connected upstream steps + data files.
-  function buildGroups(accept: string[] | undefined): PickerGroup[] {
+  function buildGroups(accept: string[] | undefined, artifactRequirement?: LiatirArtifactRequirement): PickerGroup[] {
     const groups: PickerGroup[] = [];
 
     const stepItems = upstreamOptions(id, getNodes(), getEdges() as Edge[], 'file', { accept });
@@ -108,13 +110,25 @@
     if (files.length > 0) {
       groups.push({
         title: 'Data files',
-        items: files.map(f => ({
-          value: f.path,
-          label: f.name,
-          sublabel: getLastSegmentsStringFromPath(f.path, 2),
-          badge: f.ext || '?',
-          meta: f.size != null ? fmtBytes(f.size) : undefined,
-        })),
+        items: files.map(f => {
+          const compatibility = artifactCompatibility(f.scientific, artifactRequirement);
+          const firstDiagnostic = compatibility?.diagnostics[0];
+          return {
+            value: f.path,
+            label: f.name,
+            sublabel: getLastSegmentsStringFromPath(f.path, 2),
+            badge: f.ext || '?',
+            meta: [
+              f.size != null ? fmtBytes(f.size) : null,
+              artifactValidationLabel(f.scientific),
+              compatibility ? `scientific I/O: ${compatibility.status}` : null,
+            ].filter(Boolean).join(' · ') || undefined,
+            disabled: compatibility?.status === 'incompatible',
+            reason: firstDiagnostic
+              ? `${firstDiagnostic.message}${firstDiagnostic.action ? ` ${firstDiagnostic.action}` : ''}`
+              : undefined,
+          };
+        }),
       });
     }
 
@@ -146,7 +160,11 @@
 
 <Handle type="target" position={Position.Left} id="input" />
 
-<div class="min-w-70 max-w-80 rounded-xl border border-border bg-surface shadow-md overflow-visible">
+<div
+  class="min-w-70 max-w-80 rounded-xl border border-border bg-surface shadow-md overflow-visible"
+  data-testid="pipeline-tool-node"
+  data-step-id={data.stepId}
+>
 
   <div class="flex items-center gap-2 px-3 py-2.5 rounded-t-xl border-b border-border bg-surface cursor-grab active:cursor-grabbing">
     <span class="h-2 w-2 rounded-full shrink-0 {statusDotClass(status)}" title={statusLabel(status)}></span>
@@ -169,7 +187,7 @@
           <div>
             <OptionPicker
               value={data.inputs[key] ?? ''}
-              groups={buildGroups(schema.accept)}
+              groups={buildGroups(schema.accept, schema.artifact)}
               label="{schema.label ?? key}{schema.required ? '' : ' (optional)'}"
               placeholder="Select or connect a step…"
               searchPlaceholder="Search…"
@@ -210,6 +228,22 @@
               <p class="mt-1 text-[10px] leading-snug text-text-subtle">{schema.description}</p>
             {/if}
           </div>
+        {:else if schema.type === 'boolean'}
+          <label class="flex items-start gap-2 rounded-lg border border-border bg-surface-2 px-2.5 py-2">
+            <input
+              type="checkbox"
+              checked={(data.inputs[key] ?? String(schema.default ?? false)) === 'true'}
+              disabled={inputsDisabled}
+              onchange={(event) => setInput(key, String(event.currentTarget.checked))}
+              class="mt-0.5"
+            />
+            <span class="min-w-0">
+              <span class="block text-[11px] text-text-muted">{schema.label ?? key}</span>
+              {#if schema.description}
+                <span class="block mt-0.5 text-[10px] leading-snug text-text-subtle">{schema.description}</span>
+              {/if}
+            </span>
+          </label>
         {:else if schema.type === 'string' || schema.type === 'number'}
           <div>
             <span class="block text-[11px] text-text-muted mb-1">

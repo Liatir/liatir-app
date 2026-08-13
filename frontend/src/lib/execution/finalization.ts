@@ -1,8 +1,10 @@
 import type {
   JsonValue,
+  LiatirExecutionIdentity,
   LiatirExecutionTerminalStatus,
   LiatirRunStatus,
 } from '@liatir/core';
+import { LIATIR_EXTERNAL_WORKFLOW_STEP_PREFIX } from '@liatir/core';
 import {
   analysisRuns,
   type AnalysisRun,
@@ -27,6 +29,13 @@ function recordParams(value: JsonValue | undefined): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
     : {};
+}
+
+function resultToolId(identity: LiatirExecutionIdentity): string {
+  if (identity.runKind === 'external-workflow' && identity.entityId) {
+    return `${LIATIR_EXTERNAL_WORKFLOW_STEP_PREFIX}${identity.entityId}`;
+  }
+  return identity.entityId ?? identity.runKind;
 }
 
 /**
@@ -87,7 +96,7 @@ export async function reconcileExecutionResults(): Promise<void> {
     );
     await analysisRuns.add({
       id: resultId,
-      tool: execution.identity.entityId ?? execution.identity.runKind,
+      tool: resultToolId(execution.identity),
       label: execution.label,
       inputs: stringInputs(execution.inputs),
       params: recordParams(execution.params),

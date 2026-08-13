@@ -1,10 +1,54 @@
 use tauri::AppHandle;
 use tauri_plugin_dialog::{DialogExt, FilePath};
 use serde::Serialize;
-use std::{fs, path::{Path, PathBuf}};
+use sha2::{Digest, Sha256};
+use std::{fs, io::Read, path::{Path, PathBuf}};
 
 #[derive(Serialize)]
 pub struct OpenResult { pub paths: Vec<String> }
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileIdentity {
+  pub size_bytes: u64,
+  pub sha256: String,
+  /** First eight bytes, lowercase hex. Enough to identify container signatures without loading the file. */
+  pub prefix_hex: String,
+}
+
+fn inspect_file_identity(path: &str) -> Result<FileIdentity, String> {
+  let mut file = fs::File::open(path).map_err(|e| format!("Could not open file for inspection: {e}"))?;
+  let mut hasher = Sha256::new();
+  let mut buffer = [0u8; 65_536];
+  let mut prefix = Vec::with_capacity(8);
+  let mut size_bytes = 0u64;
+
+  loop {
+    let read = file.read(&mut buffer).map_err(|e| format!("Could not inspect file: {e}"))?;
+    if read == 0 { break; }
+    if prefix.len() < 8 {
+      let take = (8 - prefix.len()).min(read);
+      prefix.extend_from_slice(&buffer[..take]);
+    }
+    size_bytes = size_bytes.checked_add(read as u64)
+      .ok_or_else(|| "File size overflow while inspecting artifact".to_string())?;
+    hasher.update(&buffer[..read]);
+  }
+
+  Ok(FileIdentity {
+    size_bytes,
+    sha256: format!("{:x}", hasher.finalize()),
+    prefix_hex: prefix.iter().map(|byte| format!("{byte:02x}")).collect(),
+  })
+}
+
+/// Stream a local file once to establish its stable content identity and container signature.
+#[tauri::command]
+pub async fn lia_file_identity(_app: AppHandle, path: String) -> Result<FileIdentity, String> {
+  tauri::async_runtime::spawn_blocking(move || inspect_file_identity(&path))
+    .await
+    .map_err(|e| format!("File inspection task failed: {e}"))?
+}
 
 fn file_path_to_string(p: FilePath) -> String {
   match p {
@@ -194,4 +238,28 @@ pub async fn lia_file_save(app: AppHandle, default_name: Option<String>) -> Resu
   .map_err(|e| format!("Join error: {e}"))?;
 
   Ok(saved)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::inspect_file_identity;
+  use std::{fs, path::PathBuf};
+
+  #[test]
+  fn file_identity_streams_size_digest_and_signature() {
+    let mut path = PathBuf::from(std::env::temp_dir());
+    path.push(format!("liatir-file-identity-{}.h5ad", std::process::id()));
+    let contents = b"\x89HDF\r\n\x1a\nfixture";
+    fs::write(&path, contents).expect("write fixture");
+
+    let identity = inspect_file_identity(path.to_str().expect("utf8 path")).expect("inspect fixture");
+    assert_eq!(identity.size_bytes, contents.len() as u64);
+    assert_eq!(identity.prefix_hex, "894844460d0a1a0a");
+    assert_eq!(
+      identity.sha256,
+      "49c125f35c8cf401e1ec1e7739825d788afb0d361d5906d18d0df6bcf2de4bd2",
+    );
+
+    let _ = fs::remove_file(path);
+  }
 }

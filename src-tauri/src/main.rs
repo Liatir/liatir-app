@@ -282,6 +282,9 @@ fn main() {
       lia_file_open,
       lia_file_save,
       lia_file_open_with_bytes,
+      lia_file_identity,
+      lia_external_workflow_prepare_run,
+      lia_external_workflow_collect_outputs,
 
       // app
       lia_app_info,

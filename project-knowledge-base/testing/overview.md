@@ -204,6 +204,76 @@ Connector success and cancellation, standalone Native Tool Job/Result identity,
 WASM Plugin success/failure/progress/logs/off-page cancellation, and resumable
 dependency download after cancellation through a real HTTP Range request.
 
+`tests/e2e/specs/scientific-artifacts.e2e.mjs` is the focused Gate 4 native
+test. It verifies streamed size, SHA-256 and HDF5 identity through the real
+bridge, reloads persisted AnnData metadata, and proves that profile, validation,
+digest and transformation lineage remain visible in Data and Results. Pure
+compatibility, backward-version, mutation and Single-cell Embedding adoption
+cases live in the `scientific-artifact-*` and
+`single-cell-artifact-adoption` unit suites.
+
+`tests/e2e/specs/single-cell-lighthouse.e2e.mjs` is the focused Gate 5 native
+test. It opens a profiled AnnData Result with a bounded embedding preview,
+verifies artifact identity, validation, projection and plotted points, adds both
+outputs to Data, reopens them in the standalone viewer, and creates the saved
+single-cell preset with typed output references. The
+`single-cell-lighthouse` unit suite covers preview parsing, projection
+precedence, compatibility rejection and preset wiring. It deliberately uses a
+bounded local fixture and does not download or execute a heavy AI Model.
+
+At Gate 5 closure on 2026-08-13, the focused Gate 5, artifact, pipeline
+lifecycle and execution-spine suites passed after the main implementation. Two
+later parser/PCA edge-case fixes pass their focused unit tests and
+`test:verify`. The focused suite was subsequently rerun against the final Gate
+6 Tauri binary and remained green 1/1.
+
+`tests/e2e/specs/external-workflow-nextflow.e2e.mjs` is the focused Gate 6
+native test. It requires system-installed Nextflow and Java and is skipped
+unless `LIATIR_E2E_NEXTFLOW=1` is set. Its three cases use one saved definition
+directly and twice in a pipeline, verify declared output handoff and engine
+provenance, exercise a real process failure and owner-scoped cancellation, and
+reconcile an interrupted External Workflow Result exactly once after reload.
+The fixture is small and local; it does not download scientific data or a model.
+
+Prepare and run it on macOS or a graphical Linux host with:
+
+```bash
+nextflow -version
+java -version
+npm run test:tauri:prepare
+LIATIR_E2E_NEXTFLOW=1 node tests/e2e/run-tauri-e2e.mjs tests/e2e/specs/external-workflow-nextflow.e2e.mjs
+```
+
+`NXF_OFFLINE=true` may be added only when the selected Nextflow engine JAR is
+already present in `NXF_HOME`. This is useful for a deterministic offline rerun,
+but an empty offline cache is expected to fail before the product test.
+
+Nextflow supports Windows through WSL rather than as a native Windows runtime.
+Gate 6 therefore has two distinct remaining proofs. First, inside WSL2, keep
+the checkout in the Linux filesystem, compile a separate Linux binary there,
+confirm it is native x86_64 ELF, and run the suite under Xvfb:
+
+```bash
+uname -m
+nextflow -version
+java -version
+npm run test:tauri:prepare
+file src-tauri/target/debug/liatir
+LIATIR_E2E_NEXTFLOW=1 xvfb-run -a node tests/e2e/run-tauri-e2e.mjs tests/e2e/specs/external-workflow-nextflow.e2e.mjs
+```
+
+Record the E2E report plus `npm run test:verify`, `cargo test`, `cargo clippy
+--tests`, `uname -m`, and `file` output. This closes the Linux path only.
+
+Second, before claiming support from the native Windows desktop app, implement
+an explicit `liatir.exe` to WSL execution backend. Its gate must start from the
+Windows UI and prove Windows/WSL path translation, run-owned staging, one Job,
+owner-scoped cancellation, exact output collection, provenance and restart
+reconciliation. Do not install an unofficial native Nextflow runtime or hide
+`wsl.exe` behind an ad hoc `nextflow.cmd` wrapper: either the supported bridge
+passes its own native Windows E2E, or the Beta support matrix must state that
+Nextflow External Workflows are unavailable in the Windows app.
+
 `npm run pipeline:test:settlement-restart` is the process-restart companion.
 The first Tauri process persists an active pipeline plus direct AI Model,
 Plugin, Native Tool and API Connector executions. The second process reconciles

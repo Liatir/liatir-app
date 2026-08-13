@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createLiatirChildExecutionIdentity,
+  createLiatirExternalWorkflowRunIdentity,
   createLiatirRootExecutionIdentity,
 } from '@liatir/core';
 
@@ -112,6 +113,31 @@ describe.sequential('durable execution store', () => {
     expect(analysisRuns.runs[0]?.error).toMatch(/interrupted/i);
   });
 
+  it('keeps an interrupted External Workflow in its saved definition history', async () => {
+    const runId = 'external-restart';
+    await executionRuns.begin({
+      identity: createLiatirExternalWorkflowRunIdentity({
+        runId,
+        workspaceId: harness.workspace.activeId!,
+        entityId: 'workflow-a',
+      }),
+      label: 'Workflow A',
+      resultPolicy: 'own',
+      resultId: runId,
+    });
+    executionRuns.reset();
+    analysisRuns.reset();
+
+    await reconcileExecutionResults();
+    await reconcileExecutionResults();
+
+    expect(analysisRuns.runs.filter((item) => item.id === runId)).toHaveLength(1);
+    expect(analysisRuns.runs[0]).toMatchObject({
+      tool: 'external-workflow:workflow-a',
+      status: 'error',
+    });
+  });
+
   it('does not leak execution state across workspaces', async () => {
     await executionRuns.begin({
       identity: identity('workspace-a-run'), label: 'A', resultPolicy: 'none',
@@ -132,6 +158,30 @@ describe.sequential('durable execution store', () => {
       }),
       label: 'Wrong', resultPolicy: 'none',
     })).rejects.toThrow(/active workspace/);
+  });
+
+  it('persists resolved inputs and execution evidence before finalization', async () => {
+    const runId = 'run-evidence';
+    await executionRuns.begin({
+      identity: identity(runId), label: 'Workflow', resultPolicy: 'own',
+    });
+    await executionRuns.setPayload(runId, {
+      inputs: ['/data/input.txt'],
+      params: {
+        label: 'sample',
+        externalWorkflow: { engine: 'nextflow', finalStatus: 'done' },
+      },
+    });
+
+    expect(executionRuns.byId(runId)).toMatchObject({
+      inputs: ['/data/input.txt'],
+      params: {
+        label: 'sample',
+        externalWorkflow: { engine: 'nextflow', finalStatus: 'done' },
+      },
+    });
+    expect(JSON.parse(harness.files.get('workspaces/workspace-a/execution-runs/index.json') ?? '[]')[0])
+      .toMatchObject({ params: { externalWorkflow: { engine: 'nextflow' } } });
   });
 
   it('cancels only an owned run tree and its Jobs', async () => {

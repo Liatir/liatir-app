@@ -9,6 +9,7 @@
   import { liatir } from '$lib/api';
   import { getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
+  import { artifactValidationLabel } from '$lib/scientific-artifacts';
 
   onMount(async () => {
     await dataFiles.init();
@@ -617,6 +618,11 @@
 
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-medium {file.missing ? 'text-amber-700' : 'text-text'} truncate">{file.name}</p>
+                  {#if file.scientific}
+                    <p class="mt-0.5 text-[10px] text-text-subtle truncate" title={file.scientific.validation.diagnostics.map((item) => item.message).join(' ')}>
+                      {artifactValidationLabel(file.scientific)} · {file.scientific.scientificType}
+                    </p>
+                  {/if}
                 </div>
 
                 {#if file.missing}
@@ -637,6 +643,17 @@
                   <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium border {extClass(file.ext)}">
                     {file.ext || '?'}
                   </span>
+
+                  {#if file.scientific}
+                    <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium border
+                      {file.scientific.validation.status === 'valid'
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                        : file.scientific.validation.status === 'invalid'
+                          ? 'border-red-200 bg-red-50 text-red-700'
+                          : 'border-amber-200 bg-amber-50 text-amber-700'}">
+                      {file.scientific.validation.status}
+                    </span>
+                  {/if}
 
                   <div class="shrink-0 w-24">
                     {#if file.protected}

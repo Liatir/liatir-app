@@ -6,14 +6,21 @@
  * tracks — rather than something the user has to do by hand afterwards.
  *
  * These steps do not draw anything themselves. They validate the input and emit a viewer *section* in
- * the tool output; the actual rendering happens when a user opens the Result, at which point the
- * heavy viewer runtime is loaded on demand. That separation is what keeps a pipeline run headless and
- * fast while still producing something interactive at the end.
+ * the tool output; the actual rendering happens when a user opens the Result. Optional heavy viewer
+ * runtimes are loaded on demand, while the bounded single-cell preview stays built in. That separation
+ * keeps a pipeline run headless and fast while still producing something interactive at the end.
  */
 import { liatir } from '$lib/api';
 import type { PipelineStepDefinition, RunOutputFile } from '$lib/types/pipeline';
 import type { ToolOutput } from '$lib/types/tool-output';
-import type { JsonValue } from '@liatir/core';
+import {
+  LIATIR_ANNDATA_PROFILE_V1,
+  type JsonValue,
+  type LiatirArtifactRequirement,
+  type LiatirScientificArtifactMetadata,
+} from '@liatir/core';
+import { dataFiles } from '$lib/stores/dataFiles.svelte';
+import { assertArtifactCompatible, inspectAnnDataArtifact } from '$lib/scientific-artifacts';
 
 /** 3D molecular structures. `accept` lists the formats 3Dmol.js can actually read. */
 export const structureViewerDefinition: PipelineStepDefinition = {
@@ -78,22 +85,41 @@ export const genomeViewerDefinition: PipelineStepDefinition = {
   },
 };
 
+export const singleCellViewerAnnDataRequirement: LiatirArtifactRequirement = {
+  profiles: [{ ...LIATIR_ANNDATA_PROFILE_V1 }],
+  formats: ['anndata-h5ad'],
+  scientificTypes: ['annotated-matrix'],
+  validation: 'valid-or-partial',
+  qualifiers: {
+    modalities: ['single-cell-rna'],
+  },
+};
+
 export const singleCellViewerDefinition: PipelineStepDefinition = {
   id: 'viewer-single-cell',
   type: 'utility',
   label: 'Single-cell Viewer',
-  description: 'Create a single-cell/spatial viewer section from AnnData, label CSV, or summary JSON artifacts.',
+  description: 'Inspect a profiled AnnData artifact and an optional bounded embedding preview CSV.',
   category: 'Visualization',
   inputSchema: {
     inputFile: {
       type: 'file',
-      label: 'Single-cell artifact',
+      label: 'AnnData artifact',
       required: true,
-      accept: ['h5ad', 'csv', 'json'],
+      accept: ['h5ad'],
+      artifact: singleCellViewerAnnDataRequirement,
     },
-    labelColumn: {
+    previewFile: {
+      type: 'file',
+      label: 'Embedding preview',
+      description: 'Optional CSV emitted with an embedded AnnData artifact. Connect it to render the first two embedding dimensions.',
+      required: false,
+      accept: ['csv'],
+    },
+    embeddingKey: {
       type: 'string',
-      label: 'Label column',
+      label: 'Embedding key',
+      description: 'Optional AnnData obsm key, for example X_geneformer.',
       required: false,
       default: '',
     },
@@ -163,45 +189,57 @@ function splitCsvLine(line: string): string[] {
   return cells.map(cell => cell.trim().replace(/^"|"$/g, ''));
 }
 
-/**
- * Counts how many cells carry each label, for the summary shown beside a single-cell view.
- *
- * Finding the label column is the interesting part. An explicit column wins; failing that, the header
- * is matched against the names annotation tools actually emit (`predicted_labels`, `majority_voting`,
- * `cell_type`, …), because there is no standard and every tool names it differently. Falling back to
- * column 0 means a file with an unrecognised header still produces *something* rather than nothing.
- */
-function labelCountsFromCsv(text: string, preferredColumn: string): Record<string, number> {
-  const lines = text.split(/\r?\n/).filter(line => line.trim());
-  // A header alone, with no rows, has nothing to count.
-  if (lines.length < 2) return {};
-  const headers = splitCsvLine(lines[0]);
-  const preferredIndex = preferredColumn ? headers.indexOf(preferredColumn) : -1;
-  const labelIndex = preferredIndex >= 0
-    ? preferredIndex
-    // Math.max(..., 0) turns findIndex's -1 (no match) into column 0.
-    : Math.max(
-        headers.findIndex(header => /majority|predicted|label|cell_type|annotation/i.test(header)),
-        0,
-      );
-  const counts: Record<string, number> = {};
-  for (const line of lines.slice(1)) {
-    const cells = splitCsvLine(line);
-    // An empty cell is counted as `unlabeled` rather than dropped: the total must still equal the
-    // number of cells, or the summary would quietly misrepresent the dataset.
-    const label = cells[labelIndex] || 'unlabeled';
-    counts[label] = (counts[label] ?? 0) + 1;
-  }
-  return counts;
+export interface SingleCellEmbeddingPreviewPoint {
+  cellId: string;
+  x: number;
+  y: number;
 }
 
-/** Some tools pre-compute the counts. Both shapes seen in the wild are accepted. */
-function labelCountsFromJson(text: string): Record<string, number> {
-  const parsed = JSON.parse(text) as {
-    counts?: Record<string, number>;
-    summary?: { counts?: Record<string, number> };
-  };
-  return parsed.counts ?? parsed.summary?.counts ?? {};
+function previewProjectionFromCsv(text: string): 'bounded-preview-pca' | 'first-two-dimensions' {
+  const headers = splitCsvLine(text.split(/\r?\n/, 1)[0] ?? '');
+  return headers.includes('preview_pc_1') && headers.includes('preview_pc_2')
+    ? 'bounded-preview-pca'
+    : 'first-two-dimensions';
+}
+
+/** Parse the bounded CSV preview emitted by every Single-cell Embedding AI Model. */
+export function embeddingPointsFromCsv(
+  text: string,
+  limit = 5_000,
+): SingleCellEmbeddingPreviewPoint[] {
+  const lines = text.split(/\r?\n/).filter(line => line.trim());
+  if (lines.length < 2) return [];
+  const headers = splitCsvLine(lines[0]);
+  const dimensions = headers
+    .map((header, index) => ({ header, index }))
+    .filter(item => /^preview_pc_[12]$/i.test(item.header) || /^dim_\d+$/i.test(item.header))
+    .sort((a, b) => {
+      const aPca = /^preview_pc_[12]$/i.test(a.header);
+      const bPca = /^preview_pc_[12]$/i.test(b.header);
+      if (aPca !== bPca) return aPca ? -1 : 1;
+      const number = (header: string) => Number(header.match(/\d+$/)?.[0] ?? 0);
+      return number(a.header) - number(b.header);
+    });
+  if (dimensions.length === 0) return [];
+  const xIndex = dimensions[0].index;
+  const yIndex = dimensions[1]?.index;
+  const cellIdIndex = headers.findIndex(header => /^(cell_?id|cell|observation)$/i.test(header));
+  const points: SingleCellEmbeddingPreviewPoint[] = [];
+  for (const line of lines.slice(1, Math.max(1, limit) + 1)) {
+    const cells = splitCsvLine(line);
+    const rawX = cells[xIndex]?.trim();
+    const rawY = yIndex === undefined ? undefined : cells[yIndex]?.trim();
+    if (!rawX || (yIndex !== undefined && !rawY)) continue;
+    const x = Number(rawX);
+    const y = yIndex === undefined ? 0 : Number(rawY);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+    points.push({
+      cellId: (cellIdIndex >= 0 ? cells[cellIdIndex] : '') || `cell_${points.length + 1}`,
+      x,
+      y,
+    });
+  }
+  return points;
 }
 
 /**
@@ -297,17 +335,49 @@ export async function runSingleCellViewerStep(
   if (!inputs.inputFile) throw new Error('Single-cell artifact is required.');
   const api = liatir();
   const ext = extension(inputs.inputFile);
-  let labelCounts: Record<string, number> = {};
+  if (ext !== 'h5ad') {
+    throw new Error('Single-cell Viewer requires a profiled AnnData .h5ad artifact. Add a separate embedding preview CSV when available.');
+  }
+  let embeddingPoints: SingleCellEmbeddingPreviewPoint[] = [];
+  let scientific: LiatirScientificArtifactMetadata | undefined;
+  let previewPath = inputs.previewFile || '';
+  let projection = 'first-two-dimensions';
 
-  if (api && (ext === 'csv' || ext === 'json')) {
-    const text = await api.invoke('lia_read_file_text', { path: inputs.inputFile }) as string;
-    labelCounts = ext === 'json'
-      ? labelCountsFromJson(text)
-      : labelCountsFromCsv(text, inputs.labelColumn || '');
+  await dataFiles.init();
+  scientific = await dataFiles.ensureAnnDataProfile(inputs.inputFile, true);
+  if (!scientific) scientific = await inspectAnnDataArtifact(inputs.inputFile);
+  const compatibility = assertArtifactCompatible(scientific, singleCellViewerAnnDataRequirement);
+  for (const item of compatibility.diagnostics.filter(diagnostic => diagnostic.severity === 'warning')) {
+    onLog(`artifact warning: ${item.message}${item.action ? ` ${item.action}` : ''}`);
+  }
+  if (!previewPath && typeof scientific.viewerHints?.embeddingPreviewPath === 'string') {
+    previewPath = scientific.viewerHints.embeddingPreviewPath;
+  }
+
+  if (api && previewPath) {
+    try {
+      const previewText = await api.invoke('lia_read_file_text', { path: previewPath }) as string;
+      embeddingPoints = embeddingPointsFromCsv(previewText);
+      projection = previewProjectionFromCsv(previewText);
+    } catch (error) {
+      if (inputs.previewFile) throw new Error('The selected embedding preview CSV could not be read.');
+      onLog(`viewer warning: stored embedding preview is unavailable (${error instanceof Error ? error.message : String(error)})`);
+      previewPath = '';
+    }
+  }
+
+  const embeddingKey = inputs.embeddingKey
+    || (typeof scientific?.viewerHints?.embeddingKey === 'string' ? scientific.viewerHints.embeddingKey : '')
+    || scientific?.qualifiers.embeddingKeys?.[0]
+    || '';
+  const matrix = scientific?.qualifiers.matrix;
+  if (!previewPath && typeof scientific?.viewerHints?.projection === 'string') {
+    projection = scientific.viewerHints.projection;
   }
 
   onLog(`viewer ${singleCellViewerDefinition.id}`);
   onLog(`artifact ${basename(inputs.inputFile)}`);
+  if (embeddingPoints.length > 0) onLog(`preview ${embeddingPoints.length} cells`);
 
   return {
     outputFiles: [],
@@ -316,11 +386,25 @@ export async function runSingleCellViewerStep(
         {
           type: 'single-cell-viewer',
           label: basename(inputs.inputFile),
-          description: 'Lightweight label distribution preview. Full Vitessce rendering is a modular viewer runtime.',
+          description: 'Validated AnnData with a bounded embedding preview; the full matrix remains in the artifact.',
           config: {
             title: basename(inputs.inputFile),
             source: inputs.inputFile,
-            labelCounts,
+            ...(previewPath ? { previewCsv: previewPath } : {}),
+            labelCounts: {},
+            embeddingPoints: embeddingPoints as unknown as JsonValue,
+            projection,
+            ...(embeddingKey ? { embeddingKey } : {}),
+            ...(matrix?.observations !== undefined ? { cellCount: matrix.observations } : {}),
+            ...(scientific?.qualifiers.embeddingKeys?.length
+              ? { availableEmbeddingKeys: scientific.qualifiers.embeddingKeys }
+              : {}),
+            ...(scientific
+              ? {
+                  artifactId: scientific.physical.artifactId,
+                  validationStatus: scientific.validation.status,
+                }
+              : {}),
           },
           height: 340,
         },
@@ -330,7 +414,12 @@ export async function runSingleCellViewerStep(
       report: {
         viewer: 'single-cell-viewer',
         artifact: basename(inputs.inputFile),
-        labelCount: Object.keys(labelCounts).length,
+        labelCount: 0,
+        previewPointCount: embeddingPoints.length,
+        projection,
+        embeddingKey: embeddingKey || null,
+        artifactId: scientific?.physical.artifactId ?? null,
+        validationStatus: scientific?.validation.status ?? null,
       },
     },
   };

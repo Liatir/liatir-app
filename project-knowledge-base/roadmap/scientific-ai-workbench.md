@@ -1,6 +1,6 @@
 # Scientific AI Workbench Product Plan
 
-Last reviewed: 2026-08-11
+Last reviewed: 2026-08-13
 
 This document is the canonical product direction and execution sequence for
 Liatir during and after the current Runtime Box CI foundation program. It turns
@@ -32,9 +32,14 @@ update, app restart, rollback, replay and equivocation rejection, accepted
 revocation retention, and corrupt-state isolation on macOS arm64, native
 Windows x86_64, and WSL2 Linux x86_64. Gate 2 has now closed asynchronous
 settlement on the native product path, and Gate 3 has closed the common
-execution spine for direct, pipeline and nested runs. Gate 4 and versioned
-scientific artifact profiles are the active implementation boundary. Every paid or
-remote action still requires its exact local gate, workflow/input/revision
+execution spine for direct, pipeline and nested runs. Gate 4 has now completed
+the first versioned scientific artifact contract and its AnnData/single-cell
+adoption. Gate 5 has completed the single-cell lighthouse with viewer handoff,
+downstream reuse and a no-code preset. Gate 6 has completed the first saved
+Nextflow External Workflow, runnable standalone and by reference in pipelines,
+on macOS arm64. WSL2 Linux verification and the native Windows app-to-WSL
+execution boundary remain before its cross-platform closure and Gate 7.
+Every paid or remote action still requires its exact local gate, workflow/input/revision
 readback, cost declaration, and fresh explicit approval.
 
 ## Product decision
@@ -133,8 +138,8 @@ execution foundation, but some product claims are ahead of their evidence.
 | AI Models and AI Tools | Runtime Box-only catalog with Geneformer, scGPT, and UCE plus the shared Single-cell Embedding Tool; legacy and mock integrations were removed on 2026-07-22 | Complete the common execution spine and product update guarantees before adding another family |
 | Runtime Box distribution | Nine current schema-v2 targets are live and product-lifecycle verified; Scrollcase P5 and security Gate 1 are complete; app-global anti-replay and true A-to-B rollback are natively verified across app restart on macOS arm64, Windows x86_64, and Linux x86_64 | Keep the focused security suite repeatable on all three platforms, then decide whether UCE `beta.1` belongs in revocations |
 | Scientific viewers | Protein, genome, and single-cell surfaces exist but need native visual/runtime validation | Make viewer completion part of each scientific vertical |
-| Artifact semantics | Files have paths, extensions, media types, producer, parent run, and lifecycle role; scientific meaning is not yet a versioned compatibility contract | Add semantic profiles without replacing original formats |
-| External workflow engines | Nextflow and Snakemake dependencies are recognized, but no first-class External Workflow entity exists yet | Build Nextflow first, runnable both standalone and as a pipeline node, after the artifact contract |
+| Artifact semantics | Verified versioned core contract plus AnnData profile with streamed SHA-256 identity, separate transport/format/scientific compatibility, validation and lineage | Extend profiles incrementally without replacing original formats; prove viewer and downstream reuse in Gate 5 |
+| External workflow engines | First-class saved Nextflow External Workflows are implemented and natively verified on macOS arm64 for direct and pipeline use | Verify the Linux app in WSL2 and implement/test the native Windows app-to-WSL boundary before expanding engines |
 | Quenta | Read-only explanatory MVP | Keep it explanatory until the workbench is trustworthy without it |
 
 ## Target architecture
@@ -367,24 +372,69 @@ none of the Gate 2/3 lifecycle cases fail.
 
 **Difficulty:** `5/5` · **Codex effort:** `xhigh`
 
+**Status (2026-08-13): complete locally on macOS arm64.**
+
 Extend `packages/liatir-core` with backward-compatible, versioned scientific
 artifact profiles. Separate transport, format and scientific compatibility;
 preserve the original format, digest, provenance, lineage and transformations.
 Adopt the contract incrementally, beginning with AnnData and single-cell
 artifacts.
 
+The core now owns `org.liatir.scientific.anndata@1.0.0`, optional metadata for
+legacy files, validation diagnostics and the three-layer compatibility report.
+The native bridge streams file size, SHA-256 and the HDF5 signature. Data,
+Results and relevant selectors preserve or expose profile state, while known
+scientific mismatches are rejected before model compute. The shared
+Single-cell Embedding finalizer records immutable input/output identities,
+model transformation parameters, source revision, embedding hints and lineage
+for both direct and pipeline execution.
+
+Local evidence is `npm run test:verify` (47 files / 272 tests), `cargo test`
+(46 passed / 2 intentionally ignored), `cargo clippy --tests`, the 1/1 native
+scientific-artifact E2E, the unchanged 10/10 pipeline lifecycle suite and the
+5/5 common execution-spine suite. Gate 5 deliberately retains the full viewer,
+downstream reuse and no-code preset proof.
+
 ### Gate 5: complete the single-cell lighthouse
 
 **Difficulty:** `4/5` · **Codex effort:** `xhigh`
+
+**Status (2026-08-13): complete locally on macOS arm64.**
 
 Prove AnnData validation, the Single-cell Embedding Tool, supported AI Models,
 viewer handoff and downstream reuse as one coherent workflow. Direct and
 pipeline execution must produce equivalent artifacts and provenance. Add one
 useful no-code preset only after the individual nodes and viewer pass.
 
+The single-cell viewer now requires profiled AnnData, preserves artifact
+identity and validation, and consumes the optional embedding preview emitted by
+the shared Tool. Geneformer, scGPT and UCE produce a deterministic bounded PCA
+preview for at most 1,000 cells; the UI labels this honestly and does not claim
+full-dataset UMAP, clustering or annotation. Direct and pipeline runs use the
+same artifact finalizer and viewer hints.
+
+Result outputs can be added to Data and reopened in the standalone viewer. The
+saved `single-cell-embedding-viewer-v1` preset connects typed AnnData and preview
+outputs to the viewer and leaves only the input AnnData and installed AI Model
+for the user to choose.
+
+Local evidence is `npm run test:verify` (48 files / 279 tests), `cargo test`
+(46 passed / 2 intentionally ignored), `cargo clippy --tests`, the 1/1 native
+single-cell lighthouse E2E, the unchanged 1/1 scientific-artifact E2E, 10/10
+pipeline lifecycle and 5/5 common execution-spine suites. Existing tracked
+Runtime Box publication and product-lifecycle evidence remains the model layer;
+this gate did not re-download or re-run heavy models to prove UI orchestration.
+The focused Gate 5 native test passed after the main implementation. Two later
+parser/PCA edge-case fixes are covered by unit tests and `test:verify`; the
+suite was subsequently rerun against the final Gate 6 Tauri binary and remained
+green 1/1.
+
 ### Gate 6: integrate Nextflow as an External Workflow
 
 **Difficulty:** `5/5` · **Codex effort:** `max` · **Windows** · **Linux**
+
+**Status (2026-08-13): complete locally on macOS arm64; WSL2 Linux x86_64
+verification and native Windows app-to-WSL integration pending.**
 
 Introduce External Workflow as a first-class saved entity and add
 `external-workflow` to the shared contracts. Nextflow is the first adapter; it
@@ -404,6 +454,34 @@ environment, work/output locations, logs, trace, report, timeline and exit
 state; and converts only declared outputs into reusable Liatir artifacts.
 Ambiguous outputs require explicit mapping. Nextflow continues to own DSL2,
 scheduling, internal parallelism, cache and resume.
+
+The shared core now owns the versioned definition and pipeline type. Definitions
+are workspace-scoped, accept a local snapshot or version-pinned repository, and
+declare typed parameters, staged inputs and exact reusable outputs. The direct
+Tools surface and pipeline registry reference one definition ID and call one
+adapter. Standalone and nested runs retain the correct execution identity,
+parent, Job, Result, output and provenance; task rows remain nested under the
+workflow-level Job.
+
+The native bridge creates a run-owned staging area, hashes source, config,
+inputs and outputs, rejects symlinks at the staging boundary, and atomically
+publishes only declared output paths. The adapter records Nextflow/Java version,
+command, source/revision, profile/config, environment, directories, logs,
+trace, report, timeline, DAG, session, task states and exit code. Cancellation,
+failure and restart reconciliation preserve readable evidence; Nextflow resume
+is an explicit compatible expert action.
+
+Local evidence uses system Nextflow `26.04.6 build 12646` and Java `21.0.11`:
+the native Gate 6 suite is 3/3 for direct execution, two-node pipeline reuse,
+declared output handoff, failure, cancellation and exactly-once restart
+reconciliation. Pipeline/execution-spine/single-cell regressions are 16/16,
+`npm run test:verify` is 51 files / 293 tests, `cargo test` is 52 passed / 2
+intentionally ignored, and `cargo clippy --tests` passes with the existing
+warning baseline. This does not yet establish Windows or Linux support.
+Nextflow officially runs on POSIX systems and on Windows through WSL, so the
+remaining Windows work is an explicit `liatir.exe` to WSL execution boundary,
+not an unsupported native Nextflow installation. It must preserve path mapping,
+staging, cancellation, output collection and the same execution identity.
 
 ### Gate 7: close Beta 1 readiness
 
@@ -505,13 +583,18 @@ Exit criteria:
 Objective: make downstream composition scientifically safer than passing paths
 and extensions.
 
+Status: the Gate 4 AnnData/single-cell slice is complete as described above.
+The remaining format profiles and explicit conversion adapters are incremental
+post-lighthouse work, not hidden prerequisites for Gate 5.
+
 Work:
 
 1. write a focused core RFC for versioned artifact identity, semantic profiles,
    validation, lineage, and compatibility diagnostics;
 2. extend `packages/liatir-core` backward-compatibly and regenerate all derived
    consumers rather than mirroring types;
-3. implement profile validators for the initial file set;
+3. implement the first complete AnnData validator, then extend the profile set
+   incrementally after the lighthouse;
 4. add explicit adapter nodes for legitimate conversions, indexing, metadata
    enrichment, and reference normalization;
 5. show compatibility errors before expensive execution when possible;
@@ -759,21 +842,15 @@ implemented-but-unverified features as production-ready.
 This is the default sequence unless a later evidence-backed decision explicitly
 reorders it:
 
-1. close Plugin, direct AI, API Connector, dependency and nested-run lifecycle
-   gaps needed by the common execution spine;
-2. design and land the backward-compatible semantic artifact contract in
-   `packages/liatir-core`;
-3. implement the AnnData/single-cell profiles and lighthouse workflow;
-4. complete single-cell viewer and preset evidence;
-5. implement one saved local Nextflow External Workflow with direct and nested
-   execution;
-6. prove Nextflow output reuse through an existing AI Tool or viewer;
-7. close the desktop release matrix and public Beta 1 documentation;
-8. implement controlled local MCP access with a real client after Beta 1;
-9. validate the predictive/variant genomics and protein structure/binding
+1. repeat the complete Gate 6 Nextflow product proof with a separately compiled
+   WSL2 Linux ELF binary under Xvfb, then implement and prove the native Windows
+   client against that WSL execution backend;
+2. close the desktop release matrix and public Beta 1 documentation;
+3. implement controlled local MCP access with a real client after Beta 1;
+4. validate the predictive/variant genomics and protein structure/binding
     verticals;
-10. publish useful verified Plugin and pipeline templates;
-11. evaluate another external workflow engine only from the reusable adapter
+5. publish useful verified Plugin and pipeline templates;
+6. evaluate another external workflow engine only from the reusable adapter
     contract, then reconsider other advanced expansion.
 
 ## Definition of done for every integration

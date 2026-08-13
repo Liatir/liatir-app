@@ -161,6 +161,7 @@
 				{#if openHref}
 					<button
 						type="button"
+						data-testid="viewer-open-page"
 						title={openLabel}
 						aria-label={openLabel}
 						class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800"

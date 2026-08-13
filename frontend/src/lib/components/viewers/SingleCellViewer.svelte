@@ -1,10 +1,7 @@
 <!--
-	Lightweight single-cell preview: a bar chart of how many cells carry each label.
-
-	The full Vitessce runtime is not installable yet (see `runtime-registry`), so this is what Liatir shows
-	in the meantime. It is deliberately honest about that — when an `.h5ad` has no label summary, the empty
-	state says the artifact *is* Vitessce-ready and that this is only the lightweight preview, rather than
-	implying the data is unusable.
+	Lightweight single-cell preview: a bounded PCA scatter for model embeddings, with label counts retained
+	for legacy Result sections. The chart is deliberately explicit that it is neither a whole-dataset UMAP
+	nor an annotation, so a convenient preview cannot be mistaken for a biological conclusion.
 
 	The `as*` helpers exist because the viewer config is loosely-typed JSON produced by a tool, so every
 	field is treated as untrusted and coerced rather than asserted.
@@ -31,6 +28,10 @@
     return typeof value === 'string' ? value : '';
   }
 
+  function asNumber(value: JsonValue | undefined): number | null {
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
+  }
+
   /**
    * Normalises the label counts, sorted largest first — so the dominant cell types are at the top of the
    * chart, where they are what the user sees. Counts that do not parse as finite numbers are dropped
@@ -44,11 +45,46 @@
       .sort((a, b) => b[1] - a[1]);
   }
 
+  interface EmbeddingPoint {
+    cellId: string;
+    x: number;
+    y: number;
+  }
+
+  function asEmbeddingPoints(value: JsonValue | undefined): EmbeddingPoint[] {
+    if (!Array.isArray(value)) return [];
+    return value.flatMap((item, index) => {
+      if (!isRecord(item)) return [];
+      const x = asNumber(item.x);
+      const y = asNumber(item.y);
+      if (x === null || y === null) return [];
+      return [{ cellId: asString(item.cellId) || `cell_${index + 1}`, x, y }];
+    });
+  }
+
   const config = $derived(asRecord(section.config));
   const title = $derived(asString(config.title) || section.label);
   const source = $derived(asString(config.source));
   const sourceLabel = $derived(source ? getLastSegmentsStringFromPath(source, 2) : '');
-  // Two spellings accepted, because different tools emit different key names.
+  const previewCsv = $derived(asString(config.previewCsv));
+  const embeddingKey = $derived(asString(config.embeddingKey));
+  const validationStatus = $derived(asString(config.validationStatus));
+  const cellCount = $derived(asNumber(config.cellCount));
+  const embeddingDim = $derived(asNumber(config.embeddingDim));
+  const projection = $derived(asString(config.projection) || 'first-two-dimensions');
+  const embeddingPoints = $derived(asEmbeddingPoints(config.embeddingPoints).slice(0, 1_000));
+  const bounds = $derived.by(() => {
+    if (embeddingPoints.length === 0) return { minX: 0, maxX: 1, minY: 0, maxY: 1 };
+    const xs = embeddingPoints.map((point) => point.x);
+    const ys = embeddingPoints.map((point) => point.y);
+    return {
+      minX: Math.min(...xs),
+      maxX: Math.max(...xs),
+      minY: Math.min(...ys),
+      maxY: Math.max(...ys),
+    };
+  });
+  // Two spellings remain accepted for older annotation Result sections.
   const labelCounts = $derived(asCountEntries(config.labelCounts ?? config.counts));
   // The largest count sets the bar scale. `Math.max(1, …)` guards against a division by zero when the
   // list is empty (the spread would otherwise yield -Infinity).
@@ -56,6 +92,16 @@
   // Distinguishes "a real single-cell file we simply cannot chart" from "a file that is not one at all",
   // which lets the empty state below say something accurate rather than generic.
   const sourceIsH5ad = $derived(source.toLowerCase().endsWith('.h5ad'));
+
+  function plotX(value: number): number {
+    const span = bounds.maxX - bounds.minX;
+    return span === 0 ? 360 : 30 + ((value - bounds.minX) / span) * 660;
+  }
+
+  function plotY(value: number): number {
+    const span = bounds.maxY - bounds.minY;
+    return span === 0 ? 135 : 245 - ((value - bounds.minY) / span) * 220;
+  }
 </script>
 
 <VisualizationShell
@@ -63,13 +109,58 @@
   description={section.description ?? sourceLabel}
   badge="single-cell"
   height={section.height ?? 300}
-  openHref={source ? `/tools/visualization/single-cell?file=${encodeURIComponent(source)}` : undefined}
+  openHref={source
+    ? `/tools/visualization/single-cell?file=${encodeURIComponent(source)}${previewCsv ? `&preview=${encodeURIComponent(previewCsv)}` : ''}${embeddingKey ? `&embeddingKey=${encodeURIComponent(embeddingKey)}` : ''}`
+    : undefined}
 >
-  <div class="h-full overflow-auto bg-white">
-    {#if labelCounts.length === 0}
+  <div class="flex h-full flex-col overflow-auto bg-white" data-testid="single-cell-viewer">
+    {#if embeddingKey || cellCount !== null || validationStatus}
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border/70 bg-zinc-50 px-3 py-2 text-[10px] text-zinc-500">
+        {#if embeddingKey}<span><strong class="font-medium text-zinc-700">Embedding</strong> {embeddingKey}</span>{/if}
+        {#if cellCount !== null}<span><strong class="font-medium text-zinc-700">Cells</strong> {cellCount.toLocaleString()}</span>{/if}
+        {#if embeddingDim !== null}<span><strong class="font-medium text-zinc-700">Dimensions</strong> {embeddingDim.toLocaleString()}</span>{/if}
+        {#if validationStatus}
+          <span class="rounded border px-1.5 py-0.5 {validationStatus === 'valid' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}">{validationStatus}</span>
+        {/if}
+      </div>
+    {/if}
+
+    {#if embeddingPoints.length > 0}
+      <div class="min-h-0 flex-1 p-3" data-testid="single-cell-embedding-preview">
+        <svg
+          viewBox="0 0 720 270"
+          class="h-full min-h-56 w-full rounded-md border border-zinc-100 bg-zinc-50"
+          role="img"
+          aria-label={`First two dimensions of ${embeddingPoints.length} preview cells`}
+          data-testid="single-cell-scatter"
+        >
+          <line x1="30" y1="245" x2="690" y2="245" stroke="#d4d4d8" stroke-width="1" />
+          <line x1="30" y1="25" x2="30" y2="245" stroke="#d4d4d8" stroke-width="1" />
+          {#each embeddingPoints as point, index (index)}
+            <circle
+              cx={plotX(point.x)}
+              cy={plotY(point.y)}
+              r="3.2"
+              fill="#0a948b"
+              fill-opacity="0.68"
+              data-testid="single-cell-point"
+            >
+              <title>{point.cellId}: {point.x.toPrecision(4)}, {point.y.toPrecision(4)}</title>
+            </circle>
+          {/each}
+          <text x="360" y="264" text-anchor="middle" font-size="10" fill="#71717a">{projection === 'bounded-preview-pca' ? 'preview PC 1' : 'dimension 1'}</text>
+          <text x="10" y="135" text-anchor="middle" font-size="10" fill="#71717a" transform="rotate(-90 10 135)">{projection === 'bounded-preview-pca' ? 'preview PC 2' : 'dimension 2'}</text>
+        </svg>
+        <p class="mt-1 text-center text-[10px] text-zinc-400">
+          {projection === 'bounded-preview-pca'
+            ? 'PCA is computed only on the bounded preview rows; it is not a whole-dataset UMAP, clustering, or cell-type annotation.'
+            : 'Quick preview of the first two model dimensions; this is not a UMAP, clustering, or cell-type annotation.'}
+        </p>
+      </div>
+    {:else if labelCounts.length === 0}
       <div class="flex min-h-56 items-center justify-center px-4 text-center text-xs text-zinc-400">
         {#if sourceIsH5ad}
-          This h5ad artifact is registered for Vitessce-compatible viewing, but no label summary is available for the lightweight preview.
+          This h5ad artifact is valid for single-cell viewing, but no embedding preview CSV or label summary is available.
         {:else}
           No label distribution available in this single-cell viewer config.
         {/if}

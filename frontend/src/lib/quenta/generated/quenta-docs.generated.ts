@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "18701c35c0f7eea4903a3efee93acfeb2ac9913091553d7db65fa2d5cf693a61";
+export const QUENTA_DOCS_SEED_HASH = "70771fa87545ae9b56595527468e25bb60aa4141237f0e7e4ff7e1b272725f34";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -379,8 +379,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Single-cell Embedding — Outputs",
     "locator": "Docs / Ai / Tools / Single Cell Embedding / Outputs",
-    "excerpt": "Outputs | Output | Meaning | | --- | --- | | Embedded AnnData | Main `.h5ad` artifact with `obsm[\"X_uce\"]` or `obsm[\"X_geneformer\"]` | | Embedding preview CSV | Small table for quick inspection | | Summary JSON | Counts, dimensions, settings, warnings, and pr…",
-    "content": "Outputs\n| Output | Meaning |\n| --- | --- |\n| Embedded AnnData | Main `.h5ad` artifact with `obsm[\"X_uce\"]` or `obsm[\"X_geneformer\"]` |\n| Embedding preview CSV | Small table for quick inspection |\n| Summary JSON | Counts, dimensions, settings, warnings, and provenance |\n| Intermediate files | UCE processing artifacts when UCE is selected, marked as intermediate |\n\nUse the embedded AnnData file for downstream scientific work. The CSV preview is\nonly meant for quick inspection."
+    "excerpt": "Outputs | Output | Meaning | | --- | --- | | Embedded AnnData | Main `.h5ad` artifact with `obsm[\"X_uce\"]` or `obsm[\"X_geneformer\"]` | | Embedding preview CSV | Bounded table with raw embedding dimensions and two preview PCA columns | | Summary JSON | Counts,…",
+    "content": "Outputs\n| Output | Meaning |\n| --- | --- |\n| Embedded AnnData | Main `.h5ad` artifact with `obsm[\"X_uce\"]` or `obsm[\"X_geneformer\"]` |\n| Embedding preview CSV | Bounded table with raw embedding dimensions and two preview PCA columns |\n| Summary JSON | Counts, dimensions, settings, warnings, and provenance |\n| Intermediate files | UCE processing artifacts when UCE is selected, marked as intermediate |\n\nUse the embedded AnnData file for downstream scientific work. The CSV preview is\nonly meant for quick inspection. Its PCA is computed over the bounded exported\nrows, not over the whole dataset."
   },
   {
     "id": "docs:ai/tools/single-cell-embedding#in-pipelines",
@@ -388,7 +388,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Single-cell Embedding — In pipelines",
     "locator": "Docs / Ai / Tools / Single Cell Embedding / In pipelines",
     "excerpt": "In pipelines Use this tool when you want: - `h5ad -> single-cell embedding -> viewer/report`; - `h5ad -> embedding -> downstream script/plugin`; - a reusable cell-embedding step before visualization. In the pipeline editor, the AI Model dropdown only shows co…",
-    "content": "In pipelines\nUse this tool when you want:\n\n- `h5ad -> single-cell embedding -> viewer/report`;\n- `h5ad -> embedding -> downstream script/plugin`;\n- a reusable cell-embedding step before visualization.\n\nIn the pipeline editor, the AI Model dropdown only shows compatible installed\nmodels."
+    "content": "In pipelines\nUse this tool when you want:\n\n- `h5ad -> single-cell embedding -> viewer/report`;\n- `h5ad -> embedding -> downstream script/plugin`;\n- a reusable cell-embedding step before visualization.\n\nIn the pipeline editor, the AI Model dropdown only shows compatible installed\nmodels.\n\nFor the ready-made path, open **Pipelines**, choose **Single-cell embedding and\npreview**, select the AnnData file and an installed AI Model, and run. The\npreset connects both the embedded AnnData and its preview to the Single-cell\nViewer. Pipeline outputs are registered in Data before the viewer step starts."
   },
   {
     "id": "docs:ai/tools/single-cell-embedding#reading-the-result",
@@ -627,16 +627,16 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Pipelines",
     "locator": "Docs / Pipeline / Overview",
-    "excerpt": "Pipelines let you connect analysis steps visually so that the output from one step becomes the input for the next one. Use pipelines when you want to repeat a workflow, avoid manual file handoffs, or combine built-in tools, `.lia` plugins, and AI Tools in one…",
-    "content": "Pipelines let you connect analysis steps visually so that the output from one\nstep becomes the input for the next one.\n\nUse pipelines when you want to repeat a workflow, avoid manual file handoffs,\nor combine built-in tools, `.lia` plugins, and AI Tools in one place."
+    "excerpt": "Pipelines let you connect analysis steps visually so that the output from one step becomes the input for the next one. Use pipelines when you want to repeat a workflow, avoid manual file handoffs, or combine built-in tools, `.lia` plugins, AI Tools, and saved…",
+    "content": "Pipelines let you connect analysis steps visually so that the output from one\nstep becomes the input for the next one.\n\nUse pipelines when you want to repeat a workflow, avoid manual file handoffs,\nor combine built-in tools, `.lia` plugins, AI Tools, and saved External\nWorkflows in one place."
   },
   {
     "id": "docs:pipeline/overview#what-a-pipeline-contains",
     "sourceKind": "documentation",
     "title": "Pipelines — What a pipeline contains",
     "locator": "Docs / Pipeline / Overview / What a pipeline contains",
-    "excerpt": "What a pipeline contains A pipeline is made of nodes and connections: - **Input nodes** provide starting files or values. - **Tool nodes** run built-in tools, `.lia` plugins, or AI Tools. - **Logic nodes** help control simple branching or conditional behavior…",
-    "content": "What a pipeline contains\nA pipeline is made of nodes and connections:\n\n- **Input nodes** provide starting files or values.\n- **Tool nodes** run built-in tools, `.lia` plugins, or AI Tools.\n- **Logic nodes** help control simple branching or conditional behavior.\n- **Connections** pass compatible outputs into later inputs.\n\nEach node exposes only the inputs that make sense for that tool. File pickers\nare filtered by compatible format whenever possible."
+    "excerpt": "What a pipeline contains A pipeline is made of nodes and connections: - **Input nodes** provide starting files or values. - **Tool nodes** run built-in tools, `.lia` plugins, AI Tools, or saved External Workflows. - **Logic nodes** help control simple branchi…",
+    "content": "What a pipeline contains\nA pipeline is made of nodes and connections:\n\n- **Input nodes** provide starting files or values.\n- **Tool nodes** run built-in tools, `.lia` plugins, AI Tools, or saved External\n  Workflows.\n- **Logic nodes** help control simple branching or conditional behavior.\n- **Connections** pass compatible outputs into later inputs.\n\nEach node exposes only the inputs that make sense for that tool. File pickers\nare filtered by compatible format whenever possible."
   },
   {
     "id": "docs:pipeline/overview#running-a-pipeline",
@@ -645,6 +645,14 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "locator": "Docs / Pipeline / Overview / Running a pipeline",
     "excerpt": "Running a pipeline 1. Open **Pipeline** from the sidebar. 2. Add the tools or plugins you want to use. 3. Connect outputs to compatible inputs. 4. Fill in required fields. 5. Click **Run pipeline**. While a pipeline is running, it is locked to prevent acciden…",
     "content": "Running a pipeline\n1. Open **Pipeline** from the sidebar.\n2. Add the tools or plugins you want to use.\n3. Connect outputs to compatible inputs.\n4. Fill in required fields.\n5. Click **Run pipeline**.\n\nWhile a pipeline is running, it is locked to prevent accidental edits. You can\nstill work in other pipelines and elsewhere in the app."
+  },
+  {
+    "id": "docs:pipeline/overview#starting-from-a-preset",
+    "sourceKind": "documentation",
+    "title": "Pipelines — Starting from a preset",
+    "locator": "Docs / Pipeline / Overview / Starting from a preset",
+    "excerpt": "Starting from a preset The Pipelines page includes small, editable workflows with their artifact handoffs already connected. **Single-cell embedding and preview** asks only for an AnnData file and an installed AI Model, then validates the input, creates an im…",
+    "content": "Starting from a preset\nThe Pipelines page includes small, editable workflows with their artifact\nhandoffs already connected. **Single-cell embedding and preview** asks only for\nan AnnData file and an installed AI Model, then validates the input, creates an\nimmutable embedded AnnData result, opens its bounded preview, and leaves the\nartifact in Data for later nodes."
   },
   {
     "id": "docs:pipeline/overview#jobs-and-results",
@@ -660,7 +668,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Pipelines — Example workflows",
     "locator": "Docs / Pipeline / Overview / Example workflows",
     "excerpt": "Example workflows ### FASTQ quality control 1. Start from FASTQ files in **Data**. 2. Run **FastQC**. 3. Run **fastp** to trim reads. 4. Add trimmed files back to **Data** or pass them to the next step. ### Variant filtering 1. Start from a VCF or BCF file. 2…",
-    "content": "Example workflows\n### FASTQ quality control\n\n1. Start from FASTQ files in **Data**.\n2. Run **FastQC**.\n3. Run **fastp** to trim reads.\n4. Add trimmed files back to **Data** or pass them to the next step.\n\n### Variant filtering\n\n1. Start from a VCF or BCF file.\n2. Run **BCFtools stats** to inspect the callset.\n3. Run **BCFtools filter** with a quality expression.\n4. Review the filtered VCF in **Results**.\n\n### AI-assisted workflows\n\n1. Install a compatible AI Model.\n2. Add an AI Tool to the pipeline.\n3. Select the model inside the tool.\n4. Connect the generated output to viewers, reports, or later tools.\n\nExample AI pipelines:\n\n- `.h5ad` file to [Single-cell Embedding](/ai/tools/single-cell-embedding) to an embedded AnnData artifact and viewer.\n\nRead [Local AI for bioinformatics](/ai/guide) before interpreting AI outputs."
+    "content": "Example workflows\n### FASTQ quality control\n\n1. Start from FASTQ files in **Data**.\n2. Run **FastQC**.\n3. Run **fastp** to trim reads.\n4. Add trimmed files back to **Data** or pass them to the next step.\n\n### Variant filtering\n\n1. Start from a VCF or BCF file.\n2. Run **BCFtools stats** to inspect the callset.\n3. Run **BCFtools filter** with a quality expression.\n4. Review the filtered VCF in **Results**.\n\n### AI-assisted workflows\n\n1. Install a compatible AI Model.\n2. Add an AI Tool to the pipeline.\n3. Select the model inside the tool.\n4. Connect the generated output to viewers, reports, or later tools.\n\nExample AI pipelines:\n\n- `.h5ad` file to [Single-cell Embedding](/ai/tools/single-cell-embedding) to an embedded AnnData artifact and [Single-cell Viewer](/visualization/single-cell-viewer).\n\nRead [Local AI for bioinformatics](/ai/guide) before interpreting AI outputs.\n\n### External workflow integration\n\nA saved [External Workflow](/tools/external-workflows) appears as a reusable\npipeline node. Its declared files and parameters become node inputs, and only\nits exact declared outputs are available to downstream nodes. The external\nengine keeps ownership of its internal scheduling while Liatir keeps the parent\nPipeline Run, Job, Result and cross-tool provenance."
   },
   {
     "id": "docs:pipeline/overview#saving-and-reusing-workflows",
@@ -1655,6 +1663,54 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "content": "How to read the result\nThe SAM file is usually an intermediate file. For real workflows, you normally\nconvert, sort, and index it with Samtools before downstream analysis.\n\nCheck logs for indexing or reference errors. If the run is very slow, increase\nthreads when your machine has enough CPU cores."
   },
   {
+    "id": "docs:tools/external-workflows",
+    "sourceKind": "documentation",
+    "title": "External Workflows",
+    "locator": "Docs / Tools / External Workflows",
+    "excerpt": "External Workflows let you run a saved workflow engine project from Liatir and reuse the same definition as one step in a larger Liatir pipeline. Nextflow is the first supported engine. Liatir does not replace Nextflow or edit its DSL. Nextflow still owns its…",
+    "content": "External Workflows let you run a saved workflow engine project from Liatir and\nreuse the same definition as one step in a larger Liatir pipeline. Nextflow is\nthe first supported engine.\n\nLiatir does not replace Nextflow or edit its DSL. Nextflow still owns its\nprocess scheduling, executors, cache and internal parallelism. Liatir provides\nthe common inputs, Jobs, Results, provenance and output handoff around it."
+  },
+  {
+    "id": "docs:tools/external-workflows#requirements",
+    "sourceKind": "documentation",
+    "title": "External Workflows — Requirements",
+    "locator": "Docs / Tools / External Workflows / Requirements",
+    "excerpt": "Requirements Install [Nextflow](https://docs.seqera.io/nextflow/install) and a compatible Java runtime on a supported execution host. Nextflow runs on POSIX systems and uses WSL on Windows. Both `nextflow` and `java` must be available on `PATH`; Liatir checks…",
+    "content": "Requirements\nInstall [Nextflow](https://docs.seqera.io/nextflow/install) and a compatible\nJava runtime on a supported execution host. Nextflow runs on POSIX systems and\nuses WSL on Windows. Both `nextflow` and `java` must be available on `PATH`;\nLiatir checks them before a run.\n\nThis first Liatir adapter is currently verified on macOS arm64. Linux and the\nnative Windows-to-WSL path will be listed as supported only after their native\nproduct gates pass.\n\nThe first release does not install Nextflow, configure HPC or cloud executors,\nor download workflow dependencies for you. Local workflows can run without a\nnetwork connection when their own dependencies are already available. A\nrepository source may need network access unless Nextflow has cached it."
+  },
+  {
+    "id": "docs:tools/external-workflows#save-a-workflow",
+    "sourceKind": "documentation",
+    "title": "External Workflows — Save a workflow",
+    "locator": "Docs / Tools / External Workflows / Save a workflow",
+    "excerpt": "Save a workflow 1. Open **Tools → External Workflows** and choose **New workflow**. 2. Select a local Nextflow script, or enter a repository with a fixed tag or commit. Moving branch names such as `main` are not accepted. 3. Describe the parameters and file i…",
+    "content": "Save a workflow\n1. Open **Tools → External Workflows** and choose **New workflow**.\n2. Select a local Nextflow script, or enter a repository with a fixed tag or\n   commit. Moving branch names such as `main` are not accepted.\n3. Describe the parameters and file inputs that users should fill in.\n4. Declare every output with its exact path below the workflow output folder.\n5. Save the definition.\n\nWildcard output paths are intentionally unsupported. Only files explicitly\ndeclared in the saved definition become Liatir outputs."
+  },
+  {
+    "id": "docs:tools/external-workflows#run-it-directly",
+    "sourceKind": "documentation",
+    "title": "External Workflows — Run it directly",
+    "locator": "Docs / Tools / External Workflows / Run it directly",
+    "excerpt": "Run it directly Open the saved definition, choose its inputs and parameters, then select **Run workflow**. The run receives its own Job and Result. Liatir copies the source, configuration and inputs into an isolated run folder; it does not modify the original…",
+    "content": "Run it directly\nOpen the saved definition, choose its inputs and parameters, then select\n**Run workflow**. The run receives its own Job and Result. Liatir copies the\nsource, configuration and inputs into an isolated run folder; it does not\nmodify the originals.\n\nThe Result includes the declared files plus the Nextflow and Java versions,\ncommand, source revision, parameters, profile, configuration digest, task\nstates, logs, trace, report, timeline and exit status. Declared files can be\nadded to **Data** and reused without searching the Nextflow work directory."
+  },
+  {
+    "id": "docs:tools/external-workflows#use-it-in-a-pipeline",
+    "sourceKind": "documentation",
+    "title": "External Workflows — Use it in a pipeline",
+    "locator": "Docs / Tools / External Workflows / Use it in a pipeline",
+    "excerpt": "Use it in a pipeline Saved definitions appear in the pipeline palette under **External Workflows**. Adding one creates a reference to the same definition rather than a copy. Its declared inputs and outputs behave like the fields of other Liatir nodes, so an o…",
+    "content": "Use it in a pipeline\nSaved definitions appear in the pipeline palette under **External Workflows**.\nAdding one creates a reference to the same definition rather than a copy. Its\ndeclared inputs and outputs behave like the fields of other Liatir nodes, so an\noutput can feed a built-in tool, Native Tool, `.lia` Plugin, AI Tool, viewer or\nanother External Workflow.\n\nA nested run keeps the parent Pipeline Run identity while using the same\nNextflow adapter and output rules as a direct run. Nextflow process tasks appear\ninside the workflow Job instead of becoming unrelated top-level Jobs."
+  },
+  {
+    "id": "docs:tools/external-workflows#cancellation-and-resume",
+    "sourceKind": "documentation",
+    "title": "External Workflows — Cancellation and resume",
+    "locator": "Docs / Tools / External Workflows / Cancellation and resume",
+    "excerpt": "Cancellation and resume Cancelling a run stops only that External Workflow Job. Failed and cancelled runs keep their available logs and provenance in Results. Nextflow resume is available as an explicit expert option for a compatible past run. Liatir does not…",
+    "content": "Cancellation and resume\nCancelling a run stops only that External Workflow Job. Failed and cancelled\nruns keep their available logs and provenance in Results.\n\nNextflow resume is available as an explicit expert option for a compatible past\nrun. Liatir does not claim ownership of Nextflow cache semantics, and it will\nnot resume against a changed workflow definition or source revision."
+  },
+  {
     "id": "docs:tools/fastp",
     "sourceKind": "documentation",
     "title": "fastp",
@@ -1803,8 +1859,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Tools",
     "locator": "Docs / Tools / Overview",
-    "excerpt": "Liatir offers three kinds of analysis step: **built-in tools** that work out of the box, **native tools** that use programs installed on your machine, and **AI Tools** that use local AI Models. They all share the same layout, run history, and results view, an…",
-    "content": "Liatir offers three kinds of analysis step: **built-in tools** that work out of\nthe box, **native tools** that use programs installed on your machine, and\n**AI Tools** that use local AI Models.\n\nThey all share the same layout, run history, and results view, and they can be\nmixed freely in a pipeline whenever their inputs and outputs match."
+    "excerpt": "Liatir offers four kinds of analysis step: **built-in tools** that work out of the box, **native tools** that use programs installed on your machine, **AI Tools** that use local AI Models, and **External Workflows** that run saved engine projects such as Next…",
+    "content": "Liatir offers four kinds of analysis step: **built-in tools** that work out of\nthe box, **native tools** that use programs installed on your machine,\n**AI Tools** that use local AI Models, and **External Workflows** that run saved\nengine projects such as Nextflow.\n\nThey all share the same layout, run history, and results view, and they can be\nmixed freely in a pipeline whenever their inputs and outputs match."
   },
   {
     "id": "docs:tools/overview#built-in-tools",
@@ -1831,20 +1887,28 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "content": "AI Tools\nAI Tools are documented separately because interpreting their results requires\nmodel-specific context.\n\n| AI Tool | Description |\n| --- | --- |\n| [Single-cell Embedding](/ai/tools/single-cell-embedding) | Foundation-model cell embeddings from `.h5ad` inputs |\n\nStart with [Local AI for bioinformatics](/ai/guide) if you are new to these\noutputs."
   },
   {
+    "id": "docs:tools/overview#external-workflows",
+    "sourceKind": "documentation",
+    "title": "Tools — External Workflows",
+    "locator": "Docs / Tools / Overview / External Workflows",
+    "excerpt": "External Workflows External Workflows can run on their own or as one reusable node in a Liatir pipeline. The first adapter uses a system-installed Nextflow and Java runtime. | Engine | Description | | --- | --- | | [Nextflow](/tools/external-workflows) | Save…",
+    "content": "External Workflows\nExternal Workflows can run on their own or as one reusable node in a Liatir\npipeline. The first adapter uses a system-installed Nextflow and Java runtime.\n\n| Engine | Description |\n| --- | --- |\n| [Nextflow](/tools/external-workflows) | Saved local or revision-pinned workflows with declared inputs, exact outputs and engine provenance |"
+  },
+  {
     "id": "docs:tools/overview#scientific-viewers",
     "sourceKind": "documentation",
     "title": "Tools — Scientific viewers",
     "locator": "Docs / Tools / Overview / Scientific viewers",
     "excerpt": "Scientific viewers Viewers inspect output artifacts produced by tools and pipelines. | Viewer | Description | | --- | --- | | [3D Structure Viewer](/visualization/structure-viewer) | PDB/mmCIF/CIF structure inspection | | [Genome Track Viewer](/visualization/…",
-    "content": "Scientific viewers\nViewers inspect output artifacts produced by tools and pipelines.\n\n| Viewer | Description |\n| --- | --- |\n| [3D Structure Viewer](/visualization/structure-viewer) | PDB/mmCIF/CIF structure inspection |\n| [Genome Track Viewer](/visualization/genome-track-viewer) | BED and genome-track inspection |\n| [Single-cell Viewer](/visualization/single-cell-viewer) | single-cell labels and preview artifacts |"
+    "content": "Scientific viewers\nViewers inspect output artifacts produced by tools and pipelines.\n\n| Viewer | Description |\n| --- | --- |\n| [3D Structure Viewer](/visualization/structure-viewer) | PDB/mmCIF/CIF structure inspection |\n| [Genome Track Viewer](/visualization/genome-track-viewer) | BED and genome-track inspection |\n| [Single-cell Viewer](/visualization/single-cell-viewer) | profiled AnnData and bounded embedding previews |"
   },
   {
     "id": "docs:tools/overview#common-ui-pattern",
     "sourceKind": "documentation",
     "title": "Tools — Common UI pattern",
     "locator": "Docs / Tools / Overview / Common UI pattern",
-    "excerpt": "Common UI pattern Every tool page follows the same layout: 1. **Dependency check** — if a native binary is missing, Liatir shows installation instructions. 2. **Input form** — file pickers pre-filtered by compatible extension, plus any tool-specific options.…",
-    "content": "Common UI pattern\nEvery tool page follows the same layout:\n\n1. **Dependency check** — if a native binary is missing, Liatir shows installation instructions.\n2. **Input form** — file pickers pre-filtered by compatible extension, plus any tool-specific options.\n3. **Run button** — starts the analysis and streams progress or logs when available.\n4. **Results panel** — shows parsed stats, tables, text output, charts, and generated files.\n5. **Run history sidebar** — all past runs for this tool, selectable to re-display their results."
+    "excerpt": "Common UI pattern Every tool page follows the same layout: 1. **Dependency check** — if a required native binary or workflow engine is missing, Liatir explains what is needed. 2. **Input form** — file pickers pre-filtered by compatible extension, plus any too…",
+    "content": "Common UI pattern\nEvery tool page follows the same layout:\n\n1. **Dependency check** — if a required native binary or workflow engine is missing, Liatir explains what is needed.\n2. **Input form** — file pickers pre-filtered by compatible extension, plus any tool-specific options.\n3. **Run button** — starts the analysis and streams progress or logs when available.\n4. **Results panel** — shows parsed stats, tables, text output, charts, and generated files.\n5. **Run history sidebar** — all past runs for this tool, selectable to re-display their results."
   },
   {
     "id": "docs:tools/overview#result-views",
@@ -1875,8 +1939,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Tools — Pipeline integration",
     "locator": "Docs / Tools / Overview / Pipeline integration",
-    "excerpt": "Pipeline integration Tools expose compatible inputs and outputs to the pipeline builder. This allows an output file from one step to be connected to a compatible input in the next step. See [Pipeline Overview](/pipeline/overview) for details.",
-    "content": "Pipeline integration\nTools expose compatible inputs and outputs to the pipeline builder. This allows\nan output file from one step to be connected to a compatible input in the next\nstep. See [Pipeline Overview](/pipeline/overview) for details."
+    "excerpt": "Pipeline integration Tools and saved External Workflows expose compatible inputs and outputs to the pipeline builder. This allows an output file from one step to be connected to a compatible input in the next step. See [Pipeline Overview](/pipeline/overview)…",
+    "content": "Pipeline integration\nTools and saved External Workflows expose compatible inputs and outputs to the\npipeline builder. This allows an output file from one step to be connected to a\ncompatible input in the next step. See [Pipeline Overview](/pipeline/overview)\nfor details."
   },
   {
     "id": "docs:tools/samtools-faidx",
@@ -2132,7 +2196,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Scientific Viewers — Viewer types",
     "locator": "Docs / Visualization / Overview / Viewer types",
     "excerpt": "Viewer types | Viewer | Use it for | Typical input | | --- | --- | --- | | [3D Structure Viewer](/visualization/structure-viewer) | protein structure inspection | PDB, mmCIF, CIF | | [Genome Track Viewer](/visualization/genome-track-viewer) | genome interval…",
-    "content": "Viewer types\n| Viewer | Use it for | Typical input |\n| --- | --- | --- |\n| [3D Structure Viewer](/visualization/structure-viewer) | protein structure inspection | PDB, mmCIF, CIF |\n| [Genome Track Viewer](/visualization/genome-track-viewer) | genome interval or score tracks | FASTA plus BED/GFF/VCF-like tracks |\n| [Single-cell Viewer](/visualization/single-cell-viewer) | single-cell labels or embeddings | CSV/JSON/AnnData-derived artifacts |\n\nSome viewers download what they need the first time you use them, so the base\napp stays small."
+    "content": "Viewer types\n| Viewer | Use it for | Typical input |\n| --- | --- | --- |\n| [3D Structure Viewer](/visualization/structure-viewer) | protein structure inspection | PDB, mmCIF, CIF |\n| [Genome Track Viewer](/visualization/genome-track-viewer) | genome interval or score tracks | FASTA plus BED/GFF/VCF-like tracks |\n| [Single-cell Viewer](/visualization/single-cell-viewer) | validated single-cell embeddings | profiled AnnData plus an optional bounded preview CSV |\n\nSome viewers download what they need the first time you use them, so the base\napp stays small."
   },
   {
     "id": "docs:visualization/overview#screenshots-and-fullscreen",
@@ -2155,32 +2219,32 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Single-cell Viewer",
     "locator": "Docs / Visualization / Single Cell Viewer",
-    "excerpt": "The Single-cell Viewer is the lightweight single-cell result preview currently used by Liatir.",
-    "content": "The Single-cell Viewer is the lightweight single-cell result preview currently\nused by Liatir."
+    "excerpt": "The Single-cell Viewer opens a profiled AnnData artifact together with the bounded preview produced by Single-cell Embedding.",
+    "content": "The Single-cell Viewer opens a profiled AnnData artifact together with the\nbounded preview produced by Single-cell Embedding."
   },
   {
     "id": "docs:visualization/single-cell-viewer#use-it-for",
     "sourceKind": "documentation",
     "title": "Single-cell Viewer — Use it for",
     "locator": "Docs / Visualization / Single Cell Viewer / Use it for",
-    "excerpt": "Use it for - inspecting single-cell embedding previews; - checking single-cell output artifacts before deeper visualization; - getting a quick look before richer interactive views.",
-    "content": "Use it for\n- inspecting single-cell embedding previews;\n- checking single-cell output artifacts before deeper visualization;\n- getting a quick look before richer interactive views."
+    "excerpt": "Use it for - confirming that an embedded AnnData result is valid and reusable; - inspecting the bounded two-dimensional PCA preview produced with the result; - checking cell count, embedding key, dimensions, and validation state.",
+    "content": "Use it for\n- confirming that an embedded AnnData result is valid and reusable;\n- inspecting the bounded two-dimensional PCA preview produced with the result;\n- checking cell count, embedding key, dimensions, and validation state."
   },
   {
     "id": "docs:visualization/single-cell-viewer#inputs",
     "sourceKind": "documentation",
     "title": "Single-cell Viewer — Inputs",
     "locator": "Docs / Visualization / Single Cell Viewer / Inputs",
-    "excerpt": "Inputs - Single-cell artifact generated by a tool. - Optional label column.",
-    "content": "Inputs\n- Single-cell artifact generated by a tool.\n- Optional label column."
+    "excerpt": "Inputs - A profiled AnnData `.h5ad` artifact. - Optionally, the embedding preview CSV produced by Single-cell Embedding. - Optionally, the `obsm` embedding key when it is not already in artifact metadata.",
+    "content": "Inputs\n- A profiled AnnData `.h5ad` artifact.\n- Optionally, the embedding preview CSV produced by Single-cell Embedding.\n- Optionally, the `obsm` embedding key when it is not already in artifact metadata."
   },
   {
     "id": "docs:visualization/single-cell-viewer#how-to-read-the-result",
     "sourceKind": "documentation",
     "title": "Single-cell Viewer — How to read the result",
     "locator": "Docs / Visualization / Single Cell Viewer / How to read the result",
-    "excerpt": "How to read the result Start with cell counts, embedding dimensions, and obvious outliers. If a result looks unexpected, check input preprocessing, gene identifiers, and species. This viewer is a practical preview. Full interactive single-cell and spatial vis…",
-    "content": "How to read the result\nStart with cell counts, embedding dimensions, and obvious outliers. If a result\nlooks unexpected, check input preprocessing, gene identifiers, and species.\n\nThis viewer is a practical preview. Full interactive single-cell and spatial\nvisualization is planned."
+    "excerpt": "How to read the result Start with cell count, embedding key, validation state, and obvious outliers. The displayed PCA is calculated only from the bounded preview rows; it is not a whole-dataset UMAP, clustering, or cell-type annotation. The full embedding ma…",
+    "content": "How to read the result\nStart with cell count, embedding key, validation state, and obvious outliers.\nThe displayed PCA is calculated only from the bounded preview rows; it is not a\nwhole-dataset UMAP, clustering, or cell-type annotation. The full embedding\nmatrix remains in the AnnData artifact.\n\nIf a result looks unexpected, inspect input preprocessing, gene identifiers,\nspecies, model provenance, and warnings in Results."
   },
   {
     "id": "docs:visualization/single-cell-viewer#related-tools",

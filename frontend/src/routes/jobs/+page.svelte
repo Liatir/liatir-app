@@ -56,7 +56,10 @@
 
 	function pipelineJobName(job: JobEntry): string | null {
 		const metadata = job.metadata ?? {};
-		if (metadata.runKind !== 'pipeline-step') return null;
+		const execution = metadata.execution && typeof metadata.execution === 'object' && !Array.isArray(metadata.execution)
+			? metadata.execution as Record<string, unknown>
+			: null;
+		if (metadata.runKind !== 'pipeline-step' && typeof execution?.pipelineRunId !== 'string') return null;
 		return typeof metadata.pipelineName === 'string' ? metadata.pipelineName : 'Pipeline';
 	}
 

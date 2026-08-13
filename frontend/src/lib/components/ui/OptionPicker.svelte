@@ -8,6 +8,8 @@
     sublabel?: string;
     badge?: string;
     meta?: string;
+    disabled?: boolean;
+    reason?: string;
   }
 
   export interface PickerGroup {
@@ -66,9 +68,10 @@
   });
 
   const filteredCount = $derived(filteredGroups.reduce((n, g) => n + g.items.length, 0));
-  const firstResult = $derived(filteredGroups[0]?.items[0] ?? null);
+  const firstResult = $derived(filteredGroups.flatMap(group => group.items).find(item => !item.disabled) ?? null);
 
   function pick(val: string) {
+    if (allItems.find(item => item.value === val)?.disabled) return;
     onchange(val);
     open = false;
     query = '';
@@ -115,6 +118,9 @@
           <span class="block text-sm font-medium text-brand truncate">{selected.label}</span>
           {#if selected.sublabel}
             <span class="block text-[11px] text-text-subtle truncate">{selected.sublabel}</span>
+          {/if}
+          {#if selected.meta}
+            <span class="block text-[10px] text-text-subtle truncate">{selected.meta}</span>
           {/if}
         </span>
         {#if selected.badge}
@@ -195,14 +201,18 @@
             {@const sel = item.value === value}
             <button
               type="button"
+              disabled={item.disabled}
               onclick={() => pick(item.value)}
               class="w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors
-                     {sel ? 'bg-brand/8' : 'hover:bg-surface-2'}"
+                     {item.disabled ? 'opacity-50 cursor-not-allowed' : sel ? 'bg-brand/8' : 'hover:bg-surface-2'}"
             >
               <span class="flex-1 min-w-0">
                 <span class="block text-sm font-medium truncate {sel ? 'text-brand' : 'text-text'}">{item.label}</span>
                 {#if item.sublabel}
                   <span class="block text-[11px] text-text-subtle truncate">{item.sublabel}</span>
+                {/if}
+                {#if item.reason}
+                  <span class="block text-[10px] {item.disabled ? 'text-red-600' : 'text-text-subtle'} leading-snug">{item.reason}</span>
                 {/if}
               </span>
               <div class="shrink-0 flex items-center gap-1.5">

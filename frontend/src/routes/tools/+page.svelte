@@ -139,7 +139,7 @@
     {
       id: 'viewer-single-cell',
       label: 'Single-cell Viewer',
-      description: 'Inspect CellTypist labels and single-cell summary artifacts, with a Vitessce-ready viewer contract.',
+      description: 'Inspect AnnData embeddings, bounded preview CSVs, and single-cell label summaries.',
       href: '/tools/visualization/single-cell',
       status: 'available',
       tags: ['h5ad', 'CSV', 'Vitessce'],
@@ -147,12 +147,12 @@
     },
     {
       id: 'nextflow',
-      label: 'Nextflow',
-      description: 'Run Nextflow pipelines with your system-installed Nextflow.',
-      href: '/tools/pipelines/nextflow',
-      status: 'soon',
-      tags: ['Pipeline', 'DSL2'],
-      category: 'Pipelines',
+      label: 'External Workflows',
+      description: 'Save and run Nextflow workflows directly or reuse the same definition in a Liatir pipeline.',
+      href: '/tools/external-workflows',
+      status: 'available',
+      tags: ['Nextflow', 'DSL2', 'Local-first'],
+      category: 'External Workflows',
     },
     {
       id: 'snakemake',

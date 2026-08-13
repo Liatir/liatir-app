@@ -1,8 +1,9 @@
 # Tools
 
-Liatir offers three kinds of analysis step: **built-in tools** that work out of
-the box, **native tools** that use programs installed on your machine, and
-**AI Tools** that use local AI Models.
+Liatir offers four kinds of analysis step: **built-in tools** that work out of
+the box, **native tools** that use programs installed on your machine,
+**AI Tools** that use local AI Models, and **External Workflows** that run saved
+engine projects such as Nextflow.
 
 They all share the same layout, run history, and results view, and they can be
 mixed freely in a pipeline whenever their inputs and outputs match.
@@ -46,6 +47,15 @@ model-specific context.
 Start with [Local AI for bioinformatics](/ai/guide) if you are new to these
 outputs.
 
+## External Workflows
+
+External Workflows can run on their own or as one reusable node in a Liatir
+pipeline. The first adapter uses a system-installed Nextflow and Java runtime.
+
+| Engine | Description |
+| --- | --- |
+| [Nextflow](/tools/external-workflows) | Saved local or revision-pinned workflows with declared inputs, exact outputs and engine provenance |
+
 ## Scientific viewers
 
 Viewers inspect output artifacts produced by tools and pipelines.
@@ -54,13 +64,13 @@ Viewers inspect output artifacts produced by tools and pipelines.
 | --- | --- |
 | [3D Structure Viewer](/visualization/structure-viewer) | PDB/mmCIF/CIF structure inspection |
 | [Genome Track Viewer](/visualization/genome-track-viewer) | BED and genome-track inspection |
-| [Single-cell Viewer](/visualization/single-cell-viewer) | single-cell labels and preview artifacts |
+| [Single-cell Viewer](/visualization/single-cell-viewer) | profiled AnnData and bounded embedding previews |
 
 ## Common UI pattern
 
 Every tool page follows the same layout:
 
-1. **Dependency check** — if a native binary is missing, Liatir shows installation instructions.
+1. **Dependency check** — if a required native binary or workflow engine is missing, Liatir explains what is needed.
 2. **Input form** — file pickers pre-filtered by compatible extension, plus any tool-specific options.
 3. **Run button** — starts the analysis and streams progress or logs when available.
 4. **Results panel** — shows parsed stats, tables, text output, charts, and generated files.
@@ -95,6 +105,7 @@ re-renders its output without re-running the tool. Run records include:
 
 ## Pipeline integration
 
-Tools expose compatible inputs and outputs to the pipeline builder. This allows
-an output file from one step to be connected to a compatible input in the next
-step. See [Pipeline Overview](/pipeline/overview) for details.
+Tools and saved External Workflows expose compatible inputs and outputs to the
+pipeline builder. This allows an output file from one step to be connected to a
+compatible input in the next step. See [Pipeline Overview](/pipeline/overview)
+for details.

@@ -17,6 +17,7 @@ import { dataFiles } from './dataFiles.svelte';
 import { analysisRuns } from './analysisRuns.svelte';
 import { liaPluginsStore } from './lia-plugins.svelte';
 import { executionRuns } from './executionRuns.svelte';
+import { externalWorkflowsStore } from './externalWorkflows.svelte';
 import { reconcileExecutionResults } from '$lib/execution/finalization';
 
 setResetFn((scope) => {
@@ -39,6 +40,7 @@ setResetFn((scope) => {
   dataFiles.reset();
   analysisRuns.reset();
   liaPluginsStore.reset();
+  externalWorkflowsStore.reset();
 });
 
 // Same injection pattern: a brand-new workspace is seeded with demo files, but the workspace store

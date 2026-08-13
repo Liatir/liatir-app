@@ -19,5 +19,6 @@ export * from "./modules/rs/globalVariables/_types";
 export * from "./modules/desktop/_types";
 export * from "./modules/rs/jobs/_types";
 export * from "./modules/rs/deps/_types";
+export * from "./modules/rs/externalWorkflows/_types";
 export * from "./modules/qc/_types";
 export * from "./modules/qc/fastqc/_types";

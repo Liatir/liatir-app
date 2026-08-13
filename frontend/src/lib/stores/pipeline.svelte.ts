@@ -21,24 +21,31 @@ import type {
 import { isExecutablePipelineNode } from '$lib/types/pipeline';
 import type { AIPipelineRunContext } from '$lib/ai/direct-run-context';
 import {
+  LIATIR_EXTERNAL_WORKFLOW_STEP_PREFIX,
   createLiatirChildExecutionIdentity,
+  createLiatirNestedExternalWorkflowRunIdentity,
   createLiatirRootExecutionIdentity,
   isLiatirExecutionTerminalStatus,
   type JsonValue,
   type LiatirExecutionIdentity,
   type LiatirExecutionRunKind,
 } from '@liatir/core';
+import { externalWorkflowsStore } from './externalWorkflows.svelte';
 import { createAsyncStoreInitializer } from './async-store-initializer';
 import {
   isRunCancelled,
   PIPELINE_CANCELLED_MESSAGE,
   throwIfRunCancelled,
 } from '$lib/pipeline/cancellation';
+import { ExternalWorkflowRunError } from '$lib/external-workflows/nextflow';
 
 interface PipelineStepRecord {
   label: string;
   output?: ToolOutput;
   files: RunOutputFile[];
+  nodeId?: string;
+  executionRunId?: string;
+  executionEvidence?: Record<string, JsonValue>;
 }
 
 interface ApiStepResult {
@@ -239,13 +246,24 @@ function executionKindForStep(type: PipelineStepDefinition['type']): LiatirExecu
   if (type === 'ai-tool') return 'ai-tool';
   if (type === 'api-request') return 'api-request';
   if (type === 'lia-plugin' || type === 'wasm-plugin') return 'lia-plugin';
+  if (type === 'external-workflow') return 'external-workflow';
   return 'pipeline-step';
+}
+
+function executionEntityIdForStep(definition: PipelineStepDefinition): string {
+  if (
+    definition.type === 'external-workflow'
+    && definition.id.startsWith(LIATIR_EXTERNAL_WORKFLOW_STEP_PREFIX)
+  ) {
+    return definition.id.slice(LIATIR_EXTERNAL_WORKFLOW_STEP_PREFIX.length);
+  }
+  return definition.id;
 }
 
 async function beginPipelineChild(
   parent: LiatirExecutionIdentity,
   input: {
-    runKind: Exclude<LiatirExecutionRunKind, 'pipeline' | 'external-workflow'>;
+    runKind: Exclude<LiatirExecutionRunKind, 'pipeline'>;
     nodeId: string;
     entityId: string;
     label: string;
@@ -253,12 +271,18 @@ async function beginPipelineChild(
     params?: JsonValue;
   },
 ): Promise<LiatirExecutionIdentity> {
-  const identity = createLiatirChildExecutionIdentity(parent, {
-    runId: crypto.randomUUID(),
-    runKind: input.runKind,
-    nodeId: input.nodeId,
-    entityId: input.entityId,
-  });
+  const identity = input.runKind === 'external-workflow'
+    ? createLiatirNestedExternalWorkflowRunIdentity(parent, {
+        runId: crypto.randomUUID(),
+        nodeId: input.nodeId,
+        entityId: input.entityId,
+      })
+    : createLiatirChildExecutionIdentity(parent, {
+        runId: crypto.randomUUID(),
+        runKind: input.runKind,
+        nodeId: input.nodeId,
+        entityId: input.entityId,
+      });
   await executionRuns.begin({
     identity,
     label: input.label,
@@ -319,7 +343,8 @@ function resolveRef(
   const srcNode = nodes.find(n => n.id === srcNodeId);
   const srcDef = resolveStepEntry((srcNode?.data?.stepId as string) ?? '')?.definition;
   const label = srcDef?.outputSchema[outKey]?.label ?? (outKey === 'responseBody' ? 'Response Body' : outKey);
-  const outFile = srcState.outputFiles.find(f => f.label === label);
+  const outFile = srcState.outputFiles.find(f => f.fieldKey === outKey)
+    ?? srcState.outputFiles.find(f => f.label === label);
   return outFile ? outFile.path : '';
 }
 
@@ -516,7 +541,7 @@ function createPipelineStore() {
     await dataFiles.createFolder(virtualFolder);
     for (const file of files) {
       await api.invoke('lia_file_size', { path: file.path });
-      await dataFiles.add(file.path, virtualFolder);
+      await dataFiles.add(file.path, virtualFolder, file.scientific);
     }
   }
 
@@ -659,9 +684,9 @@ function createPipelineStore() {
           inputsWithDefaults(entry.definition, node.data?.inputs as Record<string, string> ?? {})
         );
         const childIdentity = await beginPipelineChild(parentContext.execution, {
-          runKind: executionKindForStep(entry.definition.type) as Exclude<LiatirExecutionRunKind, 'pipeline' | 'external-workflow'>,
+          runKind: executionKindForStep(entry.definition.type) as Exclude<LiatirExecutionRunKind, 'pipeline'>,
           nodeId: nestedNodeId,
-          entityId: entry.definition.id,
+          entityId: executionEntityIdForStep(entry.definition),
           label: nodeDisplayLabel(node, entry.definition.label),
           inputs: Object.values(resolved),
           params: resolved,
@@ -714,6 +739,11 @@ function createPipelineStore() {
           });
           await registerSettledFiles(outputFiles, virtualFolder);
           throwIfRunCancelled(parentContext.signal);
+          if (result.executionEvidence) {
+            await executionRuns.setPayload(childIdentity.runId, {
+              params: { ...resolved, ...result.executionEvidence },
+            });
+          }
           patch({
             status: 'done',
             logs,
@@ -724,9 +754,16 @@ function createPipelineStore() {
           allOutputFiles.push(...outputFiles);
         } catch (e) {
           const cancelled = isRunCancelled(e, parentContext.signal);
+          const failedResult = e instanceof ExternalWorkflowRunError ? e.result : null;
+          if (failedResult?.executionEvidence) {
+            await executionRuns.setPayload(childIdentity.runId, {
+              params: { ...resolved, ...failedResult.executionEvidence },
+            });
+          }
           patch({
             status: cancelled ? 'cancelled' : 'error',
             logs,
+            outputFiles: failedResult?.outputFiles ?? [],
             error: cancelled ? PIPELINE_CANCELLED_MESSAGE : errorMessage(e),
           });
           await executionRuns.finish(
@@ -931,6 +968,8 @@ function createPipelineStore() {
       await initializer.run(async (isCurrent) => {
         const api = liatir();
         if (!api) return;
+        await externalWorkflowsStore.init();
+        if (!isCurrent()) return;
         try {
           if (await appStorage.exists(getFile())) {
             const raw = await appStorage.readText(getFile());
@@ -1049,6 +1088,37 @@ function createPipelineStore() {
       schedulePersist();
     },
 
+    async createPipeline(name: string, nodes: Node[], edges: Edge[]): Promise<SavedPipeline> {
+      const baseName = name.trim() || 'Untitled Pipeline';
+      let uniqueName = baseName;
+      let suffix = 2;
+      while (savedPipelines.some((pipeline) => pipeline.name === uniqueName)) {
+        uniqueName = `${baseName} (${suffix})`;
+        suffix += 1;
+      }
+      const pipeline: SavedPipeline = {
+        id: crypto.randomUUID(),
+        name: uniqueName,
+        nodes: JSON.parse(JSON.stringify(nodes)),
+        edges: JSON.parse(JSON.stringify(edges)),
+        updatedAt: Date.now(),
+      };
+      savedPipelines = [pipeline, ...savedPipelines];
+      currentNodes = JSON.parse(JSON.stringify(pipeline.nodes));
+      currentEdges = JSON.parse(JSON.stringify(pipeline.edges));
+      pipelineName = pipeline.name;
+      pipelineId = pipeline.id;
+      runtimeFor(runtimeKeyFor(pipeline.id), pipeline.id, pipeline.name);
+      pendingLoad = {
+        nodes: currentNodes,
+        edges: currentEdges,
+        name: pipeline.name,
+        id: pipeline.id,
+      };
+      await persist();
+      return pipeline;
+    },
+
     async deleteSavedPipeline(id: string) {
       savedPipelines = savedPipelines.filter(p => p.id !== id);
       await persist();
@@ -1129,6 +1199,7 @@ function createPipelineStore() {
         dataFiles.init(),
         apiConnections.init(),
         liaPluginsStore.init(),
+        externalWorkflowsStore.init(),
       ]);
 
       const fresh = new Map<string, NodeRunState>();
@@ -1214,11 +1285,13 @@ function createPipelineStore() {
             : null;
           const childIdentity = await beginPipelineChild(rootIdentity, {
             runKind: node.type === 'tool' && stepEntry
-              ? executionKindForStep(stepEntry.definition.type) as Exclude<LiatirExecutionRunKind, 'pipeline' | 'external-workflow'>
+              ? executionKindForStep(stepEntry.definition.type) as Exclude<LiatirExecutionRunKind, 'pipeline'>
               : node.type === 'api-request' ? 'api-request' : 'pipeline-step',
             nodeId,
             entityId: node.type === 'tool'
-              ? String(node.data?.stepId ?? 'unknown-tool')
+              ? stepEntry
+                ? executionEntityIdForStep(stepEntry.definition)
+                : String(node.data?.stepId ?? 'unknown-tool')
               : node.type === 'api-request'
                 ? String(node.data?.requestId ?? 'missing-request')
                 : String(node.type ?? 'pipeline-step'),
@@ -1246,6 +1319,11 @@ function createPipelineStore() {
             states(),
             inputsWithDefaults(entry.definition, node.data?.inputs as Record<string, string> ?? {})
           );
+          await executionRuns.setPayload(childIdentity.runId, {
+            inputs: Object.values(resolved),
+            params: resolved,
+          });
+          const stepStartedAt = executionRuns.byId(childIdentity.runId)?.startedAt ?? Date.now();
           const logs: string[] = [];
           try {
             const result = await entry.run(resolved, outputDir, (line) => {
@@ -1253,7 +1331,7 @@ function createPipelineStore() {
               patchRunState(nodeId, { logs: [...logs] });
               recordExecutionLog(childIdentity, line);
               recordExecutionLog(rootIdentity, line);
-            }, pipelineStepContext(childIdentity, nodeId, entry.definition, nodeLabel, resolved, outputDir, pipeStartedAt));
+            }, pipelineStepContext(childIdentity, nodeId, entry.definition, nodeLabel, resolved, outputDir, stepStartedAt));
             const outputFiles = withArtifactsMetadata(result.outputFiles, {
               role: 'final',
               createdAt: Date.now(),
@@ -1275,6 +1353,11 @@ function createPipelineStore() {
             });
             await registerSettledFiles(outputFiles, virtualFolder);
             throwIfRunCancelled(controller.signal);
+            if (result.executionEvidence) {
+              await executionRuns.setPayload(childIdentity.runId, {
+                params: { ...resolved, ...result.executionEvidence },
+              });
+            }
             patchRunState(nodeId, {
               status: 'done',
               logs,
@@ -1283,14 +1366,35 @@ function createPipelineStore() {
               outputValues: outputsToValues(result.metrics, result.values),
             });
             await executionRuns.finish(childIdentity.runId, 'done');
-            pipeSteps.push({ label: nodeLabel, output: result.output, files: outputFiles });
+            pipeSteps.push({
+              label: nodeLabel,
+              output: result.output,
+              files: outputFiles,
+              nodeId,
+              executionRunId: childIdentity.runId,
+              executionEvidence: result.executionEvidence,
+            });
           } catch (e) {
             const cancelled = isRunCancelled(e, controller.signal);
+            const failedResult = e instanceof ExternalWorkflowRunError ? e.result : null;
+            if (failedResult?.executionEvidence) {
+              await executionRuns.setPayload(childIdentity.runId, {
+                params: { ...resolved, ...failedResult.executionEvidence },
+              });
+              pipeSteps.push({
+                label: nodeLabel,
+                output: failedResult.output,
+                files: [],
+                nodeId,
+                executionRunId: childIdentity.runId,
+                executionEvidence: failedResult.executionEvidence,
+              });
+            }
             patchRunState(nodeId, {
               status: cancelled ? 'cancelled' : 'error',
               logs,
               outputFiles: [],
-              error: cancelled ? PIPELINE_CANCELLED_MESSAGE : String(e),
+              error: cancelled ? PIPELINE_CANCELLED_MESSAGE : errorMessage(e),
             });
             await executionRuns.finish(
               childIdentity.runId,
@@ -1515,6 +1619,11 @@ function createPipelineStore() {
           const endedAt = Date.now();
           const logs = [...finalStates.values()].flatMap(s => s.logs ?? []);
           const allFiles = pipeSteps.flatMap(s => s.files);
+          const stepEvidence = pipeSteps.flatMap((step) => step.executionEvidence ? [{
+            nodeId: step.nodeId ?? '',
+            executionRunId: step.executionRunId ?? '',
+            evidence: step.executionEvidence,
+          }] : []);
           await analysisRuns.init();
           try {
             await finalizeExecutionResult(pipelineRunId, finalStatus, {
@@ -1522,12 +1631,17 @@ function createPipelineStore() {
               tool: 'pipeline',
               label: runPipelineName,
               inputs: [],
-              params: { steps: pipeSteps.length, pipelineId: runPipelineId, pipelineRunId },
+              params: {
+                steps: pipeSteps.length,
+                pipelineId: runPipelineId,
+                pipelineRunId,
+                ...(stepEvidence.length > 0 ? { stepEvidence } : {}),
+              },
               outputFiles: allFiles,
               startedAt: pipeStartedAt,
               endedAt,
               durationMs: endedAt - pipeStartedAt,
-              output: finalStatus === 'done' ? buildPipelineOutput(pipeSteps) : null,
+              output: pipeSteps.length > 0 ? buildPipelineOutput(pipeSteps) : null,
               error: finalError,
               log: logs,
             });

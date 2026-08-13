@@ -3,8 +3,10 @@ import type {
 	LiatirAIModelRecord,
 	LiatirAIProvenance,
 	LiatirAIToolDefinition,
+	LiatirArtifactRequirement,
 	LiatirFileArtifactRole
 } from '@liatir/core';
+import { LIATIR_ANNDATA_PROFILE_V1, liatirArtifactLineageSource } from '@liatir/core';
 import type { RunOutputFile } from '$lib/types/pipeline';
 import type { ToolOutput } from '$lib/types/tool-output';
 import { aiRunMetadata, type AIRunContext } from '$lib/ai/direct-run-context';
@@ -20,7 +22,12 @@ import { GENEFORMER_EMBEDDING_SCRIPT } from './python-scripts/geneformer-embeddi
 import { SCGPT_EMBEDDING_SCRIPT } from './python-scripts/scgpt-embedding';
 import { UCE_EMBEDDING_SCRIPT } from './python-scripts/uce-embedding';
 import { liatir } from '$lib/api';
-import { getLastSegmentsStringFromPath } from '$lib/utils';
+import { dataFiles } from '$lib/stores/dataFiles.svelte';
+import {
+	assertArtifactCompatible,
+	inspectAnnDataArtifact,
+	refineAnnDataArtifact
+} from '$lib/scientific-artifacts';
 
 export const uceSpeciesOptions = [
 	{ value: 'human', label: 'Human' },
@@ -32,6 +39,41 @@ export const uceSpeciesOptions = [
 	{ value: 'macaca_fascicularis', label: 'Crab-eating macaque' },
 	{ value: 'macaca_mulatta', label: 'Rhesus macaque' }
 ];
+
+const SPECIES_QUALIFIERS: Record<string, { taxonId: string; name: string }> = {
+	human: { taxonId: '9606', name: 'Homo sapiens' },
+	mouse: { taxonId: '10090', name: 'Mus musculus' },
+	frog: { taxonId: '8364', name: 'Xenopus tropicalis' },
+	zebrafish: { taxonId: '7955', name: 'Danio rerio' },
+	mouse_lemur: { taxonId: '30608', name: 'Microcebus murinus' },
+	pig: { taxonId: '9823', name: 'Sus scrofa' },
+	macaca_fascicularis: { taxonId: '9541', name: 'Macaca fascicularis' },
+	macaca_mulatta: { taxonId: '9544', name: 'Macaca mulatta' }
+};
+
+function featureNamespaceForModel(modelId: string): string {
+	return modelId === GENEFORMER_V1_10M_MODEL_ID ? 'ensembl-gene-id' : 'gene-symbol';
+}
+
+export function singleCellAnnDataRequirement(
+	modelId: string,
+	species: string
+): LiatirArtifactRequirement {
+	const organism = SPECIES_QUALIFIERS[species];
+	return {
+		profiles: [{ ...LIATIR_ANNDATA_PROFILE_V1 }],
+		formats: ['anndata-h5ad'],
+		scientificTypes: ['annotated-matrix'],
+		validation: 'valid-or-partial',
+		qualifiers: {
+			...(organism ? { taxonIds: [organism.taxonId] } : {}),
+			modalities: ['single-cell-rna'],
+			featureNamespaces: [featureNamespaceForModel(modelId)],
+			preprocessing: ['raw-counts'],
+			representations: ['expression']
+		}
+	};
+}
 
 export const singleCellEmbeddingDefinition: LiatirAIToolDefinition = {
 	id: 'ai-single-cell-embedding',
@@ -52,7 +94,18 @@ export const singleCellEmbeddingDefinition: LiatirAIToolDefinition = {
 			required: true,
 			description:
 				'Use raw scRNA-seq counts. UCE and scGPT expect gene symbols; Geneformer V1 expects human Ensembl IDs.',
-			accept: ['h5ad']
+			accept: ['h5ad'],
+			artifact: {
+				profiles: [{ ...LIATIR_ANNDATA_PROFILE_V1 }],
+				formats: ['anndata-h5ad'],
+				scientificTypes: ['annotated-matrix'],
+				validation: 'valid-or-partial',
+				qualifiers: {
+					modalities: ['single-cell-rna'],
+					preprocessing: ['raw-counts'],
+					representations: ['expression']
+				}
+			}
 		},
 		species: {
 			type: 'string',
@@ -80,7 +133,21 @@ export const singleCellEmbeddingDefinition: LiatirAIToolDefinition = {
 		}
 	},
 	outputSchema: {
-		embeddedAnnData: { type: 'file', label: 'Embedded AnnData', ext: ['h5ad'] },
+		embeddedAnnData: {
+			type: 'file',
+			label: 'Embedded AnnData',
+			ext: ['h5ad'],
+			artifact: {
+				profile: { ...LIATIR_ANNDATA_PROFILE_V1 },
+				format: 'anndata-h5ad',
+				scientificType: 'annotated-matrix',
+				qualifiers: {
+					modality: 'single-cell-rna',
+					preprocessing: ['raw-counts'],
+					representations: ['expression', 'embedding']
+				}
+			}
+		},
 		embeddingPreviewCsv: { type: 'file', label: 'Embedding preview', ext: ['csv'] },
 		summaryJson: { type: 'file', label: 'Embedding summary', ext: ['json'] },
 		intermediateFiles: {
@@ -132,7 +199,8 @@ async function fileArtifact(
 	path: string,
 	ext: string,
 	fieldKey: string,
-	role: LiatirFileArtifactRole = 'final'
+	role: LiatirFileArtifactRole = 'final',
+	scientific?: RunOutputFile['scientific']
 ): Promise<RunOutputFile> {
 	let size: number | undefined;
 	const api = liatir();
@@ -143,7 +211,7 @@ async function fileArtifact(
 			/* ok */
 		}
 	}
-	return { label, path, ext, size, fieldKey, role };
+	return { label, path, ext, size, fieldKey, role, ...(scientific ? { scientific } : {}) };
 }
 
 function extensionFor(path: string): string {
@@ -176,6 +244,7 @@ export async function finalizeSingleCellEmbeddingResult(
 		throw new Error(result.stderr || `Single-cell embedding exited with code ${result.exitCode}`);
 	}
 	if (result.stderr.trim()) onLog(result.stderr.trim());
+	await dataFiles.init();
 
 	const parsed = parsePythonJson<{
 		embeddedAnnDataPath: string;
@@ -185,6 +254,7 @@ export async function finalizeSingleCellEmbeddingResult(
 		summary: {
 			cellCount: number;
 			geneCount: number;
+			outputGeneCount?: number;
 			inputCellCount: number | null;
 			inputGeneCount: number | null;
 			embeddingDim: number;
@@ -201,7 +271,11 @@ export async function finalizeSingleCellEmbeddingResult(
 			normalization?: string;
 			warnings: string[];
 		};
+		previewCellIds?: string[];
 		preview: number[][];
+		viewerPreviewCellIds?: string[];
+		viewerPreview?: number[][];
+		viewerProjection?: string;
 	}>(result.stdout);
 
 	const provenance: LiatirAIProvenance = {
@@ -235,8 +309,84 @@ export async function finalizeSingleCellEmbeddingResult(
 		generatedAt: new Date().toISOString()
 	};
 
+	if (parsed.embeddedAnnDataPath === inputs.inputFile) {
+		throw new Error('Single-cell Embedding must create a new AnnData artifact; the input path cannot be overwritten.');
+	}
+	const organism = SPECIES_QUALIFIERS[parsed.summary.species];
+	const inputInspection = {
+		observations: parsed.summary.inputCellCount ?? parsed.summary.cellCount,
+		variables: parsed.summary.inputGeneCount ?? parsed.summary.geneCount,
+		matrixLocation: 'X',
+		matrixPresent: true,
+		finiteValues: true,
+		nonNegativeValues: true,
+		integerLikeValues: true,
+		scientificType: 'annotated-matrix',
+		...(organism ? { organism } : {}),
+		modality: 'single-cell-rna',
+		featureNamespace: featureNamespaceForModel(model.id),
+		preprocessing: ['raw-counts'],
+		representations: ['expression']
+	};
+	let inputScientific = dataFiles.files.find((file) => file.path === inputs.inputFile)?.scientific;
+	if (inputScientific) {
+		inputScientific = refineAnnDataArtifact(inputScientific, inputInspection);
+	} else {
+		inputScientific = await inspectAnnDataArtifact(inputs.inputFile, inputInspection);
+	}
+	await dataFiles.setScientific(inputs.inputFile, inputScientific);
+
+	const embeddedScientific = await inspectAnnDataArtifact(
+		parsed.embeddedAnnDataPath,
+		{
+			...inputInspection,
+			observations: parsed.summary.cellCount,
+			variables: parsed.summary.outputGeneCount ?? (
+				model.id === UCE_4LAYER_MODEL_ID
+					? parsed.summary.geneCount
+					: parsed.summary.inputGeneCount ?? parsed.summary.geneCount
+			),
+			representations: ['expression', 'embedding'],
+			embeddingKeys: [parsed.summary.embeddingKey]
+		},
+		{
+			lineage: {
+				sources: [liatirArtifactLineageSource(inputScientific, 'input', 'inputFile')],
+				transformation: {
+					id: singleCellEmbeddingDefinition.id,
+					label: singleCellEmbeddingDefinition.label,
+					version: '1',
+					...(model.install?.revision ? { sourceRevision: model.install.revision } : {}),
+					parameters: {
+						modelId: model.id,
+						species: parsed.summary.species,
+						batchSize: parsed.summary.batchSize,
+						embeddingKey: parsed.summary.embeddingKey,
+						csvPreviewRows: parsed.summary.previewRows
+					}
+				}
+			},
+			viewerHints: {
+				preferredViewer: 'single-cell',
+				embeddingKey: parsed.summary.embeddingKey,
+				embeddingPreviewPath: parsed.embeddingPreviewPath,
+				embeddingDimensions: parsed.summary.embeddingDim,
+				projection: parsed.viewerProjection ?? 'first-two-dimensions'
+			}
+		}
+	);
+	const viewerPreview = parsed.viewerPreview ?? parsed.preview;
+	const viewerPreviewCellIds = parsed.viewerPreviewCellIds ?? parsed.previewCellIds;
+	const embeddingPoints = viewerPreview
+		.filter((row) => row.length > 0 && row.every(Number.isFinite))
+		.map((row, index) => ({
+			cellId: viewerPreviewCellIds?.[index] ?? `cell_${index + 1}`,
+			x: row[0],
+			y: row[1] ?? 0
+		}));
+
 	const outputFiles = [
-		await fileArtifact('Embedded AnnData', parsed.embeddedAnnDataPath, 'h5ad', 'embeddedAnnData'),
+		await fileArtifact('Embedded AnnData', parsed.embeddedAnnDataPath, 'h5ad', 'embeddedAnnData', 'final', embeddedScientific),
 		await fileArtifact(
 			'Embedding preview CSV',
 			parsed.embeddingPreviewPath,
@@ -292,11 +442,15 @@ export async function finalizeSingleCellEmbeddingResult(
 						`Lightweight preview. The full embedding matrix is stored in the embedded AnnData artifact under obsm["${parsed.summary.embeddingKey}"].`,
 					config: {
 						title: `${model.name} embeddings`,
-						source: getLastSegmentsStringFromPath(parsed.embeddedAnnDataPath, 2),
+						source: parsed.embeddedAnnDataPath,
 						embeddingKey: parsed.summary.embeddingKey,
-						previewCsv: getLastSegmentsStringFromPath(parsed.embeddingPreviewPath, 2),
+						previewCsv: parsed.embeddingPreviewPath,
+						embeddingPoints,
+						projection: parsed.viewerProjection ?? 'first-two-dimensions',
 						cellCount: parsed.summary.cellCount,
-						embeddingDim: parsed.summary.embeddingDim
+						embeddingDim: parsed.summary.embeddingDim,
+						artifactId: embeddedScientific.physical.artifactId,
+						validationStatus: embeddedScientific.validation.status
 					},
 					height: 360
 				},
@@ -377,6 +531,16 @@ export async function runSingleCellEmbeddingStep(
 		species !== 'human'
 	)
 		throw new Error(`${model.name} supports human single-cell transcriptomes only.`);
+	await dataFiles.init();
+	let inputScientific = await dataFiles.ensureAnnDataProfile(inputs.inputFile, true);
+	if (!inputScientific) inputScientific = await inspectAnnDataArtifact(inputs.inputFile);
+	const compatibility = assertArtifactCompatible(
+		inputScientific,
+		singleCellAnnDataRequirement(model.id, species)
+	);
+	for (const item of compatibility.diagnostics.filter((diagnostic) => diagnostic.severity === 'warning')) {
+		onLog(`artifact warning: ${item.message}${item.action ? ` ${item.action}` : ''}`);
+	}
 	const cachePath = cachePathForModel(model);
 
 	onLog(`ai-tool ${singleCellEmbeddingDefinition.id}`);

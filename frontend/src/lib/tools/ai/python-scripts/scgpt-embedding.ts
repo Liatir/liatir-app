@@ -275,12 +275,26 @@ output_dir.mkdir(parents=True, exist_ok=True)
 embedded_path = output_dir / f"{input_file.stem}_scgpt_adata.h5ad"
 result_adata.write_h5ad(str(embedded_path))
 preview_rows = min(max_csv_rows, embeddings.shape[0])
+viewer_preview_rows = min(preview_rows, 1000)
+viewer_embeddings = np.asarray(embeddings[:viewer_preview_rows], dtype=np.float64)
+if viewer_embeddings.shape[0] > 0 and viewer_embeddings.shape[1] > 0:
+    centered = viewer_embeddings - viewer_embeddings.mean(axis=0, keepdims=True)
+    _, _, components = np.linalg.svd(centered, full_matrices=False)
+    components = components[:2]
+    max_abs_columns = np.argmax(np.abs(components), axis=1)
+    signs = np.sign(components[np.arange(components.shape[0]), max_abs_columns])
+    signs[signs == 0] = 1
+    viewer_projection = centered @ (components * signs[:, None]).T
+    viewer_projection = np.pad(viewer_projection, ((0, 0), (0, max(0, 2 - viewer_projection.shape[1]))))
+else:
+    viewer_projection = np.zeros((viewer_embeddings.shape[0], 2), dtype=np.float64)
 preview_path = output_dir / "scgpt-embedding-preview.csv"
 with preview_path.open("w", newline="", encoding="utf-8") as target:
     writer = csv.writer(target)
-    writer.writerow(["cell_id"] + [f"dim_{index}" for index in range(embeddings.shape[1])])
+    writer.writerow(["cell_id", "preview_pc_1", "preview_pc_2"] + [f"dim_{index}" for index in range(embeddings.shape[1])])
     for index in range(preview_rows):
-        writer.writerow([str(result_adata.obs_names[index])] + [float(value) for value in embeddings[index]])
+        projection = viewer_projection[index] if index < viewer_preview_rows else (None, None)
+        writer.writerow([str(result_adata.obs_names[index]), projection[0], projection[1]] + [float(value) for value in embeddings[index]])
 
 excluded_cells = input_cell_count - len(kept_positions)
 if excluded_cells:
@@ -288,6 +302,7 @@ if excluded_cells:
 summary = {
     "cellCount": int(embeddings.shape[0]),
     "geneCount": int(supported_indices.size),
+    "outputGeneCount": int(result_adata.n_vars),
     "matchedGeneCount": int(supported_indices.size),
     "inputCellCount": input_cell_count,
     "inputGeneCount": input_gene_count,
@@ -322,6 +337,10 @@ print(json.dumps({
     "summaryPath": str(summary_path),
     "intermediatePaths": [],
     "summary": summary,
+    "previewCellIds": [str(value) for value in result_adata.obs_names[: min(3, embeddings.shape[0])]],
     "preview": embeddings[: min(3, embeddings.shape[0]), : min(8, embeddings.shape[1])].tolist(),
+    "viewerPreviewCellIds": [str(value) for value in result_adata.obs_names[:viewer_preview_rows]],
+    "viewerPreview": viewer_projection.tolist(),
+    "viewerProjection": "bounded-preview-pca",
 }))
 `;

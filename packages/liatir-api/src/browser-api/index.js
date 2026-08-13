@@ -800,7 +800,8 @@ function buildFiles(core) {
   return {
     open: (options) => core.invoke("lia_file_open", { multi: options?.multi ?? false, allowedExtensions: options?.allowed, maxBytes: options?.maxBytes }),
     openWithBytes: (options) => core.invoke("lia_file_open_with_bytes", { multi: options?.multi ?? false, allowedExtensions: options?.allowed, maxBytes: options?.maxBytes }),
-    save: (defaultName) => core.invoke("lia_file_save", { defaultName: defaultName ?? null })
+    save: (defaultName) => core.invoke("lia_file_save", { defaultName: defaultName ?? null }),
+    identity: (path) => core.invoke("lia_file_identity", { path })
   };
 }
 
@@ -1311,6 +1312,14 @@ function buildDeps(core) {
   };
 }
 
+// src-ts/modules/rs/externalWorkflows/_main.ts
+function buildExternalWorkflows(core) {
+  return {
+    prepareRun: (options) => core.invoke("lia_external_workflow_prepare_run", { ...options }),
+    collectOutputs: (options) => core.invoke("lia_external_workflow_collect_outputs", { ...options })
+  };
+}
+
 // src-ts/modules/qc/fastqc/_main.ts
 var MODULE = "fastqc.wasm";
 function parentDir(filePath) {
@@ -1477,6 +1486,7 @@ function buildQc(core) {
     },
     jobs: buildJobs(core),
     deps: buildDeps(core),
+    externalWorkflows: buildExternalWorkflows(core),
     qc: buildQc(core),
     tauri: windowTauriProxy,
     onReady: liaReadyEventListener,
@@ -1518,6 +1528,7 @@ export {
   buildDiagnosticsTestFunctions,
   buildDragDrop,
   buildEvents,
+  buildExternalWorkflows,
   buildFastqc,
   buildFiles,
   buildFs,

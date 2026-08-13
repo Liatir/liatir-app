@@ -146,6 +146,8 @@ export type StepRunFn = (
   metrics?: Record<string, number>;
   /** Non-file output values exposed as connectable pipeline values. */
   values?: Record<string, JsonValue>;
+  /** Durable, engine-specific evidence attached to the owning execution. */
+  executionEvidence?: Record<string, JsonValue>;
 }>;
 
 export interface PipelineRegistryEntry {

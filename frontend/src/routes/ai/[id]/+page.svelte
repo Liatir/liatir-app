@@ -33,6 +33,7 @@
 	} from '$lib/ai/model-registry';
 	import {
 		singleCellEmbeddingDefinition,
+		singleCellAnnDataRequirement,
 		runSingleCellEmbeddingStep,
 		uceSpeciesOptions
 	} from '$lib/tools/ai/single-cell-embedding';
@@ -43,6 +44,7 @@
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { executionRuns } from '$lib/stores/executionRuns.svelte';
 	import { finalizeExecutionResult } from '$lib/execution/finalization';
+	import { artifactCompatibility } from '$lib/scientific-artifacts';
 
 	const modelId = $derived(page.params.id ?? '');
 	const model = $derived(aiModelsStore.byId(modelId));
@@ -91,12 +93,30 @@
 	);
 	const activeModelJob = $derived(activeModelJobs[activeModelJobs.length - 1] ?? null);
 	const modelRunActive = $derived(running || !!activeModelJob);
+	const selectedInputArtifact = $derived(
+		dataFiles.files.find((file) => file.path === inputFile)?.scientific
+	);
+	const inputCompatibility = $derived(
+		inputFile
+			? artifactCompatibility(
+				selectedInputArtifact,
+				singleCellAnnDataRequirement(modelId, humanOnlyModel ? 'human' : species)
+			)
+			: null
+	);
+	const inputCompatibilityMessage = $derived(
+		inputCompatibility?.diagnostics
+			.filter((item) => inputCompatibility.status === 'incompatible' ? item.severity === 'error' : item.severity === 'warning')
+			.map((item) => `${item.message}${item.action ? ` ${item.action}` : ''}`)
+			.join(' ') ?? ''
+	);
 	const displayError = $derived<string | null>(
 		selectedRun?.status === 'error' ? (selectedRun.error ?? 'Unknown error') : null
 	);
 	const installBlock = $derived(model ? modelInstallBlock(model, hardware) : null);
 	const canRun = $derived(
-		!!model && model.status === 'installed' && !!inputFile && !modelRunActive
+		!!model && model.status === 'installed' && !!inputFile &&
+		inputCompatibility?.status !== 'incompatible' && !modelRunActive
 	);
 	const runStartedAt = $derived(startedAt ?? activeModelJob?.startedAtMs ?? null);
 
@@ -357,7 +377,12 @@
 					<Card class="p-5 space-y-4">
 						<div><div class="flex items-center gap-1"><p class="text-sm font-semibold text-text">Input</p><InfoPopup text={AI_MODEL_INPUT_HELP.runInput} /></div><p class="mt-1 text-xs text-text-muted">{model.runtime.name} · single-cell</p></div>
 						<fieldset disabled={modelRunActive} class="space-y-4 disabled:opacity-70">
-							<FilePickerPopup files={h5adFiles} value={inputFile} label="AnnData file" info={inputHelp} emptyText="No h5ad files in Data yet." disabled={modelRunActive} onchange={(path) => (inputFile = path)} />
+							<FilePickerPopup files={h5adFiles} value={inputFile} label="AnnData file" info={inputHelp} emptyText="No h5ad files in Data yet." disabled={modelRunActive} artifactRequirement={singleCellAnnDataRequirement(modelId, humanOnlyModel ? 'human' : species)} onchange={(path) => (inputFile = path)} />
+							{#if inputFile && inputCompatibility && inputCompatibilityMessage}
+								<p class="text-xs leading-relaxed {inputCompatibility.status === 'incompatible' ? 'text-red-600' : 'text-amber-700'}" data-testid="ai-input-compatibility">
+									{inputCompatibilityMessage}
+								</p>
+							{/if}
 							<div class="grid grid-cols-1 {humanOnlyModel ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-3">
 								{#if !humanOnlyModel}
 									<div><LabelWithInfo targetId="species" text="Species" info={AI_MODEL_INPUT_HELP.uceSpecies} /><Select id="species" value={species} options={uceSpeciesOptions} disabled={modelRunActive} onchange={(value) => (species = value)} /></div>

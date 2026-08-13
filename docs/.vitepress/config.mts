@@ -85,6 +85,7 @@ export default defineConfig({
         collapsed: true,
         items: [
           { text: 'Overview', link: '/tools/overview' },
+          { text: 'External Workflows', link: '/tools/external-workflows' },
           { text: 'FastQC', link: '/tools/fastqc' },
           { text: 'fastp', link: '/tools/fastp' },
           { text: 'seqkit', link: '/tools/seqkit' },

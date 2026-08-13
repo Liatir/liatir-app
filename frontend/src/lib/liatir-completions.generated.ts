@@ -24,6 +24,7 @@ export const LIATIR_API: Record<string, ApiNode> = {
           open: { type: "method", detail: "(options?: { multi?: boolean; allowed?: string[]; maxBytes?: U64; }): Promise<OpenResult>" },
           openWithBytes: { type: "method", detail: "(options?: { multi?: boolean; allowed?: string[]; maxBytes?: U64; }): Promise<OpenResultWithBytes>" },
           save: { type: "method", detail: "(defaultName?: string): Promise<string>" },
+          identity: { type: "method", detail: "(path: string): Promise<FileIdentity>", info: "Stream a local file to compute its content identity without loading it into the webview." },
       } },
       app: { type: "property", detail: "AppInterface", children: {
           info: { type: "method", detail: "(): Promise<AppInfo>" },
@@ -189,6 +190,10 @@ export const LIATIR_API: Record<string, ApiNode> = {
   deps: { type: "property", detail: "DepsInterface", info: "Check whether system tools are installed and get their versions.", children: {
       check: { type: "method", detail: "(binary: string): Promise<DepCheckResult>", info: "Check if a single binary is available in PATH" },
       checkMany: { type: "method", detail: "(binaries: string[]): Promise<DepCheckResult[]>", info: "Check multiple binaries at once" },
+  } },
+  externalWorkflows: { type: "property", detail: "ExternalWorkflowsInterface", info: "Saved external scientific workflows executed through system engines such as Nextflow.", children: {
+      prepareRun: { type: "method", detail: "(options: PrepareExternalWorkflowRunOptions): Promise<ExternalWorkflowRunLayout>" },
+      collectOutputs: { type: "method", detail: "(options: CollectExternalWorkflowOutputsOptions): Promise<ExternalWorkflowCollectedOutput[]>" },
   } },
   qc: { type: "property", detail: "QcInterface", children: {
       fastqc: { type: "property", detail: "FastqcInterface", children: {

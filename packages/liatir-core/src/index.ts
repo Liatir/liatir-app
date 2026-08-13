@@ -28,6 +28,7 @@ export type LiatirStepKind =
   | "wasm-plugin"
   | "api-request"
   | "ai-tool"
+  | "external-workflow"
   | "utility"
   | "sub-pipeline";
 
@@ -61,6 +62,8 @@ export interface LiatirInputFieldSchema<
   TDefault = unknown,
 > extends LiatirFieldSchema<TDefault> {
   type: LiatirInputFieldType;
+  /** Versioned semantic requirements for file inputs. Extension matching remains a separate format hint. */
+  artifact?: import("./scientific-artifacts").LiatirArtifactRequirement;
 }
 
 export interface LiatirOutputFieldSchema extends LiatirFieldSchema {
@@ -69,6 +72,8 @@ export interface LiatirOutputFieldSchema extends LiatirFieldSchema {
   ext?: string[];
   /** Display hint for numeric metric outputs. */
   format?: "integer" | "decimal" | "percent" | "bytes";
+  /** Semantic promise for a file output before the concrete artifact exists. */
+  artifact?: import("./scientific-artifacts").LiatirArtifactDeclaration;
 }
 
 export interface LiatirStepDefinition {
@@ -193,6 +198,8 @@ export interface LiatirFileArtifact {
   fieldKey?: string;
   /** MIME type or domain-specific media type, when known. */
   mediaType?: string;
+  /** Optional versioned scientific metadata. Legacy files remain valid without it. */
+  scientific?: import("./scientific-artifacts").LiatirScientificArtifactMetadata;
 }
 
 export interface LiatirFileContentOutput {
@@ -589,6 +596,8 @@ export type InputFieldSchema = LiatirInputFieldSchema;
 export type OutputFieldSchema = LiatirOutputFieldSchema;
 export type PipelineStepDefinition = LiatirStepDefinition;
 export type RunOutputFile = LiatirFileArtifact;
+
+export * from "./scientific-artifacts";
 export type FileOutputValue = LiatirFileOutputValue;
 export type StepStatus = LiatirStepStatus;
 
@@ -607,6 +616,9 @@ export type ToolOutput = LiatirToolOutput;
 // Durable identity and lifecycle shared by direct, pipeline and future
 // External Workflow execution.
 export * from "./execution";
+
+// Saved workflow definitions and their shared direct/pipeline contract.
+export * from "./external-workflows";
 
 // Built-in AI model catalog — the single source of truth shared by the app UI
 // and the plugin API (@liatir/api Liatir.ai). Model ids, metadata, and runtime

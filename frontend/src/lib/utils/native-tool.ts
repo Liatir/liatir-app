@@ -18,6 +18,7 @@ export interface NativeRunResult {
 }
 
 export interface NativeRunOptions {
+  cwd?: string;
   env?: Record<string, string>;
   label?: string;
   kind?: string;
@@ -66,6 +67,7 @@ export async function runNativeTool(
     cmd,
     args,
     workspaceId: workspaceStore.activeId,
+    cwd: options.cwd,
     env: options.env,
     label: options.label,
     kind: options.kind,

@@ -45,8 +45,14 @@ fn now_ms() -> u64 {
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum JobStatus {
     Running,
-    Done { exit_code: Option<i32> },
-    Failed { exit_code: Option<i32> },
+    Done {
+        #[serde(rename = "exitCode")]
+        exit_code: Option<i32>,
+    },
+    Failed {
+        #[serde(rename = "exitCode")]
+        exit_code: Option<i32>,
+    },
     Killed,
 }
 
@@ -671,7 +677,7 @@ pub fn lia_jobs_get_output(
 
 #[cfg(test)]
 mod tests {
-    use super::is_safe_job_id;
+    use super::{is_safe_job_id, JobStatus};
 
     #[test]
     fn caller_allocated_job_ids_are_path_safe() {
@@ -681,5 +687,17 @@ mod tests {
         assert!(!is_safe_job_id("nested/job"));
         assert!(!is_safe_job_id(""));
         assert!(!is_safe_job_id(&"a".repeat(129)));
+    }
+
+    #[test]
+    fn terminal_status_uses_the_shared_camel_case_exit_code_contract() {
+        assert_eq!(
+            serde_json::to_value(JobStatus::Done { exit_code: Some(0) }).unwrap(),
+            serde_json::json!({ "type": "done", "exitCode": 0 })
+        );
+        assert_eq!(
+            serde_json::to_value(JobStatus::Failed { exit_code: Some(17) }).unwrap(),
+            serde_json::json!({ "type": "failed", "exitCode": 17 })
+        );
     }
 }

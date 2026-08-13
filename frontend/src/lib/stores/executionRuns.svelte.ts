@@ -60,6 +60,11 @@ export interface BeginExecutionInput {
   startedAt?: number;
 }
 
+export interface ExecutionPayloadUpdate {
+  inputs?: JsonValue;
+  params?: JsonValue;
+}
+
 function createExecutionRunsStore() {
   let records = $state<LiatirExecutionRecord[]>([]);
   const controllers = new Map<string, AbortController>();
@@ -219,6 +224,21 @@ function createExecutionRunsStore() {
       const record = requireRecord(runId);
       if (isLiatirExecutionTerminalStatus(record.status)) return;
       replace({ ...record, progress, updatedAt: Date.now() });
+      await enqueuePersist();
+    },
+
+    /** Persist resolved inputs and run evidence after a child identity has been allocated. */
+    async setPayload(runId: string, update: ExecutionPayloadUpdate): Promise<void> {
+      const record = requireRecord(runId);
+      if (isLiatirExecutionTerminalStatus(record.status)) {
+        throw new Error(`Execution is already terminal: ${runId}`);
+      }
+      replace({
+        ...record,
+        ...(update.inputs !== undefined ? { inputs: update.inputs } : {}),
+        ...(update.params !== undefined ? { params: update.params } : {}),
+        updatedAt: Date.now(),
+      });
       await enqueuePersist();
     },
 

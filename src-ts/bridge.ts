@@ -38,6 +38,7 @@ import { API_VERSION } from "./constants";
 import { windowTauriProxy, tauriReadyCheck, waitTauri } from "./helpers";
 import { buildJobs } from "./modules/rs/jobs/_main";
 import { buildDeps } from "./modules/rs/deps/_main";
+import { buildExternalWorkflows } from "./modules/rs/externalWorkflows/_main";
 import { buildQc } from "./modules/qc/_main";
 import { isBrowser } from "./utils";
 
@@ -79,6 +80,7 @@ import { isBrowser } from "./utils";
 
     jobs:     buildJobs(core),
     deps:     buildDeps(core),
+    externalWorkflows: buildExternalWorkflows(core),
 
     qc:       buildQc(core),
 

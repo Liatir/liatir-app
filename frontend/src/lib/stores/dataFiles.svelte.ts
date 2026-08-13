@@ -1,6 +1,8 @@
 import { liatir } from '$lib/api';
 import { appStorage } from './app-storage';
 import { getDataPrefix, SANDBOX_WORKSPACE_ID } from './workspace.svelte';
+import { inspectAnnDataArtifact } from '$lib/scientific-artifacts';
+import type { LiatirScientificArtifactMetadata } from '@liatir/core';
 
 export interface DataFile {
   id: string;
@@ -12,6 +14,8 @@ export interface DataFile {
   folder: string;
   missing?: boolean;
   protected?: boolean;
+  /** Versioned scientific profile metadata. Missing remains valid for legacy files. */
+  scientific?: LiatirScientificArtifactMetadata;
 }
 
 interface StoredData {
@@ -158,14 +162,29 @@ function createDataFilesStore() {
       } catch { /* demo files init is best-effort */ }
     },
 
-    async add(path: string, folder = '') {
-      if (files.some(f => f.path === path)) return;
+    async add(path: string, folder = '', scientific?: LiatirScientificArtifactMetadata) {
+      const existing = files.find(f => f.path === path);
+      if (existing) {
+        if (scientific && existing.scientific !== scientific) {
+          files = files.map(file => file.path === path ? { ...file, scientific } : file);
+          await persist();
+        }
+        return;
+      }
       const name = path.split(/[\\/]/).pop() ?? path;
       let size: number | undefined;
       try {
         const api = liatir();
         if (api) size = (await api.invoke('lia_file_size', { path })) as number;
       } catch { /* size stays undefined */ }
+      let detectedScientific = scientific;
+      if (!detectedScientific && detectExt(path) === 'h5ad') {
+        try {
+          detectedScientific = await inspectAnnDataArtifact(path);
+        } catch {
+          // The file remains usable as a backward-compatible path. Validation can be retried later.
+        }
+      }
       files = [{
         id: crypto.randomUUID(),
         name,
@@ -174,6 +193,7 @@ function createDataFilesStore() {
         size,
         addedAt: Date.now(),
         folder,
+        ...(detectedScientific ? { scientific: detectedScientific } : {}),
       }, ...files];
       await persist();
     },
@@ -182,12 +202,31 @@ function createDataFilesStore() {
      * Register a tool/job/pipeline result file under the locked `Results/<tool>/`
      * folder (folders auto-created). Mirrors how the pipeline stores its outputs.
      */
-    async addToResults(path: string, toolName: string) {
+    async addToResults(path: string, toolName: string, scientific?: LiatirScientificArtifactMetadata) {
       const safe = toolName.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '-') || 'tool';
       const folder = `${RESULTS_FOLDER}/${safe}`;
       await this.createFolder(RESULTS_FOLDER);
       await this.createFolder(folder);
-      await this.add(path, folder);
+      await this.add(path, folder, scientific);
+    },
+
+    async setScientific(path: string, scientific: LiatirScientificArtifactMetadata) {
+      if (!files.some(file => file.path === path)) return;
+      files = files.map(file => file.path === path ? { ...file, scientific } : file);
+      await persist();
+    },
+
+    async ensureAnnDataProfile(path: string, refreshIdentity = false): Promise<LiatirScientificArtifactMetadata | undefined> {
+      const file = files.find(item => item.path === path);
+      if (!file || file.ext !== 'h5ad') return file?.scientific;
+      if (file.scientific && !refreshIdentity) return file.scientific;
+      const inspected = await inspectAnnDataArtifact(path);
+      const scientific = file.scientific &&
+        file.scientific.physical.artifactId === inspected.physical.artifactId
+          ? file.scientific
+          : inspected;
+      await this.setScientific(path, scientific);
+      return scientific;
     },
 
     async remove(id: string) {
@@ -298,8 +337,30 @@ function createDataFilesStore() {
       const name = newPath.split(/[\\/]/).pop() ?? newPath;
       let size: number | undefined;
       try { size = (await api.invoke('lia_file_size', { path: newPath })) as number; } catch { /* ok */ }
+      const current = files.find(file => file.id === id);
+      let scientific: LiatirScientificArtifactMetadata | undefined;
+      if (detectExt(newPath) === 'h5ad') {
+        try {
+          const inspected = await inspectAnnDataArtifact(newPath);
+          scientific = current?.scientific?.physical.artifactId === inspected.physical.artifactId
+            ? current.scientific
+            : inspected;
+        } catch {
+          scientific = undefined;
+        }
+      }
       files = files.map(f =>
-        f.id === id ? { ...f, path: newPath, name, ext: detectExt(newPath), size, missing: false } : f
+        f.id === id
+          ? {
+              ...f,
+              path: newPath,
+              name,
+              ext: detectExt(newPath),
+              size,
+              missing: false,
+              ...(scientific ? { scientific } : { scientific: undefined }),
+            }
+          : f
       );
       await persist();
     },

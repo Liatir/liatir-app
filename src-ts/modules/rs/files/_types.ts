@@ -10,6 +10,11 @@ export type FileWithBytes = {
 }
 export type OpenResult = { paths: string[] };
 export type OpenResultWithBytes = { files: FileWithBytes[] };
+export type FileIdentity = {
+  sizeBytes: U64;
+  sha256: string;
+  prefixHex: string;
+};
 
 
 export interface FilesInterface {
@@ -24,4 +29,6 @@ export interface FilesInterface {
         maxBytes?: U64;
     }) => Promise<OpenResultWithBytes>;
     save: (defaultName?: string | null) => Promise<string>;
+    /** Stream a local file to compute its content identity without loading it into the webview. */
+    identity: (path: string) => Promise<FileIdentity>;
   };

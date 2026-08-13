@@ -47,7 +47,7 @@
     next.add(file.path);
     addingToData = next;
     try {
-      await dataFiles.addToResults(file.path, toolName);
+      await dataFiles.addToResults(file.path, toolName, file.scientific);
     } finally {
       const s = new Set(addingToData);
       s.delete(file.path);
@@ -99,7 +99,11 @@
       <p class="text-xs font-medium text-text-muted mb-3">Output files</p>
       <div class="space-y-2">
         {#each outputFiles as file (file.path)}
-          <div class="flex items-center gap-3 rounded-lg border border-border bg-surface-2 px-3 py-2.5">
+          <div
+            class="flex items-center gap-3 rounded-lg border border-border bg-surface-2 px-3 py-2.5"
+            data-testid="result-output-file"
+            data-output-field={file.fieldKey ?? ''}
+          >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0A948B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
               <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
               <polyline points="13 2 13 9 20 9" />
@@ -112,6 +116,27 @@
               {#if file.size != null}
                 <p class="text-[10px] text-text-subtle font-mono">{fmtBytes(file.size)}</p>
               {/if}
+              {#if file.scientific}
+                <div class="mt-1 flex flex-wrap items-center gap-1.5" title={file.scientific.validation.diagnostics.map((item) => item.message).join(' ')}>
+                  <span class="rounded px-1.5 py-0.5 text-[10px] font-medium border
+                    {file.scientific.validation.status === 'valid'
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                      : file.scientific.validation.status === 'invalid'
+                        ? 'border-red-200 bg-red-50 text-red-700'
+                        : 'border-amber-200 bg-amber-50 text-amber-700'}">
+                    {file.scientific.validation.status}
+                  </span>
+                  <span class="text-[10px] text-text-subtle">
+                    {file.scientific.profile.id.split('.').pop()} {file.scientific.profile.version} · {file.scientific.scientificType}
+                  </span>
+                  {#if file.scientific.lineage?.transformation}
+                    <span class="text-[10px] text-text-subtle">· from {file.scientific.lineage.sources.length} source{file.scientific.lineage.sources.length === 1 ? '' : 's'} via {file.scientific.lineage.transformation.label}</span>
+                  {/if}
+                </div>
+                <p class="mt-0.5 text-[10px] text-text-subtle font-mono" title={file.scientific.physical.digest.value}>
+                  sha256:{file.scientific.physical.digest.value.slice(0, 12)}…
+                </p>
+              {/if}
             </div>
             <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-surface-2 text-text-secondary border border-border">
               {file.ext}
@@ -121,6 +146,7 @@
               size="sm"
               class="shrink-0"
               loading={addingToData.has(file.path)}
+              testId={`add-output-to-data-${file.fieldKey ?? file.ext}`}
               onclick={() => addToData(file)}
             >
               Add to Data

@@ -1,6 +1,7 @@
 import type { DesktopInterface } from "../modules/desktop/_types";
 import type { JobsInterface } from "../modules/rs/jobs/_types";
 import type { DepsInterface } from "../modules/rs/deps/_types";
+import type { ExternalWorkflowsInterface } from "../modules/rs/externalWorkflows/_types";
 import type { QcInterface } from "../modules/qc/_types";
 import type { WindowTauri } from "../core/_types";
 export type LiaPlatform = "macos" | "linux" | "windows";
@@ -17,6 +18,8 @@ export type LiatirBrowserAPI = {
     jobs: JobsInterface;
     /** Check whether system tools are installed and get their versions. */
     deps: DepsInterface;
+    /** Saved external scientific workflows executed through system engines such as Nextflow. */
+    externalWorkflows: ExternalWorkflowsInterface;
     qc: QcInterface;
     tauri?: WindowTauri;
     onReady: (callback: Function) => void;

@@ -14,6 +14,7 @@
   import { openQuentaWindow } from '$lib/quenta/window';
   import { toast } from '$lib/stores/toast.svelte';
   import type { ToolOutput } from '$lib/types/tool-output';
+  import { externalWorkflowsStore } from '$lib/stores/externalWorkflows.svelte';
 	import Icon from '@iconify/svelte';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
 	import { HEADER_HEIGHT } from '$lib/_constants';
@@ -35,7 +36,12 @@
     snpeff: 'SnpEff',
   };
 
-  function toolLabel(tool: string) { return TOOL_LABELS[tool] ?? tool; }
+  function toolLabel(tool: string) {
+    if (tool.startsWith('external-workflow:')) {
+      return externalWorkflowsStore.byId(tool.slice('external-workflow:'.length))?.name ?? 'External Workflow';
+    }
+    return TOOL_LABELS[tool] ?? tool;
+  }
 
   // ── filters ────────────────────────────────────────────────────
   let activeTool = $state<string | 'all'>('all');
@@ -72,7 +78,7 @@
   });
 
   onMount(() => {
-    analysisRuns.init().then(() => {
+    Promise.all([analysisRuns.init(), externalWorkflowsStore.init()]).then(() => {
       const runParam = page.url.searchParams.get('run');
       if (runParam && analysisRuns.runs.find(r => r.id === runParam)) {
         selectedId = runParam;
@@ -262,6 +268,15 @@
                 : 'border-red-200 bg-red-50 text-red-700'}" data-selectable>
               {sanitizeLocalPathsForDisplay(selectedRun.error ?? 'Unknown error', 2)}
             </div>
+            {#if loadedOutput}
+              <div class="mt-4">
+                <ToolResultView
+                  output={loadedOutput}
+                  outputFiles={selectedRun.outputFiles ?? []}
+                  resultFolder={toolLabel(selectedRun.tool)}
+                />
+              </div>
+            {/if}
             <RunLog runId={selectedId} />
           </div>
 
@@ -316,7 +331,7 @@
               </div>
             </div>
             {#if loadedOutput}
-              <ToolResultView output={loadedOutput} outputFiles={selectedRun.outputFiles ?? []} />
+                  <ToolResultView output={loadedOutput} outputFiles={selectedRun.outputFiles ?? []} resultFolder={toolLabel(selectedRun.tool)} />
             {:else}
               <div class="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text-muted">
                 This Result has no structured preview. Quenta can still use its metadata, files, and logs.
