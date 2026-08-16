@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress'
+import { HOSTNAME, addCanonical, writeLlmsFiles } from './site-meta'
 
 export default defineConfig({
   markdown: {
@@ -18,7 +19,19 @@ export default defineConfig({
   // Generate sitemap.xml at build time so search engines can crawl every page.
   // `hostname` must be the production domain — it prefixes every URL entry.
   sitemap: {
-    hostname: 'https://liatir.com',
+    hostname: HOSTNAME,
+  },
+
+  // The site answers on its Cloudflare Pages `*.pages.dev` hostname as well as on
+  // liatir.com. robots.txt is a static file and cannot tell the two apart, so the
+  // canonical tag is what keeps that from counting as duplicate content.
+  transformPageData(pageData) {
+    addCanonical(pageData)
+  },
+
+  // llms.txt / llms-full.txt, regenerated from the pages that were just built.
+  buildEnd(siteConfig) {
+    writeLlmsFiles(siteConfig)
   },
 
   // Browser-tab favicon: logo mark. SVG first for crisp scaling,

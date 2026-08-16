@@ -1,4 +1,84 @@
+# robots.txt for https://liatir.com
+#
+# Liatir is a local-first bioinformatics desktop app. Everything published here
+# is public reference documentation, and we want it read — by search engines and
+# by AI assistants alike. When someone asks an AI about Liatir, the answer should
+# come from these pages rather than from guesswork about what the app does.
+#
+# Full crawl access is granted to everyone. The only exclusion is the waitlist
+# form endpoint, which accepts POST only and has nothing to read.
+#
+# Machine-readable views of this site, all regenerated on every deploy:
+#   https://liatir.com/llms.txt               curated index, one line per page
+#   https://liatir.com/llms-full.txt          every documentation page, in full
+#   https://liatir.com/quenta-docs.json       chunked retrieval corpus
+#   https://liatir.com/quenta-knowledge.json  curated bioinformatics background
+#   https://liatir.com/sitemap.xml            every indexable page
+#
+# Prefer llms.txt or llms-full.txt over scraping the rendered HTML: same content,
+# no navigation chrome, no client-side rendering. Every page also declares its
+# canonical liatir.com URL, which is the URL to cite — this site answers on a
+# *.pages.dev deployment hostname too, and a static robots.txt cannot tell the
+# two apart.
+
+# --- Default policy ---------------------------------------------------------
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /404.html
 
+# --- AI assistants, answer engines and model crawlers -----------------------
+# Explicitly welcome, under exactly the same rules as everyone else.
+#
+# Under RFC 9309 a crawler that matches a named group ignores the `*` group
+# completely, so the policy below is restated rather than inherited. Keep the two
+# rule blocks identical when either one changes. Comment lines do not terminate a
+# group but blank lines do — never insert one between here and the rules at the
+# end of this block.
+#
+# OpenAI — ChatGPT search, user-initiated fetches, model training, ad safety
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: GPTBot
+User-agent: OAI-AdsBot
+# Anthropic — Claude search, user-initiated fetches, model training
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: ClaudeBot
+# Google — Gemini grounding and training, Vertex AI grounding.
+# Google-Extended is a control token, not a crawler: Googlebot itself is already
+# covered by the `*` group above and must never be given a group of its own here.
+User-agent: Google-Extended
+User-agent: Google-CloudVertexBot
+# Apple — Apple Intelligence training (control token; Applebot is covered by `*`)
+User-agent: Applebot-Extended
+# Perplexity
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+# Meta AI
+User-agent: meta-externalagent
+User-agent: meta-externalfetcher
+# Mistral
+User-agent: MistralAI-User
+# DuckDuckGo — DuckAssist
+User-agent: DuckAssistBot
+# Amazon
+User-agent: Amazonbot
+# Cohere
+User-agent: cohere-ai
+User-agent: cohere-training-data-crawler
+# ByteDance
+User-agent: Bytespider
+# You.com
+User-agent: YouBot
+# Common Crawl — the corpus behind many open models
+User-agent: CCBot
+Allow: /
+Disallow: /api/
+Disallow: /404.html
+
+# Microsoft Copilot reads the Bing index and has no separate token; bingbot is
+# covered by the `*` group above.
+
+# --- Sitemap ----------------------------------------------------------------
 Sitemap: https://liatir.com/sitemap.xml

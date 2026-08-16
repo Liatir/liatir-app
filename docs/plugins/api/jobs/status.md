@@ -1,5 +1,5 @@
 ---
-title: .jobs.status
+title: jobs.status
 description: Reads one async process job status.
 ---
 
