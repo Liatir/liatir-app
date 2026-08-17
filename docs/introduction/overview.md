@@ -36,12 +36,13 @@ AI Models are signed local Runtime Boxes that Liatir installs and manages for yo
 
 ## Getting started
 
-1. [Add files to your Data library](/data/overview) — import by path, no copying.
-2. [Run a native tool](/tools/overview) — start with FastQC or fastp on FASTQ files.
-3. [Read the AI guide](/ai/guide) — learn what AI Models and AI Tools do before interpreting results.
-4. [Install an AI Model](/ai/models/overview) — run a local single-cell embedding workflow.
-5. [Build or import a .lia plugin](/plugins/overview) — for custom logic or pipeline orchestration.
-6. [Connect steps in a pipeline](/pipeline/overview) — outputs flow into the next step automatically.
+1. [Install Liatir Beta](/getting-started/install) and check the current platform status.
+2. [Run your first single-cell analysis](/getting-started/first-analysis).
+3. [Add files to your Data library](/data/overview) — import by path, no copying.
+4. [Run a native tool](/tools/overview) — start with FastQC or fastp on FASTQ files.
+5. [Read the AI guide](/ai/guide) — learn what AI Models and AI Tools do before interpreting results.
+6. [Build or import a .lia plugin](/plugins/overview) — for custom logic or pipeline orchestration.
+7. [Connect steps in a pipeline](/pipeline/overview) — outputs flow into the next step automatically.
 
 
 ## The name Liatir

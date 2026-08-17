@@ -8,8 +8,8 @@ dependencies, scientific runner, and legal notices tested together.
 
 | AI Model | Input | Published support |
 | --- | --- | --- |
-| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | human AnnData | macOS arm64 Metal; Linux x86_64 CPU/CUDA; Windows x86_64 CPU |
-| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | human AnnData | macOS arm64 Metal |
+| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | human AnnData | macOS arm64 Metal; Linux CUDA 12.9; Windows CUDA 12.8 |
+| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | human AnnData | macOS arm64 Metal; Linux/Windows CPU; Linux CUDA 12.9; Windows CUDA 12.8 |
 | [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | multi-species AnnData | macOS arm64 Metal |
 
 These are the complete product catalog. Models without a published Runtime Box

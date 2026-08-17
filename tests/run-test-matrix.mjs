@@ -449,6 +449,12 @@ async function main() {
       results.push(skippedResult(suite, 'Heavy suite not enabled. Pass --include-heavy and required env vars to run it.'));
       continue;
     }
+    // Desktop packaging and installation are per-OS gates. A suite declaring its platforms is
+    // skipped elsewhere rather than failing, so one profile name stays usable on every host.
+    if (suite.platforms && !suite.platforms.includes(process.platform)) {
+      results.push(skippedResult(suite, `Suite runs only on ${suite.platforms.join(', ')}; host is ${process.platform}.`));
+      continue;
+    }
     if (missing.length > 0) {
       results.push(skippedResult(suite, `Missing required environment variable${missing.length === 1 ? '' : 's'}: ${missing.join(', ')}`));
       continue;

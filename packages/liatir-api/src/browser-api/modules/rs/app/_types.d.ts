@@ -45,7 +45,26 @@ export type AppInfo = {
     version: string;
     windows: AppWindowInfo[];
 };
+export type AppUpdateCheckResult = {
+    available: boolean;
+    currentVersion: string;
+    version?: string | null;
+    publishedAt?: string | null;
+    notes?: string | null;
+};
+export type AppUpdateInstallResult = {
+    version: string;
+};
+export interface AppUpdatesInterface {
+    /** Check the signed release feed. This is the only operation that needs network access. */
+    check: () => Promise<AppUpdateCheckResult>;
+    /** Download, verify and install the update selected by the latest check. */
+    install: () => Promise<AppUpdateInstallResult>;
+    /** Restart Liatir after installation. Refused while a Job is running. */
+    restart: () => Promise<void>;
+}
 export interface AppInterface {
     info: () => Promise<AppInfo>;
     exit: (code?: I32 | undefined) => Promise<void>;
+    updates: AppUpdatesInterface;
 }

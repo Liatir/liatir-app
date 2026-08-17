@@ -55,7 +55,7 @@ pub fn lia_plugin_log(
 
     // Append formatted log to job's stderr buffer
     let registry = app.state::<JobRegistry>();
-    let mut jobs = registry.0.lock().unwrap();
+    let mut jobs = registry.jobs.lock().unwrap();
     if let Some(state) = jobs.get_mut(&job_id) {
         let formatted = format!("[{}] {}", level.to_uppercase(), message);
         state.stderr.lock().unwrap().push(formatted);

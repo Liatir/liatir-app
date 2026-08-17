@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "18456431bfaa7c52655465b5b703b9bf841fc7daebd6fafd84036884410cd977";
+export const QUENTA_DOCS_SEED_HASH = "990384fd26653b3834c6aca97a4f34c81ca70fc5dbf30ba9e515b1c29ac1166f";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -20,7 +20,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Local AI for bioinformatics — AI Models and AI Tools",
     "locator": "Docs / Ai / Guide / AI Models and AI Tools",
     "excerpt": "AI Models and AI Tools An **AI Model** is the packaged scientific model. An **AI Tool** is the task that sends an input to a compatible installed model and turns its output into Jobs, Results, files, and provenance. The current product catalog contains: | AI…",
-    "content": "AI Models and AI Tools\nAn **AI Model** is the packaged scientific model. An **AI Tool** is the task\nthat sends an input to a compatible installed model and turns its output into\nJobs, Results, files, and provenance.\n\nThe current product catalog contains:\n\n| AI Model | Current published targets | Main use |\n| --- | --- | --- |\n| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | macOS arm64 Metal, Linux x86_64 CPU/CUDA, Windows x86_64 CPU | human single-cell embeddings |\n| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | macOS arm64 Metal | human single-cell embeddings |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | macOS arm64 Metal | multi-species single-cell embeddings |\n\nThe current AI Tool is [Single-cell Embedding](/ai/tools/single-cell-embedding).\nNo other AI Model or AI Tool is available until it has its own reviewed,\npublished Runtime Box path."
+    "content": "AI Models and AI Tools\nAn **AI Model** is the packaged scientific model. An **AI Tool** is the task\nthat sends an input to a compatible installed model and turns its output into\nJobs, Results, files, and provenance.\n\nThe current product catalog contains:\n\n| AI Model | Current published targets | Main use |\n| --- | --- | --- |\n| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | macOS arm64 Metal; Linux CUDA 12.9; Windows CUDA 12.8 | human single-cell embeddings |\n| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | macOS arm64 Metal; Linux/Windows CPU; Linux CUDA 12.9; Windows CUDA 12.8 | human single-cell embeddings |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | macOS arm64 Metal | multi-species single-cell embeddings |\n\nThe current AI Tool is [Single-cell Embedding](/ai/tools/single-cell-embedding).\nNo other AI Model or AI Tool is available until it has its own reviewed,\npublished Runtime Box path."
   },
   {
     "id": "docs:ai/guide#installation",
@@ -51,8 +51,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Local AI for bioinformatics — Hardware support",
     "locator": "Docs / Ai / Guide / Hardware support",
-    "excerpt": "Hardware support Liatir installs only a published target that exactly matches the operating system, architecture, accelerator, memory, and driver constraints. CUDA support is currently validated only on Linux. Windows CUDA is not a supported target.",
-    "content": "Hardware support\nLiatir installs only a published target that exactly matches the operating\nsystem, architecture, accelerator, memory, and driver constraints. CUDA support\nis currently validated only on Linux. Windows CUDA is not a supported target."
+    "excerpt": "Hardware support Liatir installs only a published target that exactly matches the operating system, architecture, accelerator, memory, and driver constraints. Native Windows CUDA support is limited to the exact published CUDA 12.8 Geneformer and scGPT targets…",
+    "content": "Hardware support\nLiatir installs only a published target that exactly matches the operating\nsystem, architecture, accelerator, memory, and driver constraints. Native\nWindows CUDA support is limited to the exact published CUDA 12.8 Geneformer and\nscGPT targets; other Windows CUDA combinations are not inferred from them."
   },
   {
     "id": "docs:ai/guide#related-pages",
@@ -83,8 +83,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "scGPT Whole-human — Current status in Liatir",
     "locator": "Docs / Ai / Models / Bowang Scgpt Whole Human / Current status in Liatir",
-    "excerpt": "Current status in Liatir scGPT is published as a signed macOS arm64 Metal Runtime Box on the beta channel. Liatir installs the complete tested environment and records the exact box release in Results provenance.",
-    "content": "Current status in Liatir\nscGPT is published as a signed macOS arm64 Metal Runtime Box on the beta\nchannel. Liatir installs the complete tested environment and records the exact\nbox release in Results provenance."
+    "excerpt": "Current status in Liatir scGPT is published as signed Runtime Boxes for macOS arm64 Metal, Linux/Windows x86_64 CPU, Linux x86_64 CUDA 12.9 and Windows x86_64 CUDA 12.8. Liatir installs the complete target-specific environment and records the exact box releas…",
+    "content": "Current status in Liatir\nscGPT is published as signed Runtime Boxes for macOS arm64 Metal,\nLinux/Windows x86_64 CPU, Linux x86_64 CUDA 12.9 and Windows x86_64 CUDA 12.8.\nLiatir installs the complete target-specific environment and records the exact\nbox release in Results provenance."
   },
   {
     "id": "docs:ai/models/bowang-scgpt-whole-human#expected-inputs",
@@ -99,16 +99,16 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "scGPT Whole-human — Expected outputs",
     "locator": "Docs / Ai / Models / Bowang Scgpt Whole Human / Expected outputs",
-    "excerpt": "Expected outputs - Cell embeddings. - UMAP-ready tables or matrices. - Optional batch-corrected representations. - JSON/CSV summaries and provenance.",
-    "content": "Expected outputs\n- Cell embeddings.\n- UMAP-ready tables or matrices.\n- Optional batch-corrected representations.\n- JSON/CSV summaries and provenance."
+    "excerpt": "Expected outputs - Embedded AnnData with cell embeddings in `obsm[\"X_scgpt\"]`. - A bounded CSV preview for visualization. - JSON summary, warnings and Runtime Box provenance.",
+    "content": "Expected outputs\n- Embedded AnnData with cell embeddings in `obsm[\"X_scgpt\"]`.\n- A bounded CSV preview for visualization.\n- JSON summary, warnings and Runtime Box provenance."
   },
   {
     "id": "docs:ai/models/bowang-scgpt-whole-human#hardware-and-installation",
     "sourceKind": "documentation",
     "title": "scGPT Whole-human — Hardware and installation",
     "locator": "Docs / Ai / Models / Bowang Scgpt Whole Human / Hardware and installation",
-    "excerpt": "Hardware and installation The current product target is Apple silicon with Metal. The model and its dependencies live inside the Runtime Box and are never added to the base app or the system Python.",
-    "content": "Hardware and installation\nThe current product target is Apple silicon with Metal. The model and its\ndependencies live inside the Runtime Box and are never added to the base app or\nthe system Python."
+    "excerpt": "Hardware and installation Use only the exact published target compatible with the host. Windows CUDA is CUDA 12.8 and Linux CUDA is CUDA 12.9; support for those targets does not imply other CUDA or driver combinations. The model and its dependencies live insi…",
+    "content": "Hardware and installation\nUse only the exact published target compatible with the host. Windows CUDA is\nCUDA 12.8 and Linux CUDA is CUDA 12.9; support for those targets does not imply\nother CUDA or driver combinations. The model and its dependencies live inside\nthe Runtime Box and are never added to the base app or system Python."
   },
   {
     "id": "docs:ai/models/bowang-scgpt-whole-human#official-source",
@@ -163,8 +163,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Geneformer V1 10M — Hardware and installation",
     "locator": "Docs / Ai / Models / Ctheodoris Geneformer V1 10m / Hardware and installation",
-    "excerpt": "Hardware and installation The 10M-parameter V1 model can run on CPU for small datasets. CUDA or Apple Metal is preferred for larger cell batches. Published native targets cover macOS arm64 Metal, Linux x86_64 CPU/CUDA, and Windows x86_64 CPU. CUDA is validate…",
-    "content": "Hardware and installation\nThe 10M-parameter V1 model can run on CPU for small datasets. CUDA or Apple\nMetal is preferred for larger cell batches. Published native targets cover\nmacOS arm64 Metal, Linux x86_64 CPU/CUDA, and Windows x86_64 CPU. CUDA is\nvalidated only on Linux; Windows CUDA is not supported.\n\nThe input matrix is normalized per cell to 10,000 counts, scaled by the official\nGenecorpus-30M gene medians, converted to the V1 rank-value encoding, and capped\nat 2,048 gene tokens. Cell embeddings are mean-pooled from the second-to-last\nhidden layer. The original input file is never modified."
+    "excerpt": "Hardware and installation Measured CPU throughput was not viable for the current product target. The published native targets are macOS arm64 Metal, Linux x86_64 CUDA 12.9 and Windows x86_64 CUDA 12.8. Liatir does not substitute a CPU or different CUDA target…",
+    "content": "Hardware and installation\nMeasured CPU throughput was not viable for the current product target. The\npublished native targets are macOS arm64 Metal, Linux x86_64 CUDA 12.9 and\nWindows x86_64 CUDA 12.8. Liatir does not substitute a CPU or different CUDA\ntarget when one of these exact environments is unavailable.\n\nThe input matrix is normalized per cell to 10,000 counts, scaled by the official\nGenecorpus-30M gene medians, converted to the V1 rank-value encoding, and capped\nat 2,048 gene tokens. Cell embeddings are mean-pooled from the second-to-last\nhidden layer. The original input file is never modified."
   },
   {
     "id": "docs:ai/models/ctheodoris-geneformer-v1-10m#official-source",
@@ -187,8 +187,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "AI Models — Available models",
     "locator": "Docs / Ai / Models / Overview / Available models",
-    "excerpt": "Available models | AI Model | Input | Published support | | --- | --- | --- | | [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | human AnnData | macOS arm64 Metal; Linux x86_64 CPU/CUDA; Windows x86_64 CPU | | [scGPT Whole-human](/ai/models/bowa…",
-    "content": "Available models\n| AI Model | Input | Published support |\n| --- | --- | --- |\n| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | human AnnData | macOS arm64 Metal; Linux x86_64 CPU/CUDA; Windows x86_64 CPU |\n| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | human AnnData | macOS arm64 Metal |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | multi-species AnnData | macOS arm64 Metal |\n\nThese are the complete product catalog. Models without a published Runtime Box\nare not shown as previews and cannot be installed through a legacy path."
+    "excerpt": "Available models | AI Model | Input | Published support | | --- | --- | --- | | [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | human AnnData | macOS arm64 Metal; Linux CUDA 12.9; Windows CUDA 12.8 | | [scGPT Whole-human](/ai/models/bowang-scgp…",
+    "content": "Available models\n| AI Model | Input | Published support |\n| --- | --- | --- |\n| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | human AnnData | macOS arm64 Metal; Linux CUDA 12.9; Windows CUDA 12.8 |\n| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | human AnnData | macOS arm64 Metal; Linux/Windows CPU; Linux CUDA 12.9; Windows CUDA 12.8 |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | multi-species AnnData | macOS arm64 Metal |\n\nThese are the complete product catalog. Models without a published Runtime Box\nare not shown as previews and cannot be installed through a legacy path."
   },
   {
     "id": "docs:ai/models/overview#installation-and-removal",
@@ -463,6 +463,126 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "content": "Filtering by extension\nTool pages that require a specific file type (e.g., Samtools only accepts BAM/SAM/CRAM) pre-filter the Data library's file picker by extension. Only compatible files are shown in the dropdown. This prevents mismatched inputs at the UI level."
   },
   {
+    "id": "docs:getting-started/first-analysis",
+    "sourceKind": "documentation",
+    "title": "Your first analysis",
+    "locator": "Docs / Getting Started / First Analysis",
+    "excerpt": "This path creates a local single-cell embedding, opens its preview, and keeps the produced AnnData available for another tool or pipeline.",
+    "content": "This path creates a local single-cell embedding, opens its preview, and keeps\nthe produced AnnData available for another tool or pipeline."
+  },
+  {
+    "id": "docs:getting-started/first-analysis#before-you-start",
+    "sourceKind": "documentation",
+    "title": "Your first analysis — Before you start",
+    "locator": "Docs / Getting Started / First Analysis / Before you start",
+    "excerpt": "Before you start You need: - a compatible AnnData `.h5ad` file; - enough free disk space for one supported AI Model; - a macOS arm64 machine for the currently complete local Beta path. Geneformer and scGPT expect human data. UCE supports additional species bu…",
+    "content": "Before you start\nYou need:\n\n- a compatible AnnData `.h5ad` file;\n- enough free disk space for one supported AI Model;\n- a macOS arm64 machine for the currently complete local Beta path.\n\nGeneformer and scGPT expect human data. UCE supports additional species but\nhas different gene-identifier requirements. Review the model page before\ninterpreting an output."
+  },
+  {
+    "id": "docs:getting-started/first-analysis#run-the-no-code-workflow",
+    "sourceKind": "documentation",
+    "title": "Your first analysis — Run the no-code workflow",
+    "locator": "Docs / Getting Started / First Analysis / Run the no-code workflow",
+    "excerpt": "Run the no-code workflow 1. Open **Data** and add the `.h5ad` file. Liatir records its path without copying or uploading it. 2. Open **AI Models**, choose a model compatible with your machine and select **Install**. This is an explicit network operation and m…",
+    "content": "Run the no-code workflow\n1. Open **Data** and add the `.h5ad` file. Liatir records its path without\n   copying or uploading it.\n2. Open **AI Models**, choose a model compatible with your machine and select\n   **Install**. This is an explicit network operation and may use substantial\n   disk space.\n3. Open **Pipelines** and choose **Single-cell embedding and preview**.\n4. Select the AnnData input and installed AI Model, then run the pipeline.\n5. Follow the analysis in **Jobs**. You can navigate elsewhere while it runs.\n6. Open the final entry in **Results** and inspect the single-cell preview,\n   warnings and provenance.\n7. Add the embedded AnnData to **Data** or connect it to a downstream pipeline\n   step. Use the AnnData output for scientific work; the bounded CSV/PCA view is\n   only a preview.\n\nThe direct **Single-cell Embedding** AI Tool uses the same input contract and\nfinalizer as the pipeline step."
+  },
+  {
+    "id": "docs:getting-started/first-analysis#try-a-nextflow-workflow",
+    "sourceKind": "documentation",
+    "title": "Your first analysis — Try a Nextflow workflow",
+    "locator": "Docs / Getting Started / First Analysis / Try a Nextflow workflow",
+    "excerpt": "Try a Nextflow workflow If Nextflow and Java are already installed on a supported execution host, save the workflow under **Tools → External Workflows**. The same saved definition can run by itself or appear in a Liatir pipeline. Declare outputs explicitly so…",
+    "content": "Try a Nextflow workflow\nIf Nextflow and Java are already installed on a supported execution host, save\nthe workflow under **Tools → External Workflows**. The same saved definition can\nrun by itself or appear in a Liatir pipeline. Declare outputs explicitly so\nthey become Liatir artifacts that can feed later tools without searching the\nNextflow work directory.\n\nSee [External Workflows](/tools/external-workflows) for platform requirements,\nreproducible revisions, cancellation and resume behavior."
+  },
+  {
+    "id": "docs:getting-started/first-analysis#what-to-record",
+    "sourceKind": "documentation",
+    "title": "Your first analysis — What to record",
+    "locator": "Docs / Getting Started / First Analysis / What to record",
+    "excerpt": "What to record Before sharing a result, keep the Liatir Result and check: - input identity and scientific compatibility; - model/runtime or Nextflow/Java versions; - parameters, warnings and exit status; - output digest and lineage; - whether the preview repr…",
+    "content": "What to record\nBefore sharing a result, keep the Liatir Result and check:\n\n- input identity and scientific compatibility;\n- model/runtime or Nextflow/Java versions;\n- parameters, warnings and exit status;\n- output digest and lineage;\n- whether the preview represents the whole dataset or a bounded sample.\n\nAn embedding is not a cell annotation or a clinical conclusion."
+  },
+  {
+    "id": "docs:getting-started/install",
+    "sourceKind": "documentation",
+    "title": "Install Liatir Beta",
+    "locator": "Docs / Getting Started / Install",
+    "excerpt": "Liatir is a local-first desktop application. The application, its interface, your workspace index and your analysis history stay available without a network connection. Optional AI Models and external tools are installed only when you choose to use them. :::…",
+    "content": "Liatir is a local-first desktop application. The application, its interface,\nyour workspace index and your analysis history stay available without a\nnetwork connection. Optional AI Models and external tools are installed only\nwhen you choose to use them.\n\n::: warning Beta packages\nUse only a package linked from the official Liatir website or GitHub\norganization. Platform packages will be published only after their signing and\nclean-machine release checks pass. An unsigned development build is not an\nofficial Beta package.\n:::"
+  },
+  {
+    "id": "docs:getting-started/install#platform-status",
+    "sourceKind": "documentation",
+    "title": "Install Liatir Beta — Platform status",
+    "locator": "Docs / Getting Started / Install / Platform status",
+    "excerpt": "Platform status | Platform | Scientific workflows | Beta installer status | | --- | --- | --- | | macOS arm64 | Single-cell and native Nextflow paths verified | Local packaging verified; Developer ID signing and Apple notarization still required for public di…",
+    "content": "Platform status\n| Platform | Scientific workflows | Beta installer status |\n| --- | --- | --- |\n| macOS arm64 | Single-cell and native Nextflow paths verified | Local packaging verified; Developer ID signing and Apple notarization still required for public distribution |\n| Windows 11 x86_64 | Single-cell Runtime Box support and Nextflow through WSL2 verified | Release installer gate in progress |\n| Linux x86_64 | Runtime Box support and native Nextflow verified | Release package gate in progress |\n\nThese rows describe tested paths, not every computer that may happen to run\nLiatir. See [Beta support and troubleshooting](/getting-started/support) before\nstarting a long analysis."
+  },
+  {
+    "id": "docs:getting-started/install#macos",
+    "sourceKind": "documentation",
+    "title": "Install Liatir Beta — macOS",
+    "locator": "Docs / Getting Started / Install / macOS",
+    "excerpt": "macOS An official macOS Beta is distributed as a signed and notarized `.dmg`: 1. Download the macOS arm64 disk image from the official release page. 2. Open the disk image and drag **Liatir** into **Applications**. 3. Start Liatir from **Applications** and co…",
+    "content": "macOS\nAn official macOS Beta is distributed as a signed and notarized `.dmg`:\n\n1. Download the macOS arm64 disk image from the official release page.\n2. Open the disk image and drag **Liatir** into **Applications**.\n3. Start Liatir from **Applications** and confirm that macOS identifies the\n   expected Liatir developer.\n4. Create or select a workspace. Your scientific files are referenced in their\n   existing locations; Liatir does not upload them.\n\nDo not bypass a macOS warning for an unsigned or unidentified build. Report the\npackage name and release version instead."
+  },
+  {
+    "id": "docs:getting-started/install#application-updates",
+    "sourceKind": "documentation",
+    "title": "Install Liatir Beta — Application updates",
+    "locator": "Docs / Getting Started / Install / Application updates",
+    "excerpt": "Application updates Open **Settings → Application updates** and select **Check for updates**. Liatir does not contact the release feed automatically. When an update is available, Liatir downloads it, verifies its updater signature, and asks you to restart aft…",
+    "content": "Application updates\nOpen **Settings → Application updates** and select **Check for updates**.\nLiatir does not contact the release feed automatically. When an update is\navailable, Liatir downloads it, verifies its updater signature, and asks you to\nrestart after installation.\n\nAn update is refused while a Job is running. Finish or cancel the Job first so\nan analysis is never interrupted by application replacement."
+  },
+  {
+    "id": "docs:getting-started/install#migration-and-recovery",
+    "sourceKind": "documentation",
+    "title": "Install Liatir Beta — Migration and recovery",
+    "locator": "Docs / Getting Started / Install / Migration and recovery",
+    "excerpt": "Migration and recovery On first start after upgrading from an older build, Liatir copies legacy workspace and analysis indexes into its isolated application storage. The migration is one-time and non-destructive: original entries and user-visible Results are…",
+    "content": "Migration and recovery\nOn first start after upgrading from an older build, Liatir copies legacy\nworkspace and analysis indexes into its isolated application storage. The\nmigration is one-time and non-destructive: original entries and user-visible\nResults are not deleted.\n\nIf the app does not reopen correctly after an update:\n\n1. preserve the Liatir application-data folder;\n2. reinstall the same official package or the previous supported package;\n3. reopen Liatir and inspect **Jobs** and **Results**;\n4. export diagnostics before removing any application data."
+  },
+  {
+    "id": "docs:getting-started/install#uninstall-on-macos",
+    "sourceKind": "documentation",
+    "title": "Install Liatir Beta — Uninstall on macOS",
+    "locator": "Docs / Getting Started / Install / Uninstall on macOS",
+    "excerpt": "Uninstall on macOS Quit Liatir, then move **Liatir.app** from **Applications** to the Trash. Removing the app does not remove your source datasets, Results, installed AI Models, or workspace metadata. This retention is intentional so reinstalling does not des…",
+    "content": "Uninstall on macOS\nQuit Liatir, then move **Liatir.app** from **Applications** to the Trash.\nRemoving the app does not remove your source datasets, Results, installed AI\nModels, or workspace metadata. This retention is intentional so reinstalling\ndoes not destroy scientific work.\n\nIf you also want to remove all Liatir-managed state, first back up any Results\nyou need, then remove `~/Library/Application Support/app.liatir.app`. Files you\nkept elsewhere on disk are not owned or deleted by Liatir."
+  },
+  {
+    "id": "docs:getting-started/support",
+    "sourceKind": "documentation",
+    "title": "Beta support and troubleshooting",
+    "locator": "Docs / Getting Started / Support",
+    "excerpt": "Liatir Beta focuses on one coherent local laboratory path: inspect data, run a single-cell AI workflow, inspect and reuse its outputs, and run a saved Nextflow workflow either directly or inside a Liatir pipeline.",
+    "content": "Liatir Beta focuses on one coherent local laboratory path: inspect data, run a\nsingle-cell AI workflow, inspect and reuse its outputs, and run a saved\nNextflow workflow either directly or inside a Liatir pipeline."
+  },
+  {
+    "id": "docs:getting-started/support#current-limits",
+    "sourceKind": "documentation",
+    "title": "Beta support and troubleshooting — Current limits",
+    "locator": "Docs / Getting Started / Support / Current limits",
+    "excerpt": "Current limits - Public signed desktop packages are not considered ready until the installer gate is complete on that platform. - macOS scientific and local packaging evidence currently covers Apple silicon, not Intel Macs. - Windows Nextflow runs through WSL…",
+    "content": "Current limits\n- Public signed desktop packages are not considered ready until the installer\n  gate is complete on that platform.\n- macOS scientific and local packaging evidence currently covers Apple silicon,\n  not Intel Macs.\n- Windows Nextflow runs through WSL2 Linux x86_64. Native Windows Nextflow,\n  WSL1 and WSL ARM64 are not supported.\n- Liatir does not yet install Nextflow/Java or configure HPC and cloud\n  executors.\n- Windows CUDA support is limited to the exact published CUDA 12.8 Geneformer\n  and scGPT targets. The hosted Windows GPU runner cannot validate them, so\n  support comes from their recorded native product evidence and is not a claim\n  about other drivers or CUDA versions.\n- AI Model availability is target-specific. The model selector shows only\n  compatible installed assets.\n- Liatir pipelines orchestrate tools but do not replace Nextflow scheduling,\n  cache, resume or DSL semantics.\n- Liatir is research software. Outputs require scientific review and are not a\n  medical diagnosis."
+  },
+  {
+    "id": "docs:getting-started/support#common-problems",
+    "sourceKind": "documentation",
+    "title": "Beta support and troubleshooting — Common problems",
+    "locator": "Docs / Getting Started / Support / Common problems",
+    "excerpt": "Common problems ### macOS says the developer cannot be verified Do not bypass the warning for a Beta package. Delete that app bundle and obtain the signed, notarized package from the official release page. Include the package filename and version in a support…",
+    "content": "Common problems\n### macOS says the developer cannot be verified\n\nDo not bypass the warning for a Beta package. Delete that app bundle and obtain\nthe signed, notarized package from the official release page. Include the\npackage filename and version in a support report.\n\n### Update check is unavailable\n\nDevelopment builds do not have a release feed. In an official package, confirm\nthat the machine can reach the release service over HTTPS and try again. An\noffline app remains usable; only the explicit update check needs connectivity.\n\n### Liatir will not update or restart\n\nOpen **Jobs**. Finish or cancel every running Job, then retry. Liatir refuses to\nreplace or restart the app while scientific work is active.\n\n### A file is missing\n\nLiatir stores references to source files. If a file was moved, open **Data**,\nselect the missing entry and use **Relocate**. Existing run history keeps its\nassociation with the updated reference.\n\n### An AI Model cannot be installed\n\nCheck the model's operating-system, architecture, accelerator, memory and disk\nrequirements. Liatir will not substitute an incompatible Runtime Box. Keep the\nerror and diagnostics; do not loosen version or signature checks.\n\n### Nextflow is not ready\n\nVerify that both `nextflow` and `java` are installed on the supported execution\nhost and available on `PATH`. On Windows, install them inside an x86_64 WSL2\ndistribution rather than as an unofficial native Windows wrapper.\n\n### A run was interrupted\n\nReopen Liatir and inspect **Jobs** and **Results**. Liatir reconciles interrupted\nruns instead of leaving them falsely running. Nextflow `-resume` is an explicit\nexpert action and is allowed only with a compatible saved definition and source\nrevision."
+  },
+  {
+    "id": "docs:getting-started/support#report-a-problem",
+    "sourceKind": "documentation",
+    "title": "Beta support and troubleshooting — Report a problem",
+    "locator": "Docs / Getting Started / Support / Report a problem",
+    "excerpt": "Report a problem Include the Liatir version, operating system and architecture, the affected Job or Result identity, what you expected, and the exported diagnostics. Do not send private datasets, credentials, signing keys, patient identifiers, or complete env…",
+    "content": "Report a problem\nInclude the Liatir version, operating system and architecture, the affected Job\nor Result identity, what you expected, and the exported diagnostics. Do not\nsend private datasets, credentials, signing keys, patient identifiers, or\ncomplete environment-variable dumps."
+  },
+  {
     "id": "docs:introduction/architecture",
     "sourceKind": "documentation",
     "title": "How Liatir Works",
@@ -547,8 +667,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "What is Liatir — Getting started",
     "locator": "Docs / Introduction / Overview / Getting started",
-    "excerpt": "Getting started 1. [Add files to your Data library](/data/overview) — import by path, no copying. 2. [Run a native tool](/tools/overview) — start with FastQC or fastp on FASTQ files. 3. [Read the AI guide](/ai/guide) — learn what AI Models and AI Tools do bef…",
-    "content": "Getting started\n1. [Add files to your Data library](/data/overview) — import by path, no copying.\n2. [Run a native tool](/tools/overview) — start with FastQC or fastp on FASTQ files.\n3. [Read the AI guide](/ai/guide) — learn what AI Models and AI Tools do before interpreting results.\n4. [Install an AI Model](/ai/models/overview) — run a local single-cell embedding workflow.\n5. [Build or import a .lia plugin](/plugins/overview) — for custom logic or pipeline orchestration.\n6. [Connect steps in a pipeline](/pipeline/overview) — outputs flow into the next step automatically."
+    "excerpt": "Getting started 1. [Install Liatir Beta](/getting-started/install) and check the current platform status. 2. [Run your first single-cell analysis](/getting-started/first-analysis). 3. [Add files to your Data library](/data/overview) — import by path, no copyi…",
+    "content": "Getting started\n1. [Install Liatir Beta](/getting-started/install) and check the current platform status.\n2. [Run your first single-cell analysis](/getting-started/first-analysis).\n3. [Add files to your Data library](/data/overview) — import by path, no copying.\n4. [Run a native tool](/tools/overview) — start with FastQC or fastp on FASTQ files.\n5. [Read the AI guide](/ai/guide) — learn what AI Models and AI Tools do before interpreting results.\n6. [Build or import a .lia plugin](/plugins/overview) — for custom logic or pipeline orchestration.\n7. [Connect steps in a pipeline](/pipeline/overview) — outputs flow into the next step automatically."
   },
   {
     "id": "docs:introduction/overview#the-name-liatir",

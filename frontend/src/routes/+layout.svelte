@@ -7,6 +7,9 @@
 	import Toast from '$lib/components/ui/Toast.svelte';
 	import InstallBanner from '$lib/components/ui/InstallBanner.svelte';
 	import StartupCleanupBanner from '$lib/components/ui/StartupCleanupBanner.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import { liatir } from '$lib/api';
+	import { LIATIR_SUPPORT_URL } from '$lib/_constants';
 	import {
 		finalizeCompletedAIDirectRuns,
 		hasRunningDirectAIJob
@@ -28,6 +31,8 @@
 	let { children } = $props();
 
 	let initialized: boolean = $state(false);
+	let startupError: string | null = $state(null);
+	let retryingStartup = $state(false);
 	let jobRefreshInterval: ReturnType<typeof setInterval> | null = null;
 	let closeGuardUnlisten: (() => void) | null = null;
 	let refreshingJobs = false;
@@ -60,6 +65,41 @@
 		void finalizeCompletedAIDirectRuns(jobs);
 	});
 
+	async function initializeApplication() {
+		startupError = null;
+		retryingStartup = true;
+		try {
+			closeGuardUnlisten ??= await initAppCloseGuard();
+			await workspaceStore.init();
+			if (!(workspaceStore.activeId && workspaceStore.active)) {
+				goto('/workspaces');
+				initialized = true;
+				return;
+			}
+			await executionRuns.init();
+			await reconcileExecutionResults();
+			await refreshJobsAndFinalize();
+			if (!jobRefreshInterval) {
+				jobRefreshInterval = setInterval(() => {
+					if (jobsStore.runningCount > 0 || hasRunningDirectAIJob(jobsStore.jobs)) {
+						void refreshJobsAndFinalize();
+					}
+				}, 2000);
+			}
+			await pipelineStore.init();
+			initialized = true;
+		} catch (error) {
+			startupError = error instanceof Error ? error.message : String(error);
+			initialized = false;
+		} finally {
+			retryingStartup = false;
+		}
+	}
+
+	function openStartupSupport() {
+		void liatir()?.openBrowser(LIATIR_SUPPORT_URL);
+	}
+
 	onMount(async () => {
 		// Capture uncaught errors app-wide (incl. the plugin-dev window) before
 		// anything else runs, so early failures are recorded too.
@@ -72,24 +112,7 @@
 			initialized = true;
 			return;
 		}
-		closeGuardUnlisten = await initAppCloseGuard();
-		await workspaceStore.init();
-		if (!(workspaceStore.activeId && workspaceStore.active)) {
-			goto('/workspaces');
-			initialized = true;
-			return;
-		}
-		await executionRuns.init();
-		await reconcileExecutionResults();
-		await refreshJobsAndFinalize();
-		jobRefreshInterval = setInterval(() => {
-			if (jobsStore.runningCount > 0 || hasRunningDirectAIJob(jobsStore.jobs)) {
-				void refreshJobsAndFinalize();
-			}
-		}, 2000);
-		await pipelineStore.init();
-		
-		initialized = true;
+		await initializeApplication();
 	});
 
 	const setSidebarForceExpand = (status: boolean) => {
@@ -109,7 +132,20 @@
 	</div>
 	<Toast />
 {:else if !workspaceStore.initialized || !initialized}
-	<div class="h-screen flex items-center justify-center" style="background-color: var(--color-bg);">
+	<div class="h-screen flex items-center justify-center p-6" style="background-color: var(--color-bg);">
+		{#if startupError}
+			<div class="w-full max-w-lg rounded-xl border border-red-500/30 bg-surface p-6 shadow-lg" data-testid="startup-recovery">
+				<h1 class="text-lg font-semibold text-text">Liatir could not open its workspace data</h1>
+				<p class="mt-2 text-sm text-text-secondary">
+					Your data was not deleted. This can happen when application storage is temporarily unavailable or an upgrade cannot be completed safely.
+				</p>
+				<p class="mt-3 rounded-lg bg-surface-2 p-3 font-mono text-xs text-red-400" data-testid="startup-recovery-error">{startupError}</p>
+				<div class="mt-4 flex gap-2">
+					<Button variant="primary" loading={retryingStartup} testId="startup-retry" onclick={initializeApplication}>Try again</Button>
+					<Button variant="secondary" onclick={openStartupSupport}>Troubleshooting</Button>
+				</div>
+			</div>
+		{:else}
 		<svg
 			class="animate-spin h-5 w-5 text-brand"
 			xmlns="http://www.w3.org/2000/svg"
@@ -121,6 +157,7 @@
 			<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
 			></path>
 		</svg>
+		{/if}
 	</div>
 {:else}
 <div style="{workspaceStore.isSandboxMode ? 'background-color: var(--color-sandbox-500);' : ''}">

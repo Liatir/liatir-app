@@ -4,7 +4,6 @@ set -euo pipefail
 # -----------------------------
 # Read inputs with safe defaults
 # -----------------------------
-: "${APP_URL:=http://blank.html}"
 : "${APP_VERSION:=0.1.0}"
 : "${CARGO_PACKAGE_NAME:=liatir}"
 : "${CARGO_PACKAGE_VERSION:=$APP_VERSION}"
@@ -22,7 +21,7 @@ fi
 : "${MAIN_WINDOW_WIDTH:=1200}"
 : "${MAIN_WINDOW_HEIGHT:=800}"
 : "${MAIN_WINDOW_BG_COLOR:=#ffffff}"
-: "${MAIN_WINDOW_URL:=$APP_URL}"
+: "${MAIN_WINDOW_URL:=}"
 : "${MAIN_WINDOW_RESIZABLE:=true}"
 : "${MAIN_WINDOW_OPEN_FULLSCREEN:=false}"
 
@@ -38,26 +37,18 @@ MAIN_WINDOW_OPEN_FULLSCREEN=${MAIN_WINDOW_OPEN_FULLSCREEN}
 EOF
 
 # -----------------------------
-# Resolve APP_URL origin and remote URL patterns
+# Validate immutable release inputs
 # -----------------------------
 
-APP_URL_ORIGIN="$(printf '%s' "$APP_URL" | sed -E 's#^(https?://[^/]+).*$#\1#')"
-
-if ! printf '%s' "$APP_URL_ORIGIN" | grep -Eq '^https?://[^/]+$'; then
-  echo "Invalid APP_URL origin resolved from APP_URL: $APP_URL"
+if [ -n "$MAIN_WINDOW_URL" ]; then
+  echo "MAIN_WINDOW_URL must be empty for an offline-capable production build"
   exit 1
 fi
 
-APP_URL_SCHEME="$(printf '%s' "$APP_URL_ORIGIN" | sed -E 's#^(https?)://.*$#\1#')"
-APP_URL_HOST="$(printf '%s' "$APP_URL_ORIGIN" | sed -E 's#^https?://([^/:]+)(:[0-9]+)?$#\1#')"
-APP_URL_PORT="$(printf '%s' "$APP_URL_ORIGIN" | sed -nE 's#^https?://[^/:]+(:[0-9]+)$#\1#p')"
-
-APP_URL_HOST_WITH_PORT="${APP_URL_HOST}${APP_URL_PORT}"
-APP_URL_WILDCARD_HOST="*.${APP_URL_HOST}${APP_URL_PORT}"
-
-echo "Resolved APP_URL_ORIGIN=$APP_URL_ORIGIN"
-echo "Resolved APP_URL_SCHEME=$APP_URL_SCHEME"
-echo "Resolved APP_URL_HOST_WITH_PORT=$APP_URL_HOST_WITH_PORT"
+if ! printf '%s' "$UPDATE_ENDPOINT" | grep -Eq '^https://'; then
+  echo "UPDATE_ENDPOINT must use HTTPS for a production build"
+  exit 1
+fi
 
 # -----------------------------
 # Always use PROD templates
@@ -71,24 +62,9 @@ TAURI_TEMPLATE="conf-templates/tauri.conf.template.prod.json"
 
 echo "1. Generating files from templates"
 
-# remote.json capabilities
-cp conf-templates/remote.template.json src-tauri/capabilities/remote.json
-
-jq \
-  --arg scheme "$APP_URL_SCHEME" \
-  --arg host "$APP_URL_HOST_WITH_PORT" \
-  --arg wildcardHost "$APP_URL_WILDCARD_HOST" \
-  '
-  .remote = (.remote // {}) |
-  .remote.urls = [
-    ($scheme + "://" + $host + "/*"),
-    ($scheme + "://" + $wildcardHost + "/*")
-  ]
-  ' src-tauri/capabilities/remote.json > src-tauri/capabilities/remote.json.tmp && mv src-tauri/capabilities/remote.json.tmp src-tauri/capabilities/remote.json
-
-echo "  remote.json             -> patched"
-echo "  remote.urls:"
-jq '.remote.urls' src-tauri/capabilities/remote.json
+# Production web content is bundled. The app never depends on a hosted UI.
+cp conf-templates/capability.local.json src-tauri/capabilities/local.json
+echo "  local.json              -> copied (bundled frontend)"
 
 # Cargo.toml
 sed -e "s/%%CARGO_PACKAGE_NAME%%/${CARGO_PACKAGE_NAME}/g" \
@@ -98,7 +74,7 @@ sed -e "s/%%CARGO_PACKAGE_NAME%%/${CARGO_PACKAGE_NAME}/g" \
 echo "  Cargo.toml              -> patched [${CARGO_PACKAGE_NAME} ${CARGO_PACKAGE_VERSION}]"
 
 # bridge.constants.json
-sed -e "s|%%APP_URL%%|${APP_URL_ORIGIN}|g" \
+sed -e "s|%%APP_URL%%||g" \
     -e "s|%%APP_VERSION%%|${APP_VERSION}|g" \
   conf-templates/bridge.constants.template.json > src-ts/bridge.constants.json
 
@@ -131,31 +107,6 @@ jq \
   '.version = $ver' \
   src-tauri/tauri.conf.json > src-tauri/tauri.conf.json.tmp && mv src-tauri/tauri.conf.json.tmp src-tauri/tauri.conf.json
 
-# CSP allowlist
-echo "5. Patching CSP allowlist"
-jq --arg url "$APP_URL_ORIGIN" '
-  .app = (.app // {}) |
-  .app.security = (.app.security // {}) |
-  .app.security.csp = (
-    "default-src '\''self'\'' " + $url + "; " +
-    "script-src '\''self'\'' " + $url + " '\''unsafe-inline'\''; " +
-    "style-src '\''self'\'' " + $url + " '\''unsafe-inline'\''; " +
-    "img-src * data: blob:; " +
-    "connect-src *; " +
-    "media-src *;"
-  )
-' src-tauri/tauri.conf.json > src-tauri/tauri.conf.json.tmp && mv src-tauri/tauri.conf.json.tmp src-tauri/tauri.conf.json
-
-# Ensure remote capability is enabled
-echo "5.1. Ensuring remote capability is enabled"
-jq '
-  .app = (.app // {}) |
-  .app.security = (.app.security // {}) |
-  .app.security.capabilities = (
-    ((.app.security.capabilities // []) + ["remote"]) | unique
-  )
-' src-tauri/tauri.conf.json > src-tauri/tauri.conf.json.tmp && mv src-tauri/tauri.conf.json.tmp src-tauri/tauri.conf.json
-
 # Updater config
 echo "6. Patching updater settings (Tauri v2 plugin)"
 jq --arg endpoint "$UPDATE_ENDPOINT" --arg pubkey "$ED25519_PUBKEY" '
@@ -187,6 +138,5 @@ echo "  tauri.conf.json -> patched"
 
 echo "  enabled capabilities:"
 jq '.app.security.capabilities' src-tauri/tauri.conf.json
-
-echo "  final remote.json:"
-cat src-tauri/capabilities/remote.json
+echo "  frontendDist:"
+jq '.build.frontendDist' src-tauri/tauri.conf.json

@@ -22,6 +22,9 @@ commands.allow = [
 
   "lia_app_info",
   "lia_app_exit",
+  "lia_app_update_check",
+  "lia_app_update_install",
+  "lia_app_restart",
 
   "lia_global_vars_get",
   "lia_global_vars_set",

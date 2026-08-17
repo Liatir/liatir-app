@@ -57,6 +57,7 @@ fn main() {
   let mut builder = tauri::Builder::default();
 
   builder = builder.manage(bridge::jobs::JobRegistry::new());
+  builder = builder.manage(bridge::app_updates::AppUpdateState::new());
   builder = builder.manage(bridge::managed_bins::DownloadRegistry::new());
   builder = builder.manage(bridge::plugin_dev::PluginDevRegistry::new());
 
@@ -87,6 +88,7 @@ fn main() {
     .plugin(tauri_plugin_clipboard_manager::init())
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_shell::init())
+    .plugin(tauri_plugin_updater::Builder::new().build())
     .plugin(bridge::autostart::init_plugin());
 
   #[cfg(feature = "wdio")]
@@ -291,6 +293,9 @@ fn main() {
       // app
       lia_app_info,
       lia_app_exit,
+      lia_app_update_check,
+      lia_app_update_install,
+      lia_app_restart,
 
       // global_vars
       lia_global_vars_get,

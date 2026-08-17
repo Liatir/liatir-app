@@ -34,10 +34,10 @@ runtime.
 
 ## Hardware and installation
 
-The 10M-parameter V1 model can run on CPU for small datasets. CUDA or Apple
-Metal is preferred for larger cell batches. Published native targets cover
-macOS arm64 Metal, Linux x86_64 CPU/CUDA, and Windows x86_64 CPU. CUDA is
-validated only on Linux; Windows CUDA is not supported.
+Measured CPU throughput was not viable for the current product target. The
+published native targets are macOS arm64 Metal, Linux x86_64 CUDA 12.9 and
+Windows x86_64 CUDA 12.8. Liatir does not substitute a CPU or different CUDA
+target when one of these exact environments is unavailable.
 
 The input matrix is normalized per cell to 10,000 counts, scaled by the official
 Genecorpus-30M gene medians, converted to the V1 rank-value encoding, and capped

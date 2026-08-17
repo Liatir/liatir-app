@@ -1108,7 +1108,12 @@ function buildNotifications(core) {
 function buildAppInfo(core) {
   return {
     info: () => core.invoke("lia_app_info"),
-    exit: (code) => core.invoke("lia_app_exit", { code: code ?? 0 })
+    exit: (code) => core.invoke("lia_app_exit", { code: code ?? 0 }),
+    updates: {
+      check: () => core.invoke("lia_app_update_check"),
+      install: () => core.invoke("lia_app_update_install"),
+      restart: () => core.invoke("lia_app_restart")
+    }
   };
 }
 

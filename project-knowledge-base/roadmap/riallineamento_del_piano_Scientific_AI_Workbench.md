@@ -1,6 +1,6 @@
 # Riallineamento del piano “Scientific AI Workbench”
 
-Ultima revisione: 2026-08-14
+Ultima revisione: 2026-08-17
 
 ## Stato corrente
 
@@ -12,7 +12,8 @@ Ultima revisione: 2026-08-14
 | 4. I/O scientifico standardizzato | Completato localmente su macOS arm64 |
 | 5. Lighthouse single-cell | Completato localmente su macOS arm64 |
 | 6. Nextflow come External Workflow | Completato su macOS arm64, Linux x86_64 e app Windows x86_64 con backend WSL2 Linux x86_64 |
-| 7–8 | Pianificati |
+| 7. Gate Beta 1 | In corso: implementazione ed evidenza locale macOS arm64 complete ed eseguite; release Apple firmata/notarizzata e Windows/Linux ancora aperti |
+| 8. MCP dopo il nucleo Beta | Pianificato dopo il Gate 7 |
 
 ## Indicatori
 
@@ -170,11 +171,49 @@ limitazioni sono in
 
 **Difficoltà:** `4/5` · **Codex effort:** `high` · **Windows** · **Linux**
 
+**Stato (2026-08-17): in corso. La parte locale macOS arm64 è implementata e
+completamente eseguita; non è ancora evidenza di una release pubblicabile.**
+
 - E2E del laboratorio single-cell.
 - E2E Nextflow sia autonomo sia dentro una pipeline.
 - Provare che il medesimo output sia riutilizzabile downstream.
 - Installer firmato, aggiornamento, migrazione, recovery e disinstallazione.
 - Documentazione pubblica e support matrix basata sulle evidenze.
+
+Il frontend di produzione è ora incorporato nell'app e resta avviabile offline.
+Il bridge updater nativo usa il verificatore Tauri, serializza le operazioni e
+rifiuta installazione o restart mentre un Job è attivo. Migrazioni fallite
+aprono un percorso di recovery senza cancellare dati. Un gate locale separato
+ha prodotto, verificato e montato un DMG ad-hoc esplicitamente non pubblicabile;
+una prova in due processi ha conservato workspace e Results attraverso
+migrazione, restart e rimozione dell'app. Le regressioni native single-cell
+1/1 e Nextflow reale 3/3 sono verdi.
+
+Le due prove rimaste sospese sono state eseguite il 2026-08-17 su un binario
+ricostruito dal worktree corrente: il pacchetto DMG ad-hoc passa sulla revisione
+attuale (`codesign` e `hdiutil` verdi, immagine montata e ispezionata) e l'E2E di
+recovery da indice corrotto passa 1/1. La prima esecuzione di quest'ultimo ha
+rivelato un difetto **nel test**, non nell'app: un handle WebDriver già risolto
+resta memorizzato, quindi chiedere a un nodo rimosso se è visibile solleva uno
+stale reference invece di riportarne l'assenza. Corretto interrogando di nuovo
+l'elemento a ogni ciclo.
+
+È stato inoltre corretto un difetto di proprietà delle suite: i due spec
+`desktop-beta-macos-*` non dichiaravano `requiredEnv`, quindi il glob predefinito
+del runner li avrebbe eseguiti dentro `npm run test:ui` senza lo stato seminato
+dall'orchestratore. Ora richiedono `LIATIR_DESKTOP_BETA_LIFECYCLE`, la prova di
+ciclo di vita è una suite dichiarata (`desktop-beta-lifecycle-e2e`) nei profili
+`ui` e `all`, il matrix runner supporta `platforms` per saltare una suite fuori
+piattaforma invece di fallirla, e un test unitario impedisce che uno spec
+orchestrato torni a finire nel glob predefinito.
+
+Evidenza finale macOS: `npm run test:verify` 52 file / 306 test, `cargo test` 54
+passati / 2 ignorati intenzionalmente, `desktop-beta:test:macos` 2 processi su 2,
+Gate 5 1/1, updater/Job-safety 1/1, scientific-artifact 1/1.
+
+Restano aperti Developer ID, notarizzazione e updater firmato A → B su un
+pacchetto pubblico, oltre ai gate desktop Windows e Linux. Dettagli e handoff:
+[Gate 7 Beta 1 — macOS evidence](./gate-7-beta1-macos.md).
 
 ### 8. MCP dopo il nucleo Beta
 

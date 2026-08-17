@@ -15,8 +15,8 @@ The current product catalog contains:
 
 | AI Model | Current published targets | Main use |
 | --- | --- | --- |
-| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | macOS arm64 Metal, Linux x86_64 CPU/CUDA, Windows x86_64 CPU | human single-cell embeddings |
-| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | macOS arm64 Metal | human single-cell embeddings |
+| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | macOS arm64 Metal; Linux CUDA 12.9; Windows CUDA 12.8 | human single-cell embeddings |
+| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | macOS arm64 Metal; Linux/Windows CPU; Linux CUDA 12.9; Windows CUDA 12.8 | human single-cell embeddings |
 | [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | macOS arm64 Metal | multi-species single-cell embeddings |
 
 The current AI Tool is [Single-cell Embedding](/ai/tools/single-cell-embedding).
@@ -64,8 +64,9 @@ analysis; it is not a final biological conclusion.
 ## Hardware support
 
 Liatir installs only a published target that exactly matches the operating
-system, architecture, accelerator, memory, and driver constraints. CUDA support
-is currently validated only on Linux. Windows CUDA is not a supported target.
+system, architecture, accelerator, memory, and driver constraints. Native
+Windows CUDA support is limited to the exact published CUDA 12.8 Geneformer and
+scGPT targets; other Windows CUDA combinations are not inferred from them.
 
 ## Related pages
 

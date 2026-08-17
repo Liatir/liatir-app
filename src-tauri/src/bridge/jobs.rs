@@ -4,7 +4,7 @@ use std::{
     collections::HashMap,
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
-        Arc, Mutex,
+        Arc, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard,
     },
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -106,11 +106,48 @@ pub(crate) struct JobKillCommand {
 // Registry (managed Tauri state)
 // ---------------------------------
 
-pub struct JobRegistry(pub(crate) Mutex<HashMap<String, JobState>>);
+pub struct JobRegistry {
+    pub(crate) jobs: Mutex<HashMap<String, JobState>>,
+    job_start_gate: RwLock<()>,
+}
 
 impl JobRegistry {
     pub fn new() -> Self {
-        Self(Mutex::new(HashMap::new()))
+        Self {
+            jobs: Mutex::new(HashMap::new()),
+            job_start_gate: RwLock::new(()),
+        }
+    }
+
+    /// Hold while a new Job is being registered. Application replacement takes
+    /// the exclusive side of the same gate, closing the race between its final
+    /// running-Job check and the native updater install call.
+    pub(crate) fn allow_job_start(&self) -> Result<RwLockReadGuard<'_, ()>, String> {
+        self.job_start_gate
+            .read()
+            .map_err(|_| "Job start gate is unavailable".to_string())
+    }
+
+    pub(crate) fn block_new_jobs_for_update(
+        &self,
+    ) -> Result<RwLockWriteGuard<'_, ()>, String> {
+        self.job_start_gate
+            .write()
+            .map_err(|_| "Job start gate is unavailable".to_string())
+    }
+
+    /// Number of live Jobs owned by this app process. Application replacement
+    /// must never interrupt them; the updater checks this both before download
+    /// and immediately before installing the verified artifact.
+    pub(crate) fn running_count(&self) -> Result<usize, String> {
+        let jobs = self
+            .jobs
+            .lock()
+            .map_err(|_| "Job registry lock poisoned".to_string())?;
+        Ok(jobs
+            .values()
+            .filter(|job| job.entry.status == JobStatus::Running)
+            .count())
     }
 }
 
@@ -312,6 +349,8 @@ async fn spawn_job(
     env.insert("LIATIR_JOB_ID".to_string(), job_id.clone());
     command = command.envs(env);
 
+    let registry = app.state::<JobRegistry>();
+    let _job_start = registry.allow_job_start()?;
     let (mut rx, child) = command
         .spawn()
         .map_err(|e| format!("failed to spawn '{resolved}': {e}"))?;
@@ -334,8 +373,7 @@ async fn spawn_job(
     let stderr_buf = Arc::new(Mutex::new(Vec::<String>::new()));
 
     {
-        let registry = app.state::<JobRegistry>();
-        let mut jobs = registry.0.lock().unwrap();
+        let mut jobs = registry.jobs.lock().unwrap();
         jobs.insert(
             job_id.clone(),
             JobState {
@@ -392,7 +430,7 @@ async fn spawn_job(
 
                     {
                         let registry = handle.state::<JobRegistry>();
-                        let mut jobs = registry.0.lock().unwrap();
+                        let mut jobs = registry.jobs.lock().unwrap();
                         if let Some(state) = jobs.get_mut(&jid) {
                             if state.entry.status == JobStatus::Killed {
                                 status = JobStatus::Killed;
@@ -482,7 +520,8 @@ pub(crate) fn create_in_process_job_with_id(
         progress: None,
     };
     let registry = app.state::<JobRegistry>();
-    let mut jobs = registry.0.lock().unwrap();
+    let _job_start = registry.allow_job_start()?;
+    let mut jobs = registry.jobs.lock().unwrap();
     if jobs.contains_key(&job_id) {
         return Err(format!("job ID already exists: {job_id}"));
     }
@@ -507,7 +546,7 @@ pub(crate) fn append_in_process_output(
     line: String,
 ) {
     let registry = app.state::<JobRegistry>();
-    let jobs = registry.0.lock().unwrap();
+    let jobs = registry.jobs.lock().unwrap();
     let Some(state) = jobs.get(job_id) else { return };
     if stream == "stderr" {
         state.stderr.lock().unwrap().push(line.clone());
@@ -520,7 +559,7 @@ pub(crate) fn append_in_process_output(
 
 pub(crate) fn finish_in_process_job(app: &AppHandle, job_id: &str, ok: bool) {
     let registry = app.state::<JobRegistry>();
-    let mut jobs = registry.0.lock().unwrap();
+    let mut jobs = registry.jobs.lock().unwrap();
     let Some(state) = jobs.get_mut(job_id) else { return };
     if state.entry.status == JobStatus::Killed {
         return;
@@ -576,7 +615,7 @@ pub fn lia_jobs_append_logical_output(
     }
     {
         let registry = app.state::<JobRegistry>();
-        let jobs = registry.0.lock().unwrap();
+        let jobs = registry.jobs.lock().unwrap();
         let state = jobs
             .get(&job_id)
             .ok_or_else(|| format!("job not found: {job_id}"))?;
@@ -595,7 +634,7 @@ pub fn lia_jobs_append_logical_output(
 pub fn lia_jobs_finish_logical(app: AppHandle, job_id: String, ok: bool) -> Result<(), String> {
     {
         let registry = app.state::<JobRegistry>();
-        let jobs = registry.0.lock().unwrap();
+        let jobs = registry.jobs.lock().unwrap();
         let state = jobs
             .get(&job_id)
             .ok_or_else(|| format!("job not found: {job_id}"))?;
@@ -609,7 +648,7 @@ pub fn lia_jobs_finish_logical(app: AppHandle, job_id: String, ok: bool) -> Resu
 
 fn kill_job_blocking(app: AppHandle, job_id: String) -> Result<bool, String> {
     let registry = app.state::<JobRegistry>();
-    let mut jobs = registry.0.lock().unwrap();
+    let mut jobs = registry.jobs.lock().unwrap();
 
     let state = jobs
         .get_mut(&job_id)
@@ -686,7 +725,7 @@ pub async fn lia_jobs_kill(app: AppHandle, job_id: String) -> Result<bool, Strin
 #[tauri::command]
 pub fn lia_jobs_status(app: AppHandle, job_id: String) -> Result<JobEntry, String> {
     let registry = app.state::<JobRegistry>();
-    let jobs = registry.0.lock().unwrap();
+    let jobs = registry.jobs.lock().unwrap();
 
     jobs.get(&job_id)
         .map(|s| s.entry.clone())
@@ -700,7 +739,7 @@ pub fn lia_jobs_list(
     include_dev: Option<bool>,
 ) -> Result<Vec<JobEntry>, String> {
     let registry = app.state::<JobRegistry>();
-    let jobs = registry.0.lock().unwrap();
+    let jobs = registry.jobs.lock().unwrap();
     let include_dev = include_dev.unwrap_or(false);
 
     let mut list: Vec<JobEntry> = jobs
@@ -722,7 +761,7 @@ pub fn lia_jobs_list(
 #[tauri::command]
 pub fn lia_jobs_clear_done(app: AppHandle, workspace_id: Option<String>) -> Result<usize, String> {
     let registry = app.state::<JobRegistry>();
-    let mut jobs = registry.0.lock().unwrap();
+    let mut jobs = registry.jobs.lock().unwrap();
 
     let before = jobs.len();
     // Keep running jobs; also keep finished jobs that belong to *other*
@@ -749,7 +788,7 @@ pub fn lia_jobs_get_output(
     since: Option<usize>,
 ) -> Result<JobOutput, String> {
     let registry = app.state::<JobRegistry>();
-    let jobs = registry.0.lock().unwrap();
+    let jobs = registry.jobs.lock().unwrap();
 
     let state = jobs
         .get(&job_id)

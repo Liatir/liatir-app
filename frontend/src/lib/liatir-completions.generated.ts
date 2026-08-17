@@ -29,6 +29,11 @@ export const LIATIR_API: Record<string, ApiNode> = {
       app: { type: "property", detail: "AppInterface", children: {
           info: { type: "method", detail: "(): Promise<AppInfo>" },
           exit: { type: "method", detail: "(code?: I32): Promise<void>" },
+          updates: { type: "property", detail: "AppUpdatesInterface", children: {
+              check: { type: "method", detail: "(): Promise<AppUpdateCheckResult>", info: "Check the signed release feed. This is the only operation that needs network access." },
+              install: { type: "method", detail: "(): Promise<AppUpdateInstallResult>", info: "Download, verify and install the update selected by the latest check." },
+              restart: { type: "method", detail: "(): Promise<void>", info: "Restart Liatir after installation. Refused while a Job is running." },
+          } },
       } },
       window: { type: "property", detail: "WindowInterface", children: {
           new: { type: "method", detail: "(options?: NewWindowOptions): Promise<void>" },

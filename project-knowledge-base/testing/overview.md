@@ -299,6 +299,45 @@ ELF app passed 3/3 under Xvfb. Both checkouts passed 51 files / 296 tests in
 versions and limitations are recorded in
 [Gate 6 Nextflow cross-platform evidence](../roadmap/gate-6-nextflow-cross-platform.md).
 
+### Gate 7 desktop Beta lifecycle
+
+The macOS arm64 slice has two deliberately separate local gates:
+
+```bash
+npm run desktop-beta:package:macos
+npm run test:tauri:prepare
+npm run desktop-beta:test:macos
+```
+
+The package gate creates an ad-hoc-signed app and DMG, disables updater
+artifacts, verifies the signature and disk image, mounts the DMG and checks the
+packaged executable. It is never public release evidence and must not be
+published. The lifecycle gate launches two native app processes against the
+same isolated test-owned home, proves one-time migration and restart recovery,
+then removes the temporary app and proves workspace state and Results remain.
+
+`tests/e2e/specs/app-update.e2e.mjs` covers the explicit update UI and verifies
+that application restart is refused while a logical Job is running. A real
+signed updater A-to-B test remains blocked on release signing inputs and must
+not be replaced by weakening updater signatures.
+
+For the complete macOS regression run, also execute:
+
+```bash
+node tests/e2e/run-tauri-e2e.mjs tests/e2e/specs/app-update.e2e.mjs tests/e2e/specs/single-cell-lighthouse.e2e.mjs
+LIATIR_E2E_NEXTFLOW=1 node tests/e2e/run-tauri-e2e.mjs tests/e2e/specs/external-workflow-nextflow.e2e.mjs
+```
+
+On macOS these GUI tests may need to run outside a restricted shell sandbox so
+WebKit and LaunchServices can expose the embedded WebDriver. A process that
+stays alive while the WebDriver port never opens, with `hiservices` connection
+errors in the Tauri log, is harness permission evidence rather than a Nextflow
+failure.
+
+The current evidence, unclaimed release checks and Windows/WSL continuation are
+recorded in
+[Gate 7 Beta 1 — macOS evidence](../roadmap/gate-7-beta1-macos.md).
+
 `npm run pipeline:test:settlement-restart` is the process-restart companion.
 The first Tauri process persists an active pipeline plus direct AI Model,
 Plugin, Native Tool and API Connector executions. The second process reconciles

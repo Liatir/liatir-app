@@ -1,5 +1,79 @@
 # Current project status
 
+## The Gate 7 macOS slice is fully executed (2026-08-17)
+
+The two macOS proofs the previous session prepared but could not launch have now
+been run against a debug binary rebuilt from the current worktree.
+`npm run desktop-beta:package:macos` passed on the current revision, after the
+CSP and release-input hardening: it produced `Liatir_0.2.1_aarch64.dmg`,
+`codesign --verify --deep --strict` reported the bundle valid and satisfying its
+Designated Requirement, `hdiutil verify` reported a valid checksum, and the
+mounted image contained the packaged executable. It remains ad-hoc signed, not
+notarized, and must not be published. The native corrupt-index recovery spec
+passed 1/1.
+
+Running that recovery spec for the first time found a defect in the spec, not in
+the application. `WebDriverElement` caches an element id once resolved, so
+asking the already-resolved recovery banner whether it is displayed after a
+successful retry queries a removed node and raises a stale element reference
+instead of reporting absence. The failure screenshot showed the app had
+recovered correctly while the assertion reported failure. The spec now
+re-queries the element each poll and asserts absence through `isExisting`.
+
+A second defect was in suite ownership. `desktop-beta-macos-install` and
+`desktop-beta-macos-recover` shipped without `requiredEnv`, and the native
+runner globs the whole spec directory when given no spec arguments, so both
+would have run inside `npm run test:ui` against an unseeded home and failed
+while the orchestrated Gate 7 proof passed. Every other orchestrator-owned spec
+already declared the guard. Both now require `LIATIR_DESKTOP_BETA_LIFECYCLE`;
+the lifecycle proof is a declared `desktop-beta-lifecycle-e2e` suite in the `ui`
+and `all` profiles; the matrix runner accepts a `platforms` declaration and
+skips an off-platform suite instead of failing it, so the Windows session can
+add its own package/lifecycle suite the same way; and
+`tests/unit/e2e-spec-loading.test.ts` now fails if any orchestrator-owned spec
+stops declaring `requiredEnv`.
+
+Evidence: `npm run test:verify` 52 files / 306 tests with every build and type
+gate green, `cargo test` 54 passed / 2 intentionally ignored,
+`npm run desktop-beta:test:macos` both native processes 1/1, and Gate 5
+single-cell 1/1, updater/Job-safety 1/1 and scientific-artifact 1/1 against the
+rebuilt binary. The real Gate 6 Nextflow regression was not re-run because no
+application code changed after its recorded 3/3; only specs and the test matrix
+did.
+
+Gate 7 is still not closed. Developer ID signing, Apple notarization, a real
+signed A-to-B update on a public package, and the Windows and Linux desktop
+matrices remain release blockers.
+
+## Gate 7 Beta 1 is in progress; the local macOS slice is implemented and verified (2026-08-14)
+
+The production desktop path now bundles the frontend instead of depending on a
+hosted UI. Settings exposes a user-triggered Tauri updater flow; the native
+bridge serializes checks/installs and refuses application replacement or
+restart while a scientific Job is running; an exclusive lifecycle guard also
+prevents a new Job from appearing between the final check and replacement.
+Startup migration failures now keep
+data in place and show retry/support recovery instead of leaving a permanent
+spinner. A release-build entry point requires an exact clean revision, HTTPS
+feed, updater signing keys and platform signing/notarization inputs, and never
+publishes artifacts itself.
+
+Local macOS arm64 evidence is complete at the non-release layer. An ad-hoc
+signed DMG was built, code-signature checked, checksum verified, mounted and
+inspected. Native tests passed for the explicit updater and Job guard (1/1),
+the Gate 5 single-cell lighthouse (1/1), real Gate 6 Nextflow standalone and
+pipeline behavior (3/3), and two-process migration/recovery/uninstall retention
+(2/2 processes). Removing the temporary app preserved migrated state and both
+legacy and newly produced Results. Public installation, first-analysis,
+limitations and troubleshooting pages were added.
+
+Gate 7 is not closed. This machine has no Developer ID identity or Apple
+notarization credentials, so the local DMG is explicitly non-publishable and no
+real signed updater A-to-B transition is claimed. A clean-machine signed and
+notarized macOS proof plus native Windows and Linux desktop package/lifecycle
+evidence remain release blockers. The exact evidence and Windows/WSL handoff
+are in [Gate 7 Beta 1 — macOS evidence](./roadmap/gate-7-beta1-macos.md).
+
 ## Nextflow External Workflows are cross-platform complete (Gate 6, 2026-08-14)
 
 Liatir now has a first-class, workspace-scoped External Workflow definition in
@@ -55,7 +129,8 @@ with two intentional ignores, and `cargo clippy --tests` exited successfully.
 Gate 6 is therefore cross-platform complete for macOS arm64, native Linux
 x86_64, and the native Windows x86_64 app using WSL2 Linux x86_64. This does not
 claim native-Windows Nextflow, WSL1, WSL ARM64, managed Nextflow installation,
-or HPC/cloud executors. Gate 7 remains planned.
+or HPC/cloud executors. Gate 7 has now started with the macOS slice recorded
+above.
 
 ## The single-cell lighthouse is complete (Gate 5, 2026-08-13)
 
@@ -428,7 +503,9 @@ channel changed.
 The Runtime Box migration and the nine-target re-release are complete. Continue
 Liatir development in this order:
 
-1. close the signed desktop Beta 1 release matrix and public documentation;
+1. complete the remaining signed/notarized macOS and Windows/Linux Gate 7
+   release evidence; the local macOS implementation and public documentation
+   are already in place;
 2. expose controlled local MCP access after Beta 1;
 3. continue the evidence-backed scientific verticals and extension work in the
    canonical product-plan order.

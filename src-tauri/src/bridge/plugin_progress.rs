@@ -45,7 +45,7 @@ pub fn lia_plugin_progress(
     done: Option<bool>,
 ) -> Result<(), String> {
     let registry = app.state::<JobRegistry>();
-    let mut jobs = registry.0.lock().unwrap();
+    let mut jobs = registry.jobs.lock().unwrap();
 
     let state = jobs
         .get_mut(&job_id)

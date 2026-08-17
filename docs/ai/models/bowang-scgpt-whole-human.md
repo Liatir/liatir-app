@@ -12,8 +12,9 @@ reference mapping, batch correction, and perturbation hypotheses.
 
 ## Current status in Liatir
 
-scGPT is published as a signed macOS arm64 Metal Runtime Box on the beta
-channel. Liatir installs the complete tested environment and records the exact
+scGPT is published as signed Runtime Boxes for macOS arm64 Metal,
+Linux/Windows x86_64 CPU, Linux x86_64 CUDA 12.9 and Windows x86_64 CUDA 12.8.
+Liatir installs the complete target-specific environment and records the exact
 box release in Results provenance.
 
 ## Expected inputs
@@ -24,16 +25,16 @@ box release in Results provenance.
 
 ## Expected outputs
 
-- Cell embeddings.
-- UMAP-ready tables or matrices.
-- Optional batch-corrected representations.
-- JSON/CSV summaries and provenance.
+- Embedded AnnData with cell embeddings in `obsm["X_scgpt"]`.
+- A bounded CSV preview for visualization.
+- JSON summary, warnings and Runtime Box provenance.
 
 ## Hardware and installation
 
-The current product target is Apple silicon with Metal. The model and its
-dependencies live inside the Runtime Box and are never added to the base app or
-the system Python.
+Use only the exact published target compatible with the host. Windows CUDA is
+CUDA 12.8 and Linux CUDA is CUDA 12.9; support for those targets does not imply
+other CUDA or driver combinations. The model and its dependencies live inside
+the Runtime Box and are never added to the base app or system Python.
 
 ## Official source
 

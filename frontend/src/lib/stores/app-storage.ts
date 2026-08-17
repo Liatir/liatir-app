@@ -50,9 +50,9 @@ export const appStorage = {
   },
 
   /** One-time, non-destructive migration of legacy state out of the public data scope. */
-  async migrate(): Promise<void> {
+  async migrate(): Promise<boolean> {
     const api = liatir();
-    if (!api) return;
-    try { await api.invoke('lia_app_migrate'); } catch { /* best effort */ }
+    if (!api) return false;
+    return await api.invoke('lia_app_migrate') as boolean;
   },
 };

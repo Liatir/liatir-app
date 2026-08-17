@@ -65,6 +65,7 @@ export default defineConfig({
     search: { provider: 'local' },
 
     nav: [
+      { text: 'Get started', link: '/getting-started/install' },
       { text: 'Resources', items: [
         { text: 'Tools', link: '/tools/overview' },
         { text: 'AI Models', link: '/ai/guide' },
@@ -78,6 +79,14 @@ export default defineConfig({
     ],
 
     sidebar: [
+      {
+        text: 'Get started',
+        items: [
+          { text: 'Install Liatir Beta', link: '/getting-started/install' },
+          { text: 'First analysis', link: '/getting-started/first-analysis' },
+          { text: 'Support and limitations', link: '/getting-started/support' },
+        ],
+      },
       {
         text: 'Introduction',
         items: [

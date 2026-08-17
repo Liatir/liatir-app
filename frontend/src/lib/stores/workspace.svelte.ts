@@ -84,35 +84,34 @@ function createWorkspaceStore() {
     async init() {
       if (initStarted) return;
       initStarted = true;
-      const api = liatir();
-      if (!api) { initialized = true; return; }
-
-      // Move any legacy app state out of the public data scope before reading.
-      await appStorage.migrate();
-
       try {
+        const api = liatir();
+        if (!api) { initialized = true; return; }
+
+        // Move any legacy app state out of the public data scope before reading.
+        await appStorage.migrate();
+
         if (await appStorage.exists(WORKSPACES_FILE)) {
           const raw = await appStorage.readText(WORKSPACES_FILE);
           const parsed: WorkspacesFile = JSON.parse(raw);
-          workspaces = parsed.workspaces ?? [];
+          if (!Array.isArray(parsed.workspaces)) {
+            throw new Error('Workspace index is invalid: expected a workspaces array');
+          }
+          workspaces = parsed.workspaces;
         }
-      } catch {
-        workspaces = [];
-      }
 
-      // Auto-create Sandbox workspace if missing
-      if (!workspaces.some(w => w.id === SANDBOX_WORKSPACE_ID)) {
-        const testWs: WorkspaceMeta = {
-          id: SANDBOX_WORKSPACE_ID,
-          name: SANDBOX_WORKSPACE_NAME,
-          createdAt: Date.now(),
-          lastOpenedAt: 0,
-        };
-        workspaces = [...workspaces, testWs];
-        await persistWorkspaces();
-      }
+        // Auto-create Sandbox workspace if missing
+        if (!workspaces.some(w => w.id === SANDBOX_WORKSPACE_ID)) {
+          const testWs: WorkspaceMeta = {
+            id: SANDBOX_WORKSPACE_ID,
+            name: SANDBOX_WORKSPACE_NAME,
+            createdAt: Date.now(),
+            lastOpenedAt: 0,
+          };
+          workspaces = [...workspaces, testWs];
+          await persistWorkspaces();
+        }
 
-      try {
         if (await appStorage.exists(ACTIVE_FILE)) {
           const raw = await appStorage.readText(ACTIVE_FILE);
           const parsed = JSON.parse(raw) as { id?: string | null };
@@ -122,12 +121,16 @@ function createWorkspaceStore() {
             await loadEnvVars(savedId);
           }
         }
-      } catch {
-        activeId = null;
-        envVars = [];
-      }
 
-      initialized = true;
+        initialized = true;
+      } catch (error) {
+        // Keep persisted data untouched and let the startup recovery screen
+        // offer a real retry. Leaving this latch set would turn a transient
+        // disk/permission failure into a permanent spinner.
+        initialized = false;
+        initStarted = false;
+        throw error;
+      }
     },
 
     async create(name: string): Promise<WorkspaceMeta> {

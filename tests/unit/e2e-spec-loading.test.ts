@@ -46,6 +46,30 @@ describe("end-to-end spec loading", () => {
     expect(status, `${file} failed to load:\n${stderr}`).toBe(0);
   });
 
+  /**
+   * The runner globs the whole spec directory when it is given no spec arguments, so a spec that
+   * only works against state an orchestrator script seeds first will fail inside `npm run test:ui`.
+   * Declaring `requiredEnv` is what keeps the default glob skipping it, and the orchestrator sets
+   * that variable. The two Gate 7 desktop specs shipped without it and would have failed every
+   * default UI run against an unseeded home.
+   */
+  it("keeps every orchestrator-owned spec out of the default glob", () => {
+    const orchestrators = readdirSync(resolve("scripts")).filter((file) => file.endsWith(".mjs"));
+    const owned = new Set<string>();
+    for (const orchestrator of orchestrators) {
+      const source = readFileSync(resolve("scripts", orchestrator), "utf8");
+      for (const match of source.matchAll(/'([a-z0-9-]+\.e2e\.mjs)'/g)) owned.add(match[1]);
+    }
+
+    expect(owned.size, "no orchestrator-owned specs were discovered").toBeGreaterThan(0);
+    for (const file of owned) {
+      expect(specs, `${file} is orchestrated but missing from the spec directory`).toContain(file);
+      const source = readFileSync(resolve(specsDir, file), "utf8");
+      expect(source, `${file} is run by an orchestrator but does not declare requiredEnv, so the default glob would run it without its seeded state`)
+        .toContain("requiredEnv");
+    }
+  });
+
   // Which spec a release runs is checked in runtime-box-ci-catalog: it comes from the catalog, per
   // model. This file only answers the other half — that the spec it names can actually be loaded.
   it("covers every spec a model routes its product lifecycle to", () => {
