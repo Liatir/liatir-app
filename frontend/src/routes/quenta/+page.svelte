@@ -854,6 +854,7 @@
           <span
             class="rounded-full px-2 py-1 text-[10px] font-medium {quentaStatusClass}"
             data-testid="quenta-provider-status"
+            data-state={localAIReady ? 'ready' : preparingQuenta ? 'preparing' : 'attention'}
           >
             {quentaStatusLabel}
           </span>

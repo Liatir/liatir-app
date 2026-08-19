@@ -77,15 +77,27 @@
     });
   });
 
+  let storesReady = $state(false);
+  /** The last `?run=` this page acted on, so a user's own selection is not overridden on re-render. */
+  let appliedRunParam: string | null = null;
+
   onMount(() => {
     Promise.all([analysisRuns.init(), externalWorkflowsStore.init()]).then(() => {
-      const runParam = page.url.searchParams.get('run');
-      if (runParam && analysisRuns.runs.find(r => r.id === runParam)) {
-        selectedId = runParam;
-      } else if (filtered.length > 0 && !selectedId) {
-        // selectedId = filtered[0].id;
-      }
+      storesReady = true;
     });
+  });
+
+  // Reacting to the parameter rather than reading it once on mount: Liatir routes client-side, so
+  // opening a Result deep link while already on this page never remounts it. Read once, the link
+  // silently did nothing and the run stayed unselected.
+  $effect(() => {
+    if (!storesReady) return;
+    const runParam = page.url.searchParams.get('run');
+    if (!runParam || runParam === appliedRunParam) return;
+    if (analysisRuns.runs.some(r => r.id === runParam)) {
+      appliedRunParam = runParam;
+      selectedId = runParam;
+    }
   });
 
   // ── actions ────────────────────────────────────────────────────

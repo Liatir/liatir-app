@@ -381,21 +381,29 @@ Plugin, Native Tool and API Connector executions. The second process reconciles
 one interrupted Result for each owner, leaves downstream pipeline work pending,
 and reloads once more to prove that no Result is duplicated.
 
-The broad `npm run test:ui` baseline on native Windows x86_64, measured on
-2026-08-19, is 19 passed / 17 failed / 19 skipped. Eleven failures are the
-categories the Gate 3 closure already listed: stale AI catalog expectations, the
-intentionally hidden Dependencies sidebar route, and Quenta reload/selection.
-Six are not: three `00-pipeline-lifecycle` cases, the standalone FastQC Native
-Tool Job, the Python `.lia` plugin `plugin-runtimes` path, and
-`single-cell-lighthouse`.
+`npm run test:ui` is green on native Windows x86_64 as of 2026-08-19: 31 passed,
+0 failed, 24 skipped. It had been 19 passed / 17 failed / 19 skipped, and the
+first step of fixing it was running every failing spec on its own — sixteen of
+the seventeen failed in isolation too, so they were real rather than one spec
+inheriting another's state.
 
-That last one matters more than its count. It passes 1/1 when run on its own,
-on both macOS and Windows, and fails inside the full suite. The whole suite
-shares one isolated home for the entire run, so treat it as state contamination
-between specs, not as a failure of the product path the focused Gate 5 gate
-proves. Keep all six separate from common-spine regression triage until those
-surfaces are realigned, and do not read "passes in isolation" as "passes in the
-suite".
+Two rules came out of that work and are worth keeping:
+
+- **Assert against stable selectors, not product copy.** Several suites waited
+  on visible text ("Quenta ready", "No AI Models match your search.") that the
+  product had legitimately changed. Cards, empty states and the Quenta provider
+  badge now expose `data-testid`, `data-model-id` and `data-state`.
+- **A fixture that shells out has to be cross-platform.** The pipeline fixtures
+  wrote fake native tools as `#!/bin/sh` scripts. Windows cannot execute those,
+  and Rust spawns through `CreateProcess`, which will not run a `.cmd` shim
+  either, so they are now one small compiled executable copied under each tool
+  name — the approach the Runtime Box security fixture already used.
+
+Five Quenta cases are skipped behind `LIATIR_E2E_QUENTA_UNIMPLEMENTED`. They
+specify structured reports, the `report` deep-link intent, restoring the selected
+chat after a reload and re-attaching to an in-flight response — none of which the
+product implements yet. Keep them as the specification of that work; do not
+weaken them to make the suite green.
 
 `tests/e2e/specs/dependencies.e2e.mjs` includes a heavy managed-binary gate.
 With `--heavy`, it downloads the real checksummed SeqKit release into isolated

@@ -6,7 +6,7 @@
  */
 import {
   expectNoVisibleRuntimeError,
-  navigateSidebar,
+  navigateInApp,
   openSandboxWorkspace,
 } from '../support/liatir-app.mjs';
 
@@ -15,7 +15,7 @@ export const tests = [
     name: 'loads dependency checks through the real Tauri bridge',
     async run({ browser, expect }) {
       await openSandboxWorkspace(browser);
-      await navigateSidebar(browser, '/deps');
+      await navigateInApp(browser, '/deps');
 
       await browser.waitUntil(
         async () => browser.execute(() => document.body.innerText.includes('Dependencies')),
@@ -41,7 +41,7 @@ export const tests = [
     heavy: true,
     async run({ browser, expect }) {
       await openSandboxWorkspace(browser);
-      await navigateSidebar(browser, '/deps');
+      await navigateInApp(browser, '/deps');
 
       const installButton = await browser.$('[data-testid="managed-install-seqkit"]');
       await installButton.waitForDisplayed({ timeout: 60_000 });

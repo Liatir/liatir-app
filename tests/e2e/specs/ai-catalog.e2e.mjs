@@ -1,7 +1,7 @@
 /** Verifies that the AI catalog exposes only supported Runtime Box models through stable selectors. */
 import {
   expectNoVisibleRuntimeError,
-  navigateSidebar,
+  navigateInApp,
   openSandboxWorkspace,
 } from '../support/liatir-app.mjs';
 
@@ -16,13 +16,15 @@ export const tests = [
     name: 'keeps removed legacy AI Models out of the visible catalog',
     async run({ browser, expect }) {
       await openSandboxWorkspace(browser);
-      await navigateSidebar(browser, '/ai');
+      await navigateInApp(browser, '/ai');
 
       await searchAIModels(browser, 'Mock Local Model');
-      await browser.waitUntil(
-        async () => browser.execute(() => document.body.innerText.includes('No AI Models match your search.')),
-        { timeout: 10_000, timeoutMsg: 'Removed legacy model still appears in the AI Models catalog' },
-      );
+      // Assert the empty state by its stable selector: the wording is product copy and has already
+      // changed once under this test.
+      await (await browser.$('[data-testid="ai-models-empty"]')).waitForDisplayed({
+        timeout: 10_000,
+        timeoutMsg: 'Removed legacy model still appears in the AI Models catalog',
+      });
 
       const visibleLegacyModel = await browser.execute(() => document.body.innerText.includes('Mock Local Model'));
       expect(visibleLegacyModel).toBe(false);
@@ -33,7 +35,7 @@ export const tests = [
     name: 'exposes stable AI Model card selectors for automation',
     async run({ browser, expect }) {
       await openSandboxWorkspace(browser);
-      await navigateSidebar(browser, '/ai');
+      await navigateInApp(browser, '/ai');
 
       await searchAIModels(browser, 'ctheodoris-geneformer-v1-10m');
       await browser.waitUntil(

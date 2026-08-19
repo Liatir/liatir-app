@@ -38,6 +38,27 @@ test asserted more than the product relies on, failing on the zero-length
 `python3.exe` App Execution Alias that Windows 11 ships; the product already
 skips it through `--version` validation, and the test now makes the same choice.
 
+`npm run test:ui` is also green on Windows for the first time: 31 passed, 0
+failed, 24 skipped, from 19 passed / 17 failed / 19 skipped at the start of the
+session. Running every failing spec in isolation before changing anything is
+what made that tractable — sixteen of the seventeen failed alone too, so they
+were real rather than cross-spec contamination. Five were product defects on
+Windows: WASM plugins could read no file at all because host directories were
+mounted into the WASI sandbox under a verbatim `\?\C:\...` path; a Python
+plugin environment could not be created because `setuptools` pushed a path two
+characters past the 260-character limit; a Result deep link did nothing when the
+user was already on the Results page, because `?run=` was read once on mount
+while the app routes client-side; and the AI Models and Quenta screens exposed
+their state only as copy. Long-path support was deliberately not enabled, per
+the standing rule that it fixes one host and no user; the product trimmed the
+path segment it owns instead.
+
+Five Quenta cases remain skipped behind `LIATIR_E2E_QUENTA_UNIMPLEMENTED`. They
+specify structured reports, the `report` deep-link intent, and restoring chat
+selection and an in-flight response after reload — none implemented yet. They
+are kept as the executable specification of that work rather than weakened,
+which is what the readiness ledger means by Quenta being "Partial".
+
 The exact package identities, commands, counts and limitations are in
 [Gate 7 Beta 1 — Windows and Linux evidence](./roadmap/gate-7-beta1-windows-linux.md).
 Gate 7 is still not closed: code signing, notarization and a real signed

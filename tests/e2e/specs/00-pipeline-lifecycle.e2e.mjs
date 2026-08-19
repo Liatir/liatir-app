@@ -507,38 +507,91 @@ function apiWorkspace(url) {
   };
 }
 
+/**
+ * Builds the fake native tools the pipeline fixtures run.
+ *
+ * POSIX hosts keep the shell scripts they always used. Windows cannot: a shebang means nothing
+ * there, `chmod` is a no-op, and Rust spawns through `CreateProcess`, which refuses `.cmd` and
+ * `.bat` outright, so a batch shim would not be executable either. One tiny real executable,
+ * compiled once and copied under each tool name, is the approach the Runtime Box security fixture
+ * already uses for its native launcher. The program picks its behaviour from its own name.
+ */
+function buildFakeNativeTools(binDir) {
+  fs.mkdirSync(binDir, { recursive: true });
+
+  if (process.platform !== 'win32') {
+    const write = (name, lines) => {
+      const target = path.join(binDir, name);
+      fs.writeFileSync(target, lines.join('\n') + '\n', { mode: 0o755 });
+      fs.chmodSync(target, 0o755);
+      return target;
+    };
+    return {
+      echo: '/bin/echo',
+      slow: write('e2e-slow-fastp', ['#!/bin/sh', 'exec sleep 30']),
+      minimap2: write('e2e-minimap2', [
+        '#!/bin/sh',
+        "printf '@HD\tVN:1.6\tSO:unsorted\\n'",
+        "printf 'read1\t0\tchr1\t1\t60\t4M\t*\t0\t0\tACGT\tIIII\\n'",
+        "printf '[M::main] mapped 1 sequence\\n' >&2",
+      ]),
+      samtools: write('e2e-samtools', [
+        '#!/bin/sh',
+        "printf '1 + 0 in total (QC-passed reads + QC-failed reads)\\n'",
+        "printf '1 + 0 mapped (100.00%: N/A)\\n'",
+        "printf '0 + 0 duplicates\\n'",
+      ]),
+    };
+  }
+
+  const source = path.join(binDir, 'e2e-fake-tool.rs');
+  const template = path.join(binDir, 'e2e-fake-tool.exe');
+  fs.writeFileSync(source, [
+    'use std::io::Write;',
+    'fn main() {',
+    '    let name = std::env::args().next().unwrap_or_default().to_lowercase();',
+    '    let stdout = std::io::stdout();',
+    '    let mut out = stdout.lock();',
+    '    if name.contains("minimap2") {',
+    '        writeln!(out, "@HD\tVN:1.6\tSO:unsorted").unwrap();',
+    '        writeln!(out, "read1\t0\tchr1\t1\t60\t4M\t*\t0\t0\tACGT\tIIII").unwrap();',
+    '        eprintln!("[M::main] mapped 1 sequence");',
+    '    } else if name.contains("samtools") {',
+    '        writeln!(out, "1 + 0 in total (QC-passed reads + QC-failed reads)").unwrap();',
+    '        writeln!(out, "1 + 0 mapped (100.00%: N/A)").unwrap();',
+    '        writeln!(out, "0 + 0 duplicates").unwrap();',
+    '    } else if name.contains("slow") {',
+    '        std::thread::sleep(std::time::Duration::from_secs(30));',
+    '    } else {',
+    '        let args: Vec<String> = std::env::args().skip(1).collect();',
+    '        writeln!(out, "{}", args.join(" ")).unwrap();',
+    '    }',
+    '}',
+  ].join('\n') + '\n');
+  execFileSync('rustc', [
+    source, '--crate-name', 'e2e_fake_tool', '--edition', '2021',
+    '-C', 'opt-level=0', '-o', template,
+  ]);
+  const copy = (name) => {
+    const target = path.join(binDir, name + '.exe');
+    fs.copyFileSync(template, target);
+    return target;
+  };
+  return {
+    echo: copy('e2e-echo'),
+    slow: copy('e2e-slow-fastp'),
+    minimap2: copy('e2e-minimap2'),
+    samtools: copy('e2e-samtools'),
+  };
+}
+
 async function seedSandbox(browser, apiUrl, pluginPath) {
   const binDir = path.resolve('tests/.artifacts/bin');
-  const slowToolPath = path.join(binDir, 'e2e-slow-fastp');
-  const minimapToolPath = path.join(binDir, 'e2e-minimap2');
-  const samtoolsToolPath = path.join(binDir, 'e2e-samtools');
-  fs.mkdirSync(binDir, { recursive: true });
-  fs.writeFileSync(slowToolPath, '#!/bin/sh\nexec sleep 30\n', { mode: 0o755 });
-  fs.writeFileSync(
-    minimapToolPath,
-    [
-      '#!/bin/sh',
-      "printf '@HD\\tVN:1.6\\tSO:unsorted\\n'",
-      "printf 'read1\\t0\\tchr1\\t1\\t60\\t4M\\t*\\t0\\t0\\tACGT\\tIIII\\n'",
-      "printf '[M::main] mapped 1 sequence\\n' >&2",
-      '',
-    ].join('\n'),
-    { mode: 0o755 },
-  );
-  fs.writeFileSync(
-    samtoolsToolPath,
-    [
-      '#!/bin/sh',
-      "printf '1 + 0 in total (QC-passed reads + QC-failed reads)\\n'",
-      "printf '1 + 0 mapped (100.00% : N/A)\\n'",
-      "printf '0 + 0 duplicates\\n'",
-      '',
-    ].join('\n'),
-    { mode: 0o755 },
-  );
-  fs.chmodSync(slowToolPath, 0o755);
-  fs.chmodSync(minimapToolPath, 0o755);
-  fs.chmodSync(samtoolsToolPath, 0o755);
+  const tools = buildFakeNativeTools(binDir);
+  const slowToolPath = tools.slow;
+  const minimapToolPath = tools.minimap2;
+  const samtoolsToolPath = tools.samtools;
+  const echoToolPath = tools.echo;
 
   await waitForLiatirBridge(browser);
   await browser.execute(async (pipelineState, apiState, binaries, pluginBundlePath, pluginId) => {
@@ -582,7 +635,7 @@ async function seedSandbox(browser, apiUrl, pluginPath) {
           seqkit: {
             binary: 'seqkit',
             version: 'e2e',
-            path: '/bin/echo',
+            path: binaries.echo,
             platform: 'macos',
             arch: 'test',
             installedAt: Date.now(),
@@ -615,6 +668,7 @@ async function seedSandbox(browser, apiUrl, pluginPath) {
       }),
     ]);
   }, pipelineWorkspace(), apiWorkspace(apiUrl), {
+    echo: echoToolPath,
     slow: slowToolPath,
     minimap2: minimapToolPath,
     samtools: samtoolsToolPath,

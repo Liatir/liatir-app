@@ -231,7 +231,14 @@ fn sanitize_env_part(value: &str, max_len: usize) -> String {
     if clean.is_empty() {
         clean = "plugin".to_string();
     }
-    clean.chars().take(max_len).collect()
+    // Trim again after truncating: cutting mid-word can leave a trailing separator, which would
+    // then collide with the one this part is joined by and read as `name--version`.
+    clean
+        .chars()
+        .take(max_len)
+        .collect::<String>()
+        .trim_matches('-')
+        .to_string()
 }
 
 fn stable_hash_hex(bytes: &[u8]) -> String {
@@ -272,10 +279,17 @@ fn python_plugin_env_id(manifest: &Value, spec: &PythonPluginSpec) -> String {
         .and_then(|value| value.as_str())
         .unwrap_or("0");
     let spec_hash = python_spec_hash(spec);
+    // Kept deliberately short. This directory sits under the app data root and a plugin venv then
+    // adds `venv/Lib/site-packages/` plus whatever pip installs; setuptools alone ships a
+    // `pkg_resources/tests/data/...` path of about 113 characters, which pushed a real install past
+    // the 260-character Windows limit and failed the environment bootstrap outright. The name and
+    // version are here for a human reading the directory listing; the hash is what makes it unique,
+    // so they are the parts that can afford to be trimmed. A venv is rebuildable cache, not user
+    // data, so shortening this only causes the environment to be recreated once.
     format!(
         "plugin-{}-{}-{}",
-        sanitize_env_part(name, 28),
-        sanitize_env_part(version, 16),
+        sanitize_env_part(name, 14),
+        sanitize_env_part(version, 10),
         &spec_hash[..12.min(spec_hash.len())]
     )
 }
@@ -530,7 +544,7 @@ impl Default for LiaPluginRunOptions {
 pub(crate) async fn run_lia_plugin_bundle(
     app: AppHandle,
     path: String,
-    inputs: Value,
+    mut inputs: Value,
     options: LiaPluginRunOptions,
 ) -> Result<Value, String> {
     let mut zip = open_validated(&path)?;
@@ -577,6 +591,9 @@ pub(crate) async fn run_lia_plugin_bundle(
                 }
             }
         }
+
+        // Hand the plugin the paths the sandbox actually exposes.
+        super::plugins::rewrite_host_paths(&mut inputs, &host_read_paths);
 
         // Persistent /storage scope name, derived from the manifest name
         // (sanitized + ".wasm" so it passes the plugin-name validation).
@@ -917,6 +934,8 @@ mod tests {
         })))
         .unwrap();
         assert!(id.len() <= 80, "env id too long: {id}");
+        // Windows MAX_PATH is a shared budget and this segment is one of the few the product owns.
+        assert!(id.len() <= 46, "env id spends too much of the Windows path budget: {id}");
         assert!(id
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_'));

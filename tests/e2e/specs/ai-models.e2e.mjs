@@ -1,53 +1,66 @@
-/** The AI Models screen: install and remove flows, and the status a model reports through them. */
+/** The AI Models screen: how the published Runtime Box catalog is searched and restored. */
 import {
   expectNoVisibleRuntimeError,
-  navigateSidebar,
+  navigateInApp,
   openSandboxWorkspace,
+  setAppInputValue,
 } from '../support/liatir-app.mjs';
+
+/**
+ * This spec used to assert collapsed model categories and the Boltz structure model. Both were
+ * removed on purpose — the legacy AI batches were deleted on 2026-07-22 and the screen now lists
+ * the published Runtime Boxes directly — so it was asserting a UI that no longer exists and failed
+ * on every host. It now covers what the screen actually does, against stable selectors rather than
+ * copy, which is the part worth protecting.
+ */
+const SEARCH = '[data-testid="ai-models-search"]';
 
 export const tests = [
   {
-    name: 'groups models into collapsed categories by default and expands search matches',
+    name: 'filters the Runtime Box catalog by search and restores it when cleared',
     async run({ browser, expect }) {
       await openSandboxWorkspace(browser);
-      await navigateSidebar(browser, '/ai');
+      await navigateInApp(browser, '/ai');
 
-      const search = await browser.$('[data-testid="ai-models-search"]');
+      const search = await browser.$(SEARCH);
       await search.waitForDisplayed({ timeout: 20_000 });
-      await search.setValue('');
+      // Establish the starting state instead of assuming it: the whole suite shares one app, and a
+      // previous spec can leave this field filtered.
+      await setAppInputValue(browser, SEARCH, '');
 
       await browser.waitUntil(
-        async () => browser.execute(() => document.querySelectorAll('[data-testid="ai-model-category"]').length > 1),
-        { timeout: 10_000, timeoutMsg: 'AI Model categories did not reset after clearing search' },
+        async () => browser.execute(
+          () => document.querySelectorAll('[data-testid="ai-model-card"]').length > 1,
+        ),
+        { timeout: 20_000, timeoutMsg: 'The published Runtime Box catalog did not render' },
+      );
+      // `waitUntil` reports only that the condition held, so read the count separately.
+      const total = await browser.execute(
+        () => document.querySelectorAll('[data-testid="ai-model-card"]').length,
       );
 
-      const categories = await browser.$$('[data-testid="ai-model-category"]');
-      expect(categories.length).toBeGreaterThan(1);
-
-      const expandedBeforeSearch = await browser.execute(() =>
-        Array.from(document.querySelectorAll('[data-testid="ai-model-category-toggle"]'))
-          .map((element) => element.getAttribute('aria-expanded')),
-      );
-      expect(expandedBeforeSearch.every((value) => value === 'false')).toBe(true);
-
-      await search.setValue('Boltz');
+      await setAppInputValue(browser, SEARCH, 'Geneformer');
       await browser.waitUntil(
-        async () => browser.execute(() => document.body.innerText.includes('Boltz-2 Local Structure & Binding')),
-        { timeout: 10_000, timeoutMsg: 'Boltz model did not appear in filtered AI Models list' },
+        async () => browser.execute(() => {
+          const cards = document.querySelectorAll('[data-testid="ai-model-card"]');
+          return cards.length === 1 && cards[0].getAttribute('data-model-id') === 'ctheodoris-geneformer-v1-10m';
+        }),
+        { timeout: 10_000, timeoutMsg: 'Search did not narrow the catalog to Geneformer' },
       );
 
-      const searchState = await browser.execute(() => {
-        const visibleCategories = Array.from(document.querySelectorAll('[data-testid="ai-model-category"]'))
-          .map((element) => element.getAttribute('data-category'));
-        const expanded = Array.from(document.querySelectorAll('[data-testid="ai-model-category-toggle"]'))
-          .map((element) => element.getAttribute('aria-expanded'));
+      // A search that matches nothing must say so rather than render an empty list.
+      await setAppInputValue(browser, SEARCH, 'no-such-runtime-box');
+      await (await browser.$('[data-testid="ai-models-empty"]')).waitForDisplayed({ timeout: 10_000 });
 
-        return { visibleCategories, expanded, text: document.body.innerText };
-      });
+      await setAppInputValue(browser, SEARCH, '');
+      await browser.waitUntil(
+        async () => browser.execute(
+          (expected) => document.querySelectorAll('[data-testid="ai-model-card"]').length === expected,
+          total,
+        ),
+        { timeout: 10_000, timeoutMsg: 'Clearing the search did not restore the full catalog' },
+      );
 
-      expect(searchState.visibleCategories).toContain('Protein Structure');
-      expect(searchState.expanded.every((value) => value === 'true')).toBe(true);
-      expect(searchState.text).toContain('Boltz-2 Local Structure & Binding');
       await expectNoVisibleRuntimeError(browser);
     },
   },

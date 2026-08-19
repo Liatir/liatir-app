@@ -101,7 +101,9 @@ export const tests = [
       expect(setup.after.installed).toBe(true);
       expect(setup.after.missingPackages).toEqual([]);
       expect(setup.after.missingSources).toEqual([]);
-      expect(setup.after.envId).toContain('python-stdlib-fixture');
+      // The env id deliberately truncates the plugin name to stay inside the Windows path budget,
+      // so assert the stable prefix and the spec hash rather than the full name.
+      expect(setup.after.envId).toMatch(/^plugin-python-stdlib-\d/);
       expect(setup.run.jobId).toBeTruthy();
 
       const completed = await waitForJobResult(browser, setup.run.jobId);

@@ -141,6 +141,25 @@ async function replaceDocument(browser, startNavigation, argument, description) 
   await waitForLiatirBridge(browser);
 }
 
+/**
+ * Sets a bound input to an exact value, including the empty string.
+ *
+ * `setValue('')` cannot clear a Svelte-bound field: WebDriver's `clear` fires no `input` event and
+ * an empty string types no keystrokes, so the component's state keeps the previous value while the
+ * DOM looks empty. Assigning through the native setter and dispatching `input` is what the binding
+ * actually listens to.
+ */
+export async function setAppInputValue(browser, selector, value) {
+  await browser.execute((target, next) => {
+    const element = document.querySelector(target);
+    if (!element) throw new Error(`Input not found: ${target}`);
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+    setter?.call(element, next);
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+    return true;
+  }, selector, value);
+}
+
 /** Finds one section of a persisted Result output document. */
 export function outputSection(output, type, label = null) {
   return output.sections.find((item) => item.type === type && (label === null || item.label === label));

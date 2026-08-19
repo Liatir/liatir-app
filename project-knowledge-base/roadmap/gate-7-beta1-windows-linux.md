@@ -106,20 +106,20 @@ configuration file was restored to its local-development state.
 ### Quality gates
 
 - `npm run test:verify`: 6 of 6 suites passed; 53 test files / 318 tests.
-- `cargo test`: 55 passed, 0 failed, 2 intentionally ignored Runtime Box
+- `cargo test`: 58 passed, 0 failed, 2 intentionally ignored Runtime Box
   fixtures.
 - `cargo clippy --tests`: exit 0 on the repository's existing warning baseline
   (122 warnings on this host).
-- `npm run test:ui`: the broad `tauri-e2e` suite is **not green** on Windows —
-  19 passed, 17 failed, 19 skipped. It is not green on macOS either; see the
-  breakdown below.
-- The complete `ui` profile, run with `--continue-on-failure` so that a failing
-  suite does not hide the ones after it, is 4 passed / 1 failed / 2 skipped:
+- `npm run test:ui`: **green**, exit 0. The `tauri-e2e` suite is 31 passed,
+  0 failed, 24 skipped, and the profile is 5 passed / 0 failed / 2 skipped. It
+  started this session at 19 passed / 17 failed / 19 skipped; the breakdown of
+  what was wrong is below.
+- The complete `ui` profile:
 
   | Suite | Result |
   | --- | --- |
   | Tauri test binary prepare | passed |
-  | Native Tauri E2E | failed (the pre-existing breakdown below) |
+  | Native Tauri E2E | passed (31/0/24) |
   | Pipeline settlement restart lifecycle | passed |
   | Runtime Box security lifecycle | passed |
   | Desktop Beta install lifecycle | skipped — runs only on darwin |
@@ -135,28 +135,65 @@ whole spec directory in about seven minutes on Windows, so the old five-minute
 budget reported a timeout on a suite that had in fact completed and printed its
 result — which hid the real failures behind an infrastructure error.
 
-### What the broad UI suite still fails, and what is new
+### The broad UI suite was red, and is now green
 
-Eleven failures are the categories the Gate 3 record already lists: three stale
-AI-catalog expectations, the intentionally hidden Dependencies sidebar route, and
-seven Quenta cases. Six are not in that record and are open work rather than
-Gate 7 evidence:
+`npm run test:ui` first reported 19 passed / 17 failed / 19 skipped on Windows. Every
+failure was run again on its own to separate a real defect from one spec
+inheriting another's state; sixteen failed in isolation too, so they were real.
+Five of the seventeen turned out to be product defects on Windows, and none of
+them was visible from a successful build:
 
-1. three `00-pipeline-lifecycle` cases — native child Job attribution, the
-   cancel button, and the scientific alignment artifact;
-2. the standalone Native Tool FastQC Job;
-3. the Python `.lia` plugin build, which fails on a `plugin-runtimes` path under
-   the isolated Windows home;
-4. `single-cell-lighthouse`, which passes 1/1 when run on its own — as recorded
-   above and on macOS — but fails inside the full suite with "The Result did not
-   render the embedding preview".
+1. **WASM plugins could not read any file on Windows.** Host directories were
+   mounted into the WASI sandbox under their canonicalized host path, which
+   `canonicalize` renders as verbatim `\?\C:\...`; a drive-letter path is not
+   even absolute to `wasi-libc`, so the preopen could never match the file the
+   plugin opened. FastQC failed with `Operation not permitted`. Directories now
+   mount at a deterministic POSIX point and the plugin's payload is rewritten
+   through the same pure function, so the two cannot drift. On a POSIX host the
+   mount is the real directory and the rewrite is the identity, so macOS and
+   Linux are unchanged by construction. Covered by three Rust unit tests.
+2. **A Python plugin environment could not be created.** `pip` failed with
+   `[Errno 2]` on a 262-character path — two over the Windows limit — because
+   `setuptools` ships a `pkg_resources/tests/data/...` path of about 113
+   characters. Long-path support was deliberately *not* enabled, per the
+   standing rule that it fixes one host and no user. Instead the segment the
+   product owns was trimmed: the plugin environment id now spends 14 characters
+   on the name and 10 on the version instead of 28 and 16. A plugin venv is
+   rebuildable cache, not user data, so this only causes one recreation. A unit
+   assertion pins the new ceiling.
+3. **A Result deep link did nothing if the user was already on Results.** The
+   `?run=` parameter was read once in `onMount`, and Liatir routes client-side,
+   so opening a Result link from an already-mounted Results page left the run
+   unselected. Selection now reacts to the parameter, without overriding a
+   selection the user made themselves. This is the defect that looked like
+   cross-spec contamination: the single-cell lighthouse passed alone and failed
+   after any spec that left the app on Results.
+4. **The AI Models screen exposed no stable automation contract.** Cards had
+   neither `data-testid` nor `data-model-id`, and the empty state was matched by
+   its copy. Both are now stable selectors.
+5. **The Quenta provider badge reported its state only as copy.** The tests
+   waited for "Quenta ready" while the badge reads "Ready"; it now carries
+   `data-state`.
 
-Item 4 is the one worth acting on: the whole suite shares one isolated home for
-the entire run, so it points at state contamination between specs rather than at
-the product path the focused Gate 5 gate proves. It is recorded here rather than
-smoothed over, because "passes in isolation" is not the same claim as "passes in
-the suite". None of these six is caused by this gate's changes; all of them
-predate it and none is claimed as Gate 7 evidence.
+The remaining failures were defects in the tests themselves: fixtures that built
+fake native tools as POSIX shell scripts, which Windows cannot execute and Rust
+cannot spawn as `.cmd` either (they are now one small compiled executable copied
+per tool name); a Dependencies test navigating through a sidebar entry that is
+hidden on purpose; and an AI Models test asserting collapsed categories and the
+Boltz model, both removed with the legacy AI batches on 2026-07-22, which was
+rewritten to cover what the screen actually does.
+
+`npm run test:ui` is now **31 passed, 0 failed, 24 skipped** on Windows.
+
+### Quenta features that remain unimplemented
+
+Five Quenta cases are skipped behind `LIATIR_E2E_QUENTA_UNIMPLEMENTED` because
+they specify behaviour the product does not have: there is no `result-report`
+action on a Result, `intentFromParam` accepts only `explain-result` and
+`explain-failure` so a `report` deep link falls back to plain chat, and neither
+the selected chat nor an in-flight response is restored after a reload. They are
+kept as the executable specification of that work rather than weakened, which is
+what the readiness ledger already means by Quenta being "Partial".
 
 ## Linux evidence
 

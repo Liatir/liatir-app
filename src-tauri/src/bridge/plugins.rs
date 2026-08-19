@@ -340,8 +340,12 @@ pub async fn lia_plugin_call(
         .or(module)
         .ok_or_else(|| "plugin required".to_string())?;
 
-    let validated_paths = validate_host_read_paths(host_read_paths.unwrap_or_default())
+    let raw_host_read_paths = host_read_paths.unwrap_or_default();
+    let validated_paths = validate_host_read_paths(raw_host_read_paths.clone())
         .map_err(|e| e.to_string())?;
+    // The payload names the files the plugin will open, so it has to speak in sandbox paths.
+    let mut payload = payload;
+    rewrite_host_paths(&mut payload, &raw_host_read_paths);
 
     let tracked_job = if let Some(job_id) = job_id {
         let (id, cancelled) = super::jobs::create_in_process_job_with_id(
@@ -426,7 +430,84 @@ pub async fn lia_plugin_call(
     response
 }
 
-fn validate_host_read_paths(raw: Vec<String>) -> Result<Vec<PathBuf>> {
+/// Mount point of one exposed host directory inside the WASI sandbox.
+///
+/// WASI paths are POSIX. A Windows path is not one: it starts with a drive letter instead of `/`,
+/// and `canonicalize` turns it into a verbatim `\?\C:\...` path on top of that, so a preopen
+/// named after it can never match the path a plugin actually opens. That is why FastQC failed on
+/// Windows with `Operation not permitted` while working everywhere else.
+///
+/// A host whose paths are already absolute POSIX keeps its real path, so a plugin still opens the
+/// file by the exact path it was handed and nothing about the existing behaviour changes there.
+/// Everything else gets a synthetic POSIX mount, and the caller rewrites its file inputs to match
+/// through this same function — which is why it is deterministic in the directory's list position.
+pub fn wasm_guest_mount(host_dir: &str, index: usize) -> String {
+    if host_dir.starts_with('/') && !host_dir.contains('\\') {
+        return host_dir.to_string();
+    }
+    format!("/liatir-host-{index}")
+}
+
+/// Rewrites one host file path to its sandbox equivalent under `guest`.
+///
+/// Returns `None` when the value does not live in that directory, so the caller can try the next
+/// mount. Comparison is case-insensitive because the hosts that need a synthetic mount are the
+/// ones with case-insensitive filesystems.
+pub fn wasm_guest_path(value: &str, host_dir: &str, guest: &str) -> Option<String> {
+    if guest == host_dir {
+        return Some(value.to_string());
+    }
+    let normalized = value.replace('\\', "/");
+    let normalized_dir = host_dir.replace('\\', "/");
+    let remainder = normalized
+        .get(..normalized_dir.len())
+        .filter(|prefix| prefix.eq_ignore_ascii_case(&normalized_dir))
+        .map(|_| &normalized[normalized_dir.len()..])?;
+    let remainder = remainder.strip_prefix('/').unwrap_or(remainder);
+    if remainder.is_empty() {
+        return Some(guest.to_string());
+    }
+    Some(format!("{guest}/{remainder}"))
+}
+
+/// Rewrites every string in `value` that points inside one of the exposed host directories.
+///
+/// The plugin receives paths in its own payload — `lia_plugin_call` carries them inside
+/// `payload.args`, a bundle run carries them in its inputs — and it opens them verbatim. Those
+/// paths therefore have to name the mount the sandbox actually exposes. On a POSIX host each mount
+/// is the real directory, so this walk rewrites nothing and behaviour is unchanged.
+pub fn rewrite_host_paths(value: &mut serde_json::Value, host_dirs: &[String]) {
+    if host_dirs.is_empty() {
+        return;
+    }
+    match value {
+        serde_json::Value::String(text) => {
+            for (index, dir) in host_dirs.iter().enumerate() {
+                let guest = wasm_guest_mount(dir, index);
+                if guest == *dir {
+                    continue;
+                }
+                if let Some(mapped) = wasm_guest_path(text, dir, &guest) {
+                    *text = mapped;
+                    return;
+                }
+            }
+        }
+        serde_json::Value::Array(items) => {
+            for item in items {
+                rewrite_host_paths(item, host_dirs);
+            }
+        }
+        serde_json::Value::Object(entries) => {
+            for (_, item) in entries.iter_mut() {
+                rewrite_host_paths(item, host_dirs);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn validate_host_read_paths(raw: Vec<String>) -> Result<Vec<(PathBuf, String)>> {
     // Paths that must never be exposed to a WASM plugin.
     let blocked_prefixes: &[&str] = &[
         "/etc", "/proc", "/sys", "/dev",
@@ -436,7 +517,7 @@ fn validate_host_read_paths(raw: Vec<String>) -> Result<Vec<PathBuf>> {
 
     let mut out = Vec::with_capacity(raw.len());
 
-    for s in raw {
+    for (index, s) in raw.into_iter().enumerate() {
         let p = PathBuf::from(&s);
 
         if !p.is_absolute() {
@@ -456,7 +537,7 @@ fn validate_host_read_paths(raw: Vec<String>) -> Result<Vec<PathBuf>> {
             }
         }
 
-        out.push(canonical);
+        out.push((canonical, wasm_guest_mount(&s, index)));
     }
 
     Ok(out)
@@ -513,7 +594,7 @@ fn run_plugin_job(
     payload: serde_json::Value,
     timeout_ms: u64,
     started: Instant,
-    host_read_paths: Vec<PathBuf>,
+    host_read_paths: Vec<(PathBuf, String)>,
     cancelled: Option<Arc<AtomicBool>>,
 ) -> Result<serde_json::Value> {
     let job_dir = plugin_job_dir(&app, &id)?;
@@ -602,7 +683,7 @@ fn run_plugin_job_inner(
     timeout_ms: u64,
     job_dir: &Path,
     storage_dir: &Path,
-    host_read_paths: &[PathBuf],
+    host_read_paths: &[(PathBuf, String)],
     cancelled: Option<Arc<AtomicBool>>,
 ) -> Result<PluginResponse> {
     let wasm_bytes = match wasm_bytes_override {
@@ -654,15 +735,13 @@ fn run_plugin_job_inner(
     // Read-only host directories requested by the caller (e.g. the directory
     // containing a FASTQ or BAM file). Mapped to the same absolute path inside
     // the sandbox so the plugin can open files by their original path.
-    for host_dir in host_read_paths {
-        if let Some(guest) = host_dir.to_str() {
-            wasi_builder.preopened_dir(
-                host_dir,
-                guest,
-                DirPerms::READ,
-                FilePerms::READ,
-            )?;
-        }
+    for (host_dir, guest) in host_read_paths {
+        wasi_builder.preopened_dir(
+            host_dir,
+            guest,
+            DirPerms::READ,
+            FilePerms::READ,
+        )?;
     }
 
     let wasi = wasi_builder.build_p1();
@@ -727,4 +806,46 @@ fn run_plugin_job_inner(
         error: None,
         duration_ms: 0,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{wasm_guest_mount, wasm_guest_path};
+
+    /// A POSIX host must keep the exact path the plugin was handed, or this becomes a behaviour
+    /// change on macOS and Linux rather than a Windows fix.
+    #[test]
+    fn posix_host_directories_mount_at_their_own_path() {
+        let dir = "/home/lorenzo/data";
+        let guest = wasm_guest_mount(dir, 0);
+        assert_eq!(guest, dir);
+        assert_eq!(
+            wasm_guest_path("/home/lorenzo/data/sample.fastq", dir, &guest).as_deref(),
+            Some("/home/lorenzo/data/sample.fastq"),
+        );
+    }
+
+    /// A drive-letter path is not a WASI path: wasi-libc reads it as relative, so the preopen could
+    /// never match the file the plugin opens. FastQC failed on Windows for exactly this.
+    #[test]
+    fn windows_host_directories_mount_at_a_synthetic_posix_path() {
+        let dir = "C:\\lt-8380\\wasm";
+        let guest = wasm_guest_mount(dir, 0);
+        assert_eq!(guest, "/liatir-host-0");
+        assert_eq!(
+            wasm_guest_path("C:\\lt-8380\\wasm\\sample.fastq", dir, &guest).as_deref(),
+            Some("/liatir-host-0/sample.fastq"),
+        );
+    }
+
+    #[test]
+    fn each_directory_keeps_its_own_mount_and_ignores_unrelated_paths() {
+        assert_eq!(wasm_guest_mount("C:\\a", 1), "/liatir-host-1");
+        assert_eq!(wasm_guest_path("C:\\other\\x.fastq", "C:\\a", "/liatir-host-1"), None);
+        // Windows filesystems are case-insensitive, so the mount has to be too.
+        assert_eq!(
+            wasm_guest_path("c:\\A\\x.fastq", "C:\\a", "/liatir-host-1").as_deref(),
+            Some("/liatir-host-1/x.fastq"),
+        );
+    }
 }

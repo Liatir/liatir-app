@@ -236,7 +236,7 @@
 			{#if loading}
 				<div class="flex justify-center py-16"><Spinner /></div>
 			{:else if filteredModels.length === 0}
-				<div class="border border-border bg-surface rounded-lg px-4 py-10 text-center text-sm text-text-muted">No Runtime Box model matches this search.</div>
+				<div data-testid="ai-models-empty" class="border border-border bg-surface rounded-lg px-4 py-10 text-center text-sm text-text-muted">No Runtime Box model matches this search.</div>
 			{:else}
 				<div class="space-y-3">
 					{#each filteredModels as model (model.id)}
@@ -244,7 +244,7 @@
 						{@const progress = installing[model.id]}
 						{@const percent = installPercent(model)}
 						{@const installLog = installLogState(model.id)}
-						<div class="border border-border bg-surface rounded-lg overflow-hidden">
+						<div data-testid="ai-model-card" data-model-id={model.id} class="border border-border bg-surface rounded-lg overflow-hidden">
 							<div class="p-4 grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto] gap-4 items-center">
 								<div class="min-w-0">
 									<div class="flex items-center gap-2"><p class="text-sm font-semibold text-text truncate">{model.name}</p><Badge variant={statusVariant(model)} size="xs">{statusLabel(model)}</Badge></div>
