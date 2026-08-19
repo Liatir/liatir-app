@@ -20,6 +20,7 @@ import {
   expectNoVisibleRuntimeError,
   navigateSidebar,
   openSandboxWorkspace,
+  reloadLiatirApp,
   waitForLiatirBridge,
 } from '../support/liatir-app.mjs';
 
@@ -622,8 +623,7 @@ async function seedSandbox(browser, apiUrl, pluginPath) {
 
 async function reseedSandbox(browser, apiUrl, pluginPath) {
   await seedSandbox(browser, apiUrl, pluginPath);
-  await browser.execute(() => window.location.reload());
-  await waitForLiatirBridge(browser);
+  await reloadLiatirApp(browser);
   await openSandboxWorkspace(browser);
 }
 
@@ -1130,8 +1130,7 @@ export const tests = [
       await openPipeline(browser, PIPELINE_INTERRUPTED_ID);
       await writeInterruptedRuntime(browser);
 
-      await browser.execute(() => window.location.reload());
-      await waitForLiatirBridge(browser);
+      await reloadLiatirApp(browser);
       await browser.waitUntil(
         async () => browser.execute((pipelineId) => {
           const editor = document.querySelector('[data-testid="pipeline-editor"]');

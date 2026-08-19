@@ -1339,7 +1339,15 @@ mod tests {
 
     #[test]
     fn import_check_script_runs_with_json_null_and_bool_when_python_is_available() {
-        let Some(python) = first_available(&["python3", "python"]) else {
+        // Select the interpreter the way `preferred_python_matching` does, by requiring a readable
+        // version, rather than by mere presence on PATH. Windows 11 ships a zero-length
+        // `python3.exe` App Execution Alias in `WindowsApps` that only prints "Python was not
+        // found"; the product skips it because `command_stdout` rejects its non-zero exit, and this
+        // test has to make the same choice or it fails on a machine the product handles correctly.
+        let Some(python) = python_candidates()
+            .into_iter()
+            .find(|candidate| command_stdout(candidate, &["--version"]).is_some())
+        else {
             return;
         };
         let script = import_check_script(&[PythonEnvPackage {

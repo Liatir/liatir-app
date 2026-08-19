@@ -52,9 +52,44 @@ describe('Gate 7 desktop release contract', () => {
       UPDATE_ENDPOINT: 'https://updates.liatir.com/{{target}}/{{arch}}/{{current_version}}',
       ED25519_PUBKEY: 'test-public-key',
       TAURI_SIGNING_PRIVATE_KEY: '/secure/updater.key',
-    }, 'win32')).toContain(
-      'This Gate 7 release contract is implemented only for macOS; add and verify the native platform contract first',
+    }, 'linux')).toContain(
+      'This Gate 7 release contract is implemented for macOS and Windows; add and verify the native platform contract first',
     );
+  });
+
+  it('requires code-signing and a countersigned timestamp on Windows', () => {
+    expect(validateReleaseEnvironment({}, 'win32')).toEqual(expect.arrayContaining([
+      'APP_VERSION must be an explicit semantic version',
+      'TAURI_SIGNING_PRIVATE_KEY is required to produce signed updater artifacts',
+      'WINDOWS_CERTIFICATE_THUMBPRINT (40 hex characters) or WINDOWS_CERTIFICATE is required for Windows code signing',
+      'WINDOWS_TIMESTAMP_URL must be an explicit HTTPS RFC 3161 timestamp server',
+    ]));
+
+    const signed = {
+      APP_VERSION: '0.3.0-beta.1',
+      RELEASE_REVISION: 'a'.repeat(40),
+      UPDATE_ENDPOINT: 'https://updates.liatir.com/{{target}}/{{arch}}/{{current_version}}',
+      ED25519_PUBKEY: 'test-public-key',
+      TAURI_SIGNING_PRIVATE_KEY: 'C:/secure/updater.key',
+      WINDOWS_TIMESTAMP_URL: 'https://timestamp.digicert.com',
+    };
+    expect(validateReleaseEnvironment({
+      ...signed,
+      WINDOWS_CERTIFICATE_THUMBPRINT: 'A1B2C3D4E5F6' + '0'.repeat(28),
+    }, 'win32')).toEqual([]);
+
+    // An exported certificate is useless without its password, and a truncated thumbprint is not a
+    // certificate identity at all.
+    expect(validateReleaseEnvironment({
+      ...signed,
+      WINDOWS_CERTIFICATE: 'base64-pfx',
+    }, 'win32')).toEqual(['WINDOWS_CERTIFICATE_PASSWORD is required with WINDOWS_CERTIFICATE']);
+    expect(validateReleaseEnvironment({
+      ...signed,
+      WINDOWS_CERTIFICATE_THUMBPRINT: 'A1B2C3',
+    }, 'win32')).toEqual([
+      'WINDOWS_CERTIFICATE_THUMBPRINT (40 hex characters) or WINDOWS_CERTIFICATE is required for Windows code signing',
+    ]);
   });
 
   it('keeps update controls behind the native bridge and blocks replacement during Jobs', async () => {
@@ -84,6 +119,41 @@ describe('Gate 7 desktop release contract', () => {
     expect(script).toContain("signingIdentity: '-'");
     expect(script).toContain('must not be published');
     expect(script).toContain("hdiutil', ['verify'");
+  });
+
+  it('builds the Windows package gate against the real installer format and refuses a signed one', async () => {
+    const [template, script] = await Promise.all([
+      readFile(resolve(root, 'conf-templates/tauri.conf.template.prod.json'), 'utf8'),
+      readFile(resolve(root, 'scripts/build-desktop-windows-adhoc.mjs'), 'utf8'),
+    ]);
+
+    // The gate must package whatever the product actually ships on Windows.
+    expect(JSON.parse(template).bundle.targets).toContain('nsis');
+    expect(script).toContain("config.bundle.targets = ['nsis']");
+    expect(script).toContain('config.bundle.createUpdaterArtifacts = false');
+    expect(script).toContain("webviewInstallMode: { type: 'skip' }");
+    // Unsigned is the whole separation from a release on Windows, so it is asserted, not assumed.
+    expect(script).toContain("status !== 'NotSigned'");
+    expect(script).toContain('must not be published');
+    expect(script).toContain('NullsoftInst');
+  });
+
+  it('builds the Linux package gate against the claimed formats and produces no updater signature', async () => {
+    const [template, script] = await Promise.all([
+      readFile(resolve(root, 'conf-templates/tauri.conf.template.prod.json'), 'utf8'),
+      readFile(resolve(root, 'scripts/build-desktop-linux-adhoc.mjs'), 'utf8'),
+    ]);
+
+    // Every Linux format the product claims has to be built and inspected, not just the easy one.
+    const claimed = JSON.parse(template).bundle.targets;
+    for (const target of ['deb', 'rpm', 'appimage']) expect(claimed).toContain(target);
+    expect(script).toContain("const BUNDLES = ['deb', 'rpm', 'appimage']");
+    expect(script).toContain('config.bundle.createUpdaterArtifacts = false');
+    // Linux packages carry no signature of their own, so the absent updater signature is what keeps
+    // this gate distinguishable from a release.
+    expect(script).toContain('must not produce updater signatures');
+    expect(script).toContain('must not be published');
+    expect(script).toContain("'--contents', deb");
   });
 
   it('keeps unreadable workspace state intact and makes startup retryable', async () => {

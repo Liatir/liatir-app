@@ -1,5 +1,48 @@
 # Current project status
 
+## The Gate 7 Windows and Linux slices are complete and executed (2026-08-19)
+
+Both remaining desktop platforms now have their own package gate, lifecycle
+proof and executed regression evidence, and the desktop matrix is coherent
+across macOS, Windows and Linux at the local, unsigned layer.
+
+`npm run desktop-beta:package:windows` builds the real NSIS installer from a
+production-shaped configuration and refuses to accept a signed one: it requires
+Authenticode `NotSigned` on the installer, the packaged executable and the
+installed executable, since Windows has no ad-hoc signature to stand in for
+macOS's. It then performs a real silent per-user installation into a test-owned
+directory and lets the generated uninstaller remove it, leaving no registry
+entry, Start Menu shortcut or directory behind.
+`npm run desktop-beta:package:linux` builds and inspects the `.deb`, `.rpm` and
+AppImage the product claims, and requires that no updater signature exists.
+`npm run desktop-beta:test:windows` and `npm run desktop-beta:test:linux` share
+one lifecycle module and drive the installed copy in two native processes;
+macOS keeps its own orchestrator because re-signing a debug WebDriver bundle
+changes how macOS launches it. `scripts/build-desktop-release.mjs` now
+implements the Windows signing contract — a certificate thumbprint or PFX, an
+HTTPS RFC 3161 timestamp server, an NSIS installer plus `.nsis.zip` updater
+artifact, and `Get-AuthenticodeSignature` reporting `Valid` with a real
+countersignature on both the installer and the executable. Linux remains
+deliberately rejected by that contract.
+
+Three defects were found by executing rather than building. A bare
+`window.location.reload()` deadlocks WebView2 — the document is torn down before
+the script response is sent, so the run sat on the harness's 600-second script
+timeout instead of failing, which is how the single-cell lighthouse "hung" on
+Windows; `reloadLiatirApp` is now shared support and every spec uses it. On
+Windows the `bash` npm's `cmd.exe` finds first is `System32ash.exe`, the WSL
+launcher, so generating a Windows build's configuration silently ran inside
+Linux and depended on tools installed there; `scripts/run-conf.mjs` now resolves
+the Git for Windows shell and refuses that fallback. Finally a Python discovery
+test asserted more than the product relies on, failing on the zero-length
+`python3.exe` App Execution Alias that Windows 11 ships; the product already
+skips it through `--version` validation, and the test now makes the same choice.
+
+The exact package identities, commands, counts and limitations are in
+[Gate 7 Beta 1 — Windows and Linux evidence](./roadmap/gate-7-beta1-windows-linux.md).
+Gate 7 is still not closed: code signing, notarization and a real signed
+A-to-B update on a clean machine remain release blockers on all three platforms.
+
 ## The Gate 7 macOS slice is fully executed (2026-08-17)
 
 The two macOS proofs the previous session prepared but could not launch have now

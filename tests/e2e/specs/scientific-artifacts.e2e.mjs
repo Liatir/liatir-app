@@ -7,7 +7,7 @@ import {
   expectNoVisibleRuntimeError,
   navigateSidebar,
   openSandboxWorkspace,
-  waitForLiatirBridge,
+  reloadLiatirApp,
 } from '../support/liatir-app.mjs';
 
 const RUN_ID = 'e2e-scientific-artifact-result';
@@ -143,8 +143,7 @@ export const tests = [{
     await writeWorkspaceJson(browser, 'workspaces/__test__/analysis-runs/index.json', [run]);
     await writeWorkspaceJson(browser, `workspaces/__test__/analysis-runs/${RUN_ID}.json`, { sections: [] });
 
-    await browser.execute(() => window.location.reload());
-    await waitForLiatirBridge(browser);
+    await reloadLiatirApp(browser);
     await openSandboxWorkspace(browser);
 
     await navigateSidebar(browser, '/data');

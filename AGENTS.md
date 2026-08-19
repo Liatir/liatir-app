@@ -63,6 +63,13 @@ These are the current commands. If one no longer exists, read the `scripts` sect
 - `npm run test:verify` — **the gate before declaring work done**: unit + SDK type generation + core build + frontend check/build + `src-ts` compile.
 - `npm run test:ui` — end-to-end against a real compiled binary. `npm run test:ui:visual` for visual snapshots.
 - `npm run lint:ts`, plus `cargo clippy` / `cargo test` inside `src-tauri/` for Rust work.
+- `npm run desktop-beta:package:<macos|windows|linux>` and
+  `npm run desktop-beta:test:<macos|windows|linux>` — the per-platform Gate 7 desktop package and
+  install-lifecycle gates. Each refuses to run off its own platform, and every artifact they build
+  is deliberately unsigned and must never be published.
+- The `*conf` scripts run through `node scripts/run-conf.mjs <name>-conf.sh`, which resolves a real
+  POSIX shell. On Windows they need Git for Windows and `jq`; the `bash` on PATH there is the WSL
+  launcher and is deliberately not used.
 
 Run `test:verify` before closing any task, and add `test:ui` when you touched UI, navigation, or the job/results lifecycle. Never mark work done on the strength of a successful build alone.
 

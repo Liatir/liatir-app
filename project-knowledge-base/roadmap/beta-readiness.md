@@ -1,6 +1,6 @@
 # Beta 1 Readiness
 
-Last reviewed: 2026-08-17
+Last reviewed: 2026-08-19
 
 This page is the cross-surface readiness ledger for the first production-grade
 Liatir beta. It complements the canonical
@@ -52,8 +52,10 @@ feature to Verified.
 | Plugin templates | **Partial** | CLI scaffolds supported runtimes | Replace toy examples with useful, tested scientific templates for every supported runtime |
 | API/pipeline presets | **Partial — single-cell verified** | The saved `single-cell-embedding-viewer-v1` preset connects typed Tool outputs to the viewer; unit and native E2E verify creation and persisted references | Add further presets only from individually verified nodes and realistic bounded fixtures |
 | Public/internal documentation | **Verified — Gate 7 core path** | Both VitePress sites build successfully; public install, platform matrix, first single-cell analysis, Nextflow handoff, update, recovery, uninstall and troubleshooting paths are present and distinguish local evidence from public release claims | Keep the support matrix synchronized with signed package evidence on each platform |
-| macOS distribution | **Partial — local Gate 7 evidence complete and executed** | Production UI is bundled for offline startup; explicit signed-updater UI and Job guard are natively verified; an ad-hoc non-publishable DMG was built, `codesign`/`hdiutil` verified and mounted on the current revision; two native processes prove one-time migration, restart recovery and Results retention after app removal; corrupt-index startup recovery is natively 1/1; Gate 5 is 1/1 and real Nextflow is 3/3. The desktop lifecycle proof is now a declared `desktop-beta-lifecycle-e2e` suite in the `ui` profile | Developer ID signing, Apple notarization/stapling, clean-machine install and real signed updater A-to-B/reinstall proof |
-| Windows/Linux distribution | **Partial** | The current Linux and Windows Runtime Box targets are published and product-lifecycle verified, including CUDA on both systems and scGPT CPU. This is model-distribution evidence, not a complete desktop application release matrix | Complete signed desktop packaging, install/update/migration/uninstall, and native UI coverage per supported OS |
+| macOS distribution | **Partial — local Gate 7 evidence complete and executed** | Production UI is bundled for offline startup; explicit signed-updater UI and Job guard are natively verified; an ad-hoc non-publishable DMG was built, `codesign`/`hdiutil` verified and mounted on the current revision; two native processes prove one-time migration, restart recovery and Results retention after app removal; corrupt-index startup recovery is natively 1/1; Gate 5 is 1/1 and real Nextflow is 3/3. The desktop lifecycle proof is a declared `desktop-beta-lifecycle-e2e` suite in the `ui` profile | Developer ID signing, Apple notarization/stapling, clean-machine install and real signed updater A-to-B/reinstall proof |
+| Windows desktop distribution | **Partial — local Gate 7 evidence complete and executed** | The real NSIS installer is built and inspected by `desktop-beta:package:windows`: `MZ` and `NullsoftInst` structure, `NotSigned` Authenticode on the installer and on both the packaged and installed executables, then a real silent per-user install into a test-owned directory and removal by the generated uninstaller, leaving no registry entry, shortcut or directory behind. Two native processes prove migration, restart recovery and Results retention after uninstall; updater/Job safety is 1/1, Gate 5 is 1/1, and Gate 6 through WSL2 is 3/3 plus 2/2 restart phases. `build-desktop-release.mjs` now implements the Windows signing/artifact contract | Authenticode signing with an RFC 3161 countersignature, clean-machine install, and a real signed updater A-to-B/reinstall proof |
+| Linux desktop distribution | **Partial — local Gate 7 evidence complete and executed** | An independently compiled x86_64 ELF app in a Linux-filesystem checkout passes the desktop lifecycle, updater/Job safety, Gate 5 and native Nextflow under Xvfb. `desktop-beta:package:linux` builds and inspects the claimed `.deb`, `.rpm` and AppImage formats and requires that no updater signature is produced | A signed, distributable package per format, its update feed, and a clean-machine install/update/uninstall proof; `build-desktop-release.mjs` still deliberately rejects Linux |
+| Runtime Box OS coverage | **Verified — model distribution** | The current Linux and Windows Runtime Box targets are published and product-lifecycle verified, including CUDA on both systems and scGPT CPU. This is model-distribution evidence, not a desktop application release matrix | Keep target evidence current as boxes are re-released |
 
 ## Release-blocking scenarios
 
@@ -72,9 +74,10 @@ The beta cannot ship until automated native coverage proves:
 
 ## Immediate execution order
 
-1. Complete public-shaped macOS signing/notarization/update evidence and the
-   Windows/Linux desktop release matrix; the local macOS implementation and
-   core public Beta documentation are complete.
+1. Complete public-shaped signing, notarization and real signed-update
+   evidence on macOS, Windows and Linux. Every platform's local packaging,
+   lifecycle and documentation is now complete and executed; only the signed,
+   clean-machine release layer remains.
 2. Implement controlled local MCP access with a real client after Beta 1.
 
 Quenta expansion, simulations, generative model families, additional scientific

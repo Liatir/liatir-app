@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "990384fd26653b3834c6aca97a4f34c81ca70fc5dbf30ba9e515b1c29ac1166f";
+export const QUENTA_DOCS_SEED_HASH = "267948a04f89c272bb00e1052c48c8bbfb3f36661282a0b02ee27dfb829b56f1";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -516,7 +516,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Install Liatir Beta — Platform status",
     "locator": "Docs / Getting Started / Install / Platform status",
     "excerpt": "Platform status | Platform | Scientific workflows | Beta installer status | | --- | --- | --- | | macOS arm64 | Single-cell and native Nextflow paths verified | Local packaging verified; Developer ID signing and Apple notarization still required for public di…",
-    "content": "Platform status\n| Platform | Scientific workflows | Beta installer status |\n| --- | --- | --- |\n| macOS arm64 | Single-cell and native Nextflow paths verified | Local packaging verified; Developer ID signing and Apple notarization still required for public distribution |\n| Windows 11 x86_64 | Single-cell Runtime Box support and Nextflow through WSL2 verified | Release installer gate in progress |\n| Linux x86_64 | Runtime Box support and native Nextflow verified | Release package gate in progress |\n\nThese rows describe tested paths, not every computer that may happen to run\nLiatir. See [Beta support and troubleshooting](/getting-started/support) before\nstarting a long analysis."
+    "content": "Platform status\n| Platform | Scientific workflows | Beta installer status |\n| --- | --- | --- |\n| macOS arm64 | Single-cell and native Nextflow paths verified | Local packaging verified; Developer ID signing and Apple notarization still required for public distribution |\n| Windows 11 x86_64 | Single-cell Runtime Box support and Nextflow through WSL2 verified | Local NSIS installer verified, including a real silent install and uninstall; Authenticode code signing still required for public distribution |\n| Linux x86_64 | Runtime Box support and native Nextflow verified | Local `.deb`, `.rpm` and AppImage packaging verified; a signed, distributable package and its update feed are still required |\n\nThese rows describe tested paths, not every computer that may happen to run\nLiatir. See [Beta support and troubleshooting](/getting-started/support) before\nstarting a long analysis."
   },
   {
     "id": "docs:getting-started/install#macos",
@@ -543,12 +543,44 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "content": "Migration and recovery\nOn first start after upgrading from an older build, Liatir copies legacy\nworkspace and analysis indexes into its isolated application storage. The\nmigration is one-time and non-destructive: original entries and user-visible\nResults are not deleted.\n\nIf the app does not reopen correctly after an update:\n\n1. preserve the Liatir application-data folder;\n2. reinstall the same official package or the previous supported package;\n3. reopen Liatir and inspect **Jobs** and **Results**;\n4. export diagnostics before removing any application data."
   },
   {
+    "id": "docs:getting-started/install#windows",
+    "sourceKind": "documentation",
+    "title": "Install Liatir Beta — Windows",
+    "locator": "Docs / Getting Started / Install / Windows",
+    "excerpt": "Windows An official Windows Beta is distributed as a code-signed `.exe` installer built with NSIS: 1. Download the Windows x86_64 installer from the official release page. 2. Run it and confirm that Windows identifies the expected Liatir publisher. 3. Liatir…",
+    "content": "Windows\nAn official Windows Beta is distributed as a code-signed `.exe` installer built\nwith NSIS:\n\n1. Download the Windows x86_64 installer from the official release page.\n2. Run it and confirm that Windows identifies the expected Liatir publisher.\n3. Liatir installs for the current user, so no administrator account is needed.\n4. Start Liatir from the Start menu and create or select a workspace.\n\nWindows SmartScreen warns about an installer it does not recognise. Do not\nchoose **Run anyway** for a Beta package: report the filename and version\ninstead.\n\nTo run Nextflow workflows from Liatir on Windows, install Nextflow and a\ncompatible Java inside an x86_64 WSL2 distribution. Liatir drives that\ndistribution; there is no native Windows Nextflow."
+  },
+  {
+    "id": "docs:getting-started/install#linux",
+    "sourceKind": "documentation",
+    "title": "Install Liatir Beta — Linux",
+    "locator": "Docs / Getting Started / Install / Linux",
+    "excerpt": "Linux An official Linux Beta is distributed as a `.deb`, an `.rpm` or an AppImage for x86_64: 1. Download the package that matches your distribution. 2. Install it with your package manager, or make the AppImage executable and run it directly. 3. Start Liatir…",
+    "content": "Linux\nAn official Linux Beta is distributed as a `.deb`, an `.rpm` or an AppImage for\nx86_64:\n\n1. Download the package that matches your distribution.\n2. Install it with your package manager, or make the AppImage executable and\n   run it directly.\n3. Start Liatir and create or select a workspace.\n\nLiatir needs a WebKitGTK-based webview, which the `.deb` and `.rpm` packages\ndeclare as a dependency."
+  },
+  {
     "id": "docs:getting-started/install#uninstall-on-macos",
     "sourceKind": "documentation",
     "title": "Install Liatir Beta — Uninstall on macOS",
     "locator": "Docs / Getting Started / Install / Uninstall on macOS",
     "excerpt": "Uninstall on macOS Quit Liatir, then move **Liatir.app** from **Applications** to the Trash. Removing the app does not remove your source datasets, Results, installed AI Models, or workspace metadata. This retention is intentional so reinstalling does not des…",
     "content": "Uninstall on macOS\nQuit Liatir, then move **Liatir.app** from **Applications** to the Trash.\nRemoving the app does not remove your source datasets, Results, installed AI\nModels, or workspace metadata. This retention is intentional so reinstalling\ndoes not destroy scientific work.\n\nIf you also want to remove all Liatir-managed state, first back up any Results\nyou need, then remove `~/Library/Application Support/app.liatir.app`. Files you\nkept elsewhere on disk are not owned or deleted by Liatir."
+  },
+  {
+    "id": "docs:getting-started/install#uninstall-on-windows",
+    "sourceKind": "documentation",
+    "title": "Install Liatir Beta — Uninstall on Windows",
+    "locator": "Docs / Getting Started / Install / Uninstall on Windows",
+    "excerpt": "Uninstall on Windows Close Liatir, then remove **Liatir** from **Settings → Apps → Installed apps**, or run the `uninstall.exe` that sits in the installation directory. This removes the application, its Start menu entry and its uninstall registration. It does…",
+    "content": "Uninstall on Windows\nClose Liatir, then remove **Liatir** from **Settings → Apps → Installed apps**,\nor run the `uninstall.exe` that sits in the installation directory. This removes\nthe application, its Start menu entry and its uninstall registration.\n\nIt does not remove your source datasets, Results, installed AI Models or\nworkspace metadata. To remove all Liatir-managed state as well, back up any\nResults you need first, then remove `%APPDATA%\u0007pp.liatir.app`."
+  },
+  {
+    "id": "docs:getting-started/install#uninstall-on-linux",
+    "sourceKind": "documentation",
+    "title": "Install Liatir Beta — Uninstall on Linux",
+    "locator": "Docs / Getting Started / Install / Uninstall on Linux",
+    "excerpt": "Uninstall on Linux Remove the package with your package manager, or delete the AppImage file. Liatir-managed state stays in `$XDG_DATA_HOME/app.liatir.app`, which defaults to `~/.local/share/app.liatir.app`; remove it only after backing up any Results you nee…",
+    "content": "Uninstall on Linux\nRemove the package with your package manager, or delete the AppImage file.\nLiatir-managed state stays in `$XDG_DATA_HOME/app.liatir.app`, which defaults to\n`~/.local/share/app.liatir.app`; remove it only after backing up any Results you\nneed."
   },
   {
     "id": "docs:getting-started/support",
@@ -572,7 +604,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Beta support and troubleshooting — Common problems",
     "locator": "Docs / Getting Started / Support / Common problems",
     "excerpt": "Common problems ### macOS says the developer cannot be verified Do not bypass the warning for a Beta package. Delete that app bundle and obtain the signed, notarized package from the official release page. Include the package filename and version in a support…",
-    "content": "Common problems\n### macOS says the developer cannot be verified\n\nDo not bypass the warning for a Beta package. Delete that app bundle and obtain\nthe signed, notarized package from the official release page. Include the\npackage filename and version in a support report.\n\n### Update check is unavailable\n\nDevelopment builds do not have a release feed. In an official package, confirm\nthat the machine can reach the release service over HTTPS and try again. An\noffline app remains usable; only the explicit update check needs connectivity.\n\n### Liatir will not update or restart\n\nOpen **Jobs**. Finish or cancel every running Job, then retry. Liatir refuses to\nreplace or restart the app while scientific work is active.\n\n### A file is missing\n\nLiatir stores references to source files. If a file was moved, open **Data**,\nselect the missing entry and use **Relocate**. Existing run history keeps its\nassociation with the updated reference.\n\n### An AI Model cannot be installed\n\nCheck the model's operating-system, architecture, accelerator, memory and disk\nrequirements. Liatir will not substitute an incompatible Runtime Box. Keep the\nerror and diagnostics; do not loosen version or signature checks.\n\n### Nextflow is not ready\n\nVerify that both `nextflow` and `java` are installed on the supported execution\nhost and available on `PATH`. On Windows, install them inside an x86_64 WSL2\ndistribution rather than as an unofficial native Windows wrapper.\n\n### A run was interrupted\n\nReopen Liatir and inspect **Jobs** and **Results**. Liatir reconciles interrupted\nruns instead of leaving them falsely running. Nextflow `-resume` is an explicit\nexpert action and is allowed only with a compatible saved definition and source\nrevision."
+    "content": "Common problems\n### macOS says the developer cannot be verified\n\nDo not bypass the warning for a Beta package. Delete that app bundle and obtain\nthe signed, notarized package from the official release page. Include the\npackage filename and version in a support report.\n\n### Windows SmartScreen does not recognise the installer\n\nDo not choose **Run anyway** for a Beta package. An official Windows installer is\nAuthenticode-signed; an unrecognised one is a development build. Delete it and\nobtain the signed installer from the official release page, quoting the filename\nand version in a support report.\n\n### Update check is unavailable\n\nDevelopment builds do not have a release feed. In an official package, confirm\nthat the machine can reach the release service over HTTPS and try again. An\noffline app remains usable; only the explicit update check needs connectivity.\n\n### Liatir will not update or restart\n\nOpen **Jobs**. Finish or cancel every running Job, then retry. Liatir refuses to\nreplace or restart the app while scientific work is active.\n\n### A file is missing\n\nLiatir stores references to source files. If a file was moved, open **Data**,\nselect the missing entry and use **Relocate**. Existing run history keeps its\nassociation with the updated reference.\n\n### An AI Model cannot be installed\n\nCheck the model's operating-system, architecture, accelerator, memory and disk\nrequirements. Liatir will not substitute an incompatible Runtime Box. Keep the\nerror and diagnostics; do not loosen version or signature checks.\n\n### Nextflow is not ready\n\nVerify that both `nextflow` and `java` are installed on the supported execution\nhost and available on `PATH`. On Windows, install them inside an x86_64 WSL2\ndistribution rather than as an unofficial native Windows wrapper.\n\n### A run was interrupted\n\nReopen Liatir and inspect **Jobs** and **Results**. Liatir reconciles interrupted\nruns instead of leaving them falsely running. Nextflow `-resume` is an explicit\nexpert action and is allowed only with a compatible saved definition and source\nrevision."
   },
   {
     "id": "docs:getting-started/support#report-a-problem",

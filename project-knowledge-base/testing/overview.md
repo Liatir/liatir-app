@@ -301,25 +301,62 @@ versions and limitations are recorded in
 
 ### Gate 7 desktop Beta lifecycle
 
-The macOS arm64 slice has two deliberately separate local gates:
+Every supported desktop platform has two deliberately separate local gates: a
+package gate that builds and inspects the format the product actually ships,
+and a lifecycle gate that drives two native app processes against one isolated
+test-owned home. Each orchestrator refuses to run off its own platform, and the
+matrix skips the other platforms' suites instead of failing them.
 
 ```bash
+# macOS arm64
 npm run desktop-beta:package:macos
 npm run test:tauri:prepare
 npm run desktop-beta:test:macos
+
+# Windows x86_64
+npm run desktop-beta:package:windows
+npm run test:tauri:prepare
+npm run desktop-beta:test:windows
+
+# Linux x86_64
+npm run desktop-beta:package:linux
+npm run test:tauri:prepare
+npm run desktop-beta:test:linux
 ```
 
-The package gate creates an ad-hoc-signed app and DMG, disables updater
+The macOS package gate creates an ad-hoc-signed app and DMG, disables updater
 artifacts, verifies the signature and disk image, mounts the DMG and checks the
-packaged executable. It is never public release evidence and must not be
-published. The lifecycle gate launches two native app processes against the
-same isolated test-owned home, proves one-time migration and restart recovery,
-then removes the temporary app and proves workspace state and Results remain.
+packaged executable. The Windows package gate builds the real NSIS installer,
+requires the installer and both the packaged and installed executables to report
+Authenticode `NotSigned`, then silently installs into a test-owned directory and
+lets the generated uninstaller remove it again. The Linux package gate builds the
+`.deb`, `.rpm` and AppImage, checks the ELF architecture, reads the Debian
+package contents and version, checks the RPM and AppImage magic, and requires
+that no updater signature was produced. None of the three is public release
+evidence and none of their artifacts may be published.
+
+The lifecycle gate proves one-time migration and restart recovery, then removes
+the installed application and proves workspace state and Results remain. macOS
+drives the build output because re-signing a debug WebDriver bundle changes how
+macOS launches it; Windows and Linux drive the installed copy itself.
+
+The Windows package gate needs a POSIX shell and `jq` on the Windows host: the
+`*conf` scripts are shell scripts, and `npm run prodconf` now resolves the Git
+for Windows shell explicitly through `scripts/run-conf.mjs`. It deliberately
+does not fall back to `System32ash.exe`, which is the WSL launcher.
 
 `tests/e2e/specs/app-update.e2e.mjs` covers the explicit update UI and verifies
 that application restart is refused while a logical Job is running. A real
 signed updater A-to-B test remains blocked on release signing inputs and must
 not be replaced by weakening updater signatures.
+
+Never reload the webview with a bare `browser.execute(() => window.location.reload())`.
+The document is torn down before WebView2 acknowledges the command, so the call
+never returns and the run sits on the harness's 600-second script timeout rather
+than failing. Use `reloadLiatirApp` from `tests/e2e/support/liatir-app.mjs`: it
+defers the reload by one turn and then confirms it against a new
+`performance.timeOrigin`. The single-cell lighthouse hung exactly this way on its
+first native Windows run.
 
 For the complete macOS regression run, also execute:
 
@@ -344,11 +381,21 @@ Plugin, Native Tool and API Connector executions. The second process reconciles
 one interrupted Result for each owner, leaves downstream pipeline work pending,
 and reloads once more to prove that no Result is duplicated.
 
-As of the Gate 3 closure on 2026-08-11, the broad `npm run test:ui` baseline is
-21 passed / 11 failed / 8 skipped. Gate 2 and Gate 3 lifecycle suites are green.
-The remaining failures are the stale AI catalog expectations, the hidden
-Dependencies sidebar route and Quenta reload/selection cases; keep them separate
-from common-spine regression triage until those surfaces are realigned.
+The broad `npm run test:ui` baseline on native Windows x86_64, measured on
+2026-08-19, is 19 passed / 17 failed / 19 skipped. Eleven failures are the
+categories the Gate 3 closure already listed: stale AI catalog expectations, the
+intentionally hidden Dependencies sidebar route, and Quenta reload/selection.
+Six are not: three `00-pipeline-lifecycle` cases, the standalone FastQC Native
+Tool Job, the Python `.lia` plugin `plugin-runtimes` path, and
+`single-cell-lighthouse`.
+
+That last one matters more than its count. It passes 1/1 when run on its own,
+on both macOS and Windows, and fails inside the full suite. The whole suite
+shares one isolated home for the entire run, so treat it as state contamination
+between specs, not as a failure of the product path the focused Gate 5 gate
+proves. Keep all six separate from common-spine regression triage until those
+surfaces are realigned, and do not read "passes in isolation" as "passes in the
+suite".
 
 `tests/e2e/specs/dependencies.e2e.mjs` includes a heavy managed-binary gate.
 With `--heavy`, it downloads the real checksummed SeqKit release into isolated

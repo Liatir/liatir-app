@@ -499,19 +499,23 @@ remaining limits are in
 
 **Difficulty:** `4/5` · **Codex effort:** `high` · **Windows** · **Linux**
 
-**Status (2026-08-17): in progress.** The macOS arm64 implementation and local
-non-release evidence are complete and fully executed: bundled offline frontend,
-explicit native updater with Job protection, actionable startup recovery,
-ad-hoc DMG verified on the current revision, two-process
+**Status (2026-08-19): in progress; the whole local desktop matrix is now
+complete and executed.** macOS arm64 was closed on 2026-08-17 with a bundled
+offline frontend, an explicit native updater with Job protection, actionable
+startup recovery, a verified ad-hoc DMG, two-process
 migration/recovery/uninstall retention, native corrupt-index recovery 1/1,
-public core documentation, Gate 5 regression 1/1 and real Nextflow regression
-3/3. The two proofs previously left unexecuted have now been run; the first run
-of the recovery spec exposed a stale-element defect in the spec itself, and two
-orchestrator-owned specs were missing the `requiredEnv` guard that keeps them
-out of the default runner glob. Both are fixed and covered by a unit guard.
-Developer ID signing/notarization, a real signed updater A-to-B transition and
-the Windows/Linux desktop matrix remain open. See
-[Gate 7 Beta 1 — macOS evidence](./gate-7-beta1-macos.md).
+public documentation, Gate 5 1/1 and real Nextflow 3/3. Windows x86_64 and Linux
+x86_64 followed on 2026-08-19 with their own package gates — a real NSIS
+installer proven by a silent install and uninstall, and the claimed `.deb`,
+`.rpm` and AppImage formats — plus their own two-process lifecycle proofs,
+updater/Job-safety, Gate 5 and Nextflow regressions, and the Windows half of the
+release signing contract. Three defects were found by executing rather than
+building: a WebView2 reload deadlock, Windows conf generation silently running
+inside WSL, and a Python discovery test asserting more than the product relies
+on. Code signing, notarization and a real signed updater A-to-B transition on a
+clean machine remain open on every platform. See
+[Gate 7 Beta 1 — macOS evidence](./gate-7-beta1-macos.md) and
+[Gate 7 Beta 1 — Windows and Linux evidence](./gate-7-beta1-windows-linux.md).
 
 Run the complete single-cell and Nextflow verticals, including standalone and
 nested Nextflow execution and downstream output reuse. Close signed installer,

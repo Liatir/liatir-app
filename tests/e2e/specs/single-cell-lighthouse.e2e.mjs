@@ -6,7 +6,7 @@ import {
   expectNoVisibleRuntimeError,
   navigateInApp,
   openSandboxWorkspace,
-  waitForLiatirBridge,
+  reloadLiatirApp,
 } from '../support/liatir-app.mjs';
 
 const RUN_ID = 'e2e-single-cell-lighthouse-result';
@@ -175,8 +175,7 @@ export const tests = [{
       }],
     });
 
-    await browser.execute(() => window.location.reload());
-    await waitForLiatirBridge(browser);
+    await reloadLiatirApp(browser);
     await openSandboxWorkspace(browser);
     await navigateInApp(browser, `/results?run=${RUN_ID}`);
     await browser.waitUntil(

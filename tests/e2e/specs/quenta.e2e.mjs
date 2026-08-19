@@ -9,6 +9,8 @@ import { createServer } from 'node:http';
 
 import {
   expectNoVisibleRuntimeError,
+  hardNavigateInApp,
+  reloadLiatirApp,
   waitForLiatirBridge,
 } from '../support/liatir-app.mjs';
 
@@ -327,10 +329,7 @@ async function openSandboxWorkspaceForQuenta(browser) {
     });
     return true;
   });
-  await browser.execute(() => {
-    window.location.href = '/';
-    return true;
-  });
+  await hardNavigateInApp(browser, '/');
   await (await browser.$('[data-testid="sidebar-nav-item"]')).waitForDisplayed({
     timeout: 20_000,
     timeoutMsg: 'Sandbox workspace shell did not open for Quenta E2E',
@@ -346,9 +345,7 @@ export const tests = [
         await openSandboxWorkspaceForQuenta(browser);
         await seedQuentaConversations(browser, ollama.baseUrl);
 
-        await browser.execute(() => {
-          window.location.href = '/quenta';
-        });
+        await hardNavigateInApp(browser, '/quenta');
         await (await browser.$('[data-testid="quenta-conversation-search"]')).waitForDisplayed({
           timeout: 20_000,
           timeoutMsg: 'Quenta route did not open',
@@ -424,7 +421,7 @@ export const tests = [
           { timeout: 10_000, timeoutMsg: 'Quenta chat tags did not render after save' },
         );
 
-        await browser.execute(() => window.location.reload());
+        await reloadLiatirApp(browser);
         await browser.waitUntil(
           async () => browser.execute(() => document.body.innerText.includes('Variant report reviewed')),
           { timeout: 20_000, timeoutMsg: 'Renamed Quenta chat did not survive reload' },
@@ -451,7 +448,7 @@ export const tests = [
           timeoutMsg: 'Deleting the selected chat automatically selected another chat',
         });
 
-        await browser.execute(() => window.location.reload());
+        await reloadLiatirApp(browser);
         await browser.waitUntil(
           async () => browser.execute(() => window.location.pathname === '/quenta'),
           { timeout: 20_000, timeoutMsg: 'Quenta did not reload after deleting a chat' },
@@ -508,8 +505,8 @@ export const tests = [
             content: JSON.stringify({ revision: 0, conversations }, null, 2),
             createDirs: true,
           });
-          window.location.href = `/quenta?intent=explain-failure&run=${encodeURIComponent(runId)}`;
         }, RUN_ID);
+        await hardNavigateInApp(browser, `/quenta?intent=explain-failure&run=${encodeURIComponent(RUN_ID)}`);
 
         await browser.waitUntil(
           async () => browser.execute(async () => {
@@ -527,7 +524,7 @@ export const tests = [
           )),
           { timeout: 30_000, timeoutMsg: 'Quenta did not finish preparing before duplicate reload' },
         );
-        await browser.execute(() => window.location.reload());
+        await reloadLiatirApp(browser);
         await browser.waitUntil(
           async () => browser.execute(() => window.location.pathname === '/quenta'),
           { timeout: 20_000, timeoutMsg: 'Quenta did not reload after duplicate cleanup' },
@@ -560,9 +557,7 @@ export const tests = [
       try {
         await openSandboxWorkspaceForQuenta(browser);
         await seedQuentaState(browser, ollama.baseUrl);
-        await browser.execute((runId) => {
-          window.location.href = `/results?run=${encodeURIComponent(runId)}`;
-        }, RUN_ID);
+        await hardNavigateInApp(browser, `/results?run=${encodeURIComponent(RUN_ID)}`);
         await (await browser.$('[data-testid="result-report"]')).waitForDisplayed({
           timeout: 20_000,
           timeoutMsg: 'Result report action did not render',
@@ -614,9 +609,7 @@ export const tests = [
         expect(Boolean(conversationId)).toBe(true);
 
         await browser.request('POST', '/window', { handle: originalHandle });
-        await browser.execute((id) => {
-          window.location.href = `/quenta?conversation=${encodeURIComponent(id)}`;
-        }, conversationId);
+        await hardNavigateInApp(browser, `/quenta?conversation=${encodeURIComponent(conversationId)}`);
         await browser.waitUntil(
           async () => browser.execute((id) => Boolean(
             document.querySelector(`[data-conversation-id="${id}"]`),
@@ -663,7 +656,7 @@ export const tests = [
           async () => browser.execute((id) => !document.querySelector(`[data-conversation-id="${id}"]`), conversationId),
           { timeout: 10_000, timeoutMsg: 'Separate window did not receive the main-window deletion' },
         );
-        await browser.execute(() => window.location.reload());
+        await reloadLiatirApp(browser);
         await browser.waitUntil(
           async () => browser.execute(() => (
             document.querySelector('[data-testid="quenta-provider-status"]')?.textContent
@@ -699,8 +692,8 @@ export const tests = [
             content: JSON.stringify({ conversations: [] }, null, 2),
             createDirs: true,
           });
-          window.location.href = `/quenta?intent=report&run=${encodeURIComponent(runId)}`;
         }, RUN_ID);
+        await hardNavigateInApp(browser, `/quenta?intent=report&run=${encodeURIComponent(RUN_ID)}`);
 
         await browser.waitUntil(
           async () => browser.execute(() => (
@@ -728,7 +721,7 @@ export const tests = [
         });
         expect(beforeReload).toHaveLength(1);
 
-        await browser.execute(() => window.location.reload());
+        await reloadLiatirApp(browser);
         await browser.waitUntil(
           async () => browser.execute(() => window.location.pathname === '/quenta'),
           { timeout: 20_000, timeoutMsg: 'Quenta did not reload after consuming the Result deep link' },
@@ -770,9 +763,7 @@ export const tests = [
         await openSandboxWorkspaceForQuenta(browser);
         await seedQuentaState(browser, ollama.baseUrl);
 
-        await browser.execute((runId) => {
-          window.location.href = `/quenta?intent=explain-result&run=${encodeURIComponent(runId)}&auto=1`;
-        }, RUN_ID);
+        await hardNavigateInApp(browser, `/quenta?intent=explain-result&run=${encodeURIComponent(RUN_ID)}&auto=1`);
 
         await (await browser.$('[data-testid="quenta-transcript"]')).waitForDisplayed({
           timeout: 20_000,
@@ -823,8 +814,8 @@ export const tests = [
             content: JSON.stringify({ conversations: [] }, null, 2),
             createDirs: true,
           });
-          window.location.href = '/quenta';
         });
+        await hardNavigateInApp(browser, '/quenta');
         await (await browser.$('[data-testid="quenta-empty-new-chat"]')).waitForDisplayed({
           timeout: 30_000,
           timeoutMsg: 'Quenta did not show the empty state for response safety validation',
@@ -865,8 +856,8 @@ export const tests = [
             content: JSON.stringify({ conversations: [] }, null, 2),
             createDirs: true,
           });
-          window.location.href = '/quenta';
         });
+        await hardNavigateInApp(browser, '/quenta');
 
         const newChat = await browser.$('[data-testid="quenta-empty-new-chat"]');
         await newChat.waitForDisplayed({
@@ -957,8 +948,8 @@ export const tests = [
             content: JSON.stringify({ conversations: [] }, null, 2),
             createDirs: true,
           });
-          window.location.href = '/quenta';
         });
+        await hardNavigateInApp(browser, '/quenta');
         const emptyNewChat = await browser.$('[data-testid="quenta-empty-new-chat"]');
         await emptyNewChat.waitForDisplayed({
           timeout: 30_000,
@@ -1026,8 +1017,8 @@ export const tests = [
             content: JSON.stringify({ conversations: [] }, null, 2),
             createDirs: true,
           });
-          window.location.href = '/quenta';
         });
+        await hardNavigateInApp(browser, '/quenta');
         const emptyNewChat = await browser.$('[data-testid="quenta-empty-new-chat"]');
         await emptyNewChat.waitForDisplayed({
           timeout: 30_000,
@@ -1046,7 +1037,7 @@ export const tests = [
           timeoutMsg: 'Quenta response did not start before reload',
         });
 
-        await browser.execute(() => window.location.reload());
+        await reloadLiatirApp(browser);
         const savedConversation = await browser.$('[data-testid="quenta-conversation"] button[aria-label^="Open"]');
         await savedConversation.waitForDisplayed({
           timeout: 30_000,
@@ -1088,9 +1079,7 @@ export const tests = [
         await openSandboxWorkspaceForQuenta(browser);
         await seedQuentaState(browser, ollama.baseUrl);
 
-        await browser.execute((runId) => {
-          window.location.href = `/quenta?intent=report&run=${encodeURIComponent(runId)}&auto=1`;
-        }, RUN_ID);
+        await hardNavigateInApp(browser, `/quenta?intent=report&run=${encodeURIComponent(RUN_ID)}&auto=1`);
 
         await (await browser.$('[data-testid="quenta-transcript"]')).waitForDisplayed({
           timeout: 20_000,

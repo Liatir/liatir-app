@@ -30,9 +30,9 @@
   "scripts": {
     "lint:ts": "eslint \"packages/*/src/**/*.ts\"",
 
-    "devconf": "bash scripts/dev-conf.sh",
-    "localdevconf": "bash scripts/local-dev-conf.sh",
-    "prodconf": "bash scripts/prod-conf.sh",
+    "devconf": "node scripts/run-conf.mjs dev-conf.sh",
+    "localdevconf": "node scripts/run-conf.mjs local-dev-conf.sh",
+    "prodconf": "node scripts/run-conf.mjs prod-conf.sh",
 
     "ts:clean": "find . -type f -name \"_companion_context.js\" -delete && find . -type f -name \"bridge.js\" -delete && find . -type f -name \"_constants.js\" -delete && find . -type f -name \"_helpers.js\" -delete && find . -type f -name \"_types.js\" -delete && find . -type f -name \"_main.js\" -delete && npm run clean:ts --prefix src-tauri/",
     "ts:compile": "npm run build --prefix packages/liatir-core && npx tsc -p tsconfig.json && npm run ts:compile --prefix src-tauri/",
@@ -50,6 +50,10 @@
     "desktop-release:build": "node scripts/build-desktop-release.mjs",
     "desktop-beta:test:macos": "node scripts/run-desktop-beta-macos-e2e.mjs",
     "desktop-beta:package:macos": "node scripts/build-desktop-macos-adhoc.mjs",
+    "desktop-beta:test:windows": "node scripts/run-desktop-beta-windows-e2e.mjs",
+    "desktop-beta:package:windows": "node scripts/build-desktop-windows-adhoc.mjs",
+    "desktop-beta:test:linux": "node scripts/run-desktop-beta-linux-e2e.mjs",
+    "desktop-beta:package:linux": "node scripts/build-desktop-linux-adhoc.mjs",
     "build:clean": "npm run build:clean --prefix src-tauri/",
     "build:log": "npm run build:log --prefix src-tauri/",
     "build:wasm": "npm run build:wasm --prefix src-tauri/",

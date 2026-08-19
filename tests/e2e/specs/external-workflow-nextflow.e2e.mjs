@@ -7,8 +7,10 @@ import {
   expectNoVisibleRuntimeError,
   navigateInApp,
   openSandboxWorkspace,
-  waitForLiatirBridge,
+  reloadLiatirApp,
 } from '../support/liatir-app.mjs';
+
+export { reloadLiatirApp };
 
 export const DEFINITION_ID = 'gate-6-nextflow';
 export const STEP_ID = `external-workflow:${DEFINITION_ID}`;
@@ -34,21 +36,6 @@ export async function readWorkspaceJson(browser, rel) {
     const raw = await window.Liatir.invoke('lia_app_read_text', { rel: file });
     return JSON.parse(raw);
   }, rel);
-}
-
-/** Reload without unloading the WebView2 document before WebDriver acknowledges the command. */
-export async function reloadLiatirApp(browser) {
-  const previousTimeOrigin = await browser.execute(() => performance.timeOrigin);
-  await browser.execute(() => {
-    window.setTimeout(() => window.location.reload(), 50);
-    return true;
-  });
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  await browser.waitUntil(
-    async () => browser.execute((previous) => performance.timeOrigin !== previous, previousTimeOrigin),
-    { timeout: 20_000, timeoutMsg: 'Liatir did not complete the requested reload' },
-  );
-  await waitForLiatirBridge(browser);
 }
 
 function workflowDefinition(mainScriptPath, configFilePath) {

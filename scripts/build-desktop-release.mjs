@@ -30,10 +30,13 @@ function hasAll(environment, names) {
   return names.every((name) => Boolean(environment[name]?.trim()));
 }
 
+/** Platforms whose native signing and artifact contract is implemented and verified. */
+const RELEASE_PLATFORMS = new Set(['darwin', 'win32']);
+
 export function validateReleaseEnvironment(environment, platform = process.platform) {
   const errors = [];
-  if (platform !== 'darwin') {
-    errors.push('This Gate 7 release contract is implemented only for macOS; add and verify the native platform contract first');
+  if (!RELEASE_PLATFORMS.has(platform)) {
+    errors.push('This Gate 7 release contract is implemented for macOS and Windows; add and verify the native platform contract first');
   }
   if (!isSemver(environment.APP_VERSION ?? '')) {
     errors.push('APP_VERSION must be an explicit semantic version');
@@ -65,6 +68,24 @@ export function validateReleaseEnvironment(environment, platform = process.platf
     const hasAppleIdNotary = hasAll(environment, ['APPLE_ID', 'APPLE_PASSWORD', 'APPLE_TEAM_ID']);
     if (!hasApiNotary && !hasAppleIdNotary) {
       errors.push('Apple notarization credentials are required (API key or Apple ID set)');
+    }
+  }
+
+  if (platform === 'win32') {
+    // Tauri signs through signtool, which takes either a certificate already in the store (by
+    // thumbprint) or an exported PFX it imports first.
+    const thumbprint = (environment.WINDOWS_CERTIFICATE_THUMBPRINT ?? '').replace(/\s/g, '');
+    const hasCertificate = Boolean(environment.WINDOWS_CERTIFICATE?.trim());
+    if (!/^[0-9a-fA-F]{40}$/.test(thumbprint) && !hasCertificate) {
+      errors.push('WINDOWS_CERTIFICATE_THUMBPRINT (40 hex characters) or WINDOWS_CERTIFICATE is required for Windows code signing');
+    }
+    if (hasCertificate && !environment.WINDOWS_CERTIFICATE_PASSWORD?.trim()) {
+      errors.push('WINDOWS_CERTIFICATE_PASSWORD is required with WINDOWS_CERTIFICATE');
+    }
+    // Windows has no notarization step; an RFC 3161 countersignature is what keeps the installer
+    // trusted after the signing certificate expires, so it is required rather than optional.
+    if (!/^https:\/\//.test(environment.WINDOWS_TIMESTAMP_URL ?? '')) {
+      errors.push('WINDOWS_TIMESTAMP_URL must be an explicit HTTPS RFC 3161 timestamp server');
     }
   }
 
@@ -106,6 +127,35 @@ function walkFiles(root) {
   return files;
 }
 
+/** Quotes a path for a PowerShell literal string; PowerShell does not escape with backslashes. */
+function powershellLiteral(value) {
+  return `'${String(value).replaceAll("'", "''")}'`;
+}
+
+/**
+ * Requires a validly signed and countersigned Windows artifact.
+ *
+ * `Get-AuthenticodeSignature` is the same verification Windows itself performs, so an untrusted
+ * chain, a tampered file or a self-signed test certificate all fail here rather than at a user's
+ * SmartScreen prompt.
+ */
+function requireSignedWindowsArtifact(path) {
+  const report = execFileSync('powershell.exe', [
+    '-NoProfile',
+    '-NonInteractive',
+    '-Command',
+    `$s = Get-AuthenticodeSignature -LiteralPath ${powershellLiteral(path)};`
+    + ' "$($s.Status)|$([bool]$s.TimeStamperCertificate)"',
+  ], { cwd: ROOT, encoding: 'utf8' }).trim();
+  const [status, timestamped] = report.split('|');
+  if (status !== 'Valid') {
+    throw new Error(`${basename(path)} is not validly signed (Authenticode status: ${status})`);
+  }
+  if (timestamped !== 'True') {
+    throw new Error(`${basename(path)} carries no RFC 3161 countersignature, so its signature expires with the certificate`);
+  }
+}
+
 function requireArtifacts(platform, version, buildStartedAt) {
   const bundleRoot = join(ROOT, 'src-tauri', 'target', 'release', 'bundle');
   const files = walkFiles(bundleRoot).filter((path) => statSync(path).mtimeMs >= buildStartedAt - 2_000);
@@ -128,6 +178,22 @@ function requireArtifacts(platform, version, buildStartedAt) {
     run('spctl', ['--assess', '--type', 'open', '--context', 'context:primary-signature', '--verbose=2', dmg]);
     run('xcrun', ['stapler', 'validate', dmg]);
     run('hdiutil', ['verify', dmg]);
+  }
+
+  if (platform === 'win32') {
+    const setup = files.find((path) => path.endsWith('-setup.exe') && basename(path).includes(version));
+    const updaterArchive = files.find((path) => path.endsWith('.nsis.zip'));
+    if (!setup || !updaterArchive) {
+      throw new Error('Windows release must contain a current-version NSIS installer and a new .nsis.zip updater artifact');
+    }
+    const executable = join(ROOT, 'src-tauri', 'target', 'release', 'liatir.exe');
+    if (statSync(executable).mtimeMs < buildStartedAt - 2_000) {
+      throw new Error('The Windows application executable was not produced by this release build');
+    }
+    // The installer and the executable it packages are separately signed; a user can run into
+    // either one first, so both must verify.
+    requireSignedWindowsArtifact(executable);
+    requireSignedWindowsArtifact(setup);
   }
 
   console.log(`Verified ${files.length} release files; updater signature: ${basename(updater)}`);

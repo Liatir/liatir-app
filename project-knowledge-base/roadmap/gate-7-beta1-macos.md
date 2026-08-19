@@ -1,8 +1,11 @@
 # Gate 7 Beta 1 — macOS arm64 evidence and cross-platform handoff
 
 Status: **macOS local implementation and non-release evidence complete and fully
-executed on 2026-08-17; public signing/notarization and Windows/Linux evidence
-remain open.**
+executed on 2026-08-17. The Windows x86_64 and Linux x86_64 slices are now also
+complete and executed; their evidence lives in
+[Gate 7 Beta 1 — Windows and Linux evidence](./gate-7-beta1-windows-linux.md).
+Public signing, notarization and every clean-machine release check remain open
+on all three platforms.**
 
 This is the authoritative Gate 7 handoff. Gate 7 is not closed until every
 platform claimed by Beta 1 has its own installer, updater, migration, recovery
@@ -146,13 +149,16 @@ this machine. Therefore the following release blockers remain:
 Do not weaken signature or notarization requirements to turn local packaging
 into a release claim.
 
-## Windows native plus WSL2 continuation
+## Windows native plus WSL2 continuation — completed 2026-08-19
 
-Start from a clean checkout of the commit containing this document. Read
-`AGENTS.md`, this file, `current-project-status.md`, `beta-readiness.md`, the
-canonical workbench plan and `testing/overview.md` completely before editing.
+All seven items below were executed. The exact commands, package identities,
+test counts, defects found and residual limitations are recorded in
+[Gate 7 Beta 1 — Windows and Linux evidence](./gate-7-beta1-windows-linux.md).
+The Gate 6 `liatir.exe -> wsl.exe -> Nextflow` backend was preserved unchanged
+and re-proven on this revision; no native-Windows Nextflow was added and no
+shared External Workflow contract changed.
 
-The Windows session must:
+The original brief was:
 
 1. preserve the completed `liatir.exe -> wsl.exe -> Nextflow` Gate 6 backend;
    do not add native-Windows Nextflow or change shared External Workflow

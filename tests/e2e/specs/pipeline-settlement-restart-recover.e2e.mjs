@@ -1,4 +1,4 @@
-import { openSandboxWorkspace, waitForLiatirBridge } from '../support/liatir-app.mjs';
+import { openSandboxWorkspace, reloadLiatirApp } from '../support/liatir-app.mjs';
 import {
   DIRECT_RESTART_RUNS,
   INTERRUPTED_ERROR,
@@ -54,8 +54,7 @@ export const tests = [{
         .toEqual(expect.any(Number));
     }
 
-    await browser.execute(() => window.location.reload());
-    await waitForLiatirBridge(browser);
+    await reloadLiatirApp(browser);
     await openSandboxWorkspace(browser);
     await waitForRecovery(browser);
     state = await readRestartState(browser);

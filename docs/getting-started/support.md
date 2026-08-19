@@ -33,6 +33,13 @@ Do not bypass the warning for a Beta package. Delete that app bundle and obtain
 the signed, notarized package from the official release page. Include the
 package filename and version in a support report.
 
+### Windows SmartScreen does not recognise the installer
+
+Do not choose **Run anyway** for a Beta package. An official Windows installer is
+Authenticode-signed; an unrecognised one is a development build. Delete it and
+obtain the signed installer from the official release page, quoting the filename
+and version in a support report.
+
 ### Update check is unavailable
 
 Development builds do not have a release feed. In an official package, confirm

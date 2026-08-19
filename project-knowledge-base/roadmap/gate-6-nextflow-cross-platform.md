@@ -1,6 +1,10 @@
 # Gate 6 Nextflow cross-platform evidence
 
-Verified: 2026-08-14
+Verified: 2026-08-14. Re-proven unchanged on 2026-08-19 during the Gate 7 Windows/Linux
+slice: the Windows app-to-WSL2 suite passed 3/3 with its restart companion at 2/2
+phases, and the independently compiled Linux x86_64 app passed 3/3 under Xvfb.
+No backend code changed; see
+[Gate 7 Beta 1 — Windows and Linux evidence](./gate-7-beta1-windows-linux.md).
 Starting revision: `8d6270846477988ef85cd32c435b389f05f8e4ad`
 
 ## Outcome

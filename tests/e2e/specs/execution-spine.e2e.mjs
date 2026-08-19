@@ -10,7 +10,7 @@ import {
   navigateInApp,
   navigateSidebar,
   openSandboxWorkspace,
-  waitForLiatirBridge,
+  reloadLiatirApp,
 } from '../support/liatir-app.mjs';
 
 const require = createRequire(import.meta.url);
@@ -48,8 +48,7 @@ async function readWorkspaceJson(browser, rel) {
 }
 
 async function reloadWorkspace(browser) {
-  await browser.execute(() => window.location.reload());
-  await waitForLiatirBridge(browser);
+  await reloadLiatirApp(browser);
   await openSandboxWorkspace(browser);
 }
 

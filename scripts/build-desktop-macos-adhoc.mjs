@@ -12,6 +12,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { confShellInvocation } from './run-conf.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const CONFIG_FILES = [
@@ -49,7 +50,8 @@ try {
   run('npm', ['run', 'gen:sdk-types']);
   run('npm', ['run', 'build:frontend']);
   run('npm', ['run', 'ts:compile']);
-  run('bash', ['scripts/prod-conf.sh'], {
+  const prodConf = confShellInvocation('prod-conf.sh');
+  run(prodConf.command, prodConf.args, {
     ...process.env,
     APP_VERSION: '0.2.1',
     CARGO_PACKAGE_VERSION: '0.2.1',

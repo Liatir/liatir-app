@@ -84,6 +84,63 @@ export async function navigateInApp(browser, pathname) {
   );
 }
 
+/**
+ * Reloads the app the way a user's restart does, without deadlocking the WebDriver session.
+ *
+ * `window.location.reload()` executed directly tears the document down before WebView2 sends the
+ * script's response, so the command never completes and the run sits on the harness's 600s script
+ * timeout instead of failing. Windows found this first — the single-cell lighthouse hung there on
+ * its first native run — but the deferred reload is correct on every platform, so it is shared
+ * rather than branched. The reload is then confirmed against a new `performance.timeOrigin`, which
+ * is what distinguishes a completed reload from a document that never went away.
+ */
+export async function reloadLiatirApp(browser) {
+  await replaceDocument(
+    browser,
+    () => { window.setTimeout(() => window.location.reload(), 50); },
+    null,
+    'reload',
+  );
+}
+
+/**
+ * Loads a route with a real document load, the way a deep link or a cold start does.
+ *
+ * Prefer `navigateInApp` for ordinary in-app routing; this is for the cases that deliberately
+ * exercise a fresh document on a URL.
+ */
+export async function hardNavigateInApp(browser, destination) {
+  await replaceDocument(
+    browser,
+    (target) => { window.setTimeout(() => { window.location.href = target; }, 50); },
+    destination,
+    `navigation to ${destination}`,
+  );
+}
+
+/**
+ * Replaces the current document without deadlocking the WebDriver session.
+ *
+ * A navigation performed directly inside `browser.execute` tears the document down before WebView2
+ * sends the script's response, so the command never completes and the run sits on the harness's
+ * 600-second script timeout instead of failing. Windows found this first: the single-cell
+ * lighthouse hung there on its first native run, and every Quenta deep-link case cost ten minutes
+ * apiece. Deferring the navigation by one turn lets the response go out first, and is correct on
+ * every platform, so it is shared rather than branched. Completion is then confirmed against a new
+ * `performance.timeOrigin`, which is what distinguishes a finished load from a document that never
+ * went away.
+ */
+async function replaceDocument(browser, startNavigation, argument, description) {
+  const previousTimeOrigin = await browser.execute(() => performance.timeOrigin);
+  await browser.execute(startNavigation, argument);
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  await browser.waitUntil(
+    async () => browser.execute((previous) => performance.timeOrigin !== previous, previousTimeOrigin),
+    { timeout: 30_000, timeoutMsg: `Liatir did not complete the requested ${description}` },
+  );
+  await waitForLiatirBridge(browser);
+}
+
 /** Finds one section of a persisted Result output document. */
 export function outputSection(output, type, label = null) {
   return output.sections.find((item) => item.type === type && (label === null || item.label === label));

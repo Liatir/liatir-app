@@ -1,5 +1,5 @@
 /** Native Gate 7 proof that corrupt startup state is retained and retryable. */
-import { openSandboxWorkspace, waitForLiatirBridge } from '../support/liatir-app.mjs';
+import { openSandboxWorkspace, reloadLiatirApp } from '../support/liatir-app.mjs';
 
 export const tests = [{
   name: 'keeps an unreadable workspace index intact and recovers after a real retry',
@@ -15,17 +15,7 @@ export const tests = [{
       createDirs: true,
     }));
 
-    const previousTimeOrigin = await browser.execute(() => performance.timeOrigin);
-    await browser.execute(() => {
-      window.setTimeout(() => window.location.reload(), 50);
-      return true;
-    });
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    await browser.waitUntil(
-      async () => browser.execute((previous) => performance.timeOrigin !== previous, previousTimeOrigin),
-      { timeout: 20_000, timeoutMsg: 'Liatir did not reload for the startup recovery proof' },
-    );
-    await waitForLiatirBridge(browser);
+    await reloadLiatirApp(browser);
 
     const recovery = await browser.$('[data-testid="startup-recovery"]');
     await recovery.waitForDisplayed({ timeout: 20_000 });
