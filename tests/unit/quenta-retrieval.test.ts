@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   citedSources,
+  isQuentaSelfDocumentation,
   retrieveQuentaContext,
 } from '../../frontend/src/lib/quenta/retrieval';
 import { buildQuentaMessages } from '../../frontend/src/lib/quenta/prompt';
@@ -95,5 +96,21 @@ describe('Quenta retrieval', () => {
     const citations = citedSources('The failure is visible in [job:failed], not [missing:id].', docs);
 
     expect(citations.map((citation) => citation.id)).toEqual(['job:failed']);
+  });
+
+  /**
+   * Quenta's own usage pages describe how to *ask* for an explanation, which is never evidence for
+   * what a Result means — but their wording matches such a question almost perfectly, so they
+   * outranked the science and were then cited back at the user as sources for their experiment.
+   */
+  it('recognises Quenta usage documentation so a focused explanation can exclude it', () => {
+    expect(isQuentaSelfDocumentation('docs:ai/quenta')).toBe(true);
+    expect(isQuentaSelfDocumentation('docs:ai/quenta#explaining-a-result')).toBe(true);
+
+    // Product documentation that merely mentions Quenta stays retrievable, and so does anything
+    // under a path that only shares the prefix.
+    expect(isQuentaSelfDocumentation('docs:ai/quenta-models')).toBe(false);
+    expect(isQuentaSelfDocumentation('docs:plugins/plugin-context#runtime-validation')).toBe(false);
+    expect(isQuentaSelfDocumentation('result:abc')).toBe(false);
   });
 });

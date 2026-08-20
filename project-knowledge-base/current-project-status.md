@@ -1,5 +1,57 @@
 # Current project status
 
+## Six product defects found by using the app, none by the suite (2026-08-20)
+
+Manual use of the built app surfaced six defects that every automated gate had
+been green through, before and after the fix. That is the finding worth keeping:
+the suites cover the paths they were written for, and each of these lived just
+outside one.
+
+- **fastp could not run on a clean install.** The tool pages composed
+  `${paths.data}/tool-outputs` and passed it as an output argument, but nothing
+  created the directory. Only jobs whose output is captured through `stdoutPath`
+  got one created for them, so the directory existed as a side effect of having
+  run bwa or minimap2 first — and fastp and bcftools-filter worked on a
+  developer machine and failed on a new one. All five pages now call one shared
+  `ensureToolOutputsDir()`.
+- **Two viewers reported `No such file or directory (os error 2)`.** The install
+  marker for a viewer runtime lives in `_app/viewer-runtime-installs/`, outside
+  the runtime directory, so trashing the payload left the marker behind and the
+  store reported a runtime as installed whose files were gone. The store now
+  verifies the entry file before trusting a marker, and the loader turns a failed
+  read into "not installed" so the existing install prompt fires instead of a
+  filesystem error. This was a live violation of release-blocking scenario 7.
+- **Quenta attached sources to an answer it had not produced.** When the
+  plain-language repair failed, the content was replaced with an apology while
+  the citation list fell back to the first four retrieval candidates — four
+  documents presented as the basis of an explanation that never existed.
+- **Quenta's own usage documentation competed with the science.** The retrieval
+  corpus indexes all of `docs/`, so the pages describing how to *ask* for a
+  result explanation matched a result-explanation query almost perfectly and were
+  cited back at the user. They are now excluded from focused explanations and
+  kept for free-form questions, where they are the answer.
+- **The file picker was unreadable.** The metadata line sat in a `shrink-0`
+  container, refused to yield width, and crushed the text column until the
+  compatibility reason wrapped one word per line.
+- **A fourteen-minute AI job showed no logs at all.** Python processes were
+  spawned without `PYTHONUNBUFFERED`, and CPython block-buffers into a pipe —
+  which is exactly how a Job captures stdout. Progress went into an 8 KB buffer
+  and was released at exit. The variable is now set in `runtime_python_env`, so
+  every Python path streams, not only AI Tools. This one contradicted the
+  "Verified" status of the Jobs log/progress transport in the readiness ledger:
+  the transport worked, but nothing was ever handed to it until the process
+  ended.
+
+Regression coverage was added where it can be pinned cheaply: a Rust test
+asserting the unbuffered environment (and that the map is never empty, since the
+spawn path drops an empty one and would take the flag with it) and a TypeScript
+test for the Quenta self-documentation predicate. The viewer store and the picker
+layout are not covered — the first needs store mocking and the second is layout.
+
+Gates after the fixes: `test:verify` 53 files / 319 tests, `cargo test` 59 passed
+/ 2 ignored, `cargo clippy --tests` exit 0, `npm run test:ui` 31 passed / 0
+failed / 24 skipped.
+
 ## Gate 7 is closed, re-scoped to the local desktop matrix (2026-08-20)
 
 Gate 7 carried two halves with different blockers: the local desktop matrix,

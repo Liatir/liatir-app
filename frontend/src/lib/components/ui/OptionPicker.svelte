@@ -203,7 +203,7 @@
               type="button"
               disabled={item.disabled}
               onclick={() => pick(item.value)}
-              class="w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors
+              class="w-full flex items-start gap-3 px-3 py-2.5 text-left transition-colors
                      {item.disabled ? 'opacity-50 cursor-not-allowed' : sel ? 'bg-brand/8' : 'hover:bg-surface-2'}"
             >
               <span class="flex-1 min-w-0">
@@ -211,14 +211,18 @@
                 {#if item.sublabel}
                   <span class="block text-[11px] text-text-subtle truncate">{item.sublabel}</span>
                 {/if}
+                <!-- `meta` belongs in this column, not beside the badge: it is a sentence-long
+                     summary, and in a `shrink-0` container it refused to give up any width and
+                     crushed this whole column until the reason below wrapped one word per line.
+                     The trigger button above lays it out the same way. -->
+                {#if item.meta}
+                  <span class="block text-[10px] font-mono text-text-subtle truncate">{item.meta}</span>
+                {/if}
                 {#if item.reason}
                   <span class="block text-[10px] {item.disabled ? 'text-red-600' : 'text-text-subtle'} leading-snug">{item.reason}</span>
                 {/if}
               </span>
               <div class="shrink-0 flex items-center gap-1.5">
-                {#if item.meta}
-                  <span class="text-[10px] font-mono text-text-subtle">{item.meta}</span>
-                {/if}
                 {#if item.badge}
                   <span class="rounded px-1.5 py-0.5 text-[10px] font-medium border
                     {sel ? 'bg-brand/10 border-brand/20 text-brand' : 'bg-surface-2 border-border text-text-muted'}">

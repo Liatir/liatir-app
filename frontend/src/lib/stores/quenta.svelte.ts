@@ -7,7 +7,7 @@ import {
   buildQuentaMessages,
   buildQuentaPlainLanguageRepairMessages,
 } from '$lib/quenta/prompt';
-import { citedSources, retrieveQuentaContext } from '$lib/quenta/retrieval';
+import { citedSources, isQuentaSelfDocumentation, retrieveQuentaContext } from '$lib/quenta/retrieval';
 import { quentaResponseNeedsPlainLanguageRepair } from '$lib/quenta/response-safety';
 import { sanitizeQuentaReasoning } from '$lib/quenta/reasoning-safety';
 import { createQuentaRuntime } from '$lib/quenta/runtime';
@@ -780,6 +780,7 @@ function createQuentaStore() {
     let response = initialResponse;
     let assistantContent = response.content;
     let citations = citedSources(response.content, descriptor.citations);
+    let repairFailed = false;
     if (quentaResponseNeedsPlainLanguageRepair(response.content)) {
       updateActiveResponse(descriptor.conversationId, descriptor.requestId, {
         phase: 'writing-response',
@@ -796,12 +797,16 @@ function createQuentaStore() {
         descriptor.requestId,
         event,
       ));
-      assistantContent = quentaResponseNeedsPlainLanguageRepair(response.content)
+      repairFailed = quentaResponseNeedsPlainLanguageRepair(response.content);
+      assistantContent = repairFailed
         ? 'Quenta could not turn the available information into a clear, reliable explanation. Please try again.'
         : response.content;
       citations = citedSources(assistantContent, descriptor.citations);
     }
-    if (citations.length === 0) citations = descriptor.citations.slice(0, 4);
+    // Only a real answer gets sources. When the repair fails the content is an apology, and
+    // attaching retrieval candidates to it presented four documents as the basis of an explanation
+    // that was never produced — the provenance panel has to mean what it says.
+    if (citations.length === 0 && !repairFailed) citations = descriptor.citations.slice(0, 4);
 
     const completedAt = now();
     const generation = activeResponsesByConversation[descriptor.conversationId];
@@ -1007,7 +1012,8 @@ function createQuentaStore() {
       }
       const retrievalDocuments = focus
         ? documents.filter((document) => (
-            requiredIds.includes(document.id) || document.sourceKind !== focus.kind
+            requiredIds.includes(document.id)
+            || (document.sourceKind !== focus.kind && !isQuentaSelfDocumentation(document.id))
           ))
         : documents;
       const retrieval = retrieveQuentaContext(query, retrievalDocuments, {

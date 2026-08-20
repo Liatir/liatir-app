@@ -68,7 +68,15 @@ export async function readViewerRuntimeScript(runtimeId: string): Promise<{ runt
   }
   const api = liatir();
   if (!api) throw new Error('Liatir API not available.');
-  const source = await api.invoke('lia_read_file_text', { path: runtime.entryPath }) as string;
+  // The store verifies the entry file at init, but the runtime can disappear between that check and
+  // this read. Reporting it as not installed keeps the user on the one action that fixes it —
+  // reinstalling — instead of showing them the filesystem error underneath.
+  let source: string;
+  try {
+    source = await api.invoke('lia_read_file_text', { path: runtime.entryPath }) as string;
+  } catch {
+    throw new Error(`${runtime.name} is not installed.`);
+  }
   return { runtime, source };
 }
 

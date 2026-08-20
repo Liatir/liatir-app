@@ -55,6 +55,28 @@ function defaultState(): StoredViewerRuntimeState {
   };
 }
 
+/**
+ * Whether a runtime's recorded entry file is still on disk.
+ *
+ * An install marker records that an install *finished*, not that its payload is still there. A
+ * sandbox reset or an uninstall moves the runtime directory to the trash and leaves the marker
+ * behind, so the store reported the runtime as installed and the viewer then failed reading it —
+ * surfacing a raw `No such file or directory (os error 2)` to a user who was never told a runtime
+ * was missing. The marker is deliberately not deleted: restoring the directory from the trash
+ * makes the runtime usable again, and a probe per managed runtime at init costs nothing.
+ */
+async function entryFileExists(path: string | undefined): Promise<boolean> {
+  if (!path) return false;
+  const api = liatir();
+  if (!api) return false;
+  try {
+    await api.invoke('lia_file_size', { path });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function createViewerRuntimesStore() {
   let initialized = false;
   let runtimeStates = $state<Record<string, StoredViewerRuntimeState>>({});
@@ -167,6 +189,20 @@ function createViewerRuntimesStore() {
             },
           };
         } catch { /* marker recovery is best-effort */ }
+      }
+
+      // Neither source of "installed" proves the payload survived, so verify it before the UI can
+      // offer a viewer that cannot load. A runtime whose entry file is gone is offered for install
+      // again, which is the state the user is actually in.
+      for (const runtime of VIEWER_RUNTIME_REGISTRY) {
+        if (runtime.install.kind !== 'managed-script') continue;
+        const state = runtimeStates[runtime.id];
+        if (state?.status !== 'installed') continue;
+        if (await entryFileExists(state.entryPath)) continue;
+        runtimeStates = {
+          ...runtimeStates,
+          [runtime.id]: { ...defaultState(), updatedAt: state.updatedAt },
+        };
       }
     },
 

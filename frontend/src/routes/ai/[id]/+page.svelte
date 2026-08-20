@@ -104,11 +104,18 @@
 			)
 			: null
 	);
-	const inputCompatibilityMessage = $derived(
+	const inputCompatibilityDiagnostics = $derived(
 		inputCompatibility?.diagnostics
 			.filter((item) => inputCompatibility.status === 'incompatible' ? item.severity === 'error' : item.severity === 'warning')
-			.map((item) => `${item.message}${item.action ? ` ${item.action}` : ''}`)
-			.join(' ') ?? ''
+			?? []
+	);
+	// One line, not all of them joined into a paragraph. An uninspected file produces three warnings
+	// that each restate "this has not been inspected" and twice tell the user to inspect it, which
+	// read as a wall of amber text with no single action in it. The rest stay one click away.
+	const inputCompatibilityMessage = $derived(
+		inputCompatibilityDiagnostics[0]
+			? `${inputCompatibilityDiagnostics[0].message}${inputCompatibilityDiagnostics[0].action ? ` ${inputCompatibilityDiagnostics[0].action}` : ''}`
+			: ''
 	);
 	const displayError = $derived<string | null>(
 		selectedRun?.status === 'error' ? (selectedRun.error ?? 'Unknown error') : null
@@ -379,9 +386,21 @@
 						<fieldset disabled={modelRunActive} class="space-y-4 disabled:opacity-70">
 							<FilePickerPopup files={h5adFiles} value={inputFile} label="AnnData file" info={inputHelp} emptyText="No h5ad files in Data yet." disabled={modelRunActive} artifactRequirement={singleCellAnnDataRequirement(modelId, humanOnlyModel ? 'human' : species)} onchange={(path) => (inputFile = path)} />
 							{#if inputFile && inputCompatibility && inputCompatibilityMessage}
-								<p class="text-xs leading-relaxed {inputCompatibility.status === 'incompatible' ? 'text-red-600' : 'text-amber-700'}" data-testid="ai-input-compatibility">
-									{inputCompatibilityMessage}
-								</p>
+								<div class="text-xs leading-relaxed {inputCompatibility.status === 'incompatible' ? 'text-red-600' : 'text-amber-700'}">
+									<p data-testid="ai-input-compatibility">{inputCompatibilityMessage}</p>
+									{#if inputCompatibilityDiagnostics.length > 1}
+										<details class="mt-1">
+											<summary class="cursor-pointer select-none opacity-80 hover:opacity-100">
+												Show details ({inputCompatibilityDiagnostics.length - 1} more)
+											</summary>
+											<ul class="mt-1 list-disc space-y-1 pl-4" data-testid="ai-input-compatibility-details">
+												{#each inputCompatibilityDiagnostics.slice(1) as item (item.code)}
+													<li>{item.message}{item.action ? ` ${item.action}` : ''}</li>
+												{/each}
+											</ul>
+										</details>
+									{/if}
+								</div>
 							{/if}
 							<div class="grid grid-cols-1 {humanOnlyModel ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-3">
 								{#if !humanOnlyModel}

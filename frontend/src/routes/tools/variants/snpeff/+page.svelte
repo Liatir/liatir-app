@@ -17,6 +17,7 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { beginDirectNativeToolRun } from '$lib/execution/direct-native-tool';
   import { runNativeTool } from '$lib/utils/native-tool';
+  import { ensureToolOutputsDir } from '$lib/utils/results';
   import { snpEffStore } from '$lib/stores/snpeff.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
@@ -307,8 +308,7 @@
     activeExecutionRunId = runId;
 
     try {
-      const { data: dataDir } = await api.invoke('lia_fs_paths') as { data: string; cache: string };
-      const outDir  = `${dataDir}/tool-outputs`;
+      const outDir = await ensureToolOutputsDir();
       const outPath = `${outDir}/snpeff-${runId}.vcf`;
 
       logLines = [

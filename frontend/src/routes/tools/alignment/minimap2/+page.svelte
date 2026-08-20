@@ -17,6 +17,7 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { beginDirectNativeToolRun } from '$lib/execution/direct-native-tool';
   import { runNativeTool } from '$lib/utils/native-tool';
+  import { ensureToolOutputsDir } from '$lib/utils/results';
   import { notify } from '$lib/utils/notify';
   import { fmtDuration, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { liatir } from '$lib/api';
@@ -114,8 +115,7 @@
     activeExecutionRunId = runId;
 
     try {
-      const { data: dataDir } = await api.invoke('lia_fs_paths') as { data: string; cache: string };
-      const outPath = `${dataDir}/tool-outputs/minimap2-${runId}.sam`;
+      const outPath = `${await ensureToolOutputsDir()}/minimap2-${runId}.sam`;
       logLines = [
         `$ minimap2 -t ${threadInfo.threads} -ax ${preset} ${refName} ${r1Name}`,
         `→ Output: minimap2-${runId}.sam`,

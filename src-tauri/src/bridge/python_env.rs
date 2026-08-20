@@ -528,7 +528,7 @@ pub async fn spawn_in_env(
     metadata_map.insert("envRoot".to_string(), Value::String(env_root));
     metadata_map.insert("envId".to_string(), Value::String(env_id.clone()));
 
-    let mut env = runtime_python_env(&dir).unwrap_or_default();
+    let mut env = runtime_python_env(&dir);
     if let Some(extra_env) = extra_env {
         env.extend(extra_env);
     }
@@ -579,9 +579,7 @@ pub fn run_in_env(
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    if let Some(env) = runtime_python_env(&dir) {
-        command.envs(env);
-    }
+    command.envs(runtime_python_env(&dir));
     let mut child = command
         .spawn()
         .map_err(|e| format!("failed to start Python environment: {e}"))?;
@@ -906,12 +904,18 @@ fn python_path_env_value(paths: &[PathBuf]) -> Option<String> {
     )
 }
 
-fn runtime_python_env(dir: &Path) -> Option<HashMap<String, String>> {
-    python_path_env_value(&read_runtime_python_paths(dir)).map(|value| {
-        let mut env = HashMap::new();
+fn runtime_python_env(dir: &Path) -> HashMap<String, String> {
+    let mut env = HashMap::new();
+    // CPython block-buffers stdout when it is a pipe, which is exactly how a Job captures it. A
+    // long scientific run therefore printed its progress into an 8 KB buffer and released it only
+    // at exit: a fourteen-minute embedding job showed "No logs yet" for its entire duration and
+    // then dumped everything at once. Unbuffered output is what makes progress visible while the
+    // work is still happening, and it is the only reason the transport looked broken.
+    env.insert("PYTHONUNBUFFERED".to_string(), "1".to_string());
+    if let Some(value) = python_path_env_value(&read_runtime_python_paths(dir)) {
         env.insert("PYTHONPATH".to_string(), value);
-        env
-    })
+    }
+    env
 }
 
 fn run_command(cmd: &str, args: &[String], cwd: Option<&Path>) -> Result<(String, String), String> {
@@ -1337,6 +1341,19 @@ fn now_ms() -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A Job captures stdout through a pipe, and CPython block-buffers into a pipe. Without this
+    /// variable a long run shows no output at all until it exits, which is what made a
+    /// fourteen-minute embedding job look like it had produced nothing.
+    #[test]
+    fn python_processes_always_run_with_unbuffered_output() {
+        let env = runtime_python_env(Path::new("does-not-exist"));
+        assert_eq!(env.get("PYTHONUNBUFFERED").map(String::as_str), Some("1"));
+        // No environment on disk means no PYTHONPATH, and the env must still not be empty —
+        // an empty map is dropped by the spawn path and would take the flag with it.
+        assert!(!env.contains_key("PYTHONPATH"));
+        assert!(!env.is_empty());
+    }
 
     #[test]
     fn venv_python_prefers_scripts_then_falls_back_to_standalone_on_windows() {

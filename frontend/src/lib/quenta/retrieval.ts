@@ -183,3 +183,20 @@ export function citedSources(
   }
   return available.filter((citation) => mentioned.has(citation.id));
 }
+
+/** Prefix of the documentation pages that describe how to use Quenta itself. */
+const QUENTA_SELF_DOC_ID_PREFIX = 'docs:ai/quenta';
+
+/**
+ * Whether a document is Quenta's own usage documentation.
+ *
+ * Those pages answer "how do I ask Quenta to explain a Result?", which is never evidence for what a
+ * Result *means* — but their wording matches a result-explanation query almost perfectly, so they
+ * outranked the science and were then cited back at the user as sources for their own experiment.
+ * They are only dropped from focused explanations; a free-form question about how to use Quenta
+ * still retrieves them, because there they are the answer.
+ */
+export function isQuentaSelfDocumentation(documentId: string): boolean {
+  return documentId === QUENTA_SELF_DOC_ID_PREFIX
+    || documentId.startsWith(`${QUENTA_SELF_DOC_ID_PREFIX}#`);
+}

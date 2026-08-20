@@ -13,6 +13,7 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { beginDirectNativeToolRun } from '$lib/execution/direct-native-tool';
   import { runNativeTool } from '$lib/utils/native-tool';
+  import { ensureToolOutputsDir } from '$lib/utils/results';
   import { parseFastpJson, fastpToToolOutput } from '$lib/tools/qc/fastp';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
@@ -113,8 +114,7 @@
     activeExecutionRunId = runId;
 
     try {
-      const paths = await api!.invoke('lia_fs_paths', {}) as { data: string; cache: string };
-      const base = `${paths.data}/tool-outputs`;
+      const base = await ensureToolOutputsDir();
       const jsonPath = `${base}/fastp-${runId}.json`;
       const out1Path = `${base}/fastp-${runId}-R1.fastq.gz`;
       const out2Path = `${base}/fastp-${runId}-R2.fastq.gz`;

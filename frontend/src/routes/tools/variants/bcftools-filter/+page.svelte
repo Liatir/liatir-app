@@ -13,6 +13,7 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { beginDirectNativeToolRun } from '$lib/execution/direct-native-tool';
   import { runNativeTool } from '$lib/utils/native-tool';
+  import { ensureToolOutputsDir } from '$lib/utils/results';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
   import { notify } from '$lib/utils/notify';
@@ -117,8 +118,7 @@
     activeExecutionRunId = runId;
 
     try {
-      const { data: dataDir } = await api.invoke('lia_fs_paths') as { data: string; cache: string };
-      const outDir  = `${dataDir}/tool-outputs`;
+      const outDir = await ensureToolOutputsDir();
       const outPath = `${outDir}/bcftools-filter-${runId}.vcf.gz`;
 
       logLines = [`$ bcftools filter --threads ${threadInfo.threads} -i '${expression.trim()}' ${fileName}`];
