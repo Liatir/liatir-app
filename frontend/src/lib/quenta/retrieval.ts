@@ -9,6 +9,7 @@
 import type {
   LiatirQuentaCitation,
   LiatirQuentaContextDocument,
+  LiatirQuentaSourceKind,
 } from '@liatir/core';
 
 /** Words too common to carry signal; scoring them would rank every document alike. */
@@ -182,6 +183,28 @@ export function citedSources(
     mentioned.add(match[1]);
   }
   return available.filter((citation) => mentioned.has(citation.id));
+}
+
+/**
+ * The only source kinds Quenta presents to the user as the sources of an answer.
+ *
+ * A source is a thing in the user's own workspace that they can go and open: the Job that ran and
+ * the Result it produced. Everything else Quenta retrieves — the product documentation, the curated
+ * biology knowledge, the app's own description of itself — is background it is expected to know,
+ * not evidence about the user's experiment. Listing it as a "source" both misdescribes where the
+ * answer came from and buries the two entries that actually let the user check the claim.
+ *
+ * This does not change what reaches the model. Documentation still goes into the prompt and still
+ * informs the answer; it simply stops being displayed as provenance.
+ */
+const CITABLE_SOURCE_KINDS: ReadonlySet<LiatirQuentaSourceKind> = new Set<LiatirQuentaSourceKind>([
+  'result',
+  'job',
+]);
+
+/** Whether a retrieved source may be shown to the user in the sources panel. */
+export function isUserVisibleSource(citation: Pick<LiatirQuentaCitation, 'sourceKind'>): boolean {
+  return CITABLE_SOURCE_KINDS.has(citation.sourceKind);
 }
 
 /** Prefix of the documentation pages that describe how to use Quenta itself. */

@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import {
   citedSources,
   isQuentaSelfDocumentation,
+  isUserVisibleSource,
   retrieveQuentaContext,
 } from '../../frontend/src/lib/quenta/retrieval';
 import { buildQuentaMessages } from '../../frontend/src/lib/quenta/prompt';
@@ -80,6 +81,32 @@ describe('Quenta retrieval', () => {
     expect(quentaResponseNeedsPlainLanguageRepair(
       'The result did not complete, so no biological interpretation is available yet.',
     )).toBe(false);
+    expect(quentaResponseNeedsPlainLanguageRepair(
+      'The job failed with a TypeError; read the stack trace to find the call chain.',
+    )).toBe(true);
+    expect(quentaResponseNeedsPlainLanguageRepair(
+      'Set the environment variable and re-run `uname -a`.',
+    )).toBe(true);
+  });
+
+  /**
+   * The half that was missing, and the reason `explain-result` failed every single time it was
+   * asked. Explaining a Result means naming files, formats and the tool that ran, and models quote
+   * those in code fences. A guard meant to stop developer *instructions* was rejecting the
+   * vocabulary of the answer itself, so a good explanation was thrown away and replaced with an
+   * apology.
+   */
+  it('does not flag a normal scientific result explanation', () => {
+    const explanations = [
+      'The run produced embeddings for 2,700 cells across 50 dimensions. The values are stored in the JSON file next to the output, and the preview shows the first 500 rows.',
+      'The tool completed successfully. Its executable reported no warnings, and every input read was retained.',
+      'The embedding matrix has this shape:\n\n```\n2700 x 50\n```\n\nThat is one row per cell, so no cells were dropped during processing.',
+      'What was observed: quality scores stayed above 30 across the read. What it means: the sequencing run is usable as-is. Limitations: this preview is bounded and is not a full analysis. Next steps: validate against a second sample before drawing conclusions.',
+    ];
+
+    for (const explanation of explanations) {
+      expect(quentaResponseNeedsPlainLanguageRepair(explanation), explanation.slice(0, 60)).toBe(false);
+    }
   });
 
   it('keeps useful reasoning while redacting local paths and oversized lines', () => {
@@ -96,6 +123,20 @@ describe('Quenta retrieval', () => {
     const citations = citedSources('The failure is visible in [job:failed], not [missing:id].', docs);
 
     expect(citations.map((citation) => citation.id)).toEqual(['job:failed']);
+  });
+
+  /**
+   * A source is something in the user's own workspace they can open and check. Documentation and
+   * curated knowledge still reach the model and still shape the answer; presenting them as sources
+   * described the app's own manual as evidence about the user's experiment.
+   */
+  it('shows only the user own Jobs and Results as sources', () => {
+    expect(isUserVisibleSource({ sourceKind: 'result' })).toBe(true);
+    expect(isUserVisibleSource({ sourceKind: 'job' })).toBe(true);
+
+    for (const sourceKind of ['documentation', 'bioinformatics', 'app', 'workspace', 'pipeline', 'ai-model', 'api-connector'] as const) {
+      expect(isUserVisibleSource({ sourceKind }), sourceKind).toBe(false);
+    }
   });
 
   /**

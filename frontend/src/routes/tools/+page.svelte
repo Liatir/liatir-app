@@ -19,7 +19,8 @@
     id: string;
     label: string;
     description: string;
-    href: string;
+    /** Absent while a tool is still `soon`: an announced tool has no page to link to yet. */
+    href?: string;
     /** `soon` renders the card but disables it — announced, not yet available. */
     status: 'available' | 'soon';
     /** Searchable keywords: a user looks for "FASTQ" or "QC", rarely for a tool's name. */
@@ -147,7 +148,7 @@
     },
     {
       id: 'nextflow',
-      label: 'External Workflows',
+      label: 'Nextflow',
       description: 'Save and run Nextflow workflows directly or reuse the same definition in a Liatir pipeline.',
       href: '/tools/external-workflows',
       status: 'available',
@@ -158,10 +159,9 @@
       id: 'snakemake',
       label: 'Snakemake',
       description: 'Execute Snakemake workflows from your workspace.',
-      href: '/tools/pipelines/snakemake',
       status: 'soon',
-      tags: ['Pipeline', 'Python'],
-      category: 'Pipelines',
+      tags: ['Workflow', 'Python'],
+      category: 'External Workflows',
     },
   ];
 

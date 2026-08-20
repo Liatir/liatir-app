@@ -1,5 +1,51 @@
 # Current project status
 
+## Quenta could never explain a Result, and its own guard was why (2026-08-20)
+
+Five stored conversations show five `explain-result` attempts and five identical
+failures. This was not intermittent: the feature failed every time it was asked.
+
+`quentaResponseNeedsPlainLanguageRepair` exists to keep Quenta from answering a
+biologist like a maintainer — no shell command to run, no stack trace to read.
+Three of its patterns instead matched the vocabulary of the answer the feature
+exists to produce: a bare code fence, which is formatting and which any model
+reaches for when quoting a value; the bare word "executable", which is an
+ordinary way to name the tool that ran; and "JSON file", when saying where a
+result was written *is* the answer. A good explanation was therefore rejected,
+the repair pass produced the same kind of text, and the second rejection replaced
+everything with an apology.
+
+The guard now keys on developer instructions and diagnostics only. The specific
+shell and error patterns still match inside a fenced block, so dropping the fence
+rule costs no protection.
+
+The missing test is the more important finding. The guard was covered by an
+assertion that it *catches* developer-facing text and by nothing asserting it
+*passes* legitimate scientific text — so the half that was broken was the half
+nobody checked. Both directions are covered now, with realistic result
+explanations as the fixtures.
+
+### Sources are the user's own Jobs and Results, and nothing else
+
+Decided by the maintainer on 2026-08-20. A source is something in the user's
+workspace they can open and check. Documentation, curated biology knowledge and
+the app's own description of itself still reach the model and still shape the
+answer, but they are background knowledge rather than evidence about the user's
+experiment, and listing them both misdescribed the answer's provenance and buried
+the entries that let the user verify it. `isUserVisibleSource` filters the panel;
+retrieval and the prompt are unchanged. Pipelines, AI Models and API connectors
+are excluded too, deliberately and per that decision, though they are the obvious
+candidates if the rule is ever widened.
+
+The sources panel hides itself when the list is empty, so a general question now
+shows no sources rather than an empty box.
+
+### Still open
+
+A stored chat holds one user message and the same assistant reply three times.
+Duplicate handling exists for focused chats and for stop/retry, so this is a
+different path. Not investigated.
+
 ## Six product defects found by using the app, none by the suite (2026-08-20)
 
 Manual use of the built app surfaced six defects that every automated gate had

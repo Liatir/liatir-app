@@ -7,7 +7,12 @@ import {
   buildQuentaMessages,
   buildQuentaPlainLanguageRepairMessages,
 } from '$lib/quenta/prompt';
-import { citedSources, isQuentaSelfDocumentation, retrieveQuentaContext } from '$lib/quenta/retrieval';
+import {
+  citedSources,
+  isQuentaSelfDocumentation,
+  isUserVisibleSource,
+  retrieveQuentaContext,
+} from '$lib/quenta/retrieval';
 import { quentaResponseNeedsPlainLanguageRepair } from '$lib/quenta/response-safety';
 import { sanitizeQuentaReasoning } from '$lib/quenta/reasoning-safety';
 import { createQuentaRuntime } from '$lib/quenta/runtime';
@@ -807,6 +812,11 @@ function createQuentaStore() {
     // attaching retrieval candidates to it presented four documents as the basis of an explanation
     // that was never produced — the provenance panel has to mean what it says.
     if (citations.length === 0 && !repairFailed) citations = descriptor.citations.slice(0, 4);
+    // And a source is something in the user's own workspace they can open — the Job that ran, the
+    // Result it produced. Documentation and curated knowledge still reach the model and still shape
+    // the answer, but showing them here described the app's own manual as evidence about the user's
+    // experiment, and buried the two entries that let them actually check it.
+    citations = citations.filter(isUserVisibleSource);
 
     const completedAt = now();
     const generation = activeResponsesByConversation[descriptor.conversationId];
