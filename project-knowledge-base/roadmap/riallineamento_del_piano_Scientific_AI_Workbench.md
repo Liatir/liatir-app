@@ -1,6 +1,6 @@
 # Riallineamento del piano “Scientific AI Workbench”
 
-Ultima revisione: 2026-08-17
+Ultima revisione: 2026-08-20
 
 ## Stato corrente
 
@@ -12,7 +12,7 @@ Ultima revisione: 2026-08-17
 | 4. I/O scientifico standardizzato | Completato localmente su macOS arm64 |
 | 5. Lighthouse single-cell | Completato localmente su macOS arm64 |
 | 6. Nextflow come External Workflow | Completato su macOS arm64, Linux x86_64 e app Windows x86_64 con backend WSL2 Linux x86_64 |
-| 7. Gate Beta 1 | In corso: implementazione ed evidenza locale macOS arm64 complete ed eseguite; release Apple firmata/notarizzata e Windows/Linux ancora aperti |
+| 7. Gate Beta 1 | In corso: implementazione ed evidenza locale complete ed eseguite su macOS arm64, Windows x86_64 e Linux x86_64, e verificate in modo incrociato; restano aperti firma, notarizzazione e updater firmato A → B su macchina pulita per ogni piattaforma |
 | 8. MCP dopo il nucleo Beta | Pianificato dopo il Gate 7 |
 
 ## Indicatori
@@ -171,8 +171,10 @@ limitazioni sono in
 
 **Difficoltà:** `4/5` · **Codex effort:** `high` · **Windows** · **Linux**
 
-**Stato (2026-08-17): in corso. La parte locale macOS arm64 è implementata e
-completamente eseguita; non è ancora evidenza di una release pubblicabile.**
+**Stato (2026-08-20): in corso. L'intera matrice desktop locale — macOS arm64,
+Windows x86_64 e Linux x86_64 — è implementata, completamente eseguita e
+verificata in modo incrociato; non è ancora evidenza di una release
+pubblicabile.**
 
 - E2E del laboratorio single-cell.
 - E2E Nextflow sia autonomo sia dentro una pipeline.
@@ -207,13 +209,35 @@ ciclo di vita è una suite dichiarata (`desktop-beta-lifecycle-e2e`) nei profili
 piattaforma invece di fallirla, e un test unitario impedisce che uno spec
 orchestrato torni a finire nel glob predefinito.
 
-Evidenza finale macOS: `npm run test:verify` 52 file / 306 test, `cargo test` 54
-passati / 2 ignorati intenzionalmente, `desktop-beta:test:macos` 2 processi su 2,
-Gate 5 1/1, updater/Job-safety 1/1, scientific-artifact 1/1.
+Evidenza macOS del 2026-08-17: `npm run test:verify` 52 file / 306 test,
+`cargo test` 54 passati / 2 ignorati intenzionalmente, `desktop-beta:test:macos`
+2 processi su 2, Gate 5 1/1, updater/Job-safety 1/1, scientific-artifact 1/1.
 
-Restano aperti Developer ID, notarizzazione e updater firmato A → B su un
-pacchetto pubblico, oltre ai gate desktop Windows e Linux. Dettagli e handoff:
-[Gate 7 Beta 1 — macOS evidence](./gate-7-beta1-macos.md).
+I gate desktop Windows x86_64 e Linux x86_64 sono stati completati ed eseguiti
+il 2026-08-19, con i loro package gate — l'installer NSIS reale provato da
+un'installazione e disinstallazione silenziose, e i formati `.deb`, `.rpm` e
+AppImage dichiarati — le prove di ciclo di vita in due processi, updater/Job-
+safety, Gate 5 e Nextflow, oltre alla metà Windows del contratto di firma.
+Dettagli in
+[Gate 7 Beta 1 — Windows and Linux evidence](./gate-7-beta1-windows-linux.md).
+
+Quei commit hanno però toccato codice condiviso con macOS che su POSIX non era
+mai stato eseguito: il mount delle directory host WASI e l'id degli ambienti
+Python nel bridge Rust, tre route Svelte, il modulo di supporto E2E condiviso,
+otto spec, la matrice dei test e il risolutore della shell di configurazione.
+Tutti i gate macOS sono stati quindi rieseguiti il 2026-08-20 sulla revisione
+`5d35592` e sono passati al primo tentativo, senza richiedere alcuna correzione:
+`npm run test:ui` verde per la prima volta come profilo completo su macOS (31
+passati / 0 falliti / 24 saltati, profilo 5/0/2), `test:verify` 53 file / 318
+test, `cargo test` 58 passati / 2 ignorati, Clippy exit 0, il package gate DMG
+ad-hoc di nuovo verde con `codesign` e `hdiutil`, e `desktop-beta:test:macos`
+1/1 in entrambi i processi. La regressione Nextflow reale è stata rieseguita ed
+è 3/3: il 3/3 precedente valeva solo finché non cambiava codice applicativo, e
+nel frattempo erano cambiati il bridge Rust e tre route.
+
+Restano aperti, su tutte e tre le piattaforme, la firma, la notarizzazione e un
+updater firmato A → B su un pacchetto pubblico installato su macchina pulita.
+Dettagli e handoff: [Gate 7 Beta 1 — macOS evidence](./gate-7-beta1-macos.md).
 
 ### 8. MCP dopo il nucleo Beta
 

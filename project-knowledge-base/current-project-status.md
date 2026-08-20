@@ -1,5 +1,43 @@
 # Current project status
 
+## The shared Windows and Linux changes are verified on macOS (2026-08-20)
+
+The Windows and Linux session changed code shared with macOS and could not run
+any of it on POSIX: the WASI host directory mount and the Python environment id
+in the Rust bridge, three Svelte routes, the shared E2E support module, eight
+specs, the test matrix and the conf shell resolver. Every macOS gate predating
+those commits has now been re-run on `5d35592` with a clean worktree, and every
+one passed on the first attempt. No macOS fix was required — the shared changes
+are inert on POSIX in practice, not only by construction.
+
+`npm run test:ui` is green on macOS for the first time as a complete profile:
+`tauri-e2e` 31 passed / 0 failed / 24 skipped, profile 5 passed / 0 failed / 2
+skipped, exactly the counts Windows reports, with the two off-platform lifecycle
+suites skipped by their `platforms` declaration. Earlier macOS evidence ran
+individual specs and the orchestrated lifecycle gate but never the whole
+profile, so this closes a gap rather than repeating a check. `test:verify` is 53
+files / 318 tests, matching Windows; `cargo test` is 58 passed / 2 ignored, up
+from 54 by exactly the four tests the shared commits added; Clippy exits 0 on
+the existing baseline. The ad-hoc DMG gate passed again and with it the darwin
+path of the new `confShellInvocation` resolver, and the standalone lifecycle
+gate is 1/1 in both native processes.
+
+The real Gate 6 Nextflow regression was re-run on macOS and is 3/3. It had to
+be: the earlier macOS 3/3 was recorded under the rule that it stands only until
+application code changes again, and the Rust bridge and three routes have since
+changed. One macOS behaviour did change, in the safe direction — a WASM host
+directory is now preopened under the raw path the caller supplied rather than
+its canonicalized form, so the mount matches the path the plugin is handed even
+when it crosses a symlink such as `/var` to `/private/var`.
+
+Recorded for a Linux host to settle: the Linux `cargo test` count of 54 in the
+Windows/Linux evidence predates the four new Rust tests, so it is stale rather
+than platform-conditional, and its "one fewer than Windows" explanation never
+matched its own number. macOS measures 58, the same as Windows.
+
+The complete commands, artifact identities and counts are in
+[Gate 7 Beta 1 — macOS evidence](./roadmap/gate-7-beta1-macos.md).
+
 ## The Gate 7 Windows and Linux slices are complete and executed (2026-08-19)
 
 Both remaining desktop platforms now have their own package gate, lifecycle

@@ -387,6 +387,13 @@ first step of fixing it was running every failing spec on its own — sixteen of
 the seventeen failed in isolation too, so they were real rather than one spec
 inheriting another's state.
 
+It is green on macOS arm64 as of 2026-08-20 with the same counts, 31 passed / 0
+failed / 24 skipped, and the profile at 5 passed / 0 failed / 2 skipped. That
+was the first execution of the complete profile on macOS — earlier macOS
+evidence ran individual specs and the orchestrated lifecycle gate — and it
+passed unchanged, which is what confirms the Windows fixes above are inert on
+POSIX rather than merely intended to be.
+
 Two rules came out of that work and are worth keeping:
 
 - **Assert against stable selectors, not product copy.** Several suites waited

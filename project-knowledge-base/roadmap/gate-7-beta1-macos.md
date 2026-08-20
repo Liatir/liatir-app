@@ -1,8 +1,9 @@
 # Gate 7 Beta 1 — macOS arm64 evidence and cross-platform handoff
 
 Status: **macOS local implementation and non-release evidence complete and fully
-executed on 2026-08-17. The Windows x86_64 and Linux x86_64 slices are now also
-complete and executed; their evidence lives in
+executed, and re-executed in full on 2026-08-20 against the shared changes the
+Windows and Linux slices introduced. The Windows x86_64 and Linux x86_64 slices
+are also complete and executed; their evidence lives in
 [Gate 7 Beta 1 — Windows and Linux evidence](./gate-7-beta1-windows-linux.md).
 Public signing, notarization and every clean-machine release check remain open
 on all three platforms.**
@@ -132,6 +133,77 @@ does not match instead of failing, so one profile name stays usable on every
 host and the Windows session can add its own package/lifecycle suite the same
 way. `tests/unit/e2e-spec-loading.test.ts` now discovers every spec named by an
 orchestrator script and fails if one does not declare `requiredEnv`.
+
+## macOS re-verification of the shared Windows and Linux changes (2026-08-20)
+
+The Windows and Linux session changed code shared with macOS — the WASI host
+directory mount and the Python environment id in the Rust bridge, three Svelte
+routes, the shared E2E support module, eight specs, the test matrix and the conf
+shell resolver — and could not execute any of it on POSIX. Every macOS gate
+predating those commits was therefore re-run on revision
+`5d35592f2572a1c73b97283648b1c8fd98485238` with a clean worktree.
+
+| Host | Toolchain |
+| --- | --- |
+| macOS `14.4.1` (`23E224`), `arm64` | Node `v26.4.0`; npm `11.17.0`; Rust/Cargo `1.95.0`; Nextflow `26.04.6.12646` |
+
+Everything passed on the first attempt; no macOS fix was required. The shared
+changes are inert on POSIX in practice, not only by construction.
+
+- `npm run test:ui`: **green**, exit 0. The `tauri-e2e` suite is 31 passed, 0
+  failed, 24 skipped and the profile is 5 passed / 0 failed / 2 skipped — the
+  same counts Windows reports. The two off-platform lifecycle suites are skipped
+  by their `platforms` declaration rather than failed. This is the first
+  execution of the complete `ui` profile on macOS: earlier macOS evidence ran
+  individual specs and the orchestrated lifecycle gate, never the whole profile.
+  `tauri-prepare` recompiled the binary from the current worktree (`Compiling
+  liatir v0.2.1`, dev profile finished in 37.61s), so no result came from a stale
+  artifact.
+- `npm run test:verify`: 6 of 6 suites passed; 53 test files / 318 tests,
+  matching Windows exactly.
+- `cargo test`: 58 passed, 0 failed, 2 intentionally ignored Runtime Box
+  fixtures — up from 54 by exactly the four tests the shared commits added
+  (three WASI mount tests and the Windows path-budget assertion).
+- `cargo clippy --tests`: exit 0 on the existing warning baseline (121 warnings
+  on this host, against 122 on Windows).
+- Real Gate 6 Nextflow regression with `LIATIR_E2E_NEXTFLOW=1`: 3 passed, 0
+  failed, 0 skipped. This had to be re-run: the earlier macOS 3/3 was recorded
+  under the rule that it stands until application code changes again, and the
+  Rust bridge and three routes have since changed.
+- `npm run desktop-beta:package:macos`: passed, and with it the darwin path of
+  the new `confShellInvocation` resolver, which
+  `scripts/build-desktop-macos-adhoc.mjs` now uses to run `prod-conf.sh`.
+
+  | Artifact | Bytes | SHA-256 |
+  | --- | --- | --- |
+  | `src-tauri/target/release/bundle/dmg/Liatir_0.2.1_aarch64.dmg` | `19718711` | `5910d1964d71ce404629f280278e69bfd18ee5e8af4d7728111406e9d0c72e51` |
+  | `src-tauri/target/release/liatir` | `42365888` | `14965507c51a614790acbf0717c63b3eb697e0656f925fd4ce35b59f4c754651` |
+
+  `codesign` reported the bundle valid on disk and satisfying its Designated
+  Requirement, `hdiutil verify` reported the checksum VALID, and the image was
+  mounted, inspected and ejected. Notarization was explicitly skipped for want
+  of credentials, no `.sig` or updater artifact was produced, and the worktree
+  was clean again afterwards. **The artifact is ad-hoc signed and must not be
+  published.**
+- `npm run desktop-beta:test:macos` as a standalone gate: both native processes
+  passed 1/1, in addition to the same suite passing inside the `ui` profile.
+
+One behaviour on macOS did change, in the safe direction. A host directory is
+now preopened under the raw path the caller supplied rather than its
+canonicalized form, because `wasm_guest_mount` is derived from the raw string.
+On macOS these differ whenever a path crosses a symlink — `/var/...` against
+`/private/var/...` — and the mount now matches the path the plugin is actually
+handed instead of the resolved one. The plugin execution specs cover it and pass.
+
+### Stale count in the Linux evidence
+
+`gate-7-beta1-windows-linux.md` records Linux `cargo test` as 54 passed and
+explains it as "one fewer than Windows". That figure was written in `e4c5263`,
+before `40491ce` and `5d35592` added the four new Rust tests, so it is stale
+rather than platform-conditional — and 54 was never one fewer than 58. macOS now
+measures 58, the same as Windows, which shows the delta was not a compiled-out
+platform difference at all. Re-measure it on Linux and correct that line; it is
+recorded here rather than edited blind because no Linux host was available.
 
 ## Deliberately unclaimed macOS evidence
 

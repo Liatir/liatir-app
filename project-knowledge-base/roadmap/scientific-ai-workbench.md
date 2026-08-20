@@ -499,8 +499,8 @@ remaining limits are in
 
 **Difficulty:** `4/5` · **Codex effort:** `high` · **Windows** · **Linux**
 
-**Status (2026-08-19): in progress; the whole local desktop matrix is now
-complete and executed.** macOS arm64 was closed on 2026-08-17 with a bundled
+**Status (2026-08-20): in progress; the whole local desktop matrix is complete,
+executed, and now cross-verified.** macOS arm64 was closed on 2026-08-17 with a bundled
 offline frontend, an explicit native updater with Job protection, actionable
 startup recovery, a verified ad-hoc DMG, two-process
 migration/recovery/uninstall retention, native corrupt-index recovery 1/1,
@@ -512,8 +512,12 @@ updater/Job-safety, Gate 5 and Nextflow regressions, and the Windows half of the
 release signing contract. Three defects were found by executing rather than
 building: a WebView2 reload deadlock, Windows conf generation silently running
 inside WSL, and a Python discovery test asserting more than the product relies
-on. Code signing, notarization and a real signed updater A-to-B transition on a
-clean machine remain open on every platform. See
+on. Those Windows and Linux commits changed code shared with macOS that could
+not be executed on POSIX there, so every macOS gate was re-run on 2026-08-20 and
+passed on the first attempt, including the first complete `npm run test:ui` on
+macOS at 31 passed / 0 failed / 24 skipped and a re-run of the real Nextflow
+regression at 3/3. Code signing, notarization and a real signed updater A-to-B
+transition on a clean machine remain open on every platform. See
 [Gate 7 Beta 1 — macOS evidence](./gate-7-beta1-macos.md) and
 [Gate 7 Beta 1 — Windows and Linux evidence](./gate-7-beta1-windows-linux.md).
 
