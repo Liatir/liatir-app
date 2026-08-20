@@ -46,10 +46,14 @@ were real rather than cross-spec contamination. Five were product defects on
 Windows: WASM plugins could read no file at all because host directories were
 mounted into the WASI sandbox under a verbatim `\?\C:\...` path; a Python
 plugin environment could not be created because `setuptools` pushed a path two
-characters past the 260-character limit — mitigated by trimming the segment the
-product owns, but **not closed**: the fixed path cost is 213 characters, which
-leaves room for roughly a 7-character user name and fails outright for a longer
-one, so it stays an open Windows defect; a Result deep link did nothing when the
+characters past the 260-character limit, which is now fixed at the root: managed
+Python environments moved on Windows from the roaming data directory to
+`%LOCALAPPDATA%pp.liatir.app\plugin\`, cutting that prefix from 67 characters
+to 37 and leaving 34 for a user name where Windows allows at most 20. They are
+rebuildable cache, so no migration was needed, and `Roaming` is the wrong place
+for machine-specific binaries anyway; macOS and Linux are unchanged. A unit test
+now measures the whole path down to the deepest file pip installs; a Result deep
+link did nothing when the
 user was already on the Results page, because `?run=` was read once on mount
 while the app routes client-side; and the AI Models and Quenta screens exposed
 their state only as copy. Long-path support was deliberately not enabled, per

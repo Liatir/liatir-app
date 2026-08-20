@@ -154,10 +154,51 @@ pub fn command_stdout(cmd: &str, args: &[&str]) -> Option<String> {
     Some(if stdout.is_empty() { stderr } else { stdout })
 }
 
+/// Directory segment a managed environment root uses on disk.
+///
+/// Windows drops the `-runtimes` suffix. It reads the same and costs nine characters less, which
+/// matters only there; every other host keeps the name unchanged.
+pub fn env_root_segment(env_root: &str, windows: bool) -> &str {
+    if windows {
+        env_root.strip_suffix("-runtimes").unwrap_or(env_root)
+    } else {
+        env_root
+    }
+}
+
+/// Parent directory of all managed Python environments.
+///
+/// Windows enforces a 260-character path limit for anything not long-path aware, and a managed
+/// environment is deep by nature: `venv\Lib\site-packages\` plus whatever pip installs, where
+/// setuptools alone contributes a 113-character `pkg_resources\tests\data\...` path. Composing that
+/// under `app_data_dir()/.liatir/.main/data/plugin-runtimes/` spends 67 characters before the
+/// environment starts and left room for a seven-character user name, so creating an environment
+/// failed for most real profiles.
+///
+/// The local application data directory costs 37 characters for the same purpose, and is where
+/// these belong regardless: `Roaming` is synchronised across a domain profile, and a venv holds
+/// binaries built for one machine. A managed environment is rebuildable cache rather than user
+/// data, so the new root simply gets populated on the next run. POSIX hosts have no such limit and
+/// keep their existing location, so nothing about them changes.
+fn managed_env_root(app: &AppHandle, env_root: &str) -> Result<PathBuf, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let base = app
+            .path()
+            .app_local_data_dir()
+            .map_err(|e| format!("no local app data dir: {e}"))?;
+        Ok(base.join(env_root_segment(env_root, true)))
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Ok(data_root(app)?.join(env_root_segment(env_root, false)))
+    }
+}
+
 pub fn env_dir(app: &AppHandle, env_root: &str, env_id: &str) -> Result<PathBuf, String> {
     validate_env_root(env_root)?;
     validate_env_id(env_id)?;
-    Ok(data_root(app)?.join(env_root).join(env_id))
+    Ok(managed_env_root(app, env_root)?.join(env_id))
 }
 
 pub fn venv_python(dir: &Path) -> PathBuf {

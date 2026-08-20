@@ -160,9 +160,9 @@ them was visible from a successful build:
    version instead of 28 and 16, and a unit assertion pins the new ceiling. A
    plugin venv is rebuildable cache, so this costs one recreation.
 
-   **This mitigates the test, not the user, and must not be read as closed.**
-   The fixed cost of the path is 213 characters before the user name and the
-   environment id are added at all:
+   **The root cause was then fixed too.** Trimming the id alone left only seven
+   characters for a user name, because the path costs 213 before the name and the
+   id are added at all:
 
    | Segment | Characters |
    | --- | --- |
@@ -171,19 +171,20 @@ them was visible from a successful build:
    | `venv\Lib\site-packages\` | 24 |
    | longest setuptools file (`pkg_resources\tests\data\...\dependency_links.txt`) | 113 |
 
-   That leaves 46 characters for the user name plus the environment id. With the
-   id this fixture produces (39) the user name may be at most **7 characters**;
-   with the id at its new ceiling (45) it may be at most **one**. The suite
-   passes because the isolated test home is `C:\lt-<pid>`, three characters
-   shorter than a real `C:\Users\loren`. A real user with an ordinary name and a
-   plugin whose name is not very short will still fail.
+   Managed Python environments therefore moved, **on Windows only**, from the
+   roaming data root to `%LOCALAPPDATA%\app.liatir.app\plugin\`, and the root
+   segment drops its `-runtimes` suffix there. That is 37 characters instead of
+   67. `Roaming` is synchronised across a domain profile and a venv holds
+   machine-specific binaries, so this is also where they belonged. The
+   environments are rebuildable cache, so no migration is required — the new root
+   is populated on the next run. macOS and Linux keep their existing location and
+   are unchanged.
 
-   The two levers that would actually close it are the 113 characters setuptools
-   spends — it is installed into every plugin venv by
-   `PYTHON_BOOTSTRAP_REQUIREMENTS`, and its bundled test data is what overflows —
-   and the 67-character data prefix, which the status document already records as
-   worth about 30 characters and a migration. Both are product decisions and
-   neither was taken here.
+   `python_env_paths_fit_the_windows_limit_for_any_real_user_name` now measures
+   the whole path down to the deepest file pip installs and requires at least 20
+   characters for the user name, which is the longest Windows allows. It leaves
+   34, so an ordinary profile no longer fails.
+
 3. **A Result deep link did nothing if the user was already on Results.** The
    `?run=` parameter was read once in `onMount`, and Liatir routes client-side,
    so opening a Result link from an already-mounted Results page left the run
@@ -365,11 +366,9 @@ claim.
   by these tests; that is why packaging and lifecycle are separate gates.
 - The Windows package gate performs a real per-user install and uninstall, but
   into a test-owned directory. It is not a clean-machine installation test.
-- **Python plugin environments remain MAX_PATH-fragile on Windows for real
-  users.** See the measured budget above: about a 7-character user name for a
-  short plugin name, and one character in the worst case. The suite is green
-  because the test home is shorter than a real profile path, so treat this as an
-  open product defect rather than as fixed.
+- Managed Python environments live under `%LOCALAPPDATA%` on Windows rather than
+  the roaming data root, so a Plugin environment is not carried between machines
+  by a roaming profile and is recreated locally if removed.
 - Nextflow support on Windows remains the `liatir.exe -> wsl.exe -> Nextflow`
   backend proven by Gate 6. Native-Windows Nextflow, WSL1 and WSL ARM64 remain
   unsupported and unchanged by this gate.

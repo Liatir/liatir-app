@@ -926,6 +926,57 @@ mod tests {
         assert_eq!(canonical_digest_from_rows(&a), canonical_digest_from_rows(&b));
     }
 
+    /// Joins path segments the way Windows does, counting the separators.
+    fn windows_path_len(segments: &[&str]) -> usize {
+        segments.iter().map(|s| s.len()).sum::<usize>() + segments.len().saturating_sub(1)
+    }
+
+    /// The Windows path budget, measured end to end rather than assumed.
+    ///
+    /// A managed environment lives at `<local app data>/<root>/<env id>/venv/Lib/site-packages/`,
+    /// and the deepest file pip installs into it is setuptools' bundled test data. Windows caps a
+    /// user name at 20 characters, so the budget has to cover that with room to spare. Under the
+    /// roaming data root it allowed seven, which is why creating an environment failed for most
+    /// real profiles.
+    #[test]
+    fn python_env_paths_fit_the_windows_limit_for_any_real_user_name() {
+        const WINDOWS_MAX_PATH: usize = 259;
+        const MAX_WINDOWS_USER_NAME: usize = 20;
+
+        let id = python_env_id_for_manifest(&manifest(json!({
+            "requirements": ["colorama==0.4.6"],
+        })))
+        .unwrap();
+
+        // The empty segment stands in for the user name, whose length is what this measures.
+        let without_user_name = windows_path_len(&[
+            "C:",
+            "Users",
+            "",
+            "AppData",
+            "Local",
+            "app.liatir.app",
+            crate::bridge::python_env::env_root_segment(PYTHON_PLUGIN_ENV_ROOT, true),
+            &id,
+            "venv",
+            "Lib",
+            "site-packages",
+            "pkg_resources",
+            "tests",
+            "data",
+            "my-test-package_unpacked-egg",
+            "my_test_package-1.0-py3.7.egg",
+            "EGG-INFO",
+            "dependency_links.txt",
+        ]);
+        let room_for_user_name = WINDOWS_MAX_PATH - without_user_name;
+
+        assert!(
+            room_for_user_name >= MAX_WINDOWS_USER_NAME,
+            "only {room_for_user_name} characters left for the user name; Windows allows up to {MAX_WINDOWS_USER_NAME}",
+        );
+    }
+
     #[test]
     fn python_env_id_stays_within_env_id_limits() {
         // env ids must pass python_env::validate_env_id (alnum/-/_, len <= 80).

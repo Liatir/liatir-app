@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "267948a04f89c272bb00e1052c48c8bbfb3f36661282a0b02ee27dfb829b56f1";
+export const QUENTA_DOCS_SEED_HASH = "8d9f3566e430e61a1e6c120615448674637491e15aaa593d20ccf7ef4f40f1b3";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -572,7 +572,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Install Liatir Beta — Uninstall on Windows",
     "locator": "Docs / Getting Started / Install / Uninstall on Windows",
     "excerpt": "Uninstall on Windows Close Liatir, then remove **Liatir** from **Settings → Apps → Installed apps**, or run the `uninstall.exe` that sits in the installation directory. This removes the application, its Start menu entry and its uninstall registration. It does…",
-    "content": "Uninstall on Windows\nClose Liatir, then remove **Liatir** from **Settings → Apps → Installed apps**,\nor run the `uninstall.exe` that sits in the installation directory. This removes\nthe application, its Start menu entry and its uninstall registration.\n\nIt does not remove your source datasets, Results, installed AI Models or\nworkspace metadata. To remove all Liatir-managed state as well, back up any\nResults you need first, then remove `%APPDATA%\u0007pp.liatir.app`."
+    "content": "Uninstall on Windows\nClose Liatir, then remove **Liatir** from **Settings → Apps → Installed apps**,\nor run the `uninstall.exe` that sits in the installation directory. This removes\nthe application, its Start menu entry and its uninstall registration.\n\nIt does not remove your source datasets, Results, installed AI Models or\nworkspace metadata. To remove all Liatir-managed state as well, back up any\nResults you need first, then remove `%APPDATA%\u0007pp.liatir.app`. Managed Python\nenvironments for Plugins are rebuildable and live separately under\n`%LOCALAPPDATA%\u0007pp.liatir.app`; removing them only means Liatir recreates them\nthe next time a Plugin runs."
   },
   {
     "id": "docs:getting-started/install#uninstall-on-linux",

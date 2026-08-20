@@ -112,7 +112,10 @@ the application, its Start menu entry and its uninstall registration.
 
 It does not remove your source datasets, Results, installed AI Models or
 workspace metadata. To remove all Liatir-managed state as well, back up any
-Results you need first, then remove `%APPDATA%pp.liatir.app`.
+Results you need first, then remove `%APPDATA%pp.liatir.app`. Managed Python
+environments for Plugins are rebuildable and live separately under
+`%LOCALAPPDATA%pp.liatir.app`; removing them only means Liatir recreates them
+the next time a Plugin runs.
 
 ## Uninstall on Linux
 

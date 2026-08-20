@@ -96,7 +96,13 @@ export const tests = [
 
       expect(setup.manifest.runtime).toBe('python');
       expect(setup.manifest.python.entry).toBe('python/main.py');
-      expect(setup.prepared.pythonPath).toContain('plugin-runtimes');
+      // The managed environment root drops its `-runtimes` suffix on Windows to stay inside the
+      // path limit, so assert that the interpreter lives under this environment rather than
+      // pinning the platform's directory name.
+      expect(setup.prepared.pythonPath).toContain(setup.after.envId);
+      expect(setup.prepared.pythonPath).toContain(
+        process.platform === 'win32' ? 'app.liatir.app' : 'plugin-runtimes',
+      );
       expect(setup.prepared.sizeBytes).toBeGreaterThan(0);
       expect(setup.after.installed).toBe(true);
       expect(setup.after.missingPackages).toEqual([]);
