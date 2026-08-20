@@ -1,5 +1,48 @@
 # Current project status
 
+## Gate 7 is closed, re-scoped to the local desktop matrix (2026-08-20)
+
+Gate 7 carried two halves with different blockers: the local desktop matrix,
+which is engineering, and the signed public release, which is credentials, money
+and a distribution decision. Keeping them in one gate meant finished, fully
+executed and cross-verified work stayed open indefinitely behind a purchase.
+
+**Gate 7 is therefore complete at the local layer.** Every platform claimed by
+Beta 1 — macOS arm64, Windows x86_64, Linux x86_64 — has its own package gate,
+two-process migration/recovery/uninstall proof, updater and Job-safety coverage,
+both lighthouse regressions, green quality gates and accurate public
+documentation, all executed rather than inferred from a build.
+
+Signing, notarization, clean-machine installation and a real signed A-to-B
+update moved to
+[Release gate — signed public distribution](./roadmap/release-signed-distribution.md),
+which is open and deliberately not started. The re-scope changes what Gate 7
+claims; it upgrades no artifact. Every local package remains unsigned and
+unpublishable. Gate 8 MCP is no longer queued behind a purchase.
+
+The release gate is deliberately unnumbered: this knowledge base already uses
+"Gate 8" and "Gate 9" for Runtime Box CI gates, so a ninth workbench number
+would be ambiguous in the documents that reference both schemes.
+
+### Windows will ship through the Microsoft Store
+
+Decided by the maintainer on 2026-08-20, to avoid buying a code-signing
+certificate. This is a change of distribution model, not the same work minus the
+certificate, and three things must be settled before the route is committed to:
+a Store submission does not take the NSIS installer as-is and Tauri emits no
+MSIX; a Store app must not carry the in-app updater and Job-safety guard that
+Gate 7 verified, so that build needs its own variant and its own evidence; and
+MSIX runs the app in a virtualized container, which has to be validated against
+an app that downloads and executes managed binaries, creates Python environments
+and installs Runtime Boxes. That containment question is the real risk of the
+decision, larger than the certificate it saves. Whether the packaged or the
+EXE/MSI submission route actually avoids the certificate must be checked against
+current Microsoft documentation rather than assumed.
+
+macOS is unaffected: notarization still requires the Apple Developer Program,
+and there is no free path to distributing outside the App Store without a
+Gatekeeper warning. The Linux half of the release contract is still unwritten.
+
 ## The shared Windows and Linux changes are verified on macOS (2026-08-20)
 
 The Windows and Linux session changed code shared with macOS and could not run

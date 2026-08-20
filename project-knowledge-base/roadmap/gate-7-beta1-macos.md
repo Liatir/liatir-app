@@ -219,7 +219,8 @@ this machine. Therefore the following release blockers remain:
 5. repeat uninstall/reinstall recovery with that public-shaped package.
 
 Do not weaken signature or notarization requirements to turn local packaging
-into a release claim.
+into a release claim. These five items are now tracked in
+[Release gate — signed public distribution](./release-signed-distribution.md).
 
 ## Windows native plus WSL2 continuation — completed 2026-08-19
 
@@ -255,9 +256,26 @@ rule applies to a real signed updater A-to-B proof. Do not create a release,
 publish artifacts, dispatch GPU workflows or run heavy AI tests without a new
 explicit authorization.
 
-## Gate 7 close condition
+## Gate 7 close condition, and how it was met (2026-08-20)
 
-Gate 7 can be marked complete only when the claimed Beta platform matrix has
-repeatable signed installer/update evidence, migration/recovery/uninstall
-evidence, both lighthouse regressions, final quality gates and accurate public
-documentation. Until then Gate 8 MCP must remain queued after Gate 7.
+Gate 7 originally required both the local desktop matrix and repeatable signed
+installer and update evidence. Those two halves have different blockers: the
+first is engineering, the second is credentials, money and a distribution
+decision. Keeping them together meant finished, fully executed work stayed open
+indefinitely behind a purchase.
+
+**Gate 7 is therefore closed at the local layer, and re-scoped to it.** Every
+platform claimed by Beta 1 — macOS arm64, Windows x86_64, Linux x86_64 — has its
+own package gate, its own two-process migration, recovery, Results-retention and
+uninstall proof, updater and Job-safety coverage, both lighthouse regressions,
+green final quality gates and accurate public documentation, all executed and
+cross-verified rather than inferred from a build.
+
+Signing, notarization, the Microsoft Store decision, a clean-machine install and
+a real signed A-to-B update moved to
+[Release gate — signed public distribution](./release-signed-distribution.md).
+That gate is open and deliberately not started. The re-scope changes what Gate 7
+claims; it does not upgrade any artifact. Everything this document calls
+unsigned and unpublishable stays unsigned and unpublishable.
+
+Gate 8 MCP is no longer queued behind a purchase and may proceed.

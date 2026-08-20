@@ -1,8 +1,11 @@
 # Gate 7 Beta 1 — Windows and Linux evidence
 
 Status: **Windows x86_64 and Linux x86_64 local implementation and non-release
-evidence complete and fully executed on 2026-08-19; code signing and every
-public release check remain open on both platforms.**
+evidence complete and fully executed on 2026-08-19. Gate 7 closed at that local
+layer on 2026-08-20; code signing and every public release check moved to
+[Release gate — signed public distribution](./release-signed-distribution.md),
+which also records the decision to distribute Windows through the Microsoft
+Store and what that decision invalidates here.**
 
 This is the Windows/Linux half of the Gate 7 handoff and is the sibling of
 [Gate 7 Beta 1 — macOS evidence](./gate-7-beta1-macos.md). Local packaging is
@@ -357,6 +360,17 @@ platforms:
 
 Do not weaken a signature requirement to turn local packaging into a release
 claim.
+
+On 2026-08-20 the maintainer decided that Windows will ship through the
+Microsoft Store rather than by buying a code-signing certificate. That changes
+the distribution model rather than removing work: a Store submission does not
+take this NSIS installer as-is, a Store app must not carry the in-app updater
+this gate verified, and MSIX containment has to be validated against an app that
+downloads and executes managed binaries, Python virtual environments and Runtime
+Boxes. The Windows evidence above remains exactly what it says it is — a locally
+built, unsigned NSIS installer with a proven silent install and uninstall — and
+is not evidence for a Store submission. The open questions are recorded in
+[Release gate — signed public distribution](./release-signed-distribution.md).
 
 ## Residual limitations
 

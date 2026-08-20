@@ -12,8 +12,9 @@ Ultima revisione: 2026-08-20
 | 4. I/O scientifico standardizzato | Completato localmente su macOS arm64 |
 | 5. Lighthouse single-cell | Completato localmente su macOS arm64 |
 | 6. Nextflow come External Workflow | Completato su macOS arm64, Linux x86_64 e app Windows x86_64 con backend WSL2 Linux x86_64 |
-| 7. Gate Beta 1 | In corso: implementazione ed evidenza locale complete ed eseguite su macOS arm64, Windows x86_64 e Linux x86_64, e verificate in modo incrociato; restano aperti firma, notarizzazione e updater firmato A → B su macchina pulita per ogni piattaforma |
-| 8. MCP dopo il nucleo Beta | Pianificato dopo il Gate 7 |
+| 7. Gate Beta 1 | Completato il 2026-08-20 e ridefinito sul livello desktop locale: implementazione ed evidenza complete, eseguite e verificate in modo incrociato su macOS arm64, Windows x86_64 e Linux x86_64 |
+| 8. MCP dopo il nucleo Beta | Pianificato; non più in coda dietro un acquisto |
+| Gate di rilascio: distribuzione pubblica firmata | Aperto e volutamente non iniziato: firma, notarizzazione, scelta Microsoft Store, installazione su macchina pulita e update firmato A → B |
 
 ## Indicatori
 
@@ -171,15 +172,21 @@ limitazioni sono in
 
 **Difficoltà:** `4/5` · **Codex effort:** `high` · **Windows** · **Linux**
 
-**Stato (2026-08-20): in corso. L'intera matrice desktop locale — macOS arm64,
-Windows x86_64 e Linux x86_64 — è implementata, completamente eseguita e
-verificata in modo incrociato; non è ancora evidenza di una release
-pubblicabile.**
+**Stato (2026-08-20): completato e ridefinito sul livello desktop locale.**
+L'intera matrice — macOS arm64, Windows x86_64 e Linux x86_64 — è implementata,
+completamente eseguita e verificata in modo incrociato. Non è evidenza di una
+release pubblicabile, e non lo diventa: firma, notarizzazione, scelta Microsoft
+Store, installazione su macchina pulita e update firmato A → B sono stati
+spostati nel [Gate di rilascio](./release-signed-distribution.md), perché
+dipendono da credenziali e da una decisione di distribuzione, non da lavoro di
+ingegneria. Tenere aperto un lavoro finito dietro un acquisto non serviva a
+nulla.
 
 - E2E del laboratorio single-cell.
 - E2E Nextflow sia autonomo sia dentro una pipeline.
 - Provare che il medesimo output sia riutilizzabile downstream.
-- Installer firmato, aggiornamento, migrazione, recovery e disinstallazione.
+- Pacchetto locale, aggiornamento, migrazione, recovery e disinstallazione.
+  L'installer *firmato* è stato spostato nel Gate di rilascio.
 - Documentazione pubblica e support matrix basata sulle evidenze.
 
 Il frontend di produzione è ora incorporato nell'app e resta avviabile offline.
@@ -235,9 +242,33 @@ ad-hoc di nuovo verde con `codesign` e `hdiutil`, e `desktop-beta:test:macos`
 è 3/3: il 3/3 precedente valeva solo finché non cambiava codice applicativo, e
 nel frattempo erano cambiati il bridge Rust e tre route.
 
-Restano aperti, su tutte e tre le piattaforme, la firma, la notarizzazione e un
-updater firmato A → B su un pacchetto pubblico installato su macchina pulita.
-Dettagli e handoff: [Gate 7 Beta 1 — macOS evidence](./gate-7-beta1-macos.md).
+Dettagli e handoff: [Gate 7 Beta 1 — macOS evidence](./gate-7-beta1-macos.md) e
+[Gate 7 Beta 1 — Windows and Linux evidence](./gate-7-beta1-windows-linux.md).
+
+### Gate di rilascio: distribuzione pubblica firmata
+
+**Difficoltà:** `3/5` · **Codex effort:** `medium` · **Windows** · **Linux**
+
+**Stato (2026-08-20): aperto e volutamente non iniziato.**
+
+Volutamente senza numero: questo piano numera i gate da 1 a 8, mentre "Gate 8" e
+"Gate 9" indicano già i gate della CI Runtime Box altrove in questa knowledge
+base.
+
+- Credenziali di firma per piattaforma, build della revisione pulita esatta,
+  verifica delle firme.
+- Installazione su una macchina pulita per piattaforma.
+- Update firmato Beta A → Beta B reale, dopo il quale i dati scientifici
+  preesistenti si riaprono intatti.
+- Prima di tutto il resto, la via di distribuzione Windows. Il 2026-08-20 è
+  stato deciso il Microsoft Store invece dell'acquisto di un certificato: cambia
+  il formato del pacchetto, richiede una build senza updater interno, e mette il
+  contenimento MSIX davanti a un'app che scarica ed esegue binari gestiti,
+  ambienti Python e Runtime Box.
+- La metà Linux del contratto di rilascio è ancora da scrivere.
+
+Ambito completo, blocchi e regole di stop:
+[Release gate — signed public distribution](./release-signed-distribution.md).
 
 ### 8. MCP dopo il nucleo Beta
 

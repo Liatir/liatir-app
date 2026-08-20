@@ -499,8 +499,17 @@ remaining limits are in
 
 **Difficulty:** `4/5` · **Codex effort:** `high` · **Windows** · **Linux**
 
-**Status (2026-08-20): in progress; the whole local desktop matrix is complete,
-executed, and now cross-verified.** macOS arm64 was closed on 2026-08-17 with a bundled
+**Status (2026-08-20): complete, and re-scoped to the local desktop matrix.**
+Every platform claimed by Beta 1 has its own package gate, two-process
+migration/recovery/uninstall proof, updater and Job-safety coverage, both
+lighthouse regressions, green quality gates and accurate public documentation,
+all executed and cross-verified. Signing, notarization, the Microsoft Store
+decision, clean-machine installation and a real signed A-to-B update moved to
+the [Release gate — signed public distribution](./release-signed-distribution.md),
+because those depend on credentials and a distribution decision rather than on
+engineering, and holding finished work open behind a purchase served nothing.
+
+macOS arm64 was closed on 2026-08-17 with a bundled
 offline frontend, an explicit native updater with Job protection, actionable
 startup recovery, a verified ad-hoc DMG, two-process
 migration/recovery/uninstall retention, native corrupt-index recovery 1/1,
@@ -522,11 +531,33 @@ transition on a clean machine remain open on every platform. See
 [Gate 7 Beta 1 — Windows and Linux evidence](./gate-7-beta1-windows-linux.md).
 
 Run the complete single-cell and Nextflow verticals, including standalone and
-nested Nextflow execution and downstream output reuse. Close signed installer,
-update, migration, recovery and uninstall evidence for every platform claimed
-by the beta. Finish public installation, first-analysis, limitations and
-troubleshooting documentation. Do not claim unsupported platforms or
+nested Nextflow execution and downstream output reuse. Close migration,
+recovery and uninstall evidence for every platform claimed by the beta. Finish
+public installation, first-analysis, limitations and troubleshooting
+documentation. Do not claim unsupported platforms or
 implemented-but-unverified features.
+
+### Release gate: signed public distribution
+
+**Difficulty:** `3/5` · **Codex effort:** `medium` · **Windows** · **Linux**
+
+**Status (2026-08-20): open, and deliberately not started.**
+
+Deliberately unnumbered: this plan numbers its gates 1 to 8, while "Gate 8" and
+"Gate 9" already name Runtime Box CI gates elsewhere in this knowledge base, so
+a ninth workbench number would be ambiguous in the documents that reference
+both.
+
+Obtain the platform signing credentials, build the exact clean revision with
+them, verify the signatures, install on a clean machine per platform, and prove
+a real signed Beta A to Beta B update after which pre-existing scientific data
+reopens intact. Settle the Windows distribution route first: the maintainer
+chose the Microsoft Store over buying a certificate, which changes the package
+format, requires the in-app updater to be absent from that build, and puts MSIX
+containment in front of an app that downloads and executes managed binaries,
+Python environments and Runtime Boxes. The Linux half of the release contract is
+still unwritten. Full scope, blockers and stop rules in
+[Release gate — signed public distribution](./release-signed-distribution.md).
 
 ### Gate 8: expose controlled MCP access after Beta 1
 
