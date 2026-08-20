@@ -474,7 +474,17 @@ function createQuentaStore() {
   let initializePromise: Promise<void> | null = null;
   let bootstrapPromise: Promise<void> | null = null;
   let conversationEventsPromise: Promise<void> | null = null;
-  let activeRequestsRecovered = false;
+  /**
+   * In-flight guard for `recoverActiveRequests`, not a once-per-page latch.
+   *
+   * A Quenta response is executed and owned by the Rust bridge, so it keeps running when the window
+   * that started it goes away. Recovery used to run exactly once per JavaScript context, which meant
+   * a window that had already visited Quenta could never pick up a response started elsewhere: the
+   * page called `init()`, `init()` called recovery, and recovery returned immediately. Reloading was
+   * the only way to see it, because that built a fresh context. Deduplicating concurrent calls
+   * instead of blocking later ones lets every entry to the page re-check what is actually running.
+   */
+  let activeRequestRecovery: Promise<void> | null = null;
   const enqueueConversationWrite = createSerializedWriteQueue();
   const conversationPersistenceByPath = new Map<string, {
     revision: number;
@@ -598,7 +608,6 @@ function createQuentaStore() {
     const workspaceId = workspaceStore.activeId;
     if (loadedWorkspaceId === workspaceId) return;
     loadedWorkspaceId = workspaceId;
-    activeRequestsRecovered = false;
     conversations = [];
     selectedConversationId = null;
     errorByConversation = {};
@@ -1108,14 +1117,24 @@ function createQuentaStore() {
   }
 
   async function recoverActiveRequests(): Promise<void> {
-    if (activeRequestsRecovered) return;
-    activeRequestsRecovered = true;
+    if (activeRequestRecovery) return activeRequestRecovery;
+    activeRequestRecovery = recoverActiveRequestsOnce();
+    try {
+      await activeRequestRecovery;
+    } finally {
+      activeRequestRecovery = null;
+    }
+  }
+
+  async function recoverActiveRequestsOnce(): Promise<void> {
     const workspaceId = workspaceStore.activeId;
     if (!workspaceId) return;
     const runtime = createQuentaRuntime(settings.config);
     for (const descriptor of storedActiveRequests().filter(
       (request) => request.workspaceId === workspaceId,
     )) {
+      // Already streaming here: re-entering the page must not attach a second reader to it.
+      if (activeRequestsByConversation.has(descriptor.conversationId)) continue;
       const conversation = conversations.find((item) => item.id === descriptor.conversationId);
       if (!conversation) {
         forgetActiveRequest(descriptor.requestId);

@@ -40,6 +40,79 @@ candidates if the rule is ever widened.
 The sources panel hides itself when the list is empty, so a general question now
 shows no sources rather than an empty box.
 
+### Two of the five gated Quenta specs were switched off over a bug, not a gap
+
+Corrected on 2026-08-20. The Windows session recorded all five specs behind
+`LIATIR_E2E_QUENTA_UNIMPLEMENTED` as specifying "behaviour the product does not
+have". That is true of three of them and false of two, and the distinction
+matters because switching a spec off is how a defect stops being visible.
+
+Genuinely unimplemented — the **structured report**, which is a different feature
+from `explain-result`: a document with an executive summary, fixed sections, a
+trailing `Sources: [...]` line and an export action. `LiatirQuentaIntent` has
+only `chat`, `explain-result` and `explain-failure`; `intentFromParam` degrades
+`?intent=report` to plain chat; and `result-report`, "Structured report",
+"Export report" and "Executive summary" have zero occurrences in the frontend.
+Three specs depend on it: the separate report window, the report deep link and
+the cited report generation.
+
+Not unimplemented — chat management (rename, tags, search, deletion) and
+reattaching to an in-flight response after reload. All fourteen selectors the
+chat-management spec uses exist in the product, as do all six the reattach spec
+uses. Run in isolation, each with its own app process, both fail on the same
+thing: **after a reload the selected chat is not restored**. The failure
+screenshot shows Quenta on "Choose a chat" with the conversation present in the
+sidebar and unselected, so the app is wrong and the specs are right.
+
+The selection-persistence code exists — `rememberSelectedConversation`,
+`storedSelectedConversation`, and `newConversation` does call the creating path
+that stores it — so this is a defect rather than a missing feature.
+
+### Fixed: an in-flight response was invisible to every other window
+
+A Quenta response is executed and owned by the Rust bridge — `lia_quenta_ollama_chat`
+with a `lia_quenta_ollama_chat_status` companion — so it keeps running when the
+window that started it is closed. `recoverActiveRequests` nevertheless carried a
+once-per-JavaScript-context latch: the first call set it and every later call
+returned immediately.
+
+The effect, reported by the maintainer and reproduced from the code: open a chat
+in a separate Quenta window, close it, then go to the Quenta page from the main
+window. That window had already visited Quenta, so its latch was closed; the page
+called `init()`, `init()` called recovery, and recovery did nothing. The response
+was still running in Rust and nothing went to ask. Reloading was the only way to
+see it, because a reload builds a fresh context and reopens the latch — so the
+workaround was also what hid the cause.
+
+The latch is now an in-flight promise guard: concurrent calls are deduplicated,
+later calls are not blocked, and every entry to the page re-checks what is
+actually running. Conversations this context is already streaming are skipped so
+re-entry cannot attach a second reader.
+
+### Still failing: reload immediately after starting a response in a new chat
+
+The reattach spec still fails in isolation after that fix, and it is a different
+problem: a reload builds a fresh context, so the latch was never involved. The
+screenshot shows the conversation persisted in the sidebar, no selection, and no
+reattachment.
+
+Ruled out so far: the mock finishing too early (it holds the first chat for three
+seconds), the descriptor being written too late (`rememberActiveRequest` runs
+before the runtime call), and an origin change across the reload (it is
+`location.reload()`, same origin, so `localStorage` survives). Remaining
+suspects, unconfirmed: the recovery filter compares `descriptor.workspaceId`,
+taken from `conversation.workspaceId`, against `workspaceStore.activeId`, and a
+mismatch would silently drop the descriptor; or `chatStatus` returns null and the
+request is forgotten. Confirming needs instrumentation.
+
+Real-world shape, if it is a product defect: reloading immediately after starting
+a response in a brand-new chat may lose the reattachment. Reloading a chat that
+already existed does work, which is why it went unnoticed.
+
+Running the whole `quenta.e2e.mjs` file with the gate open is not a usable
+signal: one genuinely-unimplemented spec leaves the app closed and every later
+spec fails with a bridge error. Isolate before concluding.
+
 ### Still open
 
 A stored chat holds one user message and the same assistant reply three times.
