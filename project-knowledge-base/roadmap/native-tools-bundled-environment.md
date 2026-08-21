@@ -274,10 +274,12 @@ place, so an interrupted first run can never leave a half-extracted prefix that
 looks ready.
 
 Windows cannot build this artifact — only Linux can link a Linux conda prefix —
-so `npm run native-tools:build` on Windows verifies the archive and its digest
-instead of building, and fails the packaging gate if it is absent. Otherwise the
-installer would look perfectly correct and ship an application with no tools at
-all.
+so on Windows the build script verifies the archive and its digest instead of
+building. `npm run native-tools:build` only warns when it is missing, so a
+developer running an unrelated end-to-end suite is not blocked on an artifact
+only Linux can produce; `npm run native-tools:require`, which the packaging gates
+call, fails. Otherwise the installer would look perfectly correct and ship an
+application with no tools at all.
 
 The WSL2 crossing now lives in `src-tauri/src/helpers/wsl.rs`, shared with
 External Workflows rather than copied: which paths may leave Windows, how they
@@ -289,11 +291,62 @@ and what a `bcftools` filter expression never looks like.
 **Not executed on Windows.** The command construction, the path-argument
 selection and the mapping checks are unit-tested and run on every platform;
 whether `wsl.exe` and `wslpath` behave as documented is not something a macOS
-machine can answer. Two things need the Windows gate specifically: the first-run
-unpack, and whether killing `wsl.exe` cancels the tool inside it. External
-Workflows needed a token and a cancel program for that, but only because Nextflow
-detaches itself; a Native Tool is a direct `--exec` child, which should make the
-close of its pipes sufficient — should, not does.
+machine can answer.
+
+### Verifying on Windows
+
+Written down here rather than left to whoever picks this up, because none of it
+can be discovered from the code.
+
+**Prerequisites.** WSL2 with an x86_64 distribution; `node` and
+[pixi](https://pixi.sh) *inside* WSL. On the Windows side the `*conf` scripts
+need Git for Windows and `jq` — and note that the `bash` on the Windows `PATH` is
+the WSL launcher, which `scripts/run-conf.mjs` deliberately does not use.
+
+**Build the archive inside WSL**, since Windows cannot:
+
+```sh
+wsl
+cd /mnt/c/<path>/liatir-stack
+node scripts/build-native-tools-env.mjs
+```
+
+It writes `src-tauri/resources/native-tools/native-tools-linux-64.tar.gz` and its
+sidecar. `/mnt/c` makes the intermediate ~200 MB copy slow; building from a clone
+in the Linux home and copying the two files over is the faster route. The script
+runs every tool from the destination prefix before packing and fails if one does
+not start or reports a version the lock did not pin, so its output is already the
+first piece of evidence. The lock digest must be the same one macOS reports —
+`pixi.lock` is a single file covering both platforms.
+
+**Then the gates**: `npm run test:ui`, then
+`npm run desktop-beta:package:windows` and `npm run desktop-beta:test:windows`.
+Four end-to-end tests now depend on this path — three in
+`00-pipeline-lifecycle.e2e.mjs` (seqkit attribution, fastp cancellation,
+minimap2-to-samtools) and the bundled-tool test in `dependencies.e2e.mjs`, which
+expects `execution === 'wsl2'` there. macOS baseline: `test:ui` 5 passed / 0
+failed / 2 platform-skipped, end-to-end 33 passed / 0 failed / 23 skipped.
+
+**Three questions only Windows can answer.**
+
+1. *The first-run unpack.* It runs in the background at startup. After the first
+   launch `$HOME/.local/share/liatir/native-tools/<lockDigest>/bin/samtools` must
+   exist inside WSL, and the second launch must not redo the work. Interrupt a
+   first launch halfway and confirm the next attempt discards the `.partial`
+   tree rather than finding a half-extracted prefix that looks ready.
+2. *Cancellation.* Killing `wsl.exe` should be enough, because a Native Tool is a
+   direct `--exec` child and the close of its pipes should carry — should, not
+   does. External Workflows needed a token and a cancel program, but only because
+   Nextflow detaches itself. If `ps` inside WSL still shows the tool after a
+   cancellation, that is the finding; record it before designing a remedy.
+3. *Path translation on real input.* A file under a path with spaces
+   (`C:\Users\Nome Cognome\...`) is what the stdin/`IFS= read -r` protocol exists
+   for and has never actually carried. A UNC path must be refused with a clear
+   error rather than passed through.
+
+Do not change the resolution order to make a test pass, and do not switch a test
+off to make the suite green: both would hide exactly what this gate exists to
+find.
 
 ## Still to settle
 
