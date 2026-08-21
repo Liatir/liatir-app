@@ -70,16 +70,11 @@ export const BINARY_RELEASES: Record<string, BinaryReleaseMap> = {
       },
     },
   },
-  'bwa-mem2': {
-    linux: {
-      x86_64: {
-        url: 'https://github.com/bwa-mem2/bwa-mem2/releases/download/v2.3/bwa-mem2-2.3_x64-linux.tar.bz2',
-        archiveType: 'tar.bz2', version: '2.3', binaryName: 'bwa-mem2',
-        sha256: '112f3a3ebf3f8c2377f52d61446ead392c4a98ecf89e7629617d3ed16f4e73cb',
-        sizeBytes: 3_707_862, verifiedAt: '2026-07-09',
-      },
-    },
-  },
+  // No `bwa` entry: the product aligns with lh3/bwa, which publishes source
+  // tarballs only. bwa-mem2 does publish a Linux binary and was listed here, but
+  // under its own name — which no caller, and no dependency requirement, ever
+  // asks for. See `native-tools-bundled-environment.md` for why bwa stays the
+  // supported aligner.
 };
 
 export function getRelease(

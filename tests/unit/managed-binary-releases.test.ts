@@ -10,6 +10,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
+import { DEP_REQUIREMENTS } from '../../frontend/src/lib/data/dep-requirements';
 import {
   BINARY_RELEASES,
   getRelease,
@@ -46,7 +47,29 @@ describe('managed binary release registry', () => {
   it('does not advertise upstream assets that do not exist', () => {
     expect(getRelease('minimap2', 'macos', 'arm64')).toBeNull();
     expect(getRelease('minimap2', 'macos', 'x86_64')).toBeNull();
-    expect(getRelease('bwa-mem2', 'macos', 'arm64')).toBeNull();
-    expect(getRelease('bwa-mem2', 'macos', 'x86_64')).toBeNull();
+    // lh3/bwa ships source tarballs only, on every platform.
+    for (const platform of ['macos', 'linux', 'windows'] as const) {
+      for (const arch of ['arm64', 'x86_64'] as const) {
+        expect(getRelease('bwa', platform, arch)).toBeNull();
+      }
+    }
+  });
+
+  /**
+   * bwa-mem2 was advertised here for two months under its own name while every
+   * caller, and the dependency catalogue, asked for `bwa`. The Install button
+   * was therefore attached to a name nothing would ever resolve: it could not
+   * have worked, and no test noticed, because each half was self-consistent.
+   *
+   * A managed release is only reachable through a declared requirement, so
+   * requiring the key to exist in that catalogue is what makes the entry real.
+   */
+  it('only advertises binaries the dependency catalogue actually declares', () => {
+    const declared = new Set(
+      Object.values(DEP_REQUIREMENTS).map((requirement) => requirement.binary),
+    );
+    for (const binary of Object.keys(BINARY_RELEASES)) {
+      expect(declared).toContain(binary);
+    }
   });
 });
