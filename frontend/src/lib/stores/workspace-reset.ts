@@ -19,6 +19,7 @@ import { liaPluginsStore } from './lia-plugins.svelte';
 import { executionRuns } from './executionRuns.svelte';
 import { externalWorkflowsStore } from './externalWorkflows.svelte';
 import { reconcileExecutionResults } from '$lib/execution/finalization';
+import { mcpController } from '$lib/mcp/mcp-controller.svelte';
 
 setResetFn((scope) => {
   // 'runs' is a partial reset: clear what a run produced (results, run state, output files) while
@@ -41,6 +42,7 @@ setResetFn((scope) => {
   analysisRuns.reset();
   liaPluginsStore.reset();
   externalWorkflowsStore.reset();
+  mcpController.reset();
 });
 
 // Same injection pattern: a brand-new workspace is seeded with demo files, but the workspace store
@@ -54,4 +56,5 @@ setActivateFn(async () => {
   if (!workspaceStore.activeId) return;
   await executionRuns.init();
   await reconcileExecutionResults();
+  await mcpController.activate();
 });

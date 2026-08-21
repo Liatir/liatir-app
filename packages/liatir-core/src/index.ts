@@ -620,6 +620,11 @@ export * from "./execution";
 // Saved workflow definitions and their shared direct/pipeline contract.
 export * from "./external-workflows";
 
+// Controlled local Model Context Protocol surface.
+// Keep the emitted ESM specifier Node-compatible because the native browser
+// bridge is compiled with NodeNext module resolution.
+export * from "./mcp.js";
+
 // Built-in AI model catalog — the single source of truth shared by the app UI
 // and the plugin API (@liatir/api Liatir.ai). Model ids, metadata, and runtime
 // specs live here so neither side hand-duplicates the list.

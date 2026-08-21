@@ -7,6 +7,7 @@
 	import Toast from '$lib/components/ui/Toast.svelte';
 	import InstallBanner from '$lib/components/ui/InstallBanner.svelte';
 	import StartupCleanupBanner from '$lib/components/ui/StartupCleanupBanner.svelte';
+	import McpAuthorizationDialog from '$lib/components/mcp/McpAuthorizationDialog.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import { liatir } from '$lib/api';
 	import { LIATIR_SUPPORT_URL } from '$lib/_constants';
@@ -22,6 +23,7 @@
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { executionRuns } from '$lib/stores/executionRuns.svelte';
 	import { reconcileExecutionResults } from '$lib/execution/finalization';
+	import { mcpController } from '$lib/mcp/mcp-controller.svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -87,6 +89,7 @@
 				}, 2000);
 			}
 			await pipelineStore.init();
+			await mcpController.init();
 			initialized = true;
 		} catch (error) {
 			startupError = error instanceof Error ? error.message : String(error);
@@ -122,6 +125,7 @@
 
 	onDestroy(() => {
 		closeGuardUnlisten?.();
+		mcpController.destroy();
 		if (jobRefreshInterval) clearInterval(jobRefreshInterval);
 	});
 </script>
@@ -187,6 +191,7 @@
 {/if}
 
 <ConfirmDialog />
+<McpAuthorizationDialog />
 
 
 <!-- <QuentaFloatingButton/> -->

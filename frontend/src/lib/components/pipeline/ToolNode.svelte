@@ -23,6 +23,7 @@
   import { commitNodeDataAfterUpdate, getPipelineNodeDataContext } from './scripts/node-data-commit';
   import { artifactCompatibility, artifactValidationLabel } from '$lib/scientific-artifacts';
   import type { LiatirArtifactRequirement } from '@liatir/core';
+  import { compatibleRunnableAIModels } from '$lib/ai/tool-models';
 
   let { id, data }: NodeProps<Node<ToolNodeData>> = $props();
 
@@ -36,17 +37,7 @@
 
   const inputKeys = $derived(def ? Object.entries(def.inputSchema) : []);
   const aiModelOptions = $derived(
-    aiModelsStore.runnableModels
-      .filter((model) => {
-        const supportedModelIds = def?.type === 'ai-tool'
-          ? ((def as typeof def & { supportedModelIds?: string[] })?.supportedModelIds ?? [])
-          : [];
-        if (supportedModelIds.length > 0) return supportedModelIds.includes(model.id);
-        const capabilities = def?.type === 'ai-tool'
-          ? ((def as typeof def & { supportedCapabilities?: string[] })?.supportedCapabilities ?? [])
-          : [];
-        return capabilities.length === 0 || capabilities.some((capability) => model.capabilities.includes(capability as any));
-      })
+    compatibleRunnableAIModels(def, aiModelsStore.runnableModels)
       .map((model) => ({
         value: model.id,
         label: model.name,

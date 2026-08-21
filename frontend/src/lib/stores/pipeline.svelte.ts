@@ -3,6 +3,7 @@ import { liatir } from '$lib/api';
 import { appStorage } from './app-storage';
 import { getDataPrefix, workspaceStore } from './workspace.svelte';
 import { dataFiles } from './dataFiles.svelte';
+import { aiModelsStore } from './aiModels.svelte';
 import { liaPluginsStore } from './lia-plugins.svelte';
 import { apiConnections, sendApiRequest } from './apiConnections.svelte';
 import { analysisRuns } from './analysisRuns.svelte';
@@ -28,7 +29,11 @@ import {
   isLiatirExecutionTerminalStatus,
   type JsonValue,
   type LiatirExecutionIdentity,
+  type LiatirExecutionInitiator,
+  type LiatirExecutionRecord,
   type LiatirExecutionRunKind,
+  type LiatirMcpPipelineInputDescriptor,
+  type LiatirMcpPipelineInputs,
 } from '@liatir/core';
 import { externalWorkflowsStore } from './externalWorkflows.svelte';
 import { createAsyncStoreInitializer } from './async-store-initializer';
@@ -38,6 +43,11 @@ import {
   throwIfRunCancelled,
 } from '$lib/pipeline/cancellation';
 import { ExternalWorkflowRunError } from '$lib/external-workflows/nextflow';
+import {
+  mcpPipelineInputSchema,
+  resolveMcpPipelineInputs,
+  type ResolvedMcpPipelineInputs,
+} from '$lib/mcp/pipeline-inputs';
 
 interface PipelineStepRecord {
   label: string;
@@ -116,6 +126,14 @@ interface ActivePipelineExecution {
   runId: string;
   controller: AbortController;
   childJobIds: Set<string>;
+}
+
+interface PipelineRunOptions {
+  pipelineId?: string | null;
+  pipelineName?: string;
+  runId?: string;
+  initiator?: LiatirExecutionInitiator;
+  mcpInputs?: ResolvedMcpPipelineInputs;
 }
 
 const DRAFT_PIPELINE_KEY = '__draft__';
@@ -446,6 +464,7 @@ function wouldCreateCycle(
 function createPipelineStore() {
   let runtimeByPipeline = $state(new Map<string, PipelineRuntimeState>());
   const activeExecutions = new Map<string, ActivePipelineExecution>();
+  const pendingCancellations = new Set<string>();
 
   let savedPipelines = $state<SavedPipeline[]>([]);
   let pipelineName = $state('Untitled Pipeline');
@@ -642,6 +661,7 @@ function createPipelineStore() {
     onLog: (line: string) => void,
     parentContext: AIPipelineRunContext,
     pipelineStack: string[] = [],
+    mcpInputs?: ResolvedMcpPipelineInputs,
   ): Promise<RunOutputFile[]> {
     const { nodes: graphNodes, edges: graphEdges } = executableGraph(nodes, edges);
     const localStates = new Map<string, NodeRunState>();
@@ -681,7 +701,10 @@ function createPipelineStore() {
         const resolved = resolveInputs(
           graphNodes,
           localStates,
-          inputsWithDefaults(entry.definition, node.data?.inputs as Record<string, string> ?? {})
+          inputsWithDefaults(entry.definition, {
+            ...(node.data?.inputs as Record<string, string> ?? {}),
+            ...(mcpInputs?.nodeInputs.get(nestedNodeId) ?? {}),
+          })
         );
         const childIdentity = await beginPipelineChild(parentContext.execution, {
           runKind: executionKindForStep(entry.definition.type) as Exclude<LiatirExecutionRunKind, 'pipeline'>,
@@ -775,16 +798,18 @@ function createPipelineStore() {
         }
       } else if (node.type === 'variable') {
         const d = node.data as unknown as VariableNodeData;
+        const value = mcpInputs?.variables.get(nestedNodeId) ?? d.value ?? '';
         const identity = await beginPipelineChild(parentContext.execution, {
           runKind: 'pipeline-step', nodeId: nestedNodeId, entityId: 'variable',
-          label: nodeDisplayLabel(node, 'Variable'), params: { value: d.value ?? '' },
+          label: nodeDisplayLabel(node, 'Variable'), params: { value },
         });
-        patch({ executionRunId: identity.runId, status: 'done', outputValues: { value: d.value ?? '' } });
+        patch({ executionRunId: identity.runId, status: 'done', outputValues: { value } });
         await executionRuns.finish(identity.runId, 'done');
       } else if (node.type === 'math') {
         const d = node.data as unknown as MathNodeData;
-        const a = Number(resolveRef(d.literalA ?? '', graphNodes, localStates) || 0);
-        const b = Number(resolveRef(d.literalB ?? '', graphNodes, localStates) || 0);
+        const overrides = mcpInputs?.nodeInputs.get(nestedNodeId) ?? {};
+        const a = Number(resolveRef(overrides.literalA ?? d.literalA ?? '', graphNodes, localStates) || 0);
+        const b = Number(resolveRef(overrides.literalB ?? d.literalB ?? '', graphNodes, localStates) || 0);
         const res = computeMath(d.operation, a, b);
         const identity = await beginPipelineChild(parentContext.execution, {
           runKind: 'pipeline-step', nodeId: nestedNodeId, entityId: 'math',
@@ -794,12 +819,14 @@ function createPipelineStore() {
         await executionRuns.finish(identity.runId, 'done');
       } else if (node.type === 'condition') {
         const d = node.data as unknown as ConditionNodeData;
-        const value = resolveRef(d.valueRef ?? '', graphNodes, localStates);
+        const overrides = mcpInputs?.nodeInputs.get(nestedNodeId) ?? {};
+        const effectiveData = { ...d, ...overrides } as ConditionNodeData;
+        const value = resolveRef(effectiveData.valueRef ?? '', graphNodes, localStates);
         const identity = await beginPipelineChild(parentContext.execution, {
           runKind: 'pipeline-step', nodeId: nestedNodeId, entityId: 'condition',
           label: nodeDisplayLabel(node, 'Condition'), params: { value },
         });
-        const evaluated = evaluateConditionNode(d, value);
+        const evaluated = evaluateConditionNode(effectiveData, value);
         if (evaluated.error) {
           patch({ executionRunId: identity.runId, status: 'error', error: evaluated.error });
           await executionRuns.finish(identity.runId, 'error', evaluated.error);
@@ -813,11 +840,21 @@ function createPipelineStore() {
         for (const s of dead) { skipped.add(s); localStates.set(s, { ...initNodeState(), status: 'skipped' }); }
       } else if (node.type === 'api-request') {
         const d = node.data as unknown as ApiRequestNodeData;
+        const effectiveNode = {
+          ...node,
+          data: {
+            ...node.data,
+            paramOverrides: {
+              ...(d.paramOverrides ?? {}),
+              ...(mcpInputs?.apiParameters.get(nestedNodeId) ?? {}),
+            },
+          },
+        } as Node;
         const identity = await beginPipelineChild(parentContext.execution, {
           runKind: 'api-request', nodeId: nestedNodeId,
           entityId: d.requestId ?? 'missing-request',
           label: nodeDisplayLabel(node, d.requestName || 'API Request'),
-          params: (d.paramOverrides ?? {}) as JsonValue,
+          params: (effectiveNode.data?.paramOverrides ?? {}) as JsonValue,
         });
         patch({
           executionRunId: identity.runId,
@@ -826,7 +863,7 @@ function createPipelineStore() {
         });
         try {
           const result = await executeApiRequestNode(
-            node,
+            effectiveNode,
             graphNodes,
             localStates,
             parentContext.signal,
@@ -897,6 +934,7 @@ function createPipelineStore() {
             onLog,
             subContext,
             [...pipelineStack, d.pipelineId],
+            mcpInputs,
           );
           throwIfRunCancelled(parentContext.signal);
           patch({ status: 'done', outputFiles: subFiles });
@@ -964,11 +1002,22 @@ function createPipelineStore() {
       });
     },
 
+    mcpInputSchema(id: string): LiatirMcpPipelineInputDescriptor[] {
+      const saved = savedPipelines.find((candidate) => candidate.id === id);
+      if (!saved) throw new Error(`Saved pipeline not found: ${id}`);
+      return mcpPipelineInputSchema(saved, savedPipelines, aiModelsStore.runnableModels);
+    },
+
     async init() {
       await initializer.run(async (isCurrent) => {
         const api = liatir();
         if (!api) return;
-        await externalWorkflowsStore.init();
+        await Promise.all([
+          externalWorkflowsStore.init(),
+          liaPluginsStore.init(),
+          apiConnections.init(),
+          aiModelsStore.init(),
+        ]);
         if (!isCurrent()) return;
         try {
           if (await appStorage.exists(getFile())) {
@@ -1032,6 +1081,7 @@ function createPipelineStore() {
       clearTimeout(persistTimer);
       for (const execution of activeExecutions.values()) execution.controller.abort();
       activeExecutions.clear();
+      pendingCancellations.clear();
       initializer.reset();
       savedPipelines = [];
       pipelineName = 'Untitled Pipeline';
@@ -1045,6 +1095,7 @@ function createPipelineStore() {
     resetRuntime() {
       for (const execution of activeExecutions.values()) execution.controller.abort();
       activeExecutions.clear();
+      pendingCancellations.clear();
       runtimeByPipeline = new Map();
       schedulePersist();
     },
@@ -1185,16 +1236,20 @@ function createPipelineStore() {
       await persist();
     },
 
-    async run(nodes: Node[], edges: Edge[]) {
-      const runPipelineId = pipelineId;
-      const runPipelineName = pipelineName || 'Pipeline';
+    async run(
+      nodes: Node[],
+      edges: Edge[],
+      options: PipelineRunOptions = {},
+    ): Promise<LiatirExecutionRecord | null> {
+      const runPipelineId = options.pipelineId === undefined ? pipelineId : options.pipelineId;
+      const runPipelineName = (options.pipelineName ?? pipelineName) || 'Pipeline';
       const runKey = runtimeKeyFor(runPipelineId);
       const existingRuntime = runtimeFor(runKey, runPipelineId, runPipelineName);
       const { nodes: graphNodes, edges: graphEdges } = executableGraph(nodes, edges);
-      if (existingRuntime.running || graphNodes.length === 0) return;
+      if (existingRuntime.running || graphNodes.length === 0) return null;
       const api = liatir();
       const workspaceId = workspaceStore.activeId;
-      if (!api || !workspaceId) return;
+      if (!api || !workspaceId) return null;
       await Promise.all([
         dataFiles.init(),
         apiConnections.init(),
@@ -1204,13 +1259,14 @@ function createPipelineStore() {
 
       const fresh = new Map<string, NodeRunState>();
       for (const n of graphNodes) fresh.set(n.id, initNodeState());
-      const pipelineRunId = crypto.randomUUID();
+      const pipelineRunId = options.runId ?? crypto.randomUUID();
       const rootIdentity = createLiatirRootExecutionIdentity({
         runId: pipelineRunId,
         runKind: 'pipeline',
         workspaceId,
         pipelineId: runPipelineId,
         entityId: runPipelineId ?? 'draft-pipeline',
+        initiator: options.initiator,
       });
       await executionRuns.begin({
         identity: rootIdentity,
@@ -1226,6 +1282,8 @@ function createPipelineStore() {
         childJobIds: new Set(),
       };
       activeExecutions.set(runKey, execution);
+      const cancellationKey = `${runKey}:${pipelineRunId}`;
+      if (pendingCancellations.delete(cancellationKey)) controller.abort();
       setRuntime(runKey, {
         pipelineId: runPipelineId,
         pipelineName: runPipelineName,
@@ -1317,7 +1375,10 @@ function createPipelineStore() {
           const resolved = resolveInputs(
             graphNodes,
             states(),
-            inputsWithDefaults(entry.definition, node.data?.inputs as Record<string, string> ?? {})
+            inputsWithDefaults(entry.definition, {
+              ...(node.data?.inputs as Record<string, string> ?? {}),
+              ...(options.mcpInputs?.nodeInputs.get(nodeId) ?? {}),
+            })
           );
           await executionRuns.setPayload(childIdentity.runId, {
             inputs: Object.values(resolved),
@@ -1407,22 +1468,27 @@ function createPipelineStore() {
         // ── Variable node ──────────────────────────────────────────────────────
         } else if (node.type === 'variable') {
           const d = node.data as unknown as VariableNodeData;
-          patchRunState(nodeId, { status: 'done', outputValues: { value: d.value ?? '' } });
+          const value = options.mcpInputs?.variables.get(nodeId) ?? d.value ?? '';
+          patchRunState(nodeId, { status: 'done', outputValues: { value } });
+          await executionRuns.setPayload(childIdentity.runId, { params: { value } });
           await executionRuns.finish(childIdentity.runId, 'done');
 
         // ── Math node ──────────────────────────────────────────────────────────
         } else if (node.type === 'math') {
           const d = node.data as unknown as MathNodeData;
-          const a = Number(resolveRef(d.literalA ?? '', graphNodes, states()) || 0);
-          const b = Number(resolveRef(d.literalB ?? '', graphNodes, states()) || 0);
+          const overrides = options.mcpInputs?.nodeInputs.get(nodeId) ?? {};
+          const a = Number(resolveRef(overrides.literalA ?? d.literalA ?? '', graphNodes, states()) || 0);
+          const b = Number(resolveRef(overrides.literalB ?? d.literalB ?? '', graphNodes, states()) || 0);
           patchRunState(nodeId, { status: 'done', outputValues: { result: String(computeMath(d.operation, a, b)) } });
           await executionRuns.finish(childIdentity.runId, 'done');
 
         // ── Condition node ─────────────────────────────────────────────────────
         } else if (node.type === 'condition') {
           const d = node.data as unknown as ConditionNodeData;
-          const value = resolveRef(d.valueRef ?? '', graphNodes, states());
-          const evaluated = evaluateConditionNode(d, value);
+          const overrides = options.mcpInputs?.nodeInputs.get(nodeId) ?? {};
+          const effectiveData = { ...d, ...overrides } as ConditionNodeData;
+          const value = resolveRef(effectiveData.valueRef ?? '', graphNodes, states());
+          const evaluated = evaluateConditionNode(effectiveData, value);
           if (evaluated.error) {
             patchRunState(nodeId, { status: 'error', error: evaluated.error });
             await executionRuns.finish(childIdentity.runId, 'error', evaluated.error);
@@ -1488,6 +1554,7 @@ function createPipelineStore() {
               },
               subContext,
               runPipelineId ? [runPipelineId, sub.id] : [sub.id],
+              options.mcpInputs,
             );
             throwIfRunCancelled(controller.signal);
             patchRunState(nodeId, { status: 'done', outputFiles: subFiles });
@@ -1510,6 +1577,16 @@ function createPipelineStore() {
         // ── API Request node ───────────────────────────────────────────────────
         } else if (node.type === 'api-request') {
           const d = node.data as unknown as ApiRequestNodeData;
+          const effectiveNode = {
+            ...node,
+            data: {
+              ...node.data,
+              paramOverrides: {
+                ...(d.paramOverrides ?? {}),
+                ...(options.mcpInputs?.apiParameters.get(nodeId) ?? {}),
+              },
+            },
+          } as Node;
           if (!d.requestId) {
             patchRunState(nodeId, { status: 'error', error: 'No request selected' });
             await executionRuns.finish(childIdentity.runId, 'error', 'No request selected');
@@ -1522,9 +1599,12 @@ function createPipelineStore() {
             break;
           }
           patchRunState(nodeId, { status: 'running', logs: [`${req.method} ${req.url}`] });
+          await executionRuns.setPayload(childIdentity.runId, {
+            params: (effectiveNode.data?.paramOverrides ?? {}) as JsonValue,
+          });
           try {
             const result = await executeApiRequestNode(
-              node,
+              effectiveNode,
               graphNodes,
               states(),
               controller.signal,
@@ -1654,9 +1734,47 @@ function createPipelineStore() {
             console.error('[pipeline] failed to finalize execution result', error);
           }
         }
+        pendingCancellations.delete(cancellationKey);
         const active = activeExecutions.get(runKey);
         if (active?.runId === pipelineRunId) activeExecutions.delete(runKey);
       }
+      return executionRuns.byId(pipelineRunId);
+    },
+
+    async runSavedPipeline(
+      id: string,
+      expectedRevision: string,
+      runId: string,
+      initiator: LiatirExecutionInitiator,
+      expectedInputSchema: LiatirMcpPipelineInputDescriptor[],
+      inputs: LiatirMcpPipelineInputs,
+    ): Promise<LiatirExecutionRecord> {
+      const saved = savedPipelines.find((candidate) => candidate.id === id);
+      if (!saved) throw new Error(`Saved pipeline not found: ${id}`);
+      if (String(saved.updatedAt) !== expectedRevision) {
+        throw new Error('The saved pipeline changed after this MCP run was requested.');
+      }
+      if (executableGraph(saved.nodes, saved.edges).nodes.length === 0) {
+        throw new Error('The saved pipeline has no executable steps.');
+      }
+      await Promise.all([dataFiles.init(), aiModelsStore.init()]);
+      const mcpInputs = resolveMcpPipelineInputs(
+        saved,
+        savedPipelines,
+        expectedInputSchema,
+        inputs,
+        dataFiles.files,
+        aiModelsStore.runnableModels,
+      );
+      const result = await this.run(saved.nodes, saved.edges, {
+        pipelineId: saved.id,
+        pipelineName: saved.name,
+        runId,
+        initiator,
+        mcpInputs,
+      });
+      if (!result) throw new Error('The saved pipeline could not start.');
+      return result;
     },
 
     async cancel(id: string | null = pipelineId) {
@@ -1673,6 +1791,18 @@ function createPipelineStore() {
           api.invoke('lia_jobs_kill', { jobId }).catch(() => false)
         )
       );
+    },
+
+    async cancelRun(id: string, runId: string): Promise<boolean> {
+      const key = runtimeKeyFor(id);
+      const execution = activeExecutions.get(key);
+      if (!execution) {
+        pendingCancellations.add(`${key}:${runId}`);
+        return true;
+      }
+      if (execution.runId !== runId) return false;
+      await this.cancel(id);
+      return true;
     },
 
     resetStates(nodeIds: string[]) {

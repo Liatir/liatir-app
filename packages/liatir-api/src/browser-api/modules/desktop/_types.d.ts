@@ -13,6 +13,7 @@ import type { AutostartInterface } from "../rs/autostart/_types";
 import type { BadgeInterface } from "../rs/badge/_types";
 import type { ContextMenuInterface } from "../rs/contextMenu/_types";
 import type { GlobalVariablesInterface } from "../rs/globalVariables/_types";
+import type { McpInterface } from "../rs/mcp/_types";
 export type DesktopInterface = {
     notifications: NotificationsInterface;
     clipboard: ClipboardInterface;
@@ -35,4 +36,6 @@ export type DesktopInterface = {
         listener?: EventListenerOrEventListenerObject;
     };
     globalVariables: GlobalVariablesInterface;
+    /** Controlled local MCP server administration. Not available to .lia plugins. */
+    mcp: McpInterface;
 };

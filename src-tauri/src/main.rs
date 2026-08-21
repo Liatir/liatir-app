@@ -60,6 +60,7 @@ fn main() {
   builder = builder.manage(bridge::app_updates::AppUpdateState::new());
   builder = builder.manage(bridge::managed_bins::DownloadRegistry::new());
   builder = builder.manage(bridge::plugin_dev::PluginDevRegistry::new());
+  builder = builder.manage(bridge::mcp::McpRuntimeState::new());
 
   builder = builder.manage(CloseGuard {
     closing: AtomicBool::new(false),
@@ -133,6 +134,15 @@ fn main() {
     tauri::async_runtime::spawn(async move {
         if let Err(e) = bridge::ipc_server::start(ipc_handle).await {
             eprintln!("[ipc_server] failed to start: {e}");
+        }
+    });
+
+    // MCP has its own narrow token and endpoint; it never enters the broad
+    // plugin IPC dispatcher above.
+    let mcp_handle = app.handle().clone();
+    tauri::async_runtime::spawn(async move {
+        if let Err(e) = bridge::mcp::start(mcp_handle).await {
+            eprintln!("[mcp] failed to start: {e}");
         }
     });
 
@@ -480,6 +490,22 @@ fn main() {
       lia_app_mkdir,
       lia_app_remove,
       lia_app_migrate,
+
+      // controlled local MCP administration (never exposed to plugin IPC)
+      lia_mcp_status,
+      lia_mcp_set_enabled,
+      lia_mcp_rotate_token,
+      lia_mcp_allow_pipeline,
+      lia_mcp_revoke_pipeline,
+      lia_mcp_set_read_results,
+      lia_mcp_allow_data_file,
+      lia_mcp_revoke_data_file,
+      lia_mcp_pending_requests,
+      lia_mcp_requests,
+      lia_mcp_resolve_authorization,
+      lia_mcp_mark_started,
+      lia_mcp_finish_run,
+      lia_mcp_audit_records,
 
       // file utilities
       lia_file_size,

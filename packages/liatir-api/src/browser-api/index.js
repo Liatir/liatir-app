@@ -1327,6 +1327,35 @@ function buildExternalWorkflows(core) {
   };
 }
 
+// src-ts/modules/rs/mcp/_main.ts
+function buildMcp(core) {
+  return {
+    status: () => core.invoke("lia_mcp_status"),
+    setEnabled: (enabled) => core.invoke("lia_mcp_set_enabled", { enabled }),
+    rotateToken: () => core.invoke("lia_mcp_rotate_token"),
+    allowPipeline: (workspaceId, pipelineId, inputs) => core.invoke("lia_mcp_allow_pipeline", {
+      workspaceId,
+      pipelineId,
+      inputs
+    }),
+    revokePipeline: (workspaceId, pipelineId) => core.invoke("lia_mcp_revoke_pipeline", { workspaceId, pipelineId }),
+    setReadResults: (enabled) => core.invoke("lia_mcp_set_read_results", { enabled }),
+    allowDataFile: (workspaceId, artifactId) => core.invoke("lia_mcp_allow_data_file", { workspaceId, artifactId }),
+    revokeDataFile: (workspaceId, artifactId) => core.invoke("lia_mcp_revoke_data_file", { workspaceId, artifactId }),
+    pendingRequests: () => core.invoke("lia_mcp_pending_requests"),
+    requests: () => core.invoke("lia_mcp_requests"),
+    resolveAuthorization: (runId, approved) => core.invoke("lia_mcp_resolve_authorization", { runId, approved }),
+    markStarted: (runId) => core.invoke("lia_mcp_mark_started", { runId }),
+    finishRun: (runId, status, resultId, error) => core.invoke("lia_mcp_finish_run", {
+      runId,
+      status,
+      resultId: resultId ?? null,
+      error: error ?? null
+    }),
+    auditRecords: () => core.invoke("lia_mcp_audit_records")
+  };
+}
+
 // src-ts/modules/qc/fastqc/_main.ts
 var MODULE = "fastqc.wasm";
 function parentDir(filePath) {
@@ -1489,7 +1518,8 @@ function buildQc(core) {
       autostart: buildAutostart(core),
       badge: buildBadge(core),
       contextMenu: buildContextMenu(core),
-      globalVariables: buildGlobVar(core)
+      globalVariables: buildGlobVar(core),
+      mcp: buildMcp(core)
     },
     jobs: buildJobs(core),
     deps: buildDeps(core),
@@ -1541,6 +1571,7 @@ export {
   buildFs,
   buildGlobVar,
   buildJobs,
+  buildMcp,
   buildMenu,
   buildNetwork,
   buildNotifications,

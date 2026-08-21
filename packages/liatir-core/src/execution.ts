@@ -36,6 +36,16 @@ export type LiatirExecutionTerminalStatus = Extract<
 /** Whether this run owns a Result, contributes to its parent, or has no Result. */
 export type LiatirExecutionResultPolicy = "own" | "parent" | "none";
 
+/** The actor that requested a root run. Child runs inherit it unchanged. */
+export type LiatirExecutionInitiator =
+  | { kind: "user" }
+  | {
+      kind: "mcp";
+      requestId: string;
+      clientName: string;
+      clientVersion?: string;
+    };
+
 /**
  * Stable identity allocated before work starts and copied unchanged into Jobs,
  * Results and artifact provenance.
@@ -52,6 +62,7 @@ export interface LiatirExecutionIdentity {
   externalWorkflowRunId?: string;
   nodeId?: string;
   entityId?: string;
+  initiator?: LiatirExecutionInitiator;
 }
 
 /** External workflows have their own stable identity, whether direct or nested. */
@@ -99,6 +110,7 @@ export interface LiatirRootExecutionIdentityInput {
   workspaceId: string;
   pipelineId?: string | null;
   entityId?: string;
+  initiator?: LiatirExecutionInitiator;
 }
 
 export interface LiatirChildExecutionIdentityInput {
@@ -133,6 +145,7 @@ export function createLiatirRootExecutionIdentity(
     rootRunId: input.runId,
     ...(input.pipelineId !== undefined ? { pipelineId: input.pipelineId } : {}),
     ...(input.entityId ? { entityId: input.entityId } : {}),
+    ...(input.initiator ? { initiator: input.initiator } : {}),
   };
 
   if (input.runKind === "pipeline") identity.pipelineRunId = input.runId;
@@ -168,6 +181,7 @@ export function createLiatirChildExecutionIdentity(
       : {}),
     ...(input.nodeId ? { nodeId: input.nodeId } : {}),
     ...(input.entityId ? { entityId: input.entityId } : {}),
+    ...(parent.initiator ? { initiator: parent.initiator } : {}),
   };
 }
 
@@ -222,6 +236,10 @@ export function assertLiatirExecutionIdentity(
   }
   if (identity.runKind === "external-workflow-step" && !identity.externalWorkflowRunId) {
     throw new Error("An external-workflow-step identity requires externalWorkflowRunId.");
+  }
+  if (identity.initiator?.kind === "mcp") {
+    requireNonEmpty(identity.initiator.requestId, "initiator.requestId");
+    requireNonEmpty(identity.initiator.clientName, "initiator.clientName");
   }
 }
 

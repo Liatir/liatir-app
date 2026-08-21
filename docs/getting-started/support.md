@@ -2,7 +2,9 @@
 
 Liatir Beta focuses on one coherent local laboratory path: inspect data, run a
 single-cell AI workflow, inspect and reuse its outputs, and run a saved
-Nextflow workflow either directly or inside a Liatir pipeline.
+Nextflow workflow either directly or inside a Liatir pipeline. Optional
+[Local MCP](/mcp/overview) can request exact saved pipeline revisions while
+Liatir remains in control of authorization, Jobs and Results.
 
 ## Current limits
 
@@ -75,6 +77,17 @@ Reopen Liatir and inspect **Jobs** and **Results**. Liatir reconciles interrupte
 runs instead of leaving them falsely running. Nextflow `-resume` is an explicit
 expert action and is allowed only with a compatible saved definition and source
 revision.
+
+### An MCP client cannot connect or start a pipeline
+
+Open **Settings → Local MCP** and confirm the server is on. Copy the current
+Server URL and bearer token again: rotating the token invalidates the old one,
+and the local port can change when Liatir restarts. Save and explicitly allow
+the pipeline's current revision. Then bring Liatir to the foreground to approve
+the individual request. If a file input is rejected, allow that registered file
+under **Source files from Data** and pass its artifact ID rather than a path. If
+Result listing is unavailable, review the separate **Allow Results** permission.
+See [Local MCP](/mcp/overview) for the complete safety boundary.
 
 ## Report a problem
 

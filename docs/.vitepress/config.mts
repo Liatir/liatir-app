@@ -71,6 +71,7 @@ export default defineConfig({
         { text: 'AI Models', link: '/ai/guide' },
         { text: 'Plugins', link: '/plugins/overview' },
         { text: 'Pipelines', link: '/pipeline/overview' },
+        { text: 'Local MCP', link: '/mcp/overview' },
         { text: 'Donate', link: '/donate' },
         { text: 'Brand assets', link: '/branding' },
       ] },
@@ -160,6 +161,13 @@ export default defineConfig({
         collapsed: true,
         items: [
           { text: 'Overview', link: '/pipeline/overview' },
+        ],
+      },
+      {
+        text: 'Local MCP',
+        collapsed: true,
+        items: [
+          { text: 'Connect a client', link: '/mcp/overview' },
         ],
       },
       {

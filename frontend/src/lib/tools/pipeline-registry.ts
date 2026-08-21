@@ -118,11 +118,23 @@ export function autoConnectInputs(
 async function runFastqcStep(
   inputs: Record<string, string>,
   _outputDir: string,
-  onLog: (l: string) => void
+  onLog: (l: string) => void,
+  context?: AIRunContext,
 ): Promise<StepResult> {
   const api = liatir()!;
   onLog(`$ fastqc ${basename(inputs.input)}`);
-  const output = await api.qc.fastqc.run({ input: inputs.input }) as ToolOutput;
+  const jobId = context?.runKind === 'pipeline-step' ? crypto.randomUUID() : null;
+  if (jobId) context?.onJobId?.(jobId);
+  const output = await api.qc.fastqc.run(
+    { input: inputs.input },
+    jobId && context ? {
+      jobId,
+      workspaceId: context.execution.workspaceId,
+      jobLabel: context.label,
+      jobKind: 'pipeline-step',
+      metadata: aiRunMetadata(context),
+    } : undefined,
+  ) as ToolOutput;
   return { outputFiles: [], output };
 }
 

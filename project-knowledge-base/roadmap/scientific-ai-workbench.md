@@ -1,6 +1,6 @@
 # Scientific AI Workbench Product Plan
 
-Last reviewed: 2026-08-14
+Last reviewed: 2026-08-21
 
 This document is the canonical product direction and execution sequence for
 Liatir during and after the current Runtime Box CI foundation program. It turns
@@ -39,7 +39,11 @@ downstream reuse and a no-code preset. Gate 6 has completed the first saved
 Nextflow External Workflow, runnable standalone and by reference in pipelines.
 Its native macOS arm64 and Linux x86_64 paths and the native Windows x86_64
 app-to-WSL2 Linux x86_64 boundary are now verified, completing Gate 6 before
-Gate 7.
+Gate 7. Gate 7 subsequently closed the local desktop matrix on macOS arm64,
+Windows x86_64 and Linux x86_64. Gate 8 has completed the controlled local MCP
+boundary and its expanded input/artifact proof on macOS arm64 with a real MCP
+client; the separate signed public release gate remains open and deliberately
+unstarted.
 Every paid or remote action still requires its exact local gate, workflow/input/revision
 readback, cost declaration, and fresh explicit approval.
 
@@ -563,16 +567,60 @@ still unwritten. Full scope, blockers and stop rules in
 
 **Difficulty:** `5/5` · **Codex effort:** `max`
 
+**Status (2026-08-21): complete locally on macOS arm64.**
+
 Provide a local Liatir MCP server with read-only resources and controlled
 execution of saved pipelines. A start request returns a stable asynchronous run
 identity; status, logs, cancellation and Results are queried separately. Require
 an explicit allowlist, user authorization, audit records and correct
 Jobs/Results attribution, and verify the boundary with a real MCP client.
 
-The first MCP surface excludes arbitrary shell access, autonomous pipeline
-mutation and models that silently choose scientific data, preprocessing or
-parameters. MCP is an interoperability boundary, not an autonomous owner of
-scientific execution.
+The MCP surface excludes arbitrary shell access, autonomous pipeline mutation
+and models that silently choose scientific data, preprocessing or parameters.
+Clients may supply every declared run-time input, but only inside the contract
+reviewed with the exact saved revision. MCP is an interoperability boundary,
+not an autonomous owner of scientific execution.
+
+"Every declared input" explicitly spans Native Tools; AI Tools, including a
+closed choice among currently installed compatible AI Models; `.lia` Plugins;
+saved External Workflows; scientific viewers and other utility steps; public
+enabled API Connector parameters; Variable, Math and Condition nodes; and all
+of those families inside nested sub-pipelines. It does not authorize MCP to
+install or manage AI Models, or to define or edit External Workflows.
+
+The implemented server is off by default and binds Streamable HTTP only to an
+ephemeral IPv4 loopback port. Its bearer token, dispatcher and durable policy
+are separate from `.lia` Plugin IPC. Revision-bound grants and per-run approval
+protect the three-tool surface: `start_saved_pipeline` accepts a pipeline ID
+plus values from its frozen recursive input schema, `cancel_pipeline_run`
+accepts only an MCP-owned root ID, and `cancel_job` accepts only a Job attributed
+to one of those roots. Files are registered artifact IDs rather than paths.
+Read-only resources expose active-workspace identity, valid grant/input
+metadata, MCP runs and Jobs, permission-scoped Results, and bounded artifact
+content without exposing pipeline graphs or an arbitrary filesystem.
+
+The server allocates the asynchronous UUID before approval and the common
+execution spine carries it, with MCP initiator metadata, into every child run,
+Job and terminal Result. Denial creates no execution evidence. Result outputs
+from MCP runs are readable automatically; all-workspace Results and source Data
+files require separate grants. Cancellation, restart reconciliation, stale
+revisions, immediate permission revocation, independent pipelines and audit are
+owner-scoped rather than global. The complete trust analysis is in
+[Controlled local MCP boundary](../architecture/mcp.md).
+
+Native verification on macOS arm64 uses the official TypeScript MCP client
+2.0.0 with protocol negotiation pinned to `2026-07-28`. The revised scenario
+covers the exact tools/resources, invalid-token rejection, revision/input
+grants, explicit discovery of every execution family above, unavailable-model
+rejection, artifact-ID input execution, approval display, real FastQC, attributed
+Jobs/Results, sanitized reads, bounded file content, permission revocation,
+owner-aware Job/run cancellation, denial, stale grants and audit. The native
+scenario passes `1/1`; `test:verify` passes 55 files / 329 tests, Rust passes
+66/2 ignored, Clippy exits `0` and both documentation sites build. A final full
+UI-profile attempt rebuilt the app and bundle, but embedded WebDriver never
+became available and the macOS process reported `SIGABRT` before any product test started, so that attempt is
+not called green. This is not Windows/Linux runtime evidence and no remote,
+signing, publishing or heavy-model action is performed.
 
 ## Detailed capability specifications
 
@@ -902,17 +950,19 @@ Quenta, MCP, simulations, or generative design to be called complete. It must
 state its support matrix honestly and avoid presenting
 implemented-but-unverified features as production-ready.
 
-## Ordered backlog from the current state
+## Ordered continuation from the current state
 
 This is the default sequence unless a later evidence-backed decision explicitly
 reorders it:
 
-1. close the desktop release matrix and public Beta 1 documentation;
-2. implement controlled local MCP access with a real client after Beta 1;
-3. validate the predictive/variant genomics and protein structure/binding
+The local desktop matrix and controlled local MCP gate are complete. The signed
+public release remains a separate credential-dependent gate and does not block
+this product sequence:
+
+1. validate the predictive/variant genomics and protein structure/binding
     verticals;
-4. publish useful verified Plugin and pipeline templates;
-5. evaluate another external workflow engine only from the reusable adapter
+2. publish useful verified Plugin and pipeline templates;
+3. evaluate another external workflow engine only from the reusable adapter
     contract, then reconsider other advanced expansion.
 
 ## Definition of done for every integration

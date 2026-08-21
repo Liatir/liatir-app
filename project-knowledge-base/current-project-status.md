@@ -1,5 +1,102 @@
 # Current project status
 
+## Decision: Native Tools become Runtime Boxes (2026-08-20)
+
+Agreed by the maintainer, not started. Liatir distributes executable
+dependencies three ways today — signed Runtime Boxes for AI models, pinned
+upstream binaries in `binary-releases.ts`, and "install it yourself with a
+package manager" for everything those two cannot cover, which is most tool and
+platform combinations. Only the first is a controlled supply chain; the third is
+the absence of one, and it puts an unverified binary on the `PATH` that the
+resolver then executes. The reason Runtime Boxes exist — not managing
+dependencies on the user's machine — applies to `samtools` exactly as it applies
+to a model.
+
+Every Native Tool therefore becomes a Runtime Box, one per operating system, and
+a tool whose upstream has no build for a platform is declared unsupported there
+rather than handed to the user to install. Scope, sizing and the platform matrix
+depend on a conda-forge/bioconda `win-64` availability check that has not been
+run yet, and no recipe should be written before its result is recorded.
+
+Full rationale, what it replaces, the open per-tool-versus-per-family sizing
+question and the order of work are in
+[Native Tools as one bundled environment](./roadmap/native-tools-bundled-environment.md).
+
+## Gate 8 controlled local MCP is complete on macOS arm64 (2026-08-21)
+
+Liatir now has an optional local MCP boundary around the saved-pipeline runtime.
+It is off by default, binds Streamable HTTP only to an ephemeral IPv4 loopback
+port, and uses its own 64-hex bearer token and dispatcher rather than the broad
+`.lia` Plugin IPC path. Native MCP administration also checks the injected
+Tauri window identity, so only the `main` window can enable the server, reveal
+or rotate the token, change grants, resolve authorization or inspect the private
+control records.
+
+The surface is closed: `start_saved_pipeline({ pipeline_id, inputs })`,
+`cancel_pipeline_run({ run_id })` and `cancel_job({ job_id })` are the only
+tools. The revision grant freezes a recursively derived contract for every
+client-settable input of Native Tools; AI Tools, including their currently
+installed and compatible AI Model choices; `.lia` Plugins; saved External
+Workflows; scientific viewers and utility steps; enabled non-private API
+Connector parameters; Variable, Math and Condition nodes; and nested
+sub-pipelines. Connected values, graph topology, operations, private Connector
+parameters and `@pipe:` references cannot be supplied. File inputs use allowed
+workspace artifact IDs, never caller paths. MCP cannot install/manage AI Models
+or define/edit External Workflows.
+
+Read-only resources expose the active workspace, valid grant/input metadata,
+MCP-owned run status/log/Result, MCP-owned Jobs, optionally all Results in the
+active workspace, and registered artifact metadata/content. Result outputs from
+MCP runs are automatically readable; workspace-wide Results and individual
+source files from Data are separate explicit permissions in Settings. File
+content is limited to 64 KiB chunks, symlinks/non-files are rejected, and
+public metadata, Result output and Job views omit physical paths and raw command
+arguments. The server still exposes no arbitrary filesystem browser, shell,
+generic invocation, pipeline mutation, prompts or model-chosen scientific
+decisions. Client name/version is audit metadata, never authority.
+
+Every pipeline grant is tied to workspace, pipeline and exact saved revision.
+An edit makes it stale. A start request is revalidated, receives its durable UUID
+before authorization, focuses Liatir and opens a global approval dialog naming
+client, workspace, pipeline, run and supplied values. Approval revalidates the
+same revision, input-schema snapshot and current artifact permissions, then
+runs an execution-only copy through the existing common execution spine; denial creates no
+execution, Job or Result. The stable MCP identity and initiator metadata flow to
+every child run, Job and terminal Result. Run- and Job-origin cancellation are
+limited to MCP-owned roots, while different pipelines remain independent. Restart/workspace recovery
+settles durable requests from actual execution state or marks them interrupted
+instead of leaving false running state.
+
+The Rust server persists bounded request and audit indexes plus atomic policy;
+the token-bearing config is mode `0600` on Unix. Exact bearer comparison,
+strict optional loopback Origin validation, private zero-TTL resource responses,
+revision checks at request and approval, and a separate Plugin boundary close
+the threat model. Disabling or revoking denies requests still awaiting approval
+but deliberately does not kill already approved scientific work. The full
+state ownership, threats and exclusions are in
+[Controlled local MCP boundary](./architecture/mcp.md); public setup and
+troubleshooting are in `docs/mcp/overview.md`.
+
+The real official TypeScript MCP client 2.0.0 negotiates protocol `2026-07-28`.
+Its Gate 8 scenario passes `1/1` against the native app and proves exact input
+discovery for every family above, the closed compatible-installed AI Model
+selector and rejection of an unavailable model, a real artifact-ID override, approval display,
+ungranted/unknown-input rejection, FastQC Job/Result attribution, sanitized Job
+and Result reads, bounded artifact content, workspace Result and per-Data-file
+permissions, owner-aware Job cancellation, denial, stale grants, immediate
+revocation and audit. `npm run test:verify` passes 55 files / 329 tests plus SDK
+generation, core/frontend builds and `src-ts` compilation; `cargo test` passes
+66 tests with 2 intentionally ignored, `cargo clippy --tests` exits 0 with the
+existing warnings, and both documentation sites build.
+
+The latest full `test:ui` attempt rebuilt the app and bundle successfully, but
+embedded WebDriver never became available and the macOS process reported
+`SIGABRT` before any product test started. It therefore is not reported as a green full-suite run;
+the blocking Gate 8 product proof is the separately successful native MCP
+scenario above. No heavy model, GPU, remote, signing, publishing or release
+action is part of this local gate, and macOS evidence is not inferred for
+Windows/Linux.
+
 ## Quenta could never explain a Result, and its own guard was why (2026-08-20)
 
 Five stored conversations show five `explain-result` attempts and five identical
@@ -823,15 +920,16 @@ channel changed.
 
 ## Current continuation
 
-The Runtime Box migration and the nine-target re-release are complete. Continue
-Liatir development in this order:
+The Runtime Box migration, nine-target re-release, local desktop Beta matrix and
+controlled local MCP Gate 8 are complete. Continue with the evidence-backed
+predictive/variant genomics and protein structure/binding verticals, followed by
+individually verified Plugin/pipeline templates and then any additional External
+Workflow engine through the existing adapter contract.
 
-1. complete the remaining signed/notarized macOS and Windows/Linux Gate 7
-   release evidence; the local macOS implementation and public documentation
-   are already in place;
-2. expose controlled local MCP access after Beta 1;
-3. continue the evidence-backed scientific verticals and extension work in the
-   canonical product-plan order.
+The signed public [Release gate](./roadmap/release-signed-distribution.md)
+remains a separate, open path. It starts only with the exact credentials,
+notarization purchase and Windows Store packaging decision explicitly
+authorized; it does not block the product-engineering sequence above.
 
 P5.0 through P5.7 are complete; the Scrollcase P5 plan is closed.
 The canonical detailed ledger is

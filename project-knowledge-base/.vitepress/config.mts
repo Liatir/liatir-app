@@ -36,6 +36,7 @@ export default defineConfig({
           { text: 'Implementation architecture', link: '/architecture/implementation' },
           { text: 'Component boxes', link: '/architecture/component-boxes' },
           { text: 'Runtime Boxes explained', link: '/architecture/runtime-box-system-explained' },
+          { text: 'Controlled local MCP', link: '/architecture/mcp' },
         ],
       },
       {
@@ -67,6 +68,7 @@ export default defineConfig({
           { text: 'Scientific AI workbench', link: '/roadmap/scientific-ai-workbench' },
           { text: 'Beta 1 readiness', link: '/roadmap/beta-readiness' },
           { text: 'Release gate: signed distribution', link: '/roadmap/release-signed-distribution' },
+          { text: 'Native Tools bundled environment', link: '/roadmap/native-tools-bundled-environment' },
           { text: 'AI batches', link: '/roadmap/ai-batches' },
           { text: 'Runtime Box CI foundation', link: '/roadmap/runtime-box-ci-foundation' },
           { text: 'Runtime Box production report', link: '/roadmap/runtime-box-production-report' },

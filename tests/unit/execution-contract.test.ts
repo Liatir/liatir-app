@@ -18,6 +18,12 @@ describe("common execution identity", () => {
       runKind: "pipeline",
       workspaceId: "workspace-a",
       pipelineId: "pipeline-definition",
+      initiator: {
+        kind: "mcp",
+        requestId: "mcp-request",
+        clientName: "real-mcp-client",
+        clientVersion: "1.0.0",
+      },
     });
     const step = createLiatirChildExecutionIdentity(root, {
       runId: "step-run",
@@ -38,6 +44,10 @@ describe("common execution identity", () => {
       rootRunId: "pipeline-run",
       parentRunId: "pipeline-run",
       pipelineRunId: "pipeline-run",
+      initiator: {
+        kind: "mcp",
+        requestId: "mcp-request",
+      },
     });
     expect(nested).toMatchObject({
       workspaceId: "workspace-a",

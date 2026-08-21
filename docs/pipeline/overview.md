@@ -96,6 +96,15 @@ Pipeline Run, Job, Result and cross-tool provenance.
 Pipelines are meant to be reusable. A saved workflow keeps its structure and
 settings so you can return to it later, adjust inputs, and run it again.
 
+An MCP-compatible client can also request an exact saved revision through
+[Local MCP](/mcp/overview). This is off by default: you allow each saved
+revision in Settings, choose which Data files and Results it may read, and
+approve every individual run with its supplied inputs in Liatir.
+Declared inputs include Native Tools, AI Tools and their compatible installed
+AI Model choice, `.lia` Plugins, saved External Workflows, viewers, API
+Connectors, utility nodes and nested sub-pipelines. MCP cannot install models or
+edit pipeline and External Workflow definitions.
+
 For custom steps, use [.lia plugins](/plugins/overview). A plugin can wrap a
 script or command-line tool through the Liatir API bridge and still behave like a
 normal node in the pipeline.

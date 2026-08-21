@@ -1,6 +1,6 @@
 # Riallineamento del piano “Scientific AI Workbench”
 
-Ultima revisione: 2026-08-20
+Ultima revisione: 2026-08-21
 
 ## Stato corrente
 
@@ -13,7 +13,7 @@ Ultima revisione: 2026-08-20
 | 5. Lighthouse single-cell | Completato localmente su macOS arm64 |
 | 6. Nextflow come External Workflow | Completato su macOS arm64, Linux x86_64 e app Windows x86_64 con backend WSL2 Linux x86_64 |
 | 7. Gate Beta 1 | Completato il 2026-08-20 e ridefinito sul livello desktop locale: implementazione ed evidenza complete, eseguite e verificate in modo incrociato su macOS arm64, Windows x86_64 e Linux x86_64 |
-| 8. MCP dopo il nucleo Beta | Pianificato; non più in coda dietro un acquisto |
+| 8. MCP dopo il nucleo Beta | Completato localmente su macOS arm64 con input completi, Jobs, Results, artifact e vero client MCP |
 | Gate di rilascio: distribuzione pubblica firmata | Aperto e volutamente non iniziato: firma, notarizzazione, scelta Microsoft Store, installazione su macchina pulita e update firmato A → B |
 
 ## Indicatori
@@ -274,12 +274,58 @@ Ambito completo, blocchi e regole di stop:
 
 **Difficoltà:** `5/5` · **Codex effort:** `max`
 
+**Stato (2026-08-21): completato localmente su macOS arm64.**
+
 - Server MCP locale con risorse in lettura e pipeline salvate eseguibili in modo controllato.
 - Identità asincrona stabile per ogni esecuzione.
-- Stato, log, cancellazione e Results consultabili separatamente.
+- Input dichiarati passabili per tipo, inclusi file tramite artifact ID.
+- Stato, log, Jobs, cancellazione, Results e file consultabili separatamente.
 - Allowlist, autorizzazione esplicita e audit.
 - Nessuna shell arbitraria, modifica autonoma delle pipeline o decisione scientifica autonoma.
 - Validazione con un vero client MCP.
+
+Il server usa Streamable HTTP su una porta loopback effimera, è spento per
+default e ha token e dispatcher separati dalle `.lia` Plugins. Espone soltanto
+`start_saved_pipeline`, `cancel_pipeline_run` e `cancel_job`. La grant lega la
+revisione esatta a uno snapshot ricorsivo degli input modificabili di ogni
+famiglia eseguibile: Native Tools; AI Tools, compresa la scelta fra gli AI
+Models installati e compatibili dichiarati dal Tool; `.lia` Plugins; External
+Workflows salvati; viewer scientifici e altri nodi utility; parametri pubblici
+abilitati degli API Connector; Variable, operandi Math e valori Condition;
+comprese le stesse famiglie nelle sotto-pipeline. MCP non installa o gestisce AI
+Models e non definisce o modifica External Workflows: passa soltanto gli input
+dichiarati alla revisione salvata e autorizzata. I file entrano come artifact ID
+registrati, mai come path; ogni avvio richiede comunque
+un'approvazione nel main window che mostra i valori forniti. Il nome dichiarato
+dal client resta metadata di audit, non un'identità fidata.
+
+Le risorse separano run, Jobs, Results e artifact. Gli output dei Result creati
+da MCP sono leggibili automaticamente; la lettura di tutti i Results del
+workspace e ogni file sorgente di Data hanno grant distinte e revocabili. Il
+contenuto file è limitato a chunk da 64 KiB e le viste pubbliche non espongono
+path, comandi o argomenti nativi. `cancel_job` risale alla root Pipeline Run MCP
+e usa la cancellazione del proprietario, evitando Job e Result incoerenti.
+
+Un UUID stabile nasce prima dell'approvazione e diventa la root identity della
+Pipeline Run, dei child run, del Job e del Result. Diniego, cancellazione,
+riavvio e cambio workspace hanno stati terminali espliciti; pipeline differenti
+restano isolate. Il threat model, le esclusioni e il contratto di recovery sono
+in [Controlled local MCP boundary](../architecture/mcp.md), mentre la guida
+utente è in `docs/mcp/overview.md`.
+
+La nuova prova macOS arm64 con il vero client TypeScript MCP 2.0.0, protocollo
+`2026-07-28`, copre autenticazione, discovery esplicito di tutte le famiglie
+sopra elencate, rifiuto di un AI Model non disponibile, input e artifact reali,
+approvazione, FastQC, Job/Result/initiator, letture sanificate, chunk file,
+permessi e revoche, cancellazione per Job e run, diniego, grant stantio e audit.
+La matrice completa viene scoperta e autorizzata senza eseguire modelli o
+workflow pesanti. La prova nativa mirata è verde `1/1`; `test:verify` è verde con 55 file e 329
+test, `cargo test` con 66 passati e 2 ignorati, Clippy esce `0` e i due siti di
+documentazione compilano. Il successivo tentativo dell'intero profilo UI ha
+ricostruito app e bundle, ma WebDriver non è diventato disponibile e il processo
+macOS ha riportato `SIGABRT` prima di qualsiasi test prodotto;
+non viene quindi dichiarato verde. Nessuna azione remota, modello pesante,
+firma o pubblicazione rientra nel gate.
 
 ## Contratti e verifiche comuni
 
@@ -296,5 +342,5 @@ Ambito completo, blocchi e regole di stop:
 - P5.0–P5.7 resta chiuso.
 - Nextflow è il primo External Workflow supportato.
 - Il parallelismo interno delle pipeline Liatir non è richiesto per Beta 1.
-- MCP viene dopo Beta 1.
+- MCP segue Beta 1 ed è ora completato localmente su macOS arm64.
 - HPC, cloud executor, installazione gestita e altri workflow engine vengono dopo il primo adapter Nextflow verificato.

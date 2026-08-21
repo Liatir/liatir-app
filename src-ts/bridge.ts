@@ -39,6 +39,7 @@ import { windowTauriProxy, tauriReadyCheck, waitTauri } from "./helpers";
 import { buildJobs } from "./modules/rs/jobs/_main";
 import { buildDeps } from "./modules/rs/deps/_main";
 import { buildExternalWorkflows } from "./modules/rs/externalWorkflows/_main";
+import { buildMcp } from "./modules/rs/mcp/_main";
 import { buildQc } from "./modules/qc/_main";
 import { isBrowser } from "./utils";
 
@@ -76,6 +77,7 @@ import { isBrowser } from "./utils";
       badge:           buildBadge(core),
       contextMenu:     buildContextMenu(core),
       globalVariables: buildGlobVar(core),
+      mcp:             buildMcp(core),
     },
 
     jobs:     buildJobs(core),
