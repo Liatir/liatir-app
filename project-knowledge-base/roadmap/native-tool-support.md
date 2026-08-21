@@ -1,5 +1,14 @@
 # Native Tool Support Matrix
 
+> **Superseded in direction (2026-08-20).** The maintainer decided that every
+> Native Tool ships inside the app, in a single relocatable environment per
+> operating system, and that a tool with no package for a platform is declared
+> unsupported there instead of being handed to the user as a package-manager
+> instruction. The matrix below
+> still describes what ships today and stays authoritative until the migration
+> lands; the "Package manager" column is what the decision removes. See
+> [Native Tools as one bundled environment](./native-tools-bundled-environment.md).
+
 Liatir resolves every pipeline and standalone Native Tool through the shared
 Jobs backend.
 The resolver prefers a Liatir-managed binary registered in
