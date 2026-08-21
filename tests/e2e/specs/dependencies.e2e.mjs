@@ -37,90 +37,67 @@ export const tests = [
     },
   },
   {
-    name: 'installs, executes, and removes the checksummed managed SeqKit release',
-    heavy: true,
+    /**
+     * Replaced the managed-SeqKit install/execute/remove test on 2026-08-21. That
+     * test downloaded a checksummed upstream release and ran it — but every
+     * binary the managed registry could still offer is now inside the bundled
+     * environment, so its Install button no longer exists and the path it proved
+     * has no subject left on a platform that has a bundle.
+     *
+     * What replaces it is the claim that actually needs proving: that a bare tool
+     * name spawned through the shared Jobs backend runs the binary the
+     * application shipped, and not whatever happens to be on the user's PATH.
+     */
+    name: 'runs a bundled Native Tool from inside the application, not from PATH',
     async run({ browser, expect }) {
       await openSandboxWorkspace(browser);
-      await navigateInApp(browser, '/deps');
 
-      const installButton = await browser.$('[data-testid="managed-install-seqkit"]');
-      await installButton.waitForDisplayed({ timeout: 60_000 });
-      await installButton.click();
-
-      await browser.waitUntil(
-        async () => browser.execute(async () => {
-          try {
-            const raw = await window.Liatir.invoke('lia_fs_read_text', {
-              rel: 'managed-bins/index.json',
-              permanent: true,
-              windowLabel: null,
-              pluginStoragePlugin: null,
-            });
-            return Boolean(JSON.parse(raw).bins?.seqkit?.path);
-          } catch {
-            return false;
-          }
-        }),
-        { timeout: 120_000, timeoutMsg: 'Managed SeqKit install did not persist' },
+      const environment = await browser.execute(
+        async () => window.Liatir.invoke('lia_native_tools_environment', {}),
       );
+      expect(environment.available).toBe(true);
+      // Windows carries the same tools but reaches them through WSL2.
+      expect(environment.execution).toBe(process.platform === 'win32' ? 'wsl2' : 'native');
+      expect(environment.tools).toContain('seqkit');
+      const shipped = environment.manifest.tools.find((tool) => tool.id === 'seqkit');
 
-      const installed = await browser.execute(async () => {
-        const raw = await window.Liatir.invoke('lia_fs_read_text', {
-          rel: 'managed-bins/index.json',
-          permanent: true,
-          windowLabel: null,
-          pluginStoragePlugin: null,
-        });
-        const record = JSON.parse(raw).bins.seqkit;
+      const probe = await browser.execute(async () => {
         const { jobId } = await window.Liatir.invoke('lia_jobs_spawn', {
           cmd: 'seqkit',
           args: ['version'],
           workspaceId: '__test__',
-          label: 'Managed SeqKit verification',
+          label: 'Bundled SeqKit verification',
           kind: 'dependency-verification',
         });
-        return { record, jobId };
+        return { jobId };
       });
-      expect(installed.record.version).toBe('2.13.0');
 
       await browser.waitUntil(
         async () => browser.execute(async (jobId) => {
           const job = await window.Liatir.invoke('lia_jobs_status', { jobId });
           return job.status?.type === 'done';
-        }, installed.jobId),
-        { timeout: 30_000, timeoutMsg: 'Managed SeqKit did not execute' },
+        }, probe.jobId),
+        { timeout: 30_000, timeoutMsg: 'Bundled SeqKit did not execute' },
       );
       const output = await browser.execute(
         async (jobId) => window.Liatir.invoke('lia_jobs_get_output', { jobId }),
-        installed.jobId,
+        probe.jobId,
       );
-      expect(output.stdout.join('\n')).toContain('seqkit v2.13.0');
+      // The version that ran is the version the build recorded. A host SeqKit at
+      // a different version would fail here, which is the point.
+      expect(output.stdout.join('\n')).toContain(`v${shipped.version}`);
 
-      await browser.execute(async (record) => {
-        await window.Liatir.invoke('lia_managed_remove', {
-          path: record.path,
-          recursive: false,
-        });
-        await window.Liatir.invoke('lia_fs_write_text', {
-          rel: 'managed-bins/index.json',
-          permanent: true,
-          contents: JSON.stringify({ bins: {} }, null, 2),
-          createDirs: true,
-          append: false,
-          windowLabel: null,
-          pluginStoragePlugin: null,
-        });
-      }, installed.record);
-
-      const removed = await browser.execute(async (path) => {
-        try {
-          await window.Liatir.invoke('lia_file_size', { path });
-          return false;
-        } catch {
-          return true;
-        }
-      }, installed.record.path);
-      expect(removed).toBe(true);
+      // And the Dependencies screen must say so, rather than reporting a tool
+      // that works as one the user still has to install.
+      await navigateInApp(browser, '/deps');
+      await browser.waitUntil(
+        async () => browser.execute(() => document.body.innerText.includes('Included with Liatir')),
+        { timeout: 30_000, timeoutMsg: 'Dependencies did not report a bundled tool' },
+      );
+      const hasInstallButton = await browser.execute(
+        () => Boolean(document.querySelector('[data-testid="managed-install-seqkit"]')),
+      );
+      expect(hasInstallButton).toBe(false);
       await expectNoVisibleRuntimeError(browser);
     },
   },

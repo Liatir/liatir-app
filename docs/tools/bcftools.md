@@ -12,23 +12,12 @@ BCFtools is the standard toolkit for manipulating VCF and BCF variant files. Lia
 
 ## Installation
 
-BCFtools must be installed and available in your system PATH.
+Nothing to install. This tool ships inside Liatir and runs at the version this
+release was tested with; it updates when Liatir updates. The tool page shows
+**Included with Liatir** and the version it is running.
 
-::: code-group
-
-```bash [macOS (Homebrew)]
-brew install bcftools
-```
-
-```bash [Ubuntu/Debian]
-sudo apt install bcftools
-```
-
-```bash [conda]
-conda install -c bioconda bcftools
-```
-
-:::
+On Windows it runs through WSL2 — see
+[Windows and WSL2](/tools/overview#windows-and-wsl2).
 
 ## Accepted inputs
 

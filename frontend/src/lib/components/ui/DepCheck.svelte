@@ -18,18 +18,28 @@
 
   let status    = $state<DepStatus>('checking');
   let installed = $state<string | null>(null);
+  /** Ships inside the application: nothing to install, and nothing that can go missing. */
+  let bundled   = $state(false);
 
   $effect(() => { onStatusChange?.(status); });
 
   async function check() {
     status = 'checking';
     installed = null;
+    bundled = false;
     const api = liatir();
     if (!api) return;
     await managedBins.init();
     const managed = managedBins.get(req.binary);
     const r = await api.deps.check(req.binary);
-    if (!r.available && managed) {
+    if (r.source === 'bundled') {
+      // The version came from the build manifest, so it is by construction the
+      // one this release was tested with. Comparing it against a minimum the
+      // build already satisfies would only invite a false "outdated".
+      bundled = true;
+      installed = r.version;
+      status = 'ok';
+    } else if (!r.available && managed) {
       installed = `${managed.version} managed`;
       status = 'ok';
     } else if (!r.available) {
@@ -106,6 +116,9 @@
         <span class="text-sm font-semibold text-text">{req.label}</span>
         {#if status === 'checking'}
           <span class="text-xs text-text-subtle">Checking…</span>
+        {:else if bundled}
+          <span class="font-mono text-xs text-emerald-600">{installed}</span>
+          <span class="text-[10px] text-text-subtle">Included with Liatir</span>
         {:else if status === 'ok'}
           <span class="font-mono text-xs text-emerald-600">{installed}</span>
           <span class="text-[10px] text-text-subtle">(requires {requirementLabel})</span>
@@ -131,7 +144,9 @@
           <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
         </svg>
       </button>
-      {#if status !== 'missing'}
+      <!-- A bundled tool is updated by updating Liatir, so an upstream releases
+           page would offer the user an action they cannot take. -->
+      {#if status !== 'missing' && !bundled}
         <button
           onclick={openReleases}
           class="text-[11px] text-text-subtle hover:text-text-secondary transition-colors px-2 py-1 rounded hover:bg-surface-2 flex items-center gap-1"

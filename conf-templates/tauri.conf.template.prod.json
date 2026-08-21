@@ -20,6 +20,9 @@
   "bundle": {
     "active": true,
     "targets": ["nsis", "app", "dmg", "deb", "rpm", "appimage"],
+    "resources": {
+      "resources/native-tools": "native-tools"
+    },
     "icon": ["icons/icon.png", "icons/icon.icns", "icons/icon.ico"],
     "macOS": {
       "entitlements": "Entitlements.plist"

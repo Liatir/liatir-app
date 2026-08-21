@@ -119,6 +119,9 @@ try {
   runNpm(['run', 'gen:sdk-types']);
   runNpm(['run', 'build:frontend']);
   runNpm(['run', 'ts:compile']);
+  // Verifies the linux-64 archive is present; Windows cannot build it, and an
+  // installer without it would ship an application with no tools at all.
+  runNpm(['run', 'native-tools:require']);
 
   const prodConf = confShellInvocation('prod-conf.sh');
   run(prodConf.command, prodConf.args, {

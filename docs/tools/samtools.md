@@ -12,25 +12,12 @@ Samtools is the standard toolkit for working with sequence alignment data. Liati
 
 ## Installation
 
-Samtools must be installed and available in your system PATH.
+Nothing to install. This tool ships inside Liatir and runs at the version this
+release was tested with; it updates when Liatir updates. The tool page shows
+**Included with Liatir** and the version it is running.
 
-::: code-group
-
-```bash [macOS (Homebrew)]
-brew install samtools
-```
-
-```bash [Ubuntu/Debian]
-sudo apt install samtools
-```
-
-```bash [conda]
-conda install -c bioconda samtools
-```
-
-:::
-
-Liatir checks for `samtools` on page load. If it is not found, the dependency card shows these same instructions.
+On Windows it runs through WSL2 — see
+[Windows and WSL2](/tools/overview#windows-and-wsl2).
 
 ## Accepted inputs
 

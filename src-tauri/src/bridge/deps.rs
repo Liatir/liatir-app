@@ -1,3 +1,5 @@
+use tauri::AppHandle;
+
 // ---------------------------------
 // Helpers (sync, used in spawn_blocking)
 // ---------------------------------
@@ -136,16 +138,32 @@ mod tests {
 // Public Tauri commands
 // ---------------------------------
 
-/// Check whether a binary is available in PATH and retrieve its version.
+/// Check whether a dependency is available, and at what version.
 ///
 /// Returns:
-///   { available: bool, binary: string, path: string|null, version: string|null }
+///   { available: bool, binary: string, path: string|null, version: string|null,
+///     source: "bundled" | "path" }
+///
+/// A tool the application bundles is answered from the build manifest and never
+/// probed on the host: it is present because it shipped, so asking `PATH` could
+/// only produce a wrong answer — "not installed" for a tool that works, or the
+/// version of some other build that happens to be on the machine.
 ///
 /// The `binary` name must be a simple identifier (no slashes, no path traversal).
 #[tauri::command]
-pub async fn lia_deps_check(binary: String) -> Result<serde_json::Value, String> {
+pub async fn lia_deps_check(app: AppHandle, binary: String) -> Result<serde_json::Value, String> {
     if binary.is_empty() || binary.contains('/') || binary.contains('\\') || binary.contains("..") {
         return Err(format!("invalid binary name: {binary:?}"));
+    }
+
+    if let Some((path, version)) = super::native_tools::bundled_dependency(&app, &binary) {
+        return Ok(serde_json::json!({
+            "available": true,
+            "binary":    binary,
+            "path":      path,
+            "version":   version,
+            "source":    "bundled",
+        }));
     }
 
     tauri::async_runtime::spawn_blocking(move || {
@@ -163,6 +181,7 @@ pub async fn lia_deps_check(binary: String) -> Result<serde_json::Value, String>
             "binary":    binary,
             "path":      path,
             "version":   version,
+            "source":    "path",
         }))
     })
     .await
@@ -171,11 +190,14 @@ pub async fn lia_deps_check(binary: String) -> Result<serde_json::Value, String>
 
 /// Check multiple binaries at once.
 #[tauri::command]
-pub async fn lia_deps_check_many(binaries: Vec<String>) -> Result<Vec<serde_json::Value>, String> {
+pub async fn lia_deps_check_many(
+    app: AppHandle,
+    binaries: Vec<String>,
+) -> Result<Vec<serde_json::Value>, String> {
     let mut results = Vec::with_capacity(binaries.len());
 
     for binary in binaries {
-        let result = lia_deps_check(binary).await?;
+        let result = lia_deps_check(app.clone(), binary).await?;
         results.push(result);
     }
 

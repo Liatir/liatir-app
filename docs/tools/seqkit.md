@@ -12,23 +12,12 @@ seqkit is a cross-platform toolkit for FASTA/FASTQ file manipulation. Liatir use
 
 ## Installation
 
-seqkit must be installed and available in your system PATH.
+Nothing to install. This tool ships inside Liatir and runs at the version this
+release was tested with; it updates when Liatir updates. The tool page shows
+**Included with Liatir** and the version it is running.
 
-::: code-group
-
-```bash [macOS (Homebrew)]
-brew install seqkit
-```
-
-```bash [conda]
-conda install -c bioconda seqkit
-```
-
-```bash [Ubuntu/Debian]
-sudo apt install seqkit
-```
-
-:::
+On Windows it runs through WSL2 — see
+[Windows and WSL2](/tools/overview#windows-and-wsl2).
 
 ## Accepted inputs
 

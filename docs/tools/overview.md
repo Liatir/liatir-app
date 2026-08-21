@@ -19,9 +19,17 @@ every machine.
 
 ## Native tools
 
-Require the corresponding program to be installed on your machine. Liatir checks
-availability when you open the tool page and shows install instructions
-(Homebrew, apt, conda) if it is missing.
+These are real bioinformatics programs, and Liatir ships them. You do not install
+`samtools`, `bwa`, `minimap2`, `bcftools`, `seqkit` or `fastp` yourself: they
+arrive with the application, at the exact versions it was tested with, and they
+update when Liatir updates. The tool page shows **Included with Liatir** and the
+version it is running.
+
+SnpEff is the exception: it is a Java program with its own separately managed
+databases, so it still needs a Java runtime on your machine.
+
+On **Windows** these tools run inside WSL2 — see
+[Windows and WSL2](#windows-and-wsl2) below.
 
 | Tool | Subcommand | Input formats |
 |------|-----------|---------------|
@@ -34,6 +42,29 @@ availability when you open the tool page and shows install instructions
 | [BCFtools filter](/tools/bcftools-filter) | `filter` | VCF, VCF.GZ, BCF, BCF.GZ |
 | [SnpEff](/tools/snpeff) | — | VCF, VCF.GZ |
 | [fastp](/tools/fastp) | — | FASTQ (single or paired-end) |
+
+### Windows and WSL2
+
+Almost none of this software has a Windows build. `samtools`, `bcftools`, `bwa`,
+`minimap2` and `fastp` are written for Unix and rely on operating-system
+facilities Windows does not provide; their authors publish Linux and macOS
+releases only. This is not a Liatir limitation and no Windows version exists to
+package.
+
+So Liatir on Windows ships the Linux tools and runs them through **WSL2**, the
+Windows Subsystem for Linux — the same mechanism it already uses for
+[Nextflow](/tools/external-workflows). You still work entirely in the Liatir
+window; your files stay where they are, and Liatir translates their locations for
+the tool.
+
+**WSL2 must be installed.** It is a supported Windows feature, not third-party
+software: open PowerShell as administrator, run `wsl --install`, and restart when
+asked. You do not need to install anything inside it for these tools — Liatir
+brings its own copy and sets it up for you. Nextflow is different and does need
+to be installed inside WSL2 yourself.
+
+Liatir unpacks its tools the first time it starts after being installed or
+updated. It takes a second or two, happens in the background, and does not repeat.
 
 ## AI Tools
 

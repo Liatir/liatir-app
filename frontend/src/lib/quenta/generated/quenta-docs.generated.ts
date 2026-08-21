@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "03635479de1f6a9fc6b9a9bdefe5ac6c4c719451ae40871870f836412be27aff";
+export const QUENTA_DOCS_SEED_HASH = "67d6b3229aee84b5b502c71bd4fcc4fe359b1362c04eb7add6ee1c1a711f881b";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -596,7 +596,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Beta support and troubleshooting — Current limits",
     "locator": "Docs / Getting Started / Support / Current limits",
     "excerpt": "Current limits - Public signed desktop packages are not considered ready until the installer gate is complete on that platform. - macOS scientific and local packaging evidence currently covers Apple silicon, not Intel Macs. - Windows Nextflow runs through WSL…",
-    "content": "Current limits\n- Public signed desktop packages are not considered ready until the installer\n  gate is complete on that platform.\n- macOS scientific and local packaging evidence currently covers Apple silicon,\n  not Intel Macs.\n- Windows Nextflow runs through WSL2 Linux x86_64. Native Windows Nextflow,\n  WSL1 and WSL ARM64 are not supported.\n- Liatir does not yet install Nextflow/Java or configure HPC and cloud\n  executors.\n- Windows CUDA support is limited to the exact published CUDA 12.8 Geneformer\n  and scGPT targets. The hosted Windows GPU runner cannot validate them, so\n  support comes from their recorded native product evidence and is not a claim\n  about other drivers or CUDA versions.\n- AI Model availability is target-specific. The model selector shows only\n  compatible installed assets.\n- Liatir pipelines orchestrate tools but do not replace Nextflow scheduling,\n  cache, resume or DSL semantics.\n- Liatir is research software. Outputs require scientific review and are not a\n  medical diagnosis."
+    "content": "Current limits\n- Public signed desktop packages are not considered ready until the installer\n  gate is complete on that platform.\n- macOS scientific and local packaging evidence currently covers Apple silicon,\n  not Intel Macs.\n- Windows Nextflow runs through WSL2 Linux x86_64. Native Windows Nextflow,\n  WSL1 and WSL ARM64 are not supported.\n- The bundled Native Tools — samtools, bcftools, seqkit, fastp, bwa, minimap2 —\n  also run through WSL2 on Windows, for the same reason: they have no Windows\n  build. WSL2 must be installed; nothing has to be installed inside it. Their\n  Windows behaviour has not yet been verified by the Windows gate, so treat\n  Windows Native Tool support as implemented and unproven.\n- The bundled environment currently covers macOS Apple silicon and Linux x86_64.\n  On Intel Macs and Linux ARM64 these tools still have to be installed on the\n  machine.\n- Liatir does not yet install Nextflow/Java or configure HPC and cloud\n  executors.\n- Windows CUDA support is limited to the exact published CUDA 12.8 Geneformer\n  and scGPT targets. The hosted Windows GPU runner cannot validate them, so\n  support comes from their recorded native product evidence and is not a claim\n  about other drivers or CUDA versions.\n- AI Model availability is target-specific. The model selector shows only\n  compatible installed assets.\n- Liatir pipelines orchestrate tools but do not replace Nextflow scheduling,\n  cache, resume or DSL semantics.\n- Liatir is research software. Outputs require scientific review and are not a\n  medical diagnosis."
   },
   {
     "id": "docs:getting-started/support#common-problems",
@@ -1739,8 +1739,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "BCFtools filter — Installation",
     "locator": "Docs / Tools / Bcftools Filter / Installation",
-    "excerpt": "Installation BCFtools must be installed and available in your system PATH. ::: code-group ```bash [macOS (Homebrew)] brew install bcftools ``` ```bash [Ubuntu/Debian] sudo apt install bcftools ``` ```bash [conda] conda install -c bioconda bcftools ``` :::",
-    "content": "Installation\nBCFtools must be installed and available in your system PATH.\n\n::: code-group\n\n```bash [macOS (Homebrew)]\nbrew install bcftools\n```\n\n```bash [Ubuntu/Debian]\nsudo apt install bcftools\n```\n\n```bash [conda]\nconda install -c bioconda bcftools\n```\n\n:::"
+    "excerpt": "Installation Nothing to install. This tool ships inside Liatir and runs at the version this release was tested with; it updates when Liatir updates. The tool page shows **Included with Liatir** and the version it is running. On Windows it runs through WSL2 —…",
+    "content": "Installation\nNothing to install. This tool ships inside Liatir and runs at the version this\nrelease was tested with; it updates when Liatir updates. The tool page shows\n**Included with Liatir** and the version it is running.\n\nOn Windows it runs through WSL2 — see\n[Windows and WSL2](/tools/overview#windows-and-wsl2)."
   },
   {
     "id": "docs:tools/bcftools-filter#accepted-inputs",
@@ -1795,8 +1795,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "BCFtools — Installation",
     "locator": "Docs / Tools / Bcftools / Installation",
-    "excerpt": "Installation BCFtools must be installed and available in your system PATH. ::: code-group ```bash [macOS (Homebrew)] brew install bcftools ``` ```bash [Ubuntu/Debian] sudo apt install bcftools ``` ```bash [conda] conda install -c bioconda bcftools ``` :::",
-    "content": "Installation\nBCFtools must be installed and available in your system PATH.\n\n::: code-group\n\n```bash [macOS (Homebrew)]\nbrew install bcftools\n```\n\n```bash [Ubuntu/Debian]\nsudo apt install bcftools\n```\n\n```bash [conda]\nconda install -c bioconda bcftools\n```\n\n:::"
+    "excerpt": "Installation Nothing to install. This tool ships inside Liatir and runs at the version this release was tested with; it updates when Liatir updates. The tool page shows **Included with Liatir** and the version it is running. On Windows it runs through WSL2 —…",
+    "content": "Installation\nNothing to install. This tool ships inside Liatir and runs at the version this\nrelease was tested with; it updates when Liatir updates. The tool page shows\n**Included with Liatir** and the version it is running.\n\nOn Windows it runs through WSL2 — see\n[Windows and WSL2](/tools/overview#windows-and-wsl2)."
   },
   {
     "id": "docs:tools/bcftools#accepted-inputs",
@@ -1931,8 +1931,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "fastp — Installation",
     "locator": "Docs / Tools / Fastp / Installation",
-    "excerpt": "Installation fastp must be installed and available in your system PATH. ::: code-group ```bash [macOS (Homebrew)] brew install fastp ``` ```bash [Ubuntu/Debian] sudo apt install fastp ``` ```bash [conda] conda install -c bioconda fastp ``` :::",
-    "content": "Installation\nfastp must be installed and available in your system PATH.\n\n::: code-group\n\n```bash [macOS (Homebrew)]\nbrew install fastp\n```\n\n```bash [Ubuntu/Debian]\nsudo apt install fastp\n```\n\n```bash [conda]\nconda install -c bioconda fastp\n```\n\n:::"
+    "excerpt": "Installation Nothing to install. This tool ships inside Liatir and runs at the version this release was tested with; it updates when Liatir updates. The tool page shows **Included with Liatir** and the version it is running. On Windows it runs through WSL2 —…",
+    "content": "Installation\nNothing to install. This tool ships inside Liatir and runs at the version this\nrelease was tested with; it updates when Liatir updates. The tool page shows\n**Included with Liatir** and the version it is running.\n\nOn Windows it runs through WSL2 — see\n[Windows and WSL2](/tools/overview#windows-and-wsl2)."
   },
   {
     "id": "docs:tools/fastp#accepted-inputs",
@@ -2075,8 +2075,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Tools — Native tools",
     "locator": "Docs / Tools / Overview / Native tools",
-    "excerpt": "Native tools Require the corresponding program to be installed on your machine. Liatir checks availability when you open the tool page and shows install instructions (Homebrew, apt, conda) if it is missing. | Tool | Subcommand | Input formats | |------|------…",
-    "content": "Native tools\nRequire the corresponding program to be installed on your machine. Liatir checks\navailability when you open the tool page and shows install instructions\n(Homebrew, apt, conda) if it is missing.\n\n| Tool | Subcommand | Input formats |\n|------|-----------|---------------|\n| [seqkit stats](/tools/seqkit) | `stats` | FASTA, FASTQ (compressed or not) |\n| [Samtools](/tools/samtools) | `flagstat` | BAM, SAM, CRAM |\n| [Samtools faidx](/tools/samtools-faidx) | `faidx` | FASTA, FASTA.GZ |\n| [BWA-MEM](/tools/bwa-mem) | `mem` | FASTA + FASTQ |\n| [Minimap2](/tools/minimap2) | — | FASTA/MMI + FASTQ/FASTA |\n| [BCFtools](/tools/bcftools) | `stats` | VCF, VCF.GZ, BCF, BCF.GZ |\n| [BCFtools filter](/tools/bcftools-filter) | `filter` | VCF, VCF.GZ, BCF, BCF.GZ |\n| [SnpEff](/tools/snpeff) | — | VCF, VCF.GZ |\n| [fastp](/tools/fastp) | — | FASTQ (single or paired-end) |"
+    "excerpt": "Native tools These are real bioinformatics programs, and Liatir ships them. You do not install `samtools`, `bwa`, `minimap2`, `bcftools`, `seqkit` or `fastp` yourself: they arrive with the application, at the exact versions it was tested with, and they update…",
+    "content": "Native tools\nThese are real bioinformatics programs, and Liatir ships them. You do not install\n`samtools`, `bwa`, `minimap2`, `bcftools`, `seqkit` or `fastp` yourself: they\narrive with the application, at the exact versions it was tested with, and they\nupdate when Liatir updates. The tool page shows **Included with Liatir** and the\nversion it is running.\n\nSnpEff is the exception: it is a Java program with its own separately managed\ndatabases, so it still needs a Java runtime on your machine.\n\nOn **Windows** these tools run inside WSL2 — see\n[Windows and WSL2](#windows-and-wsl2) below.\n\n| Tool | Subcommand | Input formats |\n|------|-----------|---------------|\n| [seqkit stats](/tools/seqkit) | `stats` | FASTA, FASTQ (compressed or not) |\n| [Samtools](/tools/samtools) | `flagstat` | BAM, SAM, CRAM |\n| [Samtools faidx](/tools/samtools-faidx) | `faidx` | FASTA, FASTA.GZ |\n| [BWA-MEM](/tools/bwa-mem) | `mem` | FASTA + FASTQ |\n| [Minimap2](/tools/minimap2) | — | FASTA/MMI + FASTQ/FASTA |\n| [BCFtools](/tools/bcftools) | `stats` | VCF, VCF.GZ, BCF, BCF.GZ |\n| [BCFtools filter](/tools/bcftools-filter) | `filter` | VCF, VCF.GZ, BCF, BCF.GZ |\n| [SnpEff](/tools/snpeff) | — | VCF, VCF.GZ |\n| [fastp](/tools/fastp) | — | FASTQ (single or paired-end) |\n\n### Windows and WSL2\n\nAlmost none of this software has a Windows build. `samtools`, `bcftools`, `bwa`,\n`minimap2` and `fastp` are written for Unix and rely on operating-system\nfacilities Windows does not provide; their authors publish Linux and macOS\nreleases only. This is not a Liatir limitation and no Windows version exists to\npackage.\n\nSo Liatir on Windows ships the Linux tools and runs them through **WSL2**, the\nWindows Subsystem for Linux — the same mechanism it already uses for\n[Nextflow](/tools/external-workflows). You still work entirely in the Liatir\nwindow; your files stay where they are, and Liatir translates their locations for\nthe tool.\n\n**WSL2 must be installed.** It is a supported Windows feature, not third-party\nsoftware: open PowerShell as administrator, run `wsl --install`, and restart when\nasked. You do not need to install anything inside it for these tools — Liatir\nbrings its own copy and sets it up for you. Nextflow is different and does need\nto be installed inside WSL2 yourself.\n\nLiatir unpacks its tools the first time it starts after being installed or\nupdated. It takes a second or two, happens in the background, and does not repeat."
   },
   {
     "id": "docs:tools/overview#ai-tools",
@@ -2163,8 +2163,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Samtools faidx — Installation",
     "locator": "Docs / Tools / Samtools Faidx / Installation",
-    "excerpt": "Installation Samtools must be installed and available in your system PATH. ::: code-group ```bash [macOS (Homebrew)] brew install samtools ``` ```bash [Ubuntu/Debian] sudo apt install samtools ``` ```bash [conda] conda install -c bioconda samtools ``` :::",
-    "content": "Installation\nSamtools must be installed and available in your system PATH.\n\n::: code-group\n\n```bash [macOS (Homebrew)]\nbrew install samtools\n```\n\n```bash [Ubuntu/Debian]\nsudo apt install samtools\n```\n\n```bash [conda]\nconda install -c bioconda samtools\n```\n\n:::"
+    "excerpt": "Installation Nothing to install. This tool ships inside Liatir and runs at the version this release was tested with; it updates when Liatir updates. The tool page shows **Included with Liatir** and the version it is running. On Windows it runs through WSL2 —…",
+    "content": "Installation\nNothing to install. This tool ships inside Liatir and runs at the version this\nrelease was tested with; it updates when Liatir updates. The tool page shows\n**Included with Liatir** and the version it is running.\n\nOn Windows it runs through WSL2 — see\n[Windows and WSL2](/tools/overview#windows-and-wsl2)."
   },
   {
     "id": "docs:tools/samtools-faidx#accepted-inputs",
@@ -2211,8 +2211,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Samtools — Installation",
     "locator": "Docs / Tools / Samtools / Installation",
-    "excerpt": "Installation Samtools must be installed and available in your system PATH. ::: code-group ```bash [macOS (Homebrew)] brew install samtools ``` ```bash [Ubuntu/Debian] sudo apt install samtools ``` ```bash [conda] conda install -c bioconda samtools ``` ::: Lia…",
-    "content": "Installation\nSamtools must be installed and available in your system PATH.\n\n::: code-group\n\n```bash [macOS (Homebrew)]\nbrew install samtools\n```\n\n```bash [Ubuntu/Debian]\nsudo apt install samtools\n```\n\n```bash [conda]\nconda install -c bioconda samtools\n```\n\n:::\n\nLiatir checks for `samtools` on page load. If it is not found, the dependency card shows these same instructions."
+    "excerpt": "Installation Nothing to install. This tool ships inside Liatir and runs at the version this release was tested with; it updates when Liatir updates. The tool page shows **Included with Liatir** and the version it is running. On Windows it runs through WSL2 —…",
+    "content": "Installation\nNothing to install. This tool ships inside Liatir and runs at the version this\nrelease was tested with; it updates when Liatir updates. The tool page shows\n**Included with Liatir** and the version it is running.\n\nOn Windows it runs through WSL2 — see\n[Windows and WSL2](/tools/overview#windows-and-wsl2)."
   },
   {
     "id": "docs:tools/samtools#accepted-inputs",
@@ -2259,8 +2259,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "seqkit — Installation",
     "locator": "Docs / Tools / Seqkit / Installation",
-    "excerpt": "Installation seqkit must be installed and available in your system PATH. ::: code-group ```bash [macOS (Homebrew)] brew install seqkit ``` ```bash [conda] conda install -c bioconda seqkit ``` ```bash [Ubuntu/Debian] sudo apt install seqkit ``` :::",
-    "content": "Installation\nseqkit must be installed and available in your system PATH.\n\n::: code-group\n\n```bash [macOS (Homebrew)]\nbrew install seqkit\n```\n\n```bash [conda]\nconda install -c bioconda seqkit\n```\n\n```bash [Ubuntu/Debian]\nsudo apt install seqkit\n```\n\n:::"
+    "excerpt": "Installation Nothing to install. This tool ships inside Liatir and runs at the version this release was tested with; it updates when Liatir updates. The tool page shows **Included with Liatir** and the version it is running. On Windows it runs through WSL2 —…",
+    "content": "Installation\nNothing to install. This tool ships inside Liatir and runs at the version this\nrelease was tested with; it updates when Liatir updates. The tool page shows\n**Included with Liatir** and the version it is running.\n\nOn Windows it runs through WSL2 — see\n[Windows and WSL2](/tools/overview#windows-and-wsl2)."
   },
   {
     "id": "docs:tools/seqkit#accepted-inputs",

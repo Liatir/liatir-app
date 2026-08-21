@@ -718,7 +718,7 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("name required"))?
                 .to_string();
-            let result = crate::bridge::deps::lia_deps_check(name)
+            let result = crate::bridge::deps::lia_deps_check(app.clone(), name)
                 .await
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(result)
@@ -729,7 +729,7 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 .as_array()
                 .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect())
                 .ok_or_else(|| anyhow::anyhow!("names required"))?;
-            let result = crate::bridge::deps::lia_deps_check_many(names)
+            let result = crate::bridge::deps::lia_deps_check_many(app.clone(), names)
                 .await
                 .map_err(|e| anyhow::anyhow!(e))?;
             Ok(serde_json::to_value(result)?)

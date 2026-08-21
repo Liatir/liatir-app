@@ -7,10 +7,16 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
+// The WSL2 crossing is shared with the bundled Native Tools environment; both
+// capabilities must validate and translate paths the same way.
+#[cfg(target_os = "windows")]
+use crate::helpers::wsl::{
+    combined_output, map_host_paths_to_wsl, run_wsl, valid_wsl_distribution, wsl_command_args,
+};
 #[cfg(target_os = "windows")]
 use std::{
     collections::HashMap,
-    process::{Command, Output, Stdio},
+    process::{Command, Stdio},
     time::{SystemTime, UNIX_EPOCH},
 };
 use std::{
@@ -355,77 +361,6 @@ fn detect_nextflow_runtime() -> ExternalWorkflowRuntimeInfo {
                 missing.join(" and ")
             )
         }),
-    }
-}
-
-#[cfg(target_os = "windows")]
-fn valid_wsl_distribution(value: &str) -> bool {
-    !value.is_empty()
-        && value.len() <= 128
-        && value.chars().all(|character| {
-            character.is_ascii_alphanumeric() || matches!(character, ' ' | '_' | '-' | '.')
-        })
-}
-
-#[cfg(target_os = "windows")]
-fn wsl_command_args(distribution: Option<&str>, command: &[String]) -> Vec<String> {
-    let mut args = Vec::with_capacity(command.len() + 3);
-    if let Some(distribution) = distribution {
-        args.push("--distribution".into());
-        args.push(distribution.into());
-    }
-    args.push("--exec".into());
-    args.extend(command.iter().cloned());
-    args
-}
-
-#[cfg(target_os = "windows")]
-fn run_wsl(distribution: Option<&str>, command: &[String]) -> Result<Output, String> {
-    Command::new("wsl.exe")
-        .args(wsl_command_args(distribution, command))
-        .output()
-        .map_err(|error| format!("Could not start WSL2 through wsl.exe: {error}"))
-}
-
-#[cfg(target_os = "windows")]
-fn run_wsl_with_input(
-    distribution: Option<&str>,
-    command: &[String],
-    input: &[u8],
-) -> Result<Output, String> {
-    let mut child = Command::new("wsl.exe")
-        .args(wsl_command_args(distribution, command))
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|error| format!("Could not start WSL2 through wsl.exe: {error}"))?;
-    let write_result = child
-        .stdin
-        .take()
-        .ok_or_else(|| "Could not open WSL2 standard input.".to_string())
-        .and_then(|mut stdin| {
-            stdin
-                .write_all(input)
-                .map_err(|error| format!("Could not send staged paths to WSL2: {error}"))
-        });
-    let output = child
-        .wait_with_output()
-        .map_err(|error| format!("Could not wait for WSL2 path conversion: {error}"))?;
-    write_result?;
-    Ok(output)
-}
-
-#[cfg(target_os = "windows")]
-fn combined_output(output: &Output) -> String {
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    if stderr.trim().is_empty() {
-        stdout.trim().to_string()
-    } else if stdout.trim().is_empty() {
-        stderr.trim().to_string()
-    } else {
-        format!("{}\n{}", stdout.trim(), stderr.trim())
     }
 }
 
@@ -1016,53 +951,6 @@ fn attach_execution_layout(
         resume_work_directory,
     });
     Ok(())
-}
-
-#[cfg(target_os = "windows")]
-fn map_host_paths_to_wsl(distribution: &str, host_paths: &[String]) -> Result<Vec<String>, String> {
-    for path in host_paths {
-        if path
-            .chars()
-            .any(|character| matches!(character, '\0' | '\r' | '\n'))
-        {
-            return Err(
-                "A staged Windows path contains a character that WSL cannot map safely.".into(),
-            );
-        }
-        if !Path::new(path).is_absolute() {
-            return Err(format!(
-                "Only absolute Windows paths can cross into WSL2: {path}"
-            ));
-        }
-    }
-    // `wslpath` accepts one path at a time. The fixed shell program reads validated paths from
-    // standard input so Windows/WSL argument parsing never gets a chance to split spaces.
-    let command = vec![
-        "/bin/sh".into(),
-        "-c".into(),
-        "while IFS= read -r path; do\n  wslpath -a -u \"$path\" || exit $?\ndone".into(),
-    ];
-    let mut input = host_paths.join("\n");
-    input.push('\n');
-    let output = run_wsl_with_input(Some(distribution), &command, input.as_bytes())?;
-    if !output.status.success() {
-        return Err(format!(
-            "WSL2 path conversion failed: {}",
-            combined_output(&output)
-        ));
-    }
-    let mapped = String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .map(|line| line.trim_end_matches('\r').to_string())
-        .collect::<Vec<_>>();
-    if mapped.len() != host_paths.len()
-        || mapped
-            .iter()
-            .any(|path| !path.starts_with('/') || path.contains('\0'))
-    {
-        return Err("WSL2 returned an invalid path mapping for the staged run.".into());
-    }
-    Ok(mapped)
 }
 
 #[cfg(target_os = "windows")]

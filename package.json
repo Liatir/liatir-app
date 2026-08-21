@@ -58,6 +58,9 @@
     "build:clean": "npm run build:clean --prefix src-tauri/",
     "build:log": "npm run build:log --prefix src-tauri/",
     "build:wasm": "npm run build:wasm --prefix src-tauri/",
+
+    "native-tools:build": "node scripts/build-native-tools-env.mjs",
+    "native-tools:require": "node scripts/build-native-tools-env.mjs --require",
     "build:frontend": "npm ci --prefix frontend/ && npm run build --prefix frontend/",
     "build:worker": "npm run build:worker --prefix src-tauri/",
 
@@ -69,7 +72,7 @@
     "dev:frontend": "npm run dev --prefix frontend/",
     
     "test:unit": "vitest run --config tests/unit/vitest.config.ts",
-    "test:tauri:prepare": "npm run localdevconf && npm run build --prefix packages/liatir-core && npm run gen:sdk-types && npm ci --prefix frontend && npm run check --prefix frontend && npm run build --prefix frontend && npm run ts:compile --prefix src-tauri && node scripts/build-tauri-test-binary.mjs",
+    "test:tauri:prepare": "npm run localdevconf && npm run build --prefix packages/liatir-core && npm run gen:sdk-types && npm ci --prefix frontend && npm run check --prefix frontend && npm run build --prefix frontend && npm run ts:compile --prefix src-tauri && npm run native-tools:build && node scripts/build-tauri-test-binary.mjs",
     "test:tauri": "npm run test:tauri:prepare && npm run test:tauri:run",
     "test:tauri:dev-smoke": "node scripts/smoke-tauri-dev.mjs",
     "test:tauri:run": "node tests/e2e/run-tauri-e2e.mjs",

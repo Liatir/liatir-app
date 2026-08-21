@@ -43,8 +43,9 @@ pub async fn lia_minimap2(
             args.push(r2);
         }
 
-        let mut child = Command::new("minimap2")
-            .args(&args)
+        let resolved = super::jobs::resolve_spawn(&app, "minimap2", &args)?;
+        let mut child = Command::new(&resolved.program)
+            .args(&resolved.args)
             // OS-level redirect — SAM bytes go straight to disk, never through Rust
             .stdout(out_file)
             .stderr(Stdio::piped())

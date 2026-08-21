@@ -77,6 +77,8 @@ try {
   runNpm(['run', 'gen:sdk-types']);
   runNpm(['run', 'build:frontend']);
   runNpm(['run', 'ts:compile']);
+  // The bundle is not a Liatir package without its Native Tools.
+  runNpm(['run', 'native-tools:require']);
 
   const prodConf = confShellInvocation('prod-conf.sh');
   run(prodConf.command, prodConf.args, {

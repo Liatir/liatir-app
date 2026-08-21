@@ -29,8 +29,13 @@ pub async fn lia_bwa_mem(
         // Auto-index reference if index files don't exist
         if !Path::new(&format!("{reference}.amb")).exists() {
             let _ = app.emit(&format!("jobs:stderr:{job_id}"), "[liatir] Indexing reference (first use)…".to_string());
-            let idx = Command::new("bwa")
-                .args(["index", &reference])
+            let index = super::jobs::resolve_spawn(
+                &app,
+                "bwa",
+                &["index".to_string(), reference.clone()],
+            )?;
+            let idx = Command::new(&index.program)
+                .args(&index.args)
                 .stderr(Stdio::piped())
                 .status()
                 .map_err(|e| format!("failed to run bwa index: {e}"))?;
@@ -54,8 +59,9 @@ pub async fn lia_bwa_mem(
             args.push(r2);
         }
 
-        let mut child = Command::new("bwa")
-            .args(&args)
+        let resolved = super::jobs::resolve_spawn(&app, "bwa", &args)?;
+        let mut child = Command::new(&resolved.program)
+            .args(&resolved.args)
             // OS-level redirect — SAM bytes go straight to disk, never through Rust
             .stdout(out_file)
             .stderr(Stdio::piped())

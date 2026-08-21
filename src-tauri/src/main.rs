@@ -129,6 +129,11 @@ fn main() {
     // Install built-in WASM plugins from bundled resources (fastqc, …)
     bridge::plugins::ensure_builtin_modules(&app.handle());
 
+    // Unpack the bundled Native Tools environment off the startup path, so the
+    // first samtools run does not pay for it. Nothing waits on this; a tool
+    // spawned before it finishes unpacks it itself.
+    bridge::native_tools::prepare_in_background(&app.handle());
+
     // Start local IPC server for Node.js adapter (liatir-cli dev mode, .liatir scripts)
     let ipc_handle = app.handle().clone();
     tauri::async_runtime::spawn(async move {
@@ -295,6 +300,7 @@ fn main() {
       lia_file_save,
       lia_file_open_with_bytes,
       lia_file_identity,
+      lia_native_tools_environment,
       lia_external_workflow_runtime_info,
       lia_external_workflow_prepare_run,
       lia_external_workflow_spawn_nextflow,

@@ -209,8 +209,8 @@ export const LIATIR_API: Record<string, ApiNode> = {
       clearDone: { type: "method", detail: "(): Promise<number>", info: "Remove all completed/failed/killed jobs from the registry" },
   } },
   deps: { type: "property", detail: "DepsInterface", info: "Check whether system tools are installed and get their versions.", children: {
-      check: { type: "method", detail: "(binary: string): Promise<DepCheckResult>", info: "Check if a single binary is available in PATH" },
-      checkMany: { type: "method", detail: "(binaries: string[]): Promise<DepCheckResult[]>", info: "Check multiple binaries at once" },
+      check: { type: "method", detail: "(binary: string): Promise<DepCheckResult>", info: "Check whether a dependency is available, from the bundle or from PATH" },
+      checkMany: { type: "method", detail: "(binaries: string[]): Promise<DepCheckResult[]>", info: "Check multiple dependencies at once" },
   } },
   externalWorkflows: { type: "property", detail: "ExternalWorkflowsInterface", info: "Saved external scientific workflows executed through system engines such as Nextflow.", children: {
       runtimeInfo: { type: "method", detail: "(): Promise<ExternalWorkflowRuntimeInfo>" },

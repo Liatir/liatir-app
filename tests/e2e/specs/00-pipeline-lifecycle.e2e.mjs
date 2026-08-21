@@ -98,7 +98,7 @@ function buildSettlementPlugin(rootDir, artifactsDir) {
   return settlementPluginPath;
 }
 
-function pipelineWorkspace() {
+function pipelineWorkspace(fixtures) {
   const now = Date.now();
   const pipelineA = {
     id: PIPELINE_A_ID,
@@ -188,7 +188,7 @@ function pipelineWorkspace() {
           stepId: 'seqkit-stats',
           label: 'Sequence statistics',
           inputs: {
-            inputFile: '/tmp/e2e-sequences.fastq',
+            inputFile: fixtures.sequences,
             threads: '1',
           },
         },
@@ -209,7 +209,7 @@ function pipelineWorkspace() {
           stepId: 'fastp',
           label: 'Slow native step',
           inputs: {
-            r1: '/tmp/e2e-reads.fastq',
+            r1: fixtures.slowReads,
             r2: '',
             threads: '1',
           },
@@ -231,8 +231,8 @@ function pipelineWorkspace() {
           stepId: 'minimap2',
           label: 'Align reads',
           inputs: {
-            reference: '/tmp/e2e-reference.fa',
-            reads: '/tmp/e2e-reads.fastq',
+            reference: fixtures.reference,
+            reads: fixtures.reads,
             threads: '1',
           },
         },
@@ -508,93 +508,68 @@ function apiWorkspace(url) {
 }
 
 /**
- * Builds the fake native tools the pipeline fixtures run.
+ * Writes the real inputs the Native Tool pipelines run on.
  *
- * POSIX hosts keep the shell scripts they always used. Windows cannot: a shebang means nothing
- * there, `chmod` is a no-op, and Rust spawns through `CreateProcess`, which refuses `.cmd` and
- * `.bat` outright, so a batch shim would not be executable either. One tiny real executable,
- * compiled once and copied under each tool name, is the approach the Runtime Box security fixture
- * already uses for its native launcher. The program picks its behaviour from its own name.
+ * These pipelines used to run four fake tools registered in `managed-bins/index.json` — `/bin/echo`
+ * for seqkit, `sleep 30` for fastp, and two scripts printing a canned SAM and flagstat — against
+ * three files in `/tmp` that nothing in the repository ever created. That worked only for as long
+ * as somebody's `/tmp` happened to hold them, and it stopped working entirely once Liatir began
+ * shipping its own Native Tools: the bundled environment is preferred over the managed-bin
+ * registry, deliberately, so the fakes are no longer reachable.
+ *
+ * Running the real tools on inputs the suite owns is better evidence anyway. The cancellation test
+ * is the reason the sizes matter: it needs a Job that is genuinely still running when it asks, so
+ * `slow-reads.fastq` is large enough for fastp to take several seconds on one thread, while every
+ * other fixture is deliberately tiny.
  */
-function buildFakeNativeTools(binDir) {
-  fs.mkdirSync(binDir, { recursive: true });
-
-  if (process.platform !== 'win32') {
-    const write = (name, lines) => {
-      const target = path.join(binDir, name);
-      fs.writeFileSync(target, lines.join('\n') + '\n', { mode: 0o755 });
-      fs.chmodSync(target, 0o755);
-      return target;
-    };
-    return {
-      echo: '/bin/echo',
-      slow: write('e2e-slow-fastp', ['#!/bin/sh', 'exec sleep 30']),
-      minimap2: write('e2e-minimap2', [
-        '#!/bin/sh',
-        "printf '@HD\tVN:1.6\tSO:unsorted\\n'",
-        "printf 'read1\t0\tchr1\t1\t60\t4M\t*\t0\t0\tACGT\tIIII\\n'",
-        "printf '[M::main] mapped 1 sequence\\n' >&2",
-      ]),
-      samtools: write('e2e-samtools', [
-        '#!/bin/sh',
-        "printf '1 + 0 in total (QC-passed reads + QC-failed reads)\\n'",
-        "printf '1 + 0 mapped (100.00%: N/A)\\n'",
-        "printf '0 + 0 duplicates\\n'",
-      ]),
-    };
-  }
-
-  const source = path.join(binDir, 'e2e-fake-tool.rs');
-  const template = path.join(binDir, 'e2e-fake-tool.exe');
-  fs.writeFileSync(source, [
-    'use std::io::Write;',
-    'fn main() {',
-    '    let name = std::env::args().next().unwrap_or_default().to_lowercase();',
-    '    let stdout = std::io::stdout();',
-    '    let mut out = stdout.lock();',
-    '    if name.contains("minimap2") {',
-    '        writeln!(out, "@HD\tVN:1.6\tSO:unsorted").unwrap();',
-    '        writeln!(out, "read1\t0\tchr1\t1\t60\t4M\t*\t0\t0\tACGT\tIIII").unwrap();',
-    '        eprintln!("[M::main] mapped 1 sequence");',
-    '    } else if name.contains("samtools") {',
-    '        writeln!(out, "1 + 0 in total (QC-passed reads + QC-failed reads)").unwrap();',
-    '        writeln!(out, "1 + 0 mapped (100.00%: N/A)").unwrap();',
-    '        writeln!(out, "0 + 0 duplicates").unwrap();',
-    '    } else if name.contains("slow") {',
-    '        std::thread::sleep(std::time::Duration::from_secs(30));',
-    '    } else {',
-    '        let args: Vec<String> = std::env::args().skip(1).collect();',
-    '        writeln!(out, "{}", args.join(" ")).unwrap();',
-    '    }',
-    '}',
-  ].join('\n') + '\n');
-  execFileSync('rustc', [
-    source, '--crate-name', 'e2e_fake_tool', '--edition', '2021',
-    '-C', 'opt-level=0', '-o', template,
-  ]);
-  const copy = (name) => {
-    const target = path.join(binDir, name + '.exe');
-    fs.copyFileSync(template, target);
-    return target;
+function writeNativeToolFixtures(fixtureDir) {
+  fs.mkdirSync(fixtureDir, { recursive: true });
+  const fixtures = {
+    sequences: path.join(fixtureDir, 'sequences.fastq'),
+    reads: path.join(fixtureDir, 'reads.fastq'),
+    slowReads: path.join(fixtureDir, 'slow-reads.fastq'),
+    reference: path.join(fixtureDir, 'reference.fa'),
   };
-  return {
-    echo: copy('e2e-echo'),
-    slow: copy('e2e-slow-fastp'),
-    minimap2: copy('e2e-minimap2'),
-    samtools: copy('e2e-samtools'),
+  // A fixed generator, so a rerun compares against the same bytes.
+  let seed = 20260821;
+  const next = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+  const bases = 'ACGT';
+  const contig = (length) => Array.from({ length }, () => bases[Math.floor(next() * 4)]).join('');
+
+  const chr1 = contig(1_000);
+  const chr2 = contig(1_000);
+  const wrap = (sequence) => (sequence.match(/.{1,60}/g) ?? []).join('\n');
+  fs.writeFileSync(fixtures.reference, `>chr1\n${wrap(chr1)}\n>chr2\n${wrap(chr2)}\n`);
+
+  // Reads cut out of the reference, so minimap2 has something real to align.
+  const record = (name, sequence) => `@${name}\n${sequence}\n+\n${'I'.repeat(sequence.length)}\n`;
+  const sampled = (count) => {
+    let text = '';
+    for (let index = 0; index < count; index += 1) {
+      const source = index % 2 === 0 ? chr1 : chr2;
+      const start = Math.floor(next() * (source.length - 75));
+      text += record(`read${index}`, source.slice(start, start + 75));
+    }
+    return text;
   };
+  fs.writeFileSync(fixtures.sequences, sampled(60));
+  fs.writeFileSync(fixtures.reads, sampled(200));
+
+  // ~16 MB and roughly five seconds of single-threaded fastp: long enough to observe and cancel,
+  // small enough to write in a moment. Written as one repeated block rather than 100k distinct
+  // reads because generating them costs more than fastp spends reading them.
+  const block = sampled(10_000);
+  const slow = fs.createWriteStream(fixtures.slowReads);
+  for (let repeat = 0; repeat < 10; repeat += 1) slow.write(block);
+  slow.end();
+  return fixtures;
 }
 
 async function seedSandbox(browser, apiUrl, pluginPath) {
-  const binDir = path.resolve('tests/.artifacts/bin');
-  const tools = buildFakeNativeTools(binDir);
-  const slowToolPath = tools.slow;
-  const minimapToolPath = tools.minimap2;
-  const samtoolsToolPath = tools.samtools;
-  const echoToolPath = tools.echo;
+  const fixtures = writeNativeToolFixtures(path.resolve('tests/.artifacts/fixtures/pipeline-lifecycle'));
 
   await waitForLiatirBridge(browser);
-  await browser.execute(async (pipelineState, apiState, binaries, pluginBundlePath, pluginId) => {
+  await browser.execute(async (pipelineState, apiState, pluginBundlePath, pluginId) => {
     const write = (rel, value) => window.Liatir.invoke('lia_app_write_text', {
       rel,
       content: JSON.stringify(value, null, 2),
@@ -630,49 +605,12 @@ async function seedSandbox(browser, apiUrl, pluginPath) {
         outputSchema: manifest.outputSchema ?? {},
         addedAt: Date.now(),
       }]),
-      writeData('managed-bins/index.json', {
-        bins: {
-          seqkit: {
-            binary: 'seqkit',
-            version: 'e2e',
-            path: binaries.echo,
-            platform: 'macos',
-            arch: 'test',
-            installedAt: Date.now(),
-          },
-          fastp: {
-            binary: 'fastp',
-            version: 'e2e',
-            path: binaries.slow,
-            platform: 'macos',
-            arch: 'test',
-            installedAt: Date.now(),
-          },
-          minimap2: {
-            binary: 'minimap2',
-            version: 'e2e',
-            path: binaries.minimap2,
-            platform: 'macos',
-            arch: 'test',
-            installedAt: Date.now(),
-          },
-          samtools: {
-            binary: 'samtools',
-            version: 'e2e',
-            path: binaries.samtools,
-            platform: 'macos',
-            arch: 'test',
-            installedAt: Date.now(),
-          },
-        },
-      }),
+      // Empty on purpose: these tools now come from the bundled environment, which the
+      // resolver prefers over this registry, so an entry here would be dead weight that
+      // reads like a working override.
+      writeData('managed-bins/index.json', { bins: {} }),
     ]);
-  }, pipelineWorkspace(), apiWorkspace(apiUrl), {
-    echo: echoToolPath,
-    slow: slowToolPath,
-    minimap2: minimapToolPath,
-    samtools: samtoolsToolPath,
-  }, pluginPath, PLUGIN_ID);
+  }, pipelineWorkspace(fixtures), apiWorkspace(apiUrl), pluginPath, PLUGIN_ID);
 }
 
 async function reseedSandbox(browser, apiUrl, pluginPath) {

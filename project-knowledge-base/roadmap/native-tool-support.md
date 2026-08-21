@@ -1,12 +1,12 @@
 # Native Tool Support Matrix
 
-> **Superseded in direction (2026-08-20).** The maintainer decided that every
-> Native Tool ships inside the app, in a single relocatable environment per
-> operating system, and that a tool with no package for a platform is declared
-> unsupported there instead of being handed to the user as a package-manager
-> instruction. The matrix below
-> still describes what ships today and stays authoritative until the migration
-> lands; the "Package manager" column is what the decision removes. See
+> **Superseded on macOS arm64 and Linux x86_64 (2026-08-21).** Six tools —
+> samtools, bcftools, seqkit, fastp, bwa, minimap2 — now ship inside the
+> application as one relocatable environment, and the resolver prefers it over
+> both the managed-bin registry and `PATH`. The matrix below still describes what
+> happens where no bundle exists: Intel Macs, Linux ARM64, and SnpEff. Windows
+> ships the Linux bundle through WSL2, implemented but not yet executed there.
+> See
 > [Native Tools as one bundled environment](./native-tools-bundled-environment.md).
 
 Liatir resolves every pipeline and standalone Native Tool through the shared
@@ -33,10 +33,15 @@ button. Those hosts use the explicit package-manager path instead.
 | --- | --- | --- | --- | --- | --- |
 | SeqKit 2.13.0 | Managed | Managed | Managed | Managed | Managed |
 | minimap2 2.31 | Package manager | Package manager | Managed | Package manager | Package manager |
-| bwa-mem2 2.3 | Package manager | Package manager | Managed | Package manager | Package manager |
+| bwa | Package manager | Package manager | Package manager | Package manager | Package manager |
 | samtools | Package manager | Package manager | Package manager | Package manager | Package manager |
 | bcftools | Package manager | Package manager | Package manager | Package manager | Package manager |
 | fastp | Package manager | Package manager | Package manager | Package manager | Package manager |
+
+bwa has no managed row because lh3/bwa publishes source tarballs only. bwa-mem2
+does publish a Linux binary and was listed here until 2026-08-21, but under its
+own name, which no caller and no dependency requirement asks for; see
+[the bwa decision](./native-tools-bundled-environment.md#bwa-use-the-original-retire-bwa-mem2).
 
 SnpEff remains a modular Java/JAR runtime with its databases managed
 separately. Direct and pipeline annotation use the same Jobs execution path.
@@ -45,9 +50,11 @@ separately. Direct and pipeline annotation use the same Jobs execution path.
 
 - Unit tests reject release records without immutable HTTPS URLs, versions,
   byte sizes, SHA-256 digests, or verification dates.
-- The heavy native dependency E2E downloads the real SeqKit release, verifies
-  it during installation, resolves it by bare tool name, executes
-  `seqkit version`, and removes it from isolated test storage.
+- The heavy native dependency E2E that downloaded, installed, executed and
+  removed the real SeqKit release was replaced on 2026-08-21: every binary this
+  registry can still offer is now inside the bundled environment, so its Install
+  button no longer exists. What replaces it proves that a bare tool name spawned
+  through the shared Jobs backend runs the binary the application shipped.
 - The native pipeline lifecycle E2E runs a typed minimap2-to-samtools workflow
   through the shared Jobs backend and verifies downstream file transfer,
   parent pipeline/run identity, and exactly-once Result provenance.

@@ -1,8 +1,10 @@
 /**
  * Store for external command-line dependencies (samtools, bwa, python, …).
  *
- * These are real binaries on the user's machine, not something Liatir bundles. Two separate
- * concerns live here, and keeping them apart is the whole design:
+ * Since the Native Tools environment ships inside the app, this store now covers two populations:
+ * bundled tools, which are reported from the build manifest and can never be missing, and everything
+ * else — language runtimes, Java, workflow engines — which really is on the user's machine. Two
+ * separate concerns live here, and keeping them apart is the whole design:
  *
  *   - **detection** (`results`): is the binary present, where, and at what version;
  *   - **installation** (`processStates`): the progress of installing or updating one, keyed per
@@ -17,6 +19,13 @@ export interface DepResult {
   available: boolean;
   path: string | null;
   version: string | null;
+  /**
+   * `bundled` means the tool ships inside the application and was answered from
+   * the build manifest rather than probed — so there is nothing for the user to
+   * install, and on Windows nothing on the host to point at, because it lives
+   * inside WSL2.
+   */
+  source?: 'bundled' | 'path';
 }
 
 /** Progress of an install/update for one dependency. */

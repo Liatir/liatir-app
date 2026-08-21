@@ -1,25 +1,67 @@
 # Current project status
 
-## Decision: Native Tools become Runtime Boxes (2026-08-20)
+## Native Tools ship inside the app, and do on macOS today (2026-08-21)
 
-Agreed by the maintainer, not started. Liatir distributes executable
-dependencies three ways today — signed Runtime Boxes for AI models, pinned
-upstream binaries in `binary-releases.ts`, and "install it yourself with a
-package manager" for everything those two cannot cover, which is most tool and
-platform combinations. Only the first is a controlled supply chain; the third is
-the absence of one, and it puts an unverified binary on the `PATH` that the
-resolver then executes. The reason Runtime Boxes exist — not managing
-dependencies on the user's machine — applies to `samtools` exactly as it applies
-to a model.
+Liatir distributed executable dependencies three ways — signed Runtime Boxes for
+AI Models, pinned upstream binaries in `binary-releases.ts`, and "install it
+yourself with a package manager" for everything those could not cover, which was
+most tool and platform combinations. The third is not a distribution mechanism;
+it is the absence of one, and it ended with an unverified binary on the `PATH`
+that the resolver executed.
 
-Every Native Tool therefore becomes a Runtime Box, one per operating system, and
-a tool whose upstream has no build for a platform is declared unsupported there
-rather than handed to the user to install. Scope, sizing and the platform matrix
-depend on a conda-forge/bioconda `win-64` availability check that has not been
-run yet, and no recipe should be written before its result is recorded.
+Six tools — `samtools`, `bcftools`, `seqkit`, `fastp`, `bwa`, `minimap2` — now
+ship as one relocatable conda environment inside the application, built from a
+committed `native-tools-env/pixi.toml` and `pixi.lock`. Not a Runtime Box: no
+catalog, no download, no per-tool signature and no revocation, because those
+exist for models that arrive *after* installation from outside, while a tool
+inside the signed application is covered by the application's own signature.
+Scrollcase is untouched.
 
-Full rationale, what it replaces, the open per-tool-versus-per-family sizing
-question and the order of work are in
+**macOS arm64 is done and verified.** A 68.0 MB archive holding a 202.7 MB
+environment, built in 9 seconds, with every tool run on real demo data both from
+the build directory and from a prefix extracted somewhere else — `bwa mem` and
+`minimap2 -ax sr` each produced 60 alignment records, `samtools faidx` indexed
+four contigs, `seqkit stats` counted 60 reads over 4,500 bp. `resolve_spawn` in
+`bridge/jobs.rs` prefers the bundle over managed binaries and `PATH`, and
+`lia_deps_check` answers for a bundled tool from the build manifest, so the
+Dependencies screen shows *Included with Liatir* instead of "Not installed" for a
+tool that works.
+
+It ships as an archive rather than as bundled resource files because the first
+implementation measured 438 MB inside the `.app` for a 203 MB environment: the
+Tauri bundler resolves symlinks into full copies and a conda prefix has 1,140 of
+them, so `libopenblas` was written seven times. Unpacking 212 MB with `tar` takes
+1.0 second, happens off the startup path, and is keyed by the lock digest. The
+rebuilt package is a 111 MB `.app` and an 87 MB DMG, and the Gate 7 macOS
+package gate passes with it — `codesign --verify --deep --strict` included.
+
+**Windows is implemented and unproven.** bioconda publishes no `win-64` builds at
+all, and five of the six tools have no Windows build anywhere, so Windows ships
+the `linux-64` environment as one tarball and runs it through WSL2 — the road
+Gate 6 already built for Nextflow. WSL2 unpacks it into the Linux filesystem on
+first use, keyed by lock digest, because a conda prefix is 1,200+ symlinks with
+execute bits that do not survive NTFS and would pay the 9p cost on every library
+load from `/mnt/c`. The WSL2 crossing moved to `helpers/wsl.rs` and is now shared
+rather than duplicated. Its command construction and path-argument selection are
+unit-tested on every platform; nothing has been executed on Windows.
+
+`bwa-mem2` was removed the same day: it was advertised for managed install under
+its own name while every caller asked for `bwa`, so it could never resolve. A
+contract test now requires every advertised binary to be one the dependency
+catalogue declares.
+
+The resolver order found a second latent defect. Three pipeline-lifecycle E2E
+tests registered fake tools in `managed-bins/index.json` — `/bin/echo` for
+seqkit, `sleep 30` for fastp — pointed at files in `/tmp` that nothing in the
+repository ever created, so they passed only while somebody's `/tmp` happened to
+hold them. Preferring the bundle made the fakes unreachable and the real tools
+refused the missing files. The order stayed: a managed binary for a bundled tool
+can only be a leftover from an older release. The suite now writes its own
+inputs, including one sized so single-threaded fastp is genuinely still running
+when the cancellation test asks — cancelling a real process rather than a
+`sleep`. On Windows those three tests now need WSL2 and the linux-64 archive.
+
+Full detail, measurements and the six open items are in
 [Native Tools as one bundled environment](./roadmap/native-tools-bundled-environment.md).
 
 ## Gate 8 controlled local MCP is complete on macOS arm64 (2026-08-21)

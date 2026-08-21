@@ -46,6 +46,9 @@ For every run or process, verify:
 - `frontend/` — SvelteKit UI. `src/lib/` holds components, `stores/`, `pipeline/`, `ai/`, `tools/`, `quenta/`, `viewers/`.
 - `src-ts/` — the TypeScript side of the bridge and the plugin-facing runtime (`core/`, `liatir/`, `modules/`).
 - `sdk/`, `public-sdk/`, `wasm-modules/` — the plugin SDK, its published surface, and WASM tool modules.
+- `native-tools-env/` — the committed `pixi.toml`/`pixi.lock` for the Native Tools environment that
+  ships inside the app. The built environment is an archive under `src-tauri/resources/native-tools/`,
+  produced by `npm run native-tools:build` and never committed.
 - `runtime-boxes/` — Runtime Box data: `recipes/`, `catalog.json`, `trust/`, `evidence/`, `measurements/`, `legal/`. `infra/runtime-box-ci/` is the CI side; `services/runtime-box-signer` and `workers/runtime-box-registry` are the remote services.
 - `scripts/` — build, conf, publishing and Runtime Box orchestration entry points behind the npm scripts.
 - `tests/` — `unit/` (vitest), `e2e/` (a real compiled binary driven over WebDriver), and `test-matrix.mjs`, which declares every suite and profile as data.
@@ -59,6 +62,9 @@ These are the current commands. If one no longer exists, read the `scripts` sect
 
 - `npm run dev` — run the app in development. `npm run dev:frontend` for UI-only work.
 - `npm run build:dev` / `npm run build` — dev and production builds.
+- `npm run native-tools:build` — build the bundled Native Tools environment for this host. A
+  production build runs it (as `native-tools:require`) and fails without it. Windows cannot build
+  it — only Linux can link a Linux conda prefix — so there it verifies the archive instead.
 - `npm run test:fast` — unit and contract tests. Use this while working.
 - `npm run test:verify` — **the gate before declaring work done**: unit + SDK type generation + core build + frontend check/build + `src-ts` compile.
 - `npm run test:ui` — end-to-end against a real compiled binary. `npm run test:ui:visual` for visual snapshots.

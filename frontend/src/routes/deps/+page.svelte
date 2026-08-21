@@ -764,6 +764,7 @@
 								state.phase === 'downloading' ||
 								state.phase === 'extracting' ||
 								state.phase === 'pm-installing'}
+							{@const isBundled = dep.source === 'bundled'}
 							{@const versionOk = !dep.available || dependencyVersionOk(dep.version, req)}
 							{@const isUnsupportedVersion = dep.available && !!dep.version && !versionOk}
 							{@const isSoft = isSoftDependency(dep.binary)}
@@ -803,7 +804,12 @@
 
 									<!-- Status message -->
 									<div class="flex-1 min-w-0">
-										{#if managed && !dep.available}
+										{#if isBundled}
+											<p class="text-xs text-emerald-600 truncate">
+												Included with Liatir —
+												<span class="font-mono text-text-muted" data-selectable>{dep.version}</span>
+											</p>
+										{:else if managed && !dep.available}
 											<p class="text-xs text-emerald-600 truncate">
 												Managed v{managed.version} —
 												<span class="font-mono text-text-subtle" title={getLastSegmentsStringFromPath(managed.path, 2)}>
@@ -886,8 +892,11 @@
 										</button>
 									{/if}
 
-									<!-- Action buttons -->
-									{#if (isUnsupportedVersion || (!dep.available && !managed)) && pmChecked && !isBusy}
+									<!-- Action buttons. A bundled tool has none: it arrived with the
+									     application, updates with it, and cannot be removed on its own. -->
+									{#if isBundled}
+										<p class="text-xs text-text-subtle shrink-0">Built in</p>
+									{:else if (isUnsupportedVersion || (!dep.available && !managed)) && pmChecked && !isBusy}
 										<div class="flex items-center gap-2 shrink-0">
 											{#if req?.downloadOptions}
 												{#each req.downloadOptions as opt}

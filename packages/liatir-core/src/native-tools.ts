@@ -125,3 +125,70 @@ export function getNativeToolIds(): string[] {
 export function isBundledNativeTool(id: string): boolean {
   return BUILT_IN_NATIVE_TOOLS.some(t => t.id === id);
 }
+
+// ── Bundled Native Tools environment ─────────────────────────────────────────
+//
+// The process-backed tools ship inside the application as one relocatable conda
+// prefix, built from `native-tools-env/pixi.toml` by
+// `scripts/build-native-tools-env.mjs`. The user installs nothing.
+//
+// FastQC is absent because it runs as WASM in-process, and SnpEff because it is
+// a Java runtime whose JRE would outweigh every tool here combined.
+
+/** Conda subdirs Liatir builds a Native Tools environment for. */
+export type LiatirNativeToolsSubdir = 'osx-arm64' | 'linux-64';
+
+/** Tool IDs provided by the bundled environment, in build order. */
+export const BUNDLED_ENVIRONMENT_TOOL_IDS: readonly string[] = [
+  SAMTOOLS_ID,
+  BCFTOOLS_ID,
+  SEQKIT_ID,
+  FASTP_ID,
+  BWA_ID,
+  MINIMAP2_ID,
+];
+
+/** File name of the manifest written beside the environment it describes. */
+export const NATIVE_TOOLS_MANIFEST_FILE = 'liatir-native-tools.json';
+
+/** What the build recorded about the environment that shipped. */
+export interface LiatirNativeToolsManifest {
+  schemaVersion: 1;
+  subdir: LiatirNativeToolsSubdir;
+  /** SHA-256 of `pixi.lock` — the identity of this exact set of tool builds. */
+  lockDigest: string;
+  builtAt: string;
+  tools: { id: string; version: string }[];
+}
+
+/**
+ * How a host runs the bundled environment.
+ *
+ * `native` executes the prefix in place. `wsl2` is Windows: bioconda publishes
+ * no `win-64` builds and five of these six tools have no Windows build anywhere,
+ * so Windows ships the `linux-64` environment and runs it through WSL2 — the
+ * same backend External Workflows already requires for Nextflow.
+ */
+export interface LiatirNativeToolsPlacement {
+  subdir: LiatirNativeToolsSubdir;
+  execution: 'native' | 'wsl2';
+}
+
+export function nativeToolsPlacement(
+  os: 'macos' | 'linux' | 'windows',
+  arch: 'x86_64' | 'arm64',
+): LiatirNativeToolsPlacement | null {
+  if (os === 'macos' && arch === 'arm64') return { subdir: 'osx-arm64', execution: 'native' };
+  if (os === 'linux' && arch === 'x86_64') return { subdir: 'linux-64', execution: 'native' };
+  if (os === 'windows' && arch === 'x86_64') return { subdir: 'linux-64', execution: 'wsl2' };
+  return null;
+}
+
+/** True when this host gets `id` from the bundle instead of from the user's machine. */
+export function isProvidedByBundledEnvironment(
+  id: string,
+  os: 'macos' | 'linux' | 'windows',
+  arch: 'x86_64' | 'arm64',
+): boolean {
+  return nativeToolsPlacement(os, arch) !== null && BUNDLED_ENVIRONMENT_TOOL_IDS.includes(id);
+}

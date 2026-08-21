@@ -270,20 +270,38 @@ pub(crate) async fn lia_jobs_spawn_with_kill_command(
     .await
 }
 
-/// Resolve a spawn target to an executable path — the single source of truth
-/// for native-tool resolution, shared by the app's own `runNativeTool` and by
-/// out-of-process plugins calling `jobs.spawn(tools.X, ...)`:
+/// Resolve a spawn target to what will actually be executed — the single source
+/// of truth for native-tool resolution, shared by the app's own `runNativeTool`
+/// and by out-of-process plugins calling `jobs.spawn(tools.X, ...)`:
 /// - an explicit path (contains a separator) is used verbatim;
+/// - a tool the application bundles resolves to the bundled environment, which
+///   on Windows means running it inside WSL2 with its file arguments translated;
 /// - a bare name listed in the managed-bins registry
 ///   (`<data>/managed-bins/index.json`, written by the installer) resolves to
 ///   that installed binary, so the app and plugins run the SAME managed build;
-/// - otherwise the bare name is returned unchanged and resolved via PATH
-///   (tools installed through brew/conda).
-fn resolve_spawn_cmd(app: &AppHandle, cmd: &str) -> String {
+/// - otherwise the bare name is returned unchanged and resolved via PATH.
+///
+/// The bundle comes first deliberately: it is the build this release was tested
+/// against, and preferring anything on the host would reintroduce the version
+/// drift that bundling exists to remove.
+pub(crate) fn resolve_spawn(
+    app: &AppHandle,
+    cmd: &str,
+    args: &[String],
+) -> Result<super::native_tools::ResolvedCommand, String> {
     if cmd.contains('/') || cmd.contains(std::path::MAIN_SEPARATOR) {
-        return cmd.to_string();
+        return Ok(super::native_tools::ResolvedCommand {
+            program: cmd.to_string(),
+            args: args.to_vec(),
+        });
     }
-    managed_bin_path(app, cmd).unwrap_or_else(|| cmd.to_string())
+    if let Some(bundled) = super::native_tools::resolve(app, cmd, args)? {
+        return Ok(bundled);
+    }
+    Ok(super::native_tools::ResolvedCommand {
+        program: managed_bin_path(app, cmd).unwrap_or_else(|| cmd.to_string()),
+        args: args.to_vec(),
+    })
 }
 
 /// Look up a bare tool name in the managed-bins registry, returning its
@@ -332,10 +350,15 @@ async fn spawn_job(
         None
     };
 
-    // Resolve managed native tools to their installed binary; bare names fall
-    // through to PATH. The JobEntry keeps the original `cmd` for display.
-    let resolved = resolve_spawn_cmd(&app, &cmd);
-    let mut command = app.shell().command(&resolved).args(&args);
+    // Resolve to the bundled environment, then to a managed binary; bare names
+    // fall through to PATH. The JobEntry keeps the original `cmd` and `args` for
+    // display, so a Windows user still sees `samtools sort <their path>` rather
+    // than the `wsl.exe` line that carries it.
+    let resolved = resolve_spawn(&app, &cmd, &args)?;
+    let mut command = app
+        .shell()
+        .command(&resolved.program)
+        .args(&resolved.args);
 
     if let Some(dir) = cwd {
         command = command.current_dir(dir);
@@ -353,7 +376,7 @@ async fn spawn_job(
     let _job_start = registry.allow_job_start()?;
     let (mut rx, child) = command
         .spawn()
-        .map_err(|e| format!("failed to spawn '{resolved}': {e}"))?;
+        .map_err(|e| format!("failed to spawn '{}': {e}", resolved.program))?;
 
     let entry = JobEntry {
         id: job_id.clone(),
