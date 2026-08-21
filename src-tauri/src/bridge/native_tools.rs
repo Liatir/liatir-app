@@ -6,7 +6,8 @@
 //! tested against.
 //!
 //! It ships as a single `native-tools-<subdir>.tar.gz` and is unpacked once, on
-//! first use, into a directory named after the lock digest. It is not shipped as
+//! first use, into a directory named after that archive's own SHA-256 — not the
+//! lock's, which would not change when the build changes what it packs. It is not shipped as
 //! a directory of files, for a measured reason: a conda prefix is over a
 //! thousand symlinks, the Tauri bundler resolves each one into a full copy, and
 //! doing that turned a 203 MB environment into 438 MB inside the `.app` — 196 MB
@@ -95,22 +96,33 @@ fn archive_path(app: &AppHandle) -> Option<PathBuf> {
     path.is_file().then_some(path)
 }
 
-/// What the build recorded: the lock digest and every pinned tool version.
+/// What the build recorded: the archive's own digest, the lock digest, and every
+/// pinned tool version. This is the sidecar beside the archive, not the manifest
+/// inside the prefix — only the sidecar carries `archiveSha256`.
 fn manifest(app: &AppHandle) -> Option<Value> {
     let sidecar = format!("{}.json", archive_path(app)?.to_string_lossy());
     serde_json::from_str(&std::fs::read_to_string(sidecar).ok()?).ok()
 }
 
-/// The lock digest, validated as hex because it names a directory.
-fn lock_digest(app: &AppHandle) -> Result<String, String> {
+/// The identity of the environment that shipped, validated as hex because it
+/// names a directory.
+///
+/// This is the archive's digest and deliberately not the lock's. The lock pins
+/// tool *versions*; the archive is the bytes those versions were packed into, so
+/// a change to what the build packs — pruning, layout — moves this while the lock
+/// digest stays put. Naming the directory after the lock would then leave the
+/// completion marker of an older release in place and the application would keep
+/// running the environment that release unpacked, never the one it shipped. That
+/// is the same drift the bundle exists to remove, arriving from inside.
+fn environment_digest(app: &AppHandle) -> Result<String, String> {
     let digest = manifest(app)
         .as_ref()
-        .and_then(|manifest| manifest.get("lockDigest"))
+        .and_then(|manifest| manifest.get("archiveSha256"))
         .and_then(Value::as_str)
         .unwrap_or_default()
         .to_string();
     if digest.len() != 64 || !digest.chars().all(|character| character.is_ascii_hexdigit()) {
-        return Err("The Native Tools environment manifest has no usable lock digest.".into());
+        return Err("The Native Tools environment manifest has no usable archive digest.".into());
     }
     Ok(digest)
 }
@@ -234,6 +246,7 @@ pub(crate) fn resolve(
 
     #[cfg(target_os = "windows")]
     {
+        wsl_plan::reject_unreachable_paths(args)?;
         let distribution = windows::distribution()?;
         let prefix = windows::ensure_unpacked(app, &distribution)?;
         let positions = wsl_plan::path_argument_positions(args);
@@ -278,7 +291,7 @@ fn unpacked_root(app: &AppHandle) -> Result<PathBuf, String> {
         .app_data_dir()
         .map_err(|error| error.to_string())?
         .join(RESOURCE_DIR)
-        .join(lock_digest(app)?))
+        .join(environment_digest(app)?))
 }
 
 /// Unpack once per lock digest, and never half-way.
@@ -286,8 +299,8 @@ fn unpacked_root(app: &AppHandle) -> Result<PathBuf, String> {
 /// The completion marker goes inside the tree before it is moved into place, so
 /// an interrupted first run leaves a `.partial` directory the next attempt
 /// discards and can never leave a half-extracted prefix that looks ready.
-/// Keying on the lock digest means an application update that changes a tool
-/// version lands beside the old environment rather than overwriting one a
+/// Keying on the archive digest means any application update that ships a
+/// different environment lands beside the old one rather than overwriting one a
 /// running Job is still executing from.
 ///
 /// Integrity is left to gzip's own CRC — a truncated or corrupted archive fails
@@ -378,6 +391,26 @@ mod wsl_plan {
             .collect()
     }
 
+    /// Refuse a location WSL2 cannot reach, before anything is launched.
+    ///
+    /// `wslpath` has no answer for a UNC or extended-length path, so without this
+    /// the argument would travel to Linux untouched and the user would get the
+    /// tool's own `stat \\server\share\reads.fastq: no such file or directory` —
+    /// true, but not an answer a non-technical user can act on.
+    ///
+    /// Two leading backslashes is the whole test, and deliberately so: it is what
+    /// a Windows file picker produces for a network location, and no subcommand,
+    /// flag, thread count or `bcftools` filter expression begins that way.
+    pub(super) fn reject_unreachable_paths(args: &[String]) -> Result<(), String> {
+        match args.iter().find(|value| value.starts_with(r"\\")) {
+            None => Ok(()),
+            Some(argument) => Err(format!(
+                "Liatir cannot open files from a network location on Windows: {argument}\n\
+                 Copy the file to a drive on this computer, such as C:, and run the tool again."
+            )),
+        }
+    }
+
     /// Put the translated paths back in the slots they came from.
     pub(super) fn substitute_mapped_paths(
         args: &[String],
@@ -411,7 +444,7 @@ mod wsl_plan {
 
 #[cfg(target_os = "windows")]
 mod windows {
-    use super::{archive_path, lock_digest, subdir, COMPLETION_MARKER, UNPACK};
+    use super::{archive_path, environment_digest, subdir, COMPLETION_MARKER, UNPACK};
     use crate::helpers::wsl::{
         combined_output, map_host_paths_to_wsl, run_wsl, valid_wsl_distribution,
     };
@@ -424,9 +457,15 @@ mod windows {
     /// Every value is a positional argument, never interpolated into the program
     /// text: `$1` is a validated hex digest, `$2` a path `wslpath` produced, `$3`
     /// a compile-time constant, `$4` the marker name.
+    ///
+    /// The closing loop is what `prune_other_digests` does natively, and it was
+    /// missing here: without it every superseded environment stayed in the Linux
+    /// home for good, half a gigabyte at a time. It runs only after a fresh
+    /// unpack, so nothing can be executing from what it removes.
     const UNPACK_PROGRAM: &str = r#"
 set -eu
-target="$HOME/.local/share/liatir/native-tools/$1"
+root="$HOME/.local/share/liatir/native-tools"
+target="$root/$1"
 if [ -f "$target/$4" ]; then
   printf '%s\n' "$target"
   exit 0
@@ -436,9 +475,14 @@ mkdir -p "$target.partial"
 tar -xzf "$2" -C "$target.partial"
 : > "$target.partial/$3/$4"
 rm -rf "$target"
-mkdir -p "$(dirname "$target")"
+mkdir -p "$root"
 mv "$target.partial/$3" "$target"
 rm -rf "$target.partial"
+for other in "$root"/*; do
+  if [ -e "$other" ] && [ "$other" != "$target" ]; then
+    rm -rf "$other"
+  fi
+done
 printf '%s\n' "$target"
 "#;
 
@@ -484,7 +528,7 @@ printf '%s\n' "$target"
         let subdir = subdir().ok_or("No Native Tools environment is built for this host.")?;
         let archive = archive_path(app)
             .ok_or("The bundled Native Tools environment is missing from this installation.")?;
-        let digest = lock_digest(app)?;
+        let digest = environment_digest(app)?;
         let archive_in_wsl =
             map_host_paths_to_wsl(distribution, &[archive.to_string_lossy().to_string()])?
                 .remove(0);
@@ -551,6 +595,39 @@ mod tests {
             translated,
             vec!["mem", "-t", "8", "/mnt/c/bio/ref.fa", "/mnt/c/bio/R1.fastq"],
         );
+    }
+
+    /// A network location fails before WSL2 is started, with an instruction
+    /// rather than the tool's own `stat` error.
+    #[test]
+    fn refuses_a_network_location_liatir_cannot_reach() {
+        let args = vec![
+            "stats".to_string(),
+            r"\\server\share\reads.fastq".to_string(),
+        ];
+        let error = wsl_plan::reject_unreachable_paths(&args).unwrap_err();
+        assert!(error.contains(r"\\server\share\reads.fastq"));
+        assert!(error.contains("Copy the file to a drive on this computer"));
+        // The extended-length form starts the same way and is equally unmappable.
+        assert!(wsl_plan::reject_unreachable_paths(&[r"\\?\C:\bio\ref.fa".to_string()]).is_err());
+    }
+
+    /// What must keep working: everything Liatir actually passes.
+    #[test]
+    fn lets_ordinary_arguments_and_drive_paths_through() {
+        let args: Vec<String> = [
+            "view",
+            "-i",
+            "QUAL>20 && DP>10",
+            "-t",
+            "8",
+            r"C:\bio\calls.vcf",
+            "D:/data/ref.fa",
+        ]
+        .iter()
+        .map(|value| value.to_string())
+        .collect();
+        assert!(wsl_plan::reject_unreachable_paths(&args).is_ok());
     }
 
     /// The argument that must never be treated as a path.

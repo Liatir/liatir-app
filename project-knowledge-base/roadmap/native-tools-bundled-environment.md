@@ -1,8 +1,13 @@
 # Native Tools as one bundled environment
 
 Status: **Decided 2026-08-20. Built and verified end to end on macOS arm64
-2026-08-21. The Windows/WSL2 path is implemented and its logic is unit-tested,
-but has not been executed on Windows.**
+2026-08-21, and on Windows x86_64 through WSL2 the same day — every gate green
+and all three Windows-only questions answered. Running the gate found four
+defects, all fixed and covered: a CRLF checkout that broke the build and silently
+changed the environment's identity; a build-time sysroot that doubled the
+`linux-64` archive; a network path forwarded to the tool instead of refused; and
+an unpack keyed on the lock rather than on the archive, which would have kept an
+older release's environment in place.**
 
 ## The decision
 
@@ -288,20 +293,25 @@ must not exist twice. Argument translation is deliberately narrow — an argumen
 is a file if it starts with a drive letter, which is what Liatir always passes
 and what a `bcftools` filter expression never looks like.
 
-**Not executed on Windows.** The command construction, the path-argument
-selection and the mapping checks are unit-tested and run on every platform;
-whether `wsl.exe` and `wslpath` behave as documented is not something a macOS
-machine can answer.
+**Executed on Windows 2026-08-21**, and `wsl.exe` and `wslpath` do behave as
+documented. What the unit tests could already prove — command construction,
+path-argument selection, the mapping checks — they proved on every platform;
+what only Windows could answer is recorded below.
 
-### Verifying on Windows
+### Verified on Windows (2026-08-21)
 
-Written down here rather than left to whoever picks this up, because none of it
-can be discovered from the code.
+Run on Windows 11 x86_64 with WSL2 and Ubuntu (`WSL_DISTRO_NAME=Ubuntu`), against
+a `linux-64` archive built inside that same distribution. Everything below is
+reproducible from a clean checkout.
 
-**Prerequisites.** WSL2 with an x86_64 distribution; `node` and
-[pixi](https://pixi.sh) *inside* WSL. On the Windows side the `*conf` scripts
-need Git for Windows and `jq` — and note that the `bash` on the Windows `PATH` is
-the WSL launcher, which `scripts/run-conf.mjs` deliberately does not use.
+**Prerequisites, as they actually landed.** WSL2 with an x86_64 distribution, and
+`node` plus [pixi](https://pixi.sh) *inside* WSL. Nothing in this repository
+installs pixi, so it is a separate step; once installed under `$HOME/.pixi`, the
+build finds it without a `PATH` entry, through the fallback in `resolvePixi`. On
+the Windows side the `*conf` scripts need Git for Windows and `jq` — and `jq` is
+**not** part of Git for Windows, so that is a second separate install. The `bash`
+on the Windows `PATH` is the WSL launcher, which `scripts/run-conf.mjs`
+deliberately does not use.
 
 **Build the archive inside WSL**, since Windows cannot:
 
@@ -312,41 +322,173 @@ node scripts/build-native-tools-env.mjs
 ```
 
 It writes `src-tauri/resources/native-tools/native-tools-linux-64.tar.gz` and its
-sidecar. `/mnt/c` makes the intermediate ~200 MB copy slow; building from a clone
-in the Linux home and copying the two files over is the faster route. The script
-runs every tool from the destination prefix before packing and fails if one does
-not start or reports a version the lock did not pin, so its output is already the
-first piece of evidence. The lock digest must be the same one macOS reports —
-`pixi.lock` is a single file covering both platforms.
+sidecar, and runs every tool from the destination prefix before packing, so its
+output is already the first piece of evidence. `/mnt/c` makes the intermediate
+copy slow — it dominated the run — and building from a clone in the Linux home
+and copying the two files over is the faster route.
 
-**Then the gates**: `npm run test:ui`, then
-`npm run desktop-beta:package:windows` and `npm run desktop-beta:test:windows`.
-Four end-to-end tests now depend on this path — three in
-`00-pipeline-lifecycle.e2e.mjs` (seqkit attribution, fastp cancellation,
-minimap2-to-samtools) and the bundled-tool test in `dependencies.e2e.mjs`, which
-expects `execution === 'wsl2'` there. macOS baseline: `test:ui` 5 passed / 0
-failed / 2 platform-skipped, end-to-end 33 passed / 0 failed / 23 skipped.
+The first attempt **failed**, and the reason is the most valuable thing this gate
+produced; see [the four defects](#the-four-defects-this-gate-found) below. After
+that fix:
 
-**Three questions only Windows can answer.**
+| | macOS `osx-arm64` | Windows `linux-64` |
+| --- | --- | --- |
+| Packages in the lock | 38 | 44 |
+| Environment, pruned | 202.7 MB | 277.6 MB |
+| Archive | 68.0 MB | 93.2 MB |
+| Build wall time | 9 s | ~6 min |
+| Installer | 87 MB DMG | 109.4 MB NSIS |
+| First-run unpack | 1.0 s | 1.9 s |
 
-1. *The first-run unpack.* It runs in the background at startup. After the first
-   launch `$HOME/.local/share/liatir/native-tools/<lockDigest>/bin/samtools` must
-   exist inside WSL, and the second launch must not redo the work. Interrupt a
-   first launch halfway and confirm the next attempt discards the `.partial`
-   tree rather than finding a half-extracted prefix that looks ready.
-2. *Cancellation.* Killing `wsl.exe` should be enough, because a Native Tool is a
-   direct `--exec` child and the close of its pipes should carry — should, not
-   does. External Workflows needed a token and a cancel program, but only because
-   Nextflow detaches itself. If `ps` inside WSL still shows the tool after a
-   cancellation, that is the finding; record it before designing a remedy.
-3. *Path translation on real input.* A file under a path with spaces
-   (`C:\Users\Nome Cognome\...`) is what the stdin/`IFS= read -r` protocol exists
-   for and has never actually carried. A UNC path must be refused with a clear
-   error rather than passed through.
+Same six versions on both platforms — `samtools` 1.24, `bcftools` 1.24, `seqkit`
+2.13.0, `fastp` 1.3.6, `bwa` 0.7.19, `minimap2` 2.31.
+
+The `linux-64` figures are the ones **after** pruning the sysroot. As first built
+it was 513.7 MB and a 152.0 MB archive, against macOS's 202.7 MB and 68.0 MB, and
+the gap was worth chasing because it was not symlink duplication — 1,190 symlinks
+survived into the tar and out again with no repeated payloads. It was one
+package: the `linux-64` solve pulls `sysroot_linux-64` and `kernel-headers_linux-64`,
+which `osx-arm64` has no equivalent of, and 215 MB of that was a single
+`locale-archive.tmpl`. `ldd` resolves **zero** libraries out of that tree for any
+of the six tools, so it is now in `PRUNE_DIRECTORIES` — see
+[The four defects](#the-four-defects-this-gate-found).
+
+**The gates, all green.**
+
+| Gate | Result |
+| --- | --- |
+| `npm run test:verify` | 56 files / 338 tests passed |
+| `npm run test:ui` | 5 passed / 0 failed / 2 platform-skipped; end-to-end **33 passed / 0 failed / 23 skipped** |
+| `npm run desktop-beta:package:windows` | passed — 109.4 MB NSIS installer, silent install and uninstall, all three artifacts `NotSigned` as the gate requires |
+| `npm run desktop-beta:test:windows` | passed — install, migration, restart recovery, uninstall retention |
+| `cargo test` / `cargo clippy` | 79 passed / 0 failed / 2 ignored; clippy exits 0 |
+
+That end-to-end line is identical to the macOS baseline. The five tests that
+depend on this path all pass: three in `00-pipeline-lifecycle.e2e.mjs` (seqkit
+attribution, fastp cancellation, minimap2-to-samtools), and the bundled-tool test
+in `dependencies.e2e.mjs`, which sees `execution === 'wsl2'` here and now also
+carries a path with a space and a refused network path. `native-tools:build` on
+Windows correctly verified rather than built: *linux-64, executed through WSL2 —
+archive 93.2 MB, digest verified*.
+
+The pruned archive was also verified **natively on Linux**, inside the same WSL2
+distribution: unpacked somewhere it was never built, `ldd` reports no missing
+shared library for any of the six, and all six do real work — `seqkit stats` 60
+sequences over 7,200 bp, `samtools faidx` 1 contig, `bwa mem` 60 records,
+`minimap2 -ax sr` 60 records, `samtools flagstat` 60 in total, `fastp` 60 reads
+written, `bcftools` 1.24. The build script runs on Linux and re-executes every
+tool after pruning, so a wrong `PRUNE_DIRECTORIES` entry fails the build.
+
+**The three questions, answered.**
+
+1. *The first-run unpack — correct.* After the first launch,
+   `$HOME/.local/share/liatir/native-tools/<archiveSha256>/bin/samtools` exists
+   inside WSL with all six tools executable, **1,162 symlinks preserved**, the
+   completion marker in place and no stray `.partial`. A second launch does not
+   redo the work: the marker keeps the same inode and mtime across a full
+   startup. Interrupting the unpack leaves a `.partial` tree — measured at 55 MB
+   and 122 binaries with **no marker** — always under `.partial` and never under
+   the final digest name, and the next launch discards it and unpacks cleanly.
+
+   One thing to know: **killing the app does not stop the unpack.** `tar` was
+   still running inside WSL after `liatir.exe` died and finished on its own eight
+   seconds later. Harmless, because the unpack is idempotent and ends in a valid
+   prefix, but the app is not the lifetime owner of that work.
+
+2. *Cancellation — killing `wsl.exe` is enough.* Reproducing what
+   `kill_job_blocking` does (piped stdio, `child.kill()` on the `wsl.exe` child)
+   against a fastp with roughly ten seconds of work left on a 120 MB FASTQ: fastp
+   was gone from `ps` inside WSL within one second, with no orphan. The
+   end-to-end cancellation test passes and leaves no Native Tool process behind.
+   So no token and no cancel program are needed here — Nextflow needed those only
+   because it detaches itself, and a Native Tool is a direct `--exec` child.
+
+3. *Path translation — spaces work; UNC did not refuse, and now does.*
+   `C:\…\Nome Cognome\reads.fastq` arrived as `/mnt/c/…/Nome Cognome/reads.fastq`
+   and seqkit read it: 40 sequences, 4,800 bp, exit 0, with the Job record
+   keeping the original Windows path. That case is now asserted by the
+   bundled-tool test rather than living only in this document.
+
+   A UNC path was **not** refused as this section had required: it went through
+   untranslated and failed inside Linux with
+   `[ERRO] stat \\host\share\reads.fastq: no such file or directory`, status
+   `failed`, exit 255 — visible rather than silent, but the refusal was the
+   tool's, not Liatir's. Fixed; see the third defect below.
 
 Do not change the resolution order to make a test pass, and do not switch a test
 off to make the suite green: both would hide exactly what this gate exists to
 find.
+
+### The four defects this gate found
+
+None of them could have been found any other way, and three were silent.
+
+**1. A CRLF checkout broke the build and changed the environment's identity.**
+`native-tools-env/pixi.lock` was not byte-pinned in `.gitattributes`, so a
+Windows checkout under Git's default `core.autocrlf=true` materialised it with
+CRLF line endings (`git ls-files --eol` reporting `i/lf w/crlf`). Two failures at
+once, one loud and one silent:
+
+- The build refused to start: `lockedVersions` finds a platform by the exact line
+  `"      linux-64:"` after splitting on `\n`, and the trailing `\r` made that no
+  match — *"pixi.lock has no linux-64 environment"*.
+- **The lock digest changed**, from `e0bcda68…` to `cf090262…`, and at the time
+  that digest named the directory the environment unpacks into. A Windows-built
+  archive would have disagreed with the Linux and macOS one built from the
+  identical lock.
+
+Fixed with two lines in `.gitattributes`, next to the Runtime Box locks already
+pinned for the same reason. A *tolerant parser* would have been the wrong fix: it
+would have let the CRLF lock through and produced the wrong digest, which is the
+worse half. `tests/unit/native-tools-environment.test.ts` now asserts the lock
+and the manifest contain no `\r`; every other test in that file matches with
+line-tolerant regexes and kept passing through both failures.
+
+**2. The `linux-64` solve shipped 239 MB of build-time sysroot.** It pulls
+`sysroot_linux-64` and `kernel-headers_linux-64`, which `osx-arm64` has no
+equivalent of — 44 packages against 38. That was 264 MB of the 602 MB solved
+prefix, 215 MB of it a single `locale-archive.tmpl`. `ldd` resolves **zero**
+libraries out of that tree for any of the six tools. Adding
+`x86_64-conda-linux-gnu` to `PRUNE_DIRECTORIES` took the archive from 152.0 MB to
+**93.2 MB**, the prefix from 529 MB to 290 MB, the installer from 141.1 MB to
+**109.4 MB**, and the first-run unpack from 4.8 s to 1.9 s. The entry is inert on
+`osx-arm64`, which has no such directory. Verified natively on Linux as well as
+through WSL2, because the same archive ships on both.
+
+**3. A network path was forwarded to the tool instead of refused.** Covered in
+question 3 above. `resolve` now rejects any argument beginning with two
+backslashes before WSL2 is started at all:
+
+> Liatir cannot open files from a network location on Windows:
+> `\\server\share\reads.fastq`
+> Copy the file to a drive on this computer, such as C:, and run the tool again.
+
+Two leading backslashes is the whole test, deliberately: it is what a Windows
+file picker produces for a network location, and no subcommand, flag, thread
+count or `bcftools` filter expression begins that way. Two Rust unit tests cover
+the refusal and the arguments that must keep passing; the Windows arm of the
+bundled-tool E2E asserts the message reaches the caller. The comment on
+`is_mappable_windows_path` in `helpers/wsl.rs` claimed this refusal already
+happened — it was true only on the staged-path route — and now says which route
+refuses where.
+
+**4. The unpacked environment was named after the lock, not the archive.** The
+lock pins tool *versions*; the archive is the bytes those versions were packed
+into. Change what the build packs — pruning, layout — and the archive digest
+moves while the lock digest does not. The completion marker of the older release
+then stays in place under the same name, and **the application goes on running
+the environment that release unpacked, never the one it shipped**: the drift the
+bundle exists to remove, arriving from inside. Defect 2 is exactly that case, and
+it was reproduced on this machine — the pruned archive was ignored until the old
+directory was deleted by hand.
+
+The unpack is now keyed on `archiveSha256`, which the build already recorded in
+the sidecar and which `LiatirNativeToolsArchiveManifest` now declares. Observed
+across the upgrade on Windows: `e0bcda68…` (lock) became `18266feb…` (archive),
+and the old tree was removed. Removing it required a second fix — the Windows
+unpack program had no equivalent of `prune_other_digests`, so every superseded
+environment stayed in the Linux home for good, half a gigabyte at a time. That
+was pre-existing and would have been triggered by every tool-version bump.
 
 ## Still to settle
 
@@ -355,7 +497,7 @@ find.
    that does not use it. At +68 MB compressed this reads as being about CUDA and
    PyTorch rather than about `samtools`, but the bundle does make these tools
    mandatory for every user, and that is a deliberate choice being made rather
-   than overlooked.
+   than overlooked. On Windows and Linux the figure is +93 MB rather than +68 MB.
 2. **Signing.** The archive is inside the signed application, but what runs is
    unpacked into application data and is not itself signed or notarized. That is
    the same position Runtime Boxes are already in, and it is the
@@ -369,7 +511,8 @@ find.
    GPU-free hosted runner profiles already declared in
    `runtime-boxes/catalog.json` — `ubuntu-24.04`, `windows-2025`, `macos-15` —
    with the Linux job handing its archive to the Windows job. No self-hosted or
-   GPU runner is involved.
+   GPU runner is involved. Note that the Windows job needs `jq`, which neither
+   Git for Windows nor the image's default `PATH` necessarily provides.
 5. **The platforms with no environment.** `osx-64` and `linux-aarch64` resolve to
    no bundle today, so tools there still fall through to `PATH`. Adding them is
    two entries in the same manifest plus a runner that can link them.

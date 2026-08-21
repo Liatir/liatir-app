@@ -25,6 +25,10 @@ const resolver = readFileSync(
   new URL('../../src-tauri/src/bridge/native_tools.rs', import.meta.url),
   'utf8',
 );
+const builder = readFileSync(
+  new URL('../../scripts/build-native-tools-env.mjs', import.meta.url),
+  'utf8',
+);
 
 /** Tool names declared in the manifest's `[dependencies]` table. */
 function manifestTools(): string[] {
@@ -90,6 +94,33 @@ describe('bundled Native Tools environment', () => {
         ).toBe(true);
       }
     }
+  });
+
+  it('names the unpacked environment after the archive, not the lock', () => {
+    // The lock pins tool *versions*; the archive is the bytes those versions were
+    // packed into. Change what the build packs — pruning, layout — and the archive
+    // digest moves while the lock digest does not. Keying the directory on the lock
+    // therefore leaves an older release's completion marker in place, and the
+    // application goes on running the environment that release unpacked instead of
+    // the one it shipped. The build has to write the field the resolver reads.
+    expect(builder).toContain('archiveSha256');
+    expect(resolver).toContain('archiveSha256');
+    // If a future change wants to *show* the lock digest somewhere, that is fine —
+    // but it must not come back as the name of the directory, so change this
+    // deliberately rather than by accident.
+    expect(resolver).not.toContain('lockDigest');
+  });
+
+  it('keeps the lock byte-identical on a Windows checkout too', () => {
+    // Two failures at once if Git for Windows is allowed to rewrite this file:
+    // the build finds a platform by an exact `      linux-64:` line, which a
+    // trailing CR turns into "no linux-64 environment"; and the lock's sha256
+    // names the directory the environment unpacks into, so a CRLF checkout would
+    // build an archive whose identity disagrees with the one Linux and macOS
+    // build from the same lock. Every other test here uses line-tolerant regexes
+    // and would keep passing through both. Pinned in `.gitattributes`.
+    expect(lock).not.toContain('\r');
+    expect(manifest).not.toContain('\r');
   });
 
   it('is reported as bundled on every platform that has an environment', () => {

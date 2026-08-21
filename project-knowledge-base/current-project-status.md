@@ -1,6 +1,6 @@
 # Current project status
 
-## Native Tools ship inside the app, and do on macOS today (2026-08-21)
+## Native Tools ship inside the app, on macOS and on Windows (2026-08-21)
 
 Liatir distributed executable dependencies three ways — signed Runtime Boxes for
 AI Models, pinned upstream binaries in `binary-releases.ts`, and "install it
@@ -35,15 +35,57 @@ them, so `libopenblas` was written seven times. Unpacking 212 MB with `tar` take
 rebuilt package is a 111 MB `.app` and an 87 MB DMG, and the Gate 7 macOS
 package gate passes with it — `codesign --verify --deep --strict` included.
 
-**Windows is implemented and unproven.** bioconda publishes no `win-64` builds at
-all, and five of the six tools have no Windows build anywhere, so Windows ships
-the `linux-64` environment as one tarball and runs it through WSL2 — the road
-Gate 6 already built for Nextflow. WSL2 unpacks it into the Linux filesystem on
-first use, keyed by lock digest, because a conda prefix is 1,200+ symlinks with
-execute bits that do not survive NTFS and would pay the 9p cost on every library
-load from `/mnt/c`. The WSL2 crossing moved to `helpers/wsl.rs` and is now shared
-rather than duplicated. Its command construction and path-argument selection are
-unit-tested on every platform; nothing has been executed on Windows.
+**Windows is done too, and was executed rather than reasoned about.** bioconda
+publishes no `win-64` builds at all, and five of the six tools have no Windows
+build anywhere, so Windows ships the `linux-64` environment as one tarball and
+runs it through WSL2 — the road Gate 6 already built for Nextflow. WSL2 unpacks
+it into the Linux filesystem on first use, keyed by lock digest, because a conda
+prefix is 1,200+ symlinks with execute bits that do not survive NTFS and would
+pay the 9p cost on every library load from `/mnt/c`. The WSL2 crossing moved to
+`helpers/wsl.rs` and is now shared rather than duplicated.
+
+On Windows 11 x86_64 with WSL2/Ubuntu the archive was built inside WSL and every
+gate ran green: `test:ui` 5 passed / 0 failed / 2 platform-skipped with
+end-to-end 33 passed / 0 failed / 23 skipped, identical to the macOS baseline,
+plus both Gate 7 Windows gates (a 109.4 MB unsigned NSIS installer that installs
+and uninstalls itself). The three questions only Windows could answer are
+answered: the first-run unpack lands 290 MB with all 1,162 symlinks in 1.9
+seconds, a second launch does not redo it, and an interrupted one leaves only a
+marker-less `.partial` that the next launch discards; killing `wsl.exe` removes
+the Linux-side tool within a second, so no cancel token is needed as it was for
+Nextflow; and a path containing a space survives translation intact, which is now
+asserted by the bundled-tool E2E rather than trusted.
+
+**Running the gate found four defects, three of them silent, and all are fixed.**
+
+`native-tools-env/pixi.lock` was not byte-pinned in `.gitattributes`, so a
+Windows checkout turned it to CRLF. That broke the build outright *and* changed
+the digest that named the unpacked environment, so a Windows-built archive would
+have disagreed with the Linux and macOS one built from the same lock.
+
+The `linux-64` solve shipped a cross-compilation sysroot that nothing links
+against — 239 MB, of which 215 MB was one locale template, and `ldd` finds zero
+libraries from it in any of the six tools. Pruning it took the archive from
+152.0 MB to 93.2 MB and the installer from 141.1 MB to 109.4 MB. Because that
+same archive ships natively on Linux, it was re-verified there too, inside WSL2:
+no missing library, and all six doing real work from a prefix they were not built
+in.
+
+A network path (`\\server\share\…`) was forwarded to the tool rather than
+refused, so the user got the tool's raw `stat: no such file or directory`. Liatir
+now refuses it before starting WSL2 and says to copy the file to a local drive.
+
+And the unpacked environment was named after the **lock** digest rather than the
+**archive** digest. The lock pins tool versions; the archive is the bytes they
+were packed into. Change what the build packs and the archive moves while the
+lock does not — so an older release's completion marker stays in place and the
+app keeps running the environment that release unpacked. The sysroot pruning is
+exactly that case and reproduced it. It is now keyed on `archiveSha256`, and
+fixing it exposed a second gap: the Windows unpack had no equivalent of
+`prune_other_digests`, so every superseded environment stayed in the Linux home
+for good.
+
+Every one of the four has regression coverage.
 
 `bwa-mem2` was removed the same day: it was advertised for managed install under
 its own name while every caller asked for `bwa`, so it could never resolve. A

@@ -162,6 +162,22 @@ export interface LiatirNativeToolsManifest {
 }
 
 /**
+ * The sidecar written beside the archive, which is what the application reads.
+ *
+ * `archiveSha256` is the identity of what actually ships, and it is not
+ * interchangeable with `lockDigest`: the lock pins tool *versions*, while the
+ * archive is the bytes those versions were packed into. Change what the build
+ * packs — pruning, layout — and the archive digest moves while the lock digest
+ * does not. The application names the unpacked directory after this one, so that
+ * a release always runs the environment it shipped rather than one an earlier
+ * release left behind under the same name.
+ */
+export interface LiatirNativeToolsArchiveManifest extends LiatirNativeToolsManifest {
+  archiveSha256: string;
+  archiveBytes: number;
+}
+
+/**
  * How a host runs the bundled environment.
  *
  * `native` executes the prefix in place. `wsl2` is Windows: bioconda publishes

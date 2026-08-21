@@ -47,10 +47,13 @@ pub(crate) fn wsl_command_args(distribution: Option<&str>, command: &[String]) -
 
 /// A Windows path that `wslpath` can map: drive letter, colon, separator.
 ///
-/// UNC and extended-length (`\\?\`) forms are refused rather than passed
-/// through, because `wslpath` cannot map them to a Linux path and the tool would
-/// otherwise fail later with a "no such file" that names a path the user never
-/// typed.
+/// This answers "can this be mapped", not "is this a path": a `false` here means
+/// only that the value is left alone, which is right for `mem`, `-t` or a filter
+/// expression. UNC and extended-length (`\\?\`) forms are equally unmappable but
+/// are *not* handled by being ignored — the caller has to refuse them, because
+/// forwarding one means the tool fails later with its own "no such file". The
+/// staged-path route refuses them in `map_host_paths_to_wsl` below; the Native
+/// Tools argument route refuses them in `native_tools::wsl_plan`.
 pub(crate) fn is_mappable_windows_path(value: &str) -> bool {
     let bytes = value.as_bytes();
     bytes.len() >= 3

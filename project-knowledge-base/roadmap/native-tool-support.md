@@ -1,12 +1,12 @@
 # Native Tool Support Matrix
 
-> **Superseded on macOS arm64 and Linux x86_64 (2026-08-21).** Six tools —
-> samtools, bcftools, seqkit, fastp, bwa, minimap2 — now ship inside the
-> application as one relocatable environment, and the resolver prefers it over
-> both the managed-bin registry and `PATH`. The matrix below still describes what
-> happens where no bundle exists: Intel Macs, Linux ARM64, and SnpEff. Windows
-> ships the Linux bundle through WSL2, implemented but not yet executed there.
-> See
+> **Superseded on macOS arm64, Linux x86_64 and Windows x86_64 (2026-08-21).**
+> Six tools — samtools, bcftools, seqkit, fastp, bwa, minimap2 — now ship inside
+> the application as one relocatable environment, and the resolver prefers it over
+> both the managed-bin registry and `PATH`. Windows ships the Linux bundle and
+> runs it through WSL2; that path was executed and verified end to end on
+> 2026-08-21, so it is no longer a plan. The matrix below still describes what
+> happens where no bundle exists: Intel Macs, Linux ARM64, and SnpEff. See
 > [Native Tools as one bundled environment](./native-tools-bundled-environment.md).
 
 Liatir resolves every pipeline and standalone Native Tool through the shared

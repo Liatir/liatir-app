@@ -43,8 +43,17 @@ const TOOLS = ['samtools', 'bcftools', 'seqkit', 'fastp', 'bwa', 'minimap2'];
  * Build artifacts with no runtime role. Documentation and headers are the bulk;
  * static archives, pkg-config and CMake files exist only to compile against this
  * prefix, which nothing ever does once it is inside an application bundle.
+ *
+ * `x86_64-conda-linux-gnu` is the largest single entry by far and exists only on
+ * `linux-64`, where the solve pulls `sysroot_linux-64` and `kernel-headers_linux-64`
+ * that `osx-arm64` has no equivalent of. It is a cross-compilation sysroot: 239 MB,
+ * of which 215 MB is one locale archive template. `ldd` resolves zero libraries out
+ * of it for any of the six tools, and dropping it took the archive from 152.0 MB to
+ * 93.1 MB. Measured 2026-08-21; `verifyRelocated` below re-runs every tool after
+ * this pruning, so a wrong entry here fails the build rather than shipping.
  */
 const PRUNE_DIRECTORIES = [
+  'x86_64-conda-linux-gnu',
   'man',
   'include',
   'share/man',

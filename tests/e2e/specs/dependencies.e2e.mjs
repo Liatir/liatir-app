@@ -4,6 +4,9 @@
  * Driven through the real app because the value of that screen is precisely what it *shows the user* when a tool
  * is missing or shadowed — which is not something a unit test can observe.
  */
+import fs from 'node:fs';
+import path from 'node:path';
+
 import {
   expectNoVisibleRuntimeError,
   navigateInApp,
@@ -49,7 +52,7 @@ export const tests = [
      * application shipped, and not whatever happens to be on the user's PATH.
      */
     name: 'runs a bundled Native Tool from inside the application, not from PATH',
-    async run({ browser, expect }) {
+    async run({ artifactsDir, browser, expect }) {
       await openSandboxWorkspace(browser);
 
       const environment = await browser.execute(
@@ -86,6 +89,83 @@ export const tests = [
       // The version that ran is the version the build recorded. A host SeqKit at
       // a different version would fail here, which is the point.
       expect(output.stdout.join('\n')).toContain(`v${shipped.version}`);
+
+      // A real input under a directory whose name contains a space. On Windows this
+      // is the whole reason the crossing sends paths over stdin and reads them with
+      // `IFS= read -r` instead of putting them on a command line, and no test had
+      // ever actually carried one: a space that survives Windows argument parsing,
+      // `wslpath`, and the tool's own argv is what a user named "Nome Cognome" is.
+      // Elsewhere it costs one extra job and still proves the tool opens the file.
+      const spacedDirectory = path.join(artifactsDir, 'bundled-tool-path', 'Nome Cognome');
+      fs.mkdirSync(spacedDirectory, { recursive: true });
+      const spacedInput = path.join(spacedDirectory, 'reads.fastq');
+      const sequence = 'ACGT'.repeat(30);
+      fs.writeFileSync(
+        spacedInput,
+        Array.from(
+          { length: 40 },
+          (_unused, index) => `@read${index}\n${sequence}\n+\n${'I'.repeat(sequence.length)}\n`,
+        ).join(''),
+      );
+
+      const spaced = await browser.execute(async (input) => {
+        const { jobId } = await window.Liatir.invoke('lia_jobs_spawn', {
+          cmd: 'seqkit',
+          args: ['stats', input],
+          workspaceId: '__test__',
+          label: 'Bundled SeqKit path handling',
+          kind: 'dependency-verification',
+        });
+        return { jobId };
+      }, spacedInput);
+      await browser.waitUntil(
+        async () => browser.execute(async (jobId) => {
+          const job = await window.Liatir.invoke('lia_jobs_status', { jobId });
+          return ['done', 'failed', 'killed'].includes(job.status?.type);
+        }, spaced.jobId),
+        { timeout: 30_000, timeoutMsg: 'Bundled SeqKit never settled on a spaced path' },
+      );
+      const spacedJob = await browser.execute(
+        async (jobId) => window.Liatir.invoke('lia_jobs_status', { jobId }),
+        spaced.jobId,
+      );
+      const spacedOutput = await browser.execute(
+        async (jobId) => window.Liatir.invoke('lia_jobs_get_output', { jobId }),
+        spaced.jobId,
+      );
+      // Reading the file is the assertion: 40 records means the whole path arrived,
+      // not a prefix cut at the space.
+      expect(spacedJob.status).toEqual({ type: 'done', exitCode: 0 });
+      expect(spacedOutput.stdout.join('\n')).toMatch(/\breads\.fastq\b[\s\S]*\b40\b/);
+      // The Job keeps the path the user gave, whatever the backend had to do with it.
+      expect(spacedJob.args.at(-1)).toBe(spacedInput);
+
+      // A network location has no Linux equivalent, so `wslpath` cannot map it and
+      // WSL2 cannot reach it. It must be refused here, with something the user can
+      // act on — forwarding it produces the tool's own
+      // `stat \\server\share\...: no such file or directory`, which is true and
+      // useless. The refusal happens before any Job exists, so this is a rejected
+      // invoke rather than a failed Job.
+      if (process.platform === 'win32') {
+        const networkPath = String.raw`\\liatir-no-such-host\share\reads.fastq`;
+        const refusal = await browser.execute(async (input) => {
+          try {
+            await window.Liatir.invoke('lia_jobs_spawn', {
+              cmd: 'seqkit',
+              args: ['stats', input],
+              workspaceId: '__test__',
+              label: 'Bundled SeqKit network path',
+              kind: 'dependency-verification',
+            });
+            return null;
+          } catch (error) {
+            return String(error?.message ?? error);
+          }
+        }, networkPath);
+        expect(refusal).toContain('network location');
+        expect(refusal).toContain('Copy the file to a drive on this computer');
+        expect(refusal).toContain(networkPath);
+      }
 
       // And the Dependencies screen must say so, rather than reporting a tool
       // that works as one the user still has to install.
