@@ -259,19 +259,43 @@ const capabilities = [
   opacity: 0.45; /* Leggermente aumentata per farli risaltare un po' di più sotto la nav */
 }
 
+/* ── Animazioni dei tracciati ──────────────────────────── */
+@keyframes streamData {
+  0% { background-position: 0 0; }
+  100% { background-position: -400px 0; }
+}
+@keyframes streamDataReverse {
+  0% { background-position: 0 0; }
+  100% { background-position: 400px 0; }
+}
+
 .track {
   height: 12px;
   width: 100%;
   background-repeat: repeat-x;
 }
 
-/* Pattern CSS per simulare gli allineamenti / blocchi genomici */
-.t1 { background-image: repeating-linear-gradient(90deg, var(--vp-c-brand-1) 0, var(--vp-c-brand-1) 40px, transparent 40px, transparent 90px, var(--vp-c-brand-2) 90px, var(--vp-c-brand-2) 160px, transparent 160px, transparent 220px); }
-.t2 { background-image: repeating-linear-gradient(90deg, transparent 0, transparent 60px, var(--vp-c-text-2) 60px, var(--vp-c-text-2) 100px, transparent 100px, transparent 180px, var(--vp-c-brand-3, var(--vp-c-brand-1)) 180px, var(--vp-c-brand-3, var(--vp-c-brand-1)) 210px, transparent 210px, transparent 260px); }
-.t3 { background-image: repeating-linear-gradient(90deg, var(--vp-c-brand-2) 0, var(--vp-c-brand-2) 20px, transparent 20px, transparent 110px, var(--vp-c-text-3) 110px, var(--vp-c-text-3) 150px, transparent 150px, transparent 200px); }
-.t4 { background-image: repeating-linear-gradient(90deg, transparent 0, transparent 30px, var(--vp-c-brand-1) 30px, var(--vp-c-brand-1) 80px, transparent 80px, transparent 140px, var(--vp-c-brand-2) 140px, var(--vp-c-brand-2) 190px, transparent 190px, transparent 250px); }
-.t5 { background-image: repeating-linear-gradient(90deg, var(--vp-c-text-2) 0, var(--vp-c-text-2) 50px, transparent 50px, transparent 120px, var(--vp-c-brand-1) 120px, var(--vp-c-brand-1) 160px, transparent 160px, transparent 280px); }
-
+/* Pattern CSS animati per simulare gli allineamenti / blocchi genomici */
+.t1 { 
+  background-image: repeating-linear-gradient(90deg, var(--vp-c-brand-1) 0, var(--vp-c-brand-1) 40px, transparent 40px, transparent 90px, var(--vp-c-brand-2) 90px, var(--vp-c-brand-2) 160px, transparent 160px, transparent 220px); 
+  animation: streamData 40s linear infinite;
+}
+.t2 { 
+  background-image: repeating-linear-gradient(90deg, transparent 0, transparent 60px, var(--vp-c-text-2) 60px, var(--vp-c-text-2) 100px, transparent 100px, transparent 180px, var(--vp-c-brand-3, var(--vp-c-brand-1)) 180px, var(--vp-c-brand-3, var(--vp-c-brand-1)) 210px, transparent 210px, transparent 260px); 
+  animation: streamDataReverse 55s linear infinite;
+}
+.t3 { 
+  background-image: repeating-linear-gradient(90deg, var(--vp-c-brand-2) 0, var(--vp-c-brand-2) 20px, transparent 20px, transparent 110px, var(--vp-c-text-3) 110px, var(--vp-c-text-3) 150px, transparent 150px, transparent 200px); 
+  animation: streamData 30s linear infinite;
+}
+.t4 { 
+  background-image: repeating-linear-gradient(90deg, transparent 0, transparent 30px, var(--vp-c-brand-1) 30px, var(--vp-c-brand-1) 80px, transparent 80px, transparent 140px, var(--vp-c-brand-2) 140px, var(--vp-c-brand-2) 190px, transparent 190px, transparent 250px); 
+  animation: streamDataReverse 45s linear infinite;
+}
+.t5 { 
+  background-image: repeating-linear-gradient(90deg, var(--vp-c-text-2) 0, var(--vp-c-text-2) 50px, transparent 50px, transparent 120px, var(--vp-c-brand-1) 120px, var(--vp-c-brand-1) 160px, transparent 160px, transparent 280px); 
+  animation: streamData 60s linear infinite;
+}
 
 .hero-inner {
   position: relative;
