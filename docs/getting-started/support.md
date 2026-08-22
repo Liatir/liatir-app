@@ -16,12 +16,11 @@ Liatir remains in control of authorization, Jobs and Results.
   WSL1 and WSL ARM64 are not supported.
 - The bundled Native Tools — samtools, bcftools, seqkit, fastp, bwa, minimap2 —
   also run through WSL2 on Windows, for the same reason: they have no Windows
-  build. WSL2 must be installed; nothing has to be installed inside it. Their
-  Windows behaviour has not yet been verified by the Windows gate, so treat
-  Windows Native Tool support as implemented and unproven.
-- The bundled environment currently covers macOS Apple silicon and Linux x86_64.
-  On Intel Macs and Linux ARM64 these tools still have to be installed on the
-  machine.
+  build. WSL2 must be installed; nothing has to be installed inside it. Files on
+  a network location (`\\server\share\…`) cannot be reached from WSL2 and are
+  refused with an explanation; copy them to a drive on the computer first.
+- SnpEff is the one Native Tool that is not bundled. It is a Java program with
+  separately managed databases, so it still needs a Java runtime on your machine.
 - Liatir does not yet install Nextflow/Java or configure HPC and cloud
   executors.
 - Windows CUDA support is limited to the exact published CUDA 12.8 Geneformer

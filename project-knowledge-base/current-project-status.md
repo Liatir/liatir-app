@@ -1,5 +1,39 @@
 # Current project status
 
+## Platform coverage for the Native Tools is closed (2026-08-22)
+
+Three maintainer decisions, and together they mean **every platform Liatir
+supports now has a bundled environment**.
+
+**SnpEff stays out**, and Java stays the one dependency Liatir manages rather
+than ships. Bundling SnpEff means bundling a JRE that would outweigh all six
+tools combined, for a tool most users never open, and its databases already live
+outside the application. Java is now the only entry on the Dependencies screen a
+user of a supported platform can still be asked to install for a Native Tool.
+
+**macOS x86_64 is not a target, ever.** Not "no environment yet" — Intel Macs are
+out of the product, and Apple silicon with Metal is the only macOS Liatir
+supports.
+
+**Linux ARM64 gets no environment**, for want of an application rather than of
+tools: all six resolve on `linux-aarch64` at identical versions in 41 packages,
+checked 2026-08-22, but Liatir ships macOS arm64, Windows x86_64 and Linux
+x86_64, and building an environment for a fourth would be building it for an
+application that does not exist.
+
+The consequence worth acting on: `binary-releases.ts` and the managed-bin
+installer were waiting on exactly those two platforms, where they were still the
+only route. Nothing Liatir supports depends on them any more, so retiring them —
+the resolver, the bridge commands, the Dependencies UI and their tests — is
+unblocked and not started.
+
+CI now builds the archives on `ubuntu-24.04` and `macos-15`
+(`.github/workflows/native-tools-box.yml`), manually or when the environment's
+inputs change. There is no Windows job because there is nothing for it to build:
+the `linux-64` artifact is the Windows input. Still missing is the Linux
+application gate — the archive is verified natively on Linux, but Liatir itself
+has not been run there with the environment inside it.
+
 ## Native Tools ship inside the app, on macOS and on Windows (2026-08-21)
 
 Liatir distributed executable dependencies three ways — signed Runtime Boxes for

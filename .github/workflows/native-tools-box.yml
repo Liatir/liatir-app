@@ -1,0 +1,83 @@
+name: Native Tools box
+
+# Builds the bundled Native Tools environment on the platforms that can link it,
+# and publishes each archive as an artifact.
+#
+# Two jobs, not three. macOS and Linux each build their own environment; Windows
+# has nothing to build, because only Linux can link a Linux conda prefix. The
+# `linux-64` artifact this workflow publishes IS the Windows input: download it
+# into `src-tauri/resources/native-tools/` and `npm run native-tools:require`
+# accepts it, instead of building it by hand inside WSL2 — which works but is
+# slow, since the intermediate copy crosses `/mnt/c`.
+#
+# The build script is its own gate: it runs every tool from the destination
+# prefix and fails if one does not start or reports a version the lock did not
+# pin. So a job that goes green has executed all six, not merely downloaded them.
+
+on:
+  workflow_dispatch:
+  # Only when the inputs of the environment change. The lock pins exact builds,
+  # so nothing else in the repository can alter what this produces, and running
+  # it on every pull request would spend runner minutes to rebuild bytes that
+  # cannot have moved.
+  pull_request:
+    paths:
+      - 'native-tools-env/**'
+      - 'scripts/build-native-tools-env.mjs'
+      - '.github/workflows/native-tools-box.yml'
+
+concurrency:
+  group: native-tools-box-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.subdir }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      # Each platform's result stands on its own; one failing must not hide the
+      # other, because the two solves differ (linux-64 pulls a sysroot that
+      # osx-arm64 has no equivalent of).
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            subdir: linux-64
+          - runner: macos-15
+            subdir: osx-arm64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # No `npm ci`: the build script imports only Node builtins, and the
+      # environment it produces comes from pixi, not from npm.
+      - name: Install pinned pixi
+        shell: bash
+        env:
+          PIXI_VERSION: v0.77.0
+          PIXI_HOME: ${{ runner.temp }}/liatir-pixi
+          PIXI_NO_PATH_UPDATE: "1"
+        run: |
+          curl -fsSL https://pixi.sh/install.sh | bash
+          echo "$PIXI_HOME/bin" >> "$GITHUB_PATH"
+
+      # Before building, not after: a lock that no longer satisfies the manifest
+      # would otherwise install one set of versions while the manifest claims
+      # another, and the archive would ship the difference.
+      - name: Refuse a lock that no longer matches the manifest
+        run: pixi lock --check --manifest-path native-tools-env/pixi.toml
+
+      - name: Build, prune and run every tool
+        run: npm run native-tools:build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-tools-${{ matrix.subdir }}
+          path: |
+            src-tauri/resources/native-tools/native-tools-${{ matrix.subdir }}.tar.gz
+            src-tauri/resources/native-tools/native-tools-${{ matrix.subdir }}.tar.gz.json
+          if-no-files-found: error

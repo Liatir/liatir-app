@@ -490,6 +490,30 @@ unpack program had no equivalent of `prune_other_digests`, so every superseded
 environment stayed in the Linux home for good, half a gigabyte at a time. That
 was pre-existing and would have been triggered by every tool-version bump.
 
+## Decided 2026-08-22
+
+**SnpEff stays out, and Java stays the one dependency Liatir manages rather than
+ships.** Bundling it means bundling a JRE, which would outweigh all six tools
+combined for a tool most users never open — and SnpEff already keeps its
+databases outside the application, so it was never going to be self-contained
+anyway. Java therefore remains in `dep-requirements.ts` and on the Dependencies
+screen, and it is now the *only* entry there that a user of a supported platform
+can still be asked to install for a Native Tool.
+
+**macOS x86_64 is not a target, ever.** Not "no environment yet": Intel Macs are
+out of the product, and Apple silicon with Metal is the only macOS Liatir
+supports. Nothing should be added to `osx-64` on any future pass.
+
+**Linux ARM64 gets no environment, for want of an application rather than of
+tools.** All six resolve on `linux-aarch64` at the identical versions — samtools
+1.24, bcftools 1.24, seqkit 2.13.0, fastp 1.3.6, bwa 0.7.19, minimap2 2.31, in 41
+packages — checked 2026-08-22. But Liatir ships three platforms, and Linux ARM64
+is not one of them, so an environment there would be built for an application
+that does not exist. Two lines in the same manifest if that ever changes.
+
+Together those close the last hole in coverage: **every platform Liatir supports
+now has a bundled environment.**
+
 ## Still to settle
 
 1. **The invariant.** AGENTS.md requires that heavy dependencies stay modular and
@@ -502,19 +526,24 @@ was pre-existing and would have been triggered by every tool-version bump.
    unpacked into application data and is not itself signed or notarized. That is
    the same position Runtime Boxes are already in, and it is the
    [release gate](./release-signed-distribution.md)'s problem, not answered here.
-3. **Retiring the old path.** `binary-releases.ts`, the managed-bin installer and
-   the package-manager column of [the support matrix](./native-tool-support.md)
-   are redundant wherever a bundle exists, but they are still the only path on
-   macOS x86_64 and Linux ARM64. Deleting them waits on those two platforms
-   getting an environment.
-4. **Build reproducibility in CI.** The environment must be built by the three
-   GPU-free hosted runner profiles already declared in
-   `runtime-boxes/catalog.json` — `ubuntu-24.04`, `windows-2025`, `macos-15` —
-   with the Linux job handing its archive to the Windows job. No self-hosted or
-   GPU runner is involved. Note that the Windows job needs `jq`, which neither
-   Git for Windows nor the image's default `PATH` necessarily provides.
-5. **The platforms with no environment.** `osx-64` and `linux-aarch64` resolve to
-   no bundle today, so tools there still fall through to `PATH`. Adding them is
-   two entries in the same manifest plus a runner that can link them.
-6. **SnpEff**, still unmeasured: it is Java, and its JRE would outweigh all six
-   tools combined.
+3. **Retiring the old path — now unblocked.** `binary-releases.ts`, the
+   managed-bin installer, its Dependencies-screen UI and the package-manager
+   column of [the support matrix](./native-tool-support.md) were waiting on
+   macOS x86_64 and Linux ARM64, the two platforms where they were still the only
+   route. The decisions above remove both, so nothing Liatir supports depends on
+   them any more and they can go. It is a change of its own size — the resolver,
+   the bridge commands, the UI and their tests — and it has not been started.
+4. **The Linux application has not been gated with the bundle.** The `linux-64`
+   archive is verified: built, pruned, and every tool run from a prefix extracted
+   somewhere it was not built, natively on Linux. What has not run is Liatir
+   *itself* on Linux with the environment inside it — `test:ui`,
+   `desktop-beta:package:linux`, `desktop-beta:test:linux`. The code path there
+   is the native one macOS already proves, not the WSL2 one, so the risk is low
+   rather than absent; AppImage is the interesting case, since its resources live
+   in a read-only mount while the unpack goes to application data.
+5. **CI produces the archives** (`.github/workflows/native-tools-box.yml`), on
+   `ubuntu-24.04` and `macos-15`, triggered manually or when the environment's
+   inputs change. There is no Windows job because there is nothing for it to
+   build: the `linux-64` artifact is the Windows input. What is still missing is
+   a desktop release pipeline for those artifacts to feed — today the packaging
+   gates are run by hand, so the archive is downloaded or built locally.
