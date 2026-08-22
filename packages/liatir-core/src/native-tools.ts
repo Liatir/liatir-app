@@ -126,20 +126,20 @@ export function isBundledNativeTool(id: string): boolean {
   return BUILT_IN_NATIVE_TOOLS.some(t => t.id === id);
 }
 
-// ── Bundled Native Tools environment ─────────────────────────────────────────
+// ── Native Tools Scrollcase box ──────────────────────────────────────────────
 //
-// The process-backed tools ship inside the application as one relocatable conda
-// prefix, built from `native-tools-env/pixi.toml` by
-// `scripts/build-native-tools-env.mjs`. The user installs nothing.
+// The process-backed tools ship inside the application as one signed Scrollcase
+// box. The user installs nothing and the application verifies the box before it
+// can execute anything from it.
 //
 // FastQC is absent because it runs as WASM in-process, and SnpEff because it is
 // a Java runtime whose JRE would outweigh every tool here combined.
 
-/** Conda subdirs Liatir builds a Native Tools environment for. */
-export type LiatirNativeToolsSubdir = 'osx-arm64' | 'linux-64';
+/** Scrollcase target IDs Liatir builds the Native Tools box for. */
+export type LiatirNativeToolsTargetId = 'macos-aarch64-cpu' | 'linux-x86_64-cpu';
 
-/** Tool IDs provided by the bundled environment, in build order. */
-export const BUNDLED_ENVIRONMENT_TOOL_IDS: readonly string[] = [
+/** Tool IDs provided by the box, in build order. */
+export const NATIVE_TOOLS_BOX_TOOL_IDS: readonly string[] = [
   SAMTOOLS_ID,
   BCFTOOLS_ID,
   SEQKIT_ID,
@@ -148,63 +148,47 @@ export const BUNDLED_ENVIRONMENT_TOOL_IDS: readonly string[] = [
   MINIMAP2_ID,
 ];
 
-/** File name of the manifest written beside the environment it describes. */
-export const NATIVE_TOOLS_MANIFEST_FILE = 'liatir-native-tools.json';
-
-/** What the build recorded about the environment that shipped. */
-export interface LiatirNativeToolsManifest {
+/** Product metadata compiled into the app and included inside every box target. */
+export interface LiatirNativeToolsBoxMetadata {
   schemaVersion: 1;
-  subdir: LiatirNativeToolsSubdir;
-  /** SHA-256 of `pixi.lock` — the identity of this exact set of tool builds. */
-  lockDigest: string;
-  builtAt: string;
+  boxId: 'native-tools';
   tools: { id: string; version: string }[];
 }
 
 /**
- * The sidecar written beside the archive, which is what the application reads.
+ * How a host runs the box.
  *
- * `archiveSha256` is the identity of what actually ships, and it is not
- * interchangeable with `lockDigest`: the lock pins tool *versions*, while the
- * archive is the bytes those versions were packed into. Change what the build
- * packs — pruning, layout — and the archive digest moves while the lock digest
- * does not. The application names the unpacked directory after this one, so that
- * a release always runs the environment it shipped rather than one an earlier
- * release left behind under the same name.
- */
-export interface LiatirNativeToolsArchiveManifest extends LiatirNativeToolsManifest {
-  archiveSha256: string;
-  archiveBytes: number;
-}
-
-/**
- * How a host runs the bundled environment.
- *
- * `native` executes the prefix in place. `wsl2` is Windows: bioconda publishes
+ * `native` executes the verified payload in place. `wsl2` is Windows: bioconda publishes
  * no `win-64` builds and five of these six tools have no Windows build anywhere,
- * so Windows ships the `linux-64` environment and runs it through WSL2 — the
+ * so Windows ships the Linux Scrollcase target and runs it through WSL2 — the
  * same backend External Workflows already requires for Nextflow.
  */
-export interface LiatirNativeToolsPlacement {
-  subdir: LiatirNativeToolsSubdir;
+export interface LiatirNativeToolsBoxPlacement {
+  targetId: LiatirNativeToolsTargetId;
   execution: 'native' | 'wsl2';
 }
 
-export function nativeToolsPlacement(
+export function nativeToolsBoxPlacement(
   os: 'macos' | 'linux' | 'windows',
   arch: 'x86_64' | 'arm64',
-): LiatirNativeToolsPlacement | null {
-  if (os === 'macos' && arch === 'arm64') return { subdir: 'osx-arm64', execution: 'native' };
-  if (os === 'linux' && arch === 'x86_64') return { subdir: 'linux-64', execution: 'native' };
-  if (os === 'windows' && arch === 'x86_64') return { subdir: 'linux-64', execution: 'wsl2' };
+): LiatirNativeToolsBoxPlacement | null {
+  if (os === 'macos' && arch === 'arm64') {
+    return { targetId: 'macos-aarch64-cpu', execution: 'native' };
+  }
+  if (os === 'linux' && arch === 'x86_64') {
+    return { targetId: 'linux-x86_64-cpu', execution: 'native' };
+  }
+  if (os === 'windows' && arch === 'x86_64') {
+    return { targetId: 'linux-x86_64-cpu', execution: 'wsl2' };
+  }
   return null;
 }
 
-/** True when this host gets `id` from the bundle instead of from the user's machine. */
-export function isProvidedByBundledEnvironment(
+/** True when this host gets `id` from the box instead of from the user's machine. */
+export function isProvidedByNativeToolsBox(
   id: string,
   os: 'macos' | 'linux' | 'windows',
   arch: 'x86_64' | 'arm64',
 ): boolean {
-  return nativeToolsPlacement(os, arch) !== null && BUNDLED_ENVIRONMENT_TOOL_IDS.includes(id);
+  return nativeToolsBoxPlacement(os, arch) !== null && NATIVE_TOOLS_BOX_TOOL_IDS.includes(id);
 }

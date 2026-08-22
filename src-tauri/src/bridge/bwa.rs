@@ -36,6 +36,7 @@ pub async fn lia_bwa_mem(
             )?;
             let idx = Command::new(&index.program)
                 .args(&index.args)
+                .envs(index.environment)
                 .stderr(Stdio::piped())
                 .status()
                 .map_err(|e| format!("failed to run bwa index: {e}"))?;
@@ -62,6 +63,7 @@ pub async fn lia_bwa_mem(
         let resolved = super::jobs::resolve_spawn(&app, "bwa", &args)?;
         let mut child = Command::new(&resolved.program)
             .args(&resolved.args)
+            .envs(resolved.environment.iter().map(|(name, value)| (name, value)))
             // OS-level redirect — SAM bytes go straight to disk, never through Rust
             .stdout(out_file)
             .stderr(Stdio::piped())

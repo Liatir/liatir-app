@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "a550bc75a2cd4acb7076656df46c8abbe059af002d58d8940c0ddbe276cd93ab";
+export const QUENTA_DOCS_SEED_HASH = "7f451952b0855ebecb8a7ebcccc21d3e03de36cd4159ab637617adc4245f0e0f";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -899,8 +899,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "`.deps.checkMany` — Example",
     "locator": "Docs / Plugins / Api / Deps / Check Many / Example",
-    "excerpt": "Example <Tabs> <Tab title=\"Node\"> ```ts const deps = await Liatir.deps.checkMany(['samtools', 'bcftools', 'fastqc']); deps.forEach(dep => { console.log(`${dep.binary}: ${dep.available ? '✓' : '✗'}`); }); ``` </Tab> <Tab title=\"Python\"> ```python deps = ctx.li…",
-    "content": "Example\n<Tabs>\n<Tab title=\"Node\">\n\n```ts\nconst deps = await Liatir.deps.checkMany(['samtools', 'bcftools', 'fastqc']);\n\ndeps.forEach(dep => {\n  console.log(`${dep.binary}: ${dep.available ? '✓' : '✗'}`);\n});\n```\n\n</Tab>\n<Tab title=\"Python\">\n\n```python\ndeps = ctx.liatir.deps.check_many(['samtools', 'bcftools', 'fastqc'])\n\nfor dep in deps:\n    print(f\"{dep['binary']}: {'✓' if dep['available'] else '✗'}\")\n```\n\n</Tab>\n</Tabs>"
+    "excerpt": "Example <Tabs> <Tab title=\"Node\"> ```ts const deps = await Liatir.deps.checkMany(['samtools', 'bcftools', 'java']); deps.forEach(dep => { console.log(`${dep.binary}: ${dep.available ? '✓' : '✗'}`); }); ``` </Tab> <Tab title=\"Python\"> ```python deps = ctx.liat…",
+    "content": "Example\n<Tabs>\n<Tab title=\"Node\">\n\n```ts\nconst deps = await Liatir.deps.checkMany(['samtools', 'bcftools', 'java']);\n\ndeps.forEach(dep => {\n  console.log(`${dep.binary}: ${dep.available ? '✓' : '✗'}`);\n});\n```\n\n</Tab>\n<Tab title=\"Python\">\n\n```python\ndeps = ctx.liatir.deps.check_many(['samtools', 'bcftools', 'java'])\n\nfor dep in deps:\n    print(f\"{dep['binary']}: {'✓' if dep['available'] else '✗'}\")\n```\n\n</Tab>\n</Tabs>"
   },
   {
     "id": "docs:plugins/api/deps/check-many#depcheckresult",

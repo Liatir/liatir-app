@@ -274,15 +274,13 @@ pub(crate) async fn lia_jobs_spawn_with_kill_command(
 /// of truth for native-tool resolution, shared by the app's own `runNativeTool`
 /// and by out-of-process plugins calling `jobs.spawn(tools.X, ...)`:
 /// - an explicit path (contains a separator) is used verbatim;
-/// - a tool the application bundles resolves to the bundled environment, which
+/// - a tool the application bundles resolves to the verified Native Tools box, which
 ///   on Windows means running it inside WSL2 with its file arguments translated;
 /// - otherwise the bare name is returned unchanged and resolved via PATH.
 ///
-/// There is no third source any more. A managed-bins registry sat between these
-/// two until every platform Liatir supports got a bundled environment; what it
-/// could still have held was a binary installed by an older release, and
-/// preferring that over the one this release shipped is the version drift the
-/// bundle exists to remove.
+/// There is no third source. A bare name outside the tools Liatir provides is
+/// deliberately left to `PATH`; supported process-backed Native Tools must not
+/// silently resolve to a different host installation.
 pub(crate) fn resolve_spawn(
     app: &AppHandle,
     cmd: &str,
@@ -292,6 +290,7 @@ pub(crate) fn resolve_spawn(
         return Ok(super::native_tools::ResolvedCommand {
             program: cmd.to_string(),
             args: args.to_vec(),
+            environment: Vec::new(),
         });
     }
     if let Some(bundled) = super::native_tools::resolve(app, cmd, args)? {
@@ -300,6 +299,7 @@ pub(crate) fn resolve_spawn(
     Ok(super::native_tools::ResolvedCommand {
         program: cmd.to_string(),
         args: args.to_vec(),
+        environment: Vec::new(),
     })
 }
 
@@ -337,7 +337,7 @@ async fn spawn_job(
         None
     };
 
-    // Resolve to the bundled environment; bare names fall through to PATH.
+    // Resolve to the Native Tools box; bare names fall through to PATH.
     // The JobEntry keeps the original `cmd` and `args` for
     // display, so a Windows user still sees `samtools sort <their path>` rather
     // than the `wsl.exe` line that carries it.
@@ -357,6 +357,9 @@ async fn spawn_job(
     // Liatir.progress fail with "job not found" and Liatir.log fail in dev.
     let mut env = env.unwrap_or_default();
     env.insert("LIATIR_JOB_ID".to_string(), job_id.clone());
+    // The verified box's execution environment wins over caller and host
+    // values, matching Scrollcase's signed-environment precedence.
+    env.extend(resolved.environment);
     command = command.envs(env);
 
     let registry = app.state::<JobRegistry>();

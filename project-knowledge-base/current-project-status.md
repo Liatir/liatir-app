@@ -1,9 +1,40 @@
 # Current project status
 
+## Native Tools are one signed Scrollcase box (2026-08-22)
+
+The six process-backed tools — `samtools`, `bcftools`, `seqkit`, `fastp`, `bwa`
+and `minimap2` — now ship in one **real Scrollcase v2 box**. The authoring source
+is `runtime-boxes/scrolls/native-tools/`, with separate locked targets for
+`macos-aarch64-cpu` and `linux-x86_64-cpu`; Windows uses that Linux target inside
+WSL2. FastQC remains in-process WASM and SnpEff remains the one Java-based tool.
+
+There is no second box format. `scrollcase@0.8.0` builds, self-tests, signs and
+verifies the resource. `scrollcase-consumer 0.3.2` verifies the compiled-in trust
+anchor, signed release, archive, box manifest and payload digest before the Rust
+bridge exposes a binary. Windows runs the same consumer semantics through a
+static Linux helper whose digest is compiled into the Windows executable, so the
+user installs no Node, Python, pixi, conda or archive tool. The previous
+`native-tools-env/`, tar sidecar, completion marker and custom shell extraction
+path are removed. Signed provenance binds the release to the current metadata,
+self-test and per-target dependency lock, so packaging refuses a valid but stale
+box as well as an invalid one.
+
+The macOS target was rebuilt from the new scroll by the current `test:ui` gate
+and passed all six real self-tests, signature/archive verification and the
+packaging `require` gate. The compiled Tauri app then proved that a bare SeqKit
+request ran version 2.13.0 from the embedded box rather than `PATH`; the main
+native suite is 33 passed / 0 failed / 23 skipped, with restart, Runtime Box
+security and desktop lifecycle phases also green. `test:verify` is 57 files /
+340 tests, Rust is 79 passed / 2 deliberately ignored, and Clippy exits 0. The
+Linux/WSL target is authored, locked and covered by the same CI workflow but has
+not yet been rebuilt and re-executed after this format migration; the Windows
+and Linux evidence below predates the migration and must not be presented as
+current Scrollcase-box evidence.
+
 ## Platform coverage for the Native Tools is closed (2026-08-22)
 
 Three maintainer decisions, and together they mean **every platform Liatir
-supports now has a bundled environment**.
+supports now has a Native Tools box target**.
 
 **SnpEff stays out**, and Java stays the one dependency Liatir manages rather
 than ships. Bundling SnpEff means bundling a JRE that would outweigh all six
@@ -42,12 +73,11 @@ path — counting and differential expression come after, the latter in R. The f
 reasoning, including why alevin-fry is the interesting one if this is ever taken
 up, is in the roadmap doc.
 
-CI now builds the archives on `ubuntu-24.04` and `macos-15`
-(`.github/workflows/native-tools-box.yml`), manually or when the environment's
-inputs change. There is no Windows job because there is nothing for it to build:
-the `linux-64` artifact is the Windows input. Still missing is the Linux
-application gate — the archive is verified natively on Linux, but Liatir itself
-has not been run there with the environment inside it.
+CI builds and signs the Scrollcase targets on `ubuntu-24.04` and `macos-15`
+(`.github/workflows/native-tools-box.yml`), manually or when a scroll, lock,
+self-test, legal audit, consumer or build input changes. There is no Windows
+build job: the complete `linux-x86_64-cpu` artifact, including its static WSL2
+Scrollcase consumer, is the Windows input.
 
 Java is now the only dependency Liatir asks a user to install, which made it worth
 checking that Liatir can tell whether the right one is there. Two of the three
@@ -61,7 +91,12 @@ declares `versionMustBeDetectable`, the two UI surfaces share one verdict throug
 installed" about a command the user can see. Details and the reasoning are in the
 roadmap doc.
 
-## Native Tools ship inside the app, on macOS and on Windows (2026-08-21)
+## Historical pre-Scrollcase Native Tools implementation (superseded 2026-08-22)
+
+The remainder of this section records the implementation and evidence that
+preceded the Scrollcase migration. Its tar format, custom extraction path, sizes
+and platform runs are historical evidence only; the current contract is the
+signed Scrollcase box described above.
 
 Liatir distributed executable dependencies three ways — signed Runtime Boxes for
 AI Models, pinned upstream binaries in `binary-releases.ts`, and "install it
@@ -165,7 +200,7 @@ when the cancellation test asks — cancelling a real process rather than a
 `sleep`. On Windows those three tests now need WSL2 and the linux-64 archive.
 
 Full detail, measurements and the remaining package/release questions are in
-[Native Tools as one bundled environment](./roadmap/native-tools-bundled-environment.md).
+[Native Tools as one Scrollcase box](./roadmap/native-tools-bundled-environment.md).
 
 ## Gate 8 controlled local MCP is cross-platform complete (2026-08-22)
 

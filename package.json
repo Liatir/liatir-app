@@ -59,8 +59,9 @@
     "build:log": "npm run build:log --prefix src-tauri/",
     "build:wasm": "npm run build:wasm --prefix src-tauri/",
 
-    "native-tools:build": "node scripts/build-native-tools-env.mjs",
-    "native-tools:require": "node scripts/build-native-tools-env.mjs --require",
+    "native-tools:build": "node scripts/build-native-tools-box.mjs",
+    "native-tools:require": "node scripts/build-native-tools-box.mjs --require",
+    "native-tools:wsl-consumer:build": "node scripts/build-native-tools-wsl-consumer.mjs",
     "build:frontend": "npm ci --prefix frontend/ && npm run build --prefix frontend/",
     "build:worker": "npm run build:worker --prefix src-tauri/",
 

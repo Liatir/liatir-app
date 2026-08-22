@@ -181,6 +181,6 @@ gha-creds-*.json
 # Per-machine agent settings (permissions granted on this machine only)
 .claude/settings.local.json
 
-# Built Native Tools environment (produced by scripts/build-native-tools-env.mjs)
+# Built Native Tools Scrollcase resources (produced by scripts/build-native-tools-box.mjs)
 src-tauri/resources/native-tools/
-native-tools-env/.pixi/
+tools/native-tools-box-consumer/target/

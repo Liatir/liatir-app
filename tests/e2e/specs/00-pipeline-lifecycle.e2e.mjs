@@ -510,14 +510,7 @@ function apiWorkspace(url) {
 /**
  * Writes the real inputs the Native Tool pipelines run on.
  *
- * These pipelines used to run four fake tools registered in `managed-bins/index.json` — `/bin/echo`
- * for seqkit, `sleep 30` for fastp, and two scripts printing a canned SAM and flagstat — against
- * three files in `/tmp` that nothing in the repository ever created. That worked only for as long
- * as somebody's `/tmp` happened to hold them, and it stopped working entirely once Liatir began
- * shipping its own Native Tools: the bundled environment is preferred over the managed-bin
- * registry, deliberately, so the fakes are no longer reachable.
- *
- * Running the real tools on inputs the suite owns is better evidence anyway. The cancellation test
+ * These pipelines run the real tools on inputs the suite owns. The cancellation test
  * is the reason the sizes matter: it needs a Job that is genuinely still running when it asks, so
  * `slow-reads.fastq` is large enough for fastp to take several seconds on one thread, while every
  * other fixture is deliberately tiny.
@@ -575,16 +568,6 @@ async function seedSandbox(browser, apiUrl, pluginPath) {
       content: JSON.stringify(value, null, 2),
       createDirs: true,
     });
-    const writeData = (rel, value) => window.Liatir.invoke('lia_fs_write_text', {
-      rel,
-      permanent: true,
-      contents: JSON.stringify(value, null, 2),
-      createDirs: true,
-      append: false,
-      windowLabel: null,
-      pluginStoragePlugin: null,
-    });
-
     const manifest = await window.Liatir.invoke('lia_liatir_read_manifest', {
       path: pluginBundlePath,
     });
@@ -605,10 +588,6 @@ async function seedSandbox(browser, apiUrl, pluginPath) {
         outputSchema: manifest.outputSchema ?? {},
         addedAt: Date.now(),
       }]),
-      // Empty on purpose: these tools now come from the bundled environment, which the
-      // resolver prefers over this registry, so an entry here would be dead weight that
-      // reads like a working override.
-      writeData('managed-bins/index.json', { bins: {} }),
     ]);
   }, pipelineWorkspace(fixtures), apiWorkspace(apiUrl), pluginPath, PLUGIN_ID);
 }

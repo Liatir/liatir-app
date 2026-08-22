@@ -1,31 +1,37 @@
-# Native Tools as one bundled environment
+# Native Tools as one Scrollcase box
 
-Status: **Decided 2026-08-20. Built and verified end to end on macOS arm64
+Status: **Migrated to a signed Scrollcase v2 box on 2026-08-22. The previous
+custom tar implementation was built and verified end to end on macOS arm64
 2026-08-21, on Windows x86_64 through WSL2 the same day, and inside a native
 Linux x86_64 Liatir ELF app during Gate 8 on 2026-08-22. The Windows and Linux
 runtime gates are green; the Linux package gate remains separate. Running the gate found four
-defects, all fixed and covered: a CRLF checkout that broke the build and silently
+defects, all fixed and covered in that historical implementation: a CRLF checkout that broke the build and silently
 changed the environment's identity; a build-time sysroot that doubled the
 `linux-64` archive; a network path forwarded to the tool instead of refused; and
 an unpack keyed on the lock rather than on the archive, which would have kept an
-older release's environment in place.**
+older release's environment in place. The macOS Scrollcase target has since been
+built and verified locally; Linux/WSL2 must be re-executed before the old platform
+evidence can be promoted to current Scrollcase evidence. The current macOS
+`test:ui` gate rebuilt and embedded the Scrollcase box, then passed its direct
+bundled-tool E2E plus the complete 33/0/23 native suite.**
 
 ## The decision
 
-Every Native Tool ships **inside the app**, in a single relocatable environment
-built from conda-forge and bioconda, one per operating system. A tool with no
-package for a platform is simply not in that platform's bundle and is declared
-unsupported there.
+Every process-backed Native Tool ships **inside the app**, in a single signed
+Scrollcase box built from conda-forge and bioconda. It has one locked scroll per
+supported target. A tool with no package for a platform is simply not in that
+target and is declared unsupported there.
 
-There is no catalog, no download, no per-tool signature and no revocation for
-tools. Those exist for AI models because a model arrives *after* installation,
-from outside. A tool that is already inside the signed application bundle is
-covered by the application's own signature.
+There is no catalog or runtime download for these tools because the complete
+box is embedded in the application. The box nevertheless uses the same
+Scrollcase v2 format and its own signed release: one objective has one packaging
+and verification solution regardless of whether the payload is an AI Model.
 
-Scrollcase is not affected. It is an external builder Liatir uses; nothing about
-its box format needs to change, because a bundled environment is not a
-downloadable box — the app knows where its own resources are and does not have
-to discover an entry point.
+`scrollcase@0.8.0` owns authoring, locked installation, self-test, deterministic
+ZIP, release signature and verification. `scrollcase-consumer 0.3.2` owns native
+verification and extraction. Windows invokes a static Linux build of that same
+consumer inside WSL2. The deleted tar sidecar and shell extractor are not an
+alternative path.
 
 ## Why
 
@@ -39,7 +45,33 @@ the `PATH` that the resolver executes.
 Bundling removes dependency management from the user's machine entirely, which
 is the same reason Runtime Boxes exist for models.
 
-## Measured on macOS arm64 (2026-08-21)
+## Current Scrollcase implementation (2026-08-22)
+
+- `runtime-boxes/scrolls/native-tools/<target>/` contains the v2 scroll, exact
+  pixi manifest and committed lock for `macos-aarch64-cpu` and
+  `linux-x86_64-cpu`.
+- `runtime-boxes/native-tools/native-tools.json` is the single product metadata
+  source. It is compiled into the app for instant dependency UI and included
+  inside the signed box; no custom manifest sidecar exists. The authored
+  self-test executes all six tools on generated FASTA, FASTQ and VCF data.
+- `npm run native-tools:build` invokes only the published Scrollcase CLI: keygen,
+  build, self-test, signed v2 release and verification. It emits a ZIP, signed
+  release and public key; the temporary private build key is removed. The
+  public key is compiled into the application, so replacing a key
+  file beside the archive cannot change what the Rust bridge trusts. The signed
+  provenance revision binds the current product metadata and self-test, while
+  `dependencyLockSha256` binds the target lock; `native-tools:require` rejects a
+  correctly signed but stale artifact.
+- Native macOS/Linux preparation goes through `scrollcase-consumer 0.3.2`,
+  including release signature, archive identity, manifest agreement and payload
+  digest. Windows ships the Linux box plus a static Rust consumer whose digest
+  is compiled into the Windows executable, and performs the same operation
+  inside WSL2. No `tar`, completion marker or custom shell extraction remains.
+- Scrollcase v2 requires its own Python interpreter even though Liatir executes
+  the six native binaries directly. That interpreter is part of the box and is
+  not a user dependency.
+
+## Historical macOS measurements (2026-08-21, pre-Scrollcase)
 
 Six tools in one environment — `samtools`, `bcftools`, `seqkit`, `fastp`, `bwa`,
 `minimap2` — solved and installed from conda-forge + bioconda for `osx-arm64`
@@ -62,7 +94,9 @@ The built package came in at 87 MB.
 
 38 packages total, and the deduplication is real: `htslib` is present once and
 serves both `samtools` and `bcftools`, which is the whole argument for one shared
-environment instead of one box per tool. No Python interpreter is pulled in.
+environment instead of one box per tool. That pre-Scrollcase archive pulled in
+no Python interpreter; the current v2 box includes the interpreter required by
+the Scrollcase contract.
 
 ### Verified, not assumed
 
@@ -98,7 +132,7 @@ does not currently call.
 JRE that outweighs all six tools combined. Measure it separately before
 deciding whether it belongs in the bundle or stays a separate install.
 
-## Platform coverage, measured (2026-08-21)
+## Historical platform coverage, measured (2026-08-21)
 
 The same solve was run per tool for each platform. conda-forge + bioconda:
 
@@ -167,7 +201,7 @@ changes nothing for existing pipelines, because it is already what they call.
 If speed matters later, add bwa-mem2 as a separately named tool with its memory
 requirement stated, never as a silent substitute for `bwa`.
 
-## Implementation (2026-08-21)
+## Historical implementation (2026-08-21, superseded)
 
 ### What builds it
 

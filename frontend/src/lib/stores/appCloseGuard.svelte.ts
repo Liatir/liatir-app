@@ -15,8 +15,8 @@ type ActiveProcessSummary = {
 	labels: string[];
 };
 
-// Downloading and extracting went with the managed binary installer; a package
-// manager is the only dependency work the app still runs itself.
+// Native Tools arrive with Liatir. Package-manager operations cover only the
+// remaining host runtimes and workflow dependencies.
 const ACTIVE_DEPENDENCY_PHASES = new Set<DependencyProcessState['phase']>([
 	'pm-installing'
 ]);

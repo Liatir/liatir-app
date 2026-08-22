@@ -103,6 +103,7 @@ strip = true
 
 [build-dependencies]
 tauri-build = { version = "2.5.6", features = [] }
+sha2 = "=0.10.9"
 
 [[bin]]
 name = "%%CARGO_PACKAGE_NAME%%"

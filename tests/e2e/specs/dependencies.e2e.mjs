@@ -43,8 +43,8 @@ export const tests = [
     /**
      * Replaced the managed-SeqKit install/execute/remove test on 2026-08-21. That
      * test downloaded a checksummed upstream release and ran it — but every
-     * binary the managed registry could still offer is now inside the bundled
-     * environment, so its Install button no longer exists and the path it proved
+     * binary the managed registry could still offer is now inside the Native Tools
+     * box, so its Install button no longer exists and the path it proved
      * has no subject left on a platform that has a bundle.
      *
      * What replaces it is the claim that actually needs proving: that a bare tool
@@ -62,7 +62,7 @@ export const tests = [
       // Windows carries the same tools but reaches them through WSL2.
       expect(environment.execution).toBe(process.platform === 'win32' ? 'wsl2' : 'native');
       expect(environment.tools).toContain('seqkit');
-      const shipped = environment.manifest.tools.find((tool) => tool.id === 'seqkit');
+      const shipped = environment.metadata.tools.find((tool) => tool.id === 'seqkit');
 
       const probe = await browser.execute(async () => {
         const { jobId } = await window.Liatir.invoke('lia_jobs_spawn', {

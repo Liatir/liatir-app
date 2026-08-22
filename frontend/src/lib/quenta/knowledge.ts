@@ -81,7 +81,7 @@ const NATIVE_KNOWLEDGE: LiatirQuentaContextDocument[] = [
     sourceKind: 'documentation',
     title: 'Native Tool dependencies',
     locator: 'Docs / Dependencies',
-    content: 'Pipeline Native Tools run through the shared Jobs resolver. It prefers checksummed Liatir-managed binaries and falls back to the host PATH for package-manager installations. Missing official upstream binaries are not replaced with guessed URLs or unofficial assets.',
+    content: 'Pipeline Native Tools run through the shared Jobs resolver. Liatir supplies the process-backed tools it supports instead of asking the user to install separate copies; FastQC runs in-process as bundled WASM, while SnpEff is the one Native Tool that uses a compatible Java runtime from the host. Missing official upstream binaries are never replaced with guessed URLs or unofficial assets.',
   },
 ];
 

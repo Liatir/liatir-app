@@ -144,10 +144,9 @@ mod tests {
 ///   { available: bool, binary: string, path: string|null, version: string|null,
 ///     source: "bundled" | "path" }
 ///
-/// A tool the application bundles is answered from the build manifest and never
-/// probed on the host: it is present because it shipped, so asking `PATH` could
-/// only produce a wrong answer — "not installed" for a tool that works, or the
-/// version of some other build that happens to be on the machine.
+/// A tool the application bundles is answered from compiled product metadata
+/// only after its signed Scrollcase release has verified. It is never probed on
+/// the host: asking `PATH` could only report a different installation.
 ///
 /// The `binary` name must be a simple identifier (no slashes, no path traversal).
 #[tauri::command]

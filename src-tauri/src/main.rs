@@ -435,7 +435,7 @@ fn main() {
       lia_deps_check,
       lia_deps_check_many,
 
-      // managed binaries
+      // managed downloads and integrity helpers
       lia_managed_download,
       lia_managed_download_cancel,
       lia_managed_verify_sha256,

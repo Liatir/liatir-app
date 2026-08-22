@@ -32,7 +32,7 @@ check_many(binaries) -> list[dict]
 <Tab title="Node">
 
 ```ts
-const deps = await Liatir.deps.checkMany(['samtools', 'bcftools', 'fastqc']);
+const deps = await Liatir.deps.checkMany(['samtools', 'bcftools', 'java']);
 
 deps.forEach(dep => {
   console.log(`${dep.binary}: ${dep.available ? '✓' : '✗'}`);
@@ -43,7 +43,7 @@ deps.forEach(dep => {
 <Tab title="Python">
 
 ```python
-deps = ctx.liatir.deps.check_many(['samtools', 'bcftools', 'fastqc'])
+deps = ctx.liatir.deps.check_many(['samtools', 'bcftools', 'java'])
 
 for dep in deps:
     print(f"{dep['binary']}: {'✓' if dep['available'] else '✗'}")

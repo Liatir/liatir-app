@@ -12,13 +12,6 @@
 *.yml text eol=lf
 *.yaml text eol=lf
 
-# The Native Tools lock is byte-pinned twice over. Its sha256 names the directory the bundled
-# environment unpacks into, so a CRLF checkout would build an archive whose identity disagrees with
-# the one Linux and macOS build from the same lock; and the build script finds a platform by an
-# exact "      linux-64:" line, which a trailing CR turns into "no linux-64 environment".
-native-tools-env/pixi.lock text eol=lf
-native-tools-env/pixi.toml text eol=lf
-
 # Runtime Box locks and legal inputs are byte-pinned and must not be rewritten by Git for Windows.
 runtime-boxes/recipes/**/requirements.lock text eol=lf
 runtime-boxes/recipes/**/pixi.lock text eol=lf

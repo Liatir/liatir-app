@@ -285,23 +285,6 @@ export const DEP_REQUIREMENTS: Record<string, DepRequirement> = {
       { platform: 'conda', cmd: 'conda install -c bioconda minimap2' },
     ],
   },
-  fastqc: {
-    binary: 'fastqc',
-    label: 'FastQC',
-    description:
-      'Quality control for raw FASTQ sequencing data. Generates per-base quality, GC content, duplication, and adapter reports.',
-    minVersion: '0.11.9',
-    category: 'bioinformatics',
-    releasesUrl: 'https://www.bioinformatics.babraham.ac.uk/projects/fastqc/',
-    brew: 'fastqc',
-    apt: 'fastqc',
-    conda: 'fastqc',
-    installCmds: [
-      { platform: 'macOS', cmd: 'brew install fastqc' },
-      { platform: 'Ubuntu', cmd: 'sudo apt install fastqc' },
-      { platform: 'conda', cmd: 'conda install -c bioconda fastqc' },
-    ],
-  },
   nextflow: {
     binary: 'nextflow',
     label: 'Nextflow',

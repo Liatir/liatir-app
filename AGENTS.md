@@ -46,9 +46,10 @@ For every run or process, verify:
 - `frontend/` — SvelteKit UI. `src/lib/` holds components, `stores/`, `pipeline/`, `ai/`, `tools/`, `quenta/`, `viewers/`.
 - `src-ts/` — the TypeScript side of the bridge and the plugin-facing runtime (`core/`, `liatir/`, `modules/`).
 - `sdk/`, `public-sdk/`, `wasm-modules/` — the plugin SDK, its published surface, and WASM tool modules.
-- `native-tools-env/` — the committed `pixi.toml`/`pixi.lock` for the Native Tools environment that
-  ships inside the app. The built environment is an archive under `src-tauri/resources/native-tools/`,
-  produced by `npm run native-tools:build` and never committed.
+- `runtime-boxes/scrolls/native-tools/` — the committed Scrollcase scrolls and locks for the single
+  Native Tools box that ships inside the app. Built signed box resources live under
+  `src-tauri/resources/native-tools/`, are produced by `npm run native-tools:build`, and are never
+  committed.
 - `runtime-boxes/` — Runtime Box data: `recipes/`, `catalog.json`, `trust/`, `evidence/`, `measurements/`, `legal/`. `infra/runtime-box-ci/` is the CI side; `services/runtime-box-signer` and `workers/runtime-box-registry` are the remote services.
 - `scripts/` — build, conf, publishing and Runtime Box orchestration entry points behind the npm scripts.
 - `tests/` — `unit/` (vitest), `e2e/` (a real compiled binary driven over WebDriver), and `test-matrix.mjs`, which declares every suite and profile as data.
@@ -62,10 +63,11 @@ These are the current commands. If one no longer exists, read the `scripts` sect
 
 - `npm run dev` — run the app in development. `npm run dev:frontend` for UI-only work.
 - `npm run build:dev` / `npm run build` — dev and production builds.
-- `npm run native-tools:build` — build the bundled Native Tools environment for this host. A
+- `npm run native-tools:build` — build the bundled Native Tools Scrollcase box for this host. A
   production build and `test:tauri:prepare` run it and a packaging gate fails without it
   (`native-tools:require`). Windows cannot build it — only Linux can link a Linux conda prefix — so
-  there it verifies the archive instead, and building it means running this inside WSL2.
+  there it verifies the Linux box and its WSL2 Scrollcase consumer instead, and building it means
+  running this inside WSL2.
   `npm run dev` does **not** build it: a debug binary finds whatever is already in
   `src-tauri/resources/native-tools/`, and with nothing there the six bundled tools fall through to
   `PATH` exactly as they did before bundling. Build it once and dev matches production; the
