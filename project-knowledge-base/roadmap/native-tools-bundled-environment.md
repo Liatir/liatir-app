@@ -89,8 +89,9 @@ does not currently call.
 
 - `binary-releases.ts` and the managed-bin install path.
 - The package-manager column of [the support matrix](./native-tool-support.md).
-- **STAR, bedtools and hisat2**, which are offered for installation today with
-  zero references anywhere in the tool code. They are not in the bundle.
+- **STAR, bedtools and hisat2**, which were offered for installation with zero
+  references anywhere in the tool code. Removed from the catalogue 2026-08-22
+  rather than bundled; see the note on RNA-seq below.
 
 `snpeff` is deliberately out of this measurement: it is Java and would pull a
 JRE that outweighs all six tools combined. Measure it separately before
@@ -514,6 +515,40 @@ that does not exist. Two lines in the same manifest if that ever changes.
 Together those close the last hole in coverage: **every platform Liatir supports
 now has a bundled environment.**
 
+## RNA-seq is a vertical, not three more tools (2026-08-22)
+
+STAR, hisat2 and bedtools were in the dependency catalogue and in nothing else.
+The question of whether to bundle them instead of removing them was asked and
+answered no, and the reasoning is worth keeping because it will come back.
+
+Liatir already does single-cell RNA-seq — but it starts where RNA-seq ends. The
+`.h5ad` files the AI Tools consume *are* the output of an RNA-seq pipeline: the
+counts matrix. So the real gap is not "STAR is missing", it is that someone
+holding raw reads cannot reach the point where the product's best feature begins.
+
+Three measured facts about closing it, checked 2026-08-22 rather than recalled:
+
+- **STAR cannot run on the target machine.** Indexing a human genome wants on the
+  order of 30 GB of RAM, held while it works. This is the bwa-mem2 argument again,
+  worse: fine on a cluster, disqualifying on a laptop.
+- **hisat2 pulls a Python interpreter** into a bundle that deliberately has none.
+  Solved alone: hisat2 20 packages *with* python, STAR 21 without, subread 2,
+  bedtools 5. All four resolve on `osx-arm64` and `linux-64`.
+- **Two aligners do not make an RNA-seq path.** Counting comes after alignment
+  (`subread`), and differential expression after that — which is R and DESeq2,
+  a language Liatir does not host at all. Bulk RNA-seq is its own vertical with
+  its own downstream.
+
+And the single-cell route is a different toolchain again: STARsolo (STAR, so the
+same memory wall) or alevin-fry, which indexes the transcriptome rather than the
+genome and should therefore fit in gigabytes rather than tens of them — unmeasured,
+and the thing to measure first if this is ever taken up.
+
+So: if RNA-seq becomes a direction, it is planned as a vertical the way the
+single-cell lighthouse was, the aligner question is decided by memory rather than
+by popularity, and the interesting target is the one that connects into the
+AnnData path that already exists.
+
 ## Still to settle
 
 1. **The invariant.** AGENTS.md requires that heavy dependencies stay modular and
@@ -532,8 +567,18 @@ now has a bundled environment.**
    consults a managed-bin registry. What survives is the native downloader, which
    viewer runtimes, SnpEff databases, Runtime Boxes and the generic download
    store all still use; its resume-and-cancel contract moved to where it is
-   implemented. Still open in the same area: `dep-requirements.ts` lists STAR,
-   bedtools and hisat2, which no tool code references at all.
+   implemented. STAR, hisat2 and bedtools left `dep-requirements.ts` the same
+   day: the Dependencies screen was asking users to install three programs no
+   code in the application could run, which to a non-technical user reads as
+   missing pieces blocking their work.
+
+   That left `wrongToolPatterns` and `homebrewLinkConflict` — and therefore both
+   dependency resolvers — with no subject, because STAR was the only requirement
+   using either. They are kept, with the reason written where the list is now
+   empty: the hazard is real and recurring, `java` being the obvious next case,
+   and populating it needs patterns matched against real `--version` output
+   rather than guessed. If that is not done, deleting the subsystem is the
+   correct alternative; leaving it unexplained is not.
 4. **The Linux application has not been gated with the bundle.** The `linux-64`
    archive is verified: built, pruned, and every tool run from a prefix extracted
    somewhere it was not built, natively on Linux. What has not run is Liatir

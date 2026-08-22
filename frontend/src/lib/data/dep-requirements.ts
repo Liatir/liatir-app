@@ -286,56 +286,6 @@ export const DEP_REQUIREMENTS: Record<string, DepRequirement> = {
       { platform: 'conda', cmd: 'conda install -c bioconda fastqc' },
     ],
   },
-  hisat2: {
-    binary: 'hisat2',
-    label: 'HISAT2',
-    description:
-      'Splice-aware graph-based RNA-seq aligner for reads spanning exon-exon junctions.',
-    minVersion: '2.2.1',
-    category: 'bioinformatics',
-    releasesUrl: 'https://daehwankimlab.github.io/hisat2/',
-    apt: 'hisat2',
-    conda: 'hisat2',
-    installCmds: [
-      { platform: 'Ubuntu', cmd: 'sudo apt install hisat2' },
-      { platform: 'conda', cmd: 'conda install -c bioconda hisat2' },
-    ],
-  },
-  star: {
-    binary: 'STAR',
-    label: 'STAR',
-    description:
-      'RNA-seq aligner for splice junction discovery and chimeric read detection.',
-    minVersion: '2.7.0',
-    category: 'bioinformatics',
-    releasesUrl: 'https://github.com/alexdobin/STAR/releases/latest',
-    brew: 'rna-star',
-    apt: 'rna-star',
-    conda: 'star',
-    wrongToolPatterns: [
-      'standard tap archiver',
-      'schily',
-      'jörg schilling',
-      'joerg schilling',
-      'star: star 1.7.0',
-    ],
-    wrongToolMessage:
-      'Found the Schily star archiver, not the STAR RNA-seq aligner. Install RNA-seq STAR with rna-star; if Homebrew reports a link conflict, remove or unlink the archiver formula named star first.',
-    homebrewLinkConflict: {
-      blockerFormula: 'star',
-      targetFormula: 'rna-star',
-      binary: 'STAR',
-      actionLabel: 'Resolve Homebrew link',
-      confirmTitle: 'Resolve STAR link conflict',
-      confirmMessage:
-        'Homebrew has RNA-seq STAR installed as rna-star, but the archiver formula named star is shadowing the STAR command. Liatir can run "brew unlink star" and then "brew link rna-star". This keeps both formulas installed, but makes STAR resolve to the RNA-seq aligner.',
-    },
-    installCmds: [
-      { platform: 'macOS', cmd: 'brew install rna-star' },
-      { platform: 'Ubuntu', cmd: 'sudo apt install rna-star' },
-      { platform: 'conda', cmd: 'conda install -c bioconda star' },
-    ],
-  },
   nextflow: {
     binary: 'nextflow',
     label: 'Nextflow',
@@ -366,23 +316,6 @@ export const DEP_REQUIREMENTS: Record<string, DepRequirement> = {
     installCmds: [
       { platform: 'macOS', cmd: 'brew install snakemake' },
       { platform: 'conda', cmd: 'conda install -c bioconda snakemake' },
-    ],
-  },
-  bedtools: {
-    binary: 'bedtools',
-    label: 'bedtools',
-    description:
-      'Genome arithmetic toolkit for intersecting, merging, counting, and manipulating genomic intervals.',
-    minVersion: '2.30.0',
-    category: 'bioinformatics',
-    releasesUrl: 'https://github.com/arq5x/bedtools2/releases/latest',
-    brew: 'bedtools',
-    apt: 'bedtools',
-    conda: 'bedtools',
-    installCmds: [
-      { platform: 'macOS', cmd: 'brew install bedtools' },
-      { platform: 'Ubuntu', cmd: 'sudo apt install bedtools' },
-      { platform: 'conda', cmd: 'conda install -c bioconda bedtools' },
     ],
   },
 };

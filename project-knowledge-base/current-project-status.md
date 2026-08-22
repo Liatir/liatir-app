@@ -33,8 +33,14 @@ build this release shipped, which is the drift the bundle exists to remove.
 The native downloader stays: viewer runtimes, SnpEff databases, Runtime Boxes and
 the generic download store all go through it, and its resume-and-cancel contract
 is now pinned where it is implemented instead of across a deleted installer. What
-is left in that area is `dep-requirements.ts`, which still lists STAR, bedtools
-and hisat2 — no tool code references any of them.
+STAR, hisat2 and bedtools left `dep-requirements.ts` the same day. The
+Dependencies screen was asking users to install three programs no code in the
+application could run. Whether to bundle them instead was asked and answered no:
+STAR wants ~30 GB of RAM to index a human genome, hisat2 pulls a Python
+interpreter into a bundle that has none, and two aligners do not make an RNA-seq
+path — counting and differential expression come after, the latter in R. The full
+reasoning, including why alevin-fry is the interesting one if this is ever taken
+up, is in the roadmap doc.
 
 CI now builds the archives on `ubuntu-24.04` and `macos-15`
 (`.github/workflows/native-tools-box.yml`), manually or when the environment's

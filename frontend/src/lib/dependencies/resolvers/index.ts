@@ -16,6 +16,14 @@ import type {
  * Order matters: it decides which message the user reads first, and which fix is offered first.
  * `wrongTool` comes first because "this is not the program you think it is" reframes everything
  * else — a link conflict is beside the point if the binary on PATH is a different tool entirely.
+ *
+ * Both currently have no subject. STAR was the only requirement carrying
+ * `wrongToolPatterns` and `homebrewLinkConflict`, and it left the catalogue on
+ * 2026-08-22 with the other tools no code referenced. They are kept rather than
+ * deleted because the hazard has not gone anywhere: `java` in particular is the
+ * classic case — several JVMs, several versions, and Homebrew happy to shadow
+ * one with another. Populating it needs patterns matched against real `--version`
+ * output, not guessed, which is why this is empty and not wrong.
  */
 const DEPENDENCY_RESOLVERS: DependencyResolver[] = [
   wrongToolResolver,
