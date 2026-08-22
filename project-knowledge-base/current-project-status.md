@@ -155,7 +155,7 @@ when the cancellation test asks — cancelling a real process rather than a
 Full detail, measurements and the six open items are in
 [Native Tools as one bundled environment](./roadmap/native-tools-bundled-environment.md).
 
-## Gate 8 controlled local MCP is complete on macOS arm64 (2026-08-21)
+## Gate 8 controlled local MCP is verified on macOS; Windows and Linux remain (2026-08-22)
 
 Liatir now has an optional local MCP boundary around the saved-pipeline runtime.
 It is off by default, binds Streamable HTTP only to an ephemeral IPv4 loopback
@@ -229,6 +229,16 @@ the blocking Gate 8 product proof is the separately successful native MCP
 scenario above. No heavy model, GPU, remote, signing, publishing or release
 action is part of this local gate, and macOS evidence is not inferred for
 Windows/Linux.
+
+The remaining platform closure is now explicit. On native Windows, the MCP
+server and authorization UI run in `liatir.exe`, while a real process-backed
+Native Tool launched by the approved pipeline must execute from the bundled
+`linux-64` environment through WSL2. On native Linux x86_64, the same MCP client
+scenario must target a freshly built ELF Liatir app from an independent checkout
+inside WSL2's Linux filesystem, not `/mnt/c`. FastQC alone is not sufficient for
+the Windows proof because it is WASM and never crosses the Windows-to-WSL2 Native
+Tools boundary. The exact scenario, commands, evidence fields and exit criteria
+are in [Gate 8 MCP — Windows and Linux evidence handoff](./roadmap/gate-8-mcp-windows-linux.md).
 
 ## Quenta could never explain a Result, and its own guard was why (2026-08-20)
 

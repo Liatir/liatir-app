@@ -241,6 +241,15 @@ claimed from that attempt. No Windows/Linux
 runtime, remote, heavy-model, signing or publishing action is claimed by the
 local macOS evidence.
 
+Cross-platform closure is deliberately stronger than rerunning the FastQC WASM
+fixture. Native Windows must drive this MCP server inside `liatir.exe` and pass
+one approved pipeline through the bundled SeqKit Native Tool, whose supported
+Windows backend is WSL2. Native Linux x86_64 must run the same real-client
+scenario against an independently compiled ELF Liatir app from the WSL2 Linux
+filesystem under Xvfb. The two executions share a physical machine but not a
+product identity or binary. The maintained procedure and exit criteria are in
+[Gate 8 MCP — Windows and Linux evidence](../roadmap/gate-8-mcp-windows-linux.md).
+
 ## Explicit exclusions
 
 - remote MCP hosting, TLS termination or LAN exposure;

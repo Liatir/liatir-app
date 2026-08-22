@@ -1,6 +1,6 @@
 # Scientific AI Workbench Product Plan
 
-Last reviewed: 2026-08-21
+Last reviewed: 2026-08-22
 
 This document is the canonical product direction and execution sequence for
 Liatir during and after the current Runtime Box CI foundation program. It turns
@@ -40,9 +40,10 @@ Nextflow External Workflow, runnable standalone and by reference in pipelines.
 Its native macOS arm64 and Linux x86_64 paths and the native Windows x86_64
 app-to-WSL2 Linux x86_64 boundary are now verified, completing Gate 6 before
 Gate 7. Gate 7 subsequently closed the local desktop matrix on macOS arm64,
-Windows x86_64 and Linux x86_64. Gate 8 has completed the controlled local MCP
-boundary and its expanded input/artifact proof on macOS arm64 with a real MCP
-client; the separate signed public release gate remains open and deliberately
+Windows x86_64 and Linux x86_64. Gate 8 has implemented the controlled local MCP
+boundary and completed its expanded input/artifact proof on macOS arm64 with a
+real MCP client. Native Windows x86_64 and Linux x86_64 runtime evidence remains
+open; the separate signed public release gate also remains open and deliberately
 unstarted.
 Every paid or remote action still requires its exact local gate, workflow/input/revision
 readback, cost declaration, and fresh explicit approval.
@@ -567,7 +568,8 @@ still unwritten. Full scope, blockers and stop rules in
 
 **Difficulty:** `5/5` · **Codex effort:** `max`
 
-**Status (2026-08-21): complete locally on macOS arm64.**
+**Status (2026-08-22): implemented; verified on macOS arm64, with native Windows
+x86_64 and Linux x86_64 evidence still open.**
 
 Provide a local Liatir MCP server with read-only resources and controlled
 execution of saved pipelines. A start request returns a stable asynchronous run
@@ -621,6 +623,17 @@ UI-profile attempt rebuilt the app and bundle, but embedded WebDriver never
 became available and the macOS process reported `SIGABRT` before any product test started, so that attempt is
 not called green. This is not Windows/Linux runtime evidence and no remote,
 signing, publishing or heavy-model action is performed.
+
+Platform closure uses one Windows 11 x86_64 machine for two different native
+products. The Windows proof drives the MCP server in `liatir.exe` and must run a
+real bundled Native Tool through WSL2 from the approved MCP pipeline. The Linux
+proof builds and drives a real x86-64 ELF Liatir app from an independent checkout
+inside WSL2's Linux filesystem. WSL2 is therefore the Windows execution backend
+for Native Tools as well as Nextflow, while the Linux-in-WSL2 run is native Linux
+desktop evidence. FastQC remains the lightweight full-lifecycle/cancellation
+fixture, but cannot by itself prove the Windows-to-WSL2 Native Tools crossing.
+The exact handoff and exit criteria are in
+[Gate 8 MCP — Windows and Linux evidence](./gate-8-mcp-windows-linux.md).
 
 ## Detailed capability specifications
 

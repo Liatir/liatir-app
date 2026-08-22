@@ -1,6 +1,6 @@
 # Riallineamento del piano “Scientific AI Workbench”
 
-Ultima revisione: 2026-08-21
+Ultima revisione: 2026-08-22
 
 ## Stato corrente
 
@@ -13,7 +13,7 @@ Ultima revisione: 2026-08-21
 | 5. Lighthouse single-cell | Completato localmente su macOS arm64 |
 | 6. Nextflow come External Workflow | Completato su macOS arm64, Linux x86_64 e app Windows x86_64 con backend WSL2 Linux x86_64 |
 | 7. Gate Beta 1 | Completato il 2026-08-20 e ridefinito sul livello desktop locale: implementazione ed evidenza complete, eseguite e verificate in modo incrociato su macOS arm64, Windows x86_64 e Linux x86_64 |
-| 8. MCP dopo il nucleo Beta | Completato localmente su macOS arm64 con input completi, Jobs, Results, artifact e vero client MCP |
+| 8. MCP dopo il nucleo Beta | Implementato e verificato su macOS arm64; restano le prove native Windows x86_64 e Linux x86_64, inclusa una vera pipeline MCP Native Tool dall'app Windows tramite WSL2 |
 | Gate di rilascio: distribuzione pubblica firmata | Aperto e volutamente non iniziato: firma, notarizzazione, scelta Microsoft Store, installazione su macchina pulita e update firmato A → B |
 
 ## Indicatori
@@ -274,7 +274,8 @@ Ambito completo, blocchi e regole di stop:
 
 **Difficoltà:** `5/5` · **Codex effort:** `max`
 
-**Stato (2026-08-21): completato localmente su macOS arm64.**
+**Stato (2026-08-22): implementato; verificato su macOS arm64, con evidenza
+nativa Windows x86_64 e Linux x86_64 ancora aperta.**
 
 - Server MCP locale con risorse in lettura e pipeline salvate eseguibili in modo controllato.
 - Identità asincrona stabile per ogni esecuzione.
@@ -327,6 +328,18 @@ macOS ha riportato `SIGABRT` prima di qualsiasi test prodotto;
 non viene quindi dichiarato verde. Nessuna azione remota, modello pesante,
 firma o pubblicazione rientra nel gate.
 
+La chiusura multipiattaforma usa la stessa macchina Windows per due prove che
+non vanno confuse. La prova Windows usa il server MCP e la UI di autorizzazione
+del vero `liatir.exe`; una pipeline approvata deve poi eseguire davvero un Native
+Tool dal bundle `linux-64` attraverso WSL2. La prova Linux usa invece un checkout
+indipendente nel filesystem Linux di WSL2, compila un vero eseguibile ELF x86-64
+di Liatir e guida il suo server MCP sotto Xvfb. WSL2 è quindi backend Windows sia
+per i Native Tools sia per Nextflow; la seconda esecuzione resta evidenza Linux
+nativa. FastQC copre bene il lifecycle MCP leggero, ma essendo WASM non prova il
+confine Windows → WSL2 dei Native Tools. Scenario, comandi, campi di evidenza e
+criteri di uscita sono in
+[Gate 8 MCP — Windows and Linux evidence](./gate-8-mcp-windows-linux.md).
+
 ## Contratti e verifiche comuni
 
 - I contratti restano in `packages/liatir-core`.
@@ -342,5 +355,6 @@ firma o pubblicazione rientra nel gate.
 - P5.0–P5.7 resta chiuso.
 - Nextflow è il primo External Workflow supportato.
 - Il parallelismo interno delle pipeline Liatir non è richiesto per Beta 1.
-- MCP segue Beta 1 ed è ora completato localmente su macOS arm64.
+- MCP segue Beta 1; è implementato e verificato su macOS arm64, mentre restano
+  le prove native Windows x86_64 e Linux x86_64 definite nel relativo handoff.
 - HPC, cloud executor, installazione gestita e altri workflow engine vengono dopo il primo adapter Nextflow verificato.
