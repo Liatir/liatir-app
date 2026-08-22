@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "641370a8cad834c363b056a89e5226468434eea04962abcb21456e4d7cf28c04";
+export const QUENTA_DOCS_SEED_HASH = "421ed184112110af454955925f51acf8aa3dc3b498c1845990bc0e9c05a7e196";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -683,8 +683,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "What is Liatir — Three ways to extend Liatir",
     "locator": "Docs / Introduction / Overview / Three ways to extend Liatir",
-    "excerpt": "Three ways to extend Liatir ### Native tools Any binary installed on your machine can run as a native tool. Liatir checks availability, shows install instructions when a tool is missing, and runs it with the parameters you choose. Run history and parsed resul…",
-    "content": "Three ways to extend Liatir\n### Native tools\nAny binary installed on your machine can run as a native tool. Liatir checks availability, shows install instructions when a tool is missing, and runs it with the parameters you choose. Run history and parsed results are stored automatically.\n\n### Plugins\nA `.lia` plugin is a self-contained extension that adds custom analysis steps. Plugins can be written in Python, Node, or compiled to WebAssembly, and appear as normal tools in the UI and in pipelines. See the [Plugins](/plugins/overview) section to build one.\n\n### AI Models\nAI Models are signed local Runtime Boxes that Liatir installs and manages for you. The current AI Tool uses Geneformer, scGPT, or UCE for single-cell embeddings."
+    "excerpt": "Three ways to extend Liatir ### Native tools Liatir ships the bioinformatics programs it runs — samtools, bcftools, seqkit, fastp, bwa and minimap2 — so there is nothing to install and nothing to keep up to date. You choose the parameters; run history and par…",
+    "content": "Three ways to extend Liatir\n### Native tools\nLiatir ships the bioinformatics programs it runs — samtools, bcftools, seqkit, fastp, bwa and minimap2 — so there is nothing to install and nothing to keep up to date. You choose the parameters; run history and parsed results are stored automatically. Tools that are not bundled, such as SnpEff and its Java runtime, are checked on your machine and Liatir shows what is missing.\n\n### Plugins\nA `.lia` plugin is a self-contained extension that adds custom analysis steps. Plugins can be written in Python, Node, or compiled to WebAssembly, and appear as normal tools in the UI and in pipelines. See the [Plugins](/plugins/overview) section to build one.\n\n### AI Models\nAI Models are signed local Runtime Boxes that Liatir installs and manages for you. The current AI Tool uses Geneformer, scGPT, or UCE for single-cell embeddings."
   },
   {
     "id": "docs:introduction/overview#core-concepts",
@@ -2059,8 +2059,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Tools",
     "locator": "Docs / Tools / Overview",
-    "excerpt": "Liatir offers four kinds of analysis step: **built-in tools** that work out of the box, **native tools** that use programs installed on your machine, **AI Tools** that use local AI Models, and **External Workflows** that run saved engine projects such as Next…",
-    "content": "Liatir offers four kinds of analysis step: **built-in tools** that work out of\nthe box, **native tools** that use programs installed on your machine,\n**AI Tools** that use local AI Models, and **External Workflows** that run saved\nengine projects such as Nextflow.\n\nThey all share the same layout, run history, and results view, and they can be\nmixed freely in a pipeline whenever their inputs and outputs match."
+    "excerpt": "Liatir offers four kinds of analysis step: **built-in tools** that work out of the box, **native tools** — real bioinformatics programs, shipped with Liatir — **AI Tools** that use local AI Models, and **External Workflows** that run saved engine projects suc…",
+    "content": "Liatir offers four kinds of analysis step: **built-in tools** that work out of\nthe box, **native tools** — real bioinformatics programs, shipped with Liatir —\n**AI Tools** that use local AI Models, and **External Workflows** that run saved\nengine projects such as Nextflow.\n\nThey all share the same layout, run history, and results view, and they can be\nmixed freely in a pipeline whenever their inputs and outputs match."
   },
   {
     "id": "docs:tools/overview#built-in-tools",

@@ -63,8 +63,13 @@ These are the current commands. If one no longer exists, read the `scripts` sect
 - `npm run dev` — run the app in development. `npm run dev:frontend` for UI-only work.
 - `npm run build:dev` / `npm run build` — dev and production builds.
 - `npm run native-tools:build` — build the bundled Native Tools environment for this host. A
-  production build runs it (as `native-tools:require`) and fails without it. Windows cannot build
-  it — only Linux can link a Linux conda prefix — so there it verifies the archive instead.
+  production build and `test:tauri:prepare` run it and a packaging gate fails without it
+  (`native-tools:require`). Windows cannot build it — only Linux can link a Linux conda prefix — so
+  there it verifies the archive instead, and building it means running this inside WSL2.
+  `npm run dev` does **not** build it: a debug binary finds whatever is already in
+  `src-tauri/resources/native-tools/`, and with nothing there the six bundled tools fall through to
+  `PATH` exactly as they did before bundling. Build it once and dev matches production; the
+  Dependencies screen shows which of the two you are on.
 - `npm run test:fast` — unit and contract tests. Use this while working.
 - `npm run test:verify` — **the gate before declaring work done**: unit + SDK type generation + core build + frontend check/build + `src-ts` compile.
 - `npm run test:ui` — end-to-end against a real compiled binary. `npm run test:ui:visual` for visual snapshots.

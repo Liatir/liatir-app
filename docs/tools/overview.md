@@ -1,7 +1,7 @@
 # Tools
 
 Liatir offers four kinds of analysis step: **built-in tools** that work out of
-the box, **native tools** that use programs installed on your machine,
+the box, **native tools** — real bioinformatics programs, shipped with Liatir —
 **AI Tools** that use local AI Models, and **External Workflows** that run saved
 engine projects such as Nextflow.
 

@@ -412,11 +412,15 @@ chat after a reload and re-attaching to an in-flight response — none of which 
 product implements yet. Keep them as the specification of that work; do not
 weaken them to make the suite green.
 
-`tests/e2e/specs/dependencies.e2e.mjs` includes a heavy managed-binary gate.
-With `--heavy`, it downloads the real checksummed SeqKit release into isolated
-test storage, executes it through the same bare-name Jobs resolver used by
-pipelines, and removes it. Direct managed support is intentionally limited to
-the verified [Native Tool support matrix](../roadmap/native-tool-support.md).
+`tests/e2e/specs/dependencies.e2e.mjs` proves the Native Tools the application
+ships. It asks the bridge what environment is bundled, spawns a bare tool name
+through the same Jobs resolver pipelines use, and requires the version that ran
+to be the one the build manifest records — a host tool at another version fails
+there, which is the point. It also carries a path containing a space, and on
+Windows requires a network location to be refused with an instruction rather
+than forwarded to the tool. The heavy managed-binary gate it replaced is gone
+with the installer; see the
+[Native Tool support matrix](../roadmap/native-tool-support.md).
 
 ## Writing New Tests
 

@@ -526,13 +526,14 @@ now has a bundled environment.**
    unpacked into application data and is not itself signed or notarized. That is
    the same position Runtime Boxes are already in, and it is the
    [release gate](./release-signed-distribution.md)'s problem, not answered here.
-3. **Retiring the old path — now unblocked.** `binary-releases.ts`, the
-   managed-bin installer, its Dependencies-screen UI and the package-manager
-   column of [the support matrix](./native-tool-support.md) were waiting on
-   macOS x86_64 and Linux ARM64, the two platforms where they were still the only
-   route. The decisions above remove both, so nothing Liatir supports depends on
-   them any more and they can go. It is a change of its own size — the resolver,
-   the bridge commands, the UI and their tests — and it has not been started.
+3. **Retiring the old path — done 2026-08-22.** `binary-releases.ts`,
+   `binary-manager.ts`, the `managedBins` store, four bridge commands and the
+   Dependencies-screen install UI are deleted, and `resolve_spawn` no longer
+   consults a managed-bin registry. What survives is the native downloader, which
+   viewer runtimes, SnpEff databases, Runtime Boxes and the generic download
+   store all still use; its resume-and-cancel contract moved to where it is
+   implemented. Still open in the same area: `dep-requirements.ts` lists STAR,
+   bedtools and hisat2, which no tool code references at all.
 4. **The Linux application has not been gated with the bundle.** The `linux-64`
    archive is verified: built, pruned, and every tool run from a prefix extracted
    somewhere it was not built, natively on Linux. What has not run is Liatir

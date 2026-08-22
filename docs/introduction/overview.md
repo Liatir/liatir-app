@@ -15,7 +15,7 @@ Most modern bioinformatics platforms are cloud-based: you upload files to a remo
 ## Three ways to extend Liatir
 
 ### Native tools
-Any binary installed on your machine can run as a native tool. Liatir checks availability, shows install instructions when a tool is missing, and runs it with the parameters you choose. Run history and parsed results are stored automatically.
+Liatir ships the bioinformatics programs it runs — samtools, bcftools, seqkit, fastp, bwa and minimap2 — so there is nothing to install and nothing to keep up to date. You choose the parameters; run history and parsed results are stored automatically. Tools that are not bundled, such as SnpEff and its Java runtime, are checked on your machine and Liatir shows what is missing.
 
 ### Plugins
 A `.lia` plugin is a self-contained extension that adds custom analysis steps. Plugins can be written in Python, Node, or compiled to WebAssembly, and appear as normal tools in the UI and in pipelines. See the [Plugins](/plugins/overview) section to build one.

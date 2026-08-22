@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { liatir } from '$lib/api';
-  import { managedBins } from '$lib/stores/managedBins.svelte';
   import { versionGte, versionLt } from '$lib/utils/versions';
   import type { DepRequirement } from '$lib/data/dep-requirements';
 
@@ -29,8 +28,6 @@
     bundled = false;
     const api = liatir();
     if (!api) return;
-    await managedBins.init();
-    const managed = managedBins.get(req.binary);
     const r = await api.deps.check(req.binary);
     if (r.source === 'bundled') {
       // The version came from the build manifest, so it is by construction the
@@ -38,9 +35,6 @@
       // build already satisfies would only invite a false "outdated".
       bundled = true;
       installed = r.version;
-      status = 'ok';
-    } else if (!r.available && managed) {
-      installed = `${managed.version} managed`;
       status = 'ok';
     } else if (!r.available) {
       status = 'missing';

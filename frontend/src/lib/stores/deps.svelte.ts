@@ -28,11 +28,9 @@ export interface DepResult {
   source?: 'bundled' | 'path';
 }
 
-/** Progress of an install/update for one dependency. */
+/** Progress of a package-manager install or update for one dependency. */
 export interface DependencyProcessState {
-  phase: 'idle' | 'downloading' | 'extracting' | 'done' | 'error' | 'pm-installing';
-  bytesDownloaded: number;
-  bytesTotal: number | null;
+  phase: 'idle' | 'done' | 'error' | 'pm-installing';
   error: string | null;
   /** Package-manager output, kept so a failed install can be explained rather than just reported. */
   pmLog: string[];
@@ -51,8 +49,6 @@ function uniqueBinaries(binaries: string[]): string[] {
 export function defaultDependencyProcessState(): DependencyProcessState {
   return {
     phase: 'idle',
-    bytesDownloaded: 0,
-    bytesTotal: null,
     error: null,
     pmLog: [],
     pmOperation: null,

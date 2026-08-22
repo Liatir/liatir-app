@@ -276,14 +276,13 @@ pub(crate) async fn lia_jobs_spawn_with_kill_command(
 /// - an explicit path (contains a separator) is used verbatim;
 /// - a tool the application bundles resolves to the bundled environment, which
 ///   on Windows means running it inside WSL2 with its file arguments translated;
-/// - a bare name listed in the managed-bins registry
-///   (`<data>/managed-bins/index.json`, written by the installer) resolves to
-///   that installed binary, so the app and plugins run the SAME managed build;
 /// - otherwise the bare name is returned unchanged and resolved via PATH.
 ///
-/// The bundle comes first deliberately: it is the build this release was tested
-/// against, and preferring anything on the host would reintroduce the version
-/// drift that bundling exists to remove.
+/// There is no third source any more. A managed-bins registry sat between these
+/// two until every platform Liatir supports got a bundled environment; what it
+/// could still have held was a binary installed by an older release, and
+/// preferring that over the one this release shipped is the version drift the
+/// bundle exists to remove.
 pub(crate) fn resolve_spawn(
     app: &AppHandle,
     cmd: &str,
@@ -299,21 +298,9 @@ pub(crate) fn resolve_spawn(
         return Ok(bundled);
     }
     Ok(super::native_tools::ResolvedCommand {
-        program: managed_bin_path(app, cmd).unwrap_or_else(|| cmd.to_string()),
+        program: cmd.to_string(),
         args: args.to_vec(),
     })
-}
-
-/// Look up a bare tool name in the managed-bins registry, returning its
-/// absolute path only if the registry lists it AND the file still exists.
-fn managed_bin_path(app: &AppHandle, name: &str) -> Option<String> {
-    let index_path = super::fs::base_dir(app, true).join("managed-bins/index.json");
-    let raw = std::fs::read_to_string(index_path).ok()?;
-    let index: Value = serde_json::from_str(&raw).ok()?;
-    let path = index.get("bins")?.get(name)?.get("path")?.as_str()?;
-    std::path::Path::new(path)
-        .exists()
-        .then(|| path.to_string())
 }
 
 async fn spawn_job(
@@ -350,8 +337,8 @@ async fn spawn_job(
         None
     };
 
-    // Resolve to the bundled environment, then to a managed binary; bare names
-    // fall through to PATH. The JobEntry keeps the original `cmd` and `args` for
+    // Resolve to the bundled environment; bare names fall through to PATH.
+    // The JobEntry keeps the original `cmd` and `args` for
     // display, so a Windows user still sees `samtools sort <their path>` rather
     // than the `wsl.exe` line that carries it.
     let resolved = resolve_spawn(&app, &cmd, &args)?;

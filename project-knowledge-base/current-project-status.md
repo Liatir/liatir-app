@@ -21,11 +21,20 @@ checked 2026-08-22, but Liatir ships macOS arm64, Windows x86_64 and Linux
 x86_64, and building an environment for a fourth would be building it for an
 application that does not exist.
 
-The consequence worth acting on: `binary-releases.ts` and the managed-bin
+The consequence, acted on the same day: `binary-releases.ts` and the managed-bin
 installer were waiting on exactly those two platforms, where they were still the
-only route. Nothing Liatir supports depends on them any more, so retiring them —
-the resolver, the bridge commands, the Dependencies UI and their tests — is
-unblocked and not started.
+only route. Nothing Liatir supports depended on them any more, so they are gone —
+the registry, `binary-manager.ts`, the `managedBins` store, four bridge commands
+and the extraction chain only they reached, the Dependencies-screen install,
+update and remove buttons, and the managed-bin lookup inside `resolve_spawn`. A
+leftover entry from an older release could only ever have been preferred over the
+build this release shipped, which is the drift the bundle exists to remove.
+
+The native downloader stays: viewer runtimes, SnpEff databases, Runtime Boxes and
+the generic download store all go through it, and its resume-and-cancel contract
+is now pinned where it is implemented instead of across a deleted installer. What
+is left in that area is `dep-requirements.ts`, which still lists STAR, bedtools
+and hisat2 — no tool code references any of them.
 
 CI now builds the archives on `ubuntu-24.04` and `macos-15`
 (`.github/workflows/native-tools-box.yml`), manually or when the environment's

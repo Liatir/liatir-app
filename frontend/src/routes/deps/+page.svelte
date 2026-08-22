@@ -12,7 +12,6 @@
 		type DependencyProcessState,
 		type DepResult
 	} from '$lib/stores/deps.svelte';
-	import { managedBins } from '$lib/stores/managedBins.svelte';
 	import { installProgress } from '$lib/stores/installProgress.svelte';
 	import { viewerRuntimesStore } from '$lib/stores/viewerRuntimes.svelte';
 	import { confirm } from '$lib/stores/confirm.svelte';
@@ -20,12 +19,6 @@
 	import { liatir } from '$lib/api';
 	import { runNativeTool } from '$lib/utils/native-tool';
 	import { getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
-	import {
-		getRelease,
-		installBinary,
-		type OsPlatform,
-		type Arch
-	} from '$lib/tools/binary-manager';
 	import {
 		DEP_REQUIREMENTS,
 		depRequirementForBinary,
@@ -73,8 +66,6 @@
 	];
 
 	// ── platform + package manager ─────────────────────────────────────
-	let platformOs = $state<OsPlatform>('macos');
-	let platformArch = $state<Arch>('x86_64');
 	let brewAvailable = $state(false);
 	let condaAvailable = $state(false);
 	let pmChecked = $state(false);
@@ -201,7 +192,6 @@
 
 	onMount(async () => {
 		void depsStore.checkAll(focusedDependencies);
-		await managedBins.init();
 		await viewerRuntimesStore.init();
 		await executionRuns.init();
 		for (const execution of executionRuns.records) {
@@ -216,10 +206,6 @@
 
 		const api = liatir();
 		if (api) {
-			const info = await api.desktop.app.info();
-			platformOs = info.os as OsPlatform;
-			platformArch = (info.arch === 'aarch64' ? 'arm64' : 'x86_64') as Arch;
-
 			const [brewRes, condaRes] = await Promise.all([
 				api.deps.check('brew'),
 				api.deps.check('conda')
@@ -239,130 +225,6 @@
 			void scrollFocusedDependencyIntoView();
 		}
 	});
-
-	// ── download install (precompiled binary) ──────────────────────────
-	async function downloadInstall(binary: string) {
-		const label = depRequirementForBinary(binary)?.label ?? binary;
-		const operation = managedBins.get(binary) ? 'update' : 'install';
-		const execution = await beginDependencyExecution(binary, label, operation);
-		setToolState(binary, {
-			phase: 'downloading',
-			error: null,
-			bytesDownloaded: 0,
-			bytesTotal: null
-		});
-		let logicalJobId: string | null = null;
-		try {
-			const logical = await jobsStore.beginLogical('managed-dependency-install', {
-				label: `${operation === 'update' ? 'Update' : 'Install'} ${label}`,
-				kind: 'dependency',
-				metadata: {
-					...liatirExecutionMetadata(execution),
-					binary,
-					operation,
-				},
-			});
-			logicalJobId = logical?.jobId ?? null;
-			if (logicalJobId) await executionRuns.attachJob(execution.runId, logicalJobId);
-			await installBinary(binary, platformOs, platformArch, (p) => {
-				if (p.phase === 'downloading') {
-					setToolState(binary, {
-						phase: 'downloading',
-						bytesDownloaded: p.bytesDownloaded,
-						bytesTotal: p.bytesTotal
-					});
-					installProgress.update(binary, {
-						phase: 'downloading',
-						bytesDownloaded: p.bytesDownloaded,
-						bytesTotal: p.bytesTotal
-					});
-					void executionRuns.setProgress(execution.runId, {
-						current: p.bytesDownloaded,
-						total: p.bytesTotal,
-						label: 'Downloading',
-						done: false,
-					}).catch(() => {});
-					if (logicalJobId) {
-						void jobsStore.setProgress(logicalJobId, {
-							current: p.bytesDownloaded,
-							total: p.bytesTotal,
-							label: 'Downloading',
-							done: false,
-						}).catch(() => {});
-					}
-				} else if (p.phase === 'extracting') {
-					setToolState(binary, { phase: 'extracting' });
-					installProgress.update(binary, { phase: 'extracting' });
-					void executionRuns.setProgress(execution.runId, {
-						current: 0, total: 1, label: 'Extracting', done: false,
-					}).catch(() => {});
-					if (logicalJobId) {
-						void jobsStore.setProgress(logicalJobId, {
-							current: 0, total: 1, label: 'Extracting', done: false,
-						}).catch(() => {});
-					}
-				} else if (p.phase === 'done') {
-					setToolState(binary, { phase: 'done' });
-					void executionRuns.setProgress(execution.runId, {
-						current: 1, total: 1, label: 'Installed', done: true,
-					}).catch(() => {});
-					if (logicalJobId) {
-						void jobsStore.setProgress(logicalJobId, {
-							current: 1, total: 1, label: 'Installed', done: true,
-						}).catch(() => {});
-					}
-				}
-			}, { downloadId: execution.runId, signal: executionRuns.signal(execution.runId) });
-			await depsStore.recheckOne(binary);
-			if (logicalJobId) await jobsStore.finishLogical(logicalJobId, true);
-			await executionRuns.finish(execution.runId, 'done');
-			installProgress.done(binary);
-		} catch (e) {
-			const cancelled = isCancelledDependencyRun(execution, e);
-			const message = cancelled
-				? 'Install cancelled. Run it again to resume the retained download.'
-				: e instanceof Error ? e.message : String(e);
-			if (logicalJobId) await jobsStore.finishLogical(logicalJobId, false).catch(() => {});
-			if (logicalJobId) {
-				await jobsStore.setProgress(logicalJobId, {
-					current: 0,
-					total: 1,
-					label: cancelled ? 'Cancelled' : 'Failed',
-					done: true,
-				}).catch(() => {});
-			}
-			if (executionRuns.byId(execution.runId)) {
-				await executionRuns.finish(execution.runId, cancelled ? 'cancelled' : 'error', message);
-			}
-			setToolState(binary, { phase: 'error', error: message, showLog: true });
-			if (cancelled) installProgress.recoverable(binary, label, message);
-			else installProgress.error(binary, message);
-		}
-	}
-
-	async function removeManaged(binary: string) {
-		const managed = managedBins.get(binary);
-		if (!managed) return;
-		const approved = await confirm({
-			title: `Remove managed ${binary}`,
-			message: `Remove Liatir's managed ${binary} ${managed.version} installation? System and package-manager installations are not affected.`,
-			confirmLabel: 'Remove'
-		});
-		if (!approved) return;
-
-		const api = liatir();
-		if (!api) return;
-		setToolState(binary, { phase: 'pm-installing', error: null, pmLog: [`Removing ${managed.path}`] });
-		try {
-			await api.invoke('lia_managed_remove', { path: managed.path, recursive: false });
-			await managedBins.remove(binary);
-			await depsStore.recheckOne(binary);
-			setToolState(binary, { phase: 'done', pmLog: [] });
-			toast.success(`Removed managed ${binary}`);
-		} catch (error) {
-			setToolState(binary, { phase: 'error', error: String(error) });
-		}
-	}
 
 	// ── package manager install (brew / conda) ─────────────────────────
 	function pmInstallCmd(binary: string): DependencyResolverCommand | null {
@@ -637,8 +499,7 @@
 	function dependencyNeedsAction(dep: DepResult): boolean {
 		if (!isCoreDependency(dep.binary)) return false;
 		const req = depRequirementForBinary(dep.binary);
-		const managed = managedBins.get(dep.binary);
-		if (!dep.available && !managed) return true;
+		if (!dep.available) return true;
 		return dep.available && !!dep.version && !dependencyVersionOk(dep.version, req);
 	}
 
@@ -756,14 +617,9 @@
 						{#each depsStore.results as dep (dep.binary)}
 							{@const req = depRequirementForBinary(dep.binary)}
 							{@const state = toolState(dep.binary)}
-							{@const hasRelease = !!getRelease(dep.binary, platformOs, platformArch)}
 							{@const hasPm = !!pmInstallCmd(dep.binary)}
-								{@const managed = managedBins.get(dep.binary)}
-								{@const activeDependencyRun = activeDependencyRunId(dep.binary)}
-							{@const isBusy =
-								state.phase === 'downloading' ||
-								state.phase === 'extracting' ||
-								state.phase === 'pm-installing'}
+							{@const activeDependencyRun = activeDependencyRunId(dep.binary)}
+							{@const isBusy = state.phase === 'pm-installing'}
 							{@const isBundled = dep.source === 'bundled'}
 							{@const versionOk = !dep.available || dependencyVersionOk(dep.version, req)}
 							{@const isUnsupportedVersion = dep.available && !!dep.version && !versionOk}
@@ -785,7 +641,7 @@
 									<span
 										class="h-2 w-2 rounded-full shrink-0 {isUnsupportedVersion
 											? 'bg-amber-400'
-											: dep.available || managed
+											: dep.available
 											? 'bg-emerald-500'
 											: !isCore || isSoft
 											? 'bg-border-2'
@@ -808,13 +664,6 @@
 											<p class="text-xs text-emerald-600 truncate">
 												Included with Liatir —
 												<span class="font-mono text-text-muted" data-selectable>{dep.version}</span>
-											</p>
-										{:else if managed && !dep.available}
-											<p class="text-xs text-emerald-600 truncate">
-												Managed v{managed.version} —
-												<span class="font-mono text-text-subtle" title={getLastSegmentsStringFromPath(managed.path, 2)}>
-													{getLastSegmentsStringFromPath(managed.path, 2)}
-												</span>
 											</p>
 										{:else if dep.available}
 											{#if isUnsupportedVersion && req}
@@ -839,17 +688,6 @@
 											{#if isSoft || !isCore}
 												<p class="mt-1 text-[10px] text-text-subtle">{dependencyKindLabel(dep.binary)}</p>
 											{/if}
-										{:else if state.phase === 'downloading'}
-											<p class="text-xs text-brand">
-												Downloading…
-												{#if state.bytesTotal}
-													{fmtBytes(state.bytesDownloaded)} / {fmtBytes(state.bytesTotal)}
-												{:else}
-													{fmtBytes(state.bytesDownloaded)}
-												{/if}
-											</p>
-										{:else if state.phase === 'extracting'}
-											<p class="text-xs text-brand">Extracting…</p>
 										{:else if state.phase === 'pm-installing'}
 											<p class="text-xs text-brand">{state.pmOperation === 'update' ? 'Checking for update' : 'Installing'} via {pmLabel()}…</p>
 										{:else if state.phase === 'done'}
@@ -860,7 +698,7 @@
 											{#if isSoft || !isCore}
 												<p class="text-xs text-text-subtle">
 													Install when needed by {isSoft ? 'an AI Model' : 'a tool'}
-													{#if pmChecked && !hasRelease && !hasPm}
+													{#if pmChecked && !hasPm}
 														— use <span class="font-mono">brew</span>,
 														<span class="font-mono">conda</span>, or
 														<span class="font-mono">apt</span>
@@ -869,7 +707,7 @@
 											{:else}
 												<p class="text-xs text-text-subtle">
 													Not found in PATH
-													{#if pmChecked && !hasRelease && !hasPm}
+													{#if pmChecked && !hasPm}
 														— install via <span class="font-mono">brew</span>,
 														<span class="font-mono">conda</span>, or
 														<span class="font-mono">apt</span>
@@ -896,7 +734,7 @@
 									     application, updates with it, and cannot be removed on its own. -->
 									{#if isBundled}
 										<p class="text-xs text-text-subtle shrink-0">Built in</p>
-									{:else if (isUnsupportedVersion || (!dep.available && !managed)) && pmChecked && !isBusy}
+									{:else if (isUnsupportedVersion || !dep.available) && pmChecked && !isBusy}
 										<div class="flex items-center gap-2 shrink-0">
 											{#if req?.downloadOptions}
 												{#each req.downloadOptions as opt}
@@ -909,16 +747,6 @@
 													</Button>
 												{/each}
 											{:else}
-												{#if hasRelease}
-													<Button
-														variant="primary"
-														size="sm"
-														testId={`managed-install-${dep.binary}`}
-														onclick={() => downloadInstall(dep.binary)}
-													>
-														{dep.available || managed ? 'Download & Update' : 'Download & Install'}
-													</Button>
-												{/if}
 												{#if hasPm}
 													<Button variant="secondary" size="sm" onclick={() => pmInstall(dep.binary)}>
 														{dep.available ? `Install/Update ${pmLabel()}` : pmLabel()}
@@ -954,30 +782,10 @@
 												<Button variant="secondary" size="sm" onclick={() => executionRuns.cancel(activeDependencyRun)}>Cancel</Button>
 											{/if}
 										</div>
-									{:else if !isBusy && (dep.available || managed) && pmChecked}
+									{:else if !isBusy && dep.available && pmChecked}
 										<div class="flex items-center gap-2 shrink-0">
 											<p class="text-xs text-text-subtle">Installed</p>
-											{#if hasRelease}
-												<Button
-													variant="secondary"
-													size="sm"
-													testId={`managed-install-${dep.binary}`}
-													onclick={() => downloadInstall(dep.binary)}
-												>
-													{managed ? 'Update' : 'Install managed'}
-												</Button>
-											{/if}
-											{#if managed}
-												<Button
-													variant="danger"
-													size="sm"
-													testId={`managed-remove-${dep.binary}`}
-													onclick={() => removeManaged(dep.binary)}
-												>
-													Remove managed
-												</Button>
-											{/if}
-											{#if dep.available && canUpdateWithPm}
+											{#if canUpdateWithPm}
 												<Button variant="secondary" size="sm" onclick={() => pmUpdate(dep.binary)}>
 													Check update
 												</Button>

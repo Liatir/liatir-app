@@ -174,10 +174,17 @@ export const tests = [
         async () => browser.execute(() => document.body.innerText.includes('Included with Liatir')),
         { timeout: 30_000, timeoutMsg: 'Dependencies did not report a bundled tool' },
       );
-      const hasInstallButton = await browser.execute(
-        () => Boolean(document.querySelector('[data-testid="managed-install-seqkit"]')),
-      );
-      expect(hasInstallButton).toBe(false);
+      // "Built in" is the whole claim: the row offers no install, no update and no
+      // removal, because a bundled tool arrives and leaves with the application.
+      const rowActions = await browser.execute(() => {
+        const row = document.querySelector('#dependency-seqkit');
+        return {
+          text: row?.textContent ?? '',
+          buttons: row ? [...row.querySelectorAll('button')].map((b) => b.textContent?.trim()) : [],
+        };
+      });
+      expect(rowActions.text).toContain('Built in');
+      expect(rowActions.buttons.join(' ')).not.toMatch(/Install|Update|Remove/i);
       await expectNoVisibleRuntimeError(browser);
     },
   },

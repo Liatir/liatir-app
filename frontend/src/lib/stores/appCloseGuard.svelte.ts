@@ -15,9 +15,9 @@ type ActiveProcessSummary = {
 	labels: string[];
 };
 
+// Downloading and extracting went with the managed binary installer; a package
+// manager is the only dependency work the app still runs itself.
 const ACTIVE_DEPENDENCY_PHASES = new Set<DependencyProcessState['phase']>([
-	'downloading',
-	'extracting',
 	'pm-installing'
 ]);
 

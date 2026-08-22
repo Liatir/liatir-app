@@ -1,12 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader, Read, Seek, SeekFrom, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
-use walkdir::WalkDir;
 
 // A stalled connection (open but delivering no bytes) must not hang a download
 // forever. If no chunk arrives within this window we abort with a clear error;
@@ -390,143 +389,7 @@ pub fn lia_managed_verify_sha256(path: String, expected: String) -> Result<bool,
     Ok(computed == expected.to_lowercase())
 }
 
-// ── Archive extraction ────────────────────────────────────────────
-
-#[tauri::command]
-pub fn lia_managed_extract(archive_path: String, dest_dir: String) -> Result<(), String> {
-    std::fs::create_dir_all(&dest_dir).map_err(|e| e.to_string())?;
-
-    let lower = archive_path.to_lowercase();
-    if lower.ends_with(".zip") {
-        extract_zip(&archive_path, &dest_dir)
-    } else {
-        extract_tar(&archive_path, &dest_dir)
-    }
-}
-
-fn extract_tar(archive_path: &str, dest_dir: &str) -> Result<(), String> {
-    let output = std::process::Command::new("tar")
-        .args(["-xf", archive_path, "-C", dest_dir])
-        .output()
-        .map_err(|e| format!("tar not found: {e}"))?;
-
-    if !output.status.success() {
-        return Err(format!("tar failed: {}", String::from_utf8_lossy(&output.stderr)));
-    }
-    Ok(())
-}
-
-/// Extract a ZIP while rejecting traversal and symbolic-link entries. Runtime
-/// boxes use this helper before an atomic activation swap, so no archive entry
-/// may escape or redirect writes outside the staging directory.
-pub(crate) fn extract_zip(archive_path: &str, dest_dir: &str) -> Result<(), String> {
-    extract_zip_with_expected_size(archive_path, dest_dir, None)
-}
-
-/// Extract a ZIP and, when provided, reject an unexpected logical payload size
-/// before writing the first entry.
-pub(crate) fn extract_zip_with_expected_size(
-    archive_path: &str,
-    dest_dir: &str,
-    expected_size: Option<u64>,
-) -> Result<(), String> {
-    let file = std::fs::File::open(archive_path).map_err(|e| e.to_string())?;
-    let mut archive = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
-    let destination = Path::new(dest_dir);
-
-    if let Some(expected) = expected_size {
-        let mut declared = 0u64;
-        for index in 0..archive.len() {
-            declared = declared.saturating_add(archive.by_index(index).map_err(|e| e.to_string())?.size());
-        }
-        if declared != expected {
-            return Err("ZIP payload size does not match the signed Runtime Box release".to_string());
-        }
-    }
-
-    for i in 0..archive.len() {
-        let mut entry = archive.by_index(i).map_err(|e| e.to_string())?;
-        if entry.is_symlink() {
-            return Err(format!("ZIP symbolic links are not allowed: {}", entry.name()));
-        }
-        let enclosed = entry
-            .enclosed_name()
-            .ok_or_else(|| format!("Unsafe ZIP entry path: {}", entry.name()))?;
-        let out_path = destination.join(enclosed);
-
-        if entry.is_dir() {
-            std::fs::create_dir_all(&out_path).map_err(|e| e.to_string())?;
-        } else {
-            if let Some(parent) = out_path.parent() {
-                std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-            }
-            let mut out_file = std::fs::File::create(&out_path).map_err(|e| e.to_string())?;
-            copy_zip_entry_sparse(&mut entry, &mut out_file)?;
-            #[cfg(unix)]
-            if let Some(mode) = entry.unix_mode() {
-                use std::os::unix::fs::PermissionsExt;
-                std::fs::set_permissions(&out_path, std::fs::Permissions::from_mode(mode & 0o777))
-                    .map_err(|e| e.to_string())?;
-            }
-        }
-    }
-    Ok(())
-}
-
-/// Copy one ZIP entry while representing all-zero regions as sparse file holes.
-/// Runtime Boxes remain byte-identical when read, while synthetic or naturally
-/// sparse multi-gigabyte files do not consume unnecessary physical storage.
-fn copy_zip_entry_sparse<R: Read>(reader: &mut R, output: &mut std::fs::File) -> Result<u64, String> {
-    let mut buffer = [0u8; 64 * 1024];
-    let mut written = 0u64;
-    loop {
-        let count = reader.read(&mut buffer).map_err(|error| error.to_string())?;
-        if count == 0 {
-            break;
-        }
-        if buffer[..count].iter().all(|byte| *byte == 0) {
-            output.seek(SeekFrom::Current(count as i64)).map_err(|error| error.to_string())?;
-        } else {
-            output.write_all(&buffer[..count]).map_err(|error| error.to_string())?;
-        }
-        written = written.saturating_add(count as u64);
-    }
-    output.set_len(written).map_err(|error| error.to_string())?;
-    Ok(written)
-}
-
-// ── Binary search + move + remove ────────────────────────────────
-
-#[tauri::command]
-pub fn lia_managed_find_binary(dir: String, name: String) -> Result<Option<String>, String> {
-    for entry in WalkDir::new(&dir).follow_links(true) {
-        let entry = entry.map_err(|e| e.to_string())?;
-        if entry.file_type().is_file() {
-            if let Some(fname) = entry.file_name().to_str() {
-                let matches = fname == name
-                    || fname == format!("{name}.exe")
-                    || fname.to_lowercase() == name.to_lowercase();
-                if matches {
-                    return Ok(Some(entry.path().to_string_lossy().to_string()));
-                }
-            }
-        }
-    }
-    Ok(None)
-}
-
-#[tauri::command]
-pub fn lia_managed_move(src: String, dest: String) -> Result<(), String> {
-    if let Some(parent) = Path::new(&dest).parent() {
-        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    }
-    std::fs::rename(&src, &dest)
-        .or_else(|_| {
-            std::fs::copy(&src, &dest).map(|_| ())?;
-            std::fs::remove_file(&src)
-        })
-        .map_err(|e| format!("Move failed: {e}"))
-}
+// ── Removal ───────────────────────────────────────────────────────
 
 #[tauri::command]
 pub fn lia_managed_remove(path: String, recursive: bool) -> Result<(), String> {
@@ -539,19 +402,6 @@ pub fn lia_managed_remove(path: String, recursive: bool) -> Result<(), String> {
     } else {
         std::fs::remove_file(p).map_err(|e| e.to_string())
     }
-}
-
-#[tauri::command]
-pub fn lia_managed_set_executable(path: String) -> Result<(), String> {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let meta = std::fs::metadata(&path).map_err(|e| e.to_string())?;
-        let mut perms = meta.permissions();
-        perms.set_mode(0o755);
-        std::fs::set_permissions(&path, perms).map_err(|e| e.to_string())?;
-    }
-    Ok(())
 }
 
 // ── File utilities ────────────────────────────────────────────────
