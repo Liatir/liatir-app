@@ -236,6 +236,9 @@
         label: plugin.name,
         inputs: Object.values(runValues).filter((value): value is string => typeof value === 'string'),
         outputFiles: runSavedFiles,
+        // A plugin reaches the filesystem only through the SDK's save calls, and everything it
+        // saves that way is already in `runSavedFiles`.
+        sideEffects: [],
         params: { ...runValues, runtime: plugin.runtime, pluginVersion: plugin.version },
         startedAt,
         endedAt,
@@ -260,6 +263,7 @@
           tool: plugin.id,
           label: plugin.name,
           inputs: Object.values(runValues).filter((value): value is string => typeof value === 'string'),
+          sideEffects: [],
           params: { ...runValues, runtime: plugin.runtime, pluginVersion: plugin.version },
           startedAt,
           endedAt,

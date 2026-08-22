@@ -134,6 +134,26 @@ re-renders its output without re-running the tool. Run records include:
 - Output file references
 - Timestamp
 
+### What a run writes down
+
+A run records everything it did, not only what it was asked for.
+
+**Every file it produced.** Alongside the result, the run lists the files the tool
+wrote along the way — fastp's quality report, the index bwa builds beside your
+reference the first time you align against it, the log and execution report a
+Nextflow workflow leaves behind. They appear under **Files this run also produced**,
+separately from the result so the two are never confused, and you can open or save
+them like any other output.
+
+This matters for a specific reason: some of these files are written next to *your*
+files, under your own filenames. A tool that quietly creates five files in your
+folder and never says so is a tool you cannot audit.
+
+**The complete log.** The run keeps everything the program printed, including its
+error output, marked as such. It is the full record, not the trimmed version shown
+while the run is in progress, and it is kept for as long as the run itself — so a
+result from two months ago can still be explained.
+
 ## Pipeline integration
 
 Tools and saved External Workflows expose compatible inputs and outputs to the

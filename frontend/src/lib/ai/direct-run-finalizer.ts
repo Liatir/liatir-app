@@ -33,6 +33,8 @@ import { finalizeExecutionResult } from '$lib/execution/finalization';
 
 type FinalizedAIToolResult = {
 	outputFiles: RunOutputFile[];
+	/** What the model wrote on the way to the answer — see `finalizeExecutionResult`. */
+	sideEffects: RunOutputFile[];
 	output: ToolOutput;
 	metrics: Record<string, number>;
 	values: Record<string, unknown>;
@@ -171,6 +173,7 @@ export async function finalizeCompletedAIDirectRuns(jobs: JobEntry[]): Promise<v
 				inputs: context.inputPaths,
 				inputSizes: context.inputSizes,
 				outputFiles: finalized.outputFiles,
+				sideEffects: finalized.sideEffects,
 				params: context.params,
 				startedAt: context.startedAt,
 				endedAt,
@@ -193,6 +196,8 @@ export async function finalizeCompletedAIDirectRuns(jobs: JobEntry[]): Promise<v
 				label: context.label,
 				inputs: context.inputPaths,
 				inputSizes: context.inputSizes,
+				// The run failed before the finalizer could inspect what the model left behind.
+				sideEffects: [],
 				params: context.params,
 				startedAt: context.startedAt,
 				endedAt,

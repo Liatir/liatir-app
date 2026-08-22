@@ -43,6 +43,36 @@ export interface ExternalWorkflowStepResult {
   executionEvidence: Record<string, JsonValue>;
 }
 
+/**
+ * The files Nextflow writes next to a run that are not the workflow's outputs.
+ *
+ * The engine reports on itself — an execution report, a timeline, a task trace, the resolved DAG,
+ * the parameters it was actually given — and until now Liatir wrote all of it to disk and told the
+ * user about none of it. These are the first things anyone looks at when a workflow behaves oddly,
+ * so they belong in the run record; `finalizeExecutionResult` takes them as `sideEffects`.
+ *
+ * Paths come straight from the provenance the adapter already saves, so nothing new is computed and
+ * nothing can drift out of step with where the engine was told to write.
+ */
+export function externalWorkflowSideEffects(
+  provenance: LiatirExternalWorkflowRunProvenance,
+): RunOutputFile[] {
+  const { locations } = provenance;
+  const declared: Array<{ label: string; path: string | undefined; ext: string }> = [
+    { label: 'Nextflow log', path: locations.logFile, ext: 'log' },
+    { label: 'Task trace', path: locations.traceFile, ext: 'txt' },
+    { label: 'Execution report', path: locations.reportFile, ext: 'html' },
+    { label: 'Timeline', path: locations.timelineFile, ext: 'html' },
+    { label: 'Workflow DAG', path: locations.dagFile, ext: 'html' },
+    { label: 'Resolved parameters', path: locations.paramsFile, ext: 'json' },
+  ];
+  // Size is deliberately absent: stat-ing six files on every finalization would slow the path that
+  // commits a Result, and an unknown size renders as blank rather than wrong.
+  return declared
+    .filter((item): item is { label: string; path: string; ext: string } => !!item.path)
+    .map(({ label, path, ext }) => ({ label, path, ext, role: 'intermediate' as const }));
+}
+
 export class ExternalWorkflowRunError extends Error {
   readonly result: ExternalWorkflowStepResult;
 

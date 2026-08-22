@@ -256,6 +256,7 @@
 				inputs: [inputFile],
 				inputSizes,
 				outputFiles: result.outputFiles as RunOutputFile[],
+				sideEffects: result.sideEffects as RunOutputFile[],
 				params: inputs,
 				startedAt: t0,
 				endedAt,
@@ -278,6 +279,8 @@
 					label,
 					inputs: [inputFile],
 					inputSizes,
+					// Failed before the model reported what it wrote.
+					sideEffects: [],
 					params: inputs,
 					startedAt: t0,
 					endedAt,

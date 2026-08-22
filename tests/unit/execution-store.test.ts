@@ -60,6 +60,9 @@ function result(runId: string, status: 'done' | 'error' = 'done') {
     label: 'Plugin',
     inputs: [],
     params: {},
+    // Required by the recording rule: every caller states what it left on disk. This fixture is a
+    // plugin run that produced nothing.
+    sideEffects: [],
     status,
     startedAt: 1,
     endedAt: 2,

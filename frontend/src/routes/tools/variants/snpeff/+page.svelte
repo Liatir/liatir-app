@@ -351,14 +351,18 @@
         size: outFileSize,
       }];
 
-      // Stats files are optional — SnpEff may not produce them on failure
+      // SnpEff writes a summary alongside the annotation whether or not anyone asked for it. It is
+      // not the result — the annotated VCF is — but it is where you look when the annotation counts
+      // are surprising, so it is declared rather than left on disk unmentioned. Optional because
+      // SnpEff may not get far enough to write it.
+      const sideEffects: RunOutputFile[] = [];
       for (const [label, path, ext] of [
         ['Summary (HTML)', statsHtml,  'html'],
         ['Gene stats',     statsGenes, 'txt'],
       ] as const) {
         try {
           const size = await api.invoke('lia_file_size', { path }) as number;
-          outputFiles.push({ label, path, ext, size });
+          sideEffects.push({ label, path, ext, size });
         } catch { /* not generated */ }
       }
 
@@ -373,7 +377,7 @@
         inputs: [filePath], inputSizes,
         params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
-        output, outputFiles, error: null,
+        output, outputFiles, sideEffects, error: null,
         log: [...logLines],
       });
       await notify('SnpEff complete', `${fileName} finished in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
@@ -385,6 +389,8 @@
       await execution.finalize(cancelled ? 'cancelled' : 'error', {
         id: runId, tool: 'snpeff', label: fileName,
         inputs: [filePath], inputSizes,
+        // The summary is written last; a run that failed has nothing to point at.
+        sideEffects: [],
         params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: message,

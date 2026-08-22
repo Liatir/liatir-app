@@ -35,6 +35,7 @@
   import {
     ExternalWorkflowRunError,
     externalWorkflowProvenanceFromParams,
+    externalWorkflowSideEffects,
     runExternalWorkflowDefinition,
     type ExternalWorkflowResumeSource,
   } from '$lib/external-workflows/nextflow';
@@ -383,6 +384,7 @@
           externalWorkflow: result.provenance as unknown as JsonValue,
         },
         outputFiles: result.outputFiles,
+        sideEffects: externalWorkflowSideEffects(result.provenance),
         startedAt,
         endedAt,
         durationMs: endedAt - startedAt,
@@ -409,6 +411,11 @@
               : {}),
           },
           outputFiles: adapterError?.result.outputFiles ?? [],
+          // A failed run leaves the engine's own reports behind too, and those are the ones worth
+          // reading. Without provenance the engine never started, so there is nothing to point at.
+          sideEffects: adapterError
+            ? externalWorkflowSideEffects(adapterError.result.provenance)
+            : [],
           startedAt,
           endedAt: adapterError?.result.provenance.endedAt ?? endedAt,
           durationMs: (adapterError?.result.provenance.endedAt ?? endedAt) - startedAt,

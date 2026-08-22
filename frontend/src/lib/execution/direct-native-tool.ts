@@ -4,11 +4,10 @@ import {
   type LiatirExecutionIdentity,
   type LiatirRunStatus,
 } from '@liatir/core';
-import { finalizeExecutionResult } from '$lib/execution/finalization';
+import { finalizeExecutionResult, type FinalizedRunResult } from '$lib/execution/finalization';
 import { isRunCancelled } from '$lib/pipeline/cancellation';
 import { executionRuns } from '$lib/stores/executionRuns.svelte';
 import { workspaceStore } from '$lib/stores/workspace.svelte';
-import type { AnalysisRun } from '$lib/stores/analysisRuns.svelte';
 import type { NativeRunOptions } from '$lib/utils/native-tool';
 
 export interface BeginDirectNativeToolRunInput {
@@ -20,7 +19,7 @@ export interface BeginDirectNativeToolRunInput {
   startedAt?: number;
 }
 
-type DirectNativeToolResult = Omit<AnalysisRun, 'execution' | 'status'>;
+type DirectNativeToolResult = FinalizedRunResult;
 
 /**
  * One standalone Native Tool run. The identity is allocated before any file,

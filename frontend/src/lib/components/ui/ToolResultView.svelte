@@ -90,15 +90,23 @@
   function displayCell(value: string | number): string | number {
     return typeof value === 'string' ? displayText(value) : value;
   }
+
+  /**
+   * Results and by-products are shown apart because they answer different questions. A run that
+   * produced one alignment and six index files reads, in one flat list, as though it produced seven
+   * results — and the user has to know the tool to tell which is which. Splitting them keeps the
+   * by-products reachable, which is the whole point of recording them, without letting them bury
+   * the thing that was asked for.
+   *
+   * A file with no role is `final`: that was the only meaning before roles existed.
+   */
+  const resultFiles = $derived((outputFiles ?? []).filter((file) => (file.role ?? 'final') === 'final'));
+  const byproductFiles = $derived((outputFiles ?? []).filter((file) => (file.role ?? 'final') !== 'final'));
 </script>
 
 <div class="space-y-4">
 
-  {#if outputFiles && outputFiles.length > 0}
-    <Card class="p-4">
-      <p class="text-xs font-medium text-text-muted mb-3">Output files</p>
-      <div class="space-y-2">
-        {#each outputFiles as file (file.path)}
+  {#snippet fileRow(file: RunOutputFile)}
           <div
             class="flex items-center gap-3 rounded-lg border border-border bg-surface-2 px-3 py-2.5"
             data-testid="result-output-file"
@@ -161,7 +169,25 @@
               Save as…
             </Button>
           </div>
-        {/each}
+  {/snippet}
+
+  {#if resultFiles.length > 0}
+    <Card class="p-4">
+      <p class="text-xs font-medium text-text-muted mb-3">Output files</p>
+      <div class="space-y-2">
+        {#each resultFiles as file (file.path)}{@render fileRow(file)}{/each}
+      </div>
+    </Card>
+  {/if}
+
+  {#if byproductFiles.length > 0}
+    <Card class="p-4">
+      <p class="text-xs font-medium text-text-muted mb-1">Files this run also produced</p>
+      <p class="text-[10px] text-text-subtle mb-3">
+        Not the result — reports, indexes and working files the tool wrote along the way.
+      </p>
+      <div class="space-y-2">
+        {#each byproductFiles as file (file.path)}{@render fileRow(file)}{/each}
       </div>
     </Card>
   {/if}

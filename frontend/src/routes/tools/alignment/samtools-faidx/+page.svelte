@@ -142,12 +142,22 @@
         size: await api.invoke('lia_file_size', { path: faiPath }) as number,
       }];
 
+      // Indexing a bgzip-compressed FASTA writes a second index beside the first. It is samtools'
+      // doing, not the user's request, and it appears next to their own file — so it is declared.
+      // Probed rather than assumed: the file exists only for compressed input.
+      const gziPath = `${filePath}.gzi`;
+      const sideEffects: RunOutputFile[] = [];
+      try {
+        const gziSize = await api.invoke('lia_file_size', { path: gziPath }) as number;
+        sideEffects.push({ label: 'BGZF index', path: gziPath, ext: 'gzi', size: gziSize });
+      } catch { /* uncompressed input: samtools writes no .gzi */ }
+
       await execution.finalize('done', {
         id: runId, tool: 'samtools-faidx', label: fileName,
         inputs: [filePath], inputSizes,
         params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
-        output, outputFiles, error: null,
+        output, outputFiles, sideEffects, error: null,
         log: [...logLines],
       });
       await notify('Samtools faidx complete', `${fileName} finished in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
@@ -159,6 +169,8 @@
       await execution.finalize(cancelled ? 'cancelled' : 'error', {
         id: runId, tool: 'samtools-faidx', label: fileName,
         inputs: [filePath], inputSizes,
+        // Indexing failed, so nothing beside the user's FASTA was written.
+        sideEffects: [],
         params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: message,
@@ -221,6 +233,8 @@
         tool: 'samtools-faidx',
         label: `${fileName} · ${region}`,
         inputs: [filePath],
+        // Extracting a subsequence prints it; it writes nothing.
+        sideEffects: [],
         params,
         startedAt: started,
         endedAt,
@@ -242,6 +256,7 @@
         tool: 'samtools-faidx',
         label: `${fileName} · ${region}`,
         inputs: [filePath],
+        sideEffects: [],
         params,
         startedAt: started,
         endedAt,

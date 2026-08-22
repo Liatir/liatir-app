@@ -128,6 +128,8 @@
       await execution.finalize('done', {
         id: runId, tool: 'seqkit', label: fileName,
         inputs: [filePath], inputSizes,
+        // seqkit stats reads its input and writes its table to stdout.
+        sideEffects: [],
         params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, error: null,
@@ -142,6 +144,7 @@
       await execution.finalize(cancelled ? 'cancelled' : 'error', {
         id: runId, tool: 'seqkit', label: fileName,
         inputs: [filePath], inputSizes,
+        sideEffects: [],
         params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: message,

@@ -40,7 +40,6 @@ export interface AnalysisRun extends AnalysisRunMeta {
 }
 
 const MAX_RUNS = 200;
-const LOG_TTL_MS = 7 * 24 * 3600 * 1000;
 const NATIVE_ANALYSIS_TOOLS = new Set([
   'fastp',
   'fastqc',
@@ -121,6 +120,12 @@ function getIndex() { return `${getDir()}/index.json`; }
 function runPath(id: string) { return `${getDir()}/${id}.json`; }
 function logPath(id: string) { return `${getDir()}/${id}.log.json`; }
 
+/** Removes a run's two on-disk files. Missing files are the normal case, not a failure. */
+async function discardRunFiles(id: string): Promise<void> {
+  await appStorage.remove(runPath(id)).catch(() => {});
+  await appStorage.remove(logPath(id)).catch(() => {});
+}
+
 function createAnalysisRunsStore() {
   let runs = $state<AnalysisRunMeta[]>([]);
   const initializer = createAsyncStoreInitializer();
@@ -151,14 +156,11 @@ function createAnalysisRunsStore() {
           if (isCurrent()) runs = [];
         }
 
-        if (!isCurrent()) return;
-        // Clean up log files older than TTL
-        const cutoff = Date.now() - LOG_TTL_MS;
-        for (const run of runs) {
-          if (run.endedAt < cutoff) {
-            appStorage.remove(logPath(run.id)).catch(() => {});
-          }
-        }
+        // A run's transcript lives exactly as long as the run does. Logs used to be deleted after
+        // seven days, which left older Results openable but mute — and the runs worth going back to
+        // are precisely the old ones, whose numbers someone is now trying to explain. `MAX_RUNS`
+        // already bounds how many can accumulate, so the age cutoff bought little and cost the
+        // evidence.
       });
     },
 
@@ -213,7 +215,14 @@ function createAnalysisRunsStore() {
 
       // Update index (meta only, no output/log)
       const { output: _output, log: _log, ...meta } = normalizedRun;
-      runs = [{ ...meta, outputSize }, ...runs.filter(r => r.id !== normalizedRun.id)].slice(0, MAX_RUNS);
+      const retained = [{ ...meta, outputSize }, ...runs.filter(r => r.id !== normalizedRun.id)];
+      // Runs pushed past the cap lose their index entry, so their output and transcript files
+      // become unreachable. Deleting them here is what keeps the transcripts unbounded in age
+      // without being unbounded on disk.
+      for (const evicted of retained.slice(MAX_RUNS)) {
+        void discardRunFiles(evicted.id);
+      }
+      runs = retained.slice(0, MAX_RUNS);
       await persistIndex();
       const execution = executionRuns.byId(run.execution?.runId ?? run.id);
       if (execution) {
@@ -235,10 +244,7 @@ function createAnalysisRunsStore() {
     },
 
     async remove(id: string) {
-      try {
-        await appStorage.remove(runPath(id));
-      } catch { /* file may not exist */ }
-
+      await discardRunFiles(id);
       outputCache.delete(id);
       runs = runs.filter(r => r.id !== id);
       await persistIndex();

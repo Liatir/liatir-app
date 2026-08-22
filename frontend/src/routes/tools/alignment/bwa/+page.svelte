@@ -125,6 +125,7 @@
 
       let indexed = true;
       try { await api.invoke('lia_file_size', { path: `${refPath}.amb` }); } catch { indexed = false; }
+      const builtIndex = !indexed;
       if (!indexed) {
         logLines.push(`$ bwa index ${refName}`);
         const indexResult = await runNativeTool(
@@ -164,13 +165,29 @@
 
       const outputFiles: RunOutputFile[] = [{ label: 'Output SAM', path: outPath, ext: 'sam', size: outSize }];
 
+      // Aligning against an unindexed reference makes bwa index it first, which drops five files
+      // beside the user's own FASTA — in their folder, under their filename, without anything in
+      // Liatir saying so. They are `cache`, not `intermediate`: every later run against the same
+      // reference reuses them, which is exactly why this run skips the step when they already
+      // exist. Declared only when this run created them; otherwise they belong to an earlier one.
+      const sideEffects: RunOutputFile[] = builtIndex
+        ? await Promise.all(
+            ['amb', 'ann', 'bwt', 'pac', 'sa'].map(async (ext) => {
+              const path = `${refPath}.${ext}`;
+              let size: number | undefined;
+              try { size = await api.invoke('lia_file_size', { path }) as number; } catch { /* ok */ }
+              return { label: `Reference index (.${ext})`, path, ext, size, role: 'cache' as const };
+            }),
+          )
+        : [];
+
       await execution.finalize('done', {
         id: runId, tool: 'bwa', label,
         inputs,
         inputSizes: inputSizes.length ? inputSizes : undefined,
         params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
-        output, outputFiles, error: null,
+        output, outputFiles, sideEffects, error: null,
         log: [...logLines],
       });
       await notify('BWA-MEM complete', `${label} aligned in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
@@ -183,6 +200,9 @@
         id: runId, tool: 'bwa', label,
         inputs,
         inputSizes: inputSizes.length ? inputSizes : undefined,
+        // A failed alignment may still have left a half-written index; the run that finally
+        // succeeds against this reference is the one that gets to claim it.
+        sideEffects: [],
         params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: message,

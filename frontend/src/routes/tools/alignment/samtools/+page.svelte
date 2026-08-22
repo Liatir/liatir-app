@@ -122,6 +122,8 @@
       await execution.finalize('done', {
         id: runId, tool: 'samtools', label: fileName,
         inputs: [filePath], inputSizes,
+        // samtools flagstat only reads; its counts arrive on stdout.
+        sideEffects: [],
         params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, error: null,
@@ -136,6 +138,7 @@
       await execution.finalize(cancelled ? 'cancelled' : 'error', {
         id: runId, tool: 'samtools', label: fileName,
         inputs: [filePath], inputSizes,
+        sideEffects: [],
         params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: message,

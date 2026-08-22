@@ -1718,6 +1718,9 @@ function createPipelineStore() {
                 ...(stepEvidence.length > 0 ? { stepEvidence } : {}),
               },
               outputFiles: allFiles,
+              // A pipeline writes nothing of its own: every file here was produced by a step, and
+              // each step already recorded its own by-products against its own run.
+              sideEffects: [],
               startedAt: pipeStartedAt,
               endedAt,
               durationMs: endedAt - pipeStartedAt,

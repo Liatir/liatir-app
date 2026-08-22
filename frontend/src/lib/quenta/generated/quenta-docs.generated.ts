@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "7f451952b0855ebecb8a7ebcccc21d3e03de36cd4159ab637617adc4245f0e0f";
+export const QUENTA_DOCS_SEED_HASH = "f4265ffba6ff0979f8160ff239224e3967df42792d2e2a37c240b627057c294e";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -2131,8 +2131,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Tools — Run history",
     "locator": "Docs / Tools / Overview / Run history",
-    "excerpt": "Run history Each tool keeps a persistent run history. Selecting a past run in the sidebar re-renders its output without re-running the tool. Run records include: - Tool name and version - Input file paths - Parsed results - Output file references - Timestamp",
-    "content": "Run history\nEach tool keeps a persistent run history. Selecting a past run in the sidebar\nre-renders its output without re-running the tool. Run records include:\n\n- Tool name and version\n- Input file paths\n- Parsed results\n- Output file references\n- Timestamp"
+    "excerpt": "Run history Each tool keeps a persistent run history. Selecting a past run in the sidebar re-renders its output without re-running the tool. Run records include: - Tool name and version - Input file paths - Parsed results - Output file references - Timestamp…",
+    "content": "Run history\nEach tool keeps a persistent run history. Selecting a past run in the sidebar\nre-renders its output without re-running the tool. Run records include:\n\n- Tool name and version\n- Input file paths\n- Parsed results\n- Output file references\n- Timestamp\n\n### What a run writes down\n\nA run records everything it did, not only what it was asked for.\n\n**Every file it produced.** Alongside the result, the run lists the files the tool\nwrote along the way — fastp's quality report, the index bwa builds beside your\nreference the first time you align against it, the log and execution report a\nNextflow workflow leaves behind. They appear under **Files this run also produced**,\nseparately from the result so the two are never confused, and you can open or save\nthem like any other output.\n\nThis matters for a specific reason: some of these files are written next to *your*\nfiles, under your own filenames. A tool that quietly creates five files in your\nfolder and never says so is a tool you cannot audit.\n\n**The complete log.** The run keeps everything the program printed, including its\nerror output, marked as such. It is the full record, not the trimmed version shown\nwhile the run is in progress, and it is kept for as long as the run itself — so a\nresult from two months ago can still be explained."
   },
   {
     "id": "docs:tools/overview#pipeline-integration",

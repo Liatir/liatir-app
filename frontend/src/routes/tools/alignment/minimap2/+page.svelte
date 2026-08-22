@@ -148,6 +148,8 @@
         id: runId, tool: 'minimap2', label: r1Name,
         inputs: [refPath, r1Path],
         inputSizes: inputSizes.length ? inputSizes : undefined,
+        // minimap2 writes the one SAM it was asked for and nothing else.
+        sideEffects: [],
         params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, outputFiles, error: null,
@@ -163,6 +165,7 @@
         id: runId, tool: 'minimap2', label: r1Name,
         inputs: [refPath, r1Path],
         inputSizes: inputSizes.length ? inputSizes : undefined,
+        sideEffects: [],
         params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: message,

@@ -171,6 +171,8 @@
       await execution.finalize('done', {
         id: runId, tool: 'bcftools-filter', label: fileName,
         inputs: [filePath], inputSizes,
+        // bcftools filter writes the one VCF it was asked for.
+        sideEffects: [],
         params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, outputFiles, error: null, log: [...logLines],
@@ -184,6 +186,7 @@
       await execution.finalize(cancelled ? 'cancelled' : 'error', {
         id: runId, tool: 'bcftools-filter', label: fileName,
         inputs: [filePath], inputSizes,
+        sideEffects: [],
         params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: message,

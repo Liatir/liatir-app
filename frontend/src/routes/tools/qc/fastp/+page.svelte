@@ -116,6 +116,7 @@
     try {
       const base = await ensureToolOutputsDir();
       const jsonPath = `${base}/fastp-${runId}.json`;
+      const htmlPath = `${base}/fastp-${runId}.html`;
       const out1Path = `${base}/fastp-${runId}-R1.fastq.gz`;
       const out2Path = `${base}/fastp-${runId}-R2.fastq.gz`;
 
@@ -123,7 +124,10 @@
         '--in1', r1Path,
         '--out1', out1Path,
         '--json', jsonPath,
-        '--html', '/dev/null',
+        // fastp's HTML report used to be discarded into /dev/null because Liatir reads its numbers
+        // from the JSON. But the report is the readable one — the per-base quality curves a
+        // biologist actually looks at — and it costs one file to keep.
+        '--html', htmlPath,
         '--thread', String(threadInfo.threads),
       ];
       if (isPaired) {
@@ -156,12 +160,20 @@
         outputFiles.push({ label: 'Trimmed R2', path: out2Path, ext: 'fastq.gz', size: await trySize(out2Path) });
       }
 
+      // Both reports are fastp's, not the user's request: the trimmed reads are the result. They
+      // are declared so the run can be inspected rather than merely reported on.
+      const sideEffects: RunOutputFile[] = [
+        { label: 'fastp report', path: htmlPath, ext: 'html', size: await trySize(htmlPath) },
+        { label: 'fastp report data', path: jsonPath, ext: 'json', size: await trySize(jsonPath) },
+      ];
+
       await execution.finalize('done', {
         id: runId, tool: 'fastp', label,
         inputs,
         inputSizes: inputSizes.length > 0 ? inputSizes : undefined,
         params,
         outputFiles,
+        sideEffects,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output, error: null,
         log: [...logLines],
@@ -176,6 +188,8 @@
         id: runId, tool: 'fastp', label,
         inputs,
         inputSizes: inputSizes.length > 0 ? inputSizes : undefined,
+        // fastp writes its reports on a clean exit; a failed run has none to offer.
+        sideEffects: [],
         params,
         startedAt: t0, endedAt, durationMs: endedAt - t0,
         output: null, error: message,

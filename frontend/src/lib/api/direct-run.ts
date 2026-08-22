@@ -139,6 +139,8 @@ export async function runApiConnectorDirect(
       inputs: [],
       params,
       outputFiles,
+      // An API request writes only what it was asked to save; nothing else reaches the disk.
+      sideEffects: [],
       startedAt,
       endedAt,
       durationMs: endedAt - startedAt,
@@ -189,6 +191,8 @@ export async function runApiConnectorDirect(
         ...(apiError ? { errorKind: apiError.kind, httpStatus: apiError.response?.status } : {}),
       },
       outputFiles,
+      // An API request writes only what it was asked to save; nothing else reaches the disk.
+      sideEffects: [],
       startedAt,
       endedAt,
       durationMs: endedAt - startedAt,

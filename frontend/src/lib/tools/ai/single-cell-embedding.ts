@@ -236,6 +236,7 @@ export async function finalizeSingleCellEmbeddingResult(
 	onLog: (line: string) => void
 ): Promise<{
 	outputFiles: RunOutputFile[];
+	sideEffects: RunOutputFile[];
 	output: ToolOutput;
 	metrics: Record<string, number>;
 	values: Record<string, JsonValue>;
@@ -393,19 +394,21 @@ export async function finalizeSingleCellEmbeddingResult(
 			'csv',
 			'embeddingPreviewCsv'
 		),
-		await fileArtifact('Embedding summary', parsed.summaryPath, 'json', 'summaryJson'),
-		...(await Promise.all(
-			(parsed.intermediatePaths ?? []).map((path) =>
-				fileArtifact(
-					`${model.name} intermediate: ${basename(path)}`,
-					path,
-					extensionFor(path),
-					'intermediateFiles',
-					'intermediate'
-				)
-			)
-		))
+		await fileArtifact('Embedding summary', parsed.summaryPath, 'json', 'summaryJson')
 	];
+	// Whatever the model wrote on its way to the answer. Declared separately from the outputs the
+	// user asked for, on the channel `finalizeExecutionResult` requires — see its `sideEffects`.
+	const sideEffects = await Promise.all(
+		(parsed.intermediatePaths ?? []).map((path) =>
+			fileArtifact(
+				`${model.name} intermediate: ${basename(path)}`,
+				path,
+				extensionFor(path),
+				'intermediateFiles',
+				'intermediate'
+			)
+		)
+	);
 	const provenanceRows: (string | number)[][] = [
 		['AI Model', model.name],
 		['Runtime', `${model.runtime.name} (${model.runtime.kind})`],
@@ -423,6 +426,7 @@ export async function finalizeSingleCellEmbeddingResult(
 
 	return {
 		outputFiles,
+		sideEffects,
 		output: {
 			sections: [
 				{
@@ -505,6 +509,7 @@ export async function runSingleCellEmbeddingStep(
 	runContext?: AIRunContext
 ): Promise<{
 	outputFiles: RunOutputFile[];
+	sideEffects: RunOutputFile[];
 	output: ToolOutput;
 	metrics: Record<string, number>;
 	values: Record<string, JsonValue>;

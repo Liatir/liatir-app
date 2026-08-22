@@ -93,6 +93,14 @@ export async function runNativeTool(
     : await api.invoke('lia_jobs_spawn', { ...spawnRequest }) as { jobId: string };
   if (options.execution && executionRuns.byId(options.execution.runId)) {
     await executionRuns.attachJob(options.execution.runId, jobId);
+    // The command as actually spawned, not as a page chose to describe it. Recorded here so the
+    // run's transcript is complete without every caller remembering to narrate itself — and so it
+    // states the real argv, which is what someone reproducing the run needs.
+    await executionRuns.appendLog(
+      options.execution.runId,
+      `$ ${[cmd, ...args].join(' ')}`,
+      { stream: 'system' },
+    ).catch(() => {});
   }
   options.onSpawn?.(jobId);
   const settlement = await waitForJobSettlement(api, jobId, {

@@ -1,5 +1,60 @@
 # Current project status
 
+## Every run records what it actually did (2026-08-23)
+
+A user must be able to open any run and read what happened: the whole transcript,
+and every file it left on disk. That was already the design — `LiatirFileArtifactRole`
+has carried `intermediate` since artifacts were introduced — and it was implemented
+in exactly one tool, the Single-cell Embedding AI Tool. Everywhere else a run
+recorded only its declared outputs and a display copy of its log.
+
+Checking tool by tool mattered here, because the first read of the code overstated
+the problem. Four of the six native tools genuinely leave nothing behind: `minimap2`
+writes its one SAM, and `samtools flagstat`, `bcftools stats` and `seqkit stats`
+report on stdout. Their hardcoded `final` role was correct, not lazy. The evidence
+was being dropped in a smaller number of specific places:
+
+- **fastp** wrote its JSON report, read the numbers back out of it, and never listed
+  it — and sent its HTML report, the readable per-base quality view a biologist
+  actually looks at, to `/dev/null`.
+- **bwa** indexes an unindexed reference before aligning, dropping five files beside
+  the user's own FASTA, under their filename, with nothing in Liatir saying so.
+- **samtools faidx** writes a second index (`.gzi`) for bgzip-compressed input.
+- **SnpEff** listed its summary and gene stats as though they were results.
+- **External Workflows** wrote Nextflow's log, trace, execution report, timeline and
+  DAG — the first things anyone reads when a workflow misbehaves — and mentioned none.
+
+Two things about logs were worse than the files. Every process line already flowed
+into the execution spine through `runNativeTool`, was persisted on every line, and
+was **never shown anywhere**: Liatir paid the full cost of capturing stdout and
+stderr and then discarded it, because `finalizeExecutionResult` preferred the
+caller's own array (`result.log ?? execution.logs`) and every tool page passes one.
+Those arrays are display transcripts — filtered, capped at a few hundred lines. And
+`analysisRuns` deleted log files after seven days while keeping the runs, so an
+older Result opened mute, which is backwards: old runs are the ones someone is now
+trying to explain.
+
+The rule now lives in `finalizeExecutionResult`, the single place a Result is
+committed, so it is enforced rather than repeated in thirteen pages:
+
+- the transcript comes from the execution spine, always, with `stderr` marked so the
+  distinction survives flattening; `runNativeTool` records the command as spawned,
+  so no caller has to narrate itself;
+- `sideEffects` is **required and has no default** — `[]` is a real answer, but one
+  someone has to give on purpose. An optional field is the one every new tool
+  forgets. Making it mandatory broke thirteen call sites at compile time, which is
+  the enforcement working;
+- by-products are filed with an honest role (`bwa`'s index is `cache`, not
+  `intermediate` — later runs reuse it, which is why this one skips indexing when it
+  exists) and the results view shows them apart from the result, so a run that
+  produced one alignment and six index files does not read as seven results;
+- a run's transcript now lives as long as the run, with both files deleted when a run
+  is evicted past `MAX_RUNS` — unbounded age, still bounded disk.
+
+Pinned by `tests/unit/run-recording-rule.test.ts`. What is not yet enforced: nothing
+proves a `sideEffects: []` is *true*, only that it was stated. Enumerating a per-run
+directory would prove it, and would need every tool to write into one.
+
 ## Native Tools are one signed Scrollcase box (2026-08-22)
 
 The six process-backed tools — `samtools`, `bcftools`, `seqkit`, `fastp`, `bwa`
