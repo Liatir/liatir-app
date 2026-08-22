@@ -1,6 +1,7 @@
 # Controlled local MCP boundary
 
-Status: Scientific AI Workbench Gate 8, schema version 1  
+Status: Scientific AI Workbench Gate 8 cross-platform complete, schema version 1
+
 Owner: `packages/liatir-core`  
 Protocol: MCP `2026-07-28`, Streamable HTTP
 
@@ -221,6 +222,10 @@ protocol negotiation pinned to `2026-07-28`. It proves:
 - stable asynchronous identity before approval;
 - approval followed by a real FastQC Pipeline Run, one Job, one Result, logs
   and MCP initiator attribution;
+- approval of a saved SeqKit pipeline whose registered FASTQ path contains a
+  space, with declared file and numeric inputs, one Native Tool Job, exactly one
+  terminal Result, 17 expected records, root/initiator inheritance and no
+  mutation of the saved graph;
 - owner-aware Job and run cancellation settling Job and Result as cancelled;
 - workspace Result listing, path-free Result output, explicit Data access,
   bounded text content reads and immediate permission revocation;
@@ -228,26 +233,29 @@ protocol negotiation pinned to `2026-07-28`. It proves:
 - required audit actions.
 
 Focused core tests pin the shared schema/revision helper and initiator
-inheritance. Rust tests pin exact token comparison, loopback Origin parsing,
-main-window-only administration and the three permitted per-run resource kinds.
+inheritance. The SeqKit parser regression pins aligned output whose first file
+column contains spaces. Rust tests pin exact token comparison, loopback Origin
+parsing, main-window-only administration, the three permitted per-run resource
+kinds, and redaction of an absolute output path that is not one of the
+registered host-path replacements.
 
-The revised native MCP scenario passes `1/1`. `npm run test:verify` passes 55
-files / 329 tests, `cargo test` passes 66 tests with 2 intentionally ignored,
-`cargo clippy --tests` exits 0 with existing warnings, and both documentation
-sites build. The latest full UI-profile attempt rebuilt the app and bundle, but
-the embedded WebDriver never became available and the macOS process reported
-`SIGABRT` before any product test started, so no green full-suite result is
-claimed from that attempt. No Windows/Linux
-runtime, remote, heavy-model, signing or publishing action is claimed by the
-local macOS evidence.
+The same official-client scenario passes `1/1` against both the real native
+Windows app and an independently compiled Linux x86_64 ELF app. On Windows it
+asserts `lia_native_tools_environment().execution === "wsl2"` and the
+successful SeqKit Result proves the complete `liatir.exe -> WSL2 bundled tool`
+crossing. Under Linux/Xvfb it asserts `execution === "native"`, so the ELF app
+executes its bundled SeqKit directly. FastQC remains the lifecycle and
+cancellation fixture; it is not treated as evidence for the Windows Native
+Tools boundary.
 
-Cross-platform closure is deliberately stronger than rerunning the FastQC WASM
-fixture. Native Windows must drive this MCP server inside `liatir.exe` and pass
-one approved pipeline through the bundled SeqKit Native Tool, whose supported
-Windows backend is WSL2. Native Linux x86_64 must run the same real-client
-scenario against an independently compiled ELF Liatir app from the WSL2 Linux
-filesystem under Xvfb. The two executions share a physical machine but not a
-product identity or binary. The maintained procedure and exit criteria are in
+On each platform `npm run test:verify` passes 57 files / 342 tests and the
+complete UI profile passes 5 suites / 0 failed / 2 platform-skipped, with the
+native Tauri E2E sub-run at 33 passed / 0 failed / 23 skipped. Windows Rust is
+80 passed / 2 ignored; Linux Rust is 79 passed / 2 ignored; Clippy exits 0 on
+both at the existing warning baseline. The earlier macOS arm64 real-client
+proof remains 1/1; its separate full-profile WebDriver `SIGABRT` is not
+rewritten as green evidence. Exact hosts, toolchains, archive digests, commands,
+prerequisites and failure/retry history are in
 [Gate 8 MCP — Windows and Linux evidence](../roadmap/gate-8-mcp-windows-linux.md).
 
 ## Explicit exclusions

@@ -13,6 +13,16 @@ function numOrNull(parts, idx) {
     const v = parseFloat(col(parts, idx));
     return isNaN(v) ? null : v;
 }
+function fields(line, expectedColumns) {
+    if (line.includes('\t'))
+        return line.trimEnd().split('\t').map((value) => value.trim());
+    const parts = line.trim().split(/\s+/);
+    if (expectedColumns !== undefined && parts.length > expectedColumns) {
+        const firstColumnParts = parts.length - expectedColumns + 1;
+        return [parts.slice(0, firstColumnParts).join(' '), ...parts.slice(firstColumnParts)];
+    }
+    return parts;
+}
 /** Parse `seqkit stats` (optionally `-a`) tabular stdout. Returns null if unparseable. */
 export function parseSeqkitStats(stdout) {
     const lines = stdout.split('\n').filter((l) => l.trim() && !l.startsWith('#'));
@@ -23,8 +33,11 @@ export function parseSeqkitStats(stdout) {
     const dataLine = lines[1];
     if (!dataLine)
         return null;
-    const headers = headerLine.trim().split(/\s+/);
-    const parts = dataLine.trim().split(/\s+/);
+    const headers = fields(headerLine);
+    // SeqKit's default aligned table does not quote the first `file` column.
+    // Rejoin only the excess leading fields so a path containing spaces cannot
+    // shift the scientific columns; `-T` tabular output remains unambiguous.
+    const parts = fields(dataLine, headers.length);
     const idx = (name) => headers.findIndex((h) => h.toLowerCase().includes(name.toLowerCase()));
     const iFile = 0;
     const iFormat = idx('format');

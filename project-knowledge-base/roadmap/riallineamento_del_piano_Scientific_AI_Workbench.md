@@ -13,7 +13,7 @@ Ultima revisione: 2026-08-22
 | 5. Lighthouse single-cell | Completato localmente su macOS arm64 |
 | 6. Nextflow come External Workflow | Completato su macOS arm64, Linux x86_64 e app Windows x86_64 con backend WSL2 Linux x86_64 |
 | 7. Gate Beta 1 | Completato il 2026-08-20 e ridefinito sul livello desktop locale: implementazione ed evidenza complete, eseguite e verificate in modo incrociato su macOS arm64, Windows x86_64 e Linux x86_64 |
-| 8. MCP dopo il nucleo Beta | Implementato e verificato su macOS arm64; restano le prove native Windows x86_64 e Linux x86_64, inclusa una vera pipeline MCP Native Tool dall'app Windows tramite WSL2 |
+| 8. MCP dopo il nucleo Beta | Completato su macOS arm64, Windows x86_64 nativo e Linux x86_64 nativo; la prova Windows esegue SeqKit dal bundle Linux tramite WSL2 |
 | Gate di rilascio: distribuzione pubblica firmata | Aperto e volutamente non iniziato: firma, notarizzazione, scelta Microsoft Store, installazione su macchina pulita e update firmato A → B |
 
 ## Indicatori
@@ -274,8 +274,8 @@ Ambito completo, blocchi e regole di stop:
 
 **Difficoltà:** `5/5` · **Codex effort:** `max`
 
-**Stato (2026-08-22): implementato; verificato su macOS arm64, con evidenza
-nativa Windows x86_64 e Linux x86_64 ancora aperta.**
+**Stato (2026-08-22): completato su macOS arm64, Windows x86_64 nativo e
+Linux x86_64 nativo.**
 
 - Server MCP locale con risorse in lettura e pipeline salvate eseguibili in modo controllato.
 - Identità asincrona stabile per ogni esecuzione.
@@ -314,30 +314,47 @@ restano isolate. Il threat model, le esclusioni e il contratto di recovery sono
 in [Controlled local MCP boundary](../architecture/mcp.md), mentre la guida
 utente è in `docs/mcp/overview.md`.
 
-La nuova prova macOS arm64 con il vero client TypeScript MCP 2.0.0, protocollo
-`2026-07-28`, copre autenticazione, discovery esplicito di tutte le famiglie
-sopra elencate, rifiuto di un AI Model non disponibile, input e artifact reali,
-approvazione, FastQC, Job/Result/initiator, letture sanificate, chunk file,
-permessi e revoche, cancellazione per Job e run, diniego, grant stantio e audit.
-La matrice completa viene scoperta e autorizzata senza eseguire modelli o
-workflow pesanti. La prova nativa mirata è verde `1/1`; `test:verify` è verde con 55 file e 329
-test, `cargo test` con 66 passati e 2 ignorati, Clippy esce `0` e i due siti di
-documentazione compilano. Il successivo tentativo dell'intero profilo UI ha
-ricostruito app e bundle, ma WebDriver non è diventato disponibile e il processo
-macOS ha riportato `SIGABRT` prima di qualsiasi test prodotto;
-non viene quindi dichiarato verde. Nessuna azione remota, modello pesante,
-firma o pubblicazione rientra nel gate.
+Il vero client TypeScript MCP 2.0.0, protocollo `2026-07-28`, continua a coprire
+autenticazione, discovery esplicito di tutte le famiglie sopra elencate, rifiuto
+di un AI Model non disponibile, input e artifact reali, approvazione, FastQC,
+Job/Result/initiator, letture sanificate, chunk file, permessi e revoche,
+cancellazione per Job e run, diniego, grant stantio e audit. La matrice completa
+viene scoperta e autorizzata senza eseguire modelli o workflow pesanti. La prova
+macOS arm64 resta verde `1/1`; il distinto fallimento `SIGABRT` del profilo UI
+completo macOS resta registrato come tale e non viene reinterpretato usando
+l'evidenza di un'altra piattaforma.
 
-La chiusura multipiattaforma usa la stessa macchina Windows per due prove che
-non vanno confuse. La prova Windows usa il server MCP e la UI di autorizzazione
-del vero `liatir.exe`; una pipeline approvata deve poi eseguire davvero un Native
-Tool dal bundle `linux-64` attraverso WSL2. La prova Linux usa invece un checkout
-indipendente nel filesystem Linux di WSL2, compila un vero eseguibile ELF x86-64
-di Liatir e guida il suo server MCP sotto Xvfb. WSL2 è quindi backend Windows sia
-per i Native Tools sia per Nextflow; la seconda esecuzione resta evidenza Linux
-nativa. FastQC copre bene il lifecycle MCP leggero, ma essendo WASM non prova il
-confine Windows → WSL2 dei Native Tools. Scenario, comandi, campi di evidenza e
-criteri di uscita sono in
+Lo stesso scenario comune aggiunge ora la pipeline salvata `seqkit-stats`. Un
+FASTQ registrato con 17 record vive in un path contenente uno spazio; artifact e
+valore numerico dei thread compaiono nello schema congelato e nella finestra di
+approvazione. L'esecuzione crea un solo Job Native Tool e un solo Result
+terminale, conserva root ID e initiator MCP in Pipeline Run, child run, Job e
+Result, riporta 17 sequenze, mantiene sanificate tutte le risorse pubbliche e
+non modifica la pipeline salvata. FastQC resta la prova leggera di lifecycle e
+cancellazione.
+
+Su Windows 11 x86_64 il vero `liatir.exe` riporta
+`lia_native_tools_environment().execution = "wsl2"`; il Result SeqKit prova
+quindi l'intero confine app Windows → bundle Linux in WSL2. Nel checkout
+indipendente `/home/lorenzo/liatir-stack-gate8-mcp`, mai sotto `/mnt/c`, `file`
+conferma un ELF 64-bit x86-64 e lo scenario sotto Xvfb riporta
+`execution = "native"`. Entrambe le prove mirate sono 1/1. Su entrambe le
+piattaforme `test:verify` passa 57 file / 342 test e il profilo UI completo passa
+5/0/2 suite, con E2E Tauri nativo 33/0/23. Rust passa 80/2 ignorati su Windows e
+79/2 ignorati su Linux; Clippy esce 0 su entrambe.
+
+Il gate ha corretto due difetti prodotto: l'output allineato di SeqKit spostava
+le colonne scientifiche quando il file conteneva spazi, e un path WSL assoluto
+non registrato poteva sopravvivere nella sanificazione MCP. Regressioni unitarie
+e Rust coprono entrambe le correzioni. Il primo run Windows ha inoltre corretto
+un'aspettativa del solo test da `pipeline-step` al tipo canonico
+`native-tool`. Il clone Linux fresco ha richiesto i package npm annidati già
+documentati; Ubuntu 26.04 espone Python 3.14.4, correttamente fuori dal requisito
+`<3.14` della fixture, quindi il run UI verde ha usato Python 3.12.14 isolato
+tramite Pixi sul solo `PATH` del runner. Non è cambiata la logica WSL condivisa
+di esecuzione/cancellazione e non serviva rieseguire Nextflow. Nessuna azione
+remota, modello pesante, firma, pubblicazione, deployment o release è stata
+eseguita. Host, digest, comandi e cronologia completa sono in
 [Gate 8 MCP — Windows and Linux evidence](./gate-8-mcp-windows-linux.md).
 
 ## Contratti e verifiche comuni
@@ -355,6 +372,6 @@ criteri di uscita sono in
 - P5.0–P5.7 resta chiuso.
 - Nextflow è il primo External Workflow supportato.
 - Il parallelismo interno delle pipeline Liatir non è richiesto per Beta 1.
-- MCP segue Beta 1; è implementato e verificato su macOS arm64, mentre restano
-  le prove native Windows x86_64 e Linux x86_64 definite nel relativo handoff.
+- MCP segue Beta 1 ed è completato con prove native macOS arm64, Windows x86_64
+  e Linux x86_64 definite nel relativo handoff.
 - HPC, cloud executor, installazione gestita e altri workflow engine vengono dopo il primo adapter Nextflow verificato.

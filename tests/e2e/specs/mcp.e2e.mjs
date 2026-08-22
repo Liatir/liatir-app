@@ -12,6 +12,7 @@ import {
 } from '../support/liatir-app.mjs';
 
 const PIPELINE_ID = 'gate-8-mcp-fastqc';
+const SEQKIT_PIPELINE_ID = 'gate-8-mcp-seqkit';
 const SURFACE_PIPELINE_ID = 'gate-8-mcp-input-surface';
 const NESTED_PIPELINE_ID = 'gate-8-mcp-nested';
 const PLUGIN_ID = 'gate-8-mcp-plugin';
@@ -20,6 +21,8 @@ const API_COLLECTION_ID = 'gate-8-mcp-api';
 const API_REQUEST_ID = 'gate-8-mcp-request';
 const EXISTING_RESULT_ID = 'gate-8-existing-result';
 const RESULT_ARTIFACT_ID = 'gate-8-result-artifact';
+const SEQKIT_RECORD_COUNT = 17;
+const SEQKIT_THREADS = 3;
 const WASM_PENDING = 'AGFzbQEAAAABBAFgAAADAgEABwoBBl9zdGFydAAACgkBBwADQAwACwsAEwRuYW1lAwwBAAEAB2ZvcmV2ZXI=';
 
 async function writeAppJson(browser, rel, value) {
@@ -69,7 +72,26 @@ function pipelineWorkspace(inputPath, updatedAt = Date.now()) {
       data: { varType: 'string', value: 'saved nested value', label: 'Nested value' },
     }],
     edges: [],
-    updatedAt: updatedAt - 2,
+    updatedAt: updatedAt - 3,
+  };
+  const seqkit = {
+    id: SEQKIT_PIPELINE_ID,
+    name: 'Gate 8 MCP SeqKit stats',
+    nodes: [{
+      id: 'mcp-seqkit',
+      type: 'tool',
+      position: { x: 120, y: 120 },
+      data: {
+        stepId: 'seqkit-stats',
+        label: 'SeqKit stats through MCP',
+        inputs: {
+          inputFile: '/not/the/allowed/seqkit input.fastq',
+          threads: '0',
+        },
+      },
+    }],
+    edges: [],
+    updatedAt: updatedAt - 1,
   };
   const surface = {
     id: SURFACE_PIPELINE_ID,
@@ -158,7 +180,7 @@ function pipelineWorkspace(inputPath, updatedAt = Date.now()) {
       },
     ],
     edges: [],
-    updatedAt: updatedAt - 1,
+    updatedAt: updatedAt - 2,
   };
   return {
     current: {
@@ -167,7 +189,7 @@ function pipelineWorkspace(inputPath, updatedAt = Date.now()) {
       nodes: pipeline.nodes,
       edges: pipeline.edges,
     },
-    saved: [pipeline, surface, nested],
+    saved: [pipeline, seqkit, surface, nested],
     runtime: [],
   };
 }
@@ -264,6 +286,13 @@ function resourceContent(result) {
   return content;
 }
 
+function stringValues(value) {
+  if (typeof value === 'string') return [value];
+  if (Array.isArray(value)) return value.flatMap(stringValues);
+  if (value && typeof value === 'object') return Object.values(value).flatMap(stringValues);
+  return [];
+}
+
 async function mcpStatus(browser, runId) {
   const requests = await browser.execute(async () => window.Liatir.desktop.mcp.requests());
   return requests.find((request) => request.runId === runId)?.status ?? null;
@@ -285,7 +314,7 @@ async function runEvidence(browser, runId) {
     ]);
     return {
       jobs: jobs.filter((job) => job.metadata?.execution?.rootRunId === id),
-      results: results.filter((result) => result.id === id),
+      results: results.filter((result) => result.id === id || result.execution?.rootRunId === id),
       executions: executions.filter((execution) => execution.identity?.rootRunId === id),
     };
   }, runId);
@@ -298,20 +327,55 @@ async function clickAuthorization(browser, action) {
   await button.click();
 }
 
+async function allowPipeline(browser, pipelineId, revision) {
+  const allow = await browser.$(`[data-testid="mcp-pipeline-${pipelineId}"] button`);
+  await allow.waitForDisplayed({ timeout: 20_000 });
+  await allow.click();
+  await browser.waitUntil(
+    async () => browser.execute(async (id, expectedRevision) => {
+      const status = await window.Liatir.desktop.mcp.status();
+      return status.allowlist.some((grant) => (
+        grant.workspaceId === '__test__'
+        && grant.pipelineId === id
+        && grant.pipelineRevision === expectedRevision
+      ));
+    }, pipelineId, String(revision)),
+    { timeout: 20_000, timeoutMsg: `Saved pipeline ${pipelineId} was not allowed for MCP` },
+  );
+}
+
 export const tests = [{
   name: 'passes declared pipeline inputs and exposes owner-scoped Jobs, Results, artifacts, and cancellation',
-  async run({ browser, expect }) {
+  async run({ artifactsDir, browser, expect }) {
     await openSandboxWorkspace(browser);
+    const seqkitDirectory = path.join(artifactsDir, 'MCP source path with space');
+    const seqkitInputPath = path.join(seqkitDirectory, 'reads with space.fastq');
+    const sequence = 'ACGT'.repeat(10);
+    fs.mkdirSync(seqkitDirectory, { recursive: true });
+    fs.writeFileSync(
+      seqkitInputPath,
+      Array.from(
+        { length: SEQKIT_RECORD_COUNT },
+        (_unused, index) => `@gate8-${index}\n${sequence}\n+\n${'I'.repeat(sequence.length)}\n`,
+      ).join(''),
+    );
+    expect(seqkitInputPath).toContain(' ');
+
     const sample = await browser.execute(async () => {
       const samplePath = await window.Liatir.invoke('lia_fastqc_sample_path', {});
       const size = await window.Liatir.invoke('lia_file_size', { path: samplePath });
-      return { samplePath, size, artifactId: crypto.randomUUID() };
+      return {
+        samplePath,
+        size,
+        artifactId: crypto.randomUUID(),
+        seqkitArtifactId: crypto.randomUUID(),
+      };
     });
     const samplePath = sample.samplePath;
     const initialData = await readAppJson(browser, 'workspaces/__test__/data-files.json', { files: [], folders: [] });
-    if (!initialData.files.some((file) => file.path === samplePath)) {
-      await writeAppJson(browser, 'workspaces/__test__/data-files.json', {
-        files: [{
+    const seededFiles = [...initialData.files];
+    if (!seededFiles.some((file) => file.path === samplePath)) {
+      seededFiles.unshift({
           id: sample.artifactId,
           name: 'sample.fastq',
           path: samplePath,
@@ -320,11 +384,30 @@ export const tests = [{
           addedAt: 0,
           folder: 'Gate 8 MCP',
           protected: true,
-        }, ...initialData.files],
-        folders: [...new Set([...(initialData.folders ?? []), 'Gate 8 MCP'])],
       });
     }
+    seededFiles.unshift({
+      id: sample.seqkitArtifactId,
+      name: path.basename(seqkitInputPath),
+      path: seqkitInputPath,
+      ext: 'fastq',
+      size: fs.statSync(seqkitInputPath).size,
+      addedAt: 0,
+      folder: 'Gate 8 MCP',
+      protected: true,
+    });
+    await writeAppJson(browser, 'workspaces/__test__/data-files.json', {
+      files: seededFiles,
+      folders: [...new Set([...(initialData.folders ?? []), 'Gate 8 MCP'])],
+    });
+
     const seeded = pipelineWorkspace('/not/the/allowed/input.fastq');
+    const fastqcSaved = seeded.saved.find((pipeline) => pipeline.id === PIPELINE_ID);
+    const seqkitSaved = seeded.saved.find((pipeline) => pipeline.id === SEQKIT_PIPELINE_ID);
+    const surfaceSaved = seeded.saved.find((pipeline) => pipeline.id === SURFACE_PIPELINE_ID);
+    expect(fastqcSaved).toBeTruthy();
+    expect(seqkitSaved).toBeTruthy();
+    expect(surfaceSaved).toBeTruthy();
     await Promise.all([
       writeAppJson(browser, 'workspaces/__test__/pipeline-workspace.json', seeded),
       writeAppJson(browser, 'workspaces/__test__/external-workflows.json', {
@@ -338,7 +421,9 @@ export const tests = [{
     await openSandboxWorkspace(browser);
     const dataIndex = await readAppJson(browser, 'workspaces/__test__/data-files.json', { files: [], folders: [] });
     const sampleArtifact = dataIndex.files.find((file) => file.path === samplePath);
+    const seqkitArtifact = dataIndex.files.find((file) => file.path === seqkitInputPath);
     expect(sampleArtifact?.id).toMatch(/^[A-Za-z0-9][A-Za-z0-9._-]*$/);
+    expect(seqkitArtifact?.id).toMatch(/^[A-Za-z0-9][A-Za-z0-9._-]*$/);
     const resultArtifactPath = await browser.execute(async () => {
       const root = await window.Liatir.invoke('lia_app_path');
       const rel = 'workspaces/__test__/analysis-runs/gate-8-result.txt';
@@ -393,6 +478,13 @@ export const tests = [{
     await reloadLiatirApp(browser);
     await openSandboxWorkspace(browser);
 
+    const nativeToolsEnvironment = await browser.execute(
+      async () => window.Liatir.invoke('lia_native_tools_environment', {}),
+    );
+    expect(nativeToolsEnvironment.available).toBe(true);
+    expect(nativeToolsEnvironment.tools).toContain('seqkit');
+    expect(nativeToolsEnvironment.execution).toBe(process.platform === 'win32' ? 'wsl2' : 'native');
+
     // Configure through the user-facing Settings surface, starting from the
     // secure default even if this spec follows another local run.
     await browser.execute(async () => window.Liatir.desktop.mcp.setEnabled(false));
@@ -408,34 +500,9 @@ export const tests = [{
       { timeout: 20_000, timeoutMsg: 'Local MCP endpoint did not enable' },
     );
 
-    const allow = await browser.$(`[data-testid="mcp-pipeline-${PIPELINE_ID}"] button`);
-    await allow.waitForDisplayed({ timeout: 20_000 });
-    await allow.click();
-    await browser.waitUntil(
-      async () => browser.execute(async (pipelineId, revision) => {
-        const status = await window.Liatir.desktop.mcp.status();
-        return status.allowlist.some((grant) => (
-          grant.workspaceId === '__test__'
-          && grant.pipelineId === pipelineId
-          && grant.pipelineRevision === revision
-        ));
-      }, PIPELINE_ID, String(seeded.saved[0].updatedAt)),
-      { timeout: 20_000, timeoutMsg: 'Saved pipeline revision was not allowed for MCP' },
-    );
-    const allowSurface = await browser.$(`[data-testid="mcp-pipeline-${SURFACE_PIPELINE_ID}"] button`);
-    await allowSurface.waitForDisplayed({ timeout: 20_000 });
-    await allowSurface.click();
-    await browser.waitUntil(
-      async () => browser.execute(async (pipelineId, revision) => {
-        const status = await window.Liatir.desktop.mcp.status();
-        return status.allowlist.some((grant) => (
-          grant.workspaceId === '__test__'
-          && grant.pipelineId === pipelineId
-          && grant.pipelineRevision === revision
-        ));
-      }, SURFACE_PIPELINE_ID, String(seeded.saved[1].updatedAt)),
-      { timeout: 20_000, timeoutMsg: 'Complete MCP input surface was not allowed' },
-    );
+    await allowPipeline(browser, PIPELINE_ID, fastqcSaved.updatedAt);
+    await allowPipeline(browser, SEQKIT_PIPELINE_ID, seqkitSaved.updatedAt);
+    await allowPipeline(browser, SURFACE_PIPELINE_ID, surfaceSaved.updatedAt);
 
     const connection = await browser.execute(async () => window.Liatir.desktop.mcp.status());
     expect(connection.enabled).toBe(true);
@@ -477,11 +544,11 @@ export const tests = [{
       const allowed = resourcePayload(await client.readResource({
         uri: 'liatir://workspace/active/pipelines',
       }));
-      expect(allowed.pipelines).toHaveLength(2);
+      expect(allowed.pipelines).toHaveLength(3);
       const fastqcGrant = allowed.pipelines.find((pipeline) => pipeline.pipelineId === PIPELINE_ID);
       expect(fastqcGrant).toMatchObject({
         pipelineId: PIPELINE_ID,
-        pipelineRevision: String(seeded.saved[0].updatedAt),
+        pipelineRevision: String(fastqcSaved.updatedAt),
       });
       const inputDescriptor = fastqcGrant.inputs.find((input) => input.fieldKey === 'input');
       expect(inputDescriptor).toMatchObject({
@@ -490,8 +557,28 @@ export const tests = [{
         source: 'node-input',
       });
 
+      const seqkitGrant = allowed.pipelines.find((pipeline) => pipeline.pipelineId === SEQKIT_PIPELINE_ID);
+      expect(seqkitGrant).toMatchObject({
+        pipelineId: SEQKIT_PIPELINE_ID,
+        pipelineRevision: String(seqkitSaved.updatedAt),
+      });
+      const seqkitFileInput = seqkitGrant.inputs.find((input) => input.fieldKey === 'inputFile');
+      const seqkitThreadsInput = seqkitGrant.inputs.find((input) => input.fieldKey === 'threads');
+      expect(seqkitFileInput).toMatchObject({
+        id: 'mcp-seqkit:node-input:inputFile',
+        label: 'FASTA / FASTQ file',
+        type: 'file',
+        source: 'node-input',
+      });
+      expect(seqkitThreadsInput).toMatchObject({
+        id: 'mcp-seqkit:node-input:threads',
+        label: 'Threads',
+        type: 'number',
+        source: 'node-input',
+      });
+
       const surfaceGrant = allowed.pipelines.find((pipeline) => pipeline.pipelineId === SURFACE_PIPELINE_ID);
-      expect(surfaceGrant.pipelineRevision).toBe(String(seeded.saved[1].updatedAt));
+      expect(surfaceGrant.pipelineRevision).toBe(String(surfaceSaved.updatedAt));
       const descriptors = Object.fromEntries(surfaceGrant.inputs.map((input) => [input.id, input]));
       expect(descriptors['mcp-ai-tool:node-input:modelId']).toMatchObject({
         fieldKey: 'modelId',
@@ -596,16 +683,20 @@ export const tests = [{
 
       // Source files and workspace-wide Results are separate, explicit user
       // permissions in Settings.
-      const sourcePermission = await browser.$(`[data-testid="mcp-data-file-${sampleArtifact.id}"] button`);
-      await sourcePermission.waitForDisplayed({ timeout: 20_000 });
-      await sourcePermission.click();
+      for (const artifact of [sampleArtifact, seqkitArtifact]) {
+        const sourcePermission = await browser.$(`[data-testid="mcp-data-file-${artifact.id}"] button`);
+        await sourcePermission.waitForDisplayed({ timeout: 20_000 });
+        await sourcePermission.click();
+      }
       const resultsPermission = await browser.$('[data-testid="mcp-results-toggle"]');
       await resultsPermission.click();
       await browser.waitUntil(
-        async () => browser.execute(async (artifactId) => {
+        async () => browser.execute(async (artifactIds) => {
           const status = await window.Liatir.desktop.mcp.status();
-          return status.readResults && status.dataAllowlist.some((grant) => grant.artifactId === artifactId);
-        }, sampleArtifact.id),
+          return status.readResults && artifactIds.every((artifactId) => (
+            status.dataAllowlist.some((grant) => grant.artifactId === artifactId)
+          ));
+        }, [sampleArtifact.id, seqkitArtifact.id]),
         { timeout: 20_000, timeoutMsg: 'MCP artifact permissions did not settle' },
       );
 
@@ -691,6 +782,166 @@ export const tests = [{
         },
       });
 
+      // The second approved pipeline crosses the real Native Tools boundary:
+      // native on POSIX, and liatir.exe -> WSL2 -> bundled SeqKit on Windows.
+      const seqkitStarted = await client.callTool({
+        name: 'start_saved_pipeline',
+        arguments: {
+          pipeline_id: SEQKIT_PIPELINE_ID,
+          inputs: {
+            [seqkitFileInput.id]: { artifactId: seqkitArtifact.id },
+            [seqkitThreadsInput.id]: SEQKIT_THREADS,
+          },
+        },
+      });
+      expect(seqkitStarted.isError).not.toBe(true);
+      const seqkitRun = toolPayload(seqkitStarted);
+      expect(seqkitRun).toMatchObject({
+        pipelineId: SEQKIT_PIPELINE_ID,
+        status: 'awaiting-authorization',
+        inputs: {
+          [seqkitFileInput.id]: { artifactId: seqkitArtifact.id },
+          [seqkitThreadsInput.id]: SEQKIT_THREADS,
+        },
+      });
+      const seqkitDialog = await browser.$('[data-testid="mcp-request-inputs"]');
+      await seqkitDialog.waitForDisplayed({ timeout: 20_000 });
+      const seqkitDialogText = await seqkitDialog.getText();
+      expect(seqkitDialogText).toContain(seqkitArtifact.name);
+      expect(seqkitDialogText).toMatch(/Threads[\s\S]*From client[\s\S]*\b3\b/);
+      await clickAuthorization(browser, 'approve');
+
+      await browser.waitUntil(
+        async () => (await mcpStatus(browser, seqkitRun.runId)) === 'done',
+        { timeout: 60_000, timeoutMsg: 'Approved MCP SeqKit pipeline did not settle as done' },
+      );
+      const seqkitStatus = resourcePayload(await client.readResource({
+        uri: `liatir://runs/${seqkitRun.runId}/status`,
+      }));
+      const seqkitLogs = resourcePayload(await client.readResource({
+        uri: `liatir://runs/${seqkitRun.runId}/logs`,
+      }));
+      const seqkitResult = resourcePayload(await client.readResource({
+        uri: `liatir://runs/${seqkitRun.runId}/result`,
+      }));
+      expect(seqkitStatus).toMatchObject({
+        request: { status: 'done', resultId: seqkitRun.runId },
+        execution: {
+          status: 'done',
+          identity: {
+            runId: seqkitRun.runId,
+            rootRunId: seqkitRun.runId,
+            pipelineRunId: seqkitRun.runId,
+            initiator: { kind: 'mcp', requestId: seqkitRun.runId },
+          },
+        },
+      });
+      expect(seqkitLogs.executions.some((execution) => (
+        execution.logs.some((entry) => entry.message?.includes('$ seqkit stats'))
+      ))).toBe(true);
+      expect(seqkitResult.data.result).toMatchObject({
+        id: seqkitRun.runId,
+        tool: 'pipeline',
+        status: 'done',
+        execution: {
+          runId: seqkitRun.runId,
+          rootRunId: seqkitRun.runId,
+          pipelineRunId: seqkitRun.runId,
+          initiator: { kind: 'mcp', requestId: seqkitRun.runId },
+        },
+      });
+      const seqkitStats = seqkitResult.data.output.sections.find((section) => section.type === 'stats');
+      expect(seqkitStats.items.find((item) => item.label === 'Sequences')?.value).toBe(
+        String(SEQKIT_RECORD_COUNT),
+      );
+
+      const seqkitEvidence = await runEvidence(browser, seqkitRun.runId);
+      expect(seqkitEvidence.results).toHaveLength(1);
+      expect(seqkitEvidence.results[0]).toMatchObject({
+        id: seqkitRun.runId,
+        status: 'done',
+        execution: {
+          runId: seqkitRun.runId,
+          rootRunId: seqkitRun.runId,
+          pipelineRunId: seqkitRun.runId,
+          initiator: { kind: 'mcp', requestId: seqkitRun.runId },
+        },
+      });
+      expect(seqkitEvidence.executions).toHaveLength(2);
+      const seqkitRoot = seqkitEvidence.executions.find((run) => run.identity.runId === seqkitRun.runId);
+      const seqkitChild = seqkitEvidence.executions.find((run) => run.identity.runId !== seqkitRun.runId);
+      expect(seqkitRoot).toMatchObject({
+        status: 'done',
+        resultId: seqkitRun.runId,
+        identity: {
+          runKind: 'pipeline',
+          rootRunId: seqkitRun.runId,
+          pipelineRunId: seqkitRun.runId,
+          initiator: { kind: 'mcp', requestId: seqkitRun.runId },
+        },
+      });
+      expect(seqkitChild).toMatchObject({
+        status: 'done',
+        resultPolicy: 'parent',
+        identity: {
+          runKind: 'native-tool',
+          rootRunId: seqkitRun.runId,
+          parentRunId: seqkitRun.runId,
+          pipelineRunId: seqkitRun.runId,
+          nodeId: 'mcp-seqkit',
+          entityId: 'seqkit-stats',
+          initiator: { kind: 'mcp', requestId: seqkitRun.runId },
+        },
+      });
+      expect(seqkitEvidence.jobs).toHaveLength(1);
+      expect(seqkitEvidence.jobs[0]).toMatchObject({
+        status: { type: 'done' },
+        metadata: {
+          toolId: 'seqkit-stats',
+          execution: {
+            rootRunId: seqkitRun.runId,
+            pipelineRunId: seqkitRun.runId,
+            initiator: { kind: 'mcp', requestId: seqkitRun.runId },
+          },
+        },
+      });
+
+      const seqkitJobs = resourcePayload(await client.readResource({ uri: 'liatir://jobs' }));
+      const publicSeqkitJob = seqkitJobs.jobs.find((job) => job.runId === seqkitRun.runId);
+      expect(publicSeqkitJob).toMatchObject({ runId: seqkitRun.runId, status: { type: 'done' } });
+      const seqkitJob = resourcePayload(await client.readResource({
+        uri: `liatir://jobs/${publicSeqkitJob.id}`,
+      }));
+      expect(seqkitJob.cmd).toBeUndefined();
+      expect(seqkitJob.args).toBeUndefined();
+      expect(seqkitJob.metadata).toBeUndefined();
+      const seqkitArtifactResource = resourcePayload(await client.readResource({
+        uri: `liatir://artifacts/${seqkitArtifact.id}`,
+      }));
+      expect(seqkitArtifactResource).toMatchObject({
+        artifactId: seqkitArtifact.id,
+        name: seqkitArtifact.name,
+        access: 'data-grant',
+      });
+      expect(seqkitArtifactResource.path).toBeUndefined();
+
+      const publicSeqkitStrings = stringValues([
+        seqkitStatus,
+        seqkitLogs,
+        seqkitResult,
+        seqkitJob,
+        seqkitArtifactResource,
+      ]).join('\n');
+      expect(publicSeqkitStrings).not.toContain(seqkitInputPath);
+      expect(publicSeqkitStrings).not.toContain(path.dirname(seqkitInputPath));
+      expect(publicSeqkitStrings).not.toContain('/not/the/allowed/seqkit input.fastq');
+      if (process.platform === 'win32') expect(publicSeqkitStrings).not.toMatch(/\/mnt\/[a-z]\//i);
+
+      const persistedAfterSeqkit = await readAppJson(browser, 'workspaces/__test__/pipeline-workspace.json');
+      expect(persistedAfterSeqkit.saved.find((pipeline) => pipeline.id === SEQKIT_PIPELINE_ID)).toEqual(
+        seqkitSaved,
+      );
+
       const resultList = resourcePayload(await client.readResource({ uri: 'liatir://results' }));
       expect(resultList.results.some((result) => result.id === EXISTING_RESULT_ID)).toBe(true);
       const existingResult = resourcePayload(await client.readResource({
@@ -712,7 +963,7 @@ export const tests = [{
       const artifacts = resourcePayload(await client.readResource({ uri: 'liatir://artifacts' }));
       expect(artifacts.maxChunkBytes).toBe(65_536);
       expect(artifacts.artifacts.map((artifact) => artifact.artifactId)).toEqual(
-        expect.arrayContaining([sampleArtifact.id, RESULT_ARTIFACT_ID]),
+        expect.arrayContaining([sampleArtifact.id, seqkitArtifact.id, RESULT_ARTIFACT_ID]),
       );
       const resultArtifact = resourcePayload(await client.readResource({
         uri: `liatir://artifacts/${RESULT_ARTIFACT_ID}`,

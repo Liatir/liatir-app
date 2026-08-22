@@ -40,11 +40,12 @@ Nextflow External Workflow, runnable standalone and by reference in pipelines.
 Its native macOS arm64 and Linux x86_64 paths and the native Windows x86_64
 app-to-WSL2 Linux x86_64 boundary are now verified, completing Gate 6 before
 Gate 7. Gate 7 subsequently closed the local desktop matrix on macOS arm64,
-Windows x86_64 and Linux x86_64. Gate 8 has implemented the controlled local MCP
-boundary and completed its expanded input/artifact proof on macOS arm64 with a
-real MCP client. Native Windows x86_64 and Linux x86_64 runtime evidence remains
-open; the separate signed public release gate also remains open and deliberately
-unstarted.
+Windows x86_64 and Linux x86_64. Gate 8 has completed the controlled local MCP
+boundary on macOS arm64, native Windows x86_64 and native Linux x86_64 with the
+same official MCP client. Its Windows proof crosses from `liatir.exe` into the
+bundled Linux SeqKit through WSL2; its Linux proof uses an independently built
+x86-64 ELF app under Xvfb. The separate signed public release gate remains open
+and deliberately unstarted.
 Every paid or remote action still requires its exact local gate, workflow/input/revision
 readback, cost declaration, and fresh explicit approval.
 
@@ -568,8 +569,8 @@ still unwritten. Full scope, blockers and stop rules in
 
 **Difficulty:** `5/5` · **Codex effort:** `max`
 
-**Status (2026-08-22): implemented; verified on macOS arm64, with native Windows
-x86_64 and Linux x86_64 evidence still open.**
+**Status (2026-08-22): complete on macOS arm64, native Windows x86_64 and
+native Linux x86_64.**
 
 Provide a local Liatir MCP server with read-only resources and controlled
 execution of saved pipelines. A start request returns a stable asynchronous run
@@ -610,30 +611,42 @@ revisions, immediate permission revocation, independent pipelines and audit are
 owner-scoped rather than global. The complete trust analysis is in
 [Controlled local MCP boundary](../architecture/mcp.md).
 
-Native verification on macOS arm64 uses the official TypeScript MCP client
-2.0.0 with protocol negotiation pinned to `2026-07-28`. The revised scenario
-covers the exact tools/resources, invalid-token rejection, revision/input
-grants, explicit discovery of every execution family above, unavailable-model
-rejection, artifact-ID input execution, approval display, real FastQC, attributed
-Jobs/Results, sanitized reads, bounded file content, permission revocation,
-owner-aware Job/run cancellation, denial, stale grants and audit. The native
-scenario passes `1/1`; `test:verify` passes 55 files / 329 tests, Rust passes
-66/2 ignored, Clippy exits `0` and both documentation sites build. A final full
-UI-profile attempt rebuilt the app and bundle, but embedded WebDriver never
-became available and the macOS process reported `SIGABRT` before any product test started, so that attempt is
-not called green. This is not Windows/Linux runtime evidence and no remote,
-signing, publishing or heavy-model action is performed.
+The official TypeScript MCP client remains 2.0.0 with protocol negotiation
+pinned to `2026-07-28`. The common scenario covers the exact tools/resources,
+invalid-token rejection, revision/input grants, explicit discovery of every
+execution family above, unavailable-model rejection, artifact-ID inputs,
+approval display, real FastQC, attributed Jobs/Results, sanitized reads,
+bounded content, permission revocation, owner-aware cancellation, denial,
+stale grants and audit. The earlier macOS arm64 native scenario remains green
+1/1; its separate full-profile WebDriver `SIGABRT` remains a recorded failure,
+not evidence inferred from another platform.
 
-Platform closure uses one Windows 11 x86_64 machine for two different native
-products. The Windows proof drives the MCP server in `liatir.exe` and must run a
-real bundled Native Tool through WSL2 from the approved MCP pipeline. The Linux
-proof builds and drives a real x86-64 ELF Liatir app from an independent checkout
-inside WSL2's Linux filesystem. WSL2 is therefore the Windows execution backend
-for Native Tools as well as Nextflow, while the Linux-in-WSL2 run is native Linux
-desktop evidence. FastQC remains the lightweight full-lifecycle/cancellation
-fixture, but cannot by itself prove the Windows-to-WSL2 Native Tools crossing.
-The exact handoff and exit criteria are in
-[Gate 8 MCP — Windows and Linux evidence](./gate-8-mcp-windows-linux.md).
+Cross-platform closure adds one saved `seqkit-stats` pipeline to that same
+scenario. It receives a registered 17-record FASTQ from a path containing a
+space plus a numeric thread value, exposes both declared inputs, displays them
+for approval, executes one real Native Tool Job, publishes exactly one terminal
+Result, retains the MCP root and initiator through every execution entity,
+reports 17 sequences, sanitizes every public resource and does not modify the
+saved graph. FastQC remains the lightweight lifecycle/cancellation fixture.
+
+On Windows 11 x86_64, the real `liatir.exe` reports Native Tools
+`execution = "wsl2"`; the successful SeqKit Result therefore proves the
+Windows app-to-WSL2 bundle boundary. In the independent
+`/home/lorenzo/liatir-stack-gate8-mcp` checkout, `file` confirms an ELF 64-bit
+x86-64 Liatir app and the same scenario under Xvfb reports
+`execution = "native"`. Both targeted runs are 1/1. Both platforms pass
+`test:verify` at 57 files / 342 tests and full UI at 5/0/2 suites with native
+Tauri E2E 33/0/23. Rust is Windows 80/2 ignored and Linux 79/2 ignored; Clippy
+exits 0 on both.
+
+The gate corrected two product defects: aligned SeqKit output shifted numeric
+columns when the file path contained spaces, and an unregistered absolute WSL
+path could survive public MCP output sanitization. Unit/Rust regressions pin
+both fixes. The first Windows run also corrected a test-only child-kind
+expectation from `pipeline-step` to the canonical `native-tool`. No shared WSL
+execution/cancellation code changed, so the conditional Nextflow rerun was not
+required. Exact hosts, digests, prerequisites, commands and attempt history are
+in [Gate 8 MCP — Windows and Linux evidence](./gate-8-mcp-windows-linux.md).
 
 ## Detailed capability specifications
 

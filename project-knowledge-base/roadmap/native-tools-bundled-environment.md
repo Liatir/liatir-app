@@ -1,8 +1,9 @@
 # Native Tools as one bundled environment
 
 Status: **Decided 2026-08-20. Built and verified end to end on macOS arm64
-2026-08-21, and on Windows x86_64 through WSL2 the same day — every gate green
-and all three Windows-only questions answered. Running the gate found four
+2026-08-21, on Windows x86_64 through WSL2 the same day, and inside a native
+Linux x86_64 Liatir ELF app during Gate 8 on 2026-08-22. The Windows and Linux
+runtime gates are green; the Linux package gate remains separate. Running the gate found four
 defects, all fixed and covered: a CRLF checkout that broke the build and silently
 changed the environment's identity; a build-time sysroot that doubled the
 `linux-64` archive; a network path forwarded to the tool instead of refused; and
@@ -617,14 +618,17 @@ AnnData path that already exists.
    catalogue, `brew install --cask temurin@21`, is right precisely because a cask
    lands where the stub looks. Leaving that resolver unused is a decision to
    revisit, not an oversight; if no subject appears, deleting it is correct.
-4. **The Linux application has not been gated with the bundle.** The `linux-64`
-   archive is verified: built, pruned, and every tool run from a prefix extracted
-   somewhere it was not built, natively on Linux. What has not run is Liatir
-   *itself* on Linux with the environment inside it — `test:ui`,
-   `desktop-beta:package:linux`, `desktop-beta:test:linux`. The code path there
-   is the native one macOS already proves, not the WSL2 one, so the risk is low
-   rather than absent; AppImage is the interesting case, since its resources live
-   in a read-only mount while the unpack goes to application data.
+4. **The native Linux application runtime is gated with the bundle — closed by
+   Gate 8 on 2026-08-22.** An independent checkout below `/home` built a real
+   ELF 64-bit x86-64 Liatir app. Under Xvfb, the common MCP scenario asserted
+   `execution = "native"` and ran bundled SeqKit over a 17-record FASTQ; the
+   complete `test:ui` profile passed 5/0/2 suites with native E2E 33/0/23, and
+   its declared Linux desktop lifecycle suite passed. `test:verify`, Rust and
+   Clippy were also green. Exact archive digests and commands are in
+   [Gate 8 MCP — Windows and Linux evidence](./gate-8-mcp-windows-linux.md).
+   `desktop-beta:package:linux` was not part of Gate 8 and remains the separate
+   package-level check; AppImage is still the interesting case because its
+   resources live in a read-only mount while unpack goes to application data.
 5. **CI produces the archives** (`.github/workflows/native-tools-box.yml`), on
    `ubuntu-24.04` and `macos-15`, triggered manually or when the environment's
    inputs change. There is no Windows job because there is nothing for it to

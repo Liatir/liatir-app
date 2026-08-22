@@ -164,10 +164,10 @@ inputs, including one sized so single-threaded fastp is genuinely still running
 when the cancellation test asks — cancelling a real process rather than a
 `sleep`. On Windows those three tests now need WSL2 and the linux-64 archive.
 
-Full detail, measurements and the six open items are in
+Full detail, measurements and the remaining package/release questions are in
 [Native Tools as one bundled environment](./roadmap/native-tools-bundled-environment.md).
 
-## Gate 8 controlled local MCP is verified on macOS; Windows and Linux remain (2026-08-22)
+## Gate 8 controlled local MCP is cross-platform complete (2026-08-22)
 
 Liatir now has an optional local MCP boundary around the saved-pipeline runtime.
 It is off by default, binds Streamable HTTP only to an ephemeral IPv4 loopback
@@ -223,34 +223,52 @@ state ownership, threats and exclusions are in
 troubleshooting are in `docs/mcp/overview.md`.
 
 The real official TypeScript MCP client 2.0.0 negotiates protocol `2026-07-28`.
-Its Gate 8 scenario passes `1/1` against the native app and proves exact input
-discovery for every family above, the closed compatible-installed AI Model
-selector and rejection of an unavailable model, a real artifact-ID override, approval display,
-ungranted/unknown-input rejection, FastQC Job/Result attribution, sanitized Job
-and Result reads, bounded artifact content, workspace Result and per-Data-file
-permissions, owner-aware Job cancellation, denial, stale grants, immediate
-revocation and audit. `npm run test:verify` passes 55 files / 329 tests plus SDK
-generation, core/frontend builds and `src-ts` compilation; `cargo test` passes
-66 tests with 2 intentionally ignored, `cargo clippy --tests` exits 0 with the
-existing warnings, and both documentation sites build.
+Its common Gate 8 scenario now passes `1/1` against both the native Windows app
+and an independently compiled Linux x86_64 app. It preserves every earlier
+check — exact input discovery for every family above, the closed
+compatible-installed AI Model selector and unavailable-model rejection,
+artifact-ID overrides, approval, ungranted/unknown-input rejection, FastQC
+lifecycle/cancellation, sanitized and bounded reads, separate Result/Data
+permissions, owner-aware cancellation, denial, stale grants, immediate
+revocation and audit.
 
-The latest full `test:ui` attempt rebuilt the app and bundle successfully, but
-embedded WebDriver never became available and the macOS process reported
-`SIGABRT` before any product test started. It therefore is not reported as a green full-suite run;
-the blocking Gate 8 product proof is the separately successful native MCP
-scenario above. No heavy model, GPU, remote, signing, publishing or release
-action is part of this local gate, and macOS evidence is not inferred for
-Windows/Linux.
+The same scenario adds a saved `seqkit-stats` pipeline. A 17-record FASTQ is
+registered from a path containing a space; its artifact and numeric thread
+value appear in the frozen schema and approval window. The approved run creates
+one Native Tool Job and exactly one terminal Result, keeps the MCP root and
+initiator in the Pipeline Run, child, Job and Result, reports 17 sequences,
+keeps status/log/Job/Result/artifact resources path-safe and leaves the saved
+pipeline unchanged. On Windows the test asserts `execution === "wsl2"`, so the
+successful Result proves `MCP client -> liatir.exe -> saved pipeline -> Job ->
+bundled SeqKit through WSL2 -> Result`. On Linux it asserts
+`execution === "native"` against an ELF app built and run under Xvfb from
+`/home/lorenzo/liatir-stack-gate8-mcp`, never `/mnt/c`.
 
-The remaining platform closure is now explicit. On native Windows, the MCP
-server and authorization UI run in `liatir.exe`, while a real process-backed
-Native Tool launched by the approved pipeline must execute from the bundled
-`linux-64` environment through WSL2. On native Linux x86_64, the same MCP client
-scenario must target a freshly built ELF Liatir app from an independent checkout
-inside WSL2's Linux filesystem, not `/mnt/c`. FastQC alone is not sufficient for
-the Windows proof because it is WASM and never crosses the Windows-to-WSL2 Native
-Tools boundary. The exact scenario, commands, evidence fields and exit criteria
-are in [Gate 8 MCP — Windows and Linux evidence handoff](./roadmap/gate-8-mcp-windows-linux.md).
+Both platforms pass `npm run test:verify` at 57 files / 342 tests. Their full
+UI profiles are each 5 suites passed / 0 failed / 2 platform-skipped, with the
+native Tauri E2E sub-run at 33 passed / 0 failed / 23 skipped. Windows Rust is
+80 passed / 2 ignored; Linux Rust is 79 passed / 2 ignored; Clippy exits 0 on
+both at the existing warning baseline. The earlier macOS arm64 targeted proof
+remains 1/1; its separate full-profile WebDriver `SIGABRT` remains recorded as
+the failure it was rather than being inferred green from either platform.
+
+The gate found two product defects and one test defect. SeqKit's aligned output
+shifted scientific columns when the first file column contained spaces; the
+parser now rejoins only excess leading fields and has a 17-record regression.
+An unregistered WSL absolute path could survive raw MCP output sanitization;
+unknown absolute-path scalars are now redacted, with Rust coverage for WSL and
+Windows forms. The first Windows assertion incorrectly expected the Native Tool
+child to have `runKind = "pipeline-step"`; the product correctly recorded
+`native-tool`, so only the test changed. A fresh Linux clone additionally
+needed its documented nested npm prerequisites, and Ubuntu 26.04's Python
+3.14.4 was correctly outside the Python fixture's `<3.14` contract; the final
+full-profile run used an isolated Pixi Python 3.12.14 on `PATH`.
+
+No shared WSL execution/cancellation code changed, so no conditional Nextflow
+rerun was required. No heavy model, GPU workflow, remote workflow, signing,
+publishing, deployment or release action ran. Exact OS/toolchain versions,
+archive digests, commands and attempt history are in
+[Gate 8 MCP — Windows and Linux evidence handoff](./roadmap/gate-8-mcp-windows-linux.md).
 
 ## Quenta could never explain a Result, and its own guard was why (2026-08-20)
 

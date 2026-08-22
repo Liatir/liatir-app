@@ -677,7 +677,14 @@ fn looks_like_absolute_path(value: &str) -> bool {
 
 fn sanitize_value(value: &Value, replacements: &[(String, String)]) -> Option<Value> {
     match value {
-        Value::String(text) => Some(Value::String(sanitize_text(text, replacements))),
+        Value::String(text) => {
+            let sanitized = sanitize_text(text, replacements);
+            if sanitized == *text && looks_like_absolute_path(text.trim_start()) {
+                Some(Value::String("[absolute path redacted]".to_string()))
+            } else {
+                Some(Value::String(sanitized))
+            }
+        }
         Value::Array(items) => Some(Value::Array(
             items
                 .iter()
@@ -2823,5 +2830,22 @@ mod tests {
             }))
         );
         assert_eq!(sanitize_value(&json!({ "raw": true, "content": "secret" }), &[]), None);
+    }
+
+    #[test]
+    fn output_lines_cannot_expose_an_unregistered_absolute_path() {
+        let value = json!([
+            "/mnt/c/Users/Bio/Gate 8/reads.fastq  FASTQ  DNA  17",
+            r"C:\Users\Bio\private.fastq",
+            "17 records processed",
+        ]);
+        assert_eq!(
+            sanitize_value(&value, &[]),
+            Some(json!([
+                "[absolute path redacted]",
+                "[absolute path redacted]",
+                "17 records processed",
+            ]))
+        );
     }
 }
