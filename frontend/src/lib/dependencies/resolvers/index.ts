@@ -17,13 +17,15 @@ import type {
  * `wrongTool` comes first because "this is not the program you think it is" reframes everything
  * else — a link conflict is beside the point if the binary on PATH is a different tool entirely.
  *
- * Both currently have no subject. STAR was the only requirement carrying
- * `wrongToolPatterns` and `homebrewLinkConflict`, and it left the catalogue on
- * 2026-08-22 with the other tools no code referenced. They are kept rather than
- * deleted because the hazard has not gone anywhere: `java` in particular is the
- * classic case — several JVMs, several versions, and Homebrew happy to shadow
- * one with another. Populating it needs patterns matched against real `--version`
- * output, not guessed, which is why this is empty and not wrong.
+ * `wrongTool` now answers for `java`, which took over from STAR as the subject of this subsystem
+ * when STAR left the catalogue on 2026-08-22. It carries no `wrongToolPatterns`: no rival program
+ * answers to the name `java`, and a JVM too old for the requirement is already caught by the version
+ * bounds. Its hazard is the opposite shape — a stub that reports nothing — so it is declared with
+ * `versionMustBeDetectable` instead.
+ *
+ * `homebrewLinkConflict` has no subject at all. Java is not one: Homebrew's `openjdk` is keg-only by
+ * design (`:shadowed_by_macos`), so it never loses a name race, and `brew unlink`/`brew link` is not
+ * the fix for it. Leaving it unused is a decision to revisit, not an oversight.
  */
 const DEPENDENCY_RESOLVERS: DependencyResolver[] = [
   wrongToolResolver,

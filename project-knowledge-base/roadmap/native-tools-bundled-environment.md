@@ -574,11 +574,49 @@ AnnData path that already exists.
 
    That left `wrongToolPatterns` and `homebrewLinkConflict` — and therefore both
    dependency resolvers — with no subject, because STAR was the only requirement
-   using either. They are kept, with the reason written where the list is now
-   empty: the hazard is real and recurring, `java` being the obvious next case,
-   and populating it needs patterns matched against real `--version` output
-   rather than guessed. If that is not done, deleting the subsystem is the
-   correct alternative; leaving it unexplained is not.
+   using either.
+
+   **`wrongTool` now answers for `java`, and the hazard turned out to be a
+   different one — 2026-08-22.** Java is the last dependency Liatir asks a user to
+   install, so "is the right Java installed" had to be answered properly. Reading
+   the real behaviour first changed what needed building:
+
+   - *A JDK that is too old is already handled.* Oracle 8 answers `-version` on
+     stderr with `java version "1.8.0_501"`, `parseVersion` reaches `[1, 8, 0]`,
+     and the bounds reject it. Temurin 21 answers `--version` on stdout with
+     `openjdk 21.0.11 2026-04-21 LTS` and passes. Both verified against the two
+     JDKs installed on the macOS development machine. No new code was needed and
+     none was written.
+   - *No rival program answers to the name `java`.* `wrongToolPatterns` — string
+     matching on a version banner — has no correct content here, so it stays
+     empty for this requirement, deliberately.
+   - *The real defect was a false green.* macOS ships a launcher stub at
+     `/usr/bin/java` that exists whether or not a JVM does. Detection finds it and
+     reports `available: true`; the stub reports no version, so `version` is
+     `null`; and both UI surfaces then said "installed but version undetectable —
+     assume ok". A machine with no Java at all showed Java as fine, and SnpEff
+     failed later with nothing connecting the two. That is precisely the silent
+     pretend-success `AGENTS.md` forbids.
+
+   The fix is one declared fact, `versionMustBeDetectable`, set only on `java`:
+   for this requirement a successful version probe is the evidence, and silence is
+   the failure. `depVersionSatisfied` in `dep-requirements.ts` is now the single
+   answer both the Dependencies screen and the per-tool `DepCheck` card read, so
+   the two cannot disagree; `wrongToolResolver` gained the mirror case and
+   supplies the sentence explaining why Liatir says "not installed" about a
+   command the user can see. Every other requirement keeps the permissive default,
+   which a test pins — flipping them all would be a worse failure than the one
+   being fixed. Covered by `tests/unit/java-dependency-detection.test.ts`, whose
+   banners are verbatim output from the two real JDKs rather than plausible fakes.
+
+   `homebrewLinkConflict` still has no subject, and `java` is not one: Homebrew's
+   `openjdk` is keg-only by design (`:shadowed_by_macos`, verified with
+   `brew info --json=v2`), so it never loses a name race and `brew unlink` /
+   `brew link` is not its fix — the formula's own advice is a `ln -sfn` into
+   `/Library/Java/JavaVirtualMachines`. The macOS install command in the
+   catalogue, `brew install --cask temurin@21`, is right precisely because a cask
+   lands where the stub looks. Leaving that resolver unused is a decision to
+   revisit, not an oversight; if no subject appears, deleting it is correct.
 4. **The Linux application has not been gated with the bundle.** The `linux-64`
    archive is verified: built, pruned, and every tool run from a prefix extracted
    somewhere it was not built, natively on Linux. What has not run is Liatir

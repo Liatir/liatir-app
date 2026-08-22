@@ -8,6 +8,11 @@
  * The version string is the tell: the wrong program identifies itself differently when asked. So
  * matching against known signatures in its `--version` output is what distinguishes "installed" from
  * "installed, but not the one we mean".
+ *
+ * There is a second shape of the same problem, and `java` is the case that matters: what answers to
+ * the name is not a rival program but a stub with nothing behind it, which reports no version at
+ * all. Both end the same way — the user is told the dependency is fine and then watches it fail —
+ * so both are diagnosed here.
  */
 import type { DepRequirement } from '$lib/data/dep-requirements';
 import type { DependencyResolver } from './types';
@@ -19,11 +24,18 @@ import type { DependencyResolver } from './types';
  * when the *symptom* is that the wrong tool is being found.
  */
 export function wrongToolMessage(version: string | null, req: DepRequirement | undefined): string | null {
-  if (!version || !req?.wrongToolPatterns?.length) return null;
+  if (!req) return null;
+  const fallback = `Found a different tool named ${req.binary}.`;
+
+  // Saying nothing is the tell for `java`: a stub answers to the name whether or not a JVM exists,
+  // so it identifies itself by refusing to. See `versionMustBeDetectable`.
+  if (!version) return req.versionMustBeDetectable ? (req.wrongToolMessage ?? fallback) : null;
+
+  if (!req.wrongToolPatterns?.length) return null;
   // Case-insensitive substring match: version banners vary in capitalisation and surrounding text.
   const lower = version.toLowerCase();
   const matched = req.wrongToolPatterns.some((pattern) => lower.includes(pattern.toLowerCase()));
-  return matched ? (req.wrongToolMessage ?? `Found a different tool named ${req.binary}.`) : null;
+  return matched ? (req.wrongToolMessage ?? fallback) : null;
 }
 
 /**

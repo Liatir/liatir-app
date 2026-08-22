@@ -24,6 +24,7 @@
 		depRequirementForBinary,
 		depRequirementLabel,
 		depScope,
+		depVersionSatisfied,
 		dependencyBinaryForKeyOrBinary,
 		isSoftDep,
 		type DepRequirement
@@ -36,7 +37,6 @@
 		type DependencyResolverEnvironment,
 		type DependencyResolverCommand,
 	} from '$lib/dependencies/resolvers';
-	import { versionGte, versionLt } from '$lib/utils/versions';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
 	import {
 		createLiatirRootExecutionIdentity,
@@ -464,13 +464,6 @@
 		return depRequirementLabel(req);
 	}
 
-	function dependencyVersionOk(version: string | null, req: DepRequirement | undefined): boolean {
-		if (!req || !version) return true;
-		if (!versionGte(version, req.minVersion)) return false;
-		if (req.maxVersionExclusive && !versionLt(version, req.maxVersionExclusive)) return false;
-		return true;
-	}
-
 	function dependencyScope(binary: string): NonNullable<DepRequirement['scope']> {
 		return depScope(depRequirementForBinary(binary));
 	}
@@ -500,7 +493,7 @@
 		if (!isCoreDependency(dep.binary)) return false;
 		const req = depRequirementForBinary(dep.binary);
 		if (!dep.available) return true;
-		return dep.available && !!dep.version && !dependencyVersionOk(dep.version, req);
+		return !depVersionSatisfied(dep.version, req);
 	}
 
 	function viewerProgressLabel(id: string): string {
@@ -621,8 +614,9 @@
 							{@const activeDependencyRun = activeDependencyRunId(dep.binary)}
 							{@const isBusy = state.phase === 'pm-installing'}
 							{@const isBundled = dep.source === 'bundled'}
-							{@const versionOk = !dep.available || dependencyVersionOk(dep.version, req)}
-							{@const isUnsupportedVersion = dep.available && !!dep.version && !versionOk}
+							{@const versionOk = !dep.available || depVersionSatisfied(dep.version, req)}
+							<!-- Includes the case where nothing usable answered at all, not only a version out of range. -->
+							{@const isUnsupportedVersion = dep.available && !versionOk}
 							{@const isSoft = isSoftDependency(dep.binary)}
 							{@const isCore = isCoreDependency(dep.binary)}
 							{@const canUpdateWithPm = !!pmUpdateCmd(dep.binary)}
@@ -671,7 +665,7 @@
 													<p class="text-xs text-amber-600">{primaryResolutionMessage}</p>
 												{:else}
 													<p class="text-xs text-amber-600 truncate">
-														{dep.version} — requires {requirementLabel(req)}
+														{dep.version ?? 'No version reported'} — requires {requirementLabel(req)}
 													</p>
 												{/if}
 											{:else if dep.version}

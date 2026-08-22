@@ -16,7 +16,7 @@ Results are written to the `ANN` INFO field of the output VCF so every downstrea
 
 | Dependency | Why |
 |---|---|
-| **Java ≥ 8** | SnpEff is a Java application |
+| **Java ≥ 21** | SnpEff is a Java application, and recent releases need Java 21 |
 | **snpEff.jar** | The SnpEff JAR — configure or download inside Liatir |
 | **Genome database** | Per-genome annotation data (`snpEffectPredictor.bin`) |
 
@@ -95,7 +95,13 @@ the [Pipelines](/pipeline/overview) section.
 
 ## Troubleshooting
 
-**Java not found** — install Java 8+ from your package manager and make sure `java` is on `PATH`.
+**Java not found** — install Java 21 or newer. Liatir's Dependencies screen lists the exact command
+for your system.
+
+On macOS, seeing a `java` command in a terminal does not mean Java is installed: the system ships a
+placeholder of that name that is present even when no Java is. Liatir checks whether it answers, so
+it can report Java as missing on a machine where the command appears to exist — that is the
+placeholder, and installing a real JDK is the fix.
 
 **Database download fails** — check your network or firewall settings, then try the download again.
 

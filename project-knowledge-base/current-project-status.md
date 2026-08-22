@@ -49,6 +49,18 @@ the `linux-64` artifact is the Windows input. Still missing is the Linux
 application gate — the archive is verified natively on Linux, but Liatir itself
 has not been run there with the environment inside it.
 
+Java is now the only dependency Liatir asks a user to install, which made it worth
+checking that Liatir can tell whether the right one is there. Two of the three
+answers were reassuring — the version bounds already reject a JDK that is too old,
+and no rival program answers to the name `java`, so `wrongToolPatterns` stays
+empty for it. The third was a real defect: macOS ships a stub at `/usr/bin/java`
+that exists with no JVM behind it, and a machine with no Java at all was reported
+as fine, with SnpEff failing later and nothing connecting the two. `java` now
+declares `versionMustBeDetectable`, the two UI surfaces share one verdict through
+`depVersionSatisfied`, and the wrong-tool resolver explains why Liatir says "not
+installed" about a command the user can see. Details and the reasoning are in the
+roadmap doc.
+
 ## Native Tools ship inside the app, on macOS and on Windows (2026-08-21)
 
 Liatir distributed executable dependencies three ways — signed Runtime Boxes for

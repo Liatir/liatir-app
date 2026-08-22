@@ -2,7 +2,8 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { liatir } from '$lib/api';
-  import { versionGte, versionLt } from '$lib/utils/versions';
+  import { depVersionSatisfied } from '$lib/data/dep-requirements';
+  import { wrongToolMessage } from '$lib/dependencies/resolvers';
   import type { DepRequirement } from '$lib/data/dep-requirements';
 
   export type DepStatus = 'checking' | 'ok' | 'outdated' | 'missing';
@@ -40,13 +41,11 @@
       status = 'missing';
     } else {
       installed = r.version ?? null;
-      if (!installed) {
-        status = 'ok'; // installed but version undetectable — assume ok
-      } else {
-        status = versionGte(installed, req.minVersion) && (!req.maxVersionExclusive || versionLt(installed, req.maxVersionExclusive))
-          ? 'ok'
-          : 'outdated';
-      }
+      // A binary that will not name its version is usually fine; for a requirement that says
+      // otherwise it is not installed at all, whatever PATH suggests — so offer the installer.
+      status = depVersionSatisfied(installed, req)
+        ? 'ok'
+        : installed ? 'outdated' : 'missing';
     }
   }
 
@@ -70,6 +69,14 @@
 
   const requirementLabel = $derived(
     req.versionLabel ?? (req.maxVersionExclusive ? `${req.minVersion} - <${req.maxVersionExclusive}` : `${req.minVersion}+`)
+  );
+
+  /**
+   * Why the card says "Not installed" about a command the user can see on their machine. Without
+   * this the verdict looks like a bug in Liatir rather than a fact about their system.
+   */
+  const impostorNote = $derived(
+    status === 'missing' ? wrongToolMessage(installed, req) : null
   );
 </script>
 
@@ -159,6 +166,9 @@
   <!-- Outdated or missing: install/upgrade instructions -->
   {#if status === 'outdated' || status === 'missing'}
     <div class="rounded-lg border border-border bg-surface-2 p-3 space-y-1.5">
+      {#if impostorNote}
+        <p class="text-[11px] text-amber-600 mb-2">{impostorNote}</p>
+      {/if}
       <p class="text-[11px] text-text-muted mb-2">
         {status === 'outdated' ? `Update ${req.label} to ${requirementLabel}:` : `Install ${req.label}:`}
       </p>

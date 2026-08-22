@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "421ed184112110af454955925f51acf8aa3dc3b498c1845990bc0e9c05a7e196";
+export const QUENTA_DOCS_SEED_HASH = "a550bc75a2cd4acb7076656df46c8abbe059af002d58d8940c0ddbe276cd93ab";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -2307,8 +2307,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "SnpEff — Requirements",
     "locator": "Docs / Tools / Snpeff / Requirements",
-    "excerpt": "Requirements | Dependency | Why | |---|---| | **Java ≥ 8** | SnpEff is a Java application | | **snpEff.jar** | The SnpEff JAR — configure or download inside Liatir | | **Genome database** | Per-genome annotation data (`snpEffectPredictor.bin`) |",
-    "content": "Requirements\n| Dependency | Why |\n|---|---|\n| **Java ≥ 8** | SnpEff is a Java application |\n| **snpEff.jar** | The SnpEff JAR — configure or download inside Liatir |\n| **Genome database** | Per-genome annotation data (`snpEffectPredictor.bin`) |"
+    "excerpt": "Requirements | Dependency | Why | |---|---| | **Java ≥ 21** | SnpEff is a Java application, and recent releases need Java 21 | | **snpEff.jar** | The SnpEff JAR — configure or download inside Liatir | | **Genome database** | Per-genome annotation data (`snpEf…",
+    "content": "Requirements\n| Dependency | Why |\n|---|---|\n| **Java ≥ 21** | SnpEff is a Java application, and recent releases need Java 21 |\n| **snpEff.jar** | The SnpEff JAR — configure or download inside Liatir |\n| **Genome database** | Per-genome annotation data (`snpEffectPredictor.bin`) |"
   },
   {
     "id": "docs:tools/snpeff#setup",
@@ -2347,8 +2347,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "SnpEff — Troubleshooting",
     "locator": "Docs / Tools / Snpeff / Troubleshooting",
-    "excerpt": "Troubleshooting **Java not found** — install Java 8+ from your package manager and make sure `java` is on `PATH`. **Database download fails** — check your network or firewall settings, then try the download again. **Out of memory** — very large VCFs on memory…",
-    "content": "Troubleshooting\n**Java not found** — install Java 8+ from your package manager and make sure `java` is on `PATH`.\n\n**Database download fails** — check your network or firewall settings, then try the download again.\n\n**Out of memory** — very large VCFs on memory-constrained machines can run out of heap; consider closing other apps first.\n\n**Wrong genome ID** — SnpEff genome IDs are case-sensitive. Pick one from the dropdown, or double-check a custom ID against the official [SnpEff database list](https://pcingola.github.io/SnpEff/)."
+    "excerpt": "Troubleshooting **Java not found** — install Java 21 or newer. Liatir's Dependencies screen lists the exact command for your system. On macOS, seeing a `java` command in a terminal does not mean Java is installed: the system ships a placeholder of that name t…",
+    "content": "Troubleshooting\n**Java not found** — install Java 21 or newer. Liatir's Dependencies screen lists the exact command\nfor your system.\n\nOn macOS, seeing a `java` command in a terminal does not mean Java is installed: the system ships a\nplaceholder of that name that is present even when no Java is. Liatir checks whether it answers, so\nit can report Java as missing on a machine where the command appears to exist — that is the\nplaceholder, and installing a real JDK is the fix.\n\n**Database download fails** — check your network or firewall settings, then try the download again.\n\n**Out of memory** — very large VCFs on memory-constrained machines can run out of heap; consider closing other apps first.\n\n**Wrong genome ID** — SnpEff genome IDs are case-sensitive. Pick one from the dropdown, or double-check a custom ID against the official [SnpEff database list](https://pcingola.github.io/SnpEff/)."
   },
   {
     "id": "docs:visualization/genome-track-viewer",

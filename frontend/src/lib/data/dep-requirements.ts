@@ -12,6 +12,8 @@
  * The failure-diagnosis fields (`wrongToolPatterns`, `homebrewLinkConflict`) are what let the app
  * explain a broken dependency instead of merely reporting it — see `dependencies/resolvers/`.
  */
+import { versionGte, versionLt } from '$lib/utils/versions';
+
 export interface InstallCmd {
   platform: string;
   cmd: string;
@@ -50,6 +52,16 @@ export interface DepRequirement {
    */
   wrongToolPatterns?: string[];
   wrongToolMessage?: string;
+  /**
+   * Set when finding the binary proves nothing and only a successful version probe does.
+   *
+   * Detection reports `available` for anything on PATH, and a `version` of `null` normally just
+   * means "it works, it simply did not say which release" — harmless. For `java` on macOS it is not
+   * harmless: the system ships a launcher stub at `/usr/bin/java` that is present even when no JVM
+   * is installed at all, so the file is always there and "found it" is not evidence of anything.
+   * Every real JVM answers a version probe, which makes silence the reliable signal.
+   */
+  versionMustBeDetectable?: boolean;
   /** Present when a known Homebrew formula can shadow this binary; drives the one-click relink fix. */
   homebrewLinkConflict?: {
     blockerFormula: string;
@@ -156,6 +168,10 @@ export const DEP_REQUIREMENTS: Record<string, DepRequirement> = {
       'Java Runtime Environment required by Java-based bioinformatics tools such as SnpEff.',
     minVersion: '21',
     category: 'bioinformatics',
+    // The one dependency where "the command exists" and "the tool works" genuinely come apart.
+    versionMustBeDetectable: true,
+    wrongToolMessage:
+      'A java command was found but it reports no version, so it is not a working Java runtime. macOS ships this placeholder even when no Java is installed.',
     releasesUrl: 'https://adoptium.net/temurin/releases/',
     downloadOptions: [
       { label: 'Eclipse Temurin', url: 'https://adoptium.net/temurin/releases/', recommended: true },
@@ -335,6 +351,25 @@ export function depScope(req: DepRequirement | undefined): NonNullable<DepRequir
 export function isSoftDep(req: DepRequirement | undefined): boolean {
   const scope = depScope(req);
   return scope === 'model-runtime' || scope === 'optional';
+}
+
+/**
+ * Whether a detected version satisfies its requirement — the single answer both the Dependencies
+ * screen and the per-tool `DepCheck` card read, so the two can never disagree about one dependency.
+ *
+ * An undetectable version passes by default: most tools that decline to identify themselves still
+ * work. `versionMustBeDetectable` inverts that for the requirements where silence is itself the
+ * failure.
+ */
+export function depVersionSatisfied(
+  version: string | null,
+  req: DepRequirement | undefined
+): boolean {
+  if (!req) return true;
+  if (!version) return !req.versionMustBeDetectable;
+  if (!versionGte(version, req.minVersion)) return false;
+  if (req.maxVersionExclusive && !versionLt(version, req.maxVersionExclusive)) return false;
+  return true;
 }
 
 /** The version requirement as displayed: an explicit label wins, else the bounds are rendered. */
