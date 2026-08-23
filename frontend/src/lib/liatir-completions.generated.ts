@@ -243,5 +243,4 @@ export const LIATIR_API: Record<string, ApiNode> = {
   } },
   onReady: { type: "method", detail: "(callback: Function): void" },
   openBrowser: { type: "method", detail: "(url: string): Promise<void>" },
-  openPath: { type: "method", detail: "(path: string): Promise<void>", info: "Reveal a local file or directory in the platform's file manager." },
 };

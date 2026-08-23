@@ -47,4 +47,42 @@ export const tests = [
       await expectNoVisibleRuntimeError(browser);
     },
   },
+  {
+    /**
+     * Revealing a run folder used to go through the shell plugin's `open`, which validates its
+     * argument against a URL regex — so the call was rejected before reaching the platform and the
+     * button did nothing at all. What that needs is a command that is actually registered and
+     * actually reachable from the webview, which is what this checks.
+     *
+     * Deliberately never asks for a directory that exists: succeeding would launch the host's file
+     * manager in the middle of the suite. Reaching Rust and being refused for the right reason
+     * proves the wiring; the refusals themselves are the security boundary.
+     */
+    name: 'reveals only directories inside the data root, through a command of its own',
+    async run({ browser, expect }) {
+      await waitForLiatirBridge(browser);
+
+      const outcome = await browser.execute(async () => {
+        const attempt = async (rel) => {
+          try {
+            await window.Liatir.invoke('lia_fs_reveal', { rel });
+            return 'resolved';
+          } catch (error) {
+            return String(error);
+          }
+        };
+        return {
+          missing: await attempt('runs/does-not-exist'),
+          escaping: await attempt('../../../../../../etc'),
+          hasOpenPath: typeof window.Liatir.openPath,
+        };
+      });
+
+      // Registered: an unregistered command fails with "not allowed"/"not found" instead.
+      expect(outcome.missing).toContain('not a directory');
+      expect(outcome.escaping).toContain('Path traversal not allowed');
+      // The bridge must not keep the second, broken way to do this.
+      expect(outcome.hasOpenPath).toBe('undefined');
+    },
+  },
 ];

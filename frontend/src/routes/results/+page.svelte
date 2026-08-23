@@ -3,7 +3,7 @@
   import { page } from '$app/state';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
-  import RunLog from '$lib/components/ui/RunLog.svelte';
+  import RunRecord from '$lib/components/ui/RunRecord.svelte';
   import Select from '$lib/components/ui/Select.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import { analysisRuns, type AnalysisRunMeta } from '$lib/stores/analysisRuns.svelte';
@@ -336,11 +336,10 @@
                   output={loadedOutput}
                   outputFiles={selectedRun.outputFiles ?? []}
                   resultFolder={toolLabel(selectedRun.tool)}
-                  runId={selectedRun.id}
                 />
               </div>
             {/if}
-            <RunLog runId={selectedId} />
+            <RunRecord runId={selectedId} />
           </div>
 
         {:else if loadingOutput}
@@ -400,7 +399,7 @@
                 This Result has no structured preview. Quenta can still use its metadata, files, and logs.
               </div>
             {/if}
-            <RunLog runId={selectedId} />
+            <RunRecord runId={selectedId} />
           </div>
         {/if}
       </div>

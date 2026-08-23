@@ -20,16 +20,13 @@
   import type { RunOutputFile } from '$lib/types/pipeline';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { liatir } from '$lib/api';
-  import { runDirPath } from '$lib/execution/run-storage';
   import { page } from '$app/state';
   import { getLastSegmentsStringFromPath, sanitizeLocalPathsForDisplay } from '$lib/utils';
 
-  let { output, outputFiles, resultFolder, runId }: {
+  let { output, outputFiles, resultFolder }: {
     output: ToolOutput;
     outputFiles?: RunOutputFile[];
     resultFolder?: string;
-    /** Lets the panel offer the run's own directory, where its by-products actually are. */
-    runId?: string | null;
   } = $props();
 
   // Result files land in the locked Results/<tool>/ folder. Tool name is taken
@@ -109,13 +106,6 @@
    */
   const resultFiles = $derived((outputFiles ?? []).filter((file) => (file.role ?? 'final') === 'final'));
   const byproductCount = $derived((outputFiles ?? []).length - resultFiles.length);
-
-  async function openRunFolder() {
-    if (!runId) return;
-    const api = liatir();
-    if (!api?.openPath) return;
-    await api.openPath(await runDirPath(runId));
-  }
 </script>
 
 <div class="space-y-4">
@@ -194,21 +184,15 @@
     </Card>
   {/if}
 
-  {#if runId && byproductCount > 0}
+  {#if byproductCount > 0}
     <Card class="p-4">
-      <div class="flex items-center gap-3">
-        <div class="flex-1 min-w-0">
-          <p class="text-xs font-medium text-text-muted">
-            This run also produced {byproductCount} other {byproductCount === 1 ? 'file' : 'files'}
-          </p>
-          <p class="text-[10px] text-text-subtle mt-0.5">
-            Reports, indexes and working files the tool wrote along the way. They are kept with the run.
-          </p>
-        </div>
-        <Button variant="secondary" size="sm" class="shrink-0" onclick={openRunFolder}>
-          Open run folder
-        </Button>
-      </div>
+      <p class="text-xs font-medium text-text-muted">
+        This run also produced {byproductCount} other {byproductCount === 1 ? 'file' : 'files'}
+      </p>
+      <p class="text-[10px] text-text-subtle mt-0.5">
+        Reports, indexes and working files the tool wrote along the way. They are kept with the run —
+        <span class="text-text-secondary">Open run folder</span> below shows them.
+      </p>
     </Card>
   {/if}
 

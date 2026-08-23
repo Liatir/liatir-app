@@ -1,6 +1,6 @@
 import { liatir } from '$lib/api';
 
-// Shared copy/export helpers for log-style panels (RunLog, JobLogViewer, …).
+// Shared copy/export helpers for log-style panels (RunRecord, JobLogViewer, …).
 // Both actions go through the desktop bridge; keeping them here avoids
 // duplicating the clipboard + save-to-file dance in every viewer component.
 

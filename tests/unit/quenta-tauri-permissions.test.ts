@@ -17,6 +17,36 @@ import { describe, expect, it } from 'vitest';
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
+function read(rel: string): string {
+  return readFileSync(resolve(rootDir, rel), 'utf8');
+}
+
+describe('bridge command permissions', () => {
+  /**
+   * The Quenta checks below cover one feature. This covers the rule they are an instance of:
+   * registering a command in `generate_handler!` is not granting it. A command that is registered
+   * and not listed compiles, passes `cargo check`, and is refused at runtime with
+   * "not allowed. Command not found" — which is only ever seen by someone clicking the button.
+   * `lia_fs_reveal` shipped that way and cost an end-to-end run to find.
+   */
+  it('grants every bridge command that is registered', () => {
+    const main = read('src-tauri/src/main.rs');
+    const handler = main.slice(
+      main.indexOf('tauri::generate_handler!['),
+      main.indexOf('])', main.indexOf('tauri::generate_handler![')),
+    );
+    const registered = [...handler.matchAll(/^\s*(lia_\w+),/gm)].map((match) => match[1]);
+    const allowed = new Set(
+      [...read('src-tauri/permissions/liatir-bridge.toml').matchAll(/"([^"]+)"/g)]
+        .map((match) => match[1]),
+    );
+
+    // A parse that silently matched nothing would make this test vacuously pass forever.
+    expect(registered.length).toBeGreaterThan(100);
+    expect(registered.filter((command) => !allowed.has(command))).toEqual([]);
+  });
+});
+
 describe('Quenta Tauri permissions', () => {
   it('allows every Quenta Ollama command invoked by the frontend runtime', () => {
     const runtimeSource = readFileSync(

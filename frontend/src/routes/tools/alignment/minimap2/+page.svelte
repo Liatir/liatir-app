@@ -7,7 +7,7 @@
   import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
-  import RunLog from '$lib/components/ui/RunLog.svelte';
+  import RunRecord from '$lib/components/ui/RunRecord.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
   import ThreadControl from '$lib/components/tools/ThreadControl.svelte';
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
@@ -317,6 +317,7 @@
 
         {#if displayError}
           <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-mono" data-selectable>{sanitizeLocalPathsForDisplay(displayError, 2)}</div>
+          <RunRecord runId={selectedRunId} />
         {:else if loadingOutput}
           <div class="flex justify-center py-12">
             <svg class="animate-spin h-5 w-5 text-text-subtle" viewBox="0 0 24 24" fill="none">
@@ -333,8 +334,8 @@
                 <span class="text-xs text-text-subtle">{fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}</span>
               {/if}
             </div>
-            <ToolResultView output={loadedOutput} outputFiles={selectedRunOutputFiles} runId={selectedRunId} />
-            <RunLog runId={selectedRunId} />
+            <ToolResultView output={loadedOutput} outputFiles={selectedRunOutputFiles} />
+            <RunRecord runId={selectedRunId} />
           </div>
         {/if}
       {/if}

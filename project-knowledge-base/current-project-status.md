@@ -114,11 +114,7 @@ Three things this settled along the way:
   Pipeline steps stamped `final` on everything and registered all of it, while
   standalone tools escaped only because each page hand-picked one path. Registration
   now happens once, at finalization, filtered to `final`. By-products are reached
-  from the run: the results panel shows a count and an **Open run folder** button.
-- **No new native command was needed** for that button. `shell:allow-open` is already
-  granted unscoped, and `shell.open` hands a directory to the platform's file manager
-  exactly as it hands a URL to a browser — so it is one named method on the bridge
-  (`openPath`), not a Rust change.
+  from the run: the results panel shows a count, and the run itself offers the folder.
 - **Nothing is deleted automatically.** `MAX_RUNS` is gone: a run now owns files the
   user made, and a list growing long is not a reason to destroy them. Pruning is an
   explicit action that says what it will delete, including how many of the files the
@@ -143,6 +139,47 @@ What still stands apart: the interrupted-pipeline recovery path in
 `pipeline.svelte.ts` calls `analysisRuns.add` directly, because it reconciles from a
 serialized runtime snapshot with no execution record to draw a transcript from. It
 now writes its own `log.jsonl` so a recovered run is not mute.
+
+#### Opening a run folder needs a command of its own
+
+`shell.open` cannot reveal a directory. The shell plugin validates its argument
+against a URL regex (`mailto:`/`tel:`/`http(s)://` unless
+`plugins > shell > open` is configured otherwise), so a filesystem path is rejected
+inside the plugin and never reaches the platform. `shell:allow-open` being granted is
+irrelevant — the capability lets the webview *call* the command; the regex is what
+decides its argument. The first version of the button went through `openPath` on the
+bridge and therefore did nothing at all, silently, since the rejected promise had no
+handler.
+
+Widening that regex to accept paths would admit any path on the machine, an
+executable included, because the plugin has no notion of which directories are
+Liatir's. The constraint that actually holds is "inside the data root", which
+`lia_fs_safe_join_data` already enforces — so revealing is `lia_fs_reveal`, a command
+of our own that safe-joins a **relative** path and refuses anything that is not a
+directory. No absolute path crosses the bridge. `openPath` is gone; `openBrowser`
+stays on `shell.open`, where a URL is what the regex is for.
+
+**Registering a bridge command is not granting it.** `permissions/liatir-bridge.toml`
+is an explicit allowlist; a command in `generate_handler!` that is missing from it
+compiles, passes `cargo check`, and is refused at runtime with
+`"<cmd> not allowed. Command not found"`. The Quenta-scoped guard for this has been
+generalised in `tests/unit/quenta-tauri-permissions.test.ts` to check *every*
+registered `lia_*` command, so the class fails in `test:verify` instead of costing an
+E2E build. It immediately found three standing gaps: `lia_quenta_docs_sync` was
+registered and invoked but never granted, and `knowledge-sync.ts` swallows the
+rejection as "offline" — so Quenta's online corpus sync had never once run. The three
+`lia_logs_test_*` diagnostics helpers were ungranted the same way. All four are now
+listed.
+
+**The affordance belongs to the run, not to its results.** It started inside
+`ToolResultView`, gated on there being by-products — so it was missing from the
+Results screen entirely, from every failed run, and from any run with no structured
+output: exactly the runs someone opens a folder to understand. It now lives in
+`RunRecord.svelte` (formerly `RunLog.svelte`, renamed because it is no longer only
+the log), beside **View log**, on every screen that shows a run and in the failure
+branch of each. The result view keeps the by-product *count*, which is about the
+files. A run that wrote nothing has no directory, and the button says so rather than
+appearing to do nothing.
 
 ## Native Tools are one signed Scrollcase box (2026-08-22)
 

@@ -61,6 +61,7 @@ commands.allow = [
   "lia_fs_clear_cache",
   "lia_fs_clear_data",
   "lia_fs_paths",
+  "lia_fs_reveal",
 
   "lia_fs_trash_list_dir",
   "lia_fs_trash_stat",
@@ -94,6 +95,13 @@ commands.allow = [
   "lia_logs_record_error",
   "lia_logs_new_record",
   "lia_logs_export_zip",
+
+  # Registered only under `debug_assertions`, so these names resolve to nothing in a release
+  # build. Granting them is what makes the diagnostics helpers in `src-ts/modules/rs/diagnostics`
+  # work at all in development.
+  "lia_logs_test_record_n",
+  "lia_logs_test_panic",
+  "lia_logs_test_force_retention",
 
   "lia_network_get_status",
   "lia_network_ping",
@@ -152,6 +160,7 @@ commands.allow = [
   "lia_quenta_ollama_cancel_chat",
   "lia_quenta_ollama_forget_chat",
   "lia_quenta_ollama_embed",
+  "lia_quenta_docs_sync",
 
   "lia_deps_check",
   "lia_deps_check_many",

@@ -40,8 +40,6 @@ export type LiatirBrowserAPI = {
   tauri?: WindowTauri;
   onReady: (callback: Function) => void;
   openBrowser: (url: string) => Promise<void>;
-  /** Reveal a local file or directory in the platform's file manager. */
-  openPath: (path: string) => Promise<void>;
 };
 
 /**

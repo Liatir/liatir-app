@@ -141,8 +141,11 @@ A run records everything it did, not only what it was asked for.
 **Every file it produced.** Each run has its own folder, and everything the tool
 wrote goes in it — the result, plus whatever it produced along the way: fastp's
 quality report, the log and execution report a Nextflow workflow leaves behind,
-working files. The results panel lists the results and tells you how many other files
-there are, with an **Open run folder** button to inspect them.
+working files. The results panel lists the results and tells you how many other
+files there are; **Open run folder**, next to **View log** under any run, shows
+them in Finder or Explorer. It is there on every screen that displays a run — the
+tool page, the Results screen, AI Tools, External Workflows — including for a run
+that failed, which is when you are most likely to want it.
 
 The same is true of a step inside a pipeline: it is a run like any other and has its
 own folder. Where you *find* your results does not change — they still appear under

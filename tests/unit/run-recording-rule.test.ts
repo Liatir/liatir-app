@@ -45,6 +45,23 @@ const RUN_RECORDERS = [
 
 const runStorage = read('frontend/src/lib/execution/run-storage.ts');
 
+/** Every screen that displays a past run, and so must let the user open it. */
+const RUN_VIEWERS = [
+  'frontend/src/routes/results/+page.svelte',
+  'frontend/src/routes/tools/qc/fastp/+page.svelte',
+  'frontend/src/routes/tools/qc/fastqc/+page.svelte',
+  'frontend/src/routes/tools/qc/seqkit/+page.svelte',
+  'frontend/src/routes/tools/alignment/bwa/+page.svelte',
+  'frontend/src/routes/tools/alignment/minimap2/+page.svelte',
+  'frontend/src/routes/tools/alignment/samtools/+page.svelte',
+  'frontend/src/routes/tools/alignment/samtools-faidx/+page.svelte',
+  'frontend/src/routes/tools/variants/bcftools/+page.svelte',
+  'frontend/src/routes/tools/variants/bcftools-filter/+page.svelte',
+  'frontend/src/routes/tools/variants/snpeff/+page.svelte',
+  'frontend/src/routes/tools/external-workflows/[id]/+page.svelte',
+  'frontend/src/routes/ai/[id]/+page.svelte',
+];
+
 describe('the recording rule', () => {
   it('makes the by-product declaration mandatory, with no default', () => {
     // `sideEffects?:` would defeat the whole thing — the field exists to be impossible to skip.
@@ -201,7 +218,42 @@ describe('the results view', () => {
     // A file with no role predates roles, and back then everything shown was a result.
     expect(view).toContain("(file.role ?? 'final') === 'final'");
     expect(view).toContain('byproductCount');
-    expect(view).toContain('openRunFolder');
+  });
+
+  it('offers the run folder on every screen that shows a run, not only where files were listed', () => {
+    // It used to live in the result view, gated on there being by-products — so it was absent from
+    // the Results screen, from failures, and from any run with no structured output: exactly the
+    // runs someone opens a folder to understand.
+    const record = read('frontend/src/lib/components/ui/RunRecord.svelte');
+    expect(record).toContain('revealRunDir');
+    expect(record).toContain('Open run folder');
+    for (const path of RUN_VIEWERS) {
+      expect(read(path)).toContain('<RunRecord ');
+    }
+  });
+
+  it('offers it for a failed run too, which is when it is most wanted', () => {
+    // These pages render a selected failure as a red box and stopped there: no transcript, no
+    // folder, on the one run someone is actually trying to explain.
+    for (const path of RUN_VIEWERS) {
+      const source = read(path);
+      const start = source.indexOf('{#if displayError}');
+      if (start === -1) continue;
+      const failureBranch = source.slice(start, source.indexOf('{:else', start));
+      expect(failureBranch, `${path} hides the run record on failure`).toContain('<RunRecord ');
+    }
+  });
+
+  it('reveals a directory through a command of its own, not by widening the shell scope', () => {
+    // `shell.open` validates its argument against a URL regex, so a path silently fails; relaxing
+    // that regex would admit any path on the machine, an executable included.
+    expect(runStorage).toContain("api.invoke('lia_fs_reveal', { rel: runDirRel(runId) })");
+    const rust = read('src-tauri/src/bridge/fs.rs');
+    expect(rust).toContain('pub fn lia_fs_reveal');
+    expect(rust).toContain('lia_fs_safe_join_data(&app, &rel)');
+    expect(read('src-tauri/src/main.rs')).toContain('lia_fs_reveal,');
+    // The bridge must not keep a second, broken way to do it.
+    expect(read('src-ts/bridge.ts')).not.toContain('openPath:');
   });
 
   it('registers only results in the Data library, in one place', () => {

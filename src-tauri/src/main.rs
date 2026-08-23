@@ -350,6 +350,7 @@ fn main() {
       lia_fs_clear_cache,
       lia_fs_clear_data,
       lia_fs_paths,
+      lia_fs_reveal,
 
       // fs trash
       lia_fs_trash_list_dir,

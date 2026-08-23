@@ -871,6 +871,31 @@ pub fn lia_fs_paths(app: AppHandle) -> Result<FsPaths, String> {
     })
 }
 
+/// Show a directory inside Liatir's own data root in the platform's file manager.
+///
+/// `shell.open` cannot do this. The shell plugin validates its argument against a URL regex
+/// (`mailto:`/`tel:`/`http(s)://` by default), so a filesystem path is rejected before it ever
+/// reaches the platform — the call fails silently from the webview's point of view. Widening that
+/// regex to accept paths would let *any* path through, an executable included, since the plugin has
+/// no notion of which directories are ours. The constraint that actually holds here is "inside the
+/// data root", and `lia_fs_safe_join_data` is what enforces it, so the reveal is a command of our
+/// own rather than a loosened plugin scope.
+///
+/// Directories only: handing a file to the platform launches whatever application claims its
+/// extension, which is not what revealing a run's folder means.
+#[tauri::command]
+pub fn lia_fs_reveal(app: AppHandle, rel: String) -> Result<(), String> {
+    let dir = lia_fs_safe_join_data(&app, &rel)?;
+    if !dir.is_dir() {
+        return Err(format!("not a directory: {rel}"));
+    }
+    // Deprecated in favour of tauri-plugin-opener, which would be a new dependency for one call.
+    // `scope: None` is the documented way to call it from Rust: validation is the caller's job, and
+    // the safe join above is that validation.
+    #[allow(deprecated)]
+    tauri_plugin_shell::open::open(None, dir.to_string_lossy(), None).map_err(|e| e.to_string())
+}
+
 // Exposes the persistent public "data" base dir.
 pub fn lia_fs_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     ensure_base_exists(app, true)

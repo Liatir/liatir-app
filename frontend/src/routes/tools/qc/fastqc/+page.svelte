@@ -18,7 +18,7 @@
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
   import { notify } from '$lib/utils/notify';
-  import RunLog from '$lib/components/ui/RunLog.svelte';
+  import RunRecord from '$lib/components/ui/RunRecord.svelte';
 
   // ── form state ─────────────────────────────────────────────────
   let maxReads = $state<number | undefined>(undefined);
@@ -349,6 +349,7 @@
         <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-mono" data-selectable>
           {sanitizeLocalPathsForDisplay(displayError, 2)}
         </div>
+        <RunRecord runId={selectedRunId} />
       {:else if loadingOutput}
         <div class="flex justify-center py-12">
           <svg class="animate-spin h-5 w-5 text-text-subtle" viewBox="0 0 24 24" fill="none">
@@ -368,7 +369,7 @@
             {/if}
           </div>
           <ToolResultView output={loadedOutput} />
-            <RunLog runId={selectedRunId} />
+            <RunRecord runId={selectedRunId} />
         </div>
       {/if}
 

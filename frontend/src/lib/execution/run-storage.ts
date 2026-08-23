@@ -45,9 +45,42 @@ async function dataRoot(): Promise<string> {
   return data;
 }
 
-/** Absolute path of a run's directory, for revealing it in the platform's file manager. */
+/**
+ * Absolute path of a run's directory.
+ *
+ * For code that has to reason about the location itself — counting what a prune is about to
+ * destroy, for instance. Revealing it to the user goes through `revealRunDir`, which never lets an
+ * absolute path cross the bridge.
+ */
 export async function runDirPath(runId: string): Promise<string> {
   return `${await dataRoot()}/${runDirRel(runId)}`;
+}
+
+/**
+ * Show a run's directory in the platform's file manager.
+ *
+ * Goes through `lia_fs_reveal` rather than the shell plugin's `open`, which only accepts URLs. The
+ * relative path is what crosses the bridge: the command resolves it under the data root, so a run
+ * id cannot address anything outside it.
+ *
+ * The two ways this fails are told apart on purpose. A run that wrote nothing has no directory —
+ * it is created by the first write — and that is an ordinary state to explain, not a fault. Anything
+ * else is a real failure and reaches the caller as its own message, because reporting every
+ * refusal as "wrote nothing" would be the same silent lie as the button that did nothing.
+ */
+export type RevealOutcome = { ok: true } | { ok: false; reason: 'no-directory' | string };
+
+export async function revealRunDir(runId: string): Promise<RevealOutcome> {
+  const api = liatir();
+  if (!api) return { ok: false, reason: 'Liatir API not available' };
+  try {
+    await api.invoke('lia_fs_reveal', { rel: runDirRel(runId) });
+    return { ok: true };
+  } catch (error) {
+    const message = String(error);
+    if (message.includes('not a directory')) return { ok: false, reason: 'no-directory' };
+    return { ok: false, reason: message };
+  }
 }
 
 /**

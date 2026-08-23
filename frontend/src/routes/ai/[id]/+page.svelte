@@ -12,7 +12,7 @@
 	import InfoPopup from '$lib/components/ui/InfoPopup.svelte';
 	import LabelWithInfo from '$lib/components/ui/LabelWithInfo.svelte';
 	import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
-	import RunLog from '$lib/components/ui/RunLog.svelte';
+	import RunRecord from '$lib/components/ui/RunRecord.svelte';
 	import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
 	import { aiModelsStore } from '$lib/stores/aiModels.svelte';
 	import { dataFiles } from '$lib/stores/dataFiles.svelte';
@@ -430,11 +430,11 @@
 
 				{#if displayError}
 					<div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-mono" data-selectable>{sanitizeLocalPathsForDisplay(displayError, 2)}</div>
-					<RunLog runId={selectedRunId} />
+					<RunRecord runId={selectedRunId} />
 				{:else if loadingOutput}
 					<div class="flex justify-center py-12"><Icon icon="svg-spinners:ring-resize" width="22" height="22" class="text-text-subtle" /></div>
 				{:else if loadedOutput}
-					<div><p class="mb-2 text-[10px] font-semibold text-text-subtle uppercase tracking-wider">Last run result</p><div class="flex items-center justify-between mb-3"><h2 class="text-xs font-medium text-text-secondary">{selectedRun?.label ?? 'Results'}</h2>{#if selectedRun}<span class="text-xs text-text-subtle">{fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}</span>{/if}</div><ToolResultView output={loadedOutput} outputFiles={selectedRunOutputFiles} runId={selectedRunId} /><RunLog runId={selectedRunId} /></div>
+					<div><p class="mb-2 text-[10px] font-semibold text-text-subtle uppercase tracking-wider">Last run result</p><div class="flex items-center justify-between mb-3"><h2 class="text-xs font-medium text-text-secondary">{selectedRun?.label ?? 'Results'}</h2>{#if selectedRun}<span class="text-xs text-text-subtle">{fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}</span>{/if}</div><ToolResultView output={loadedOutput} outputFiles={selectedRunOutputFiles} /><RunRecord runId={selectedRunId} /></div>
 				{/if}
 			</div>
 		</PageContent>
