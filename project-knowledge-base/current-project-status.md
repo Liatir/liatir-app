@@ -51,9 +51,35 @@ committed, so it is enforced rather than repeated in thirteen pages:
 - a run's transcript now lives as long as the run, with both files deleted when a run
   is evicted past `MAX_RUNS` — unbounded age, still bounded disk.
 
-Pinned by `tests/unit/run-recording-rule.test.ts`. What is not yet enforced: nothing
-proves a `sideEffects: []` is *true*, only that it was stated. Enumerating a per-run
-directory would prove it, and would need every tool to write into one.
+Pinned by `tests/unit/run-recording-rule.test.ts`.
+
+### An empty declaration is now checked, not believed (2026-08-23)
+
+The gap left open above is closed for standalone tool runs. Tools used to write into
+one shared `tool-outputs/` folder under run-prefixed filenames — which keeps runs
+apart but leaves nothing to enumerate, since you cannot tell by looking at the folder
+what this run put there. Each run now gets `tool-outputs/<runId>/`, and
+`finalizeExecutionResult` lists it: anything present and undeclared is recorded
+anyway, under its own filename. A tool that writes a file and forgets to mention it
+no longer hides it. `ensureToolOutputsDir` is deleted rather than left as a second
+way of doing the same thing.
+
+Matching is by filename, not path: declared paths are built with forward slashes
+while `lia_fs_list_dir` returns the platform's separators, and comparing those
+directly would report every declared file as undeclared on Windows.
+
+`sideEffects` stays required, with a narrower and clearer job — files written
+*outside* the run directory, which enumeration cannot see. Some tools have no
+choice: `bwa`'s index has to sit beside the reference for `bwa` to find it. That is
+also why `[]` still has to be said rather than defaulted.
+
+**Two boundaries, both deliberate.** Pipeline steps write into the user-facing
+`Results/<Tool>/` folder, which accumulates across every run of that tool, so
+enumerating it would attribute older runs' files to this one; giving steps their own
+directories would fix it and would move where pipeline results land, which is a
+user-visible decision. And the interrupted-pipeline recovery path in
+`pipeline.svelte.ts` still calls `analysisRuns.add` directly, because it reconciles
+from serialized runtime state with no execution record to draw a transcript from.
 
 ## Native Tools are one signed Scrollcase box (2026-08-22)
 

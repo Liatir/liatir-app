@@ -17,7 +17,7 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { beginDirectNativeToolRun } from '$lib/execution/direct-native-tool';
   import { runNativeTool } from '$lib/utils/native-tool';
-  import { ensureToolOutputsDir } from '$lib/utils/results';
+  import { ensureRunOutputsDir } from '$lib/utils/results';
   import { notify } from '$lib/utils/notify';
   import { fmtDuration, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { liatir } from '$lib/api';
@@ -117,7 +117,7 @@
     activeExecutionRunId = runId;
 
     try {
-      const outPath = `${await ensureToolOutputsDir()}/bwa-${runId}.sam`;
+      const outPath = `${await ensureRunOutputsDir(runId)}/aligned.sam`;
       logLines = [
         `$ bwa mem -t ${threadInfo.threads} ${refName} ${r1Name}${r2Path ? ` ${r2Path.split(/[\\/]/).pop()}` : ''}`,
         `→ Output: bwa-${runId}.sam`,

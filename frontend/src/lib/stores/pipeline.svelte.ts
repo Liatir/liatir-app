@@ -1718,8 +1718,15 @@ function createPipelineStore() {
                 ...(stepEvidence.length > 0 ? { stepEvidence } : {}),
               },
               outputFiles: allFiles,
-              // A pipeline writes nothing of its own: every file here was produced by a step, and
-              // each step already recorded its own by-products against its own run.
+              // A pipeline writes nothing of its own: every file here was produced by a step.
+              //
+              // This one is declared rather than checked, and knowingly so. A standalone tool run
+              // gets a directory of its own, which is what lets finalization enumerate it and catch
+              // a by-product nobody declared. Pipeline steps instead write into the user-facing
+              // `Results/<Tool>/` folder, which accumulates across every run of that tool — so
+              // listing it would attribute older runs' files to this one. Giving steps their own
+              // directories would fix that and would move where pipeline results land, which is a
+              // user-visible decision and not this change's to make.
               sideEffects: [],
               startedAt: pipeStartedAt,
               endedAt,

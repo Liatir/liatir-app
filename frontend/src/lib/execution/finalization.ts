@@ -16,6 +16,7 @@ import {
   executionRuns,
   EXECUTION_INTERRUPTED_MESSAGE,
 } from '$lib/stores/executionRuns.svelte';
+import { listRunOutputs, type RunOutputEntry } from '$lib/utils/results';
 
 function resultStatus(status: LiatirExecutionTerminalStatus): LiatirRunStatus {
   return status === 'interrupted' ? 'error' : status;
@@ -57,6 +58,48 @@ function runTranscript(logs: LiatirExecutionLogEntry[], fallback: string[] | und
   return logs.length > 0 ? logs.map(renderLogEntry) : (fallback ?? []);
 }
 
+/** Compression suffixes that are part of the extension rather than the whole of it. */
+const COMPOUND_SUFFIXES = new Set(['gz', 'bz2', 'xz', 'zst']);
+
+/** `reads.fastq.gz` → `fastq.gz`, `report.html` → `html`, `Makefile` → `file`. */
+function extensionOf(name: string): string {
+  const parts = name.split('.');
+  if (parts.length < 2) return 'file';
+  const last = parts[parts.length - 1];
+  if (COMPOUND_SUFFIXES.has(last) && parts.length > 2) {
+    return `${parts[parts.length - 2]}.${last}`;
+  }
+  return last;
+}
+
+/**
+ * Files found in the run's own directory that nobody declared.
+ *
+ * This is what makes an empty `sideEffects` checkable instead of merely stated. A tool writes into
+ * a directory Liatir owns for that run, so at this point Liatir can simply look: anything present
+ * and unaccounted for is recorded anyway, under its own filename, rather than existing on the
+ * user's disk with nothing in the app admitting it.
+ *
+ * Matching is by filename, not by path: the declared paths are built with forward slashes while the
+ * enumeration returns the platform's own separators, and comparing those directly would report
+ * every declared file as undeclared on Windows.
+ */
+function undeclaredRunOutputs(
+  found: RunOutputEntry[],
+  declared: RunOutputFile[],
+): RunOutputFile[] {
+  const declaredNames = new Set(declared.map((file) => file.path.split(/[\\/]/).pop()));
+  return found
+    .filter((entry) => !declaredNames.has(entry.name))
+    .map((entry) => ({
+      label: entry.name,
+      path: entry.path,
+      ext: extensionOf(entry.name),
+      ...(entry.size != null ? { size: entry.size } : {}),
+      role: 'intermediate' as const,
+    }));
+}
+
 /**
  * Everything a run left on disk, in one list, each file carrying an honest role.
  *
@@ -91,15 +134,19 @@ function resultToolId(identity: LiatirExecutionIdentity): string {
 /**
  * What a caller must state about the run it is finalizing.
  *
- * `sideEffects` is required and has no default. `[]` is a real answer — "this run left nothing
- * behind" — but it is a claim someone has to make deliberately, which is the point: an optional
- * field is one every new tool forgets, and the files then exist on the user's disk with nothing in
- * Liatir admitting they are there.
+ * `sideEffects` is required and has no default, because an optional field is the one every new tool
+ * forgets. But it is no longer the only thing standing between a by-product and oblivion: anything
+ * written into the run's own output directory is discovered by enumeration at finalization, so an
+ * empty list here is checked rather than believed.
+ *
+ * What enumeration cannot see is a file written somewhere else — and some tools have no choice, an
+ * aligner index has to sit beside the reference for the aligner to find it. That is what this field
+ * is now for, and it is why `[]` still has to be said out loud rather than defaulted.
  */
 export interface FinalizedRunResult extends Omit<AnalysisRun, 'execution' | 'status'> {
   /**
-   * Files the run left on disk that are not among its declared outputs: a report it wrote but does
-   * not return, an index it built beside the user's data, scratch it did not clean up.
+   * Files the run left outside its own output directory: an index built beside the user's data, or
+   * anything else Liatir cannot find by looking where it put the run.
    */
   sideEffects: RunOutputFile[];
 }
@@ -125,12 +172,18 @@ export async function finalizeExecutionResult(
   }
 
   const { sideEffects, ...run } = result;
+  const declared = mergeRunArtifacts(run.outputFiles, sideEffects);
+  // Checked, not trusted: whatever is in the run's own directory is recorded whether or not the
+  // caller mentioned it. Declaration still carries the files a tool had to write elsewhere, and the
+  // better labels for the ones it did mention.
+  const discovered = undeclaredRunOutputs(await listRunOutputs(run.id), declared);
+
   await analysisRuns.add({
     ...run,
     status,
     execution: execution.identity,
     jobIds: execution.jobIds,
-    outputFiles: mergeRunArtifacts(run.outputFiles, sideEffects),
+    outputFiles: [...declared, ...discovered],
     log: runTranscript(execution.logs, run.log),
   });
 

@@ -43,6 +43,8 @@ const RUN_RECORDERS = [
   'frontend/src/lib/ai/direct-run-finalizer.ts',
 ];
 
+const results = read('frontend/src/lib/utils/results.ts');
+
 describe('the recording rule', () => {
   it('makes the by-product declaration mandatory, with no default', () => {
     // `sideEffects?:` would defeat the whole thing — the field exists to be impossible to skip.
@@ -68,6 +70,44 @@ describe('the recording rule', () => {
 
   it('records the command as spawned, so no caller has to narrate itself', () => {
     expect(nativeTool).toContain('`$ ${[cmd, ...args].join(\' \')}`');
+  });
+});
+
+describe('an empty declaration is checked, not believed', () => {
+  it('gives each run a directory of its own to be checked against', () => {
+    // The old layout put every tool's files in one shared folder under run-prefixed names. That
+    // keeps runs apart but leaves nothing to enumerate: you cannot tell, by looking at the folder,
+    // what this run put there.
+    expect(results).toContain('export async function ensureRunOutputsDir');
+    expect(results).toContain('`${TOOL_OUTPUTS_DIR}/${runId}`');
+    // The shared-folder helper is gone rather than left as a second way of doing it.
+    expect(results).not.toContain('ensureToolOutputsDir');
+  });
+
+  it('records what is in that directory whether or not the caller mentioned it', () => {
+    expect(finalization).toContain('undeclaredRunOutputs(await listRunOutputs(run.id)');
+  });
+
+  it('matches by filename, because path separators differ by platform', () => {
+    // Declared paths are built with forward slashes; the enumeration returns the platform's own.
+    // Comparing them directly would report every declared file as undeclared on Windows.
+    expect(finalization).toContain("file.path.split(/[\\\\/]/).pop()");
+  });
+
+  it('treats a missing directory as a run that wrote nothing, not as a failure', () => {
+    expect(results).toContain('return [];');
+  });
+
+  it('has every file-writing tool write into its run directory', () => {
+    for (const path of [
+      'frontend/src/routes/tools/qc/fastp/+page.svelte',
+      'frontend/src/routes/tools/alignment/bwa/+page.svelte',
+      'frontend/src/routes/tools/alignment/minimap2/+page.svelte',
+      'frontend/src/routes/tools/variants/bcftools-filter/+page.svelte',
+      'frontend/src/routes/tools/variants/snpeff/+page.svelte',
+    ]) {
+      expect(read(path)).toContain('ensureRunOutputsDir(runId)');
+    }
   });
 });
 

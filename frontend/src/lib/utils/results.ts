@@ -36,23 +36,63 @@ export async function ensureResultsDir(
   return { absDir: `${data}/${relTool}`, virtualFolder: `Results/${safe}`, safe };
 }
 
+/** Where one run's files live, relative to the data directory. */
+function runOutputsRel(runId: string): string {
+  return `${TOOL_OUTPUTS_DIR}/${runId}`;
+}
+
 /**
- * Ensure the shared `tool-outputs` directory exists and return its absolute path.
+ * Ensure this run's own output directory exists and return its absolute path.
  *
- * A native tool that writes its own output file — fastp with `--out1`, bcftools with `-o` —
- * cannot create the directory for it, and fails with a raw writer error if it is missing. Only
- * the tools whose output is captured through a job's `stdoutPath` got one created for them, so
- * this directory used to appear as a side effect of running one of those first: every other tool
- * worked on a machine that happened to have run bwa once, and failed on a fresh install.
+ * A directory per run is what turns "the tool says it left nothing behind" into something Liatir
+ * can check: at finalization it lists this directory and records whatever is in it, so a file the
+ * tool wrote and forgot to declare is recorded anyway. Tools used to write into one shared folder
+ * under run-prefixed filenames, which kept them apart but left nothing to enumerate.
  *
- * Not workspace-prefixed, deliberately: these are intermediate tool outputs addressed by absolute
- * path, and moving them under a workspace would orphan the paths already recorded in Results.
+ * Files a tool must write elsewhere — an index that has to sit beside the user's reference for the
+ * tool to find it — cannot be discovered this way and still have to be declared.
  */
-export async function ensureToolOutputsDir(): Promise<string> {
+export async function ensureRunOutputsDir(runId: string): Promise<string> {
   const api = liatir();
   if (!api) throw new Error('Liatir API not available');
 
   await api.invoke('lia_fs_mkdir', { rel: TOOL_OUTPUTS_DIR, permanent: true });
+  await api.invoke('lia_fs_mkdir', { rel: runOutputsRel(runId), permanent: true });
   const { data } = await api.invoke('lia_fs_paths') as { data: string; cache: string };
-  return `${data}/${TOOL_OUTPUTS_DIR}`;
+  return `${data}/${runOutputsRel(runId)}`;
+}
+
+export interface RunOutputEntry {
+  name: string;
+  path: string;
+  size?: number;
+}
+
+/**
+ * Everything actually sitting in a run's output directory.
+ *
+ * Returns nothing when the directory was never created — most runs write no files at all, and a run
+ * that produced nothing is not an error to report.
+ */
+export async function listRunOutputs(runId: string): Promise<RunOutputEntry[]> {
+  const api = liatir();
+  if (!api) return [];
+  try {
+    const entries = await api.invoke('lia_fs_list_dir', {
+      rel: runOutputsRel(runId),
+      permanent: true,
+      windowLabel: undefined,
+      pluginStoragePlugin: undefined,
+    }) as Array<{ name: string; path: string; isDir: boolean; size?: number | null }>;
+    return entries
+      .filter((entry) => !entry.isDir)
+      .map((entry) => ({
+        name: entry.name,
+        path: entry.path,
+        ...(entry.size != null ? { size: entry.size } : {}),
+      }));
+  } catch {
+    // The directory does not exist, which is the normal case for a run that writes nothing.
+    return [];
+  }
 }

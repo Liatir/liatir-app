@@ -17,7 +17,7 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { beginDirectNativeToolRun } from '$lib/execution/direct-native-tool';
   import { runNativeTool } from '$lib/utils/native-tool';
-  import { ensureToolOutputsDir } from '$lib/utils/results';
+  import { ensureRunOutputsDir } from '$lib/utils/results';
   import { snpEffStore } from '$lib/stores/snpeff.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
@@ -308,8 +308,8 @@
     activeExecutionRunId = runId;
 
     try {
-      const outDir = await ensureToolOutputsDir();
-      const outPath = `${outDir}/snpeff-${runId}.vcf`;
+      const outDir = await ensureRunOutputsDir(runId);
+      const outPath = `${outDir}/annotated.vcf`;
 
       logLines = [
         `$ java -Xmx${snpEffStore.jvmHeap} -jar snpEff.jar ann ${genome} ${fileName}`,

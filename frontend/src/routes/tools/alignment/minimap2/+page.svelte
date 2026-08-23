@@ -17,7 +17,7 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { beginDirectNativeToolRun } from '$lib/execution/direct-native-tool';
   import { runNativeTool } from '$lib/utils/native-tool';
-  import { ensureToolOutputsDir } from '$lib/utils/results';
+  import { ensureRunOutputsDir } from '$lib/utils/results';
   import { notify } from '$lib/utils/notify';
   import { fmtDuration, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { liatir } from '$lib/api';
@@ -115,7 +115,7 @@
     activeExecutionRunId = runId;
 
     try {
-      const outPath = `${await ensureToolOutputsDir()}/minimap2-${runId}.sam`;
+      const outPath = `${await ensureRunOutputsDir(runId)}/aligned.sam`;
       logLines = [
         `$ minimap2 -t ${threadInfo.threads} -ax ${preset} ${refName} ${r1Name}`,
         `→ Output: minimap2-${runId}.sam`,

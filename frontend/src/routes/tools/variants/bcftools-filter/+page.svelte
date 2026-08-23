@@ -13,7 +13,7 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { beginDirectNativeToolRun } from '$lib/execution/direct-native-tool';
   import { runNativeTool } from '$lib/utils/native-tool';
-  import { ensureToolOutputsDir } from '$lib/utils/results';
+  import { ensureRunOutputsDir } from '$lib/utils/results';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
   import { notify } from '$lib/utils/notify';
@@ -118,8 +118,8 @@
     activeExecutionRunId = runId;
 
     try {
-      const outDir = await ensureToolOutputsDir();
-      const outPath = `${outDir}/bcftools-filter-${runId}.vcf.gz`;
+      const outDir = await ensureRunOutputsDir(runId);
+      const outPath = `${outDir}/filtered.vcf.gz`;
 
       logLines = [`$ bcftools filter --threads ${threadInfo.threads} -i '${expression.trim()}' ${fileName}`];
       // bcftools filter -i '<expr>' -O z -o <out> <in>
