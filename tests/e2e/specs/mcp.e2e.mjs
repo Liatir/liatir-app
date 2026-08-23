@@ -25,6 +25,23 @@ const SEQKIT_RECORD_COUNT = 17;
 const SEQKIT_THREADS = 3;
 const WASM_PENDING = 'AGFzbQEAAAABBAFgAAADAgEABwoBBl9zdGFydAAACgkBBwADQAwACwsAEwRuYW1lAwwBAAEAB2ZvcmV2ZXI=';
 
+/**
+ * Seed a file inside a run's directory.
+ *
+ * Run directories are data-scope, not app storage: they hold the files a run produced, which native
+ * tools write by absolute path. Only the history index that points at them lives in app storage.
+ */
+async function writeRunJson(browser, rel, value) {
+  await browser.execute(async (file, content) => {
+    await window.Liatir.invoke('lia_fs_write_text', {
+      rel: file,
+      contents: JSON.stringify(content, null, 2),
+      permanent: true,
+      createDirs: true,
+    });
+  }, rel, value);
+}
+
 async function writeAppJson(browser, rel, value) {
   await browser.execute(async (file, content) => {
     await window.Liatir.invoke('lia_app_write_text', {
@@ -468,7 +485,7 @@ export const tests = [{
       },
       ...existingResults.filter((result) => result.id !== EXISTING_RESULT_ID),
     ]);
-    await writeAppJson(browser, `workspaces/__test__/analysis-runs/${EXISTING_RESULT_ID}.json`, {
+    await writeRunJson(browser, `workspaces/__test__/runs/${EXISTING_RESULT_ID}/result.json`, {
       sections: [{
         type: 'text',
         label: 'Fixture',

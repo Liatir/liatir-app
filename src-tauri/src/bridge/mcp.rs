@@ -8,6 +8,7 @@
 use std::{
     fs,
     io::{Read, Seek, SeekFrom},
+    path::PathBuf,
     sync::{
         atomic::{AtomicU16, Ordering},
         Mutex, MutexGuard,
@@ -142,6 +143,45 @@ fn read_json(app: &AppHandle, rel: &str, missing: Value) -> Result<Value, String
     }
     let raw = fs::read_to_string(path).map_err(|error| error.to_string())?;
     serde_json::from_str(&raw).map_err(|error| format!("Invalid {rel}: {error}"))
+}
+
+/// `read_json`, resolved against the data root rather than app storage.
+fn read_run_json(app: &AppHandle, rel: &str, missing: Value) -> Result<Value, String> {
+    let path = resolve_run_path(app, rel)?;
+    if !path.exists() {
+        return Ok(missing);
+    }
+    let raw = fs::read_to_string(path).map_err(|error| error.to_string())?;
+    serde_json::from_str(&raw).map_err(|error| format!("Invalid {rel}: {error}"))
+}
+
+/// Resolve a path inside a run directory.
+///
+/// Run directories live in the **data** root, not app storage: they hold files the user produced,
+/// which native tools write by absolute path and the Data library points at. App storage is a
+/// subdirectory of that same root reserved for Liatir's own state — the history index lives there,
+/// but the runs it indexes do not.
+fn resolve_run_path(app: &AppHandle, rel: &str) -> Result<PathBuf, String> {
+    crate::bridge::fs::lia_fs_safe_join_data(app, rel)
+}
+
+/// A run's transcript, one JSON object per line.
+///
+/// Lines, not one array, because a transcript is appended to while a run is in progress. A line
+/// that will not parse is skipped rather than failing the read: one corrupted entry must not cost
+/// the caller the rest of the log, which is usually the part explaining what went wrong.
+fn read_run_log(app: &AppHandle, rel: &str) -> Result<Value, String> {
+    let path = resolve_run_path(app, rel)?;
+    if !path.exists() {
+        return Ok(json!([]));
+    }
+    let raw = fs::read_to_string(path).map_err(|error| error.to_string())?;
+    let entries: Vec<Value> = raw
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .filter_map(|line| serde_json::from_str::<Value>(line).ok())
+        .collect();
+    Ok(Value::Array(entries))
 }
 
 fn write_json(app: &AppHandle, rel: &str, value: &Value, private: bool) -> Result<(), String> {
@@ -770,8 +810,8 @@ fn public_result(
         .get("id")
         .and_then(Value::as_str)
         .ok_or_else(|| "Result has no identity".to_string())?;
-    let output_rel = format!("workspaces/{workspace_id}/analysis-runs/{result_id}.json");
-    let output = read_json(app, &output_rel, Value::Null)?;
+    let output_rel = format!("workspaces/{workspace_id}/runs/{result_id}/result.json");
+    let output = read_run_json(app, &output_rel, Value::Null)?;
     let replacements = path_replacements(app, config, requests, workspace_id)?;
     Ok(json!({
         "result": public_result_summary(app, config, requests, workspace_id, result)?,
@@ -2234,8 +2274,8 @@ impl LiatirMcpServer {
                 }).map(|execution| public_execution(execution, &replacements)),
             })),
             "logs" => {
-                let analysis_log_rel = format!("workspaces/{workspace_id}/analysis-runs/{run_id}.log.json");
-                let result_log = read_json(&self.app, &analysis_log_rel, json!([]))?;
+                let analysis_log_rel = format!("workspaces/{workspace_id}/runs/{run_id}/log.jsonl");
+                let result_log = read_run_log(&self.app, &analysis_log_rel)?;
                 Ok(json!({
                     "runId": run_id,
                     "executions": owned_executions.into_iter().map(|execution| json!({

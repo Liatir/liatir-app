@@ -3,10 +3,14 @@ import type {
   LiatirExecutionIdentity,
   LiatirExecutionLogEntry,
   LiatirExecutionTerminalStatus,
+  LiatirRunMetadata,
   LiatirRunStatus,
   RunOutputFile,
 } from '@liatir/core';
-import { LIATIR_EXTERNAL_WORKFLOW_STEP_PREFIX } from '@liatir/core';
+import {
+  LIATIR_EXTERNAL_WORKFLOW_STEP_PREFIX,
+  LIATIR_RUN_RECORD_SCHEMA_VERSION,
+} from '@liatir/core';
 import {
   analysisRuns,
   type AnalysisRun,
@@ -16,7 +20,14 @@ import {
   executionRuns,
   EXECUTION_INTERRUPTED_MESSAGE,
 } from '$lib/stores/executionRuns.svelte';
-import { listRunOutputs, type RunOutputEntry } from '$lib/utils/results';
+import {
+  listRunOutputs,
+  writeRunLog,
+  writeRunMetadata,
+  type RunOutputEntry,
+} from '$lib/execution/run-storage';
+import { dataFiles } from '$lib/stores/dataFiles.svelte';
+import { safeResultName } from '$lib/utils/results';
 
 function resultStatus(status: LiatirExecutionTerminalStatus): LiatirRunStatus {
   return status === 'interrupted' ? 'error' : status;
@@ -124,6 +135,17 @@ function mergeRunArtifacts(
   ];
 }
 
+/** The `parent` block of a run's metadata, present only for a run that is a node inside another. */
+function runParent(identity: LiatirExecutionIdentity): Pick<LiatirRunMetadata, 'parent'> {
+  const parent = {
+    ...(identity.pipelineRunId ? { pipelineRunId: identity.pipelineRunId } : {}),
+    ...(identity.pipelineId !== undefined ? { pipelineId: identity.pipelineId } : {}),
+    ...(identity.parentRunId ? { parentRunId: identity.parentRunId } : {}),
+    ...(identity.nodeId ? { nodeId: identity.nodeId } : {}),
+  };
+  return Object.keys(parent).length > 0 ? { parent } : {};
+}
+
 function resultToolId(identity: LiatirExecutionIdentity): string {
   if (identity.runKind === 'external-workflow' && identity.entityId) {
     return `${LIATIR_EXTERNAL_WORKFLOW_STEP_PREFIX}${identity.entityId}`;
@@ -152,13 +174,40 @@ export interface FinalizedRunResult extends Omit<AnalysisRun, 'execution' | 'sta
 }
 
 /**
+ * Registers a run's results in the Data library — and only its results.
+ *
+ * The Data library is what the user browses, so `Results/<Tool>/` has to mean "the things this tool
+ * produced for me", not "every file that passed through". The distinction has always been in the
+ * data as each artifact's `role`; what was missing is anything reading it. Pipeline steps stamped
+ * `final` on everything they touched and registered all of it, while standalone tools avoided the
+ * problem only because each page happened to hand-pick one path.
+ *
+ * Deciding it here means a new tool cannot get it wrong, and cannot get it right by accident either.
+ * By-products are reachable from the run itself, which is where they belong.
+ */
+export async function registerResultsInDataLibrary(
+  files: RunOutputFile[],
+  toolLabel: string,
+): Promise<void> {
+  const results = files.filter((file) => (file.role ?? 'final') === 'final');
+  if (results.length === 0) return;
+  const folder = `Results/${safeResultName(toolLabel)}`;
+  await dataFiles.createFolder('Results');
+  await dataFiles.createFolder(folder);
+  for (const file of results) {
+    await dataFiles.add(file.path, folder, file.scientific);
+  }
+}
+
+/**
  * Commit a scientific Result, then settle its execution identity. If the app
  * exits between those writes, startup reconciliation adopts the durable Result.
  *
  * This is the one place every run in Liatir is written down — native tools, AI Tools, plugins, API
  * requests, external workflows, pipelines — so it is where the recording rule is enforced rather
- * than repeated: the complete execution transcript is kept, and every file the run touched is
- * listed with an honest role. Neither depends on the caller remembering.
+ * than repeated: the run's directory is written, the complete execution transcript is kept, every
+ * file the run touched is listed with an honest role, and only the results reach the Data library.
+ * None of it depends on the caller remembering.
  */
 export async function finalizeExecutionResult(
   runId: string,
@@ -177,15 +226,37 @@ export async function finalizeExecutionResult(
   // caller mentioned it. Declaration still carries the files a tool had to write elsewhere, and the
   // better labels for the ones it did mention.
   const discovered = undeclaredRunOutputs(await listRunOutputs(run.id), declared);
+  const outputFiles = [...declared, ...discovered];
+
+  // The run's own directory is written before the index entry: it is the durable record, and an
+  // index that named a run with nothing behind it would be worse than one that missed a run.
+  await writeRunMetadata({
+    schemaVersion: LIATIR_RUN_RECORD_SCHEMA_VERSION,
+    runId: run.id,
+    runKind: execution.identity.runKind,
+    ...(execution.identity.entityId ? { entityId: execution.identity.entityId } : {}),
+    label: run.label,
+    status,
+    startedAt: run.startedAt,
+    endedAt: run.endedAt,
+    durationMs: run.durationMs,
+    error: run.error,
+    inputs: run.inputs,
+    params: run.params as Record<string, JsonValue>,
+    ...(execution.identity.workspaceId ? { workspaceId: execution.identity.workspaceId } : {}),
+    ...(runParent(execution.identity)),
+  });
+  await writeRunLog(run.id, execution.logs);
 
   await analysisRuns.add({
     ...run,
     status,
     execution: execution.identity,
     jobIds: execution.jobIds,
-    outputFiles: [...declared, ...discovered],
+    outputFiles,
     log: runTranscript(execution.logs, run.log),
   });
+  await registerResultsInDataLibrary(outputFiles, run.label);
 
   const committed = analysisRuns.runs.find((item) => item.id === result.id);
   if (!committed) throw new Error(`Result ${result.id} was not committed.`);
@@ -236,6 +307,10 @@ export async function reconcileExecutionResults(): Promise<void> {
       execution: execution.identity,
       jobIds: execution.jobIds,
     });
+    // Same directory, same contract: a run recovered after a restart is still a run, and the one
+    // thing it can still say — what it had managed to print — belongs where every other run's
+    // transcript is looked for.
+    await writeRunLog(resultId, execution.logs);
     await executionRuns.markResultFinalized(execution.identity.runId, resultId, endedAt);
   }
 }

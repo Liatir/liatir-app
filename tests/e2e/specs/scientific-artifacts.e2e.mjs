@@ -37,6 +37,23 @@ function scientificMetadata(identity, inspection, extras = {}) {
   };
 }
 
+/**
+ * Seed a file inside a run's directory.
+ *
+ * Run directories are data-scope, not app storage: they hold the files a run produced, which native
+ * tools write by absolute path. Only the history index that points at them lives in app storage.
+ */
+async function writeRunJson(browser, rel, value) {
+  await browser.execute(async (file, content) => {
+    await window.Liatir.invoke('lia_fs_write_text', {
+      rel: file,
+      contents: JSON.stringify(content, null, 2),
+      permanent: true,
+      createDirs: true,
+    });
+  }, rel, value);
+}
+
 async function writeWorkspaceJson(browser, rel, value) {
   await browser.execute(async (file, content) => {
     await window.Liatir.invoke('lia_app_write_text', {
@@ -141,7 +158,7 @@ export const tests = [{
       error: null,
     };
     await writeWorkspaceJson(browser, 'workspaces/__test__/analysis-runs/index.json', [run]);
-    await writeWorkspaceJson(browser, `workspaces/__test__/analysis-runs/${RUN_ID}.json`, { sections: [] });
+    await writeRunJson(browser, `workspaces/__test__/runs/${RUN_ID}/result.json`, { sections: [] });
 
     await reloadLiatirApp(browser);
     await openSandboxWorkspace(browser);

@@ -1527,7 +1527,11 @@ function buildQc(core) {
     qc: buildQc(core),
     tauri: windowTauriProxy,
     onReady: liaReadyEventListener,
-    openBrowser: (url) => window.__TAURI__?.shell?.open(url)
+    openBrowser: (url) => window.__TAURI__?.shell?.open(url),
+    // Same call, different intent: `shell.open` hands a directory to the platform's file manager
+    // exactly as it hands a URL to the browser. Named apart so a caller revealing a run's folder
+    // does not have to read like it is opening a web page.
+    openPath: (path) => window.__TAURI__?.shell?.open(path)
   };
   Object.defineProperty(window, "Liatir", {
     value: api,

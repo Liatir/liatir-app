@@ -13,7 +13,7 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { beginDirectNativeToolRun } from '$lib/execution/direct-native-tool';
   import { runNativeTool } from '$lib/utils/native-tool';
-  import { ensureRunOutputsDir } from '$lib/utils/results';
+  import { ensureRunOutputDir } from '$lib/execution/run-storage';
   import { parseFastpJson, fastpToToolOutput } from '$lib/tools/qc/fastp';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
   import TerminalOutput from '$lib/components/ui/TerminalOutput.svelte';
@@ -114,7 +114,7 @@
     activeExecutionRunId = runId;
 
     try {
-      const base = await ensureRunOutputsDir(runId);
+      const base = await ensureRunOutputDir(runId);
       const jsonPath = `${base}/fastp.json`;
       const htmlPath = `${base}/fastp.html`;
       const out1Path = `${base}/trimmed-R1.fastq.gz`;
@@ -388,7 +388,7 @@
                 </span>
               {/if}
             </div>
-            <ToolResultView output={loadedOutput} outputFiles={selectedRunOutputFiles} />
+            <ToolResultView output={loadedOutput} outputFiles={selectedRunOutputFiles} runId={selectedRunId} />
             <RunLog runId={selectedRunId} />
           </div>
         {/if}

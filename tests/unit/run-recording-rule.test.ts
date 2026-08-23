@@ -43,7 +43,7 @@ const RUN_RECORDERS = [
   'frontend/src/lib/ai/direct-run-finalizer.ts',
 ];
 
-const results = read('frontend/src/lib/utils/results.ts');
+const runStorage = read('frontend/src/lib/execution/run-storage.ts');
 
 describe('the recording rule', () => {
   it('makes the by-product declaration mandatory, with no default', () => {
@@ -75,13 +75,44 @@ describe('the recording rule', () => {
 
 describe('an empty declaration is checked, not believed', () => {
   it('gives each run a directory of its own to be checked against', () => {
-    // The old layout put every tool's files in one shared folder under run-prefixed names. That
-    // keeps runs apart but leaves nothing to enumerate: you cannot tell, by looking at the folder,
-    // what this run put there.
-    expect(results).toContain('export async function ensureRunOutputsDir');
-    expect(results).toContain('`${TOOL_OUTPUTS_DIR}/${runId}`');
-    // The shared-folder helper is gone rather than left as a second way of doing it.
-    expect(results).not.toContain('ensureToolOutputsDir');
+    // The old layout put every tool's files in one shared folder under run-prefixed names, and
+    // pipeline steps in the user-facing Results folder shared by every run of that tool. Neither
+    // could answer, by looking, what *this* run put there.
+    expect(runStorage).toContain('export async function ensureRunOutputDir');
+    expect(runStorage).toContain("const RUNS_DIR = 'runs'");
+    // Scoped to the workspace, like the index that points into it: deleting a workspace has to
+    // reclaim the files its runs produced.
+    expect(runStorage).toContain('getDataPrefix()');
+    expect(runStorage).toContain('`${runDirRel(runId)}/output`');
+  });
+
+  it('leaves no second way to place a run’s files', () => {
+    // Liatir is unreleased, so the old layouts are deleted rather than kept for compatibility.
+    const legacy = read('frontend/src/lib/utils/results.ts');
+    expect(legacy).not.toContain('ensureResultsDir');
+    expect(legacy).not.toContain('tool-outputs');
+    for (const path of RUN_RECORDERS) {
+      expect(read(path)).not.toContain('ensureResultsDir');
+    }
+  });
+
+  it('writes the run’s own record before the index that points at it', () => {
+    expect(finalization).toContain('await writeRunMetadata(');
+    expect(finalization).toContain('await writeRunLog(run.id, execution.logs)');
+  });
+
+  it('keeps a pipeline’s steps in their own file, apart from its metadata', () => {
+    const pipeline = read('frontend/src/lib/stores/pipeline.svelte.ts');
+    expect(pipeline).toContain('writeRunSteps(pipelineRunId, pipelineStepsRecord(');
+    // Flat, not nested: a step is an ordinary run, referenced by id.
+    expect(pipeline).toContain('runId: state.executionRunId');
+  });
+
+  it('gives utility nodes an identity but no directory', () => {
+    const pipeline = read('frontend/src/lib/stores/pipeline.svelte.ts');
+    expect(pipeline).toContain("kind === 'utility' && value");
+    // Only a node that runs something asks for an output directory.
+    expect(pipeline).toContain('ensureRunOutputDir(childIdentity.runId)');
   });
 
   it('records what is in that directory whether or not the caller mentioned it', () => {
@@ -95,7 +126,7 @@ describe('an empty declaration is checked, not believed', () => {
   });
 
   it('treats a missing directory as a run that wrote nothing, not as a failure', () => {
-    expect(results).toContain('return [];');
+    expect(runStorage).toContain('return [];');
   });
 
   it('has every file-writing tool write into its run directory', () => {
@@ -106,21 +137,30 @@ describe('an empty declaration is checked, not believed', () => {
       'frontend/src/routes/tools/variants/bcftools-filter/+page.svelte',
       'frontend/src/routes/tools/variants/snpeff/+page.svelte',
     ]) {
-      expect(read(path)).toContain('ensureRunOutputsDir(runId)');
+      expect(read(path)).toContain('ensureRunOutputDir(runId)');
     }
   });
 });
 
-describe('transcript retention', () => {
+describe('nothing is deleted on Liatir’s own initiative', () => {
   it('keeps a run’s log for as long as the run itself', () => {
     // Logs used to be deleted after seven days while the run stayed, leaving old Results openable
     // and mute — and old runs are exactly the ones someone is trying to explain.
     expect(analysisRuns).not.toContain('LOG_TTL_MS');
   });
 
-  it('deletes both files when a run goes away, so unbounded age is not unbounded disk', () => {
-    expect(analysisRuns).toContain('discardRunFiles');
-    expect(analysisRuns).toContain('retained.slice(MAX_RUNS)');
+  it('no longer drops runs once the history grows long', () => {
+    // A run now owns files the user made. A list growing is not a reason to destroy their work.
+    expect(analysisRuns).not.toContain('MAX_RUNS');
+  });
+
+  it('offers the user an explicit prune instead', () => {
+    expect(analysisRuns).toContain('async removeMany(');
+    const resultsPage = read('frontend/src/routes/results/+page.svelte');
+    expect(resultsPage).toContain('pruneOldRuns');
+    // It must say what it is about to destroy, including what the Data library still points at.
+    expect(resultsPage).toContain('dataFiles.countUnder(directories)');
+    expect(resultsPage).toContain('dataFiles.removeUnder(directories)');
   });
 });
 
@@ -155,11 +195,19 @@ describe('the tools that were dropping evidence', () => {
 });
 
 describe('the results view', () => {
-  it('separates results from by-products rather than listing seven of each as one', () => {
+  it('lists results only, and points at the run for everything else', () => {
     const view = read('frontend/src/lib/components/ui/ToolResultView.svelte');
     expect(view).toContain('resultFiles');
-    expect(view).toContain('byproductFiles');
     // A file with no role predates roles, and back then everything shown was a result.
     expect(view).toContain("(file.role ?? 'final') === 'final'");
+    expect(view).toContain('byproductCount');
+    expect(view).toContain('openRunFolder');
+  });
+
+  it('registers only results in the Data library, in one place', () => {
+    expect(finalization).toContain("files.filter((file) => (file.role ?? 'final') === 'final')");
+    // The pipeline goes through the same rule rather than keeping its own.
+    const pipeline = read('frontend/src/lib/stores/pipeline.svelte.ts');
+    expect(pipeline).toContain('registerResultsInDataLibrary(files, toolLabel)');
   });
 });

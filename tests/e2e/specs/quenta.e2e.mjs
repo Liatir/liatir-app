@@ -219,9 +219,10 @@ async function seedQuentaState(browser, baseUrl, thinkingEnabled = false) {
       content: JSON.stringify([run], null, 2),
       createDirs: true,
     });
-    await window.Liatir.invoke('lia_app_write_text', {
-      rel: `workspaces/__test__/analysis-runs/${input.runId}.json`,
-      content: JSON.stringify({
+    await window.Liatir.invoke('lia_fs_write_text', {
+      permanent: true,
+      rel: `workspaces/__test__/runs/${input.runId}/result.json`,
+      contents: JSON.stringify({
         sections: [
           {
             type: 'stats',
@@ -239,9 +240,15 @@ async function seedQuentaState(browser, baseUrl, thinkingEnabled = false) {
       }, null, 2),
       createDirs: true,
     });
-    await window.Liatir.invoke('lia_app_write_text', {
-      rel: `workspaces/__test__/analysis-runs/${input.runId}.log.json`,
-      content: JSON.stringify(['SeqKit completed', 'reads=42']),
+    // A run's transcript is JSON Lines in its own directory now — one entry per line, streams
+    // marked — not a JSON array of display strings beside the index.
+    await window.Liatir.invoke('lia_fs_write_text', {
+      permanent: true,
+      rel: `workspaces/__test__/runs/${input.runId}/log.jsonl`,
+      contents: [
+        { timestampMs: 1, level: 'info', message: 'SeqKit completed', stream: 'stdout' },
+        { timestampMs: 2, level: 'info', message: 'reads=42', stream: 'stdout' },
+      ].map((entry) => JSON.stringify(entry)).join('\n'),
       createDirs: true,
     });
   }, { baseUrl, runId: RUN_ID, thinkingEnabled });

@@ -24,7 +24,7 @@
 	import { aiModelLiatirDocsUrl, aiModelOfficialUrl } from '$lib/ai/model-docs';
 	import { AI_MODEL_INPUT_HELP, aiModelInfo } from '$lib/ai/model-help';
 	import { fmtDuration, openLinkInBrowser, sanitizeLocalPathsForDisplay } from '$lib/utils';
-	import { ensureResultsDir } from '$lib/utils/results';
+	import { ensureRunOutputDir } from '$lib/execution/run-storage';
 	import type { AIDirectRunContext } from '$lib/ai/direct-run-context';
 	import { getAIHardwareInfo, type AIHardwareInfo } from '$lib/ai/runtime';
 	import {
@@ -230,7 +230,7 @@
 				inputs: [inputFile],
 				params: inputs
 			});
-			const { absDir } = await ensureResultsDir(singleCellEmbeddingDefinition.label);
+			const absDir = await ensureRunOutputDir(runId);
 			const context: AIDirectRunContext = {
 				runKind: 'ai-model-direct',
 				execution,
@@ -434,7 +434,7 @@
 				{:else if loadingOutput}
 					<div class="flex justify-center py-12"><Icon icon="svg-spinners:ring-resize" width="22" height="22" class="text-text-subtle" /></div>
 				{:else if loadedOutput}
-					<div><p class="mb-2 text-[10px] font-semibold text-text-subtle uppercase tracking-wider">Last run result</p><div class="flex items-center justify-between mb-3"><h2 class="text-xs font-medium text-text-secondary">{selectedRun?.label ?? 'Results'}</h2>{#if selectedRun}<span class="text-xs text-text-subtle">{fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}</span>{/if}</div><ToolResultView output={loadedOutput} outputFiles={selectedRunOutputFiles} /><RunLog runId={selectedRunId} /></div>
+					<div><p class="mb-2 text-[10px] font-semibold text-text-subtle uppercase tracking-wider">Last run result</p><div class="flex items-center justify-between mb-3"><h2 class="text-xs font-medium text-text-secondary">{selectedRun?.label ?? 'Results'}</h2>{#if selectedRun}<span class="text-xs text-text-subtle">{fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}</span>{/if}</div><ToolResultView output={loadedOutput} outputFiles={selectedRunOutputFiles} runId={selectedRunId} /><RunLog runId={selectedRunId} /></div>
 				{/if}
 			</div>
 		</PageContent>

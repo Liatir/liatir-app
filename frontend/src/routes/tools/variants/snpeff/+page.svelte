@@ -17,7 +17,7 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { beginDirectNativeToolRun } from '$lib/execution/direct-native-tool';
   import { runNativeTool } from '$lib/utils/native-tool';
-  import { ensureRunOutputsDir } from '$lib/utils/results';
+  import { ensureRunOutputDir } from '$lib/execution/run-storage';
   import { snpEffStore } from '$lib/stores/snpeff.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
@@ -308,7 +308,7 @@
     activeExecutionRunId = runId;
 
     try {
-      const outDir = await ensureRunOutputsDir(runId);
+      const outDir = await ensureRunOutputDir(runId);
       const outPath = `${outDir}/annotated.vcf`;
 
       logLines = [
@@ -737,7 +737,7 @@
                 </span>
               {/if}
             </div>
-            <ToolResultView output={loadedOutput} outputFiles={selectedRunOutputFiles} />
+            <ToolResultView output={loadedOutput} outputFiles={selectedRunOutputFiles} runId={selectedRunId} />
             <RunLog runId={selectedRunId} />
           </div>
         {/if}

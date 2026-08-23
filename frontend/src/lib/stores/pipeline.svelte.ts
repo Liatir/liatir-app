@@ -8,9 +8,16 @@ import { liaPluginsStore } from './lia-plugins.svelte';
 import { apiConnections, sendApiRequest } from './apiConnections.svelte';
 import { analysisRuns } from './analysisRuns.svelte';
 import { executionRuns } from './executionRuns.svelte';
-import { finalizeExecutionResult } from '$lib/execution/finalization';
+import {
+  finalizeExecutionResult,
+  registerResultsInDataLibrary,
+} from '$lib/execution/finalization';
 import { resolveStepEntry } from '$lib/tools/pipeline-registry';
-import { ensureResultsDir } from '$lib/utils/results';
+import {
+  ensureRunOutputDir,
+  writeRunLog,
+  writeRunSteps,
+} from '$lib/execution/run-storage';
 import { withArtifactsMetadata } from '$lib/utils/artifacts';
 import { evaluateConditionNode } from '$lib/pipeline/conditions';
 import type { ToolOutput } from '$lib/types/tool-output';
@@ -32,6 +39,7 @@ import {
   type LiatirExecutionInitiator,
   type LiatirExecutionRecord,
   type LiatirExecutionRunKind,
+  type LiatirRunStep,
   type LiatirMcpPipelineInputDescriptor,
   type LiatirMcpPipelineInputs,
 } from '@liatir/core';
@@ -62,7 +70,6 @@ interface ApiStepResult {
   label: string;
   outputFiles: RunOutputFile[];
   outputValues: Record<string, string>;
-  virtualFolder: string;
 }
 
 /** Combine each step's result into one grouped ToolOutput (a heading per step). */
@@ -257,6 +264,55 @@ function errorMessage(error: unknown): string {
 // anything user-facing (Results headings, logs, artifact metadata).
 function nodeDisplayLabel(node: Node, fallback: string): string {
   return ((node.data?.label as string) ?? '').trim() || fallback;
+}
+
+/**
+ * A pipeline's `steps.json`: every executable node, in graph order, with a pointer to its own run.
+ *
+ * Kept apart from `metadata.json`, which describes the pipeline run itself. This file describes what
+ * happened inside it, and it is what makes the flat layout navigable: a step is an ordinary run in
+ * `runs/`, and this is the only thing that says which runs belonged to this pipeline and in what
+ * order.
+ *
+ * A utility node — variable, math, condition — has an identity but no directory, because it computes
+ * a value rather than running a process and would otherwise leave an empty folder per arithmetic
+ * operation. Its result is recorded here, which is the whole of what there is to record about it.
+ */
+function pipelineStepsRecord(
+  graphNodes: Node[],
+  nodeStates: Map<string, NodeRunState>,
+): LiatirRunStep[] {
+  const steps: LiatirRunStep[] = [];
+  for (const node of graphNodes) {
+    if (!isExecutablePipelineNode(node)) continue;
+    const state = nodeStates.get(node.id);
+    if (!state) continue;
+    const entry = node.type === 'tool'
+      ? resolveStepEntry(node.data?.stepId as string ?? '')
+      : null;
+    const kind: LiatirRunStep['kind'] = entry
+      ? entry.definition.type
+      : node.type === 'api-request'
+        ? 'api-request'
+        : node.type === 'sub-pipeline'
+          ? 'sub-pipeline'
+          : 'utility';
+    const value = state.outputValues && Object.keys(state.outputValues).length > 0
+      ? state.outputValues
+      : undefined;
+    steps.push({
+      nodeId: node.id,
+      kind,
+      label: nodeDisplayLabel(node, entry?.definition.label ?? node.type ?? 'Step'),
+      runId: state.executionRunId ?? '',
+      status: state.status,
+      ...(state.startedAt !== undefined ? { startedAt: state.startedAt } : {}),
+      ...(state.endedAt !== undefined ? { endedAt: state.endedAt } : {}),
+      error: state.error,
+      ...(kind === 'utility' && value ? { value } : {}),
+    });
+  }
+  return steps;
 }
 
 function executionKindForStep(type: PipelineStepDefinition['type']): LiatirExecutionRunKind {
@@ -498,12 +554,35 @@ function createPipelineStore() {
     schedulePersist();
   }
 
+  /**
+   * When a node started and when it stopped, derived from the status it is being moved to.
+   *
+   * Stamped in the one place every node state change passes through rather than at the forty-odd
+   * call sites that patch a status — the same reason the rest of the run record is written centrally
+   * and not by each caller. A node that never runs gets neither, which is the truth about it.
+   */
+  function stampNodeTimings(
+    prev: NodeRunState,
+    patch: Partial<NodeRunState>,
+  ): Partial<NodeRunState> {
+    if (!patch.status || patch.status === prev.status) return patch;
+    const now = Date.now();
+    if (patch.status === 'running') {
+      return prev.startedAt ? patch : { ...patch, startedAt: now };
+    }
+    if (patch.status === 'done' || patch.status === 'error' || patch.status === 'cancelled') {
+      return { ...patch, endedAt: now };
+    }
+    // `pending` and `skipped` are not endings a node reached by running.
+    return patch;
+  }
+
   function patchStateFor(key: string, id: string, patch: Partial<NodeRunState>) {
     const runtime = runtimeFor(key);
     const prev = runtime.nodeStates.get(id) ?? initNodeState();
     setRuntime(key, {
       ...runtime,
-      nodeStates: new Map([...runtime.nodeStates, [id, { ...prev, ...patch }]]),
+      nodeStates: new Map([...runtime.nodeStates, [id, { ...prev, ...stampNodeTimings(prev, patch) }]]),
     });
   }
 
@@ -550,18 +629,22 @@ function createPipelineStore() {
     await persist();
   }
 
-  /** A file output is settled only after it exists and its Data registration is durable. */
-  async function registerSettledFiles(files: RunOutputFile[], virtualFolder: string): Promise<void> {
+  /**
+   * A file output is settled only after it exists and its Data registration is durable.
+   *
+   * Which files reach the Data library is decided by `registerResultsInDataLibrary`, the same rule
+   * a standalone run goes through: results only. Existence is checked here first, because a step
+   * that reports a file it did not write must fail rather than register a path to nothing.
+   */
+  async function registerSettledFiles(files: RunOutputFile[], toolLabel: string): Promise<void> {
     if (files.length === 0) return;
     const api = liatir();
     if (!api) throw new Error('Liatir API not available');
 
-    await dataFiles.createFolder('Results');
-    await dataFiles.createFolder(virtualFolder);
     for (const file of files) {
       await api.invoke('lia_file_size', { path: file.path });
-      await dataFiles.add(file.path, virtualFolder, file.scientific);
     }
+    await registerResultsInDataLibrary(files, toolLabel);
   }
 
   async function executeApiRequestNode(
@@ -604,9 +687,8 @@ function createPipelineStore() {
       'stdout',
     );
 
-    const { absDir, virtualFolder } = await ensureResultsDir(req.name || d.requestId);
-    const artifactId = crypto.randomUUID();
-    const bodyPath = `${absDir}/response-${artifactId}.json`;
+    const absDir = await ensureRunOutputDir(runIdentity.runId);
+    const bodyPath = `${absDir}/response.json`;
     await api.invoke('lia_write_file_path', { path: bodyPath, content: response.body });
 
     let outputFiles: RunOutputFile[] = [{ label: 'Response Body', path: bodyPath, ext: 'json' }];
@@ -619,7 +701,9 @@ function createPipelineStore() {
         for (const [key, field] of Object.entries(req.outputSchema)) {
           const value = getValueAtPath(parsed, field.path);
           if (value === undefined) continue;
-          const valuePath = `${absDir}/${key}-${artifactId}.json`;
+          // The run owns this directory, so the schema key alone is unique — the random suffix only
+          // existed to stop runs colliding inside the folder they used to share.
+          const valuePath = `${absDir}/${key}.json`;
           await api.invoke('lia_write_file_path', { path: valuePath, content: JSON.stringify(value) });
           outputFiles.push({ label: field.label || key, path: valuePath, ext: 'json' });
           outputValues[key] = value !== null && typeof value === 'object'
@@ -648,10 +732,10 @@ function createPipelineStore() {
         nodeId: runIdentity.nodeId,
       },
     });
-    await registerSettledFiles(outputFiles, virtualFolder);
+    await registerSettledFiles(outputFiles, req.name || d.requestId);
     throwIfRunCancelled(signal);
 
-    return { label, outputFiles, outputValues, virtualFolder };
+    return { label, outputFiles, outputValues };
   }
 
   // Run a set of nodes inline (used for sub-pipeline execution)
@@ -715,7 +799,10 @@ function createPipelineStore() {
           params: resolved,
         });
         patch({ executionRunId: childIdentity.runId, status: 'running' });
-        const { absDir: outputDir, virtualFolder } = await ensureResultsDir(entry.definition.label);
+        // A step is a run: its files go in its own directory, exactly like a tool started on its
+        // own. What the user browses is unchanged — the Data library is a virtual index over
+        // absolute paths, so results still appear under `Results/<Tool>`.
+        const outputDir = await ensureRunOutputDir(childIdentity.runId);
         const logs: string[] = [];
         try {
           const result = await entry.run(
@@ -760,7 +847,7 @@ function createPipelineStore() {
               nodeId: nestedNodeId,
             },
           });
-          await registerSettledFiles(outputFiles, virtualFolder);
+          await registerSettledFiles(outputFiles, entry.definition.label);
           throwIfRunCancelled(parentContext.signal);
           if (result.executionEvidence) {
             await executionRuns.setPayload(childIdentity.runId, {
@@ -1044,6 +1131,7 @@ function createPipelineStore() {
                 if (!isCurrent()) return;
                 const endedAt = Date.now();
                 const startedAt = runtime.startedAt ?? endedAt;
+                const interruptedLog = runtime.nodeStates.flatMap(([, state]) => state.logs ?? []);
                 await analysisRuns.add({
                   id: runtime.runId!,
                   tool: 'pipeline',
@@ -1061,10 +1149,22 @@ function createPipelineStore() {
                   durationMs: Math.max(0, endedAt - startedAt),
                   output: null,
                   error: INTERRUPTED_PIPELINE_ERROR,
-                  log: runtime.nodeStates.flatMap(([, state]) => state.logs ?? []),
+                  log: interruptedLog,
                 }).catch((error) => {
                   console.error('[pipeline] failed to persist interrupted analysis run', error);
                 });
+                // This path cannot go through `finalizeExecutionResult`: the execution record died
+                // with the process, and all that survives is the runtime snapshot persisted as the
+                // pipeline went. So it writes the transcript itself, into the same file every other
+                // run keeps it in, rather than leaving a recovered run mute.
+                await writeRunLog(
+                  runtime.runId!,
+                  interruptedLog.map((message) => ({
+                    timestampMs: endedAt,
+                    level: 'info' as const,
+                    message,
+                  })),
+                ).catch(() => {});
               }
 
               if (!isCurrent()) return;
@@ -1370,7 +1470,7 @@ function createPipelineStore() {
           const nodeLabel = nodeDisplayLabel(node, entry.definition.label);
           patchRunState(nodeId, { status: 'running' });
 
-          const { absDir: outputDir, virtualFolder } = await ensureResultsDir(entry.definition.label);
+          const outputDir = await ensureRunOutputDir(childIdentity.runId);
 
           const resolved = resolveInputs(
             graphNodes,
@@ -1412,7 +1512,7 @@ function createPipelineStore() {
                 nodeId,
               },
             });
-            await registerSettledFiles(outputFiles, virtualFolder);
+            await registerSettledFiles(outputFiles, entry.definition.label);
             throwIfRunCancelled(controller.signal);
             if (result.executionEvidence) {
               await executionRuns.setPayload(childIdentity.runId, {
@@ -1705,6 +1805,8 @@ function createPipelineStore() {
             evidence: step.executionEvidence,
           }] : []);
           await analysisRuns.init();
+          await writeRunSteps(pipelineRunId, pipelineStepsRecord(graphNodes, finalStates))
+            .catch(() => {});
           try {
             await finalizeExecutionResult(pipelineRunId, finalStatus, {
               id: pipelineRunId,

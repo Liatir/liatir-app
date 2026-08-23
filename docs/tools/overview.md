@@ -138,21 +138,31 @@ re-renders its output without re-running the tool. Run records include:
 
 A run records everything it did, not only what it was asked for.
 
-**Every file it produced.** Alongside the result, the run lists the files the tool
-wrote along the way — fastp's quality report, the index bwa builds beside your
-reference the first time you align against it, the log and execution report a
-Nextflow workflow leaves behind. They appear under **Files this run also produced**,
-separately from the result so the two are never confused, and you can open or save
-them like any other output.
+**Every file it produced.** Each run has its own folder, and everything the tool
+wrote goes in it — the result, plus whatever it produced along the way: fastp's
+quality report, the log and execution report a Nextflow workflow leaves behind,
+working files. The results panel lists the results and tells you how many other files
+there are, with an **Open run folder** button to inspect them.
 
-This matters for a specific reason: some of these files are written next to *your*
-files, under your own filenames. A tool that quietly creates five files in your
-folder and never says so is a tool you cannot audit.
+The same is true of a step inside a pipeline: it is a run like any other and has its
+own folder. Where you *find* your results does not change — they still appear under
+**Results** in your Data library, grouped by tool.
+
+This matters for a specific reason: some files are written next to *your* files,
+under your own filenames — the index `bwa` builds beside your reference the first
+time you align against it. A tool that quietly creates five files in your folder and
+never says so is a tool you cannot audit, so those are recorded with the run too.
 
 **The complete log.** The run keeps everything the program printed, including its
 error output, marked as such. It is the full record, not the trimmed version shown
 while the run is in progress, and it is kept for as long as the run itself — so a
 result from two months ago can still be explained.
+
+**Nothing is deleted for you.** Liatir never removes a run on its own, however long
+the history gets, because a run holds files you made and may still be using. When you
+want the space back, the Results screen offers an action that deletes older runs — it
+tells you first how many files go with them and how many of those are in your Data
+library.
 
 ## Pipeline integration
 

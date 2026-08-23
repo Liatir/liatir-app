@@ -215,6 +215,7 @@ pub fn lia_app_migrate(app: AppHandle) -> Result<bool, String> {
         "liatir-plugins.json",
         "liatir-modules.json",
         "analysis-runs",
+        "runs",
         "scripts",
         "workspaces",
     ];

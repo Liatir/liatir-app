@@ -89,6 +89,10 @@ import { isBrowser } from "./utils";
     tauri:       windowTauriProxy as WindowTauri,
     onReady:     liaReadyEventListener,
     openBrowser: (url: string): Promise<void> => window.__TAURI__?.shell?.open(url),
+    // Same call, different intent: `shell.open` hands a directory to the platform's file manager
+    // exactly as it hands a URL to the browser. Named apart so a caller revealing a run's folder
+    // does not have to read like it is opening a web page.
+    openPath: (path: string): Promise<void> => window.__TAURI__?.shell?.open(path),
   };
 
   // Locked down on purpose — see the note at the top of the file. `enumerable: false` also keeps it out of

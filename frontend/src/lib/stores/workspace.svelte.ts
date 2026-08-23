@@ -206,6 +206,9 @@ function createWorkspaceStore() {
       if (level === 'runs') {
         resetFn?.('runs');
         try { await appStorage.remove(`workspaces/${SANDBOX_WORKSPACE_ID}/analysis-runs`, true); } catch { /* ok */ }
+        // The run directories hold what the index only points at, so resetting one without the
+        // other would leave the sandbox with orphan runs on disk.
+        try { await appStorage.remove(`workspaces/${SANDBOX_WORKSPACE_ID}/runs`, true); } catch { /* ok */ }
         try { await appStorage.remove(`workspaces/${SANDBOX_WORKSPACE_ID}/execution-runs`, true); } catch { /* ok */ }
         if (api) {
           try { await api.desktop.fs.data.remove(`workspaces/${SANDBOX_WORKSPACE_ID}/Results`, true); } catch { /* ok */ }

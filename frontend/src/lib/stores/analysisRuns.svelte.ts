@@ -12,6 +12,12 @@ import type {
   LiatirRunStatus,
 } from '@liatir/core';
 import { executionRuns } from './executionRuns.svelte';
+import {
+  readRunLog,
+  readRunResult,
+  removeRunDir,
+  writeRunResult,
+} from '$lib/execution/run-storage';
 
 export type { RunOutputFile };
 
@@ -39,7 +45,14 @@ export interface AnalysisRun extends AnalysisRunMeta {
   log?: string[];
 }
 
-const MAX_RUNS = 200;
+/**
+ * No cap, and nothing is removed on Liatir's own initiative.
+ *
+ * The history used to keep the most recent 200 and drop the rest. That was safe while a run record
+ * was only bookkeeping; it is not safe now that a run owns a directory containing files the user
+ * made and may still be using. A list growing long is not a reason to destroy someone's work, so
+ * pruning is an action the user takes deliberately — see `removeMany`.
+ */
 const NATIVE_ANALYSIS_TOOLS = new Set([
   'fastp',
   'fastqc',
@@ -115,16 +128,13 @@ function artifactParentRun(run: AnalysisRun): {
   };
 }
 
-function getDir() { return `${getDataPrefix()}analysis-runs`; }
-function getIndex() { return `${getDir()}/index.json`; }
-function runPath(id: string) { return `${getDir()}/${id}.json`; }
-function logPath(id: string) { return `${getDir()}/${id}.log.json`; }
-
-/** Removes a run's two on-disk files. Missing files are the normal case, not a failure. */
-async function discardRunFiles(id: string): Promise<void> {
-  await appStorage.remove(runPath(id)).catch(() => {});
-  await appStorage.remove(logPath(id)).catch(() => {});
-}
+/**
+ * The index is a lookup over the run directories, not the record itself.
+ *
+ * Every run's durable truth is `runs/<runId>/` — its metadata, its transcript, its files. This file
+ * exists so the history list can be shown without stat-ing thousands of directories at startup.
+ */
+function getIndex() { return `${getDataPrefix()}analysis-runs/index.json`; }
 
 function createAnalysisRunsStore() {
   let runs = $state<AnalysisRunMeta[]>([]);
@@ -156,11 +166,6 @@ function createAnalysisRunsStore() {
           if (isCurrent()) runs = [];
         }
 
-        // A run's transcript lives exactly as long as the run does. Logs used to be deleted after
-        // seven days, which left older Results openable but mute — and the runs worth going back to
-        // are precisely the old ones, whose numbers someone is now trying to explain. `MAX_RUNS`
-        // already bounds how many can accumulate, so the age cutoff bought little and cost the
-        // evidence.
       });
     },
 
@@ -191,38 +196,18 @@ function createAnalysisRunsStore() {
       });
       const normalizedRun: AnalysisRun = { ...run, outputFiles };
 
-      const serialized = JSON.stringify(normalizedRun.output);
-
-      // Write output to its own file
-      await appStorage.writeText(runPath(normalizedRun.id), serialized, { createDirs: true });
-
-      // Persist log if present
-      if (normalizedRun.log && normalizedRun.log.length > 0) {
-        await appStorage.writeText(logPath(normalizedRun.id), JSON.stringify(normalizedRun.log), { createDirs: true });
-      }
+      // The parsed output goes in the run's own directory, beside its metadata, transcript and
+      // files. The transcript is not written here: `finalizeExecutionResult` already wrote the rich
+      // entries, streams and all, and re-flattening them from this store's `string[]` would replace
+      // the better copy with the poorer one.
+      await writeRunResult(normalizedRun.id, normalizedRun.output);
 
       // Cache it immediately so the first view is instant
       outputCache.set(normalizedRun.id, normalizedRun.output);
 
-      // Get output file size
-      let outputSize: number | undefined;
-      try {
-        const appPath = await appStorage.path();
-        outputSize = (await api.invoke('lia_file_size', {
-          path: `${appPath}/${runPath(normalizedRun.id)}`,
-        })) as number;
-      } catch { /* size stays undefined */ }
-
       // Update index (meta only, no output/log)
       const { output: _output, log: _log, ...meta } = normalizedRun;
-      const retained = [{ ...meta, outputSize }, ...runs.filter(r => r.id !== normalizedRun.id)];
-      // Runs pushed past the cap lose their index entry, so their output and transcript files
-      // become unreachable. Deleting them here is what keeps the transcripts unbounded in age
-      // without being unbounded on disk.
-      for (const evicted of retained.slice(MAX_RUNS)) {
-        void discardRunFiles(evicted.id);
-      }
-      runs = retained.slice(0, MAX_RUNS);
+      runs = [meta, ...runs.filter(r => r.id !== normalizedRun.id)];
       await persistIndex();
       const execution = executionRuns.byId(run.execution?.runId ?? run.id);
       if (execution) {
@@ -244,24 +229,35 @@ function createAnalysisRunsStore() {
     },
 
     async remove(id: string) {
-      await discardRunFiles(id);
+      await removeRunDir(id);
       outputCache.delete(id);
       runs = runs.filter(r => r.id !== id);
       await persistIndex();
     },
 
+    /**
+     * Delete several runs at once, for the explicit prune action.
+     *
+     * One index write rather than one per run: pruning hundreds of runs individually would rewrite
+     * the whole index hundreds of times.
+     */
+    async removeMany(ids: string[]): Promise<void> {
+      if (ids.length === 0) return;
+      const doomed = new Set(ids);
+      for (const id of ids) {
+        await removeRunDir(id);
+        outputCache.delete(id);
+      }
+      runs = runs.filter((run) => !doomed.has(run.id));
+      await persistIndex();
+    },
+
     async loadOutput(id: string): Promise<ToolOutput | null> {
       if (outputCache.has(id)) return outputCache.get(id)!;
-      if (!liatir()) return null;
-
-      try {
-        const exists = await appStorage.exists(runPath(id));
-        if (!exists) return null;
-        const raw = await appStorage.readText(runPath(id));
-        const output = JSON.parse(raw) as ToolOutput | null;
-        outputCache.set(id, output);
-        return output;
-      } catch { return null; }
+      const output = await readRunResult<ToolOutput | null>(id);
+      if (output === null) return null;
+      outputCache.set(id, output);
+      return output;
     },
 
     reset() {
@@ -275,14 +271,18 @@ function createAnalysisRunsStore() {
       return runs.filter(r => r.tool === tool);
     },
 
+    /**
+     * The run's transcript, rendered for the log viewer.
+     *
+     * `stderr` is marked rather than dropped: reading a failure back, which lines came from the
+     * error stream is usually the whole question, and the stored entries still carry it.
+     */
     async loadLog(id: string): Promise<string[] | null> {
-      if (!liatir()) return null;
-      try {
-        const exists = await appStorage.exists(logPath(id));
-        if (!exists) return null;
-        const raw = await appStorage.readText(logPath(id));
-        return JSON.parse(raw) as string[];
-      } catch { return null; }
+      const entries = await readRunLog(id);
+      if (!entries) return null;
+      return entries.map((entry) =>
+        entry.stream === 'stderr' ? `[stderr] ${entry.message}` : entry.message
+      );
     },
   };
 }

@@ -73,13 +73,76 @@ directly would report every declared file as undeclared on Windows.
 choice: `bwa`'s index has to sit beside the reference for `bwa` to find it. That is
 also why `[]` still has to be said rather than defaulted.
 
-**Two boundaries, both deliberate.** Pipeline steps write into the user-facing
-`Results/<Tool>/` folder, which accumulates across every run of that tool, so
-enumerating it would attribute older runs' files to this one; giving steps their own
-directories would fix it and would move where pipeline results land, which is a
-user-visible decision. And the interrupted-pipeline recovery path in
-`pipeline.svelte.ts` still calls `analysisRuns.add` directly, because it reconciles
-from serialized runtime state with no execution record to draw a transcript from.
+### One layout for every run (2026-08-23)
+
+The boundary above is gone, and the objection behind it was weak: the Data library
+indexes absolute paths under a virtual folder label, so where a file physically lives
+was never what the user browses. Pipeline steps could always have had their own
+directories without moving anything the user sees.
+
+Every run now owns `runs/<runId>/` — a tool, an AI Model, a plugin, an API call, an
+External Workflow, a pipeline, and every step inside one:
+
+```text
+runs/<runId>/
+  metadata.json   what this run was          (LiatirRunMetadata)
+  result.json     the parsed output Liatir renders
+  log.jsonl       the transcript, one entry per line
+  steps.json      pipelines only             (LiatirRunStep[])
+  output/         the files the run produced
+```
+
+**Flat, not nested.** A pipeline's steps are ordinary runs in `runs/` beside it,
+listed in its `steps.json` in execution order. Nesting would make the same code
+handle two shapes and would recurse without bound through sub-pipelines. `steps.json`
+is separate from `metadata.json` because one describes the run and the other
+describes what happened inside it.
+
+**Utility nodes get an identity but no directory.** A `variable`, `math` or
+`condition` node computes a value rather than running a process; a folder per
+arithmetic operation would be machinery heavier than the problem. Its result is
+recorded in `steps.json`, and enumerating a directory that was never created
+correctly reports nothing — the same code path, no special case.
+
+`log.jsonl` rather than an array inside `metadata.json`: a transcript is appended to
+while a run is in progress, and a format that must be reparsed and rewritten whole is
+what made logging cost more the longer a run went on.
+
+Three things this settled along the way:
+
+- **Results means results.** `role` has always distinguished them; nothing read it.
+  Pipeline steps stamped `final` on everything and registered all of it, while
+  standalone tools escaped only because each page hand-picked one path. Registration
+  now happens once, at finalization, filtered to `final`. By-products are reached
+  from the run: the results panel shows a count and an **Open run folder** button.
+- **No new native command was needed** for that button. `shell:allow-open` is already
+  granted unscoped, and `shell.open` hands a directory to the platform's file manager
+  exactly as it hands a URL to a browser — so it is one named method on the bridge
+  (`openPath`), not a Rust change.
+- **Nothing is deleted automatically.** `MAX_RUNS` is gone: a run now owns files the
+  user made, and a list growing long is not a reason to destroy them. Pruning is an
+  explicit action that says what it will delete, including how many of the files the
+  Data library still points at, and clears those entries so the library is not left
+  full of dangling paths. Deletions go to Liatir's trash, so the action does not
+  promise disk space back.
+
+The legacy layouts are deleted outright rather than migrated — Liatir is unreleased.
+`ensureResultsDir`, the physical `Results/<Tool>/` folder and the flat `tool-outputs/`
+are gone; the **virtual** `Results/<Tool>` in the Data library stays, because that is
+the user's organisation, not a storage detail.
+
+**Run directories are workspace-scoped**, like the index that points into them, so
+deleting a workspace reclaims what its runs produced. They live in the **data** root,
+not app storage — app storage is a subdirectory of it reserved for Liatir's own state.
+Getting that wrong is what four E2E failures caught: the history index is app-scope
+and the runs it indexes are not, and MCP was still reading both from app storage.
+`startup_cleanup` also had to learn to skip `output/`, since a JSON it cannot parse
+there is the user's data, not corruption to tidy.
+
+What still stands apart: the interrupted-pipeline recovery path in
+`pipeline.svelte.ts` calls `analysisRuns.add` directly, because it reconciles from a
+serialized runtime snapshot with no execution record to draw a transcript from. It
+now writes its own `log.jsonl` so a recovered run is not mute.
 
 ## Native Tools are one signed Scrollcase box (2026-08-22)
 

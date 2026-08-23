@@ -97,14 +97,19 @@ pub fn lia_startup_cleanup(app: AppHandle) -> Result<CleanupReport, String> {
         remove_empty_dirs(&cache_dir, &mut report.errors);
     }
 
-    // 3 ── Remove corrupted analysis-run JSON files ────────────────
-    let runs_dir = data_dir.join("analysis-runs");
-    if runs_dir.exists() {
+    // 3 ── Remove corrupted run bookkeeping ───────────────────────
+    //
+    // Only Liatir's own files: the index beside them, and each run's metadata and parsed result. A
+    // run's `output/` holds files the user made, and a JSON among them that this cannot parse is
+    // their data, not corruption to clean up — deleting it would be destroying work to tidy a cache.
+    for runs_dir in [data_dir.join("analysis-runs"), data_dir.join("runs")] {
+        if !runs_dir.exists() { continue; }
         for entry in WalkDir::new(&runs_dir).follow_links(false) {
             let entry = match entry { Ok(e) => e, Err(_) => continue };
             if !entry.file_type().is_file() { continue; }
             let path = entry.path();
             if path.extension().and_then(|e| e.to_str()) != Some("json") { continue; }
+            if path.components().any(|component| component.as_os_str() == "output") { continue; }
 
             match std::fs::read_to_string(path) {
                 Err(e) => {

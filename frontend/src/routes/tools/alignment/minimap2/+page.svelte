@@ -17,7 +17,7 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { beginDirectNativeToolRun } from '$lib/execution/direct-native-tool';
   import { runNativeTool } from '$lib/utils/native-tool';
-  import { ensureRunOutputsDir } from '$lib/utils/results';
+  import { ensureRunOutputDir } from '$lib/execution/run-storage';
   import { notify } from '$lib/utils/notify';
   import { fmtDuration, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { liatir } from '$lib/api';
@@ -115,7 +115,7 @@
     activeExecutionRunId = runId;
 
     try {
-      const outPath = `${await ensureRunOutputsDir(runId)}/aligned.sam`;
+      const outPath = `${await ensureRunOutputDir(runId)}/aligned.sam`;
       logLines = [
         `$ minimap2 -t ${threadInfo.threads} -ax ${preset} ${refName} ${r1Name}`,
         `→ Output: minimap2-${runId}.sam`,
@@ -333,7 +333,7 @@
                 <span class="text-xs text-text-subtle">{fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}</span>
               {/if}
             </div>
-            <ToolResultView output={loadedOutput} outputFiles={selectedRunOutputFiles} />
+            <ToolResultView output={loadedOutput} outputFiles={selectedRunOutputFiles} runId={selectedRunId} />
             <RunLog runId={selectedRunId} />
           </div>
         {/if}

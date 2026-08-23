@@ -115,6 +115,9 @@ export interface NodeRunState {
   /** Stable child-run identity allocated before this node starts. */
   executionRunId?: string;
   status: StepStatus;
+  /** Stamped centrally when the status first becomes `running`, and when it becomes terminal. */
+  startedAt?: number;
+  endedAt?: number;
   logs: string[];
   outputFiles: RunOutputFile[];
   error: string | null;

@@ -1,4 +1,4 @@
-import type { JsonValue } from "./index";
+import type { JsonValue, LiatirStepKind, LiatirStepStatus } from "./index";
 
 /** Version of the durable execution identity and lifecycle record. */
 export const LIATIR_EXECUTION_SCHEMA_VERSION = 1 as const;
@@ -269,4 +269,78 @@ export function finalizeLiatirExecutionRecord(
     updatedAt: endedAt,
     error,
   };
+}
+
+// ---------------------------------------------------------------------------
+// On-disk run folder
+// ---------------------------------------------------------------------------
+
+/** Version of the `runs/<runId>/` folder layout described below. */
+export const LIATIR_RUN_RECORD_SCHEMA_VERSION = 1 as const;
+
+/**
+ * Every run in Liatir owns one directory, whatever produced it and whether it ran on its own or as
+ * a node inside a pipeline:
+ *
+ * ```
+ * runs/<runId>/
+ *   metadata.json   what this run was          (LiatirRunMetadata)
+ *   result.json     the parsed output Liatir renders
+ *   log.jsonl       the transcript, one LiatirExecutionLogEntry per line
+ *   steps.json      pipelines only             (LiatirRunStep[])
+ *   output/         the files the run produced
+ * ```
+ *
+ * The layout is **flat**: a pipeline's steps are ordinary runs in `runs/` alongside it, referenced
+ * from its `steps.json`, not nested inside it. Nesting would make the same code handle two shapes
+ * and would recurse without bound through sub-pipelines; references do not.
+ *
+ * The directory is created on first write, so a run that produces nothing has none — which is the
+ * correct answer to "what did it leave behind", not a missing case to handle.
+ */
+export interface LiatirRunMetadata {
+  schemaVersion: typeof LIATIR_RUN_RECORD_SCHEMA_VERSION;
+  runId: string;
+  runKind: LiatirExecutionRunKind;
+  /** Tool, model, plugin or workflow this run executed, when it has one. */
+  entityId?: string;
+  label: string;
+  status: "done" | "error" | "cancelled";
+  startedAt: number;
+  endedAt: number;
+  durationMs: number;
+  error: string | null;
+  inputs: string[];
+  params: Record<string, JsonValue>;
+  workspaceId?: string;
+  /** Present when this run is a node inside another. Empty for a run started on its own. */
+  parent?: {
+    pipelineRunId?: string;
+    pipelineId?: string | null;
+    parentRunId?: string;
+    nodeId?: string;
+  };
+}
+
+/**
+ * One node of a pipeline run, recorded in the pipeline's `steps.json` in execution order.
+ *
+ * A step that executed something — a tool, a model, a workflow, an API call — points at its own run
+ * directory through `runId`, and its files, transcript and parameters live there like any other
+ * run's. A utility node (variable, math, condition) computes a value rather than running a process:
+ * it still has an identity, but no directory is created for it, and its result is recorded here
+ * instead. Enumerating a run directory that was never created correctly reports nothing.
+ */
+export interface LiatirRunStep {
+  nodeId: string;
+  kind: LiatirStepKind | "utility";
+  label: string;
+  runId: string;
+  status: LiatirStepStatus;
+  /** Absent for a node that never started — skipped by a branch, or never reached. */
+  startedAt?: number;
+  endedAt?: number;
+  error: string | null;
+  /** The computed result of a utility node, which has no output files to point at. */
+  value?: JsonValue;
 }

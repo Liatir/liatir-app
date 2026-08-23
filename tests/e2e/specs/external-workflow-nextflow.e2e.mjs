@@ -352,10 +352,11 @@ export const tests = [
         directProvenance.locations.dagFile,
       ]) expect(fs.existsSync(evidencePath)).toBe(true);
 
-      const directOutput = await readWorkspaceJson(
-        browser,
-        `workspaces/__test__/analysis-runs/${direct.id}.json`,
-      );
+      const directOutput = await browser.execute(async (file) => {
+        // Data scope: a run's parsed result lives in its own directory, not in app storage.
+        const raw = await window.Liatir.invoke('lia_fs_read_text', { rel: file, permanent: true });
+        return JSON.parse(raw);
+      }, `workspaces/__test__/runs/${direct.id}/result.json`);
       expect(directOutput.sections.some((section) => section.label === 'Nextflow processes')).toBe(true);
       const directJobs = (await workflowJobs(browser, DEFINITION_ID))
         .filter((job) => job.metadata?.execution?.runId === direct.id);

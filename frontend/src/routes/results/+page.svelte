@@ -5,8 +5,17 @@
   import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
   import RunLog from '$lib/components/ui/RunLog.svelte';
   import Select from '$lib/components/ui/Select.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
   import { analysisRuns, type AnalysisRunMeta } from '$lib/stores/analysisRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
+  import { dataFiles } from '$lib/stores/dataFiles.svelte';
+  import { runDirPath } from '$lib/execution/run-storage';
+
+  /**
+   * How many runs the prune action keeps. Not a cap: nothing is removed until the user asks, and
+   * this only sets what "older runs" means when they do.
+   */
+  const KEEP_RECENT_RUNS = 100;
   import { fmtDuration, fmtBytes, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { liatir } from '$lib/api';
   import { exportToHtml } from '$lib/utils/export-result';
@@ -113,6 +122,39 @@
       selectedId = next?.id ?? null;
     }
     await analysisRuns.remove(run.id);
+  }
+
+  /**
+   * The explicit prune. Liatir never removes a run on its own, so this is the only thing that does.
+   *
+   * It says what it is about to destroy before doing it — including how many of the files are in
+   * the user's Data library, because those are the ones they are likely to still be using. Deleting
+   * silently and leaving the library full of entries pointing at nothing would be the worst of both.
+   */
+  async function pruneOldRuns() {
+    const keep = KEEP_RECENT_RUNS;
+    const doomed = analysisRuns.runs.slice(keep);
+    if (doomed.length === 0) return;
+
+    const directories = await Promise.all(doomed.map((run) => runDirPath(run.id)));
+    const fileCount = doomed.reduce((total, run) => total + (run.outputFiles?.length ?? 0), 0);
+    const inLibrary = dataFiles.countUnder(directories);
+
+    const ok = await confirm({
+      title: `Delete ${doomed.length} older ${doomed.length === 1 ? 'run' : 'runs'}`,
+      message: [
+        `This keeps the ${keep} most recent runs and deletes the rest, with everything they produced`,
+        `— ${fileCount} ${fileCount === 1 ? 'file' : 'files'}, of which ${inLibrary} ${inLibrary === 1 ? 'is' : 'are'} in your Data library.`,
+        'Deleted runs move to Liatir\'s trash; empty it to reclaim the disk space.',
+      ].join(' '),
+      confirmLabel: 'Delete runs',
+    });
+    if (!ok) return;
+
+    if (selectedId && doomed.some((run) => run.id === selectedId)) selectedId = null;
+    await analysisRuns.removeMany(doomed.map((run) => run.id));
+    await dataFiles.removeUnder(directories);
+    toast.success(`Deleted ${doomed.length} ${doomed.length === 1 ? 'run' : 'runs'}.`);
   }
 
   async function exportRun() {
@@ -232,7 +274,15 @@
     <PageHeader
       title="Results"
       description="Analysis run history across all tools"
-    />
+    >
+      {#snippet actions()}
+        {#if analysisRuns.runs.length > KEEP_RECENT_RUNS}
+          <Button variant="secondary" size="sm" onclick={pruneOldRuns}>
+            Delete runs older than the last {KEEP_RECENT_RUNS}
+          </Button>
+        {/if}
+      {/snippet}
+    </PageHeader>
 
     <PageContent>
       <div class="flex-1 overflow-y-auto p-6">
@@ -286,6 +336,7 @@
                   output={loadedOutput}
                   outputFiles={selectedRun.outputFiles ?? []}
                   resultFolder={toolLabel(selectedRun.tool)}
+                  runId={selectedRun.id}
                 />
               </div>
             {/if}

@@ -18,7 +18,7 @@ import type {
   ApiResponse,
 } from '$lib/types/api-connection';
 import { withArtifactsMetadata } from '$lib/utils/artifacts';
-import { ensureResultsDir } from '$lib/utils/results';
+import { ensureRunOutputDir } from '$lib/execution/run-storage';
 
 export interface DirectApiRunResult {
   response: ApiResponse;
@@ -36,15 +36,15 @@ async function persistResponseArtifact(
 ): Promise<RunOutputFile[]> {
   const api = liatir();
   if (!api) throw new Error('Liatir API not available');
-  const { absDir, virtualFolder } = await ensureResultsDir(req.name || 'API Connector');
+  const absDir = await ensureRunOutputDir(identity.runId);
   let ext = 'txt';
   try { JSON.parse(response.body); ext = 'json'; } catch { /* text response */ }
-  const path = `${absDir}/response-${identity.runId}.${ext}`;
+  // The run owns this directory, so the run id no longer has to be part of the filename.
+  const path = `${absDir}/response.${ext}`;
   await api.invoke('lia_write_file_path', { path, content: response.body });
   await api.invoke('lia_file_size', { path });
-  await dataFiles.createFolder('Results');
-  await dataFiles.createFolder(virtualFolder);
-  await dataFiles.add(path, virtualFolder);
+  // Registration in the Data library happens once, at finalization, where the role decides what
+  // counts as a result. Doing it here as well would put by-products in front of the user.
   return withArtifactsMetadata([{ label: 'Response Body', path, ext }], {
     role: 'final',
     createdAt: Date.now(),

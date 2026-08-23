@@ -235,6 +235,38 @@ function createDataFilesStore() {
       await persist();
     },
 
+    /**
+     * Drop every entry pointing inside one of the given directories.
+     *
+     * Deleting a run takes its files with it, and an entry left behind would point at nothing —
+     * the library would keep offering a file that is gone. Matching is on the path prefix because
+     * that is the only thing tying a library entry to the run that produced it.
+     */
+    /** How many library entries point inside these directories. For telling the user before deleting. */
+    countUnder(directories: string[]): number {
+      const prefixes = directories.map((dir) => dir.replace(/[\\/]+$/, ''));
+      return files.filter((file) =>
+        !file.protected && prefixes.some((prefix) =>
+          file.path === prefix || file.path.startsWith(`${prefix}/`) || file.path.startsWith(`${prefix}\\`)
+        )
+      ).length;
+    },
+
+    async removeUnder(directories: string[]): Promise<number> {
+      if (directories.length === 0) return 0;
+      const prefixes = directories.map((dir) => dir.replace(/[\\/]+$/, ''));
+      const doomed = files.filter((file) =>
+        !file.protected && prefixes.some((prefix) =>
+          file.path === prefix || file.path.startsWith(`${prefix}/`) || file.path.startsWith(`${prefix}\\`)
+        )
+      );
+      if (doomed.length === 0) return 0;
+      const ids = new Set(doomed.map((file) => file.id));
+      files = files.filter((file) => !ids.has(file.id));
+      await persist();
+      return doomed.length;
+    },
+
     async move(id: string, folder: string) {
       if (files.find(f => f.id === id)?.protected) return;
       files = files.map(f => f.id === id ? { ...f, folder } : f);
