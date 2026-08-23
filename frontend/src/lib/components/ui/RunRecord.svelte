@@ -84,13 +84,20 @@
         View log
       </button>
 
+      <!--
+        Bordered, unlike its neighbours. Small is right — it is not the point of the screen — but
+        as plain 11px text beside "View log" it read as a footnote and went unnoticed. The border is
+        what makes it look like something you press.
+      -->
       <button
         onclick={openFolder}
         data-testid="open-run-folder"
-        class="flex items-center gap-1.5 text-[11px] text-text-subtle hover:text-text-secondary transition-colors"
+        class="flex items-center gap-1.5 rounded-md border border-border bg-surface-2 px-2 py-1
+               text-[11px] font-medium text-text-secondary
+               hover:border-text-subtle hover:text-text transition-colors"
       >
         <svg
-          width="10" height="10" viewBox="0 0 24 24" fill="none"
+          width="11" height="11" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
         >
           <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>

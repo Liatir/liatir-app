@@ -18,6 +18,7 @@ import {
   writeRunLog,
   writeRunSteps,
 } from '$lib/execution/run-storage';
+import { nodeDisplayLabel, pipelineStepsRecord } from '$lib/execution/pipeline-steps';
 import { withArtifactsMetadata } from '$lib/utils/artifacts';
 import { evaluateConditionNode } from '$lib/pipeline/conditions';
 import type { ToolOutput } from '$lib/types/tool-output';
@@ -39,7 +40,6 @@ import {
   type LiatirExecutionInitiator,
   type LiatirExecutionRecord,
   type LiatirExecutionRunKind,
-  type LiatirRunStep,
   type LiatirMcpPipelineInputDescriptor,
   type LiatirMcpPipelineInputs,
 } from '@liatir/core';
@@ -258,61 +258,6 @@ function deserializeRuntimeState(serialized: SerializedPipelineRuntimeState): Pi
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
-}
-
-// Prefer the user's custom node name (data.label) over the tool/type name for
-// anything user-facing (Results headings, logs, artifact metadata).
-function nodeDisplayLabel(node: Node, fallback: string): string {
-  return ((node.data?.label as string) ?? '').trim() || fallback;
-}
-
-/**
- * A pipeline's `steps.json`: every executable node, in graph order, with a pointer to its own run.
- *
- * Kept apart from `metadata.json`, which describes the pipeline run itself. This file describes what
- * happened inside it, and it is what makes the flat layout navigable: a step is an ordinary run in
- * `runs/`, and this is the only thing that says which runs belonged to this pipeline and in what
- * order.
- *
- * A utility node — variable, math, condition — has an identity but no directory, because it computes
- * a value rather than running a process and would otherwise leave an empty folder per arithmetic
- * operation. Its result is recorded here, which is the whole of what there is to record about it.
- */
-function pipelineStepsRecord(
-  graphNodes: Node[],
-  nodeStates: Map<string, NodeRunState>,
-): LiatirRunStep[] {
-  const steps: LiatirRunStep[] = [];
-  for (const node of graphNodes) {
-    if (!isExecutablePipelineNode(node)) continue;
-    const state = nodeStates.get(node.id);
-    if (!state) continue;
-    const entry = node.type === 'tool'
-      ? resolveStepEntry(node.data?.stepId as string ?? '')
-      : null;
-    const kind: LiatirRunStep['kind'] = entry
-      ? entry.definition.type
-      : node.type === 'api-request'
-        ? 'api-request'
-        : node.type === 'sub-pipeline'
-          ? 'sub-pipeline'
-          : 'utility';
-    const value = state.outputValues && Object.keys(state.outputValues).length > 0
-      ? state.outputValues
-      : undefined;
-    steps.push({
-      nodeId: node.id,
-      kind,
-      label: nodeDisplayLabel(node, entry?.definition.label ?? node.type ?? 'Step'),
-      runId: state.executionRunId ?? '',
-      status: state.status,
-      ...(state.startedAt !== undefined ? { startedAt: state.startedAt } : {}),
-      ...(state.endedAt !== undefined ? { endedAt: state.endedAt } : {}),
-      error: state.error,
-      ...(kind === 'utility' && value ? { value } : {}),
-    });
-  }
-  return steps;
 }
 
 function executionKindForStep(type: PipelineStepDefinition['type']): LiatirExecutionRunKind {
@@ -1805,7 +1750,7 @@ function createPipelineStore() {
             evidence: step.executionEvidence,
           }] : []);
           await analysisRuns.init();
-          await writeRunSteps(pipelineRunId, pipelineStepsRecord(graphNodes, finalStates))
+          await writeRunSteps(pipelineRunId, pipelineStepsRecord(graphNodes, graphEdges, finalStates))
             .catch(() => {});
           try {
             await finalizeExecutionResult(pipelineRunId, finalStatus, {

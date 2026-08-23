@@ -287,7 +287,7 @@ export const LIATIR_RUN_RECORD_SCHEMA_VERSION = 1 as const;
  *   metadata.json   what this run was          (LiatirRunMetadata)
  *   result.json     the parsed output Liatir renders
  *   log.jsonl       the transcript, one LiatirExecutionLogEntry per line
- *   steps.json      pipelines only             (LiatirRunStep[])
+ *   steps.json      pipelines only             (LiatirRunSteps)
  *   output/         the files the run produced
  * ```
  *
@@ -323,7 +323,7 @@ export interface LiatirRunMetadata {
 }
 
 /**
- * One node of a pipeline run, recorded in the pipeline's `steps.json` in execution order.
+ * One node of a pipeline run.
  *
  * A step that executed something — a tool, a model, a workflow, an API call — points at its own run
  * directory through `runId`, and its files, transcript and parameters live there like any other
@@ -343,4 +343,48 @@ export interface LiatirRunStep {
   error: string | null;
   /** The computed result of a utility node, which has no output files to point at. */
   value?: JsonValue;
+  /**
+   * For a condition node: the branch it actually took. Says which of its outgoing connections
+   * carried on and which was abandoned, without the reader having to infer it from which of
+   * `trueBranch`/`falseBranch` in `value` came out empty.
+   */
+  activeBranch?: "true" | "false";
+}
+
+/**
+ * One connection between two steps, as the graph stood when the run executed.
+ *
+ * Named by handle on both ends because that is what carries the meaning: a condition node's
+ * outputs are `trueBranch` and `falseBranch`, so the handle is what says which branch a downstream
+ * step hangs off. Recorded once per edge rather than duplicated onto both endpoints, which is the
+ * shape that goes stale.
+ */
+export interface LiatirRunStepConnection {
+  /** `nodeId` of the step the value comes from. */
+  from: string;
+  /** Output handle on `from`. */
+  output: string | null;
+  /** `nodeId` of the step it feeds. */
+  to: string;
+  /** Input handle on `to`. */
+  input: string | null;
+}
+
+/**
+ * A pipeline run's `steps.json`: what ran, and how it was wired.
+ *
+ * **`steps` is ordered by when each step started**, so the file reads in the order things actually
+ * happened. There is no index field, because a pipeline is a graph and not a sequence: steps with no
+ * dependency between them can start together, and numbering them would assert an order that does
+ * not exist. Steps that never started — skipped by a branch, or never reached — come last, in graph
+ * order, since they have no start time to sort by.
+ *
+ * **`connections` is what makes it a graph rather than a list.** It answers what feeds what, and
+ * which branch of a condition leads where. The order steps ran in does not imply it: two adjacent
+ * entries may be unrelated, and a step may depend on one that finished long before.
+ */
+export interface LiatirRunSteps {
+  schemaVersion: typeof LIATIR_RUN_RECORD_SCHEMA_VERSION;
+  steps: LiatirRunStep[];
+  connections: LiatirRunStepConnection[];
 }

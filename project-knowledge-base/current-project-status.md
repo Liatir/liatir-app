@@ -88,15 +88,39 @@ runs/<runId>/
   metadata.json   what this run was          (LiatirRunMetadata)
   result.json     the parsed output Liatir renders
   log.jsonl       the transcript, one entry per line
-  steps.json      pipelines only             (LiatirRunStep[])
+  steps.json      pipelines only             (LiatirRunSteps)
   output/         the files the run produced
 ```
 
 **Flat, not nested.** A pipeline's steps are ordinary runs in `runs/` beside it,
-listed in its `steps.json` in execution order. Nesting would make the same code
-handle two shapes and would recurse without bound through sub-pipelines. `steps.json`
-is separate from `metadata.json` because one describes the run and the other
-describes what happened inside it.
+listed in its `steps.json`. Nesting would make the same code handle two shapes and
+would recurse without bound through sub-pipelines. `steps.json` is separate from
+`metadata.json` because one describes the run and the other describes what happened
+inside it.
+
+**`steps.json` is `{ schemaVersion, steps, connections }`, not a bare array.** It was
+first written in graph-array order — the order nodes were dropped on the canvas —
+which reads as a sequence that was never run. Steps are now ordered by `startedAt`,
+with nodes that never started last, in graph order. There is deliberately **no index
+field**: a pipeline is a graph, independent steps can start in the same millisecond,
+and numbering them would assert a sequence that does not exist. Sorting by a real
+timestamp says what is true without inventing what is not.
+
+`connections` carries the edges — `{ from, output, to, input }`, named by handle on
+both ends — because execution order does not say what feeds what: two adjacent steps
+may be unrelated, and one may depend on a step that finished long before. The handle
+is what makes a condition legible, since its outputs are `trueBranch` and
+`falseBranch`; the branch actually taken is on the condition step as `activeBranch`,
+so it need not be inferred from which output value came out empty. Both branches stay
+in `connections` — which one was abandoned is readable from `activeBranch`, and
+dropping it would hide half of what the pipeline is wired to do. Edges are recorded
+once, never denormalised onto both endpoints, and never pointed at a nodeId the file
+does not list.
+
+`pipelineStepsRecord` moved out of the store into `frontend/src/lib/execution/pipeline-steps.ts`.
+It is a pure function of (nodes, edges, states), and order and wiring are exactly the
+things that look right until someone reads the file — so they are unit-tested in
+`tests/unit/pipeline-steps-record.test.ts` rather than only observed after a real run.
 
 **Utility nodes get an identity but no directory.** A `variable`, `math` or
 `condition` node computes a value rather than running a process; a folder per
@@ -180,6 +204,10 @@ the log), beside **View log**, on every screen that shows a run and in the failu
 branch of each. The result view keeps the by-product *count*, which is about the
 files. A run that wrote nothing has no directory, and the button says so rather than
 appearing to do nothing.
+
+It is the one bordered control in that row. Small is right — it is not the point of
+the screen — but as plain 11px text beside **View log** it read as a footnote and went
+unnoticed; the border is what makes it look like something you press.
 
 ## Native Tools are one signed Scrollcase box (2026-08-22)
 

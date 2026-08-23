@@ -122,12 +122,13 @@ describe('an empty declaration is checked, not believed', () => {
     const pipeline = read('frontend/src/lib/stores/pipeline.svelte.ts');
     expect(pipeline).toContain('writeRunSteps(pipelineRunId, pipelineStepsRecord(');
     // Flat, not nested: a step is an ordinary run, referenced by id.
-    expect(pipeline).toContain('runId: state.executionRunId');
+    // What that file contains — order and connections — is covered in pipeline-steps-record.test.ts.
+    expect(read('frontend/src/lib/execution/pipeline-steps.ts')).toContain('runId: state.executionRunId');
   });
 
   it('gives utility nodes an identity but no directory', () => {
     const pipeline = read('frontend/src/lib/stores/pipeline.svelte.ts');
-    expect(pipeline).toContain("kind === 'utility' && value");
+    expect(read('frontend/src/lib/execution/pipeline-steps.ts')).toContain("kind === 'utility' && value");
     // Only a node that runs something asks for an output directory.
     expect(pipeline).toContain('ensureRunOutputDir(childIdentity.runId)');
   });

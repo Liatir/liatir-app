@@ -21,7 +21,7 @@ import { getDataPrefix } from '$lib/stores/workspace.svelte';
 import type {
   LiatirExecutionLogEntry,
   LiatirRunMetadata,
-  LiatirRunStep,
+  LiatirRunSteps,
 } from '@liatir/core';
 
 const RUNS_DIR = 'runs';
@@ -188,7 +188,7 @@ export async function readRunLog(runId: string): Promise<LiatirExecutionLogEntry
 }
 
 /** Kept apart from `metadata.json`, which describes the run rather than what happened inside it. */
-export async function writeRunSteps(runId: string, steps: LiatirRunStep[]): Promise<void> {
+export async function writeRunSteps(runId: string, steps: LiatirRunSteps): Promise<void> {
   await writeRunFile(runId, 'steps.json', JSON.stringify(steps, null, 2));
 }
 
