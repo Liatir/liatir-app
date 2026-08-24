@@ -1408,9 +1408,19 @@ active; signer deployment run `32688008078` passed its real KMS smoke test. The
 first index run (`32688392977`) exhausted the standard hosted runner disk during
 simpleaf, before any upload or catalog promotion. The fixed workflow removes only
 explicit unused SDKs from that ephemeral runner and requires 40 GB free before the
-large build. It gets one retry; a second disk failure means selecting a larger
-runner, not widening cleanup. Production activation remains open until that retry
-publishes and the archive plus signed catalog are read back and verified.
+large build.
+
+Production activation is now complete. Retry `32689107199` on exact revision
+`d0da9c4` passed: cleanup changed free runner disk from 13 GB to 42 GB, the real
+build took 64m54s, and the complete release job took 72m59s. The published archive
+is 4,714,468,782 bytes with SHA-256
+`99072c6b9e4ec8b709b298bc38c0b54d9256aa65323d72c587c1ea160d7f2e8c`; its CI
+receipt records a complete public HTTP 200 download with the same size and hash.
+The live catalog has payload SHA-256
+`cb8e66caa101f5bb65ab28232dbb8441d384ea7a9f0dea1b70bd6f8ae2022d64` and one
+`liatir-runtime-box-kms-2026` signature verified independently against the tracked
+production key. Independent HTTP read-back returned 200 for the catalog and for
+the immutable archive, whose content length matched exactly.
 
 The signed public [Release gate](./roadmap/release-signed-distribution.md)
 remains a separate, open path. It starts only with the exact credentials,

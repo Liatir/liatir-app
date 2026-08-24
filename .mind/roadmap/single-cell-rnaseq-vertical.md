@@ -1,9 +1,9 @@
 # Single-cell RNA-seq vertical (alevin-fry)
 
-Status: **built, locally verified and production infrastructure deployed.** Liatir
-takes raw single-cell reads to an `.h5ad` count matrix without asking the user to
-install anything. Ready-made index distribution is implemented from CI producer
-to native app lifecycle; the first real index publication is in progress.
+Status: **production-complete for the first human index.** Liatir takes raw
+single-cell reads to an `.h5ad` count matrix without asking the user to install
+anything. Ready-made distribution is live from CI producer through the native app
+lifecycle.
 
 ## Why this vertical
 
@@ -122,20 +122,25 @@ single-cell can no longer be packaged.
 
 ## Still open
 
-**Production activation.** The workflow-specific Google identity is active, the
+**Production activation is complete.** The workflow-specific Google identity is active, the
 Registry Worker is version `bd570562-1ccf-491f-a779-d94bb0f3986c`, and protected
 signer deployment run `32688008078` passed its real KMS smoke test on exact `main`.
 The first index run, `32688392977`, reached the real simpleaf build but the standard
 GitHub runner exhausted its disk before upload or signing. The regression now
 reclaims only explicit unused SDK paths on the ephemeral hosted runner and requires
 40 GB free before downloading the genome. Its test is in
-`tests/unit/single-cell-index-distribution.test.ts`. Retry limit: one run from the
-fixed exact `main`; if that still exhausts disk, stop and move the producer to a
-larger runner rather than adding unbounded cleanup.
+`tests/unit/single-cell-index-distribution.test.ts`.
 
-The remaining activation evidence is the successful retry plus read-back of the
-immutable archive and signed catalog. Until both exist, the first real index is not
-published and the catalog correctly remains absent.
+The single allowed retry, run `32689107199` on source revision `d0da9c4`, passed.
+Cleanup changed free runner disk from 13 GB to 42 GB. The real build step took
+64m54s and the complete release job took 72m59s. It published the 4,714,468,782-byte
+archive with SHA-256
+`99072c6b9e4ec8b709b298bc38c0b54d9256aa65323d72c587c1ea160d7f2e8c`; CI verified
+the full public download before promoting catalog payload
+`cb8e66caa101f5bb65ab28232dbb8441d384ea7a9f0dea1b70bd6f8ae2022d64`. Independent
+read-back returned HTTP 200 for both objects, matched the archive length, and
+verified the catalog's `liatir-runtime-box-kms-2026` signature against the tracked
+production public key.
 
 The original reasons for this shape remain:
 
