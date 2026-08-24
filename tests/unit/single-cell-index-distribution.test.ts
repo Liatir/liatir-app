@@ -95,6 +95,10 @@ describe('single-cell reference-index distribution', () => {
     expect(workflow).toContain('workflow_dispatch:');
     expect(workflow).toContain('environment: runtime-box-production');
     expect(workflow.indexOf('verify-signer-policy')).toBeLessThan(workflow.indexOf('Build the index'));
+    expect(workflow.indexOf('Reclaim hosted-runner disk'))
+      .toBeLessThan(workflow.indexOf('Build the index'));
+    expect(workflow).toContain('test "${RUNNER_ENVIRONMENT}" = "github-hosted"');
+    expect(workflow).toContain('test "${available_bytes}" -ge 40000000000');
     expect(workflow.indexOf('Mint a fresh signer identity after the long build'))
       .toBeLessThan(workflow.indexOf('Publish immutable bytes'));
     expect(workflow).not.toContain('wrangler r2 object put');

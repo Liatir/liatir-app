@@ -1,10 +1,9 @@
 # Single-cell RNA-seq vertical (alevin-fry)
 
-Status: **built and locally verified.** Liatir takes raw single-cell reads to an
-`.h5ad` count matrix without asking the user to install anything. Ready-made
-index distribution is implemented from CI producer to native app lifecycle; the
-production Worker, signer policy and first real index have not yet been deployed
-or published.
+Status: **built, locally verified and production infrastructure deployed.** Liatir
+takes raw single-cell reads to an `.h5ad` count matrix without asking the user to
+install anything. Ready-made index distribution is implemented from CI producer
+to native app lifecycle; the first real index publication is in progress.
 
 ## Why this vertical
 
@@ -123,19 +122,20 @@ single-cell can no longer be packaged.
 
 ## Still open
 
-**Production activation.** The code path is complete, but no remote mutation was
-performed in this implementation turn. Before the first catalog can appear in
-the app, an explicitly authorized operator must, in order:
+**Production activation.** The workflow-specific Google identity is active, the
+Registry Worker is version `bd570562-1ccf-491f-a779-d94bb0f3986c`, and protected
+signer deployment run `32688008078` passed its real KMS smoke test on exact `main`.
+The first index run, `32688392977`, reached the real simpleaf build but the standard
+GitHub runner exhausted its disk before upload or signing. The regression now
+reclaims only explicit unused SDK paths on the ephemeral hosted runner and requires
+40 GB free before downloading the genome. Its test is in
+`tests/unit/single-cell-index-distribution.test.ts`. Retry limit: one run from the
+fixed exact `main`; if that still exhausts disk, stop and move the producer to a
+larger runner rather than adding unbounded cleanup.
 
-1. run the idempotent CI identity configuration so the new workflow-specific
-   provider and GitHub Environment variable exist;
-2. deploy the reviewed signer policy and Registry Worker revision;
-3. dispatch the manual workflow from exact `main` for the approved human recipe;
-4. read back the immutable archive and signed catalog evidence.
-
-That first remote run is also the first real measurement of human-index archive
-size, wall time and GitHub runner disk headroom. It must not be represented as
-complete from the tiny local fixture.
+The remaining activation evidence is the successful retry plus read-back of the
+immutable archive and signed catalog. Until both exist, the first real index is not
+published and the catalog correctly remains absent.
 
 The original reasons for this shape remain:
 

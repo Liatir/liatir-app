@@ -1384,9 +1384,9 @@ and must never grow one. The box's self-test runs the whole chain and asserts
 exact per-cell, per-gene counts, so a box that cannot do single-cell cannot be
 packaged.
 
-Ready-made index distribution is now **implemented and locally verified**, but
-not remotely activated. A manual protected GitHub workflow builds the approved
-human GRCh38 / GENCODE v47 / spliced+intronic / R2 91 index from checksummed
+Ready-made index distribution is now **implemented, locally verified and deployed
+through the production control plane**. A manual protected GitHub workflow builds
+the approved human GRCh38 / GENCODE v47 / spliced+intronic / R2 91 index from checksummed
 sources with the committed Linux Native Tools lock. It packages deterministic,
 content-addressed bytes, uploads them to R2 through the least-privilege Registry
 admin surface, verifies the public SHA-256, then signs and promotes a catalog
@@ -1402,9 +1402,15 @@ focused Rust tests passed 3/3; the dedicated native index lifecycle passed 1/1
 and proved one archive request across install plus reuse, followed by complete
 removal; the full `test:ui` profile passed its main 34/0 native cases plus the
 declared restart/security/desktop lifecycle suites. The first real human index
-was deliberately not built or published. Production activation still requires
-explicit authorization to configure the new workflow identity, deploy the
-reviewed signer/Worker revisions, dispatch exact `main`, and read back evidence.
+was started from exact `main` after authorization. The production Registry Worker
+is version `bd570562-1ccf-491f-a779-d94bb0f3986c`; the dedicated Google identity is
+active; signer deployment run `32688008078` passed its real KMS smoke test. The
+first index run (`32688392977`) exhausted the standard hosted runner disk during
+simpleaf, before any upload or catalog promotion. The fixed workflow removes only
+explicit unused SDKs from that ephemeral runner and requires 40 GB free before the
+large build. It gets one retry; a second disk failure means selecting a larger
+runner, not widening cleanup. Production activation remains open until that retry
+publishes and the archive plus signed catalog are read back and verified.
 
 The signed public [Release gate](./roadmap/release-signed-distribution.md)
 remains a separate, open path. It starts only with the exact credentials,
