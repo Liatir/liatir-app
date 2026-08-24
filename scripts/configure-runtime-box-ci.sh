@@ -230,7 +230,7 @@ ensure_provider "$SIGNER_PROVIDER_ID" "Runtime Box signer deployments" \
 # that already holds Cloud Run Invoker on the signer.
 ensure_provider "$REVOCATION_PROVIDER_ID" "Runtime Box revocations" \
   "$PRODUCTION_ENVIRONMENT" "runtime-box-revoke.yml"
-ensure_provider "$INDEX_PROVIDER_ID" "Single-cell reference index releases" \
+ensure_provider "$INDEX_PROVIDER_ID" "Single-cell index releases" \
   "$PRODUCTION_ENVIRONMENT" "single-cell-index-release.yml"
 
 ensure_service_account "$RELEASE_SERVICE_ACCOUNT_ID" "Runtime Box release CI"

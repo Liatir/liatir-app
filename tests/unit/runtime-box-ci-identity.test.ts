@@ -20,6 +20,17 @@ const protectedWorkflows = readdirSync(workflowDirectory)
     .includes("google-github-actions/auth"));
 
 describe("Runtime Box CI identity wiring", () => {
+  it("keeps provider display names within Google's 32-character limit", () => {
+    const displayNames = [...configureScript.matchAll(
+      /ensure_provider\s+"\$[A-Z_]+"\s+"([^"]+)"/g,
+    )].map(([, displayName]) => displayName);
+
+    expect(displayNames.length).toBeGreaterThanOrEqual(4);
+    for (const displayName of displayNames) {
+      expect(displayName.length, `${displayName} exceeds 32 characters`).toBeLessThanOrEqual(32);
+    }
+  });
+
   it("provisions a provider for every workflow that authenticates to Google", () => {
     const unprovisioned = protectedWorkflows.filter((name) => !configureScript.includes(`"${name}"`));
 
