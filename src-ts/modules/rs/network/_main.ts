@@ -16,5 +16,7 @@ export function buildNetwork(core: { invoke: LiatirAPI["invoke"] }): NetworkInte
     estimateBandwidth: (url?: string, sizeHintBytes?: U64, timeoutMs?: U64): Promise<void> => core.invoke("lia_network_bandwidth_estimate", {url, sizeHintBytes, timeoutMs}),
     setMonitor: (intervalMs?: U64, targets?: string[]): Promise<void> => core.invoke("lia_network_set_monitor", {intervalMs:intervalMs??3000, targets}),
     stopMonitor: (): Promise<void> => core.invoke("lia_network_stop_monitor"),
+    request: (request) => core.invoke("lia_http_request", { request }),
+    cancelRequest: (requestId) => core.invoke("lia_http_request_cancel", { requestId }),
   };
 }

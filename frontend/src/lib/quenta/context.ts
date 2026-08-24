@@ -234,7 +234,6 @@ function apiDocuments(): LiatirQuentaContextDocument[] {
         line('Name', request.name),
         line('Method', request.method),
         line('URL', request.url),
-        line('Use as', request.useAs),
         line('Last status', request.lastResponse ? `${request.lastResponse.status} ${request.lastResponse.statusText}` : null),
         line('Last response at', request.lastResponse ? new Date(request.lastResponse.timestamp).toISOString() : null),
         '',

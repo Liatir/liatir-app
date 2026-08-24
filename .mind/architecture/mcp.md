@@ -28,10 +28,10 @@ The input contract recursively covers every client-settable field of every
 pipeline execution family: Native Tools; AI Tools, including selection among
 the AI Tool's currently installed and compatible AI Models; `.lia` Plugins;
 saved External Workflows; scientific viewers and other utility steps; enabled
-non-private API Connector parameters; Variable values; Math operands; Condition
+API Connector parameters exposed as run inputs; Variable values; Math operands; Condition
 values/comparisons; and the same families inside nested sub-pipelines. Connected
 fields are produced inside the graph. The client cannot inject `@pipe:`
-references, private Connector parameters, operations, condition operators or
+references, fixed Connector parameters, operations, condition operators or
 topology. File values are `{ artifactId }`, never paths. There are no arbitrary
 command fields, pipeline mutation methods, filesystem browser, prompt surface,
 sampling surface, or model-chosen scientific decisions. MCP cannot install,

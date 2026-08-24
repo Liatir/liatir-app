@@ -109,6 +109,8 @@ commands.allow = [
   "lia_network_bandwidth_estimate",
   "lia_network_set_monitor",
   "lia_network_stop_monitor",
+  "lia_http_request",
+  "lia_http_request_cancel",
 
   "lia_get_autostart_mode",
   "lia_set_autostart_mode",

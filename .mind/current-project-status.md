@@ -1,5 +1,33 @@
 # Current project status
 
+## API Connector now has a Liatir-native contract (2026-08-24)
+
+The Bubble-derived surface has been removed. Calls no longer carry a meaningless
+Data/Action mode, and parameters now say exactly what Liatir does: enabled,
+exposed as a run input, destination and required. URL/header `[parameters]` and
+body `<parameters>` are discovered automatically. Existing workspaces migrate
+once without losing executable configuration; copied fields and the unimplemented
+OAuth User-Agent mode are removed from the rewritten file.
+
+`Test request and detect outputs` is now a true preview: it performs the request,
+shows the response and refreshes the structured output schema without creating a
+Job or Result. `Run` remains the durable execution path. Nested JSON fields keep
+real paths and primitive types in direct, pipeline and MCP use; required values,
+invalid JSON, HTTP errors and changed response types fail visibly.
+
+External HTTP moved from the webview to the cancellable native bridge, removing
+browser CORS as a product limitation. The bridge accepts only HTTP(S), rejects
+embedded URL credentials, bounds redirects/time/response size and can cancel
+both connection and response reads. JSON, raw text and URL-encoded form are the
+body modes actually sent.
+
+Evidence: `npm run test:verify` passed 63 files / 424 tests and all six build and
+type suites. `npm run test:ui` passed all six applicable suites: native Tauri E2E
+was 34/0/24, including API preview, direct and pipeline success/failure/cancel;
+the reference-index, restart, Runtime Box security and macOS install lifecycles
+also passed. Windows and Linux install lifecycles were skipped on macOS. The
+durable contract is in [API Connector](./architecture/api-connector.md).
+
 ## The knowledge base became `.mind/`, and it is the only memory (2026-08-24)
 
 `project-knowledge-base/` is now `.mind/`. The rename is not cosmetic: it settles
@@ -458,9 +486,9 @@ The surface is closed: `start_saved_pipeline({ pipeline_id, inputs })`,
 tools. The revision grant freezes a recursively derived contract for every
 client-settable input of Native Tools; AI Tools, including their currently
 installed and compatible AI Model choices; `.lia` Plugins; saved External
-Workflows; scientific viewers and utility steps; enabled non-private API
-Connector parameters; Variable, Math and Condition nodes; and nested
-sub-pipelines. Connected values, graph topology, operations, private Connector
+Workflows; scientific viewers and utility steps; enabled API Connector
+parameters exposed as run inputs; Variable, Math and Condition nodes; and nested
+sub-pipelines. Connected values, graph topology, operations, fixed Connector
 parameters and `@pipe:` references cannot be supplied. File inputs use allowed
 workspace artifact IDs, never caller paths. MCP cannot install/manage AI Models
 or define/edit External Workflows.

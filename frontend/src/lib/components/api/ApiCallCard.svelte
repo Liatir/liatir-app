@@ -6,7 +6,12 @@
   import ApiParamTable from './ApiParamTable.svelte';
   import ApiAuthEditor from './ApiAuthEditor.svelte';
   import ApiSchemaEditor from './ApiSchemaEditor.svelte';
-  import { apiConnections } from '$lib/stores/apiConnections.svelte';
+  import {
+    addDiscoveredParameters,
+    apiConnections,
+    inferSchema,
+    sendApiRequest,
+  } from '$lib/stores/apiConnections.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import type { ApiRequest, ApiCollection, ApiParam, ApiKeyValue, ApiBody, HttpMethod, ApiResponse, ApiOutputSchemaField } from '$lib/types/api-connection';
@@ -40,9 +45,11 @@
 
   let open = $state(initialOpenState());
   let initValues = $state<Record<string, string>>({});
-  let sending = $state(false);
+  let testing = $state(false);
+  let running = $state(false);
   let response = $state<ApiResponse | null>(initialResponseState());
   let activeRunId = $state<string | null>(null);
+  let testController = $state<AbortController | null>(null);
 
   const METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
   const METHOD_COLORS: Record<string, string> = {
@@ -50,36 +57,74 @@
     PATCH: 'text-violet-600', DELETE: 'text-red-600', HEAD: 'text-text-muted', OPTIONS: 'text-text-muted',
   };
 
-  function set(patch: Partial<ApiRequest>) { onchange({ ...request, ...patch }); }
+  function set(patch: Partial<ApiRequest>, discoverParameters = false) {
+    const next = { ...request, ...patch };
+    onchange(discoverParameters ? addDiscoveredParameters(next, provider) : next);
+  }
 
-  // Non-private params (call + provider shared) become call-time inputs.
-  const inputParams = $derived([
-    ...provider.sharedParams.filter(p => !p.private && p.enabled && p.key),
-    ...request.params.filter(p => !p.private && p.enabled && p.key),
-  ]);
+  const inputParams = $derived.by(() => {
+    const merged = new Map<string, ApiParam>();
+    for (const parameter of provider.sharedParams) {
+      if (parameter.exposedAsInput && parameter.enabled && parameter.key) merged.set(parameter.key, parameter);
+    }
+    for (const parameter of request.params) {
+      if (parameter.exposedAsInput && parameter.enabled && parameter.key) merged.set(parameter.key, parameter);
+      else if (parameter.enabled && parameter.key) merged.delete(parameter.key);
+    }
+    return [...merged.values()];
+  });
+  const hasDetectedOutputs = $derived(!!request.outputSchema && Object.keys(request.outputSchema).length > 0);
 
-  async function initialize() {
-    if (sending) return;
-    sending = true;
+  async function testAndDetectOutputs() {
+    if (testing || running) return;
+    testing = true;
+    const controller = new AbortController();
+    testController = controller;
+    try {
+      const resp = await sendApiRequest(request, {
+        provider,
+        paramOverrides: initValues,
+        signal: controller.signal,
+        validateDeclaredSchema: false,
+      });
+      response = resp;
+      await apiConnections.storeLastResponse(request.id, resp);
+      let schema: Record<string, ApiOutputSchemaField> = {};
+      try { schema = inferSchema(JSON.parse(resp.body)); } catch { /* A text response has no structured fields. */ }
+      set({ outputSchema: Object.keys(schema).length ? schema : undefined, lastResponse: { ...resp, timestamp: Date.now() } });
+      toast.success(`Test succeeded · HTTP ${resp.status}`);
+    } catch (e) {
+      if (!(e instanceof DOMException && e.name === 'AbortError')) {
+        toast.error(`Test failed: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    } finally {
+      testing = false;
+      testController = null;
+    }
+  }
+
+  async function run() {
+    if (testing || running) return;
+    running = true;
     const runId = crypto.randomUUID();
     activeRunId = runId;
     try {
-      const { response: resp, schema } = await runApiConnectorDirect(runId, request, initValues);
-      response = resp;
-      // Bubble behaviour: the detected schema populates the editable return values.
-      set({ outputSchema: schema, lastResponse: { ...resp, timestamp: Date.now() } });
-      toast.success(`Initialized · HTTP ${resp.status}`);
+      const result = await runApiConnectorDirect(runId, request, initValues);
+      response = result.response;
+      toast.success(`Completed · HTTP ${result.response.status}`);
     } catch (e) {
-      toast.error(`Call failed: ${e instanceof Error ? e.message : String(e)}`);
+      if (!(e instanceof DOMException && e.name === 'AbortError')) {
+        toast.error(`Call failed: ${e instanceof Error ? e.message : String(e)}`);
+      }
     } finally {
-      sending = false;
+      running = false;
       activeRunId = null;
     }
   }
 
-  async function cancelInitialize() {
-    if (!activeRunId) return;
-    await executionRuns.cancel(activeRunId);
+  async function cancel() {
+    testController?.abort();
+    if (activeRunId) await executionRuns.cancel(activeRunId);
   }
 
   async function del() {
@@ -102,10 +147,9 @@
     <Icon icon="lucide:chevron-right" width="12" height="12" class="text-text-subtle shrink-0 transition-transform {open ? 'rotate-90' : ''}" />
     <span class="text-[10px] font-bold font-mono shrink-0 w-12 {METHOD_COLORS[request.method]}">{request.method}</span>
     <span class="flex-1 text-sm text-text truncate">{request.name}</span>
-    {#if request.outputSchema && Object.keys(request.outputSchema).length}
-      <span class="text-[10px] text-emerald-600 bg-emerald-50 rounded px-1.5 py-0.5">initialized</span>
+    {#if hasDetectedOutputs}
+      <span class="text-[10px] text-emerald-600 bg-emerald-50 rounded px-1.5 py-0.5">outputs detected</span>
     {/if}
-    <span class="text-[10px] text-text-subtle uppercase">{request.useAs}</span>
     <button type="button" onclick={(e) => { e.stopPropagation(); del(); }} aria-label="Delete call"
       class="text-text-faint hover:text-red-400 transition-colors shrink-0">
       <Icon icon="lucide:trash-2" width="13" height="13" />
@@ -114,14 +158,11 @@
 
   {#if open}
     <div class="px-3 pb-3 pt-1 space-y-3 border-t border-border">
-      <!-- Name + Use as -->
-      <div class="flex items-center gap-2">
+      <!-- Name -->
+      <div>
         <input type="text" value={request.name} placeholder="Call name"
           oninput={(e) => set({ name: (e.target as HTMLInputElement).value })}
-          class="flex-1 text-sm font-medium text-text border-b border-transparent focus:border-brand/40 outline-none bg-transparent pb-0.5" />
-        <span class="text-[11px] text-text-subtle">Use as</span>
-        <Select value={request.useAs} options={[{ value: 'data', label: 'Data' }, { value: 'action', label: 'Action' }]}
-          onchange={(v) => set({ useAs: v as 'data' | 'action' })} class="w-24" />
+          class="w-full text-sm font-medium text-text border-b border-transparent focus:border-brand/40 outline-none bg-transparent pb-0.5" />
       </div>
 
       <!-- Method + URL -->
@@ -129,10 +170,10 @@
         <Select value={request.method} options={METHODS.map(m => ({ value: m, label: m }))}
           onchange={(m) => set({ method: m as HttpMethod })} class="w-24" />
         <input type="text" value={request.url} placeholder="https://api.example.com/users/[user_id]"
-          oninput={(e) => set({ url: (e.target as HTMLInputElement).value })}
+          oninput={(e) => set({ url: (e.target as HTMLInputElement).value }, true)}
           class="flex-1 text-xs font-mono border border-border rounded px-2 py-1.5 bg-surface outline-none focus:border-brand/60" />
       </div>
-      <p class="text-[10px] text-text-subtle -mt-1">Use <code class="bg-surface px-1 rounded">[param]</code> in the URL/headers and <code class="bg-surface px-1 rounded">&lt;param&gt;</code> in the body to insert parameter values.</p>
+      <p class="text-[10px] text-text-subtle -mt-1">Write <code class="bg-surface px-1 rounded">[parameter]</code> in the URL or headers, and <code class="bg-surface px-1 rounded">&lt;parameter&gt;</code> in the body. Liatir adds the matching input automatically.</p>
 
       <!-- Parameters -->
       <div>
@@ -144,7 +185,7 @@
       <div>
         <span class="text-[11px] font-medium text-text-muted">Headers</span>
         <KeyValueTable rows={request.headers} keyPlaceholder="Header" valuePlaceholder="Value"
-          onchange={(headers: ApiKeyValue[]) => set({ headers })} />
+          onchange={(headers: ApiKeyValue[]) => set({ headers }, true)} />
       </div>
 
       <!-- Body -->
@@ -152,13 +193,13 @@
         <div class="flex items-center gap-2">
           <span class="text-[11px] font-medium text-text-muted">Body</span>
           <Select value={request.body.type}
-            options={[{ value: 'none', label: 'None' }, { value: 'json', label: 'JSON' }, { value: 'form-data', label: 'Form' }, { value: 'raw', label: 'Raw' }]}
+            options={[{ value: 'none', label: 'None' }, { value: 'json', label: 'JSON' }, { value: 'form-urlencoded', label: 'URL-encoded form' }, { value: 'raw', label: 'Raw text' }]}
             onchange={(t) => set({ body: { ...request.body, type: t as ApiBody['type'] } })} class="w-28" />
         </div>
         {#if request.body.type !== 'none'}
           <textarea value={request.body.content}
             placeholder={request.body.type === 'json' ? '{\n  "name": "<name>"\n}' : 'Request body…'}
-            oninput={(e) => set({ body: { ...request.body, content: (e.target as HTMLTextAreaElement).value } })}
+            oninput={(e) => set({ body: { ...request.body, content: (e.target as HTMLTextAreaElement).value } }, true)}
             rows={4} class="w-full text-[11px] font-mono border border-border rounded px-2 py-1.5 bg-surface outline-none focus:border-brand/60 resize-y"></textarea>
         {/if}
       </div>
@@ -168,28 +209,33 @@
         <ApiAuthEditor auth={request.auth} allowInherit onchange={(auth) => set({ auth })} />
       </div>
 
-      <!-- Initialize call -->
+      <!-- Test and run -->
       <div class="rounded-lg border border-border bg-surface/50 p-3 space-y-2.5">
         <div class="flex items-center justify-between">
-          <span class="text-[11px] font-semibold text-text-secondary">Initialize call</span>
-          <Button variant="primary" size="sm" loading={sending} onclick={initialize} disabled={!request.url} testId="api-connector-run-button">
-            <Icon icon="lucide:play" width="11" height="11" />
-            {request.outputSchema ? 'Reinitialize' : 'Initialize call'}
-          </Button>
-          {#if sending}
-            <Button variant="secondary" size="sm" onclick={cancelInitialize} testId="api-connector-cancel-button">Cancel</Button>
-          {/if}
+          <span class="text-[11px] font-semibold text-text-secondary">Test request and detect outputs</span>
+          <div class="flex items-center gap-1.5">
+            <Button variant="secondary" size="sm" loading={testing} onclick={testAndDetectOutputs} disabled={!request.url || running} testId="api-connector-test-button">
+              <Icon icon="lucide:play" width="11" height="11" />
+              {hasDetectedOutputs ? 'Retest' : 'Test'}
+            </Button>
+            <Button variant="primary" size="sm" loading={running} onclick={run} disabled={!request.url || testing} testId="api-connector-run-button">
+              Run
+            </Button>
+            {#if testing || running}
+              <Button variant="secondary" size="sm" onclick={cancel} testId="api-connector-cancel-button">Cancel</Button>
+            {/if}
+          </div>
         </div>
 
         {#if inputParams.length}
           <div class="space-y-1.5">
-            <span class="text-[10px] text-text-subtle">Provide values for the non-private parameters:</span>
+            <span class="text-[10px] text-text-subtle">Values to use for this test or run:</span>
             {#each inputParams as p (p.key)}
               <div class="flex items-center gap-2">
                 <span class="text-[11px] font-mono text-text-muted w-32 truncate">{p.key}</span>
                 <input type="text" value={initValues[p.key] ?? p.value}
                   oninput={(e) => initValues = { ...initValues, [p.key]: (e.target as HTMLInputElement).value }}
-                  placeholder={p.optional ? 'optional' : 'value'}
+                  placeholder={p.required ? 'required' : 'optional'}
                   class="flex-1 text-xs font-mono border border-border rounded px-2 py-1 bg-surface outline-none focus:border-brand/60" />
               </div>
             {/each}
@@ -209,7 +255,7 @@
       </div>
 
       <!-- Return values (typed output) -->
-      {#if request.outputSchema}
+      {#if hasDetectedOutputs && request.outputSchema}
         <div class="space-y-1.5">
           <span class="text-[11px] font-medium text-text-muted">Return values (output type)</span>
           <ApiSchemaEditor schema={request.outputSchema}

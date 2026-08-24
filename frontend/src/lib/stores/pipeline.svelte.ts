@@ -5,7 +5,7 @@ import { getDataPrefix, workspaceStore } from './workspace.svelte';
 import { dataFiles } from './dataFiles.svelte';
 import { aiModelsStore } from './aiModels.svelte';
 import { liaPluginsStore } from './lia-plugins.svelte';
-import { apiConnections, sendApiRequest } from './apiConnections.svelte';
+import { apiConnections, flattenApiOutputSchema, sendApiRequest } from './apiConnections.svelte';
 import { analysisRuns } from './analysisRuns.svelte';
 import { executionRuns } from './executionRuns.svelte';
 import {
@@ -622,7 +622,6 @@ function createPipelineStore() {
     const response = await sendApiRequest(req, {
       provider,
       paramOverrides,
-      envVars: apiConnections.activeEnvVars,
       signal,
     });
     throwIfRunCancelled(signal);
@@ -633,24 +632,27 @@ function createPipelineStore() {
     );
 
     const absDir = await ensureRunOutputDir(runIdentity.runId);
-    const bodyPath = `${absDir}/response.json`;
+    let responseExt = 'txt';
+    try { JSON.parse(response.body); responseExt = 'json'; } catch { /* Keep text responses as text. */ }
+    const bodyPath = `${absDir}/response.${responseExt}`;
     await api.invoke('lia_write_file_path', { path: bodyPath, content: response.body });
 
-    let outputFiles: RunOutputFile[] = [{ label: 'Response Body', path: bodyPath, ext: 'json' }];
+    let outputFiles: RunOutputFile[] = [{ label: 'Response Body', path: bodyPath, ext: responseExt, fieldKey: 'responseBody' }];
     const outputValues: Record<string, string> = { status: String(response.status) };
 
     if (req.outputSchema) {
       let parsed: unknown;
       try { parsed = JSON.parse(response.body); } catch { /* not JSON */ }
       if (parsed !== undefined) {
-        for (const [key, field] of Object.entries(req.outputSchema)) {
+        for (const { key, field } of flattenApiOutputSchema(req.outputSchema)) {
           const value = getValueAtPath(parsed, field.path);
           if (value === undefined) continue;
           // The run owns this directory, so the schema key alone is unique — the random suffix only
           // existed to stop runs colliding inside the folder they used to share.
-          const valuePath = `${absDir}/${key}.json`;
+          const safeKey = key.replace(/[^a-zA-Z0-9._-]/g, '_');
+          const valuePath = `${absDir}/${safeKey}.json`;
           await api.invoke('lia_write_file_path', { path: valuePath, content: JSON.stringify(value) });
-          outputFiles.push({ label: field.label || key, path: valuePath, ext: 'json' });
+          outputFiles.push({ label: field.label || key, path: valuePath, ext: 'json', fieldKey: key });
           outputValues[key] = value !== null && typeof value === 'object'
             ? JSON.stringify(value)
             : String(value);

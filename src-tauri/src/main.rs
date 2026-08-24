@@ -396,6 +396,8 @@ fn main() {
       lia_network_bandwidth_estimate,
       lia_network_set_monitor,
       lia_network_stop_monitor,
+      lia_http_request,
+      lia_http_request_cancel,
 
       // autostart
       lia_get_autostart_mode,

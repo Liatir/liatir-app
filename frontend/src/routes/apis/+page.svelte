@@ -35,7 +35,7 @@
   <PageHeader
     title="API Connector"
     description="Define reusable external API calls with typed outputs to use in pipelines"
-    info="Each API call you initialize exposes its parameters as pipeline node inputs and its return values as typed outputs."
+    info="Test a call to detect its outputs, then use its editable inputs and typed return values in pipelines."
   >
     {#snippet actions()}
       <Button variant="primary" size="sm" onclick={addProvider}>
@@ -51,7 +51,7 @@
       <div class="max-w-4xl mx-auto mt-16">
         <EmptyState
           title="No APIs yet"
-          description="Add an API provider, define its calls and authentication, then initialize each call to capture its typed response — ready to plug into your pipelines."
+          description="Add an API, define its calls and authentication, then test each call to detect the outputs you can connect in a pipeline."
         >
           {#snippet icon()}
             <Icon icon="lucide:plug-zap" width="28" height="28" class="text-text-faint" />

@@ -89,7 +89,6 @@ function apiWorkspace(url) {
       id: REQUEST_ID,
       collectionId: COLLECTION_ID,
       name: 'Never-settled request',
-      useAs: 'data',
       method: 'GET',
       url,
       params: [],
@@ -99,8 +98,6 @@ function apiWorkspace(url) {
       createdAt: now,
       updatedAt: now,
     }],
-    environments: [],
-    activeEnvironmentId: null,
   };
 }
 

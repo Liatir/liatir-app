@@ -200,7 +200,7 @@ function collectTargets(
         if (parameter.enabled && parameter.key) parameters.set(parameter.key, parameter);
       }
       for (const parameter of parameters.values()) {
-        if (parameter.private) continue;
+        if (!parameter.exposedAsInput) continue;
         const savedValue = data.paramOverrides?.[parameter.key] ?? parameter.value;
         if (isConnected(savedValue)) continue;
         targets.push({
@@ -211,7 +211,7 @@ function collectTargets(
             fieldKey: parameter.key,
             label: parameter.key,
             type: 'string',
-            required: !parameter.optional,
+            required: parameter.required,
             source: 'api-parameter',
           },
           savedValue,

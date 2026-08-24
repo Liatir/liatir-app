@@ -8,7 +8,7 @@ import {
 } from '../../frontend/src/lib/api/response-validation';
 
 const request = {
-  id: 'request', collectionId: 'collection', name: 'Call', useAs: 'data', method: 'GET',
+  id: 'request', collectionId: 'collection', name: 'Call', method: 'GET',
   url: 'https://example.test', params: [], headers: [], body: { type: 'none', content: '' },
   auth: { type: 'none' }, createdAt: 1, updatedAt: 1,
 } satisfies ApiRequest;
@@ -32,6 +32,26 @@ describe('API Connector response contract', () => {
       .toThrowError(expect.objectContaining<ApiConnectorError>({ kind: 'malformed-response' }));
     expect(() => validateApiConnectorResponse(structured, response(200, '{"data":{}}')))
       .toThrow(/missing declared output/i);
+  });
+
+  it('validates nested output presence and declared types', () => {
+    const structured = {
+      ...request,
+      outputSchema: {
+        sample: {
+          label: 'Sample', path: 'sample', type: 'object' as const,
+          children: {
+            count: { label: 'Count', path: 'sample.count', type: 'number' as const },
+          },
+        },
+      },
+    };
+    expect(() => validateApiConnectorResponse(structured, response(200, '{"sample":{}}')))
+      .toThrow(/sample.count/i);
+    expect(() => validateApiConnectorResponse(structured, response(200, '{"sample":{"count":"3"}}')))
+      .toThrow(/wrong type/i);
+    expect(() => validateApiConnectorResponse(structured, response(200, '{"sample":{"count":3}}')))
+      .not.toThrow();
   });
 
   it('requires successful, valid OAuth token responses', () => {

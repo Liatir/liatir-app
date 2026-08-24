@@ -1,4 +1,5 @@
 import type { ApiRequest, ApiResponse } from '$lib/types/api-connection';
+import type { ApiOutputSchemaField } from '$lib/types/api-connection';
 
 export type ApiConnectorErrorKind =
   | 'authentication'
@@ -27,6 +28,18 @@ function valueAtPath(value: unknown, path: string): unknown {
     current = (current as Record<string, unknown>)[part];
   }
   return current;
+}
+
+function flattenSchema(
+  schema: Record<string, ApiOutputSchemaField>,
+  prefix = '',
+): { key: string; field: ApiOutputSchemaField }[] {
+  return Object.entries(schema).flatMap(([key, field]) => {
+    const outputKey = prefix ? `${prefix}.${key}` : key;
+    return field.type === 'object' && field.children
+      ? flattenSchema(field.children, outputKey)
+      : [{ key: outputKey, field }];
+  });
 }
 
 export function validateApiConnectorResponse(req: ApiRequest, response: ApiResponse): void {
@@ -58,15 +71,39 @@ export function validateApiConnectorResponse(req: ApiRequest, response: ApiRespo
       response,
     );
   }
-  const missing = Object.entries(schema)
-    .filter(([, field]) => valueAtPath(parsed, field.path) === undefined)
-    .map(([key]) => key);
+  const fields = flattenSchema(schema);
+  const missing = fields
+    .filter(({ field }) => valueAtPath(parsed, field.path) === undefined)
+    .map(({ key }) => key);
   if (missing.length > 0) {
     throw new ApiConnectorError(
       'malformed-response',
       `API response is missing declared output${missing.length === 1 ? '' : 's'}: ${missing.join(', ')}.`,
       response,
     );
+  }
+
+  const wrongTypes = fields.flatMap(({ key, field }) => {
+    const value = valueAtPath(parsed, field.path);
+    return matchesDeclaredType(value, field) ? [] : [key];
+  });
+  if (wrongTypes.length > 0) {
+    throw new ApiConnectorError(
+      'malformed-response',
+      `API response has the wrong type for declared output${wrongTypes.length === 1 ? '' : 's'}: ${wrongTypes.join(', ')}.`,
+      response,
+    );
+  }
+}
+
+function matchesDeclaredType(value: unknown, field: ApiOutputSchemaField): boolean {
+  switch (field.type) {
+    case 'string': return typeof value === 'string';
+    case 'number': return typeof value === 'number' && Number.isFinite(value);
+    case 'boolean': return typeof value === 'boolean';
+    case 'date': return typeof value === 'string' && !Number.isNaN(Date.parse(value));
+    case 'object': return value !== null && typeof value === 'object' && !Array.isArray(value);
+    case 'array': return Array.isArray(value);
   }
 }
 

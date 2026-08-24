@@ -7,7 +7,7 @@
 
 import type { Node, Edge } from '@xyflow/svelte';
 import { resolveStepEntry } from './pipeline-registry';
-import { apiConnections } from '$lib/stores/apiConnections.svelte';
+import { apiConnections, flattenApiOutputSchema } from '$lib/stores/apiConnections.svelte';
 import type { PickerItem } from '$lib/components/ui/OptionPicker.svelte';
 import { matchesAcceptedExtension } from '$lib/utils/file-extensions';
 
@@ -60,10 +60,17 @@ export function nodeOutputs(node: Node): NodeOutput[] {
       const req = rid ? apiConnections.requestById(rid) : null;
       const out: NodeOutput[] = [
         { key: 'status',       label: 'HTTP status',   kind: 'value', valueType: 'number' },
-        { key: 'responseBody', label: 'Response body',  kind: 'file',  ext: 'json' },
+        { key: 'responseBody', label: 'Response body',  kind: 'file' },
       ];
-      for (const [k, f] of Object.entries(req?.outputSchema ?? {})) {
-        out.push({ key: k, label: f.label || k, kind: 'value', valueType: 'string' });
+      for (const { key, field } of flattenApiOutputSchema(req?.outputSchema ?? {})) {
+        const valueType = field.type === 'number'
+          ? 'number'
+          : field.type === 'boolean'
+            ? 'boolean'
+            : field.type === 'array' || field.type === 'object'
+              ? 'json'
+              : 'string';
+        out.push({ key, label: field.label || key, kind: 'value', valueType });
       }
       return out;
     }

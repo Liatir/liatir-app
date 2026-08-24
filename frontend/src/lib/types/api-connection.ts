@@ -1,43 +1,31 @@
+import type {
+  LiatirApiFieldType,
+  LiatirApiOutputSchemaField,
+  LiatirApiParameter,
+  LiatirHttpMethod,
+  LiatirHttpResponse,
+} from '@liatir/core';
+
 export interface ApiKeyValue {
   key: string;
   value: string;
   enabled: boolean;
 }
 
-/**
- * A Bubble-style call parameter. Beyond a plain key/value it carries:
- * - `private`:    value is fixed server-side and NOT exposed as an input
- *                 (non-private params become call-time inputs / pipeline node inputs).
- * - `querystring`: sent as a URL query param when true, otherwise part of the body.
- * - `optional`:   may be left blank.
- * Parameters are also referenced inline via `[key]` in the URL/headers and `<key>` in the body.
- */
-export interface ApiParam {
-  key: string;
-  value: string;
-  private: boolean;
-  querystring: boolean;
-  optional: boolean;
-  enabled: boolean;
-}
+export type ApiParam = LiatirApiParameter;
+export type HttpMethod = LiatirHttpMethod;
+export type BodyType = 'none' | 'json' | 'raw' | 'form-urlencoded';
 
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS';
-export type BodyType = 'none' | 'json' | 'raw' | 'form-data';
-
-/** Bubble.io authentication set. `oauth2-user-agent` is reserved for phase 2 (disabled in UI). */
 export type AuthType =
   | 'none'
-  | 'inherit'              // call inherits the provider-level auth
-  | 'basic'                // HTTP Basic Auth
-  | 'bearer'               // Bearer token
-  | 'api-key'              // private key in header
-  | 'api-key-url'          // private key in URL (query string)
-  | 'private-key-header'   // alias of api-key (Bubble naming)
-  | 'private-key-url'      // alias of api-key-url (Bubble naming)
-  | 'oauth2-password'      // OAuth2 Password flow
-  | 'oauth2-custom'        // OAuth2 Custom Token (user-defined token request)
-  | 'jwt'                  // signed JWT (HS*)
-  | 'oauth2-user-agent';   // OAuth2 User-Agent redirect flow — PHASE 2 (UI disabled)
+  | 'inherit'
+  | 'basic'
+  | 'bearer'
+  | 'api-key-header'
+  | 'api-key-query'
+  | 'oauth2-password'
+  | 'oauth2-custom'
+  | 'jwt';
 
 export interface ApiBody {
   type: BodyType;
@@ -54,12 +42,9 @@ export interface ApiAuth {
   username?: string;
   password?: string;
 
-  // key-based (api-key / private-key, header or url) — keyName is the header/query param name
+  // API key — keyName is the header or query parameter name.
   keyName?: string;
   keyValue?: string;
-  // legacy fields kept for back-compat with existing api-workspace.json
-  apiKeyHeader?: string;
-  apiKeyValue?: string;
 
   // oauth2 (password / custom)
   tokenUrl?: string;
@@ -81,22 +66,13 @@ export interface ApiAuth {
   jwtPayload?: string;     // JSON payload template
 }
 
-export type ApiFieldType = 'string' | 'number' | 'boolean' | 'date' | 'object' | 'array';
-
-/** A typed return value. Recursive: objects carry `children`, arrays carry `items`. */
-export interface ApiOutputSchemaField {
-  label: string;
-  path: string;            // dot-path to the value (used by the pipeline to extract leaves)
-  type: ApiFieldType;
-  children?: Record<string, ApiOutputSchemaField>;  // when type === 'object'
-  items?: ApiOutputSchemaField;                      // when type === 'array'
-}
+export type ApiFieldType = LiatirApiFieldType;
+export type ApiOutputSchemaField = LiatirApiOutputSchemaField;
 
 export interface ApiRequest {
   id: string;
   collectionId: string;
   name: string;
-  useAs: 'action' | 'data';
   method: HttpMethod;
   url: string;
   params: ApiParam[];
@@ -116,7 +92,7 @@ export interface ApiRequest {
   };
 }
 
-/** A Bubble "API" provider: shared auth + shared headers/params applied to all its calls. */
+/** Shared authentication, headers and parameters applied to a group of related calls. */
 export interface ApiCollection {
   id: string;
   name: string;
@@ -126,33 +102,13 @@ export interface ApiCollection {
   createdAt: number;
 }
 
-export interface ApiEnvironmentVar {
-  key: string;
-  value: string;
-  enabled: boolean;
-}
-
-export interface ApiEnvironment {
-  id: string;
-  name: string;
-  variables: ApiEnvironmentVar[];
-  createdAt: number;
-}
-
-export interface ApiResponse {
-  status: number;
-  statusText: string;
-  headers: Record<string, string>;
-  body: string;
-  durationMs: number;
-}
+export type ApiResponse = LiatirHttpResponse;
 
 // Legacy alias
 export type ApiConnection = ApiRequest;
 
 export const DEFAULT_REQUEST: Omit<ApiRequest, 'id' | 'collectionId' | 'createdAt' | 'updatedAt'> = {
   name: 'New call',
-  useAs: 'data',
   method: 'GET',
   url: '',
   params: [],
@@ -163,5 +119,12 @@ export const DEFAULT_REQUEST: Omit<ApiRequest, 'id' | 'collectionId' | 'createdA
 
 /** Default param row factory. */
 export function emptyParam(): ApiParam {
-  return { key: '', value: '', private: false, querystring: true, optional: false, enabled: true };
+  return {
+    key: '',
+    value: '',
+    exposedAsInput: true,
+    location: 'query',
+    required: true,
+    enabled: true,
+  };
 }

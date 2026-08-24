@@ -51,7 +51,6 @@ async function startDelayedApi(delayMs = 800) {
   const server = createServer((_request, response) => {
     const timer = setTimeout(() => {
       response.writeHead(200, {
-        'access-control-allow-origin': '*',
         'content-type': 'application/json',
       });
       response.end(JSON.stringify({ ok: true, source: 'pipeline-lifecycle-e2e' }));
@@ -446,7 +445,6 @@ function apiWorkspace(url) {
         id: REQUEST_ID,
         collectionId: COLLECTION_ID,
         name: 'Delayed response',
-        useAs: 'data',
         method: 'GET',
         url,
         params: [],
@@ -463,7 +461,6 @@ function apiWorkspace(url) {
         id: SUB_REQUEST_ID,
         collectionId: COLLECTION_ID,
         name: 'Child delayed response',
-        useAs: 'data',
         method: 'GET',
         url,
         params: [],
@@ -477,7 +474,6 @@ function apiWorkspace(url) {
         id: API_CANCELLATION_REQUEST_ID,
         collectionId: COLLECTION_ID,
         name: 'Cancellable API',
-        useAs: 'data',
         method: 'GET',
         url,
         params: [],
@@ -491,7 +487,6 @@ function apiWorkspace(url) {
         id: FAILURE_REQUEST_ID,
         collectionId: COLLECTION_ID,
         name: 'Unreachable endpoint',
-        useAs: 'data',
         method: 'GET',
         url: 'http://127.0.0.1:1/unreachable',
         params: [],
@@ -502,8 +497,6 @@ function apiWorkspace(url) {
         updatedAt: now,
       },
     ],
-    environments: [],
-    activeEnvironmentId: null,
   };
 }
 

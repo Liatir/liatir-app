@@ -88,15 +88,15 @@ vi.mock('$lib/stores/apiConnections.svelte', () => ({
       collectionId: 'collection-1',
       name: 'Fixture request',
       params: [
-        { key: 'query', value: 'saved query', enabled: true, optional: false, private: false },
-        { key: 'secret', value: 'hidden', enabled: true, optional: false, private: true },
-        { key: 'disabled', value: 'hidden', enabled: false, optional: true, private: false },
+        { key: 'query', value: 'saved query', enabled: true, required: true, exposedAsInput: true, location: 'query' },
+        { key: 'fixed', value: 'hidden', enabled: true, required: true, exposedAsInput: false, location: 'query' },
+        { key: 'disabled', value: 'hidden', enabled: false, required: false, exposedAsInput: true, location: 'query' },
       ],
     } : null,
     collectionById: (collectionId: string) => collectionId === 'collection-1' ? {
       sharedParams: [
-        { key: 'locale', value: 'en', enabled: true, optional: true, private: false },
-        { key: 'token', value: 'hidden', enabled: true, optional: false, private: true },
+        { key: 'locale', value: 'en', enabled: true, required: false, exposedAsInput: true, location: 'query' },
+        { key: 'token', value: 'hidden', enabled: true, required: true, exposedAsInput: false, location: 'query' },
       ],
     } : null,
   },
@@ -207,7 +207,7 @@ function reorderObjectKeys(
 }
 
 describe('MCP pipeline inputs', () => {
-  it('declares every client-settable runtime input while keeping connections and secrets internal', () => {
+  it('declares every client-settable runtime input while keeping connections and fixed values internal', () => {
     const { root, all } = pipelines();
     const schema = mcpPipelineInputSchema(root, all, runnableAIModels);
 
@@ -249,7 +249,7 @@ describe('MCP pipeline inputs', () => {
       description: 'Version 1.0.0 · Runtime A · single-cell-rna',
     }]);
     expect(schema.some((input) => input.fieldKey === 'connected')).toBe(false);
-    expect(schema.some((input) => input.fieldKey === 'secret' || input.fieldKey === 'token')).toBe(false);
+    expect(schema.some((input) => input.fieldKey === 'fixed' || input.fieldKey === 'token')).toBe(false);
   });
 
   it('accepts a Rust-reordered descriptor snapshot and resolves typed values and artifacts', () => {

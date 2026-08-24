@@ -8,7 +8,7 @@
   import Icon from '@iconify/svelte';
   import type { ApiRequestNodeData } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
-  import { apiConnections } from '$lib/stores/apiConnections.svelte';
+  import { apiConnections, flattenApiOutputSchema } from '$lib/stores/apiConnections.svelte';
   import { upstreamOptions } from '$lib/tools/pipeline-io';
   import { sanitizeLocalPathsForDisplay } from '$lib/utils';
   import ValueRefInput from './actions/ValueRefInput.svelte';
@@ -62,14 +62,19 @@
     if (runId) goto(`/results?run=${runId}`);
   }
 
-  // Non-private params that may be overridden from upstream (call overrides provider).
+  // Parameters intentionally exposed as run inputs (call overrides provider).
   const overridableParams = $derived.by(() => {
     if (!req) return [] as string[];
     const provider = apiConnections.collectionById(req.collectionId);
-    const keys: string[] = [];
-    for (const p of provider?.sharedParams ?? []) if (!p.private && p.enabled && p.key) keys.push(p.key);
-    for (const p of req.params) if (!p.private && p.enabled && p.key) keys.push(p.key);
-    return [...new Set(keys)];
+    const keys = new Set<string>();
+    for (const p of provider?.sharedParams ?? []) {
+      if (p.exposedAsInput && p.enabled && p.key) keys.add(p.key);
+    }
+    for (const p of req.params) {
+      if (p.exposedAsInput && p.enabled && p.key) keys.add(p.key);
+      else if (p.enabled && p.key) keys.delete(p.key);
+    }
+    return [...keys];
   });
 
   // Connected upstream value outputs, usable as param overrides.
@@ -81,7 +86,7 @@
   // Output fields the request exposes (status + extracted schema fields).
   const outputFields = $derived([
     { key: 'status', label: 'HTTP status' },
-    ...Object.entries(req?.outputSchema ?? {}).map(([k, f]) => ({ key: k, label: f.label || k })),
+    ...flattenApiOutputSchema(req?.outputSchema ?? {}).map(({ key, field }) => ({ key, label: field.label || key })),
   ]);
 
   function setOverride(key: string, value: string) {

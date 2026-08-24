@@ -116,7 +116,6 @@ export async function runApiConnectorDirect(
     response = await sendApiRequest(req, {
       provider,
       paramOverrides: overrides,
-      envVars: apiConnections.activeEnvVars,
       signal: executionRuns.signal(runId),
     });
     const outputFiles = await persistResponseArtifact(req, identity, response);

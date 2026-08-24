@@ -159,6 +159,8 @@ export const LIATIR_API: Record<string, ApiNode> = {
           estimateBandwidth: { type: "method", detail: "(url?: string, sizeHintBytes?: U64, timeout?: U64): Promise<void>" },
           setMonitor: { type: "method", detail: "(interval: U64, targets?: string[]): Promise<void>" },
           stopMonitor: { type: "method", detail: "(): Promise<void>" },
+          request: { type: "method", detail: "(request: LiatirHttpRequest): Promise<LiatirHttpResponse>", info: "Perform an HTTP request in the native app, outside browser CORS restrictions." },
+          cancelRequest: { type: "method", detail: "(requestId: string): Promise<boolean>" },
       } },
       autostart: { type: "property", detail: "AutostartInterface", children: {
           enable: { type: "method", detail: "(): Promise<void>" },

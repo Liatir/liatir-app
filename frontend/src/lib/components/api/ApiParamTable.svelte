@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from '@iconify/svelte';
+  import Select from '$lib/components/ui/Select.svelte';
   import type { ApiParam } from '$lib/types/api-connection';
   import { emptyParam } from '$lib/types/api-connection';
 
@@ -20,40 +21,39 @@
 
 <div class="rounded-lg border border-border overflow-hidden text-xs">
   <!-- Header -->
-  <div class="grid grid-cols-[18px_1fr_1fr_auto_auto_auto_18px] gap-2 px-2 py-1.5 bg-surface border-b border-border items-center">
+  <div class="grid grid-cols-[18px_1fr_1fr_24px_72px_24px_18px] gap-2 px-2 py-1.5 bg-surface border-b border-border items-center">
     <span></span>
     <span class="text-[10px] font-semibold text-text-subtle uppercase tracking-wider">Key</span>
     <span class="text-[10px] font-semibold text-text-subtle uppercase tracking-wider">Value</span>
-    <span class="text-[10px] font-semibold text-text-subtle w-12 text-center" title="Private: value fixed server-side, not exposed as an input">Private</span>
-    <span class="text-[10px] font-semibold text-text-subtle w-14 text-center" title="Send in the query string (otherwise in the body)">Querystr.</span>
-    <span class="text-[10px] font-semibold text-text-subtle w-12 text-center" title="May be left blank">Optional</span>
+    <span class="text-[10px] font-semibold text-text-subtle text-center" title="Let the user or a pipeline provide this value when the call runs">Input</span>
+    <span class="text-[10px] font-semibold text-text-subtle text-center" title="Where to send the value when it is not embedded in the request">In</span>
+    <span class="text-[10px] font-semibold text-text-subtle text-center" title="Stop before sending when the value is empty">Req.</span>
     <span></span>
   </div>
 
   {#each rows as row, i (i)}
-    <div class="grid grid-cols-[18px_1fr_1fr_auto_auto_auto_18px] gap-2 px-2 py-1 items-center border-b border-border/50 last:border-0 {!row.enabled ? 'opacity-50' : ''}">
+    <div class="grid grid-cols-[18px_1fr_1fr_24px_72px_24px_18px] gap-2 px-2 py-1 items-center border-b border-border/50 last:border-0 {!row.enabled ? 'opacity-50' : ''}">
       <input type="checkbox" checked={row.enabled} {disabled}
         onchange={(e) => update(i, { enabled: (e.target as HTMLInputElement).checked })}
         class="h-3 w-3 rounded border-border-2 accent-brand" />
       <input type="text" value={row.key} placeholder="key" {disabled}
         oninput={(e) => update(i, { key: (e.target as HTMLInputElement).value })}
         class="w-full font-mono bg-transparent outline-none text-text placeholder:text-text-faint focus:bg-brand/5 rounded px-1 py-0.5" />
-      <input type="text" value={row.value} placeholder={row.private ? 'value' : 'default / input'} {disabled}
+      <input type="text" value={row.value} placeholder={row.exposedAsInput ? 'default value' : 'fixed value'} {disabled}
         oninput={(e) => update(i, { value: (e.target as HTMLInputElement).value })}
         class="w-full font-mono bg-transparent outline-none text-text placeholder:text-text-faint focus:bg-brand/5 rounded px-1 py-0.5" />
-      <div class="w-12 flex justify-center">
-        <input type="checkbox" checked={row.private} {disabled}
-          onchange={(e) => update(i, { private: (e.target as HTMLInputElement).checked })}
+      <div class="flex justify-center">
+        <input type="checkbox" checked={row.exposedAsInput} {disabled}
+          onchange={(e) => update(i, { exposedAsInput: (e.target as HTMLInputElement).checked })}
           class="h-3 w-3 rounded border-border-2 accent-brand" />
       </div>
-      <div class="w-14 flex justify-center">
-        <input type="checkbox" checked={row.querystring} {disabled}
-          onchange={(e) => update(i, { querystring: (e.target as HTMLInputElement).checked })}
-          class="h-3 w-3 rounded border-border-2 accent-brand" />
-      </div>
-      <div class="w-12 flex justify-center">
-        <input type="checkbox" checked={row.optional} {disabled}
-          onchange={(e) => update(i, { optional: (e.target as HTMLInputElement).checked })}
+      <Select value={row.location}
+        options={[{ value: 'query', label: 'URL' }, { value: 'body', label: 'Body' }]}
+        onchange={(location) => update(i, { location: location as ApiParam['location'] })}
+        class="w-[72px]" />
+      <div class="flex justify-center">
+        <input type="checkbox" checked={row.required} {disabled}
+          onchange={(e) => update(i, { required: (e.target as HTMLInputElement).checked })}
           class="h-3 w-3 rounded border-border-2 accent-brand" />
       </div>
       <button type="button" onclick={() => removeRow(i)} {disabled} aria-label="Remove parameter"

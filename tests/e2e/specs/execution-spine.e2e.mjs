@@ -64,10 +64,7 @@ async function startApiFixture() {
     if (request.url === '/pending') {
       return;
     }
-    response.writeHead(200, {
-      'access-control-allow-origin': '*',
-      'content-type': 'application/json',
-    });
+    response.writeHead(200, { 'content-type': 'application/json' });
     response.end(JSON.stringify({ ok: true, source: 'execution-spine-e2e' }));
   });
   await new Promise((resolve, reject) => {
@@ -95,20 +92,18 @@ function apiWorkspace(baseUrl) {
     }],
     requests: [
       {
-        id: 'e2e-api-pending', collectionId: 'e2e-spine-api', name: 'Pending call', useAs: 'data',
+        id: 'e2e-api-pending', collectionId: 'e2e-spine-api', name: 'Pending call',
         method: 'GET', url: `${baseUrl}/pending`, params: [], headers: [],
         body: { type: 'none', content: '' }, auth: { type: 'inherit' },
         createdAt: now, updatedAt: now,
       },
       {
-        id: 'e2e-api-success', collectionId: 'e2e-spine-api', name: 'Successful call', useAs: 'data',
+        id: 'e2e-api-success', collectionId: 'e2e-spine-api', name: 'Successful call',
         method: 'GET', url: `${baseUrl}/success`, params: [], headers: [],
         body: { type: 'none', content: '' }, auth: { type: 'inherit' },
         createdAt: now, updatedAt: now,
       },
     ],
-    environments: [],
-    activeEnvironmentId: null,
   };
 }
 
@@ -312,6 +307,19 @@ export const tests = [
         );
 
         await (await browser.$(`${successCard} [data-testid="api-connector-card-toggle"]`)).click();
+        await (await browser.$(`${successCard} [data-testid="api-connector-test-button"]`)).click();
+        await browser.waitUntil(
+          async () => browser.execute(async () => {
+            const workspace = JSON.parse(await window.Liatir.invoke('lia_app_read_text', {
+              rel: 'workspaces/__test__/api-workspace.json',
+            }));
+            const request = workspace.requests.find((entry) => entry.id === 'e2e-api-success');
+            const jobs = await window.Liatir.invoke('lia_jobs_list', { workspaceId: '__test__' });
+            return request?.outputSchema?.ok?.type === 'boolean'
+              && !jobs.some((job) => job.metadata?.requestId === 'e2e-api-success');
+          }),
+          { timeout: 20_000, timeoutMsg: 'API Connector test did not detect outputs without creating a Job' },
+        );
         await (await browser.$(`${successCard} [data-testid="api-connector-run-button"]`)).click();
         await browser.waitUntil(
           async () => browser.execute(async () => {

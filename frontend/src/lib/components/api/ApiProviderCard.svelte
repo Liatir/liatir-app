@@ -5,7 +5,7 @@
   import ApiParamTable from './ApiParamTable.svelte';
   import ApiAuthEditor from './ApiAuthEditor.svelte';
   import ApiCallCard from './ApiCallCard.svelte';
-  import { apiConnections } from '$lib/stores/apiConnections.svelte';
+  import { addDiscoveredSharedParameters, apiConnections } from '$lib/stores/apiConnections.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import type { ApiCollection, ApiRequest, ApiParam, ApiKeyValue, ApiAuth } from '$lib/types/api-connection';
@@ -79,7 +79,9 @@
         <div>
           <span class="text-[11px] font-medium text-text-muted">Shared headers</span>
           <KeyValueTable rows={provider.sharedHeaders} keyPlaceholder="Header" valuePlaceholder="Value"
-            onchange={(sharedHeaders: ApiKeyValue[]) => setProvider({ sharedHeaders })} />
+            onchange={(sharedHeaders: ApiKeyValue[]) => apiConnections.updateCollection(
+              addDiscoveredSharedParameters({ ...provider, sharedHeaders })
+            )} />
         </div>
         <div>
           <span class="text-[11px] font-medium text-text-muted">Shared parameters</span>

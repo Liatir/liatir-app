@@ -258,14 +258,16 @@ function apiWorkspaceFixture(updatedAt = Date.now()) {
       name: 'Gate 8 API Connector',
       auth: { type: 'none' },
       sharedHeaders: [],
-      sharedParams: [{ key: 'locale', value: 'en', enabled: true, optional: true, private: false }],
+      sharedParams: [{
+        key: 'locale', value: 'en', enabled: true, required: false,
+        exposedAsInput: true, location: 'query',
+      }],
       createdAt: updatedAt,
     }],
     requests: [{
       id: API_REQUEST_ID,
       collectionId: API_COLLECTION_ID,
       name: 'Gate 8 request',
-      useAs: 'data',
       method: 'GET',
       url: 'http://127.0.0.1:1/not-executed',
       params: [
@@ -278,8 +280,6 @@ function apiWorkspaceFixture(updatedAt = Date.now()) {
       createdAt: updatedAt,
       updatedAt,
     }],
-    environments: [],
-    activeEnvironmentId: null,
   };
 }
 

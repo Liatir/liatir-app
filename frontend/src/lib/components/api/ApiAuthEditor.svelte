@@ -1,7 +1,7 @@
 <script lang="ts">
   import Select from '$lib/components/ui/Select.svelte';
   import KeyValueTable from '$lib/components/ui/KeyValueTable.svelte';
-  import type { ApiAuth, AuthType, ApiKeyValue, HttpMethod } from '$lib/types/api-connection';
+  import type { ApiAuth, ApiBody, AuthType, ApiKeyValue, HttpMethod } from '$lib/types/api-connection';
 
   interface Props {
     auth: ApiAuth;
@@ -14,22 +14,20 @@
 
   const METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
-  // Faithful to Bubble.io's authentication list.
   const options = $derived([
     ...(allowInherit ? [{ value: 'inherit', label: 'Inherit from API' }] : []),
-    { value: 'none', label: 'None or self-handled' },
+    { value: 'none', label: 'None or custom headers' },
     { value: 'basic', label: 'HTTP Basic Auth' },
-    { value: 'private-key-header', label: 'Private key in header' },
-    { value: 'private-key-url', label: 'Private key in URL' },
+    { value: 'bearer', label: 'Bearer token' },
+    { value: 'api-key-header', label: 'API key in header' },
+    { value: 'api-key-query', label: 'API key in URL' },
     { value: 'oauth2-password', label: 'OAuth2 Password Flow' },
     { value: 'oauth2-custom', label: 'OAuth2 Custom Token' },
     { value: 'jwt', label: 'JSON Web Token' },
-    { value: 'oauth2-user-agent', label: 'OAuth2 User-Agent Flow (coming soon)' },
   ]);
 
   function set(patch: Partial<ApiAuth>) { onchange({ ...auth, ...patch }); }
   function setType(t: string) {
-    if (t === 'oauth2-user-agent') return; // phase 2, disabled
     set({ type: t as AuthType });
   }
 
@@ -57,12 +55,18 @@
         oninput={(e) => set({ password: (e.target as HTMLInputElement).value })} class={fieldCls} />
     </div>
 
-  {:else if auth.type === 'private-key-header' || auth.type === 'private-key-url'}
+  {:else if auth.type === 'bearer'}
+    <div class="pl-30">
+      <input type="password" value={auth.token ?? ''} placeholder="Bearer token" {disabled}
+        oninput={(e) => set({ token: (e.target as HTMLInputElement).value })} class={fieldCls} />
+    </div>
+
+  {:else if auth.type === 'api-key-header' || auth.type === 'api-key-query'}
     <div class="grid grid-cols-2 gap-2 pl-30">
       <input type="text" value={auth.keyName ?? ''} {disabled}
-        placeholder={auth.type === 'private-key-header' ? 'Header name (e.g. Authorization)' : 'Query param name (e.g. api_key)'}
+        placeholder={auth.type === 'api-key-header' ? 'Header name (e.g. X-API-Key)' : 'Query parameter name (e.g. api_key)'}
         oninput={(e) => set({ keyName: (e.target as HTMLInputElement).value })} class={fieldCls} />
-      <input type="text" value={auth.keyValue ?? ''} placeholder="Key value" {disabled}
+      <input type="password" value={auth.keyValue ?? ''} placeholder="API key" {disabled}
         oninput={(e) => set({ keyValue: (e.target as HTMLInputElement).value })} class={fieldCls} />
     </div>
 
@@ -95,9 +99,19 @@
         <span class="text-[10px] text-text-subtle">Token request headers</span>
         <KeyValueTable rows={ctr().headers} {disabled} onchange={(headers: ApiKeyValue[]) => setCtr({ headers })} />
       </div>
-      <textarea value={ctr().body.content} placeholder={'Token request body (JSON)\n{ "grant_type": "client_credentials" }'} {disabled}
-        oninput={(e) => setCtr({ body: { type: 'json', content: (e.target as HTMLTextAreaElement).value } })}
-        rows={3} class="{fieldCls} resize-y"></textarea>
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] text-text-subtle">Token request body</span>
+        <Select value={ctr().body.type}
+          options={[{ value: 'none', label: 'None' }, { value: 'json', label: 'JSON' }, { value: 'form-urlencoded', label: 'URL-encoded form' }, { value: 'raw', label: 'Raw text' }]}
+          onchange={(type) => setCtr({ body: { ...ctr().body, type: type as ApiBody['type'] } })}
+          class="w-36" />
+      </div>
+      {#if ctr().body.type !== 'none'}
+        <textarea value={ctr().body.content}
+          placeholder={ctr().body.type === 'json' ? '{ "grant_type": "client_credentials" }' : 'Token request body'} {disabled}
+          oninput={(e) => setCtr({ body: { ...ctr().body, content: (e.target as HTMLTextAreaElement).value } })}
+          rows={3} class="{fieldCls} resize-y"></textarea>
+      {/if}
       <input type="text" value={auth.tokenPath ?? ''} placeholder="Token path (default: access_token)" {disabled}
         oninput={(e) => set({ tokenPath: (e.target as HTMLInputElement).value })} class={fieldCls} />
     </div>
@@ -115,7 +129,11 @@
         rows={3} class="{fieldCls} resize-y"></textarea>
     </div>
 
-  {:else if auth.type === 'oauth2-user-agent'}
-    <p class="pl-30 text-[11px] text-amber-600">OAuth2 User-Agent (browser redirect) flow is coming in a later update.</p>
+  {/if}
+
+  {#if !['none', 'inherit'].includes(auth.type)}
+    <p class="pl-30 text-[10px] text-text-subtle">
+      Credentials are stored only in this local workspace and sent as configured by this request.
+    </p>
   {/if}
 </div>

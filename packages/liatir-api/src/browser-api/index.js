@@ -1204,7 +1204,9 @@ function buildNetwork(core) {
     resolve: (host) => core.invoke("lia_network_resolve", { host }),
     estimateBandwidth: (url, sizeHintBytes, timeoutMs) => core.invoke("lia_network_bandwidth_estimate", { url, sizeHintBytes, timeoutMs }),
     setMonitor: (intervalMs, targets) => core.invoke("lia_network_set_monitor", { intervalMs: intervalMs ?? 3e3, targets }),
-    stopMonitor: () => core.invoke("lia_network_stop_monitor")
+    stopMonitor: () => core.invoke("lia_network_stop_monitor"),
+    request: (request) => core.invoke("lia_http_request", { request }),
+    cancelRequest: (requestId) => core.invoke("lia_http_request_cancel", { requestId })
   };
 }
 
