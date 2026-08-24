@@ -222,6 +222,15 @@ single-cell preset with typed output references. The
 precedence, compatibility rejection and preset wiring. It deliberately uses a
 bounded local fixture and does not download or execute a heavy AI Model.
 
+`tests/e2e/specs/single-cell-index-distribution.e2e.mjs` is the ready-made
+reference lifecycle gate. `scripts/run-single-cell-index-e2e.mjs` creates a tiny
+deterministic index archive and an ephemeral signing key, serves the signed
+catalog from loopback, then drives the real Tauri app through the dropdown. It
+proves verified installation, one archive request across a second reuse call,
+and exact removal from both native storage and the installed list. The ordinary
+native run skips this spec without its fixture; `single-cell-index-e2e` is a
+declared suite in the `ui` and `all` profiles.
+
 At Gate 5 closure on 2026-08-13, the focused Gate 5, artifact, pipeline
 lifecycle and execution-spine suites passed after the main implementation. Two
 later parser/PCA edge-case fixes pass their focused unit tests and

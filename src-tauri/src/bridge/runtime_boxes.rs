@@ -491,11 +491,11 @@ fn trusted_keys() -> Result<Vec<TrustedKey>, String> {
         keys.append(&mut parse_keys(DEVELOPMENT_TRUST_KEY)?);
         if let Ok(path) = std::env::var("LIATIR_RUNTIME_BOX_TRUSTED_KEY_FILE") {
             let raw = std::fs::read_to_string(&path).map_err(|error| {
-                format!("cannot read debug Runtime Box trust key {path}: {error}")
+                format!("cannot read debug Liatir distribution trust key {path}: {error}")
             })?;
             keys.append(
                 &mut parse_keys(&raw)
-                    .map_err(|error| format!("invalid debug Runtime Box trust key: {error}"))?,
+                    .map_err(|error| format!("invalid debug Liatir distribution trust key: {error}"))?,
             );
         }
     }
@@ -505,12 +505,12 @@ fn trusted_keys() -> Result<Vec<TrustedKey>, String> {
     if let Some(raw) = option_env!("LIATIR_RUNTIME_BOX_TRUSTED_KEYS_JSON") {
         keys.append(
             &mut parse_keys(raw)
-                .map_err(|error| format!("invalid production Runtime Box trust keys: {error}"))?,
+                .map_err(|error| format!("invalid production Liatir distribution trust keys: {error}"))?,
         );
     }
     // Fail closed: with no key at all every box would otherwise be unverifiable.
     if keys.is_empty() {
-        return Err("This Liatir build has no trusted AI Runtime Box signing keys".to_string());
+        return Err("This Liatir build has no trusted distribution signing keys".to_string());
     }
     Ok(keys)
 }
@@ -524,23 +524,30 @@ fn trusted_keys() -> Result<Vec<TrustedKey>, String> {
 fn verify_signed_payload_with_digest<T: for<'de> Deserialize<'de>>(
     bytes: &[u8],
 ) -> Result<(T, String), String> {
+    verify_signed_control_payload_with_digest(bytes, "Runtime Box")
+}
+
+pub(crate) fn verify_signed_control_payload_with_digest<T: for<'de> Deserialize<'de>>(
+    bytes: &[u8],
+    subject: &str,
+) -> Result<(T, String), String> {
     let document: SignedDocument = serde_json::from_slice(bytes)
-        .map_err(|error| format!("invalid signed Runtime Box document: {error}"))?;
+        .map_err(|error| format!("invalid signed {subject} document: {error}"))?;
     // Schema version is checked here, from the parsed integer, before the crate sees the
-    // document. A v1 or unknown box must produce Liatir's own stable unsupported-format
+    // document. A v1 or unknown document must produce Liatir's own stable unsupported-format
     // state, which drives product-owned cleanup; it must never depend on matching an
     // upstream error string.
     if document.schema_version != RUNTIME_BOX_SCHEMA_VERSION {
-        return Err("unsupported signed Runtime Box document".to_string());
+        return Err(format!("unsupported signed {subject} document"));
     }
     let keys = trusted_keys()?;
     let verified = verify_signed_document(&document, &keys).map_err(|error| {
-        format!("AI Runtime Box document is not signed by a trusted Liatir key: {error}")
+        format!("{subject} document is not signed by a trusted Liatir key: {error}")
     })?;
     // Only parsed once the bytes are proven authentic, so no attacker-controlled JSON is
     // ever fed to the typed deserialiser.
     let payload = serde_json::from_slice(&verified.bytes)
-        .map_err(|error| format!("invalid signed Runtime Box payload: {error}"))?;
+        .map_err(|error| format!("invalid signed {subject} payload: {error}"))?;
     Ok((payload, document.payload_sha256))
 }
 

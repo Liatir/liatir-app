@@ -1,9 +1,10 @@
 # Runtime Box Registry Worker
 
-This Worker is the small control plane for AI Runtime Boxes. It serves signed
-channel and revocation documents from R2 and accepts authenticated promotion of
-already-signed metadata. Large archives are uploaded by the repository CLI and
-served directly from the R2 custom domain.
+This Worker is the small control plane for AI Runtime Boxes and ready-made
+single-cell reference indexes. It serves signed catalogs, channel and revocation
+documents from R2 and accepts authenticated promotion of already-signed
+metadata. Large archives are uploaded by the repository CLI and served directly
+from the R2 custom domain.
 
 ## Local development
 
@@ -37,11 +38,11 @@ documents are signed independently by the private Google Cloud Run/KMS signer;
 the Worker and R2 store only the public trust bundle and signed output.
 
 The authenticated admin surface also exposes bounded multipart archive upload
-for Runtime Boxes larger than Wrangler's object limit. Keys are derived from a
-validated box/version/target/SHA-256 identity, existing immutable objects are
-refused, each request is limited to 64 MiB, and completion checks the expected
-byte size. The release CLI verifies the complete public SHA-256 before it
-uploads or promotes signed metadata.
+for Runtime Boxes and reference indexes larger than Wrangler's object limit.
+Keys are derived from a validated scientific or box identity plus SHA-256,
+existing immutable objects are refused, each request is limited to 64 MiB, and
+completion checks the expected byte size. The release CLI verifies the complete
+public SHA-256 before it uploads or promotes signed metadata.
 
 CI uses the Registry admin surface for both archives and immutable signed release documents.
 It does not receive a Cloudflare account or R2 API token. Rotate the shared Worker/GitHub
@@ -53,10 +54,12 @@ The deployed Worker is `liatir-runtime-box-registry`. Its public control-plane
 domain is `models.liatir.com`; immutable R2 objects use
 `assets.models.liatir.com`. `wrangler.jsonc` binds `RUNTIME_BOXES` to bucket
 `liatir-storage`, sets `OBJECT_PREFIX=ai-runtime-boxes`, and declares the
-required Worker secret name `ADMIN_TOKEN`.
+required Worker secret name `ADMIN_TOKEN`. `ASSET_ORIGIN` pins signed archive
+URLs to `https://assets.models.liatir.com`.
 
 The protected `runtime-box-production` GitHub Environment supplies these
-Registry-facing variables to `.github/workflows/runtime-box-release.yml`:
+Registry-facing variables to `.github/workflows/runtime-box-release.yml` and
+`.github/workflows/single-cell-index-release.yml`:
 
 - `LIATIR_RUNTIME_BOX_REGISTRY`
 - `LIATIR_RUNTIME_BOX_BUCKET`

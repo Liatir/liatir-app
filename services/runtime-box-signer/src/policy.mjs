@@ -153,6 +153,50 @@ function validateRevocations(policy, payload) {
   }
 }
 
+function validateReferenceIndexCatalog(policy, payload) {
+  requireValue(typeof payload.updatedAt === 'string' && payload.updatedAt.length > 0, 'missing index catalog update time');
+  requireValue(Array.isArray(payload.indexes) && payload.indexes.length > 0 && payload.indexes.length <= 200, 'index catalog must contain 1 to 200 entries');
+  const identities = new Set();
+  for (const entry of payload.indexes) {
+    const approved = policy.referenceIndexes?.find((candidate) =>
+      candidate.id === entry?.id && candidate.version === entry?.version);
+    requireValue(approved, `reference index is not approved: ${entry?.id} ${entry?.version}`);
+    const identity = `${entry.id}@${entry.version}`;
+    requireValue(!identities.has(identity), 'reference index versions must be unique');
+    identities.add(identity);
+    requireValue(entry.label === approved.label, 'reference index label does not match signing policy');
+    requireValue(entry.species?.commonName === approved.commonName, 'reference index common name does not match signing policy');
+    requireValue(entry.species?.scientificName === approved.scientificName, 'reference index scientific name does not match signing policy');
+    requireValue(entry.species?.taxonId === approved.taxonId, 'reference index species does not match signing policy');
+    requireValue(entry.genome?.assembly === approved.assembly, 'reference index assembly does not match signing policy');
+    requireValue(entry.annotation?.provider === approved.annotationProvider, 'reference index annotation provider does not match signing policy');
+    requireValue(entry.annotation?.release === approved.annotationRelease, 'reference index annotation release does not match signing policy');
+    requireValue(entry.annotation?.format === approved.annotationFormat, 'reference index annotation format is not approved');
+    requireValue(entry.referenceType === approved.referenceType, 'reference index construction does not match signing policy');
+    requireValue(entry.readLength === approved.readLength, 'reference index read length does not match signing policy');
+    requireValue(entry.genome?.source?.url === approved.genomeUrl, 'reference genome URL does not match signing policy');
+    requireValue(entry.genome?.source?.checksum?.value === approved.genomeChecksum, 'reference genome checksum does not match signing policy');
+    requireValue(entry.genome?.source?.checksum?.algorithm === approved.genomeChecksumAlgorithm, 'reference genome checksum algorithm does not match signing policy');
+    requireValue(entry.annotation?.source?.url === approved.annotationUrl, 'reference annotation URL does not match signing policy');
+    requireValue(entry.annotation?.source?.checksum?.value === approved.annotationChecksum, 'reference annotation checksum does not match signing policy');
+    requireValue(entry.annotation?.source?.checksum?.algorithm === approved.annotationChecksumAlgorithm, 'reference annotation checksum algorithm does not match signing policy');
+    requireValue(entry.toolchain?.simpleafVersion === approved.simpleafVersion, 'simpleaf version does not match signing policy');
+    requireValue(entry.toolchain?.piscemVersion === approved.piscemVersion, 'piscem version does not match signing policy');
+    requireValue(entry.toolchain?.nativeToolsLockSha256 === approved.nativeToolsLockSha256, 'Native Tools lock does not match signing policy');
+    requireValue(entry.provenance?.recipeSha256 === approved.recipeSha256, 'reference-index recipe does not match signing policy');
+    requireValue(typeof entry.provenance?.sourceRevision === 'string' && /^[a-f0-9]{40}$/.test(entry.provenance.sourceRevision), 'invalid reference-index source revision');
+    requireValue(typeof entry.provenance?.builtAt === 'string' && entry.provenance.builtAt.length > 0, 'missing reference-index build time');
+    requireValue(entry.archive?.format === 'zip', 'only ZIP reference indexes are approved');
+    requireValue(SHA256.test(entry.archive?.sha256 ?? ''), 'invalid reference-index archive SHA-256');
+    requireValue(Number.isSafeInteger(entry.archive?.sizeBytes) && entry.archive.sizeBytes > 0, 'invalid reference-index archive size');
+    exactAssetUrl(
+      policy,
+      entry.archive.url,
+      `reference-indexes/${entry.id}/${entry.version}/${entry.archive.sha256}.zip`,
+    );
+  }
+}
+
 /** Validate the exact payload before KMS is allowed to sign it. */
 export function validateSigningPayload(policy, payload) {
   requireValue(payload && typeof payload === 'object' && !Array.isArray(payload), 'payload must be an object');
@@ -160,5 +204,6 @@ export function validateSigningPayload(policy, payload) {
   if (payload.kind === 'liatir.runtime-box.release') validateRelease(policy, payload);
   else if (payload.kind === 'liatir.runtime-box.channel') validateChannel(policy, payload);
   else if (payload.kind === 'liatir.runtime-box.revocations') validateRevocations(policy, payload);
+  else if (payload.kind === 'liatir.single-cell-index.catalog') validateReferenceIndexCatalog(policy, payload);
   else throw new Error('document kind is not signable');
 }

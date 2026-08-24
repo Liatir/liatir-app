@@ -2,6 +2,7 @@ import type { DesktopInterface } from "../modules/desktop/_types";
 import type { JobsInterface } from "../modules/rs/jobs/_types";
 import type { DepsInterface } from "../modules/rs/deps/_types";
 import type { ExternalWorkflowsInterface } from "../modules/rs/externalWorkflows/_types";
+import type { SingleCellIndexesInterface } from "../modules/rs/singleCellIndexes/_types";
 import type { QcInterface } from "../modules/qc/_types";
 import type { WindowTauri } from "../core/_types";
 export type LiaPlatform = "macos" | "linux" | "windows";
@@ -20,6 +21,8 @@ export type LiatirBrowserAPI = {
     deps: DepsInterface;
     /** Saved external scientific workflows executed through system engines such as Nextflow. */
     externalWorkflows: ExternalWorkflowsInterface;
+    /** Verified catalog and app-global installation of reusable single-cell references. */
+    singleCellIndexes: SingleCellIndexesInterface;
     qc: QcInterface;
     tauri?: WindowTauri;
     onReady: (callback: Function) => void;

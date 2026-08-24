@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "indexes": [
+    {
+      "id": "human-grch38-gencode-v47-si-r91",
+      "version": "1.0.0",
+      "label": "Human (GRCh38, GENCODE v47, R2 91 bp)",
+      "species": {
+        "commonName": "Human",
+        "scientificName": "Homo sapiens",
+        "taxonId": 9606
+      },
+      "genome": {
+        "assembly": "GRCh38",
+        "source": {
+          "url": "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_47/GRCh38.primary_assembly.genome.fa.gz",
+          "checksum": {
+            "algorithm": "md5",
+            "value": "0c33152bea6f09b89fb5e3f89558771e"
+          }
+        }
+      },
+      "annotation": {
+        "provider": "GENCODE",
+        "release": "v47",
+        "format": "gtf",
+        "source": {
+          "url": "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_47/gencode.v47.primary_assembly.annotation.gtf.gz",
+          "checksum": {
+            "algorithm": "md5",
+            "value": "81cf2337bb31aeaddba7059a3b0f14f5"
+          }
+        }
+      },
+      "referenceType": "spliced+intronic",
+      "readLength": 91,
+      "toolchain": {
+        "simpleafVersion": "0.28.0",
+        "piscemVersion": "0.22.1",
+        "pixiManifest": "runtime-boxes/scrolls/native-tools/linux-x86_64-cpu/pixi.toml",
+        "pixiLock": "runtime-boxes/scrolls/native-tools/linux-x86_64-cpu/pixi.lock"
+      }
+    }
+  ]
+}

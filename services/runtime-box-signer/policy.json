@@ -6,6 +6,32 @@
     "beta",
     "stable"
   ],
+  "referenceIndexes": [
+    {
+      "id": "human-grch38-gencode-v47-si-r91",
+      "version": "1.0.0",
+      "recipeSha256": "622a6726a7ab4a59df38f83ba67a05ea7f39a2344e5dfb4a0303615e6fb31010",
+      "label": "Human (GRCh38, GENCODE v47, R2 91 bp)",
+      "commonName": "Human",
+      "scientificName": "Homo sapiens",
+      "taxonId": 9606,
+      "assembly": "GRCh38",
+      "annotationProvider": "GENCODE",
+      "annotationRelease": "v47",
+      "annotationFormat": "gtf",
+      "referenceType": "spliced+intronic",
+      "readLength": 91,
+      "genomeUrl": "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_47/GRCh38.primary_assembly.genome.fa.gz",
+      "genomeChecksum": "0c33152bea6f09b89fb5e3f89558771e",
+      "genomeChecksumAlgorithm": "md5",
+      "annotationUrl": "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_47/gencode.v47.primary_assembly.annotation.gtf.gz",
+      "annotationChecksum": "81cf2337bb31aeaddba7059a3b0f14f5",
+      "annotationChecksumAlgorithm": "md5",
+      "simpleafVersion": "0.28.0",
+      "piscemVersion": "0.22.1",
+      "nativeToolsLockSha256": "4fecf29fb26462aa28c56096ce02916fde2531fa6b531027c939f2e082998b71"
+    }
+  ],
   "boxes": [
     {
       "boxId": "geneformer-v1-10m",

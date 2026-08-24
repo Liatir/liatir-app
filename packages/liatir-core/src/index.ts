@@ -637,7 +637,7 @@ export * from "./runtime-box";
 export * from "./native-tools";
 
 // Single-cell RNA-seq: the reference index a quantification runs against.
-export * from "./single-cell";
+export * from "./single-cell.js";
 
 // ── ToolRef — unified reference for anything spawnable via jobs ──────────────
 

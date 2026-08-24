@@ -16,6 +16,7 @@
   import RunRecord from '$lib/components/ui/RunRecord.svelte';
   import DepCheck, { type DepStatus } from '$lib/components/ui/DepCheck.svelte';
   import ThreadControl from '$lib/components/tools/ThreadControl.svelte';
+  import SingleCellIndexManager from '$lib/components/tools/SingleCellIndexManager.svelte';
   import { DEP_REQUIREMENTS } from '$lib/data/dep-requirements';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
   import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
@@ -262,6 +263,8 @@
     </PageHeader>
 
     <div class="flex-1 overflow-y-auto p-6 space-y-5">
+
+      <SingleCellIndexManager onuse={(path) => indexPath = path} />
 
       <DepCheck req={DEP_REQUIREMENTS.simpleaf} onStatusChange={(s) => depStatus = s} />
 

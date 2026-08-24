@@ -18,8 +18,8 @@ You run one step, not five.
 
 ## Inputs
 
-- **Single-cell index** — produced by
-  [Single-cell Reference Index](/tools/single-cell-index).
+- **Single-cell index** — download a verified ready-made reference or build a
+  custom one in [Single-cell Reference Index](/tools/single-cell-index).
 - **Reads R1** — the short read carrying the cell barcode and the UMI.
 - **Reads R2** — the read carrying the transcript sequence.
 - **Chemistry** — the kit the library was made with. Getting this wrong makes
@@ -86,8 +86,7 @@ release gives Ensembl IDs — which is what **Geneformer** expects. **UCE** and
 the wrong namespace. Symbols are stored alongside the identifiers when the
 annotation carried them.
 
-## What is not here yet
+## Current limit
 
-Liatir does not yet offer ready-made downloadable indexes for common species, so
-the reference is built on your machine the first time. A sample split across
-several FASTQ files per read also has to be concatenated before running.
+A sample split across several FASTQ files per read has to be concatenated before
+running.

@@ -128,6 +128,9 @@ dist
 .rb/
 .runtime-box-dist/
 .runtime-box-ci/
+.single-cell-index-dist/
+.single-cell-index-work/
+.single-cell-index-toolchain/
 gha-creds-*.json
 
 # Gatsby files

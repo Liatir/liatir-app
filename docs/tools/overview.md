@@ -51,6 +51,11 @@ result is an `.h5ad` count matrix, which is the input the
 [Single-cell Embedding](/ai/tools/single-cell-embedding) AI Tool and the
 [Single-cell Viewer](/visualization/single-cell-viewer) expect.
 
+Common single-cell references can be selected from a ready-made list. Liatir
+downloads each index once, verifies it and keeps it for reuse; the reference
+index tool remains available for species or annotation releases not in that
+list.
+
 ### Windows and WSL2
 
 Almost none of this software has a Windows build. `samtools`, `bcftools`, `bwa`,

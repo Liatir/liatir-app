@@ -12,6 +12,7 @@ POOL_ID="${LIATIR_WIF_POOL_ID:-liatir-github-actions}"
 RELEASE_PROVIDER_ID="${LIATIR_RELEASE_PROVIDER_ID:-runtime-box-production}"
 SIGNER_PROVIDER_ID="${LIATIR_SIGNER_PROVIDER_ID:-runtime-box-signer-admin}"
 REVOCATION_PROVIDER_ID="${LIATIR_REVOCATION_PROVIDER_ID:-runtime-box-revocation}"
+INDEX_PROVIDER_ID="${LIATIR_INDEX_PROVIDER_ID:-single-cell-index-release}"
 RELEASE_SERVICE_ACCOUNT_ID="${LIATIR_RELEASE_SERVICE_ACCOUNT_ID:-runtime-box-release-ci}"
 SIGNER_SERVICE_ACCOUNT_ID="${LIATIR_SIGNER_ADMIN_SERVICE_ACCOUNT_ID:-runtime-box-signer-deploy-ci}"
 PRODUCTION_ENVIRONMENT="runtime-box-production"
@@ -229,6 +230,8 @@ ensure_provider "$SIGNER_PROVIDER_ID" "Runtime Box signer deployments" \
 # that already holds Cloud Run Invoker on the signer.
 ensure_provider "$REVOCATION_PROVIDER_ID" "Runtime Box revocations" \
   "$PRODUCTION_ENVIRONMENT" "runtime-box-revoke.yml"
+ensure_provider "$INDEX_PROVIDER_ID" "Single-cell reference index releases" \
+  "$PRODUCTION_ENVIRONMENT" "single-cell-index-release.yml"
 
 ensure_service_account "$RELEASE_SERVICE_ACCOUNT_ID" "Runtime Box release CI"
 ensure_service_account "$SIGNER_SERVICE_ACCOUNT_ID" "Runtime Box signer deployment CI"
@@ -278,12 +281,15 @@ SIGNER_PROVIDER="$(gcloud iam workload-identity-pools providers describe "$SIGNE
   --workload-identity-pool "$POOL_ID" --location global --project "$PROJECT_ID" --format='value(name)')"
 REVOCATION_PROVIDER="$(gcloud iam workload-identity-pools providers describe "$REVOCATION_PROVIDER_ID" \
   --workload-identity-pool "$POOL_ID" --location global --project "$PROJECT_ID" --format='value(name)')"
+INDEX_PROVIDER="$(gcloud iam workload-identity-pools providers describe "$INDEX_PROVIDER_ID" \
+  --workload-identity-pool "$POOL_ID" --location global --project "$PROJECT_ID" --format='value(name)')"
 
 set_environment_variable "$PRODUCTION_ENVIRONMENT" GCP_PROJECT_ID "$PROJECT_ID"
 set_environment_variable "$PRODUCTION_ENVIRONMENT" GCP_REGION "$REGION"
 set_environment_variable "$PRODUCTION_ENVIRONMENT" LIATIR_RUNTIME_BOX_SIGNER_URL "$SIGNER_URL"
 set_environment_variable "$PRODUCTION_ENVIRONMENT" GCP_WORKLOAD_IDENTITY_PROVIDER "$RELEASE_PROVIDER"
 set_environment_variable "$PRODUCTION_ENVIRONMENT" GCP_REVOCATION_WORKLOAD_IDENTITY_PROVIDER "$REVOCATION_PROVIDER"
+set_environment_variable "$PRODUCTION_ENVIRONMENT" GCP_SINGLE_CELL_INDEX_WORKLOAD_IDENTITY_PROVIDER "$INDEX_PROVIDER"
 set_environment_variable "$PRODUCTION_ENVIRONMENT" GCP_RELEASE_SERVICE_ACCOUNT "$RELEASE_SERVICE_ACCOUNT"
 set_environment_variable "$PRODUCTION_ENVIRONMENT" LIATIR_RUNTIME_BOX_REGISTRY https://models.liatir.com
 set_environment_variable "$PRODUCTION_ENVIRONMENT" LIATIR_RUNTIME_BOX_BUCKET liatir-storage

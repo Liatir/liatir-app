@@ -69,6 +69,13 @@ export interface MultipartArchiveIdentity {
   key: string;
 }
 
+export interface ReferenceIndexArchiveIdentity {
+  indexId: string;
+  version: string;
+  sha256: string;
+  key: string;
+}
+
 export interface ImmutableReleaseIdentity {
   boxId: string;
   version: string;
@@ -95,6 +102,24 @@ export function parseMultipartArchiveIdentity(
     target,
     sha256,
     key: `boxes/${boxId}/${version}/${target}/${sha256}.zip`,
+  };
+}
+
+/** Builds the only immutable object identity accepted for a scientific reference index. */
+export function parseReferenceIndexArchiveIdentity(
+  indexIdValue: string,
+  versionValue: string,
+  sha256Value: string,
+): ReferenceIndexArchiveIdentity | null {
+  const indexId = safeSegment(indexIdValue);
+  const version = safeSegment(versionValue);
+  const sha256 = SHA256_PATTERN.test(sha256Value) ? sha256Value : null;
+  if (!indexId || !version || !sha256) return null;
+  return {
+    indexId,
+    version,
+    sha256,
+    key: `reference-indexes/${indexId}/${version}/${sha256}.zip`,
   };
 }
 
@@ -293,11 +318,48 @@ async function createArchiveUpload(request: Request, env: Env): Promise<Response
   return json({ uploadId: upload.uploadId, key: identity.key });
 }
 
+/** Starts an index upload without giving the producer direct R2 credentials. */
+async function createReferenceIndexUpload(request: Request, env: Env): Promise<Response> {
+  if (!await requireAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
+  let input: unknown;
+  try {
+    input = await readBoundedJson(request);
+  } catch (error) {
+    return json({ error: error instanceof Error ? error.message : 'invalid_json' }, 400);
+  }
+  if (!input || typeof input !== 'object') return json({ error: 'invalid_upload' }, 400);
+  const record = input as Record<string, unknown>;
+  const identity = parseReferenceIndexArchiveIdentity(
+    String(record.indexId ?? ''),
+    String(record.version ?? ''),
+    String(record.sha256 ?? ''),
+  );
+  const expectedSizeBytes = Number(record.sizeBytes);
+  if (!identity || !Number.isSafeInteger(expectedSizeBytes) || expectedSizeBytes <= 0) {
+    return json({ error: 'invalid_upload' }, 400);
+  }
+  const key = objectKey(env, identity.key);
+  if (await env.RUNTIME_BOXES.head(key)) return json({ error: 'immutable_object_exists' }, 409);
+  const upload = await env.RUNTIME_BOXES.createMultipartUpload(key, {
+    httpMetadata: {
+      contentType: 'application/zip',
+      cacheControl: 'public, max-age=31536000, immutable',
+    },
+    customMetadata: {
+      expectedSha256: identity.sha256,
+      expectedSizeBytes: String(expectedSizeBytes),
+      assetKind: 'single-cell-reference-index',
+    },
+  });
+  console.log(JSON.stringify({ event: 'reference_index_upload_created', ...identity }));
+  return json({ uploadId: upload.uploadId, key: identity.key });
+}
+
 /** Streams one bounded part directly into R2 without buffering it in Worker memory. */
 async function uploadArchivePart(
   request: Request,
   env: Env,
-  identity: MultipartArchiveIdentity,
+  identity: MultipartArchiveIdentity | ReferenceIndexArchiveIdentity,
   uploadId: string,
   partNumber: number,
 ): Promise<Response> {
@@ -325,7 +387,7 @@ async function uploadArchivePart(
 async function completeArchiveUpload(
   request: Request,
   env: Env,
-  identity: MultipartArchiveIdentity,
+  identity: MultipartArchiveIdentity | ReferenceIndexArchiveIdentity,
   uploadId: string,
 ): Promise<Response> {
   if (!await requireAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
@@ -376,7 +438,7 @@ async function completeArchiveUpload(
 async function abortArchiveUpload(
   request: Request,
   env: Env,
-  identity: MultipartArchiveIdentity,
+  identity: MultipartArchiveIdentity | ReferenceIndexArchiveIdentity,
   uploadId: string,
 ): Promise<Response> {
   if (!await requireAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
@@ -449,7 +511,12 @@ async function serveObject(request: Request, env: Env, key: string): Promise<Res
   const headers = new Headers();
   object.writeHttpMetadata(headers);
   headers.set('etag', object.httpEtag);
-  headers.set('cache-control', key.startsWith('channels/') ? 'public, max-age=60' : 'public, max-age=300');
+  headers.set(
+    'cache-control',
+    key.startsWith('channels/') || key === 'reference-indexes/catalog.json'
+      ? 'public, max-age=60'
+      : 'public, max-age=300',
+  );
   headers.set('access-control-allow-origin', '*');
   headers.set('x-content-type-options', 'nosniff');
   return new Response(object.body, { headers });
@@ -570,6 +637,77 @@ async function promoteRevocations(request: Request, env: Env): Promise<Response>
   return json({ ok: true, key: 'control/revocations.json' });
 }
 
+/** The signature authenticates the catalog; this check binds each archive to its R2 route. */
+export function isReferenceIndexCatalog(
+  env: Env,
+  payload: Record<string, unknown>,
+): boolean {
+  if (payload.schemaVersion !== 2
+    || payload.kind !== 'liatir.single-cell-index.catalog'
+    || typeof payload.updatedAt !== 'string'
+    || !Array.isArray(payload.indexes)
+    || payload.indexes.length === 0
+    || payload.indexes.length > 200) return false;
+  const identities = new Set<string>();
+  return payload.indexes.every((value) => {
+    if (!value || typeof value !== 'object') return false;
+    const entry = value as Record<string, unknown>;
+    const identity = parseReferenceIndexArchiveIdentity(
+      String(entry.id ?? ''),
+      String(entry.version ?? ''),
+      String((entry.archive as Record<string, unknown> | undefined)?.sha256 ?? ''),
+    );
+    const archive = entry.archive as Record<string, unknown> | undefined;
+    if (!identity
+      || identities.has(`${identity.indexId}@${identity.version}`)
+      || archive?.format !== 'zip'
+      || !Number.isSafeInteger(archive.sizeBytes)
+      || Number(archive.sizeBytes) <= 0
+      || typeof archive.url !== 'string') return false;
+    identities.add(`${identity.indexId}@${identity.version}`);
+    try {
+      const url = new URL(archive.url);
+      const assetOrigin = new URL(env.ASSET_ORIGIN);
+      const prefix = env.OBJECT_PREFIX.replace(/^\/+|\/+$/g, '');
+      return url.protocol === 'https:'
+        && url.origin === assetOrigin.origin
+        && url.username === ''
+        && url.password === ''
+        && url.search === ''
+        && url.hash === ''
+        && url.pathname === `/${prefix}/${identity.key}`;
+    } catch {
+      return false;
+    }
+  });
+}
+
+/** Replaces the small mutable catalog only after signature and route validation. */
+async function promoteReferenceIndexCatalog(request: Request, env: Env): Promise<Response> {
+  if (!await requireAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
+  let input: unknown;
+  try {
+    input = await readBoundedJson(request);
+  } catch (error) {
+    return json({ error: error instanceof Error ? error.message : 'invalid_json' }, 400);
+  }
+  if (!isLiatirSignedRuntimeBoxDocument(input)) return json({ error: 'invalid_signed_document' }, 400);
+  const payload = await verifySignedDocument(env, input);
+  if (!payload || !isReferenceIndexCatalog(env, payload)) {
+    return json({ error: 'invalid_reference_index_catalog' }, 400);
+  }
+  const key = 'reference-indexes/catalog.json';
+  await env.RUNTIME_BOXES.put(objectKey(env, key), `${JSON.stringify(input, null, 2)}\n`, {
+    httpMetadata: { contentType: 'application/json', cacheControl: 'public, max-age=60' },
+    customMetadata: { payloadSha256: input.payloadSha256 },
+  });
+  console.log(JSON.stringify({
+    event: 'reference_index_catalog_promoted',
+    count: (payload.indexes as unknown[]).length,
+  }));
+  return json({ ok: true, key });
+}
+
 export default {
   /**
    * Router. Paths are matched by exact segment count and shape rather than by prefix, so an
@@ -582,6 +720,9 @@ export default {
     }
     if (request.method === 'GET' && url.pathname === '/v1/revocations') {
       return serveObject(request, env, 'control/revocations.json');
+    }
+    if (request.method === 'GET' && url.pathname === '/v1/reference-indexes/catalog') {
+      return serveObject(request, env, 'reference-indexes/catalog.json');
     }
     const parts = url.pathname.split('/').filter(Boolean);
     // GET /v1/channels/:channel/:boxId/:target — what the app calls to start an install.
@@ -604,6 +745,9 @@ export default {
     if (request.method === 'POST' && url.pathname === '/v1/admin/uploads') {
       return createArchiveUpload(request, env);
     }
+    if (request.method === 'POST' && url.pathname === '/v1/admin/reference-indexes/uploads') {
+      return createReferenceIndexUpload(request, env);
+    }
     // PUT /v1/admin/releases/:boxId/:version/:target/:sha256 — immutable signed metadata.
     if (request.method === 'PUT' && parts.length === 7 && parts[0] === 'v1' && parts[1] === 'admin' && parts[2] === 'releases') {
       const identity = parseImmutableReleaseIdentity(parts[3], parts[4], parts[5], parts[6]);
@@ -624,6 +768,27 @@ export default {
       if (request.method === 'PUT' && parts.length === 9 && parts[7] === 'parts') {
         return uploadArchivePart(request, env, identity, uploadId, Number(parts[8]));
       }
+    }
+    if (parts.length >= 7
+      && parts[0] === 'v1'
+      && parts[1] === 'admin'
+      && parts[2] === 'reference-indexes'
+      && parts[3] === 'uploads') {
+      const identity = parseReferenceIndexArchiveIdentity(parts[4], parts[5], parts[6]);
+      const uploadId = multipartUploadId(url);
+      if (!identity || !uploadId) return json({ error: 'invalid_route' }, 400);
+      if (request.method === 'DELETE' && parts.length === 7) {
+        return abortArchiveUpload(request, env, identity, uploadId);
+      }
+      if (request.method === 'POST' && parts.length === 8 && parts[7] === 'complete') {
+        return completeArchiveUpload(request, env, identity, uploadId);
+      }
+      if (request.method === 'PUT' && parts.length === 9 && parts[7] === 'parts') {
+        return uploadArchivePart(request, env, identity, uploadId, Number(parts[8]));
+      }
+    }
+    if (request.method === 'PUT' && url.pathname === '/v1/admin/reference-indexes/catalog') {
+      return promoteReferenceIndexCatalog(request, env);
     }
     if (request.method === 'PUT' && url.pathname === '/v1/admin/revocations') {
       return promoteRevocations(request, env);

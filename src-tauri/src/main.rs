@@ -460,6 +460,10 @@ fn main() {
       lia_quenta_docs_sync,
       lia_snpeff_annotate,
       lia_snpeff_download_db,
+      lia_single_cell_indexes_catalog,
+      lia_single_cell_indexes_installed,
+      lia_single_cell_index_install,
+      lia_single_cell_index_remove,
       lia_bwa_mem,
       lia_minimap2,
 

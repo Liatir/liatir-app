@@ -1,9 +1,9 @@
 # Runtime Box Signer
 
-Private Cloud Run service that validates Runtime Box release metadata against a
-versioned allowlist and asks Cloud KMS to create an Ed25519 signature. The
-service never stores or exports private key material and never proxies Runtime
-Box archives.
+Private Cloud Run service that validates Runtime Box metadata and single-cell
+reference-index catalogs against a versioned allowlist, then asks Cloud KMS to
+create an Ed25519 signature. The service never stores or exports private key
+material and never proxies archives.
 
 Cloud Run IAM is the authentication boundary. Deploy the service without
 unauthenticated access and grant `roles/run.invoker` only to the release
@@ -31,8 +31,8 @@ identity has a project-level or key-level Cloud KMS role; the configuration
 script asserts that boundary.
 
 `policy.json` is intentionally reviewed and deployed with the service. Adding a
-new AI Model or target therefore requires a code review and signer deployment
-before KMS will sign it.
+new AI Model, target, species or annotation release therefore requires a code
+review and signer deployment before KMS will sign it.
 
 The repository deployment helper provisions the service for an authorized
 bootstrap operator:
@@ -82,6 +82,11 @@ direct command. `policy.json`, the service source, the deployment script, the
 checked-in public trust bundle, and the WIF/environment configuration must be
 reviewed together for a signer or key change. Key rotation must retain every
 public key needed to verify supported releases.
+
+The single-cell index workflow has its own workflow-pinned identity provider,
+`GCP_SINGLE_CELL_INDEX_WORKLOAD_IDENTITY_PROVIDER`, but reuses the protected
+release service account. It can sign only catalog entries whose complete
+scientific identity and source checksums are approved in `referenceIndexes`.
 
 See the internal
 [Runtime Box production report](../../.mind/roadmap/runtime-box-production-report.md)

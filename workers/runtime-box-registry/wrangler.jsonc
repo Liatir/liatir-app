@@ -19,7 +19,8 @@
   ],
   "vars": {
     "ENVIRONMENT": "production",
-    "OBJECT_PREFIX": "ai-runtime-boxes"
+    "OBJECT_PREFIX": "ai-runtime-boxes",
+    "ASSET_ORIGIN": "https://assets.models.liatir.com"
   },
   "secrets": {
     "required": ["ADMIN_TOKEN"]

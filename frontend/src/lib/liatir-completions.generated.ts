@@ -218,6 +218,12 @@ export const LIATIR_API: Record<string, ApiNode> = {
       spawnNextflow: { type: "method", detail: "(options: SpawnExternalWorkflowNextflowOptions): Promise<{ jobId: string; }>" },
       collectOutputs: { type: "method", detail: "(options: CollectExternalWorkflowOutputsOptions): Promise<ExternalWorkflowCollectedOutput[]>" },
   } },
+  singleCellIndexes: { type: "property", detail: "SingleCellIndexesInterface", info: "Verified catalog and app-global installation of reusable single-cell references.", children: {
+      catalog: { type: "method", detail: "(): Promise<LiatirSingleCellIndexCatalogResult>" },
+      installed: { type: "method", detail: "(): Promise<LiatirInstalledSingleCellIndex[]>" },
+      install: { type: "method", detail: "(id: string, version: string, downloadId: string): Promise<LiatirSingleCellIndexInstallResult>" },
+      remove: { type: "method", detail: "(id: string, version: string, archiveSha256: string): Promise<boolean>" },
+  } },
   qc: { type: "property", detail: "QcInterface", children: {
       fastqc: { type: "property", detail: "FastqcInterface", children: {
           run: { type: "method", detail: "(args: FastqcArgs, execution?: FastqcExecutionOptions): Promise<LiatirToolOutput>" },

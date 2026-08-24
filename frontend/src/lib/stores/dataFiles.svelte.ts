@@ -27,6 +27,7 @@ function getFile() { return `${getDataPrefix()}data-files.json`; }
 
 function detectExt(path: string): string {
   const name = path.split(/[\\/]/).pop() ?? path;
+  if (/\.sc-index\.json$/i.test(name))        return 'sc-index.json';
   if (/\.(fastq|fq)\.gz$/i.test(name))       return 'fastq.gz';
   if (/\.(fastq|fq)$/i.test(name))           return 'fastq';
   if (/\.(fasta|fa|fna|faa)\.gz$/i.test(name)) return 'fasta.gz';

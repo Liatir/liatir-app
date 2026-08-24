@@ -4,15 +4,22 @@
 // that builds an index emits this manifest instead — one small JSON file naming the
 // directory and the maps beside it — and the step that quantifies reads it.
 //
-// The seam is deliberate. Where an index comes from is expected to change: today Liatir
-// builds it on the machine from a genome and its annotation, and a published index the app
-// downloads is the settled direction. Neither step has to change for that, because whatever
-// produces an index writes one of these.
+// The seam is deliberate. Liatir can build an unusual index on the machine or download a
+// ready-made, verified index from its signed catalog. Neither quantification path has to change,
+// because both producers write one of these.
 
 export const LIATIR_SINGLE_CELL_INDEX_KIND = "liatir.single-cell-index" as const;
 
 /** Extension of the manifest file, and what a quantification input accepts. */
 export const LIATIR_SINGLE_CELL_INDEX_EXTENSION = "sc-index.json" as const;
+
+/** Signed registry document containing the reference indexes Liatir can install. */
+export const LIATIR_SINGLE_CELL_INDEX_CATALOG_KIND =
+  "liatir.single-cell-index.catalog" as const;
+
+/** Portable manifest stored at the root of every published index archive. */
+export const LIATIR_SINGLE_CELL_INDEX_BUNDLE_KIND =
+  "liatir.single-cell-index.bundle" as const;
 
 /**
  * How the reference was expanded before indexing.
@@ -22,6 +29,105 @@ export const LIATIR_SINGLE_CELL_INDEX_EXTENSION = "sc-index.json" as const;
  * "USA mode": every gene is counted three times over — spliced, unspliced, and ambiguous.
  */
 export type LiatirSingleCellReferenceType = "spliced+intronic";
+
+export interface LiatirSingleCellIndexSourceAsset {
+  url: string;
+  /** GENCODE currently publishes MD5 values for its release files. */
+  checksum: { algorithm: "md5" | "sha256"; value: string };
+}
+
+export interface LiatirSingleCellIndexCatalogEntry {
+  /** Stable scientific identity, including the decisions that change quantification. */
+  id: string;
+  /** Version of this packaged index. Its bytes are immutable once published. */
+  version: string;
+  label: string;
+  species: {
+    commonName: string;
+    scientificName: string;
+    taxonId: number;
+  };
+  genome: {
+    assembly: string;
+    source: LiatirSingleCellIndexSourceAsset;
+  };
+  annotation: {
+    provider: string;
+    release: string;
+    format: "gtf" | "gff3";
+    source: LiatirSingleCellIndexSourceAsset;
+  };
+  referenceType: LiatirSingleCellReferenceType;
+  /** Biological read length used to expand introns, not a download or machine setting. */
+  readLength: number;
+  archive: {
+    format: "zip";
+    url: string;
+    sha256: string;
+    sizeBytes: number;
+  };
+  toolchain: {
+    simpleafVersion: string;
+    piscemVersion: string;
+    nativeToolsLockSha256: string;
+  };
+  provenance: {
+    recipeSha256: string;
+    sourceRevision: string;
+    builtAt: string;
+  };
+}
+
+export interface LiatirSingleCellIndexCatalog {
+  schemaVersion: 2;
+  kind: typeof LIATIR_SINGLE_CELL_INDEX_CATALOG_KIND;
+  updatedAt: string;
+  indexes: LiatirSingleCellIndexCatalogEntry[];
+}
+
+export interface LiatirSingleCellIndexBundleFile {
+  path: string;
+  sha256: string;
+  sizeBytes: number;
+}
+
+/**
+ * Machine-independent contents of a published archive.
+ *
+ * Absolute paths never leave the build machine. The desktop app verifies these files and then
+ * writes the ordinary local `.sc-index.json` manifest with paths for the current machine.
+ */
+export interface LiatirSingleCellIndexBundleManifest {
+  schemaVersion: 1;
+  kind: typeof LIATIR_SINGLE_CELL_INDEX_BUNDLE_KIND;
+  indexId: string;
+  version: string;
+  indexDir: string;
+  t2gMap: string;
+  geneIdToName?: string;
+  files: LiatirSingleCellIndexBundleFile[];
+}
+
+export interface LiatirInstalledSingleCellIndex {
+  id: string;
+  version: string;
+  label: string;
+  archiveSha256: string;
+  manifestPath: string;
+  installDir: string;
+  installedAt: string;
+}
+
+export interface LiatirSingleCellIndexCatalogResult {
+  catalog: LiatirSingleCellIndexCatalog;
+  /** A cached catalog remains usable offline because its signature was verified before storage. */
+  source: "network" | "cache";
+}
+
+export interface LiatirSingleCellIndexInstallResult {
+  installed: LiatirInstalledSingleCellIndex;
+  reused: boolean;
+}
 
 export interface LiatirSingleCellIndexSources {
   genomeFasta: string;

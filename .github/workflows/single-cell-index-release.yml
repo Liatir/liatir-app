@@ -1,0 +1,150 @@
+name: Single-cell reference index release
+
+on:
+  workflow_dispatch:
+    inputs:
+      index_id:
+        description: Approved scientific reference to build and publish
+        required: true
+        type: choice
+        options:
+          - human-grch38-gencode-v47-si-r91
+
+concurrency:
+  group: single-cell-reference-index-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  preflight:
+    name: Validate the tracked scientific recipe
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      version: ${{ steps.recipe.outputs.version }}
+      entry_path: ${{ steps.recipe.outputs.entry_path }}
+    steps:
+      - name: Require the exact main ref
+        run: test "${{ github.ref }}" = "refs/heads/main"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - id: recipe
+        name: Validate the selected recipe and resolve its tracked version
+        run: |
+          npm run single-cell-index -- validate --id "${{ inputs.index_id }}" --github-output "$GITHUB_OUTPUT"
+          npm run test:unit -- tests/unit/single-cell-index-distribution.test.ts
+          npm run runtime-box:signer:check
+
+      - name: Verify the clean checked-out revision
+        run: test -z "$(git status --porcelain)"
+
+  release:
+    name: Build, verify, publish, then promote
+    needs: preflight
+    environment: runtime-box-production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+      LIATIR_RUNTIME_BOX_ADMIN_TOKEN: ${{ secrets.LIATIR_RUNTIME_BOX_ADMIN_TOKEN }}
+      LIATIR_RUNTIME_BOX_REGISTRY: ${{ vars.LIATIR_RUNTIME_BOX_REGISTRY }}
+      LIATIR_RUNTIME_BOX_SIGNER_URL: ${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}
+      PIXI_HOME: ${{ github.workspace }}/.single-cell-index-toolchain/pixi
+      PIXI_NO_PATH_UPDATE: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - id: preflight-auth
+        name: Mint a short-lived signer identity for the policy check
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_SINGLE_CELL_INDEX_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_RELEASE_SERVICE_ACCOUNT }}
+          token_format: id_token
+          id_token_audience: ${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}
+          id_token_include_email: true
+
+      - name: Fail before the large build if the deployed signer policy is stale
+        env:
+          LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN: ${{ steps.preflight-auth.outputs.id_token }}
+        run: >-
+          npm run runtime-box:ci -- verify-signer-policy
+          --signer "${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}"
+
+      - name: Install the pinned Native Tools pixi
+        env:
+          PIXI_VERSION: v0.77.0
+        run: |
+          curl -fsSL https://pixi.sh/install.sh | bash
+          echo "$PIXI_HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Build the index from checksummed GENCODE sources
+        run: >-
+          npm run single-cell-index -- build
+          --id "${{ inputs.index_id }}"
+          --pixi "$PIXI_HOME/bin/pixi"
+          --threads 8
+
+      - name: Require the same clean source revision before signing
+        run: |
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          test -z "$(git status --porcelain)"
+
+      - id: release-auth
+        name: Mint a fresh signer identity after the long build
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_SINGLE_CELL_INDEX_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_RELEASE_SERVICE_ACCOUNT }}
+          token_format: id_token
+          id_token_audience: ${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}
+          id_token_include_email: true
+          create_credentials_file: false
+
+      - name: Publish immutable bytes, verify R2, sign and promote the catalog
+        env:
+          LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN: ${{ steps.release-auth.outputs.id_token }}
+        run: >-
+          npm run single-cell-index -- publish
+          --entry "${{ needs.preflight.outputs.entry_path }}"
+          --registry "${{ vars.LIATIR_RUNTIME_BOX_REGISTRY }}"
+          --signer "${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}"
+          --signer-audience "${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}"
+          --public-key runtime-boxes/trust/production-public.json
+
+      - name: Upload compact build and publication evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: single-cell-index-${{ inputs.index_id }}-${{ github.run_attempt }}
+          path: |
+            .single-cell-index-dist/${{ inputs.index_id }}/${{ needs.preflight.outputs.version }}/build-evidence.json
+            .single-cell-index-dist/${{ inputs.index_id }}/${{ needs.preflight.outputs.version }}/publish-receipt.json
+            .single-cell-index-dist/${{ inputs.index_id }}/${{ needs.preflight.outputs.version }}/catalog.signed.json
+          include-hidden-files: true
+          retention-days: 14
+          if-no-files-found: warn

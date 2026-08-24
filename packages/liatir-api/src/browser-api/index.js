@@ -1327,6 +1327,20 @@ function buildExternalWorkflows(core) {
   };
 }
 
+// src-ts/modules/rs/singleCellIndexes/_main.ts
+function buildSingleCellIndexes(core) {
+  return {
+    catalog: () => core.invoke("lia_single_cell_indexes_catalog"),
+    installed: () => core.invoke("lia_single_cell_indexes_installed"),
+    install: (id, version, downloadId) => core.invoke("lia_single_cell_index_install", {
+      id,
+      version,
+      downloadId
+    }),
+    remove: (id, version, archiveSha256) => core.invoke("lia_single_cell_index_remove", { id, version, archiveSha256 })
+  };
+}
+
 // src-ts/modules/rs/mcp/_main.ts
 function buildMcp(core) {
   return {
@@ -1524,6 +1538,7 @@ function buildQc(core) {
     jobs: buildJobs(core),
     deps: buildDeps(core),
     externalWorkflows: buildExternalWorkflows(core),
+    singleCellIndexes: buildSingleCellIndexes(core),
     qc: buildQc(core),
     tauri: windowTauriProxy,
     onReady: liaReadyEventListener,
@@ -1580,6 +1595,7 @@ export {
   buildNotifications,
   buildQc,
   buildShortcuts,
+  buildSingleCellIndexes,
   buildWindow,
   buildWorker,
   closeWindow,

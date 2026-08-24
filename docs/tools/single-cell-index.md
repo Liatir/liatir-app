@@ -3,6 +3,11 @@
 Builds the reference a single-cell experiment is measured against, from a genome
 and its annotation.
 
+For a common reference, start with **Ready-made reference** at the top of the
+tool. Choose the species, genome assembly, annotation release and read length;
+Liatir downloads the finished index once, verifies it, and reuses it for later
+samples. You can remove the local copy from the same panel.
+
 ## What an index is, in one paragraph
 
 Sequencing gives you millions of short pieces of text. An index is a lookup table
@@ -12,11 +17,15 @@ slow to be practical.
 
 ## Use it for
 
-- preparing a species once, before quantifying any number of samples;
+- downloading a listed reference without finding genome files or building it;
+- preparing a custom species once, before quantifying any number of samples;
 - a species or annotation release Liatir does not provide ready-made;
 - reproducing an analysis against a specific annotation version.
 
 ## Inputs
+
+The ready-made list shows every scientific choice that affects the result. If
+the reference you need is not listed, build a custom one with:
 
 - **Genome FASTA** — the species genome, as downloaded from Ensembl or GENCODE.
 - **Annotation (GTF or GFF3)** — where the genes are in that genome.
@@ -36,9 +45,14 @@ guess for you: it is a scientific choice.
 
 ## What to expect
 
-Building an index reads the entire genome and needs a few gigabytes of memory. On
-a human genome it takes minutes rather than seconds. It is done **once** per
-species and annotation release — every sample afterwards is fast.
+A ready-made index needs only one download. Liatir checks the signed catalog,
+the archive checksum and every extracted file before the index becomes usable;
+the verified copy also works offline.
+
+Building a custom index reads the entire genome and needs a few gigabytes of
+memory. On a human genome it takes minutes rather than seconds. Either route is
+done **once** per species and annotation release — every sample afterwards
+reuses the same index.
 
 The index is built as a *spliced + intronic* reference, which means reads coming
 from unfinished transcripts (the parts of a gene that are normally cut out) are

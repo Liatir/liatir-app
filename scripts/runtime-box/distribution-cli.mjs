@@ -866,4 +866,14 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   });
 }
 
-export { multipartPartRanges, parseHttpByteRange };
+export {
+  multipartPartRanges,
+  parseHttpByteRange,
+  registryAdminRequest,
+  registryAdminToken,
+  registryBaseUrl,
+  remoteObjectExists,
+  signDocument,
+  verifyRemoteObject,
+  verifySignedDocument,
+};

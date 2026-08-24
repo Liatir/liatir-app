@@ -52,6 +52,7 @@ pub mod plugin_progress;
 pub mod quenta;
 pub mod external_workflows;
 pub mod native_tools;
+pub mod single_cell_indexes;
 
 // Flattened re-exports. Four modules declared above are deliberately missing from this list,
 // because nothing needs to reach them through `bridge::*` — each is referenced by its full path
@@ -101,3 +102,4 @@ pub use plugin_progress::*;
 pub use quenta::*;
 pub use external_workflows::*;
 pub use native_tools::*;
+pub use single_cell_indexes::*;

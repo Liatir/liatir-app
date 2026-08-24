@@ -1384,15 +1384,27 @@ and must never grow one. The box's self-test runs the whole chain and asserts
 exact per-cell, per-gene counts, so a box that cannot do single-cell cannot be
 packaged.
 
-What is **not** built is index distribution. The settled decision stands —
-reference indexes built in CI, published to R2, downloaded when the user selects
-one, never in the installer — and no such workflow exists; the R2 spine in this
-repository is Runtime Box infrastructure. Today the index is built locally by a
-step in the app, which a user with an unusual species will always need but is not
-the path a first-time human or mouse user should be on. The seam is in place: the
-index step emits a small manifest file (`packages/liatir-core/src/single-cell.ts`)
-that names the directory, so a downloaded index drops in without the
-quantification step changing.
+Ready-made index distribution is now **implemented and locally verified**, but
+not remotely activated. A manual protected GitHub workflow builds the approved
+human GRCh38 / GENCODE v47 / spliced+intronic / R2 91 index from checksummed
+sources with the committed Linux Native Tools lock. It packages deterministic,
+content-addressed bytes, uploads them to R2 through the least-privilege Registry
+admin surface, verifies the public SHA-256, then signs and promotes a catalog
+whose policy binds the whole scientific identity. The app presents that identity
+in a dropdown, verifies signature/archive/every extracted file, caches the signed
+catalog for offline use, reuses a still-valid install, and supports exact removal.
+The custom local builder remains for unusual species and releases; both routes
+emit the same small manifest (`packages/liatir-core/src/single-cell.ts`), so
+quantification did not change.
+
+Local evidence on 2026-08-24: `test:verify` passed 62 files / 415 tests; the
+focused Rust tests passed 3/3; the dedicated native index lifecycle passed 1/1
+and proved one archive request across install plus reuse, followed by complete
+removal; the full `test:ui` profile passed its main 34/0 native cases plus the
+declared restart/security/desktop lifecycle suites. The first real human index
+was deliberately not built or published. Production activation still requires
+explicit authorization to configure the new workflow identity, deploy the
+reviewed signer/Worker revisions, dispatch exact `main`, and read back evidence.
 
 The signed public [Release gate](./roadmap/release-signed-distribution.md)
 remains a separate, open path. It starts only with the exact credentials,

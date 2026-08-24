@@ -1,9 +1,10 @@
 # Single-cell RNA-seq vertical (alevin-fry)
 
-Status: **built, on the machine.** Liatir takes raw single-cell reads to an
-`.h5ad` count matrix without asking the user to install anything. What is *not*
-built is the published-index distribution described under "Still open" — today the
-reference index is built locally, once, by a step in the app.
+Status: **built and locally verified.** Liatir takes raw single-cell reads to an
+`.h5ad` count matrix without asking the user to install anything. Ready-made
+index distribution is implemented from CI producer to native app lifecycle; the
+production Worker, signer policy and first real index have not yet been deployed
+or published.
 
 ## Why this vertical
 
@@ -28,6 +29,31 @@ calls `simpleaf` and nothing else: it drives piscem for mapping and alevin-fry f
 permit list, collation and UMI resolution. Three engines that can each fail
 differently become one command that fails once, which is the difference between a
 tool a non-technical user can run and one they cannot.
+
+### Ready-made reference indexes
+
+The common path no longer asks the user to find GENCODE files or build an index.
+Both single-cell tool pages show a catalog dropdown with the full scientific
+identity: species, assembly, annotation provider/release, spliced+intronic
+construction and R2 read length. The first approved recipe is human GRCh38,
+GENCODE v47 primary assembly, spliced+intronic, R2 91 bases. The custom local
+builder remains below it for an unusual species or release.
+
+The distribution path is deliberately scientific data, not another executable
+Runtime Box. `.github/workflows/single-cell-index-release.yml` downloads the
+checksummed GENCODE sources, builds with the committed Linux Native Tools pixi
+lock, packages a deterministic ZIP, uploads immutable content-addressed bytes
+through the existing Registry Worker, verifies the complete public SHA-256,
+then signs and promotes the merged catalog. CI never receives an R2 API token.
+Its Google identity provider is pinned to that exact manual workflow.
+
+The signer allowlist binds the complete scientific choice and source checksums,
+not merely an archive name. The Worker re-verifies the signature and exact R2
+origin/path before promotion. The app verifies the catalog signature, archive
+size/SHA-256, safe ZIP paths and every extracted file, activates by rename,
+caches the signed catalog for offline use, re-verifies before reuse, and removes
+only the exact selected identity. Installed manifests are normal
+`*.sc-index.json` values, so quantification did not gain a second input path.
 
 ### The conversion problem dissolved
 
@@ -97,10 +123,21 @@ single-cell can no longer be packaged.
 
 ## Still open
 
-**Published reference indexes.** The settled direction remains: *indexes are built
-in CI, published to R2, and downloaded by the app when the user picks one* — not
-shipped inside the installer, and not built on every user's machine. The reasons,
-kept because they are what makes the decision hold:
+**Production activation.** The code path is complete, but no remote mutation was
+performed in this implementation turn. Before the first catalog can appear in
+the app, an explicitly authorized operator must, in order:
+
+1. run the idempotent CI identity configuration so the new workflow-specific
+   provider and GitHub Environment variable exist;
+2. deploy the reviewed signer policy and Registry Worker revision;
+3. dispatch the manual workflow from exact `main` for the approved human recipe;
+4. read back the immutable archive and signed catalog evidence.
+
+That first remote run is also the first real measurement of human-index archive
+size, wall time and GitHub runner disk headroom. It must not be represented as
+complete from the tiny local fixture.
+
+The original reasons for this shape remain:
 
 - There is no single "human index". There is a matrix of choices — species, then
   annotation release (GENCODE v44/v45/v46…), then variant (with or without
@@ -112,22 +149,10 @@ kept because they are what makes the decision hold:
 - Building on the user's machine costs minutes and RAM on first use and puts a
   step before the first result, which is where a non-technical user is lost.
 
-**None of that is built.** There is no workflow that builds or publishes an index.
-What exists today is the local index step, which is honest work — a user with an
-unusual species or a specific annotation release will always need it — but it is
-not the path a first-time user should be on for human or mouse.
-
-The product shape already exists in the app: SnpEff's genome databases
-(`frontend/src/lib/stores/snpeff.svelte.ts` — `downloadedGenomes`, download on
-demand, marked as present, removable) are the same pattern applied to a different
-tool. Index distribution is that pattern, plus a CI producer, plus a manifest
-writer — and the manifest already exists.
-
-Whether indexes reuse the Runtime Box spine (`.github/workflows/runtime-box-*.yml`,
-`workers/runtime-box-registry`, `services/runtime-box-signer`) or get a simpler
-unsigned asset path on the same bucket is still open. A transcriptome index built
-from a public annotation is not a model weight and does not obviously need KMS
-signing, but it does need a checksum the app can verify offline.
+The local index step remains intentional: a user with an unusual species or a
+specific annotation release will always need it. Mouse and later human releases
+are additions to `single-cell-indexes/recipes.json` plus signer review; they must
+not be silently substituted for the first approved identity.
 
 **Barcode permit lists stay local.** simpleaf's `--unfiltered-pl` downloads the
 manufacturer barcode list from a remote URL, which an offline-first app cannot

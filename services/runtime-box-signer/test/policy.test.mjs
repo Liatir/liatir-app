@@ -41,8 +41,74 @@ const release = {
   },
 };
 
+const approvedIndex = policy.referenceIndexes[0];
+const indexCatalog = {
+  schemaVersion: 2,
+  kind: 'liatir.single-cell-index.catalog',
+  updatedAt: '2026-08-24T00:00:00.000Z',
+  indexes: [{
+    id: approvedIndex.id,
+    version: approvedIndex.version,
+    label: approvedIndex.label,
+    species: {
+      commonName: approvedIndex.commonName,
+      scientificName: approvedIndex.scientificName,
+      taxonId: approvedIndex.taxonId,
+    },
+    genome: {
+      assembly: approvedIndex.assembly,
+      source: {
+        url: approvedIndex.genomeUrl,
+        checksum: { algorithm: approvedIndex.genomeChecksumAlgorithm, value: approvedIndex.genomeChecksum },
+      },
+    },
+    annotation: {
+      provider: approvedIndex.annotationProvider,
+      release: approvedIndex.annotationRelease,
+      format: approvedIndex.annotationFormat,
+      source: {
+        url: approvedIndex.annotationUrl,
+        checksum: { algorithm: approvedIndex.annotationChecksumAlgorithm, value: approvedIndex.annotationChecksum },
+      },
+    },
+    referenceType: approvedIndex.referenceType,
+    readLength: approvedIndex.readLength,
+    archive: {
+      format: 'zip',
+      url: `https://assets.models.liatir.com/ai-runtime-boxes/reference-indexes/${approvedIndex.id}/${approvedIndex.version}/${'c'.repeat(64)}.zip`,
+      sha256: 'c'.repeat(64),
+      sizeBytes: 100,
+    },
+    toolchain: {
+      simpleafVersion: approvedIndex.simpleafVersion,
+      piscemVersion: approvedIndex.piscemVersion,
+      nativeToolsLockSha256: approvedIndex.nativeToolsLockSha256,
+    },
+    provenance: {
+      recipeSha256: approvedIndex.recipeSha256,
+      sourceRevision: 'd'.repeat(40),
+      builtAt: '2026-08-24T00:00:00.000Z',
+    },
+  }],
+};
+
 test('accepts an approved immutable release', () => {
   assert.doesNotThrow(() => validateSigningPayload(policy, release));
+});
+
+test('accepts only the approved scientific identity for a reference-index catalog', () => {
+  assert.doesNotThrow(() => validateSigningPayload(policy, indexCatalog));
+  assert.throws(() => validateSigningPayload(policy, {
+    ...indexCatalog,
+    indexes: [{ ...indexCatalog.indexes[0], readLength: 100 }],
+  }), /read length does not match/);
+  assert.throws(() => validateSigningPayload(policy, {
+    ...indexCatalog,
+    indexes: [{
+      ...indexCatalog.indexes[0],
+      archive: { ...indexCatalog.indexes[0].archive, url: indexCatalog.indexes[0].archive.url.replace('assets.models.liatir.com', 'attacker.example') },
+    }],
+  }), /origin is not approved/);
 });
 
 test('accepts the approved UCE Runtime Box identity', () => {

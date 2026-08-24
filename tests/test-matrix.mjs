@@ -23,6 +23,7 @@ export const testProfiles = {
   ui: [
     'tauri-prepare',
     'tauri-e2e',
+    'single-cell-index-e2e',
     'pipeline-settlement-restart-e2e',
     'runtime-box-security-e2e',
     'desktop-beta-lifecycle-e2e',
@@ -40,6 +41,7 @@ export const testProfiles = {
     'src-ts-compile',
     'tauri-prepare',
     'tauri-e2e',
+    'single-cell-index-e2e',
     'pipeline-settlement-restart-e2e',
     'runtime-box-security-e2e',
     'desktop-beta-lifecycle-e2e',
@@ -136,6 +138,16 @@ export const testSuites = [
     timeoutMs: 300_000,
     e2eReport: true,
     description: 'Captures and compares native webview screenshots against baselines.',
+  },
+  {
+    id: 'single-cell-index-e2e',
+    label: 'Single-cell reference index lifecycle',
+    layer: 'tauri',
+    command: 'node',
+    args: ['scripts/run-single-cell-index-e2e.mjs'],
+    timeoutMs: 180_000,
+    e2eReport: true,
+    description: 'Installs a tiny signed index, proves verified reuse without a second download, and removes it.',
   },
   {
     id: 'pipeline-settlement-restart-e2e',
