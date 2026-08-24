@@ -68,9 +68,11 @@ export function resolveDependency(input: DependencyResolverInput): DependencyRes
 }
 
 export {
+  dependencyOwner,
   packageManagerInstallCommand,
   packageManagerUpdateCommand,
 } from './package-manager';
+export type { DependencyOwner } from './package-manager';
 export type {
   DependencyResolution,
   DependencyResolverAction,

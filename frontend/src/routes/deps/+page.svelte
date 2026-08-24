@@ -232,7 +232,14 @@
 	}
 
 	function pmUpdateCmd(binary: string): DependencyResolverCommand | null {
-		return packageManagerUpdateCommand(depRequirementForBinary(binary), resolverEnvironment);
+		// Where detection found the binary decides whether a package manager can update it at all:
+		// one it never installed answers with "not installed", which contradicts the row's own status.
+		const installedPath = depsStore.results.find((dep) => dep.binary === binary)?.path ?? null;
+		return packageManagerUpdateCommand(
+			depRequirementForBinary(binary),
+			resolverEnvironment,
+			installedPath,
+		);
 	}
 
 	async function pmRun(binary: string, operation: 'install' | 'update') {
@@ -782,6 +789,16 @@
 											{#if canUpdateWithPm}
 												<Button variant="secondary" size="sm" onclick={() => pmUpdate(dep.binary)}>
 													Check update
+												</Button>
+											{:else if req?.releasesUrl}
+												<!-- Installed by something Liatir does not manage: the honest offer is the
+												     project's own releases page, not a package-manager command that would fail. -->
+												<Button
+													variant="secondary"
+													size="sm"
+													onclick={async () => { const api = liatir(); if (api) await api.openBrowser(req.releasesUrl!); }}
+												>
+													Check update ↗
 												</Button>
 											{/if}
 										</div>
