@@ -1,4 +1,4 @@
-# AGENT-POLICY.md
+# Multi-step LLM systems
 
 How to decide the shape of a multi-step LLM system in this repository: workflow, autonomous agent, or multi-agent.
 

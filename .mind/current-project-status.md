@@ -1,5 +1,37 @@
 # Current project status
 
+## The knowledge base became `.mind/`, and it is the only memory (2026-08-24)
+
+`project-knowledge-base/` is now `.mind/`. The rename is not cosmetic: it settles
+what this folder is. It had been framed as "private maintainer documentation"
+while in practice it was also the project's memory across sessions — and an agent
+had been keeping a second, host-local memory store outside the repository, so the
+two drifted and neither was complete.
+
+**One memory, shared.** A project's knowledge serves everyone who works on it.
+Agents are not tools that consume documentation; they work on this repository the
+way a developer does, and they write to `.mind/` as much as they read it. So there
+is no human copy and no agent copy — there is `.mind/`, and the copy throughout no
+longer addresses only a human reader.
+
+**Nothing durable may live outside the repository.** The host-local memory store
+was deleted. The two facts it held that were not written down anywhere else — the
+per-model CPU support gating principle, and that Scrollcase's maintainer is
+Liatir's maintainer — are now in the standing constraints below. `AGENTS.md` states
+the rule directly under "Memory lives in this repository, and nowhere else".
+
+**`.mind/.agents/`** holds the working agreements that apply only to agents;
+`AGENTS.md` at the repository root is the entry point that links to them. They sit
+inside `.mind/` because they are project knowledge too, addressed to one kind of
+colleague — and the leading dot is deliberate: they are operating rules to be read
+where they are used, not pages of a rendered site. VitePress skips dot-directories,
+which is the wanted behaviour here.
+
+Five `runtime-boxes/scrolls/**/pixi.toml` files still name the old path in a
+comment. They are deliberately untouched: a scroll's bytes determine its
+`sourceRevision`, so editing a comment would invalidate boxes that are already
+built and signed. A stale path in a comment is cheaper than a re-signing round.
+
 ## Every run records what it actually did (2026-08-23)
 
 A user must be able to open any run and read what happened: the whole transcript,
@@ -1343,6 +1375,25 @@ predictive/variant genomics and protein structure/binding verticals, followed by
 individually verified Plugin/pipeline templates and then any additional External
 Workflow engine through the existing adapter contract.
 
+The [single-cell RNA-seq vertical](./roadmap/single-cell-rnaseq-vertical.md) is
+built on the machine: `simpleaf`, `alevin-fry` and `piscem` ship in the bundled
+Native Tools box (+31 MB compressed), and two pipeline steps take raw reads to an
+`.h5ad` count matrix — the format the single-cell AI Tools already read. simpleaf
+writes the `.h5ad` itself, so Liatir has no implementation of the AnnData format
+and must never grow one. The box's self-test runs the whole chain and asserts
+exact per-cell, per-gene counts, so a box that cannot do single-cell cannot be
+packaged.
+
+What is **not** built is index distribution. The settled decision stands —
+reference indexes built in CI, published to R2, downloaded when the user selects
+one, never in the installer — and no such workflow exists; the R2 spine in this
+repository is Runtime Box infrastructure. Today the index is built locally by a
+step in the app, which a user with an unusual species will always need but is not
+the path a first-time human or mouse user should be on. The seam is in place: the
+index step emits a small manifest file (`packages/liatir-core/src/single-cell.ts`)
+that names the directory, so a downloaded index drops in without the
+quantification step changing.
+
 The signed public [Release gate](./roadmap/release-signed-distribution.md)
 remains a separate, open path. It starts only with the exact credentials,
 notarization purchase and Windows Store packaging decision explicitly
@@ -2156,7 +2207,7 @@ Runtime Box CI foundation gate summary (see the ledger for evidence IDs):
   Runtime Box, signer, Registry, compatibility, evidence, AI roadmap, readiness,
   and handoff documentation are aligned. Zero-cost closure gates passed:
   catalog 3 models / 3 fixtures, signer 11/11, verify profile 164/164 plus all
-  builds/checks, and the complete project-knowledge-base build. No remote or paid action
+  builds/checks, and the complete internal documentation build. No remote or paid action
   was needed.
 
 ## How Gate 8.2 Windows CPU was closed (2026-07-19/20)
@@ -2458,6 +2509,18 @@ first).
   installed box already lives there, so it is a migration and not a cleanup. Do not
   answer a MAX_PATH failure by enabling long paths on a machine: that fixes one host
   and no user.
+- **CPU support per AI Model is not mandatory.** A CPU Runtime Box ships only if
+  the model finishes a realistic reference dataset inside an acceptable wall-clock
+  time. The decision is per-model and based on measured throughput, never on the
+  binary "it runs". If CPU takes hours, the CPU box is not shipped and the UI says
+  the model needs a GPU or Metal. Shipping a technically-working but hours-slow box
+  is a false promise to a non-technical user. Maintainer decision, 2026-07-23; the
+  reference dataset size and the acceptable wall-clock are still to be set.
+- **Scrollcase's maintainer is Liatir's maintainer.** Where a plan says "stop and
+  ask the Scrollcase maintainer", that is an upstream API design conversation with
+  him, not an external blocker. The vendor-neutrality rule still holds: Scrollcase
+  never learns Liatir vocabulary, credentials or policy, and this repository never
+  deep-imports or edits Scrollcase source.
 - **Never assert the shape of a failure before reading its cause.** Install status,
   job status and install errors are all recorded by the app; on an ephemeral runner
   they disappear with the job. Read the error, then assert.

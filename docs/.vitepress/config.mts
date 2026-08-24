@@ -119,6 +119,8 @@ export default defineConfig({
           { text: 'BCFtools stats', link: '/tools/bcftools' },
           { text: 'BCFtools filter', link: '/tools/bcftools-filter' },
           { text: 'SnpEff', link: '/tools/snpeff' },
+          { text: 'Single-cell Reference Index', link: '/tools/single-cell-index' },
+          { text: 'Single-cell Quantification', link: '/tools/single-cell-quant' },
         ],
       },
       {

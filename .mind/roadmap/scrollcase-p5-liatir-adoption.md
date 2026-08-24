@@ -2771,9 +2771,9 @@ object, protected workflow, publication, promotion or deployment was touched.
 Update together:
 
 - this plan and execution ledger;
-- `project-knowledge-base/current-project-status.md`;
-- `project-knowledge-base/roadmap/scrollcase-extraction-plan.md`;
-- `project-knowledge-base/roadmap/runtime-box-pixi-migration.md`;
+- `.mind/current-project-status.md`;
+- `.mind/roadmap/scrollcase-extraction-plan.md`;
+- `.mind/roadmap/runtime-box-pixi-migration.md`;
 - Runtime Box production/operator documentation if commands changed;
 - `AGENTS.md` only if repository commands or boundaries changed.
 

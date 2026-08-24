@@ -34,6 +34,8 @@ export const BCFTOOLS_ID = 'bcftools';
 export const FASTP_ID = 'fastp';
 export const SEQKIT_ID = 'seqkit';
 export const SNPEFF_ID = 'snpeff';
+export const SIMPLEAF_ID = 'simpleaf';
+export const ALEVIN_FRY_ID = 'alevin-fry';
 
 // ── Built-in Native Tools Registry ───────────────────────────────────────────
 
@@ -100,6 +102,26 @@ export const BUILT_IN_NATIVE_TOOLS: LiatirNativeToolMetadata[] = [
     category: 'Variant Annotation',
     binaryName: 'snpeff',
     tags: ['built-in', 'annotation', 'variant-effect', 'snv', 'indel']
+  },
+  {
+    id: SIMPLEAF_ID,
+    name: 'simpleaf',
+    displayName: 'simpleaf',
+    description:
+      'Single-cell RNA-seq workflow driver: builds the reference index and runs mapping and quantification end to end, writing an AnnData .h5ad count matrix.',
+    category: 'Single-cell',
+    binaryName: 'simpleaf',
+    tags: ['built-in', 'single-cell', 'rna-seq', 'quantification', 'anndata']
+  },
+  {
+    id: ALEVIN_FRY_ID,
+    name: 'alevin-fry',
+    displayName: 'alevin-fry',
+    description:
+      'Single-cell quantification engine: cell-barcode permit list, collation and UMI resolution into a per-cell, per-gene count matrix.',
+    category: 'Single-cell',
+    binaryName: 'alevin-fry',
+    tags: ['built-in', 'single-cell', 'rna-seq', 'quantification', 'umi']
   }
 ];
 
@@ -134,6 +156,10 @@ export function isBundledNativeTool(id: string): boolean {
 //
 // FastQC is absent because it runs as WASM in-process, and SnpEff because it is
 // a Java runtime whose JRE would outweigh every tool here combined.
+//
+// simpleaf carries piscem and alevin-fry with it; piscem is the mapping engine
+// simpleaf drives and is never launched on its own, so it is present in the box
+// without being a tool Liatir exposes.
 
 /** Scrollcase target IDs Liatir builds the Native Tools box for. */
 export type LiatirNativeToolsTargetId = 'macos-aarch64-cpu' | 'linux-x86_64-cpu';
@@ -146,6 +172,8 @@ export const NATIVE_TOOLS_BOX_TOOL_IDS: readonly string[] = [
   FASTP_ID,
   BWA_ID,
   MINIMAP2_ID,
+  SIMPLEAF_ID,
+  ALEVIN_FRY_ID,
 ];
 
 /** Product metadata compiled into the app and included inside every box target. */
@@ -159,7 +187,7 @@ export interface LiatirNativeToolsBoxMetadata {
  * How a host runs the box.
  *
  * `native` executes the verified payload in place. `wsl2` is Windows: bioconda publishes
- * no `win-64` builds and five of these six tools have no Windows build anywhere,
+ * no `win-64` builds and almost none of these tools have a Windows build anywhere,
  * so Windows ships the Linux Scrollcase target and runs it through WSL2 — the
  * same backend External Workflows already requires for Nextflow.
  */

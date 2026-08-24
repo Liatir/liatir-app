@@ -7,6 +7,9 @@ Supported backends are [UCE 4-layer](/ai/models/snap-stanford-uce-4layer),
 [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m), and
 [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human).
 
+If you are starting from raw sequencing reads rather than an existing `.h5ad`,
+[Single-cell Quantification](/tools/single-cell-quant) produces one.
+
 ## What it does
 
 The tool reads a single-cell dataset and asks the selected foundation model to

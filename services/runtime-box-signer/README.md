@@ -84,6 +84,6 @@ reviewed together for a signer or key change. Key rotation must retain every
 public key needed to verify supported releases.
 
 See the internal
-[Runtime Box production report](../../project-knowledge-base/roadmap/runtime-box-production-report.md)
+[Runtime Box production report](../../.mind/roadmap/runtime-box-production-report.md)
 for the exact WIF principal forms, release environment, evidence matrix,
 rotation boundary, and incident procedures.

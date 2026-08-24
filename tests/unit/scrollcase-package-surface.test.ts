@@ -117,7 +117,9 @@ describe("published Scrollcase package surface", () => {
       encoding: "utf8",
     });
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-  });
+    // A whole TypeScript compile, not an assertion about a string: it takes longer than the
+    // default budget on an ordinary laptop, and timing out there says nothing about the code.
+  }, 60_000);
 
   it("does not leak external Scrollcase references into the generated browser SDK", () => {
     const generatedSdk = readFileSync(

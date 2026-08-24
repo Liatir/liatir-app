@@ -1,6 +1,6 @@
 # Implementation Architecture
 
-This page is internal maintainer documentation. It explains implementation
+This page is internal project memory. It explains implementation
 details that should not appear in the public user-facing documentation.
 
 ## App layers

@@ -7,4 +7,5 @@ export * from './alignment/minimap2';
 export * from './alignment/samtools';
 export * from './variants/bcftools';
 export * from './variants/snpeff';
+export * from './single-cell/simpleaf';
 //# sourceMappingURL=index.d.ts.map

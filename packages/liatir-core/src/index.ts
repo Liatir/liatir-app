@@ -636,6 +636,9 @@ export * from "./runtime-box";
 // Built-in native tools catalog — bioinformatics binaries bundled with Liatir.
 export * from "./native-tools";
 
+// Single-cell RNA-seq: the reference index a quantification runs against.
+export * from "./single-cell";
+
 // ── ToolRef — unified reference for anything spawnable via jobs ──────────────
 
 /**

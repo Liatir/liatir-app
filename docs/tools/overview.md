@@ -20,10 +20,10 @@ every machine.
 ## Native tools
 
 These are real bioinformatics programs, and Liatir ships them. You do not install
-`samtools`, `bwa`, `minimap2`, `bcftools`, `seqkit` or `fastp` yourself: they
-arrive with the application, at the exact versions it was tested with, and they
-update when Liatir updates. The tool page shows **Included with Liatir** and the
-version it is running.
+`samtools`, `bwa`, `minimap2`, `bcftools`, `seqkit`, `fastp`, `simpleaf` or
+`alevin-fry` yourself: they arrive with the application, at the exact versions it
+was tested with, and they update when Liatir updates. The tool page shows
+**Included with Liatir** and the version it is running.
 
 SnpEff is the exception: it is a Java program with its own separately managed
 databases, so it still needs a Java runtime on your machine.
@@ -42,14 +42,22 @@ On **Windows** these tools run inside WSL2 — see
 | [BCFtools filter](/tools/bcftools-filter) | `filter` | VCF, VCF.GZ, BCF, BCF.GZ |
 | [SnpEff](/tools/snpeff) | — | VCF, VCF.GZ |
 | [fastp](/tools/fastp) | — | FASTQ (single or paired-end) |
+| [Single-cell Reference Index](/tools/single-cell-index) | `simpleaf index` | Genome FASTA + GTF/GFF3 |
+| [Single-cell Quantification](/tools/single-cell-quant) | `simpleaf quant` | Single-cell index + paired FASTQ |
+
+The two single-cell steps are one toolchain: `simpleaf` drives `piscem` for
+mapping and `alevin-fry` for counting, so you run one step instead of five. The
+result is an `.h5ad` count matrix, which is the input the
+[Single-cell Embedding](/ai/tools/single-cell-embedding) AI Tool and the
+[Single-cell Viewer](/visualization/single-cell-viewer) expect.
 
 ### Windows and WSL2
 
 Almost none of this software has a Windows build. `samtools`, `bcftools`, `bwa`,
-`minimap2` and `fastp` are written for Unix and rely on operating-system
-facilities Windows does not provide; their authors publish Linux and macOS
-releases only. This is not a Liatir limitation and no Windows version exists to
-package.
+`minimap2`, `fastp`, `simpleaf` and `alevin-fry` are written for Unix and rely on
+operating-system facilities Windows does not provide; their authors publish Linux
+and macOS releases only. This is not a Liatir limitation and no Windows version
+exists to package.
 
 So Liatir on Windows ships the Linux tools and runs them through **WSL2**, the
 Windows Subsystem for Linux — the same mechanism it already uses for

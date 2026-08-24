@@ -8,6 +8,38 @@ Operational instructions for AI coding agents working in this repository. Read t
 
 ---
 
+## Answering in chat (non-negotiable)
+
+The person you are working with owns the product; they are not a bioinformatician.
+Long, dense, jargon-heavy answers have repeatedly cost real time and money in useless
+back-and-forth. These rules outrank your instinct to be thorough.
+
+- **Short by default.** A few lines. No long reports, no walls of text, no exhaustive
+  option surveys in chat. Detail is given only when it is explicitly asked for.
+- **Explain every term the moment you use it**, in one plain sentence, as you would to a
+  child. Never assume a tool name, a file format, a data structure or an acronym is
+  understood. If you cannot explain it simply, you do not understand it well enough to
+  recommend it.
+- **Always give your recommendation and the reason.** Never present two or three options
+  and stop. They are asking precisely because they do not have the technical background
+  to choose; handing the choice back unanswered is a failure, not neutrality.
+- **Answer the question that was asked.** Do not start work, measurements, builds or
+  edits when the question was "are you ready?" or "what do you think?".
+- **Write durable decisions into `.mind/`** so they are never re-derived or re-argued in
+  a later session.
+
+## Memory lives in this repository, and nowhere else
+
+**Never write anything to an agent-local memory store outside this repository.** Not
+`~/.claude`, not a scratch directory, not any host-local note file. The only memory is
+`.mind/`, which is tracked, reviewable, and travels with the code.
+
+An agent-local memory is invisible to everyone else on the project, invisible to every
+other machine and agent, and cannot be linked from a tracked document without producing
+a dangling reference. If you learn something durable — a decision, a constraint, a
+preference, a measured fact — it goes in `.mind/` in the same turn you learn it. If your
+harness offers a memory tool, do not use it here.
+
 ## Naming (canonical terms — use exactly these)
 
 - **"Plugins"** means only `.lia` plugins.
@@ -53,7 +85,7 @@ For every run or process, verify:
 - `runtime-boxes/` — Runtime Box data: `recipes/`, `catalog.json`, `trust/`, `evidence/`, `measurements/`, `legal/`. `infra/runtime-box-ci/` is the CI side; `services/runtime-box-signer` and `workers/runtime-box-registry` are the remote services.
 - `scripts/` — build, conf, publishing and Runtime Box orchestration entry points behind the npm scripts.
 - `tests/` — `unit/` (vitest), `e2e/` (a real compiled binary driven over WebDriver), and `test-matrix.mjs`, which declares every suite and profile as data.
-- `project-knowledge-base/` — internal maintainer docs (see Repository continuity). `docs/` is the public product site. `quenta-knowledge/` is curated scientific content.
+- `.mind/` — the project's memory: internal knowledge shared by people and agents (see Repository continuity), with `.agents/` for agent-specific working agreements. `docs/` is the public product site. `quenta-knowledge/` is curated scientific content.
 
 This list is not complete — read the files for more.
 
@@ -69,7 +101,7 @@ These are the current commands. If one no longer exists, read the `scripts` sect
   there it verifies the Linux box and its WSL2 Scrollcase consumer instead, and building it means
   running this inside WSL2.
   `npm run dev` does **not** build it: a debug binary finds whatever is already in
-  `src-tauri/resources/native-tools/`, and with nothing there the six bundled tools fall through to
+  `src-tauri/resources/native-tools/`, and with nothing there the bundled tools fall through to
   `PATH` exactly as they did before bundling. Build it once and dev matches production; the
   Dependencies screen shows which of the two you are on.
 - `npm run test:fast` — unit and contract tests. Use this while working.
@@ -93,7 +125,7 @@ Learned the hard way. These are not style preferences.
 - **GPU CI runners cost real money.** Never trigger, re-run, or "just try" a GPU Runtime Box workflow to see what happens. Prepare the change so the first run passes, and ask before launching one.
 - **Heavy AI tests download and run real models** (`test:heavy:ai`, `LIATIR_RUN_HEAVY_AI=1`, `--include-heavy`). Do not run them casually, and never as a substitute for `test:verify`.
 - **Never perform a paid, remote, publishing, release, deployment, or destructive action from memory or name inference.** Read back the exact action definition and its inputs, confirm they match the intent, then immediately verify the created identity, revision, target and mode. Stop or cancel on any mismatch.
-- **Windows CUDA is currently out of CI** (the hosted runner driver is too old for the required CUDA version). Do not "fix" it by loosening version constraints; see `project-knowledge-base/roadmap/runtime-box-ci-foundation.md`.
+- **Windows CUDA is currently out of CI** (the hosted runner driver is too old for the required CUDA version). Do not "fix" it by loosening version constraints; see `.mind/roadmap/runtime-box-ci-foundation.md`.
 
 ## Boundaries — do not touch
 
@@ -113,9 +145,9 @@ Learned the hard way. These are not style preferences.
 
 ## Repository continuity
 
-- `project-knowledge-base/` is authoritative memory, not decoration. Keep `current-project-status.md` up to date.
-- Durable plans, implementation status, and handoff context must live in tracked repository docs. Machine-local agent memory is a convenience, never the only source for continuing work.
-- The canonical Runtime Box CI plan and gate status live in `project-knowledge-base/roadmap/runtime-box-ci-foundation.md`. Read it before starting a Runtime Box CI gate, and update it when a gate is completed or re-scoped.
+- `.mind/` is the project's memory, shared by everyone who works on Liatir — people and agents alike. It is not decoration. Keep `current-project-status.md` up to date.
+- Durable plans, implementation status, and handoff context live there and nowhere else. There is no separate agent memory: see "Memory lives in this repository, and nowhere else" above.
+- The canonical Runtime Box CI plan and gate status live in `.mind/roadmap/runtime-box-ci-foundation.md`. Read it before starting a Runtime Box CI gate, and update it when a gate is completed or re-scoped.
 
 ## Working discipline
 
@@ -126,4 +158,4 @@ Learned the hard way. These are not style preferences.
 
 ## Designing multi-step LLM systems
 
-**Before proposing, designing, or building any multi-step LLM system — a workflow, an autonomous agent, a multi-agent setup, or AI Tool orchestration — read `AGENT-POLICY.md` first.** It is not needed for ordinary code work; skip it otherwise.
+**Before proposing, designing, or building any multi-step LLM system — a workflow, an autonomous agent, a multi-agent setup, or AI Tool orchestration — read `.mind/.agents/multi-step-llm-systems.md` first.** It is not needed for ordinary code work; skip it otherwise. The rest of `.mind/.agents/` holds the other agent-specific working agreements.

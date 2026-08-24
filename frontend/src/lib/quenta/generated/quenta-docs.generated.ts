@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "0c0750cc896a1c8e7ca5103fc35fe285c1b5cab89389cd8392e96e12592aff72";
+export const QUENTA_DOCS_SEED_HASH = "9f0252e43ec14e8788189545fbae56dbdf29767158d973e818ecce484bc2bbbc";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -356,7 +356,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Single-cell Embedding",
     "locator": "Docs / Ai / Tools / Single Cell Embedding",
     "excerpt": "Single-cell Embedding is an AI Tool that creates numeric vectors for cells in an AnnData `.h5ad` dataset. Supported backends are [UCE 4-layer](/ai/models/snap-stanford-uce-4layer), [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m), and [scGPT Whole…",
-    "content": "Single-cell Embedding is an AI Tool that creates numeric vectors for cells in an\nAnnData `.h5ad` dataset.\n\nSupported backends are [UCE 4-layer](/ai/models/snap-stanford-uce-4layer),\n[Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m), and\n[scGPT Whole-human](/ai/models/bowang-scgpt-whole-human)."
+    "content": "Single-cell Embedding is an AI Tool that creates numeric vectors for cells in an\nAnnData `.h5ad` dataset.\n\nSupported backends are [UCE 4-layer](/ai/models/snap-stanford-uce-4layer),\n[Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m), and\n[scGPT Whole-human](/ai/models/bowang-scgpt-whole-human).\n\nIf you are starting from raw sequencing reads rather than an existing `.h5ad`,\n[Single-cell Quantification](/tools/single-cell-quant) produces one."
   },
   {
     "id": "docs:ai/tools/single-cell-embedding#what-it-does",
@@ -2075,8 +2075,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Tools — Native tools",
     "locator": "Docs / Tools / Overview / Native tools",
-    "excerpt": "Native tools These are real bioinformatics programs, and Liatir ships them. You do not install `samtools`, `bwa`, `minimap2`, `bcftools`, `seqkit` or `fastp` yourself: they arrive with the application, at the exact versions it was tested with, and they update…",
-    "content": "Native tools\nThese are real bioinformatics programs, and Liatir ships them. You do not install\n`samtools`, `bwa`, `minimap2`, `bcftools`, `seqkit` or `fastp` yourself: they\narrive with the application, at the exact versions it was tested with, and they\nupdate when Liatir updates. The tool page shows **Included with Liatir** and the\nversion it is running.\n\nSnpEff is the exception: it is a Java program with its own separately managed\ndatabases, so it still needs a Java runtime on your machine.\n\nOn **Windows** these tools run inside WSL2 — see\n[Windows and WSL2](#windows-and-wsl2) below.\n\n| Tool | Subcommand | Input formats |\n|------|-----------|---------------|\n| [seqkit stats](/tools/seqkit) | `stats` | FASTA, FASTQ (compressed or not) |\n| [Samtools](/tools/samtools) | `flagstat` | BAM, SAM, CRAM |\n| [Samtools faidx](/tools/samtools-faidx) | `faidx` | FASTA, FASTA.GZ |\n| [BWA-MEM](/tools/bwa-mem) | `mem` | FASTA + FASTQ |\n| [Minimap2](/tools/minimap2) | — | FASTA/MMI + FASTQ/FASTA |\n| [BCFtools](/tools/bcftools) | `stats` | VCF, VCF.GZ, BCF, BCF.GZ |\n| [BCFtools filter](/tools/bcftools-filter) | `filter` | VCF, VCF.GZ, BCF, BCF.GZ |\n| [SnpEff](/tools/snpeff) | — | VCF, VCF.GZ |\n| [fastp](/tools/fastp) | — | FASTQ (single or paired-end) |\n\n### Windows and WSL2\n\nAlmost none of this software has a Windows build. `samtools`, `bcftools`, `bwa`,\n`minimap2` and `fastp` are written for Unix and rely on operating-system\nfacilities Windows does not provide; their authors publish Linux and macOS\nreleases only. This is not a Liatir limitation and no Windows version exists to\npackage.\n\nSo Liatir on Windows ships the Linux tools and runs them through **WSL2**, the\nWindows Subsystem for Linux — the same mechanism it already uses for\n[Nextflow](/tools/external-workflows). You still work entirely in the Liatir\nwindow; your files stay where they are, and Liatir translates their locations for\nthe tool.\n\n**WSL2 must be installed.** It is a supported Windows feature, not third-party\nsoftware: open PowerShell as administrator, run `wsl --install`, and restart when\nasked. You do not need to install anything inside it for these tools — Liatir\nbrings its own copy and sets it up for you. Nextflow is different and does need\nto be installed inside WSL2 yourself.\n\nLiatir unpacks its tools the first time it starts after being installed or\nupdated. It takes a second or two, happens in the background, and does not repeat."
+    "excerpt": "Native tools These are real bioinformatics programs, and Liatir ships them. You do not install `samtools`, `bwa`, `minimap2`, `bcftools`, `seqkit`, `fastp`, `simpleaf` or `alevin-fry` yourself: they arrive with the application, at the exact versions it was te…",
+    "content": "Native tools\nThese are real bioinformatics programs, and Liatir ships them. You do not install\n`samtools`, `bwa`, `minimap2`, `bcftools`, `seqkit`, `fastp`, `simpleaf` or\n`alevin-fry` yourself: they arrive with the application, at the exact versions it\nwas tested with, and they update when Liatir updates. The tool page shows\n**Included with Liatir** and the version it is running.\n\nSnpEff is the exception: it is a Java program with its own separately managed\ndatabases, so it still needs a Java runtime on your machine.\n\nOn **Windows** these tools run inside WSL2 — see\n[Windows and WSL2](#windows-and-wsl2) below.\n\n| Tool | Subcommand | Input formats |\n|------|-----------|---------------|\n| [seqkit stats](/tools/seqkit) | `stats` | FASTA, FASTQ (compressed or not) |\n| [Samtools](/tools/samtools) | `flagstat` | BAM, SAM, CRAM |\n| [Samtools faidx](/tools/samtools-faidx) | `faidx` | FASTA, FASTA.GZ |\n| [BWA-MEM](/tools/bwa-mem) | `mem` | FASTA + FASTQ |\n| [Minimap2](/tools/minimap2) | — | FASTA/MMI + FASTQ/FASTA |\n| [BCFtools](/tools/bcftools) | `stats` | VCF, VCF.GZ, BCF, BCF.GZ |\n| [BCFtools filter](/tools/bcftools-filter) | `filter` | VCF, VCF.GZ, BCF, BCF.GZ |\n| [SnpEff](/tools/snpeff) | — | VCF, VCF.GZ |\n| [fastp](/tools/fastp) | — | FASTQ (single or paired-end) |\n| [Single-cell Reference Index](/tools/single-cell-index) | `simpleaf index` | Genome FASTA + GTF/GFF3 |\n| [Single-cell Quantification](/tools/single-cell-quant) | `simpleaf quant` | Single-cell index + paired FASTQ |\n\nThe two single-cell steps are one toolchain: `simpleaf` drives `piscem` for\nmapping and `alevin-fry` for counting, so you run one step instead of five. The\nresult is an `.h5ad` count matrix, which is the input the\n[Single-cell Embedding](/ai/tools/single-cell-embedding) AI Tool and the\n[Single-cell Viewer](/visualization/single-cell-viewer) expect.\n\n### Windows and WSL2\n\nAlmost none of this software has a Windows build. `samtools`, `bcftools`, `bwa`,\n`minimap2`, `fastp`, `simpleaf` and `alevin-fry` are written for Unix and rely on\noperating-system facilities Windows does not provide; their authors publish Linux\nand macOS releases only. This is not a Liatir limitation and no Windows version\nexists to package.\n\nSo Liatir on Windows ships the Linux tools and runs them through **WSL2**, the\nWindows Subsystem for Linux — the same mechanism it already uses for\n[Nextflow](/tools/external-workflows). You still work entirely in the Liatir\nwindow; your files stay where they are, and Liatir translates their locations for\nthe tool.\n\n**WSL2 must be installed.** It is a supported Windows feature, not third-party\nsoftware: open PowerShell as administrator, run `wsl --install`, and restart when\nasked. You do not need to install anything inside it for these tools — Liatir\nbrings its own copy and sets it up for you. Nextflow is different and does need\nto be installed inside WSL2 yourself.\n\nLiatir unpacks its tools the first time it starts after being installed or\nupdated. It takes a second or two, happens in the background, and does not repeat."
   },
   {
     "id": "docs:tools/overview#ai-tools",
@@ -2285,6 +2285,110 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "locator": "Docs / Tools / Seqkit / Output metrics",
     "excerpt": "Output metrics ### Basic stats (always included) | Metric | Description | |--------|-------------| | Sequences | Total number of sequences (reads for FASTQ, entries for FASTA) | | Total length | Sum of all sequence lengths | | Min length | Shortest sequence |…",
     "content": "Output metrics\n### Basic stats (always included)\n\n| Metric | Description |\n|--------|-------------|\n| Sequences | Total number of sequences (reads for FASTQ, entries for FASTA) |\n| Total length | Sum of all sequence lengths |\n| Min length | Shortest sequence |\n| Avg length | Mean sequence length |\n| Max length | Longest sequence |\n\n### Extended stats (`-a` flag)\n\n| Metric | Description |\n|--------|-------------|\n| N50 | Half of total assembly length is contained in sequences ≥ N50. Primary assembly quality metric. |\n| GC content | Percentage of guanine + cytosine bases |\n| Q20 rate | Fraction of bases with Phred quality ≥ 20 (FASTQ only) |\n| Q30 rate | Fraction of bases with Phred quality ≥ 30 (FASTQ only) |\n\n::: tip N50 for assemblies\nN50 is a key metric for genome assemblies. A higher N50 means larger contigs. For chromosome-level assemblies N50 ≈ chromosome length; for fragmented assemblies N50 may be a few hundred Kb. A low N50 in a FASTA intended to be a complete genome suggests the assembly is highly fragmented.\n:::"
+  },
+  {
+    "id": "docs:tools/single-cell-index",
+    "sourceKind": "documentation",
+    "title": "Single-cell Reference Index",
+    "locator": "Docs / Tools / Single Cell Index",
+    "excerpt": "Builds the reference a single-cell experiment is measured against, from a genome and its annotation.",
+    "content": "Builds the reference a single-cell experiment is measured against, from a genome\nand its annotation."
+  },
+  {
+    "id": "docs:tools/single-cell-index#what-an-index-is-in-one-paragraph",
+    "sourceKind": "documentation",
+    "title": "Single-cell Reference Index — What an index is, in one paragraph",
+    "locator": "Docs / Tools / Single Cell Index / What an index is, in one paragraph",
+    "excerpt": "What an index is, in one paragraph Sequencing gives you millions of short pieces of text. An index is a lookup table that lets Liatir work out, quickly, which gene each piece came from. Without one, every read would have to be compared against the whole genom…",
+    "content": "What an index is, in one paragraph\nSequencing gives you millions of short pieces of text. An index is a lookup table\nthat lets Liatir work out, quickly, which gene each piece came from. Without one,\nevery read would have to be compared against the whole genome, which is far too\nslow to be practical."
+  },
+  {
+    "id": "docs:tools/single-cell-index#use-it-for",
+    "sourceKind": "documentation",
+    "title": "Single-cell Reference Index — Use it for",
+    "locator": "Docs / Tools / Single Cell Index / Use it for",
+    "excerpt": "Use it for - preparing a species once, before quantifying any number of samples; - a species or annotation release Liatir does not provide ready-made; - reproducing an analysis against a specific annotation version.",
+    "content": "Use it for\n- preparing a species once, before quantifying any number of samples;\n- a species or annotation release Liatir does not provide ready-made;\n- reproducing an analysis against a specific annotation version."
+  },
+  {
+    "id": "docs:tools/single-cell-index#inputs",
+    "sourceKind": "documentation",
+    "title": "Single-cell Reference Index — Inputs",
+    "locator": "Docs / Tools / Single Cell Index / Inputs",
+    "excerpt": "Inputs - **Genome FASTA** — the species genome, as downloaded from Ensembl or GENCODE. - **Annotation (GTF or GFF3)** — where the genes are in that genome. - **Read length** — the length of the cDNA read (R2) in the samples this index will be used for. 91 sui…",
+    "content": "Inputs\n- **Genome FASTA** — the species genome, as downloaded from Ensembl or GENCODE.\n- **Annotation (GTF or GFF3)** — where the genes are in that genome.\n- **Read length** — the length of the cDNA read (R2) in the samples this index\n  will be used for. 91 suits 10x 3′ v3.\n- **Threads.**\n\nThe annotation must be the release that goes with the genome. Results produced\nagainst two different annotation releases are not comparable, and Liatir will not\nguess for you: it is a scientific choice."
+  },
+  {
+    "id": "docs:tools/single-cell-index#outputs",
+    "sourceKind": "documentation",
+    "title": "Single-cell Reference Index — Outputs",
+    "locator": "Docs / Tools / Single Cell Index / Outputs",
+    "excerpt": "Outputs - A **single-cell index** file. It is small — it describes where the index is and what it was built from. Connect it to [Single-cell Quantification](/tools/single-cell-quant).",
+    "content": "Outputs\n- A **single-cell index** file. It is small — it describes where the index is and\n  what it was built from. Connect it to\n  [Single-cell Quantification](/tools/single-cell-quant)."
+  },
+  {
+    "id": "docs:tools/single-cell-index#what-to-expect",
+    "sourceKind": "documentation",
+    "title": "Single-cell Reference Index — What to expect",
+    "locator": "Docs / Tools / Single Cell Index / What to expect",
+    "excerpt": "What to expect Building an index reads the entire genome and needs a few gigabytes of memory. On a human genome it takes minutes rather than seconds. It is done **once** per species and annotation release — every sample afterwards is fast. The index is built…",
+    "content": "What to expect\nBuilding an index reads the entire genome and needs a few gigabytes of memory. On\na human genome it takes minutes rather than seconds. It is done **once** per\nspecies and annotation release — every sample afterwards is fast.\n\nThe index is built as a *spliced + intronic* reference, which means reads coming\nfrom unfinished transcripts (the parts of a gene that are normally cut out) are\ncounted rather than discarded. That is what makes the result usable for whole\nnuclei as well as whole cells, and it is why the counts you get later include an\nintronic component."
+  },
+  {
+    "id": "docs:tools/single-cell-index#how-to-read-the-result",
+    "sourceKind": "documentation",
+    "title": "Single-cell Reference Index — How to read the result",
+    "locator": "Docs / Tools / Single Cell Index / How to read the result",
+    "excerpt": "How to read the result The run summary tells you two things worth checking: - whether the annotation carried **gene symbols**. If it did, the count matrix will name genes by symbol as well as by identifier; - what the index was built from, so an analysis can…",
+    "content": "How to read the result\nThe run summary tells you two things worth checking:\n\n- whether the annotation carried **gene symbols**. If it did, the count matrix\n  will name genes by symbol as well as by identifier;\n- what the index was built from, so an analysis can be traced back to the exact\n  genome and annotation files."
+  },
+  {
+    "id": "docs:tools/single-cell-quant",
+    "sourceKind": "documentation",
+    "title": "Single-cell Quantification",
+    "locator": "Docs / Tools / Single Cell Quant",
+    "excerpt": "Turns raw single-cell sequencing reads into a **count matrix**: a table with one row per cell, one column per gene, and in each box the number of times that gene was read in that cell. It is written as an AnnData `.h5ad` file — the format the [Single-cell Emb…",
+    "content": "Turns raw single-cell sequencing reads into a **count matrix**: a table with one\nrow per cell, one column per gene, and in each box the number of times that gene\nwas read in that cell. It is written as an AnnData `.h5ad` file — the format the\n[Single-cell Embedding](/ai/tools/single-cell-embedding) AI Tool reads.\n\nLiatir drives this with `simpleaf`, which runs the whole chain for you: mapping\nwith `piscem`, then cell detection, collation and UMI counting with `alevin-fry`.\nYou run one step, not five."
+  },
+  {
+    "id": "docs:tools/single-cell-quant#use-it-for",
+    "sourceKind": "documentation",
+    "title": "Single-cell Quantification — Use it for",
+    "locator": "Docs / Tools / Single Cell Quant / Use it for",
+    "excerpt": "Use it for - 10x Genomics 3′ and 5′ single-cell RNA-seq; - producing the `.h5ad` input the single-cell AI Tools and the [Single-cell Viewer](/visualization/single-cell-viewer) expect; - re-quantifying a sample against a different annotation release.",
+    "content": "Use it for\n- 10x Genomics 3′ and 5′ single-cell RNA-seq;\n- producing the `.h5ad` input the single-cell AI Tools and the\n  [Single-cell Viewer](/visualization/single-cell-viewer) expect;\n- re-quantifying a sample against a different annotation release."
+  },
+  {
+    "id": "docs:tools/single-cell-quant#inputs",
+    "sourceKind": "documentation",
+    "title": "Single-cell Quantification — Inputs",
+    "locator": "Docs / Tools / Single Cell Quant / Inputs",
+    "excerpt": "Inputs - **Single-cell index** — produced by [Single-cell Reference Index](/tools/single-cell-index). - **Reads R1** — the short read carrying the cell barcode and the UMI. - **Reads R2** — the read carrying the transcript sequence. - **Chemistry** — the kit…",
+    "content": "Inputs\n- **Single-cell index** — produced by\n  [Single-cell Reference Index](/tools/single-cell-index).\n- **Reads R1** — the short read carrying the cell barcode and the UMI.\n- **Reads R2** — the read carrying the transcript sequence.\n- **Chemistry** — the kit the library was made with. Getting this wrong makes\n  almost nothing map, so check it first when a run comes back near zero.\n- **Which droplets are cells** — see below.\n- **UMI resolution** — how a read that could belong to more than one gene is\n  counted.\n- **Threads.**\n\n### Which droplets are cells\n\nMost droplets in a single-cell run contain no cell. Three ways to decide:\n\n| Option | What it does | When to use it |\n| --- | --- | --- |\n| Detect cells automatically | Finds the drop between real cells and empty droplets | The default. Needs nothing from you |\n| Use my barcode list | Quantifies exactly the barcodes in a file you supply, one per line | You already know which cells you want |\n| Keep a fixed number of cells | Takes the N barcodes with the most reads | You know roughly how many cells were loaded |\n\n### UMI resolution\n\nA UMI is a random tag attached to each original molecule, so the same molecule\nread ten times is counted once. When a read could have come from more than one\ngene, the resolution mode decides what happens:\n\n- **Standard (CellRanger-like)** — the default. Whole counts, and what most\n  published analyses use.\n- **Parsimony** modes — whole counts, resolved differently.\n- **Shared reads (EM)** modes — split an ambiguous read between the genes it\n  could belong to, so counts can be fractional (1.4 copies of a gene).\n\nFractional counts are a legitimate estimate, but they are **not raw counts**.\nLiatir records that on the file, and a tool that requires raw counts will refuse\nit rather than produce a quiet wrong answer."
+  },
+  {
+    "id": "docs:tools/single-cell-quant#outputs",
+    "sourceKind": "documentation",
+    "title": "Single-cell Quantification — Outputs",
+    "locator": "Docs / Tools / Single Cell Quant / Outputs",
+    "excerpt": "Outputs - **Count matrix (AnnData)** — the `.h5ad` file. - Run summary: cells, genes, percentage of reads mapped, percentage of barcodes kept, and how the matrix was made.",
+    "content": "Outputs\n- **Count matrix (AnnData)** — the `.h5ad` file.\n- Run summary: cells, genes, percentage of reads mapped, percentage of barcodes\n  kept, and how the matrix was made."
+  },
+  {
+    "id": "docs:tools/single-cell-quant#how-to-read-the-result",
+    "sourceKind": "documentation",
+    "title": "Single-cell Quantification — How to read the result",
+    "locator": "Docs / Tools / Single Cell Quant / How to read the result",
+    "excerpt": "How to read the result - **Reads mapped** below roughly 50% usually means the wrong chemistry, or R1 and R2 the wrong way round. - **Barcodes kept** counts reads whose barcode matched a real cell, including those rescued from a single-letter sequencing error.…",
+    "content": "How to read the result\n- **Reads mapped** below roughly 50% usually means the wrong chemistry, or R1 and\n  R2 the wrong way round.\n- **Barcodes kept** counts reads whose barcode matched a real cell, including\n  those rescued from a single-letter sequencing error.\n- **Cells** far from what you loaded suggests the cell-detection option needs\n  changing.\n\n### What the counts include\n\nBecause the index is a spliced + intronic reference, the matrix holds\n**spliced + unspliced + ambiguous** counts together, and keeps the three\nseparately as layers inside the same file. This is right for whole nuclei and\nstandard for droplet single-cell work; it is stated in the run log so it is never\nan assumption.\n\n### Gene names\n\nGenes are named by the identifiers in your annotation. An Ensembl or GENCODE\nrelease gives Ensembl IDs — which is what **Geneformer** expects. **UCE** and\n**scGPT** expect gene symbols and will report the mismatch instead of running on\nthe wrong namespace. Symbols are stored alongside the identifiers when the\nannotation carried them."
+  },
+  {
+    "id": "docs:tools/single-cell-quant#what-is-not-here-yet",
+    "sourceKind": "documentation",
+    "title": "Single-cell Quantification — What is not here yet",
+    "locator": "Docs / Tools / Single Cell Quant / What is not here yet",
+    "excerpt": "What is not here yet Liatir does not yet offer ready-made downloadable indexes for common species, so the reference is built on your machine the first time. A sample split across several FASTQ files per read also has to be concatenated before running.",
+    "content": "What is not here yet\nLiatir does not yet offer ready-made downloadable indexes for common species, so\nthe reference is built on your machine the first time. A sample split across\nseveral FASTQ files per read also has to be concatenated before running."
   },
   {
     "id": "docs:tools/snpeff",

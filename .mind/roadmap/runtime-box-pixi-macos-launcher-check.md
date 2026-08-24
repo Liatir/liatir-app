@@ -34,7 +34,7 @@ launcher preserves).
 You are on the maintainer's macOS Apple-Silicon machine, in a checkout of `Liatir/liatir-stack` on
 `main`. This is a **local, zero-cost verification**. Do not dispatch any paid or remote job, do not
 sign, publish, or promote anything, and change no production code unless a defect is found. Read
-`project-knowledge-base/roadmap/runtime-box-pixi-migration.md` (the Phase 3 and Phase 5 sections)
+`.mind/roadmap/runtime-box-pixi-migration.md` (the Phase 3 and Phase 5 sections)
 first.
 
 ### Part A — shared launcher preflight (required, ~30 s, registers nothing)

@@ -1,13 +1,13 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  title: 'Liatir Internal',
-  description: 'Private maintainer documentation for developing Liatir.',
+  title: 'Liatir Mind',
+  description: 'The project memory for Liatir — shared by everyone who works on it.',
   base: '/',
 
   themeConfig: {
     logo: { light: '/static/app-icon-white-bg-color.png', dark: '/static/app-icon-white-bg-color.png', alt: 'Liatir' },
-    siteTitle: 'Liatir Internal',
+    siteTitle: 'Liatir Mind',
     search: { provider: 'local' },
 
     nav: [
@@ -22,7 +22,7 @@ export default defineConfig({
 
     sidebar: [
       {
-        text: 'Maintainer Guide',
+        text: 'Liatir Mind',
         collapsed: false,
         items: [
           { text: 'Overview', link: '/' },
@@ -69,6 +69,7 @@ export default defineConfig({
           { text: 'Beta 1 readiness', link: '/roadmap/beta-readiness' },
           { text: 'Release gate: signed distribution', link: '/roadmap/release-signed-distribution' },
           { text: 'Native Tools bundled environment', link: '/roadmap/native-tools-bundled-environment' },
+          { text: 'Single-cell RNA-seq vertical', link: '/roadmap/single-cell-rnaseq-vertical' },
           { text: 'AI batches', link: '/roadmap/ai-batches' },
           { text: 'Runtime Box CI foundation', link: '/roadmap/runtime-box-ci-foundation' },
           { text: 'Runtime Box production report', link: '/roadmap/runtime-box-production-report' },
@@ -81,7 +82,7 @@ export default defineConfig({
     socialLinks: [],
 
     footer: {
-      message: 'Private Liatir maintainer documentation.',
+      message: 'Liatir project memory — internal.',
     },
   },
 })

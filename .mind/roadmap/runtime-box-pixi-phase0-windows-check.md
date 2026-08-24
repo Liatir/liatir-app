@@ -23,7 +23,7 @@ Related: [Phase 0 decision record](./runtime-box-pixi-phase0-spike.md),
 You are running on Windows, on a machine with an NVIDIA RTX 4060 Ti (compute 8.9, CUDA
 12.4-capable). This is a **local, zero-cost hands-on spike**. Do not touch any CI, do not run
 anything paid or remote, install everything **contained** under a scratch `PIXI_HOME`, and change
-no production code. Read `project-knowledge-base/roadmap/runtime-box-pixi-phase0-spike.md` and
+no production code. Read `.mind/roadmap/runtime-box-pixi-phase0-spike.md` and
 `runtime-box-pixi-migration.md` first for context.
 
 ### The exact question you must answer

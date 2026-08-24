@@ -584,6 +584,14 @@ single-cell lighthouse was, the aligner question is decided by memory rather tha
 by popularity, and the interesting target is the one that connects into the
 AnnData path that already exists.
 
+It has since been taken up, and built. `simpleaf`, `alevin-fry` and `piscem` are
+in this box — the eight tool ids, not six — for **+31 MB compressed** and 147 MB
+installed, and they arrived with the two pipeline steps that use them, never
+before. The box's self-test now runs a complete single-cell quantification and
+checks the counts, so this box cannot ship half-working. The rest of that story,
+including the index distribution that is still not built, lives in
+[the single-cell RNA-seq vertical](./single-cell-rnaseq-vertical.md).
+
 ## Still to settle
 
 1. **The invariant.** AGENTS.md requires that heavy dependencies stay modular and

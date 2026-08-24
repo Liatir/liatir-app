@@ -7,7 +7,7 @@
   "modelId": "liatir-native-tools",
   "runtimeId": "native-tools",
   "version": "1.0.0",
-  "sourceRevision": "7d7c65ed810022b8504401673b8b1fca13de68a08e654745e5e2fbc6e91aef18",
+  "sourceRevision": "bd3b4b0362ed78706c803f2b941a4000cdbd6bdd762fde2f74b969ed3e98fb34",
   "target": {
     "platform": "macos",
     "arch": "aarch64",
@@ -28,12 +28,12 @@
     {
       "sourcePath": "runtime-boxes/native-tools/native-tools.json",
       "relativePath": "native-tools.json",
-      "sha256": "16fcc0328f71d73416d7426024879583a1c98573f6a4921e1250d73d3d9cee63"
+      "sha256": "c4cbed624682e2dee901ad689ded1d01f551b7c62e09e23b67ecf6e130477402"
     },
     {
       "sourcePath": "runtime-boxes/native-tools/native-tools-self-test.py",
       "relativePath": "native-tools-self-test.py",
-      "sha256": "dd69286875484b890f13b028963235f1e105cdce361b2f1b2031a1d02795d4ec"
+      "sha256": "62f71a2e9da32838038017bbe162a135f3d09341b72891bc0973eb899f9abef5"
     }
   ],
   "prunePaths": [
@@ -48,7 +48,7 @@
     "venv/lib/cmake"
   ],
   "selfTest": {
-    "imports": ["json", "subprocess", "tempfile"],
+    "imports": ["json", "shutil", "subprocess", "tempfile"],
     "files": [
       "native-tools.json",
       "native-tools-self-test.py",
@@ -57,7 +57,10 @@
       "venv/bin/seqkit",
       "venv/bin/fastp",
       "venv/bin/bwa",
-      "venv/bin/minimap2"
+      "venv/bin/minimap2",
+      "venv/bin/simpleaf",
+      "venv/bin/alevin-fry",
+      "venv/bin/piscem"
     ],
     "pythonCode": "exec(compile(open('native-tools-self-test.py', encoding='utf-8').read(), 'native-tools-self-test.py', 'exec'))"
   }

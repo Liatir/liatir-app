@@ -2,12 +2,18 @@
   "schemaVersion": 2,
   "kind": "scrollcase.box.dependency-license-audit",
   "targetId": "macos-aarch64-cpu",
-  "dependencyLockSha256": "a031cd6ffd2d48a45762b119bc52f44a32197d2e032c248127d8279779ab87e8",
+  "dependencyLockSha256": "b141981f8f07be142bd83e8aeb22a0b7b6f75ca68d06844edc0d804de5624c88",
   "packages": [
     {
       "name": "_openmp_mutex",
       "version": "4.5",
       "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "alevin-fry",
+      "version": "0.18.0",
+      "declaredLicense": "BSD 3-Clause",
       "source": "conda"
     },
     {
@@ -161,6 +167,12 @@
       "source": "conda"
     },
     {
+      "name": "libjemalloc",
+      "version": "5.3.1",
+      "declaredLicense": "BSD-2-Clause",
+      "source": "conda"
+    },
+    {
       "name": "liblzma",
       "version": "5.8.3",
       "declaredLicense": "0BSD",
@@ -233,6 +245,12 @@
       "source": "conda"
     },
     {
+      "name": "piscem",
+      "version": "0.22.1",
+      "declaredLicense": "BSD 3-Clause",
+      "source": "conda"
+    },
+    {
       "name": "python",
       "version": "3.11.15",
       "declaredLicense": "Python-2.0",
@@ -254,6 +272,12 @@
       "name": "seqkit",
       "version": "2.13.0",
       "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "simpleaf",
+      "version": "0.28.0",
+      "declaredLicense": "BSD-3-Clause",
       "source": "conda"
     },
     {

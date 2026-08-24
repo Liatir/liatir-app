@@ -1,6 +1,6 @@
 //! The signed Scrollcase box that carries Liatir's process-backed Native Tools.
 //!
-//! Six tools share one locked box because they have one purpose: Liatir supplies
+//! They share one locked box because they have one purpose: Liatir supplies
 //! them without asking a user to install or maintain dependencies. The box is
 //! built with the pinned Scrollcase CLI, verified and extracted with the pinned
 //! Rust consumer, and runs entirely offline from application resources.
@@ -33,17 +33,34 @@ include!(concat!(env!("OUT_DIR"), "/native_tools_trust.rs"));
 ///
 /// Kept in step with `NATIVE_TOOLS_BOX_TOOL_IDS` in `packages/liatir-core`;
 /// `tests/unit/native-tools-scrollcase.test.ts` fails if the two drift apart.
-pub(crate) const BUNDLED_TOOLS: [&str; 6] =
-    ["samtools", "bcftools", "seqkit", "fastp", "bwa", "minimap2"];
+///
+/// `piscem` is in the box too, as the mapping engine simpleaf drives, but it is
+/// not listed here: Liatir never launches it directly, and simpleaf finds it
+/// through the box's own PATH.
+pub(crate) const BUNDLED_TOOLS: [&str; 8] = [
+    "samtools",
+    "bcftools",
+    "seqkit",
+    "fastp",
+    "bwa",
+    "minimap2",
+    "simpleaf",
+    "alevin-fry",
+];
 
 const RESOURCE_DIR: &str = "native-tools";
 const BOX_ID: &str = "native-tools";
 const RUNTIME_ID: &str = "native-tools";
 const WSL_CONSUMER: &str = "native-tools-box-consumer";
 
+const SIMPLEAF_HOME_DIR: &str = "simpleaf-home";
+const SIMPLEAF_HOME_VARIABLE: &str = "ALEVIN_FRY_HOME";
+
 /// Serialises preparation. Two Jobs started together on a fresh installation
 /// must not race to install the same immutable box destination.
 static PREPARED_BOX: Mutex<Option<String>> = Mutex::new(None);
+/// The simpleaf configuration directory already pointed at the prepared box.
+static SIMPLEAF_HOME: Mutex<Option<PathBuf>> = Mutex::new(None);
 /// Avoid re-hashing the same immutable embedded archive for every dependency row.
 static VERIFIED_ARCHIVE: Mutex<Option<String>> = Mutex::new(None);
 
@@ -289,7 +306,55 @@ fn native_environment(root: &Path) -> Vec<(String, String)> {
             library_variable.into(),
             root.join("venv/lib").to_string_lossy().to_string(),
         ),
+        (
+            SIMPLEAF_HOME_VARIABLE.into(),
+            simpleaf_home(root).to_string_lossy().to_string(),
+        ),
     ]
+}
+
+/// simpleaf reads the piscem and alevin-fry paths from a JSON file in this directory and
+/// refuses to start without it. Kept beside the extracted boxes rather than inside one: the
+/// box root is content-addressed and immutable, and its parent already belongs to Liatir.
+/// `prune_previous_boxes` only deletes directories named by a digest, so this one survives a
+/// box upgrade — and `ensure_simpleaf_home` rewrites the file for the current root anyway.
+#[cfg(not(target_os = "windows"))]
+fn simpleaf_home(root: &Path) -> PathBuf {
+    match root.parent() {
+        Some(parent) => parent.join(SIMPLEAF_HOME_DIR),
+        None => root.join(SIMPLEAF_HOME_DIR),
+    }
+}
+
+/// Point simpleaf at the engines inside *this* box, once per application run.
+///
+/// The recorded paths name a specific box root, so they go stale the moment the application
+/// ships a new box. Rewriting them on first use costs one short process and removes the
+/// failure mode entirely, which is worth more than the milliseconds saved by trusting them.
+#[cfg(not(target_os = "windows"))]
+fn ensure_simpleaf_home(root: &Path) -> Result<(), String> {
+    let mut recorded = SIMPLEAF_HOME
+        .lock()
+        .map_err(|_| "simpleaf configuration lock poisoned")?;
+    let home = simpleaf_home(root);
+    if recorded.as_deref() == Some(home.as_path()) {
+        return Ok(());
+    }
+    std::fs::create_dir_all(&home)
+        .map_err(|error| format!("Liatir could not create simpleaf's configuration directory: {error}"))?;
+    let output = std::process::Command::new(root.join("venv/bin/simpleaf"))
+        .arg("set-paths")
+        .envs(native_environment(root))
+        .output()
+        .map_err(|error| format!("Liatir could not configure simpleaf: {error}"))?;
+    if !output.status.success() {
+        return Err(format!(
+            "Liatir could not configure simpleaf: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+    *recorded = Some(home);
+    Ok(())
 }
 
 /// Resolve a spawn request against the verified Native Tools box.
@@ -312,6 +377,9 @@ pub(crate) fn resolve(
                 binary.display()
             ));
         }
+        if cmd == "simpleaf" {
+            ensure_simpleaf_home(&root)?;
+        }
         Ok(Some(ResolvedCommand {
             program: binary.to_string_lossy().to_string(),
             args: args.to_vec(),
@@ -324,6 +392,9 @@ pub(crate) fn resolve(
         wsl_plan::reject_unreachable_paths(args)?;
         let distribution = windows::distribution()?;
         let prefix = windows::ensure_prepared(app, &distribution)?;
+        if cmd == "simpleaf" {
+            windows::ensure_simpleaf_home(&distribution, &prefix)?;
+        }
         let positions = wsl_plan::path_argument_positions(args);
         let mapped = if positions.is_empty() {
             Vec::new()
@@ -490,6 +561,20 @@ mod wsl_plan {
         Ok(result)
     }
 
+    /// simpleaf's configuration directory inside WSL2, beside the extracted boxes.
+    ///
+    /// The Linux mirror of [`super::simpleaf_home`]: the consumer prepares the box at
+    /// `<parent>/<digest>`, so the sibling directory is Liatir's and is writable by the same
+    /// user that runs the tools.
+    pub(super) fn simpleaf_home(prefix: &str) -> String {
+        match prefix.rsplit_once('/') {
+            Some((parent, _)) if !parent.is_empty() => {
+                format!("{parent}/{}", super::SIMPLEAF_HOME_DIR)
+            }
+            _ => format!("{prefix}/{}", super::SIMPLEAF_HOME_DIR),
+        }
+    }
+
     pub(super) fn tool_command(
         distribution: &str,
         prefix: &str,
@@ -499,6 +584,13 @@ mod wsl_plan {
         let mut command = vec![
             "/usr/bin/env".into(),
             format!("LD_LIBRARY_PATH={prefix}/venv/lib"),
+            // simpleaf launches piscem and alevin-fry by name; both are in the box beside it.
+            format!("PATH={prefix}/venv/bin:/usr/bin:/bin"),
+            format!(
+                "{}={}",
+                super::SIMPLEAF_HOME_VARIABLE,
+                simpleaf_home(prefix)
+            ),
             format!("{prefix}/venv/bin/{cmd}"),
         ];
         command.extend(args.iter().cloned());
@@ -513,7 +605,8 @@ mod wsl_plan {
 #[cfg(target_os = "windows")]
 mod windows {
     use super::{
-        resources, signed_archive_digest, verify_platform_resources, PREPARED_BOX, VERIFIED_ARCHIVE,
+        resources, signed_archive_digest, verify_platform_resources, PREPARED_BOX, SIMPLEAF_HOME,
+        VERIFIED_ARCHIVE,
     };
     use crate::helpers::wsl::{
         combined_output, map_host_paths_to_wsl, run_wsl, valid_wsl_distribution,
@@ -599,6 +692,39 @@ mod windows {
         *prepared_in_process = Some(prefix.clone());
         Ok(prefix)
     }
+
+    /// Point simpleaf at the engines inside *this* box, once per application run.
+    ///
+    /// The WSL2 half of [`super::ensure_simpleaf_home`], and stale for the same reason: the
+    /// recorded paths name one box root, which a shipped upgrade replaces.
+    pub(super) fn ensure_simpleaf_home(distribution: &str, prefix: &str) -> Result<(), String> {
+        let mut recorded = SIMPLEAF_HOME
+            .lock()
+            .map_err(|_| "simpleaf configuration lock poisoned")?;
+        let home = super::wsl_plan::simpleaf_home(prefix);
+        if recorded.as_ref().map(|path| path.to_string_lossy().to_string()).as_deref() == Some(home.as_str()) {
+            return Ok(());
+        }
+        let output = run_wsl(
+            Some(distribution),
+            &[
+                "/bin/sh".into(),
+                "-c".into(),
+                format!(
+                    "mkdir -p '{home}' && LD_LIBRARY_PATH='{prefix}/venv/lib' PATH='{prefix}/venv/bin:/usr/bin:/bin' {}='{home}' '{prefix}/venv/bin/simpleaf' set-paths",
+                    super::SIMPLEAF_HOME_VARIABLE
+                ),
+            ],
+        )?;
+        if !output.status.success() {
+            return Err(format!(
+                "Liatir could not configure simpleaf inside WSL2: {}",
+                combined_output(&output)
+            ));
+        }
+        *recorded = Some(std::path::PathBuf::from(home));
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -609,11 +735,33 @@ mod tests {
     fn claims_only_the_tools_the_box_actually_builds() {
         assert!(is_bundled_tool("samtools"));
         assert!(is_bundled_tool("bwa"));
+        assert!(is_bundled_tool("simpleaf"));
+        assert!(is_bundled_tool("alevin-fry"));
         // FastQC runs as WASM in-process and SnpEff is a Java runtime.
         assert!(!is_bundled_tool("fastqc"));
         assert!(!is_bundled_tool("snpeff"));
         assert!(!is_bundled_tool("java"));
         assert!(!is_bundled_tool("nextflow"));
+        // piscem is in the box, as simpleaf's mapping engine — never launched on its own.
+        assert!(!is_bundled_tool("piscem"));
+    }
+
+    #[test]
+    fn keeps_simpleaf_configuration_beside_the_boxes_rather_than_inside_one() {
+        let root = Path::new("/data/native-tools/abcdef");
+        assert_eq!(
+            simpleaf_home(root),
+            Path::new("/data/native-tools/simpleaf-home"),
+        );
+        assert_eq!(
+            wsl_plan::simpleaf_home("/home/bio/.local/share/liatir/native-tools/abcdef"),
+            "/home/bio/.local/share/liatir/native-tools/simpleaf-home",
+        );
+        // The box environment carries it, so every simpleaf invocation finds its engines.
+        assert!(native_environment(root)
+            .iter()
+            .any(|(name, value)| name == "ALEVIN_FRY_HOME"
+                && value == "/data/native-tools/simpleaf-home"));
     }
 
     #[test]
@@ -682,6 +830,8 @@ mod tests {
                 "--exec",
                 "/usr/bin/env",
                 "LD_LIBRARY_PATH=/home/bio/.local/share/liatir/native-tools/abc/venv/lib",
+                "PATH=/home/bio/.local/share/liatir/native-tools/abc/venv/bin:/usr/bin:/bin",
+                "ALEVIN_FRY_HOME=/home/bio/.local/share/liatir/native-tools/simpleaf-home",
                 "/home/bio/.local/share/liatir/native-tools/abc/venv/bin/samtools",
                 "sort",
                 "/mnt/c/bio/reads.bam",

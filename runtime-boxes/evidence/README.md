@@ -29,4 +29,4 @@ they must not invent GitHub workflow or approver metadata.
 
 The reviewed target matrix, production topology, and operational ownership are
 summarized in the internal
-[Runtime Box production report](../../project-knowledge-base/roadmap/runtime-box-production-report.md).
+[Runtime Box production report](../../.mind/roadmap/runtime-box-production-report.md).

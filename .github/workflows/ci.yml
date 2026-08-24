@@ -10,7 +10,7 @@ on:
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
-      - 'project-knowledge-base/**'
+      - '.mind/**'
 
 # Cancel superseded runs on the same ref to save runner minutes.
 concurrency:

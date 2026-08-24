@@ -285,6 +285,34 @@ export const DEP_REQUIREMENTS: Record<string, DepRequirement> = {
       { platform: 'conda', cmd: 'conda install -c bioconda minimap2' },
     ],
   },
+  simpleaf: {
+    binary: 'simpleaf',
+    label: 'simpleaf',
+    description:
+      'Single-cell RNA-seq workflow driver. Builds the reference index and runs mapping and quantification in one command, writing an AnnData .h5ad count matrix.',
+    minVersion: '0.28.0',
+    category: 'bioinformatics',
+    releasesUrl: 'https://github.com/COMBINE-lab/simpleaf/releases/latest',
+    conda: 'simpleaf',
+    condaChannel: 'bioconda',
+    installCmds: [
+      { platform: 'conda', cmd: 'conda install -c bioconda simpleaf' },
+    ],
+  },
+  'alevin-fry': {
+    binary: 'alevin-fry',
+    label: 'alevin-fry',
+    description:
+      'Single-cell quantification engine. Turns mapped reads into a per-cell, per-gene count matrix through permit-list generation, collation and UMI resolution.',
+    minVersion: '0.18.0',
+    category: 'bioinformatics',
+    releasesUrl: 'https://github.com/COMBINE-lab/alevin-fry/releases/latest',
+    conda: 'alevin-fry',
+    condaChannel: 'bioconda',
+    installCmds: [
+      { platform: 'conda', cmd: 'conda install -c bioconda alevin-fry' },
+    ],
+  },
   nextflow: {
     binary: 'nextflow',
     label: 'Nextflow',

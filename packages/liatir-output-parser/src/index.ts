@@ -18,3 +18,6 @@ export * from './alignment/samtools';
 // Variants
 export * from './variants/bcftools';
 export * from './variants/snpeff';
+
+// Single-cell
+export * from './single-cell/simpleaf';

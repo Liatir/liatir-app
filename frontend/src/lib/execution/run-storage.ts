@@ -98,6 +98,44 @@ export async function ensureRunOutputDir(runId: string): Promise<string> {
   return `${await dataRoot()}/${runOutputRel(runId)}`;
 }
 
+/**
+ * Turn an absolute path inside the data root back into the relative one the bridge accepts.
+ *
+ * The filesystem commands are deliberately sandboxed: they take a path relative to Liatir's
+ * data directory and can address nothing outside it. A step that has just written into its
+ * own `output/` holds the absolute path, so this is the one conversion it needs — and it
+ * refuses anything that is not under the data root rather than reaching for it.
+ */
+async function dataRelativePath(absolutePath: string): Promise<string> {
+  const root = await dataRoot();
+  const normalised = absolutePath.replace(/\\/g, '/');
+  const prefix = `${root.replace(/\\/g, '/')}/`;
+  if (!normalised.startsWith(prefix)) {
+    throw new Error(`${absolutePath} is not inside Liatir's data directory.`);
+  }
+  return normalised.slice(prefix.length);
+}
+
+/**
+ * Move a file a run produced to another place inside that run's own directory.
+ *
+ * A tool that writes its result several directories deep under a name of its own choosing
+ * leaves the user with `quants.h5ad` and no idea which sample it belongs to. Lifting it to
+ * the top of the run's `output/` under the sample's name is a rename, not a transformation:
+ * the file is byte-for-byte what the tool wrote.
+ */
+export async function moveRunFile(from: string, to: string): Promise<void> {
+  const api = liatir();
+  if (!api) throw new Error('Liatir API not available');
+  await api.invoke('lia_fs_move', {
+    src: await dataRelativePath(from),
+    dest: await dataRelativePath(to),
+    permanent: true,
+    createDirs: true,
+    overwrite: true,
+  });
+}
+
 export interface RunOutputEntry {
   name: string;
   path: string;

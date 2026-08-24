@@ -781,8 +781,8 @@ This gate proved both large-model delivery and safe temporary-runner lifecycle.
 
 ### Gate 10: operational handoff
 
-**Question:** Could another maintainer operate and continue the system without
-guessing from chat history or exposing secret values?
+**Question:** Could someone else — a person or an agent — operate and continue the
+system without guessing from chat history or exposing secret values?
 
 We aligned:
 
@@ -955,9 +955,9 @@ their own scoped evidence.
 
 | Need | Source of truth |
 | --- | --- |
-| Current quick status | `project-knowledge-base/current-project-status.md` |
-| Complete gate history | `project-knowledge-base/roadmap/runtime-box-ci-foundation.md` |
-| Production resources and operator procedures | `project-knowledge-base/roadmap/runtime-box-production-report.md` |
+| Current quick status | `.mind/current-project-status.md` |
+| Complete gate history | `.mind/roadmap/runtime-box-ci-foundation.md` |
+| Production resources and operator procedures | `.mind/roadmap/runtime-box-production-report.md` |
 | Live model/target/publication catalog | `runtime-boxes/catalog.json` |
 | Human-readable support matrix | `runtime-boxes/compatibility-matrix.md` |
 | Reviewed compact evidence | `runtime-boxes/evidence/` |

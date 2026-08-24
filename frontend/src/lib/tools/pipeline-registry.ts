@@ -9,6 +9,12 @@ import { bcftoolsStatsDefinition, bcftoolsFilterDefinition, parseBcftoolsStats, 
 import { snpeffDefinition, parseSnpEffStats, buildSnpEffOutput } from './variants/snpeff';
 import { singleCellEmbeddingDefinition, runSingleCellEmbeddingStep } from './ai/single-cell-embedding';
 import {
+  runSimpleafIndexStep,
+  runSimpleafQuantStep,
+  simpleafIndexDefinition,
+  simpleafQuantDefinition,
+} from './single-cell/simpleaf';
+import {
   genomeViewerDefinition,
   runGenomeViewerStep,
   runSingleCellViewerStep,
@@ -479,6 +485,8 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
   'bcftools-stats':     { definition: bcftoolsStatsDefinition,     run: runBcftoolsStatsStep },
   'bcftools-filter':    { definition: bcftoolsFilterDefinition,    run: runBcftoolsFilterStep },
   'snpeff':             { definition: snpeffDefinition,            run: runSnpeffStep },
+  'simpleaf-index':     { definition: simpleafIndexDefinition,     run: runSimpleafIndexStep },
+  'simpleaf-quant':     { definition: simpleafQuantDefinition,     run: runSimpleafQuantStep },
   'ai-single-cell-embedding': { definition: singleCellEmbeddingDefinition, run: runSingleCellEmbeddingStep },
   'viewer-structure-3d': { definition: structureViewerDefinition, run: runStructureViewerStep },
   'viewer-genome-track': { definition: genomeViewerDefinition, run: runGenomeViewerStep },

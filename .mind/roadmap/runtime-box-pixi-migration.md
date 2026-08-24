@@ -769,14 +769,14 @@ shift; re-pin fixtures — accepted).
 - CI/runners: `.github/workflows/{_runtime-box-validate,runtime-box-release,runtime-box-foundation,
   runtime-box-*-cuda-preflight}.yml`, `scripts/run-runtime-box-*-runner.sh` (generalized).
 - Validators: `scripts/ai-validation/geneformer-parity.py`, `scripts/validate-*-runtime.mjs`.
-- Docs: `project-knowledge-base/roadmap/runtime-box-*.md`, `project-knowledge-base/current-project-status.md`.
+- Docs: `.mind/roadmap/runtime-box-*.md`, `.mind/current-project-status.md`.
 
 ## Verification
 
 - **Phase 0:** local relocation POC — cold `import torch, ...` from a moved prefix passes;
   activation requirement determined.
 - **Cheap gates (every change):** `npm run runtime-box:ci -- check`, focused unit tests,
-  `npm run test:verify`, Rust `cargo test runtime_box`, signer policy tests, project-knowledge-base build,
+  `npm run test:verify`, Rust `cargo test runtime_box`, signer policy tests, .mind build,
   `git diff --check` (get exact scripts from `package.json`).
 - **Per target:** one self-hosted native validation run (build → self-test → scientific parity →
   Rust lifecycle → evidence) then one protected release (KMS sign → R2 publish → beta → product

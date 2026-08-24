@@ -37,7 +37,7 @@ Related: [Phase 0 decision record](./runtime-box-pixi-phase0-spike.md),
 
 You are on Linux x86_64. This is a **local, zero-cost hands-on spike**. Do not touch CI, do not run
 anything paid or remote, install everything **contained** under a scratch `PIXI_HOME`, and change no
-production code. Read `project-knowledge-base/roadmap/runtime-box-pixi-phase0-spike.md` first.
+production code. Read `.mind/roadmap/runtime-box-pixi-phase0-spike.md` first.
 
 **If you are running under WSL2 (the expected case):**
 

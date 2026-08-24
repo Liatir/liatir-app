@@ -96,7 +96,7 @@ describe('Native Tools Scrollcase box', () => {
     expect(nativeToolsBoxPlacement('macos', 'x86_64')).toBeNull();
   });
 
-  it('declares exactly the six process-backed tools in every scroll and in Rust', () => {
+  it('declares exactly the process-backed tools in every scroll and in Rust', () => {
     for (const { targetId } of targets) {
       expect(manifestTools(manifest(targetId)).sort()).toEqual(
         [...NATIVE_TOOLS_BOX_TOOL_IDS].sort(),
@@ -164,6 +164,14 @@ describe('Native Tools Scrollcase box', () => {
     }
     for (const tool of NATIVE_TOOLS_BOX_TOOL_IDS) {
       expect(selfTest).toContain(`"${tool}"`);
+      for (const { targetId } of targets) {
+        expect(scroll(targetId).selfTest.files).toContain(`venv/bin/${tool}`);
+      }
+    }
+    // piscem is in the box as simpleaf's mapping engine and is never launched on its own.
+    // It is not a declared tool, so only the file check can notice it going missing.
+    for (const { targetId } of targets) {
+      expect(scroll(targetId).selfTest.files).toContain('venv/bin/piscem');
     }
   });
 

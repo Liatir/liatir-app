@@ -27,23 +27,36 @@ nothing, and what runs is the build the release was tested against.
 | fastp | Scrollcase box | Scrollcase box | Linux Scrollcase box, through WSL2 |
 | bwa | Scrollcase box | Scrollcase box | Linux Scrollcase box, through WSL2 |
 | minimap2 | Scrollcase box | Scrollcase box | Linux Scrollcase box, through WSL2 |
+| simpleaf | Scrollcase box | Scrollcase box | Linux Scrollcase box, through WSL2 |
+| alevin-fry | Scrollcase box | Scrollcase box | Linux Scrollcase box, through WSL2 |
 | FastQC | In-process WASM | In-process WASM | In-process WASM |
 | SnpEff | Java on `PATH` | Java on `PATH` | Java on `PATH` |
+
+`piscem` is in the box as well, as the mapping engine simpleaf drives. It is not a
+resolvable tool id: Liatir never launches it, and simpleaf finds it through the
+box's own `PATH`. simpleaf additionally needs `ALEVIN_FRY_HOME`, a writable
+directory recording where its engines are; the resolver sets it and rewrites its
+contents once per application run, because the box root is content-addressed and a
+shipped upgrade would otherwise leave the recorded paths pointing at a box that no
+longer exists.
 
 Those are the three platforms Liatir ships. macOS x86_64 is not a target and will
 not become one; Linux ARM64 has no application, so it has no box target either.
 
 SnpEff is the one exception, and deliberately: it is a Java program whose
 databases are managed separately, so bundling it would mean bundling a JRE that
-outweighs all six tools combined. Java is therefore the only dependency a user of
-a supported platform can still be asked to install for a Native Tool.
+outweighs every tool here combined. Java is therefore the only dependency a user
+of a supported platform can still be asked to install for a Native Tool.
 
 ## Verification gates
 
 - Scrollcase builds from committed per-target locks, runs every tool through the
   authored self-test, signs the release and verifies the finished archive. It
   fails if one does not work or reports a version the lock did not pin, so a
-  green build has executed all six rather than merely downloaded them.
+  green build has executed every tool rather than merely downloaded them. The
+  single-cell chain is exercised end to end there — a synthetic genome is indexed,
+  three cells are quantified, and every spliced, unspliced and ambiguous count is
+  checked against the matrix the run wrote.
   `.github/workflows/native-tools-box.yml` does this on `ubuntu-24.04` and
   `macos-15`.
 - Contract tests hold both scrolls, both locks, product metadata, the TypeScript
