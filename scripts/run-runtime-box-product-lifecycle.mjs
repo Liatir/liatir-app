@@ -42,7 +42,7 @@ function productLifecycleSpec() {
   const modelId = String(process.env.LIATIR_RUNTIME_BOX_MODEL_ID ?? '').trim();
   if (!modelId) throw new Error('LIATIR_RUNTIME_BOX_MODEL_ID is required to select the lifecycle spec.');
   const catalog = JSON.parse(fs.readFileSync(path.join(ROOT, 'runtime-boxes/catalog.json'), 'utf8'));
-  const model = catalog.models.find((candidate) => candidate.modelId === modelId);
+  const model = catalog.components.find((candidate) => candidate.modelId === modelId);
   if (!model?.productLifecycleSpec) {
     throw new Error(`No product lifecycle spec in the catalog for ${modelId}.`);
   }

@@ -53,6 +53,40 @@ Per ogni target “in prova” viene concesso un solo ciclo di fattibilità: loc
 
 Accettazione: vecchi box AI ancora installabili ed eseguibili, Tool Runtime isolati, nessuna migrazione distruttiva degli ambienti esistenti e nessun download automatico.
 
+### Implementation status — complete locally (2026-08-25)
+
+- The shared `Runtime Component` lifecycle is live end to end. AI Models remain under
+  `ai-runtimes`; Tool Runtimes use the independent `tool-runtimes` root. The generic status,
+  install, rollback and remove commands are exposed through the typed browser API, while every
+  previous AI command remains a compatibility alias.
+- Dependencies owns install, explicit update check, Update, cancel, rollback and remove. A check
+  verifies only the bounded signed channel document; it cannot fetch a release manifest, archive
+  or activate anything. There is no automatic update check.
+- The CI authority is now the schema-v2 `components` catalog. Existing Scrollcase `modelId`, v2
+  signatures, target identity, trust roots, revocations and app-global anti-replay state remain
+  unchanged. New evidence records carry both product component identity and the compatibility
+  `modelId`.
+- Core now owns the FASTA, A3M, VEP tumor VCF, PDB/mmCIF/SDF, neoantigen TSV and linked DCD
+  profiles; `LiatirComplexSpec v1`; non-empty multi-model AI provenance while retaining the primary
+  model fields read by existing Results; and the lazy, memory-bounded DCD Result player. SDK and
+  browser API types were regenerated from Core.
+- The Tool Runtime catalog is deliberately empty in Phase 1. pVACtools and OpenMM enter it only
+  after their later component-specific legal, build, scientific and lifecycle gates pass.
+
+Local evidence: `npm run test:fast` passed 454 tests; `npm run test:verify` passed all six suites;
+Rust passed 91 tests with 2 ignored and Clippy completed without errors; `npm run test:ui` passed
+all seven applicable suites, including 34 native app scenarios. The signed
+security fixture exercised the old AI alias and the generic Tool Runtime install, A-to-B update,
+isolated roots, rollback, remove, anti-replay and restart path in the real app. Windows and Linux
+desktop lifecycles were not executed on the macOS host. No GPU, heavy-model, publication, signing
+or remote deployment action was run.
+
+Release follow-up: the clean frontend install reported five advisories across production and
+development dependencies (two low, one moderate and two high). The production-only `npm audit`
+could not be queried because this environment did not permit sending the dependency inventory to
+the external npm advisory endpoint. Run that authorized registry audit before a public package
+release; it does not invalidate the local Phase 1 functional gates above.
+
 ## Fase 2 — Oncologia: MHCflurry e pVACtools
 
 **Codex effort consigliato: xhigh**  

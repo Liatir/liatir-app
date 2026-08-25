@@ -26,7 +26,7 @@ export function runtimeBoxInstallTimeoutMs(archiveSizeBytes) {
 
 /** Returns candidate metadata from the same checked catalog and recipe used by the release. */
 export function runtimeBoxTargetForNativeTest(modelId, targetId) {
-  const model = CATALOG.models.find((candidate) => candidate.modelId === modelId);
+  const model = CATALOG.components.find((candidate) => candidate.modelId === modelId);
   const target = model?.targets.find((candidate) => candidate.targetId === targetId);
   if (!target) throw new Error(`Unsupported native Runtime Box test target: ${modelId}/${targetId}`);
   const recipe = resolveRuntimeBoxAuthoringInput({

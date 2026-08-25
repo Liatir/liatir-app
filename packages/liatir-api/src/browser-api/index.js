@@ -801,7 +801,8 @@ function buildFiles(core) {
     open: (options) => core.invoke("lia_file_open", { multi: options?.multi ?? false, allowedExtensions: options?.allowed, maxBytes: options?.maxBytes }),
     openWithBytes: (options) => core.invoke("lia_file_open_with_bytes", { multi: options?.multi ?? false, allowedExtensions: options?.allowed, maxBytes: options?.maxBytes }),
     save: (defaultName) => core.invoke("lia_file_save", { defaultName: defaultName ?? null }),
-    identity: (path) => core.invoke("lia_file_identity", { path })
+    identity: (path) => core.invoke("lia_file_identity", { path }),
+    readBase64: (path, maxBytes) => core.invoke("lia_file_read_base64", { path, maxBytes })
   };
 }
 
@@ -1363,6 +1364,33 @@ function buildSnpEffSuite(core) {
   };
 }
 
+// src-ts/modules/rs/runtimeBoxes/_main.ts
+function buildRuntimeBoxes(core) {
+  return {
+    status: ({ componentKind, runtimeId, packages = [], update }) => core.invoke("lia_runtime_box_status", {
+      componentKind,
+      runtimeId,
+      packages,
+      update: update ?? null
+    }),
+    install: ({ componentKind, componentId, boxId, channel, registryBaseUrl, publishedTargets, downloadId }) => core.invoke("lia_runtime_box_install", {
+      componentKind,
+      componentId,
+      boxId,
+      channel,
+      registryBaseUrl,
+      targetCandidates: publishedTargets,
+      downloadId
+    }),
+    rollback: (componentKind, runtimeId) => core.invoke("lia_runtime_box_rollback", {
+      componentKind,
+      runtimeId
+    }),
+    remove: (componentKind, runtimeId, boxId) => core.invoke("lia_runtime_box_remove", { componentKind, runtimeId, boxId }),
+    cancelDownload: (downloadId) => core.invoke("lia_managed_download_cancel", { id: downloadId })
+  };
+}
+
 // src-ts/modules/rs/mcp/_main.ts
 function buildMcp(core) {
   return {
@@ -1562,6 +1590,7 @@ function buildQc(core) {
     externalWorkflows: buildExternalWorkflows(core),
     singleCellIndexes: buildSingleCellIndexes(core),
     snpEffSuite: buildSnpEffSuite(core),
+    runtimeBoxes: buildRuntimeBoxes(core),
     qc: buildQc(core),
     tauri: windowTauriProxy,
     onReady: liaReadyEventListener,
@@ -1617,6 +1646,7 @@ export {
   buildNetwork,
   buildNotifications,
   buildQc,
+  buildRuntimeBoxes,
   buildShortcuts,
   buildSingleCellIndexes,
   buildSnpEffSuite,

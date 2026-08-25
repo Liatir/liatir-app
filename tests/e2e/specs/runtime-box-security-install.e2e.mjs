@@ -1,6 +1,7 @@
 import { activateCleanSandbox } from '../support/runtime-box.mjs';
 import {
   installSecurityFixture,
+  installSecurityToolRuntimeFixture,
   invokeOutcome,
   runSecurityFixtureVersion,
   SECURITY_RUNTIME_ID,
@@ -27,6 +28,83 @@ export const tests = [{
     expect(installedA.ok).toBe(true);
     expect(installedA.value.version).toBe('1.0.0');
     expect(installedA.value.rollbackAvailable).toBe(false);
+    expect(await runSecurityFixtureVersion(browser)).toEqual({
+      ok: true,
+      value: { version: '1.0.0' },
+    });
+
+    // The same signed fixture can coexist in the independent Tool Runtime root. This proves the
+    // generic surface without weakening the compatibility alias exercised above.
+    const toolA = await installSecurityToolRuntimeFixture(browser, `security-tool-a-${Date.now()}`);
+    expect(toolA).toMatchObject({
+      ok: true,
+      value: {
+        componentKind: 'tool-runtime',
+        componentId: 'security-fixture-model',
+        version: '1.0.0',
+      },
+    });
+    const toolStatusA = await invokeOutcome(browser, 'lia_runtime_box_status', {
+      componentKind: 'tool-runtime',
+      runtimeId: SECURITY_RUNTIME_ID,
+      packages: [],
+      update: null,
+    });
+    const aiStatusA = await invokeOutcome(browser, 'lia_runtime_box_status', {
+      componentKind: 'ai-model',
+      runtimeId: SECURITY_RUNTIME_ID,
+      packages: [],
+      update: null,
+    });
+    expect(toolStatusA).toMatchObject({ ok: true, value: { installed: true, componentKind: 'tool-runtime' } });
+    expect(aiStatusA).toMatchObject({ ok: true, value: { installed: true, componentKind: 'ai-model' } });
+    expect(toolStatusA.value.runtimeDir).toContain('tool-runtimes');
+    expect(aiStatusA.value.runtimeDir).toContain('ai-runtimes');
+
+    await setSecurityRegistryState('b', 'b');
+    const toolUpdate = await invokeOutcome(browser, 'lia_runtime_box_status', {
+      componentKind: 'tool-runtime',
+      runtimeId: SECURITY_RUNTIME_ID,
+      packages: [],
+      update: {
+        componentId: 'security-fixture-model',
+        boxId: 'security-fixture-box',
+        channel: 'beta',
+        registryBaseUrl: securityFixtureEnvironment().registryBaseUrl,
+        targetCandidates: [{ target: securityFixtureEnvironment().target, hostEnvironments: ['native'] }],
+      },
+    });
+    expect(toolUpdate).toMatchObject({
+      ok: true,
+      value: {
+        installed: true,
+        update: {
+          currentVersion: '1.0.0',
+          availableVersion: '2.0.0',
+          updateAvailable: true,
+        },
+      },
+    });
+    const toolB = await installSecurityToolRuntimeFixture(browser, `security-tool-b-${Date.now()}`);
+    expect(toolB).toMatchObject({ ok: true, value: { version: '2.0.0', rollbackAvailable: true } });
+    const toolRollback = await invokeOutcome(browser, 'lia_runtime_box_rollback', {
+      componentKind: 'tool-runtime',
+      runtimeId: SECURITY_RUNTIME_ID,
+    });
+    expect(toolRollback).toMatchObject({ ok: true, value: { restored: true, componentKind: 'tool-runtime' } });
+    const removedTool = await invokeOutcome(browser, 'lia_runtime_box_remove', {
+      componentKind: 'tool-runtime',
+      runtimeId: SECURITY_RUNTIME_ID,
+      boxId: 'security-fixture-box',
+    });
+    expect(removedTool).toEqual({ ok: true, value: true });
+    const removedToolStatus = await invokeOutcome(browser, 'lia_runtime_box_status', {
+      componentKind: 'tool-runtime',
+      runtimeId: SECURITY_RUNTIME_ID,
+      packages: [],
+      update: null,
+    });
+    expect(removedToolStatus).toMatchObject({ ok: true, value: { installed: false } });
     expect(await runSecurityFixtureVersion(browser)).toEqual({
       ok: true,
       value: { version: '1.0.0' },

@@ -3,6 +3,9 @@ use tauri_plugin_dialog::{DialogExt, FilePath};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::{fs, io::Read, path::{Path, PathBuf}};
+use base64::{engine::general_purpose, Engine as _};
+
+const MAX_WEBVIEW_BINARY_READ_BYTES: u64 = 268_435_456;
 
 #[derive(Serialize)]
 pub struct OpenResult { pub paths: Vec<String> }
@@ -14,6 +17,37 @@ pub struct FileIdentity {
   pub sha256: String,
   /** First eight bytes, lowercase hex. Enough to identify container signatures without loading the file. */
   pub prefix_hex: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileBase64 {
+  pub size_bytes: u64,
+  pub data_base64: String,
+}
+
+fn read_file_base64(path: &str, max_bytes: u64) -> Result<FileBase64, String> {
+  if max_bytes == 0 || max_bytes > MAX_WEBVIEW_BINARY_READ_BYTES {
+    return Err(format!("Binary viewer reads must be between 1 byte and {MAX_WEBVIEW_BINARY_READ_BYTES} bytes"));
+  }
+  let file = fs::File::open(path).map_err(|error| error.to_string())?;
+  let expected_size = file.metadata().map_err(|error| error.to_string())?.len();
+  if expected_size > max_bytes {
+    return Err(format!("The file is too large for interactive playback ({expected_size} bytes; limit {max_bytes})"));
+  }
+  // Read through a hard limit as well as checking metadata: the file may be a simulation output
+  // that is still growing, and a concurrent append must not bypass the webview memory bound.
+  let mut bytes = Vec::with_capacity(expected_size as usize);
+  file.take(max_bytes + 1)
+    .read_to_end(&mut bytes)
+    .map_err(|error| error.to_string())?;
+  if bytes.len() as u64 > max_bytes {
+    return Err(format!("The file grew beyond the interactive playback limit of {max_bytes} bytes"));
+  }
+  Ok(FileBase64 {
+    size_bytes: bytes.len() as u64,
+    data_base64: general_purpose::STANDARD.encode(bytes),
+  })
 }
 
 fn inspect_file_identity(path: &str) -> Result<FileIdentity, String> {
@@ -48,6 +82,18 @@ pub async fn lia_file_identity(_app: AppHandle, path: String) -> Result<FileIden
   tauri::async_runtime::spawn_blocking(move || inspect_file_identity(&path))
     .await
     .map_err(|e| format!("File inspection task failed: {e}"))?
+}
+
+/// Bounded binary read used only after a user asks to load an interactive Result viewer.
+#[tauri::command]
+pub async fn lia_file_read_base64(
+  _app: AppHandle,
+  path: String,
+  max_bytes: u64,
+) -> Result<FileBase64, String> {
+  tauri::async_runtime::spawn_blocking(move || read_file_base64(&path, max_bytes))
+  .await
+  .map_err(|error| error.to_string())?
 }
 
 fn file_path_to_string(p: FilePath) -> String {
@@ -242,7 +288,7 @@ pub async fn lia_file_save(app: AppHandle, default_name: Option<String>) -> Resu
 
 #[cfg(test)]
 mod tests {
-  use super::inspect_file_identity;
+  use super::{inspect_file_identity, read_file_base64};
   use std::{fs, path::PathBuf};
 
   #[test]
@@ -260,6 +306,17 @@ mod tests {
       "49c125f35c8cf401e1ec1e7739825d788afb0d361d5906d18d0df6bcf2de4bd2",
     );
 
+    let _ = fs::remove_file(path);
+  }
+
+  #[test]
+  fn binary_viewer_read_is_bounded_and_base64_encoded() {
+    let mut path = PathBuf::from(std::env::temp_dir());
+    path.push(format!("liatir-binary-viewer-{}.dcd", std::process::id()));
+    fs::write(&path, [0_u8, 1, 2, 255]).expect("write fixture");
+    let path = path.to_str().expect("utf8 path");
+    assert_eq!(read_file_base64(path, 4).expect("read fixture").data_base64, "AAEC/w==");
+    assert!(read_file_base64(path, 3).unwrap_err().contains("too large"));
     let _ = fs::remove_file(path);
   }
 }

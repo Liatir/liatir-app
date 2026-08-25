@@ -22,6 +22,7 @@ export * from "./modules/rs/deps/_main";
 export * from "./modules/rs/externalWorkflows/_main";
 export * from "./modules/rs/singleCellIndexes/_main";
 export * from "./modules/rs/snpEffSuite/_main";
+export * from "./modules/rs/runtimeBoxes/_main";
 export * from "./modules/rs/mcp/_main";
 export * from "./modules/qc/_main";
 export * from "./modules/qc/fastqc/_main";

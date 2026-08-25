@@ -1,5 +1,5 @@
 /**
- * Shared wire contracts for prebuilt AI Runtime Boxes.
+ * Shared wire contracts for prebuilt Runtime Components.
  *
  * Signed documents use an exact base64-encoded JSON payload instead of
  * canonicalized JSON. This keeps signature verification identical in Node,
@@ -22,6 +22,9 @@ import type {
 } from "scrollcase/contract/types";
 
 export const LIATIR_RUNTIME_BOX_SCHEMA_VERSION = BOX_SCHEMA_VERSION;
+
+/** Product classification for an installable Runtime Box; it never changes Scrollcase's wire format. */
+export type LiatirRuntimeComponentKind = "ai-model" | "tool-runtime";
 
 export type LiatirRuntimeBoxPlatform = BoxTarget["platform"];
 export type LiatirRuntimeBoxArch = BoxTarget["arch"];
@@ -100,13 +103,62 @@ export interface LiatirRuntimeBoxActivationMetadata {
   signedRelease: LiatirSignedRuntimeBoxDocument;
 }
 
-export interface LiatirAIModelRuntimeBoxInstall {
+export interface LiatirRuntimeBoxInstall {
   boxId: string;
   channel: LiatirRuntimeBoxChannel;
   /** Public control-plane base URL. Debug builds may override it locally. */
   registryBaseUrl: string;
-  /** Ordered targets already published for this model; unlisted targets are never requested. */
+  /** Ordered targets already published for this component; unlisted targets are never requested. */
   publishedTargets: readonly LiatirRuntimeBoxTargetCandidate[];
+}
+
+/** Compatibility name retained for existing AI Model metadata and downstream consumers. */
+export type LiatirAIModelRuntimeBoxInstall = LiatirRuntimeBoxInstall;
+
+export interface LiatirRuntimeComponentUpdateRequest extends LiatirRuntimeBoxInstall {
+  /** Stable product identity stored in Scrollcase's unchanged `modelId` release field. */
+  componentId: string;
+}
+
+export interface LiatirRuntimeComponentUpdateStatus {
+  checkedAt: string;
+  currentVersion: string | null;
+  availableVersion: string | null;
+  updateAvailable: boolean;
+  selectedTarget: LiatirRuntimeBoxTarget;
+}
+
+export interface LiatirRuntimeComponentStatus {
+  componentKind: LiatirRuntimeComponentKind;
+  runtimeId: string;
+  runtimeDir: string;
+  pythonPath: string | null;
+  installed: boolean;
+  missingPackages: string[];
+  error: string | null;
+  sizeBytes?: number | null;
+  activation?: LiatirRuntimeBoxActivationMetadata | null;
+  /** Present only after the user explicitly asks to check the signed channel manifest. */
+  update?: LiatirRuntimeComponentUpdateStatus | null;
+}
+
+export interface LiatirRuntimeComponentInstallResult {
+  componentKind: LiatirRuntimeComponentKind;
+  componentId: string;
+  runtimeId: string;
+  runtimeDir: string;
+  pythonPath: string;
+  version: string;
+  sizeBytes: number;
+  rollbackAvailable: boolean;
+  activation: LiatirRuntimeBoxActivationMetadata;
+}
+
+export interface LiatirRuntimeComponentRollbackResult {
+  componentKind: LiatirRuntimeComponentKind;
+  runtimeId: string;
+  runtimeDir: string;
+  restored: boolean;
 }
 
 export type LiatirRuntimeBoxCiValidationMode = "build" | "scientific" | "native-lifecycle";
@@ -182,7 +234,10 @@ export interface LiatirRuntimeBoxCiTargetRecord {
   publication?: LiatirRuntimeBoxCiPublicationEvidence;
 }
 
-export interface LiatirRuntimeBoxCiModelRecord {
+export interface LiatirRuntimeBoxCiComponentRecord {
+  componentKind: LiatirRuntimeComponentKind;
+  componentId: string;
+  /** Compatibility identity used by the unchanged Scrollcase release schema. */
   modelId: string;
   boxId: string;
   runtimeId: string;
@@ -203,12 +258,15 @@ export interface LiatirRuntimeBoxCiModelRecord {
   targets: readonly LiatirRuntimeBoxCiTargetRecord[];
 }
 
+/** Compatibility name for code that only handles the existing AI Model catalog. */
+export type LiatirRuntimeBoxCiModelRecord = LiatirRuntimeBoxCiComponentRecord;
+
 /** Machine-readable CI authority for Runtime Box runners, targets, and validation gates. */
 export interface LiatirRuntimeBoxCiCatalog {
-  schemaVersion: 1;
+  schemaVersion: 2;
   costPolicy: {
     maxPaidRunnerConcurrency: 1;
-    maxModelsPerGpuJob: 1;
+    maxComponentsPerGpuJob: 1;
     maxTargetsPerGpuJob: 1;
     heartbeatSeconds: number;
     gpuManualOnly: true;
@@ -233,7 +291,7 @@ export interface LiatirRuntimeBoxCiCatalog {
       safetyMarginBytes: number;
     };
   }[];
-  models: readonly LiatirRuntimeBoxCiModelRecord[];
+  components: readonly LiatirRuntimeBoxCiComponentRecord[];
 }
 
 export const LIATIR_RUNTIME_BOX_CI_EVIDENCE_SCHEMA_VERSION = 1 as const;
@@ -247,6 +305,9 @@ export type LiatirRuntimeBoxCiEvidencePhase =
   | "signer-deploy";
 
 export interface LiatirRuntimeBoxCiEvidenceSubject {
+  componentKind?: LiatirRuntimeComponentKind;
+  componentId?: string;
+  /** Compatibility identity carried by the unchanged Scrollcase schema. */
   modelId?: string;
   boxId?: string;
   runtimeId?: string;

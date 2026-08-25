@@ -36,6 +36,10 @@ export const tests = [
 
       expect(state.hasLiatir).toBe(true);
       expect(state.text).toContain('python');
+      expect(state.text).toContain('AI Models');
+      expect(state.text).toContain('Tool Runtimes');
+      expect(state.text).toContain('Check update only reads a small signed manifest');
+      expect(state.text).toContain('No Tool Runtime has passed its component-specific release gate yet.');
       await expectNoVisibleRuntimeError(browser);
     },
   },

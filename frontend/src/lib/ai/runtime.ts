@@ -5,6 +5,9 @@ import type {
   LiatirAIModelMetadata,
   LiatirAIModelRecord,
   LiatirRuntimeBoxActivationMetadata,
+  LiatirRuntimeComponentInstallResult,
+  LiatirRuntimeComponentStatus,
+  LiatirRuntimeComponentUpdateStatus,
 } from '@liatir/core';
 // Model → runtime-parameter mapping lives in @liatir/core (shared with the
 // plugin API). Re-exported here so existing frontend imports keep working.
@@ -36,25 +39,8 @@ export interface AIHardwareInfo {
   nvidiaDriverVersion?: string | null;
 }
 
-export interface AIRuntimeStatus {
-  runtimeId: string;
-  runtimeDir: string;
-  pythonPath: string | null;
-  installed: boolean;
-  missingPackages: string[];
-  error: string | null;
-  sizeBytes?: number | null;
-}
-
-export interface AIRuntimeBoxInstallResult {
-  runtimeId: string;
-  runtimeDir: string;
-  pythonPath: string;
-  version: string;
-  sizeBytes: number;
-  rollbackAvailable: boolean;
-  activation: LiatirRuntimeBoxActivationMetadata;
-}
+export type AIRuntimeStatus = LiatirRuntimeComponentStatus;
+export type AIRuntimeBoxInstallResult = LiatirRuntimeComponentInstallResult;
 
 export interface AIPythonRunResult {
   ok: boolean;
@@ -90,37 +76,76 @@ export async function getAIRuntimeStatus(model: LiatirAIModelMetadata): Promise<
   const api = liatir();
   const runtimeId = runtimeIdForModel(model);
   if (!api || !runtimeId) return null;
-  return await api.invoke('lia_ai_runtime_status', {
+  return await api.runtimeBoxes.status({
+    componentKind: 'ai-model',
     runtimeId,
     packages: packageChecksForModel(model),
-  }) as AIRuntimeStatus;
+  });
+}
+
+/** Explicitly reads the signed channel pointer; it never downloads or activates a release. */
+export async function checkAIRuntimeBoxUpdate(
+  model: LiatirAIModelMetadata,
+): Promise<LiatirRuntimeComponentUpdateStatus | null> {
+  const api = liatir();
+  const runtimeId = runtimeIdForModel(model);
+  if (!api || !runtimeId) return null;
+  const status = await api.runtimeBoxes.status({
+    componentKind: 'ai-model',
+    runtimeId,
+    packages: packageChecksForModel(model),
+    update: {
+      componentId: model.id,
+      ...model.install.runtimeBox,
+    },
+  });
+  return status.update ?? null;
 }
 
 /** Download and atomically activate the signed Runtime Box selected by channel. */
 export async function installAIRuntimeBox(
   model: LiatirAIModelMetadata,
   onProgress?: (progress: { bytesDownloaded: number; bytesTotal: number | null }) => void,
+  downloadId = `runtime-box-${model.id}-${crypto.randomUUID()}`,
 ): Promise<AIRuntimeBoxInstallResult> {
   const api = liatir();
   const runtimeBox = model.install.runtimeBox;
   if (!api) throw new Error('Liatir API not available');
-  const downloadId = `runtime-box-${model.id}-${crypto.randomUUID()}`;
   const unlisten = await api.desktop.events.on(
     `managed:progress:${downloadId}`,
     (progress: { bytesDownloaded: number; bytesTotal: number | null }) => onProgress?.(progress),
   );
   try {
-    return await api.invoke('lia_ai_runtime_box_install', {
+    return await api.runtimeBoxes.install({
+      componentKind: 'ai-model',
+      componentId: model.id,
       boxId: runtimeBox.boxId,
-      modelId: model.id,
       channel: runtimeBox.channel,
       registryBaseUrl: runtimeBox.registryBaseUrl,
-      targetCandidates: runtimeBox.publishedTargets,
+      publishedTargets: runtimeBox.publishedTargets,
       downloadId,
-    }) as AIRuntimeBoxInstallResult;
+    });
   } finally {
     unlisten();
   }
+}
+
+export async function cancelAIRuntimeBoxDownload(downloadId: string): Promise<boolean> {
+  const api = liatir();
+  if (!api) return false;
+  return api.runtimeBoxes.cancelDownload(downloadId);
+}
+
+export async function rollbackAIRuntimeBox(model: LiatirAIModelMetadata) {
+  const api = liatir();
+  if (!api) throw new Error('Liatir API not available');
+  return api.runtimeBoxes.rollback('ai-model', runtimeIdForModel(model));
+}
+
+export async function removeAIRuntimeBox(model: LiatirAIModelMetadata): Promise<boolean> {
+  const api = liatir();
+  if (!api) return false;
+  return api.runtimeBoxes.remove('ai-model', runtimeIdForModel(model), model.install.runtimeBox.boxId);
 }
 
 export async function runAIPython(

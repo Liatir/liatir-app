@@ -66,7 +66,7 @@ const RUNTIME_DIR = resolve(
 async function gpuFloorsForRecipe() {
   if (RECIPE.target.accelerator !== 'cuda') return null;
   const catalog = JSON.parse(await readFile(join(ROOT, 'runtime-boxes', 'catalog.json'), 'utf8'));
-  for (const model of catalog.models) {
+  for (const model of catalog.components) {
     for (const target of model.targets) {
       if (target.recipeId !== RECIPE_ID) continue;
       const runner = catalog.runnerProfiles.find((candidate) => candidate.id === target.runnerProfileId);

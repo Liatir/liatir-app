@@ -215,7 +215,7 @@ describe('Runtime Box CI cost controls', () => {
   });
 
   it('pins every model lock and calculates disk before native allocation', () => {
-    for (const model of catalog.models) {
+    for (const model of catalog.components) {
       for (const target of model.targets) {
         const recipe = authoringInput(target.recipeId).document;
         const plan = runtimeBoxBuildDiskPlan(recipe, target);
@@ -230,7 +230,7 @@ describe('Runtime Box CI cost controls', () => {
   // locked sympy, which PyTorch 2.8 imports lazily. The rule is not scGPT's: a packed conda
   // prefix is only sound whole, and every model pays a native run to rediscover that.
   it('keeps every locked runtime dependency in every canonical model box', () => {
-    for (const model of catalog.models) {
+    for (const model of catalog.components) {
       for (const target of model.targets ?? []) {
         const authoring = authoringInput(target.recipeId);
         expect(authoring.kind, target.targetId).toBe('scroll-v2');
@@ -282,7 +282,7 @@ describe('Runtime Box CI cost controls', () => {
 
   it('rejects lock drift before any native runner is resolved', () => {
     const changed = structuredClone(catalog);
-    changed.models[0].targets[0].dependencyLockSha256 = '0'.repeat(64);
+    changed.components[0].targets[0].dependencyLockSha256 = '0'.repeat(64);
     expect(() => validateRuntimeBoxCiCatalog(changed, { requireWorkflows: false }))
       .toThrow(/(?:dependency lock|pixi\.lock) SHA-256 mismatch/);
   });
@@ -293,7 +293,7 @@ describe('Runtime Box CI cost controls', () => {
         descriptorPath: `runtime-boxes/scrolls/runtime-box-installer-fixture/${fixture.targetId}/scroll.json`,
         lockPath: `runtime-boxes/scrolls/runtime-box-installer-fixture/${fixture.targetId}/pixi.lock`,
       })),
-      ...catalog.models.flatMap((model) => model.targets.map((target) => ({
+      ...catalog.components.flatMap((model) => model.targets.map((target) => ({
         descriptorPath: repositoryPath(authoringInput(target.recipeId).documentPath),
         lockPath: repositoryPath(authoringInput(target.recipeId).lockPath),
       }))),
@@ -326,7 +326,7 @@ describe('Runtime Box CI cost controls', () => {
 
   it('rejects reviewed Python-license audit drift before a native build', () => {
     const changed = structuredClone(catalog);
-    const target = changed.models[0].targets[0];
+    const target = changed.components[0].targets[0];
     target.condaDependencyLicenseAudit = 'runtime-boxes/legal/audits/missing.json';
     expect(() => validateRuntimeBoxCiCatalog(changed, { requireWorkflows: false }))
       .toThrow(/recipe and catalog conda license audits differ|missing conda dependency license audit/);

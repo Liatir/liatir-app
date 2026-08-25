@@ -46,6 +46,7 @@
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { executionRuns } from '$lib/stores/executionRuns.svelte';
 	import { jobsStore } from '$lib/stores/jobs.svelte';
+	import RuntimeComponentsManager from '$lib/components/dependencies/RuntimeComponentsManager.svelte';
 
 	interface RelatedDependencyTool {
 		id: string;
@@ -569,6 +570,8 @@
 				<Button variant="primary" onclick={() => depsStore.checkAll(focusedDependencies)}>Check Dependencies</Button>
 			</div>
 		{:else}
+			<RuntimeComponentsManager />
+
 			<!-- Summary -->
 			<div class="grid grid-cols-3 gap-3">
 				<Card class="p-4">

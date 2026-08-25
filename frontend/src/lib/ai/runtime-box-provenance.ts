@@ -1,5 +1,5 @@
 /** Pure helpers for carrying verified Runtime Box activation metadata into Jobs and Results. */
-import type { LiatirAIProvenance, LiatirRuntimeBoxActivationMetadata } from '@liatir/core';
+import type { LiatirAIModelProvenance, LiatirRuntimeBoxActivationMetadata } from '@liatir/core';
 
 /** Reads validated Runtime Box provenance added by the Rust job launcher. */
 export function runtimeBoxActivationFromMetadata(
@@ -21,6 +21,6 @@ export function runtimeBoxActivationFromMetadata(
 /** Adds Runtime Box activation provenance to a scientific Result when execution used one. */
 export function runtimeBoxResultProvenance(result: {
 	runtimeBoxActivation?: LiatirRuntimeBoxActivationMetadata;
-}): Pick<LiatirAIProvenance, 'runtimeBoxActivation'> {
+}): Pick<LiatirAIModelProvenance, 'runtimeBoxActivation'> {
 	return result.runtimeBoxActivation ? { runtimeBoxActivation: result.runtimeBoxActivation } : {};
 }

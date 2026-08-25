@@ -172,6 +172,10 @@ commands.allow = [
   "lia_managed_verify_sha256",
   "lia_managed_remove",
   "lia_ai_hardware_info",
+  "lia_runtime_box_status",
+  "lia_runtime_box_install",
+  "lia_runtime_box_rollback",
+  "lia_runtime_box_remove",
   "lia_ai_runtime_status",
   "lia_ai_runtime_box_install",
   "lia_ai_runtime_box_rollback",
@@ -223,6 +227,7 @@ commands.allow = [
 
   "lia_file_size",
   "lia_read_file_text",
+  "lia_file_read_base64",
   "lia_write_file_path",
   "lia_preview_file",
 

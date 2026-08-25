@@ -57,6 +57,19 @@ export async function installSecurityFixture(browser, downloadId) {
   });
 }
 
+export async function installSecurityToolRuntimeFixture(browser, downloadId) {
+  const { registryBaseUrl, target } = securityFixtureEnvironment();
+  return invokeOutcome(browser, 'lia_runtime_box_install', {
+    componentKind: 'tool-runtime',
+    boxId: SECURITY_BOX_ID,
+    componentId: SECURITY_MODEL_ID,
+    channel: 'beta',
+    registryBaseUrl,
+    targetCandidates: [{ target, hostEnvironments: ['native'] }],
+    downloadId,
+  });
+}
+
 export async function runSecurityFixtureVersion(browser) {
   const outcome = await invokeOutcome(browser, 'lia_ai_python_run', {
     runtimeId: SECURITY_RUNTIME_ID,

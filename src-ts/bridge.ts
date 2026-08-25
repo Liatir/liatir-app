@@ -42,6 +42,7 @@ import { buildExternalWorkflows } from "./modules/rs/externalWorkflows/_main";
 import { buildMcp } from "./modules/rs/mcp/_main";
 import { buildSingleCellIndexes } from "./modules/rs/singleCellIndexes/_main";
 import { buildSnpEffSuite } from "./modules/rs/snpEffSuite/_main";
+import { buildRuntimeBoxes } from "./modules/rs/runtimeBoxes/_main";
 import { buildQc } from "./modules/qc/_main";
 import { isBrowser } from "./utils";
 
@@ -87,6 +88,7 @@ import { isBrowser } from "./utils";
     externalWorkflows: buildExternalWorkflows(core),
     singleCellIndexes: buildSingleCellIndexes(core),
     snpEffSuite: buildSnpEffSuite(core),
+    runtimeBoxes: buildRuntimeBoxes(core),
 
     qc:       buildQc(core),
 

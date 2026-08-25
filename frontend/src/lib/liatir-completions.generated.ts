@@ -25,6 +25,7 @@ export const LIATIR_API: Record<string, ApiNode> = {
           openWithBytes: { type: "method", detail: "(options?: { multi?: boolean; allowed?: string[]; maxBytes?: U64; }): Promise<OpenResultWithBytes>" },
           save: { type: "method", detail: "(defaultName?: string): Promise<string>" },
           identity: { type: "method", detail: "(path: string): Promise<FileIdentity>", info: "Stream a local file to compute its content identity without loading it into the webview." },
+          readBase64: { type: "method", detail: "(path: string, maxBytes: number): Promise<FileBase64>", info: "Read a bounded local binary only after the user requests an interactive viewer." },
       } },
       app: { type: "property", detail: "AppInterface", children: {
           info: { type: "method", detail: "(): Promise<AppInfo>" },
@@ -232,6 +233,13 @@ export const LIATIR_API: Record<string, ApiNode> = {
       remove: { type: "method", detail: "(): Promise<boolean>" },
       installDatabase: { type: "method", detail: "(id: string, suiteVersion: string, downloadId: string, jobId: string): Promise<LiatirSnpEffDatabaseInstallResult>" },
       removeDatabase: { type: "method", detail: "(database: Pick<LiatirInstalledSnpEffDatabase, \"id\" | \"suiteVersion\" | \"archiveSha256\">): Promise<boolean>" },
+  } },
+  runtimeBoxes: { type: "property", detail: "RuntimeBoxesInterface", info: "Explicit install, update, rollback and removal for signed Runtime Components.", children: {
+      status: { type: "method", detail: "(input: RuntimeComponentStatusInput): Promise<LiatirRuntimeComponentStatus>" },
+      install: { type: "method", detail: "(input: RuntimeComponentInstallInput): Promise<LiatirRuntimeComponentInstallResult>" },
+      rollback: { type: "method", detail: "(componentKind: LiatirRuntimeComponentKind, runtimeId: string): Promise<LiatirRuntimeComponentRollbackResult>" },
+      remove: { type: "method", detail: "(componentKind: LiatirRuntimeComponentKind, runtimeId: string, boxId: string): Promise<boolean>" },
+      cancelDownload: { type: "method", detail: "(downloadId: string): Promise<boolean>" },
   } },
   qc: { type: "property", detail: "QcInterface", children: {
       fastqc: { type: "property", detail: "FastqcInterface", children: {

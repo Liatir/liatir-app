@@ -18,6 +18,10 @@ export type FileIdentity = {
     sha256: string;
     prefixHex: string;
 };
+export type FileBase64 = {
+    sizeBytes: U64;
+    dataBase64: string;
+};
 export interface FilesInterface {
     open: (options?: {
         multi?: boolean;
@@ -32,4 +36,6 @@ export interface FilesInterface {
     save: (defaultName?: string | null) => Promise<string>;
     /** Stream a local file to compute its content identity without loading it into the webview. */
     identity: (path: string) => Promise<FileIdentity>;
+    /** Read a bounded local binary only after the user requests an interactive viewer. */
+    readBase64: (path: string, maxBytes: number) => Promise<FileBase64>;
 }

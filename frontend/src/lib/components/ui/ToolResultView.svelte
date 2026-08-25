@@ -6,6 +6,7 @@
   import StructureViewer from '$lib/components/viewers/StructureViewer.svelte';
   import GenomeViewer from '$lib/components/viewers/GenomeViewer.svelte';
   import SingleCellViewer from '$lib/components/viewers/SingleCellViewer.svelte';
+  import MolecularTrajectoryViewer from '$lib/components/viewers/MolecularTrajectoryViewer.svelte';
   import type {
     ToolOutput,
     StatsSection,
@@ -16,6 +17,7 @@
     StructureViewerSection,
     GenomeViewerSection,
     SingleCellViewerSection,
+    MolecularTrajectoryViewerSection,
   } from '$lib/types/tool-output';
   import type { RunOutputFile } from '$lib/types/pipeline';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
@@ -320,6 +322,8 @@
       </Card>
     {:else if section.type === 'structure-viewer'}
       <StructureViewer section={section as StructureViewerSection} />
+    {:else if section.type === 'molecular-trajectory-viewer'}
+      <MolecularTrajectoryViewer section={section as MolecularTrajectoryViewerSection} />
     {:else if section.type === 'genome-viewer'}
       <GenomeViewer section={section as GenomeViewerSection} />
     {:else if section.type === 'single-cell-viewer'}

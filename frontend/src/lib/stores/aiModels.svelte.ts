@@ -23,9 +23,13 @@ import { RUNTIME_BOX_AI_MODEL_REGISTRY } from '$lib/ai/model-registry';
 import { modelInstallBlock } from '$lib/ai/model-compatibility';
 import {
   cachePathForModel,
+  cancelAIRuntimeBoxDownload,
+  checkAIRuntimeBoxUpdate,
   getAIHardwareInfo,
   getAIRuntimeStatus,
   installAIRuntimeBox,
+  removeAIRuntimeBox,
+  rollbackAIRuntimeBox,
   runtimeIdForModel,
   type AIHardwareInfo,
 } from '$lib/ai/runtime';
@@ -72,10 +76,20 @@ export interface AIModelInstallProgress {
 
 /** Live progress of an install that is currently running. */
 export type AIModelInstallState = AIModelInstallProgress & {
+  downloadId?: string;
   showLog: boolean;
   logLines: string[];
   startedAt: number;
 };
+
+export interface AIModelUpdateState {
+  checking: boolean;
+  checkedAt?: string;
+  currentVersion?: string | null;
+  availableVersion?: string | null;
+  updateAvailable: boolean;
+  error?: string;
+}
 
 /**
  * The log of an install that has *finished*.
@@ -130,6 +144,8 @@ function createAIModelsStore() {
   let installing = $state<Record<string, AIModelInstallState>>({});
   /** Logs of installs that have finished; see AIModelInstallLogState. */
   let installLogs = $state<Record<string, AIModelInstallLogState>>({});
+  /** Signed-channel update checks, keyed per model and never run automatically. */
+  let updates = $state<Record<string, AIModelUpdateState>>({});
   // These three are single-flight guards, not reactive state: they exist so that N callers asking
   // for the same work get the one in-flight promise instead of each starting a duplicate job.
   let runtimeStatusRefreshPromise: Promise<void> | null = null;
@@ -184,6 +200,7 @@ function createAIModelsStore() {
     installing = {
       ...installing,
       [id]: {
+        downloadId: current?.downloadId,
         phase: progress.phase ?? current?.phase,
         fileIndex: progress.fileIndex,
         fileCount: progress.fileCount,
@@ -202,7 +219,7 @@ function createAIModelsStore() {
     installLogs = restLogs;
   }
 
-  function startInstall(id: string, progress: AIModelInstallProgress) {
+  function startInstall(id: string, progress: AIModelInstallProgress & { downloadId?: string }) {
     clearInstallLog(id);
     installing = {
       ...installing,
@@ -272,6 +289,7 @@ function createAIModelsStore() {
     get hardwareInfoLoading() { return hardwareInfoLoading; },
     get installing() { return installing; },
     get installLogs() { return installLogs; },
+    get updates() { return updates; },
     /**
      * Models the rest of the app may actually run: enabled, installed, and not currently
      * mid-check. Excluding models under inspection avoids handing a caller a runtime that is about
@@ -482,6 +500,36 @@ function createAIModelsStore() {
       };
     },
 
+    async checkRuntimeBoxUpdate(id: string): Promise<AIModelUpdateState> {
+      const model = records().find((item) => item.id === id);
+      if (!model) throw new Error(`Unknown AI Model: ${id}`);
+      if (model.status !== 'installed') throw new Error('Install this AI Model before checking for updates.');
+      updates = {
+        ...updates,
+        [id]: { ...(updates[id] ?? { updateAvailable: false }), checking: true, error: undefined },
+      };
+      try {
+        const update = await checkAIRuntimeBoxUpdate(model);
+        const state: AIModelUpdateState = {
+          checking: false,
+          checkedAt: update?.checkedAt,
+          currentVersion: update?.currentVersion,
+          availableVersion: update?.availableVersion,
+          updateAvailable: update?.updateAvailable ?? false,
+        };
+        updates = { ...updates, [id]: state };
+        return state;
+      } catch (error) {
+        const state: AIModelUpdateState = {
+          checking: false,
+          updateAvailable: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
+        updates = { ...updates, [id]: state };
+        return state;
+      }
+    },
+
     /**
      * Installs a pre-built, signed Runtime Box. The backend verifies its signatures and hashes
      * before atomically activating it; see `runtime_boxes.rs`.
@@ -508,7 +556,9 @@ function createAIModelsStore() {
       }
 
       const installPromise = (async () => {
+        const downloadId = `runtime-box-${metadata.id}-${crypto.randomUUID()}`;
         startInstall(id, {
+          downloadId,
           phase: 'preparing-runtime',
           fileIndex: 0,
           fileCount: 1,
@@ -537,7 +587,7 @@ function createAIModelsStore() {
               bytesTotal: progress.bytesTotal,
               message: 'Downloading Runtime Box',
             }, onProgress);
-          });
+          }, downloadId);
           const record: LiatirAIModelRecord = {
             ...metadata,
             status: 'installed',
@@ -568,6 +618,7 @@ function createAIModelsStore() {
             { createDirs: true },
           );
           finishInstall(id, 'done', 'AI Runtime Box installed');
+          updates = { ...updates, [id]: { checking: false, updateAvailable: false } };
           // Deliberately not awaited: the install is already complete and the model is usable.
           // This just reconciles the on-disk runtime in the background.
           void this.refreshRuntimeBoxStatus(id);
@@ -595,6 +646,23 @@ function createAIModelsStore() {
       return installPromise;
     },
 
+    async cancelRuntimeBoxInstall(id: string): Promise<boolean> {
+      const downloadId = installing[id]?.downloadId;
+      if (!downloadId) return false;
+      return cancelAIRuntimeBoxDownload(downloadId);
+    },
+
+    async rollbackRuntimeBoxModel(id: string): Promise<boolean> {
+      const model = records().find((item) => item.id === id);
+      if (!model) throw new Error(`Unknown AI Model: ${id}`);
+      const result = await rollbackAIRuntimeBox(model);
+      if (result.restored) {
+        updates = { ...updates, [id]: { checking: false, updateAvailable: false } };
+        await this.refreshRuntimeBoxStatus(id);
+      }
+      return result.restored;
+    },
+
     /**
      * Uninstalls a model and reclaims its disk space.
      *
@@ -614,16 +682,15 @@ function createAIModelsStore() {
         && runtimeIdForModel(item) === runtimeId
       );
       if (!sharedRuntimeStillInstalled) {
-        await api.invoke('lia_ai_runtime_box_remove', {
-          runtimeId,
-          boxId: model.install.runtimeBox.boxId,
-        }).catch(() => {});
+        await removeAIRuntimeBox(model);
       }
       const { [id]: _removed, ...restStates } = modelStates;
       modelStates = restStates;
       // The marker must go too: leaving it behind would make the next startup resurrect this model
       // as "installed" (see `init`), even though its files are gone.
       await appStorage.remove(getInstallMarkerFile(id)).catch(() => {});
+      const { [id]: _removedUpdate, ...restUpdates } = updates;
+      updates = restUpdates;
       await persist();
     },
 
@@ -644,6 +711,7 @@ function createAIModelsStore() {
       hardwareInfoPromise = null;
       installing = {};
       installLogs = {};
+      updates = {};
       installPromises.clear();
     },
   };

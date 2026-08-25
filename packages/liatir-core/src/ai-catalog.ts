@@ -1,5 +1,5 @@
-import type { LiatirAIModelMetadata, LiatirAIModelRuntimePackage } from './index';
-import type { LiatirRuntimeBoxTargetCandidate } from './runtime-box';
+import type { LiatirAIModelMetadata, LiatirAIModelRuntimePackage } from './index.js';
+import type { LiatirRuntimeBoxTargetCandidate } from './runtime-box.js';
 
 export const SCGPT_WHOLE_HUMAN_MODEL_ID = 'bowang-scgpt-whole-human';
 export const GENEFORMER_V1_10M_MODEL_ID = 'ctheodoris-geneformer-v1-10m';

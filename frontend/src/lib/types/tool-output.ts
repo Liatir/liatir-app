@@ -9,6 +9,7 @@ export type {
   TextSection,
   TableSection,
   StructureViewerSection,
+  MolecularTrajectoryViewerSection,
   GenomeViewerSection,
   SingleCellViewerSection,
   ToolSection,

@@ -1,9 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import {
   LIATIR_ANNDATA_PROFILE_V1,
+  LIATIR_A3M_PROFILE_V1,
+  LIATIR_DCD_TRAJECTORY_PROFILE_V1,
+  LIATIR_FASTA_PROFILE_V1,
+  LIATIR_NEOANTIGEN_TSV_PROFILE_V1,
+  LIATIR_STRUCTURE_PROFILE_V1,
+  LIATIR_VEP_TUMOR_VCF_PROFILE_V1,
   checkLiatirArtifactCompatibility,
   liatirArtifactLineageSource,
   validateLiatirAnnDataArtifact,
+  validateLiatirA3mArtifact,
+  validateLiatirDcdTrajectoryArtifact,
+  validateLiatirFastaArtifact,
+  validateLiatirNeoantigenTsvArtifact,
+  validateLiatirStructureArtifact,
+  validateLiatirVepTumorVcfArtifact,
   type LiatirArtifactRequirement,
 } from '@liatir/core';
 
@@ -225,5 +237,104 @@ describe('versioned scientific artifact contract', () => {
       fieldKey: 'inputFile',
     }]);
     expect(output.lineage?.transformation?.id).toBe('ai-single-cell-embedding');
+  });
+
+  it('validates FASTA and local A3M as distinct versioned profiles', () => {
+    const common = {
+      sizeBytes: 128,
+      sha256,
+      validatedAt,
+      inspection: {
+        headerPresent: true,
+        sequenceCount: 3,
+        alphabet: 'protein' as const,
+        validCharacters: true,
+        aligned: true,
+        alignmentColumns: 42,
+      },
+    };
+    expect(validateLiatirFastaArtifact(common)).toMatchObject({
+      profile: LIATIR_FASTA_PROFILE_V1,
+      validation: { status: 'valid' },
+      qualifiers: { sequence: { alphabet: 'protein', count: 3 } },
+    });
+    expect(validateLiatirA3mArtifact(common)).toMatchObject({
+      profile: LIATIR_A3M_PROFILE_V1,
+      validation: { status: 'valid' },
+      qualifiers: { sequence: { aligned: true, alignmentColumns: 42 } },
+    });
+  });
+
+  it('rejects a tumor VCF until the required VEP and sample evidence is present', () => {
+    const invalid = validateLiatirVepTumorVcfArtifact({
+      sizeBytes: 512,
+      sha256,
+      validatedAt,
+      inspection: {
+        vcfHeader: true,
+        csqHeader: false,
+        genotypeFormat: true,
+        sampleIds: ['NORMAL'],
+        tumorSample: 'TUMOR',
+        wildtypeProteinAnnotation: false,
+        frameshiftSequenceAnnotation: false,
+      },
+    });
+    expect(invalid.profile).toEqual(LIATIR_VEP_TUMOR_VCF_PROFILE_V1);
+    expect(invalid.validation.status).toBe('invalid');
+    expect(invalid.validation.diagnostics.map((item) => item.code)).toEqual(expect.arrayContaining([
+      'vep-vcf.csq.missing',
+      'vep-vcf.tumor-sample.missing',
+      'vep-vcf.wildtype-protein.missing',
+      'vep-vcf.frameshift-sequence.missing',
+    ]));
+  });
+
+  it('records structure and neoantigen report facts without replacing their files', () => {
+    const structure = validateLiatirStructureArtifact({
+      sizeBytes: 1024,
+      sha256,
+      validatedAt,
+      inspection: { format: 'mmcif', recognizedFormat: true, atomCount: 25, modelCount: 1, finiteCoordinates: true },
+    });
+    const report = validateLiatirNeoantigenTsvArtifact({
+      sizeBytes: 256,
+      sha256: 'b'.repeat(64),
+      validatedAt,
+      inspection: {
+        tabDelimited: true,
+        columns: ['peptide', 'hla', 'score'],
+        requiredColumns: ['peptide', 'hla', 'score'],
+        rowCount: 4,
+        finiteScores: true,
+      },
+    });
+    expect(structure).toMatchObject({ profile: LIATIR_STRUCTURE_PROFILE_V1, validation: { status: 'valid' }, qualifiers: { structure: { atomCount: 25 } } });
+    expect(report).toMatchObject({ profile: LIATIR_NEOANTIGEN_TSV_PROFILE_V1, validation: { status: 'valid' }, qualifiers: { table: { rows: 4 } } });
+  });
+
+  it('binds each DCD trajectory to an initial structure and rejects atom-count drift', () => {
+    const valid = validateLiatirDcdTrajectoryArtifact({
+      sizeBytes: 2048,
+      sha256,
+      validatedAt,
+      inspection: {
+        dcdSignature: true,
+        frameCount: 10,
+        atomCount: 20,
+        topologyAtomCount: 20,
+        finiteCoordinates: true,
+        initialStructureArtifactId: `sha256:${'c'.repeat(64)}`,
+      },
+    });
+    const invalid = validateLiatirDcdTrajectoryArtifact({
+      sizeBytes: 2048,
+      sha256,
+      validatedAt,
+      inspection: { ...valid.qualifiers.trajectory!, dcdSignature: true, topologyAtomCount: 19, finiteCoordinates: true },
+    });
+    expect(valid).toMatchObject({ profile: LIATIR_DCD_TRAJECTORY_PROFILE_V1, validation: { status: 'valid' } });
+    expect(invalid.validation.status).toBe('invalid');
+    expect(invalid.validation.diagnostics.map((item) => item.code)).toContain('dcd.topology.atom-count-mismatch');
   });
 });

@@ -66,7 +66,7 @@ export interface LiatirInputFieldSchema<
 > extends LiatirFieldSchema<TDefault> {
   type: LiatirInputFieldType;
   /** Versioned semantic requirements for file inputs. Extension matching remains a separate format hint. */
-  artifact?: import("./scientific-artifacts").LiatirArtifactRequirement;
+  artifact?: import("./scientific-artifacts.js").LiatirArtifactRequirement;
 }
 
 export interface LiatirOutputFieldSchema extends LiatirFieldSchema {
@@ -76,7 +76,7 @@ export interface LiatirOutputFieldSchema extends LiatirFieldSchema {
   /** Display hint for numeric metric outputs. */
   format?: "integer" | "decimal" | "percent" | "bytes";
   /** Semantic promise for a file output before the concrete artifact exists. */
-  artifact?: import("./scientific-artifacts").LiatirArtifactDeclaration;
+  artifact?: import("./scientific-artifacts.js").LiatirArtifactDeclaration;
 }
 
 export interface LiatirStepDefinition {
@@ -202,7 +202,7 @@ export interface LiatirFileArtifact {
   /** MIME type or domain-specific media type, when known. */
   mediaType?: string;
   /** Optional versioned scientific metadata. Legacy files remain valid without it. */
-  scientific?: import("./scientific-artifacts").LiatirScientificArtifactMetadata;
+  scientific?: import("./scientific-artifacts.js").LiatirScientificArtifactMetadata;
 }
 
 export interface LiatirFileContentOutput {
@@ -307,6 +307,23 @@ export interface LiatirStructureViewerSection {
   height?: number;
 }
 
+export interface LiatirMolecularTrajectoryViewerSection {
+  type: "molecular-trajectory-viewer";
+  label: string;
+  description?: string;
+  trajectoryPath: string;
+  trajectoryFormat: "dcd";
+  /** The DCD coordinate order is meaningful only together with this exact starting structure. */
+  structurePath: string;
+  structureFormat: "pdb";
+  frameCount?: number;
+  timestepFs?: number;
+  frameStride?: number;
+  style?: LiatirStructureStyle;
+  colorScheme?: "spectrum" | "chain" | "element";
+  height?: number;
+}
+
 export type LiatirGenomeTrackKind =
   | "gff"
   | "bed"
@@ -360,6 +377,7 @@ export type LiatirToolSection =
   | LiatirTextSection
   | LiatirTableSection
   | LiatirStructureViewerSection
+  | LiatirMolecularTrajectoryViewerSection
   | LiatirGenomeViewerSection
   | LiatirSingleCellViewerSection;
 
@@ -466,7 +484,7 @@ export interface LiatirAIModelInstallSpec {
   method: "runtime-box";
   runtimeId: string;
   runtimePackages?: LiatirAIModelRuntimePackage[];
-  runtimeBox: import("./runtime-box").LiatirAIModelRuntimeBoxInstall;
+  runtimeBox: import("./runtime-box.js").LiatirAIModelRuntimeBoxInstall;
   modelCacheSubdir: string;
   /** Immutable upstream model/source revision included in the Runtime Box. */
   revision?: string;
@@ -562,7 +580,7 @@ export interface LiatirAIModelRecord extends LiatirAIModelMetadata {
   /** Bytes used by model cache/weights inside the runtime box, when measured separately. */
   cacheSizeBytes?: number;
   /** Signed Runtime Box release and the native target selected for this installation. */
-  runtimeBoxActivation?: import("./runtime-box").LiatirRuntimeBoxActivationMetadata;
+  runtimeBoxActivation?: import("./runtime-box.js").LiatirRuntimeBoxActivationMetadata;
   enabled?: boolean;
   addedAt?: number;
   updatedAt?: number;
@@ -577,22 +595,36 @@ export interface LiatirAIToolDefinition extends LiatirStepDefinition {
   supportedModelIds?: string[];
 }
 
-export interface LiatirAIProvenance {
-  toolId: string;
-  toolLabel: string;
+export interface LiatirAIModelProvenance {
   modelId: string;
   modelName: string;
   modelVersion?: string | null;
   runtimeKind: LiatirAIModelRuntimeKind;
   runtimeName: string;
   runtimeVersion?: string | null;
-  /** Present when execution used a prebuilt signed Runtime Box. */
-  runtimeBoxActivation?: import("./runtime-box").LiatirRuntimeBoxActivationMetadata | null;
+  runtimeBoxActivation?: import("./runtime-box.js").LiatirRuntimeBoxActivationMetadata | null;
+}
+
+export interface LiatirAIProvenanceCommon {
+  toolId: string;
+  toolLabel: string;
   localOnly: boolean;
   inputSummary?: Record<string, JsonValue>;
   parameters?: Record<string, JsonValue>;
   generatedAt: string;
 }
+
+/**
+ * The original top-level fields remain the primary model for old consumers. New Results also use
+ * a non-empty list so one scientific Result can identify every model in a shared or chained run.
+ */
+export type LiatirAIProvenance = LiatirAIProvenanceCommon & LiatirAIModelProvenance & (
+  | { models: [LiatirAIModelProvenance, ...LiatirAIModelProvenance[]] }
+  | {
+      /** Absent only on legacy single-model Results. */
+      models?: undefined;
+    }
+);
 
 // Compatibility aliases used by the current frontend and packages.
 export type InputFieldSchema = LiatirInputFieldSchema;
@@ -600,7 +632,7 @@ export type OutputFieldSchema = LiatirOutputFieldSchema;
 export type PipelineStepDefinition = LiatirStepDefinition;
 export type RunOutputFile = LiatirFileArtifact;
 
-export * from "./scientific-artifacts";
+export * from "./scientific-artifacts.js";
 export type FileOutputValue = LiatirFileOutputValue;
 export type StepStatus = LiatirStepStatus;
 
@@ -611,6 +643,7 @@ export type PlotlySection = LiatirPlotlySection;
 export type TextSection = LiatirTextSection;
 export type TableSection = LiatirTableSection;
 export type StructureViewerSection = LiatirStructureViewerSection;
+export type MolecularTrajectoryViewerSection = LiatirMolecularTrajectoryViewerSection;
 export type GenomeViewerSection = LiatirGenomeViewerSection;
 export type SingleCellViewerSection = LiatirSingleCellViewerSection;
 export type ToolSection = LiatirToolSection;
@@ -618,10 +651,10 @@ export type ToolOutput = LiatirToolOutput;
 
 // Durable identity and lifecycle shared by direct, pipeline and future
 // External Workflow execution.
-export * from "./execution";
+export * from "./execution.js";
 
 // Saved workflow definitions and their shared direct/pipeline contract.
-export * from "./external-workflows";
+export * from "./external-workflows.js";
 
 // Controlled local Model Context Protocol surface.
 // Keep the emitted ESM specifier Node-compatible because the native browser
@@ -631,13 +664,19 @@ export * from "./mcp.js";
 // Built-in AI model catalog — the single source of truth shared by the app UI
 // and the plugin API (@liatir/api Liatir.ai). Model ids, metadata, and runtime
 // specs live here so neither side hand-duplicates the list.
-export * from "./ai-catalog";
+export * from "./ai-catalog.js";
 
 // Signed, prebuilt AI Runtime Box distribution contracts.
-export * from "./runtime-box";
+export * from "./runtime-box.js";
+
+// Installable scientific command environments that are not AI Models.
+export * from "./tool-runtime-catalog.js";
+
+// Neutral multimolecular input shared by structure-prediction adapters.
+export * from "./complex-spec.js";
 
 // Built-in native tools catalog — bioinformatics binaries bundled with Liatir.
-export * from "./native-tools";
+export * from "./native-tools.js";
 
 // Single-cell RNA-seq: the reference index a quantification runs against.
 export * from "./single-cell.js";
@@ -733,4 +772,4 @@ export interface LiatirJobEntry {
 
 // Read-only Quenta contracts. Quenta may explain app/scientific state
 // and generate cited reports, but it is intentionally not a runnable entity.
-export * from "./quenta";
+export * from "./quenta.js";

@@ -22,6 +22,7 @@ export * from "./modules/rs/deps/_types";
 export * from "./modules/rs/externalWorkflows/_types";
 export * from "./modules/rs/singleCellIndexes/_types";
 export * from "./modules/rs/snpEffSuite/_types";
+export * from "./modules/rs/runtimeBoxes/_types";
 export * from "./modules/rs/mcp/_types";
 export * from "./modules/qc/_types";
 export * from "./modules/qc/fastqc/_types";

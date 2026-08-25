@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import catalogJson from '../../runtime-boxes/catalog.json';
 import {
+  LIATIR_TOOL_RUNTIME_CATALOG,
   RUNTIME_BOX_AI_MODEL_REGISTRY,
   runtimeBoxTargetId,
   type LiatirRuntimeBoxCiCatalog,
@@ -25,13 +26,15 @@ describe('Runtime Box CI catalog', () => {
   });
 
   it('keeps published core targets exactly aligned with published catalog targets', () => {
-    for (const record of catalog.models) {
-      const model = RUNTIME_BOX_AI_MODEL_REGISTRY.find((candidate) => candidate.id === record.modelId);
-      const appTargets = model?.install?.runtimeBox?.publishedTargets ?? [];
+    for (const record of catalog.components) {
+      const component = record.componentKind === 'ai-model'
+        ? RUNTIME_BOX_AI_MODEL_REGISTRY.find((candidate) => candidate.id === record.componentId)
+        : LIATIR_TOOL_RUNTIME_CATALOG.find((candidate) => candidate.id === record.componentId);
+      const appTargets = component?.install.runtimeBox.publishedTargets ?? [];
       const catalogTargets = record.targets.filter((target) => target.status === 'published');
 
-      expect(model?.install?.runtimeBox?.boxId).toBe(record.boxId);
-      expect(model?.install?.runtimeId).toBe(record.runtimeId);
+      expect(component?.install.runtimeBox.boxId).toBe(record.boxId);
+      expect(component?.install.runtimeId).toBe(record.runtimeId);
       expect(appTargets.map((candidate) => runtimeBoxTargetId(candidate.target)).sort())
         .toEqual(catalogTargets.map((target) => target.targetId).sort());
       for (const target of catalogTargets) {
@@ -161,7 +164,7 @@ describe('Runtime Box CI catalog', () => {
   it('keeps the checked cost policy manual, serial, uncached, and low-noise', () => {
     expect(catalog.costPolicy).toEqual({
       maxPaidRunnerConcurrency: 1,
-      maxModelsPerGpuJob: 1,
+      maxComponentsPerGpuJob: 1,
       maxTargetsPerGpuJob: 1,
       heartbeatSeconds: 300,
       gpuManualOnly: true,
@@ -211,7 +214,7 @@ describe('Runtime Box CI catalog', () => {
   });
 
   it('routes UCE native CI only to the repository-scoped ephemeral heavy runner', () => {
-    const uce = catalog.models.find((model) => model.boxId === 'uce-4layer');
+    const uce = catalog.components.find((model) => model.boxId === 'uce-4layer');
     const runner = catalog.runnerProfiles.find((candidate) => candidate.id === uce?.targets[0].runnerProfileId);
     expect(uce?.targets[0]).toMatchObject({
       status: 'published',
@@ -239,7 +242,7 @@ describe('Runtime Box CI catalog', () => {
   });
 
   it('routes scGPT macOS Metal validation to the self-hosted Apple-Silicon runner', () => {
-    const scgpt = catalog.models.find((model) => model.boxId === 'scgpt-whole-human');
+    const scgpt = catalog.components.find((model) => model.boxId === 'scgpt-whole-human');
     const macos = scgpt?.targets.find((target) => target.targetId === 'macos-aarch64-metal');
     const runner = catalog.runnerProfiles.find((candidate) => candidate.id === macos?.runnerProfileId);
 
@@ -321,11 +324,11 @@ describe('Runtime Box CI catalog', () => {
       'utf8',
     );
 
-    const specs = catalog.models.map((model) => model.productLifecycleSpec);
+    const specs = catalog.components.map((model) => model.productLifecycleSpec);
     expect(specs.every((spec) => spec.startsWith('tests/e2e/specs/'))).toBe(true);
     // One spec per model: a shared spec would validate the wrong box for someone.
     expect(new Set(specs).size).toBe(specs.length);
-    for (const model of catalog.models) {
+    for (const model of catalog.components) {
       const spec = readFileSync(new URL(`../../${model.productLifecycleSpec}`, import.meta.url), 'utf8');
       expect(spec, model.modelId).toContain(`'${model.modelId}'`);
       expect(spec, model.modelId).toContain(`'${model.boxId}'`);
@@ -390,7 +393,7 @@ describe('Runtime Box CI catalog', () => {
     expect(catalog.runnerProfiles.map((runner) => runner.runsOn))
       .toEqual(expect.not.arrayContaining(['liatir-linux-t4', 'liatir-windows-t4']));
 
-    for (const model of catalog.models) {
+    for (const model of catalog.components) {
       for (const target of model.targets) {
         if (target.target.platform === 'macos') continue;
         const runner = catalog.runnerProfiles.find((candidate) => candidate.id === target.runnerProfileId);

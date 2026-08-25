@@ -317,7 +317,7 @@ function evidenceSources(recipe) {
 }
 
 async function completeModelRecord(options, catalog, phase) {
-  const model = catalog.models.find((candidate) => candidate.modelId === options.model);
+  const model = catalog.components.find((candidate) => candidate.modelId === options.model);
   requireEvidence(model, `unknown model ${options.model}`);
   const target = model.targets.find((candidate) => candidate.targetId === options.target);
   requireEvidence(target, `unknown target ${options.model}/${options.target}`);
@@ -336,6 +336,8 @@ async function completeModelRecord(options, catalog, phase) {
     status: options.status,
     environment: options.environment || null,
     subject: {
+      componentKind: model.componentKind,
+      componentId: model.componentId,
       modelId: model.modelId,
       boxId: model.boxId,
       runtimeId: model.runtimeId,

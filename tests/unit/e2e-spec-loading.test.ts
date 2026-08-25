@@ -74,7 +74,7 @@ describe("end-to-end spec loading", () => {
   // model. This file only answers the other half — that the spec it names can actually be loaded.
   it("covers every spec a model routes its product lifecycle to", () => {
     const catalog = JSON.parse(readFileSync(resolve("runtime-boxes/catalog.json"), "utf8"));
-    for (const model of catalog.models) {
+    for (const model of catalog.components) {
       const routed = String(model.productLifecycleSpec ?? "");
       expect(routed, `${model.modelId} routes no product lifecycle spec`).not.toBe("");
       expect(specs, `${routed} is routed but not in the spec directory`)

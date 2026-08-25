@@ -5,6 +5,7 @@ import { depsStore, type DependencyProcessState } from './deps.svelte';
 import { jobsStore, type JobEntry } from './jobs.svelte';
 import { pipelineStore } from './pipeline.svelte';
 import { viewerRuntimesStore } from './viewerRuntimes.svelte';
+import { toolRuntimesStore } from './toolRuntimes.svelte';
 
 type CloseRequestedPayload = {
 	label?: string | null;
@@ -64,6 +65,9 @@ async function activeProcessSummary(): Promise<ActiveProcessSummary> {
 	const aiModelInstalls = safeCount(() => Object.keys(aiModelsStore.installing).length);
 	if (aiModelInstalls > 0) labels.push(plural(aiModelInstalls, 'AI Model install'));
 
+	const toolRuntimeInstalls = safeCount(() => Object.keys(toolRuntimesStore.operations).length);
+	if (toolRuntimeInstalls > 0) labels.push(plural(toolRuntimeInstalls, 'Tool Runtime install'));
+
 	const dependencyProcesses = safeCount(
 		() =>
 			Object.values(depsStore.processStates).filter((state) =>
@@ -82,6 +86,7 @@ async function activeProcessSummary(): Promise<ActiveProcessSummary> {
 			runningJobs +
 			runningPipelines +
 			aiModelInstalls +
+			toolRuntimeInstalls +
 			dependencyProcesses +
 			viewerRuntimeInstalls,
 		labels

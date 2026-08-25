@@ -229,7 +229,7 @@ export function validateWindowsCudaPrerequisite(model, target) {
 
 /** Finds a unique model and target selected only by catalog IDs. */
 export function resolveCiTarget(catalog, modelId, recipeId, targetId, mode) {
-  const model = catalog.models.find((candidate) => candidate.modelId === modelId);
+  const model = catalog.components.find((candidate) => candidate.modelId === modelId);
   requireCatalog(model, `unknown modelId ${modelId}`);
   const target = model.targets.find((candidate) => candidate.targetId === targetId);
   requireCatalog(target, `unknown target ${modelId}/${targetId}`);
@@ -278,9 +278,9 @@ export function foundationMatrix(catalog, recipeId = '') {
 
 /** Validates all static catalog invariants and its repository-owned references. */
 export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true } = {}) {
-  requireCatalog(catalog?.schemaVersion === 1, 'schemaVersion must be 1');
+  requireCatalog(catalog?.schemaVersion === 2, 'schemaVersion must be 2');
   requireCatalog(catalog.costPolicy?.maxPaidRunnerConcurrency === 1, 'paid runner concurrency must remain 1');
-  requireCatalog(catalog.costPolicy?.maxModelsPerGpuJob === 1, 'GPU jobs must remain scoped to one model');
+  requireCatalog(catalog.costPolicy?.maxComponentsPerGpuJob === 1, 'GPU jobs must remain scoped to one Runtime Component');
   requireCatalog(catalog.costPolicy?.maxTargetsPerGpuJob === 1, 'GPU jobs must remain scoped to one target');
   requireCatalog(Number.isInteger(catalog.costPolicy?.heartbeatSeconds) && catalog.costPolicy.heartbeatSeconds >= 60, 'heartbeat must be at least 60 seconds');
   requireCatalog(catalog.costPolicy?.gpuManualOnly === true, 'GPU workflows must remain manual-only');
@@ -289,7 +289,7 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
   requireCatalog(catalog.costPolicy?.cacheModelWeightsOrArchives === false, 'model weights and archives may not be cached');
   requireCatalog(Array.isArray(catalog.runnerProfiles) && catalog.runnerProfiles.length > 0, 'runnerProfiles are required');
   requireCatalog(Array.isArray(catalog.foundationFixtures) && catalog.foundationFixtures.length > 0, 'foundationFixtures are required');
-  requireCatalog(Array.isArray(catalog.models) && catalog.models.length > 0, 'models are required');
+  requireCatalog(Array.isArray(catalog.components) && catalog.components.length > 0, 'components are required');
 
   const runnerIds = new Set();
   const runnerLabels = new Set();
@@ -374,7 +374,9 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
   const modelIds = new Set();
   const boxIds = new Set();
   const targetKeys = new Set();
-  for (const model of catalog.models) {
+  for (const model of catalog.components) {
+    requireCatalog(['ai-model', 'tool-runtime'].includes(model.componentKind), `invalid component kind for ${model.modelId}`);
+    requireCatalog(model.componentId === model.modelId, `Scrollcase identity mismatch for ${model.componentId}`);
     requireCatalog(!modelIds.has(model.modelId), `duplicate modelId ${model.modelId}`);
     requireCatalog(!boxIds.has(model.boxId), `duplicate boxId ${model.boxId}`);
     requireCatalog(model.legalStatus === 'approved', `${model.modelId} is not legally approved`);
@@ -730,7 +732,7 @@ async function main() {
   const catalog = readRuntimeBoxCiCatalog();
   if (command === 'check') {
     validateRuntimeBoxCiCatalog(catalog);
-    console.log(`Validated ${catalog.models.length} Runtime Box model records and ${catalog.foundationFixtures.length} foundation fixtures.`);
+    console.log(`Validated ${catalog.components.length} Runtime Component records and ${catalog.foundationFixtures.length} foundation fixtures.`);
     return;
   }
   if (command === 'foundation-matrix') {
@@ -811,7 +813,7 @@ async function main() {
   }
   if (command === 'release-resolve') {
     validateRuntimeBoxCiCatalog(catalog);
-    const model = catalog.models.find((candidate) => candidate.modelId === options.get('model'));
+    const model = catalog.components.find((candidate) => candidate.modelId === options.get('model'));
     requireCatalog(model, `unknown modelId ${options.get('model')}`);
     const target = model.targets.find((candidate) => candidate.targetId === options.get('target'));
     requireCatalog(target, `unknown target ${model.modelId}/${options.get('target')}`);

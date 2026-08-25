@@ -1,5 +1,34 @@
 # Current project status
 
+## Runtime Components and scientific contracts are ready for model-specific phases (2026-08-25)
+
+Runtime Boxes now have one signed lifecycle for two honest product kinds: AI Models and Tool
+Runtimes. Existing AI environments and commands remain compatible under `ai-runtimes`; scientific
+command environments are isolated under `tool-runtimes`. Dependencies provides install, explicit
+manifest-only update check, user-triggered Update, cancel, rollback and remove. Nothing checks for
+or downloads an update automatically.
+
+Core now owns the six new versioned scientific input/output profiles, `LiatirComplexSpec v1`,
+multi-model AI provenance while retaining the primary model fields read by existing Results, and a
+lazy memory-bounded DCD Result player. The CI catalog is schema v2 and component-aware without changing Scrollcase v2 identity,
+signatures, target IDs, trust, revocations or anti-replay. The Tool Runtime catalog intentionally
+has no entries until the pVACtools and OpenMM phases produce their own release evidence.
+
+Evidence: `npm run test:fast` passed 454 tests; `npm run test:verify` passed all six suites; Rust
+passed 91 tests with 2 ignored and Clippy completed without errors. `npm run test:ui` passed all
+seven applicable desktop suites, including 34 native app scenarios plus a
+real signed Tool Runtime install/update/rollback/remove lifecycle beside a still-runnable legacy AI
+alias, anti-replay across restart, Dependencies, and the macOS install lifecycle. Windows and Linux
+desktop lifecycle evidence remains platform-specific and was not claimed from macOS. No heavy AI,
+GPU CI, publication, application signing or deployment ran. Full decisions and scope are in
+[New scientific model integration](./roadmap/new-ai-models-integration-plan.md).
+
+Release follow-up: the clean frontend install reported five advisories across production and
+development dependencies (two low, one moderate and two high). The production-only `npm audit`
+could not be queried because this environment did not permit sending the dependency inventory to
+the external npm advisory endpoint, so the affected dependency scope still needs an authorized
+registry audit before a public package release.
+
 ## SnpEff and SnpSift are one verified, on-demand suite (2026-08-25)
 
 The manual SnpEff download path is gone from the normal product flow. Liatir now presents one

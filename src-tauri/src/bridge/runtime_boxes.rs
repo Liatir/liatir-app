@@ -1,6 +1,6 @@
-//! Installation, activation and rollback of AI Runtime Boxes.
+//! Installation, activation and rollback of signed Runtime Components.
 //!
-//! An AI Runtime Box is a self-contained, pre-built Python environment (interpreter +
+//! A Runtime Box is a self-contained, pre-built Python environment (interpreter +
 //! wheels + model glue) shipped as a zip archive, so heavy AI dependencies are installed
 //! only when the user actually needs them instead of being bundled into the app.
 //!
@@ -21,7 +21,7 @@
 //! Activation is a directory rename, so a box is never observed half-installed: it is either
 //! the old version or the new one.
 
-use chrono::DateTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
@@ -59,8 +59,9 @@ use super::{
     python_env::env_dir,
 };
 
-/// Parent directory (under the app-managed storage scope) holding one directory per runtime.
+/// Parent directories (under the app-managed storage scope) holding one directory per runtime.
 const AI_RUNTIME_ROOT: &str = "ai-runtimes";
+const TOOL_RUNTIME_ROOT: &str = "tool-runtimes";
 /// Hard cap for channel/release/revocation documents, so a hostile or broken registry
 /// cannot make the app buffer an unbounded response into memory.
 const MAX_CONTROL_DOCUMENT_BYTES: usize = 1024 * 1024;
@@ -84,13 +85,61 @@ const DEVELOPMENT_TRUST_KEY: &str =
 
 /// Runtime IDs with an install/rollback/remove currently in flight.
 ///
-/// Guarded by [`InstallGuard`]. The set is keyed by runtime ID, so two *different* runtimes
-/// can still be installed concurrently — only same-runtime overlap is rejected.
+/// Guarded by [`InstallGuard`]. The set is keyed by component root plus runtime ID, so AI Models
+/// and Tool Runtimes remain independent even when the signed Scrollcase identity is shared.
 static ACTIVE_INSTALLS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 /// Serialises the read/compare/write transaction over the app-global anti-replay file.
 /// Different Runtime Boxes may install concurrently, but their accepted control-document
 /// generations must never overwrite one another with two stale snapshots of the same file.
 static ANTI_REPLAY_STATE_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+
+/// Product classification only. Scrollcase v2 and its signed `modelId` field stay unchanged.
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, Hash)]
+#[serde(rename_all = "kebab-case")]
+pub enum RuntimeComponentKind {
+    AiModel,
+    ToolRuntime,
+}
+
+impl RuntimeComponentKind {
+    pub(crate) fn runtime_root(self) -> &'static str {
+        match self {
+            Self::AiModel => AI_RUNTIME_ROOT,
+            Self::ToolRuntime => TOOL_RUNTIME_ROOT,
+        }
+    }
+
+    fn guard_key(self, runtime_id: &str) -> String {
+        format!("{}:{runtime_id}", self.runtime_root())
+    }
+}
+
+fn validate_scrollcase_identifier(value: &str, label: &str) -> Result<(), String> {
+    let valid = !value.is_empty()
+        && value.split(['-', '.']).all(|segment| {
+            !segment.is_empty()
+                && segment
+                    .chars()
+                    .all(|character| character.is_ascii_lowercase() || character.is_ascii_digit())
+        });
+    if !valid {
+        return Err(format!("invalid Runtime Box {label}"));
+    }
+    Ok(())
+}
+
+fn validate_runtime_component_request(
+    box_id: &str,
+    component_id: &str,
+    channel: &str,
+) -> Result<(), String> {
+    validate_scrollcase_identifier(box_id, "box id")?;
+    validate_scrollcase_identifier(component_id, "component id")?;
+    if !matches!(channel, "nightly" | "beta" | "stable") {
+        return Err("invalid Runtime Box channel".to_string());
+    }
+    Ok(())
+}
 
 /// The hardware/OS profile a box is built for. A box is only installable when this
 /// matches the detected native host and passes signed release verification.
@@ -143,7 +192,7 @@ const MIN_LIATIR_VERSION: &str = "minLiatirVersion";
 /// Upper bound of the same constraint. Optional.
 const MAX_LIATIR_VERSION_EXCLUSIVE: &str = "maxLiatirVersionExclusive";
 
-/// One published target candidate supplied by the shared AI Model catalog.
+/// One published target candidate supplied by the shared Runtime Component catalog.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RuntimeBoxTargetCandidate {
@@ -151,6 +200,26 @@ pub struct RuntimeBoxTargetCandidate {
     host_environments: Vec<String>,
     min_ram_gb: Option<f64>,
     min_nvidia_driver_version: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct RuntimeComponentUpdateRequest {
+    component_id: String,
+    box_id: String,
+    channel: String,
+    registry_base_url: String,
+    target_candidates: Vec<RuntimeBoxTargetCandidate>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeComponentUpdateStatus {
+    checked_at: String,
+    current_version: Option<String>,
+    available_version: Option<String>,
+    update_available: bool,
+    selected_target: RuntimeBoxTarget,
 }
 
 /// Native facts used to choose one candidate without relying on mutable global selection state.
@@ -249,6 +318,8 @@ pub struct RuntimeBoxActivationMetadata {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RuntimeBoxInstallResult {
+    component_kind: RuntimeComponentKind,
+    component_id: String,
     runtime_id: String,
     runtime_dir: String,
     /// Absolute path of the box's interpreter, ready to be spawned by the caller.
@@ -265,36 +336,37 @@ pub struct RuntimeBoxInstallResult {
 /// Schema-v1 installations remain removable through filesystem ownership, but are never parsed
 /// or dispatched. V2 activation envelopes are re-verified against the compiled trust roots before
 /// every run.
-pub(crate) fn runtime_box_activation_metadata(
+pub(crate) fn runtime_box_activation_metadata_for_component(
     app: &AppHandle,
+    component_kind: RuntimeComponentKind,
     runtime_id: &str,
 ) -> Result<Option<serde_json::Value>, String> {
-    let runtime_dir = env_dir(app, AI_RUNTIME_ROOT, runtime_id)?;
+    let runtime_dir = env_dir(app, component_kind.runtime_root(), runtime_id)?;
     let path = runtime_dir.join("runtime-box-activation.json");
     if !path.is_file() {
         return Ok(None);
     }
     let bytes = std::fs::read(&path)
-        .map_err(|error| format!("cannot read AI Runtime Box activation metadata: {error}"))?;
+        .map_err(|error| format!("cannot read Runtime Box activation metadata: {error}"))?;
     let value: serde_json::Value = serde_json::from_slice(&bytes)
-        .map_err(|error| format!("invalid AI Runtime Box activation metadata: {error}"))?;
+        .map_err(|error| format!("invalid Runtime Box activation metadata: {error}"))?;
 
     if value.get("release").is_none()
         || value.get("schemaVersion").and_then(serde_json::Value::as_u64)
             != Some(u64::from(RUNTIME_BOX_SCHEMA_VERSION))
     {
         return Err(
-            "AI Runtime Box format is unsupported; remove and reinstall this Runtime Box"
+            "Runtime Box format is unsupported; remove and reinstall this Runtime Box"
                 .to_string(),
         );
     }
     let activation: RuntimeBoxActivationMetadata = serde_json::from_value(value)
-        .map_err(|error| format!("invalid AI Runtime Box activation metadata: {error}"))?;
+        .map_err(|error| format!("invalid Runtime Box activation metadata: {error}"))?;
     if activation.selected_target != activation.release.target {
-        return Err("AI Runtime Box activation target does not match its release".to_string());
+        return Err("Runtime Box activation target does not match its release".to_string());
     }
     let document = activation.signed_release.as_ref().ok_or_else(|| {
-        "AI Runtime Box activation metadata is missing its signed release".to_string()
+        "Runtime Box activation metadata is missing its signed release".to_string()
     })?;
     let signed_bytes = serde_json::to_vec(document).map_err(|error| error.to_string())?;
     let verified: ReleaseManifest = verify_signed_payload(&signed_bytes)?;
@@ -302,7 +374,7 @@ pub(crate) fn runtime_box_activation_metadata(
         != serde_json::to_value(&activation.release).map_err(|error| error.to_string())?
     {
         return Err(
-            "AI Runtime Box activation release does not match its signed metadata".to_string(),
+            "Runtime Box activation release does not match its signed metadata".to_string(),
         );
     }
 
@@ -311,11 +383,19 @@ pub(crate) fn runtime_box_activation_metadata(
         .map_err(|error| error.to_string())
 }
 
+pub(crate) fn runtime_box_activation_metadata(
+    app: &AppHandle,
+    runtime_id: &str,
+) -> Result<Option<serde_json::Value>, String> {
+    runtime_box_activation_metadata_for_component(app, RuntimeComponentKind::AiModel, runtime_id)
+}
+
 /// Returned by a rollback. `restored` is `false` when there was simply nothing to roll
 /// back to — that is a normal outcome, not an error.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RuntimeBoxRollbackResult {
+    component_kind: RuntimeComponentKind,
     runtime_id: String,
     runtime_dir: String,
     restored: bool,
@@ -332,18 +412,19 @@ struct InstallGuard {
 
 impl InstallGuard {
     /// Claims `runtime_id`, or fails if another operation on it is already running.
-    fn acquire(runtime_id: &str) -> Result<Self, String> {
+    fn acquire(component_kind: RuntimeComponentKind, runtime_id: &str) -> Result<Self, String> {
+        let guard_key = component_kind.guard_key(runtime_id);
         let installs = ACTIVE_INSTALLS.get_or_init(|| Mutex::new(HashSet::new()));
         let mut active = installs
             .lock()
             .map_err(|_| "runtime install state poisoned".to_string())?;
-        if !active.insert(runtime_id.to_string()) {
+        if !active.insert(guard_key.clone()) {
             return Err(format!(
-                "AI Runtime Box installation is already active for {runtime_id}"
+                "Runtime Box installation is already active for {runtime_id}"
             ));
         }
         Ok(Self {
-            runtime_id: runtime_id.to_string(),
+            runtime_id: guard_key,
         })
     }
 }
@@ -418,7 +499,7 @@ impl RuntimeBoxInstallOrder {
     ) -> Result<(), String> {
         if self.phase != expected {
             return Err(format!(
-                "internal AI Runtime Box install order error: expected {expected:?}, found {:?}",
+                "internal Runtime Box install order error: expected {expected:?}, found {:?}",
                 self.phase
             ));
         }
@@ -458,7 +539,7 @@ impl RuntimeBoxInstallOrder {
     fn extract<T>(&mut self, prepare: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
         if self.phase != RuntimeBoxInstallPhase::ArchiveVerified {
             return Err(format!(
-                "internal AI Runtime Box install order error: extraction requires {:?}, found {:?}",
+                "internal Runtime Box install order error: extraction requires {:?}, found {:?}",
                 RuntimeBoxInstallPhase::ArchiveVerified,
                 self.phase
             ));
@@ -570,7 +651,7 @@ fn validate_control_url(value: &str) -> Result<Url, String> {
     {
         return Ok(url);
     }
-    Err("AI Runtime Box URLs must use HTTPS; debug builds also allow loopback HTTP".to_string())
+    Err("Runtime Box URLs must use HTTPS; debug builds also allow loopback HTTP".to_string())
 }
 
 /// Canonical registry namespace used both for requests and durable anti-replay identity.
@@ -582,7 +663,7 @@ fn canonical_registry_base_url(value: &str) -> Result<String, String> {
         || url.fragment().is_some()
     {
         return Err(
-            "AI Runtime Box registry URLs cannot contain credentials, a query, or a fragment"
+            "Runtime Box registry URLs cannot contain credentials, a query, or a fragment"
                 .to_string(),
         );
     }
@@ -705,7 +786,7 @@ fn advance_control_floor(
             .expect("validated anti-replay state contains a valid timestamp");
         if incoming_time < accepted_time {
             return Err(format!(
-                "Signed AI Runtime Box {} is older than the newest document already accepted by this app",
+                "Signed Runtime Box {} is older than the newest document already accepted by this app",
                 control_document_label(&identity)
             ));
         }
@@ -714,7 +795,7 @@ fn advance_control_floor(
                 return Ok(false);
             }
             return Err(format!(
-                "Signed AI Runtime Box {} is equivocal: the same updatedAt identifies a different payload",
+                "Signed Runtime Box {} is equivocal: the same updatedAt identifies a different payload",
                 control_document_label(&identity)
             ));
         }
@@ -741,7 +822,7 @@ fn persist_anti_replay_state(
 
 fn security_state_unavailable(error: String) -> String {
     format!(
-        "AI Runtime Box security state is unreadable or corrupt. Installed AI Models remain available, but new installs and updates are blocked until the state is repaired: {error}"
+        "Runtime Box security state is unreadable or corrupt. Installed Runtime Components remain available, but new installs and updates are blocked until the state is repaired: {error}"
     )
 }
 
@@ -754,13 +835,13 @@ fn accept_control_document(
     let _guard = ANTI_REPLAY_STATE_LOCK
         .get_or_init(|| Mutex::new(()))
         .lock()
-        .map_err(|_| "AI Runtime Box security-state lock is poisoned".to_string())?;
+        .map_err(|_| "Runtime Box security-state lock is poisoned".to_string())?;
     let path = resolve_app_path(app, ANTI_REPLAY_STATE_PATH)?;
     let mut state = load_anti_replay_state(&path).map_err(security_state_unavailable)?;
     if advance_control_floor(&mut state, identity, updated_at, payload_sha256)? {
         persist_anti_replay_state(&path, &state).map_err(|error| {
             format!(
-                "Cannot persist AI Runtime Box security state, so this install or update was blocked: {error}"
+                "Cannot persist Runtime Box security state, so this install or update was blocked: {error}"
             )
         })?;
     }
@@ -774,7 +855,7 @@ fn has_accepted_control_document(
     let _guard = ANTI_REPLAY_STATE_LOCK
         .get_or_init(|| Mutex::new(()))
         .lock()
-        .map_err(|_| "AI Runtime Box security-state lock is poisoned".to_string())?;
+        .map_err(|_| "Runtime Box security-state lock is poisoned".to_string())?;
     let path = resolve_app_path(app, ANTI_REPLAY_STATE_PATH)?;
     let state = load_anti_replay_state(&path).map_err(security_state_unavailable)?;
     Ok(state.entries.iter().any(|entry| &entry.identity == identity))
@@ -855,7 +936,7 @@ fn select_target_candidate<'a>(
     host: &RuntimeBoxHostCapabilities,
 ) -> Result<&'a RuntimeBoxTargetCandidate, String> {
     if candidates.is_empty() {
-        return Err("This AI Model has no published Runtime Box targets".to_string());
+        return Err("This Runtime Component has no published Runtime Box targets".to_string());
     }
     for candidate in candidates {
         let candidate_id = target_id(&candidate.target)?;
@@ -902,7 +983,7 @@ fn select_target_candidate<'a>(
         .collect::<Vec<_>>();
     if platform_candidates.is_empty() {
         return Err(format!(
-            "This AI Model does not have a published Runtime Box for {}",
+            "This Runtime Component does not have a published Runtime Box for {}",
             match host.platform.as_str() {
                 "macos" => "macOS",
                 "windows" => "Windows",
@@ -917,7 +998,7 @@ fn select_target_candidate<'a>(
         .collect::<Vec<_>>();
     if architecture_candidates.is_empty() {
         return Err(format!(
-            "This AI Model does not have a published Runtime Box for {} {}",
+            "This Runtime Component does not have a published Runtime Box for {} {}",
             host.platform, host.arch
         ));
     }
@@ -932,7 +1013,7 @@ fn select_target_candidate<'a>(
         .collect::<Vec<_>>();
     if native_candidates.is_empty() {
         return Err(format!(
-            "This AI Model has no native Runtime Box for {} {}; WSL2 targets are not selected",
+            "This Runtime Component has no native Runtime Box for {} {}; WSL2 targets are not selected",
             host.platform, host.arch
         ));
     }
@@ -974,7 +1055,7 @@ fn select_target_candidate<'a>(
             (required_memory_gb, host.total_memory_bytes)
         {
             return Err(format!(
-                "This AI Model needs at least {minimum_gb} GB of memory, but this computer has {} GB",
+                "This Runtime Component needs at least {minimum_gb} GB of memory, but this computer has {} GB",
                 format_memory_gigabytes(installed_bytes)
             ));
         }
@@ -982,10 +1063,10 @@ fn select_target_candidate<'a>(
     if let Some(minimum) = required_driver {
         return match host.nvidia_driver_version.as_deref() {
             Some(installed) => Err(format!(
-                "This AI Model needs NVIDIA driver {minimum} or newer, but this computer has {installed}; no compatible CPU Runtime Box is published"
+                "This Runtime Component needs NVIDIA driver {minimum} or newer, but this computer has {installed}; no compatible CPU Runtime Box is published"
             )),
             None => Err(format!(
-                "This AI Model needs an NVIDIA GPU with driver {minimum} or newer; no compatible CPU Runtime Box is published"
+                "This Runtime Component needs an NVIDIA GPU with driver {minimum} or newer; no compatible CPU Runtime Box is published"
             )),
         };
     }
@@ -1032,6 +1113,53 @@ fn version_parts(value: &str) -> Vec<u64> {
         .collect()
 }
 
+fn version_is_newer(candidate: &str, current: &str) -> bool {
+    fn parse(value: &str) -> (Vec<u64>, Option<Vec<String>>) {
+        let without_build = value.split('+').next().unwrap_or(value);
+        let (core, prerelease) = without_build
+            .split_once('-')
+            .map_or((without_build, None), |(core, pre)| {
+                (core, Some(pre.split('.').map(str::to_string).collect()))
+            });
+        let core = core
+            .split('.')
+            .map(|part| part.parse::<u64>().unwrap_or(0))
+            .chain(std::iter::repeat(0))
+            .take(3)
+            .collect();
+        (core, prerelease)
+    }
+
+    let (candidate_core, candidate_pre) = parse(candidate);
+    let (current_core, current_pre) = parse(current);
+    if candidate_core != current_core {
+        return candidate_core > current_core;
+    }
+    match (candidate_pre, current_pre) {
+        (None, Some(_)) => true,
+        (Some(_), None) | (None, None) => false,
+        (Some(candidate_parts), Some(current_parts)) => {
+            for index in 0..candidate_parts.len().max(current_parts.len()) {
+                match (candidate_parts.get(index), current_parts.get(index)) {
+                    (Some(_), None) => return true,
+                    (None, Some(_)) => return false,
+                    (None, None) => return false,
+                    (Some(left), Some(right)) if left == right => continue,
+                    (Some(left), Some(right)) => {
+                        return match (left.parse::<u64>(), right.parse::<u64>()) {
+                            (Ok(left), Ok(right)) => left > right,
+                            (Ok(_), Err(_)) => false,
+                            (Err(_), Ok(_)) => true,
+                            (Err(_), Err(_)) => left > right,
+                        };
+                    }
+                }
+            }
+            false
+        }
+    }
+}
+
 /// Converts the shared decimal-gigabyte requirement to the native byte probe unit.
 ///
 /// Rounded *up*: a fractional requirement must never be satisfied by a host that is short of it,
@@ -1063,7 +1191,7 @@ fn liatir_constraint<'a>(
         None => Ok(None),
         Some(serde_json::Value::String(value)) if !value.is_empty() => Ok(Some(value)),
         Some(_) => Err(format!(
-            "This AI Runtime Box declares an unreadable {name} requirement"
+            "This Runtime Box declares an unreadable {name} requirement"
         )),
     }
 }
@@ -1085,24 +1213,24 @@ fn check_compatibility(
     for name in compatibility.additional.keys() {
         if name != MIN_LIATIR_VERSION && name != MAX_LIATIR_VERSION_EXCLUSIVE {
             return Err(format!(
-                "This AI Runtime Box declares a requirement this version of Liatir cannot check ({name})"
+                "This Runtime Box declares a requirement this version of Liatir cannot check ({name})"
             ));
         }
     }
     let app = version_parts(env!("CARGO_PKG_VERSION"));
     // Required: a release that names no minimum has not been through Liatir's publishing path.
     let minimum = liatir_constraint(compatibility, MIN_LIATIR_VERSION)?.ok_or_else(|| {
-        "This AI Runtime Box does not declare which Liatir versions it supports".to_string()
+        "This Runtime Box does not declare which Liatir versions it supports".to_string()
     })?;
     if app < version_parts(minimum) {
         return Err(format!(
-            "This AI Runtime Box requires Liatir {minimum} or newer"
+            "This Runtime Box requires Liatir {minimum} or newer"
         ));
     }
     if let Some(maximum) = liatir_constraint(compatibility, MAX_LIATIR_VERSION_EXCLUSIVE)? {
         if app >= version_parts(maximum) {
             return Err(format!(
-                "This AI Runtime Box requires a Liatir version older than {maximum}"
+                "This Runtime Box requires a Liatir version older than {maximum}"
             ));
         }
     }
@@ -1120,7 +1248,7 @@ fn check_compatibility(
             .is_some_and(|version| version < version_parts(minimum))
         {
             return Err(format!(
-                "This AI Runtime Box requires macOS {minimum} or newer"
+                "This Runtime Box requires macOS {minimum} or newer"
             ));
         }
     }
@@ -1128,20 +1256,20 @@ fn check_compatibility(
         let installed_bytes = host.total_memory_bytes;
         if installed_bytes.is_some_and(|bytes| bytes < required_memory_bytes(minimum_gb)) {
             return Err(format!(
-                "This AI Runtime Box requires at least {minimum_gb} GB of memory"
+                "This Runtime Box requires at least {minimum_gb} GB of memory"
             ));
         }
     }
     if let Some(minimum) = compatibility.min_nvidia_driver_version.as_deref() {
         if !is_numeric_version(minimum) {
-            return Err("This AI Runtime Box has an invalid NVIDIA driver requirement".to_string());
+            return Err("This Runtime Box has an invalid NVIDIA driver requirement".to_string());
         }
         let installed = host.nvidia_driver_version.as_deref().ok_or_else(|| {
-            format!("This AI Runtime Box requires an NVIDIA GPU with driver {minimum} or newer")
+            format!("This Runtime Box requires an NVIDIA GPU with driver {minimum} or newer")
         })?;
         if version_parts(installed) < version_parts(minimum) {
             return Err(format!(
-                "This AI Runtime Box requires NVIDIA driver {minimum} or newer, but this computer has {installed}"
+                "This Runtime Box requires NVIDIA driver {minimum} or newer, but this computer has {installed}"
             ));
         }
     }
@@ -1155,7 +1283,7 @@ fn check_compatibility(
         })
     {
         return Err(
-            "This AI Runtime Box is not validated for native desktop execution".to_string(),
+            "This Runtime Box is not validated for native desktop execution".to_string(),
         );
     }
     Ok(())
@@ -1203,7 +1331,7 @@ fn select_channel_release<'a>(
         }
     }
     // Reachable when no release is at 100%: this machine is simply not in any cohort yet.
-    Err("No AI Runtime Box release is assigned to this installation".to_string())
+    Err("No Runtime Box release is assigned to this installation".to_string())
 }
 
 /// Validates every signed channel field the install path will rely on before its freshness floor
@@ -1221,13 +1349,13 @@ fn validate_channel_manifest(
         || manifest.box_id != expected_box_id
         || &manifest.target != expected_target
     {
-        return Err("AI Runtime Box channel does not match this request and host".to_string());
+        return Err("Runtime Box channel does not match this request and host".to_string());
     }
     parse_control_updated_at(&manifest.updated_at)
-        .map_err(|error| format!("invalid AI Runtime Box channel: {error}"))?;
+        .map_err(|error| format!("invalid Runtime Box channel: {error}"))?;
     if manifest.cohort_salt.is_empty() || manifest.releases.is_empty() || manifest.releases.len() > 10
     {
-        return Err("invalid AI Runtime Box channel".to_string());
+        return Err("invalid Runtime Box channel".to_string());
     }
     let mut versions = HashSet::new();
     for release in &manifest.releases {
@@ -1236,11 +1364,90 @@ fn validate_channel_manifest(
             || release.rollout_percentage == 0
             || release.rollout_percentage > 100
         {
-            return Err("invalid AI Runtime Box channel release".to_string());
+            return Err("invalid Runtime Box channel release".to_string());
         }
         validate_control_url(&release.release_manifest_url)?;
     }
     Ok(())
+}
+
+/// Checks only the small signed channel document. The release and archive are fetched exclusively
+/// by `lia_runtime_box_install` after the user clicks Install or Update.
+pub(crate) async fn runtime_component_update_status(
+    app: &AppHandle,
+    component_kind: RuntimeComponentKind,
+    runtime_id: &str,
+    request: RuntimeComponentUpdateRequest,
+) -> Result<RuntimeComponentUpdateStatus, String> {
+    validate_runtime_component_request(&request.box_id, &request.component_id, &request.channel)?;
+    let registry_base_url = if cfg!(debug_assertions) {
+        std::env::var("LIATIR_RUNTIME_BOX_REGISTRY_URL")
+            .unwrap_or(request.registry_base_url)
+    } else {
+        request.registry_base_url
+    };
+    let registry_base_url = canonical_registry_base_url(&registry_base_url)?;
+    let host = current_host_capabilities();
+    let selected_candidate = select_target_candidate(&request.target_candidates, &host)?;
+    let target = selected_candidate.target.clone();
+    let target_slug = target_id(&target)?;
+    let channel_url = format!(
+        "{}/channels/{}/{}/{}",
+        registry_base_url.trim_end_matches('/'),
+        request.channel,
+        request.box_id,
+        target_slug
+    );
+    let channel_bytes = fetch_control_document(&channel_url)
+        .await?
+        .ok_or_else(|| {
+            format!(
+                "No {} Runtime Box is available for {target_slug}",
+                request.channel
+            )
+        })?;
+    let (manifest, payload_sha256): (ChannelManifest, String) =
+        verify_signed_payload_with_digest(&channel_bytes)?;
+    validate_channel_manifest(&manifest, &request.channel, &request.box_id, &target)?;
+    accept_control_document(
+        app,
+        RuntimeBoxControlIdentity::Channel {
+            registry_base_url,
+            channel: request.channel,
+            box_id: request.box_id.clone(),
+            target_id: target_slug,
+        },
+        &manifest.updated_at,
+        &payload_sha256,
+    )?;
+    let selected = select_channel_release(&manifest, &installation_id(app)?)?;
+    let activation = runtime_box_activation_metadata_for_component(
+        app,
+        component_kind,
+        runtime_id,
+    )?
+    .map(serde_json::from_value::<RuntimeBoxActivationMetadata>)
+    .transpose()
+    .map_err(|error| format!("invalid Runtime Box activation metadata: {error}"))?;
+    if let Some(activation) = activation.as_ref() {
+        if activation.release.runtime_id != runtime_id
+            || activation.release.box_id != request.box_id
+            || activation.release.model_id != request.component_id
+        {
+            return Err("Installed Runtime Box identity does not match this component".to_string());
+        }
+    }
+    let current_version = activation.map(|value| value.release.version);
+    let update_available = current_version
+        .as_deref()
+        .is_some_and(|current| version_is_newer(&selected.version, current));
+    Ok(RuntimeComponentUpdateStatus {
+        checked_at: Utc::now().to_rfc3339(),
+        current_version,
+        available_version: update_available.then(|| selected.version.clone()),
+        update_available,
+        selected_target: target,
+    })
 }
 
 /// Confirms a signed release actually is the thing we asked for, and that we can run it.
@@ -1258,20 +1465,20 @@ fn verify_release_identity(
 ) -> Result<(), String> {
     release
         .validate()
-        .map_err(|error| format!("invalid AI Runtime Box release manifest: {}", error.message()))?;
+        .map_err(|error| format!("invalid Runtime Box release manifest: {}", error.message()))?;
     if release.kind != "liatir.runtime-box.release" {
-        return Err("invalid AI Runtime Box release manifest".to_string());
+        return Err("invalid Runtime Box release manifest".to_string());
     }
     if release.box_id != box_id || release.model_id != model_id {
         return Err(
-            "AI Runtime Box release identity does not match the requested model".to_string(),
+            "Runtime Box release identity does not match the requested component".to_string(),
         );
     }
     if &release.target != target {
         let release_target_id = target_id(&release.target)?;
         let host_target_id = target_id(target)?;
         return Err(format!(
-            "AI Runtime Box target {} does not match this host {}",
+            "Runtime Box target {} does not match this host {}",
             release_target_id, host_target_id
         ));
     }
@@ -1283,18 +1490,18 @@ fn verify_release_identity(
             .is_some_and(is_numeric_version)
         {
             return Err(
-                "A CUDA AI Runtime Box release must declare a minimum NVIDIA driver".to_string(),
+                "A CUDA Runtime Box release must declare a minimum NVIDIA driver".to_string(),
             );
         }
     } else if release.compatibility.min_nvidia_driver_version.is_some() {
-        return Err("Only CUDA AI Runtime Box releases may require an NVIDIA driver".to_string());
+        return Err("Only CUDA Runtime Box releases may require an NVIDIA driver".to_string());
     }
     validate_control_url(&release.archive.url)?;
     let adapter = box_target_adapter(&release.target)
-        .map_err(|error| format!("invalid AI Runtime Box target: {}", error.message()))?;
+        .map_err(|error| format!("invalid Runtime Box target: {}", error.message()))?;
     assert_python_entry_point(adapter, &release.python_entry_point).map_err(|error| {
         format!(
-            "invalid AI Runtime Box interpreter path: {}",
+            "invalid Runtime Box interpreter path: {}",
             error.message()
         )
     })?;
@@ -1310,7 +1517,7 @@ fn verify_release_identity(
                 })
         })
     {
-        return Err("invalid AI Runtime Box self-test imports".to_string());
+        return Err("invalid Runtime Box self-test imports".to_string());
     }
     check_compatibility(&release.compatibility, host)
 }
@@ -1332,7 +1539,7 @@ async fn ensure_not_revoked(
     let Some(bytes) = fetch_control_document(&url).await? else {
         if has_accepted_control_document(app, &identity)? {
             return Err(
-                "The AI Runtime Box revocation list disappeared after this app accepted a signed generation"
+                "The Runtime Box revocation list disappeared after this app accepted a signed generation"
                     .to_string(),
             );
         }
@@ -1359,7 +1566,7 @@ async fn ensure_not_revoked(
                 .is_none_or(|target| target == &release.target)
     }) {
         return Err(format!(
-            "AI Runtime Box {} {} was revoked: {}",
+            "Runtime Box {} {} was revoked: {}",
             release.box_id, release.version, revocation.reason
         ));
     }
@@ -1373,19 +1580,19 @@ fn validate_revocations_manifest(manifest: &RevocationsManifest) -> Result<(), S
         || manifest.revocations.is_empty()
         || manifest.revocations.len() > 100
     {
-        return Err("invalid AI Runtime Box revocation document".to_string());
+        return Err("invalid Runtime Box revocation document".to_string());
     }
     parse_control_updated_at(&manifest.updated_at)
-        .map_err(|error| format!("invalid AI Runtime Box revocation document: {error}"))?;
+        .map_err(|error| format!("invalid Runtime Box revocation document: {error}"))?;
     for revocation in &manifest.revocations {
         if revocation.box_id.is_empty()
             || revocation.version.is_empty()
             || revocation.reason.trim().len() < 8
         {
-            return Err("invalid AI Runtime Box revocation document".to_string());
+            return Err("invalid Runtime Box revocation document".to_string());
         }
         parse_control_updated_at(&revocation.revoked_at)
-            .map_err(|error| format!("invalid AI Runtime Box revocation document: {error}"))?;
+            .map_err(|error| format!("invalid Runtime Box revocation document: {error}"))?;
         if let Some(target) = &revocation.target {
             target_id(target)?;
         }
@@ -1416,7 +1623,7 @@ fn run_self_test(python_path: &Path, self_test: &SelfTest) -> Result<(), String>
         .stdout(Stdio::null())
         .stderr(Stdio::piped())
         .spawn()
-        .map_err(|error| format!("cannot start AI Runtime Box self-test: {error}"))?;
+        .map_err(|error| format!("cannot start Runtime Box self-test: {error}"))?;
     let started = Instant::now();
     let timeout = Duration::from_secs(self_test.timeout_seconds.clamp(10, 600));
     loop {
@@ -1424,7 +1631,7 @@ fn run_self_test(python_path: &Path, self_test: &SelfTest) -> Result<(), String>
             Some(status) if status.success() => return Ok(()),
             Some(status) => {
                 return Err(format!(
-                    "AI Runtime Box self-test failed with status {status}{}",
+                    "Runtime Box self-test failed with status {status}{}",
                     self_test_stderr_suffix(&mut child)
                 ));
             }
@@ -1432,7 +1639,7 @@ fn run_self_test(python_path: &Path, self_test: &SelfTest) -> Result<(), String>
                 let _ = child.kill();
                 let _ = child.wait();
                 return Err(format!(
-                    "AI Runtime Box self-test timed out after {} seconds{}",
+                    "Runtime Box self-test timed out after {} seconds{}",
                     timeout.as_secs(),
                     self_test_stderr_suffix(&mut child)
                 ));
@@ -1476,7 +1683,7 @@ fn self_test_stderr_suffix(child: &mut std::process::Child) -> String {
 /// would report less than the signed release declares.
 fn dir_size(path: &Path) -> Result<u64, String> {
     scrollcase_payload_size(path)
-        .map_err(|error| format!("cannot size the AI Runtime Box: {}", error.message()))
+        .map_err(|error| format!("cannot size the Runtime Box: {}", error.message()))
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -1524,7 +1731,7 @@ fn existing_dir_size(path: &Path) -> Result<u64, String> {
 fn validate_runtime_box_disk_plan(plan: &RuntimeBoxDiskPlan, available: u64) -> Result<(), String> {
     if available < plan.required_additional_bytes {
         return Err(format!(
-            "Not enough disk space to install this AI Model: {} additional space is required, but only {} is free. The current runtime and rollback ({}) are preserved.",
+            "Not enough disk space to install this Runtime Component: {} additional space is required, but only {} is free. The current runtime and rollback ({}) are preserved.",
             format_bytes(plan.required_additional_bytes),
             format_bytes(available),
             format_bytes(plan.current_runtime_bytes.saturating_add(plan.rollback_bytes)),
@@ -1624,7 +1831,7 @@ fn activate_runtime(
 ) -> Result<bool, String> {
     let parent = runtime_dir
         .parent()
-        .ok_or_else(|| "AI runtime directory has no parent".to_string())?;
+        .ok_or_else(|| "Runtime Component directory has no parent".to_string())?;
     let rollback = rollback_root(parent, &release.runtime_id);
     std::fs::create_dir_all(&rollback).map_err(|error| error.to_string())?;
     // The UUID keeps the backup name unique even when the same version is reinstalled.
@@ -1632,7 +1839,7 @@ fn activate_runtime(
     let had_previous = runtime_dir.exists();
     if had_previous {
         rename_with_retry(runtime_dir, &backup)
-            .map_err(|error| format!("cannot stage previous AI runtime for rollback: {error}"))?;
+            .map_err(|error| format!("cannot stage previous Runtime Component for rollback: {error}"))?;
     }
     // The self-test just executed this box's interpreter from `staging`, so on Windows a
     // transient antivirus or child-process lock can still be clearing; retry the move before
@@ -1642,17 +1849,44 @@ fn activate_runtime(
         if had_previous {
             let _ = rename_with_retry(&backup, runtime_dir);
         }
-        return Err(format!("cannot activate AI Runtime Box: {error}"));
+        return Err(format!("cannot activate Runtime Box: {error}"));
     }
     prune_rollbacks(&rollback, had_previous.then_some(backup.as_path()))?;
     Ok(had_previous)
 }
 
-/// Installs an AI Runtime Box: resolve → verify → download → stage → self-test → activate.
+/// Installs a Runtime Component: resolve → verify → download → stage → self-test → activate.
 ///
 /// Runs the full chain described at the top of this module. Every failure leaves the previously
 /// installed version untouched, and `download_id` lets the frontend track progress and cancel
 /// the transfer through the shared [`DownloadRegistry`].
+#[tauri::command]
+pub async fn lia_runtime_box_install(
+    app: AppHandle,
+    downloads: tauri::State<'_, DownloadRegistry>,
+    component_kind: RuntimeComponentKind,
+    box_id: String,
+    component_id: String,
+    channel: String,
+    registry_base_url: String,
+    target_candidates: Vec<RuntimeBoxTargetCandidate>,
+    download_id: String,
+) -> Result<RuntimeBoxInstallResult, String> {
+    install_runtime_box(
+        app,
+        &downloads,
+        component_kind,
+        box_id,
+        component_id,
+        channel,
+        registry_base_url,
+        target_candidates,
+        download_id,
+    )
+    .await
+}
+
+/// Compatibility command for existing AI Model callers.
 #[tauri::command]
 pub async fn lia_ai_runtime_box_install(
     app: AppHandle,
@@ -1664,6 +1898,32 @@ pub async fn lia_ai_runtime_box_install(
     target_candidates: Vec<RuntimeBoxTargetCandidate>,
     download_id: String,
 ) -> Result<RuntimeBoxInstallResult, String> {
+    install_runtime_box(
+        app,
+        &downloads,
+        RuntimeComponentKind::AiModel,
+        box_id,
+        model_id,
+        channel,
+        registry_base_url,
+        target_candidates,
+        download_id,
+    )
+    .await
+}
+
+async fn install_runtime_box(
+    app: AppHandle,
+    downloads: &DownloadRegistry,
+    component_kind: RuntimeComponentKind,
+    box_id: String,
+    component_id: String,
+    channel: String,
+    registry_base_url: String,
+    target_candidates: Vec<RuntimeBoxTargetCandidate>,
+    download_id: String,
+) -> Result<RuntimeBoxInstallResult, String> {
+    validate_runtime_component_request(&box_id, &component_id, &channel)?;
     // The download ID becomes part of an event name and a progress key, so restrict it to a
     // bounded, well-known alphabet rather than trusting the caller.
     if download_id.is_empty()
@@ -1672,7 +1932,7 @@ pub async fn lia_ai_runtime_box_install(
             character.is_ascii_alphanumeric() || character == '-' || character == '_'
         })
     {
-        return Err("invalid AI Runtime Box download id".to_string());
+        return Err("invalid Runtime Box download id".to_string());
     }
     // Debug builds may be pointed at a local test registry; release builds always use the URL
     // the caller passed, so the environment cannot redirect a production install.
@@ -1696,7 +1956,7 @@ pub async fn lia_ai_runtime_box_install(
     );
     let channel_bytes = fetch_control_document(&channel_url)
         .await?
-        .ok_or_else(|| format!("No {channel} AI Runtime Box is available for {target_slug}"))?;
+        .ok_or_else(|| format!("No {channel} Runtime Box is available for {target_slug}"))?;
     let (channel_manifest, channel_payload_sha256): (ChannelManifest, String) =
         verify_signed_payload_with_digest(&channel_bytes)?;
     // Signed, structurally usable and addressed to us: a valid document served from the wrong URL
@@ -1719,11 +1979,11 @@ pub async fn lia_ai_runtime_box_install(
     let selected = select_channel_release(&channel_manifest, &installation_id(&app)?)?;
     let release_bytes = fetch_control_document(&selected.release_manifest_url)
         .await?
-        .ok_or_else(|| "AI Runtime Box release manifest was not found".to_string())?;
+        .ok_or_else(|| "Runtime Box release manifest was not found".to_string())?;
     let signed_release: serde_json::Value = serde_json::from_slice(&release_bytes)
         .map_err(|error| format!("invalid signed Runtime Box release document: {error}"))?;
     let release: ReleaseManifest = verify_signed_payload(&release_bytes)?;
-    verify_release_identity(&release, &box_id, &model_id, &target, &host)?;
+    verify_release_identity(&release, &box_id, &component_id, &target, &host)?;
     if release.compatibility.min_nvidia_driver_version
         != selected_candidate.min_nvidia_driver_version
         || selected_candidate.min_ram_gb.is_some()
@@ -1736,7 +1996,7 @@ pub async fn lia_ai_runtime_box_install(
     // Ties the release back to the channel that offered it, so a signed manifest for a
     // different version cannot be substituted at the release-manifest URL.
     if release.version != selected.version {
-        return Err("AI Runtime Box release version does not match its signed channel".to_string());
+        return Err("Runtime Box release version does not match its signed channel".to_string());
     }
     let release_payload_sha256 = signed_release
         .get("payloadSha256")
@@ -1747,12 +2007,12 @@ pub async fn lia_ai_runtime_box_install(
     ensure_not_revoked(&app, &registry_base_url, &release).await?;
     install_order.product_policy_checked()?;
     // Held for the rest of the function; released on Drop, including on any `?` below.
-    let _install_guard = InstallGuard::acquire(&release.runtime_id)?;
+    let _install_guard = InstallGuard::acquire(component_kind, &release.runtime_id)?;
 
-    let runtime_dir = env_dir(&app, AI_RUNTIME_ROOT, &release.runtime_id)?;
+    let runtime_dir = env_dir(&app, component_kind.runtime_root(), &release.runtime_id)?;
     let runtime_parent = runtime_dir
         .parent()
-        .ok_or_else(|| "AI runtime directory has no parent".to_string())?;
+        .ok_or_else(|| "Runtime Component directory has no parent".to_string())?;
     std::fs::create_dir_all(runtime_parent).map_err(|error| error.to_string())?;
     let downloads_dir = runtime_parent.join(".runtime-box-downloads");
     std::fs::create_dir_all(&downloads_dir).map_err(|error| error.to_string())?;
@@ -1822,7 +2082,7 @@ pub async fn lia_ai_runtime_box_install(
         != release.archive.size_bytes
     {
         let _ = std::fs::remove_file(&archive_path);
-        return Err("AI Runtime Box archive size does not match the signed release".to_string());
+        return Err("Runtime Box archive size does not match the signed release".to_string());
     }
     install_order.archive_verified()?;
 
@@ -1856,7 +2116,7 @@ pub async fn lia_ai_runtime_box_install(
                 Ok(_) if attempt < 8 => {
                     attempt += 1;
                 }
-                Ok(_) => return Err("cannot allocate AI Runtime Box staging path".to_string()),
+                Ok(_) => return Err("cannot allocate Runtime Box staging path".to_string()),
                 Err(error) => return Err(error.to_string()),
             }
         }
@@ -1884,11 +2144,11 @@ pub async fn lia_ai_runtime_box_install(
                     environment: EnvironmentReportOptions::default(),
                 },
             )
-            .map_err(|error| format!("AI Runtime Box preparation failed: {}", error.message()))
+            .map_err(|error| format!("Runtime Box preparation failed: {}", error.message()))
         })?;
         if prepared.release_payload_sha256() != release_payload_sha256 {
             return Err(
-                "Prepared AI Runtime Box does not match the release approved by Liatir".to_string(),
+                "Prepared Runtime Box does not match the release approved by Liatir".to_string(),
             );
         }
         let python_path = prepared
@@ -1913,6 +2173,8 @@ pub async fn lia_ai_runtime_box_install(
         let size_bytes = dir_size(&staging)?;
         let rollback_available = activate_runtime(&runtime_dir, &staging, &release)?;
         Ok(RuntimeBoxInstallResult {
+            component_kind,
+            component_id: component_id.clone(),
             runtime_id: release.runtime_id.clone(),
             runtime_dir: runtime_dir.to_string_lossy().to_string(),
             python_path: runtime_dir
@@ -1947,7 +2209,7 @@ pub async fn lia_ai_runtime_box_install(
 fn rollback_runtime(runtime_dir: &Path, runtime_id: &str) -> Result<bool, String> {
     let parent = runtime_dir
         .parent()
-        .ok_or_else(|| "AI runtime directory has no parent".to_string())?;
+        .ok_or_else(|| "Runtime Component directory has no parent".to_string())?;
     let root = rollback_root(parent, runtime_id);
     let Some(previous) = newest_rollback(&root)? else {
         return Ok(false);
@@ -1962,7 +2224,7 @@ fn rollback_runtime(runtime_dir: &Path, runtime_id: &str) -> Result<bool, String
         if failed.exists() {
             let _ = rename_with_retry(&failed, runtime_dir);
         }
-        return Err(format!("cannot roll back AI Runtime Box: {error}"));
+        return Err(format!("cannot roll back Runtime Box: {error}"));
     }
     // Restore succeeded, so the bad version can go.
     if failed.exists() {
@@ -1972,15 +2234,33 @@ fn rollback_runtime(runtime_dir: &Path, runtime_id: &str) -> Result<bool, String
 }
 
 #[tauri::command]
+pub async fn lia_runtime_box_rollback(
+    app: AppHandle,
+    component_kind: RuntimeComponentKind,
+    runtime_id: String,
+) -> Result<RuntimeBoxRollbackResult, String> {
+    rollback_runtime_box(app, component_kind, runtime_id).await
+}
+
+#[tauri::command]
 pub async fn lia_ai_runtime_box_rollback(
     app: AppHandle,
     runtime_id: String,
 ) -> Result<RuntimeBoxRollbackResult, String> {
+    rollback_runtime_box(app, RuntimeComponentKind::AiModel, runtime_id).await
+}
+
+async fn rollback_runtime_box(
+    app: AppHandle,
+    component_kind: RuntimeComponentKind,
+    runtime_id: String,
+) -> Result<RuntimeBoxRollbackResult, String> {
     // Same lock as install: a rollback must not race an install of the same runtime.
-    let _install_guard = InstallGuard::acquire(&runtime_id)?;
-    let runtime_dir = env_dir(&app, AI_RUNTIME_ROOT, &runtime_id)?;
+    let _install_guard = InstallGuard::acquire(component_kind, &runtime_id)?;
+    let runtime_dir = env_dir(&app, component_kind.runtime_root(), &runtime_id)?;
     let restored = rollback_runtime(&runtime_dir, &runtime_id)?;
     Ok(RuntimeBoxRollbackResult {
+        component_kind,
         runtime_id,
         runtime_dir: runtime_dir.to_string_lossy().to_string(),
         restored,
@@ -1995,7 +2275,7 @@ pub async fn lia_ai_runtime_box_rollback(
 fn remove_runtime_files(runtime_dir: &Path, runtime_id: &str, box_id: &str) -> Result<(), String> {
     let parent = runtime_dir
         .parent()
-        .ok_or_else(|| "AI runtime directory has no parent".to_string())?;
+        .ok_or_else(|| "Runtime Component directory has no parent".to_string())?;
     if runtime_dir.exists() {
         std::fs::remove_dir_all(runtime_dir).map_err(|error| error.to_string())?;
     }
@@ -2024,13 +2304,49 @@ fn remove_runtime_files(runtime_dir: &Path, runtime_id: &str, box_id: &str) -> R
 }
 
 #[tauri::command]
+pub async fn lia_runtime_box_remove(
+    app: AppHandle,
+    component_kind: RuntimeComponentKind,
+    runtime_id: String,
+    box_id: String,
+) -> Result<bool, String> {
+    remove_runtime_box(app, component_kind, runtime_id, box_id).await
+}
+
+#[tauri::command]
 pub async fn lia_ai_runtime_box_remove(
     app: AppHandle,
     runtime_id: String,
     box_id: String,
 ) -> Result<bool, String> {
-    let _install_guard = InstallGuard::acquire(&runtime_id)?;
-    let runtime_dir = env_dir(&app, AI_RUNTIME_ROOT, &runtime_id)?;
+    remove_runtime_box(app, RuntimeComponentKind::AiModel, runtime_id, box_id).await
+}
+
+async fn remove_runtime_box(
+    app: AppHandle,
+    component_kind: RuntimeComponentKind,
+    runtime_id: String,
+    box_id: String,
+) -> Result<bool, String> {
+    validate_scrollcase_identifier(&box_id, "box id")?;
+    let _install_guard = InstallGuard::acquire(component_kind, &runtime_id)?;
+    let runtime_dir = env_dir(&app, component_kind.runtime_root(), &runtime_id)?;
+    // The box identity scopes both the active runtime and the cached archives. Refuse a mismatched
+    // caller before deleting either; old schema-v1 installations without a release remain removable.
+    let activation_path = runtime_dir.join("runtime-box-activation.json");
+    if activation_path.is_file() {
+        if let Ok(bytes) = std::fs::read(&activation_path) {
+            if let Ok(activation) = serde_json::from_slice::<serde_json::Value>(&bytes) {
+                let installed_box_id = activation
+                    .pointer("/release/boxId")
+                    .or_else(|| activation.get("boxId"))
+                    .and_then(serde_json::Value::as_str);
+                if installed_box_id.is_some_and(|installed| installed != box_id) {
+                    return Err("Installed Runtime Box identity does not match this removal request".to_string());
+                }
+            }
+        }
+    }
     remove_runtime_files(&runtime_dir, &runtime_id, &box_id)?;
     Ok(true)
 }
@@ -2585,7 +2901,7 @@ mod tests {
         assert!(
             validate_runtime_box_disk_plan(&plan, plan.required_additional_bytes - 1)
                 .unwrap_err()
-                .contains("Not enough disk space to install this AI Model")
+                .contains("Not enough disk space to install this Runtime Component")
         );
     }
 
@@ -2688,7 +3004,7 @@ mod tests {
             &fixture_release("2.0.0"),
         )
         .unwrap_err();
-        assert!(error.contains("cannot activate AI Runtime Box"));
+        assert!(error.contains("cannot activate Runtime Box"));
         assert_eq!(read_runtime_marker(&runtime), "stable");
         assert_eq!(
             std::fs::read_dir(rollback_root(&root, "fixture-runtime"))
@@ -2904,5 +3220,34 @@ mod tests {
         assert_eq!(final_byte, [0]);
 
         std::fs::remove_dir_all(destination).unwrap();
+    }
+
+    #[test]
+    fn runtime_component_kinds_have_isolated_storage_and_lock_keys() {
+        assert_eq!(RuntimeComponentKind::AiModel.runtime_root(), "ai-runtimes");
+        assert_eq!(RuntimeComponentKind::ToolRuntime.runtime_root(), "tool-runtimes");
+        assert_ne!(
+            RuntimeComponentKind::AiModel.guard_key("shared-id"),
+            RuntimeComponentKind::ToolRuntime.guard_key("shared-id")
+        );
+    }
+
+    #[test]
+    fn generic_requests_reject_route_and_removal_identity_injection() {
+        assert!(validate_runtime_component_request("openmm", "openmm", "beta").is_ok());
+        for invalid in ["", "../openmm", "OpenMM", "openmm_unsafe", "openmm--cuda"] {
+            assert!(validate_scrollcase_identifier(invalid, "box id").is_err());
+        }
+        assert!(validate_runtime_component_request("openmm", "openmm", "preview").is_err());
+    }
+
+    #[test]
+    fn explicit_update_check_only_accepts_a_newer_semantic_version() {
+        assert!(version_is_newer("1.0.0-beta.3", "1.0.0-beta.2"));
+        assert!(version_is_newer("1.0.0", "1.0.0-beta.9"));
+        assert!(version_is_newer("2.0.0", "1.99.99"));
+        assert!(!version_is_newer("1.0.0-beta.2", "1.0.0-beta.2"));
+        assert!(!version_is_newer("1.0.0-beta.1", "1.0.0-beta.2"));
+        assert!(!version_is_newer("1.0.0-beta.1", "1.0.0"));
     }
 }

@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "costPolicy": {
     "maxPaidRunnerConcurrency": 1,
-    "maxModelsPerGpuJob": 1,
+    "maxComponentsPerGpuJob": 1,
     "maxTargetsPerGpuJob": 1,
     "heartbeatSeconds": 300,
     "gpuManualOnly": true,
@@ -182,8 +182,10 @@
       }
     }
   ],
-  "models": [
+  "components": [
     {
+      "componentKind": "ai-model",
+      "componentId": "ctheodoris-geneformer-v1-10m",
       "modelId": "ctheodoris-geneformer-v1-10m",
       "boxId": "geneformer-v1-10m",
       "runtimeId": "single-cell-foundation-geneformer-v1-10m",
@@ -324,6 +326,8 @@
       ]
     },
     {
+      "componentKind": "ai-model",
+      "componentId": "bowang-scgpt-whole-human",
       "modelId": "bowang-scgpt-whole-human",
       "boxId": "scgpt-whole-human",
       "runtimeId": "single-cell-foundation-scgpt-whole-human",
@@ -546,6 +550,8 @@
       ]
     },
     {
+      "componentKind": "ai-model",
+      "componentId": "snap-stanford-uce-4layer",
       "modelId": "snap-stanford-uce-4layer",
       "boxId": "uce-4layer",
       "runtimeId": "single-cell-foundation-uce",

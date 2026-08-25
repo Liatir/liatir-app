@@ -279,16 +279,20 @@ export async function finalizeSingleCellEmbeddingResult(
 		viewerProjection?: string;
 	}>(result.stdout);
 
-	const provenance: LiatirAIProvenance = {
-		toolId: singleCellEmbeddingDefinition.id,
-		toolLabel: singleCellEmbeddingDefinition.label,
+	const modelProvenance = {
 		modelId: model.id,
 		modelName: model.name,
 		modelVersion: model.version ?? null,
 		runtimeKind: model.runtime.kind,
 		runtimeName: model.runtime.name,
 		runtimeVersion: model.runtime.version ?? null,
-		...runtimeBoxResultProvenance(result),
+		...runtimeBoxResultProvenance(result)
+	};
+	const provenance: LiatirAIProvenance = {
+		toolId: singleCellEmbeddingDefinition.id,
+		toolLabel: singleCellEmbeddingDefinition.label,
+		...modelProvenance,
+		models: [modelProvenance],
 		localOnly: model.localOnly,
 		inputSummary: {
 			inputFile: basename(inputs.inputFile),

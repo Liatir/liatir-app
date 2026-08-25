@@ -7,7 +7,7 @@
  * The output is written for a non-technical user: a block is not a boolean, it carries the reason,
  * what was required and what was actually detected.
  */
-import type { LiatirAIModelMetadata } from '@liatir/core';
+import type { LiatirAIModelMetadata, LiatirRuntimeBoxInstall, LiatirToolRuntimeMetadata } from '@liatir/core';
 import type { AIHardwareInfo } from './runtime';
 
 interface VersionParts {
@@ -75,18 +75,19 @@ function detectedHostLabel(hardware: AIHardwareInfo): string {
 
 /** Selects whether one ordered published Runtime Box target can run natively on this host. */
 function runtimeBoxInstallBlock(
-  model: LiatirAIModelMetadata,
+  runtimeBox: LiatirRuntimeBoxInstall,
   hardware: AIHardwareInfo,
+  componentLabel: 'AI Model' | 'Tool Runtime',
 ): AIModelInstallBlock | null {
-  const candidates = model.install?.runtimeBox?.publishedTargets ?? [];
+  const candidates = runtimeBox.publishedTargets ?? [];
   if (candidates.length === 0) {
     return {
       kind: 'runtime-target',
       summary: 'This model is not ready to install',
       required: 'A published Runtime Box target',
       detected: detectedHostLabel(hardware),
-      reason: 'This AI Model does not have a published Runtime Box for this computer yet.',
-      details: ['No published target is listed for this AI Model.'],
+      reason: `This ${componentLabel} does not have a published Runtime Box for this computer yet.`,
+      details: [`No published target is listed for this ${componentLabel}.`],
     };
   }
 
@@ -102,7 +103,7 @@ function runtimeBoxInstallBlock(
       summary: 'This model is not available on this system',
       required: osListLabel(requiredPlatforms),
       detected: detectedHostLabel(hardware),
-      reason: `This AI Model does not have a published Runtime Box for ${osLabel(hardware.os)}.`,
+      reason: `This ${componentLabel} does not have a published Runtime Box for ${osLabel(hardware.os)}.`,
       details: [
         `Published platforms: ${osListLabel(requiredPlatforms)}`,
         `Detected: ${detectedHostLabel(hardware)}`,
@@ -122,7 +123,7 @@ function runtimeBoxInstallBlock(
       summary: 'This model is not available on this architecture',
       required: requiredArchitectures.join(', '),
       detected: `${osLabel(hardware.os)} ${hardware.arch}`,
-      reason: `This AI Model needs a published ${requiredArchitectures.join(' or ')} Runtime Box.`,
+      reason: `This ${componentLabel} needs a published ${requiredArchitectures.join(' or ')} Runtime Box.`,
       details: [
         `Detected architecture: ${hardware.arch}`,
         `Published architectures: ${requiredArchitectures.join(', ')}`,
@@ -140,7 +141,7 @@ function runtimeBoxInstallBlock(
       required: `Native ${osLabel(hardware.os)} ${hardware.arch}`,
       detected: detectedHostLabel(hardware),
       reason:
-        'This AI Model has no native Runtime Box for this computer. WSL2 targets are not selected.',
+        `This ${componentLabel} has no native Runtime Box for this computer. WSL2 targets are not selected.`,
       details: ['Only native Runtime Boxes can be installed by the current desktop runtime.'],
     };
   }
@@ -152,7 +153,7 @@ function runtimeBoxInstallBlock(
     if (
       candidate.minRamGb &&
       memoryBytes !== null &&
-      memoryBytes < candidate.minRamGb * 1024 ** 3
+      memoryBytes < candidate.minRamGb * 1_000_000_000
     ) {
       minimumMemoryGb = Math.max(minimumMemoryGb ?? 0, candidate.minRamGb);
       continue;
@@ -178,8 +179,8 @@ function runtimeBoxInstallBlock(
         ? `NVIDIA driver ${hardware.nvidiaDriverVersion}`
         : 'No compatible NVIDIA driver detected',
       reason: hardware.nvidiaDriverVersion
-        ? `Update the NVIDIA driver to ${minimumDriver} or newer. No compatible CPU Runtime Box is published for this AI Model.`
-        : `This AI Model needs an NVIDIA GPU with driver ${minimumDriver} or newer. No compatible CPU Runtime Box is published.`,
+        ? `Update the NVIDIA driver to ${minimumDriver} or newer. No compatible CPU Runtime Box is published for this ${componentLabel}.`
+        : `This ${componentLabel} needs an NVIDIA GPU with driver ${minimumDriver} or newer. No compatible CPU Runtime Box is published.`,
       details: [
         `Detected: ${detectedHostLabel(hardware)}`,
         `Required: NVIDIA driver ${minimumDriver} or newer`,
@@ -188,13 +189,13 @@ function runtimeBoxInstallBlock(
   }
 
   if (minimumMemoryGb !== null && memoryBytes !== null) {
-    const detectedMemoryGb = Math.floor(memoryBytes / 1024 ** 3);
+    const detectedMemoryGb = Math.floor(memoryBytes / 1_000_000_000);
     return {
       kind: 'memory',
       summary: 'More memory is required',
       required: `${minimumMemoryGb} GB of memory`,
       detected: `${detectedMemoryGb} GB of memory`,
-      reason: `This AI Model needs at least ${minimumMemoryGb} GB of memory.`,
+      reason: `This ${componentLabel} needs at least ${minimumMemoryGb} GB of memory.`,
       details: [`Detected: ${detectedMemoryGb} GB`, `Required: ${minimumMemoryGb} GB`],
     };
   }
@@ -224,5 +225,13 @@ export function modelInstallBlock(
 ): AIModelInstallBlock | null {
   if (!hardware) return null;
 
-  return runtimeBoxInstallBlock(model, hardware);
+  return runtimeBoxInstallBlock(model.install.runtimeBox, hardware, 'AI Model');
+}
+
+export function toolRuntimeInstallBlock(
+  runtime: LiatirToolRuntimeMetadata,
+  hardware: AIHardwareInfo | null | undefined,
+): AIModelInstallBlock | null {
+  if (!hardware) return null;
+  return runtimeBoxInstallBlock(runtime.install.runtimeBox, hardware, 'Tool Runtime');
 }

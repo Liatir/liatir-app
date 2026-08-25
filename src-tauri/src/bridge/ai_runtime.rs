@@ -1,4 +1,4 @@
-//! Tauri commands for signed AI Runtime Boxes.
+//! Tauri commands for signed Runtime Components and AI Model execution.
 //!
 //! Runtime installation and removal live in [`super::runtime_boxes`]. This module inspects an
 //! activated box and runs its Python entry points without modifying the environment locally.
@@ -11,7 +11,14 @@ use super::ai_hardware::{nvidia_capability, total_memory_bytes};
 use super::python_env::{
     run_in_env, spawn_in_env, status_env, PythonEnvPackage, PythonRunResult,
 };
-use super::runtime_boxes::runtime_box_activation_metadata;
+use super::runtime_boxes::{
+    runtime_box_activation_metadata,
+    runtime_box_activation_metadata_for_component,
+    runtime_component_update_status,
+    RuntimeComponentKind,
+    RuntimeComponentUpdateRequest,
+    RuntimeComponentUpdateStatus,
+};
 
 /// Environment root passed to every `python_env` call, i.e. `<data root>/ai-runtimes/<runtime id>`.
 const AI_PYTHON_ENV_ROOT: &str = "ai-runtimes";
@@ -53,6 +60,21 @@ pub struct AiRuntimeStatus {
     pub size_bytes: Option<u64>,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeComponentStatus {
+    pub component_kind: RuntimeComponentKind,
+    pub runtime_id: String,
+    pub runtime_dir: String,
+    pub python_path: Option<String>,
+    pub installed: bool,
+    pub missing_packages: Vec<String>,
+    pub error: Option<String>,
+    pub size_bytes: Option<u64>,
+    pub activation: Option<Value>,
+    pub update: Option<RuntimeComponentUpdateStatus>,
+}
+
 /// Probes the host facts used to select a compatible Runtime Box target.
 #[tauri::command]
 pub fn lia_ai_hardware_info() -> Result<AiHardwareInfo, String> {
@@ -80,33 +102,97 @@ pub fn lia_ai_hardware_info() -> Result<AiHardwareInfo, String> {
 /// off the async runtime so the UI stays responsive. The same pattern is used by every command
 /// below except [`lia_ai_python_spawn`], which is natively async.
 #[tauri::command]
+pub async fn lia_runtime_box_status(
+    app: AppHandle,
+    component_kind: RuntimeComponentKind,
+    runtime_id: String,
+    packages: Vec<AiRuntimePackage>,
+    update: Option<RuntimeComponentUpdateRequest>,
+) -> Result<RuntimeComponentStatus, String> {
+    runtime_component_status(app, component_kind, runtime_id, packages, update).await
+}
+
+async fn runtime_component_status(
+    app: AppHandle,
+    component_kind: RuntimeComponentKind,
+    runtime_id: String,
+    packages: Vec<AiRuntimePackage>,
+    update: Option<RuntimeComponentUpdateRequest>,
+) -> Result<RuntimeComponentStatus, String> {
+    // Cloned because the closure moves it, while the original is needed to build the response.
+    let runtime_id_for_task = runtime_id.clone();
+    let app_for_task = app.clone();
+    let mut status = tauri::async_runtime::spawn_blocking(move || {
+        status_env(
+            app_for_task,
+            component_kind.runtime_root().to_string(),
+            runtime_id_for_task,
+            packages,
+            Vec::new(),
+        )
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    let activation = match runtime_box_activation_metadata_for_component(
+        &app,
+        component_kind,
+        &runtime_id,
+    ) {
+        Ok(value) => value,
+        Err(error) => {
+            status.installed = false;
+            status.error = Some(error);
+            None
+        }
+    };
+    let update = if status.installed && status.error.is_none() {
+        match update {
+            Some(request) => Some(
+                runtime_component_update_status(&app, component_kind, &runtime_id, request).await?,
+            ),
+            None => None,
+        }
+    } else {
+        None
+    };
+    Ok(RuntimeComponentStatus {
+        component_kind,
+        runtime_id,
+        runtime_dir: status.env_dir,
+        python_path: status.python_path,
+        installed: status.installed,
+        missing_packages: status.missing_packages,
+        error: status.error,
+        size_bytes: status.size_bytes,
+        activation,
+        update,
+    })
+}
+
+/// Compatibility command for existing AI Model callers; it performs no network update check.
+#[tauri::command]
 pub async fn lia_ai_runtime_status(
     app: AppHandle,
     runtime_id: String,
     packages: Vec<AiRuntimePackage>,
 ) -> Result<AiRuntimeStatus, String> {
-    // Cloned because the closure moves it, while the original is needed to build the response.
-    let runtime_id_for_task = runtime_id.clone();
-    tauri::async_runtime::spawn_blocking(move || {
-        let status = status_env(
-            app,
-            AI_PYTHON_ENV_ROOT.to_string(),
-            runtime_id_for_task,
-            packages,
-            Vec::new(),
-        )?;
-        Ok(AiRuntimeStatus {
-            runtime_id,
-            runtime_dir: status.env_dir,
-            python_path: status.python_path,
-            installed: status.installed,
-            missing_packages: status.missing_packages,
-            error: status.error,
-            size_bytes: status.size_bytes,
-        })
+    let status = runtime_component_status(
+        app,
+        RuntimeComponentKind::AiModel,
+        runtime_id,
+        packages,
+        None,
+    )
+    .await?;
+    Ok(AiRuntimeStatus {
+        runtime_id: status.runtime_id,
+        runtime_dir: status.runtime_dir,
+        python_path: status.python_path,
+        installed: status.installed,
+        missing_packages: status.missing_packages,
+        error: status.error,
+        size_bytes: status.size_bytes,
     })
-    .await
-    .map_err(|e| e.to_string())?
 }
 
 /// Starts a Python script as a tracked background job and returns immediately.

@@ -4,6 +4,7 @@ import type { DepsInterface } from "../modules/rs/deps/_types";
 import type { ExternalWorkflowsInterface } from "../modules/rs/externalWorkflows/_types";
 import type { SingleCellIndexesInterface } from "../modules/rs/singleCellIndexes/_types";
 import type { SnpEffSuiteInterface } from "../modules/rs/snpEffSuite/_types";
+import type { RuntimeBoxesInterface } from "../modules/rs/runtimeBoxes/_types";
 import type { QcInterface } from "../modules/qc/_types";
 import type { WindowTauri } from "../core/_types";
 export type LiaPlatform = "macos" | "linux" | "windows";
@@ -26,6 +27,8 @@ export type LiatirBrowserAPI = {
     singleCellIndexes: SingleCellIndexesInterface;
     /** Optional, verified SnpEff and SnpSift suite plus compatible genome databases. */
     snpEffSuite: SnpEffSuiteInterface;
+    /** Explicit install, update, rollback and removal for signed Runtime Components. */
+    runtimeBoxes: RuntimeBoxesInterface;
     qc: QcInterface;
     tauri?: WindowTauri;
     onReady: (callback: Function) => void;
