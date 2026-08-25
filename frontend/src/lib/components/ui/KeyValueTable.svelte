@@ -7,6 +7,7 @@
     valuePlaceholder?: string;
     disabled?: boolean;
     onchange: (rows: ApiKeyValue[]) => void;
+    oncommit?: (rows: ApiKeyValue[]) => void;
   }
 
   let {
@@ -15,11 +16,21 @@
     valuePlaceholder = 'Value',
     disabled = false,
     onchange,
+    oncommit,
   }: Props = $props();
 
-  function update(index: number, patch: Partial<ApiKeyValue>) {
-    const next = rows.map((r, i) => i === index ? { ...r, ...patch } : r);
+  function patchedRows(index: number, patch: Partial<ApiKeyValue>) {
+    return rows.map((r, i) => i === index ? { ...r, ...patch } : r);
+  }
+
+  function update(index: number, patch: Partial<ApiKeyValue>, commit = false) {
+    const next = patchedRows(index, patch);
     onchange(next);
+    if (commit) oncommit?.(next);
+  }
+
+  function commit(index: number, patch: Partial<ApiKeyValue>) {
+    oncommit?.(patchedRows(index, patch));
   }
 
   function addRow() {
@@ -27,7 +38,9 @@
   }
 
   function removeRow(index: number) {
-    onchange(rows.filter((_, i) => i !== index));
+    const next = rows.filter((_, i) => i !== index);
+    onchange(next);
+    oncommit?.(next);
   }
 </script>
 
@@ -47,7 +60,7 @@
       <input
         type="checkbox"
         checked={row.enabled}
-        onchange={(e) => update(i, { enabled: (e.target as HTMLInputElement).checked })}
+        onchange={(e) => update(i, { enabled: (e.target as HTMLInputElement).checked }, true)}
         {disabled}
         class="h-3 w-3 rounded border-border-2 accent-brand"
       />
@@ -55,6 +68,7 @@
         type="text"
         value={row.key}
         oninput={(e) => update(i, { key: (e.target as HTMLInputElement).value })}
+        onchange={(e) => commit(i, { key: (e.target as HTMLInputElement).value })}
         placeholder={keyPlaceholder}
         {disabled}
         class="w-full text-xs font-mono bg-transparent outline-none text-text
@@ -64,6 +78,7 @@
         type="text"
         value={row.value}
         oninput={(e) => update(i, { value: (e.target as HTMLInputElement).value })}
+        onchange={(e) => commit(i, { value: (e.target as HTMLInputElement).value })}
         placeholder={valuePlaceholder}
         {disabled}
         class="w-full text-xs font-mono bg-transparent outline-none text-text

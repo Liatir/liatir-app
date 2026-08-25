@@ -18,6 +18,27 @@ interface Workspace {
   requests: ApiRequest[];
 }
 
+const BRACKET_PARAM = /\[([^\]]+)\]/g;
+const BODY_PARAM = /<([^>]+)>/g;
+
+function scanTemplateParameterKeys(value: string, pattern: RegExp, keys: Set<string>): void {
+  pattern.lastIndex = 0;
+  for (const match of value.matchAll(pattern)) {
+    const key = match[1]?.trim();
+    if (key) keys.add(key);
+  }
+}
+
+function headerTemplateParameterKeys(headers: ApiKeyValue[]): Set<string> {
+  const keys = new Set<string>();
+  for (const header of headers) {
+    if (!header.enabled) continue;
+    scanTemplateParameterKeys(header.key, BRACKET_PARAM, keys);
+    scanTemplateParameterKeys(header.value, BRACKET_PARAM, keys);
+  }
+  return keys;
+}
+
 export function resolveVars(str: string, vars: Record<string, string>): string {
   return str.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? `{{${key}}}`);
 }
@@ -28,14 +49,15 @@ type LegacyApiParam = Partial<ApiParam> & Partial<ApiKeyValue> & {
   private?: boolean;
   querystring?: boolean;
   optional?: boolean;
+  location?: 'query' | 'body';
 };
 
 function migrateParam(p: LegacyApiParam): ApiParam {
   return {
     key: p.key ?? '',
     value: p.value ?? '',
+    source: p.source,
     exposedAsInput: p.exposedAsInput ?? !(p.private ?? false),
-    location: p.location ?? (p.querystring === false ? 'body' : 'query'),
     required: p.required ?? !(p.optional ?? false),
     enabled: p.enabled ?? true,
   };
@@ -66,29 +88,60 @@ function migrateAuth(auth: LegacyApiAuth | undefined, fallback: ApiAuth): ApiAut
 }
 
 function migrateCollection(c: Partial<ApiCollection>): ApiCollection {
+  const sharedHeaders = c.sharedHeaders ?? [];
+  const templateKeys = headerTemplateParameterKeys(sharedHeaders);
   return {
     id: c.id ?? crypto.randomUUID(),
     name: c.name ?? 'API',
     auth: migrateAuth(c.auth, { type: 'none' }),
-    sharedHeaders: c.sharedHeaders ?? [],
-    sharedParams: (c.sharedParams ?? []).map(migrateParam),
+    sharedHeaders,
+    sharedParams: (c.sharedParams ?? []).map((value) => {
+      const parameter = migrateParam(value);
+      return { ...parameter, source: parameter.source ?? (templateKeys.has(parameter.key) ? 'template' : 'manual') };
+    }),
     createdAt: c.createdAt ?? Date.now(),
   };
 }
 
 function migrateRequest(r: Partial<ApiRequest>): ApiRequest {
   const now = Date.now();
+  const method = r.method ?? 'GET';
+  const acceptsBody = method !== 'GET' && method !== 'HEAD';
+  const url = r.url ?? '';
+  const headers = r.headers ?? [];
+  let body = r.body
+    ? { ...r.body, type: r.body.type === ('form-data' as typeof r.body.type) ? 'form-urlencoded' : r.body.type }
+    : { type: 'none' as const, content: '' };
+  if (!acceptsBody) body = { type: 'none', content: '' };
+  const templateKeys = new Set(requestTemplateParameterKeys({ url, headers, body }));
+  let params: ApiParam[] = [];
+  for (const value of r.params ?? []) {
+    const parameter = migrateParam(value);
+    if (templateKeys.has(parameter.key)) params.push({ ...parameter, source: 'template' });
+    else if (parameter.source !== 'template') params.push({ ...parameter, source: 'manual' });
+  }
+  if (acceptsBody && body.type === 'form-urlencoded' && body.content.trim()) {
+    const existing = new Set(params.map((parameter) => parameter.key));
+    for (const [key, value] of new URLSearchParams(body.content)) {
+      if (!key || existing.has(key)) continue;
+      params.push({ key, value, source: 'manual', exposedAsInput: true, required: true, enabled: true });
+      existing.add(key);
+    }
+    body = { ...body, content: '' };
+  }
+  if (!acceptsBody) params = params.filter((parameter) => parameter.source === 'template');
+  if (acceptsBody && body.type === 'none' && params.some((parameter) => parameter.source === 'manual')) {
+    body = { type: 'form-urlencoded', content: '' };
+  }
   return {
     id: r.id ?? crypto.randomUUID(),
     collectionId: r.collectionId ?? '',
     name: r.name ?? 'New call',
-    method: r.method ?? 'GET',
-    url: r.url ?? '',
-    params: (r.params ?? []).map(migrateParam),
-    headers: r.headers ?? [],
-    body: r.body
-      ? { ...r.body, type: r.body.type === ('form-data' as typeof r.body.type) ? 'form-urlencoded' : r.body.type }
-      : { type: 'none', content: '' },
+    method,
+    url,
+    params,
+    headers,
+    body,
     auth: migrateAuth(r.auth, { type: 'inherit' }),
     createdAt: r.createdAt ?? now,
     updatedAt: r.updatedAt ?? now,
@@ -230,70 +283,95 @@ export const apiConnections = createApiStore();
 
 // ── Request templates and schema inference ─────────────────────────────────────
 
-const BRACKET_PARAM = /\[([^\]]+)\]/g;
-const BODY_PARAM = /<([^>]+)>/g;
-
-export function requestTemplateParameterKeys(req: Pick<ApiRequest, 'url' | 'headers' | 'body'>): string[] {
+export function urlAndHeaderTemplateParameterKeys(
+  req: Pick<ApiRequest, 'url' | 'headers'>,
+): string[] {
   const keys = new Set<string>();
-  const scan = (value: string, pattern: RegExp) => {
-    pattern.lastIndex = 0;
-    for (const match of value.matchAll(pattern)) {
-      const key = match[1]?.trim();
-      if (key) keys.add(key);
-    }
-  };
-  scan(req.url, BRACKET_PARAM);
-  for (const header of req.headers) {
-    if (!header.enabled) continue;
-    scan(header.key, BRACKET_PARAM);
-    scan(header.value, BRACKET_PARAM);
-  }
-  if (req.body.type !== 'none') scan(req.body.content, BODY_PARAM);
+  scanTemplateParameterKeys(req.url, BRACKET_PARAM, keys);
+  for (const key of headerTemplateParameterKeys(req.headers)) keys.add(key);
   return [...keys];
 }
 
-/** Add newly referenced template parameters without deleting user-created rows. */
-export function addDiscoveredParameters(req: ApiRequest, provider?: ApiCollection): ApiRequest {
-  const existing = new Set([
-    ...(provider?.sharedParams ?? []).map((parameter) => parameter.key),
-    ...req.params.map((parameter) => parameter.key),
-  ]);
-  const additions = requestTemplateParameterKeys(req)
+export function bodyTemplateParameterKeys(req: Pick<ApiRequest, 'body'>): string[] {
+  const keys = new Set<string>();
+  if (req.body.type !== 'none') scanTemplateParameterKeys(req.body.content, BODY_PARAM, keys);
+  return [...keys];
+}
+
+export function requestTemplateParameterKeys(req: Pick<ApiRequest, 'url' | 'headers' | 'body'>): string[] {
+  return [...new Set([
+    ...urlAndHeaderTemplateParameterKeys(req),
+    ...bodyTemplateParameterKeys(req),
+  ])];
+}
+
+/** Shared values only exist when a call references them; call-level rows override them by key. */
+export function effectiveApiParameters(req: ApiRequest, provider?: ApiCollection): ApiParam[] {
+  const referenced = new Set(requestTemplateParameterKeys({
+    ...req,
+    headers: [...(provider?.sharedHeaders ?? []), ...req.headers],
+  }));
+  const merged = new Map<string, ApiParam>();
+  for (const parameter of provider?.sharedParams ?? []) {
+    if (parameter.enabled && parameter.key && referenced.has(parameter.key)) {
+      merged.set(parameter.key, parameter);
+    }
+  }
+  for (const parameter of req.params) {
+    if (parameter.enabled && parameter.key) merged.set(parameter.key, parameter);
+    else if (parameter.key) merged.delete(parameter.key);
+  }
+  return [...merged.values()];
+}
+
+/** Keep template-owned rows synchronized with the placeholders currently present. */
+export function syncDiscoveredParameters(req: ApiRequest, provider?: ApiCollection): ApiRequest {
+  const referenced = new Set(requestTemplateParameterKeys(req));
+  const shared = new Set((provider?.sharedParams ?? []).map((parameter) => parameter.key));
+  const retained = req.params.flatMap((parameter) => {
+    if (referenced.has(parameter.key)) {
+      return [{ ...parameter, source: 'template' as const }];
+    }
+    return parameter.source === 'template' ? [] : [parameter];
+  });
+  const existing = new Set([...shared, ...retained.map((parameter) => parameter.key)]);
+  const additions = [...referenced]
     .filter((key) => !existing.has(key))
     .map((key): ApiParam => ({
       key,
       value: '',
+      source: 'template',
       exposedAsInput: true,
-      location: 'query',
       required: true,
       enabled: true,
     }));
-  return additions.length ? { ...req, params: [...req.params, ...additions] } : req;
+  const params = [...retained, ...additions];
+  return params.length === req.params.length && params.every((parameter, index) => parameter === req.params[index])
+    ? req
+    : { ...req, params };
 }
 
-export function addDiscoveredSharedParameters(provider: ApiCollection): ApiCollection {
-  const keys = new Set(provider.sharedParams.map((parameter) => parameter.key));
-  const discovered = new Set<string>();
-  for (const header of provider.sharedHeaders) {
-    if (!header.enabled) continue;
-    for (const match of `${header.key}\n${header.value}`.matchAll(BRACKET_PARAM)) {
-      const key = match[1]?.trim();
-      if (key) discovered.add(key);
-    }
-  }
-  const additions = [...discovered]
+export function syncDiscoveredSharedParameters(provider: ApiCollection): ApiCollection {
+  const referenced = headerTemplateParameterKeys(provider.sharedHeaders);
+  const retained = provider.sharedParams.filter((parameter) => (
+    parameter.source !== 'template' || referenced.has(parameter.key)
+  ));
+  const keys = new Set(retained.map((parameter) => parameter.key));
+  const additions = [...referenced]
     .filter((key) => !keys.has(key))
     .map((key): ApiParam => ({
       key,
       value: '',
+      source: 'template',
       exposedAsInput: true,
-      location: 'query',
       required: true,
       enabled: true,
     }));
-  return additions.length
-    ? { ...provider, sharedParams: [...provider.sharedParams, ...additions] }
-    : provider;
+  const sharedParams = [...retained, ...additions];
+  return sharedParams.length === provider.sharedParams.length
+    && sharedParams.every((parameter, index) => parameter === provider.sharedParams[index])
+    ? provider
+    : { ...provider, sharedParams };
 }
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}|$)/;
@@ -604,10 +682,8 @@ export async function sendApiRequest(
   const r = (s: string) => resolveVars(s, env);
 
   // Effective params = provider shared params + call params (call overrides by key).
-  const merged = new Map<string, ApiParam>();
-  for (const p of opts.provider?.sharedParams ?? []) if (p.enabled && p.key) merged.set(p.key, p);
-  for (const p of req.params) if (p.enabled && p.key) merged.set(p.key, p);
-  const params = [...merged.values()];
+  const params = effectiveApiParameters(req, opts.provider);
+  const merged = new Map(params.map((parameter) => [parameter.key, parameter]));
   const referencedKeys = requestTemplateParameterKeys({
     ...req,
     headers: [...(opts.provider?.sharedHeaders ?? []), ...req.headers],
@@ -655,16 +731,13 @@ export async function sendApiRequest(
     }
   }
 
-  // Remaining parameters follow their explicit query/body destination.
-  const queryPairs: [string, string][] = [];
+  // Parameters not embedded in a template are explicit body fields.
   const bodyParams: [string, string][] = [];
   for (const p of params) {
     if (consumed.has(p.key)) continue;
     if (!p.required && paramValues[p.key] === '') continue;
-    if (p.location === 'query') queryPairs.push([p.key, paramValues[p.key]]);
-    else bodyParams.push([p.key, paramValues[p.key]]);
+    bodyParams.push([p.key, paramValues[p.key]]);
   }
-  url = appendQuery(url, queryPairs);
 
   // Auth (resolve 'inherit' to the provider auth).
   const effectiveAuth: ApiAuth = req.auth.type === 'inherit'

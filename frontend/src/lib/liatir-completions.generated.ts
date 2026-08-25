@@ -226,6 +226,13 @@ export const LIATIR_API: Record<string, ApiNode> = {
       install: { type: "method", detail: "(id: string, version: string, downloadId: string): Promise<LiatirSingleCellIndexInstallResult>" },
       remove: { type: "method", detail: "(id: string, version: string, archiveSha256: string): Promise<boolean>" },
   } },
+  snpEffSuite: { type: "property", detail: "SnpEffSuiteInterface", info: "Optional, verified SnpEff and SnpSift suite plus compatible genome databases.", children: {
+      status: { type: "method", detail: "(): Promise<LiatirSnpEffSuiteStatus>" },
+      install: { type: "method", detail: "(version: string, downloadId: string, jobId: string): Promise<LiatirSnpEffSuiteInstallResult>" },
+      remove: { type: "method", detail: "(): Promise<boolean>" },
+      installDatabase: { type: "method", detail: "(id: string, suiteVersion: string, downloadId: string, jobId: string): Promise<LiatirSnpEffDatabaseInstallResult>" },
+      removeDatabase: { type: "method", detail: "(database: Pick<LiatirInstalledSnpEffDatabase, \"id\" | \"suiteVersion\" | \"archiveSha256\">): Promise<boolean>" },
+  } },
   qc: { type: "property", detail: "QcInterface", children: {
       fastqc: { type: "property", detail: "FastqcInterface", children: {
           run: { type: "method", detail: "(args: FastqcArgs, execution?: FastqcExecutionOptions): Promise<LiatirToolOutput>" },

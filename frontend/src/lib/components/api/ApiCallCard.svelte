@@ -7,10 +7,13 @@
   import ApiAuthEditor from './ApiAuthEditor.svelte';
   import ApiSchemaEditor from './ApiSchemaEditor.svelte';
   import {
-    addDiscoveredParameters,
     apiConnections,
+    bodyTemplateParameterKeys,
+    effectiveApiParameters,
+    urlAndHeaderTemplateParameterKeys,
     inferSchema,
     sendApiRequest,
+    syncDiscoveredParameters,
   } from '$lib/stores/apiConnections.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
@@ -59,20 +62,59 @@
 
   function set(patch: Partial<ApiRequest>, discoverParameters = false) {
     const next = { ...request, ...patch };
-    onchange(discoverParameters ? addDiscoveredParameters(next, provider) : next);
+    onchange(discoverParameters ? syncDiscoveredParameters(next, provider) : next);
+  }
+
+  function setParameterGroup(current: ApiParam[], next: ApiParam[]) {
+    const currentRows = new Set(current);
+    const params = [...request.params.filter((parameter) => !currentRows.has(parameter)), ...next];
+    set({ params });
+  }
+
+  function acceptsBody(method: HttpMethod): boolean {
+    return method !== 'GET' && method !== 'HEAD';
+  }
+
+  function setMethod(method: HttpMethod) {
+    if (acceptsBody(method)) {
+      set({ method });
+      return;
+    }
+    const urlKeys = new Set(urlAndHeaderTemplateParameterKeys(request));
+    set({
+      method,
+      body: { type: 'none', content: '' },
+      params: request.params.filter((parameter) => parameter.source === 'template' && urlKeys.has(parameter.key)),
+    });
+  }
+
+  function setBodyType(type: ApiBody['type']) {
+    const urlKeys = new Set(urlAndHeaderTemplateParameterKeys(request));
+    const keepManual = type === 'json' || type === 'form-urlencoded';
+    const params = request.params.filter((parameter) => (
+      (parameter.source === 'template' && urlKeys.has(parameter.key))
+      || (parameter.source !== 'template' && keepManual)
+    ));
+    set({ body: { type, content: type === request.body.type ? request.body.content : '' }, params }, true);
   }
 
   const inputParams = $derived.by(() => {
     const merged = new Map<string, ApiParam>();
-    for (const parameter of provider.sharedParams) {
+    for (const parameter of effectiveApiParameters(request, provider)) {
       if (parameter.exposedAsInput && parameter.enabled && parameter.key) merged.set(parameter.key, parameter);
-    }
-    for (const parameter of request.params) {
-      if (parameter.exposedAsInput && parameter.enabled && parameter.key) merged.set(parameter.key, parameter);
-      else if (parameter.enabled && parameter.key) merged.delete(parameter.key);
     }
     return [...merged.values()];
   });
+  const urlParameterKeys = $derived(new Set(urlAndHeaderTemplateParameterKeys(request)));
+  const bodyParameterKeys = $derived(new Set(bodyTemplateParameterKeys(request)));
+  const urlParameters = $derived(request.params.filter((parameter) => parameter.source === 'template' && urlParameterKeys.has(parameter.key)));
+  const manualBodyFields = $derived(request.params.filter((parameter) => parameter.source !== 'template'));
+  const bodyTemplateParameters = $derived(request.params.filter((parameter) => (
+    parameter.source === 'template'
+    && bodyParameterKeys.has(parameter.key)
+    && !urlParameterKeys.has(parameter.key)
+  )));
+  const methodAcceptsBody = $derived(acceptsBody(request.method));
   const hasDetectedOutputs = $derived(!!request.outputSchema && Object.keys(request.outputSchema).length > 0);
 
   async function testAndDetectOutputs() {
@@ -168,41 +210,85 @@
       <!-- Method + URL -->
       <div class="flex items-center gap-1.5">
         <Select value={request.method} options={METHODS.map(m => ({ value: m, label: m }))}
-          onchange={(m) => set({ method: m as HttpMethod })} class="w-24" />
+          onchange={(m) => setMethod(m as HttpMethod)} class="w-24" />
         <input type="text" value={request.url} placeholder="https://api.example.com/users/[user_id]"
-          oninput={(e) => set({ url: (e.target as HTMLInputElement).value }, true)}
+          oninput={(e) => set({ url: (e.target as HTMLInputElement).value })}
+          onchange={(e) => set({ url: (e.target as HTMLInputElement).value }, true)}
+          data-testid="api-connector-url"
           class="flex-1 text-xs font-mono border border-border rounded px-2 py-1.5 bg-surface outline-none focus:border-brand/60" />
       </div>
-      <p class="text-[10px] text-text-subtle -mt-1">Write <code class="bg-surface px-1 rounded">[parameter]</code> in the URL or headers, and <code class="bg-surface px-1 rounded">&lt;parameter&gt;</code> in the body. Liatir adds the matching input automatically.</p>
-
-      <!-- Parameters -->
-      <div>
-        <span class="text-[11px] font-medium text-text-muted">Parameters</span>
-        <ApiParamTable rows={request.params} onchange={(params: ApiParam[]) => set({ params })} />
-      </div>
+      <p class="text-[10px] text-text-subtle -mt-1">Write <code class="bg-surface px-1 rounded">[parameter]</code> in the URL or headers, and <code class="bg-surface px-1 rounded">&lt;parameter&gt;</code> in the body. Liatir adds the matching input when you finish editing the field.</p>
 
       <!-- Headers -->
       <div>
         <span class="text-[11px] font-medium text-text-muted">Headers</span>
         <KeyValueTable rows={request.headers} keyPlaceholder="Header" valuePlaceholder="Value"
-          onchange={(headers: ApiKeyValue[]) => set({ headers }, true)} />
+          onchange={(headers: ApiKeyValue[]) => set({ headers })}
+          oncommit={(headers: ApiKeyValue[]) => set({ headers }, true)} />
       </div>
 
+      {#if urlParameters.length}
+        <div class="space-y-1" data-testid="api-connector-url-parameters">
+          <span class="text-[11px] font-medium text-text-muted">URL &amp; header parameters</span>
+          <ApiParamTable rows={urlParameters} allowAdd={false}
+            onchange={(params: ApiParam[]) => setParameterGroup(urlParameters, params)} />
+        </div>
+      {/if}
+
       <!-- Body -->
-      <div class="space-y-1.5">
+      {#if methodAcceptsBody}
+      <div class="space-y-2" data-testid="api-connector-body">
         <div class="flex items-center gap-2">
           <span class="text-[11px] font-medium text-text-muted">Body</span>
           <Select value={request.body.type}
-            options={[{ value: 'none', label: 'None' }, { value: 'json', label: 'JSON' }, { value: 'form-urlencoded', label: 'URL-encoded form' }, { value: 'raw', label: 'Raw text' }]}
-            onchange={(t) => set({ body: { ...request.body, type: t as ApiBody['type'] } })} class="w-28" />
+            options={[{ value: 'none', label: 'None' }, { value: 'json', label: 'JSON' }, { value: 'form-urlencoded', label: 'Form fields' }, { value: 'raw', label: 'Raw text' }]}
+            onchange={(t) => setBodyType(t as ApiBody['type'])} class="w-36" id={`api-connector-body-type-${request.id}`} />
         </div>
-        {#if request.body.type !== 'none'}
+
+        {#if request.body.type === 'json' || request.body.type === 'form-urlencoded'}
+          <div class="space-y-1" data-testid="api-connector-manual-body-fields">
+            <span class="text-[11px] font-medium text-text-muted">Body fields</span>
+            <ApiParamTable rows={manualBodyFields} addLabel="Add body field"
+              onchange={(params: ApiParam[]) => setParameterGroup(manualBodyFields, params)} />
+          </div>
+        {/if}
+
+        {#if request.body.type === 'json'}
+          <div class="space-y-1">
+            <span class="text-[11px] font-medium text-text-muted">JSON body</span>
           <textarea value={request.body.content}
-            placeholder={request.body.type === 'json' ? '{\n  "name": "<name>"\n}' : 'Request body…'}
-            oninput={(e) => set({ body: { ...request.body, content: (e.target as HTMLTextAreaElement).value } }, true)}
+            placeholder={'{\n  "name": "<name>"\n}'}
+            oninput={(e) => set({ body: { ...request.body, content: (e.target as HTMLTextAreaElement).value } })}
+            onchange={(e) => set({ body: { ...request.body, content: (e.target as HTMLTextAreaElement).value } }, true)}
+            data-testid="api-connector-json-body"
             rows={4} class="w-full text-[11px] font-mono border border-border rounded px-2 py-1.5 bg-surface outline-none focus:border-brand/60 resize-y"></textarea>
+          </div>
+          {#if bodyTemplateParameters.length}
+            <div class="space-y-1" data-testid="api-connector-json-parameters">
+              <span class="text-[11px] font-medium text-text-muted">JSON parameters</span>
+              <ApiParamTable rows={bodyTemplateParameters} allowAdd={false}
+                onchange={(params: ApiParam[]) => setParameterGroup(bodyTemplateParameters, params)} />
+            </div>
+          {/if}
+        {:else if request.body.type === 'raw'}
+          <div class="space-y-1">
+            <span class="text-[11px] font-medium text-text-muted">Raw body</span>
+            <textarea value={request.body.content} placeholder="Request body…"
+              oninput={(e) => set({ body: { ...request.body, content: (e.target as HTMLTextAreaElement).value } })}
+              onchange={(e) => set({ body: { ...request.body, content: (e.target as HTMLTextAreaElement).value } }, true)}
+              data-testid="api-connector-raw-body"
+              rows={4} class="w-full text-[11px] font-mono border border-border rounded px-2 py-1.5 bg-surface outline-none focus:border-brand/60 resize-y"></textarea>
+          </div>
+          {#if bodyTemplateParameters.length}
+            <div class="space-y-1" data-testid="api-connector-raw-parameters">
+              <span class="text-[11px] font-medium text-text-muted">Raw parameters</span>
+              <ApiParamTable rows={bodyTemplateParameters} allowAdd={false}
+                onchange={(params: ApiParam[]) => setParameterGroup(bodyTemplateParameters, params)} />
+            </div>
+          {/if}
         {/if}
       </div>
+      {/if}
 
       <!-- Authentication (call level, can inherit) -->
       <div class="pt-1">

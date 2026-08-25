@@ -7,6 +7,7 @@
 // UI components, the SDK, the CLI, parsers, and pipeline code should import or re-export these types instead of mirroring them manually.
 
 export * from "./api-connector.js";
+export * from "./snpeff-suite.js";
 
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue =

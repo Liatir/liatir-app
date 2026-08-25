@@ -35,6 +35,7 @@ const RUN_RECORDERS = [
   'frontend/src/routes/tools/variants/bcftools/+page.svelte',
   'frontend/src/routes/tools/variants/bcftools-filter/+page.svelte',
   'frontend/src/routes/tools/variants/snpeff/+page.svelte',
+  'frontend/src/routes/tools/variants/snpsift-filter/+page.svelte',
   'frontend/src/routes/tools/external-workflows/[id]/+page.svelte',
   'frontend/src/routes/plugins/[id]/+page.svelte',
   'frontend/src/routes/ai/[id]/+page.svelte',
@@ -58,6 +59,7 @@ const RUN_VIEWERS = [
   'frontend/src/routes/tools/variants/bcftools/+page.svelte',
   'frontend/src/routes/tools/variants/bcftools-filter/+page.svelte',
   'frontend/src/routes/tools/variants/snpeff/+page.svelte',
+  'frontend/src/routes/tools/variants/snpsift-filter/+page.svelte',
   'frontend/src/routes/tools/external-workflows/[id]/+page.svelte',
   'frontend/src/routes/ai/[id]/+page.svelte',
 ];
@@ -154,6 +156,7 @@ describe('an empty declaration is checked, not believed', () => {
       'frontend/src/routes/tools/alignment/minimap2/+page.svelte',
       'frontend/src/routes/tools/variants/bcftools-filter/+page.svelte',
       'frontend/src/routes/tools/variants/snpeff/+page.svelte',
+      'frontend/src/routes/tools/variants/snpsift-filter/+page.svelte',
     ]) {
       expect(read(path)).toContain('ensureRunOutputDir(runId)');
     }

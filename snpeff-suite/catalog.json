@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.snpeff-suite.catalog",
+  "recommendedVersion": "5.4c",
+  "releases": [
+    {
+      "version": "5.4c",
+      "releasedAt": "2026-02-23",
+      "javaMinMajor": 21,
+      "databaseSeries": "v5_4",
+      "license": {
+        "spdxId": "MIT",
+        "url": "https://github.com/pcingola/SnpEff/blob/master/LICENSE.md"
+      },
+      "archive": {
+        "format": "zip",
+        "url": "https://snpeff-public.s3.amazonaws.com/versions/snpEff_v5_4c_core.zip",
+        "sha256": "3b06a1e1f939e7ebd5433387f088c1d3d1e0a7d472d63f39161b1fe9f00adf33",
+        "sizeBytes": 66677840
+      }
+    }
+  ],
+  "databases": [
+    {
+      "id": "GRCh38.115",
+      "label": "Human GRCh38 (Ensembl 115)",
+      "species": { "commonName": "Human", "scientificName": "Homo sapiens", "taxonId": 9606 },
+      "assembly": "GRCh38",
+      "annotation": { "provider": "Ensembl", "release": "115" },
+      "suiteVersion": "5.4c",
+      "databaseSeries": "v5_4",
+      "archive": {
+        "format": "zip",
+        "url": "https://snpeff-public.s3.amazonaws.com/databases/v5_4/snpEff_v5_4_GRCh38.115.zip",
+        "sha256": "0c306f8926d7243b32dd32261851f7066b0991752ce2977fc91ee60562500405",
+        "sizeBytes": 807209320
+      }
+    },
+    {
+      "id": "GRCm39.115",
+      "label": "Mouse GRCm39 (Ensembl 115)",
+      "species": { "commonName": "Mouse", "scientificName": "Mus musculus", "taxonId": 10090 },
+      "assembly": "GRCm39",
+      "annotation": { "provider": "Ensembl", "release": "115" },
+      "suiteVersion": "5.4c",
+      "databaseSeries": "v5_4",
+      "archive": {
+        "format": "zip",
+        "url": "https://snpeff-public.s3.amazonaws.com/databases/v5_4/snpEff_v5_4_GRCm39.115.zip",
+        "sha256": "82b79911a0a91d9181462bc7b27445b2de10cec50dc79c8e32ffe9cd4488c93e",
+        "sizeBytes": 534567899
+      }
+    },
+    {
+      "id": "GRCz11.115",
+      "label": "Zebrafish GRCz11 (Ensembl 115)",
+      "species": { "commonName": "Zebrafish", "scientificName": "Danio rerio", "taxonId": 7955 },
+      "assembly": "GRCz11",
+      "annotation": { "provider": "Ensembl", "release": "115" },
+      "suiteVersion": "5.4c",
+      "databaseSeries": "v5_4",
+      "archive": {
+        "format": "zip",
+        "url": "https://snpeff-public.s3.amazonaws.com/databases/v5_4/snpEff_v5_4_GRCz11.115.zip",
+        "sha256": "e4c68533c281e54fba42dcc6fe648f061a5b289540ed9862a033ee8d174dcb85",
+        "sizeBytes": 276530623
+      }
+    },
+    {
+      "id": "BDGP6.115",
+      "label": "Fruit fly BDGP6 (Ensembl 115)",
+      "species": { "commonName": "Fruit fly", "scientificName": "Drosophila melanogaster", "taxonId": 7227 },
+      "assembly": "BDGP6",
+      "annotation": { "provider": "Ensembl", "release": "115" },
+      "suiteVersion": "5.4c",
+      "databaseSeries": "v5_4",
+      "archive": {
+        "format": "zip",
+        "url": "https://snpeff-public.s3.amazonaws.com/databases/v5_4/snpEff_v5_4_BDGP6.115.zip",
+        "sha256": "41245a1ebff6f087ff6112c8976b9b2db519ad2160177b094a9200ed6ff0cf18",
+        "sizeBytes": 56750473
+      }
+    },
+    {
+      "id": "WBcel235.115",
+      "label": "C. elegans WBcel235 (Ensembl 115)",
+      "species": { "commonName": "C. elegans", "scientificName": "Caenorhabditis elegans", "taxonId": 6239 },
+      "assembly": "WBcel235",
+      "annotation": { "provider": "Ensembl", "release": "115" },
+      "suiteVersion": "5.4c",
+      "databaseSeries": "v5_4",
+      "archive": {
+        "format": "zip",
+        "url": "https://snpeff-public.s3.amazonaws.com/databases/v5_4/snpEff_v5_4_WBcel235.115.zip",
+        "sha256": "607371ddcb68dbe153b193306b0071ad222d5436e65839e28d7f363b68974eac",
+        "sizeBytes": 44575683
+      }
+    },
+    {
+      "id": "R64-1-1.115",
+      "label": "Yeast R64-1-1 (Ensembl 115)",
+      "species": { "commonName": "Yeast", "scientificName": "Saccharomyces cerevisiae", "taxonId": 4932 },
+      "assembly": "R64-1-1",
+      "annotation": { "provider": "Ensembl", "release": "115" },
+      "suiteVersion": "5.4c",
+      "databaseSeries": "v5_4",
+      "archive": {
+        "format": "zip",
+        "url": "https://snpeff-public.s3.amazonaws.com/databases/v5_4/snpEff_v5_4_R64-1-1.115.zip",
+        "sha256": "a4eaf0f6b3772e5da69d6a21502d3cf16e8f91ce521dfa04cc36161fc76ddcd1",
+        "sizeBytes": 6336767
+      }
+    }
+  ]
+}

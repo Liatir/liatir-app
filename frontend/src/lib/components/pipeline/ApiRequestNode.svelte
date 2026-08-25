@@ -8,7 +8,7 @@
   import Icon from '@iconify/svelte';
   import type { ApiRequestNodeData } from '$lib/types/pipeline';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
-  import { apiConnections, flattenApiOutputSchema } from '$lib/stores/apiConnections.svelte';
+  import { apiConnections, effectiveApiParameters, flattenApiOutputSchema } from '$lib/stores/apiConnections.svelte';
   import { upstreamOptions } from '$lib/tools/pipeline-io';
   import { sanitizeLocalPathsForDisplay } from '$lib/utils';
   import ValueRefInput from './actions/ValueRefInput.svelte';
@@ -62,17 +62,13 @@
     if (runId) goto(`/results?run=${runId}`);
   }
 
-  // Parameters intentionally exposed as run inputs (call overrides provider).
+  // Parameters intentionally exposed as run inputs (call overrides referenced provider values).
   const overridableParams = $derived.by(() => {
     if (!req) return [] as string[];
     const provider = apiConnections.collectionById(req.collectionId);
     const keys = new Set<string>();
-    for (const p of provider?.sharedParams ?? []) {
+    for (const p of effectiveApiParameters(req, provider ?? undefined)) {
       if (p.exposedAsInput && p.enabled && p.key) keys.add(p.key);
-    }
-    for (const p of req.params) {
-      if (p.exposedAsInput && p.enabled && p.key) keys.add(p.key);
-      else if (p.enabled && p.key) keys.delete(p.key);
     }
     return [...keys];
   });

@@ -17,6 +17,7 @@ const TOOL_LABELS: Record<string, string> = {
   'bcftools-stats': 'BCFtools stats',
   'bcftools-filter': 'BCFtools filter',
   snpeff: 'SnpEff',
+  'snpsift-filter': 'SnpSift Filter',
 };
 
 function escHtml(s: string): string {

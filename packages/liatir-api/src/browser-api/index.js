@@ -1343,6 +1343,26 @@ function buildSingleCellIndexes(core) {
   };
 }
 
+// src-ts/modules/rs/snpEffSuite/_main.ts
+function buildSnpEffSuite(core) {
+  return {
+    status: () => core.invoke("lia_snpeff_suite_status"),
+    install: (version, downloadId, jobId) => core.invoke("lia_snpeff_suite_install", {
+      version,
+      downloadId,
+      jobId
+    }),
+    remove: () => core.invoke("lia_snpeff_suite_remove"),
+    installDatabase: (id, suiteVersion, downloadId, jobId) => core.invoke("lia_snpeff_database_install", {
+      id,
+      suiteVersion,
+      downloadId,
+      jobId
+    }),
+    removeDatabase: (database) => core.invoke("lia_snpeff_database_remove", database)
+  };
+}
+
 // src-ts/modules/rs/mcp/_main.ts
 function buildMcp(core) {
   return {
@@ -1541,6 +1561,7 @@ function buildQc(core) {
     deps: buildDeps(core),
     externalWorkflows: buildExternalWorkflows(core),
     singleCellIndexes: buildSingleCellIndexes(core),
+    snpEffSuite: buildSnpEffSuite(core),
     qc: buildQc(core),
     tauri: windowTauriProxy,
     onReady: liaReadyEventListener,
@@ -1598,6 +1619,7 @@ export {
   buildQc,
   buildShortcuts,
   buildSingleCellIndexes,
+  buildSnpEffSuite,
   buildWindow,
   buildWorker,
   closeWindow,

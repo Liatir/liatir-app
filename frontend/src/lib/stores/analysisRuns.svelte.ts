@@ -68,6 +68,7 @@ const NATIVE_ANALYSIS_TOOLS = new Set([
   'bcftools-stats',
   'bcftools-filter',
   'snpeff',
+  'snpsift-filter',
 ]);
 const AI_ANALYSIS_TOOLS = new Set([
   'ai-single-cell-embedding',

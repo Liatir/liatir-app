@@ -64,6 +64,7 @@
     "native-tools:wsl-consumer:build": "node scripts/build-native-tools-wsl-consumer.mjs",
     "single-cell-index": "node scripts/single-cell-indexes.mjs",
     "single-cell-index:test:e2e": "node scripts/run-single-cell-index-e2e.mjs",
+    "snpeff-suite:test:e2e": "node scripts/run-snpeff-suite-e2e.mjs",
     "build:frontend": "npm ci --prefix frontend/ && npm run build --prefix frontend/",
     "build:worker": "npm run build:worker --prefix src-tauri/",
 

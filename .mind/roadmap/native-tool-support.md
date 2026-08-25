@@ -30,7 +30,7 @@ nothing, and what runs is the build the release was tested against.
 | simpleaf | Scrollcase box | Scrollcase box | Linux Scrollcase box, through WSL2 |
 | alevin-fry | Scrollcase box | Scrollcase box | Linux Scrollcase box, through WSL2 |
 | FastQC | In-process WASM | In-process WASM | In-process WASM |
-| SnpEff | Java on `PATH` | Java on `PATH` | Java on `PATH` |
+| SnpEff + SnpSift | Java 21 host + managed verified suite | Java 21 host + managed verified suite | Java 21 host + managed verified suite |
 
 `piscem` is in the box as well, as the mapping engine simpleaf drives. It is not a
 resolvable tool id: Liatir never launches it, and simpleaf finds it through the
@@ -43,10 +43,13 @@ longer exists.
 Those are the three platforms Liatir ships. macOS x86_64 is not a target and will
 not become one; Linux ARM64 has no application, so it has no box target either.
 
-SnpEff is the one exception, and deliberately: it is a Java program whose
-databases are managed separately, so bundling it would mean bundling a JRE that
-outweighs every tool here combined. Java is therefore the only dependency a user
-of a supported platform can still be asked to install for a Native Tool.
+SnpEff and SnpSift are the one suite exception, deliberately. Liatir installs
+their pinned official JARs together on demand and manages checksum-bound SnpEff
+databases. The Java runtime stays outside the app because bundling a JRE would
+outweigh every Native Tool here combined. Java 21 is therefore the only host
+dependency a user of a supported platform can still be asked to install for a
+Native Tool. The exact lifecycle is recorded in
+[Managed SnpEff and SnpSift suite](./snpeff-snpsift-managed-suite.md).
 
 ## Verification gates
 

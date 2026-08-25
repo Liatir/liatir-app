@@ -15,7 +15,7 @@ import type {
   ToolNodeData,
   VariableNodeData,
 } from '$lib/types/pipeline';
-import { apiConnections } from '$lib/stores/apiConnections.svelte';
+import { apiConnections, effectiveApiParameters } from '$lib/stores/apiConnections.svelte';
 import type { DataFile } from '$lib/stores/dataFiles.svelte';
 import { conditionNeedsCompareValue } from '$lib/pipeline/conditions';
 import { aiModelInputOptions } from '$lib/ai/tool-models';
@@ -191,15 +191,7 @@ function collectTargets(
       const request = data.requestId ? apiConnections.requestById(data.requestId) : null;
       if (!request) continue;
       const provider = apiConnections.collectionById(request.collectionId);
-      const parameters = new Map(
-        (provider?.sharedParams ?? [])
-          .filter((parameter) => parameter.enabled && parameter.key)
-          .map((parameter) => [parameter.key, parameter] as const),
-      );
-      for (const parameter of request.params) {
-        if (parameter.enabled && parameter.key) parameters.set(parameter.key, parameter);
-      }
-      for (const parameter of parameters.values()) {
+      for (const parameter of effectiveApiParameters(request, provider ?? undefined)) {
         if (!parameter.exposedAsInput) continue;
         const savedValue = data.paramOverrides?.[parameter.key] ?? parameter.value;
         if (isConnected(savedValue)) continue;

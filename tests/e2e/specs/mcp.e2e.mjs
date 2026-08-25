@@ -260,7 +260,7 @@ function apiWorkspaceFixture(updatedAt = Date.now()) {
       sharedHeaders: [],
       sharedParams: [{
         key: 'locale', value: 'en', enabled: true, required: false,
-        exposedAsInput: true, location: 'query',
+        exposedAsInput: true,
       }],
       createdAt: updatedAt,
     }],
@@ -269,7 +269,7 @@ function apiWorkspaceFixture(updatedAt = Date.now()) {
       collectionId: API_COLLECTION_ID,
       name: 'Gate 8 request',
       method: 'GET',
-      url: 'http://127.0.0.1:1/not-executed',
+      url: 'http://127.0.0.1:1/not-executed?locale=[locale]&query=[query]',
       params: [
         { key: 'query', value: 'saved query', enabled: true, optional: false, private: false },
         { key: 'token', value: 'secret', enabled: true, optional: false, private: true },

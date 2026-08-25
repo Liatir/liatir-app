@@ -25,15 +25,13 @@ export interface LiatirHttpResponse {
   durationMs: number;
 }
 
-export type LiatirApiParameterLocation = "query" | "body";
-
 export interface LiatirApiParameter {
   key: string;
   value: string;
+  /** Template parameters follow their URL, header or body placeholder; manual rows do not. */
+  source?: "manual" | "template";
   /** Whether a run may supply a value instead of the saved default. */
   exposedAsInput: boolean;
-  /** Used only when the parameter is not already embedded in a request template. */
-  location: LiatirApiParameterLocation;
   required: boolean;
   enabled: boolean;
 }

@@ -19,8 +19,8 @@ Liatir remains in control of authorization, Jobs and Results.
   build. WSL2 must be installed; nothing has to be installed inside it. Files on
   a network location (`\\server\share\…`) cannot be reached from WSL2 and are
   refused with an explanation; copy them to a drive on the computer first.
-- SnpEff is the one Native Tool that is not bundled. It is a Java program with
-  separately managed databases, so it still needs a Java runtime on your machine.
+- SnpEff and SnpSift are installed together on demand rather than bundled. They
+  are Java programs, so Java 21 or newer must still be installed on your machine.
 - Liatir does not yet install Nextflow/Java or configure HPC and cloud
   executors.
 - Windows CUDA support is limited to the exact published CUDA 12.8 Geneformer

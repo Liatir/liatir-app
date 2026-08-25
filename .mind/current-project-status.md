@@ -1,13 +1,43 @@
 # Current project status
 
-## API Connector now has a Liatir-native contract (2026-08-24)
+## SnpEff and SnpSift are one verified, on-demand suite (2026-08-25)
+
+The manual SnpEff download path is gone from the normal product flow. Liatir now presents one
+pinned SnpEff and SnpSift release, downloads both applications together, checks the exact archive
+and installed components, activates them atomically and reuses the verified local copy. Java 21+
+remains the only host dependency and the suite stays separate from the Native Tools Scrollcase box.
+
+SnpEff genome databases now come from the same built-in catalog. The user chooses an explicit
+species, genome assembly and Ensembl release; Liatir downloads and verifies it once, records its
+identity with each run, and can remove it later. Human GRCh38, mouse GRCm39, zebrafish GRCz11,
+fruit fly BDGP6, *C. elegans* WBcel235 and yeast R64-1-1 are pinned to Ensembl 115 and the compatible
+SnpEff 5.4c database series. External installations remain an advanced, visibly unverified option
+and Liatir never deletes their files.
+
+SnpSift Filter is available as both a direct Tool and a pipeline step. It streams VCF output to
+disk, offers readable high-impact, high-or-moderate, missense, stop-gained and minimum-quality
+presets, and keeps an advanced expression mode. Runs record the resolved expression and exact suite
+evidence; presets that depend on SnpEff's `ANN` annotation say so before execution.
+
+Evidence: `npm run test:verify` passed all 6 suites, including 65 unit files / 435 tests and a clean
+Svelte check. Rust passed 87 tests and Clippy. `npm run test:ui` passed all 7 applicable suites; its
+isolated SnpEff/SnpSift lifecycle proved one download, verified reuse without another request, and
+complete managed removal. The durable contract and exact validation ledger are in
+[Managed SnpEff and SnpSift suite](./roadmap/snpeff-snpsift-managed-suite.md).
+
+## API Connector now has a Liatir-native contract (2026-08-25)
 
 The Bubble-derived surface has been removed. Calls no longer carry a meaningless
 Data/Action mode, and parameters now say exactly what Liatir does: enabled,
-exposed as a run input, destination and required. URL/header `[parameters]` and
-body `<parameters>` are discovered automatically. Existing workspaces migrate
-once without losing executable configuration; copied fields and the unimplemented
-OAuth User-Agent mode are removed from the rewritten file.
+exposed as a run input and required. There is no destination selector:
+URL/header `[parameters]` and body `<parameters>` are discovered automatically,
+while manually added fields always belong to the body. The UI lists URL/header
+parameters next to those fields. GET and HEAD have no Body section. JSON keeps
+manual body fields, its JSON editor and discovered JSON parameters separate;
+Form fields has only key/value rows, and Raw has only its text editor plus any
+discovered placeholders. Existing workspaces migrate once without losing executable
+configuration; copied fields and the unimplemented OAuth User-Agent mode are
+removed from the rewritten file.
 
 `Test request and detect outputs` is now a true preview: it performs the request,
 shows the response and refreshes the structured output schema without creating a
@@ -21,9 +51,10 @@ embedded URL credentials, bounds redirects/time/response size and can cancel
 both connection and response reads. JSON, raw text and URL-encoded form are the
 body modes actually sent.
 
-Evidence: `npm run test:verify` passed 63 files / 424 tests and all six build and
-type suites. `npm run test:ui` passed all six applicable suites: native Tauri E2E
-was 34/0/24, including API preview, direct and pipeline success/failure/cancel;
+Evidence: `npm run test:verify` passed 65 files / 437 tests and all six build and
+type suites. `npm run test:ui` passed all seven applicable suites: native Tauri E2E
+was 34/0/25, including placeholder synchronization, separated parameter lists,
+API preview, direct and pipeline success/failure/cancel;
 the reference-index, restart, Runtime Box security and macOS install lifecycles
 also passed. Windows and Linux install lifecycles were skipped on macOS. The
 durable contract is in [API Connector](./architecture/api-connector.md).

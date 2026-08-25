@@ -103,6 +103,22 @@ function apiWorkspace(baseUrl) {
         body: { type: 'none', content: '' }, auth: { type: 'inherit' },
         createdAt: now, updatedAt: now,
       },
+      {
+        id: 'e2e-api-placeholder', collectionId: 'e2e-spine-api', name: 'Placeholder call',
+        method: 'GET', url: 'https://example.test/', params: [], headers: [],
+        body: { type: 'none', content: '' }, auth: { type: 'inherit' },
+        createdAt: now, updatedAt: now,
+      },
+      {
+        id: 'e2e-api-body-layout', collectionId: 'e2e-spine-api', name: 'Body layout call',
+        method: 'POST', url: 'https://example.test/body', headers: [],
+        params: [
+          { key: 'manual', value: 'field', source: 'manual', exposedAsInput: true, required: true, enabled: true },
+          { key: 'name', value: 'Ada', source: 'template', exposedAsInput: true, required: true, enabled: true },
+        ],
+        body: { type: 'json', content: '{"name":"<name>"}' }, auth: { type: 'inherit' },
+        createdAt: now, updatedAt: now,
+      },
     ],
   };
 }
@@ -296,6 +312,139 @@ export const tests = [
 
         const pendingCard = '[data-testid="api-connector-card"][data-request-id="e2e-api-pending"]';
         const successCard = '[data-testid="api-connector-card"][data-request-id="e2e-api-success"]';
+        const placeholderCard = '[data-testid="api-connector-card"][data-request-id="e2e-api-placeholder"]';
+        const bodyLayoutCard = '[data-testid="api-connector-card"][data-request-id="e2e-api-body-layout"]';
+
+        await (await browser.$(`${placeholderCard} [data-testid="api-connector-card-toggle"]`)).click();
+        const partialParameterCount = await browser.execute(async (selector) => {
+          const card = document.querySelector(selector);
+          const input = card?.querySelector('[data-testid="api-connector-url"]');
+          if (!(input instanceof HTMLInputElement)) throw new Error('Placeholder URL input not found.');
+          input.focus();
+          let name = '';
+          for (const letter of 'parameter') {
+            name += letter;
+            input.value = `https://example.test/[${name}]`;
+            input.dispatchEvent(new InputEvent('input', { bubbles: true, data: letter, inputType: 'insertText' }));
+            await new Promise((resolve) => setTimeout(resolve, 0));
+          }
+          const count = card.querySelectorAll('[data-testid="api-connector-parameter-row"]').length;
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+          input.blur();
+          return count;
+        }, placeholderCard);
+        expect(partialParameterCount).toBe(0);
+        await browser.waitUntil(
+          async () => browser.execute((selector) => (
+            document.querySelector(selector)?.querySelectorAll('[data-testid="api-connector-parameter-row"]').length === 1
+          ), placeholderCard),
+          { timeout: 10_000, timeoutMsg: 'Final API placeholder did not create exactly one parameter' },
+        );
+        await browser.waitUntil(
+          async () => browser.execute(async () => {
+            const workspace = JSON.parse(await window.Liatir.invoke('lia_app_read_text', {
+              rel: 'workspaces/__test__/api-workspace.json',
+            }));
+            const request = workspace.requests.find((entry) => entry.id === 'e2e-api-placeholder');
+            return request?.params.length === 1 && request.params[0].key === 'parameter';
+          }),
+          { timeout: 10_000, timeoutMsg: 'Final API placeholder was not persisted exactly once' },
+        );
+        const placeholderKeys = await browser.execute(async () => {
+          const workspace = JSON.parse(await window.Liatir.invoke('lia_app_read_text', {
+            rel: 'workspaces/__test__/api-workspace.json',
+          }));
+          return workspace.requests.find((entry) => entry.id === 'e2e-api-placeholder')?.params.map((entry) => entry.key);
+        });
+        expect(placeholderKeys).toEqual(['parameter']);
+        const parameterGroups = await browser.execute((selector) => {
+          const card = document.querySelector(selector);
+          const urlGroup = card?.querySelector('[data-testid="api-connector-url-parameters"]');
+          const body = card?.querySelector('[data-testid="api-connector-body"]');
+          const templateKey = urlGroup?.querySelector('[data-testid="api-connector-parameter-row"] input[type="text"]');
+          return {
+            urlRows: urlGroup?.querySelectorAll('[data-testid="api-connector-parameter-row"]').length ?? 0,
+            bodyVisible: body !== null,
+            templateKeyLocked: templateKey instanceof HTMLInputElement && templateKey.disabled,
+          };
+        }, placeholderCard);
+        expect(parameterGroups).toEqual({ urlRows: 1, bodyVisible: false, templateKeyLocked: true });
+
+        const parameterCountDuringRename = await browser.execute(async (selector) => {
+          const card = document.querySelector(selector);
+          const input = card?.querySelector('[data-testid="api-connector-url"]');
+          if (!(input instanceof HTMLInputElement)) throw new Error('Placeholder URL input not found.');
+          input.focus();
+          let suffix = '';
+          for (const letter of '.1') {
+            suffix += letter;
+            input.value = `https://example.test/[parameter${suffix}]`;
+            input.dispatchEvent(new InputEvent('input', { bubbles: true, data: letter, inputType: 'insertText' }));
+            await new Promise((resolve) => setTimeout(resolve, 0));
+          }
+          const count = card.querySelectorAll('[data-testid="api-connector-parameter-row"]').length;
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+          input.blur();
+          return count;
+        }, placeholderCard);
+        expect(parameterCountDuringRename).toBe(0);
+        await browser.waitUntil(
+          async () => browser.execute(async () => {
+            const workspace = JSON.parse(await window.Liatir.invoke('lia_app_read_text', {
+              rel: 'workspaces/__test__/api-workspace.json',
+            }));
+            const request = workspace.requests.find((entry) => entry.id === 'e2e-api-placeholder');
+            return request?.params.length === 1 && request.params[0].key === 'parameter.1';
+          }),
+          { timeout: 10_000, timeoutMsg: 'Renamed API placeholder did not replace its previous parameter' },
+        );
+
+        await (await browser.$(`${bodyLayoutCard} [data-testid="api-connector-card-toggle"]`)).click();
+        const jsonLayout = await browser.execute((selector) => {
+          const card = document.querySelector(selector);
+          return {
+            manualRows: card?.querySelectorAll('[data-testid="api-connector-manual-body-fields"] [data-testid="api-connector-parameter-row"]').length ?? 0,
+            jsonRows: card?.querySelectorAll('[data-testid="api-connector-json-parameters"] [data-testid="api-connector-parameter-row"]').length ?? 0,
+            jsonEditor: card?.querySelector('[data-testid="api-connector-json-body"]') !== null,
+            rawEditor: card?.querySelector('[data-testid="api-connector-raw-body"]') !== null,
+          };
+        }, bodyLayoutCard);
+        expect(jsonLayout).toEqual({ manualRows: 1, jsonRows: 1, jsonEditor: true, rawEditor: false });
+
+        await browser.execute((selector) => {
+          document.querySelector(selector)?.querySelector('button[id^="api-connector-body-type-"]')?.click();
+        }, bodyLayoutCard);
+        await browser.execute((selector) => {
+          const card = document.querySelector(selector);
+          [...(card?.querySelectorAll('[role="option"]') ?? [])]
+            .find((option) => option.textContent?.trim() === 'Form fields')?.click();
+        }, bodyLayoutCard);
+        await browser.waitUntil(
+          async () => browser.execute((selector) => {
+            const card = document.querySelector(selector);
+            return card?.querySelector('[data-testid="api-connector-manual-body-fields"]') !== null
+              && card.querySelector('textarea') === null;
+          }, bodyLayoutCard),
+          { timeout: 10_000, timeoutMsg: 'Form fields still rendered a raw body editor' },
+        );
+
+        await browser.execute((selector) => {
+          document.querySelector(selector)?.querySelector('button[id^="api-connector-body-type-"]')?.click();
+        }, bodyLayoutCard);
+        await browser.execute((selector) => {
+          const card = document.querySelector(selector);
+          [...(card?.querySelectorAll('[role="option"]') ?? [])]
+            .find((option) => option.textContent?.trim() === 'Raw text')?.click();
+        }, bodyLayoutCard);
+        await browser.waitUntil(
+          async () => browser.execute((selector) => {
+            const card = document.querySelector(selector);
+            return card?.querySelector('[data-testid="api-connector-raw-body"]') !== null
+              && card.querySelector('[data-testid="api-connector-manual-body-fields"]') === null;
+          }, bodyLayoutCard),
+          { timeout: 10_000, timeoutMsg: 'Raw body did not replace the form field table' },
+        );
+
         await (await browser.$(`${pendingCard} [data-testid="api-connector-card-toggle"]`)).click();
         await (await browser.$(`${pendingCard} [data-testid="api-connector-run-button"]`)).click();
         await browser.waitUntil(

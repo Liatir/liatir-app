@@ -19,7 +19,7 @@ export const snpeffDefinition: PipelineStepDefinition = {
   category: 'Variant Calling',
   inputSchema: {
     inputFile: { type: 'file', label: 'VCF file', required: true, accept: ['vcf', 'vcf.gz'] },
-    genome:    { type: 'string', label: 'Genome', required: true, default: 'hg38' },
+    genome:    { type: 'string', label: 'Genome database', required: true, default: 'GRCh38.115' },
   },
   outputSchema: {
     annotatedVcf:   { type: 'file',   label: 'Annotated VCF', ext: ['vcf'] },
@@ -30,19 +30,3 @@ export const snpeffDefinition: PipelineStepDefinition = {
     lowImpact:      { type: 'number', label: 'LOW impact',     format: 'integer' },
   },
 };
-
-// Common genomes available in SnpEff database — IDs match the S3 bucket filenames exactly.
-// Check https://snpeff-public.s3.amazonaws.com/ for the current list.
-export const SNPEFF_GENOMES = [
-  { id: 'GRCh38.115',   label: 'Human GRCh38.115 (Ensembl 115)' },
-  { id: 'hg38',         label: 'Human hg38 (UCSC / v5_0)' },
-  { id: 'hg19',         label: 'Human hg19 / GRCh37 (UCSC)' },
-  { id: 'GRCm39.115',   label: 'Mouse GRCm39.115 (Ensembl 115)' },
-  { id: 'mm10',         label: 'Mouse mm10 / GRCm38 (UCSC / v5_0)' },
-  { id: 'GRCz11.115',   label: 'Zebrafish GRCz11.115 (Ensembl 115)' },
-  { id: 'BDGP6.115',    label: 'Drosophila BDGP6.115 (Ensembl 115)' },
-  { id: 'WBcel235.115', label: 'C. elegans WBcel235.115 (Ensembl 115)' },
-  { id: 'R64-1-1.115',  label: 'Yeast R64-1-1.115 (Ensembl 115)' },
-];
-
-export const SNPEFF_DOWNLOAD_URL = 'https://pcingola.github.io/SnpEff/#download';

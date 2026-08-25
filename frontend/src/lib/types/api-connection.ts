@@ -122,8 +122,8 @@ export function emptyParam(): ApiParam {
   return {
     key: '',
     value: '',
+    source: 'manual',
     exposedAsInput: true,
-    location: 'query',
     required: true,
     enabled: true,
   };

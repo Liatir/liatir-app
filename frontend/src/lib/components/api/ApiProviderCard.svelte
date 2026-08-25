@@ -5,7 +5,12 @@
   import ApiParamTable from './ApiParamTable.svelte';
   import ApiAuthEditor from './ApiAuthEditor.svelte';
   import ApiCallCard from './ApiCallCard.svelte';
-  import { addDiscoveredSharedParameters, apiConnections } from '$lib/stores/apiConnections.svelte';
+  import {
+    apiConnections,
+    syncDiscoveredParameters,
+    syncDiscoveredSharedParameters,
+    urlAndHeaderTemplateParameterKeys,
+  } from '$lib/stores/apiConnections.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import type { ApiCollection, ApiRequest, ApiParam, ApiKeyValue, ApiAuth } from '$lib/types/api-connection';
@@ -26,9 +31,33 @@
   let newlyAddedId = $state<string | null>(null);
 
   const calls = $derived(apiConnections.requestsInCollection(provider.id));
+  const sharedHeaderParameterKeys = $derived(new Set(urlAndHeaderTemplateParameterKeys({
+    url: '',
+    headers: provider.sharedHeaders,
+  })));
+  const sharedHeaderParameters = $derived(provider.sharedParams.filter((parameter) => sharedHeaderParameterKeys.has(parameter.key)));
+  const sharedValues = $derived(provider.sharedParams.filter((parameter) => !sharedHeaderParameterKeys.has(parameter.key)));
 
   function setProvider(patch: Partial<ApiCollection>) {
     apiConnections.updateCollection({ ...provider, ...patch });
+  }
+
+  function setProviderParameters(nextProvider: ApiCollection) {
+    apiConnections.updateCollection(nextProvider);
+    for (const call of calls) {
+      const synchronized = syncDiscoveredParameters(call, nextProvider);
+      if (synchronized !== call) apiConnections.updateRequest(synchronized);
+    }
+  }
+
+  function commitSharedHeaders(sharedHeaders: ApiKeyValue[]) {
+    setProviderParameters(syncDiscoveredSharedParameters({ ...provider, sharedHeaders }));
+  }
+
+  function setSharedParameterGroup(current: ApiParam[], next: ApiParam[]) {
+    const currentRows = new Set(current);
+    const sharedParams = [...provider.sharedParams.filter((parameter) => !currentRows.has(parameter)), ...next];
+    setProviderParameters({ ...provider, sharedParams });
   }
 
   async function addCall() {
@@ -47,9 +76,9 @@
   function deleteCall(id: string) { apiConnections.deleteRequest(id); toast.info('Call deleted'); }
 </script>
 
-<div class="rounded-xl border border-border bg-surface/40 overflow-hidden">
+<div class="rounded-xl border border-border bg-surface/40 overflow-visible">
   <!-- Provider header -->
-  <div class="flex items-center gap-2 px-3 py-2.5 bg-surface border-b border-border">
+  <div class="flex items-center gap-2 px-3 py-2.5 bg-surface border-b border-border {open ? 'rounded-t-xl' : 'rounded-xl'}">
     <button type="button" onclick={() => open = !open} aria-label="Toggle"
       class="text-text-subtle hover:text-text-secondary shrink-0">
       <Icon icon="lucide:chevron-right" width="14" height="14" class="transition-transform {open ? 'rotate-90' : ''}" />
@@ -79,13 +108,22 @@
         <div>
           <span class="text-[11px] font-medium text-text-muted">Shared headers</span>
           <KeyValueTable rows={provider.sharedHeaders} keyPlaceholder="Header" valuePlaceholder="Value"
-            onchange={(sharedHeaders: ApiKeyValue[]) => apiConnections.updateCollection(
-              addDiscoveredSharedParameters({ ...provider, sharedHeaders })
-            )} />
+            onchange={(sharedHeaders: ApiKeyValue[]) => setProvider({ sharedHeaders })}
+            oncommit={commitSharedHeaders} />
         </div>
+        {#if sharedHeaderParameters.length}
+          <div>
+            <span class="text-[11px] font-medium text-text-muted">Shared header parameters</span>
+            <ApiParamTable rows={sharedHeaderParameters} allowAdd={false}
+              onchange={(sharedParams: ApiParam[]) => setSharedParameterGroup(sharedHeaderParameters, sharedParams)} />
+          </div>
+        {/if}
         <div>
-          <span class="text-[11px] font-medium text-text-muted">Shared parameters</span>
-          <ApiParamTable rows={provider.sharedParams} onchange={(sharedParams: ApiParam[]) => setProvider({ sharedParams })} />
+          <span class="text-[11px] font-medium text-text-muted">Shared values</span>
+          <p class="text-[10px] text-text-subtle">Used only when a call contains a matching URL, header, JSON or raw placeholder.</p>
+          <ApiParamTable rows={sharedValues}
+            addLabel="Add shared value"
+            onchange={(sharedParams: ApiParam[]) => setSharedParameterGroup(sharedValues, sharedParams)} />
         </div>
       </div>
     {/if}

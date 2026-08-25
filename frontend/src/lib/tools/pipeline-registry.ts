@@ -7,6 +7,7 @@ import { bwaMemDefinition, parseBwaMemStats, bwaMemToToolOutput } from './alignm
 import { minimap2Definition, parseMinimap2Stats, minimap2ToToolOutput } from './alignment/minimap2';
 import { bcftoolsStatsDefinition, bcftoolsFilterDefinition, parseBcftoolsStats, bcftoolsStatsToToolOutput } from './variants/bcftools';
 import { snpeffDefinition, parseSnpEffStats, buildSnpEffOutput } from './variants/snpeff';
+import { resolveSnpSiftFilterExpression, snpSiftFilterDefinition } from './variants/snpsift';
 import { singleCellEmbeddingDefinition, runSingleCellEmbeddingStep } from './ai/single-cell-embedding';
 import {
   runSimpleafIndexStep,
@@ -410,11 +411,8 @@ async function runSnpeffStep(
   await snpEffStore.init();
   await settingsStore.init();
 
-  const jarPath = snpEffStore.config.jarPath;
-  if (!jarPath) {
-    throw new Error('SnpEff is not configured — open the SnpEff tool and set the JAR path first.');
-  }
-  const genome = inputs.genome?.trim() || 'hg38';
+  const genome = inputs.genome?.trim() || 'GRCh38.115';
+  const runtime = await snpEffStore.captureSnpEffRuntime(genome);
   const runId = crypto.randomUUID();
   const outPath = `${outputDir}/snpeff-${runId}.vcf`;
   const statsBase = outPath.replace(/\.vcf$/, '');
@@ -429,10 +427,10 @@ async function runSnpeffStep(
     [
       `-Xmx${snpEffStore.jvmHeap}`,
       '-jar',
-      jarPath,
+      runtime.snpEffJar,
       'ann',
       '-dataDir',
-      snpEffStore.config.dataDir,
+      runtime.dataDir,
       '-noLog',
       '-stats',
       statsHtml,
@@ -441,7 +439,17 @@ async function runSnpeffStep(
     ],
     undefined,
     (line) => { if (line.trim()) onLog(line); },
-    { ...nativePipelineJobOptions(context), stdoutPath: outPath },
+    {
+      ...nativePipelineJobOptions(context),
+      metadata: {
+        snpeffSuiteVersion: runtime.suiteVersion,
+        snpeffSuiteSha256: runtime.suiteArchiveSha256,
+        snpeffSuiteSource: runtime.source,
+        snpeffDatabaseId: runtime.database!.id,
+        snpeffDatabaseSha256: runtime.database!.archiveSha256,
+      },
+      stdoutPath: outPath,
+    },
   );
   if (!result.ok) {
     throw new Error(result.stderr || `SnpEff exited with code ${result.exitCode}`);
@@ -469,6 +477,73 @@ async function runSnpeffStep(
     outputFiles,
     output,
     metrics: { totalVariants: summary.totalVariants, highImpact: summary.highImpact, moderateImpact: summary.moderateImpact, lowImpact: summary.lowImpact },
+    executionEvidence: {
+      snpeffSuiteVersion: runtime.suiteVersion,
+      snpeffSuiteSha256: runtime.suiteArchiveSha256,
+      snpeffSuiteSource: runtime.source,
+      snpeffDatabaseId: runtime.database!.id,
+      snpeffDatabaseSeries: runtime.database!.databaseSeries,
+      snpeffDatabaseSha256: runtime.database!.archiveSha256,
+      snpeffDatabaseSource: runtime.database!.source,
+    },
+  };
+}
+
+async function runSnpSiftFilterStep(
+  inputs: Record<string, string>,
+  outputDir: string,
+  onLog: (line: string) => void,
+  context?: AIRunContext,
+): Promise<StepResult> {
+  const api = liatir()!;
+  await snpEffStore.init();
+  await settingsStore.init();
+  const runtime = await snpEffStore.captureSnpSiftRuntime();
+  if (!runtime.snpSiftJar) throw new Error('SnpSift is not available in the selected suite.');
+  const resolved = resolveSnpSiftFilterExpression(inputs.preset?.trim() || 'high-impact', {
+    minimumQuality: inputs.minimumQuality,
+    customExpression: inputs.expression,
+  });
+  const outPath = `${outputDir}/snpsift-filter-${crypto.randomUUID()}.vcf`;
+  const java = settingsStore.javaPath || 'java';
+
+  onLog(`$ java -Xmx1g -jar SnpSift.jar filter '${resolved.expression}' ${basename(inputs.inputFile)}`);
+  const result = await runNativeTool(
+    java,
+    ['-Xmx1g', '-jar', runtime.snpSiftJar, 'filter', resolved.expression, inputs.inputFile],
+    undefined,
+    (line) => { if (line.trim()) onLog(line); },
+    {
+      ...nativePipelineJobOptions(context),
+      metadata: {
+        snpeffSuiteVersion: runtime.suiteVersion,
+        snpeffSuiteSha256: runtime.suiteArchiveSha256,
+        snpeffSuiteSource: runtime.source,
+        snpsiftFilterPreset: resolved.preset.id,
+        snpsiftFilterExpression: resolved.expression,
+      },
+      stdoutPath: outPath,
+    },
+  );
+  if (!result.ok) {
+    throw new Error(result.stderr || `SnpSift Filter exited with code ${result.exitCode}`);
+  }
+  let size: number | undefined;
+  try { size = await api.invoke('lia_file_size', { path: outPath }) as number; } catch { /* ok */ }
+  return {
+    outputFiles: [{ label: 'Filtered VCF', path: outPath, ext: 'vcf', size }],
+    output: textOutput(
+      'SnpSift Filter',
+      `Preset: ${resolved.preset.label}\nExpression: ${resolved.expression}\nOutput: ${basename(outPath)}`,
+    ),
+    executionEvidence: {
+      snpeffSuiteVersion: runtime.suiteVersion,
+      snpeffSuiteSha256: runtime.suiteArchiveSha256,
+      snpeffSuiteSource: runtime.source,
+      snpsiftFilterPreset: resolved.preset.id,
+      snpsiftFilterExpression: resolved.expression,
+      snpsiftRequiresAnn: resolved.preset.requiresAnn,
+    },
   };
 }
 
@@ -485,6 +560,7 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
   'bcftools-stats':     { definition: bcftoolsStatsDefinition,     run: runBcftoolsStatsStep },
   'bcftools-filter':    { definition: bcftoolsFilterDefinition,    run: runBcftoolsFilterStep },
   'snpeff':             { definition: snpeffDefinition,            run: runSnpeffStep },
+  'snpsift-filter':     { definition: snpSiftFilterDefinition,     run: runSnpSiftFilterStep },
   'simpleaf-index':     { definition: simpleafIndexDefinition,     run: runSimpleafIndexStep },
   'simpleaf-quant':     { definition: simpleafQuantDefinition,     run: runSimpleafQuantStep },
   'ai-single-cell-embedding': { definition: singleCellEmbeddingDefinition, run: runSingleCellEmbeddingStep },

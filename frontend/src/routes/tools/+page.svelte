@@ -138,6 +138,15 @@
       category: 'Variant Calling',
     },
     {
+      id: 'snpsift-filter',
+      label: 'SnpSift Filter',
+      description: 'Keep variants by predicted effect, quality, or an advanced filter expression.',
+      href: '/tools/variants/snpsift-filter',
+      status: 'available',
+      tags: ['VCF', 'Filter', 'Annotation', 'Java'],
+      category: 'Variant Calling',
+    },
+    {
       id: 'viewer-structure-3d',
       label: '3D Structure Viewer',
       description: 'Inspect PDB, mmCIF, SDF, MOL2, and XYZ structure files with an optional local 3Dmol.js runtime.',

@@ -25,8 +25,9 @@ These are real bioinformatics programs, and Liatir ships them. You do not instal
 was tested with, and they update when Liatir updates. The tool page shows
 **Included with Liatir** and the version it is running.
 
-SnpEff is the exception: it is a Java program with its own separately managed
-databases, so it still needs a Java runtime on your machine.
+SnpEff and SnpSift are the exception: they are Java programs. Liatir downloads
+and verifies both together only when you need them, then manages their versions
+and SnpEff databases. Java 21 or newer must still be installed on your machine.
 
 On **Windows** these tools run inside WSL2 — see
 [Windows and WSL2](#windows-and-wsl2) below.
@@ -41,6 +42,7 @@ On **Windows** these tools run inside WSL2 — see
 | [BCFtools](/tools/bcftools) | `stats` | VCF, VCF.GZ, BCF, BCF.GZ |
 | [BCFtools filter](/tools/bcftools-filter) | `filter` | VCF, VCF.GZ, BCF, BCF.GZ |
 | [SnpEff](/tools/snpeff) | — | VCF, VCF.GZ |
+| [SnpSift Filter](/tools/snpsift-filter) | `filter` | VCF, VCF.GZ |
 | [fastp](/tools/fastp) | — | FASTQ (single or paired-end) |
 | [Single-cell Reference Index](/tools/single-cell-index) | `simpleaf index` | Genome FASTA + GTF/GFF3 |
 | [Single-cell Quantification](/tools/single-cell-quant) | `simpleaf quant` | Single-cell index + paired FASTQ |

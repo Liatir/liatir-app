@@ -23,18 +23,20 @@
   import { fmtDuration, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { runNativeTool } from '$lib/utils/native-tool';
   import { notify } from '$lib/utils/notify';
-  import { buildSnpEffOutput, parseSnpEffStats } from '$lib/tools/variants/snpeff';
+  import {
+    SNPSIFT_FILTER_PRESETS,
+    resolveSnpSiftFilterExpression,
+    type SnpSiftFilterPresetId,
+  } from '$lib/tools/variants/snpsift';
   import type { ToolOutput } from '$lib/types/tool-output';
   import type { RunOutputFile } from '$lib/stores/analysisRuns.svelte';
 
-  const TOOL_ID = 'snpeff';
+  const TOOL_ID = 'snpsift-filter';
   let depStatus = $state<DepStatus>('checking');
-  let selectedGenome = $state('GRCh38.115');
-  let useExternal = $state(false);
-  let externalGenome = $state('GRCh38.115');
-  let externalGenomePresent = $state(false);
-  let externalChecking = $state(false);
   let filePath = $state('');
+  let presetId = $state<SnpSiftFilterPresetId>('high-impact');
+  let minimumQuality = $state(30);
+  let customExpression = $state('');
   let running = $state(false);
   let startedAt = $state<number | null>(null);
   let now = $state(Date.now());
@@ -46,18 +48,9 @@
 
   const runs = $derived(analysisRuns.byTool(TOOL_ID));
   const vcfFiles = $derived(dataFiles.byExt('vcf', 'vcf.gz'));
+  const selectedPreset = $derived(SNPSIFT_FILTER_PRESETS.find((preset) => preset.id === presetId)!);
   const selectedRun = $derived(runs.find((run) => run.id === selectedRunId) ?? null);
   const selectedRunOutputFiles = $derived(selectedRun?.outputFiles ?? []);
-  const selectedCatalogEntry = $derived(snpEffStore.catalog?.databases.find((entry) =>
-    entry.id === selectedGenome && entry.suiteVersion === snpEffStore.active?.version
-  ) ?? null);
-  const managedDatabaseReady = $derived(Boolean(
-    selectedCatalogEntry && snpEffStore.installedDatabaseFor(selectedCatalogEntry)
-  ));
-  const externalReady = $derived(Boolean(
-    snpEffStore.config.externalJarPath && externalGenome.trim() && externalGenomePresent
-  ));
-  const runtimeReady = $derived(useExternal ? externalReady : Boolean(snpEffStore.active && managedDatabaseReady));
   const displayError = $derived<string | null>(
     selectedRun?.status === 'error' ? (selectedRun.error ?? 'Unknown error') : null,
   );
@@ -78,25 +71,6 @@
     });
   });
 
-  $effect(() => {
-    const genome = externalGenome.trim();
-    const jar = snpEffStore.config.externalJarPath;
-    const dataDir = snpEffStore.config.externalDataDir;
-    if (!useExternal || !jar || !genome || !dataDir) {
-      externalGenomePresent = false;
-      externalChecking = false;
-      return;
-    }
-    let current = true;
-    externalChecking = true;
-    snpEffStore.checkExternalGenomePresent(genome).then((present) => {
-      if (!current) return;
-      externalGenomePresent = present;
-      externalChecking = false;
-    });
-    return () => { current = false; };
-  });
-
   onMount(async () => {
     dataFiles.init();
     analysisRuns.init();
@@ -107,28 +81,24 @@
     return path.split(/[\\/]/).pop() ?? path;
   }
 
-  async function browseExternalJar() {
-    const api = liatir();
-    if (!api) return;
-    try {
-      const result = await api.invoke('lia_file_open', {
-        multi: false,
-        allowedExtensions: ['jar'],
-      }) as { paths: string[] };
-      const path = result.paths[0];
-      if (path) await snpEffStore.setExternalJarPath(path);
-    } catch { /* picker cancelled */ }
+  function resolvedFilter() {
+    return resolveSnpSiftFilterExpression(presetId, { minimumQuality, customExpression });
   }
 
-  async function runAnnotation() {
-    const genome = useExternal ? externalGenome.trim() : selectedGenome;
-    if (!filePath || !genome || running) return;
+  function expressionPreview() {
+    try { return resolvedFilter().expression; } catch { return ''; }
+  }
 
+  async function runFilter() {
+    if (!filePath || running) return;
+    let resolved;
     let runtime;
     try {
-      runtime = await snpEffStore.captureSnpEffRuntime(genome, useExternal);
+      resolved = resolvedFilter();
+      runtime = await snpEffStore.captureSnpSiftRuntime();
+      if (!runtime.snpSiftJar) throw new Error('SnpSift.jar is unavailable.');
     } catch (error) {
-      await notify('SnpEff is not ready', String(error));
+      await notify('SnpSift is not ready', String(error));
       return;
     }
 
@@ -143,15 +113,13 @@
     const fileSize = dataFiles.files.find((file) => file.path === filePath)?.size;
     const inputSizes = fileSize == null ? undefined : [fileSize];
     const params = {
-      genome,
-      heap: snpEffStore.jvmHeap,
+      preset: resolved.preset.id,
+      presetLabel: resolved.preset.label,
+      expression: resolved.expression,
+      requiresAnn: resolved.preset.requiresAnn,
       snpeffSuiteVersion: runtime.suiteVersion,
       snpeffSuiteSha256: runtime.suiteArchiveSha256,
       snpeffSuiteSource: runtime.source,
-      snpeffDatabaseId: runtime.database!.id,
-      snpeffDatabaseSeries: runtime.database!.databaseSeries,
-      snpeffDatabaseSha256: runtime.database!.archiveSha256,
-      snpeffDatabaseSource: runtime.database!.source,
     };
     const execution = await beginDirectNativeToolRun({
       runId,
@@ -161,7 +129,7 @@
       params,
       startedAt: t0,
     }).catch(async (error) => {
-      await notify('SnpEff failed', String(error));
+      await notify('SnpSift Filter failed', String(error));
       return null;
     });
     if (!execution) {
@@ -173,27 +141,12 @@
 
     try {
       const outDir = await ensureRunOutputDir(runId);
-      const outPath = `${outDir}/annotated.vcf`;
-      const statsBase = outPath.replace(/\.vcf$/, '');
-      const statsHtml = `${statsBase}-summary.html`;
-      const statsGenes = `${statsBase}-summary.genes.txt`;
+      const outPath = `${outDir}/filtered.vcf`;
       const java = settingsStore.javaPath || 'java';
-      logLines = [
-        `$ java -Xmx${snpEffStore.jvmHeap} -jar snpEff.jar ann ${genome} ${fileName}`,
-        `→ ${runtime.source === 'managed' ? 'Verified Liatir suite' : 'External unverified suite'}`,
-      ];
+      logLines = [`$ java -Xmx1g -jar SnpSift.jar filter '${resolved.expression}' ${fileName}`];
       const result = await runNativeTool(
         java,
-        [
-          `-Xmx${snpEffStore.jvmHeap}`,
-          '-jar', runtime.snpEffJar,
-          'ann',
-          '-dataDir', runtime.dataDir,
-          '-noLog',
-          '-stats', statsHtml,
-          genome,
-          filePath,
-        ],
+        ['-Xmx1g', '-jar', runtime.snpSiftJar, 'filter', resolved.expression, filePath],
         undefined,
         (line) => { if (line.trim() && logLines.length < 500) logLines.push(line); },
         execution.nativeOptions({
@@ -202,32 +155,33 @@
             snpeffSuiteVersion: runtime.suiteVersion,
             snpeffSuiteSha256: runtime.suiteArchiveSha256,
             snpeffSuiteSource: runtime.source,
-            snpeffDatabaseId: runtime.database!.id,
-            snpeffDatabaseSha256: runtime.database!.archiveSha256,
+            snpsiftFilterPreset: resolved.preset.id,
+            snpsiftFilterExpression: resolved.expression,
           },
         }),
       );
-      if (!result.ok) throw new Error(result.stderr || `SnpEff exited with code ${result.exitCode}`);
+      if (!result.ok) throw new Error(result.stderr || `SnpSift Filter exited with code ${result.exitCode}`);
 
       const outputFiles: RunOutputFile[] = [{
-        label: 'Annotated VCF',
+        label: 'Filtered VCF',
         path: outPath,
         ext: 'vcf',
         size: await api.invoke('lia_file_size', { path: outPath }) as number,
       }];
-      const sideEffects: RunOutputFile[] = [];
-      for (const [label, path, ext] of [
-        ['Summary (HTML)', statsHtml, 'html'],
-        ['Gene stats', statsGenes, 'txt'],
-      ] as const) {
-        try {
-          sideEffects.push({ label, path, ext, size: await api.invoke('lia_file_size', { path }) as number });
-        } catch { /* optional SnpEff diagnostic */ }
-      }
-      const summary = parseSnpEffStats(result.stderr);
+      const output: ToolOutput = { sections: [{
+        type: 'stats',
+        cols: 2,
+        items: [
+          { label: 'Preset', value: resolved.preset.label },
+          { label: 'Expression', value: resolved.expression },
+        ],
+      }, {
+        type: 'text',
+        label: 'Output',
+        content: `Filtered variants written to ${basename(outPath)}.`,
+      }] };
       const endedAt = Date.now();
-      logLines.push(`✓ Annotation complete in ${fmtDuration(t0, endedAt)}`);
-      await snpEffStore.touchGenome(genome);
+      logLines.push(`✓ Filtering complete in ${fmtDuration(t0, endedAt)}`);
       await execution.finalize('done', {
         id: runId,
         tool: TOOL_ID,
@@ -238,17 +192,17 @@
         startedAt: t0,
         endedAt,
         durationMs: endedAt - t0,
-        output: buildSnpEffOutput(summary, fileName),
+        output,
         outputFiles,
-        sideEffects,
+        sideEffects: [],
         error: null,
         log: [...logLines],
       });
-      await notify('SnpEff complete', `${fileName} finished in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
+      await notify('SnpSift Filter complete', `${fileName} filtered in ${fmtDuration(t0, endedAt)}`, endedAt - t0);
     } catch (error) {
       const endedAt = Date.now();
       const cancelled = execution.isCancelled(error);
-      const message = cancelled ? 'SnpEff run was cancelled.' : String(error);
+      const message = cancelled ? 'SnpSift Filter run was cancelled.' : String(error);
       logLines.push(cancelled ? `■ ${message}` : `✗ Error: ${message}`);
       await execution.finalize(cancelled ? 'cancelled' : 'error', {
         id: runId,
@@ -266,7 +220,7 @@
         error: message,
         log: [...logLines],
       });
-      await notify(cancelled ? 'SnpEff cancelled' : 'SnpEff failed', message);
+      await notify(cancelled ? 'SnpSift Filter cancelled' : 'SnpSift Filter failed', message);
     } finally {
       running = false;
       startedAt = null;
@@ -308,13 +262,11 @@
             <button onclick={() => selectedRunId = run.id} class="flex-1 text-left px-3 py-2.5 min-w-0">
               <div class="flex items-center gap-1.5 mb-0.5">
                 <span class="h-1.5 w-1.5 rounded-full shrink-0 {run.status === 'done' ? 'bg-emerald-500' : 'bg-red-500'}"></span>
-                <p class="text-xs font-medium truncate {selectedRunId === run.id ? 'text-brand' : 'text-text-secondary'}">{run.label}</p>
+                <p class="text-xs font-medium truncate">{run.label}</p>
               </div>
               <p class="text-[10px] text-text-subtle pl-3">{fmtDate(run.startedAt)} · {fmtDuration(run.startedAt, run.endedAt)}</p>
             </button>
-            <button onclick={() => deleteRun(run.id, run.label)} aria-label="Delete run" class="opacity-0 group-hover:opacity-100 p-1.5 mt-2 mr-1.5 text-text-subtle hover:text-red-500 rounded">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
+            <button onclick={() => deleteRun(run.id, run.label)} aria-label="Delete run" class="opacity-0 group-hover:opacity-100 p-1.5 mt-2 mr-1.5 text-text-subtle hover:text-red-500 rounded">×</button>
           </div>
         {/each}
       {/if}
@@ -322,90 +274,65 @@
   </div>
 
   <div class="flex-1 flex flex-col overflow-hidden">
-    <PageHeader title="SnpEff" description="Annotate variants with their predicted biological effects">
-      {#snippet actions()}
-        <Button variant="ghost" size="sm" onclick={() => goto('/tools')}>← Back</Button>
-      {/snippet}
+    <PageHeader title="SnpSift Filter" description="Keep the variants that match a biological or quality rule">
+      {#snippet actions()}<Button variant="ghost" size="sm" onclick={() => goto('/tools')}>← Back</Button>{/snippet}
     </PageHeader>
-
     <div class="flex-1 overflow-y-auto p-6 space-y-5">
       <DepCheck req={DEP_REQUIREMENTS.java} onStatusChange={(status) => depStatus = status} />
 
-      <SnpEffSuiteManager
-        showDatabases
-        selectedDatabaseId={selectedGenome}
-        onselect={(id) => selectedGenome = id}
-      />
+      <SnpEffSuiteManager />
 
       {#if depStatus === 'ok'}
-        <details class="rounded-xl border border-border bg-surface p-4">
-          <summary class="cursor-pointer text-xs font-medium text-text-secondary">Advanced: use an existing external installation</summary>
-          <div class="mt-4 space-y-3">
-            <p class="text-[11px] text-amber-700 leading-relaxed">
-              External files are kept for compatibility, but Liatir cannot verify their version or origin.
-            </p>
-            <label class="flex items-center gap-2 text-xs text-text-secondary">
-              <input type="checkbox" bind:checked={useExternal} /> Use external SnpEff for this run
-            </label>
-            <div class="flex items-center gap-2">
-              <Button variant="secondary" size="sm" onclick={browseExternalJar}>Select snpEff.jar</Button>
-              <span class="min-w-0 truncate text-[11px] font-mono text-text-subtle">
-                {snpEffStore.config.externalJarPath ?? 'No external JAR selected'}
-              </span>
-            </div>
-            <label class="block text-[11px] text-text-muted">
-              External database folder
-              <input
-                value={snpEffStore.config.externalDataDir}
-                onchange={(event) => snpEffStore.setExternalDataDir(event.currentTarget.value)}
-                class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand/30"
-              />
-            </label>
-            <label class="block text-[11px] text-text-muted">
-              External genome ID
-              <input bind:value={externalGenome} class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand/30" />
-            </label>
-            {#if useExternal}
-              <p class="text-[11px] {externalGenomePresent ? 'text-emerald-700' : 'text-amber-700'}">
-                {externalChecking ? 'Checking external database…' : externalGenomePresent ? 'External database found' : 'External database not found'}
-              </p>
-            {/if}
-          </div>
-        </details>
-
         <Card class="p-5 space-y-4">
           <div>
-            <h2 class="text-sm font-semibold text-text">Annotate variants</h2>
-            <p class="mt-1 text-xs text-text-secondary">
-              The selected database identity and exact suite checksum are saved with the result.
+            <h2 class="text-sm font-semibold text-text">Filter variants</h2>
+            <p class="mt-1 text-xs text-text-secondary leading-relaxed">
+              Choose a readable preset, or enter the underlying SnpSift expression yourself.
             </p>
           </div>
 
-          {#if !runtimeReady}
-            <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              {useExternal
-                ? 'Select an external JAR and a database that is present in its data folder.'
-                : 'Install the suite and the selected verified genome database above.'}
+          <FilePickerPopup files={vcfFiles} value={filePath} label="VCF file" emptyText="No VCF files in Data yet." disabled={running} onchange={(path) => filePath = path} />
+
+          <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {#each SNPSIFT_FILTER_PRESETS as preset}
+              <button
+                onclick={() => presetId = preset.id}
+                class="rounded-lg border px-3 py-2 text-left transition-colors {presetId === preset.id ? 'border-brand bg-brand/5' : 'border-border hover:border-brand/40'}"
+              >
+                <span class="block text-xs font-medium {presetId === preset.id ? 'text-brand' : 'text-text'}">{preset.label}</span>
+                <span class="mt-0.5 block text-[10px] leading-relaxed text-text-subtle">{preset.description}</span>
+              </button>
+            {/each}
+          </div>
+
+          {#if presetId === 'minimum-quality'}
+            <label class="block text-xs text-text-secondary">
+              Minimum VCF quality score
+              <input type="number" min="0" step="1" bind:value={minimumQuality} class="mt-1 block w-40 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs" />
+            </label>
+          {:else if presetId === 'custom'}
+            <label class="block text-xs text-text-secondary">
+              SnpSift Filter expression
+              <textarea bind:value={customExpression} rows="3" placeholder="e.g. (QUAL >= 30) & (DP >= 10)" class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand/30"></textarea>
+            </label>
+          {/if}
+
+          {#if selectedPreset.requiresAnn}
+            <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 leading-relaxed" data-testid="snpsift-ann-warning">
+              This preset reads the ANN field, which is the annotation SnpEff adds to a VCF. Run SnpEff first if your file does not contain ANN.
+            </div>
+          {/if}
+
+          {#if expressionPreview()}
+            <div class="rounded-lg border border-border bg-surface-2 px-3 py-2 text-[11px]">
+              <span class="text-text-subtle">Exact expression: </span><code class="font-mono text-text-secondary">{expressionPreview()}</code>
             </div>
           {/if}
 
           <div class="flex items-center gap-3">
-            <span class="text-[11px] text-text-muted shrink-0">Java memory</span>
-            <div class="flex flex-wrap gap-1.5">
-              {#each ['4g', '6g', '8g', '12g', '16g'] as heap}
-                <button
-                  onclick={() => snpEffStore.setJvmHeap(heap)}
-                  class="px-2.5 py-1 rounded-md border text-xs {snpEffStore.jvmHeap === heap ? 'bg-brand text-white border-brand' : 'bg-surface border-border text-text-secondary'}"
-                >{heap.replace('g', ' GB')}</button>
-              {/each}
-            </div>
-          </div>
-
-          <FilePickerPopup files={vcfFiles} value={filePath} label="VCF file" emptyText="No VCF files in Data yet." disabled={running} onchange={(path) => filePath = path} />
-          <div class="flex items-center gap-3">
-            <Button variant="primary" testId="direct-native-run" disabled={!filePath || !runtimeReady || running} loading={running} onclick={runAnnotation}>Run annotation</Button>
+            <Button variant="primary" testId="snpsift-filter-run" disabled={!filePath || (!snpEffStore.active && !snpEffStore.config.externalJarPath) || running} loading={running} onclick={runFilter}>Run filter</Button>
             {#if running && activeExecutionRunId}
-              <Button variant="secondary" testId="direct-native-cancel" onclick={() => executionRuns.cancel(activeExecutionRunId!)}>Cancel</Button>
+              <Button variant="secondary" testId="snpsift-filter-cancel" onclick={() => executionRuns.cancel(activeExecutionRunId!)}>Cancel</Button>
             {/if}
             {#if running && startedAt}<span class="text-xs text-text-subtle">Elapsed: {fmtDuration(startedAt, now)}</span>{/if}
           </div>

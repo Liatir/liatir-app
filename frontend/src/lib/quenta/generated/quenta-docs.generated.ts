@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "f318b7551c039cf6188b274db0d704e00a706e8090aff96ca2951baf1daebe45";
+export const QUENTA_DOCS_SEED_HASH = "35f4585b9f0d5578110b9295a5e549b8194ecfefb0e68a72e4e0b906585d554a";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -596,7 +596,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Beta support and troubleshooting — Current limits",
     "locator": "Docs / Getting Started / Support / Current limits",
     "excerpt": "Current limits - Public signed desktop packages are not considered ready until the installer gate is complete on that platform. - macOS scientific and local packaging evidence currently covers Apple silicon, not Intel Macs. - Windows Nextflow runs through WSL…",
-    "content": "Current limits\n- Public signed desktop packages are not considered ready until the installer\n  gate is complete on that platform.\n- macOS scientific and local packaging evidence currently covers Apple silicon,\n  not Intel Macs.\n- Windows Nextflow runs through WSL2 Linux x86_64. Native Windows Nextflow,\n  WSL1 and WSL ARM64 are not supported.\n- The bundled Native Tools — samtools, bcftools, seqkit, fastp, bwa, minimap2 —\n  also run through WSL2 on Windows, for the same reason: they have no Windows\n  build. WSL2 must be installed; nothing has to be installed inside it. Files on\n  a network location (`\\\\server\\share\\…`) cannot be reached from WSL2 and are\n  refused with an explanation; copy them to a drive on the computer first.\n- SnpEff is the one Native Tool that is not bundled. It is a Java program with\n  separately managed databases, so it still needs a Java runtime on your machine.\n- Liatir does not yet install Nextflow/Java or configure HPC and cloud\n  executors.\n- Windows CUDA support is limited to the exact published CUDA 12.8 Geneformer\n  and scGPT targets. The hosted Windows GPU runner cannot validate them, so\n  support comes from their recorded native product evidence and is not a claim\n  about other drivers or CUDA versions.\n- AI Model availability is target-specific. The model selector shows only\n  compatible installed assets.\n- Liatir pipelines orchestrate tools but do not replace Nextflow scheduling,\n  cache, resume or DSL semantics.\n- Liatir is research software. Outputs require scientific review and are not a\n  medical diagnosis."
+    "content": "Current limits\n- Public signed desktop packages are not considered ready until the installer\n  gate is complete on that platform.\n- macOS scientific and local packaging evidence currently covers Apple silicon,\n  not Intel Macs.\n- Windows Nextflow runs through WSL2 Linux x86_64. Native Windows Nextflow,\n  WSL1 and WSL ARM64 are not supported.\n- The bundled Native Tools — samtools, bcftools, seqkit, fastp, bwa, minimap2 —\n  also run through WSL2 on Windows, for the same reason: they have no Windows\n  build. WSL2 must be installed; nothing has to be installed inside it. Files on\n  a network location (`\\\\server\\share\\…`) cannot be reached from WSL2 and are\n  refused with an explanation; copy them to a drive on the computer first.\n- SnpEff and SnpSift are installed together on demand rather than bundled. They\n  are Java programs, so Java 21 or newer must still be installed on your machine.\n- Liatir does not yet install Nextflow/Java or configure HPC and cloud\n  executors.\n- Windows CUDA support is limited to the exact published CUDA 12.8 Geneformer\n  and scGPT targets. The hosted Windows GPU runner cannot validate them, so\n  support comes from their recorded native product evidence and is not a claim\n  about other drivers or CUDA versions.\n- AI Model availability is target-specific. The model selector shows only\n  compatible installed assets.\n- Liatir pipelines orchestrate tools but do not replace Nextflow scheduling,\n  cache, resume or DSL semantics.\n- Liatir is research software. Outputs require scientific review and are not a\n  medical diagnosis."
   },
   {
     "id": "docs:getting-started/support#common-problems",
@@ -683,8 +683,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "What is Liatir — Three ways to extend Liatir",
     "locator": "Docs / Introduction / Overview / Three ways to extend Liatir",
-    "excerpt": "Three ways to extend Liatir ### Native tools Liatir ships the bioinformatics programs it runs — samtools, bcftools, seqkit, fastp, bwa and minimap2 — so there is nothing to install and nothing to keep up to date. You choose the parameters; run history and par…",
-    "content": "Three ways to extend Liatir\n### Native tools\nLiatir ships the bioinformatics programs it runs — samtools, bcftools, seqkit, fastp, bwa and minimap2 — so there is nothing to install and nothing to keep up to date. You choose the parameters; run history and parsed results are stored automatically. Tools that are not bundled, such as SnpEff and its Java runtime, are checked on your machine and Liatir shows what is missing.\n\n### Plugins\nA `.lia` plugin is a self-contained extension that adds custom analysis steps. Plugins can be written in Python, Node, or compiled to WebAssembly, and appear as normal tools in the UI and in pipelines. See the [Plugins](/plugins/overview) section to build one.\n\n### AI Models\nAI Models are signed local Runtime Boxes that Liatir installs and manages for you. The current AI Tool uses Geneformer, scGPT, or UCE for single-cell embeddings."
+    "excerpt": "Three ways to extend Liatir ### Native tools Liatir ships its common bioinformatics programs — samtools, bcftools, seqkit, fastp, bwa and minimap2 — so there is nothing to install or keep up to date. SnpEff and SnpSift are downloaded together only when needed…",
+    "content": "Three ways to extend Liatir\n### Native tools\nLiatir ships its common bioinformatics programs — samtools, bcftools, seqkit, fastp, bwa and minimap2 — so there is nothing to install or keep up to date. SnpEff and SnpSift are downloaded together only when needed, verified, and then managed by Liatir; their Java 21 runtime remains a system requirement. You choose the parameters, while run history and parsed results are stored automatically.\n\n### Plugins\nA `.lia` plugin is a self-contained extension that adds custom analysis steps. Plugins can be written in Python, Node, or compiled to WebAssembly, and appear as normal tools in the UI and in pipelines. See the [Plugins](/plugins/overview) section to build one.\n\n### AI Models\nAI Models are signed local Runtime Boxes that Liatir installs and manages for you. The current AI Tool uses Geneformer, scGPT, or UCE for single-cell embeddings."
   },
   {
     "id": "docs:introduction/overview#core-concepts",
@@ -2076,7 +2076,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Tools — Native tools",
     "locator": "Docs / Tools / Overview / Native tools",
     "excerpt": "Native tools These are real bioinformatics programs, and Liatir ships them. You do not install `samtools`, `bwa`, `minimap2`, `bcftools`, `seqkit`, `fastp`, `simpleaf` or `alevin-fry` yourself: they arrive with the application, at the exact versions it was te…",
-    "content": "Native tools\nThese are real bioinformatics programs, and Liatir ships them. You do not install\n`samtools`, `bwa`, `minimap2`, `bcftools`, `seqkit`, `fastp`, `simpleaf` or\n`alevin-fry` yourself: they arrive with the application, at the exact versions it\nwas tested with, and they update when Liatir updates. The tool page shows\n**Included with Liatir** and the version it is running.\n\nSnpEff is the exception: it is a Java program with its own separately managed\ndatabases, so it still needs a Java runtime on your machine.\n\nOn **Windows** these tools run inside WSL2 — see\n[Windows and WSL2](#windows-and-wsl2) below.\n\n| Tool | Subcommand | Input formats |\n|------|-----------|---------------|\n| [seqkit stats](/tools/seqkit) | `stats` | FASTA, FASTQ (compressed or not) |\n| [Samtools](/tools/samtools) | `flagstat` | BAM, SAM, CRAM |\n| [Samtools faidx](/tools/samtools-faidx) | `faidx` | FASTA, FASTA.GZ |\n| [BWA-MEM](/tools/bwa-mem) | `mem` | FASTA + FASTQ |\n| [Minimap2](/tools/minimap2) | — | FASTA/MMI + FASTQ/FASTA |\n| [BCFtools](/tools/bcftools) | `stats` | VCF, VCF.GZ, BCF, BCF.GZ |\n| [BCFtools filter](/tools/bcftools-filter) | `filter` | VCF, VCF.GZ, BCF, BCF.GZ |\n| [SnpEff](/tools/snpeff) | — | VCF, VCF.GZ |\n| [fastp](/tools/fastp) | — | FASTQ (single or paired-end) |\n| [Single-cell Reference Index](/tools/single-cell-index) | `simpleaf index` | Genome FASTA + GTF/GFF3 |\n| [Single-cell Quantification](/tools/single-cell-quant) | `simpleaf quant` | Single-cell index + paired FASTQ |\n\nThe two single-cell steps are one toolchain: `simpleaf` drives `piscem` for\nmapping and `alevin-fry` for counting, so you run one step instead of five. The\nresult is an `.h5ad` count matrix, which is the input the\n[Single-cell Embedding](/ai/tools/single-cell-embedding) AI Tool and the\n[Single-cell Viewer](/visualization/single-cell-viewer) expect.\n\nCommon single-cell references can be selected from a ready-made list. Liatir\ndownloads each index once, verifies it and keeps it for reuse; the reference\nindex tool remains available for species or annotation releases not in that\nlist.\n\n### Windows and WSL2\n\nAlmost none of this software has a Windows build. `samtools`, `bcftools`, `bwa`,\n`minimap2`, `fastp`, `simpleaf` and `alevin-fry` are written for Unix and rely on\noperating-system facilities Windows does not provide; their authors publish Linux\nand macOS releases only. This is not a Liatir limitation and no Windows version\nexists to package.\n\nSo Liatir on Windows ships the Linux tools and runs them through **WSL2**, the\nWindows Subsystem for Linux — the same mechanism it already uses for\n[Nextflow](/tools/external-workflows). You still work entirely in the Liatir\nwindow; your files stay where they are, and Liatir translates their locations for\nthe tool.\n\n**WSL2 must be installed.** It is a supported Windows feature, not third-party\nsoftware: open PowerShell as administrator, run `wsl --install`, and restart when\nasked. You do not need to install anything inside it for these tools — Liatir\nbrings its own copy and sets it up for you. Nextflow is different and does need\nto be installed inside WSL2 yourself.\n\nLiatir unpacks its tools the first time it starts after being installed or\nupdated. It takes a second or two, happens in the background, and does not repeat."
+    "content": "Native tools\nThese are real bioinformatics programs, and Liatir ships them. You do not install\n`samtools`, `bwa`, `minimap2`, `bcftools`, `seqkit`, `fastp`, `simpleaf` or\n`alevin-fry` yourself: they arrive with the application, at the exact versions it\nwas tested with, and they update when Liatir updates. The tool page shows\n**Included with Liatir** and the version it is running.\n\nSnpEff and SnpSift are the exception: they are Java programs. Liatir downloads\nand verifies both together only when you need them, then manages their versions\nand SnpEff databases. Java 21 or newer must still be installed on your machine.\n\nOn **Windows** these tools run inside WSL2 — see\n[Windows and WSL2](#windows-and-wsl2) below.\n\n| Tool | Subcommand | Input formats |\n|------|-----------|---------------|\n| [seqkit stats](/tools/seqkit) | `stats` | FASTA, FASTQ (compressed or not) |\n| [Samtools](/tools/samtools) | `flagstat` | BAM, SAM, CRAM |\n| [Samtools faidx](/tools/samtools-faidx) | `faidx` | FASTA, FASTA.GZ |\n| [BWA-MEM](/tools/bwa-mem) | `mem` | FASTA + FASTQ |\n| [Minimap2](/tools/minimap2) | — | FASTA/MMI + FASTQ/FASTA |\n| [BCFtools](/tools/bcftools) | `stats` | VCF, VCF.GZ, BCF, BCF.GZ |\n| [BCFtools filter](/tools/bcftools-filter) | `filter` | VCF, VCF.GZ, BCF, BCF.GZ |\n| [SnpEff](/tools/snpeff) | — | VCF, VCF.GZ |\n| [SnpSift Filter](/tools/snpsift-filter) | `filter` | VCF, VCF.GZ |\n| [fastp](/tools/fastp) | — | FASTQ (single or paired-end) |\n| [Single-cell Reference Index](/tools/single-cell-index) | `simpleaf index` | Genome FASTA + GTF/GFF3 |\n| [Single-cell Quantification](/tools/single-cell-quant) | `simpleaf quant` | Single-cell index + paired FASTQ |\n\nThe two single-cell steps are one toolchain: `simpleaf` drives `piscem` for\nmapping and `alevin-fry` for counting, so you run one step instead of five. The\nresult is an `.h5ad` count matrix, which is the input the\n[Single-cell Embedding](/ai/tools/single-cell-embedding) AI Tool and the\n[Single-cell Viewer](/visualization/single-cell-viewer) expect.\n\nCommon single-cell references can be selected from a ready-made list. Liatir\ndownloads each index once, verifies it and keeps it for reuse; the reference\nindex tool remains available for species or annotation releases not in that\nlist.\n\n### Windows and WSL2\n\nAlmost none of this software has a Windows build. `samtools`, `bcftools`, `bwa`,\n`minimap2`, `fastp`, `simpleaf` and `alevin-fry` are written for Unix and rely on\noperating-system facilities Windows does not provide; their authors publish Linux\nand macOS releases only. This is not a Liatir limitation and no Windows version\nexists to package.\n\nSo Liatir on Windows ships the Linux tools and runs them through **WSL2**, the\nWindows Subsystem for Linux — the same mechanism it already uses for\n[Nextflow](/tools/external-workflows). You still work entirely in the Liatir\nwindow; your files stay where they are, and Liatir translates their locations for\nthe tool.\n\n**WSL2 must be installed.** It is a supported Windows feature, not third-party\nsoftware: open PowerShell as administrator, run `wsl --install`, and restart when\nasked. You do not need to install anything inside it for these tools — Liatir\nbrings its own copy and sets it up for you. Nextflow is different and does need\nto be installed inside WSL2 yourself.\n\nLiatir unpacks its tools the first time it starts after being installed or\nupdated. It takes a second or two, happens in the background, and does not repeat."
   },
   {
     "id": "docs:tools/overview#ai-tools",
@@ -2395,64 +2395,104 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "SnpEff",
     "locator": "Docs / Tools / Snpeff",
-    "excerpt": "Annotate VCF variants with predicted functional effects — missense, stop gained, frameshift, splice-site disruption, and more.",
-    "content": "Annotate VCF variants with predicted functional effects — missense, stop gained, frameshift, splice-site disruption, and more."
+    "excerpt": "SnpEff annotates VCF variants with predicted biological effects such as missense, stop gained, frameshift and splice-site changes.",
+    "content": "SnpEff annotates VCF variants with predicted biological effects such as missense, stop gained,\nframeshift and splice-site changes."
   },
   {
     "id": "docs:tools/snpeff#what-it-does",
     "sourceKind": "documentation",
     "title": "SnpEff — What it does",
     "locator": "Docs / Tools / Snpeff / What it does",
-    "excerpt": "What it does SnpEff maps each variant to the transcripts it overlaps and assigns: - **Effect** — `missense_variant`, `stop_gained`, `splice_donor_variant`, etc. (Sequence Ontology terms) - **Impact** — `HIGH`, `MODERATE`, `LOW`, or `MODIFIER` - **Gene / trans…",
-    "content": "What it does\nSnpEff maps each variant to the transcripts it overlaps and assigns:\n\n- **Effect** — `missense_variant`, `stop_gained`, `splice_donor_variant`, etc. (Sequence Ontology terms)\n- **Impact** — `HIGH`, `MODERATE`, `LOW`, or `MODIFIER`\n- **Gene / transcript** — gene symbol, Ensembl ID, HGVS notation (coding + protein)\n\nResults are written to the `ANN` INFO field of the output VCF so every downstream tool can read them."
+    "excerpt": "What it does SnpEff adds an `ANN` field to each VCF record. That field identifies the affected gene and transcript, the predicted effect, and an impact level: `HIGH`, `MODERATE`, `LOW` or `MODIFIER`.",
+    "content": "What it does\nSnpEff adds an `ANN` field to each VCF record. That field identifies the affected gene and\ntranscript, the predicted effect, and an impact level: `HIGH`, `MODERATE`, `LOW` or `MODIFIER`."
   },
   {
     "id": "docs:tools/snpeff#requirements",
     "sourceKind": "documentation",
     "title": "SnpEff — Requirements",
     "locator": "Docs / Tools / Snpeff / Requirements",
-    "excerpt": "Requirements | Dependency | Why | |---|---| | **Java ≥ 21** | SnpEff is a Java application, and recent releases need Java 21 | | **snpEff.jar** | The SnpEff JAR — configure or download inside Liatir | | **Genome database** | Per-genome annotation data (`snpEf…",
-    "content": "Requirements\n| Dependency | Why |\n|---|---|\n| **Java ≥ 21** | SnpEff is a Java application, and recent releases need Java 21 |\n| **snpEff.jar** | The SnpEff JAR — configure or download inside Liatir |\n| **Genome database** | Per-genome annotation data (`snpEffectPredictor.bin`) |"
+    "excerpt": "Requirements SnpEff needs **Java 21 or newer**. Liatir checks Java separately because Java remains installed on the computer; SnpEff and SnpSift themselves are managed together by Liatir.",
+    "content": "Requirements\nSnpEff needs **Java 21 or newer**. Liatir checks Java separately because Java remains installed on\nthe computer; SnpEff and SnpSift themselves are managed together by Liatir."
   },
   {
     "id": "docs:tools/snpeff#setup",
     "sourceKind": "documentation",
     "title": "SnpEff — Setup",
     "locator": "Docs / Tools / Snpeff / Setup",
-    "excerpt": "Setup ### Step 1 — Configure the JAR You can either: - **Browse** for an existing `snpEff.jar` on your machine, or - **Download** the latest SnpEff bundle from the official source directly inside Liatir. The download runs in the background with progress, spee…",
-    "content": "Setup\n### Step 1 — Configure the JAR\n\nYou can either:\n\n- **Browse** for an existing `snpEff.jar` on your machine, or\n- **Download** the latest SnpEff bundle from the official source directly inside Liatir. The download runs in the background with progress, speed, and pause/resume support.\n\nThe JAR path is saved by Liatir and persists across restarts.\n\n### Step 2 — Download a genome database\n\nSelect a genome from the dropdown or type a custom ID (e.g. `GRCh38.p14`). Liatir downloads the matching annotation database directly, with progress, speed, and pause/resume support, and installs it for you.\n\nAvailable built-in genomes:\n\n| ID | Build |\n|---|---|\n| `hg38` | Human GRCh38 |\n| `hg19` | Human GRCh37 |\n| `GRCh38.105` | Human GRCh38.105 (Ensembl) |\n| `mm39` | Mouse GRCm39 |\n| `mm10` | Mouse GRCm38 |\n| `rn7` | Rat mRatBN7.2 |\n| `danRer11` | Zebrafish GRCz11 |\n| `dm6` | Drosophila BDGP6 |\n| `ce11` | C. elegans WBcel235 |\n| `sacCer3` | Yeast R64 |"
+    "excerpt": "Setup 1. Click **Download and verify** in the **SnpEff + SnpSift suite** card. Liatir downloads one pinned official release, checks its checksum, and keeps it for reuse. 2. Choose a genome database. The species, genome assembly and annotation release are visi…",
+    "content": "Setup\n1. Click **Download and verify** in the **SnpEff + SnpSift suite** card. Liatir downloads one pinned\n   official release, checks its checksum, and keeps it for reuse.\n2. Choose a genome database. The species, genome assembly and annotation release are visible before\n   download; Liatir checks the database checksum and installs it once.\n3. Select a VCF and run the annotation.\n\nThe managed catalog currently includes Ensembl release 115 databases for human, mouse, zebrafish,\nfruit fly, *C. elegans* and yeast. A database is offered only with the compatible SnpEff release.\n\nInstallations and downloads appear in Jobs, continue when you leave the page, and can be cancelled.\nReinstalling the same verified version reuses the local copy without downloading it again."
   },
   {
-    "id": "docs:tools/snpeff#running-annotation",
+    "id": "docs:tools/snpeff#scientific-provenance",
     "sourceKind": "documentation",
-    "title": "SnpEff — Running annotation",
-    "locator": "Docs / Tools / Snpeff / Running annotation",
-    "excerpt": "Running annotation With JAR and genome ready, select a VCF/VCF.gz file and click **Annotate**. Liatir runs: ``` java -Xmx4g -jar snpEff.jar ann \\ -dataDir <dir> \\ -noStats -noLog \\ <genome> \\ <input.vcf> ``` The annotated VCF appears in the results panel and…",
-    "content": "Running annotation\nWith JAR and genome ready, select a VCF/VCF.gz file and click **Annotate**. Liatir runs:\n\n```\njava -Xmx4g -jar snpEff.jar ann \\\n  -dataDir <dir> \\\n  -noStats -noLog \\\n  <genome> \\\n  <input.vcf>\n```\n\nThe annotated VCF appears in the results panel and can be added to the Data library."
+    "title": "SnpEff — Scientific provenance",
+    "locator": "Docs / Tools / Snpeff / Scientific provenance",
+    "excerpt": "Scientific provenance Every run records: - the exact SnpEff suite version and archive checksum; - whether the suite was managed by Liatir or supplied externally; - the database ID, series and archive checksum; - the Java memory setting and input VCF. This mat…",
+    "content": "Scientific provenance\nEvery run records:\n\n- the exact SnpEff suite version and archive checksum;\n- whether the suite was managed by Liatir or supplied externally;\n- the database ID, series and archive checksum;\n- the Java memory setting and input VCF.\n\nThis matters because changing the annotation release can change the reported effect of a variant."
+  },
+  {
+    "id": "docs:tools/snpeff#existing-external-installations",
+    "sourceKind": "documentation",
+    "title": "SnpEff — Existing external installations",
+    "locator": "Docs / Tools / Snpeff / Existing external installations",
+    "excerpt": "Existing external installations The advanced section can use an existing `snpEff.jar` and database folder. Liatir never deletes or overwrites those files. Because their origin and contents cannot be proven, runs record them as **external and unverified**. The…",
+    "content": "Existing external installations\nThe advanced section can use an existing `snpEff.jar` and database folder. Liatir never deletes or\noverwrites those files. Because their origin and contents cannot be proven, runs record them as\n**external and unverified**. The managed, verified installation is recommended."
   },
   {
     "id": "docs:tools/snpeff#output",
     "sourceKind": "documentation",
     "title": "SnpEff — Output",
     "locator": "Docs / Tools / Snpeff / Output",
-    "excerpt": "Output ### Summary stats | Stat | Description | |---|---| | Total variants | All records processed | | HIGH impact | Stop gained, frameshift, splice site | | MODERATE impact | Missense, in-frame indel | | LOW impact | Synonymous, splice region | ### ANN field…",
-    "content": "Output\n### Summary stats\n\n| Stat | Description |\n|---|---|\n| Total variants | All records processed |\n| HIGH impact | Stop gained, frameshift, splice site |\n| MODERATE impact | Missense, in-frame indel |\n| LOW impact | Synonymous, splice region |\n\n### ANN field\n\nEach variant gets an `ANN=` INFO field with one entry per overlapping transcript:\n\n```\nANN=A|missense_variant|MODERATE|BRCA1|ENSG00000012048|\n    transcript|ENST00000357654.9|protein_coding|\n    18/23|c.5266dupC|p.Gln1756fs|...\n```\n\nPipe-separated fields (simplified): allele | effect | impact | gene name | gene ID | feature type | feature ID | biotype | exon rank | HGVS.c | HGVS.p | …"
+    "excerpt": "Output The main result is an annotated VCF. SnpEff also writes an HTML summary and a gene statistics file; Liatir records these as supporting files rather than presenting them as separate scientific results. The annotated VCF can be passed directly to [SnpSif…",
+    "content": "Output\nThe main result is an annotated VCF. SnpEff also writes an HTML summary and a gene statistics file;\nLiatir records these as supporting files rather than presenting them as separate scientific results.\n\nThe annotated VCF can be passed directly to [SnpSift Filter](/tools/snpsift-filter), whose biological\npresets read the `ANN` field."
   },
   {
     "id": "docs:tools/snpeff#pipeline-use",
     "sourceKind": "documentation",
     "title": "SnpEff — Pipeline use",
     "locator": "Docs / Tools / Snpeff / Pipeline use",
-    "excerpt": "Pipeline use SnpEff works as a normal pipeline node: connect a VCF output (for example from [BCFtools filter](/tools/bcftools-filter)) into its input and pick a genome. See the [Pipelines](/pipeline/overview) section.",
-    "content": "Pipeline use\nSnpEff works as a normal pipeline node: connect a VCF output (for example from\n[BCFtools filter](/tools/bcftools-filter)) into its input and pick a genome. See\nthe [Pipelines](/pipeline/overview) section."
+    "excerpt": "Pipeline use SnpEff is also a pipeline node. Connect a VCF, choose a database ID, and Liatir uses the same verified suite and database as the standalone page.",
+    "content": "Pipeline use\nSnpEff is also a pipeline node. Connect a VCF, choose a database ID, and Liatir uses the same verified\nsuite and database as the standalone page."
   },
   {
     "id": "docs:tools/snpeff#troubleshooting",
     "sourceKind": "documentation",
     "title": "SnpEff — Troubleshooting",
     "locator": "Docs / Tools / Snpeff / Troubleshooting",
-    "excerpt": "Troubleshooting **Java not found** — install Java 21 or newer. Liatir's Dependencies screen lists the exact command for your system. On macOS, seeing a `java` command in a terminal does not mean Java is installed: the system ships a placeholder of that name t…",
-    "content": "Troubleshooting\n**Java not found** — install Java 21 or newer. Liatir's Dependencies screen lists the exact command\nfor your system.\n\nOn macOS, seeing a `java` command in a terminal does not mean Java is installed: the system ships a\nplaceholder of that name that is present even when no Java is. Liatir checks whether it answers, so\nit can report Java as missing on a machine where the command appears to exist — that is the\nplaceholder, and installing a real JDK is the fix.\n\n**Database download fails** — check your network or firewall settings, then try the download again.\n\n**Out of memory** — very large VCFs on memory-constrained machines can run out of heap; consider closing other apps first.\n\n**Wrong genome ID** — SnpEff genome IDs are case-sensitive. Pick one from the dropdown, or double-check a custom ID against the official [SnpEff database list](https://pcingola.github.io/SnpEff/)."
+    "excerpt": "Troubleshooting **Java not found** — install Java 21 or newer. The Dependencies screen gives the command for your system. On macOS, the built-in `java` placeholder is not a working Java installation; Liatir tests the command rather than only checking that it…",
+    "content": "Troubleshooting\n**Java not found** — install Java 21 or newer. The Dependencies screen gives the command for your\nsystem. On macOS, the built-in `java` placeholder is not a working Java installation; Liatir tests\nthe command rather than only checking that it exists.\n\n**Out of memory** — increase the Java memory setting or close other memory-heavy applications.\n\n**Database missing** — install the exact database selected in the SnpEff card. Liatir does not fall\nback silently to a different annotation release."
+  },
+  {
+    "id": "docs:tools/snpsift-filter",
+    "sourceKind": "documentation",
+    "title": "SnpSift Filter",
+    "locator": "Docs / Tools / Snpsift Filter",
+    "excerpt": "SnpSift Filter keeps only VCF variants that match a rule. SnpSift is included in the same verified, on-demand suite as SnpEff, so there is no second program to download or configure.",
+    "content": "SnpSift Filter keeps only VCF variants that match a rule. SnpSift is included in the same verified,\non-demand suite as SnpEff, so there is no second program to download or configure."
+  },
+  {
+    "id": "docs:tools/snpsift-filter#presets",
+    "sourceKind": "documentation",
+    "title": "SnpSift Filter — Presets",
+    "locator": "Docs / Tools / Snpsift Filter / Presets",
+    "excerpt": "Presets The page offers readable presets for: - high-impact variants; - high- or moderate-impact variants; - missense variants; - stop-gained variants; - a minimum VCF quality score; - an advanced SnpSift expression. The first four read `ANN`, the annotation…",
+    "content": "Presets\nThe page offers readable presets for:\n\n- high-impact variants;\n- high- or moderate-impact variants;\n- missense variants;\n- stop-gained variants;\n- a minimum VCF quality score;\n- an advanced SnpSift expression.\n\nThe first four read `ANN`, the annotation field written by SnpEff. If the input VCF has not been\nannotated, run [SnpEff](/tools/snpeff) first. The quality preset works on an ordinary VCF.\n\nLiatir always shows and records the exact expression generated by a preset. Advanced expressions are\npassed as one argument to SnpSift; they are not interpreted by a shell."
+  },
+  {
+    "id": "docs:tools/snpsift-filter#output-and-memory-use",
+    "sourceKind": "documentation",
+    "title": "SnpSift Filter — Output and memory use",
+    "locator": "Docs / Tools / Snpsift Filter / Output and memory use",
+    "excerpt": "Output and memory use The filtered VCF is streamed directly to its result file. Liatir does not load the complete VCF into memory, so large files do not freeze the interface. Every run records the preset, exact expression, suite version, suite checksum and wh…",
+    "content": "Output and memory use\nThe filtered VCF is streamed directly to its result file. Liatir does not load the complete VCF into\nmemory, so large files do not freeze the interface.\n\nEvery run records the preset, exact expression, suite version, suite checksum and whether the suite\nwas managed or external."
+  },
+  {
+    "id": "docs:tools/snpsift-filter#pipeline-use",
+    "sourceKind": "documentation",
+    "title": "SnpSift Filter — Pipeline use",
+    "locator": "Docs / Tools / Snpsift Filter / Pipeline use",
+    "excerpt": "Pipeline use SnpSift Filter is available as a pipeline node with the same presets and expression rules as the standalone page. A common flow is **SnpEff → SnpSift Filter**: annotate variants, then keep only the effects relevant to the analysis.",
+    "content": "Pipeline use\nSnpSift Filter is available as a pipeline node with the same presets and expression rules as the\nstandalone page. A common flow is **SnpEff → SnpSift Filter**: annotate variants, then keep only the\neffects relevant to the analysis."
   },
   {
     "id": "docs:visualization/genome-track-viewer",

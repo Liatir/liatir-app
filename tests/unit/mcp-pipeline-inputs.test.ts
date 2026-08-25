@@ -83,20 +83,30 @@ vi.mock('$lib/tools/pipeline-registry', () => ({
 }));
 
 vi.mock('$lib/stores/apiConnections.svelte', () => ({
+  effectiveApiParameters: (request: { params: Array<{ key: string; enabled: boolean }> }, provider?: { sharedParams?: Array<{ key: string; enabled: boolean }> }) => {
+    const merged = new Map((provider?.sharedParams ?? [])
+      .filter((parameter) => parameter.enabled && parameter.key)
+      .map((parameter) => [parameter.key, parameter]));
+    for (const parameter of request.params) {
+      if (parameter.enabled && parameter.key) merged.set(parameter.key, parameter);
+      else if (parameter.key) merged.delete(parameter.key);
+    }
+    return [...merged.values()];
+  },
   apiConnections: {
     requestById: (requestId: string) => requestId === 'request-1' ? {
       collectionId: 'collection-1',
       name: 'Fixture request',
       params: [
-        { key: 'query', value: 'saved query', enabled: true, required: true, exposedAsInput: true, location: 'query' },
-        { key: 'fixed', value: 'hidden', enabled: true, required: true, exposedAsInput: false, location: 'query' },
-        { key: 'disabled', value: 'hidden', enabled: false, required: false, exposedAsInput: true, location: 'query' },
+        { key: 'query', value: 'saved query', enabled: true, required: true, exposedAsInput: true },
+        { key: 'fixed', value: 'hidden', enabled: true, required: true, exposedAsInput: false },
+        { key: 'disabled', value: 'hidden', enabled: false, required: false, exposedAsInput: true },
       ],
     } : null,
     collectionById: (collectionId: string) => collectionId === 'collection-1' ? {
       sharedParams: [
-        { key: 'locale', value: 'en', enabled: true, required: false, exposedAsInput: true, location: 'query' },
-        { key: 'token', value: 'hidden', enabled: true, required: true, exposedAsInput: false, location: 'query' },
+        { key: 'locale', value: 'en', enabled: true, required: false, exposedAsInput: true },
+        { key: 'token', value: 'hidden', enabled: true, required: true, exposedAsInput: false },
       ],
     } : null,
   },

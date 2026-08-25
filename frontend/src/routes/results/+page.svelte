@@ -43,6 +43,7 @@
     'bcftools-stats': 'BCFtools stats',
     'bcftools-filter': 'BCFtools filter',
     snpeff: 'SnpEff',
+    'snpsift-filter': 'SnpSift Filter',
   };
 
   function toolLabel(tool: string) {

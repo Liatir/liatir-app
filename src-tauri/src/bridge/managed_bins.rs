@@ -116,6 +116,26 @@ impl DownloadRegistry {
         flag
     }
 
+    /// Register a cancellation flag already owned by a logical Job.
+    ///
+    /// Sharing one flag means cancelling either the Job or the download stops the same operation;
+    /// a page navigation cannot detach dependency work from the Jobs lifecycle.
+    pub(crate) fn register_shared(
+        &self,
+        id: &str,
+        flag: Arc<AtomicBool>,
+    ) -> Result<(), String> {
+        let mut active = self
+            .active
+            .lock()
+            .map_err(|_| "Download registry is unavailable".to_string())?;
+        if active.contains_key(id) {
+            return Err(format!("Download identifier is already active: {id}"));
+        }
+        active.insert(id.to_string(), flag);
+        Ok(())
+    }
+
     pub(crate) fn unregister(&self, id: &str) {
         self.active.lock().unwrap().remove(id);
     }

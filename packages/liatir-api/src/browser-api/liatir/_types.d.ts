@@ -3,6 +3,7 @@ import type { JobsInterface } from "../modules/rs/jobs/_types";
 import type { DepsInterface } from "../modules/rs/deps/_types";
 import type { ExternalWorkflowsInterface } from "../modules/rs/externalWorkflows/_types";
 import type { SingleCellIndexesInterface } from "../modules/rs/singleCellIndexes/_types";
+import type { SnpEffSuiteInterface } from "../modules/rs/snpEffSuite/_types";
 import type { QcInterface } from "../modules/qc/_types";
 import type { WindowTauri } from "../core/_types";
 export type LiaPlatform = "macos" | "linux" | "windows";
@@ -23,6 +24,8 @@ export type LiatirBrowserAPI = {
     externalWorkflows: ExternalWorkflowsInterface;
     /** Verified catalog and app-global installation of reusable single-cell references. */
     singleCellIndexes: SingleCellIndexesInterface;
+    /** Optional, verified SnpEff and SnpSift suite plus compatible genome databases. */
+    snpEffSuite: SnpEffSuiteInterface;
     qc: QcInterface;
     tauri?: WindowTauri;
     onReady: (callback: Function) => void;
