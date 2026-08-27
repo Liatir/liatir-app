@@ -29,6 +29,14 @@ import {
 const MAX_CONTROL_DOCUMENT_BYTES = 1024 * 1024;
 const MAX_MULTIPART_PART_BYTES = 64 * 1024 * 1024;
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
+const SOURCE_MIRRORS = {
+  'mhcflurry-class1-presentation': {
+    sha256: '44784a00d480298b66bfc232e2d1bb1a2df5e564f894a2fcc15d29fbd83f0d1e',
+    sizeBytes: 135_602_727,
+    key: 'source-mirrors/mhcflurry/models_class1_presentation.20200611.models-only.tar.gz',
+    contentType: 'application/gzip',
+  },
+} as const;
 /** R2 object holding the Ed25519 public keys this registry accepts signatures from. */
 const TRUSTED_KEYS_OBJECT = 'control/trusted-keys.json';
 /**
@@ -76,6 +84,14 @@ export interface ReferenceIndexArchiveIdentity {
   key: string;
 }
 
+export interface SourceMirrorIdentity {
+  mirrorId: keyof typeof SOURCE_MIRRORS;
+  sha256: string;
+  sizeBytes: number;
+  key: string;
+  contentType: string;
+}
+
 export interface ImmutableReleaseIdentity {
   boxId: string;
   version: string;
@@ -121,6 +137,13 @@ export function parseReferenceIndexArchiveIdentity(
     sha256,
     key: `reference-indexes/${indexId}/${version}/${sha256}.zip`,
   };
+}
+
+/** Resolves one reviewed source mirror; callers can never supply an R2 key, size or hash. */
+export function parseSourceMirrorIdentity(mirrorIdValue: string): SourceMirrorIdentity | null {
+  if (!Object.hasOwn(SOURCE_MIRRORS, mirrorIdValue)) return null;
+  const mirrorId = mirrorIdValue as keyof typeof SOURCE_MIRRORS;
+  return { mirrorId, ...SOURCE_MIRRORS[mirrorId] };
 }
 
 /** Builds the only immutable signed-release object identity the admin surface may write. */
@@ -355,11 +378,42 @@ async function createReferenceIndexUpload(request: Request, env: Env): Promise<R
   return json({ uploadId: upload.uploadId, key: identity.key });
 }
 
+/** Starts the upload of one fully allowlisted source mirror and no arbitrary R2 object. */
+async function createSourceMirrorUpload(
+  request: Request,
+  env: Env,
+  identity: SourceMirrorIdentity,
+): Promise<Response> {
+  if (!await requireAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
+  const key = objectKey(env, identity.key);
+  if (await env.RUNTIME_BOXES.head(key)) return json({ error: 'immutable_object_exists' }, 409);
+  const upload = await env.RUNTIME_BOXES.createMultipartUpload(key, {
+    httpMetadata: {
+      contentType: identity.contentType,
+      cacheControl: 'public, max-age=31536000, immutable',
+    },
+    customMetadata: {
+      expectedSha256: identity.sha256,
+      expectedSizeBytes: String(identity.sizeBytes),
+      assetKind: 'source-mirror',
+      mirrorId: identity.mirrorId,
+    },
+  });
+  console.log(JSON.stringify({ event: 'source_mirror_upload_created', ...identity }));
+  return json({
+    uploadId: upload.uploadId,
+    mirrorId: identity.mirrorId,
+    key: identity.key,
+    sha256: identity.sha256,
+    sizeBytes: identity.sizeBytes,
+  });
+}
+
 /** Streams one bounded part directly into R2 without buffering it in Worker memory. */
 async function uploadArchivePart(
   request: Request,
   env: Env,
-  identity: MultipartArchiveIdentity | ReferenceIndexArchiveIdentity,
+  identity: MultipartArchiveIdentity | ReferenceIndexArchiveIdentity | SourceMirrorIdentity,
   uploadId: string,
   partNumber: number,
 ): Promise<Response> {
@@ -387,7 +441,7 @@ async function uploadArchivePart(
 async function completeArchiveUpload(
   request: Request,
   env: Env,
-  identity: MultipartArchiveIdentity | ReferenceIndexArchiveIdentity,
+  identity: MultipartArchiveIdentity | ReferenceIndexArchiveIdentity | SourceMirrorIdentity,
   uploadId: string,
 ): Promise<Response> {
   if (!await requireAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
@@ -438,7 +492,7 @@ async function completeArchiveUpload(
 async function abortArchiveUpload(
   request: Request,
   env: Env,
-  identity: MultipartArchiveIdentity | ReferenceIndexArchiveIdentity,
+  identity: MultipartArchiveIdentity | ReferenceIndexArchiveIdentity | SourceMirrorIdentity,
   uploadId: string,
 ): Promise<Response> {
   if (!await requireAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
@@ -747,6 +801,28 @@ export default {
     }
     if (request.method === 'POST' && url.pathname === '/v1/admin/reference-indexes/uploads') {
       return createReferenceIndexUpload(request, env);
+    }
+    if (parts.length >= 5
+      && parts[0] === 'v1'
+      && parts[1] === 'admin'
+      && parts[2] === 'source-mirrors'
+      && parts[4] === 'uploads') {
+      const identity = parseSourceMirrorIdentity(parts[3]);
+      if (!identity) return json({ error: 'invalid_route' }, 400);
+      if (request.method === 'POST' && parts.length === 5) {
+        return createSourceMirrorUpload(request, env, identity);
+      }
+      const uploadId = multipartUploadId(url);
+      if (!uploadId) return json({ error: 'invalid_route' }, 400);
+      if (request.method === 'DELETE' && parts.length === 5) {
+        return abortArchiveUpload(request, env, identity, uploadId);
+      }
+      if (request.method === 'POST' && parts.length === 6 && parts[5] === 'complete') {
+        return completeArchiveUpload(request, env, identity, uploadId);
+      }
+      if (request.method === 'PUT' && parts.length === 7 && parts[5] === 'parts') {
+        return uploadArchivePart(request, env, identity, uploadId, Number(parts[6]));
+      }
     }
     // PUT /v1/admin/releases/:boxId/:version/:target/:sha256 — immutable signed metadata.
     if (request.method === 'PUT' && parts.length === 7 && parts[0] === 'v1' && parts[1] === 'admin' && parts[2] === 'releases') {

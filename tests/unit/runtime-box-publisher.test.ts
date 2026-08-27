@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  SOURCE_MIRROR_SPECS,
   multipartPartRanges,
   parseHttpByteRange,
 } from '../../scripts/runtime-box/distribution-cli.mjs';
 import {
   parseImmutableReleaseIdentity,
   parseMultipartArchiveIdentity,
+  parseSourceMirrorIdentity,
   validateImmutableReleaseRoute,
 } from '../../workers/runtime-box-registry/src/index';
+import runtimeBoxRegistry from '../../workers/runtime-box-registry/src/index';
 
 describe('Runtime Box large-archive publisher', () => {
   it('splits the measured UCE archive into contiguous 64 MiB parts', () => {
@@ -80,6 +83,48 @@ describe('Runtime Box large-archive publisher', () => {
       target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
     }, identity!)).toBe(false);
     expect(parseImmutableReleaseIdentity('../geneformer', '1.0.0', 'macos-aarch64-metal', sha256)).toBeNull();
+  });
+
+  it('allows exactly the reviewed MHCflurry source mirror', () => {
+    const expected = {
+      mirrorId: 'mhcflurry-class1-presentation',
+      sha256: '44784a00d480298b66bfc232e2d1bb1a2df5e564f894a2fcc15d29fbd83f0d1e',
+      sizeBytes: 135_602_727,
+      key: 'source-mirrors/mhcflurry/models_class1_presentation.20200611.models-only.tar.gz',
+      contentType: 'application/gzip',
+    };
+    expect(parseSourceMirrorIdentity('mhcflurry-class1-presentation')).toEqual(expected);
+    expect(parseSourceMirrorIdentity('mhcflurry')).toBeNull();
+    expect(parseSourceMirrorIdentity('../mhcflurry-class1-presentation')).toBeNull();
+    expect(SOURCE_MIRROR_SPECS['mhcflurry-class1-presentation']).toEqual({
+      sizeBytes: expected.sizeBytes,
+      sha256: expected.sha256,
+      key: expected.key,
+      publicUrl: `https://assets.models.liatir.com/ai-runtime-boxes/${expected.key}`,
+    });
+    expect(Object.keys(SOURCE_MIRROR_SPECS)).toEqual(['mhcflurry-class1-presentation']);
+  });
+
+  it('rejects unknown and unauthenticated source-mirror upload routes before touching R2', async () => {
+    const env = { ADMIN_TOKEN: 'not-used' } as never;
+    const context = {} as never;
+    const unknown = await runtimeBoxRegistry.fetch(
+      new Request('https://models.liatir.com/v1/admin/source-mirrors/other/uploads', { method: 'POST' }),
+      env,
+      context,
+    );
+    expect(unknown.status).toBe(400);
+    await expect(unknown.json()).resolves.toEqual({ error: 'invalid_route' });
+
+    const unauthenticated = await runtimeBoxRegistry.fetch(
+      new Request('https://models.liatir.com/v1/admin/source-mirrors/mhcflurry-class1-presentation/uploads', {
+        method: 'POST',
+      }),
+      env,
+      context,
+    );
+    expect(unauthenticated.status).toBe(401);
+    await expect(unauthenticated.json()).resolves.toEqual({ error: 'unauthorized' });
   });
 });
 

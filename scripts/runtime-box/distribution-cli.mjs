@@ -64,6 +64,14 @@ const defaultPublicKeyPath = () => join(paths.keys, 'signing-public.json');
 const DEFAULT_OBJECT_PREFIX = 'ai-runtime-boxes';
 const DEFAULT_REGISTRY = 'https://models.liatir.com';
 const MULTIPART_PART_BYTES = 64 * 1024 * 1024;
+const SOURCE_MIRROR_SPECS = Object.freeze({
+  'mhcflurry-class1-presentation': Object.freeze({
+    sizeBytes: 135_602_727,
+    sha256: '44784a00d480298b66bfc232e2d1bb1a2df5e564f894a2fcc15d29fbd83f0d1e',
+    key: 'source-mirrors/mhcflurry/models_class1_presentation.20200611.models-only.tar.gz',
+    publicUrl: 'https://assets.models.liatir.com/ai-runtime-boxes/source-mirrors/mhcflurry/models_class1_presentation.20200611.models-only.tar.gz',
+  }),
+});
 /** The registry the command talks to, trailing slash removed so paths can be appended directly. */
 function registryBaseUrl(flags) {
   return String(flags.get('registry') || DEFAULT_REGISTRY).replace(/\/$/, '');
@@ -380,6 +388,111 @@ async function uploadArchiveMultipart(archivePath, release, flags) {
     }
     throw error;
   }
+}
+
+/**
+ * `publish-source-mirror` — publishes one reviewed source asset through a fixed Worker route.
+ *
+ * This intentionally has no bucket, key, size or hash flags. The selected ID resolves every remote
+ * field from the allowlist above, and the Worker owns an independent copy of the same allowlist.
+ */
+async function publishSourceMirror(mirrorId, flags) {
+  const spec = SOURCE_MIRROR_SPECS[mirrorId];
+  if (!spec) fail(`Unknown source mirror: ${mirrorId}`);
+  const fileFlag = flags.get('file');
+  if (typeof fileFlag !== 'string' || !fileFlag) {
+    fail('publish-source-mirror requires --file <prepared-archive>.');
+  }
+  const sourcePath = resolve(fileFlag);
+  const sourceInfo = await stat(sourcePath);
+  if (sourceInfo.size !== spec.sizeBytes) fail('Source mirror size does not match the reviewed asset.');
+  if (await sha256File(sourcePath) !== spec.sha256) {
+    fail('Source mirror SHA-256 does not match the reviewed asset.');
+  }
+
+  if (!await remoteObjectExists(spec.publicUrl)) {
+    const registry = registryBaseUrl(flags);
+    const token = await registryAdminToken(flags);
+    const route = `${registry}/v1/admin/source-mirrors/${encodeURIComponent(mirrorId)}/uploads`;
+    const created = await registryAdminRequest(route, token, { method: 'POST' });
+    if (typeof created.uploadId !== 'string' || !created.uploadId) {
+      fail('Registry did not return a source-mirror upload ID.');
+    }
+    if (created.mirrorId !== mirrorId
+      || created.key !== spec.key
+      || created.sha256 !== spec.sha256
+      || created.sizeBytes !== spec.sizeBytes) {
+      fail('Registry source-mirror identity differs from the reviewed local identity.');
+    }
+
+    const ranges = multipartPartRanges(spec.sizeBytes);
+    const completedParts = [];
+    try {
+      for (const range of ranges) {
+        let completed;
+        let lastError;
+        for (let attempt = 1; attempt <= 3 && !completed; attempt += 1) {
+          try {
+            completed = await registryAdminRequest(
+              `${route}/parts/${range.partNumber}?uploadId=${encodeURIComponent(created.uploadId)}`,
+              token,
+              {
+                method: 'PUT',
+                headers: {
+                  'content-type': 'application/octet-stream',
+                  'content-length': String(range.sizeBytes),
+                },
+                body: createReadStream(sourcePath, { start: range.start, end: range.end }),
+                duplex: 'half',
+              },
+            );
+          } catch (error) {
+            lastError = error;
+            if (attempt < 3) await new Promise((resolveRetry) => setTimeout(resolveRetry, attempt * 1000));
+          }
+        }
+        if (!completed) throw lastError;
+        if (completed.partNumber !== range.partNumber || typeof completed.etag !== 'string') {
+          fail(`Registry returned invalid metadata for source-mirror part ${range.partNumber}.`);
+        }
+        completedParts.push({ partNumber: completed.partNumber, etag: completed.etag });
+        console.log(`Uploaded source-mirror part ${range.partNumber} / ${ranges.length}`);
+      }
+      const completed = await registryAdminRequest(
+        `${route}/complete?uploadId=${encodeURIComponent(created.uploadId)}`,
+        token,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ parts: completedParts }),
+        },
+      );
+      if (completed.key !== spec.key || completed.sizeBytes !== spec.sizeBytes) {
+        fail('Registry completed a source mirror with the wrong identity.');
+      }
+    } catch (error) {
+      try {
+        await registryAdminRequest(
+          `${route}?uploadId=${encodeURIComponent(created.uploadId)}`,
+          token,
+          { method: 'DELETE' },
+        );
+      } catch {
+        // Preserve the primary error; incomplete R2 multipart uploads also expire automatically.
+      }
+      throw error;
+    }
+  }
+
+  const verification = await verifyRemoteObject(spec.publicUrl, spec.sizeBytes, spec.sha256);
+  await writeReceipt(flags, {
+    schemaVersion: 1,
+    status: 'passed',
+    mirrorId,
+    key: spec.key,
+    ...verification,
+  });
+  console.log(`Published and verified source mirror ${mirrorId}`);
 }
 
 /** Publishes one small signed release document through the same least-privilege Registry token. */
@@ -807,6 +920,7 @@ function usage() {
 Commands:
   serve [--port 8790]            Serve local channel documents and artifacts
   publish <release.json>         Upload immutable release objects to R2
+  publish-source-mirror <id>     Upload one allowlisted source mirror
   publish-key --bucket <name>    Publish the Worker public-key trust root
   promote <channel.json>         Promote a signed channel through the Worker
   revoke --box --version         Create a signed revocation document
@@ -846,6 +960,12 @@ export async function runRuntimeBoxDistributionCommand(command, rest) {
   configureWorkspace({ overrides: workspaceOverridesFromFlags(flags) });
   if (command === 'serve') return serve(flags);
   if (command === 'publish') return publish(positional[0] || fail('publish requires a signed release document.'), flags);
+  if (command === 'publish-source-mirror') {
+    return publishSourceMirror(
+      positional[0] || fail('publish-source-mirror requires an allowlisted mirror ID.'),
+      flags,
+    );
+  }
   if (command === 'publish-key') return publishTrustedKey(flags);
   if (command === 'promote') return promote(positional[0] || fail('promote requires a signed channel document.'), flags);
   if (command === 'revoke') return createRevocation(flags);
@@ -867,6 +987,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
 }
 
 export {
+  SOURCE_MIRROR_SPECS,
   multipartPartRanges,
   parseHttpByteRange,
   registryAdminRequest,

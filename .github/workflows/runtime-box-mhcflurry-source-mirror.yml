@@ -1,0 +1,97 @@
+name: Runtime Box MHCflurry source mirror
+
+on:
+  workflow_dispatch:
+    inputs:
+      mirror_id:
+        description: Reviewed source mirror to prepare and upload
+        required: true
+        type: choice
+        options:
+          - mhcflurry-class1-presentation
+      confirm:
+        description: Type UPLOAD MHCFLURRY SOURCE MIRROR to confirm the immutable R2 write
+        required: true
+        type: string
+
+concurrency:
+  group: runtime-box-source-mirror-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Prepare, upload and publicly verify the reviewed mirror
+    environment: runtime-box-production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      LIATIR_RUNTIME_BOX_ADMIN_TOKEN: ${{ secrets.LIATIR_RUNTIME_BOX_ADMIN_TOKEN }}
+      LIATIR_RUNTIME_BOX_REGISTRY: ${{ vars.LIATIR_RUNTIME_BOX_REGISTRY }}
+      MIRROR_ID: ${{ inputs.mirror_id }}
+      MIRROR_DIR: ${{ github.workspace }}/.runtime-box-source-mirror
+      UPLOAD_CONFIRMATION: ${{ inputs.confirm }}
+    steps:
+      - name: Require the exact main ref
+        run: test "${{ github.ref }}" = "refs/heads/main"
+
+      - name: Require the exact reviewed operation
+        run: |
+          test "$MIRROR_ID" = "mhcflurry-class1-presentation"
+          test "$UPLOAD_CONFIRMATION" = "UPLOAD MHCFLURRY SOURCE MIRROR"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Validate the bounded uploader
+        run: npm run test:unit -- tests/unit/runtime-box-publisher.test.ts
+
+      - name: Download and verify the official MHCflurry archive
+        run: |
+          set -euo pipefail
+          mkdir -p "$MIRROR_DIR"
+          curl -fL --retry 3 --retry-delay 2 \
+            --output "$MIRROR_DIR/models_class1_presentation.20200611.tar.bz2" \
+            https://github.com/openvax/mhcflurry/releases/download/pre-2.0/models_class1_presentation.20200611.tar.bz2
+          echo '6193efee43e768c605b1869b1a7da2b8b89a31140f49cf45449fae17b5b7102e  '"$MIRROR_DIR/models_class1_presentation.20200611.tar.bz2" | sha256sum --check --strict
+
+      - name: Repack only the reviewed models directory
+        run: >-
+          python3 scripts/repack-mhcflurry-model-asset.py
+          "$MIRROR_DIR/models_class1_presentation.20200611.tar.bz2"
+          "$MIRROR_DIR/models_class1_presentation.20200611.models-only.tar.gz"
+
+      - name: Upload through the restricted Registry surface and verify the public bytes
+        run: >-
+          npm run runtime-box -- publish-source-mirror "$MIRROR_ID"
+          --file "$MIRROR_DIR/models_class1_presentation.20200611.models-only.tar.gz"
+          --registry "$LIATIR_RUNTIME_BOX_REGISTRY"
+          --receipt "$MIRROR_DIR/publish-receipt.json"
+
+      - name: Record the exact public result
+        if: success()
+        run: |
+          {
+            echo '### MHCflurry source mirror'
+            echo
+            jq -r '"- URL: `\(.url)`\n- Bytes: `\(.sizeBytes)`\n- SHA-256: `\(.sha256)`"' "$MIRROR_DIR/publish-receipt.json"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the publication receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mhcflurry-source-mirror-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.MIRROR_DIR }}/publish-receipt.json
+          if-no-files-found: warn
+          retention-days: 90

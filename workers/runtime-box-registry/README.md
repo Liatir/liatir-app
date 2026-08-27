@@ -44,6 +44,14 @@ existing immutable objects are refused, each request is limited to 64 MiB, and
 completion checks the expected byte size. The release CLI verifies the complete
 public SHA-256 before it uploads or promotes signed metadata.
 
+The source-mirror surface is narrower still: it accepts only IDs compiled into
+both the Worker and repository CLI. The sole current ID is
+`mhcflurry-class1-presentation`; its R2 key, byte size, SHA-256 and content type
+cannot be supplied by a caller. Production upload runs only through the manual
+`runtime-box-mhcflurry-source-mirror.yml` workflow in the protected
+`runtime-box-production` environment, and finishes by streaming and hashing the
+public object.
+
 CI uses the Registry admin surface for both archives and immutable signed release documents.
 It does not receive a Cloudflare account or R2 API token. Rotate the shared Worker/GitHub
 Environment token with `npm run runtime-box:ci:configure -- --rotate-registry-token`.
