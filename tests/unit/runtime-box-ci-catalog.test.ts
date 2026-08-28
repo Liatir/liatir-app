@@ -25,7 +25,7 @@ describe('Runtime Box CI catalog', () => {
     expect(() => validateRuntimeBoxCiCatalog(catalog, { requireWorkflows: false })).not.toThrow();
   });
 
-  it('enables only the reviewed first oncology native target', () => {
+  it('enables only the reviewed macOS oncology native targets', () => {
     const oncologyIds = new Set([
       'openvax-mhcflurry-class1-presentation',
       'griffithlab-pvactools-pvacseq',
@@ -38,6 +38,7 @@ describe('Runtime Box CI catalog', () => {
 
     expect(enabled).toEqual([
       'openvax-mhcflurry-class1-presentation/macos-aarch64-metal',
+      'griffithlab-pvactools-pvacseq/macos-aarch64-cpu',
     ]);
     const mhcflurry = catalog.components.find(
       (component) => component.componentId === 'openvax-mhcflurry-class1-presentation',
@@ -47,6 +48,13 @@ describe('Runtime Box CI catalog', () => {
     expect(mhcflurry?.targets
       .filter((target) => target.targetId !== 'macos-aarch64-metal')
       .every((target) => target.status === 'planned' && !target.nativeCiEnabled)).toBe(true);
+    const pvactools = catalog.components.find(
+      (component) => component.componentId === 'griffithlab-pvactools-pvacseq',
+    );
+    expect(pvactools?.targets.find((target) => target.targetId === 'macos-aarch64-cpu'))
+      .toMatchObject({ status: 'planned', nativeCiEnabled: true });
+    expect(pvactools?.targets.find((target) => target.targetId === 'linux-x86_64-cpu'))
+      .toMatchObject({ status: 'planned', nativeCiEnabled: false });
     for (const component of catalog.components.filter((entry) => oncologyIds.has(entry.componentId))) {
       expect(readFileSync(component.callerWorkflow, 'utf8')).toContain('"runtime-boxes/catalog.json"');
     }
