@@ -1,10 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 import {
   SOURCE_MIRROR_SPECS,
   multipartPartRanges,
   parseHttpByteRange,
 } from '../../scripts/runtime-box/distribution-cli.mjs';
+import { dispatchRuntimeBox } from '../../scripts/runtime-box/scrollcase-adapter.mjs';
 import {
   parseImmutableReleaseIdentity,
   parseMultipartArchiveIdentity,
@@ -125,6 +128,34 @@ describe('Runtime Box large-archive publisher', () => {
     );
     expect(unauthenticated.status).toBe(401);
     await expect(unauthenticated.json()).resolves.toEqual({ error: 'unauthorized' });
+  });
+
+  it('keeps the production source-mirror workflow manual and MHCflurry-only', () => {
+    const workflow = readFileSync(
+      resolve('.github/workflows/runtime-box-mhcflurry-source-mirror.yml'),
+      'utf8',
+    );
+    const triggers = workflow.slice(0, workflow.indexOf('\nconcurrency:'));
+    expect(triggers).toContain('workflow_dispatch:');
+    expect(triggers).not.toContain('\n  push:');
+    expect(triggers).not.toContain('\n  pull_request:');
+    expect(workflow).toContain('environment: runtime-box-production');
+    expect(workflow).toContain('LIATIR_RUNTIME_BOX_ADMIN_TOKEN: ${{ secrets.LIATIR_RUNTIME_BOX_ADMIN_TOKEN }}');
+    expect(workflow).toContain('test "$MIRROR_ID" = "mhcflurry-class1-presentation"');
+    expect(workflow).toContain('test "$UPLOAD_CONFIRMATION" = "UPLOAD MHCFLURRY SOURCE MIRROR"');
+    expect(workflow).toContain('publish-source-mirror "$MIRROR_ID"');
+    expect(workflow).not.toMatch(/CLOUDFLARE_API_TOKEN|wrangler r2 object put|runtime-box -- publish /);
+    expect(workflow.match(/- mhcflurry-class1-presentation/g)).toHaveLength(1);
+  });
+
+  it('routes the source-mirror command through the stable Runtime Box CLI', async () => {
+    const distributionCommand = vi.fn(async () => undefined);
+    const values = ['mhcflurry-class1-presentation', '--file', '/tmp/mirror.tar.gz'];
+
+    await dispatchRuntimeBox('publish-source-mirror', values, { distributionCommand });
+
+    expect(distributionCommand).toHaveBeenCalledOnce();
+    expect(distributionCommand).toHaveBeenCalledWith('publish-source-mirror', values);
   });
 });
 

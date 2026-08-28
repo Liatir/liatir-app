@@ -24,7 +24,14 @@ import { runRuntimeBoxDistributionCommand } from './distribution-cli.mjs';
 import { liatirSignerCommand } from './signer-command.mjs';
 
 export const LIATIR_SCROLLCASE_NAMESPACE = 'liatir.runtime-box';
-const DISTRIBUTION_COMMANDS = new Set(['serve', 'publish', 'publish-key', 'promote', 'revoke']);
+const DISTRIBUTION_COMMANDS = new Set([
+  'serve',
+  'publish',
+  'publish-source-mirror',
+  'publish-key',
+  'promote',
+  'revoke',
+]);
 const VALUE_FLAGS = new Set([
   'archive',
   'asset-base-url',
@@ -285,6 +292,7 @@ Generic box commands (published Scrollcase):
 Liatir distribution commands:
   serve [--port 8790]            Serve local candidate Registry data
   publish <release.json>         Upload immutable release objects to R2
+  publish-source-mirror <id>     Upload one allowlisted source mirror
   publish-key --bucket <name>    Publish the Worker public-key trust root
   promote <channel.json>         Promote a signed channel through the Worker
   revoke --box --version         Create a signed revocation document
