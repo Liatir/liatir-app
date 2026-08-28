@@ -1,6 +1,6 @@
 # Current project status
 
-## Oncology Phase 2 is implemented on `main`; native target proof remains gated (2026-08-28)
+## Oncology Phase 2 is on `main`; MHCflurry Metal is native-lifecycle validated (2026-08-28)
 
 MHC-I Epitope Prediction and pVACseq Neoantigen Prioritization now have shared contracts, bounded
 offline product scripts, direct and pipeline execution, Jobs/Results/provenance, cancellation and
@@ -16,10 +16,11 @@ signed Runtime Box version, target and archive SHA-256. The Neoantigen card and 
 hidden while the Tool Runtime catalog is empty and become available only after at least one exact
 pVACseq target is published.
 
-The release boundary remains closed on purpose. Every new catalog target is `planned` with native CI
-disabled, both active product catalogs omit the components, and the preset is filtered out. No target
-has yet completed a native build, scientific comparison and install/update/rollback/remove lifecycle.
-Publication still requires those evidence records; no GPU CI, signing or Runtime Box publication ran.
+The release boundary remains closed on purpose. MHCflurry `macos-aarch64-metal` is now
+`native-lifecycle-validated` with native CI enabled; every other oncology target remains `planned`
+with native CI disabled. Both active product catalogs still omit the components, and the preset is
+filtered out. Production publication still requires protected signing, immutable publication and the
+real product lifecycle; no CUDA CI, production signing or Runtime Box publication ran.
 The unmodified upstream pVACtools wheel retains generic IEDB integration modules because pVACseq loads
 that machinery even when it executes the local MHCflurry predictor. Liatir exposes only
 MHCflurry/MHCflurryEL, sets IEDB retries to zero and denies network access to the parent and child
@@ -57,13 +58,17 @@ native jobs were skipped by design because every new target still has `nativeCiE
 The same push ran the existing public SDK mirror successfully as run `33161230603`, producing
 `liatir/sdk` commit `902661f41b478a4938e050158714ebc432945b97`.
 
-The first intended native target is MHCflurry `macos-aarch64-metal`, because it proves the standalone
-Metal path and CPU/MPS parity on the available host before any paid CUDA work. Its ephemeral-runner
-preflight stopped before registration: the Mac had 2,374,496,256 free bytes while the reviewed
-`macos-arm64-heavy` profile requires 37,580,963,840. No runner, workflow dispatch, target enablement,
-native build, signing or Runtime Box publication occurred. Do not lower that safety floor; free at
-least the required space on an Apple-silicon Mac, then enable and validate exactly one target at a
-time.
+After disk was freed, commit `d8bc51266e8e1eff779c25f0d366d75479de98dc` enabled only MHCflurry
+`macos-aarch64-metal`; a regression guard keeps the other six oncology targets disabled. Manual run
+`33166465046` passed on exact ephemeral runner `liatir-macos-heavy-1787915736-91228`: clean pixi
+build, development signature verification, archive/layout self-test, scientific CPU/Metal comparison
+and 23 Rust Runtime Box lifecycle tests (2 heavy fixtures ignored). The 459,529,381-byte archive had
+SHA-256 `b9d645b4051eb796308ba29b66005891658c4258e26b32296de57b04bb36b72e` and installed size
+1,379,850,808 bytes. MHCflurry 2.2.1 with torch 2.8.0 produced finite binding and presentation
+predictions; repeated CPU ranking and Metal parity passed at absolute/relative tolerance 0.001, with
+maximum absolute difference 0.0014372563091455959. Compact evidence artifact `9683966329` has digest
+`sha256:3c7a180df1d584ba4f8b188bc11877d5d020b40b982dbd6df2fc26cdb1531e54`. Cleanup passed, the runner
+deregistered, its marked root was removed and the repository runner inventory returned to zero.
 
 ## Runtime Components and scientific contracts are ready for model-specific phases (2026-08-25)
 

@@ -39,6 +39,14 @@ describe('Runtime Box CI catalog', () => {
     expect(enabled).toEqual([
       'openvax-mhcflurry-class1-presentation/macos-aarch64-metal',
     ]);
+    const mhcflurry = catalog.components.find(
+      (component) => component.componentId === 'openvax-mhcflurry-class1-presentation',
+    );
+    expect(mhcflurry?.targets.find((target) => target.targetId === 'macos-aarch64-metal'))
+      .toMatchObject({ status: 'native-lifecycle-validated', nativeCiEnabled: true });
+    expect(mhcflurry?.targets
+      .filter((target) => target.targetId !== 'macos-aarch64-metal')
+      .every((target) => target.status === 'planned' && !target.nativeCiEnabled)).toBe(true);
     for (const component of catalog.components.filter((entry) => oncologyIds.has(entry.componentId))) {
       expect(readFileSync(component.callerWorkflow, 'utf8')).toContain('"runtime-boxes/catalog.json"');
     }

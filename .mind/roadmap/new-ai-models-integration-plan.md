@@ -185,12 +185,21 @@ the local gates. Automatic catalog-only preflights passed for MHCflurry in run `
 (artifact `9681714960`, digest
 `sha256:7984adb083f2d1eaadc54faffb3c4a21fc98bae2fbe04412260494c24aaf0fd6`) and pVACtools in run
 `33161230937` (artifact `9681718976`, digest
-`sha256:6cceb615655ac04546538578d0bac44dd30b458be679329ce00ac258a45bed84`). Their native jobs were
-skipped intentionally because target enablement remains false. The MHCflurry Apple-silicon runner
-preflight then found 2,374,496,256 free bytes on the available Mac versus the required
-37,580,963,840, so it stopped before runner registration or workflow dispatch. The next execution
-step is therefore to free the required Mac disk space and run `macos-aarch64-metal` alone; do not
-reduce the reviewed disk floor and do not start CUDA, signing or publication as a workaround.
+`sha256:6cceb615655ac04546538578d0bac44dd30b458be679329ce00ac258a45bed84`).
+
+After the Apple-silicon host regained the reviewed free-disk floor, commit
+`d8bc51266e8e1eff779c25f0d366d75479de98dc` enabled only MHCflurry
+`macos-aarch64-metal`; all other oncology targets remain disabled. Manual native-lifecycle run
+`33166465046` passed on ephemeral runner `liatir-macos-heavy-1787915736-91228`. It built and verified
+the exact 459,529,381-byte archive (SHA-256
+`b9d645b4051eb796308ba29b66005891658c4258e26b32296de57b04bb36b72e`), ran the native self-test,
+proved finite and stable binding/presentation predictions, and passed CPU/Metal parity with maximum
+absolute difference 0.0014372563091455959 inside the declared 0.001 absolute/relative tolerance.
+The Rust lifecycle passed 23 tests with 2 heavy fixtures ignored. Compact evidence artifact
+`9683966329` has digest
+`sha256:3c7a180df1d584ba4f8b188bc11877d5d020b40b982dbd6df2fc26cdb1531e54`. Cleanup deregistered the
+runner and removed its marked root. This proves the first native target, but does not prove CUDA,
+production signing/publication or the real product lifecycle; those gates remain separate.
 
 ## Fase 3 — Strutture, affinità e simulazione
 

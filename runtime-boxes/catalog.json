@@ -626,7 +626,7 @@
           "hostEnvironments": ["native"],
           "recipeId": "mhcflurry-class1-presentation-macos-aarch64-metal",
           "runnerProfileId": "macos-arm64-heavy",
-          "status": "planned",
+          "status": "native-lifecycle-validated",
           "validationModes": ["build", "scientific", "native-lifecycle"],
           "timeoutMinutes": 120,
           "requiredBuildDiskBytes": 8589934592,
