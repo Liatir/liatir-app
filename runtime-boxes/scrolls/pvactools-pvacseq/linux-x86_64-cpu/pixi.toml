@@ -5,6 +5,7 @@ platforms = ["linux-64"]
 
 [dependencies]
 python = "3.11.*"
+setuptools = "80.9.0.*"
 tensorflow = "2.15.*"
 numpy = "1.26.4.*"
 pandas = ">=1.5,<2.1"
@@ -14,7 +15,7 @@ pyyaml = "*"
 biopython = "1.83.*"
 networkx = "*"
 simanneal = "*"
-wget = "*"
+python-wget = "3.2.*"
 pysam = "*"
 pillow = "*"
 pymp-pypi = "*"

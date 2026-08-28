@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "kind": "scrollcase.box.dependency-license-audit",
   "targetId": "linux-x86_64-cpu",
-  "dependencyLockSha256": "09bf56c98ab86d2a1f910647c45c83f890a7549af6f1c48bca89cfe1d9f782f7",
+  "dependencyLockSha256": "984ef86f75d955cf7abbb97e19b83440d8ee57f5826b32762ef45afde0e22646",
   "packages": [
     {
       "name": "_openmp_mutex",
@@ -593,12 +593,6 @@
       "source": "conda"
     },
     {
-      "name": "libidn2",
-      "version": "2.3.8",
-      "declaredLicense": "LGPL-2.0-only",
-      "source": "conda"
-    },
-    {
       "name": "libjpeg-turbo",
       "version": "3.2.0",
       "declaredLicense": "IJG AND BSD-3-Clause AND Zlib",
@@ -722,12 +716,6 @@
       "name": "libudev1",
       "version": "257.13",
       "declaredLicense": "LGPL-2.1-or-later",
-      "source": "conda"
-    },
-    {
-      "name": "libunistring",
-      "version": "0.9.10",
-      "declaredLicense": "GPL-3.0-only OR LGPL-3.0-only",
       "source": "conda"
     },
     {
@@ -881,12 +869,6 @@
       "source": "conda"
     },
     {
-      "name": "pcre2",
-      "version": "10.47",
-      "declaredLicense": "BSD-3-Clause",
-      "source": "conda"
-    },
-    {
       "name": "pillow",
       "version": "12.3.0",
       "declaredLicense": "HPND",
@@ -995,6 +977,12 @@
       "source": "conda"
     },
     {
+      "name": "python-wget",
+      "version": "3.2",
+      "declaredLicense": "Public Domain",
+      "source": "conda"
+    },
+    {
       "name": "python_abi",
       "version": "3.11",
       "declaredLicense": "BSD-3-Clause",
@@ -1080,7 +1068,7 @@
     },
     {
       "name": "setuptools",
-      "version": "81.0.0",
+      "version": "80.9.0",
       "declaredLicense": "MIT",
       "source": "conda"
     },
@@ -1199,12 +1187,6 @@
       "source": "conda"
     },
     {
-      "name": "wget",
-      "version": "1.25.0",
-      "declaredLicense": "GPL-3.0-or-later",
-      "source": "conda"
-    },
-    {
       "name": "wrapt",
       "version": "1.14.1",
       "declaredLicense": "BSD-2-Clause",
@@ -1262,12 +1244,6 @@
       "name": "zipp",
       "version": "4.1.0",
       "declaredLicense": "MIT",
-      "source": "conda"
-    },
-    {
-      "name": "zlib",
-      "version": "1.3.2",
-      "declaredLicense": "Zlib",
       "source": "conda"
     },
     {

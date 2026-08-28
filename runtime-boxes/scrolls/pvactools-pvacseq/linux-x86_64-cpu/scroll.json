@@ -140,7 +140,7 @@
     "source/pvactools-wheel/pvactools/tools/pvacseq/example_data/results/combined"
   ],
   "selfTest": {
-    "imports": ["tensorflow", "numpy", "pandas", "sklearn", "pysam", "Bio", "pymp"],
+    "imports": ["tensorflow", "numpy", "pandas", "sklearn", "pysam", "Bio", "pymp", "wget", "pkg_resources"],
     "files": [
       "source/pvactools-wheel/pvactools/tools/pvacseq/run.py",
       "source/pvactools-wheel/pvactools/tools/pvacseq/example_data/annotated.expression.vcf.gz",

@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "kind": "scrollcase.box.dependency-license-audit",
   "targetId": "macos-aarch64-cpu",
-  "dependencyLockSha256": "d9167746a55d85af0a3cd7995d89e3cd0c5029dff3058d551cec379f54007aa6",
+  "dependencyLockSha256": "1c35c27f2e09afc8ed9b47cae2ecde5d920245be644ba85a72acffedbdd29c3b",
   "packages": [
     {
       "name": "_openmp_mutex",
@@ -569,18 +569,6 @@
       "source": "conda"
     },
     {
-      "name": "libidn2",
-      "version": "2.3.8",
-      "declaredLicense": "LGPL-2.0-only",
-      "source": "conda"
-    },
-    {
-      "name": "libintl",
-      "version": "0.25.1",
-      "declaredLicense": "LGPL-2.1-or-later",
-      "source": "conda"
-    },
-    {
       "name": "libjpeg-turbo",
       "version": "3.2.0",
       "declaredLicense": "IJG AND BSD-3-Clause AND Zlib",
@@ -668,12 +656,6 @@
       "name": "libtiff",
       "version": "4.7.2",
       "declaredLicense": "HPND",
-      "source": "conda"
-    },
-    {
-      "name": "libunistring",
-      "version": "0.9.10",
-      "declaredLicense": "GPL-3.0-only OR LGPL-3.0-only",
       "source": "conda"
     },
     {
@@ -821,12 +803,6 @@
       "source": "conda"
     },
     {
-      "name": "pcre2",
-      "version": "10.47",
-      "declaredLicense": "BSD-3-Clause",
-      "source": "conda"
-    },
-    {
       "name": "pillow",
       "version": "12.3.0",
       "declaredLicense": "HPND",
@@ -935,6 +911,12 @@
       "source": "conda"
     },
     {
+      "name": "python-wget",
+      "version": "3.2",
+      "declaredLicense": "Public Domain",
+      "source": "conda"
+    },
+    {
       "name": "python_abi",
       "version": "3.11",
       "declaredLicense": "BSD-3-Clause",
@@ -1008,7 +990,7 @@
     },
     {
       "name": "setuptools",
-      "version": "84.0.0",
+      "version": "80.9.0",
       "declaredLicense": "MIT",
       "source": "conda"
     },
@@ -1121,12 +1103,6 @@
       "source": "conda"
     },
     {
-      "name": "wget",
-      "version": "1.25.0",
-      "declaredLicense": "GPL-3.0-or-later",
-      "source": "conda"
-    },
-    {
       "name": "wrapt",
       "version": "1.14.1",
       "declaredLicense": "BSD-2-Clause",
@@ -1184,12 +1160,6 @@
       "name": "zipp",
       "version": "4.1.0",
       "declaredLicense": "MIT",
-      "source": "conda"
-    },
-    {
-      "name": "zlib",
-      "version": "1.3.2",
-      "declaredLicense": "Zlib",
       "source": "conda"
     },
     {

@@ -42,6 +42,19 @@ describe('Phase 2 oncology contract', () => {
     }
   });
 
+  it('installs and self-tests legacy Python modules required by the reviewed wheels', () => {
+    for (const targetId of ['macos-aarch64-cpu', 'linux-x86_64-cpu']) {
+      const directory = resolve(`runtime-boxes/scrolls/pvactools-pvacseq/${targetId}`);
+      const manifest = readFileSync(resolve(directory, 'pixi.toml'), 'utf8');
+      const scroll = JSON.parse(readFileSync(resolve(directory, 'scroll.json'), 'utf8'));
+      expect(manifest).toContain('python-wget = "3.2.*"');
+      expect(manifest).toContain('setuptools = "80.9.0.*"');
+      expect(manifest).not.toMatch(/^wget\s*=/m);
+      expect(scroll.selfTest.imports).toContain('wget');
+      expect(scroll.selfTest.imports).toContain('pkg_resources');
+    }
+  });
+
   it('keeps reviewed MHCflurry metadata unexposed until an exact target is published', () => {
     expect(MHCFLURRY_CLASS1_PRESENTATION_METADATA).toMatchObject({
       id: MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID,

@@ -747,7 +747,7 @@
           "validationModes": ["build", "scientific", "native-lifecycle"],
           "timeoutMinutes": 180,
           "requiredBuildDiskBytes": 10737418240,
-          "dependencyLockSha256": "d9167746a55d85af0a3cd7995d89e3cd0c5029dff3058d551cec379f54007aa6",
+          "dependencyLockSha256": "1c35c27f2e09afc8ed9b47cae2ecde5d920245be644ba85a72acffedbdd29c3b",
           "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/pvactools-pvacseq-macos-aarch64-cpu.json",
           "diskPlan": {
             "estimatedInstalledSizeBytes": 3221225472,
@@ -767,7 +767,7 @@
           "validationModes": ["build", "scientific", "native-lifecycle"],
           "timeoutMinutes": 180,
           "requiredBuildDiskBytes": 10737418240,
-          "dependencyLockSha256": "09bf56c98ab86d2a1f910647c45c83f890a7549af6f1c48bca89cfe1d9f782f7",
+          "dependencyLockSha256": "984ef86f75d955cf7abbb97e19b83440d8ee57f5826b32762ef45afde0e22646",
           "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/pvactools-pvacseq-linux-x86_64-cpu.json",
           "diskPlan": {
             "estimatedInstalledSizeBytes": 3221225472,
