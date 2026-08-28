@@ -30,6 +30,18 @@ describe('Phase 2 oncology contract', () => {
     ]).size).toBe(5);
   });
 
+  it('checks vendored vcfpy only after adding its reviewed source directory', () => {
+    for (const targetId of ['macos-aarch64-cpu', 'linux-x86_64-cpu']) {
+      const scroll = JSON.parse(readFileSync(resolve(
+        `runtime-boxes/scrolls/pvactools-pvacseq/${targetId}/scroll.json`,
+      ), 'utf8'));
+      expect(scroll.selfTest.imports).not.toContain('vcfpy');
+      expect(scroll.selfTest.pythonCode.indexOf("source/vcfpy-sdist"))
+        .toBeLessThan(scroll.selfTest.pythonCode.indexOf('import vcfpy'));
+      expect(scroll.selfTest.pythonCode).toContain("assert vcfpy.__version__ == '0.13.8'");
+    }
+  });
+
   it('keeps reviewed MHCflurry metadata unexposed until an exact target is published', () => {
     expect(MHCFLURRY_CLASS1_PRESENTATION_METADATA).toMatchObject({
       id: MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID,
