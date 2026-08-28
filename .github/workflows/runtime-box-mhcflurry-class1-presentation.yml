@@ -3,6 +3,7 @@ name: Runtime Box MHCflurry Class I presentation
 on:
   pull_request:
     paths:
+      - "runtime-boxes/catalog.json"
       - "runtime-boxes/scrolls/mhcflurry-class1-presentation/macos-aarch64-metal/**"
       - "runtime-boxes/scrolls/mhcflurry-class1-presentation/linux-x86_64-cpu/**"
       - "runtime-boxes/scrolls/mhcflurry-class1-presentation/windows-x86_64-cpu/**"
@@ -26,6 +27,7 @@ on:
   push:
     branches: [main]
     paths:
+      - "runtime-boxes/catalog.json"
       - "runtime-boxes/scrolls/mhcflurry-class1-presentation/macos-aarch64-metal/**"
       - "runtime-boxes/scrolls/mhcflurry-class1-presentation/linux-x86_64-cpu/**"
       - "runtime-boxes/scrolls/mhcflurry-class1-presentation/windows-x86_64-cpu/**"

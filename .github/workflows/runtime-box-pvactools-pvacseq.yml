@@ -3,6 +3,7 @@ name: Runtime Box pVACtools pVACseq
 on:
   pull_request:
     paths:
+      - "runtime-boxes/catalog.json"
       - "runtime-boxes/scrolls/pvactools-pvacseq/macos-aarch64-cpu/**"
       - "runtime-boxes/scrolls/pvactools-pvacseq/linux-x86_64-cpu/**"
       - "runtime-boxes/legal/audits/pvactools-pvacseq-macos-aarch64-cpu.json"
@@ -20,6 +21,7 @@ on:
   push:
     branches: [main]
     paths:
+      - "runtime-boxes/catalog.json"
       - "runtime-boxes/scrolls/pvactools-pvacseq/macos-aarch64-cpu/**"
       - "runtime-boxes/scrolls/pvactools-pvacseq/linux-x86_64-cpu/**"
       - "runtime-boxes/legal/audits/pvactools-pvacseq-macos-aarch64-cpu.json"

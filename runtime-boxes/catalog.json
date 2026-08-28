@@ -638,7 +638,7 @@
             "safetyMarginBytes": 4294967296
           },
           "gpuRequired": false,
-          "nativeCiEnabled": false
+          "nativeCiEnabled": true
         },
         {
           "targetId": "linux-x86_64-cpu",

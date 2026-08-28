@@ -25,6 +25,25 @@ describe('Runtime Box CI catalog', () => {
     expect(() => validateRuntimeBoxCiCatalog(catalog, { requireWorkflows: false })).not.toThrow();
   });
 
+  it('enables only the reviewed first oncology native target', () => {
+    const oncologyIds = new Set([
+      'openvax-mhcflurry-class1-presentation',
+      'griffithlab-pvactools-pvacseq',
+    ]);
+    const enabled = catalog.components
+      .filter((component) => oncologyIds.has(component.componentId))
+      .flatMap((component) => component.targets
+        .filter((target) => target.nativeCiEnabled)
+        .map((target) => `${component.componentId}/${target.targetId}`));
+
+    expect(enabled).toEqual([
+      'openvax-mhcflurry-class1-presentation/macos-aarch64-metal',
+    ]);
+    for (const component of catalog.components.filter((entry) => oncologyIds.has(entry.componentId))) {
+      expect(readFileSync(component.callerWorkflow, 'utf8')).toContain('"runtime-boxes/catalog.json"');
+    }
+  });
+
   it('keeps published core targets exactly aligned with published catalog targets', () => {
     for (const record of catalog.components) {
       const component = record.componentKind === 'ai-model'
