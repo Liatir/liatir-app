@@ -1,5 +1,52 @@
 # Current project status
 
+## Oncology Phase 2 is implemented locally; the reviewed MHCflurry mirror is public (2026-08-28)
+
+MHC-I Epitope Prediction and pVACseq Neoantigen Prioritization now have shared contracts, bounded
+offline product scripts, direct and pipeline execution, Jobs/Results/provenance, cancellation and
+navigation-safe finalization. The Runtime Box source includes exact locks, asset hashes, legal
+inventories, CI workflows, scientific validators and lifecycle E2E specifications. MHCflurry has
+prepared Apple Metal, Linux/Windows CPU and Linux/Windows CUDA targets; pVACseq has macOS/Linux CPU
+targets, with Windows WSL2 recorded only as future evidence and not current product support.
+
+Each direct screen now binds only to its own direct-run Job, so a pipeline execution cannot disable
+or replace unrelated direct-run inputs. Persisted Results record every selected scientific parameter,
+primary and optional proximal input inspection, accelerator and disabled-network state, plus the exact
+signed Runtime Box version, target and archive SHA-256. The Neoantigen card and pipeline preset remain
+hidden while the Tool Runtime catalog is empty and become available only after at least one exact
+pVACseq target is published.
+
+The release boundary remains closed on purpose. Every new catalog target is `planned` with native CI
+disabled, both active product catalogs omit the components, and the preset is filtered out. No target
+has yet completed a native build, scientific comparison and install/update/rollback/remove lifecycle.
+Publication still requires those evidence records; no GPU CI, signing or Runtime Box publication ran.
+The unmodified upstream pVACtools wheel retains generic IEDB integration modules because pVACseq loads
+that machinery even when it executes the local MHCflurry predictor. Liatir exposes only
+MHCflurry/MHCflurryEL, sets IEDB retries to zero and denies network access to the parent and child
+processes; deleting those upstream modules would require an unsupported pVACtools fork.
+
+The previously missing source-mirror boundary is deployed and proven. Commit `8128002` added a manual
+`runtime-box-production` workflow plus a Registry route that derives the only accepted R2 key, size,
+SHA-256 and content type from the fixed ID `mhcflurry-class1-presentation`. Wrangler deployed clean
+commit bytes as Registry version `f8905c7a-9893-4d52-93dd-bbcbf4926a34`; public health passed, the
+`ADMIN_TOKEN` secret and `liatir-storage` binding remained attached, and an unauthenticated create was
+rejected with 401. The billing-blocked run `33064748592` never created a job. The first healthy run
+`33159915001` reproduced the archive but failed before contacting the Registry because the stable CLI
+did not route the new command. Commit `1a891c7` fixed that exact boundary and added a regression test.
+Run `33160339119` then passed the allowlist, official-source hash, deterministic repack, restricted
+multipart upload, public byte/hash readback and receipt upload. An independent public download matched
+135,602,727 bytes and SHA-256
+`44784a00d480298b66bfc232e2d1bb1a2df5e564f894a2fcc15d29fbd83f0d1e`, with 45 archive entries limited
+to `models/` and `LIATIR_SOURCE.json`. Receipt artifact `9681436581` has digest
+`sha256:2047147d0330adb7154edd4309e014b1fc50cde2fc11f050b52703c15cee34c9`.
+
+Local evidence: the final `npm run test:verify` passed 70 files / 473 tests; Rust passed
+91 tests with 2 heavy fixtures ignored and Clippy had no errors. The desktop UI gate passed its 34
+native scenarios and all applicable companion suites; the two new heavy component specifications
+loaded but skipped because their boxes are unpublished. Catalog, JSON, JavaScript syntax and diff
+checks passed. The exact acceptance ledger and remaining publication sequence are in
+[New scientific model integration](./roadmap/new-ai-models-integration-plan.md).
+
 ## Runtime Components and scientific contracts are ready for model-specific phases (2026-08-25)
 
 Runtime Boxes now have one signed lifecycle for two honest product kinds: AI Models and Tool

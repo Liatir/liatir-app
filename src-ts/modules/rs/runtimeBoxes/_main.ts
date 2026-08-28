@@ -1,5 +1,6 @@
 import type { LiatirAPI } from '../../../types';
 import type {
+  LiatirRuntimeComponentPythonRunResult,
   LiatirRuntimeComponentInstallResult,
   LiatirRuntimeComponentRollbackResult,
   LiatirRuntimeComponentStatus,
@@ -34,6 +35,26 @@ export function buildRuntimeBoxes(
       }),
     remove: (componentKind, runtimeId, boxId) =>
       core.invoke<boolean>('lia_runtime_box_remove', { componentKind, runtimeId, boxId }),
+    runPython: ({ componentKind, runtimeId, script, args = [], inputJson, timeoutSeconds }) =>
+      core.invoke<LiatirRuntimeComponentPythonRunResult>('lia_runtime_component_python_run', {
+        componentKind,
+        runtimeId,
+        script,
+        args,
+        inputJson,
+        timeoutSeconds: timeoutSeconds ?? null,
+      }),
+    spawnPython: ({ componentKind, runtimeId, script, args = [], inputJson, workspaceId, label, metadata }) =>
+      core.invoke<{ jobId: string }>('lia_runtime_component_python_spawn', {
+        componentKind,
+        runtimeId,
+        script,
+        args,
+        inputJson,
+        workspaceId: workspaceId ?? null,
+        label: label ?? null,
+        metadata: metadata ?? null,
+      }),
     cancelDownload: (downloadId) =>
       core.invoke<boolean>('lia_managed_download_cancel', { id: downloadId }),
   };

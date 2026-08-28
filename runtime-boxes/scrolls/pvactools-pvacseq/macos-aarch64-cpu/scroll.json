@@ -1,0 +1,160 @@
+{
+  "$schema": "https://scrollcase.dev/schema/v2/scroll.schema.json",
+  "schemaVersion": 2,
+  "scrollId": "pvactools-pvacseq-macos-aarch64-cpu",
+  "scrollVersion": "1.0.0",
+  "boxId": "pvactools-pvacseq",
+  "modelId": "griffithlab-pvactools-pvacseq",
+  "runtimeId": "oncology-pvactools-pvacseq-7-1-2",
+  "version": "7.1.2-beta.1",
+  "sourceRevision": "v7.1.2+mhcflurry-v2.0.6",
+  "target": {
+    "platform": "macos",
+    "arch": "aarch64",
+    "accelerator": "cpu"
+  },
+  "compatibility": {
+    "minLiatirVersion": "0.2.1",
+    "minMacosVersion": "13.0",
+    "minRamGb": 8
+  },
+  "pythonVersion": "3.11.16",
+  "pixiVersion": "0.73.0",
+  "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/pvactools-pvacseq-macos-aarch64-cpu.json",
+  "pythonEntryPoint": "venv/bin/python",
+  "modelCacheSubdir": "model-cache/pvactools-mhcflurry-downloads",
+  "assetBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
+  "assets": [
+    {
+      "url": "https://files.pythonhosted.org/packages/4c/5e/ea975bf21baea879b27bb8fd5e61e0a64ac312c087c3c4bd27a6448d72c3/pvactools-7.1.2-py3-none-any.whl",
+      "relativePath": ".sources/pvactools-7.1.2-py3-none-any.whl",
+      "sizeBytes": 77285688,
+      "sha256": "625049fea40020660c365c02d14f6f72c0be6a47aba1a7d4f079fda912853dba"
+    },
+    {
+      "url": "https://files.pythonhosted.org/packages/19/2f/4d33286e48d9477a897cc3e07e0bb21e302c2ecd91f6ce6f1d707b02a9a2/mhcflurry-2.0.6-py3-none-any.whl",
+      "relativePath": ".sources/mhcflurry-2.0.6-py3-none-any.whl",
+      "sizeBytes": 140766,
+      "sha256": "9aae769f4093a93076dfa9662bd563f1245d15c0ad159da41af91bc6c405bdef"
+    },
+    {
+      "url": "https://files.pythonhosted.org/packages/36/15/7fe6d6bb60483a39b49bcb5a8669ca931c0c514eb1cd867258c185e57652/mhcgnomes-3.33.6-py3-none-any.whl",
+      "relativePath": ".sources/mhcgnomes-3.33.6-py3-none-any.whl",
+      "sizeBytes": 192255,
+      "sha256": "65d76a8e48c43652d4e3cd8ac3dc73f62793e6bf6df1bf0dd849cebf96ddf904"
+    },
+    {
+      "url": "https://files.pythonhosted.org/packages/e7/c1/314e8bac0b73b683ecbd23e565f3309173eef3e0f9b6d470ef60f5dfdfae/vcfpy-0.13.8.tar.gz",
+      "relativePath": ".sources/vcfpy-0.13.8.tar.gz",
+      "sizeBytes": 993203,
+      "sha256": "e7d00965105e7ca9567299f073ad60c6bbfc78d685d25ba33353988af9b33160"
+    },
+    {
+      "url": "https://files.pythonhosted.org/packages/83/09/612afbe0a602d35fae6b87fd201c5237f049bb27dbb99a6c5e3a931e5ae3/np_utils-0.6.0.tar.gz",
+      "relativePath": ".sources/np_utils-0.6.0.tar.gz",
+      "sizeBytes": 61986,
+      "sha256": "2aa5c7ece3d1cb512d1af718aa05a5909dd47c74e5978b7c389c9b4f1a6ef804"
+    },
+    {
+      "url": "https://files.pythonhosted.org/packages/b2/de/565cac253738616a63544bbf1483f0e27695ef92a641376aa6f2b9dcc141/vaxrank-1.4.0.tar.gz",
+      "relativePath": ".sources/vaxrank-1.4.0.tar.gz",
+      "sizeBytes": 53003,
+      "sha256": "0a287076eae0542a26fd0131848b230c803714de3ff5ba14d9add0e8d7c99be7"
+    },
+    {
+      "url": "https://assets.models.liatir.com/ai-runtime-boxes/source-mirrors/mhcflurry/models_class1_presentation.20200611.models-only.tar.gz",
+      "relativePath": ".sources/models_class1_presentation.20200611.models-only.tar.gz",
+      "sizeBytes": 135602727,
+      "sha256": "44784a00d480298b66bfc232e2d1bb1a2df5e564f894a2fcc15d29fbd83f0d1e"
+    }
+  ],
+  "assetArchives": [
+    {
+      "relativePath": ".sources/pvactools-7.1.2-py3-none-any.whl",
+      "format": "zip",
+      "destination": "source/pvactools-wheel",
+      "stripComponents": 0,
+      "removeAfterExtract": true
+    },
+    {
+      "relativePath": ".sources/mhcflurry-2.0.6-py3-none-any.whl",
+      "format": "zip",
+      "destination": "source/mhcflurry-wheel",
+      "stripComponents": 0,
+      "removeAfterExtract": true
+    },
+    {
+      "relativePath": ".sources/mhcgnomes-3.33.6-py3-none-any.whl",
+      "format": "zip",
+      "destination": "source/mhcgnomes-wheel",
+      "stripComponents": 0,
+      "removeAfterExtract": true
+    },
+    {
+      "relativePath": ".sources/vcfpy-0.13.8.tar.gz",
+      "format": "tar.gz",
+      "destination": "source/vcfpy-sdist",
+      "stripComponents": 1,
+      "removeAfterExtract": true
+    },
+    {
+      "relativePath": ".sources/np_utils-0.6.0.tar.gz",
+      "format": "tar.gz",
+      "destination": "source/np-utils-sdist",
+      "stripComponents": 1,
+      "removeAfterExtract": true
+    },
+    {
+      "relativePath": ".sources/vaxrank-1.4.0.tar.gz",
+      "format": "tar.gz",
+      "destination": "source/vaxrank-sdist",
+      "stripComponents": 1,
+      "removeAfterExtract": true
+    },
+    {
+      "relativePath": ".sources/models_class1_presentation.20200611.models-only.tar.gz",
+      "format": "tar.gz",
+      "destination": "model-cache/pvactools-mhcflurry-downloads/models_class1_presentation",
+      "stripComponents": 0,
+      "removeAfterExtract": true
+    }
+  ],
+  "localFiles": [
+    {
+      "sourcePath": "runtime-boxes/legal/licenses/Apache-2.0.txt",
+      "relativePath": "licenses/Apache-2.0.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "sourcePath": "runtime-boxes/legal/pvactools-pvacseq.md",
+      "relativePath": "THIRD_PARTY_NOTICES/pvactools-pvacseq.md",
+      "sha256": "44427d50675b8fce1640a328945e102604e30858f676f5387ff8f4f9985ea87a"
+    }
+  ],
+  "prunePaths": [
+    "source/pvactools-wheel/pvactools/tools/pvacbind",
+    "source/pvactools-wheel/pvactools/tools/pvacfuse",
+    "source/pvactools-wheel/pvactools/tools/pvacsplice",
+    "source/pvactools-wheel/pvactools/tools/pvacvector",
+    "source/pvactools-wheel/pvactools/tools/pvacview",
+    "source/pvactools-wheel/pvactools/tools/pvacseq/example_data/results/MHC_Class_II",
+    "source/pvactools-wheel/pvactools/tools/pvacseq/example_data/results/combined"
+  ],
+  "selfTest": {
+    "imports": ["tensorflow", "numpy", "pandas", "sklearn", "vcfpy", "pysam", "Bio", "pymp"],
+    "files": [
+      "source/pvactools-wheel/pvactools/tools/pvacseq/run.py",
+      "source/pvactools-wheel/pvactools/tools/pvacseq/example_data/annotated.expression.vcf.gz",
+      "source/pvactools-wheel/pvactools/tools/pvacseq/example_data/annotated.expression.vcf.gz.tbi",
+      "source/pvactools-wheel/pvactools-7.1.2.dist-info/LICENSE",
+      "source/mhcflurry-wheel/mhcflurry-2.0.6.dist-info/LICENSE",
+      "source/mhcgnomes-wheel/mhcgnomes-3.33.6.dist-info/licenses/LICENSE",
+      "source/vcfpy-sdist/LICENSE",
+      "source/np-utils-sdist/LICENSE.txt",
+      "source/vaxrank-sdist/LICENSE",
+      "model-cache/pvactools-mhcflurry-downloads/models_class1_presentation/models/weights.csv",
+      "THIRD_PARTY_NOTICES/pvactools-pvacseq.md"
+    ],
+    "pythonCode": "import importlib.metadata\nimport os\nimport sys\nfrom pathlib import Path\nroot = Path.cwd()\nsys.path[:0] = [str(root / 'source/pvactools-wheel'), str(root / 'source/mhcflurry-wheel'), str(root / 'source/mhcgnomes-wheel'), str(root / 'source/vcfpy-sdist'), str(root / 'source/np-utils-sdist'), str(root / 'source/vaxrank-sdist')]\nos.environ['MHCFLURRY_DOWNLOADS_DIR'] = str(root / 'model-cache/pvactools-mhcflurry-downloads')\nassert importlib.metadata.version('pvactools') == '7.1.2'\nassert importlib.metadata.version('mhcflurry') == '2.0.6'\nimport vcfpy\nassert vcfpy.__version__ == '0.13.8'\nfrom pvactools.tools.pvacseq.run import main\nfrom mhcflurry import Class1PresentationPredictor\np = Class1PresentationPredictor.load(str(root / 'model-cache/pvactools-mhcflurry-downloads/models_class1_presentation/models'))\nr = p.predict_affinity(peptides=['SIINFEKL'], alleles={'sample':['HLA-A*02:01']}, sample_names=['sample'])\nassert len(r) == 1"
+  }
+}

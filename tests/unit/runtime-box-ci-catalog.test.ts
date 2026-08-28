@@ -33,6 +33,14 @@ describe('Runtime Box CI catalog', () => {
       const appTargets = component?.install.runtimeBox.publishedTargets ?? [];
       const catalogTargets = record.targets.filter((target) => target.status === 'published');
 
+      // Planned component records belong to CI, not to the product catalog. Exposing one before
+      // any exact target has passed publication would give the app an install button that cannot
+      // resolve a signed release.
+      if (catalogTargets.length === 0) {
+        expect(component, `${record.componentId} is exposed before its first published target`)
+          .toBeUndefined();
+        continue;
+      }
       expect(component?.install.runtimeBox.boxId).toBe(record.boxId);
       expect(component?.install.runtimeId).toBe(record.runtimeId);
       expect(appTargets.map((candidate) => runtimeBoxTargetId(candidate.target)).sort())

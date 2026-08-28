@@ -119,6 +119,67 @@ release; it does not invalidate the local Phase 1 functional gates above.
 - MHCflurry standalone verificato su peptidi noti: valori finiti, ranking stabile e parità CPU/CUDA/MPS entro tolleranza.
 - Test di VCF non annotato, allele sconosciuto, campione assente, output vuoto, cancellazione e ripresa della navigazione.
 
+### Implementation status — prepared locally, reviewed mirror public (2026-08-28)
+
+- The standalone MHCflurry 2.2.1 component has exact Scrollcase recipes and Pixi locks for Apple
+  silicon Metal, Linux and Windows CPU, and Linux and Windows CUDA. The pVACseq component has exact
+  recipes for macOS and Linux CPU with the upstream-supported pVACtools 7.1.2 + MHCflurry 2.0.6
+  pair. The Linux recipe declares Windows WSL2 as a future validation environment; the current app
+  does not select Runtime Boxes through WSL2, so Windows pVACseq is not claimed as product support.
+- Both components have reviewed legal records, per-target dependency inventories, signer identities,
+  component-specific workflows, exact product scripts, native lifecycle specifications and scientific
+  validators. The MHCflurry model archive repacker reproduced the prepared artifact byte for byte:
+  135,602,727 bytes, SHA-256
+  `44784a00d480298b66bfc232e2d1bb1a2df5e564f894a2fcc15d29fbd83f0d1e`.
+- The product surfaces are implemented end to end. MHC-I Epitope Prediction accepts protein FASTA
+  or peptide tables and produces ranked CSV, candidate FASTA, summary and provenance. Neoantigen
+  Prioritization validates the primary and optional proximal VCF contracts before importing the
+  scientific stack, locks predictors to local MHCflurry/MHCflurryEL, and records all required pVACseq
+  reports, metrics, candidate FASTA, Jobs, Results, logs, cancellation and navigation-safe state.
+  Input and output reading is bounded, and network access is denied in both the parent and pVACseq
+  child processes. Direct screens bind only to their own direct-run Job, so pipeline executions do not
+  disable unrelated inputs. Persisted Result provenance includes every selected scientific parameter,
+  both VCF inspections when applicable, accelerator and disabled-network state, and the exact signed
+  Runtime Box version, target and archive SHA-256.
+- The pipeline step and Tumor variants to neoantigen candidates preset are registered internally but
+  filtered from the product until pVACseq has an exact published target. The Neoantigen card follows
+  the same catalog gate. The direct pVACseq page says that the runtime is not published; MHCflurry is
+  absent from the active AI catalog. This prevents an unvalidated or unavailable component from
+  appearing installable.
+- The exact upstream pVACtools wheel retains its generic IEDB integration modules because pVACseq
+  imports that machinery even for local MHCflurry execution. They are not an approved product surface:
+  Liatir permits only MHCflurry/MHCflurryEL, sets IEDB retries to zero and denies parent and child
+  network access. Physically pruning those modules would require an unsupported pVACtools fork.
+
+Local evidence: the final `npm run test:verify` passed 70 files / 473 tests; generated
+SDK types, Core, frontend checks/build and `src-ts` compile passed. Rust passed 91 tests with 2 heavy
+fixtures ignored, and Clippy completed without errors. The real desktop UI gate passed 34 native app
+scenarios plus the applicable index, SnpEff, restart, Runtime Box security and macOS desktop lifecycle
+suites. The new native MHCflurry and pVACseq E2E specifications loaded correctly but were skipped as
+designed because no target is published. Catalog validation, 16 changed JSON documents, JavaScript
+syntax and `git diff --check` also passed. No GPU CI, Runtime Box signing or Runtime Box publication ran.
+
+Runtime Box publication remains gated, but its reviewed source mirror is ready. Commit `8128002` added
+the dedicated source-mirror command, the manual protected GitHub workflow and the independently
+allowlisted Registry route. Callers can select only
+`mhcflurry-class1-presentation`; they cannot provide an R2 key, size, SHA-256 or content type. The
+Registry was deployed from clean commit bytes as Cloudflare version
+`f8905c7a-9893-4d52-93dd-bbcbf4926a34`, and its public health, R2 binding, retained admin secret and
+unauthenticated 401 boundary were read back successfully.
+
+The billing-blocked run `33064748592` created no job. The first healthy run `33159915001` reproduced the
+archive but exposed a missing stable-CLI route before any Registry request; commit `1a891c7` added that
+route and a regression guard. Run `33160339119` then passed the official-source check, deterministic
+repack, restricted multipart upload, public byte/hash verification and receipt upload. An independent
+public download confirmed 135,602,727 bytes, SHA-256
+`44784a00d480298b66bfc232e2d1bb1a2df5e564f894a2fcc15d29fbd83f0d1e`, and 45 entries limited to
+`models/` plus `LIATIR_SOURCE.json`. Receipt artifact `9681436581` has digest
+`sha256:2047147d0330adb7154edd4309e014b1fc50cde2fc11f050b52703c15cee34c9`. Next, run build, scientific
+and native lifecycle validation on intended targets, create evidence and signed releases, change only
+proven targets to `published`, and
+add only those targets to active product catalogs. CPU/CUDA/MPS parity is not claimed until those
+native validators pass.
+
 ## Fase 3 — Strutture, affinità e simulazione
 
 **Codex effort consigliato: max**  

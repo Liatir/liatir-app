@@ -45,6 +45,8 @@
 	import { executionRuns } from '$lib/stores/executionRuns.svelte';
 	import { finalizeExecutionResult } from '$lib/execution/finalization';
 	import { artifactCompatibility } from '$lib/scientific-artifacts';
+	import MhcFlurryModelPage from '$lib/components/ai/MhcFlurryModelPage.svelte';
+	import { MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID } from '@liatir/core';
 
 	const modelId = $derived(page.params.id ?? '');
 	const model = $derived(aiModelsStore.byId(modelId));
@@ -331,6 +333,9 @@
 	}
 </script>
 
+{#if modelId === MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID}
+	<MhcFlurryModelPage {modelId} />
+{:else}
 <div class="flex h-full overflow-hidden">
 	<div class="w-56 shrink-0 border-r border-border flex flex-col">
 		<div class="flex items-end justify-between px-3 py-3 border-b border-border bg-surface" style="height: {HEADER_HEIGHT}px;">
@@ -440,3 +445,4 @@
 		</PageContent>
 	</div>
 </div>
+{/if}

@@ -62,6 +62,27 @@
       "targets": [
         "macos-aarch64-metal"
       ]
+    },
+    {
+      "boxId": "mhcflurry-class1-presentation",
+      "modelId": "openvax-mhcflurry-class1-presentation",
+      "runtimeId": "oncology-mhcflurry-class1-presentation-2-2-1",
+      "targets": [
+        "macos-aarch64-metal",
+        "linux-x86_64-cpu",
+        "windows-x86_64-cpu",
+        "linux-x86_64-cuda12.9",
+        "windows-x86_64-cuda12.8"
+      ]
+    },
+    {
+      "boxId": "pvactools-pvacseq",
+      "modelId": "griffithlab-pvactools-pvacseq",
+      "runtimeId": "oncology-pvactools-pvacseq-7-1-2",
+      "targets": [
+        "macos-aarch64-cpu",
+        "linux-x86_64-cpu"
+      ]
     }
   ]
 }

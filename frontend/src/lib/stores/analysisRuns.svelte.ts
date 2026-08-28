@@ -72,19 +72,24 @@ const NATIVE_ANALYSIS_TOOLS = new Set([
 ]);
 const AI_ANALYSIS_TOOLS = new Set([
   'ai-single-cell-embedding',
+  'ai-mhc-class-i-epitope-prediction',
+]);
+const TOOL_RUNTIME_ANALYSIS_TOOLS = new Set([
+  'neoantigen-prioritization',
 ]);
 
 function producerKindFor(tool: string): LiatirArtifactProducerKind {
   if (tool === 'pipeline') return 'pipeline';
   if (NATIVE_ANALYSIS_TOOLS.has(tool)) return 'native-tool';
   if (AI_ANALYSIS_TOOLS.has(tool)) return 'ai-tool';
+  if (TOOL_RUNTIME_ANALYSIS_TOOLS.has(tool)) return 'tool-runtime';
   return 'unknown';
 }
 
 function artifactProducerKind(run: AnalysisRun): LiatirArtifactProducerKind {
   const kind = run.execution?.runKind;
   if (
-    kind === 'native-tool' || kind === 'ai-model' || kind === 'ai-tool' ||
+    kind === 'native-tool' || kind === 'tool-runtime' || kind === 'ai-model' || kind === 'ai-tool' ||
     kind === 'lia-plugin' || kind === 'api-request' || kind === 'dependency' ||
     kind === 'external-workflow' || kind === 'pipeline'
   ) return kind;
@@ -94,6 +99,7 @@ function artifactProducerKind(run: AnalysisRun): LiatirArtifactProducerKind {
 function parentRunKindFor(tool: string): LiatirArtifactParentRunKind {
   if (tool === 'pipeline') return 'pipeline';
   if (AI_ANALYSIS_TOOLS.has(tool)) return 'ai-model-direct';
+  if (TOOL_RUNTIME_ANALYSIS_TOOLS.has(tool)) return 'tool-runtime';
   return 'tool';
 }
 

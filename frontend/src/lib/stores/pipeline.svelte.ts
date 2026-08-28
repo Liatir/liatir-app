@@ -262,6 +262,7 @@ function errorMessage(error: unknown): string {
 
 function executionKindForStep(type: PipelineStepDefinition['type']): LiatirExecutionRunKind {
   if (type === 'native-tool') return 'native-tool';
+  if (type === 'tool-runtime') return 'tool-runtime';
   if (type === 'ai-tool') return 'ai-tool';
   if (type === 'api-request') return 'api-request';
   if (type === 'lia-plugin' || type === 'wasm-plugin') return 'lia-plugin';

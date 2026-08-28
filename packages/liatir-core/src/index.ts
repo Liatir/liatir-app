@@ -8,6 +8,7 @@
 
 export * from "./api-connector.js";
 export * from "./snpeff-suite.js";
+export * from "./oncology.js";
 
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue =
@@ -27,6 +28,7 @@ export type LiatirFieldType = LiatirInputFieldType | LiatirOutputFieldType;
 
 export type LiatirStepKind =
   | "native-tool"
+  | "tool-runtime"
   | "lia-plugin"
   | "wasm-plugin"
   | "api-request"
@@ -163,6 +165,7 @@ export type LiatirArtifactParentRunKind =
   | "pipeline-step"
   | "ai-model-direct"
   | "native-tool"
+  | "tool-runtime"
   | "ai-model"
   | "ai-tool"
   | "lia-plugin"
@@ -411,6 +414,7 @@ export type LiatirAICapability =
   | "classification"
   | "cell-annotation"
   | "single-cell-embedding"
+  | "mhc-class-i-epitope-prediction"
   | "batch-correction"
   | "perturbation-prediction"
   | "gene-network-inference"

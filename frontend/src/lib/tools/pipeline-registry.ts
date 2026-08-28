@@ -9,6 +9,11 @@ import { bcftoolsStatsDefinition, bcftoolsFilterDefinition, parseBcftoolsStats, 
 import { snpeffDefinition, parseSnpEffStats, buildSnpEffOutput } from './variants/snpeff';
 import { resolveSnpSiftFilterExpression, snpSiftFilterDefinition } from './variants/snpsift';
 import { singleCellEmbeddingDefinition, runSingleCellEmbeddingStep } from './ai/single-cell-embedding';
+import { mhcFlurryEpitopeDefinition, runMhcFlurryEpitopeStep } from './ai/mhcflurry-epitope';
+import {
+  neoantigenPrioritizationDefinition,
+  runNeoantigenPrioritizationStep,
+} from './oncology/neoantigen-prioritization';
 import {
   runSimpleafIndexStep,
   runSimpleafQuantStep,
@@ -35,6 +40,12 @@ import {
   pluginToDefinition,
 } from './plugin-step';
 import type { JsonValue } from '@liatir/core';
+import {
+  LIATIR_TOOL_RUNTIME_CATALOG,
+  MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID,
+  PVACTOOLS_RUNTIME_COMPONENT_ID,
+  RUNTIME_BOX_AI_MODEL_REGISTRY,
+} from '@liatir/core';
 import { threadInputSchema, threadParam } from '$lib/utils/execution-resources';
 import type { AIRunContext } from '$lib/ai/direct-run-context';
 import { aiRunMetadata } from '$lib/ai/direct-run-context';
@@ -564,6 +575,8 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
   'simpleaf-index':     { definition: simpleafIndexDefinition,     run: runSimpleafIndexStep },
   'simpleaf-quant':     { definition: simpleafQuantDefinition,     run: runSimpleafQuantStep },
   'ai-single-cell-embedding': { definition: singleCellEmbeddingDefinition, run: runSingleCellEmbeddingStep },
+  'ai-mhc-class-i-epitope-prediction': { definition: mhcFlurryEpitopeDefinition, run: runMhcFlurryEpitopeStep },
+  'neoantigen-prioritization': { definition: neoantigenPrioritizationDefinition, run: runNeoantigenPrioritizationStep },
   'viewer-structure-3d': { definition: structureViewerDefinition, run: runStructureViewerStep },
   'viewer-genome-track': { definition: genomeViewerDefinition, run: runGenomeViewerStep },
   'viewer-single-cell': { definition: singleCellViewerDefinition, run: runSingleCellViewerStep },
@@ -625,8 +638,31 @@ export function pluginStepDefinitions(): PipelineStepDefinition[] {
 
 /** Definitions of all available steps (native tools + imported .lia plugins). */
 export function allStepDefinitions(): PipelineStepDefinition[] {
+  const publishedAiModelSteps = new Set(
+    RUNTIME_BOX_AI_MODEL_REGISTRY.some((model) =>
+      model.id === MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID
+      && model.install.runtimeBox.publishedTargets.length > 0
+    )
+      ? [mhcFlurryEpitopeDefinition.id]
+      : [],
+  );
+  const publishedToolRuntimeSteps = new Set(
+    LIATIR_TOOL_RUNTIME_CATALOG.some((runtime) =>
+      runtime.id === PVACTOOLS_RUNTIME_COMPONENT_ID
+      && runtime.install.runtimeBox.publishedTargets.length > 0
+    )
+      ? [neoantigenPrioritizationDefinition.id]
+      : [],
+  );
   return [
-    ...Object.values(PIPELINE_REGISTRY).map((e) => e.definition),
+    ...Object.values(PIPELINE_REGISTRY)
+      .map((e) => e.definition)
+      .filter((definition) => {
+        if (definition.id === mhcFlurryEpitopeDefinition.id) {
+          return publishedAiModelSteps.has(definition.id);
+        }
+        return definition.type !== 'tool-runtime' || publishedToolRuntimeSteps.has(definition.id);
+      }),
     ...pluginStepDefinitions(),
     ...externalWorkflowsStore.definitions.map(externalWorkflowToStepDefinition),
   ];

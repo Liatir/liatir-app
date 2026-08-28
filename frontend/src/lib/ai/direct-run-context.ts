@@ -16,7 +16,7 @@
  */
 import type { JsonValue, LiatirExecutionIdentity } from '@liatir/core';
 
-export type AIDirectRunMode = 'single-cell-embedding';
+export type AIDirectRunMode = 'single-cell-embedding' | 'mhc-class-i-epitope-prediction';
 
 export interface AIDirectRunContext {
 	runKind: 'ai-model-direct';
@@ -140,7 +140,10 @@ export function parseDirectRunContext(metadata: unknown): AIDirectRunContext | n
 	if (record.runKind !== 'ai-model-direct') return null;
 	if (typeof record.analysisRunId !== 'string') return null;
 	if (typeof record.toolId !== 'string') return null;
-	if (record.mode !== 'single-cell-embedding') return null;
+	if (
+		record.mode !== 'single-cell-embedding' &&
+		record.mode !== 'mhc-class-i-epitope-prediction'
+	) return null;
 	if (typeof record.label !== 'string') return null;
 	if (typeof record.startedAt !== 'number') return null;
 	if (typeof record.outputDir !== 'string') return null;

@@ -154,8 +154,16 @@ describe('Runtime Box CI cost controls', () => {
       expect(scgptRuntimeBoxProductE2E, `P5.6 lifecycle receipt lacks ${phase}`)
         .toContain(`${phase}: 'passed'`);
     }
+    const componentInlineRun = aiRuntime.slice(
+      aiRuntime.indexOf('pub async fn lia_runtime_component_python_run'),
+      aiRuntime.indexOf('pub async fn lia_ai_python_run'),
+    );
+    expect(componentInlineRun).toContain(
+      'runtime_box_activation_metadata_for_component(&app, component_kind, &runtime_id)?;',
+    );
     const inlineRun = aiRuntime.slice(aiRuntime.indexOf('pub async fn lia_ai_python_run'));
-    expect(inlineRun).toContain('runtime_box_activation_metadata(&app, &runtime_id)?;');
+    expect(inlineRun).toContain('lia_runtime_component_python_run(');
+    expect(inlineRun).toContain('RuntimeComponentKind::AiModel');
     expect(runtimeBoxProductE2E).not.toContain('bytesDownloaded > 64 * 1024');
     // Path normalisation lives in the shared support helper now, so both specs get it from one
     // place, and the isolation assertion names the home the runner actually used rather than a

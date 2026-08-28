@@ -239,6 +239,8 @@ export const LIATIR_API: Record<string, ApiNode> = {
       install: { type: "method", detail: "(input: RuntimeComponentInstallInput): Promise<LiatirRuntimeComponentInstallResult>" },
       rollback: { type: "method", detail: "(componentKind: LiatirRuntimeComponentKind, runtimeId: string): Promise<LiatirRuntimeComponentRollbackResult>" },
       remove: { type: "method", detail: "(componentKind: LiatirRuntimeComponentKind, runtimeId: string, boxId: string): Promise<boolean>" },
+      runPython: { type: "method", detail: "(input: RuntimeComponentPythonRunInput): Promise<LiatirRuntimeComponentPythonRunResult>" },
+      spawnPython: { type: "method", detail: "(input: RuntimeComponentPythonSpawnInput): Promise<{ jobId: string; }>" },
       cancelDownload: { type: "method", detail: "(downloadId: string): Promise<boolean>" },
   } },
   qc: { type: "property", detail: "QcInterface", children: {

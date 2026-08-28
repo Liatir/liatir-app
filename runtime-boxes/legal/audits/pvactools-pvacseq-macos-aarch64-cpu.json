@@ -1,0 +1,1214 @@
+{
+  "schemaVersion": 2,
+  "kind": "scrollcase.box.dependency-license-audit",
+  "targetId": "macos-aarch64-cpu",
+  "dependencyLockSha256": "d9167746a55d85af0a3cd7995d89e3cd0c5029dff3058d551cec379f54007aa6",
+  "packages": [
+    {
+      "name": "_openmp_mutex",
+      "version": "4.5",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "absl-py",
+      "version": "2.5.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aiohappyeyeballs",
+      "version": "2.7.1",
+      "declaredLicense": "PSF-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aiohttp",
+      "version": "3.14.3",
+      "declaredLicense": "MIT AND Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aiosignal",
+      "version": "1.4.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "appdirs",
+      "version": "1.4.4",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "astunparse",
+      "version": "1.6.3",
+      "declaredLicense": "BSD-3-Clause AND PSF-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "attrs",
+      "version": "26.1.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "aws-c-auth",
+      "version": "0.7.11",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-c-cal",
+      "version": "0.6.9",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-c-common",
+      "version": "0.9.12",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-c-compression",
+      "version": "0.2.17",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-c-event-stream",
+      "version": "0.4.1",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-c-http",
+      "version": "0.8.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-c-io",
+      "version": "0.14.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-c-mqtt",
+      "version": "0.10.1",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-c-s3",
+      "version": "0.4.9",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-c-sdkutils",
+      "version": "0.1.13",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-checksums",
+      "version": "0.1.17",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-crt-cpp",
+      "version": "0.26.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-sdk-cpp",
+      "version": "1.11.210",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "biopython",
+      "version": "1.83",
+      "declaredLicense": "LicenseRef-Biopython",
+      "source": "conda"
+    },
+    {
+      "name": "blinker",
+      "version": "1.9.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "brotli-python",
+      "version": "1.1.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "bzip2",
+      "version": "1.0.8",
+      "declaredLicense": "bzip2-1.0.6",
+      "source": "conda"
+    },
+    {
+      "name": "c-ares",
+      "version": "1.34.8",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "ca-certificates",
+      "version": "2026.7.22",
+      "declaredLicense": "ISC",
+      "source": "conda"
+    },
+    {
+      "name": "cachebox",
+      "version": "5.2.3",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "cached-property",
+      "version": "2.0.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "cached_property",
+      "version": "2.0.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "certifi",
+      "version": "2026.7.22",
+      "declaredLicense": "ISC",
+      "source": "conda"
+    },
+    {
+      "name": "cffi",
+      "version": "2.1.1",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.1",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "click",
+      "version": "8.4.2",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "cryptography",
+      "version": "50.0.0",
+      "declaredLicense": "Apache-2.0 AND BSD-3-Clause AND PSF-2.0 AND MIT",
+      "source": "conda"
+    },
+    {
+      "name": "deepdiff",
+      "version": "9.1.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "et_xmlfile",
+      "version": "2.0.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "flatbuffers",
+      "version": "23.5.26",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "frozenlist",
+      "version": "1.8.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "fsspec",
+      "version": "2025.3.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "gast",
+      "version": "0.7.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "gflags",
+      "version": "2.2.2",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "giflib",
+      "version": "5.2.2",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "glog",
+      "version": "0.6.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "google-auth",
+      "version": "2.57.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "google-auth-oauthlib",
+      "version": "1.4.1",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "google-pasta",
+      "version": "0.2.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "grpcio",
+      "version": "1.59.3",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "gtfparse",
+      "version": "2.0.1",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "h2",
+      "version": "4.4.1",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "h5py",
+      "version": "3.16.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "hdf5",
+      "version": "1.14.6",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "hpack",
+      "version": "4.2.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "hyperframe",
+      "version": "6.1.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "icu",
+      "version": "73.2",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "idna",
+      "version": "3.19",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "imbalanced-learn",
+      "version": "0.14.2",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "importlib-metadata",
+      "version": "9.0.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "joblib",
+      "version": "1.5.3",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "keras",
+      "version": "2.15.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "krb5",
+      "version": "1.22.2",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "lcms2",
+      "version": "2.19.1",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "lerc",
+      "version": "4.2.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "libabseil",
+      "version": "20230802.1",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "libaec",
+      "version": "1.1.5",
+      "declaredLicense": "BSD-2-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libarrow",
+      "version": "15.0.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "libarrow-acero",
+      "version": "15.0.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "libarrow-dataset",
+      "version": "15.0.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "libarrow-flight",
+      "version": "15.0.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "libarrow-flight-sql",
+      "version": "15.0.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "libarrow-gandiva",
+      "version": "15.0.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "libarrow-substrait",
+      "version": "15.0.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "libblas",
+      "version": "3.11.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libbrotlicommon",
+      "version": "1.1.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libbrotlidec",
+      "version": "1.1.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libbrotlienc",
+      "version": "1.1.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libcblas",
+      "version": "3.11.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libcrc32c",
+      "version": "1.1.2",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libcurl",
+      "version": "8.21.0",
+      "declaredLicense": "curl",
+      "source": "conda"
+    },
+    {
+      "name": "libcxx",
+      "version": "23.1.0",
+      "declaredLicense": "Apache-2.0 WITH LLVM-exception",
+      "source": "conda"
+    },
+    {
+      "name": "libdeflate",
+      "version": "1.25",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libedit",
+      "version": "3.1.20250104",
+      "declaredLicense": "BSD-2-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libev",
+      "version": "4.33",
+      "declaredLicense": "BSD-2-Clause OR GPL-2.0-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "libevent",
+      "version": "2.1.12",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libexpat",
+      "version": "2.8.1",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libffi",
+      "version": "3.7.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libfreetype",
+      "version": "2.14.3",
+      "declaredLicense": "GPL-2.0-only OR FTL",
+      "source": "conda"
+    },
+    {
+      "name": "libfreetype6",
+      "version": "2.14.3",
+      "declaredLicense": "GPL-2.0-only OR FTL",
+      "source": "conda"
+    },
+    {
+      "name": "libgcc",
+      "version": "16.2.0",
+      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
+      "source": "conda"
+    },
+    {
+      "name": "libgfortran",
+      "version": "16.2.0",
+      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
+      "source": "conda"
+    },
+    {
+      "name": "libgfortran5",
+      "version": "16.2.0",
+      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
+      "source": "conda"
+    },
+    {
+      "name": "libgoogle-cloud",
+      "version": "2.12.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "libgrpc",
+      "version": "1.59.3",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "libiconv",
+      "version": "1.18",
+      "declaredLicense": "LGPL-2.1-only",
+      "source": "conda"
+    },
+    {
+      "name": "libidn2",
+      "version": "2.3.8",
+      "declaredLicense": "LGPL-2.0-only",
+      "source": "conda"
+    },
+    {
+      "name": "libintl",
+      "version": "0.25.1",
+      "declaredLicense": "LGPL-2.1-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "libjpeg-turbo",
+      "version": "3.2.0",
+      "declaredLicense": "IJG AND BSD-3-Clause AND Zlib",
+      "source": "conda"
+    },
+    {
+      "name": "liblapack",
+      "version": "3.11.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libllvm15",
+      "version": "15.0.7",
+      "declaredLicense": "Apache-2.0 WITH LLVM-exception",
+      "source": "conda"
+    },
+    {
+      "name": "liblzma",
+      "version": "5.8.3",
+      "declaredLicense": "0BSD",
+      "source": "conda"
+    },
+    {
+      "name": "liblzma-devel",
+      "version": "5.8.3",
+      "declaredLicense": "0BSD",
+      "source": "conda"
+    },
+    {
+      "name": "libnghttp2",
+      "version": "1.68.1",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libopenblas",
+      "version": "0.3.34",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libparquet",
+      "version": "15.0.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "libpng",
+      "version": "1.6.58",
+      "declaredLicense": "zlib-acknowledgement",
+      "source": "conda"
+    },
+    {
+      "name": "libprotobuf",
+      "version": "4.24.4",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libre2-11",
+      "version": "2023.09.01",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libsqlite",
+      "version": "3.53.4",
+      "declaredLicense": "blessing",
+      "source": "conda"
+    },
+    {
+      "name": "libssh2",
+      "version": "1.11.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libthrift",
+      "version": "0.19.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "libtiff",
+      "version": "4.7.2",
+      "declaredLicense": "HPND",
+      "source": "conda"
+    },
+    {
+      "name": "libunistring",
+      "version": "0.9.10",
+      "declaredLicense": "GPL-3.0-only OR LGPL-3.0-only",
+      "source": "conda"
+    },
+    {
+      "name": "libutf8proc",
+      "version": "2.8.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libwebp-base",
+      "version": "1.6.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libxcb",
+      "version": "1.17.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libxml2",
+      "version": "2.12.7",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libzlib",
+      "version": "1.3.2",
+      "declaredLicense": "Zlib",
+      "source": "conda"
+    },
+    {
+      "name": "llvm-openmp",
+      "version": "23.1.0",
+      "declaredLicense": "Apache-2.0 WITH LLVM-exception",
+      "source": "conda"
+    },
+    {
+      "name": "lz4-c",
+      "version": "1.9.4",
+      "declaredLicense": "BSD-2-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "markdown",
+      "version": "3.10.3",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "markupsafe",
+      "version": "3.0.3",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "ml_dtypes",
+      "version": "0.2.0",
+      "declaredLicense": "MPL-2.0 AND Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "mock",
+      "version": "5.2.0",
+      "declaredLicense": "BSD-2-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "multidict",
+      "version": "6.7.1",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "ncurses",
+      "version": "6.6",
+      "declaredLicense": "X11 AND BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "networkx",
+      "version": "3.6.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "numpy",
+      "version": "1.26.4",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "oauthlib",
+      "version": "3.3.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "openjpeg",
+      "version": "2.5.4",
+      "declaredLicense": "BSD-2-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "openpyxl",
+      "version": "3.1.5",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "openssl",
+      "version": "3.6.4",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "opt_einsum",
+      "version": "3.4.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "orc",
+      "version": "1.9.2",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "orderly-set",
+      "version": "5.5.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "packaging",
+      "version": "26.3",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "pandas",
+      "version": "2.0.3",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pcre2",
+      "version": "10.47",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pillow",
+      "version": "12.3.0",
+      "declaredLicense": "HPND",
+      "source": "conda"
+    },
+    {
+      "name": "polars",
+      "version": "0.16.18",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "propcache",
+      "version": "0.5.2",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "protobuf",
+      "version": "4.24.4",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pthread-stubs",
+      "version": "0.4",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "pyarrow",
+      "version": "15.0.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "pyasn1",
+      "version": "0.6.4",
+      "declaredLicense": "BSD-2-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pyasn1-modules",
+      "version": "0.4.2",
+      "declaredLicense": "BSD-2-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pycparser",
+      "version": "3.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pyfaidx",
+      "version": "0.9.0.4",
+      "declaredLicense": "BSD",
+      "source": "conda"
+    },
+    {
+      "name": "pyjwt",
+      "version": "2.13.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "pymp-pypi",
+      "version": "0.4.5",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "pysam",
+      "version": "0.24.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "pysocks",
+      "version": "1.7.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "python",
+      "version": "3.11.16",
+      "declaredLicense": "Python-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "python-flatbuffers",
+      "version": "25.12.19",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "python-tzdata",
+      "version": "2026.3",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "python_abi",
+      "version": "3.11",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pytz",
+      "version": "2026.3.post1",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "pyu2f",
+      "version": "0.1.5",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "pyvcf3",
+      "version": "1.0.4",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pyyaml",
+      "version": "6.0.3",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "re2",
+      "version": "2023.09.01",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "readline",
+      "version": "8.3",
+      "declaredLicense": "GPL-3.0-only",
+      "source": "conda"
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "requests-oauthlib",
+      "version": "2.0.0",
+      "declaredLicense": "ISC",
+      "source": "conda"
+    },
+    {
+      "name": "rsa",
+      "version": "4.9.1",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "scikit-learn",
+      "version": "1.7.2",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "scipy",
+      "version": "1.17.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "setuptools",
+      "version": "84.0.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "simanneal",
+      "version": "0.5.0",
+      "declaredLicense": "ISC",
+      "source": "conda"
+    },
+    {
+      "name": "six",
+      "version": "1.17.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "sklearn-compat",
+      "version": "0.1.6",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "snappy",
+      "version": "1.1.10",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "tensorboard",
+      "version": "2.15.2",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "tensorboard-data-server",
+      "version": "0.7.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "tensorflow",
+      "version": "2.15.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "tensorflow-base",
+      "version": "2.15.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "tensorflow-estimator",
+      "version": "2.15.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "termcolor",
+      "version": "3.3.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "testfixtures",
+      "version": "12.0.1",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "threadpoolctl",
+      "version": "3.6.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "tk",
+      "version": "8.6.13",
+      "declaredLicense": "TCL",
+      "source": "conda"
+    },
+    {
+      "name": "tqdm",
+      "version": "4.70.0",
+      "declaredLicense": "MPL-2.0 and MIT",
+      "source": "conda"
+    },
+    {
+      "name": "typing_extensions",
+      "version": "4.16.0",
+      "declaredLicense": "PSF-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "tzdata",
+      "version": "2026c",
+      "declaredLicense": "LicenseRef-Public-Domain",
+      "source": "conda"
+    },
+    {
+      "name": "urllib3",
+      "version": "2.5.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "werkzeug",
+      "version": "3.1.8",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "wget",
+      "version": "1.25.0",
+      "declaredLicense": "GPL-3.0-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "wrapt",
+      "version": "1.14.1",
+      "declaredLicense": "BSD-2-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "xlsxwriter",
+      "version": "3.2.9",
+      "declaredLicense": "BSD-2-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "xorg-libxau",
+      "version": "1.0.12",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "xorg-libxdmcp",
+      "version": "1.1.5",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "xz",
+      "version": "5.8.3",
+      "declaredLicense": "0BSD AND LGPL-2.1-or-later AND GPL-2.0-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "xz-gpl-tools",
+      "version": "5.8.3",
+      "declaredLicense": "0BSD AND LGPL-2.1-or-later AND GPL-2.0-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "xz-tools",
+      "version": "5.8.3",
+      "declaredLicense": "0BSD AND LGPL-2.1-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "yaml",
+      "version": "0.2.5",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "yarl",
+      "version": "1.24.5",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "zipp",
+      "version": "4.1.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "zlib",
+      "version": "1.3.2",
+      "declaredLicense": "Zlib",
+      "source": "conda"
+    },
+    {
+      "name": "zlib-ng",
+      "version": "2.3.3",
+      "declaredLicense": "Zlib",
+      "source": "conda"
+    },
+    {
+      "name": "zstandard",
+      "version": "0.25.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "zstd",
+      "version": "1.5.7",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import type { LiatirAIModelMetadata, LiatirAIModelRuntimePackage } from './index.js';
 import type { LiatirRuntimeBoxTargetCandidate } from './runtime-box.js';
+import { MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID } from './oncology.js';
 
 export const SCGPT_WHOLE_HUMAN_MODEL_ID = 'bowang-scgpt-whole-human';
 export const GENEFORMER_V1_10M_MODEL_ID = 'ctheodoris-geneformer-v1-10m';
@@ -41,6 +42,71 @@ const GENEFORMER_V1_10M_RUNTIME_PACKAGES = [
 
 const GENEFORMER_V1_10M_REVISION = '04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5';
 const SCGPT_WHOLE_HUMAN_REVISION = 'cebd6fae655b9c585a4807daa3ac31bb764f06b4';
+
+/**
+ * Reviewed MHCflurry metadata. It remains outside the product registry until at least one exact
+ * target completes scientific validation and signed publication.
+ */
+export const MHCFLURRY_CLASS1_PRESENTATION_METADATA: LiatirAIModelMetadata = {
+	id: MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID,
+	name: 'MHCflurry Class I Presentation',
+	description:
+		'Local MHC Class I binding and presentation prediction with bundled MHCflurry models.',
+	category: 'Oncology',
+	version: '2.2.1',
+	runtime: {
+		kind: 'python-venv',
+		name: 'MHCflurry PyTorch Runtime',
+		version: 'Python 3.11'
+	},
+	source: 'runtime-box',
+	localOnly: true,
+	capabilities: ['mhc-class-i-epitope-prediction'],
+	modalities: ['protein'],
+	license: {
+		name: 'Apache License 2.0',
+		spdxId: 'Apache-2.0',
+		url: 'https://github.com/openvax/mhcflurry/blob/v2.2.1/LICENSE',
+		verifiedAt: '2026-08-26'
+	},
+	hardware: {
+		cpu: true,
+		gpu: true,
+		minRamGb: 8,
+		recommendedRamGb: 16,
+		notes:
+			'CPU, Apple Metal, and NVIDIA CUDA targets are prepared independently and are exposed only after exact-target validation.'
+	},
+	install: {
+		method: 'runtime-box',
+		runtimeId: 'oncology-mhcflurry-class1-presentation-2-2-1',
+		modelCacheSubdir: 'model-cache/mhcflurry-class1-presentation',
+		revision: 'v2.2.1',
+		runtimeBox: {
+			boxId: 'mhcflurry-class1-presentation',
+			channel: 'beta',
+			registryBaseUrl: 'https://models.liatir.com/v1',
+			publishedTargets: []
+		},
+		runtimePackages: [
+			{ package: 'torch', version: '2.8.0', importName: 'torch' },
+			{ package: 'numpy', version: '1.26.4', importName: 'numpy' },
+			{ package: 'pandas', version: '2.3.3', importName: 'pandas' },
+			{ package: 'scikit-learn', version: '1.9.0', importName: 'sklearn' }
+		],
+		hostRequirements: {
+			os: ['macos', 'linux', 'windows'],
+			arch: ['aarch64', 'x86_64'],
+			reason:
+				'Separate signed Runtime Boxes are prepared for Apple silicon Metal and Linux or Windows x86_64 CPU/CUDA targets.'
+		}
+	},
+	documentation: {
+		liatirPath: '/ai/models/openvax-mhcflurry-class1-presentation',
+		officialUrl: 'https://github.com/openvax/mhcflurry'
+	},
+	tags: ['built-in', 'runtime-box', 'oncology', 'mhc-class-i', 'epitope', 'presentation']
+};
 
 /** Builds the shared Apple silicon target used by published single-cell Runtime Boxes. */
 function publishedMacosArm64MetalTarget(

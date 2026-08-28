@@ -161,6 +161,17 @@ export interface LiatirRuntimeComponentRollbackResult {
   restored: boolean;
 }
 
+/** Terminal output from a short Runtime Component Python execution. Long work uses a tracked Job. */
+export interface LiatirRuntimeComponentPythonRunResult {
+  ok: boolean;
+  exitCode: number | null;
+  stdout: string;
+  stderr: string;
+  durationMs: number;
+  /** Present when the result was reconstructed from a tracked Runtime Component Job. */
+  runtimeBoxActivation?: LiatirRuntimeBoxActivationMetadata;
+}
+
 export type LiatirRuntimeBoxCiValidationMode = "build" | "scientific" | "native-lifecycle";
 export type LiatirRuntimeBoxCiTargetStatus =
   | "planned"

@@ -1,0 +1,18 @@
+[workspace]
+name = "mhcflurry-class1-presentation-windows-x86_64-cuda12.8"
+channels = ["conda-forge"]
+platforms = ["win-64"]
+
+[system-requirements]
+cuda = "12.8"
+
+[dependencies]
+python = "3.11.*"
+pytorch = "2.8.0.*"
+cuda-version = "12.8.*"
+numpy = "1.26.4.*"
+pandas = "2.*"
+scikit-learn = "*"
+pyyaml = "*"
+tqdm = "*"
+appdirs = "*"

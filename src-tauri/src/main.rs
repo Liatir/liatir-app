@@ -453,6 +453,8 @@ fn main() {
       lia_ai_runtime_box_install,
       lia_ai_runtime_box_rollback,
       lia_ai_runtime_box_remove,
+      lia_runtime_component_python_spawn,
+      lia_runtime_component_python_run,
       lia_ai_python_spawn,
       lia_ai_python_run,
       lia_quenta_ollama_status,

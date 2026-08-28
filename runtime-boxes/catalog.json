@@ -605,6 +605,179 @@
           }
         }
       ]
+    },
+    {
+      "componentKind": "ai-model",
+      "componentId": "openvax-mhcflurry-class1-presentation",
+      "modelId": "openvax-mhcflurry-class1-presentation",
+      "boxId": "mhcflurry-class1-presentation",
+      "runtimeId": "oncology-mhcflurry-class1-presentation-2-2-1",
+      "legalRecord": "runtime-boxes/legal/mhcflurry-class1-presentation.md",
+      "legalStatus": "approved",
+      "validatorScript": "runtime-box:validate:mhcflurry",
+      "validatorPath": "scripts/validate-mhcflurry-runtime.mjs",
+      "productScriptPath": "frontend/src/lib/tools/ai/python-scripts/mhcflurry-epitope.ts",
+      "productLifecycleSpec": "tests/e2e/specs/runtime-box-mhcflurry-native.e2e.mjs",
+      "callerWorkflow": ".github/workflows/runtime-box-mhcflurry-class1-presentation.yml",
+      "targets": [
+        {
+          "targetId": "macos-aarch64-metal",
+          "target": { "platform": "macos", "arch": "aarch64", "accelerator": "metal" },
+          "hostEnvironments": ["native"],
+          "recipeId": "mhcflurry-class1-presentation-macos-aarch64-metal",
+          "runnerProfileId": "macos-arm64-heavy",
+          "status": "planned",
+          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "timeoutMinutes": 120,
+          "requiredBuildDiskBytes": 8589934592,
+          "dependencyLockSha256": "5c972d33e8741232bc97bafc6cc7939bbaad01cb660beddf09394a0f24b8fc56",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/mhcflurry-class1-presentation-macos-aarch64-metal.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 1610612736,
+            "estimatedArchiveSizeBytes": 805306368,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": false,
+          "nativeCiEnabled": false
+        },
+        {
+          "targetId": "linux-x86_64-cpu",
+          "target": { "platform": "linux", "arch": "x86_64", "accelerator": "cpu" },
+          "hostEnvironments": ["native"],
+          "recipeId": "mhcflurry-class1-presentation-linux-x86_64-cpu",
+          "runnerProfileId": "linux-x64-selfhosted",
+          "status": "planned",
+          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "timeoutMinutes": 120,
+          "requiredBuildDiskBytes": 8589934592,
+          "dependencyLockSha256": "9cebf319d9eb350dcdabd85694e2aedc61c20dfd8ab07a77ca826bf5797016ce",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/mhcflurry-class1-presentation-linux-x86_64-cpu.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 2147483648,
+            "estimatedArchiveSizeBytes": 1073741824,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": false,
+          "nativeCiEnabled": false
+        },
+        {
+          "targetId": "windows-x86_64-cpu",
+          "target": { "platform": "windows", "arch": "x86_64", "accelerator": "cpu" },
+          "hostEnvironments": ["native"],
+          "recipeId": "mhcflurry-class1-presentation-windows-x86_64-cpu",
+          "runnerProfileId": "windows-x64-selfhosted",
+          "status": "planned",
+          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "timeoutMinutes": 120,
+          "requiredBuildDiskBytes": 8589934592,
+          "dependencyLockSha256": "c80a50a5aece08050ec84afd023af27ef49d70e98b6d7cf6734fb748c7b33c8c",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/mhcflurry-class1-presentation-windows-x86_64-cpu.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 2147483648,
+            "estimatedArchiveSizeBytes": 1073741824,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": false,
+          "nativeCiEnabled": false
+        },
+        {
+          "targetId": "linux-x86_64-cuda12.9",
+          "target": { "platform": "linux", "arch": "x86_64", "accelerator": "cuda", "cudaVersion": "12.9" },
+          "hostEnvironments": ["native"],
+          "recipeId": "mhcflurry-class1-presentation-linux-x86_64-cuda12.9",
+          "runnerProfileId": "linux-x64-cuda-selfhosted",
+          "status": "planned",
+          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "timeoutMinutes": 150,
+          "requiredBuildDiskBytes": 34359738368,
+          "dependencyLockSha256": "95f154e78f10a8d98f9b640e76a49ab7e9cbe64389bdcbcce96087532f71d2a2",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/mhcflurry-class1-presentation-linux-x86_64-cuda12.9.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 16106127360,
+            "estimatedArchiveSizeBytes": 8589934592,
+            "safetyMarginBytes": 5368709120
+          },
+          "gpuRequired": true,
+          "nativeCiEnabled": false
+        },
+        {
+          "targetId": "windows-x86_64-cuda12.8",
+          "target": { "platform": "windows", "arch": "x86_64", "accelerator": "cuda", "cudaVersion": "12.8" },
+          "hostEnvironments": ["native"],
+          "recipeId": "mhcflurry-class1-presentation-windows-x86_64-cuda12.8",
+          "runnerProfileId": "windows-x64-cuda-selfhosted",
+          "status": "planned",
+          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "timeoutMinutes": 150,
+          "requiredBuildDiskBytes": 25769803776,
+          "dependencyLockSha256": "8af3930a6834ed1574bdbe35773c1a89a36f28a9a05b91cb42e99bf67d12bb83",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/mhcflurry-class1-presentation-windows-x86_64-cuda12.8.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 10737418240,
+            "estimatedArchiveSizeBytes": 6442450944,
+            "safetyMarginBytes": 5368709120
+          },
+          "gpuRequired": true,
+          "nativeCiEnabled": false,
+          "linuxValidationPrerequisiteTargetId": "linux-x86_64-cuda12.9"
+        }
+      ]
+    },
+    {
+      "componentKind": "tool-runtime",
+      "componentId": "griffithlab-pvactools-pvacseq",
+      "modelId": "griffithlab-pvactools-pvacseq",
+      "boxId": "pvactools-pvacseq",
+      "runtimeId": "oncology-pvactools-pvacseq-7-1-2",
+      "legalRecord": "runtime-boxes/legal/pvactools-pvacseq.md",
+      "legalStatus": "approved",
+      "validatorScript": "runtime-box:validate:pvactools",
+      "validatorPath": "scripts/validate-pvactools-runtime.mjs",
+      "productScriptPath": "frontend/src/lib/tools/oncology/python-scripts/pvacseq.ts",
+      "productLifecycleSpec": "tests/e2e/specs/runtime-box-pvactools-native.e2e.mjs",
+      "callerWorkflow": ".github/workflows/runtime-box-pvactools-pvacseq.yml",
+      "targets": [
+        {
+          "targetId": "macos-aarch64-cpu",
+          "target": { "platform": "macos", "arch": "aarch64", "accelerator": "cpu" },
+          "hostEnvironments": ["native"],
+          "recipeId": "pvactools-pvacseq-macos-aarch64-cpu",
+          "runnerProfileId": "macos-arm64-heavy",
+          "status": "planned",
+          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "timeoutMinutes": 180,
+          "requiredBuildDiskBytes": 10737418240,
+          "dependencyLockSha256": "d9167746a55d85af0a3cd7995d89e3cd0c5029dff3058d551cec379f54007aa6",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/pvactools-pvacseq-macos-aarch64-cpu.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 3221225472,
+            "estimatedArchiveSizeBytes": 1610612736,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": false,
+          "nativeCiEnabled": false
+        },
+        {
+          "targetId": "linux-x86_64-cpu",
+          "target": { "platform": "linux", "arch": "x86_64", "accelerator": "cpu" },
+          "hostEnvironments": ["native", "windows-wsl2"],
+          "recipeId": "pvactools-pvacseq-linux-x86_64-cpu",
+          "runnerProfileId": "linux-x64-selfhosted",
+          "status": "planned",
+          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "timeoutMinutes": 180,
+          "requiredBuildDiskBytes": 10737418240,
+          "dependencyLockSha256": "09bf56c98ab86d2a1f910647c45c83f890a7549af6f1c48bca89cfe1d9f782f7",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/pvactools-pvacseq-linux-x86_64-cpu.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 3221225472,
+            "estimatedArchiveSizeBytes": 1610612736,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": false,
+          "nativeCiEnabled": false
+        }
+      ]
     }
   ]
 }

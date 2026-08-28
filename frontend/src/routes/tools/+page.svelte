@@ -14,6 +14,7 @@
   import { workspaceStore } from '$lib/stores/workspace.svelte';
   import { toast } from '$lib/stores/toast.svelte';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
+  import { LIATIR_TOOL_RUNTIME_CATALOG, PVACTOOLS_RUNTIME_COMPONENT_ID } from '@liatir/core';
 
   interface BuiltinTool {
     id: string;
@@ -27,6 +28,11 @@
     tags: string[];
     category: string;
   }
+
+  const pvactoolsPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
+    (runtime) => runtime.id === PVACTOOLS_RUNTIME_COMPONENT_ID
+      && runtime.install.runtimeBox.publishedTargets.length > 0,
+  );
 
   const builtins: BuiltinTool[] = [
     {
@@ -145,6 +151,15 @@
       status: 'available',
       tags: ['VCF', 'Filter', 'Annotation', 'Java'],
       category: 'Variant Calling',
+    },
+    {
+      id: 'neoantigen-prioritization',
+      label: 'Neoantigen Prioritization',
+      description: 'Prioritize experimental MHC Class I candidates from a VEP-annotated tumor VCF.',
+      ...(pvactoolsPublished ? { href: '/tools/oncology/neoantigen-prioritization' } : {}),
+      status: pvactoolsPublished ? 'available' : 'soon',
+      tags: ['VCF', 'VEP', 'pVACseq', 'MHC Class I'],
+      category: 'Oncology',
     },
     {
       id: 'viewer-structure-3d',

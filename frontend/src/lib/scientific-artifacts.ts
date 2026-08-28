@@ -1,13 +1,19 @@
 import { liatir } from '$lib/api';
 import {
   checkLiatirArtifactCompatibility,
+  validateLiatirFastaArtifact,
   validateLiatirAnnDataArtifact,
+  validateLiatirNeoantigenTsvArtifact,
+  validateLiatirVepTumorVcfArtifact,
   type LiatirAnnDataInspectionV1,
   type LiatirArtifactCompatibilityReport,
   type LiatirArtifactLineage,
   type LiatirArtifactRequirement,
   type LiatirArtifactViewerHints,
+  type LiatirNeoantigenTsvInspectionV1,
+  type LiatirSequenceInspectionV1,
   type LiatirScientificArtifactMetadata,
+  type LiatirVepTumorVcfInspectionV1,
 } from '@liatir/core';
 
 const HDF5_SIGNATURE_HEX = '894844460d0a1a0a';
@@ -24,14 +30,20 @@ export interface AnnDataArtifactOptions {
   validatedAt?: string;
 }
 
+export type ScientificArtifactOptions = AnnDataArtifactOptions;
+
+async function fileIdentity(path: string): Promise<NativeFileIdentity> {
+  const api = liatir();
+  if (!api) throw new Error('Liatir API not available');
+  return api.invoke('lia_file_identity', { path }) as Promise<NativeFileIdentity>;
+}
+
 export async function inspectAnnDataArtifact(
   path: string,
   inspection: Omit<LiatirAnnDataInspectionV1, 'hdf5Signature'> = {},
   options: AnnDataArtifactOptions = {},
 ): Promise<LiatirScientificArtifactMetadata> {
-  const api = liatir();
-  if (!api) throw new Error('Liatir API not available');
-  const identity = await api.invoke('lia_file_identity', { path }) as NativeFileIdentity;
+  const identity = await fileIdentity(path);
   return validateLiatirAnnDataArtifact({
     sizeBytes: identity.sizeBytes,
     sha256: identity.sha256,
@@ -39,6 +51,54 @@ export async function inspectAnnDataArtifact(
       ...inspection,
       hdf5Signature: identity.prefixHex.toLowerCase() === HDF5_SIGNATURE_HEX,
     },
+    validatedAt: options.validatedAt ?? new Date().toISOString(),
+    ...(options.lineage ? { lineage: options.lineage } : {}),
+    ...(options.viewerHints ? { viewerHints: options.viewerHints } : {}),
+  });
+}
+
+export async function inspectFastaArtifact(
+  path: string,
+  inspection: LiatirSequenceInspectionV1,
+  options: ScientificArtifactOptions = {},
+): Promise<LiatirScientificArtifactMetadata> {
+  const identity = await fileIdentity(path);
+  return validateLiatirFastaArtifact({
+    sizeBytes: identity.sizeBytes,
+    sha256: identity.sha256,
+    inspection,
+    validatedAt: options.validatedAt ?? new Date().toISOString(),
+    ...(options.lineage ? { lineage: options.lineage } : {}),
+    ...(options.viewerHints ? { viewerHints: options.viewerHints } : {}),
+  });
+}
+
+export async function inspectVepTumorVcfArtifact(
+  path: string,
+  inspection: LiatirVepTumorVcfInspectionV1,
+  options: ScientificArtifactOptions = {},
+): Promise<LiatirScientificArtifactMetadata> {
+  const identity = await fileIdentity(path);
+  return validateLiatirVepTumorVcfArtifact({
+    sizeBytes: identity.sizeBytes,
+    sha256: identity.sha256,
+    inspection,
+    validatedAt: options.validatedAt ?? new Date().toISOString(),
+    ...(options.lineage ? { lineage: options.lineage } : {}),
+    ...(options.viewerHints ? { viewerHints: options.viewerHints } : {}),
+  });
+}
+
+export async function inspectNeoantigenTsvArtifact(
+  path: string,
+  inspection: LiatirNeoantigenTsvInspectionV1,
+  options: ScientificArtifactOptions = {},
+): Promise<LiatirScientificArtifactMetadata> {
+  const identity = await fileIdentity(path);
+  return validateLiatirNeoantigenTsvArtifact({
+    sizeBytes: identity.sizeBytes,
+    sha256: identity.sha256,
+    inspection,
     validatedAt: options.validatedAt ?? new Date().toISOString(),
     ...(options.lineage ? { lineage: options.lineage } : {}),
     ...(options.viewerHints ? { viewerHints: options.viewerHints } : {}),

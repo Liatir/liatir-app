@@ -1,0 +1,65 @@
+name: Runtime Box pVACtools pVACseq
+
+on:
+  pull_request:
+    paths:
+      - "runtime-boxes/scrolls/pvactools-pvacseq/macos-aarch64-cpu/**"
+      - "runtime-boxes/scrolls/pvactools-pvacseq/linux-x86_64-cpu/**"
+      - "runtime-boxes/legal/audits/pvactools-pvacseq-macos-aarch64-cpu.json"
+      - "runtime-boxes/legal/audits/pvactools-pvacseq-linux-x86_64-cpu.json"
+      - "runtime-boxes/legal/pvactools-pvacseq.md"
+      - "scripts/validate-pvactools-runtime.mjs"
+      - "scripts/runtime-box/evidence.mjs"
+      - "scripts/runtime-box-ci.mjs"
+      - "scripts/runtime-box/validator-context.mjs"
+      - "scripts/install-runtime-box-linux-product-deps.sh"
+      - "frontend/src/lib/tools/oncology/python-scripts/pvacseq.ts"
+      - "tests/e2e/specs/runtime-box-pvactools-native.e2e.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
+      - ".github/workflows/runtime-box-pvactools-pvacseq.yml"
+  push:
+    branches: [main]
+    paths:
+      - "runtime-boxes/scrolls/pvactools-pvacseq/macos-aarch64-cpu/**"
+      - "runtime-boxes/scrolls/pvactools-pvacseq/linux-x86_64-cpu/**"
+      - "runtime-boxes/legal/audits/pvactools-pvacseq-macos-aarch64-cpu.json"
+      - "runtime-boxes/legal/audits/pvactools-pvacseq-linux-x86_64-cpu.json"
+      - "runtime-boxes/legal/pvactools-pvacseq.md"
+      - "scripts/validate-pvactools-runtime.mjs"
+      - "scripts/runtime-box/evidence.mjs"
+      - "scripts/runtime-box-ci.mjs"
+      - "scripts/runtime-box/validator-context.mjs"
+      - "scripts/install-runtime-box-linux-product-deps.sh"
+      - "frontend/src/lib/tools/oncology/python-scripts/pvacseq.ts"
+      - "tests/e2e/specs/runtime-box-pvactools-native.e2e.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
+      - ".github/workflows/runtime-box-pvactools-pvacseq.yml"
+  workflow_dispatch:
+    inputs:
+      target_id:
+        description: Checked Runtime Box target
+        required: true
+        type: choice
+        options: [macos-aarch64-cpu, linux-x86_64-cpu]
+      mode:
+        description: Native validation depth
+        required: true
+        default: build
+        type: choice
+        options: [build, scientific, native-lifecycle]
+
+concurrency:
+  group: runtime-box-pvactools-pvacseq-${{ inputs.target_id || 'macos-aarch64-cpu' }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/_runtime-box-validate.yml
+    with:
+      model_id: griffithlab-pvactools-pvacseq
+      target_id: ${{ inputs.target_id || 'macos-aarch64-cpu' }}
+      mode: ${{ inputs.mode || 'build' }}
+      native_requested: ${{ github.event_name == 'workflow_dispatch' }}

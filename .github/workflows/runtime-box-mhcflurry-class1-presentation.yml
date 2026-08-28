@@ -1,0 +1,77 @@
+name: Runtime Box MHCflurry Class I presentation
+
+on:
+  pull_request:
+    paths:
+      - "runtime-boxes/scrolls/mhcflurry-class1-presentation/macos-aarch64-metal/**"
+      - "runtime-boxes/scrolls/mhcflurry-class1-presentation/linux-x86_64-cpu/**"
+      - "runtime-boxes/scrolls/mhcflurry-class1-presentation/windows-x86_64-cpu/**"
+      - "runtime-boxes/scrolls/mhcflurry-class1-presentation/linux-x86_64-cuda12.9/**"
+      - "runtime-boxes/scrolls/mhcflurry-class1-presentation/windows-x86_64-cuda12.8/**"
+      - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-macos-aarch64-metal.json"
+      - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-linux-x86_64-cpu.json"
+      - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-windows-x86_64-cpu.json"
+      - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-linux-x86_64-cuda12.9.json"
+      - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-windows-x86_64-cuda12.8.json"
+      - "runtime-boxes/legal/mhcflurry-class1-presentation.md"
+      - "scripts/validate-mhcflurry-runtime.mjs"
+      - "scripts/runtime-box/evidence.mjs"
+      - "scripts/runtime-box-ci.mjs"
+      - "scripts/runtime-box/validator-context.mjs"
+      - "scripts/install-runtime-box-linux-product-deps.sh"
+      - "frontend/src/lib/tools/ai/python-scripts/mhcflurry-epitope.ts"
+      - "tests/e2e/specs/runtime-box-mhcflurry-native.e2e.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
+      - ".github/workflows/runtime-box-mhcflurry-class1-presentation.yml"
+  push:
+    branches: [main]
+    paths:
+      - "runtime-boxes/scrolls/mhcflurry-class1-presentation/macos-aarch64-metal/**"
+      - "runtime-boxes/scrolls/mhcflurry-class1-presentation/linux-x86_64-cpu/**"
+      - "runtime-boxes/scrolls/mhcflurry-class1-presentation/windows-x86_64-cpu/**"
+      - "runtime-boxes/scrolls/mhcflurry-class1-presentation/linux-x86_64-cuda12.9/**"
+      - "runtime-boxes/scrolls/mhcflurry-class1-presentation/windows-x86_64-cuda12.8/**"
+      - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-macos-aarch64-metal.json"
+      - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-linux-x86_64-cpu.json"
+      - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-windows-x86_64-cpu.json"
+      - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-linux-x86_64-cuda12.9.json"
+      - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-windows-x86_64-cuda12.8.json"
+      - "runtime-boxes/legal/mhcflurry-class1-presentation.md"
+      - "scripts/validate-mhcflurry-runtime.mjs"
+      - "scripts/runtime-box/evidence.mjs"
+      - "scripts/runtime-box-ci.mjs"
+      - "scripts/runtime-box/validator-context.mjs"
+      - "scripts/install-runtime-box-linux-product-deps.sh"
+      - "frontend/src/lib/tools/ai/python-scripts/mhcflurry-epitope.ts"
+      - "tests/e2e/specs/runtime-box-mhcflurry-native.e2e.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
+      - ".github/workflows/runtime-box-mhcflurry-class1-presentation.yml"
+  workflow_dispatch:
+    inputs:
+      target_id:
+        description: Checked Runtime Box target
+        required: true
+        type: choice
+        options: [macos-aarch64-metal, linux-x86_64-cpu, windows-x86_64-cpu, linux-x86_64-cuda12.9, windows-x86_64-cuda12.8]
+      mode:
+        description: Native validation depth
+        required: true
+        default: build
+        type: choice
+        options: [build, scientific, native-lifecycle]
+
+concurrency:
+  group: runtime-box-mhcflurry-class1-presentation-${{ inputs.target_id || 'macos-aarch64-metal' }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/_runtime-box-validate.yml
+    with:
+      model_id: openvax-mhcflurry-class1-presentation
+      target_id: ${{ inputs.target_id || 'macos-aarch64-metal' }}
+      mode: ${{ inputs.mode || 'build' }}
+      native_requested: ${{ github.event_name == 'workflow_dispatch' }}

@@ -108,7 +108,18 @@ export async function startRuntimeBoxInstall(browser, input, options = {}) {
         }
       },
     );
-    void window.Liatir.invoke('lia_ai_runtime_box_install', request)
+    const generic = typeof request.componentKind === 'string';
+    const command = generic ? 'lia_runtime_box_install' : 'lia_ai_runtime_box_install';
+    const payload = generic ? {
+      componentKind: request.componentKind,
+      componentId: request.componentId ?? request.modelId,
+      boxId: request.boxId,
+      channel: request.channel,
+      registryBaseUrl: request.registryBaseUrl,
+      targetCandidates: request.targetCandidates,
+      downloadId: request.downloadId,
+    } : request;
+    void window.Liatir.invoke(command, payload)
       .then((result) => {
         state.status = 'done';
         state.result = result;

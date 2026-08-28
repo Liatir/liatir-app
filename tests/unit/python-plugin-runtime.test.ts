@@ -638,6 +638,7 @@ export default {
   it('keeps Python plugin runtime boxes separate from AI model runtimes', () => {
     const liaPlugins = readFileSync(resolve(rootDir, 'src-tauri/src/bridge/lia_plugins.rs'), 'utf8');
     const aiRuntime = readFileSync(resolve(rootDir, 'src-tauri/src/bridge/ai_runtime.rs'), 'utf8');
+    const runtimeBoxes = readFileSync(resolve(rootDir, 'src-tauri/src/bridge/runtime_boxes.rs'), 'utf8');
 
     expect(liaPlugins).toContain('const PYTHON_PLUGIN_ENV_ROOT: &str = "plugin-runtimes";');
     expect(liaPlugins).toContain('prepare_env(');
@@ -647,8 +648,11 @@ export default {
     expect(liaPlugins).toContain('fn python_spec_hash');
     expect(liaPlugins).toContain('python_env_id_for_manifest');
     expect(liaPlugins).toContain('metadata_map.insert("runtime".to_string(), Value::String("python".to_string()))');
-    expect(aiRuntime).toContain('const AI_PYTHON_ENV_ROOT: &str = "ai-runtimes";');
+    expect(runtimeBoxes).toContain('const AI_RUNTIME_ROOT: &str = "ai-runtimes";');
+    expect(runtimeBoxes).toContain('const TOOL_RUNTIME_ROOT: &str = "tool-runtimes";');
+    expect(aiRuntime).toContain('component_kind.runtime_root()');
     expect(aiRuntime).not.toContain('plugin-runtimes');
+    expect(runtimeBoxes).not.toContain('plugin-runtimes');
   });
 
   it('keeps liatir dev in a temporary app-backed session instead of importing real plugins', () => {

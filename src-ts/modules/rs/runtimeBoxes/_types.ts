@@ -1,12 +1,29 @@
 import type {
   AiRuntimePackageCheck,
+  JsonValue,
   LiatirRuntimeBoxInstall,
   LiatirRuntimeComponentInstallResult,
   LiatirRuntimeComponentKind,
+  LiatirRuntimeComponentPythonRunResult,
   LiatirRuntimeComponentRollbackResult,
   LiatirRuntimeComponentStatus,
   LiatirRuntimeComponentUpdateRequest,
 } from '@liatir/core';
+
+export interface RuntimeComponentPythonRunInput {
+  componentKind: LiatirRuntimeComponentKind;
+  runtimeId: string;
+  script: string;
+  args?: string[];
+  inputJson: Record<string, JsonValue>;
+  timeoutSeconds?: number;
+}
+
+export interface RuntimeComponentPythonSpawnInput extends Omit<RuntimeComponentPythonRunInput, 'timeoutSeconds'> {
+  workspaceId?: string | null;
+  label?: string;
+  metadata?: Record<string, JsonValue>;
+}
 
 export interface RuntimeComponentStatusInput {
   componentKind: LiatirRuntimeComponentKind;
@@ -34,5 +51,7 @@ export interface RuntimeBoxesInterface {
     runtimeId: string,
     boxId: string,
   ): Promise<boolean>;
+  runPython(input: RuntimeComponentPythonRunInput): Promise<LiatirRuntimeComponentPythonRunResult>;
+  spawnPython(input: RuntimeComponentPythonSpawnInput): Promise<{ jobId: string }>;
   cancelDownload(downloadId: string): Promise<boolean>;
 }

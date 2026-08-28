@@ -1387,6 +1387,24 @@ function buildRuntimeBoxes(core) {
       runtimeId
     }),
     remove: (componentKind, runtimeId, boxId) => core.invoke("lia_runtime_box_remove", { componentKind, runtimeId, boxId }),
+    runPython: ({ componentKind, runtimeId, script, args = [], inputJson, timeoutSeconds }) => core.invoke("lia_runtime_component_python_run", {
+      componentKind,
+      runtimeId,
+      script,
+      args,
+      inputJson,
+      timeoutSeconds: timeoutSeconds ?? null
+    }),
+    spawnPython: ({ componentKind, runtimeId, script, args = [], inputJson, workspaceId, label, metadata }) => core.invoke("lia_runtime_component_python_spawn", {
+      componentKind,
+      runtimeId,
+      script,
+      args,
+      inputJson,
+      workspaceId: workspaceId ?? null,
+      label: label ?? null,
+      metadata: metadata ?? null
+    }),
     cancelDownload: (downloadId) => core.invoke("lia_managed_download_cancel", { id: downloadId })
   };
 }

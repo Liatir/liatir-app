@@ -15,6 +15,10 @@
 		finalizeCompletedAIDirectRuns,
 		hasRunningDirectAIJob
 	} from '$lib/ai/direct-run-finalizer';
+	import {
+		finalizeCompletedToolRuntimeDirectRuns,
+		hasRunningDirectToolRuntimeJob
+	} from '$lib/tool-runtimes/direct-run-finalizer';
 	import { initAppCloseGuard } from '$lib/stores/appCloseGuard.svelte';
 	import { installGlobalErrorHandler } from '$lib/diagnostics/global-error-handler';
 	import { jobsStore } from '$lib/stores/jobs.svelte';
@@ -50,6 +54,7 @@
 		try {
 			await jobsStore.refresh();
 			await finalizeCompletedAIDirectRuns(jobsStore.jobs);
+			await finalizeCompletedToolRuntimeDirectRuns(jobsStore.jobs);
 		} finally {
 			refreshingJobs = false;
 		}
@@ -65,6 +70,7 @@
 		const jobs = jobsStore.jobs;
 		if (!initialized || isPluginDevRoute || !workspaceStore.activeId) return;
 		void finalizeCompletedAIDirectRuns(jobs);
+		void finalizeCompletedToolRuntimeDirectRuns(jobs);
 	});
 
 	async function initializeApplication() {
@@ -83,7 +89,11 @@
 			await refreshJobsAndFinalize();
 			if (!jobRefreshInterval) {
 				jobRefreshInterval = setInterval(() => {
-					if (jobsStore.runningCount > 0 || hasRunningDirectAIJob(jobsStore.jobs)) {
+					if (
+						jobsStore.runningCount > 0
+						|| hasRunningDirectAIJob(jobsStore.jobs)
+						|| hasRunningDirectToolRuntimeJob(jobsStore.jobs)
+					) {
 						void refreshJobsAndFinalize();
 					}
 				}, 2000);

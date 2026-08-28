@@ -13,6 +13,7 @@ export type LiatirExecutionRunKind =
   | "external-workflow"
   | "external-workflow-step"
   | "native-tool"
+  | "tool-runtime"
   | "ai-model"
   | "ai-tool"
   | "lia-plugin"

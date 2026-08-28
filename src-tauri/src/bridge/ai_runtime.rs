@@ -8,20 +8,11 @@ use serde_json::Value;
 use tauri::AppHandle;
 
 use super::ai_hardware::{nvidia_capability, total_memory_bytes};
-use super::python_env::{
-    run_in_env, spawn_in_env, status_env, PythonEnvPackage, PythonRunResult,
-};
+use super::python_env::{run_in_env, spawn_in_env, status_env, PythonEnvPackage, PythonRunResult};
 use super::runtime_boxes::{
-    runtime_box_activation_metadata,
-    runtime_box_activation_metadata_for_component,
-    runtime_component_update_status,
-    RuntimeComponentKind,
-    RuntimeComponentUpdateRequest,
-    RuntimeComponentUpdateStatus,
+    runtime_box_activation_metadata_for_component, runtime_component_update_status,
+    RuntimeComponentKind, RuntimeComponentUpdateRequest, RuntimeComponentUpdateStatus,
 };
-
-/// Environment root passed to every `python_env` call, i.e. `<data root>/ai-runtimes/<runtime id>`.
-const AI_PYTHON_ENV_ROOT: &str = "ai-runtimes";
 
 // AI-facing names for the generic execution contracts. These are aliases, not copies.
 pub type AiRuntimePackage = PythonEnvPackage;
@@ -133,18 +124,15 @@ async fn runtime_component_status(
     })
     .await
     .map_err(|e| e.to_string())??;
-    let activation = match runtime_box_activation_metadata_for_component(
-        &app,
-        component_kind,
-        &runtime_id,
-    ) {
-        Ok(value) => value,
-        Err(error) => {
-            status.installed = false;
-            status.error = Some(error);
-            None
-        }
-    };
+    let activation =
+        match runtime_box_activation_metadata_for_component(&app, component_kind, &runtime_id) {
+            Ok(value) => value,
+            Err(error) => {
+                status.installed = false;
+                status.error = Some(error);
+                None
+            }
+        };
     let update = if status.installed && status.error.is_none() {
         match update {
             Some(request) => Some(
@@ -199,10 +187,11 @@ pub async fn lia_ai_runtime_status(
 ///
 /// This is the long-running path: the caller gets a job handle, and output and progress arrive
 /// later as events, so inference that takes minutes does not block the UI. Use
-/// [`lia_ai_python_run`] instead when the result is needed inline.
+/// [`lia_runtime_component_python_run`] instead when the result is needed inline.
 #[tauri::command]
-pub async fn lia_ai_python_spawn(
+pub async fn lia_runtime_component_python_spawn(
     app: AppHandle,
+    component_kind: RuntimeComponentKind,
     runtime_id: String,
     script: String,
     args: Vec<String>,
@@ -223,15 +212,21 @@ pub async fn lia_ai_python_spawn(
         }
         None => serde_json::Map::new(),
     };
-    // Stamped onto the job so Jobs and Results can attribute the run to its runtime.
+    // Stamped onto the job so Jobs and Results can attribute the run to its exact component.
+    metadata_map.insert(
+        "componentKind".to_string(),
+        serde_json::to_value(component_kind).map_err(|error| error.to_string())?,
+    );
     metadata_map.insert("runtimeId".to_string(), Value::String(runtime_id.clone()));
-    if let Some(activation) = runtime_box_activation_metadata(&app, &runtime_id)? {
+    if let Some(activation) =
+        runtime_box_activation_metadata_for_component(&app, component_kind, &runtime_id)?
+    {
         metadata_map.insert("runtimeBoxActivation".to_string(), activation);
     }
 
     spawn_in_env(
         app,
-        AI_PYTHON_ENV_ROOT.to_string(),
+        component_kind.runtime_root().to_string(),
         runtime_id.clone(),
         script,
         args,
@@ -240,21 +235,55 @@ pub async fn lia_ai_python_spawn(
         // extra_env: AI runs need no additional environment variables beyond the venv's own.
         None,
         // A readable fallback label, since this is what the user sees in the Jobs list.
-        Some(label.unwrap_or_else(|| format!("AI runtime: {runtime_id}"))),
-        // job_kind: lets the UI filter AI jobs apart from plugin or native-tool jobs.
-        "ai-python".to_string(),
+        Some(label.unwrap_or_else(|| match component_kind {
+            RuntimeComponentKind::AiModel => format!("AI runtime: {runtime_id}"),
+            RuntimeComponentKind::ToolRuntime => format!("Tool runtime: {runtime_id}"),
+        })),
+        // Preserve the established AI kind because direct-run recovery depends on it. Tool
+        // Runtime jobs use their own honest kind and still share the same Jobs lifecycle.
+        match component_kind {
+            RuntimeComponentKind::AiModel => "ai-python".to_string(),
+            RuntimeComponentKind::ToolRuntime => "tool-runtime-python".to_string(),
+        },
         Some(Value::Object(metadata_map)),
+    )
+    .await
+}
+
+/// Compatibility command for existing AI Model callers.
+#[tauri::command]
+pub async fn lia_ai_python_spawn(
+    app: AppHandle,
+    runtime_id: String,
+    script: String,
+    args: Vec<String>,
+    input_json: Value,
+    workspace_id: Option<String>,
+    label: Option<String>,
+    metadata: Option<Value>,
+) -> Result<Value, String> {
+    lia_runtime_component_python_spawn(
+        app,
+        RuntimeComponentKind::AiModel,
+        runtime_id,
+        script,
+        args,
+        input_json,
+        workspace_id,
+        label,
+        metadata,
     )
     .await
 }
 
 /// Runs a Python script to completion and returns its result.
 ///
-/// The blocking counterpart of [`lia_ai_python_spawn`]: no job is created and the caller waits,
-/// so this suits short work with a bounded `timeout_seconds`.
+/// The blocking counterpart of [`lia_runtime_component_python_spawn`]: no job is created and the
+/// caller waits, so this suits short work with a bounded `timeout_seconds`.
 #[tauri::command]
-pub async fn lia_ai_python_run(
+pub async fn lia_runtime_component_python_run(
     app: AppHandle,
+    component_kind: RuntimeComponentKind,
     runtime_id: String,
     script: String,
     args: Vec<String>,
@@ -262,12 +291,12 @@ pub async fn lia_ai_python_run(
     timeout_seconds: Option<u64>,
 ) -> Result<AiPythonRunResult, String> {
     // Keep the inline path under the same Runtime Box gate as tracked Jobs. Without this check a
-    // schema-v1 activation was blocked by `lia_ai_python_spawn` but could still execute here.
-    runtime_box_activation_metadata(&app, &runtime_id)?;
+    // schema-v1 activation blocked by spawn could still execute here.
+    runtime_box_activation_metadata_for_component(&app, component_kind, &runtime_id)?;
     tauri::async_runtime::spawn_blocking(move || {
         run_in_env(
             app,
-            AI_PYTHON_ENV_ROOT.to_string(),
+            component_kind.runtime_root().to_string(),
             runtime_id,
             script,
             args,
@@ -277,4 +306,26 @@ pub async fn lia_ai_python_run(
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+/// Compatibility command for existing AI Model callers.
+#[tauri::command]
+pub async fn lia_ai_python_run(
+    app: AppHandle,
+    runtime_id: String,
+    script: String,
+    args: Vec<String>,
+    input_json: Value,
+    timeout_seconds: Option<u64>,
+) -> Result<AiPythonRunResult, String> {
+    lia_runtime_component_python_run(
+        app,
+        RuntimeComponentKind::AiModel,
+        runtime_id,
+        script,
+        args,
+        input_json,
+        timeout_seconds,
+    )
+    .await
 }

@@ -28,6 +28,10 @@ import {
 	singleCellEmbeddingDefinition,
 	finalizeSingleCellEmbeddingResult
 } from '$lib/tools/ai/single-cell-embedding';
+import {
+	finalizeMhcFlurryEpitopeResult,
+	mhcFlurryEpitopeDefinition
+} from '$lib/tools/ai/mhcflurry-epitope';
 import type { ToolOutput } from '$lib/types/tool-output';
 import { finalizeExecutionResult } from '$lib/execution/finalization';
 
@@ -107,6 +111,9 @@ async function finalizeToolResult(
 ): Promise<FinalizedAIToolResult> {
 	if (toolId === singleCellEmbeddingDefinition.id) {
 		return await finalizeSingleCellEmbeddingResult(model, params, result, onLog);
+	}
+	if (toolId === mhcFlurryEpitopeDefinition.id) {
+		return await finalizeMhcFlurryEpitopeResult(model, params, result, onLog);
 	}
 	throw new Error(`Unsupported AI Tool finalizer: ${toolId}`);
 }
