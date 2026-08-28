@@ -180,6 +180,18 @@ proven targets to `published`, and
 add only those targets to active product catalogs. CPU/CUDA/MPS parity is not claimed until those
 native validators pass.
 
+The implementation commit `e7a7a7b16bbfb37f322db13bda55c6f91ed55e2b` was pushed to `main` after
+the local gates. Automatic catalog-only preflights passed for MHCflurry in run `33161230745`
+(artifact `9681714960`, digest
+`sha256:7984adb083f2d1eaadc54faffb3c4a21fc98bae2fbe04412260494c24aaf0fd6`) and pVACtools in run
+`33161230937` (artifact `9681718976`, digest
+`sha256:6cceb615655ac04546538578d0bac44dd30b458be679329ce00ac258a45bed84`). Their native jobs were
+skipped intentionally because target enablement remains false. The MHCflurry Apple-silicon runner
+preflight then found 2,374,496,256 free bytes on the available Mac versus the required
+37,580,963,840, so it stopped before runner registration or workflow dispatch. The next execution
+step is therefore to free the required Mac disk space and run `macos-aarch64-metal` alone; do not
+reduce the reviewed disk floor and do not start CUDA, signing or publication as a workaround.
+
 ## Fase 3 — Strutture, affinità e simulazione
 
 **Codex effort consigliato: max**  

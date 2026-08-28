@@ -1,6 +1,6 @@
 # Current project status
 
-## Oncology Phase 2 is implemented locally; the reviewed MHCflurry mirror is public (2026-08-28)
+## Oncology Phase 2 is implemented on `main`; native target proof remains gated (2026-08-28)
 
 MHC-I Epitope Prediction and pVACseq Neoantigen Prioritization now have shared contracts, bounded
 offline product scripts, direct and pipeline execution, Jobs/Results/provenance, cancellation and
@@ -46,6 +46,24 @@ native scenarios and all applicable companion suites; the two new heavy componen
 loaded but skipped because their boxes are unpublished. Catalog, JSON, JavaScript syntax and diff
 checks passed. The exact acceptance ledger and remaining publication sequence are in
 [New scientific model integration](./roadmap/new-ai-models-integration-plan.md).
+
+Commit `e7a7a7b16bbfb37f322db13bda55c6f91ed55e2b` is now on `origin/main`. Its automatic GitHub
+preflights passed for MHCflurry in run `33161230745` (artifact `9681714960`, digest
+`sha256:7984adb083f2d1eaadc54faffb3c4a21fc98bae2fbe04412260494c24aaf0fd6`) and pVACtools in run
+`33161230937` (artifact `9681718976`, digest
+`sha256:6cceb615655ac04546538578d0bac44dd30b458be679329ce00ac258a45bed84`). Both receipts identify the
+clean pushed commit and passed the legal, recipe, target, runner, timeout and catalog contracts. The
+native jobs were skipped by design because every new target still has `nativeCiEnabled: false`.
+The same push ran the existing public SDK mirror successfully as run `33161230603`, producing
+`liatir/sdk` commit `902661f41b478a4938e050158714ebc432945b97`.
+
+The first intended native target is MHCflurry `macos-aarch64-metal`, because it proves the standalone
+Metal path and CPU/MPS parity on the available host before any paid CUDA work. Its ephemeral-runner
+preflight stopped before registration: the Mac had 2,374,496,256 free bytes while the reviewed
+`macos-arm64-heavy` profile requires 37,580,963,840. No runner, workflow dispatch, target enablement,
+native build, signing or Runtime Box publication occurred. Do not lower that safety floor; free at
+least the required space on an Apple-silicon Mac, then enable and validate exactly one target at a
+time.
 
 ## Runtime Components and scientific contracts are ready for model-specific phases (2026-08-25)
 
