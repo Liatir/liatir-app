@@ -7,7 +7,7 @@ import {
   startRuntimeBoxInstall,
   waitForRuntimeBoxInstall,
 } from '../e2e/support/runtime-box.mjs';
-import { waitForLiatirBridge } from '../e2e/support/liatir-app.mjs';
+import { selectFileFromPicker, waitForLiatirBridge } from '../e2e/support/liatir-app.mjs';
 import { resolveRuntimeBoxReleaseCandidate } from '../../frontend/src/lib/runtime-box-release-candidate';
 import {
   prepareTauriTestEnvironment,
@@ -37,6 +37,41 @@ describe('Runtime Box product E2E support', () => {
       }] } } } });
     expect(() => resolveRuntimeBoxReleaseCandidate('unknown-component')).toThrow(/Unsupported/);
   });
+
+  it('selects a picker file through standard CSS instead of unsupported text-selector syntax', async () => {
+    let pickerClicked = false;
+    let optionClicked = false;
+    const option = {
+      getText: async () => 'mhc-native-input.fasta\nworkspace/mhc-native-input.fasta',
+      isDisplayed: async () => true,
+      click: async () => { optionClicked = true; },
+    };
+    const browser = {
+      $: async (selector: string) => {
+        expect(selector).toBe('[data-testid="mhc-input-file"]');
+        return {
+          waitForDisplayed: async () => {},
+          click: async () => { pickerClicked = true; },
+        };
+      },
+      $$: async (selector: string) => {
+        expect(selector).toBe('button');
+        expect(pickerClicked).toBe(true);
+        return [{
+          getText: async () => 'Close',
+          isDisplayed: async () => true,
+        }, option];
+      },
+      waitUntil: async (condition: () => Promise<boolean>) => {
+        if (!await condition()) throw new Error('condition did not pass');
+        return true;
+      },
+    };
+
+    await selectFileFromPicker(browser, 'mhc-input-file', 'mhc-native-input.fasta');
+    expect(optionClicked).toBe(true);
+  });
+
   it('opens the isolated Sandbox through the product workspace flow', async () => {
     let sandboxClicked = false;
     const browser = {

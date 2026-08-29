@@ -10,7 +10,7 @@ import {
   startRuntimeBoxInstall,
   waitForRuntimeBoxInstall,
 } from '../support/runtime-box.mjs';
-import { navigateInApp, reloadLiatirApp } from '../support/liatir-app.mjs';
+import { navigateInApp, reloadLiatirApp, selectFileFromPicker } from '../support/liatir-app.mjs';
 
 const BOX_ID = 'mhcflurry-class1-presentation';
 const MODEL_ID = 'openvax-mhcflurry-class1-presentation';
@@ -32,15 +32,6 @@ async function writeAppJson(browser, rel, value) {
 
 async function jobs(browser) {
   return browser.execute(async () => window.Liatir.invoke('lia_jobs_list', { workspaceId: '__test__' }));
-}
-
-async function selectFile(browser, pickerTestId, filename) {
-  const picker = await browser.$(`[data-testid="${pickerTestId}"]`);
-  await picker.waitForDisplayed({ timeout: 20_000 });
-  await picker.click();
-  const option = await browser.$(`button*=${filename}`);
-  await option.waitForDisplayed({ timeout: 20_000 });
-  await option.click();
 }
 
 export const tests = [{
@@ -100,7 +91,7 @@ export const tests = [{
     expect(cancelled.status.type).toBe('killed');
 
     await navigateInApp(browser, `/ai/${MODEL_ID}`);
-    await selectFile(browser, 'mhc-input-file', path.basename(fixturePath));
+    await selectFileFromPicker(browser, 'mhc-input-file', path.basename(fixturePath));
     await (await browser.$('#mhc-lengths')).setValue('8,9');
     await (await browser.$('#mhc-top')).setValue('10');
     const runButton = await browser.$('[data-testid="mhc-run"]');

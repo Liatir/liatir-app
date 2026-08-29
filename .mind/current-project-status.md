@@ -35,6 +35,18 @@ catalog. The remaining local stop condition is the full `test:verify` gate befor
 one fresh remote release attempt. That gate then passed all 70 test files and 482 tests, regenerated
 the SDK types, built Core and the frontend, and compiled the TypeScript bridge.
 
+Release run `33250827268` then passed clean signing, native self-test, Metal scientific parity,
+immutable publication, the candidate visibility smoke and the real app build. It stopped before
+promotion when the MHCflurry lifecycle opened its file picker: the retained screenshot proves the
+requested file was visible, but both oncology specs had copied WebdriverIO's `button*=text` syntax
+while Liatir's embedded harness accepts standard CSS selectors only. The correction is one shared
+picker helper that enumerates real `button` elements and matches visible text, used by MHCflurry and
+pVACseq. Its behavioral regression, spec-loading checks and full `test:verify` must pass before one
+bounded MHCflurry retry; any further failure stops publication for a new diagnosis. The beta channel
+was not promoted. Those gates now pass: 78 focused tests, then all 70 test files and 483 tests, SDK
+type regeneration, Core/frontend builds and bridge compilation. The bounded retry is permitted after
+the clean fix commit is pushed and the runner preflight passes again.
+
 ## Oncology Phase 2 is complete for the authorized scope (2026-08-29)
 
 MHC-I Epitope Prediction and pVACseq Neoantigen Prioritization now have shared contracts, bounded

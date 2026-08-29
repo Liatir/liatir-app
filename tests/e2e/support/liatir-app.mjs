@@ -102,6 +102,31 @@ export async function navigateInApp(browser, pathname) {
   );
 }
 
+/** Selects one visible workspace file through the real picker using only standard CSS selectors. */
+export async function selectFileFromPicker(browser, pickerTestId, filename) {
+  const picker = await browser.$(`[data-testid="${pickerTestId}"]`);
+  await picker.waitForDisplayed({ timeout: 20_000 });
+  await picker.click();
+
+  let option = null;
+  await browser.waitUntil(async () => {
+    const buttons = await browser.$$('button');
+    for (const candidate of buttons) {
+      const text = (await candidate.getText()).trim();
+      if (text.startsWith(filename) && await candidate.isDisplayed()) {
+        option = candidate;
+        return true;
+      }
+    }
+    return false;
+  }, {
+    timeout: 20_000,
+    timeoutMsg: `File picker option was not displayed: ${filename}`,
+  });
+
+  await option.click();
+}
+
 /**
  * Reloads the app the way a user's restart does, without deadlocking the WebDriver session.
  *
