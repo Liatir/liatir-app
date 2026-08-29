@@ -58,6 +58,18 @@ attempt; another failure requires a fresh diagnosis before any retry. Promotion 
 endpoint regression and all routed-spec checks now pass (79 focused tests), followed by the full 70
 test files and 484 tests, SDK regeneration, Core/frontend builds and bridge compilation.
 
+Retry `33266824095` then passed candidate visibility, signing, native self-test, Metal scientific
+parity, immutable publication, installation, cancellation, file selection and the real MHCflurry
+inference. It stopped before promotion only when the E2E tried to inspect the completed Result with
+`lia_app_read_text`: that command reads isolated app state, while durable `runs/<id>/result.json`
+documents live in the user data scope and require `lia_fs_read_text` with `permanent: true`. The
+product finalizer already writes the Result before its app-state index entry, so this is a test-only
+scope error rather than missing scientific output. MHCflurry and pVACseq now share one data-scope
+JSON reader, covered by a regression that rejects app-storage access. Promotion still did not run;
+one bounded retry is allowed only after the focused test, `test:verify`, clean push and fresh runner
+preflight pass. The focused regression now passes all 15 tests, and `test:verify` passes all 70 test
+files and 485 tests, SDK regeneration, Core/frontend builds and bridge compilation.
+
 ## Oncology Phase 2 is complete for the authorized scope (2026-08-29)
 
 MHC-I Epitope Prediction and pVACseq Neoantigen Prioritization now have shared contracts, bounded

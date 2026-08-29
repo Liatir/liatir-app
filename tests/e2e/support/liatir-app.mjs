@@ -127,6 +127,14 @@ export async function selectFileFromPicker(browser, pickerTestId, filename) {
   await option.click();
 }
 
+/** Reads JSON from the user data scope, where durable run directories live. */
+export async function readDataJson(browser, rel) {
+  return browser.execute(async (file) => {
+    const raw = await window.Liatir.invoke('lia_fs_read_text', { rel: file, permanent: true });
+    return JSON.parse(raw);
+  }, rel);
+}
+
 /**
  * Reloads the app the way a user's restart does, without deadlocking the WebDriver session.
  *

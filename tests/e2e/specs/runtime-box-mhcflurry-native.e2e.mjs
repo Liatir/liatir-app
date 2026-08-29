@@ -10,7 +10,12 @@ import {
   startRuntimeBoxInstall,
   waitForRuntimeBoxInstall,
 } from '../support/runtime-box.mjs';
-import { navigateInApp, reloadLiatirApp, selectFileFromPicker } from '../support/liatir-app.mjs';
+import {
+  navigateInApp,
+  readDataJson,
+  reloadLiatirApp,
+  selectFileFromPicker,
+} from '../support/liatir-app.mjs';
 
 const BOX_ID = 'mhcflurry-class1-presentation';
 const MODEL_ID = 'openvax-mhcflurry-class1-presentation';
@@ -128,10 +133,10 @@ export const tests = [{
     }, { timeout: 60_000, interval: 1_000, timeoutMsg: 'MHCflurry Job was not finalized into Results' });
     expect(result.outputFiles.length).toBeGreaterThan(0);
     expect(result.outputFiles.every((file) => file.producer?.id === TOOL_ID)).toBe(true);
-    const persistedOutput = JSON.parse(await browser.execute(
-      async (rel) => window.Liatir.invoke('lia_app_read_text', { rel }),
+    const persistedOutput = await readDataJson(
+      browser,
       `workspaces/__test__/runs/${result.id}/result.json`,
-    ));
+    );
     const provenance = persistedOutput.sections.find(
       (section) => section.type === 'table' && section.label === 'Provenance',
     );

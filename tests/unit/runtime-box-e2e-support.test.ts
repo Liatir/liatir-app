@@ -9,7 +9,11 @@ import {
   startRuntimeBoxInstall,
   waitForRuntimeBoxInstall,
 } from '../e2e/support/runtime-box.mjs';
-import { selectFileFromPicker, waitForLiatirBridge } from '../e2e/support/liatir-app.mjs';
+import {
+  readDataJson,
+  selectFileFromPicker,
+  waitForLiatirBridge,
+} from '../e2e/support/liatir-app.mjs';
 import { resolveRuntimeBoxReleaseCandidate } from '../../frontend/src/lib/runtime-box-release-candidate';
 import {
   prepareTauriTestEnvironment,
@@ -83,6 +87,24 @@ describe('Runtime Box product E2E support', () => {
 
     await selectFileFromPicker(browser, 'mhc-input-file', 'mhc-native-input.fasta');
     expect(optionClicked).toBe(true);
+  });
+
+  it('reads durable Result documents from the user data scope', async () => {
+    const browser = {
+      execute: async (fn: (...args: unknown[]) => unknown, rel: string) => {
+        const source = fn.toString();
+        expect(source).toContain("lia_fs_read_text");
+        expect(source).toContain('permanent: true');
+        expect(source).not.toContain('lia_app_read_text');
+        expect(rel).toBe('workspaces/__test__/runs/run-1/result.json');
+        return { sections: [{ type: 'text', content: 'done' }] };
+      },
+    };
+
+    await expect(readDataJson(
+      browser,
+      'workspaces/__test__/runs/run-1/result.json',
+    )).resolves.toEqual({ sections: [{ type: 'text', content: 'done' }] });
   });
 
   it('opens the isolated Sandbox through the product workspace flow', async () => {
