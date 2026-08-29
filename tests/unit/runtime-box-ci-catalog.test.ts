@@ -352,11 +352,11 @@ describe('Runtime Box CI catalog', () => {
   });
 
   // The release drives each model's real product lifecycle through an end-to-end spec, and every
-  // spec pins its own box and model. The runner used to hardcode Geneformer's, which only worked
+  // spec pins its own box and component. The runner used to hardcode Geneformer's, which only worked
   // while Geneformer was the only model with a native lifecycle: run 31288741734 published the
   // scGPT Linux CPU box and then failed the lifecycle with "Unsupported native Runtime Box test
-  // target: ctheodoris-geneformer-v1-10m/linux-x86_64-cpu". macOS never caught it because the
-  // release skips the lifecycle there.
+  // target: ctheodoris-geneformer-v1-10m/linux-x86_64-cpu". Every supported OS now runs this
+  // lifecycle before promotion.
   it('resolves one product lifecycle spec per model, and never a hardcoded default', () => {
     const runner = readFileSync(
       new URL('../../scripts/run-runtime-box-product-lifecycle.mjs', import.meta.url),
@@ -381,9 +381,13 @@ describe('Runtime Box CI catalog', () => {
     expect(runner).toContain('productLifecycleSpec');
     expect(runner).toContain('LIATIR_RUNTIME_BOX_MODEL_ID');
     expect(runner).not.toContain("'tests/e2e/specs/runtime-box-native.e2e.mjs'");
-    // Both platform lifecycle steps carry the model, or one of them silently picks the wrong spec.
+    // Every platform lifecycle step carries the component, or one silently picks the wrong spec.
     expect(release.match(/LIATIR_RUNTIME_BOX_MODEL_ID: \$\{\{ inputs\.model_id \}\}/g))
-      .toHaveLength(2);
+      .toHaveLength(3);
+    expect(release).toContain('Run the macOS candidate through the component\'s product lifecycle spec');
+    expect(release).toContain('openvax-mhcflurry-class1-presentation');
+    expect(release).toContain('griffithlab-pvactools-pvacseq');
+    expect(release).toContain('macos-aarch64-cpu');
   });
 
   it('keeps both self-hosted launchers on one pinned runner release and one cleanup contract', () => {

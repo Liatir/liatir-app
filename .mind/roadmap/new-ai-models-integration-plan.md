@@ -92,6 +92,14 @@ release; it does not invalidate the local Phase 1 functional gates above.
 **Codex effort consigliato: xhigh**  
 **Stima prudenziale: 10–15 giorni**
 
+### Publication authorization — granted 2026-08-29
+
+The product owner authorized protected production publication and active app-catalog exposure for
+the two validated Phase 2 targets: MHCflurry `macos-aarch64-metal` and pVACseq
+`macos-aarch64-cpu`. This is also standing authorization for future Runtime Boxes after every exact
+legal, build, scientific, native and packaged-product lifecycle gate has passed. Paid GPU CI still
+requires its own explicit approval, and planned or unvalidated targets remain outside this authority.
+
 ### Runtime Box
 
 - Box MHCflurry standalone con PyTorch, modelli Class I binding/processing/presentation e asset già inclusi: nessun `mhcflurry-downloads fetch` durante l’uso.

@@ -93,6 +93,16 @@ function productionRecord() {
       promotionHttpStatus: 200,
       promotionResponse: { ok: true },
     },
+    productLifecycle: {
+      status: 'passed',
+      targetId: 'macos-aarch64-metal',
+      version: '1.0.0-beta.1',
+      jobId: 'job-1',
+      analysisRunId: 'run-1',
+      accelerator: 'Metal',
+      resultArtifactCount: 3,
+      assertions: { results: 'passed', provenance: 'passed', removal: 'passed' },
+    },
   };
 }
 
@@ -124,12 +134,13 @@ describe('Runtime Box CI evidence contract', () => {
   });
 
   it('requires full product lifecycle evidence for a successful Linux release', () => {
-    const record = productionRecord();
+    const record: any = productionRecord();
     record.subject.targetId = 'linux-x86_64-cpu';
     record.subject.recipeId = 'geneformer-v1-10m-linux-x86_64-cpu';
     record.host.platform = 'linux';
     record.host.arch = 'x86_64';
     record.scientific.accelerator.kind = 'cpu';
+    delete record.productLifecycle;
     expect(() => validateRuntimeBoxCiEvidence(record)).toThrow(/product lifecycle evidence/);
 
     record.productLifecycle = {
@@ -149,6 +160,7 @@ describe('Runtime Box CI evidence contract', () => {
     const record: any = productionRecord();
     record.subject.targetId = 'linux-x86_64-cuda12.4';
     record.subject.recipeId = 'geneformer-v1-10m-linux-x86_64-cuda12.4';
+    record.productLifecycle.targetId = 'linux-x86_64-cuda12.4';
     Object.assign(record.host, {
       platform: 'linux',
       arch: 'x86_64',

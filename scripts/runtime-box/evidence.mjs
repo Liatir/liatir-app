@@ -453,9 +453,7 @@ export async function writeReleaseEvidence(options, catalog) {
   const productLifecycle = optionalJson(options.productLifecycle);
   if (record.status === 'passed') {
     requireEvidence(release && channel && publish && promotion, 'successful publication evidence requires all signed documents and receipts');
-    if (record.subject.targetId.startsWith('linux-')) {
-      requireEvidence(productLifecycle, 'successful Linux publication evidence requires the real product lifecycle receipt');
-    }
+    requireEvidence(productLifecycle, 'successful publication evidence requires the real product lifecycle receipt');
   }
   if (productLifecycle) {
     requireEvidence(
@@ -582,6 +580,8 @@ export function validateRuntimeBoxCiEvidence(record) {
     requireEvidence(record.publication.archive.streamedVerification === 'passed', 'archive stream verification is missing');
     requireEvidence(record.publication.release.streamedVerification === 'passed', 'release stream verification is missing');
     requireEvidence(record.publication.promotionHttpStatus >= 200 && record.publication.promotionHttpStatus < 300, 'promotion response did not pass');
+    // Older reviewed macOS publications predate the all-platform product lifecycle. New evidence
+    // cannot omit it because writeReleaseEvidence rejects that omission before writing the record.
     if (record.subject.targetId.startsWith('linux-')) {
       requireEvidence(record.productLifecycle?.status === 'passed', 'Linux release lacks passed product lifecycle evidence');
       requireEvidence(record.productLifecycle.assertions?.results === 'passed', 'Linux release lacks Results proof');

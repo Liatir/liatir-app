@@ -11,11 +11,13 @@ on:
           - ctheodoris-geneformer-v1-10m
           - bowang-scgpt-whole-human
           - snap-stanford-uce-4layer
+          - openvax-mhcflurry-class1-presentation
+          - griffithlab-pvactools-pvacseq
       target_id:
         description: Checked native target
         required: true
         type: choice
-        options: [macos-aarch64-metal, linux-x86_64-cpu, linux-x86_64-cuda12.9, windows-x86_64-cpu, windows-x86_64-cuda12.8]
+        options: [macos-aarch64-metal, macos-aarch64-cpu, linux-x86_64-cpu, linux-x86_64-cuda12.9, windows-x86_64-cpu, windows-x86_64-cuda12.8]
       channel:
         description: Allowed release channel
         required: true
@@ -209,7 +211,6 @@ jobs:
         run: bash scripts/install-runtime-box-linux-product-deps.sh
 
       - name: Install pinned Rust 1.95.0 for the product lifecycle
-        if: startsWith(inputs.target_id, 'linux-') || startsWith(inputs.target_id, 'windows-')
         uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
         with:
           toolchain: "1.95.0"
@@ -269,8 +270,18 @@ jobs:
           --receipt .runtime-box-ci/publish-receipt.json
 
       - name: Build the real Liatir product test binary
-        if: startsWith(inputs.target_id, 'linux-') || startsWith(inputs.target_id, 'windows-')
         run: npm run test:tauri:prepare
+
+      - name: Run the macOS candidate through the component's product lifecycle spec
+        if: startsWith(inputs.target_id, 'macos-')
+        env:
+          LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL: http://127.0.0.1:8790/v1
+          LIATIR_RUNTIME_BOX_MODEL_ID: ${{ inputs.model_id }}
+          LIATIR_RUNTIME_BOX_TARGET_ID: ${{ inputs.target_id }}
+          LIATIR_RUNTIME_BOX_EXPECTED_VERSION: ${{ needs.preflight.outputs.version }}
+          LIATIR_RUNTIME_BOX_PRODUCT_EVIDENCE: .runtime-box-ci/product-lifecycle.json
+          LIATIR_E2E_REPORT: .runtime-box-ci/product-lifecycle-e2e.json
+        run: npm run runtime-box:product-lifecycle
 
       - name: Run the Linux candidate through the model's product lifecycle spec
         if: startsWith(inputs.target_id, 'linux-')

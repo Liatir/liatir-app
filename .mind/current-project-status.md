@@ -1,5 +1,15 @@
 # Current project status
 
+## Oncology publication is authorized and in progress (2026-08-29)
+
+The product owner explicitly authorized protected production publication and active product-catalog
+exposure for the validated MHCflurry `macos-aarch64-metal` and pVACseq `macos-aarch64-cpu` targets.
+The same authorization applies to future Runtime Boxes only after their exact legal, build,
+scientific, native and packaged-product lifecycle gates pass. It does not waive the separate explicit
+approval required for paid GPU CI, and it does not permit publishing planned or unvalidated targets.
+Every publication still requires the protected KMS signer, immutable public objects, independent
+public readback and retained evidence before the app catalog can expose it.
+
 ## Oncology Phase 2 is complete for the authorized scope (2026-08-29)
 
 MHC-I Epitope Prediction and pVACseq Neoantigen Prioritization now have shared contracts, bounded
